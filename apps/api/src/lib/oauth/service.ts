@@ -9,7 +9,7 @@ import {
 import { resolveActiveKeyPepper, resolveKeyPepperCandidates } from "@/lib/security/keyPepper";
 import { generateGatewayKey, hmacSecret, timingSafeEqual } from "@/routes/auth.helpers";
 import { validateWebhookEndpointUrlForDelivery } from "@/core/webhook-endpoints";
-import { validateOAuthToken, type JWTClaims } from "./jwt";
+import { decodeJWT, validateOAuthToken, type JWTClaims } from "./jwt";
 
 const encoder = new TextEncoder();
 const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
@@ -97,6 +97,8 @@ export function isReservedOAuthClientName(value: string): boolean {
 
 export type OAuthActor = {
 	userId: string;
+	mfaRequired?: boolean;
+	assuranceLevel?: string | null;
 	email?: string | null;
 	name?: string | null;
 };
@@ -437,6 +439,9 @@ export async function getSupabaseActor(accessToken: string): Promise<OAuthActor 
 	const metadata = (data.user.user_metadata ?? {}) as Record<string, unknown>;
 	return {
 		userId: data.user.id,
+		mfaRequired: (data.user.factors ?? []).some((factor) => factor.status === "verified"),
+		// getUser above authenticates this exact token before its assurance claim is used.
+		assuranceLevel: decodeJWT(accessToken)?.payload?.aal ?? null,
 		email: data.user.email ?? null,
 		name:
 			typeof metadata.full_name === "string"

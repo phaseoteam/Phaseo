@@ -380,19 +380,20 @@ describe("video-reconciliation provider polling", () => {
 		);
 	});
 
-	it("polls Novita's native task-result endpoint", async () => {
+	it.each(["novita/seedance-1", "kling-v3.0-std-t2v", "kling-v3.0-pro-i2v"])("polls Novita's native task-result endpoint for %s", async model => {
 		const nativeId = "novita-job-789";
 		const job = makeBaseJob({
 			videoId: "vid_compat_1",
 			nativeId,
 			provider: "novita",
-			model: "novita/seedance-1",
+			model,
 			meta: {
 				seconds: 6,
 				provider: "novita",
 				keySource: "gateway",
 				resolution: "720p",
 				quality: "standard",
+				audio: true,
 			},
 		});
 
@@ -421,8 +422,9 @@ describe("video-reconciliation provider polling", () => {
 			expect.objectContaining({
 				status: "completed",
 				providerId: "novita",
-				model: "novita/seedance-1",
+				model,
 				seconds: 6,
+				requestOptions: expect.objectContaining({ audio: true }),
 			}),
 		);
 	});

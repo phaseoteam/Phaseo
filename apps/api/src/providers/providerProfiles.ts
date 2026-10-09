@@ -431,9 +431,9 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		aliases: ["novitaai", "novita-ai"],
 		adapterBackedOverrides: {
 			"video.generate": true,
-			"image.generate": false,
+			"image.generate": true,
 			"image.edit": false,
-			"audio.speech": false,
+			"audio.speech": true,
 			"audio.transcription": false,
 			"audio.translations": false,
 		},

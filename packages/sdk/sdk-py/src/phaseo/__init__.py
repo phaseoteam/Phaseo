@@ -990,7 +990,7 @@ class Phaseo:
         request = {"music_id": music_id}
         started = time.time()
         try:
-            response = ops.getMusicGeneration(self._client, path={"music_id": quote(music_id, safe="")})
+            response = ops.getMusicGeneration(self._client, path={"music_id": music_id})
             self._capture_success(endpoint="music.retrieve", request=request, response=response, started_at=started)
             return response
         except Exception as exc:

@@ -149,7 +149,7 @@ const teamEnrichment = {
 function seedContextCache(options: { legacyCredit?: boolean; credit?: unknown; endpoint?: string } = {}): void {
 	runtime.store.set(`gateway:keyver:id:${apiKeyId}`, "1");
 	runtime.store.set(
-		`gateway:dynamic:default:${workspaceId}:${apiKeyId}:v1`,
+		`gateway:dynamic:default:${workspaceId}:${apiKeyId}:v1.w0`,
 		JSON.stringify({
 			workspaceId,
 			key: { ok: true, reason: null, resetAt: null },
@@ -162,7 +162,7 @@ function seedContextCache(options: { legacyCredit?: boolean; credit?: unknown; e
 		}),
 	);
 	runtime.store.set(
-		`gateway:static:v5:default:${workspaceId}:v1:${options.endpoint ?? endpoint}:${model}`,
+		`gateway:static:v5:default:${workspaceId}:v1.w0:${options.endpoint ?? endpoint}:${model}`,
 		JSON.stringify({
 			workspaceId,
 			resolvedModel: model,
@@ -373,8 +373,8 @@ describe("fetchGatewayContext credit-only cache refresh", () => {
 		await vi.waitFor(() => expect(settled).toBe(true));
 		expect(runtime.background).toHaveLength(1);
 		expect(runtime.pendingWrites.map(({ key }) => key).sort()).toEqual([
-			`gateway:dynamic:default:${workspaceId}:${apiKeyId}:v1`,
-			`gateway:static:v5:default:${workspaceId}:v1:${endpoint}:${model}`,
+			`gateway:dynamic:default:${workspaceId}:${apiKeyId}:v1.w0`,
+			`gateway:static:v5:default:${workspaceId}:v1.w0:${endpoint}:${model}`,
 		]);
 
 		await fetchPromise;

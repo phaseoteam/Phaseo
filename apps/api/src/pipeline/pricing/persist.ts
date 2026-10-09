@@ -1,9 +1,14 @@
-import Stripe from "stripe";
+// Type-only: the SDK is loaded on demand so charging does not evaluate it.
+import type Stripe from "stripe";
 // Purpose: Pricing rules, billing, and persistence helpers.
 // Why: Centralizes all cost calculations.
 // How: Persists pricing/usage data into storage.
 
-import { invalidateGatewayCreditCache } from "../../core/gateway-credit-cache";
+import {
+    creditWriteBackEnabled,
+    invalidateGatewayCreditCache,
+    writeBackGatewayCreditCache,
+} from "../../core/gateway-credit-cache";
 import { getSupabaseAdmin, ensureRuntimeForBackground } from "../../runtime/env";
 import { enqueueLowBalanceEmail } from "../notifications/low-balance";
 import { enqueueAutoTopUpFailedEmail } from "../notifications/billing-alerts";
@@ -16,6 +21,8 @@ export type ChargeRpcResult = {
     applied?: boolean;
     already_applied?: boolean;
     invalidate_credit_cache?: boolean;
+    /** Exact post-charge available balance, present only for newly applied charges. */
+    available_nanos?: number | null;
 };
 
 type WorkspaceLowBalanceSettingsRow = {
@@ -27,10 +34,11 @@ type WorkspaceLowBalanceSettingsRow = {
 
 let workspaceSettingsSupportsLowBalanceEmailColumns: boolean | null = null;
 
-function getStripe(): Stripe {
+async function getStripe(): Promise<Stripe> {
     const key = process.env.STRIPE_SECRET_KEY ?? process.env.TEST_STRIPE_SECRET_KEY;
     if (!key) throw new Error("Stripe secret key missing");
-    return new Stripe(key, { apiVersion: "2026-04-22.dahlia" as any });
+    const { default: StripeClient } = await import("stripe");
+    return new StripeClient(key, { apiVersion: "2026-04-22.dahlia" as any });
 }
 
 async function resolveDefaultPaymentMethod(stripe: Stripe, customerId: string): Promise<string | null> {
@@ -67,6 +75,7 @@ function normalizeChargeRpcResult(data: any): ChargeRpcResult | null {
         applied: (row as any).applied === true,
         already_applied: (row as any).already_applied === true,
         invalidate_credit_cache: typeof row.invalidate_credit_cache === "boolean" ? row.invalidate_credit_cache : undefined,
+        available_nanos: row.available_nanos == null ? null : Number(row.available_nanos),
     };
 }
 
@@ -141,10 +150,34 @@ async function loadWorkspaceLowBalanceSettings(
     return null;
 }
 
+// Runs after every applied charge. Most workspaces have alerts off, so remember
+// that answer briefly; enabled workspaces always read fresh cooldown state.
+const LOW_BALANCE_DISABLED_CACHE_TTL_MS = 60_000;
+const LOW_BALANCE_DISABLED_CACHE_MAX_ENTRIES = 20_000;
+const lowBalanceAlertsDisabledUntil = new Map<string, number>();
+
+export function __resetLowBalanceSettingsCacheForTests(): void {
+    lowBalanceAlertsDisabledUntil.clear();
+}
+
+function rememberLowBalanceAlertsDisabled(workspaceId: string): void {
+    lowBalanceAlertsDisabledUntil.delete(workspaceId);
+    lowBalanceAlertsDisabledUntil.set(workspaceId, Date.now() + LOW_BALANCE_DISABLED_CACHE_TTL_MS);
+    while (lowBalanceAlertsDisabledUntil.size > LOW_BALANCE_DISABLED_CACHE_MAX_ENTRIES) {
+        const oldest = lowBalanceAlertsDisabledUntil.keys().next();
+        if (oldest.done) break;
+        lowBalanceAlertsDisabledUntil.delete(oldest.value);
+    }
+}
+
 async function maybeEnqueueLowBalanceAlert(workspaceId: string): Promise<void> {
+    if ((lowBalanceAlertsDisabledUntil.get(workspaceId) ?? 0) > Date.now()) return;
     const supabase = getSupabaseAdmin();
     const typedSettings = await loadWorkspaceLowBalanceSettings(supabase, workspaceId);
-    if (!typedSettings?.low_balance_email_enabled) return;
+    if (!typedSettings?.low_balance_email_enabled) {
+        if (typedSettings) rememberLowBalanceAlertsDisabled(workspaceId);
+        return;
+    }
 
     const thresholdNanos = toFiniteNumber(typedSettings.low_balance_email_threshold_nanos, 0);
     if (thresholdNanos < 0) return;
@@ -212,7 +245,16 @@ export async function recordUsageAndCharge(args: {
         }
         if (chargeResult.invalidate_credit_cache === true ||
             (chargeResult.applied && chargeResult.invalidate_credit_cache !== false)) {
-            await invalidateGatewayCreditCache(args.workspaceId);
+            // Replays never carry a balance, so they always invalidate.
+            const availableNanos = chargeResult.applied && !chargeResult.already_applied &&
+                chargeResult.status === "top_up_not_required" && chargeResult.available_nanos != null
+                ? Number(chargeResult.available_nanos)
+                : Number.NaN;
+            if (creditWriteBackEnabled() && Number.isSafeInteger(availableNanos)) {
+                await writeBackGatewayCreditCache(args.workspaceId, availableNanos);
+            } else {
+                await invalidateGatewayCreditCache(args.workspaceId);
+            }
         }
         if (chargeResult.already_applied) return chargeResult;
 
@@ -232,7 +274,7 @@ export async function recordUsageAndCharge(args: {
             // 1. Apply reverse calculation: net = gross / (1 + fee_rate)
             // 2. Use the flat 5% top-up fee
             // 3. Credit wallet with net amount after the fee deduction
-            const stripe = getStripe();
+            const stripe = await getStripe();
             const minTopUpNanos = 1 * 1_000_000_000;
             if (chargeResult.auto_top_up_amount_nanos < minTopUpNanos) {
                 console.error("[auto-recharge] Skipped: auto top-up amount below $1", {

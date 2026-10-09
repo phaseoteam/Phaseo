@@ -1,8 +1,15 @@
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
+from urllib.parse import quote
 from .client import Client
 from . import models
+
+def _path_segment(value: Any) -> str:
+	value = str(value)
+	if value in ('.', '..'):
+		raise ValueError('Dot segments are not valid path parameters')
+	return quote(value, safe='')
 
 def addGuardrailKeys(
 	client: Client,
@@ -13,7 +20,7 @@ def addGuardrailKeys(
 	body: Optional[Any] = None,
 ) -> GuardrailKeyAddResponse:
 	path = path or {}
-	resolved_path = f"/guardrails/{path.get('id', '')}/keys/add"
+	resolved_path = f"/guardrails/{_path_segment(path.get('id', ''))}/keys/add"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -26,7 +33,7 @@ def addGuardrailMembers(
 	body: Optional[Any] = None,
 ) -> GuardrailMemberAddResponse:
 	path = path or {}
-	resolved_path = f"/guardrails/{path.get('id', '')}/members/add"
+	resolved_path = f"/guardrails/{_path_segment(path.get('id', ''))}/members/add"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -39,7 +46,7 @@ def addWorkspaceMembers(
 	body: Optional[Any] = None,
 ) -> WorkspaceMemberAddResponse:
 	path = path or {}
-	resolved_path = f"/workspaces/{path.get('id', '')}/members/add"
+	resolved_path = f"/workspaces/{_path_segment(path.get('id', ''))}/members/add"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -52,7 +59,7 @@ def applyPresetUpstreamVersion(
 	body: Optional[Any] = None,
 ) -> PresetUpstreamApplyResponse:
 	path = path or {}
-	resolved_path = f"/presets/{path.get('id', '')}/upstream"
+	resolved_path = f"/presets/{_path_segment(path.get('id', ''))}/upstream"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -65,7 +72,7 @@ def approveWorkspaceJoinRequest(
 	body: Optional[Any] = None,
 ) -> WorkspaceJoinRequestResponse:
 	path = path or {}
-	resolved_path = f"/workspaces/{path.get('id', '')}/join-requests/{path.get('request_id', '')}/approve"
+	resolved_path = f"/workspaces/{_path_segment(path.get('id', ''))}/join-requests/{_path_segment(path.get('request_id', ''))}/approve"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -91,7 +98,7 @@ def cancelBatch(
 	body: Optional[Any] = None,
 ) -> BatchResponse:
 	path = path or {}
-	resolved_path = f"/batches/{path.get('batch_id', '')}/cancel"
+	resolved_path = f"/batches/{_path_segment(path.get('batch_id', ''))}/cancel"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -104,7 +111,7 @@ def cancelBatchAlias(
 	body: Optional[Any] = None,
 ) -> BatchResponse:
 	path = path or {}
-	resolved_path = f"/batch/{path.get('id', '')}/cancel"
+	resolved_path = f"/batch/{_path_segment(path.get('id', ''))}/cancel"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -117,7 +124,7 @@ def cancelVideo(
 	body: Optional[Any] = None,
 ) -> Any:
 	path = path or {}
-	resolved_path = f"/videos/{path.get('video_id', '')}/cancel"
+	resolved_path = f"/videos/{_path_segment(path.get('video_id', ''))}/cancel"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -130,7 +137,7 @@ def cancelVideoAlias(
 	body: Optional[Any] = None,
 ) -> Any:
 	path = path or {}
-	resolved_path = f"/video/generations/{path.get('video_id', '')}/cancel"
+	resolved_path = f"/video/generations/{_path_segment(path.get('video_id', ''))}/cancel"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -546,7 +553,7 @@ def createVideoDownloadUrl(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = f"/videos/{path.get('video_id', '')}/download_url"
+	resolved_path = f"/videos/{_path_segment(path.get('video_id', ''))}/download_url"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -559,7 +566,7 @@ def createVideoDownloadUrlAlias(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = f"/video/generations/{path.get('video_id', '')}/download_url"
+	resolved_path = f"/video/generations/{_path_segment(path.get('video_id', ''))}/download_url"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -637,7 +644,7 @@ def createWorkspaceInvite(
 	body: Optional[Any] = None,
 ) -> WorkspaceInviteCreateResponse:
 	path = path or {}
-	resolved_path = f"/workspaces/{path.get('id', '')}/invites"
+	resolved_path = f"/workspaces/{_path_segment(path.get('id', ''))}/invites"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -676,7 +683,7 @@ def deleteApiKey(
 	body: Optional[Any] = None,
 ) -> ManagementKeyRuntimeDeleteResponse:
 	path = path or {}
-	resolved_path = f"/keys/{path.get('id', '')}"
+	resolved_path = f"/keys/{_path_segment(path.get('id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -689,7 +696,7 @@ def deleteDataContributionClassifier(
 	body: Optional[Any] = None,
 ) -> DataContributionClassifierDeleteResponse:
 	path = path or {}
-	resolved_path = f"/data-contribution/classifiers/{path.get('id', '')}"
+	resolved_path = f"/data-contribution/classifiers/{_path_segment(path.get('id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -702,7 +709,7 @@ def deleteDynamicRoute(
 	body: Optional[Any] = None,
 ) -> DynamicRouteDeleteResponse:
 	path = path or {}
-	resolved_path = f"/routing/dynamic-routes/{path.get('id', '')}"
+	resolved_path = f"/routing/dynamic-routes/{_path_segment(path.get('id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -715,7 +722,7 @@ def deleteGuardrail(
 	body: Optional[Any] = None,
 ) -> GuardrailDeleteResponse:
 	path = path or {}
-	resolved_path = f"/guardrails/{path.get('id', '')}"
+	resolved_path = f"/guardrails/{_path_segment(path.get('id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -728,7 +735,7 @@ def deleteManagementKey(
 	body: Optional[Any] = None,
 ) -> ManagementKeyRuntimeDeleteResponse:
 	path = path or {}
-	resolved_path = f"/management-keys/{path.get('id', '')}"
+	resolved_path = f"/management-keys/{_path_segment(path.get('id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -741,7 +748,7 @@ def deleteOAuthClient(
 	body: Optional[Any] = None,
 ) -> OAuthClientDeleteResponse:
 	path = path or {}
-	resolved_path = f"/oauth-clients/{path.get('client_id', '')}"
+	resolved_path = f"/oauth-clients/{_path_segment(path.get('client_id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -754,7 +761,7 @@ def deleteObservabilityDestination(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = f"/observability/destinations/{path.get('id', '')}"
+	resolved_path = f"/observability/destinations/{_path_segment(path.get('id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -767,7 +774,7 @@ def deletePreset(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = f"/presets/{path.get('id', '')}"
+	resolved_path = f"/presets/{_path_segment(path.get('id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -780,7 +787,7 @@ def deletePrivateModel(
 	body: Optional[Any] = None,
 ) -> PrivateModelDeleteResponse:
 	path = path or {}
-	resolved_path = f"/private-models/{path.get('id', '')}"
+	resolved_path = f"/private-models/{_path_segment(path.get('id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -793,7 +800,7 @@ def deleteProviderCredential(
 	body: Optional[Any] = None,
 ) -> ProviderCredentialDeleteResponse:
 	path = path or {}
-	resolved_path = f"/byok/{path.get('id', '')}"
+	resolved_path = f"/byok/{_path_segment(path.get('id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -806,7 +813,7 @@ def deleteVideo(
 	body: Optional[Any] = None,
 ) -> VideoDeleteResponse:
 	path = path or {}
-	resolved_path = f"/videos/{path.get('video_id', '')}"
+	resolved_path = f"/videos/{_path_segment(path.get('video_id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -819,7 +826,7 @@ def deleteVideoAlias(
 	body: Optional[Any] = None,
 ) -> VideoDeleteResponse:
 	path = path or {}
-	resolved_path = f"/video/generations/{path.get('video_id', '')}"
+	resolved_path = f"/video/generations/{_path_segment(path.get('video_id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -832,7 +839,7 @@ def deleteWebhookEndpoint(
 	body: Optional[Any] = None,
 ) -> WebhookEndpointDeleteResponse:
 	path = path or {}
-	resolved_path = f"/webhook-endpoints/{path.get('id', '')}"
+	resolved_path = f"/webhook-endpoints/{_path_segment(path.get('id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -845,7 +852,7 @@ def deleteWorkspace(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = f"/workspaces/{path.get('id', '')}"
+	resolved_path = f"/workspaces/{_path_segment(path.get('id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -858,7 +865,7 @@ def deleteWorkspaceBudget(
 	body: Optional[Any] = None,
 ) -> WorkspaceBudgetDeleteResponse:
 	path = path or {}
-	resolved_path = f"/budgets/{path.get('id', '')}"
+	resolved_path = f"/budgets/{_path_segment(path.get('id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -871,7 +878,7 @@ def deleteWorkspaceDepartment(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = f"/identity/departments/{path.get('id', '')}"
+	resolved_path = f"/identity/departments/{_path_segment(path.get('id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -884,7 +891,7 @@ def deleteWorkspaceDepartmentMember(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = f"/identity/departments/{path.get('departmentId', '')}/members/{path.get('userId', '')}"
+	resolved_path = f"/identity/departments/{_path_segment(path.get('departmentId', ''))}/members/{_path_segment(path.get('userId', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -897,7 +904,7 @@ def deleteWorkspaceGroupMapping(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = f"/identity/group-mappings/{path.get('id', '')}"
+	resolved_path = f"/identity/group-mappings/{_path_segment(path.get('id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -910,7 +917,7 @@ def deleteWorkspaceInvite(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = f"/workspaces/{path.get('id', '')}/invites/{path.get('invite_id', '')}"
+	resolved_path = f"/workspaces/{_path_segment(path.get('id', ''))}/invites/{_path_segment(path.get('invite_id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -923,7 +930,7 @@ def deleteWorkspaceNotificationDestination(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = f"/notifications/destinations/{path.get('id', '')}"
+	resolved_path = f"/notifications/destinations/{_path_segment(path.get('id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -936,7 +943,7 @@ def deployDynamicRouteVersion(
 	body: Optional[Any] = None,
 ) -> DynamicRouteDeployResponse:
 	path = path or {}
-	resolved_path = f"/routing/dynamic-routes/{path.get('id', '')}/versions/{path.get('version', '')}/deploy"
+	resolved_path = f"/routing/dynamic-routes/{_path_segment(path.get('id', ''))}/versions/{_path_segment(path.get('version', ''))}/deploy"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -962,7 +969,7 @@ def finalizeRealtimeSession(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = f"/audio/realtime/sessions/{path.get('session_id', '')}/finalize"
+	resolved_path = f"/audio/realtime/sessions/{_path_segment(path.get('session_id', ''))}/finalize"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -975,7 +982,7 @@ def forkPreset(
 	body: Optional[Any] = None,
 ) -> PresetResponse:
 	path = path or {}
-	resolved_path = f"/presets/{path.get('id', '')}/fork"
+	resolved_path = f"/presets/{_path_segment(path.get('id', ''))}/fork"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1040,7 +1047,7 @@ def getApiKey(
 	body: Optional[Any] = None,
 ) -> ApiKeyResponse:
 	path = path or {}
-	resolved_path = f"/keys/{path.get('id', '')}"
+	resolved_path = f"/keys/{_path_segment(path.get('id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1092,7 +1099,7 @@ def getDynamicRoute(
 	body: Optional[Any] = None,
 ) -> DynamicRouteResponse:
 	path = path or {}
-	resolved_path = f"/routing/dynamic-routes/{path.get('id', '')}"
+	resolved_path = f"/routing/dynamic-routes/{_path_segment(path.get('id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1105,7 +1112,7 @@ def getGatewayRequestLog(
 	body: Optional[Any] = None,
 ) -> GatewayRequestLogResponse:
 	path = path or {}
-	resolved_path = f"/logs/{path.get('requestId', '')}"
+	resolved_path = f"/logs/{_path_segment(path.get('requestId', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1131,7 +1138,7 @@ def getGuardrail(
 	body: Optional[Any] = None,
 ) -> GuardrailDetailResponse:
 	path = path or {}
-	resolved_path = f"/guardrails/{path.get('id', '')}"
+	resolved_path = f"/guardrails/{_path_segment(path.get('id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1157,7 +1164,7 @@ def getManagementKey(
 	body: Optional[Any] = None,
 ) -> ManagementKeyRuntimeResponse:
 	path = path or {}
-	resolved_path = f"/management-keys/{path.get('id', '')}"
+	resolved_path = f"/management-keys/{_path_segment(path.get('id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1170,7 +1177,7 @@ def getMusicGeneration(
 	body: Optional[Any] = None,
 ) -> MusicGenerateResponse:
 	path = path or {}
-	resolved_path = f"/music/generate/{path.get('music_id', '')}"
+	resolved_path = f"/music/generate/{_path_segment(path.get('music_id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1183,7 +1190,7 @@ def getMusicGenerationAlias(
 	body: Optional[Any] = None,
 ) -> MusicGenerateResponse:
 	path = path or {}
-	resolved_path = f"/music/generations/{path.get('music_id', '')}"
+	resolved_path = f"/music/generations/{_path_segment(path.get('music_id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1196,7 +1203,7 @@ def getOAuthClient(
 	body: Optional[Any] = None,
 ) -> OAuthClient:
 	path = path or {}
-	resolved_path = f"/oauth-clients/{path.get('client_id', '')}"
+	resolved_path = f"/oauth-clients/{_path_segment(path.get('client_id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1209,7 +1216,7 @@ def getObservabilityDestination(
 	body: Optional[Any] = None,
 ) -> ObservabilityDestinationResponse:
 	path = path or {}
-	resolved_path = f"/observability/destinations/{path.get('id', '')}"
+	resolved_path = f"/observability/destinations/{_path_segment(path.get('id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1235,7 +1242,7 @@ def getPreset(
 	body: Optional[Any] = None,
 ) -> PresetResponse:
 	path = path or {}
-	resolved_path = f"/presets/{path.get('id', '')}"
+	resolved_path = f"/presets/{_path_segment(path.get('id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1261,7 +1268,7 @@ def getPresetTestRun(
 	body: Optional[Any] = None,
 ) -> PresetTestRunDetailResponse:
 	path = path or {}
-	resolved_path = f"/preset-test-runs/{path.get('id', '')}"
+	resolved_path = f"/preset-test-runs/{_path_segment(path.get('id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1274,7 +1281,7 @@ def getPrivateModel(
 	body: Optional[Any] = None,
 ) -> PrivateModelResponse:
 	path = path or {}
-	resolved_path = f"/private-models/{path.get('id', '')}"
+	resolved_path = f"/private-models/{_path_segment(path.get('id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1287,7 +1294,7 @@ def getProviderCredential(
 	body: Optional[Any] = None,
 ) -> ProviderCredentialResponse:
 	path = path or {}
-	resolved_path = f"/byok/{path.get('id', '')}"
+	resolved_path = f"/byok/{_path_segment(path.get('id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1300,7 +1307,7 @@ def getProviderDerankStatus(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = f"/health/providers/{path.get('provider_id', '')}/derank"
+	resolved_path = f"/health/providers/{_path_segment(path.get('provider_id', ''))}/derank"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1313,7 +1320,7 @@ def getVideo(
 	body: Optional[Any] = None,
 ) -> VideoGenerationResponse:
 	path = path or {}
-	resolved_path = f"/videos/{path.get('video_id', '')}"
+	resolved_path = f"/videos/{_path_segment(path.get('video_id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1326,7 +1333,7 @@ def getVideoAlias(
 	body: Optional[Any] = None,
 ) -> VideoGenerationResponse:
 	path = path or {}
-	resolved_path = f"/video/generations/{path.get('video_id', '')}"
+	resolved_path = f"/video/generations/{_path_segment(path.get('video_id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1339,7 +1346,7 @@ def getVideoContent(
 	body: Optional[Any] = None,
 ) -> Any:
 	path = path or {}
-	resolved_path = f"/videos/{path.get('video_id', '')}/content"
+	resolved_path = f"/videos/{_path_segment(path.get('video_id', ''))}/content"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1352,7 +1359,7 @@ def getVideoContentAlias(
 	body: Optional[Any] = None,
 ) -> Any:
 	path = path or {}
-	resolved_path = f"/video/generations/{path.get('video_id', '')}/content"
+	resolved_path = f"/video/generations/{_path_segment(path.get('video_id', ''))}/content"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1365,7 +1372,7 @@ def getWebhookEndpoint(
 	body: Optional[Any] = None,
 ) -> WebhookEndpoint:
 	path = path or {}
-	resolved_path = f"/webhook-endpoints/{path.get('id', '')}"
+	resolved_path = f"/webhook-endpoints/{_path_segment(path.get('id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1378,7 +1385,7 @@ def getWorkspace(
 	body: Optional[Any] = None,
 ) -> WorkspaceResponse:
 	path = path or {}
-	resolved_path = f"/workspaces/{path.get('id', '')}"
+	resolved_path = f"/workspaces/{_path_segment(path.get('id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1391,7 +1398,7 @@ def getWorkspaceBudget(
 	body: Optional[Any] = None,
 ) -> WorkspaceBudgetResponse:
 	path = path or {}
-	resolved_path = f"/budgets/{path.get('id', '')}"
+	resolved_path = f"/budgets/{_path_segment(path.get('id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1469,7 +1476,7 @@ def invalidateApiKeyCache(
 	body: Optional[Any] = None,
 ) -> KeyInvalidateResponse:
 	path = path or {}
-	resolved_path = f"/keys/{path.get('id', '')}/invalidate"
+	resolved_path = f"/keys/{_path_segment(path.get('id', ''))}/invalidate"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1599,7 +1606,7 @@ def listBatchRequests(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = f"/batches/{path.get('batch_id', '')}/requests"
+	resolved_path = f"/batches/{_path_segment(path.get('batch_id', ''))}/requests"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1612,7 +1619,7 @@ def listBatchRequestsAlias(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = f"/batch/{path.get('id', '')}/requests"
+	resolved_path = f"/batch/{_path_segment(path.get('id', ''))}/requests"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1716,7 +1723,7 @@ def listGuardrailKeys(
 	body: Optional[Any] = None,
 ) -> GuardrailKeyListResponse:
 	path = path or {}
-	resolved_path = f"/guardrails/{path.get('id', '')}/keys"
+	resolved_path = f"/guardrails/{_path_segment(path.get('id', ''))}/keys"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1729,7 +1736,7 @@ def listGuardrailMembers(
 	body: Optional[Any] = None,
 ) -> GuardrailMemberListResponse:
 	path = path or {}
-	resolved_path = f"/guardrails/{path.get('id', '')}/members"
+	resolved_path = f"/guardrails/{_path_segment(path.get('id', ''))}/members"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1768,7 +1775,7 @@ def listModelEndpoints(
 	body: Optional[Any] = None,
 ) -> ModelEndpointsResponse:
 	path = path or {}
-	resolved_path = f"/models/{path.get('author', '')}/{path.get('slug', '')}/endpoints"
+	resolved_path = f"/models/{_path_segment(path.get('author', ''))}/{_path_segment(path.get('slug', ''))}/endpoints"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1859,7 +1866,7 @@ def listPresetVersions(
 	body: Optional[Any] = None,
 ) -> PresetVersionListResponse:
 	path = path or {}
-	resolved_path = f"/presets/{path.get('id', '')}/versions"
+	resolved_path = f"/presets/{_path_segment(path.get('id', ''))}/versions"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2067,7 +2074,7 @@ def listWorkspaceInvites(
 	body: Optional[Any] = None,
 ) -> WorkspaceInviteListResponse:
 	path = path or {}
-	resolved_path = f"/workspaces/{path.get('id', '')}/invites"
+	resolved_path = f"/workspaces/{_path_segment(path.get('id', ''))}/invites"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2080,7 +2087,7 @@ def listWorkspaceJoinRequests(
 	body: Optional[Any] = None,
 ) -> WorkspaceJoinRequestListResponse:
 	path = path or {}
-	resolved_path = f"/workspaces/{path.get('id', '')}/join-requests"
+	resolved_path = f"/workspaces/{_path_segment(path.get('id', ''))}/join-requests"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2093,7 +2100,7 @@ def listWorkspaceMembers(
 	body: Optional[Any] = None,
 ) -> WorkspaceMemberListResponse:
 	path = path or {}
-	resolved_path = f"/workspaces/{path.get('id', '')}/members"
+	resolved_path = f"/workspaces/{_path_segment(path.get('id', ''))}/members"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2171,7 +2178,7 @@ def mergeWorkspaceApp(
 	body: Optional[Any] = None,
 ) -> WorkspaceAppMergeResponse:
 	path = path or {}
-	resolved_path = f"/apps/{path.get('id', '')}/merge"
+	resolved_path = f"/apps/{_path_segment(path.get('id', ''))}/merge"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2184,7 +2191,7 @@ def publishPresetVersion(
 	body: Optional[Any] = None,
 ) -> PresetVersionResponse:
 	path = path or {}
-	resolved_path = f"/presets/{path.get('id', '')}/versions"
+	resolved_path = f"/presets/{_path_segment(path.get('id', ''))}/versions"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2197,7 +2204,7 @@ def regenerateOAuthClientSecret(
 	body: Optional[Any] = None,
 ) -> OAuthClientSecretResponse:
 	path = path or {}
-	resolved_path = f"/oauth-clients/{path.get('client_id', '')}/regenerate-secret"
+	resolved_path = f"/oauth-clients/{_path_segment(path.get('client_id', ''))}/regenerate-secret"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2210,7 +2217,7 @@ def rejectWorkspaceJoinRequest(
 	body: Optional[Any] = None,
 ) -> WorkspaceJoinRequestResponse:
 	path = path or {}
-	resolved_path = f"/workspaces/{path.get('id', '')}/join-requests/{path.get('request_id', '')}/reject"
+	resolved_path = f"/workspaces/{_path_segment(path.get('id', ''))}/join-requests/{_path_segment(path.get('request_id', ''))}/reject"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2223,7 +2230,7 @@ def removeGuardrailKeys(
 	body: Optional[Any] = None,
 ) -> GuardrailRemoveResponse:
 	path = path or {}
-	resolved_path = f"/guardrails/{path.get('id', '')}/keys/remove"
+	resolved_path = f"/guardrails/{_path_segment(path.get('id', ''))}/keys/remove"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2236,7 +2243,7 @@ def removeGuardrailMembers(
 	body: Optional[Any] = None,
 ) -> GuardrailRemoveResponse:
 	path = path or {}
-	resolved_path = f"/guardrails/{path.get('id', '')}/members/remove"
+	resolved_path = f"/guardrails/{_path_segment(path.get('id', ''))}/members/remove"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2249,7 +2256,7 @@ def removeWorkspaceMembers(
 	body: Optional[Any] = None,
 ) -> WorkspaceMemberRemoveResponse:
 	path = path or {}
-	resolved_path = f"/workspaces/{path.get('id', '')}/members/remove"
+	resolved_path = f"/workspaces/{_path_segment(path.get('id', ''))}/members/remove"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2275,7 +2282,7 @@ def replaceDynamicRouteKeys(
 	body: Optional[Any] = None,
 ) -> DynamicRouteKeysResponse:
 	path = path or {}
-	resolved_path = f"/routing/dynamic-routes/{path.get('id', '')}/keys"
+	resolved_path = f"/routing/dynamic-routes/{_path_segment(path.get('id', ''))}/keys"
 	return client.request("PUT", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2288,7 +2295,7 @@ def replaceGuardrailKeys(
 	body: Optional[Any] = None,
 ) -> GuardrailKeySetResponse:
 	path = path or {}
-	resolved_path = f"/guardrails/{path.get('id', '')}/keys"
+	resolved_path = f"/guardrails/{_path_segment(path.get('id', ''))}/keys"
 	return client.request("PUT", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2301,7 +2308,7 @@ def retrieveBatch(
 	body: Optional[Any] = None,
 ) -> BatchResponse:
 	path = path or {}
-	resolved_path = f"/batches/{path.get('batch_id', '')}"
+	resolved_path = f"/batches/{_path_segment(path.get('batch_id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2314,7 +2321,7 @@ def retrieveBatchAlias(
 	body: Optional[Any] = None,
 ) -> BatchResponse:
 	path = path or {}
-	resolved_path = f"/batch/{path.get('id', '')}"
+	resolved_path = f"/batch/{_path_segment(path.get('id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2327,7 +2334,7 @@ def retrieveBatchFile(
 	body: Optional[Any] = None,
 ) -> FileResponse:
 	path = path or {}
-	resolved_path = f"/batches/files/{path.get('file_id', '')}"
+	resolved_path = f"/batches/files/{_path_segment(path.get('file_id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2340,7 +2347,7 @@ def retrieveBatchFileAlias(
 	body: Optional[Any] = None,
 ) -> FileResponse:
 	path = path or {}
-	resolved_path = f"/batch/files/{path.get('file_id', '')}"
+	resolved_path = f"/batch/files/{_path_segment(path.get('file_id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2353,7 +2360,7 @@ def retrieveBatchFileContent(
 	body: Optional[Any] = None,
 ) -> Any:
 	path = path or {}
-	resolved_path = f"/batches/files/{path.get('file_id', '')}/content"
+	resolved_path = f"/batches/files/{_path_segment(path.get('file_id', ''))}/content"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2366,7 +2373,7 @@ def retrieveBatchFileContentAlias(
 	body: Optional[Any] = None,
 ) -> Any:
 	path = path or {}
-	resolved_path = f"/batch/files/{path.get('file_id', '')}/content"
+	resolved_path = f"/batch/files/{_path_segment(path.get('file_id', ''))}/content"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2379,7 +2386,7 @@ def retrieveBatchResults(
 	body: Optional[Any] = None,
 ) -> str:
 	path = path or {}
-	resolved_path = f"/batches/{path.get('batch_id', '')}/results"
+	resolved_path = f"/batches/{_path_segment(path.get('batch_id', ''))}/results"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2392,7 +2399,7 @@ def retrieveBatchResultsAlias(
 	body: Optional[Any] = None,
 ) -> str:
 	path = path or {}
-	resolved_path = f"/batch/{path.get('id', '')}/results"
+	resolved_path = f"/batch/{_path_segment(path.get('id', ''))}/results"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2405,7 +2412,7 @@ def retrieveFile(
 	body: Optional[Any] = None,
 ) -> FileResponse:
 	path = path or {}
-	resolved_path = f"/files/{path.get('file_id', '')}"
+	resolved_path = f"/files/{_path_segment(path.get('file_id', ''))}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2418,7 +2425,7 @@ def retrieveFileContent(
 	body: Optional[Any] = None,
 ) -> Any:
 	path = path or {}
-	resolved_path = f"/files/{path.get('file_id', '')}/content"
+	resolved_path = f"/files/{_path_segment(path.get('file_id', ''))}/content"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2431,7 +2438,7 @@ def revokeWorkspaceScimToken(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = f"/identity/scim/tokens/{path.get('id', '')}"
+	resolved_path = f"/identity/scim/tokens/{_path_segment(path.get('id', ''))}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2444,7 +2451,7 @@ def rotateApiKey(
 	body: Optional[Any] = None,
 ) -> ApiKeyRotateResponse:
 	path = path or {}
-	resolved_path = f"/keys/{path.get('id', '')}/rotate"
+	resolved_path = f"/keys/{_path_segment(path.get('id', ''))}/rotate"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2457,7 +2464,7 @@ def rotateWebhookEndpointSecret(
 	body: Optional[Any] = None,
 ) -> WebhookEndpointSecretResponse:
 	path = path or {}
-	resolved_path = f"/webhook-endpoints/{path.get('id', '')}/rotate-secret"
+	resolved_path = f"/webhook-endpoints/{_path_segment(path.get('id', ''))}/rotate-secret"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2470,7 +2477,7 @@ def setWorkspaceDepartmentMember(
 	body: Optional[Any] = None,
 ) -> WorkspaceDepartmentMemberResponse:
 	path = path or {}
-	resolved_path = f"/identity/departments/{path.get('departmentId', '')}/members/{path.get('userId', '')}"
+	resolved_path = f"/identity/departments/{_path_segment(path.get('departmentId', ''))}/members/{_path_segment(path.get('userId', ''))}"
 	return client.request("PUT", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2496,7 +2503,7 @@ def testWebhookEndpoint(
 	body: Optional[Any] = None,
 ) -> WebhookEndpointTestResponse:
 	path = path or {}
-	resolved_path = f"/webhook-endpoints/{path.get('id', '')}/test"
+	resolved_path = f"/webhook-endpoints/{_path_segment(path.get('id', ''))}/test"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2509,7 +2516,7 @@ def testWorkspaceNotificationDestination(
 	body: Optional[Any] = None,
 ) -> WorkspaceNotificationTestResponse:
 	path = path or {}
-	resolved_path = f"/notifications/destinations/{path.get('id', '')}/test"
+	resolved_path = f"/notifications/destinations/{_path_segment(path.get('id', ''))}/test"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2535,7 +2542,7 @@ def updateApiKey(
 	body: Optional[Any] = None,
 ) -> ApiKeyResponse:
 	path = path or {}
-	resolved_path = f"/keys/{path.get('id', '')}"
+	resolved_path = f"/keys/{_path_segment(path.get('id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2548,7 +2555,7 @@ def updateDataContributionClassifier(
 	body: Optional[Any] = None,
 ) -> DataContributionClassifierResponse:
 	path = path or {}
-	resolved_path = f"/data-contribution/classifiers/{path.get('id', '')}"
+	resolved_path = f"/data-contribution/classifiers/{_path_segment(path.get('id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2574,7 +2581,7 @@ def updateDynamicRoute(
 	body: Optional[Any] = None,
 ) -> DynamicRouteResponse:
 	path = path or {}
-	resolved_path = f"/routing/dynamic-routes/{path.get('id', '')}"
+	resolved_path = f"/routing/dynamic-routes/{_path_segment(path.get('id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2587,7 +2594,7 @@ def updateGuardrail(
 	body: Optional[Any] = None,
 ) -> GuardrailResponse:
 	path = path or {}
-	resolved_path = f"/guardrails/{path.get('id', '')}"
+	resolved_path = f"/guardrails/{_path_segment(path.get('id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2600,7 +2607,7 @@ def updateManagementKey(
 	body: Optional[Any] = None,
 ) -> ManagementKeyRuntimeResponse:
 	path = path or {}
-	resolved_path = f"/management-keys/{path.get('id', '')}"
+	resolved_path = f"/management-keys/{_path_segment(path.get('id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2613,7 +2620,7 @@ def updateOAuthClient(
 	body: Optional[Any] = None,
 ) -> OAuthClient:
 	path = path or {}
-	resolved_path = f"/oauth-clients/{path.get('client_id', '')}"
+	resolved_path = f"/oauth-clients/{_path_segment(path.get('client_id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2626,7 +2633,7 @@ def updateObservabilityDestination(
 	body: Optional[Any] = None,
 ) -> ObservabilityDestinationResponse:
 	path = path or {}
-	resolved_path = f"/observability/destinations/{path.get('id', '')}"
+	resolved_path = f"/observability/destinations/{_path_segment(path.get('id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2652,7 +2659,7 @@ def updatePreset(
 	body: Optional[Any] = None,
 ) -> PresetResponse:
 	path = path or {}
-	resolved_path = f"/presets/{path.get('id', '')}"
+	resolved_path = f"/presets/{_path_segment(path.get('id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2678,7 +2685,7 @@ def updatePresetTestRun(
 	body: Optional[Any] = None,
 ) -> PresetTestRunResponse:
 	path = path or {}
-	resolved_path = f"/preset-test-runs/{path.get('id', '')}"
+	resolved_path = f"/preset-test-runs/{_path_segment(path.get('id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2691,7 +2698,7 @@ def updatePrivateModel(
 	body: Optional[Any] = None,
 ) -> PrivateModelResponse:
 	path = path or {}
-	resolved_path = f"/private-models/{path.get('id', '')}"
+	resolved_path = f"/private-models/{_path_segment(path.get('id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2704,7 +2711,7 @@ def updateProviderCredential(
 	body: Optional[Any] = None,
 ) -> ProviderCredentialResponse:
 	path = path or {}
-	resolved_path = f"/byok/{path.get('id', '')}"
+	resolved_path = f"/byok/{_path_segment(path.get('id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2717,7 +2724,7 @@ def updateWebhookEndpoint(
 	body: Optional[Any] = None,
 ) -> WebhookEndpoint:
 	path = path or {}
-	resolved_path = f"/webhook-endpoints/{path.get('id', '')}"
+	resolved_path = f"/webhook-endpoints/{_path_segment(path.get('id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2730,7 +2737,7 @@ def updateWorkspace(
 	body: Optional[Any] = None,
 ) -> WorkspaceResponse:
 	path = path or {}
-	resolved_path = f"/workspaces/{path.get('id', '')}"
+	resolved_path = f"/workspaces/{_path_segment(path.get('id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2743,7 +2750,7 @@ def updateWorkspaceApp(
 	body: Optional[Any] = None,
 ) -> WorkspaceAppResponse:
 	path = path or {}
-	resolved_path = f"/apps/{path.get('id', '')}"
+	resolved_path = f"/apps/{_path_segment(path.get('id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2756,7 +2763,7 @@ def updateWorkspaceBudget(
 	body: Optional[Any] = None,
 ) -> WorkspaceBudgetResponse:
 	path = path or {}
-	resolved_path = f"/budgets/{path.get('id', '')}"
+	resolved_path = f"/budgets/{_path_segment(path.get('id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2769,7 +2776,7 @@ def updateWorkspaceDepartment(
 	body: Optional[Any] = None,
 ) -> WorkspaceDepartmentResponse:
 	path = path or {}
-	resolved_path = f"/identity/departments/{path.get('id', '')}"
+	resolved_path = f"/identity/departments/{_path_segment(path.get('id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2782,7 +2789,7 @@ def updateWorkspaceDirectoryMember(
 	body: Optional[Any] = None,
 ) -> UpdatedResponse:
 	path = path or {}
-	resolved_path = f"/identity/directory/members/{path.get('id', '')}"
+	resolved_path = f"/identity/directory/members/{_path_segment(path.get('id', ''))}"
 	return client.request("PUT", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2795,7 +2802,7 @@ def updateWorkspaceGroupMapping(
 	body: Optional[Any] = None,
 ) -> WorkspaceGroupMappingResponse:
 	path = path or {}
-	resolved_path = f"/identity/group-mappings/{path.get('id', '')}"
+	resolved_path = f"/identity/group-mappings/{_path_segment(path.get('id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2808,7 +2815,7 @@ def updateWorkspaceMemberRole(
 	body: Optional[Any] = None,
 ) -> WorkspaceMemberResponse:
 	path = path or {}
-	resolved_path = f"/workspaces/{path.get('id', '')}/members/{path.get('user_id', '')}"
+	resolved_path = f"/workspaces/{_path_segment(path.get('id', ''))}/members/{_path_segment(path.get('user_id', ''))}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -2821,7 +2828,7 @@ def updateWorkspaceNotificationRoute(
 	body: Optional[Any] = None,
 ) -> WorkspaceNotificationRouteResponse:
 	path = path or {}
-	resolved_path = f"/notifications/routes/{path.get('eventKind', '')}"
+	resolved_path = f"/notifications/routes/{_path_segment(path.get('eventKind', ''))}"
 	return client.request("PUT", resolved_path, query=query, headers=headers, body=body)
 
 

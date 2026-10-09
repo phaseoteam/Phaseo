@@ -1,4 +1,5 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { tieredRead } from "@core/tiered-cache";
 import { decryptWebhookSecret, validateWebhookEndpointUrlForDelivery } from "@core/webhook-endpoints";
 import {
 	buildAsyncGenAiOtlpPayload,
@@ -148,7 +149,22 @@ function buildOptions(destination: Destination): GatewayOtlpBuildOptions {
 	};
 }
 
+// Looked up for every request, and empty for almost every workspace. Rows hold
+// encrypted destination configs, so they stay in isolate memory only; edits
+// apply within about a minute.
+const DESTINATIONS_CACHE_FRESH_MS = 60_000;
+
 async function destinations(workspaceId: string): Promise<Destination[]> {
+	return (await tieredRead<Destination[]>({
+		key: `otlp-destinations:${workspaceId}`,
+		loader: () => loadDestinations(workspaceId),
+		l1FreshMs: DESTINATIONS_CACHE_FRESH_MS,
+		l2: false,
+		l3: false,
+	})) ?? [];
+}
+
+async function loadDestinations(workspaceId: string): Promise<Destination[]> {
 	const { data, error } = await getSupabaseAdmin()
 		.from("workspace_broadcast_destinations")
 		.select(`

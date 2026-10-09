@@ -6,6 +6,7 @@ import { getProviderQuirks } from "./quirks";
 import { parseMinimaxInterleavedText } from "./providers/minimax/quirks";
 import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
 import { encodeOpenAIResponsesResponse } from "@protocols/openai-responses/encode";
+import { SseParser } from "@core/sse-parser";
 
 export type StreamAdapterState = {
 	requestId: string;
@@ -23,21 +24,6 @@ function applyStreamQuirks(chunk: any, state: StreamAdapterState, providerId: st
 			// ignore quirk errors to avoid breaking stream
 		}
 	}
-}
-
-function parseSseBlock(block: string): { event: string | null; data: string } {
-	const lines = block.split("\n");
-	let event: string | null = null;
-	let data = "";
-	for (const rawLine of lines) {
-		const line = rawLine.replace(/\r$/, "");
-		if (line.startsWith("event:")) {
-			event = line.slice(6).trim();
-		} else if (line.startsWith("data:")) {
-			data += line.slice(5).trimStart();
-		}
-	}
-	return { event, data };
 }
 
 function normalizeResponsesEvent(event: string | null): string | null {
@@ -151,9 +137,8 @@ export function transformChatStream(
 	state: StreamAdapterState,
 ): ReadableStream<Uint8Array> {
 	const reader = stream.getReader();
-	const decoder = new TextDecoder();
+	const parser = new SseParser();
 	const encoder = new TextEncoder();
-	let buf = "";
 
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
@@ -161,12 +146,9 @@ export function transformChatStream(
 				while (true) {
 					const { value, done } = await reader.read();
 					if (done) break;
-					buf += decoder.decode(value, { stream: true });
-					const frames = buf.split(/\n\n/);
-					buf = frames.pop() ?? "";
 
-					for (const raw of frames) {
-						const { data } = parseSseBlock(raw);
+					for (const frame of parser.pushBytes(value)) {
+						const { data } = frame;
 						if (!data || data === "[DONE]") continue;
 						let payload: any;
 						try {
@@ -194,9 +176,8 @@ export function transformResponsesStreamToChat(
 	state: StreamAdapterState,
 ): ReadableStream<Uint8Array> {
 	const reader = stream.getReader();
-	const decoder = new TextDecoder();
+	const parser = new SseParser();
 	const encoder = new TextEncoder();
-	let buf = "";
 
 	// State tracking for the response
 	let nativeResponseId: string | null = null;
@@ -205,7 +186,18 @@ export function transformResponsesStreamToChat(
 	// Buffer tool calls across deltas (Responses API sends tool calls incrementally).
 	// OpenAI often uses item_id (fc_*) in argument-delta events and call_id (call_*) in output-item events.
 	// We alias both to a canonical tool id (prefer call_id) so chat deltas stay consistent.
-	const toolBuffer = new Map<string, { arguments: string; name?: string; output_index: number; tool_index: number }>();
+	// Chat clients concatenate streamed tool-call fields, so each chunk carries only
+	// the unsent argument suffix, and id/type/name are sent once per tool call.
+	type ToolBufferEntry = {
+		arguments: string;
+		name?: string;
+		output_index: number;
+		tool_index: number;
+		emitted: string;
+		announced: boolean;
+		diverged?: boolean;
+	};
+	const toolBuffer = new Map<string, ToolBufferEntry>();
 	const toolAlias = new Map<string, string>();
 	const toolIndexById = new Map<string, number>();
 	let nextToolIndex = 0;
@@ -255,18 +247,46 @@ export function transformResponsesStreamToChat(
 		await emit(chunk, controller);
 	};
 
+	const flushToolArguments = async (
+		toolId: string,
+		entry: ToolBufferEntry,
+		controller: ReadableStreamDefaultController<Uint8Array>,
+	) => {
+		const full = entry.arguments ?? "";
+		let fragment = "";
+		if (full.startsWith(entry.emitted)) {
+			fragment = full.slice(entry.emitted.length);
+		} else if (!entry.diverged) {
+			// Emitted chunks cannot be retracted; keep the client-side value stable.
+			entry.diverged = true;
+			console.warn("openai_compat_tool_arguments_diverged", {
+				provider: args.providerId,
+				requestId: args.requestId,
+			});
+		}
+		if (entry.announced && !fragment) return;
+		const toolCall = entry.announced
+			? { index: entry.tool_index, function: { arguments: fragment } }
+			: {
+				index: entry.tool_index,
+				id: toolId,
+				type: "function",
+				function: { name: entry.name ?? "", arguments: fragment },
+			};
+		entry.announced = true;
+		entry.emitted += fragment;
+		await emitDelta({ role: "assistant", tool_calls: [toolCall] }, controller, 0);
+	};
+
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
 			try {
 				while (true) {
 					const { value, done } = await reader.read();
 					if (done) break;
-					buf += decoder.decode(value, { stream: true });
-					const frames = buf.split(/\n\n/);
-					buf = frames.pop() ?? "";
 
-					for (const raw of frames) {
-						const { event, data } = parseSseBlock(raw);
+					for (const frame of parser.pushBytes(value)) {
+						const { event, data } = frame;
 						if (!data || data === "[DONE]") continue;
 						let payload: any;
 						try {
@@ -299,26 +319,12 @@ export function transformResponsesStreamToChat(
 							case "response.function_call_arguments.delta": {
 								const resolvedId = canonicalToolId(payload?.item_id);
 								if (!resolvedId) break;
-								const existing = toolBuffer.get(resolvedId);
-								if (!existing) break;
-								const entry: { arguments: string; name?: string; output_index: number; tool_index: number } =
-									existing;
+								const entry = toolBuffer.get(resolvedId);
+								if (!entry) break;
 								if (typeof payload?.delta === "string") {
 									entry.arguments += payload.delta;
 								}
-								toolBuffer.set(resolvedId, entry);
-								await emitDelta({
-									role: "assistant",
-									tool_calls: [{
-										index: entry.tool_index,
-										id: resolvedId,
-										type: "function",
-										function: {
-											name: entry.name ?? "",
-											arguments: entry.arguments ?? "",
-										},
-									}],
-								}, controller, 0);
+								await flushToolArguments(resolvedId, entry, controller);
 								break;
 							}
 							case "response.output_item.added":
@@ -336,28 +342,18 @@ export function transformResponsesStreamToChat(
 								aliasToolId(item?.id, canonicalId);
 								aliasToolId(item?.tool_call_id, canonicalId);
 								aliasToolId(payload?.item_id, canonicalId);
-								const entry: { arguments: string; name?: string; output_index: number; tool_index: number } =
-									toolBuffer.get(canonicalId) ?? {
+								const entry: ToolBufferEntry = toolBuffer.get(canonicalId) ?? {
 									arguments: "",
 									output_index: 0,
 									tool_index: ensureToolIndex(canonicalId),
+									emitted: "",
+									announced: false,
 								};
 								entry.name = itemName;
 								const itemArguments = readResponseToolCallArguments(item);
 								if (itemArguments !== undefined) entry.arguments = itemArguments;
 								toolBuffer.set(canonicalId, entry);
-								await emitDelta({
-									role: "assistant",
-									tool_calls: [{
-										index: entry.tool_index,
-										id: canonicalId,
-										type: "function",
-										function: {
-											name: entry.name ?? "",
-											arguments: entry.arguments ?? "",
-										},
-									}],
-								}, controller, 0);
+								await flushToolArguments(canonicalId, entry, controller);
 								break;
 							}
 							case "response.function_call_arguments.done": {
@@ -367,11 +363,12 @@ export function transformResponsesStreamToChat(
 										? payload.name.trim()
 										: undefined;
 								if (!resolvedId) break;
-								const entry: { arguments: string; name?: string; output_index: number; tool_index: number } =
-									toolBuffer.get(resolvedId) ?? {
+								const entry: ToolBufferEntry = toolBuffer.get(resolvedId) ?? {
 									arguments: "",
 									output_index: 0,
 									tool_index: ensureToolIndex(resolvedId),
+									emitted: "",
+									announced: false,
 								};
 								if (typeof payload?.arguments === "string") {
 									entry.arguments = payload.arguments;
@@ -381,18 +378,7 @@ export function transformResponsesStreamToChat(
 								}
 								if (!entry.name || entry.name === "tool_call") break;
 								toolBuffer.set(resolvedId, entry);
-								await emitDelta({
-									role: "assistant",
-									tool_calls: [{
-										index: entry.tool_index,
-										id: resolvedId,
-										type: "function",
-										function: {
-											name: entry.name ?? "",
-											arguments: entry.arguments ?? "",
-										},
-									}],
-								}, controller, 0);
+								await flushToolArguments(resolvedId, entry, controller);
 								break;
 							}
 							case "response.completed":
@@ -442,9 +428,8 @@ export function transformChatStreamToResponses(
 	state: StreamAdapterState,
 ): ReadableStream<Uint8Array> {
 	const reader = stream.getReader();
-	const decoder = new TextDecoder();
+	const parser = new SseParser();
 	const encoder = new TextEncoder();
-	let buf = "";
 
 	let mode: "unknown" | "responses" | "chat" = "unknown";
 	let createdAt = Math.floor(Date.now() / 1000);
@@ -536,12 +521,9 @@ export function transformChatStreamToResponses(
 				while (true) {
 					const { value, done } = await reader.read();
 					if (done) break;
-					buf += decoder.decode(value, { stream: true });
-					const frames = buf.split(/\n\n/);
-					buf = frames.pop() ?? "";
 
-					for (const raw of frames) {
-						const { event, data } = parseSseBlock(raw);
+					for (const frame of parser.pushBytes(value)) {
+						const { event, data } = frame;
 						if (!data || data === "[DONE]") continue;
 						let payload: any;
 						try {
@@ -566,8 +548,16 @@ export function transformChatStreamToResponses(
 
 						if (mode === "responses" && !isChatPayload) {
 							const normalized = normalizeResponsesEvent(event) ?? "response.event";
+							// The payload is not modified here, so when the event name is
+							// already normalized and the data is a single line, forward
+							// the upstream JSON text instead of re-stringifying it. For
+							// compact upstream JSON (and for gateway-encoded streams) the
+							// bytes are identical; every consumer re-parses the frame.
+							const forwardData = normalized === event && frame.dataLines === 1
+								? data
+								: JSON.stringify(payload);
 							controller.enqueue(
-								encoder.encode(`event: ${normalized}\ndata: ${JSON.stringify(payload)}\n\n`)
+								encoder.encode(`event: ${normalized}\ndata: ${forwardData}\n\n`)
 							);
 							continue;
 						}

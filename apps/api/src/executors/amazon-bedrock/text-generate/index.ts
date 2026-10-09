@@ -9,8 +9,11 @@ import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-g
 import { resolveStreamForProtocol, bufferStreamToIR } from "@executors/_shared/text-generate/openai-compat";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
-import { collectAnthropicStreamUsage, irToAnthropicMessages, anthropicMessagesToIR } from "@executors/anthropic/text-generate";
-import { createAnthropicToResponsesStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
+import { irToAnthropicMessages, anthropicMessagesToIR } from "@executors/anthropic/text-generate";
+import {
+	createAnthropicStreamAccounting,
+	createAnthropicToResponsesStreamTransformer,
+} from "@executors/anthropic/text-generate/stream-transformer";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import type { ProviderExecutor } from "../../types";
@@ -108,9 +111,11 @@ async function executeBedrockMessages(
 		if (!res.body) {
 			throw new Error("bedrock_messages_stream_missing_body");
 		}
-		const [clientBody, accountingBody] = res.body.tee();
-		const responsesStream = clientBody.pipeThrough(
-			createAnthropicToResponsesStreamTransformer(args.requestId, model),
+		// Usage is recorded by the transformer itself; no tee()'d accounting
+		// branch buffering the whole response.
+		const accounting = createAnthropicStreamAccounting();
+		const responsesStream = res.body.pipeThrough(
+			createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting }),
 		);
 		const stream = resolveStreamForProtocol(
 			new Response(responsesStream, {
@@ -119,12 +124,13 @@ async function executeBedrockMessages(
 			}),
 			args,
 			"responses",
+			{ canonicalResponsesEvents: true },
 		);
 		return {
 			kind: "stream",
 			stream,
 			usageFinalizer: async () => {
-				const final = await collectAnthropicStreamUsage(accountingBody);
+				const final = accounting.snapshot();
 				return {
 					...bill,
 					usage: normalizeTextUsageForPricing(final.usage) ?? undefined,

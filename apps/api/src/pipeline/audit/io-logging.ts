@@ -170,13 +170,15 @@ export async function resolveGatewayIoLoggingPolicy(input: {
     keyId?: string | null;
 }): Promise<GatewayIoLoggingPolicy> {
     const bindings = getBindings();
-    const [featureEnabled, settings] = await Promise.all([
-        isGatewayIoLoggingFeatureEnabled({
+    // Settings are cached per isolate; the feature gate is an external HTTP
+    // call, so only evaluate it for workspaces that have logging switched on.
+    const settings = await getWorkspaceIoLoggingSettings(input.workspaceId);
+    const featureEnabled = settings.enabled
+        ? await isGatewayIoLoggingFeatureEnabled({
             workspaceId: input.workspaceId,
             apiKeyId: input.keyId ?? null,
-        }, bindings),
-        getWorkspaceIoLoggingSettings(input.workspaceId),
-    ]);
+        }, bindings)
+        : false;
     return {
         ...settings,
         featureEnabled,

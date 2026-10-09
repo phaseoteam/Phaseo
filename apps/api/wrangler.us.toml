@@ -3,13 +3,14 @@
 name = "phaseo-gateway-us"
 main = "src/index.ts"
 compatibility_date = "2025-10-01"
-compatibility_flags = ["global_fetch_strictly_public", "web_socket_auto_reply_to_close"]
+compatibility_flags = ["global_fetch_strictly_public", "web_socket_auto_reply_to_close", "nodejs_als"]
 workers_dev = false
 preview_urls = false
 
 [vars]
 GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED = "true"
 CUSTOMER_RATE_LIMITS_ENABLED = "true"
+GATEWAY_SPEND_LIMIT_DO_MODE = "off"
 GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
 ENV = "prod"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
@@ -60,4 +61,9 @@ script_name = "phaseo-gateway"
 [[durable_objects.bindings]]
 name = "CUSTOMER_RATE_LIMITS"
 class_name = "CustomerRateLimitDurableObject"
+script_name = "phaseo-gateway"
+
+[[durable_objects.bindings]]
+name = "SPEND_LIMITS"
+class_name = "SpendLimitDurableObject"
 script_name = "phaseo-gateway"

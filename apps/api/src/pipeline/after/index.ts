@@ -487,6 +487,7 @@ async function handleNonStreamResponse(
     const isByok = (result?.keySource ?? ctx.meta.keySource) === "byok";
     const pricedWithByokSubtotal = await ctx.timer.span("after_apply_byok_fee", () => applyByokServiceFee({
         workspaceId: ctx.workspaceId,
+        idempotencyKey: ctx.billingRequestId,
         isByok,
         baseCostNanos: totalNanos,
         pricedUsage,

@@ -7,10 +7,12 @@ import { dispatchBackground, getSupabaseAdmin, getCache } from "@/runtime/env";
 import { getProviderResidencyMetadata } from "@/lib/config/providerResidency";
 import { parseRouteAvailabilityPolicy } from "@/lib/config/routeAvailability";
 import { getTextMany, keyVersionToken } from "@/core/kv";
+import { tieredRead } from "@/core/tiered-cache";
 import { gatewayCreditCacheKey } from "@/core/gateway-credit-cache";
 import { isDataContributionAccessEnabled } from "@/core/feature-flags";
 import { normalizePrivateModelBaseUrl } from "@/core/private-models";
 import { loadPrivateRouteRow } from "./privateModelCache";
+import { getWorkspacePolicyVersionToken } from "./workspacePolicy";
 import { contextBundleEnabled, loadTextContextBundle, type ContextBundle } from "./contextBundle";
 import { bytesToString, decryptBYOK } from "@pipeline/byok/decrypt";
 import { BYOK_KEYS_PER_PROVIDER_LIMIT, isByokKeyEligible } from "@/core/byok";
@@ -90,27 +92,44 @@ function minimumCreditNanos(endpoint: string): number {
 
 const contextInflight = new Map<string, Promise<GatewayContextData>>();
 
-async function assertPresetAccess(args: {
+type PresetAccess = "allowed" | "api_key_not_authorized" | "preset_not_found";
+
+async function lookupPresetAccess(args: {
+	workspaceId: string;
+	apiKeyId: string;
+	slug: string;
+}): Promise<PresetAccess> {
+	const supabase = getSupabaseAdmin();
+	const [{ data: key, error: keyError }, { data: preset, error: presetError }] =
+		await Promise.all([
+			supabase.from("keys").select("created_by,workspace_id,status").eq("id", args.apiKeyId).maybeSingle(),
+			supabase.from("presets").select("created_by,visibility").eq("workspace_id", args.workspaceId).eq("slug", args.slug).is("archived_at", null).maybeSingle(),
+		]);
+	if (keyError || presetError) throw new Error("preset_access_lookup_failed");
+	if (!key || key.workspace_id !== args.workspaceId || key.status !== "active") return "api_key_not_authorized";
+	if (!preset) return "preset_not_found";
+	if (preset.visibility === "private" && preset.created_by !== key.created_by) return "preset_not_found";
+	return "allowed";
+}
+
+export async function assertPresetAccess(args: {
 	workspaceId: string;
 	apiKeyId: string;
 	model: string;
 }): Promise<void> {
 	if (!args.model.startsWith("@")) return;
-	const supabase = getSupabaseAdmin();
 	const slug = args.model.slice(1);
-	const [{ data: key, error: keyError }, { data: preset, error: presetError }] =
-		await Promise.all([
-			supabase.from("keys").select("created_by,workspace_id,status").eq("id", args.apiKeyId).maybeSingle(),
-			supabase.from("presets").select("created_by,visibility").eq("workspace_id", args.workspaceId).eq("slug", slug).is("archived_at", null).maybeSingle(),
-		]);
-	if (keyError || presetError) throw new Error("preset_access_lookup_failed");
-	if (!key || key.workspace_id !== args.workspaceId || key.status !== "active") {
-		throw new Error("api_key_not_authorized");
-	}
-	if (!preset) throw new Error("preset_not_found");
-	if (preset.visibility === "private" && preset.created_by !== key.created_by) {
-		throw new Error("preset_not_found");
-	}
+	// Isolate-only and short-lived: an access decision, so visibility or key
+	// changes apply within 30 s and stale answers are never used past 60 s.
+	const access = await tieredRead<PresetAccess>({
+		key: `preset-access:${JSON.stringify([args.workspaceId, args.apiKeyId, slug])}`,
+		loader: () => lookupPresetAccess({ workspaceId: args.workspaceId, apiKeyId: args.apiKeyId, slug }),
+		l1FreshMs: 30_000,
+		maxStaleMs: 60_000,
+		l2: false,
+		l3: false,
+	});
+	if (access !== "allowed") throw new Error(access ?? "preset_access_lookup_failed");
 }
 
 type CreditContextSnapshot = Pick<
@@ -1148,10 +1167,16 @@ export async function fetchGatewayContext(args: {
     let versionToken = "v0";
     if (needsVersionToken) {
         const keyVersionStartedAt = performance.now();
-        versionToken = await keyVersionToken("id", args.apiKeyId, {
-            useL1Cache: true,
-            l1TtlMs: CONTEXT_KEY_VERSION_L1_TTL_MS,
-        });
+        // Key version and workspace version invalidate independently; both are
+        // isolate-cached for a few seconds and read in parallel.
+        const [keyVersion, workspaceVersion] = await Promise.all([
+            keyVersionToken("id", args.apiKeyId, {
+                useL1Cache: true,
+                l1TtlMs: CONTEXT_KEY_VERSION_L1_TTL_MS,
+            }),
+            getWorkspacePolicyVersionToken(args.workspaceId),
+        ]);
+        versionToken = `${keyVersion}.w${workspaceVersion.replace(/^v/, "")}`;
         telemetry.keyVersionMs = round3(performance.now() - keyVersionStartedAt);
     }
     const testingModeCacheSegment = args.includeTestingMode ? "testing" : "default";
@@ -1352,7 +1377,9 @@ export async function fetchGatewayContext(args: {
                 }
             }
         }
-        if (contextBundle) parsed.publicCatalogExpiresAt = contextBundle.catalog.expiresAt;
+        // Catalogue snapshots are served stale-while-revalidate, so only the next
+        // scheduled boundary (not the snapshot's soft expiry) invalidates them.
+        if (contextBundle?.catalog.boundaryAt != null) parsed.publicCatalogExpiresAt = contextBundle.catalog.boundaryAt;
 
         // Fallback path for provider-scoped model slugs (e.g. mistral/mistral-medium-2508):
         // if RPC returned no providers and did not resolve the model, remap via provider_model_slug.

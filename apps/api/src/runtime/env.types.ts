@@ -2,7 +2,16 @@
 
 export type GatewayBindings = {
     GATEWAY_CONTEXT_BUNDLE_ENABLED?: string;
-    GATEWAY_PUBLIC_CATALOG_TARGETS?: string;
+    /** Kill switch for the caches.default layer of the tiered read cache ("false" disables it). */
+    GATEWAY_TIERED_CACHE_L2_ENABLED?: string;
+    /** "true" writes the post-charge balance back to the credit cache instead of deleting it. */
+    GATEWAY_CREDIT_WRITEBACK_ENABLED?: string;
+    /**
+     * Deadline (ms) for a provider request to return response headers before the
+     * attempt fails as a provider transport failure and routing fails over.
+     * Unset or 0 disables the deadline.
+     */
+    GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS?: string;
     SUPABASE_URL: string;
     SUPABASE_SERVICE_ROLE_KEY: string;
 	GATEWAY_ROUTING_REGION?: "eu" | "us";
@@ -42,6 +51,13 @@ export type GatewayBindings = {
 	PROVIDER_RATE_LIMITS?: DurableObjectNamespace;
 	CUSTOMER_RATE_LIMITS?: DurableObjectNamespace;
 	CUSTOMER_RATE_LIMITS_ENABLED?: string;
+	/** JSON trust-ladder tuning; see core/customer-rate-limit-ladder.ts. */
+	CUSTOMER_RATE_LIMIT_LADDER?: string;
+	CUSTOMER_RATE_LIMIT_LADDER_ENABLED?: string;
+	CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED?: string;
+	SPEND_LIMITS?: DurableObjectNamespace;
+	/** off | shadow | enforce for the SpendLimit Durable Object (default off). */
+	GATEWAY_SPEND_LIMIT_DO_MODE?: string;
     KV?: KVNamespace;
     DB?: D1Database;
     PHASEO_CONTROL_SECRET?: string;

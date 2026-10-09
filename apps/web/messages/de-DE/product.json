@@ -1,4 +1,10 @@
 {
+	"privacyReview": {
+		"title": "Chat-Datenschutz prüfen", "description": "Die Datenschutzeinstellungen des Kontos wurden beim Wechsel zu Arbeitsbereichen entfernt. Prüfen Sie die aktuellen Einstellungen, bevor Sie fortfahren.",
+		"paidTraining": "Kostenpflichtige Anbieter mit möglicher Trainingsnutzung", "freeTraining": "Kostenlose Anbieter mit möglicher Trainingsnutzung", "publication": "Anbieter, die Prompts veröffentlichen", "providerLogging": "Anbieter, die Prompts speichern", "zdr": "Keine Datenspeicherung", "workspaceLogging": "Prompt-Speicherung im Arbeitsbereich", "providers": "Anbieterbeschränkungen", "models": "Modellbeschränkungen",
+		"allowed": "Erlaubt", "blocked": "Gesperrt", "required": "Erforderlich", "notRequired": "Nicht erforderlich", "disabled": "Deaktiviert", "enabledDays": "Aktiviert ({days} Tage)", "none": "Keine",
+		"administrators": "Administratoren des Arbeitsbereichs können diese Einstellungen ändern. Zusätzliche Regeln für Schlüssel und Mitglieder können gelten.", "accept": "Akzeptieren und fortfahren", "settings": "Datenschutzeinstellungen", "saving": "Wird gespeichert…", "loading": "Einstellungen werden geladen…", "loadError": "Datenschutzeinstellungen konnten nicht geladen werden. Laden Sie die Seite erneut.", "saveError": "Ihre Bestätigung konnte nicht gespeichert werden. Versuchen Sie es erneut."
+	},
 	"developerMenu": {
 		"title": "Entwicklermenü",
 		"admin": "Administration",

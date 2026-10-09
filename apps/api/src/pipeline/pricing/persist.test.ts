@@ -29,9 +29,14 @@ vi.mock("../../runtime/env", () => ({
 	})),
 }));
 
+const writeBackGatewayCreditCacheMock = vi.fn();
+const creditWriteBack = { enabled: false };
 vi.mock("../../core/gateway-credit-cache", () => ({
 	invalidateGatewayCreditCache: (...args: unknown[]) =>
 		invalidateGatewayCreditCacheMock(...args),
+	writeBackGatewayCreditCache: (...args: unknown[]) =>
+		writeBackGatewayCreditCacheMock(...args),
+	creditWriteBackEnabled: () => creditWriteBack.enabled,
 }));
 
 vi.mock("../notifications/low-balance", () => ({
@@ -46,9 +51,43 @@ describe("recordUsageAndCharge", () => {
 	beforeEach(() => {
 		rpcMock.mockReset();
 		invalidateGatewayCreditCacheMock.mockReset();
+		writeBackGatewayCreditCacheMock.mockReset();
+		creditWriteBack.enabled = false;
 		releaseRuntimeMock.mockReset();
 		enqueueAutoTopUpFailedEmailMock.mockReset().mockResolvedValue(true);
 		process.env.STRIPE_SECRET_KEY = "sk_test_example";
+	});
+
+	it("writes back the post-charge balance instead of invalidating when enabled", async () => {
+		creditWriteBack.enabled = true;
+		rpcMock.mockResolvedValue({
+			data: { status: "top_up_not_required", applied: true, already_applied: false, invalidate_credit_cache: true, available_nanos: 5_000_000_000 },
+			error: null,
+		});
+		const { recordUsageAndCharge } = await import("./persist");
+
+		await recordUsageAndCharge({ requestId: "req_wb", workspaceId: "workspace_123", cost_nanos: 123 });
+
+		expect(writeBackGatewayCreditCacheMock).toHaveBeenCalledWith("workspace_123", 5_000_000_000);
+		expect(invalidateGatewayCreditCacheMock).not.toHaveBeenCalled();
+	});
+
+	it.each([
+		["the flag is off", false, { status: "top_up_not_required", available_nanos: 5_000_000_000 }],
+		["a top-up is required", true, { status: "top_up_required", available_nanos: 5_000_000_000 }],
+		["no balance is reported", true, { status: "top_up_not_required", available_nanos: null }],
+	])("invalidates instead of writing back when %s", async (_label, enabled, data) => {
+		creditWriteBack.enabled = enabled;
+		rpcMock.mockResolvedValue({
+			data: { applied: true, already_applied: false, invalidate_credit_cache: true, ...data },
+			error: null,
+		});
+		const { recordUsageAndCharge } = await import("./persist");
+
+		await recordUsageAndCharge({ requestId: "req_inv", workspaceId: "workspace_123", cost_nanos: 123 });
+
+		expect(writeBackGatewayCreditCacheMock).not.toHaveBeenCalled();
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledWith("workspace_123");
 	});
 
 	it("invalidates the workspace credit cache after a successful new charge", async () => {

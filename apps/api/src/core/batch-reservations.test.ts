@@ -11,6 +11,12 @@ vi.mock("@core/wallet-reservations", () => ({ reserveWalletCredits: (...args: an
 import { estimateInputQuadTokens, estimateInputTokenUpperBound, reserveBatchCredits } from "./batch-reservations";
 
 describe("batch credit reservations", () => {
+	it.each(["/v1/responses", "/v1/chat/completions"])("reserves Xiaomi text batch credits for %s", async endpoint => {
+		await expect(reserveBatchCredits({ workspaceId: "ws_1", apiKeyId: "key_1", requestId: "xiaomi_batch",
+			providerId: "xiaomi", requests: [{ endpoint, body: { model: "xiaomi/mimo", input: "hello", max_output_tokens: 10 } }],
+		})).resolves.toMatchObject({ held: true });
+		expect(reserveWalletCreditsMock).toHaveBeenCalledOnce();
+	});
 	beforeEach(() => {
 		loadPriceCardMock.mockReset().mockResolvedValue({ provider: "openai", model: "openai/gpt-4.1-mini", rules: [] });
 		computeBillMock.mockReset().mockImplementation((usage: any) => ({ pricing: { total_nanos: usage.output_tokens * 1000 + usage.input_tokens } }));

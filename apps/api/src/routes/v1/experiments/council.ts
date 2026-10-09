@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { customerQuotaMiddleware } from "@/routes/v1/data/customer-quota";
 import { authenticate, type AuthFailure } from "@pipeline/before/auth";
 import { dispatchBackground } from "@/runtime/env";
 import { json, withRuntime } from "@/routes/utils";
@@ -286,6 +287,6 @@ councilRoutes.use("*", async (c, next) => {
 	}
 });
 
-councilRoutes.post("/runs", withRuntime(handleCreateCouncilRun));
+councilRoutes.post("/runs", customerQuotaMiddleware, withRuntime(handleCreateCouncilRun));
 councilRoutes.get("/runs/:id", withRuntime(handleGetCouncilRun));
 councilRoutes.get("/runs/:id/events", withRuntime(handleCouncilRunEvents));

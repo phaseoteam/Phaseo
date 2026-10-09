@@ -47,7 +47,7 @@ CREATE TABLE "public"."v2_private_usage_daily" (
     (upstream_attempts >= 0) AND (failed_upstream_attempts >= 0) AND (failed_upstream_attempts <= upstream_attempts) AND (cost_nanos >= (0)::numeric))),
   CONSTRAINT "v2_private_usage_daily_pkey" PRIMARY KEY (rollup_id),
   CONSTRAINT "v2_private_usage_daily_provider_model_id_fkey" FOREIGN KEY (provider_model_id) REFERENCES public.v2_model_provider_routes(provider_model_id) ON DELETE SET NULL,
-  CONSTRAINT "v2_private_usage_daily_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+  CONSTRAINT "v2_private_usage_daily_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT
 );
 
 ALTER TABLE "public"."v2_private_usage_daily"

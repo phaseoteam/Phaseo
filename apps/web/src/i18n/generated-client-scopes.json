@@ -192,7 +192,7 @@
     "Product.appsDetail",
     "SettingsUI.apps"
   ],
-  "[\"Catalogue.common\",\"Catalogue.modelDetail\",\"Catalogue.models\",\"Catalogue.updatesCalendar.weekdayAnalysis.showMore\",\"Common.ui.accessibility\",\"Common.ui.actions\",\"Common.ui.auditCopy\",\"Common.ui.chat\",\"Common.ui.chatComposer\",\"Common.ui.chatRooms\",\"Common.ui.chatSettings\",\"Common.ui.filters\",\"Common.ui.media\",\"Common.ui.modelSettingsDialog\",\"Common.ui.moderation\",\"Common.ui.requestBuilder\",\"Common.ui.responseLayout\",\"Common.ui.select\",\"Common.ui.status\",\"Common.ui.temporaryChat\",\"Product.chat\",\"Product.chatRooms\",\"Product.experimentsCouncil\",\"Product.tools.request\",\"SettingsUI.chatGaps\",\"SettingsUI.strings\"]": [
+  "[\"Catalogue.common\",\"Catalogue.modelDetail\",\"Catalogue.models\",\"Catalogue.updatesCalendar.weekdayAnalysis.showMore\",\"Common.ui.accessibility\",\"Common.ui.actions\",\"Common.ui.auditCopy\",\"Common.ui.chat\",\"Common.ui.chatComposer\",\"Common.ui.chatRooms\",\"Common.ui.chatSettings\",\"Common.ui.filters\",\"Common.ui.media\",\"Common.ui.modelSettingsDialog\",\"Common.ui.moderation\",\"Common.ui.openui\",\"Common.ui.requestBuilder\",\"Common.ui.responseLayout\",\"Common.ui.select\",\"Common.ui.status\",\"Common.ui.temporaryChat\",\"Product.chat\",\"Product.chatRooms\",\"Product.experimentsCouncil\",\"Product.privacyReview\",\"Product.tools.request\",\"SettingsUI.chatGaps\",\"SettingsUI.strings\"]": [
     "Catalogue.updatesCalendar.weekdayAnalysis.showMore",
     "Common.ui.accessibility",
     "Common.ui.actions",
@@ -205,6 +205,7 @@
     "Common.ui.media",
     "Common.ui.modelSettingsDialog",
     "Common.ui.moderation",
+    "Common.ui.openui",
     "Common.ui.requestBuilder",
     "Common.ui.responseLayout",
     "Common.ui.select",
@@ -330,6 +331,7 @@
     "Product.experimentsCouncil.updatePresetFailed",
     "Product.experimentsCouncil.waitingForOutput",
     "Product.experimentsCouncil.waitingForSources",
+    "Product.privacyReview",
     "Product.tools.request.frequencyPenalty",
     "Product.tools.request.maxOutputTokens",
     "Product.tools.request.messages",
@@ -873,14 +875,18 @@
   "[\"Common.ui.actions.back\"]": [
     "Common.ui.actions.back"
   ],
-  "[\"Common.ui.auditCopy.chatHistoryFailed\",\"Common.ui.auditCopy.loadingChat\"]": [
+  "[\"Common.ui.auditCopy.chatHistoryFailed\",\"Common.ui.auditCopy.loadingChat\",\"Product.privacyReview\"]": [
     "Common.ui.auditCopy.chatHistoryFailed",
-    "Common.ui.auditCopy.loadingChat"
+    "Common.ui.auditCopy.loadingChat",
+    "Product.privacyReview"
   ],
   "[\"Common.ui.auditCopy\",\"Product.games\",\"Product.gamesDetail\"]": [
     "Common.ui.auditCopy.priceLocked",
     "Common.ui.auditCopy.rightOnTheMoney",
     "Product.games"
+  ],
+  "[\"Common.ui.openui\"]": [
+    "Common.ui.openui"
   ],
   "[\"Content.acknowledgements\"]": [
     "Content.acknowledgements"

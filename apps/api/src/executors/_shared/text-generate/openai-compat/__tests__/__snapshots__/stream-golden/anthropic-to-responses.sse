@@ -1,0 +1,30 @@
+event: response.created
+data: {"response":{"id":"req_golden","created_at":1767323045,"model":"claude-x"}}
+
+event: response.reasoning_text.delta
+data: {"delta":"Let me think ✓","output_index":0,"item_id":"item_req_golden_0"}
+
+event: response.output_text.delta
+data: {"delta":"Hello","output_index":1,"item_id":"item_req_golden_1"}
+
+event: response.output_text.delta
+data: {"delta":" wörld 👋","output_index":1,"item_id":"item_req_golden_1"}
+
+event: response.output_item.added
+data: {"output_index":2,"item":{"type":"function_call","id":"item_req_golden_2","call_id":"toolu_1","name":"get_weather","arguments":""}}
+
+event: response.function_call_arguments.delta
+data: {"delta":"{\"city\":","output_index":2,"item_id":"item_req_golden_2","call_id":"toolu_1"}
+
+event: response.function_call_arguments.delta
+data: {"delta":"\"Paris\"}","output_index":2,"item_id":"item_req_golden_2","call_id":"toolu_1"}
+
+event: response.function_call_arguments.done
+data: {"item_id":"item_req_golden_2","call_id":"toolu_1","output_index":2,"name":"get_weather","arguments":"{\"city\":\"Paris\"}"}
+
+event: response.output_item.done
+data: {"output_index":2,"item":{"type":"function_call","id":"item_req_golden_2","call_id":"toolu_1","name":"get_weather","arguments":"{\"city\":\"Paris\"}"}}
+
+event: response.completed
+data: {"response":{"id":"req_golden","object":"response","created_at":1767323045,"model":"claude-x","status":"completed","output":[{"type":"reasoning","id":"item_req_golden_0","status":"completed","content":[{"type":"output_text","text":"Let me think ✓","annotations":[]}]},{"type":"message","id":"item_req_golden_1","status":"completed","role":"assistant","content":[{"type":"output_text","text":"Hello wörld 👋","annotations":[]}]},{"type":"function_call","id":"item_req_golden_2","call_id":"toolu_1","name":"get_weather","arguments":"{\"city\":\"Paris\"}"}],"usage":{"input_tokens":25,"output_tokens":42,"total_tokens":67,"input_tokens_details":{"cached_tokens":5}},"nativeResponseId":"msg_01"}}
+

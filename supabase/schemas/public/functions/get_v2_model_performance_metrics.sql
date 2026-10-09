@@ -57,19 +57,19 @@ with raw as materialized (
   from raw
 ), suppressed as (
   select
-    case when coalesce((payload #>> '{last_24h,total_requests}')::bigint, 0) >= 1
+    case when coalesce((payload #>> '{last_24h,total_requests}')::bigint, 0) >= 20
       then payload -> 'last_24h' else '{}'::jsonb end last_24h,
-    case when coalesce((payload #>> '{prev_24h,total_requests}')::bigint, 0) >= 1
+    case when coalesce((payload #>> '{prev_24h,total_requests}')::bigint, 0) >= 20
       then payload -> 'prev_24h' else '{}'::jsonb end prev_24h,
     coalesce((select jsonb_agg(entry order by entry ->> 'bucket')
       from jsonb_array_elements(coalesce(payload -> 'hourly_24h', '[]'::jsonb)) entry
-      where coalesce((entry ->> 'requests')::bigint, 0) >= 1), '[]'::jsonb) hourly_24h,
+      where coalesce((entry ->> 'requests')::bigint, 0) >= 20), '[]'::jsonb) hourly_24h,
     coalesce((select jsonb_agg(entry order by entry ->> 'day', entry ->> 'provider')
       from jsonb_array_elements(coalesce(payload -> 'provider_daily_7d', '[]'::jsonb)) entry
-      where coalesce((entry ->> 'requests')::bigint, 0) >= 1), '[]'::jsonb) provider_daily_7d,
+      where coalesce((entry ->> 'requests')::bigint, 0) >= 20), '[]'::jsonb) provider_daily_7d,
     coalesce((select jsonb_agg(entry order by entry ->> 'provider')
       from jsonb_array_elements(coalesce(payload -> 'provider_uptime_24h', '[]'::jsonb)) entry
-      where coalesce((entry ->> 'requests')::bigint, 0) >= 1), '[]'::jsonb) provider_uptime_24h,
+      where coalesce((entry ->> 'requests')::bigint, 0) >= 20), '[]'::jsonb) provider_uptime_24h,
     payload
   from redacted
 )

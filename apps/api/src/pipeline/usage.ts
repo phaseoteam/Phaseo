@@ -42,31 +42,21 @@ export function stripUsagePricing(usage: any) {
     return base;
 }
 
+/** Media inputs counted from the request body, used when upstream usage omits them. */
+export type RequestMediaCounts = { images: number; audio: number; video: number };
+
 /**
- * Shape usage for client-facing responses:
- * - Prefer OpenAI-style keys (input_tokens, output_tokens, total_tokens)
- * - Add detailed breakdowns under input_tokens_details/output_tokens_details
- * - Omit legacy duplicate token aliases from the persisted/public shape.
+ * Count image/audio/video inputs in a chat.completions or responses request
+ * body (null for other endpoints). The result only depends on the body, so
+ * per-request callers that shape usage several times (streaming) compute it
+ * once and pass it as `mediaCounts`.
  */
-export function shapeUsageForClient(
-    usage: any,
-    ctx?: { endpoint?: Endpoint; body?: any; includeInternalHints?: boolean },
-) {
-    if (!usage || typeof usage !== "object") return usage;
-
-    const base: any = { ...usage };
-    const shaped: any = {};
-    const textEndpoint =
-        ctx?.endpoint === "chat.completions" ||
-        ctx?.endpoint === "responses" ||
-        ctx?.endpoint === "messages";
-
-    // Derive multimodal counts when upstream usage omits them.
-    if (ctx?.endpoint === "chat.completions") {
-        const messages: any[] = Array.isArray(ctx.body?.messages) ? ctx.body.messages : [];
-        let img = base.input_image_count ?? 0;
-        let audio = base.input_audio_count ?? 0;
-        let video = base.input_video_count ?? 0;
+export function countRequestMediaInputs(endpoint: Endpoint | undefined, body: any): RequestMediaCounts | null {
+    if (endpoint === "chat.completions") {
+        const messages: any[] = Array.isArray(body?.messages) ? body.messages : [];
+        let img = 0;
+        let audio = 0;
+        let video = 0;
         for (const msg of messages) {
             const content = (msg && msg.content) as any;
             if (!content) continue;
@@ -81,16 +71,14 @@ export function shapeUsageForClient(
                 }
             }
         }
-        if (img && base.input_image_count == null) base.input_image_count = img;
-        if (audio && base.input_audio_count == null) base.input_audio_count = audio;
-        if (video && base.input_video_count == null) base.input_video_count = video;
+        return { images: img, audio, video };
     }
 
-    if (ctx?.endpoint === "responses") {
-        const items: any[] = Array.isArray(ctx.body?.input) ? ctx.body.input : (Array.isArray(ctx.body?.input_items) ? ctx.body.input_items : []);
-        let img = base.input_image_count ?? 0;
-        let audio = base.input_audio_count ?? 0;
-        let video = base.input_video_count ?? 0;
+    if (endpoint === "responses") {
+        const items: any[] = Array.isArray(body?.input) ? body.input : (Array.isArray(body?.input_items) ? body.input_items : []);
+        let img = 0;
+        let audio = 0;
+        let video = 0;
 
         const inspectContent = (node: any) => {
             if (!node) return;
@@ -122,10 +110,46 @@ export function shapeUsageForClient(
             inspectContent(item);
             if (item && Array.isArray((item as any).content)) inspectContent((item as any).content);
         }
+        return { images: img, audio, video };
+    }
 
-        if (img && base.input_image_count == null) base.input_image_count = img;
-        if (audio && base.input_audio_count == null) base.input_audio_count = audio;
-        if (video && base.input_video_count == null) base.input_video_count = video;
+    return null;
+}
+
+/**
+ * Shape usage for client-facing responses:
+ * - Prefer OpenAI-style keys (input_tokens, output_tokens, total_tokens)
+ * - Add detailed breakdowns under input_tokens_details/output_tokens_details
+ * - Omit legacy duplicate token aliases from the persisted/public shape.
+ */
+export function shapeUsageForClient(
+    usage: any,
+    ctx?: {
+        endpoint?: Endpoint;
+        body?: any;
+        includeInternalHints?: boolean;
+        /** Precomputed countRequestMediaInputs(endpoint, body) for this request. */
+        mediaCounts?: RequestMediaCounts | null;
+    },
+) {
+    if (!usage || typeof usage !== "object") return usage;
+
+    const base: any = { ...usage };
+    const shaped: any = {};
+    const textEndpoint =
+        ctx?.endpoint === "chat.completions" ||
+        ctx?.endpoint === "responses" ||
+        ctx?.endpoint === "messages";
+
+    // Derive multimodal counts when upstream usage omits them.
+    const mediaCounts = ctx?.mediaCounts !== undefined
+        ? ctx.mediaCounts
+        : countRequestMediaInputs(ctx?.endpoint, ctx?.body);
+    if (mediaCounts) {
+        // Upstream-provided counts win; body counts only fill missing meters.
+        if (mediaCounts.images && base.input_image_count == null) base.input_image_count = mediaCounts.images;
+        if (mediaCounts.audio && base.input_audio_count == null) base.input_audio_count = mediaCounts.audio;
+        if (mediaCounts.video && base.input_video_count == null) base.input_video_count = mediaCounts.video;
     }
 
     const canonicalTokens = resolveCanonicalTokenUsage(base);

@@ -343,6 +343,7 @@ function collectDecisionTargetsFromValue(
 
 function collectDecisionTargets(body: any): TextTarget[] {
 	const targets: TextTarget[] = [];
+	collectResponsesTargetsFromValue(body?.input, ["input"], targets);
 	collectDecisionTargetsFromValue(body?.state, ["state"], targets);
 	collectDecisionTargetsFromValue(body?.questions, ["questions"], targets);
 	return targets;

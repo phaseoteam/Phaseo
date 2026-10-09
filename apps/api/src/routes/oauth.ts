@@ -789,6 +789,9 @@ oauthRouter.post(
 		if (action !== "approve" || !workspaceId) {
 			return oauthError("invalid_request", "action must be lookup, approve, or deny");
 		}
+		if (actor.mfaRequired && actor.assuranceLevel !== "aal2") {
+			return oauthError("access_denied", "Complete two-factor verification before approving this device", 403);
+		}
 
 		const membership = await supabase
 			.from("workspace_members")

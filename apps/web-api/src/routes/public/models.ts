@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { normalizeCatalogueTier, normalizeCatalogueTiers } from "@/models/catalogue-tiers";
 import { PUBLIC_MODEL_CATALOGUE_CACHE } from "@/cache/catalogue";
 import { PUBLIC_LIVE_DATA_CACHE } from "@/cache/publicLiveData";
 import { getDataClient } from "@/data/supabase";
@@ -12,9 +13,9 @@ import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
 
 // Public performance and usage telemetry is aggregated, cached, and excludes
 // raw request timestamps, request content, and request identifiers. App
-// attribution remains opt-in and uses a larger cohort of ten requests.
-const PUBLIC_PERFORMANCE_MIN_REQUESTS = 1;
-const PUBLIC_CACHE_TELEMETRY_MIN_REQUESTS = 1;
+// attribution remains opt-in and requires ten requests.
+const PUBLIC_PERFORMANCE_MIN_REQUESTS = 20;
+const PUBLIC_CACHE_TELEMETRY_MIN_REQUESTS = 20;
 const PUBLIC_APP_ATTRIBUTION_MIN_REQUESTS = 10;
 
 function hasPublicPerformanceSample(value: unknown) {
@@ -501,7 +502,7 @@ export async function fetchGatewayMonitorRows(
 			quantization: row.quantization_scheme ?? undefined,
 			supportedParameters: supportedParameters(params),
 			effectiveFrom: row.effective_from ?? undefined,
-			tier: row.is_free_variant ? "free" : String(row.pricing_tier ?? "standard"),
+			tier: row.is_free_variant ? "free" : normalizeCatalogueTier(row.pricing_tier),
 			added: row.model_release_date ?? undefined,
 			retired: row.model_retirement_date ?? undefined,
 			weeklyTokensModel: numberOrNull(row.weekly_tokens_model),
@@ -835,7 +836,8 @@ publicModelsRouter.get("/", async (c) => {
 				includeVirtual ? fetchFreeRouterOverview(c.env, includeMetrics) : Promise.resolve(null),
 			]);
 			const databaseModels = catalogue.models.filter((model) => model.model_id !== "phaseo/free");
-			const allModels = freeRouter ? [buildFreeRouterCatalogueRow(freeRouter, includeMetrics), ...databaseModels] : databaseModels;
+			const allModels = (freeRouter ? [buildFreeRouterCatalogueRow(freeRouter, includeMetrics), ...databaseModels] : databaseModels)
+				.filter((model) => !serviceTier || normalizeCatalogueTiers(model.gateway_tiers).includes(normalizeCatalogueTier(serviceTier)));
 			const normalizedSearch = search?.toLowerCase();
 			const filtered = normalizedSearch ? allModels.filter((model) => String(model.name ?? "").toLowerCase().includes(normalizedSearch)) : allModels;
 			const response = withPublicCache(c.json({ models: filtered.slice(offset, offset + limit), facets: buildModelsPageFacets(filtered), pricing_complete: catalogue.pricingComplete, total: filtered.length, limit, offset, catalogue_version: catalogueVersion, shape: "page", projection }), cataloguePolicy(catalogueVersion, includeVirtual));
@@ -1769,7 +1771,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 		const providerColor = (provider: unknown) => providerColors.get(String(provider ?? "").trim().toLowerCase()) ?? null;
 		const number = (value: unknown) => { const parsed = Number(value); return value == null || !Number.isFinite(parsed) ? null : parsed; };
 		const cacheRate = (requests: unknown, value: unknown) =>
-			Number(requests ?? 0) > 0 ? number(value) ?? 0 : null;
+			hasPublicCacheTelemetrySample(requests) ? number(value) : null;
 		const summary = (value: Record<string, unknown> | null | undefined) => ({ avgThroughput: number(value?.avg_throughput), avgOutputSpeed: number(value?.output_speed_tps), avgLatencyMs: number(value?.avg_latency_ms), avgGenerationMs: number(value?.avg_generation_ms), avgPhaseoOverheadMs: number(value?.phaseo_overhead_ms), avgTpotMs: number(value?.tpot_ms), avgItlMs: number(value?.itl_ms), uptimePct: number(value?.uptime_pct), totalRequests: Number(value?.total_requests ?? 0), successfulRequests: Number(value?.successful_requests ?? 0) });
 		const cachedInputMetrics = (cachedInput.data ?? {}) as Record<string, any>;
 		const cachedInputHourly = new Map((cachedInputMetrics.hourly_24h ?? []).map((value: Record<string, unknown>) => [String(value.bucket ?? ""), value]));
@@ -1777,7 +1779,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 		const hourly = (performance.hourly_24h ?? []).map((value: Record<string, unknown>) => {
 			const cache = cachedInputHourly.get(String(value.bucket ?? "")) as Record<string, unknown> | undefined;
 			const cacheRequests = Number(cache?.telemetry_requests ?? 0);
-			return { bucket: value.bucket ?? "", avgThroughput: number(value.avg_throughput), avgOutputSpeed: number(value.output_speed_tps), avgLatencyMs: number(value.avg_latency_ms), avgEndToEndMs: number(value.gateway_e2e_ms), avgGenerationMs: number(value.avg_generation_ms), avgPhaseoOverheadMs: number(value.phaseo_overhead_ms), avgTpotMs: number(value.tpot_ms), avgItlMs: number(value.itl_ms), cachedInputPct: cacheRate(value.requests, cache?.cached_input_pct), cacheTelemetryRequests: hasPublicCacheTelemetrySample(cacheRequests) ? cacheRequests : 0, requests: Number(value.requests ?? 0), successPct: number(value.success_pct) };
+			return { bucket: value.bucket ?? "", avgThroughput: number(value.avg_throughput), avgOutputSpeed: number(value.output_speed_tps), avgLatencyMs: number(value.avg_latency_ms), avgEndToEndMs: number(value.gateway_e2e_ms), avgGenerationMs: number(value.avg_generation_ms), avgPhaseoOverheadMs: number(value.phaseo_overhead_ms), avgTpotMs: number(value.tpot_ms), avgItlMs: number(value.itl_ms), cachedInputPct: cacheRate(cacheRequests, cache?.cached_input_pct), cacheTelemetryRequests: hasPublicCacheTelemetrySample(cacheRequests) ? cacheRequests : 0, requests: Number(value.requests ?? 0), successPct: number(value.success_pct) };
 		});
 		const providerPerformance = (performance.provider_uptime_24h ?? []).map((value: Record<string, any>) => { const provider = publicProviderId(value.provider, stealthProviderIds); return { provider, providerName: provider === "stealth" ? "Stealth" : value.provider_name ?? value.provider ?? "", providerColor: providerColor(provider), avgThroughput: number(value.avg_throughput), avgLatencyMs: number(value.avg_latency_ms), avgGenerationMs: number(value.avg_generation_ms), requests: Number(value.requests ?? 0), uptimePct: number(value.uptime_pct), uptimeBuckets: (value.uptime_buckets ?? []).map((bucket: Record<string, unknown>) => {
 			const requests = Number(bucket.health_requests ?? bucket.requests ?? 0);
@@ -1790,7 +1792,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			const publicProvider = publicProviderId(value.provider, stealthProviderIds);
 			const cache = cachedInputProviderDaily.get(`${String(value.day ?? "")}:${publicProvider}`) as Record<string, unknown> | undefined;
 			const cacheRequests = Number(cache?.telemetry_requests ?? 0);
-			return { day: value.day ?? "", provider: value.provider ?? "", providerName: value.provider_name ?? value.provider ?? "", providerColor: providerColor(value.provider), avgThroughput: number(value.avg_throughput), avgOutputSpeed: number(value.output_speed_tps), avgLatencyMs: number(value.avg_latency_ms), avgEndToEndMs: number(value.gateway_e2e_ms), avgGenerationMs: number(value.avg_generation_ms), avgPhaseoOverheadMs: number(value.phaseo_overhead_ms), avgTpotMs: number(value.tpot_ms), avgItlMs: number(value.itl_ms), cachedInputPct: cacheRate(value.requests, cache?.cached_input_pct), cachedInputTokens: hasPublicCacheTelemetrySample(cacheRequests) ? number(cache?.cached_input_tokens) : null, effectiveInputTokens: hasPublicCacheTelemetrySample(cacheRequests) ? number(cache?.effective_input_tokens) : null, cacheTelemetryRequests: hasPublicCacheTelemetrySample(cacheRequests) ? cacheRequests : 0, requests: Number(value.requests ?? 0) };
+			return { day: value.day ?? "", provider: value.provider ?? "", providerName: value.provider_name ?? value.provider ?? "", providerColor: providerColor(value.provider), avgThroughput: number(value.avg_throughput), avgOutputSpeed: number(value.output_speed_tps), avgLatencyMs: number(value.avg_latency_ms), avgEndToEndMs: number(value.gateway_e2e_ms), avgGenerationMs: number(value.avg_generation_ms), avgPhaseoOverheadMs: number(value.phaseo_overhead_ms), avgTpotMs: number(value.tpot_ms), avgItlMs: number(value.itl_ms), cachedInputPct: cacheRate(cacheRequests, cache?.cached_input_pct), cachedInputTokens: hasPublicCacheTelemetrySample(cacheRequests) ? number(cache?.cached_input_tokens) : null, effectiveInputTokens: hasPublicCacheTelemetrySample(cacheRequests) ? number(cache?.effective_input_tokens) : null, cacheTelemetryRequests: hasPublicCacheTelemetrySample(cacheRequests) ? cacheRequests : 0, requests: Number(value.requests ?? 0) };
 		});
 		const providerHourly7d = providerHourlyRows.map((value) => {
 			const cacheRequests = Number(value.cache_telemetry_requests ?? 0);
@@ -1808,7 +1810,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 				avgPhaseoOverheadMs: number(value.phaseo_overhead_ms),
 				avgTpotMs: number(value.tpot_ms),
 				avgItlMs: number(value.itl_ms),
-				cachedInputPct: cacheRate(value.requests, value.cached_input_pct),
+				cachedInputPct: cacheRate(cacheRequests, value.cached_input_pct),
 				cachedInputTokens: hasPublicCacheTelemetrySample(cacheRequests) ? number(value.cached_input_tokens) : null,
 				effectiveInputTokens: hasPublicCacheTelemetrySample(cacheRequests) ? number(value.effective_input_tokens) : null,
 				cacheTelemetryRequests: hasPublicCacheTelemetrySample(cacheRequests) ? cacheRequests : 0,

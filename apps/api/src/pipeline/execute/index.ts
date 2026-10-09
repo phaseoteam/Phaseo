@@ -106,6 +106,7 @@ import { getEffectiveRoutingHints } from "../requestRouting";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
 import { extractDownstreamRateLimitHeaders } from "../upstream-rate-limit-headers";
 import { guardFreeRouteQuota } from "@core/customer-rate-limits";
+import { shouldRecordLastUsed } from "@core/last-used-throttle";
 import {
 	admitManagedProvider,
 	estimateProviderTokenReservation,
@@ -627,10 +628,11 @@ export async function doRequestWithIR(
 			attempt + 1,
 			choice.credential,
 			choice.phase,
+			attempt < credentialPlan.length - 1,
 		);
 
 		if (result.ok) {
-			if (choice.credential.kind === "byok") {
+			if (choice.credential.kind === "byok" && shouldRecordLastUsed("byok_keys", choice.credential.key.id)) {
 				const usedKeyId = choice.credential.key.id;
 				dispatchProviderHealthBackground(async () => {
 					const { error } = await getSupabaseAdmin()
@@ -706,6 +708,7 @@ async function attemptProviderWithIR(
 	attemptNumber: number,
 	credential: { kind: "gateway" } | { kind: "byok"; key: ByokKeyMeta },
 	credentialPhase: CredentialAttemptPhase,
+	hasAlternateCandidates = false,
 ): Promise<{ ok: true; result: IRRequestResult } | { ok: false; skip?: string; stopFallback?: boolean; response?: Response }> {
 	const attemptErrors: Array<Record<string, unknown>> = (ctx.attemptErrors ??= []);
 	const attemptPrefix = `attempt_${attemptNumber}`;
@@ -898,7 +901,8 @@ async function attemptProviderWithIR(
 					: ir,
 		);
 		if (credential.kind === "gateway" && !ctx.testingMode) {
-			const reservationTokens = estimateProviderTokenReservation({
+			// Estimated only when the provider has a token limit.
+			const reservationTokens = () => estimateProviderTokenReservation({
 				providerId: candidate.providerId,
 				capability: normalizedCapability,
 				body: ctx.rawBody,
@@ -909,7 +913,9 @@ async function attemptProviderWithIR(
 				providerMaxOutputTokens: candidate.maxOutputTokens,
 			});
 			const rateLimit = await timing.timer.span(`${attemptPrefix}_provider_rate_limit`, () =>
-				admitManagedProvider(candidate.providerId, reservationTokens),
+				admitManagedProvider(candidate.providerId, reservationTokens, crypto.randomUUID(),
+					candidate.providerId === "together" && normalizedCapability === "decisions.make"
+						? Object.keys((ir as any).questions ?? {}).length : 1),
 			);
 			if (!rateLimit.allowed) {
 				const retryAfter = rateLimit.retryAfterSeconds != null
@@ -968,6 +974,7 @@ async function attemptProviderWithIR(
 				byokMeta: credential.kind === "byok" ? [credential.key] : [],
 				pricingCard,
 				upstreamTiming: upstreamTracker.timing,
+				hasAlternateCandidates,
 				meta: {
 					debug: ctx.meta.debug,
 					returnMeta: ctx.meta.returnMeta,

@@ -28,6 +28,8 @@ export async function addGuardrailKeys(
   }[];
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/guardrails/${encodeURIComponent(String(path["id"]))}/keys/add`;
   return client.request<{
     added_count: number;
@@ -74,6 +76,8 @@ export async function addGuardrailMembers(
   }[];
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/guardrails/${encodeURIComponent(String(path["id"]))}/members/add`;
   return client.request<{
     added_count: number;
@@ -121,6 +125,8 @@ export async function addWorkspaceMembers(
   }[];
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/workspaces/${encodeURIComponent(String(path["id"]))}/members/add`;
   return client.request<{
     added_count: number;
@@ -165,6 +171,8 @@ export async function applyPresetUpstreamVersion(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/presets/${encodeURIComponent(String(path["id"]))}/upstream`;
   return client.request<{
     data: {
@@ -210,6 +218,10 @@ export async function approveWorkspaceJoinRequest(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  if ([".", ".."].includes(String(path?.["request_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/workspaces/${encodeURIComponent(String(path["id"]))}/join-requests/${encodeURIComponent(String(path["request_id"]))}/approve`;
   return client.request<{
     data: {
@@ -401,6 +413,8 @@ export async function cancelBatch(
   websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["batch_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/batches/${encodeURIComponent(String(path["batch_id"]))}/cancel`;
   return client.request<{
     billing?: {
@@ -650,6 +664,8 @@ export async function cancelBatchAlias(
   websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/batch/${encodeURIComponent(String(path["id"]))}/cancel`;
   return client.request<{
     billing?: {
@@ -788,6 +804,8 @@ export async function cancelVideo(
   args: CancelVideoParams,
 ): Promise<unknown> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["video_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/videos/${encodeURIComponent(String(path["video_id"]))}/cancel`;
   return client.request<unknown>({
     method: "POST",
@@ -815,6 +833,8 @@ export async function cancelVideoAlias(
   args: CancelVideoAliasParams,
 ): Promise<unknown> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["video_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/video/generations/${encodeURIComponent(String(path["video_id"]))}/cancel`;
   return client.request<unknown>({
     method: "POST",
@@ -6306,6 +6326,8 @@ export async function createVideoDownloadUrl(
   expires_at?: number;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["video_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/videos/${encodeURIComponent(String(path["video_id"]))}/download_url`;
   return client.request<{
     download_url?: string;
@@ -6343,6 +6365,8 @@ export async function createVideoDownloadUrlAlias(
   expires_at?: number;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["video_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/video/generations/${encodeURIComponent(String(path["video_id"]))}/download_url`;
   return client.request<{
     download_url?: string;
@@ -6721,6 +6745,8 @@ export async function createWorkspaceInvite(
   token: string;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/workspaces/${encodeURIComponent(String(path["id"]))}/invites`;
   return client.request<{
     data: {
@@ -6880,6 +6906,8 @@ export async function deleteApiKey(
   deleted: true;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/keys/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     deleted: true;
@@ -6913,6 +6941,8 @@ export async function deleteDataContributionClassifier(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/data-contribution/classifiers/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -6951,6 +6981,8 @@ export async function deleteDynamicRoute(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/routing/dynamic-routes/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -6985,6 +7017,8 @@ export async function deleteGuardrail(
   deleted: true;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/guardrails/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     deleted: true;
@@ -7016,6 +7050,8 @@ export async function deleteManagementKey(
   deleted: true;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/management-keys/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     deleted: true;
@@ -7048,6 +7084,8 @@ export async function deleteOAuthClient(
   message: string;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["client_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/oauth-clients/${encodeURIComponent(String(path["client_id"]))}`;
   return client.request<{
     client_id: string;
@@ -7080,6 +7118,8 @@ export async function deleteObservabilityDestination(
   deleted: true;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/observability/destinations/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     deleted: true;
@@ -7113,6 +7153,8 @@ export async function deletePreset(
   deleted: true;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/presets/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     deleted: true;
@@ -7144,6 +7186,8 @@ export async function deletePrivateModel(
   deleted: boolean;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/private-models/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     deleted: boolean;
@@ -7175,6 +7219,8 @@ export async function deleteProviderCredential(
   deleted: boolean;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/byok/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     deleted: boolean;
@@ -7208,6 +7254,8 @@ export async function deleteVideo(
   object?: string;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["video_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/videos/${encodeURIComponent(String(path["video_id"]))}`;
   return client.request<{
     deleted?: boolean;
@@ -7243,6 +7291,8 @@ export async function deleteVideoAlias(
   object?: string;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["video_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/video/generations/${encodeURIComponent(String(path["video_id"]))}`;
   return client.request<{
     deleted?: boolean;
@@ -7278,6 +7328,8 @@ export async function deleteWebhookEndpoint(
   object: "webhook_endpoint";
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/webhook-endpoints/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     deleted: true;
@@ -7311,6 +7363,8 @@ export async function deleteWorkspace(
   deleted: true;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/workspaces/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     deleted: true;
@@ -7345,6 +7399,8 @@ export async function deleteWorkspaceBudget(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/budgets/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -7379,6 +7435,8 @@ export async function deleteWorkspaceDepartment(
   deleted: true;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/identity/departments/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     deleted: true;
@@ -7411,6 +7469,10 @@ export async function deleteWorkspaceDepartmentMember(
   deleted: true;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["departmentId"])))
+    throw new Error("Dot segments are not valid path parameters");
+  if ([".", ".."].includes(String(path?.["userId"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/identity/departments/${encodeURIComponent(String(path["departmentId"]))}/members/${encodeURIComponent(String(path["userId"]))}`;
   return client.request<{
     deleted: true;
@@ -7442,6 +7504,8 @@ export async function deleteWorkspaceGroupMapping(
   deleted: true;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/identity/group-mappings/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     deleted: true;
@@ -7474,6 +7538,10 @@ export async function deleteWorkspaceInvite(
   deleted: true;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  if ([".", ".."].includes(String(path?.["invite_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/workspaces/${encodeURIComponent(String(path["id"]))}/invites/${encodeURIComponent(String(path["invite_id"]))}`;
   return client.request<{
     deleted: true;
@@ -7505,6 +7573,8 @@ export async function deleteWorkspaceNotificationDestination(
   deleted: true;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/notifications/destinations/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     deleted: true;
@@ -7540,6 +7610,10 @@ export async function deployDynamicRouteVersion(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  if ([".", ".."].includes(String(path?.["version"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/routing/dynamic-routes/${encodeURIComponent(String(path["id"]))}/versions/${encodeURIComponent(String(path["version"]))}/deploy`;
   return client.request<{
     data: {
@@ -7636,6 +7710,8 @@ export async function finalizeRealtimeSession(
   [key: string]: unknown;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["session_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/audio/realtime/sessions/${encodeURIComponent(String(path["session_id"]))}/finalize`;
   return client.request<{
     billing: {
@@ -7705,6 +7781,8 @@ export async function forkPreset(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/presets/${encodeURIComponent(String(path["id"]))}/fork`;
   return client.request<{
     data: {
@@ -8221,6 +8299,8 @@ export async function getApiKey(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/keys/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -8676,6 +8756,8 @@ export async function getDynamicRoute(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/routing/dynamic-routes/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -8819,6 +8901,8 @@ export async function getGatewayRequestLog(
   ok: true;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["requestId"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/logs/${encodeURIComponent(String(path["requestId"]))}`;
   return client.request<{
     data: {
@@ -9007,6 +9091,8 @@ export async function getGuardrail(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/guardrails/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -9120,6 +9206,8 @@ export async function getManagementKey(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/management-keys/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -9185,6 +9273,8 @@ export async function getMusicGeneration(
   [key: string]: unknown;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["music_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/music/generate/${encodeURIComponent(String(path["music_id"]))}`;
   return client.request<{
     audio_base64?: string;
@@ -9246,6 +9336,8 @@ export async function getMusicGenerationAlias(
   [key: string]: unknown;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["music_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/music/generations/${encodeURIComponent(String(path["music_id"]))}`;
   return client.request<{
     audio_base64?: string;
@@ -9310,6 +9402,8 @@ export async function getOAuthClient(
   [key: string]: unknown;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["client_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/oauth-clients/${encodeURIComponent(String(path["client_id"]))}`;
   return client.request<{
     active_authorizations?: number;
@@ -9409,6 +9503,8 @@ export async function getObservabilityDestination(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/observability/destinations/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -9555,6 +9651,8 @@ export async function getPreset(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/presets/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -9674,6 +9772,8 @@ export async function getPresetTestRun(
   } | null;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/preset-test-runs/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -9765,6 +9865,8 @@ export async function getPrivateModel(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/private-models/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -9842,6 +9944,8 @@ export async function getProviderCredential(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/byok/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -9898,6 +10002,8 @@ export async function getProviderDerankStatus(
   [key: string]: unknown;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["provider_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/health/providers/${encodeURIComponent(String(path["provider_id"]))}/derank`;
   return client.request<{
     [key: string]: unknown;
@@ -10034,6 +10140,8 @@ export async function getVideo(
   websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["video_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/videos/${encodeURIComponent(String(path["video_id"]))}`;
   return client.request<{
     asset?: {
@@ -10280,6 +10388,8 @@ export async function getVideoAlias(
   websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["video_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/video/generations/${encodeURIComponent(String(path["video_id"]))}`;
   return client.request<{
     asset?: {
@@ -10419,6 +10529,8 @@ export async function getVideoContent(
   args: GetVideoContentParams,
 ): Promise<Blob> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["video_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/videos/${encodeURIComponent(String(path["video_id"]))}/content`;
   return client.request<Blob>({
     method: "GET",
@@ -10446,6 +10558,8 @@ export async function getVideoContentAlias(
   args: GetVideoContentAliasParams,
 ): Promise<Blob> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["video_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/video/generations/${encodeURIComponent(String(path["video_id"]))}/content`;
   return client.request<Blob>({
     method: "GET",
@@ -10507,6 +10621,8 @@ export async function getWebhookEndpoint(
   workspaceId: string;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/webhook-endpoints/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     createdAt?: string | null;
@@ -10577,6 +10693,8 @@ export async function getWorkspace(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/workspaces/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -10631,6 +10749,8 @@ export async function getWorkspaceBudget(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/budgets/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -11064,6 +11184,8 @@ export async function invalidateApiKeyCache(
   ok: true;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/keys/${encodeURIComponent(String(path["id"]))}/invalidate`;
   return client.request<{
     key: {
@@ -12192,6 +12314,8 @@ export async function listBatchRequests(
   object?: string;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["batch_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/batches/${encodeURIComponent(String(path["batch_id"]))}/requests`;
   return client.request<{
     batch_id?: string;
@@ -12289,6 +12413,8 @@ export async function listBatchRequestsAlias(
   object?: string;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/batch/${encodeURIComponent(String(path["id"]))}/requests`;
   return client.request<{
     batch_id?: string;
@@ -13245,6 +13371,8 @@ export async function listGuardrailKeys(
   total_count: number;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/guardrails/${encodeURIComponent(String(path["id"]))}/keys`;
   return client.request<{
     data: {
@@ -13289,6 +13417,8 @@ export async function listGuardrailMembers(
   total_count: number;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/guardrails/${encodeURIComponent(String(path["id"]))}/members`;
   return client.request<{
     data: {
@@ -13619,6 +13749,10 @@ export async function listModelEndpoints(
   } | null;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["author"])))
+    throw new Error("Dot segments are not valid path parameters");
+  if ([".", ".."].includes(String(path?.["slug"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/models/${encodeURIComponent(String(path["author"]))}/${encodeURIComponent(String(path["slug"]))}/endpoints`;
   return client.request<{
     availability_mode: "active" | "all";
@@ -14792,6 +14926,8 @@ export async function listPresetVersions(
   }[];
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/presets/${encodeURIComponent(String(path["id"]))}/versions`;
   return client.request<{
     data: {
@@ -16867,6 +17003,8 @@ export async function listWorkspaceInvites(
   total_count: number;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/workspaces/${encodeURIComponent(String(path["id"]))}/invites`;
   return client.request<{
     data: {
@@ -16923,6 +17061,8 @@ export async function listWorkspaceJoinRequests(
   total_count: number;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/workspaces/${encodeURIComponent(String(path["id"]))}/join-requests`;
   return client.request<{
     data: {
@@ -16974,6 +17114,8 @@ export async function listWorkspaceMembers(
   total_count: number;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/workspaces/${encodeURIComponent(String(path["id"]))}/members`;
   return client.request<{
     data: {
@@ -17670,6 +17812,8 @@ export async function mergeWorkspaceApp(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/apps/${encodeURIComponent(String(path["id"]))}/merge`;
   return client.request<{
     data: {
@@ -17724,6 +17868,8 @@ export async function publishPresetVersion(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/presets/${encodeURIComponent(String(path["id"]))}/versions`;
   return client.request<{
     data: {
@@ -17773,6 +17919,8 @@ export async function regenerateOAuthClientSecret(
   message: string;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["client_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/oauth-clients/${encodeURIComponent(String(path["client_id"]))}/regenerate-secret`;
   return client.request<{
     client_id: string;
@@ -17816,6 +17964,10 @@ export async function rejectWorkspaceJoinRequest(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  if ([".", ".."].includes(String(path?.["request_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/workspaces/${encodeURIComponent(String(path["id"]))}/join-requests/${encodeURIComponent(String(path["request_id"]))}/reject`;
   return client.request<{
     data: {
@@ -17858,6 +18010,8 @@ export async function removeGuardrailKeys(
   removed_count: number;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/guardrails/${encodeURIComponent(String(path["id"]))}/keys/remove`;
   return client.request<{
     removed_count: number;
@@ -17891,6 +18045,8 @@ export async function removeGuardrailMembers(
   removed_count: number;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/guardrails/${encodeURIComponent(String(path["id"]))}/members/remove`;
   return client.request<{
     removed_count: number;
@@ -17924,6 +18080,8 @@ export async function removeWorkspaceMembers(
   removed_count: number;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/workspaces/${encodeURIComponent(String(path["id"]))}/members/remove`;
   return client.request<{
     removed_count: number;
@@ -17993,6 +18151,8 @@ export async function replaceDynamicRouteKeys(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/routing/dynamic-routes/${encodeURIComponent(String(path["id"]))}/keys`;
   return client.request<{
     data: {
@@ -18032,6 +18192,8 @@ export async function replaceGuardrailKeys(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/guardrails/${encodeURIComponent(String(path["id"]))}/keys`;
   return client.request<{
     data: {
@@ -18175,6 +18337,8 @@ export async function retrieveBatch(
   websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["batch_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/batches/${encodeURIComponent(String(path["batch_id"]))}`;
   return client.request<{
     billing?: {
@@ -18424,6 +18588,8 @@ export async function retrieveBatchAlias(
   websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/batch/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     billing?: {
@@ -18571,6 +18737,8 @@ export async function retrieveBatchFile(
   status_details?: {};
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["file_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/batches/files/${encodeURIComponent(String(path["file_id"]))}`;
   return client.request<{
     bytes?: number;
@@ -18616,6 +18784,8 @@ export async function retrieveBatchFileAlias(
   status_details?: {};
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["file_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/batch/files/${encodeURIComponent(String(path["file_id"]))}`;
   return client.request<{
     bytes?: number;
@@ -18652,6 +18822,8 @@ export async function retrieveBatchFileContent(
   args: RetrieveBatchFileContentParams,
 ): Promise<Blob> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["file_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/batches/files/${encodeURIComponent(String(path["file_id"]))}/content`;
   return client.request<Blob>({
     method: "GET",
@@ -18679,6 +18851,8 @@ export async function retrieveBatchFileContentAlias(
   args: RetrieveBatchFileContentAliasParams,
 ): Promise<Blob> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["file_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/batch/files/${encodeURIComponent(String(path["file_id"]))}/content`;
   return client.request<Blob>({
     method: "GET",
@@ -18706,6 +18880,8 @@ export async function retrieveBatchResults(
   args: RetrieveBatchResultsParams,
 ): Promise<string> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["batch_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/batches/${encodeURIComponent(String(path["batch_id"]))}/results`;
   return client.request<string>({
     method: "GET",
@@ -18733,6 +18909,8 @@ export async function retrieveBatchResultsAlias(
   args: RetrieveBatchResultsAliasParams,
 ): Promise<string> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/batch/${encodeURIComponent(String(path["id"]))}/results`;
   return client.request<string>({
     method: "GET",
@@ -18769,6 +18947,8 @@ export async function retrieveFile(
   status_details?: {};
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["file_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/files/${encodeURIComponent(String(path["file_id"]))}`;
   return client.request<{
     bytes?: number;
@@ -18805,6 +18985,8 @@ export async function retrieveFileContent(
   args: RetrieveFileContentParams,
 ): Promise<Blob> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["file_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/files/${encodeURIComponent(String(path["file_id"]))}/content`;
   return client.request<Blob>({
     method: "GET",
@@ -18834,6 +19016,8 @@ export async function revokeWorkspaceScimToken(
   deleted: true;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/identity/scim/tokens/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     deleted: true;
@@ -18927,6 +19111,8 @@ export async function rotateApiKey(
   previous_key_expires_at: string | null;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/keys/${encodeURIComponent(String(path["id"]))}/rotate`;
   return client.request<{
     data: {
@@ -19028,6 +19214,8 @@ export async function rotateWebhookEndpointSecret(
   workspaceId: string;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/webhook-endpoints/${encodeURIComponent(String(path["id"]))}/rotate-secret`;
   return client.request<{
     createdAt?: string | null;
@@ -19079,6 +19267,10 @@ export async function setWorkspaceDepartmentMember(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["departmentId"])))
+    throw new Error("Dot segments are not valid path parameters");
+  if ([".", ".."].includes(String(path?.["userId"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/identity/departments/${encodeURIComponent(String(path["departmentId"]))}/members/${encodeURIComponent(String(path["userId"]))}`;
   return client.request<{
     data: {
@@ -19185,6 +19377,8 @@ export async function testWebhookEndpoint(
   status_code: number | null;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/webhook-endpoints/${encodeURIComponent(String(path["id"]))}/test`;
   return client.request<{
     error: string | null;
@@ -19223,6 +19417,8 @@ export async function testWorkspaceNotificationDestination(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/notifications/destinations/${encodeURIComponent(String(path["id"]))}/test`;
   return client.request<{
     data: {
@@ -19381,6 +19577,8 @@ export async function updateApiKey(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/keys/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -19497,6 +19695,8 @@ export async function updateDataContributionClassifier(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/data-contribution/classifiers/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -19731,6 +19931,8 @@ export async function updateDynamicRoute(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/routing/dynamic-routes/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -19902,6 +20104,8 @@ export async function updateGuardrail(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/guardrails/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -19998,6 +20202,8 @@ export async function updateManagementKey(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/management-keys/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -20075,6 +20281,8 @@ export async function updateOAuthClient(
   [key: string]: unknown;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["client_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/oauth-clients/${encodeURIComponent(String(path["client_id"]))}`;
   return client.request<{
     active_authorizations?: number;
@@ -20221,6 +20429,8 @@ export async function updateObservabilityDestination(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/observability/destinations/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -20381,6 +20591,8 @@ export async function updatePreset(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/presets/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -20496,6 +20708,8 @@ export async function updatePresetTestRun(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/preset-test-runs/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -20587,6 +20801,8 @@ export async function updatePrivateModel(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/private-models/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -20671,6 +20887,8 @@ export async function updateProviderCredential(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/byok/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -20782,6 +21000,8 @@ export async function updateWebhookEndpoint(
   workspaceId: string;
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/webhook-endpoints/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     createdAt?: string | null;
@@ -20855,6 +21075,8 @@ export async function updateWorkspace(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/workspaces/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -20914,6 +21136,8 @@ export async function updateWorkspaceApp(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/apps/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -20977,6 +21201,8 @@ export async function updateWorkspaceBudget(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/budgets/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -21077,6 +21303,8 @@ export async function updateWorkspaceDepartment(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/identity/departments/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -21127,6 +21355,8 @@ export async function updateWorkspaceDirectoryMember(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/identity/directory/members/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -21171,6 +21401,8 @@ export async function updateWorkspaceGroupMapping(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/identity/group-mappings/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
@@ -21219,6 +21451,10 @@ export async function updateWorkspaceMemberRole(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  if ([".", ".."].includes(String(path?.["user_id"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/workspaces/${encodeURIComponent(String(path["id"]))}/members/${encodeURIComponent(String(path["user_id"]))}`;
   return client.request<{
     data: {
@@ -21269,6 +21505,8 @@ export async function updateWorkspaceNotificationRoute(
   };
 }> {
   const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["eventKind"])))
+    throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/notifications/routes/${encodeURIComponent(String(path["eventKind"]))}`;
   return client.request<{
     data: {

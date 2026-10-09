@@ -2,6 +2,8 @@
 // Why: Responses API expects specific event names and structure
 // How: Parse Anthropic events and emit normalized Responses API events
 
+import { SseParser } from "@core/sse-parser";
+
 /**
  * Transform Anthropic Messages API streaming to OpenAI Responses API streaming format
  *
@@ -20,13 +22,39 @@
  * - response.function_call_arguments.delta: Tool call argument deltas
  * - response.completed: Final response with usage
  */
+/**
+ * Authoritative usage and stop reason observed on an Anthropic Messages stream.
+ * Executors read it from their usage finalizer instead of tee()-ing the
+ * upstream body into a second, rarely read branch that would buffer the whole
+ * response in Worker memory.
+ */
+export type AnthropicStreamAccounting = {
+	observe(payload: any): void;
+	snapshot(): { usage: Record<string, unknown>; stopReason: string | null };
+};
+
+export function createAnthropicStreamAccounting(): AnthropicStreamAccounting {
+	let usage: Record<string, unknown> = {};
+	let stopReason: string | null = null;
+	return {
+		observe(event: any) {
+			const eventUsage = event?.message?.usage ?? event?.usage;
+			if (eventUsage && typeof eventUsage === "object") usage = { ...usage, ...eventUsage };
+			if (typeof event?.delta?.stop_reason === "string") stopReason = event.delta.stop_reason;
+			if (typeof event?.message?.stop_reason === "string") stopReason = event.message.stop_reason;
+		},
+		snapshot: () => ({ usage: { ...usage }, stopReason }),
+	};
+}
+
 export function createAnthropicToResponsesStreamTransformer(
 	requestId: string,
 	model: string,
+	options?: { accounting?: AnthropicStreamAccounting },
 ): TransformStream<Uint8Array, Uint8Array> {
-	const decoder = new TextDecoder();
+	const accounting = options?.accounting;
+	const parser = new SseParser();
 	const encoder = new TextEncoder();
-	let buf = "";
 
 	// Track state for building output items
 	let messageId: string | null = null;
@@ -59,18 +87,8 @@ export function createAnthropicToResponsesStreamTransformer(
 
 	return new TransformStream<Uint8Array, Uint8Array>({
 		async transform(chunk, controller) {
-			buf += decoder.decode(chunk, { stream: true });
-			const frames = buf.split(/\n\n/);
-			buf = frames.pop() ?? "";
-
-			for (const raw of frames) {
-				// Parse SSE frame
-				const lines = raw.split("\n");
-				let data = "";
-				for (const line of lines) {
-					const l = line.replace(/\r$/, "");
-					if (l.startsWith("data:")) data += l.slice(5).trimStart();
-				}
+			for (const frame of parser.pushBytes(chunk)) {
+				const data = frame.data;
 				if (!data || data === "[DONE]") continue;
 
 				let payload: any;
@@ -79,6 +97,7 @@ export function createAnthropicToResponsesStreamTransformer(
 				} catch {
 					continue;
 				}
+				accounting?.observe(payload);
 
 				// Handle different Anthropic event types
 				if (payload.type === "message_start") {
@@ -302,9 +321,20 @@ export function createAnthropicToResponsesStreamTransformer(
 			}
 		},
 
-		flush(controller) {
-			// If there's any remaining buffer, ignore it
-			// All complete events should have been processed
+		flush() {
+			// A trailing frame without its blank line is not emitted downstream
+			// (all complete events have been processed), but it still counts for
+			// usage accounting, matching the former tee()-based collector.
+			if (!accounting) return;
+			for (const frame of parser.flush()) {
+				const data = frame.data.trim();
+				if (!data || data === "[DONE]") continue;
+				try {
+					accounting.observe(JSON.parse(data));
+				} catch {
+					// ignore malformed trailing data
+				}
+			}
 		},
 	});
 }

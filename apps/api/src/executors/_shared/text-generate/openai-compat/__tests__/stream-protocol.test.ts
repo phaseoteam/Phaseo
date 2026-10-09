@@ -53,6 +53,23 @@ function parseSseJsonFrames(text: string): any[] {
 	return out;
 }
 
+// Mirrors OpenAI SDK stream accumulation: string fields are concatenated per
+// tool index, so repeated ids, names, or cumulative arguments corrupt the result.
+function accumulateChatToolCalls(chunks: any[]): Array<{ index: number; id: string; type: string; name: string; arguments: string }> {
+	const calls = new Map<number, { index: number; id: string; type: string; name: string; arguments: string }>();
+	for (const chunk of chunks) {
+		for (const call of chunk?.choices?.[0]?.delta?.tool_calls ?? []) {
+			const current = calls.get(call.index) ?? { index: call.index, id: "", type: "", name: "", arguments: "" };
+			if (typeof call.id === "string") current.id += call.id;
+			if (typeof call.type === "string") current.type = call.type;
+			if (typeof call.function?.name === "string") current.name += call.function.name;
+			if (typeof call.function?.arguments === "string") current.arguments += call.function.arguments;
+			calls.set(call.index, current);
+		}
+	}
+	return [...calls.values()].sort((a, b) => a.index - b.index);
+}
+
 function baseArgs(overrides?: Record<string, any>): any {
 	return {
 		ir: {
@@ -653,14 +670,9 @@ describe("resolveStreamForProtocol", () => {
 
 		const output = await readStreamText(stream);
 		const chunks = parseSseJsonFrames(output).filter((payload) => payload?.object === "chat.completion.chunk");
-		const toolChunks = chunks.filter((payload) => Array.isArray(payload?.choices?.[0]?.delta?.tool_calls));
-		expect(toolChunks.length).toBeGreaterThan(0);
-		for (const chunk of toolChunks) {
-			const tc = chunk.choices?.[0]?.delta?.tool_calls?.[0];
-			expect(tc?.id).toBe("call_weather_1");
-			expect(tc?.function?.name).toBe("get_weather");
-		}
-		expect(output).toContain("\"arguments\":\"{\\\"city\\\":\\\"SF\\\"}\"");
+		expect(accumulateChatToolCalls(chunks)).toEqual([
+			{ index: 0, id: "call_weather_1", type: "function", name: "get_weather", arguments: "{\"city\":\"SF\"}" },
+		]);
 	});
 
 	it("converts named responses tool_call stream events to chat tool_call deltas", async () => {
@@ -722,15 +734,101 @@ describe("resolveStreamForProtocol", () => {
 
 		const output = await readStreamText(stream);
 		const chunks = parseSseJsonFrames(output).filter((payload) => payload?.object === "chat.completion.chunk");
-		const toolChunks = chunks.filter((payload) => Array.isArray(payload?.choices?.[0]?.delta?.tool_calls));
-		expect(toolChunks.length).toBeGreaterThan(0);
-		for (const chunk of toolChunks) {
-			expect(chunk.choices?.[0]?.index).toBe(0);
-			const tc = chunk.choices?.[0]?.delta?.tool_calls?.[0];
-			expect(tc?.id).toBe("call_weather_1");
-			expect(tc?.function?.name).toBe("get_weather");
-		}
-		expect(output).toContain("\"arguments\":\"{\\\"city\\\":\\\"SF\\\"}\"");
+		for (const chunk of chunks) expect(chunk.choices?.[0]?.index).toBe(0);
+		expect(accumulateChatToolCalls(chunks)).toEqual([
+			{ index: 0, id: "call_weather_1", type: "function", name: "get_weather", arguments: "{\"city\":\"SF\"}" },
+		]);
+	});
+
+	it("streams multi-delta tool arguments as fragments that concatenate to valid JSON", async () => {
+		const upstream = makeSseResponse([
+			{ event: "response.created", data: { response: { id: "resp_md", created_at: 1710000003, model: "test-model" } } },
+			{
+				event: "response.output_item.added",
+				data: { output_index: 0, item: { type: "function_call", id: "fc_md", call_id: "call_md", name: "lookup", arguments: "" } },
+			},
+			{ event: "response.function_call_arguments.delta", data: { item_id: "fc_md", output_index: 0, delta: "{\"query\":" } },
+			{ event: "response.function_call_arguments.delta", data: { item_id: "fc_md", output_index: 0, delta: "\"weather in " } },
+			{ event: "response.function_call_arguments.delta", data: { item_id: "fc_md", output_index: 0, delta: "SF\"}" } },
+			{ event: "response.function_call_arguments.done", data: { item_id: "fc_md", output_index: 0, name: "lookup", arguments: "{\"query\":\"weather in SF\"}" } },
+			{
+				event: "response.output_item.done",
+				data: { output_index: 0, item: { type: "function_call", id: "fc_md", call_id: "call_md", name: "lookup", arguments: "{\"query\":\"weather in SF\"}" } },
+			},
+			"[DONE]",
+		]);
+
+		const stream = resolveStreamForProtocol(upstream, baseArgs(), "responses");
+		const chunks = parseSseJsonFrames(await readStreamText(stream)).filter((payload) => payload?.object === "chat.completion.chunk");
+		const toolDeltas = chunks.flatMap((chunk) => chunk.choices?.[0]?.delta?.tool_calls ?? []);
+
+		expect(toolDeltas.filter((call: any) => call.id !== undefined)).toHaveLength(1);
+		expect(toolDeltas.filter((call: any) => call.function?.name !== undefined)).toHaveLength(1);
+		const [call] = accumulateChatToolCalls(chunks);
+		expect(call).toEqual({ index: 0, id: "call_md", type: "function", name: "lookup", arguments: "{\"query\":\"weather in SF\"}" });
+		expect(JSON.parse(call.arguments)).toEqual({ query: "weather in SF" });
+	});
+
+	it("emits full tool arguments once when only the done event carries them", async () => {
+		const upstream = makeSseResponse([
+			{ event: "response.created", data: { response: { id: "resp_done", created_at: 1710000004, model: "test-model" } } },
+			{
+				event: "response.output_item.added",
+				data: { output_index: 0, item: { type: "function_call", id: "fc_done", call_id: "call_done", name: "lookup", arguments: "" } },
+			},
+			{ event: "response.function_call_arguments.done", data: { item_id: "fc_done", output_index: 0, name: "lookup", arguments: "{\"a\":1}" } },
+			"[DONE]",
+		]);
+
+		const stream = resolveStreamForProtocol(upstream, baseArgs(), "responses");
+		const chunks = parseSseJsonFrames(await readStreamText(stream)).filter((payload) => payload?.object === "chat.completion.chunk");
+		expect(accumulateChatToolCalls(chunks)).toEqual([
+			{ index: 0, id: "call_done", type: "function", name: "lookup", arguments: "{\"a\":1}" },
+		]);
+	});
+
+	it("keeps interleaved parallel tool calls separate", async () => {
+		const upstream = makeSseResponse([
+			{ event: "response.created", data: { response: { id: "resp_par", created_at: 1710000005, model: "test-model" } } },
+			{ event: "response.output_item.added", data: { output_index: 0, item: { type: "function_call", id: "fc_a", call_id: "call_a", name: "first", arguments: "" } } },
+			{ event: "response.output_item.added", data: { output_index: 1, item: { type: "function_call", id: "fc_b", call_id: "call_b", name: "second", arguments: "" } } },
+			{ event: "response.function_call_arguments.delta", data: { item_id: "fc_a", output_index: 0, delta: "{\"x\":" } },
+			{ event: "response.function_call_arguments.delta", data: { item_id: "fc_b", output_index: 1, delta: "{\"y\":" } },
+			{ event: "response.function_call_arguments.delta", data: { item_id: "fc_a", output_index: 0, delta: "1}" } },
+			{ event: "response.function_call_arguments.delta", data: { item_id: "fc_b", output_index: 1, delta: "2}" } },
+			"[DONE]",
+		]);
+
+		const stream = resolveStreamForProtocol(upstream, baseArgs(), "responses");
+		const chunks = parseSseJsonFrames(await readStreamText(stream)).filter((payload) => payload?.object === "chat.completion.chunk");
+		expect(accumulateChatToolCalls(chunks)).toEqual([
+			{ index: 0, id: "call_a", type: "function", name: "first", arguments: "{\"x\":1}" },
+			{ index: 1, id: "call_b", type: "function", name: "second", arguments: "{\"y\":2}" },
+		]);
+	});
+
+	it("assembles tool arguments split across fragmented SSE network chunks", async () => {
+		const body = [
+			`event: response.output_item.added\ndata: ${JSON.stringify({ output_index: 0, item: { type: "function_call", id: "fc_frag", call_id: "call_frag", name: "lookup", arguments: "" } })}\n\n`,
+			`event: response.function_call_arguments.delta\ndata: ${JSON.stringify({ item_id: "fc_frag", output_index: 0, delta: "{\"k\":" })}\n\n`,
+			`event: response.function_call_arguments.delta\ndata: ${JSON.stringify({ item_id: "fc_frag", output_index: 0, delta: "\"v\"}" })}\n\n`,
+			"data: [DONE]\n\n",
+		].join("");
+		const encoder = new TextEncoder();
+		const upstream = new Response(new ReadableStream<Uint8Array>({
+			start(controller) {
+				for (let offset = 0; offset < body.length; offset += 7) {
+					controller.enqueue(encoder.encode(body.slice(offset, offset + 7)));
+				}
+				controller.close();
+			},
+		}), { headers: { "Content-Type": "text/event-stream" } });
+
+		const stream = resolveStreamForProtocol(upstream, baseArgs(), "responses");
+		const chunks = parseSseJsonFrames(await readStreamText(stream)).filter((payload) => payload?.object === "chat.completion.chunk");
+		expect(accumulateChatToolCalls(chunks)).toEqual([
+			{ index: 0, id: "call_frag", type: "function", name: "lookup", arguments: "{\"k\":\"v\"}" },
+		]);
 	});
 
 	it("does not convert generic responses tool_call completions to chat tool_call deltas", async () => {

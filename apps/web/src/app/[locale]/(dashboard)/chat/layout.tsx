@@ -46,7 +46,7 @@ export default async function ChatLayout({
 	]);
 
 	return (
-		<ScopedMessages params={params} namespaces={["Common.ui.accessibility", "Product.chat", "Product.chatRooms", "Product.experimentsCouncil", "Product.tools.request", "Catalogue.common", "Catalogue.models", "Catalogue.modelDetail", "Catalogue.updatesCalendar.weekdayAnalysis.showMore", "SettingsUI.chatGaps", "SettingsUI.strings", "Common.ui.auditCopy", "Common.ui.chatRooms", "Common.ui.status", "Common.ui.select", "Common.ui.actions", "Common.ui.media", "Common.ui.moderation", "Common.ui.requestBuilder", "Common.ui.chatComposer", "Common.ui.chatSettings", "Common.ui.chat", "Common.ui.responseLayout", "Common.ui.temporaryChat", "Common.ui.modelSettingsDialog", "Common.ui.filters"]}>
+		<ScopedMessages params={params} namespaces={["Common.ui.accessibility", "Product.chat", "Product.privacyReview", "Product.chatRooms", "Product.experimentsCouncil", "Product.tools.request", "Catalogue.common", "Catalogue.models", "Catalogue.modelDetail", "Catalogue.updatesCalendar.weekdayAnalysis.showMore", "SettingsUI.chatGaps", "SettingsUI.strings", "Common.ui.auditCopy", "Common.ui.chatRooms", "Common.ui.status", "Common.ui.select", "Common.ui.actions", "Common.ui.media", "Common.ui.moderation", "Common.ui.requestBuilder", "Common.ui.chatComposer", "Common.ui.chatSettings", "Common.ui.chat", "Common.ui.openui", "Common.ui.responseLayout", "Common.ui.temporaryChat", "Common.ui.modelSettingsDialog", "Common.ui.filters"]}>
 		<ChatAuthProvider initialAuth={initialAuth}>
 			<ChatFeatureFlagsProvider
 				realtimeEnabled={realtimeEnabled}

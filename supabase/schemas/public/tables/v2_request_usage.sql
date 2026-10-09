@@ -25,8 +25,6 @@ CREATE INDEX v2_request_usage_meter_time_idx ON public.v2_request_usage USING bt
 
 CREATE INDEX v2_request_usage_modality_time_idx ON public.v2_request_usage USING btree (modality, created_at DESC);
 
-CREATE INDEX v2_request_usage_request_idx ON public.v2_request_usage USING btree (request_event_id, meter_key);
-
 CREATE INDEX v2_request_usage_public_ranking_idx ON public.v2_request_usage USING btree (request_event_id, meter_key) INCLUDE (quantity);
 
 CREATE INDEX v2_request_usage_public_tokens_idx ON public.v2_request_usage USING btree (request_event_id, meter_key) INCLUDE (quantity)

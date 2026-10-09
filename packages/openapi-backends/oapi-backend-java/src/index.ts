@@ -276,6 +276,10 @@ function renderOperations(operations: IROperation[]): string {
 		"",
 		"public final class Operations {",
 		"\tprivate Operations() {}",
+		"\tprivate static String pathSegment(String value) {",
+		"\t\tif (value.equals(\".\") || value.equals(\"..\")) throw new IllegalArgumentException(\"Dot segments are not valid path parameters\");",
+		"\t\treturn java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8).replace(\"+\", \"%20\");",
+		"\t}",
 		""
 	];
 	for (const operation of operations) {
@@ -306,7 +310,7 @@ function renderPathTemplate(path: string, params: IROperation["params"]): string
 	const parts = segments.map((segment) => {
 		if (segment.startsWith("{") && segment.endsWith("}")) {
 			const name = JSON.stringify(segment.slice(1, -1));
-			return `(path != null && path.containsKey(${name}) ? path.get(${name}) : "")`;
+			return `pathSegment(path != null && path.containsKey(${name}) ? path.get(${name}) : "")`;
 		}
 		return JSON.stringify(segment);
 	});

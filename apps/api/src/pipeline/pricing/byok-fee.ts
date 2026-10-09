@@ -1,4 +1,4 @@
-import { getSupabaseAdmin } from "@/runtime/env";
+import { dispatchBackground, getSupabaseAdmin } from "@/runtime/env";
 import { formatUsdFromNanosExact } from "./money";
 
 const NANOS_PER_CENT = 10_000_000;
@@ -116,10 +116,49 @@ async function readByokCounter(
 	}
 }
 
+// Once a workspace has used its monthly free allowance, every further request
+// pays the fee regardless of the exact count, so the increment no longer
+// needs to block the response. Tracked per isolate and month.
+const MAX_TRACKED_EXHAUSTED_WORKSPACES = 20_000;
+const exhaustedAllowance = new Map<string, number>();
+
+export function __resetByokAllowanceCacheForTests(): void {
+	exhaustedAllowance.clear();
+}
+
+function rememberCount(workspaceId: string, monthStart: string, requestCount: number | null): void {
+	if (requestCount == null || requestCount < BYOK_MONTHLY_FREE_REQUESTS) return;
+	const key = `${workspaceId}:${monthStart}`;
+	exhaustedAllowance.delete(key);
+	exhaustedAllowance.set(key, requestCount);
+	while (exhaustedAllowance.size > MAX_TRACKED_EXHAUSTED_WORKSPACES) {
+		const oldest = exhaustedAllowance.keys().next();
+		if (oldest.done) break;
+		exhaustedAllowance.delete(oldest.value);
+	}
+}
+
 async function resolveByokCounter(workspaceId: string, countRequest: boolean, requestIncrement: number, idempotencyKey?: string): Promise<ByokCounterResolution> {
-	const supabase = getSupabaseAdmin();
 	const nowIso = new Date().toISOString();
 	if (!countRequest) return readByokCounter(workspaceId, nowIso, requestIncrement, "preview_read");
+	const monthStart = utcMonthStartIso(nowIso);
+	const knownCount = exhaustedAllowance.get(`${workspaceId}:${monthStart}`);
+	if (knownCount !== undefined && idempotencyKey) {
+		// Idempotent, so a lost or retried background increment cannot double-count.
+		const estimate = knownCount + requestIncrement;
+		exhaustedAllowance.set(`${workspaceId}:${monthStart}`, estimate);
+		// Key by the locally computed month: the RPC formats month_start differently.
+		dispatchBackground(incrementByokCounter(workspaceId, nowIso, requestIncrement, idempotencyKey)
+			.then((resolved) => rememberCount(workspaceId, monthStart, resolved.requestCount)));
+		return { requestCount: estimate, monthStart, source: "rpc" };
+	}
+	const resolved = await incrementByokCounter(workspaceId, nowIso, requestIncrement, idempotencyKey);
+	rememberCount(workspaceId, monthStart, resolved.requestCount);
+	return resolved;
+}
+
+async function incrementByokCounter(workspaceId: string, nowIso: string, requestIncrement: number, idempotencyKey?: string): Promise<ByokCounterResolution> {
+	const supabase = getSupabaseAdmin();
 	let lastError: unknown = null;
 
 	for (let attempt = 1; attempt <= COUNTER_RPC_MAX_ATTEMPTS; attempt++) {

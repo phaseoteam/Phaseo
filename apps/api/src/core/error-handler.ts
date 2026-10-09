@@ -14,12 +14,12 @@ import { isDebugAllowed, logDebugEvent } from "@pipeline/debug";
 import { readAttributionHeaders } from "@pipeline/after/attribution";
 import { buildResponseTimeline } from "@pipeline/after/timing";
 import { getEdgeMeta } from "./edge";
-import { sanitizeForAxiom, stringifyForAxiom } from "@observability/privacy";
+import { sanitizeForAxiom } from "@observability/privacy";
 import { emitGatewayRequestEvent } from "@observability/events";
 import { emitGatewayTelemetryDeliveryFailure } from "@observability/axiom";
 import { runGatewayTelemetryPipelines } from "@observability/gateway-telemetry";
 import { enqueueGatewayOtlpExport } from "@observability/otlp-export";
-import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
+import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
 
 const REDACT_ERROR_KEYS = new Set([
     "messages",
@@ -920,56 +920,9 @@ export async function handleError({
         };
     }
     const gatewayErrorPayload = sanitizeForAxiom(errorPayload);
-    const providerResponseHeaders = sanitizeForAxiom(headersToRecord(res.headers));
     const replayRequestPayload = requestPayloadForObservability;
 
     // Audit failure
-    const auditExtraJson = (() => {
-        try {
-            return stringifyForAxiom({
-                stage,
-                request: requestMeta,
-                timing: ctx ? (ctx as any)?.timing ?? null : body?.timing ?? null,
-                providers: ctx?.providers?.map((p) => ({
-                    provider_id: p.providerId,
-                    base_weight: p.baseWeight,
-                    byok_keys: p.byokMeta?.length ?? 0,
-                    has_pricing: Boolean(p.pricingCard),
-                })),
-                transform: {
-                    protocol: ctx?.protocol ?? null,
-                    endpoint,
-                    model: modelForObservability,
-                    request_surface_sanitized: sanitizeForAxiom(requestPayloadForObservability),
-                    gateway_response_sanitized: gatewayErrorPayload,
-                    gateway_response_present: true,
-                    upstream_request_sanitized: null,
-                    upstream_response_sanitized: sanitizeForAxiom(body ?? null),
-                    upstream_response_present: body != null,
-                    upstream_response_headers: providerResponseHeaders,
-                    upstream_status_code: statusCode,
-                    upstream_status_text: res.statusText ?? null,
-					upstream_url: sanitizeUrlForLogging(res.url ?? null),
-                    requested_params: sanitizeForAxiom(ctx?.requestedParams ?? null),
-                    param_routing_diagnostics: sanitizeForAxiom(ctx?.paramRoutingDiagnostics ?? null),
-                    provider_enablement_diagnostics: sanitizeForAxiom(ctx?.providerEnablementDiagnostics ?? null),
-                    provider_candidate_build_diagnostics: sanitizeForAxiom(
-                        ctx?.providerCandidateBuildDiagnostics ?? null,
-                    ),
-                    provider_attempts: sanitizeForAxiom(ctx?.providerAttempts ?? null),
-                    attempt_errors: sanitizeForAxiom((ctx as any)?.attemptErrors ?? null),
-                    routing_snapshot: sanitizeForAxiom((ctx as any)?.routingSnapshot ?? null),
-                    routing_diagnostics: sanitizeForAxiom((ctx as any)?.routingDiagnostics ?? null),
-                    error_details: sanitizeForAxiom(body ?? null),
-                },
-                gateway_response_sanitized: gatewayErrorPayload,
-                provider_response_sanitized: sanitizeForAxiom(body ?? null),
-                internal_reporting: sanitizeForAxiom(upstreamUnsupportedParamSignal ?? null),
-            });
-        } catch {
-            return null;
-        }
-    })();
     const errorDetailsJson = buildErrorDetails(body, ctx);
     const internalLatencyMs = ctx ? (ctx as any)?.timing?.internal_latency_ms ?? null : null;
     const beforeTimingMs = (() => {
@@ -1063,7 +1016,6 @@ export async function handleError({
         edgeCountry: requestMeta.edgeCountry,
         edgeContinent: requestMeta.edgeContinent,
         edgeAsn: requestMeta.edgeAsn,
-        extraJson: auditExtraJson,
         errorDetailsJson,
         errorPayload: gatewayErrorPayload,
         requestPayload: replayRequestPayload,
@@ -1092,7 +1044,15 @@ export async function handleError({
             ? ctx.providerAttempts
             : null;
     }
-    await runGatewayTelemetryPipelines({
+    // The error response does not depend on audit persistence; deliver it in the
+    // background so clients are not held for database writes and retries.
+    let releaseRuntime: (() => void) | null = null;
+    try {
+        releaseRuntime = ensureRuntimeForBackground();
+    } catch {
+        // Unit fixtures may run without a configured runtime.
+    }
+    const telemetry = runGatewayTelemetryPipelines({
         requestId: auditArgs.requestId,
         workspaceId: auditArgs.workspaceId,
         writeSupabase: () => auditFailure(auditArgs),
@@ -1168,7 +1128,8 @@ export async function handleError({
         gatewayResponse: errorPayload,
         }),
         onDeliveryFailure: emitGatewayTelemetryDeliveryFailure,
-    });
+    }).finally(() => releaseRuntime?.());
+    dispatchBackground(telemetry);
     return new Response(JSON.stringify(errorPayload), { status: statusCode, headers });
 }
 

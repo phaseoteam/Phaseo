@@ -5,7 +5,7 @@ CREATE TABLE "public"."workspace_byok_monthly_usage" (
   "created_at"    timestamp with time zone NOT NULL DEFAULT now(),
   "updated_at"    timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT "workspace_byok_monthly_usage_pkey" PRIMARY KEY (workspace_id, month_start),
-  CONSTRAINT "workspace_byok_monthly_usage_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+  CONSTRAINT "workspace_byok_monthly_usage_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT
 );
 
 ALTER TABLE "public"."workspace_byok_monthly_usage"

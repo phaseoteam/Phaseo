@@ -63,7 +63,7 @@ export default function ProviderCatalogChanges({ catalog, modelId, disabled, onR
 					<div><p className="mb-2 text-xs text-muted-foreground">{t("feedValue")}</p><pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all rounded bg-muted p-3 text-xs">{displayValue(feedValue(feed, field), field)}</pre></div>
 					<div><p className="mb-2 text-xs text-muted-foreground">{t("effectiveValue")}</p><pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all rounded bg-muted p-3 text-xs">{displayValue(edit.value, field)}</pre></div>
 				</div>
-				<Button variant="outline" size="sm" className="mt-3" disabled={disabled} onClick={() => onRevert(field)}>{field === "$model" && !feed ? fields("remove") : t("useFeedValue")}</Button>
+				<Button variant="outline" size="sm" className="mt-3" disabled={disabled || (["name", "description", "inputModalities", "outputModalities", "contextLength", "maxOutputTokens", "availableFrom", "deprecatedAt", "shutdownAt"].includes(field) && !catalog.permissions?.can_edit_model_metadata)} onClick={() => onRevert(field)}>{field === "$model" && !feed ? fields("remove") : t("useFeedValue")}</Button>
 			</details>)}
 		</section> : null}
 		<details className="rounded-lg border px-4 py-3 text-sm">

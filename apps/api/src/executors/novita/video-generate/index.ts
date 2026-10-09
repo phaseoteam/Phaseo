@@ -7,20 +7,35 @@ import { reserveVideoGenerationCredits } from "@core/video-reservations";
 import { releaseWalletReservation } from "@core/wallet-reservations";
 import { saveVideoJobMeta, setVideoJobStatus } from "@core/video-jobs";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
+import { buildKlingRequest, isKlingModel, resolveKlingEndpoint } from "./kling";
+import { buildUnifiedKlingRequest, isUnifiedKlingModel } from "./unified";
 
 const emptyBill = { cost_cents: 0, currency: "USD", usage: undefined as any, upstream_id: undefined, finish_reason: null };
 
-function failure(status: number, message: string): ExecutorResult {
-	return { kind: "completed", ir: undefined, bill: { ...emptyBill },
+function failure(status: number, message: string): Extract<ExecutorResult, { kind: "completed" }> {
+	return { kind: "completed", localClientError: status === 400, ir: undefined, bill: { ...emptyBill },
 		upstream: Response.json({ error: { type: "invalid_request_error", message } }, { status }),
 		keySource: null, byokKeyId: null };
 }
 
-// Novita's video API is native /v3/async, not its OpenAI-compatible text API.
+// Novita offers reviewed unified and model-specific native video APIs.
 // Only reviewed model contracts are accepted; never infer a route from user input.
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const ir = args.ir as IRVideoGenerationRequest;
 	const model = args.providerModelSlug || ir.model;
+	if (isUnifiedKlingModel(model)) {
+		let request: ReturnType<typeof buildUnifiedKlingRequest>;
+		try { request = buildUnifiedKlingRequest(ir, model); }
+		catch (error) { return failure(400, error instanceof Error ? error.message : "Invalid Novita unified video request."); }
+		return submitVideo(args, ir, model, "/v3/video/create", request.seconds, undefined, request.ratio, false, request.body);
+	}
+	if (isKlingModel(model)) {
+		const endpoint = resolveKlingEndpoint(ir, model);
+		let request: ReturnType<typeof buildKlingRequest>;
+		try { request = buildKlingRequest(ir, endpoint); }
+		catch (error) { return failure(400, error instanceof Error ? error.message : "Invalid Novita Kling request."); }
+		return submitVideo(args, ir, model, `/v3/async/${endpoint}`, request.seconds, undefined, request.ratio, request.generateAudio, request.body);
+	}
 	if (!["seedance-v1.5-pro", "seedance-v1.5-pro-t2v", "seedance-v1.5-pro-i2v", "bytedance/seedance-1.5-pro", "bytedance/seedance-1-5-pro"].includes(model)) {
 		return failure(400, "This Novita video model does not have a validated native request contract.");
 	}
@@ -49,9 +64,18 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const body = { ...options, prompt: ir.prompt, duration: seconds, resolution: size, ratio,
 		generate_audio: generateAudio, ...(ir.seed != null ? { seed: ir.seed } : {}),
 		...(image ? { image } : {}), ...(lastImage ? { last_image: lastImage } : {}) };
+	return submitVideo(args, ir, model, `/v3/async/seedance-v1.5-pro-${image ? "i2v" : "t2v"}`, seconds, size, ratio, generateAudio, body);
+}
+
+async function submitVideo(
+	args: ExecutorExecuteArgs, ir: IRVideoGenerationRequest, model: string, endpoint: string,
+	seconds: number, size: string | undefined, ratio: string, generateAudio: boolean,
+	body: Record<string, unknown>,
+): Promise<ExecutorResult> {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const key = resolveProviderKey({ providerId: args.providerId, byokMeta: args.byokMeta, forceGatewayKey: args.meta.forceGatewayKey }, () => bindings.NOVITA_API_KEY);
 	const reservation = await reserveVideoGenerationCredits({ workspaceId: args.workspaceId, videoId: args.requestId,
+		keyId: args.apiKeyId, authMethod: args.meta.authMethod, onReservationDenied: args.onReservationDenied,
 		providerId: args.providerId, model, seconds, pricingCard: args.pricingCard, isByok: key.source === "byok",
 		requestOptions: buildVideoPricingRequestOptions({ size, seconds, audio: generateAudio, aspect_ratio: ratio }) });
 	if (!reservation.held && reservation.status !== "skip_zero_cost") {
@@ -70,29 +94,33 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	}
 	let response: Response;
 	try {
-		response = await fetchUpstream(args, `https://api.novita.ai/v3/async/seedance-v1.5-pro-${image ? "i2v" : "t2v"}`, {
+		response = await fetchUpstream(args, `https://api.novita.ai${endpoint}`, {
 			method: "POST", headers: { Authorization: `Bearer ${key.key}`, "Content-Type": "application/json" }, body: JSON.stringify(body),
 		});
-	} catch (error) {
+	} catch {
 		await setVideoJobStatus(args.workspaceId, args.requestId, "pending", { submissionState: "unknown" }).catch(() => undefined);
-		throw error;
+		return { ...failure(502, "Novita submission outcome is uncertain. Retain the gateway request ID and do not resubmit."), terminal: true, keySource: key.source, byokKeyId: key.byokId };
 	}
 	if (!response.ok) {
 		if (response.status < 500 && response.status !== 408) {
 			await releaseWalletReservation({ workspaceId: args.workspaceId, reservationId: reservation.reservationId, releaseRefId: args.requestId });
 			await setVideoJobStatus(args.workspaceId, args.requestId, "failed", { submissionState: "rejected" });
 		} else {
-			await setVideoJobStatus(args.workspaceId, args.requestId, "pending", { submissionState: "unknown" });
+			await setVideoJobStatus(args.workspaceId, args.requestId, "pending", { submissionState: "unknown" }).catch(() => undefined);
 		}
-		return { kind: "completed", ir: undefined, bill: { ...emptyBill }, upstream: response, keySource: key.source, byokKeyId: key.byokId };
+		return { kind: "completed", terminal: response.status >= 500 || response.status === 408, ir: undefined, bill: { ...emptyBill }, upstream: response, keySource: key.source, byokKeyId: key.byokId };
 	}
 	const result = await response.clone().json().catch(() => null) as any;
 	const nativeId = typeof result?.id === "string" ? result.id : typeof result?.task_id === "string" ? result.task_id : undefined;
 	if (!nativeId) {
-		await setVideoJobStatus(args.workspaceId, args.requestId, "pending", { submissionState: "unknown" });
-		return failure(502, "Novita submission outcome is uncertain. Retain the gateway request ID and do not resubmit.");
+		await setVideoJobStatus(args.workspaceId, args.requestId, "pending", { submissionState: "unknown" }).catch(() => undefined);
+		return { ...failure(502, "Novita submission outcome is uncertain. Retain the gateway request ID and do not resubmit."), terminal: true, keySource: key.source, byokKeyId: key.byokId };
 	}
-	await saveVideoJobMeta(args.workspaceId, args.requestId, { ...meta, providerTaskId: nativeId, submissionState: "accepted" }, nativeId, "queued");
+	try {
+		await saveVideoJobMeta(args.workspaceId, args.requestId, { ...meta, providerTaskId: nativeId, submissionState: "accepted" }, nativeId, "queued");
+	} catch {
+		return { ...failure(502, "Novita accepted the video, but gateway ownership could not be saved. Retain the gateway request ID and do not resubmit."), terminal: true, keySource: key.source, byokKeyId: key.byokId };
+	}
 	return { kind: "completed", bill: { ...emptyBill }, upstream: response,
 		keySource: key.source, byokKeyId: key.byokId,
 		ir: { id: args.requestId, nativeId, provider: args.providerId, model, status: "queued", seconds: String(seconds), size },

@@ -68,3 +68,5 @@ COMMENT ON COLUMN "public"."v2_request_routing_decisions"."score_factors" IS 'Bo
 COMMENT ON COLUMN "public"."v2_request_routing_decisions"."score_trace" IS 'Bounded raw inputs, normalization values, weights, contributions, and intermediate calculations for one candidate.';
 
 COMMENT ON TABLE "public"."v2_request_routing_decisions" IS 'Content-free scored/ranked and excluded provider decisions used to explain routing for one gateway request.';
+
+CREATE INDEX v2_request_routing_decisions_retention_idx ON public.v2_request_routing_decisions USING btree (created_at, routing_decision_id);
