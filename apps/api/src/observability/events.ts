@@ -897,6 +897,15 @@ function classifyOperationalError(args: EventArgs): OperationalErrorClassificati
     const rawCode = code.includes(":") ? code.split(":").slice(1).join(":") : code;
     const detailKeyword = getFirstDetailKeyword(args);
 
+    if (rawCode === "phaseo_free_model_limit_exceeded") {
+        return {
+            origin: "gateway",
+            kind: "phaseo_free_model_limit_exceeded",
+            owner: "caller",
+            operationallyActionable: false,
+        };
+    }
+
     if (
         rawCode === "invalid_json" ||
         rawCode === "model_required" ||

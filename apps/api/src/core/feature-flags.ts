@@ -4,6 +4,7 @@
 import type { AuthSuccess } from "@pipeline/before/auth";
 import type { GatewayBindings } from "@/runtime/env.types";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { awaitShared } from "@core/shared-wait";
 
 const DEFAULT_BATCH_API_GATE = "gateway_batch_api";
 const DEFAULT_VIDEO_API_GATE = "gateway_video_api";
@@ -33,6 +34,7 @@ const workspaceOwnerCache = new Map<string, { userId: string | null; expiresAt: 
 const STATSIG_GATE_CACHE_TTL_MS = 60_000;
 const STATSIG_GATE_FAILURE_TTL_MS = 10_000;
 const STATSIG_GATE_CACHE_MAX_ENTRIES = 10_000;
+const STATSIG_SHARED_WAIT_MS = 1_500;
 const statsigGateCache = new Map<string, { value: boolean; expiresAt: number }>();
 const statsigGateInflight = new Map<string, Promise<boolean>>();
 
@@ -140,7 +142,11 @@ async function isStatsigGateEnabled(
 	const cached = statsigGateCache.get(cacheKey);
 	if (cached && cached.expiresAt > Date.now()) return cached.value;
 	const pending = statsigGateInflight.get(cacheKey);
-	if (pending) return pending;
+	if (pending) {
+		// The evaluation may belong to another request; never wait on it unboundedly.
+		const shared = await awaitShared(pending, STATSIG_SHARED_WAIT_MS);
+		if (shared.settled) return shared.value;
+	}
 	const evaluation = evaluateStatsigGate(gateName, subject, userId, tier, statsigKey)
 		.then(({ value, definitive }) => {
 			rememberStatsigGate(cacheKey, value, definitive ? STATSIG_GATE_CACHE_TTL_MS : STATSIG_GATE_FAILURE_TTL_MS);

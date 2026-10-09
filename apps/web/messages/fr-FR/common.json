@@ -653,6 +653,24 @@
 		"lastYear": "Dernière année"
 	},
 	"ui": {
+		"openui": {
+			"title": "Réponses interactives",
+			"experimentLabel": "Réponses interactives · Expérience",
+			"localLabel": "Phaseo · Expérience locale",
+			"description": "Aperçu des exemples. Les formulaires envoyés apparaissent ci-dessous sans appeler de modèle. Essayez la génération dans le chat.",
+			"examples": "Exemples",
+			"replay": "Rejouer le flux",
+			"stop": "Arrêter la lecture",
+			"storage": "Le stockage du navigateur est indisponible. Les valeurs du formulaire seront conservées jusqu’à la fermeture de cette page.",
+			"submitted": "Message envoyé",
+			"loading": "Chargement de la réponse interactive…",
+			"failure": "Cette réponse interactive n’a pas pu être entièrement affichée. Essayez de la régénérer.",
+			"tradeoffs": "Inconvénients",
+			"comparison": "Comparaison",
+			"edge": "Négatif / zéro",
+			"malformed": "Format incorrect",
+			"markdown": "Markdown"
+		},
 		"modelEditor": {
 			"dialogTitle": "Modifier le modèle",
 			"dialogDescription": "Effectuez vos modifications, puis cliquez sur Enregistrer.",

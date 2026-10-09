@@ -86,6 +86,7 @@ icon: "bug"
 | `authorization_error` | `403` | 此密钥无权访问该资源。 |
 | `not_found_error` | `404` | 找不到端点或资源。 |
 | `rate_limit_error` | `429` | 请求过多。请在指定延迟后重试。 |
+| `phaseo_free_model_limit_exceeded` | `429` | Phaseo 免费模型的共享每日配额已用尽（默认 1,500 次请求）。请遵循 `Retry-After`，等待 00:00 UTC 重置，或选择付费模型。 |
 | `validation_error` | `400` | 参数或请求正文无效。 |
 | `provider_error` | `502` | 上游模型提供商未能正确响应。 |
 | `server_error` | `500` | Phaseo 内部发生意外问题。 |
@@ -268,4 +269,3 @@ icon: "bug"
 - 将调试负载视为潜在敏感数据，并在写入持久日志前进行脱敏。
 - 优先使用确定性重试（限制次数并加入抖动），避免无限循环。
 </Visibility>
-

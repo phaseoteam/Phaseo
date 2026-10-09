@@ -8,6 +8,20 @@ description: "使用受支持的决策模型，针对应用状态评估带类型
 
 新调用请使用兼容 OpenAI 的格式：`input` 包含文本或带有内联 `input_image` 的用户消息，`questions` 是按顺序排列的 `predicate`、`choice` 或 `score` 问题数组。回答保持相同顺序及可选名称。布尔选项仍为布尔值。不支持托管图片 URL；Luna 支持最多128张内联图片，其他提供商有各自的限制。显式图片细节和 `safety_identifier` 需要 OpenAI 路由。原有的 `state`、命名问题映射、`noul` 和 `criteria` 格式仍受支持，并返回回答映射。Together Tev 返回不含概率的标签，因此需要原有格式。原有示例仍然有效。
 
+Mercury Decide (`inception/mercury-decide`) 支持使用文本或 JSON 的 `predicate`、`choice` 和 `score` 问题。每个选择题最多支持 255 个选项，每个评分题最多支持 10 个等级。不支持图片、流式响应或工具调用。Inception 当前提供五折优惠，输入价格为每百万 token 0.02 美元；输出 token 会计入用量，但免费。Inception 尚未公布优惠结束日期。使用前请检查模型可用性和[当前价格](https://docs.inceptionlabs.ai/get-started/models)。
+
+```json
+{
+  "model": "inception/mercury-decide",
+  "input": "Please refund the duplicate charge on my account.",
+  "questions": [{
+    "type": "predicate",
+    "name": "billing",
+    "instructions": "Is this request about billing?"
+  }]
+}
+```
+
 ```json
 {
   "model": "openai/gpt-6-luna",

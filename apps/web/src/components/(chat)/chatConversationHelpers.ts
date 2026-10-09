@@ -1,6 +1,7 @@
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import type {
 	ChatMessage,
+	ChatMessageVariant,
 	ChatReasoningEffort,
 } from "@/lib/indexeddb/chats";
 
@@ -304,7 +305,7 @@ export function stripMarkdownLink(content: string, url: string): string {
 	return content.trim();
 }
 
-export function ensureVariants(message: ChatMessage) {
+export function ensureVariants(message: ChatMessage): ChatMessageVariant[] {
 	if (message.variants && message.variants.length > 0) {
 		return message.variants;
 	}

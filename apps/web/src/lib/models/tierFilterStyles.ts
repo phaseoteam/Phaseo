@@ -55,12 +55,9 @@ const TIER_FILTER_META: Record<string, TierFilterMeta> = {
 };
 
 export function getTierFilterMeta(value: string): TierFilterMeta {
+	const normalized = String(value ?? "").trim().toLowerCase();
 	return (
-		TIER_FILTER_META[
-			String(value ?? "")
-				.trim()
-				.toLowerCase()
-		] ?? {
+		TIER_FILTER_META[normalized === "fast" ? "priority" : normalized] ?? {
 			icon: CircleDot,
 			iconClassName: "text-muted-foreground",
 			filterIconHoverClassName: "group-hover:text-foreground",

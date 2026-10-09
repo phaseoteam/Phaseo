@@ -1650,6 +1650,7 @@
                 "group": "2026",
                 "pages": [
                   "v1/changelog",
+                  "v1/changelog/2026-09",
                   "v1/changelog/2026-08",
                   "v1/changelog/2026-07",
                   "v1/changelog/2026-06",
@@ -3289,6 +3290,7 @@
                 "group": "2026",
                 "pages": [
                   "es/v1/changelog",
+                  "es/v1/changelog/2026-09",
                   "es/v1/changelog/2026-08",
                   "es/v1/changelog/2026-07",
                   "es/v1/changelog/2026-06",
@@ -4949,6 +4951,7 @@
                 "group": "2026",
                 "pages": [
                   "fr/v1/changelog",
+                  "fr/v1/changelog/2026-09",
                   "fr/v1/changelog/2026-08",
                   "fr/v1/changelog/2026-07",
                   "fr/v1/changelog/2026-06",
@@ -6609,6 +6612,7 @@
                 "group": "2026",
                 "pages": [
                   "de/v1/changelog",
+                  "de/v1/changelog/2026-09",
                   "de/v1/changelog/2026-08",
                   "de/v1/changelog/2026-07",
                   "de/v1/changelog/2026-06",
@@ -8269,6 +8273,7 @@
                 "group": "2026",
                 "pages": [
                   "pt-BR/v1/changelog",
+                  "pt-BR/v1/changelog/2026-09",
                   "pt-BR/v1/changelog/2026-08",
                   "pt-BR/v1/changelog/2026-07",
                   "pt-BR/v1/changelog/2026-06",
@@ -9929,6 +9934,7 @@
                 "group": "2026",
                 "pages": [
                   "ja/v1/changelog",
+                  "ja/v1/changelog/2026-09",
                   "ja/v1/changelog/2026-08",
                   "ja/v1/changelog/2026-07",
                   "ja/v1/changelog/2026-06",
@@ -11589,6 +11595,7 @@
                 "group": "2026",
                 "pages": [
                   "zh-Hans/v1/changelog",
+                  "zh-Hans/v1/changelog/2026-09",
                   "zh-Hans/v1/changelog/2026-08",
                   "zh-Hans/v1/changelog/2026-07",
                   "zh-Hans/v1/changelog/2026-06",
@@ -13249,6 +13256,7 @@
                 "group": "2026",
                 "pages": [
                   "hi/v1/changelog",
+                  "hi/v1/changelog/2026-09",
                   "hi/v1/changelog/2026-08",
                   "hi/v1/changelog/2026-07",
                   "hi/v1/changelog/2026-06",
@@ -14909,6 +14917,7 @@
                 "group": "2026",
                 "pages": [
                   "ar/v1/changelog",
+                  "ar/v1/changelog/2026-09",
                   "ar/v1/changelog/2026-08",
                   "ar/v1/changelog/2026-07",
                   "ar/v1/changelog/2026-06",

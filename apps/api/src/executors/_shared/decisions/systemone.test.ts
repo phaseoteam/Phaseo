@@ -12,6 +12,7 @@ const providers = [
 	{ id: "liquid-ai", model: "d1:free", url: "https://api.liquid.ai/decisions/v1/systemone", outputTokens: 0 },
 	{ id: "liquid", model: "d1:free", url: "https://api.liquid.ai/decisions/v1/systemone", outputTokens: 0 },
 	{ id: "perplexity", model: "decider-27b", url: "https://api.perplexity.ai/v1/decisions", outputTokens: 3 },
+	{ id: "inception", model: "mercury-decide", url: "https://api.inceptionlabs.ai/v1/decisions", outputTokens: 3 },
 ];
 const questions = {
 	defect: { type: "noul", instructions: "Does the review report a defect?" },
@@ -31,7 +32,7 @@ function argsFor(provider: typeof providers[number], overrides: Partial<Executor
 		providerModelSlug: provider.model, byokMeta: [], pricingCard: { rules: [] }, meta: {}, ...overrides,
 	};
 }
-beforeEach(() => setupRuntimeFromEnv({ LIQUID_AI_API_KEY: "liquid-test", PERPLEXITY_API_KEY: "perplexity-test" }));
+beforeEach(() => setupRuntimeFromEnv({ LIQUID_AI_API_KEY: "liquid-test", PERPLEXITY_API_KEY: "perplexity-test", INCEPTION_API_KEY: "inception-test" }));
 afterEach(teardownTestRuntime);
 
 describe.each(providers)("$id decisions", provider => {
@@ -75,7 +76,7 @@ describe.each(providers)("$id decisions", provider => {
 			expect(mock.calls[0]).toMatchObject({ method: "POST", bodyJson: {
 				model: provider.model, state: args.ir.state, questions,
 			} });
-			expect(mock.calls[0].headers.Authorization).toBe(`Bearer ${provider.id === "perplexity" ? "perplexity-test" : "liquid-test"}`);
+			expect(mock.calls[0].headers.Authorization).toBe(`Bearer ${provider.id === "perplexity" ? "perplexity-test" : provider.id === "inception" ? "inception-test" : "liquid-test"}`);
 			expect(result.ir).toMatchObject({ model: args.ir.model, answers, usage: {
 				inputTokens: 120, outputTokens: provider.outputTokens, totalTokens: 120 + provider.outputTokens,
 			} });
