@@ -48,6 +48,7 @@ jobs:
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/customer-rate-limit-tiers.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/gateway-spend-limit-seed.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/staged-model-public-reporting.test.mjs
+                  PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/legacy-staged-reporting.test.mjs
             - name: Verify declarative schemas against frozen baseline and forward migrations
               if: inputs.generate_migration != true
               run: node scripts/declarative-schema.mjs check

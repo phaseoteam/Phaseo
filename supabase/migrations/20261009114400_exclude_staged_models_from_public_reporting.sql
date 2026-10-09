@@ -27,12 +27,36 @@ $$;
 revoke all on function public.public_reporting_route_is_visible(text,text,text,timestamptz) from public;
 grant execute on function public.public_reporting_route_is_visible(text,text,text,timestamptz) to anon, authenticated, service_role;
 
--- Preserve existing history without an unbounded request-fact backfill. New
--- rows are always classified by the trigger, never by a caller-supplied flag.
+-- Preserve eligible public history and explicitly exclude legacy private rows.
+-- New rows are classified by the trigger, never by a caller-supplied flag.
 alter table public.v2_request_facts add column public_reporting_allowed boolean not null default true;
 alter table public.v2_request_facts alter column public_reporting_allowed set default false;
 alter table public.data_contributions add column public_reporting_allowed boolean not null default true;
 alter table public.data_contributions alter column public_reporting_allowed set default false;
+
+-- Classify legacy rows before the ingestion triggers take ownership of the flag.
+update public.v2_request_facts fact
+set public_reporting_allowed = false
+where fact.public_reporting_allowed and (
+  fact.provider_model_id is null
+  or coalesce(fact.safe_metadata->>'testing_mode', 'false') = 'true'
+  or not public.public_reporting_route_is_visible(
+    coalesce(fact.routed_model_slug, fact.requested_model_slug), fact.provider_model_id, null, fact.occurred_at
+  )
+);
+update public.data_contributions contribution
+set public_reporting_allowed = false
+where contribution.public_reporting_allowed and (
+  contribution.provider_slug is null
+  or not public.public_reporting_route_is_visible(
+    contribution.model_slug, null, contribution.provider_slug, contribution.occurred_at
+  )
+  or exists (select 1 from public.v2_request_facts fact
+    where fact.workspace_id = contribution.workspace_id and fact.request_id = contribution.request_id
+      and not fact.public_reporting_allowed)
+);
+
+
 
 create or replace function private.set_request_public_reporting_scope()
 returns trigger language plpgsql security invoker set search_path = '' as $$
