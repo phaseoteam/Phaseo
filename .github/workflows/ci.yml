@@ -1006,9 +1006,21 @@ jobs:
               env:
                   CLOUDFLARE_DEPLOY_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   CLOUDFLARE_DEPLOY_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+              # Regional Workers bind Durable Object classes exported by phaseo-gateway, which
+              # deploys in parallel. A new class is rejected ("not exported by script") until
+              # that deploy lands, so retry failed deploys while the global API catches up.
               run: |
                   $region = if ("${{ matrix.target }}" -eq "api-eu") { "eu" } else { "us" }
-                  ./scripts/deploy-regional.ps1 -Region $region -SecretsFromEnvironment -Deploy
+                  $attempts = 8
+                  for ($attempt = 1; $attempt -le $attempts; $attempt++) {
+                      ./scripts/deploy-regional.ps1 -Region $region -SecretsFromEnvironment -Deploy
+                      if ($LASTEXITCODE -eq 0) { exit 0 }
+                      if ($attempt -lt $attempts) {
+                          Write-Host "::warning::Regional deploy attempt $attempt failed (exit $LASTEXITCODE); retrying in 30 seconds."
+                          Start-Sleep -Seconds 30
+                      }
+                  }
+                  exit $LASTEXITCODE
 
             - name: Deploy Web API Worker to Cloudflare
               if: matrix.target == 'web-api'
