@@ -1375,6 +1375,12 @@ type DebugOptions struct {
 	TraceLevel *string `json:"trace_level,omitempty"`
 }
 
+type DecisionAudioSource struct {
+	Data *string `json:"data,omitempty"`
+	Format *string `json:"format,omitempty"`
+	Url *string `json:"url,omitempty"`
+}
+
 type DecisionChoiceAnswer struct {
 	Choice interface{} `json:"choice"`
 	Confidence float64 `json:"confidence"`
@@ -1398,6 +1404,11 @@ type DecisionImage struct {
 	ContentType string `json:"content_type"`
 }
 
+type DecisionInputAudio struct {
+	InputAudio map[string]interface{} `json:"input_audio"`
+	Type string `json:"type"`
+}
+
 type DecisionInputImage struct {
 	Detail *string `json:"detail,omitempty"`
 	ImageUrl string `json:"image_url"`
@@ -1413,6 +1424,11 @@ type DecisionInputMessage struct {
 type DecisionInputText struct {
 	Text string `json:"text"`
 	Type string `json:"type"`
+}
+
+type DecisionInputVideo struct {
+	Type string `json:"type"`
+	VideoUrl interface{} `json:"video_url"`
 }
 
 type DecisionInstructions = interface{}

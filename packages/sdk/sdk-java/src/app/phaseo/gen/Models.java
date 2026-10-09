@@ -703,6 +703,12 @@ public final class Models {
 		public Object trace_level;
 	}
 
+	public static class DecisionAudioSource {
+		public String data;
+		public Object format;
+		public String url;
+	}
+
 	public static class DecisionChoiceAnswer {
 		public Object choice;
 		public Double confidence;
@@ -728,6 +734,11 @@ public final class Models {
 		public Object content_type;
 	}
 
+	public static class DecisionInputAudio {
+		public Object input_audio;
+		public Object type;
+	}
+
 	public static class DecisionInputImage {
 		public Object detail;
 		public String image_url;
@@ -743,6 +754,11 @@ public final class Models {
 	public static class DecisionInputText {
 		public String text;
 		public Object type;
+	}
+
+	public static class DecisionInputVideo {
+		public Object type;
+		public Object video_url;
 	}
 
 	public static class DecisionInstructions {

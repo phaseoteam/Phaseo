@@ -96,7 +96,7 @@ Die Fragensemantik des Anbieters ist in der [API-Referenz](https://docs.typesafe
 
 ### Bildentscheidungen mit Clef
 
-`cloudflare/clef` und `cloudflare/clef-flash` unterstützen alle drei Fragetypen und eingebettete Bilder über Cloudflare Workers AI. Beide haben ein Kontextfenster von 65.536 Token. Die Eingabe kostet 0,24 USD pro Million Token für Clef und 0,09 USD für Clef Flash.
+`cloudflare/clef` und `cloudflare/clef-flash` unterstützen alle drei Fragetypen und eingebettete Bilder über Cloudflare Workers AI. Clef bietet 65.536 Kontext-Tokens, Clef Flash 24.576. Eingaben kosten 0,24 USD pro Million Tokens für Clef und 0,038 USD für Clef Flash.
 
 ```json
 {
@@ -112,3 +112,30 @@ Die Fragensemantik des Anbieters ist in der [API-Referenz](https://docs.typesafe
 Sie können auch eine Zeichenfolge `data:image/png;base64,...` in `images` übergeben. Clef akzeptiert bis zu vier PNG-, JPEG- oder WebP-Bilder mit jeweils höchstens 4 MiB und 16 Megapixeln, insgesamt höchstens 8 MiB dekodierten Bilddaten und einem Anfragekörper von 13 MiB. Remote-URLs werden nicht unterstützt. Cloudflare prüft Bildformate und Abmessungen. Modelle ohne Bildunterstützung lehnen Bildanfragen ab.
 
 Clef akzeptiert höchstens 64 Fragen mit IDs aus bis zu 100 Buchstaben, Ziffern, Unterstrichen, Punkten oder Bindestrichen. Auswahlfragen benötigen 2–255 Optionen; Bewertungsfragen benötigen 2–10 Stufen. Siehe die [Clef-Dokumentation](https://developers.cloudflare.com/workers-ai/models/clef/) von Cloudflare.
+
+### Audio und Video mit Clef Omni
+
+`cloudflare/clef-omni` verarbeitet Text, Bilder, Audio und Video mit denselben geordneten Fragen und Antworten. Audio und Video sind Phaseo-Erweiterungen des OpenAI-Eingabevertrags; OpenAI-Entscheidungsrouten unterstützen derzeit nur Text und Bilder. Prüfen Sie vor der Verwendung die Modellverfügbarkeit.
+
+Dieses Beispiel erfordert eine verfügbare Omni-Route und einen Phaseo-API-Schlüssel. Ersetzen Sie die Audio-Platzhalter und die Video-URL durch eigene Medien.
+
+```json
+{
+  "model": "cloudflare/clef-omni",
+  "input": [{
+    "role": "user",
+    "content": [
+      { "type": "input_text", "text": "Review the recording and clip." },
+      { "type": "input_audio", "input_audio": { "data": "<base64 WAV bytes>", "format": "wav" } },
+      { "type": "input_video", "video_url": { "url": "https://media.example.com/clip.mp4" } }
+    ]
+  }],
+  "questions": [{ "type": "predicate", "name": "safe", "instructions": "Is the equipment operating safely?" }]
+}
+```
+
+Verwenden Sie `input_audio.data` mit `format: "wav"` oder `"mp3"`, oder `input_audio.url` mit einer öffentlichen HTTPS-URL oder Audio-Daten-URL. `input_video.video_url` akzeptiert einen String oder `{ "url": "..." }` mit einer öffentlichen HTTPS-URL oder MP4/WebM-Daten-URL. Der Server muss den passenden Content-Type liefern. Phaseo lädt Medien mit Größenlimits und Prüfungen privater Adressen und Weiterleitungen und bettet sie für Cloudflare ein. Anbieterzugangsdaten werden niemals an den Medienserver gesendet.
+
+Omni akzeptiert bis zu vier Audioclips (je 8 MiB und 300 Sekunden) und zwei Videos (je 16 MiB und 60 Sekunden), insgesamt höchstens 16 MiB dekodierte Audio- und Videodaten. Die Limits je Bild und für die gesamten Bilddaten gelten weiterhin; für Omni ersetzt das Limit von 37 MiB das Clef/Flash-Body-Limit von 13 MiB. Phaseo begrenzt den gesamten Request-Body auf 37 MiB. Cloudflare prüft Kodierung, Bildabmessungen und Dauer und nimmt zwei Videobilder pro Sekunde auf. Die Tonspur wird verwendet, wenn jedes Video eine hat.
+
+Der dokumentierte Kontext umfasst 64.000 Tokens. Eine Million Eingabe-Tokens insgesamt kostet 0,15 USD. Medien-Tokens zählen zu Kontext und Abrechnung; Ausgaben sind kostenlos. Phaseo rechnet nach dem von Cloudflare gemeldeten Eingabeverbrauch ohne zusätzliche Audio- oder Videogebühren ab. [Cloudflare](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).

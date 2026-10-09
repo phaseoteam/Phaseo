@@ -703,6 +703,12 @@ struct DebugOptions {
 	std::any trace_level;
 };
 
+struct DecisionAudioSource {
+	std::string data;
+	std::any format;
+	std::string url;
+};
+
 struct DecisionChoiceAnswer {
 	std::any choice;
 	double confidence;
@@ -726,6 +732,11 @@ struct DecisionImage {
 	std::any content_type;
 };
 
+struct DecisionInputAudio {
+	std::map<std::string, std::any> input_audio;
+	std::any type;
+};
+
 struct DecisionInputImage {
 	std::optional<std::any> detail;
 	std::string image_url;
@@ -741,6 +752,11 @@ struct DecisionInputMessage {
 struct DecisionInputText {
 	std::string text;
 	std::any type;
+};
+
+struct DecisionInputVideo {
+	std::any type;
+	std::any video_url;
 };
 
 using DecisionInstructions = std::any;

@@ -10679,7 +10679,7 @@ components:
           minLength: 1
           description: Identificador canónico del modelo de Phaseo o alias del modelo del proveedor.
         input:
-          description: Texto o mensajes con imágenes integradas.
+          description: Texto o mensajes con imágenes integradas. Audio y vídeo son extensiones de Phaseo para modelos compatibles; las rutas de decisiones OpenAI no las admiten.
           oneOf:
             - type: string
               maxLength: 10485760
@@ -10737,6 +10737,75 @@ components:
                 oneOf:
                   - $ref: '#/components/schemas/DecisionInputText'
                   - $ref: '#/components/schemas/DecisionInputImage'
+                  - $ref: '#/components/schemas/DecisionInputAudio'
+                  - $ref: '#/components/schemas/DecisionInputVideo'
+    DecisionInputAudio:
+      type: object
+      required:
+        - type
+        - input_audio
+      additionalProperties: false
+      description: 'Extensión de Phaseo para modelos de decisiones con audio, como Clef Omni. Proporciona exactamente uno: datos base64 con formato o una URL HTTPS pública o de datos de audio. Los modelos de decisiones de OpenAI no admiten esta extensión.'
+      properties:
+        type:
+          type: string
+          enum:
+            - input_audio
+        input_audio:
+          $ref: '#/components/schemas/DecisionAudioSource'
+    DecisionAudioSource:
+      type: object
+      additionalProperties: false
+      anyOf:
+        - required:
+            - data
+            - format
+        - required:
+            - url
+      not:
+        required:
+          - data
+          - url
+      properties:
+        data:
+          type: string
+          maxLength: 12582912
+          pattern: ^[A-Za-z0-9+/]+={0,2}$
+        format:
+          type: string
+          enum:
+            - wav
+            - mp3
+        url:
+          type: string
+          maxLength: 25165824
+          pattern: ^(https://|data:audio/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$)
+    DecisionInputVideo:
+      type: object
+      required:
+        - type
+        - video_url
+      additionalProperties: false
+      description: Extensión de Phaseo para modelos de decisiones con vídeo, como Clef Omni. Proporciona una URL HTTPS pública o de datos de vídeo. Los modelos de decisiones de OpenAI no admiten esta extensión.
+      properties:
+        type:
+          type: string
+          enum:
+            - input_video
+        video_url:
+          oneOf:
+            - type: string
+              maxLength: 25165824
+              pattern: ^(https://|data:video/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$)
+            - type: object
+              required:
+                - url
+              additionalProperties: false
+              properties:
+                url:
+                  type: string
+                  maxLength: 25165824
+                  pattern: ^(https://|data:video/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$)
     DecisionInputText:
       type: object
       required:

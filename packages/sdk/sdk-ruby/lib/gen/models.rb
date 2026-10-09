@@ -1040,6 +1040,13 @@ module Phaseo
     # @!attribute [rw] trace_level
     #   @return [String, nil]
     DebugOptions = Struct.new(:enabled, :return_upstream_request, :return_upstream_response, :trace, :trace_level, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [String, nil]
+    # @!attribute [rw] format
+    #   @return [String, nil]
+    # @!attribute [rw] url
+    #   @return [String, nil]
+    DecisionAudioSource = Struct.new(:data, :format, :url, keyword_init: true)
     # @!attribute [rw] choice
     #   @return [String, Boolean]
     # @!attribute [rw] confidence
@@ -1065,6 +1072,11 @@ module Phaseo
     # @!attribute [rw] content_type
     #   @return [String]
     DecisionImage = Struct.new(:base64, :content_type, keyword_init: true)
+    # @!attribute [rw] input_audio
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] type
+    #   @return [String]
+    DecisionInputAudio = Struct.new(:input_audio, :type, keyword_init: true)
     # @!attribute [rw] detail
     #   @return [String, nil]
     # @!attribute [rw] image_url
@@ -1084,6 +1096,11 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     DecisionInputText = Struct.new(:text, :type, keyword_init: true)
+    # @!attribute [rw] type
+    #   @return [String]
+    # @!attribute [rw] video_url
+    #   @return [String, Hash{String => Object}]
+    DecisionInputVideo = Struct.new(:type, :video_url, keyword_init: true)
     DecisionInstructions = Object
     # @!attribute [rw] criteria
     #   @return [Hash{String => Object}, nil]

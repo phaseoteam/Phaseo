@@ -70,14 +70,17 @@ export type { DataContributionOverviewResponse } from "./DataContributionOvervie
 export type { DataModel } from "./DataModel.js";
 export type { DataModelOrganisation } from "./DataModelOrganisation.js";
 export type { DebugOptions } from "./DebugOptions.js";
+export type { DecisionAudioSource } from "./DecisionAudioSource.js";
 export type { DecisionChoiceAnswer } from "./DecisionChoiceAnswer.js";
 export type { DecisionChoiceQuestion } from "./DecisionChoiceQuestion.js";
 export type { DecisionCreateRequest } from "./DecisionCreateRequest.js";
 export type { DecisionCreateResponse } from "./DecisionCreateResponse.js";
 export type { DecisionImage } from "./DecisionImage.js";
+export type { DecisionInputAudio } from "./DecisionInputAudio.js";
 export type { DecisionInputImage } from "./DecisionInputImage.js";
 export type { DecisionInputMessage } from "./DecisionInputMessage.js";
 export type { DecisionInputText } from "./DecisionInputText.js";
+export type { DecisionInputVideo } from "./DecisionInputVideo.js";
 export type { DecisionInstructions } from "./DecisionInstructions.js";
 export type { DecisionNoulQuestion } from "./DecisionNoulQuestion.js";
 export type { DecisionPredicateAnswer } from "./DecisionPredicateAnswer.js";

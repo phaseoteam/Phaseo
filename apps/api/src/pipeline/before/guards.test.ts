@@ -25,6 +25,17 @@ describe("parseW3cTraceContext", () => {
 });
 
 describe("guardJson", () => {
+	it("allows larger embedded decision media while bounding the decisions endpoint", async () => {
+		const request = (bytes: number) => new Request("https://gateway.local/v1/decisions", {
+			method: "POST", headers: { "content-type": "application/json", "content-length": String(bytes) },
+			body: "{}",
+		});
+		expect((await guardJson(request(24 * 1024 * 1024), "team_test", "req_test", { endpoint: "decisions" })).ok).toBe(true);
+		expect((await guardJson(request(24 * 1024 * 1024), "team_test", "req_test", { endpoint: "chat.completions" })).ok).toBe(false);
+		const result = await guardJson(request(37 * 1024 * 1024 + 1), "team_test", "req_test", { endpoint: "decisions" });
+		expect(result.ok).toBe(false);
+		if (!result.ok) expect(result.response.status).toBe(413);
+	});
 	it("parses multipart form-data bodies including files and array fields", async () => {
 		const form = new FormData();
 		form.set("model", "openai/gpt-4o-transcribe");

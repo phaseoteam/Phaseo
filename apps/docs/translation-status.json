@@ -2,7 +2,7 @@
   "version": 1,
   "locales": {
     "ar": {
-      "@openapi": "05afc9866bbe67ae773060a81df44414452ce75ae2c3fef8df910d0aef752702",
+      "@openapi": "0539caf46f94c9a430112792a57402544db1f1add18ff5ef95bcbb94707a0d65",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "f475e54b012d1791c7ba29b4b57cc8a7a1be1d14f070f47ccc2507c0053be561",
       "api-reference/endpoint/analytics-export.mdx": "603e9f3570f0f2d18807cbbfe028655213b36de0e180396e08698eaeb4cc36e9",
@@ -39,7 +39,7 @@
       "api-reference/endpoint/data-contribution-classifier-update.mdx": "234f1da70febba59903a2edb974f782c45f83638560be035d77b2a5d804761d3",
       "api-reference/endpoint/data-contribution-consent-update.mdx": "7366a3cfe9941c45932116925361097ece629c40baaa3d36ac7040996ef0e8aa",
       "api-reference/endpoint/data-contribution-get.mdx": "b5c4438544ef16f58db975ee7a141ad47a706b5b05da5285ad23f9e0dce035e6",
-      "api-reference/endpoint/decisions.mdx": "5858b6cb404e6e1a8e9053f5a9123ccc652375a85b570fec7be9908fed07f069",
+      "api-reference/endpoint/decisions.mdx": "a45d02c557170e2d2bb1529476f7288308dcc651e29ac888ab9fdb888f0adfa3",
       "api-reference/endpoint/dynamic-routes-create.mdx": "9d93d3132e4c01d7d926d01bc788cd1a25ef21aac912062bf2ae0d8401cf4bae",
       "api-reference/endpoint/dynamic-routes-delete.mdx": "3f7768a3849166e656e862c6e308989c839200854a089bef0a5b4d7f048a87c8",
       "api-reference/endpoint/dynamic-routes-deploy.mdx": "28ca291e2203298ff4bfa85c0522a392e50a7ba99d4c29ccf4e0f9ac25249355",
@@ -629,7 +629,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "de": {
-      "@openapi": "05afc9866bbe67ae773060a81df44414452ce75ae2c3fef8df910d0aef752702",
+      "@openapi": "0539caf46f94c9a430112792a57402544db1f1add18ff5ef95bcbb94707a0d65",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "f475e54b012d1791c7ba29b4b57cc8a7a1be1d14f070f47ccc2507c0053be561",
       "api-reference/endpoint/analytics-export.mdx": "603e9f3570f0f2d18807cbbfe028655213b36de0e180396e08698eaeb4cc36e9",
@@ -666,7 +666,7 @@
       "api-reference/endpoint/data-contribution-classifier-update.mdx": "234f1da70febba59903a2edb974f782c45f83638560be035d77b2a5d804761d3",
       "api-reference/endpoint/data-contribution-consent-update.mdx": "7366a3cfe9941c45932116925361097ece629c40baaa3d36ac7040996ef0e8aa",
       "api-reference/endpoint/data-contribution-get.mdx": "b5c4438544ef16f58db975ee7a141ad47a706b5b05da5285ad23f9e0dce035e6",
-      "api-reference/endpoint/decisions.mdx": "5858b6cb404e6e1a8e9053f5a9123ccc652375a85b570fec7be9908fed07f069",
+      "api-reference/endpoint/decisions.mdx": "a45d02c557170e2d2bb1529476f7288308dcc651e29ac888ab9fdb888f0adfa3",
       "api-reference/endpoint/dynamic-routes-create.mdx": "9d93d3132e4c01d7d926d01bc788cd1a25ef21aac912062bf2ae0d8401cf4bae",
       "api-reference/endpoint/dynamic-routes-delete.mdx": "3f7768a3849166e656e862c6e308989c839200854a089bef0a5b4d7f048a87c8",
       "api-reference/endpoint/dynamic-routes-deploy.mdx": "28ca291e2203298ff4bfa85c0522a392e50a7ba99d4c29ccf4e0f9ac25249355",
@@ -1256,7 +1256,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "es": {
-      "@openapi": "05afc9866bbe67ae773060a81df44414452ce75ae2c3fef8df910d0aef752702",
+      "@openapi": "0539caf46f94c9a430112792a57402544db1f1add18ff5ef95bcbb94707a0d65",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "f475e54b012d1791c7ba29b4b57cc8a7a1be1d14f070f47ccc2507c0053be561",
       "api-reference/endpoint/analytics-export.mdx": "603e9f3570f0f2d18807cbbfe028655213b36de0e180396e08698eaeb4cc36e9",
@@ -1293,7 +1293,7 @@
       "api-reference/endpoint/data-contribution-classifier-update.mdx": "234f1da70febba59903a2edb974f782c45f83638560be035d77b2a5d804761d3",
       "api-reference/endpoint/data-contribution-consent-update.mdx": "7366a3cfe9941c45932116925361097ece629c40baaa3d36ac7040996ef0e8aa",
       "api-reference/endpoint/data-contribution-get.mdx": "b5c4438544ef16f58db975ee7a141ad47a706b5b05da5285ad23f9e0dce035e6",
-      "api-reference/endpoint/decisions.mdx": "5858b6cb404e6e1a8e9053f5a9123ccc652375a85b570fec7be9908fed07f069",
+      "api-reference/endpoint/decisions.mdx": "a45d02c557170e2d2bb1529476f7288308dcc651e29ac888ab9fdb888f0adfa3",
       "api-reference/endpoint/dynamic-routes-create.mdx": "9d93d3132e4c01d7d926d01bc788cd1a25ef21aac912062bf2ae0d8401cf4bae",
       "api-reference/endpoint/dynamic-routes-delete.mdx": "3f7768a3849166e656e862c6e308989c839200854a089bef0a5b4d7f048a87c8",
       "api-reference/endpoint/dynamic-routes-deploy.mdx": "28ca291e2203298ff4bfa85c0522a392e50a7ba99d4c29ccf4e0f9ac25249355",
@@ -1883,7 +1883,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "fr": {
-      "@openapi": "05afc9866bbe67ae773060a81df44414452ce75ae2c3fef8df910d0aef752702",
+      "@openapi": "0539caf46f94c9a430112792a57402544db1f1add18ff5ef95bcbb94707a0d65",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "f475e54b012d1791c7ba29b4b57cc8a7a1be1d14f070f47ccc2507c0053be561",
       "api-reference/endpoint/analytics-export.mdx": "603e9f3570f0f2d18807cbbfe028655213b36de0e180396e08698eaeb4cc36e9",
@@ -1920,7 +1920,7 @@
       "api-reference/endpoint/data-contribution-classifier-update.mdx": "234f1da70febba59903a2edb974f782c45f83638560be035d77b2a5d804761d3",
       "api-reference/endpoint/data-contribution-consent-update.mdx": "7366a3cfe9941c45932116925361097ece629c40baaa3d36ac7040996ef0e8aa",
       "api-reference/endpoint/data-contribution-get.mdx": "b5c4438544ef16f58db975ee7a141ad47a706b5b05da5285ad23f9e0dce035e6",
-      "api-reference/endpoint/decisions.mdx": "5858b6cb404e6e1a8e9053f5a9123ccc652375a85b570fec7be9908fed07f069",
+      "api-reference/endpoint/decisions.mdx": "a45d02c557170e2d2bb1529476f7288308dcc651e29ac888ab9fdb888f0adfa3",
       "api-reference/endpoint/dynamic-routes-create.mdx": "9d93d3132e4c01d7d926d01bc788cd1a25ef21aac912062bf2ae0d8401cf4bae",
       "api-reference/endpoint/dynamic-routes-delete.mdx": "3f7768a3849166e656e862c6e308989c839200854a089bef0a5b4d7f048a87c8",
       "api-reference/endpoint/dynamic-routes-deploy.mdx": "28ca291e2203298ff4bfa85c0522a392e50a7ba99d4c29ccf4e0f9ac25249355",
@@ -2510,7 +2510,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "hi": {
-      "@openapi": "05afc9866bbe67ae773060a81df44414452ce75ae2c3fef8df910d0aef752702",
+      "@openapi": "0539caf46f94c9a430112792a57402544db1f1add18ff5ef95bcbb94707a0d65",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "f475e54b012d1791c7ba29b4b57cc8a7a1be1d14f070f47ccc2507c0053be561",
       "api-reference/endpoint/analytics-export.mdx": "603e9f3570f0f2d18807cbbfe028655213b36de0e180396e08698eaeb4cc36e9",
@@ -2547,7 +2547,7 @@
       "api-reference/endpoint/data-contribution-classifier-update.mdx": "234f1da70febba59903a2edb974f782c45f83638560be035d77b2a5d804761d3",
       "api-reference/endpoint/data-contribution-consent-update.mdx": "7366a3cfe9941c45932116925361097ece629c40baaa3d36ac7040996ef0e8aa",
       "api-reference/endpoint/data-contribution-get.mdx": "b5c4438544ef16f58db975ee7a141ad47a706b5b05da5285ad23f9e0dce035e6",
-      "api-reference/endpoint/decisions.mdx": "5858b6cb404e6e1a8e9053f5a9123ccc652375a85b570fec7be9908fed07f069",
+      "api-reference/endpoint/decisions.mdx": "a45d02c557170e2d2bb1529476f7288308dcc651e29ac888ab9fdb888f0adfa3",
       "api-reference/endpoint/dynamic-routes-create.mdx": "9d93d3132e4c01d7d926d01bc788cd1a25ef21aac912062bf2ae0d8401cf4bae",
       "api-reference/endpoint/dynamic-routes-delete.mdx": "3f7768a3849166e656e862c6e308989c839200854a089bef0a5b4d7f048a87c8",
       "api-reference/endpoint/dynamic-routes-deploy.mdx": "28ca291e2203298ff4bfa85c0522a392e50a7ba99d4c29ccf4e0f9ac25249355",
@@ -3137,7 +3137,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "ja": {
-      "@openapi": "05afc9866bbe67ae773060a81df44414452ce75ae2c3fef8df910d0aef752702",
+      "@openapi": "0539caf46f94c9a430112792a57402544db1f1add18ff5ef95bcbb94707a0d65",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "f475e54b012d1791c7ba29b4b57cc8a7a1be1d14f070f47ccc2507c0053be561",
       "api-reference/endpoint/analytics-export.mdx": "603e9f3570f0f2d18807cbbfe028655213b36de0e180396e08698eaeb4cc36e9",
@@ -3174,7 +3174,7 @@
       "api-reference/endpoint/data-contribution-classifier-update.mdx": "234f1da70febba59903a2edb974f782c45f83638560be035d77b2a5d804761d3",
       "api-reference/endpoint/data-contribution-consent-update.mdx": "7366a3cfe9941c45932116925361097ece629c40baaa3d36ac7040996ef0e8aa",
       "api-reference/endpoint/data-contribution-get.mdx": "b5c4438544ef16f58db975ee7a141ad47a706b5b05da5285ad23f9e0dce035e6",
-      "api-reference/endpoint/decisions.mdx": "5858b6cb404e6e1a8e9053f5a9123ccc652375a85b570fec7be9908fed07f069",
+      "api-reference/endpoint/decisions.mdx": "a45d02c557170e2d2bb1529476f7288308dcc651e29ac888ab9fdb888f0adfa3",
       "api-reference/endpoint/dynamic-routes-create.mdx": "9d93d3132e4c01d7d926d01bc788cd1a25ef21aac912062bf2ae0d8401cf4bae",
       "api-reference/endpoint/dynamic-routes-delete.mdx": "3f7768a3849166e656e862c6e308989c839200854a089bef0a5b4d7f048a87c8",
       "api-reference/endpoint/dynamic-routes-deploy.mdx": "28ca291e2203298ff4bfa85c0522a392e50a7ba99d4c29ccf4e0f9ac25249355",
@@ -3764,7 +3764,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "pt-BR": {
-      "@openapi": "05afc9866bbe67ae773060a81df44414452ce75ae2c3fef8df910d0aef752702",
+      "@openapi": "0539caf46f94c9a430112792a57402544db1f1add18ff5ef95bcbb94707a0d65",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "f475e54b012d1791c7ba29b4b57cc8a7a1be1d14f070f47ccc2507c0053be561",
       "api-reference/endpoint/analytics-export.mdx": "603e9f3570f0f2d18807cbbfe028655213b36de0e180396e08698eaeb4cc36e9",
@@ -3801,7 +3801,7 @@
       "api-reference/endpoint/data-contribution-classifier-update.mdx": "234f1da70febba59903a2edb974f782c45f83638560be035d77b2a5d804761d3",
       "api-reference/endpoint/data-contribution-consent-update.mdx": "7366a3cfe9941c45932116925361097ece629c40baaa3d36ac7040996ef0e8aa",
       "api-reference/endpoint/data-contribution-get.mdx": "b5c4438544ef16f58db975ee7a141ad47a706b5b05da5285ad23f9e0dce035e6",
-      "api-reference/endpoint/decisions.mdx": "5858b6cb404e6e1a8e9053f5a9123ccc652375a85b570fec7be9908fed07f069",
+      "api-reference/endpoint/decisions.mdx": "a45d02c557170e2d2bb1529476f7288308dcc651e29ac888ab9fdb888f0adfa3",
       "api-reference/endpoint/dynamic-routes-create.mdx": "9d93d3132e4c01d7d926d01bc788cd1a25ef21aac912062bf2ae0d8401cf4bae",
       "api-reference/endpoint/dynamic-routes-delete.mdx": "3f7768a3849166e656e862c6e308989c839200854a089bef0a5b4d7f048a87c8",
       "api-reference/endpoint/dynamic-routes-deploy.mdx": "28ca291e2203298ff4bfa85c0522a392e50a7ba99d4c29ccf4e0f9ac25249355",
@@ -4391,7 +4391,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "zh-Hans": {
-      "@openapi": "05afc9866bbe67ae773060a81df44414452ce75ae2c3fef8df910d0aef752702",
+      "@openapi": "0539caf46f94c9a430112792a57402544db1f1add18ff5ef95bcbb94707a0d65",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "f475e54b012d1791c7ba29b4b57cc8a7a1be1d14f070f47ccc2507c0053be561",
       "api-reference/endpoint/analytics-export.mdx": "603e9f3570f0f2d18807cbbfe028655213b36de0e180396e08698eaeb4cc36e9",
@@ -4428,7 +4428,7 @@
       "api-reference/endpoint/data-contribution-classifier-update.mdx": "234f1da70febba59903a2edb974f782c45f83638560be035d77b2a5d804761d3",
       "api-reference/endpoint/data-contribution-consent-update.mdx": "7366a3cfe9941c45932116925361097ece629c40baaa3d36ac7040996ef0e8aa",
       "api-reference/endpoint/data-contribution-get.mdx": "b5c4438544ef16f58db975ee7a141ad47a706b5b05da5285ad23f9e0dce035e6",
-      "api-reference/endpoint/decisions.mdx": "5858b6cb404e6e1a8e9053f5a9123ccc652375a85b570fec7be9908fed07f069",
+      "api-reference/endpoint/decisions.mdx": "a45d02c557170e2d2bb1529476f7288308dcc651e29ac888ab9fdb888f0adfa3",
       "api-reference/endpoint/dynamic-routes-create.mdx": "9d93d3132e4c01d7d926d01bc788cd1a25ef21aac912062bf2ae0d8401cf4bae",
       "api-reference/endpoint/dynamic-routes-delete.mdx": "3f7768a3849166e656e862c6e308989c839200854a089bef0a5b4d7f048a87c8",
       "api-reference/endpoint/dynamic-routes-deploy.mdx": "28ca291e2203298ff4bfa85c0522a392e50a7ba99d4c29ccf4e0f9ac25249355",

@@ -1738,6 +1738,19 @@ public sealed class DebugOptions
 
 }
 
+public sealed class DecisionAudioSource
+{
+	[JsonPropertyName("data")]
+	public string? Data { get; set; }
+
+	[JsonPropertyName("format")]
+	public string? Format { get; set; }
+
+	[JsonPropertyName("url")]
+	public string? Url { get; set; }
+
+}
+
 public sealed class DecisionChoiceAnswer
 {
 	[JsonPropertyName("choice")]
@@ -1784,6 +1797,16 @@ public sealed class DecisionImage
 
 }
 
+public sealed class DecisionInputAudio
+{
+	[JsonPropertyName("input_audio")]
+	public Dictionary<string, object> InputAudio { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class DecisionInputImage
 {
 	[JsonPropertyName("detail")]
@@ -1817,6 +1840,16 @@ public sealed class DecisionInputText
 
 	[JsonPropertyName("type")]
 	public string Type { get; set; }
+
+}
+
+public sealed class DecisionInputVideo
+{
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("video_url")]
+	public object VideoUrl { get; set; }
 
 }
 

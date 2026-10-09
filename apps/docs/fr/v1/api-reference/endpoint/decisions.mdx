@@ -96,7 +96,7 @@ Pour la sémantique des questions du fournisseur, consultez la [référence API]
 
 ### Décisions sur les images avec Clef
 
-`cloudflare/clef` et `cloudflare/clef-flash` prennent en charge les trois types de questions et les images intégrées via Cloudflare Workers AI. Chacun dispose d’une fenêtre de contexte de 65 536 jetons. L’entrée coûte 0,24 USD par million de jetons pour Clef et 0,09 USD pour Clef Flash.
+`cloudflare/clef` et `cloudflare/clef-flash` prennent en charge les trois types de questions et les images intégrées via Cloudflare Workers AI. Clef dispose de 65 536 tokens de contexte, Clef Flash de 24 576. L’entrée coûte 0,24 $ par million de tokens pour Clef et 0,038 $ pour Clef Flash.
 
 ```json
 {
@@ -112,3 +112,30 @@ Pour la sémantique des questions du fournisseur, consultez la [référence API]
 Vous pouvez également fournir une chaîne `data:image/png;base64,...` dans `images`. Clef accepte jusqu’à quatre images PNG, JPEG ou WebP, chacune de 4 MiB et 16 mégapixels au maximum, avec au plus 8 MiB de données d’image décodées au total et un corps de requête de 13 MiB. Les URL distantes ne sont pas prises en charge. Cloudflare valide les formats et dimensions des images. Les modèles ne prenant pas en charge les images rejettent les requêtes contenant des images.
 
 Clef accepte au maximum 64 questions, avec des identifiants de 100 lettres, chiffres, traits de soulignement, points ou tirets au maximum. Les questions de choix nécessitent 2 à 255 options ; les questions de score, 2 à 10 niveaux. Consultez la [documentation de Clef](https://developers.cloudflare.com/workers-ai/models/clef/) de Cloudflare.
+
+### Audio et vidéo avec Clef Omni
+
+`cloudflare/clef-omni` accepte texte, images, audio et vidéo avec les mêmes questions ordonnées et réponses. Audio et vidéo sont des extensions Phaseo du contrat d’entrée OpenAI ; les routes de décisions OpenAI acceptent uniquement texte et images. Vérifiez la disponibilité du modèle avant utilisation.
+
+Cet exemple nécessite une route Omni disponible et une clé API Phaseo. Remplacez les données audio fictives et l’URL vidéo par vos médias avant l’envoi.
+
+```json
+{
+  "model": "cloudflare/clef-omni",
+  "input": [{
+    "role": "user",
+    "content": [
+      { "type": "input_text", "text": "Review the recording and clip." },
+      { "type": "input_audio", "input_audio": { "data": "<base64 WAV bytes>", "format": "wav" } },
+      { "type": "input_video", "video_url": { "url": "https://media.example.com/clip.mp4" } }
+    ]
+  }],
+  "questions": [{ "type": "predicate", "name": "safe", "instructions": "Is the equipment operating safely?" }]
+}
+```
+
+Utilisez `input_audio.data` avec `format: "wav"` ou `"mp3"`, ou `input_audio.url` avec une URL HTTPS publique ou de données audio. `input_video.video_url` accepte une chaîne ou `{ "url": "..." }` contenant une URL HTTPS publique ou de données MP4/WebM. Le serveur doit renvoyer le Content-Type correspondant. Phaseo télécharge les médias avec des limites de taille et des contrôles d’adresses privées et de redirections, puis les intègre pour Cloudflare sans transmettre les identifiants du fournisseur au serveur média.
+
+Omni accepte quatre clips audio maximum (8 MiB et 300 secondes chacun) et deux vidéos (16 MiB et 60 secondes chacune), avec 16 MiB décodifiés au total pour audio et vidéo. Les limites par image et pour les données d’images cumulées restent applicables ; la limite du corps Omni remplace les 13 MiB de Clef/Flash. Phaseo limite le corps complet à 37 MiB. Cloudflare valide encodage, dimensions et durée, et échantillonne la vidéo à deux images par seconde. La bande sonore est utilisée si toutes les vidéos en ont une.
+
+Le contexte documenté est de 64 000 tokens, à 0,15 $ par million de tokens d’entrée cumulés. Les tokens médias comptent pour le contexte et la facturation ; la sortie est gratuite. Phaseo utilise la consommation d’entrée signalée par Cloudflare sans frais audio ou vidéo supplémentaires. [Cloudflare](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).
