@@ -158,6 +158,7 @@ type L1StateEntry = {
 
 const l1State = new Map<string, L1StateEntry>();
 const l1StateInflight = new Map<string, Promise<Record<string, string>>>();
+const l1StateGenerations = new Map<string, number>();
 const pendingBackgroundSaves = new Map<string, { map: Record<string, string>; ttlSeconds: number }>();
 const activeBackgroundSave = new Set<string>();
 const keyUpdateQueues = new Map<string, Array<() => void>>();
@@ -392,27 +393,33 @@ async function loadMapByKey(key: string): Promise<Record<string, string>> {
         if (shared.settled) return { ...shared.value };
     }
 
+    // A read superseded by a replacement (see above) must not overwrite the newer state.
+    const generation = (l1StateGenerations.get(key) ?? 0) + 1;
+    l1StateGenerations.set(key, generation);
+    const remember = (map: Record<string, string>) => {
+        if (l1StateGenerations.get(key) === generation) l1State.set(key, { map: { ...map }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+    };
     const loader = (async () => {
         try {
             const raw = await getCache().get(key, "text");
             if (!raw) {
                 const empty: Record<string, string> = {};
-                l1State.set(key, { map: { ...empty }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+                remember(empty);
                 return empty;
             }
             try {
                 const normalized = normalizeMap(JSON.parse(raw));
-                l1State.set(key, { map: { ...normalized }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+                remember(normalized);
                 return normalized;
             } catch {
                 const empty: Record<string, string> = {};
-                l1State.set(key, { map: { ...empty }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+                remember(empty);
                 return empty;
             }
         } catch {
             // Fail open to in-memory defaults when KV is unavailable.
             const empty: Record<string, string> = {};
-            l1State.set(key, { map: { ...empty }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+            remember(empty);
             return empty;
         }
     })();
@@ -460,6 +467,7 @@ async function saveMap(
     mode: SaveMapMode = "sync"
 ) {
     const normalized = normalizeMap(map);
+    l1StateGenerations.set(key, (l1StateGenerations.get(key) ?? 0) + 1);
     l1State.set(key, { map: { ...normalized }, expiresAtMs: Date.now() + HEALTH_L1_TTL_MS });
     if (mode === "background") {
         pendingBackgroundSaves.set(key, { map: { ...normalized }, ttlSeconds });
@@ -874,6 +882,7 @@ export function resetHealthStateForTests(): void {
     healthStateEpoch += 1;
     l1State.clear();
     l1StateInflight.clear();
+    l1StateGenerations.clear();
     pendingBackgroundSaves.clear();
     activeBackgroundSave.clear();
     keyUpdateQueues.clear();

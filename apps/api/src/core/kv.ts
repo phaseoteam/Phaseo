@@ -156,7 +156,8 @@ export async function getKeyVersion(
             const raw = await getCache().get(key, "text");
             const parsed = raw ? Number(raw) : 0;
             const normalized = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
-            if (useL1Cache && readKeyVersionEpoch(key) === epochAtStart) {
+            // Skip the write when invalidated or superseded by a replacement read (see above).
+            if (useL1Cache && readKeyVersionEpoch(key) === epochAtStart && keyVersionInflight.get(key) === loader) {
                 writeKeyVersionL1(scope, value, normalized, l1TtlMs);
             }
             return normalized;

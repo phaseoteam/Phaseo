@@ -62,6 +62,10 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
     }
 
     const loader = (async (): Promise<PriceCard | null> => {
+        // A load superseded by a replacement (see above) must not overwrite the newer card.
+        const remember = (card: PriceCard | null, ttlMs: number) => {
+            if (pricingInflight.get(cacheKey) === loader) writePricingL1(cacheKey, card, ttlMs);
+        };
         const nowIso = new Date().toISOString();
         const supabase = getSupabaseAdmin();
         // Existing foreign keys let PostgREST fetch the complete pricing graph
@@ -88,13 +92,13 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
         const { data: skuRows, error: skuError } = await query;
         if (skuError) return null;
         if (!skuRows?.length) {
-            writePricingL1(cacheKey, null, PRICING_L1_NEGATIVE_TTL_MS);
+            remember(null, PRICING_L1_NEGATIVE_TTL_MS);
             return null;
         }
         const meterRows = skuRows.flatMap((row) => row.meters)
             .sort((left, right) => Number(left.meter_order) - Number(right.meter_order));
         if (!meterRows.length) {
-            writePricingL1(cacheKey, null, PRICING_L1_NEGATIVE_TTL_MS);
+            remember(null, PRICING_L1_NEGATIVE_TTL_MS);
             return null;
         }
         const skuById = new Map(skuRows.map((row) => [String(row.sku_id), row]));
@@ -171,7 +175,7 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
             version,
             rules,
         };
-        writePricingL1(cacheKey, card, resolvePricingL1TtlMs(card));
+        remember(card, resolvePricingL1TtlMs(card));
         return card;
     })();
 
