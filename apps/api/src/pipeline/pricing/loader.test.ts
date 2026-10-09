@@ -19,6 +19,21 @@ let rows: ReturnType<typeof sku>[];
 let respond: () => Promise<Response>;
 
 describe("joined price-card loader", () => {
+    it("isolates admin internal pricing from ordinary route lookups and cache entries", async () => {
+        const privateCard = await loadPriceCard("example", "example/internal", "text.generate", "preview", true);
+        expect(privateCard?.rules).toHaveLength(2);
+        const privateParams = requests[0].searchParams;
+        expect(privateParams.get("access_scope")).toBe("eq.internal");
+        expect(privateParams.get("phaseo_status")).toBe("in.(testing,enabled)");
+        expect(privateParams.has("routing_enabled")).toBe(false);
+        expect(privateParams.get("provider_model_slug")).toBe("eq.preview");
+        respond = async () => Response.json([]);
+        expect(await loadPriceCard("example", "example/internal", "text.generate", "preview")).toBeNull();
+        expect(requests).toHaveLength(2);
+        expect(requests[1].searchParams.get("routing_enabled")).toBe("eq.true");
+        expect(await loadPriceCard("example", "example/internal", "text.generate", "preview", true)).toBe(privateCard);
+        expect(requests).toHaveLength(2);
+    });
     beforeEach(() => {
         __resetPricingLoaderCachesForTests();
         vi.useFakeTimers();

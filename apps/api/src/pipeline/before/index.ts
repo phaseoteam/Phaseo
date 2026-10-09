@@ -680,6 +680,7 @@ export async function beforeRequest(
         };
     }
     const workspacePolicy = workspacePolicyLoad.value;
+    let pricingInternalOnly = testingMode.reason === "admin";
     let dynamicRouteEvaluation: DynamicRouteEvaluation | null = null;
     if (workspacePolicy.dynamicRoute) {
         dynamicRouteEvaluation = evaluateDynamicRoute({
@@ -732,6 +733,7 @@ export async function beforeRequest(
                 continue;
             }
             ({ context, providers, resolvedModel, candidateDiagnostics } = routedContext.value);
+            pricingInternalOnly = false;
             dynamicRouteEvaluation = {
                 ...dynamicRouteEvaluation,
                 action: { ...dynamicRouteEvaluation.action, model: resolvedModel || routedModel },
@@ -1436,6 +1438,7 @@ export async function beforeRequest(
         guardrailEnforcement: sensitiveInfoResult.enforcement,
         // Billing eligibility is server-owned, never a request body flag.
         billableInternalTesting: testingMode.reason === "admin",
+        pricingInternalOnly,
     };
 
     // console.log(`[DEBUG] beforeRequest: final ctx.model: ${ctx.model}`);

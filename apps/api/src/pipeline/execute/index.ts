@@ -740,7 +740,7 @@ async function attemptProviderWithIR(
 	let pricingCard = candidate.pricingCard ?? null;
 	if (!pricingCard) {
 		pricingCard = await timing.timer.span(`${attemptPrefix}_load_pricecard`, () =>
-			loadPriceCard(candidate.providerId, candidateApiModelId ?? baseModel, ctx.capability, providerModelSlug),
+			loadPriceCard(candidate.providerId, candidateApiModelId ?? baseModel, ctx.capability, providerModelSlug, ctx.billableInternalTesting === true),
 		);
 		if (pricingCard) candidate.pricingCard = pricingCard;
 	}
