@@ -73,6 +73,22 @@ describe("tieredRead", () => {
 		expect(loader).toHaveBeenCalledTimes(1);
 	});
 
+	it("loads itself when another request's load never settles", async () => {
+		vi.useFakeTimers();
+		// Another request's load whose I/O was cancelled with that request.
+		const abandoned = { key: "k:abandoned", loader: () => new Promise<string>(() => {}), l1FreshMs: 1000, l2: false, l3: false } as const;
+		void tieredRead(abandoned);
+		const own = vi.fn(async () => "value");
+		const read = tieredRead({ ...abandoned, loader: own });
+		await vi.advanceTimersByTimeAsync(1_500);
+
+		expect(await read).toBe("value");
+		expect(own).toHaveBeenCalledTimes(1);
+		// The fresh load replaced the abandoned one for later misses.
+		expect(await tieredRead({ ...abandoned, loader: own })).toBe("value");
+		expect(own).toHaveBeenCalledTimes(1);
+	});
+
 	it("prefers KV over the loader and does not block on a stale KV entry", async () => {
 		runtime.store.set("k:kv", envelope("from-kv", Date.now() - 600_000));
 		let finishLoad!: (value: string) => void;

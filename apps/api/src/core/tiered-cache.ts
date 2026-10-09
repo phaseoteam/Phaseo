@@ -11,6 +11,7 @@
 // - Secrets, credentials and wallet balances must use `l2: false, l3: false`.
 
 import { dispatchBackground, getBindingsIfConfigured, getCache } from "@/runtime/env";
+import { awaitShared } from "@core/shared-wait";
 
 type Envelope<T> = {
 	/** Cached value; `null` is a negative-cache entry. */
@@ -61,11 +62,16 @@ export type TieredCacheOptions<T> = {
 const L1_MAX_ENTRIES = 10_000;
 const L1_MAX_BYTES = 32 * 1024 * 1024;
 const L2_KEY_ORIGIN = "https://gateway-cache.internal/v1/";
+// A concurrent miss joins another request's load for at most this long, then loads itself.
+const SHARED_LOAD_WAIT_MS = 1_500;
 
 const l1 = new Map<string, L1Entry>();
 let l1Bytes = 0;
 const inflight = new Map<string, Promise<unknown>>();
-const refreshing = new Set<string>();
+// Refresh key -> start time. A refresh whose request was cancelled never settles, so
+// entries older than the waitUntil budget no longer block new refreshes.
+const refreshing = new Map<string, number>();
+const STALE_REFRESH_MS = 30_000;
 const epochs = new Map<string, number>();
 
 export function __resetTieredCacheForTests(): void {
@@ -238,8 +244,10 @@ async function readFrom<T>(options: TieredCacheOptions<T>, level: Level): Promis
 
 function scheduleRefresh<T>(options: TieredCacheOptions<T>, level: Level): void {
 	const refreshKey = `${level}:${options.key}`;
-	if (refreshing.has(refreshKey)) return;
-	refreshing.add(refreshKey);
+	const startedAt = refreshing.get(refreshKey);
+	if (startedAt !== undefined && Date.now() - startedAt < STALE_REFRESH_MS) return;
+	const marker = Date.now();
+	refreshing.set(refreshKey, marker);
 	dispatchBackground(
 		readFrom(options, level)
 			.catch((error) => {
@@ -249,7 +257,7 @@ function scheduleRefresh<T>(options: TieredCacheOptions<T>, level: Level): void 
 					error: error instanceof Error ? error.message : String(error),
 				});
 			})
-			.finally(() => refreshing.delete(refreshKey)),
+			.finally(() => { if (refreshing.get(refreshKey) === marker) refreshing.delete(refreshKey); }),
 	);
 }
 
@@ -276,7 +284,11 @@ export async function tieredReadDetailed<T>(options: TieredCacheOptions<T>): Pro
 	}
 
 	const pending = inflight.get(options.key) as Promise<TieredResult<T>> | undefined;
-	if (pending) return pending;
+	if (pending) {
+		// The load may belong to another request; never wait on it unboundedly.
+		const shared = await awaitShared(pending, SHARED_LOAD_WAIT_MS);
+		if (shared.settled) return shared.value;
+	}
 	const load = readFrom(options, 2).finally(() => {
 		if (inflight.get(options.key) === load) inflight.delete(options.key);
 	});
