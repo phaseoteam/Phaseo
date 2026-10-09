@@ -5,7 +5,12 @@
 //      reports the scope exhausted, this isolate remembers the denial until the
 //      window frees up and rejects later requests locally with the 429 contract.
 //      A few requests already in flight at the boundary may exceed the limit.
+//      The daily free-model allowance is stricter: an isolate that has no recent
+//      headroom for a scope (a cold isolate, or one near the limit) awaits the
+//      object before admitting, so an exhausted scope cannot get one free request
+//      through on every isolate it reaches.
 import { dispatchBackground, ensureRuntimeForBackground, getBindingsIfConfigured } from "@/runtime/env";
+import { awaitShared } from "@core/shared-wait";
 import type { GatewayBindings } from "@/runtime/env.types";
 import { err } from "@pipeline/before/http";
 import type { PriceCard } from "@pipeline/pricing/types";
@@ -56,6 +61,16 @@ type Denial = { until: number; limit: number };
 const denials = new Map<string, Denial>();
 /** `${kind}|${scopeKey}|${admissionId}` -> expiry of an admission already counted here. */
 const admissions = new Map<string, number>();
+const MAX_HEADROOM = 10_000;
+/** Free-day headroom reported by the counter is trusted locally for this long. */
+const FREE_DAY_HEADROOM_MS = 60_000;
+/** Below this many remaining free requests every admission asks the counter. */
+const FREE_DAY_HEADROOM_MARGIN = 20;
+/** An unanswered counter call admits (fails open) after this long. */
+const FREE_DAY_ADMIT_TIMEOUT_MS = 2_000;
+type Headroom = { remaining: number; until: number };
+/** scopeKey -> free-day slots this isolate may still admit without asking the counter. */
+const freeDayHeadroom = new Map<string, Headroom>();
 let missingBindingReported = false;
 
 function remember<V>(map: Map<string, V>, key: string, value: V, max: number): void {
@@ -75,11 +90,23 @@ function activeDenial(key: string, now: number): Denial | null {
 export function __resetCustomerQuotaStateForTests(): void {
 	denials.clear();
 	admissions.clear();
+	freeDayHeadroom.clear();
 	missingBindingReported = false;
 }
 
 export function __customerQuotaStateSizeForTests(): { denials: number; admissions: number } {
 	return { denials: denials.size, admissions: admissions.size };
+}
+
+/** Records what the counter reported for a scope: a denial to replay locally, or free-day headroom. */
+function noteAdmission(kind: CustomerQuotaKind, scopeKey: string, admission: CustomerAdmission): void {
+	if (!admission.allowed || (admission.remaining <= 0 && admission.retryAfterSeconds > 0)) {
+		const until = Date.now() + Math.max(1, admission.retryAfterSeconds) * 1000;
+		remember(denials, `${kind}|${scopeKey}`, { until, limit: admission.limit }, MAX_DENIALS);
+	}
+	if (kind === "free-day") {
+		remember(freeDayHeadroom, scopeKey, { remaining: admission.remaining, until: Date.now() + FREE_DAY_HEADROOM_MS }, MAX_HEADROOM);
+	}
 }
 
 function quotaExceeded(args: { requestId: string; kind: CustomerQuotaKind }, limit: number, retryAfterSeconds: number): Response {
@@ -116,11 +143,7 @@ function countInBackground(bindings: GatewayBindings, scopeKey: string, args: Cu
 		try {
 			const limits = await customerLimitsFor(bindings, args.workspaceId);
 			const stub = namespace.getByName(scopeKey) as unknown as CustomerStub;
-			const admission = await stub.admit(scopeKey, args.kind, args.admissionId, limits);
-			if (!admission.allowed || (admission.remaining <= 0 && admission.retryAfterSeconds > 0)) {
-				const until = Date.now() + Math.max(1, admission.retryAfterSeconds) * 1000;
-				remember(denials, `${args.kind}|${scopeKey}`, { until, limit: admission.limit }, MAX_DENIALS);
-			}
+			noteAdmission(args.kind, scopeKey, await stub.admit(scopeKey, args.kind, args.admissionId, limits));
 		} catch (error) {
 			// Fail open: the request was already admitted.
 			console.warn("customer_rate_limit_count_failed", {
@@ -133,45 +156,93 @@ function countInBackground(bindings: GatewayBindings, scopeKey: string, args: Cu
 	})());
 }
 
-/**
- * Admits immediately unless this isolate already knows the scope is over its
- * limit, in which case it returns the 429 response. Never waits on the counter.
- */
-export function guardCustomerQuota(args: CustomerScope & {
+type QuotaArgs = CustomerScope & {
 	requestId: string;
 	admissionId: string;
 	kind: CustomerQuotaKind;
 	internal?: boolean;
-}): Response | null {
-	if (args.internal) return null;
+};
+
+type QuotaCheck =
+	| { decided: Response | null }
+	| { bindings: GatewayBindings; scopeKey: string; admissionKey: string; now: number };
+
+/** The local decisions shared by every quota kind; never waits on the counter. */
+function checkLocally(args: QuotaArgs): QuotaCheck {
+	if (args.internal) return { decided: null };
 	const bindings = getBindingsIfConfigured();
 	// Unit fixtures and local tools may run without Worker bindings.
-	if (!bindings || bindings.CUSTOMER_RATE_LIMITS_ENABLED !== "true") return null;
+	if (!bindings || bindings.CUSTOMER_RATE_LIMITS_ENABLED !== "true") return { decided: null };
 	const now = Date.now();
 	const scopeKey = customerScopeKey(args);
 	const admissionKey = `${args.kind}|${scopeKey}|${args.admissionId}`;
 	// A fallback attempt of a request that was already admitted and counted.
 	// (Minute admissions happen once per HTTP request; see customer-quota.ts.)
-	if ((admissions.get(admissionKey) ?? 0) > now) return null;
+	if ((admissions.get(admissionKey) ?? 0) > now) return { decided: null };
 	const denial = activeDenial(`${args.kind}|${scopeKey}`, now);
-	if (denial) return quotaExceeded(args, denial.limit, Math.max(1, Math.ceil((denial.until - now) / 1000)));
+	if (denial) return { decided: quotaExceeded(args, denial.limit, Math.max(1, Math.ceil((denial.until - now) / 1000))) };
 	if (!bindings.CUSTOMER_RATE_LIMITS) {
 		if (!missingBindingReported) console.error("customer_rate_limit_binding_missing");
 		missingBindingReported = true;
-		return null;
+		return { decided: null };
 	}
-	if (args.kind === "free-day") remember(admissions, admissionKey, now + ADMISSION_MEMORY_MS, MAX_ADMISSIONS);
-	countInBackground(bindings, scopeKey, args);
+	return { bindings, scopeKey, admissionKey, now };
+}
+
+/**
+ * Admits immediately unless this isolate already knows the scope is over its
+ * limit, in which case it returns the 429 response. Never waits on the counter.
+ */
+export function guardCustomerQuota(args: QuotaArgs): Response | null {
+	const check = checkLocally(args);
+	if (!("bindings" in check)) return check.decided;
+	if (args.kind === "free-day") remember(admissions, check.admissionKey, check.now + ADMISSION_MEMORY_MS, MAX_ADMISSIONS);
+	countInBackground(check.bindings, check.scopeKey, args);
 	return null;
 }
 
-export function guardFreeRouteQuota(args: CustomerScope & {
+/**
+ * Admits a free-model request. Uses local headroom when the counter recently
+ * reported plenty left; otherwise awaits the counter so an exhausted scope is
+ * rejected on its first request to each isolate. Fails open if the counter is
+ * unavailable.
+ */
+async function guardFreeDayQuota(args: QuotaArgs): Promise<Response | null> {
+	const check = checkLocally(args);
+	if (!("bindings" in check)) return check.decided;
+	const { bindings, scopeKey, admissionKey, now } = check;
+	const known = freeDayHeadroom.get(scopeKey);
+	if (known && known.until > now && known.remaining > FREE_DAY_HEADROOM_MARGIN) {
+		known.remaining -= 1;
+		remember(admissions, admissionKey, now + ADMISSION_MEMORY_MS, MAX_ADMISSIONS);
+		countInBackground(bindings, scopeKey, args);
+		return null;
+	}
+	const counted = await awaitShared((async () => {
+		const limits = await customerLimitsFor(bindings, args.workspaceId);
+		const stub = bindings.CUSTOMER_RATE_LIMITS!.getByName(scopeKey) as unknown as CustomerStub;
+		return stub.admit(scopeKey, args.kind, args.admissionId, limits);
+	})(), FREE_DAY_ADMIT_TIMEOUT_MS);
+	if (!counted.settled) {
+		console.warn("customer_rate_limit_count_failed", { kind: args.kind, error: "free_day_admit_unavailable" });
+		remember(admissions, admissionKey, Date.now() + ADMISSION_MEMORY_MS, MAX_ADMISSIONS);
+		return null;
+	}
+	noteAdmission(args.kind, scopeKey, counted.value);
+	if (!counted.value.allowed) {
+		return quotaExceeded(args, counted.value.limit, Math.max(1, counted.value.retryAfterSeconds));
+	}
+	remember(admissions, admissionKey, Date.now() + ADMISSION_MEMORY_MS, MAX_ADMISSIONS);
+	return null;
+}
+
+export async function guardFreeRouteQuota(args: CustomerScope & {
 	requestId: string;
 	admissionId: string;
 	pricingCard: PriceCard | null | undefined;
 	internal?: boolean;
 	testingMode?: boolean;
-}): Response | null {
+}): Promise<Response | null> {
 	if (args.testingMode || !isFreePriceCard(args.pricingCard)) return null;
-	return guardCustomerQuota({ ...args, kind: "free-day" });
+	return guardFreeDayQuota({ ...args, kind: "free-day" });
 }

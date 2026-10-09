@@ -132,33 +132,58 @@ describe("customer quota integration", () => {
 	});
 
 	it("applies RPD to actual free pricing, including models without a :free suffix", async () => {
-		expect(guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") })).toBeNull();
-		await settle();
+		expect(await guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") })).toBeNull();
 		expect(mocks.admit).toHaveBeenCalledWith(customerScopeKey(args), "free-day", "server-admission", expect.any(Object));
+	});
+
+	it("rejects an exhausted scope on its first request to a cold isolate", async () => {
+		mocks.admit.mockResolvedValue({ allowed: false, limit: 1500, remaining: 0, retryAfterSeconds: 3600 });
+		expect((await guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") }))?.status).toBe(429);
+		// Later requests are rejected locally without asking the counter again.
+		expect((await guardFreeRouteQuota({ ...args, admissionId: "next", pricingCard: card("free", "0") }))?.status).toBe(429);
+		expect(mocks.admit).toHaveBeenCalledTimes(1);
+	});
+
+	it("admits from reported headroom without waiting, and asks the counter again near the limit", async () => {
+		mocks.admit.mockResolvedValueOnce({ allowed: true, limit: 1500, remaining: 21, retryAfterSeconds: 0 });
+		expect(await guardFreeRouteQuota({ ...args, admissionId: "a", pricingCard: card("free", "0") })).toBeNull();
+		// Plenty left: admitted immediately and counted in the background.
+		mocks.admit.mockReturnValue(new Promise(() => {}));
+		expect(await guardFreeRouteQuota({ ...args, admissionId: "b", pricingCard: card("free", "0") })).toBeNull();
+		expect(mocks.background).toHaveLength(1);
+		// At the margin the next request awaits the counter, which here reports the scope exhausted.
+		mocks.admit.mockResolvedValueOnce({ allowed: false, limit: 1500, remaining: 0, retryAfterSeconds: 60 });
+		expect((await guardFreeRouteQuota({ ...args, admissionId: "c", pricingCard: card("free", "0") }))?.status).toBe(429);
+	});
+
+	it("fails open when the counter does not answer in time", async () => {
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		mocks.admit.mockReturnValue(new Promise(() => {}));
+		const admitted = guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") });
+		await vi.advanceTimersByTimeAsync(2_000);
+		expect(await admitted).toBeNull();
 	});
 
 	it("counts one free admission per request across fallback attempts", async () => {
 		mocks.admit.mockResolvedValue({ allowed: true, limit: 1500, remaining: 0, retryAfterSeconds: 3600 });
-		expect(guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") })).toBeNull();
-		await settle();
+		expect(await guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") })).toBeNull();
 		// The same request's next attempt is already admitted; other requests are rejected.
-		expect(guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") })).toBeNull();
-		expect(guardFreeRouteQuota({ ...args, admissionId: "other-request", pricingCard: card("free", "0") })?.status).toBe(429);
+		expect(await guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") })).toBeNull();
+		expect((await guardFreeRouteQuota({ ...args, admissionId: "other-request", pricingCard: card("free", "0") }))?.status).toBe(429);
 		expect(mocks.admit).toHaveBeenCalledTimes(1);
 	});
 
-	it("does not apply RPD to paid, missing, or zero-price standard pricing", () => {
+	it("does not apply RPD to paid, missing, or zero-price standard pricing", async () => {
 		for (const pricingCard of [card("standard", "0.01"), card("standard", "0"), null]) {
-			expect(guardFreeRouteQuota({ ...args, pricingCard })).toBeNull();
+			expect(await guardFreeRouteQuota({ ...args, pricingCard })).toBeNull();
 		}
+		expect(mocks.admit).not.toHaveBeenCalled();
 		expect(mocks.background).toHaveLength(0);
 	});
 
 	it.each([1500, 2500])("explains the effective %i free-model limit and recovery options", async (limit) => {
 		mocks.admit.mockResolvedValue({ allowed: false, limit, remaining: 0, retryAfterSeconds: 3600 });
-		guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") });
-		await settle();
-		const response = guardFreeRouteQuota({ ...args, admissionId: "next", pricingCard: card("free", "0") });
+		const response = await guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") });
 		expect(response?.status).toBe(429);
 		expect(response?.headers.get("Retry-After")).toBe("3600");
 		expect(await response?.json()).toMatchObject({
@@ -169,7 +194,7 @@ describe("customer quota integration", () => {
 
 	it("keeps minute and free-model denials independent", async () => {
 		mocks.admit.mockResolvedValue({ allowed: false, limit: 1500, remaining: 0, retryAfterSeconds: 3600 });
-		guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") });
+		await guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") });
 		await settle();
 		expect(minute()).toBeNull();
 	});
