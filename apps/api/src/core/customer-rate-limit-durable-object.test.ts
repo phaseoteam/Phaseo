@@ -40,13 +40,13 @@ beforeEach(() => {
 afterEach(() => { db.close(); vi.useRealTimers(); });
 
 describe("customer quota coordinator", () => {
-	it("admits exactly the default limit concurrently without storage or KV access", async () => {
+	it("admits exactly the default limit concurrently with one checkpoint write and no KV access", async () => {
 		const limiter = object();
 		sqlCalls = [];
 		const results = await Promise.all(Array.from({ length: 100 }, (_, index) => limiter.admit(key, "minute", String(index))));
 		expect(results.filter(result => result.allowed)).toHaveLength(25);
 		expect(results[25]).toEqual({ allowed: false, limit: 25, remaining: 0, retryAfterSeconds: 60 });
-		expect(sqlCalls).toEqual([]);
+		expect(sqlCalls).toEqual(["INSERT OR REPLACE INTO minute_checkpoint (id, entries) VALUES (1, ?)"]);
 	});
 
 	it("uses a rolling minute across the wall-clock minute boundary", async () => {
@@ -78,13 +78,28 @@ describe("customer quota coordinator", () => {
 		expect(await limiter.admit(key, "free-day", "extra")).toMatchObject({ allowed: true, remaining: 1499 });
 	});
 
-	it("retains daily free counters across restarts but not the in-memory minute log", async () => {
+	it("retains daily free counters exactly across restarts", async () => {
 		const first = object();
-		for (let index = 0; index < 25; index++) await first.admit(key, "minute", String(index));
 		for (let index = 0; index < 3; index++) await first.admit(key, "free-day", String(index), { freeRequestsPerDay: 3 });
 		const second = object();
 		expect(await second.admit(key, "free-day", "extra", { freeRequestsPerDay: 3 })).toMatchObject({ allowed: false });
-		expect(await second.admit(key, "minute", "extra")).toMatchObject({ allowed: true });
+	});
+
+	it("restores the checkpointed minute window after a restart, forgetting at most five seconds", async () => {
+		const limits = { requestsPerMinute: 3 };
+		const first = object();
+		await first.admit(key, "minute", "a", limits);
+		vi.advanceTimersByTime(1_000);
+		await first.admit(key, "minute", "b", limits);
+		// Restart before the next checkpoint: "a" survives, "b" is forgotten.
+		const second = object();
+		expect(await second.admit(key, "minute", "a", limits)).toMatchObject({ allowed: true, remaining: 2 });
+		expect(await second.admit(key, "minute", "b", limits)).toMatchObject({ allowed: true, remaining: 1 });
+		expect(await second.admit(key, "minute", "c", limits)).toMatchObject({ allowed: true, remaining: 0 });
+		expect(await second.admit(key, "minute", "d", limits)).toMatchObject({ allowed: false });
+		vi.advanceTimersByTime(60_000);
+		const third = object();
+		expect(await third.admit(key, "minute", "f", limits)).toMatchObject({ allowed: true, remaining: 2 });
 	});
 
 	it("drops the legacy persisted minute log", async () => {

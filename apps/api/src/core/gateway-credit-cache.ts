@@ -52,7 +52,13 @@ export async function writeBackGatewayCreditCache(workspaceId: string, available
 		const cache = getCache();
 		const raw = await cache.get(key, "text");
 		const current = raw ? JSON.parse(raw) as Record<string, any> : null;
-		if (!current || current.workspaceId !== workspaceId || !current.credit) {
+		// KV has no compare-and-set, so charges finishing out of order across
+		// isolates could otherwise put an older, higher balance over a newer one.
+		// A charge only ever lowers the balance and top-ups go through
+		// invalidation, so a write-back never raises the cached value.
+		const cachedNanos = Number(current?.credit?.balanceNanos);
+		if (!current || current.workspaceId !== workspaceId || !current.credit ||
+			!Number.isFinite(cachedNanos) || availableNanos > cachedNanos) {
 			await invalidateGatewayCreditCache(workspaceId);
 			return "invalidated";
 		}

@@ -7,14 +7,16 @@ import {
 
 const MINUTE_MS = 60_000;
 const DAY_MS = 86_400_000;
+// A restart forgets at most this much of the minute window.
+const MINUTE_CHECKPOINT_INTERVAL_MS = 5_000;
 
 /**
  * Exact per-scope admission counter.
  *
- * The rolling minute log is held in memory only: an object is evicted only
- * after idling for longer than the window it would have to remember, so
- * persisting it would buy nothing but billed row writes. Daily free-model
- * admissions must survive restarts and stay in SQLite.
+ * The rolling minute log is held in memory and checkpointed as one SQLite row
+ * at most every few seconds, so deploys and restarts cannot hand a scope a
+ * fresh allowance, at a bounded number of billed row writes rather than one
+ * per admission. Daily free-model admissions stay in SQLite exactly.
  *
  * Limits are supplied by the caller (see `resolveCustomerLimits`); this object
  * performs no KV or network reads.
@@ -23,6 +25,7 @@ export class CustomerRateLimitDurableObject extends DurableObject<GatewayBinding
 	private scope: string | null = null;
 	/** Admission ID -> start time, in arrival order. */
 	private readonly minute = new Map<string, number>();
+	private lastMinuteCheckpoint = 0;
 	private freeDay = -1;
 	private freeUsed = 0;
 
@@ -31,10 +34,34 @@ export class CustomerRateLimitDurableObject extends DurableObject<GatewayBinding
 		ctx.blockConcurrencyWhile(async () => {
 			const sql = ctx.storage.sql;
 			sql.exec("CREATE TABLE IF NOT EXISTS free_requests (admission_id TEXT PRIMARY KEY, day INTEGER NOT NULL)");
-			// Earlier versions persisted the minute log.
+			sql.exec("CREATE TABLE IF NOT EXISTS minute_checkpoint (id INTEGER PRIMARY KEY CHECK (id = 1), entries TEXT NOT NULL)");
+			// Earlier versions persisted one row per minute admission.
 			sql.exec("DROP TABLE IF EXISTS minute_requests");
+			this.restoreMinute(Date.now());
 			this.rollFreeDay(Math.floor(Date.now() / DAY_MS));
 		});
+	}
+
+	private restoreMinute(now: number): void {
+		const row = this.ctx.storage.sql.exec<{ entries: string }>("SELECT entries FROM minute_checkpoint WHERE id = 1").toArray()[0];
+		if (!row) return;
+		try {
+			const entries = JSON.parse(row.entries) as Array<[string, number]>;
+			for (const [id, startedAt] of entries) {
+				if (typeof id === "string" && Number.isFinite(startedAt) && startedAt > now - MINUTE_MS) this.minute.set(id, startedAt);
+			}
+		} catch {
+			console.warn("customer_rate_limit_checkpoint_unreadable");
+		}
+	}
+
+	private checkpointMinute(now: number): void {
+		if (now - this.lastMinuteCheckpoint < MINUTE_CHECKPOINT_INTERVAL_MS) return;
+		this.lastMinuteCheckpoint = now;
+		this.ctx.storage.sql.exec(
+			"INSERT OR REPLACE INTO minute_checkpoint (id, entries) VALUES (1, ?)",
+			JSON.stringify([...this.minute]),
+		);
 	}
 
 	private rollFreeDay(day: number): void {
@@ -82,6 +109,7 @@ export class CustomerRateLimitDurableObject extends DurableObject<GatewayBinding
 		}
 		if (used >= limit) return { allowed: false, limit, remaining: 0, retryAfterSeconds: this.minuteRetryAfter(now) };
 		this.minute.set(admissionId, now);
+		this.checkpointMinute(now);
 		const remaining = limit - used - 1;
 		return { allowed: true, limit, remaining, retryAfterSeconds: remaining ? 0 : this.minuteRetryAfter(now) };
 	}

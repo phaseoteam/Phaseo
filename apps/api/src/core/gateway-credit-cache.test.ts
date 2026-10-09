@@ -59,6 +59,13 @@ describe("writeBackGatewayCreditCache", () => {
 		expect(state.puts).toHaveLength(0);
 	});
 
+	it("never raises the cached balance, so out-of-order charges cannot overstate credit", async () => {
+		seedSnapshot(4_000_000_000);
+		expect(await writeBackGatewayCreditCache(ws, 6_000_000_000)).toBe("invalidated");
+		expect(state.store.has(key)).toBe(false);
+		expect(state.puts).toHaveLength(0);
+	});
+
 	it("throttles writes to one per key every two seconds and invalidates in between", async () => {
 		vi.useFakeTimers({ now: 1_000_000 });
 		seedSnapshot();
