@@ -1,6 +1,7 @@
 # Public statistics and rollup work reduction
 
-Draft implementation prepared on 9 October 2026. It has not been deployed.
+Implementation prepared on 9 October 2026. Deployment uses the generated forward
+migrations through the existing production release pipeline.
 
 ## Evidence and first change
 
@@ -49,6 +50,11 @@ Acknowledgment requires `processing` status, preserving re-enqueues during a run
 Any failure rolls back the rebuild and acknowledgments together. Former-grain
 repairs continue to use the same reserved slots and row locks.
 
+Synchronous range refreshes acquire the same lock before enqueueing. If it is
+busy they raise SQLSTATE `55P03`, with no queued changes, so lock contention
+cannot masquerade as successful completion. The healthy path drains its range
+under the lock as before.
+
 ## Local verification
 
 `supabase/tests/monitor-model-rows.test.mjs` compares all output fields against
@@ -70,7 +76,7 @@ $env:PGLITE_MODULE = '<file URL to @electric-sql/pglite/dist/index.js>'
 node supabase/tests/monitor-model-rows.test.mjs
 ```
 
-The regression is also registered in declarative-schema CI.
+The regressions are also registered in declarative-schema CI.
 
 `analytics-outbox-coalescing.test.mjs` compares every rollup field and meter with
 the prior processor. For 3,000 requests plus boundary cases, worker passes fell
@@ -79,8 +85,8 @@ the cap, different workspaces, readiness, public visibility, corrections during 
 rebuild, moved identities, empty-run idempotency and grants.
 
 Web API validation passed: forty-nine focused tests, lint/typecheck (four existing
-file-length warnings), SDK build and the production Worker dry run. No public API
-request or response shape changed.
+file-length warnings), SDK build, the production Worker dry run, and all 813 Web
+API tests. No public API request or response shape changed.
 
 ## Remaining deployment preparation
 
@@ -91,6 +97,14 @@ generated the two-function migration successfully in run 37993699629.
 identities and grants using `CREATE OR REPLACE`, and limits DDL lock acquisition
 to 500 ms and statement duration to fifteen seconds. The generated dependency
 manifest is retained. Full equivalence and replay run in the pull request checks.
+Run 37995224414 generated the range-refresh safeguard in
+`20261009214650_coordinate_analytics_range_refresh.sql`. Replay also runs an
+actual two-session PostgreSQL test proving that scheduled contention skips and
+synchronous contention fails with no enqueueing.
+
+A read-only production sample at 22:39 BST found 5,627 ready events covered by
+the summary identities selected for the first 250 events; all had a model ID.
+The coalescing cap still limits an individual run to 2,000 acknowledgments.
 
 Generate and review the forward migration using the repository's disposable
 runtime, retain the generated dependency manifest, and run `db:schema:check`
