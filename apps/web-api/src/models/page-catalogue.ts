@@ -369,9 +369,10 @@ async function catalogueRevision(env: Env): Promise<string | null> {
 	return revision && /^\d+$/.test(revision) ? revision : null;
 }
 
-async function sharedPageRows(env: Env, cache: Cache, region: string | null, serviceTier: string | null): Promise<Row[]> {
+async function sharedPageRows(env: Env, cache: Cache, region: string | null, serviceTier: string | null, organisationId: string | null): Promise<Row[]> {
 	const revision = await catalogueRevision(env);
-	if (!revision) return loadPageRows(env, region, serviceTier, null);
+	// Without a revision nothing is cached, so keep the narrow organisation query.
+	if (!revision) return loadPageRows(env, region, serviceTier, organisationId);
 	const key = `https://web-api.internal/models-page-rows/v1/${revision}/${encodeURIComponent(region ?? "")}/${encodeURIComponent(serviceTier ?? "")}`;
 	const inflight = sharedRowsInflight.get(key);
 	if (inflight) return inflight;
@@ -400,7 +401,7 @@ async function databasePageRows(env: Env, query: ModelsPageQuery = {}): Promise<
 	const serviceTier = query.serviceTier || null;
 	const cache = (globalThis as { caches?: { default?: Cache } }).caches?.default;
 	const data = cache
-		? await sharedPageRows(env, cache, region, serviceTier)
+		? await sharedPageRows(env, cache, region, serviceTier, query.organisationId || null)
 		: await loadPageRows(env, region, serviceTier, query.organisationId || null);
 	return query.organisationId
 		? data.filter((row: Row) => String(row.organisation_id ?? "") === query.organisationId)

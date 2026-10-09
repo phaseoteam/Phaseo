@@ -168,16 +168,18 @@ describe("shared models page rows", () => {
 			put: async (key: string, response: Response) => { store.set(key, await response.text()); },
 		} });
 		const payloadCalls: URL[] = [];
-		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+		const payloadBodies: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const url = new URL(String(input));
 			if (url.pathname.endsWith("/gateway_catalogue_revision")) return revision();
 			payloadCalls.push(url);
+			payloadBodies.push(String(init?.body ?? ""));
 			return new Response(JSON.stringify([
 				{ model_id: "lab-a/model", name: "A", organisation_id: "lab-a" },
 				{ model_id: "lab-b/model", name: "B", organisation_id: "lab-b" },
 			]));
 		}));
-		return { store, payloadCalls };
+		return { store, payloadCalls, payloadBodies };
 	}
 
 	it("builds the payload once per catalogue revision for every page and organisation", async () => {
@@ -199,11 +201,12 @@ describe("shared models page rows", () => {
 		expect(payloadCalls).toHaveLength(2);
 	});
 
-	it("loads directly without caching when the revision is unavailable", async () => {
-		const { store, payloadCalls } = stubCatalogue(() => Response.json({ message: "permission denied" }, { status: 403 }));
+	it("loads only the organisation without caching when the revision is unavailable", async () => {
+		const { store, payloadCalls, payloadBodies } = stubCatalogue(() => Response.json({ message: "permission denied" }, { status: 403 }));
 		await fetchModelsPageCatalogue(env, { organisationId: "lab-a", includeMetrics: false });
 		expect(store.size).toBe(0);
 		expect(payloadCalls[0].pathname).toMatch(/get_public_models_page_payload$/);
+		expect(JSON.parse(payloadBodies[0])).toMatchObject({ p_organisation_id: "lab-a" });
 	});
 });
 
