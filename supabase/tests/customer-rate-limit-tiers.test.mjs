@@ -32,7 +32,7 @@ try {
       return NEW;
     end $$;
   `);
-  await db.exec(await readFile(new URL('../migrations/20261009100000_customer_rate_limit_tiers.sql', import.meta.url), 'utf8'));
+  await db.exec(await readFile(new URL('../migrations/20261009000300_customer_rate_limit_tiers.sql', import.meta.url), 'utf8'));
 
   await db.exec(`
     insert into public.workspaces(id, created_at, billing_mode) values

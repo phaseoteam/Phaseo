@@ -20,7 +20,7 @@ try {
   const migration = await readFile(new URL('../migrations/20260916144808_gateway_credit_cache_headroom.sql', import.meta.url), 'utf8');
   await db.exec(migration); await db.exec(migration);
   // The write-back revision must keep every invalidation decision below unchanged.
-  const writeBack = await readFile(new URL('../migrations/20261009093000_gateway_charge_returns_available_balance.sql', import.meta.url), 'utf8');
+  const writeBack = await readFile(new URL('../migrations/20261009000200_gateway_charge_returns_available_balance.sql', import.meta.url), 'utf8');
   await db.exec(writeBack); await db.exec(writeBack);
   for (const role of ['anon', 'authenticated']) {
     await db.exec(`set role ${role}`);

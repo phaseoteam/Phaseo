@@ -30,7 +30,7 @@ try {
     'public/functions/gateway_workspace_budget_status.sql',
     'public/functions/gateway_fetch_request_context_without_workspace_budget.sql',
   ]) await db.exec(await schema(path));
-  const migration = await readFile(new URL('../migrations/20261009200000_gateway_spend_limit_seed.sql', import.meta.url), 'utf8');
+  const migration = await readFile(new URL('../migrations/20261009000400_gateway_spend_limit_seed.sql', import.meta.url), 'utf8');
   await db.exec(migration);
   await db.exec(migration);
   assert.equal(await schema('public/functions/gateway_spend_limit_seed.sql'),

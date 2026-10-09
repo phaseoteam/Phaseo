@@ -34,9 +34,10 @@ try {
     create or replace function public.gateway_catalogue_revision() returns text language sql stable set search_path to ''
       as $$ select revision::text from private.routing_catalogue_revision where singleton $$;
   `);
-  const migration = await readFile(new URL('../migrations/20261009090000_gateway_catalogue_snapshot_at.sql', import.meta.url), 'utf8');
+  const migration = await readFile(new URL('../migrations/20261009000100_gateway_catalogue_snapshot_at.sql', import.meta.url), 'utf8');
   await db.exec(migration);
   await db.exec(migration);
+  const priceChangeAt = at(600_000);
 
   await db.exec(`
     insert into public.v2_models(model_slug,status,hidden,input_modalities,output_modalities) values ('lab/model','active',false,array['text'],array['text']);
@@ -46,9 +47,9 @@ try {
     insert into public.v2_route_capabilities(provider_model_id,capability_id,status,params,created_at) values
       ('${route}','text.generate','active','{"temperature":true}',now());
     insert into public.v2_pricing_skus(sku_id,provider_model_id,operation,status,currency,metadata,effective_to,updated_at) values
-      ('${currentSku}','${route}','text.generate','active','USD','{}','${at(600_000)}',now()),
+      ('${currentSku}','${route}','text.generate','active','USD','{}','${priceChangeAt}',now()),
       ('${nextSku}','${route}','text.generate','active','USD','{}',null,now());
-    update public.v2_pricing_skus set effective_from='${at(600_000)}' where sku_id='${nextSku}';
+    update public.v2_pricing_skus set effective_from='${priceChangeAt}' where sku_id='${nextSku}';
     insert into public.v2_pricing_sku_meters(sku_meter_id,sku_id,meter_key,unit,unit_quantity,price_nanos,billable,meter_order,metadata,updated_at) values
       ('50000000-0000-4000-8000-000000000001','${currentSku}','input_text_tokens','token',1000000,200000000,true,100,'{}',now()),
       ('50000000-0000-4000-8000-000000000002','${nextSku}','input_text_tokens','token',1000000,300000000,true,100,'{}',now());
