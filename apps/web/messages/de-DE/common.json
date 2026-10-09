@@ -653,6 +653,24 @@
 		"lastYear": "Letztes Jahr"
 	},
 	"ui": {
+		"openui": {
+			"title": "Interaktive Antworten",
+			"experimentLabel": "Interaktive Antworten · Experiment",
+			"localLabel": "Phaseo · Lokales Experiment",
+			"description": "Beispielvorschau. Gesendete Formulare erscheinen unten, ohne ein Modell aufzurufen. Teste die Generierung im Chat.",
+			"examples": "Beispiele",
+			"replay": "Streaming wiedergeben",
+			"stop": "Wiedergabe stoppen",
+			"storage": "Der Browserspeicher ist nicht verfügbar. Formularwerte bleiben nur bis zum Schließen dieser Seite erhalten.",
+			"submitted": "Gesendete Nachricht",
+			"loading": "Interaktive Antwort wird geladen…",
+			"failure": "Diese interaktive Antwort konnte nicht vollständig angezeigt werden. Versuche, die Antwort neu zu generieren.",
+			"tradeoffs": "Nachteile",
+			"comparison": "Vergleich",
+			"edge": "Negativ / null",
+			"malformed": "Ungültiges Format",
+			"markdown": "Markdown"
+		},
 		"modelEditor": {
 			"dialogTitle": "Modell bearbeiten",
 			"dialogDescription": "Nehmen Sie Änderungen vor und klicken Sie anschließend auf Speichern.",

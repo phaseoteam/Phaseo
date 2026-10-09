@@ -3,10 +3,13 @@
 // How: Exposes helpers used by before/execute/after orchestration.
 
 import { getSupabaseAdmin } from "@/runtime/env";
+import { awaitShared } from "@core/shared-wait";
 import type { PriceCard, PriceRule, PricingTimeWindow } from "./types";
 
 const PRICING_L1_TTL_MS = 60_000;
 const PRICING_L1_NEGATIVE_TTL_MS = 15_000;
+// A concurrent miss joins another request's load for at most this long, then loads itself.
+const SHARED_LOAD_WAIT_MS = 1_500;
 
 type PricingL1Entry = {
     value: PriceCard | null;
@@ -52,9 +55,17 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
     if (l1 !== undefined) return l1;
 
     const inflight = pricingInflight.get(cacheKey);
-    if (inflight) return inflight;
+    if (inflight) {
+        // The load may belong to another request; never wait on it unboundedly.
+        const shared = await awaitShared(inflight, SHARED_LOAD_WAIT_MS);
+        if (shared.settled) return shared.value;
+    }
 
     const loader = (async (): Promise<PriceCard | null> => {
+        // A load superseded by a replacement (see above) must not overwrite the newer card.
+        const remember = (card: PriceCard | null, ttlMs: number) => {
+            if (pricingInflight.get(cacheKey) === loader) writePricingL1(cacheKey, card, ttlMs);
+        };
         const nowIso = new Date().toISOString();
         const supabase = getSupabaseAdmin();
         // Existing foreign keys let PostgREST fetch the complete pricing graph
@@ -81,13 +92,13 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
         const { data: skuRows, error: skuError } = await query;
         if (skuError) return null;
         if (!skuRows?.length) {
-            writePricingL1(cacheKey, null, PRICING_L1_NEGATIVE_TTL_MS);
+            remember(null, PRICING_L1_NEGATIVE_TTL_MS);
             return null;
         }
         const meterRows = skuRows.flatMap((row) => row.meters)
             .sort((left, right) => Number(left.meter_order) - Number(right.meter_order));
         if (!meterRows.length) {
-            writePricingL1(cacheKey, null, PRICING_L1_NEGATIVE_TTL_MS);
+            remember(null, PRICING_L1_NEGATIVE_TTL_MS);
             return null;
         }
         const skuById = new Map(skuRows.map((row) => [String(row.sku_id), row]));
@@ -164,7 +175,7 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
             version,
             rules,
         };
-        writePricingL1(cacheKey, card, resolvePricingL1TtlMs(card));
+        remember(card, resolvePricingL1TtlMs(card));
         return card;
     })();
 
@@ -172,7 +183,7 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
     try {
         return await loader;
     } finally {
-        pricingInflight.delete(cacheKey);
+        if (pricingInflight.get(cacheKey) === loader) pricingInflight.delete(cacheKey);
     }
 }
 

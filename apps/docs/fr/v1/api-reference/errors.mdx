@@ -86,6 +86,7 @@ Certaines erreurs fournissent des détails supplémentaires pour accélérer le 
 | `authorization_error` | `403` | La clé n’a pas accès à cette ressource. |
 | `not_found_error` | `404` | Le point de terminaison ou la ressource est introuvable. |
 | `rate_limit_error` | `429` | Trop de requêtes. Réessayez après le délai indiqué. |
+| `phaseo_free_model_limit_exceeded` | `429` | Le quota quotidien partagé des modèles gratuits de Phaseo est épuisé (1 500 requêtes par défaut). Respectez `Retry-After`, attendez la réinitialisation à 00:00 UTC ou choisissez un modèle payant. |
 | `validation_error` | `400` | Paramètres ou corps de requête invalide. |
 | `provider_error` | `502` | Le fournisseur de modèle en amont n’a pas répondu correctement. |
 | `server_error` | `500` | Un problème inattendu s’est produit dans Phaseo. |
@@ -268,4 +269,3 @@ Si vous implémentez la gestion des erreurs en tant qu’agent :
 - Traitez les charges utiles de débogage comme potentiellement sensibles et masquez-les avant de les conserver dans les journaux.
 - Préférez des tentatives déterministes (nombre limité et délai aléatoire) aux boucles sans limite.
 </Visibility>
-

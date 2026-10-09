@@ -53,6 +53,35 @@ describe("joined price-card loader", () => {
         expect(card?.version).toBe("2026-09-01T00:00:00.000Z");
     });
 
+    it("loads itself when another request's load never settles", async () => {
+        // The first request's I/O is cancelled with that request and never settles.
+        respond = () => new Promise<Response>(() => {});
+        void loadPriceCard("poolside", "poolside/laguna-s-2.1:free", "text.generate");
+        await vi.advanceTimersByTimeAsync(0);
+        respond = async () => Response.json(rows);
+        const card = loadPriceCard("poolside", "poolside/laguna-s-2.1:free", "text.generate");
+        await vi.advanceTimersByTimeAsync(1_500);
+        expect((await card)?.rules.map((rule) => rule.id)).toEqual(["input_text_tokens", "output_text_tokens"]);
+        expect(requests).toHaveLength(2);
+    });
+
+    it("does not let a slow superseded load overwrite its replacement", async () => {
+        let finishSlow!: (response: Response) => void;
+        respond = () => new Promise<Response>((resolve) => { finishSlow = resolve; });
+        void loadPriceCard("poolside", "poolside/laguna-s-2.1:free", "text.generate");
+        await vi.advanceTimersByTimeAsync(0);
+        respond = async () => Response.json(rows);
+        const replacement = loadPriceCard("poolside", "poolside/laguna-s-2.1:free", "text.generate");
+        await vi.advanceTimersByTimeAsync(1_500);
+        expect((await replacement)?.rules).toHaveLength(2);
+
+        // The slow original finally returns an older card with a single meter.
+        finishSlow(Response.json([{ ...sku(), meters: [meter("input_text_tokens", 1, 100)] }]));
+        await vi.advanceTimersByTimeAsync(0);
+        expect((await loadPriceCard("poolside", "poolside/laguna-s-2.1:free", "text.generate"))?.rules).toHaveLength(2);
+        expect(requests).toHaveLength(2);
+    });
+
     it("uses only the exact executed provider slug when one is supplied", async () => {
         await loadPriceCard("minimax", "canonical", "text.generate", "speech-hd");
         expect(requests[0].searchParams.get("route.provider_model_slug")).toBe("eq.speech-hd");

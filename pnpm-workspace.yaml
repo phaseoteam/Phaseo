@@ -26,6 +26,8 @@ allowBuilds:
 # Hold dependency installs until versions have been available for 7 days.
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
+  # Isolated OpenUI experiment evaluates the newly released renderer.
+  - "@openuidev/*"
   # Security patches for static-path middleware bypasses must not wait a week.
   - "hono"
   - "@hono/node-server"

@@ -75,6 +75,7 @@ import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import { modelOutputFilterValues } from "@/lib/models/modelCapabilities";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
+import { parseCatalogueTierFilters } from "@/lib/models/catalogueTierFilters";
 import type { MonitorModelTableRow } from "@/lib/fetchers/models/table-view/types";
 import { MonitorTableClient } from "@/components/monitor/MonitorTableClient";
 import { MODEL_TABLE_COLUMNS } from "@/components/monitor/MonitorDataTable";
@@ -715,6 +716,7 @@ export default function ModelsTableDisplay({
 			batch: "tierBatch",
 			flex: "tierFlex",
 			priority: "tierFast",
+			fast: "tierFast",
 		};
 		const key = keys[String(value ?? "").trim().toLowerCase()];
 		return key ? tQuickstart(key as never) : toTitleCase(value);
@@ -876,7 +878,7 @@ export default function ModelsTableDisplay({
 	});
 	const [selectedTiers, setSelectedTiers] = useQueryState("tiers", {
 		defaultValue: [] as string[],
-		parse: parseCsvParam,
+		parse: parseCatalogueTierFilters,
 		serialize: serializeCsvParam,
 		shallow: true,
 		clearOnDefault: true,

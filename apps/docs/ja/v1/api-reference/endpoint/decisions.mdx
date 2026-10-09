@@ -8,6 +8,20 @@ description: "対応する判断モデルを使い、アプリケーションの
 
 新しい呼び出しには OpenAI 互換形式を使います。`input` はテキストまたはインラインの `input_image` を含むユーザーメッセージ、`questions` は `predicate`、`choice`、`score` 質問の順序付き配列です。回答は同じ順序と任意の名前を保持します。真偽値の選択肢は真偽値のままです。外部画像 URL は使用できません。Luna は最大128枚のインライン画像に対応し、他のプロバイダーには独自の制限があります。明示的な画像詳細と `safety_identifier` は OpenAI ルートが必要です。従来の `state`、名前付き質問マップ、`noul`、`criteria` 形式も使用でき、回答マップを返します。Together Tev は確率なしのラベルを返すため従来形式が必要です。従来の例も有効です。
 
+Mercury Decide (`inception/mercury-decide`) は、テキストまたは JSON を使う `predicate`、`choice`、`score` の質問に対応します。選択式の質問は最大255個の選択肢、スコアの質問は最大10段階です。画像、ストリーミング、ツール呼び出しには対応しません。Inception の50%割引により、入力は現在100万トークンあたり0.02米ドルです。出力トークンは報告されますが無料です。割引の終了日は公表されていません。利用前にモデルの提供状況と[最新の料金](https://docs.inceptionlabs.ai/get-started/models)を確認してください。
+
+```json
+{
+  "model": "inception/mercury-decide",
+  "input": "Please refund the duplicate charge on my account.",
+  "questions": [{
+    "type": "predicate",
+    "name": "billing",
+    "instructions": "Is this request about billing?"
+  }]
+}
+```
+
 ```json
 {
   "model": "openai/gpt-6-luna",

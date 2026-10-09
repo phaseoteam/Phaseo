@@ -24,6 +24,7 @@ import {
 	splitProviderScopedModel,
 } from "./context.nebius";
 import { applyExplicitProviderModelRouting } from "./context.provider-offers";
+import { awaitShared } from "@core/shared-wait";
 import {
 	clampTtl,
 	cloneGatewayContextData,
@@ -91,6 +92,8 @@ function minimumCreditNanos(endpoint: string): number {
 }
 
 const contextInflight = new Map<string, Promise<GatewayContextData>>();
+// A concurrent miss joins another request's context load for at most this long, then loads itself.
+const CONTEXT_SHARED_WAIT_MS = 2_000;
 
 type PresetAccess = "allowed" | "api_key_not_authorized" | "preset_not_found";
 
@@ -1276,9 +1279,9 @@ export async function fetchGatewayContext(args: {
     if (inflightKey) {
 		const inflight = contextInflight.get(inflightKey);
 		if (inflight) {
-			return inflight.then((value) =>
-				finishContext(cloneGatewayContextData(value)),
-			);
+			// The load may belong to another request; never wait on it unboundedly.
+			const shared = await awaitShared(inflight, CONTEXT_SHARED_WAIT_MS);
+			if (shared.settled) return finishContext(cloneGatewayContextData(shared.value));
         }
     }
 
