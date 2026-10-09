@@ -529,16 +529,36 @@ export async function guardAllFailed(
     }
     if (residencyStage) {
         captureTimingSnapshot(ctx, timing);
+        // Report the constraints that actually removed routes, not every requested one.
         const requested = routingDiagnostics?.requestedRouting ?? {};
-        const region = typeof requested.requiredExecutionRegion === "string"
-            ? requested.requiredExecutionRegion
-            : typeof requested.requiredDataRegion === "string" ? requested.requiredDataRegion : null;
-        const description = region
-            ? `This model has no provider that processes requests in the ${region.toUpperCase()} region.`
-            : "This model has no provider that meets the request's data residency requirements.";
-        const action = region
+        const dropReasons = new Set<string>(
+            (Array.isArray(residencyStage.droppedProviders) ? residencyStage.droppedProviders : [])
+                .map((entry: any) => String(entry?.reason ?? "")),
+        );
+        const executionRegion = dropReasons.has("execution_region_mismatch") && typeof requested.requiredExecutionRegion === "string"
+            ? requested.requiredExecutionRegion : null;
+        const dataRegion = dropReasons.has("data_region_mismatch") && typeof requested.requiredDataRegion === "string"
+            ? requested.requiredDataRegion : null;
+        const zeroDataRetention = dropReasons.has("zero_data_retention_unsupported");
+        const unmet = [
+            executionRegion ? `processes requests in the ${executionRegion.toUpperCase()} region` : null,
+            dataRegion ? `stores data in the ${dataRegion.toUpperCase()} region` : null,
+            zeroDataRetention ? "offers zero data retention" : null,
+        ].filter((part): part is string => part !== null);
+        const onlyExecutionRegion = executionRegion !== null && unmet.length === 1;
+        const description = unmet.length === 1
+            ? `This model has no provider that ${unmet[0]}.`
+            : unmet.length > 1
+                ? `No provider for this model meets this request's residency requirements: one that ${unmet.join(", one that ")}.`
+                : "This model has no provider that meets the request's data residency requirements.";
+        const action = onlyExecutionRegion
             ? "Choose a model available in this region, or use https://api.phaseo.app for global routing."
             : "Relax the residency requirements or choose another model.";
+        const unmetRequirements = {
+            ...(executionRegion ? { execution_region: executionRegion } : {}),
+            ...(dataRegion ? { data_region: dataRegion } : {}),
+            ...(zeroDataRetention ? { zero_data_retention: true } : {}),
+        };
         if (isStealthRequest(ctx)) {
             return {
                 ok: false,
@@ -553,20 +573,20 @@ export async function guardAllFailed(
                     request_id: ctx.requestId,
                     model: ctx.model,
                     endpoint: ctx.endpoint,
-                    required_region: region,
+                    unmet_requirements: unmetRequirements,
                 }, 403),
             };
         }
         return {
             ok: false,
             response: err("model_region_unavailable", {
-                reason: region ? "no_provider_in_required_region" : "no_provider_meets_residency_requirements",
+                reason: onlyExecutionRegion ? "no_provider_in_required_region" : "no_provider_meets_residency_requirements",
                 description,
                 action,
                 model: ctx.model,
                 endpoint: ctx.endpoint,
                 request_id: ctx.requestId,
-                required_region: region,
+                unmet_requirements: unmetRequirements,
                 routing_diagnostics: routingDiagnostics,
             }),
         };

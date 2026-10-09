@@ -1125,10 +1125,18 @@ function getTopProvider(providerMeters: Map<string, Map<string, number>>): strin
 
 // Building the catalogue costs about ten queries (~4 s). The catalogue revision changes
 // several times a minute, so keying on it would rarely hit; instead the list is served
-// stale-while-revalidate: fresh for a minute, then served while one background rebuild
-// refreshes it, and only rebuilt before serving once it is an hour old. It holds public
+// stale-while-revalidate: served immediately, refreshed in the background once stale
+// (below), and only rebuilt before serving once it is an hour old. It holds public
 // catalogue data only (workspace-private models are fetched separately).
+// Refreshes run per isolate with no distributed lock, so they are staggered instead: each
+// isolate's own copy goes stale after a jittered 60-90 s and refreshes from the location
+// copy (90 s), which refreshes from KV (150 s). Only a stale KV copy rebuilds from the
+// database, and KV outlives its own cross-location propagation (about 60 s), so one
+// location's rebuild is reused elsewhere rather than repeated.
 const CATALOGUE_LIST_FRESH_S = 60;
+const CATALOGUE_LIST_JITTER_S = 30;
+const CATALOGUE_LIST_LOCATION_FRESH_S = 90;
+const CATALOGUE_LIST_KV_FRESH_S = 150;
 const CATALOGUE_LIST_MAX_STALE_S = 60 * 60;
 
 function catalogueFilterKey(filter: CatalogueFilters): string {
@@ -1156,10 +1164,10 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     const models = await tieredRead<CatalogueModel[]>({
         key,
         loader: () => loadCatalogue(filter),
-        l1FreshMs: CATALOGUE_LIST_FRESH_S * 1000,
+        l1FreshMs: (CATALOGUE_LIST_FRESH_S + Math.random() * CATALOGUE_LIST_JITTER_S) * 1000,
         maxStaleMs: CATALOGUE_LIST_MAX_STALE_S * 1000,
-        l2: { freshS: CATALOGUE_LIST_FRESH_S, storeS: CATALOGUE_LIST_MAX_STALE_S },
-        l3: { freshS: CATALOGUE_LIST_FRESH_S, expirationS: CATALOGUE_LIST_MAX_STALE_S },
+        l2: { freshS: CATALOGUE_LIST_LOCATION_FRESH_S, storeS: CATALOGUE_LIST_MAX_STALE_S },
+        l3: { freshS: CATALOGUE_LIST_KV_FRESH_S, expirationS: CATALOGUE_LIST_MAX_STALE_S },
         validate: (value): value is CatalogueModel[] => Array.isArray(value),
     });
     return structuredClone(models ?? []);
