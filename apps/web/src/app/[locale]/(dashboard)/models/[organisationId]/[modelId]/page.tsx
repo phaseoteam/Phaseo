@@ -60,6 +60,7 @@ import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerf
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
+import { adminSourceToChatModels } from "@/lib/chat/adminInternalModels";
 import { fetchAdminModelSource } from "@/lib/fetchers/internal/fetchAdminModelSource";
 import { toAdminModelOverview } from "@/lib/models/adminModelOverview";
 
@@ -552,6 +553,7 @@ async function ModelDetailPageBody({
 export default async function Page({ params }: { params: Promise<ModelRouteParams> }) {
 	const routeParams = await params;
 	let includeHidden = false;
+	let canChatInternal = false;
 	const { requestedModelId, canonicalModelId, source } = await resolveModelRouteIds(routeParams, includeHidden);
 	const isAliasRoute = isModelAliasRoute({ requestedModelId, canonicalModelId, source });
 	if (canonicalModelId !== requestedModelId && !isAliasRoute) {
@@ -596,6 +598,7 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 		modelOverview = source ? toAdminModelOverview(source) : null;
 		if (!modelOverview) notFound();
 		includeHidden = true;
+		canChatInternal = source ? adminSourceToChatModels(source).length > 0 : false;
 		benchmarkPromise = fetchFrontendModelBenchmarkHighlights(modelId, true).catch(() => []);
 		subscriptionPromise = fetchFrontendModelSubscriptionPlans(modelId, true).catch(() => []);
 		availabilityPromise = fetchFrontendModelAvailability(modelId, true).catch(() => undefined);
@@ -618,7 +621,7 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 		is_private: modelOverview.is_private === true,
 	};
 	return (
-		<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} header={modelHeader} modelOverview={modelOverview} requestedAlias={requestedAlias} canChat={includeHidden ? false : undefined} canCompare={!includeHidden}>
+	<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} header={modelHeader} modelOverview={modelOverview} requestedAlias={requestedAlias} canChat={includeHidden ? canChatInternal : undefined} canCompare={!includeHidden}>
 			<Suspense fallback={<ModelOverviewSectionsSkeleton />}>
 				<ModelDetailPageBody
 					modelId={modelId}
