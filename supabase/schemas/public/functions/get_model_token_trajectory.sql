@@ -30,24 +30,29 @@ anchors as (
   from model_row mr
 ),
 
+-- Daily usage rollups carry the same token meters as raw request usage, keyed
+-- by coalesce(routed, requested) model slug. Facts without either slug are
+-- failed requests with no usage, so the totals match the raw-fact scan this
+-- replaces without reading every request since release on each call.
 daily_tokens as (
-  select date_trunc('day', fact.occurred_at at time zone 'utc') as day,
-    sum(coalesce(nullif(tokens.explicit_total, 0),
-      coalesce(tokens.input_tokens, 0) + coalesce(tokens.output_tokens, 0))) as tokens
-  from public.v2_request_facts fact
-  cross join model_row mr
-  left join lateral (
-    select sum(usage.quantity) filter (where usage.meter_key = 'total_tokens') as explicit_total,
-      sum(usage.quantity) filter (where usage.meter_key = 'input_tokens') as input_tokens,
-      sum(usage.quantity) filter (where usage.meter_key = 'output_tokens') as output_tokens
-    from public.v2_request_usage usage
-    where usage.request_event_id = fact.request_event_id
-      and usage.meter_key in ('total_tokens', 'input_tokens', 'output_tokens')
-  ) tokens on true
-  where coalesce(fact.routed_model_slug, fact.requested_model_slug, fact.requested_model_input)
-      in (select model_id from model_ids)
-    and mr.release_date is not null
-    and fact.occurred_at >= mr.release_date
+  select grain.usage_date::timestamp as day,
+    sum(coalesce(nullif(grain.explicit_total, 0),
+      coalesce(grain.input_tokens, 0) + coalesce(grain.output_tokens, 0))) as tokens
+  from (
+    select rollup.usage_date,
+      sum(meter.quantity) filter (where meter.meter_key = 'total_tokens') as explicit_total,
+      sum(meter.quantity) filter (where meter.meter_key = 'input_tokens') as input_tokens,
+      sum(meter.quantity) filter (where meter.meter_key = 'output_tokens') as output_tokens
+    from public.v2_public_usage_daily rollup
+    cross join model_row mr
+    join public.v2_public_usage_daily_meters meter
+      on meter.rollup_id = rollup.rollup_id
+     and meter.meter_key in ('total_tokens', 'input_tokens', 'output_tokens')
+    where rollup.model_slug in (select model_id from model_ids)
+      and mr.release_date is not null
+      and rollup.usage_date >= (mr.release_date at time zone 'utc')::date
+    group by rollup.rollup_id, rollup.usage_date
+  ) grain
   group by 1
 ),
 
