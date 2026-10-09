@@ -34,7 +34,6 @@ import {
 	fetchOrganisations,
 } from "@/app/(dashboard)/internal/audit/actions-advanced";
 import { useRouter } from "next/navigation";
-import { ModelAvailabilityControl } from "./ModelAvailabilityControl";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -312,10 +311,6 @@ export function UnifiedModelEditor({
 
 						{/* BASIC INFO */}
 						<TabsContent value="basic" className="space-y-4">
-							<ModelAvailabilityControl key={`${model.modelId}:${model.hidden}`} modelId={model.modelId} hidden={model.hidden} onChanged={(available) => {
-								setHidden(!available);
-								setStatus(available ? "active" : "draft");
-							}} />
 							{/* Model ID (read-only) */}
 							<div className="space-y-2">
 								<Label htmlFor="model-id">{tUi("modelEditor.publicModelId")}</Label>

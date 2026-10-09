@@ -45,7 +45,6 @@ import {
 	type CompleteModelData,
 } from "@/app/(dashboard)/internal/audit/actions-advanced";
 import { useRouter } from "next/navigation";
-import { ModelAvailabilityControl } from "./ModelAvailabilityControl";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -695,10 +694,6 @@ export function ComprehensiveModelEditor({
 
 						{/* BASIC INFO */}
 						<TabsContent value="basic" className="space-y-4">
-							<ModelAvailabilityControl key={`${model.modelId}:${model.hidden}`} modelId={model.modelId} hidden={model.hidden} onChanged={(available) => {
-								setHidden(!available);
-								setStatus(available ? "Available" : "Withheld");
-							}} />
 							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 								{/* Model ID (read-only) */}
 								<div className="space-y-2 sm:col-span-2">
