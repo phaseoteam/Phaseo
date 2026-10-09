@@ -19,7 +19,7 @@ export type ChatOpenUIRendererProps = {
   disabled: boolean;
   initialState?: Record<string, unknown>;
   onStateChange?: (state: Record<string, unknown>) => void;
-  onSubmit?: (prompt: string) => void;
+  onSubmit?: (prompt: string) => boolean | Promise<boolean>;
 };
 
 export function ChatOpenUIRenderer({
@@ -61,7 +61,7 @@ export function ChatOpenUIRenderer({
         </p>
       )}
       <OpenUIActionContext.Provider
-        value={{ disabled: disabled || isStreaming || failed || !onSubmit }}
+        value={{ disabled: disabled || isStreaming || failed || !onSubmit, onSubmit }}
       >
         <Renderer
           response={source}

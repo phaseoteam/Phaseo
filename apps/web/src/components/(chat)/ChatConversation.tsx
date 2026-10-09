@@ -905,6 +905,16 @@ export function ChatConversation({
 	]);
 	const effectiveSendGateType =
 		isAuthenticated && sendGateType === "auth" ? null : sendGateType;
+	const openUISendPending = useRef(false);
+	const handleOpenUISubmit = useCallback(async (content: string) => {
+		if (isSending || openUISendPending.current) return false;
+		openUISendPending.current = true;
+		try {
+			return await onSend({ content, attachments: [], webSearchEnabled, apiServerToolsEnabled, serverTools, serverToolConfigs });
+		} finally {
+			openUISendPending.current = false;
+		}
+	}, [isSending, onSend, webSearchEnabled, apiServerToolsEnabled, serverTools, serverToolConfigs]);
 	const hasNoMessages = (activeThread?.messages.length ?? 0) === 0;
 	const promptHistory = useMemo(
 		() =>
@@ -981,7 +991,7 @@ export function ChatConversation({
 							<ChatConversationMessages
 								onOpenUIStateChange={onOpenUIStateChange}
 								interactiveActionsDisabled={isSending || !isAuthenticated}
-								onOpenUISubmit={(content) => { void onSend({ content, attachments: [], webSearchEnabled, apiServerToolsEnabled, serverTools, serverToolConfigs }); }}
+								onOpenUISubmit={handleOpenUISubmit}
 								activeThread={activeThread}
 								isSending={isSending}
 								lastMessageId={lastMessageId}

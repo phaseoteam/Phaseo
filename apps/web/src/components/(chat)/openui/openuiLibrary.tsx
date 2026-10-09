@@ -1,13 +1,12 @@
 "use client";
 
-import { createContext, useContext, useId } from "react";
+import { createContext, useContext, useId, useRef, useState } from "react";
 import {
   createLibrary,
   defineComponent,
   useIsStreaming,
   useRenderNode,
   useStateField,
-  useTriggerAction,
   type ElementNode,
   type ParseResult,
 } from "@openuidev/react-lang";
@@ -16,7 +15,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { openUIFollowUp } from "./openuiHelpers";
 
-export const OpenUIActionContext = createContext({ disabled: true });
+export const OpenUIActionContext = createContext<{
+  disabled: boolean;
+  onSubmit?: (prompt: string) => boolean | Promise<boolean>;
+}>({ disabled: true });
 const text = z.string().max(8000);
 const label = z.string().max(300);
 const tableSchema = z.object({
@@ -190,7 +192,7 @@ const Comparison = defineComponent({
   },
 });
 
-function FollowUpForm({
+export function FollowUpForm({
   question,
   fieldName,
   placeholder,
@@ -204,17 +206,30 @@ function FollowUpForm({
   const field = useStateField<string>(fieldName, "");
   const streaming = useIsStreaming();
   const actions = useContext(OpenUIActionContext);
-  const triggerAction = useTriggerAction();
+  const pending = useRef(false);
+  const [submitted, setSubmitted] = useState(false);
   const id = useId();
   const value = typeof field.value === "string" ? field.value : "";
   return (
     <form
       className="space-y-3 rounded-lg border bg-muted/30 p-4"
-      onSubmit={(event) => {
+      onSubmit={async (event) => {
         event.preventDefault();
         const prompt = openUIFollowUp(question, value);
-        if (prompt && !streaming && !actions.disabled)
-          void triggerAction(prompt);
+        if (!prompt || streaming || actions.disabled || pending.current || !actions.onSubmit) return;
+        pending.current = true;
+        setSubmitted(true);
+        let accepted = false;
+        try {
+          accepted = await actions.onSubmit(prompt);
+        } catch {
+          // The normal chat flow reports request failures; allow a rejected send to retry.
+        } finally {
+          if (!accepted) {
+            pending.current = false;
+            setSubmitted(false);
+          }
+        }
       }}
     >
       <label htmlFor={id} className="block text-sm font-medium">
@@ -225,13 +240,13 @@ function FollowUpForm({
         value={value}
         placeholder={placeholder}
         maxLength={2000}
-        disabled={streaming || actions.disabled}
+        disabled={streaming || actions.disabled || submitted}
         onChange={(event) => field.setValue(event.target.value)}
       />
       <Button
         type="submit"
         size="sm"
-        disabled={streaming || actions.disabled || !value.trim()}
+        disabled={streaming || actions.disabled || submitted || !value.trim()}
       >
         {buttonLabel}
       </Button>

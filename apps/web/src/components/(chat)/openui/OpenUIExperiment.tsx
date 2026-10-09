@@ -111,7 +111,7 @@ export function OpenUIExperiment() {
             setStorageError(true);
           }
         }}
-        onSubmit={setSubmitted}
+        onSubmit={(prompt) => { setSubmitted(prompt); return true; }}
       />
       {storageError && (
         <p role="status" className="text-sm text-destructive">

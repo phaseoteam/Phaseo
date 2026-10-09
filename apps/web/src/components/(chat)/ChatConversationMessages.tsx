@@ -360,7 +360,7 @@ const getTraceEventsFromMeta = (
 
 type ChatConversationMessagesProps = {
 	onOpenUIStateChange?: (messageId: string, variantId: string, state: Record<string, unknown>) => void;
-	onOpenUISubmit?: (prompt: string) => void;
+	onOpenUISubmit?: (prompt: string) => boolean | Promise<boolean>;
 	interactiveActionsDisabled?: boolean;
 	activeThread: ChatThread | null;
 	isSending: boolean;
