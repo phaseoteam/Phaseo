@@ -436,6 +436,7 @@ export async function guardContext(args: {
     requestId: string;
     internal?: boolean;
     testingMode?: boolean;
+    internalOnly?: boolean;
     disableCache?: boolean;
     onCreditCacheWrite?: (write: Promise<void>) => void;
 }): Promise<GuardResult<{ context: any; providers: any[]; resolvedModel?: string | null; candidateDiagnostics: ProviderCandidateBuildDiagnostics }>> {
@@ -446,6 +447,7 @@ export async function guardContext(args: {
             endpoint: args.capability,
             apiKeyId: args.apiKeyId,
             includeTestingMode: args.testingMode,
+            internalOnly: args.internalOnly,
             disableCache: args.disableCache,
             onCreditCacheWrite: args.onCreditCacheWrite,
         });

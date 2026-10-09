@@ -391,7 +391,8 @@ describe("beforeRequest pricing loss-prevention", () => {
 		expect(serverTiming).toContain("context_cache_read;dur=21.750");
 	});
 
-	it("rejects request when pricing card has zero rules", async () => {
+	it.each([false, true])("requires pricing unless authorized testing is enabled (%s)", async (testingMode) => {
+		resolveTestingModeMock.mockResolvedValue({ enabled: testingMode, reason: testingMode ? "admin" : "not_requested" });
 		const provider = providerWithPricingRules(0);
 		guardContextMock.mockResolvedValue({
 			ok: true,
@@ -423,7 +424,7 @@ describe("beforeRequest pricing loss-prevention", () => {
 		});
 		const timer = new Timer();
 		const result = await beforeRequest(req, "responses", timer, null);
-		expect(result.ok).toBe(false);
+		expect(result.ok).toBe(testingMode);
 		if (result.ok) return;
 		expect(result.response.status).toBe(400);
 		const payload = await result.response.json();

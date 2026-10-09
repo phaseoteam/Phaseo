@@ -105,6 +105,9 @@ export async function loadProviderPricing(
     ctx: PipelineContext,
     result: RequestResult
 ): Promise<PriceCard | null> {
+    // Authorized internal tests have no customer charge and may precede pricing.
+    if (ctx.testingMode && !ctx.billableInternalTesting) return null;
+    if (ctx.billableInternalTesting) ctx.internalPricingAvailable = false;
     const apiModelId =
         typeof result.apiModelId === "string" && result.apiModelId.trim().length > 0
             ? result.apiModelId.trim()
@@ -123,11 +126,13 @@ export async function loadProviderPricing(
                 ctx.capability,
             );
         }
-		if (!card && apiModelId) {
+		if (!card && apiModelId && !ctx.billableInternalTesting) {
 			// A stable provider-model route was executed. Falling back to the
 			// canonical model can mix sibling SKUs and undercharge the request.
 			throw new Error(`pricing_card_missing_for_executed_route:${result.provider}:${apiModelId}`);
 		}
+        // Internal previews must not borrow pricing from a sibling route.
+        if (!card && apiModelId && ctx.billableInternalTesting) return null;
         if (!card && pricingKey !== result.provider) {
             card = ctx.pricing?.[result.provider] ?? null;
         }
@@ -154,6 +159,10 @@ export async function loadProviderPricing(
 			}
 		}
 
+        if (ctx.billableInternalTesting) {
+            if (!card?.rules?.length) return null;
+            ctx.internalPricingAvailable = true;
+        }
         return card;
     } catch (err) {
         console.error("pricing card lookup failed", err);

@@ -428,6 +428,7 @@ export async function beforeRequest(
             workspaceId,
             userId,
             internal,
+            model,
         })
     );
     if (testingModeRequested && !testingMode.enabled) {
@@ -477,6 +478,7 @@ export async function beforeRequest(
 		requestId,
 		internal,
 		testingMode: testingModeEnabled,
+		internalOnly: testingMode.reason === "admin",
 		disableCache: debugEnabled,
 		onCreditCacheWrite,
 	});
@@ -1227,7 +1229,7 @@ export async function beforeRequest(
             provider.pricingCard.rules.length === 0
         )
         .map((provider) => provider.providerId);
-    if (missingPricingProviders.length) {
+    if (missingPricingProviders.length && !testingModeEnabled) {
         for (const providerId of missingPricingProviders) {
             providerEnablementDropped.push({
                 providerId,
@@ -1432,6 +1434,8 @@ export async function beforeRequest(
 			autoRouter: autoRouterEvaluation,
         },
         guardrailEnforcement: sensitiveInfoResult.enforcement,
+        // Billing eligibility is server-owned, never a request body flag.
+        billableInternalTesting: testingMode.reason === "admin",
     };
 
     // console.log(`[DEBUG] beforeRequest: final ctx.model: ${ctx.model}`);
