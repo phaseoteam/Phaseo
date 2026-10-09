@@ -1,3 +1,7 @@
+-- The backfill walks gateway_requests in id order. Requests created before
+-- routing snapshots existed never match, so every batch rescanned the March-August
+-- partitions (~24k of ~24.5k buffers per call on production, 2026-10-09).
+-- Bounding created_at lets partition pruning skip them.
 CREATE OR REPLACE FUNCTION public.gateway_routing_archive_batch(
   p_after_id uuid, p_after_created_at timestamptz, p_cutoff timestamptz, p_limit integer DEFAULT 25
 )
