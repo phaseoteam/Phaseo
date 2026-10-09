@@ -21,6 +21,7 @@ try {
     insert into public.v2_request_facts(request_event_id,occurred_at,routed_model_slug,provider_model_id,success,stream,safe_metadata)
       select n::text,date_trunc('hour',now()),'model','route',true,false,'{}'::jsonb from generate_series(1,40) n;
     insert into public.v2_request_usage select request_event_id,'input_tokens',100 from public.v2_request_facts;`);
+  await db.exec('create view public.reporting_request_facts as select * from public.v2_request_facts');
   for (const name of ['get_v2_model_cached_input_metrics', 'get_v2_model_provider_hourly_performance_v2', 'get_v2_model_provider_30m_performance_v1']) {
     await db.exec(await readFile(new URL(`../schemas/public/functions/${name}.sql`, import.meta.url), 'utf8'));
   }

@@ -64,7 +64,7 @@ CREATE VIEW "public"."v2_rpc_gateway_model_usage_daily" WITH (security_invoker=t
     COALESCE(((meters."values" ->> 'video_seconds'::text))::numeric, ((meters."values" ->> 'output_video_seconds'::text))::numeric, (0)::numeric) AS video_seconds,
     COALESCE(((meters."values" ->> 'speech_seconds'::text))::numeric, (0)::numeric) AS speech_seconds,
     COALESCE(((meters."values" ->> 'transcription_seconds'::text))::numeric, (0)::numeric) AS transcription_seconds
-   FROM (((public.v2_public_usage_daily usage
+   FROM (((public.reporting_usage_daily usage
      JOIN public.v2_model_provider_routes route ON (((route.provider_model_id = usage.provider_model_id) AND (COALESCE(route.is_stealth, false) = false) AND (route.routing_enabled = true) AND (route.status = ANY (ARRAY['active'::text, 'degraded'::text])) AND ((route.effective_from IS NULL) OR (route.effective_from <= now())) AND ((route.effective_to IS NULL) OR (route.effective_to > now())))))
      JOIN public.v2_models model ON (((model.model_slug = usage.model_slug) AND (model.hidden = false) AND (model.status <> 'disabled'::text))))
      LEFT JOIN LATERAL ( SELECT jsonb_object_agg(meter.meter_key, meter.quantity) AS "values"

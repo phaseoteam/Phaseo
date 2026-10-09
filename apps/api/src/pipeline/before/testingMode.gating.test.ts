@@ -1,17 +1,30 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getBindingsMock = vi.fn();
+const roleLookupMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => getBindingsMock(),
-	getSupabaseAdmin: vi.fn(),
+	getSupabaseAdmin: () => ({ from: () => ({ select: () => ({ eq: () => ({ maybeSingle: roleLookupMock }) }) }) }),
 }));
 
 import { isPerfGatewayEndpointAllowed, resolvePerfGatewayAccess, resolveTestingMode } from "./testingMode";
 
 describe("resolveTestingMode gating", () => {
+	it.each([null, "member-user"])("denies internal inference for non-admin identity %s", async (userId) => {
+		roleLookupMock.mockResolvedValue({ data: { role: "user" }, error: null });
+		expect(await resolveTestingMode({ requested: true, workspaceId: "team_1", userId, internal: true }))
+			.toEqual({ enabled: false, reason: "requires_admin" });
+	});
+	it("fails closed when role lookup fails", async () => {
+		roleLookupMock.mockRejectedValue(new Error("unavailable"));
+		expect(await resolveTestingMode({ requested: true, workspaceId: "team_1", userId: "admin-user", internal: true }))
+			.toEqual({ enabled: false, reason: "requires_admin" });
+	});
 	beforeEach(() => {
 		getBindingsMock.mockReset();
+		roleLookupMock.mockReset();
+		roleLookupMock.mockResolvedValue({ data: { role: "admin" }, error: null });
 		getBindingsMock.mockReturnValue({});
 	});
 
@@ -52,7 +65,7 @@ describe("resolveTestingMode gating", () => {
 		const result = await resolveTestingMode({
 			requested: true,
 			workspaceId: "team_1",
-			userId: null,
+			userId: "admin-user",
 			internal: true,
 		});
 		expect(result).toEqual({ enabled: true, reason: "internal" });

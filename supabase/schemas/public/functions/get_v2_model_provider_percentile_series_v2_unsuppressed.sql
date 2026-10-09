@@ -29,7 +29,7 @@ with percentile_values(percentile) as (
 ),
 scoped_facts as (
   select fact.request_event_id
-  from public.v2_request_facts fact
+  from public.reporting_request_facts fact
   where coalesce(fact.routed_model_slug, fact.requested_model_slug) = lower(trim(p_model_slug))
     and fact.occurred_at >= now() - interval '7 days'
 ),
@@ -86,7 +86,7 @@ base as (
           end
       )
     end cached_input_pct
-  from public.v2_request_facts fact
+  from public.reporting_request_facts fact
   join public.v2_model_provider_routes route
     on route.provider_model_id = fact.provider_model_id
   join public.v2_providers provider

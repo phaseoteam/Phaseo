@@ -18,7 +18,7 @@ CREATE VIEW "public"."v2_web_public_usage_hourly" WITH (security_invoker=true) A
     usage.throughput_count AS throughput_samples,
     usage.generation_sum_ms,
     usage.generation_count AS generation_samples
-   FROM (((public.v2_public_usage_hourly usage
+   FROM (((public.reporting_usage_hourly usage
      JOIN public.v2_model_provider_routes route ON (((route.provider_model_id = usage.provider_model_id) AND (COALESCE(route.is_stealth, false) = false) AND (route.routing_enabled = true) AND (route.status = ANY (ARRAY['active'::text, 'degraded'::text])) AND ((route.effective_from IS NULL) OR (route.effective_from <= now())) AND ((route.effective_to IS NULL) OR (route.effective_to > now())))))
      JOIN public.v2_models model ON (((model.model_slug = usage.model_slug) AND (model.hidden = false) AND (model.status <> 'disabled'::text))))
      LEFT JOIN meters ON ((meters.rollup_id = usage.rollup_id)));

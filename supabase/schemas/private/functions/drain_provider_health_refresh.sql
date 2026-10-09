@@ -40,7 +40,7 @@ begin
           count(*), count(*) filter (where attempt.success), count(*) filter (where not attempt.success),
           count(*) filter (where attempt.attempt_number > 1),
           coalesce(sum(attempt.latency_ms), 0), count(attempt.latency_ms), clock_timestamp()
-        from public.v2_request_facts fact
+        from public.reporting_request_facts fact
         join public.v2_request_attempts attempt on attempt.request_event_id = fact.request_event_id
         where fact.occurred_at >= item.usage_date::timestamptz
           and fact.occurred_at < (item.usage_date + 1)::timestamptz

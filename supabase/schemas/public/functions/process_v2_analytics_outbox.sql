@@ -208,7 +208,7 @@ begin
       coalesce(sum(attempts.attempts), 0), coalesce(sum(attempts.failed_attempts), 0),
       coalesce(sum(usage.cached_input_tokens), 0), coalesce(sum(usage.input_tokens), 0),
       coalesce(sum(fact.cost_nanos), 0)
-    from public.v2_request_facts fact
+    from public.reporting_request_facts fact
     left join lateral (
       select count(*)::bigint as attempts,
         count(*) filter (where not attempt.success)::bigint as failed_attempts
@@ -236,7 +236,7 @@ begin
     )
     select v_rollup_id, meter.meter_key, meter.modality, meter.unit, sum(meter.quantity)
     from public.v2_request_usage meter
-    join public.v2_request_facts fact on fact.request_event_id = meter.request_event_id
+    join public.reporting_request_facts fact on fact.request_event_id = meter.request_event_id
     where fact.occurred_at >= grain.usage_date::timestamptz
       and fact.occurred_at < (grain.usage_date + 1)::timestamptz
       and fact.app_id is not distinct from grain.app_id
@@ -292,7 +292,7 @@ begin
       coalesce(sum(attempts.attempts), 0), coalesce(sum(attempts.failed_attempts), 0),
       coalesce(sum(usage.cached_input_tokens), 0), coalesce(sum(usage.input_tokens), 0),
       coalesce(sum(fact.cost_nanos), 0)
-    from public.v2_request_facts fact
+    from public.reporting_request_facts fact
     left join lateral (
       select count(*)::bigint as attempts,
         count(*) filter (where not attempt.success)::bigint as failed_attempts
@@ -320,7 +320,7 @@ begin
     )
     select v_rollup_id, meter.meter_key, meter.modality, meter.unit, sum(meter.quantity)
     from public.v2_request_usage meter
-    join public.v2_request_facts fact on fact.request_event_id = meter.request_event_id
+    join public.reporting_request_facts fact on fact.request_event_id = meter.request_event_id
     where fact.occurred_at >= grain.bucket_start
       and fact.occurred_at < grain.bucket_start + interval '1 hour'
       and fact.app_id is not distinct from grain.app_id

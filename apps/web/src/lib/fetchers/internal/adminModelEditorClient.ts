@@ -107,6 +107,14 @@ export async function saveAdminModelAliases(modelId: string, aliases: Array<Reco
 	);
 }
 
+export async function setAdminModelAvailability(modelId: string, available: boolean) {
+	return fetchAccountWebApi<{ model_slug: string; available: boolean }>(
+		`/api/account/models/${encodeURIComponent(modelId)}/availability`,
+		await getBrowserAccessToken(),
+		{ method: "PUT", body: JSON.stringify({ available }) },
+	);
+}
+
 export async function endDateAdminPricingSku(modelId: string, skuId: string, effectiveTo: string) {
 	return fetchAccountWebApi<{ pricing: Record<string, unknown> }>(
 		`/api/account/models/${encodeURIComponent(modelId)}/pricing-editor/${encodeURIComponent(skuId)}/end-date`,

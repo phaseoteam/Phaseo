@@ -28,13 +28,22 @@ export async function resolveTestingMode(args: {
 	reason:
 	| "not_requested"
 	| "internal"
+	| "requires_admin"
 	| "requires_internal_token";
 }> {
 	if (!args.requested) {
 		return { enabled: false, reason: "not_requested" };
 	}
 	if (args.internal) {
-		return { enabled: true, reason: "internal" };
+		if (!args.userId) return { enabled: false, reason: "requires_admin" };
+		try {
+			const { data, error } = await getSupabaseAdmin().from("users")
+				.select("role").eq("user_id", args.userId).maybeSingle();
+			if (!error && data?.role === "admin") return { enabled: true, reason: "internal" };
+		} catch {
+			// Internal inference must fail closed when role verification is unavailable.
+		}
+		return { enabled: false, reason: "requires_admin" };
 	}
 	return { enabled: false, reason: "requires_internal_token" };
 }
@@ -76,3 +85,4 @@ export function isPerfGatewayEndpointAllowed(args: {
 	if (!allowed.length) return false;
 	return allowed.includes(args.endpoint);
 }
+import { getSupabaseAdmin } from "@/runtime/env";

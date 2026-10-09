@@ -34,7 +34,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_provider_health (
     jsonb_agg(jsonb_build_object('day', health.usage_date, 'requests', health.request_count, 'attempts', health.attempt_count,
       'successful_attempts', health.successful_attempts, 'failed_attempts', health.failed_attempts,
       'fallback_attempts', health.fallback_attempts) order by health.usage_date), max(health.usage_date)
-  from public.v2_public_provider_health_daily health
+  from public.reporting_provider_health_daily health
   left join public.v2_providers provider on provider.provider_slug = health.provider_slug
   where health.model_slug = lower(trim(p_model_slug))
     and health.usage_date >= current_date - greatest(1, least(coalesce(p_window_days, 3), 90))

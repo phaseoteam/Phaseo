@@ -42,3 +42,6 @@ GRANT SELECT ON TABLE "public"."v2_public_effective_pricing_daily" TO "authentic
 REVOKE ALL ON TABLE "public"."v2_public_effective_pricing_daily" FROM "service_role";
 
 GRANT SELECT ON TABLE "public"."v2_public_effective_pricing_daily" TO "service_role";
+
+create policy public_pricing_model_visibility on public.v2_public_effective_pricing_daily as restrictive
+for select to anon, authenticated using (public.public_reporting_route_is_visible(model_slug, null, provider_id));

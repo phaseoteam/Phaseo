@@ -19,7 +19,7 @@ CREATE OR REPLACE FUNCTION public.get_public_summary_stats()
       count(distinct usage.model_slug)::integer as models, count(distinct route.provider_slug)::integer as providers,
       sum(usage.latency_sum_ms)::numeric as latency_sum, sum(usage.latency_count)::bigint as latency_count,
       sum(usage.successful_requests)::bigint as successes
-    from public.v2_public_usage_hourly usage
+    from public.reporting_usage_hourly usage
     left join meters on meters.rollup_id = usage.rollup_id
     left join public.v2_model_provider_routes route on route.provider_model_id = usage.provider_model_id
     where usage.bucket_start >= now() - interval '24 hours'

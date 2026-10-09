@@ -16,7 +16,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_performance_overview (
       sum(generation_count)::numeric as generation_count,
       sum(throughput_sum)::numeric as throughput_sum,
       sum(throughput_count)::numeric as throughput_count
-    from public.v2_public_usage_hourly
+    from public.reporting_usage_hourly
     where model_slug = lower(trim(p_model_slug))
       and bucket_start >= now() - interval '5 days'
     group by bucket_start, provider_model_id
@@ -109,7 +109,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_performance_overview (
       sum(generation_count)::numeric as generation_count,
       sum(throughput_sum)::numeric as throughput_sum,
       sum(throughput_count)::numeric as throughput_count
-    from public.v2_public_usage_hourly
+    from public.reporting_usage_hourly
     where model_slug = lower(trim(p_model_slug))
       and bucket_start >= now() - interval '5 days'
       and (p_cloudflare_colo is null or cloudflare_colo = upper(trim(p_cloudflare_colo)))
@@ -212,7 +212,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_performance_overview (
       fact.occurred_at::date as usage_day,
       route.provider_slug as provider_id,
       fact.success, fact.latency_ms, fact.generation_ms, fact.throughput
-    from public.v2_request_facts fact
+    from public.reporting_request_facts fact
     left join public.v2_model_provider_routes route
       on route.provider_model_id = fact.provider_model_id
     cross join params

@@ -25,7 +25,7 @@ scoped_facts as materialized (
     coalesce(fact.gateway_ttft_ms, fact.time_to_first_token_ms) gateway_ttft_ms,
     fact.provider_ttft_ms, fact.generation_ms, fact.gateway_total_ms,
     fact.phaseo_overhead_ms, fact.throughput, fact.output_speed_tps, fact.tpot_ms, fact.itl_ms
-  from public.v2_request_facts fact
+  from public.reporting_request_facts fact
   cross join params
   where coalesce(fact.routed_model_slug, fact.requested_model_slug) = params.model_slug
     and fact.occurred_at >= params.now_ts - interval '7 days'

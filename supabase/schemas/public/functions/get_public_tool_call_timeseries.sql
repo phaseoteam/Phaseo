@@ -25,7 +25,7 @@ CREATE OR REPLACE FUNCTION public.get_public_tool_call_timeseries (
   ),
   top_models as (
     select usage.model_slug
-    from public.v2_public_usage_daily usage
+    from public.reporting_usage_daily usage
     cross join bounds
     where usage.usage_date >= bounds.since_date
       and usage.tool_call_count > 0
@@ -45,7 +45,7 @@ CREATE OR REPLACE FUNCTION public.get_public_tool_call_timeseries (
     sum(usage.tool_call_count)::bigint as requests,
     0::bigint as tokens,
     null::text as colour
-  from public.v2_public_usage_daily usage
+  from public.reporting_usage_daily usage
   join top_models on top_models.model_slug = usage.model_slug
   cross join bounds
   where usage.usage_date >= bounds.since_date

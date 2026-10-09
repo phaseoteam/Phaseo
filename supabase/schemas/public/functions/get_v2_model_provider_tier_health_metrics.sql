@@ -70,7 +70,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_provider_tier_health_metrics (
       usage.input_tokens,
       usage.output_tokens,
       usage.cached_read_tokens
-    from public.v2_request_facts fact
+    from public.reporting_request_facts fact
     join params on true
     left join public.v2_model_provider_routes route
       on route.provider_model_id = fact.provider_model_id

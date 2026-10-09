@@ -42,7 +42,7 @@ begin
   ), actors as (
     select w.is_current, d.model_id, d.actor_hash
     from windows w
-    join public.public_model_user_usage_daily d on d.day_bucket >= w.full_from and d.day_bucket < w.full_to
+    join public.reporting_model_user_usage_daily d on d.day_bucket >= w.full_from and d.day_bucket < w.full_to
     where p_metric = 'users'
     union all
     -- Match the actor identity and model normalization used by the daily user rollup.
@@ -57,7 +57,7 @@ begin
         nullif(fact.end_user_id, ''), fact.workspace_id::text, fact.key_id::text
       ))
     from edges e
-    join public.v2_request_facts fact on fact.occurred_at >= e.start_at and fact.occurred_at < e.end_at
+    join public.reporting_request_facts fact on fact.occurred_at >= e.start_at and fact.occurred_at < e.end_at
     left join public.v2_model_provider_routes route on route.provider_model_id = fact.provider_model_id
     left join public.gateway_requests authoritative on authoritative.id = fact.gateway_request_id
       and authoritative.created_at = fact.gateway_request_created_at
