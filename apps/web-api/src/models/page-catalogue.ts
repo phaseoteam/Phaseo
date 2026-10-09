@@ -343,14 +343,65 @@ export type ModelsPageQuery = {
 	includeMetrics?: boolean;
 };
 
-async function databasePageRows(env: Env, query: ModelsPageQuery = {}): Promise<Row[]> {
+async function loadPageRows(env: Env, region: string | null, serviceTier: string | null, organisationId: string | null): Promise<Row[]> {
 	const { data, error } = await getDataClient(env).rpc("get_public_models_page_payload", {
-		p_region: query.region || null,
-		p_service_tier: query.serviceTier || null,
-		p_organisation_id: query.organisationId || null,
+		p_region: region,
+		p_service_tier: serviceTier,
+		p_organisation_id: organisationId,
 	});
 	if (error) throw error;
 	if (!Array.isArray(data)) throw new Error("Invalid models catalogue payload");
+	return data;
+}
+
+// The payload costs ~1s of database time and ~6.6MB per build, yet edge
+// responses are keyed by URL, so every offset, search, projection and
+// organisation page rebuilt it. Share one copy per catalogue revision, region
+// and tier across those callers. Revision triggers cover every catalogue table
+// the payload reads except v2_labs, so the TTL bounds lab edits to the same
+// window as the edge cache.
+const SHARED_ROWS_TTL_SECONDS = 15 * 60;
+const sharedRowsInflight = new Map<string, Promise<Row[]>>();
+
+async function catalogueRevision(env: Env): Promise<string | null> {
+	const { data, error } = await getDataClient(env).rpc("gateway_catalogue_revision");
+	const revision = error ? null : String(data ?? "");
+	return revision && /^\d+$/.test(revision) ? revision : null;
+}
+
+async function sharedPageRows(env: Env, cache: Cache, region: string | null, serviceTier: string | null): Promise<Row[]> {
+	const revision = await catalogueRevision(env);
+	if (!revision) return loadPageRows(env, region, serviceTier, null);
+	const key = `https://web-api.internal/models-page-rows/v1/${revision}/${encodeURIComponent(region ?? "")}/${encodeURIComponent(serviceTier ?? "")}`;
+	const inflight = sharedRowsInflight.get(key);
+	if (inflight) return inflight;
+	const load = (async () => {
+		const cached = await cache.match(key).catch(() => undefined);
+		if (cached) {
+			const rows = await cached.json().catch(() => null);
+			if (Array.isArray(rows)) return rows as Row[];
+		}
+		const rows = await loadPageRows(env, region, serviceTier, null);
+		await cache.put(key, new Response(JSON.stringify(rows), {
+			headers: { "Content-Type": "application/json", "Cache-Control": `max-age=${SHARED_ROWS_TTL_SECONDS}` },
+		})).catch(() => {});
+		return rows;
+	})();
+	sharedRowsInflight.set(key, load);
+	try {
+		return await load;
+	} finally {
+		sharedRowsInflight.delete(key);
+	}
+}
+
+async function databasePageRows(env: Env, query: ModelsPageQuery = {}): Promise<Row[]> {
+	const region = query.region || null;
+	const serviceTier = query.serviceTier || null;
+	const cache = (globalThis as { caches?: { default?: Cache } }).caches?.default;
+	const data = cache
+		? await sharedPageRows(env, cache, region, serviceTier)
+		: await loadPageRows(env, region, serviceTier, query.organisationId || null);
 	return query.organisationId
 		? data.filter((row: Row) => String(row.organisation_id ?? "") === query.organisationId)
 		: data;
