@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	createUpstreamTimingTracker,
+	isStreamingProviderRequest,
 	fetchUpstream,
 	resolveUpstreamHeadersTimeoutMs,
 	UpstreamHeadersTimeoutError,
@@ -23,6 +24,7 @@ function hangingFetch() {
 }
 
 const streaming = { applyHeadersDeadline: true };
+const STREAM_URL = "https://provider.test/v1beta/models/m:streamGenerateContent?alt=sse";
 
 describe("upstream headers deadline", () => {
 	afterEach(() => {
@@ -35,16 +37,16 @@ describe("upstream headers deadline", () => {
 		expect(resolveUpstreamHeadersTimeoutMs()).toBe(0);
 		const init = { method: "POST" };
 		const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("ok"));
-		await createUpstreamTimingTracker(undefined, streaming).timing.fetch("https://provider.test", init);
+		await createUpstreamTimingTracker(undefined, streaming).timing.fetch(STREAM_URL, init);
 		// The caller's init is passed through untouched (no injected signal).
-		expect(fetchSpy).toHaveBeenCalledWith("https://provider.test", init);
+		expect(fetchSpy).toHaveBeenCalledWith(STREAM_URL, init);
 	});
 
 	it("fails a stalled provider with a provider transport failure", async () => {
 		bindingsState.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "25" };
 		hangingFetch();
 		const tracker = createUpstreamTimingTracker(undefined, streaming);
-		const error = await tracker.timing.fetch("https://provider.test", { method: "POST" }).catch((err) => err);
+		const error = await tracker.timing.fetch("https://provider.test/v1/messages", { method: "POST", body: JSON.stringify({ model: "m", stream: true }) }).catch((err) => err);
 		expect(error).toBeInstanceOf(UpstreamHeadersTimeoutError);
 		expect(error).toMatchObject({ name: "UpstreamHeadersTimeoutError", code: "upstream_headers_timeout", timeoutMs: 25 });
 		expect(tracker.isProviderTransportFailure(error)).toBe(true);
@@ -71,9 +73,34 @@ describe("upstream headers deadline", () => {
 			await new Promise((resolve) => setTimeout(resolve, 30));
 			return new Response("late but fine");
 		});
-		const response = await createUpstreamTimingTracker(undefined, streaming).timing.fetch("https://provider.test", undefined, phase);
+		const response = await createUpstreamTimingTracker(undefined, streaming).timing.fetch(STREAM_URL, undefined, phase);
 		expect(await response.text()).toBe("late but fine");
 		expect(fetchSpy.mock.calls[0][1]).toBeUndefined();
+	});
+
+	it("does not apply to a non-streaming provider call made for a streaming client", async () => {
+		// e.g. Google Interactions or synthetic image streams: a completed upstream call, re-streamed locally.
+		bindingsState.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "5" };
+		vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 30));
+			return new Response("completed generation");
+		});
+		const response = await createUpstreamTimingTracker(undefined, streaming).timing.fetch(
+			"https://provider.test/v1beta/models/m:generateContent",
+			{ method: "POST", body: JSON.stringify({ contents: [] }) },
+		);
+		expect(await response.text()).toBe("completed generation");
+	});
+
+	it.each([
+		["a streamGenerateContent URL", "https://g.test/v1beta/models/m:streamGenerateContent?alt=sse", undefined, true],
+		["an SSE Accept header", "https://p.test/v1/x", { headers: { accept: "text/event-stream" } }, true],
+		["a JSON body with stream true", "https://p.test/v1/chat/completions", { body: '{"model":"m","stream": true}' }, true],
+		["a JSON body with stream false", "https://p.test/v1/chat/completions", { body: '{"model":"m","stream":false}' }, false],
+		["a generateContent URL", "https://g.test/v1beta/models/m:generateContent", { body: "{}" }, false],
+		["a binary body", "https://p.test/v1/audio", { body: new Uint8Array([1, 2]) }, false],
+	] as const)("detects streaming provider requests: %s", (_label, url, init, expected) => {
+		expect(isStreamingProviderRequest(url, init as RequestInit | undefined)).toBe(expected);
 	});
 
 	it("keeps caller cancellation a neutral AbortError", async () => {
@@ -81,7 +108,7 @@ describe("upstream headers deadline", () => {
 		hangingFetch();
 		const caller = new AbortController();
 		const tracker = createUpstreamTimingTracker(undefined, streaming);
-		const pending = tracker.timing.fetch("https://provider.test", { signal: caller.signal }).catch((err) => err);
+		const pending = tracker.timing.fetch(STREAM_URL, { signal: caller.signal }).catch((err) => err);
 		caller.abort(new DOMException("client went away", "AbortError"));
 		const error = await pending;
 		expect(error).not.toBeInstanceOf(UpstreamHeadersTimeoutError);
@@ -104,7 +131,7 @@ describe("upstream headers deadline", () => {
 				},
 			}));
 		});
-		const response = await createUpstreamTimingTracker(undefined, streaming).timing.fetch("https://provider.test");
+		const response = await createUpstreamTimingTracker(undefined, streaming).timing.fetch(STREAM_URL);
 		expect(await response.text()).toBe("data: a\n\ndata: b\n\n");
 		expect(bodySignal?.aborted).toBe(false);
 	});
@@ -117,7 +144,7 @@ describe("upstream headers deadline", () => {
 			return new Response("ok");
 		});
 		const caller = new AbortController();
-		await createUpstreamTimingTracker(undefined, streaming).timing.fetch("https://provider.test", { signal: caller.signal });
+		await createUpstreamTimingTracker(undefined, streaming).timing.fetch(STREAM_URL, { signal: caller.signal });
 		caller.abort();
 		expect(requestSignal?.aborted).toBe(true);
 	});

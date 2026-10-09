@@ -323,7 +323,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 				return Promise.resolve(new Response("{}", { status: 200 }));
 			});
 			const executor = vi.fn(async (args: any) => {
-				const upstream = await args.upstreamTiming.fetch(`https://${args.providerId}.test/generate`, { method: "POST" });
+				const upstream = await args.upstreamTiming.fetch(`https://${args.providerId}.test/generate`, { method: "POST", body: JSON.stringify({ stream: true }) });
 				return { kind: "completed", ir: {}, upstream, bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
 			});
 			resolveProviderExecutorMock.mockReturnValue(executor);
