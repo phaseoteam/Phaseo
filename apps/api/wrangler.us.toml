@@ -10,8 +10,9 @@ preview_urls = false
 [vars]
 GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED = "true"
 CUSTOMER_RATE_LIMITS_ENABLED = "true"
-# After each charge, store the exact post-charge balance in the credit cache
-# instead of deleting it, so low-balance workspaces skip a wallet read.
+# When a charge would have invalidated the credit cache, store its exact
+# post-charge balance instead if it is at least $1, no higher than the cached
+# balance, and not throttled; otherwise the cache is still invalidated.
 GATEWAY_CREDIT_WRITEBACK_ENABLED = "true"
 GATEWAY_SPEND_LIMIT_DO_MODE = "off"
 GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
