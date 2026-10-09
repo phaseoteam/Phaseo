@@ -198,8 +198,11 @@ export type TieredResult<T> = { value: T | null; source: TieredSource };
 async function readFrom<T>(options: TieredCacheOptions<T>, level: Level): Promise<TieredResult<T>> {
 	const { key } = options;
 	const epoch = epochOf(key);
+	// A load superseded by invalidation or by a replacement load must not write any layer,
+	// or a slow, older result could overwrite the newer one.
+	const current = () => epochOf(key) === epoch;
 	const fill = (envelope: Envelope<unknown>, raw: string) => {
-		if (epochOf(key) === epoch) l1Set(key, envelope, raw.length);
+		if (current()) l1Set(key, envelope, raw.length);
 	};
 
 	if (level <= 2 && l2Enabled(options)) {
@@ -219,7 +222,7 @@ async function readFrom<T>(options: TieredCacheOptions<T>, level: Level): Promis
 		const envelope = parseEnvelope(raw, options);
 		if (raw && envelope && servable(options, envelope)) {
 			fill(envelope, raw);
-			if (l2Enabled(options)) dispatchBackground(l2Write(key, raw, options.l2.storeS));
+			if (current() && l2Enabled(options)) dispatchBackground(l2Write(key, raw, options.l2.storeS));
 			if (staleInL3({ ...options, l3: options.l3 }, envelope)) {
 				scheduleRefresh(options, 4);
 			}
@@ -231,7 +234,7 @@ async function readFrom<T>(options: TieredCacheOptions<T>, level: Level): Promis
 	const envelope: Envelope<T> = { v: value ?? null, at: Date.now() };
 	const raw = JSON.stringify(envelope);
 	fill(envelope, raw);
-	const shared = options.isShareable ? options.isShareable(envelope.v) : true;
+	const shared = current() && (options.isShareable ? options.isShareable(envelope.v) : true);
 	if (shared && l2Enabled(options)) dispatchBackground(l2Write(key, raw, options.l2.storeS));
 	if (shared && options.l3) {
 		const expirationS = envelope.v === null
@@ -288,6 +291,8 @@ export async function tieredReadDetailed<T>(options: TieredCacheOptions<T>): Pro
 		// The load may belong to another request; never wait on it unboundedly.
 		const shared = await awaitShared(pending, SHARED_LOAD_WAIT_MS);
 		if (shared.settled) return shared.value;
+		// Supersede the unsettled load so it cannot overwrite this one if it finishes later.
+		epochs.set(options.key, epochOf(options.key) + 1);
 	}
 	const load = readFrom(options, 2).finally(() => {
 		if (inflight.get(options.key) === load) inflight.delete(options.key);
