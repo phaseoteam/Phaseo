@@ -5,8 +5,7 @@ import { ChatViewportLock } from "./ChatViewportLock";
 import { buildMetadata } from "@/lib/seo";
 import { ChatFeatureFlagsProvider } from "@/components/(chat)/ChatFeatureFlags";
 import { realtimeVoiceFlag, videoApiFlag } from "@/lib/flags";
-import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
-import type { InternalAuthHeaderData } from "@/lib/fetchers/internal/authTypes";
+import { getHeaderAccountData } from "@/components/header/getHeaderAccountData";
 import { ChatAuthProvider } from "@/components/(chat)/ChatAuthProvider";
 import { ScopedMessages } from "@/components/i18n/ScopedMessages";
 
@@ -32,17 +31,11 @@ export default async function ChatLayout({
 	params: Promise<{ locale: string }>;
 }) {
 	await connection();
-	const emptyAuth: InternalAuthHeaderData = {
-		isLoggedIn: false,
-		user: undefined,
-		teams: [],
-		currentTeamId: undefined,
-		userRole: undefined,
-	};
+	// Shares the header's request-scoped account read instead of fetching it again.
 	const [realtimeEnabled, videoEnabled, initialAuth] = await Promise.all([
 		realtimeVoiceFlag().catch(() => false),
 		videoApiFlag().catch(() => false),
-		fetchInternalAuthHeaderData().catch(() => emptyAuth),
+		getHeaderAccountData(),
 	]);
 
 	return (
