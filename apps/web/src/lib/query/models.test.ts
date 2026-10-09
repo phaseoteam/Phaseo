@@ -39,6 +39,24 @@ describe("fetchModelsPageData", () => {
 		global.fetch = originalFetch;
 	});
 
+	it("merges staged records only through the account-scoped admin request", async () => {
+		global.fetch = jest.fn(async (url) => {
+			const path = String(url);
+			if (path.includes("/audit/source")) return new Response(JSON.stringify({ models: [
+				{ model_id: "test/staged", name: "Staged", hidden: true, organisation: { lab_slug: "test", name: "Test" } },
+			] }));
+			if (path.includes("/api/account/")) return new Response(JSON.stringify({ private_catalogue: true, models: [] }));
+			return new Response(JSON.stringify({ models: [model("public")], facets: structuredClone(facets), pricing_complete: true, total: 1, limit: 2000 }));
+		});
+		const publicData = await fetchModelsPageData("/api/_web/models");
+		expect(publicData.models.map((row) => row.model_id)).toEqual(["public"]);
+		const adminData = await fetchModelsPageData("/api/_web/models", [], {
+			accountQueryScope: { userId: "admin", workspaceId: null }, accessToken: "admin-token", fetchProviderPreviews: false,
+		});
+		expect(adminData.models.map((row) => row.model_id)).toEqual(["test/staged", "public"]);
+		expect(adminData.facets.statusCounts.coming_soon).toBe(1);
+	});
+
 	it("combines every API page while retaining the catalogue facets", async () => {
 		const fetchMock = jest
 			.fn()

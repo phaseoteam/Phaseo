@@ -10,6 +10,8 @@ export type AdminModelSource = {
 	pricingRules: Array<Record<string, any>>;
 	subscriptionPlans: Array<Record<string, any>>;
 	aliases: Array<{ api_model_id: string; alias_slug: string }>;
+	links?: Array<{ url: string; platform?: string | null; kind?: string | null; title?: string | null }>;
+	details?: Array<{ detail_name: string; detail_value: string | number | null }>;
 };
 
 export async function fetchAdminModelSource(modelId: string): Promise<AdminModelSource> {
