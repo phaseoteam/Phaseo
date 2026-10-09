@@ -15,6 +15,15 @@ function valueAt(value: unknown, path: string): string {
 }
 
 describe("runtime locale message loading", () => {
+	it("reuses assembled dictionaries across requests without mixing locales", async () => {
+		const sourceRequest = getPublicMessages("en-GB");
+		expect(getPublicMessages("en-GB")).toBe(sourceRequest);
+		const source = await sourceRequest;
+		expect(await getPublicMessages("en-GB")).toBe(source);
+		const localized = await getPublicMessages("es-ES");
+		expect(localized).not.toBe(source);
+		expect(await getPublicMessages("es-ES")).toBe(localized);
+	});
 	it.each(publicLocales)("loads complete domain trees for %s", async (locale: PublicLocale) => {
 		const messages = await getPublicMessages(locale);
 		const onError = jest.fn();

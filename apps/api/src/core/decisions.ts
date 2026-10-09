@@ -3,7 +3,9 @@ import { z } from "zod";
 export type DecisionValue = string | boolean;
 export type DecisionInputPart =
 	| { type: "input_text"; text: string }
-	| { type: "input_image"; image_url: string; detail?: "low" | "high" | "auto" | "original" | null };
+	| { type: "input_image"; image_url: string; detail?: "low" | "high" | "auto" | "original" | null }
+	| { type: "input_audio"; input_audio: { data?: string; url?: string; format?: "wav" | "mp3" } }
+	| { type: "input_video"; video_url: string | { url: string } };
 export type DecisionInput = string | Array<{ role: "user"; type?: "message"; content: string | DecisionInputPart[] }>;
 export type NativeDecisionQuestion =
 	| { type: "predicate"; name?: string; instructions: string }
@@ -19,6 +21,10 @@ export type NativeDecisionRequest = {
 const instructions = z.string().max(1048576);
 const commonQuestion = { name: instructions.optional(), instructions };
 const value = z.union([z.string(), z.boolean()]);
+const mediaUrl = (kind: "audio" | "video") => z.string().max(24 * 1024 * 1024).refine(value => {
+	if (new RegExp(`^data:${kind}/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$`, "i").test(value)) return true;
+	try { return new URL(value).protocol === "https:"; } catch { return false; }
+}, "Use an inline base64 data URL or a public HTTPS URL.");
 export const NativeDecisionQuestionSchema = z.discriminatedUnion("type", [
 	z.object({ ...commonQuestion, type: z.literal("predicate") }).strict(),
 	z.object({
@@ -31,6 +37,19 @@ export const NativeDecisionQuestionSchema = z.discriminatedUnion("type", [
 	}).strict(),
 ]);
 const inputPart = z.discriminatedUnion("type", [
+	z.object({
+		type: z.literal("input_audio"),
+		input_audio: z.object({
+			data: z.string().max(12 * 1024 * 1024).regex(/^[A-Za-z0-9+/]+={0,2}$/).optional(),
+			url: mediaUrl("audio").optional(),
+			format: z.enum(["wav", "mp3"]).optional(),
+		}).strict().refine(audio => (audio.data !== undefined) !== (audio.url !== undefined),
+			"Supply exactly one of data or url.").refine(audio => audio.data === undefined || audio.format !== undefined,
+			"Inline audio data requires a format."),
+	}).strict(),
+	z.object({ type: z.literal("input_video"), video_url: z.union([
+		mediaUrl("video"), z.object({ url: mediaUrl("video") }).strict(),
+	]) }).strict(),
 	z.object({ type: z.literal("input_text"), text: z.string().max(10485760) }).strict(),
 	z.object({
 		type: z.literal("input_image"),

@@ -20,6 +20,7 @@ const runtimeBindings = vi.hoisted(() => ({ value: null as Record<string, unknow
 const classifyHealthCalls = vi.hoisted(() => [] as Array<Record<string, unknown>>);
 
 vi.mock("@/runtime/env", () => ({
+	getCache: () => ({ get: async () => null, put: async () => undefined }),
 	getBindingsIfConfigured: () => runtimeBindings.value,
 	dispatchBackground: (promise: Promise<unknown>) => void promise,
 	ensureRuntimeForBackground: () => ensureRuntimeForBackgroundMock(),
@@ -508,6 +509,19 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		guardCandidatesMock.mockResolvedValue({ ok: true, value: [{ providerId: "typesafe", inputModalities: ["text"], capabilityParams: {} }] });
 		const result = await doRequestWithIR(createCtx({ endpoint: "decisions", capability: "decisions.make" }), {
 			model: "typesafe/jev-1.13.0", state: "Photo", questions: {}, images: ["data:image/png;base64,AQID"],
+		} as any, createTiming());
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(400);
+		expect(rankProvidersMock).not.toHaveBeenCalled();
+		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
+	});
+	it.each([
+		{ audio: [{ type: "audio", source: "data", data: "AQID", format: "wav" }] },
+		{ videos: ["data:video/mp4;base64,AQID"] },
+	])("rejects unsupported decision media before provider selection: %j", async media => {
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [{ providerId: "openai", inputModalities: ["text", "image"], capabilityParams: { images: true } }] });
+		const result = await doRequestWithIR(createCtx({ endpoint: "decisions", capability: "decisions.make" }), {
+			model: "openai/gpt-6-luna", state: "Recording", questions: {}, ...media,
 		} as any, createTiming());
 		expect(result).toBeInstanceOf(Response);
 		expect((result as Response).status).toBe(400);

@@ -19,6 +19,21 @@ let rows: ReturnType<typeof sku>[];
 let respond: () => Promise<Response>;
 
 describe("joined price-card loader", () => {
+    it("isolates admin internal pricing from ordinary route lookups and cache entries", async () => {
+        const privateCard = await loadPriceCard("example", "example/internal", "text.generate", "preview", true);
+        expect(privateCard?.rules).toHaveLength(2);
+        const privateParams = requests[0].searchParams;
+        expect(privateParams.get("access_scope")).toBe("eq.internal");
+        expect(privateParams.get("phaseo_status")).toBe("in.(testing,enabled)");
+        expect(privateParams.has("routing_enabled")).toBe(false);
+        expect(privateParams.get("provider_model_slug")).toBe("eq.preview");
+        respond = async () => Response.json([]);
+        expect(await loadPriceCard("example", "example/internal", "text.generate", "preview")).toBeNull();
+        expect(requests).toHaveLength(2);
+        expect(requests[1].searchParams.get("routing_enabled")).toBe("eq.true");
+        expect(await loadPriceCard("example", "example/internal", "text.generate", "preview", true)).toBe(privateCard);
+        expect(requests).toHaveLength(2);
+    });
     beforeEach(() => {
         __resetPricingLoaderCachesForTests();
         vi.useFakeTimers();
@@ -60,7 +75,7 @@ describe("joined price-card loader", () => {
         respond = () => new Promise<Response>(() => {});
         void loadPriceCard("poolside", "poolside/laguna-s-2.1:free", "text.generate");
         await vi.advanceTimersByTimeAsync(0);
-        respond = async () => Response.json(rows);
+        respond = async () => Response.json([{ provider_model_id: "route-1", skus: rows }]);
         const card = loadPriceCard("poolside", "poolside/laguna-s-2.1:free", "text.generate");
         await vi.advanceTimersByTimeAsync(1_500);
         expect((await card)?.rules.map((rule) => rule.id)).toEqual(["input_text_tokens", "output_text_tokens"]);
@@ -72,13 +87,13 @@ describe("joined price-card loader", () => {
         respond = () => new Promise<Response>((resolve) => { finishSlow = resolve; });
         void loadPriceCard("poolside", "poolside/laguna-s-2.1:free", "text.generate");
         await vi.advanceTimersByTimeAsync(0);
-        respond = async () => Response.json(rows);
+        respond = async () => Response.json([{ provider_model_id: "route-1", skus: rows }]);
         const replacement = loadPriceCard("poolside", "poolside/laguna-s-2.1:free", "text.generate");
         await vi.advanceTimersByTimeAsync(1_500);
         expect((await replacement)?.rules).toHaveLength(2);
 
         // The slow original finally returns an older card with a single meter.
-        finishSlow(Response.json([{ ...sku(), meters: [meter("input_text_tokens", 1, 100)] }]));
+        finishSlow(Response.json([{ provider_model_id: "route-1", skus: [{ ...sku(), meters: [meter("input_text_tokens", 1, 100)] }] }]));
         await vi.advanceTimersByTimeAsync(0);
         expect((await loadPriceCard("poolside", "poolside/laguna-s-2.1:free", "text.generate"))?.rules).toHaveLength(2);
         expect(requests).toHaveLength(2);

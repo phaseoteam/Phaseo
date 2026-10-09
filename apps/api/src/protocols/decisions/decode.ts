@@ -19,10 +19,22 @@ export function decodeDecisionsRequest(req: DecisionsRequest): IRDecisionsReques
 	}
 	const native = req as unknown as NativeDecisionRequest;
 	const images: string[] = [];
+	const audio: NonNullable<IRDecisionsRequest["audio"]> = [];
+	const videos: string[] = [];
 	const state = typeof native.input === "string" ? native.input : native.input.map(message => ({
 		role: message.role,
 		content: typeof message.content === "string" ? message.content : message.content.map(part => {
 			if (part.type === "input_text") return part.text;
+			if (part.type === "input_audio") {
+				const clip = part.input_audio;
+				const index = audio.push({ type: "audio", source: clip.url ? "url" : "data",
+					data: clip.url ?? clip.data!, ...(clip.format ? { format: clip.format } : {}) }) - 1;
+				return `[Audio ${index}]`;
+			}
+			if (part.type === "input_video") {
+				const index = videos.push(typeof part.video_url === "string" ? part.video_url : part.video_url.url) - 1;
+				return `[Video ${index}]`;
+			}
 			const index = images.push(part.image_url) - 1;
 			return `[Image ${index}]`;
 		}).join("\n"),
@@ -43,6 +55,8 @@ export function decodeDecisionsRequest(req: DecisionsRequest): IRDecisionsReques
 	return {
 		model: native.model, state, questions,
 		...(images.length ? { images } : {}),
+		...(audio.length ? { audio } : {}),
+		...(videos.length ? { videos } : {}),
 		decisionContext: {
 			model: native.model, input: native.input, questions: native.questions,
 			...(native.safety_identifier === undefined ? {} : { safety_identifier: native.safety_identifier }),

@@ -4,6 +4,25 @@ import httpx
 from phaseo import Phaseo
 
 
+def test_omni_media_preserves_native_decisions_contract():
+    body = {"model": "cloudflare/clef-omni", "input": [{"role": "user", "content": [
+        {"type": "input_audio", "input_audio": {"data": "AQID", "format": "wav"}},
+        {"type": "input_video", "video_url": {"url": "https://media.example/clip.mp4"}},
+    ]}], "questions": [{"type": "predicate", "instructions": "Safe?"}]}
+
+    def handler(request):
+        assert str(request.url) == "https://example.test/v1/decisions"
+        assert json.loads(request.content) == body
+        return httpx.Response(200, json={"model": body["model"], "answers": [
+            {"type": "predicate", "name": None, "probability": 0.9}],
+            "usage": {"input_tokens": 1000, "output_tokens": 0, "total_tokens": 1000}})
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as transport:
+        client = Phaseo(api_key="sk_test_123", base_url="https://example.test/v1", http_client=transport,
+                        enable_deprecation_warnings=False)
+        assert client.decisions.create(body)["answers"][0]["probability"] == 0.9
+
+
 def test_openai_decisions_preserve_typed_choices_and_inline_images():
     body = {"model": "openai/gpt-6-luna",
             "input": [{"role": "user", "content": [{"type": "input_image", "image_url": "data:image/png;base64,AQID", "detail": "original"}]}],

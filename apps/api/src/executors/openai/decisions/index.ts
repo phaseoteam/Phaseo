@@ -93,6 +93,7 @@ export const executor: ProviderExecutor = async args => {
 	if (args.providerId !== "openai" || args.providerModelSlug !== "gpt-6-luna") {
 		return invalid("OpenAI Decisions requires the gpt-6-luna provider route.");
 	}
+	if (ir.audio?.length || ir.videos?.length) return invalid("OpenAI Decisions does not support audio or video inputs.");
 	if (!(ir.decisionContext ? NativeDecisionsBodySchema.safeParse(ir.decisionContext) : DecisionsSchema.safeParse(ir)).success) {
 		return invalid("Invalid Phaseo decision request.");
 	}

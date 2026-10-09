@@ -3,6 +3,7 @@ import { DecisionsSchema } from "@core/schemas";
 import type { ExecutorExecuteArgs, ExecutorResult, ProviderExecutor } from "@executors/types";
 import { completeSystemOne } from "@executors/_shared/decisions/systemone";
 import { runCloudflareModel, unwrapCloudflareResult } from "../shared";
+import { prepareClefOmniMedia } from "./media";
 
 function invalidRequest(args: ExecutorExecuteArgs, message: string): ExecutorResult {
 	return {
@@ -15,9 +16,11 @@ function invalidRequest(args: ExecutorExecuteArgs, message: string): ExecutorRes
 export const executor: ProviderExecutor = async args => {
 	const ir = args.ir as IRDecisionsRequest;
 	const upstreamModel = args.providerModelSlug?.trim();
-	if (upstreamModel !== "@cf/cloudflare/clef" && upstreamModel !== "@cf/cloudflare/clef-flash") {
-		return invalidRequest(args, "The Cloudflare decisions route must select Clef or Clef Flash.");
+	const omni = upstreamModel === "@cf/cloudflare/clef-omni";
+	if (!omni && upstreamModel !== "@cf/cloudflare/clef" && upstreamModel !== "@cf/cloudflare/clef-flash") {
+		return invalidRequest(args, "The Cloudflare decisions route must select Clef, Clef Flash, or Clef Omni.");
 	}
+	if (!omni && (ir.audio?.length || ir.videos?.length)) return invalidRequest(args, "Audio and video decisions require Clef Omni.");
 	const entries = Object.entries(ir.questions);
 	if (!entries.length || entries.length > 64 || entries.some(([id]) => !/^[A-Za-z0-9_.-]{1,100}$/.test(id))) {
 		return invalidRequest(args, "Clef requires 1–64 questions with IDs of at most 100 letters, digits, underscores, dots, or hyphens.");
@@ -47,12 +50,27 @@ export const executor: ProviderExecutor = async args => {
 			}
 		}
 	}
+	let media: Awaited<ReturnType<typeof prepareClefOmniMedia>> = {};
+	if (omni) {
+		try { media = await prepareClefOmniMedia(ir, args); } catch (error) {
+			const code = error instanceof Error ? error.message : "";
+			if (code.startsWith("remote_media_url_rejected") || code === "remote_media_redirect_rejected") {
+				return invalidRequest(args, "Media URLs and redirect targets must use public HTTPS addresses.");
+			}
+			if (code.startsWith("remote_media_fetch_failed") || (error instanceof Error && error.name === "AbortError")) {
+				return invalidRequest(args, "Unable to retrieve remote media. Check that the media server is available and responds within the download timeout.");
+			}
+			return invalidRequest(args, "Clef Omni accepts up to four WAV/MP3 audio clips (8 MiB each) and two MP4/WebM videos, with at most 16 MiB combined audio/video. Use valid base64 or public HTTPS URLs with the matching Content-Type.");
+		}
+	}
 	const body = JSON.stringify({
 		model: upstreamModel.slice("@cf/cloudflare/".length), state: ir.state, questions: ir.questions,
 		...(ir.images?.length ? { images: ir.images } : {}),
+		...media,
 	});
-	if (new TextEncoder().encode(body).byteLength > 13 * 1024 * 1024) {
-		return invalidRequest(args, "Clef request bodies must be at most 13 MiB.");
+	const maxBodyMiB = omni ? 37 : 13;
+	if (new TextEncoder().encode(body).byteLength > maxBodyMiB * 1024 * 1024) {
+		return invalidRequest(args, `Clef request bodies must be at most ${maxBodyMiB} MiB.`);
 	}
 	const { response, keySource, byokKeyId } = await runCloudflareModel(args, body, "application/json");
 	return completeSystemOne(args, response, { source: keySource, byokId: byokKeyId },

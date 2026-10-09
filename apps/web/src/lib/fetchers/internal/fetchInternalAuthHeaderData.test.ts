@@ -19,6 +19,13 @@ describe("server authentication header loading", () => {
 	});
 	afterEach(() => jest.useRealTimers());
 
+	it("returns signed-out data without an account API call when no session exists", async () => {
+		getSession.mockResolvedValue({ data: { session: null } });
+		await expect(fetchInternalAuthHeaderData()).resolves.toEqual({ isLoggedIn: false, teams: [] });
+		expect(fetchAccountWebApi).not.toHaveBeenCalled();
+		expect(jest.getTimerCount()).toBe(0);
+	});
+
 	it("preserves auth, workspace and search parameters with a cancellation signal", async () => {
 		const result = { isLoggedIn: true, teams: [] };
 		jest.mocked(fetchAccountWebApi).mockResolvedValue(result);

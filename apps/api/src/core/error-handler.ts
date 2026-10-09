@@ -540,6 +540,8 @@ export function classifyErrorType(args: {
         "validation",
         "unsupported_param",
         "unsupported_model_or_endpoint",
+        // A 403 the request's location or residency requirements caused, not a key or gateway fault.
+        "model_region_unavailable",
         "unsupported_modalities",
         "bad_request",
         "missing_required",

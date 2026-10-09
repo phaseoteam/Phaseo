@@ -34,15 +34,6 @@ import {
 	computePrivateModelDiscoveryFingerprint,
 	sendPrivateModelDiscoveryNotification,
 } from "./private-model-discovery-notifications";
-import {
-	buildPricingTableIssueEntries,
-	buildCatalogPricingIssueEntries,
-	buildProviderPricingIssueEntries,
-	buildProviderIssueEntries,
-	shouldSyncProviderDiscoveryIssues,
-	syncUpstreamDiscoveryIssues,
-} from "./github-issues";
-import { dispatchProviderCatalogSync, type CatalogSyncDispatchSummary } from "./github-dispatch";
 import { fetchPricingTableSnapshots, hasPricingSourceChanged, type PricingTableSnapshot } from "./pricing-tables";
 import { MODEL_DISCOVERY_PROVIDERS, type ProviderConfig } from "./providers";
 import {
@@ -216,14 +207,6 @@ type DiscoveryRunSummary = {
 	staleModelsDeleted: number;
 	results: ProviderResult[];
 	changes: ProviderChange[];
-	issueSync?: {
-		created: number;
-		updated: number;
-		skipped: boolean;
-		reason?: string | null;
-		error?: string | null;
-	};
-	catalogSyncDispatch?: CatalogSyncDispatchSummary & { error?: string | null };
 	statePersisted: boolean;
 	persistenceDeferredReason?: string | null;
 	pricingMonitor: PricingMonitorSummary;
@@ -312,7 +295,6 @@ const PROVIDER_API_PRICING_WATCH_PROVIDER_IDS = new Set<string>([
 
 const PROVIDERS: ProviderConfig[] = MODEL_DISCOVERY_PROVIDERS;
 
-const PROVIDER_NAMES_BY_ID = new Map(PROVIDERS.map((provider) => [provider.providerId, provider.providerName]));
 
 export function getModelDiscoveryProviderCount(): number {
 	return PROVIDERS.length;
@@ -373,6 +355,33 @@ async function insertRunStart(runId: string, args: RunArgs, startedAt: string): 
 		started_at: startedAt,
 	});
 	if (error) throw new Error(error.message || "Failed to insert model discovery run row");
+}
+
+// A scheduled Worker invocation cannot outlive 15 minutes, so an older scheduled run
+// still marked "running" lost its worker before it could record an outcome. Manual
+// runs (scripts/model-discovery) have no such limit and are left alone.
+const ABANDONED_RUN_AFTER_MS = 30 * 60 * 1000;
+export const ABANDONED_RUN_ERROR = "abandoned: the worker stopped before the run recorded an outcome";
+
+/** Closes runs whose worker died mid-run; best effort, never blocks discovery. */
+export async function closeAbandonedRuns(now: Date, currentRunId: string): Promise<number> {
+	try {
+		const { data, error } = await getSupabaseAdmin()
+			.from("model_discovery_runs")
+			.update({ status: "failed", finished_at: now.toISOString(), error: ABANDONED_RUN_ERROR })
+			.eq("status", "running")
+			.eq("trigger", "scheduled")
+			.lt("started_at", new Date(now.getTime() - ABANDONED_RUN_AFTER_MS).toISOString())
+			.neq("id", currentRunId)
+			.select("id");
+		if (error) throw new Error(error.message || "Failed to close abandoned model discovery runs");
+		const closed = Array.isArray(data) ? data.length : 0;
+		if (closed > 0) console.warn("[model-discovery] Closed abandoned runs:", closed);
+		return closed;
+	} catch (error) {
+		console.warn("[model-discovery] Could not close abandoned runs:", error instanceof Error ? error.message : String(error));
+		return 0;
+	}
 }
 
 function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError?: string | null; error?: string | null } = {}): Record<string, unknown> {
@@ -915,23 +924,12 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		&& shouldRunPricingMonitor(args);
 
 	await insertRunStart(runId, args, startedAt.toISOString());
+	await closeAbandonedRuns(startedAt, runId);
 	let deliveredNotificationFingerprint: string | null = null;
 
 	try {
 		const results: ProviderResult[] = [];
 		const changes: ProviderChange[] = [];
-		let issueSyncSummary: DiscoveryRunSummary["issueSync"] = {
-			created: 0,
-			updated: 0,
-			skipped: false,
-			reason: "not attempted",
-		};
-		let catalogSyncDispatch: DiscoveryRunSummary["catalogSyncDispatch"] = {
-			dispatched: false,
-			skipped: true,
-			providers: [],
-			reason: "not attempted",
-		};
 		const upsertRows: SeenModelUpsertRow[] = [];
 		const deleteRows: SeenModelDeleteRow[] = [];
 		const pendingRemovalRows: SeenModelPendingRemovalRow[] = [];
@@ -1227,100 +1225,6 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			}
 		}
 
-		if (
-			changes.length > 0 ||
-			pricingMonitor.providerChanges.length > 0 ||
-			providerApiPricingMonitor.providerChanges.length > 0 ||
-			pricingTableMonitor.providerChanges.length > 0
-		) {
-			if (!shouldSyncProviderDiscoveryIssues()) {
-				issueSyncSummary = {
-					created: 0,
-					updated: 0,
-					skipped: true,
-					reason: "disabled by MODEL_DISCOVERY_ISSUE_SYNC_ENABLED",
-				};
-				console.log("[model-discovery] Provider GitHub issue sync skipped:", issueSyncSummary.reason);
-			} else {
-				try {
-					const detectedAt = new Date().toISOString();
-					const issueEntries = [
-						...buildProviderIssueEntries({ changes, detectedAt, detectionSource: args.source }),
-						...buildCatalogPricingIssueEntries({
-							changes: pricingMonitor.providerChanges.map((change) => ({
-								...change,
-								providerName: PROVIDER_NAMES_BY_ID.get(change.providerId) ?? change.providerId,
-							})),
-							detectedAt,
-							detectionSource: args.source,
-						}),
-						...buildProviderPricingIssueEntries({
-							changes: providerApiPricingMonitor.providerChanges.map((change) => ({
-								...change,
-								providerName: PROVIDER_NAMES_BY_ID.get(change.providerId) ?? change.providerId,
-							})),
-							detectedAt,
-							detectionSource: args.source,
-						}),
-						...buildPricingTableIssueEntries({
-							changes: pricingTableMonitor.providerChanges,
-							detectedAt,
-							detectionSource: args.source,
-						}),
-					];
-					issueSyncSummary = await syncUpstreamDiscoveryIssues(issueEntries);
-					if (issueSyncSummary.skipped) {
-						console.log(
-							"[model-discovery] Provider GitHub issue sync skipped:",
-							issueSyncSummary.reason ?? "no reason provided"
-						);
-					} else {
-						console.log(
-							`[model-discovery] Provider GitHub issue sync complete: created=${issueSyncSummary.created}, updated=${issueSyncSummary.updated}.`
-						);
-					}
-				} catch (error) {
-					const reason = error instanceof Error ? error.message : String(error);
-					issueSyncSummary = {
-						created: 0,
-						updated: 0,
-						skipped: false,
-						error: reason,
-					};
-					console.error("[model-discovery] Provider GitHub issue sync failed:", reason);
-				}
-			}
-		}
-
-		const catalogSyncProviders = [
-			...changes.map((change) => change.providerId),
-			...pricingMonitor.providerChanges.map((change) => change.providerId),
-			...providerApiPricingMonitor.providerChanges.map((change) => change.providerId),
-			...pricingTableMonitor.providerChanges.map((change) => change.providerId),
-		];
-		try {
-			catalogSyncDispatch = persistenceDeferredReason
-				? {
-					dispatched: false,
-					skipped: true,
-					providers: [...new Set(catalogSyncProviders)].sort(),
-					reason: "discovery state was not persisted",
-				}
-				: await dispatchProviderCatalogSync(catalogSyncProviders);
-			if (catalogSyncDispatch.skipped && catalogSyncProviders.length > 0) {
-				console.log("[model-discovery] Provider catalog sync dispatch skipped:", catalogSyncDispatch.reason);
-			}
-		} catch (error) {
-			const reason = error instanceof Error ? error.message : String(error);
-			catalogSyncDispatch = {
-				dispatched: false,
-				skipped: false,
-				providers: [...new Set(catalogSyncProviders)].sort(),
-				error: reason,
-			};
-			console.error("[model-discovery] Provider catalog sync dispatch failed:", reason);
-		}
-
 		const finishedAt = new Date();
 		const summary: DiscoveryRunSummary = {
 			runId,
@@ -1337,8 +1241,6 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			staleModelsDeleted,
 			results,
 			changes,
-			issueSync: issueSyncSummary,
-			catalogSyncDispatch,
 			statePersisted: !persistenceDeferredReason,
 			persistenceDeferredReason,
 			pricingMonitor,
@@ -1353,8 +1255,6 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		const status: RunStatus =
 			summary.providersError > 0 ||
 			notificationError ||
-			Boolean(summary.issueSync?.error) ||
-			Boolean(summary.catalogSyncDispatch?.error) ||
 			Boolean(summary.persistenceDeferredReason) ||
 			Boolean(summary.pricingMonitor.error) ||
 			Boolean(summary.providerApiPricingMonitor.error) ||
@@ -1385,18 +1285,6 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			staleModelsDeleted: 0,
 			results: [],
 			changes: [],
-			issueSync: {
-				created: 0,
-				updated: 0,
-				skipped: false,
-				error: reason,
-			},
-			catalogSyncDispatch: {
-				dispatched: false,
-				skipped: false,
-				providers: [],
-				error: reason,
-			},
 			statePersisted: false,
 			persistenceDeferredReason: null,
 			pricingMonitor: {

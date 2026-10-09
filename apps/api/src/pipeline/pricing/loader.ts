@@ -19,8 +19,8 @@ type PricingL1Entry = {
 const pricingL1 = new Map<string, PricingL1Entry>();
 const pricingInflight = new Map<string, Promise<PriceCard | null>>();
 
-function pricingCacheKey(provider: string, model: string, endpoint: string, providerModelSlug?: string | null): string {
-    return `${provider}:${model}:${endpoint}:${providerModelSlug ?? "*"}`;
+function pricingCacheKey(provider: string, model: string, endpoint: string, providerModelSlug?: string | null, adminInternal = false): string {
+    return `${provider}:${model}:${endpoint}:${providerModelSlug ?? "*"}:${adminInternal ? "admin-internal" : "public"}`;
 }
 
 function readPricingL1(key: string): PriceCard | null | undefined {
@@ -48,9 +48,9 @@ function resolvePricingL1TtlMs(card: PriceCard, nowMs: number = Date.now()): num
     return Math.max(1, Math.min(PRICING_L1_TTL_MS, effectiveToMs - nowMs));
 }
 
-export async function loadPriceCard(provider: string, model: string, endpoint: string, providerModelSlug?: string | null): Promise<PriceCard | null> {
+export async function loadPriceCard(provider: string, model: string, endpoint: string, providerModelSlug?: string | null, adminInternal = false): Promise<PriceCard | null> {
     const normalizedProviderModelSlug = providerModelSlug?.trim() || null;
-    const cacheKey = pricingCacheKey(provider, model, endpoint, normalizedProviderModelSlug);
+    const cacheKey = pricingCacheKey(provider, model, endpoint, normalizedProviderModelSlug, adminInternal);
     const l1 = readPricingL1(cacheKey);
     if (l1 !== undefined) return l1;
 
@@ -78,7 +78,6 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
             .select("provider_model_id,skus:v2_pricing_skus(sku_id,provider_model_id,service_tier_slug,operation,status,currency,effective_from,effective_to,metadata,updated_at,meters:v2_pricing_sku_meters(sku_meter_id,sku_id,meter_key,unit,unit_quantity,price_nanos,meter_order,metadata,updated_at))")
             .eq("provider_slug", provider)
             .in("status", ["active", "degraded"])
-            .eq("routing_enabled", true)
             .eq("skus.operation", endpoint)
             .eq("skus.status", "active")
             // Wallet debits are USD. Foreign-currency catalog quotes must be
@@ -89,6 +88,11 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
             .eq("skus.meters.billable", true)
             .order("effective_from", { referencedTable: "skus", ascending: false })
             .order("meter_order", { referencedTable: "skus.meters", ascending: true });
+        // Only callers with verified admin-internal authorization may price
+        // staged routes. Ordinary requests retain the public routing gate.
+        query = adminInternal
+            ? query.eq("access_scope", "internal").in("phaseo_status", ["testing", "enabled"])
+            : query.eq("routing_enabled", true);
         query = normalizedProviderModelSlug
             ? query.eq("provider_model_slug", normalizedProviderModelSlug)
             : query.or(`model_slug.eq.${JSON.stringify(model)},provider_model_slug.eq.${JSON.stringify(model)}`);

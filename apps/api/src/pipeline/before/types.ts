@@ -757,5 +757,7 @@ export type PipelineContext = {
     keyId?: string | null;
     testingMode?: boolean;
     billableInternalTesting?: boolean;
+    /** Scope used to load the selected route's pricing context. */
+    pricingInternalOnly?: boolean;
     internalPricingAvailable?: boolean;
 };

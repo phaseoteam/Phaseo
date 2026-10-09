@@ -30,7 +30,30 @@ beforeEach(() => setupRuntimeFromEnv({ CLOUDFLARE_ACCOUNT_ID: "account-test", CL
 afterEach(teardownTestRuntime);
 
 describe("Cloudflare Clef decisions", () => {
-	it.each(["clef", "clef-flash"])("maps %s to native System One, unwraps the envelope, and bills actual usage", async model => {
+	it("maps native audio/video to Omni and bills aggregate input usage", async () => {
+		const mock = installFetchMock([{ match: () => true, response: jsonResponse({ success: true,
+			result: { model: "clef-omni", answers: { question_0: { type: "noul", noul: 0.8 } }, usage: { input_tokens: 1300, output_tokens: 0 } } }) }]);
+		try {
+			const args = argsFor("clef-omni");
+			args.ir = decodeDecisionsRequest(DecisionsSchema.parse({ model: "cloudflare/clef-omni",
+				input: [{ role: "user", content: [
+					{ type: "input_audio", input_audio: { data: "AQID", format: "mp3" } },
+					{ type: "input_video", video_url: "data:video/webm;base64,AQID" },
+				] }], questions: [{ type: "predicate", instructions: "Safe?" }] }));
+			const result = await execute(args);
+			expect(mock.calls[0].bodyJson).toMatchObject({ model: "clef-omni", audio: ["data:audio/mpeg;base64,AQID"], videos: ["data:video/webm;base64,AQID"] });
+			expect(result.bill.usage).toMatchObject({ input_tokens: 1300, output_tokens: 0, total_tokens: 1300 });
+		} finally { mock.restore(); }
+	});
+	it.each(["clef", "clef-flash"])("rejects audio/video on %s without an upstream request", async model => {
+		const mock = installFetchMock([]);
+		try {
+			const args = argsFor(model); args.ir = { ...args.ir, videos: ["data:video/mp4;base64,AQID"] };
+			expect((await execute(args)).upstream.status).toBe(400);
+			expect(mock.calls).toHaveLength(0);
+		} finally { mock.restore(); }
+	});
+	it.each(["clef", "clef-flash", "clef-omni"])("maps %s to native System One, unwraps the envelope, and bills actual usage", async model => {
 		const mock = installFetchMock([{ match: url => url.endsWith(`/ai/run/@cf/cloudflare/${model}`),
 			response: jsonResponse({ success: true, result: { model, answers, usage: { input_tokens: 123, output_tokens: 0 } } }, { headers: { "cf-ray": "ray-test" } }) }]);
 		try {

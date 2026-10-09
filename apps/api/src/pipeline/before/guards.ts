@@ -33,6 +33,8 @@ const FORM_JSON_FIELDS = new Set(["provider", "debug", "include", "timestamp_gra
 const FORM_FORCE_ARRAY_FIELDS = new Set(["include", "timestamp_granularities", "languages", "keywords", "context_bias", "known_speaker_names", "known_speaker_references"]);
 const DEFAULT_REQUEST_BODY_LIMIT_BYTES = 16 * 1024 * 1024;
 const MULTIPART_REQUEST_BODY_LIMIT_BYTES = 32 * 1024 * 1024;
+// Embedded Omni evidence can contain 24 MiB of decoded images/audio/video.
+const DECISIONS_REQUEST_BODY_LIMIT_BYTES = 37 * 1024 * 1024;
 
 class RequestBodyTooLargeError extends Error {}
 
@@ -376,7 +378,9 @@ export async function guardJson(
     const maxBytes = options.maxBytes ?? (
         contentType.includes("multipart/form-data")
             ? MULTIPART_REQUEST_BODY_LIMIT_BYTES
-            : DEFAULT_REQUEST_BODY_LIMIT_BYTES
+            : options.endpoint === "decisions"
+                ? DECISIONS_REQUEST_BODY_LIMIT_BYTES
+                : DEFAULT_REQUEST_BODY_LIMIT_BYTES
     );
     try {
         const bodyBytes = await readBoundedRequestBody(req, maxBytes);

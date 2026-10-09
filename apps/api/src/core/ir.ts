@@ -486,6 +486,8 @@ export type IRDecisionsRequest = {
 	state: string | Record<string, any> | any[];
 	questions: Record<string, IRDecisionQuestion>;
 	images?: Array<string | { content_type: "image/png" | "image/jpeg" | "image/webp"; base64: string }>;
+	audio?: Array<Extract<IRContentPart, { type: "audio" }>>;
+	videos?: string[];
 	// Canonical ordered questions and multimodal evidence are retained losslessly
 	// while System One providers consume the normalized state/question map.
 	decisionContext?: import("./decisions").NativeDecisionRequest;

@@ -209,6 +209,16 @@ describe("handleError", () => {
 		});
 	});
 
+	it("classifies region and residency 403s as user errors", () => {
+		for (const reason of ["all_routes_unavailable_in_request_country", "no_provider_in_required_region"]) {
+			const args = { stage: "execute" as const, status: 403, errorCode: "model_region_unavailable", body: { reason } };
+			expect(classifyErrorType(args)).toBe("user");
+			expect(classifyErrorOrigin(args)).toBe("user");
+		}
+		// Other 403s keep the gateway ops policy.
+		expect(classifyErrorType({ stage: "execute", status: 403, errorCode: "forbidden", body: {} })).toBe("system");
+	});
+
 	it("preserves before-stage system labels from provider candidate gaps", async () => {
 		expect(classifyErrorType({
 			stage: "before",

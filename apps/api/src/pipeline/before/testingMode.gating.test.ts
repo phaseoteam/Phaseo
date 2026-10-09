@@ -6,12 +6,16 @@ const routeLookupMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => getBindingsMock(),
+	getBindingsIfConfigured: () => null,
+	dispatchBackground: () => undefined,
+	getCache: () => ({ get: async () => null, put: async () => undefined }),
 	getSupabaseAdmin: () => ({ from: (table: string) => table === "users"
 		? { select: () => ({ eq: () => ({ maybeSingle: roleLookupMock }) }) }
 		: { select: () => ({ eq: () => ({ eq: () => ({ in: () => ({ limit: () => ({ maybeSingle: routeLookupMock }) }) }) }) }) } }),
 }));
 
 import { isPerfGatewayEndpointAllowed, resolvePerfGatewayAccess, resolveTestingMode } from "./testingMode";
+import { __resetTieredCacheForTests } from "@core/tiered-cache";
 
 describe("resolveTestingMode gating", () => {
 	it.each([null, "member-user"])("denies internal inference for non-admin identity %s", async (userId) => {
@@ -25,6 +29,7 @@ describe("resolveTestingMode gating", () => {
 			.toEqual({ enabled: false, reason: "requires_admin" });
 	});
 	beforeEach(() => {
+		__resetTieredCacheForTests();
 		getBindingsMock.mockReset();
 		roleLookupMock.mockReset();
 		routeLookupMock.mockReset();
@@ -97,7 +102,14 @@ describe("resolveTestingMode gating", () => {
 	it.each([null, "member-user"])("does not automatically grant internal access to %s", async (userId) => {
 		roleLookupMock.mockResolvedValue({ data: { role: "user" }, error: null });
 		expect(await resolveTestingMode({ requested: false, workspaceId: "team_1", userId, model: "test/internal" })).toEqual({ enabled: false, reason: "not_requested" });
-		expect(routeLookupMock).not.toHaveBeenCalled();
+	});
+	it("skips the role lookup for ordinary requests to public models and caches the route check", async () => {
+		routeLookupMock.mockResolvedValue({ data: null, error: null });
+		const args = { requested: false, workspaceId: "team_1", userId: "any-user", model: "test/public" };
+		expect(await resolveTestingMode(args)).toEqual({ enabled: false, reason: "not_requested" });
+		expect(await resolveTestingMode({ ...args, userId: "other-user" })).toEqual({ enabled: false, reason: "not_requested" });
+		expect(roleLookupMock).not.toHaveBeenCalled();
+		expect(routeLookupMock).toHaveBeenCalledTimes(1);
 	});
 	it("keeps ordinary admin requests on public routing when no internal route exists", async () => {
 		routeLookupMock.mockResolvedValue({ data: null, error: null });
@@ -108,7 +120,7 @@ describe("resolveTestingMode gating", () => {
 		const args = { requested: false, workspaceId: "team_1", userId: "admin-user", model: "test/internal" };
 		expect(await resolveTestingMode(args)).toEqual({ enabled: false, reason: "not_requested" });
 		routeLookupMock.mockRejectedValueOnce(new Error("unavailable"));
-		expect(await resolveTestingMode(args)).toEqual({ enabled: false, reason: "not_requested" });
+		expect(await resolveTestingMode({ ...args, model: "test/uncached-internal" })).toEqual({ enabled: false, reason: "not_requested" });
 	});
 	it("allows a verified admin's explicit testing request without an internal token", async () => {
 		expect(await resolveTestingMode({ requested: true, workspaceId: "team_1", userId: "admin-user", model: "test/internal", internal: false })).toEqual({ enabled: true, reason: "admin" });

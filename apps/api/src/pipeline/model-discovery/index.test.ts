@@ -7,7 +7,7 @@ vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => getSupabaseAdminMock(),
 }));
 
-import { dedupeSeenModelRows, fetchPreviousModelsByProviders, markPendingModelRemovals } from "./index";
+import { ABANDONED_RUN_ERROR, closeAbandonedRuns, dedupeSeenModelRows, fetchPreviousModelsByProviders, markPendingModelRemovals } from "./index";
 
 type SeenModelRow = {
 	provider_id: string;
@@ -173,5 +173,40 @@ describe("markPendingModelRemovals", () => {
 			removal_pending: true,
 			last_seen_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
 		});
+	});
+});
+
+describe("closeAbandonedRuns", () => {
+	function updateMock(result: { data: unknown; error: unknown }) {
+		const calls: Array<[string, ...unknown[]]> = [];
+		const builder: any = {};
+		for (const method of ["update", "eq", "lt", "neq"]) {
+			builder[method] = (...args: unknown[]) => { calls.push([method, ...args]); return builder; };
+		}
+		builder.select = async () => result;
+		getSupabaseAdminMock.mockReturnValue({ from: (table: string) => { calls.push(["from", table]); return builder; } });
+		return calls;
+	}
+
+	it("fails scheduled runs still marked running after 30 minutes, except the current run", async () => {
+		const calls = updateMock({ data: [{ id: "old-1" }, { id: "old-2" }], error: null });
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		const now = new Date("2026-10-09T20:00:00Z");
+		expect(await closeAbandonedRuns(now, "current-run")).toBe(2);
+		expect(calls).toEqual([
+			["from", "model_discovery_runs"],
+			["update", { status: "failed", finished_at: now.toISOString(), error: ABANDONED_RUN_ERROR }],
+			["eq", "status", "running"],
+			// Manual runs from scripts/model-discovery may legitimately run longer.
+			["eq", "trigger", "scheduled"],
+			["lt", "started_at", "2026-10-09T19:30:00.000Z"],
+			["neq", "id", "current-run"],
+		]);
+	});
+
+	it("never blocks discovery when the update fails", async () => {
+		updateMock({ data: null, error: { message: "statement timeout" } });
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		expect(await closeAbandonedRuns(new Date(), "current-run")).toBe(0);
 	});
 });

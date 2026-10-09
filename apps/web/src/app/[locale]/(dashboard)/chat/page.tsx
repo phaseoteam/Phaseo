@@ -10,6 +10,7 @@ import { fetchChatEffectivePolicy } from "@/lib/fetchers/internal/fetchChatEffec
 import { applyChatEffectivePolicy } from "@/lib/chat/effectivePolicy";
 import { fetchServerProviderCatalogPreviews } from "@/lib/fetchers/internal/fetchServerProviderCatalogPreviews";
 import { providerCatalogPreviewsToGatewayModels } from "@/lib/chat/providerCatalogPreviewModels";
+import { fetchServerAdminChatModels } from "@/lib/fetchers/internal/fetchServerAdminChatModels";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("Product.chat");
@@ -29,15 +30,16 @@ export default function ChatPlaygroundPage({ searchParams }: ChatPageProps) {
 }
 
 async function ChatPlaygroundContent({ searchParams }: ChatPageProps) {
-	const [catalogue, effectivePolicy, providerPreviews] = await Promise.all([
+	const [catalogue, effectivePolicy, providerPreviews, internalModels] = await Promise.all([
 		fetchFrontendGatewayModels(),
 		fetchChatEffectivePolicy().catch(() => null),
 		fetchServerProviderCatalogPreviews(),
+		fetchServerAdminChatModels(),
 	]);
 	const catalogueIds = new Set(catalogue.map((model) => model.modelId));
 	const previewModels = providerCatalogPreviewsToGatewayModels(providerPreviews)
 		.filter((model) => !catalogueIds.has(model.modelId));
-	const models = applyChatEffectivePolicy([...catalogue, ...previewModels], effectivePolicy);
+	const models = applyChatEffectivePolicy([...catalogue, ...previewModels, ...internalModels], effectivePolicy);
 	const resolvedParams = (await searchParams) ?? {};
 	const modelParamRaw = resolvedParams.model;
 	const promptParamRaw = resolvedParams.prompt;

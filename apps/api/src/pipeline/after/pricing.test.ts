@@ -17,6 +17,31 @@ it("does not require a price card for authorized internal testing", async () => 
 
 type PipelineContextForTest = Parameters<typeof loadProviderPricing>[0];
 
+it("loads the exact internal route with admin scope and enables wallet billing", async () => {
+    loadPriceCardMock.mockClear();
+    const card = { currency: "USD", rules: [{ meter: "input_text_tokens" }] };
+    loadPriceCardMock.mockResolvedValue(card);
+    const ctx = { testingMode: true, billableInternalTesting: true, pricingInternalOnly: true, pricing: {}, meta: {}, model: "test/internal", capability: "text.generate" } as unknown as PipelineContextForTest;
+    expect(await loadProviderPricing(ctx, { provider: "test", apiModelId: "test/internal", providerModelSlug: "preview", pricingKey: "route" } as Parameters<typeof loadProviderPricing>[1])).toBe(card);
+    expect(loadPriceCardMock).toHaveBeenCalledWith("test", "test/internal", "text.generate", "preview", true);
+    expect(ctx.internalPricingAvailable).toBe(true);
+});
+
+it.each([false, true])("uses public pricing after an admin dynamic route replacement (expired card: %s)", async (expired) => {
+    loadPriceCardMock.mockClear();
+    const card = { currency: "USD", rules: [{ meter: "input_text_tokens" }] };
+    loadPriceCardMock.mockResolvedValue(card);
+    const ctx = {
+        testingMode: true, billableInternalTesting: true, pricingInternalOnly: false,
+        pricing: expired ? { route: { ...card, effective_to: "2026-01-01T00:00:00Z" } } : {},
+        meta: { upstreamStartMs: Date.parse("2026-10-09T00:00:00Z") },
+        model: "test/public", capability: "text.generate",
+    } as unknown as PipelineContextForTest;
+    expect(await loadProviderPricing(ctx, { provider: "test", apiModelId: "test/public", providerModelSlug: "public", pricingKey: "route" } as Parameters<typeof loadProviderPricing>[1])).toBe(card);
+    expect(loadPriceCardMock).toHaveBeenCalledWith("test", "test/public", "text.generate", "public", false);
+    expect(ctx.internalPricingAvailable).toBe(true);
+});
+
 it.each([false, true])("resolves pricing for billable admin internal requests when available (%s)", async (priced) => {
     loadPriceCardMock.mockResolvedValue(null);
     const card = { currency: "USD", rules: [{ meter: "input_text_tokens" }] };
@@ -761,6 +786,8 @@ describe("after/pricing calculatePricing", () => {
 			"venice",
 			"anthropic/claude-opus-5-fast",
 			"text.generate",
+			undefined,
+			false,
 		);
 		expect(card?.model).toBe("anthropic/claude-opus-5-fast");
 	});
@@ -799,6 +826,8 @@ describe("after/pricing calculatePricing", () => {
 			"venice",
 			"anthropic/claude-opus-5-fast",
 			"text.generate",
+			undefined,
+			false,
 		);
 		expect(card?.model).toBe("anthropic/claude-opus-5-fast");
 	});
@@ -859,6 +888,8 @@ describe("after/pricing calculatePricing", () => {
 			"deepseek",
 			"deepseek/deepseek-v4-pro-0813",
 			"text.generate",
+			undefined,
+			false,
 		);
 		expect(card).toBe(newCard);
 	});

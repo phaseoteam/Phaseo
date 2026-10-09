@@ -10679,7 +10679,7 @@ components:
           minLength: 1
           description: Phaseo 的规范模型 ID 或提供商模型别名。
         input:
-          description: 文本或带内联图片的消息。
+          description: 文本或带内联图片的消息。音频和视频是面向兼容模型的 Phaseo 扩展；OpenAI 决策路由不支持这些扩展。
           oneOf:
             - type: string
               maxLength: 10485760
@@ -10737,6 +10737,75 @@ components:
                 oneOf:
                   - $ref: '#/components/schemas/DecisionInputText'
                   - $ref: '#/components/schemas/DecisionInputImage'
+                  - $ref: '#/components/schemas/DecisionInputAudio'
+                  - $ref: '#/components/schemas/DecisionInputVideo'
+    DecisionInputAudio:
+      type: object
+      required:
+        - type
+        - input_audio
+      additionalProperties: false
+      description: 适用于 Clef Omni 等支持音频的决策模型的 Phaseo 扩展。仅提供一种来源：带格式的 base64 数据、公共 HTTPS URL 或内联音频数据 URL。OpenAI 决策模型不支持此扩展。
+      properties:
+        type:
+          type: string
+          enum:
+            - input_audio
+        input_audio:
+          $ref: '#/components/schemas/DecisionAudioSource'
+    DecisionAudioSource:
+      type: object
+      additionalProperties: false
+      anyOf:
+        - required:
+            - data
+            - format
+        - required:
+            - url
+      not:
+        required:
+          - data
+          - url
+      properties:
+        data:
+          type: string
+          maxLength: 12582912
+          pattern: ^[A-Za-z0-9+/]+={0,2}$
+        format:
+          type: string
+          enum:
+            - wav
+            - mp3
+        url:
+          type: string
+          maxLength: 25165824
+          pattern: ^(https://|data:audio/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$)
+    DecisionInputVideo:
+      type: object
+      required:
+        - type
+        - video_url
+      additionalProperties: false
+      description: 适用于 Clef Omni 等支持视频的决策模型的 Phaseo 扩展。提供公共 HTTPS URL 或内联视频数据 URL。OpenAI 决策模型不支持此扩展。
+      properties:
+        type:
+          type: string
+          enum:
+            - input_video
+        video_url:
+          oneOf:
+            - type: string
+              maxLength: 25165824
+              pattern: ^(https://|data:video/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$)
+            - type: object
+              required:
+                - url
+              additionalProperties: false
+              properties:
+                url:
+                  type: string
+                  maxLength: 25165824
+                  pattern: ^(https://|data:video/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$)
     DecisionInputText:
       type: object
       required:

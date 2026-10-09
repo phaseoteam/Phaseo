@@ -4,6 +4,7 @@
 
 import type {
 	IRChatRequest,
+	IRDecisionsRequest,
 	IRContentPart,
 	IREmbeddingsRequest,
 	IREmbeddingsInput,
@@ -13,6 +14,16 @@ import type {
 import type { ProviderCandidate } from "../before/types";
 
 export type Modality = "text" | "image" | "audio" | "video";
+
+export function filterDecisionCandidatesByModalities(candidates: ProviderCandidate[], ir: IRDecisionsRequest): ProviderCandidate[] {
+	const media = [
+		{ modality: "image", parameter: "images", requested: Boolean(ir.images?.length) },
+		{ modality: "audio", parameter: "audio", requested: Boolean(ir.audio?.length) },
+		{ modality: "video", parameter: "videos", requested: Boolean(ir.videos?.length) },
+	].filter(item => item.requested);
+	return candidates.filter(candidate => media.every(item =>
+		candidate.inputModalities?.includes(item.modality) && candidate.capabilityParams?.[item.parameter] === true));
+}
 
 type ModalityRequirements = {
 	input: Set<Modality>;

@@ -1253,6 +1253,16 @@ class DebugOptions
 	public $trace_level;
 }
 
+class DecisionAudioSource
+{
+	/** @var string|null */
+	public $data;
+	/** @var string|null */
+	public $format;
+	/** @var string|null */
+	public $url;
+}
+
 class DecisionChoiceAnswer
 {
 	/** @var string|bool */
@@ -1289,6 +1299,14 @@ class DecisionImage
 	public $content_type;
 }
 
+class DecisionInputAudio
+{
+	/** @var array<string, mixed> */
+	public $input_audio;
+	/** @var string */
+	public $type;
+}
+
 class DecisionInputImage
 {
 	/** @var string|null */
@@ -1315,6 +1333,14 @@ class DecisionInputText
 	public $text;
 	/** @var string */
 	public $type;
+}
+
+class DecisionInputVideo
+{
+	/** @var string */
+	public $type;
+	/** @var string|array<string, mixed> */
+	public $video_url;
 }
 
 class DecisionInstructions { }
