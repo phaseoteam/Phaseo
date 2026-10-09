@@ -1,5 +1,5 @@
 import { getDataClient } from "@/data/supabase";
-import { normalizeCatalogueTiers } from "@/models/catalogue-tiers";
+import { normalizeCatalogueTier, normalizeCatalogueTiers } from "@/models/catalogue-tiers";
 import type { Env } from "@/env";
 import { fetchModelPricingSources } from "./pricing";
 import { withDecisionOperationPricing } from "./decision-pricing";
@@ -348,14 +348,16 @@ export type ModelsPageQuery = {
 async function databasePageRows(env: Env, query: ModelsPageQuery = {}): Promise<Row[]> {
 	const { data, error } = await getDataClient(env).rpc("get_public_models_page_payload", {
 		p_region: query.region || null,
-		p_service_tier: query.serviceTier || null,
+		// Match normalized modes after loading every provider alias in the region.
+		p_service_tier: null,
 		p_organisation_id: query.organisationId || null,
 	});
 	if (error) throw error;
 	if (!Array.isArray(data)) throw new Error("Invalid models catalogue payload");
-	return query.organisationId
-		? data.filter((row: Row) => String(row.organisation_id ?? "") === query.organisationId)
-		: data;
+	return data.filter((row: Row) =>
+		(!query.organisationId || String(row.organisation_id ?? "") === query.organisationId)
+		&& (!query.serviceTier || normalizeCatalogueTiers(row.gateway_tiers).includes(normalizeCatalogueTier(query.serviceTier))),
+	);
 }
 
 async function weeklyMetrics(env: Env, modelIds?: string[], throwOnError = false): Promise<WeeklyMetricRow[]> {

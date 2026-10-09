@@ -71,6 +71,7 @@ import { getModalityTone } from "@/lib/models/modalityStyles";
 import { ModelCapabilityBadges } from "@/components/(data)/models/ModelCapabilityBadges";
 import { decisionModelCapability, modelOutputFilterValues } from "@/lib/models/modelCapabilities";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
+import { parseCatalogueTierFilters } from "@/lib/models/catalogueTierFilters";
 import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
 import { cn } from "@/lib/utils";
 import {
@@ -446,7 +447,7 @@ export function MonitorDataTable({
 	});
 	const [selectedTiers] = useQueryState("tiers", {
 		defaultValue: [],
-		parse: (value) => (value ? value.split(",") : []),
+		parse: parseCatalogueTierFilters,
 		serialize: (value) => value.join(","),
 	});
 
@@ -1158,6 +1159,7 @@ export function MonitorDataTable({
 							free: modelsUiT("tierFree"),
 							flex: modelsUiT("tierFlex"),
 							priority: modelsUiT("tierPriority"),
+							fast: modelsUiT("tierPriority"),
 						} as Record<string, string>)[normalizedTier] ?? normalizedTier
 					}</span>
 			</span>
