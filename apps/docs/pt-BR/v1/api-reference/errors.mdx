@@ -86,6 +86,7 @@ Alguns erros trazem mais detalhes para ajudar a corrigir o problema rapidamente:
 | `authorization_error` | `403` | A chave não tem acesso a este recurso. |
 | `not_found_error` | `404` | O endpoint ou recurso não foi encontrado. |
 | `rate_limit_error` | `429` | Muitas solicitações. Tente novamente após o intervalo indicado. |
+| `phaseo_free_model_limit_exceeded` | `429` | A cota diária compartilhada dos modelos gratuitos do Phaseo foi esgotada (1.500 solicitações por padrão). Respeite `Retry-After`, aguarde a redefinição às 00:00 UTC ou escolha um modelo pago. |
 | `validation_error` | `400` | Parâmetros ou corpo da solicitação inválidos. |
 | `provider_error` | `502` | O provedor upstream do modelo não respondeu corretamente. |
 | `server_error` | `500` | Ocorreu um problema inesperado na Phaseo. |
@@ -268,4 +269,3 @@ Se estiver implementando tratamento de erros como agente:
 - Trate payloads de depuração como potencialmente confidenciais e redija-os antes de armazená-los em logs persistentes.
 - Prefira novas tentativas determinísticas (limite de tentativas e jitter) a loops sem limite.
 </Visibility>
-

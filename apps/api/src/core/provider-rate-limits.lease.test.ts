@@ -100,6 +100,25 @@ describe("provider rate-limit leases", () => {
 		expect(node.calls.acquire.filter((call) => call.requests > 0)).toHaveLength(awaited);
 	});
 
+	it("acquires its own lease when another request's acquire never settles", async () => {
+		const limits = config({ requestsPerMinute: 100 });
+		const pool = new LeasePool<ProviderLeaseMeta, ProviderRateLimitAdmission>({ background: (promise) => { background.push(promise); } });
+		let calls = 0;
+		const transport: LeaseTransport<ProviderLeaseMeta, ProviderRateLimitAdmission> = {
+			// The first acquire belongs to a request that ended; its I/O never settles.
+			acquire: (need, want, returns) => ++calls === 1
+				? new Promise(() => {})
+				: coordinator.acquireLease(limits, need, want, returns, `r-${calls}`),
+			returnLeases: async (returns) => { await coordinator.returnLeases(returns); },
+		};
+		void pool.admit("abandoned", { requests: 1, units: 0 }, transport);
+		const admitted = pool.admit("waiting", { requests: 1, units: 0 }, transport);
+		await vi.advanceTimersByTimeAsync(1_000);
+
+		expect(await admitted).toMatchObject({ allowed: true });
+		expect(calls).toBe(2);
+	});
+
 	it("awaits the coordinator near the cap and denies exactly at it", async () => {
 		const limits = config({ requestsPerMinute: 10 });
 		const node = isolate(limits);

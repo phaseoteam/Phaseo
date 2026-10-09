@@ -653,6 +653,24 @@
 		"lastYear": "過去1年"
 	},
 	"ui": {
+		"openui": {
+			"title": "インタラクティブな回答",
+			"experimentLabel": "インタラクティブな回答 · 実験",
+			"localLabel": "Phaseo · ローカル実験",
+			"description": "サンプルのプレビューです。フォームの送信内容は下に表示され、モデルは呼び出されません。チャットで回答の生成をお試しください。",
+			"examples": "例",
+			"replay": "ストリーミングを再生",
+			"stop": "再生を停止",
+			"storage": "ブラウザーのストレージを利用できません。フォームの値はこのページを閉じるまで保存されます。",
+			"submitted": "送信したメッセージ",
+			"loading": "インタラクティブな回答を読み込み中…",
+			"failure": "このインタラクティブな回答を完全に表示できませんでした。回答を再生成してください。",
+			"tradeoffs": "欠点",
+			"comparison": "比較",
+			"edge": "負の値 / ゼロ",
+			"malformed": "不正な形式",
+			"markdown": "Markdown"
+		},
 		"modelEditor": {
 			"dialogTitle": "モデルを編集",
 			"dialogDescription": "変更を加え、完了したら保存をクリックしてください。",

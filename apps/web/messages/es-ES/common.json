@@ -653,6 +653,24 @@
 		"lastYear": "Último año"
 	},
 	"ui": {
+		"openui": {
+			"title": "Respuestas interactivas",
+			"experimentLabel": "Respuestas interactivas · Experimento",
+			"localLabel": "Phaseo · Experimento local",
+			"description": "Vista previa de ejemplos. Los formularios enviados aparecen abajo y no llaman a ningún modelo. Prueba la generación en el chat.",
+			"examples": "Ejemplos",
+			"replay": "Reproducir transmisión",
+			"stop": "Detener reproducción",
+			"storage": "El almacenamiento del navegador no está disponible. Los valores del formulario se conservarán hasta que cierres esta página.",
+			"submitted": "Mensaje enviado",
+			"loading": "Cargando respuesta interactiva…",
+			"failure": "No se pudo mostrar toda la respuesta interactiva. Intenta regenerarla.",
+			"tradeoffs": "Inconvenientes",
+			"comparison": "Comparación",
+			"edge": "Negativo / cero",
+			"malformed": "Formato incorrecto",
+			"markdown": "Markdown"
+		},
 		"modelEditor": {
 			"dialogTitle": "Editar modelo",
 			"dialogDescription": "Haz los cambios y pulsa Guardar cuando termines.",

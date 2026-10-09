@@ -83,12 +83,13 @@ export function __customerQuotaStateSizeForTests(): { denials: number; admission
 }
 
 function quotaExceeded(args: { requestId: string; kind: CustomerQuotaKind }, limit: number, retryAfterSeconds: number): Response {
-	const response = err("key_limit_exceeded", {
+	const response = err(args.kind === "free-day" ? "phaseo_free_model_limit_exceeded" : "key_limit_exceeded", {
 		request_id: args.requestId,
+		error_origin: args.kind === "free-day" ? "gateway" : "user",
 		reason: args.kind === "minute" ? "customer_requests_per_minute" : "free_requests_per_day",
 		description: args.kind === "minute"
 			? `This user and workspace have reached their limit of ${limit} requests per minute. Retry after ${retryAfterSeconds} seconds.`
-			: `This user and workspace have reached their daily allowance of ${limit} free-model requests, shared across all free models. The allowance resets at 00:00 UTC. Retry after ${retryAfterSeconds} seconds, choose a paid model, or ask your workspace administrator to request a higher limit.`,
+			: `Phaseo free-model daily limit reached. This user and workspace have reached their daily allowance of ${limit} free-model requests, shared across all free models. The allowance resets at 00:00 UTC. Retry after ${retryAfterSeconds} seconds, choose a paid model, or ask your workspace administrator to request a higher limit.`,
 	});
 	response.headers.set("Retry-After", String(retryAfterSeconds));
 	return response;

@@ -1,4 +1,5 @@
 import { getDataClient } from "@/data/supabase";
+import { normalizeCatalogueTier, normalizeCatalogueTiers } from "@/models/catalogue-tiers";
 import type { Env } from "@/env";
 import { fetchModelPricingSources } from "./pricing";
 import { withDecisionOperationPricing } from "./decision-pricing";
@@ -239,6 +240,7 @@ export function attachModelsPageVariants(rows: Row[]): Row[] {
 		const baseId = baseModelId(row);
 		return withoutExternalProviders({
 			...row,
+			gateway_tiers: normalizeCatalogueTiers(row.gateway_tiers),
 			base_model_id: baseId,
 			variant_kind: variantKind(row),
 			variants: variantsByBaseModel.get(baseId) ?? {},
@@ -327,7 +329,7 @@ export function buildModelsPageFacets(rows: Row[]): ModelsPageFacets {
 			gateway_output_modalities: strings([...strings(row.gateway_output_modalities).map(modality), ...(strings(row.gateway_endpoints).includes("decisions.make") ? ["decisions"] : [])]),
 		})), "gateway_output_modalities", modality), MODALITY_ORDER),
 		featureOptions: ordered(optionCounts(rows, "gateway_features"), FEATURE_ORDER),
-		tierOptions: optionCounts(rows, "gateway_tiers"),
+		tierOptions: optionCounts(rows.map((row) => ({ ...row, gateway_tiers: normalizeCatalogueTiers(row.gateway_tiers) })), "gateway_tiers"),
 		supportedParameterOptions: optionCounts(rows, "supported_parameters"),
 		providerOptions: optionCounts(rows, "gateway_provider_names"),
 		regionOptions: optionCounts(rows, "gateway_execution_regions"),
@@ -346,14 +348,16 @@ export type ModelsPageQuery = {
 async function databasePageRows(env: Env, query: ModelsPageQuery = {}): Promise<Row[]> {
 	const { data, error } = await getDataClient(env).rpc("get_public_models_page_payload", {
 		p_region: query.region || null,
-		p_service_tier: query.serviceTier || null,
+		// Match normalized modes after loading every provider alias in the region.
+		p_service_tier: null,
 		p_organisation_id: query.organisationId || null,
 	});
 	if (error) throw error;
 	if (!Array.isArray(data)) throw new Error("Invalid models catalogue payload");
-	return query.organisationId
-		? data.filter((row: Row) => String(row.organisation_id ?? "") === query.organisationId)
-		: data;
+	return data.filter((row: Row) =>
+		(!query.organisationId || String(row.organisation_id ?? "") === query.organisationId)
+		&& (!query.serviceTier || normalizeCatalogueTiers(row.gateway_tiers).includes(normalizeCatalogueTier(query.serviceTier))),
+	);
 }
 
 async function weeklyMetrics(env: Env, modelIds?: string[], throwOnError = false): Promise<WeeklyMetricRow[]> {

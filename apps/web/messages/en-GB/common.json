@@ -653,6 +653,24 @@
 		"lastYear": "Last year"
 	},
 	"ui": {
+		"openui": {
+			"title": "Interactive answers",
+			"experimentLabel": "Interactive answers · Experiment",
+			"localLabel": "Phaseo · Local experiment",
+			"description": "Fixture preview. Form submissions are shown below; they do not call a model. Try live generation in chat.",
+			"examples": "Examples",
+			"replay": "Replay streaming",
+			"stop": "Stop replay",
+			"storage": "Browser storage is unavailable. Form values will last only until this page closes.",
+			"submitted": "Submitted user message",
+			"loading": "Loading interactive answer…",
+			"failure": "This interactive answer could not be fully rendered. Try regenerating the response.",
+			"tradeoffs": "Tradeoffs",
+			"comparison": "Comparison",
+			"edge": "Negative / zero",
+			"malformed": "Malformed",
+			"markdown": "Markdown"
+		},
 		"modelEditor": {
 			"dialogTitle": "Edit model",
 			"dialogDescription": "Make changes and click Save when you are done.",

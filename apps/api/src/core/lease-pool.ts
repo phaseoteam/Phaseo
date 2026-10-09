@@ -12,6 +12,8 @@
 // - Settlements (actual usage, releases) are applied locally while the lease is still held, and
 //   are otherwise the caller's responsibility to send to the coordinator.
 
+import { awaitShared } from "@core/shared-wait";
+
 /** Two allowance dimensions: requests, and a scope-defined unit (tokens or cost nanos). */
 export type LeaseVector = { requests: number; units: number };
 
@@ -89,6 +91,10 @@ type HeldLease<M> = {
 
 const DEMAND_BUCKET_MS = 10_000;
 const MAX_SETTLED_TICKETS = 20_000;
+// Another request's acquire may never settle for this one (its I/O is cancelled when that
+// request ends), so cold requests join it only briefly and stop treating it as busy later.
+const SHARED_ACQUIRE_WAIT_MS = 1_000;
+const STALE_COORDINATOR_CALL_MS = 10_000;
 
 function fits(lease: HeldLease<unknown>, need: LeaseVector, precheck: boolean): boolean {
 	const { requests, units } = lease.grant;
@@ -101,7 +107,8 @@ export class LeasePool<M, D> {
 	private readonly held = new Map<string, HeldLease<M>>();
 	private returns: LeaseReturn[] = [];
 	private acquiring: Promise<unknown> | null = null;
-	private toppingUp = false;
+	private acquiringSince = 0;
+	private toppingUp: { since: number } | null = null;
 	private topUpPausedUntil = 0;
 	private readonly settled = new Set<string>();
 	private demand = { bucketStart: 0, requests: 0, units: 0, previousRequests: 0, previousUnits: 0 };
@@ -176,7 +183,7 @@ export class LeasePool<M, D> {
 		}
 		if (this.acquiring) {
 			// Concurrent cold requests share the first grant before asking for their own.
-			await this.acquiring.catch(() => undefined);
+			await awaitShared(this.acquiring, SHARED_ACQUIRE_WAIT_MS);
 			const shared = this.tryAdmit(id, need);
 			if (shared) {
 				this.afterAdmission(transport);
@@ -191,6 +198,7 @@ export class LeasePool<M, D> {
 		const returns = this.takeReturns();
 		const request = transport.acquire(need, this.want(need), returns);
 		this.acquiring = request;
+		this.acquiringSince = this.now();
 		let result: LeaseAcquireResult<M, D>;
 		try {
 			result = await request;
@@ -253,8 +261,9 @@ export class LeasePool<M, D> {
 
 	/** Sends returns for expired leases (and any queued returns) in the background. */
 	flushReturns(transport: Pick<LeaseTransport<M, D>, "returnLeases">): void {
-		this.sweep(this.now());
-		if (!this.returns.length || this.acquiring || this.toppingUp) return;
+		const now = this.now();
+		this.sweep(now);
+		if (!this.returns.length || this.busy(now)) return;
 		this.dispatch(transport.returnLeases(this.takeReturns()));
 	}
 
@@ -370,8 +379,9 @@ export class LeasePool<M, D> {
 
 	private afterAdmission(transport: LeaseTransport<M, D>): void {
 		const now = this.now();
-		if (!this.toppingUp && !this.acquiring && now >= this.topUpPausedUntil && this.needsTopUp(now)) {
-			this.toppingUp = true;
+		if (!this.busy(now) && now >= this.topUpPausedUntil && this.needsTopUp(now)) {
+			const marker = { since: now };
+			this.toppingUp = marker;
 			const returns = this.takeReturns();
 			const recent = this.want({ requests: 0, units: 0 });
 			const topUp = transport.acquire({ requests: 0, units: 0 }, recent, returns)
@@ -386,14 +396,20 @@ export class LeasePool<M, D> {
 					this.topUpPausedUntil = this.now() + this.options.topUpBackoffMs;
 					throw error;
 				})
-				.finally(() => { this.toppingUp = false; });
+				.finally(() => { if (this.toppingUp === marker) this.toppingUp = null; });
 			this.dispatch(topUp);
 			return;
 		}
-		if (this.returns.length && !this.acquiring && !this.toppingUp) {
+		if (this.returns.length && !this.busy(now)) {
 			const returns = this.takeReturns();
 			this.dispatch(transport.returnLeases(returns));
 		}
+	}
+
+	/** A coordinator call is in flight, ignoring calls that have gone unanswered for too long. */
+	private busy(now: number): boolean {
+		return (this.acquiring !== null && now - this.acquiringSince < STALE_COORDINATOR_CALL_MS) ||
+			(this.toppingUp !== null && now - this.toppingUp.since < STALE_COORDINATOR_CALL_MS);
 	}
 
 	private dispatch(promise: Promise<unknown>): void {

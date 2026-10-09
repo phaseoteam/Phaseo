@@ -8,6 +8,20 @@ description: "समर्थित निर्णय मॉडल से ऐ�
 
 नई कॉल के लिए OpenAI-संगत प्रारूप इस्तेमाल करें: `input` में टेक्स्ट या इनलाइन `input_image` वाले उपयोगकर्ता संदेश होते हैं और `questions` में `predicate`, `choice` या `score` प्रश्नों की क्रमबद्ध सूची होती है। उत्तर वही क्रम और वैकल्पिक नाम रखते हैं। बूलियन विकल्प बूलियन ही रहते हैं। होस्ट किए गए चित्र URL समर्थित नहीं हैं; Luna अधिकतम 128 इनलाइन चित्र स्वीकार करता है और अन्य प्रदाताओं की अपनी सीमाएँ हैं। स्पष्ट चित्र विवरण और `safety_identifier` के लिए OpenAI रूट आवश्यक है। पुराना `state`, नामित प्रश्न मैप, `noul` और `criteria` प्रारूप समर्थित है और उत्तर मैप लौटाता है। Together Tev को वही प्रारूप चाहिए क्योंकि वह संभावनाओं के बिना लेबल लौटाता है। पुराने उदाहरण मान्य हैं।
 
+Mercury Decide (`inception/mercury-decide`) टेक्स्ट या JSON के साथ `predicate`, `choice` और `score` प्रश्नों का समर्थन करता है। प्रत्येक चयन प्रश्न में अधिकतम 255 विकल्प और प्रत्येक स्कोर प्रश्न में अधिकतम 10 स्तर हो सकते हैं। चित्र, स्ट्रीमिंग और टूल कॉल समर्थित नहीं हैं। Inception की 50% छूट के तहत इनपुट की वर्तमान कीमत प्रति दस लाख टोकन 0.02 USD है; आउटपुट टोकन रिपोर्ट किए जाते हैं, लेकिन निःशुल्क हैं। Inception ने छूट समाप्त होने की तारीख नहीं बताई है। उपयोग से पहले मॉडल की उपलब्धता और [वर्तमान कीमतें](https://docs.inceptionlabs.ai/get-started/models) जाँचें।
+
+```json
+{
+  "model": "inception/mercury-decide",
+  "input": "Please refund the duplicate charge on my account.",
+  "questions": [{
+    "type": "predicate",
+    "name": "billing",
+    "instructions": "Is this request about billing?"
+  }]
+}
+```
+
 ```json
 {
   "model": "openai/gpt-6-luna",
