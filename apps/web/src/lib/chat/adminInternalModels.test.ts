@@ -1,4 +1,4 @@
-import { adminSourceToChatModels } from "./adminInternalModels";
+import { adminHiddenModelsToChatModels, adminSourceToChatModels } from "./adminInternalModels";
 import type { AdminModelSource } from "@/lib/fetchers/internal/fetchAdminModelSource";
 
 const source = {
@@ -23,4 +23,28 @@ it.each([
 it("does not turn public or retired model records into admin chat entries", () => {
 	expect(adminSourceToChatModels({ ...source, model: { ...source.model, hidden: false } })).toEqual([]);
 	expect(adminSourceToChatModels({ ...source, model: { ...source.model, status: "retired" } })).toEqual([]);
+});
+
+describe("batched hidden models", () => {
+	const route = (modelId: string, providerId: string) => ({ ...source.providerRows[0], model_id: modelId, provider_id: providerId });
+	it("assigns each model its own routes and its -fast and -flex variants", () => {
+		const models = adminHiddenModelsToChatModels({
+			models: [
+				{ model_id: "test/a", hidden: true, status: "active", name: "A", lab_slug: "test", organisation: { name: "Test lab" } },
+				{ model_id: "test/b", hidden: true, status: "active", name: "B", lab_slug: "test" },
+			],
+			providerRows: [route("test/a", "p1"), route("test/a-fast", "p2"), route("test/a-flex", "p3"), route("test/b", "p4"), route("test/other", "p5")],
+		});
+		expect(models.map((model) => [model.modelId, model.providerId])).toEqual([
+			["test/a", "p1"], ["test/a", "p2"], ["test/a", "p3"], ["test/b", "p4"],
+		]);
+		expect(models[0]).toMatchObject({ modelName: "A", organisationName: "Test lab" });
+	});
+	it("applies the same eligibility rules as the per-model source", () => {
+		expect(adminHiddenModelsToChatModels({
+			models: [{ model_id: "test/retired", hidden: true, status: "retired", name: "Retired", lab_slug: "test" }],
+			providerRows: [route("test/retired", "p1")],
+		})).toEqual([]);
+		expect(adminHiddenModelsToChatModels({ models: [{ model_id: "test/a", hidden: true, status: "active" }] })).toEqual([]);
+	});
 });

@@ -32,6 +32,6 @@ describe("staged catalogue access", () => {
 		expect(await fetchAdminStagedModels({ accessToken: "admin-token" })).toMatchObject([
 			{ model_id: "test/staged", organisation_name: "Test lab", gateway_active_provider_count: 0 },
 		]);
-		expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/api/account/models/audit/source?includeHidden=true"), expect.objectContaining({ cache: "no-store", headers: expect.objectContaining({ Authorization: "Bearer admin-token" }) }));
+		expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/api/account/models/hidden"), expect.objectContaining({ cache: "no-store", headers: expect.objectContaining({ Authorization: "Bearer admin-token" }) }));
 	});
 });

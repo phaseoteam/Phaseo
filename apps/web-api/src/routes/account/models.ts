@@ -342,6 +342,42 @@ accountModelsRouter.get("/audit/source", async (c) => {
 	}
 });
 
+// Hidden (staged and internal) models only. Page loads use this instead of the
+// full audit source, which also serialises every route, benchmark, and price.
+const HIDDEN_MODEL_ROUTE_CHUNK_SIZE = 25;
+
+accountModelsRouter.get("/hidden", async (c) => {
+	const user = await requireUser(c.req.raw, c.env);
+	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const client = await requireAdmin(c.req.raw, c.env);
+	if (!client) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	try {
+		const models = await fetchAllRows<any>((from, to) => client.from("v2_models")
+			.select("model_id:model_slug,name,release_date:released_at,announced_at,retirement_date:retired_at,status,catalogue_status,hidden,lab_slug,input_types:input_modalities,output_types:output_modalities,organisation:v2_labs(lab_slug,name)")
+			.eq("hidden", true)
+			.order("released_at", { ascending: false })
+			.range(from, to));
+		if (c.req.query("includeRoutes") !== "true") return c.json({ models }, 200, PRIVATE_NO_STORE_HEADERS);
+		const modelIds = models.map((model) => String(model.model_id ?? "")).filter(Boolean);
+		const chunks: string[][] = [];
+		for (let index = 0; index < modelIds.length; index += HIDDEN_MODEL_ROUTE_CHUNK_SIZE) {
+			chunks.push(modelIds.slice(index, index + HIDDEN_MODEL_ROUTE_CHUNK_SIZE));
+		}
+		const sources = await Promise.all(chunks.map((chunk) => fetchModelPricingSources(c.env, chunk, true)));
+		const seen = new Set<string>();
+		const providerRows = sources.flatMap((source) => source.providerRows).filter((row) => {
+			const key = String(row.provider_api_model_id ?? "");
+			if (seen.has(key)) return false;
+			seen.add(key);
+			return true;
+		});
+		return c.json({ models, providerRows }, 200, PRIVATE_NO_STORE_HEADERS);
+	} catch (error) {
+		console.error("[web-api/account/models] hidden models failed", { error });
+		return c.json({ error: "admin_hidden_models_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	}
+});
+
 accountModelsRouter.get("/provider-audit/source", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
