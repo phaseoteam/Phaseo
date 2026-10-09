@@ -767,7 +767,8 @@ describe("sendPrivateModelDiscoveryNotification", () => {
 		const webhookUrl = "https://discord.example/private-discovery";
 		setupRuntimeFromEnv({
 			DISCORD_WEBHOOK_URL: webhookUrl,
-			DISCORD_ROLE_ID: "role-1",
+			DISCORD_ROLE_ID: "public-role",
+			DISCORD_PRIVATE_MODEL_DISCOVERY_ROLE_ID: "dev-role",
 			DISCORD_USER_ID: "user-1",
 		} as any);
 		const fetchMock = installFetchMock([{
@@ -798,6 +799,9 @@ describe("sendPrivateModelDiscoveryNotification", () => {
 				content: expect.stringContaining("novita/new-model"),
 			});
 			expect(fetchMock.calls[0]?.bodyJson.embeds).toBeUndefined();
+			expect(fetchMock.calls[0]?.bodyJson.allowed_mentions.roles).toEqual(["dev-role"]);
+			expect(fetchMock.calls[0]?.bodyJson.content).toContain("<@&dev-role>");
+			expect(fetchMock.calls[0]?.bodyJson.content).not.toContain("<@&public-role>");
 		} finally {
 			fetchMock.restore();
 		}

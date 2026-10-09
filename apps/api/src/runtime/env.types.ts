@@ -339,6 +339,7 @@ export type GatewayBindings = {
     DISCORD_WEBHOOK_URL?: string;
     DISCORD_WEBHOOK_NEW_MODELS_PUBLIC?: string;
     DISCORD_ROLE_ID?: string;
+    DISCORD_PRIVATE_MODEL_DISCOVERY_ROLE_ID?: string;
     DISCORD_USER_ID?: string;
     MODEL_DISCOVERY_SLACK_WEBHOOK_URL?: string;
     MODEL_DISCOVERY_REVIEW_URL?: string;
