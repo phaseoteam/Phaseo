@@ -1,4 +1,4 @@
-﻿import { FollowUpForm } from "./openuiLibrary";
+import { FollowUpForm } from "./openuiLibrary";
 
 let mockSubmit: (prompt: string) => boolean | Promise<boolean>;
 const mockSetSubmitted = jest.fn();
