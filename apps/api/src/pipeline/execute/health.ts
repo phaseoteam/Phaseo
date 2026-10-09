@@ -5,6 +5,7 @@
 import { dispatchBackground, getCache, getSupabaseAdmin } from "@/runtime/env";
 import { HEALTH_CONSTANTS, HEALTH_KEYS, isRecoveryProbeRequest } from "./health.config";
 import type { Endpoint } from "@core/types";
+import { awaitShared } from "@core/shared-wait";
 import { coordinatedHealthEnabled, coordinatedHealthMany, coordinatedHealthRead, reportCoordinatedHealth, resetCoordinatedHealthForTests } from "./health-coordinator";
 
 export type BreakerState = "closed" | "open" | "half_open";
@@ -143,6 +144,8 @@ const breakerField = (provider: string) => `${provider}::breaker`;
 const field = (provider: string, metric: string) => `${provider}::${metric}`;
 
 const HEALTH_STATE_TTL_SECONDS = 24 * 60 * 60;
+// Waits on another request's health load or update lock are bounded to this long.
+const SHARED_HEALTH_WAIT_MS = 2_000;
 // KV requires expirationTtl >= 60 seconds. Retain sparse recovery probes long
 // enough to accumulate a batch; each recorded probe refreshes this TTL.
 const HALF_STATE_TTL_SECONDS = HEALTH_CONSTANTS.MAX_OPEN_SECS;
@@ -155,6 +158,7 @@ type L1StateEntry = {
 
 const l1State = new Map<string, L1StateEntry>();
 const l1StateInflight = new Map<string, Promise<Record<string, string>>>();
+const l1StateGenerations = new Map<string, number>();
 const pendingBackgroundSaves = new Map<string, { map: Record<string, string>; ttlSeconds: number }>();
 const activeBackgroundSave = new Set<string>();
 const keyUpdateQueues = new Map<string, Array<() => void>>();
@@ -163,7 +167,9 @@ let healthStateEpoch = 0;
 async function withKeyUpdateLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
     const queue = keyUpdateQueues.get(key);
     if (queue) {
-        await new Promise<void>((resolve) => queue.push(resolve));
+        // The holder may be another request whose I/O is cancelled when it ends; health
+        // state is best-effort, so proceed concurrently rather than wait forever.
+        await awaitShared(new Promise<void>((resolve) => queue.push(resolve)), SHARED_HEALTH_WAIT_MS);
     } else {
         keyUpdateQueues.set(key, []);
     }
@@ -382,30 +388,38 @@ async function loadMapByKey(key: string): Promise<Record<string, string>> {
 
     const inflight = l1StateInflight.get(key);
     if (inflight) {
-        return { ...(await inflight) };
+        // The load may belong to another request; never wait on it unboundedly.
+        const shared = await awaitShared(inflight, SHARED_HEALTH_WAIT_MS);
+        if (shared.settled) return { ...shared.value };
     }
 
+    // A read superseded by a replacement (see above) must not overwrite the newer state.
+    const generation = (l1StateGenerations.get(key) ?? 0) + 1;
+    l1StateGenerations.set(key, generation);
+    const remember = (map: Record<string, string>) => {
+        if (l1StateGenerations.get(key) === generation) l1State.set(key, { map: { ...map }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+    };
     const loader = (async () => {
         try {
             const raw = await getCache().get(key, "text");
             if (!raw) {
                 const empty: Record<string, string> = {};
-                l1State.set(key, { map: { ...empty }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+                remember(empty);
                 return empty;
             }
             try {
                 const normalized = normalizeMap(JSON.parse(raw));
-                l1State.set(key, { map: { ...normalized }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+                remember(normalized);
                 return normalized;
             } catch {
                 const empty: Record<string, string> = {};
-                l1State.set(key, { map: { ...empty }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+                remember(empty);
                 return empty;
             }
         } catch {
             // Fail open to in-memory defaults when KV is unavailable.
             const empty: Record<string, string> = {};
-            l1State.set(key, { map: { ...empty }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+            remember(empty);
             return empty;
         }
     })();
@@ -453,6 +467,7 @@ async function saveMap(
     mode: SaveMapMode = "sync"
 ) {
     const normalized = normalizeMap(map);
+    l1StateGenerations.set(key, (l1StateGenerations.get(key) ?? 0) + 1);
     l1State.set(key, { map: { ...normalized }, expiresAtMs: Date.now() + HEALTH_L1_TTL_MS });
     if (mode === "background") {
         pendingBackgroundSaves.set(key, { map: { ...normalized }, ttlSeconds });
@@ -867,6 +882,7 @@ export function resetHealthStateForTests(): void {
     healthStateEpoch += 1;
     l1State.clear();
     l1StateInflight.clear();
+    l1StateGenerations.clear();
     pendingBackgroundSaves.clear();
     activeBackgroundSave.clear();
     keyUpdateQueues.clear();

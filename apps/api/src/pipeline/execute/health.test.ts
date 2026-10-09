@@ -80,6 +80,22 @@ describe("execute health state", () => {
         expect(snapshot.last_updated).toBeGreaterThan(0);
     });
 
+    it("does not hang behind another request's health update that never finishes", async () => {
+        const health = await import("./health");
+        // The lock holder's KV read belongs to a request that ended; it never settles.
+        runtime.cache.get.mockImplementationOnce(() => new Promise<string | null>(() => {}));
+        void health.onCallStart("responses", "openai", "gpt-4o-mini");
+        vi.useFakeTimers();
+        try {
+            const next = health.onCallStart("responses", "openai", "gpt-4o-mini");
+            // Bounded wait on the update lock, then on the holder's in-flight read.
+            await vi.advanceTimersByTimeAsync(4_000);
+            await expect(next).resolves.not.toThrow();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it("classifies only provider uptime failures as failures", async () => {
         const health = await import("./health");
 
