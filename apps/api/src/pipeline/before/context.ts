@@ -900,6 +900,7 @@ async function fetchTestingProviderSnapshots(args: {
             providerModelSlug,
         });
         testingProviders.push({
+            accessScope: "internal",
             providerId,
             apiModelId: row.model_slug,
             pricingKey: getProviderPricingKey(providerId, row.model_slug, providerModelSlug),

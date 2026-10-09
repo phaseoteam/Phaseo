@@ -594,6 +594,7 @@
 			}
 		},
 		"modelPicker": {
+			"internalModels": "内部模型",
 			"title": "选择模型",
 			"addModel": "添加模型",
 			"searchPlaceholder": "搜索模型…",

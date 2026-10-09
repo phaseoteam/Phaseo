@@ -594,6 +594,7 @@
 			}
 		},
 		"modelPicker": {
+			"internalModels": "النماذج الداخلية",
 			"title": "اختر نموذجًا",
 			"addModel": "إضافة نموذج",
 			"searchPlaceholder": "ابحث عن النماذج…",

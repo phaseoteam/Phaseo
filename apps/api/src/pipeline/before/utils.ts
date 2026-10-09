@@ -59,6 +59,7 @@ export function buildProviderCandidatesWithDiagnostics(
             offerLabel: provider.offerLabel ?? null,
 			dataPolicyVariant: provider.dataPolicyVariant ?? "standard",
             apiModelId: provider.apiModelId ?? null,
+            accessScope: provider.accessScope ?? "public",
             pricingKey: provider.pricingKey ?? provider.providerId,
             providerStatus: provider.providerStatus ?? "active",
             externalRoutingOverride: provider.externalRoutingOverride === true,

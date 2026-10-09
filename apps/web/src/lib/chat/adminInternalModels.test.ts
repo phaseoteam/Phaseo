@@ -8,7 +8,7 @@ const source = {
 } as unknown as AdminModelSource;
 
 it("makes a hidden internal text route selectable without claiming a price", () => {
-	expect(adminSourceToChatModels(source)).toMatchObject([{ modelId: "test/internal", providerId: "test", capabilities: ["text.generate"], isAvailable: true, inputPricePerMillion: null }]);
+	expect(adminSourceToChatModels(source)).toMatchObject([{ isInternal: true, modelId: "test/internal", providerId: "test", capabilities: ["text.generate"], isAvailable: true, inputPricePerMillion: null }]);
 });
 it.each([
 	{ access_scope: "public" }, { phaseo_status: "disabled" }, { routing_status: "disabled" },
