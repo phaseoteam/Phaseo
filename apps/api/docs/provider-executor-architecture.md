@@ -140,6 +140,22 @@ OpenAI protocol routes cover chat/Responses, embeddings, image generation/editin
 
 Selecting a resource does not establish data residency by itself. Configure a regional deployment type in Azure when regional processing is required; Global and DataZone deployment types have different processing boundaries.
 
+## Azure decisions
+
+Microsoft Decision uses the existing decisions IR, response validation, and billing pipeline. It calls the Foundry resource's `/providers/microsoft/v1/systemone` endpoint. The catalog route's provider model slug is the Azure deployment name; the existing `AZURE_OPENAI_DEPLOYMENTS` mapping can override it using either that slug or the full canonical model ID:
+
+```json
+{
+  "microsoft/microsoft-decision-1": { "deployment": "my-decision-deployment" }
+}
+```
+
+This entry inherits the default resource and credentials. A mapping with a different `baseUrl` requires its own `apiKey` or `authToken`. Both API-key and Entra bearer authentication are supported; Entra tokens require the `https://cognitiveservices.azure.com/.default` scope. The decision endpoint does not use `AZURE_OPENAI_API_VERSION`.
+
+The executor accepts text and JSON evidence and rejects media, streaming, tools, `safety_identifier`, `service_tier`, and generation controls such as `temperature`, `top_p`, token-generation limits, and reasoning options. Shared System One completion validates typed answers and actual token usage. Capability and pricing records use `decisions.make`; a zero output meter represents free output. Executor registration does not enable catalog routing.
+
+Contract source: [Deploy and use Microsoft-Decision-1](https://learn.microsoft.com/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision).
+
 ## Novita media contracts
 
 Novita's dedicated executors implement Kling 3.0 Standard/Pro/4K video, unified

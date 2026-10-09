@@ -128,6 +128,10 @@ describe("Azure Microsoft Decision", () => {
 		{ rawRequest: { stream: true } }, { rawRequest: { tools: [] } },
 		{ rawRequest: { tool_choice: "auto" } }, { rawRequest: { safety_identifier: "user" } },
 		{ rawRequest: { service_tier: "fast" } },
+		{ rawRequest: { temperature: 0 } }, { rawRequest: { top_p: 0.5 } },
+		{ rawRequest: { max_tokens: 10 } }, { rawRequest: { max_output_tokens: 10 } },
+		{ rawRequest: { max_completion_tokens: 10 } },
+		{ rawRequest: { reasoning: { effort: "high" } } }, { rawRequest: { reasoning_effort: "high" } },
 	] satisfies Partial<IRDecisionsRequest>[])("rejects unsupported requests without fetching: %j", async override => {
 		const mock = installFetchMock([]);
 		try {
