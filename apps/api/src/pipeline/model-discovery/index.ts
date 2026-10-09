@@ -767,7 +767,34 @@ export async function fetchPreviousModelsByProviders(providerIds: string[]): Pro
 	return { byProvider: map, providerApiSnapshotReadyByProvider };
 }
 
-async function upsertCurrentModels(rows: SeenModelUpsertRow[]): Promise<void> {
+// Postgres rejects an INSERT ... ON CONFLICT DO UPDATE that touches one key twice, which would
+// abort persistence for every provider in the run. Keep the first row per key; rows arrive in
+// provider order, so the winner is deterministic.
+export function dedupeSeenModelRows(
+	rows: SeenModelUpsertRow[],
+	onDuplicate?: (row: SeenModelUpsertRow) => void,
+): SeenModelUpsertRow[] {
+	const byKey = new Map<string, SeenModelUpsertRow>();
+	for (const row of rows) {
+		const key = JSON.stringify([row.provider_id, row.model_id]);
+		if (byKey.has(key)) onDuplicate?.(row);
+		else byKey.set(key, row);
+	}
+	return Array.from(byKey.values());
+}
+
+async function upsertCurrentModels(allRows: SeenModelUpsertRow[]): Promise<void> {
+	const droppedByProvider = new Map<string, number>();
+	const rows = dedupeSeenModelRows(allRows, (row) => {
+		droppedByProvider.set(row.provider_id, (droppedByProvider.get(row.provider_id) ?? 0) + 1);
+	});
+	if (droppedByProvider.size > 0) {
+		// Provider ids and counts only, so the duplicate source is visible without logging model lists.
+		console.warn("model_discovery_duplicate_rows_dropped", {
+			count: allRows.length - rows.length,
+			providers: Object.fromEntries([...droppedByProvider].sort(([a], [b]) => a.localeCompare(b))),
+		});
+	}
 	if (rows.length === 0) return;
 	const supabase = getSupabaseAdmin();
 

@@ -60,6 +60,26 @@ describe("MODEL_DISCOVERY_PROVIDERS", () => {
 		expect(providers.get("amazon-bedrock")?.apiKeyEnv).toContain("AMAZON_BEDROCK_MANTLE_API_KEY");
 	});
 
+	it("lists each provider id once so seen-model upserts never repeat a conflict key", () => {
+		const counts = new Map<string, number>();
+		for (const provider of MODEL_DISCOVERY_PROVIDERS) {
+			counts.set(provider.providerId, (counts.get(provider.providerId) ?? 0) + 1);
+		}
+		const duplicates = Array.from(counts).filter(([, count]) => count > 1).map(([providerId]) => providerId);
+
+		expect(duplicates).toEqual([]);
+	});
+
+	it("prefers the native discovery entry when a provider is also OpenAI-compatible", () => {
+		const empiriolabs = MODEL_DISCOVERY_PROVIDERS.filter((provider) => provider.providerId === "empiriolabs");
+
+		expect(empiriolabs).toHaveLength(1);
+		expect(empiriolabs[0]).toMatchObject({
+			modelsEndpoint: "https://api.empiriolabs.ai/v1/models",
+			authStyle: "none",
+		});
+	});
+
 	it("includes models.dev parity aggregator and public catalog endpoints", () => {
 		const providers = new Map(MODEL_DISCOVERY_PROVIDERS.map((provider) => [provider.providerId, provider]));
 		for (const providerId of ["crossmodel", "digitalocean", "empiriolabs", "llmgateway", "ovhcloud", "pioneer", "vercel"]) {

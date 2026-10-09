@@ -320,7 +320,15 @@ for (const config of Object.values(OPENAI_COMPAT_CONFIG)) {
 	openAICompatProviders.set(provider.providerId, provider);
 }
 
+// A provider can be registered both natively and in the OpenAI-compatible registry
+// (for example empiriolabs). Discovery persists rows keyed by provider_id + model_id, so
+// listing it twice would put duplicate conflict keys in one upsert. The native entry wins
+// because it carries the provider's real models endpoint and auth style.
+const nativeDiscoveryProviderIds = new Set(NATIVE_DISCOVERY_PROVIDERS.map((provider) => provider.providerId));
+
 export const MODEL_DISCOVERY_PROVIDERS: ProviderConfig[] = [
 	...NATIVE_DISCOVERY_PROVIDERS,
-	...Array.from(openAICompatProviders.values()),
+	...Array.from(openAICompatProviders.values()).filter(
+		(provider) => !nativeDiscoveryProviderIds.has(provider.providerId),
+	),
 ].sort((a, b) => a.providerId.localeCompare(b.providerId));
