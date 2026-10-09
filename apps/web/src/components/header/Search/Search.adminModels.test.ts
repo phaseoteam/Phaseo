@@ -18,9 +18,14 @@ describe("admin model search overlay", () => {
 		expect(mergeAdminSearchModels(publicData, [])).toBe(publicData);
 		expect(mergeAdminSearchModels(undefined, [internal])).toBeUndefined();
 	});
-	it("does not duplicate a publicly released model", () => {
-		const released = mergeAdminSearchModels(publicData, [internal])!;
-		expect(mergeAdminSearchModels(released, [internal])!.models).toHaveLength(1);
+	it("makes stale public copies non-persistable when the admin source marks them internal", () => {
+		const stale = { ...publicData, models: [{ id: internal.model_id, title: internal.name, subtitle: null, href: `/models/${internal.model_id}`, logoId: "example", releaseGroupLabel: null }] };
+		const result = mergeAdminSearchModels(stale, [internal])!;
+		expect(result.models).toHaveLength(1);
+		expect(result.models[0]?.persistable).toBe(false);
+		expect(addRecentItem([], result.models[0]!)).toEqual([]);
+		expect(togglePinnedItem([], result.models[0]!)).toEqual([]);
+		expect(stale.models[0]).not.toHaveProperty("persistable");
 	});
 	it("never saves internal results in recent or pinned items", () => {
 		const item = mergeAdminSearchModels(publicData, [internal])!.models[0]!;
