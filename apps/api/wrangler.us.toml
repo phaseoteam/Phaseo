@@ -10,6 +10,7 @@ preview_urls = false
 [vars]
 GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED = "true"
 CUSTOMER_RATE_LIMITS_ENABLED = "true"
+GATEWAY_SPEND_LIMIT_DO_MODE = "off"
 GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
 ENV = "prod"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
@@ -60,4 +61,9 @@ script_name = "phaseo-gateway"
 [[durable_objects.bindings]]
 name = "CUSTOMER_RATE_LIMITS"
 class_name = "CustomerRateLimitDurableObject"
+script_name = "phaseo-gateway"
+
+[[durable_objects.bindings]]
+name = "SPEND_LIMITS"
+class_name = "SpendLimitDurableObject"
 script_name = "phaseo-gateway"

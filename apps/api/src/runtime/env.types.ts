@@ -55,6 +55,9 @@ export type GatewayBindings = {
 	CUSTOMER_RATE_LIMIT_LADDER?: string;
 	CUSTOMER_RATE_LIMIT_LADDER_ENABLED?: string;
 	CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED?: string;
+	SPEND_LIMITS?: DurableObjectNamespace;
+	/** off | shadow | enforce for the SpendLimit Durable Object (default off). */
+	GATEWAY_SPEND_LIMIT_DO_MODE?: string;
     KV?: KVNamespace;
     DB?: D1Database;
     PHASEO_CONTROL_SECRET?: string;

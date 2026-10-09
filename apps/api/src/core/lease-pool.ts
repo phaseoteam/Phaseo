@@ -70,6 +70,12 @@ export type LeasePoolOptions = {
 	maxWantRequests?: number;
 	/** Pause background top-ups for this long after one grants nothing. */
 	topUpBackoffMs?: number;
+	/**
+	 * "reserve" (default): admissions reserve `need.units` up front (provider tokens).
+	 * "precheck": units are only known after the request (spend). A slice admits while its
+	 * settled units plus an estimate for in-flight admissions stay below the grant.
+	 */
+	unitsMode?: "reserve" | "precheck";
 	now?: () => number;
 	background?: (promise: Promise<unknown>) => void;
 };
@@ -84,10 +90,11 @@ type HeldLease<M> = {
 const DEMAND_BUCKET_MS = 10_000;
 const MAX_SETTLED_TICKETS = 20_000;
 
-function fits(lease: HeldLease<unknown>, need: LeaseVector): boolean {
+function fits(lease: HeldLease<unknown>, need: LeaseVector, precheck: boolean): boolean {
 	const { requests, units } = lease.grant;
-	return (requests === null || lease.usedRequests + need.requests <= requests) &&
-		(units === null || lease.usedUnits + need.units <= units);
+	if (requests !== null && lease.usedRequests + need.requests > requests) return false;
+	// In precheck mode units are checked across all held leases (see tryAdmit).
+	return precheck || units === null || lease.usedUnits + need.units <= units;
 }
 
 export class LeasePool<M, D> {
@@ -98,6 +105,8 @@ export class LeasePool<M, D> {
 	private topUpPausedUntil = 0;
 	private readonly settled = new Set<string>();
 	private demand = { bucketStart: 0, requests: 0, units: 0, previousRequests: 0, previousUnits: 0 };
+	/** Moving average of settled units per request (precheck mode). */
+	private unitsPerRequest = 0;
 	private readonly options: Required<Omit<LeasePoolOptions, "now" | "background">> & Pick<LeasePoolOptions, "background">;
 	private readonly now: () => number;
 
@@ -110,6 +119,7 @@ export class LeasePool<M, D> {
 			minWantRequests: options.minWantRequests ?? 4,
 			maxWantRequests: options.maxWantRequests ?? 10_000,
 			topUpBackoffMs: options.topUpBackoffMs ?? 1_000,
+			unitsMode: options.unitsMode ?? "reserve",
 			background: options.background,
 		};
 		this.demand.bucketStart = this.now();
@@ -119,8 +129,32 @@ export class LeasePool<M, D> {
 	tryAdmit(id: string, need: LeaseVector): LeaseTicket<M> | null {
 		const now = this.now();
 		this.sweep(now);
+		const precheck = this.options.unitsMode === "precheck";
+		if (precheck) {
+			// Units are only settled after a request, so one slice can overrun its grant; pooling the
+			// held slices lets the others absorb that, keeping the isolate within its total grant.
+			let granted = 0, used = 0, inFlight = 0, limited = false;
+			for (const lease of this.held.values()) {
+				if (lease.grant.expiresAt <= now || lease.grant.units === null) continue;
+				limited = true;
+				granted += lease.grant.units;
+				used += lease.usedUnits;
+				inFlight += lease.inFlightRequests;
+			}
+			if (limited && used + inFlight * this.unitsPerRequest >= granted) return null;
+		}
+		let chosen: HeldLease<M> | null = null;
+		let chosenSpare = -Infinity;
 		for (const lease of this.held.values()) {
-			if (lease.grant.expiresAt <= now || !fits(lease, need)) continue;
+			if (lease.grant.expiresAt <= now || !fits(lease, need, precheck)) continue;
+			if (!precheck) { chosen = lease; break; }
+			// Charge the slice with the most unsettled room, so its coordinator hold stays accurate.
+			const spare = lease.grant.units === null ? Infinity
+				: lease.grant.units - lease.usedUnits - lease.inFlightRequests * this.unitsPerRequest;
+			if (spare > chosenSpare) { chosen = lease; chosenSpare = spare; }
+		}
+		if (chosen) {
+			const lease = chosen;
 			lease.usedRequests += need.requests;
 			lease.usedUnits += need.units;
 			lease.inFlightRequests += need.requests;
@@ -148,6 +182,11 @@ export class LeasePool<M, D> {
 				this.afterAdmission(transport);
 				return { allowed: true, ticket: shared };
 			}
+		}
+		if (this.options.unitsMode === "precheck") {
+			// Nothing held can admit: hand it all back with this request so the coordinator decides
+			// on exact usage instead of counting this isolate's unusable remainders as held.
+			for (const lease of [...this.held.values()]) this.close(lease);
 		}
 		const returns = this.takeReturns();
 		const request = transport.acquire(need, this.want(need), returns);
@@ -180,11 +219,19 @@ export class LeasePool<M, D> {
 		if (!lease) return false;
 		lease.usedRequests = Math.max(0, lease.usedRequests + delta.requests);
 		lease.usedUnits = Math.max(0, lease.usedUnits + delta.units);
+		if (this.options.unitsMode === "precheck" && delta.units > 0) this.learnUnits(delta.units);
 		if (opts.final !== false) {
 			lease.inFlightRequests = Math.max(0, lease.inFlightRequests - ticket.requests);
 			this.markSettled(ticket.id);
 		}
 		return true;
+	}
+
+	/** Feeds units settled outside a held lease into demand sizing (precheck mode). */
+	learnUnits(units: number): void {
+		if (!(units > 0) || !Number.isFinite(units)) return;
+		this.unitsPerRequest = this.unitsPerRequest === 0 ? units : this.unitsPerRequest * 0.8 + units * 0.2;
+		this.demand.units += units;
 	}
 
 	/** Records that a ticket was settled through the coordinator, so later local settles are ignored. */
@@ -202,6 +249,13 @@ export class LeasePool<M, D> {
 
 	holds(leaseId: string): boolean {
 		return this.held.has(leaseId);
+	}
+
+	/** Sends returns for expired leases (and any queued returns) in the background. */
+	flushReturns(transport: Pick<LeaseTransport<M, D>, "returnLeases">): void {
+		this.sweep(this.now());
+		if (!this.returns.length || this.acquiring || this.toppingUp) return;
+		this.dispatch(transport.returnLeases(this.takeReturns()));
 	}
 
 	/** Returns every held lease now (used on configuration changes and in tests). */

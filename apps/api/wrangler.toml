@@ -14,6 +14,7 @@ CUSTOMER_RATE_LIMITS_ENABLED = "true"
 # the tier publisher reports a complete backfill.
 CUSTOMER_RATE_LIMIT_LADDER_ENABLED = "false"
 CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED = "false"
+GATEWAY_SPEND_LIMIT_DO_MODE = "off"
 # Also enables the per-minute catalogue revision publisher; catalogue
 # snapshots are cached stale-while-revalidate against that revision.
 GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
@@ -173,3 +174,11 @@ class_name = "CustomerRateLimitDurableObject"
 [[migrations]]
 tag = "v4-customer-rate-limits"
 new_sqlite_classes = ["CustomerRateLimitDurableObject"]
+
+[[durable_objects.bindings]]
+name = "SPEND_LIMITS"
+class_name = "SpendLimitDurableObject"
+
+[[migrations]]
+tag = "v5-spend-limits"
+new_sqlite_classes = ["SpendLimitDurableObject"]
