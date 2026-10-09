@@ -1183,17 +1183,7 @@ function ChatPlaygroundContent({
 			const personalizationPrompt =
 				buildPersonalizationPrompt(personalization);
 			const systemPrompt = thread.settings.systemPrompt?.trim() ?? "";
-			let interactivePrompt = "";
-			if (thread.settings.interactiveAnswers) {
-				try {
-					interactivePrompt = (await loadOpenUILibrary()).getOpenUIPrompt();
-				} catch {
-					setError("Interactive answers could not load. Disable the experiment and retry.");
-					if (manageSendingState) setIsSending(false);
-					return;
-				}
-			}
-			const mergedSystemPrompt = [systemPrompt, personalizationPrompt, interactivePrompt]
+			const mergedSystemPrompt = [systemPrompt, personalizationPrompt]
 				.filter(Boolean)
 				.join("\n\n");
 			if (mergedSystemPrompt) {
@@ -1583,6 +1573,15 @@ function ChatPlaygroundContent({
 			};
 
 			try {
+				if (thread.settings.interactiveAnswers) {
+					const interactivePrompt = (await loadOpenUILibrary()).getOpenUIPrompt();
+					const systemMessage = input.find((message) => message.role === "system");
+					if (systemMessage && typeof systemMessage.content === "string") {
+						systemMessage.content += `\n\n${interactivePrompt}`;
+					} else {
+						input.unshift({ role: "system", content: interactivePrompt });
+					}
+				}
 				markChatPerformance(performanceRunId, "request-dispatch");
 				const response = await fetchChatWebApi("/api/chat/text", {
 					method: "POST",
