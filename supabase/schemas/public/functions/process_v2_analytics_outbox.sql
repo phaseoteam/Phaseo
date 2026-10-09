@@ -83,12 +83,13 @@ begin
   -- then re-enqueue after this transaction, even when an existing pending
   -- outbox upsert would otherwise have been a no-op. Cap all acknowledgments
   -- at 2,000; do not enlarge the set of summaries that must be rebuilt.
-  create temporary table if not exists pg_temp.v2_rollup_covered (
-    request_event_id uuid primary key
-  ) on commit drop;
-  truncate table pg_temp.v2_rollup_covered;
-  insert into pg_temp.v2_rollup_covered
-  select outbox.request_event_id
+  insert into pg_temp.v2_rollup_batch (
+    request_event_id, workspace_id, occurred_at, app_id, model_slug,
+    provider_model_id, cloudflare_colo
+  )
+  select outbox.request_event_id, fact.workspace_id, fact.occurred_at, fact.app_id,
+    coalesce(fact.routed_model_slug, fact.requested_model_slug),
+    fact.provider_model_id, fact.cloudflare_colo
   from public.v2_analytics_outbox outbox
   join public.v2_request_facts fact on fact.request_event_id = outbox.request_event_id
   where outbox.status in ('pending', 'failed') and outbox.available_at <= now()
@@ -111,8 +112,7 @@ begin
 
   update public.v2_analytics_outbox outbox
   set status = 'processing', updated_at = now()
-  where outbox.request_event_id in (select batch.request_event_id from pg_temp.v2_rollup_batch batch)
-     or outbox.request_event_id in (select covered.request_event_id from pg_temp.v2_rollup_covered covered);
+  where outbox.request_event_id in (select batch.request_event_id from pg_temp.v2_rollup_batch batch);
 
   for grain in
     select distinct
@@ -401,10 +401,8 @@ begin
 
   update public.v2_analytics_outbox outbox
   set status = 'complete', last_error = null, updated_at = now()
-  where outbox.status = 'processing' and (
-    outbox.request_event_id in (select batch.request_event_id from pg_temp.v2_rollup_batch batch)
-    or outbox.request_event_id in (select covered.request_event_id from pg_temp.v2_rollup_covered covered)
-  );
+  where outbox.status = 'processing'
+    and outbox.request_event_id in (select batch.request_event_id from pg_temp.v2_rollup_batch batch);
 
 
   delete from private.v2_analytics_previous_grains

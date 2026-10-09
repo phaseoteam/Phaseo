@@ -36,7 +36,7 @@ async function fixture(current) {
     insert into v2_request_facts (request_event_id,workspace_id,request_id,occurred_at,routed_model_slug,provider_model_id,
       success,status_code,latency_ms,throughput,generation_ms,cost_nanos,public_reporting_allowed)
     select md5(i::text)::uuid, md5('workspace')::uuid, 'request-'||i,
-      date_trunc('day',now())-interval '1 day', 'model-a', 'route-a', i%5<>0,
+      date_trunc('day',now())-interval '1 day'+make_interval(secs=>i%1800), 'model-a', 'route-a', i%5<>0,
       case when i%5=0 then 429 else 200 end, case when i%7=0 then null else i end,
       case when i%11=0 then null else i/2.0 end,i*2,i*100,i%13<>0
     from generate_series(1,3000) i;
@@ -49,7 +49,7 @@ async function fixture(current) {
       on conflict(request_event_id) do update set available_at=now();
     -- Same public hour but another workspace is not covered privately.
     insert into v2_request_facts(request_event_id,workspace_id,request_id,occurred_at,routed_model_slug,provider_model_id,success,public_reporting_allowed)
-      values (md5('other')::uuid,md5('other-workspace')::uuid,'other',date_trunc('day',now())-interval '1 day'+interval '1 minute','model-a','route-a',true,true);
+      values (md5('other')::uuid,md5('other-workspace')::uuid,'other',date_trunc('day',now())-interval '1 day'+interval '55 minutes','model-a','route-a',true,true);
     insert into v2_analytics_outbox(request_event_id,workspace_id,occurred_at,status,available_at)
       select request_event_id,workspace_id,occurred_at,'pending',now() from v2_request_facts where request_id='other';
     -- Not ready to acknowledge, even though the aggregate sees its fact.
@@ -74,6 +74,10 @@ async function drain(db, current, checkInitial = false) {
       assert.equal(Number((await db.query("select count(*) n from v2_analytics_outbox where status='complete'")).rows[0].n),2000);
       assert.equal((await db.query("select status from v2_analytics_outbox where request_event_id=md5('other')::uuid")).rows[0].status,'pending');
       assert.equal((await db.query("select status from v2_analytics_outbox where request_event_id=md5('future')::uuid")).rows[0].status,'pending');
+      const freshness = (await db.query(`select
+        (select source_watermark from v2_rollup_refresh_state where rollup_name='public_hourly') watermark,
+        (select max(occurred_at) from v2_analytics_outbox where status='complete') acknowledged`)).rows[0];
+      assert.equal(freshness.watermark.getTime(),freshness.acknowledged.getTime(),'Freshness includes covered events beyond the seed batch');
     }
   }
   assert.fail('Worker failed to drain ready events');
