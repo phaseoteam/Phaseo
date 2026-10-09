@@ -90,6 +90,11 @@ function resolveRequestRoutingModeOverride(
     return fallback;
 }
 
+/** Captures a promise's outcome so a result that is never awaited cannot become an unhandled rejection. */
+function settle<T>(promise: Promise<T>): Promise<{ value: T } | { error: unknown }> {
+	return promise.then((value) => ({ value }), (error: unknown) => ({ error }));
+}
+
 function objectOrEmpty(value: unknown): Record<string, unknown> {
     return value && typeof value === "object" && !Array.isArray(value)
         ? { ...(value as Record<string, unknown>) }
@@ -422,7 +427,40 @@ export async function beforeRequest(
         model,
     });
 
-    const testingMode = await timer.span("resolveTestingMode", () =>
+    // 5) RPC + gating + providers (choose viable providers for this model/endpoint)
+    const capability = normalizeCapability(resolveCapabilityFromEndpoint(endpoint));
+    // Text requests (streamed or not) have no wallet reservation before provider
+    // dispatch. Their cache fill may overlap inference, but must finish before
+    // final charging invalidates that cache (charge awaits creditCacheWrites).
+    // Media/async reservation paths remain ordered.
+    const creditCacheWrites: Promise<void>[] = [];
+    const onCreditCacheWrite = ["responses", "chat.completions", "messages"].includes(endpoint)
+        ? (write: Promise<void>) => { creditCacheWrites.push(write); }
+        : undefined;
+	const contextForModel = (candidateModel: string, flags: { testingMode: boolean; internalOnly: boolean }) => guardContext({
+		workspaceId,
+		apiKeyId,
+		endpoint,
+		capability,
+		model: candidateModel,
+		requestId,
+		internal,
+		testingMode: flags.testingMode,
+		internalOnly: flags.internalOnly,
+		disableCache: debugEnabled,
+		onCreditCacheWrite,
+	});
+
+    // Policy and request context depend on the authenticated workspace/key but
+    // not on one another. Overlap their cache/source reads, and the testing-mode
+    // check, while retaining the same fail-closed enforcement after all complete.
+    const workspacePolicyPromise = timer.span("fetchWorkspacePolicy", () =>
+        fetchWorkspacePolicy({ workspaceId, apiKeyId })
+    ).then(
+        (value) => ({ ok: true as const, value }),
+        (error: unknown) => ({ ok: false as const, error }),
+    );
+    const testingModePromise = timer.span("resolveTestingMode", () =>
         resolveTestingMode({
             requested: testingModeRequested,
             workspaceId,
@@ -431,6 +469,13 @@ export async function beforeRequest(
             model,
         })
     );
+    // An ordinary request almost never enters testing mode (only an admin's request
+    // to an internal route does), so load its context alongside the check and
+    // reload only in that rare case. Explicit testing requests wait for the check.
+    const speculativeContext = !testingModeRequested && !isAutoRouterModel(model)
+        ? settle(timer.span("guardContext", () => contextForModel(model, { testingMode: false, internalOnly: false })))
+        : null;
+    const testingMode = await testingModePromise;
     if (testingModeRequested && !testingMode.enabled) {
         return {
             ok: false,
@@ -443,45 +488,13 @@ export async function beforeRequest(
     }
     const testingModeEnabled = testingMode.enabled;
 
-    // Policy and request context depend on the authenticated workspace/key but
-    // not on one another. Overlap their cache/source reads while retaining the
-    // same fail-closed enforcement after both have completed.
-    const workspacePolicyPromise = timer.span("fetchWorkspacePolicy", () =>
-        fetchWorkspacePolicy({ workspaceId, apiKeyId })
-    ).then(
-        (value) => ({ ok: true as const, value }),
-        (error: unknown) => ({ ok: false as const, error }),
-    );
-
-    // 5) RPC + gating + providers (choose viable providers for this model/endpoint)
-    const capability = normalizeCapability(resolveCapabilityFromEndpoint(endpoint));
-    // Text requests (streamed or not) have no wallet reservation before provider
-    // dispatch. Their cache fill may overlap inference, but must finish before
-    // final charging invalidates that cache (charge awaits creditCacheWrites).
-    // Media/async reservation paths remain ordered.
-    const creditCacheWrites: Promise<void>[] = [];
-    const onCreditCacheWrite = ["responses", "chat.completions", "messages"].includes(endpoint)
-        ? (write: Promise<void>) => { creditCacheWrites.push(write); }
-        : undefined;
     let autoRouterEvaluation: AutoRouterEvaluation | null = null;
     let workspacePolicyLoad: Awaited<typeof workspacePolicyPromise> | null = null;
     const loadWorkspacePolicy = async () => {
 		workspacePolicyLoad ??= await workspacePolicyPromise;
 		return workspacePolicyLoad;
 	};
-	const contextForModel = (candidateModel: string) => guardContext({
-		workspaceId,
-		apiKeyId,
-		endpoint,
-		capability,
-		model: candidateModel,
-		requestId,
-		internal,
-		testingMode: testingModeEnabled,
-		internalOnly: testingMode.reason === "admin",
-		disableCache: debugEnabled,
-		onCreditCacheWrite,
-	});
+	const testingContextFlags = { testingMode: testingModeEnabled, internalOnly: testingMode.reason === "admin" };
 
 	let c: Awaited<ReturnType<typeof guardContext>>;
 	if (isAutoRouterModel(model)) {
@@ -567,7 +580,7 @@ export async function beforeRequest(
 			modelOverride: options?.autoRouterModelOverride,
 			loadBenchmarks: loadAutoRouterBenchmarks,
 			loadCandidate: async (candidateModel) => {
-				const candidateContext = await contextForModel(candidateModel);
+				const candidateContext = await contextForModel(candidateModel, testingContextFlags);
 				if (!candidateContext.ok) return { ok: false as const, reason: "model_or_endpoint_unavailable" };
 				const candidateResolvedModel = candidateContext.value.resolvedModel || candidateModel;
 				const policyResult = applyWorkspacePolicy({
@@ -640,7 +653,11 @@ export async function beforeRequest(
 		c = selection.selected.contextResult as Awaited<ReturnType<typeof guardContext>>;
 		options?.onObservabilitySnapshot?.({ requestPayload: rawBody, requestedModel, model: selection.selected.resolvedModel });
 	} else {
-		c = await timer.span("guardContext", () => contextForModel(model));
+		const speculative = speculativeContext && !testingModeEnabled ? await speculativeContext : null;
+		if (speculative && "error" in speculative) throw speculative.error;
+		c = speculative && "value" in speculative
+			? speculative.value
+			: await timer.span("guardContext", () => contextForModel(model, testingContextFlags));
 	}
     if (!c.ok) return c as { ok: false; response: Response };
     let { context, providers, resolvedModel, candidateDiagnostics } = c.value;

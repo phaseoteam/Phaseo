@@ -447,6 +447,24 @@ describe("beforeRequest pricing loss-prevention", () => {
 		expect(timer.attachTo(new Response()).headers.get("Server-Timing")).toContain("context_total;dur=12.500");
 	});
 
+	it.each([
+		[false, [{ testingMode: false, internalOnly: false }]],
+		// Testing mode was granted after the context load started: reload with testing flags.
+		[true, [{ testingMode: false, internalOnly: false }, { testingMode: true, internalOnly: true }]],
+	])("loads context alongside the testing-mode check (admin internal route: %s)", async (granted, expectedLoads) => {
+		resolveTestingModeMock.mockResolvedValue({ enabled: granted, reason: granted ? "admin" : "not_requested" });
+		guardContextMock.mockResolvedValue({ ok: false, response: new Response("stop", { status: 418 }) });
+		const req = new Request("https://gateway.local/v1/responses", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ model: "openai/gpt-4.1-mini" }),
+		});
+		const result = await beforeRequest(req, "responses", new Timer(), null);
+		expect(result.ok).toBe(false);
+		expect(guardContextMock.mock.calls.map(([args]) => ({ testingMode: args.testingMode, internalOnly: args.internalOnly })))
+			.toEqual(expectedLoads);
+	});
+
 	it("rejects request when workspace policy blocks the resolved model", async () => {
 		const provider = providerWithPricingRules(1);
 		guardContextMock.mockResolvedValue({
