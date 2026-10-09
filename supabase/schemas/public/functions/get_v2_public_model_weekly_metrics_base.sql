@@ -21,7 +21,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_model_weekly_metrics_base()
       rollup.latency_count,
       rollup.throughput_sum,
       rollup.throughput_count
-    from public.v2_public_usage_daily rollup
+    from public.reporting_usage_daily rollup
     where rollup.usage_date >= current_date - 6
       and rollup.usage_date <= current_date
   ),

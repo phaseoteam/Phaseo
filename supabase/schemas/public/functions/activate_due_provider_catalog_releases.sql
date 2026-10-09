@@ -6,8 +6,15 @@ CREATE OR REPLACE FUNCTION public.activate_due_provider_catalog_releases()
 declare
   activated_count integer := 0;
   activated_route_ids text[] := '{}';
+  due_route_ids text[];
+  due_statuses text[];
 begin
-  with due as (
+  -- Every catalogue table bumps the routing catalogue revision once per
+  -- statement, even when no row changes. This runs every minute, so it must
+  -- not issue updates when nothing is due.
+  select coalesce(array_agg(due.provider_model_id), '{}'), coalesce(array_agg(due.next_status), '{}')
+  into due_route_ids, due_statuses
+  from (
     select route.provider_model_id,
       case when candidate.availability = 'ready' then 'active' else 'degraded' end as next_status
     from public.v2_model_provider_routes route
@@ -46,6 +53,13 @@ begin
           and nullif(trim(provider.base_url), '') is not null
       )
     for update of route skip locked
+  ) due;
+  if cardinality(due_route_ids) = 0 then
+    return 0;
+  end if;
+
+  with due as (
+    select * from unnest(due_route_ids, due_statuses) as due(provider_model_id, next_status)
   ), activated as (
     update public.v2_model_provider_routes route
     set status = due.next_status,

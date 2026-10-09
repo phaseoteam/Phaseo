@@ -31,7 +31,7 @@ begin
       public.gateway_usage_nonnegative_bigint(coalesce(
         public.gateway_usage_total_tokens(usage.payload), usage.total_tokens, 0
       )) as total_tokens
-    from public.v2_request_facts fact
+    from public.reporting_request_facts fact
     left join public.v2_model_provider_routes route on route.provider_model_id = fact.provider_model_id
     left join public.gateway_requests request
       on request.id = fact.gateway_request_id and request.created_at = fact.gateway_request_created_at

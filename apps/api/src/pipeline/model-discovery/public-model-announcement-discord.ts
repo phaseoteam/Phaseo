@@ -150,7 +150,6 @@ function formatPerModelEmbed(model: PublicModelAnnouncementModel, nowIso: string
 
 	const descriptionLines = [
 		`Model ID: \`${safeModel.modelId}\``,
-		`[View Model](${safeModel.modelUrl})`,
 		...(safeModel.changeSummaryLines ? ["", ...safeModel.changeSummaryLines] : []),
 	];
 

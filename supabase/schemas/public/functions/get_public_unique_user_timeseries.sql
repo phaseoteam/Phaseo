@@ -40,7 +40,7 @@ begin
       d.actor_hash,
       sum(d.requests)::bigint as req_count,
       sum(d.tokens)::bigint as tok_count
-    from public.public_model_user_usage_daily d
+    from public.reporting_model_user_usage_daily d
     where d.day_bucket >= v_since
       and lower(d.model_id) not in ('unknown', 'other')
     group by 1, 2, 3

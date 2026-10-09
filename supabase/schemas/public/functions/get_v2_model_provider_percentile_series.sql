@@ -62,7 +62,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_provider_percentile_series (
       filter (where fact.success is true and fact.throughput is not null)::numeric as throughput_p95,
     percentile_cont(0.99) within group (order by fact.throughput)
       filter (where fact.success is true and fact.throughput is not null)::numeric as throughput_p99
-  from public.v2_request_facts fact
+  from public.reporting_request_facts fact
   join public.v2_model_provider_routes route
     on route.provider_model_id = fact.provider_model_id
   join public.v2_providers provider

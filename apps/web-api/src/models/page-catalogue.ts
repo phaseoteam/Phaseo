@@ -345,17 +345,69 @@ export type ModelsPageQuery = {
 	includeMetrics?: boolean;
 };
 
-async function databasePageRows(env: Env, query: ModelsPageQuery = {}): Promise<Row[]> {
+async function loadPageRows(env: Env, region: string | null, organisationId: string | null): Promise<Row[]> {
 	const { data, error } = await getDataClient(env).rpc("get_public_models_page_payload", {
-		p_region: query.region || null,
+		p_region: region,
 		// Match normalized modes after loading every provider alias in the region.
 		p_service_tier: null,
-		p_organisation_id: query.organisationId || null,
+		p_organisation_id: organisationId,
 	});
 	if (error) throw error;
 	if (!Array.isArray(data)) throw new Error("Invalid models catalogue payload");
+	return data;
+}
+
+// The payload costs ~1s of database time and ~6.6MB per build, yet edge
+// responses are keyed by URL, so every offset, search, projection, tier and
+// organisation page rebuilt it. Share one copy per catalogue revision and
+// region across those callers. Revision triggers cover every catalogue table
+// the payload reads except v2_labs, so the TTL bounds lab edits to the same
+// window as the edge cache.
+const SHARED_ROWS_TTL_SECONDS = 15 * 60;
+const sharedRowsInflight = new Map<string, Promise<Row[]>>();
+
+async function catalogueRevision(env: Env): Promise<string | null> {
+	const { data, error } = await getDataClient(env).rpc("gateway_catalogue_revision");
+	const revision = error ? null : String(data ?? "");
+	return revision && /^\d+$/.test(revision) ? revision : null;
+}
+
+async function sharedPageRows(env: Env, cache: Cache, region: string | null, organisationId: string | null): Promise<Row[]> {
+	const revision = await catalogueRevision(env);
+	// Without a revision nothing is cached, so keep the narrow organisation query.
+	if (!revision) return loadPageRows(env, region, organisationId);
+	const key = `https://web-api.internal/models-page-rows/v2/${revision}/${encodeURIComponent(region ?? "")}`;
+	const inflight = sharedRowsInflight.get(key);
+	if (inflight) return inflight;
+	const load = (async () => {
+		const cached = await cache.match(key).catch(() => undefined);
+		if (cached) {
+			const rows = await cached.json().catch(() => null);
+			if (Array.isArray(rows)) return rows as Row[];
+		}
+		const rows = await loadPageRows(env, region, null);
+		await cache.put(key, new Response(JSON.stringify(rows), {
+			headers: { "Content-Type": "application/json", "Cache-Control": `max-age=${SHARED_ROWS_TTL_SECONDS}` },
+		})).catch(() => {});
+		return rows;
+	})();
+	sharedRowsInflight.set(key, load);
+	try {
+		return await load;
+	} finally {
+		sharedRowsInflight.delete(key);
+	}
+}
+
+async function databasePageRows(env: Env, query: ModelsPageQuery = {}): Promise<Row[]> {
+	const region = query.region || null;
+	const organisationId = query.organisationId || null;
+	const cache = (globalThis as { caches?: { default?: Cache } }).caches?.default;
+	const data = cache
+		? await sharedPageRows(env, cache, region, organisationId)
+		: await loadPageRows(env, region, organisationId);
 	return data.filter((row: Row) =>
-		(!query.organisationId || String(row.organisation_id ?? "") === query.organisationId)
+		(!organisationId || String(row.organisation_id ?? "") === organisationId)
 		&& (!query.serviceTier || normalizeCatalogueTiers(row.gateway_tiers).includes(normalizeCatalogueTier(query.serviceTier))),
 	);
 }

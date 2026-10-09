@@ -27,3 +27,6 @@ CREATE POLICY "v2_public_provider_health_daily_public_select" ON "public"."v2_pu
   USING (true);
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."v2_public_provider_health_daily" TO "anon", "authenticated", "service_role";
+
+create policy public_health_model_visibility on public.v2_public_provider_health_daily as restrictive
+for select to anon, authenticated using (public.public_reporting_route_is_visible(model_slug, provider_model_id));

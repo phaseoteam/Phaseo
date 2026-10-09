@@ -56,7 +56,7 @@ scoped_facts as (
     fact.tool_call_succeeded,
     fact.structured_output_attempted,
     fact.structured_output_succeeded
-  from public.v2_request_facts fact
+  from public.reporting_request_facts fact
   join visible_model
     on visible_model.model_slug = coalesce(fact.routed_model_slug, fact.requested_model_slug)
   cross join params

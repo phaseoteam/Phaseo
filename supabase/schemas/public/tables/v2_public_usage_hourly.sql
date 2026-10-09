@@ -78,3 +78,6 @@ COMMENT ON COLUMN "public"."v2_public_usage_hourly"."cloudflare_colo" IS 'Execut
 COMMENT ON POLICY "v2_public_usage_hourly_public_select" ON "public"."v2_public_usage_hourly" IS 'Exposes anonymous usage and usage attributed to explicitly public apps only.';
 
 COMMENT ON TABLE "public"."v2_public_usage_hourly" IS 'Recent public hourly projection for performance pages; daily remains the durable baseline.';
+
+create policy public_usage_model_visibility on public.v2_public_usage_hourly as restrictive
+for select to anon, authenticated using (public.public_reporting_route_is_visible(model_slug, provider_model_id));

@@ -53,7 +53,7 @@ with meters as (
       0
     )::numeric as total_tokens
   from public.v2_public_usage_hourly_meters meter
-  join public.v2_public_usage_hourly scoped on scoped.rollup_id = meter.rollup_id
+  join public.reporting_usage_hourly scoped on scoped.rollup_id = meter.rollup_id
   where v_bucket_size = 'hour' and scoped.bucket_start >= v_since
   group by meter.rollup_id
 )
@@ -72,7 +72,7 @@ select
   usage.throughput_count as throughput_samples,
   usage.generation_sum_ms,
   usage.generation_count as generation_samples
-from public.v2_public_usage_hourly usage
+from public.reporting_usage_hourly usage
 join public.v2_model_provider_routes route
   on route.provider_model_id = usage.provider_model_id
   and coalesce(route.is_stealth, false) = false
@@ -112,7 +112,7 @@ with meters as (
       0
     )::numeric as total_tokens
   from public.v2_public_usage_daily_meters meter
-  join public.v2_public_usage_daily scoped on scoped.rollup_id = meter.rollup_id
+  join public.reporting_usage_daily scoped on scoped.rollup_id = meter.rollup_id
   where v_bucket_size <> 'hour' and scoped.usage_date >= (v_since at time zone 'utc')::date
   group by meter.rollup_id
 )
@@ -131,7 +131,7 @@ select
   usage.throughput_count as throughput_samples,
   usage.generation_sum_ms,
   usage.generation_count as generation_samples
-from public.v2_public_usage_daily usage
+from public.reporting_usage_daily usage
 join public.v2_model_provider_routes route
   on route.provider_model_id = usage.provider_model_id
   and coalesce(route.is_stealth, false) = false

@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getBindingsMock = vi.fn();
+const roleLookupMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => getBindingsMock(),
-	getSupabaseAdmin: vi.fn(),
+	getSupabaseAdmin: () => ({ from: () => ({ select: () => ({ eq: () => ({ maybeSingle: roleLookupMock }) }) }) }),
 }));
 
 import { isTestingModeRequested, resolveTestingMode } from "./testingMode";
@@ -12,6 +13,8 @@ import { isTestingModeRequested, resolveTestingMode } from "./testingMode";
 describe("isTestingModeRequested", () => {
 	beforeEach(() => {
 		getBindingsMock.mockReset();
+		roleLookupMock.mockReset();
+		roleLookupMock.mockResolvedValue({ data: { role: "admin" }, error: null });
 		getBindingsMock.mockReturnValue({});
 	});
 
@@ -81,6 +84,7 @@ describe("isTestingModeRequested", () => {
 		await expect(resolveTestingMode({
 			requested: true,
 			workspaceId: "workspace-internal",
+			userId: "admin-user",
 			internal: true,
 		})).resolves.toEqual({
 			enabled: true,

@@ -82,3 +82,6 @@ COMMENT ON COLUMN "public"."v2_public_usage_daily"."tool_call_successes" IS 'Suc
 COMMENT ON POLICY "v2_public_usage_daily_public_select" ON "public"."v2_public_usage_daily" IS 'Exposes anonymous usage and usage attributed to explicitly public apps only.';
 
 COMMENT ON TABLE "public"."v2_public_usage_daily" IS 'Cache hit rate is derived as cached_input_tokens / input_tokens, never stored as a precomputed percentage.';
+
+create policy public_usage_model_visibility on public.v2_public_usage_daily as restrictive
+for select to anon, authenticated using (public.public_reporting_route_is_visible(model_slug, provider_model_id));
