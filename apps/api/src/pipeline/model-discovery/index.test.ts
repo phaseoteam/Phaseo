@@ -119,6 +119,31 @@ describe("dedupeSeenModelRows", () => {
 		expect(deduped[0]?.watch_snapshot.contextLength).toBe(1_000);
 	});
 
+	it("reports each dropped duplicate so the source provider can be logged", () => {
+		const dropped: string[] = [];
+
+		dedupeSeenModelRows(
+			[
+				seenRow("empiriolabs", "model-a"),
+				seenRow("empiriolabs", "model-a"),
+				seenRow("empiriolabs", "model-b"),
+				seenRow("empiriolabs", "model-b"),
+				seenRow("other", "model-a"),
+			],
+			(row) => dropped.push(`${row.provider_id}/${row.model_id}`),
+		);
+
+		expect(dropped).toEqual(["empiriolabs/model-a", "empiriolabs/model-b"]);
+	});
+
+	it("does not call the duplicate callback when every key is unique", () => {
+		const onDuplicate = vi.fn();
+
+		dedupeSeenModelRows([seenRow("a", "m1"), seenRow("a", "m2"), seenRow("b", "m1")], onDuplicate);
+
+		expect(onDuplicate).not.toHaveBeenCalled();
+	});
+
 	it("treats case and whitespace variants as distinct keys, matching the primary key", () => {
 		const deduped = dedupeSeenModelRows([
 			seenRow("provider", "Model-A"),
