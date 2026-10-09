@@ -16,6 +16,7 @@ export type ErrorCode =
     | "not_supported"
     | "not_ready"
     | "key_limit_exceeded"
+    | "phaseo_free_model_limit_exceeded"
     | "insufficient_funds"
     | "guardrail_blocked"
     | "unsupported_model_or_endpoint";
@@ -107,6 +108,7 @@ const STATUS: Record<ErrorCode, number> = {
     not_supported: 400,
     not_ready: 409,
     key_limit_exceeded: 429,
+    phaseo_free_model_limit_exceeded: 429,
     insufficient_funds: 402,
     guardrail_blocked: 403,
     unsupported_model_or_endpoint: 400,
@@ -133,7 +135,6 @@ export function err(code: ErrorCode, payload: Record<string, unknown>) {
     }
     return json(body, STATUS[code]);
 }
-
 
 
 

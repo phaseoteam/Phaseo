@@ -86,6 +86,7 @@ Algunos errores incluyen más detalles para ayudarte a corregir el problema más
 | `authorization_error` | `403` | La clave no tiene acceso a este recurso. |
 | `not_found_error` | `404` | No se encontró el endpoint o el recurso. |
 | `rate_limit_error` | `429` | Hay demasiadas solicitudes. Reintenta después del intervalo indicado. |
+| `phaseo_free_model_limit_exceeded` | `429` | Se agotó la cuota diaria compartida de modelos gratuitos de Phaseo (1.500 solicitudes por defecto). Respeta `Retry-After`, espera al reinicio a las 00:00 UTC o elige un modelo de pago. |
 | `validation_error` | `400` | Los parámetros o el cuerpo de la solicitud no son válidos. |
 | `provider_error` | `502` | El proveedor del modelo ascendente no respondió correctamente. |
 | `server_error` | `500` | Se produjo un problema inesperado en Phaseo. |
@@ -268,4 +269,3 @@ Si implementas la gestión de errores como agente:
 - Trata las cargas de depuración como información potencialmente sensible y redacta su contenido antes de guardarlo en registros persistentes.
 - Prefiere reintentos deterministas (intentos limitados y variación aleatoria) en lugar de bucles sin límite.
 </Visibility>
-

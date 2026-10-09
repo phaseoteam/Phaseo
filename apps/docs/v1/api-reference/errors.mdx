@@ -86,6 +86,7 @@ Some errors include more detail to help you fix the issue faster:
 | `authorization_error` | `403` | The key does not have access to this resource. |
 | `not_found_error` | `404` | The endpoint or resource could not be found. |
 | `rate_limit_error` | `429` | Too many requests. Retry after the specified delay. |
+| `phaseo_free_model_limit_exceeded` | `429` | Phaseo's shared daily free-model allowance is exhausted (1,500 requests by default). Honor `Retry-After`, wait for the 00:00 UTC reset, or choose a paid model. |
 | `validation_error` | `400` | Invalid parameters or request body. |
 | `provider_error` | `502` | The upstream model provider failed to respond correctly. |
 | `server_error` | `500` | An unexpected issue happened inside Phaseo. |
