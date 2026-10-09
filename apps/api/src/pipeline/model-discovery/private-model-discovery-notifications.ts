@@ -83,7 +83,7 @@ export async function sendPrivateModelDiscoveryNotification(
 			await sendDiscordTextMessage({
 				webhookUrl: discordWebhookUrl,
 				message,
-				roleId: readBindingEnv(["DISCORD_ROLE_ID"]),
+				roleId: readBindingEnv(["DISCORD_PRIVATE_MODEL_DISCOVERY_ROLE_ID"]),
 				userId: readBindingEnv(["DISCORD_USER_ID"]),
 				username: PRIVATE_MODEL_DISCOVERY_USERNAME,
 				avatarUrl: PRIVATE_MODEL_DISCOVERY_AVATAR_URL,
