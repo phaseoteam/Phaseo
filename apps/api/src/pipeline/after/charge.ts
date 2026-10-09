@@ -18,7 +18,7 @@ export async function recordUsageAndChargeOnce(args: {
 	throwOnFailure?: boolean;
 }): Promise<void> {
 	const { ctx, costNanos, endpoint } = args;
-	if (ctx.testingMode) return;
+	if (ctx.testingMode && (!ctx.billableInternalTesting || ctx.meta.internalPricingAvailable !== true)) return;
 	if (!Number.isFinite(costNanos) || costNanos <= 0) return;
 
 	const meta = ctx.meta as Record<string, unknown>;

@@ -1433,6 +1433,8 @@ export async function beforeRequest(
 			autoRouter: autoRouterEvaluation,
         },
         guardrailEnforcement: sensitiveInfoResult.enforcement,
+        // Billing eligibility is server-owned, never a request body flag.
+        billableInternalTesting: testingMode.reason === "admin",
     };
 
     // console.log(`[DEBUG] beforeRequest: final ctx.model: ${ctx.model}`);

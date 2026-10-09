@@ -16,6 +16,15 @@ it("does not require a price card for authorized internal testing", async () => 
 });
 
 type PipelineContextForTest = Parameters<typeof loadProviderPricing>[0];
+
+it.each([false, true])("resolves pricing for billable admin internal requests when available (%s)", async (priced) => {
+    loadPriceCardMock.mockResolvedValue(null);
+    const card = { currency: "USD", rules: [{ meter: "input_text_tokens" }] };
+    const ctx = { testingMode: true, billableInternalTesting: true, pricing: priced ? { route: card } : {}, meta: {}, model: "test/internal", capability: "text.generate" } as unknown as PipelineContextForTest;
+    const result = await loadProviderPricing(ctx, { provider: "test", apiModelId: "test/internal", pricingKey: "route" } as Parameters<typeof loadProviderPricing>[1]);
+    expect(result).toEqual(priced ? card : null);
+    expect(ctx.meta.internalPricingAvailable).toBe(priced);
+});
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../../../../..");
 const deepSeekV4ProPricingPath = path.join(

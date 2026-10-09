@@ -9,6 +9,12 @@ vi.mock("../pricing/persist", () => ({
 import { recordUsageAndChargeOnce } from "./charge";
 
 describe("recordUsageAndChargeOnce", () => {
+    it.each([false, true])("charges admin internal requests only with verified pricing (%s)", async (priced) => {
+        const ctx: any = { requestId: "internal", workspaceId: "admin-workspace", testingMode: true,
+            billableInternalTesting: true, meta: { internalPricingAvailable: priced } };
+        await recordUsageAndChargeOnce({ ctx, costNanos: 100, endpoint: "responses" });
+        expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(priced ? 1 : 0);
+    });
     it("passes the server-owned admission balance into settlement", async () => {
         const ctx: any = { requestId: "r", billingRequestId: "bill", workspaceId: "ws", meta: {},
             gating: { credit: { balanceNanos: 100_000_000_000_000 } }, rawBody: { creditSnapshotBalanceNanos: 1 } };
