@@ -52,23 +52,7 @@ CREATE OR REPLACE FUNCTION public.get_monitor_model_rows (
   STABLE
   SET search_path TO 'public', 'pg_temp'
   AS $function$
-  with weekly_request_groups as materialized (
-    -- Resolve model aliases once per group, rather than once per request.
-    -- Keep sums and counts separate so combining aliases preserves averages.
-    select
-      gr.canonical_model_id,
-      gr.model_id,
-      gr.provider,
-      sum(public.gateway_usage_total_tokens(gr.usage)) as total_tokens,
-      sum(gr.throughput::numeric) as throughput_sum,
-      count(gr.throughput) as throughput_count,
-      sum(gr.latency_ms::numeric) as latency_sum,
-      count(gr.latency_ms) as latency_count
-    from private.v2_rpc_gateway_requests_compat gr
-    where gr.created_at >= now() - interval '7 days'
-    group by gr.canonical_model_id, gr.model_id, gr.provider
-  ),
-  normalized_weekly_requests as materialized (
+  with normalized_weekly_requests as (
     select
       coalesce(
         nullif(gr.canonical_model_id, ''),
@@ -76,19 +60,18 @@ CREATE OR REPLACE FUNCTION public.get_monitor_model_rows (
         nullif(gr.model_id, '')
       ) as canonical_model_id,
       coalesce(nullif(gr.provider, ''), 'unknown') as provider_id,
-      gr.total_tokens,
-      gr.throughput_sum,
-      gr.throughput_count,
-      gr.latency_sum,
-      gr.latency_count
-    from weekly_request_groups gr
+      public.gateway_usage_total_tokens(gr.usage)::bigint as total_tokens,
+      gr.throughput::numeric as throughput,
+      gr.latency_ms::numeric as latency_ms
+    from private.v2_rpc_gateway_requests_compat gr
+    where gr.created_at >= now() - interval '7 days'
   ),
   weekly_model_usage as (
     select
       r.canonical_model_id as model_id,
       sum(r.total_tokens)::bigint as weekly_tokens_model,
-      round(sum(r.throughput_sum) / nullif(sum(r.throughput_count), 0), 2) as weekly_throughput_model,
-      round(sum(r.latency_sum) / nullif(sum(r.latency_count), 0), 0) as weekly_latency_model
+      round(avg(r.throughput), 2) as weekly_throughput_model,
+      round(avg(r.latency_ms), 0) as weekly_latency_model
     from normalized_weekly_requests r
     where r.canonical_model_id is not null
     group by r.canonical_model_id

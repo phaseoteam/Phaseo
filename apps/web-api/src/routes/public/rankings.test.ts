@@ -34,7 +34,7 @@ describe("public rankings routes", () => {
 		vi.stubGlobal("fetch", fetchMock);
 		const response = await app.request("https://phaseo.app/api/_web/rankings/timeseries?time_range=month&bucket_size=day&top_n=4", {}, env);
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
 		expect(String(fetchMock.mock.calls[0]?.[0])).toContain("get_public_usage_timeseries");
 		expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain('"p_time_range":"month"');
 		await expect(response.json()).resolves.toEqual({ data: [{ model_id: "openai/gpt-test", tokens: 10 }] });
@@ -72,7 +72,7 @@ describe("public rankings routes", () => {
 		const response = await app.request("https://phaseo.app/api/_web/rankings/benchmarks", {}, env);
 
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
 		await expect(response.json()).resolves.toMatchObject({
 			benchmarks: [{
 				benchmark_id: "aa-intelligence-index-v4",
@@ -104,7 +104,7 @@ describe("public rankings routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe(
-			"public, max-age=300, stale-while-revalidate=300",
+			"public, max-age=900, stale-while-revalidate=900, stale-if-error=3600",
 		);
 		expect(String(fetchMock.mock.calls[0]?.[0])).toContain(
 			"get_public_context_length_distribution",
@@ -132,7 +132,7 @@ describe("public rankings routes", () => {
 		vi.stubGlobal("fetch", fetchMock);
 		const response = await app.request("https://phaseo.app/api/_web/rankings/model-retention?weeks=8&limit=10&min_workspace_weeks=40&min_workspaces=8&min_weeks=3", {}, env);
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
 		const rpcCall = fetchMock.mock.calls.find(([input]) => String(input).includes("get_public_model_retention_rankings"));
 		expect(String(rpcCall?.[1]?.body)).toContain('"p_weeks":8');
 		expect(String(rpcCall?.[1]?.body)).toContain('"p_min_workspace_weeks":40');
@@ -175,7 +175,7 @@ describe("public rankings routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe(
-			"public, max-age=300, stale-while-revalidate=300",
+			"public, max-age=900, stale-while-revalidate=900, stale-if-error=3600",
 		);
 		expect(String(fetchMock.mock.calls[0]?.[0])).toContain("get_public_fastest_models");
 		expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain('"p_days":30');
@@ -280,7 +280,7 @@ it("paginates AA results, excludes hidden and old-version scores, and ranks cost
 	expect(benchmarks[0].entries[0]).toMatchObject({ organisation_colour:'#123456', release_date:'2026-09-01', configurations:[{variant:'max',score:900},{variant:'high',score:850}] });
   expect(benchmarks[0].entries.some((entry:any)=>['test/old','test/hidden','test/malformed','test/manual'].includes(entry.model_id))).toBe(false);
   expect(benchmarks[0].total_models).toBe(benchmarks[0].entries.length);
-  expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
+  expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
   expect(benchmarks[0].entries).toEqual(expect.arrayContaining([expect.objectContaining({ model_id: 'test/preview', score: 43.6 })]));
   expect(benchmarks[3].lower_is_better).toBe(true);
   expect(benchmarks[3].entries.map((entry:any)=>[entry.score,entry.rank])).toEqual([[0,1],[0,1],[10.25,3]]);

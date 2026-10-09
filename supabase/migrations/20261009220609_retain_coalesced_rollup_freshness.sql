@@ -1,3 +1,9 @@
+-- phaseo:allow-destructive-migration reason: Replaces the analytics function only; existing rebuild logic deletes derived rows and truncates temporary batches, but this migration performs no deletion or rebuild and preserves source and financial records.
+set local lock_timeout = '500ms';
+set local statement_timeout = '15s';
+
+SET local check_function_bodies = off;
+
 CREATE OR REPLACE FUNCTION public.process_v2_analytics_outbox (
   p_limit integer DEFAULT 250
 )
@@ -416,13 +422,3 @@ begin
   );
 end;
 $function$;
-
-GRANT EXECUTE ON FUNCTION "public"."process_v2_analytics_outbox"(integer) TO "service_role";
-
-COMMENT ON FUNCTION "public"."process_v2_analytics_outbox"(integer) IS 'Serializes summary rebuilds, claims a bounded seed batch, and coalesces covered workspace/hour events before idempotent private daily, public daily, and public hourly rebuilds. At most 2000 acknowledgments per run; corrections retain row locks and re-enqueue after commit.';
-
-REVOKE ALL ON FUNCTION "public"."process_v2_analytics_outbox"(integer) FROM "postgres";
-
-GRANT EXECUTE ON FUNCTION "public"."process_v2_analytics_outbox"(integer) TO "postgres";
-
-REVOKE ALL ON FUNCTION "public"."process_v2_analytics_outbox"(integer) FROM PUBLIC, "anon", "authenticated";

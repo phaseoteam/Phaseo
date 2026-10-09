@@ -9,6 +9,7 @@ on:
             - 'supabase/baseline/**'
             - 'supabase/tests/**'
             - 'scripts/declarative-schema.mjs'
+            - 'scripts/rollup-lock-smoke.mjs'
             - 'scripts/declarative-replay-history.mjs'
             - 'scripts/declarative-replay-history.test.mjs'
             - '.github/workflows/declarative-schema.yml'
@@ -39,6 +40,8 @@ jobs:
               run: |
                   npm install --prefix "$RUNNER_TEMP/public-model-timeout-tests" --ignore-scripts --no-audit --no-fund --save-exact @electric-sql/pglite@0.5.8
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/public-model-timeouts.test.mjs
+                  PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/monitor-model-rows.test.mjs
+                  PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/analytics-outbox-coalescing.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/gateway-admission-history.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/routing-archive.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/scheduled-model-pricing.test.mjs

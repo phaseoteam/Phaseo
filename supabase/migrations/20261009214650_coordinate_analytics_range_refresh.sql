@@ -1,3 +1,8 @@
+set local lock_timeout = '500ms';
+set local statement_timeout = '15s';
+
+SET local check_function_bodies = off;
+
 CREATE OR REPLACE FUNCTION public.refresh_v2_analytics_range (
   p_since        timestamp with time zone,
   p_until        timestamp with time zone DEFAULT now(),
@@ -42,13 +47,3 @@ begin
   end loop;
 end;
 $function$;
-
-GRANT EXECUTE ON FUNCTION "public"."refresh_v2_analytics_range"(timestamp WITH time zone, timestamp WITH time zone, uuid) TO "service_role";
-
-COMMENT ON FUNCTION "public"."refresh_v2_analytics_range"(timestamp with time zone, timestamp with time zone, uuid) IS 'Queues and recomputes V2 analytics grains for a bounded time/workspace range.';
-
-REVOKE ALL ON FUNCTION "public"."refresh_v2_analytics_range"(timestamp WITH time zone, timestamp WITH time zone, uuid) FROM "postgres";
-
-GRANT EXECUTE ON FUNCTION "public"."refresh_v2_analytics_range"(timestamp WITH time zone, timestamp WITH time zone, uuid) TO "postgres";
-
-REVOKE ALL ON FUNCTION "public"."refresh_v2_analytics_range"(timestamp WITH time zone, timestamp WITH time zone, uuid) FROM PUBLIC, "anon", "authenticated";
