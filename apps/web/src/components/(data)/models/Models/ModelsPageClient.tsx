@@ -8,6 +8,7 @@ import {
 	fetchModelsPageData,
 	fetchModelsPageDataV2,
 } from "@/lib/query/models";
+import { compactModelsPageData, expandModelsPageData } from "@/lib/query/modelsPageCompaction";
 import { useRefetchOnResume } from "@/lib/query/refetchOnResume";
 import { ModelsPageSkeleton } from "./ModelsPageSkeleton";
 import type { AuthenticatedProviderCatalogPreview } from "@/lib/query/providerCatalogPreviews";
@@ -57,8 +58,9 @@ function ModelsPageDataClient({
 			catalogueVersion,
 			previewCacheScope,
 		}),
+		// The server streams the same compact form into the page HTML.
 		queryFn: ({ signal }) =>
-			catalogueVersion === "v2"
+			(catalogueVersion === "v2"
 				? fetchModelsPageDataV2(path, initialProviderPreviews, {
 						signal,
 						accountQueryScope: scope,
@@ -66,7 +68,8 @@ function ModelsPageDataClient({
 				: fetchModelsPageData(path, initialProviderPreviews, {
 						signal,
 						accountQueryScope: scope,
-					}),
+					})).then(compactModelsPageData),
+		select: expandModelsPageData,
 		...(hasAuthenticatedAccountQueryScope(scope) ? WEB_QUERY_POLICIES.private : WEB_QUERY_POLICIES.public),
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { defaultShouldDehydrateQuery, dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { ScopedMessages } from "@/components/i18n/ScopedMessages";
 import ModelsPageClient from "@/components/(data)/models/Models/ModelsPageClient";
 import { ModelsPageSkeleton } from "@/components/(data)/models/Models/ModelsPageSkeleton";
 import { resolveModelsCatalogueVersion } from "@/lib/models/catalogueVersion";
@@ -16,6 +17,7 @@ import {
 	webQueryKeys,
 } from "@/lib/query/queryKeys";
 import { fetchModelsPageData, fetchModelsPageDataV2 } from "@/lib/query/models";
+import { compactModelsPageData } from "@/lib/query/modelsPageCompaction";
 import { withServerDeadline } from "@/lib/query/serverDeadline";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -61,9 +63,9 @@ async function loadModelsPageContent(title: string) {
 				accessToken: accountContext.accessToken,
 				fetchProviderPreviews: false,
 			};
-			return catalogueVersion === "v2"
+			return compactModelsPageData(await (catalogueVersion === "v2"
 				? fetchModelsPageDataV2(cataloguePath, initialProviderPreviews, options)
-				: fetchModelsPageData(cataloguePath, initialProviderPreviews, options);
+				: fetchModelsPageData(cataloguePath, initialProviderPreviews, options)));
 		}),
 	});
 	return (
@@ -81,10 +83,15 @@ async function loadModelsPageContent(title: string) {
 }
 
 export default async function ModelsPage() {
-	const t = await getTranslations("Catalogue.models");
+	const [locale, t] = await Promise.all([getLocale(), getTranslations("Catalogue.models")]);
+	// The list has its own message boundary. Model detail and table routes keep
+	// the broader catalogue scope, which this page would otherwise inherit. The
+	// action dock loads its provider catalogue messages separately.
 	return (
-		<Suspense fallback={<ModelsPageSkeleton title={t("title")} />}>
-			<ModelsPageContent title={t("title")} />
-		</Suspense>
+		<ScopedMessages params={Promise.resolve({ locale })} namespaces={["Catalogue.common", "Catalogue.modelDetail.availabilityLabels", "Catalogue.modelDetail.metadata", "Catalogue.modelDetail.pricing.perMillionTokens", "Catalogue.modelDetail.providerTable", "Catalogue.models", "Common.ui.actions", "Common.ui.auditCopy"]}>
+			<Suspense fallback={<ModelsPageSkeleton title={t("title")} />}>
+				<ModelsPageContent title={t("title")} />
+			</Suspense>
+		</ScopedMessages>
 	);
 }
