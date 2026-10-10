@@ -8,9 +8,9 @@ jest.mock("react", () => {
 	return jest.requireActual(path.join(path.dirname(require.resolve("react/package.json")), "cjs/react.react-server.development.js"));
 });
 
-const { renderToReadableStream } = require("next/dist/compiled/react-server-dom-webpack/server.node") as {
+const { renderToReadableStream } = jest.requireActual<{
 	renderToReadableStream: (model: unknown, manifest: object, options: { onError: (error: unknown) => string }) => Promise<ReadableStream>;
-};
+}>("next/dist/compiled/react-server-dom-webpack/server.node");
 
 async function render(read: () => Promise<unknown>) {
 	async function Component() {
