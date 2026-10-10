@@ -218,7 +218,6 @@ function summarise(model: Row, rates: Rate[]): CardPricingSummary | null {
 	const base = rates.filter((item) => !item.auxiliary);
 	const candidates = preferredTier(base);
 	if (!candidates.length) return null;
-	if (candidates.every((item) => item.price === 0)) return { kind: "free" };
 
 	const outputModalities = model.gateway_output_modalities ?? model.output_types ?? model.output_modalities;
 	const outputs = Array.isArray(outputModalities) ? outputModalities.map((item) => String(item).toLowerCase()) : [];
@@ -251,6 +250,8 @@ function summarise(model: Row, rates: Rate[]): CardPricingSummary | null {
 		: media && candidates.some((item) => item.side === "output")
 			? candidates.filter((item) => item.side === "output")
 			: candidates;
+	// As with tokens, free status comes only from the meters chosen above.
+	if (primary.every((item) => item.price === 0)) return { kind: "free" };
 	const byUnit = [...groupBy(primary, (item) => item.unit).entries()]
 		.sort(([a, aRates], [b, bRates]) => mediaUnitRank(a) - mediaUnitRank(b) || bRates.length - aRates.length || a.localeCompare(b));
 	const [unit, unitRates] = byUnit[0];

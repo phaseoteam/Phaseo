@@ -171,6 +171,15 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "free" });
 	});
 
+	it("does not call a model Free because of a zero-priced standard-tier tool meter", () => {
+		const row = card([
+			usage("included_requests", 0, "request"),
+			tokens("input_text_tokens", 1, { service_tier: "upstream-1" }),
+			tokens("output_text_tokens", 4, { service_tier: "upstream-1" }),
+		]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 1, output: 4, unit: "1M tokens" });
+	});
+
 	it("bases compatibility token prices on text meters, not other-modality tokens", () => {
 		const row = card([
 			tokens("input_text_tokens", 3),
