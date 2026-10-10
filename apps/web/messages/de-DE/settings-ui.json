@@ -5852,5 +5852,32 @@
 		"notVerified": "Nicht verifiziert",
 		"routeBlocked": "Diese Route wurde von Phaseo pausiert. Wenden Sie sich an den Support.",
 		"pendingSync": "Gespeicherte Änderungen warten auf die Synchronisierung. Öffentliche Angebote verwenden noch den letzten erfolgreichen Import."
+	},
+	"providerRateLimits": {
+		"title": "Ratenlimits",
+		"description": "Die Anfrage- und Token-Limits, die Ihre Plattform für das Konto von Phaseo anwendet. Wird eines erreicht, stuft Phaseo Ihre Angebote niedriger ein und leitet Traffic zuerst an andere Anbieter. Anfragen werden nie blockiert.",
+		"applyNote": "Änderungen gelten innerhalb von etwa einer Minute und müssen nicht geprüft werden.",
+		"feedNote": "Ihr Katalog-Feed kann ebenfalls rate_limits angeben. In diesem Fall ersetzt jede importierte Feed-Änderung diese Werte.",
+		"allModels": "Alle Modelle",
+		"allModelsDescription": "Wird über alle Modelle gezählt, die Sie über Phaseo anbieten.",
+		"modelLimits": "Modell-Limits",
+		"modelLimitsDescription": "Wird für ein Upstream-Modell gezählt, zusätzlich zum Limit für alle Modelle.",
+		"requestsPerMinute": "Anfragen pro Minute",
+		"requestsPerDay": "Anfragen pro Tag",
+		"tokensPerMinute": "Tokens pro Minute",
+		"tokensPerDay": "Tokens pro Tag",
+		"noLimit": "Kein Limit",
+		"addModel": "Modell-Limit hinzufügen",
+		"chooseModel": "Upstream-Modell auswählen",
+		"removeModel": "Limit für {model} entfernen",
+		"notInCatalog": "Nicht im aktuellen Katalog",
+		"save": "Ratenlimits speichern",
+		"saving": "Wird gespeichert…",
+		"saved": "Ratenlimits gespeichert.",
+		"unsaved": "Nicht gespeicherte Änderungen an Ratenlimits",
+		"invalidNumber": "Verwenden Sie eine ganze Zahl größer als null oder lassen Sie das Feld leer.",
+		"emptyModel": "Geben Sie mindestens ein Limit für {model} ein oder entfernen Sie es.",
+		"stale": "Die Ratenlimits wurden an anderer Stelle geändert. Laden Sie neu, bevor Sie erneut speichern.",
+		"saveFailed": "Die Ratenlimits konnten nicht gespeichert werden."
 	}
 }

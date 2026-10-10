@@ -5852,5 +5852,32 @@
 		"notVerified": "未確認",
 		"routeBlocked": "このルートは Phaseo によって停止されています。サポートにお問い合わせください。",
 		"pendingSync": "保存した変更は同期待ちです。公開中の提供内容は前回の成功した取り込みを使用しています。"
+	},
+	"providerRateLimits": {
+		"title": "レート制限",
+		"description": "お客様のプラットフォームが Phaseo のアカウントに適用するリクエスト数とトークン数の上限です。上限に達すると、Phaseo はお客様のオファーの順位を下げ、他のプロバイダーを優先してトラフィックを送ります。リクエストがブロックされることはありません。",
+		"applyNote": "変更は約 1 分以内に反映され、審査は不要です。",
+		"feedNote": "カタログフィードでも rate_limits を宣言できます。その場合、フィードの変更を取り込むたびにこれらの値が置き換えられます。",
+		"allModels": "すべてのモデル",
+		"allModelsDescription": "Phaseo 経由で提供するすべてのモデルを合算してカウントします。",
+		"modelLimits": "モデル別の制限",
+		"modelLimitsDescription": "1 つのアップストリームモデルについてカウントし、すべてのモデルの制限に加えて適用されます。",
+		"requestsPerMinute": "1 分あたりのリクエスト数",
+		"requestsPerDay": "1 日あたりのリクエスト数",
+		"tokensPerMinute": "1 分あたりのトークン数",
+		"tokensPerDay": "1 日あたりのトークン数",
+		"noLimit": "制限なし",
+		"addModel": "モデルの制限を追加",
+		"chooseModel": "アップストリームモデルを選択",
+		"removeModel": "{model} の制限を削除",
+		"notInCatalog": "現在のカタログにありません",
+		"save": "レート制限を保存",
+		"saving": "保存中…",
+		"saved": "レート制限を保存しました。",
+		"unsaved": "レート制限に未保存の変更があります",
+		"invalidNumber": "0 より大きい整数を入力するか、空欄にしてください。",
+		"emptyModel": "{model} の制限を 1 つ以上入力するか、削除してください。",
+		"stale": "レート制限が別の場所で変更されました。保存する前に再読み込みしてください。",
+		"saveFailed": "レート制限を保存できませんでした。"
 	}
 }

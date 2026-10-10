@@ -24,6 +24,11 @@ CREATE TABLE "public"."provider_rate_limits" (
 ALTER TABLE "public"."provider_rate_limits"
   ENABLE ROW LEVEL SECURITY;
 
+CREATE TRIGGER routing_catalogue_changed
+  AFTER INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.provider_rate_limits
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION private.invalidate_routing_catalogue();
+
 CREATE POLICY "deny_direct_client_access" ON "public"."provider_rate_limits"
   AS RESTRICTIVE
   FOR ALL
@@ -35,7 +40,7 @@ COMMENT ON COLUMN "public"."provider_rate_limits"."headroom_bps" IS 'Capacity he
 
 COMMENT ON COLUMN "public"."provider_rate_limits"."provider_model_slug" IS 'Upstream model id (v2_model_provider_routes.provider_model_slug) the limit applies to; ''*'' applies it across all of the provider''s models.';
 
-COMMENT ON TABLE "public"."provider_rate_limits" IS 'Gateway-managed upstream provider capacity limits, counted globally across all users. A provider and model that reaches a limit is heavily deranked in routing rather than excluded.';
+COMMENT ON TABLE "public"."provider_rate_limits" IS 'Upstream provider capacity limits declared by each provider through its catalogue, counted globally across all users. A provider and model that reaches a limit is heavily deranked in routing rather than excluded.';
 
 REVOKE ALL ON TABLE "public"."provider_rate_limits" FROM "service_role";
 

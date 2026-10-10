@@ -57,6 +57,11 @@ export type TieredCacheOptions<T> = {
 	 * to fall back to `l3.freshS`.
 	 */
 	isFreshInL3?: (value: T) => boolean | undefined;
+	/**
+	 * Revalidates an isolate copy before `l1FreshMs` elapses (at most once per
+	 * `L1_STALE_RECHECK_MS`), for example when a newer revision has been published.
+	 */
+	isStaleInL1?: (value: T) => boolean;
 };
 
 const L1_MAX_ENTRIES = 10_000;
@@ -64,6 +69,9 @@ const L1_MAX_BYTES = 32 * 1024 * 1024;
 const L2_KEY_ORIGIN = "https://gateway-cache.internal/v1/";
 // A concurrent miss joins another request's load for at most this long, then loads itself.
 const SHARED_LOAD_WAIT_MS = 1_500;
+// Bounds lower-layer reads (and loads, if the loader keeps failing) while an isolate copy
+// reported by `isStaleInL1` is being replaced. Matches the catalogue revision refresh interval.
+const L1_STALE_RECHECK_MS = 15_000;
 
 const l1 = new Map<string, L1Entry>();
 let l1Bytes = 0;
@@ -312,7 +320,9 @@ export async function tieredReadDetailed<T>(options: TieredCacheOptions<T>): Pro
 	const entry = l1Get(options.key);
 	if (entry && servable(options, entry.envelope)) {
 		const freshMs = layerFreshMs(options, entry.envelope, options.l1FreshMs);
-		if (Date.now() - entry.checkedAt >= freshMs) {
+		const sinceCheckMs = Date.now() - entry.checkedAt;
+		if (sinceCheckMs >= freshMs || (sinceCheckMs >= L1_STALE_RECHECK_MS && entry.envelope.v !== null
+			&& options.isStaleInL1?.(entry.envelope.v as T) === true)) {
 			// Mark as checked so concurrent requests do not queue more refreshes.
 			entry.checkedAt = Date.now();
 			scheduleRefresh(options, options.l2 ? 2 : options.l3 ? 3 : 4);

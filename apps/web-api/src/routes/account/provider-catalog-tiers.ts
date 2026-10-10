@@ -1,4 +1,5 @@
 import type { ProviderCatalogPreview, ProviderCatalogModelPreview } from "./provider-catalog";
+import { normalizeProviderRateLimits, upstreamModelSlugs } from "./provider-catalog-rate-limits";
 
 export const CATALOG_SERVICE_TIERS = ["standard", "fast", "ultrafast", "flex", "batch"] as const;
 export type CatalogServiceTier = typeof CATALOG_SERVICE_TIERS[number];
@@ -13,7 +14,7 @@ export type ProviderCatalogTier = {
 export function normalizeTieredProviderCatalog(payload: Record<string, unknown>, normalizeV1: (payload: unknown) => ProviderCatalogPreview): ProviderCatalogPreview {
 	const issues: ProviderCatalogPreview["issues"] = [];
 	const models: ProviderCatalogModelPreview[] = [];
-	if (Object.keys(payload).some((key) => !["schema_version", "data"].includes(key))) issues.push({ path: "$", message: "Unknown catalog field." });
+	if (Object.keys(payload).some((key) => !["schema_version", "data", "rate_limits"].includes(key))) issues.push({ path: "$", message: "Unknown catalog field." });
 	if (!Array.isArray(payload.data) || payload.data.length > 1000) {
 		return { valid: false, modelCount: 0, models: [], allModels: [], issues: [{ path: "data", message: "Expected up to 1000 models." }], truncated: false };
 	}
@@ -67,5 +68,8 @@ export function normalizeTieredProviderCatalog(payload: Record<string, unknown>,
 		seen.add(normalizedModel.id.toLowerCase());
 		models.push({ ...normalizedModel, serviceTiers: tiers });
 	}
-	return { valid: issues.length === 0, modelCount: payload.data.length, models: models.slice(0, 100), allModels: models, issues: issues.slice(0, 100), truncated: models.length > 100 };
+	const declared = payload.rate_limits === undefined ? null : normalizeProviderRateLimits(payload.rate_limits, upstreamModelSlugs(models));
+	if (declared) issues.push(...declared.issues);
+	const rateLimits = declared && !declared.issues.length ? declared.limits : null;
+	return { valid: issues.length === 0, modelCount: payload.data.length, models: models.slice(0, 100), allModels: models, issues: issues.slice(0, 100), truncated: models.length > 100, rateLimits };
 }

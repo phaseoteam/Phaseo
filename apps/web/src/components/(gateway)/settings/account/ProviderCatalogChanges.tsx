@@ -46,11 +46,12 @@ function ActivityEvent({ providerSlug, event, label }: { providerSlug: string; e
 export default function ProviderCatalogChanges({ catalog, modelId, disabled, onRevert }: { catalog: ProviderManagedCatalog; modelId: string; disabled: boolean; onRevert: (field: string, modelId?: string) => void }) {
 	const t = useTranslations("SettingsUI.providerDashboard");
 	const fields = useTranslations("SettingsUI.providerCatalogCopy");
+	const rateLimits = useTranslations("SettingsUI.providerRateLimits");
 	const locale = useLocale();
 	const overrides = catalog.overrides?.[modelId] ?? {};
 	const feed = catalog.feed_models?.find((model) => model.id === modelId);
 	const date = (value: string) => new Date(value).toLocaleString(locale);
-	const fieldLabels: Record<string, string> = { name: fields("modelName"), description: fields("description"), providerModelSlug: fields("providerModelID"), inputModalities: fields("inputModalities"), outputModalities: fields("outputModalities"), contextLength: fields("contextLength"), maxOutputTokens: fields("maxOutputTokens"), availability: fields("availability"), availableFrom: fields("availableFrom"), deprecatedAt: fields("deprecatedAt"), shutdownAt: fields("shutdownAt"), capabilities: fields("capabilities"), pricing: fields("pricing"), serviceTiers: t("tiers"), $model: t("manual"), $removed: fields("notListed"), $catalog: fields("catalog"), $rate: fields("price"), upstreamServiceTier: fields("upstreamTier"), displayLabel: fields("displayName"), displayUnit: fields("displayUnit") };
+	const fieldLabels: Record<string, string> = { name: fields("modelName"), description: fields("description"), providerModelSlug: fields("providerModelID"), inputModalities: fields("inputModalities"), outputModalities: fields("outputModalities"), contextLength: fields("contextLength"), maxOutputTokens: fields("maxOutputTokens"), availability: fields("availability"), availableFrom: fields("availableFrom"), deprecatedAt: fields("deprecatedAt"), shutdownAt: fields("shutdownAt"), capabilities: fields("capabilities"), pricing: fields("pricing"), serviceTiers: t("tiers"), $model: t("manual"), $removed: fields("notListed"), $catalog: fields("catalog"), $rate_limits: rateLimits("title"), $rate: fields("price"), upstreamServiceTier: fields("upstreamTier"), displayLabel: fields("displayName"), displayUnit: fields("displayUnit") };
 	const label = (field: string) => pathParts(field).map((part) => fieldLabels[part] ?? part).join(" · ");
 	return <div className="space-y-4">
 		{catalog.source.last_success_at ? <p className="text-xs text-muted-foreground">{t("lastSuccess")} · {date(catalog.source.last_success_at)}</p> : null}

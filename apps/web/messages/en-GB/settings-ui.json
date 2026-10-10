@@ -5852,5 +5852,32 @@
 		"notVerified": "Not verified",
 		"routeBlocked": "This route is paused by Phaseo. Contact support to review it.",
 		"pendingSync": "Saved edits are waiting to sync. Public offers still use the last successful import."
+	},
+	"providerRateLimits": {
+		"title": "Rate limits",
+		"description": "The request and token limits your platform applies to Phaseo's account. When one is reached, Phaseo ranks your offers lower and sends traffic to other providers first. Requests are never blocked.",
+		"applyNote": "Changes apply within about a minute and do not need review.",
+		"feedNote": "Your catalog feed can also declare rate_limits. When it does, each imported feed change replaces these values.",
+		"allModels": "All models",
+		"allModelsDescription": "Counted across every model you serve through Phaseo.",
+		"modelLimits": "Model limits",
+		"modelLimitsDescription": "Counted for one upstream model, in addition to the limit for all models.",
+		"requestsPerMinute": "Requests per minute",
+		"requestsPerDay": "Requests per day",
+		"tokensPerMinute": "Tokens per minute",
+		"tokensPerDay": "Tokens per day",
+		"noLimit": "No limit",
+		"addModel": "Add model limit",
+		"chooseModel": "Choose an upstream model",
+		"removeModel": "Remove the limit for {model}",
+		"notInCatalog": "Not in the current catalog",
+		"save": "Save rate limits",
+		"saving": "Saving…",
+		"saved": "Rate limits saved.",
+		"unsaved": "Unsaved rate limit changes",
+		"invalidNumber": "Use a whole number greater than zero, or leave the field empty.",
+		"emptyModel": "Enter at least one limit for {model}, or remove it.",
+		"stale": "Rate limits changed elsewhere. Reload before saving again.",
+		"saveFailed": "Rate limits could not be saved."
 	}
 }

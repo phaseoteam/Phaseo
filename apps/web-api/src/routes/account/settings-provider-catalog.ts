@@ -4,6 +4,7 @@ import { requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { readLimitedText } from "@/http/readLimitedText";
 import {
 	normalizeProviderCatalog,
 	validateProviderCatalogPricingMeters,
@@ -11,10 +12,19 @@ import {
 } from "./provider-catalog";
 import { syncProviderCatalog } from "./provider-catalog-sync";
 import { applyCatalogOverrides, catalogOverrideChanges, normalizedCatalogDocument, type CatalogOverrides } from "./provider-catalog-overrides";
-import { isProviderAccessBlockedByReview, latestApplicableProviderReviewApplication } from "./provider-review-access";
+import { isProviderCatalogBlockedByReview } from "./provider-review-access";
+import { normalizeProviderRateLimits, rateLimitsFromRows } from "./provider-catalog-rate-limits";
 
 const providerSlugSchema = z.string().trim().toLowerCase().min(2).max(64).regex(/^[a-z0-9][a-z0-9._-]*$/);
 const MAX_MANAGED_CATALOG_BYTES = 5 * 1024 * 1024;
+const MAX_RATE_LIMITS_BYTES = 256 * 1024;
+const RATE_LIMIT_SELECT = "provider_model_slug,requests_per_minute,requests_per_day,tokens_per_minute,tokens_per_day";
+const rateLimitsBodySchema = z.object({
+	// Shape only; entries are validated against the provider's catalog below.
+	rate_limits: z.array(z.unknown()).max(1_000),
+	// Null until the provider first declares limits.
+	expectedVersion: z.string().datetime({ offset: true }).nullable(),
+}).strict();
 const EMPTY_WORKSPACE_ID = "00000000-0000-0000-0000-000000000000";
 
 type CatalogAccess = { isAdmin: boolean; workspaceId: string | null; linkStatus: string | null; linkedBy: string | null };
@@ -143,15 +153,16 @@ function catalogDocument(data: Record<string, any>[]) {
 }
 
 async function readProviderCatalog(client: any, providerSlug: string, canEditDescription = false) {
-	const [providerResult, sourceResult, modelsResult, capabilitiesResult, runResult, eventsResult] = await Promise.all([
+	const [providerResult, sourceResult, modelsResult, capabilitiesResult, runResult, eventsResult, rateLimitsResult] = await Promise.all([
 		client.from("v2_providers").select("provider_slug,name,status,routable,routing_enabled").eq("provider_slug", providerSlug).maybeSingle(),
-		client.from("provider_catalog_sources").select("provider_slug,catalog_url,management_mode,managed_catalog,managed_updated_at,updated_at,last_success_at,last_error,last_polled_at,feed_models,catalog_overrides,overrides_updated_at,catalog_updated_at,refresh_requested").eq("provider_slug", providerSlug).maybeSingle(),
+		client.from("provider_catalog_sources").select("provider_slug,catalog_url,management_mode,managed_catalog,managed_updated_at,updated_at,last_success_at,last_error,last_polled_at,feed_models,catalog_overrides,overrides_updated_at,catalog_updated_at,refresh_requested,rate_limits_updated_at").eq("provider_slug", providerSlug).maybeSingle(),
 		client.from("provider_catalog_models").select("model_slug,provider_model_slug,name,description,input_modalities,output_modalities,context_length,max_output_tokens,status,availability,available_from,deprecated_at,shutdown_at,metadata,updated_at").eq("provider_slug", providerSlug).eq("status", "active").order("model_slug", { ascending: true }),
 		client.from("provider_catalog_model_capabilities").select("model_slug,capability_id,parameters,status").eq("provider_slug", providerSlug).eq("status", "active").order("capability_id", { ascending: true }),
 		client.from("provider_catalog_sync_runs").select("id,status,review_status,model_count,created_at,completed_at").eq("provider_slug", providerSlug).neq("status", "not_modified").order("created_at", { ascending: false }).limit(1),
 		client.from("provider_catalog_edit_events").select("id,model_slug,field,actor_id,actor_name,actor_kind,action,created_at").eq("provider_slug", providerSlug).order("created_at", { ascending: false }).limit(100),
+		client.from("provider_rate_limits").select(RATE_LIMIT_SELECT).eq("provider_id", providerSlug),
 	]);
-	if (providerResult.error || sourceResult.error || modelsResult.error || capabilitiesResult.error || runResult.error) throw new Error("provider_catalog_unavailable");
+	if (providerResult.error || sourceResult.error || modelsResult.error || capabilitiesResult.error || runResult.error || rateLimitsResult.error) throw new Error("provider_catalog_unavailable");
 	if (!providerResult.data || !sourceResult.data) return null;
 
 	const capabilitiesByModel = new Map<string, Array<{ id: string; parameters: string[] }>>();
@@ -218,7 +229,14 @@ async function readProviderCatalog(client: any, providerSlug: string, canEditDes
 			return standard ? { ...model, provider_model_slug: standard.provider_model_slug, pricing: standard.pricing } : model;
 		}) : observedModels,
 		latest_run: runResult.data?.[0] ?? null,
+		rate_limits: { version: sourceResult.data.rate_limits_updated_at ?? null, limits: rateLimitsFromRows(rateLimitsResult.data ?? []) },
 	};
+}
+
+/** Whether a pending or rejected provider application still blocks this editor's catalog changes. */
+function catalogEditsBlocked(client: any, providerSlug: string, access: CatalogAccess, userId: string): Promise<boolean> {
+	if (access.isAdmin) return Promise.resolve(false);
+	return isProviderCatalogBlockedByReview(client, providerSlug, { status: access.linkStatus, linkedBy: access.linkedBy ?? userId });
 }
 
 export const accountSettingsProviderCatalogRouter = new Hono<{ Bindings: Env }>();
@@ -294,22 +312,7 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 	try {
 		const access = await providerAccess(client, user.id, parsedSlug.data);
 		if (!access) return errorResponse(c, "forbidden", 403);
-		if (!access.isAdmin) {
-			const [provider, application] = await Promise.all([
-				client.from("v2_providers").select("metadata").eq("provider_slug", parsedSlug.data).maybeSingle(),
-				client.from("provider_onboarding_submissions").select("application_type,provider_review_status,submitted_by").eq("provider_slug", parsedSlug.data).order("created_at", { ascending: false }),
-			]);
-			if (provider.error) throw provider.error;
-			if (application.error) throw application.error;
-			const reviewApplication = latestApplicableProviderReviewApplication(application.data ?? [], access.linkedBy ?? user.id);
-			if (isProviderAccessBlockedByReview({
-				application: reviewApplication,
-				fallbackReviewStatus: provider.data?.metadata?.self_serve?.provider_review_status,
-				linkStatus: access.linkStatus,
-			})) {
-				return errorResponse(c, "provider_application_not_approved", 409);
-			}
-		}
+		if (await catalogEditsBlocked(client, parsedSlug.data, access, user.id)) return errorResponse(c, "provider_application_not_approved", 409);
 		const source = await client.from("provider_catalog_sources").select("provider_slug,catalog_url,management_mode,managed_catalog,managed_updated_at,updated_at,feed_models,catalog_overrides").eq("provider_slug", parsedSlug.data).maybeSingle();
 		if (source.error) throw source.error;
 		if (!source.data) return errorResponse(c, "provider_catalog_source_not_found", 404);
@@ -338,6 +341,10 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 		const revert = body?.catalog?.revert ?? body?.revert;
 		if (!access.isAdmin && MODEL_METADATA_OVERRIDE_FIELDS.has(revert?.field)) return errorResponse(c, "forbidden", 403);
 		let document = body?.catalog ?? body;
+		// Limits have their own version and endpoint, so a catalog save cannot overwrite a concurrent limit edit.
+		if (document && typeof document === "object" && Object.hasOwn(document, "rate_limits")) {
+			return c.json({ ok: false, error: "catalog_invalid", message: "rate_limits: Save rate limits from the Rate limits section.", issues: [{ path: "rate_limits", message: "Save rate limits from the Rate limits section." }] }, 422, PRIVATE_NO_STORE_HEADERS);
+		}
 		let changes: Array<{ model_id: string; field: string; value?: unknown; revert?: boolean }> | null = null;
 		if (source.data.management_mode === "remote") {
 			const current = await readProviderCatalog(client, parsedSlug.data, access.isAdmin);
@@ -407,5 +414,53 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 	} catch (error) {
 		console.error("provider_catalog_write_failed", { providerSlug: parsedSlug.data, error: error instanceof Error ? error.message : String(error) });
 		return errorResponse(c, "provider_catalog_update_failed", 503);
+	}
+});
+
+// Providers publish their own limits without review: reaching one only ranks the provider lower
+// in routing. Approval of the provider application still gates every catalog change.
+accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:providerSlug/rate-limits", async (c) => {
+	const user = await requireUser(c.req.raw, c.env);
+	if (!user) return errorResponse(c, "unauthorized", 401);
+	const parsedSlug = providerSlugSchema.safeParse(c.req.param("providerSlug"));
+	if (!parsedSlug.success) return errorResponse(c, "invalid_provider_slug", 400);
+	if (Number(c.req.header("content-length") ?? 0) > MAX_RATE_LIMITS_BYTES) return errorResponse(c, "rate_limits_too_large", 413);
+	let raw: string;
+	try { raw = await readLimitedText(c.req.raw, MAX_RATE_LIMITS_BYTES); }
+	catch { return errorResponse(c, "rate_limits_too_large", 413); }
+	let json: unknown;
+	try { json = JSON.parse(raw); }
+	catch { return errorResponse(c, "rate_limits_json_invalid", 400); }
+	const body = rateLimitsBodySchema.safeParse(json);
+	if (!body.success) return errorResponse(c, "invalid_rate_limits", 400);
+	const client = getDataClient(c.env);
+	try {
+		const access = await providerAccess(client, user.id, parsedSlug.data);
+		if (!access) return errorResponse(c, "forbidden", 403);
+		if (await catalogEditsBlocked(client, parsedSlug.data, access, user.id)) return errorResponse(c, "provider_application_not_approved", 409);
+		const current = await readProviderCatalog(client, parsedSlug.data, access.isAdmin);
+		if (!current) return errorResponse(c, "provider_catalog_not_found", 404);
+		// Limits may name any upstream model in the current catalog. Already-declared models stay
+		// accepted so a limit for a model since removed from the catalog never blocks other edits.
+		const known = new Set<string>();
+		for (const model of current.models) {
+			if (model?.provider_model_slug) known.add(String(model.provider_model_slug));
+			for (const tier of model?.service_tiers ?? []) if (tier?.provider_model_slug) known.add(String(tier.provider_model_slug));
+		}
+		for (const limit of current.rate_limits.limits) if (limit.model) known.add(limit.model);
+		const declared = normalizeProviderRateLimits(body.data.rate_limits, known);
+		if (declared.issues.length) return c.json({ ok: false, error: "rate_limits_invalid", message: declared.issues.map((issue) => `${issue.path}: ${issue.message}`).slice(0, 5).join("; "), issues: declared.issues }, 422, PRIVATE_NO_STORE_HEADERS);
+		const saved = await client.rpc("save_provider_rate_limits", {
+			p_provider_slug: parsedSlug.data, p_actor_id: user.id, p_actor_kind: access.isAdmin ? "phaseo" : "provider",
+			p_expected_version: body.data.expectedVersion, p_limits: declared.limits, p_check_version: true,
+		});
+		if (saved.error?.message?.includes("version_conflict")) return errorResponse(c, "Rate limits changed. Reload before saving again.", 409);
+		if (saved.error) throw saved.error;
+		const limits = await client.from("provider_rate_limits").select(RATE_LIMIT_SELECT).eq("provider_id", parsedSlug.data);
+		if (limits.error) throw limits.error;
+		return c.json({ ok: true, rate_limits: { version: saved.data ?? null, limits: rateLimitsFromRows(limits.data ?? []) } }, 200, PRIVATE_NO_STORE_HEADERS);
+	} catch (error) {
+		console.error("provider_rate_limits_write_failed", { providerSlug: parsedSlug.data, error: error instanceof Error ? error.message : String(error) });
+		return errorResponse(c, "provider_rate_limits_update_failed", 503);
 	}
 });

@@ -31,6 +31,7 @@ CREATE TABLE "public"."provider_catalog_sources" (
   "catalog_overrides"         jsonb                    NOT NULL DEFAULT '{}'::jsonb,
   "overrides_updated_at"      timestamp with time zone,
   "catalog_updated_at"        timestamp with time zone,
+  "rate_limits_updated_at"    timestamp with time zone,
   CONSTRAINT "provider_catalog_sources_feed_models_check" CHECK (jsonb_typeof(feed_models) = 'array'),
   CONSTRAINT "provider_catalog_sources_overrides_check" CHECK (jsonb_typeof(catalog_overrides) = 'object'),
   CONSTRAINT "provider_catalog_sources_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -71,6 +72,8 @@ CREATE POLICY "deny_direct_client_access" ON "public"."provider_catalog_sources"
 COMMENT ON COLUMN "public"."provider_catalog_sources"."managed_catalog" IS 'Provider-managed catalog document in the validated {data: [...]} contract shape.';
 
 COMMENT ON COLUMN "public"."provider_catalog_sources"."management_mode" IS 'Catalog authority: remote provider URL or a provider-managed Phaseo document.';
+
+COMMENT ON COLUMN "public"."provider_catalog_sources"."rate_limits_updated_at" IS 'Version of the provider-declared provider_rate_limits rows; null until the provider first declares limits.';
 
 COMMENT ON TABLE "public"."provider_catalog_sources" IS 'Provider-owned catalog source configuration with webhook and polling state.';
 

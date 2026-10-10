@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { normalizeTieredProviderCatalog, type ProviderCatalogTier } from "./provider-catalog-tiers";
+import { normalizeProviderRateLimits, rateLimitJsonSchema, rateLimitsJsonSchema, upstreamModelSlugs, type ProviderCatalogRateLimit } from "./provider-catalog-rate-limits";
 
 const MAX_MODELS = 1_000;
 const MAX_PREVIEW_MODELS = 100;
@@ -44,15 +45,17 @@ export const providerCatalogJsonSchema = {
 	$schema: "https://json-schema.org/draft/2020-12/schema",
 	$id: "https://phaseo.app/schemas/provider-catalog.v1.json",
 	title: "Phaseo provider catalog",
-	description: "Version 1 of the Phaseo provider catalog. Approved providers update existing model offers automatically. New canonical models require administrator approval. price_nanos is the effective price to bill, including any promotion. Publish a new snapshot when that price changes. Conditional prices are not supported by V1 billing.",
+	description: "Version 1 of the Phaseo provider catalog. Approved providers update existing model offers automatically. New canonical models require administrator approval. price_nanos is the effective price to bill, including any promotion. Publish a new snapshot when that price changes. Conditional prices are not supported by V1 billing. Optional rate_limits declare the request and token limits your platform imposes on Phaseo; they apply without review and only rank your offers lower once reached.",
 	type: "object",
 	required: ["data"],
 	additionalProperties: false,
 	properties: {
 		schema_version: { const: "1.0" },
 		data: { type: "array", minItems: 0, maxItems: MAX_MODELS, items: { $ref: "#/$defs/model" } },
+		rate_limits: rateLimitsJsonSchema,
 	},
 	$defs: {
+		rateLimit: rateLimitJsonSchema,
 		capability: { oneOf: [{ type: "string" }, { type: "object", required: ["id"], additionalProperties: false, properties: { id: { type: "string" }, parameters: { type: "array", items: { type: "string" } } } }] },
 		model: {
 			type: "object", required: ["id", "capabilities"], additionalProperties: false,
@@ -94,7 +97,7 @@ const { pricing: tierPricingSchema, provider_model_slug: upstreamModelSchema, ..
 export const providerCatalogV11JsonSchema = {
 	...providerCatalogJsonSchema,
 	$id: "https://phaseo.app/schemas/provider-catalog.v1.1.json",
-	description: "Version 1.1. Publish normalized standard, fast, ultrafast, flex and batch offers with independent effective prices. Batch uses the separate Batch API.",
+	description: "Version 1.1. Publish normalized standard, fast, ultrafast, flex and batch offers with independent effective prices. Batch uses the separate Batch API. Optional rate_limits may name the upstream model ID of any tier.",
 	required: ["schema_version", "data"],
 	properties: { ...providerCatalogJsonSchema.properties, schema_version: { const: "1.1" } },
 	$defs: {
@@ -128,6 +131,8 @@ export type ProviderCatalogPreview = {
 	allModels: ProviderCatalogModelPreview[];
 	issues: ProviderCatalogIssue[];
 	truncated: boolean;
+	/** Declared rate limits, or null when the catalog does not declare any. */
+	rateLimits?: ProviderCatalogRateLimit[] | null;
 };
 
 export async function validateProviderCatalogPricingMeters(client: any, preview: ProviderCatalogPreview): Promise<ProviderCatalogPreview> {
@@ -296,10 +301,11 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 	const entries = modelEntries(payload);
 	const issues: ProviderCatalogIssue[] = [];
 	const body = asRecord(payload);
-	if (!body || Object.keys(body).some((key) => key !== "data")) issues.push({ path: "$", message: "Catalog must be an object containing only the data array." });
+	if (!body || Object.keys(body).some((key) => key !== "data" && key !== "rate_limits")) issues.push({ path: "$", message: "Catalog must be an object containing only the data array." });
 	if (entries.length === 0) {
 		if (!Array.isArray(body?.data)) issues.push({ path: "data", message: "Expected a data array of models." });
-		return { valid: issues.length === 0, modelCount: 0, models: [], allModels: [], issues, truncated: false };
+		const rateLimits = catalogRateLimits(body, [], issues);
+		return { valid: issues.length === 0, modelCount: 0, models: [], allModels: [], issues, truncated: false, rateLimits };
 	}
 	if (entries.length > MAX_MODELS) {
 		issues.push({ path: "data", message: `Catalog contains ${entries.length} models; the limit is ${MAX_MODELS}.` });
@@ -397,6 +403,7 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 			capabilities,
 		});
 	}
+	const rateLimits = catalogRateLimits(body, models, issues);
 
 	return {
 		valid: issues.length === 0 && models.length > 0,
@@ -405,7 +412,16 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 		allModels: models,
 		issues: issues.slice(0, 100),
 		truncated: models.length > MAX_PREVIEW_MODELS,
+		rateLimits,
 	};
+}
+
+/** Validates the optional `rate_limits` section against the catalog's own upstream model slugs. */
+export function catalogRateLimits(body: Record<string, unknown> | null, models: ProviderCatalogModelPreview[], issues: ProviderCatalogIssue[]): ProviderCatalogRateLimit[] | null {
+	if (!body || body.rate_limits === undefined) return null;
+	const result = normalizeProviderRateLimits(body.rate_limits, upstreamModelSlugs(models));
+	issues.push(...result.issues);
+	return result.issues.length ? null : result.limits;
 }
 
 export function validateCatalogUrl(value: unknown): { ok: true; url: string } | { ok: false; message: string } {

@@ -142,6 +142,33 @@ describe("tieredRead", () => {
 		expect(await tieredRead(options)).toBe("v2");
 	});
 
+	it("revalidates an isolate copy early when it reports itself stale, at most every 15 seconds", async () => {
+		vi.useFakeTimers({ now: 1_000_000 });
+		let published = "r1";
+		const loader = vi.fn(async () => ({ revision: published }));
+		const options = {
+			key: "k:revision", loader, l1FreshMs: 60_000, l3: false,
+			isStaleInL1: (value: { revision: string }) => value.revision !== published,
+		} as const;
+
+		expect(await tieredRead(options)).toEqual({ revision: "r1" });
+		published = "r2";
+		// Within the recheck floor the copy is served without a lower-layer read.
+		vi.setSystemTime(1_010_000);
+		expect(await tieredRead(options)).toEqual({ revision: "r1" });
+		expect(loader).toHaveBeenCalledTimes(1);
+
+		vi.setSystemTime(1_016_000);
+		expect(await tieredRead(options)).toEqual({ revision: "r1" });
+		await drainBackground();
+		expect(loader).toHaveBeenCalledTimes(2);
+		expect(await tieredRead(options)).toEqual({ revision: "r2" });
+		// A current copy keeps its age-based freshness.
+		vi.setSystemTime(1_040_000);
+		await tieredRead(options);
+		expect(loader).toHaveBeenCalledTimes(2);
+	});
+
 	it("awaits the loader when data is older than maxStaleMs", async () => {
 		runtime.store.set("k:bounded", envelope("ancient", Date.now() - 3_600_000));
 		const loader = vi.fn(async () => "fresh");
