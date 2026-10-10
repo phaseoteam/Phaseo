@@ -19,7 +19,7 @@ export default function ChatPlaygroundCatalog({ previewModels, internalModels, e
 	promptParam?: string | null;
 }) {
 	const t = useTranslations("Common.errors");
-	const catalogue = useQuery({ queryKey: webQueryKeys.public.chatGatewayModels(), queryFn: fetchFrontendGatewayModels });
+	const catalogue = useQuery({ queryKey: webQueryKeys.public.chatGatewayModels(), queryFn: () => fetchFrontendGatewayModels({ credentials: "same-origin" }) });
 	const models = useMemo(() => {
 		const publicModels = catalogue.data ?? [];
 		const catalogueIds = new Set(publicModels.map((model) => model.modelId));

@@ -144,8 +144,8 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 		queryKey: webQueryKeys.public.benchmarkRankings(),
 		queryFn: async () => {
 			const [payload, organisationPayload] = await Promise.all([
-				fetchPublicWebApi<{ benchmarks: PublicBenchmarkRanking[] }>("/api/_web/rankings/benchmarks"),
-				fetchPublicWebApi<{ organisations: Array<{ organisation_id: string; colour: string | null }> }>("/api/_web/organisations").catch(() => ({ organisations: [] })),
+				fetchPublicWebApi<{ benchmarks: PublicBenchmarkRanking[] }>("/api/_web/rankings/benchmarks", { credentials: "same-origin" }),
+				fetchPublicWebApi<{ organisations: Array<{ organisation_id: string; colour: string | null }> }>("/api/_web/organisations", { credentials: "same-origin" }).catch(() => ({ organisations: [] })),
 			]);
 			return applyArtificialAnalysisOrganisationColours(payload.benchmarks, new Map(organisationPayload.organisations.map((organisation) => [organisation.organisation_id, organisation.colour])));
 		},
