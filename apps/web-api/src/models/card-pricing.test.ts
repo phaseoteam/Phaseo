@@ -189,6 +189,15 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row).toMatchObject({ lowest_input_price: 3, lowest_output_price: 15, lowest_from_price: 3 });
 	});
 
+	it("keeps descriptive provider display units", () => {
+		const row = card([
+			{ ...usage("output_music", 0.15, "request", 1, { modality: "audio" }), display_unit: "1 track (up to 5 minutes)" },
+		], ["audio"]);
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.15, unit: "track (up to 5 minutes)" });
+		expect(card([{ ...tokens("input_text_tokens", 2), display_unit: "per million tokens" }]).pricing_summary)
+			.toMatchObject({ kind: "tokens", input: 2 });
+	});
+
 	it("passes preformatted rows through untouched", () => {
 		const rows = [{ label: "Custom contract", value: "Contact provider" }];
 		const row = normalizeModelsPagePricing({ pricing_detail_rows: rows });

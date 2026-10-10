@@ -44,6 +44,7 @@ function finite(value: unknown): number | null {
 
 /** 1000 -> "1K", 1_000_000 -> "1M"; other batch sizes stay as written. */
 function batchSize(quantity: number): string {
+	if (quantity >= 1_000_000_000 && quantity % 1_000_000_000 === 0) return `${quantity / 1_000_000_000}B`;
 	if (quantity >= 1_000_000 && quantity % 1_000_000 === 0) return `${quantity / 1_000_000}M`;
 	if (quantity >= 1_000 && quantity % 1_000 === 0) return `${quantity / 1_000}K`;
 	return quantity.toLocaleString("en-US");
@@ -81,20 +82,23 @@ function parseDisplayUnit(value: string): { quantity: number; unit: string } | n
 function normaliseUnit(row: Row): { unit: string; factor: number } | null {
 	let unit = String(row.unit ?? "").trim().toLowerCase();
 	let quantity = finite(row.unit_quantity);
-	const displayUnit = String(row.display_unit ?? "").trim();
-	if ((!unit || quantity === null) && displayUnit && displayUnit.toLowerCase() !== "billing unit") {
-		const parsed = parseDisplayUnit(displayUnit);
-		if (parsed) {
-			unit = parsed.unit;
-			quantity = parsed.quantity;
-		} else if (!unit) {
-			return { unit: displayUnit, factor: 1 };
-		}
+	const rawDisplayUnit = String(row.display_unit ?? "").trim();
+	const displayUnit = rawDisplayUnit.toLowerCase() === "billing unit" ? "" : rawDisplayUnit;
+	const parsed = displayUnit ? parseDisplayUnit(displayUnit) : null;
+	if ((!unit || quantity === null) && parsed) {
+		unit = parsed.unit;
+		quantity = parsed.quantity;
+	}
+	const singular = unit.replace(/s$/, "");
+	// A provider label that says more than "N units" (for example "1 track
+	// (up to 5 minutes)") describes what the charge covers, so it is kept
+	// unless the unit is one the card canonicalises (tokens and time).
+	if (displayUnit && !parsed && !["token", "second", "minute", "hour"].includes(singular)) {
+		return { unit: displayUnit.replace(/^1\s+/, ""), factor: 1 };
 	}
 	if (!unit) return null;
 	quantity ??= 1;
 	if (quantity <= 0) return null;
-	const singular = unit.replace(/s$/, "");
 	if (singular === "token") return { unit: "1M tokens", factor: 1_000_000 / quantity };
 	if (singular === "second" && quantity === 60) return { unit: "min", factor: 1 };
 	if (singular === "second" && quantity === 3600) return { unit: "hr", factor: 1 };

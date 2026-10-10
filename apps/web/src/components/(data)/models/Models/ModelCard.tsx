@@ -793,6 +793,11 @@ function ModelCardImpl({
 	const priceLabel = headlineSummary
 		? headline?.kind !== "free" && headline?.from ? t("from") : null
 		: structuredPriceSummary || isTextModel ? t("pricing") : t("from");
+	// Models with meter details but no headline price (for example, billed at
+	// provider cost) still get a pill that opens the details.
+	const pillValue = priceSummary
+		?? ((model.pricing_detail_rows?.length ?? 0) > 0 ? t("pricing") : null);
+	const pillLabel = priceSummary ? priceLabel : null;
 	const fallbackInputLabel =
 		primaryInputKey === "image"
 			? t("imageInputs")
@@ -1144,7 +1149,7 @@ function ModelCardImpl({
 								</span>
 							</span>
 						)) : <Link href={`${modelHref}/pricing`} className="rounded-md border border-border/60 px-2 py-1 underline underline-offset-2">{t("pricing")}</Link>) : null}
-						{!dualDecisionsModel && priceSummary ? (
+						{!dualDecisionsModel && pillValue ? (
 							pricingDetailRows.length > 0 ? (
 								<HoverCard openDelay={120} closeDelay={100}>
 									<HoverCardTrigger asChild>
@@ -1153,11 +1158,11 @@ function ModelCardImpl({
 											data-no-row-nav="true"
 											className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1 text-left transition-colors hover:bg-muted/45"
 										>
-											{priceLabel ? (
-												<span className="text-muted-foreground">{priceLabel}</span>
+											{pillLabel ? (
+												<span className="text-muted-foreground">{pillLabel}</span>
 											) : null}
 											<span className="font-medium tabular-nums text-foreground">
-												{priceSummary}
+												{pillValue}
 											</span>
 										</button>
 									</HoverCardTrigger>
@@ -1321,10 +1326,10 @@ function ModelCardImpl({
 								</HoverCard>
 							) : (
 								<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
-									{priceLabel ? (
-										<span className="text-muted-foreground">{priceLabel}</span>
+									{pillLabel ? (
+										<span className="text-muted-foreground">{pillLabel}</span>
 									) : null}
-									<span className="font-medium tabular-nums text-foreground">{priceSummary}</span>
+									<span className="font-medium tabular-nums text-foreground">{pillValue}</span>
 								</div>
 							)
 						) : null}
