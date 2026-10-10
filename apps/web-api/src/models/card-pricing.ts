@@ -232,6 +232,9 @@ function summarise(model: Row, rates: Rate[]): CardPricingSummary | null {
 	const input = tokens.filter((item) => item.side === "input");
 	const output = tokens.filter((item) => item.side === "output");
 	if (!media && (input.length || output.length)) {
+		// Free is decided by the token rates alone; a paid tool fee does not
+		// make a free model's tokens cost "$0".
+		if (tokens.every((item) => item.price === 0)) return { kind: "free" };
 		return {
 			kind: "tokens",
 			from: varies(input) || varies(output),
@@ -291,9 +294,12 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	// preference as the headline, so tier-only models keep a sortable price.
 	const headline = rates.filter((item) => !item.auxiliary);
 	const lowest = (side: Rate["side"]) => {
+		// Prefer the text token meters the headline uses, so a zero-priced
+		// image or audio token meter cannot become the sortable input price.
 		const matches = headline.filter((item) => item.side === side);
+		const textTokens = matches.filter(isTextToken);
 		const tokenMatches = matches.filter((item) => item.unit === "1M tokens");
-		const pool = preferredTier(tokenMatches.length ? tokenMatches : matches);
+		const pool = preferredTier(textTokens.length ? textTokens : tokenMatches.length ? tokenMatches : matches);
 		return pool.length && pool.every((item) => item.unit === pool[0].unit)
 			? { price: min(pool), unit: pool[0].unit }
 			: null;

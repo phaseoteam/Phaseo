@@ -162,6 +162,24 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row).toMatchObject({ lowest_input_price: 2, lowest_output_price: 8 });
 	});
 
+	it("calls a model with free tokens and a paid tool fee Free", () => {
+		const row = card([
+			tokens("input_text_tokens", 0),
+			tokens("output_text_tokens", 0),
+			usage("native_web_search_requests", 0.01, "request"),
+		]);
+		expect(row.pricing_summary).toEqual({ kind: "free" });
+	});
+
+	it("bases compatibility token prices on text meters, not other-modality tokens", () => {
+		const row = card([
+			tokens("input_text_tokens", 3),
+			tokens("input_audio_tokens", 0),
+			tokens("output_text_tokens", 15),
+		]);
+		expect(row).toMatchObject({ lowest_input_price: 3, lowest_output_price: 15, lowest_from_price: 3 });
+	});
+
 	it("passes preformatted rows through untouched", () => {
 		const rows = [{ label: "Custom contract", value: "Contact provider" }];
 		const row = normalizeModelsPagePricing({ pricing_detail_rows: rows });
