@@ -440,6 +440,7 @@
 			"status": "Status",
 			"code": "Código",
 			"request": "Solicitação",
+			"viewRequestLog": "Ver registro da solicitação",
 			"requestId": "ID da solicitação",
 			"endpoint": "Ponto de extremidade",
 			"model": "Modelo",

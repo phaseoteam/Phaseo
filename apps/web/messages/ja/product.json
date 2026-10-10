@@ -440,6 +440,7 @@
 			"status": "ステータス",
 			"code": "コード",
 			"request": "リクエスト",
+			"viewRequestLog": "リクエストログを表示",
 			"requestId": "リクエスト ID",
 			"endpoint": "エンドポイント",
 			"model": "モデル",

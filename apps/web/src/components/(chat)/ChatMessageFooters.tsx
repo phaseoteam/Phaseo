@@ -138,7 +138,7 @@ function MetadataRow({
 }) {
 	return (
 		<div className="flex items-center justify-between gap-4">
-			<span className="text-muted-foreground">{label}</span>
+			<span className="shrink-0 whitespace-nowrap text-muted-foreground">{label}</span>
 			<div className="min-w-0 text-right font-medium text-foreground">
 				{children}
 			</div>
@@ -388,17 +388,6 @@ export function AssistantMessageFooter({
 											{formatServiceTierLabel(metadataServiceTier, { standard: t("serviceTiers.standard"), priority: t("serviceTiers.priority"), flex: t("serviceTiers.flex"), batch: t("serviceTiers.batch") })}
 										</NumericValue>
 									</MetadataRow>
-									{requestLogHref && metadataRequestId ? (
-										<MetadataRow label={t("requestId")}>
-											<Link
-												href={requestLogHref}
-												title={t("openRequestLog", { id: metadataRequestId })}
-												className="block max-w-44 truncate font-mono text-xs underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground"
-											>
-												{metadataRequestId}
-											</Link>
-										</MetadataRow>
-									) : null}
 								</div>
 								<div className="h-px bg-border" />
 								<MetadataSection title={t("usage")}>
@@ -450,6 +439,16 @@ export function AssistantMessageFooter({
 										</MetadataRow>
 									) : null}
 								</MetadataSection>
+								{requestLogHref ? (
+									<>
+										<div className="h-px bg-border" />
+										<Button asChild variant="outline" size="sm" className="w-full">
+											<Link href={requestLogHref} prefetch={false}>
+												{t("viewRequestLog")}
+											</Link>
+										</Button>
+									</>
+								) : null}
 							</div>
 						</PopoverContent>
 					</Popover>
