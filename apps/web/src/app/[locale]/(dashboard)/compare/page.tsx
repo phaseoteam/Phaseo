@@ -4,7 +4,6 @@ import { Suspense } from "react";
 
 import { getLocale, getTranslations } from "next-intl/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
-import type { ExtendedModel } from "@/data/types";
 import {
 	fetchFrontendCompareModels,
 	fetchFrontendCompareUsage,
@@ -14,7 +13,7 @@ import {
 	fetchFrontendModelTokenTrajectory,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import CompareDashboard from "@/components/(data)/compare/CompareDashboard";
-import type { CompareGatewayUsageByModel } from "@/components/(data)/compare/types";
+import { toCompareModelOption, type CompareGatewayUsageByModel } from "@/components/(data)/compare/types";
 import { WebApiError } from "@/lib/web-api/client";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -123,7 +122,7 @@ async function ComparePageContent({ searchParams }: PageProps) {
 		fetchFrontendCompareModels(),
 		searchParams,
 	]);
-	const typedModels = models as ExtendedModel[];
+	const typedModels = models.map(toCompareModelOption);
 	const selection = normalizeSelection(resolvedSearchParams?.models).map(
 		decodeModelIdFromUrl
 	);

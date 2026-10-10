@@ -12,6 +12,7 @@ import { isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalys
 import { isEpochCapabilitiesIndex } from "@/lib/benchmarks/epoch";
 import { ArtificialAnalysisBenchmarks } from "./ArtificialAnalysisBenchmarks";
 import { EpochCapabilitiesIndex } from "./EpochCapabilitiesIndex";
+import { summarizeArtificialAnalysisRankings } from "@/lib/benchmarks/artificialAnalysis";
 
 type Props = {
 	highlightCards: ModelBenchmarkHighlight[];
@@ -50,7 +51,7 @@ export default async function ModelBenchmarks({
 
 	return (
 		<div className="space-y-8">
-			<ArtificialAnalysisBenchmarks highlights={highlightCards} results={benchmarkResults} rankings={benchmarkRankings} modelId={modelId} modelName={modelName} />
+			<ArtificialAnalysisBenchmarks highlights={highlightCards} results={benchmarkResults} rankSummaries={summarizeArtificialAnalysisRankings(benchmarkRankings)} loadRankings modelId={modelId} modelName={modelName} />
 			<EpochCapabilitiesIndex highlights={highlightCards} ranking={benchmarkRankings.find((item) => isEpochCapabilitiesIndex(item.benchmark_id))} modelId={modelId} />
 			{otherHighlights.length > 0 || !hasKeyBenchmark ? (
 				hasKeyBenchmark ? (

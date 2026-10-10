@@ -100,6 +100,31 @@ export function buildArtificialAnalysisValue(benchmarks: PublicBenchmarkRanking[
 	return { benchmark_id: intelligence?.benchmark_id ?? "aa-intelligence-index-v4", entries };
 }
 
+export type ArtificialAnalysisRankSummary = {
+	lowerIsBetter: boolean;
+	entries: Array<{ modelId: string; version: string | null; scores: number[] }>;
+};
+
+export function summarizeArtificialAnalysisRankings(rankings: PublicBenchmarkRanking[]) {
+	return Object.fromEntries(rankings.filter((ranking) => isArtificialAnalysisBenchmark(ranking.benchmark_id)).map((ranking) => [ranking.benchmark_id, {
+		lowerIsBetter: ranking.lower_is_better,
+		entries: ranking.entries.map((entry) => ({
+			modelId: entry.model_id,
+			version: artificialAnalysisVersion(entry.other_info),
+			scores: entry.configurations?.length ? entry.configurations.map((configuration) => configuration.score) : [entry.score],
+		})),
+	} satisfies ArtificialAnalysisRankSummary]));
+}
+
+export function artificialAnalysisSummaryRank(summary: ArtificialAnalysisRankSummary, score: number, modelId: string | undefined, version: string | null, localScores: number[]) {
+	const entries = summary.entries.filter((entry) => !version || !entry.version || entry.version === version);
+	const others = entries.filter((entry) => entry.modelId !== modelId);
+	if (!others.length) return null;
+	const current = modelId ? localScores.length ? localScores : entries.find((entry) => entry.modelId === modelId)?.scores ?? [score] : [];
+	const scores = [...others.flatMap((entry) => entry.scores), ...current];
+	return { rank: 1 + scores.filter((value) => summary.lowerIsBetter ? value < score : value > score).length, total: scores.length };
+}
+
 /** Rank the evaluated configurations, including ties, rather than one best score per model. */
 export function artificialAnalysisConfigurationRank(entries: PublicBenchmarkRankingEntry[], score: number, lowerIsBetter: boolean) {
 	const scores = entries.flatMap((entry) => entry.configurations?.length ? entry.configurations.map((configuration) => configuration.score) : [entry.score]);

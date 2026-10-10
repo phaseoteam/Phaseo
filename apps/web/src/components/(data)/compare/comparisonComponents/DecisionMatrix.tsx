@@ -29,7 +29,7 @@ import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { ExternalLink, Info, MessageSquare } from "lucide-react";
 import { ProviderLogo } from "../ProviderLogo";
 import ModelCombobox from "../ModelCombobox";
-import type { CompareGatewayUsageByModel } from "../types";
+import type { CompareGatewayUsageByModel, CompareModelOption } from "../types";
 import { useLocale, useTranslations } from "next-intl";
 import {
 	ColumnGrid,
@@ -42,7 +42,7 @@ import {
 type DecisionMatrixProps = {
 	selectedModels: ExtendedModel[];
 	usageByModel: CompareGatewayUsageByModel;
-	models: ExtendedModel[];
+	models: CompareModelOption[];
 	selectedIds: string[];
 	onSelectedIdsChange: (ids: string[]) => void;
 };

@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import ModelCombobox from "./ModelCombobox";
-import type { ExtendedModel } from "@/data/types";
+import type { CompareModelOption } from "./types";
 import { useTranslations } from "next-intl";
 
 export default function MainCard({
@@ -10,7 +10,7 @@ export default function MainCard({
 	selected,
 	setSelected,
 }: {
-	models: ExtendedModel[];
+	models: CompareModelOption[];
 	selected: string[];
 	setSelected: (ids: string[]) => void;
 }) {

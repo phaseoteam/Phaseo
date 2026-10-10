@@ -3,6 +3,9 @@ import { localizedBenchmarkConfiguration, localizedArtificialAnalysisMetric } fr
 import { useLocale, useTranslations } from "next-intl";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchPublicWebApi } from "@/lib/web-api/client";
+import { webQueryKeys } from "@/lib/query/queryKeys";
 import NumberFlow from "@number-flow/react";
 import { Link } from "@/i18n/navigation";
 import { ArrowUpRight, Bot, BrainCircuit, ChevronsUpDown, CircleDollarSign, Code2, ExternalLink, ListChecks, ListX } from "lucide-react";
@@ -16,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { PublicBenchmarkRanking, PublicBenchmarkRankingEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { ModelBenchmarkHighlight, ModelBenchmarkResult } from "@/lib/fetchers/models/getModelBenchmarkData";
-import { artificialAnalysisChartColour, artificialAnalysisConfigurationRank, artificialAnalysisMetricKey, artificialAnalysisMetrics, artificialAnalysisVersion, isArtificialAnalysisBenchmark, isArtificialAnalysisCostBenchmark } from "@/lib/benchmarks/artificialAnalysis";
+import { applyArtificialAnalysisOrganisationColours, artificialAnalysisChartColour, artificialAnalysisConfigurationRank, artificialAnalysisSummaryRank, artificialAnalysisMetricKey, artificialAnalysisMetrics, artificialAnalysisVersion, isArtificialAnalysisBenchmark, isArtificialAnalysisCostBenchmark, type ArtificialAnalysisRankSummary } from "@/lib/benchmarks/artificialAnalysis";
 
 const configurationOrder = ["none", "low", "medium", "high", "xhigh", "max"];
 const metricIcons = {
@@ -115,10 +118,12 @@ function ModelHoverCard({ entry, configurations, metricLabel, rank, total }: { e
 	</HoverCardContent>;
 }
 
-export function ArtificialAnalysisBenchmarks({ highlights, results = [], rankings = [], modelId, modelName, initialExpandedMetric = null }: {
+export function ArtificialAnalysisBenchmarks({ highlights, results = [], rankings: initialRankings = [], rankSummaries, loadRankings = false, modelId, modelName, initialExpandedMetric = null }: {
 	highlights: ModelBenchmarkHighlight[];
 	results?: ModelBenchmarkResult[];
 	rankings?: PublicBenchmarkRanking[];
+	rankSummaries?: Record<string, ArtificialAnalysisRankSummary>;
+	loadRankings?: boolean;
 	modelId?: string;
 	modelName?: string;
 	initialExpandedMetric?: string | null;
@@ -135,6 +140,18 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 	const preferred = variants.includes("max") ? "max" : variants.at(-1) ?? "";
 	const [selectedVariant, setSelectedVariant] = useState(preferred);
 	const [expandedMetric, setExpandedMetric] = useState<string | null>(initialExpandedMetric);
+	const rankingQuery = useQuery({
+		queryKey: webQueryKeys.public.benchmarkRankings(),
+		queryFn: async () => {
+			const [payload, organisationPayload] = await Promise.all([
+				fetchPublicWebApi<{ benchmarks: PublicBenchmarkRanking[] }>("/api/_web/rankings/benchmarks"),
+				fetchPublicWebApi<{ organisations: Array<{ organisation_id: string; colour: string | null }> }>("/api/_web/organisations").catch(() => ({ organisations: [] })),
+			]);
+			return applyArtificialAnalysisOrganisationColours(payload.benchmarks, new Map(organisationPayload.organisations.map((organisation) => [organisation.organisation_id, organisation.colour])));
+		},
+		enabled: loadRankings && Boolean(expandedMetric) && initialRankings.length === 0,
+	});
+	const rankings = initialRankings.length ? initialRankings : rankingQuery.data ?? [];
 	const [selectionByMetric, setSelectionByMetric] = useState<Record<string, string[]>>({});
 	const [pickerOpen, setPickerOpen] = useState(false);
 	const [pickerQuery, setPickerQuery] = useState("");
@@ -176,7 +193,8 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 		};
 		return [...entries.filter((entry) => entry.model_id !== modelId), current].sort((left, right) => (lowerIsBetter ? left.score - right.score : right.score - left.score) || left.model_name.localeCompare(right.model_name));
 	};
-	const entries = expandedMetric ? comparisonEntries(expandedMetric) : [];
+	const waitingForRankings = loadRankings && !initialRankings.length && !rankingQuery.data && !rankingQuery.isSuccess;
+	const entries = expandedMetric && !waitingForRankings ? comparisonEntries(expandedMetric) : [];
 	const datedEntries = [...entries].sort(modelDateDescending);
 	const pickerRows = datedEntries.flatMap((entry) => {
 		const configurations = orderConfigurations(entry.configurations?.length ? entry.configurations : [{ variant: null, result_key: null, score: Number(entry.score), other_info: entry.other_info ?? null, source_link: entry.source_link ?? null, updated_at: entry.updated_at ?? null }]);
@@ -207,6 +225,12 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 	const hasSelectedModel = Boolean(modelId && chartRows.some((row) => row.entry.model_id === modelId));
 	const maxScore = Math.max(...chartRows.map((row) => Number(row.configuration.score)), 1);
 	const rankFor = (benchmarkId: string, score: number) => {
+		const summary = rankSummaries?.[benchmarkId];
+		if (summary && !rankings.length) {
+			const version = artificialAnalysisVersion(available.find((item) => item.benchmarkId === benchmarkId)?.otherInfo);
+			const local = localConfigurations(aaResults, benchmarkId).filter((item) => !version || !artificialAnalysisVersion(item.other_info) || artificialAnalysisVersion(item.other_info) === version);
+			return artificialAnalysisSummaryRank(summary, score, modelId, version, local.map((item) => item.score));
+		}
 		const ranking = rankings.find((item) => item.benchmark_id === benchmarkId);
 		if (!ranking) return null;
 		const comparisons = comparisonEntries(benchmarkId);
@@ -243,7 +267,7 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 					<div className="grid grid-cols-2 gap-1.5 border-t bg-popover p-2"><Button type="button" variant="ghost" size="sm" className="h-8 justify-between bg-muted/40 px-2.5 text-xs" onClick={() => setSelectedKeys([])}>{tx("Common.search.clear" as never)}<ListX className="size-3.5" /></Button><Button type="button" variant="ghost" size="sm" className="h-8 justify-between bg-muted/40 px-2.5 text-xs" onClick={() => setSelectedKeys(pickerRows.map((row) => row.key))}>{tx("Common.authFlows.oauthConsent.selectAll" as never)}<ListChecks className="size-3.5" /></Button></div>
 				</PopoverContent></Popover> : null}
 			</div>
-			{chartRows.length ? <ScrollArea className="w-full" scrollBarOrientation="horizontal" viewportClassName="pb-3"><div className="relative h-[360px] border-b" style={{ width: `${Math.max(chartRows.length * 54 + 144, 480)}px`, minWidth: "100%" }}>
+			{loadRankings && !rankings.length && rankingQuery.isPending ? <p role="status">{tx("Common.ui.accessibility.loading")}</p> : loadRankings && rankingQuery.isError ? <Button variant="outline" onClick={() => void rankingQuery.refetch()}>{tx("Common.errors.tryAgain")}</Button> : chartRows.length ? <ScrollArea className="w-full" scrollBarOrientation="horizontal" viewportClassName="pb-3"><div className="relative h-[360px] border-b" style={{ width: `${Math.max(chartRows.length * 54 + 144, 480)}px`, minWidth: "100%" }}>
 				<div className="pointer-events-none absolute inset-x-16 bottom-[140px] top-4 flex flex-col justify-between">{[0, 1, 2, 3, 4].map((line) => <span key={line} className="border-t border-dashed border-border/70" />)}</div>
 								<div className="absolute inset-x-16 bottom-0 top-4 flex items-end gap-1.5">{chartRows.map(({ entry, configuration }) => {
 									const isSelectedModel = entry.model_id === modelId;

@@ -7,7 +7,7 @@ import MainCard from "./MainCard";
 import ComparisonDisplay from "./ComparisonDisplay";
 import { ExtendedModel } from "@/data/types";
 import ModelCombobox from "./ModelCombobox";
-import type { CompareGatewayUsageByModel } from "./types";
+import type { CompareGatewayUsageByModel, CompareModelOption } from "./types";
 import { useTranslations } from "next-intl";
 
 const decodeModelIdFromUrl = (value: string): string => {
@@ -28,7 +28,7 @@ const encodeModelIdForUrl = (value: string): string => {
 };
 
 type CompareDashboardProps = {
-	models: ExtendedModel[];
+	models: CompareModelOption[];
 	comparisonData: ExtendedModel[];
 	usageByModel: CompareGatewayUsageByModel;
 };
@@ -51,7 +51,7 @@ function EmptyComparisonState({
 	models,
 	onSelect,
 }: {
-	models: ExtendedModel[];
+	models: CompareModelOption[];
 	onSelect: (ids: string[]) => void;
 }) {
 	const t = useTranslations("Catalogue.compare");
@@ -122,7 +122,7 @@ export default function CompareDashboard({
 	}, [resolvedSelectionIds]);
 
 	const modelsById = useMemo(() => {
-		const map = new Map<string, ExtendedModel>();
+		const map = new Map<string, CompareModelOption>();
 		for (const model of models) {
 			if (!model.id) continue;
 			map.set(model.id, model);
@@ -139,7 +139,7 @@ export default function CompareDashboard({
 
 	const selectedModels = uniqueResolvedSelectionIds
 		.map((modelId) => modelsById.get(modelId))
-		.filter((model): model is ExtendedModel => Boolean(model));
+		.filter((model): model is CompareModelOption => Boolean(model));
 	const comparisonDataById = useMemo(() => {
 		const map = new Map<string, ExtendedModel>();
 		for (const model of comparisonData) {

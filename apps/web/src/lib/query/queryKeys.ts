@@ -52,6 +52,8 @@ const publicKeys = {
 	search: () => [...publicKeys.all(), "search"] as const,
 	documentationSearch: (locale: string) => [...publicKeys.all(), "documentation-search", locale] as const,
 	gatewayModels: () => [...publicKeys.all(), "gateway-models"] as const,
+	chatGatewayModels: () => [...publicKeys.all(), "chat-gateway-models", "available-only"] as const,
+	benchmarkRankings: () => [...publicKeys.all(), "benchmark-rankings"] as const,
 	modelsWeeklyMetrics: () => [...publicKeys.all(), "models-weekly-metrics"] as const,
 	freeRouterUsage: () => [...publicKeys.all(), "free-router-usage"] as const,
 	modelPerformance: (args: {

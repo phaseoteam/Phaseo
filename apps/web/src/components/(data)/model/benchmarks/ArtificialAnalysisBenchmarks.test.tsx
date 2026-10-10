@@ -5,12 +5,14 @@ import { NextIntlClientProvider, createTranslator } from "next-intl";
 import type { ReactNode } from "react";
 import common from "../../../../../messages/en-GB/common.json";
 import React from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ArtificialAnalysisBenchmarks } from "./ArtificialAnalysisBenchmarks";
 import { EpochCapabilitiesIndex } from "./EpochCapabilitiesIndex";
 import ModelBenchmarks from "./ModelBenchmarks";
 import type { ModelBenchmarkHighlight } from "@/lib/fetchers/models/getModelBenchmarkData";
 import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { summarizeArtificialAnalysisRankings } from "@/lib/benchmarks/artificialAnalysis";
 
 jest.mock("@number-flow/react", () => ({
 	__esModule: true,
@@ -28,10 +30,19 @@ const highlight = (benchmarkId: string, score: number): ModelBenchmarkHighlight 
 });
 
 function renderLocalized(node: ReactNode) {
-	return renderToStaticMarkup(<NextIntlClientProvider timeZone="UTC" locale="en-GB" messages={{ Common: common, Catalogue: catalogue, Product: product, Site: site }}>{node}</NextIntlClientProvider>);
+	return renderToStaticMarkup(<QueryClientProvider client={new QueryClient()}><NextIntlClientProvider timeZone="UTC" locale="en-GB" messages={{ Common: common, Catalogue: catalogue, Product: product, Site: site }}>{node}</NextIntlClientProvider></QueryClientProvider>);
 }
 
 describe("Artificial Analysis benchmark panel", () => {
+	it("renders score and rank from compact summaries before loading interactive leaderboards", () => {
+		const id = "aa-intelligence-index-v4";
+		const ranking: PublicBenchmarkRanking = { benchmark_id: id, name: "Intelligence", category: null, benchmark_type: null, lower_is_better: false, total_models: 1, entries: [{ model_id: "test/leader", model_name: "Leader detail omitted", organisation_id: null, organisation_name: null, score: 50, rank: 1, other_info: "Intelligence Index v4.3", configurations: [50, 48].map(score => ({ score, variant: null, result_key: null, other_info: null, source_link: null, updated_at: null })) }] };
+		const html = renderLocalized(<ArtificialAnalysisBenchmarks highlights={[highlight(id, 43.6)]} rankSummaries={summarizeArtificialAnalysisRankings([ranking])} loadRankings modelId="test/current" />);
+		const translate = createTranslator({ locale: "en-GB", messages: { Common: common }, namespace: "Common.ui.benchmarkChartCopy" } as never);
+		expect(html).toContain(translate("rankRankOfTotalEvaluatedConfigurations", { rank: 3, total: 3 }));
+		expect(html).toContain("43.6");
+		expect(html).not.toContain("Leader detail omitted");
+	});
 	it.each(["aa-intelligence-index-cost-v4", "aa-intelligence-index-cost-v5"])("orders %s by lowest cost without leaderboard metadata", (benchmarkId) => {
 		const results = [100, 10].map((score, index) => ({
 			id: `cost-${index}`, benchmark_id: benchmarkId, score, raw_score: score, score_display: String(score),
