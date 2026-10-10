@@ -42,7 +42,7 @@ describe("fetchModelsPageData", () => {
 	it("merges staged records only through the account-scoped admin request", async () => {
 		global.fetch = jest.fn(async (url) => {
 			const path = String(url);
-			if (path.includes("/audit/source")) return new Response(JSON.stringify({ models: [
+			if (path.includes("/models/hidden")) return new Response(JSON.stringify({ models: [
 				{ model_id: "test/staged", name: "Staged", hidden: true, organisation: { lab_slug: "test", name: "Test" } },
 			] }));
 			if (path.includes("/api/account/")) return new Response(JSON.stringify({ private_catalogue: true, models: [] }));
