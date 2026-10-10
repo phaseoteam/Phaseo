@@ -18,12 +18,12 @@ import {
 	ModelSelectorList,
 	ModelSelectorTrigger,
 } from "@/components/ai-elements/model-selector";
-import type { ExtendedModel } from "@/data/types";
+import type { CompareModelOption } from "./types";
 import { ProviderLogo } from "./ProviderLogo";
 import { useLocale, useTranslations } from "next-intl";
 
 interface ModelComboboxProps {
-	models: ExtendedModel[];
+	models: CompareModelOption[];
 	selected: string[];
 	setSelected: (ids: string[]) => void;
 	open?: boolean;
@@ -39,12 +39,12 @@ type GroupedModels = {
 	monthKey: string;
 	monthLabel: string;
 	monthTimestamp: number;
-	models: ExtendedModel[];
+	models: CompareModelOption[];
 };
 
 const MAX_SELECTION = 4;
 
-function parseTypeSet(value: ExtendedModel["input_types"]): Set<string> {
+function parseTypeSet(value: CompareModelOption["input_types"]): Set<string> {
 	if (!value) return new Set();
 	const parts = Array.isArray(value)
 		? value
@@ -55,7 +55,7 @@ function parseTypeSet(value: ExtendedModel["input_types"]): Set<string> {
 	return new Set(parts.map((v) => v.toLowerCase()));
 }
 
-function getEndpointSignature(model: ExtendedModel): Set<string> {
+function getEndpointSignature(model: CompareModelOption): Set<string> {
 	// Proxy for "endpoints": treat output types as the primary signal,
 	// falling back to input types if output is missing.
 	const out = parseTypeSet(model.output_types);
@@ -72,7 +72,7 @@ function intersect(a: Set<string>, b: Set<string>): Set<string> {
 	return out;
 }
 
-function buildRequiredSignature(selectedModels: ExtendedModel[]): Set<string> | null {
+function buildRequiredSignature(selectedModels: CompareModelOption[]): Set<string> | null {
 	let required: Set<string> | null = null;
 	for (const m of selectedModels) {
 		const sig = getEndpointSignature(m);
@@ -83,7 +83,7 @@ function buildRequiredSignature(selectedModels: ExtendedModel[]): Set<string> | 
 	return required;
 }
 
-function getReleaseDate(model: ExtendedModel): Date | null {
+function getReleaseDate(model: CompareModelOption): Date | null {
 	if (!model.release_date) return null;
 	const parsed = new Date(model.release_date);
 	if (Number.isNaN(parsed.getTime())) return null;
@@ -205,7 +205,7 @@ export default function ModelCombobox({
 	}, [groupedModels, searchTerm]);
 
 	const modelsById = React.useMemo(() => {
-		const lookup = new Map<string, ExtendedModel>();
+		const lookup = new Map<string, CompareModelOption>();
 		models.forEach((model) => lookup.set(model.id, model));
 		return lookup;
 	}, [models]);
@@ -226,7 +226,7 @@ export default function ModelCombobox({
 			: pendingSelection;
 		return idsForCompatibility
 			.map((id) => modelsById.get(id))
-			.filter(Boolean) as ExtendedModel[];
+			.filter(Boolean) as CompareModelOption[];
 	}, [activeReplaceTarget, pendingSelection, modelsById]);
 
 	const requiredSignature = React.useMemo(() => {

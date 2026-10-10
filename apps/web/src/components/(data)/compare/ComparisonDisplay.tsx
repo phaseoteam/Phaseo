@@ -8,7 +8,7 @@ import PricingAnalysis from "./comparisonComponents/pricingAnalysis/PricingAnaly
 import AvailabilityComparison from "./comparisonComponents/AvailabilityComparison";
 import SubscriptionPlansComparison from "./comparisonComponents/SubscriptionPlansComparison";
 import GatewayUsageComparison from "./comparisonComponents/GatewayUsageComparison";
-import type { CompareGatewayUsageByModel } from "./types";
+import type { CompareGatewayUsageByModel, CompareModelOption } from "./types";
 import { useTranslations } from "next-intl";
 
 export default function ComparisonDisplay({
@@ -20,7 +20,7 @@ export default function ComparisonDisplay({
 }: {
 	selectedModels: ExtendedModel[];
 	usageByModel: CompareGatewayUsageByModel;
-	models: ExtendedModel[];
+	models: CompareModelOption[];
 	selectedIds: string[];
 	onSelectedIdsChange: (ids: string[]) => void;
 }) {

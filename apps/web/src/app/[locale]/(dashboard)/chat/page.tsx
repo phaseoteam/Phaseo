@@ -4,10 +4,8 @@ import { getTranslations } from "next-intl/server";
 import type { SearchParams } from "nuqs/server";
 import { buildMetadata } from "@/lib/seo";
 import ChatPlaygroundShell from "@/components/(chat)/ChatPlaygroundShell";
-import ChatPlayground from "@/components/(chat)/ChatPlayground";
-import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
+import ChatPlaygroundCatalog from "@/components/(chat)/ChatPlaygroundCatalog";
 import { fetchChatEffectivePolicy } from "@/lib/fetchers/internal/fetchChatEffectivePolicy";
-import { applyChatEffectivePolicy } from "@/lib/chat/effectivePolicy";
 import { fetchServerProviderCatalogPreviews } from "@/lib/fetchers/internal/fetchServerProviderCatalogPreviews";
 import { providerCatalogPreviewsToGatewayModels } from "@/lib/chat/providerCatalogPreviewModels";
 import { fetchServerAdminChatModels } from "@/lib/fetchers/internal/fetchServerAdminChatModels";
@@ -30,16 +28,12 @@ export default function ChatPlaygroundPage({ searchParams }: ChatPageProps) {
 }
 
 async function ChatPlaygroundContent({ searchParams }: ChatPageProps) {
-	const [catalogue, effectivePolicy, providerPreviews, internalModels] = await Promise.all([
-		fetchFrontendGatewayModels(),
+	const [effectivePolicy, providerPreviews, internalModels] = await Promise.all([
 		fetchChatEffectivePolicy().catch(() => null),
 		fetchServerProviderCatalogPreviews(),
 		fetchServerAdminChatModels(),
 	]);
-	const catalogueIds = new Set(catalogue.map((model) => model.modelId));
-	const previewModels = providerCatalogPreviewsToGatewayModels(providerPreviews)
-		.filter((model) => !catalogueIds.has(model.modelId));
-	const models = applyChatEffectivePolicy([...catalogue, ...previewModels, ...internalModels], effectivePolicy);
+	const previewModels = providerCatalogPreviewsToGatewayModels(providerPreviews);
 	const resolvedParams = (await searchParams) ?? {};
 	const modelParamRaw = resolvedParams.model;
 	const promptParamRaw = resolvedParams.prompt;
@@ -51,8 +45,10 @@ async function ChatPlaygroundContent({ searchParams }: ChatPageProps) {
 		: promptParamRaw;
 
 	return (
-		<ChatPlayground
-			models={models}
+		<ChatPlaygroundCatalog
+			previewModels={previewModels}
+			internalModels={internalModels}
+			effectivePolicy={effectivePolicy}
 			modelParam={modelParam ?? null}
 			promptParam={promptParam ?? null}
 		/>

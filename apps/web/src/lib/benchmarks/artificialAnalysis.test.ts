@@ -1,7 +1,24 @@
-import { artificialAnalysisConfigurationRank, artificialAnalysisMetricsForBenchmark, artificialAnalysisVersion, buildArtificialAnalysisRanking, buildArtificialAnalysisValue, formatArtificialAnalysisValue } from "./artificialAnalysis";
+import { artificialAnalysisConfigurationRank, artificialAnalysisSummaryRank, summarizeArtificialAnalysisRankings, artificialAnalysisMetricsForBenchmark, artificialAnalysisVersion, buildArtificialAnalysisRanking, buildArtificialAnalysisValue, formatArtificialAnalysisValue } from "./artificialAnalysis";
 import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 describe("Artificial Analysis benchmark helpers", () => {
+	it("keeps compact ranks correct for ties, versions, current model replacement and evaluation cost", () => {
+		const ranking: PublicBenchmarkRanking = {
+			benchmark_id: "aa-intelligence-index-v4", name: "Intelligence", category: null, benchmark_type: null, total_models: 3, lower_is_better: false,
+			entries: [
+				{ model_id: "test/leader", model_name: "Leader", organisation_id: null, organisation_name: null, rank: 1, score: 50, other_info: "Intelligence Index v4.3", configurations: [50, 40].map(score => ({ score, variant: null, result_key: null, other_info: null, source_link: null, updated_at: null })) },
+				{ model_id: "test/current", model_name: "Current", organisation_id: null, organisation_name: null, rank: 2, score: 20, other_info: "Intelligence Index v4.3" },
+				{ model_id: "test/old", model_name: "Old", organisation_id: null, organisation_name: null, rank: 1, score: 99, other_info: "Intelligence Index v4.1" },
+			],
+		};
+		const summary = summarizeArtificialAnalysisRankings([ranking])[ranking.benchmark_id];
+		expect(artificialAnalysisSummaryRank(summary, 40, "test/current", "4.3", [40, 30])).toEqual({ rank: 2, total: 4 });
+		expect(artificialAnalysisSummaryRank(summary, 40, "test/missing", "4.3", [])).toEqual({ rank: 2, total: 4 });
+		expect(artificialAnalysisSummaryRank({ ...summary, lowerIsBetter: true }, 40, "test/current", "4.3", [40, 30])).toEqual({ rank: 2, total: 4 });
+		expect(artificialAnalysisSummaryRank({ lowerIsBetter: false, entries: [summary.entries[1]] }, 40, "test/current", "4.3", [40])).toBeNull();
+		expect(JSON.stringify(summary)).not.toContain("organisation_name");
+		expect(JSON.stringify(summary).length).toBeLessThan(JSON.stringify(ranking).length / 2);
+	});
 	it("derives preview value from existing API configurations without mixing reasoning settings", () => {
 		const config = (score: number, variant: string, updated_at = "2026-10-01") => ({ score, variant, result_key: variant, updated_at, source_link: null, other_info: `Example ${variant}; Artificial Analysis ID source-${variant}; Intelligence Index v4.3.2` });
 		const benchmark = (benchmark_id: string, configurations: ReturnType<typeof config>[]): PublicBenchmarkRanking => ({ benchmark_id, name: "Test", category: null, benchmark_type: null, total_models: 1, lower_is_better: false, entries: [{ model_id: "test/model", model_name: "Test", organisation_id: null, organisation_name: null, rank: 1, score: configurations[0].score, configurations }] });
