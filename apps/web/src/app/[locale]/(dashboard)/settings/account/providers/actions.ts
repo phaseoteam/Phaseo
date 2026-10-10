@@ -68,6 +68,16 @@ export type ProviderManagedCatalogModel = {
 	pricing: Array<{ meter_key: string; modality: string; direction: string | null; unit: string; unit_quantity: number; price_nanos: number; display_label: string; display_unit: string; conditions?: Array<{ path: string; op: "eq" | "in" | "gt" | "gte" | "lt" | "lte"; value: string | number | boolean | Array<string | number> }> }>;
 };
 
+export type ProviderRateLimit = {
+	/** Upstream provider model slug; null applies across all of the provider's models. */
+	model: string | null;
+	requests_per_minute: number | null;
+	requests_per_day: number | null;
+	tokens_per_minute: number | null;
+	tokens_per_day: number | null;
+};
+export type ProviderRateLimits = { version: string | null; limits: ProviderRateLimit[] };
+
 export type ProviderManagedCatalog = {
 	permissions?: { can_edit_description: boolean; can_edit_model_metadata?: boolean };
 	capability_options?: Record<string, string[]>;
@@ -80,6 +90,7 @@ export type ProviderManagedCatalog = {
 	activity: Array<{ id: string; model_slug: string; field: string; actor_name: string | null; actor_kind: "phaseo" | "provider"; action: "override" | "revert"; created_at: string }>;
 	model_states: Record<string, { decision: string; decision_reason: string | null; route_projection_status: string; route_projection_error: string | null }>;
 	latest_run: { id: string; status: string; review_status: string; model_count: number | null; created_at: string; completed_at: string | null } | null;
+	rate_limits?: ProviderRateLimits;
 };
 
 export async function previewProviderCatalogAction(catalogUrl: string) {
@@ -126,6 +137,22 @@ export async function updateProviderCatalogAction(providerSlug: string, catalog:
 	);
 	} catch (error) {
 		if (error instanceof WebApiError && error.status === 422) return { ok: false, issues: error.issues ?? [{ path: "catalog", message: error.detail ?? "Invalid catalog" }] } as const;
+		throw error;
+	}
+}
+
+export async function updateProviderRateLimitsAction(providerSlug: string, limits: ProviderRateLimit[], expectedVersion: string | null) {
+	try {
+		const result = await fetchAccountWebApi<{ ok: true; rate_limits: ProviderRateLimits }>(
+			`/api/account/settings/provider-onboarding/catalog/${encodeURIComponent(providerSlug)}/rate-limits`,
+			await accessToken(),
+			{ method: "PUT", body: JSON.stringify({ rate_limits: limits, expectedVersion }) },
+		);
+		return { ok: true, rateLimits: result.rate_limits } as const;
+	} catch (error) {
+		// Returned rather than thrown so the editor can explain them in production builds.
+		if (error instanceof WebApiError && error.status === 422) return { ok: false, conflict: false, issues: error.issues ?? [{ path: "rate_limits", message: error.detail ?? "Invalid rate limits" }] } as const;
+		if (error instanceof WebApiError && error.status === 409 && error.detail !== "provider_application_not_approved") return { ok: false, conflict: true, issues: [] } as const;
 		throw error;
 	}
 }

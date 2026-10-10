@@ -1,6 +1,6 @@
 ---
 title: "Publish a provider catalog"
-description: "Publish V1 or V1.1 model feeds with normalized service-tier offers."
+description: "Publish V1 or V1.1 model feeds with normalized service-tier offers and rate limits."
 icon: "list"
 ---
 
@@ -68,6 +68,29 @@ Use the same canonical model ID for its service tiers. Different models need sep
 To add Fast, add another tier object with `"service_tier": "fast"`, its effective prices, and a distinct upstream model ID for that offer. If the provider selects its lane using a native parameter instead, use the same upstream model ID and declare `"upstream_service_tier": "priority"` or `"fast"`. Omit that field when the model ID selects the lane. Standard accepts `default` or `standard`; Flex and Ultrafast accept their corresponding values. Phaseo rejects nonstandard synchronous tiers that have no distinct model ID or native selector.
 
 Every tier needs explicit pricing, including output and any cache/media meters you bill. Zero prices are valid; negative prices, unknown meters, duplicate tiers and conditional rates are rejected. `price_nanos` remains the effective price after promotions. Publish a new snapshot when rates change; Phaseo keeps previous effective prices.
+
+## Declare rate limits
+
+Declare the request and token limits your platform applies to Phaseo's account in an optional top-level `rate_limits` array. It works the same way in V1 and V1.1 documents. Leave out `model` for a limit across all of your models, or set it to the upstream `provider_model_slug` of any model or tier in the same document.
+
+```json
+{
+  "schema_version": "1.1",
+  "data": [{ "id": "your-provider/example-model", "...": "..." }],
+  "rate_limits": [
+    { "requests_per_minute": 600, "tokens_per_minute": 2000000 },
+    { "model": "example-model", "requests_per_day": 100000, "tokens_per_day": 500000000 }
+  ]
+}
+```
+
+Each entry accepts `requests_per_minute`, `requests_per_day`, `tokens_per_minute` and `tokens_per_day`. Each value is a positive integer or `null`, and each entry needs at least one value. Phaseo counts each limit globally across all of its traffic to you. A model limit applies in addition to the limit across all models.
+
+Limits never block requests. When a limit is reached, Phaseo ranks that offer lower and sends traffic to other providers first, so a value that is too low only reduces your own share of traffic. For that reason, limits apply without review once your provider application is approved, usually within a minute.
+
+When the array is present, it replaces your declared limits each time a changed feed imports successfully. An empty array removes them. Omit `rate_limits` to keep the limits you manage in provider settings. Phaseo rejects the whole snapshot, and keeps your current catalog and limits, if an entry names a model that is not in the document, repeats a scope, or uses a value that is not a positive integer. The rejection appears as **Needs changes**.
+
+You can also edit limits in **Provider settings → Your models → Rate limits**. Those edits save separately from catalog changes. The catalog editor does not accept `rate_limits`.
 
 ## Update and verify
 

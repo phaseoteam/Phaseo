@@ -1,12 +1,14 @@
 // Purpose: Track the request and token limits providers impose on gateway-managed credentials.
 // Why: Keeps Phaseo within upstream quotas, counted globally across all users, without delaying
 //      requests or excluding a provider outright.
-// How: Loads limits from Supabase (served stale-while-revalidate). Each limit applies across a
+// How: Loads limits from Supabase (served stale-while-revalidate; a newer catalogue revision, which
+//      limit changes publish, refreshes them early). Each limit applies across a
 //      provider ("*") or to one upstream model, and is counted in fixed windows by its own Durable
 //      Object. Isolates hold leases (slices of the remaining allowance the object has already
 //      counted) and admit from them locally. Request-path charges are never awaited: a refusal
 //      marks the scope saturated in this isolate until its window resets, and routing deranks it.
 
+import { knownCatalogueRevision } from "@core/catalogue-revision";
 import { resolveCanonicalTokenUsage } from "@core/usage-normalization";
 import { LeasePool, type LeaseAcquireResult, type LeaseReturn, type LeaseTransport, type LeaseVector } from "@core/lease-pool";
 import { __resetTieredCacheForTests, tieredRead } from "@core/tiered-cache";
@@ -309,9 +311,21 @@ export function providerLimitScope(config: Pick<ProviderRateLimitConfig, "provid
 }
 
 const CONFIG_SELECT = "provider_id,provider_model_slug,requests_per_minute,requests_per_day,tokens_per_minute,tokens_per_day,headroom_bps,enabled";
-const configKey = (providerId: string) => `gateway:provider-rate-limit-config:v3:${providerId}`;
+const configKey = (providerId: string) => `gateway:provider-rate-limit-config:v4:${providerId}`;
 
-function isConfigList(providerId: string) {
+/** A provider's limits, stamped with the catalogue revision known when they were loaded. */
+type ConfigSnapshot = { revision: string | null; configs: ProviderRateLimitConfig[] };
+
+/**
+ * Whether limit changes were published after this snapshot was loaded. Unknown revisions fall
+ * back to age-based freshness, so a cold isolate or a stopped publisher never forces reloads.
+ */
+function predatesPublishedRevision(snapshot: ConfigSnapshot): boolean {
+	const revision = knownCatalogueRevision();
+	return revision !== null && snapshot.revision !== null && snapshot.revision !== revision;
+}
+
+function isConfigSnapshot(providerId: string) {
 	const limit = (field: unknown) => field === null || (Number.isSafeInteger(field) && Number(field) > 0);
 	const isConfig = (value: unknown): value is ProviderRateLimitConfig => {
 		if (!value || typeof value !== "object") return false;
@@ -322,8 +336,12 @@ function isConfigList(providerId: string) {
 			limit(config.tokensPerMinute) && limit(config.tokensPerDay) &&
 			typeof config.headroomBps === "number" && config.headroomBps >= 0 && config.headroomBps <= 5000;
 	};
-	return (value: unknown): value is ProviderRateLimitConfig[] =>
-		Array.isArray(value) && value.length > 0 && value.every(isConfig);
+	return (value: unknown): value is ConfigSnapshot => {
+		if (!value || typeof value !== "object") return false;
+		const snapshot = value as Record<string, unknown>;
+		return (snapshot.revision === null || typeof snapshot.revision === "string") &&
+			Array.isArray(snapshot.configs) && snapshot.configs.every(isConfig);
+	};
 }
 
 /**
@@ -333,14 +351,18 @@ function isConfigList(providerId: string) {
  * `maxStaleMs` is never used.
  */
 async function loadConfigs(providerId: string): Promise<ProviderRateLimitConfig[] | null> {
-	return tieredRead<ProviderRateLimitConfig[]>({
+	const snapshot = await tieredRead<ConfigSnapshot>({
 		key: configKey(providerId),
 		l1FreshMs: CONFIG_CACHE_TTL_MS,
 		maxStaleMs: 15 * 60_000,
 		l2: false,
 		l3: { freshS: CONFIG_CACHE_TTL_MS / 1000, expirationS: 24 * 60 * 60 },
-		validate: isConfigList(providerId),
+		validate: isConfigSnapshot(providerId),
+		isStaleInL1: predatesPublishedRevision,
+		isFreshInL3: (value) => predatesPublishedRevision(value) ? false : undefined,
 		loader: async () => {
+			// Read before querying: a revision published during the query must not be attributed to older rows.
+			const revision = knownCatalogueRevision();
 			const { data, error } = await getSupabaseAdmin()
 				.from("provider_rate_limits")
 				.select(CONFIG_SELECT)
@@ -349,9 +371,10 @@ async function loadConfigs(providerId: string): Promise<ProviderRateLimitConfig[
 			const configs = (Array.isArray(data) ? data : [])
 				.map((row) => parseProviderRateLimitConfig(row as Record<string, unknown>))
 				.filter((config): config is ProviderRateLimitConfig => config?.providerId === providerId);
-			return configs.length ? configs : null;
+			return { revision, configs };
 		},
 	});
+	return snapshot?.configs.length ? snapshot.configs : null;
 }
 
 // Scopes a coordinator refused, until their blocking window resets. Isolate-local: each

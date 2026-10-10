@@ -17,6 +17,7 @@ import { nanosToUsd, usdToNanos } from "@/lib/providerPricing";
 import ProviderCatalogTierControls from "./ProviderCatalogTierControls";
 import ProviderCatalogChanges from "./ProviderCatalogChanges";
 import ProviderCatalogCapabilities from "./ProviderCatalogCapabilities";
+import ProviderRateLimitsEditor from "./ProviderRateLimitsEditor";
 import {
 	fetchProviderCatalogAction,
 	fetchProviderCatalogVersionAction,
@@ -120,8 +121,13 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 	const [saving, setSaving] = React.useState(false);
 	const [validationIssues, setValidationIssues] = React.useState<Array<{path:string;message:string}>>([]);
 	const [dirty, setDirty] = React.useState(false);
+	const [rateLimitsDirty, setRateLimitsDirty] = React.useState(false);
+	// Each full load resets the rate limit editor, so a reload discards its unsaved edits too.
+	// Other limit changes (such as a feed sync after a catalog save) keep its draft.
+	const [catalogLoads, setCatalogLoads] = React.useState(0);
 	const [stale, setStale] = React.useState(false);
-	React.useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
+	const unsavedChanges = dirty || rateLimitsDirty;
+	React.useEffect(() => { onDirtyChange?.(unsavedChanges); }, [unsavedChanges, onDirtyChange]);
 	const requestVersion = React.useRef(0);
 	const chosenZone = timeZone ?? browserZone;
 	const zoneValid = validTimeZone(chosenZone);
@@ -152,6 +158,7 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 			setLatestRun(result.latest_run);
 			setDirty(false);
 			setStale(false);
+			setCatalogLoads((count) => count + 1);
 		} catch (error) {
 			if (request !== requestVersion.current) return;
 			setLoadError(t("providerCatalogCopy.loadFailed"));
@@ -308,11 +315,11 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 		<div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-4">
 			<div className="min-w-0"><h2 className="text-base font-semibold">{t("providerCatalogCopy.catalog")}</h2><p className="mt-0.5 truncate text-xs text-muted-foreground">{providerSlug}</p></div>
 			<div className="flex items-center gap-2">
-				{manageableProviders.length > 1 ? <Select value={providerSlug} disabled={loading || saving} onValueChange={(value) => { if (dirty && !window.confirm(t("providerCatalogCopy.discardUnsavedChanges"))) return; setSelectedIndex(0); setProviderSlug(value); }}><SelectTrigger aria-label={t("providerCatalogCopy.provider")} className="w-full"><SelectValue>{providerSlug}</SelectValue></SelectTrigger><SelectContent>{manageableProviders.map((provider) => <SelectItem key={provider.provider_slug} value={provider.provider_slug}>{provider.provider_slug}</SelectItem>)}</SelectContent></Select> : null}
-				<Button type="button" variant="outline" size="sm" disabled={loading || saving} onClick={() => { if (!dirty || window.confirm(t("providerCatalogCopy.reloadConfirm"))) void loadCatalog(providerSlug); }}><RefreshCw className="mr-1.5 size-3.5" />{t("providerCatalogCopy.reload")}</Button>
+				{manageableProviders.length > 1 ? <Select value={providerSlug} disabled={loading || saving} onValueChange={(value) => { if (unsavedChanges && !window.confirm(t("providerCatalogCopy.discardUnsavedChanges"))) return; setSelectedIndex(0); setProviderSlug(value); }}><SelectTrigger aria-label={t("providerCatalogCopy.provider")} className="w-full"><SelectValue>{providerSlug}</SelectValue></SelectTrigger><SelectContent>{manageableProviders.map((provider) => <SelectItem key={provider.provider_slug} value={provider.provider_slug}>{provider.provider_slug}</SelectItem>)}</SelectContent></Select> : null}
+				<Button type="button" variant="outline" size="sm" disabled={loading || saving} onClick={() => { if (!unsavedChanges || window.confirm(t("providerCatalogCopy.reloadConfirm"))) void loadCatalog(providerSlug); }}><RefreshCw className="mr-1.5 size-3.5" />{t("providerCatalogCopy.reload")}</Button>
 			</div>
 		</div>
-		{stale ? <div role="alert" className="flex flex-wrap items-center justify-between gap-3 border-l-2 border-amber-500 bg-amber-500/5 px-4 py-3 text-sm"><span className="flex items-center gap-2"><AlertCircle className="size-4 text-amber-600" />{t("providerCatalogCopy.stale")}</span><Button type="button" size="sm" variant="outline" onClick={() => { if (!dirty || window.confirm(t("providerCatalogCopy.latestConfirm"))) void loadCatalog(providerSlug); }}>{t("providerCatalogCopy.reloadLatest")}</Button></div> : null}
+		{stale ? <div role="alert" className="flex flex-wrap items-center justify-between gap-3 border-l-2 border-amber-500 bg-amber-500/5 px-4 py-3 text-sm"><span className="flex items-center gap-2"><AlertCircle className="size-4 text-amber-600" />{t("providerCatalogCopy.stale")}</span><Button type="button" size="sm" variant="outline" onClick={() => { if (!unsavedChanges || window.confirm(t("providerCatalogCopy.latestConfirm"))) void loadCatalog(providerSlug); }}>{t("providerCatalogCopy.reloadLatest")}</Button></div> : null}
 		{loadError ? <p role="alert" className="py-10 text-sm text-destructive">{loadError}</p> : null}
 		{validationIssues.length ? <ul role="alert" className="space-y-1 text-sm text-destructive">{validationIssues.map((issue,index) => <li key={index}><code>{issue.path}</code>: {issue.message}</li>)}</ul> : null}
 		{!source && !loadError ? <p className="py-10 text-sm text-muted-foreground">{t("providerCatalogCopy.loading")}</p> : null}
@@ -332,6 +339,17 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 				{activePanel === "pricing" ? <Section title={t("providerCatalogCopy.pricing")} description={t("providerCatalogCopy.pricingDescription")}><div className="space-y-6">{selected.pricing.map((price, priceIndex) => <div key={priceIndex} className="border-b border-border/70 pb-5 last:border-0 last:pb-0"><div className="mb-3 flex items-center justify-between gap-3"><h4 className="text-sm font-medium">{moneyLabel(price, t)} <span className="font-normal text-muted-foreground">· {t("providerCatalogCopy.perUnit", {unit: price.display_unit || (price.unit === "token" ? t("providerCatalogCopy.tokens", {count: price.unit_quantity}) : `${price.unit_quantity} ${price.unit}`)})}</span></h4><Button type="button" variant="ghost" size="sm" onClick={() => removePrice(priceIndex)} aria-label={t("providerCatalogCopy.removePrice", {label: moneyLabel(price, t)})}><Trash2 className="size-3.5" /></Button></div><div className="grid gap-4 sm:grid-cols-2"><Field label={t("providerCatalogCopy.priceUsd")} htmlFor={`price-amount-${priceIndex}`}><div className="relative"><span className="pointer-events-none absolute left-3 top-2 text-sm text-muted-foreground">$</span><Input id={`price-amount-${priceIndex}`} className="pl-7 tabular-nums" inputMode="decimal" value={price.amountDraft ?? nanosToUsd(price.price_nanos)} onChange={(event) => editPrice(priceIndex, { amountDraft: event.target.value })} placeholder="0.10" /></div></Field><Field label={t("providerCatalogCopy.meter")} htmlFor={`price-meter-${priceIndex}`}><Input id={`price-meter-${priceIndex}`} className="font-mono" value={price.meter_key} onChange={(event) => editPrice(priceIndex, { meter_key: event.target.value })} placeholder="input_text_tokens" /></Field></div><details className="group mt-3"><summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">{t("providerCatalogCopy.meterDetails")}</summary><div className="mt-4 grid gap-4 sm:grid-cols-2"><Field label={t("providerCatalogCopy.direction")} htmlFor={`price-direction-${priceIndex}`}><Select value={price.direction ?? "other"} onValueChange={(value) => editPrice(priceIndex, { direction: value === "other" ? null : value })}><SelectTrigger id={`price-direction-${priceIndex}`} className="w-full"><SelectValue>{price.direction === "input" ? t("providerCatalogCopy.input") : price.direction === "output" ? t("providerCatalogCopy.output") : t("providerCatalogCopy.other")}</SelectValue></SelectTrigger><SelectContent><SelectItem value="other">{t("providerCatalogCopy.other")}</SelectItem><SelectItem value="input">{t("providerCatalogCopy.input")}</SelectItem><SelectItem value="output">{t("providerCatalogCopy.output")}</SelectItem></SelectContent></Select></Field><Field label={t("providerCatalogCopy.modality")} htmlFor={`price-modality-${priceIndex}`}><Input id={`price-modality-${priceIndex}`} value={price.modality} onChange={(event) => editPrice(priceIndex, { modality: event.target.value })} /></Field><Field label={t("providerCatalogCopy.unit")} htmlFor={`price-unit-${priceIndex}`}><Input id={`price-unit-${priceIndex}`} value={price.unit} onChange={(event) => editPrice(priceIndex, { unit: event.target.value })} /></Field><Field label={t("providerCatalogCopy.quantity")} htmlFor={`price-quantity-${priceIndex}`}><Input id={`price-quantity-${priceIndex}`} type="number" min="0.000001" value={price.quantityDraft ?? String(price.unit_quantity)} onChange={(event) => editPrice(priceIndex, { quantityDraft: event.target.value })} /></Field><Field label={t("providerCatalogCopy.displayName")} htmlFor={`price-label-${priceIndex}`}><Input id={`price-label-${priceIndex}`} value={price.display_label} onChange={(event) => editPrice(priceIndex, { display_label: event.target.value })} /></Field><Field label={t("providerCatalogCopy.displayUnit")} htmlFor={`price-display-unit-${priceIndex}`}><Input id={`price-display-unit-${priceIndex}`} value={price.display_unit} onChange={(event) => editPrice(priceIndex, { display_unit: event.target.value })} /></Field></div></details></div>)}<div className="flex flex-wrap gap-2"><Button type="button" variant="outline" size="sm" onClick={() => addPrice("input")}><Plus className="mr-1 size-3.5" />{t("providerCatalogCopy.inputPrice")}</Button><Button type="button" variant="outline" size="sm" onClick={() => addPrice("output")}><Plus className="mr-1 size-3.5" />{t("providerCatalogCopy.outputPrice")}</Button><Button type="button" variant="ghost" size="sm" onClick={() => addPrice(null)}>{t("providerCatalogCopy.customMeter")}</Button></div></div></Section> : null}
 			</div> : null}
 			<div className="sticky bottom-0 z-10 -mx-1 flex items-center justify-between gap-3 border-t border-border bg-background/95 px-1 py-3 backdrop-blur-sm"><span className="text-xs text-muted-foreground">{stale ? t("providerCatalogCopy.reloadBeforeSaving") : dirty ? t("providerCatalogCopy.unsavedChanges") : t("providerCatalogCopy.saved")}</span><Button type="button" disabled={loading || saving || !dirty || stale} onClick={() => void saveCatalog()}><Save className="mr-1.5 size-3.5" />{saving ? t("providerCatalogCopy.saving") : t("providerCatalogCopy.saveCatalog")}</Button></div>
+			{/* Only the selected provider's own limits: a failed switch keeps the previous catalog loaded. */}
+			{catalogInfo?.rate_limits && catalogInfo.provider.provider_slug === providerSlug ? <ProviderRateLimitsEditor
+				key={`${providerSlug}:${catalogLoads}`}
+				providerSlug={providerSlug}
+				rateLimits={catalogInfo.rate_limits}
+				models={catalogInfo.models}
+				managementMode={source.management_mode}
+				disabled={loading}
+				onDirtyChange={setRateLimitsDirty}
+				onSaved={(rateLimits) => setCatalogInfo((current) => current ? { ...current, rate_limits: rateLimits } : current)}
+			/> : null}
 		</> : null}
 	</section>;
 }

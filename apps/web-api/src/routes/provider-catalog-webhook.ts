@@ -24,15 +24,26 @@ providerCatalogWebhookRouter.get("/provider-catalog/schema", (c) => {
 
 providerCatalogWebhookRouter.get("/provider-catalog/openapi", (c) => c.json({
 	openapi: "3.1.0",
-	info: { title: "Phaseo provider catalog webhook", version: "1.0.0" },
+	info: {
+		title: "Phaseo provider catalog webhook",
+		version: "1.1.0",
+		description: "Signal that your catalog changed; Phaseo then fetches the catalog document from your configured URL. The document's optional rate_limits section declares the request and token limits your platform imposes on Phaseo. Declared limits apply without review once your provider application is approved, and reaching one only ranks your offers lower in routing.",
+	},
 	paths: {
 		"/api/internal/provider-catalog/{providerSlug}": {
 			post: {
 				summary: "Notify Phaseo that a provider catalog changed",
 				parameters: [{ name: "providerSlug", in: "path", required: true, schema: { type: "string" } }, { name: "x-phaseo-timestamp", in: "header", required: true, schema: { type: "string" } }, { name: "x-phaseo-signature", in: "header", required: true, schema: { type: "string", description: "v1=<hex HMAC-SHA256 of timestamp.rawBody>" } }, { name: "x-phaseo-event-id", in: "header", required: true, schema: { type: "string" } }],
 				requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["event_id"], properties: { event_id: { type: "string" } } } } } },
-				responses: { "202": { description: "Catalog refresh accepted" }, "401": { description: "Invalid signature" } },
+				responses: { "202": { description: "Catalog refresh accepted. Models, prices and any declared rate_limits are applied from the fetched document." }, "401": { description: "Invalid signature" } },
 			},
+		},
+	},
+	components: {
+		schemas: {
+			ProviderCatalog: { $ref: "/api/internal/provider-catalog/schema" },
+			ProviderCatalogRateLimits: { ...providerCatalogJsonSchema.properties.rate_limits, items: { $ref: "#/components/schemas/ProviderCatalogRateLimit" } },
+			ProviderCatalogRateLimit: providerCatalogJsonSchema.$defs.rateLimit,
 		},
 	},
 }, 200, { "cache-control": "public, max-age=3600" }));

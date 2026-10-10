@@ -5,7 +5,7 @@
     "Common.ui.select", "Common.ui.datePicker", "Common.ui.formTypes",
     "Common.ui.modelSettingsDialog.noModelsFound",
     "Product.internalTools.dataEditor",
-    "SettingsUI.providerCatalogCopy", "SettingsUI.providerDashboard", "SettingsUI.providerCatalog.title",
+    "SettingsUI.providerCatalogCopy", "SettingsUI.providerDashboard", "SettingsUI.providerRateLimits", "SettingsUI.providerCatalog.title",
     "SettingsUI.identity.availability", "SettingsUI.identity.reviewStatus",
     "SettingsUI.identity.routeStatus",
     "SettingsUI.identity.unknown",

@@ -6,7 +6,9 @@ const runtime = vi.hoisted(() => ({
 	acquireLease: vi.fn(),
 	returnLeases: vi.fn(),
 	background: [] as Promise<unknown>[],
+	revision: null as string | null,
 }));
+vi.mock("@core/catalogue-revision", () => ({ knownCatalogueRevision: () => runtime.revision }));
 vi.mock("@/runtime/env", () => ({
 	getCache: () => ({ get: runtime.get, put: runtime.put }),
 	getBindingsIfConfigured: () => null,
@@ -16,7 +18,7 @@ vi.mock("@/runtime/env", () => ({
 }));
 
 const row = (overrides: Record<string, unknown> = {}) => [{ provider_id: "openai", provider_model_slug: "*", enabled: true, requests_per_minute: 100, ...overrides }];
-const envelope = (value: unknown, at = Date.now()) => JSON.stringify({ v: [value], at });
+const envelope = (value: unknown, at = Date.now(), revision: string | null = null) => JSON.stringify({ v: { revision, configs: [value] }, at });
 const config = (overrides: Record<string, unknown> = {}) => ({ providerId: "openai", modelSlug: "*", requestsPerMinute: 100, requestsPerDay: null,
 	tokensPerMinute: null, tokensPerDay: null, headroomBps: 0, ...overrides });
 const lease = (requests: number | null, units: number | null = null, expiresAt = Date.now() + 50_000) =>
@@ -25,7 +27,7 @@ const flush = async () => { while (runtime.background.length) await Promise.all(
 
 describe("provider rate-limit configuration and leases", () => {
 	beforeEach(() => {
-		vi.resetModules(); vi.resetAllMocks(); runtime.background.length = 0;
+		vi.resetModules(); vi.resetAllMocks(); runtime.background.length = 0; runtime.revision = null;
 		runtime.get.mockResolvedValue(null); runtime.put.mockResolvedValue(undefined);
 		runtime.returnLeases.mockResolvedValue(undefined);
 		runtime.acquireLease.mockImplementation(async () => lease(20));
@@ -90,7 +92,7 @@ describe("provider rate-limit configuration and leases", () => {
 		await (await import("./provider-rate-limits")).admitManagedProvider("openai", 32);
 		await flush();
 		const [key, raw] = runtime.put.mock.calls[0];
-		expect(key).toBe("gateway:provider-rate-limit-config:v3:openai");
+		expect(key).toBe("gateway:provider-rate-limit-config:v4:openai");
 		vi.resetModules(); runtime.get.mockResolvedValue(raw);
 		await (await import("./provider-rate-limits")).admitManagedProvider("openai", 32);
 		expect(runtime.query).toHaveBeenCalledTimes(1);
@@ -117,10 +119,11 @@ describe("provider rate-limit configuration and leases", () => {
 	});
 
 	it.each([
-		JSON.stringify({ v: [{ ...config(), providerId: "another" }], at: Date.now() }),
-		JSON.stringify({ v: [{ ...config(), requestsPerMinute: -1 }], at: Date.now() }),
-		JSON.stringify({ v: [config()], at: Date.now() - 16 * 60_000 }),
-		JSON.stringify({ v: config(), at: Date.now() }),
+		envelope({ ...config(), providerId: "another" }),
+		envelope({ ...config(), requestsPerMinute: -1 }),
+		envelope(config(), Date.now() - 16 * 60_000),
+		JSON.stringify({ v: [config()], at: Date.now() }),
+		JSON.stringify({ v: { configs: [config()] }, at: Date.now() }),
 		"not json",
 	])("ignores mismatched, malformed or too-old snapshots: %s", async (raw) => {
 		runtime.get.mockResolvedValue(raw);
@@ -151,6 +154,49 @@ describe("provider rate-limit configuration and leases", () => {
 			expect(runtime.acquireLease.mock.calls.at(-1)?.[0]).toMatchObject({ requestsPerMinute: 7 });
 			// Slices sized for the old limits are returned when the limits change.
 			expect(runtime.returnLeases).toHaveBeenCalled();
+		} finally { clock.mockRestore(); }
+	});
+
+	it("refreshes configuration early once a newer catalogue revision is published", async () => {
+		const now = Date.now(); const clock = vi.spyOn(Date, "now").mockReturnValue(now);
+		runtime.revision = "41";
+		runtime.query.mockResolvedValueOnce({ data: row({ requests_per_minute: 100 }), error: null });
+		try {
+			const { admitManagedProvider } = await import("./provider-rate-limits");
+			await admitManagedProvider("openai", 32);
+			await flush();
+			expect(JSON.parse(runtime.put.mock.calls[0][1]).v.revision).toBe("41");
+			// Limit writes bump the revision; well inside the 60s TTL the isolate and KV copies are stale.
+			runtime.revision = "42";
+			clock.mockReturnValue(now + 16_000);
+			runtime.get.mockResolvedValue(runtime.put.mock.calls[0][1]);
+			runtime.query.mockResolvedValueOnce({ data: row({ requests_per_minute: 7 }), error: null });
+			await admitManagedProvider("openai", 32);
+			await flush();
+			expect(runtime.query).toHaveBeenCalledTimes(2);
+			await admitManagedProvider("openai", 32);
+			expect(runtime.acquireLease.mock.calls.at(-1)?.[0]).toMatchObject({ requestsPerMinute: 7 });
+			// The refreshed snapshot carries the new revision, so it is not reloaded again.
+			clock.mockReturnValue(now + 40_000);
+			await admitManagedProvider("openai", 32);
+			await flush();
+			expect(runtime.query).toHaveBeenCalledTimes(2);
+		} finally { clock.mockRestore(); }
+	});
+
+	it("keeps age-based freshness when the revision is unknown", async () => {
+		const now = Date.now(); const clock = vi.spyOn(Date, "now").mockReturnValue(now);
+		runtime.query.mockResolvedValue({ data: row(), error: null });
+		try {
+			const { admitManagedProvider } = await import("./provider-rate-limits");
+			await admitManagedProvider("openai", 32);
+			await flush();
+			// A cold isolate learns the revision after loading: the null-stamped snapshot is not reloaded.
+			runtime.revision = "42";
+			clock.mockReturnValue(now + 20_000);
+			await admitManagedProvider("openai", 32);
+			await flush();
+			expect(runtime.query).toHaveBeenCalledTimes(1);
 		} finally { clock.mockRestore(); }
 	});
 

@@ -5,6 +5,7 @@ const validationKeys: Record<string, string> = {
 	"Condition needs a valid path, operator, and value.": "conditionFields",
 	"Use a scalar for eq, a non-empty list for in, or a number for range comparisons.": "conditionValue",
 	"Catalog must be an object containing only the data array.": "catalogShape",
+	"Catalog must be an object containing only the data array and optional rate_limits.": "catalogShape",
 	"Expected a non-empty data array of models.": "modelsArray",
 	"Each model must be an object.": "modelObject",
 	"Unknown model field.": "unknownModelField",

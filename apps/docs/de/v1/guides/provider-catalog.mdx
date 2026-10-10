@@ -1,6 +1,6 @@
 ---
 title: "Anbieterkatalog veröffentlichen"
-description: "V1- und V1.1-Kataloge mit standardisierten Service-Stufen."
+description: "V1- und V1.1-Kataloge mit standardisierten Service-Stufen und Ratenlimits."
 icon: "list"
 ---
 
@@ -23,3 +23,18 @@ Polling und signierte Webhooks unterstützen beide Versionen. In den Anbieterein
 Das vollständige Beispiel und beide JSON-Schemata finden Sie im [englischen Vertragsleitfaden](/v1/guides/provider-catalog).
 
 Bei API-Katalogen bleiben Änderungen im Dashboard als Anpassungen erhalten. Importe aktualisieren Felder ohne Anpassung. **Feed-Wert verwenden** entfernt eine Anpassung. Das Dashboard zeigt Feed-Wert, wirksamen Wert, Bearbeiter und Zeitpunkt; Änderungen und Rücksetzungen werden protokolliert. Manuell hinzugefügte Modelle bleiben lokale Angebote. Aus dem Feed entfernte Modelle werden deaktiviert, auch wenn einzelne Felder bearbeitet wurden. Rein manuelle Kataloge bleiben unterstützt.
+
+## Ratenlimits
+
+Geben Sie die Anfrage- und Token-Limits, die Ihre Plattform für das Konto von Phaseo anwendet, in einem optionalen `rate_limits`-Array auf oberster Ebene an, in V1 und V1.1. Lassen Sie `model` weg für ein Limit über alle Modelle, oder nennen Sie den `provider_model_slug` eines Modells oder einer Stufe aus demselben Dokument. Jeder Eintrag akzeptiert `requests_per_minute`, `requests_per_day`, `tokens_per_minute` und `tokens_per_day` als positive Ganzzahlen oder `null`, mit mindestens einem Wert. Ein Modell-Limit gilt zusätzlich zum Limit für alle Modelle.
+
+```json
+{
+  "rate_limits": [
+    { "requests_per_minute": 600, "tokens_per_minute": 2000000 },
+    { "model": "example-model", "requests_per_day": 100000 }
+  ]
+}
+```
+
+Limits blockieren nie Anfragen: Wird eines erreicht, stuft Phaseo Ihr Angebot niedriger ein und leitet Traffic zuerst an andere Anbieter. Deshalb gelten sie nach Freigabe Ihres Antrags ohne Prüfung, meist innerhalb einer Minute. Ist das Array vorhanden, ersetzt es Ihre Limits bei jedem erfolgreichen Import eines geänderten Feeds; `[]` entfernt sie, und ohne das Array bleiben die in den Anbietereinstellungen gesetzten Limits erhalten. Der gesamte Snapshot wird abgelehnt, wenn ein Eintrag ein fehlendes Modell nennt, einen Geltungsbereich wiederholt oder einen ungültigen Wert nutzt. Sie können die Limits auch unter **Anbietereinstellungen → Ihre Modelle → Ratenlimits** bearbeiten.

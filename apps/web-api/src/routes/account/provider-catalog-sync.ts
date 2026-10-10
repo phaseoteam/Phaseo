@@ -8,6 +8,8 @@ import {
 	type ProviderCatalogPreview,
 	validateProviderCatalogPricingMeters,
 } from "./provider-catalog";
+import type { ProviderCatalogRateLimit } from "./provider-catalog-rate-limits";
+import { isProviderCatalogBlockedByReview } from "./provider-review-access";
 
 export type ProviderCatalogSyncTrigger = "webhook" | "poll" | "manual";
 
@@ -27,9 +29,10 @@ type ProviderCatalogSource = {
 	etag: string | null;
 	last_modified: string | null;
 	refresh_requested: boolean;
+	created_by: string | null;
 };
 
-const SOURCE_SELECT = "provider_slug,catalog_url,management_mode,managed_catalog,catalog_overrides,updated_at,status,poll_interval_seconds,consecutive_failures,webhook_secret_ciphertext,webhook_secret_iv,webhook_secret_hash,etag,last_modified,refresh_requested";
+const SOURCE_SELECT = "provider_slug,catalog_url,management_mode,managed_catalog,catalog_overrides,updated_at,status,poll_interval_seconds,consecutive_failures,webhook_secret_ciphertext,webhook_secret_iv,webhook_secret_hash,etag,last_modified,refresh_requested,created_by";
 const MAX_WEBHOOK_SKEW_SECONDS = 300;
 
 function bytes(value: Uint8Array): ArrayBuffer {
@@ -114,6 +117,21 @@ function nextPollAt(intervalSeconds: number, failures: number): string {
 
 function publicPreview(preview: ProviderCatalogPreview) {
 	return { valid: preview.valid, modelCount: preview.modelCount, truncated: preview.truncated, issues: preview.issues, models: preview.models };
+}
+
+/**
+ * Replaces the provider's limits with those its feed declares. Limits skip catalog review and
+ * releases but wait for the provider application to be approved; approval forces a fresh sync.
+ */
+async function applyDeclaredRateLimits(client: any, source: ProviderCatalogSource, limits: ProviderCatalogRateLimit[]): Promise<void> {
+	const link = await client.from("provider_account_links").select("status,linked_by").eq("provider_slug", source.provider_slug).in("status", ["pending", "active"]).order("status", { ascending: true }).limit(1).maybeSingle();
+	if (link.error) throw link.error;
+	if (await isProviderCatalogBlockedByReview(client, source.provider_slug, { status: link.data?.status ?? "pending", linkedBy: link.data?.linked_by ?? source.created_by })) return;
+	const saved = await client.rpc("save_provider_rate_limits", { p_provider_slug: source.provider_slug, p_actor_id: null, p_actor_kind: "provider", p_expected_version: null, p_limits: limits, p_check_version: false });
+	if (saved.error) {
+		console.error("provider_rate_limits_apply_failed", { providerSlug: source.provider_slug, errorCode: saved.error.code });
+		throw new Error("The declared rate limits could not be applied. Existing limits remain unchanged.");
+	}
 }
 
 async function notifyProviderOwners(client: any, providerSlug: string, runId: string, title: string, message: string) {
@@ -232,10 +250,18 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 			if (applied.error.message.includes("provider_catalog_conditional_pricing_not_supported")) throw new Error("Conditional prices are not supported by V1 billing. Provide an effective unconditional price.");
 			throw new Error("The catalog could not be applied. Existing offers and prices remain unchanged.");
 		}
+		// Limits follow only an applied snapshot, so a rejected or conflicting one changes nothing.
+		// A failed save leaves the snapshot applied and requests a prompt full refetch to retry.
+		// A feed without rate_limits leaves limits managed in provider settings untouched.
+		let rateLimitsError: string | null = null;
+		if (catalog.preview.rateLimits) {
+			try { await applyDeclaredRateLimits(client, source, catalog.preview.rateLimits); }
+			catch (error) { rateLimitsError = error instanceof Error ? error.message : "The declared rate limits could not be applied."; }
+		}
 		await renewLease(true);
 		const now = new Date().toISOString();
 		await client.from("provider_catalog_sync_runs").update({ status: "applied", catalog_sha256: catalog.sha256, model_count: preview.modelCount, model_preview: publicPreview(preview), validation_summary: { valid: true, issues: [], checked_at: now }, completed_at: now }).eq("id", runId);
-		await client.from("provider_catalog_sources").update({ last_success_at: source.management_mode === "managed" ? now : undefined, last_polled_at: trigger === "poll" ? now : undefined, last_catalog_sha256: catalog.sha256, etag: catalog.etag, last_modified: catalog.lastModified, consecutive_failures: 0, last_error: null, updated_at: now }).eq("provider_slug", providerSlug);
+		await client.from("provider_catalog_sources").update({ last_success_at: source.management_mode === "managed" ? now : undefined, last_polled_at: trigger === "poll" ? now : undefined, last_catalog_sha256: catalog.sha256, etag: catalog.etag, last_modified: catalog.lastModified, consecutive_failures: 0, last_error: rateLimitsError, ...(rateLimitsError ? { refresh_requested: true, next_poll_at: new Date(Date.now() + 5 * 60_000).toISOString() } : {}), updated_at: now }).eq("provider_slug", providerSlug);
 		if (source.management_mode === "remote") await client.from("provider_catalog_sources").update({ next_poll_at: nextPollAt(source.poll_interval_seconds, 0) }).eq("provider_slug", providerSlug).eq("refresh_requested", false);
 		await notifyPendingProviderModels(env).catch(() => { console.error("provider_model_notification_failed"); });
 		return { status: "applied", runId, modelCount: Number(applied.data ?? preview.modelCount) };

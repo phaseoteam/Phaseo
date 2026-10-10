@@ -22,6 +22,11 @@ describe("signed provider catalog webhook",()=>{
   return app.request("https://phaseo.app/api/internal/provider-catalog/sample",{method:"POST",headers:{"content-type":"application/json","x-phaseo-timestamp":timestamp,"x-phaseo-signature":signature,"x-phaseo-event-id":options.headerEvent??event},body:options.tamper?JSON.stringify({event_id:"tampered"}):body},env as never,{waitUntil:vi.fn()} as never);
  }
  it("accepts a valid signed event and forwards its id to the idempotent sync",async()=>{expect((await send()).status).toBe(202);expect(syncProviderCatalog).toHaveBeenCalledWith(env,"sample","webhook","event-1");});
+ it("publishes provider-declared rate limits in the schema and OpenAPI contract",async()=>{
+  for(const version of ["1.0","1.1"]){const schema=await (await app.request(`https://phaseo.app/api/internal/provider-catalog/schema?version=${version}`)).json() as any;expect(schema.properties.rate_limits.items).toEqual({$ref:"#/$defs/rateLimit"});expect(Object.keys(schema.$defs.rateLimit.properties)).toEqual(["model","requests_per_minute","requests_per_day","tokens_per_minute","tokens_per_day"]);}
+  const openapi=await (await app.request("https://phaseo.app/api/internal/provider-catalog/openapi")).json() as any;
+  expect(openapi.info.description).toContain("rate_limits");expect(openapi.components.schemas.ProviderCatalogRateLimits.items).toEqual({$ref:"#/components/schemas/ProviderCatalogRateLimit"});
+ });
  it("rejects a changed body",async()=>{expect((await send({tamper:true})).status).toBe(401);expect(syncProviderCatalog).not.toHaveBeenCalled();});
  it("rejects an expired signature",async()=>{expect((await send({timestamp:String(Math.floor(Date.now()/1000)-600)})).status).toBe(401);});
  it("cannot bypass deduplication by changing the unsigned event header",async()=>{expect((await send({headerEvent:"different-event"})).status).toBe(400);expect(syncProviderCatalog).not.toHaveBeenCalled();});
