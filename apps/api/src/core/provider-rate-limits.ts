@@ -465,7 +465,12 @@ async function admitScope(
 			if (unboundedTokens === "reserve_all") return { ...admission.denial, source: "coordinator" };
 			// The attempt is still sent (deranked, not blocked), so it must still count, above all
 			// toward longer windows: its request now, its tokens once usage is known.
-			await stub.recordRequests(reservationRequests);
+			background(stub.recordRequests(reservationRequests).catch((error: unknown) =>
+				console.error("[gateway] provider rate-limit request recording failed", {
+					provider: config.providerId,
+					scope,
+					error: error instanceof Error ? error.message : String(error),
+				})));
 			const now = Date.now();
 			return {
 				...admission.denial,

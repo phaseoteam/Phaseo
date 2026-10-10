@@ -91,6 +91,27 @@ describe("non-blocking provider quota charges", () => {
 		expect(object.reconcileTokens).toHaveBeenCalledWith(expect.objectContaining({ id: "attempt-2", tokens: 0 }), 450);
 	});
 
+	it("keeps a refused attempt's token accounting when recording its request fails", async () => {
+		const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		runtime.rows = [limit({ provider_model_slug: "gpt-x", requests_per_minute: 1, tokens_per_day: 1_000_000 })];
+		runtime.acquire.mockResolvedValue({ ok: false, denial: { allowed: false, reason: "requests_per_minute", retryAfterSeconds: 30, reservation: null } });
+		try {
+			const recordRequests = vi.fn(async () => { throw new Error("object overloaded"); });
+			runtime.objects.set("managed:openai::gpt-x", {
+				acquireLease: vi.fn((...args: unknown[]) => runtime.acquire("managed:openai::gpt-x", ...args)),
+				returnLeases: vi.fn(async () => undefined),
+				reconcileTokens: vi.fn(async () => undefined),
+				recordRequests,
+			});
+			const { chargeManagedProvider } = await import("./provider-rate-limits");
+			const charge = chargeManagedProvider({ providerId: "openai", model: "gpt-x", reservationTokens: 400 });
+			expect(await charge.reservations).toEqual([expect.objectContaining({ scope: "openai::gpt-x", tokens: 0 })]);
+			await flush();
+			expect(recordRequests).toHaveBeenCalledWith(1);
+			expect(log).toHaveBeenCalledWith("[gateway] provider rate-limit request recording failed", expect.anything());
+		} finally { log.mockRestore(); }
+	});
+
 	it("a provider-wide refusal deranks every model of that provider", async () => {
 		runtime.rows = [limit({ requests_per_day: 5 })];
 		runtime.acquire.mockResolvedValue({ ok: false, denial: { allowed: false, reason: "requests_per_day", retryAfterSeconds: 3_600, reservation: null } });
