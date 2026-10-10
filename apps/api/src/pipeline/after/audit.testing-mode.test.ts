@@ -10,4 +10,8 @@ describe("testing-mode audit persistence", () => {
 		expect(shouldPersistGatewayAudit({ testingMode: false })).toBe(true);
 		expect(shouldPersistGatewayAudit({})).toBe(true);
 	});
+	it("persists billable administrator internal requests even when pricing is unavailable", () => {
+		expect(shouldPersistGatewayAudit({ testingMode: true, billableInternalTesting: true })).toBe(true);
+		expect(shouldPersistGatewayAudit({ testingMode: true, billableInternalTesting: false })).toBe(false);
+	});
 });

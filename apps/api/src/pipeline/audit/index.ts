@@ -282,6 +282,7 @@ async function insertGatewayRequest(row: any) {
 }
 
 async function upsertV2RequestFact(args: {
+    testingMode?: boolean;
     requestId: string;
     workspaceId: string;
     appId?: string | null;
@@ -438,6 +439,7 @@ async function upsertV2RequestFact(args: {
             routing_trace: routingArchive ? {} : routingTrace,
             routing_archive: routingArchive ?? null,
             safe_metadata: {
+                testing_mode: args.testingMode === true,
                 provider: args.provider ?? null,
                 response_timeline: args.responseTimeline ?? null,
                 lifecycle_events: args.lifecycleEvents ?? null,
@@ -860,6 +862,7 @@ export async function auditSuccess(input: {
             let v2PersistenceError: Error | null = null;
             try {
                 await retryWithBackoff(() => upsertV2RequestFact({
+                    testingMode: args.detailMetadata?.testing_mode === true,
                     requestId: args.requestId,
                     workspaceId: args.workspaceId,
                     appId,
@@ -1189,6 +1192,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                     let v2PersistenceError: Error | null = null;
                     try {
                         await retryWithBackoff(() => upsertV2RequestFact({
+                            testingMode: args.detailMetadata?.testing_mode === true,
                             requestId: args.requestId,
                             workspaceId: args.workspaceId,
                             appId: resolvedAppId,
@@ -1372,6 +1376,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                 let v2PersistenceError: Error | null = null;
                 try {
                     await retryWithBackoff(() => upsertV2RequestFact({
+                        testingMode: args.detailMetadata?.testing_mode === true,
                         requestId: args.requestId,
                         workspaceId: args.workspaceId,
                         appId: resolvedAppId,

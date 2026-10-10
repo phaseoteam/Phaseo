@@ -177,8 +177,8 @@ function resolveExecuteAdapterMs(ctx: PipelineContext): number | null {
     return flat > 0 ? flat : null;
 }
 
-export function shouldPersistGatewayAudit(ctx: Pick<PipelineContext, "testingMode">): boolean {
-	return !ctx.testingMode;
+export function shouldPersistGatewayAudit(ctx: Pick<PipelineContext, "testingMode" | "billableInternalTesting">): boolean {
+	return !ctx.testingMode || ctx.billableInternalTesting === true;
 }
 
 export async function handleFailureAudit(
@@ -288,6 +288,7 @@ export async function handleFailureAudit(
 			lifecycleEvents: retainedLifecycle(ctx),
             detailMetadata: {
                 stage: "execute",
+                testing_mode: ctx.testingMode === true,
                 response_timeline: buildResponseTimeline(ctx),
                 ...(accountingContext ? {
                     accounting_finalization: sanitizeForAxiom({
@@ -542,6 +543,7 @@ export async function handleSuccessAudit(
 			lifecycleEvents: retainedLifecycle(ctx),
             detailMetadata: {
                 stage: "execute",
+                testing_mode: ctx.testingMode === true,
                 response_timeline: buildResponseTimeline(ctx),
                 labels: ctx.meta.labels ?? [],
                 client_source: ctx.meta.clientSource ?? null,
