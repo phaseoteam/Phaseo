@@ -47,6 +47,21 @@ export function createAnthropicStreamAccounting(): AnthropicStreamAccounting {
 	};
 }
 
+// Preserve signed thinking blocks on the native Messages surface while observing
+// usage on the same stream. No extra reader or buffered accounting branch.
+export function createAnthropicPassthroughStreamTransformer(accounting: AnthropicStreamAccounting): TransformStream<Uint8Array, Uint8Array> {
+	const parser = new SseParser();
+	const observe = (frames: ReturnType<SseParser["pushBytes"]>) => {
+		for (const frame of frames) {
+			try { accounting.observe(JSON.parse(frame.data)); } catch { /* Ignore non-JSON keepalives. */ }
+		}
+	};
+	return new TransformStream({
+		transform(chunk, controller) { observe(parser.pushBytes(chunk)); controller.enqueue(chunk); },
+		flush() { observe(parser.flush()); },
+	});
+}
+
 export function createAnthropicToResponsesStreamTransformer(
 	requestId: string,
 	model: string,

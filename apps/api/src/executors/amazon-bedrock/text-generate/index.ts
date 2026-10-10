@@ -3,21 +3,24 @@
 // How: IR -> Anthropic Messages or OpenAI Chat/Responses, then protocol shaping is handled by the pipeline.
 
 import type { IRChatRequest } from "@core/ir";
+import { isClaudeOpus55 } from "@core/claudeModelCapabilities";
+import { assertClaudeRequestSupported } from "@core/claudeRequestValidation";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { resolveStreamForProtocol, bufferStreamToIR } from "@executors/_shared/text-generate/openai-compat";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
-import { irToAnthropicMessages, anthropicMessagesToIR } from "@executors/anthropic/text-generate";
+import { irToAnthropicMessages, anthropicMessagesToIR, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
 import {
 	createAnthropicStreamAccounting,
+	createAnthropicPassthroughStreamTransformer,
 	createAnthropicToResponsesStreamTransformer,
 } from "@executors/anthropic/text-generate/stream-transformer";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import type { ProviderExecutor } from "../../types";
-import { resolveMantleAuth, signAwsV4Request } from "./bedrock-utils";
+import { resolveMantleAuth, signAwsV4Request, extractRegionFromMantleUrl } from "./bedrock-utils";
 
 type BedrockCredentials = {
 	accessKeyId: string;
@@ -42,17 +45,27 @@ type MantleAuth =
 	};
 
 export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChatRequest {
+	assertClaudeRequestSupported(ir, args.providerModelSlug ?? ir.model, args.providerId);
 	return cherryPickIRParams(ir, args.capabilityParams);
 }
 
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const irRequest = args.ir as IRChatRequest;
 	const model = args.providerModelSlug ?? irRequest.model;
+	assertClaudeRequestSupported(irRequest, model, args.providerId);
 	const { keyInfo, auth } = resolveMantleAuth(args);
-	if (usesBedrockMessagesApi(args)) {
+	const route = resolveMantleTextRoute(args);
+	if (isClaudeOpus55(irRequest.model) || isClaudeOpus55(model)) {
+		// Runtime inference profiles cannot be stripped here: that would change
+		// residency semantics. The catalogue must provide the Mantle model ID.
+		if (model !== "anthropic.claude-opus-5-5") throw new Error("amazon_bedrock_opus_55_mantle_model_required");
+		if (!["us-east-1", "ap-southeast-4", "us-gov-west-1"].includes(auth.region)) throw new Error("amazon_bedrock_opus_55_mantle_region_unsupported");
+		const hostRegion = extractRegionFromMantleUrl(auth.baseUrl);
+		if (hostRegion && hostRegion !== auth.region) throw new Error("amazon_bedrock_opus_55_mantle_region_mismatch");
+	}
+	if (route === "messages") {
 		return executeBedrockMessages(args, keyInfo, auth, model);
 	}
-	const route = resolveMantleTextRoute(args);
 	return executeMantleOpenAI(args, keyInfo, auth, model, route);
 }
 
@@ -114,11 +127,12 @@ async function executeBedrockMessages(
 		// Usage is recorded by the transformer itself; no tee()'d accounting
 		// branch buffering the whole response.
 		const accounting = createAnthropicStreamAccounting();
-		const responsesStream = res.body.pipeThrough(
+		const nativeMessages = isClaudeOpus55(model) && args.protocol === "anthropic.messages";
+		const responsesStream = nativeMessages ? null : res.body.pipeThrough(
 			createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting }),
 		);
-		const stream = resolveStreamForProtocol(
-			new Response(responsesStream, {
+		const stream = nativeMessages ? res.body.pipeThrough(createAnthropicPassthroughStreamTransformer(accounting)) : resolveStreamForProtocol(
+			new Response(responsesStream!, {
 				status: res.status,
 				headers: res.headers,
 			}),
@@ -134,11 +148,7 @@ async function executeBedrockMessages(
 				return {
 					...bill,
 					usage: normalizeTextUsageForPricing(final.usage) ?? undefined,
-					finish_reason: final.stopReason === "max_tokens"
-						? "length"
-						: final.stopReason === "tool_use"
-							? "tool_calls"
-							: final.stopReason ? "stop" : null,
+					finish_reason: mapAnthropicStopReason(final.stopReason),
 				};
 			},
 			bill,
@@ -327,9 +337,12 @@ export function transformStream(stream: ReadableStream<Uint8Array>): ReadableStr
 }
 
 
-function resolveMantleTextRoute(
+export function resolveMantleTextRoute(
 	args: ExecutorExecuteArgs,
-): "chat" | "responses" {
+): "messages" | "chat" | "responses" {
+	// Opus 5.5 supports only Anthropic Messages on Mantle, irrespective of
+	// the public protocol. Preserve the existing selection for other models.
+	if (isClaudeOpus55(args.ir.model) || isClaudeOpus55(args.providerModelSlug) || usesBedrockMessagesApi(args)) return "messages";
 	const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
 	const wantsResponses = protocol === "openai.responses" || args.endpoint === "responses";
 	return wantsResponses ? "responses" : "chat";

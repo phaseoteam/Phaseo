@@ -230,8 +230,11 @@ function splitContentParts(parts: IRContentPart[]): {
 	const textParts = parts
 		.filter((part): part is Extract<IRContentPart, { type: "text" }> => part.type === "text");
 	const reasoningParts = parts
-		.filter((part) => part.type === "reasoning_text")
-		.map((part) => part.text);
+		.flatMap((part) => {
+			if (part.type === "reasoning_text") return [part.text];
+			if (part.type === "provider_block" && part.block?.type === "thinking" && typeof part.block.thinking === "string" && part.block.thinking) return [part.block.thinking];
+			return [];
+		});
 	const imageParts = parts.filter((part) => part.type === "image") as Array<Extract<IRContentPart, { type: "image" }>>;
 	const audioParts = parts.filter((part) => part.type === "audio") as Array<Extract<IRContentPart, { type: "audio" }>>;
 	return { textParts, reasoningParts, imageParts, audioParts };
