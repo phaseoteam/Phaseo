@@ -10,6 +10,7 @@ import {
 } from "./provider-catalog";
 import type { ProviderCatalogRateLimit } from "./provider-catalog-rate-limits";
 import { isProviderCatalogBlockedByReview } from "./provider-review-access";
+import { normalizeEmpirioLabsCatalog } from "./provider-catalog-empiriolabs";
 
 export type ProviderCatalogSyncTrigger = "webhook" | "poll" | "manual";
 
@@ -220,7 +221,9 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 			return { status: "not_modified", runId };
 		}
 		await renewLease(true);
-		const feedModels = catalog.preview.allModels;
+		const feedModels = source.management_mode === "remote" && providerSlug === "empiriolabs" && catalog.preview.valid
+			? normalizeEmpirioLabsCatalog(catalog.preview.allModels)
+			: catalog.preview.allModels;
 		const effectivePreview = source.management_mode === "remote" && catalog.preview.valid
 			? normalizeProviderCatalog(normalizedCatalogDocument(applyCatalogOverrides(feedModels, source.catalog_overrides ?? {})))
 			: catalog.preview;
@@ -233,8 +236,18 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 			return { status: "rejected", runId, modelCount: preview.modelCount };
 		}
 
-		const applied = source.management_mode === "remote"
-			? await client.rpc("apply_provider_catalog_feed_snapshot", { p_provider_slug: providerSlug, p_run_id: runId, p_feed_models: feedModels, p_models: preview.allModels, p_expected_version: source.updated_at })
+		// Lease renewals also advance updated_at. Re-read after the heartbeat, but
+		// never accept a document/configuration edit made while this feed was fetched.
+		await renewLease(true);
+		const current = await client.from("provider_catalog_sources").select(SOURCE_SELECT).eq("provider_slug", providerSlug).single();
+		if (current.error) throw current.error;
+		const currentSource = current.data as ProviderCatalogSource;
+		const unchanged = (["catalog_url", "management_mode", "managed_catalog", "catalog_overrides", "status"] as const)
+			.every((field) => JSON.stringify(source[field] ?? null) === JSON.stringify(currentSource[field] ?? null));
+		const applied = !unchanged
+			? { data: null, error: { message: "provider_catalog_version_conflict", code: "40001", details: "", hint: "" } }
+			: source.management_mode === "remote"
+			? await client.rpc("apply_provider_catalog_feed_snapshot", { p_provider_slug: providerSlug, p_run_id: runId, p_feed_models: feedModels, p_models: preview.allModels, p_expected_version: currentSource.updated_at })
 			: await client.rpc("apply_provider_catalog_snapshot", { p_provider_slug: providerSlug, p_run_id: runId, p_models: preview.allModels });
 		if (applied.error) {
 			if (applied.error.message.includes("provider_catalog_version_conflict")) {
