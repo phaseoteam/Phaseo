@@ -1,5 +1,39 @@
 # @phaseo/php-sdk
 
+## 3.1.0
+
+### Minor Changes
+
+- [#2425](https://github.com/phaseoteam/Phaseo/pull/2425) [`9b68ad3`](https://github.com/phaseoteam/Phaseo/commit/9b68ad32bbad415bd591c01d2d46841fe43119d3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add TypeSafe Jev structured Decisions support through the `/v1/decisions` gateway endpoint, generated SDK operations, catalog pricing, and a dedicated Decisions playground.
+
+- [#2624](https://github.com/phaseoteam/Phaseo/pull/2624) [`a134fa5`](https://github.com/phaseoteam/Phaseo/commit/a134fa542da6cb529b1827aa84a85d88a31d2edf) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add the Ultrafast tier to gateway routing and the OpenAPI SDKs, and display it with a distinct badge in model and provider pricing.
+
+- [#2456](https://github.com/phaseoteam/Phaseo/pull/2456) [`65b3d54`](https://github.com/phaseoteam/Phaseo/commit/65b3d545d0ee9d476447ce7dc0909ea36e3aa0d8) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add native pagination, resumable job handles, and full-request live capability preflight across every gateway SDK.
+
+- [#2809](https://github.com/phaseoteam/Phaseo/pull/2809) [`0a47362`](https://github.com/phaseoteam/Phaseo/commit/0a473627713fffd53ea55d52ec6f97b584884f1b) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add audio and video inputs to the Decisions API for Clef Omni, with public HTTPS media references, provider capability checks, bounded downloads, and aggregate input-token billing.
+
+- [#2676](https://github.com/phaseoteam/Phaseo/pull/2676) [`d8ae83c`](https://github.com/phaseoteam/Phaseo/commit/d8ae83ccc9d6626eeffa64a8c219ae8df2bc5bde) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Support Cloudflare Clef and Clef Flash typed decisions with embedded image inputs, provider limit validation, and usage accounting. Add optional decision images to the public API and generated SDKs.
+
+- [#2451](https://github.com/phaseoteam/Phaseo/pull/2451) [`1a5fbcc`](https://github.com/phaseoteam/Phaseo/commit/1a5fbcc3b53e6ac0b0402725c10ac653a81dce1d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add live model endpoint capability discovery and structured parameter support
+  reports to every gateway SDK. Reports identify fully supported,
+  partially supported, unsupported, and unknown parameters, validate advertised
+  constraints, and return the provider routes that accept the complete parameter
+  set.
+
+- [#2744](https://github.com/phaseoteam/Phaseo/pull/2744) [`5cc4d2f`](https://github.com/phaseoteam/Phaseo/commit/5cc4d2faa1440b62f07a6c5774f44adc1a066d62) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Make OpenAI-compatible input and ordered question/answer arrays the preferred Decisions contract across the gateway, SDKs, docs, and playground. Support GPT-6 Luna with inline images, typed boolean choices, refusal handling, and input-only billing while preserving legacy state/question-map callers and SDK type names.
+
+- [#2455](https://github.com/phaseoteam/Phaseo/pull/2455) [`a94e315`](https://github.com/phaseoteam/Phaseo/commit/a94e31546ec77fbcbdc708f622d2c581afec2a4d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add a shared SDK transport contract with request-scoped controls, safe read retries, idempotency keys, raw response metadata, structured HTTP errors, and public request lifecycle hooks.
+
+### Patch Changes
+
+- [#2711](https://github.com/phaseoteam/Phaseo/pull/2711) [`2a84658`](https://github.com/phaseoteam/Phaseo/commit/2a84658993c7477296c1ac4461d59044d3c732dc) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Update vulnerable runtime and tooling dependencies to patched releases, including Hono, Electron, Jackson, Guzzle, and shared dependency overrides.
+
+- [#2646](https://github.com/phaseoteam/Phaseo/pull/2646) [`4de0d4c`](https://github.com/phaseoteam/Phaseo/commit/4de0d4c85c77c2f0e2416da12ab8ba56bd8643d3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add Eleven v4 and Eleven v4 Turbo speech routes with support for ElevenLabs voice library IDs and model-specific setting validation. Expose speech configuration and v4 model IDs through the OpenAPI contract and generated SDKs.
+
+- [#2429](https://github.com/phaseoteam/Phaseo/pull/2429) [`2b78b13`](https://github.com/phaseoteam/Phaseo/commit/2b78b13e7225b6ccb54c9c4a615b73455cdb26b6) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Refine the Decisions chat experience with typed question controls, local conversation history, structured result rendering, canonical Jev model identity, and complete request timing metadata. Expose provider-neutral Decisions naming across the gateway, web proxy, OpenAPI contract, and generated SDKs while keeping TypeSafe's System One terminology inside its provider adapter. Keep text generation internally streamed while preserving non-streaming client responses.
+
+- [#2773](https://github.com/phaseoteam/Phaseo/pull/2773) [`f0c2012`](https://github.com/phaseoteam/Phaseo/commit/f0c201294b5b5feffc9da8d45d6059bf0761f18d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Strengthen request policy enforcement, privacy controls, resource limits, and SDK path handling. Require a workspace privacy review before Chat resumes.
+
 ## 3.0.0
 
 ### Major Changes

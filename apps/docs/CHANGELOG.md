@@ -1,5 +1,13 @@
 # @phaseo/docs
 
+## 1.0.2
+
+### Patch Changes
+
+- [#2684](https://github.com/phaseoteam/Phaseo/pull/2684) [`b952403`](https://github.com/phaseoteam/Phaseo/commit/b952403ba791e43e909a5932dc652c8a4201b8ad) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Lower Enterprise pricing to $29/month for up to 100 workspace members and $79/month at 1,000 members. Allow smaller teams to subscribe, clarify membership-based allowances, and let Statsig control self-service rollout without an internal-admin restriction. Existing subscriptions and credit top-up fees remain unchanged.
+
+- [#2825](https://github.com/phaseoteam/Phaseo/pull/2825) [`8c8af3b`](https://github.com/phaseoteam/Phaseo/commit/8c8af3bdf3ec12adfaec1f3304f3129ddaf6b19d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Providers declare the request and token limits they impose on Phaseo, provider-wide or per upstream model, through an optional `rate_limits` section in their catalogue feed or the new Rate limits section in provider settings. Limits apply without review once the provider is approved, and the gateway picks up changes as soon as the catalogue revision moves instead of waiting for its configuration TTL.
+
 ## 1.0.1
 
 ### Patch Changes

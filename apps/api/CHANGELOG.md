@@ -1,5 +1,179 @@
 # @phaseo/gateway-api
 
+## 2.1.0
+
+### Minor Changes
+
+- [#2611](https://github.com/phaseoteam/Phaseo/pull/2611) [`8a312be`](https://github.com/phaseoteam/Phaseo/commit/8a312beeea70748428717f48ca4fb630693b3deb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add GMI Cloud Hy Image 3.5 Preview image generation and reference image editing, including the September 25–October 1 free campaign variant.
+
+- [#2425](https://github.com/phaseoteam/Phaseo/pull/2425) [`9b68ad3`](https://github.com/phaseoteam/Phaseo/commit/9b68ad32bbad415bd591c01d2d46841fe43119d3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add TypeSafe Jev structured Decisions support through the `/v1/decisions` gateway endpoint, generated SDK operations, catalog pricing, and a dedicated Decisions playground.
+
+- [#2481](https://github.com/phaseoteam/Phaseo/pull/2481) [`562f800`](https://github.com/phaseoteam/Phaseo/commit/562f80000bfb73c8cbf7657773f0ed117ab718b8) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add Xiaomi MiMo V2.6 Pro and Flash to the OpenAI-compatible Batch API through Xiaomi's regional batch endpoint.
+
+- [#2624](https://github.com/phaseoteam/Phaseo/pull/2624) [`a134fa5`](https://github.com/phaseoteam/Phaseo/commit/a134fa542da6cb529b1827aa84a85d88a31d2edf) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add the Ultrafast tier to gateway routing and the OpenAPI SDKs, and display it with a distinct badge in model and provider pricing.
+
+- [#2676](https://github.com/phaseoteam/Phaseo/pull/2676) [`d8ae83c`](https://github.com/phaseoteam/Phaseo/commit/d8ae83ccc9d6626eeffa64a8c219ae8df2bc5bde) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Support Cloudflare Clef and Clef Flash typed decisions with embedded image inputs, provider limit validation, and usage accounting. Add optional decision images to the public API and generated SDKs.
+
+- [#2646](https://github.com/phaseoteam/Phaseo/pull/2646) [`4de0d4c`](https://github.com/phaseoteam/Phaseo/commit/4de0d4c85c77c2f0e2416da12ab8ba56bd8643d3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add Eleven v4 and Eleven v4 Turbo speech routes with support for ElevenLabs voice library IDs and model-specific setting validation. Expose speech configuration and v4 model IDs through the OpenAPI contract and generated SDKs.
+
+- [#2748](https://github.com/phaseoteam/Phaseo/pull/2748) [`2ec48dd`](https://github.com/phaseoteam/Phaseo/commit/2ec48dd8734ffedac25eb5458d5541d68a04b1e8) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add EmpirioLabs text inference and Aplomb Decisions through the IR pipeline, with model-aware Responses routing, bearer authentication and guards for unpriced built-in tools and research models.
+
+- [#2763](https://github.com/phaseoteam/Phaseo/pull/2763) [`929a0f1`](https://github.com/phaseoteam/Phaseo/commit/929a0f169690718901d2b3cee5f8e9a3b95f824f) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add reviewed Novita Kling 3.0 Standard/Pro/4K and unified Kling 2.5 Turbo/2.1 Master video, Fish Audio S1 and MiniMax Speech 2.8 HD/Turbo speech, and Ming Image generation executors using the existing media APIs. Preserve video reservations and prevent fallback after uncertain submissions. Catalogue routes remain disabled pending pricing confirmation, deployment and live verification.
+
+- [#2690](https://github.com/phaseoteam/Phaseo/pull/2690) [`51f273e`](https://github.com/phaseoteam/Phaseo/commit/51f273e39e02e93160d73cf412f97a277a40cc8c) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Limit gateway requests to 25 per rolling minute per authenticated user/workspace, with administrator overrides, and enforce a daily request cap on free-model routes.
+
+- [#2777](https://github.com/phaseoteam/Phaseo/pull/2777) [`a5309e0`](https://github.com/phaseoteam/Phaseo/commit/a5309e0e12951fa404f748572a0af70df05a2533) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Reduce gateway latency, database load and Cloudflare cost. Model catalogue data is always served from cache (isolate memory, Workers Cache, KV) and revalidated in the background against the published catalogue revision, with scheduled price and route changes switching exactly on time. Per-request bookkeeping writes, Statsig calls and uncached lookups are removed or throttled, failure audits no longer delay error responses, and workspace changes made outside the gateway invalidate cached contexts through the existing publication outbox. Fix streamed Responses-to-chat tool-call arguments being re-sent cumulatively and background work attaching to the wrong concurrent request.
+
+- [#2686](https://github.com/phaseoteam/Phaseo/pull/2686) [`b4a7418`](https://github.com/phaseoteam/Phaseo/commit/b4a7418dfac7ba646aafc7feb6c13e8e702aea70) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add per-key IP restrictions with labeled IPv4, IPv6, and CIDR entries in key settings. Enforce restrictions during gateway authentication and retain them when rotating keys.
+  
+  Move key details and editing to dedicated pages with creator information, usage summaries, and filtered request logs.
+  
+  Add daily request and spend charts, creator avatar chips, and workspace-scoped Activity filters for keys created by a user.
+
+- [#2788](https://github.com/phaseoteam/Phaseo/pull/2788) [`4e468c1`](https://github.com/phaseoteam/Phaseo/commit/4e468c10c1de52d1b3a90ed6ea35fd8518f67bd6) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Support Inception Mercury Decide through the Decisions endpoint with typed answers and input-only billing.
+
+- [#2744](https://github.com/phaseoteam/Phaseo/pull/2744) [`5cc4d2f`](https://github.com/phaseoteam/Phaseo/commit/5cc4d2faa1440b62f07a6c5774f44adc1a066d62) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Make OpenAI-compatible input and ordered question/answer arrays the preferred Decisions contract across the gateway, SDKs, docs, and playground. Support GPT-6 Luna with inline images, typed boolean choices, refusal handling, and input-only billing while preserving legacy state/question-map callers and SDK type names.
+
+- [#2761](https://github.com/phaseoteam/Phaseo/pull/2761) [`891aa5d`](https://github.com/phaseoteam/Phaseo/commit/891aa5d238c01beb487832f3514ab0a9bb557047) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Accept V1.1 provider catalogs alongside V1, with normalized service-tier offers, independent upstream model selectors and pricing, and tier editing in provider settings.
+
+- [#2571](https://github.com/phaseoteam/Phaseo/pull/2571) [`130dca2`](https://github.com/phaseoteam/Phaseo/commit/130dca2c79d131f47f544adbc1e07cefb4f08e4b) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Expose Together Tev's Hugging Face weights and license links on model pages, and add a Tev-specific `/v1/decisions` executor with Together's published pricing.
+
+### Patch Changes
+
+- [#2664](https://github.com/phaseoteam/Phaseo/pull/2664) [`d70bebb`](https://github.com/phaseoteam/Phaseo/commit/d70bebbb2f0af2fe0e08f9c120beb586d843fb56) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Route the GPT-6.1 Sol Pro catalogue slug to OpenAI Responses with pro reasoning mode.
+
+- [#2727](https://github.com/phaseoteam/Phaseo/pull/2727) [`8c9d153`](https://github.com/phaseoteam/Phaseo/commit/8c9d15327987e6900317895b30c08caf18e17776) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Prepare Reflection text generation support with Chat Completions, reasoning, tools, structured outputs and streaming. Preserve reasoning across tool turns and reject unsupported stop sequences or disabled reasoning.
+
+- [#2425](https://github.com/phaseoteam/Phaseo/pull/2425) [`9b68ad3`](https://github.com/phaseoteam/Phaseo/commit/9b68ad32bbad415bd591c01d2d46841fe43119d3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add TypeSafe Jev 1.13 to the Decisions capability with the public `/v1/decisions` route, per-million-token pricing, a dedicated Decisions playground, and provider model discovery.
+
+- [#2803](https://github.com/phaseoteam/Phaseo/pull/2803) [`e5184d2`](https://github.com/phaseoteam/Phaseo/commit/e5184d23224d9add81047cfb28808c5d7ea746af) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Allow authenticated Phaseo admins to request internal model routes without a separate testing token or flag, including internal previews whose pricing is not yet configured.
+
+- [#2705](https://github.com/phaseoteam/Phaseo/pull/2705) [`00f7f85`](https://github.com/phaseoteam/Phaseo/commit/00f7f852c8bc8d7a9dee35934f3b267d9d945201) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Persist usage, response evidence, pricing context and billing identifiers when streamed or non-streamed request finalization fails.
+
+- [#2817](https://github.com/phaseoteam/Phaseo/pull/2817) [`04be331`](https://github.com/phaseoteam/Phaseo/commit/04be3310f5271c0377ca538876bf26a9f9ab16d4) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Support Microsoft Decision on Azure through the existing decisions IR, with Azure deployment mapping, credentials, typed answer validation, and token usage accounting.
+
+- [#2791](https://github.com/phaseoteam/Phaseo/pull/2791) [`2c1137b`](https://github.com/phaseoteam/Phaseo/commit/2c1137b446525c89ad9e8719bf704ca172db545c) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Bound the remaining request-path waits on work started by other requests (price cards, routing health reads and updates, key versions, context loads), so a cancelled request can no longer leave concurrent requests hanging until the runtime cancels them.
+
+- [#2649](https://github.com/phaseoteam/Phaseo/pull/2649) [`7b30ce4`](https://github.com/phaseoteam/Phaseo/commit/7b30ce4acc2dc4fe874d9fef91b95a91531b17df) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Register public model announcement runs before writing state, and show character-based provider prices per 1K characters.
+
+- [#2509](https://github.com/phaseoteam/Phaseo/pull/2509) [`abe1c00`](https://github.com/phaseoteam/Phaseo/commit/abe1c00be0aa010f279271122ac5cc3b3591110e) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Align the gateway model catalogue cache with the models page: five minutes fresh followed by five minutes of stale-while-revalidate for JSON, RSS, and Atom responses.
+
+- [#2714](https://github.com/phaseoteam/Phaseo/pull/2714) [`3b8f913`](https://github.com/phaseoteam/Phaseo/commit/3b8f913d06a97fc6fc5b4c74dddf876dcdaab22a) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Align media routing lookups with canonical catalog capability IDs while preserving endpoint aliases. Retire generic audio IDs and stop treating generic audio generation as speech synthesis.
+
+- [#2420](https://github.com/phaseoteam/Phaseo/pull/2420) [`96cd1e5`](https://github.com/phaseoteam/Phaseo/commit/96cd1e559c1eb895488f393d6e820bb6db71332e) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Keep private model-discovery alerts text-only and separate their operator workflow from public model-catalog announcement embeds. Add a no-mention smoke-test path for public announcement webhook delivery.
+
+- [#2444](https://github.com/phaseoteam/Phaseo/pull/2444) [`285659f`](https://github.com/phaseoteam/Phaseo/commit/285659fe88baacb322740a56275c3556e1fbd974) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Preserve the database error code and message when request analytics persistence retries fail, without logging database row details.
+
+- [#2762](https://github.com/phaseoteam/Phaseo/pull/2762) [`491f739`](https://github.com/phaseoteam/Phaseo/commit/491f7396adc4c59d099a81ad367a062a95715e32) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Store full routing explanations in private R2 objects and load them on authorized request-detail reads, preserving database diagnostics when object storage is unavailable.
+
+- [#2711](https://github.com/phaseoteam/Phaseo/pull/2711) [`2a84658`](https://github.com/phaseoteam/Phaseo/commit/2a84658993c7477296c1ac4461d59044d3c732dc) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Update vulnerable runtime and tooling dependencies to patched releases, including Hono, Electron, Jackson, Guzzle, and shared dependency overrides.
+
+- [#2732](https://github.com/phaseoteam/Phaseo/pull/2732) [`8f9c748`](https://github.com/phaseoteam/Phaseo/commit/8f9c7489605712f075956fd25294fb9debbbb8d3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Allow the registered first-party desktop OAuth client to use PKCE loopback callbacks and scoped gateway consent.
+
+- [#2760](https://github.com/phaseoteam/Phaseo/pull/2760) [`85307c1`](https://github.com/phaseoteam/Phaseo/commit/85307c14daea07efb75ee9738deb03bba5a42ff8) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Preserve Discord delivery records across model watcher failures, monitor Mistral API pricing tables, and restore fallback model OG images in public notifications.
+
+- [#2677](https://github.com/phaseoteam/Phaseo/pull/2677) [`b57f359`](https://github.com/phaseoteam/Phaseo/commit/b57f3599f1b7a4b6d83dac1ddabf162f9e108679) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Allow Grok Imagine Video 1.5 Lite text-to-video requests while preserving single-image generation and rejecting unsupported reference images and video editing.
+  
+  Reject image-only video charges when output pricing is missing.
+
+- [#2827](https://github.com/phaseoteam/Phaseo/pull/2827) [`f37655e`](https://github.com/phaseoteam/Phaseo/commit/f37655ec7618aa8597a2d488b1b5dfcad410433b) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Route Bedrock Mantle Opus 5.5 requests through Anthropic Messages across public text protocols. Reject unsupported Opus 5.5 options explicitly, preserve native signed thinking blocks, and finalize Vertex streaming usage from provider events. Production catalogue activation remains a separate operation.
+
+- [#2796](https://github.com/phaseoteam/Phaseo/pull/2796) [`0a0f13c`](https://github.com/phaseoteam/Phaseo/commit/0a0f13c5b4c7652bf616d17fa36be4ca3f9bc21c) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Fix the model-discovery cron failing with "ON CONFLICT DO UPDATE command cannot affect row a second time". EmpirioLabs was listed twice in the discovery provider list, so one run upserted the same seen-model rows twice and aborted persistence for every provider. Discovery now lists each provider once, dedupes seen-model rows by provider and model before upserting and logs `model_discovery_duplicate_rows_dropped` with provider ids and a count if any duplicate is still dropped. The shared OpenAI-compatible executor's upstream error log line now includes the model and route.
+
+- [#2439](https://github.com/phaseoteam/Phaseo/pull/2439) [`6750211`](https://github.com/phaseoteam/Phaseo/commit/675021141b68dc7d47b8218a6b58ca92d664c4fc) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Connect modality rankings to recorded usage, persist missing workload meters, repair public meter aliases and backend retention access, and show retryable errors when ranking data cannot be loaded.
+
+- [#2539](https://github.com/phaseoteam/Phaseo/pull/2539) [`e9fb1c8`](https://github.com/phaseoteam/Phaseo/commit/e9fb1c8e7c5c54af9b3788fb0ccfe4a18009b663) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Prevent Supabase request-audit writes from failing on nullable routing data, duplicate attempt numbers, and concurrent provider-health refreshes.
+
+- [#2787](https://github.com/phaseoteam/Phaseo/pull/2787) [`b19c3f6`](https://github.com/phaseoteam/Phaseo/commit/b19c3f664fa290bdc4108ddab055bf26e059b2b9) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Return a dedicated Phaseo free-model daily limit error, preserve Retry-After on normalized error responses, and log quota rejections without attributing them to an upstream provider.
+
+- [#2790](https://github.com/phaseoteam/Phaseo/pull/2790) [`88ada4c`](https://github.com/phaseoteam/Phaseo/commit/88ada4cfc87ced1cedc0e2e7107b9a8815def2fa) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Enforce the daily free-model allowance on the first request to each gateway isolate: an isolate without recent headroom for a user now asks the counter before admitting, so an exhausted user can no longer get free requests through on every new isolate.
+
+- [#2818](https://github.com/phaseoteam/Phaseo/pull/2818) [`68dc1e8`](https://github.com/phaseoteam/Phaseo/commit/68dc1e820f6b9d5320a1cf3aee6fccdb0915e3f3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Reduce cold-isolate latency: load request context alongside the testing-mode check, share workspace policy and confirmed private-model absence per location through the Workers Cache, and build request schemas on first use instead of at Worker startup.
+
+- [#2780](https://github.com/phaseoteam/Phaseo/pull/2780) [`7ca870b`](https://github.com/phaseoteam/Phaseo/commit/7ca870b3fa1d074c736bbf9baac5594a65e5d120) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Load price cards from the matching route instead of scanning every active pricing SKU, cutting the lookup from ~340ms to under 1ms in the database.
+
+- [#2783](https://github.com/phaseoteam/Phaseo/pull/2783) [`86225f5`](https://github.com/phaseoteam/Phaseo/commit/86225f5e17aab143f0157b88cc5916e0ee200e81) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Bound waits on cache loads, provider lease acquisitions, and Statsig evaluations started by another request, so a cancelled request can no longer leave concurrent requests hanging until the runtime cancels them.
+
+- [#2759](https://github.com/phaseoteam/Phaseo/pull/2759) [`be1fd69`](https://github.com/phaseoteam/Phaseo/commit/be1fd691d579607365f0b8f8b706928859398413) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Support adaptive thinking and effort controls for Claude Haiku 5.5.
+
+- [#2819](https://github.com/phaseoteam/Phaseo/pull/2819) [`89d10d6`](https://github.com/phaseoteam/Phaseo/commit/89d10d6982d2ebabe248a3d8223cf7a4a478989e) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Persist billable administrator internal-model request history with a testing marker that excludes it from public reporting.
+
+- [#2807](https://github.com/phaseoteam/Phaseo/pull/2807) [`4094f83`](https://github.com/phaseoteam/Phaseo/commit/4094f83ce013505def6e8269349c81eab82150c2) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Load configured internal route pricing for authorized admin inference without enabling public routing.
+
+- [#2812](https://github.com/phaseoteam/Phaseo/pull/2812) [`efb6467`](https://github.com/phaseoteam/Phaseo/commit/efb64679dd9df76a284076f10102b85c730fe59e) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Group administrator-only internal chat models in a collapsible picker section and preserve the selected route's pricing scope during execution.
+
+- [#2671](https://github.com/phaseoteam/Phaseo/pull/2671) [`4f0d0ce`](https://github.com/phaseoteam/Phaseo/commit/4f0d0ce3fbb60321e9e0bca272e70d565e151cb3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add native Liquid D1 and Perplexity Decider executors for the Decisions IR, with BYOK support, bounded response validation, and actual token usage accounting. Load the Liquid provider credential from Infisical during gateway deployment.
+
+- [#2814](https://github.com/phaseoteam/Phaseo/pull/2814) [`bb201e4`](https://github.com/phaseoteam/Phaseo/commit/bb201e4ca5ea1e91e1c574c2385cca4989677f73) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Remove model discovery's GitHub catalogue dispatch and issue sync, and close discovery runs left "running" after their worker stopped.
+
+- [#2811](https://github.com/phaseoteam/Phaseo/pull/2811) [`1eb714d`](https://github.com/phaseoteam/Phaseo/commit/1eb714dd4974159758d49afe5cb0fd615d747f2a) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Serve the model catalogue from cache (stale-while-revalidate across isolate memory, the Workers Cache and KV) instead of rebuilding it from about ten database queries on every request, and return `model_region_unavailable` (403) instead of a 502 provider failure when a regional gateway or residency requirement leaves no provider for a model.
+
+- [#2663](https://github.com/phaseoteam/Phaseo/pull/2663) [`e82a4ce`](https://github.com/phaseoteam/Phaseo/commit/e82a4ce36267ef37fe77487faa89ce377d4b05f9) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Route GPT-6.1 Sol requests through OpenAI Responses and preserve its full reasoning range. Use Responses for GPT-6 Astra Ultrafast requests.
+
+- [#2708](https://github.com/phaseoteam/Phaseo/pull/2708) [`0c67106`](https://github.com/phaseoteam/Phaseo/commit/0c67106448b069a2208a20f28a5fe9cb2a3308f9) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Record an ordered, bounded request lifecycle journal in operational metadata and retained I/O logs. Display model calls, tool execution, retries, and continuations in execution order, including the routing timeline when payload logging is disabled.
+
+- [#2680](https://github.com/phaseoteam/Phaseo/pull/2680) [`77bf67d`](https://github.com/phaseoteam/Phaseo/commit/77bf67dc6473ce4e4b328af5329adcd936e667ce) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add an interactive model explorer with live search, model details, three-model comparisons, and token cost estimates to the Phaseo MCP.
+  
+  Expose global sidebar and thread entrypoints, selected model context for chat, model/comparison deep links, sorting, and a Gateway availability filter.
+  
+  Add local saved shortlists, integration examples, a usage dashboard, and explicitly reviewed text inference comparisons. Support optional inference OAuth consent, pinned routing, and expiring single-use quotes through the normal Gateway billing pipeline.
+
+- [#2795](https://github.com/phaseoteam/Phaseo/pull/2795) [`480aaff`](https://github.com/phaseoteam/Phaseo/commit/480aaff2955bb4a61d88647a1b3d41acdc4e469c) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Keep the private model discovery Dev role separate from the public announcement role.
+
+- [#2825](https://github.com/phaseoteam/Phaseo/pull/2825) [`8c8af3b`](https://github.com/phaseoteam/Phaseo/commit/8c8af3bdf3ec12adfaec1f3304f3129ddaf6b19d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Providers declare the request and token limits they impose on Phaseo, provider-wide or per upstream model, through an optional `rate_limits` section in their catalogue feed or the new Rate limits section in provider settings. Limits apply without review once the provider is approved, and the gateway picks up changes as soon as the catalogue revision moves instead of waiting for its configuration TTL.
+
+- [#2821](https://github.com/phaseoteam/Phaseo/pull/2821) [`4b7019f`](https://github.com/phaseoteam/Phaseo/commit/4b7019fde36ef2b4f581c768e96f8e6fbe2dd4d2) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Support upstream provider limits (requests and tokens per minute and per day) per provider and model as well as provider-wide, configured in `provider_rate_limits` and counted globally across all users. Charges never delay a request; a provider and model that reaches a limit is heavily deranked in routing until its window resets instead of being skipped.
+
+- [#2710](https://github.com/phaseoteam/Phaseo/pull/2710) [`468190b`](https://github.com/phaseoteam/Phaseo/commit/468190b5b7969d4385ed36e88dba3355af708d5f) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Use server-generated G-prefixed generation IDs for public response headers, generation payloads and request logs instead of UUIDs or caller-supplied request IDs. Existing log IDs remain readable.
+
+- [#2736](https://github.com/phaseoteam/Phaseo/pull/2736) [`1ba7231`](https://github.com/phaseoteam/Phaseo/commit/1ba7231b7b4970b1984119cb3d32b599920cad2d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Use catalogue creator names and colours in automatic Discord model announcements.
+
+- [#2470](https://github.com/phaseoteam/Phaseo/pull/2470) [`c368d1a`](https://github.com/phaseoteam/Phaseo/commit/c368d1a5d02a67258d62449da9d7a3d8b9a2286c) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Announce public models when their catalogue status becomes available, check for availability every minute, and add a per-model Discord announcement action to the internal model editor using the current public embed format.
+
+- [#2735](https://github.com/phaseoteam/Phaseo/pull/2735) [`70d9008`](https://github.com/phaseoteam/Phaseo/commit/70d90083059e7916c78dbb462e5b08766f785f25) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Announce public preview model releases and preserve their lifecycle status without duplicate announcements on general availability.
+
+- [#2643](https://github.com/phaseoteam/Phaseo/pull/2643) [`528cc51`](https://github.com/phaseoteam/Phaseo/commit/528cc515d022a81e2dba361a8158c8931ea1d212) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Allow ordinary inference with at least $0.10 in available credits while retaining the $1 minimum for video and batch submissions. Bound gateway key usage checks to the active month.
+
+- [#2756](https://github.com/phaseoteam/Phaseo/pull/2756) [`793d7c5`](https://github.com/phaseoteam/Phaseo/commit/793d7c583e567688505722b3a744451005faea3a) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Remove historical analytics scans from gateway admission and skip key usage scans when no key limits are configured. Preserve unavailable telemetry as null.
+
+- [#2740](https://github.com/phaseoteam/Phaseo/pull/2740) [`1555449`](https://github.com/phaseoteam/Phaseo/commit/1555449485b3de1c5ee5be41cfc5e767340bb2d5) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Remove the availability sentence from public model notification embeds.
+
+- [#2629](https://github.com/phaseoteam/Phaseo/pull/2629) [`d2da646`](https://github.com/phaseoteam/Phaseo/commit/d2da646bd9f909f876e5f34e5ac35772f8bcc94a) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add Respan Span-01 Lite and Pro Decisions support.
+
+- [#2435](https://github.com/phaseoteam/Phaseo/pull/2435) [`80824f1`](https://github.com/phaseoteam/Phaseo/commit/80824f1ed859d603140cf43e60ddab6c612c7870) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Preserve the provider's finish reason when buffering streams that end with a separate usage frame, including reasoning-only responses that reach the output token limit.
+
+- [#2693](https://github.com/phaseoteam/Phaseo/pull/2693) [`3f64de1`](https://github.com/phaseoteam/Phaseo/commit/3f64de106b0654da83b239a6aa28842e9e00763a) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Reuse valid persisted public catalogue snapshots during scheduled warming to avoid redundant database reads while preserving pricing and routing expiry deadlines.
+
+- [#2429](https://github.com/phaseoteam/Phaseo/pull/2429) [`2b78b13`](https://github.com/phaseoteam/Phaseo/commit/2b78b13e7225b6ccb54c9c4a615b73455cdb26b6) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Refine the Decisions chat experience with typed question controls, local conversation history, structured result rendering, canonical Jev model identity, and complete request timing metadata. Expose provider-neutral Decisions naming across the gateway, web proxy, OpenAPI contract, and generated SDKs while keeping TypeSafe's System One terminology inside its provider adapter. Keep text generation internally streamed while preserving non-streaming client responses.
+
+- [#2813](https://github.com/phaseoteam/Phaseo/pull/2813) [`a31601a`](https://github.com/phaseoteam/Phaseo/commit/a31601a29c1aa1ba75c570cdf472bd4b9a9babf0) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Classify `model_region_unavailable` (request country or residency requirements) as a user error rather than a system error.
+
+- [#2792](https://github.com/phaseoteam/Phaseo/pull/2792) [`085dbd0`](https://github.com/phaseoteam/Phaseo/commit/085dbd0c33c5059b3fb055bed4053f641d46c038) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Remove the redundant View Model link from Discord announcements while keeping the model title linked.
+
+- [#2745](https://github.com/phaseoteam/Phaseo/pull/2745) [`14be856`](https://github.com/phaseoteam/Phaseo/commit/14be856730b76aab7920257416415683472d244c) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Remove the catalog-added summary sentence from public Discord model announcements.
+
+- [#2647](https://github.com/phaseoteam/Phaseo/pull/2647) [`f45bb87`](https://github.com/phaseoteam/Phaseo/commit/f45bb87208df64c4f40f58d4a1e0884f2af13acd) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Clarify which Decisions question types Respan Span-01 supports.
+
+- [#2531](https://github.com/phaseoteam/Phaseo/pull/2531) [`3a10c45`](https://github.com/phaseoteam/Phaseo/commit/3a10c457bb70541383ca73a4275d45487795be62) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Scope external-provider routing overrides to individual provider-model routes.
+
+- [#2773](https://github.com/phaseoteam/Phaseo/pull/2773) [`f0c2012`](https://github.com/phaseoteam/Phaseo/commit/f0c201294b5b5feffc9da8d45d6059bf0761f18d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Strengthen request policy enforcement, privacy controls, resource limits, and SDK path handling. Require a workspace privacy review before Chat resumes.
+
+- [#2806](https://github.com/phaseoteam/Phaseo/pull/2806) [`35b3b6e`](https://github.com/phaseoteam/Phaseo/commit/35b3b6e066f41ac7afa4da19e99794bb4c1baada) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Cut per-request lookups before upstream: skip the testing-mode role lookup for models without an internal route, and share API-key and workspace version counters per location through the Workers Cache with an absolute 30-second expiry.
+
+- [#2668](https://github.com/phaseoteam/Phaseo/pull/2668) [`3ab3671`](https://github.com/phaseoteam/Phaseo/commit/3ab36711a11f120138bb12cf97f76f865696af69) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Reduce CPU work when computing sticky routing hints by skipping unused request formats and stopping after opening anchors and eight meaningful content parts are found.
+
+- [#2789](https://github.com/phaseoteam/Phaseo/pull/2789) [`d826307`](https://github.com/phaseoteam/Phaseo/commit/d826307ee571acd3aefd130425277fd77ae8b78e) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Exclude staged model traffic from public reporting and let admins release prepared internal models atomically.
+
+- [#2802](https://github.com/phaseoteam/Phaseo/pull/2802) [`2cf84c7`](https://github.com/phaseoteam/Phaseo/commit/2cf84c742769f87b553ce0ec44162124ff4ddd14) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Apply the upstream response-headers deadline only to streaming requests, and enable it at 60 seconds, so a stalled streaming provider fails over without cutting off long non-streaming generations.
+
+- [#2668](https://github.com/phaseoteam/Phaseo/pull/2668) [`3ab3671`](https://github.com/phaseoteam/Phaseo/commit/3ab36711a11f120138bb12cf97f76f865696af69) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Serialize supplemental pricing array entries once when sorting model-watch snapshots, preserving existing fingerprints and pricing alerts. Prepare a scheduled-only Worker with its cron disabled for a controlled cutover.
+
+- [#2432](https://github.com/phaseoteam/Phaseo/pull/2432) [`43575fb`](https://github.com/phaseoteam/Phaseo/commit/43575fb31fac9f0f93c24723509290ea88ed5d95) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Return successful reasoning-only text responses instead of an empty-response error. Preserve reasoning, token usage, and the provider's finish reason, including output-limit termination.
+
+- [#2662](https://github.com/phaseoteam/Phaseo/pull/2662) [`3f0e9ac`](https://github.com/phaseoteam/Phaseo/commit/3f0e9ac9fe22b21a92787792a6e2844e9b059f5c) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Capture gateway-managed tool calls and results in opt-in R2 request logs, and show request lifecycle details in the Logs trace view.
+
+- [#2472](https://github.com/phaseoteam/Phaseo/pull/2472) [`0df69ee`](https://github.com/phaseoteam/Phaseo/commit/0df69ee98e5be111da0a6a5c5c9032f1075edc41) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Route Xiaomi MiMo V2.6 Pro fast-tier requests through its UltraSpeed model slug.
+
 ## 2.0.0
 
 ### Major Changes
