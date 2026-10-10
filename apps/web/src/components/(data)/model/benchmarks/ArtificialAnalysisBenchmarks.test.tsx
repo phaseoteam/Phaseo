@@ -13,6 +13,7 @@ import ModelBenchmarks from "./ModelBenchmarks";
 import type { ModelBenchmarkHighlight } from "@/lib/fetchers/models/getModelBenchmarkData";
 import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { summarizeArtificialAnalysisRankings } from "@/lib/benchmarks/artificialAnalysis";
+import { webQueryKeys } from "@/lib/query/queryKeys";
 
 jest.mock("@number-flow/react", () => ({
 	__esModule: true,
@@ -29,11 +30,35 @@ const highlight = (benchmarkId: string, score: number): ModelBenchmarkHighlight 
 	otherInfo: `Example (high); Intelligence Index v${benchmarkId.endsWith("v5") ? "5" : "4.3"}`, sourceLink: "https://artificialanalysis.ai/models/example",
 });
 
-function renderLocalized(node: ReactNode) {
-	return renderToStaticMarkup(<QueryClientProvider client={new QueryClient()}><NextIntlClientProvider timeZone="UTC" locale="en-GB" messages={{ Common: common, Catalogue: catalogue, Product: product, Site: site }}>{node}</NextIntlClientProvider></QueryClientProvider>);
+function renderLocalized(node: ReactNode, client = new QueryClient()) {
+	return renderToStaticMarkup(<QueryClientProvider client={client}><NextIntlClientProvider timeZone="UTC" locale="en-GB" messages={{ Common: common, Catalogue: catalogue, Product: product, Site: site }}>{node}</NextIntlClientProvider></QueryClientProvider>);
 }
 
 describe("Artificial Analysis benchmark panel", () => {
+	it("keeps a previously loaded chart visible if a background refresh fails", async () => {
+		const id = "aa-intelligence-index-v4";
+		const ranking: PublicBenchmarkRanking = { benchmark_id: id, name: "Intelligence", category: null, benchmark_type: null, lower_is_better: false, total_models: 1, entries: [{ model_id: "test/leader", model_name: "Cached leader remains visible", organisation_id: null, organisation_name: null, score: 50, rank: 1, other_info: "Intelligence Index v4.3" }] };
+		const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+		client.setQueryData(webQueryKeys.public.benchmarkRankings(), [ranking]);
+		await client.fetchQuery({ queryKey: webQueryKeys.public.benchmarkRankings(), queryFn: () => Promise.reject(new Error("Temporary refresh failure")), retry: false }).catch(() => undefined);
+		const html = renderLocalized(<ArtificialAnalysisBenchmarks highlights={[highlight(id, 43.6)]} loadRankings modelId="test/current" initialExpandedMetric={id} />, client);
+		expect(html).toContain("Cached leader remains visible");
+		expect(html).not.toContain("Try Again");
+		client.clear();
+	});
+	it("shows progress while retrying a failed initial leaderboard request", async () => {
+		const id = "aa-intelligence-index-v4";
+		const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+		await client.fetchQuery({ queryKey: webQueryKeys.public.benchmarkRankings(), queryFn: () => Promise.reject(new Error("Initial failure")), retry: false }).catch(() => undefined);
+		let complete!: (value: PublicBenchmarkRanking[]) => void;
+		const retry = client.fetchQuery({ queryKey: webQueryKeys.public.benchmarkRankings(), queryFn: () => new Promise<PublicBenchmarkRanking[]>(resolve => { complete = resolve; }), retry: false });
+		const html = renderLocalized(<ArtificialAnalysisBenchmarks highlights={[highlight(id, 43.6)]} loadRankings modelId="test/current" initialExpandedMetric={id} />, client);
+		expect(html).toContain('role="status"');
+		expect(html).not.toContain("Try Again");
+		complete([]);
+		await retry;
+		client.clear();
+	});
 	it("renders score and rank from compact summaries before loading interactive leaderboards", () => {
 		const id = "aa-intelligence-index-v4";
 		const ranking: PublicBenchmarkRanking = { benchmark_id: id, name: "Intelligence", category: null, benchmark_type: null, lower_is_better: false, total_models: 1, entries: [{ model_id: "test/leader", model_name: "Leader detail omitted", organisation_id: null, organisation_name: null, score: 50, rank: 1, other_info: "Intelligence Index v4.3", configurations: [50, 48].map(score => ({ score, variant: null, result_key: null, other_info: null, source_link: null, updated_at: null })) }] };
