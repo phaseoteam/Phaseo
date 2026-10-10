@@ -231,10 +231,11 @@ function summarise(model: Row, rates: Rate[]): CardPricingSummary | null {
 	const byUnit = [...groupBy(primary, (item) => item.unit).entries()]
 		.sort(([a, aRates], [b, bRates]) => mediaUnitRank(a) - mediaUnitRank(b) || bRates.length - aRates.length || a.localeCompare(b));
 	const [unit, unitRates] = byUnit[0];
-	const others = candidates.length > unitRates.length;
+	// Only alternative headline rates qualify the price; input meters on a
+	// media model are in the hover card, not a reason to say "From".
 	return {
 		kind: "usage",
-		from: varies(unitRates) || others || byUnit.length > 1,
+		from: varies(unitRates) || byUnit.length > 1,
 		price: min(unitRates),
 		unit,
 	};

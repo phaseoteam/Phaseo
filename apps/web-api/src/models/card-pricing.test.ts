@@ -105,6 +105,14 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "usage", from: true, price: 0.04, unit: "image" });
 	});
 
+	it("does not say From for a single image price alongside input meters", () => {
+		const row = card([
+			tokens("input_text_tokens", 5),
+			usage("output_image", 0.04, "image", 1, { modality: "image" }),
+		], ["image"]);
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.04, unit: "image" });
+	});
+
 	it("headlines per-second video pricing across audio variants", () => {
 		const row = card([
 			usage("output_video_audio", 0.4, "second", 1, { modality: "video" }),
