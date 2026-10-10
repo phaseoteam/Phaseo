@@ -76,7 +76,7 @@ describe("provider-declared rate limits", () => {
 		const rateLimits = [{ requests_per_minute: 600 }, { model: "atlas-1", tokens_per_day: null, tokens_per_minute: 9 }];
 		expect(v1({ data: [model("acme/atlas-1", "atlas-1")], rate_limits: rateLimits }), JSON.stringify(v1.errors)).toBe(true);
 		expect(v11({ schema_version: "1.1", data: [{ id: "acme/atlas-1", capabilities: ["responses"], service_tiers: [{ service_tier: "standard", provider_model_slug: "atlas-1", pricing: [price] }] }], rate_limits: rateLimits }), JSON.stringify(v11.errors)).toBe(true);
-		for (const invalid of [[{ requests_per_minute: 0 }], [{ requests_per_minute: 1.5 }], [{ requests_per_minute: 1, burst: 2 }], [{}]]) {
+		for (const invalid of [[{ requests_per_minute: 0 }], [{ requests_per_minute: 1.5 }], [{ requests_per_minute: 1, burst: 2 }], [{}], [{ model: "atlas-1" }], [{ requests_per_minute: null }]]) {
 			expect(v1({ data: [], rate_limits: invalid })).toBe(false);
 		}
 	});

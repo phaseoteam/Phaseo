@@ -26,7 +26,8 @@ export const rateLimitEntrySchema = z.object({
 export const rateLimitJsonSchema = {
 	type: "object",
 	additionalProperties: false,
-	minProperties: 1,
+	// At least one limit must be a number, matching the import's runtime check.
+	anyOf: RATE_LIMIT_FIELDS.map((field) => ({ required: [field], properties: { [field]: { type: "integer" } } })),
 	description: "A limit your platform imposes on Phaseo's account. Omit model for a provider-wide limit. Reaching a limit ranks your offers lower in routing; it never blocks requests.",
 	properties: {
 		model: { type: ["string", "null"], minLength: 1, maxLength: MAX_MODEL_SLUG_LENGTH, description: "Upstream provider_model_slug from this catalog. Omit, or use null, for a provider-wide limit." },

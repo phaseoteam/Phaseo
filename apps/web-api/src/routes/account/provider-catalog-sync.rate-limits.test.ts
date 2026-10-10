@@ -6,7 +6,7 @@ import { getDataClient } from "@/data/supabase";
 
 const feedModel = { id: "sample/model", name: "Model", provider_model_slug: "model-1", capabilities: ["responses"], availability: "not_ready" };
 
-function client({ reviewStatus }: { reviewStatus?: string } = {}) {
+function client({ reviewStatus, applyError }: { reviewStatus?: string; applyError?: string } = {}) {
 	const source = { provider_slug: "sample", status: "active", management_mode: "remote", catalog_url: "https://example.invalid/models", etag: null, last_modified: null, poll_interval_seconds: 3600, consecutive_failures: 0, updated_at: "2026-10-07T00:00:00Z", created_by: "owner-user" };
 	const rows: Record<string, unknown> = {
 		provider_catalog_sources: source,
@@ -24,7 +24,9 @@ function client({ reviewStatus }: { reviewStatus?: string } = {}) {
 		for (const method of ["select", "eq", "in", "gt", "order", "limit", "update", "insert"]) builder[method] = () => builder;
 		return builder;
 	}
-	const rpc = vi.fn(async (name: string) => ({ data: name === "claim_provider_catalog_sync" ? true : name === "consume_provider_catalog_refresh" ? false : name === "apply_provider_catalog_feed_snapshot" ? 1 : true, error: null }));
+	const rpc = vi.fn(async (name: string) => name === "apply_provider_catalog_feed_snapshot" && applyError
+		? { data: null, error: { code: "P0001", message: applyError } }
+		: { data: name === "claim_provider_catalog_sync" ? true : name === "consume_provider_catalog_refresh" ? false : name === "apply_provider_catalog_feed_snapshot" ? 1 : true, error: null });
 	vi.mocked(getDataClient).mockReturnValue({ from: query, rpc } as never);
 	return rpc;
 }
@@ -50,6 +52,23 @@ describe("feed-declared rate limits", () => {
 			],
 		});
 		expect(rpc).toHaveBeenCalledWith("apply_provider_catalog_feed_snapshot", expect.anything());
+	});
+
+	it.each(["provider_catalog_version_conflict", "provider_catalog_namespace_not_owned"])("keeps current limits when the snapshot itself fails to apply (%s)", async (applyError) => {
+		const rpc = client({ reviewStatus: "approved", applyError });
+		vi.spyOn(console, "error").mockImplementation(() => undefined);
+		serveFeed({ data: [feedModel], rate_limits: [{ requests_per_minute: 100 }] });
+		await syncProviderCatalog({} as never, "sample", "manual").catch(() => undefined);
+		expect(rpc).toHaveBeenCalledWith("apply_provider_catalog_feed_snapshot", expect.anything());
+		expect(rpc).not.toHaveBeenCalledWith("save_provider_rate_limits", expect.anything());
+	});
+
+	it("applies limits after the snapshot", async () => {
+		const rpc = client({ reviewStatus: "approved" });
+		serveFeed({ data: [feedModel], rate_limits: [{ requests_per_minute: 100 }] });
+		await syncProviderCatalog({} as never, "sample", "manual");
+		const order = rpc.mock.calls.map(([name]) => name);
+		expect(order.indexOf("save_provider_rate_limits")).toBeGreaterThan(order.indexOf("apply_provider_catalog_feed_snapshot"));
 	});
 
 	it("leaves console-managed limits alone when the feed declares none", async () => {

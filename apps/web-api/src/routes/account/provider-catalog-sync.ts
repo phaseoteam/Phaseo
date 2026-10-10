@@ -232,8 +232,6 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 			await notifyProviderOwners(client, providerSlug, runId, "Catalog needs changes", preview.issues[0]?.message ?? "Catalog validation failed.");
 			return { status: "rejected", runId, modelCount: preview.modelCount };
 		}
-		// A feed without rate_limits leaves limits managed in provider settings untouched.
-		if (catalog.preview.rateLimits) await applyDeclaredRateLimits(client, source, catalog.preview.rateLimits);
 
 		const applied = source.management_mode === "remote"
 			? await client.rpc("apply_provider_catalog_feed_snapshot", { p_provider_slug: providerSlug, p_run_id: runId, p_feed_models: feedModels, p_models: preview.allModels, p_expected_version: source.updated_at })
@@ -252,6 +250,10 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 			if (applied.error.message.includes("provider_catalog_conditional_pricing_not_supported")) throw new Error("Conditional prices are not supported by V1 billing. Provide an effective unconditional price.");
 			throw new Error("The catalog could not be applied. Existing offers and prices remain unchanged.");
 		}
+		// Limits follow only an applied snapshot, so a rejected or conflicting one changes nothing.
+		// If this fails, the run fails with a refresh requested and the next sync refetches in full.
+		// A feed without rate_limits leaves limits managed in provider settings untouched.
+		if (catalog.preview.rateLimits) await applyDeclaredRateLimits(client, source, catalog.preview.rateLimits);
 		await renewLease(true);
 		const now = new Date().toISOString();
 		await client.from("provider_catalog_sync_runs").update({ status: "applied", catalog_sha256: catalog.sha256, model_count: preview.modelCount, model_preview: publicPreview(preview), validation_summary: { valid: true, issues: [], checked_at: now }, completed_at: now }).eq("id", runId);
