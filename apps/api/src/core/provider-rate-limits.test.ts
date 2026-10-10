@@ -41,6 +41,7 @@ describe("provider rate-limit configuration", () => {
 			enabled: true,
 		})).toEqual({
 			providerId: "openai",
+			modelSlug: "*",
 			requestsPerMinute: 500,
 			requestsPerDay: null,
 			tokensPerMinute: 100000,

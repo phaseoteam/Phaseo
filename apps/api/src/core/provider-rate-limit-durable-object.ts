@@ -213,9 +213,10 @@ export class ProviderRateLimitDurableObject extends DurableObject<GatewayBinding
 		this.sweepLeases(row, nowMs);
 		const hasTokenLimit = config.tokensPerMinute != null || config.tokensPerDay != null;
 		const hasRequestLimit = config.requestsPerMinute != null || config.requestsPerDay != null;
+		// Zero means the caller counts the tokens once they are known (reconcileTokens).
 		const needTokens = !hasTokenLimit || topUp
 			? 0
-			: Number.isSafeInteger(need.units) && need.units > 0 ? need.units : Number.MAX_SAFE_INTEGER;
+			: Number.isSafeInteger(need.units) && need.units >= 0 ? need.units : Number.MAX_SAFE_INTEGER;
 		const counters = () => ({
 			minuteWindow: row.minute_window,
 			dayWindow: row.day_window,
@@ -359,7 +360,7 @@ export class ProviderRateLimitDurableObject extends DurableObject<GatewayBinding
 		actualTokens: number,
 		nowMs = Date.now(),
 	): Promise<void> {
-		if (!Number.isSafeInteger(reservation.tokens) || reservation.tokens <= 0) return;
+		if (!Number.isSafeInteger(reservation.tokens) || reservation.tokens < 0) return;
 		if (!Number.isSafeInteger(actualTokens) || actualTokens < 0) return;
 		if (typeof reservation.id === "string") {
 			// Reconciliation is a delta; applying a retried call twice would double-count it.

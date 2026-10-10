@@ -23,16 +23,15 @@ vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => ({
 		from: () => ({
 			select: () => ({
-				eq: () => ({
-					maybeSingle: async () => ({
-						data: {
-							provider_id: "openai",
-							tokens_per_minute: 10_000,
-							headroom_bps: 500,
-							enabled: true,
-						},
-						error: null,
-					}),
+				eq: async () => ({
+					data: [{
+						provider_id: "openai",
+						provider_model_slug: "*",
+						tokens_per_minute: 10_000,
+						headroom_bps: 500,
+						enabled: true,
+					}],
+					error: null,
 				}),
 			}),
 		}),

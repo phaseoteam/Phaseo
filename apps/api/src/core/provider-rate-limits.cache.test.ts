@@ -11,13 +11,13 @@ vi.mock("@/runtime/env", () => ({
 	getCache: () => ({ get: runtime.get, put: runtime.put }),
 	getBindingsIfConfigured: () => null,
 	dispatchBackground: (promise: Promise<unknown>) => { runtime.background.push(promise.catch(() => undefined)); },
-	getSupabaseAdmin: () => ({ from: () => ({ select: () => ({ eq: () => ({ maybeSingle: runtime.query }) }) }) }),
+	getSupabaseAdmin: () => ({ from: () => ({ select: () => ({ eq: () => runtime.query() }) }) }),
 	getBindings: () => ({ PROVIDER_RATE_LIMITS: { getByName: () => ({ acquireLease: runtime.acquireLease, returnLeases: runtime.returnLeases }) } }),
 }));
 
-const row = (overrides: Record<string, unknown> = {}) => ({ provider_id: "openai", enabled: true, requests_per_minute: 100, ...overrides });
-const envelope = (value: unknown, at = Date.now()) => JSON.stringify({ v: value, at });
-const config = (overrides: Record<string, unknown> = {}) => ({ providerId: "openai", requestsPerMinute: 100, requestsPerDay: null,
+const row = (overrides: Record<string, unknown> = {}) => [{ provider_id: "openai", provider_model_slug: "*", enabled: true, requests_per_minute: 100, ...overrides }];
+const envelope = (value: unknown, at = Date.now()) => JSON.stringify({ v: [value], at });
+const config = (overrides: Record<string, unknown> = {}) => ({ providerId: "openai", modelSlug: "*", requestsPerMinute: 100, requestsPerDay: null,
 	tokensPerMinute: null, tokensPerDay: null, headroomBps: 0, ...overrides });
 const lease = (requests: number | null, units: number | null = null, expiresAt = Date.now() + 50_000) =>
 	({ ok: true, lease: { id: `lease-${Math.random()}`, expiresAt, requests, units, meta: { minuteWindow: 1, dayWindow: 1 } } });
@@ -90,7 +90,7 @@ describe("provider rate-limit configuration and leases", () => {
 		await (await import("./provider-rate-limits")).admitManagedProvider("openai", 32);
 		await flush();
 		const [key, raw] = runtime.put.mock.calls[0];
-		expect(key).toBe("gateway:provider-rate-limit-config:v2:openai");
+		expect(key).toBe("gateway:provider-rate-limit-config:v3:openai");
 		vi.resetModules(); runtime.get.mockResolvedValue(raw);
 		await (await import("./provider-rate-limits")).admitManagedProvider("openai", 32);
 		expect(runtime.query).toHaveBeenCalledTimes(1);
@@ -117,9 +117,10 @@ describe("provider rate-limit configuration and leases", () => {
 	});
 
 	it.each([
-		JSON.stringify({ v: { ...config(), providerId: "another" }, at: Date.now() }),
-		JSON.stringify({ v: { ...config(), requestsPerMinute: -1 }, at: Date.now() }),
-		JSON.stringify({ v: config(), at: Date.now() - 16 * 60_000 }),
+		JSON.stringify({ v: [{ ...config(), providerId: "another" }], at: Date.now() }),
+		JSON.stringify({ v: [{ ...config(), requestsPerMinute: -1 }], at: Date.now() }),
+		JSON.stringify({ v: [config()], at: Date.now() - 16 * 60_000 }),
+		JSON.stringify({ v: config(), at: Date.now() }),
 		"not json",
 	])("ignores mismatched, malformed or too-old snapshots: %s", async (raw) => {
 		runtime.get.mockResolvedValue(raw);

@@ -20,6 +20,7 @@ import {
 import { providerMeetsResidencyRequirement } from "@/lib/config/providerResidency";
 import { routeMeetsAvailabilityPolicy } from "@/lib/config/routeAvailability";
 import { readHealthManyOptimistic, ProviderHealth } from "./health";
+import { providerLimitModel, providerQuotaSaturated } from "@core/provider-rate-limits";
 import { isRecoveryProbeRequest } from "./health.config";
 import { ageHealth } from "./health-evidence";
 import { stripPrioritySuffix } from "./utils";
@@ -46,6 +47,15 @@ const ROUTING_ALGORITHM_VERSION = "provider-score-v8";
 // keep them behind non-external providers and retain the score penalty within
 // the fallback pool.
 const EXTERNAL_PROVIDER_ROUTING_MULTIPLIER = 0.1;
+// A provider and model at one of its upstream limits on Phaseo's managed credentials stays
+// routable, behind every unsaturated candidate (but ahead of an open breaker, 1e-9).
+const PROVIDER_QUOTA_SATURATED_MULTIPLIER = 1e-6;
+
+// Mirrors the credential plan: priority and balanced BYOK keys are tried before managed ones.
+function usesOwnCredentials(candidate: ProviderCandidate): boolean {
+    return Boolean(candidate.privateEndpoint) || (candidate.byokMeta ?? []).some((key) =>
+        (key.routingMode ?? (key.alwaysUse ? "priority" : "fallback")) !== "fallback");
+}
 
 type RoutingPreset = {
     wSucc: number;
@@ -617,13 +627,14 @@ export type RoutingScoreTrace = {
         latencyPreferenceMultiplier: number;
         throughputPreferenceMultiplier: number;
         recentOutageMultiplier: number;
+        providerQuotaMultiplier: number;
         reliabilityMultiplier: number;
         finalScore: number;
     };
 };
 
 export type RoutingFilterStageDiagnostics = {
-    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "offer_scope_gate" | "geographic_availability_gate" | "residency_gate" | "pricing_cap_gate" | "service_tier_offer_replacement" | "health_breaker";
+    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "offer_scope_gate" | "geographic_availability_gate" | "residency_gate" | "pricing_cap_gate" | "service_tier_offer_replacement" | "health_breaker" | "provider_quota";
     beforeCount: number;
     afterCount: number;
     droppedProviders: Array<{
@@ -1355,6 +1366,23 @@ export async function routeProviders(
                 })),
         });
     }
+    const isQuotaSaturated = (entry: { candidate: ProviderCandidate }) =>
+        !usesOwnCredentials(entry.candidate) &&
+        providerQuotaSaturated(entry.candidate.providerId, providerLimitModel(entry.candidate));
+    const quotaSaturated = healths.filter(isQuotaSaturated);
+    if (quotaSaturated.length > 0) {
+        filterStages.push({
+            stage: "provider_quota",
+            beforeCount: healths.length,
+            afterCount: healths.length,
+            droppedProviders: quotaSaturated.map((entry) => ({
+                providerId: entry.candidate.providerId,
+                apiModelId: entry.candidate.apiModelId ?? null,
+                providerModelSlug: entry.candidate.providerModelSlug ?? null,
+                reason: "provider_quota_deranked",
+            })),
+        });
+    }
     if (debugEnabled) {
         console.log("[gateway] provider pool", {
             model: ctx.model,
@@ -1484,6 +1512,7 @@ export async function routeProviders(
         };
         const baseScore = Object.values(contributions).reduce((sum, value) => sum + value, 0);
         const recentOutageMultiplier = isRecentOutage(v) ? 1e-9 : 1;
+        const providerQuotaMultiplier = isQuotaSaturated(v) ? PROVIDER_QUOTA_SATURATED_MULTIPLIER : 1;
 
         const score = Math.max(
             0,
@@ -1495,7 +1524,8 @@ export async function routeProviders(
                 latencyPreferenceMultiplier *
                 throughputPreferenceMultiplier *
                 reliabilityMultiplier *
-                recentOutageMultiplier
+                recentOutageMultiplier *
+                providerQuotaMultiplier
         );
         const scoreFactorValues: RoutingScoreFactorValues = [
             succ,
@@ -1562,6 +1592,7 @@ export async function routeProviders(
                     latencyPreferenceMultiplier: roundDiagnosticNumber(latencyPreferenceMultiplier),
                     throughputPreferenceMultiplier: roundDiagnosticNumber(throughputPreferenceMultiplier),
                     recentOutageMultiplier: roundDiagnosticNumber(recentOutageMultiplier),
+                    providerQuotaMultiplier: roundDiagnosticNumber(providerQuotaMultiplier),
                     reliabilityMultiplier: roundDiagnosticNumber(reliabilityMultiplier),
                     finalScore: roundDiagnosticNumber(score),
                 },
