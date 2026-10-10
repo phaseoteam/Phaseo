@@ -316,9 +316,20 @@ export function normalizeModelsPagePricing(model: Row): Row {
 
 	// Text-and-Decisions models already carry per-operation prices, and their
 	// `lowest_*` fields hold the text-generation rates; the detail rows mix
-	// both operations' SKUs, so they must not overwrite those fields.
+	// both operations' SKUs, so they must not overwrite those prices. Those
+	// prices are per 1M tokens, which replaces the RPC's "billing unit".
 	if (Array.isArray(model.operation_pricing)) {
-		return { ...model, pricing_summary: summarise(model, rates), pricing_detail_rows: [...detailRows, ...preformatted] };
+		const tokenUnit = (price: unknown) => (finite(price) === null ? null : "1M tokens");
+		return {
+			...model,
+			pricing_summary: summarise(model, rates),
+			pricing_detail_rows: [...detailRows, ...preformatted],
+			lowest_standard_input_price_label: "Input",
+			lowest_standard_output_price_label: "Output",
+			lowest_standard_input_price_unit: tokenUnit(model.lowest_standard_input_price),
+			lowest_standard_output_price_unit: tokenUnit(model.lowest_standard_output_price),
+			lowest_from_price_unit: tokenUnit(model.lowest_from_price),
+		};
 	}
 
 	return {

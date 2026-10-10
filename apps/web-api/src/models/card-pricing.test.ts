@@ -204,7 +204,8 @@ describe("normalizeModelsPagePricing", () => {
 			operation_pricing: [{ capability: "text.generate", input: 3, output: 15 }, { capability: "decisions.make", input: 1, output: 2 }],
 			lowest_input_price: 3, lowest_output_price: 15,
 			lowest_standard_input_price: 3, lowest_standard_output_price: 15,
-			lowest_from_price: null, lowest_from_price_unit: null,
+			lowest_standard_input_price_unit: "billing unit", lowest_standard_output_price_unit: "billing unit",
+			lowest_from_price: null, lowest_from_price_unit: "billing unit",
 			pricing_detail_rows: [
 				tokens("input_text_tokens", 3), tokens("output_text_tokens", 15),
 				tokens("input_text_tokens", 1), tokens("output_text_tokens", 2),
@@ -213,7 +214,9 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row).toMatchObject({
 			lowest_input_price: 3, lowest_output_price: 15,
 			lowest_standard_input_price: 3, lowest_standard_output_price: 15,
-			lowest_from_price: null,
+			lowest_standard_input_price_unit: "1M tokens", lowest_standard_output_price_unit: "1M tokens",
+			lowest_standard_input_price_label: "Input", lowest_standard_output_price_label: "Output",
+			lowest_from_price: null, lowest_from_price_unit: null,
 		});
 	});
 
