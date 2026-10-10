@@ -3242,7 +3242,7 @@
 			"conditionsLimit": "料金条件は最大8件まで指定できます。",
 			"conditionFields": "条件には有効なパス、演算子、値が必要です。",
 			"conditionValue": "eqにはスカラー、inには空でないリスト、範囲比較には数値を指定してください。",
-			"catalogShape": "カタログはdata配列のみを含むオブジェクトにしてください。",
+			"catalogShape": "カタログは data 配列と任意の rate_limits のみを含むオブジェクトにしてください。",
 			"modelsArray": "空でないモデルのdata配列が必要です。",
 			"modelsLimit": "カタログには{count}件のモデルがあります。上限は{limit}件です。",
 			"modelObject": "各モデルはオブジェクトにしてください。",

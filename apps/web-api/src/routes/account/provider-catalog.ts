@@ -301,7 +301,7 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 	const entries = modelEntries(payload);
 	const issues: ProviderCatalogIssue[] = [];
 	const body = asRecord(payload);
-	if (!body || Object.keys(body).some((key) => key !== "data" && key !== "rate_limits")) issues.push({ path: "$", message: "Catalog must be an object containing only the data array." });
+	if (!body || Object.keys(body).some((key) => key !== "data" && key !== "rate_limits")) issues.push({ path: "$", message: "Catalog must be an object containing only the data array and optional rate_limits." });
 	if (entries.length === 0) {
 		if (!Array.isArray(body?.data)) issues.push({ path: "data", message: "Expected a data array of models." });
 		const rateLimits = catalogRateLimits(body, [], issues);

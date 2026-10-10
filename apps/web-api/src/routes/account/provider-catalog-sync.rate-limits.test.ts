@@ -6,7 +6,8 @@ import { getDataClient } from "@/data/supabase";
 
 const feedModel = { id: "sample/model", name: "Model", provider_model_slug: "model-1", capabilities: ["responses"], availability: "not_ready" };
 
-function client({ reviewStatus, applyError }: { reviewStatus?: string; applyError?: string } = {}) {
+function client({ reviewStatus, applyError, limitsError }: { reviewStatus?: string; applyError?: string; limitsError?: boolean } = {}) {
+	const updates: Array<{ table: string; values: Record<string, unknown> }> = [];
 	const source = { provider_slug: "sample", status: "active", management_mode: "remote", catalog_url: "https://example.invalid/models", etag: null, last_modified: null, poll_interval_seconds: 3600, consecutive_failures: 0, updated_at: "2026-10-07T00:00:00Z", created_by: "owner-user" };
 	const rows: Record<string, unknown> = {
 		provider_catalog_sources: source,
@@ -21,14 +22,16 @@ function client({ reviewStatus, applyError }: { reviewStatus?: string; applyErro
 			maybeSingle: async () => result(), single: async () => result(),
 			then: (resolve: (value: unknown) => unknown) => Promise.resolve(result()).then(resolve),
 		};
-		for (const method of ["select", "eq", "in", "gt", "order", "limit", "update", "insert"]) builder[method] = () => builder;
+		for (const method of ["select", "eq", "in", "gt", "order", "limit", "insert"]) builder[method] = () => builder;
+		builder.update = (values: Record<string, unknown>) => { updates.push({ table, values }); return builder; };
 		return builder;
 	}
 	const rpc = vi.fn(async (name: string) => name === "apply_provider_catalog_feed_snapshot" && applyError
 		? { data: null, error: { code: "P0001", message: applyError } }
+		: name === "save_provider_rate_limits" && limitsError ? { data: null, error: { code: "57014", message: "canceling statement due to statement timeout" } }
 		: { data: name === "claim_provider_catalog_sync" ? true : name === "consume_provider_catalog_refresh" ? false : name === "apply_provider_catalog_feed_snapshot" ? 1 : true, error: null });
 	vi.mocked(getDataClient).mockReturnValue({ from: query, rpc } as never);
-	return rpc;
+	return Object.assign(rpc, { updates });
 }
 
 function serveFeed(document: unknown) {
@@ -61,6 +64,18 @@ describe("feed-declared rate limits", () => {
 		await syncProviderCatalog({} as never, "sample", "manual").catch(() => undefined);
 		expect(rpc).toHaveBeenCalledWith("apply_provider_catalog_feed_snapshot", expect.anything());
 		expect(rpc).not.toHaveBeenCalledWith("save_provider_rate_limits", expect.anything());
+	});
+
+	it("keeps an applied snapshot applied when saving its limits fails, and retries promptly", async () => {
+		const rpc = client({ reviewStatus: "approved", limitsError: true });
+		vi.spyOn(console, "error").mockImplementation(() => undefined);
+		serveFeed({ data: [feedModel], rate_limits: [{ requests_per_minute: 100 }] });
+		expect((await syncProviderCatalog({} as never, "sample", "poll")).status).toBe("applied");
+		expect(rpc.updates).toContainEqual({ table: "provider_catalog_sync_runs", values: expect.objectContaining({ status: "applied" }) });
+		expect(rpc.updates).not.toContainEqual({ table: "provider_catalog_sync_runs", values: expect.objectContaining({ status: "failed" }) });
+		expect(rpc.updates).toContainEqual({ table: "provider_catalog_sources", values: expect.objectContaining({
+			consecutive_failures: 0, refresh_requested: true, last_error: "The declared rate limits could not be applied. Existing limits remain unchanged.",
+		}) });
 	});
 
 	it("applies limits after the snapshot", async () => {

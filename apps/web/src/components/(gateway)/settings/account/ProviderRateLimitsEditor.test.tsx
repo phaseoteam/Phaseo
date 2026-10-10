@@ -14,8 +14,10 @@ const limit = (model: string | null, overrides: Record<string, number | null> = 
 describe("provider rate limits editor", () => {
 	it("accepts whole positive numbers and treats an empty field as no limit", () => {
 		expect(parseLimit("")).toBeNull();
-		expect(parseLimit(" 1,000_000 ")).toBe(1_000_000);
-		for (const invalid of ["0", "-5", "1.5", "1e3", "abc", "9007199254740993"]) expect(parseLimit(invalid)).toBeUndefined();
+		expect(parseLimit(" 1,000,000 ")).toBe(1_000_000);
+		expect(parseLimit("1_000")).toBe(1_000);
+		expect(parseLimit("2 500 000")).toBe(2_500_000);
+		for (const invalid of ["0", "-5", "1.5", "1,5", "12,34,567", "1,000_000", "1e3", "abc", "9007199254740993"]) expect(parseLimit(invalid)).toBeUndefined();
 	});
 
 	it("always offers a provider-wide row and omits it when left empty", () => {

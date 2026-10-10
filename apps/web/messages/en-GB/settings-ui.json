@@ -3242,7 +3242,7 @@
 			"conditionsLimit": "Expected up to eight pricing conditions.",
 			"conditionFields": "Condition needs a valid path, operator, and value.",
 			"conditionValue": "Use a scalar for eq, a non-empty list for in, or a number for range comparisons.",
-			"catalogShape": "Catalog must be an object containing only the data array.",
+			"catalogShape": "Catalog must be an object containing only the data array and optional rate_limits.",
 			"modelsArray": "Expected a non-empty data array of models.",
 			"modelsLimit": "Catalog contains {count} models; the limit is {limit}.",
 			"modelObject": "Each model must be an object.",

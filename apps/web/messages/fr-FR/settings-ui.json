@@ -3242,7 +3242,7 @@
 			"conditionsLimit": "Huit conditions tarifaires au maximum sont attendues.",
 			"conditionFields": "La condition nécessite un chemin, un opérateur et une valeur valides.",
 			"conditionValue": "Utilisez un scalaire pour eq, une liste non vide pour in ou un nombre pour les comparaisons de plage.",
-			"catalogShape": "Le catalogue doit être un objet contenant uniquement le tableau data.",
+			"catalogShape": "Le catalogue doit être un objet contenant uniquement le tableau data et, éventuellement, rate_limits.",
 			"modelsArray": "Un tableau data de modèles non vide est attendu.",
 			"modelsLimit": "Le catalogue contient {count} modèles ; la limite est de {limit}.",
 			"modelObject": "Chaque modèle doit être un objet.",

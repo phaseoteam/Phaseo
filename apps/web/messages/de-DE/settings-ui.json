@@ -3242,7 +3242,7 @@
 			"conditionsLimit": "Höchstens acht Preisbedingungen sind zulässig.",
 			"conditionFields": "Die Bedingung benötigt einen gültigen Pfad, Operator und Wert.",
 			"conditionValue": "Verwenden Sie einen Skalar für eq, eine nicht leere Liste für in oder eine Zahl für Bereichsvergleiche.",
-			"catalogShape": "Der Katalog muss ein Objekt sein, das nur das Array data enthält.",
+			"catalogShape": "Der Katalog muss ein Objekt sein, das nur das Array data und optional rate_limits enthält.",
 			"modelsArray": "Ein nicht leeres Array data mit Modellen wird erwartet.",
 			"modelsLimit": "Der Katalog enthält {count} Modelle; das Limit beträgt {limit}.",
 			"modelObject": "Jedes Modell muss ein Objekt sein.",

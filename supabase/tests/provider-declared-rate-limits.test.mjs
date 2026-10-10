@@ -111,6 +111,17 @@ try {
   assert.equal(await revision(), before);
   assert.equal((await rows("select count(*)::int as n from public.provider_catalog_edit_events"))[0].n, events);
 
+  // A feed re-import leaves a disabled row disabled; a provider saving the same limits re-enables it.
+  await db.exec('reset role');
+  await db.exec("update public.provider_rate_limits set enabled=false where provider_id='declared'");
+  await db.exec('set role service_role');
+  before = await revision();
+  await save([{ model: 'model-a', tokens_per_day: 40_000_000 }], { check: false, actorId: null });
+  assert.equal((await limits())[0].enabled, false);
+  assert.equal(await revision(), before);
+  await save([{ model: 'model-a', tokens_per_day: 40_000_000 }], { expected: await version() });
+  assert.equal((await limits())[0].enabled, true);
+
   // Feed imports replace without a version, attributed to the provider.
   await save([], { check: false, actorId: null });
   assert.deepEqual(await limits(), []);

@@ -3242,7 +3242,7 @@
 			"conditionsLimit": "最多可指定八个定价条件。",
 			"conditionFields": "条件需要有效的路径、运算符和值。",
 			"conditionValue": "eq 使用标量，in 使用非空列表，范围比较使用数字。",
-			"catalogShape": "目录必须是仅包含 data 数组的对象。",
+			"catalogShape": "目录必须是仅包含 data 数组和可选 rate_limits 的对象。",
 			"modelsArray": "需要非空的模型 data 数组。",
 			"modelsLimit": "目录包含 {count} 个模型；上限为 {limit}。",
 			"modelObject": "每个模型都必须是对象。",

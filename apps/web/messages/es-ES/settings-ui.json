@@ -3242,7 +3242,7 @@
 			"conditionsLimit": "Se esperan como máximo ocho condiciones de precios.",
 			"conditionFields": "La condición necesita una ruta, un operador y un valor válidos.",
 			"conditionValue": "Usa un escalar para eq, una lista no vacía para in o un número para comparaciones de rango.",
-			"catalogShape": "El catálogo debe ser un objeto que contenga únicamente la matriz data.",
+			"catalogShape": "El catálogo debe ser un objeto que contenga únicamente la matriz data y, opcionalmente, rate_limits.",
 			"modelsArray": "Se espera una matriz data de modelos no vacía.",
 			"modelsLimit": "El catálogo contiene {count} modelos; el límite es {limit}.",
 			"modelObject": "Cada modelo debe ser un objeto.",

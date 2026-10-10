@@ -251,13 +251,17 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 			throw new Error("The catalog could not be applied. Existing offers and prices remain unchanged.");
 		}
 		// Limits follow only an applied snapshot, so a rejected or conflicting one changes nothing.
-		// If this fails, the run fails with a refresh requested and the next sync refetches in full.
+		// A failed save leaves the snapshot applied and requests a prompt full refetch to retry.
 		// A feed without rate_limits leaves limits managed in provider settings untouched.
-		if (catalog.preview.rateLimits) await applyDeclaredRateLimits(client, source, catalog.preview.rateLimits);
+		let rateLimitsError: string | null = null;
+		if (catalog.preview.rateLimits) {
+			try { await applyDeclaredRateLimits(client, source, catalog.preview.rateLimits); }
+			catch (error) { rateLimitsError = error instanceof Error ? error.message : "The declared rate limits could not be applied."; }
+		}
 		await renewLease(true);
 		const now = new Date().toISOString();
 		await client.from("provider_catalog_sync_runs").update({ status: "applied", catalog_sha256: catalog.sha256, model_count: preview.modelCount, model_preview: publicPreview(preview), validation_summary: { valid: true, issues: [], checked_at: now }, completed_at: now }).eq("id", runId);
-		await client.from("provider_catalog_sources").update({ last_success_at: source.management_mode === "managed" ? now : undefined, last_polled_at: trigger === "poll" ? now : undefined, last_catalog_sha256: catalog.sha256, etag: catalog.etag, last_modified: catalog.lastModified, consecutive_failures: 0, last_error: null, updated_at: now }).eq("provider_slug", providerSlug);
+		await client.from("provider_catalog_sources").update({ last_success_at: source.management_mode === "managed" ? now : undefined, last_polled_at: trigger === "poll" ? now : undefined, last_catalog_sha256: catalog.sha256, etag: catalog.etag, last_modified: catalog.lastModified, consecutive_failures: 0, last_error: rateLimitsError, ...(rateLimitsError ? { refresh_requested: true, next_poll_at: new Date(Date.now() + 5 * 60_000).toISOString() } : {}), updated_at: now }).eq("provider_slug", providerSlug);
 		if (source.management_mode === "remote") await client.from("provider_catalog_sources").update({ next_poll_at: nextPollAt(source.poll_interval_seconds, 0) }).eq("provider_slug", providerSlug).eq("refresh_requested", false);
 		await notifyPendingProviderModels(env).catch(() => { console.error("provider_model_notification_failed"); });
 		return { status: "applied", runId, modelCount: Number(applied.data ?? preview.modelCount) };

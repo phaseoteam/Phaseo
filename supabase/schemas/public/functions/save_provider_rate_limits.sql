@@ -51,9 +51,9 @@ begin
     ) order by limits.provider_model_slug),'[]'::jsonb), coalesce(bool_and(limits.enabled),true)
   into previous, all_enabled
   from public.provider_rate_limits limits where limits.provider_id=p_provider_slug;
-  -- Unchanged declarations (for example a feed re-import) leave rows, audit history and the
-  -- routing catalogue revision untouched.
-  if previous=desired and all_enabled then return source.rate_limits_updated_at; end if;
+  -- Unchanged declarations leave rows, audit history and the routing catalogue revision untouched.
+  -- A provider saving them again re-enables disabled rows; a feed re-import never does.
+  if previous=desired and (all_enabled or not p_check_version) then return source.rate_limits_updated_at; end if;
   delete from public.provider_rate_limits limits
   where limits.provider_id=p_provider_slug
     and not exists (select 1 from jsonb_array_elements(desired) scope where scope->>'model'=limits.provider_model_slug);

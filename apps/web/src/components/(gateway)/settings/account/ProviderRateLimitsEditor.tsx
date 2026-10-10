@@ -35,10 +35,11 @@ export function toDrafts(limits: ProviderRateLimit[]): Draft[] {
 
 /** A whole number above zero, null for an empty field, or undefined when invalid. */
 export function parseLimit(value: string): number | null | undefined {
-	const text = value.trim().replace(/[,_\s]/g, "");
+	const text = value.trim();
 	if (!text) return null;
-	if (!/^\d+$/.test(text)) return undefined;
-	const number = Number(text);
+	// Plain digits, or thousands grouped consistently with commas, underscores or spaces.
+	if (!/^(?:\d+|\d{1,3}([,_ ])\d{3}(?:\1\d{3})*)$/.test(text)) return undefined;
+	const number = Number(text.replace(/[,_ ]/g, ""));
 	return number > 0 && Number.isSafeInteger(number) ? number : undefined;
 }
 
@@ -79,11 +80,20 @@ export default function ProviderRateLimitsEditor({ providerSlug, rateLimits, mod
 	onDirtyChange?: (dirty: boolean) => void;
 }) {
 	const t = useTranslations("SettingsUI.providerRateLimits");
+	// The saved limits the drafts were derived from. Saves are checked against this version, so
+	// a draft started before limits changed elsewhere (for example a feed sync) is refused.
+	const [base, setBase] = React.useState(rateLimits);
 	const [drafts, setDrafts] = React.useState(() => toDrafts(rateLimits.limits));
 	const [newModel, setNewModel] = React.useState("");
 	const [dirty, setDirty] = React.useState(false);
 	const [saving, setSaving] = React.useState(false);
-	const [stale, setStale] = React.useState(false);
+	const [conflict, setConflict] = React.useState(false);
+	if (rateLimits.version !== base.version && !dirty && !saving) {
+		// Nothing unsaved: follow the newer limits instead of discarding work.
+		setBase(rateLimits);
+		setDrafts(toDrafts(rateLimits.limits));
+	}
+	const stale = conflict || (dirty && rateLimits.version !== base.version);
 	const [issues, setIssues] = React.useState<ReadonlyArray<{ path: string; message: string }>>([]);
 	React.useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 	const options = upstreamModels(models);
@@ -113,13 +123,15 @@ export default function ProviderRateLimitsEditor({ providerSlug, rateLimits, mod
 		if ("error" in prepared) return void toast.error(prepared.error === "emptyModel" ? t("emptyModel", { model: prepared.model }) : t("invalidNumber"));
 		setSaving(true);
 		try {
-			const result = await updateProviderRateLimitsAction(providerSlug, prepared.limits, rateLimits.version);
+			const result = await updateProviderRateLimitsAction(providerSlug, prepared.limits, base.version);
 			if (!result.ok) {
 				setIssues(result.issues);
-				if (result.conflict) { setStale(true); toast.error(t("stale")); }
+				if (result.conflict) { setConflict(true); toast.error(t("stale")); }
 				return;
 			}
 			setIssues([]);
+			setBase(result.rateLimits);
+			setDrafts(toDrafts(result.rateLimits.limits));
 			setDirty(false);
 			toast.success(t("saved"));
 			onSaved(result.rateLimits);
