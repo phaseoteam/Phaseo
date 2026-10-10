@@ -11,6 +11,7 @@ import lazyScopes from "./lazy-message-scopes.json";
 import { gzipSync } from "node:zlib";
 import { selectClientMessages } from "./client-message-selection";
 import { localizedProviderCatalogMessage } from "./provider-catalog-messages";
+import { BENCHMARK_CONFIGURATION_KEYS } from "./benchmark-display";
 
 function routeNamespaces(directory: string): string[][] {
 	return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -89,6 +90,24 @@ describe("route message selection", () => {
 		expect(gzipSync(JSON.stringify(selected)).byteLength).toBeLessThan(7_500);
 		expect((selected.Site as Record<string, unknown>).home).toBeUndefined();
 		expect((selected.SettingsUI as Record<string, unknown>).providerCatalogCopy).toBeUndefined();
+	});
+
+	it("keeps model configuration copy without unrelated catalogue pages in every locale", async () => {
+		const modelScope = scopes.find(scope => scope.includes("Catalogue.models.detail") && scope.includes("Common.ui.publicModelCopy"));
+		expect(modelScope).toBeDefined();
+		for (const locale of publicLocales) {
+			const messages = await getPublicMessages(locale);
+			const selected = selectClientMessages(messages, modelScope!);
+			const catalogue = selected.Catalogue as Record<string, unknown>;
+			for (const key of ["compare", "monitor", "updates", "updatesCalendar", "countryDetail"]) {
+				expect(catalogue[key]).toBeUndefined();
+			}
+			const translate = createTranslator({ locale, messages: selected } as never);
+			for (const key of Object.values(BENCHMARK_CONFIGURATION_KEYS)) {
+				expect(translate.has(key as never)).toBe(true);
+			}
+			expect(catalogue.modelDetail).toEqual(messages.Catalogue.modelDetail);
+		}
 	});
 
 	it("merges features without losing shared nested keys or mutating source catalogs", () => {
