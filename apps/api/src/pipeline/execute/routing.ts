@@ -20,7 +20,7 @@ import {
 import { providerMeetsResidencyRequirement } from "@/lib/config/providerResidency";
 import { routeMeetsAvailabilityPolicy } from "@/lib/config/routeAvailability";
 import { readHealthManyOptimistic, ProviderHealth } from "./health";
-import { providerLimitModel, providerQuotaSaturated } from "@core/provider-rate-limits";
+import { providerLimitModel, providerQuotaPressure } from "@core/provider-rate-limits";
 import { isRecoveryProbeRequest } from "./health.config";
 import { ageHealth } from "./health-evidence";
 import { stripPrioritySuffix } from "./utils";
@@ -1366,10 +1366,11 @@ export async function routeProviders(
                 })),
         });
     }
-    const isQuotaSaturated = (entry: { candidate: ProviderCandidate }) =>
-        !usesOwnCredentials(entry.candidate) &&
-        providerQuotaSaturated(entry.candidate.providerId, providerLimitModel(entry.candidate));
-    const quotaSaturated = healths.filter(isQuotaSaturated);
+    const quotaPressure = (entry: { candidate: ProviderCandidate }) =>
+        usesOwnCredentials(entry.candidate)
+            ? 0
+            : providerQuotaPressure(entry.candidate.providerId, providerLimitModel(entry.candidate));
+    const quotaSaturated = healths.filter((entry) => quotaPressure(entry) > 0);
     if (quotaSaturated.length > 0) {
         filterStages.push({
             stage: "provider_quota",
@@ -1512,7 +1513,8 @@ export async function routeProviders(
         };
         const baseScore = Object.values(contributions).reduce((sum, value) => sum + value, 0);
         const recentOutageMultiplier = isRecentOutage(v) ? 1e-9 : 1;
-        const providerQuotaMultiplier = isQuotaSaturated(v) ? PROVIDER_QUOTA_SATURATED_MULTIPLIER : 1;
+        const providerQuotaOverage = quotaPressure(v);
+        const providerQuotaMultiplier = providerQuotaOverage > 0 ? PROVIDER_QUOTA_SATURATED_MULTIPLIER : 1;
 
         const score = Math.max(
             0,
@@ -1551,6 +1553,8 @@ export async function routeProviders(
             adapter: v.adapter,
             health: h,
             score,
+            providerQuotaOverage,
+            recentOutage: isRecentOutage(v),
 			scoreFactorValues,
 			get scoreTrace(): RoutingScoreTrace { return cachedTrace ??= {
                 inputs: {
@@ -1618,11 +1622,21 @@ export async function routeProviders(
         primary: entries.filter((entry) => !isExternalProvider(entry)),
         external: entries.filter(isExternalProvider),
     });
+    // Candidates at a managed upstream limit stay routable behind every other candidate except
+    // open breakers, least over their limit first. Weighted order alone cannot guarantee this:
+    // it floors tiny weights. Without a saturated candidate the order is unchanged.
+    const quotaSaturatedLast = (entries: typeof routableScored) => {
+        if (!entries.some((entry) => entry.providerQuotaOverage > 0)) return entries;
+        const tier = (entry: typeof routableScored[number]) =>
+            entry.recentOutage ? 2 : entry.providerQuotaOverage > 0 ? 1 : 0;
+        return [...entries].sort((a, b) => tier(a) - tier(b) ||
+            (tier(a) === 1 ? a.providerQuotaOverage - b.providerQuotaOverage : 0));
+    };
     const weightedOrderWithExternalFallback = (entries: typeof routableScored) => {
         const { primary, external } = splitExternalFallback(entries);
         return [
-            ...weightedOrder(primary, (entry) => entry.score, rng),
-            ...weightedOrder(external, (entry) => entry.score, rng),
+            ...quotaSaturatedLast(weightedOrder(primary, (entry) => entry.score, rng)),
+            ...quotaSaturatedLast(weightedOrder(external, (entry) => entry.score, rng)),
         ];
     };
     const explorationRequest = Boolean(ctx.requestId && isRecoveryProbeRequest(ctx.workspaceId, ctx.requestId));
@@ -1661,7 +1675,7 @@ export async function routeProviders(
             (entry) => !orderedSet.has(getRoutingCandidateKey(entry.candidate))
         );
         if (strict || deterministicRequestSort) {
-            const ranked = [...ordered, ...remaining.sort((a, b) => b.score - a.score)];
+            const ranked = [...ordered, ...quotaSaturatedLast(remaining.sort((a, b) => b.score - a.score))];
             return {
                 ranked,
 			diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked), false, "explicit_provider_order"),
@@ -1678,8 +1692,8 @@ export async function routeProviders(
     if (strict || deterministicRequestSort) {
         const { primary, external } = splitExternalFallback(routableScored);
         const ranked = [
-            ...primary.sort(compareScores),
-            ...external.sort(compareScores),
+            ...quotaSaturatedLast(primary.sort(compareScores)),
+            ...quotaSaturatedLast(external.sort(compareScores)),
         ];
         const recovery = selectRecovery(ranked);
         return {

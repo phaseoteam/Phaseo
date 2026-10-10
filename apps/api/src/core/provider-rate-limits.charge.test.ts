@@ -66,14 +66,14 @@ describe("non-blocking provider quota charges", () => {
 		runtime.acquire.mockResolvedValue({ ok: false, denial: { allowed: false, reason: "requests_per_minute", retryAfterSeconds: 30, reservation: null } });
 		const now = Date.now(); const clock = vi.spyOn(Date, "now").mockReturnValue(now);
 		try {
-			const { chargeManagedProvider, providerQuotaSaturated } = await import("./provider-rate-limits");
-			expect(providerQuotaSaturated("openai", "gpt-x")).toBe(false);
+			const { chargeManagedProvider, providerQuotaPressure } = await import("./provider-rate-limits");
+			expect(providerQuotaPressure("openai", "gpt-x")).toBe(0);
 			await chargeManagedProvider({ providerId: "openai", model: "gpt-x", reservationTokens: 10 }).reservations;
-			expect(providerQuotaSaturated("openai", "gpt-x")).toBe(true);
-			expect(providerQuotaSaturated("openai", "gpt-y")).toBe(false);
-			expect(providerQuotaSaturated("anthropic", "gpt-x")).toBe(false);
+			expect(providerQuotaPressure("openai", "gpt-x")).toBeGreaterThan(0);
+			expect(providerQuotaPressure("openai", "gpt-y")).toBe(0);
+			expect(providerQuotaPressure("anthropic", "gpt-x")).toBe(0);
 			clock.mockReturnValue(now + 31_000);
-			expect(providerQuotaSaturated("openai", "gpt-x")).toBe(false);
+			expect(providerQuotaPressure("openai", "gpt-x")).toBe(0);
 		} finally { clock.mockRestore(); }
 	});
 
@@ -115,10 +115,32 @@ describe("non-blocking provider quota charges", () => {
 	it("a provider-wide refusal deranks every model of that provider", async () => {
 		runtime.rows = [limit({ requests_per_day: 5 })];
 		runtime.acquire.mockResolvedValue({ ok: false, denial: { allowed: false, reason: "requests_per_day", retryAfterSeconds: 3_600, reservation: null } });
-		const { chargeManagedProvider, providerQuotaSaturated } = await import("./provider-rate-limits");
+		const { chargeManagedProvider, providerQuotaPressure } = await import("./provider-rate-limits");
 		await chargeManagedProvider({ providerId: "openai", model: "gpt-x", reservationTokens: 10 }).reservations;
-		expect(providerQuotaSaturated("openai", "gpt-y")).toBe(true);
-		expect(providerQuotaSaturated("openai", null)).toBe(true);
+		expect(providerQuotaPressure("openai", "gpt-y")).toBeGreaterThan(0);
+		expect(providerQuotaPressure("openai", null)).toBeGreaterThan(0);
+	});
+
+	it("reports how far over its limit a provider and model is, worst scope first", async () => {
+		runtime.rows = [limit({ requests_per_minute: 100 }), limit({ provider_model_slug: "gpt-x", requests_per_minute: 10 })];
+		runtime.acquire.mockImplementation(async (name: string, _config: unknown, need: { requests: number; units: number }) =>
+			name === "managed:openai::gpt-x"
+				? { ok: false, denial: { allowed: false, reason: "requests_per_minute", retryAfterSeconds: 30, reservation: null, overage: 1.5 } }
+				: grant(need));
+		const { chargeManagedProvider, providerQuotaPressure } = await import("./provider-rate-limits");
+		await chargeManagedProvider({ providerId: "openai", model: "gpt-x", reservationTokens: 10 }).reservations;
+		expect(providerQuotaPressure("openai", "gpt-x")).toBe(1.5);
+		expect(providerQuotaPressure("openai", "gpt-y")).toBe(0);
+	});
+
+	it("measures overage against the provider's own limit", async () => {
+		const { resolveProviderRateLimitDenial } = await import("./provider-rate-limits");
+		const counters = { minuteWindow: 0, dayWindow: 0, minuteRequests: 12, dayRequests: 50, minuteTokens: 900, dayTokens: 0 };
+		const config = { providerId: "openai", requestsPerMinute: 10, requestsPerDay: 1_000, tokensPerMinute: 1_000, tokensPerDay: null, headroomBps: 1_000 };
+		// 13/10 requests beats 1,000/1,000 tokens (refused only because of the 10% headroom).
+		expect(resolveProviderRateLimitDenial(config, counters, 0, 100)?.overage).toBeCloseTo(1.3);
+		// An unbounded reservation is not counted as overage.
+		expect(resolveProviderRateLimitDenial({ ...config, requestsPerMinute: null }, counters, 0, Number.MAX_SAFE_INTEGER)?.overage).toBeCloseTo(0.9);
 	});
 
 	it("fails open without saturating anything when the coordinator is unavailable", async () => {
@@ -126,9 +148,9 @@ describe("non-blocking provider quota charges", () => {
 		runtime.rows = [limit({ requests_per_minute: 1 })];
 		runtime.acquire.mockRejectedValue(new Error("object overloaded"));
 		try {
-			const { chargeManagedProvider, providerQuotaSaturated } = await import("./provider-rate-limits");
+			const { chargeManagedProvider, providerQuotaPressure } = await import("./provider-rate-limits");
 			expect(await chargeManagedProvider({ providerId: "openai", model: "gpt-x", reservationTokens: 10 }).reservations).toEqual([]);
-			expect(providerQuotaSaturated("openai", "gpt-x")).toBe(false);
+			expect(providerQuotaPressure("openai", "gpt-x")).toBe(0);
 		} finally { log.mockRestore(); }
 	});
 

@@ -54,6 +54,8 @@ export type ProviderRateLimitAdmission = {
 	reason: "requests_per_minute" | "requests_per_day" | "tokens_per_minute" | "tokens_per_day" | null;
 	retryAfterSeconds: number | null;
 	reservation: ProviderTokenReservation | null;
+	/** Denials only: usage over the provider's limit (1.2 = 20% over), worst exceeded limit. */
+	overage?: number;
 	/** How the decision was made (telemetry only). */
 	source?: "lease" | "coordinator" | "fail_open" | "unconfigured";
 };
@@ -94,22 +96,28 @@ export function resolveProviderRateLimitDenial(
 	reservationTokens = 0,
 	reservationRequests = 1,
 ): ProviderRateLimitAdmission | null {
-	const violations: Array<{ reason: NonNullable<ProviderRateLimitAdmission["reason"]>; resetMs: number }> = [];
+	const violations: Array<{ reason: NonNullable<ProviderRateLimitAdmission["reason"]>; resetMs: number; overage: number }> = [];
 	const minuteResetMs = (counters.minuteWindow + 1) * 60_000;
 	const dayResetMs = (counters.dayWindow + 1) * DAY_MS;
+	// An unbounded reservation says nothing about how far over the limit the scope is.
+	const knownTokens = reservationTokens === Number.MAX_SAFE_INTEGER ? 0 : reservationTokens;
 	if (config.requestsPerMinute != null && counters.minuteRequests + reservationRequests > config.requestsPerMinute) {
-		violations.push({ reason: "requests_per_minute", resetMs: minuteResetMs });
+		violations.push({ reason: "requests_per_minute", resetMs: minuteResetMs,
+			overage: (counters.minuteRequests + reservationRequests) / Math.max(1, config.requestsPerMinute) });
 	}
 	if (config.requestsPerDay != null && counters.dayRequests + reservationRequests > config.requestsPerDay) {
-		violations.push({ reason: "requests_per_day", resetMs: dayResetMs });
+		violations.push({ reason: "requests_per_day", resetMs: dayResetMs,
+			overage: (counters.dayRequests + reservationRequests) / Math.max(1, config.requestsPerDay) });
 	}
 	const tokensPerMinute = effectiveTokenLimit(config.tokensPerMinute, config.headroomBps);
 	if (tokensPerMinute != null && counters.minuteTokens + reservationTokens > tokensPerMinute) {
-		violations.push({ reason: "tokens_per_minute", resetMs: minuteResetMs });
+		violations.push({ reason: "tokens_per_minute", resetMs: minuteResetMs,
+			overage: (counters.minuteTokens + knownTokens) / Math.max(1, config.tokensPerMinute!) });
 	}
 	const tokensPerDay = effectiveTokenLimit(config.tokensPerDay, config.headroomBps);
 	if (tokensPerDay != null && counters.dayTokens + reservationTokens > tokensPerDay) {
-		violations.push({ reason: "tokens_per_day", resetMs: dayResetMs });
+		violations.push({ reason: "tokens_per_day", resetMs: dayResetMs,
+			overage: (counters.dayTokens + knownTokens) / Math.max(1, config.tokensPerDay!) });
 	}
 	if (!violations.length) return null;
 	const blocking = violations.sort((left, right) => right.resetMs - left.resetMs)[0];
@@ -118,6 +126,7 @@ export function resolveProviderRateLimitDenial(
 		reason: blocking.reason,
 		retryAfterSeconds: Math.max(1, Math.ceil((blocking.resetMs - nowMs) / 1000)),
 		reservation: null,
+		overage: Math.max(...violations.map((violation) => violation.overage)),
 	};
 }
 
@@ -348,31 +357,35 @@ async function loadConfigs(providerId: string): Promise<ProviderRateLimitConfig[
 // Scopes a coordinator refused, until their blocking window resets. Isolate-local: each
 // isolate learns from its own (background) charges and deranks the scope in routing.
 const MAX_SATURATED_SCOPES = 2_000;
-const saturatedUntil = new Map<string, number>();
+const saturatedUntil = new Map<string, { until: number; overage: number }>();
 
-function markSaturated(scope: string, retryAfterSeconds: number | null): void {
+function markSaturated(scope: string, denial: ProviderRateLimitAdmission): void {
 	saturatedUntil.delete(scope);
 	if (saturatedUntil.size >= MAX_SATURATED_SCOPES) saturatedUntil.delete(saturatedUntil.keys().next().value!);
-	saturatedUntil.set(scope, Date.now() + Math.max(1, retryAfterSeconds ?? 60) * 1000);
+	saturatedUntil.set(scope, {
+		until: Date.now() + Math.max(1, denial.retryAfterSeconds ?? 60) * 1000,
+		overage: Number.isFinite(denial.overage) && denial.overage! > 0 ? denial.overage! : 1,
+	});
 }
 
-function scopeSaturated(scope: string, now: number): boolean {
-	const until = saturatedUntil.get(scope);
-	if (until === undefined) return false;
-	if (until > now) return true;
+function scopePressure(scope: string, now: number): number {
+	const entry = saturatedUntil.get(scope);
+	if (entry === undefined) return 0;
+	if (entry.until > now) return entry.overage;
 	saturatedUntil.delete(scope);
-	return false;
+	return 0;
 }
 
 /**
- * Whether this provider (across its models, or for this model) recently reached a limit on
- * Phaseo's managed credentials. Synchronous: routing deranks such candidates, never drops them.
+ * How far this provider (across its models, or for this model) recently went over a limit on
+ * Phaseo's managed credentials: 0 when it did not, otherwise the worst overage (1.2 = 20%
+ * over). Synchronous: routing deranks such candidates, least over first, never drops them.
  */
-export function providerQuotaSaturated(providerId: string, model: string | null): boolean {
-	if (saturatedUntil.size === 0) return false;
+export function providerQuotaPressure(providerId: string, model: string | null): number {
+	if (saturatedUntil.size === 0) return 0;
 	const now = Date.now();
-	return scopeSaturated(providerId, now) ||
-		(model != null && scopeSaturated(providerLimitScope({ providerId, modelSlug: model }), now));
+	return Math.max(scopePressure(providerId, now),
+		model != null ? scopePressure(providerLimitScope({ providerId, modelSlug: model }), now) : 0);
 }
 
 type ProviderRateLimitStub = {
@@ -461,7 +474,7 @@ async function admitScope(
 		const admission = await pool.admit(reservationId, { requests: reservationRequests, units: tokens },
 			transportFor(stub, config, reservationId));
 		if ("denial" in admission) {
-			markSaturated(scope, admission.denial.retryAfterSeconds);
+			markSaturated(scope, admission.denial);
 			if (unboundedTokens === "reserve_all") return { ...admission.denial, source: "coordinator" };
 			// The attempt is still sent (deranked, not blocked), so it must still count, above all
 			// toward longer windows: its request now, its tokens once usage is known.
