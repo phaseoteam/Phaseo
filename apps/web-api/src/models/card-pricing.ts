@@ -196,19 +196,39 @@ function mediaUnitRank(unit: string): number {
 	return index === -1 ? MEDIA_UNIT_ORDER.length : index;
 }
 
+const DISCOUNT_TIER = /batch|flex|discount/;
+
+/**
+ * Narrows rates to the most representative service tier: standard when
+ * present, then other full-price tiers (provider-named tiers, on-demand,
+ * priority), and only then discounted tiers such as batch, so a discounted
+ * rate is never shown as a list price while a full-price rate exists.
+ */
+function preferredTier(rates: Rate[]): Rate[] {
+	const standard = rates.filter((item) => item.tier === "standard");
+	if (standard.length) return standard;
+	const fullPrice = rates.filter((item) => !DISCOUNT_TIER.test(item.tier));
+	return fullPrice.length ? fullPrice : rates;
+}
+
+const isTextToken = (item: Rate) => item.unit === "1M tokens" && item.modality === "text"
+	&& (item.side === "input" || item.side === "output");
+
 function summarise(model: Row, rates: Rate[]): CardPricingSummary | null {
 	const base = rates.filter((item) => !item.auxiliary);
-	const standard = base.filter((item) => item.tier === "standard");
-	const candidates = standard.length ? standard : base;
+	const candidates = preferredTier(base);
 	if (!candidates.length) return null;
 	if (candidates.every((item) => item.price === 0)) return { kind: "free" };
 
 	const outputModalities = model.gateway_output_modalities ?? model.output_types ?? model.output_modalities;
 	const outputs = Array.isArray(outputModalities) ? outputModalities.map((item) => String(item).toLowerCase()) : [];
-	const mediaOutputs = candidates.filter((item) => item.side === "output" && MEDIA.includes(item.modality) && item.unit !== "1M tokens");
+	const isMediaOutput = (item: Rate) => item.side === "output" && MEDIA.includes(item.modality) && item.unit !== "1M tokens";
+	const mediaOutputs = preferredTier(base.filter(isMediaOutput));
 	const media = mediaOutputs.length > 0 || (outputs.some((item) => /image|video|audio/.test(item)) && !outputs.includes("text"));
 
-	const tokens = candidates.filter((item) => item.unit === "1M tokens" && item.modality === "text");
+	// Token rates are chosen in their own best tier, so a standard-tier tool
+	// fee cannot displace input/output pricing offered only in other tiers.
+	const tokens = preferredTier(base.filter(isTextToken));
 	const input = tokens.filter((item) => item.side === "input");
 	const output = tokens.filter((item) => item.side === "output");
 	if (!media && (input.length || output.length)) {
@@ -267,11 +287,13 @@ export function normalizeModelsPagePricing(model: Row): Row {
 				: `${spread(items)} / ${items[0].unit}`,
 		}));
 
-	const headline = rates.filter((item) => !item.auxiliary && item.tier === "standard");
+	// The compatibility fields (price sort, older consumers) use the same tier
+	// preference as the headline, so tier-only models keep a sortable price.
+	const headline = rates.filter((item) => !item.auxiliary);
 	const lowest = (side: Rate["side"]) => {
 		const matches = headline.filter((item) => item.side === side);
 		const tokenMatches = matches.filter((item) => item.unit === "1M tokens");
-		const pool = tokenMatches.length ? tokenMatches : matches;
+		const pool = preferredTier(tokenMatches.length ? tokenMatches : matches);
 		return pool.length && pool.every((item) => item.unit === pool[0].unit)
 			? { price: min(pool), unit: pool[0].unit }
 			: null;

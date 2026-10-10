@@ -141,6 +141,27 @@ describe("normalizeModelsPagePricing", () => {
 		expect(card([usage("deepinfra_cost_usd", 1, "usd")], ["image"]).pricing_summary).toBeNull();
 	});
 
+	it("keeps token pricing from provider tiers ahead of a standard-tier tool fee", () => {
+		const row = card([
+			tokens("input_text_tokens", 0.5, { service_tier: "upstream-1" }),
+			tokens("output_text_tokens", 1.5, { service_tier: "upstream-1" }),
+			usage("native_web_search_requests", 0.0006, "request"),
+		]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 0.5, output: 1.5, unit: "1M tokens" });
+		expect(row).toMatchObject({ lowest_input_price: 0.5, lowest_output_price: 1.5, lowest_from_price: 0.5 });
+	});
+
+	it("prefers full-price tiers over batch when there is no standard tier", () => {
+		const row = card([
+			tokens("input_text_tokens", 1, { service_tier: "batch" }),
+			tokens("output_text_tokens", 4, { service_tier: "batch" }),
+			tokens("input_text_tokens", 2, { service_tier: "on-demand" }),
+			tokens("output_text_tokens", 8, { service_tier: "on-demand" }),
+		]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 2, output: 8, unit: "1M tokens" });
+		expect(row).toMatchObject({ lowest_input_price: 2, lowest_output_price: 8 });
+	});
+
 	it("passes preformatted rows through untouched", () => {
 		const rows = [{ label: "Custom contract", value: "Contact provider" }];
 		const row = normalizeModelsPagePricing({ pricing_detail_rows: rows });
