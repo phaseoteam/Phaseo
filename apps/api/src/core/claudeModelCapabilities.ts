@@ -2,6 +2,10 @@ export function normalizeClaudeModelId(model: string | null | undefined): string
 	return typeof model === "string" ? model.trim().toLowerCase() : "";
 }
 
+export function isClaudeOpus55(model: string | null | undefined): boolean {
+	return /(?:^|[/.])claude-opus-5[.-]5$/.test(normalizeClaudeModelId(model));
+}
+
 export function usesClaudeAdaptiveThinkingControls(model: string | null | undefined): boolean {
 	const normalized = normalizeClaudeModelId(model);
 	if (!normalized) return false;

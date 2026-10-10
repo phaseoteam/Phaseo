@@ -359,14 +359,14 @@ export async function collectAnthropicStreamUsage(
 	return accounting.snapshot();
 }
 
-function mapAnthropicStopReason(stopReason: string | null): Bill["finish_reason"] {
+export function mapAnthropicStopReason(stopReason: string | null): Bill["finish_reason"] {
 	if (stopReason === "max_tokens" || stopReason === "model_context_window_exceeded") return "length";
 	if (stopReason === "tool_use") return "tool_calls";
 	if (stopReason === "refusal") return "content_filter";
 	return stopReason ? "stop" : null;
 }
 
-async function bufferAnthropicStreamToMessage(res: Response, upstreamStartMs: number): Promise<{ message: any; firstFrameMs: number | null; totalMs: number | null }> {
+export async function bufferAnthropicStreamToMessage(res: Response, upstreamStartMs: number): Promise<{ message: any; firstFrameMs: number | null; totalMs: number | null }> {
 	if (!res.body) throw new Error("anthropic_stream_missing_body");
 	const reader = res.body.getReader();
 	const parser = new SseParser();

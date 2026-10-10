@@ -73,6 +73,15 @@ try {
   assert.equal(current.boundaryAt, boundaryAt);
   assert.equal(current.expiresAt <= current.boundaryAt, true);
   assert.equal(current.variants[0].pricing.test.rules[0].price_per_unit, 0.2);
+  // Opus 5.5 was staged with both gates closed. Enabling the route alone
+  // must not expose a degraded text capability to prepaid managed routing.
+  await db.exec(`update public.v2_model_provider_routes set status='disabled',routing_enabled=false where provider_model_id='${route}';
+    update public.v2_route_capabilities set status='degraded' where provider_model_id='${route}'`);
+  assert.equal((await one(`select public.gateway_fetch_public_catalog_at('lab/model',array['text.generate'],now()) as value`)).variants[0].providers.length, 0);
+  await db.exec(`update public.v2_model_provider_routes set status='active',routing_enabled=true where provider_model_id='${route}'`);
+  assert.equal((await one(`select public.gateway_fetch_public_catalog_at('lab/model',array['text.generate'],now()) as value`)).variants[0].providers.length, 0);
+  await db.exec(`update public.v2_route_capabilities set status='active' where provider_model_id='${route}'`);
+  assert.equal((await one(`select public.gateway_fetch_public_catalog_at('lab/model',array['text.generate'],now()) as value`)).variants[0].providers.length, 1);
   // Apart from the added fields, the legacy wrapper returns the same snapshot.
   const { revision: _revision, boundaryAt: _boundary, checkedAt: _c1, expiresAt: _e1, ...currentShape } = current;
   const { checkedAt: _c2, expiresAt: _e2, ...legacyShape } = legacy;

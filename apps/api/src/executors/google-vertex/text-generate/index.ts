@@ -8,8 +8,10 @@ import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
-import { irToAnthropicMessages, anthropicMessagesToIR } from "@executors/anthropic/text-generate";
-import { createAnthropicToResponsesStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
+import { irToAnthropicMessages, anthropicMessagesToIR, bufferAnthropicStreamToMessage, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
+import { createAnthropicToResponsesStreamTransformer, createAnthropicStreamAccounting, createAnthropicPassthroughStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
+import { isClaudeOpus55 } from "@core/claudeModelCapabilities";
+import { assertClaudeRequestSupported } from "@core/claudeRequestValidation";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { transformStream as transformGoogleGeminiStream } from "@executors/google-ai-studio/text-generate";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
@@ -41,12 +43,14 @@ function vertexError(code: string): Error & { code: string } {
 }
 
 export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChatRequest {
+	assertClaudeRequestSupported(ir, args.providerModelSlug ?? ir.model, args.providerId);
 	return cherryPickIRParams(ir, args.capabilityParams);
 }
 
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const irRequest = args.ir as IRChatRequest;
 	const model = args.providerModelSlug ?? irRequest.model;
+	assertClaudeRequestSupported(irRequest, model, args.providerId);
 	const bindings = getBindings() as any;
 	const keyInfo = resolveProviderKey(args, () =>
 		bindings.GOOGLE_VERTEX_ACCESS_TOKEN || bindings.GOOGLE_VERTEX_API_KEY,
@@ -120,6 +124,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	if (res.body && !isJsonResponse) {
 		if (irRequest.stream) {
+			const accounting = route.family === "anthropic" && isClaudeOpus55(model) ? createAnthropicStreamAccounting() : undefined;
 			const stream = (() => {
 				if (route.family === "gemini") {
 					return transformGoogleGeminiStream(res.body!, args);
@@ -134,8 +139,11 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 						"chat",
 					);
 				}
+				if (accounting && args.protocol === "anthropic.messages") {
+					return res.body!.pipeThrough(createAnthropicPassthroughStreamTransformer(accounting));
+				}
 				const responsesStream = res.body!.pipeThrough(
-					createAnthropicToResponsesStreamTransformer(args.requestId, model),
+					createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting }),
 				);
 				return resolveStreamForProtocol(
 					new Response(responsesStream, {
@@ -151,7 +159,12 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				kind: "stream",
 				allowEmptySuccess: true,
 				stream,
-				usageFinalizer: async () => null,
+				usageFinalizer: async () => {
+					if (!accounting) return null;
+					const final = accounting.snapshot();
+					return { ...bill, usage: normalizeTextUsageForPricing(final.usage) ?? undefined,
+						finish_reason: mapAnthropicStopReason(final.stopReason) };
+				},
 				bill,
 				upstream: res,
 				keySource: keyInfo.source,
@@ -162,6 +175,14 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 					generationMs: undefined,
 				},
 			};
+		}
+		if (route.family === "anthropic" && isClaudeOpus55(model)) {
+			const { message, firstFrameMs, totalMs } = await bufferAnthropicStreamToMessage(res, selectedDispatchAtMs);
+			const ir = anthropicMessagesToIR(message, args.requestId, model, args.providerId);
+			bill.usage = normalizeTextUsageForPricing(message.usage) ?? undefined;
+			bill.finish_reason = ir.choices[0]?.finishReason ?? null;
+			return { kind: "completed", ir, bill, upstream: res, keySource: keyInfo.source, byokKeyId: keyInfo.byokId,
+				mappedRequest, rawResponse: message, timing: { latencyMs: firstFrameMs ?? undefined, generationMs: totalMs } };
 		}
 
 		const bufferingStream = (() => {
