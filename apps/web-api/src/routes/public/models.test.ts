@@ -416,8 +416,8 @@ describe("public model routes", () => {
 					lowest_standard_input_price_unit: "1M tokens",
 					lowest_standard_output_price_unit: "1M tokens",
 					pricing_detail_rows: [
-						{ label: "Input Text Tokens", value: "$0.3 / 1M tokens" },
-						{ label: "Output Text Tokens", value: "$1.2 / 1M tokens" },
+						{ label: "Input Text Tokens", value: "$0.30 / 1M tokens" },
+						{ label: "Output Text Tokens", value: "$1.20 / 1M tokens" },
 					],
 				},
 			],

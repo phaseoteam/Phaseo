@@ -305,6 +305,8 @@
 		"outputImagesFrom": "Images produites (à partir de)",
 		"audioOutput": "Sortie audio",
 		"videoOutputFrom": "Vidéo produite (à partir de)",
+		"priceInputOutput": "{input} entrée · {output} sortie",
+		"priceOutputOnly": "{output} sortie",
 		"filters": "Filtres",
 		"shown": "affichés",
 		"noModelsForFilters": "Aucun modèle ne correspond aux filtres sélectionnés.",

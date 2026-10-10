@@ -380,9 +380,10 @@ describe("normalizeModelsPagePricing", () => {
 			lowest_standard_output_price_label: "Output",
 			lowest_standard_output_price_unit: "1M tokens",
 			lowest_from_price_unit: "1M tokens",
+			pricing_summary: { kind: "tokens", from: false, input: 0.3, output: 1.5, unit: "1M tokens" },
 			pricing_detail_rows: [
-				{ label: "Input Text Tokens", value: "$0.3 / 1M tokens" },
-				{ label: "Output Text Tokens", value: "$1.5 / 1M tokens" },
+				{ label: "Input Text Tokens", value: "$0.30 / 1M tokens" },
+				{ label: "Output Text Tokens", value: "$1.50 / 1M tokens" },
 			],
 		});
 	});

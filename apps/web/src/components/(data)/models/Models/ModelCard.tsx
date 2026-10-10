@@ -280,6 +280,25 @@ function formatPrice(
 	return `$${formatNumber(value, { maximumFractionDigits, notation: "standard" })}`;
 }
 
+// Matches the API's detail-row formatting: cents for fractional amounts of a
+// cent or more ("$0.50", "$0.035"), bare integers ("$15"), and three
+// significant digits below a cent so small rates never look free.
+function formatHeadlinePrice(
+	value: number,
+	formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string,
+): string {
+	if (value === 0) return "$0";
+	if (value < 0.01) {
+		return `$${formatNumber(value, { maximumSignificantDigits: 3, notation: "standard" })}`;
+	}
+	const integer = Math.abs(value - Math.round(value)) < 1e-9;
+	return `$${formatNumber(value, {
+		minimumFractionDigits: integer ? 0 : 2,
+		maximumFractionDigits: integer ? 0 : 3,
+		notation: "standard",
+	})}`;
+}
+
 function formatCostNanos(
 	value: number | null | undefined,
 	formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string,
@@ -748,13 +767,32 @@ function ModelCardImpl({
 	const isFreeDisplayModel =
 		isDisplayedApiModelFree && (isFreeTextModel || hasZeroFromPrice);
 	const fromPriceSummary = explicitFromPrice ?? fallbackFromPrice;
+	// The API's headline price wins when present; the derivation above is the
+	// fallback for rows that do not carry one yet.
+	const headline = model.pricing_summary;
+	const headlinePrice = (value: number) => formatHeadlinePrice(value, format.number);
+	const headlineSummary = !headline
+		? null
+		: headline.kind === "free"
+			? t("free")
+			: headline.kind === "usage"
+				? `${headlinePrice(headline.price)} / ${headline.unit}`
+				: headline.input !== null && headline.output !== null
+					? `${t("priceInputOutput", { input: headlinePrice(headline.input), output: headlinePrice(headline.output) })} / ${headline.unit}`
+					: headline.input !== null
+						? `${headlinePrice(headline.input)} / ${headline.unit}`
+						: headline.output !== null
+							? `${t("priceOutputOnly", { output: headlinePrice(headline.output) })} / ${headline.unit}`
+							: null;
 	const priceSummary =
-		isFreeDisplayModel
+		headlineSummary ?? (isFreeDisplayModel
 			? t("free")
 			: structuredPriceSummary
 				? structuredPriceSummary
-				: fromPriceSummary;
-	const priceLabel = structuredPriceSummary || isTextModel ? t("pricing") : t("from");
+				: fromPriceSummary);
+	const priceLabel = headlineSummary
+		? headline?.kind !== "free" && headline?.from ? t("from") : null
+		: structuredPriceSummary || isTextModel ? t("pricing") : t("from");
 	const fallbackInputLabel =
 		primaryInputKey === "image"
 			? t("imageInputs")
@@ -879,6 +917,14 @@ function ModelCardImpl({
 		if (additionalExplicitRows.length > 0) {
 			pricingDetailRows = [...basePricingDetailRows, ...additionalExplicitRows];
 		}
+	}
+	if (headlineSummary && explicitPricingDetailRows.length > 0) {
+		// The API sends every meter already grouped and ordered.
+		pricingDetailRows = explicitPricingDetailRows.map((row, index) => ({
+			id: `meter-${index}`,
+			label: row.label,
+			value: row.value,
+		}));
 	}
 	if (pricingDetailRows.length === 0 && priceSummary) {
 		pricingDetailRows = [
@@ -1107,16 +1153,28 @@ function ModelCardImpl({
 											data-no-row-nav="true"
 											className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1 text-left transition-colors hover:bg-muted/45"
 										>
-											<span className="text-muted-foreground">{priceLabel}</span>
-											<span className="font-medium text-foreground">
+											{priceLabel ? (
+												<span className="text-muted-foreground">{priceLabel}</span>
+											) : null}
+											<span className="font-medium tabular-nums text-foreground">
 												{priceSummary}
 											</span>
 										</button>
 									</HoverCardTrigger>
 									<HoverCardContent
 										align="start"
-										className="w-fit min-w-[13rem] max-w-[22rem] p-3"
+										className="max-h-96 w-fit min-w-[13rem] max-w-[22rem] overflow-y-auto p-3"
 									>
+										{headlineSummary ? (
+											<div className="space-y-1 text-xs">
+												{pricingDetailRows.map((row) => (
+													<div key={row.id} className="flex items-baseline justify-between gap-4">
+														<span className="text-muted-foreground">{row.label}</span>
+														<span className="shrink-0 tabular-nums text-foreground">{row.value}</span>
+													</div>
+												))}
+											</div>
+										) : (
 										<div className="space-y-2">
 											{pricingDetailGroups.map((group) => {
 												const shouldGroupVariants =
@@ -1258,12 +1316,15 @@ function ModelCardImpl({
 												);
 											})}
 										</div>
+										)}
 									</HoverCardContent>
 								</HoverCard>
 							) : (
 								<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
-									<span className="text-muted-foreground">{priceLabel}</span>
-									<span className="font-medium text-foreground">{priceSummary}</span>
+									{priceLabel ? (
+										<span className="text-muted-foreground">{priceLabel}</span>
+									) : null}
+									<span className="font-medium tabular-nums text-foreground">{priceSummary}</span>
 								</div>
 							)
 						) : null}

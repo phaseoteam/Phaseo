@@ -305,6 +305,8 @@
 		"outputImagesFrom": "صور الإخراج (بدءًا من)",
 		"audioOutput": "إخراج صوتي",
 		"videoOutputFrom": "إخراج فيديو (بدءًا من)",
+		"priceInputOutput": "{input} إدخال · {output} إخراج",
+		"priceOutputOnly": "{output} إخراج",
 		"filters": "عوامل التصفية",
 		"shown": "معروض",
 		"noModelsForFilters": "لم يتم العثور على نماذج لعوامل التصفية المحددة.",

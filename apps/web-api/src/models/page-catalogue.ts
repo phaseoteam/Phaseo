@@ -3,7 +3,10 @@ import { normalizeCatalogueTier, normalizeCatalogueTiers } from "@/models/catalo
 import type { Env } from "@/env";
 import { fetchModelPricingSources } from "./pricing";
 import { withDecisionOperationPricing } from "./decision-pricing";
+import { normalizeModelsPagePricing } from "./card-pricing";
 import { publicProviderDisplayName, STEALTH_PROVIDER_ID } from "@/models/provider-identity";
+
+export { normalizeModelsPagePricing };
 
 type Row = Record<string, unknown>;
 
@@ -47,103 +50,6 @@ function strings(value: unknown): string[] {
 	return Array.isArray(value)
 		? [...new Set(value.map((item) => String(item ?? "").trim()).filter(Boolean))].sort()
 		: [];
-}
-
-function pricingUnit(row: Row): string | null {
-	const displayUnit = String(row.display_unit ?? "").trim();
-	const unit = String(row.unit ?? "").trim().toLowerCase();
-	const quantity = Number(row.unit_quantity);
-	if (
-		/^1(?:000000|m)\s*tokens?$/i.test(displayUnit.replace(/,/g, ""))
-		|| (unit === "token" && quantity === 1_000_000)
-	) {
-		return "1M tokens";
-	}
-	if (displayUnit && displayUnit.toLowerCase() !== "billing unit") {
-		return displayUnit;
-	}
-	if (unit && Number.isFinite(quantity) && quantity > 0) {
-		return `${quantity} ${unit}${quantity === 1 ? "" : "s"}`;
-	}
-	return unit || null;
-}
-
-function pricingLabel(value: unknown): string {
-	return String(value ?? "")
-		.trim()
-		.replace(/[_-]+/g, " ")
-		.replace(/\b\w/g, (character) => character.toUpperCase());
-}
-
-function pricingValue(price: number, unit: string): string {
-	const formatted = price.toLocaleString("en-US", {
-		minimumFractionDigits: 0,
-		maximumFractionDigits: 6,
-	});
-	return `$${formatted} / ${unit}`;
-}
-
-function structuredPricingRows(value: unknown): Row[] {
-	return Array.isArray(value)
-		? value.filter((row): row is Row => Boolean(row && typeof row === "object"))
-		: [];
-}
-
-function directionPricingUnit(
-	rows: Row[],
-	direction: "input" | "output",
-	price: unknown,
-): string | null {
-	const expectedPrice = Number(price);
-	const candidates = rows.filter((row) => {
-		const meter = String(row.meter_key ?? row.label ?? "").trim().toLowerCase();
-		const tier = String(row.service_tier ?? "standard").trim().toLowerCase();
-		return tier === "standard" && (meter === direction || meter.startsWith(`${direction}_`));
-	});
-	const matching = Number.isFinite(expectedPrice)
-		? candidates.find((row) => Math.abs(Number(row.price) - expectedPrice) < 1e-9)
-		: undefined;
-	return pricingUnit(matching ?? candidates[0] ?? {});
-}
-
-export function normalizeModelsPagePricing(row: Row): Row {
-	const rows = structuredPricingRows(row.pricing_detail_rows);
-	if (rows.length === 0) return row;
-	const detailRows = rows.flatMap((pricingRow) => {
-		const existingLabel = String(pricingRow.label ?? "").trim();
-		const existingValue = String(pricingRow.value ?? "").trim();
-		if (existingLabel && existingValue) return [{ label: existingLabel, value: existingValue }];
-		const price = Number(pricingRow.price);
-		const unit = pricingUnit(pricingRow);
-		if (!Number.isFinite(price) || !unit) return [];
-		const tier = String(pricingRow.service_tier ?? "standard").trim().toLowerCase();
-		const baseLabel = pricingLabel(pricingRow.label ?? pricingRow.meter_key);
-		if (!baseLabel) return [];
-		return [{
-			label: tier && tier !== "standard" ? `${baseLabel} (${pricingLabel(tier)})` : baseLabel,
-			value: pricingValue(price, unit),
-		}];
-	});
-	const uniqueDetailRows = [...new Map(
-		detailRows.map((detail) => [`${detail.label}::${detail.value}`, detail] as const),
-	).values()].slice(0, 6);
-	const inputUnit = directionPricingUnit(rows, "input", row.lowest_standard_input_price ?? row.lowest_input_price);
-	const outputUnit = directionPricingUnit(rows, "output", row.lowest_standard_output_price ?? row.lowest_output_price);
-	const fromPrice = Number(row.lowest_from_price);
-	const fromRow = Number.isFinite(fromPrice)
-		? rows.find((pricingRow) => Math.abs(Number(pricingRow.price) - fromPrice) < 1e-9)
-		: undefined;
-	const fromUnit = pricingUnit(fromRow ?? {});
-
-	return {
-		...row,
-		lowest_standard_input_price_label: row.lowest_standard_input_price != null ? "Input" : row.lowest_standard_input_price_label,
-		lowest_standard_input_price_unit: inputUnit ?? row.lowest_standard_input_price_unit,
-		lowest_standard_output_price_label: row.lowest_standard_output_price != null ? "Output" : row.lowest_standard_output_price_label,
-		lowest_standard_output_price_unit: outputUnit ?? row.lowest_standard_output_price_unit,
-		lowest_from_price_unit: fromUnit ?? row.lowest_from_price_unit,
-		pricing_detail_rows: uniqueDetailRows,
-	};
 }
 
 function baseModelId(row: Row): string {
