@@ -10,6 +10,7 @@ const CAPABILITY_GROUPS: Record<string, string> = {
 	"audio.speech": "audio_tts",
 	"audio.realtime": "realtime",
 	"audio.music": "audio_music",
+	"music.generate": "audio_music",
 	"text.embed": "embeddings",
 	embeddings: "embeddings",
 	"text.rerank": "rerank",

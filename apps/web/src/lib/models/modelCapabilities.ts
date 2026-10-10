@@ -1,3 +1,5 @@
+import { modelGroupModalities } from "./modelGroupModalities";
+
 export type DecisionModelCapability = "text.generate" | "decisions.make";
 
 export function decisionModelCapability(endpoint: string): DecisionModelCapability | null {
@@ -13,5 +15,6 @@ export function decisionModelCapabilities(endpoints: readonly string[]): Decisio
 }
 
 export function modelOutputFilterValues(modalities: readonly string[], endpoints: readonly string[]): string[] {
-	return [...new Set([...modalities.map(value => value.trim().toLowerCase()).filter(Boolean), ...(endpoints.some(endpoint => decisionModelCapability(endpoint) === "decisions.make") ? ["decisions"] : [])])];
+	const groups = modelGroupModalities(new Set(modalities.map(value => value.trim().toLowerCase()).filter(Boolean)), endpoints);
+	return [...new Set([...groups, ...(endpoints.some(endpoint => decisionModelCapability(endpoint) === "decisions.make") ? ["decisions"] : [])])];
 }

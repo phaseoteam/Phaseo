@@ -5,6 +5,7 @@ describe("modelGroupModalities", () => {
 		["audio.speech", "audio_tts"],
 		["audio.realtime", "realtime"],
 		["audio.music", "audio_music"],
+		["music.generate", "audio_music"],
 		["text.embed", "embeddings"],
 		["text.rerank", "rerank"],
 		["text.moderate", "moderations"],

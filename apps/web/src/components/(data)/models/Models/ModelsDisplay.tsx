@@ -14,7 +14,6 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { debounce, useQueryState } from "nuqs";
 import { ModelsGrid } from "./ModelsGrid";
-import { modelGroupModalities } from "./modelGroupModalities";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { ActiveModelFilters, type ActiveModelFilter } from "./ActiveModelFilters";
 import { resolveDefaultGatewayStatuses } from "@/lib/models/defaultGatewayStatuses";
@@ -1323,7 +1322,7 @@ function ModelsDisplayContent({
 					status: getGatewayStatusBucket(model.gateway_status),
 					endpointsSet: new Set(endpoints),
 					inputModalitiesSet: new Set(inputModalities),
-					outputModalitiesSet: modelGroupModalities(new Set(outputModalities), model.gateway_endpoints),
+					outputModalitiesSet: new Set(outputModalities),
 					featuresSet: new Set(features),
 					tiersSet: new Set(tiers),
 					providerNamesSet: new Set(providerNames),
