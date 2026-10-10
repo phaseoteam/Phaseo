@@ -9,7 +9,7 @@ import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublic
 import { ModelBenchmarksGrid } from "./ModelBenchmarksGrid";
 import { ModelBenchmarksTable } from "./ModelBenchmarksTable";
 import { isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
-import { isEpochCapabilitiesIndex } from "@/lib/benchmarks/epoch";
+import { isEpochCapabilitiesIndex, selectEpochLeaderboardEntries } from "@/lib/benchmarks/epoch";
 import { ArtificialAnalysisBenchmarks } from "./ArtificialAnalysisBenchmarks";
 import { EpochCapabilitiesIndex } from "./EpochCapabilitiesIndex";
 import { summarizeArtificialAnalysisRankings } from "@/lib/benchmarks/artificialAnalysis";
@@ -41,6 +41,7 @@ export default async function ModelBenchmarks({
 	const hasArtificialAnalysis = highlightCards.some((item) => isArtificialAnalysisBenchmark(item.benchmarkId) && item.score !== null);
 	const hasEpochCapabilitiesIndex = highlightCards.some((item) => isEpochCapabilitiesIndex(item.benchmarkId) && item.score !== null);
 	const hasKeyBenchmark = hasArtificialAnalysis || hasEpochCapabilitiesIndex;
+	const epochRanking = benchmarkRankings.find((item) => isEpochCapabilitiesIndex(item.benchmark_id));
 	const otherBenchmarks = otherHighlights.length ? (
 		<ModelBenchmarksGrid highlights={otherHighlights} />
 	) : (
@@ -52,7 +53,7 @@ export default async function ModelBenchmarks({
 	return (
 		<div className="space-y-8">
 			<ArtificialAnalysisBenchmarks highlights={highlightCards} results={benchmarkResults} rankSummaries={summarizeArtificialAnalysisRankings(benchmarkRankings)} loadRankings modelId={modelId} modelName={modelName} />
-			<EpochCapabilitiesIndex highlights={highlightCards} ranking={benchmarkRankings.find((item) => isEpochCapabilitiesIndex(item.benchmark_id))} modelId={modelId} />
+			<EpochCapabilitiesIndex highlights={highlightCards} ranking={epochRanking ? { ...epochRanking, entries: selectEpochLeaderboardEntries(epochRanking.entries, modelId) } : undefined} modelId={modelId} />
 			{otherHighlights.length > 0 || !hasKeyBenchmark ? (
 				hasKeyBenchmark ? (
 					<section aria-label={t("otherBenchmarks")}>

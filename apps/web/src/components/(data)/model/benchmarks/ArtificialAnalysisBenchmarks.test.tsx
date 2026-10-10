@@ -13,6 +13,7 @@ import ModelBenchmarks from "./ModelBenchmarks";
 import type { ModelBenchmarkHighlight } from "@/lib/fetchers/models/getModelBenchmarkData";
 import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { summarizeArtificialAnalysisRankings } from "@/lib/benchmarks/artificialAnalysis";
+import { selectEpochLeaderboardEntries } from "@/lib/benchmarks/epoch";
 import { webQueryKeys } from "@/lib/query/queryKeys";
 
 jest.mock("@number-flow/react", () => ({
@@ -179,6 +180,29 @@ describe("Artificial Analysis benchmark panel", () => {
 		expect(html).not.toContain("rounded-md border bg-muted/40");
 		expect(html).toContain("View full leaderboard");
 		expect(html).toContain("/benchmarks/epoch-capabilities-index");
+	});
+	it.each([0, 40, 99, -1])("keeps Epoch markup identical with the server's compact window (index %s)", async (index) => {
+		const entries: PublicBenchmarkRanking["entries"] = Array.from({ length: 100 }, (_, i) => ({
+			model_id: `test/model-${i}`, model_name: `Model ${i}`, organisation_id: "test", organisation_name: "Test",
+			score: 200 - i, rank: i + 1, other_info: `95% CI ${199 - i}-${201 - i}`,
+		}));
+		const ranking: PublicBenchmarkRanking = {
+			benchmark_id: "epoch-capabilities-index", name: "Epoch Capabilities Index", category: "general",
+			benchmark_type: "numerical", lower_is_better: false, total_models: 100, entries,
+		};
+		const modelId = `test/model-${index}`;
+		const highlights = [{ ...highlight(ranking.benchmark_id, 200 - index), rank: index + 1 }];
+		const tree = await ModelBenchmarks({ highlightCards: highlights, benchmarkRankings: [ranking], modelId });
+		const epoch = React.Children.toArray(tree.props.children).find(child => React.isValidElement(child) && child.type === EpochCapabilitiesIndex) as React.ReactElement<{ ranking: PublicBenchmarkRanking }>;
+		expect(epoch.props.ranking.entries).toEqual(selectEpochLeaderboardEntries(entries, modelId));
+		expect(epoch.props.ranking.entries).toHaveLength(12);
+		expect(epoch.props.ranking.total_models).toBe(100);
+		expect(ranking.entries).toHaveLength(100);
+		for (const initialExpanded of [false, true]) {
+			const full = renderLocalized(<EpochCapabilitiesIndex highlights={highlights} ranking={ranking} modelId={modelId} initialExpanded={initialExpanded} />);
+			const compact = renderLocalized(<EpochCapabilitiesIndex highlights={highlights} ranking={epoch.props.ranking} modelId={modelId} initialExpanded={initialExpanded} />);
+			expect(compact).toBe(full);
+		}
 	});
 	it("dims other models in an expanded comparison", () => {
 		const ranking: PublicBenchmarkRanking = {
