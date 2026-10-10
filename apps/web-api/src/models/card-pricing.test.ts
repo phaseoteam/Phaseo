@@ -198,6 +198,25 @@ describe("normalizeModelsPagePricing", () => {
 			.toMatchObject({ kind: "tokens", input: 2 });
 	});
 
+	it("keeps text-generation compatibility prices on operation-priced models", () => {
+		const row = normalizeModelsPagePricing({
+			gateway_output_modalities: ["text"],
+			operation_pricing: [{ capability: "text.generate", input: 3, output: 15 }, { capability: "decisions.make", input: 1, output: 2 }],
+			lowest_input_price: 3, lowest_output_price: 15,
+			lowest_standard_input_price: 3, lowest_standard_output_price: 15,
+			lowest_from_price: null, lowest_from_price_unit: null,
+			pricing_detail_rows: [
+				tokens("input_text_tokens", 3), tokens("output_text_tokens", 15),
+				tokens("input_text_tokens", 1), tokens("output_text_tokens", 2),
+			],
+		});
+		expect(row).toMatchObject({
+			lowest_input_price: 3, lowest_output_price: 15,
+			lowest_standard_input_price: 3, lowest_standard_output_price: 15,
+			lowest_from_price: null,
+		});
+	});
+
 	it("passes preformatted rows through untouched", () => {
 		const rows = [{ label: "Custom contract", value: "Contact provider" }];
 		const row = normalizeModelsPagePricing({ pricing_detail_rows: rows });

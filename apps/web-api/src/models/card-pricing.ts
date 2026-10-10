@@ -314,6 +314,13 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	const from = [input, output].filter((item) => item !== null)
 		.sort((a, b) => a.price - b.price)[0] ?? null;
 
+	// Text-and-Decisions models already carry per-operation prices, and their
+	// `lowest_*` fields hold the text-generation rates; the detail rows mix
+	// both operations' SKUs, so they must not overwrite those fields.
+	if (Array.isArray(model.operation_pricing)) {
+		return { ...model, pricing_summary: summarise(model, rates), pricing_detail_rows: [...detailRows, ...preformatted] };
+	}
+
 	return {
 		...model,
 		pricing_summary: summarise(model, rates),
