@@ -220,6 +220,18 @@ describe("normalizeModelsPagePricing", () => {
 		});
 	});
 
+	it("sorts usage-priced models by the unit the card shows", () => {
+		const row = card([
+			tokens("input_audio_tokens", 3, { modality: "audio" }),
+			usage("input_audio", 0.006, "minute", 1, { modality: "audio" }),
+		]);
+		expect(row.pricing_summary).toMatchObject({ kind: "usage", price: 0.006, unit: "min" });
+		expect(row).toMatchObject({
+			lowest_input_price: 0.006, lowest_standard_input_price_unit: "min",
+			lowest_output_price: null, lowest_from_price: 0.006, lowest_from_price_unit: "min",
+		});
+	});
+
 	it("passes preformatted rows through untouched", () => {
 		const rows = [{ label: "Custom contract", value: "Contact provider" }];
 		const row = normalizeModelsPagePricing({ pricing_detail_rows: rows });

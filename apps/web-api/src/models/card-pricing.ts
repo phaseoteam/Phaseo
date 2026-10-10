@@ -297,11 +297,18 @@ export function normalizeModelsPagePricing(model: Row): Row {
 
 	// The compatibility fields (price sort, older consumers) use the same tier
 	// preference as the headline, so tier-only models keep a sortable price.
+	const summary = summarise(model, rates);
 	const headline = rates.filter((item) => !item.auxiliary);
 	const lowest = (side: Rate["side"]) => {
+		const matches = headline.filter((item) => item.side === side);
+		// A usage headline fixes the unit: the sort then compares the rate the
+		// card shows, not a cheaper-looking rate in another unit.
+		if (summary?.kind === "usage") {
+			const sameUnit = preferredTier(matches.filter((item) => item.unit === summary.unit));
+			return sameUnit.length ? { price: min(sameUnit), unit: summary.unit } : null;
+		}
 		// Prefer the text token meters the headline uses, so a zero-priced
 		// image or audio token meter cannot become the sortable input price.
-		const matches = headline.filter((item) => item.side === side);
 		const textTokens = matches.filter(isTextToken);
 		const tokenMatches = matches.filter((item) => item.unit === "1M tokens");
 		const pool = preferredTier(textTokens.length ? textTokens : tokenMatches.length ? tokenMatches : matches);
@@ -322,7 +329,7 @@ export function normalizeModelsPagePricing(model: Row): Row {
 		const tokenUnit = (price: unknown) => (finite(price) === null ? null : "1M tokens");
 		return {
 			...model,
-			pricing_summary: summarise(model, rates),
+			pricing_summary: summary,
 			pricing_detail_rows: [...detailRows, ...preformatted],
 			lowest_standard_input_price_label: "Input",
 			lowest_standard_output_price_label: "Output",
@@ -334,7 +341,7 @@ export function normalizeModelsPagePricing(model: Row): Row {
 
 	return {
 		...model,
-		pricing_summary: summarise(model, rates),
+		pricing_summary: summary,
 		pricing_detail_rows: [...detailRows, ...preformatted],
 		lowest_input_price: input?.price ?? null,
 		lowest_output_price: output?.price ?? null,
