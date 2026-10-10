@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { sdkExportStore, sdkRequestFromChat } from "@/lib/chat/sdkExport";
 import { isPublicLocale } from "@/i18n/locales";
 
@@ -54,7 +55,7 @@ async function readJsonPayload<T>(
  * serving, cache tags, and revalidation are owned by Cloudflare so there is a
  * single cache contract for every web deployment.
  */
-export async function fetchPublicWebApi<T>(
+async function fetchPublicWebApiUncached<T>(
 	path: `/api/_web/${string}`,
 	options: { signal?: AbortSignal; credentials?: RequestCredentials } = {},
 ): Promise<T> {
@@ -77,6 +78,29 @@ export async function fetchPublicWebApi<T>(
 	}
 
 	return (await response.json()) as T;
+}
+
+// The timeout signal above opts out of Next's automatic fetch deduplication.
+// Share the parsed public response across metadata and Server Components in
+// one render only; Cloudflare still owns freshness between incoming requests.
+const fetchPublicWebApiForRender = cache((path: `/api/_web/${string}`) =>
+	fetchPublicWebApiUncached<unknown>(path),
+);
+
+export function fetchPublicWebApi<T>(
+	path: `/api/_web/${string}`,
+	options: { signal?: AbortSignal; credentials?: RequestCredentials } = {},
+): Promise<T> {
+	if (
+		typeof window === "undefined" &&
+		!options.signal &&
+		(options.credentials === undefined || options.credentials === "omit")
+	) {
+		return fetchPublicWebApiForRender(path) as Promise<T>;
+	}
+	// Explicit cancellation and credentialed requests keep their own lifetime.
+	// Browser revalidation is owned by the existing query client.
+	return fetchPublicWebApiUncached<T>(path, options);
 }
 
 export async function fetchOptionalPublicWebApi<T>(
