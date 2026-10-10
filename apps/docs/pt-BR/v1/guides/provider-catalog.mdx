@@ -1,6 +1,6 @@
 ---
 title: "Publicar um catálogo de provedor"
-description: "Feeds V1 e V1.1 com níveis de serviço padronizados."
+description: "Feeds V1 e V1.1 com níveis de serviço padronizados e limites de taxa."
 icon: "list"
 ---
 
@@ -23,3 +23,18 @@ Polling e webhooks assinados aceitam ambas as versões. Selecione o nível antes
 Veja o exemplo completo e os esquemas JSON no [guia do contrato em inglês](/v1/guides/provider-catalog).
 
 Nos catálogos API, as edições do painel são persistentes. Importações atualizam campos sem alterações manuais. **Usar valor do feed** remove uma alteração. O painel mostra os valores do feed e efetivos, o autor e a data; a atividade registra edições e reversões. Modelos adicionados manualmente continuam sendo ofertas locais. Remover um modelo do feed desativa a oferta mesmo com campos editados. Catálogos manuais continuam compatíveis.
+
+## Limites de taxa
+
+Declare os limites de solicitações e tokens que sua plataforma aplica à conta da Phaseo em um array `rate_limits` opcional de nível superior, em V1 e V1.1. Omita `model` para um limite em todos os modelos ou informe o `provider_model_slug` de um modelo ou nível do mesmo documento. Cada entrada aceita `requests_per_minute`, `requests_per_day`, `tokens_per_minute` e `tokens_per_day`, com inteiros positivos ou `null` e pelo menos um valor. O limite de um modelo se aplica além do limite de todos os modelos.
+
+```json
+{
+  "rate_limits": [
+    { "requests_per_minute": 600, "tokens_per_minute": 2000000 },
+    { "model": "example-model", "requests_per_day": 100000 }
+  ]
+}
+```
+
+Os limites nunca bloqueiam solicitações: ao atingir um limite, a Phaseo classifica sua oferta em posição inferior e envia o tráfego primeiro para outros provedores. Por isso, eles entram em vigor sem revisão depois que sua solicitação é aprovada, geralmente em um minuto. Quando o array está presente, ele substitui seus limites a cada importação bem-sucedida de um feed alterado; `[]` os remove e omiti-lo mantém os limites definidos nas configurações do provedor. O snapshot inteiro é rejeitado se uma entrada citar um modelo ausente, repetir um escopo ou usar um valor inválido. Você também pode editá-los em **Configurações do provedor → Seus modelos → Limites de taxa**.

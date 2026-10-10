@@ -1,6 +1,6 @@
 ---
 title: "Publicar un catálogo de proveedor"
-description: "Feeds V1 y V1.1 con niveles de servicio normalizados."
+description: "Feeds V1 y V1.1 con niveles de servicio normalizados y límites de uso."
 icon: "list"
 ---
 
@@ -23,3 +23,18 @@ El sondeo y los webhooks firmados admiten ambas versiones. Seleccione el nivel a
 Consulte el ejemplo completo y los esquemas JSON en la [guía del contrato en inglés](/v1/guides/provider-catalog).
 
 En los catálogos API, los cambios del panel son persistentes. Las importaciones actualizan campos sin cambios manuales. **Usar valor del feed** elimina un cambio manual. El panel muestra el valor del feed, el efectivo, quién lo editó y cuándo; la actividad registra ediciones y restauraciones. Los modelos añadidos manualmente siguen siendo ofertas locales. Eliminar un modelo del feed desactiva esa oferta aunque algunos campos tengan cambios. Los catálogos manuales siguen siendo compatibles.
+
+## Límites de uso
+
+Declare los límites de solicitudes y tokens que su plataforma aplica a la cuenta de Phaseo en un array `rate_limits` opcional de nivel superior, en V1 y V1.1. Omita `model` para un límite de todos los modelos o indique el `provider_model_slug` de un modelo o nivel del mismo documento. Cada entrada admite `requests_per_minute`, `requests_per_day`, `tokens_per_minute` y `tokens_per_day`, con enteros positivos o `null` y al menos un valor. El límite de un modelo se aplica además del límite de todos los modelos.
+
+```json
+{
+  "rate_limits": [
+    { "requests_per_minute": 600, "tokens_per_minute": 2000000 },
+    { "model": "example-model", "requests_per_day": 100000 }
+  ]
+}
+```
+
+Los límites nunca bloquean solicitudes: al alcanzarse, Phaseo sitúa su oferta en una posición inferior y envía el tráfico primero a otros proveedores. Por eso se aplican sin revisión una vez aprobada su solicitud, normalmente en un minuto. Si el array está presente, sustituye sus límites cada vez que se importa correctamente un feed modificado; `[]` los elimina y omitirlo conserva los límites definidos en la configuración del proveedor. Se rechaza la instantánea completa si una entrada nombra un modelo ausente, repite un ámbito o usa un valor no válido. También puede editarlos en **Configuración del proveedor → Sus modelos → Límites de uso**.

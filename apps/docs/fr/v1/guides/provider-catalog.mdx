@@ -1,6 +1,6 @@
 ---
 title: "Publier un catalogue fournisseur"
-description: "Flux V1 et V1.1 avec niveaux de service normalisés."
+description: "Flux V1 et V1.1 avec niveaux de service normalisés et limites de débit."
 icon: "list"
 ---
 
@@ -23,3 +23,18 @@ Le polling et les webhooks signés acceptent les deux versions. Dans les paramè
 Consultez l’exemple complet et les deux schémas JSON dans le [guide contractuel anglais](/v1/guides/provider-catalog).
 
 Pour les catalogues API, les modifications du tableau de bord sont persistantes. Les imports actualisent les champs sans modification manuelle. **Utiliser la valeur du flux** supprime une modification. Le tableau de bord affiche les valeurs du flux et effectives, l’auteur et la date ; l’activité conserve les modifications et rétablissements. Les modèles ajoutés manuellement restent des offres locales. La suppression d’un modèle du flux désactive son offre même si certains champs ont été modifiés. Les catalogues manuels restent compatibles.
+
+## Limites de débit
+
+Déclarez les limites de requêtes et de jetons que votre plateforme applique au compte de Phaseo dans un tableau `rate_limits` facultatif de premier niveau, en V1 comme en V1.1. Omettez `model` pour une limite sur tous les modèles, ou indiquez le `provider_model_slug` d'un modèle ou d'un niveau du même document. Chaque entrée accepte `requests_per_minute`, `requests_per_day`, `tokens_per_minute` et `tokens_per_day`, sous forme d'entiers positifs ou de `null`, avec au moins une valeur. La limite d'un modèle s'applique en plus de la limite sur tous les modèles.
+
+```json
+{
+  "rate_limits": [
+    { "requests_per_minute": 600, "tokens_per_minute": 2000000 },
+    { "model": "example-model", "requests_per_day": 100000 }
+  ]
+}
+```
+
+Les limites ne bloquent jamais les requêtes : une fois atteintes, Phaseo classe votre offre plus bas et envoie d'abord le trafic vers d'autres fournisseurs. Elles s'appliquent donc sans vérification une fois votre demande approuvée, généralement en une minute. Lorsque le tableau est présent, il remplace vos limites à chaque import réussi d'un flux modifié ; `[]` les supprime et son absence conserve les limites définies dans les paramètres du fournisseur. L'instantané entier est rejeté si une entrée cite un modèle absent, répète une portée ou utilise une valeur invalide. Vous pouvez aussi les modifier dans **Paramètres du fournisseur → Vos modèles → Limites de débit**.
