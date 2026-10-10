@@ -108,11 +108,13 @@ import { extractDownstreamRateLimitHeaders } from "../upstream-rate-limit-header
 import { guardFreeRouteQuota } from "@core/customer-rate-limits";
 import { shouldRecordLastUsed } from "@core/last-used-throttle";
 import {
-	admitManagedProvider,
+	chargeManagedProvider,
 	estimateProviderTokenReservation,
+	providerLimitModel,
+	providerQuotaPressure,
 	releaseManagedProviderReservation,
 	settleFailedManagedProviderReservation,
-	type ProviderTokenReservation,
+	type ProviderQuotaCharge,
 } from "@core/provider-rate-limits";
 
 const ATTEMPT_PREVIEW_LIMIT = 320;
@@ -194,8 +196,17 @@ export function buildCredentialAttemptPlan(
 			credential: { kind: "gateway" as const },
 		}];
 	});
+	// Routing exempts candidates tried first with the customer's own key from quota deranking,
+	// so their managed attempts are reordered here: saturated ones after every other one, least
+	// over their limit first.
+	const pressure = new Map(balancedAttempts.map((attempt) => [attempt, attempt.credential.kind === "gateway"
+		? providerQuotaPressure(attempt.routed.candidate.providerId, providerLimitModel(attempt.routed.candidate))
+		: 0]));
 	const gatewayAttempts = limitedPriorityAttempts.length === 0 || options.allowManagedFallback === true
-		? balancedAttempts
+		? [...balancedAttempts].sort((a, b) => {
+			const left = pressure.get(a)!, right = pressure.get(b)!;
+			return Math.sign(left) - Math.sign(right) || left - right;
+		})
 		: [];
 
 	return [
@@ -445,7 +456,7 @@ export type IRRequestResult = {
 	bill: Bill;
 	keySource?: "gateway" | "byok";
 	byokKeyId?: string | null;
-	providerRateLimitReservation?: ProviderTokenReservation | null;
+	providerRateLimitReservation?: ProviderQuotaCharge | null;
 	mappedRequest?: string;
 	rawResponse?: any;
 };
@@ -828,7 +839,7 @@ async function attemptProviderWithIR(
 	let t0 = performance.now();
 	// The headers deadline is only safe when the provider streams (see the tracker).
 	const upstreamTracker = createUpstreamTimingTracker(ctx.gatewayTimingTrace, { applyHeadersDeadline: ctx.stream === true });
-	let providerRateLimitReservation: ProviderTokenReservation | null = null;
+	let providerRateLimitReservation: ProviderQuotaCharge | null = null;
 	try {
 		timing.timer.mark("adapter_start");
 		if (!timing.internal.adapterMarked) {
@@ -913,43 +924,15 @@ async function attemptProviderWithIR(
 				providerMaxInputTokens: candidate.maxInputTokens,
 				providerMaxOutputTokens: candidate.maxOutputTokens,
 			});
-			const rateLimit = await timing.timer.span(`${attemptPrefix}_provider_rate_limit`, () =>
-				admitManagedProvider(candidate.providerId, reservationTokens, crypto.randomUUID(),
-					candidate.providerId === "together" && normalizedCapability === "decisions.make"
-						? Object.keys((ir as any).questions ?? {}).length : 1),
-			);
-			if (!rateLimit.allowed) {
-				const retryAfter = rateLimit.retryAfterSeconds != null
-					? String(rateLimit.retryAfterSeconds)
-					: null;
-				attemptErrors.push({
-					...credentialLog,
-					provider: candidate.providerId,
-					endpoint: ctx.endpoint,
-					attempt_number: attemptNumber,
-					type: "provider_rate_limited",
-					status: 429,
-					rate_limit_reason: rateLimit.reason,
-					upstream_rate_limit_headers: retryAfter ? { "Retry-After": retryAfter } : null,
-				});
-				recordProviderAttempt(ctx, {
-					...credentialLog,
-					attempt_number: attemptNumber,
-					provider: candidate.providerId,
-					endpoint: ctx.endpoint,
-					model: baseModel,
-					api_model_id: candidateApiModelId,
-					provider_model_slug: providerModelSlug ?? null,
-					outcome: "rate_limited",
-					type: rateLimit.reason,
-					duration_ms: Math.round(performance.now() - attemptStartedAt),
-					status: 429,
-					key_source: "gateway",
-					was_probe: isProbe,
-				});
-				return { ok: false, skip: "provider_rate_limit" };
-			}
-			providerRateLimitReservation = rateLimit.reservation;
+			// Counted globally in the background; never awaited. A provider and model that
+			// reached a limit is deranked by routing, not skipped here.
+			providerRateLimitReservation = chargeManagedProvider({
+				providerId: candidate.providerId,
+				model: providerLimitModel({ providerModelSlug, apiModelId: candidateApiModelId }),
+				reservationTokens,
+				reservationRequests: candidate.providerId === "together" && normalizedCapability === "decisions.make"
+					? Object.keys((ir as any).questions ?? {}).length : 1,
+			});
 		}
 		let reservationDenial: import("@core/video-reservations").VideoReservationDenial | undefined;
 		const catalogTier = readProviderCatalogTier(candidate.capabilityParams);

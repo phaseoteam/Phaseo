@@ -41,6 +41,7 @@ describe("provider rate-limit configuration", () => {
 			enabled: true,
 		})).toEqual({
 			providerId: "openai",
+			modelSlug: "*",
 			requestsPerMinute: 500,
 			requestsPerDay: null,
 			tokensPerMinute: 100000,
@@ -77,6 +78,7 @@ describe("provider rate-limit configuration", () => {
 			reason: "requests_per_day",
 			retryAfterSeconds: 41_400,
 			reservation: null,
+			overage: 1.1,
 		});
 	});
 
@@ -105,6 +107,8 @@ describe("provider rate-limit configuration", () => {
 			reason: "tokens_per_minute",
 			retryAfterSeconds: 60,
 			reservation: null,
+			// Refused by the 5% headroom while still under the provider's own limit.
+			overage: 0.951,
 		});
 	});
 

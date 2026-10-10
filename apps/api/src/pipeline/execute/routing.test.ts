@@ -4,6 +4,12 @@ import { routeProviders } from "./routing";
 const readHealthManyMock = vi.fn();
 const readStickyRoutingMock = vi.fn();
 const resolveStickyRoutingContextMock = vi.fn();
+const providerQuotaPressureMock = vi.fn((_providerId: string, _model: string | null) => 0);
+
+vi.mock("@core/provider-rate-limits", () => ({
+	providerLimitModel: (c: { providerModelSlug?: string | null; apiModelId?: string | null }) => c.providerModelSlug || c.apiModelId || null,
+	providerQuotaPressure: (providerId: string, model: string | null) => providerQuotaPressureMock(providerId, model),
+}));
 
 vi.mock("./health", () => ({
 	readHealthManyOptimistic: (...args: any[]) => readHealthManyMock(...args),
@@ -643,6 +649,56 @@ describe("routeProviders testing mode", () => {
 		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual([
 			"moonshotai-turbo",
 		]);
+	});
+
+	it("ranks a provider and model at its upstream limit last without dropping it", async () => {
+		providerQuotaPressureMock.mockImplementation((providerId, model) => providerId === "openai" && model === "gpt-4o-mini" ? 1.2 : 0);
+		try {
+			const candidates = [
+				candidate({ providerId: "openai", providerModelSlug: "gpt-4o-mini", pricingCard: textPricingCard(0.000001, 0) }),
+				candidate({ providerId: "google-ai-studio", providerModelSlug: "gemini", pricingCard: textPricingCard(0.000004, 0) }),
+				candidate({ providerId: "anthropic", providerModelSlug: "claude", pricingCard: textPricingCard(0.000004, 0) }),
+			];
+			const context = { endpoint: "responses" as const, model: "openai/gpt-4o-mini", workspaceId: "team_123", requestId: "quota", debug: { enabled: true } };
+			const result = await routeProviders(candidates, context as any);
+			expect(result.ranked.map((entry) => entry.candidate.providerId).at(-1)).toBe("openai");
+			expect(result.ranked).toHaveLength(3);
+			const saturated = result.ranked.find((entry) => entry.candidate.providerId === "openai")!;
+			expect(saturated.scoreTrace.calculation.providerQuotaMultiplier).toBe(1e-6);
+
+			// The limits cover Phaseo's managed credentials; a customer's own key is unaffected.
+			const ownKey = { ...candidates[0], byokMeta: [{ id: "key-1", routingMode: "priority" }] };
+			const withOwnKey = await routeProviders([ownKey, candidates[1], candidates[2]], context as any);
+			expect(withOwnKey.ranked.find((entry) => entry.candidate.providerId === "openai")!
+				.scoreTrace.calculation.providerQuotaMultiplier).toBe(1);
+		} finally {
+			providerQuotaPressureMock.mockReset().mockReturnValue(0);
+		}
+	});
+
+	it("routes every candidate when all are at their limits, least over first", async () => {
+		const overage: Record<string, number> = { openai: 2, "google-ai-studio": 1.1, anthropic: 1.5 };
+		providerQuotaPressureMock.mockImplementation((providerId) => overage[providerId] ?? 0);
+		readHealthManyMock.mockImplementation((_endpoint: string, _model: string, providerIds: string[]) =>
+			Object.fromEntries(providerIds.map((providerId) => [providerId, providerId === "mistral"
+				? health(providerId, { breaker: "open", breaker_until_ms: Date.now() + 60_000 })
+				: health(providerId)])));
+		try {
+			const candidates = [
+				// The cheapest candidate is the furthest over its limit.
+				candidate({ providerId: "openai", providerModelSlug: "gpt-4o-mini", pricingCard: textPricingCard(0.000001, 0) }),
+				candidate({ providerId: "google-ai-studio", providerModelSlug: "gemini", pricingCard: textPricingCard(0.000004, 0) }),
+				candidate({ providerId: "anthropic", providerModelSlug: "claude", pricingCard: textPricingCard(0.000004, 0) }),
+				candidate({ providerId: "mistral", providerModelSlug: "mistral", pricingCard: textPricingCard(0.000004, 0) }),
+			];
+			for (const requestId of ["quota-1", "quota-2", "quota-3", "quota-4"]) {
+				const context = { endpoint: "responses" as const, model: "openai/gpt-4o-mini", workspaceId: "team_123", requestId };
+				const result = await routeProviders(candidates, context as any);
+				expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["google-ai-studio", "anthropic", "openai", "mistral"]);
+			}
+		} finally {
+			providerQuotaPressureMock.mockReset().mockReturnValue(0);
+		}
 	});
 
 	it("applies strong derank multipliers (legacy deranked maps to lvl1)", async () => {
