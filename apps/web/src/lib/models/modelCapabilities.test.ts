@@ -2,6 +2,11 @@ import { decisionModelCapabilities, modelOutputFilterValues } from "./modelCapab
 import { filterModelsForRoom } from "@/lib/chat/rooms";
 
 describe("models with Text generation and Decisions", () => {
+	it("shares capability groups between card and table filters", () => {
+		expect(modelOutputFilterValues(["text"], ["audio.transcription"])).toEqual(["text", "audio_stt"]);
+		expect(modelOutputFilterValues(["audio"], ["music.generate"])).toEqual(["audio", "audio_music"]);
+		expect(modelOutputFilterValues([], ["text.rerank"])).toEqual(["rerank"]);
+	});
 	it("includes a dual-capability text model in both output filters without duplicating Decisions", () => {
 		expect(modelOutputFilterValues(["text"], ["text.generate", "decisions.make"])).toEqual(["text", "decisions"]);
 		expect(modelOutputFilterValues(["decisions"], ["/v1/decisions"])).toEqual(["decisions"]);
