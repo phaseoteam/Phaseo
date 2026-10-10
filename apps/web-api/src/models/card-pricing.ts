@@ -231,9 +231,12 @@ function summarise(model: Row, rates: Rate[]): CardPricingSummary | null {
 
 	// Token rates are chosen in their own best tier, so a standard-tier tool
 	// fee cannot displace input/output pricing offered only in other tiers.
-	const tokens = preferredTier(base.filter(isTextToken));
-	const input = tokens.filter((item) => item.side === "input");
-	const output = tokens.filter((item) => item.side === "output");
+	// Each side picks its tier independently, so a side priced only in a
+	// provider tier is not dropped because the other side has a standard rate.
+	const textTokens = base.filter(isTextToken);
+	const input = preferredTier(textTokens.filter((item) => item.side === "input"));
+	const output = preferredTier(textTokens.filter((item) => item.side === "output"));
+	const tokens = [...input, ...output];
 	if (!media && (input.length || output.length)) {
 		// Free is decided by the token rates alone; a paid tool fee does not
 		// make a free model's tokens cost "$0".

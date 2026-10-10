@@ -232,6 +232,14 @@ describe("normalizeModelsPagePricing", () => {
 		});
 	});
 
+	it("chooses each token side's tier independently", () => {
+		const row = card([
+			tokens("input_text_tokens", 0),
+			tokens("output_text_tokens", 6, { service_tier: "on-demand" }),
+		]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 0, output: 6, unit: "1M tokens" });
+	});
+
 	it("passes preformatted rows through untouched", () => {
 		const rows = [{ label: "Custom contract", value: "Contact provider" }];
 		const row = normalizeModelsPagePricing({ pricing_detail_rows: rows });
