@@ -1,6 +1,7 @@
 -- Providers declare the request and token limits they impose on Phaseo through their catalogue,
 -- without review. Writes replace a provider's rows atomically and bump the routing catalogue
 -- revision so gateways pick up new limits without waiting for the configuration TTL.
+-- phaseo:allow-destructive-migration reason: Adds a column, a statement trigger (whose event list names TRUNCATE and DELETE) and a function that replaces one provider's provider_rate_limits rows when called; this migration itself deletes or truncates no data, and provider_rate_limits is empty in production.
 SET local check_function_bodies = off;
 
 ALTER TABLE "public"."provider_catalog_sources"
