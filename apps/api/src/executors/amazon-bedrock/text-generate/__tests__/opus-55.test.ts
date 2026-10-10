@@ -20,6 +20,16 @@ function args(protocol: Protocol, stream = false, region = "us-east-1", model = 
 }
 
 describe("managed Bedrock Opus 5.5 Mantle contract", () => {
+	it.each(protocols)("accepts documented default sampling on %s without upstream overrides", async protocol => {
+		const sampling = protocol === "openai.chat.completions" ? { temperature: 1 } : { top_p: protocol === "openai.responses" ? 0.99 : 1 };
+		const mock = installFetchMock([{ match: url => url.endsWith("/anthropic/v1/messages"), response: Response.json(opusMessage) }]);
+		try {
+			await executor(args(protocol, false, "us-east-1", "anthropic.claude-opus-5-5", sampling));
+			expect(mock.calls).toHaveLength(1);
+			expect(mock.calls[0].bodyJson).not.toHaveProperty("temperature");
+			expect(mock.calls[0].bodyJson).not.toHaveProperty("top_p");
+		} finally { mock.restore(); }
+	});
 	it.each(protocols)("keeps summarized thinking separate from answer text on buffered %s", async protocol => {
 		const message = { ...opusMessage, content: [{ type: "thinking", thinking: "Summary", signature: "opaque-signature" }, ...opusMessage.content.slice(1)] };
 		const mock = installFetchMock([{ match: url => url.endsWith("/anthropic/v1/messages"), response: Response.json(message) }]);

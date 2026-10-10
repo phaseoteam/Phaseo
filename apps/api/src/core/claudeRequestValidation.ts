@@ -8,9 +8,16 @@ export function claudeRequestIssues(ir: IRChatRequest, model: string, providerId
 	if (!isClaudeOpus55(model)) return [];
 	const issues: ClaudeRequestIssue[] = [];
 	const add = (field: string, message: string) => issues.push({ field, message: `Opus 5.5: ${message}` });
-	for (const [field, value] of [["temperature", ir.temperature], ["top_p", ir.topP], ["top_k", ir.topK]] as const) {
-		if (value !== undefined) add(field, `omit ${field}; sampling controls are not supported.`);
+	// The Messages API accepts temperature=1 and top_p in [0.99, 1] for
+	// backwards compatibility. Adaptive conversion omits these no-op defaults.
+	// https://platform.claude.com/docs/en/api/messages/create
+	if (ir.temperature !== undefined && ir.temperature !== 1) {
+		add("temperature", "omit temperature or use its supported default of 1.");
 	}
+	if (ir.topP !== undefined && !(ir.topP >= 0.99 && ir.topP <= 1)) {
+		add("top_p", "omit top_p or use a supported default value between 0.99 and 1.");
+	}
+	if (ir.topK !== undefined) add("top_k", "omit top_k; it is not supported.");
 	if (ir.reasoning?.enabled === false || ir.reasoning?.effort === "none") {
 		add("thinking", "thinking cannot be disabled; choose a supported reasoning effort instead.");
 	}

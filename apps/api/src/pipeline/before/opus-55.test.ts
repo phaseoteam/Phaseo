@@ -9,6 +9,13 @@ function validate(endpoint: "messages" | "responses" | "chat.completions", body:
 }
 
 describe("Opus 5.5 request preflight", () => {
+	it.each([
+		["chat.completions", { messages: [{ role: "user", content: "Hi" }], temperature: 1 }],
+		["responses", { input: "Hi", top_p: 0.99 }],
+		["messages", { messages: [{ role: "user", content: "Hi" }], top_p: 1 }],
+	] as const)("allows documented default sampling at %s preflight", (endpoint, body) => {
+		expect(validate(endpoint, body).ok).toBe(true);
+	});
 	it.each(["google-vertex", "amazon-bedrock"])("keeps strict %s pinning with no provider fallback", providerId => {
 		const body = { model: "anthropic/claude-opus-5.5", provider: { only: [providerId], allow_fallbacks: false } };
 		const providers = [providerId, "anthropic"].map(id => ({ providerId: id, providerStatus: "active", providerRoutingStatus: "active", modelRoutingStatus: "active", capabilityStatus: "active", byokMeta: [], pricingCard: null } as any));

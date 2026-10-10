@@ -23,6 +23,16 @@ function args(protocol: Protocol, stream = false, extra: Record<string, unknown>
 }
 
 describe("managed Vertex Opus 5.5", () => {
+	it.each(protocols)("accepts documented default sampling on %s without upstream overrides", async protocol => {
+		const sampling = protocol === "openai.chat.completions" ? { temperature: 1 } : { top_p: protocol === "openai.responses" ? 0.99 : 1 };
+		const mock = installFetchMock([{ match: url => url.includes(":streamRawPredict"), response: opusStream() }]);
+		try {
+			await executor(args(protocol, false, sampling));
+			expect(mock.calls).toHaveLength(1);
+			expect(mock.calls[0].bodyJson).not.toHaveProperty("temperature");
+			expect(mock.calls[0].bodyJson).not.toHaveProperty("top_p");
+		} finally { mock.restore(); }
+	});
 	it.each(protocols)("keeps summarized thinking separate from answer text on buffered %s", async protocol => {
 		const mock = installFetchMock([{ match: url => url.includes(":streamRawPredict"), response: opusStream("Summary") }]);
 		try {
