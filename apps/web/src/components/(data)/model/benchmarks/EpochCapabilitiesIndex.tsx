@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { ModelBenchmarkHighlight } from "@/lib/fetchers/models/getModelBenchmarkData";
-import { epochCapabilitiesIndexId, isEpochCapabilitiesIndex, parseEpochConfidenceInterval } from "@/lib/benchmarks/epoch";
+import { epochCapabilitiesIndexId, isEpochCapabilitiesIndex, parseEpochConfidenceInterval, selectEpochLeaderboardEntries } from "@/lib/benchmarks/epoch";
 import { cn } from "@/lib/utils";
 
 export function EpochCapabilitiesIndex({ highlights, ranking, modelId, initialExpanded = false }: {
@@ -27,9 +27,7 @@ export function EpochCapabilitiesIndex({ highlights, ranking, modelId, initialEx
 	if (!result || result.score === null) return null;
 
 	const entries = ranking?.entries ?? [];
-	const currentIndex = entries.findIndex((entry) => entry.model_id === modelId);
-	const start = currentIndex < 0 ? 0 : Math.min(Math.max(0, currentIndex - 5), Math.max(0, entries.length - 12));
-	const visibleEntries = entries.slice(start, start + 12);
+	const visibleEntries = selectEpochLeaderboardEntries(entries, modelId);
 	const rangeValues = visibleEntries.flatMap((entry) => {
 		const interval = parseEpochConfidenceInterval(entry.other_info);
 		return interval ? [interval.low, interval.high] : [entry.score];
