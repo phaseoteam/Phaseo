@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const runtime = vi.hoisted(() => ({
 	rows: [] as Record<string, unknown>[],
-	objects: new Map<string, { acquireLease: ReturnType<typeof vi.fn>; returnLeases: ReturnType<typeof vi.fn>; reconcileTokens: ReturnType<typeof vi.fn> }>(),
+	objects: new Map<string, Record<"acquireLease" | "returnLeases" | "reconcileTokens" | "recordRequests", ReturnType<typeof vi.fn>>>(),
 	acquire: vi.fn(),
 	background: [] as Promise<unknown>[],
 }));
@@ -20,6 +20,7 @@ vi.mock("@/runtime/env", () => ({
 						acquireLease: vi.fn((...args: unknown[]) => runtime.acquire(name, ...args)),
 						returnLeases: vi.fn(async () => undefined),
 						reconcileTokens: vi.fn(async () => undefined),
+						recordRequests: vi.fn(async () => undefined),
 					};
 					runtime.objects.set(name, object);
 				}
@@ -74,6 +75,20 @@ describe("non-blocking provider quota charges", () => {
 			clock.mockReturnValue(now + 31_000);
 			expect(providerQuotaSaturated("openai", "gpt-x")).toBe(false);
 		} finally { clock.mockRestore(); }
+	});
+
+	it("still counts a refused attempt, which is sent anyway, toward longer windows", async () => {
+		runtime.rows = [limit({ provider_model_slug: "gpt-x", requests_per_minute: 1, tokens_per_day: 1_000_000 })];
+		runtime.acquire.mockResolvedValue({ ok: false, denial: { allowed: false, reason: "requests_per_minute", retryAfterSeconds: 30, reservation: null } });
+		const { chargeManagedProvider, recordManagedProviderTokensOnce } = await import("./provider-rate-limits");
+		const charge = chargeManagedProvider({ providerId: "openai", model: "gpt-x", reservationTokens: 400, reservationId: "attempt-2" });
+		expect(await charge.reservations).toEqual([expect.objectContaining({ scope: "openai::gpt-x", tokens: 0 })]);
+		const object = runtime.objects.get("managed:openai::gpt-x") as any;
+		expect(object.recordRequests).toHaveBeenCalledWith(1);
+
+		const ctx = { testingMode: false, requestId: "req", meta: {} } as any;
+		await recordManagedProviderTokensOnce({ ctx, providerId: "openai", keySource: "gateway", usage: { total_tokens: 450 }, reservation: charge });
+		expect(object.reconcileTokens).toHaveBeenCalledWith(expect.objectContaining({ id: "attempt-2", tokens: 0 }), 450);
 	});
 
 	it("a provider-wide refusal deranks every model of that provider", async () => {

@@ -111,6 +111,7 @@ import {
 	chargeManagedProvider,
 	estimateProviderTokenReservation,
 	providerLimitModel,
+	providerQuotaSaturated,
 	releaseManagedProviderReservation,
 	settleFailedManagedProviderReservation,
 	type ProviderQuotaCharge,
@@ -195,8 +196,13 @@ export function buildCredentialAttemptPlan(
 			credential: { kind: "gateway" as const },
 		}];
 	});
+	// Routing exempts candidates tried first with the customer's own key from quota deranking,
+	// so their managed attempts are reordered here: saturated ones after every other one.
+	const managedSaturated = (attempt: (typeof balancedAttempts)[number]) =>
+		attempt.credential.kind === "gateway" &&
+		providerQuotaSaturated(attempt.routed.candidate.providerId, providerLimitModel(attempt.routed.candidate));
 	const gatewayAttempts = limitedPriorityAttempts.length === 0 || options.allowManagedFallback === true
-		? balancedAttempts
+		? [...balancedAttempts.filter((attempt) => !managedSaturated(attempt)), ...balancedAttempts.filter(managedSaturated)]
 		: [];
 
 	return [

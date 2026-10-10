@@ -1,5 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { buildCredentialAttemptPlan, MAX_BYOK_CREDENTIAL_ATTEMPTS } from "./index";
+
+const saturated = vi.hoisted(() => new Set<string>());
+vi.mock("@core/provider-rate-limits", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@core/provider-rate-limits")>()),
+	providerQuotaSaturated: (providerId: string) => saturated.has(providerId),
+}));
 
 function key(id: string, routingMode: "priority" | "fallback", sortOrder: number) {
 	return {
@@ -69,6 +75,20 @@ describe("credential attempt plan", () => {
 			"provider-a:a-fallback",
 			"provider-b:b-fallback",
 		]);
+	});
+
+	it("tries a saturated managed credential after every other managed attempt", () => {
+		const providerA = { candidate: { providerId: "provider-a", byokMeta: [key("a-priority", "priority", 0)] } };
+		const providerB = { candidate: { providerId: "provider-b", byokMeta: [] } };
+		saturated.add("provider-a");
+		try {
+			const plan = buildCredentialAttemptPlan([providerA, providerB], { allowManagedFallback: true });
+			expect(plan.map((attempt) =>
+				`${attempt.routed.candidate.providerId}:${attempt.credential.kind === "gateway" ? "gateway" : attempt.credential.key.id}`,
+			)).toEqual(["provider-a:a-priority", "provider-b:gateway", "provider-a:gateway"]);
+		} finally {
+			saturated.clear();
+		}
 	});
 
 	it("omits fallback BYOK keys when requested", () => {

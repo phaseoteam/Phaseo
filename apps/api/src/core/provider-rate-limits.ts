@@ -379,6 +379,7 @@ type ProviderRateLimitStub = {
 	admit(config: ProviderRateLimitConfig, reservationTokens: number | null, reservationId: string, nowMs?: number, reservationRequests?: number): Promise<ProviderRateLimitAdmission>;
 	acquireLease(config: ProviderRateLimitConfig, need: LeaseVector, want: LeaseVector, returns: LeaseReturn[], reservationId: string, nowMs?: number): Promise<LeaseAcquireResult<ProviderLeaseMeta, ProviderRateLimitAdmission>>;
 	returnLeases(returns: LeaseReturn[], nowMs?: number): Promise<void>;
+	recordRequests(requests: number, nowMs?: number): Promise<void>;
 	recordTokens(tokens: number, nowMs?: number): Promise<void>;
 	reconcileTokens(reservation: ProviderTokenReservation, actualTokens: number, nowMs?: number): Promise<void>;
 };
@@ -461,7 +462,19 @@ async function admitScope(
 			transportFor(stub, config, reservationId));
 		if ("denial" in admission) {
 			markSaturated(scope, admission.denial.retryAfterSeconds);
-			return { ...admission.denial, source: "coordinator" };
+			if (unboundedTokens === "reserve_all") return { ...admission.denial, source: "coordinator" };
+			// The attempt is still sent (deranked, not blocked), so it must still count, above all
+			// toward longer windows: its request now, its tokens once usage is known.
+			await stub.recordRequests(reservationRequests);
+			const now = Date.now();
+			return {
+				...admission.denial,
+				reservation: hasTokenLimit ? {
+					id: reservationId, providerId: config.providerId, scope, tokens: 0,
+					minuteWindow: Math.floor(now / 60_000), dayWindow: Math.floor(now / DAY_MS),
+				} : null,
+				source: "coordinator",
+			};
 		}
 		saturatedUntil.delete(scope);
 		const { ticket } = admission;

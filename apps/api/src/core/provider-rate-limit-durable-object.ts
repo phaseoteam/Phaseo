@@ -347,6 +347,15 @@ export class ProviderRateLimitDurableObject extends DurableObject<GatewayBinding
 		);
 	}
 
+	/** Counts requests that were sent upstream although this scope refused them (deranked, not blocked). */
+	async recordRequests(requests: number, nowMs = Date.now()): Promise<void> {
+		if (!Number.isSafeInteger(requests) || requests <= 0) return;
+		const row = this.current(nowMs);
+		row.minute_requests += requests;
+		row.day_requests += requests;
+		this.persist(row);
+	}
+
 	async recordTokens(tokens: number, nowMs = Date.now()): Promise<void> {
 		if (!Number.isSafeInteger(tokens) || tokens <= 0) return;
 		const row = this.current(nowMs);
