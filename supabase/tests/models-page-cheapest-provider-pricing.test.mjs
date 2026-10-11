@@ -80,6 +80,7 @@ const fixtures = `
 		('20000000-0000-0000-0000-000000000002', 'input_text_tokens', 'input', 4000000000, 'Input Text Tokens'),
 		('20000000-0000-0000-0000-000000000002', 'output_text_tokens', 'output', 15000000000, 'Output Text Tokens'),
 		('20000000-0000-0000-0000-000000000003', 'input_text_tokens', 'input', 2200000000, 'Input Text Tokens'),
+		('20000000-0000-0000-0000-000000000003', 'audio_seconds', 'input', 1000000, 'Audio Seconds'),
 		('20000000-0000-0000-0000-000000000004', 'input_text_tokens', 'input', 1000000000, 'Input Text Tokens'),
 		('20000000-0000-0000-0000-000000000005', 'input_text_tokens', 'input', 500000000, 'Input Text Tokens'),
 		('20000000-0000-0000-0000-000000000006', 'input_text_tokens', 'input', 100000000, 'Input Text Tokens');
@@ -109,8 +110,10 @@ test("models page pricing uses current, active, global SKUs from shown routes", 
 		assert.deepEqual(all["cloudflare/clef-flash"], ["1|standard|input_tokens|input|0.038"]);
 		// Short and long context stay; the EU price is dropped while a global
 		// price exists; draft SKUs never appear; other tiers stay for the API.
+		// The EU-only audio meter stays: there is no global price for it.
 		assert.deepEqual(all["openai/gpt-test"], [
 			"1|batch|input_text_tokens|input|1",
+			"1|standard|audio_seconds|input|0.001",
 			"1|standard|input_text_tokens|input|2",
 			"1|standard|input_text_tokens|input|4",
 			"1|standard|output_text_tokens|output|10",

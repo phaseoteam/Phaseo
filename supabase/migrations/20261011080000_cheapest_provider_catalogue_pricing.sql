@@ -117,8 +117,8 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
   -- Prices come only from routes the page shows, and only from active SKUs
   -- in effect now. A newer SKU replaces an older one for the same route,
   -- service tier, operation, region and meter, even when the older one was
-  -- never closed. Without a region filter, regional prices are used only for
-  -- routes that have no global price. Rows carry an anonymous provider group,
+  -- never closed. Without a region filter, a regional price is used only when
+  -- the route has no global price for that meter. Rows carry an anonymous provider group,
   -- not the provider, so the API can pick the cheapest provider.
   priced_routes as (
     select distinct provider_model_id, model_slug, provider_slug
@@ -175,7 +175,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
           order by live.effective_from desc
         ) as recency,
         bool_or(live.pricing_region is null) over (
-          partition by live.provider_model_id, live.service_tier_slug, live.operation
+          partition by live.provider_model_id, live.service_tier_slug, live.operation, live.meter_key
         ) as has_global_price,
         -- An opaque per-model provider number, so prices can be compared by
         -- provider without naming one (stealth routes stay anonymous).
