@@ -146,6 +146,18 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.0001, unit: "sec" });
 	});
 
+	it("recognises a transcription model from its endpoint when it only lists text output", () => {
+		const row = normalizeModelsPagePricing({
+			gateway_output_modalities: ["text"],
+			gateway_endpoints: ["audio.transcription"],
+			pricing_detail_rows: [
+				tokens("output_text_tokens", 0, { provider_group: 1 }),
+				usage("input_audio_seconds", 0.0001, "second", 1, { modality: "audio", provider_group: 2 }),
+			],
+		});
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.0001, unit: "sec" });
+	});
+
 	it("does not let a $0 tool-only route make an embeddings model Free", () => {
 		const row = card([
 			usage("web_search", 0, "request", 1, { provider_group: 1 }),

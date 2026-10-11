@@ -142,6 +142,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
       select
         sku.sku_id,
         sku.route_variant_id,
+        sku.effective_to,
         route.model_slug,
         route.provider_slug,
         sku.provider_model_id,
@@ -161,9 +162,10 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
       left join public.v2_route_variants variant on variant.variant_id = sku.route_variant_id
       where sku.status = 'active'
         and sku.effective_from <= now()
-        and (sku.effective_to is null or sku.effective_to > now())
     ) ranked
+    -- An expired latest version hides its predecessors rather than reviving them.
     where ranked.recency = 1
+      and (ranked.effective_to is null or ranked.effective_to > now())
       and (
         ranked.route_variant_id is null
         or ranked.route_variant_id in (select variant_id from priced_variants)

@@ -372,7 +372,8 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	const outputs = Array.isArray(outputModalities) ? outputModalities.map((item) => String(item).toLowerCase()) : [];
 	// Transcription (speech-to-text) lists text as its output but is billed on
 	// the input audio, so it counts as input-priced.
-	const transcription = outputs.some((item) => /stt|transcri|speech_to_text/.test(item));
+	const endpoints = Array.isArray(model.gateway_endpoints) ? model.gateway_endpoints.map((item) => String(item).toLowerCase()) : [];
+	const transcription = [...outputs, ...endpoints].some((item) => /stt|transcri|speech_to_text/.test(item));
 	const outputPriced = outputs.length
 		? !transcription && outputs.some((item) => /text|image|video|audio|speech|music/.test(item))
 		: offers.some((offer) => offer.headline.some((item) => item.side === "output"));
