@@ -232,6 +232,15 @@ describe("normalizeModelsPagePricing", () => {
 		});
 	});
 
+	it("sorts a speech model by the output rate it headlines, not the same-unit input", () => {
+		const row = card([
+			tokens("input_text_tokens", 0.5),
+			tokens("output_audio_tokens", 9, { modality: "audio" }),
+		], ["audio"]);
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 9, unit: "1M tokens" });
+		expect(row).toMatchObject({ lowest_input_price: null, lowest_output_price: 9, lowest_from_price: 9 });
+	});
+
 	it("chooses each token side's tier independently", () => {
 		const row = card([
 			tokens("input_text_tokens", 0),

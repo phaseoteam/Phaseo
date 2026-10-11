@@ -222,10 +222,14 @@ const TOOL_METER = /search|grounding|tool|fetch|code_interpreter|code_execution|
 const isTextToken =(item: Rate) => item.unit === "1M tokens" && item.modality === "text"
 	&& (item.side === "input" || item.side === "output");
 
-function summarise(model: Row, rates: Rate[]): CardPricingSummary | null {
+/**
+ * Chooses the card's headline price and returns the exact rates behind it,
+ * so the sort fields can be derived from the same side, unit, and tier.
+ */
+function summarise(model: Row, rates: Rate[]): { summary: CardPricingSummary | null; headline: Rate[] } {
 	const base = rates.filter((item) => !item.auxiliary);
 	const candidates = preferredTier(base);
-	if (!candidates.length) return null;
+	if (!candidates.length) return { summary: null, headline: [] };
 
 	const outputModalities = model.gateway_output_modalities ?? model.output_types ?? model.output_modalities;
 	const outputs = Array.isArray(outputModalities) ? outputModalities.map((item) => String(item).toLowerCase()) : [];
@@ -251,13 +255,16 @@ function summarise(model: Row, rates: Rate[]): CardPricingSummary | null {
 	if (!media && (input.length || output.length) && !(freeTokens && paidUsage.length)) {
 		// Free is decided by the token rates alone; a paid tool fee does not
 		// make a free model's tokens cost "$0".
-		if (freeTokens) return { kind: "free" };
+		if (freeTokens) return { summary: { kind: "free" }, headline: tokens };
 		return {
-			kind: "tokens",
-			from: varies(input) || varies(output),
-			input: input.length ? min(input) : null,
-			output: output.length ? min(output) : null,
-			unit: "1M tokens",
+			summary: {
+				kind: "tokens",
+				from: varies(input) || varies(output),
+				input: input.length ? min(input) : null,
+				output: output.length ? min(output) : null,
+				unit: "1M tokens",
+			},
+			headline: tokens,
 		};
 	}
 
@@ -271,17 +278,20 @@ function summarise(model: Row, rates: Rate[]): CardPricingSummary | null {
 				? paidUsage
 				: candidates;
 	// As with tokens, free status comes only from the meters chosen above.
-	if (primary.every((item) => item.price === 0)) return { kind: "free" };
+	if (primary.every((item) => item.price === 0)) return { summary: { kind: "free" }, headline: primary };
 	const byUnit = [...groupBy(primary, (item) => item.unit).entries()]
 		.sort(([a, aRates], [b, bRates]) => mediaUnitRank(a) - mediaUnitRank(b) || bRates.length - aRates.length || a.localeCompare(b));
 	const [unit, unitRates] = byUnit[0];
 	// Only alternative headline rates qualify the price; input meters on a
 	// media model are in the hover card, not a reason to say "From".
 	return {
-		kind: "usage",
-		from: varies(unitRates) || byUnit.length > 1,
-		price: min(unitRates),
-		unit,
+		summary: {
+			kind: "usage",
+			from: varies(unitRates) || byUnit.length > 1,
+			price: min(unitRates),
+			unit,
+		},
+		headline: unitRates,
 	};
 }
 
@@ -313,16 +323,17 @@ export function normalizeModelsPagePricing(model: Row): Row {
 
 	// The compatibility fields (price sort, older consumers) use the same tier
 	// preference as the headline, so tier-only models keep a sortable price.
-	const summary = summarise(model, rates);
+	const { summary, headline: headlineRates } = summarise(model, rates);
 	const headline = rates.filter((item) => !item.auxiliary);
 	const lowest = (side: Rate["side"]) => {
-		const matches = headline.filter((item) => item.side === side);
-		// A usage headline fixes the unit: the sort then compares the rate the
-		// card shows, not a cheaper-looking rate in another unit.
+		// A usage headline fixes the side, unit and tier: the sort compares
+		// exactly the rate the card shows. Side-less meters (requests, credits)
+		// count as output, the price of producing the result.
 		if (summary?.kind === "usage") {
-			const sameUnit = preferredTier(matches.filter((item) => item.unit === summary.unit));
-			return sameUnit.length ? { price: min(sameUnit), unit: summary.unit } : null;
+			const shown = headlineRates.filter((item) => (item.side || "output") === side);
+			return shown.length ? { price: min(shown), unit: summary.unit } : null;
 		}
+		const matches = headline.filter((item) => item.side === side);
 		// Prefer the text token meters the headline uses, so a zero-priced
 		// image or audio token meter cannot become the sortable input price.
 		const textTokens = matches.filter(isTextToken);
