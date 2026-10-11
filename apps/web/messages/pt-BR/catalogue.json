@@ -492,7 +492,7 @@
 			},
 			"statusBanner": {
 				"rumouredTitle": "Modelo especulado",
-				"rumouredDescription": "Há rumores de que este modelo será lançado em breve. Os dados podem mudar até que o lançamento seja confirmado. Entre no nosso {discord} para receber avisos sobre novos modelos e atualizações.",
+				"rumouredDescription": "Há rumores de que este modelo será lançado em breve. Os dados podem mudar até que o lançamento seja confirmado. Entre no nosso <discord>Discord</discord> para receber avisos sobre novos modelos e atualizações.",
 				"announcedTitle": "Modelo anunciado",
 				"announcedDescription": "Este modelo foi anunciado, mas ainda não foi lançado. Aguardamos o lançamento completo para disponibilizar mais informações.",
 				"withheldTitle": "Modelo retido",

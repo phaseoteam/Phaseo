@@ -492,7 +492,7 @@
 			},
 			"statusBanner": {
 				"rumouredTitle": "Vermutetes Modell",
-				"rumouredDescription": "Dieses Modell soll demnächst erscheinen. Alle Angaben können sich ändern, bis die Veröffentlichung bestätigt ist. Folge unserem {discord}, um über neue Modelle und Aktualisierungen informiert zu werden.",
+				"rumouredDescription": "Dieses Modell soll demnächst erscheinen. Alle Angaben können sich ändern, bis die Veröffentlichung bestätigt ist. Folge unserem <discord>Discord</discord>, um über neue Modelle und Aktualisierungen informiert zu werden.",
 				"announcedTitle": "Angekündigtes Modell",
 				"announcedDescription": "Dieses Modell wurde angekündigt, aber noch nicht veröffentlicht. Wir warten auf die vollständige Veröffentlichung, bevor wir weitere Informationen bereitstellen.",
 				"withheldTitle": "Zurückgehaltenes Modell",

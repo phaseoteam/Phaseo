@@ -492,7 +492,7 @@
 			},
 			"statusBanner": {
 				"rumouredTitle": "Rumoured Model",
-				"rumouredDescription": "This model is rumoured to be coming soon. Any data here is subject to change until the release is confirmed. Join our {discord} to be notified of new models and updates.",
+				"rumouredDescription": "This model is rumoured to be coming soon. Any data here is subject to change until the release is confirmed. Join our <discord>Discord</discord> to be notified of new models and updates.",
 				"announcedTitle": "Announced Model",
 				"announcedDescription": "This model has been announced, but not released. We await the full release to make more information available.",
 				"withheldTitle": "Withheld Model",

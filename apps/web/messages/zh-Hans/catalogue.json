@@ -492,7 +492,7 @@
 			},
 			"statusBanner": {
 				"rumouredTitle": "传闻中的模型",
-				"rumouredDescription": "据称该模型即将推出。在正式确认发布前，这些数据都可能变化。加入我们的{discord}，获取新模型和更新通知。",
+				"rumouredDescription": "据称该模型即将推出。在正式确认发布前，这些数据都可能变化。加入我们的<discord>Discord</discord>，获取新模型和更新通知。",
 				"announcedTitle": "已公布模型",
 				"announcedDescription": "该模型已公布，但尚未发布。我们会等待正式发布后再提供更多信息。",
 				"withheldTitle": "暂缓发布的模型",

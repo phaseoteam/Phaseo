@@ -492,7 +492,7 @@
 			},
 			"statusBanner": {
 				"rumouredTitle": "噂されているモデル",
-				"rumouredDescription": "このモデルは近日公開されるとうわさされています。公開が確定するまでは、ここにある情報が変更される場合があります。新しいモデルや更新情報を受け取るには、{discord}に参加してください。",
+				"rumouredDescription": "このモデルは近日公開されるとうわさされています。公開が確定するまでは、ここにある情報が変更される場合があります。新しいモデルや更新情報を受け取るには、<discord>Discord</discord>に参加してください。",
 				"announcedTitle": "発表済みモデル",
 				"announcedDescription": "このモデルは発表されていますが、まだリリースされていません。正式リリース後に詳細をお知らせします。",
 				"withheldTitle": "公開保留中のモデル",
