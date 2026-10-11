@@ -183,6 +183,14 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.015, unit: "1K characters" });
 	});
 
+	it("does not headline an input-image surcharge over a paid image output", () => {
+		const row = card([
+			usage("input_image", 0, "image", 1, { modality: "image", provider_group: 1 }),
+			usage("output_image", 0.04, "image", 1, { modality: "image", provider_group: 2 }),
+		], ["image"]);
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.04, unit: "image" });
+	});
+
 	it("treats an OCR model as billed on its input pages", () => {
 		const row = normalizeModelsPagePricing({
 			gateway_output_modalities: ["text"],

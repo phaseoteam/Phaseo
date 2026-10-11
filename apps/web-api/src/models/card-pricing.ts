@@ -382,13 +382,14 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	// such as requests count for both; tool fees such as web search never do,
 	// so a route listing only a tool fee ranks last).
 	// Media-only models (image, video, speech) are billed in many shapes: per
-	// image, per second, per input character, per request. Any such meter
-	// covers them; only text-token prices (often $0 placeholders) do not.
+	// image or second of output, per request, or per input character (speech).
+	// Text-token prices (often $0 placeholders) and input-media surcharges
+	// (an input image fee) are not the generation price.
 	const mediaOnly = outputs.some((item) => /image|video|audio|speech|music/.test(item))
 		&& !outputs.some((item) => item === "text");
 	const coversBilledSide = (headline: Rate[]) =>
 		headline.some((item) => !TOOL_METER.test(item.key) && (mediaOnly && outputPriced
-			? !isTextToken(item)
+			? !isTextToken(item) && (item.side !== "input" || !MEDIA.includes(item.modality))
 			: item.side !== (outputPriced ? "input" : "output")));
 	// A free product price, not just a $0 tool fee such as web search.
 	const freeUsage = (offer: { summary: CardPricingSummary; headline: Rate[] }) =>
