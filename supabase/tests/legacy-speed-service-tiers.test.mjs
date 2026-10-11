@@ -24,6 +24,8 @@ test("legacy speed cutover preserves prices, route gates and IDs and is repeatab
     ('mimo-route','xiaomi/mimo-v2.5-pro-ultraspeed','xiaomi','mimo-v2.5-pro-ultraspeed','active',true,'enabled','public','available','{}',now()),
     ('empirio-route','moonshotai/kimi-k2.7-code-highspeed','empiriolabs','kimi-native','disabled',false,'blocked','public','available','{}',now());
    insert into v2_route_capabilities select provider_model_id,'text.generate','{"temperature":true,"service_tier":{"note":"preserve"}}' from v2_model_provider_routes;
+   update v2_route_capabilities set params='["reasoning","include_reasoning"]' where provider_model_id='mimo-route';
+   update v2_route_capabilities set params=null where provider_model_id='kimi-route';
    insert into v2_pricing_skus select provider_model_id||'-sku',provider_model_id,'active','text.generate','standard',now() from v2_model_provider_routes;
    insert into v2_pricing_sku_meters select sku_id,'input_text_tokens',123456789,1000000 from v2_pricing_skus;
    insert into v2_route_variants select provider_model_id||'-variant',provider_model_id,'standard',now() from v2_model_provider_routes;
@@ -40,6 +42,9 @@ test("legacy speed cutover preserves prices, route gates and IDs and is repeatab
   assert.equal((await db.query("select count(*)::integer as n from v2_models where hidden and metadata->'serving_tier'->>'name'='fast'")).rows[0].n, 3);
   assert.equal((await db.query("select count(*)::integer as n from v2_pricing_skus where service_tier_slug='priority'")).rows[0].n, 3);
   assert.equal((await db.query("select params->'service_tier'->>'note' as note from v2_route_capabilities where provider_model_id='minimax-route'")).rows[0].note, "preserve");
+  assert.deepEqual((await db.query("select params from v2_route_capabilities where provider_model_id='mimo-route'")).rows[0].params,
+   { reasoning: true, include_reasoning: true, service_tier: { type: "string", enum: ["fast", "priority"], provider_catalog: { name: "fast", upstream: null } } });
+  assert.deepEqual((await db.query("select params->'service_tier'->'enum' as tiers from v2_route_capabilities where provider_model_id='kimi-route'")).rows[0].tiers, ["fast", "priority"]);
   assert.equal((await db.query("select model_slug from v2_model_provider_routes where provider_model_id='empirio-route'")).rows[0].model_slug, "moonshotai/kimi-k2.7-code-highspeed");
   await db.exec(operation);
   assert.deepEqual((await db.query("select * from v2_pricing_sku_meters order by sku_id")).rows, before);
