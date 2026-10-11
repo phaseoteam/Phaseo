@@ -71,6 +71,25 @@ export function azureHeaders(key: string, authType: "api-key" | "entra" = "api-k
     };
 }
 
+export function azureAnthropicHeaders(key: string, authType: "api-key" | "entra" = "api-key"): Record<string, string> {
+    return {
+        ...(authType === "entra" ? { Authorization: `Bearer ${key}` } : { "x-api-key": key }),
+        "Content-Type": "application/json",
+    };
+}
+
+export function azureAnthropicUrl(baseUrl: string): string {
+    const url = new URL(baseUrl);
+    url.pathname = azureResourceBaseUrl(url.pathname);
+    if (url.hostname.endsWith(".openai.azure.com")) {
+        url.hostname = url.hostname.replace(/\.openai\.azure\.com$/, ".services.ai.azure.com");
+    }
+    url.pathname = `${url.pathname.replace(/\/anthropic(?:\/v1(?:\/messages)?)?\/?$/i, "").replace(/\/$/, "")}/anthropic/v1/messages`;
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+}
+
 export function azureDeployment(args: ProviderExecuteArgs): string {
     return encodeURIComponent(args.providerModelSlug || args.model);
 }

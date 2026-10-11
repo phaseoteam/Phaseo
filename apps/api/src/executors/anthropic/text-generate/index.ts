@@ -11,7 +11,7 @@ import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { IRChatRequest, IRChatResponse, IRChoice, IRContentPart, IRToolCall } from "@core/ir";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
-import { azureHeaders, resolveAzureConfig, resolveAzureCredential } from "@providers/azure/config";
+import { azureAnthropicHeaders, azureAnthropicUrl, resolveAzureConfig, resolveAzureCredential } from "@providers/azure/config";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import {
@@ -224,9 +224,9 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 		? resolveAnthropicAwsAuth(keyInfo.key, bindings)
 		: null;
 	const url = azureConfig
-		? `${azureConfig.baseUrl.replace(/\/+$/, "").replace(/\/(?:openai(?:\/v1)?|anthropic(?:\/v1)?)$/i, "")}/anthropic/v1/messages`
+		? azureAnthropicUrl(azureConfig.baseUrl)
 		: awsAuth ? `${awsAuth.baseUrl}/v1/messages` : `${anthropicBaseUrl()}/v1/messages`;
-	const headers = azureCredential ? { ...azureHeaders(azureCredential.key, azureCredential.authType), ...baseHeaders } : awsAuth
+	const headers = azureCredential ? { ...azureAnthropicHeaders(azureCredential.key, azureCredential.authType), ...baseHeaders } : awsAuth
 		? await buildAnthropicAwsHeaders(awsAuth, requestPayloadJson, baseHeaders)
 		: { "x-api-key": keyInfo.key, ...baseHeaders };
 
