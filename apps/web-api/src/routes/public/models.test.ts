@@ -190,6 +190,51 @@ describe("stealth provider filters", () => {
 		expect(fetchMock.mock.calls.filter(([input]) => String(input).includes("get_public_monitor_rows_payload"))).toHaveLength(1);
 	});
 
+	it("looks up route flags for every chunk concurrently", async () => {
+		const routeCount = 450;
+		let pendingRouteLookups = 0;
+		let maxConcurrentRouteLookups = 0;
+		const routeChunkSizes: number[] = [];
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_public_monitor_rows_payload")) {
+				return new Response(JSON.stringify(Array.from({ length: routeCount }, (_, index) => ({
+					model_id: `test/model-${index}`, api_model_id: `test/model-${index}`,
+					provider_api_model_id: `route-${index}`, provider_id: index === 449 ? "external-provider" : "test",
+					capability_id: "text.generate", capability_status: "active",
+				}))));
+			}
+			if (url.includes("v2_model_provider_routes")) {
+				const routeIds = decodeURIComponent(url).match(/route-\d+/g) ?? [];
+				routeChunkSizes.push(routeIds.length);
+				pendingRouteLookups += 1;
+				maxConcurrentRouteLookups = Math.max(maxConcurrentRouteLookups, pendingRouteLookups);
+				await new Promise((resolve) => setTimeout(resolve, 5));
+				pendingRouteLookups -= 1;
+				return new Response(JSON.stringify(routeIds.flatMap((routeId) => {
+					if (routeId === "route-420") return [{ provider_model_id: routeId, is_stealth: true }];
+					if (routeId === "route-449") return [{ provider_model_id: routeId, metadata: { external_routing_override: true } }];
+					return [];
+				})));
+			}
+			if (url.includes("v2_providers?")) {
+				return new Response(JSON.stringify([{ provider_slug: "external-provider", status: "external" }]));
+			}
+			return new Response("[]");
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const result = await fetchGatewayMonitorRows(env);
+
+		expect(routeChunkSizes.sort((left, right) => right - left)).toEqual([200, 200, 50]);
+		expect(maxConcurrentRouteLookups).toBe(3);
+		// Flags from the last chunk still apply: stealth redaction and the
+		// external-provider override.
+		expect(result.get("test/model-420")?.[0]).toMatchObject({ provider: { id: "stealth" } });
+		expect(result.get("test/model-449")?.[0]).toMatchObject({ provider: { id: "external-provider" } });
+		expect(result.size).toBe(routeCount);
+	});
+
 	it("rebuilds on Worker invocation instead of renewing an inner stale response", async () => {
 		const match = vi.fn(async () => new Response('{"models":[{"model_id":"stale"}]}'));
 		const put = vi.fn();

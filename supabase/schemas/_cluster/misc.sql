@@ -27,3 +27,7 @@ SELECT
 SELECT
   cron.schedule_in_database('refresh-public-model-workspace-usage-weekly', '17 * * * *',
   'select public.refresh_public_model_workspace_usage_weekly(now() - interval ''12 weeks'', now());', 'postgres', NULL, false);
+
+SELECT
+  cron.schedule_in_database('refresh-public-monitor-weekly-usage', '4-59/15 * * * *',
+  'set statement_timeout = ''120s''; set lock_timeout = ''5s''; select public.refresh_public_monitor_weekly_usage();', 'postgres', NULL, true);

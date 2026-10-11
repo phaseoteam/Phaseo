@@ -414,12 +414,20 @@ export async function fetchGatewayMonitorRows(
 	const monitorRouteIds = [...new Set(rows.map((row) => String(row.provider_api_model_id ?? "").trim()).filter(Boolean))];
 	const stealthRouteIds = new Set<string>();
 	const externalOverrideRouteIds = new Set<string>();
+	// Thousands of routes span dozens of chunks; fetch them concurrently so the
+	// lookups stay within the optional enrichment deadline.
+	const routeChunks: string[][] = [];
 	for (let offset = 0; offset < monitorRouteIds.length; offset += 200) {
+		routeChunks.push(monitorRouteIds.slice(offset, offset + 200));
+	}
+	const routeResults = await Promise.all(routeChunks.map((routeIds) => {
 		const routeRequest = client
 			.from("v2_model_provider_routes")
 			.select("provider_model_id,is_stealth,metadata")
-			.in("provider_model_id", monitorRouteIds.slice(offset, offset + 200));
-		const result = await (signal ? routeRequest.abortSignal(signal) : routeRequest);
+			.in("provider_model_id", routeIds);
+		return signal ? routeRequest.abortSignal(signal) : routeRequest;
+	}));
+	for (const result of routeResults) {
 		if (result.error) throw result.error;
 		for (const route of result.data ?? []) {
 			const routeId = String(route.provider_model_id);
