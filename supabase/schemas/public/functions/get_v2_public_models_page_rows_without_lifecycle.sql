@@ -108,11 +108,11 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
     group by route.model_slug
   ),
   -- Prices come only from routes the page shows, and only from active SKUs
-  -- in effect now. A newer SKU replaces an older one for the same route,
-  -- service tier, operation, region and meter, even when the older one was
-  -- never closed. Without a region filter, a regional price is used only when
-  -- the route has no global price for that meter. Rows carry an anonymous provider group,
-  -- not the provider, so the API can pick the cheapest provider.
+  -- in effect now. Only a higher version of the same SKU code replaces a SKU;
+  -- different codes are independent families (for example short and long
+  -- context). Without a region filter, a regional price is used only when the
+  -- route has no global price for that meter. Rows carry an anonymous provider
+  -- group, not the provider, so the API can pick the cheapest provider.
   priced_routes as (
     select distinct provider_model_id, model_slug, provider_slug
     from display_routes
@@ -129,7 +129,8 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
       sku.provider_model_id,
       sku.service_tier_slug,
       sku.operation,
-      sku.effective_from,
+      sku.sku_code,
+      sku.version,
       nullif(nullif(lower(coalesce(sku.region, variant.execution_region, '')), ''), 'global') as pricing_region,
       meter.meter_key,
       meter.modality,
@@ -164,8 +165,8 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
       select
         live.*,
         dense_rank() over (
-          partition by live.provider_model_id, live.service_tier_slug, live.operation, live.pricing_region, live.meter_key
-          order by live.effective_from desc
+          partition by live.provider_model_id, live.sku_code, live.meter_key
+          order by live.version desc
         ) as recency,
         bool_or(live.pricing_region is null) over (
           partition by live.provider_model_id, live.service_tier_slug, live.operation, live.meter_key

@@ -354,9 +354,12 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	// cheapest of those; providers are never mixed into one price.
 	const offers = [...groupBy(allRates, (item) => item.provider).values()]
 		.map((rates) => ({ rates, ...summarise(model, rates) }));
+	// Offers that price more token sides come first whatever their kind, so a
+	// provider with only a $0 input meter cannot make the model "Free".
+	const tokenSides = (headline: Rate[]) => new Set(headline.filter(isTextToken).map((item) => item.side)).size;
 	const priced = offers
 		.filter((offer): offer is typeof offer & { summary: CardPricingSummary } => offer.summary !== null)
-		.sort((a, b) => compareOffers(a.summary, b.summary));
+		.sort((a, b) => tokenSides(b.headline) - tokenSides(a.headline) || compareOffers(a.summary, b.summary));
 	const chosen = priced[0] ?? { rates: allRates, summary: null, headline: [] };
 	const { rates, summary, headline: headlineRates } = chosen;
 

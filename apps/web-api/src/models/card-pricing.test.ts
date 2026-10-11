@@ -86,6 +86,15 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 6, output: 6, unit: "1M tokens" });
 	});
 
+	it("does not call a model Free because one provider lists only a $0 input price", () => {
+		const row = card([
+			tokens("input_text_tokens", 0, { provider_group: 1 }),
+			tokens("input_text_tokens", 3, { provider_group: 2 }),
+			tokens("output_text_tokens", 15, { provider_group: 2 }),
+		]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 3, output: 15, unit: "1M tokens" });
+	});
+
 	it("uses a provider's base rate when it has short- and long-context SKUs, without From", () => {
 		const row = card([
 			tokens("input_text_tokens", 2, { provider: "openai" }),

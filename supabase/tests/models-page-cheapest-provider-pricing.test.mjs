@@ -30,7 +30,7 @@ const schema = `
 	create table public.v2_provider_regions (provider_slug text, region_code text, status text default 'active', routing_enabled boolean default true);
 	create table public.v2_route_capabilities (provider_model_id text, capability_id text, status text default 'active', params jsonb default '{}');
 	create table public.v2_pricing_skus (
-		sku_id uuid primary key default gen_random_uuid(), provider_model_id text, sku_code text, operation text default 'inference',
+		sku_id uuid primary key default gen_random_uuid(), provider_model_id text, sku_code text, version integer default 1, operation text default 'inference',
 		status text default 'active', region text, service_tier_slug text default 'standard',
 		effective_from timestamptz default now() - interval '1 day', effective_to timestamptz, route_variant_id uuid
 	);
@@ -64,13 +64,19 @@ const fixtures = `
 		('10000000-0000-0000-0000-000000000002', 'cf:clef-flash', 'provider-models', now() - interval '2 days', '00000000-0000-0000-0000-000000000001', 'standard', 'active'),
 		('10000000-0000-0000-0000-000000000003', 'crossmodel:clef-flash', 'audit', now() - interval '3 days', null, 'standard', 'active'),
 		('20000000-0000-0000-0000-000000000001', 'openai:gpt-test', 'standard-short', now() - interval '5 days', '00000000-0000-0000-0000-000000000002', 'standard', 'active'),
-		('20000000-0000-0000-0000-000000000002', 'openai:gpt-test', 'standard-long', now() - interval '5 days', '00000000-0000-0000-0000-000000000002', 'standard', 'active'),
+		('20000000-0000-0000-0000-000000000002', 'openai:gpt-test', 'standard-long', now() - interval '2 days', '00000000-0000-0000-0000-000000000002', 'standard', 'active'),
 		('20000000-0000-0000-0000-000000000003', 'openai:gpt-test', 'eu', now() - interval '5 days', '00000000-0000-0000-0000-000000000003', 'standard', 'active'),
 		('20000000-0000-0000-0000-000000000004', 'openai:gpt-test', 'batch', now() - interval '5 days', '00000000-0000-0000-0000-000000000004', 'batch', 'active'),
 		('20000000-0000-0000-0000-000000000005', 'openai:gpt-test', 'draft', now() - interval '1 days', '00000000-0000-0000-0000-000000000002', 'standard', 'draft'),
 		('20000000-0000-0000-0000-000000000006', 'openai:gpt-test', 'hidden-variant', now() - interval '5 days', '00000000-0000-0000-0000-000000000005', 'priority', 'active');
 
+	insert into public.v2_pricing_skus (sku_id, provider_model_id, sku_code, version, route_variant_id) values
+		('30000000-0000-0000-0000-000000000001', 'cf:clef-flash', 'repriced', 1, '00000000-0000-0000-0000-000000000001'),
+		('30000000-0000-0000-0000-000000000002', 'cf:clef-flash', 'repriced', 2, '00000000-0000-0000-0000-000000000001');
+
 	insert into public.v2_pricing_sku_meters (sku_id, meter_key, direction, price_nanos, display_label) values
+		('30000000-0000-0000-0000-000000000001', 'output_tokens', 'output', 500000000, 'Output Tokens'),
+		('30000000-0000-0000-0000-000000000002', 'output_tokens', 'output', 300000000, 'Output Tokens'),
 		('10000000-0000-0000-0000-000000000001', 'input_tokens', 'input', 90000000, 'Input Tokens'),
 		('10000000-0000-0000-0000-000000000002', 'input_tokens', 'input', 38000000, 'Input Tokens'),
 		('10000000-0000-0000-0000-000000000003', 'input_tokens', 'input', 90000000, 'Input Tokens'),
@@ -106,9 +112,15 @@ test("models page pricing uses current, active, global SKUs from shown routes", 
 		await db.exec(migration);
 
 		const all = await pricing(db);
-		// The superseded $0.09 SKU and the disabled CrossModel route are gone.
-		assert.deepEqual(all["cloudflare/clef-flash"], ["1|standard|input_tokens|input|0.038"]);
-		// Short and long context stay; the EU price is dropped while a global
+		// The disabled CrossModel route is gone (no $0 output); separate SKU
+		// codes both stay and the API takes the cheaper; within one code only
+		// the highest version counts ($0.30, not $0.50).
+		assert.deepEqual(all["cloudflare/clef-flash"], [
+			"1|standard|input_tokens|input|0.038",
+			"1|standard|input_tokens|input|0.09",
+			"1|standard|output_tokens|output|0.3",
+		]);
+		// Short and long context stay even with different start dates; the EU price is dropped while a global
 		// price exists; draft SKUs never appear; other tiers stay for the API.
 		// The EU-only audio meter stays: there is no global price for it.
 		assert.deepEqual(all["openai/gpt-test"], [
