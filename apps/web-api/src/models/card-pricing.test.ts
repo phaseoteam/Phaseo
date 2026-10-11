@@ -191,6 +191,52 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.04, unit: "image" });
 	});
 
+	it("lists each priced video variant in the hover card under From", () => {
+		const second = (price: number, variant: string, conditions: unknown[] = [{ path: "video_params.audio", value: true }]) =>
+			usage("output_video_seconds", price, "second", 1, { modality: "video", direction: "output", variant, conditions });
+		const row = card([
+			second(0.4, "720p or 1080p with audio."),
+			second(0.2, "720p or 1080p without audio."),
+			second(0.6, "4K with audio."),
+		], ["video"]);
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: true, price: 0.2, unit: "sec" });
+		expect(row.pricing_detail_rows).toEqual([
+			{ label: "Output Video Seconds (720p or 1080p without audio)", value: "$0.20 / sec" },
+			{ label: "Output Video Seconds (720p or 1080p with audio)", value: "$0.40 / sec" },
+			{ label: "Output Video Seconds (4K with audio)", value: "$0.60 / sec" },
+		]);
+	});
+
+	it("builds a variant label from match conditions when there is no description", () => {
+		const image = (price: number, conditions: unknown[]) =>
+			usage("output_image", price, "image", 1, { modality: "image", direction: "output", conditions });
+		const row = card([
+			image(0.04, [{ path: "image_params.quality", value: "standard" }]),
+			image(0.08, [{ path: "image_params.quality", value: ["hd", "ultra"] }]),
+		], ["image"]);
+		expect(row.pricing_detail_rows).toEqual([
+			{ label: "Output Image (Quality: standard)", value: "$0.04 / image" },
+			{ label: "Output Image (Quality: hd or ultra)", value: "$0.08 / image" },
+		]);
+	});
+
+	it("marks unlabelled differing media prices as From in the hover card", () => {
+		const row = card([
+			usage("output_image", 0.04, "image", 1, { modality: "image", direction: "output" }),
+			usage("output_image", 0.08, "image", 1, { modality: "image", direction: "output" }),
+		], ["image"]);
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: true, price: 0.04, unit: "image" });
+		expect(row.pricing_detail_rows).toEqual([{ label: "Output Image", value: "From $0.04 / image" }]);
+	});
+
+	it("keeps text models on their base rate even when SKUs are conditional", () => {
+		const row = card([
+			tokens("input_text_tokens", 2, { variant: "Up to 272K tokens" }),
+			tokens("input_text_tokens", 4, { variant: "Over 272K tokens" }),
+		]);
+		expect(row.pricing_detail_rows).toEqual([{ label: "Input Text Tokens", value: "$2 / 1M tokens" }]);
+	});
+
 	it("treats an OCR model as billed on its input pages", () => {
 		const row = normalizeModelsPagePricing({
 			gateway_output_modalities: ["text"],

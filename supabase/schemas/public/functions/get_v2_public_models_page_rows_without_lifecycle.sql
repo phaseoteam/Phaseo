@@ -149,6 +149,13 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
         sku.provider_model_id,
         sku.service_tier_slug,
         sku.operation,
+        -- Conditional SKUs (for example one price per resolution or with or
+        -- without audio) carry their conditions and a human description.
+        case
+          when jsonb_typeof(sku.metadata->'match') = 'array' and jsonb_array_length(sku.metadata->'match') > 0
+            then sku.metadata->'match'
+        end as conditions,
+        nullif(btrim(sku.description), '') as sku_description,
         -- Each region dimension separately, so a request can match any of
         -- them; a price is global only when none is set.
         nullif(nullif(lower(coalesce(sku.region, '')), ''), 'global') as sku_region,
@@ -202,7 +209,14 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
       meter.price_nanos,
       meter.display_label,
       meter.display_unit,
-      meter.meter_order
+      meter.meter_order,
+      sku.conditions,
+      -- Only conditional prices get a variant label: the meter's note, else
+      -- the SKU description.
+      case
+        when sku.conditions is not null
+          then coalesce(nullif(btrim(meter.metadata->>'note'), ''), sku.sku_description)
+      end as variant
     from current_skus sku
     join public.v2_pricing_sku_meters meter on meter.sku_id = sku.sku_id and meter.billable
   ),
@@ -232,7 +246,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
       min(meter.price_nanos / 1000000000.0) filter (where meter.direction = 'input') as lowest_input_price,
       min(meter.price_nanos / 1000000000.0) filter (where meter.direction = 'output') as lowest_output_price,
       jsonb_agg(
-        jsonb_build_object(
+        jsonb_strip_nulls(jsonb_build_object(
           'label', meter.display_label,
           'meter_key', meter.meter_key,
           'modality', meter.modality,
@@ -242,9 +256,11 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
           'price', meter.price_nanos / 1000000000.0,
           'display_unit', meter.display_unit,
           'service_tier', meter.service_tier_slug,
-          'provider_group', meter.provider_group
-        )
-        order by meter.meter_order, meter.meter_key, meter.provider_group
+          'provider_group', meter.provider_group,
+          'variant', meter.variant,
+          'conditions', meter.conditions
+        ))
+        order by meter.meter_order, meter.meter_key, meter.provider_group, meter.price_nanos
       ) as pricing_detail_rows
     from current_meters meter
     group by meter.model_slug

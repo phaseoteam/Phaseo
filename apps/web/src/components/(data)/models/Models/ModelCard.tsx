@@ -1171,13 +1171,29 @@ function ModelCardImpl({
 										className="max-h-96 w-fit min-w-[13rem] max-w-[22rem] overflow-y-auto p-3"
 									>
 										{headlineSummary ? (
-											<div className="space-y-1 text-xs">
-												{pricingDetailRows.map((row) => (
-													<div key={row.id} className="flex items-baseline justify-between gap-4">
-														<span className="text-muted-foreground">{row.label}</span>
-														<span className="shrink-0 tabular-nums text-foreground">{row.value}</span>
-													</div>
-												))}
+											<div className="space-y-2 text-xs">
+												{pricingDetailGroups.map((group) =>
+													group.items.some((item) => item.variant) ? (
+														// One price per variant (resolution, audio, quality)
+														// under the meter it applies to.
+														<div key={group.id} className="space-y-1">
+															<div className="font-medium text-foreground">{group.baseLabel}</div>
+															{group.items.map((item) => (
+																<div key={item.id} className="flex items-baseline justify-between gap-4 pl-2">
+																	<span className="text-muted-foreground">{item.variant ?? item.label}</span>
+																	<span className="shrink-0 tabular-nums text-foreground">{item.value}</span>
+																</div>
+															))}
+														</div>
+													) : (
+														group.items.map((item) => (
+															<div key={item.id} className="flex items-baseline justify-between gap-4">
+																<span className="text-muted-foreground">{item.label}</span>
+																<span className="shrink-0 tabular-nums text-foreground">{item.value}</span>
+															</div>
+														))
+													),
+												)}
 											</div>
 										) : (
 										<div className="space-y-2">
