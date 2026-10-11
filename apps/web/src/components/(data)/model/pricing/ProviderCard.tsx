@@ -75,7 +75,7 @@ import {
 	type UsageRow,
 } from "@/components/(data)/model/pricing/pricingHelpers";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
-import type { ProviderRuntimeStats } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
+import type { PricingRuntimeStats as ProviderRuntimeStats } from "./pricingRuntimeStats";
 import type { ProviderRoutingStatus } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import { Logo } from "@/components/Logo";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";

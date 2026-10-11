@@ -10,6 +10,7 @@ import {
 	fetchFrontendModelGatewayMetadata,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import ModelPricingClient from "@/components/(data)/model/pricing/ModelPricingClient";
+import { toPricingRuntimeStats } from "./pricingRuntimeStats";
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
 import { fetchWorkspacePrivacySettings } from "@/lib/fetchers/internal/fetchWorkspacePrivacySettings";
 import type { WorkspacePrivacySettings } from "@/lib/fetchers/internal/settingsTypes";
@@ -297,7 +298,7 @@ export default async function ModelPricing({
 					internalOnly={includeHidden}
 					creatorOrgId={identity.organisationId}
 					initialPricingTimeMs={now.getTime()}
-					runtimeStats={runtimeStats}
+					runtimeStats={toPricingRuntimeStats(runtimeStats)}
 					routingHealth={routingHealth}
 					workspacePrivacySettings={workspacePrivacySettings}
 					showHeader={false}
@@ -363,7 +364,7 @@ export default async function ModelPricing({
 				internalOnly={includeHidden}
 				creatorOrgId={identity.organisationId}
 				initialPricingTimeMs={now.getTime()}
-				runtimeStats={runtimeStats}
+				runtimeStats={toPricingRuntimeStats(runtimeStats)}
 				routingHealth={routingHealth}
 				workspacePrivacySettings={workspacePrivacySettings}
 				showHeader={showHeader}
