@@ -76,6 +76,7 @@ export type ModelsPageModel = Omit<
 		| "lowest_from_price_unit"
 		| "pricing_detail_rows"
 		| "pricing_summary"
+		| "pricing_provider_id"
 		| "popularity_tokens_week"
 		| "weekly_usage_metric"
 		| "weekly_usage_quantity"

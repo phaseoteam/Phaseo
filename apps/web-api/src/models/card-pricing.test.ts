@@ -543,6 +543,53 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.08, unit: "request" });
 	});
 
+	it("lists text tokens first on each side and drops media token rates that repeat them", () => {
+		const row = card([
+			tokens("input_image_tokens", 0.075, { label: "Image Input", modality: "image", direction: "input" }),
+			tokens("input_text_tokens", 0.075, { label: "Input", modality: "text", direction: "input" }),
+			tokens("input_video_tokens", 0.075, { label: "Video Input", modality: "video", direction: "input" }),
+			tokens("input_audio_tokens", 0.3, { label: "Audio Input", modality: "audio", direction: "input" }),
+			tokens("output_text_tokens", 0.25, { label: "Output", modality: "text", direction: "output" }),
+			tokens("cached_read_text_tokens", 0.02, { label: "Cached Input", modality: "text", direction: "input" }),
+		]);
+		expect(row.pricing_detail_rows).toEqual([
+			{ label: "Input", value: "$0.075 / 1M tokens" },
+			{ label: "Audio Input", value: "$0.30 / 1M tokens" },
+			{ label: "Output", value: "$0.25 / 1M tokens" },
+			{ label: "Cached Input", value: "$0.02 / 1M tokens" },
+		]);
+	});
+
+	it("orders differing media inputs image, video, audio and keeps non-media rates that match text", () => {
+		const row = card([
+			tokens("input_audio_tokens", 0.3, { label: "Audio Input", modality: "audio", direction: "input" }),
+			tokens("input_video_tokens", 0.2, { label: "Video Input", modality: "video", direction: "input" }),
+			tokens("input_image_tokens", 0.15, { label: "Image Input", modality: "image", direction: "input" }),
+			tokens("input_embedding_tokens", 0.1, { label: "Embedding Input", modality: "embedding", direction: "input" }),
+			tokens("input_text_tokens", 0.1, { label: "Input", modality: "text", direction: "input" }),
+			tokens("output_text_tokens", 0.4, { label: "Output", modality: "text", direction: "output" }),
+		]);
+		expect((row.pricing_detail_rows as Array<{ label: string }>).map((item) => item.label)).toEqual([
+			"Input", "Image Input", "Video Input", "Audio Input", "Embedding Input", "Output",
+		]);
+	});
+
+	it("names the provider behind the chosen offer, and no provider for stealth routes", () => {
+		const row = card([
+			tokens("input_tokens", 1, { provider_group: 1, provider: "openai" }),
+			tokens("output_tokens", 4, { provider_group: 1, provider: "openai" }),
+			tokens("input_tokens", 0.5, { provider_group: 2, provider: "Together" }),
+			tokens("output_tokens", 2, { provider_group: 2, provider: "Together" }),
+		]);
+		expect(row.pricing_provider_id).toBe("together");
+
+		const stealth = card([
+			tokens("input_tokens", 0.5, { provider_group: 1 }),
+			tokens("output_tokens", 2, { provider_group: 1 }),
+		]);
+		expect(stealth.pricing_provider_id).toBeNull();
+	});
+
 	it("passes preformatted rows through untouched", () => {
 		const rows = [{ label: "Custom contract", value: "Contact provider" }];
 		const row = normalizeModelsPagePricing({ pricing_detail_rows: rows });
