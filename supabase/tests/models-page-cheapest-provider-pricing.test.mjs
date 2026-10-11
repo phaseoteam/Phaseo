@@ -125,7 +125,9 @@ const fixtures = `
 	insert into public.v2_pricing_sku_meters (sku_id, meter_key, direction, unit, unit_quantity, price_nanos, display_label, metadata) values
 		('50000000-0000-0000-0000-000000000001', 'output_video_seconds', 'output', 'second', 1, 400000000, 'Output Video Seconds', '{}'),
 		('50000000-0000-0000-0000-000000000002', 'output_video_seconds', 'output', 'second', 1, 200000000, 'Output Video Seconds', '{"note":"720p or 1080p without audio."}'),
-		('50000000-0000-0000-0000-000000000003', 'input_image', 'input', 'image', 1, 10000000, 'Input Image', '{}');
+		('50000000-0000-0000-0000-000000000003', 'input_image', 'input', 'image', 1, 10000000, 'Input Image', '{}'),
+		('50000000-0000-0000-0000-000000000003', 'output_video', 'output', 'video', 1, 500000000, 'Output Video',
+			'{"note":"4K only.","match":[{"op":"eq","path":"video_params.resolution","value":"4k"}]}');
 	insert into public.v2_pricing_skus (sku_id, provider_model_id, sku_code) values
 		('40000000-0000-0000-0000-000000000001', 'soon:clef-flash', 'preview'),
 		('40000000-0000-0000-0000-000000000002', 'soon:preview-only', 'preview'),
@@ -215,10 +217,13 @@ test("models page pricing uses current, active, global SKUs from shown routes", 
 		const videoRows = video.rows[0].rows;
 		assert.deepEqual(videoRows.map((row) => [row.meter_key, Number(row.price), row.variant ?? null]), [
 			["input_image", 0.01, null],
+			// Conditions stored on the meter count too.
+			["output_video", 0.5, "4K only."],
 			["output_video_seconds", 0.2, "720p or 1080p without audio."],
 			["output_video_seconds", 0.4, "720p or 1080p with audio."],
 		]);
-		assert.equal(videoRows[2].conditions.length, 2);
+		assert.equal(videoRows[3].conditions.length, 2);
+		assert.equal(videoRows[1].conditions.length, 1);
 		assert.ok(!("conditions" in videoRows[0]) && !("variant" in videoRows[0]));
 
 		// "tiermove" moved from standard (v1) to priority (v2): a standard-tier

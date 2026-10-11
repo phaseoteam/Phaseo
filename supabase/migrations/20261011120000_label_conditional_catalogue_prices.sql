@@ -216,15 +216,26 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
       meter.display_label,
       meter.display_unit,
       meter.meter_order,
-      sku.conditions,
+      conditional.conditions,
       -- Only conditional prices get a variant label: the meter's note, else
       -- the SKU description.
       case
-        when sku.conditions is not null
+        when conditional.conditions is not null
           then coalesce(nullif(btrim(meter.metadata->>'note'), ''), sku.sku_description)
       end as variant
     from current_skus sku
     join public.v2_pricing_sku_meters meter on meter.sku_id = sku.sku_id and meter.billable
+    -- Conditions may sit on the SKU or on the meter; the SKU's win, as in the
+    -- gateway's billing.
+    cross join lateral (
+      select coalesce(
+        sku.conditions,
+        case
+          when jsonb_typeof(meter.metadata->'match') = 'array' and jsonb_array_length(meter.metadata->'match') > 0
+            then meter.metadata->'match'
+        end
+      ) as conditions
+    ) conditional
   ),
   -- Global availability is judged over current versions only.
   current_meters as (

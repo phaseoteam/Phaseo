@@ -220,6 +220,28 @@ describe("normalizeModelsPagePricing", () => {
 		]);
 	});
 
+	it("respects condition operators in generated labels", () => {
+		const image = (price: number, conditions: unknown[]) =>
+			usage("output_image", price, "image", 1, { modality: "image", direction: "output", conditions });
+		const row = card([
+			image(0.04, [{ path: "video_params.audio", op: "neq", value: true }]),
+			image(0.06, [{ path: "params.input_video_seconds", op: "gt", value: 0 }]),
+			image(0.08, [{ path: "image_params.quality", op: "nin", value: ["low"] }]),
+		], ["image"]);
+		expect((row.pricing_detail_rows as Array<{ label: string }>).map((item) => item.label)).toEqual([
+			"Output Image (No audio)",
+			"Output Image (Input Video Seconds > 0)",
+			"Output Image (Quality: not low)",
+		]);
+	});
+
+	it("keeps the label of a lone conditional price", () => {
+		const row = card([
+			usage("output_video_seconds", 0.2, "second", 1, { modality: "video", direction: "output", variant: "720p without audio" }),
+		], ["video"]);
+		expect(row.pricing_detail_rows).toEqual([{ label: "Output Video Seconds (720p without audio)", value: "$0.20 / sec" }]);
+	});
+
 	it("marks unlabelled differing media prices as From in the hover card", () => {
 		const row = card([
 			usage("output_image", 0.04, "image", 1, { modality: "image", direction: "output" }),

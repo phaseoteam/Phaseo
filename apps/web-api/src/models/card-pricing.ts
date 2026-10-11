@@ -154,14 +154,19 @@ function variantLabel(row: Row): string | null {
 	const described = String(row.variant ?? "").trim().replace(/\.$/, "");
 	if (described) return described.charAt(0).toUpperCase() + described.slice(1);
 	if (!Array.isArray(row.conditions) || !row.conditions.length) return null;
+	const COMPARISON: Record<string, string> = { gt: ">", gte: "≥", lt: "<", lte: "≤" };
 	const parts = row.conditions.flatMap((condition) => {
 		if (!condition || typeof condition !== "object") return [];
-		const { path, value } = condition as Row;
+		const { path, value, op: rawOp } = condition as Row;
+		const op = String(rawOp ?? "eq").trim().toLowerCase();
 		const name = String(path ?? "").split(".").pop()?.replace(/_/g, " ").trim();
 		if (!name) return [];
-		if (typeof value === "boolean") return [value ? `With ${name}` : `No ${name}`];
+		const negated = op === "neq" || op === "nin" || op === "not_in";
+		if (typeof value === "boolean") return [value !== negated ? `With ${name}` : `No ${name}`];
 		const values = (Array.isArray(value) ? value : [value]).map((item) => String(item)).filter(Boolean);
-		return values.length ? [`${title(name)}: ${values.join(" or ")}`] : [];
+		if (!values.length) return [];
+		if (COMPARISON[op]) return [`${title(name)} ${COMPARISON[op]} ${values[0]}`];
+		return [`${title(name)}: ${negated ? "not " : ""}${values.join(" or ")}`];
 	});
 	return parts.length ? parts.join(" · ") : null;
 }
@@ -450,7 +455,9 @@ export function normalizeModelsPagePricing(model: Row): Row {
 				? [items]
 				: [...groupBy(items, (item) => item.variant ?? "").values()].sort((a, b) => min(a) - min(b));
 			return variants.map((group) => ({
-				label: group[0].variant && variants.length > 1 ? `${group[0].label} (${group[0].variant})` : group[0].label,
+				// A conditional price keeps its label even when it is the only one,
+				// so a restricted price never reads as unconditional.
+				label: group[0].variant && !isTextToken(group[0]) ? `${group[0].label} (${group[0].variant})` : group[0].label,
 				value: `${!isTextToken(group[0]) && varies(group) ? "From " : ""}${formatUsd(min(group))} / ${group[0].unit}`,
 			}));
 		});
