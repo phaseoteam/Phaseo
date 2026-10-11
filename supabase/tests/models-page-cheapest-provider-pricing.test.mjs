@@ -88,7 +88,30 @@ const fixtures = `
 		('30000000-0000-0000-0000-000000000007', 'openai:gpt-test', 'eu-data', '00000000-0000-0000-0000-000000000006'),
 		('30000000-0000-0000-0000-000000000008', 'openai:gpt-test', 'us-run-eu-data', '00000000-0000-0000-0000-000000000007');
 
+	-- A coming-soon preview route next to a routable one, a preview-only model,
+	-- and one provider with two routes for the same model.
+	insert into public.v2_labs values ('acme', 'Acme');
+	insert into public.v2_models (model_slug, name, lab_slug) values
+		('acme/preview-only', 'Preview Only', 'acme'), ('acme/two-routes', 'Two Routes', 'acme');
+	insert into public.v2_providers (provider_slug, name) values ('soon', 'Soon'), ('acme', 'Acme');
+	insert into public.v2_model_provider_routes (provider_model_id, model_slug, provider_slug, routing_enabled, provider_availability_status) values
+		('soon:clef-flash', 'cloudflare/clef-flash', 'soon', false, 'coming_soon'),
+		('soon:preview-only', 'acme/preview-only', 'soon', false, 'coming_soon'),
+		('acme:two-a', 'acme/two-routes', 'acme', true, 'available'),
+		('acme:two-b', 'acme/two-routes', 'acme', true, 'available');
+	insert into public.v2_route_variants (provider_model_id, routing_enabled) values
+		('soon:clef-flash', false), ('soon:preview-only', false), ('acme:two-a', true), ('acme:two-b', true);
+	insert into public.v2_pricing_skus (sku_id, provider_model_id, sku_code) values
+		('40000000-0000-0000-0000-000000000001', 'soon:clef-flash', 'preview'),
+		('40000000-0000-0000-0000-000000000002', 'soon:preview-only', 'preview'),
+		('40000000-0000-0000-0000-000000000003', 'acme:two-a', 'a'),
+		('40000000-0000-0000-0000-000000000004', 'acme:two-b', 'b');
+
 	insert into public.v2_pricing_sku_meters (sku_id, meter_key, direction, price_nanos, display_label) values
+		('40000000-0000-0000-0000-000000000001', 'input_tokens', 'input', 1000000, 'Input Tokens'),
+		('40000000-0000-0000-0000-000000000002', 'input_tokens', 'input', 7000000, 'Input Tokens'),
+		('40000000-0000-0000-0000-000000000003', 'input_tokens', 'input', 1000000000, 'Input Tokens'),
+		('40000000-0000-0000-0000-000000000004', 'output_tokens', 'output', 2000000000, 'Output Tokens'),
 		('30000000-0000-0000-0000-000000000001', 'output_tokens', 'output', 500000000, 'Output Tokens'),
 		('30000000-0000-0000-0000-000000000002', 'output_tokens', 'output', 300000000, 'Output Tokens'),
 		('30000000-0000-0000-0000-000000000001', 'requests', 'input', 10000000, 'Requests'),
@@ -145,6 +168,16 @@ test("models page pricing uses current, active, global SKUs from shown routes", 
 			"1|standard|output_tokens|output|0.3",
 			"1|priority|video_inputs|input|0.05",
 		].sort());
+
+		// The cheaper coming-soon route is not used while a routable one exists,
+		// but prices a preview-only model.
+		assert.ok(!all["cloudflare/clef-flash"].some((meter) => meter.endsWith("|0.001")));
+		assert.deepEqual(all["acme/preview-only"], ["1|standard|input_tokens|input|0.007"]);
+		// Two routes of one provider are separate offers.
+		assert.deepEqual(all["acme/two-routes"], [
+			"1|standard|input_tokens|input|1",
+			"2|standard|output_tokens|output|2",
+		]);
 
 		// "tiermove" moved from standard (v1) to priority (v2): a standard-tier
 		// request must not bring back v1.

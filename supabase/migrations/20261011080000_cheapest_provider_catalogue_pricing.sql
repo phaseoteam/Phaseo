@@ -114,20 +114,30 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
     left join lateral unnest(route.output_modalities) output(output_modality) on true
     group by route.model_slug
   ),
-  -- Prices come only from routes the page shows, and only from active SKUs
-  -- in effect now. Only a higher version of the same SKU code replaces a SKU;
-  -- different codes are independent families (for example short and long
-  -- context). Without a region filter, a regional price is used only when the
-  -- route has no global price for that meter. Rows carry an anonymous provider
-  -- group, not the provider, so the API can pick the cheapest provider.
+  -- Prices come only from routable routes the page shows (coming-soon
+  -- previews only for models with no routable route), and only from active
+  -- SKUs in effect now. Only a higher version of the same SKU code replaces a
+  -- SKU; different codes are independent families (for example short and
+  -- long context). Without a region filter, a regional price is used only
+  -- when the route has no global price for that meter. Rows carry an
+  -- anonymous route group, not the provider, so the API can pick the
+  -- cheapest offer.
+  pricing_routes as (
+    select * from eligible_routes
+    union all
+    select * from preview_routes preview
+    where not exists (
+      select 1 from eligible_routes eligible where eligible.model_slug = preview.model_slug
+    )
+  ),
   priced_routes as (
     select distinct provider_model_id, model_slug, provider_slug
-    from display_routes
+    from pricing_routes
   ),
-  -- A SKU tied to a variant counts only when the page shows that variant.
+  -- A SKU tied to a variant counts only when it is one of those routes' variants.
   priced_variants as (
     select distinct variant_id
-    from display_routes
+    from pricing_routes
   ),
   -- The latest live version of each SKU code, chosen per whole SKU (so meters
   -- dropped in a newer version do not survive from an older one) and before
@@ -205,11 +215,12 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
         bool_or(live.pricing_region is null) over (
           partition by live.provider_model_id, live.service_tier_slug, live.operation, live.meter_key
         ) as has_global_price,
-        -- An opaque per-model provider number, so prices can be compared by
-        -- provider without naming one (stealth routes stay anonymous).
+        -- An opaque per-model route number, so offers can be compared without
+        -- naming a provider (stealth routes stay anonymous) and two routes of
+        -- one provider are never blended into one price.
         dense_rank() over (
           partition by live.model_slug
-          order by live.provider_slug
+          order by live.provider_model_id
         ) as provider_group
       from live_meters live
     ) ranked
