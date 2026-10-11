@@ -241,6 +241,26 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row).toMatchObject({ lowest_input_price: null, lowest_output_price: 9, lowest_from_price: 9 });
 	});
 
+	it("headlines token-billed media output over text output on a media-only model", () => {
+		const row = card([
+			tokens("input_text_tokens", 0.5),
+			tokens("output_text_tokens", 2),
+			tokens("output_image_tokens", 30, { modality: "image" }),
+		], ["image"]);
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 30, unit: "1M tokens" });
+		expect(row).toMatchObject({ lowest_output_price: 30, lowest_input_price: null });
+	});
+
+	it("keeps text rates as the headline on text-and-image models", () => {
+		const row = card([
+			tokens("input_text_tokens", 0.5),
+			tokens("output_text_tokens", 2),
+			tokens("output_image_tokens", 30, { modality: "image" }),
+		], ["text", "image"]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 0.5, output: 2, unit: "1M tokens" });
+		expect(row.pricing_detail_rows).toContainEqual({ label: "Output Image Tokens", value: "$30 / 1M tokens" });
+	});
+
 	it("chooses each token side's tier independently", () => {
 		const row = card([
 			tokens("input_text_tokens", 0),

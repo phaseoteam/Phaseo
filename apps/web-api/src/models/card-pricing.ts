@@ -233,9 +233,14 @@ function summarise(model: Row, rates: Rate[]): { summary: CardPricingSummary | n
 
 	const outputModalities = model.gateway_output_modalities ?? model.output_types ?? model.output_modalities;
 	const outputs = Array.isArray(outputModalities) ? outputModalities.map((item) => String(item).toLowerCase()) : [];
-	const isMediaOutput = (item: Rate) => item.side === "output" && MEDIA.includes(item.modality) && item.unit !== "1M tokens";
+	const isMediaOutput = (item: Rate) => item.side === "output" && MEDIA.includes(item.modality);
+	// Generated-media meters, whatever their billing unit. Per-token media
+	// output only makes the card a media card when the model has no text
+	// output; for text-and-media models the text rates stay the headline and
+	// the media token rates are listed in the hover card.
 	const mediaOutputs = preferredTier(base.filter(isMediaOutput));
-	const media = mediaOutputs.length > 0 || (outputs.some((item) => /image|video|audio/.test(item)) && !outputs.includes("text"));
+	const media = mediaOutputs.some((item) => item.unit !== "1M tokens")
+		|| (outputs.some((item) => /image|video|audio/.test(item)) && !outputs.includes("text"));
 
 	// Token rates are chosen in their own best tier, so a standard-tier tool
 	// fee cannot displace input/output pricing offered only in other tiers.
@@ -270,7 +275,7 @@ function summarise(model: Row, rates: Rate[]): { summary: CardPricingSummary | n
 
 	// Media and other usage-priced models: headline the cheapest primary rate
 	// in its most representative unit, and leave the rest to the detail rows.
-	const primary = mediaOutputs.length
+	const primary = media && mediaOutputs.length
 		? mediaOutputs
 		: media && candidates.some((item) => item.side === "output")
 			? candidates.filter((item) => item.side === "output")
