@@ -5,7 +5,7 @@ import { PGlite } from "@electric-sql/pglite";
 
 // The latest migration redefining the page projection.
 const migration = await readFile(
-	new URL("../migrations/20261011190000_name_catalogue_pricing_provider.sql", import.meta.url),
+	new URL("../migrations/20261011230000_name_catalogue_pricing_provider.sql", import.meta.url),
 	"utf8",
 );
 
