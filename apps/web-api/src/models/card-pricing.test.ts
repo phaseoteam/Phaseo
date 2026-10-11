@@ -158,6 +158,31 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.0001, unit: "sec" });
 	});
 
+	it("treats an OCR model as billed on its input pages", () => {
+		const row = normalizeModelsPagePricing({
+			gateway_output_modalities: ["text"],
+			gateway_endpoints: ["ocr"],
+			pricing_detail_rows: [
+				tokens("output_text_tokens", 0, { provider_group: 1 }),
+				usage("input_pages", 1, "page", 1000, { provider_group: 2 }),
+			],
+		});
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 1, unit: "1K pages" });
+	});
+
+	it("shows each hover row from the tier the headline used", () => {
+		const row = card([
+			tokens("input_text_tokens", 10),
+			tokens("input_text_tokens", 1, { service_tier: "priority" }),
+			tokens("output_text_tokens", 20, { service_tier: "priority" }),
+		]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 10, output: 20, unit: "1M tokens" });
+		expect(row.pricing_detail_rows).toEqual([
+			{ label: "Input Text Tokens", value: "$10 / 1M tokens" },
+			{ label: "Output Text Tokens", value: "$20 / 1M tokens" },
+		]);
+	});
+
 	it("does not let a $0 tool-only route make an embeddings model Free", () => {
 		const row = card([
 			usage("web_search", 0, "request", 1, { provider_group: 1 }),

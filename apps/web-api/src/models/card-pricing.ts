@@ -370,12 +370,12 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	const tokenSides = (headline: Rate[]) => new Set(headline.filter(isTextToken).map((item) => item.side)).size;
 	const outputModalities = model.gateway_output_modalities ?? model.output_types ?? model.output_modalities;
 	const outputs = Array.isArray(outputModalities) ? outputModalities.map((item) => String(item).toLowerCase()) : [];
-	// Transcription (speech-to-text) lists text as its output but is billed on
-	// the input audio, so it counts as input-priced.
+	// Transcription, OCR and document parsing list text as their output but
+	// are billed on the input (audio, pages), so they count as input-priced.
 	const endpoints = Array.isArray(model.gateway_endpoints) ? model.gateway_endpoints.map((item) => String(item).toLowerCase()) : [];
-	const transcription = [...outputs, ...endpoints].some((item) => /stt|transcri|speech_to_text/.test(item));
+	const inputBilledTask = [...outputs, ...endpoints].some((item) => /stt|transcri|speech_to_text|ocr|parse/.test(item));
 	const outputPriced = outputs.length
-		? !transcription && outputs.some((item) => /text|image|video|audio|speech|music/.test(item))
+		? !inputBilledTask && outputs.some((item) => /text|image|video|audio|speech|music/.test(item))
 		: offers.some((offer) => offer.headline.some((item) => item.side === "output"));
 	// Whether an offer prices the side the model is billed on: an output for
 	// output-priced models, an input for input-priced ones (side-less meters
@@ -396,9 +396,15 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	const chosen = priced[0] ?? { rates: allRates, summary: null, headline: [] };
 	const { rates, summary, headline: headlineRates } = chosen;
 
-	// One price per meter: the provider's base rate when it has several
-	// standard SKUs (for example short and long context).
+	// One price per meter: taken from the tier the headline used for that
+	// meter (otherwise the preferred tier), and the provider's base rate when
+	// it has several SKUs there (for example short and long context).
 	const detailRows = [...groupBy(detailTierRates(rates, headlineRates), (item) => `${item.key}|${item.unit}`).values()]
+		.map((items) => {
+			const headlineTier = headlineRates.find((item) => item.key === items[0].key && item.unit === items[0].unit)?.tier;
+			const tierItems = headlineTier ? items.filter((item) => item.tier === headlineTier) : preferredTier(items);
+			return tierItems.length ? tierItems : items;
+		})
 		.sort((a, b) => detailOrder(a[0], b[0]))
 		.map((items) => ({
 			label: items[0].label,
