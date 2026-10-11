@@ -79,7 +79,8 @@ export function azureAnthropicHeaders(key: string, authType: "api-key" | "entra"
 }
 
 export function azureAnthropicUrl(baseUrl: string): string {
-    const url = new URL(azureResourceBaseUrl(baseUrl));
+    const url = new URL(baseUrl);
+    url.pathname = azureResourceBaseUrl(url.pathname);
     if (url.hostname.endsWith(".openai.azure.com")) {
         url.hostname = url.hostname.replace(/\.openai\.azure\.com$/, ".services.ai.azure.com");
     }

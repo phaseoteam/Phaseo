@@ -26,6 +26,7 @@ afterAll(() => {
 describe("azure config", () => {
 	it.each([
 		"https://phaseo-resource.openai.azure.com/openai/v1/",
+		"https://phaseo-resource.openai.azure.com/openai/v1?api-version=preview#fragment",
 		"https://phaseo-resource.services.ai.azure.com",
 		"https://phaseo-resource.services.ai.azure.com/anthropic/v1/",
 	])("uses the Claude Messages endpoint for %s", (baseUrl) => {
