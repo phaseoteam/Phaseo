@@ -829,12 +829,18 @@ jobs:
                       production_sha=$(curl -fsS --max-time 30 -H "Authorization: Bearer $VERCEL_TOKEN" \
                           "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID?teamId=$VERCEL_ORG_ID" \
                           | jq -r '.targets.production.meta.githubCommitSha // empty') || production_sha=""
-                      # apps/web compiles packages/data/catalog/src through a tsconfig path,
-                      # and its prebuild reads apps/docs for the docs search index.
+                      # Everything outside apps/web that the web build reads:
+                      # - packages/data/catalog/src, compiled through a tsconfig path;
+                      # - apps/docs, read by the prebuild for the docs search index;
+                      # - the two model-discovery modules imported by the internal
+                      #   model-discovery-notifier server action.
+                      # Add any new import that reaches outside apps/web here too.
                       if [ -n "$production_sha" ] \
                           && git fetch --quiet --depth=1 origin "$production_sha" \
                           && git diff --quiet "$production_sha" "$GITHUB_SHA" -- \
                               apps/web apps/docs packages/data/catalog \
+                              apps/api/src/pipeline/model-discovery/public-model-announcement-discord.ts \
+                              apps/api/src/pipeline/model-discovery/discord-webhook.ts \
                               package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json; then
                           deploy=false
                           echo "Production already serves $production_sha with the same web inputs; skipping the web deploy."
