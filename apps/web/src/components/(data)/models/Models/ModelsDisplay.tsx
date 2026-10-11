@@ -230,7 +230,7 @@ const ENDPOINT_LABELS: Record<string, string> = {
 	"audio/transcription": "Transcription",
 	"audio/transcriptions": "Transcription",
 	"audio/translations": "Translation",
-	"audio/realtime": "Real-time",
+	"audio/realtime": "Realtime",
 	"video/generations": "Video Generation",
 	decisions: "Decisions",
 	"decision/make": "Decisions",
@@ -483,7 +483,7 @@ function toTitleCase(value: string): string {
 	) {
 		return "Decisions";
 	}
-	if (normalized === "realtime") return "Real-time";
+	if (normalized === "realtime") return "Realtime";
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
