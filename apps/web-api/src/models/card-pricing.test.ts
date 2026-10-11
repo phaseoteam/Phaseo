@@ -112,6 +112,14 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.04, unit: "image" });
 	});
 
+	it("keeps a free input-only provider for an input-priced model", () => {
+		const row = card([
+			tokens("input_tokens", 0, { provider_group: 1 }),
+			usage("requests", 0.001, "request", 1, { provider_group: 2 }),
+		], ["embeddings"]);
+		expect(row.pricing_summary).toEqual({ kind: "free" });
+	});
+
 	it("uses a provider's base rate when it has short- and long-context SKUs, without From", () => {
 		const row = card([
 			tokens("input_text_tokens", 2, { provider: "openai" }),
