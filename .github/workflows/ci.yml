@@ -213,7 +213,6 @@ jobs:
         outputs:
             data-changed: ${{ steps.filter.outputs.data }}
             migrations-changed: ${{ steps.filter.outputs.migrations }}
-            web-changed: ${{ steps.filter.outputs.web }}
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
@@ -228,14 +227,6 @@ jobs:
                           - 'supabase/tests/**'
                           - 'supabase/config.toml'
                           - 'scripts/validate-supabase-migrations.mjs'
-                      # apps/web also compiles packages/data/catalog/src through a tsconfig path.
-                      web:
-                          - 'apps/web/**'
-                          - 'packages/data/catalog/**'
-                          - 'package.json'
-                          - 'pnpm-lock.yaml'
-                          - 'pnpm-workspace.yaml'
-                          - 'turbo.json'
 
     migration-validation:
         name: Validate database migration policy
@@ -782,10 +773,6 @@ jobs:
         permissions:
             contents: read
             id-token: write
-        env:
-            # Each production deploy starts the web app with an empty runtime cache,
-            # so skip it when nothing the web build uses changed. Manual runs always deploy.
-            DEPLOY_WEB: ${{ matrix.target == 'web' && (github.event_name == 'workflow_dispatch' || needs.check-paths.outputs.web-changed == 'true') }}
         strategy:
             fail-fast: false
             matrix:
@@ -823,12 +810,44 @@ jobs:
             - name: Restore lockfile (guard setup-node cache mutation)
               run: git checkout -- pnpm-lock.yaml
 
+            # Each production deploy starts the web app with an empty runtime cache,
+            # so skip it when nothing the web build reads has changed since the commit
+            # production serves. Comparing with production rather than the previous
+            # push means a web change whose deploy failed or was skipped still ships
+            # with the next green run. Manual runs, or a failed lookup, always deploy.
+            - name: Check web changes since the production deployment
+              id: web-changes
+              if: matrix.target == 'web'
+              env:
+                  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+                  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+                  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+                  FORCE_DEPLOY: ${{ github.event_name == 'workflow_dispatch' }}
+              run: |
+                  deploy=true
+                  if [ "$FORCE_DEPLOY" != "true" ] && [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+                      production_sha=$(curl -fsS --max-time 30 -H "Authorization: Bearer $VERCEL_TOKEN" \
+                          "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID?teamId=$VERCEL_ORG_ID" \
+                          | jq -r '.targets.production.meta.githubCommitSha // empty') || production_sha=""
+                      # apps/web compiles packages/data/catalog/src through a tsconfig path,
+                      # and its prebuild reads apps/docs for the docs search index.
+                      if [ -n "$production_sha" ] \
+                          && git fetch --quiet --depth=1 origin "$production_sha" \
+                          && git diff --quiet "$production_sha" "$GITHUB_SHA" -- \
+                              apps/web apps/docs packages/data/catalog \
+                              package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json; then
+                          deploy=false
+                          echo "Production already serves $production_sha with the same web inputs; skipping the web deploy."
+                      fi
+                  fi
+                  echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
+
             - name: Install dependencies
-              if: env.DEPLOY_WEB == 'true'
+              if: steps.web-changes.outputs.deploy == 'true'
               run: corepack pnpm install --frozen-lockfile
 
             - name: Install Vercel CLI
-              if: env.DEPLOY_WEB == 'true'
+              if: steps.web-changes.outputs.deploy == 'true'
               run: npm install --global vercel@latest
 
             - name: Deploy web to Vercel (production)
@@ -836,7 +855,7 @@ jobs:
                   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
                   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
                   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-              if: ${{ env.DEPLOY_WEB == 'true' && env.VERCEL_PROJECT_ID != '' }}
+              if: ${{ steps.web-changes.outputs.deploy == 'true' && env.VERCEL_PROJECT_ID != '' }}
               run: |
                   vercel pull --yes --environment=production --token=$VERCEL_TOKEN
                   vercel deploy --yes --archive=tgz --prod --logs --token=$VERCEL_TOKEN
