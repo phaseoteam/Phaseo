@@ -215,7 +215,11 @@ function preferredTier(rates: Rate[]): Rate[] {
 	return fullPrice.length ? fullPrice : rates;
 }
 
-const isTextToken = (item: Rate) => item.unit === "1M tokens" && item.modality === "text"
+// Add-on tool charges (search, grounding, code execution) rather than the
+// model's own generation price.
+const TOOL_METER = /search|grounding|tool|fetch|code_interpreter|code_execution|file_search/;
+
+const isTextToken =(item: Rate) => item.unit === "1M tokens" && item.modality === "text"
 	&& (item.side === "input" || item.side === "output");
 
 function summarise(model: Row, rates: Rate[]): CardPricingSummary | null {
@@ -237,10 +241,16 @@ function summarise(model: Row, rates: Rate[]): CardPricingSummary | null {
 	const input = preferredTier(textTokens.filter((item) => item.side === "input"));
 	const output = preferredTier(textTokens.filter((item) => item.side === "output"));
 	const tokens = [...input, ...output];
-	if (!media && (input.length || output.length)) {
+	// Paid usage meters that are not tool fees, such as a per-request song or
+	// image generation charge. The page RPC sends no direction or modality, so
+	// these can sit beside $0 token placeholders on a text-and-media model.
+	const paidUsage = preferredTier(candidates.filter((item) =>
+		!isTextToken(item) && item.price > 0 && !TOOL_METER.test(item.key)));
+	const freeTokens = tokens.every((item) => item.price === 0);
+	if (!media && (input.length || output.length) && !(freeTokens && paidUsage.length)) {
 		// Free is decided by the token rates alone; a paid tool fee does not
 		// make a free model's tokens cost "$0".
-		if (tokens.every((item) => item.price === 0)) return { kind: "free" };
+		if (freeTokens) return { kind: "free" };
 		return {
 			kind: "tokens",
 			from: varies(input) || varies(output),
@@ -256,7 +266,9 @@ function summarise(model: Row, rates: Rate[]): CardPricingSummary | null {
 		? mediaOutputs
 		: media && candidates.some((item) => item.side === "output")
 			? candidates.filter((item) => item.side === "output")
-			: candidates;
+			: freeTokens && paidUsage.length
+				? paidUsage
+				: candidates;
 	// As with tokens, free status comes only from the meters chosen above.
 	if (primary.every((item) => item.price === 0)) return { kind: "free" };
 	const byUnit = [...groupBy(primary, (item) => item.unit).entries()]

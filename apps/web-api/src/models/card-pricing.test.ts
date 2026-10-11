@@ -240,6 +240,15 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 0, output: 6, unit: "1M tokens" });
 	});
 
+	it("headlines a paid generation request when token rows are $0 placeholders", () => {
+		const row = card([
+			tokens("input_text_tokens", 0),
+			tokens("output_text_tokens", 0),
+			usage("requests", 0.08, "request"),
+		], ["text", "audio"]);
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.08, unit: "request" });
+	});
+
 	it("passes preformatted rows through untouched", () => {
 		const rows = [{ label: "Custom contract", value: "Contact provider" }];
 		const row = normalizeModelsPagePricing({ pricing_detail_rows: rows });
