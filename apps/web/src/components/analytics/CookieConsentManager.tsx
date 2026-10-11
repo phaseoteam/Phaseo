@@ -163,7 +163,7 @@ export function CookieConsentManager({
           </p>
           <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
             {copy.bodyBeforePrivacy}{" "}
-            <Link className="underline" href="/privacy">
+            <Link className="underline" href="/privacy" prefetch={false}>
               {copy.privacyPolicy}
             </Link>
             {copy.bodyAfterPrivacy}

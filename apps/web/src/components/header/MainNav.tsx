@@ -1,6 +1,6 @@
 "use client";
 
-import { Link, usePathname } from "@/i18n/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
@@ -14,17 +14,25 @@ const LINKS = [
 
 export default function MainNav() {
 	const pathname = usePathname() ?? "/";
+	const router = useRouter();
 	const t = useTranslations("Common.nav");
 
 	return (
 		<nav className="flex items-center gap-1 xl:gap-1.5">
 			{LINKS.map(({ href, key }) => {
 				const isActive = pathname === href || pathname.startsWith(href + "/");
+				// The nav renders on every page, so viewport prefetching made each
+				// crawler page view render all five destinations. Prefetch on intent.
+				const prefetchDestination = () => router.prefetch(href);
 
 				return (
 					<Link
 						key={href}
 						href={href}
+						prefetch={false}
+						onMouseEnter={prefetchDestination}
+						onFocus={prefetchDestination}
+						onTouchStart={prefetchDestination}
 						aria-current={isActive ? "page" : undefined}
 						className={cn(
 							"inline-flex h-[var(--site-header-control-h,2.5rem)] items-center whitespace-nowrap rounded-lg px-[var(--site-header-nav-px,0.75rem)] text-[13px] font-medium leading-none xl:text-sm",

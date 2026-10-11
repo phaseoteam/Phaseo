@@ -188,7 +188,7 @@ export default function HeaderClient({
 						className="h-8 items-stretch overflow-hidden rounded-l-lg rounded-r-md shadow-xs [&>[data-slot]:not(:has(~[data-slot]))]:rounded-r-md!"
 					>
 						<Button asChild className="h-8 rounded-r-none px-4">
-							<Link href="/sign-up">
+							<Link href="/sign-up" prefetch={false}>
 								{t("signUp")}
 							</Link>
 						</Button>
@@ -511,7 +511,7 @@ export default function HeaderClient({
 					) : (
 						<>
 							<DropdownMenuItem asChild className="cursor-pointer rounded-lg text-sm">
-								<Link href="/sign-up">
+								<Link href="/sign-up" prefetch={false}>
 									{t("signUp")}
 								</Link>
 							</DropdownMenuItem>
@@ -587,7 +587,7 @@ export default function HeaderClient({
 					) : null}
 				</>
 			) : (
-				<Link href="/sign-up">
+				<Link href="/sign-up" prefetch={false}>
 					<Button
 						variant="default"
 						className="rounded-lg px-4 py-2 text-xs font-semibold"
