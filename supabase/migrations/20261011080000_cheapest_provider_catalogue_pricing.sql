@@ -131,19 +131,20 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
   ),
   -- The latest live version of each SKU code, chosen per whole SKU (so meters
   -- dropped in a newer version do not survive from an older one) and before
-  -- any region filter (so a superseded version cannot resurface for a region
-  -- the current version does not cover).
+  -- the variant, service tier and region filters (so a superseded version
+  -- cannot resurface where the current version does not apply).
   current_skus as (
     select *
     from (
       select
         sku.sku_id,
+        sku.route_variant_id,
         route.model_slug,
         route.provider_slug,
         sku.provider_model_id,
         sku.service_tier_slug,
         sku.operation,
-        nullif(nullif(lower(coalesce(sku.region, variant.execution_region, '')), ''), 'global') as pricing_region,
+        nullif(nullif(lower(coalesce(sku.region, variant.execution_region, variant.data_region, '')), ''), 'global') as pricing_region,
         dense_rank() over (
           partition by sku.provider_model_id, sku.sku_code
           order by sku.version desc
@@ -152,15 +153,15 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
       join priced_routes route on route.provider_model_id = sku.provider_model_id
       left join public.v2_route_variants variant on variant.variant_id = sku.route_variant_id
       where sku.status = 'active'
-        and (
-          sku.route_variant_id is null
-          or sku.route_variant_id in (select variant_id from priced_variants)
-        )
-        and (p_service_tier is null or sku.service_tier_slug = lower(p_service_tier))
         and sku.effective_from <= now()
         and (sku.effective_to is null or sku.effective_to > now())
     ) ranked
     where ranked.recency = 1
+      and (
+        ranked.route_variant_id is null
+        or ranked.route_variant_id in (select variant_id from priced_variants)
+      )
+      and (p_service_tier is null or ranked.service_tier_slug = lower(p_service_tier))
       and (p_region is null or ranked.pricing_region is null or ranked.pricing_region = lower(p_region))
   ),
   live_meters as (

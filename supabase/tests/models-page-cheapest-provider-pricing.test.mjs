@@ -77,6 +77,13 @@ const fixtures = `
 	insert into public.v2_pricing_skus (sku_id, provider_model_id, sku_code, version, region) values
 		('30000000-0000-0000-0000-000000000003', 'cf:clef-flash', 'moved', 1, null),
 		('30000000-0000-0000-0000-000000000004', 'cf:clef-flash', 'moved', 2, 'eu');
+	insert into public.v2_pricing_skus (sku_id, provider_model_id, sku_code, version, service_tier_slug) values
+		('30000000-0000-0000-0000-000000000005', 'cf:clef-flash', 'tiermove', 1, 'standard'),
+		('30000000-0000-0000-0000-000000000006', 'cf:clef-flash', 'tiermove', 2, 'priority');
+	insert into public.v2_route_variants (variant_id, provider_model_id, service_tier_slug, data_region) values
+		('00000000-0000-0000-0000-000000000006', 'openai:gpt-test', 'standard', 'eu');
+	insert into public.v2_pricing_skus (sku_id, provider_model_id, sku_code, route_variant_id) values
+		('30000000-0000-0000-0000-000000000007', 'openai:gpt-test', 'eu-data', '00000000-0000-0000-0000-000000000006');
 
 	insert into public.v2_pricing_sku_meters (sku_id, meter_key, direction, price_nanos, display_label) values
 		('30000000-0000-0000-0000-000000000001', 'output_tokens', 'output', 500000000, 'Output Tokens'),
@@ -84,6 +91,9 @@ const fixtures = `
 		('30000000-0000-0000-0000-000000000001', 'requests', 'input', 10000000, 'Requests'),
 		('30000000-0000-0000-0000-000000000003', 'image_inputs', 'input', 20000000, 'Image Inputs'),
 		('30000000-0000-0000-0000-000000000004', 'image_inputs', 'input', 30000000, 'Image Inputs'),
+		('30000000-0000-0000-0000-000000000005', 'video_inputs', 'input', 40000000, 'Video Inputs'),
+		('30000000-0000-0000-0000-000000000006', 'video_inputs', 'input', 50000000, 'Video Inputs'),
+		('30000000-0000-0000-0000-000000000007', 'input_text_tokens', 'input', 2400000000, 'Input Text Tokens'),
 		('10000000-0000-0000-0000-000000000001', 'input_tokens', 'input', 90000000, 'Input Tokens'),
 		('10000000-0000-0000-0000-000000000002', 'input_tokens', 'input', 38000000, 'Input Tokens'),
 		('10000000-0000-0000-0000-000000000003', 'input_tokens', 'input', 90000000, 'Input Tokens'),
@@ -129,7 +139,13 @@ test("models page pricing uses current, active, global SKUs from shown routes", 
 			"1|standard|input_tokens|input|0.038",
 			"1|standard|input_tokens|input|0.09",
 			"1|standard|output_tokens|output|0.3",
-		]);
+			"1|priority|video_inputs|input|0.05",
+		].sort());
+
+		// "tiermove" moved from standard (v1) to priority (v2): a standard-tier
+		// request must not bring back v1.
+		const standard = await pricing(db, null, "standard");
+		assert.ok(!standard["cloudflare/clef-flash"].some((meter) => meter.includes("video_inputs")));
 		// Short and long context stay even with different start dates; the EU price is dropped while a global
 		// price exists; draft SKUs never appear; other tiers stay for the API.
 		// The EU-only audio meter stays: there is no global price for it.
