@@ -30,7 +30,11 @@ update public.v2_model_provider_routes r set model_slug=x.base_slug,
  metadata=r.metadata || jsonb_build_object('legacy_speed_model_slug',x.legacy_slug,'catalog_service_tier','fast'),updated_at=now()
  from legacy_speed_routes x where r.provider_model_id=x.provider_model_id;
 
-update public.v2_route_capabilities c set params=c.params || jsonb_build_object('service_tier',
+update public.v2_route_capabilities c set params=(case
+ when jsonb_typeof(c.params)='object' then c.params
+ when jsonb_typeof(c.params)='array' then coalesce((select jsonb_object_agg(value #>> '{}','true'::jsonb)
+   from jsonb_array_elements(c.params) where jsonb_typeof(value)='string'),'{}'::jsonb)
+ else '{}'::jsonb end) || jsonb_build_object('service_tier',
  case when jsonb_typeof(c.params->'service_tier')='object' then c.params->'service_tier' else '{}'::jsonb end
  || jsonb_build_object('type','string','enum',jsonb_build_array('fast','priority'),
    'provider_catalog',jsonb_build_object('name','fast','upstream',null))),updated_at=now()
@@ -49,6 +53,8 @@ update public.v2_models m set hidden=true,status='retired',catalogue_status='ret
  from legacy_speed_models x where m.model_slug=x.model_slug;
 
 do $check$ begin
+ assert not exists(select 1 from public.v2_route_capabilities c join legacy_speed_routes x using(provider_model_id)
+   where c.capability_id='text.generate' and c.params->'service_tier'->'enum' is distinct from '["fast","priority"]'::jsonb), 'Incorrect speed capability tier';
  assert not exists(select 1 from legacy_speed_routes x join public.v2_model_provider_routes r using(provider_model_id)
    where r.model_slug<>x.base_slug or r.provider_model_slug is distinct from x.provider_model_slug
      or (r.status,r.routing_enabled,r.phaseo_status,r.access_scope,r.provider_availability_status)
