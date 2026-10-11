@@ -3,8 +3,9 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 
+// The latest migration redefining the page projection.
 const migration = await readFile(
-	new URL("../migrations/20261011080000_cheapest_provider_catalogue_pricing.sql", import.meta.url),
+	new URL("../migrations/20261011120000_label_conditional_catalogue_prices.sql", import.meta.url),
 	"utf8",
 );
 
@@ -32,12 +33,13 @@ const schema = `
 	create table public.v2_pricing_skus (
 		sku_id uuid primary key default gen_random_uuid(), provider_model_id text, sku_code text, version integer default 1, operation text default 'inference',
 		status text default 'active', region text, service_tier_slug text default 'standard',
-		effective_from timestamptz default now() - interval '1 day', effective_to timestamptz, route_variant_id uuid
+		effective_from timestamptz default now() - interval '1 day', effective_to timestamptz, route_variant_id uuid,
+		description text, metadata jsonb default '{}'
 	);
 	create table public.v2_pricing_sku_meters (
 		sku_id uuid, meter_key text, modality text default 'text', direction text, unit text default 'token',
 		unit_quantity numeric default 1000000, price_nanos numeric, display_label text, display_unit text default '1M tokens',
-		billable boolean default true, meter_order integer default 100
+		billable boolean default true, meter_order integer default 100, metadata jsonb default '{}'
 	);
 `;
 
@@ -109,6 +111,23 @@ const fixtures = `
 		('acme:two-b', 'acme/two-routes', 'acme', true, 'available');
 	insert into public.v2_route_variants (provider_model_id, routing_enabled) values
 		('soon:clef-flash', false), ('soon:preview-only', false), ('acme:two-a', true), ('acme:two-b', true);
+
+	-- A video model priced per resolution and audio, one conditional SKU each.
+	insert into public.v2_models (model_slug, name, lab_slug) values ('acme/video', 'Video', 'acme');
+	insert into public.v2_model_provider_routes (provider_model_id, model_slug, provider_slug) values ('acme:video', 'acme/video', 'acme');
+	insert into public.v2_route_variants (provider_model_id) values ('acme:video');
+	insert into public.v2_pricing_skus (sku_id, provider_model_id, sku_code, description, metadata) values
+		('50000000-0000-0000-0000-000000000001', 'acme:video', 'hd-audio', '720p or 1080p with audio.',
+			'{"match":[{"op":"in","path":"video_params.resolution","value":["720p","1080p"]},{"op":"eq","path":"video_params.audio","value":true}]}'),
+		('50000000-0000-0000-0000-000000000002', 'acme:video', 'hd-silent', 'Fallback description.',
+			'{"match":[{"op":"eq","path":"video_params.audio","value":false}]}'),
+		('50000000-0000-0000-0000-000000000003', 'acme:video', 'plain', 'Not conditional.', '{}');
+	insert into public.v2_pricing_sku_meters (sku_id, meter_key, direction, unit, unit_quantity, price_nanos, display_label, metadata) values
+		('50000000-0000-0000-0000-000000000001', 'output_video_seconds', 'output', 'second', 1, 400000000, 'Output Video Seconds', '{}'),
+		('50000000-0000-0000-0000-000000000002', 'output_video_seconds', 'output', 'second', 1, 200000000, 'Output Video Seconds', '{"note":"720p or 1080p without audio."}'),
+		('50000000-0000-0000-0000-000000000003', 'input_image', 'input', 'image', 1, 10000000, 'Input Image', '{}'),
+		('50000000-0000-0000-0000-000000000003', 'output_video', 'output', 'video', 1, 500000000, 'Output Video',
+			'{"note":"4K only.","match":[{"op":"eq","path":"video_params.resolution","value":"4k"}]}');
 	insert into public.v2_pricing_skus (sku_id, provider_model_id, sku_code) values
 		('40000000-0000-0000-0000-000000000001', 'soon:clef-flash', 'preview'),
 		('40000000-0000-0000-0000-000000000002', 'soon:preview-only', 'preview'),
@@ -191,6 +210,21 @@ test("models page pricing uses current, active, global SKUs from shown routes", 
 			"1|standard|input_tokens|input|1",
 			"2|standard|output_tokens|output|2",
 		]);
+
+		// Conditional prices carry a variant label (meter note first, then the SKU
+		// description) and their conditions; unconditional prices carry neither.
+		const video = await db.query("select payload->'pricing_detail_rows' as rows from public.get_v2_public_models_page_rows_without_lifecycle(null, null) payload where payload->>'model_id' = 'acme/video'");
+		const videoRows = video.rows[0].rows;
+		assert.deepEqual(videoRows.map((row) => [row.meter_key, Number(row.price), row.variant ?? null]), [
+			["input_image", 0.01, null],
+			// Conditions stored on the meter count too.
+			["output_video", 0.5, "4K only."],
+			["output_video_seconds", 0.2, "720p or 1080p without audio."],
+			["output_video_seconds", 0.4, "720p or 1080p with audio."],
+		]);
+		assert.equal(videoRows[3].conditions.length, 2);
+		assert.equal(videoRows[1].conditions.length, 1);
+		assert.ok(!("conditions" in videoRows[0]) && !("variant" in videoRows[0]));
 
 		// "tiermove" moved from standard (v1) to priority (v2): a standard-tier
 		// request must not bring back v1.

@@ -17,6 +17,8 @@ type Rate = {
 	side: "input" | "output" | "";
 	modality: string;
 	auxiliary: boolean;
+	/** What a conditional price applies to, such as "720p or 1080p with audio". */
+	variant: string | null;
 };
 
 /**
@@ -133,6 +135,7 @@ function rate(row: Row): Rate | null {
 		tier: String(row.service_tier ?? "standard").trim().toLowerCase() || "standard",
 		// The page RPC sends an anonymous per-model provider number.
 		provider: String(row.provider_group ?? row.provider ?? "").trim().toLowerCase(),
+		variant: variantLabel(row),
 		side,
 		modality,
 		// Cache, batch-discount, and reasoning meters are real prices but never
@@ -140,6 +143,32 @@ function rate(row: Row): Rate | null {
 		// passes the provider's own charge through in dollars.
 		auxiliary: /cache|cached|batch|discount|reasoning|storage/.test(key) || isPassThrough(unit.unit),
 	};
+}
+
+/**
+ * A short label for a conditional price: the catalogue's own description
+ * ("720p or 1080p with audio"), else one built from its match conditions
+ * ("Resolution: 4k · With audio"). Unconditional prices have none.
+ */
+function variantLabel(row: Row): string | null {
+	const described = String(row.variant ?? "").trim().replace(/\.$/, "");
+	if (described) return described.charAt(0).toUpperCase() + described.slice(1);
+	if (!Array.isArray(row.conditions) || !row.conditions.length) return null;
+	const COMPARISON: Record<string, string> = { gt: ">", gte: "≥", lt: "<", lte: "≤" };
+	const parts = row.conditions.flatMap((condition) => {
+		if (!condition || typeof condition !== "object") return [];
+		const { path, value, op: rawOp } = condition as Row;
+		const op = String(rawOp ?? "eq").trim().toLowerCase();
+		const name = String(path ?? "").split(".").pop()?.replace(/_/g, " ").trim();
+		if (!name) return [];
+		const negated = op === "neq" || op === "nin" || op === "not_in";
+		if (typeof value === "boolean") return [value !== negated ? `With ${name}` : `No ${name}`];
+		const values = (Array.isArray(value) ? value : [value]).map((item) => String(item)).filter(Boolean);
+		if (!values.length) return [];
+		if (COMPARISON[op]) return [`${title(name)} ${COMPARISON[op]} ${values[0]}`];
+		return [`${title(name)}: ${negated ? "not " : ""}${values.join(" or ")}`];
+	});
+	return parts.length ? parts.join(" · ") : null;
 }
 
 function isPassThrough(unit: string): boolean {
@@ -404,9 +433,11 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	const chosen = priced[0] ?? { rates: allRates, summary: null, headline: [] };
 	const { rates, summary, headline: headlineRates } = chosen;
 
-	// One price per meter: taken from the tier the headline used for that
-	// meter (otherwise the preferred tier), and the provider's base rate when
-	// it has several SKUs there (for example short and long context).
+	// Prices per meter, taken from the tier the headline used for that meter
+	// (otherwise the preferred tier). Text tokens show the provider's base rate
+	// (short context rather than long). Media and other usage meters list each
+	// labelled variant (resolution, audio, quality) with its own price, cheapest
+	// first, as "Label (variant)"; unlabelled differing prices show "From".
 	const detailRows = [...groupBy(detailTierRates(rates, headlineRates), (item) => `${item.key}|${item.unit}`).values()]
 		.map((items) => {
 			const headlineTiers = new Set(headlineRates
@@ -416,12 +447,20 @@ export function normalizeModelsPagePricing(model: Row): Row {
 			return tierItems.length ? tierItems : items;
 		})
 		.sort((a, b) => detailOrder(a[0], b[0]))
-		.map((items) => ({
-			label: items[0].label,
-			value: isPassThrough(items[0].unit) && items.every((item) => item.price === 1)
-				? "At provider cost"
-				: `${formatUsd(min(items))} / ${items[0].unit}`,
-		}));
+		.flatMap((items) => {
+			if (isPassThrough(items[0].unit) && items.every((item) => item.price === 1)) {
+				return [{ label: items[0].label, value: "At provider cost" }];
+			}
+			const variants = isTextToken(items[0])
+				? [items]
+				: [...groupBy(items, (item) => item.variant ?? "").values()].sort((a, b) => min(a) - min(b));
+			return variants.map((group) => ({
+				// A conditional price keeps its label even when it is the only one,
+				// so a restricted price never reads as unconditional.
+				label: group[0].variant && !isTextToken(group[0]) ? `${group[0].label} (${group[0].variant})` : group[0].label,
+				value: `${!isTextToken(group[0]) && varies(group) ? "From " : ""}${formatUsd(min(group))} / ${group[0].unit}`,
+			}));
+		});
 
 	// The compatibility fields (price sort, older consumers) come from the same
 	// provider and tier as the headline.
