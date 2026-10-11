@@ -215,12 +215,19 @@ function groupBy<T>(items: T[], key: (item: T) => string): Map<string, T[]> {
 
 const SIDE_ORDER: Record<string, number> = { input: 0, output: 1, "": 2 };
 
+function modalityRank(rate: Rate): number {
+	const index = ["text", ...MEDIA].indexOf(rate.modality);
+	return index === -1 ? MEDIA.length + 1 : index;
+}
+
 function detailOrder(a: Rate, b: Rate): number {
 	return Number(a.tier !== "standard") - Number(b.tier !== "standard")
 		|| Number(a.auxiliary) - Number(b.auxiliary)
 		|| SIDE_ORDER[a.side] - SIDE_ORDER[b.side]
-		// Text tokens lead their side, so "Input" comes before "Image Input".
+		// Text tokens lead their side, so "Input" comes before "Image Input",
+		// then image, video and audio, then anything else.
 		|| Number(!isTextToken(a)) - Number(!isTextToken(b))
+		|| modalityRank(a) - modalityRank(b)
 		|| a.key.localeCompare(b.key)
 		|| a.tier.localeCompare(b.tier);
 }
@@ -459,7 +466,7 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	};
 	const repeatsTextRate = (items: Rate[]) => {
 		const [first] = items;
-		return first.unit === "1M tokens" && !isTextToken(first) && !first.auxiliary && first.side !== ""
+		return first.unit === "1M tokens" && MEDIA.includes(first.modality) && !first.auxiliary && first.side !== ""
 			&& items.every((item) => item.variant === null && item.price === textTokenPrice(first.side));
 	};
 	const detailRows = meterGroups

@@ -560,6 +560,20 @@ describe("normalizeModelsPagePricing", () => {
 		]);
 	});
 
+	it("orders differing media inputs image, video, audio and keeps non-media rates that match text", () => {
+		const row = card([
+			tokens("input_audio_tokens", 0.3, { label: "Audio Input", modality: "audio", direction: "input" }),
+			tokens("input_video_tokens", 0.2, { label: "Video Input", modality: "video", direction: "input" }),
+			tokens("input_image_tokens", 0.15, { label: "Image Input", modality: "image", direction: "input" }),
+			tokens("input_embedding_tokens", 0.1, { label: "Embedding Input", modality: "embedding", direction: "input" }),
+			tokens("input_text_tokens", 0.1, { label: "Input", modality: "text", direction: "input" }),
+			tokens("output_text_tokens", 0.4, { label: "Output", modality: "text", direction: "output" }),
+		]);
+		expect((row.pricing_detail_rows as Array<{ label: string }>).map((item) => item.label)).toEqual([
+			"Input", "Image Input", "Video Input", "Audio Input", "Embedding Input", "Output",
+		]);
+	});
+
 	it("names the provider behind the chosen offer, and no provider for stealth routes", () => {
 		const row = card([
 			tokens("input_tokens", 1, { provider_group: 1, provider: "openai" }),
