@@ -355,12 +355,13 @@ async function resolveNoticeApiModelId(env: Env, modelId: string): Promise<strin
 
 type ModelsCatalogueVersion = "v1" | "v2";
 
-async function fetchProviderExecutionRegions(env: Env, providerIds: string[]) {
+async function fetchProviderExecutionRegions(env: Env, providerIds: string[], signal?: AbortSignal) {
 	const regionsByProvider = new Map<string, string[]>();
 	if (providerIds.length === 0) return regionsByProvider;
-	const { data, error } = await getDataClient(env).rpc("get_v2_provider_region_map", {
+	const request = getDataClient(env).rpc("get_v2_provider_region_map", {
 		p_provider_slugs: providerIds,
 	});
+	const { data, error } = await (signal ? request.abortSignal(signal) : request);
 	if (error) throw error;
 	for (const row of (data ?? []) as Record<string, unknown>[]) {
 		const providerId = String(row.provider_slug ?? "").trim();
@@ -373,7 +374,7 @@ async function fetchProviderExecutionRegions(env: Env, providerIds: string[]) {
 	return regionsByProvider;
 }
 
-async function fetchProviderStatuses(env: Env, providerIds: string[]) {
+async function fetchProviderStatuses(env: Env, providerIds: string[], signal?: AbortSignal) {
 	const statusesByProvider = new Map<string, string>();
 	const normalizedProviderIds = [
 		...new Set(
@@ -383,10 +384,11 @@ async function fetchProviderStatuses(env: Env, providerIds: string[]) {
 		),
 	];
 	if (normalizedProviderIds.length === 0) return statusesByProvider;
-	const { data, error } = await getDataClient(env)
+	const request = getDataClient(env)
 		.from("v2_providers")
 		.select("provider_slug,status")
 		.in("provider_slug", normalizedProviderIds);
+	const { data, error } = await (signal ? request.abortSignal(signal) : request);
 	if (error) throw error;
 	for (const row of data ?? []) {
 		const providerId = String(row.provider_slug ?? "").trim();
@@ -413,10 +415,11 @@ export async function fetchGatewayMonitorRows(
 	const stealthRouteIds = new Set<string>();
 	const externalOverrideRouteIds = new Set<string>();
 	for (let offset = 0; offset < monitorRouteIds.length; offset += 200) {
-		const result = await client
+		const routeRequest = client
 			.from("v2_model_provider_routes")
 			.select("provider_model_id,is_stealth,metadata")
 			.in("provider_model_id", monitorRouteIds.slice(offset, offset + 200));
+		const result = await (signal ? routeRequest.abortSignal(signal) : routeRequest);
 		if (result.error) throw result.error;
 		for (const route of result.data ?? []) {
 			const routeId = String(route.provider_model_id);
@@ -439,8 +442,8 @@ export async function fetchGatewayMonitorRows(
 		),
 	);
 	const [providerRegionsById, providerStatusesById] = await Promise.all([
-		fetchProviderExecutionRegions(env, providerIds),
-		fetchProviderStatuses(env, providerIds),
+		fetchProviderExecutionRegions(env, providerIds, signal),
+		fetchProviderStatuses(env, providerIds, signal),
 	]);
 
 	const byModelId = new Map<string, Record<string, unknown>[]>();

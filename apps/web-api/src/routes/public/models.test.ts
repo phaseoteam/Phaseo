@@ -9,23 +9,35 @@ const env = {
 };
 
 afterEach(() => {
+	vi.restoreAllMocks();
 	vi.unstubAllGlobals();
 	vi.useRealTimers();
 });
 
 describe("progressive model catalogue", () => {
-	it("bounds a stalled optional monitor request with an abort signal", async () => {
-		const start = Date.now();
+	it.each(["get_public_monitor_rows_payload", "v2_model_provider_routes?", "get_v2_provider_region_map", "v2_providers?"])("bounds a stalled enrichment query: %s", async (stage) => {
+		const controller = new AbortController();
+		const timeout = vi.spyOn(AbortSignal, "timeout").mockReturnValue(controller.signal);
+		let stalled = false;
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-			if (String(input).includes("get_public_monitor_rows_payload")) {
-				expect(init?.signal).toBeInstanceOf(AbortSignal);
-				return new Promise<Response>((_resolve, reject) => init!.signal!.addEventListener("abort", () => reject(init!.signal!.reason), { once: true }));
+			if (String(input).includes(stage)) {
+				expect(init?.signal).toBe(controller.signal);
+				stalled = true;
+				return new Promise<Response>((_resolve, reject) => {
+					if (init!.signal!.aborted) reject(init!.signal!.reason);
+					else init!.signal!.addEventListener("abort", () => reject(init!.signal!.reason), { once: true });
+				});
 			}
+			if (String(input).includes("get_public_monitor_rows_payload")) return new Response(JSON.stringify([{ model_id: "public/model", provider_api_model_id: "route", provider_id: "provider" }]));
+			if (!String(input).includes("v2_models?")) return new Response("[]");
 			return new Response(JSON.stringify([{ model_slug: "public/model", name: "Public", status: "active" }]), { headers: { "content-range": "0-0/1" } });
 		}));
-		const response = await app.request("/api/_web/models?limit=10", {}, env);
+		const pending = app.request("/api/_web/models?limit=10", {}, env);
+		await vi.waitFor(() => expect(stalled).toBe(true));
+		controller.abort(new DOMException("Enrichment deadline", "TimeoutError"));
+		const response = await pending;
 		expect(response.status).toBe(200);
-		expect(Date.now() - start).toBeLessThan(4_000);
+		expect(timeout).toHaveBeenCalledWith(2_000);
 		expect(await response.json()).toMatchObject({ gateway_data_complete: false });
 	});
 	it("returns model metadata with incomplete gateway data when monitor enrichment times out", async () => {
