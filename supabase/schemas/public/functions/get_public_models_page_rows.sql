@@ -63,12 +63,14 @@ CREATE OR REPLACE FUNCTION public.get_public_models_page_rows()
         where routed.payload->>'model_id' = model.model_slug
       )
   )
-  select rows.payload
+  select rows.payload || jsonb_build_object('organisation_colour',
+    coalesce(nullif(lab.colour, ''), nullif(lab.metadata->>'colour', '')))
   from (
     select payload from routed
     union all
     select payload from catalogue_only
   ) rows
+  left join public.v2_labs lab on lab.lab_slug = rows.payload->>'organisation_id'
   order by
     rows.payload->>'primary_timestamp' desc nulls last,
     rows.payload->>'organisation_name',
