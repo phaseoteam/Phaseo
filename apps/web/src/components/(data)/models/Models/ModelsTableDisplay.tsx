@@ -23,26 +23,16 @@ import {
 	ArrowUpDown,
 	Ban,
 	Binary,
-	Captions,
 	CheckCircle2,
-	CircleDot,
 	Clock3,
-	FileText,
 	Globe2,
-	Headphones,
-	Music4,
-	Radio,
 	Route,
 	Sparkles,
-	Speech,
 	Type as TypeIcon,
-	ImageIcon,
 	Layers3,
-	Video,
 	CalendarDays,
 	XCircle,
 	LockKeyhole,
-	Scale,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -73,6 +63,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
+import { getModalityIcon } from "@/lib/models/modalityIcons";
 import { modelOutputFilterValues } from "@/lib/models/modelCapabilities";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { parseCatalogueTierFilters } from "@/lib/models/catalogueTierFilters";
@@ -357,39 +348,6 @@ function toTitleCase(value: string): string {
 				: word,
 		)
 		.join(" ");
-}
-
-function getModalityIcon(modality: string): LucideIcon {
-	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
-	if (normalized.includes("decision")) return Scale;
-	if (normalized.includes("realtime") || normalized.includes("real time")) {
-		return Radio;
-	}
-	if (normalized.includes("rerank") || normalized.includes("re rank")) {
-		return ArrowUpDown;
-	}
-	if (normalized.includes("image")) return ImageIcon;
-	if (normalized.includes("video")) return Video;
-	if (normalized.includes("music")) return Music4;
-	if (
-		normalized.includes("transcri") ||
-		normalized.includes("speech to text") ||
-		normalized.includes("stt")
-	) {
-		return Captions;
-	}
-	if (
-		normalized.includes("text to speech") ||
-		normalized.includes("audio speech") ||
-		normalized.includes("speech synth") ||
-		normalized.includes("tts")
-	) {
-		return Speech;
-	}
-	if (normalized.includes("audio")) return Headphones;
-	if (normalized.includes("file")) return FileText;
-	if (normalized.includes("text")) return TypeIcon;
-	return CircleDot;
 }
 
 function FilterCheckboxList({

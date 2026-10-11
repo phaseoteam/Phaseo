@@ -1,4 +1,4 @@
-import { decisionModelCapability } from "@/lib/models/modelCapabilities";
+import { modelCapabilities, modelCapability } from "@/lib/models/modelCapabilities";
 
 export interface ModelData {
 	id: string;
@@ -31,7 +31,7 @@ export type ModelProvider = ModelData["provider"];
 
 export type ModelStatusEndpoint = {
 	status: string;
-	endpoint: string;
+	endpoints: string[];
 };
 
 export interface GroupedModelData {
@@ -52,7 +52,7 @@ export interface GroupedModelData {
 	tiers: string[];
 	inputPrices: number[];
 	outputPrices: number[];
-	operationPrices: Array<{ capability: "text.generate" | "decisions.make"; inputPrices: number[]; outputPrices: number[] }>;
+	operationPrices: Array<{ capability: string; inputPrices: number[]; outputPrices: number[] }>;
 	added?: string;
 	retired?: string;
 	popularityTokensWeek: number;
@@ -68,6 +68,16 @@ function uniqueNumbers(values: Iterable<number>): number[] {
 		.sort((a, b) => a - b);
 }
 
+// The table projection reports 0/0 when a row has no token rate (batch, per-image or
+// per-request charges). Those rows must not become the floor of a token price range.
+function hasTokenPrice({ provider, tier }: ModelData): boolean {
+	return provider.inputPrice > 0 || provider.outputPrice > 0 || tier === "free";
+}
+
+function samePrices(left: number[], right: number[]): boolean {
+	return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
 export function groupModelRows(rows: readonly ModelData[]): GroupedModelData[] {
 	const groups = new Map<string, ModelData[]>();
 	for (const row of rows) {
@@ -79,9 +89,19 @@ export function groupModelRows(rows: readonly ModelData[]): GroupedModelData[] {
 
 	return Array.from(groups, ([key, variants]) => {
 		const first = variants[0];
-		const textVariants = variants.filter(variant => decisionModelCapability(variant.endpoint) === "text.generate");
-		const hasDecisions = variants.some(variant => decisionModelCapability(variant.endpoint) === "decisions.make");
-		const priceVariants = hasDecisions && textVariants.length ? textVariants : variants;
+		const pricedVariants = variants.some(hasTokenPrice) ? variants.filter(hasTokenPrice) : variants;
+		const textVariants = pricedVariants.filter(variant => modelCapability(variant.endpoint) === "text.generate");
+		const priceVariants = textVariants.length ? textVariants : pricedVariants;
+		const operationPrices = modelCapabilities(pricedVariants.map(({ endpoint }) => endpoint)).map(capability => {
+			const matching = pricedVariants.filter(variant => modelCapability(variant.endpoint) === capability);
+			return { capability,
+				inputPrices: uniqueNumbers(matching.map(variant => variant.provider.inputPrice)),
+				outputPrices: uniqueNumbers(matching.map(variant => variant.provider.outputPrice)),
+			};
+		});
+		const operationPricesDiffer = operationPrices.some(operation =>
+			!samePrices(operation.inputPrices, operationPrices[0].inputPrices)
+			|| !samePrices(operation.outputPrices, operationPrices[0].outputPrices));
 		const providerMap = new Map<string, ModelProvider>();
 		for (const variant of variants) {
 			const providerKey = variant.provider.id || variant.provider.name;
@@ -109,15 +129,13 @@ export function groupModelRows(rows: readonly ModelData[]): GroupedModelData[] {
 			providers: Array.from(providerMap.values()).sort((a, b) =>
 				a.name.localeCompare(b.name),
 			),
-			endpoints: unique(variants.map(({ endpoint }) => endpoint)),
-			statusEndpoints: Array.from(
-				new Map(
-					variants.map(({ gatewayStatus, endpoint }) => [
-						`${gatewayStatus}\u0000${endpoint}`,
-						{ status: gatewayStatus, endpoint },
-					]),
-				).values(),
-			),
+			endpoints: modelCapabilities(variants.map(({ endpoint }) => endpoint)),
+			statusEndpoints: unique(variants.map(({ gatewayStatus }) => gatewayStatus)).map(status => ({
+				status,
+				endpoints: modelCapabilities(variants
+					.filter(({ gatewayStatus }) => gatewayStatus === status)
+					.map(({ endpoint }) => endpoint)),
+			})),
 			inputModalities: unique(
 				variants.flatMap(({ inputModalities }) => inputModalities),
 			),
@@ -142,13 +160,7 @@ export function groupModelRows(rows: readonly ModelData[]): GroupedModelData[] {
 			outputPrices: uniqueNumbers(
 				priceVariants.map(({ provider }) => provider.outputPrice),
 			),
-			operationPrices: (["text.generate", "decisions.make"] as const).flatMap(capability => {
-				const matching = variants.filter(variant => decisionModelCapability(variant.endpoint) === capability);
-				return matching.length ? [{ capability,
-					inputPrices: uniqueNumbers(matching.map(variant => variant.provider.inputPrice)),
-					outputPrices: uniqueNumbers(matching.map(variant => variant.provider.outputPrice)),
-				}] : [];
-			}),
+			operationPrices: operationPricesDiffer ? operationPrices : [],
 			added: variants
 				.map(({ added }) => added)
 				.filter(Boolean)

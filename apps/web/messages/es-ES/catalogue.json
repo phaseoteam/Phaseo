@@ -249,6 +249,9 @@
 			"endpointVideoGeneration": "Generación de video",
 			"endpointImageVariations": "Variaciones de imágenes",
 			"endpointMusicGeneration": "Generación de música",
+			"endpointVideoEditing": "Edición de vídeo",
+			"endpointOcr": "OCR",
+			"endpointDocumentParsing": "Análisis de documentos",
 			"tierPrivate": "Privados",
 			"capabilityTextGeneration": "Generación de texto",
 			"modalityDecisions": "Decisiones"

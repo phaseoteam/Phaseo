@@ -249,6 +249,9 @@
 			"endpointVideoGeneration": "视频生成",
 			"endpointImageVariations": "图像变体",
 			"endpointMusicGeneration": "音乐生成",
+			"endpointVideoEditing": "视频编辑",
+			"endpointOcr": "OCR",
+			"endpointDocumentParsing": "文档解析",
 			"tierPrivate": "私有",
 			"capabilityTextGeneration": "文本生成",
 			"modalityDecisions": "决策"

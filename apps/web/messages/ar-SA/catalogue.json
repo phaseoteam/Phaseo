@@ -249,6 +249,9 @@
 			"endpointVideoGeneration": "إنشاء الفيديو",
 			"endpointImageVariations": "تنويعات الصور",
 			"endpointMusicGeneration": "توليد الموسيقى",
+			"endpointVideoEditing": "تحرير الفيديو",
+			"endpointOcr": "التعرف الضوئي على الحروف",
+			"endpointDocumentParsing": "تحليل المستندات",
 			"tierPrivate": "خاصة",
 			"capabilityTextGeneration": "توليد النص",
 			"modalityDecisions": "القرارات"

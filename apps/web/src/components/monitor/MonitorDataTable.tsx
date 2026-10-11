@@ -68,8 +68,8 @@ import type {
 import Link from "next/link";
 import { useQueryState } from "nuqs";
 import { getModalityTone } from "@/lib/models/modalityStyles";
-import { ModelCapabilityBadges } from "@/components/(data)/models/ModelCapabilityBadges";
-import { decisionModelCapability, modelOutputFilterValues } from "@/lib/models/modelCapabilities";
+import { ModelCapabilityBadges, useModelCapabilityLabel } from "@/components/(data)/models/ModelCapabilityBadges";
+import { modelOutputFilterValues } from "@/lib/models/modelCapabilities";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { parseCatalogueTierFilters } from "@/lib/models/catalogueTierFilters";
 import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
@@ -391,6 +391,7 @@ export function MonitorDataTable({
 		values: { modality: string },
 	) => string;
 	const modelsUiT = useTranslations("Catalogue.models.filtersUi");
+	const capabilityLabel = useModelCapabilityLabel();
 	const pricingT = useTranslations("Catalogue.modelDetail.pricing");
 	const sectionsT = useTranslations("Catalogue.modelDetail.sections");
 	const comparisonT = useTranslations("Catalogue.compare");
@@ -1100,7 +1101,7 @@ export function MonitorDataTable({
 		);
 	};
 
-	const renderStatus = (status: string, endpoint?: string) => {
+	const renderStatus = (status: string, capabilities: string[]) => {
 		const normalizedStatus = normalizeStatusValue(status);
 		const iconConfig =
 			statusMetaByKey[normalizedStatus] ?? statusMetaByKey.inactive;
@@ -1108,7 +1109,9 @@ export function MonitorDataTable({
 		const label = statusMetaByKey[normalizedStatus]
 			? (t(`providerStatus.${normalizedStatus}` as never) as string)
 			: t("providerStatus.unknown", { status });
-		const endpointLabel = formatEndpoint(endpoint);
+		const endpointLabel = capabilities.length
+			? capabilities.map(capabilityLabel).join(", ")
+			: "-";
 
 		return (
 			<HoverCard openDelay={140} closeDelay={80}>
@@ -1132,7 +1135,7 @@ export function MonitorDataTable({
 					<div className="mt-1.5 space-y-1 text-muted-foreground">
 						<p>
 							{t("capabilityLabel")}:{" "}
-							<span className="font-mono text-foreground">{endpointLabel}</span>
+							<span className="text-foreground">{endpointLabel}</span>
 						</p>
 						<p>{t("capabilityStatusDescription")}</p>
 					</div>
@@ -1170,26 +1173,31 @@ export function MonitorDataTable({
 		return format.calendarDate(dateStr);
 	};
 
-	const formatEndpoint = (endpoint?: string) => {
-		const trimmed = endpoint?.replace(/\uFFFD/g, "").trim();
-		return trimmed ? trimmed : "-";
-	};
-
 	const renderStatuses = (item: GroupedModelData) => (
 		<div className="flex items-center justify-center gap-0.5">
-			{item.statusEndpoints.map(({ status, endpoint }) => (
-				<span key={`${status}-${endpoint}`}>
-					{renderStatus(status, formatEndpoint(endpoint))}
-				</span>
+			{item.statusEndpoints.map(({ status, endpoints }) => (
+				<span key={status}>{renderStatus(status, endpoints)}</span>
 			))}
 		</div>
 	);
 
-	const renderCapabilities = (endpoints: string[]) => {
-		const labels = endpoints.filter(endpoint => !decisionModelCapability(endpoint)).map(formatEndpoint);
+	// Per-capability rows only when this column's prices differ between capabilities.
+	const renderOperationPrices = (
+		item: GroupedModelData,
+		column: "inputPrices" | "outputPrices",
+	) => {
+		const operations = item.operationPrices;
+		const differs = operations.some(operation =>
+			operation[column].join() !== operations[0][column].join());
+		if (!differs) return renderPriceRange(item[column]);
 		return (
-			<div className="space-y-1"><ModelCapabilityBadges endpoints={endpoints} />
-				{labels.length ? <span className="block truncate font-mono text-[11px]" title={labels.join(", ")}>{labels.join(", ")}</span> : null}
+			<div className="space-y-1">
+				{operations.map(operation => (
+					<div key={operation.capability} className="whitespace-nowrap">
+						<span className="mr-1 text-[10px] text-muted-foreground">{capabilityLabel(operation.capability)}</span>
+						{renderPriceRange(operation[column])}
+					</div>
+				))}
 			</div>
 		);
 	};
@@ -1315,17 +1323,11 @@ export function MonitorDataTable({
 			case "status":
 				return renderStatuses(item);
 			case "capability":
-				return renderCapabilities(item.endpoints);
+				return <ModelCapabilityBadges endpoints={item.endpoints} />;
 			case "inputPrice":
-				return item.operationPrices.length === 2 ? <div className="space-y-1">{item.operationPrices.map(operation => <div key={operation.capability}>
-					<span className="mr-1 text-[10px] text-muted-foreground">{modelsUiT(operation.capability === "text.generate" ? "capabilityTextGeneration" : "modalityDecisions")}</span>
-					{renderPriceRange(operation.inputPrices)}
-				</div>)}</div> : renderPriceRange(item.inputPrices);
+				return renderOperationPrices(item, "inputPrices");
 			case "outputPrice":
-				return item.operationPrices.length === 2 ? <div className="space-y-1">{item.operationPrices.map(operation => <div key={operation.capability}>
-					<span className="mr-1 text-[10px] text-muted-foreground">{modelsUiT(operation.capability === "text.generate" ? "capabilityTextGeneration" : "modalityDecisions")}</span>
-					{renderPriceRange(operation.outputPrices)}
-				</div>)}</div> : renderPriceRange(item.outputPrices);
+				return renderOperationPrices(item, "outputPrices");
 			case "tier":
 				return renderTiers(item.tiers);
 			case "inputModalities":

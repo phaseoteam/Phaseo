@@ -249,6 +249,9 @@
 			"endpointVideoGeneration": "動画生成",
 			"endpointImageVariations": "画像バリエーション",
 			"endpointMusicGeneration": "音楽生成",
+			"endpointVideoEditing": "動画編集",
+			"endpointOcr": "OCR",
+			"endpointDocumentParsing": "ドキュメント解析",
 			"tierPrivate": "プライベート",
 			"capabilityTextGeneration": "テキスト生成",
 			"modalityDecisions": "判断"

@@ -1,4 +1,4 @@
-import { decisionModelCapabilities, modelOutputFilterValues } from "./modelCapabilities";
+import { decisionModelCapabilities, modelCapabilities, modelCapability, modelOutputFilterValues } from "./modelCapabilities";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
 
 describe("models with Text generation and Decisions", () => {
@@ -17,6 +17,17 @@ describe("models with Text generation and Decisions", () => {
 		expect(decisionModelCapabilities(["text.generate", "/v1/responses", "chat/completions", "/decisions", "decisions.make", "image"]))
 			.toEqual(["text.generate", "decisions.make"]);
 		expect(decisionModelCapabilities(["image.generate"])).toEqual([]);
+	});
+	it("collapses only semantically equivalent endpoints into one capability", () => {
+		expect(modelCapability("/v1/images/generations")).toBe("image.generate");
+		expect(modelCapability("images.edits")).toBe("image.edit");
+		expect(modelCapability("embeddings")).toBe("text.embed");
+		expect(modelCapability("rerank")).toBe("text.rerank");
+		expect(modelCapability("audio.transcribe")).toBe("audio.transcription");
+		expect(modelCapability("realtime")).toBe("audio.realtime");
+		expect(modelCapability("tool.call")).toBe("tool.call");
+		expect(modelCapabilities(["image.generate", "responses", "batch", "image.edit", "chat/completions", "decisions.make", "images.generations"]))
+			.toEqual(["text.generate", "decisions.make", "image.generate", "image.edit", "batch"]);
 	});
 	it("keeps the same Luna identity in both playground pickers", () => {
 		const luna = { modelId: "openai/gpt-6-luna", capabilities: ["text.generate", "decisions.make"], outputModalities: ["text"] };
