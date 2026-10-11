@@ -169,13 +169,15 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
         or ranked.route_variant_id in (select variant_id from priced_variants)
       )
       and (p_service_tier is null or ranked.service_tier_slug = lower(p_service_tier))
+      -- A SKU's own region is a pricing region and must match the request;
+      -- only a SKU without one inherits either of its variant's regions.
       and (
         p_region is null
         or coalesce(ranked.sku_region, ranked.execution_region, ranked.data_region) is null
-        or lower(p_region) in (
-          coalesce(ranked.sku_region, ''),
-          coalesce(ranked.execution_region, ''),
-          coalesce(ranked.data_region, '')
+        or (ranked.sku_region is not null and ranked.sku_region = lower(p_region))
+        or (
+          ranked.sku_region is null
+          and lower(p_region) in (coalesce(ranked.execution_region, ''), coalesce(ranked.data_region, ''))
         )
       )
   ),

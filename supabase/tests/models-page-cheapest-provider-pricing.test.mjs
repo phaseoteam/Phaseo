@@ -87,6 +87,8 @@ const fixtures = `
 	insert into public.v2_pricing_skus (sku_id, provider_model_id, sku_code, route_variant_id) values
 		('30000000-0000-0000-0000-000000000007', 'openai:gpt-test', 'eu-data', '00000000-0000-0000-0000-000000000006'),
 		('30000000-0000-0000-0000-000000000008', 'openai:gpt-test', 'us-run-eu-data', '00000000-0000-0000-0000-000000000007');
+	insert into public.v2_pricing_skus (sku_id, provider_model_id, sku_code, route_variant_id, region) values
+		('30000000-0000-0000-0000-000000000009', 'openai:gpt-test', 'eu-priced', '00000000-0000-0000-0000-000000000007', 'eu');
 
 	-- A coming-soon preview route next to a routable one, a preview-only model,
 	-- and one provider with two routes for the same model.
@@ -121,6 +123,7 @@ const fixtures = `
 		('30000000-0000-0000-0000-000000000006', 'video_inputs', 'input', 50000000, 'Video Inputs'),
 		('30000000-0000-0000-0000-000000000007', 'input_text_tokens', 'input', 2400000000, 'Input Text Tokens'),
 		('30000000-0000-0000-0000-000000000008', 'input_text_tokens', 'input', 2600000000, 'Input Text Tokens'),
+		('30000000-0000-0000-0000-000000000009', 'input_text_tokens', 'input', 2800000000, 'Input Text Tokens'),
 		('10000000-0000-0000-0000-000000000001', 'input_tokens', 'input', 90000000, 'Input Tokens'),
 		('10000000-0000-0000-0000-000000000002', 'input_tokens', 'input', 38000000, 'Input Tokens'),
 		('10000000-0000-0000-0000-000000000003', 'input_tokens', 'input', 90000000, 'Input Tokens'),
@@ -204,6 +207,9 @@ test("models page pricing uses current, active, global SKUs from shown routes", 
 		const us = await pricing(db, "us", null);
 		assert.ok(us["cloudflare/clef-flash"].includes("1|standard|input_tokens|input|0.038"));
 		assert.ok(!us["cloudflare/clef-flash"].some((meter) => meter.includes("image_inputs")));
+		// An EU-priced SKU on a US-run variant is not a US price.
+		assert.ok(us["openai/gpt-test"].includes("1|standard|input_text_tokens|input|2.6"));
+		assert.ok(!us["openai/gpt-test"].includes("1|standard|input_text_tokens|input|2.8"));
 
 		const eu = await pricing(db, "eu", "standard");
 		assert.ok(eu["openai/gpt-test"].includes("1|standard|input_text_tokens|input|2.2"));
