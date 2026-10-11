@@ -435,7 +435,8 @@ function rememberProjectedUse(scope: string, meta: ProviderLeaseMeta): void {
 	const until = meta.projectedUntil;
 	if (typeof value !== "number" || !Number.isFinite(value) || typeof until !== "number") return;
 	const known = projectedUse.get(scope);
-	if (known?.until === until && known.value === value) return;
+	// Admissions from an older overlapping lease carry an older projection; never move backwards.
+	if (known && known.until >= until) return;
 	projectedUse.delete(scope);
 	if (projectedUse.size >= MAX_PROJECTED_SCOPES) projectedUse.delete(projectedUse.keys().next().value!);
 	projectedUse.set(scope, { value, until });

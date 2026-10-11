@@ -117,6 +117,33 @@ describe("provider rate-limit leases", () => {
 		expect(second.lease.meta.projectedUse).toBeCloseTo(124 / 1_000);
 	});
 
+	it("lets reported token use fall when reservations are refunded", async () => {
+		vi.setSystemTime(new Date("2026-10-09T12:00:30Z"));
+		const limits = config({ tokensPerMinute: 100_000 });
+		const lease = await coordinator.acquireLease(limits, { requests: 1, units: 5_000 }, { requests: 10, units: 50_000 }, [], "tokens");
+		if (!lease.ok) throw new Error("expected a lease");
+		const projected = async (usedUnits: number, id: string) => {
+			const result = await coordinator.acquireLease(limits, { requests: 1, units: 1 }, { requests: 1, units: 1 }, [],
+				id, undefined, [{ id: lease.lease.id, usedRequests: 1, usedUnits }]);
+			if (!result.ok) throw new Error("expected a lease");
+			return result.lease.meta.projectedUse!;
+		};
+		const reserved = await projected(5_000, "reserved");
+		expect(await projected(500, "refunded")).toBeLessThan(reserved);
+	});
+
+	it("counts a returned lease's final use in the window it closes", async () => {
+		const limits = config({ requestsPerMinute: 1_000 });
+		const first = await coordinator.acquireLease(limits, { requests: 1, units: 0 }, { requests: 200, units: 0 }, [], "first");
+		if (!first.ok) throw new Error("expected a lease");
+		// The lease is returned with its final use by the first call of the next minute.
+		vi.setSystemTime(new Date("2026-10-09T12:01:00Z"));
+		const next = await coordinator.acquireLease(limits, { requests: 1, units: 0 }, { requests: 4, units: 0 },
+			[{ id: first.lease.id, usedRequests: 80, usedUnits: 0, inFlightRequests: 0 }], "next");
+		if (!next.ok) throw new Error("expected a lease");
+		expect(next.lease.meta.projectedUse).toBeCloseTo(81 / 1_000, 3);
+	});
+
 	it("carries the previous minute's use into the next and shortens leases near the limit", async () => {
 		const limits = config({ requestsPerMinute: 100 });
 		const node = isolate(limits);

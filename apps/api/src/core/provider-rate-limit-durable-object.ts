@@ -184,13 +184,17 @@ export class ProviderRateLimitDurableObject extends DurableObject<GatewayBinding
 		return { window, requests: Math.max(0, requests - unusedRequests), tokens: Math.max(0, tokens - unusedTokens) };
 	}
 
-	private recordProgress(held: LeaseProgress[]): void {
-		for (const progress of Array.isArray(held) ? held.slice(0, 64) : []) {
+	/**
+	 * Records the latest use isolates report for their leases. Use can fall (token reservations
+	 * are refunded when actual usage is known), so the latest report replaces the previous one.
+	 */
+	private recordProgress(reports: LeaseProgress[]): void {
+		for (const progress of Array.isArray(reports) ? reports.slice(0, 128) : []) {
 			const lease = progress && typeof progress.id === "string" ? this.leaseUse.get(progress.id) : undefined;
 			if (!lease) continue;
 			const used = (value: unknown) => Number.isSafeInteger(value) && Number(value) > 0 ? Number(value) : 0;
-			lease.reportedRequests = Math.max(lease.reportedRequests, used(progress.usedRequests));
-			lease.reportedTokens = Math.max(lease.reportedTokens, used(progress.usedUnits));
+			lease.reportedRequests = used(progress.usedRequests);
+			lease.reportedTokens = used(progress.usedUnits);
 		}
 	}
 
@@ -285,7 +289,8 @@ export class ProviderRateLimitDurableObject extends DurableObject<GatewayBinding
 		if (!Number.isSafeInteger(need.requests) || need.requests < 0) {
 			return { ok: false, denial: { allowed: false, reason: "requests_per_minute", retryAfterSeconds: 60, reservation: null } };
 		}
-		this.recordProgress(held);
+		// Returned leases carry their final use; record it before a window roll estimates the closing window.
+		this.recordProgress([...(Array.isArray(returns) ? returns.slice(0, 64) : []), ...(Array.isArray(held) ? held.slice(0, 64) : [])]);
 		const row = this.current(nowMs);
 		let dirty = this.applyReturns(row, returns);
 		this.sweepLeases(row, nowMs);
@@ -400,6 +405,7 @@ export class ProviderRateLimitDurableObject extends DurableObject<GatewayBinding
 
 	/** Refunds the unused part of returned leases. Unknown (already returned) leases are ignored. */
 	async returnLeases(returns: LeaseReturn[], nowMs = Date.now()): Promise<void> {
+		this.recordProgress(Array.isArray(returns) ? returns.slice(0, 64) : []);
 		const row = this.current(nowMs);
 		if (this.applyReturns(row, returns)) this.persist(row);
 	}

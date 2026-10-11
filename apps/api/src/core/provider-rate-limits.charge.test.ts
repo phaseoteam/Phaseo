@@ -157,6 +157,23 @@ describe("non-blocking provider quota charges", () => {
 		} finally { clock.mockRestore(); }
 	});
 
+	it("never replaces a projection with an older one from an overlapping lease", async () => {
+		runtime.rows = [limit({ requests_per_minute: 100 })];
+		const now = Date.now();
+		const metas = [
+			{ minuteWindow: 1, dayWindow: 1, projectedUse: 0.95, projectedUntil: now + 20_000 },
+			{ minuteWindow: 1, dayWindow: 1, projectedUse: 0.2, projectedUntil: now + 5_000 },
+		];
+		// Single-request leases, so every charge reaches the coordinator.
+		runtime.acquire.mockImplementation(async (_name: string, _config: unknown, need: { requests: number }) =>
+			({ ok: true, lease: { id: `lease-${Math.random()}`, expiresAt: now + 50_000, requests: need.requests, units: null, meta: metas.shift() } }));
+		const { chargeManagedProvider, providerQuotaHeadroom } = await import("./provider-rate-limits");
+		const { quotaHeadroomMultiplier } = await import("./provider-quota-headroom");
+		await chargeManagedProvider({ providerId: "openai", model: "gpt-x", reservationTokens: 10 }).reservations;
+		await chargeManagedProvider({ providerId: "openai", model: "gpt-x", reservationTokens: 10 }).reservations;
+		expect(providerQuotaHeadroom("openai", "gpt-x")).toBeCloseTo(quotaHeadroomMultiplier(0.95));
+	});
+
 	it("measures overage against the provider's own limit", async () => {
 		const { resolveProviderRateLimitDenial } = await import("./provider-rate-limits");
 		const counters = { minuteWindow: 0, dayWindow: 0, minuteRequests: 12, dayRequests: 50, minuteTokens: 900, dayTokens: 0 };
