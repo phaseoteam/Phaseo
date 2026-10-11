@@ -342,7 +342,7 @@ function toTitleCase(value: string): string {
 	if (normalized === "decisions.make" || normalized === "systemone" || normalized === "system.one" || normalized === "typed.decisions" || normalized === "decisions") {
 		return "Decisions";
 	}
-	if (normalized === "realtime") return "Real-time";
+	if (normalized === "realtime") return "Realtime";
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
