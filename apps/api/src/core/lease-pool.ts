@@ -41,8 +41,12 @@ export type LeaseAcquireResult<M, D> =
 	/** `denial: null` means nothing was granted for a background top-up. */
 	| { ok: false; denial: D | null };
 
+/** Use so far of a lease the isolate still holds. */
+export type LeaseProgress = { id: string; usedRequests: number; usedUnits: number };
+
 export type LeaseTransport<M, D> = {
-	acquire(need: LeaseVector, want: LeaseVector, returns: LeaseReturn[]): Promise<LeaseAcquireResult<M, D>>;
+	/** `held` reports progress on leases kept; coordinators may use it to estimate actual use. */
+	acquire(need: LeaseVector, want: LeaseVector, returns: LeaseReturn[], held: LeaseProgress[]): Promise<LeaseAcquireResult<M, D>>;
 	returnLeases(returns: LeaseReturn[]): Promise<void>;
 };
 
@@ -196,7 +200,7 @@ export class LeasePool<M, D> {
 			for (const lease of [...this.held.values()]) this.close(lease);
 		}
 		const returns = this.takeReturns();
-		const request = transport.acquire(need, this.want(need), returns);
+		const request = transport.acquire(need, this.want(need), returns, this.progress());
 		this.acquiring = request;
 		this.acquiringSince = this.now();
 		let result: LeaseAcquireResult<M, D>;
@@ -315,6 +319,14 @@ export class LeasePool<M, D> {
 		}
 	}
 
+	private progress(): LeaseProgress[] {
+		return [...this.held.values()].map((lease) => ({
+			id: lease.grant.id,
+			usedRequests: lease.usedRequests,
+			usedUnits: lease.usedUnits,
+		}));
+	}
+
 	private takeReturns(): LeaseReturn[] {
 		const returns = this.returns;
 		this.returns = [];
@@ -384,7 +396,7 @@ export class LeasePool<M, D> {
 			this.toppingUp = marker;
 			const returns = this.takeReturns();
 			const recent = this.want({ requests: 0, units: 0 });
-			const topUp = transport.acquire({ requests: 0, units: 0 }, recent, returns)
+			const topUp = transport.acquire({ requests: 0, units: 0 }, recent, returns, this.progress())
 				.then((result) => {
 					if ("lease" in result && result.lease.expiresAt > this.now()) {
 						this.held.set(result.lease.id, { grant: result.lease, usedRequests: 0, usedUnits: 0, inFlightRequests: 0 });
