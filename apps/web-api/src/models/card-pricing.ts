@@ -14,6 +14,8 @@ type Rate = {
 	unit: string;
 	tier: string;
 	provider: string;
+	/** The provider's slug, absent for stealth routes. */
+	providerId: string | null;
 	side: "input" | "output" | "";
 	modality: string;
 	auxiliary: boolean;
@@ -135,6 +137,7 @@ function rate(row: Row): Rate | null {
 		tier: String(row.service_tier ?? "standard").trim().toLowerCase() || "standard",
 		// The page RPC sends an anonymous per-model provider number.
 		provider: String(row.provider_group ?? row.provider ?? "").trim().toLowerCase(),
+		providerId: String(row.provider ?? "").trim().toLowerCase() || null,
 		variant: variantLabel(row),
 		side,
 		modality,
@@ -216,6 +219,8 @@ function detailOrder(a: Rate, b: Rate): number {
 	return Number(a.tier !== "standard") - Number(b.tier !== "standard")
 		|| Number(a.auxiliary) - Number(b.auxiliary)
 		|| SIDE_ORDER[a.side] - SIDE_ORDER[b.side]
+		// Text tokens lead their side, so "Input" comes before "Image Input".
+		|| Number(!isTextToken(a)) - Number(!isTextToken(b))
 		|| a.key.localeCompare(b.key)
 		|| a.tier.localeCompare(b.tier);
 }
@@ -438,14 +443,27 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	// (short context rather than long). Media and other usage meters list each
 	// labelled variant (resolution, audio, quality) with its own price, cheapest
 	// first, as "Label (variant)"; unlabelled differing prices show "From".
-	const detailRows = [...groupBy(detailTierRates(rates, headlineRates), (item) => `${item.key}|${item.unit}`).values()]
+	const meterGroups = [...groupBy(detailTierRates(rates, headlineRates), (item) => `${item.key}|${item.unit}`).values()]
 		.map((items) => {
 			const headlineTiers = new Set(headlineRates
 				.filter((item) => item.key === items[0].key && item.unit === items[0].unit)
 				.map((item) => item.tier));
 			const tierItems = headlineTiers.size ? items.filter((item) => headlineTiers.has(item.tier)) : preferredTier(items);
 			return tierItems.length ? tierItems : items;
-		})
+		});
+	// An image, video or audio token rate that only repeats the text rate on
+	// its side ("Image Input" at the "Input" price) adds nothing to the list.
+	const textTokenPrice = (side: Rate["side"]) => {
+		const text = meterGroups.find((items) => isTextToken(items[0]) && !items[0].auxiliary && items[0].side === side);
+		return text ? min(text) : null;
+	};
+	const repeatsTextRate = (items: Rate[]) => {
+		const [first] = items;
+		return first.unit === "1M tokens" && !isTextToken(first) && !first.auxiliary && first.side !== ""
+			&& items.every((item) => item.variant === null && item.price === textTokenPrice(first.side));
+	};
+	const detailRows = meterGroups
+		.filter((items) => !repeatsTextRate(items))
 		.sort((a, b) => detailOrder(a[0], b[0]))
 		.flatMap((items) => {
 			if (isPassThrough(items[0].unit) && items.every((item) => item.price === 1)) {
@@ -487,6 +505,9 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	const output = lowest("output");
 	const from = [input, output].filter((item) => item !== null)
 		.sort((a, b) => a.price - b.price)[0] ?? null;
+	// The provider whose prices the card shows, so the hover card can name it.
+	// Stealth routes send no slug and stay anonymous.
+	const pricingProvider = summary ? rates.find((item) => item.providerId)?.providerId ?? null : null;
 
 	// Text-and-Decisions models already carry per-operation prices, and their
 	// `lowest_*` fields hold the text-generation rates; the detail rows mix
@@ -497,6 +518,7 @@ export function normalizeModelsPagePricing(model: Row): Row {
 		return {
 			...model,
 			pricing_summary: summary,
+			pricing_provider_id: pricingProvider,
 			pricing_detail_rows: [...detailRows, ...preformatted],
 			lowest_standard_input_price_label: "Input",
 			lowest_standard_output_price_label: "Output",
@@ -509,6 +531,7 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	return {
 		...model,
 		pricing_summary: summary,
+		pricing_provider_id: pricingProvider,
 		pricing_detail_rows: [...detailRows, ...preformatted],
 		lowest_input_price: input?.price ?? null,
 		lowest_output_price: output?.price ?? null,

@@ -5,7 +5,7 @@ import { PGlite } from "@electric-sql/pglite";
 
 // The latest migration redefining the page projection.
 const migration = await readFile(
-	new URL("../migrations/20261011120000_label_conditional_catalogue_prices.sql", import.meta.url),
+	new URL("../migrations/20261011190000_name_catalogue_pricing_provider.sql", import.meta.url),
 	"utf8",
 );
 
@@ -22,7 +22,7 @@ const schema = `
 		provider_model_id text primary key, model_slug text, provider_slug text, provider_model_slug text,
 		input_modalities text[] default array['text'], output_modalities text[] default array['text'],
 		context_length integer, max_output_tokens integer, status text default 'active', routing_enabled boolean default true,
-		provider_availability_status text default 'available', regions text[] default array[]::text[]
+		provider_availability_status text default 'available', regions text[] default array[]::text[], is_stealth boolean default false
 	);
 	create table public.v2_route_variants (
 		variant_id uuid primary key default gen_random_uuid(), provider_model_id text, service_tier_slug text default 'standard',
@@ -109,6 +109,7 @@ const fixtures = `
 		('soon:preview-only', 'acme/preview-only', 'soon', false, 'coming_soon'),
 		('acme:two-a', 'acme/two-routes', 'acme', true, 'available'),
 		('acme:two-b', 'acme/two-routes', 'acme', true, 'available');
+	update public.v2_model_provider_routes set is_stealth = true where provider_model_id = 'acme:two-b';
 	insert into public.v2_route_variants (provider_model_id, routing_enabled) values
 		('soon:clef-flash', false), ('soon:preview-only', false), ('acme:two-a', true), ('acme:two-b', true);
 
@@ -242,9 +243,16 @@ test("models page pricing uses current, active, global SKUs from shown routes", 
 			"1|standard|output_text_tokens|output|15",
 		]);
 
-		// Provider identities are never part of the pricing rows.
-		const raw = await db.query("select jsonb_agg(payload->'pricing_detail_rows')::text as text from public.get_v2_public_models_page_rows_without_lifecycle(null, null) payload");
-		assert.ok(!/cloudflare"|crossmodel|"openai"/.test(raw.rows[0].text));
+		// Rows name their provider, except on stealth routes.
+		const providers = await db.query(`
+			select payload->>'model_id' as model_id, jsonb_agg(distinct coalesce(meter->>'provider', '-')) as providers
+			from public.get_v2_public_models_page_rows_without_lifecycle(null, null) payload,
+				jsonb_array_elements(payload->'pricing_detail_rows') meter
+			group by 1`);
+		const byModel = Object.fromEntries(providers.rows.map((row) => [row.model_id, row.providers]));
+		assert.deepEqual(byModel["cloudflare/clef-flash"], ["cloudflare"]);
+		assert.deepEqual(byModel["openai/gpt-test"], ["openai"]);
+		assert.deepEqual(byModel["acme/two-routes"], ["-", "acme"]);
 
 		// A region filter keeps that region's price alongside the global ones.
 		// A US request must not bring back the superseded global "moved" v1.
