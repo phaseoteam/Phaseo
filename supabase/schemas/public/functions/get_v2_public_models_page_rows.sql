@@ -43,6 +43,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows (
     ) details on true
   )
   select redacted.payload || jsonb_build_object(
+    'organisation_colour', coalesce(nullif(lab.colour, ''), nullif(lab.metadata->>'colour', '')),
     'gateway_provider_details', redacted.provider_details,
     'gateway_provider_names', coalesce((
       select to_jsonb(array_agg(distinct item->>'name' order by item->>'name'))
@@ -80,7 +81,8 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows (
         and nullif(item->>'id', '') is not null
     ), 0)
   )
-  from redacted;
+  from redacted
+  left join public.v2_labs lab on lab.lab_slug = redacted.payload->>'organisation_id';
 $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."get_v2_public_models_page_rows"(text, text) TO "service_role";
