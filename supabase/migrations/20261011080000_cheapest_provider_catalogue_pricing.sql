@@ -129,8 +129,10 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
     select distinct variant_id
     from display_routes
   ),
-  -- The latest live version of each SKU code, chosen per whole SKU so meters
-  -- dropped in a newer version do not survive from an older one.
+  -- The latest live version of each SKU code, chosen per whole SKU (so meters
+  -- dropped in a newer version do not survive from an older one) and before
+  -- any region filter (so a superseded version cannot resurface for a region
+  -- the current version does not cover).
   current_skus as (
     select *
     from (
@@ -157,13 +159,9 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
         and (p_service_tier is null or sku.service_tier_slug = lower(p_service_tier))
         and sku.effective_from <= now()
         and (sku.effective_to is null or sku.effective_to > now())
-        and (
-          p_region is null
-          or coalesce(sku.region, variant.execution_region) is null
-          or lower(p_region) in (lower(coalesce(sku.region, '')), lower(coalesce(variant.execution_region, '')))
-        )
     ) ranked
     where ranked.recency = 1
+      and (p_region is null or ranked.pricing_region is null or ranked.pricing_region = lower(p_region))
   ),
   live_meters as (
     select

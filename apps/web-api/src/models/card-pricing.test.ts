@@ -95,6 +95,15 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 3, output: 15, unit: "1M tokens" });
 	});
 
+	it("keeps a genuinely free per-image provider ahead of a paid token provider", () => {
+		const row = card([
+			usage("output_image", 0, "image", 1, { modality: "image", provider_group: 1 }),
+			tokens("input_text_tokens", 1, { provider_group: 2 }),
+			tokens("output_image_tokens", 30, { modality: "image", provider_group: 2 }),
+		], ["image"]);
+		expect(row.pricing_summary).toEqual({ kind: "free" });
+	});
+
 	it("uses a provider's base rate when it has short- and long-context SKUs, without From", () => {
 		const row = card([
 			tokens("input_text_tokens", 2, { provider: "openai" }),

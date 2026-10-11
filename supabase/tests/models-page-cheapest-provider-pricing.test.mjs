@@ -47,8 +47,9 @@ const fixtures = `
 		('cloudflare/clef-flash', 'Clef Flash', 'cloudflare'), ('openai/gpt-test', 'GPT Test', 'openai');
 	insert into public.v2_providers (provider_slug, name, status, routing_enabled) values
 		('cloudflare', 'Cloudflare', 'active', true), ('crossmodel', 'CrossModel', 'active', true), ('openai', 'OpenAI', 'active', true);
+	insert into public.v2_model_provider_routes (provider_model_id, model_slug, provider_slug, status, routing_enabled, regions) values
+		('cf:clef-flash', 'cloudflare/clef-flash', 'cloudflare', 'active', true, array['us', 'eu']);
 	insert into public.v2_model_provider_routes (provider_model_id, model_slug, provider_slug, status, routing_enabled) values
-		('cf:clef-flash', 'cloudflare/clef-flash', 'cloudflare', 'active', true),
 		('crossmodel:clef-flash', 'cloudflare/clef-flash', 'crossmodel', 'disabled', false),
 		('openai:gpt-test', 'openai/gpt-test', 'openai', 'active', true);
 	insert into public.v2_route_variants (variant_id, provider_model_id, service_tier_slug, execution_region) values
@@ -146,6 +147,11 @@ test("models page pricing uses current, active, global SKUs from shown routes", 
 		assert.ok(!/cloudflare"|crossmodel|"openai"/.test(raw.rows[0].text));
 
 		// A region filter keeps that region's price alongside the global ones.
+		// A US request must not bring back the superseded global "moved" v1.
+		const us = await pricing(db, "us", null);
+		assert.ok(us["cloudflare/clef-flash"].includes("1|standard|input_tokens|input|0.038"));
+		assert.ok(!us["cloudflare/clef-flash"].some((meter) => meter.includes("image_inputs")));
+
 		const eu = await pricing(db, "eu", "standard");
 		assert.ok(eu["openai/gpt-test"].includes("1|standard|input_text_tokens|input|2.2"));
 		assert.ok(!eu["openai/gpt-test"].some((meter) => meter.includes("|batch|")));
