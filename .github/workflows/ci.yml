@@ -213,6 +213,7 @@ jobs:
         outputs:
             data-changed: ${{ steps.filter.outputs.data }}
             migrations-changed: ${{ steps.filter.outputs.migrations }}
+            web-changed: ${{ steps.filter.outputs.web }}
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
@@ -227,6 +228,14 @@ jobs:
                           - 'supabase/tests/**'
                           - 'supabase/config.toml'
                           - 'scripts/validate-supabase-migrations.mjs'
+                      # apps/web also compiles packages/data/catalog/src through a tsconfig path.
+                      web:
+                          - 'apps/web/**'
+                          - 'packages/data/catalog/**'
+                          - 'package.json'
+                          - 'pnpm-lock.yaml'
+                          - 'pnpm-workspace.yaml'
+                          - 'turbo.json'
 
     migration-validation:
         name: Validate database migration policy
@@ -773,6 +782,10 @@ jobs:
         permissions:
             contents: read
             id-token: write
+        env:
+            # Each production deploy starts the web app with an empty runtime cache,
+            # so skip it when nothing the web build uses changed. Manual runs always deploy.
+            DEPLOY_WEB: ${{ matrix.target == 'web' && (github.event_name == 'workflow_dispatch' || needs.check-paths.outputs.web-changed == 'true') }}
         strategy:
             fail-fast: false
             matrix:
@@ -811,11 +824,11 @@ jobs:
               run: git checkout -- pnpm-lock.yaml
 
             - name: Install dependencies
-              if: matrix.target == 'web'
+              if: env.DEPLOY_WEB == 'true'
               run: corepack pnpm install --frozen-lockfile
 
             - name: Install Vercel CLI
-              if: matrix.target == 'web'
+              if: env.DEPLOY_WEB == 'true'
               run: npm install --global vercel@latest
 
             - name: Deploy web to Vercel (production)
@@ -823,7 +836,7 @@ jobs:
                   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
                   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
                   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-              if: ${{ matrix.target == 'web' && env.VERCEL_PROJECT_ID != '' }}
+              if: ${{ env.DEPLOY_WEB == 'true' && env.VERCEL_PROJECT_ID != '' }}
               run: |
                   vercel pull --yes --environment=production --token=$VERCEL_TOKEN
                   vercel deploy --yes --archive=tgz --prod --logs --token=$VERCEL_TOKEN
