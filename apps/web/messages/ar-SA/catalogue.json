@@ -2546,6 +2546,7 @@
 		"requestMissingData": "طلب البيانات المفقودة"
 	},
 	"catalogNotFound": {
+		"modelUnavailableTitle": "النموذج غير متاح | Phaseo",
 		"modelHeading": "لم يتم العثور على النموذج «{id}».",
 		"modelDescription": "تحقق من معرّف النموذج أو تصفح الكتالوج للعثور على النماذج المتاحة.",
 		"requestModel": "هل تعتقد أن نموذجًا يجب أن يظهر هنا؟",

@@ -245,8 +245,21 @@ export async function generateMetadata(props: {
 		false,
 	);
 	const { modelId, modelName, organisationName, modelDescription } = identity;
-	const [model, benchmarks, pricing, gatewayMetadata, subscriptions] = await Promise.all([
-		fetchFrontendModelOverview(modelId).then(async (overview) => overview ?? await fetchPrivateModelOverview(modelId)).catch(() => fetchPrivateModelOverview(modelId).catch(() => null)),
+	// Social metadata must only describe models in the public catalogue, even
+	// when an administrator or private-model owner visits this page.
+	const model = await fetchFrontendModelOverview(modelId).catch(() => null);
+	if (!model && !isFreeRouterModelId(modelId)) {
+		const t = await getTranslations("Catalogue.catalogNotFound");
+		return buildMetadata({
+			title: t("modelUnavailableTitle"),
+			description: t("modelDescription"),
+			path: getModelPath(modelId),
+			openGraph: { images: [] },
+			twitter: { card: "summary", images: [] },
+			robots: { index: false, follow: false },
+		});
+	}
+	const [benchmarks, pricing, gatewayMetadata, subscriptions] = await Promise.all([
 		fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []),
 		fetchFrontendModelPricing(modelId).catch(() => []),
 		fetchFrontendModelGatewayMetadata(modelId).catch(() => null),

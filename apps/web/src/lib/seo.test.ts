@@ -2,6 +2,21 @@ import { resolveTitle } from "next/dist/lib/metadata/resolvers/resolve-title";
 import { buildMetadata, resolveSiteUrl } from "./seo";
 
 describe("page title branding", () => {
+	it("omits fallback social images when unavailable pages explicitly clear them", () => {
+		const metadata = buildMetadata({
+			title: "Model unavailable | Phaseo",
+			description: "Browse the catalogue to find available models.",
+			path: "/models/example/unavailable",
+			openGraph: { images: [] },
+			twitter: { card: "summary", images: [] },
+			robots: { index: false, follow: false },
+		});
+		expect(metadata.openGraph?.images).toEqual([]);
+		expect(metadata.twitter?.images).toEqual([]);
+		expect(metadata.twitter).toMatchObject({ card: "summary" });
+		expect(metadata.title).toEqual({ absolute: "Model unavailable | Phaseo" });
+		expect(metadata.robots).toEqual({ index: false, follow: false });
+	});
 	it.each([
 		["About", "About | Phaseo"],
 		["GPT 5.6 Luna API Pricing — Compare 22 Providers | Phaseo", "GPT 5.6 Luna API Pricing — Compare 22 Providers | Phaseo"],
