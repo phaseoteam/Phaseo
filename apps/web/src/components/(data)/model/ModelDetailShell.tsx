@@ -1,6 +1,6 @@
 import { ReactNode, Suspense } from "react";
 import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
-import { Link } from "@/i18n/navigation";
+import { IntentLink as Link } from "@/components/navigation/IntentLink";
 import {
 	fetchFrontendModelHeader,
 	fetchFrontendModelGatewayMetadata,

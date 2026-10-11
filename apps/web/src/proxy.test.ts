@@ -61,6 +61,30 @@ describe("public localisation proxy", () => {
 		mockCreateServerClient.mockReset();
 	});
 
+	it.each([
+		"/docs",
+		"/docs/",
+		"/docs/v1/quickstart",
+		"/docs/zh-Hans/v1/api-reference/introduction",
+		"/ingest",
+		"/ingest/flags",
+		"/ingest/i/v0/e/",
+	])("does not invoke session middleware for public external rewrite %s", (path) => {
+		expect(unstable_doesMiddlewareMatch({ config, url: `${origin}${path}` })).toBe(false);
+	});
+
+	it.each([
+		"/docs-example",
+		"/ingestion",
+		"/models/openai/gpt-5.2",
+		"/es-ES/models/openai/gpt-5.2",
+		"/auth/callback",
+		"/oauth/consent/submit",
+		"/settings/keys/docs",
+	])("keeps page routing and authenticated handler middleware on %s", (path) => {
+		expect(unstable_doesMiddlewareMatch({ config, url: `${origin}${path}` })).toBe(true);
+	});
+
 	it("matches every exact public auth route", () => {
 		for (const route of localizedAuthRoutes) {
 			expect(

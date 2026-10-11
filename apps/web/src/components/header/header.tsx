@@ -1,5 +1,6 @@
 // components/header/Header.tsx  (STATIC)
 import Link from "next/link";
+import { IntentLink } from "@/components/navigation/IntentLink";
 import Image from "next/image";
 import { Suspense } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -48,7 +49,7 @@ export default async function Header() {
 					<GatedSettingsSidebarTrigger />
 				</Suspense>
 				<BrandMenu>
-					<Link
+					<IntentLink
 						href="/"
 						aria-label={t("home")}
 						className="inline-flex h-[var(--site-header-control-h,2.25rem)] shrink-0 items-center rounded-lg px-2 transition-colors hover:bg-zinc-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 data-[state=open]:bg-zinc-100/70 lg:px-[var(--site-header-nav-px,0.75rem)] dark:hover:bg-zinc-900/60 dark:focus-visible:ring-zinc-600/50 dark:data-[state=open]:bg-zinc-900/60"
@@ -71,7 +72,7 @@ export default async function Header() {
 							style={{ width: "auto" }}
 							priority
 						/>
-					</Link>
+					</IntentLink>
 				</BrandMenu>
 				<div className="hidden h-[var(--site-header-divider-height,1.5rem)] w-px bg-zinc-200/70 dark:bg-zinc-800 lg:block" />
 				<div className="hidden max-w-full lg:block">
