@@ -19,6 +19,7 @@ For a clean public `skills.sh` source, publish only the Phaseo skills you want d
 
 - `phaseo-gateway`: general gateway integration and migration workflow
 - `phaseo-model-provider-onboarding`: use Supabase to onboard models, routes, aliases, and pricing
+- `phaseo-internal-model-onboarding`: admin-only model setup, private logs, and public exclusion
 - `phaseo-database-changes`: schema and RPC migrations, with direct Supabase catalogue updates
 - `phaseo-guardrails`: workspace guardrails, API key attachment, previews, and enforcement debugging
 - `phaseo-response-healing`: structured-output recovery with workspace, preset, or request-level plugin policy
