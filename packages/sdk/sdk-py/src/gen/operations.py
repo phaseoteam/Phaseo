@@ -1786,7 +1786,7 @@ def listModels(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> GatewayModelsResponse:
+) -> Union[GatewayModelsResponse, OpenAIModelsResponse]:
 	path = path or {}
 	resolved_path = "/models"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)

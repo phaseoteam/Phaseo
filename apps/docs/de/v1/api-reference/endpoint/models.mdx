@@ -12,6 +12,12 @@ Katalogantworten werden fünf Minuten zwischengespeichert und können während d
 
 `GET /models/me` ist für eine künftige Filterung nach den Guardrails des aktuellen Aufrufers vorgesehen. Der Endpunkt gibt derzeit `501 not implemented` zurück. Verwenden Sie deshalb vorerst `GET /models` für den gemeinsamen Gateway-Katalog.
 
+## OpenAI-Format
+
+Verwende `GET /v1/models?format=openai` mit deinem Phaseo-API-Schlüssel für `{"object":"list","data":[{"id":"openai/gpt-4o-mini","object":"model","created":1721260800,"owned_by":"openai"}]}`. Das Standardformat `json` enthält weiterhin die Phaseo-Metadaten.
+
+Authentifizierung, regionale Verfügbarkeit, private Workspace-Modelle und Filter gelten weiterhin. Ohne `limit` werden alle Ergebnisse zurückgegeben; `offset` gilt weiterhin. IDs behalten das kanonische Phaseo-Format. `created` ist der Veröffentlichungszeitpunkt in Unix-Sekunden oder `0`, wenn unbekannt. `owned_by` ist die Katalogorganisation, `private` für Workspace-Modelle oder `phaseo`, wenn unbekannt.
+
 ## Nützliche Filter
 
 - `endpoints` verwendet öffentliche Namen wie `chat.completions`, `responses` und `messages`

@@ -2192,6 +2192,18 @@ pub struct OpenAIDecisionsResponse {
 	pub usage: HashMap<String, String>,
 }
 
+pub struct OpenAIModel {
+	pub created: i64,
+	pub id: String,
+	pub object: String,
+	pub owned_by: String,
+}
+
+pub struct OpenAIModelsResponse {
+	pub data: Vec<HashMap<String, String>>,
+	pub object: String,
+}
+
 pub struct OpenAIReasoningConfig {
 	pub effort: Option<String>,
 	pub enabled: Option<bool>,

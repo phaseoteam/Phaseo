@@ -12,6 +12,12 @@ Les réponses du catalogue sont mises en cache pendant cinq minutes et peuvent �
 
 `GET /models/me` est réservé à un futur filtrage des modèles adapté aux garde-fous de l’appelant actuel. Il renvoie actuellement `501 not implemented` ; utilisez donc `GET /models` pour accéder au catalogue Gateway partagé.
 
+## Format OpenAI
+
+Utilisez `GET /v1/models?format=openai` avec votre clé API Phaseo pour obtenir `{"object":"list","data":[{"id":"openai/gpt-4o-mini","object":"model","created":1721260800,"owned_by":"openai"}]}`. Le format par défaut `json` conserve les métadonnées Phaseo.
+
+Ce format conserve l’authentification, la disponibilité régionale, les modèles privés de l’espace de travail et les filtres. Il renvoie tous les résultats sauf si vous fournissez `limit` ; `offset` reste applicable. Les identifiants restent au format canonique de Phaseo. `created` est la date de publication en secondes Unix, ou `0` si elle est inconnue. `owned_by` est l’organisation du catalogue, `private` pour les modèles de l’espace de travail, ou `phaseo` si elle est inconnue.
+
 ## Filtres utiles
 
 - `endpoints` accepte des noms publics comme `chat.completions`, `responses` et `messages`

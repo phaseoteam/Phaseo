@@ -3160,6 +3160,20 @@ module Phaseo
     # @!attribute [rw] usage
     #   @return [Hash{String => Object}]
     OpenAIDecisionsResponse = Struct.new(:answers, :meta, :model, :request_id, :usage, keyword_init: true)
+    # @!attribute [rw] created
+    #   @return [Integer]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] object
+    #   @return [String]
+    # @!attribute [rw] owned_by
+    #   @return [String]
+    OpenAIModel = Struct.new(:created, :id, :object, :owned_by, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    # @!attribute [rw] object
+    #   @return [String]
+    OpenAIModelsResponse = Struct.new(:data, :object, keyword_init: true)
     # @!attribute [rw] effort
     #   @return [String, nil]
     # @!attribute [rw] enabled

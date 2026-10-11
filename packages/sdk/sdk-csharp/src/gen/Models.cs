@@ -5334,6 +5334,32 @@ public sealed class OpenAIDecisionsResponse
 
 }
 
+public sealed class OpenAIModel
+{
+	[JsonPropertyName("created")]
+	public long Created { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("object")]
+	public string Object { get; set; }
+
+	[JsonPropertyName("owned_by")]
+	public string OwnedBy { get; set; }
+
+}
+
+public sealed class OpenAIModelsResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+	[JsonPropertyName("object")]
+	public string Object { get; set; }
+
+}
+
 public sealed class OpenAIReasoningConfig
 {
 	[JsonPropertyName("effort")]

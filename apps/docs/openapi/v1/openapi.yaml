@@ -32,7 +32,9 @@ paths:
       description: >-
         Returns shared non-hidden gateway models. Defaults to currently publicly
         routable models; use availability=all to include non-routable
-        availability records.
+        availability records. Use format=openai for an OpenAI-compatible model
+        list. OpenAI format returns all filtered models by default; an explicit
+        limit and offset can still select a page.
       parameters:
         - name: search
           in: query
@@ -241,11 +243,14 @@ paths:
             maximum: 5000
         - name: format
           in: query
-          description: Response format. Defaults to json.
+          description: >-
+            Response format. Defaults to Phaseo-native json. OpenAI format
+            returns the complete filtered list unless limit is supplied.
           schema:
             type: string
             enum:
               - json
+              - openai
               - rss
               - atom
             default: json
@@ -264,7 +269,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GatewayModelsResponse'
+                oneOf:
+                  - $ref: '#/components/schemas/GatewayModelsResponse'
+                  - $ref: '#/components/schemas/OpenAIModelsResponse'
             application/rss+xml:
               schema:
                 type: string
@@ -17041,6 +17048,48 @@ components:
         next_cursor:
           type: string
           nullable: true
+      additionalProperties: false
+    OpenAIModelsResponse:
+      type: object
+      required:
+        - object
+        - data
+      properties:
+        object:
+          type: string
+          enum:
+            - list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OpenAIModel'
+      additionalProperties: false
+    OpenAIModel:
+      type: object
+      required:
+        - id
+        - object
+        - created
+        - owned_by
+      properties:
+        id:
+          type: string
+          description: Canonical Phaseo model ID to use for inference.
+          example: openai/gpt-4o-mini
+        object:
+          type: string
+          enum:
+            - model
+        created:
+          type: integer
+          description: Release timestamp in Unix seconds, or 0 when unknown.
+          minimum: 0
+        owned_by:
+          type: string
+          description: >-
+            Catalogue organization ID, private for workspace models, or phaseo
+            when unknown.
+          example: openai
       additionalProperties: false
     GatewayModelsResponse:
       type: object

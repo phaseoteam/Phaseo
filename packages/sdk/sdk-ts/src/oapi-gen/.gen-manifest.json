@@ -252,6 +252,8 @@
     "models/OpenAIDecisionScoreQuestion.ts",
     "models/OpenAIDecisionsRequest.ts",
     "models/OpenAIDecisionsResponse.ts",
+    "models/OpenAIModel.ts",
+    "models/OpenAIModelsResponse.ts",
     "models/OpenAIReasoningConfig.ts",
     "models/OrganisationId.ts",
     "models/OrganisationIdList.ts",

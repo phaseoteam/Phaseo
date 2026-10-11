@@ -27,7 +27,7 @@ paths:
         - Gateway
       operationId: listModels
       summary: ゲートウェイモデルを一覧表示
-      description: 共有されている非表示ではないゲートウェイモデルを返します。既定では現在パブリックにルーティングできるモデルが対象です。ルーティングできない利用可能性レコードも含めるには `availability=all` を使用します。
+      description: 共有されている非表示でないゲートウェイモデルを返します。既定では公開ルーティング可能なモデルを含みます。ルーティング不可のレコードを含めるには availability=all を指定します。OpenAI 互換の一覧には format=openai を指定します。この形式は既定ですべての絞り込み結果を返し、limit と offset でページを選択できます。
       parameters:
         - name: search
           in: query
@@ -230,11 +230,12 @@ paths:
             maximum: 5000
         - name: format
           in: query
-          description: 応答形式です。既定値は `json` です。
+          description: 応答形式。既定は Phaseo 独自の JSON です。OpenAI 形式は limit が指定されない限り、絞り込み結果の全一覧を返します。
           schema:
             type: string
             enum:
               - json
+              - openai
               - rss
               - atom
             default: json
@@ -253,7 +254,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GatewayModelsResponse'
+                oneOf:
+                  - $ref: '#/components/schemas/GatewayModelsResponse'
+                  - $ref: '#/components/schemas/OpenAIModelsResponse'
             application/rss+xml:
               schema:
                 type: string
@@ -16501,6 +16504,46 @@ components:
         next_cursor:
           type: string
           nullable: true
+      additionalProperties: false
+    OpenAIModelsResponse:
+      type: object
+      required:
+        - object
+        - data
+      properties:
+        object:
+          type: string
+          enum:
+            - list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OpenAIModel'
+      additionalProperties: false
+    OpenAIModel:
+      type: object
+      required:
+        - id
+        - object
+        - created
+        - owned_by
+      properties:
+        id:
+          type: string
+          description: 推論に使用する Phaseo の正規モデル ID。
+          example: openai/gpt-4o-mini
+        object:
+          type: string
+          enum:
+            - model
+        created:
+          type: integer
+          description: リリース日時の Unix 秒。不明な場合は 0。
+          minimum: 0
+        owned_by:
+          type: string
+          description: カタログの組織 ID。ワークスペースのモデルは private、不明な場合は phaseo。
+          example: openai
       additionalProperties: false
     GatewayModelsResponse:
       type: object

@@ -2191,6 +2191,18 @@ struct OpenAIDecisionsResponse {
 	std::map<std::string, std::any> usage;
 };
 
+struct OpenAIModel {
+	int created;
+	std::string id;
+	std::any object;
+	std::string owned_by;
+};
+
+struct OpenAIModelsResponse {
+	std::vector<std::map<std::string, std::any>> data;
+	std::any object;
+};
+
 struct OpenAIReasoningConfig {
 	std::any effort;
 	std::optional<bool> enabled;

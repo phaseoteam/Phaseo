@@ -12,6 +12,12 @@ description: "تصفح النماذج الأصلية في Gateway عبر Phaseo 
 
 `GET /models/me` مخصص لتصفية مستقبلية للنماذج وفق ضوابط المتصل الحالي. وهو يعيد حاليًا `501 not implemented`، لذا استخدم `GET /models` للوصول إلى كتالوج Gateway المشترك في الوقت الحالي.
 
+## تنسيق OpenAI
+
+استخدم `GET /v1/models?format=openai` مع مفتاح API الخاص بك في Phaseo للحصول على `{"object":"list","data":[{"id":"openai/gpt-4o-mini","object":"model","created":1721260800,"owned_by":"openai"}]}`. يحتفظ التنسيق الافتراضي `json` ببيانات Phaseo الوصفية.
+
+يستخدم هذا التنسيق المصادقة والتوفر الإقليمي ونماذج مساحة العمل الخاصة وعوامل التصفية نفسها. يعيد جميع النتائج ما لم تحدد `limit`؛ ويظل `offset` مطبقًا. تحتفظ المعرّفات بتنسيق Phaseo المعتمد. يمثل `created` وقت الإصدار بالثواني وفق Unix، أو `0` إذا كان غير معروف. يمثل `owned_by` مؤسسة الكتالوج، أو `private` لنماذج مساحة العمل، أو `phaseo` إذا كانت غير معروفة.
+
 ## عوامل تصفية مفيدة
 
 - يستخدم `endpoints` أسماء عامة مثل `chat.completions` و`responses` و`messages`

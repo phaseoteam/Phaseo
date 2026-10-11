@@ -27,7 +27,7 @@ paths:
         - Gateway
       operationId: listModels
       summary: गेटवे मॉडल की सूची बनाएँ
-      description: साझा किए गए, न छिपाए गए गेटवे मॉडल लौटाता है। डिफ़ॉल्ट रूप से वर्तमान में सार्वजनिक रूप से रूट किए जा सकने वाले मॉडल मिलते हैं; रूट न किए जा सकने वाले उपलब्धता रिकॉर्ड शामिल करने के लिए `availability=all` उपयोग करें।
+      description: गेटवे के साझा, गैर-छिपे मॉडल लौटाता है। डिफ़ॉल्ट रूप से सार्वजनिक रूप से रूट किए जा सकने वाले मॉडल शामिल हैं; अन्य उपलब्धता रिकॉर्ड के लिए availability=all उपयोग करें। OpenAI-संगत सूची के लिए format=openai उपयोग करें। यह प्रारूप डिफ़ॉल्ट रूप से सभी फ़िल्टर किए गए मॉडल लौटाता है; limit और offset से एक पृष्ठ चुन सकते हैं।
       parameters:
         - name: search
           in: query
@@ -230,11 +230,12 @@ paths:
             maximum: 5000
         - name: format
           in: query
-          description: प्रतिक्रिया प्रारूप। डिफ़ॉल्ट `json` है।
+          description: प्रतिक्रिया का प्रारूप। डिफ़ॉल्ट Phaseo का मूल JSON है। limit न दिए जाने पर OpenAI प्रारूप पूरी फ़िल्टर की गई सूची लौटाता है।
           schema:
             type: string
             enum:
               - json
+              - openai
               - rss
               - atom
             default: json
@@ -253,7 +254,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GatewayModelsResponse'
+                oneOf:
+                  - $ref: '#/components/schemas/GatewayModelsResponse'
+                  - $ref: '#/components/schemas/OpenAIModelsResponse'
             application/rss+xml:
               schema:
                 type: string
@@ -16501,6 +16504,46 @@ components:
         next_cursor:
           type: string
           nullable: true
+      additionalProperties: false
+    OpenAIModelsResponse:
+      type: object
+      required:
+        - object
+        - data
+      properties:
+        object:
+          type: string
+          enum:
+            - list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OpenAIModel'
+      additionalProperties: false
+    OpenAIModel:
+      type: object
+      required:
+        - id
+        - object
+        - created
+        - owned_by
+      properties:
+        id:
+          type: string
+          description: अनुमान के लिए उपयोग किया जाने वाला Phaseo का मानक मॉडल ID।
+          example: openai/gpt-4o-mini
+        object:
+          type: string
+          enum:
+            - model
+        created:
+          type: integer
+          description: रिलीज़ का समय Unix सेकंड में, या अज्ञात होने पर 0।
+          minimum: 0
+        owned_by:
+          type: string
+          description: कैटलॉग का संगठन ID, कार्यक्षेत्र मॉडल के लिए private, या अज्ञात होने पर phaseo।
+          example: openai
       additionalProperties: false
     GatewayModelsResponse:
       type: object

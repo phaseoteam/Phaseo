@@ -12,6 +12,12 @@ description: "Phaseo Gateway पर Gateway-native मॉडल देखें;
 
 `GET /models/me` भविष्य में मौजूदा caller के guardrail के आधार पर मॉडल फ़िल्टर करने के लिए आरक्षित है। अभी यह `501 not implemented` लौटाता है, इसलिए साझा Gateway catalogue के लिए फिलहाल `GET /models` उपयोग करें।
 
+## OpenAI प्रारूप
+
+अपने Phaseo API कुंजी के साथ `GET /v1/models?format=openai` का उपयोग करें। प्रतिक्रिया का रूप है: `{"object":"list","data":[{"id":"openai/gpt-4o-mini","object":"model","created":1721260800,"owned_by":"openai"}]}`। डिफ़ॉल्ट `json` प्रारूप में Phaseo के मेटाडेटा बने रहते हैं।
+
+प्रमाणीकरण, क्षेत्रीय उपलब्धता, कार्यक्षेत्र के निजी मॉडल और फ़िल्टर समान रहते हैं। `limit` न देने पर सभी परिणाम मिलते हैं; `offset` लागू रहता है। ID का मानक Phaseo रूप बना रहता है। `created` रिलीज़ का समय Unix सेकंड में है, या अज्ञात होने पर `0`। `owned_by` कैटलॉग का संगठन है, कार्यक्षेत्र मॉडल के लिए `private`, या अज्ञात होने पर `phaseo`।
+
 ## उपयोगी फ़िल्टर
 
 - `endpoints` में `chat.completions`, `responses` और `messages` जैसे सार्वजनिक नाम आते हैं
