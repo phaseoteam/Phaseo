@@ -67,8 +67,10 @@ function getInfoSentence(models: ExtendedModel[], formatNumber: (value: number) 
 
 	return t.rich("contextSummary", {
 		first: modelLink(first),
+		firstName: first.name,
 		firstInput: number(first.input_context_length),
 		second: modelLink(second),
+		secondName: second.name,
 		secondInput: number(second.input_context_length),
 		firstOutput: number(first.output_context_length),
 		secondOutput: number(second.output_context_length),

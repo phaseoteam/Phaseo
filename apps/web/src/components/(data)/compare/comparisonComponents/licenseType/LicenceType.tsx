@@ -64,12 +64,14 @@ function getLicenseDescriptionCard(models: ExtendedModel[], t: CompareTranslator
 											<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">{chunks}</span>
 										</Link>
 									),
+									firstName: first.name,
 									firstLicense: firstPhrase,
 									second: (chunks) => (
 										<Link href={`/models/${second.id}`} className="group">
 											<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">{chunks}</span>
 										</Link>
 									),
+									secondName: second.name,
 									secondLicense: secondPhrase,
 								})}
 							</span>

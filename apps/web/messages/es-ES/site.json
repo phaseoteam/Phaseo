@@ -2464,7 +2464,7 @@
 			"regulatorComplaint": "Si estás en el Reino Unido, también puedes presentar una reclamación ante la Information Commissioner’s Office (ICO), o ante la autoridad local de protección de datos si estás en la UE. Nos gustaría tener la oportunidad de resolver tus dudas primero, así que te animamos a contactarnos antes."
 		},
 		"termsBody": {
-			"operator": "Daniel Butler opera el Servicio bajo el nombre de <brand>Phaseo</brand> («Phaseo», «nosotros» o «nuestro»).",
+			"operator": "<person>Daniel Butler</person> opera el Servicio bajo el nombre de <brand>Phaseo</brand> («Phaseo», «nosotros» o «nuestro»).",
 			"acceptance": "Al acceder al Servicio o utilizarlo, aceptas quedar sujeto a estos Términos y a nuestra <privacy>Política de privacidad</privacy>. Si no estás de acuerdo, no debes utilizar el Servicio.",
 			"serviceIntro": "Phaseo ofrece:",
 			"features": [
