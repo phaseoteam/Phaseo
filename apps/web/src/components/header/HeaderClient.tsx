@@ -2,6 +2,7 @@
 "use client";
 
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { IntentLink } from "@/components/navigation/IntentLink";
 import { useLocale, useTranslations } from "next-intl";
 import { LazyMessages } from "@/components/i18n/LazyMessages";
 import dynamic from "next/dynamic";
@@ -188,9 +189,9 @@ export default function HeaderClient({
 						className="h-8 items-stretch overflow-hidden rounded-l-lg rounded-r-md shadow-xs [&>[data-slot]:not(:has(~[data-slot]))]:rounded-r-md!"
 					>
 						<Button asChild className="h-8 rounded-r-none px-4">
-							<Link href="/sign-up">
+							<IntentLink href="/sign-up">
 								{t("signUp")}
-							</Link>
+							</IntentLink>
 						</Button>
 						<DropdownMenuTrigger asChild>
 							<Button
@@ -220,10 +221,10 @@ export default function HeaderClient({
 										isActive && "font-semibold text-primary"
 									)}
 								>
-									<Link href={href} className="flex items-center gap-2">
+									<IntentLink href={href} className="flex items-center gap-2">
 										<Icon className="h-4 w-4" />
 										{label}
-									</Link>
+									</IntentLink>
 								</DropdownMenuItem>
 							);
 						})}
@@ -511,9 +512,9 @@ export default function HeaderClient({
 					) : (
 						<>
 							<DropdownMenuItem asChild className="cursor-pointer rounded-lg text-sm">
-								<Link href="/sign-up">
+								<IntentLink href="/sign-up">
 									{t("signUp")}
-								</Link>
+								</IntentLink>
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<div className="px-1 py-1">
@@ -587,14 +588,14 @@ export default function HeaderClient({
 					) : null}
 				</>
 			) : (
-				<Link href="/sign-up">
+				<IntentLink href="/sign-up">
 					<Button
 						variant="default"
 						className="rounded-lg px-4 py-2 text-xs font-semibold"
 					>
 						{t("signUp")}
 					</Button>
-				</Link>
+				</IntentLink>
 			)}
 		</div>
 	);

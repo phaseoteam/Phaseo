@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { IntentLink as Link } from "@/components/navigation/IntentLink";
 import { useEffect, useState } from "react";
 import { MessageSquare, Scale } from "lucide-react";
 import { Logo } from "@/components/Logo";

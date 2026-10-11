@@ -225,6 +225,7 @@ export const config = {
 		"/api/chat/:path*",
 		"/settings/keys/:path*",
 		"/:locale/settings/keys/:path*",
-		"/((?!api/|_next/|\\.well-known/|og/|.*\\.(?:avif|bmp|css|eot|gif|ico|jpe?g|js|json|map|mjs|mp3|mp4|ogg|otf|pdf|png|svg|ttf|txt|wasm|webmanifest|webp|woff2?|xml|zip)$).*)",
+		// Public external rewrites need neither locale negotiation nor sessions.
+		"/((?!api/|_next/|\\.well-known/|og/|docs(?:/|$)|ingest(?:/|$)|.*\\.(?:avif|bmp|css|eot|gif|ico|jpe?g|js|json|map|mjs|mp3|mp4|ogg|otf|pdf|png|svg|ttf|txt|wasm|webmanifest|webp|woff2?|xml|zip)$).*)",
 	],
 };

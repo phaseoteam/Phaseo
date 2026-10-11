@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import { IntentLink as Link } from "@/components/navigation/IntentLink"
 import Script from "next/script"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
