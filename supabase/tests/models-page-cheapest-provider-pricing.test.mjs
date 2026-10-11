@@ -80,6 +80,9 @@ const fixtures = `
 	insert into public.v2_pricing_skus (sku_id, provider_model_id, sku_code, version, effective_from, effective_to) values
 		('30000000-0000-0000-0000-000000000010', 'cf:clef-flash', 'expired-latest', 1, now() - interval '9 days', null),
 		('30000000-0000-0000-0000-000000000011', 'cf:clef-flash', 'expired-latest', 2, now() - interval '5 days', now() - interval '1 day');
+	insert into public.v2_pricing_skus (sku_id, provider_model_id, sku_code, version, status) values
+		('30000000-0000-0000-0000-000000000012', 'cf:clef-flash', 'disabled-latest', 1, 'active'),
+		('30000000-0000-0000-0000-000000000013', 'cf:clef-flash', 'disabled-latest', 2, 'disabled');
 	insert into public.v2_pricing_skus (sku_id, provider_model_id, sku_code, version, service_tier_slug) values
 		('30000000-0000-0000-0000-000000000005', 'cf:clef-flash', 'tiermove', 1, 'standard'),
 		('30000000-0000-0000-0000-000000000006', 'cf:clef-flash', 'tiermove', 2, 'priority');
@@ -122,6 +125,8 @@ const fixtures = `
 		('30000000-0000-0000-0000-000000000001', 'requests', 'input', 10000000, 'Requests'),
 		('30000000-0000-0000-0000-000000000003', 'image_inputs', 'input', 20000000, 'Image Inputs'),
 		('30000000-0000-0000-0000-000000000004', 'image_inputs', 'input', 30000000, 'Image Inputs'),
+		('30000000-0000-0000-0000-000000000012', 'file_inputs', 'input', 80000000, 'File Inputs'),
+		('30000000-0000-0000-0000-000000000013', 'file_inputs', 'input', 90000000, 'File Inputs'),
 		('30000000-0000-0000-0000-000000000010', 'audio_inputs', 'input', 60000000, 'Audio Inputs'),
 		('30000000-0000-0000-0000-000000000011', 'audio_inputs', 'input', 70000000, 'Audio Inputs'),
 		('30000000-0000-0000-0000-000000000005', 'video_inputs', 'input', 40000000, 'Video Inputs'),
