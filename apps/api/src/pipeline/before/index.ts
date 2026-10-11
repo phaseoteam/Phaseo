@@ -28,6 +28,7 @@ import {
 import { normalizeGatewayPlugins, resolveGatewayPlugins } from "@/plugins/normalize";
 import { findUnknownGatewayPluginIds } from "@/plugins/registry";
 import { validateSynchronousTextServiceTierRequest } from "./serviceTierValidation";
+import { normalizeLegacySpeedModel } from "./legacySpeedModels";
 import {
 	applyProviderQualifiedModelConstraint,
 	canonicalizeProviderQualifiedModelRequest,
@@ -373,7 +374,11 @@ export async function beforeRequest(
             }),
         };
     }
-    body = providerQualifiedModelRequest.body;
+    try {
+        body = await normalizeLegacySpeedModel(providerQualifiedModelRequest.body, endpoint);
+    } catch {
+        return { ok: false, response: err("gateway_error", { reason: "legacy_speed_model_resolution_failed", request_id: requestId, workspace_id: workspaceId }) };
+    }
 
 	if (endpoint === "video.generation" && body?.webhook?.endpointId) {
 		const webhookEndpoint = await timer.span("validateVideoWebhookEndpoint", () =>
