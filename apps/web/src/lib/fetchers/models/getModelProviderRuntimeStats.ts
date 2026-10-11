@@ -71,11 +71,11 @@ export function providerRuntimeStatsKey(providerId: string, serviceTier = "stand
 	return `${providerId}\u0000${normalizedTier}`;
 }
 
-export function getProviderRuntimeStats(
-	stats: ProviderRuntimeStatsMap,
+export function getProviderRuntimeStats<T>(
+	stats: Record<string, T>,
 	providerId: string,
 	serviceTier = "standard",
-): ProviderRuntimeStats | undefined {
+): T | undefined {
 	return stats[providerRuntimeStatsKey(providerId, serviceTier)];
 }
 

@@ -76,9 +76,11 @@ import { type ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import {
 	getProviderRuntimeStats,
 	getModelProviderRuntimeStats,
-	type ProviderRuntimeStats,
-	type ProviderRuntimeStatsMap,
 } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
+import type {
+	PricingRuntimeStats as ProviderRuntimeStats,
+	PricingRuntimeStatsMap as ProviderRuntimeStatsMap,
+} from "./pricingRuntimeStats";
 import type { ProviderRoutingStatusMap } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import ProviderCard, {
 	getProviderTableDiscountBadge,
