@@ -305,6 +305,8 @@
 		"outputImagesFrom": "图像输出（起始于）",
 		"audioOutput": "音频输出",
 		"videoOutputFrom": "视频输出（起始于）",
+		"priceInputOutput": "输入 {input} · 输出 {output}",
+		"priceOutputOnly": "输出 {output}",
 		"filters": "筛选条件",
 		"shown": "已显示",
 		"noModelsForFilters": "未找到符合所选筛选条件的模型。",

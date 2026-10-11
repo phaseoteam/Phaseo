@@ -305,6 +305,8 @@
 		"outputImagesFrom": "आउटपुट इमेज (से)",
 		"audioOutput": "ऑडियो आउटपुट",
 		"videoOutputFrom": "वीडियो आउटपुट (से)",
+		"priceInputOutput": "{input} इनपुट · {output} आउटपुट",
+		"priceOutputOnly": "{output} आउटपुट",
 		"filters": "फ़िल्टर",
 		"shown": "दिखाए गए",
 		"noModelsForFilters": "चुने गए फ़िल्टर के लिए कोई मॉडल नहीं मिला।",
