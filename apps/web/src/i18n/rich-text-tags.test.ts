@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import ts from "typescript";
 import {
@@ -6,10 +6,11 @@ import {
 	TYPE,
 	type MessageFormatElement,
 } from "@formatjs/icu-messageformat-parser";
+import { getPublicMessages } from "./messages";
+import { defaultLocale, publicLocales } from "./routing";
 
 const WEB_ROOT = join(__dirname, "..", "..");
 const SOURCE_ROOT = join(WEB_ROOT, "src");
-const MESSAGES_ROOT = join(WEB_ROOT, "messages");
 
 type RichCall = {
 	location: string;
@@ -25,21 +26,7 @@ function listSourceFiles(directory: string): string[] {
 	});
 }
 
-function loadCatalogs(): Map<string, Record<string, unknown>> {
-	const catalogs = new Map<string, Record<string, unknown>>();
-	for (const locale of readdirSync(MESSAGES_ROOT)) {
-		const directory = join(MESSAGES_ROOT, locale);
-		if (!statSync(directory).isDirectory()) continue;
-		const catalog: Record<string, unknown> = {};
-		for (const filename of readdirSync(directory).filter((name) => name.endsWith(".json"))) {
-			Object.assign(catalog, JSON.parse(readFileSync(join(directory, filename), "utf8")));
-		}
-		catalogs.set(locale, catalog);
-	}
-	return catalogs;
-}
-
-function lookup(catalog: Record<string, unknown>, key: string): unknown {
+function lookup(catalog: object, key: string): unknown {
 	return key.split(".").reduce<unknown>(
 		(node, part) =>
 			node && typeof node === "object" ? (node as Record<string, unknown>)[part] : undefined,
@@ -134,7 +121,6 @@ function findRichCalls(): RichCall[] {
 
 describe("rich text messages", () => {
 	const calls = findRichCalls();
-	const catalogs = loadCatalogs();
 
 	it("finds the static rich text calls in the app", () => {
 		expect(calls.length).toBeGreaterThan(20);
@@ -146,15 +132,27 @@ describe("rich text messages", () => {
 		);
 	});
 
+	it("resolves every static rich text key in the source messages", async () => {
+		const source = await getPublicMessages(defaultLocale);
+		const unresolved = calls
+			.filter((call) => typeof lookup(source, call.key) !== "string")
+			.map((call) => `${call.location} ${call.key}`);
+		expect(unresolved).toEqual([]);
+	});
+
 	// A tag callback passed for a plain {placeholder} renders a function as a
 	// React child. On a partially prerendered page that error left the response
 	// streaming until the function timed out.
-	it("defines a matching tag for every tag callback in every locale", () => {
+	it("defines a matching tag for every tag callback in every locale", async () => {
 		const problems: string[] = [];
-		for (const call of calls) {
-			for (const [locale, catalog] of catalogs) {
+		for (const locale of publicLocales) {
+			const catalog = await getPublicMessages(locale);
+			for (const call of calls) {
 				const message = lookup(catalog, call.key);
-				if (typeof message !== "string") continue;
+				if (typeof message !== "string") {
+					problems.push(`${call.location} ${locale} ${call.key}: no message`);
+					continue;
+				}
 				let tags: Set<string>;
 				try {
 					tags = collectTags(parse(message));

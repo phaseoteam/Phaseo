@@ -255,7 +255,7 @@
 		},
 		"freeRouter": {
 			"title": "無料モデルプール",
-			"description": "現在 {routerId} 経由で利用できるモデルです。下の使用量にはルーター経由のリクエストのみが含まれます。",
+			"description": "現在 <code>{routerId}</code> 経由で利用できるモデルです。下の使用量にはルーター経由のリクエストのみが含まれます。",
 			"eligibleModels": "対象モデル",
 			"eligibleModelsDescription": "無料ルーターから現在利用できる正規モデル。",
 			"eligibleProviders": "対象プロバイダー",
@@ -2482,7 +2482,7 @@
 		"licenseDescription": "利用および再配布の条件。",
 		"allModelsProprietary": "すべてのモデルにプロプライエタリライセンスが適用されています。",
 		"allModelsHaveRestrictions": "利用制限は各組織が定めています。",
-		"licenseComparison": "{first}は{firstLicense}、{second}は{secondLicense}を使用しています。",
+		"licenseComparison": "<first>{firstName}</first>は{firstLicense}、<second>{secondName}</second>は{secondLicense}を使用しています。",
 		"licenseImpact": "ライセンス条件は商用利用や再配布に影響する場合があります。",
 		"proprietaryLicense": "プロプライエタリライセンス",
 		"unknownLicense": "不明なライセンス",

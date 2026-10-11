@@ -255,7 +255,7 @@
 		},
 		"freeRouter": {
 			"title": "Free model pool",
-			"description": "Currently eligible models served by {routerId}. Usage below counts only requests made through the router itself.",
+			"description": "Currently eligible models served by <code>{routerId}</code>. Usage below counts only requests made through the router itself.",
 			"eligibleModels": "Eligible models",
 			"eligibleModelsDescription": "Canonical models currently reachable via the free router.",
 			"eligibleProviders": "Eligible providers",
@@ -2482,7 +2482,7 @@
 		"licenseDescription": "Usage and distribution terms.",
 		"allModelsProprietary": "All models use proprietary licenses.",
 		"allModelsHaveRestrictions": "Usage restrictions are defined by each organisation.",
-		"licenseComparison": "{first} uses {firstLicense}, while {second} uses {secondLicense}.",
+		"licenseComparison": "<first>{firstName}</first> uses {firstLicense}, while <second>{secondName}</second> uses {secondLicense}.",
 		"licenseImpact": "License terms may affect commercial use and distribution.",
 		"proprietaryLicense": "Proprietary license",
 		"unknownLicense": "Unknown license",

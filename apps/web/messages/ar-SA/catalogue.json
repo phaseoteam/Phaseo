@@ -255,7 +255,7 @@
 		},
 		"freeRouter": {
 			"title": "مجموعة النماذج المجانية",
-			"description": "النماذج المؤهلة حاليًا والمتاحة عبر {routerId}. يُحتسب هنا استخدام الطلبات التي مرّت عبر الموجّه فقط.",
+			"description": "النماذج المؤهلة حاليًا والمتاحة عبر <code>{routerId}</code>. يُحتسب هنا استخدام الطلبات التي مرّت عبر الموجّه فقط.",
 			"eligibleModels": "النماذج المؤهلة",
 			"eligibleModelsDescription": "النماذج القياسية المتاحة حاليًا عبر الموجّه المجاني.",
 			"eligibleProviders": "المزوّدون المؤهلون",
@@ -2482,7 +2482,7 @@
 		"licenseDescription": "شروط الاستخدام والتوزيع.",
 		"allModelsProprietary": "تستخدم جميع النماذج تراخيص مملوكة.",
 		"allModelsHaveRestrictions": "تحدد كل مؤسسة قيود الاستخدام الخاصة بها.",
-		"licenseComparison": "يستخدم {first} {firstLicense}، بينما يستخدم {second} {secondLicense}.",
+		"licenseComparison": "يستخدم <first>{firstName}</first> {firstLicense}، بينما يستخدم <second>{secondName}</second> {secondLicense}.",
 		"licenseImpact": "قد تؤثر شروط الترخيص في الاستخدام التجاري والتوزيع.",
 		"proprietaryLicense": "ترخيص مملوك",
 		"unknownLicense": "ترخيص غير معروف",

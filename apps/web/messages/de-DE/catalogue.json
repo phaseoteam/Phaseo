@@ -255,7 +255,7 @@
 		},
 		"freeRouter": {
 			"title": "Kostenloser Modellpool",
-			"description": "Derzeit geeignete Modelle über {routerId}. Die Nutzung zählt nur Anfragen, die über den Router gesendet wurden.",
+			"description": "Derzeit geeignete Modelle über <code>{routerId}</code>. Die Nutzung zählt nur Anfragen, die über den Router gesendet wurden.",
 			"eligibleModels": "Geeignete Modelle",
 			"eligibleModelsDescription": "Kanonische Modelle, die derzeit über den kostenlosen Router erreichbar sind.",
 			"eligibleProviders": "Geeignete Anbieter",
@@ -2482,7 +2482,7 @@
 		"licenseDescription": "Nutzungs- und Weitergabebedingungen.",
 		"allModelsProprietary": "Alle Modelle verwenden proprietäre Lizenzen.",
 		"allModelsHaveRestrictions": "Die jeweilige Organisation legt die Nutzungsbeschränkungen fest.",
-		"licenseComparison": "{first} verwendet {firstLicense}, {second} dagegen {secondLicense}.",
+		"licenseComparison": "<first>{firstName}</first> verwendet {firstLicense}, <second>{secondName}</second> dagegen {secondLicense}.",
 		"licenseImpact": "Lizenzbedingungen können die kommerzielle Nutzung und Weitergabe einschränken.",
 		"proprietaryLicense": "Proprietäre Lizenz",
 		"unknownLicense": "Unbekannte Lizenz",

@@ -255,7 +255,7 @@
 		},
 		"freeRouter": {
 			"title": "मुफ़्त मॉडल पूल",
-			"description": "{routerId} के माध्यम से उपलब्ध वर्तमान योग्य मॉडल। नीचे का उपयोग केवल राउटर के ज़रिए किए गए अनुरोधों को गिनता है।",
+			"description": "<code>{routerId}</code> के माध्यम से उपलब्ध वर्तमान योग्य मॉडल। नीचे का उपयोग केवल राउटर के ज़रिए किए गए अनुरोधों को गिनता है।",
 			"eligibleModels": "योग्य मॉडल",
 			"eligibleModelsDescription": "मुफ़्त राउटर के ज़रिए वर्तमान में उपलब्ध कैनॉनिकल मॉडल।",
 			"eligibleProviders": "योग्य प्रदाता",
@@ -2482,7 +2482,7 @@
 		"licenseDescription": "उपयोग और वितरण की शर्तें।",
 		"allModelsProprietary": "सभी मॉडल प्रोप्राइटरी लाइसेंस का उपयोग करते हैं।",
 		"allModelsHaveRestrictions": "प्रत्येक संगठन उपयोग की पाबंदियाँ तय करता है।",
-		"licenseComparison": "{first} {firstLicense} का उपयोग करता है, जबकि {second} {secondLicense} का।",
+		"licenseComparison": "<first>{firstName}</first> {firstLicense} का उपयोग करता है, जबकि <second>{secondName}</second> {secondLicense} का।",
 		"licenseImpact": "लाइसेंस की शर्तें व्यावसायिक उपयोग और वितरण को प्रभावित कर सकती हैं।",
 		"proprietaryLicense": "प्रोप्राइटरी लाइसेंस",
 		"unknownLicense": "अज्ञात लाइसेंस",

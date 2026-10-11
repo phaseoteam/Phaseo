@@ -255,7 +255,7 @@
 		},
 		"freeRouter": {
 			"title": "Pool de modèles gratuits",
-			"description": "Modèles actuellement admissibles proposés via {routerId}. L’utilisation ne comptabilise que les requêtes envoyées par le routeur.",
+			"description": "Modèles actuellement admissibles proposés via <code>{routerId}</code>. L’utilisation ne comptabilise que les requêtes envoyées par le routeur.",
 			"eligibleModels": "Modèles admissibles",
 			"eligibleModelsDescription": "Modèles canoniques actuellement accessibles via le routeur gratuit.",
 			"eligibleProviders": "Fournisseurs admissibles",
@@ -2482,7 +2482,7 @@
 		"licenseDescription": "Conditions d’utilisation et de distribution.",
 		"allModelsProprietary": "Tous les modèles utilisent des licences propriétaires.",
 		"allModelsHaveRestrictions": "Chaque organisation définit ses propres restrictions d’utilisation.",
-		"licenseComparison": "{first} utilise {firstLicense}, tandis que {second} utilise {secondLicense}.",
+		"licenseComparison": "<first>{firstName}</first> utilise {firstLicense}, tandis que <second>{secondName}</second> utilise {secondLicense}.",
 		"licenseImpact": "Les conditions de licence peuvent limiter l’utilisation commerciale et la distribution.",
 		"proprietaryLicense": "Licence propriétaire",
 		"unknownLicense": "Licence inconnue",

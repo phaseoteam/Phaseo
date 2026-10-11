@@ -255,7 +255,7 @@
 		},
 		"freeRouter": {
 			"title": "Conjunto de modelos gratuitos",
-			"description": "Modelos atualmente elegíveis disponíveis por meio de {routerId}. O uso abaixo conta somente as solicitações feitas pelo roteador.",
+			"description": "Modelos atualmente elegíveis disponíveis por meio de <code>{routerId}</code>. O uso abaixo conta somente as solicitações feitas pelo roteador.",
 			"eligibleModels": "Modelos elegíveis",
 			"eligibleModelsDescription": "Modelos canônicos acessíveis atualmente pelo roteador gratuito.",
 			"eligibleProviders": "Provedores elegíveis",
@@ -2482,7 +2482,7 @@
 		"licenseDescription": "Termos de uso e distribuição.",
 		"allModelsProprietary": "Todos os modelos usam licenças proprietárias.",
 		"allModelsHaveRestrictions": "Cada organização define as próprias restrições de uso.",
-		"licenseComparison": "{first} usa {firstLicense}, enquanto {second} usa {secondLicense}.",
+		"licenseComparison": "<first>{firstName}</first> usa {firstLicense}, enquanto <second>{secondName}</second> usa {secondLicense}.",
 		"licenseImpact": "Os termos da licença podem afetar o uso comercial e a distribuição.",
 		"proprietaryLicense": "Licença proprietária",
 		"unknownLicense": "Licença desconhecida",

@@ -255,7 +255,7 @@
 		},
 		"freeRouter": {
 			"title": "免费模型池",
-			"description": "当前可通过 {routerId} 使用的模型。下方用量仅统计通过该路由器发出的请求。",
+			"description": "当前可通过 <code>{routerId}</code> 使用的模型。下方用量仅统计通过该路由器发出的请求。",
 			"eligibleModels": "符合条件的模型",
 			"eligibleModelsDescription": "当前可通过免费路由器访问的规范模型。",
 			"eligibleProviders": "符合条件的提供商",
@@ -2482,7 +2482,7 @@
 		"licenseDescription": "使用和分发条款。",
 		"allModelsProprietary": "所有模型均采用专有许可证。",
 		"allModelsHaveRestrictions": "各组织自行规定使用限制。",
-		"licenseComparison": "{first}使用{firstLicense}，{second}使用{secondLicense}。",
+		"licenseComparison": "<first>{firstName}</first>使用{firstLicense}，<second>{secondName}</second>使用{secondLicense}。",
 		"licenseImpact": "许可证条款可能影响商业使用和分发。",
 		"proprietaryLicense": "专有许可证",
 		"unknownLicense": "未知许可证",
