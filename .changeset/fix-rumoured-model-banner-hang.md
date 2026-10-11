@@ -6,7 +6,7 @@ Fix model pages for rumoured models never finishing. Their status banner passed 
 
 A new test checks that each rich text tag callback has a matching tag in every locale. It also found and fixed:
 
-- the compare page licence sentence, which had lost both model names and their links;
+- the compare page licence, knowledge cutoff, release date and context window sentences, which had lost their model names and links;
 - the free router ID, which had lost its monospace style;
 - the Spanish terms, which had lost the operator's emphasis;
 - an unused code callback in provider onboarding.

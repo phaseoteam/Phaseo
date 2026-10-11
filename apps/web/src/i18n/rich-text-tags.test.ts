@@ -65,8 +65,20 @@ function translatorNamespace(initializer: ts.Expression, tree: ts.SourceFile): s
 	return null;
 }
 
+function isFunction(node: ts.Node | undefined): boolean {
+	if (!node) return false;
+	if (ts.isParenthesizedExpression(node)) return isFunction(node.expression);
+	return ts.isArrowFunction(node) || ts.isFunctionExpression(node);
+}
+
+function returnedExpression(body: ts.ConciseBody): ts.Expression | undefined {
+	return ts.isBlock(body) ? body.statements.find(ts.isReturnStatement)?.expression : body;
+}
+
 // Finds `t.rich("key", { tag: (chunks) => ... })` calls whose translator and
-// key are static, and records which values are tag callbacks.
+// key are static, and records which values are tag callbacks. A value built by
+// a local helper that returns a function, such as `link(model)` for
+// `const link = (model) => (chunks) => <Link … />`, counts as a callback too.
 function findRichCalls(): RichCall[] {
 	const calls: RichCall[] = [];
 	for (const file of listSourceFiles(SOURCE_ROOT)) {
@@ -74,14 +86,29 @@ function findRichCalls(): RichCall[] {
 		if (!text.includes(".rich(")) continue;
 		const tree = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 		const namespaces = new Map<string, string>();
+		const callbackFactories = new Set<string>();
 		const findTranslators = (node: ts.Node) => {
 			if (ts.isVariableDeclaration(node) && node.initializer) {
 				const namespace = translatorNamespace(node.initializer, tree);
 				if (namespace !== null) namespaces.set(node.name.getText(tree), namespace);
+				if (
+					(ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer)) &&
+					isFunction(returnedExpression(node.initializer.body))
+				) {
+					callbackFactories.add(node.name.getText(tree));
+				}
+			}
+			if (ts.isFunctionDeclaration(node) && node.name && node.body && isFunction(returnedExpression(node.body))) {
+				callbackFactories.add(node.name.text);
 			}
 			ts.forEachChild(node, findTranslators);
 		};
 		findTranslators(tree);
+		const isTagCallback = (value: ts.Expression) =>
+			isFunction(value) ||
+			(ts.isCallExpression(value) &&
+				ts.isIdentifier(value.expression) &&
+				callbackFactories.has(value.expression.text));
 		const visit = (node: ts.Node) => {
 			if (
 				ts.isCallExpression(node) &&
@@ -98,9 +125,7 @@ function findRichCalls(): RichCall[] {
 					ts.isObjectLiteralExpression(valuesArgument)
 				) {
 					const tags = valuesArgument.properties.flatMap((property) =>
-						ts.isPropertyAssignment(property) &&
-						(ts.isArrowFunction(property.initializer) ||
-							ts.isFunctionExpression(property.initializer))
+						ts.isPropertyAssignment(property) && isTagCallback(property.initializer)
 							? [property.name.getText(tree).replace(/^["']|["']$/g, "")]
 							: [],
 					);

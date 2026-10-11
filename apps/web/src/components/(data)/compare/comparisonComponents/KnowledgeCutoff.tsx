@@ -111,6 +111,7 @@ export default function KnowledgeCutoffTimeline({
 						<span className="block font-medium">
 							{t.rich("knowledgeCutoffSingle", {
 								model: linkedModel(oldest),
+								modelName: oldest.name,
 								date: oldestDate,
 							})}
 						</span>
@@ -119,15 +120,19 @@ export default function KnowledgeCutoffTimeline({
 							<span className="block font-medium">
 								{t.rich("knowledgeCutoffMultiple", {
 									newest: linkedModel(newest),
+									newestName: newest.name,
 									newestDate,
 									oldest: linkedModel(oldest),
+									oldestName: oldest.name,
 									oldestDate,
 								})}
 							</span>
 							<span className="block text-xs text-muted-foreground mt-1">
 								{t.rich("knowledgeCutoffDifference", {
 									newest: linkedModel(newest),
+									newestName: newest.name,
 									oldest: linkedModel(oldest),
+									oldestName: oldest.name,
 									duration: formatMonthDifference(diffMonths, locale),
 								})}
 							</span>
