@@ -106,31 +106,93 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
     left join lateral unnest(route.output_modalities) output(output_modality) on true
     group by route.model_slug
   ),
-  pricing_rows as (
+  -- Prices come only from routes the page shows, and only from active SKUs
+  -- in effect now. A newer SKU replaces an older one for the same route,
+  -- service tier, operation, region and meter, even when the older one was
+  -- never closed. Without a region filter, regional prices are used only for
+  -- routes that have no global price. Rows carry an anonymous provider group,
+  -- not the provider, so the API can pick the cheapest provider.
+  priced_routes as (
+    select distinct provider_model_id, model_slug, provider_slug
+    from display_routes
+  ),
+  live_meters as (
     select
       route.model_slug,
+      route.provider_slug,
+      sku.provider_model_id,
+      sku.service_tier_slug,
+      sku.operation,
+      sku.effective_from,
+      nullif(nullif(lower(coalesce(sku.region, variant.execution_region, '')), ''), 'global') as pricing_region,
+      meter.meter_key,
+      meter.modality,
+      meter.direction,
+      meter.unit,
+      meter.unit_quantity,
+      meter.price_nanos,
+      meter.display_label,
+      meter.display_unit,
+      meter.meter_order
+    from public.v2_pricing_skus sku
+    join priced_routes route on route.provider_model_id = sku.provider_model_id
+    join public.v2_pricing_sku_meters meter on meter.sku_id = sku.sku_id and meter.billable
+    left join public.v2_route_variants variant on variant.variant_id = sku.route_variant_id
+    where sku.status = 'active'
+      and (p_service_tier is null or sku.service_tier_slug = lower(p_service_tier))
+      and sku.effective_from <= now()
+      and (sku.effective_to is null or sku.effective_to > now())
+      and (
+        p_region is null
+        or coalesce(sku.region, variant.execution_region) is null
+        or lower(p_region) in (lower(coalesce(sku.region, '')), lower(coalesce(variant.execution_region, '')))
+      )
+  ),
+  current_meters as (
+    select *
+    from (
+      select
+        live.*,
+        dense_rank() over (
+          partition by live.provider_model_id, live.service_tier_slug, live.operation, live.pricing_region, live.meter_key
+          order by live.effective_from desc
+        ) as recency,
+        bool_or(live.pricing_region is null) over (
+          partition by live.provider_model_id, live.service_tier_slug, live.operation
+        ) as has_global_price,
+        -- An opaque per-model provider number, so prices can be compared by
+        -- provider without naming one (stealth routes stay anonymous).
+        dense_rank() over (
+          partition by live.model_slug
+          order by live.provider_slug
+        ) as provider_group
+      from live_meters live
+    ) ranked
+    where ranked.recency = 1
+      and (p_region is not null or ranked.pricing_region is null or not ranked.has_global_price)
+  ),
+  pricing_rows as (
+    select
+      meter.model_slug,
       min(meter.price_nanos / 1000000000.0) filter (where meter.direction = 'input') as lowest_input_price,
       min(meter.price_nanos / 1000000000.0) filter (where meter.direction = 'output') as lowest_output_price,
       jsonb_agg(
         jsonb_build_object(
           'label', meter.display_label,
           'meter_key', meter.meter_key,
+          'modality', meter.modality,
+          'direction', meter.direction,
           'unit', meter.unit,
           'unit_quantity', meter.unit_quantity,
           'price', meter.price_nanos / 1000000000.0,
           'display_unit', meter.display_unit,
-          'service_tier', sku.service_tier_slug
+          'service_tier', meter.service_tier_slug,
+          'provider_group', meter.provider_group
         )
-        order by meter.meter_order, meter.meter_key
+        order by meter.meter_order, meter.meter_key, meter.provider_group
       ) as pricing_detail_rows
-    from public.v2_pricing_skus sku
-    join public.v2_pricing_sku_meters meter on meter.sku_id = sku.sku_id and meter.billable
-    join public.v2_model_provider_routes route on route.provider_model_id = sku.provider_model_id
-    where sku.status <> 'disabled'
-      and (p_service_tier is null or sku.service_tier_slug = lower(p_service_tier))
-      and sku.effective_from <= now()
-      and (sku.effective_to is null or sku.effective_to > now())
-    group by route.model_slug
+    from current_meters meter
+    group by meter.model_slug
   ),
   capability_summary as (
     select

@@ -50,26 +50,59 @@ describe("normalizeModelsPagePricing", () => {
 		});
 	});
 
-	it("shows the cheapest provider with a From label and keeps the range for the hover card", () => {
+	it("shows only the cheapest provider, in the pill and the hover card", () => {
 		const row = card([
-			tokens("input_text_tokens", 3),
-			tokens("input_text_tokens", 3.3),
-			tokens("output_text_tokens", 15),
-			tokens("output_text_tokens", 16.5),
+			tokens("input_text_tokens", 3.3, { provider: "bedrock" }),
+			tokens("output_text_tokens", 16.5, { provider: "bedrock" }),
+			tokens("input_text_tokens", 3, { provider: "anthropic" }),
+			tokens("output_text_tokens", 15, { provider: "anthropic" }),
+			tokens("cached_read_text_tokens", 0.3, { provider: "anthropic" }),
 		]);
-		expect(row.pricing_summary).toEqual({ kind: "tokens", from: true, input: 3, output: 15, unit: "1M tokens" });
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 3, output: 15, unit: "1M tokens" });
 		expect(row.pricing_detail_rows).toEqual([
-			{ label: "Input Text Tokens", value: "$3–$3.30 / 1M tokens" },
-			{ label: "Output Text Tokens", value: "$15–$16.50 / 1M tokens" },
+			{ label: "Input Text Tokens", value: "$3 / 1M tokens" },
+			{ label: "Output Text Tokens", value: "$15 / 1M tokens" },
+			{ label: "Cached Read Text Tokens", value: "$0.30 / 1M tokens" },
+		]);
+		expect(row).toMatchObject({ lowest_input_price: 3, lowest_output_price: 15 });
+	});
+
+	it("groups providers by the page RPC's anonymous provider number", () => {
+		const row = card([
+			tokens("input_tokens", 0.09, { provider_group: 1 }),
+			tokens("output_tokens", 0.4, { provider_group: 1 }),
+			tokens("input_tokens", 0.038, { provider_group: 2 }),
+			tokens("output_tokens", 0.2, { provider_group: 2 }),
+		]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 0.038, output: 0.2, unit: "1M tokens" });
+	});
+
+	it("uses a provider's base rate when it has short- and long-context SKUs, without From", () => {
+		const row = card([
+			tokens("input_text_tokens", 2, { provider: "openai" }),
+			tokens("output_text_tokens", 10, { provider: "openai" }),
+			tokens("input_text_tokens", 4, { provider: "openai" }),
+			tokens("output_text_tokens", 15, { provider: "openai" }),
+		]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 2, output: 10, unit: "1M tokens" });
+		expect(row.pricing_detail_rows).toEqual([
+			{ label: "Input Text Tokens", value: "$2 / 1M tokens" },
+			{ label: "Output Text Tokens", value: "$10 / 1M tokens" },
 		]);
 	});
 
-	it("lists every meter in the hover card, standard tier first", () => {
-		const rows = Array.from({ length: 8 }, (_, index) => tokens(`input_text_tokens_${index}`, index + 1));
-		const row = card([tokens("input_text_tokens", 1, { service_tier: "priority" }), ...rows]);
-		const details = row.pricing_detail_rows as Array<{ label: string }>;
-		expect(details).toHaveLength(9);
-		expect(details.at(-1)?.label).toBe("Input Text Tokens (Priority)");
+	it("leaves batch, flex and other service tiers out of the hover card", () => {
+		const row = card([
+			tokens("input_text_tokens", 2),
+			tokens("output_text_tokens", 10),
+			tokens("input_text_tokens", 1, { service_tier: "batch" }),
+			tokens("input_text_tokens", 1, { service_tier: "flex" }),
+			tokens("input_text_tokens", 12, { service_tier: "ultrafast" }),
+		]);
+		expect(row.pricing_detail_rows).toEqual([
+			{ label: "Input Text Tokens", value: "$2 / 1M tokens" },
+			{ label: "Output Text Tokens", value: "$10 / 1M tokens" },
+		]);
 	});
 
 	it("labels free models as Free", () => {
