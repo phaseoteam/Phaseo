@@ -167,6 +167,14 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_detail_rows).toEqual([{ label: "Input Text Tokens", value: "$1 / 1M tokens" }]);
 	});
 
+	it("does not let a $0 text-token placeholder make an image model Free", () => {
+		const row = card([
+			tokens("output_text_tokens", 0, { provider_group: 1 }),
+			usage("output_image", 0.04, "image", 1, { modality: "image", provider_group: 2 }),
+		], ["image"]);
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.04, unit: "image" });
+	});
+
 	it("treats an OCR model as billed on its input pages", () => {
 		const row = normalizeModelsPagePricing({
 			gateway_output_modalities: ["text"],
