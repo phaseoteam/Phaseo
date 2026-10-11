@@ -249,6 +249,15 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.08, unit: "request" });
 	});
 
+	it("finds a paid generation request priced only in a provider tier", () => {
+		const row = card([
+			tokens("input_text_tokens", 0),
+			tokens("output_text_tokens", 0),
+			usage("requests", 0.08, "request", 1, { service_tier: "upstream-1" }),
+		], ["text", "audio"]);
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.08, unit: "request" });
+	});
+
 	it("passes preformatted rows through untouched", () => {
 		const rows = [{ label: "Custom contract", value: "Contact provider" }];
 		const row = normalizeModelsPagePricing({ pricing_detail_rows: rows });

@@ -244,7 +244,8 @@ function summarise(model: Row, rates: Rate[]): CardPricingSummary | null {
 	// Paid usage meters that are not tool fees, such as a per-request song or
 	// image generation charge. The page RPC sends no direction or modality, so
 	// these can sit beside $0 token placeholders on a text-and-media model.
-	const paidUsage = preferredTier(candidates.filter((item) =>
+	// Like each token side, these choose their own tier from all base rates.
+	const paidUsage = preferredTier(base.filter((item) =>
 		!isTextToken(item) && item.price > 0 && !TOOL_METER.test(item.key)));
 	const freeTokens = tokens.every((item) => item.price === 0);
 	if (!media && (input.length || output.length) && !(freeTokens && paidUsage.length)) {
