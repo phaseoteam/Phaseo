@@ -375,9 +375,10 @@ export function normalizeModelsPagePricing(model: Row): Row {
 		: offers.some((offer) => offer.headline.some((item) => item.side === "output"));
 	// Whether an offer prices the side the model is billed on: an output for
 	// output-priced models, an input for input-priced ones (side-less meters
-	// such as requests count for both).
+	// such as requests count for both; tool fees such as web search never do,
+	// so a route listing only a tool fee ranks last).
 	const coversBilledSide = (headline: Rate[]) =>
-		headline.some((item) => item.side !== (outputPriced ? "input" : "output"));
+		headline.some((item) => !TOOL_METER.test(item.key) && item.side !== (outputPriced ? "input" : "output"));
 	// A free product price, not just a $0 tool fee such as web search.
 	const freeUsage = (offer: { summary: CardPricingSummary; headline: Rate[] }) =>
 		offer.summary.kind === "free" && tokenSides(offer.headline) === 0

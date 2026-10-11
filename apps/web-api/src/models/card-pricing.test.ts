@@ -138,6 +138,14 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 3, output: 15, unit: "1M tokens" });
 	});
 
+	it("does not let a $0 tool-only route make an embeddings model Free", () => {
+		const row = card([
+			usage("web_search", 0, "request", 1, { provider_group: 1 }),
+			tokens("input_tokens", 0.02, { provider_group: 2 }),
+		], ["embeddings"]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 0.02, output: null, unit: "1M tokens" });
+	});
+
 	it("does not let a $0 output-only provider beat a paid input price on an embeddings model", () => {
 		const row = card([
 			tokens("output_tokens", 0, { provider_group: 1 }),
