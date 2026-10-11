@@ -316,10 +316,17 @@ function detailTierRates(rates: Rate[], headline: Rate[]): Rate[] {
 
 const SUMMARY_ORDER: Record<CardPricingSummary["kind"], number> = { free: 0, tokens: 1, usage: 2 };
 
-/** Orders offers cheapest first; offers of different kinds are not comparable by price. */
-function compareOffers(a: CardPricingSummary, b: CardPricingSummary): number {
+/**
+ * Orders offers cheapest first; offers of different kinds are not comparable
+ * by price. Input-priced models (embeddings, rerank) compare input alone.
+ */
+function compareOffers(a: CardPricingSummary, b: CardPricingSummary, outputPriced: boolean): number {
 	if (a.kind !== b.kind) return SUMMARY_ORDER[a.kind] - SUMMARY_ORDER[b.kind];
 	if (a.kind === "tokens" && b.kind === "tokens") {
+		if (!outputPriced) {
+			if (a.input === null || b.input === null) return Number(a.input === null) - Number(b.input === null);
+			return a.input - b.input;
+		}
 		// An offer missing a side is not free on that side: offers pricing more
 		// sides come first, and only like-for-like offers are compared by price.
 		const sides = (offer: typeof a) => Number(offer.input !== null) + Number(offer.output !== null);
@@ -354,14 +361,18 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	// cheapest of those; providers are never mixed into one price.
 	const offers = [...groupBy(allRates, (item) => item.provider).values()]
 		.map((rates) => ({ rates, ...summarise(model, rates) }));
-	// When the model is output-priced (some provider prices an output side),
-	// offers that price an output come first (side-less meters such as
-	// requests count), so a provider with only a $0 input meter cannot make
-	// the model "Free". Input-priced models such as embeddings skip this. Then
-	// a genuinely free usage offer ($0 per image or request), then offers
+	// When the model is output-priced (it generates text or media), offers
+	// that price an output come first (side-less meters such as requests
+	// count), so a provider with only a $0 input meter cannot make the model
+	// "Free". Input-priced models such as embeddings or rerank skip this.
+	// Then a genuinely free usage offer ($0 per image or request), then offers
 	// pricing more token sides, then the cheapest.
 	const tokenSides = (headline: Rate[]) => new Set(headline.filter(isTextToken).map((item) => item.side)).size;
-	const outputPriced = offers.some((offer) => offer.headline.some((item) => item.side === "output"));
+	const outputModalities = model.gateway_output_modalities ?? model.output_types ?? model.output_modalities;
+	const outputs = Array.isArray(outputModalities) ? outputModalities.map((item) => String(item).toLowerCase()) : [];
+	const outputPriced = outputs.length
+		? outputs.some((item) => /text|image|video|audio|speech|music/.test(item))
+		: offers.some((offer) => offer.headline.some((item) => item.side === "output"));
 	const pricesOutput = (headline: Rate[]) => outputPriced && headline.some((item) => item.side !== "input");
 	const freeUsage = (offer: { summary: CardPricingSummary; headline: Rate[] }) =>
 		offer.summary.kind === "free" && tokenSides(offer.headline) === 0;
@@ -369,8 +380,8 @@ export function normalizeModelsPagePricing(model: Row): Row {
 		.filter((offer): offer is typeof offer & { summary: CardPricingSummary } => offer.summary !== null)
 		.sort((a, b) => Number(pricesOutput(b.headline)) - Number(pricesOutput(a.headline))
 			|| Number(freeUsage(b)) - Number(freeUsage(a))
-			|| tokenSides(b.headline) - tokenSides(a.headline)
-			|| compareOffers(a.summary, b.summary));
+			|| (outputPriced ? tokenSides(b.headline) - tokenSides(a.headline) : 0)
+			|| compareOffers(a.summary, b.summary, outputPriced));
 	const chosen = priced[0] ?? { rates: allRates, summary: null, headline: [] };
 	const { rates, summary, headline: headlineRates } = chosen;
 

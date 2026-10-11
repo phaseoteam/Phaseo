@@ -120,6 +120,15 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "free" });
 	});
 
+	it("keeps an embeddings model input-priced even if one provider lists an output meter", () => {
+		const row = card([
+			tokens("input_tokens", 0.02, { provider_group: 1 }),
+			tokens("input_tokens", 0.1, { provider_group: 2 }),
+			tokens("output_tokens", 0.1, { provider_group: 2 }),
+		], ["embeddings"]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 0.02, output: null, unit: "1M tokens" });
+	});
+
 	it("uses a provider's base rate when it has short- and long-context SKUs, without From", () => {
 		const row = card([
 			tokens("input_text_tokens", 2, { provider: "openai" }),
