@@ -2203,6 +2203,18 @@ public final class Models {
 		public Object usage;
 	}
 
+	public static class OpenAIModel {
+		public Integer created;
+		public String id;
+		public Object object;
+		public String owned_by;
+	}
+
+	public static class OpenAIModelsResponse {
+		public java.util.List<Object> data;
+		public Object object;
+	}
+
 	public static class OpenAIReasoningConfig {
 		public Object effort;
 		public Boolean enabled;

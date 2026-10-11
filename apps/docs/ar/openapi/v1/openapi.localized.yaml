@@ -27,7 +27,7 @@ paths:
         - Gateway
       operationId: listModels
       summary: عرض نماذج البوابة
-      description: يعرض نماذج البوابة المشتركة وغير المخفية. يعرض افتراضيًا النماذج القابلة للتوجيه علنًا حاليًا؛ استخدم `availability=all` لتضمين سجلات التوفر غير القابلة للتوجيه.
+      description: يعيد نماذج البوابة المشتركة غير المخفية. يتضمن افتراضيًا النماذج القابلة للتوجيه العام؛ استخدم availability=all لتضمين السجلات غير القابلة للتوجيه. استخدم format=openai لقائمة متوافقة مع OpenAI. يعيد هذا التنسيق جميع النماذج المصفاة افتراضيًا؛ ويمكن تحديد صفحة باستخدام limit وoffset.
       parameters:
         - name: search
           in: query
@@ -230,11 +230,12 @@ paths:
             maximum: 5000
         - name: format
           in: query
-          description: تنسيق الاستجابة. القيمة الافتراضية هي `json`.
+          description: تنسيق الاستجابة. الافتراضي هو JSON الأصلي من Phaseo. يعيد تنسيق OpenAI القائمة المصفاة كاملة ما لم يُحدد limit.
           schema:
             type: string
             enum:
               - json
+              - openai
               - rss
               - atom
             default: json
@@ -253,7 +254,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GatewayModelsResponse'
+                oneOf:
+                  - $ref: '#/components/schemas/GatewayModelsResponse'
+                  - $ref: '#/components/schemas/OpenAIModelsResponse'
             application/rss+xml:
               schema:
                 type: string
@@ -16501,6 +16504,46 @@ components:
         next_cursor:
           type: string
           nullable: true
+      additionalProperties: false
+    OpenAIModelsResponse:
+      type: object
+      required:
+        - object
+        - data
+      properties:
+        object:
+          type: string
+          enum:
+            - list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OpenAIModel'
+      additionalProperties: false
+    OpenAIModel:
+      type: object
+      required:
+        - id
+        - object
+        - created
+        - owned_by
+      properties:
+        id:
+          type: string
+          description: معرّف نموذج Phaseo المعتمد للاستخدام في الاستدلال.
+          example: openai/gpt-4o-mini
+        object:
+          type: string
+          enum:
+            - model
+        created:
+          type: integer
+          description: وقت الإصدار بالثواني وفق توقيت Unix، أو 0 إذا كان غير معروف.
+          minimum: 0
+        owned_by:
+          type: string
+          description: معرّف المؤسسة في الكتالوج، أو private لنماذج مساحة العمل، أو phaseo إذا كان غير معروف.
+          example: openai
       additionalProperties: false
     GatewayModelsResponse:
       type: object

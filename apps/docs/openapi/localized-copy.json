@@ -206,6 +206,56 @@
 		}
 	},
 	"_strings": {
+		"Returns shared non-hidden gateway models. Defaults to currently publicly routable models; use availability=all to include non-routable availability records. Use format=openai for an OpenAI-compatible model list. OpenAI format returns all filtered models by default; an explicit limit and offset can still select a page.": {
+			"es": "Devuelve modelos compartidos no ocultos del gateway. Por defecto incluye los modelos públicamente enrutables; usa availability=all para incluir registros no enrutables. Usa format=openai para una lista compatible con OpenAI. Este formato devuelve todos los modelos filtrados por defecto; limit y offset permiten seleccionar una página.",
+			"fr": "Renvoie les modèles partagés non masqués de la passerelle. Par défaut, seuls les modèles publiquement routables sont inclus ; utilisez availability=all pour inclure les modèles non routables. Utilisez format=openai pour une liste compatible avec OpenAI. Ce format renvoie tous les modèles filtrés par défaut ; limit et offset permettent de sélectionner une page.",
+			"de": "Gibt gemeinsame, nicht ausgeblendete Gateway-Modelle zurück. Standardmäßig werden öffentlich routbare Modelle angezeigt; availability=all schließt nicht routbare Einträge ein. format=openai liefert eine OpenAI-kompatible Modellliste. Dieses Format gibt standardmäßig alle gefilterten Modelle zurück; limit und offset wählen eine Seite aus.",
+			"pt-BR": "Retorna modelos compartilhados não ocultos do gateway. Por padrão, inclui modelos publicamente roteáveis; use availability=all para incluir registros não roteáveis. Use format=openai para uma lista compatível com a OpenAI. Esse formato retorna todos os modelos filtrados por padrão; limit e offset permitem selecionar uma página.",
+			"hi": "गेटवे के साझा, गैर-छिपे मॉडल लौटाता है। डिफ़ॉल्ट रूप से सार्वजनिक रूप से रूट किए जा सकने वाले मॉडल शामिल हैं; अन्य उपलब्धता रिकॉर्ड के लिए availability=all उपयोग करें। OpenAI-संगत सूची के लिए format=openai उपयोग करें। यह प्रारूप डिफ़ॉल्ट रूप से सभी फ़िल्टर किए गए मॉडल लौटाता है; limit और offset से एक पृष्ठ चुन सकते हैं।",
+			"ja": "共有されている非表示でないゲートウェイモデルを返します。既定では公開ルーティング可能なモデルを含みます。ルーティング不可のレコードを含めるには availability=all を指定します。OpenAI 互換の一覧には format=openai を指定します。この形式は既定ですべての絞り込み結果を返し、limit と offset でページを選択できます。",
+			"zh-Hans": "返回共享且未隐藏的网关模型。默认仅包含当前可公开路由的模型；使用 availability=all 可包含不可路由的记录。使用 format=openai 获取兼容 OpenAI 的模型列表。此格式默认返回所有筛选结果；可通过 limit 和 offset 选择一页。",
+			"ar": "يعيد نماذج البوابة المشتركة غير المخفية. يتضمن افتراضيًا النماذج القابلة للتوجيه العام؛ استخدم availability=all لتضمين السجلات غير القابلة للتوجيه. استخدم format=openai لقائمة متوافقة مع OpenAI. يعيد هذا التنسيق جميع النماذج المصفاة افتراضيًا؛ ويمكن تحديد صفحة باستخدام limit وoffset."
+		},
+		"Response format. Defaults to Phaseo-native json. OpenAI format returns the complete filtered list unless limit is supplied.": {
+			"es": "Formato de respuesta. Por defecto usa el JSON nativo de Phaseo. El formato OpenAI devuelve toda la lista filtrada salvo que se indique limit.",
+			"fr": "Format de réponse. Le JSON natif de Phaseo est utilisé par défaut. Le format OpenAI renvoie toute la liste filtrée sauf si limit est fourni.",
+			"de": "Antwortformat. Standard ist das native JSON von Phaseo. Das OpenAI-Format gibt die gesamte gefilterte Liste zurück, sofern limit nicht angegeben ist.",
+			"pt-BR": "Formato de resposta. O padrão é o JSON nativo da Phaseo. O formato OpenAI retorna toda a lista filtrada, a menos que limit seja informado.",
+			"hi": "प्रतिक्रिया का प्रारूप। डिफ़ॉल्ट Phaseo का मूल JSON है। limit न दिए जाने पर OpenAI प्रारूप पूरी फ़िल्टर की गई सूची लौटाता है।",
+			"ja": "応答形式。既定は Phaseo 独自の JSON です。OpenAI 形式は limit が指定されない限り、絞り込み結果の全一覧を返します。",
+			"zh-Hans": "响应格式。默认为 Phaseo 原生 JSON。除非指定 limit，否则 OpenAI 格式返回完整的筛选列表。",
+			"ar": "تنسيق الاستجابة. الافتراضي هو JSON الأصلي من Phaseo. يعيد تنسيق OpenAI القائمة المصفاة كاملة ما لم يُحدد limit."
+		},
+		"Canonical Phaseo model ID to use for inference.": {
+			"es": "ID canónico del modelo de Phaseo para inferencia.",
+			"fr": "Identifiant canonique du modèle Phaseo à utiliser pour l’inférence.",
+			"de": "Kanonische Phaseo-Modell-ID für die Inferenz.",
+			"pt-BR": "ID canônico do modelo Phaseo para inferência.",
+			"hi": "अनुमान के लिए उपयोग किया जाने वाला Phaseo का मानक मॉडल ID।",
+			"ja": "推論に使用する Phaseo の正規モデル ID。",
+			"zh-Hans": "用于推理的 Phaseo 规范模型 ID。",
+			"ar": "معرّف نموذج Phaseo المعتمد للاستخدام في الاستدلال."
+		},
+		"Release timestamp in Unix seconds, or 0 when unknown.": {
+			"es": "Marca de tiempo del lanzamiento en segundos Unix, o 0 si se desconoce.",
+			"fr": "Horodatage de publication en secondes Unix, ou 0 s’il est inconnu.",
+			"de": "Veröffentlichungszeitpunkt in Unix-Sekunden oder 0, wenn unbekannt.",
+			"pt-BR": "Data de lançamento em segundos Unix, ou 0 quando desconhecida.",
+			"hi": "रिलीज़ का समय Unix सेकंड में, या अज्ञात होने पर 0।",
+			"ja": "リリース日時の Unix 秒。不明な場合は 0。",
+			"zh-Hans": "发布时的 Unix 秒时间戳，未知时为 0。",
+			"ar": "وقت الإصدار بالثواني وفق توقيت Unix، أو 0 إذا كان غير معروف."
+		},
+		"Catalogue organization ID, private for workspace models, or phaseo when unknown.": {
+			"es": "ID de organización del catálogo, private para modelos del espacio de trabajo o phaseo si se desconoce.",
+			"fr": "Identifiant de l’organisation du catalogue, private pour les modèles de l’espace de travail, ou phaseo s’il est inconnu.",
+			"de": "Organisations-ID im Katalog, private für Workspace-Modelle oder phaseo, wenn unbekannt.",
+			"pt-BR": "ID da organização no catálogo, private para modelos do workspace ou phaseo quando desconhecido.",
+			"hi": "कैटलॉग का संगठन ID, कार्यक्षेत्र मॉडल के लिए private, या अज्ञात होने पर phaseo।",
+			"ja": "カタログの組織 ID。ワークスペースのモデルは private、不明な場合は phaseo。",
+			"zh-Hans": "目录中的组织 ID；工作区模型为 private，未知时为 phaseo。",
+			"ar": "معرّف المؤسسة في الكتالوج، أو private لنماذج مساحة العمل، أو phaseo إذا كان غير معروف."
+		},
 		"OpenAI-compatible input and ordered questions are the preferred format. Legacy state and named question maps remain supported. The response format follows the request format; do not mix the two.": {
 			"es": "Se recomienda el formato OpenAI. El formato anterior sigue admitido. La respuesta sigue la solicitud; no mezcles formatos.",
 			"fr": "Le format OpenAI est recommandé. Le format historique reste disponible. La réponse suit la requête ; ne mélangez pas les formats.",

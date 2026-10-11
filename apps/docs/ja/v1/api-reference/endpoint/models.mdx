@@ -12,6 +12,12 @@ description: "Phaseo Gateway で Gateway ネイティブモデルを確認しま
 
 `GET /models/me` は、現在の呼び出し元に適用されるガードレールに基づくモデルの絞り込みに将来使用するための予約パスです。現在は `501 not implemented` を返すため、共通の Gateway カタログには `GET /models` を使用してください。
 
+## OpenAI 形式
+
+Phaseo API キーで `GET /v1/models?format=openai` を呼び出すと、`{"object":"list","data":[{"id":"openai/gpt-4o-mini","object":"model","created":1721260800,"owned_by":"openai"}]}` 形式の応答を取得できます。既定の `json` 形式は Phaseo のメタデータを引き続き返します。
+
+認証、地域別の利用可否、ワークスペースのプライベートモデル、フィルターは同じです。`limit` を指定しない限りすべての結果を返し、`offset` は引き続き適用されます。ID は Phaseo の正規形式を維持します。`created` はリリース日時の Unix 秒で、不明な場合は `0` です。`owned_by` はカタログの組織 ID、ワークスペースのモデルは `private`、不明な場合は `phaseo` です。
+
 ## 便利なフィルター
 
 - `endpoints` では `chat.completions`、`responses`、`messages` などの公開名を指定します

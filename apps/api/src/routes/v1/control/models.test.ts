@@ -140,6 +140,55 @@ describe("handleModels", () => {
         privateModelRows.rows = [];
     });
 
+    it("returns OpenAI model objects with stable timestamps and canonical owners", async () => {
+        const response = await handleModels(new Request("https://api.example.com/?format=openai"));
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual({ object: "list", data: [{
+            id: "openai/gpt-4o-mini", object: "model", created: 1767225600, owned_by: "openai",
+        }] });
+        expect(response.headers.get("vary")).toBe("Authorization");
+        expect(response.headers.get("cache-control")).toBe("private, max-age=300, stale-while-revalidate=300");
+    });
+
+    it("lists the full filtered catalogue in OpenAI format while native JSON stays paginated", async () => {
+        fetchCatalogueMock.mockResolvedValue(Array.from({ length: 260 }, (_, index) => buildCatalogueModel({
+            model_id: `test/model-${index}`, base_model_id: `test/model-${index}`,
+        })));
+        const openai = await handleModels(new Request("https://api.example.com/?format=openai"));
+        expect((await openai.json() as any).data).toHaveLength(260);
+        const native = await handleModels(new Request("https://api.example.com/"));
+        const nativeBody = await native.json() as any;
+        expect(nativeBody.models).toHaveLength(50);
+        expect(nativeBody.total).toBe(260);
+    });
+
+    it("applies search, sorting and explicit pagination before OpenAI serialization", async () => {
+        fetchCatalogueMock.mockResolvedValue([buildCatalogueModel(), buildCatalogueModel({
+            model_id: "other/model", base_model_id: "other/model", name: "Other",
+        })]);
+        const response = await handleModels(new Request("https://api.example.com/?format=openai&search=GPT&limit=1"));
+        expect((await response.json() as any).data.map((model: any) => model.id)).toEqual(["openai/gpt-4o-mini"]);
+        const offset = await handleModels(new Request("https://api.example.com/?format=openai&search=GPT&offset=1"));
+        expect(await offset.json()).toEqual({ object: "list", data: [] });
+    });
+
+    it("returns only safe workspace private-model fields and uses zero for unknown release dates", async () => {
+        fetchCatalogueMock.mockResolvedValue([buildCatalogueModel({ release_date: "invalid", organisation_id: null })]);
+        privateModelRows.rows = [{ model_id: "acme/private", name: "Private", created_at: "2026-09-04T00:00:00Z" }];
+        const response = await handleModels(new Request("https://api.example.com/?format=openai"));
+        const payload = await response.json() as any;
+        expect(payload.data).toContainEqual({ id: "openai/gpt-4o-mini", object: "model", created: 0, owned_by: "phaseo" });
+        expect(payload.data).toContainEqual({ id: "acme/private", object: "model", created: 1788480000, owned_by: "private" });
+        expect(payload.data.every((model: any) => Object.keys(model).length === 4)).toBe(true);
+    });
+
+    it("preserves authentication errors for OpenAI discovery", async () => {
+        guardAuthMock.mockResolvedValue({ ok: false, response: new Response("Unauthorized", { status: 401 }) });
+        const response = await handleModels(new Request("https://api.example.com/?format=openai"));
+        expect(response.status).toBe(401);
+        expect(fetchCatalogueMock).not.toHaveBeenCalled();
+    });
+
     it("adds only the authenticated workspace's private model metadata", async () => {
         privateModelRows.rows = [{
             model_id: "acme/legal-assistant",
@@ -163,7 +212,7 @@ describe("handleModels", () => {
         expect(JSON.stringify(payload)).not.toContain("base_url");
         expect(JSON.stringify(payload)).not.toContain("upstream_model_id");
         expect(response.headers.get("vary")).toBe("Authorization");
-        expect(response.headers.get("cache-control")).toBe("private, max-age=0");
+        expect(response.headers.get("cache-control")).toBe("private, max-age=300, stale-while-revalidate=300");
     });
 
     it("merges an attached private offer into its catalogue model", async () => {

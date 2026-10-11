@@ -12,6 +12,12 @@ description: "通过 Phaseo Gateway 浏览 Gateway 原生模型，并可选择�
 
 `GET /models/me` 为未来根据当前调用方的护栏筛选模型而保留。目前该接口会返回 `501 not implemented`，因此现在请使用 `GET /models` 查询共享的 Gateway 目录。
 
+## OpenAI 格式
+
+使用 Phaseo API 密钥请求 `GET /v1/models?format=openai`，即可获取 `{"object":"list","data":[{"id":"openai/gpt-4o-mini","object":"model","created":1721260800,"owned_by":"openai"}]}` 格式的响应。默认的 `json` 格式继续返回 Phaseo 元数据。
+
+此格式沿用相同的身份验证、区域可用性、工作区私有模型和筛选条件。除非指定 `limit`，否则返回所有结果；`offset` 仍然适用。ID 保持 Phaseo 规范格式。`created` 为发布时的 Unix 秒时间戳，未知时为 `0`。`owned_by` 为目录中的组织 ID，工作区模型为 `private`，未知时为 `phaseo`。
+
 ## 常用筛选条件
 
 - `endpoints` 使用公开名称，例如 `chat.completions`、`responses` 和 `messages`

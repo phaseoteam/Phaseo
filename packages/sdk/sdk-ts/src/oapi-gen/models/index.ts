@@ -246,6 +246,8 @@ export type { OpenAIDecisionChoiceQuestion } from "./OpenAIDecisionChoiceQuestio
 export type { OpenAIDecisionScoreQuestion } from "./OpenAIDecisionScoreQuestion.js";
 export type { OpenAIDecisionsRequest } from "./OpenAIDecisionsRequest.js";
 export type { OpenAIDecisionsResponse } from "./OpenAIDecisionsResponse.js";
+export type { OpenAIModel } from "./OpenAIModel.js";
+export type { OpenAIModelsResponse } from "./OpenAIModelsResponse.js";
 export type { OpenAIReasoningConfig } from "./OpenAIReasoningConfig.js";
 export type { OrganisationId } from "./OrganisationId.js";
 export type { OrganisationIdList } from "./OrganisationIdList.js";

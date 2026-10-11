@@ -781,13 +781,15 @@ export async function handleModels(req: Request) {
     const scopeError = requireCapability(auth.value, CAPABILITIES.MODELS_READ);
     if (scopeError) return scopeError;
 
-    const requestedFormat = parseFeedFormat(url);
+    const requestedFormat = url.searchParams.get("format")?.trim().toLowerCase() === "openai"
+        ? { ok: true as const, format: "openai" as const }
+        : parseFeedFormat(url);
     if (requestedFormat.ok === false) {
         return json(
             {
                 ok: false,
                 error: "invalid_request",
-                message: "format must be one of: json, rss, atom",
+                message: "format must be one of: json, openai, rss, atom",
                 provided: requestedFormat.raw,
             },
             400,
@@ -967,8 +969,22 @@ export async function handleModels(req: Request) {
                 sortOrder: sortOrderRaw as ModelListSortOrder | null,
             },
         );
-        const paged = models.slice(offset, offset + limit);
+        // OpenAI model discovery has no pagination contract. Return all matches
+        // unless the caller explicitly opts into Phaseo's limit parameter.
+        const paged = models.slice(offset, requestedFormat.format === "openai" && !url.searchParams.has("limit")
+            ? undefined : offset + limit);
         const headers = cacheHeaders({ ...cacheOptions, varyHeaders: ["Authorization"] });
+        if (requestedFormat.format === "openai") {
+            return json({
+                object: "list",
+                data: paged.map(model => ({
+                    id: model.id,
+                    object: "model",
+                    created: Math.max(0, toUnixSeconds(model.lifecycle.released_at) ?? 0),
+                    owned_by: model.organization?.id ?? "phaseo",
+                })),
+            }, 200, headers);
+        }
         if (requestedFormat.format !== "json") {
             const items: FeedItem[] = paged.map((model) => ({
                 id: model.id,

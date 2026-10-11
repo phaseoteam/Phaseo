@@ -3877,6 +3877,26 @@ class OpenAIDecisionsResponse
 	public $usage;
 }
 
+class OpenAIModel
+{
+	/** @var int */
+	public $created;
+	/** @var string */
+	public $id;
+	/** @var string */
+	public $object;
+	/** @var string */
+	public $owned_by;
+}
+
+class OpenAIModelsResponse
+{
+	/** @var array */
+	public $data;
+	/** @var string */
+	public $object;
+}
+
 class OpenAIReasoningConfig
 {
 	/** @var string|null */

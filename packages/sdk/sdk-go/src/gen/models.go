@@ -3598,6 +3598,18 @@ type OpenAIDecisionsResponse struct {
 	Usage map[string]interface{} `json:"usage"`
 }
 
+type OpenAIModel struct {
+	Created int `json:"created"`
+	Id string `json:"id"`
+	Object string `json:"object"`
+	OwnedBy string `json:"owned_by"`
+}
+
+type OpenAIModelsResponse struct {
+	Data []map[string]interface{} `json:"data"`
+	Object string `json:"object"`
+}
+
 type OpenAIReasoningConfig struct {
 	Effort *string `json:"effort,omitempty"`
 	Enabled *bool `json:"enabled,omitempty"`

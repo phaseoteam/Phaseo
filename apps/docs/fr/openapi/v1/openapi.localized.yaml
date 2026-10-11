@@ -27,7 +27,7 @@ paths:
         - Gateway
       operationId: listModels
       summary: Lister les modèles de la passerelle
-      description: Renvoie les modèles partagés et visibles de la passerelle. Par défaut, seuls les modèles actuellement routables publiquement sont renvoyés ; utilisez `availability=all` pour inclure les états de disponibilité non routables.
+      description: Renvoie les modèles partagés non masqués de la passerelle. Par défaut, seuls les modèles publiquement routables sont inclus ; utilisez availability=all pour inclure les modèles non routables. Utilisez format=openai pour une liste compatible avec OpenAI. Ce format renvoie tous les modèles filtrés par défaut ; limit et offset permettent de sélectionner une page.
       parameters:
         - name: search
           in: query
@@ -230,11 +230,12 @@ paths:
             maximum: 5000
         - name: format
           in: query
-          description: Format de réponse. `json` est utilisé par défaut.
+          description: Format de réponse. Le JSON natif de Phaseo est utilisé par défaut. Le format OpenAI renvoie toute la liste filtrée sauf si limit est fourni.
           schema:
             type: string
             enum:
               - json
+              - openai
               - rss
               - atom
             default: json
@@ -253,7 +254,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GatewayModelsResponse'
+                oneOf:
+                  - $ref: '#/components/schemas/GatewayModelsResponse'
+                  - $ref: '#/components/schemas/OpenAIModelsResponse'
             application/rss+xml:
               schema:
                 type: string
@@ -16501,6 +16504,46 @@ components:
         next_cursor:
           type: string
           nullable: true
+      additionalProperties: false
+    OpenAIModelsResponse:
+      type: object
+      required:
+        - object
+        - data
+      properties:
+        object:
+          type: string
+          enum:
+            - list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OpenAIModel'
+      additionalProperties: false
+    OpenAIModel:
+      type: object
+      required:
+        - id
+        - object
+        - created
+        - owned_by
+      properties:
+        id:
+          type: string
+          description: Identifiant canonique du modèle Phaseo à utiliser pour l’inférence.
+          example: openai/gpt-4o-mini
+        object:
+          type: string
+          enum:
+            - model
+        created:
+          type: integer
+          description: Horodatage de publication en secondes Unix, ou 0 s’il est inconnu.
+          minimum: 0
+        owned_by:
+          type: string
+          description: Identifiant de l’organisation du catalogue, private pour les modèles de l’espace de travail, ou phaseo s’il est inconnu.
+          example: openai
       additionalProperties: false
     GatewayModelsResponse:
       type: object
