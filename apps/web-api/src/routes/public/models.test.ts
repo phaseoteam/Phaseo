@@ -14,6 +14,31 @@ afterEach(() => {
 });
 
 describe("progressive model catalogue", () => {
+	it("bounds a stalled optional monitor request with an abort signal", async () => {
+		const start = Date.now();
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			if (String(input).includes("get_public_monitor_rows_payload")) {
+				expect(init?.signal).toBeInstanceOf(AbortSignal);
+				return new Promise<Response>((_resolve, reject) => init!.signal!.addEventListener("abort", () => reject(init!.signal!.reason), { once: true }));
+			}
+			return new Response(JSON.stringify([{ model_slug: "public/model", name: "Public", status: "active" }]), { headers: { "content-range": "0-0/1" } });
+		}));
+		const response = await app.request("/api/_web/models?limit=10", {}, env);
+		expect(response.status).toBe(200);
+		expect(Date.now() - start).toBeLessThan(4_000);
+		expect(await response.json()).toMatchObject({ gateway_data_complete: false });
+	});
+	it("returns model metadata with incomplete gateway data when monitor enrichment times out", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			if (String(input).includes("get_public_monitor_rows_payload")) return new Response(JSON.stringify({ code: "57014", message: "canceling statement due to statement timeout" }), { status: 500 });
+			if (String(input).includes("v2_models?")) return new Response(JSON.stringify([{ model_slug: "public/model", name: "Public", status: "active" }]), { headers: { "content-range": "0-0/1" } });
+			throw new Error("Unexpected request");
+		}));
+		const response = await app.request("/api/_web/models?limit=10", {}, env);
+		expect(response.status).toBe(200);
+		expect(response.headers.get("cache-control")).toContain("no-store");
+		expect(await response.json()).toMatchObject({ gateway_data_complete: false, total: 1, models: [{ model_id: "public/model", gateway_monitor_rows: [] }] });
+	});
 	it("returns a usable catalogue and router card without querying usage", async () => {
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
