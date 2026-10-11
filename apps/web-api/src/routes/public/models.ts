@@ -9,7 +9,7 @@ import { composeGatewayMetadata, fetchGatewayMetadataSource } from "@/models/gat
 import { fetchModelPricingSources, publicPricingRouteIdentity } from "@/models/pricing";
 import { publicProviderDisplayName, publicProviderPayload, STEALTH_PROVIDER_DISPLAY_NAME } from "@/models/provider-identity";
 import { buildFreeRouterCatalogueRow, fetchFreeRouterOverview } from "@/models/free-router";
-import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
+import { PRIVATE_NO_STORE_HEADERS, withPublicCache, type PublicCachePolicy } from "@/http/cache";
 
 // Public performance and usage telemetry is aggregated, cached, and excludes
 // raw request timestamps, request content, and request identifiers. App
@@ -355,12 +355,13 @@ async function resolveNoticeApiModelId(env: Env, modelId: string): Promise<strin
 
 type ModelsCatalogueVersion = "v1" | "v2";
 
-async function fetchProviderExecutionRegions(env: Env, providerIds: string[]) {
+async function fetchProviderExecutionRegions(env: Env, providerIds: string[], signal?: AbortSignal) {
 	const regionsByProvider = new Map<string, string[]>();
 	if (providerIds.length === 0) return regionsByProvider;
-	const { data, error } = await getDataClient(env).rpc("get_v2_provider_region_map", {
+	const request = getDataClient(env).rpc("get_v2_provider_region_map", {
 		p_provider_slugs: providerIds,
 	});
+	const { data, error } = await (signal ? request.abortSignal(signal) : request);
 	if (error) throw error;
 	for (const row of (data ?? []) as Record<string, unknown>[]) {
 		const providerId = String(row.provider_slug ?? "").trim();
@@ -373,7 +374,7 @@ async function fetchProviderExecutionRegions(env: Env, providerIds: string[]) {
 	return regionsByProvider;
 }
 
-async function fetchProviderStatuses(env: Env, providerIds: string[]) {
+async function fetchProviderStatuses(env: Env, providerIds: string[], signal?: AbortSignal) {
 	const statusesByProvider = new Map<string, string>();
 	const normalizedProviderIds = [
 		...new Set(
@@ -383,10 +384,11 @@ async function fetchProviderStatuses(env: Env, providerIds: string[]) {
 		),
 	];
 	if (normalizedProviderIds.length === 0) return statusesByProvider;
-	const { data, error } = await getDataClient(env)
+	const request = getDataClient(env)
 		.from("v2_providers")
 		.select("provider_slug,status")
 		.in("provider_slug", normalizedProviderIds);
+	const { data, error } = await (signal ? request.abortSignal(signal) : request);
 	if (error) throw error;
 	for (const row of data ?? []) {
 		const providerId = String(row.provider_slug ?? "").trim();
@@ -399,9 +401,11 @@ async function fetchProviderStatuses(env: Env, providerIds: string[]) {
 export async function fetchGatewayMonitorRows(
 	env: Env,
 	_catalogueVersion: ModelsCatalogueVersion = "v2",
+	signal?: AbortSignal,
 ): Promise<Map<string, Record<string, unknown>[]>> {
 	const client = getDataClient(env);
-	const { data, error } = await client.rpc("get_public_monitor_rows_payload");
+	const request = client.rpc("get_public_monitor_rows_payload");
+	const { data, error } = await (signal ? request.abortSignal(signal) : request);
 	if (error) throw error;
 	if (!Array.isArray(data)) throw new Error("Invalid monitor catalogue payload");
 	const rows = (data as Record<string, unknown>[]).filter(
@@ -411,10 +415,11 @@ export async function fetchGatewayMonitorRows(
 	const stealthRouteIds = new Set<string>();
 	const externalOverrideRouteIds = new Set<string>();
 	for (let offset = 0; offset < monitorRouteIds.length; offset += 200) {
-		const result = await client
+		const routeRequest = client
 			.from("v2_model_provider_routes")
 			.select("provider_model_id,is_stealth,metadata")
 			.in("provider_model_id", monitorRouteIds.slice(offset, offset + 200));
+		const result = await (signal ? routeRequest.abortSignal(signal) : routeRequest);
 		if (result.error) throw result.error;
 		for (const route of result.data ?? []) {
 			const routeId = String(route.provider_model_id);
@@ -437,8 +442,8 @@ export async function fetchGatewayMonitorRows(
 		),
 	);
 	const [providerRegionsById, providerStatusesById] = await Promise.all([
-		fetchProviderExecutionRegions(env, providerIds),
-		fetchProviderStatuses(env, providerIds),
+		fetchProviderExecutionRegions(env, providerIds, signal),
+		fetchProviderStatuses(env, providerIds, signal),
 	]);
 
 	const byModelId = new Map<string, Record<string, unknown>[]>();
@@ -866,9 +871,15 @@ publicModelsRouter.get("/", async (c) => {
 		}
 		// Metadata consumers such as the sitemap do not need the expensive
 		// gateway-monitor projection. Preserve enrichment for existing callers.
-		const gatewayRowsByModelId = c.req.query("include_gateway_data") === "false"
-			? new Map<string, Record<string, unknown>[]>()
-			: await fetchGatewayMonitorRows(c.env, catalogueVersion);
+		let gatewayDataComplete = c.req.query("include_gateway_data") !== "false";
+		let gatewayRowsByModelId = new Map<string, Record<string, unknown>[]>();
+		if (gatewayDataComplete) {
+			try { gatewayRowsByModelId = await fetchGatewayMonitorRows(c.env, catalogueVersion, AbortSignal.timeout(2_000)); }
+			catch (error) {
+				console.error("[web-api/models] optional gateway enrichment failed", error);
+				gatewayDataComplete = false;
+			}
+		}
 		const table = "v2_models";
 		const select = "model_slug,lab_slug,name,description,status,released_at,announced_at,updated_at,input_modalities,output_modalities,organisation:v2_labs!v2_models_lab_slug_fkey(name,metadata)";
 		const createQuery = () => {
@@ -927,11 +938,12 @@ publicModelsRouter.get("/", async (c) => {
 			gateway_monitor_rows:
 				gatewayRowsByModelId.get(String(model.model_slug ?? model.model_id ?? "")) ?? [],
 		}));
-		const response = withPublicCache(
-			c.json({ models, total: count, limit, offset, catalogue_version: catalogueVersion }),
-			cataloguePolicy(catalogueVersion),
-		);
-		return response;
+		const response = c.json({ models, total: count, limit, offset, catalogue_version: catalogueVersion, gateway_data_complete: gatewayDataComplete });
+		if (!gatewayDataComplete && c.req.query("include_gateway_data") !== "false") {
+			for (const [key, value] of Object.entries(PRIVATE_NO_STORE_HEADERS)) response.headers.set(key, value);
+			return response;
+		}
+		return withPublicCache(response, cataloguePolicy(catalogueVersion));
 	} catch (error) {
 		console.error("[web-api/models] catalogue failed", error);
 		return c.json({ error: "models_unavailable" }, 503);
