@@ -100,6 +100,37 @@ describe("provider rate-limit leases", () => {
 		expect(node.calls.acquire.filter((call) => call.requests > 0)).toHaveLength(awaited);
 	});
 
+	it("projects use from reported lease progress, not from whole leases", async () => {
+		// 12:00:05: 5 seconds into the minute.
+		const limits = config({ requestsPerMinute: 1_000, requestsPerDay: 1_000_000 });
+		const first = await coordinator.acquireLease(limits, { requests: 1, units: 0 }, { requests: 100, units: 0 }, [], "first");
+		if (!first.ok) throw new Error("expected a lease");
+		expect(first.lease.requests).toBeGreaterThan(1);
+		// One request in 5 seconds, projected over the minute; the rest of the lease is not use.
+		expect(first.lease.meta).toMatchObject({ projectedUse: 12 / 1_000, projectedUntil: Date.now() + 20_000 });
+
+		vi.setSystemTime(new Date("2026-10-09T12:00:30Z"));
+		const second = await coordinator.acquireLease(limits, { requests: 1, units: 0 }, { requests: 4, units: 0 }, [],
+			"second", undefined, [{ id: first.lease.id, usedRequests: 61, usedUnits: 0 }]);
+		if (!second.ok) throw new Error("expected a lease");
+		// 62 used in 30 seconds: on course for 124.
+		expect(second.lease.meta.projectedUse).toBeCloseTo(124 / 1_000);
+	});
+
+	it("carries the previous minute's use into the next and shortens leases near the limit", async () => {
+		const limits = config({ requestsPerMinute: 100 });
+		const node = isolate(limits);
+		for (let i = 0; i < 80; i++) { expect((await node.admit()).allowed).toBe(true); await flush(); }
+		for (const lease of node.pool.drain()) await coordinator.returnLeases([lease]);
+
+		// The next minute starts on course for the 80 the last one used.
+		vi.setSystemTime(new Date("2026-10-09T12:01:00Z"));
+		const next = await coordinator.acquireLease(limits, { requests: 1, units: 0 }, { requests: 20, units: 0 }, [], "next");
+		if (!next.ok) throw new Error("expected a lease");
+		expect(next.lease.meta.projectedUse).toBeCloseTo(0.8, 1);
+		expect(next.lease.expiresAt - Date.now()).toBe(10_000);
+	});
+
 	it("acquires its own lease when another request's acquire never settles", async () => {
 		const limits = config({ requestsPerMinute: 100 });
 		const pool = new LeasePool<ProviderLeaseMeta, ProviderRateLimitAdmission>({ background: (promise) => { background.push(promise); } });

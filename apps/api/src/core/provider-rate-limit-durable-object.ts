@@ -6,7 +6,8 @@
 import { DurableObject } from "cloudflare:workers";
 import type { GatewayBindings } from "@/runtime/env.types";
 import { BATCH_DOWNLOAD_LIMIT, BATCH_DOWNLOAD_WINDOW_MS, type BatchDownloadAdmission } from "@core/batch-download-limits";
-import type { LeaseAcquireResult, LeaseReturn, LeaseVector } from "@core/lease-pool";
+import type { LeaseAcquireResult, LeaseProgress, LeaseReturn, LeaseVector } from "@core/lease-pool";
+import { QUOTA_HEADROOM, projectedQuotaUse, unusedLeaseAllowance } from "@core/provider-quota-headroom";
 import {
 	PROVIDER_LEASE,
 	effectiveTokenLimit,
@@ -40,10 +41,28 @@ type CounterRow = {
 
 const DAY_MS = 86_400_000;
 
+/** Lease use as last reported by its isolate (instance memory; lost when the object restarts). */
+type LeaseUse = {
+	minuteWindow: number;
+	dayWindow: number;
+	requests: number;
+	tokens: number;
+	reportedRequests: number;
+	reportedTokens: number;
+	expiresAt: number;
+};
+
+type WindowUse = { window: number; requests: number; tokens: number };
+
 export class ProviderRateLimitDurableObject extends DurableObject<GatewayBindings> {
 	/** Reservation ids already reconciled; makes reconcile retries idempotent within this instance. */
 	private readonly reconciled = new Set<string>();
 	private leaseSweepAt = 0;
+	/** Outstanding leases and their reported use, for estimating actual use (not for admission). */
+	private readonly leaseUse = new Map<string, LeaseUse>();
+	/** Estimated use of the previous minute and day, kept when the counters roll over. */
+	private previousMinute: WindowUse | null = null;
+	private previousDay: WindowUse | null = null;
 
 	constructor(ctx: DurableObjectState, env: GatewayBindings) {
 		super(ctx, env);
@@ -117,11 +136,13 @@ export class ProviderRateLimitDurableObject extends DurableObject<GatewayBinding
 			row = { id: 1, minute_window: minuteWindow, day_window: dayWindow, minute_requests: 0, day_requests: 0, minute_tokens: 0, day_tokens: 0 };
 		}
 		if (row.minute_window !== minuteWindow) {
+			this.previousMinute = this.closingUse(row.minute_window, row.minute_requests, row.minute_tokens, minuteWindow, "minute");
 			row.minute_window = minuteWindow;
 			row.minute_requests = 0;
 			row.minute_tokens = 0;
 		}
 		if (row.day_window !== dayWindow) {
+			this.previousDay = this.closingUse(row.day_window, row.day_requests, row.day_tokens, dayWindow, "day");
 			row.day_window = dayWindow;
 			row.day_requests = 0;
 			row.day_tokens = 0;
@@ -140,6 +161,61 @@ export class ProviderRateLimitDurableObject extends DurableObject<GatewayBinding
 			row.minute_tokens,
 			row.day_tokens,
 		);
+	}
+
+	/** Leased allowance not reported as used, in the given minute and day windows. */
+	private unreportedLeases(minuteWindow: number, dayWindow: number) {
+		const unused = { minuteRequests: 0, minuteTokens: 0, dayRequests: 0, dayTokens: 0 };
+		for (const lease of this.leaseUse.values()) {
+			const requests = unusedLeaseAllowance({ granted: lease.requests, reported: lease.reportedRequests });
+			const tokens = unusedLeaseAllowance({ granted: lease.tokens, reported: lease.reportedTokens });
+			if (lease.minuteWindow === minuteWindow) { unused.minuteRequests += requests; unused.minuteTokens += tokens; }
+			if (lease.dayWindow === dayWindow) { unused.dayRequests += requests; unused.dayTokens += tokens; }
+		}
+		return unused;
+	}
+
+	/** Estimated use of a window that is closing, kept as the next window's prior when adjacent. */
+	private closingUse(window: number, requests: number, tokens: number, nextWindow: number, kind: "minute" | "day"): WindowUse {
+		if (window !== nextWindow - 1) return { window: nextWindow - 1, requests: 0, tokens: 0 };
+		const unused = kind === "minute" ? this.unreportedLeases(window, -1) : this.unreportedLeases(-1, window);
+		const unusedRequests = kind === "minute" ? unused.minuteRequests : unused.dayRequests;
+		const unusedTokens = kind === "minute" ? unused.minuteTokens : unused.dayTokens;
+		return { window, requests: Math.max(0, requests - unusedRequests), tokens: Math.max(0, tokens - unusedTokens) };
+	}
+
+	private recordProgress(held: LeaseProgress[]): void {
+		for (const progress of Array.isArray(held) ? held.slice(0, 64) : []) {
+			const lease = progress && typeof progress.id === "string" ? this.leaseUse.get(progress.id) : undefined;
+			if (!lease) continue;
+			const used = (value: unknown) => Number.isSafeInteger(value) && Number(value) > 0 ? Number(value) : 0;
+			lease.reportedRequests = Math.max(lease.reportedRequests, used(progress.usedRequests));
+			lease.reportedTokens = Math.max(lease.reportedTokens, used(progress.usedUnits));
+		}
+	}
+
+	/**
+	 * Projected use reported with a lease (see `projectedQuotaUse`): counted use less leased
+	 * allowance not reported as used, plus what is being admitted now. Isolates apply it for
+	 * `QUOTA_HEADROOM.ttlMs`; the previous window's use carries it across window boundaries.
+	 */
+	private quotaProjection(config: ProviderRateLimitConfig, row: CounterRow, requests: number, tokens: number, nowMs: number) {
+		const unused = this.unreportedLeases(row.minute_window, row.day_window);
+		const minuteStart = row.minute_window * 60_000;
+		const dayStart = row.day_window * DAY_MS;
+		const previousMinute = this.previousMinute?.window === row.minute_window - 1 ? this.previousMinute : null;
+		const previousDay = this.previousDay?.window === row.day_window - 1 ? this.previousDay : null;
+		const projectedUse = projectedQuotaUse([
+			{ limit: config.requestsPerMinute, used: row.minute_requests - unused.minuteRequests + requests,
+				previous: previousMinute?.requests ?? null, windowMs: 60_000, windowStartMs: minuteStart },
+			{ limit: config.requestsPerDay, used: row.day_requests - unused.dayRequests + requests,
+				previous: previousDay?.requests ?? null, windowMs: DAY_MS, windowStartMs: dayStart },
+			{ limit: effectiveTokenLimit(config.tokensPerMinute, config.headroomBps), used: row.minute_tokens - unused.minuteTokens + tokens,
+				previous: previousMinute?.tokens ?? null, windowMs: 60_000, windowStartMs: minuteStart },
+			{ limit: effectiveTokenLimit(config.tokensPerDay, config.headroomBps), used: row.day_tokens - unused.dayTokens + tokens,
+				previous: previousDay?.tokens ?? null, windowMs: DAY_MS, windowStartMs: dayStart },
+		], nowMs);
+		return { projectedUse, projectedUntil: nowMs + QUOTA_HEADROOM.ttlMs };
 	}
 
 	async admit(
@@ -203,11 +279,13 @@ export class ProviderRateLimitDurableObject extends DurableObject<GatewayBinding
 		returns: LeaseReturn[],
 		reservationId: string,
 		nowMs = Date.now(),
+		held: LeaseProgress[] = [],
 	): Promise<LeaseAcquireResult<ProviderLeaseMeta, ProviderRateLimitAdmission>> {
 		const topUp = need.requests === 0;
 		if (!Number.isSafeInteger(need.requests) || need.requests < 0) {
 			return { ok: false, denial: { allowed: false, reason: "requests_per_minute", retryAfterSeconds: 60, reservation: null } };
 		}
+		this.recordProgress(held);
 		const row = this.current(nowMs);
 		let dirty = this.applyReturns(row, returns);
 		this.sweepLeases(row, nowMs);
@@ -261,11 +339,17 @@ export class ProviderRateLimitDurableObject extends DurableObject<GatewayBinding
 			minuteBound ? (row.minute_window + 1) * 60_000 : Number.MAX_SAFE_INTEGER,
 			(row.day_window + 1) * DAY_MS,
 		) - PROVIDER_LEASE.windowSkewMs;
-		const expiresAt = Math.min(nowMs + PROVIDER_LEASE.ttlMs, windowEnd);
+		const meta: ProviderLeaseMeta = {
+			minuteWindow: row.minute_window,
+			dayWindow: row.day_window,
+			...this.quotaProjection(config, row, need.requests, needTokens, nowMs),
+		};
+		// Near a limit, shorter leases strand less allowance in isolates that are not using it.
+		const ttlMs = meta.projectedUse! >= QUOTA_HEADROOM.penaltyStart ? QUOTA_HEADROOM.nearLimitLeaseTtlMs : PROVIDER_LEASE.ttlMs;
+		const expiresAt = Math.min(nowMs + ttlMs, windowEnd);
 		const useful = (!hasRequestLimit || extraRequests >= 1) && (!hasTokenLimit || extraTokens >= 1) &&
 			expiresAt - nowMs >= PROVIDER_LEASE.minLifetimeMs;
 
-		const meta: ProviderLeaseMeta = { minuteWindow: row.minute_window, dayWindow: row.day_window };
 		if (!useful) {
 			if (topUp) {
 				if (dirty) this.persist(row);
@@ -292,6 +376,15 @@ export class ProviderRateLimitDurableObject extends DurableObject<GatewayBinding
 			"INSERT OR REPLACE INTO leases VALUES (?, ?, ?, ?, ?, ?)",
 			leaseId, row.minute_window, row.day_window, grantedRequests, grantedTokens, expiresAt,
 		);
+		this.leaseUse.set(leaseId, {
+			minuteWindow: row.minute_window,
+			dayWindow: row.day_window,
+			requests: grantedRequests,
+			tokens: grantedTokens,
+			reportedRequests: need.requests,
+			reportedTokens: needTokens,
+			expiresAt,
+		});
 		if (dirty) this.persist(row);
 		return {
 			ok: true,
@@ -315,6 +408,7 @@ export class ProviderRateLimitDurableObject extends DurableObject<GatewayBinding
 		let dirty = false;
 		for (const returned of Array.isArray(returns) ? returns.slice(0, 64) : []) {
 			if (!returned || typeof returned.id !== "string") continue;
+			this.leaseUse.delete(returned.id);
 			const lease = this.ctx.storage.sql.exec<LeaseRow>("SELECT * FROM leases WHERE id = ?", returned.id).toArray()[0];
 			if (!lease) continue;
 			this.ctx.storage.sql.exec("DELETE FROM leases WHERE id = ?", returned.id);
@@ -345,6 +439,9 @@ export class ProviderRateLimitDurableObject extends DurableObject<GatewayBinding
 			row.day_window,
 			nowMs - PROVIDER_LEASE.returnGraceMs,
 		);
+		for (const [id, lease] of this.leaseUse) {
+			if (lease.dayWindow !== row.day_window || lease.expiresAt < nowMs - PROVIDER_LEASE.returnGraceMs) this.leaseUse.delete(id);
+		}
 	}
 
 	/** Counts requests that were sent upstream although this scope refused them (deranked, not blocked). */

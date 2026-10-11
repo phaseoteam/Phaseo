@@ -9,8 +9,16 @@
 //      marks the scope saturated in this isolate until its window resets, and routing deranks it.
 
 import { knownCatalogueRevision } from "@core/catalogue-revision";
+import { quotaHeadroomMultiplier } from "@core/provider-quota-headroom";
 import { resolveCanonicalTokenUsage } from "@core/usage-normalization";
-import { LeasePool, type LeaseAcquireResult, type LeaseReturn, type LeaseTransport, type LeaseVector } from "@core/lease-pool";
+import {
+	LeasePool,
+	type LeaseAcquireResult,
+	type LeaseProgress,
+	type LeaseReturn,
+	type LeaseTransport,
+	type LeaseVector,
+} from "@core/lease-pool";
 import { __resetTieredCacheForTests, tieredRead } from "@core/tiered-cache";
 import { dispatchBackground, getBindings, getSupabaseAdmin } from "@/runtime/env";
 import type { PipelineContext } from "@pipeline/before/types";
@@ -35,7 +43,14 @@ export const PROVIDER_LEASE = {
 	returnGraceMs: 10 * 60_000,
 } as const;
 
-export type ProviderLeaseMeta = { minuteWindow: number; dayWindow: number };
+export type ProviderLeaseMeta = {
+	minuteWindow: number;
+	dayWindow: number;
+	/** Worst projected end-of-window use when granted (see `projectedQuotaUse`). */
+	projectedUse?: number;
+	/** Epoch ms after which isolates stop applying `projectedUse`. */
+	projectedUntil?: number;
+};
 
 /** Applies a limit across all of a provider's models. */
 export const ALL_PROVIDER_MODELS = "*";
@@ -411,9 +426,44 @@ export function providerQuotaPressure(providerId: string, model: string | null):
 		model != null ? scopePressure(providerLimitScope({ providerId, modelSlug: model }), now) : 0);
 }
 
+// Projected use the coordinator reported with this isolate's latest lease in each scope.
+const MAX_PROJECTED_SCOPES = 2_000;
+const projectedUse = new Map<string, { value: number; until: number }>();
+
+function rememberProjectedUse(scope: string, meta: ProviderLeaseMeta): void {
+	const value = meta.projectedUse;
+	const until = meta.projectedUntil;
+	if (typeof value !== "number" || !Number.isFinite(value) || typeof until !== "number") return;
+	const known = projectedUse.get(scope);
+	if (known?.until === until && known.value === value) return;
+	projectedUse.delete(scope);
+	if (projectedUse.size >= MAX_PROJECTED_SCOPES) projectedUse.delete(projectedUse.keys().next().value!);
+	projectedUse.set(scope, { value, until });
+}
+
+function scopeProjectedUse(scope: string, now: number): number {
+	const entry = projectedUse.get(scope);
+	if (entry === undefined) return 0;
+	if (entry.until > now) return entry.value;
+	projectedUse.delete(scope);
+	return 0;
+}
+
+/**
+ * Routing multiplier for a provider and model approaching a limit on Phaseo's managed
+ * credentials: 1 when neither scope is projected to come close, falling towards
+ * `QUOTA_HEADROOM.penaltyFloor` as the worst projection reaches its limit.
+ */
+export function providerQuotaHeadroom(providerId: string, model: string | null): number {
+	if (projectedUse.size === 0) return 1;
+	const now = Date.now();
+	return quotaHeadroomMultiplier(Math.max(scopeProjectedUse(providerId, now),
+		model != null ? scopeProjectedUse(providerLimitScope({ providerId, modelSlug: model }), now) : 0));
+}
+
 type ProviderRateLimitStub = {
 	admit(config: ProviderRateLimitConfig, reservationTokens: number | null, reservationId: string, nowMs?: number, reservationRequests?: number): Promise<ProviderRateLimitAdmission>;
-	acquireLease(config: ProviderRateLimitConfig, need: LeaseVector, want: LeaseVector, returns: LeaseReturn[], reservationId: string, nowMs?: number): Promise<LeaseAcquireResult<ProviderLeaseMeta, ProviderRateLimitAdmission>>;
+	acquireLease(config: ProviderRateLimitConfig, need: LeaseVector, want: LeaseVector, returns: LeaseReturn[], reservationId: string, nowMs?: number, held?: LeaseProgress[]): Promise<LeaseAcquireResult<ProviderLeaseMeta, ProviderRateLimitAdmission>>;
 	returnLeases(returns: LeaseReturn[], nowMs?: number): Promise<void>;
 	recordRequests(requests: number, nowMs?: number): Promise<void>;
 	recordTokens(tokens: number, nowMs?: number): Promise<void>;
@@ -444,8 +494,8 @@ function background(promise: Promise<unknown>): void {
 
 function transportFor(stub: ProviderRateLimitStub, config: ProviderRateLimitConfig, reservationId: string): LeaseTransport<ProviderLeaseMeta, ProviderRateLimitAdmission> {
 	return {
-		acquire: (need, want, returns) => stub.acquireLease(config, need, want, returns,
-			need.requests > 0 ? reservationId : crypto.randomUUID()),
+		acquire: (need, want, returns, held) => stub.acquireLease(config, need, want, returns,
+			need.requests > 0 ? reservationId : crypto.randomUUID(), undefined, held),
 		returnLeases: (returns) => stub.returnLeases(returns),
 	};
 }
@@ -519,6 +569,7 @@ async function admitScope(
 		}
 		saturatedUntil.delete(scope);
 		const { ticket } = admission;
+		rememberProjectedUse(scope, ticket.meta);
 		return {
 			allowed: true,
 			reason: null,
@@ -751,5 +802,6 @@ export function clearProviderRateLimitConfigCacheForTests(): void {
 	__resetTieredCacheForTests();
 	pools.clear();
 	saturatedUntil.clear();
+	projectedUse.clear();
 }
 

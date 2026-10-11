@@ -5855,7 +5855,7 @@
 	},
 	"providerRateLimits": {
 		"title": "Límites de uso",
-		"description": "Los límites de solicitudes y tokens que tu plataforma aplica a la cuenta de Phaseo. Cuando se alcanza uno, Phaseo sitúa tus ofertas en una posición inferior y envía el tráfico primero a otros proveedores. Las solicitudes nunca se bloquean.",
+		"description": "Los límites de solicitudes y tokens que tu plataforma aplica a la cuenta de Phaseo. A medida que tu tráfico se acerca a un límite, Phaseo te envía una proporción gradualmente menor. Al alcanzarlo, los demás proveedores van primero hasta que se restablece. Las solicitudes nunca se bloquean.",
 		"applyNote": "Los cambios se aplican en aproximadamente un minuto y no requieren revisión.",
 		"feedNote": "Tu feed de catálogo también puede declarar rate_limits. Si lo hace, cada cambio importado del feed sustituye estos valores.",
 		"allModels": "Todos los modelos",

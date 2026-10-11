@@ -86,7 +86,7 @@ Declare the request and token limits your platform applies to Phaseo's account i
 
 Each entry accepts `requests_per_minute`, `requests_per_day`, `tokens_per_minute` and `tokens_per_day`. Each value is a positive integer or `null`, and each entry needs at least one value. Phaseo counts each limit globally across all of its traffic to you. A model limit applies in addition to the limit across all models.
 
-Limits never block requests. When a limit is reached, Phaseo ranks that offer lower and sends traffic to other providers first, so a value that is too low only reduces your own share of traffic. For that reason, limits apply without review once your provider application is approved, usually within a minute.
+Limits never block requests. As an offer's traffic approaches a limit, Phaseo sends it a gradually smaller share. Once the limit is reached, Phaseo ranks the offer below other providers until the limit resets. A value that is too low only reduces your own share of traffic. For that reason, limits apply without review once your provider application is approved, usually within a minute.
 
 When the array is present, it replaces your declared limits each time a changed feed imports successfully. An empty array removes them. Omit `rate_limits` to keep the limits you manage in provider settings. Phaseo rejects the whole snapshot, and keeps your current catalog and limits, if an entry names a model that is not in the document, repeats a scope, or uses a value that is not a positive integer. The rejection appears as **Needs changes**.
 

@@ -20,7 +20,7 @@ import {
 import { providerMeetsResidencyRequirement } from "@/lib/config/providerResidency";
 import { routeMeetsAvailabilityPolicy } from "@/lib/config/routeAvailability";
 import { readHealthManyOptimistic, ProviderHealth } from "./health";
-import { providerLimitModel, providerQuotaPressure } from "@core/provider-rate-limits";
+import { providerLimitModel, providerQuotaHeadroom, providerQuotaPressure } from "@core/provider-rate-limits";
 import { isRecoveryProbeRequest } from "./health.config";
 import { ageHealth } from "./health-evidence";
 import { stripPrioritySuffix } from "./utils";
@@ -48,7 +48,8 @@ const ROUTING_ALGORITHM_VERSION = "provider-score-v8";
 // the fallback pool.
 const EXTERNAL_PROVIDER_ROUTING_MULTIPLIER = 0.1;
 // A provider and model at one of its upstream limits on Phaseo's managed credentials stays
-// routable, behind every unsaturated candidate (but ahead of an open breaker, 1e-9).
+// routable, behind every unsaturated candidate (but ahead of an open breaker, 1e-9). Before
+// that, one projected to approach a limit is eased off by `providerQuotaHeadroom`.
 const PROVIDER_QUOTA_SATURATED_MULTIPLIER = 1e-6;
 
 // Mirrors the credential plan: priority and balanced BYOK keys are tried before managed ones.
@@ -1370,6 +1371,10 @@ export async function routeProviders(
         usesOwnCredentials(entry.candidate)
             ? 0
             : providerQuotaPressure(entry.candidate.providerId, providerLimitModel(entry.candidate));
+    const quotaHeadroom = (entry: { candidate: ProviderCandidate }) =>
+        usesOwnCredentials(entry.candidate)
+            ? 1
+            : providerQuotaHeadroom(entry.candidate.providerId, providerLimitModel(entry.candidate));
     const quotaSaturated = healths.filter((entry) => quotaPressure(entry) > 0);
     if (quotaSaturated.length > 0) {
         filterStages.push({
@@ -1514,7 +1519,7 @@ export async function routeProviders(
         const baseScore = Object.values(contributions).reduce((sum, value) => sum + value, 0);
         const recentOutageMultiplier = isRecentOutage(v) ? 1e-9 : 1;
         const providerQuotaOverage = quotaPressure(v);
-        const providerQuotaMultiplier = providerQuotaOverage > 0 ? PROVIDER_QUOTA_SATURATED_MULTIPLIER : 1;
+        const providerQuotaMultiplier = providerQuotaOverage > 0 ? PROVIDER_QUOTA_SATURATED_MULTIPLIER : quotaHeadroom(v);
 
         const score = Math.max(
             0,

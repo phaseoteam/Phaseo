@@ -5855,7 +5855,7 @@
 	},
 	"providerRateLimits": {
 		"title": "Ratenlimits",
-		"description": "Die Anfrage- und Token-Limits, die Ihre Plattform für das Konto von Phaseo anwendet. Wird eines erreicht, stuft Phaseo Ihre Angebote niedriger ein und leitet Traffic zuerst an andere Anbieter. Anfragen werden nie blockiert.",
+		"description": "Die Anfrage- und Token-Limits, die Ihre Plattform für das Konto von Phaseo anwendet. Nähert sich Ihr Traffic einem Limit, sendet Phaseo Ihnen schrittweise einen kleineren Anteil. Ist es erreicht, kommen andere Anbieter bis zum Zurücksetzen zuerst. Anfragen werden nie blockiert.",
 		"applyNote": "Änderungen gelten innerhalb von etwa einer Minute und müssen nicht geprüft werden.",
 		"feedNote": "Ihr Katalog-Feed kann ebenfalls rate_limits angeben. In diesem Fall ersetzt jede importierte Feed-Änderung diese Werte.",
 		"allModels": "Alle Modelle",

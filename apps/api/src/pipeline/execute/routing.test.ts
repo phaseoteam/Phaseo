@@ -5,10 +5,12 @@ const readHealthManyMock = vi.fn();
 const readStickyRoutingMock = vi.fn();
 const resolveStickyRoutingContextMock = vi.fn();
 const providerQuotaPressureMock = vi.fn((_providerId: string, _model: string | null) => 0);
+const providerQuotaHeadroomMock = vi.fn((_providerId: string, _model: string | null) => 1);
 
 vi.mock("@core/provider-rate-limits", () => ({
 	providerLimitModel: (c: { providerModelSlug?: string | null; apiModelId?: string | null }) => c.providerModelSlug || c.apiModelId || null,
 	providerQuotaPressure: (providerId: string, model: string | null) => providerQuotaPressureMock(providerId, model),
+	providerQuotaHeadroom: (providerId: string, model: string | null) => providerQuotaHeadroomMock(providerId, model),
 }));
 
 vi.mock("./health", () => ({
@@ -672,6 +674,38 @@ describe("routeProviders testing mode", () => {
 			expect(withOwnKey.ranked.find((entry) => entry.candidate.providerId === "openai")!
 				.scoreTrace.calculation.providerQuotaMultiplier).toBe(1);
 		} finally {
+			providerQuotaPressureMock.mockReset().mockReturnValue(0);
+		}
+	});
+
+	it("eases a provider approaching its limit by its headroom multiplier, unless it is saturated", async () => {
+		providerQuotaHeadroomMock.mockImplementation((providerId, model) => providerId === "openai" && model === "gpt-4o-mini" ? 0.3 : 1);
+		try {
+			const candidates = [
+				candidate({ providerId: "openai", providerModelSlug: "gpt-4o-mini", pricingCard: textPricingCard(0.000004, 0) }),
+				candidate({ providerId: "google-ai-studio", providerModelSlug: "gemini", pricingCard: textPricingCard(0.000004, 0) }),
+			];
+			const context = { endpoint: "responses" as const, model: "openai/gpt-4o-mini", workspaceId: "team_123", requestId: "headroom" };
+			const result = await routeProviders(candidates, context as any);
+			const eased = result.ranked.find((entry) => entry.candidate.providerId === "openai")!;
+			const other = result.ranked.find((entry) => entry.candidate.providerId === "google-ai-studio")!;
+			expect(eased.scoreTrace.calculation.providerQuotaMultiplier).toBe(0.3);
+			expect(other.scoreTrace.calculation.providerQuotaMultiplier).toBe(1);
+			expect(eased.score).toBeLessThan(other.score);
+
+			// A customer's own key is unaffected.
+			const ownKey = { ...candidates[0], byokMeta: [{ id: "key-1", routingMode: "priority" }] };
+			const withOwnKey = await routeProviders([ownKey, candidates[1]], context as any);
+			expect(withOwnKey.ranked.find((entry) => entry.candidate.providerId === "openai")!
+				.scoreTrace.calculation.providerQuotaMultiplier).toBe(1);
+
+			// Saturation takes precedence over the headroom penalty.
+			providerQuotaPressureMock.mockImplementation((providerId) => providerId === "openai" ? 1.1 : 0);
+			const saturated = await routeProviders(candidates, context as any);
+			expect(saturated.ranked.find((entry) => entry.candidate.providerId === "openai")!
+				.scoreTrace.calculation.providerQuotaMultiplier).toBe(1e-6);
+		} finally {
+			providerQuotaHeadroomMock.mockReset().mockReturnValue(1);
 			providerQuotaPressureMock.mockReset().mockReturnValue(0);
 		}
 	});

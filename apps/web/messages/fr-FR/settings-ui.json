@@ -5855,7 +5855,7 @@
 	},
 	"providerRateLimits": {
 		"title": "Limites de débit",
-		"description": "Les limites de requêtes et de jetons que votre plateforme applique au compte de Phaseo. Lorsqu'une limite est atteinte, Phaseo classe vos offres plus bas et envoie d'abord le trafic vers d'autres fournisseurs. Les requêtes ne sont jamais bloquées.",
+		"description": "Les limites de requêtes et de jetons que votre plateforme applique au compte de Phaseo. À mesure que votre trafic approche d'une limite, Phaseo vous en envoie une part progressivement plus faible. Une fois la limite atteinte, les autres fournisseurs passent en premier jusqu'à sa réinitialisation. Les requêtes ne sont jamais bloquées.",
 		"applyNote": "Les modifications s'appliquent en une minute environ et ne nécessitent pas de vérification.",
 		"feedNote": "Votre flux de catalogue peut aussi déclarer rate_limits. Dans ce cas, chaque modification importée du flux remplace ces valeurs.",
 		"allModels": "Tous les modèles",

@@ -133,6 +133,30 @@ describe("non-blocking provider quota charges", () => {
 		expect(providerQuotaPressure("openai", "gpt-y")).toBe(0);
 	});
 
+	it("eases routing off a scope projected to approach its limit, until the projection lapses", async () => {
+		runtime.rows = [limit({ requests_per_minute: 100 }), limit({ provider_model_slug: "gpt-x", requests_per_minute: 10 })];
+		const now = Date.now(); const clock = vi.spyOn(Date, "now").mockReturnValue(now);
+		runtime.acquire.mockImplementation(async (name: string, _config: unknown, need: { requests: number; units: number }) => {
+			const lease = grant(need);
+			lease.lease.meta = name === "managed:openai::gpt-x"
+				? { minuteWindow: 1, dayWindow: 1, projectedUse: 0.95, projectedUntil: now + 10_000 } as any
+				: { minuteWindow: 1, dayWindow: 1, projectedUse: 0.2, projectedUntil: now + 10_000 } as any;
+			return lease;
+		});
+		try {
+			const { chargeManagedProvider, providerQuotaHeadroom, providerQuotaPressure } = await import("./provider-rate-limits");
+			const { quotaHeadroomMultiplier } = await import("./provider-quota-headroom");
+			expect(providerQuotaHeadroom("openai", "gpt-x")).toBe(1);
+			await chargeManagedProvider({ providerId: "openai", model: "gpt-x", reservationTokens: 10 }).reservations;
+			expect(providerQuotaPressure("openai", "gpt-x")).toBe(0);
+			expect(providerQuotaHeadroom("openai", "gpt-x")).toBeCloseTo(quotaHeadroomMultiplier(0.95));
+			// The provider-wide projection is below the penalty, so other models are unaffected.
+			expect(providerQuotaHeadroom("openai", "gpt-y")).toBe(1);
+			clock.mockReturnValue(now + 10_001);
+			expect(providerQuotaHeadroom("openai", "gpt-x")).toBe(1);
+		} finally { clock.mockRestore(); }
+	});
+
 	it("measures overage against the provider's own limit", async () => {
 		const { resolveProviderRateLimitDenial } = await import("./provider-rate-limits");
 		const counters = { minuteWindow: 0, dayWindow: 0, minuteRequests: 12, dayRequests: 50, minuteTokens: 900, dayTokens: 0 };

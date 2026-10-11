@@ -5855,7 +5855,7 @@
 	},
 	"providerRateLimits": {
 		"title": "Rate limits",
-		"description": "The request and token limits your platform applies to Phaseo's account. When one is reached, Phaseo ranks your offers lower and sends traffic to other providers first. Requests are never blocked.",
+		"description": "The request and token limits your platform applies to Phaseo's account. As your traffic approaches one, Phaseo sends you a gradually smaller share. Once it is reached, other providers come first until it resets. Requests are never blocked.",
 		"applyNote": "Changes apply within about a minute and do not need review.",
 		"feedNote": "Your catalog feed can also declare rate_limits. When it does, each imported feed change replaces these values.",
 		"allModels": "All models",
