@@ -827,9 +827,13 @@ jobs:
               run: |
                   deploy=true
                   if [ "$FORCE_DEPLOY" != "true" ] && [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+                      # targets.production is the latest production deployment, which can
+                      # still be building or have failed. Only trust it once it is ready and
+                      # holds the production alias; otherwise deploy. aliasAssigned is
+                      # boolean, timestamp or null, so require true or a positive time.
                       production_sha=$(curl -fsS --max-time 30 -H "Authorization: Bearer $VERCEL_TOKEN" \
                           "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID?teamId=$VERCEL_ORG_ID" \
-                          | jq -r '.targets.production.meta.githubCommitSha // empty') || production_sha=""
+                          | jq -r '.targets.production | select(.readyState == "READY" and (.aliasAssigned == true or ((.aliasAssigned | type) == "number" and .aliasAssigned > 0))) | .meta.githubCommitSha // empty') || production_sha=""
                       # Everything outside apps/web that the web build reads:
                       # - packages/data/catalog/src, compiled through a tsconfig path;
                       # - apps/docs, read by the prebuild for the docs search index;
