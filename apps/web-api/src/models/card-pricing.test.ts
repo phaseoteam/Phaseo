@@ -77,6 +77,15 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 0.038, output: 0.2, unit: "1M tokens" });
 	});
 
+	it("ranks a provider pricing both token sides ahead of one pricing only input", () => {
+		const row = card([
+			tokens("input_text_tokens", 10, { provider_group: 1 }),
+			tokens("input_text_tokens", 6, { provider_group: 2 }),
+			tokens("output_text_tokens", 6, { provider_group: 2 }),
+		]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 6, output: 6, unit: "1M tokens" });
+	});
+
 	it("uses a provider's base rate when it has short- and long-context SKUs, without From", () => {
 		const row = card([
 			tokens("input_text_tokens", 2, { provider: "openai" }),

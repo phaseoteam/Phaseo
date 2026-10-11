@@ -4,7 +4,7 @@ import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 
 const migration = await readFile(
-	new URL("../migrations/20261011090000_cheapest_provider_catalogue_pricing.sql", import.meta.url),
+	new URL("../migrations/20261011080000_cheapest_provider_catalogue_pricing.sql", import.meta.url),
 	"utf8",
 );
 
@@ -56,6 +56,8 @@ const fixtures = `
 		('00000000-0000-0000-0000-000000000002', 'openai:gpt-test', 'standard', null),
 		('00000000-0000-0000-0000-000000000003', 'openai:gpt-test', 'standard', 'eu'),
 		('00000000-0000-0000-0000-000000000004', 'openai:gpt-test', 'batch', null);
+	insert into public.v2_route_variants (variant_id, provider_model_id, service_tier_slug, status, routing_enabled) values
+		('00000000-0000-0000-0000-000000000005', 'openai:gpt-test', 'priority', 'disabled', false);
 
 	insert into public.v2_pricing_skus (sku_id, provider_model_id, sku_code, effective_from, route_variant_id, service_tier_slug, status) values
 		('10000000-0000-0000-0000-000000000001', 'cf:clef-flash', 'official', now() - interval '10 days', '00000000-0000-0000-0000-000000000001', 'standard', 'active'),
@@ -65,7 +67,8 @@ const fixtures = `
 		('20000000-0000-0000-0000-000000000002', 'openai:gpt-test', 'standard-long', now() - interval '5 days', '00000000-0000-0000-0000-000000000002', 'standard', 'active'),
 		('20000000-0000-0000-0000-000000000003', 'openai:gpt-test', 'eu', now() - interval '5 days', '00000000-0000-0000-0000-000000000003', 'standard', 'active'),
 		('20000000-0000-0000-0000-000000000004', 'openai:gpt-test', 'batch', now() - interval '5 days', '00000000-0000-0000-0000-000000000004', 'batch', 'active'),
-		('20000000-0000-0000-0000-000000000005', 'openai:gpt-test', 'draft', now() - interval '1 days', '00000000-0000-0000-0000-000000000002', 'standard', 'draft');
+		('20000000-0000-0000-0000-000000000005', 'openai:gpt-test', 'draft', now() - interval '1 days', '00000000-0000-0000-0000-000000000002', 'standard', 'draft'),
+		('20000000-0000-0000-0000-000000000006', 'openai:gpt-test', 'hidden-variant', now() - interval '5 days', '00000000-0000-0000-0000-000000000005', 'priority', 'active');
 
 	insert into public.v2_pricing_sku_meters (sku_id, meter_key, direction, price_nanos, display_label) values
 		('10000000-0000-0000-0000-000000000001', 'input_tokens', 'input', 90000000, 'Input Tokens'),
@@ -78,7 +81,8 @@ const fixtures = `
 		('20000000-0000-0000-0000-000000000002', 'output_text_tokens', 'output', 15000000000, 'Output Text Tokens'),
 		('20000000-0000-0000-0000-000000000003', 'input_text_tokens', 'input', 2200000000, 'Input Text Tokens'),
 		('20000000-0000-0000-0000-000000000004', 'input_text_tokens', 'input', 1000000000, 'Input Text Tokens'),
-		('20000000-0000-0000-0000-000000000005', 'input_text_tokens', 'input', 500000000, 'Input Text Tokens');
+		('20000000-0000-0000-0000-000000000005', 'input_text_tokens', 'input', 500000000, 'Input Text Tokens'),
+		('20000000-0000-0000-0000-000000000006', 'input_text_tokens', 'input', 100000000, 'Input Text Tokens');
 `;
 
 async function pricing(db, region = null, tier = null) {

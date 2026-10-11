@@ -320,7 +320,11 @@ const SUMMARY_ORDER: Record<CardPricingSummary["kind"], number> = { free: 0, tok
 function compareOffers(a: CardPricingSummary, b: CardPricingSummary): number {
 	if (a.kind !== b.kind) return SUMMARY_ORDER[a.kind] - SUMMARY_ORDER[b.kind];
 	if (a.kind === "tokens" && b.kind === "tokens") {
-		return ((a.input ?? 0) + (a.output ?? 0)) - ((b.input ?? 0) + (b.output ?? 0))
+		// An offer missing a side is not free on that side: offers pricing more
+		// sides come first, and only like-for-like offers are compared by price.
+		const sides = (offer: typeof a) => Number(offer.input !== null) + Number(offer.output !== null);
+		return sides(b) - sides(a)
+			|| ((a.input ?? 0) + (a.output ?? 0)) - ((b.input ?? 0) + (b.output ?? 0))
 			|| (a.input ?? 0) - (b.input ?? 0);
 	}
 	if (a.kind === "usage" && b.kind === "usage") {

@@ -40,6 +40,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
       provider.name as provider_name,
       provider.status as provider_status,
       provider.routing_enabled as provider_routing_enabled,
+      variant.variant_id,
       variant.service_tier_slug,
       variant.execution_region,
       variant.data_region,
@@ -123,6 +124,11 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
     select distinct provider_model_id, model_slug, provider_slug
     from display_routes
   ),
+  -- A SKU tied to a variant counts only when the page shows that variant.
+  priced_variants as (
+    select distinct variant_id
+    from display_routes
+  ),
   live_meters as (
     select
       route.model_slug,
@@ -146,6 +152,10 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
     join public.v2_pricing_sku_meters meter on meter.sku_id = sku.sku_id and meter.billable
     left join public.v2_route_variants variant on variant.variant_id = sku.route_variant_id
     where sku.status = 'active'
+      and (
+        sku.route_variant_id is null
+        or sku.route_variant_id in (select variant_id from priced_variants)
+      )
       and (p_service_tier is null or sku.service_tier_slug = lower(p_service_tier))
       and sku.effective_from <= now()
       and (sku.effective_to is null or sku.effective_to > now())
