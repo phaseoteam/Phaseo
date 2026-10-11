@@ -95,11 +95,23 @@ try {
   await db.exec(await read('../schemas/public/functions/gateway_usage_total_tokens.sql'));
   await db.exec((await read('./fixtures/monitor-model-rows-before.sql'))
     .replaceAll('get_monitor_model_rows', 'monitor_model_rows_before'));
+  await db.exec(await read('../schemas/public/tables/public_monitor_weekly_usage.sql'));
+  await db.exec(await read('../schemas/public/functions/refresh_public_monitor_weekly_usage.sql'));
   await db.exec(await read('../schemas/public/functions/get_monitor_model_rows.sql'));
+
+  // Until the first refresh, catalogue rows still load without usage totals.
+  const unrefreshed = await db.query('select * from public.get_monitor_model_rows(false)');
+  const unrefreshedBaseline = await db.query('select * from public.monitor_model_rows_before(false)');
+  assert.equal(unrefreshed.rows.length, unrefreshedBaseline.rows.length);
+  assert(unrefreshed.rows.every((row) => row.weekly_tokens_model === null && row.weekly_tokens_model_provider === null));
+  const withoutUsage = ({ weekly_tokens_model, weekly_tokens_model_provider, weekly_throughput_model, weekly_latency_model, ...row }) => row;
+  assert.deepEqual(unrefreshed.rows.map(withoutUsage), unrefreshedBaseline.rows.map(withoutUsage), 'Catalogue fields do not depend on usage');
 
   const measuredRows = async (name, includeHidden) => {
     await db.exec('alter sequence resolver_calls restart with 1');
     const start = performance.now();
+    // The raw scan now happens in the scheduled refresh; time both together.
+    if (name === 'get_monitor_model_rows') await db.exec('select public.refresh_public_monitor_weekly_usage()');
     const result = await db.query(`select * from public.${name}($1)`, [includeHidden]);
     const elapsed = performance.now() - start;
     const count = await db.query('select case when is_called then last_value else 0 end as calls from resolver_calls');
@@ -155,8 +167,31 @@ try {
     has_function_privilege('authenticated','public.get_monitor_model_rows(boolean)','execute') as authenticated,
     has_function_privilege('service_role','public.get_monitor_model_rows(boolean)','execute') as service_role`);
   assert.deepEqual(privileges.rows, [{ anon: false, authenticated: false, service_role: true }]);
+  const snapshotPrivileges = await db.query(`select
+    has_function_privilege('anon','public.refresh_public_monitor_weekly_usage()','execute') as anon_refresh,
+    has_function_privilege('authenticated','public.refresh_public_monitor_weekly_usage()','execute') as authenticated_refresh,
+    has_table_privilege('anon','public.public_monitor_weekly_usage','select') as anon_select,
+    has_table_privilege('authenticated','public.public_monitor_weekly_usage','select') as authenticated_select,
+    has_table_privilege('service_role','public.public_monitor_weekly_usage','select') as service_role_select,
+    has_table_privilege('service_role','public.public_monitor_weekly_usage','delete') as service_role_delete`);
+  assert.deepEqual(snapshotPrivileges.rows, [{
+    anon_refresh: false, authenticated_refresh: false, anon_select: false,
+    authenticated_select: false, service_role_select: true, service_role_delete: false,
+  }]);
+
+  // Reads serve the last snapshot; new requests appear after the next refresh.
+  const snapshotTokens = Number(after.rows.find((row) => row.provider_api_model_id === 'route-a' && row.capability_id === 'text.generate').weekly_tokens_model);
+  await db.exec(`insert into private.v2_rpc_gateway_requests_compat
+    (canonical_model_id,model_id,provider,usage) values ('model-a','model-a','provider-a','{"total_tokens":1000}')`);
+  const stale = await db.query(`select weekly_tokens_model from public.get_monitor_model_rows(false)
+    where provider_api_model_id = 'route-a' and capability_id = 'text.generate'`);
+  assert.equal(Number(stale.rows[0].weekly_tokens_model), snapshotTokens);
+  await db.exec('select public.refresh_public_monitor_weekly_usage()');
+  const refreshed = await db.query(`select weekly_tokens_model from public.get_monitor_model_rows(false)
+    where provider_api_model_id = 'route-a' and capability_id = 'text.generate'`);
+  assert.equal(Number(refreshed.rows[0].weekly_tokens_model), snapshotTokens + 1000);
   console.log(JSON.stringify({
-    cases: 'All columns equivalent; aliases, providers, visibility, pricing, weighted averages, NULLs, zero totals, 7-day boundary and grants passed',
+    cases: 'All columns equivalent; aliases, providers, visibility, pricing, weighted averages, NULLs, zero totals, 7-day boundary, snapshot refresh and grants passed',
     resolverCallsBefore: before.calls, resolverCallsAfter: after.calls,
     localMillisecondsBefore: Math.round(before.elapsed), localMillisecondsAfter: Math.round(after.elapsed),
   }, null, 2));
