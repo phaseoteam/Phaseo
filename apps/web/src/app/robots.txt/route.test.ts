@@ -19,6 +19,18 @@ describe("robots.txt", () => {
 		}
 	});
 
+	it("disallows query-string compare and chat URLs but keeps the pages crawlable", async () => {
+		const body = await robotsBody();
+		for (const path of ["/compare", "/chat"]) {
+			expect(body).toContain(`Disallow: ${path}?\n`);
+			expect(body).not.toContain(`Disallow: ${path}\n`);
+			for (const locale of publicLocales) {
+				expect(body).toContain(`Disallow: /${locale}${path}?\n`);
+				expect(body).not.toContain(`Disallow: /${locale}${path}\n`);
+			}
+		}
+	});
+
 	it("keeps route handler paths unprefixed", async () => {
 		const body = await robotsBody();
 		expect(body).toContain("Disallow: /api/\n");

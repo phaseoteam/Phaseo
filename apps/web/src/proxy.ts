@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import createMiddleware from "next-intl/middleware";
-import { isPublicLocale, routing } from "@/i18n/routing";
+import { defaultLocale, isPublicLocale, routing } from "@/i18n/routing";
+import { localizePublicPath } from "@/lib/auth/localized-paths";
 import { updateSession } from "@/utils/supabase/middleware";
 
 const handleI18nRouting = createMiddleware(routing);
@@ -47,6 +48,27 @@ function getBlogSlugDate(pathname: string): Date | null {
 
 	const parsed = new Date(`${match[1]}-${match[2]}-${match[3]}T00:00:00.000Z`);
 	return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/**
+ * Model pages have no sub-routes, so an extra segment is an old tab or a locale
+ * suffix, such as /models/openai/gpt-5/benchmarks or /models/openai/gpt-5/ja.
+ * The [...legacyPath] page can only redirect after the page shell has streamed
+ * with a 200, which crawlers kept fetching as pages, so redirect here first.
+ */
+export function getLegacyModelPageRedirect(pathname: string): string | null {
+	const segments = pathname.split("/").filter(Boolean);
+	const locale = isPublicLocale(segments[0]) ? segments[0] : null;
+	const [section, organisationId, modelId, ...legacyPath] = locale
+		? segments.slice(1)
+		: segments;
+	if (section !== "models" || !modelId || legacyPath.length === 0) {
+		return null;
+	}
+	return localizePublicPath(
+		locale ?? defaultLocale,
+		`/models/${organisationId}/${modelId}`,
+	);
 }
 
 function isRetiredBlogPath(pathname: string): boolean {
@@ -159,6 +181,13 @@ export async function proxy(request: NextRequest) {
 		rewriteUrl.pathname = "/__markdown";
 		rewriteUrl.searchParams.set("path", "/");
 		return NextResponse.rewrite(rewriteUrl);
+	}
+
+	const legacyModelPage = getLegacyModelPageRedirect(request.nextUrl.pathname);
+	if (legacyModelPage) {
+		const redirectUrl = request.nextUrl.clone();
+		redirectUrl.pathname = legacyModelPage;
+		return NextResponse.redirect(redirectUrl, 308);
 	}
 
 	if (withoutLocalePrefix(request.nextUrl.pathname).startsWith("/blog/")) {
