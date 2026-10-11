@@ -82,8 +82,11 @@ const fixtures = `
 		('30000000-0000-0000-0000-000000000006', 'cf:clef-flash', 'tiermove', 2, 'priority');
 	insert into public.v2_route_variants (variant_id, provider_model_id, service_tier_slug, data_region) values
 		('00000000-0000-0000-0000-000000000006', 'openai:gpt-test', 'standard', 'eu');
+	insert into public.v2_route_variants (variant_id, provider_model_id, service_tier_slug, execution_region, data_region) values
+		('00000000-0000-0000-0000-000000000007', 'openai:gpt-test', 'standard', 'us', 'eu');
 	insert into public.v2_pricing_skus (sku_id, provider_model_id, sku_code, route_variant_id) values
-		('30000000-0000-0000-0000-000000000007', 'openai:gpt-test', 'eu-data', '00000000-0000-0000-0000-000000000006');
+		('30000000-0000-0000-0000-000000000007', 'openai:gpt-test', 'eu-data', '00000000-0000-0000-0000-000000000006'),
+		('30000000-0000-0000-0000-000000000008', 'openai:gpt-test', 'us-run-eu-data', '00000000-0000-0000-0000-000000000007');
 
 	insert into public.v2_pricing_sku_meters (sku_id, meter_key, direction, price_nanos, display_label) values
 		('30000000-0000-0000-0000-000000000001', 'output_tokens', 'output', 500000000, 'Output Tokens'),
@@ -94,6 +97,7 @@ const fixtures = `
 		('30000000-0000-0000-0000-000000000005', 'video_inputs', 'input', 40000000, 'Video Inputs'),
 		('30000000-0000-0000-0000-000000000006', 'video_inputs', 'input', 50000000, 'Video Inputs'),
 		('30000000-0000-0000-0000-000000000007', 'input_text_tokens', 'input', 2400000000, 'Input Text Tokens'),
+		('30000000-0000-0000-0000-000000000008', 'input_text_tokens', 'input', 2600000000, 'Input Text Tokens'),
 		('10000000-0000-0000-0000-000000000001', 'input_tokens', 'input', 90000000, 'Input Tokens'),
 		('10000000-0000-0000-0000-000000000002', 'input_tokens', 'input', 38000000, 'Input Tokens'),
 		('10000000-0000-0000-0000-000000000003', 'input_tokens', 'input', 90000000, 'Input Tokens'),
@@ -170,6 +174,8 @@ test("models page pricing uses current, active, global SKUs from shown routes", 
 
 		const eu = await pricing(db, "eu", "standard");
 		assert.ok(eu["openai/gpt-test"].includes("1|standard|input_text_tokens|input|2.2"));
+		// A variant running in the US with EU data storage matches an EU request too.
+		assert.ok(eu["openai/gpt-test"].includes("1|standard|input_text_tokens|input|2.6"));
 		assert.ok(!eu["openai/gpt-test"].some((meter) => meter.includes("|batch|")));
 	} finally {
 		await db.close();

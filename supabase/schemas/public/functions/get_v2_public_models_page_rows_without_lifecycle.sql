@@ -137,7 +137,11 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
         sku.provider_model_id,
         sku.service_tier_slug,
         sku.operation,
-        nullif(nullif(lower(coalesce(sku.region, variant.execution_region, variant.data_region, '')), ''), 'global') as pricing_region,
+        -- Each region dimension separately, so a request can match any of
+        -- them; a price is global only when none is set.
+        nullif(nullif(lower(coalesce(sku.region, '')), ''), 'global') as sku_region,
+        nullif(nullif(lower(coalesce(variant.execution_region, '')), ''), 'global') as execution_region,
+        nullif(nullif(lower(coalesce(variant.data_region, '')), ''), 'global') as data_region,
         dense_rank() over (
           partition by sku.provider_model_id, sku.sku_code
           order by sku.version desc
@@ -155,7 +159,15 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
         or ranked.route_variant_id in (select variant_id from priced_variants)
       )
       and (p_service_tier is null or ranked.service_tier_slug = lower(p_service_tier))
-      and (p_region is null or ranked.pricing_region is null or ranked.pricing_region = lower(p_region))
+      and (
+        p_region is null
+        or coalesce(ranked.sku_region, ranked.execution_region, ranked.data_region) is null
+        or lower(p_region) in (
+          coalesce(ranked.sku_region, ''),
+          coalesce(ranked.execution_region, ''),
+          coalesce(ranked.data_region, '')
+        )
+      )
   ),
   live_meters as (
     select
@@ -164,7 +176,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
       sku.provider_model_id,
       sku.service_tier_slug,
       sku.operation,
-      sku.pricing_region,
+      coalesce(sku.sku_region, sku.execution_region, sku.data_region) as pricing_region,
       meter.meter_key,
       meter.modality,
       meter.direction,

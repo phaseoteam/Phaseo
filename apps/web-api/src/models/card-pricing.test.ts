@@ -104,6 +104,14 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "free" });
 	});
 
+	it("does not let a $0 input-only provider make a media model Free", () => {
+		const row = card([
+			tokens("input_text_tokens", 0, { provider_group: 1 }),
+			usage("output_image", 0.04, "image", 1, { modality: "image", provider_group: 2 }),
+		], ["image"]);
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.04, unit: "image" });
+	});
+
 	it("uses a provider's base rate when it has short- and long-context SKUs, without From", () => {
 		const row = card([
 			tokens("input_text_tokens", 2, { provider: "openai" }),
