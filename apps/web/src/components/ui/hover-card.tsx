@@ -1,13 +1,21 @@
 "use client"
 
+import * as React from "react"
 import { PreviewCard as PreviewCardPrimitive } from "@base-ui/react/preview-card"
 
 import { cn } from "@/lib/utils"
 import { renderAsChild } from "@/components/ui/base-ui-compat"
 
+// Opens or closes an uncontrolled card. Touch screens cannot hover, so a tap
+// on the trigger toggles the card like a popover; a tap elsewhere closes it.
+const HoverCardTapContext = React.createContext<(() => void) | null>(null)
+
 function HoverCard({
   openDelay,
   closeDelay,
+  open,
+  defaultOpen,
+  onOpenChange,
   ...props
 }: PreviewCardPrimitive.Root.Props & {
   openDelay?: number
@@ -15,22 +23,61 @@ function HoverCard({
 }) {
   void openDelay
   void closeDelay
-  return <PreviewCardPrimitive.Root data-slot="hover-card" {...props} />
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen ?? false)
+  // Controlled cards decide for themselves what a click does.
+  const controlled = open !== undefined
+  const toggle = React.useCallback(() => setUncontrolledOpen((current) => !current), [])
+  return (
+    <HoverCardTapContext.Provider value={controlled ? null : toggle}>
+      <PreviewCardPrimitive.Root
+        data-slot="hover-card"
+        open={controlled ? open : uncontrolledOpen}
+        onOpenChange={(nextOpen, details) => {
+          if (!controlled) setUncontrolledOpen(nextOpen)
+          onOpenChange?.(nextOpen, details)
+        }}
+        {...props}
+      />
+    </HoverCardTapContext.Provider>
+  )
 }
 
 function HoverCardTrigger({
   asChild,
   children,
+  onPointerDown,
+  onClick,
   ...props
 }: PreviewCardPrimitive.Trigger.Props & {
   asChild?: boolean
 }) {
+  const toggle = React.useContext(HoverCardTapContext)
+  const pointerType = React.useRef("")
+  const tapProps = {
+    onPointerDown: (event: React.PointerEvent<HTMLElement>) => {
+      pointerType.current = event.pointerType
+      onPointerDown?.(event as never)
+    },
+    onClick: (event: React.MouseEvent<HTMLElement>) => {
+      onClick?.(event as never)
+      // A tapped link still navigates; anything else opens its card instead
+      // of following a surrounding link or row.
+      const isLink = event.currentTarget instanceof HTMLAnchorElement && event.currentTarget.href
+      if (toggle && !event.defaultPrevented && !isLink && (pointerType.current === "touch" || pointerType.current === "pen")) {
+        event.preventDefault()
+        toggle()
+      }
+      pointerType.current = ""
+    },
+  }
+
   if (asChild) {
     return (
       <PreviewCardPrimitive.Trigger
         data-slot="hover-card-trigger"
         render={renderAsChild(asChild, children)}
         {...props}
+        {...tapProps}
       />
     )
   }
@@ -40,6 +87,7 @@ function HoverCardTrigger({
       data-slot="hover-card-trigger"
       render={renderAsChild(asChild, children)}
       {...props}
+      {...tapProps}
     >
       {children}
     </PreviewCardPrimitive.Trigger>
