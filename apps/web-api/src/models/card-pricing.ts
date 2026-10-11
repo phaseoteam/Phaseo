@@ -381,14 +381,15 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	// output-priced models, an input for input-priced ones (side-less meters
 	// such as requests count for both; tool fees such as web search never do,
 	// so a route listing only a tool fee ranks last).
-	// For media-only models the output must be the media itself (or a
-	// side-less charge such as per request), not a text-token placeholder.
+	// Media-only models (image, video, speech) are billed in many shapes: per
+	// image, per second, per input character, per request. Any such meter
+	// covers them; only text-token prices (often $0 placeholders) do not.
 	const mediaOnly = outputs.some((item) => /image|video|audio|speech|music/.test(item))
 		&& !outputs.some((item) => item === "text");
 	const coversBilledSide = (headline: Rate[]) =>
-		headline.some((item) => !TOOL_METER.test(item.key)
-			&& item.side !== (outputPriced ? "input" : "output")
-			&& (!(outputPriced && mediaOnly) || item.side === "" || MEDIA.includes(item.modality)));
+		headline.some((item) => !TOOL_METER.test(item.key) && (mediaOnly && outputPriced
+			? !isTextToken(item)
+			: item.side !== (outputPriced ? "input" : "output")));
 	// A free product price, not just a $0 tool fee such as web search.
 	const freeUsage = (offer: { summary: CardPricingSummary; headline: Rate[] }) =>
 		offer.summary.kind === "free" && tokenSides(offer.headline) === 0

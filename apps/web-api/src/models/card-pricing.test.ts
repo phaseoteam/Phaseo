@@ -175,6 +175,14 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.04, unit: "image" });
 	});
 
+	it("keeps a cheaper per-character speech provider over a per-request one", () => {
+		const row = card([
+			usage("input_characters", 0.015, "character", 1000, { provider_group: 1 }),
+			usage("requests", 0.05, "request", 1, { provider_group: 2 }),
+		], ["audio"]);
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.015, unit: "1K characters" });
+	});
+
 	it("treats an OCR model as billed on its input pages", () => {
 		const row = normalizeModelsPagePricing({
 			gateway_output_modalities: ["text"],
