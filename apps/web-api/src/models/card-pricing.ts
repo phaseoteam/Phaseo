@@ -373,12 +373,18 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	const outputPriced = outputs.length
 		? outputs.some((item) => /text|image|video|audio|speech|music/.test(item))
 		: offers.some((offer) => offer.headline.some((item) => item.side === "output"));
-	const pricesOutput = (headline: Rate[]) => outputPriced && headline.some((item) => item.side !== "input");
+	// Whether an offer prices the side the model is billed on: an output for
+	// output-priced models, an input for input-priced ones (side-less meters
+	// such as requests count for both).
+	const coversBilledSide = (headline: Rate[]) =>
+		headline.some((item) => item.side !== (outputPriced ? "input" : "output"));
+	// A free product price, not just a $0 tool fee such as web search.
 	const freeUsage = (offer: { summary: CardPricingSummary; headline: Rate[] }) =>
-		offer.summary.kind === "free" && tokenSides(offer.headline) === 0;
+		offer.summary.kind === "free" && tokenSides(offer.headline) === 0
+		&& offer.headline.some((item) => !TOOL_METER.test(item.key));
 	const priced = offers
 		.filter((offer): offer is typeof offer & { summary: CardPricingSummary } => offer.summary !== null)
-		.sort((a, b) => Number(pricesOutput(b.headline)) - Number(pricesOutput(a.headline))
+		.sort((a, b) => Number(coversBilledSide(b.headline)) - Number(coversBilledSide(a.headline))
 			|| Number(freeUsage(b)) - Number(freeUsage(a))
 			|| (outputPriced ? tokenSides(b.headline) - tokenSides(a.headline) : 0)
 			|| compareOffers(a.summary, b.summary, outputPriced));
