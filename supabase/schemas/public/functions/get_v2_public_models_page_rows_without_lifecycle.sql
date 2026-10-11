@@ -122,16 +122,50 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
     select distinct variant_id
     from display_routes
   ),
+  -- The latest live version of each SKU code, chosen per whole SKU so meters
+  -- dropped in a newer version do not survive from an older one.
+  current_skus as (
+    select *
+    from (
+      select
+        sku.sku_id,
+        route.model_slug,
+        route.provider_slug,
+        sku.provider_model_id,
+        sku.service_tier_slug,
+        sku.operation,
+        nullif(nullif(lower(coalesce(sku.region, variant.execution_region, '')), ''), 'global') as pricing_region,
+        dense_rank() over (
+          partition by sku.provider_model_id, sku.sku_code
+          order by sku.version desc
+        ) as recency
+      from public.v2_pricing_skus sku
+      join priced_routes route on route.provider_model_id = sku.provider_model_id
+      left join public.v2_route_variants variant on variant.variant_id = sku.route_variant_id
+      where sku.status = 'active'
+        and (
+          sku.route_variant_id is null
+          or sku.route_variant_id in (select variant_id from priced_variants)
+        )
+        and (p_service_tier is null or sku.service_tier_slug = lower(p_service_tier))
+        and sku.effective_from <= now()
+        and (sku.effective_to is null or sku.effective_to > now())
+        and (
+          p_region is null
+          or coalesce(sku.region, variant.execution_region) is null
+          or lower(p_region) in (lower(coalesce(sku.region, '')), lower(coalesce(variant.execution_region, '')))
+        )
+    ) ranked
+    where ranked.recency = 1
+  ),
   live_meters as (
     select
-      route.model_slug,
-      route.provider_slug,
+      sku.model_slug,
+      sku.provider_slug,
       sku.provider_model_id,
       sku.service_tier_slug,
       sku.operation,
-      sku.sku_code,
-      sku.version,
-      nullif(nullif(lower(coalesce(sku.region, variant.execution_region, '')), ''), 'global') as pricing_region,
+      sku.pricing_region,
       meter.meter_key,
       meter.modality,
       meter.direction,
@@ -141,33 +175,15 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
       meter.display_label,
       meter.display_unit,
       meter.meter_order
-    from public.v2_pricing_skus sku
-    join priced_routes route on route.provider_model_id = sku.provider_model_id
+    from current_skus sku
     join public.v2_pricing_sku_meters meter on meter.sku_id = sku.sku_id and meter.billable
-    left join public.v2_route_variants variant on variant.variant_id = sku.route_variant_id
-    where sku.status = 'active'
-      and (
-        sku.route_variant_id is null
-        or sku.route_variant_id in (select variant_id from priced_variants)
-      )
-      and (p_service_tier is null or sku.service_tier_slug = lower(p_service_tier))
-      and sku.effective_from <= now()
-      and (sku.effective_to is null or sku.effective_to > now())
-      and (
-        p_region is null
-        or coalesce(sku.region, variant.execution_region) is null
-        or lower(p_region) in (lower(coalesce(sku.region, '')), lower(coalesce(variant.execution_region, '')))
-      )
   ),
+  -- Global availability is judged over current versions only.
   current_meters as (
     select *
     from (
       select
         live.*,
-        dense_rank() over (
-          partition by live.provider_model_id, live.sku_code, live.meter_key
-          order by live.version desc
-        ) as recency,
         bool_or(live.pricing_region is null) over (
           partition by live.provider_model_id, live.service_tier_slug, live.operation, live.meter_key
         ) as has_global_price,
@@ -179,8 +195,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
         ) as provider_group
       from live_meters live
     ) ranked
-    where ranked.recency = 1
-      and (p_region is not null or ranked.pricing_region is null or not ranked.has_global_price)
+    where p_region is not null or ranked.pricing_region is null or not ranked.has_global_price
   ),
   pricing_rows as (
     select

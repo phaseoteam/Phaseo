@@ -73,10 +73,16 @@ const fixtures = `
 	insert into public.v2_pricing_skus (sku_id, provider_model_id, sku_code, version, route_variant_id) values
 		('30000000-0000-0000-0000-000000000001', 'cf:clef-flash', 'repriced', 1, '00000000-0000-0000-0000-000000000001'),
 		('30000000-0000-0000-0000-000000000002', 'cf:clef-flash', 'repriced', 2, '00000000-0000-0000-0000-000000000001');
+	insert into public.v2_pricing_skus (sku_id, provider_model_id, sku_code, version, region) values
+		('30000000-0000-0000-0000-000000000003', 'cf:clef-flash', 'moved', 1, null),
+		('30000000-0000-0000-0000-000000000004', 'cf:clef-flash', 'moved', 2, 'eu');
 
 	insert into public.v2_pricing_sku_meters (sku_id, meter_key, direction, price_nanos, display_label) values
 		('30000000-0000-0000-0000-000000000001', 'output_tokens', 'output', 500000000, 'Output Tokens'),
 		('30000000-0000-0000-0000-000000000002', 'output_tokens', 'output', 300000000, 'Output Tokens'),
+		('30000000-0000-0000-0000-000000000001', 'requests', 'input', 10000000, 'Requests'),
+		('30000000-0000-0000-0000-000000000003', 'image_inputs', 'input', 20000000, 'Image Inputs'),
+		('30000000-0000-0000-0000-000000000004', 'image_inputs', 'input', 30000000, 'Image Inputs'),
 		('10000000-0000-0000-0000-000000000001', 'input_tokens', 'input', 90000000, 'Input Tokens'),
 		('10000000-0000-0000-0000-000000000002', 'input_tokens', 'input', 38000000, 'Input Tokens'),
 		('10000000-0000-0000-0000-000000000003', 'input_tokens', 'input', 90000000, 'Input Tokens'),
@@ -114,8 +120,11 @@ test("models page pricing uses current, active, global SKUs from shown routes", 
 		const all = await pricing(db);
 		// The disabled CrossModel route is gone (no $0 output); separate SKU
 		// codes both stay and the API takes the cheaper; within one code only
-		// the highest version counts ($0.30, not $0.50).
+		// the highest version counts ($0.30, not $0.50), and the "requests"
+		// meter dropped in v2 does not survive from v1. "moved" went from global
+		// (v1) to EU (v2): the current EU price stays, the stale global one goes.
 		assert.deepEqual(all["cloudflare/clef-flash"], [
+			"1|standard|image_inputs|input|0.03",
 			"1|standard|input_tokens|input|0.038",
 			"1|standard|input_tokens|input|0.09",
 			"1|standard|output_tokens|output|0.3",
