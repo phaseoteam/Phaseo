@@ -50,26 +50,214 @@ describe("normalizeModelsPagePricing", () => {
 		});
 	});
 
-	it("shows the cheapest provider with a From label and keeps the range for the hover card", () => {
+	it("shows only the cheapest provider, in the pill and the hover card", () => {
 		const row = card([
-			tokens("input_text_tokens", 3),
-			tokens("input_text_tokens", 3.3),
-			tokens("output_text_tokens", 15),
-			tokens("output_text_tokens", 16.5),
+			tokens("input_text_tokens", 3.3, { provider: "bedrock" }),
+			tokens("output_text_tokens", 16.5, { provider: "bedrock" }),
+			tokens("input_text_tokens", 3, { provider: "anthropic" }),
+			tokens("output_text_tokens", 15, { provider: "anthropic" }),
+			tokens("cached_read_text_tokens", 0.3, { provider: "anthropic" }),
 		]);
-		expect(row.pricing_summary).toEqual({ kind: "tokens", from: true, input: 3, output: 15, unit: "1M tokens" });
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 3, output: 15, unit: "1M tokens" });
 		expect(row.pricing_detail_rows).toEqual([
-			{ label: "Input Text Tokens", value: "$3–$3.30 / 1M tokens" },
-			{ label: "Output Text Tokens", value: "$15–$16.50 / 1M tokens" },
+			{ label: "Input Text Tokens", value: "$3 / 1M tokens" },
+			{ label: "Output Text Tokens", value: "$15 / 1M tokens" },
+			{ label: "Cached Read Text Tokens", value: "$0.30 / 1M tokens" },
+		]);
+		expect(row).toMatchObject({ lowest_input_price: 3, lowest_output_price: 15 });
+	});
+
+	it("groups providers by the page RPC's anonymous provider number", () => {
+		const row = card([
+			tokens("input_tokens", 0.09, { provider_group: 1 }),
+			tokens("output_tokens", 0.4, { provider_group: 1 }),
+			tokens("input_tokens", 0.038, { provider_group: 2 }),
+			tokens("output_tokens", 0.2, { provider_group: 2 }),
+		]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 0.038, output: 0.2, unit: "1M tokens" });
+	});
+
+	it("ranks a provider pricing both token sides ahead of one pricing only input", () => {
+		const row = card([
+			tokens("input_text_tokens", 10, { provider_group: 1 }),
+			tokens("input_text_tokens", 6, { provider_group: 2 }),
+			tokens("output_text_tokens", 6, { provider_group: 2 }),
+		]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 6, output: 6, unit: "1M tokens" });
+	});
+
+	it("does not call a model Free because one provider lists only a $0 input price", () => {
+		const row = card([
+			tokens("input_text_tokens", 0, { provider_group: 1 }),
+			tokens("input_text_tokens", 3, { provider_group: 2 }),
+			tokens("output_text_tokens", 15, { provider_group: 2 }),
+		]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 3, output: 15, unit: "1M tokens" });
+	});
+
+	it("keeps a genuinely free per-image provider ahead of a paid token provider", () => {
+		const row = card([
+			usage("output_image", 0, "image", 1, { modality: "image", provider_group: 1 }),
+			tokens("input_text_tokens", 1, { provider_group: 2 }),
+			tokens("output_image_tokens", 30, { modality: "image", provider_group: 2 }),
+		], ["image"]);
+		expect(row.pricing_summary).toEqual({ kind: "free" });
+	});
+
+	it("does not let a $0 input-only provider make a media model Free", () => {
+		const row = card([
+			tokens("input_text_tokens", 0, { provider_group: 1 }),
+			usage("output_image", 0.04, "image", 1, { modality: "image", provider_group: 2 }),
+		], ["image"]);
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.04, unit: "image" });
+	});
+
+	it("keeps a free input-only provider for an input-priced model", () => {
+		const row = card([
+			tokens("input_tokens", 0, { provider_group: 1 }),
+			usage("requests", 0.001, "request", 1, { provider_group: 2 }),
+		], ["embeddings"]);
+		expect(row.pricing_summary).toEqual({ kind: "free" });
+	});
+
+	it("keeps an embeddings model input-priced even if one provider lists an output meter", () => {
+		const row = card([
+			tokens("input_tokens", 0.02, { provider_group: 1 }),
+			tokens("input_tokens", 0.1, { provider_group: 2 }),
+			tokens("output_tokens", 0.1, { provider_group: 2 }),
+		], ["embeddings"]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 0.02, output: null, unit: "1M tokens" });
+	});
+
+	it("does not treat a provider with only a $0 tool fee as a free model", () => {
+		const row = card([
+			usage("web_search", 0, "request", 1, { provider_group: 1 }),
+			tokens("input_text_tokens", 3, { provider_group: 2 }),
+			tokens("output_text_tokens", 15, { provider_group: 2 }),
+		]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 3, output: 15, unit: "1M tokens" });
+	});
+
+	it("treats a transcription model as billed on its input audio", () => {
+		const row = card([
+			tokens("output_text_tokens", 0, { provider_group: 1 }),
+			usage("input_audio_seconds", 0.0001, "second", 1, { modality: "audio", provider_group: 2 }),
+		], ["text", "audio_stt"]);
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.0001, unit: "sec" });
+	});
+
+	it("recognises a transcription model from its endpoint when it only lists text output", () => {
+		const row = normalizeModelsPagePricing({
+			gateway_output_modalities: ["text"],
+			gateway_endpoints: ["audio.transcription"],
+			pricing_detail_rows: [
+				tokens("output_text_tokens", 0, { provider_group: 1 }),
+				usage("input_audio_seconds", 0.0001, "second", 1, { modality: "audio", provider_group: 2 }),
+			],
+		});
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.0001, unit: "sec" });
+	});
+
+	it("matches the hover row to the headline when two full-price tiers price a meter", () => {
+		const row = card([
+			tokens("input_text_tokens", 10, { service_tier: "on-demand" }),
+			tokens("input_text_tokens", 1, { service_tier: "priority" }),
+		]);
+		expect(row.pricing_summary).toMatchObject({ kind: "tokens", input: 1 });
+		expect(row.pricing_detail_rows).toEqual([{ label: "Input Text Tokens", value: "$1 / 1M tokens" }]);
+	});
+
+	it("does not let a $0 text-token placeholder make an image model Free", () => {
+		const row = card([
+			tokens("output_text_tokens", 0, { provider_group: 1 }),
+			usage("output_image", 0.04, "image", 1, { modality: "image", provider_group: 2 }),
+		], ["image"]);
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.04, unit: "image" });
+	});
+
+	it("keeps a cheaper per-character speech provider over a per-request one", () => {
+		const row = card([
+			usage("input_characters", 0.015, "character", 1000, { provider_group: 1 }),
+			usage("requests", 0.05, "request", 1, { provider_group: 2 }),
+		], ["audio"]);
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.015, unit: "1K characters" });
+	});
+
+	it("does not headline an input-image surcharge over a paid image output", () => {
+		const row = card([
+			usage("input_image", 0, "image", 1, { modality: "image", provider_group: 1 }),
+			usage("output_image", 0.04, "image", 1, { modality: "image", provider_group: 2 }),
+		], ["image"]);
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.04, unit: "image" });
+	});
+
+	it("treats an OCR model as billed on its input pages", () => {
+		const row = normalizeModelsPagePricing({
+			gateway_output_modalities: ["text"],
+			gateway_endpoints: ["ocr"],
+			pricing_detail_rows: [
+				tokens("output_text_tokens", 0, { provider_group: 1 }),
+				usage("input_pages", 1, "page", 1000, { provider_group: 2 }),
+			],
+		});
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 1, unit: "1K pages" });
+	});
+
+	it("shows each hover row from the tier the headline used", () => {
+		const row = card([
+			tokens("input_text_tokens", 10),
+			tokens("input_text_tokens", 1, { service_tier: "priority" }),
+			tokens("output_text_tokens", 20, { service_tier: "priority" }),
+		]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 10, output: 20, unit: "1M tokens" });
+		expect(row.pricing_detail_rows).toEqual([
+			{ label: "Input Text Tokens", value: "$10 / 1M tokens" },
+			{ label: "Output Text Tokens", value: "$20 / 1M tokens" },
 		]);
 	});
 
-	it("lists every meter in the hover card, standard tier first", () => {
-		const rows = Array.from({ length: 8 }, (_, index) => tokens(`input_text_tokens_${index}`, index + 1));
-		const row = card([tokens("input_text_tokens", 1, { service_tier: "priority" }), ...rows]);
-		const details = row.pricing_detail_rows as Array<{ label: string }>;
-		expect(details).toHaveLength(9);
-		expect(details.at(-1)?.label).toBe("Input Text Tokens (Priority)");
+	it("does not let a $0 tool-only route make an embeddings model Free", () => {
+		const row = card([
+			usage("web_search", 0, "request", 1, { provider_group: 1 }),
+			tokens("input_tokens", 0.02, { provider_group: 2 }),
+		], ["embeddings"]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 0.02, output: null, unit: "1M tokens" });
+	});
+
+	it("does not let a $0 output-only provider beat a paid input price on an embeddings model", () => {
+		const row = card([
+			tokens("output_tokens", 0, { provider_group: 1 }),
+			tokens("input_tokens", 0.02, { provider_group: 2 }),
+		], ["embeddings"]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 0.02, output: null, unit: "1M tokens" });
+	});
+
+	it("uses a provider's base rate when it has short- and long-context SKUs, without From", () => {
+		const row = card([
+			tokens("input_text_tokens", 2, { provider: "openai" }),
+			tokens("output_text_tokens", 10, { provider: "openai" }),
+			tokens("input_text_tokens", 4, { provider: "openai" }),
+			tokens("output_text_tokens", 15, { provider: "openai" }),
+		]);
+		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 2, output: 10, unit: "1M tokens" });
+		expect(row.pricing_detail_rows).toEqual([
+			{ label: "Input Text Tokens", value: "$2 / 1M tokens" },
+			{ label: "Output Text Tokens", value: "$10 / 1M tokens" },
+		]);
+	});
+
+	it("leaves batch, flex and other service tiers out of the hover card", () => {
+		const row = card([
+			tokens("input_text_tokens", 2),
+			tokens("output_text_tokens", 10),
+			tokens("input_text_tokens", 1, { service_tier: "batch" }),
+			tokens("input_text_tokens", 1, { service_tier: "flex" }),
+			tokens("input_text_tokens", 12, { service_tier: "ultrafast" }),
+		]);
+		expect(row.pricing_detail_rows).toEqual([
+			{ label: "Input Text Tokens", value: "$2 / 1M tokens" },
+			{ label: "Output Text Tokens", value: "$10 / 1M tokens" },
+		]);
 	});
 
 	it("labels free models as Free", () => {

@@ -13,15 +13,18 @@ type Rate = {
 	price: number;
 	unit: string;
 	tier: string;
+	provider: string;
 	side: "input" | "output" | "";
 	modality: string;
 	auxiliary: boolean;
 };
 
 /**
- * The card's one-line headline price. It carries numbers rather than prose so
- * the web app can localise the wording; `from` means cheaper and dearer rates
- * exist (other providers, sizes, or meters), which the hover card lists.
+ * The card's one-line headline price, always from the cheapest provider's
+ * standard tier. It carries numbers rather than prose so the web app can
+ * localise the wording. `from` is only set for usage prices where that
+ * provider charges several rates for one product (image sizes, video with or
+ * without audio); token prices are never qualified.
  */
 export type CardPricingSummary =
 	| { kind: "free" }
@@ -128,6 +131,8 @@ function rate(row: Row): Rate | null {
 		price: price * unit.factor,
 		unit: unit.unit,
 		tier: String(row.service_tier ?? "standard").trim().toLowerCase() || "standard",
+		// The page RPC sends an anonymous per-model provider number.
+		provider: String(row.provider_group ?? row.provider ?? "").trim().toLowerCase(),
 		side,
 		modality,
 		// Cache, batch-discount, and reasoning meters are real prices but never
@@ -161,12 +166,6 @@ export function formatUsd(price: number): string {
 
 function min(rates: Rate[]): number {
 	return Math.min(...rates.map((item) => item.price));
-}
-
-function spread(rates: Rate[]): string {
-	const low = min(rates);
-	const high = Math.max(...rates.map((item) => item.price));
-	return low === high ? formatUsd(low) : `${formatUsd(low)}–${formatUsd(high)}`;
 }
 
 function varies(rates: Rate[]): boolean {
@@ -264,7 +263,9 @@ function summarise(model: Row, rates: Rate[]): { summary: CardPricingSummary | n
 		return {
 			summary: {
 				kind: "tokens",
-				from: varies(input) || varies(output),
+				// The base rate of one provider (short-context SKUs and the like are
+				// the lowest of its standard rates), so it is never a "From" price.
+				from: false,
 				input: input.length ? min(input) : null,
 				output: output.length ? min(output) : null,
 				unit: "1M tokens",
@@ -301,34 +302,129 @@ function summarise(model: Row, rates: Rate[]): { summary: CardPricingSummary | n
 }
 
 /**
- * Converts V2 meter rows into the models-page card contract: a one-line
- * headline (`pricing_summary`), every meter for the hover card
- * (`pricing_detail_rows`), and headline-only `lowest_*` prices that exclude
- * cache, batch, and other discounted meters.
+ * The meters a provider's hover card lists: the tiers its headline price
+ * came from plus its standard tier, so batch, flex, priority and similar
+ * service levels are left out. Auxiliary meters (cache, tool fees) in those
+ * tiers stay.
+ */
+function detailTierRates(rates: Rate[], headline: Rate[]): Rate[] {
+	const tiers = new Set(headline.map((item) => item.tier));
+	if (!tiers.size) for (const item of preferredTier(rates.filter((rate) => !rate.auxiliary))) tiers.add(item.tier);
+	tiers.add("standard");
+	return rates.filter((item) => tiers.has(item.tier));
+}
+
+const SUMMARY_ORDER: Record<CardPricingSummary["kind"], number> = { free: 0, tokens: 1, usage: 2 };
+
+/**
+ * Orders offers cheapest first; offers of different kinds are not comparable
+ * by price. Input-priced models (embeddings, rerank) compare input alone.
+ */
+function compareOffers(a: CardPricingSummary, b: CardPricingSummary, outputPriced: boolean): number {
+	if (a.kind !== b.kind) return SUMMARY_ORDER[a.kind] - SUMMARY_ORDER[b.kind];
+	if (a.kind === "tokens" && b.kind === "tokens") {
+		if (!outputPriced) {
+			if (a.input === null || b.input === null) return Number(a.input === null) - Number(b.input === null);
+			return a.input - b.input;
+		}
+		// An offer missing a side is not free on that side: offers pricing more
+		// sides come first, and only like-for-like offers are compared by price.
+		const sides = (offer: typeof a) => Number(offer.input !== null) + Number(offer.output !== null);
+		return sides(b) - sides(a)
+			|| ((a.input ?? 0) + (a.output ?? 0)) - ((b.input ?? 0) + (b.output ?? 0))
+			|| (a.input ?? 0) - (b.input ?? 0);
+	}
+	if (a.kind === "usage" && b.kind === "usage") {
+		return mediaUnitRank(a.unit) - mediaUnitRank(b.unit) || a.unit.localeCompare(b.unit) || a.price - b.price;
+	}
+	return 0;
+}
+
+/**
+ * Converts V2 meter rows into the models-page card contract. Everything is
+ * taken from the cheapest provider's standard tier: the one-line headline
+ * (`pricing_summary`), its meters for the hover card (`pricing_detail_rows`),
+ * and the headline-only `lowest_*` prices used by the price sort.
  */
 export function normalizeModelsPagePricing(model: Row): Row {
 	const rows = Array.isArray(model.pricing_detail_rows)
 		? model.pricing_detail_rows.filter((item): item is Row => Boolean(item) && typeof item === "object")
 		: [];
 	if (!rows.length) return model;
-	const rates = rows.map(rate).filter((item): item is Rate => item !== null);
+	const allRates = rows.map(rate).filter((item): item is Rate => item !== null);
 	const preformatted = rows
 		.filter((item) => finite(item.price) === null && item.label && item.value)
 		.map((item) => ({ label: String(item.label), value: String(item.value) }));
-	if (!rates.length) return { ...model, pricing_detail_rows: preformatted };
+	if (!allRates.length) return { ...model, pricing_detail_rows: preformatted };
 
-	const detailRows = [...groupBy(rates, (item) => `${item.key}|${item.unit}|${item.tier}`).values()]
+	// Each provider's own headline (with its own tier preference), then the
+	// cheapest of those; providers are never mixed into one price.
+	const offers = [...groupBy(allRates, (item) => item.provider).values()]
+		.map((rates) => ({ rates, ...summarise(model, rates) }));
+	// When the model is output-priced (it generates text or media), offers
+	// that price an output come first (side-less meters such as requests
+	// count), so a provider with only a $0 input meter cannot make the model
+	// "Free". Input-priced models such as embeddings or rerank skip this.
+	// Then a genuinely free usage offer ($0 per image or request), then offers
+	// pricing more token sides, then the cheapest.
+	const tokenSides = (headline: Rate[]) => new Set(headline.filter(isTextToken).map((item) => item.side)).size;
+	const outputModalities = model.gateway_output_modalities ?? model.output_types ?? model.output_modalities;
+	const outputs = Array.isArray(outputModalities) ? outputModalities.map((item) => String(item).toLowerCase()) : [];
+	// Transcription, OCR and document parsing list text as their output but
+	// are billed on the input (audio, pages), so they count as input-priced.
+	const endpoints = Array.isArray(model.gateway_endpoints) ? model.gateway_endpoints.map((item) => String(item).toLowerCase()) : [];
+	const inputBilledTask = [...outputs, ...endpoints].some((item) => /stt|transcri|speech_to_text|ocr|parse/.test(item));
+	const outputPriced = outputs.length
+		? !inputBilledTask && outputs.some((item) => /text|image|video|audio|speech|music/.test(item))
+		: offers.some((offer) => offer.headline.some((item) => item.side === "output"));
+	// Whether an offer prices the side the model is billed on: an output for
+	// output-priced models, an input for input-priced ones (side-less meters
+	// such as requests count for both; tool fees such as web search never do,
+	// so a route listing only a tool fee ranks last).
+	// Media-only models (image, video, speech) are billed in many shapes: per
+	// image or second of output, per request, or per input character (speech).
+	// Text-token prices (often $0 placeholders) and input-media surcharges
+	// (an input image fee) are not the generation price.
+	const mediaOnly = outputs.some((item) => /image|video|audio|speech|music/.test(item))
+		&& !outputs.some((item) => item === "text");
+	const coversBilledSide = (headline: Rate[]) =>
+		headline.some((item) => !TOOL_METER.test(item.key) && (mediaOnly && outputPriced
+			? !isTextToken(item) && (item.side !== "input" || !MEDIA.includes(item.modality))
+			: item.side !== (outputPriced ? "input" : "output")));
+	// A free product price, not just a $0 tool fee such as web search.
+	const freeUsage = (offer: { summary: CardPricingSummary; headline: Rate[] }) =>
+		offer.summary.kind === "free" && tokenSides(offer.headline) === 0
+		&& offer.headline.some((item) => !TOOL_METER.test(item.key));
+	const priced = offers
+		.filter((offer): offer is typeof offer & { summary: CardPricingSummary } => offer.summary !== null)
+		.sort((a, b) => Number(coversBilledSide(b.headline)) - Number(coversBilledSide(a.headline))
+			|| Number(freeUsage(b)) - Number(freeUsage(a))
+			|| (outputPriced ? tokenSides(b.headline) - tokenSides(a.headline) : 0)
+			|| compareOffers(a.summary, b.summary, outputPriced));
+	const chosen = priced[0] ?? { rates: allRates, summary: null, headline: [] };
+	const { rates, summary, headline: headlineRates } = chosen;
+
+	// One price per meter: taken from the tier the headline used for that
+	// meter (otherwise the preferred tier), and the provider's base rate when
+	// it has several SKUs there (for example short and long context).
+	const detailRows = [...groupBy(detailTierRates(rates, headlineRates), (item) => `${item.key}|${item.unit}`).values()]
+		.map((items) => {
+			const headlineTiers = new Set(headlineRates
+				.filter((item) => item.key === items[0].key && item.unit === items[0].unit)
+				.map((item) => item.tier));
+			const tierItems = headlineTiers.size ? items.filter((item) => headlineTiers.has(item.tier)) : preferredTier(items);
+			return tierItems.length ? tierItems : items;
+		})
 		.sort((a, b) => detailOrder(a[0], b[0]))
 		.map((items) => ({
-			label: items[0].tier === "standard" ? items[0].label : `${items[0].label} (${title(items[0].tier)})`,
+			label: items[0].label,
 			value: isPassThrough(items[0].unit) && items.every((item) => item.price === 1)
 				? "At provider cost"
-				: `${spread(items)} / ${items[0].unit}`,
+				: `${formatUsd(min(items))} / ${items[0].unit}`,
 		}));
 
-	// The compatibility fields (price sort, older consumers) use the same tier
-	// preference as the headline, so tier-only models keep a sortable price.
-	const { summary, headline: headlineRates } = summarise(model, rates);
+	// The compatibility fields (price sort, older consumers) come from the same
+	// provider and tier as the headline.
 	const headline = rates.filter((item) => !item.auxiliary);
 	const lowest = (side: Rate["side"]) => {
 		// A usage headline fixes the side, unit and tier: the sort compares
