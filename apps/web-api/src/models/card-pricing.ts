@@ -370,8 +370,11 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	const tokenSides = (headline: Rate[]) => new Set(headline.filter(isTextToken).map((item) => item.side)).size;
 	const outputModalities = model.gateway_output_modalities ?? model.output_types ?? model.output_modalities;
 	const outputs = Array.isArray(outputModalities) ? outputModalities.map((item) => String(item).toLowerCase()) : [];
+	// Transcription (speech-to-text) lists text as its output but is billed on
+	// the input audio, so it counts as input-priced.
+	const transcription = outputs.some((item) => /stt|transcri|speech_to_text/.test(item));
 	const outputPriced = outputs.length
-		? outputs.some((item) => /text|image|video|audio|speech|music/.test(item))
+		? !transcription && outputs.some((item) => /text|image|video|audio|speech|music/.test(item))
 		: offers.some((offer) => offer.headline.some((item) => item.side === "output"));
 	// Whether an offer prices the side the model is billed on: an output for
 	// output-priced models, an input for input-priced ones (side-less meters

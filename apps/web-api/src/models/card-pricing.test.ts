@@ -138,6 +138,14 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "tokens", from: false, input: 3, output: 15, unit: "1M tokens" });
 	});
 
+	it("treats a transcription model as billed on its input audio", () => {
+		const row = card([
+			tokens("output_text_tokens", 0, { provider_group: 1 }),
+			usage("input_audio_seconds", 0.0001, "second", 1, { modality: "audio", provider_group: 2 }),
+		], ["text", "audio_stt"]);
+		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.0001, unit: "sec" });
+	});
+
 	it("does not let a $0 tool-only route make an embeddings model Free", () => {
 		const row = card([
 			usage("web_search", 0, "request", 1, { provider_group: 1 }),
