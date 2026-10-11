@@ -10,7 +10,8 @@ async function robotsBody(): Promise<string> {
 describe("robots.txt", () => {
 	it("disallows private pages under every locale prefix", async () => {
 		const body = await robotsBody();
-		for (const path of ["/sign-in", "/sign-up", "/settings/", "/internal/", "/gateway/usage"]) {
+		// Slashless prefixes, so section roots such as /de-DE/settings match too.
+		for (const path of ["/sign-in", "/sign-up", "/settings", "/internal", "/gateway/usage"]) {
 			expect(body).toContain(`Disallow: ${path}\n`);
 			for (const locale of publicLocales) {
 				expect(body).toContain(`Disallow: /${locale}${path}\n`);

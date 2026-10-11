@@ -3,11 +3,13 @@ import { CONTENT_SIGNAL_VALUE } from "@/lib/agent-discovery";
 import { PUBLIC_CDN_CACHE_CONTROL } from "@/lib/cache/publicCacheHeaders";
 import { SITE_URL } from "@/lib/seo";
 
+// Prefixes without a trailing slash also cover the section roots, such as
+// /de-DE/settings, as well as everything below them.
 const PAGE_DISALLOW_PATHS = [
 	"/sign-in",
 	"/sign-up",
-	"/settings/",
-	"/internal/",
+	"/settings",
+	"/internal",
 	"/gateway/usage",
 ] as const;
 
