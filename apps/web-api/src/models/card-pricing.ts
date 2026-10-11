@@ -401,8 +401,10 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	// it has several SKUs there (for example short and long context).
 	const detailRows = [...groupBy(detailTierRates(rates, headlineRates), (item) => `${item.key}|${item.unit}`).values()]
 		.map((items) => {
-			const headlineTier = headlineRates.find((item) => item.key === items[0].key && item.unit === items[0].unit)?.tier;
-			const tierItems = headlineTier ? items.filter((item) => item.tier === headlineTier) : preferredTier(items);
+			const headlineTiers = new Set(headlineRates
+				.filter((item) => item.key === items[0].key && item.unit === items[0].unit)
+				.map((item) => item.tier));
+			const tierItems = headlineTiers.size ? items.filter((item) => headlineTiers.has(item.tier)) : preferredTier(items);
 			return tierItems.length ? tierItems : items;
 		})
 		.sort((a, b) => detailOrder(a[0], b[0]))

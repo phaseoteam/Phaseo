@@ -158,6 +158,15 @@ describe("normalizeModelsPagePricing", () => {
 		expect(row.pricing_summary).toEqual({ kind: "usage", from: false, price: 0.0001, unit: "sec" });
 	});
 
+	it("matches the hover row to the headline when two full-price tiers price a meter", () => {
+		const row = card([
+			tokens("input_text_tokens", 10, { service_tier: "on-demand" }),
+			tokens("input_text_tokens", 1, { service_tier: "priority" }),
+		]);
+		expect(row.pricing_summary).toMatchObject({ kind: "tokens", input: 1 });
+		expect(row.pricing_detail_rows).toEqual([{ label: "Input Text Tokens", value: "$1 / 1M tokens" }]);
+	});
+
 	it("treats an OCR model as billed on its input pages", () => {
 		const row = normalizeModelsPagePricing({
 			gateway_output_modalities: ["text"],
