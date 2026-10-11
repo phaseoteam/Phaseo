@@ -2546,6 +2546,7 @@
 		"requestMissingData": "请求补充数据"
 	},
 	"catalogNotFound": {
+		"modelUnavailableTitle": "模型不可用 | Phaseo",
 		"modelHeading": "未找到模型“{id}”。",
 		"modelDescription": "请检查模型 ID，或浏览目录以查找可用模型。",
 		"requestModel": "这里应该有这个模型吗？",

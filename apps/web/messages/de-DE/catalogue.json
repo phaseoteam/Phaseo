@@ -2546,6 +2546,7 @@
 		"requestMissingData": "Fehlende Daten anfragen"
 	},
 	"catalogNotFound": {
+		"modelUnavailableTitle": "Modell nicht verfügbar | Phaseo",
 		"modelHeading": "Das Modell „{id}“ wurde nicht gefunden.",
 		"modelDescription": "Prüfe die Modell-ID oder durchsuche den Katalog nach verfügbaren Modellen.",
 		"requestModel": "Fehlt hier ein Modell?",

@@ -2546,6 +2546,7 @@
 		"requestMissingData": "अनुपलब्ध डेटा का अनुरोध करें"
 	},
 	"catalogNotFound": {
+		"modelUnavailableTitle": "मॉडल उपलब्ध नहीं है | Phaseo",
 		"modelHeading": "मॉडल “{id}” नहीं मिला।",
 		"modelDescription": "मॉडल ID जाँचें या उपलब्ध मॉडल देखने के लिए कैटलॉग ब्राउज़ करें।",
 		"requestModel": "क्या यहाँ कोई मॉडल होना चाहिए?",
