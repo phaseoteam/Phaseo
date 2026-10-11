@@ -33,6 +33,26 @@ its ID. Inspect live constraints, RLS, triggers, and a comparable internal
 route. Inventory all target routes, aliases, variants, capabilities, SKUs,
 meters, effective windows, and any existing public configuration.
 
+### Required automation gate before any write
+
+Inspect `v2_models.metadata.provider_catalog_owner`, `released_at`, active
+`provider_catalog_sources`, and the deployed `apply_provider_catalog_snapshot`
+and `promote_provider_catalog_candidate` functions. The current promotion
+guard allows a hidden, unreleased model owned by the submitting provider to
+be promoted, enabling public routes and clearing `hidden` during a poll.
+`v2_catalogue_source_overrides` alone does not protect those visibility fields.
+
+For this workflow, create administrator-managed models without
+`provider_catalog_owner`. Do not adopt a provider-owned, unreleased model into
+internal testing unless a deployed, verified exclusion prevents every relevant
+sync/promotion path from publishing it. If that protection is absent, stop
+before onboarding that model and report the blocker; do not claim it is safe.
+Do not silently erase existing ownership, falsify `released_at`, or disable an
+entire provider's polling. Adding a durable policy/promotion guard requires
+separately scoped code/schema work and validation. An internal policy note is
+operator guidance, not an automation guard. Recheck this gate after any change
+in catalogue ownership or sync configuration.
+
 Verify current deployed behavior at these implementation anchors:
 
 - Admin source and chat: `apps/web/src/lib/fetchers/internal/fetchAdminModelSource.ts`
@@ -130,12 +150,22 @@ providers, metrics, or existence-dependent responses require investigation.
 Onboarding never authorizes publication. A permanent-internal restriction
 prohibits release unless the user explicitly revises that restriction.
 
-Recheck support, pricing, dates, lifecycle, aliases, and notices. Coordinate
-`hidden = false`, intended routes `access_scope = public`,
-`phaseo_status = enabled`, and `routing_enabled = true`, with valid upstream
-availability, capabilities, lifecycle, non-stealth policy, and effective
-windows. Availability alone is not publication. Verify ordinary-user
-discovery and execution after propagation.
+Recheck support, pricing, dates, lifecycle, aliases, and notices. Use the
+existing administrator availability action: authenticated
+`PUT /api/account/models/:modelId/availability` with `{ "available": true }`,
+implemented in `apps/web-api/src/routes/account/models.ts`. It invokes
+`set_v2_admin_model_availability` with the authenticated administrator's ID and
+purges the catalogue cache. Do not reproduce publication with direct DML or
+bypass the action's validation when it rejects a release.
+
+The RPC validates prepared routes and atomically coordinates public scope,
+enabled routing, active capabilities, model lifecycle/catalogue status,
+release timestamp, admin audit history, and database-managed source override.
+Check `supabase/schemas/public/functions/set_v2_admin_model_availability.sql`
+for the current readiness contract. The application's availability action is
+a publication operation, unlike upstream provider availability metadata alone.
+Verify ordinary-user discovery and execution after propagation. Source
+overrides do not replace the automation gate above.
 
 Preserve earlier internal facts and exclusions. New public traffic can enter
 reporting; historical internal tests stay private.
