@@ -1,0 +1,4 @@
+interface:
+  display_name: "Phaseo Internal Model Onboarding"
+  short_description: "Stage admin-only models and verify public exclusion."
+  default_prompt: "Use $phaseo-internal-model-onboarding to configure this model for internal administrator testing and verify private logs and public exclusion."
