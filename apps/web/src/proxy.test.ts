@@ -8,6 +8,7 @@ import { NextRequest } from "next/server";
 import { publicLocales } from "@/i18n/routing";
 import {
 	config,
+	getLegacyModelPageRedirect,
 	isLocalizedAuthPath,
 	isLocalizedPagePath,
 	proxy,
@@ -163,6 +164,35 @@ describe("public localisation proxy", () => {
 		expect(new URL(response.headers.get("x-middleware-rewrite")!).pathname).toBe(
 			"/en-GB/models/openai/gpt-4.1",
 		);
+	});
+
+	it.each([
+		["/models/openai/gpt-5/ja", "/models/openai/gpt-5"],
+		["/models/vercel/v0-1.0-md/performance", "/models/vercel/v0-1.0-md"],
+		["/en-US/models/z-ai/glm-5/playground", "/en-US/models/z-ai/glm-5"],
+		["/de-DE/models/openai/gpt-4.1/benchmarks/extra", "/de-DE/models/openai/gpt-4.1"],
+		["/en-GB/models/openai/gpt-5/fr-FR", "/models/openai/gpt-5"],
+	])("redirects legacy model sub-path %s before rendering", async (pathname, expected) => {
+		expect(unstable_doesMiddlewareMatch({ config, url: `${origin}${pathname}` })).toBe(true);
+
+		const response = await proxy(new NextRequest(`${origin}${pathname}?view=table`));
+		const location = new URL(response.headers.get("location")!);
+
+		expect(response.status).toBe(308);
+		expect(location.pathname).toBe(expected);
+		expect(location.search).toBe("?view=table");
+		expect(mockCreateServerClient).not.toHaveBeenCalled();
+	});
+
+	it.each([
+		"/models",
+		"/models/openai",
+		"/models/openai/gpt-5",
+		"/de-DE/models/openai/gpt-5",
+		"/xx/models/openai/gpt-5/ja",
+		"/benchmarks/openai/gpt-5/ja",
+	])("leaves %s to the normal page routing", (pathname) => {
+		expect(getLegacyModelPageRedirect(pathname)).toBeNull();
 	});
 
 	it.each([

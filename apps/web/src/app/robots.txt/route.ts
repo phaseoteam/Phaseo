@@ -13,14 +13,24 @@ const PAGE_DISALLOW_PATHS = [
 	"/gateway/usage",
 ] as const;
 
+// Every model page links to /compare?models=… and /chat?model=…, so crawlers
+// found one rendered page per model and locale. Only the query-string variants
+// are blocked; /compare and /chat themselves stay in the sitemap.
+const QUERY_DISALLOW_PATHS = ["/compare?", "/chat?"] as const;
+
+const LOCALIZED_DISALLOW_PATHS = [
+	...PAGE_DISALLOW_PATHS,
+	...QUERY_DISALLOW_PATHS,
+] as const;
+
 // Pages are also served under every locale prefix, such as /de-DE/sign-up.
 // Route handlers are not localized.
 const DISALLOW_PATHS = [
 	"/api/",
 	"/auth/",
-	...PAGE_DISALLOW_PATHS,
+	...LOCALIZED_DISALLOW_PATHS,
 	...publicLocales.flatMap((locale) =>
-		PAGE_DISALLOW_PATHS.map((path) => `/${locale}${path}`),
+		LOCALIZED_DISALLOW_PATHS.map((path) => `/${locale}${path}`),
 	),
 ];
 
