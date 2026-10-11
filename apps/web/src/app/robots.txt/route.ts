@@ -1,16 +1,32 @@
+import { publicLocales } from "@/i18n/routing";
 import { CONTENT_SIGNAL_VALUE } from "@/lib/agent-discovery";
 import { PUBLIC_CDN_CACHE_CONTROL } from "@/lib/cache/publicCacheHeaders";
 import { SITE_URL } from "@/lib/seo";
 
+// Prefixes without a trailing slash also cover the section roots, such as
+// /de-DE/settings, as well as everything below them.
+const PAGE_DISALLOW_PATHS = [
+	"/sign-in",
+	"/sign-up",
+	"/settings",
+	"/internal",
+	"/gateway/usage",
+] as const;
+
+// Pages are also served under every locale prefix, such as /de-DE/sign-up.
+// Route handlers are not localized.
 const DISALLOW_PATHS = [
 	"/api/",
 	"/auth/",
-	"/sign-in",
-	"/sign-up",
-	"/settings/",
-	"/internal/",
-	"/gateway/usage",
-] as const;
+	...PAGE_DISALLOW_PATHS,
+	...publicLocales.flatMap((locale) =>
+		PAGE_DISALLOW_PATHS.map((path) => `/${locale}${path}`),
+	),
+];
+
+// Crawlers kept out of the whole site. Reflectionbot sent about a quarter of
+// all requests in October 2026, mostly to localized copies of catalogue pages.
+const BLOCKED_USER_AGENTS = ["Reflectionbot"] as const;
 
 function buildRobotBlock(userAgent: string): string[] {
 	return [
@@ -27,6 +43,11 @@ const ROBOTS_BODY = [
 	...buildRobotBlock("OAI-SearchBot"),
 	...buildRobotBlock("ChatGPT-User"),
 	...buildRobotBlock("GPTBot"),
+	...BLOCKED_USER_AGENTS.flatMap((userAgent) => [
+		`User-agent: ${userAgent}`,
+		"Disallow: /",
+		"",
+	]),
 	`Sitemap: ${SITE_URL}/sitemap.xml`,
 	`Sitemap: ${SITE_URL}/docs/sitemap.xml`,
 	`Host: ${SITE_URL}`,
