@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { normalizeProviderCatalog } from "./provider-catalog";
-import { normalizedCatalogDocument } from "./provider-catalog-overrides";
-import { normalizeEmpirioLabsCatalog } from "./provider-catalog-empiriolabs";
+import { normalizedCatalogDocument, type CatalogOverrides } from "./provider-catalog-overrides";
+import { applyEmpirioLabsCatalogOverrides, normalizeEmpirioLabsCatalog } from "./provider-catalog-empiriolabs";
 
 function model(id: string, upstream: string, price: number) {
 	return { id, provider_model_slug: upstream, capabilities: ["chat.completions"], context_length: 200_000,
@@ -9,6 +9,32 @@ function model(id: string, upstream: string, price: number) {
 }
 
 describe("EmpirioLabs legacy serving offers", () => {
+	const edit = (value: unknown) => ({ value, actor_id: "operator", actor_kind: "phaseo" as const, edited_at: "2026-10-10T00:00:00Z" });
+	const feed = () => normalizeProviderCatalog({ data: [model("minimax/minimax-m2.7", "base", 123), model("minimax/minimax-m2.7-highspeed", "speed", 456)] }).allModels;
+	it("preserves legacy speed-ID availability and price overrides across upstream refreshes", () => {
+		const overrides: CatalogOverrides = { "minimax/minimax-m2.7-highspeed": {
+			availability: edit("not_ready"), "/pricing/input_text_tokens/$rate": edit({ priceNanos: 789, unitQuantity: 1_000_000, unit: "token", displayUnit: "1M tokens" }),
+		} };
+		for (const source of [feed(), feed()]) {
+			source[1].pricing[0].priceNanos = 999;
+			const grouped = applyEmpirioLabsCatalogOverrides(source, overrides);
+			expect(grouped[0].serviceTiers?.[1]).toMatchObject({ availability: "not_ready", pricing: [{ priceNanos: 789 }] });
+			expect(source).toHaveLength(2);
+			expect(source[1].pricing[0].priceNanos).toBe(999);
+		}
+	});
+	it("also preserves new base-model fast-tier edits without resurrecting the standalone ID", () => {
+		const overrides: CatalogOverrides = { "minimax/minimax-m2.7": { "/serviceTiers/fast/availability": edit("not_ready"), "/serviceTiers/fast/pricing/input_text_tokens/priceNanos": edit(789) } };
+		const grouped = applyEmpirioLabsCatalogOverrides(feed(), overrides);
+		expect(grouped).toHaveLength(1);
+		expect(grouped[0].serviceTiers?.[1]).toMatchObject({ availability: "not_ready", pricing: [{ priceNanos: 789 }] });
+	});
+	it("honors removal of a legacy speed offer and follows upstream prices when edits are reverted", () => {
+		const removed = applyEmpirioLabsCatalogOverrides(feed(), { "minimax/minimax-m2.7-highspeed": { $removed: edit(true) } });
+		expect(removed).toHaveLength(1);
+		expect(removed[0].serviceTiers).toBeUndefined();
+		expect(applyEmpirioLabsCatalogOverrides(feed(), {})[0].serviceTiers?.[1].pricing[0].priceNanos).toBe(456);
+	});
 	it.each([
 		["moonshotai/kimi-k2.7-code", "highspeed"],
 		["minimax/minimax-m2.7", "highspeed"],

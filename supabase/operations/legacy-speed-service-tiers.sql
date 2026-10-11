@@ -14,6 +14,9 @@ do $check$ begin
  assert (select count(*)=3 from legacy_speed_models x join public.v2_models m on m.model_slug=x.model_slug), 'Missing legacy model';
  assert (select count(*)=3 from legacy_speed_models x join public.v2_models m on m.model_slug=x.base_slug and not m.hidden), 'Missing public base model';
  assert exists(select 1 from public.v2_service_tiers where service_tier_slug='priority' and status='active'), 'Priority tier is unavailable';
+ assert not exists(select 1 from public.v2_model_provider_routes r join legacy_speed_models x on r.model_slug=x.model_slug
+   where r.provider_slug='empiriolabs' and (r.status<>'retired' or r.routing_enabled)),
+   'Sync the EmpirioLabs tiered catalog before retiring legacy models';
 end $check$;
 
 create temporary table legacy_speed_routes on commit drop as

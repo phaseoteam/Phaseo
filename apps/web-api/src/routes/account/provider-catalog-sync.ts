@@ -10,7 +10,7 @@ import {
 } from "./provider-catalog";
 import type { ProviderCatalogRateLimit } from "./provider-catalog-rate-limits";
 import { isProviderCatalogBlockedByReview } from "./provider-review-access";
-import { normalizeEmpirioLabsCatalog } from "./provider-catalog-empiriolabs";
+import { applyEmpirioLabsCatalogOverrides } from "./provider-catalog-empiriolabs";
 
 export type ProviderCatalogSyncTrigger = "webhook" | "poll" | "manual";
 
@@ -221,11 +221,11 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 			return { status: "not_modified", runId };
 		}
 		await renewLease(true);
-		const feedModels = source.management_mode === "remote" && providerSlug === "empiriolabs" && catalog.preview.valid
-			? normalizeEmpirioLabsCatalog(catalog.preview.allModels)
-			: catalog.preview.allModels;
+		const feedModels = catalog.preview.allModels;
 		const effectivePreview = source.management_mode === "remote" && catalog.preview.valid
-			? normalizeProviderCatalog(normalizedCatalogDocument(applyCatalogOverrides(feedModels, source.catalog_overrides ?? {})))
+			? normalizeProviderCatalog(normalizedCatalogDocument(providerSlug === "empiriolabs"
+				? applyEmpirioLabsCatalogOverrides(feedModels, source.catalog_overrides ?? {})
+				: applyCatalogOverrides(feedModels, source.catalog_overrides ?? {})))
 			: catalog.preview;
 		const preview = await validateProviderCatalogPricingMeters(client, effectivePreview);
 		if (!preview.valid) {

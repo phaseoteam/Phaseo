@@ -28,6 +28,10 @@ test("legacy speed cutover preserves prices, route gates and IDs and is repeatab
    insert into v2_pricing_sku_meters select sku_id,'input_text_tokens',123456789,1000000 from v2_pricing_skus;
    insert into v2_route_variants select provider_model_id||'-variant',provider_model_id,'standard',now() from v2_model_provider_routes;
   `);
+  await assert.rejects(db.exec(operation), /Sync the EmpirioLabs tiered catalog/);
+  await db.exec("rollback");
+  assert.equal((await db.query("select count(*)::integer as n from v2_models where hidden")).rows[0].n, 0);
+  await db.exec("update v2_model_provider_routes set status='retired' where provider_model_id='empirio-route'");
   const before = (await db.query("select * from v2_pricing_sku_meters order by sku_id")).rows;
   const gates = (await db.query("select provider_model_id,provider_model_slug,status,routing_enabled,phaseo_status,access_scope,provider_availability_status from v2_model_provider_routes order by provider_model_id")).rows;
   await db.exec(operation);

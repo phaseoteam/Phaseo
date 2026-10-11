@@ -1,5 +1,7 @@
 Deploy the gateway compatibility code before running `legacy-speed-service-tiers.sql` through the Supabase plugin. The operation moves the existing MiniMax M2.5 Highspeed, Kimi K2.7 Code Highspeed and MiMo V2.5 Pro UltraSpeed routes to their base identities. It retains provider-model IDs, execution plans, routing flags, capability limits and meter prices, and classifies active text prices as `priority` (`fast` in requests).
 
+Before the cutover, confirm a successful EmpirioLabs tiered import has retired every route still using a legacy standalone identity. The SQL operation rejects the cutover if any such route is unretired or enabled. Historical retired routes may remain.
+
 The historical model rows remain hidden with a `serving_tier` marker. The gateway uses this marker to give old model-ID callers an implicit `fast` tier. Before the marker exists, those callers continue using their standalone routes. No plain model alias is created, because catalog imports could mistake it for a standard offer. An explicit request tier continues to take precedence.
 
 After applying the operation, read back the three historical models, their replacement identities, route capabilities, variant tiers and active SKU tiers. Check that enabled/disabled route state and every meter amount and unit stayed unchanged. Refresh the public catalog through the normal invalidation path. Verify old-ID and base-model-plus-fast requests when provider usage is authorized.
