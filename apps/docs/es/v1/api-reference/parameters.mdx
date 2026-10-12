@@ -22,6 +22,7 @@ La compatibilidad de los parámetros sigue variando según el endpoint, el model
 | Parámetro | Tipo | Úsalo para |
 | --- | --- | --- |
 | [`model`](#model) | `string` | Seleccionar el ID del modelo del gateway que se ejecutará. |
+| [`models`](#models) | `string[]` | Indicar modelos alternativos ordenados que se prueban después de `model` ante fallos que permiten reintentar. |
 | [`stream`](#stream) | `boolean` | Devolver la salida SSE progresivamente en lugar de un único resultado final. |
 | [`temperature`](#temperature) | `number` | Aumentar o reducir la aleatoriedad. |
 | [`top_p`](#top_p) | `number` | Ampliar o reducir el conjunto de nucleus sampling. |
@@ -84,6 +85,20 @@ Selecciona el ID del modelo del gateway para la solicitud.
 | Ejemplo | `openai/gpt-5-nano` |
 
 Salvo que quieras usar intencionalmente un alias aceptado, utiliza el ID canónico que aparece en el inicio rápido de cada página de modelo. Los ID canónicos son la opción más segura para ejemplos, automatizaciones e integraciones duraderas.
+
+<span id="models"></span>
+<h3 id="parameter-models"><code>models</code></h3>
+
+Indica modelos alternativos opcionales, que se prueban en orden después de `model`. `model` es obligatorio y siempre es el modelo principal. La siguiente entrada solo se prueba cuando un intento falla con `429`, `500`, `502`, `503` o `504`.
+
+| Campo | Valor |
+| --- | --- |
+| Tipo | `string[]` |
+| Obligatorio | No. Una solicitud con `models` también debe definir `model`. |
+| Límites | De 1 a 25 entradas. Las entradas duplicadas y las iguales a `model` se ignoran. |
+| Ejemplo | `["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"]` |
+
+Cada intento se valida, se registra y se factura como una solicitud independiente. El campo `model` de la respuesta y el rastro de enrutamiento muestran el modelo que atendió la solicitud. Las solicitudes con transmisión solo recurren a alternativas antes del primer byte, y los trabajos de vídeo y música, solo al enviarse. Las alternativas de una ruta dinámica asociada tienen prioridad, se aceptan preajustes como entradas y `phaseo/auto` no se puede combinar con `models`. Las solicitudes por lotes, en tiempo real y de Council rechazan `models` con `400`. Los endpoints multipart aceptan campos `models` repetidos, campos `models[]` o un único array JSON. Consulta [Modelos alternativos a nivel de solicitud](../guides/routing-and-fallbacks.mdx#request-level-model-fallbacks) para conocer la precedencia, la validación, la transmisión y la facturación.
 
 <span id="stream"></span>
 <h3 id="parameter-stream"><code>stream</code></h3>

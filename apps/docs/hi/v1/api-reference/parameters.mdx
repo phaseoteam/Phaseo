@@ -22,6 +22,7 @@ icon: "sliders-horizontal"
 | पैरामीटर | प्रकार | उपयोग |
 | --- | --- | --- |
 | [`model`](#model) | `string` | चलाने के लिए gateway model ID चुनना। |
+| [`models`](#models) | `string[]` | retry योग्य विफलताओं पर `model` के बाद क्रम से आज़माए जाने वाले fallback models की सूची देना। |
 | [`stream`](#stream) | `boolean` | एक अंतिम payload के बजाय SSE आउटपुट क्रमशः लौटाना। |
 | [`temperature`](#temperature) | `number` | यादृच्छिकता बढ़ाना या घटाना। |
 | [`top_p`](#top_p) | `number` | nucleus sampling candidate pool को संकरा या चौड़ा करना। |
@@ -84,6 +85,20 @@ Anthropic-संगत Messages अनुरोधों के लिए Anthro
 | उदाहरण | `openai/gpt-5-nano` |
 
 स्वीकार किए गए alias का उपयोग जानबूझकर करना हो तभी ऐसा करें; अन्यथा हर मॉडल पेज के quickstart में दिखाया गया canonical model ID उपयोग करें। उदाहरणों, ऑटोमेशन और लंबे समय तक चलने वाले इंटीग्रेशन के लिए canonical ID सबसे सुरक्षित विकल्प हैं।
+
+<span id="models"></span>
+<h3 id="parameter-models"><code>models</code></h3>
+
+वैकल्पिक fallback models की सूची देता है, जिन्हें `model` के बाद क्रम से आज़माया जाता है। `model` आवश्यक है और हमेशा प्राथमिक मॉडल होता है। अगली entry तभी आज़माई जाती है जब कोई प्रयास `429`, `500`, `502`, `503` या `504` के साथ विफल हो।
+
+| फ़ील्ड | मान |
+| --- | --- |
+| प्रकार | `string[]` |
+| आवश्यक | नहीं। `models` वाले अनुरोध में `model` भी सेट होना चाहिए। |
+| सीमाएँ | 1 से 25 entries। Duplicate entries और `model` के बराबर entries अनदेखी की जाती हैं। |
+| उदाहरण | `["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"]` |
+
+हर प्रयास को अलग अनुरोध की तरह सत्यापित, लॉग और बिल किया जाता है। रिस्पॉन्स का `model` फ़ील्ड और routing trace वह मॉडल दिखाते हैं जिसने अनुरोध पूरा किया। Streaming अनुरोध केवल पहले byte से पहले fallback करते हैं, और वीडियो व संगीत jobs केवल submission के समय। जुड़े हुए dynamic route के fallbacks को प्राथमिकता मिलती है, प्रीसेट entries के रूप में स्वीकार किए जाते हैं, और `phaseo/auto` को `models` के साथ नहीं जोड़ा जा सकता। Batch, realtime और council अनुरोध `models` को `400` के साथ अस्वीकार करते हैं। Multipart endpoints दोहराए गए `models` fields, `models[]` fields या एक JSON array स्वीकार करते हैं। प्राथमिकता, सत्यापन, streaming और billing व्यवहार के लिए [अनुरोध-स्तर के मॉडल फ़ॉलबैक](../guides/routing-and-fallbacks.mdx#request-level-model-fallbacks) पढ़ें।
 
 <span id="stream"></span>
 <h3 id="parameter-stream"><code>stream</code></h3>

@@ -29,8 +29,8 @@ export { parseW3cTraceContext } from "@observability/trace-context";
 
 const MIN_CREDIT_AMOUNT = 1.0;
 const TRUTHY_VALUES = new Set(["1", "true", "yes"]);
-const FORM_JSON_FIELDS = new Set(["provider", "debug", "include", "timestamp_granularities", "chunking_strategy", "languages", "keywords", "context_bias", "input_reference"]);
-const FORM_FORCE_ARRAY_FIELDS = new Set(["include", "timestamp_granularities", "languages", "keywords", "context_bias", "known_speaker_names", "known_speaker_references"]);
+const FORM_JSON_FIELDS = new Set(["provider", "debug", "include", "timestamp_granularities", "chunking_strategy", "languages", "keywords", "context_bias", "input_reference", "models"]);
+const FORM_FORCE_ARRAY_FIELDS = new Set(["include", "timestamp_granularities", "languages", "keywords", "context_bias", "known_speaker_names", "known_speaker_references", "models"]);
 const DEFAULT_REQUEST_BODY_LIMIT_BYTES = 16 * 1024 * 1024;
 const MULTIPART_REQUEST_BODY_LIMIT_BYTES = 32 * 1024 * 1024;
 // Embedded Omni evidence can contain 24 MiB of decoded images/audio/video.

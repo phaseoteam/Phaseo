@@ -151,6 +151,9 @@ public sealed class AnthropicMessagesRequest
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
+
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
@@ -743,6 +746,9 @@ public sealed class AudioSpeechRequest
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
+
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
@@ -777,6 +783,9 @@ public sealed class AudioTranscriptionRequest
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
+
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
@@ -802,6 +811,9 @@ public sealed class AudioTranslationRequest
 
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
+
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
 
 	[JsonPropertyName("prompt")]
 	public string? Prompt { get; set; }
@@ -1357,6 +1369,9 @@ public sealed class ChatCompletionsRequest
 
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
+
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
 
 	[JsonPropertyName("parallel_tool_calls")]
 	public bool? ParallelToolCalls { get; set; }
@@ -1956,6 +1971,9 @@ public sealed class DecisionsRequest
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
+
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
@@ -2310,6 +2328,9 @@ public sealed class EmbeddingsRequest
 
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
+
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
@@ -3770,6 +3791,9 @@ public sealed class ImagesEditRequest
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
+
 	[JsonPropertyName("moderation")]
 	public string? Moderation { get; set; }
 
@@ -3828,6 +3852,9 @@ public sealed class ImagesGenerationRequest
 
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
+
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
 
 	[JsonPropertyName("moderation")]
 	public string? Moderation { get; set; }
@@ -3933,6 +3960,9 @@ public sealed class LegacyDecisionsRequest
 
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
+
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
@@ -4424,6 +4454,8 @@ public sealed class ModelEndpointsResponse
 
 }
 
+public sealed class ModelFallbacks { }
+
 public sealed class ModelId { }
 
 public sealed class ModelLifecycle
@@ -4607,6 +4639,9 @@ public sealed class ModerationsRequest
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
+
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
@@ -4647,6 +4682,9 @@ public sealed class MusicGenerateRequest
 
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
+
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
 
 	[JsonPropertyName("prompt")]
 	public string? Prompt { get; set; }
@@ -5240,6 +5278,9 @@ public sealed class OcrRequest
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
+
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
@@ -5300,6 +5341,9 @@ public sealed class OpenAIDecisionsRequest
 
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
+
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
@@ -5435,6 +5479,9 @@ public sealed class ParseRequest
 
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
+
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
 
 	[JsonPropertyName("output_format")]
 	public string? OutputFormat { get; set; }
@@ -6399,6 +6446,9 @@ public sealed class RerankRequest
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
+
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
@@ -6582,6 +6632,9 @@ public sealed class ResponsesRequest
 
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
+
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
 
 	[JsonPropertyName("parallel_tool_calls")]
 	public bool? ParallelToolCalls { get; set; }
@@ -7044,6 +7097,9 @@ public sealed class VideoGenerationRequest
 
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
+
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
 
 	[JsonPropertyName("negative_prompt")]
 	public string? NegativePrompt { get; set; }

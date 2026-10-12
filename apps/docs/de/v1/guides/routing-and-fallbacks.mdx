@@ -225,6 +225,49 @@ Modellknoten einer dynamischen Route können außerdem eine geordnete Liste von 
 
 Jeder Fallback wird unabhängig anhand der Workspace-Modellbeschränkungen, Guardrails, Anbieterregeln, Preise und unterstützten Fähigkeiten geprüft. Eine Route kann bis zu acht Fallback-Modelle speichern.
 
+<span id="request-level-model-fallbacks"></span>
+### Fallback-Modelle auf Anfrageebene
+
+`model` ist erforderlich und immer das primäre Modell. Mit dem optionalen Array `models` legen Sie Fallback-Modelle für eine einzelne Anfrage fest. Phaseo versucht zuerst `model` und danach jeden Eintrag in `models` in der angegebenen Reihenfolge:
+
+```json
+{
+  "model": "openai/gpt-5-mini",
+  "models": ["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"],
+  "input": "Summarize this incident report."
+}
+```
+
+Eine Anfrage, die `models` ohne `model` sendet, wird mit `400` abgelehnt. Fallbacks auf Anfrageebene nutzen denselben Mechanismus wie Fallbacks dynamischer Routen:
+
+- **Auslöser.** Das nächste Modell wird nur versucht, wenn der vorherige Versuch nach seinen eigenen Anbieter-Wiederholungen mit `429`, `500`, `502`, `503` oder `504` endet. Clientfehler wie `400`, `401`, `402`, `403`, `404`, `408`, `413` und `422` werden ohne Modellwechsel zurückgegeben. Ein `429`, weil während der Ausführung der Anfrage ein Phaseo-Budget oder das Kontingent eines kostenlosen Modells erreicht wurde, führt ebenfalls zum nächsten Modell, da ein anderes Modell in das verbleibende Limit passen kann. Authentifizierung, Ratenbegrenzungen für API-Schlüssel und andere Prüfungen, die vor der Ausführung des primären Modells fehlschlagen, werden sofort zurückgegeben.
+- **Limits.** `models` akzeptiert 1 bis 25 Einträge. Duplikate und Einträge, die `model` entsprechen, werden ignoriert. Dynamische Routen behalten ihr eigenes Limit von acht Fallbacks.
+- **Validierung.** Jeder Eintrag kann eine Modell-ID, eine anbieterqualifizierte Modell-ID oder eine Voreinstellung wie `@support` sein. Jeder Versuch wird als eigene Anfrage validiert: Unterstützung von Endpunkt und Modalität, angeforderte Parameter, Workspace-Modellbeschränkungen, Guardrails, Voreinstellungen, Preise und BYOK-Anmeldedaten. Ein Fallback, der die Anfrage nicht bedienen kann, wird übersprungen und in den Anfrageprotokollen festgehalten; er ersetzt nie den Fehler, den Sie sonst erhalten würden. Ein Fallback, der auf einen bereits unternommenen Versuch mit demselben Modell und denselben geeigneten Anbietern hinausläuft, wird übersprungen.
+- **Protokollierung und Abrechnung.** Jeder Versuch erscheint als separate Anfrage in Ihren Protokollen, mit eigener Nutzung und eigenem Abrechnungseintrag. Jeder Versuch wird daher genau so abgerechnet wie ohne Fallbacks.
+- **Welches Modell die Anfrage bedient hat.** Das Feld `model` der Antwort zeigt das Modell, das die Anfrage bedient hat. Der zugehörige Routing-Trace listet die ID der primären Anfrage, die Fallback-Reihenfolge und jeden früheren Versuch mit seinem Status auf.
+- **Streaming.** Fallbacks finden nur statt, bevor das erste Byte gesendet wird. Ein Fehler nach Beginn eines Streams wird in diesem Stream zurückgegeben.
+- **Video und Musik.** Diese Anfragen greifen nur beim Übermitteln des Jobs auf Fallbacks zurück. Sobald ein Anbieter einen Job angenommen hat, startet ein späterer Fehler keinen neuen Job mit einem anderen Modell.
+
+`models` wirkt wie folgt mit anderen Routing-Steuerungen zusammen:
+
+- **Dynamische Routen.** Fallbacks, die auf einer zugeordneten dynamischen Route konfiguriert sind, haben Vorrang vor `models`. Ein von einer dynamischen Route festgelegtes Modell gilt weiterhin für jeden Versuch.
+- **Voreinstellungen.** Eine Voreinstellung kann das primäre `model` oder ein Eintrag in `models` sein. Jeder Versuch wendet die Einschränkungen seiner eigenen Voreinstellung an, sodass eine Voreinstellung die Anbieter eingrenzen kann, die ein Fallback nutzen darf.
+- **Auto-Routing.** `phaseo/auto` verwaltet bereits eigene, nach Rang geordnete Fallbacks. Es kann daher nicht mit `models` kombiniert werden und darf nicht in `models` vorkommen.
+
+| Endpunkt | Unterstützung für `models` |
+| --- | --- |
+| Chat Completions, Responses, Messages | Unterstützt, einschließlich Streaming vor dem ersten Byte |
+| Embeddings, Moderations, Rerank | Unterstützt |
+| Bildgenerierung und -bearbeitung | Unterstützt, einschließlich Multipart-Uploads |
+| Sprachausgabe, Transkriptionen und Übersetzungen | Unterstützt, einschließlich Multipart-Uploads |
+| OCR, Parse, Decisions | Unterstützt |
+| Video- und Musikgenerierung | Bei der Job-Übermittlung unterstützt |
+| Batches | Mit `400` abgelehnt; jede Batch-Zeile zielt auf genau ein Modell |
+| Realtime- und Live-Sitzungen | Mit `400` abgelehnt; eine Sitzung ist an ein Modell gebunden |
+| Council-Läufe | Mit `400` abgelehnt; die Modelle stammen aus der Laufkonfiguration |
+
+Multipart-Endpunkte akzeptieren wiederholte `models`-Felder, `models[]`-Felder oder einen einzelnen String mit einem JSON-Array.
+
 Weitere Informationen:
 
 - [Ratenbegrenzungen](../api-reference/limits.mdx)

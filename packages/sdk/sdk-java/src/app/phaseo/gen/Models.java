@@ -64,6 +64,7 @@ public final class Models {
 		public Boolean meta;
 		public Object metadata;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
@@ -307,6 +308,7 @@ public final class Models {
 		public Object format;
 		public String input;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 		public Double speed;
 		public String voice;
@@ -320,6 +322,7 @@ public final class Models {
 		public java.util.List<String> known_speaker_references;
 		public String language;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 	}
 
@@ -332,6 +335,7 @@ public final class Models {
 		public String audio_url;
 		public String language;
 		public String model;
+		public java.util.List<String> models;
 		public String prompt;
 		public Object provider;
 		public Double temperature;
@@ -546,6 +550,7 @@ public final class Models {
 		public Object metadata;
 		public java.util.List<Object> modalities;
 		public String model;
+		public java.util.List<String> models;
 		public Boolean parallel_tool_calls;
 		public Double presence_penalty;
 		public String prompt_cache_key;
@@ -808,6 +813,7 @@ public final class Models {
 		public Boolean meta;
 		public Object metadata;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 		public Object questions;
 		public Object routing;
@@ -963,6 +969,7 @@ public final class Models {
 		public Object encoding_format;
 		public Object input;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 		public Object provider_options;
 		public String user;
@@ -1566,6 +1573,7 @@ public final class Models {
 		public String mask;
 		public Boolean meta;
 		public String model;
+		public java.util.List<String> models;
 		public Object moderation;
 		public Integer n;
 		public Integer output_compression;
@@ -1589,6 +1597,7 @@ public final class Models {
 	public static class ImagesGenerationRequest {
 		public Object background;
 		public String model;
+		public java.util.List<String> models;
 		public Object moderation;
 		public Integer n;
 		public Integer output_compression;
@@ -1633,6 +1642,7 @@ public final class Models {
 		public Boolean meta;
 		public Object metadata;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 		public Object questions;
 		public Object routing;
@@ -1835,6 +1845,9 @@ public final class Models {
 		public Object organization;
 	}
 
+	public static class ModelFallbacks {
+	}
+
 	public static class ModelId {
 	}
 
@@ -1907,6 +1920,7 @@ public final class Models {
 		public Object input;
 		public Boolean meta;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 	}
 
@@ -1924,6 +1938,7 @@ public final class Models {
 		public Object elevenlabs;
 		public Object format;
 		public String model;
+		public java.util.List<String> models;
 		public String prompt;
 		public Object provider;
 		public Object suno;
@@ -2162,6 +2177,7 @@ public final class Models {
 		public String image;
 		public String language;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 	}
 
@@ -2189,6 +2205,7 @@ public final class Models {
 		public Boolean meta;
 		public Object metadata;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 		public java.util.List<Object> questions;
 		public Object routing;
@@ -2255,6 +2272,7 @@ public final class Models {
 		public Object document;
 		public Boolean echo_upstream_request;
 		public String model;
+		public java.util.List<String> models;
 		public Object output_format;
 		public Object provider;
 		public Object routing;
@@ -2662,6 +2680,7 @@ public final class Models {
 		public Integer max_chunks_per_doc;
 		public Object metadata;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 		public Object provider_options;
 		public String query;
@@ -2739,6 +2758,7 @@ public final class Models {
 		public Object metadata;
 		public java.util.List<Object> modalities;
 		public String model;
+		public java.util.List<String> models;
 		public Boolean parallel_tool_calls;
 		public String previous_response_id;
 		public String prompt_cache_key;
@@ -2935,6 +2955,7 @@ public final class Models {
 		public java.util.List<Object> input_references;
 		public Double input_video_duration;
 		public String model;
+		public java.util.List<String> models;
 		public String negative_prompt;
 		public Object output;
 		public String person_generation;

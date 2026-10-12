@@ -225,6 +225,49 @@ Los nodos de modelo de una ruta dinámica también pueden definir una lista orde
 
 Cada alternativa se vuelve a comprobar de forma independiente según las restricciones de modelo del espacio de trabajo, los guardrails, la política de proveedores, los precios y la compatibilidad de capacidades. Una ruta puede guardar hasta ocho modelos alternativos.
 
+<span id="request-level-model-fallbacks"></span>
+### Modelos alternativos a nivel de solicitud
+
+`model` es obligatorio y siempre es el modelo principal. Añade el array opcional `models` para indicar modelos alternativos para una sola solicitud. Phaseo prueba primero `model` y después cada entrada de `models`, en orden:
+
+```json
+{
+  "model": "openai/gpt-5-mini",
+  "models": ["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"],
+  "input": "Summarize this incident report."
+}
+```
+
+Una solicitud que envía `models` sin `model` se rechaza con `400`. Las alternativas a nivel de solicitud usan el mismo mecanismo que las alternativas de las rutas dinámicas:
+
+- **Activadores.** El siguiente modelo solo se prueba cuando el intento anterior, tras sus propios reintentos con proveedores, termina con `429`, `500`, `502`, `503` o `504`. Los errores del cliente, como `400`, `401`, `402`, `403`, `404`, `408`, `413` y `422`, se devuelven sin cambiar de modelo. Un `429` causado por un presupuesto de Phaseo o por la cuota de un modelo gratuito alcanzados durante la ejecución de la solicitud también pasa al siguiente modelo, porque otro modelo puede ajustarse al límite restante. La autenticación, los límites de tasa de las claves de API y otras comprobaciones que fallan antes de ejecutar el modelo principal se devuelven de inmediato.
+- **Límites.** `models` admite de 1 a 25 entradas. Las entradas duplicadas y las iguales a `model` se ignoran. Las rutas dinámicas mantienen su propio límite de ocho alternativas.
+- **Validación.** Cada entrada puede ser un ID de modelo, un ID de modelo con proveedor o un preajuste como `@support`. Cada intento se valida como una solicitud independiente: compatibilidad con el endpoint y la modalidad, parámetros solicitados, restricciones de modelo del espacio de trabajo, guardrails, preajustes, precios y credenciales BYOK. Una alternativa que no puede atender la solicitud se omite y queda anotada en los registros de solicitudes; nunca sustituye al error que recibirías de otro modo. También se omite una alternativa que equivale a un intento ya realizado, con el mismo modelo y los mismos proveedores aptos.
+- **Registro y facturación.** Cada intento es una solicitud independiente en tus registros, con su propio uso y su propio registro de facturación, por lo que cada intento se factura exactamente igual que si no hubiera alternativas.
+- **Qué modelo atendió la solicitud.** El campo `model` de la respuesta muestra el modelo que atendió la solicitud. Su rastro de enrutamiento enumera el ID de la solicitud principal, el orden de las alternativas y cada intento anterior con su estado.
+- **Transmisión.** Las alternativas solo se aplican antes de enviar el primer byte. Un error que se produce después de iniciar una transmisión se devuelve dentro de esa misma transmisión.
+- **Vídeo y música.** Estas solicitudes solo recurren a alternativas mientras se envía el trabajo. Una vez que un proveedor acepta un trabajo, un fallo posterior no inicia un trabajo nuevo con otro modelo.
+
+`models` interactúa con otros controles de enrutamiento de la siguiente manera:
+
+- **Rutas dinámicas.** Las alternativas configuradas en una ruta dinámica asociada tienen prioridad sobre `models`. Un modelo fijo seleccionado por una ruta dinámica se sigue aplicando a cada intento.
+- **Preajustes.** Un preajuste puede ser el `model` principal o una entrada de `models`. Cada intento aplica las restricciones de su propio preajuste, por lo que un preajuste puede limitar los proveedores que puede usar una alternativa.
+- **Enrutamiento automático.** `phaseo/auto` ya gestiona alternativas clasificadas, por lo que no se puede combinar con `models` ni puede aparecer dentro de `models`.
+
+| Endpoint | Compatibilidad con `models` |
+| --- | --- |
+| Chat Completions, Responses, Messages | Compatible, incluida la transmisión antes del primer byte |
+| Embeddings, Moderations, Rerank | Compatible |
+| Generación y edición de imágenes | Compatible, incluidas las cargas multipart |
+| Voz, transcripciones y traducciones | Compatible, incluidas las cargas multipart |
+| OCR, Parse, Decisions | Compatible |
+| Generación de vídeo y música | Compatible al enviar el trabajo |
+| Lotes | Se rechaza con `400`; cada fila del lote apunta a un solo modelo |
+| Sesiones en tiempo real y en directo | Se rechaza con `400`; una sesión queda vinculada a un solo modelo |
+| Ejecuciones de Council | Se rechaza con `400`; los modelos provienen de la configuración de la ejecución |
+
+Los endpoints multipart aceptan campos `models` repetidos, campos `models[]` o una única cadena con un array JSON.
+
 Más información:
 
 - [Límites de tasa](../api-reference/limits.mdx)

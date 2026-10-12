@@ -68,6 +68,7 @@ pub struct AnthropicMessagesRequest {
 	pub meta: Option<bool>,
 	pub metadata: Option<HashMap<String, String>>,
 	pub model: String,
+	pub models: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
@@ -310,6 +311,7 @@ pub struct AudioSpeechRequest {
 	pub format: Option<String>,
 	pub input: String,
 	pub model: String,
+	pub models: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
 	pub speed: Option<f64>,
 	pub voice: Option<String>,
@@ -323,6 +325,7 @@ pub struct AudioTranscriptionRequest {
 	pub known_speaker_references: Option<Vec<String>>,
 	pub language: Option<String>,
 	pub model: String,
+	pub models: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
 }
 
@@ -335,6 +338,7 @@ pub struct AudioTranslationRequest {
 	pub audio_url: Option<String>,
 	pub language: Option<String>,
 	pub model: String,
+	pub models: Option<Vec<String>>,
 	pub prompt: Option<String>,
 	pub provider: Option<HashMap<String, String>>,
 	pub temperature: Option<f64>,
@@ -548,6 +552,7 @@ pub struct ChatCompletionsRequest {
 	pub metadata: Option<HashMap<String, String>>,
 	pub modalities: Option<Vec<String>>,
 	pub model: String,
+	pub models: Option<Vec<String>>,
 	pub parallel_tool_calls: Option<bool>,
 	pub presence_penalty: Option<f64>,
 	pub prompt_cache_key: Option<Option<String>>,
@@ -806,6 +811,7 @@ pub struct DecisionsRequest {
 	pub meta: Option<bool>,
 	pub metadata: Option<HashMap<String, String>>,
 	pub model: String,
+	pub models: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
 	pub questions: HashMap<String, String>,
 	pub routing: Option<HashMap<String, String>>,
@@ -961,6 +967,7 @@ pub struct EmbeddingsRequest {
 	pub encoding_format: Option<String>,
 	pub input: String,
 	pub model: String,
+	pub models: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub user: Option<String>,
@@ -1559,6 +1566,7 @@ pub struct ImagesEditRequest {
 	pub mask: Option<String>,
 	pub meta: Option<bool>,
 	pub model: String,
+	pub models: Option<Vec<String>>,
 	pub moderation: Option<String>,
 	pub n: Option<i64>,
 	pub output_compression: Option<i64>,
@@ -1582,6 +1590,7 @@ pub struct ImagesEditResponse {
 pub struct ImagesGenerationRequest {
 	pub background: Option<String>,
 	pub model: String,
+	pub models: Option<Vec<String>>,
 	pub moderation: Option<String>,
 	pub n: Option<i64>,
 	pub output_compression: Option<i64>,
@@ -1625,6 +1634,7 @@ pub struct LegacyDecisionsRequest {
 	pub meta: Option<bool>,
 	pub metadata: Option<HashMap<String, String>>,
 	pub model: String,
+	pub models: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
 	pub questions: HashMap<String, String>,
 	pub routing: Option<HashMap<String, String>>,
@@ -1826,6 +1836,8 @@ pub struct ModelEndpointsResponse {
 	pub organization: Option<HashMap<String, String>>,
 }
 
+pub type ModelFallbacks = JsonValue;
+
 pub type ModelId = JsonValue;
 
 pub struct ModelLifecycle {
@@ -1897,6 +1909,7 @@ pub struct ModerationsRequest {
 	pub input: String,
 	pub meta: Option<bool>,
 	pub model: String,
+	pub models: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
 }
 
@@ -1914,6 +1927,7 @@ pub struct MusicGenerateRequest {
 	pub elevenlabs: Option<HashMap<String, String>>,
 	pub format: Option<String>,
 	pub model: String,
+	pub models: Option<Vec<String>>,
 	pub prompt: Option<String>,
 	pub provider: Option<HashMap<String, String>>,
 	pub suno: Option<HashMap<String, String>>,
@@ -2151,6 +2165,7 @@ pub struct OcrRequest {
 	pub image: String,
 	pub language: Option<String>,
 	pub model: String,
+	pub models: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
 }
 
@@ -2178,6 +2193,7 @@ pub struct OpenAIDecisionsRequest {
 	pub meta: Option<bool>,
 	pub metadata: Option<HashMap<String, String>>,
 	pub model: String,
+	pub models: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
 	pub questions: Vec<String>,
 	pub routing: Option<HashMap<String, String>>,
@@ -2240,6 +2256,7 @@ pub struct ParseRequest {
 	pub document: HashMap<String, String>,
 	pub echo_upstream_request: Option<bool>,
 	pub model: String,
+	pub models: Option<Vec<String>>,
 	pub output_format: Option<String>,
 	pub provider: Option<HashMap<String, String>>,
 	pub routing: Option<HashMap<String, String>>,
@@ -2643,6 +2660,7 @@ pub struct RerankRequest {
 	pub max_chunks_per_doc: Option<i64>,
 	pub metadata: Option<HashMap<String, String>>,
 	pub model: String,
+	pub models: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub query: String,
@@ -2719,6 +2737,7 @@ pub struct ResponsesRequest {
 	pub metadata: Option<HashMap<String, String>>,
 	pub modalities: Option<Vec<String>>,
 	pub model: String,
+	pub models: Option<Vec<String>>,
 	pub parallel_tool_calls: Option<bool>,
 	pub previous_response_id: Option<String>,
 	pub prompt_cache_key: Option<Option<String>>,
@@ -2912,6 +2931,7 @@ pub struct VideoGenerationRequest {
 	pub input_references: Option<Vec<String>>,
 	pub input_video_duration: Option<f64>,
 	pub model: String,
+	pub models: Option<Vec<String>>,
 	pub negative_prompt: Option<String>,
 	pub output: Option<HashMap<String, String>>,
 	pub person_generation: Option<String>,

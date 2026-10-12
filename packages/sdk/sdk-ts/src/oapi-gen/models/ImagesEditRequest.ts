@@ -5,6 +5,7 @@ export interface ImagesEditRequest {
   mask?: string;
   meta?: boolean;
   model: string;
+  models?: string[];
   moderation?: "auto" | "low";
   n?: number;
   output_compression?: number;

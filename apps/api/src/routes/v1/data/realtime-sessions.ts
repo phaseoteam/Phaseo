@@ -11,6 +11,7 @@ import { parseW3cTraceContext } from "@observability/trace-context";
 import { guardFreeRouteQuota } from "@core/customer-rate-limits";
 import { generatePublicId } from "@pipeline/before/genId";
 import { err, json } from "@pipeline/before/http";
+import { hasRequestModelFallbacksField } from "@pipeline/before/requestModelFallbacks";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
 import { getRealtimeVoiceFeatureGateName, isRealtimeVoiceAccessEnabled } from "@core/feature-flags";
 import { withRuntime } from "../../utils";
@@ -344,6 +345,16 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 	}
 	const body = await guardJson(req, auth.value.workspaceId, auth.value.requestId);
 	if (body.ok !== true) return body.response;
+	if (hasRequestModelFallbacksField(body.value)) {
+		// A session binds one model for its lifetime; there is no request to retry.
+		return err("validation_error", {
+			reason: "models_not_supported_for_endpoint",
+			description: "Realtime sessions use a single model; remove models and choose one model",
+			details: [{ message: "models is not supported for realtime sessions", path: ["models"], keyword: "models_not_supported_for_endpoint" }],
+			request_id: auth.value.requestId,
+			workspace_id: auth.value.workspaceId,
+		});
+	}
 	const parsed = (live ? createLiveSessionSchema : createRealtimeSessionSchema).safeParse(body.value);
 	if (!parsed.success) {
 		return err("validation_error", {

@@ -691,6 +691,11 @@ export type PipelineContext = {
     providerCapabilitiesBeta?: boolean;
     meta: RequestMeta;
     rawBody: any;
+    /**
+     * Request body before guardrail redaction, kept non-enumerable so it is never
+     * serialized. Model fallbacks re-send it so guardrails rerun per attempt.
+     */
+    readonly retryRawBody?: unknown;
     body: any;
     requestedModel: string;
     model: string;

@@ -693,6 +693,26 @@ describe("batchRoutes", () => {
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
+	it.each([
+		["the batch", { models: ["openai/gpt-5-nano"], requests: [{ body: { input: "hello" } }] }],
+		["a request row", { requests: [{ body: { input: "hello", models: ["openai/gpt-5-nano"] } }] }],
+	])("rejects models fallbacks on %s before provider submission", async (_label, payload) => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ endpoint: "/v1/responses", model: "openai/gpt-4.1-mini", ...payload }),
+		});
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({
+			error: "validation_error",
+			reason: "models_not_supported_for_endpoint",
+		});
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
 	it("proxies create + retrieve completed flow while keeping gateway-only fields local", async () => {
 		state.fileMeta.set(fileKey("ws_batch_test", "file_input_123"), {
 			provider: "openai",
