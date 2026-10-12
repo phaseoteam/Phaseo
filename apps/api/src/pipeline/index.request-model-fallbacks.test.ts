@@ -214,6 +214,25 @@ describe("request-level models fallbacks", () => {
 		expect(runnerMock).toHaveBeenCalledTimes(2);
 	});
 
+	it("tries a preset fallback that resolves to the same model and providers", async () => {
+		const openai = { providers: [{ providerId: "openai" }] };
+		beforeRequestMock
+			.mockResolvedValueOnce({ ok: true, ctx: requestContext("openai/gpt-5", ["@support"], openai) })
+			.mockResolvedValueOnce({
+				ok: true,
+				ctx: requestContext("openai/gpt-5", [], { ...openai, preset: { id: "preset_support", name: "support" } }),
+			});
+		runnerMock
+			.mockResolvedValueOnce(new Response("unavailable", { status: 503 }))
+			.mockResolvedValueOnce(new Response("ok", { status: 200 }));
+
+		const response = await makeEndpointHandler({ endpoint: "responses", schema: null })(post());
+
+		expect(response.status).toBe(200);
+		expect(beforeRequestMock.mock.calls[1]?.[4]).toEqual(expect.objectContaining({ requestModelOverride: "@support" }));
+		expect(runnerMock).toHaveBeenCalledTimes(2);
+	});
+
 	it("re-sends the body as received rather than the guardrail-redacted copy", async () => {
 		const primary = requestContext("primary/model", ["fallback/model"], {
 			rawBody: { model: "primary/model", input: "call [REDACTED]" },

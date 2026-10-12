@@ -63,11 +63,16 @@ function configuredModelFallbacks(ctx: { model: string; routingDiagnostics?: Rec
 	return null;
 }
 
-// An attempt is identified by its resolved model and eligible providers, so a
-// provider-pinned or preset fallback for the same model is still tried.
-function modelFallbackAttemptKey(ctx: { model: string; providers?: Array<{ providerId: string }> | null }): string {
+// An attempt is identified by its resolved model, eligible providers and
+// preset, so a provider-pinned fallback for the same model is still tried, and
+// so is a preset that may change the prompt, parameters or routing.
+function modelFallbackAttemptKey(ctx: {
+	model: string;
+	providers?: Array<{ providerId: string }> | null;
+	preset?: { id: string } | null;
+}): string {
 	const providers = (ctx.providers ?? []).map((provider) => provider.providerId).sort().join(",");
-	return `${ctx.model}|${providers}`;
+	return `${ctx.model}|${providers}|${ctx.preset?.id ?? ""}`;
 }
 
 function shouldTryModelFallback(response: Response): boolean {
