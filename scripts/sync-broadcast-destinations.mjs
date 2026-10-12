@@ -1,4 +1,4 @@
-// Copies packages/shared/broadcast-destinations/index.ts into each app that uses
+// Copies packages/shared/broadcast-destinations into each app that uses
 // it, and checks the registry against the database definitions that repeat it.
 // Run with --check in CI to fail on drift instead of writing.
 
@@ -8,10 +8,12 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE = "packages/shared/broadcast-destinations/index.ts";
-const TARGETS = [
-	"apps/api/src/observability/broadcast-destinations.ts",
-	"apps/web-api/src/routes/account/broadcast-destinations.ts",
-	"apps/web/src/components/(gateway)/settings/observability/broadcastDestinations.ts",
+const COPIES = [
+	{ source: SOURCE, target: "apps/api/src/observability/broadcast-destinations.ts" },
+	{ source: SOURCE, target: "apps/web-api/src/routes/account/broadcast-destinations.ts" },
+	{ source: SOURCE, target: "apps/web/src/components/(gateway)/settings/observability/broadcastDestinations.ts" },
+	{ source: "packages/shared/broadcast-destinations/otlp-protobuf.ts", target: "apps/api/src/observability/otlp-protobuf.ts" },
+	{ source: "packages/shared/broadcast-destinations/otlp-protobuf.ts", target: "apps/web-api/src/routes/account/otlp-protobuf.ts" },
 ];
 const TABLE = "supabase/schemas/public/tables/workspace_broadcast_destinations.sql";
 const TRIGGER = "supabase/schemas/public/functions/enforce_broadcast_destination_limit.sql";
@@ -20,10 +22,11 @@ const OPENAPI = "apps/docs/openapi/v1/openapi.yaml";
 const check = process.argv.includes("--check");
 const read = (file) => readFile(path.join(root, file), "utf8");
 const source = await read(SOURCE);
-const output = `// Generated from ${SOURCE} by scripts/sync-broadcast-destinations.mjs. Do not edit.\n${source}`;
 const problems = [];
 
-for (const target of TARGETS) {
+for (const copy of COPIES) {
+	const { target } = copy;
+	const output = `// Generated from ${copy.source} by scripts/sync-broadcast-destinations.mjs. Do not edit.\n${await read(copy.source)}`;
 	const current = await read(target).catch(() => null);
 	if (current?.replace(/\r\n/g, "\n") === output.replace(/\r\n/g, "\n")) continue;
 	if (check) problems.push(`${target} is out of date`);

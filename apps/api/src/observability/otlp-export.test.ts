@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { deliverGatewayOtlpPayload, deliverGatewayWebhookPayload, drainGatewayOtlpOutbox, filterMetadata, selected } from "./otlp-export";
+import { encodeOtlpTraceRequest } from "./otlp-protobuf";
 
 vi.mock("@core/webhook-endpoints", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("@core/webhook-endpoints")>();
@@ -265,5 +266,43 @@ describe("drainGatewayOtlpOutbox", () => {
 		expect(patches.rejected).toMatchObject({ status: "failed", payload: {} });
 		expect(patches.retry).toMatchObject({ status: "pending" });
 		expect(patches.retry).not.toHaveProperty("payload");
+	});
+});
+
+describe("deliverGatewayOtlpPayload over protobuf", () => {
+	const payload = { resourceSpans: [{ scopeSpans: [{ spans: [{ traceId: "0af7651916cd43dd8448eb211c80319c", spanId: "b7ad6b7169203331", name: "chat" }] }] }] };
+
+	it("sends protobuf when the destination asks for it, whatever the configured headers say", async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(new Uint8Array(), { status: 200, headers: { "content-type": "application/x-protobuf" } }));
+		vi.stubGlobal("fetch", fetchMock);
+		const result = await deliverGatewayOtlpPayload(payload, {
+			endpoint: "https://collector.example.com",
+			otlp_protocol: "http/protobuf",
+			headers_json: JSON.stringify({ "Content-Type": "application/json", "x-tenant": "phaseo" }),
+		});
+		expect(result).toMatchObject({ delivered: true, status: 200 });
+		const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+		expect(url.toString()).toBe("https://collector.example.com/v1/traces");
+		const sent = new Headers(init.headers);
+		expect(sent.get("content-type")).toBe("application/x-protobuf");
+		expect(sent.get("accept")).toBe("application/x-protobuf");
+		expect(sent.get("x-tenant")).toBe("phaseo");
+		expect(init.body).toEqual(encodeOtlpTraceRequest(payload));
+	});
+
+	it("reports spans a protobuf collector rejected", async () => {
+		// partial_success { rejected_spans: 1, error_message: "bad" }
+		const body = Uint8Array.from([0x0a, 0x07, 0x08, 0x01, 0x12, 0x03, 0x62, 0x61, 0x64]);
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(body, { status: 200, headers: { "content-type": "application/x-protobuf" } })));
+		const result = await deliverGatewayOtlpPayload(payload, { endpoint: "https://collector.example.com", otlp_protocol: "http/protobuf" });
+		expect(result).toMatchObject({ delivered: false, retryable: false, error: "OTLP partial success rejected 1 spans: bad" });
+	});
+
+	it("rejects an unknown protocol without sending", async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const result = await deliverGatewayOtlpPayload(payload, { endpoint: "https://collector.example.com", otlp_protocol: "grpc" });
+		expect(result).toMatchObject({ delivered: false, retryable: false, error: "OTLP protocol must be http/json or http/protobuf" });
+		expect(fetchMock).not.toHaveBeenCalled();
 	});
 });
