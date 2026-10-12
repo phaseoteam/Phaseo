@@ -5,7 +5,13 @@ import { OutputModalityChipRow } from "./OutputModalityChipRow";
 
 jest.mock("motion/react", () => ({ useReducedMotion: () => false }));
 jest.mock("@/components/ui/scroll-area", () => ({
-	ScrollArea: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+	ScrollArea: ({
+		children,
+		scrollBarClassName,
+	}: {
+		children: ReactNode;
+		scrollBarClassName?: string;
+	}) => <div data-scrollbar={scrollBarClassName ?? "shown"}>{children}</div>,
 }));
 
 const Icon = (() => <svg />) as unknown as LucideIcon;
@@ -89,6 +95,14 @@ describe("OutputModalityChipRow", () => {
 	it("flags filters on other chips that are hidden while the audio row is open", () => {
 		expect(render(["text", "audio_stt"]).audio).toMatch(/>\+1</);
 		expect(render(["text", "embeddings", "audio"]).audio).toMatch(/>\+2</);
+	});
+
+	it("hides the scrollbar in the audio row but keeps it for the main row", () => {
+		expect(render([]).html).toContain('data-scrollbar="shown"');
+		expect(render(["audio"]).html).toContain('data-scrollbar="hidden"');
+		expect(render(["audio_music"]).html).toContain('data-scrollbar="hidden"');
+		// Audio is a plain chip without sub-types, so the row never swaps.
+		expect(render(["audio"], MAIN).html).toContain('data-scrollbar="shown"');
 	});
 
 	it("keeps sub-type chips out of the main row", () => {

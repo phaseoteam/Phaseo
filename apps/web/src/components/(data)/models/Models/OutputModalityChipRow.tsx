@@ -192,7 +192,15 @@ export function OutputModalityChipRow({
 		<ScrollArea
 			className="w-full [&>[data-orientation=horizontal]]:opacity-100 [&>[data-orientation=horizontal]]:transition-none"
 			scrollBarOrientation="horizontal"
-			viewportClassName={hasHorizontalOverflow ? "pb-2" : "pb-0"}
+			// The audio row has no bar of its own: it is scrolled by wheel, trackpad,
+			// touch or keyboard if it is wider than the window. The scroll area only
+			// re-measures when its viewport resizes, so it can keep a bar left over
+			// from the wider main row.
+			scrollBarClassName={open ? "hidden" : undefined}
+			viewportClassName={cn(
+				"transition-[padding-bottom] duration-300 motion-reduce:transition-none",
+				hasHorizontalOverflow && !open ? "pb-2" : "pb-0",
+			)}
 			viewportRef={viewportRef}
 		>
 			<div ref={contentRef} className="grid pr-4">
