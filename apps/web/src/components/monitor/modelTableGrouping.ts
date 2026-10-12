@@ -1,4 +1,5 @@
 import { modelCapabilities, modelCapability } from "@/lib/models/modelCapabilities";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 
 export interface ModelData {
 	id: string;
@@ -86,9 +87,25 @@ function uniqueNumbers(values: Iterable<number | null | undefined>): number[] {
 		.sort((a, b) => a - b);
 }
 
+// One table row per canonical model; its provider routes collapse into it.
+export function modelRowKey(row: Pick<ModelData, "id" | "modelId">): string {
+	return row.modelId || row.id;
+}
+
+// A batch capability row only says the route accepts batch jobs. Older table
+// projections report its unlisted rate as 0/0, which is not a free price.
+function isBatchPlaceholder({ endpoint, provider, tier }: ModelData): boolean {
+	return modelCapability(endpoint) === "batch"
+		&& tier !== "free"
+		&& !provider.inputPrice
+		&& !provider.outputPrice;
+}
+
 // A null token price means the route lists none (batch, per-image or per-request
 // charges). Such rows must not appear as $0 or become the floor of a price range.
-function hasTokenPrice({ provider, tier }: ModelData): boolean {
+function hasTokenPrice(row: ModelData): boolean {
+	if (isBatchPlaceholder(row)) return false;
+	const { provider, tier } = row;
 	return isPrice(provider.inputPrice) || isPrice(provider.outputPrice) || tier === "free";
 }
 
@@ -119,6 +136,39 @@ function samePrices(left: ModelOperationPrices, right: ModelOperationPrices): bo
 		&& JSON.stringify(left.usagePrices) === JSON.stringify(right.usagePrices);
 }
 
+export type ProviderRoute = {
+	id: string;
+	name: string;
+	regions: string[];
+	// Only set when name and regions alone do not tell two routes apart.
+	routeId?: string;
+};
+
+function compareRegions(a: string, b: string): number {
+	if (a === b) return 0;
+	if (a === "global") return -1;
+	if (b === "global") return 1;
+	return a.localeCompare(b);
+}
+
+// Several routes of one provider share a name (mistral and mistral-eu are both
+// "Mistral"), so each is labelled with its offer and execution regions, and
+// with its route id when those still collide.
+export function describeProviderRoutes(providers: readonly ModelProvider[]): ProviderRoute[] {
+	const routes = providers.map((provider): ProviderRoute => ({
+		id: provider.id,
+		name: resolveProviderDisplayName({ providerId: provider.id, providerName: provider.name }),
+		regions: unique((provider.executionRegions ?? []).map((region) => String(region).trim().toLowerCase()))
+			.sort(compareRegions),
+	}));
+	const signature = ({ name, regions }: ProviderRoute) => `${name}|${regions.join()}`;
+	const routesBySignature = new Map<string, number>();
+	for (const route of routes) {
+		routesBySignature.set(signature(route), (routesBySignature.get(signature(route)) ?? 0) + 1);
+	}
+	return routes.map((route) => routesBySignature.get(signature(route))! > 1 ? { ...route, routeId: route.id } : route);
+}
+
 // The lowest token rate a row displays, including per-capability rates, for sorting.
 export function lowestDisplayedPrice(
 	group: GroupedModelData,
@@ -130,7 +180,7 @@ export function lowestDisplayedPrice(
 export function groupModelRows(rows: readonly ModelData[]): GroupedModelData[] {
 	const groups = new Map<string, ModelData[]>();
 	for (const row of rows) {
-		const key = row.modelId || row.id;
+		const key = modelRowKey(row);
 		const group = groups.get(key);
 		if (group) group.push(row);
 		else groups.set(key, [row]);

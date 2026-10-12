@@ -27,36 +27,40 @@ function formatModelDisplayName(
 	return `${prefixed}${model}`;
 }
 
+// Convert MonitorModelData to ModelData format for the table
+export function toModelTableData(item: MonitorModelTableRow): ModelData {
+	return {
+		id: item.id,
+		model: formatModelDisplayName(
+			item.model,
+			item.organisationName ?? item.organisationId,
+		),
+		modelId: item.modelId,
+		organisationId: item.organisationId,
+		provider: item.provider,
+		endpoint: item.endpoint,
+		gatewayStatus: item.gatewayStatus,
+		inputModalities: item.inputModalities,
+		outputModalities: item.outputModalities,
+		context: item.context,
+		maxOutput: item.maxOutput,
+		quantization: item.quantization,
+		supportedParameters: item.supportedParameters,
+		tier: item.tier,
+		added: item.added,
+		retired: item.retired,
+		popularityTokensWeek: item.popularityTokensWeek ?? 0,
+	};
+}
+
 export function MonitorTableClient({
 	initialModelData,
 	effectiveStatuses,
 	stickyHeaderOffset,
 	modelTablePreferences,
 }: MonitorTableClientProps) {
-	// Convert MonitorModelData to ModelData format for the table
-	const modelData = useMemo<ModelData[]>(
-		() => initialModelData.map((item) => ({
-			id: item.id,
-			model: formatModelDisplayName(
-				item.model,
-				item.organisationName ?? item.organisationId,
-			),
-			modelId: item.modelId,
-			organisationId: item.organisationId,
-			provider: item.provider,
-			endpoint: item.endpoint,
-			gatewayStatus: item.gatewayStatus,
-			inputModalities: item.inputModalities,
-			outputModalities: item.outputModalities,
-			context: item.context,
-			maxOutput: item.maxOutput,
-			quantization: item.quantization,
-			supportedParameters: item.supportedParameters,
-			tier: item.tier,
-			added: item.added,
-			retired: item.retired,
-			popularityTokensWeek: item.popularityTokensWeek ?? 0,
-		})),
+	const modelData = useMemo(
+		() => initialModelData.map(toModelTableData),
 		[initialModelData],
 	);
 

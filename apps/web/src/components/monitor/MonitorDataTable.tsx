@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useLocale, useTranslations } from "next-intl";
@@ -68,20 +68,32 @@ import type {
 import Link from "next/link";
 import { useQueryState } from "nuqs";
 import { getModalityTone } from "@/lib/models/modalityStyles";
-import { ModelCapabilityBadges, useModelCapabilityLabel } from "@/components/(data)/models/ModelCapabilityBadges";
-import { modelOutputFilterValues } from "@/lib/models/modelCapabilities";
+import {
+	getCapabilityIconMeta,
+	MODEL_ICON_BADGE_CLASS_NAME,
+	ModelCapabilityIcons,
+	useModelCapabilityLabel,
+} from "@/components/(data)/models/ModelCapabilityIcons";
+import { formatExecutionRegionLabel } from "@/lib/providers/executionRegions";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { parseCatalogueTierFilters } from "@/lib/models/catalogueTierFilters";
 import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
 import { cn } from "@/lib/utils";
 import {
+	describeProviderRoutes,
 	groupModelRows,
 	lowestDisplayedPrice,
+	type ProviderRoute,
 	type GroupedModelData,
 	type ModelData,
 	type ModelOperationPrices,
 	type ModelUsagePrice,
 } from "./modelTableGrouping";
+import {
+	matchesModelTableRow,
+	normalizeModelTableStatus as normalizeStatusValue,
+	type ModelTableFilters,
+} from "./modelTableFilters";
 
 export type { ModelData } from "./modelTableGrouping";
 
@@ -212,22 +224,6 @@ function normalizeModality(value: string): string {
 	return normalized.replace(/\s+/g, "_");
 }
 
-function normalizeStatusValue(value: string): string {
-	const normalized = String(value ?? "")
-		.trim()
-		.toLowerCase()
-		.replace(/[\s-]+/g, "_");
-	if (!normalized) return "";
-	if (normalized === "not_active") return "inactive";
-	if (normalized === "deranked" || normalized === "de_ranked") {
-		return "deranked_lvl1";
-	}
-	if (normalized === "deranked_lvl_1") return "deranked_lvl1";
-	if (normalized === "deranked_lvl_2") return "deranked_lvl2";
-	if (normalized === "deranked_lvl_3") return "deranked_lvl3";
-	return normalized;
-}
-
 function sortModalities(values: string[]): string[] {
 	const unique = Array.from(
 		new Set(values.map((value) => normalizeModality(value)).filter(Boolean)),
@@ -247,41 +243,41 @@ function sortModalities(values: string[]): string[] {
 	});
 }
 
-const featureIcons = {
+const featureIcons: Record<string, { icon: LucideIcon; badgeClassName: string; iconClassName: string }> = {
 	tools: {
 		icon: Wrench,
-		color: "text-yellow-600",
-		darkColor: "dark:text-yellow-300",
+		badgeClassName: "bg-yellow-100 dark:bg-yellow-950/50",
+		iconClassName: "text-yellow-700 dark:text-yellow-300",
 	},
 	reasoning: {
 		icon: Brain,
-		color: "text-indigo-600",
-		darkColor: "dark:text-indigo-300",
+		badgeClassName: "bg-indigo-100 dark:bg-indigo-950/50",
+		iconClassName: "text-indigo-700 dark:text-indigo-300",
 	},
 	structured_outputs: {
 		icon: Braces,
-		color: "text-cyan-600",
-		darkColor: "dark:text-cyan-300",
+		badgeClassName: "bg-cyan-100 dark:bg-cyan-950/50",
+		iconClassName: "text-cyan-700 dark:text-cyan-300",
 	},
 	caching: {
 		icon: Database,
-		color: "text-emerald-600",
-		darkColor: "dark:text-emerald-300",
+		badgeClassName: "bg-emerald-100 dark:bg-emerald-950/50",
+		iconClassName: "text-emerald-700 dark:text-emerald-300",
 	},
 	web_search: {
 		icon: Globe,
-		color: "text-blue-500",
-		darkColor: "dark:text-blue-300",
+		badgeClassName: "bg-blue-100 dark:bg-blue-950/50",
+		iconClassName: "text-blue-700 dark:text-blue-300",
 	},
 	moderated: {
 		icon: ShieldAlert,
-		color: "text-red-500",
-		darkColor: "dark:text-red-300",
+		badgeClassName: "bg-red-100 dark:bg-red-950/50",
+		iconClassName: "text-red-700 dark:text-red-300",
 	},
 	free: {
 		icon: BadgeCheck,
-		color: "text-emerald-600",
-		darkColor: "dark:text-emerald-300",
+		badgeClassName: "bg-emerald-100 dark:bg-emerald-950/50",
+		iconClassName: "text-emerald-700 dark:text-emerald-300",
 	},
 };
 
@@ -342,9 +338,9 @@ export const MODEL_TABLE_COLUMNS = [
 	{ id: "model", label: "Model", width: 360 },
 	{ id: "providers", label: "Providers", width: 184 },
 	{ id: "status", label: "Gateway Status", width: 148 },
-	{ id: "capability", label: "Capabilities", width: 190 },
-	{ id: "inputPrice", label: "Input $", width: 112, numeric: true },
-	{ id: "outputPrice", label: "Output $", width: 112, numeric: true },
+	{ id: "capability", label: "Capabilities", width: 128 },
+	{ id: "inputPrice", label: "Input $", width: 128, numeric: true },
+	{ id: "outputPrice", label: "Output $", width: 128, numeric: true },
 	{ id: "tier", label: "Tier", width: 112 },
 	{ id: "inputModalities", label: "Input Modalities", width: 164 },
 	{ id: "outputModalities", label: "Output Modalities", width: 164 },
@@ -582,112 +578,38 @@ export function MonitorDataTable({
 		);
 	};
 
+	const filters = useMemo<ModelTableFilters>(() => ({
+		search: searchQuery,
+		year: yearSelected,
+		inputModalities: selectedInputModalities,
+		outputModalities: selectedOutputModalities,
+		features: selectedFeatures,
+		tiers: selectedTiers,
+		supportedParameters: selectedSupportedParameters,
+		providers: selectedProviders,
+		regions: selectedRegions,
+		creators: selectedCreators,
+		contextMin: selectedContextMin,
+		endpoints: selectedEndpoints,
+		statuses: selectedStatuses,
+	}), [
+		searchQuery,
+		yearSelected,
+		selectedInputModalities,
+		selectedOutputModalities,
+		selectedFeatures,
+		selectedTiers,
+		selectedSupportedParameters,
+		selectedProviders,
+		selectedRegions,
+		selectedCreators,
+		selectedContextMin,
+		selectedEndpoints,
+		selectedStatuses,
+	]);
+
 	const filteredGroupedData = useMemo(() => {
-		const filtered = data.filter((item) => {
-			if (searchQuery) {
-				const searchLower = searchQuery.toLowerCase();
-				const matchesSearch = Object.values(item).some((value) => {
-					if (Array.isArray(value)) {
-						return value.some((v) =>
-							String(v).toLowerCase().includes(searchLower),
-						);
-					}
-					if (typeof value === "object" && value !== null) {
-						return Object.values(value).some((nestedValue) => {
-							if (Array.isArray(nestedValue)) {
-								return nestedValue.some((v) =>
-									String(v).toLowerCase().includes(searchLower),
-								);
-							}
-							return String(nestedValue).toLowerCase().includes(searchLower);
-						});
-					}
-					return String(value).toLowerCase().includes(searchLower);
-				});
-				if (!matchesSearch) return false;
-			}
-
-			if (yearSelected && yearSelected > 0) {
-				const itemYear = item.added ? new Date(item.added).getFullYear() : null;
-				if (itemYear !== yearSelected) return false;
-			}
-
-			if (selectedInputModalities.length > 0) {
-				const hasAllInputModalities = selectedInputModalities.every((mod) =>
-					item.inputModalities.includes(mod),
-				);
-				if (!hasAllInputModalities) return false;
-			}
-
-			if (selectedOutputModalities.length > 0) {
-				const hasAllOutputModalities = selectedOutputModalities.every((mod) =>
-					modelOutputFilterValues(item.outputModalities, [item.endpoint]).includes(mod),
-				);
-				if (!hasAllOutputModalities) return false;
-			}
-
-			if (selectedFeatures.length > 0) {
-				const hasAllFeatures = selectedFeatures.every((feat) =>
-					item.provider.features.includes(feat),
-				);
-				if (!hasAllFeatures) return false;
-			}
-
-			if (selectedTiers.length > 0) {
-				const tier = String(item.tier ?? "standard")
-					.trim()
-					.toLowerCase();
-				if (!selectedTiers.includes(tier)) return false;
-			}
-
-			if (selectedSupportedParameters.length > 0) {
-				const parameters = new Set(item.supportedParameters ?? []);
-				if (
-					!selectedSupportedParameters.every((value) => parameters.has(value))
-				) {
-					return false;
-				}
-			}
-
-			if (
-				selectedProviders.length > 0 &&
-				!selectedProviders.includes(item.provider.id)
-			) {
-				return false;
-			}
-
-			if (selectedRegions.length > 0) {
-				const regions = new Set(
-					(item.provider.executionRegions ?? []).map((value) =>
-						String(value).trim().toLowerCase(),
-					),
-				);
-				if (!selectedRegions.every((value) => regions.has(value))) return false;
-			}
-
-			if (
-				selectedCreators.length > 0 &&
-				(!item.organisationId ||
-					!selectedCreators.includes(item.organisationId))
-			) {
-				return false;
-			}
-
-			if (selectedContextMin > 0 && item.context < selectedContextMin) {
-				return false;
-			}
-
-			if (selectedEndpoints.length > 0) {
-				if (!selectedEndpoints.includes(item.endpoint)) return false;
-			}
-
-			if (selectedStatuses.length > 0) {
-				const normalizedStatus = normalizeStatusValue(item.gatewayStatus);
-				if (!selectedStatuses.includes(normalizedStatus)) return false;
-			}
-
-			return true;
-		});
+		const filtered = data.filter((item) => matchesModelTableRow(item, filters));
 
 		const grouped = groupModelRows(filtered);
 		if (!sortField) return grouped;
@@ -770,24 +692,7 @@ export function MonitorDataTable({
 				? aStr.localeCompare(bStr)
 				: bStr.localeCompare(aStr);
 		});
-	}, [
-		data,
-		searchQuery,
-		yearSelected,
-		selectedInputModalities,
-		selectedOutputModalities,
-		selectedFeatures,
-		selectedTiers,
-		selectedSupportedParameters,
-		selectedProviders,
-		selectedRegions,
-		selectedCreators,
-		selectedContextMin,
-		selectedEndpoints,
-		selectedStatuses,
-		sortField,
-		sortDirection,
-	]);
+	}, [data, filters, sortField, sortDirection]);
 
 	const totalItems = filteredGroupedData.length;
 	const tableContainerRef = useRef<HTMLDivElement | null>(null);
@@ -925,8 +830,29 @@ export function MonitorDataTable({
 			(provider) => provider.id && provider.id !== "unlinked",
 		);
 		if (!linkedProviders.length) return <span className="text-xs">-</span>;
-		const visibleProviders = linkedProviders.slice(0, 5);
-		const hiddenProviders = linkedProviders.slice(visibleProviders.length);
+		const routes = describeProviderRoutes(linkedProviders);
+		const regionsLabel = (regions: string[]) => regions.map((region) =>
+			region === "jp" ? modelsUiT("regionJapan")
+				: region === "au" ? modelsUiT("regionAustralia")
+					: formatExecutionRegionLabel(region)).join(", ");
+		const routeLabel = (route: ProviderRoute) => [
+			route.name,
+			route.regions.length ? `${modelsUiT("regionRouting")}: ${regionsLabel(route.regions)}` : null,
+			route.routeId,
+		].filter(Boolean).join(" · ");
+		const renderRouteDetails = (route: ProviderRoute) => (
+			<span className="block">
+				<span className="block font-medium">{route.name}</span>
+				{route.regions.length ? (
+					<span className="block opacity-80">
+						{modelsUiT("regionRouting")}: {regionsLabel(route.regions)}
+					</span>
+				) : null}
+				{route.routeId ? <span className="block font-mono text-[10px] opacity-70">{route.routeId}</span> : null}
+			</span>
+		);
+		const visibleProviders = routes.slice(0, 5);
+		const hiddenProviders = routes.slice(visibleProviders.length);
 		return (
 			<div className="flex items-center">
 				<div className="flex items-center gap-1">
@@ -935,7 +861,7 @@ export function MonitorDataTable({
 							<TooltipTrigger asChild>
 								<Link
 									href={`/api-providers/${provider.id}`}
-									aria-label={provider.name}
+									aria-label={routeLabel(provider)}
 									className="relative flex size-6 items-center justify-center rounded-md border bg-background transition-transform hover:z-10 hover:-translate-y-0.5 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 								>
 									<span className="relative size-4">
@@ -948,7 +874,7 @@ export function MonitorDataTable({
 									</span>
 								</Link>
 							</TooltipTrigger>
-							<TooltipContent side="top">{provider.name}</TooltipContent>
+							<TooltipContent side="top" className="max-w-64">{renderRouteDetails(provider)}</TooltipContent>
 						</Tooltip>
 					))}
 				</div>
@@ -963,10 +889,10 @@ export function MonitorDataTable({
 								+{hiddenProviders.length}
 							</span>
 						</TooltipTrigger>
-						<TooltipContent side="top" className="max-w-56">
-							<div className="space-y-1">
-								{hiddenProviders.map(({ id, name }) => (
-									<span key={id} className="block">{name}</span>
+						<TooltipContent side="top" className="max-w-64">
+							<div className="space-y-1.5">
+								{hiddenProviders.map((route) => (
+									<span key={route.id} className="block">{renderRouteDetails(route)}</span>
 								))}
 							</div>
 						</TooltipContent>
@@ -1019,16 +945,11 @@ export function MonitorDataTable({
 								<button
 									type="button"
 					aria-label={tWithModality(`modalityAriaLabels.${type}`, { modality: label })}
-									className={cn(
-										"group inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
-										tone.badgeClassName,
-									)}
+									className={cn(MODEL_ICON_BADGE_CLASS_NAME, tone.badgeClassName)}
 								>
 									<IconComponent
-										className={cn(
-											"h-4 w-4 transition-transform group-hover:scale-105",
-											tone.iconClassName,
-										)}
+										aria-hidden
+										className={cn("h-3.5 w-3.5", tone.iconClassName)}
 									/>
 								</button>
 							</HoverCardTrigger>
@@ -1062,29 +983,9 @@ export function MonitorDataTable({
 							: rawKey === "structured_output"
 								? "structured_outputs"
 								: rawKey;
-					const iconConfig = featureIcons[key as keyof typeof featureIcons];
+					const iconConfig = featureIcons[key];
 					if (!iconConfig) return null;
-
 					const IconComponent = iconConfig.icon;
-					if (!IconComponent) return null;
-
-					const colorMap: Record<string, string> = {
-						"text-yellow-600":
-							"border-yellow-600 bg-yellow-50 dark:border-yellow-400/50 dark:bg-yellow-950/40",
-						"text-indigo-600":
-							"border-indigo-600 bg-indigo-50 dark:border-indigo-400/50 dark:bg-indigo-950/40",
-						"text-cyan-600":
-							"border-cyan-600 bg-cyan-50 dark:border-cyan-400/50 dark:bg-cyan-950/40",
-						"text-emerald-600":
-							"border-emerald-600 bg-emerald-50 dark:border-emerald-400/50 dark:bg-emerald-950/40",
-						"text-blue-500":
-							"border-blue-500 bg-blue-50 dark:border-blue-400/50 dark:bg-blue-950/40",
-						"text-red-500":
-							"border-red-500 bg-red-50 dark:border-red-400/50 dark:bg-red-950/40",
-					};
-
-					const borderClass =
-						colorMap[iconConfig.color] || "border-gray-600 bg-gray-50";
 
 					const label = t(`featureLabels.${key}` as never) as string;
 					const description = t(`featureDescriptions.${key}` as never) as string;
@@ -1094,10 +995,11 @@ export function MonitorDataTable({
 								<button
 									type="button"
 					aria-label={t("featureAriaLabel", { label })}
-									className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border transition-transform hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 ${borderClass}`}
+									className={cn(MODEL_ICON_BADGE_CLASS_NAME, iconConfig.badgeClassName)}
 								>
 									<IconComponent
-										className={`h-4 w-4 ${iconConfig.color} ${iconConfig.darkColor}`}
+										aria-hidden
+										className={cn("h-3.5 w-3.5", iconConfig.iconClassName)}
 									/>
 								</button>
 							</HoverCardTrigger>
@@ -1205,20 +1107,22 @@ export function MonitorDataTable({
 	) => {
 		if (column === "inputPrices" || !usage.length) return renderPriceRange(prices);
 		return (
-			<div className="space-y-0.5">
+			<div className="space-y-1">
 				{prices.length ? <div>{renderPriceRange(prices)}</div> : null}
 				{usage.map(({ price, unit }) => (
-					<div key={unit} className="whitespace-nowrap leading-tight">
-						<span className="mr-1 text-[10px] text-muted-foreground">{sectionsT("from")}</span>
+					<div key={unit} className="leading-tight">
+						<span className="mr-1 font-sans text-[10px] text-muted-foreground">{sectionsT("from")}</span>
 						{formatUsagePrice(price)}
-						<div className="text-[10px] text-muted-foreground">/ {unit}</div>
+						<div className="font-sans text-[10px] text-muted-foreground">/ {unit}</div>
 					</div>
 				))}
 			</div>
 		);
 	};
 
-	// Per-capability rows only when this column's prices differ between capabilities.
+	// Per-capability rows only when this column's prices differ between
+	// capabilities; each row is marked by the capability's icon, as in the
+	// Capabilities column, so labels never spill into the next column.
 	const renderOperationPrices = (
 		item: GroupedModelData,
 		column: "inputPrices" | "outputPrices",
@@ -1230,13 +1134,25 @@ export function MonitorDataTable({
 		const differs = operations.some(operation => columnKey(operation) !== columnKey(operations[0]));
 		if (!differs) return renderPriceCell(item[column], item.usagePrices, column);
 		return (
-			<div className="space-y-1">
-				{operations.map(operation => (
-					<div key={operation.capability} className="whitespace-nowrap">
-						<span className="mr-1 text-[10px] text-muted-foreground">{capabilityLabel(operation.capability)}</span>
-						{renderPriceCell(operation[column], operation.usagePrices, column)}
-					</div>
-				))}
+			<div className="inline-grid grid-cols-[auto_auto] items-start gap-x-1.5 gap-y-1 text-left">
+				{operations.map(operation => {
+					const { icon: Icon, tone } = getCapabilityIconMeta(operation.capability);
+					const label = capabilityLabel(operation.capability);
+					return (
+						<Fragment key={operation.capability}>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<span role="img" tabIndex={0} aria-label={label}
+										className={cn(MODEL_ICON_BADGE_CLASS_NAME, "size-4 rounded-sm", tone.badgeClassName)}>
+										<Icon aria-hidden className={cn("h-2.5 w-2.5", tone.iconClassName)} />
+									</span>
+								</TooltipTrigger>
+								<TooltipContent side="top">{label}</TooltipContent>
+							</Tooltip>
+							<div className="leading-4">{renderPriceCell(operation[column], operation.usagePrices, column)}</div>
+						</Fragment>
+					);
+				})}
 			</div>
 		);
 	};
@@ -1362,7 +1278,7 @@ export function MonitorDataTable({
 			case "status":
 				return renderStatuses(item);
 			case "capability":
-				return <ModelCapabilityBadges endpoints={item.endpoints} />;
+				return <ModelCapabilityIcons endpoints={item.endpoints} />;
 			case "inputPrice":
 				return renderOperationPrices(item, "inputPrices");
 			case "outputPrice":

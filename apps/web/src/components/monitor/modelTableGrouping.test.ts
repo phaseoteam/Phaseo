@@ -1,4 +1,4 @@
-import { groupModelRows, lowestDisplayedPrice, type ModelData } from "./modelTableGrouping";
+import { describeProviderRoutes, groupModelRows, lowestDisplayedPrice, type ModelData } from "./modelTableGrouping";
 
 function row(overrides: Partial<ModelData>): ModelData {
 	return {
@@ -125,6 +125,29 @@ describe("groupModelRows", () => {
 		expect(group.operationPrices).toEqual([]);
 	});
 
+	it("treats a batch row's 0/0 placeholder as no price, as older projections send it", () => {
+		const [group] = groupModelRows([
+			row({ modelId: "openai/gpt-6.1-sol", endpoint: "batch", provider: { id: "openai", name: "OpenAI", inputPrice: 0, outputPrice: 0, features: [] } }),
+			row({ modelId: "openai/gpt-6.1-sol", endpoint: "text.generate", provider: { id: "openai", name: "OpenAI", inputPrice: 2, outputPrice: 10, features: [] } }),
+		]);
+		expect(group.endpoints).toEqual(["text.generate", "batch"]);
+		expect(group.inputPrices).toEqual([2]);
+		expect(group.outputPrices).toEqual([10]);
+		expect(group.operationPrices).toEqual([]);
+		expect(group.usagePrices).toEqual([]);
+	});
+
+	it("keeps a free batch route's $0 and a listed batch rate", () => {
+		const [free] = groupModelRows([
+			row({ endpoint: "batch", tier: "free", provider: { id: "openai", name: "OpenAI", inputPrice: 0, outputPrice: 0, features: [] } }),
+		]);
+		expect(free.inputPrices).toEqual([0]);
+		const [listed] = groupModelRows([
+			row({ endpoint: "batch", provider: { id: "openai", name: "OpenAI", inputPrice: 1, outputPrice: 5, features: [] } }),
+		]);
+		expect(listed.outputPrices).toEqual([5]);
+	});
+
 	it("keeps genuine free-tier and provider price differences", () => {
 		const [group] = groupModelRows([
 			row({ tier: "free", provider: { id: "openai", name: "OpenAI", inputPrice: 0, outputPrice: 0, features: [] } }),
@@ -225,5 +248,47 @@ describe("groupModelRows", () => {
 
 		expect(result).toHaveLength(2);
 		expect(result.find(({ modelId }) => modelId === "openai/gpt-test")?.retired).toBeUndefined();
+	});
+});
+
+describe("describeProviderRoutes", () => {
+	const provider = (id: string, name: string, executionRegions: string[]): ModelData["provider"] => ({
+		id, name, executionRegions, inputPrice: 1, outputPrice: 2, features: [],
+	});
+
+	it("tells Mistral's two routes apart by offer and execution regions", () => {
+		const routes = describeProviderRoutes([
+			provider("mistral", "Mistral", ["eu", "global"]),
+			provider("mistral-eu", "Mistral", ["eu"]),
+		]);
+		expect(routes).toEqual([
+			{ id: "mistral", name: "Mistral", regions: ["global", "eu"] },
+			{ id: "mistral-eu", name: "Mistral (EU)", regions: ["eu"] },
+		]);
+	});
+
+	it("names Claude Sonnet 5.5's Anthropic routes from catalogue data", () => {
+		const routes = describeProviderRoutes([
+			provider("anthropic", "Anthropic", ["global", "us"]),
+			provider("anthropic-aws", "Anthropic", ["global", "us"]),
+			provider("anthropic-aws-us", "Anthropic", ["us"]),
+			provider("anthropic-us", "Anthropic", ["us"]),
+		]);
+		expect(routes.map(({ name, regions }) => `${name} ${regions.join("/")}`)).toEqual([
+			"Anthropic global/us",
+			"Claude Platform for AWS global/us",
+			"Claude Platform for AWS (US) us",
+			"Anthropic (US) us",
+		]);
+		expect(routes.every(({ routeId }) => routeId === undefined)).toBe(true);
+	});
+
+	it("adds the route id only when name and regions still collide", () => {
+		const routes = describeProviderRoutes([
+			provider("stepfun", "StepFun", []),
+			provider("stepfun-ai", "StepFun", []),
+			provider("google-vertex", "Google Vertex", ["us"]),
+		]);
+		expect(routes.map(({ routeId }) => routeId)).toEqual(["stepfun", "stepfun-ai", undefined]);
 	});
 });

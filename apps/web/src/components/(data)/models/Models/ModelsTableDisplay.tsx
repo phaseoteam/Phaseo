@@ -64,11 +64,18 @@ import {
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import { getModalityIcon } from "@/lib/models/modalityIcons";
-import { modelOutputFilterValues } from "@/lib/models/modelCapabilities";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { parseCatalogueTierFilters } from "@/lib/models/catalogueTierFilters";
 import type { MonitorModelTableRow } from "@/lib/fetchers/models/table-view/types";
-import { MonitorTableClient } from "@/components/monitor/MonitorTableClient";
+import { MonitorTableClient, toModelTableData } from "@/components/monitor/MonitorTableClient";
+import type { ModelData } from "@/components/monitor/modelTableGrouping";
+import {
+	countModelsByFilterValue,
+	filterModelTableRowsBySearch,
+	NO_MODEL_TABLE_FILTERS,
+	type ModelTableFilters,
+} from "@/components/monitor/modelTableFilters";
+import { formatExecutionRegionLabel } from "@/lib/providers/executionRegions";
 import { MODEL_TABLE_COLUMNS } from "@/components/monitor/MonitorDataTable";
 import { Logo } from "@/components/Logo";
 import { ActiveModelFilters, type ActiveModelFilter } from "./ActiveModelFilters";
@@ -209,18 +216,6 @@ function getClosestStopIndex(value: number): number {
 	if (!Number.isFinite(value) || value <= 0) return 0;
 	const index = CONTEXT_LENGTH_STOPS.findIndex((stop) => stop >= value);
 	return index === -1 ? CONTEXT_LENGTH_STOPS.length - 1 : index;
-}
-
-function formatRegionLabel(value: string): string {
-	const normalized = String(value ?? "")
-		.trim()
-		.toLowerCase();
-	if (normalized === "us") return "US";
-	if (normalized === "eu") return "EU";
-	if (normalized === "apac") return "APAC";
-	if (normalized === "jp") return "Japan";
-	if (normalized === "au") return "Australia";
-	return normalized ? normalized.toUpperCase() : value;
 }
 
 function parseCsvParam(value: string | null): string[] {
@@ -469,13 +464,16 @@ function FilterCheckboxList({
 	);
 }
 
+// Options come from every model in the catalogue; counts reflect the other
+// active filters, as on the cards page.
 function getOptionCounts(
 	values: string[],
+	availableMap: Map<string, number>,
 	countsMap: Map<string, number>,
 ): OptionCount[] {
 	return values
-		.map((value) => ({ value, count: countsMap.get(value) ?? 0 }))
-		.filter((option) => option.count > 0);
+		.filter((value) => (availableMap.get(value) ?? 0) > 0)
+		.map((value) => ({ value, count: countsMap.get(value) ?? 0 }));
 }
 
 function FilterLogo({ value }: { value: string }) {
@@ -493,13 +491,11 @@ function FilterLogo({ value }: { value: string }) {
 }
 
 function getModalityOptions(
+	availableMap: Map<string, number>,
 	countsMap: Map<string, number>,
 	values: string[],
 ): OptionCount[] {
-	const canonical = MODALITY_FILTER_DISPLAY_ORDER.map((value) => ({
-		value,
-		count: countsMap.get(value) ?? 0,
-	})).filter((option) => option.count > 0);
+	const canonical = getOptionCounts([...MODALITY_FILTER_DISPLAY_ORDER], availableMap, countsMap);
 
 	const known = new Set<string>(MODALITY_FILTER_DISPLAY_ORDER);
 	const normalizedValues = Array.from(
@@ -509,14 +505,11 @@ function getModalityOptions(
 				.filter(Boolean),
 		),
 	);
+	const available = (value: string) => availableMap.get(value) ?? 0;
 	const additional = normalizedValues
-		.filter((value) => !known.has(value))
-		.map((value) => ({ value, count: countsMap.get(value) ?? 0 }))
-		.filter((option) => option.count > 0)
-		.sort((a, b) => {
-			if (a.count !== b.count) return b.count - a.count;
-			return a.value.localeCompare(b.value);
-		});
+		.filter((value) => !known.has(value) && available(value) > 0)
+		.sort((a, b) => available(b) - available(a) || a.localeCompare(b))
+		.map((value) => ({ value, count: countsMap.get(value) ?? 0 }));
 
 	return [...canonical, ...additional];
 }
@@ -625,6 +618,26 @@ function OutputModalityButtonRow({
 	);
 }
 
+function countModelTableFacets(rows: ModelData[], filters: ModelTableFilters) {
+	const count = (
+		dimension: Parameters<typeof countModelsByFilterValue>[2],
+		normalize?: (value: string) => string,
+	) => countModelsByFilterValue(rows, filters, dimension, normalize);
+	return {
+		inputMap: count("inputModalities", normalizeModalityFilterValue),
+		outputMap: count("outputModalities", normalizeModalityFilterValue),
+		featureMap: count("features"),
+		supportedParameterMap: count("supportedParameters"),
+		providerMap: count("providers"),
+		regionMap: count("regions"),
+		creatorMap: count("creators"),
+		endpointMap: count("endpoints"),
+		statusMap: count("statuses"),
+		tierMap: count("tiers"),
+		yearMap: count("year"),
+	};
+}
+
 export default function ModelsTableDisplay({
 	initialModelData,
 	allEndpoints,
@@ -665,7 +678,7 @@ export default function ModelsTableDisplay({
 		const normalized = String(value ?? "").trim().toLowerCase();
 		return keys[normalized]
 			? tFilters(keys[normalized] as never)
-			: formatRegionLabel(value);
+			: formatExecutionRegionLabel(value);
 	};
 	const translateTier = (value: string) => {
 		const keys: Record<string, string> = {
@@ -928,144 +941,105 @@ export default function ModelsTableDisplay({
 
 	const selectedContextStopIndex = getClosestStopIndex(selectedContextMin);
 
-	const counts = useMemo(() => {
-		const inputMap = new Map<string, number>();
-		const outputMap = new Map<string, number>();
-		const featureMap = new Map<string, number>();
-		const supportedParameterMap = new Map<string, number>();
-		const providerMap = new Map<string, number>();
-		const regionMap = new Map<string, number>();
-		const creatorMap = new Map<string, number>();
-		const endpointMap = new Map<string, number>();
-		const statusMap = new Map<string, number>();
-		const tierMap = new Map<string, number>();
-		const yearMap = new Map<string, number>();
-
-		for (const item of initialModelData) {
-			for (const modality of item.inputModalities ?? []) {
-				const key = normalizeModalityFilterValue(String(modality ?? ""));
-				if (!key) continue;
-				inputMap.set(key, (inputMap.get(key) ?? 0) + 1);
-			}
-			for (const modality of modelOutputFilterValues(item.outputModalities ?? [], [item.endpoint])) {
-				const key = normalizeModalityFilterValue(String(modality ?? ""));
-				if (!key) continue;
-				outputMap.set(key, (outputMap.get(key) ?? 0) + 1);
-			}
-			for (const feature of item.provider.features ?? []) {
-				const key = String(feature ?? "").trim();
-				if (!key) continue;
-				featureMap.set(key, (featureMap.get(key) ?? 0) + 1);
-			}
-			for (const parameter of item.supportedParameters ?? []) {
-				const key = String(parameter ?? "").trim();
-				if (!key) continue;
-				supportedParameterMap.set(
-					key,
-					(supportedParameterMap.get(key) ?? 0) + 1,
-				);
-			}
-			const providerId = String(item.provider.id ?? "").trim();
-			if (providerId) {
-				providerMap.set(providerId, (providerMap.get(providerId) ?? 0) + 1);
-			}
-			for (const region of item.provider.executionRegions ?? []) {
-				const key = String(region ?? "")
-					.trim()
-					.toLowerCase();
-				if (!key) continue;
-				regionMap.set(key, (regionMap.get(key) ?? 0) + 1);
-			}
-			const creatorId = String(item.organisationId ?? "").trim();
-			if (creatorId) {
-				creatorMap.set(creatorId, (creatorMap.get(creatorId) ?? 0) + 1);
-			}
-			const endpoint = String(item.endpoint ?? "").trim();
-			if (endpoint)
-				endpointMap.set(endpoint, (endpointMap.get(endpoint) ?? 0) + 1);
-
-			const status = String(item.gatewayStatus ?? "").trim();
-			const statusKey = normalizeStatusFilterValue(status);
-			if (statusKey) {
-				statusMap.set(statusKey, (statusMap.get(statusKey) ?? 0) + 1);
-			}
-
-			const tier = String(item.tier ?? "standard")
-				.trim()
-				.toLowerCase();
-			if (tier) tierMap.set(tier, (tierMap.get(tier) ?? 0) + 1);
-
-			if (item.added) {
-				const year = String(new Date(item.added).getFullYear());
-				if (year !== "NaN") yearMap.set(year, (yearMap.get(year) ?? 0) + 1);
-			}
-		}
-
-		return {
-			inputMap,
-			outputMap,
-			featureMap,
-			supportedParameterMap,
-			providerMap,
-			regionMap,
-			creatorMap,
-			endpointMap,
-			statusMap,
-			tierMap,
-			yearMap,
-		};
-	}, [initialModelData]);
+	const tableRows = useMemo(
+		() => initialModelData.map(toModelTableData),
+		[initialModelData],
+	);
+	const tableFilters = useMemo<ModelTableFilters>(() => ({
+		search: "",
+		year: yearSelected,
+		inputModalities: selectedInputModalities,
+		outputModalities: selectedOutputModalities,
+		features: selectedFeatures,
+		tiers: selectedTiers,
+		supportedParameters: selectedSupportedParameters,
+		providers: selectedProviders,
+		regions: selectedRegions,
+		creators: selectedCreators,
+		contextMin: selectedContextMin,
+		endpoints: selectedEndpoints,
+		statuses: effectiveSelectedStatuses,
+	}), [
+		yearSelected,
+		selectedInputModalities,
+		selectedOutputModalities,
+		selectedFeatures,
+		selectedTiers,
+		selectedSupportedParameters,
+		selectedProviders,
+		selectedRegions,
+		selectedCreators,
+		selectedContextMin,
+		selectedEndpoints,
+		effectiveSelectedStatuses,
+	]);
+	const searchedTableRows = useMemo(
+		() => filterModelTableRowsBySearch(tableRows, search),
+		[tableRows, search],
+	);
+	// Facets count distinct models, as the cards page and the table's
+	// one-row-per-model layout do, rather than provider routes.
+	const available = useMemo(
+		() => countModelTableFacets(tableRows, NO_MODEL_TABLE_FILTERS),
+		[tableRows],
+	);
+	const counts = useMemo(
+		() => countModelTableFacets(searchedTableRows, tableFilters),
+		[searchedTableRows, tableFilters],
+	);
 
 	const inputModalityOptions = useMemo(
 		() =>
-			getModalityOptions(counts.inputMap, allModalities).filter((option) => {
+			getModalityOptions(available.inputMap, counts.inputMap, allModalities).filter((option) => {
 				const modality = normalizeModalityFilterValue(option.value);
 				return modality !== "file" && modality !== "document";
 			}),
-		[allModalities, counts.inputMap],
+		[allModalities, available.inputMap, counts.inputMap],
 	);
 	const outputModalityOptions = useMemo(
 		() =>
-			getModalityOptions(counts.outputMap, allModalities).filter(
+			getModalityOptions(available.outputMap, counts.outputMap, allModalities).filter(
 				(option) => normalizeModalityFilterValue(option.value) !== "action",
 			),
-		[allModalities, counts.outputMap],
+		[allModalities, available.outputMap, counts.outputMap],
 	);
 	const featureOptions = useMemo(
-		() => getOptionCounts(allFeatures, counts.featureMap),
-		[allFeatures, counts.featureMap],
+		() => getOptionCounts(allFeatures, available.featureMap, counts.featureMap),
+		[allFeatures, available.featureMap, counts.featureMap],
 	);
 	const supportedParameterOptions = useMemo(
 		() =>
 			getOptionCounts(
-				Array.from(counts.supportedParameterMap.keys()).sort((a, b) =>
+				Array.from(available.supportedParameterMap.keys()).sort((a, b) =>
 					toTitleCase(a).localeCompare(toTitleCase(b)),
 				),
+				available.supportedParameterMap,
 				counts.supportedParameterMap,
 			),
-		[counts.supportedParameterMap],
+		[available.supportedParameterMap, counts.supportedParameterMap],
 	);
 	const providerOptions = useMemo(
 		() =>
 			getOptionCounts(
-				Array.from(counts.providerMap.keys()),
+				Array.from(available.providerMap.keys()),
+				available.providerMap,
 				counts.providerMap,
 			),
-		[counts.providerMap],
+		[available.providerMap, counts.providerMap],
 	);
 	const regionOptions = useMemo(
 		() =>
-			getOptionCounts(Array.from(counts.regionMap.keys()), counts.regionMap),
-		[counts.regionMap],
+			getOptionCounts(Array.from(available.regionMap.keys()), available.regionMap, counts.regionMap),
+		[available.regionMap, counts.regionMap],
 	);
 	const creatorOptions = useMemo(
 		() =>
-			getOptionCounts(Array.from(counts.creatorMap.keys()), counts.creatorMap),
-		[counts.creatorMap],
+			getOptionCounts(Array.from(available.creatorMap.keys()), available.creatorMap, counts.creatorMap),
+		[available.creatorMap, counts.creatorMap],
 	);
 	const endpointOptions = useMemo(
-		() => getOptionCounts(allEndpoints, counts.endpointMap),
-		[allEndpoints, counts.endpointMap],
+		() => getOptionCounts(allEndpoints, available.endpointMap, counts.endpointMap),
+		[allEndpoints, available.endpointMap, counts.endpointMap],
 	);
 	const statusOptions = useMemo(
 		() =>
@@ -1077,7 +1051,7 @@ export default function ModelsTableDisplay({
 	);
 	const tierOptions = useMemo(() => {
 		const preferredOrder = ["standard", "batch", "free"];
-		const values = Array.from(counts.tierMap.keys()).sort((a, b) => {
+		const values = Array.from(available.tierMap.keys()).sort((a, b) => {
 			const aIndex = preferredOrder.indexOf(a);
 			const bIndex = preferredOrder.indexOf(b);
 			if (aIndex !== -1 || bIndex !== -1) {
@@ -1087,8 +1061,8 @@ export default function ModelsTableDisplay({
 			}
 			return a.localeCompare(b);
 		});
-		return getOptionCounts(values, counts.tierMap);
-	}, [counts.tierMap]);
+		return getOptionCounts(values, available.tierMap, counts.tierMap);
+	}, [available.tierMap, counts.tierMap]);
 	const providerLabels = useMemo(
 		() =>
 			new Map(
@@ -1110,10 +1084,12 @@ export default function ModelsTableDisplay({
 	);
 	const yearOptions = useMemo(
 		() =>
-			Array.from(counts.yearMap.entries())
-				.map(([value, count]) => ({ value, count }))
-				.sort((a, b) => Number(b.value) - Number(a.value)),
-		[counts.yearMap],
+			getOptionCounts(
+				Array.from(available.yearMap.keys()).sort((a, b) => Number(b) - Number(a)),
+				available.yearMap,
+				counts.yearMap,
+			),
+		[available.yearMap, counts.yearMap],
 	);
 
 	const activeFilterCount =
