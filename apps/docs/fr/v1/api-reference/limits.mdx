@@ -16,7 +16,7 @@ Le quota dépend de la situation du compte de l'espace de travail et augmente au
 | --- | --- |
 | Nouvel espace de travail | 10 |
 | Au moins 7 jours d'ancienneté, ou une recharge payante effectuée | 25 |
-| Au moins 30 jours d'ancienneté et au moins 50 $ d'utilisation payée | 60 |
+| Au moins 30 jours d'ancienneté et au moins 50 $ de recharges payées, remboursements déduits | 60 |
 | Facturation sur facture | 120 |
 
 Un espace de travail reçoit le quota le plus élevé auquel il a droit. Les changements prennent effet en quelques minutes.
@@ -29,7 +29,7 @@ Un quota du gateway épuisé entraîne une réponse `429` avec `Retry-After` en 
 
 ## Limites des clés et budgets
 
-Lorsque les limites quotidiennes, hebdomadaires ou mensuelles de requêtes et de dépenses d'une clé API, ou les [budgets](./endpoint/budgets-list.mdx) de l'espace de travail, sont atteintes, la réponse est `429` avec le code d'erreur `key_limit_exceeded`. Les champs `reason`, `limit_window` et `reset_at` du corps identifient la limite et le moment où sa période se réinitialise. `Retry-After` indique le nombre de secondes avant cette réinitialisation. Il est omis lorsque la limite ne se réinitialise pas d'elle-même, comme un budget à vie ou une clé temporairement bloquée ; augmentez alors la limite ou utilisez une autre clé au lieu de réessayer.
+Lorsque les limites quotidiennes, hebdomadaires ou mensuelles de requêtes et de dépenses d'une clé API, ou les [budgets](./endpoint/budgets-list.mdx) de l'espace de travail, sont atteintes, la réponse est `429` avec le code d'erreur `key_limit_exceeded`. Les champs `reason`, `limit_window` et `reset_at` du corps identifient la limite et le moment où sa période se réinitialise. `Retry-After` indique le nombre de secondes avant cette réinitialisation. Il est omis lorsque la limite ne se réinitialise pas d'elle-même, comme un budget à vie ou une clé temporairement bloquée ; au lieu de réessayer, augmentez alors le budget de l'espace de travail ou, pour une limite de clé, augmentez la limite de la clé ou utilisez une autre clé.
 
 ## Limites des fournisseurs
 

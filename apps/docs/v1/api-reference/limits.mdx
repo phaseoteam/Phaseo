@@ -16,7 +16,7 @@ The allowance depends on the workspace's account standing and rises automaticall
 | --- | --- |
 | New workspace | 10 |
 | At least 7 days old, or has made a paid top-up | 25 |
-| At least 30 days old with at least $50 of paid usage | 60 |
+| At least 30 days old with at least $50 of paid top-ups, net of refunds | 60 |
 | Invoiced billing | 120 |
 
 A workspace receives the highest allowance it qualifies for. Changes take effect within a few minutes.
@@ -29,7 +29,7 @@ A gateway quota rejection returns `429` with `Retry-After` in seconds. Its error
 
 ## Key limits and budgets
 
-An API key's daily, weekly or monthly request and spend limits, and the workspace's [budgets](./endpoint/budgets-list.mdx), return `429` with the `key_limit_exceeded` error code once reached. The body's `reason`, `limit_window` and `reset_at` fields identify the limit and when its window resets. `Retry-After` gives the seconds until that reset. It is omitted when the limit does not reset by itself, such as a lifetime budget or a soft-blocked key; raise the limit or use a different key instead of retrying.
+An API key's daily, weekly or monthly request and spend limits, and the workspace's [budgets](./endpoint/budgets-list.mdx), return `429` with the `key_limit_exceeded` error code once reached. The body's `reason`, `limit_window` and `reset_at` fields identify the limit and when its window resets. `Retry-After` gives the seconds until that reset. It is omitted when the limit does not reset by itself, such as a lifetime budget or a soft-blocked key; instead of retrying, raise the workspace budget, or for a key limit, raise the key's limit or use a different key.
 
 ## Provider limits
 

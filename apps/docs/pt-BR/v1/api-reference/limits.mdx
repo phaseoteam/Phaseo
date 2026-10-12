@@ -16,7 +16,7 @@ A cota depende da situação da conta do espaço de trabalho e aumenta automatic
 | --- | --- |
 | Espaço de trabalho novo | 10 |
 | Pelo menos 7 dias de existência ou com uma recarga paga | 25 |
-| Pelo menos 30 dias de existência e pelo menos US$ 50 de uso pago | 60 |
+| Pelo menos 30 dias de existência e pelo menos US$ 50 em recargas pagas, descontados os reembolsos | 60 |
 | Cobrança por fatura | 120 |
 
 Um espaço de trabalho recebe a maior cota para a qual se qualifica. As alterações entram em vigor em poucos minutos.
@@ -29,7 +29,7 @@ Quando uma cota do gateway se esgota, a resposta é `429` com `Retry-After` em s
 
 ## Limites de chaves e orçamentos
 
-Ao atingir os limites diários, semanais ou mensais de requisições e gastos de uma chave de API, ou os [orçamentos](./endpoint/budgets-list.mdx) do espaço de trabalho, a resposta é `429` com o código de erro `key_limit_exceeded`. Os campos `reason`, `limit_window` e `reset_at` do corpo identificam o limite e quando seu período é redefinido. `Retry-After` informa os segundos até essa redefinição. Ele é omitido quando o limite não é redefinido sozinho, como um orçamento vitalício ou uma chave bloqueada temporariamente; nesse caso, aumente o limite ou use outra chave em vez de tentar novamente.
+Ao atingir os limites diários, semanais ou mensais de requisições e gastos de uma chave de API, ou os [orçamentos](./endpoint/budgets-list.mdx) do espaço de trabalho, a resposta é `429` com o código de erro `key_limit_exceeded`. Os campos `reason`, `limit_window` e `reset_at` do corpo identificam o limite e quando seu período é redefinido. `Retry-After` informa os segundos até essa redefinição. Ele é omitido quando o limite não é redefinido sozinho, como um orçamento vitalício ou uma chave bloqueada temporariamente; nesse caso, em vez de tentar novamente, aumente o orçamento do espaço de trabalho ou, se for um limite de chave, aumente o limite da chave ou use outra chave.
 
 ## Limites do provedor
 
