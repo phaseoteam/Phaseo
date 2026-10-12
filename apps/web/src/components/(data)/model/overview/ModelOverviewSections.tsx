@@ -93,6 +93,7 @@ type ModelOverviewSectionsProps = {
 	includeHidden: boolean;
 	showBenchmarks?: boolean;
 	showSubscriptions?: boolean;
+	subscriptionOnly?: boolean;
 	showProviders?: boolean;
 	status?: string | null;
 	isGatewayActive?: boolean;
@@ -1367,6 +1368,7 @@ export default async function ModelOverviewSections({
 	includeHidden,
 	showBenchmarks = true,
 	showSubscriptions = true,
+	subscriptionOnly = false,
 	showProviders = true,
 	status,
 	isGatewayActive = true,
@@ -1378,7 +1380,6 @@ export default async function ModelOverviewSections({
 }: ModelOverviewSectionsProps) {
 	const t = await getTranslations("Catalogue.models.detail");
 	const tOverview = await getTranslations("Catalogue.modelDetail.overview");
-	const subscriptionOnly = showSubscriptions && !showProviders && !isPrivateModel;
 	const hasInternalModelData = Boolean(model);
 	const isRetired = status === "Retired";
 	const showVerification = supportsProvenanceVerification(model?.output_types);

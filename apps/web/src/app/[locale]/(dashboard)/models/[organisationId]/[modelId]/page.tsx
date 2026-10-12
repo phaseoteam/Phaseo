@@ -1,3 +1,4 @@
+import { getModelAccessLayout } from "@/lib/models/modelAccessLayout";
 import {
 	fetchFrontendModelBenchmarkHighlights,
 	fetchFrontendModelAvailability,
@@ -180,6 +181,7 @@ async function ModelFaqSectionContent({
 }
 
 function getModelPageTocItems({
+	subscriptionOnly,
 	showBenchmarks,
 	showSubscriptions,
 	status,
@@ -189,6 +191,7 @@ function getModelPageTocItems({
 	labels,
 	isPrivateModel = false,
 }: {
+	subscriptionOnly: boolean;
 	showBenchmarks: boolean;
 	showSubscriptions: boolean;
 	status?: string | null;
@@ -221,7 +224,6 @@ function getModelPageTocItems({
 		});
 	}
 
-	const subscriptionOnly = showSubscriptions && !showProviders && !isPrivateModel;
 	const orderedItems = subscriptionOnly
 		? [
 			...baseModelPageTocItems.filter((item) => item.id === "subscriptions"),
@@ -392,15 +394,20 @@ async function ModelDetailPageBody({
 	const privatePerformance = isPrivateModel ? await fetchPrivateModelPerformance(modelId) : null;
 	const showBenchmarks = benchmarkHighlights.length > 0;
 	const showSubscriptions = subscriptionPlans.length > 0;
-	const showProviders =
-		modelOverview.status === "Announced" ||
+	const hasApiProviders =
 		(availability?.activeProviderCount ?? 0) > 0 ||
 		(effectiveGatewayMetadata?.providers.length ?? 0) > 0 ||
-		pricingProviders.some((provider) => provider.provider_models.length > 0) ||
-		providerPreviews.length > 0;
+		pricingProviders.some((provider) => provider.provider_models.length > 0);
+	const { subscriptionOnly, showProviders } = getModelAccessLayout({
+		hasSubscriptions: showSubscriptions,
+		hasApiProviders,
+		isPrivateModel,
+		status: modelOverview.status,
+		hasProviderPreviews: providerPreviews.length > 0,
+	});
 	const isGatewayActive = isPrivateModel
 		? true
-		: showSubscriptions && !showProviders
+		: subscriptionOnly
 		? false
 		: availability?.isGatewayActive ?? true;
 	const resolvedPerformancePromise = isPrivateModel
@@ -411,6 +418,7 @@ async function ModelDetailPageBody({
 	const isRetired = modelOverview?.status === "Retired";
 	const t = await getTranslations("Catalogue.models.detail.navigation");
 	const modelPageTocItems = getModelPageTocItems({
+		subscriptionOnly,
 		showBenchmarks,
 		showSubscriptions,
 		status: modelOverview?.status,
@@ -534,6 +542,7 @@ async function ModelDetailPageBody({
 								includeHidden={includeHidden}
 								showBenchmarks={showBenchmarks}
 								showSubscriptions={showSubscriptions}
+								subscriptionOnly={subscriptionOnly}
 								showProviders={showProviders}
 								status={modelOverview?.status}
 								isGatewayActive={isGatewayActive}
