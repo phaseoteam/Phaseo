@@ -60,9 +60,11 @@ function HoverCardTrigger({
     },
     onClick: (event: React.MouseEvent<HTMLElement>) => {
       onClick?.(event as never)
-      // A tapped link still navigates; anything else opens its card instead
-      // of following a surrounding link or row.
-      const isLink = event.currentTarget instanceof HTMLAnchorElement && event.currentTarget.href
+      // A tapped link (the trigger itself or one inside it) still navigates;
+      // anything else opens its card instead of following a surrounding link
+      // or row.
+      const link = event.target instanceof Element ? event.target.closest("a[href]") : null
+      const isLink = Boolean(link && event.currentTarget.contains(link))
       if (toggle && !event.defaultPrevented && !isLink && (pointerType.current === "touch" || pointerType.current === "pen")) {
         event.preventDefault()
         toggle()
