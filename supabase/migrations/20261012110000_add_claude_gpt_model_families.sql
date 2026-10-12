@@ -9,14 +9,20 @@
 --   openai/gpt-6          : the Sol, Luna and Astra models (and their Pro variants)
 --   openai/gpt-6.1        : GPT 6.1 Sol and Sol Pro
 -- v2_models.family_slug is plain text (no FK), so the family rows are inserted first.
+-- v2_model_families.lab_slug is a FK to v2_labs, and a replayed database has no lab rows,
+-- so the insert joins v2_labs and simply adds nothing when the lab is absent.
 insert into public.v2_model_families (family_slug, lab_slug, name, metadata)
-values
-  ('anthropic/claude-5.5', 'anthropic', 'Claude 5.5', '{"source":"admin"}'::jsonb),
-  ('anthropic/claude-5.1', 'anthropic', 'Claude 5.1', '{"source":"admin"}'::jsonb),
-  ('anthropic/claude-4.7', 'anthropic', 'Claude 4.7', '{"source":"admin"}'::jsonb),
-  ('anthropic/claude-4.8', 'anthropic', 'Claude 4.8', '{"source":"admin"}'::jsonb),
-  ('openai/gpt-6', 'openai', 'GPT 6', '{"source":"admin"}'::jsonb),
-  ('openai/gpt-6.1', 'openai', 'GPT 6.1', '{"source":"admin"}'::jsonb)
+select f.family_slug, f.lab_slug, f.name, f.metadata
+from (
+  values
+    ('anthropic/claude-5.5', 'anthropic', 'Claude 5.5', '{"source":"admin"}'::jsonb),
+    ('anthropic/claude-5.1', 'anthropic', 'Claude 5.1', '{"source":"admin"}'::jsonb),
+    ('anthropic/claude-4.7', 'anthropic', 'Claude 4.7', '{"source":"admin"}'::jsonb),
+    ('anthropic/claude-4.8', 'anthropic', 'Claude 4.8', '{"source":"admin"}'::jsonb),
+    ('openai/gpt-6', 'openai', 'GPT 6', '{"source":"admin"}'::jsonb),
+    ('openai/gpt-6.1', 'openai', 'GPT 6.1', '{"source":"admin"}'::jsonb)
+) as f (family_slug, lab_slug, name, metadata)
+join public.v2_labs l on l.lab_slug = f.lab_slug
 on conflict (family_slug) do nothing;
 
 -- Each update is guarded on the values observed during the 2026-10-12 audit, so
