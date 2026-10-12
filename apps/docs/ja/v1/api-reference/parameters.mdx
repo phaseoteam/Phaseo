@@ -33,11 +33,11 @@ icon: "sliders-horizontal"
 | [`presence_penalty`](#presence_penalty) | `number` | 話題や語彙の変化を促します。 |
 | [`repetition_penalty`](#repetition_penalty) | `number` | プロバイダー固有の反復抑制制御。 |
 | [`seed`](#seed) | `integer` | 上流プロバイダーが対応している場合に再現性を高めます。 |
-| [`stop`](#stop) | `string` or `string[]` | 明示的な停止シーケンスを指定します。 |
+| [`stop`](#stop) | `string` または `string[]` | 明示的な停止シーケンスを指定します。 |
 | [`logprobs`](#logprobs) / [`top_logprobs`](#top_logprobs) | `boolean` / `integer` | トークンの確率データを要求します。 |
 | [`tools`](#tools), [`tool_choice`](#tool_choice) | `array`, `string`, `object` | ツール呼び出しと関数実行を制御します。 |
 | [`parallel_tool_calls`](#parallel_tool_calls) | `boolean` | ツールの逐次実行を許可または強制します。 |
-| [`response_format`](#response_format) | `string` or `object` | プレーンテキスト、JSON、またはスキーマ制約付きの出力。 |
+| [`response_format`](#response_format) | `string` または `object` | プレーンテキスト、JSON、またはスキーマ制約付きの出力。 |
 | [`json_schema`](#json_schema) | `object` | 構造化出力ワークフローのスキーマを定義します。 |
 | [`structured_outputs`](#structured_outputs) | `boolean` | スキーマ制約付き出力の信頼性を示す機能シグナル。 |
 | [`reasoning`](#reasoning) | `object` | プロバイダー固有の推論設定。 |
@@ -265,7 +265,7 @@ Phaseoを指すカスタムベースURLでAnthropic公式SDKを使用する場�
 
 | 項目 | 値 |
 | --- | --- |
-| 型 | `string` or `string[]` |
+| 型 | `string` または `string[]` |
 | デフォルト | 未設定 |
 | 一般的な用途 | パーサーの境界、テンプレートの終端、プロトコルマーカー |
 
@@ -315,7 +315,7 @@ Phaseoを指すカスタムベースURLでAnthropic公式SDKを使用する場�
 
 | 項目 | 値 |
 | --- | --- |
-| 型 | `string` or `object` |
+| 型 | `string` または `object` |
 | よく使う値 | `none`, `auto`, `required` |
 
 コンテンツのみを返す場合は`none`、モデルに判断させる場合は`auto`を使い、後続のオーケストレーションでツール呼び出しが必要なら、より厳しい値を指定します。
@@ -339,7 +339,7 @@ Phaseoを指すカスタムベースURLでAnthropic公式SDKを使用する場�
 
 | 項目 | 値 |
 | --- | --- |
-| 型 | `string` or `object` |
+| 型 | `string` または `object` |
 | デフォルト | エンドポイントとプロバイダーによって異なります |
 
 受け付けられる形式はエンドポイントとプロバイダーアダプターによって異なります。自由形式のテキスト以外、特にJSONレスポンスや構造化抽出フローが必要な場合に使用します。
@@ -510,7 +510,7 @@ OpenAIのキャッシュ保持オプションをプロバイダー固有のオ�
 | `only` | `string[]` | 特定のプロバイダーにルーティングを限定します。 |
 | `ignore` | `string[]` | 特定のプロバイダーを除外します。 |
 | `include_alpha` | `boolean` | ルーティングの判断でalphaプロバイダーを許可します。 |
-| `sort` | `string` or `object` | 通常は`price`、`latency`、`throughput`などに基づいてプロバイダーを並べ替えます。 |
+| `sort` | `string` または `object` | 通常は`price`、`latency`、`throughput`などに基づいてプロバイダーを並べ替えます。 |
 | `required_execution_region` | `string` | 実行を指定リージョンに限定します。 |
 | `required_data_region` | `string` | データ処理を指定リージョンに限定します。 |
 | `require_zero_data_retention` | `boolean` | ゼロデータ保持の要件を満たすプロバイダーを必須にします。 |
@@ -583,7 +583,7 @@ Chat Completions、Responses、Anthropic Messagesでのプロバイダー別プ�
 | `return_upstream_request` | `boolean` | 変換後の上流リクエストペイロードを含めます。 |
 | `return_upstream_response` | `boolean` | 利用可能な場合に上流レスポンスペイロードを含めます。 |
 | `trace` | `boolean` | ルーティングまたはデバッグのトレースを返します。 |
-| `trace_level` | `summary` or `full` | トレースの詳細度を制御します。 |
+| `trace_level` | `summary` または `full` | トレースの詳細度を制御します。 |
 
 デバッグペイロードには機密性の高いリクエストコンテキストが含まれる場合があります。開発環境または厳格に管理された環境でのみ使用してください。
 

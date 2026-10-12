@@ -32,7 +32,7 @@ for await (const chunk of client.streamChat({
 - `model` (required): लक्ष्य मॉडल ID।
 - `messages` (required): `system|user|assistant|tool` भूमिकाओं वाले क्रमबद्ध संदेश; कंटेंट स्ट्रिंग या हिस्सों में हो सकता है।
 - सैंपलिंग: `temperature` (0–2), `top_p` (0–1), `top_k` (>=1), `seed` (int, optional).
-- लंबाई/पेनल्टी: `max_output_tokens` (int), `presence_penalty` and `frequency_penalty` (-2 to 2), `stop` (string|string[]).
+- लंबाई/पेनल्टी: `max_output_tokens` (int), `presence_penalty` और `frequency_penalty` (-2 से 2), `stop` (string|string[]).
 - टूल: `tools` (परिभाषाएँ), `tool_choice` (`auto`/`none`/विशिष्ट टूल), `max_tool_calls` (पूर्णांक), `parallel_tool_calls` (बूलियन)।
 - लॉग प्रायिकताएँ: `logprobs` (बूलियन), `top_logprobs` (0–20)।
 - आउटपुट: `response_format` (json/text), `metadata` (पास-थ्रू ऑब्जेक्ट), `stream` (बूलियन), `service_tier`।

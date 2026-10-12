@@ -33,11 +33,11 @@ Die Parameterunterstützung variiert weiterhin je nach Endpunkt, Modell und Anbi
 | [`presence_penalty`](#presence_penalty) | `number` | Themen- oder Wortschatzwechsel fördern. |
 | [`repetition_penalty`](#repetition_penalty) | `number` | Anbieterspezifische Wiederholungskontrolle. |
 | [`seed`](#seed) | `integer` | Reproduzierbarkeit verbessern, sofern der Upstream-Anbieter dies unterstützt. |
-| [`stop`](#stop) | `string` or `string[]` | Explizite Stoppsequenzen festlegen. |
+| [`stop`](#stop) | `string` oder `string[]` | Explizite Stoppsequenzen festlegen. |
 | [`logprobs`](#logprobs) / [`top_logprobs`](#top_logprobs) | `boolean` / `integer` | Token-Wahrscheinlichkeitsdaten anfordern. |
 | [`tools`](#tools), [`tool_choice`](#tool_choice) | `array`, `string`, `object` | Steuerung von Tool-Aufrufen und Funktionsausführung. |
 | [`parallel_tool_calls`](#parallel_tool_calls) | `boolean` | Sequenzielle Tool-Ausführung erlauben oder erzwingen. |
-| [`response_format`](#response_format) | `string` or `object` | Klartext-, JSON- oder schema-konforme Ausgabe. |
+| [`response_format`](#response_format) | `string` oder `object` | Klartext-, JSON- oder schema-konforme Ausgabe. |
 | [`json_schema`](#json_schema) | `object` | Das Schema für strukturierte Ausgaben festlegen. |
 | [`structured_outputs`](#structured_outputs) | `boolean` | Fähigkeitssignal für zuverlässige schema-konforme Ausgaben. |
 | [`reasoning`](#reasoning) | `object` | Anbieterspezifische Reasoning-Konfiguration. |
@@ -265,7 +265,7 @@ Definiert eine oder mehrere Sequenzen, die die Generierung vorzeitig beenden.
 
 | Feld | Wert |
 | --- | --- |
-| Typ | `string` or `string[]` |
+| Typ | `string` oder `string[]` |
 | Standard | Nicht gesetzt |
 | Häufige Verwendung | Parser-Grenzen, Vorlagenenden und Protokollmarker |
 
@@ -315,7 +315,7 @@ Legt fest, ob das Modell Tools automatisch aufrufen darf, keine Tools aufrufen d
 
 | Feld | Wert |
 | --- | --- |
-| Typ | `string` or `object` |
+| Typ | `string` oder `object` |
 | Häufige Werte | `none`, `auto`, `required` |
 
 Verwende `none`, wenn du nur Inhalte möchtest, `auto`, wenn das Modell selbst entscheiden darf, und strengere Werte, wenn die nachgelagerte Orchestrierung einen Tool-Aufruf verlangt.
@@ -339,7 +339,7 @@ Fordert ein bestimmtes Ausgabeformat an, etwa Klartext, JSON oder schema-konform
 
 | Feld | Wert |
 | --- | --- |
-| Typ | `string` or `object` |
+| Typ | `string` oder `object` |
 | Standard | Endpunkt- und anbieterspezifisch |
 
 Die genau akzeptierten Formen hängen vom Endpunkt und Provider-Adapter ab. Nutze den Parameter für mehr als freien Text, besonders für JSON-Antworten und strukturierte Extraktion.
@@ -510,7 +510,7 @@ Häufige Felder sind:
 | `only` | `string[]` | Beschränkt das Routing auf bestimmte Anbieter. |
 | `ignore` | `string[]` | Schließt bestimmte Anbieter aus. |
 | `include_alpha` | `boolean` | Lässt Alpha-Anbieter bei Routing-Entscheidungen zu. |
-| `sort` | `string` or `object` | Ordnet Anbieter, häufig nach `price`, `latency` oder `throughput`. |
+| `sort` | `string` oder `object` | Ordnet Anbieter, häufig nach `price`, `latency` oder `throughput`. |
 | `required_execution_region` | `string` | Beschränkt die Ausführung auf eine vorgeschriebene Region. |
 | `required_data_region` | `string` | Beschränkt die Datenverarbeitung auf eine vorgeschriebene Region. |
 | `require_zero_data_retention` | `boolean` | Verlangt Anbieter, die die Anforderungen an Zero Data Retention erfüllen. |
@@ -583,7 +583,7 @@ Zu den unterstützten Debug-Feldern gehören:
 | `return_upstream_request` | `boolean` | Fügt den transformierten Upstream-Anfrage-Payload ein. |
 | `return_upstream_response` | `boolean` | Fügt nach Möglichkeit den Upstream-Antwort-Payload ein. |
 | `trace` | `boolean` | Gibt Routing- oder Debug-Traces zurück. |
-| `trace_level` | `summary` or `full` | Steuert den Detailgrad der Traces. |
+| `trace_level` | `summary` oder `full` | Steuert den Detailgrad der Traces. |
 
 Debug-Payloads können vertraulichen Anfragekontext enthalten. Verwende sie nur während der Entwicklung oder in streng kontrollierten Umgebungen.
 

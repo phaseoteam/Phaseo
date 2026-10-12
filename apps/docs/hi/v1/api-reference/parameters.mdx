@@ -33,11 +33,11 @@ icon: "sliders-horizontal"
 | [`presence_penalty`](#presence_penalty) | `number` | विषय या शब्दावली में बदलाव को प्रोत्साहित करना। |
 | [`repetition_penalty`](#repetition_penalty) | `number` | provider-विशिष्ट repetition नियंत्रण। |
 | [`seed`](#seed) | `integer` | upstream provider समर्थन करे तो पुनरुत्पादन क्षमता बेहतर करना। |
-| [`stop`](#stop) | `string` or `string[]` | स्पष्ट stop sequences तय करना। |
+| [`stop`](#stop) | `string` या `string[]` | स्पष्ट stop sequences तय करना। |
 | [`logprobs`](#logprobs) / [`top_logprobs`](#top_logprobs) | `boolean` / `integer` | token probability डेटा माँगना। |
 | [`tools`](#tools), [`tool_choice`](#tool_choice) | `array`, `string`, `object` | tool calling और function execution नियंत्रण। |
 | [`parallel_tool_calls`](#parallel_tool_calls) | `boolean` | tools के sequential execution व्यवहार की अनुमति देना या उसे बाध्य करना। |
-| [`response_format`](#response_format) | `string` or `object` | सादा टेक्स्ट, JSON या schema-सीमित आउटपुट। |
+| [`response_format`](#response_format) | `string` या `object` | सादा टेक्स्ट, JSON या schema-सीमित आउटपुट। |
 | [`json_schema`](#json_schema) | `object` | structured output workflows के लिए schema तय करना। |
 | [`structured_outputs`](#structured_outputs) | `boolean` | विश्वसनीय schema-सीमित आउटपुट की क्षमता का संकेत। |
 | [`reasoning`](#reasoning) | `object` | provider-विशिष्ट reasoning कॉन्फ़िगरेशन। |
@@ -265,7 +265,7 @@ upstream provider seed-आधारित generation का समर्थन �
 
 | फ़ील्ड | मान |
 | --- | --- |
-| प्रकार | `string` or `string[]` |
+| प्रकार | `string` या `string[]` |
 | डिफ़ॉल्ट | सेट नहीं है |
 | सामान्य उपयोग | पार्सर की सीमाएँ, टेम्पलेट के अंत और प्रोटोकॉल मार्कर |
 
@@ -315,7 +315,7 @@ endpoint docs में कुछ और न कहा हो तो OpenAI-styl
 
 | फ़ील्ड | मान |
 | --- | --- |
-| प्रकार | `string` or `object` |
+| प्रकार | `string` या `object` |
 | सामान्य मान | `none`, `auto`, `required` |
 
 केवल content चाहिए तो `none`, मॉडल को निर्णय लेने देना हो तो `auto`, और downstream orchestration को tool call चाहिए तो अधिक सख्त मान उपयोग करें।
@@ -339,7 +339,7 @@ downstream systems को सख्त sequential execution, ordered side effect
 
 | फ़ील्ड | मान |
 | --- | --- |
-| प्रकार | `string` or `object` |
+| प्रकार | `string` या `object` |
 | डिफ़ॉल्ट | endpoint और provider के अनुसार अलग |
 
 स्वीकृत सटीक संरचनाएँ endpoint और provider adapter पर निर्भर करती हैं। Free-form text से अधिक चाहिए हो, खासकर JSON responses और structured extraction workflows के लिए, तो इसका उपयोग करें।
@@ -510,7 +510,7 @@ routing constraints और provider preferences रखता है।
 | `only` | `string[]` | रूटिंग को विशिष्ट providers तक सीमित करता है। |
 | `ignore` | `string[]` | विशिष्ट providers को बाहर करता है। |
 | `include_alpha` | `boolean` | routing निर्णयों में alpha providers की अनुमति देता है। |
-| `sort` | `string` or `object` | अक्सर `price`, `latency` या `throughput` के आधार पर providers को rank करता है। |
+| `sort` | `string` या `object` | अक्सर `price`, `latency` या `throughput` के आधार पर providers को rank करता है। |
 | `required_execution_region` | `string` | execution को आवश्यक region तक सीमित करता है। |
 | `required_data_region` | `string` | data handling को आवश्यक region तक सीमित करता है। |
 | `require_zero_data_retention` | `boolean` | zero-data-retention शर्तें पूरी करने वाले providers आवश्यक करता है। |
@@ -583,7 +583,7 @@ headers या dashboards पर निर्भर रहने के बज�
 | `return_upstream_request` | `boolean` | transformed upstream request payload शामिल करता है। |
 | `return_upstream_response` | `boolean` | उपलब्ध होने पर upstream response payload शामिल करता है। |
 | `trace` | `boolean` | routing या debug traces लौटाता है। |
-| `trace_level` | `summary` or `full` | trace की verbosity नियंत्रित करता है। |
+| `trace_level` | `summary` या `full` | trace की verbosity नियंत्रित करता है। |
 
 Debug payloads में संवेदनशील request context हो सकता है। इनका उपयोग केवल development या कड़े नियंत्रण वाले environments में करें।
 
