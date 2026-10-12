@@ -29,7 +29,7 @@ Bei ausgeschöpftem Gateway-Kontingent wird `429` mit `Retry-After` in Sekunden 
 
 ## Schlüssellimits und Budgets
 
-Sind die täglichen, wöchentlichen oder monatlichen Anfrage- und Ausgabenlimits eines API-Schlüssels oder die [Budgets](./endpoint/budgets-list.mdx) des Arbeitsbereichs erreicht, wird `429` mit dem Fehlercode `key_limit_exceeded` zurückgegeben. Die Felder `reason`, `limit_window` und `reset_at` im Antworttext nennen das Limit und den Zeitpunkt, zu dem sein Zeitraum zurückgesetzt wird. `Retry-After` gibt die Sekunden bis zu diesem Zurücksetzen an. Der Header fehlt, wenn sich das Limit nicht von selbst zurücksetzt, etwa bei einem Gesamtbudget oder einem vorübergehend gesperrten Schlüssel; erhöhen Sie dann statt eines erneuten Versuchs das Arbeitsbereichsbudget oder, bei einem Schlüssellimit, das Limit des Schlüssels, oder verwenden Sie einen anderen Schlüssel.
+Sind die täglichen, wöchentlichen oder monatlichen Anfrage- und Ausgabenlimits eines API-Schlüssels oder die [Budgets](./endpoint/budgets-list.mdx) des Arbeitsbereichs erreicht, wird `429` mit dem Fehlercode `key_limit_exceeded` zurückgegeben. Die Felder `reason`, `limit_window` und `reset_at` im Antworttext nennen das Limit und den Zeitpunkt, zu dem sein Zeitraum zurückgesetzt wird. `Retry-After` gibt die Sekunden bis zu diesem Zurücksetzen an. Der Header fehlt, wenn sich das Limit nicht von selbst zurücksetzt, etwa bei einem Gesamtbudget oder einem vorübergehend gesperrten Schlüssel; erhöhe dann statt eines erneuten Versuchs das Arbeitsbereichsbudget oder, bei einem Schlüssellimit, das Limit des Schlüssels, oder verwende einen anderen Schlüssel.
 
 ## Anbieterlimits
 
