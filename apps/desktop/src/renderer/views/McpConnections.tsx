@@ -1,4 +1,5 @@
 import { ArgumentFields } from "../components/ArgumentFields";
+import { Select } from "../components/Select";
 import { useEffect, useRef, useState } from "react";
 import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
 import type { McpConnection } from "../../shared/mcp";
@@ -30,8 +31,8 @@ export function McpConnections() {
 		{!archived && <section className="panel connection-editor"><div className="panel-heading"><h2>{editing ? "Edit connection" : "New connection"}</h2></div>
 			{editorError && <p className="task-error" role="alert">{editorError}</p>}
 			<form ref={form} aria-label="MCP connection" onSubmit={event => { event.preventDefault(); void submit(); }}><fieldset className="account-form connection-fields" disabled={busy}>
-				<label>Name<input value={name} onChange={event => setName(event.target.value)} required maxLength={100} /></label><label>Scope<select value={projectId} onChange={event => setProjectId(event.target.value)}><option value="">All projects</option>{workspace.projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label>
-				<label>Transport<select value={transport} onChange={event => setTransport(event.target.value as "stdio" | "http")}><option value="stdio">Local process</option><option value="http">HTTP</option></select></label>
+				<label>Name<input value={name} onChange={event => setName(event.target.value)} required maxLength={100} /></label><label>Scope<Select label="MCP scope" value={projectId} onValueChange={setProjectId} options={[{ value: "", label: "All projects" }, ...workspace.projects.map(project => ({ value: project.id, label: project.name }))]} /></label>
+				<label>Transport<Select label="MCP transport" value={transport} onValueChange={value => setTransport(value as "stdio" | "http")} options={[{ value: "stdio", label: "Local process" }, { value: "http", label: "HTTP" }]} /></label>
 				{transport === "stdio" ? <><label>Executable<input value={executable} onChange={event => setExecutable(event.target.value)} placeholder="Absolute path to an executable" required /></label><ArgumentFields value={argumentsValue} onChange={setArgumentsValue} disabled={busy} /></> : <label>URL<input value={url} onChange={event => setUrl(event.target.value)} placeholder="https://example.com/mcp" required /></label>}
 				<label><input type="checkbox" checked={enabled} onChange={event => setEnabled(event.target.checked)} /> Enabled</label><div className="account-form-actions"><button className="task-primary" type="submit" disabled={busy || !api}>{busy ? "Saving…" : editing ? "Save connection" : "Add connection"}</button>{editing && <button type="button" disabled={busy} onClick={reset}>Cancel</button>}</div>
 			</fieldset></form>

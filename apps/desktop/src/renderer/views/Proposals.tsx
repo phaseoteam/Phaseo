@@ -1,8 +1,9 @@
 import { PullRequestDetail, reviewLabels, checkLabels } from "./PullRequestDetail";
+import { Select } from "../components/Select";
 import { useEffect, useRef, useState } from "react";
 import type { ProjectPullRequests, PullRequest } from "../../shared/pullRequests";
 import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
-import { watchLiveRefresh } from "../lib/liveRefresh";
+import { useBackgroundRefresh } from "../lib/useBackgroundRefresh";
 
 export function Proposals({ initialProjectId }: { initialProjectId?: string } = {}) {
 	const api = window.phaseoDesktop?.workspace;
@@ -30,23 +31,18 @@ export function Proposals({ initialProjectId }: { initialProjectId?: string } = 
 		void api.pullRequests(project.id, cursor).then(value => { if (active) setResult({ projectId: project.id, value, page }); }, reason => { if (active) setError(message(reason)); }).finally(() => { if (active) { pending.current = false; setLoading(false); } });
 		return () => { active = false; };
 	}, [api, project?.id, cursor, page, attempt]);
-	function refresh() { if (!api) return; if (overviewError) { if (!overviewPending.current) { overviewPending.current = true; setOverviewLoading(true); setOverviewAttempt(value => value + 1); } return; } if (!project || pending.current) return; pending.current = true; setLoading(true); if (!error) setPages({ projectId: project.id, cursors: [undefined], index: 0 }); setAttempt(value => value + 1); }
+	function refresh() { if (!api) return; if (overviewError) { if (!overviewPending.current) { overviewPending.current = true; setOverviewLoading(true); setOverviewAttempt(value => value + 1); } return; } if (!project || pending.current) return; pending.current = true; setLoading(true); setAttempt(value => value + 1); }
 	function goToPage(index: number, nextCursor?: string) { if (!project || pending.current || linkPending.current) return; pending.current = true; setLoading(true); setLinkError(""); setPages(current => { const cursors = current.projectId === project.id ? current.cursors.slice(0, index + 1) : [undefined]; if (nextCursor !== undefined) cursors[index] = nextCursor; return { projectId: project.id, cursors, index }; }); setAttempt(value => value + 1); }
 	async function open(request: PullRequest) {
 		if (!api || linkPending.current) return; linkPending.current = true; setOpening(request.number); setLinkError("");
 		try { await api.openLink(request.url); } catch (reason) { setLinkError(message(reason)); } finally { linkPending.current = false; setOpening(undefined); }
 	}
 	const visible = result && project && result.projectId === project.id ? result.value : undefined;
-	const interval = !visible?.requests.length || visible.requests.some(request => ["pending", "none", "unknown"].includes(request.checks)) ? 45_000 : 60_000;
-	const liveEnabled = Boolean(api && project && visible && selected === undefined && !error && !overviewError);
-	useEffect(() => {
-		if (!liveEnabled) return;
-		return watchLiveRefresh(() => { if (pending.current || linkPending.current) return false; pending.current = true; setLoading(true); setAttempt(value => value + 1); return true; }, interval);
-	}, [api, project?.id, cursor, page, liveEnabled, interval]);
+	useBackgroundRefresh(() => { if (selected === undefined && !linkPending.current) refresh(); });
 	return <div className="page proposals-page"><h1>Pull requests</h1>
 		<section className="panel" aria-label="Pull requests" aria-busy={loading || overviewLoading}>
-			{selected === undefined && <div className="panel-heading"><h2>Open pull requests</h2><button type="button" disabled={!api || overviewLoading || (overviewError ? false : !project || loading)} onClick={refresh}>{overviewLoading || loading ? "Loading…" : error || overviewError ? "Retry" : "Refresh"}</button></div>}
-			<div className="proposal-project"><label>Project<select aria-label="Pull-request project" disabled={overviewLoading || opening !== undefined} value={projectId} onChange={event => { setSelected(undefined); setProjectId(event.target.value); setPages({ projectId: event.target.value, cursors: [undefined], index: 0 }); setError(""); setLinkError(""); }}><option value="">Choose a project</option>{workspace.projects.filter(value => !value.worktree?.removedAt).map(value => <option key={value.id} value={value.id}>{value.name}</option>)}</select></label>{visible && <p>{visible.repository} · Updated {new Date(visible.fetchedAt).toLocaleTimeString()}</p>}</div>
+			{selected === undefined && <div className="panel-heading"><h2>Open pull requests</h2></div>}
+			<div className="proposal-project"><label>Project<Select label="Pull-request project" disabled={overviewLoading || opening !== undefined} value={projectId} onValueChange={value => { setSelected(undefined); setProjectId(value); setPages({ projectId: value, cursors: [undefined], index: 0 }); setError(""); setLinkError(""); }} options={[{ value: "", label: "Choose a project" }, ...workspace.projects.filter(value => !value.worktree?.removedAt).map(value => ({ value: value.id, label: value.name }))]} /></label>{visible && <p>{visible.repository} · Updated {new Date(visible.fetchedAt).toLocaleTimeString()}</p>}</div>
 			{overviewLoading && <p className="proposal-feedback" role="status">Loading projects…</p>}
 			{overviewError && <p className="proposal-feedback proposal-error" role="alert">{overviewError}</p>}
 			{!project && !overviewLoading && !overviewError && <p className="proposal-feedback">Choose a GitHub project to view its open pull requests.</p>}

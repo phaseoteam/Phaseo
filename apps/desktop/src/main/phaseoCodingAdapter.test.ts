@@ -9,6 +9,24 @@ import { PhaseoCodingAdapter } from "./phaseoCodingAdapter";
 const task: Task = { id: "task", title: "Task", harness: "phaseo", model: "model", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 const account: Account = { id: "account", name: "API", harness: "phaseo", kind: "api", configured: true, endpoint: "https://api.phaseo.app/v1" };
 describe("Phaseo coding run loop", () => {
+ it("executes shared delegation and consumes a child result through the model loop", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "phaseo-model-delegation-")); const store = new WorkspaceStore(path.join(root, "state.sqlite"));
+  try {
+   const child = { id: "child", title: "Review", harness: "phaseo" as const, model: "owned", status: "completed" as const };
+   const delegate = vi.fn(async () => child), wait = vi.fn(async () => ({ thread: child, timedOut: false, result: "Child findings" }));
+   const generate = vi.fn().mockImplementationOnce(async request => { expect(request.tools.some((tool: {id:string}) => tool.id === "delegate_task")).toBe(true); return {message:{role:"assistant",content:"",toolCalls:[{id:"delegate",name:"delegate_task",input:{requestId:"stable",title:"Review",prompt:"Inspect"}}]}}; }).mockResolvedValueOnce({message:{role:"assistant",content:"",toolCalls:[{id:"wait",name:"wait_thread",input:{id:"child",timeoutMs:0}}]}}).mockImplementationOnce(async request => { expect(JSON.stringify(request.messages)).toContain("Child findings"); return { message: { role: "assistant", content: "Reviewed child findings" } }; });
+   const onDelta = vi.fn();
+   await new PhaseoCodingAdapter(() => "fixture", store, () => ({ generate })).run(task, root, "Delegate", { onSession: () => {}, onDelta, onApproval: async () => "accept", threads: { list: () => [], read: vi.fn(), delegate, wait, interrupt: vi.fn() } }, account);
+   expect(delegate).toHaveBeenCalledWith(expect.objectContaining({ requestId: "stable", prompt: "Inspect" })); expect(wait).toHaveBeenCalledWith("child", 0); expect(onDelta).toHaveBeenCalledWith(expect.any(String), "Reviewed child findings");
+  } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
+ });
+ it("reports an empty completed model response instead of silently succeeding", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "phaseo-empty-response-")); const store = new WorkspaceStore(path.join(root, "state.sqlite"));
+  try {
+   const adapter = new PhaseoCodingAdapter(() => "owned-key", store, () => ({ generate: async () => ({ message: { role: "assistant" as const, content: "" } }) }));
+   await expect(adapter.run(task, root, "Check the drives", { onSession: () => {}, onDelta: () => {}, onApproval: async () => "decline" }, account)).rejects.toThrow("The model returned no answer");
+  } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
+ });
  it.each(["code", "plan"] as const)("reviews only the unfinished serial MCP effect after SQLite recovery in %s", async mode => {
   const root = mkdtempSync(path.join(tmpdir(), "phaseo-serial-recovery-")); let store = new WorkspaceStore(path.join(root, "state.sqlite"));
   try {

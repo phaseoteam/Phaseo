@@ -9,6 +9,19 @@ import { nativeMcpName, type McpConnection } from "../shared/mcp";
 
 const task: Task = { id: "task", title: "Task", harness: "claude", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("Claude SDK integration", () => {
+	it("observes native agents without treating background shell jobs as agents", async () => {
+		sdk.query.mockReturnValue(Object.assign((async function* () {
+			yield { type: "system", subtype: "task_started", task_id: "bash", task_type: "local_bash", description: "Build" };
+			yield { type: "system", subtype: "task_notification", task_id: "bash", status: "completed", summary: "Built" };
+			yield { type: "system", subtype: "task_started", task_id: "agent", task_type: "local_agent", description: "Review" };
+			yield { type: "system", subtype: "task_progress", task_id: "agent", description: "Review", summary: "Reading" };
+			yield { type: "system", subtype: "task_notification", task_id: "agent", status: "completed", summary: "Findings" };
+			yield { type: "result", subtype: "success", is_error: false, result: "Done" };
+		})(), { close: vi.fn() }));
+		const onActivity = vi.fn();
+		await new ClaudeAdapter().run({ ...task, mode: "code" }, ".", "Review", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "accept", onActivity });
+		expect(onActivity.mock.calls.map(([activity]) => activity.nativeAgent)).toEqual([{ id: "agent", status: "running" }, { id: "agent", status: "running" }, { id: "agent", status: "completed" }]);
+	});
  it.each(["assistant", "local", "result"])("gates an explicit command until approval and refresh, retaining %s output", async output => {
   const order: string[] = []; const inputs: unknown[] = []; const close = vi.fn(); sdk.query.mockImplementation(({ prompt }) => { const admitted = prompt[Symbol.asyncIterator]().next().then((value: IteratorResult<unknown>) => { if (!value.done) { order.push("prompt"); inputs.push(value.value); } return value; }); return Object.assign((async function* () { await admitted; if (output === "assistant") yield { type: "assistant", parent_tool_use_id: null, session_id: "native", message: { id: "answer", content: [{ type: "text", text: "Owned reply" }] } }; if (output === "local") yield { type: "system", subtype: "local_command_output", uuid: "local", session_id: "native", content: "Owned local result" }; yield { type: "result", subtype: "success", is_error: false, result: "Owned result", uuid: "result", session_id: "native" }; })(), { supportedCommands: async () => { order.push("catalog"); return [{ name: "review" }]; }, reinitialize: async () => { order.push("refresh"); return { commands: [{ name: "review" }] }; }, close }); });
   const onDelta = vi.fn(), onActivity = vi.fn(); await new ClaudeAdapter().run(task, "/project", "handoff wrapper", { onDelta, onActivity, onSession: vi.fn(), onApproval: async () => { expect(inputs).toEqual([]); order.push("approval"); return "accept"; } }, undefined, [], { kind: "command", id: "review", name: "review", arguments: "target" });

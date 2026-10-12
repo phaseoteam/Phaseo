@@ -17,7 +17,7 @@ export function assertCursorBackend() {
 }
 export function cursorOptions(task: Task, cwd: string, apiKey: string, store: JsonlLocalAgentStore, connections: McpConnection[]): AgentOptions {
 	const mcpServers: Record<string, McpServerConfig> = {};
-	if (task.mode === "code") for (const connection of connections) if (connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === task.projectId)) mcpServers[nativeMcpName(connection)] = connection.transport === "stdio" ? { command: connection.executable, args: connection.arguments, cwd } : { url: connection.url };
+	if (task.mode === "code") for (const connection of connections) if (connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === task.projectId)) mcpServers[nativeMcpName(connection)] = connection.transport === "stdio" ? { command: connection.executable, args: connection.arguments, cwd } : { url: connection.url, ...(connection.headers ? { headers: connection.headers } : {}) };
 	return { apiKey, model: { id: task.model === "default" ? "auto" : task.model }, name: `Phaseo ${task.id}`, mode: task.mode === "plan" ? "plan" : "agent", ...(task.mode === "chat" ? { tools: [] } : task.mode === "plan" ? { tools: ["read", "grep", "glob", "ls", "readLints", "semSearch", "webSearch", "webFetch", "readTodos", "updateTodos"] } : {}), mcpServers, local: { cwd, store, autoReview: true, enableAgentRetries: false, settingSources: task.mode === "code" ? ["project", "user", "team", "mdm", "plugins"] : [] } };
 }
 export class CursorAdapter implements AgentAdapter {

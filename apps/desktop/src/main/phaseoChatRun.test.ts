@@ -9,6 +9,17 @@ const task: Task = { id: "task", title: "Owned", harness: "phaseo", mode: "chat"
 const account: Account = { id: "api", name: "Owned", harness: "phaseo", kind: "api", configured: true, endpoint: "http://127.0.0.1:1/v1" };
 const call = (id: string, name: string, input: unknown) => new Response(`data: ${JSON.stringify({ choices: [{ delta: { tool_calls: [{ index: 0, id, type: "function", function: { name, arguments: JSON.stringify(input) } }] }, finish_reason: "tool_calls" }] })}\n\ndata: [DONE]\n\n`);
 describe("durable Phaseo Chat skills", () => {
+ it("exposes delegation in ordinary Chat and continues after the child result", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "phaseo-chat-delegation-")); const store = new WorkspaceStore(path.join(root, "state.sqlite"));
+  try {
+   const child = { id: "child", title: "Inspect", harness: "phaseo" as const, model: "owned", status: "completed" as const };
+   const delegate = vi.fn(async () => child), wait = vi.fn(async () => ({ thread: child, timedOut: false, result: "Child findings" }));
+   const fetcher = vi.fn().mockImplementationOnce(async (_url, options) => { const body = JSON.parse(options.body); expect(body.tools.some((tool: {function:{name:string}}) => tool.function.name === "delegate_task")).toBe(true); return call("delegate", "delegate_task", { requestId: "stable", title: "Inspect", prompt: "Inspect" }); }).mockResolvedValueOnce(call("wait", "wait_thread", {id:"child",timeoutMs:0})).mockImplementationOnce(async (_url, options) => { expect(options.body).toContain("Child findings"); return new Response('data: {"choices":[{"delta":{"content":"Reviewed findings"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'); });
+   const onDelta = vi.fn();
+   await new PhaseoAdapter(() => "fixture", fetcher, undefined, store).run(task, root, "Delegate", { onSession: () => {}, onDelta, onApproval: async () => "accept", threads: { list: () => [], read: vi.fn(), delegate, wait, interrupt: vi.fn() } }, account);
+   expect(delegate).toHaveBeenCalledOnce(); expect(wait).toHaveBeenCalledWith("child", 0); expect(onDelta).toHaveBeenCalledWith(expect.any(String), "Reviewed findings");
+  } finally { store.close(); rmSync(root, {recursive:true,force:true}); }
+ });
  it.each(["decline", "changed"])("keeps a %s activation out of Chat guidance", async outcome => {
   const root = mkdtempSync(path.join(tmpdir(), "phaseo-chat-reject-")), global = path.join(root, "instructions"), skill = path.join(root, "skills", "explain", "SKILL.md"); mkdirSync(global); mkdirSync(path.dirname(skill), { recursive: true }); writeFileSync(skill, "---\nname: explain\ndescription: Explain\n---\nPrivate active body"); const store = new WorkspaceStore(path.join(root, "state.sqlite")); let runId = "";
   try {

@@ -311,3 +311,75 @@ PR review threads (2026-10-04): the existing right PR panel gains a Review threa
 ![PR review comments](screenshots/pr-review-comments.png)
 
 ![Paged review threads](screenshots/pr-review-threads.png)
+
+### Sidebar separation — 2026-10-05
+
+Tools remains in the layout instead of floating over chat below 1150px. Native source/archive checks verify separation at 1440, 1180 and 1040px with the chat list open and collapsed, including maximum width and keyboard/pointer resizing. The minimum conversation remains 320px. The screenshot uses an isolated owned profile.
+
+![Tools and conversation remain separate at minimum width](screenshots/tools-separated-minimum.png)
+
+![Compact chat setup with catalog model selection](screenshots/chat-setup-model-catalog.png)
+
+The controls checks pass; complete browser tab/capture regression remains failing and is documented in WORKSPACE-PLAN.md. This is not full parity or release acceptance.
+
+### Conversation and composer — 2026-10-05
+
+Design source: the website's ChatConversationMessages.tsx, ChatConversationComposer.tsx and ui/message.tsx. Desktop now shares the 768px conversation/composer width, right-aligned user messages, logo/model assistant headers, copy actions, compact icon controls and a content-sized composer. Conversation scrolling uses the existing website Base UI ScrollArea. Typing `/` or pressing Commands opens a docked picker, with composer keyboard selection, previews, explicit insertion, outside-click/Escape dismissal and draft retention. Native and MCP command admission remains unchanged.
+
+Source verification passes 923 tests/114 files, typecheck/lint, history paging/byte bounds/reading anchors/live following, command insertion and native intent. Prompt workflows record 19 captures, native actions 18 and stdio MCP prompts 42, with zero turn submissions/provider inference. Controls and conversation captures cover 1440/1180/1040 in both themes. The new packaged UI and hosted checks remain unverified. Full web feature parity, full OSS parity, viewport virtualization and the separate browser rendering regression remain open.
+
+![Conversation and compact composer](screenshots/chat-web-alignment.png)
+
+![Slash picker at minimum width with Tools open](screenshots/chat-inline-commands.png)
+
+### Composer surface follow-up — 5 October
+
+The product direction is T3 Code for chat/project/tool workflows and Phaseo Web for typography, semantic colours and shared controls. The human comparison identified the nested textarea focus ring, disconnected toolbar and dominant labelled send button. The composer now uses one rounded muted surface, a seamless auto-sizing writing area, integrated model/settings control and circular send/queue action. Model settings use the existing account-aware settings flow; no unsupported microphone or access controls were added.
+
+Validation: desktop typecheck, lint and renderer build passed. Source native shared-controls audit passed (including narrow pane separation, model discovery and six conversation screenshots); prompt-command audit passed 19 captures with draft, focus and no-submission checks. Packaged validation remains outstanding.
+
+### T3 layout alignment contract — 5 October
+
+Reference: pingdotgg/t3code at efecd3cf8bcec3d1891b5f5a27dc2f6d797c6448, AppSidebarLayout, SidebarThreadHeader, RightPanelSheet, SettingsSidebarNav and settings route. Adapt the compact search/new-chat row, project grouping, single-line chat list, aligned conversation/tool headers, and settings navigation replacing the chat sidebar. Keep Phaseo semantic tokens and typography. Preserve bounded history, persisted selection/drafts, account-aware model discovery, browser coverage, approvals and resizable non-overlapping tools. Settings only exposes implemented categories; source T3 settings capabilities are not implied. Verify wide/intermediate/minimum layouts, settings navigation/search/return, draft preservation and tool resize.
+
+Implemented: compact search/scope/new-chat controls; collapsible project groups and single-line chat rows with status/date; coordinated conversation and icon-tab tool headers; settings sidebar with search, Appearance and shared ScrollArea; inert underlying chat and focus restoration while preserving drafts. Project scope is validated at IPC and applied in SQLite before pagination, with bound parameters and personal/all distinction.
+
+Verification: typecheck, lint, full desktop build and Forge package passed; five durable-history tests passed including project/personal pagination, search/archive combinations and malformed requests. Source prompt-command audit passed 19 captures. Source and fresh packaged shared-controls/layout audits passed across 1440/1180/1040 light/dark, with settings navigation/search/theme/draft/focus checks, six settings captures, six conversation captures and tool separation/resize checks. No provider inference. Full browser regression and broad product feature parity remain unverified.
+
+![Chat layout](screenshots/t3-chat-layout.png)
+
+![Settings layout](screenshots/t3-settings-layout.png)
+
+![Tools at minimum width](screenshots/t3-tools-minimum.png)
+
+### Development and production icons — 5 October
+
+Desktop icons now follow the web favicon convention: development uses #ff8800 with a white mark; production uses the monochrome dark variant. Native window icons, macOS dock selection, renderer favicon and the development title-bar mark use those assets. Forge packaging selects production ICO/ICNS and the Linux package icon uses PNG. Packaged runtime ignores the development URL override. Windows development uses a distinct AppUserModelID without changing account/profile storage.
+
+Typecheck, lint, main/renderer builds and ICO/ICNS header validation passed. Restarted the live development app and read its actual Windows native icon: RGB 255,136,0 at the background corner, confirming the orange icon was applied. Development SVG served with HTTP 200. Cross-platform install icon validation remains pending.
+
+### Composer-led new chat — 5 October
+
+Reference: T3 ChatView at efecd3cf8bcec3d1891b5f5a27dc2f6d797c6448, centred empty-draft composer and headline. The landing page now puts an auto-sizing persisted draft in the same Phaseo composer surface as active chats, with live harness/account/model selectors and project/mode/reasoning options. Submit or Ctrl/Cmd+Enter creates the chat and sends its first message. Once creation succeeds, the draft transfers to the new chat before send; a failed send retains it for retry. Secondary creation/import actions are in More actions, and Phaseo account connection remains visible when required. Blank creation also transfers an existing draft without sending it.
+
+Typecheck, lint and renderer build passed. Source native control audit passed at three widths in light/dark (six landing captures), real chat creation with controlled send success/failure, retry, and empty creation draft transfer. Send transport was intercepted; no provider inference occurred. Prompt-command regression passed 19 captures. Packaged landing verification has not been rerun.
+
+![New chat composer](screenshots/new-chat-composer.png)
+
+Development runner correction: the previous Vite child process stopped while its Electron window remained on a loaded UI. The runner now owns Vite via createServer, waits for listen before launching Electron directly, and closes Vite with the application. Port conflicts fail startup instead of connecting to an unrelated listener. Electron is launched visibly; the helper runner remains hidden. Verified a reopened visible/responding Phaseo window and HTTP serving of the New chat composer source.
+
+## Unified composer configuration — 5 October 2026
+
+Model catalog correction: desktop previously assumed an OpenAI `{data}` response for Phaseo, causing the valid authenticated native catalog to be rejected. Discovery now consumes Phaseo `{models}` pagination, uses canonical `text.generate` capability filters and excludes unroutable/retired entries while retaining custom OpenAI-compatible endpoints. Ten catalog tests cover native pagination, filtered pages, repeated/final pages, malformed envelopes and generic compatibility. Twenty-six catalog/Phaseo adapter tests passed; desktop typecheck and lint passed. A read-only check using the signed-in desktop account returned 207 chat models; its key remained internal and no inference calls were made.
+
+Production follow-up: with explicit authorization, the desktop client was registered in Phaseo Prod and gateway version `1853d68e-571b-4444-9c10-6db5282123e1` was deployed from the isolated current-main release branch. A valid PKCE request redirects to website consent; invalid callback URLs return 401 and missing PKCE returns 400. Gateway root and OAuth discovery return 200. Authenticated model discovery and actual user consent await signing in from the app. Source PR #2718 remains open; schema verification fails on an existing duplicate `canonical_routing_capability_id` function in the main migrations, outside the desktop client registration.
+
+Follow-up: the composer model list contains catalog models only, with no synthetic Automatic/Default entry. New chats require an explicit available model. Reasoning and speed labels use title case (Low, Medium, High, Extra High, Standard, Fast); only capabilities advertised by the selected runtime/model appear. Native default protocol values remain internal to supported existing sessions.
+
+Phaseo browser OAuth sign-in and cancellation are available in the picker and account settings, alongside the optional manual API-key form. The main process handles the PKCE exchange and encrypted credential storage, and renewing an account replaces its secret without exposing it to the renderer. Local checks passed: desktop OAuth/catalog/adapter/store tests (44), OAuth/runtime tests (21), gateway helper/security tests (40), gateway route security tests (35), the migration fixture, desktop lint, gateway scoped lint, both type checks, and main/preload/renderer builds. The source desktop audit verified bounded model search, capitalized tuning, explicit model selection, manual account discovery, and composer creation/failure/retry. No provider inference occurred. Production OAuth consent and packaged release behavior remain unverified; gateway deployment and client registration are still required.
+
+Project context belongs to the chat title/header. The new-chat header selects an existing project or adds one; no folder action appears in the composer. Existing chats show their project beside the title. One Base UI Popover contains runtime logos, account selection, searchable actual models, and advertised reasoning/speed capabilities. Search is bounded to 100 rendered results and receives initial focus. Model selection keeps the popup open for tuning; Escape restores trigger focus. Changing runtime in an existing chat uses the existing conversation handoff flow rather than attaching a native session to an incompatible runtime.
+
+Desktop-created chats use the existing tool-capable execution path for both ordinary conversation and coding, retaining approvals. The Chat/Code/Plan selector and separate task-settings form have been removed. Existing idle legacy chats switch to that execution path when sent from this UI; active legacy turns retain their current settings until stopped/completed. Backend mode contracts remain supported for existing integrations and scheduled tasks.
+
+Codex speed choices are read from the installed app-server model catalog, persisted as serviceTier, validated against the fresh catalog, and sent on turn/start. No fabricated speed/model options are added for providers without advertised capabilities. Default speed explicitly resets the native thread tier. Native adapter/catalog/store coverage: 52 targeted checks passed. Source desktop audit passed six popup sizes/themes, project-header placement, unified reasoning/speed selection, bounded 1,000-model discovery, first-message creation/failure/retry, sidebar history and tools geometry. No paid inference occurred. Packaged build and live provider inference remain unverified for this increment.

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { GitCommand, GitHunkReview, GitReview } from "../../shared/workspace";
 import { DiffView } from "./DiffView";
 import type { DiffLayout } from "./diffRendering";
+import { useBackgroundRefresh } from "../lib/useBackgroundRefresh";
 
 export function GitHunkPanel({ projectId, filename, revision, busy, layout, onCommand }: { projectId: string; filename: string; revision: GitReview; busy: boolean; layout: DiffLayout; onCommand: (command: GitCommand) => Promise<void> }) {
 	const [reviews, setReviews] = useState<GitHunkReview[]>([]);
@@ -10,6 +11,7 @@ export function GitHunkPanel({ projectId, filename, revision, busy, layout, onCo
 	const [refresh, setRefresh] = useState(0);
 	const pending = useRef(false);
 	const api = window.phaseoDesktop?.workspace;
+	useBackgroundRefresh(() => { if (!loading && !busy && !pending.current) setRefresh(value => value + 1); });
 	useEffect(() => {
 		if (!api) return; let active = true; setLoading(true); setError("");
 		void Promise.all([api.gitHunks(projectId, filename, false), api.gitHunks(projectId, filename, true)]).then(value => { if (active) setReviews(value); }, reason => { if (active) setError((reason instanceof Error ? reason.message : String(reason)).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "")); }).finally(() => { if (active) setLoading(false); });
@@ -21,7 +23,7 @@ export function GitHunkPanel({ projectId, filename, revision, busy, layout, onCo
 		finally { pending.current = false; }
 	}
 	return <section className="git-hunk-panel" aria-label={`Changes in ${filename}`} aria-busy={loading || busy}>
-		<div className="project-toolbar"><h2>{filename}</h2><button type="button" disabled={loading || busy} onClick={() => setRefresh(value => value + 1)}>Refresh changes</button></div>
+		<div className="project-toolbar"><h2>{filename}</h2></div>
 		{loading && <p className="task-muted" role="status">Loading changes…</p>}
 		{error && <p role="alert">{error}</p>}
 		{!loading && !error && !reviews.some(review => review.hunks.length) && <p className="task-muted">No individual text changes. Use the file actions above.</p>}

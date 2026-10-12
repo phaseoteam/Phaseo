@@ -1,3 +1,7 @@
+import path from "node:path";
+import { tmpdir } from "node:os";
+import { writePiOrchestrationExtension } from "./piOrchestrationExtension";
+import type { McpConnection } from "../shared/mcp";
 import { piEntries } from "./piLaunch";
 import { piNativeActionCatalog } from "./piNativeActions";
 import { nativeActionText, type NativeAction } from "../shared/nativeActions";
@@ -13,6 +17,7 @@ import { attachmentPrompt } from "./attachmentPrompt";
 
 const record = (value: unknown): PiRecord => value && typeof value === "object" && !Array.isArray(value) ? value as PiRecord : {};
 export class PiAdapter implements AgentAdapter {
+	constructor(private readonly connections: McpConnection[] = []) {}
 	private child?: ChildProcessWithoutNullStreams;
 	private rpc?: PiRpc;
 	private cancelled = false;
@@ -34,7 +39,10 @@ export class PiAdapter implements AgentAdapter {
 		else if (task.nativeForkFrom) args.push("--fork", task.nativeForkFrom);
 		if (task.mode === "chat" || compact) args.push("--no-tools");
 		if (task.mode === "plan" && !compact) args.push("--tools", "read,grep,find,ls");
-		const child = this.child = await spawnNative("pi", args, cwd, piEntries); child.stderr.resume();
+		const orchestration = this.connections.find(connection => connection.transport === "http" && connection.headers?.Authorization && connection.name === "Phaseo orchestration");
+		if (orchestration) args.push("--extension", await writePiOrchestrationExtension(path.join(tmpdir(), "phaseo-owned-extensions", task.id)));
+		if (this.cancelled) throw new Error("Task stopped.");
+		const child = this.child = await spawnNative("pi", args, cwd, piEntries, orchestration?.transport === "http" ? { PHASEO_ORCHESTRATOR_URL: orchestration.url, PHASEO_ORCHESTRATOR_AUTH: orchestration.headers!.Authorization } : undefined); child.stderr.resume();
 		const rpc = this.rpc = new PiRpc(child.stdout, child.stdin);
 		let resolveTurn!: () => void; let rejectTurn!: (error: Error) => void;
 		const turn = new Promise<void>((resolve, reject) => { resolveTurn = resolve; rejectTurn = reject; });

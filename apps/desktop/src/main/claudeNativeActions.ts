@@ -1,7 +1,7 @@
 import { query, type Query, type SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import { resolveNativeCommand } from "./nativeProcess";
 import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
-import type { Account } from "../shared/workspace";
+import type { Account, ModelOption } from "../shared/workspace";
 import type { NativeAction, NativeActionCatalog, NativeActionEntry } from "../shared/nativeActions";
 function identity(value: unknown) { return typeof value === "string" && value.length > 0 && value.length <= 200 && !value.startsWith("/") && !/\s/.test(value) && !Array.from(value).some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127) ? value : undefined; }
 export function claudeNativeActionCatalog(value: unknown): NativeActionCatalog {
@@ -27,7 +27,7 @@ export async function confirmClaudeNativeAction(execution: Pick<Query, "supporte
  const commands = await commandRequest(async () => refresh ? (await execution.reinitialize()).commands : await execution.supportedCommands(), signal, () => execution.close()); const catalog = claudeNativeActionCatalog(commands);
  if (!catalog.actions.some(entry => entry.kind === action.kind && entry.id === action.id && entry.name === action.name)) throw new Error("This Claude action is no longer available.");
 }
-export async function claudeNativeActions(cwd: string, signal: AbortSignal, account?: Account): Promise<NativeActionCatalog> {
+async function claudeDiscovery<T>(cwd: string, signal: AbortSignal, account: Account | undefined, read: (execution: Query) => Promise<T>): Promise<T> {
  signal.throwIfAborted(); const command = await resolveNativeCommand("claude"); signal.throwIfAborted(); const controller = new AbortController();
  const abort = () => controller.abort(); signal.addEventListener("abort", abort, { once: true }); let release!: () => void; const gate = new Promise<void>(resolve => { release = resolve; });
  // eslint-disable-next-line require-yield -- Discovery holds input open without submitting a user message.
@@ -35,6 +35,21 @@ export async function claudeNativeActions(cwd: string, signal: AbortSignal, acco
  let execution: Query | undefined;
  try {
   execution = query({ prompt: prompt(), options: { cwd, pathToClaudeCodeExecutable: command.executable, abortController: controller, persistSession: false, tools: [], strictMcpConfig: true, mcpServers: {}, settingSources: ["user", "project", "local"], ...(account?.configDirectory ? { env: { ...process.env, ...nativeAccountEnvironment(account) } } : {}), canUseTool: async () => ({ behavior: "deny", message: "Command discovery does not execute tools." }) } });
-  if (signal.aborted) abort(); return claudeNativeActionCatalog(await commandRequest(() => execution!.supportedCommands(), signal, () => { controller.abort(); execution!.close(); }));
+  if (signal.aborted) abort(); return await commandRequest(() => read(execution!), signal, () => { controller.abort(); execution!.close(); });
  } finally { signal.removeEventListener("abort", abort); controller.abort(); execution?.close(); release(); }
+}
+export async function claudeNativeActions(cwd: string, signal: AbortSignal, account?: Account): Promise<NativeActionCatalog> {
+ return claudeNativeActionCatalog(await claudeDiscovery(cwd, signal, account, execution => execution.supportedCommands()));
+}
+export function claudeModelCatalog(value: unknown): ModelOption[] {
+ if (!Array.isArray(value) || value.length > 1000) throw Error("Claude returned an invalid model catalog.");
+ const seen = new Set<string>();
+ return value.map(item => {
+  if (!item || typeof item !== "object" || typeof item.value !== "string" || !item.value || item.value.length > 1000 || Array.from(item.value as string).some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127) || seen.has(item.value) || typeof item.displayName !== "string" || !item.displayName || item.displayName.length > 1000 || typeof item.description !== "string" || item.description.length > 4000) throw Error("Claude returned an invalid model.");
+  seen.add(item.value);
+  return { id: item.value, name: item.displayName, description: item.description };
+ });
+}
+export async function claudeNativeModels(cwd: string, signal: AbortSignal, account?: Account): Promise<ModelOption[]> {
+ return claudeModelCatalog(await claudeDiscovery(cwd, signal, account, execution => execution.supportedModels()));
 }

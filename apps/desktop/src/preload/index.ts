@@ -35,6 +35,7 @@ const desktopApi: PhaseoDesktopApi = {
 		chooseProject: () => ipcRenderer.invoke("workspace:choose-project"),
 		createWorktree: (id, branch, base) => ipcRenderer.invoke("workspace:create-worktree", id, branch, base),
 		removeWorktree: id => ipcRenderer.invoke("workspace:remove-worktree", id),
+		pasteImage: (id, name, bytes) => ipcRenderer.invoke("workspace:paste-image", id, name, bytes),
 		chooseAttachments: id => ipcRenderer.invoke("workspace:choose-attachments", id),
 		exportTask: (id, format) => ipcRenderer.invoke("workspace:export-task", id, format),
 		importTask: configuration => ipcRenderer.invoke("workspace:import-task", configuration),
@@ -46,6 +47,7 @@ const desktopApi: PhaseoDesktopApi = {
 		checkAgent: id => ipcRenderer.invoke("workspace:check-agent", id),
 		mcp: command => ipcRenderer.invoke("workspace:mcp", command),
 		models: (harness, accountId, projectId) => ipcRenderer.invoke("workspace:models", harness, accountId, projectId),
+		linkTitle: url => ipcRenderer.invoke("workspace:link-title", url),
 		openLink: url => ipcRenderer.invoke("workspace:open-link", url),
 		terminals: () => ipcRenderer.invoke("workspace:terminals"),
 		terminal: command => ipcRenderer.invoke("workspace:terminal", command),
@@ -54,6 +56,8 @@ const desktopApi: PhaseoDesktopApi = {
 			ipcRenderer.on("workspace:terminal-event", subscription);
 			return () => ipcRenderer.removeListener("workspace:terminal-event", subscription);
 		},
+		signInPhaseo: id => ipcRenderer.invoke("workspace:phaseo-sign-in", id),
+		cancelPhaseoSignIn: () => ipcRenderer.invoke("workspace:phaseo-cancel-sign-in"),
 		signIn: id => ipcRenderer.invoke("workspace:sign-in", id),
 		accountStatus: (harness, id) => ipcRenderer.invoke("workspace:account-status", harness, id),
 		cancelSignIn: id => ipcRenderer.invoke("workspace:cancel-sign-in", id),

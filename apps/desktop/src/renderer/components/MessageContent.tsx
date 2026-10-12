@@ -2,10 +2,12 @@ import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markd
 import remarkGfm from "remark-gfm";
 import { Children, createContext, isValidElement, useContext, useEffect, useRef, useState, useMemo, type CSSProperties, type ReactNode } from "react";
 import type { CodeToken } from "./codeHighlight";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, Globe } from "lucide-react";
 import { useTextCopy } from "./useTextCopy";
 import { parseFileReference } from "../../shared/editors";
 
+import { GitHubMark } from "./GitHubMark";
+import { richLink } from "../lib/richLink";
 import { repairFileLinks } from "./repairFileLinks";
 
 const ProjectContext = createContext<string | undefined>(undefined);
@@ -29,9 +31,12 @@ function MessageLink({ href, children }: { href?: string; children?: ReactNode }
 		} catch (reason) { setError(String(reason).replace(/^Error: (?:Error invoking remote method '[^']+': (?:Error: )?)?/, "")); }
 		finally { pending.current = false; setBusy(false); }
 	}
+	const link = href ? richLink(href) : undefined;
+	const [pageTitle, setPageTitle] = useState<string>();
+	useEffect(() => { if (!href) return; let active = true; if (/^https:\/\//i.test(href)) void window.phaseoDesktop?.workspace.linkTitle(href).then(title => { if (active && title) setPageTitle(title); }).catch(() => {}); const unsubscribe = window.phaseoDesktop?.onBrowserState(state => { if (state.url === href && state.title && !state.loading) setPageTitle(state.title); }); try { const pages = JSON.parse(localStorage.getItem("phaseo.desktop.browser.recents") ?? "[]") as { url: string; title: string }[]; setPageTitle(pages.find(page => page.url === href)?.title); } catch { /* Ignore invalid cached page titles. */ } return () => { active = false; unsubscribe?.(); }; }, [href]);
 	if (reference && projectId) return <span><button type="button" className="message-file-link" disabled={busy} aria-label={`Open ${reference.filename}${reference.line ? ` at line ${reference.line}` : ""} in editor`} onClick={() => void openFile()}>{children}</button>{busy && <span className="message-link-feedback" role="status">Opening…</span>}{error && <span className="message-link-feedback" role="alert">{error}</span>}</span>;
 	const safe = typeof href === "string" && /^https?:\/\//i.test(href);
-	return safe ? <a href={href} target="_blank" rel="noreferrer" onClick={event => { if (window.phaseoDesktop?.workspace) { event.preventDefault(); void window.phaseoDesktop.workspace.openLink(href).catch(() => {}); } }}>{children}</a> : <span>{children}</span>;
+	return safe ? <a className={link ? "message-rich-link" : undefined} title={pageTitle ?? href} href={href} target="_blank" rel="noreferrer" onClick={event => { if (window.phaseoDesktop?.workspace) { event.preventDefault(); window.dispatchEvent(new CustomEvent("phaseo:open-context-link", { detail: href })); } }}>{link?.github ? <GitHubMark /> : <Globe size={13} />}{link?.label ?? (typeof children === "string" && children === href ? pageTitle ?? link?.fallback : children)}</a> : <span>{children}</span>;
 }
 
 function messageUrl(href: string) { return parseFileReference(href) ? href : defaultUrlTransform(href); }

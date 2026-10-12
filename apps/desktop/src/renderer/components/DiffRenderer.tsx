@@ -7,6 +7,7 @@ import { CodeBlock } from "./MessageContent";
 import { parseReviewPatch } from "./diffRendering";
 import { useTextCopy } from "./useTextCopy";
 import type { DiffViewProps } from "./DiffView";
+import { useBackgroundRefresh } from "../lib/useBackgroundRefresh";
 
 export function DiffRenderer({ contents, patch, layout, copyText = patch, hideHeader = false, context, onRefresh }: DiffViewProps) {
 	const files = useMemo(() => contents ? [parseDiffFromFile(contents.oldFile, contents.newFile)] : parseReviewPatch(patch), [patch, contents]);
@@ -14,6 +15,7 @@ export function DiffRenderer({ contents, patch, layout, copyText = patch, hideHe
 	const { status, copying, copy } = useTextCopy(copyText);
 	const [contextError, setContextError] = useState("");
 	const [contextLoading, setContextLoading] = useState(0);
+	useBackgroundRefresh(() => { if (contextError && contextLoading === 0) onRefresh?.(); });
 	const active = useRef(true);
 	useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
 	const loadDiffFiles = useCallback(async (file: FileDiffMetadata) => {
@@ -42,7 +44,7 @@ export function DiffRenderer({ contents, patch, layout, copyText = patch, hideHe
 	return <div className="review-diff" data-layout={layout}>
 		<div className="message-code-actions"><span aria-live="polite">{status === "failed" ? "Copy failed" : layout === "split" ? "Before / After" : "Unified diff"}</span><button type="button" onClick={() => void copy()} disabled={copying} aria-label={status === "copied" ? "Copied" : "Copy code"}>{status === "copied" ? <Check size={14} /> : <Copy size={14} />}{status === "copied" ? "Copied" : "Copy code"}</button></div>
 		{contextLoading > 0 && <p className="review-diff-feedback" role="status">Loading context…</p>}
-		{contextError && <div className="review-diff-feedback"><span role="alert">{contextError}</span>{onRefresh && <button type="button" disabled={contextLoading > 0} onClick={onRefresh}>Refresh review</button>}</div>}
+		{contextError && <div className="review-diff-feedback"><span role="alert">{contextError}</span></div>}
 		<div className="review-diff-content" tabIndex={0} aria-label={layout === "split" ? "Side-by-side changes" : "Unified changes"}>{files.map((file, index) => <FileDiff key={`${index}:${file.name}`} fileDiff={file} options={options} />)}</div>
 	</div>;
 }

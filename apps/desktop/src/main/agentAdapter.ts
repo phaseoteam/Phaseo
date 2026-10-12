@@ -1,9 +1,11 @@
+import type { ThreadTools } from "../shared/orchestration";
 import type { NativeAction } from "../shared/nativeActions";
 import type { Account, AgentActivity, AgentQuestion, ModelOption, QueuedMessage, Task } from "../shared/workspace";
 import type { AttachmentContent } from "./attachments";
 import type { AgentForm, FormAnswer } from "../shared/agentForms";
 
 export type AgentCallbacks = {
+	threads?: ThreadTools;
 	onDelta: (id: string, text: string) => void;
 	onSession: (id: string) => void;
 	onModels?: (models: ModelOption[]) => void;

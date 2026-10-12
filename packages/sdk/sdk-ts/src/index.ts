@@ -1215,8 +1215,12 @@ export class Phaseo {
   }
 
   async *streamResponses(req: ResponsesRequest, options: PhaseoRequestOptions = {}): AsyncGenerator<ResponseStreamChunk> {
+    let eventType: string | undefined;
     for await (const line of this.streamResponse(req, options)) {
-      const chunk = parseResponseStreamLine(line);
+      if (line.startsWith("event:")) { eventType = line.slice(6).trim(); continue; }
+      if (!line.startsWith("data:")) continue;
+      const chunk = parseResponseStreamLine(line, eventType);
+      eventType = undefined;
       if (!chunk) continue;
       yield chunk;
     }
@@ -1697,7 +1701,7 @@ function parseChatStreamLine(line: string): ChatStreamChunk | null {
   };
 }
 
-function parseResponseStreamLine(line: string): ResponseStreamChunk | null {
+function parseResponseStreamLine(line: string, eventType?: string): ResponseStreamChunk | null {
   const parsed = parseSseJson(line);
   if (parsed === null) return null;
   if (!isRecord(parsed)) {
@@ -1712,6 +1716,7 @@ function parseResponseStreamLine(line: string): ResponseStreamChunk | null {
   const usage = extractUsage(parsed);
   return {
     ...parsed,
+    ...(typeof parsed.type !== "string" && eventType ? { type: eventType } : {}),
     text: extractResponseChunkText(parsed),
     usage,
     reasoningTokens: extractReasoningTokens(usage)

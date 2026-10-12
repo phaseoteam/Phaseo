@@ -154,7 +154,7 @@ export function DesktopFrame({ theme, onThemeChange, onNavigate }: DesktopFrameP
 				<div className="desktop-frame-brand"><PhaseoMark /><span>Phaseo</span></div>
 				<nav className="desktop-menu-bar" aria-label="Application menu">
 					{(["phaseo", "file", "edit", "view", "help"] as const).map((name) => (
-						<button key={name} type="button" aria-haspopup="menu" aria-expanded={activeMenu === name} className={activeMenu === name ? "active" : ""} onClick={event => selectMenu(name, event.currentTarget)}>
+						<button key={name} type="button" aria-haspopup="menu" aria-expanded={activeMenu === name} className={activeMenu === name ? "active" : ""} onPointerEnter={event => { if (activeMenu && activeMenu !== name) selectMenu(name, event.currentTarget); }} onClick={event => selectMenu(name, event.currentTarget)}>
 							{name === "phaseo" ? "Phaseo" : name[0].toUpperCase() + name.slice(1)}
 						</button>
 					))}

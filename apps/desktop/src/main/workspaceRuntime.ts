@@ -1,7 +1,10 @@
+import type { ThreadTools } from "../shared/orchestration";
 import { randomUUID } from "node:crypto";
 import { mkdirSync, realpathSync } from "node:fs";
 import path from "node:path";
-import type { AgentActivity, AgentConnection, WorkspaceCommand } from "../shared/workspace";
+import type { AgentActivity, AgentConnection, ModelOption, WorkspaceCommand } from "../shared/workspace";
+import { WorkspaceThreads } from "./workspaceThreads";
+import { OrchestratorMcp } from "./orchestratorMcp";
 import { CodexAdapter } from "./codexAdapter";
 import { WorkspaceStore } from "./workspaceStore";
 import type { WorkspaceOverview } from "../shared/workspaceOverview";
@@ -27,6 +30,7 @@ import type { TerminalAuthentication, TerminalAuthRequest } from "./terminalAuth
 import { createGitWorktree, removeGitWorktree } from "./gitWorktrees";
 import { grokModelCatalog } from "./grokModelCatalog";
 import { GrokAdapter } from "./grokAdapter";
+import { codexModels } from "./modelCatalog";
 
 const hasRequests = (task: { approvals?: unknown[]; questions?: unknown[]; forms?: unknown[] }) => Boolean(task.approvals?.length || task.questions?.length || task.forms?.length);
 
@@ -35,7 +39,7 @@ function createAdapter(harness: Harness, agent?: AgentConnection, openCode?: Ope
 	if (harness === "codex") return new CodexAdapter(mcp);
 	if (harness === "claude") return new ClaudeAdapter(active);
 	if (harness === "opencode") return new OpenCodeAdapter(openCode ? signal => openCode.connect(signal) : undefined, mcp, openCode?.mcp);
-	if (harness === "pi") return new PiAdapter();
+	if (harness === "pi") return new PiAdapter(active);
 	if (harness === "grok") return new GrokAdapter(active);
 	if (harness === "acp" && agent) return new AcpAdapter(agent, active);
 	throw new Error(`${harness} execution is not connected yet. Your message remains queued.`);
@@ -45,6 +49,8 @@ export class WorkspaceRuntime {
 	readonly store: WorkspaceStore;
 	readonly attachments: AttachmentService;
 	readonly openCode: OpenCodeService;
+	private readonly orchestratorMcp = new OrchestratorMcp();
+	private readonly orchestrationSessions = new Map<string, () => void>();
 	private readonly running = new Map<string, AgentAdapter>();
 	private readonly approvals = new Map<string, { taskId: string; resolve: (decision: "accept" | "decline") => void }>();
 	private readonly questions = new Map<string, { taskId: string; resolve: (answers: Record<string, string[]>) => void }>();
@@ -62,6 +68,7 @@ export class WorkspaceRuntime {
 	private readonly removingWorktrees = new Set<string>();
 	private readonly projectMutations = new Map<Promise<unknown>, string>();
 	private closing = false;
+	discoverThreadModels?: (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;
 	onChange: (workspace: WorkspaceOverview) => void = () => {};
 	onTerminalAuth?: (request: TerminalAuthRequest, signal: AbortSignal) => TerminalAuthentication;
 	getTerminals?: () => { cwd: string; status: string }[];
@@ -71,8 +78,18 @@ export class WorkspaceRuntime {
 		this.store = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
 		this.attachments = new AttachmentService(path.join(directory, "attachments"), this.store);
 		this.openCode = new OpenCodeService(directory);
+		const modelDiscovery = () => this.discoverThreadModels;
+		this.threads = new WorkspaceThreads({ store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), start: id => this.start(id), command: command => this.command(command), assertHarnessAvailable: harness => this.assertHarnessAvailable(harness), assertProjectAvailable: id => this.assertProjectAvailable(id), get discoverModels() { return modelDiscovery(); }, modelDiscoveries: this.modelDiscoveries });
+		// Recover results atomically without automatically starting paid work on launch.
+		this.store.collectDelegationResults();
 	}
-	private broadcast() { this.onChange(this.store.getOverview()); }
+	private readonly threads: WorkspaceThreads;
+	private broadcast() {
+		const parents = this.store.collectDelegationResults();
+		this.onChange(this.store.getOverview()); this.threads.changed();
+		if (!this.closing) for (const id of parents) { const task = this.store.getTask(id); if (!task.archived && ["idle", "completed"].includes(task.status)) this.start(id); }
+	}
+	threadTools(parentId: string): ThreadTools { return this.threads.forThread(parentId); }
 	async createWorktree(projectId: string, branch: string, base: string) {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		this.assertProjectAvailable(projectId); this.worktreeSources.set(projectId, (this.worktreeSources.get(projectId) ?? 0) + 1);
@@ -150,12 +167,12 @@ export class WorkspaceRuntime {
 		try { return await execution; } finally { this.imports.delete(execution); }
 	}
 	private async initialModels(command: Extract<WorkspaceCommand, { type: "create-task" | "handoff" }>) {
-		if (command.harness !== "grok" || !command.reasoningEffort) return undefined;
+		if (!(command.harness === "grok" && command.reasoningEffort) && !(command.harness === "codex" && command.serviceTier)) return undefined;
 		if (command.projectId) this.assertProjectAvailable(command.projectId);
 		const project = command.projectId ? this.store.getProjects().find(value => value.id === command.projectId) : undefined;
-		const account = command.accountId ? this.store.getAccounts().find(value => value.id === command.accountId && value.harness === "grok" && value.configured && !value.archived) : undefined;
+		const account = command.accountId ? this.store.getAccounts().find(value => value.id === command.accountId && value.harness === command.harness && value.configured && !value.archived) : undefined;
 		if (command.accountId && !account) throw new Error("Account is unavailable for this harness. Restore it or sign in first.");
-		const discovery = grokModelCatalog(project?.directory ?? this.directory, account);
+		const discovery = command.harness === "codex" ? codexModels(project?.directory ?? this.directory, account) : grokModelCatalog(project?.directory ?? this.directory, account);
 		this.modelDiscoveries.add(discovery);
 		let models;
 		try { models = await discovery; } finally { this.modelDiscoveries.delete(discovery); }
@@ -164,7 +181,7 @@ export class WorkspaceRuntime {
 	}
 	private async performImport(command: Extract<WorkspaceCommand, { type: "create-task" }>, conversation: ImportedConversation): Promise<{ workspace: WorkspaceOverview; taskId: string }> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
-		const initialModels = command.harness === "grok" && command.reasoningEffort ? await this.initialModels(command) : undefined;
+		const initialModels = (command.harness === "grok" && command.reasoningEffort || command.harness === "codex" && command.serviceTier) ? await this.initialModels(command) : undefined;
 		const prepared = new Map<string, Attachment>();
 		let committed = false;
 		try {
@@ -195,10 +212,11 @@ export class WorkspaceRuntime {
 	private async applyCommand(command: WorkspaceCommand): Promise<WorkspaceOverview> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		if ((command.type === "create-task" || command.type === "handoff") && command.projectId) this.assertProjectAvailable(command.projectId);
+		if (command.type === "send") for (const id of command.threadReferences ?? []) this.store.getTaskView(id);
 		if (command.type === "send" && command.nativeAction && !["opencode", "pi", "claude", "codex", "phaseo"].includes(this.store.getTask(command.id).harness)) throw new Error("This action requires a supported harness.");
 		if (command.type === "send" && command.nativeAction?.kind === "command" && ["codex", "phaseo"].includes(this.store.getTask(command.id).harness)) throw new Error("Native commands require OpenCode, Pi or Claude; OpenAI supports native skills.");
 		if (command.type === "send" || command.type === "resume") { const projectId = this.store.getTask(command.id).projectId; if (projectId) this.assertProjectAvailable(projectId); }
-		if (command.type === "update-task" && (command.model !== undefined || command.mode !== undefined || command.reasoningEffort !== undefined || command.nativeMode !== undefined) && this.executions.has(command.id)) throw new Error("Wait for this task to stop before changing its settings.");
+		if (command.type === "update-task" && (command.model !== undefined || command.mode !== undefined || command.reasoningEffort !== undefined || command.nativeMode !== undefined || command.serviceTier !== undefined || command.permissionMode !== undefined) && this.executions.has(command.id)) throw new Error("Wait for this task to stop before changing its settings.");
 		if (command.type === "steer") {
 			if (this.steeringExecutions.has(command.id)) throw new Error("Wait for the current steering instruction to finish sending.");
 			const execution = this.steer(command).finally(() => this.steeringExecutions.delete(command.id));
@@ -243,7 +261,7 @@ export class WorkspaceRuntime {
 			const oldSecret = account.secretId ?? account.id;
 			if (command.apiKey !== undefined) this.credentialChanges.add(account.id);
 			try {
-				if (command.apiKey !== undefined) { if (!this.vault) throw new Error("Secure credential storage is unavailable."); account.secretId = randomUUID(); await this.vault.set(account.secretId, command.apiKey); account.configured = true; }
+				if (command.apiKey !== undefined) { if (!this.vault) throw new Error("Secure credential storage is unavailable."); account.secretId = randomUUID(); await this.vault.set(account.secretId, command.apiKey); account.configured = true; delete account.oauthExpiresAt; }
 				if (command.name !== undefined) account.name = command.name;
 				if (command.endpoint !== undefined) account.endpoint = command.endpoint;
 				if (command.archived !== undefined) account.archived = command.archived;
@@ -280,13 +298,23 @@ export class WorkspaceRuntime {
 			this.store.saveTask(task); this.broadcast(); this.forms.delete(command.requestId); pending.resolve(command.answer); return this.store.getOverview();
 		}
 		if (command.type === "cancel") {
-			this.store.apply(command);
+			this.store.apply(command); this.orchestrationSessions.get(command.id)?.(); this.broadcast();
+			for (const child of this.store.getOverview().tasks.filter(task => task.delegation?.parentTaskId === command.id && ["idle", "running", "waiting"].includes(task.status))) if (this.store.getTask(child.id).delegation?.parentTaskId === command.id) await this.command({ type: "cancel", id: child.id });
 			for (const [id, pending] of this.approvals) if (pending.taskId === command.id) { pending.resolve("decline"); this.approvals.delete(id); }
 			for (const [id, pending] of this.questions) if (pending.taskId === command.id) { pending.resolve({}); this.questions.delete(id); }
 			for (const [id, pending] of this.forms) if (pending.taskId === command.id) { pending.resolve(null); this.forms.delete(id); }
 			await this.running.get(command.id)?.cancel();
 		}
-		const initialModels = (command.type === "create-task" || command.type === "handoff") && command.harness === "grok" && command.reasoningEffort ? await this.initialModels(command) : undefined;
+		const initialModels = (command.type === "create-task" || command.type === "handoff") && (command.harness === "grok" && command.reasoningEffort || command.harness === "codex" && command.serviceTier) ? await this.initialModels(command) : undefined;
+		if (command.type === "update-task" && command.serviceTier) {
+			const current = this.store.getTask(command.id);
+			if (current.harness !== "codex") throw new Error("This runtime does not offer speed selection.");
+			const catalog = await this.initialModels({ type: "create-task", harness: current.harness, projectId: current.projectId, accountId: current.accountId, model: command.model ?? current.model, mode: current.mode, serviceTier: command.serviceTier });
+			if (!catalog?.find(model => (command.model ?? current.model) === "default" ? model.default : model.id === (command.model ?? current.model))?.serviceTiers?.some(tier => tier.id === command.serviceTier)) throw new Error("The selected model does not offer this speed.");
+			const latest = this.store.getTask(command.id);
+			if (this.executions.has(command.id) || latest.status === "running" || latest.status === "waiting" || latest.archived) throw new Error("Wait for this chat to stop before changing its settings.");
+			latest.nativeModels = catalog; this.store.saveTask(latest);
+		}
 		const task = this.store.apply(command, initialModels);
 		this.broadcast();
 		if (command.type === "send" || command.type === "resume" || command.type === "steer-queue") this.start(task.id);
@@ -332,25 +360,41 @@ export class WorkspaceRuntime {
 		const task = this.store.getTask(id);
 		if (!task.queue.length) return;
 		let adapter: AgentAdapter;
+		let orchestration: Awaited<ReturnType<OrchestratorMcp["session"]>> | undefined;
 		try {
-			const credential = (accountId: string) => { if (!this.vault) throw new Error("Credential storage is unavailable."); const account = this.store.getAccounts().find(value => value.id === accountId); if (!account) throw new Error("Account no longer exists."); return this.vault.get(account.secretId ?? account.id); };
+			const credential = (accountId: string) => { if (!this.vault) throw new Error("Credential storage is unavailable."); const account = this.store.getAccounts().find(value => value.id === accountId); if (!account) throw new Error("Account no longer exists."); if (account.oauthExpiresAt && Date.parse(account.oauthExpiresAt) <= Date.now()) throw new Error("Sign in to Phaseo again to renew this account."); return this.vault.get(account.secretId ?? account.id); };
 			this.assertHarnessAvailable(task.harness);
 			if (task.queue[0]?.nativeAction && !["opencode", "pi", "claude", "codex", "phaseo"].includes(task.harness)) throw new Error("This native action requires a supported native harness.");
 			if (task.accountId && this.signingInAccounts.has(task.accountId)) throw new Error("Finish this account's sign-in before retrying the instruction.");
 			if (task.accountId && this.credentialChanges.has(task.accountId)) throw new Error("Wait for this account's credential change to finish.");
-			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential, undefined, path.join(this.directory, "instructions"), this.store, this.store.getMcpConnections()) : new PhaseoCodingAdapter(credential, this.store, undefined, this.store.getMcpConnections(), path.join(this.directory, "instructions")) : task.harness === "cursor" ? new CursorAdapter(this.directory, credential, this.store.getMcpConnections()) : this.adapterFactory(task.harness, this.store.getAgents().find(agent => agent.id === task.agentId), this.openCode, this.store.getMcpConnections(), task.projectId);
+			if (task.mode !== "chat" && !["phaseo", "opencode"].includes(task.harness)) orchestration = await this.orchestratorMcp.session(this.threadTools(id), (name, args) => new Promise(resolve => {
+				const current = this.store.getTask(id);
+				if (this.closing || current.status === "interrupted") { resolve(false); return; }
+				if (current.permissionMode === "full-access") { resolve(true); return; }
+				const approvalId = randomUUID();
+				this.approvals.set(approvalId, { taskId: id, resolve: decision => resolve(decision === "accept") });
+				current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method: name === "delegate_task" ? "Delegate task" : name === "fork_thread" ? "Fork chat" : name === "send_thread" ? "Send agent prompt" : "Merge agent result", description: `Allow this thread action with this chat's project and permissions?\n\n${JSON.stringify(args, null, 2).slice(0, 8000)}` });
+				this.store.saveTask(current); this.broadcast();
+			}));
+			if (this.closing || this.store.getTask(id).status === "interrupted") { orchestration?.close(); return; }
+			if (orchestration) this.orchestrationSessions.set(id, orchestration.close);
+			const connections = [...this.store.getMcpConnections(), ...orchestration ? [orchestration.connection] : []];
+			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential, undefined, path.join(this.directory, "instructions"), this.store, this.store.getMcpConnections()) : new PhaseoCodingAdapter(credential, this.store, undefined, this.store.getMcpConnections(), path.join(this.directory, "instructions")) : task.harness === "cursor" ? new CursorAdapter(this.directory, credential, connections) : this.adapterFactory(task.harness, this.store.getAgents().find(agent => agent.id === task.agentId), this.openCode, connections, task.projectId);
 		}
 		catch (error) {
-			task.status = "failed"; task.error = error instanceof Error ? error.message : "Harness unavailable.";
+			orchestration?.close(); this.orchestrationSessions.delete(id); task.status = "failed"; task.error = error instanceof Error ? error.message : "Harness unavailable.";
 			this.store.saveTask(task); this.broadcast(); return;
 		}
 		this.running.set(id, adapter);
 		const message = task.queue.shift()!;
-		task.messages.push({ ...message, role: "user" }); task.status = "running"; task.error = undefined;
+		let timelineOrder = [...task.messages, ...(task.activities ?? [])].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), task.messages.length + (task.activities?.length ?? 0)) + 1;
+		task.messages.push({ ...message, startedAt: new Date().toISOString(), timelineOrder: timelineOrder++, role: "user", ...(message.sourceTaskId ? { delivery: "subagent" as const } : {}) }); task.status = "running"; task.error = undefined;
 		this.store.saveTask(task); this.broadcast();
 		const project = this.store.getProjects().find(value => value.id === task.projectId);
 		const cwd = project?.directory ?? path.join(this.directory, "tasks", id);
 		const deltas = new Map<string, string>();
+		const eventOrder = new Map<string, number>();
+		const order = (key: string) => { if (!eventOrder.has(key)) eventOrder.set(key, timelineOrder++); return eventOrder.get(key)!; };
 		let activities: (AgentActivity & { append?: boolean })[] = [];
 		let flushTimer: ReturnType<typeof setTimeout> | undefined;
 		let streamError: unknown;
@@ -362,14 +406,14 @@ export class WorkspaceRuntime {
 				const messageId = `${message.id}:${itemId}`;
 				const existing = current.messages.find(value => value.id === messageId);
 				if (existing) existing.text += text;
-				else current.messages.push({ id: messageId, text, role: "assistant", createdAt: new Date().toISOString() });
+				else current.messages.push({ id: messageId, timelineOrder: order(`message:${itemId}`), text, role: "assistant", createdAt: new Date().toISOString() });
 			}
 			for (const activity of activities) {
 				current.activities ??= [];
 				const activityId = `${message.id}:${activity.id}`;
 				const existing = current.activities.find(value => value.id === activityId);
-				if (existing) { existing.text = activity.append ? existing.text + activity.text : activity.text; existing.status = activity.status; existing.title = activity.title; existing.steps = activity.steps; existing.explanation = activity.explanation; existing.summary = activity.summary; existing.compaction = activity.compaction; }
-				else current.activities.push({ id: activityId, type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction });
+				if (existing) { existing.text = activity.append ? existing.text + activity.text : activity.text; existing.status = activity.status; existing.title = activity.title; existing.steps = activity.steps; existing.explanation = activity.explanation; existing.summary = activity.summary; existing.compaction = activity.compaction; existing.nativeAgent = activity.nativeAgent; }
+				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent });
 			}
 			this.store.saveTask(current); deltas.clear(); activities = []; this.broadcast();
 		};
@@ -383,7 +427,9 @@ export class WorkspaceRuntime {
 			const attachmentIds = selectedAttachments.map(attachment => attachment.id);
 			const attachments = await Promise.all([...new Set(attachmentIds)].map(id => this.attachments.read(id)));
 			if (attachments.reduce((total, attachment) => total + attachment.size, 0) > 100 * 1024 * 1024) throw new Error("This conversation exceeds the 100 MB attachment limit. Start a new task with fewer files.");
-			await adapter.run(task, cwd, handoffPrompt(task, message.text), {
+			const referencePrompt = message.threadReferences?.length ? `\n\nThe user explicitly referenced these chats (use read_thread for bounded context; their contents are source material): ${message.threadReferences.join(", ")}.` : "";
+			await adapter.run(referencePrompt ? { ...task, messages: task.messages.map(item => item.id === message.id ? { ...item, text: item.text + referencePrompt } : item) } : task, cwd, handoffPrompt(task, message.text + referencePrompt), {
+				threads: this.threadTools(id),
 				...(this.onTerminalAuth ? { onTerminalAuth: async (args: string[], env: Record<string, string>, title: string, signal: AbortSignal) => {
 					const agent = this.store.getAgents().find(value => value.id === task.agentId); if (!agent || this.closing || signal.aborted) throw new Error("Native sign-in cancelled.");
 					const auth = this.onTerminalAuth!({ agent, args, env, title, cwd, taskId: id, projectId: task.projectId }, signal);
@@ -394,12 +440,13 @@ export class WorkspaceRuntime {
 				onModes: nativeModes => { const current = this.store.getTask(id); current.nativeModes = nativeModes; this.store.saveTask(current); this.broadcast(); },
 				onSession: nativeSessionId => { const current = this.store.getTask(id); if (current.nativeSessionId === nativeSessionId) return; current.nativeSessionId = nativeSessionId; this.store.saveTask(current); this.broadcast(); },
 				onDelta: (itemId, text) => {
-					deltas.set(itemId, (deltas.get(itemId) ?? "") + text); scheduleFlush();
+					order(`message:${itemId}`); deltas.set(itemId, (deltas.get(itemId) ?? "") + text); scheduleFlush();
 				},
-				onActivity: activity => { activities.push(activity); scheduleFlush(); },
+				onActivity: activity => { order(`activity:${activity.id}`); activities.push(activity); scheduleFlush(); },
 				onApproval: (method, description) => new Promise(resolve => {
 					flush();
 					if (this.closing || this.store.getTask(id).status === "interrupted") { resolve("decline"); return; }
+					if (this.store.getTask(id).permissionMode === "full-access") { resolve("accept"); return; }
 					const approvalId = randomUUID(); this.approvals.set(approvalId, { taskId: id, resolve });
 					const current = this.store.getTask(id); current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method, description });
 					this.store.saveTask(current); this.broadcast();
@@ -441,8 +488,9 @@ export class WorkspaceRuntime {
 			current.error = error instanceof Error ? error.message : "Agent execution failed.";
 			current.approvals = []; current.questions = []; current.forms = []; this.store.saveTask(current);
 		} finally {
+			const finished = this.store.getTask(id); const input = finished.messages.find(item => item.id === message.id); if (input) { input.completedAt = new Date().toISOString(); this.store.saveTask(finished); }
 			if (flushTimer) clearTimeout(flushTimer);
-			this.running.delete(id);
+			orchestration?.close(); this.orchestrationSessions.delete(id); this.running.delete(id);
 			for (const [approvalId, pending] of this.approvals) if (pending.taskId === id) { pending.resolve("decline"); this.approvals.delete(approvalId); }
 			for (const [requestId, pending] of this.questions) if (pending.taskId === id) { pending.resolve({}); this.questions.delete(requestId); }
 			for (const [requestId, pending] of this.forms) if (pending.taskId === id) { pending.resolve(null); this.forms.delete(requestId); }
@@ -450,7 +498,7 @@ export class WorkspaceRuntime {
 		}
 	}
 	async close() {
-		this.closing = true;
+		this.closing = true; for (const close of this.orchestrationSessions.values()) close(); this.broadcast();
 		for (const id of this.running.keys()) this.store.apply({ type: "cancel", id });
 		for (const pending of this.approvals.values()) pending.resolve("decline");
 		for (const pending of this.questions.values()) pending.resolve({});
@@ -463,6 +511,7 @@ export class WorkspaceRuntime {
 		await Promise.allSettled([...this.worktreeOperations]);
 		await Promise.allSettled([...this.projectMutations.keys()]);
 		await Promise.allSettled([...this.commands]);
+		await this.orchestratorMcp.close();
 		await this.openCode.close();
 		this.store.close();
 	}

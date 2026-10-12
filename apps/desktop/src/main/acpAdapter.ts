@@ -112,7 +112,7 @@ export class AcpAdapter implements AgentAdapter {
 			if (initialized.protocolVersion !== PROTOCOL_VERSION) throw new Error("This agent uses an unsupported ACP protocol version.");
 			const servers = task.mode === "chat" ? [] : this.mcp;
 			if (servers.some(server => server.transport === "http") && !initialized.agentCapabilities?.mcpCapabilities?.http) throw new Error("This ACP agent does not support HTTP MCP connections.");
-			const mcpServers = servers.map(server => server.transport === "stdio" ? { name: nativeMcpName(server), command: server.executable, args: server.arguments, env: [{ name: "ELECTRON_RUN_AS_NODE", value: "1" }] } : { type: "http" as const, name: nativeMcpName(server), url: server.url, headers: [] });
+			const mcpServers = servers.map(server => server.transport === "stdio" ? { name: nativeMcpName(server), command: server.executable, args: server.arguments, env: [{ name: "ELECTRON_RUN_AS_NODE", value: "1" }] } : { type: "http" as const, name: nativeMcpName(server), url: server.url, headers: Object.entries(server.headers ?? {}).map(([name, value]) => ({ name, value })) });
 			if (attachments.some(attachment => attachment.kind === "image") && !initialized.agentCapabilities?.promptCapabilities?.image) throw new Error("This ACP agent does not support image attachments.");
 			const openSession = async (): Promise<NewSessionResponse> => {
 				const timeout = setTimeout(() => connection.close(new Error("ACP session startup timed out.")), 30000);

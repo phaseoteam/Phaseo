@@ -1,7 +1,10 @@
+import { imageMime } from "./attachments";
+import { linkTitle } from "./linkTitle";
+import { signInPhaseo, PHASEO_GATEWAY_ENDPOINT } from "./phaseoOAuth";
 import { PhaseoSkills } from "./phaseoSkills";
 import { GlobalInstructions } from "./globalInstructions";
 import { codexNativeActions } from "./codexNativeActions";
-import { claudeNativeActions } from "./claudeNativeActions";
+import { claudeNativeActions, claudeNativeModels } from "./claudeNativeActions";
 import { piNativeActions } from "./piNativeActions";
 import { mkdir } from "node:fs/promises";
 import { openCodeNativeActions } from "./openCodeNativeActions";
@@ -59,13 +62,15 @@ import { cursorAccountStatus, cursorModels, cursorSignIn } from "./cursorAccount
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const preloadPath = path.join(currentDirectory, "../preload/index.cjs");
 const rendererPath = path.join(currentDirectory, "../renderer/index.html");
-const developmentUrl = process.env.PHASEO_DESKTOP_DEV_URL;
+const developmentUrl = app.isPackaged ? undefined : process.env.PHASEO_DESKTOP_DEV_URL;
+const applicationIcon = path.join(app.getAppPath(), "assets", `icon-${developmentUrl ? "development" : "production"}.png`);
 const updateFeedUrl = process.env.PHASEO_DESKTOP_UPDATE_URL;
 let workspaceRuntime: WorkspaceRuntime;
 let globalInstructions: GlobalInstructions;
 let shutdownComplete = false;
 let shutdownStarted = false;
 const signIns = new Map<string, AbortController>();
+const phaseoSignIns = new Map<number, AbortController>();
 const modelChecks = new Map<Harness, number>();
 const nativeCatalogChecks = new Set<AbortController>();
 const mcpPromptChecks = new Map<string, { controller: AbortController; taskId: string; senderId: number }>();
@@ -95,32 +100,65 @@ ipcMain.handle("workspace:terminal", (event, command: unknown) => {
 	if (command && typeof command === "object" && "type" in command && command.type === "open" && "projectId" in command && typeof command.projectId === "string") workspaceRuntime.assertProjectAvailable(command.projectId);
 	return terminalService.command(command);
 });
+ipcMain.handle("workspace:link-title", (event, value: unknown) => { if (!senderWindow(event) || typeof value !== "string") throw new Error("Invalid link."); return linkTitle(value); });
 ipcMain.handle("workspace:open-link", async (event, value: unknown) => {
 	if (!senderWindow(event) || typeof value !== "string") throw new Error("Invalid link.");
 	const url = new URL(value);
 	if (!["https:", "http:"].includes(url.protocol) || url.username || url.password) throw new Error("Use a web link.");
 	await shell.openExternal(url.href);
 });
-ipcMain.handle("workspace:models", async (event, harness: unknown, accountId: unknown, projectId: unknown) => {
-	if (!senderWindow(event) || !["codex", "phaseo", "opencode", "pi", "cursor", "grok"].includes(String(harness)) || (accountId !== undefined && typeof accountId !== "string") || (projectId !== undefined && typeof projectId !== "string")) throw new Error("Model discovery is unavailable for this harness.");
-	workspaceRuntime.assertHarnessAvailable(harness as Harness);
-	const checkedHarness = harness as Harness;
-	modelChecks.set(checkedHarness, (modelChecks.get(checkedHarness) ?? 0) + 1);
+ipcMain.handle("workspace:phaseo-sign-in", async (event, accountId: unknown) => {
+	const owner = senderWindow(event);
+	if (!owner || shutdownStarted || !credentialVault.available() || (accountId !== undefined && typeof accountId !== "string")) throw new Error("Phaseo sign-in is unavailable.");
+	if (phaseoSignIns.has(event.sender.id)) throw new Error("Phaseo sign-in is already open.");
+	const existing = accountId ? workspaceRuntime.store.getAccounts().find(account => account.id === accountId && account.harness === "phaseo" && account.oauthExpiresAt && !account.archived) : undefined;
+	if (accountId && !existing) throw new Error("Choose an active Phaseo sign-in account.");
+	const accountIdToSave = existing?.id ?? randomUUID();
+	const releaseAccount = workspaceRuntime.beginAccountSignIn(accountIdToSave);
+	const controller = new AbortController(); phaseoSignIns.set(event.sender.id, controller);
+	const destroyed = () => controller.abort(); owner.webContents.once("destroyed", destroyed);
 	try {
+		const result = await signInPhaseo({ signal: controller.signal, openBrowser: url => shell.openExternal(url) });
+		if (controller.signal.aborted || shutdownStarted || owner.isDestroyed()) throw new Error("Sign-in canceled.");
+		const newSecret = randomUUID(); await credentialVault.set(newSecret, result.key);
+		try {
+			if (controller.signal.aborted || shutdownStarted || owner.isDestroyed()) throw new Error("Sign-in canceled.");
+			const current = existing ? workspaceRuntime.store.getAccounts().find(account => account.id === existing.id && !account.archived) : undefined;
+			if (existing && !current) throw new Error("Account is unavailable.");
+			workspaceRuntime.store.saveAccount({ ...current, id: accountIdToSave, name: current?.name ?? "Phaseo", harness: "phaseo", kind: "api", endpoint: PHASEO_GATEWAY_ENDPOINT, secretId: newSecret, configured: true, oauthExpiresAt: result.expiresAt });
+		} catch (error) { credentialVault.remove(newSecret); throw error; }
+		if (existing) credentialVault.remove(existing.secretId ?? existing.id);
+		const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state);
+		return { workspace: state, accountId: accountIdToSave };
+	} catch (error) { if (controller.signal.aborted) throw new Error("Sign-in canceled.", { cause: error }); throw error; }
+	finally { owner.webContents.removeListener("destroyed", destroyed); phaseoSignIns.delete(event.sender.id); releaseAccount(); }
+});
+ipcMain.handle("workspace:phaseo-cancel-sign-in", event => { if (!senderWindow(event)) throw new Error("Invalid sign-in request."); phaseoSignIns.get(event.sender.id)?.abort(); });
+async function discoverDesktopModels(harness: Harness, accountId?: string, projectId?: string) {
 		const project = projectId ? workspaceRuntime.store.getProjects().find(value => value.id === projectId) : undefined;
 		if (projectId && !project) throw new Error("Project is unavailable.");
 		const cwd = project?.directory ?? app.getPath("userData");
 		const account = accountId ? workspaceRuntime.store.getAccounts().find(value => value.id === accountId && value.harness === harness && value.configured) : undefined;
 		if (accountId && !account) throw new Error("Account is unavailable.");
 		if (harness === "phaseo") {
+			if (account?.oauthExpiresAt && Date.parse(account.oauthExpiresAt) <= Date.now()) throw new Error("Sign in to Phaseo again to renew this account.");
 			if (!account) throw new Error("Choose an API account.");
 			return await apiModels(account, await credentialVault.get(account.secretId ?? account.id));
 		}
 		if (harness === "cursor") { if (!account || account.archived) throw new Error("Choose a connected Cursor account."); return await cursorModels(await credentialVault.get(account.secretId ?? account.id)); }
 		if (harness === "opencode") return await openCodeModels(cwd, await workspaceRuntime.openCode.connect());
 		if (harness === "pi") return await piModels(cwd);
+		if (harness === "claude") return await claudeNativeModels(cwd, AbortSignal.timeout(15000), account);
 		if (harness === "grok") return await grokModelCatalog(cwd, account);
 		return await codexModels(cwd, account);
+}
+ipcMain.handle("workspace:models", async (event, harness: unknown, accountId: unknown, projectId: unknown) => {
+	if (!senderWindow(event) || !["codex", "claude", "phaseo", "opencode", "pi", "cursor", "grok"].includes(String(harness)) || (accountId !== undefined && typeof accountId !== "string") || (projectId !== undefined && typeof projectId !== "string")) throw new Error("Model discovery is unavailable for this harness.");
+	workspaceRuntime.assertHarnessAvailable(harness as Harness);
+	const checkedHarness = harness as Harness;
+	modelChecks.set(checkedHarness, (modelChecks.get(checkedHarness) ?? 0) + 1);
+	try {
+		return await discoverDesktopModels(checkedHarness, accountId as string | undefined, projectId as string | undefined);
 	} finally { const remaining = modelChecks.get(checkedHarness)! - 1; if (remaining) modelChecks.set(checkedHarness, remaining); else modelChecks.delete(checkedHarness); }
 });
 app.on("before-quit", event => {
@@ -133,6 +171,7 @@ app.on("before-quit", event => {
 	taskNotifications?.dismiss();
 	terminalService?.close();
 	for (const controller of signIns.values()) controller.abort();
+	for (const controller of phaseoSignIns.values()) controller.abort();
 	harnessUpdate?.controller.abort();
 	for (const controller of accountChecks.values()) controller.abort();
 	for (const controller of agentChecks.values()) controller.abort();
@@ -346,6 +385,14 @@ ipcMain.handle("workspace:choose-project", async event => {
 	if (!result.canceled && result.filePaths[0]) workspaceRuntime.store.addProject(result.filePaths[0]);
 	const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state); return state;
 });
+ipcMain.handle("workspace:paste-image", async (event, id: unknown, name: unknown, data: unknown) => {
+	if (!senderWindow(event) || typeof id !== "string" || typeof name !== "string" || name.length > 200 || !(data instanceof Uint8Array) || data.byteLength > 10 * 1024 * 1024 || shutdownStarted) throw new Error("Invalid pasted image.");
+	if (workspaceRuntime.store.getTask(id).archived) throw new Error("Restore this chat before attaching images.");
+	const bytes = Buffer.from(data); if (!imageMime(bytes)) throw new Error("Paste a PNG, JPEG, GIF or WebP image.");
+	const attachment = await workspaceRuntime.attachments.prepare(id, name || "Pasted image.png", bytes);
+	try { if (shutdownStarted || workspaceRuntime.store.getTask(id).archived) throw new Error("This chat is unavailable."); workspaceRuntime.store.saveAttachment(attachment); return attachment; }
+	catch (error) { await workspaceRuntime.attachments.discard(attachment); throw error; }
+});
 ipcMain.handle("workspace:choose-attachments", async (event, id: unknown) => {
 	const window = senderWindow(event); if (!window || typeof id !== "string") throw new Error("Invalid attachment request.");
 	if (workspaceRuntime.store.getTask(id).archived) throw new Error("Restore this task before adding files.");
@@ -439,6 +486,7 @@ function createWindow(): BrowserWindow {
 		minHeight: 680,
 		show: false,
 		backgroundColor: "#101112",
+		icon: applicationIcon,
 		title: "Phaseo",
 		frame: process.platform === "darwin",
 		titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "hidden",
@@ -553,7 +601,7 @@ ipcMain.handle("desktop:open-external", async (event, url: unknown) => {
 	return true;
 });
 
-app.setAppUserModelId("app.phaseo.desktop");
+app.setAppUserModelId(developmentUrl ? "app.phaseo.desktop.dev" : "app.phaseo.desktop");
 const primaryInstance = app.requestSingleInstanceLock();
 if (!primaryInstance) app.quit();
 app.on("second-instance", () => {
@@ -571,6 +619,7 @@ autoUpdater.on("error", (error) => broadcastUpdateState({ status: "error", messa
 
 app.whenReady().then(() => {
 	if (!primaryInstance) return;
+	if (process.platform === "darwin") app.dock?.setIcon(applicationIcon);
 	const workspaceDirectory = path.join(app.getPath("userData"), "workspace");
 	const vault = new SecretVault(path.join(workspaceDirectory, "credentials"), windowsCredentialEncryption({
 		available: () => safeStorage.isEncryptionAvailable() && (process.platform !== "linux" || safeStorage.getSelectedStorageBackend() !== "basic_text"),
@@ -578,6 +627,7 @@ app.whenReady().then(() => {
 	}));
 	credentialVault = vault;
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
+	workspaceRuntime.discoverThreadModels = discoverDesktopModels;
 	globalInstructions = new GlobalInstructions(path.join(workspaceDirectory, "instructions"));
 	browserHost.downloads.configure(workspaceRuntime.store.browserDownloads);
 	taskNotifications = new TaskNotifications({

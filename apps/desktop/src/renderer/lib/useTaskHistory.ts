@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { TaskHistoryPage, TaskHistoryQuery } from "../../shared/taskHistory";
 
-export function useTaskHistory(read: ((query: TaskHistoryQuery) => Promise<TaskHistoryPage>) | undefined, query: string, archived: boolean, revision: string) {
-	const key = JSON.stringify([query, archived]);
+export function useTaskHistory(read: ((query: TaskHistoryQuery) => Promise<TaskHistoryPage>) | undefined, query: string, archived: boolean, revision: string, projectId?: string | null) {
+	const key = JSON.stringify([query, archived, projectId === undefined ? "all" : projectId]);
 	const [pages, setPages] = useState({ key, count: 1 });
 	useEffect(() => { setPages({ key, count: 1 }); }, [key]);
 	const count = pages.key === key ? pages.count : 1;
@@ -24,7 +24,7 @@ export function useTaskHistory(read: ((query: TaskHistoryQuery) => Promise<TaskH
 				let completed = append ? previous.count : 0;
 				for (let index = completed; index < count; index++) {
 					if (index > 0 && !hasMore) break;
-					const page = await read({ query, archived, offset: index * 50, limit: 50 });
+					const page = await read({ query, archived, offset: index * 50, limit: 50, ...(projectId !== undefined ? { projectId } : {}) });
 					if (!active) return;
 					tasks.push(...page.tasks); hasMore = page.hasMore;
 					completed = index + 1;
@@ -38,7 +38,7 @@ export function useTaskHistory(read: ((query: TaskHistoryQuery) => Promise<TaskH
 			})().catch(reason => { if (active) setError(reason instanceof Error ? reason.message : String(reason)); }).finally(() => { if (active) setLoading(false); });
 		}, 150);
 		return () => { active = false; clearTimeout(timer); };
-	}, [read, query, archived, revision, key, count, retry]);
+	}, [read, query, archived, revision, key, count, retry, projectId]);
 	const page = result?.key === key ? result.page : { tasks: [], hasMore: false };
-	return { ...page, hasMore: page.hasMore && count <= 20_000, loading, error, loadMore: () => setPages({ key, count: count + 1 }), retry: () => setRetry(value => value + 1) };
+	return { ...page, hasMore: page.hasMore && count <= 20_000, loading: loading && result?.key !== key, error, loadMore: () => setPages({ key, count: count + 1 }), retry: () => setRetry(value => value + 1) };
 }

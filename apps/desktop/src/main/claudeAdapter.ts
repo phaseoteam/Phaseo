@@ -1,3 +1,4 @@
+import { claudeSubagent } from "./nativeSubagents";
 import { confirmClaudeNativeAction } from "./claudeNativeActions";
 import { nativeActionText, type NativeAction } from "../shared/nativeActions";
 import { parsePlanSteps, type PlanStep } from "../shared/planSteps";
@@ -29,14 +30,15 @@ export class ClaudeAdapter implements AgentAdapter {
 		async function* prompt(): AsyncGenerator<SDKUserMessage> { await gate; if (promptAllowed && !signal.aborted) yield { type: "user", message: { role: "user", content }, parent_tool_use_id: null, session_id: "" }; }
 		const execution = query({ prompt: images.length || gated ? prompt() : attachmentPrompt(text, attachments), options: {
 			cwd,
-			mcpServers: Object.fromEntries(managedMcp.map(server => [nativeMcpName(server), server.transport === "stdio" ? { command: server.executable, args: server.arguments, env: { ELECTRON_RUN_AS_NODE: "1" } } : { type: "http" as const, url: server.url }])),
+			mcpServers: Object.fromEntries(managedMcp.map(server => [nativeMcpName(server), server.transport === "stdio" ? { command: server.executable, args: server.arguments, env: { ELECTRON_RUN_AS_NODE: "1" } } : { type: "http" as const, url: server.url, ...(server.headers ? { headers: server.headers } : {}) }])),
 			...(task.mode === "chat" ? { strictMcpConfig: true } : {}),
 			...(account?.configDirectory ? { env: { ...process.env, ...nativeAccountEnvironment(account) } } : {}),
 			pathToClaudeCodeExecutable: command.executable,
 			abortController: this.controller,
 			...(task.model === "default" ? {} : { model: task.model }),
 			...(task.nativeSessionId ? { resume: task.nativeSessionId } : task.nativeForkFrom ? { resume: task.nativeForkFrom, forkSession: true } : {}),
-			permissionMode: task.mode === "plan" ? "plan" : "default",
+			permissionMode: task.permissionMode === "full-access" ? "bypassPermissions" : task.mode === "plan" ? "plan" : "default",
+			...(task.permissionMode === "full-access" ? { allowDangerouslySkipPermissions: true } : {}),
 			...(task.mode === "chat" ? { tools: [] } : {}),
 			includePartialMessages: true,
 			onElicitation: (request, options) => task.mode === "chat" ? Promise.resolve({ action: "decline" as const }) : respondMcpElicitation(request, callbacks, options.signal),
@@ -71,7 +73,11 @@ export class ClaudeAdapter implements AgentAdapter {
    }
 			if (managedMcp.length) { try { await waitClaudeMcp(execution, managedMcp, signal); } catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "MCP setup failed.", { cause: error }); } }
 			if (gated) { promptAllowed = true; releasePrompt(); }
+			const nativeAgents = new Set<string>();
 			for await (const message of execution) {
+				const nativeAgent = claudeSubagent(message);
+				if (nativeAgent && message.type === "system" && message.subtype === "task_started" && message.task_type === "local_agent") nativeAgents.add(nativeAgent.nativeAgent!.id);
+				if (nativeAgent && nativeAgents.has(nativeAgent.nativeAgent!.id)) callbacks.onActivity?.(nativeAgent);
 				const compactEvent = message.type === "system" && (message.subtype === "compact_boundary" || message.subtype === "status");
 				if ((compactEvent || manualCompact || !!nativeAction) && "session_id" in message && sessionId && message.session_id !== sessionId) continue;
 				if ("session_id" in message && message.session_id) {

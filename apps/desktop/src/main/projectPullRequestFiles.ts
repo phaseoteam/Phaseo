@@ -17,12 +17,12 @@ export function parsePullRequestFiles(value: unknown): PullRequestFile[] {
 export async function projectPullRequestFiles(root: string, value: unknown): Promise<PullRequestFilesPage> {
  const query=validatePullRequestFilesQuery(value);const before=await projectPullRequest(root,query.number);
  const current=()=>before.headOid===query.headOid&&before.baseOid===query.baseOid;
- if(!current())throw Error("This pull request changed. Refresh details before reviewing files.");
+ if(!current())throw Error("This pull request changed. Details will update automatically.");
  const cap=Math.min(before.changedFiles,3000);if(query.page>Math.max(1,Math.ceil(cap/100)))throw Error("This file page is no longer available.");
  let command: Awaited<ReturnType<typeof resolveNativeCommand>>;try{command=await resolveNativeCommand("gh");}catch{throw Error("Install GitHub CLI and sign in with gh auth login.");}let output:string;
  try{output=(await execute(command.executable,[...command.prefix,"api","--hostname","github.com","--method","GET",`repos/${before.repository}/pulls/${query.number}/files`,"-F","per_page=100","-F",`page=${query.page}`,"--jq",fileProjection],{cwd:root,windowsHide:true,timeout:20000,maxBuffer:8*1024*1024,env:{...process.env,GH_PROMPT_DISABLED:"1",GH_DEBUG:""}})).stdout;}catch{throw Error("Could not load changed files. Check GitHub CLI sign-in and repository access, then retry.");}
  let parsed:unknown;try{parsed=JSON.parse(output);}catch{throw Error("GitHub returned unreadable changed files.");}const files=parsePullRequestFiles(parsed);
  const expected=Math.max(0,Math.min(100,cap-(query.page-1)*100));if(files.length!==expected)throw Error("GitHub returned an incomplete changed-file page.");
- const after=await projectPullRequest(root,query.number);if(after.repository!==before.repository||after.headOid!==query.headOid||after.baseOid!==query.baseOid||after.changedFiles!==before.changedFiles)throw Error("This pull request changed while files loaded. Refresh details before reviewing files.");
+ const after=await projectPullRequest(root,query.number);if(after.repository!==before.repository||after.headOid!==query.headOid||after.baseOid!==query.baseOid||after.changedFiles!==before.changedFiles)throw Error("This pull request changed while files loaded. Details will update automatically.");
  return {repository:before.repository,...query,total:before.changedFiles,files,hasNext:query.page*100<cap,limitReached:before.changedFiles>3000};
 }

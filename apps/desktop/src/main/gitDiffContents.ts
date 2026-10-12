@@ -48,7 +48,7 @@ export async function readGitDiffContents(root: string, value: unknown): Promise
 	const staged = request.staged;
 	return withGitLock(root, async () => {
 		const readDiff = () => git(root, ["diff", ...(staged ? ["--cached"] : []), "--no-ext-diff", "--no-textconv", "--full-index"]);
-		const verifyDiff = async () => { if (contentHash(await readDiff()) !== request.hash) throw new Error("The diff changed. Refresh Git review before expanding context."); };
+		const verifyDiff = async () => { if (contentHash(await readDiff()) !== request.hash) throw new Error("The diff changed. Git review will update automatically."); };
 		await verifyDiff();
 		const file = parseGitStatus(await git(root, ["status", "--porcelain=v1", "-z"])).find(file => file.path === filename);
 		if (!file || !["M", "R", "C"].includes(staged ? file.indexStatus : file.worktreeStatus)) throw new Error("Full context is available for changed tracked text files.");

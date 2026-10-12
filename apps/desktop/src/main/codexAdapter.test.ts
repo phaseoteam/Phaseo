@@ -26,6 +26,26 @@ function fixture(onRequest: (packet: { id: number; method: string; params: Recor
 const task: Task = { id: "task", title: "Task", harness: "codex", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 
 describe("Codex native integration", () => {
+	it("sends only a catalog-advertised speed and explicitly resets default speed", async () => {
+		for (const serviceTier of ["fast", ""]) {
+			let tier: unknown;
+			fixture((packet, send) => {
+				if (packet.method === "initialize") send({ id: packet.id, result: {} });
+				if (packet.method === "model/list") send({ id: packet.id, result: { data: [{ model: "default", displayName: "Default", isDefault: true, serviceTiers: [{ id: "fast", name: "Fast", description: "Fast responses" }] }], nextCursor: null } });
+				if (packet.method === "thread/start") send({ id: packet.id, result: { thread: { id: "native" } } });
+				if (packet.method === "turn/start") { tier = packet.params.serviceTier; send({ id: packet.id, result: { turn: { id: "turn" } } }); send({ method: "turn/completed", params: { threadId: "native", turn: { id: "turn", status: "completed" } } }); }
+			});
+			await new CodexAdapter().run({ ...task, serviceTier }, ".", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+			expect(tier).toBe(serviceTier || "default");
+		}
+	});
+	it("rejects a speed removed from the native catalog before starting a turn", async () => {
+		const requests: string[] = [];
+		fixture((packet, send) => { requests.push(packet.method); if (packet.method === "initialize") send({ id: packet.id, result: {} }); if (packet.method === "model/list") send({ id: packet.id, result: { data: [{ model: "default", isDefault: true }], nextCursor: null } }); });
+		await expect(new CodexAdapter().run({ ...task, serviceTier: "fast" }, ".", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" })).rejects.toThrow("no longer offers");
+		expect(requests).not.toContain("turn/start");
+	});
+
 	it("admits native skills with fresh catalog checks and structured native input", async () => {
 		const cwd = process.cwd(), skillPath = `${cwd}/SKILL.md`, requests: string[] = []; let input: unknown;
 		fixture((packet, send) => {

@@ -17,6 +17,22 @@ describe("workspace durability", () => {
   } finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
  });
 
+
+	it("validates and persists model speed, clears it on model changes and protects running chats", () => {
+		const store = new WorkspaceStore(":memory:");
+		try {
+			const models = [{ id: "model-a", name: "A", default: true, serviceTiers: [{ id: "fast", name: "Fast", description: "Priority" }] }, { id: "model-b", name: "B" }];
+			const task = store.apply({ type: "create-task", harness: "codex", model: "model-a", mode: "code", serviceTier: "fast" }, models);
+			expect(store.getTask(task.id).serviceTier).toBe("fast");
+			expect(() => store.apply({ type: "update-task", id: task.id, serviceTier: "invented" })).toThrow("does not offer");
+			expect(store.getTask(task.id).serviceTier).toBe("fast");
+			store.apply({ type: "update-task", id: task.id, model: "model-b" }); expect(store.getTask(task.id).serviceTier).toBeUndefined();
+			store.apply({ type: "update-task", id: task.id, model: "model-a", serviceTier: "fast" });
+			const active = store.getTask(task.id); active.status = "running"; store.saveTask(active);
+			expect(() => store.apply({ type: "update-task", id: task.id, serviceTier: "" })).toThrow("Stop this task");
+			expect(() => validateCommand({ type: "update-task", id: task.id, serviceTier: 42 })).toThrow("Invalid speed");
+		} finally { store.close(); }
+	});
 	it("persists only advertised Grok reasoning choices and clears them when the model changes", () => {
 		const store = new WorkspaceStore(":memory:");
 		try {

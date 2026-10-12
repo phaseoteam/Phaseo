@@ -40,7 +40,7 @@ export async function connectPhaseoMcp(connections: McpConnection[], cwd: string
    }
    const transport = connection.transport === "stdio"
     ? new StdioClientTransport({ command: connection.executable, args: connection.arguments, cwd, env: { ...getDefaultEnvironment(), ELECTRON_RUN_AS_NODE: "1" }, stderr: "ignore", maxBufferSize: 2 * 1024 * 1024 })
-    : new StreamableHTTPClientTransport(new URL(connection.url));
+    : new StreamableHTTPClientTransport(new URL(connection.url), { requestInit: { headers: connection.headers } });
    if (transport instanceof StreamableHTTPClientTransport) http.set(client,{transport,connection});
    await client.connect(transport, { signal: setupSignal, timeout: 30000 });
    const capabilities = client.getServerCapabilities();

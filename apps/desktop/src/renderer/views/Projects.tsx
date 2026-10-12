@@ -1,5 +1,8 @@
+import { Combobox } from "../components/Combobox";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, File, Folder, FolderOpen, RefreshCw } from "lucide-react";
+import { Select } from "../components/Select";
+import { ArrowLeft, File, Folder, FolderOpen } from "lucide-react";
+import { useBackgroundRefresh } from "../lib/useBackgroundRefresh";
 import type { GitCommand, GitReview, ProjectFile } from "../../shared/workspace";
 import type { EditorId, EditorInstallation, ProjectOpenRequest } from "../../shared/editors";
 import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
@@ -43,6 +46,10 @@ export function Projects({ initialProjectId }: { initialProjectId?: string } = {
 	const [editorError, setEditorError] = useState("");
 	const [editorBusy, setEditorBusy] = useState(false);
 	const editorPending = useRef(false);
+	useBackgroundRefresh(() => {
+		if (!editorsLoading && !editorBusy) setEditorRefresh(value => value + 1);
+		if (id && !loading && !gitBusy && !saving && !dirty) setRefresh(value => value + 1);
+	});
 	const editor = editors.find(value => value.id === preferredEditor && value.available) ?? editors.find(value => value.available);
 	useEffect(() => {
 		if (!api) return; let active = true; setEditorsLoading(true); setEditorError("");
@@ -111,11 +118,11 @@ export function Projects({ initialProjectId }: { initialProjectId?: string } = {
 		catch (reason) { if (request === previewRequest.current) setError(String(reason)); }
 	}
 	return <div className="page task-workspace project-page"><section>
-		<h1>Projects</h1><div className="project-toolbar"><select aria-label="Project" value={id} onChange={event => { if (!canNavigate()) return; setId(event.target.value); setConfirmRemove(false); setHunkFile(undefined); setDirectory(""); setPreview(undefined); setReview(undefined); }}><option value="">Choose a project</option>{workspace.projects.filter(project => !project.worktree?.removedAt).map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select><button type="button" onClick={() => { if (api) void api.chooseProject().then(setWorkspace, reason => setError(String(reason))); }}><FolderOpen size={16} /> Open folder</button><button type="button" aria-pressed={tab === "files"} onClick={() => { if (canNavigate()) setTab("files"); }}>Files</button><button type="button" aria-pressed={tab === "git"} onClick={() => { if (canNavigate()) setTab("git"); }}>Git review</button>{workspace.projects.find(project => project.id === id)?.worktree && <button type="button" disabled={gitBusy} onClick={() => { if (canNavigate()) setConfirmRemove(true); }}>Remove worktree</button>}</div>
-		{id && <div className="project-toolbar project-editor-actions" aria-label="External editor"><select aria-label="External editor" value={editor?.id ?? ""} disabled={editorsLoading || editorBusy} onChange={event => setPreferredEditor(event.target.value as EditorId)}>{!editor && <option value="">{editorsLoading ? "Finding editors…" : "No editors found"}</option>}{editors.map(value => <option key={value.id} value={value.id} disabled={!value.available}>{value.name}{!value.available ? " (unavailable)" : ""}</option>)}</select><button type="button" disabled={!editor || editorsLoading || editorBusy || gitBusy || saving || dirty} onClick={() => { if (editor) void openTarget({ editor: editor.id }); }}>Open project</button><button type="button" aria-label="Refresh editors" disabled={editorsLoading || editorBusy} onClick={() => setEditorRefresh(value => value + 1)}><RefreshCw size={14} /></button><button type="button" disabled={editorBusy || gitBusy || saving || dirty} onClick={() => void openTarget({ editor: "file-manager" })}>Show folder</button></div>}
+		<h1>Projects</h1><div className="project-toolbar"><Select label="Project" value={id} onValueChange={value => { if (!canNavigate()) return; setId(value); setConfirmRemove(false); setHunkFile(undefined); setDirectory(""); setPreview(undefined); setReview(undefined); }} options={[{ value: "", label: "Choose a project" }, ...workspace.projects.filter(project => !project.worktree?.removedAt).map(project => ({ value: project.id, label: project.name }))]} /><button type="button" onClick={() => { if (api) void api.chooseProject().then(setWorkspace, reason => setError(String(reason))); }}><FolderOpen size={16} /> Open folder</button><button type="button" aria-pressed={tab === "files"} onClick={() => { if (canNavigate()) setTab("files"); }}>Files</button><button type="button" aria-pressed={tab === "git"} onClick={() => { if (canNavigate()) setTab("git"); }}>Git review</button>{workspace.projects.find(project => project.id === id)?.worktree && <button type="button" disabled={gitBusy} onClick={() => { if (canNavigate()) setConfirmRemove(true); }}>Remove worktree</button>}</div>
+		{id && <div className="project-toolbar project-editor-actions" aria-label="External editor"><Select label="External editor" value={editor?.id ?? ""} disabled={editorsLoading || editorBusy} onValueChange={value => setPreferredEditor(value as EditorId)} options={[...(!editor ? [{ value: "", label: editorsLoading ? "Finding editors…" : "No editors found" }] : []), ...editors.map(value => ({ value: value.id, label: value.name + (!value.available ? " (unavailable)" : ""), disabled: !value.available }))]} /><button type="button" disabled={!editor || editorsLoading || editorBusy || gitBusy || saving || dirty} onClick={() => { if (editor) void openTarget({ editor: editor.id }); }}>Open project</button><button type="button" disabled={editorBusy || gitBusy || saving || dirty} onClick={() => void openTarget({ editor: "file-manager" })}>Show folder</button></div>}
 		{editorError && <p className="task-error" role="alert">{editorError}</p>}
 		{editorBusy && <p className="task-muted" role="status">Opening…</p>}
-		{id && !editorsLoading && !editor && !editorError && <p className="task-muted">Install an editor, then refresh the list.</p>}
+		{id && !editorsLoading && !editor && !editorError && <p className="task-muted">No supported editors found.</p>}
 		{confirmRemove && <section className="task-setup" aria-label="Remove worktree"><p>Remove this checkout and its ignored files? The branch and conversations are retained.</p><button type="button" disabled={gitBusy} onClick={() => void removeWorktree()}>Remove checkout</button><button type="button" disabled={gitBusy} onClick={() => setConfirmRemove(false)}>Cancel</button></section>}
 		{error && <p className="task-error" role="alert">{error}</p>}
 		{loading && <p className="task-muted" role="status">Loading…</p>}
@@ -124,10 +131,8 @@ export function Projects({ initialProjectId }: { initialProjectId?: string } = {
 		{id && tab === "git" && review && <section className="project-review">
 			<div className="panel project-toolbar project-git-controls">
 				<span className="task-muted">Branch</span>
-				<button type="button" aria-label="Refresh Git review" disabled={loading || gitBusy} onClick={() => setRefresh(value => value + 1)}><RefreshCw size={14} /></button>
-				<select aria-label="Switch branch" value={review.branch} disabled={gitBusy} onChange={event => void changeGit({ type: "switch-branch", name: event.target.value })}>
-					{!review.branch && <option value="">Detached HEAD</option>}{[...new Set([review.branch, ...branches])].filter(Boolean).map(name => <option key={name} value={name}>{name}</option>)}
-				</select>
+
+				<Select label="Switch branch" value={review.branch} disabled={gitBusy} onValueChange={name => void changeGit({ type: "switch-branch", name })} options={[...(!review.branch ? [{ value: "", label: "Detached HEAD" }] : []), ...[...new Set([review.branch, ...branches])].filter(Boolean).map(name => ({ value: name, label: name }))]} />
 				<input aria-label="New branch name" placeholder="New branch" value={branchName} onChange={event => setBranchName(event.target.value)} />
 				<button type="button" disabled={gitBusy || !branchName.trim()} onClick={() => void changeGit({ type: "create-branch", name: branchName.trim() })}>Create branch</button>
 			</div>
@@ -143,7 +148,7 @@ export function Projects({ initialProjectId }: { initialProjectId?: string } = {
 			{hunkFile && review.files.some(file => file.path === hunkFile) ? <><button type="button" disabled={gitBusy} onClick={() => setHunkFile(undefined)}>All changes</button><GitHunkPanel key={`${id}:${hunkFile}`} projectId={id} filename={hunkFile} revision={review} busy={gitBusy} layout={diffLayout} onCommand={changeGit} /></> : <><h2>Unstaged changes</h2>{review.diff ? <DiffView patch={review.diff} layout={diffLayout} context={{ projectId: id, staged: false, hash: review.diffHash }} onRefresh={() => setRefresh(value => value + 1)} /> : <p className="task-muted">No unstaged changes.</p>}<h2>Staged changes</h2>{review.stagedDiff ? <DiffView patch={review.stagedDiff} layout={diffLayout} context={{ projectId: id, staged: true, hash: review.stagedDiffHash }} onRefresh={() => setRefresh(value => value + 1)} /> : <p className="task-muted">No staged changes.</p>}</>}
 			<div className="panel project-toolbar project-commit"><label>Commit message<input aria-label="Commit message" placeholder="Describe your changes" value={commitMessage} onChange={event => setCommitMessage(event.target.value)} /></label><button type="button" disabled={gitBusy || !commitMessage.trim() || !review.stagedDiff} onClick={() => void changeGit({ type: "commit", message: commitMessage })}>Commit staged changes</button></div>
 			<details className="project-worktree"><summary>Create worktree</summary>
-			<form className="project-toolbar" aria-label="Create worktree" onSubmit={event => { event.preventDefault(); void createWorktree(); }}><label>Worktree branch<input aria-label="Worktree branch" value={worktreeBranch} onChange={event => setWorktreeBranch(event.target.value)} maxLength={200} required disabled={gitBusy} /></label><label>Starting ref<input aria-label="Worktree starting ref" list="worktree-refs" value={worktreeBase} onChange={event => setWorktreeBase(event.target.value)} maxLength={1000} required disabled={gitBusy} /><datalist id="worktree-refs"><option value="HEAD" />{branches.map(branch => <option key={branch} value={branch} />)}</datalist></label><button type="submit" disabled={gitBusy || !worktreeBranch.trim() || !worktreeBase.trim()}>Create worktree</button></form>
+			<form className="project-toolbar" aria-label="Create worktree" onSubmit={event => { event.preventDefault(); void createWorktree(); }}><label>Worktree branch<input aria-label="Worktree branch" value={worktreeBranch} onChange={event => setWorktreeBranch(event.target.value)} maxLength={200} required disabled={gitBusy} /></label><label>Starting ref<Combobox label="Worktree starting ref" value={worktreeBase} onChange={setWorktreeBase} options={[{ value: "HEAD", label: "HEAD" }, ...branches.filter(branch => branch !== "HEAD").map(branch => ({ value: branch, label: branch }))]} maxLength={1000} required disabled={gitBusy} /></label><button type="submit" disabled={gitBusy || !worktreeBranch.trim() || !worktreeBase.trim()}>Create worktree</button></form>
 			</details>
 		</section>}
 	</section></div>;

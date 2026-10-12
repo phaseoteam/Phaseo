@@ -24,7 +24,7 @@ export async function readGitHunks(root: string, filename: unknown, staged: unkn
 export async function applyGitHunk(root: string, command: Record<string, unknown>) {
 	if (typeof command.hash !== "string" || !/^[a-f0-9]{64}$/.test(command.hash) || !Number.isSafeInteger(command.index) || (command.index as number) < 0) throw new Error("Invalid Git hunk.");
 	const review = await readGitHunks(root, command.filename, command.type === "unstage-hunk");
-	if (review.hash !== command.hash) throw new Error("The diff changed. Refresh before applying this action.");
+	if (review.hash !== command.hash) throw new Error("The diff changed. Changes will update automatically.");
 	const hunk = review.hunks[command.index as number];
 	if (!hunk) throw new Error("This change cannot be staged individually. Use the whole-file action.");
 	await new Promise<void>((resolve, reject) => {

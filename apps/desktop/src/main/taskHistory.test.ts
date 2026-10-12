@@ -52,7 +52,29 @@ describe("durable task history pages", () => {
 		const store = new WorkspaceStore(":memory:");
 		try {
 			const valid = { query: "", archived: false, offset: 0, limit: 50 };
-			for (const value of [null, {}, { ...valid, query: "x".repeat(513) }, { ...valid, archived: 0 }, { ...valid, offset: -1 }, { ...valid, offset: 1.5 }, { ...valid, offset: 1_000_001 }, { ...valid, limit: 0 }, { ...valid, limit: 101 }, { ...valid, limit: NaN }]) expect(() => store.taskHistory(value)).toThrow("Invalid task history query");
+			for (const value of [null, {}, { ...valid, query: "x".repeat(513) }, { ...valid, archived: 0 }, { ...valid, offset: -1 }, { ...valid, offset: 1.5 }, { ...valid, offset: 1_000_001 }, { ...valid, limit: 0 }, { ...valid, limit: 101 }, { ...valid, limit: NaN }, { ...valid, projectId: 1 }, { ...valid, projectId: "" }, { ...valid, projectId: "x".repeat(201) }]) expect(() => store.taskHistory(value)).toThrow("Invalid task history query");
+		} finally { store.close(); }
+	});
+	it("filters project and personal history before pagination and combines search and archive filters", () => {
+		const store = new WorkspaceStore(":memory:");
+		try {
+			for (let index = 0; index < 125; index++) {
+				const task = store.apply({ type: "create-task", harness: "codex", model: "default", mode: "chat" });
+				task.projectId = index < 65 ? "owned-project" : undefined;
+				task.title = "Scoped chat";
+				task.archived = index === 0;
+				store.saveTask(task);
+			}
+			const query = { query: "Scoped", archived: false, offset: 0, limit: 50 };
+			const project = store.taskHistory({ ...query, projectId: "owned-project" });
+			expect(project.tasks).toHaveLength(50);
+			expect(project.hasMore).toBe(true);
+			expect(project.tasks.every(task => task.projectId === "owned-project")).toBe(true);
+			expect(store.taskHistory({ ...query, projectId: "owned-project", offset: 50 }).tasks).toHaveLength(14);
+			expect(store.taskHistory({ ...query, projectId: null, offset: 50 }).tasks).toHaveLength(10);
+			expect(store.taskHistory({ ...query, projectId: "owned-project", archived: true }).tasks).toHaveLength(1);
+			expect(store.taskHistory({ ...query, projectId: "' OR 1=1 --" }).tasks).toEqual([]);
+			expect(store.taskHistory({ ...query, projectId: "owned-project", query: "absent" }).tasks).toEqual([]);
 		} finally { store.close(); }
 	});
 });

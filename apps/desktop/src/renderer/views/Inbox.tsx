@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Select } from "../components/Select";
 import { ArrowRight, Bell } from "lucide-react";
 import { emptyOverview } from "../../shared/workspaceOverview";
 
@@ -15,7 +16,7 @@ export function Inbox({ onOpenTask }: { onOpenTask: (id: string) => void }) {
 		return () => { active = false; unsubscribe(); };
 	}, [api]);
 	const tasks = workspace.tasks.filter(task => task.attentionReason && (filter === "all" || (filter === "attention" ? task.attentionReason !== "Task completed" : task.inboxReadAt !== task.updatedAt))).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-	return <div className="page workspace-home"><section className="page-heading"><h1>Inbox</h1><select aria-label="Inbox filter" value={filter} onChange={event => setFilter(event.target.value)}><option value="attention">Needs attention</option><option value="unread">Unread</option><option value="all">All activity</option></select></section>
+	return <div className="page workspace-home"><section className="page-heading"><h1>Inbox</h1><Select label="Inbox filter" value={filter} onValueChange={setFilter} options={[{ value: "attention", label: "Needs attention" }, { value: "unread", label: "Unread" }, { value: "all", label: "All activity" }]} /></section>
 		{error && <p className="task-error" role="alert">{error}</p>}
 		<section className="panel attention-panel"><div className="attention-list">{tasks.length ? tasks.map(task => <article className="attention-item" key={task.id}><div className="attention-icon"><Bell size={18} /></div><div><h3>{task.title}</h3><p>{task.attentionReason} · {task.harness}{task.inboxReadAt !== task.updatedAt ? " · Unread" : ""}</p></div><button className="secondary-button" type="button" onClick={() => {
 			void api?.command({ type: "inbox-read", id: task.id, revision: task.updatedAt }).catch(reason => setError(String(reason)));

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { InstructionDocument } from "../../shared/instructions";
+import { useBackgroundRefresh } from "../lib/useBackgroundRefresh";
 
 export function GlobalInstructionsEditor() {
  const api = window.phaseoDesktop?.workspace;
@@ -13,6 +14,7 @@ export function GlobalInstructionsEditor() {
   void api.globalInstructions().then(value => { if (active) { setDocument(value); setContent(value.content); } }, reason => { if (active) setError(message(reason)); }).finally(() => { if (active) { setBusy(false); pending.current = false; } });
   return () => { active = false; };
  }, [api, attempt]);
+ useBackgroundRefresh(() => { if (api && !pending.current && (!document || content === document.content)) setAttempt(value => value + 1); });
  async function save() {
   if (!api || !document || pending.current) return;
   pending.current = true; setBusy(true); setError(""); setSaved(false);
@@ -24,7 +26,7 @@ export function GlobalInstructionsEditor() {
   <div className="panel-heading"><h2>Global instructions</h2></div>
   <div className="settings-fields"><p className="task-muted">Apply to Phaseo Chat, Code and Plan. Project instructions take precedence.</p>
    <label className="global-instructions-field">Instructions<textarea aria-label="Global instructions text" value={content} disabled={busy || !document} onChange={event => { setContent(event.target.value); setSaved(false); }} rows={8} /></label>
-   <div className="prompt-command-actions"><button type="button" disabled={busy || !api} onClick={() => { if (!pending.current) setAttempt(value => value + 1); }}>Reload</button><button type="button" className="task-primary" disabled={busy || !document || content === document.content} onClick={() => void save()}>Save instructions</button></div>
+   <div className="prompt-command-actions"><button type="button" className="task-primary" disabled={busy || !document || content === document.content} onClick={() => void save()}>Save instructions</button></div>
    {busy && <p role="status">Loading or saving instructions…</p>}{saved && <p role="status">Instructions saved.</p>}{error && <p role="alert" className="task-error">{error}</p>}
   </div>
  </section>;

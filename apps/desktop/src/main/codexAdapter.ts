@@ -1,3 +1,4 @@
+import { codexSubagents } from "./nativeSubagents";
 import { parsePlanSteps } from "../shared/planSteps";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import type { Account, AgentQuestion, QueuedMessage, Task } from "../shared/workspace";
@@ -62,13 +63,17 @@ export class CodexAdapter implements AgentAdapter {
 		try {
 			await rpc.request("initialize", { clientInfo: { name: "phaseo_desktop", title: "Phaseo", version: "0.1.0" }, capabilities: { experimentalApi: true } });
 			rpc.notify("initialized");
+			if (task.serviceTier) {
+				const catalog = await readCodexModels(rpc);
+				if (!catalog.find(value => task.model === "default" ? value.default : value.id === task.model)?.serviceTiers?.some(value => value.id === task.serviceTier)) throw new Error("Codex no longer offers the selected speed.");
+			}
 			let effort = task.reasoningEffort;
 			if (effort !== undefined && !this.compacting) {
 				const models = await readCodexModels(rpc); const model = models.find(value => task.model === "default" ? value.default : value.id === task.model);
 				effort ||= model?.defaultReasoningEffort;
 				if (!effort || !model?.reasoningEfforts?.some(value => value.id === effort)) throw new AgentInputRejectedError("The selected model does not support this reasoning effort. Update the task settings.");
 			}
-			const settings = { cwd, model: task.model === "default" ? null : task.model, approvalPolicy: "untrusted", sandbox: task.mode === "code" ? "workspace-write" : "read-only", ...(this.mcp.length ? { config: codexMcpConfig(this.mcp, task) } : {}) };
+			const settings = { cwd, model: task.model === "default" ? null : task.model, approvalPolicy: task.permissionMode === "full-access" ? "never" : "untrusted", sandbox: task.permissionMode === "full-access" ? "danger-full-access" : task.mode === "code" ? "workspace-write" : "read-only", ...(this.mcp.length ? { config: codexMcpConfig(this.mcp, task) } : {}) };
 			const sourceId = task.nativeSessionId ?? task.nativeForkFrom;
 			const result = await rpc.request<{ thread: { id: string } }>(task.nativeSessionId ? "thread/resume" : task.nativeForkFrom ? "thread/fork" : "thread/start", { ...settings, ...(sourceId ? { threadId: sourceId } : {}) });
 			this.threadId = result.thread.id; callbacks.onSession(result.thread.id);
@@ -101,6 +106,7 @@ export class CodexAdapter implements AgentAdapter {
 						this.turnId = event.turn.id;
 					}
 					if (event.turnId && this.turnId && event.turnId !== this.turnId) return;
+					if (method === "item/started" || method === "item/completed") for (const activity of codexSubagents(event.item)) callbacks.onActivity?.(activity);
 					if ((method === "item/started" || method === "item/completed") && event.item?.type === "contextCompaction") {
 						if (!this.turnId || event.turnId !== this.turnId) return;
 						const id = event.item.id;
@@ -131,6 +137,7 @@ export class CodexAdapter implements AgentAdapter {
 				void rpc.request<{ turn: { id: string } }>("turn/start", {
 					threadId: this.threadId,
 					effort: effort ?? null,
+					...(task.serviceTier !== undefined ? { serviceTier: task.serviceTier || "default" } : {}),
 					input: [...(nativeAction ? [{ type: "skill", name: nativeAction.name, path: nativeAction.id }] : []), { type: "text", text: attachmentPrompt(nativeAction ? nativeAction.arguments : text, attachments), text_elements: [] }, ...attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "localImage", path: attachment.filePath }))],
 				}).then(response => { if (this.rejectTurn) this.turnId = response.turn.id; }, reject);
 			});

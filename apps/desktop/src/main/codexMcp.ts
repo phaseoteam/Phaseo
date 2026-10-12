@@ -5,7 +5,7 @@ import type { JsonRpc } from "./jsonRpc";
 
 export function codexMcpConfig(connections: McpConnection[], task: Pick<Task, "projectId" | "mode">) {
 	return Object.fromEntries(connections.map(connection => [`mcp_servers.${nativeMcpName(connection)}`, {
-		...(connection.transport === "stdio" ? { command: connection.executable, args: connection.arguments, env: { ELECTRON_RUN_AS_NODE: "1" } } : { url: connection.url }),
+		...(connection.transport === "stdio" ? { command: connection.executable, args: connection.arguments, env: { ELECTRON_RUN_AS_NODE: "1" } } : { url: connection.url, ...(connection.headers ? { http_headers: connection.headers } : {}) }),
 		enabled: task.mode !== "chat" && connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === task.projectId),
 	}]));
 }

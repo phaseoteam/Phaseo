@@ -38,6 +38,7 @@ module.exports = {
 		},
 	},
 	packagerConfig: {
+		icon: path.join(__dirname, "assets", "icon-production"),
 		prune: false,
 		asar: { unpack: "**/node_modules/{node-pty,@cursor/sdk-*}/**" },
 		appBundleId: "app.phaseo.desktop",
@@ -66,7 +67,7 @@ module.exports = {
 		{
 			name: "@electron-forge/maker-deb",
 			platforms: ["linux"],
-			config: { options: { maintainer: "Phaseo", homepage: "https://phaseo.app", categories: ["Development"] } },
+			config: { options: { maintainer: "Phaseo", homepage: "https://phaseo.app", categories: ["Development"], icon: path.join(__dirname, "assets", "icon-production.png") } },
 		},
 	],
 };

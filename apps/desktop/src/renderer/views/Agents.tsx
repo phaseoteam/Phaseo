@@ -2,6 +2,7 @@ import { ArgumentFields } from "../components/ArgumentFields";
 import { useEffect, useRef, useState } from "react";
 import type { AgentStatus, HarnessInstallation } from "../../shared/workspace";
 import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
+import { useBackgroundRefresh } from "../lib/useBackgroundRefresh";
 
 const harnessNames: Partial<Record<HarnessInstallation["harness"], string>> = { codex: "Codex", claude: "Claude Code", opencode: "OpenCode", pi: "Pi", cursor: "Cursor", grok: "Grok" };
 
@@ -53,6 +54,7 @@ export function Agents() {
 		if (!api || installationPending.current || updatePending.current) return;
 		installationPending.current = true; setRefreshing(true); setInstallationRequest(value => value + 1);
 	}
+	useBackgroundRefresh(refreshInstallations);
 	async function updateHarness(harness: "codex" | "claude" | "pi") {
 		if (!api || updatePending.current || installationPending.current || updating) return;
 		updatePending.current = true; setUpdating(harness); setUpdateFeedback(undefined);
@@ -73,9 +75,7 @@ export function Agents() {
 	}
 	const visibleAgents = workspace.agents.filter(agent => Boolean(agent.archived) === showArchived);
 	return <div className="page accounts-page"><h1>Agents</h1>{error && <p className="task-error" role="alert">{error}</p>}
-		<section className="panel native-harness-panel" aria-busy={refreshing || Boolean(updating)}><div className="panel-heading"><h2>Native harnesses</h2><button type="button" disabled={!api || (!updating && refreshing)} onClick={() => {
-			if (updating) void api?.cancelHarnessUpdate().catch(reason => setUpdateFeedback({ error: true, text: String(reason) })); else refreshInstallations();
-		}}>{updating ? "Cancel update" : refreshing ? "Checking…" : installationError ? "Retry" : "Refresh"}</button></div>
+		<section className="panel native-harness-panel" aria-busy={refreshing || Boolean(updating)}><div className="panel-heading"><h2>Native harnesses</h2>{updating && <button type="button" disabled={!api} onClick={() => void api?.cancelHarnessUpdate().catch(reason => setUpdateFeedback({ error: true, text: String(reason) }))}>Cancel update</button>}</div>
 			{refreshing && <p className="harness-feedback" role="status">Checking native installations…</p>}
 			<p className="harness-feedback task-muted">Updates apply to all accounts using the harness.</p>
 			{installationError && <p className="harness-feedback task-error" role="alert">{installationError}</p>}

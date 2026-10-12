@@ -1,3 +1,4 @@
+import { advanceBackgroundRefresh } from "./fixtures/background-clock.mjs";
 import { installChatNavigation } from "./chat-navigation.mjs";
 import { app, BrowserWindow, ipcMain } from "electron";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
@@ -37,14 +38,15 @@ app.whenReady().then(async () => {
 		const full = await run(`(async()=>{const api=window.phaseoDesktop.workspace,review=await api.gitReview('fixture');return api.gitDiffContents('fixture',{filename:${JSON.stringify(filename)},staged:false,hash:review.diffHash})})()`);
 		if (full.oldFile.contents !== original || full.newFile.contents !== edited) throw Error('Bridge returned incorrect full file versions');
 		await run(`window.__auditNavigate('Projects')`);
-		await wait(`Boolean(document.querySelector('select[aria-label="Project"] option[value="fixture"]'))`);
-		await run(`(()=>{const select=document.querySelector('select[aria-label="Project"]');select.value='fixture';select.dispatchEvent(new Event('change',{bubbles:true}));Array.from(document.querySelectorAll('.project-toolbar button')).find(button=>button.textContent==='Git review').click()})()`);
+		await wait(`Boolean(document.querySelector('button[aria-label="Project"]'))`);
+		await run(`window.__auditChoose('Project','fixture')`);
+		await run(`Array.from(document.querySelectorAll('.project-toolbar button')).find(button=>button.textContent==='Git review').click()`);
 		await wait(`Boolean(document.querySelector('.git-file-list button[aria-pressed]'))`);
 		await wait(`Boolean(document.querySelector('.project-review diffs-container')?.shadowRoot?.querySelector('[data-expand-index="1"] [data-expand-button]'))`);
 		edited = edited.replace('Line 1\n', 'Refreshed context\n'); writeFileSync(target, edited);
 		await run(`document.querySelector('.project-review diffs-container').shadowRoot.querySelector('[data-expand-index="1"] [data-expand-button]').click()`);
 		await wait(`document.querySelector('.review-diff-feedback [role="alert"]')?.textContent.includes('diff changed')`);
-		await run(`Array.from(document.querySelectorAll('.review-diff-feedback button')).find(button=>button.textContent==='Refresh review').click()`);
+		await advanceBackgroundRefresh(window);
 		await wait(`!document.querySelector('.review-diff-feedback [role="alert"]')&&document.querySelector('.project-review diffs-container')?.shadowRoot?.querySelector('pre')?.textContent.includes('Refreshed context')`);
 		const beforeContext = contextRequests; delayContext = true;
 		await run(`(()=>{const button=document.querySelector('.project-review diffs-container').shadowRoot.querySelector('[data-expand-index="1"] [data-expand-button]');if(button.tabIndex!==0||!button.getAttribute('aria-label')?.includes('unchanged'))throw Error('Expansion control is not named or keyboard-focusable');button.focus();button.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,composed:true,cancelable:true}));button.click()})()`);
@@ -72,6 +74,7 @@ app.whenReady().then(async () => {
 		const expectedCopy = await run(`window.phaseoDesktop.workspace.gitHunks('fixture',${JSON.stringify(filename)},false).then(review=>review.hunks[0].text)`);
 		await run(`document.querySelector('.git-hunk-panel button[aria-label="Copy code"]').click()`);
 		await wait(`window.hunkCopied===${JSON.stringify(expectedCopy)}`);
+		await wait(`!document.querySelector('.git-hunk-panel .review-diff > .message-code-actions button').disabled`);
 		await run(`navigator.clipboard.writeText=async()=>{throw Error('Owned copy failure')};document.querySelector('.git-hunk-panel .review-diff > .message-code-actions button').click()`);
 		await wait(`document.querySelector('.git-hunk-panel .review-diff > .message-code-actions').textContent.includes('Copy failed')`);
 		await run(`navigator.clipboard.writeText=async text=>{window.hunkCopied=text};document.querySelector('.git-hunk-panel .review-diff > .message-code-actions button').click()`);
@@ -104,8 +107,9 @@ app.whenReady().then(async () => {
 		await run(`document.querySelector('[aria-label="Close tools"]').click()`);
 		await wait(`!document.querySelector('.project-review')`);
 		await run(`window.__auditNavigate('Projects')`);
-		await wait(`Boolean(document.querySelector('select[aria-label="Project"] option[value="fixture"]'))`);
-		await run(`(()=>{const select=document.querySelector('select[aria-label="Project"]');select.value='fixture';select.dispatchEvent(new Event('change',{bubbles:true}));Array.from(document.querySelectorAll('.project-toolbar button')).find(button=>button.textContent==='Git review').click()})()`);
+		await wait(`Boolean(document.querySelector('button[aria-label="Project"]'))`);
+		await run(`window.__auditChoose('Project','fixture')`);
+		await run(`Array.from(document.querySelectorAll('.project-toolbar button')).find(button=>button.textContent==='Git review').click()`);
 		await wait(`Boolean(document.querySelector('[aria-label="Diff layout"] button:first-child[aria-pressed="true"]'))`);
 		await run(`Array.from(document.querySelectorAll('.git-file-list button')).find(button=>button.textContent==='Review changes').click()`);
 		await wait(`document.querySelectorAll('.git-hunk-panel .git-hunk').length===2&&!document.querySelector('.git-hunk-panel').getAttribute('aria-busy').includes('true')`);
@@ -122,7 +126,7 @@ app.whenReady().then(async () => {
 		await wait(`!Array.from(document.querySelectorAll('.git-hunk-panel button')).some(button=>button.textContent==='Unstage change')&&!document.querySelector('.git-hunk-panel').getAttribute('aria-busy').includes('true')`);
 		if (git(["diff", "--cached"]) || readFileSync(target, "utf8") !== edited) throw new Error("UI unstage changed the working file.");
 		const binary = path.join(repository, 'binary.dat'); writeFileSync(binary, Buffer.from([0, 1, 2])); git(['add', '--', 'binary.dat']); git(['commit', '-m', 'binary fixture']); writeFileSync(binary, Buffer.from([0, 3, 4]));
-		await run(`Array.from(document.querySelectorAll('button')).find(button=>button.textContent==='All changes').click();document.querySelector('[aria-label="Refresh Git review"]').click()`);
+		await run(`Array.from(document.querySelectorAll('button')).find(button=>button.textContent==='All changes').click()`); await advanceBackgroundRefresh(window);
 		await wait(`document.querySelector('.project-review .message-code-block pre')?.textContent.includes('Binary files')`);
 		const raw = await run(`window.phaseoDesktop.workspace.gitReview('fixture').then(review=>review.diff)`);
 		await run(`document.querySelector('.project-review .message-code-block button[aria-label="Copy code"]').click()`);

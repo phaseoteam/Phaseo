@@ -6,8 +6,45 @@ import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { WorkspaceStore } from "./workspaceStore";
 import { AgentInputRejectedError } from "./agentAdapter";
+import { SecretVault } from "./secretVault";
 
 describe("workspace orchestration", () => {
+	it("persists first-observed text and activity order despite batching and updates", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-event-order-"));
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async (_task, _cwd, _text, callbacks) => {
+			callbacks.onDelta("preface", "Checking");
+			callbacks.onActivity?.({ id: "tool", type: "tool", title: "Command", text: "", status: "running" });
+			callbacks.onDelta("final", "Done");
+			callbacks.onActivity?.({ id: "tool", type: "tool", title: "Command", text: "Result", status: "completed" });
+		}, cancel: async () => {} }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "owned", mode: "code" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Inspect" });
+			await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("completed"));
+			const task = runtime.store.getTask(id), tool = task.activities![0];
+			expect(task.messages[0].timelineOrder).toBeLessThan(task.messages[1].timelineOrder!);
+			expect(task.messages[1].timelineOrder).toBeLessThan(tool.timelineOrder!);
+			expect(tool.timelineOrder).toBeLessThan(task.messages[2].timelineOrder!);
+			expect(tool.text).toBe("Result");
+			expect(runtime.store.getTaskView(id).activities![0].timelineOrder).toBe(tool.timelineOrder);
+		} finally { await runtime.close(); rmSync(directory, {recursive:true,force:true}); }
+	});
+	it("clears OAuth expiry when replacing the credential with a manual API key", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-oauth-renewal-"));
+		const vault = new SecretVault(path.join(directory, "secrets"), { available: () => true, encrypt: value => Buffer.from(value), decrypt: value => value.toString() });
+		const runtime = new WorkspaceRuntime(directory, undefined, vault);
+		try {
+			await vault.set("old-secret", "owned-old-key");
+			runtime.store.saveAccount({ id: "owned", name: "Phaseo", harness: "phaseo", kind: "api", configured: true, endpoint: "https://api.phaseo.app/v1", secretId: "old-secret", oauthExpiresAt: "2000-01-01T00:00:00.000Z" });
+			await runtime.command({ type: "update-account", id: "owned", name: "Renamed" });
+			expect(runtime.store.getAccounts()[0].oauthExpiresAt).toBe("2000-01-01T00:00:00.000Z");
+			await runtime.command({ type: "update-account", id: "owned", apiKey: "owned-manual-key" });
+			const account = runtime.store.getAccounts()[0];
+			expect(account.oauthExpiresAt).toBeUndefined();
+			expect(await vault.get(account.secretId!)).toBe("owned-manual-key");
+			await expect(vault.get("old-secret")).rejects.toThrow();
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
  it("retains explicit native actions on preflight rejection and rejects other harnesses before enqueueing", async () => {
   const started = performance.now(), stages: { stage: string; ms: number }[] = []; const mark = (stage: string) => stages.push({ stage, ms: Math.round(performance.now() - started) });
   const directory = mkdtempSync(path.join(tmpdir(), "phaseo-native-admission-")); const run = vi.fn<AgentAdapter["run"]>(async () => { throw new AgentInputRejectedError("Catalog unavailable"); }); const runtime = new WorkspaceRuntime(directory, () => ({ run, cancel: async () => {} }));
@@ -172,6 +209,7 @@ describe("workspace orchestration", () => {
 		try {
 			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "code" }); const id = state.tasks[0].id;
 			await runtime.command({ type: "send", id, text: "Start" });
+			await vi.waitFor(() => expect(callbacks).toBeDefined());
 			const first = callbacks!.onApproval("write", "First edit"); const second = callbacks!.onApproval("write", "Second edit");
 			const question = callbacks!.onQuestion!([{ id: "choice", header: "Scope", question: "Which scope?", options: [{ label: "Small" }] }]);
 			const pending = runtime.store.getTask(id); expect(pending.approvals).toHaveLength(2);
@@ -227,6 +265,7 @@ describe("workspace orchestration", () => {
 			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "code" });
 			const id = state.tasks[0].id;
 			await runtime.command({ type: "send", id, text: "First" });
+			await vi.waitFor(() => expect(callbacks).toBeDefined());
 			const decision = callbacks!.onApproval("command", "Run command?");
 			const approval = runtime.store.getTask(id).approvals![0];
 			expect(runtime.store.getTask(id).status).toBe("waiting");

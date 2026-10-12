@@ -45,6 +45,6 @@ export async function projectPullRequestContents(root:string,value:unknown):Prom
  const oldFile=file.status==="added"?null:await contents(mergeBase,file.previousFilename??file.filename,file.status==="removed"?file.blobOid:undefined);
  const newFile=file.status==="removed"?null:await contents(query.headOid,file.filename,file.blobOid);
  const after=await projectPullRequest(root,query.number);
- if(after.repository!==page.repository||after.headOid!==query.headOid||after.baseOid!==query.baseOid)throw Error("This pull request changed while context loaded. Refresh details before reviewing files.");
+ if(after.repository!==page.repository||after.headOid!==query.headOid||after.baseOid!==query.baseOid)throw Error("This pull request changed while context loaded. Details will update automatically.");
  return {mergeBaseOid:mergeBase,headOid:query.headOid,oldFile,newFile};
 }

@@ -20,7 +20,7 @@ export class OpenCodeMcp {
 		for (const connection of connections) {
 			const server = nativeMcpName(connection); const existing = servers.find(value => value.name === server);
 			if (!connection.enabled || connection.archived || (connection.projectId && connection.projectId !== projectId)) { if (existing) await client.mcp.remove({ location, server }, options); cached.delete(server); continue; }
-			const config = connection.transport === "stdio" ? { type: "local" as const, command: [connection.executable, ...connection.arguments], cwd: directory, environment: { ELECTRON_RUN_AS_NODE: "1" } } : { type: "remote" as const, url: connection.url };
+			const config = connection.transport === "stdio" ? { type: "local" as const, command: [connection.executable, ...connection.arguments], cwd: directory, environment: { ELECTRON_RUN_AS_NODE: "1" } } : { type: "remote" as const, url: connection.url, ...(connection.headers ? { headers: connection.headers } : {}) };
 			const signature = JSON.stringify(config);
 			if (!existing || cached.get(server) !== signature) { await client.mcp.add({ location, server, config }, options); cached.set(server, signature); }
 			else if (existing.status.status === "disabled" || existing.status.status === "failed") await client.mcp.connect({ location, server }, options);

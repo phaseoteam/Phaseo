@@ -32,7 +32,7 @@ export function parsePullRequestThreads(repository: string, query: PullRequestTh
 	const pullRequest = query.type === "threads" ? node : object(node.pullRequest);
 	const returnedRepository = object(pullRequest.repository).nameWithOwner;
 	if (pullRequest.number !== query.number || typeof returnedRepository !== "string" || returnedRepository.toLowerCase() !== repository.toLowerCase()) throw Error("GitHub returned review data for another pull request.");
-	if (pullRequest.headRefOid !== query.headOid || pullRequest.baseRefOid !== query.baseOid) throw Error("This pull request changed. Refresh details before reading reviews.");
+	if (pullRequest.headRefOid !== query.headOid || pullRequest.baseRefOid !== query.baseOid) throw Error("This pull request changed. Details will update automatically.");
 	const page = connection(query.type === "threads" ? node.reviewThreads : node.comments, query.type === "threads" ? 20 : 5, query.cursor);
 	const common = { repository, number: query.number, headOid: query.headOid, baseOid: query.baseOid, total: page.total, nextCursor: page.nextCursor };
 	if (query.type === "threads") {
