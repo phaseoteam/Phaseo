@@ -16,7 +16,6 @@ import {
 	resolveProviderLogoId,
 	type ProviderOfferScope,
 } from "@/lib/providers/providerOffers";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
 	Accordion,
 	AccordionContent,
@@ -59,7 +58,7 @@ import {
 	PopoverTitle,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Check, ChevronLeft, Info, KeyRound, Trash2, UserRound, X } from "lucide-react";
+import { Check, ChevronLeft, KeyRound, Trash2, UserRound, X } from "lucide-react";
 
 import {
 	createGuardrail,
@@ -90,7 +89,6 @@ const GUARDRAIL_SECTION_IDS = new Set([
 	"access",
 	"prompt-injection",
 	"sensitive-info",
-	"budgets",
 ]);
 const expandedSectionsParser = parseAsArrayOf(parseAsString)
 	.withDefault([])
@@ -889,10 +887,6 @@ export default function GuardrailEditorPageClient(props: {
 				title: s("Sensitive Info Detection"),
 				description: s("phraseDetectAndHandleSensitiveDataBeforeRequestsLeavePhaseo"),
 			},
-			budgets: {
-				title: s("Budget Policies"),
-				description: s("phraseSetRequestAndSpendCeilingsByTimeWindow"),
-			},
 		}[activeSection]
 		: null;
 	const g = props.initialGuardrail;
@@ -1391,23 +1385,6 @@ export default function GuardrailEditorPageClient(props: {
 		() => form.sensitiveInfoRules.filter((rule) => rule.enabled).length,
 		[form.sensitiveInfoRules],
 	);
-	const configuredBudgetCount = useMemo(() => {
-		return [
-			form.dailyRequests,
-			form.weeklyRequests,
-			form.monthlyRequests,
-			form.dailyCostUsd,
-			form.weeklyCostUsd,
-			form.monthlyCostUsd,
-		].filter((value) => value.trim().length > 0).length;
-	}, [
-		form.dailyCostUsd,
-		form.dailyRequests,
-		form.monthlyCostUsd,
-		form.monthlyRequests,
-		form.weeklyCostUsd,
-		form.weeklyRequests,
-	]);
 	const privacyRestrictionCount = useMemo(() => {
 		let count = 0;
 		if (!form.privacyEnablePaidMayTrain) count += 1;
@@ -2489,105 +2466,6 @@ export default function GuardrailEditorPageClient(props: {
 									<p className="text-xs text-muted-foreground">
 										{tGuardrail("heuristicsNote")}
 									</p>
-								</div>
-							</div>
-						</EditorSection>
-							</div>
-						</AccordionContent>
-					</AccordionItem>
-					<AccordionItem value="budgets" className={activeSection && activeSection !== "budgets" ? "hidden" : "border-0"}>
-						<AccordionTrigger className={activeSection ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
-							<div className="min-w-0 flex-1 text-left">
-								<div className="text-sm font-medium">{t("strings.Budget Policies" as never)}</div>
-								<p className="mt-1 text-sm font-normal text-muted-foreground">{t("strings.phraseSetRequestAndSpendCeilingsByTimeWindow" as never)}</p>
-							</div>
-							<span className="hidden shrink-0 text-sm font-normal text-muted-foreground md:block">
-								{configuredBudgetCount ? tGuardrail("limitsConfigured", { count: configuredBudgetCount }) : t("credits.No limits" as never)}
-							</span>
-						</AccordionTrigger>
-						<AccordionContent disableAnimation className="pb-2 pt-0">
-							<div className="space-y-4">
-						<EditorSection
-							title={t("strings.Budgets" as never)}
-							description={t("strings.phraseLeaveAFieldBlankForUnlimited" as never)}
-							compact
-						>
-							<div className="space-y-4">
-								<Alert>
-									<Info />
-									<div>
-										<AlertTitle>{t("strings.Aggregate guardrail budgets are not yet enforced" as never)}</AlertTitle>
-										<AlertDescription>
-											{t("strings.phraseUseAPIKeyLimitsForHardRequestAndSpendEnforcementWhileMemberAndWorkspaceAggregationIsCompleted" as never)}
-										</AlertDescription>
-									</div>
-								</Alert>
-								<div className="grid gap-4 md:grid-cols-3">
-									<div className="space-y-2">
-												<Label>{t("strings.Daily requests" as never)}</Label>
-										<Input
-											type="number"
-											min="0"
-													placeholder={t("strings.Unlimited" as never)}
-											value={form.dailyRequests}
-											onChange={(e) => set("dailyRequests", e.target.value)}
-										/>
-									</div>
-									<div className="space-y-2">
-												<Label>{t("strings.Weekly requests" as never)}</Label>
-										<Input
-											type="number"
-											min="0"
-											placeholder={t("strings.Unlimited" as never)}
-											value={form.weeklyRequests}
-											onChange={(e) => set("weeklyRequests", e.target.value)}
-										/>
-									</div>
-									<div className="space-y-2">
-												<Label>{t("strings.Monthly requests" as never)}</Label>
-										<Input
-											type="number"
-											min="0"
-											placeholder={t("strings.Unlimited" as never)}
-											value={form.monthlyRequests}
-											onChange={(e) => set("monthlyRequests", e.target.value)}
-										/>
-									</div>
-								</div>
-								<div className="grid gap-4 md:grid-cols-3">
-									<div className="space-y-2">
-												<Label>{t("strings.Daily spend (USD)" as never)}</Label>
-										<Input
-											type="number"
-											min="0"
-											step="0.01"
-											placeholder={t("strings.Unlimited" as never)}
-											value={form.dailyCostUsd}
-											onChange={(e) => set("dailyCostUsd", e.target.value)}
-										/>
-									</div>
-									<div className="space-y-2">
-												<Label>{t("strings.Weekly spend (USD)" as never)}</Label>
-										<Input
-											type="number"
-											min="0"
-											step="0.01"
-											placeholder={t("strings.Unlimited" as never)}
-											value={form.weeklyCostUsd}
-											onChange={(e) => set("weeklyCostUsd", e.target.value)}
-										/>
-									</div>
-									<div className="space-y-2">
-												<Label>{t("strings.Monthly spend (USD)" as never)}</Label>
-										<Input
-											type="number"
-											min="0"
-											step="0.01"
-											placeholder={t("strings.Unlimited" as never)}
-											value={form.monthlyCostUsd}
-											onChange={(e) => set("monthlyCostUsd", e.target.value)}
-										/>
-									</div>
 								</div>
 							</div>
 						</EditorSection>

@@ -8,7 +8,9 @@ description: "Programmgesteuerte Guardrail-Verwaltung für Arbeitsbereiche und S
 Für die Guardrail-Verwaltung ist ein Management-API-Schlüssel erforderlich. Lesevorgänge benötigen `guardrails:read`, Änderungen `guardrails:write` oder `guardrails:delete`.
 </Info>
 
-Mit Guardrails kannst du Datenschutzkontrollen, Anbieter- und Modellbeschränkungen, den Umgang mit Prompt-Injection, Richtlinien für vertrauliche Informationen sowie Anfrage- oder Kostenlimits anwenden. Ein Guardrail kann API-Schlüsseln, Arbeitsbereichsmitgliedern oder beiden zugewiesen werden.
+Mit Guardrails kannst du Datenschutzkontrollen, Anbieter- und Modellbeschränkungen, den Umgang mit Prompt-Injection und Richtlinien für vertrauliche Informationen anwenden. Ein Guardrail kann API-Schlüsseln, Arbeitsbereichsmitgliedern oder beiden zugewiesen werden.
+
+Guardrails erzwingen keine Anfrage- oder Ausgabenlimits. Die Eingabe `budgets` und die Felder `*_limit_requests` und `*_limit_cost_nanos` werden aus Kompatibilitätsgründen angenommen und zurückgegeben, haben aber keine Wirkung. Verwende stattdessen [Limits für API-Schlüssel](./keys-update.mdx) oder [Arbeitsbereichsbudgets](./budgets-list.mdx).
 
 Erfolgreiche Änderungen aktualisieren den Richtlinienstatus des Arbeitsbereichs und erscheinen im Auditprotokoll.
 

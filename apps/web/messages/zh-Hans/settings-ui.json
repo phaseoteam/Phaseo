@@ -1946,7 +1946,7 @@
 		"phraseApplyThisGuardrailToOneOrMoreKeys": "将此护栏应用于一个或多个键。",
 		"phraseNoKeysSelectedYet": "尚未选择任何键。",
 		"Configuration Groups": "配置组",
-		"phraseConfigureAccessSafetyAndSpendingPolicies": "配置访问、安全和支出策略。",
+		"phraseConfigureAccessSafetyAndSpendingPolicies": "配置访问和安全策略。",
 		"Access": "访问权限",
 		"phraseControlPrivacyProviderAccessAndModelAccess": "控制隐私、提供者访问和模型访问。",
 		"Data handling": "数据处理",

@@ -4,7 +4,7 @@ icon: "shield-check"
 description: "Wende Guardrails auf API-Schlüssel an, teste die Durchsetzung vor dem Rollout und prüfe Blockierungen, Schwärzungen und Markierungen in den Aktivitäten."
 ---
 
-Verwende diese Anleitung, wenn du einen oder mehrere API-Schlüssel mit Budgetlimits, Routing-Einschränkungen, Prompt-Injection-Prüfungen oder Regeln für sensible Informationen schützen möchtest.
+Verwende diese Anleitung, wenn du einen oder mehrere API-Schlüssel mit Routing-Einschränkungen, Prompt-Injection-Prüfungen oder Regeln für sensible Informationen schützen möchtest.
 
 ## 1. Guardrail auf Workspace-Ebene erstellen
 
@@ -26,13 +26,14 @@ Gehe dabei so vor:
 2. Weise nach Möglichkeit jeweils nur ein Guardrail zu.
 3. Prüfe, ob das Schlüsseldialogfeld das angewendete Guardrail anzeigt.
 
-## 3. Budgetrichtlinie und Routing-Einschränkungen festlegen
+## 3. Routing-Einschränkungen festlegen
 
 Eine häufige Kombination:
 
-- tägliches Kostenlimit
 - Sperrliste für Anbieter mit geringem Vertrauensniveau
 - Zulassungsliste mit den konkreten Produktionsmodellen, die weiterhin routbar sein sollen
+
+Guardrails erzwingen keine Ausgabenlimits. Um Ausgaben zu begrenzen, lege ein Limit direkt für den API-Schlüssel fest oder erstelle ein [Arbeitsbereichsbudget](../api-reference/endpoint/budgets-list.mdx).
 
 Prüfe in der Live-Vorschau des Guardrail-Editors:
 
