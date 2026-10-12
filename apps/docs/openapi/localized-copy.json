@@ -8115,6 +8115,26 @@
 			"ja": "`model` の後に試行される、任意の順序付きフォールバックモデルです。`model` は必須で、常にプライマリモデルです。試行が `429`、`500`、`502`、`503`、`504` で失敗すると次のエントリーが試行され、その他のエラーはそのまま返されます。最大 25 個のモデル ID またはプリセットを指定でき、重複や `model` と同じエントリーは無視されます。各試行は個別のリクエストとして検証、記録、課金され、レスポンスの `model` フィールドとルーティングトレースには、リクエストを処理したモデルが表示されます。ストリーミングリクエストは最初のバイトの送信前にのみフォールバックし、動画と音楽のジョブは送信時にのみフォールバックします。Batch、realtime、council のリクエストは `models` を拒否します。動的ルートで設定されたフォールバックが優先され、`phaseo/auto` は `models` と併用できません。",
 			"zh-Hans": "在 `model` 之后按顺序尝试的可选回退模型。`model` 为必填项，且始终是主模型。当某次尝试以 `429`、`500`、`502`、`503` 或 `504` 失败时，会尝试下一项；其他错误按原样返回。最多接受 25 个模型 ID 或预设；重复项以及与 `model` 相同的项会被忽略。每次尝试都会作为独立请求进行验证、记录和计费，响应中的 `model` 字段和路由追踪会显示实际处理请求的模型。流式请求仅在发送第一个字节之前回退，视频和音乐任务仅在提交时回退。Batch、realtime 和 council 请求会拒绝 `models`。动态路由上设置的回退优先，且 `phaseo/auto` 不能与 `models` 一起使用。",
 			"ar": "نماذج احتياطية اختيارية ومرتبة تُجرَّب بعد `model`. الحقل `model` مطلوب وهو دائمًا النموذج الأساسي. عندما تفشل محاولة بالرمز `429` أو `500` أو `502` أو `503` أو `504`، تُجرَّب الإدخالة التالية؛ وتُعاد الأخطاء الأخرى دون تغيير. يقبل ما يصل إلى 25 معرّف نموذج أو إعدادًا مسبقًا؛ وتُتجاهل الإدخالات المكررة والإدخالات المطابقة لـ `model`. يُتحقق من كل محاولة وتُسجَّل وتُحتسب تكلفتها كطلب مستقل، ويعرض الحقل `model` في الاستجابة وتتبّع التوجيه النموذج الذي خدم الطلب. لا تنتقل طلبات البث إلى نموذج احتياطي إلا قبل إرسال البايت الأول، ولا تنتقل مهام الفيديو والموسيقى إلا عند الإرسال. ترفض طلبات batch وrealtime وcouncil الحقل `models`. تكون الأولوية للنماذج الاحتياطية المحددة في مسار ديناميكي، ولا يمكن الجمع بين `phaseo/auto` و`models`."
+		},
+		"Department this key belongs to for department rate limits and budgets. Null means the key counts only toward workspace-wide limits.": {
+			"es": "Departamento al que pertenece esta clave para los límites de frecuencia y los presupuestos del departamento. Null significa que la clave solo cuenta para los límites de todo el espacio de trabajo.",
+			"fr": "Service auquel cette clé appartient pour les limites de débit et les budgets du service. Null signifie que la clé ne compte que pour les limites de l’ensemble de l’espace de travail.",
+			"de": "Abteilung, zu der dieser Schlüssel für Ratenlimits und Budgets der Abteilung gehört. Null bedeutet, dass der Schlüssel nur auf die Limits des gesamten Workspace angerechnet wird.",
+			"pt-BR": "Departamento ao qual esta chave pertence para os limites de taxa e os orçamentos do departamento. Null significa que a chave conta apenas para os limites de todo o espaço de trabalho.",
+			"hi": "विभाग की दर सीमाओं और बजट के लिए यह कुंजी जिस विभाग से संबंधित है। Null का अर्थ है कि कुंजी केवल पूरे वर्कस्पेस की सीमाओं में गिनी जाती है।",
+			"ja": "部門のレート制限と予算の対象として、このキーが属する部門。Null の場合、キーはワークスペース全体の制限にのみ計上されます。",
+			"zh-Hans": "此密钥所属的部门，用于部门速率限制和预算。Null 表示该密钥仅计入整个工作区的限制。",
+			"ar": "القسم الذي ينتمي إليه هذا المفتاح لأغراض حدود المعدل وميزانيات القسم. تعني القيمة null أن المفتاح يُحتسب فقط ضمن حدود مساحة العمل بأكملها."
+		},
+		"Deprecated. Guardrails do not enforce request or spend limits; use API key limits or workspace budgets instead.": {
+			"es": "Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.",
+			"fr": "Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.",
+			"de": "Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.",
+			"pt-BR": "Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.",
+			"hi": "अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।",
+			"ja": "非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。",
+			"zh-Hans": "已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。",
+			"ar": "مهمل. لا تفرض حواجز الحماية حدودًا على الطلبات أو الإنفاق؛ استخدم بدلًا من ذلك حدود مفاتيح API أو ميزانيات مساحة العمل."
 		}
 	},
 	"GET /apps": {

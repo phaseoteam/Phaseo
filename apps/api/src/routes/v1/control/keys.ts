@@ -38,6 +38,7 @@ type KeyRow = {
 	weekly_limit_requests?: number | null;
 	monthly_limit_requests?: number | null;
 	scopes?: string | null;
+	department_id?: string | null;
 };
 
 type KeyUsageRow = {
@@ -53,7 +54,7 @@ type KeyUsageRow = {
 	last_used_at?: string | null;
 };
 
-const KEY_COLUMNS = "id, hash, workspace_id, name, prefix, status, scopes, created_by, created_at, updated_at, last_used_at, soft_blocked, expires_at, daily_limit_requests, weekly_limit_requests, monthly_limit_requests, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos";
+const KEY_COLUMNS = "id, hash, workspace_id, name, prefix, status, scopes, created_by, created_at, updated_at, last_used_at, soft_blocked, expires_at, daily_limit_requests, weekly_limit_requests, monthly_limit_requests, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos, department_id";
 const KEY_WITH_KID_COLUMNS = `${KEY_COLUMNS}, kid`;
 
 const DEFAULT_LIMIT = 100;
@@ -150,6 +151,26 @@ function parseLimitNumber(raw: unknown): { ok: true; value: number | null | unde
 		return { ok: false, message: "limit must be a non-negative number or null" };
 	}
 	return { ok: true, value: parsed };
+}
+
+function parseDepartmentId(raw: unknown): { ok: true; value: string | null | undefined } | { ok: false; message: string } {
+	if (raw === undefined) return { ok: true, value: undefined };
+	if (raw === null || raw === "") return { ok: true, value: null };
+	if (typeof raw === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(raw.trim())) {
+		return { ok: true, value: raw.trim().toLowerCase() };
+	}
+	return { ok: false, message: "department_id must be a department id or null" };
+}
+
+async function departmentExists(workspaceId: string, departmentId: string): Promise<boolean> {
+	const { data, error } = await getSupabaseAdmin()
+		.from("workspace_departments")
+		.select("id")
+		.eq("workspace_id", workspaceId)
+		.eq("id", departmentId)
+		.maybeSingle();
+	if (error) throw new Error(error.message || "Failed to look up department");
+	return Boolean(data);
 }
 
 function parseLimitReset(raw: unknown): { ok: true; value: "daily" | "weekly" | "monthly" | undefined } | { ok: false; message: string } {
@@ -257,6 +278,7 @@ function formatApiKey(row: KeyRow, usage?: KeyUsageRow) {
 		updated_at: row.updated_at ?? null,
 		last_used_at: usage?.last_used_at ?? row.last_used_at ?? null,
 		expires_at: row.expires_at ?? null,
+		department_id: row.department_id ?? null,
 	};
 }
 
@@ -586,8 +608,15 @@ async function handleCreateKey(req: Request) {
 	if (expiresAt.ok === false) {
 		return json({ error: "bad_request", message: expiresAt.message }, 400, { "Cache-Control": "no-store" });
 	}
+	const departmentId = parseDepartmentId(body.department_id);
+	if (departmentId.ok === false) {
+		return json({ error: "bad_request", message: departmentId.message }, 400, { "Cache-Control": "no-store" });
+	}
 
 	try {
+		if (departmentId.value && !(await departmentExists(workspaceScope.workspaceId, departmentId.value))) {
+			return json({ error: "bad_request", message: "department_id does not match a department in this workspace" }, 400, { "Cache-Control": "no-store" });
+		}
 		await enforceWorkspaceKeyLimit(workspaceScope.workspaceId, "api");
 		const creatorUserId =
 			auth.value.authMethod === "oauth" && auth.value.userId
@@ -623,6 +652,7 @@ async function handleCreateKey(req: Request) {
 			monthly_limit_cost_nanos: 0,
 			soft_blocked: softBlocked,
 			...(expiresAt.value !== undefined ? { expires_at: expiresAt.value } : {}),
+			...(departmentId.value ? { department_id: departmentId.value } : {}),
 		};
 		applyCostLimitFields(insertPayload, {
 			limit: limit.value,
@@ -737,6 +767,10 @@ async function handleUpdateKey(req: Request) {
 	}
 	const scopesError = rejectApiKeyScopes(body);
 	if (scopesError) return scopesError;
+	const departmentId = parseDepartmentId(body.department_id);
+	if (departmentId.ok === false) {
+		return json({ error: "bad_request", message: departmentId.message }, 400, { "Cache-Control": "no-store" });
+	}
 	const roleError = await requireOAuthWorkspaceAdmin(auth.value, auth.value.workspaceId);
 	if (roleError) return roleError;
 
@@ -773,6 +807,12 @@ async function handleUpdateKey(req: Request) {
 		}
 		if (expiresAt.value !== undefined) {
 			updatePayload.expires_at = expiresAt.value;
+		}
+		if (departmentId.value !== undefined) {
+			if (departmentId.value && !(await departmentExists(auth.value.workspaceId, departmentId.value))) {
+				return json({ error: "bad_request", message: "department_id does not match a department in this workspace" }, 400, { "Cache-Control": "no-store" });
+			}
+			updatePayload.department_id = departmentId.value;
 		}
 		applyCostLimitFields(updatePayload, {
 			limit:
@@ -915,7 +955,7 @@ async function handleRotateKey(req: Request) {
 		const supabase = getSupabaseAdmin();
 		const lookupColumn = resolveKeyLookupColumn(keyId);
 		const { data: existing, error: fetchError } = await supabase.from("keys")
-			.select("id,workspace_id,kid,name,prefix,status,scopes,created_by,soft_blocked,ip_allowlist,expires_at,daily_limit_requests,weekly_limit_requests,monthly_limit_requests,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos")
+			.select("id,workspace_id,kid,name,prefix,status,scopes,created_by,soft_blocked,ip_allowlist,expires_at,daily_limit_requests,weekly_limit_requests,monthly_limit_requests,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos,department_id")
 			.eq("workspace_id", auth.value.workspaceId).neq("name", CHAT_MANAGED_KEY_NAME).eq(lookupColumn, keyId).maybeSingle();
 		if (fetchError) throw new Error(fetchError.message || "Failed to fetch API key");
 		if (!existing || String(existing.status ?? "").toLowerCase() === "deleted") return json({ error: "not_found", message: "API key not found" }, 404, { "Cache-Control": "no-store" });
@@ -937,6 +977,7 @@ async function handleRotateKey(req: Request) {
 			daily_limit_cost_nanos: existing.daily_limit_cost_nanos ?? 0,
 			weekly_limit_cost_nanos: existing.weekly_limit_cost_nanos ?? 0,
 			monthly_limit_cost_nanos: existing.monthly_limit_cost_nanos ?? 0,
+			department_id: existing.department_id ?? null,
 		}).select(KEY_COLUMNS).maybeSingle();
 		if (insertError || !replacement) throw new Error(insertError?.message || "Failed to rotate API key");
 		if (previousExpiry.value !== undefined) {

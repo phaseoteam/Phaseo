@@ -153,6 +153,8 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] creator_user_id
     #   @return [String, nil]
+    # @!attribute [rw] department_id
+    #   @return [String, nil]
     # @!attribute [rw] disabled
     #   @return [Boolean]
     # @!attribute [rw] expires_at
@@ -199,7 +201,9 @@ module Phaseo
     #   @return [Float]
     # @!attribute [rw] workspace_id
     #   @return [String]
-    ApiKey = Struct.new(:created_at, :created_by, :creator_user_id, :disabled, :expires_at, :hash, :id, :include_byok_in_limit, :label, :last_used_at, :limit, :limit_remaining, :limit_reset, :limits, :name, :prefix, :scopes, :soft_blocked, :status, :updated_at, :usage, :usage_daily, :usage_details, :usage_monthly, :usage_weekly, :workspace_id, keyword_init: true)
+    ApiKey = Struct.new(:created_at, :created_by, :creator_user_id, :department_id, :disabled, :expires_at, :hash, :id, :include_byok_in_limit, :label, :last_used_at, :limit, :limit_remaining, :limit_reset, :limits, :name, :prefix, :scopes, :soft_blocked, :status, :updated_at, :usage, :usage_daily, :usage_details, :usage_monthly, :usage_weekly, :workspace_id, keyword_init: true)
+    # @!attribute [rw] department_id
+    #   @return [String, nil]
     # @!attribute [rw] disabled
     #   @return [Boolean, nil]
     # @!attribute [rw] expires_at
@@ -220,7 +224,7 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] workspace_id
     #   @return [String, nil]
-    ApiKeyCreateRequest = Struct.new(:disabled, :expires_at, :include_byok_in_limit, :limit, :limit_reset, :limits, :name, :scopes, :soft_blocked, :workspace_id, keyword_init: true)
+    ApiKeyCreateRequest = Struct.new(:department_id, :disabled, :expires_at, :include_byok_in_limit, :limit, :limit_reset, :limits, :name, :scopes, :soft_blocked, :workspace_id, keyword_init: true)
     # @!attribute [rw] cost
     #   @return [Float, nil]
     # @!attribute [rw] requests
@@ -264,6 +268,8 @@ module Phaseo
     #   @return [String, nil]
     ApiKeyRotateResponse = Struct.new(:data, :previous_key_expires_at, keyword_init: true)
     ApiKeyScopeValue = Object
+    # @!attribute [rw] department_id
+    #   @return [String, nil]
     # @!attribute [rw] disabled
     #   @return [Boolean, nil]
     # @!attribute [rw] expires_at
@@ -282,7 +288,7 @@ module Phaseo
     #   @return [String, Array<String>, nil]
     # @!attribute [rw] soft_blocked
     #   @return [Boolean, nil]
-    ApiKeyUpdateRequest = Struct.new(:disabled, :expires_at, :include_byok_in_limit, :limit, :limit_reset, :limits, :name, :scopes, :soft_blocked, keyword_init: true)
+    ApiKeyUpdateRequest = Struct.new(:department_id, :disabled, :expires_at, :include_byok_in_limit, :limit, :limit_reset, :limits, :name, :scopes, :soft_blocked, keyword_init: true)
     # @!attribute [rw] cost
     #   @return [Float]
     # @!attribute [rw] requests
@@ -302,6 +308,8 @@ module Phaseo
     # @!attribute [rw] created_by
     #   @return [String, nil]
     # @!attribute [rw] creator_user_id
+    #   @return [String, nil]
+    # @!attribute [rw] department_id
     #   @return [String, nil]
     # @!attribute [rw] disabled
     #   @return [Boolean]
@@ -351,7 +359,7 @@ module Phaseo
     #   @return [Float]
     # @!attribute [rw] workspace_id
     #   @return [String]
-    ApiKeyWithValue = Struct.new(:created_at, :created_by, :creator_user_id, :disabled, :expires_at, :hash, :id, :include_byok_in_limit, :key, :label, :last_used_at, :limit, :limit_remaining, :limit_reset, :limits, :name, :prefix, :scopes, :soft_blocked, :status, :updated_at, :usage, :usage_daily, :usage_details, :usage_monthly, :usage_weekly, :workspace_id, keyword_init: true)
+    ApiKeyWithValue = Struct.new(:created_at, :created_by, :creator_user_id, :department_id, :disabled, :expires_at, :hash, :id, :include_byok_in_limit, :key, :label, :last_used_at, :limit, :limit_remaining, :limit_reset, :limits, :name, :prefix, :scopes, :soft_blocked, :status, :updated_at, :usage, :usage_daily, :usage_details, :usage_monthly, :usage_weekly, :workspace_id, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     ApiKeyWithValueResponse = Struct.new(:data, keyword_init: true)
@@ -3790,6 +3798,102 @@ module Phaseo
     # @!attribute [rw] status
     #   @return [String, nil]
     ProvisioningKeyWithValue = Struct.new(:created_at, :id, :key, :name, :prefix, :scopes, :status, keyword_init: true)
+    # @!attribute [rw] created_at
+    #   @return [String]
+    # @!attribute [rw] created_by
+    #   @return [String, nil]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] policy_id
+    #   @return [String]
+    # @!attribute [rw] target_id
+    #   @return [String, nil]
+    # @!attribute [rw] target_type
+    #   @return [String]
+    # @!attribute [rw] updated_at
+    #   @return [String]
+    # @!attribute [rw] workspace_id
+    #   @return [String]
+    RateLimitAssignment = Struct.new(:created_at, :created_by, :id, :policy_id, :target_id, :target_type, :updated_at, :workspace_id, keyword_init: true)
+    # @!attribute [rw] policy_id
+    #   @return [String]
+    # @!attribute [rw] target_id
+    #   @return [String, nil]
+    # @!attribute [rw] target_type
+    #   @return [String]
+    RateLimitAssignmentInput = Struct.new(:policy_id, :target_id, :target_type, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    # @!attribute [rw] has_more
+    #   @return [Boolean]
+    RateLimitAssignmentListResponse = Struct.new(:data, :has_more, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    RateLimitAssignmentResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] policy_id
+    #   @return [String]
+    RateLimitAssignmentUpdateInput = Struct.new(:policy_id, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    RateLimitDeleteResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] concurrent_requests
+    #   @return [Integer, nil]
+    # @!attribute [rw] created_at
+    #   @return [String]
+    # @!attribute [rw] created_by
+    #   @return [String, nil]
+    # @!attribute [rw] description
+    #   @return [String, nil]
+    # @!attribute [rw] fail_closed
+    #   @return [Boolean]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] name
+    #   @return [String]
+    # @!attribute [rw] requests_per_minute
+    #   @return [Integer, nil]
+    # @!attribute [rw] tokens_per_minute
+    #   @return [Integer, nil]
+    # @!attribute [rw] updated_at
+    #   @return [String]
+    # @!attribute [rw] workspace_id
+    #   @return [String]
+    RateLimitPolicy = Struct.new(:concurrent_requests, :created_at, :created_by, :description, :fail_closed, :id, :name, :requests_per_minute, :tokens_per_minute, :updated_at, :workspace_id, keyword_init: true)
+    # @!attribute [rw] concurrent_requests
+    #   @return [Integer, nil]
+    # @!attribute [rw] description
+    #   @return [String, nil]
+    # @!attribute [rw] fail_closed
+    #   @return [Boolean, nil]
+    # @!attribute [rw] name
+    #   @return [String]
+    # @!attribute [rw] requests_per_minute
+    #   @return [Integer, nil]
+    # @!attribute [rw] tokens_per_minute
+    #   @return [Integer, nil]
+    RateLimitPolicyInput = Struct.new(:concurrent_requests, :description, :fail_closed, :name, :requests_per_minute, :tokens_per_minute, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    # @!attribute [rw] has_more
+    #   @return [Boolean]
+    RateLimitPolicyListResponse = Struct.new(:data, :has_more, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    RateLimitPolicyResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] concurrent_requests
+    #   @return [Integer, nil]
+    # @!attribute [rw] description
+    #   @return [String, nil]
+    # @!attribute [rw] fail_closed
+    #   @return [Boolean, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] requests_per_minute
+    #   @return [Integer, nil]
+    # @!attribute [rw] tokens_per_minute
+    #   @return [Integer, nil]
+    RateLimitPolicyUpdateInput = Struct.new(:concurrent_requests, :description, :fail_closed, :name, :requests_per_minute, :tokens_per_minute, keyword_init: true)
+    RateLimitTargetType = Object
     # @!attribute [rw] effort
     #   @return [String, nil]
     # @!attribute [rw] enabled

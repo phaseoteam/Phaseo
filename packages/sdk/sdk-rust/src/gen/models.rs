@@ -112,6 +112,7 @@ pub struct ApiKey {
 	pub created_at: Option<String>,
 	pub created_by: Option<String>,
 	pub creator_user_id: Option<String>,
+	pub department_id: Option<Option<String>>,
 	pub disabled: bool,
 	pub expires_at: Option<String>,
 	pub hash: String,
@@ -138,6 +139,7 @@ pub struct ApiKey {
 }
 
 pub struct ApiKeyCreateRequest {
+	pub department_id: Option<Option<String>>,
 	pub disabled: Option<bool>,
 	pub expires_at: Option<Option<String>>,
 	pub include_byok_in_limit: Option<bool>,
@@ -194,6 +196,7 @@ pub struct ApiKeyRotateResponse {
 pub type ApiKeyScopeValue = JsonValue;
 
 pub struct ApiKeyUpdateRequest {
+	pub department_id: Option<Option<String>>,
 	pub disabled: Option<bool>,
 	pub expires_at: Option<Option<String>>,
 	pub include_byok_in_limit: Option<bool>,
@@ -221,6 +224,7 @@ pub struct ApiKeyWithValue {
 	pub created_at: Option<String>,
 	pub created_by: Option<String>,
 	pub creator_user_id: Option<String>,
+	pub department_id: Option<Option<String>>,
 	pub disabled: bool,
 	pub expires_at: Option<String>,
 	pub hash: String,
@@ -2643,6 +2647,83 @@ pub struct ProvisioningKeyWithValue {
 	pub scopes: Option<String>,
 	pub status: Option<String>,
 }
+
+pub struct RateLimitAssignment {
+	pub created_at: String,
+	pub created_by: Option<Option<String>>,
+	pub id: String,
+	pub policy_id: String,
+	pub target_id: Option<String>,
+	pub target_type: String,
+	pub updated_at: String,
+	pub workspace_id: String,
+}
+
+pub struct RateLimitAssignmentInput {
+	pub policy_id: String,
+	pub target_id: Option<String>,
+	pub target_type: String,
+}
+
+pub struct RateLimitAssignmentListResponse {
+	pub data: Vec<HashMap<String, String>>,
+	pub has_more: bool,
+}
+
+pub struct RateLimitAssignmentResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct RateLimitAssignmentUpdateInput {
+	pub policy_id: String,
+}
+
+pub struct RateLimitDeleteResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct RateLimitPolicy {
+	pub concurrent_requests: Option<i64>,
+	pub created_at: String,
+	pub created_by: Option<Option<String>>,
+	pub description: Option<String>,
+	pub fail_closed: bool,
+	pub id: String,
+	pub name: String,
+	pub requests_per_minute: Option<i64>,
+	pub tokens_per_minute: Option<i64>,
+	pub updated_at: String,
+	pub workspace_id: String,
+}
+
+pub struct RateLimitPolicyInput {
+	pub concurrent_requests: Option<Option<i64>>,
+	pub description: Option<Option<String>>,
+	pub fail_closed: Option<bool>,
+	pub name: String,
+	pub requests_per_minute: Option<Option<i64>>,
+	pub tokens_per_minute: Option<Option<i64>>,
+}
+
+pub struct RateLimitPolicyListResponse {
+	pub data: Vec<HashMap<String, String>>,
+	pub has_more: bool,
+}
+
+pub struct RateLimitPolicyResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct RateLimitPolicyUpdateInput {
+	pub concurrent_requests: Option<Option<i64>>,
+	pub description: Option<Option<String>>,
+	pub fail_closed: Option<bool>,
+	pub name: Option<String>,
+	pub requests_per_minute: Option<Option<i64>>,
+	pub tokens_per_minute: Option<Option<i64>>,
+}
+
+pub type RateLimitTargetType = JsonValue;
 
 pub struct ReasoningConfig {
 	pub effort: Option<String>,

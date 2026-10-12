@@ -39,7 +39,9 @@ CREATE TABLE "public"."keys" (
   CONSTRAINT "keys_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE,
   "created_by"               uuid                     NOT NULL DEFAULT auth.uid(),
   CONSTRAINT "keys_created_by_fkey" FOREIGN KEY (created_by) REFERENCES public.users(user_id) ON DELETE CASCADE,
-  CONSTRAINT "keys_ip_allowlist_valid" CHECK (public.valid_key_ip_allowlist(ip_allowlist))
+  CONSTRAINT "keys_ip_allowlist_valid" CHECK (public.valid_key_ip_allowlist(ip_allowlist)),
+  "department_id"            uuid,
+  CONSTRAINT "keys_department_fkey" FOREIGN KEY (department_id, workspace_id) REFERENCES public.workspace_departments(id, workspace_id) ON DELETE SET NULL (department_id)
 );
 
 ALTER TABLE "public"."keys"
@@ -86,5 +88,10 @@ GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON
 
 CREATE INDEX keys_created_by_idx ON public.keys USING btree (created_by)
   WHERE (created_by IS NOT NULL);
+
+CREATE INDEX keys_department_id_idx ON public.keys USING btree (department_id, workspace_id)
+  WHERE (department_id IS NOT NULL);
+
+COMMENT ON COLUMN "public"."keys"."department_id" IS 'Department whose limits and budgets this key counts toward. NULL means the key counts only toward workspace-wide limits. Requests made with OAuth use the user''s department instead.';
 
 COMMENT ON COLUMN "public"."keys"."ip_allowlist" IS 'Labeled IPv4/IPv6 addresses or CIDRs allowed to use this key. Empty permits any IP.';

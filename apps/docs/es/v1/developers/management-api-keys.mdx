@@ -57,6 +57,7 @@ Usa una plantilla de acceso para los casos habituales. Elige capacidades explíc
 | Modelos privados | `private_models:read` | `private_models:write` | `private_models:delete` |
 | Guardrails | `guardrails:read` | `guardrails:write` | `guardrails:delete` |
 | Presupuestos | `budgets:read` | `budgets:write` | `budgets:delete` |
+| Límites de frecuencia | `rate_limits:read` | `rate_limits:write` | `rate_limits:delete` |
 | Clientes OAuth | `oauth_clients:read` | `oauth_clients:write` | `oauth_clients:delete` |
 
 Las plantillas `Write` incluyen las capacidades de lectura correspondientes para que una integración pueda consultar un recurso antes de actualizarlo. `All` incluye capacidades de eliminación; úsala solo para automatizaciones administrativas de confianza.

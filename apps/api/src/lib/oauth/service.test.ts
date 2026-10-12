@@ -122,6 +122,9 @@ describe("OAuth service helpers", () => {
 		expect(CLI_DEFAULT_SCOPES).toContain("budgets:read");
 		expect(CLI_DEFAULT_SCOPES).toContain("budgets:write");
 		expect(CLI_DEFAULT_SCOPES).toContain("budgets:delete");
+		expect(CLI_DEFAULT_SCOPES).toContain("rate_limits:read");
+		expect(CLI_DEFAULT_SCOPES).toContain("rate_limits:write");
+		expect(CLI_DEFAULT_SCOPES).toContain("rate_limits:delete");
 		expect(CLI_DEFAULT_SCOPES).toContain("keys:write");
 		expect(CLI_DEFAULT_SCOPES).toContain("keys:delete");
 		expect(CLI_DEFAULT_SCOPES).toContain("workspaces:write");

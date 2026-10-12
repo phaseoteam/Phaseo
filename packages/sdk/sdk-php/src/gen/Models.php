@@ -191,6 +191,8 @@ class ApiKey
 	public $created_by;
 	/** @var string|null */
 	public $creator_user_id;
+	/** @var string|null */
+	public $department_id;
 	/** @var bool */
 	public $disabled;
 	/** @var string|null */
@@ -241,6 +243,8 @@ class ApiKey
 
 class ApiKeyCreateRequest
 {
+	/** @var string|null */
+	public $department_id;
 	/** @var bool|null */
 	public $disabled;
 	/** @var string|null */
@@ -333,6 +337,8 @@ class ApiKeyScopeValue { }
 
 class ApiKeyUpdateRequest
 {
+	/** @var string|null */
+	public $department_id;
 	/** @var bool|null */
 	public $disabled;
 	/** @var string|null */
@@ -381,6 +387,8 @@ class ApiKeyWithValue
 	public $created_by;
 	/** @var string|null */
 	public $creator_user_id;
+	/** @var string|null */
+	public $department_id;
 	/** @var bool */
 	public $disabled;
 	/** @var string|null */
@@ -4664,6 +4672,136 @@ class ProvisioningKeyWithValue
 	/** @var string|null */
 	public $status;
 }
+
+class RateLimitAssignment
+{
+	/** @var string */
+	public $created_at;
+	/** @var string|null */
+	public $created_by;
+	/** @var string */
+	public $id;
+	/** @var string */
+	public $policy_id;
+	/** @var string|null */
+	public $target_id;
+	/** @var string */
+	public $target_type;
+	/** @var string */
+	public $updated_at;
+	/** @var string */
+	public $workspace_id;
+}
+
+class RateLimitAssignmentInput
+{
+	/** @var string */
+	public $policy_id;
+	/** @var string|null */
+	public $target_id;
+	/** @var string */
+	public $target_type;
+}
+
+class RateLimitAssignmentListResponse
+{
+	/** @var array */
+	public $data;
+	/** @var bool */
+	public $has_more;
+}
+
+class RateLimitAssignmentResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class RateLimitAssignmentUpdateInput
+{
+	/** @var string */
+	public $policy_id;
+}
+
+class RateLimitDeleteResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class RateLimitPolicy
+{
+	/** @var int|null */
+	public $concurrent_requests;
+	/** @var string */
+	public $created_at;
+	/** @var string|null */
+	public $created_by;
+	/** @var string|null */
+	public $description;
+	/** @var bool */
+	public $fail_closed;
+	/** @var string */
+	public $id;
+	/** @var string */
+	public $name;
+	/** @var int|null */
+	public $requests_per_minute;
+	/** @var int|null */
+	public $tokens_per_minute;
+	/** @var string */
+	public $updated_at;
+	/** @var string */
+	public $workspace_id;
+}
+
+class RateLimitPolicyInput
+{
+	/** @var int|null */
+	public $concurrent_requests;
+	/** @var string|null */
+	public $description;
+	/** @var bool|null */
+	public $fail_closed;
+	/** @var string */
+	public $name;
+	/** @var int|null */
+	public $requests_per_minute;
+	/** @var int|null */
+	public $tokens_per_minute;
+}
+
+class RateLimitPolicyListResponse
+{
+	/** @var array */
+	public $data;
+	/** @var bool */
+	public $has_more;
+}
+
+class RateLimitPolicyResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class RateLimitPolicyUpdateInput
+{
+	/** @var int|null */
+	public $concurrent_requests;
+	/** @var string|null */
+	public $description;
+	/** @var bool|null */
+	public $fail_closed;
+	/** @var string|null */
+	public $name;
+	/** @var int|null */
+	public $requests_per_minute;
+	/** @var int|null */
+	public $tokens_per_minute;
+}
+
+class RateLimitTargetType { }
 
 class ReasoningConfig
 {

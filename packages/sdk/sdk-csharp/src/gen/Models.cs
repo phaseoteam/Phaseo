@@ -263,6 +263,9 @@ public sealed class ApiKey
 	[JsonPropertyName("creator_user_id")]
 	public string? CreatorUserId { get; set; }
 
+	[JsonPropertyName("department_id")]
+	public string? DepartmentId { get; set; }
+
 	[JsonPropertyName("disabled")]
 	public bool Disabled { get; set; }
 
@@ -336,6 +339,9 @@ public sealed class ApiKey
 
 public sealed class ApiKeyCreateRequest
 {
+	[JsonPropertyName("department_id")]
+	public string? DepartmentId { get; set; }
+
 	[JsonPropertyName("disabled")]
 	public bool? Disabled { get; set; }
 
@@ -455,6 +461,9 @@ public sealed class ApiKeyScopeValue { }
 
 public sealed class ApiKeyUpdateRequest
 {
+	[JsonPropertyName("department_id")]
+	public string? DepartmentId { get; set; }
+
 	[JsonPropertyName("disabled")]
 	public bool? Disabled { get; set; }
 
@@ -520,6 +529,9 @@ public sealed class ApiKeyWithValue
 
 	[JsonPropertyName("creator_user_id")]
 	public string? CreatorUserId { get; set; }
+
+	[JsonPropertyName("department_id")]
+	public string? DepartmentId { get; set; }
 
 	[JsonPropertyName("disabled")]
 	public bool Disabled { get; set; }
@@ -6407,6 +6419,178 @@ public sealed class ProvisioningKeyWithValue
 	public string? Status { get; set; }
 
 }
+
+public sealed class RateLimitAssignment
+{
+	[JsonPropertyName("created_at")]
+	public string CreatedAt { get; set; }
+
+	[JsonPropertyName("created_by")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("policy_id")]
+	public string PolicyId { get; set; }
+
+	[JsonPropertyName("target_id")]
+	public string? TargetId { get; set; }
+
+	[JsonPropertyName("target_type")]
+	public string TargetType { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string UpdatedAt { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class RateLimitAssignmentInput
+{
+	[JsonPropertyName("policy_id")]
+	public string PolicyId { get; set; }
+
+	[JsonPropertyName("target_id")]
+	public string? TargetId { get; set; }
+
+	[JsonPropertyName("target_type")]
+	public string TargetType { get; set; }
+
+}
+
+public sealed class RateLimitAssignmentListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+	[JsonPropertyName("has_more")]
+	public bool HasMore { get; set; }
+
+}
+
+public sealed class RateLimitAssignmentResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class RateLimitAssignmentUpdateInput
+{
+	[JsonPropertyName("policy_id")]
+	public string PolicyId { get; set; }
+
+}
+
+public sealed class RateLimitDeleteResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class RateLimitPolicy
+{
+	[JsonPropertyName("concurrent_requests")]
+	public long? ConcurrentRequests { get; set; }
+
+	[JsonPropertyName("created_at")]
+	public string CreatedAt { get; set; }
+
+	[JsonPropertyName("created_by")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("fail_closed")]
+	public bool FailClosed { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("requests_per_minute")]
+	public long? RequestsPerMinute { get; set; }
+
+	[JsonPropertyName("tokens_per_minute")]
+	public long? TokensPerMinute { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string UpdatedAt { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class RateLimitPolicyInput
+{
+	[JsonPropertyName("concurrent_requests")]
+	public long? ConcurrentRequests { get; set; }
+
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("fail_closed")]
+	public bool? FailClosed { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("requests_per_minute")]
+	public long? RequestsPerMinute { get; set; }
+
+	[JsonPropertyName("tokens_per_minute")]
+	public long? TokensPerMinute { get; set; }
+
+}
+
+public sealed class RateLimitPolicyListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+	[JsonPropertyName("has_more")]
+	public bool HasMore { get; set; }
+
+}
+
+public sealed class RateLimitPolicyResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class RateLimitPolicyUpdateInput
+{
+	[JsonPropertyName("concurrent_requests")]
+	public long? ConcurrentRequests { get; set; }
+
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("fail_closed")]
+	public bool? FailClosed { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("requests_per_minute")]
+	public long? RequestsPerMinute { get; set; }
+
+	[JsonPropertyName("tokens_per_minute")]
+	public long? TokensPerMinute { get; set; }
+
+}
+
+public sealed class RateLimitTargetType { }
 
 public sealed class ReasoningConfig
 {

@@ -111,6 +111,7 @@ struct ApiKey {
 	std::optional<std::string> created_at;
 	std::optional<std::string> created_by;
 	std::optional<std::string> creator_user_id;
+	std::optional<std::string> department_id;
 	bool disabled;
 	std::optional<std::string> expires_at;
 	std::string hash;
@@ -137,6 +138,7 @@ struct ApiKey {
 };
 
 struct ApiKeyCreateRequest {
+	std::optional<std::string> department_id;
 	std::optional<bool> disabled;
 	std::optional<std::string> expires_at;
 	std::optional<bool> include_byok_in_limit;
@@ -193,6 +195,7 @@ struct ApiKeyRotateResponse {
 using ApiKeyScopeValue = std::any;
 
 struct ApiKeyUpdateRequest {
+	std::optional<std::string> department_id;
 	std::optional<bool> disabled;
 	std::optional<std::string> expires_at;
 	std::optional<bool> include_byok_in_limit;
@@ -220,6 +223,7 @@ struct ApiKeyWithValue {
 	std::optional<std::string> created_at;
 	std::optional<std::string> created_by;
 	std::optional<std::string> creator_user_id;
+	std::optional<std::string> department_id;
 	bool disabled;
 	std::optional<std::string> expires_at;
 	std::string hash;
@@ -2642,6 +2646,83 @@ struct ProvisioningKeyWithValue {
 	std::string scopes;
 	std::any status;
 };
+
+struct RateLimitAssignment {
+	std::string created_at;
+	std::optional<std::string> created_by;
+	std::string id;
+	std::string policy_id;
+	std::optional<std::string> target_id;
+	std::any target_type;
+	std::string updated_at;
+	std::string workspace_id;
+};
+
+struct RateLimitAssignmentInput {
+	std::string policy_id;
+	std::string target_id;
+	std::any target_type;
+};
+
+struct RateLimitAssignmentListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+	bool has_more;
+};
+
+struct RateLimitAssignmentResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct RateLimitAssignmentUpdateInput {
+	std::string policy_id;
+};
+
+struct RateLimitDeleteResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct RateLimitPolicy {
+	std::optional<int> concurrent_requests;
+	std::string created_at;
+	std::optional<std::string> created_by;
+	std::optional<std::string> description;
+	bool fail_closed;
+	std::string id;
+	std::string name;
+	std::optional<int> requests_per_minute;
+	std::optional<int> tokens_per_minute;
+	std::string updated_at;
+	std::string workspace_id;
+};
+
+struct RateLimitPolicyInput {
+	std::optional<int> concurrent_requests;
+	std::optional<std::string> description;
+	std::optional<bool> fail_closed;
+	std::string name;
+	std::optional<int> requests_per_minute;
+	std::optional<int> tokens_per_minute;
+};
+
+struct RateLimitPolicyListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+	bool has_more;
+};
+
+struct RateLimitPolicyResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct RateLimitPolicyUpdateInput {
+	std::optional<int> concurrent_requests;
+	std::optional<std::string> description;
+	std::optional<bool> fail_closed;
+	std::string name;
+	std::optional<int> requests_per_minute;
+	std::optional<int> tokens_per_minute;
+};
+
+using RateLimitTargetType = std::any;
 
 struct ReasoningConfig {
 	std::any effort;
