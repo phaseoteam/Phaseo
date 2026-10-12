@@ -106,6 +106,7 @@ import { getEffectiveRoutingHints } from "../requestRouting";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
 import { extractDownstreamRateLimitHeaders } from "../upstream-rate-limit-headers";
 import { guardFreeRouteQuota } from "@core/customer-rate-limits";
+import { guardRateLimitPolicies } from "@core/rate-limit-policies";
 import { shouldRecordLastUsed } from "@core/last-used-throttle";
 import {
 	chargeManagedProvider,
@@ -754,6 +755,13 @@ async function attemptProviderWithIR(
 			loadPriceCard(candidate.providerId, candidateApiModelId ?? baseModel, ctx.capability, providerModelSlug, candidate.accessScope === "internal"),
 		);
 		if (pricingCard) candidate.pricingCard = pricingCard;
+	}
+	// Workspace rate limit policies: counted once per request (the plan is read
+	// once and admissions are memoized), and never for response-cache hits.
+	const policyResponse = await timing.timer.span(`${attemptPrefix}_rate_limit_policies`, () => guardRateLimitPolicies(ctx));
+	if (policyResponse) {
+		recordLifecycleEvent(ctx, { type: "provider.rejected", span_id: lifecycleSpanId, provider: candidate.providerId, model: baseModel, outcome: "quota_rejected", status: policyResponse.status });
+		return { ok: false, response: policyResponse };
 	}
 	if (pricingCard && (!pricingCard.currency || pricingCard.currency.toUpperCase() === "USD") &&
 		!pricingCard.rules.some((rule) => rule.currency && rule.currency.toUpperCase() !== "USD")) {

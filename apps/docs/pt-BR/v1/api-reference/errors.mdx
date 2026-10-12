@@ -87,6 +87,7 @@ Alguns erros trazem mais detalhes para ajudar a corrigir o problema rapidamente:
 | `not_found_error` | `404` | O endpoint ou recurso não foi encontrado. |
 | `rate_limit_error` | `429` | Muitas solicitações. Tente novamente após o intervalo indicado. |
 | `phaseo_free_model_limit_exceeded` | `429` | A cota diária compartilhada dos modelos gratuitos do Phaseo foi esgotada (1.500 solicitações por padrão). Respeite `Retry-After`, aguarde a redefinição às 00:00 UTC ou escolha um modelo pago. |
+| `rate_limit_exceeded` | `429` | Uma [política de limite de taxa](./limits.mdx) do espaço de trabalho se esgotou. `policy_id` e `limit_scope` a identificam. Respeite `Retry-After` ou peça a um administrador do espaço de trabalho para alterar a política. |
 | `validation_error` | `400` | Parâmetros ou corpo da solicitação inválidos. |
 | `provider_error` | `502` | O provedor upstream do modelo não respondeu corretamente. |
 | `server_error` | `500` | Ocorreu um problema inesperado na Phaseo. |

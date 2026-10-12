@@ -153,6 +153,32 @@ describe("handleError", () => {
 		expect(emitGatewayRequestEventMock).toHaveBeenCalledWith(expect.objectContaining({ errorCode: "gateway:phaseo_free_model_limit_exceeded", provider: null }));
 	});
 
+	it("attributes a rate limit policy rejection to the caller and keeps the policy fields", async () => {
+		let capturedAuditArgs: any = null;
+		const response = await handleError({
+			stage: "execute",
+			endpoint: "chat.completions",
+			res: new Response(JSON.stringify({
+				error: "rate_limit_exceeded",
+				error_type: "user",
+				error_origin: "user",
+				reason: "policy_requests_per_minute",
+				policy_id: "policy-1",
+				limit_scope: "key",
+				description: "This API key reached the \"Strict\" rate limit policy's 2 requests per minute. Retry after 9 seconds.",
+			}), { status: 429, headers: { "Retry-After": "9" } }),
+			ctx: { requestId: "G-POLICY-LIMIT", workspaceId: "workspace", model: "openai/gpt-5", meta: {}, providers: [{ providerId: "openai" }] } as any,
+			auditFailure: async (args) => { capturedAuditArgs = args; },
+		});
+		expect(response.status).toBe(429);
+		expect(response.headers.get("Retry-After")).toBe("9");
+		expect(response.headers.get("X-Gateway-Error-Attribution")).toBe("user");
+		expect(await response.json()).toMatchObject({
+			error: "rate_limit_exceeded", error_origin: "user", reason: "policy_requests_per_minute", policy_id: "policy-1", limit_scope: "key",
+		});
+		expect(capturedAuditArgs).toMatchObject({ errorCode: "user:rate_limit_exceeded", provider: null });
+	});
+
 	it("preserves guardrail enforcement metadata on blocked before-stage requests", async () => {
 		let capturedAuditArgs: any = null;
 		const blocked = new Response(

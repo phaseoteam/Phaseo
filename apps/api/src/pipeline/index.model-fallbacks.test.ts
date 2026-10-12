@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { beforeRequestMock, handleErrorMock, runnerMock } = vi.hoisted(() => ({
+const { beforeRequestMock, handleErrorMock, runnerMock, policyRejectedMock } = vi.hoisted(() => ({
+	policyRejectedMock: vi.fn((_ctx: unknown) => false),
 	beforeRequestMock: vi.fn(),
 	handleErrorMock: vi.fn(async ({ res }: { res: Response }) => res),
 	runnerMock: vi.fn(),
@@ -10,6 +11,13 @@ vi.mock("./before", () => ({ beforeRequest: beforeRequestMock }));
 vi.mock("./registry", () => ({ resolvePipeline: () => runnerMock }));
 vi.mock("@core/error-handler", () => ({ handleError: handleErrorMock }));
 vi.mock("./audit", () => ({ auditFailure: vi.fn() }));
+vi.mock("@core/rate-limit-policies", () => ({
+	rejectedByRateLimitPolicy: policyRejectedMock,
+	withRateLimitPolicyHeaders: (response: Response, ctx: { model: string }) => {
+		response.headers.set("x-test-policy-ctx", ctx.model);
+		return response;
+	},
+}));
 vi.mock("./error-response", () => ({
 	buildPipelineExecutionErrorResponse: vi.fn(() => new Response(null, { status: 500 })),
 	logPipelineExecutionError: vi.fn(),
@@ -51,6 +59,45 @@ describe("dynamic route model fallbacks", () => {
 		beforeRequestMock.mockReset();
 		handleErrorMock.mockClear();
 		runnerMock.mockReset();
+		policyRejectedMock.mockReset().mockReturnValue(false);
+	});
+
+	it("does not try fallback models after a rate limit policy rejection", async () => {
+		const primary = { ...context("primary/model", ["fallback/model"]), billingRequestId: "primary-billing" };
+		beforeRequestMock.mockResolvedValueOnce({ ok: true, ctx: primary });
+		runnerMock.mockResolvedValueOnce(new Response("limited", { status: 429 }));
+		policyRejectedMock.mockImplementation((ctx) => ctx === primary);
+
+		const response = await makeEndpointHandler({ endpoint: "responses", schema: null })(new Request("https://api.phaseo.app/v1/responses", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ model: "request/model", input: "hello" }),
+		}));
+
+		expect(response.status).toBe(429);
+		expect(response.headers.get("x-test-policy-ctx")).toBe("primary/model");
+		expect(beforeRequestMock).toHaveBeenCalledTimes(1);
+		expect(runnerMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("counts a model fallback under the primary request's rate limit admission", async () => {
+		const fallback: Record<string, unknown> = { ...context("fallback/model"), billingRequestId: "fallback-billing" };
+		beforeRequestMock
+			.mockResolvedValueOnce({ ok: true, ctx: { ...context("primary/model", ["fallback/model"]), billingRequestId: "primary-billing" } })
+			.mockResolvedValueOnce({ ok: true, ctx: fallback });
+		runnerMock
+			.mockResolvedValueOnce(new Response("unavailable", { status: 503 }))
+			.mockResolvedValueOnce(new Response("ok", { status: 200 }));
+
+		const response = await makeEndpointHandler({ endpoint: "responses", schema: null })(new Request("https://api.phaseo.app/v1/responses", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ model: "request/model", input: "hello" }),
+		}));
+
+		expect(response.status).toBe(200);
+		expect(fallback.rateLimitAdmissionId).toBe("primary-billing");
+		expect(response.headers.get("x-test-policy-ctx")).toBe("fallback/model");
 	});
 
 	it("passes parsed request metadata to before-stage error telemetry", async () => {

@@ -31,6 +31,19 @@ icon: "gauge"
 
 达到 API 密钥的每日、每周或每月请求和支出上限，或工作区的[预算](./endpoint/budgets-list.mdx)时，会返回 `429` 和错误代码 `key_limit_exceeded`。响应正文中的 `reason`、`limit_window` 和 `reset_at` 字段说明触发的是哪个限制以及其周期何时重置。`Retry-After` 给出距离重置的秒数。如果限制不会自动重置（例如终身预算或被临时封禁的密钥），则不会返回该标头；此时请不要重试，而是提高工作区预算；如果是密钥上限，请提高该密钥的上限或改用其他密钥。
 
+## 速率限制策略
+
+工作区管理员可以通过 `/v1/rate-limits` 管理 API 创建命名的速率限制策略，并将其分配给 API 密钥、工作区成员、防护规则，或作为每个最终用户的默认值。网关会按滚动的一分钟窗口执行策略的 `requests_per_minute`：
+
+- **密钥：**该密钥自己的配额。
+- **成员：**由该成员的密钥和 OAuth 请求共享的一份配额。
+- **防护规则：**防护规则覆盖的每个密钥（或 OAuth 用户）各有一份独立配额。
+- **最终用户默认值：**每个最终用户各有一份独立配额，通过请求的 `user` 字段或 `X-Phaseo-User-Id` 请求头识别。没有最终用户 ID 的请求不受其限制。
+
+当多个策略同时适用时，每个策略都会计数，最先耗尽的策略会拒绝请求。策略限制在上述网关限制之外另行生效。`tokens_per_minute`、`concurrent_requests` 和部门分配尚未执行。策略变更约在一分钟内生效。
+
+被拒绝的请求返回 `429`，包含错误代码 `rate_limit_exceeded`、原因 `policy_requests_per_minute`、`policy_id` 和 `limit_scope`（`key`、`member`、`guardrail` 或 `end_user`），以及以秒为单位的 `Retry-After`。适用策略的请求的响应会包含最严格策略的 `x-ratelimit-limit-requests`、`x-ratelimit-remaining-requests` 和 `x-ratelimit-reset-requests`（例如 `60s`）。计数在后台进行，因此 `remaining` 为近似值。同一请求内的提供商回退只计一次，响应缓存命中不计数。
+
 ## 提供商限制
 
 BYOK 请求使用您的提供商账户限制。托管请求使用提供商的共享容量；该容量并非单个工作区的专属配额。

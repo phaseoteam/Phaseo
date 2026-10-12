@@ -678,6 +678,13 @@ export type WebFetchObservability = {
 export type PipelineContext = {
 	/** Authenticated key owner or OAuth user; never use caller attribution for quotas. */
 	quotaUserId?: string | null;
+	/** Guardrails active for this key or OAuth user; selects guardrail rate limit policies. */
+	activeGuardrailIds?: string[];
+	/**
+	 * Admission ID for rate limit policies when it differs from `billingRequestId`:
+	 * model fallbacks of one HTTP request reuse the primary attempt's admission.
+	 */
+	rateLimitAdmissionId?: string;
     /** Request-owned diagnostics; never cache or serialize. Not enabled by public headers. */
     gatewayTimingTrace?: import("../telemetry/gateway-trace").GatewayTimingTrace;
     /** Request-owned persistence barrier; never cache or serialize this field. */

@@ -14,6 +14,7 @@ const reportProbeResultMock = vi.fn();
 const resolveProviderExecutorMock = vi.fn();
 const loadPriceCardMock = vi.fn();
 const freeQuotaMock = vi.fn();
+const policyGuardMock = vi.fn();
 const releaseBackgroundRuntimeMock = vi.fn();
 const ensureRuntimeForBackgroundMock = vi.fn(() => releaseBackgroundRuntimeMock);
 const runtimeBindings = vi.hoisted(() => ({ value: null as Record<string, unknown> | null }));
@@ -63,6 +64,10 @@ vi.mock("@core/customer-rate-limits", () => ({
 	guardFreeRouteQuota: (...args: any[]) => freeQuotaMock(...args),
 }));
 
+vi.mock("@core/rate-limit-policies", () => ({
+	guardRateLimitPolicies: (...args: any[]) => policyGuardMock(...args),
+}));
+
 vi.mock("../pricing", () => ({
 	loadPriceCard: (...args: any[]) => loadPriceCardMock(...args),
 }));
@@ -106,6 +111,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		vi.clearAllMocks();
 		guardPricingFoundMock.mockResolvedValue({ ok: true });
 		freeQuotaMock.mockResolvedValue(null);
+		policyGuardMock.mockResolvedValue(null);
 
 		guardAllFailedMock.mockResolvedValue({
 			ok: false,
@@ -136,6 +142,41 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(executor).not.toHaveBeenCalled();
 		expect(freeQuotaMock).toHaveBeenCalledTimes(1);
 		expect(freeQuotaMock).toHaveBeenCalledWith(expect.objectContaining({ userId: "authenticated-owner", admissionId: "server-billing-id", pricingCard }));
+	});
+
+	it("returns a rate limit policy denial before the free quota, dispatch or provider fallback", async () => {
+		const pricingCard = { currency: "USD", rules: [{ pricing_plan: "free", price_per_unit: "0", currency: "USD" }] };
+		const candidates = ["first", "second"].map(providerId => ({ providerId, pricingCard, byokMeta: [], providerModelSlug: "model", capabilityParams: {} }));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+		rankProvidersMock.mockResolvedValue(candidates.map(candidate => ({ candidate, health: {} })));
+		const executor = vi.fn();
+		resolveProviderExecutorMock.mockReturnValue(executor);
+		const denial = new Response("{}", { status: 429, headers: { "Retry-After": "12" } });
+		policyGuardMock.mockResolvedValue(denial);
+		const ctx = createCtx({ billingRequestId: "server-billing-id" });
+		const result = await doRequestWithIR(ctx, { model: "model", prompt: "test" } as any, createTiming());
+		expect(result).toBe(denial);
+		expect(policyGuardMock).toHaveBeenCalledTimes(1);
+		expect(policyGuardMock).toHaveBeenCalledWith(ctx);
+		expect(freeQuotaMock).not.toHaveBeenCalled();
+		expect(admitThroughBreakerMock).not.toHaveBeenCalled();
+		expect(executor).not.toHaveBeenCalled();
+		expect(ctx.lifecycle?.events).toContainEqual(expect.objectContaining({ type: "provider.rejected", outcome: "quota_rejected", status: 429 }));
+	});
+
+	it("checks rate limit policies on every provider attempt of the same request", async () => {
+		const pricingCard = { currency: "USD", rules: [] };
+		const candidates = ["first", "second"].map(providerId => ({ providerId, pricingCard, byokMeta: [], providerModelSlug: "model", capabilityParams: {} }));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+		rankProvidersMock.mockResolvedValue(candidates.map(candidate => ({ candidate, health: {} })));
+		resolveProviderExecutorMock.mockReturnValue(vi.fn(async () => ({
+			kind: "completed", ir: {}, upstream: new Response("{}", { status: 503 }),
+			bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway",
+		})));
+		const ctx = createCtx({ testingMode: true });
+		await doRequestWithIR(ctx, { model: "model", prompt: "test" } as any, createTiming());
+		// The guard memoizes per request, so later attempts are never counted again.
+		expect(policyGuardMock.mock.calls.map(([arg]) => arg)).toEqual([ctx, ctx]);
 	});
 
 	it.each([

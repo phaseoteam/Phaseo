@@ -31,6 +31,19 @@ Cuando se agota una cuota del gateway, se devuelve `429` con `Retry-After` en se
 
 Al alcanzar los límites diarios, semanales o mensuales de solicitudes y gasto de una clave API, o los [presupuestos](./endpoint/budgets-list.mdx) del espacio de trabajo, se devuelve `429` con el código de error `key_limit_exceeded`. Los campos `reason`, `limit_window` y `reset_at` del cuerpo identifican el límite y cuándo se restablece su periodo. `Retry-After` indica los segundos que faltan para ese restablecimiento. Se omite cuando el límite no se restablece por sí solo, como un presupuesto vitalicio o una clave bloqueada temporalmente; en ese caso, en lugar de reintentar, aumente el presupuesto del espacio de trabajo o, si es un límite de clave, aumente el límite de la clave o use otra clave.
 
+## Políticas de límite de frecuencia
+
+Los administradores del espacio de trabajo pueden crear políticas de límite de frecuencia con nombre mediante la API de administración `/v1/rate-limits` y asignarlas a claves API, miembros del espacio de trabajo, barreras de seguridad o como valor predeterminado para cada usuario final. El gateway aplica el `requests_per_minute` de una política, medido en un minuto móvil:
+
+- **Clave:** la asignación propia de la clave.
+- **Miembro:** una asignación compartida por las claves y las solicitudes OAuth del miembro.
+- **Barrera de seguridad:** una asignación independiente para cada clave (o usuario de OAuth) que cubre la barrera.
+- **Valor predeterminado por usuario final:** una asignación independiente para cada usuario final, identificado por el campo `user` de la solicitud o la cabecera `X-Phaseo-User-Id`. Las solicitudes sin ID de usuario final no quedan limitadas por ella.
+
+Cuando se aplican varias políticas, se cuentan todas y la primera que se agota rechaza la solicitud. Los límites de las políticas se suman a los límites del gateway anteriores. `tokens_per_minute`, `concurrent_requests` y las asignaciones a departamentos todavía no se aplican. Los cambios de las políticas surten efecto en aproximadamente un minuto.
+
+Una solicitud rechazada devuelve `429` con el código de error `rate_limit_exceeded`, el motivo `policy_requests_per_minute`, el `policy_id` y el `limit_scope` (`key`, `member`, `guardrail` o `end_user`), además de `Retry-After` en segundos. Las respuestas a solicitudes a las que se aplica una política incluyen `x-ratelimit-limit-requests`, `x-ratelimit-remaining-requests` y `x-ratelimit-reset-requests` (por ejemplo, `60s`) de la política más restrictiva. El recuento se hace en segundo plano, así que `remaining` es aproximado. Los fallbacks de proveedor dentro de una solicitud cuentan una sola vez, y los aciertos de la caché de respuestas no se cuentan.
+
 ## Límites del proveedor
 
 Las solicitudes BYOK usan los límites de tu cuenta del proveedor. Las solicitudes gestionadas usan capacidad compartida del proveedor; esa capacidad no es una cuota individual del espacio de trabajo.

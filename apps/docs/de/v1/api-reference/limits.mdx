@@ -31,6 +31,19 @@ Bei ausgeschöpftem Gateway-Kontingent wird `429` mit `Retry-After` in Sekunden 
 
 Sind die täglichen, wöchentlichen oder monatlichen Anfrage- und Ausgabenlimits eines API-Schlüssels oder die [Budgets](./endpoint/budgets-list.mdx) des Arbeitsbereichs erreicht, wird `429` mit dem Fehlercode `key_limit_exceeded` zurückgegeben. Die Felder `reason`, `limit_window` und `reset_at` im Antworttext nennen das Limit und den Zeitpunkt, zu dem sein Zeitraum zurückgesetzt wird. `Retry-After` gibt die Sekunden bis zu diesem Zurücksetzen an. Der Header fehlt, wenn sich das Limit nicht von selbst zurücksetzt, etwa bei einem Gesamtbudget oder einem vorübergehend gesperrten Schlüssel; erhöhe dann statt eines erneuten Versuchs das Arbeitsbereichsbudget oder, bei einem Schlüssellimit, das Limit des Schlüssels, oder verwende einen anderen Schlüssel.
 
+## Ratenlimit-Richtlinien
+
+Workspace-Admins können über die Management-API `/v1/rate-limits` benannte Ratenlimit-Richtlinien erstellen und sie API-Schlüsseln, Workspace-Mitgliedern, Sicherheitsleitplanken oder als Standard für jeden Endnutzer zuweisen. Das Gateway setzt den Wert `requests_per_minute` einer Richtlinie durch, gemessen über eine gleitende Minute:
+
+- **Schlüssel:** das eigene Kontingent des Schlüssels.
+- **Mitglied:** ein Kontingent, das sich die Schlüssel und OAuth-Anfragen des Mitglieds teilen.
+- **Sicherheitsleitplanke:** ein eigenes Kontingent für jeden Schlüssel (oder OAuth-Nutzer), den die Leitplanke abdeckt.
+- **Standard pro Endnutzer:** ein eigenes Kontingent für jeden Endnutzer, erkannt am Feld `user` der Anfrage oder am Header `X-Phaseo-User-Id`. Anfragen ohne Endnutzer-ID werden dadurch nicht begrenzt.
+
+Gelten mehrere Richtlinien, wird jede gezählt, und die erste ausgeschöpfte lehnt die Anfrage ab. Richtlinienlimits gelten zusätzlich zu den Gateway-Limits oben. `tokens_per_minute`, `concurrent_requests` und Abteilungszuweisungen werden noch nicht durchgesetzt. Änderungen an Richtlinien werden innerhalb von etwa einer Minute wirksam.
+
+Eine abgelehnte Anfrage gibt `429` mit dem Fehlercode `rate_limit_exceeded`, dem Grund `policy_requests_per_minute`, der `policy_id` und dem `limit_scope` (`key`, `member`, `guardrail` oder `end_user`) sowie `Retry-After` in Sekunden zurück. Antworten auf Anfragen, für die eine Richtlinie gilt, enthalten `x-ratelimit-limit-requests`, `x-ratelimit-remaining-requests` und `x-ratelimit-reset-requests` (zum Beispiel `60s`) für die strengste Richtlinie. Gezählt wird im Hintergrund, daher ist `remaining` ein Näherungswert. Anbieter-Fallbacks innerhalb einer Anfrage zählen einmal, und Treffer im Antwort-Cache werden nicht gezählt.
+
 ## Anbieterlimits
 
 BYOK-Anfragen verwenden die Limits deines Anbieterkontos. Verwaltete Anfragen nutzen gemeinsame Anbieterkapazität; diese Kapazität ist kein individuelles Arbeitsbereichskontingent.

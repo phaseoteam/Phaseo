@@ -87,6 +87,7 @@ icon: "bug"
 | `not_found_error` | `404` | エンドポイントまたはリソースが見つかりません。 |
 | `rate_limit_error` | `429` | リクエストが多すぎます。指定された時間が経過してから再試行してください。 |
 | `phaseo_free_model_limit_exceeded` | `429` | Phaseoの無料モデル共通の日次上限に達しました（既定で1,500リクエスト）。`Retry-After`に従い、00:00 UTCのリセットを待つか、有料モデルを選択してください。 |
+| `rate_limit_exceeded` | `429` | ワークスペースの[レート制限ポリシー](./limits.mdx)の上限に達しました。`policy_id`と`limit_scope`で対象を特定できます。`Retry-After`に従うか、ワークスペース管理者にポリシーの変更を依頼してください。 |
 | `validation_error` | `400` | パラメーターまたはリクエスト本文が無効です。 |
 | `provider_error` | `502` | 上流のモデルプロバイダーが正しく応答しませんでした。 |
 | `server_error` | `500` | Phaseo 内部で予期しない問題が発生しました。 |

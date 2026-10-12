@@ -906,6 +906,15 @@ function classifyOperationalError(args: EventArgs): OperationalErrorClassificati
         };
     }
 
+    if (rawCode === "rate_limit_exceeded") {
+        return {
+            origin: "user",
+            kind: "workspace_rate_limit_policy_exceeded",
+            owner: "workspace_admin",
+            operationallyActionable: false,
+        };
+    }
+
     if (
         rawCode === "invalid_json" ||
         rawCode === "model_required" ||

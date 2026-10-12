@@ -4433,7 +4433,7 @@ paths:
             minimum: 1
             maximum: 250
       summary: List rate limit policies
-      description: Lists the workspace's named rate limit policies. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
       responses:
         '200':
           description: Rate limit policies
@@ -4453,7 +4453,7 @@ paths:
         - Gateway
       operationId: createRateLimitPolicy
       summary: Create a rate limit policy
-      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
       requestBody:
         required: true
         content:
@@ -4488,7 +4488,7 @@ paths:
         - Gateway
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
-      description: Returns one rate limit policy. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Returns one rate limit policy. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
       responses:
         '200':
           description: Rate limit policy
@@ -4508,7 +4508,7 @@ paths:
         - Gateway
       operationId: updateRateLimitPolicy
       summary: Update a rate limit policy
-      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
       requestBody:
         required: true
         content:
@@ -4534,7 +4534,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitPolicy
       summary: Delete a rate limit policy
-      description: Deletes a policy and every assignment that uses it. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -4555,7 +4555,7 @@ paths:
         - Gateway
       operationId: listRateLimitAssignments
       summary: List rate limit assignments
-      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
       parameters:
         - name: policy_id
           in: query
@@ -4606,7 +4606,7 @@ paths:
         - Gateway
       operationId: createRateLimitAssignment
       summary: Assign a rate limit policy
-      description: Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
       requestBody:
         required: true
         content:
@@ -4641,7 +4641,7 @@ paths:
         - Gateway
       operationId: getRateLimitAssignment
       summary: Get a rate limit assignment
-      description: Returns one rate limit assignment. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Returns one rate limit assignment. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
       responses:
         '200':
           description: Rate limit assignment
@@ -4661,7 +4661,7 @@ paths:
         - Gateway
       operationId: updateRateLimitAssignment
       summary: Change an assignment's policy
-      description: Switches the policy applied to an assignment's target. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
       requestBody:
         required: true
         content:
@@ -4687,7 +4687,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitAssignment
       summary: Delete a rate limit assignment
-      description: Removes a policy from its target. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      description: Removes a policy from its target. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
       responses:
         '200':
           description: Rate limit assignment deleted

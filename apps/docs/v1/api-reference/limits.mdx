@@ -31,6 +31,19 @@ A gateway quota rejection returns `429` with `Retry-After` in seconds. Its error
 
 An API key's daily, weekly or monthly request and spend limits, and the workspace's [budgets](./endpoint/budgets-list.mdx), return `429` with the `key_limit_exceeded` error code once reached. The body's `reason`, `limit_window` and `reset_at` fields identify the limit and when its window resets. `Retry-After` gives the seconds until that reset. It is omitted when the limit does not reset by itself, such as a lifetime budget or a soft-blocked key; instead of retrying, raise the workspace budget, or for a key limit, raise the key's limit or use a different key.
 
+## Rate limit policies
+
+Workspace admins can create named rate limit policies through the `/v1/rate-limits` management API and assign them to API keys, workspace members, guardrails, or as the default for each end user. The gateway enforces a policy's `requests_per_minute`, measured over a rolling minute:
+
+- **Key:** the key's own allowance.
+- **Member:** one allowance shared by the member's keys and OAuth requests.
+- **Guardrail:** a separate allowance for each key (or OAuth user) the guardrail covers.
+- **End-user default:** a separate allowance for each end user, identified by the request's `user` field or `X-Phaseo-User-Id` header. Requests without an end-user ID are not limited by it.
+
+When several policies apply, each is counted and the first one exhausted rejects the request. Policy limits apply in addition to the gateway limits above. `tokens_per_minute`, `concurrent_requests` and department assignments are not enforced yet. Policy changes take effect within about a minute.
+
+A rejected request returns `429` with the `rate_limit_exceeded` error code, reason `policy_requests_per_minute`, the `policy_id` and the `limit_scope` (`key`, `member`, `guardrail` or `end_user`), plus `Retry-After` in seconds. Responses to requests a policy applies to include `x-ratelimit-limit-requests`, `x-ratelimit-remaining-requests` and `x-ratelimit-reset-requests` (for example `60s`) for the most restrictive policy. Counting happens in the background, so `remaining` is approximate. Provider fallbacks within one request count once, and response cache hits are not counted.
+
 ## Provider limits
 
 BYOK requests use the limits of your provider account. Managed requests use shared provider capacity; that capacity is not an individual workspace allowance.
