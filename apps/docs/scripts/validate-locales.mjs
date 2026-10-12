@@ -33,13 +33,28 @@ function listPages(root, parent = root, pages = new Set()) {
 	return pages;
 }
 
+function openApiReference(path) {
+	const frontmatter = readFileSync(path, "utf8").match(/^---\s*\r?\n([\s\S]*?)\r?\n---/);
+	return frontmatter?.[1].match(/^openapi:\s*["']?(.*?)["']?\s*$/m)?.[1];
+}
+
 // Mintlify resolves an `openapi: "METHOD /path"` reference against the alphabetically first spec
 // that defines the operation, which is a localized spec. Every page must name its own spec file.
 function openApiReferenceIssue(path, specFile) {
-	const frontmatter = readFileSync(path, "utf8").match(/^---\s*\r?\n([\s\S]*?)\r?\n---/);
-	const reference = frontmatter?.[1].match(/^openapi:\s*["']?(.*?)["']?\s*$/m)?.[1];
+	const reference = openApiReference(path);
 	if (reference === undefined || reference.startsWith(`${specFile} `)) return undefined;
 	return `${relative(docsRoot, path).split(sep).join("/")} must reference "${specFile} METHOD /path", found "${reference}"`;
+}
+
+// A translation must keep its endpoint reference exactly when the English page has one, so a deleted
+// or unparseable `openapi:` line on either side cannot silently drop a page's API reference.
+function openApiParityIssue(sourcePath, translatedPath) {
+	const source = openApiReference(sourcePath) !== undefined;
+	if (source === (openApiReference(translatedPath) !== undefined)) return undefined;
+	const page = relative(docsRoot, translatedPath).split(sep).join("/");
+	return source
+		? `${page} is missing the OpenAPI reference its English page has`
+		: `${page} has an OpenAPI reference its English page lacks`;
 }
 
 // An unclosed code fence renders the rest of the page as code.
@@ -72,7 +87,9 @@ for (const locale of locales) {
 	for (const page of translatedPages) {
 		const path = join(localeRoot, page);
 		const specFile = `/${locale}/openapi/v1/openapi.localized.yaml`;
-		for (const issue of [openApiReferenceIssue(path, specFile), unclosedFenceIssue(path)]) {
+		const checks = [openApiReferenceIssue(path, specFile), unclosedFenceIssue(path)];
+		if (sourcePages.has(page)) checks.push(openApiParityIssue(join(sourceRoot, page), path));
+		for (const issue of checks) {
 			if (issue) issues.push(issue);
 		}
 	}
