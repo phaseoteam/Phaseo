@@ -38,6 +38,27 @@ The SDK does not store runs in any Phaseo-hosted service.
 
 If your application wants resumability across requests, workers, or process restarts, persist that returned value directly or pass a `state` accessor with `load()` and `save()` methods.
 
+Pass `messages` to `run()` or `stream()` when starting from an existing conversation. These messages replace the default user message derived from `input`; `input` remains the application-owned run input. The SDK clones the messages before saving them, and continuations retain the saved history.
+
+```ts
+const result = await agent.run({
+  input: "Review the attachment",
+  messages: [
+    { role: "user", content: "Earlier question" },
+    { role: "assistant", content: "Earlier answer" },
+    { role: "user", content: [
+      { type: "text", text: "Describe this image" },
+      { type: "image_url", image_url: { url: imageDataUrl } },
+    ] },
+  ],
+  client,
+});
+```
+
+User messages accept text or text/image parts. The gateway adapter maps image parts to Responses `input_image` items. Other model clients must support the supplied content parts. Persisted run history includes these parts, so use your application's normal storage and retention controls for attachment data.
+
+For a structured follow-up, pass `humanMessages` to `continueRun()` or `continueStream()`. It replaces `humanInput`, is cloned, and is appended after pending tool results so the conversation preserves tool-call ordering. Omit it when continuing only to approve or reject a tool.
+
 ## Install
 
 ```bash
@@ -255,7 +276,13 @@ const agent = createAgent({
 });
 ```
 
-The runtime still persists tool-result messages in tool-call order.
+Tools run serially by default, including approved tools resumed from a pause. Context updates from each serial tool are available to the next tool. Before resuming, the runtime validates all required approval decisions and manual outputs, so an incomplete response cannot start an earlier approved tool.
+
+When a state store is configured, serial approved/manual continuations save a start marker before each action and checkpoint each confirmed result. Failed or cancelled continuations retain completed results, remaining calls, context, and deferred human messages. Resume requires fresh decisions for the remaining calls. An `executionStartedAt` marker means an interrupted action may already have had effects; inspect those effects before approving it again. This journal does not guarantee exactly-once external effects or cover partial parallel batches or automatic tool execution.
+
+Cancellation propagates even when a tool uses `onError: "return-to-model"`; interrupted actions are not consumed as confirmed error results.
+
+With explicit concurrency, tools may finish in any order. The runtime still persists tool-result messages in tool-call order.
 
 ### Typed item streams
 

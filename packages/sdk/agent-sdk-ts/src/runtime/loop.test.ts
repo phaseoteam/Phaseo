@@ -1,11 +1,111 @@
+import { defineTool } from "../index";
 import { describe, expect, it, vi } from "vitest";
 import { randomUUID } from "node:crypto";
 import * as fs from "node:fs";
 import { createAgent } from "../agent";
 import { createAgentDevtools } from "../devtools";
 import { AgentGatewayError } from "../errors";
+import type { AgentMessage, AgentRunResult } from "../types";
 
 describe("Agent SDK runtime loop", () => {
+ it("retains confirmed effects when next-turn configuration fails", async () => {
+  let step = 0, saved: AgentRunResult<unknown, string> | undefined;
+  const effect = vi.fn(() => "Confirmed effect");
+  const agent = createAgent<string, unknown>({ id: "configuration-failure", tools: [defineTool({ id: "effect", requireApproval: true, execute: effect, nextTurnParams: { model: () => { throw Error("Owned configuration failure"); } } })] });
+  const state = { load: async () => saved ?? null, save: async (result: AgentRunResult<unknown, string>) => { saved = structuredClone(result); } };
+  const client = { generate: async () => ({ message: { role: "assistant" as const, content: "Done", ...(step++ === 0 ? { toolCalls: [{ id: "one", name: "effect", input: {} }] } : {}) } }) };
+  const paused = await agent.run({ input: "Work", client, state });
+  await expect(agent.continueRun({ run: paused, client, state, approvals: ["one"], humanMessages: [{ role: "user", content: "Keep this follow-up" }] })).rejects.toThrow("Owned configuration failure");
+  expect(saved!.run.pause).toBeNull();
+  expect(saved!.run.messages.at(-1)?.content).toBe("Keep this follow-up");
+  const result = await agent.continueRun({ run: saved!, client, state });
+  expect(result.run.status).toBe("completed"); expect(effect).toHaveBeenCalledOnce();
+  expect(result.stepResults?.[0].toolResults.map(item => item.toolCallId)).toEqual(["one"]);
+ });
+ it.each(["failed", "cancelled", "cancelled-with-model-errors"] as const)("preserves completed serial tools and queued input after a %s continuation", async status => {
+  let firstCalls=0,secondCalls=0,step=0;const controller=new AbortController();let saved:AgentRunResult<unknown,string>|undefined;
+  const state={load:async()=>saved??null,save:async(result:AgentRunResult<unknown,string>)=>{saved=structuredClone(result);}};
+  const agent=createAgent<string,unknown>({id:"serial-checkpoint-"+status,toolExecution:{onError:status==="cancelled-with-model-errors"?"return-to-model":"fail-run"},tools:[defineTool({id:"first",requireApproval:true,execute:(_input,runtime)=>{firstCalls++;runtime.setContext({value:"retained"});return "Confirmed first effect";}}),defineTool({id:"second",requireApproval:true,execute:(_input,runtime)=>{if(++secondCalls===1){if(status.startsWith("cancelled"))controller.abort();throw Error("Owned interruption");}return runtime.context;}})]});
+  const client={generate:async()=>({message:{role:"assistant" as const,content:"Done",...(step++===0?{toolCalls:[{id:"one",name:"first",input:{}},{id:"two",name:"second",input:{}}]}:{})}})};
+  const paused=await agent.run({input:"Work",client,state});const continuing=agent.continueRun({run:paused,client,state,signal:controller.signal,approvals:["one","two"],humanMessages:[{role:"user",content:"Queued follow-up"}]});
+  if(status==="failed")await expect(continuing).rejects.toThrow("Owned interruption");else expect((await continuing).run.status).toBe("cancelled");
+  expect(firstCalls).toBe(1);expect(saved!.run.messages.filter(message=>message.role==="tool").map(message=>message.toolCallId)).toEqual(["one"]);expect(saved!.run.context).toEqual({value:"retained"});expect(saved!.run.pause!.pendingToolCalls!.map(entry=>entry.call.id)).toEqual(["two"]);expect(saved!.run.pause!.pendingToolCalls![0].executionStartedAt).toEqual(expect.any(String));expect(saved!.run.pause!.continuationMessages).toEqual([{role:"user",content:"Queued follow-up"}]);
+  const result=await agent.continueRun({run:saved!,client,state,approvals:["two"]});expect(result.run.status).toBe("completed");expect(firstCalls).toBe(1);expect(secondCalls).toBe(2);expect(result.messages.filter(message=>message.role==="tool").map(message=>message.toolCallId)).toEqual(["one","two"]);expect(result.messages.filter(message=>message.content==="Queued follow-up")).toHaveLength(1);expect(result.messages.at(-2)).toEqual({role:"user",content:"Queued follow-up"});expect(result.run.error).toBeUndefined();expect(result.run.pause).toBeNull();
+ });
+ it("does not start a serial effect when its start checkpoint cannot be saved",async()=>{
+  const effect=vi.fn(()=>"Owned effect");let step=0;const agent=createAgent<string,unknown>({id:"start-checkpoint",tools:[defineTool({id:"effect",requireApproval:true,execute:effect})]});const client={generate:async()=>({message:{role:"assistant" as const,content:"Done",...(step++===0?{toolCalls:[{id:"one",name:"effect",input:{}}]}:{})}})};
+  const state={load:async()=>null,save:async(result:AgentRunResult<unknown,string>)=>{if(result.run.pause?.pendingToolCalls?.some(entry=>entry.executionStartedAt))throw Error("Owned checkpoint failure");}};
+  const paused=await agent.run({input:"Work",client,state});await expect(agent.continueRun({run:paused,client,state,approvals:["one"]})).rejects.toThrow("Owned checkpoint failure");expect(effect).not.toHaveBeenCalled();
+ });
+ it("checks cancellation after saving a serial start checkpoint",async()=>{
+  const effect=vi.fn(()=>"Owned effect"),controller=new AbortController();let step=0;const agent=createAgent<string,unknown>({id:"cancel-start",tools:[defineTool({id:"effect",requireApproval:true,execute:effect})]});const client={generate:async()=>({message:{role:"assistant" as const,content:"Done",...(step++===0?{toolCalls:[{id:"one",name:"effect",input:{}}]}:{})}})};
+  const state={load:async()=>null,save:async(result:AgentRunResult<unknown,string>)=>{if(result.run.pause?.pendingToolCalls?.some(entry=>entry.executionStartedAt))controller.abort();}};
+  const paused=await agent.run({input:"Work",client,state});const result=await agent.continueRun({run:paused,client,state,signal:controller.signal,approvals:["one"]});expect(result.run.status).toBe("cancelled");expect(effect).not.toHaveBeenCalled();
+ });
+
+ it("keeps mixed approval, rejection and manual outputs in call order", async () => {
+  let step = 0; const rejected = vi.fn(() => "must not run");
+  const agent = createAgent({ id: "mixed-continuation", tools: [defineTool({ id: "read", requireApproval: true, execute: (_input, runtime) => runtime.context }), defineTool({ id: "denied", requireApproval: true, execute: rejected }), defineTool({ id: "manual", execute: false, onResponseReceived: (output, runtime) => { runtime.setContext({ value: output }); return output; } })] });
+  const client = { generate: async () => ({ message: { role: "assistant" as const, content: "", ...(step++ === 0 ? { toolCalls: [{ id: "one", name: "read", input: {} }, { id: "two", name: "denied", input: {} }, { id: "three", name: "manual", input: {} }, { id: "four", name: "read", input: {} }] } : {}) } }) };
+  const paused = await agent.run({ input: "Do work", context: { value: "original" }, client });
+  const result = await agent.continueRun({ run: paused, approvals: ["one", "four"], rejections: ["two"], toolOutputs: [{ toolCallId: "three", output: "updated" }], client });
+  const messages = result.run.messages.filter(message => message.role === "tool"); expect(messages.map(message => message.toolCallId)).toEqual(["one", "two", "three", "four"]); expect(messages[1].isError).toBe(true); expect(JSON.parse(messages[3].content as string)).toEqual({ value: "updated" }); expect(result.run.context).toEqual({ value: "updated" }); expect(rejected).not.toHaveBeenCalled();
+ });
+
+ it("resumes approved tools serially with the preceding context", async () => {
+  let completed = false, step = 0;
+  const agent = createAgent({ id: "approved-order", tools: [defineTool({ id: "first", requireApproval: true, execute: async (_input, runtime) => { await Promise.resolve(); runtime.setContext({ value: "updated" }); completed = true; return "first"; } }), defineTool({ id: "second", requireApproval: true, execute: (_input, runtime) => { expect(completed).toBe(true); return runtime.context; } })] });
+  const client = { generate: async () => ({ message: { role: "assistant" as const, content: "", ...(step++ === 0 ? { toolCalls: [{ id: "one", name: "first", input: {} }, { id: "two", name: "second", input: {} }] } : {}) } }) };
+  const paused = await agent.run({ input: "Do work", context: { value: "original" }, client });
+  const result = await agent.continueRun({ run: paused, approvals: ["one", "two"], client });
+  expect(result.run.context).toEqual({ value: "updated" }); expect(JSON.parse(result.run.messages.find(message => message.role === "tool" && message.toolCallId === "two")!.content as string)).toEqual({ value: "updated" });
+ });
+ it("validates every pending decision before starting an approved effect", async () => {
+  const effect = vi.fn(() => "owned effect"), agent = createAgent({ id: "all-decisions", tools: [defineTool({ id: "effect", requireApproval: true, execute: effect })] });
+  const client = { generate: async () => ({ message: { role: "assistant" as const, content: "", toolCalls: [{ id: "one", name: "effect", input: {} }, { id: "two", name: "effect", input: {} }] } }) };
+  const paused = await agent.run({ input: "Do work", client });
+  await expect(agent.continueRun({ run: paused, approvals: ["one"], client })).rejects.toThrow("Missing approval decision"); expect(effect).not.toHaveBeenCalled();
+ });
+ it("honors explicit parallel approval execution and keeps call ordering", async () => {
+  let release: () => void = () => {}, step = 0; const gate = new Promise<void>(resolve => { release = resolve; }), finished: string[] = [];
+  const agent = createAgent({ id: "parallel-approval", toolExecution: { toolConcurrency: 2 }, tools: [defineTool({ id: "first", requireApproval: true, execute: async () => { await gate; finished.push("first"); return "first"; } }), defineTool({ id: "second", requireApproval: true, execute: () => { finished.push("second"); release(); return "second"; } })] });
+  const client = { generate: async () => ({ message: { role: "assistant" as const, content: "", ...(step++ === 0 ? { toolCalls: [{ id: "one", name: "first", input: {} }, { id: "two", name: "second", input: {} }] } : {}) } }) };
+  const paused = await agent.run({ input: "Do work", client }), result = await agent.continueRun({ run: paused, approvals: ["one", "two"], client });
+  expect(finished).toEqual(["second", "first"]); expect(result.run.messages.filter(message => message.role === "tool").map(message => message.toolCallId)).toEqual(["one", "two"]);
+ });
+
+ it("passes context changes to later automatic tools in the same serial batch", async () => {
+  let step = 0;
+  const agent = createAgent({ id: "serial-context", tools: [defineTool({ id: "change", execute: (_input, runtime) => { runtime.setContext({ value: "updated" }); return "changed"; } }), defineTool({ id: "read", execute: (_input, runtime) => runtime.context })] });
+  const result = await agent.run({ input: "Update", context: { value: "initial" }, client: { generate: async () => ({ message: { role: "assistant", content: "", ...(step++ === 0 ? { toolCalls: [{ id: "change", name: "change", input: {} }, { id: "read", name: "read", input: {} }] } : {}) } }) } });
+  expect(result.run.context).toEqual({ value: "updated" }); expect(JSON.parse(result.run.messages.find(message => message.role === "tool" && message.toolCallId === "read")!.content as string)).toEqual({ value: "updated" });
+ });
+
+	it("resumes human review with structured input and rejects an empty response", async () => {
+		const agent = createAgent<string, string>({ id: "image-review", humanReview: ({ response }) => response.message.content === "Review needed" ? { reason: "image_review" } : null });
+		const generate = vi.fn().mockResolvedValueOnce({ message: { role: "assistant", content: "Review needed" } }).mockImplementationOnce(async request => {
+			expect(request.messages.at(-1)).toEqual({ role: "user", content: [{ type: "text", text: "Use this correction" }, { type: "image_url", image_url: { url: "data:image/png;base64,YWJj" } }] });
+			return { message: { role: "assistant", content: "Approved answer" } };
+		});
+		const pending = await agent.run({ input: "Draft", client: { generate } });
+		await expect(agent.continueRun({ run: structuredClone(pending), client: { generate }, humanInput: "Ignored fallback", humanMessages: [] })).rejects.toThrow("waiting for human input");
+		expect(generate).toHaveBeenCalledTimes(1);
+		const result = await agent.continueRun({ run: pending, client: { generate }, humanMessages: [{ role: "user", content: [{ type: "text", text: "Use this correction" }, { type: "image_url", image_url: { url: "data:image/png;base64,YWJj" } }] }] });
+		expect(result.run.status).toBe("completed"); expect(result.output).toBe("Approved answer");
+	});
+	it("retains structured multimodal history through a saved approval and continuation", async () => {
+		const messages: AgentMessage[] = [{ role: "user", content: "Earlier question" }, { role: "assistant", content: "Earlier answer" }, { role: "user", content: [{ type: "text", text: "Review this image" }, { type: "image_url", image_url: { url: "data:image/png;base64,YWJj" } }] }];
+		const expected = structuredClone(messages), saved = new Map<string, AgentRunResult<unknown, string>>();
+		const state = { load: async (id: string) => saved.get(id) ?? null, save: async (result: AgentRunResult<unknown, string>) => { saved.set(result.run.id, structuredClone(result)); } };
+		const agent = createAgent<string, unknown>({ id: "history", tools: [{ id: "review", requireApproval: true, execute: () => "Reviewed" }] });
+		const generate = vi.fn().mockImplementationOnce(async request => { expect(request.messages).toEqual(expected); messages[0].content = "Mutated caller history"; return { message: { role: "assistant", content: "", toolCalls: [{ id: "approval", name: "review", input: {} }] } }; }).mockImplementationOnce(async request => { expect(request.messages.slice(0, 3)).toEqual(expected); return { message: { role: "assistant", content: "Done" } }; });
+		const pending = await agent.run({ input: "Must not replace messages", messages, client: { generate }, state });
+		expect(pending.run.messages.slice(0, 3)).toEqual(expected); expect(pending.run.status).toBe("waiting_for_human");
+		const followUp: AgentMessage[] = [{ role: "user", content: [{ type: "image_url", image_url: { url: "data:image/png;base64,ZGVm" } }] }];
+		const result = await agent.continueRun({ run: saved.get(pending.run.id)!, client: { generate }, state, approvals: ["approval"], humanMessages: followUp });
+		expect(result.run.status).toBe("completed"); expect(result.run.messages.slice(0, 3)).toEqual(expected);
+		expect(result.run.messages.at(-2)).toEqual(followUp[0]); followUp[0].content = "Changed caller follow-up"; expect(result.run.messages.at(-2)?.content).not.toBe("Changed caller follow-up");
+	});
 	it("pauses a run for human review and exposes pause metadata", async () => {
 		const events: string[] = [];
 		const client = {

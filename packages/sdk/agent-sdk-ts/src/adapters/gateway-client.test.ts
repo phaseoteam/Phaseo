@@ -1,8 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
 import { AgentGatewayError } from "../errors";
 import { createGatewayAgentClient } from "./gateway-client";
+import { Phaseo } from "@phaseo/sdk";
 
 describe("createGatewayAgentClient", () => {
+	it("reads gateway event headers through the real SDK stream parser", async () => {
+		const frames = 'event: response.reasoning_text.delta\ndata: {"delta":"Owned thought"}\n\nevent: response.output_text.delta\ndata: {"delta":"Owned answer"}\n\nevent: response.function_call_arguments.delta\ndata: {"delta":"{}"}\n\nevent: response.completed\ndata: {"response":{"output":[]}}\n\n';
+		const sdk = new Phaseo({ apiKey: "owned-key", fetchImpl: async () => new Response(frames, { headers: { "content-type": "text/event-stream" } }) } as any);
+		const client = createGatewayAgentClient({ client: sdk });
+		const events = [];
+		for await (const event of client.stream!({ agentId: "owned", messages: [], tools: [], context: undefined })) events.push(event);
+		expect(events.filter(event => event.type === "response.output_text.delta")).toEqual([expect.objectContaining({ delta: "Owned answer" })]);
+		expect(events).toContainEqual(expect.objectContaining({ type: "response.reasoning.delta", delta: "Owned thought" }));
+	});
+	it("maps user text and images to Responses multimodal parts", async () => {
+		const create = vi.fn(async () => ({ id: "owned-image", output: [] }));
+		const client = createGatewayAgentClient({ client: { responses: { create } } as any });
+		await client.generate({ agentId: "images", model: "owned", messages: [{ role: "user", content: [{ type: "text", text: "Describe" }, { type: "image_url", image_url: { url: "data:image/png;base64,YWJj" } }] }], tools: [], context: undefined });
+		expect(create.mock.calls[0][0]).toEqual(expect.objectContaining({ input: [{ type: "message", role: "user", content: [{ type: "input_text", text: "Describe" }, { type: "input_image", image_url: "data:image/png;base64,YWJj" }] }] }));
+	});
 	it("passes current Responses fields through while protecting agent-owned fields", async () => {
 		const create = vi.fn(async () => ({ id: "resp_1", output: [] }));
 		const client = createGatewayAgentClient({
@@ -579,6 +595,22 @@ describe("createGatewayAgentClient", () => {
 });
 
 describe("live GPT 5.6 Luna gateway smoke", () => {
+	it.each(["complete", "missing", "without-items"])("keeps tool argument deltas out of assistant text with %s completion", async completion => {
+		const call = { type: "function_call", call_id: "owned-call", name: "run_project_command", arguments: '{"command":"owned-command"}' };
+		async function* stream() {
+			yield { type: "response.reasoning_text.delta", delta: "Inspect the environment" };
+			yield { type: "response.output_text.delta", delta: "Checking the drives." };
+			yield { type: "response.function_call_arguments.delta", delta: call.arguments };
+			yield { type: "response.output_item.done", item: call };
+			if (completion !== "missing") yield { type: "response.completed", response: completion === "complete" ? { output: [call] } : { id: "owned-response" } };
+		}
+		const client = createGatewayAgentClient({ client: { responses: { create: vi.fn(() => stream()) } } as any });
+		const events = [];
+		for await (const event of client.stream!({ agentId: "owned", messages: [], tools: [], context: undefined })) events.push(event);
+		expect(events.filter(event => event.type === "response.output_text.delta")).toEqual([expect.objectContaining({ delta: "Checking the drives." })]);
+		expect(events).toContainEqual(expect.objectContaining({ type: "response.reasoning.delta", delta: "Inspect the environment" }));
+		expect(events.at(-1)).toMatchObject({ type: "response.completed", response: { message: { toolCalls: [{ id: "owned-call", name: "run_project_command", input: { command: "owned-command" } }] } } });
+	});
 	it.runIf(process.env.PHASEO_AGENT_LIVE_SMOKE === "true" && Boolean(process.env.PHASEO_API_KEY))("streams a real response", async () => {
 		const client=createGatewayAgentClient({model:"openai/gpt-5.6-luna",includeMeta:true});const events=[];
 		for await(const event of client.stream!({agentId:"live-smoke",messages:[{role:"user",content:"Reply with exactly: luna-ok"}],tools:[],context:undefined}))events.push(event);

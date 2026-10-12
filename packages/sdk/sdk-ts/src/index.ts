@@ -1224,8 +1224,12 @@ export class Phaseo {
   }
 
   async *streamResponses(req: ResponsesRequest, options: PhaseoRequestOptions = {}): AsyncGenerator<ResponseStreamChunk> {
+    let eventType: string | undefined;
     for await (const line of this.streamResponse(req, options)) {
-      const chunk = parseResponseStreamLine(line);
+      if (line.startsWith("event:")) { eventType = line.slice(6).trim(); continue; }
+      if (!line.startsWith("data:")) continue;
+      const chunk = parseResponseStreamLine(line, eventType);
+      eventType = undefined;
       if (!chunk) continue;
       yield chunk;
     }
@@ -1706,7 +1710,7 @@ function parseChatStreamLine(line: string): ChatStreamChunk | null {
   };
 }
 
-function parseResponseStreamLine(line: string): ResponseStreamChunk | null {
+function parseResponseStreamLine(line: string, eventType?: string): ResponseStreamChunk | null {
   const parsed = parseSseJson(line);
   if (parsed === null) return null;
   if (!isRecord(parsed)) {
@@ -1718,10 +1722,11 @@ function parseResponseStreamLine(line: string): ResponseStreamChunk | null {
     };
   }
 
-  const usage = extractUsage(parsed);
+  const chunk = typeof parsed.type !== "string" && eventType ? { ...parsed, type: eventType } : parsed;
+  const usage = extractUsage(chunk);
   return {
-    ...parsed,
-    text: extractResponseChunkText(parsed),
+    ...chunk,
+    text: extractResponseChunkText(chunk),
     usage,
     reasoningTokens: extractReasoningTokens(usage)
   };
@@ -1787,6 +1792,8 @@ function extractChatChunkText(chunk: Record<string, unknown>): string {
 }
 
 function extractResponseChunkText(chunk: Record<string, unknown>): string {
+  // Reasoning and function-call argument deltas are not reply text.
+  if (typeof chunk.type === "string" && chunk.type.endsWith(".delta") && chunk.type !== "response.output_text.delta") return "";
   if (typeof chunk.delta === "string") return chunk.delta;
   if (typeof chunk.text === "string") return chunk.text;
   if (typeof chunk.output_text === "string") return chunk.output_text;
