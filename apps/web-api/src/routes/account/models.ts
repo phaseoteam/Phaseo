@@ -412,6 +412,27 @@ accountModelsRouter.post("/catalog/price-proposals/:id", async (c) => {
   return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+const successorModelSchema = z.string().trim().min(1).max(512);
+
+accountModelsRouter.get("/catalog/successor-routing", async (c) => {
+  const admin = await requireAdminContext(c.req.raw, c.env);
+  if (!admin.context) return c.json({ error: "unauthorized" }, admin.status, PRIVATE_NO_STORE_HEADERS);
+  const model = successorModelSchema.safeParse(c.req.query("model"));
+  if (!model.success) return c.json({ error: "invalid_model" }, 400, PRIVATE_NO_STORE_HEADERS);
+  const result = await admin.context.client.rpc("get_model_successor_routing", { p_model_slug: model.data });
+  if (result.error) return c.json({ error: "successor_routing_unavailable", message: result.error.message }, 503, PRIVATE_NO_STORE_HEADERS);
+  return c.json({ routing: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+accountModelsRouter.post("/catalog/successor-routing", async (c) => {
+  const admin = await requireAdminContext(c.req.raw, c.env);
+  if (!admin.context) return c.json({ error: "unauthorized" }, admin.status, PRIVATE_NO_STORE_HEADERS);
+  const parsed = z.object({ model: successorModelSchema, enabled: z.boolean(), allowWarnings: z.boolean().default(false), notes: z.string().trim().max(2000).nullable().optional() }).safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: "invalid_successor_routing" }, 400, PRIVATE_NO_STORE_HEADERS);
+  const result = await admin.context.client.rpc("set_model_successor_routing", { p_actor_user_id: admin.context.user.id, p_model_slug: parsed.data.model, p_enabled: parsed.data.enabled, p_allow_incompatible: parsed.data.allowWarnings, p_notes: parsed.data.notes ?? null });
+  if (result.error) return c.json({ error: "successor_routing_rejected", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
+  return c.json({ routing: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
 accountModelsRouter.get("/catalog/registries", async (c) => {
   const admin = await requireAdminContext(c.req.raw, c.env);
   if (!admin.context) return c.json({ error: "unauthorized" }, admin.status, PRIVATE_NO_STORE_HEADERS);

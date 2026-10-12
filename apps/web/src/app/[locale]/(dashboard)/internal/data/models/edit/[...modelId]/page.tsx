@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { fetchAdminCatalogRecord } from "@/lib/fetchers/internal/fetchAdminCatalog";
 import ModelLegacyEditor from "./ModelLegacyEditor";
 import ModelRevalidationControls from "./ModelRevalidationControls";
+import ModelSuccessorRoutingPanel from "./ModelSuccessorRoutingPanel";
 import SendModelDiscordNotificationButton from "@/app/(dashboard)/internal/data/models/edit/[...modelId]/SendModelDiscordNotificationButton";
 
 export default async function EditModelPage({
@@ -43,6 +44,7 @@ export default async function EditModelPage({
 				initialTab={initialTab}
 				focusProviderId={focusProviderId}
 			/>
+			<ModelSuccessorRoutingPanel modelId={modelId} />
 			<ModelRevalidationControls modelId={modelId} />
 			<div className="flex">
 				<Link href="/internal/data/models" className="rounded-md border px-3 py-2 text-sm">
