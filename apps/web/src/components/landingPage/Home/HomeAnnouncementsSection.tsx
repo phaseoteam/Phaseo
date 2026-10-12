@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import { IntentLink as Link } from "@/components/navigation/IntentLink";
 import { ChevronRight } from "lucide-react";
 import {
 	Card,
