@@ -1,0 +1,16 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+const ports = vi.hoisted(() => ({ git: vi.fn(), resolve: vi.fn(), execute: vi.fn() }));
+vi.mock("./gitProcess", () => ({ git: ports.git }));
+vi.mock("./nativeProcess", () => ({ resolveNativeCommand: ports.resolve }));
+vi.mock("node:util", () => ({ promisify: () => ports.execute }));
+import { parsePullRequestDetails, projectPullRequest } from "./projectPullRequests";
+const entry = { number:12,title:"Owned details",body:"# Description\nOwned body",state:"OPEN",author:{login:"fixture"},isDraft:true,headRefName:"feature",baseRefName:"main",headRefOid:"a".repeat(40),baseRefOid:"b".repeat(40),updatedAt:"2026-10-04T00:00:00Z",reviewDecision:"APPROVED",additions:12,deletions:4,changedFiles:2,mergeable:"MERGEABLE",mergeStateStatus:"CLEAN",commits:{nodes:[{commit:{statusCheckRollup:{state:"PENDING"}}}]}};
+describe("GitHub pull-request details",()=>{
+ beforeEach(()=>{vi.clearAllMocks();ports.git.mockResolvedValue("git@github.com:phaseoteam/Phaseo.git");ports.resolve.mockResolvedValue({executable:"/owned/gh",prefix:["literal"]});ports.execute.mockResolvedValue({stdout:JSON.stringify({data:{repository:{pullRequest:entry}}})});});
+ it("reads project-bound details with literal arguments, compact checks and bounded execution",async()=>{const value=await projectPullRequest("/owned/project",12);expect(value).toMatchObject({repository:"phaseoteam/Phaseo",number:12,body:entry.body,checks:"pending",review:"approved",headOid:entry.headRefOid,url:"https://github.com/phaseoteam/Phaseo/pull/12"});expect(ports.execute).toHaveBeenCalledWith("/owned/gh",expect.arrayContaining(["literal","api","graphql","--hostname","github.com","-F","number=12"]),expect.objectContaining({cwd:"/owned/project",windowsHide:true,timeout:20000,maxBuffer:2097152}));});
+ it.each([null,"12",-1,0,1.5,2147483648])("rejects invalid selectors before touching Git or CLI",async value=>{await expect(projectPullRequest("/owned",value)).rejects.toThrow("number");expect(ports.git).not.toHaveBeenCalled();expect(ports.execute).not.toHaveBeenCalled();});
+ it.each([{number:13},{body:null},{body:"x".repeat(200001)},{state:"UNKNOWN"},{additions:-1},{deletions:1.5},{changedFiles:null},{headRefOid:"untrusted"},{baseRefOid:""}])("rejects malformed details",patch=>{expect(()=>parsePullRequestDetails("owned/repo",12,{...entry,...patch})).toThrow("invalid");});
+ it("retains deleted authors and unknown conflict states without inventing success",()=>{expect(parsePullRequestDetails("owned/repo",12,{...entry,author:null,mergeable:"FUTURE",commits:{nodes:[]}})).toMatchObject({author:"Unknown author",mergeable:"UNKNOWN",checks:"unknown"});});
+ it.each(["not JSON",JSON.stringify({errors:[{message:"private"}],data:{repository:{pullRequest:entry}}}),JSON.stringify({data:{repository:{pullRequest:null}}})])("rejects unreadable, partial or missing details",async stdout=>{ports.execute.mockResolvedValue({stdout});await expect(projectPullRequest("/owned",12)).rejects.toThrow(/unreadable|incomplete/);});
+ it("keeps authentication diagnostics out of renderer errors",async()=>{ports.execute.mockRejectedValue(Error("private token diagnostic"));await expect(projectPullRequest("/owned",12)).rejects.toThrow("Check GitHub CLI sign-in");});
+});

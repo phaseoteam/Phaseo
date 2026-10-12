@@ -16,6 +16,7 @@ allowBuilds:
   es5-ext: set this to true or false
   esbuild: true
   keytar: set this to true or false
+  node-pty: true
   protobufjs: set this to true or false
   puppeteer: set this to true or false
   sharp: set this to true or false

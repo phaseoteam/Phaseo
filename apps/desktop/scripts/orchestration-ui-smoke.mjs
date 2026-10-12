@@ -1,0 +1,100 @@
+import { app, BrowserWindow, ipcMain } from 'electron';
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+app.setPath('userData', mkdtempSync(path.join(tmpdir(), 'phaseo-orchestration-ui-')));
+await import('../dist/main/index.mjs');
+app.whenReady().then(async () => {
+ const deadline = setTimeout(() => app.exit(1), 45000);
+ try {
+  const now = new Date().toISOString();
+  const parentId = '11111111-1111-4111-8111-111111111111', childId = '22222222-2222-4222-8222-222222222222', referenceId = '33333333-3333-4333-8333-333333333333';
+  const task = (id, title, extra = {}) => ({ id, title, harness: 'codex', model: 'owned-model', mode: 'code', status: 'completed', permissionMode: 'supervised', pinned: false, archived: false, createdAt: now, updatedAt: now, revision: 1, messages: [], queue: [], ...extra });
+  const tasks = [task(parentId, 'Owned parent', {activities:[{id:'result:command',type:'tool',title:'Check time',text:'Done',status:'completed',timelineOrder:3},{id:'native',type:'tool',title:'Native review',text:'Native findings',status:'completed',nativeAgent:{id:'provider-child',status:'completed'}}],messages:[{ id:'result', role:'user', delivery:'subagent', text:'Delegated findings', createdAt:now, timelineOrder:1 },{id:'preface',role:'assistant',text:'Checking time',createdAt:now,timelineOrder:2},{id:'final',role:'assistant',text:'Time checked',createdAt:now,timelineOrder:4}]}), task(childId, 'Owned child', { parentId, delegation: { parentTaskId:parentId, requestId:'owned' } }), task(referenceId, 'Owned reference', {harness:'phaseo',model:'openai/owned-model'})];
+  const overview = () => ({ version:1, projects:[], accounts:[], agents:[], mcpConnections:[], tasks:tasks.map(({messages,queue,...rest}) => ({...rest,attentionKey:'owned',approvalsCount:0,answersCount:0,steeringReviewCount:0})) });
+  const replace = (name, handler) => { ipcMain.removeHandler(name); ipcMain.handle(name, handler); };
+  replace('workspace:overview', overview);
+  replace('workspace:task', (_event, id) => tasks.find(task => task.id===id));
+  replace('workspace:task-history', () => ({tasks:tasks.map(({id,title,harness,status,pinned,updatedAt})=>({id,title,harness,status,pinned,updatedAt})),hasMore:false}));
+  replace('workspace:installations', () => [{harness:'codex',installed:true}]);
+  replace('workspace:account-status', () => ({authenticated:true,checkedAt:now}));
+  replace('workspace:models', () => [{id:'owned-model',name:'Owned model'}]);
+  let pasted=0;
+  replace('workspace:paste-image',(_event,id,name,bytes)=>{if(!(bytes instanceof Uint8Array)||bytes.length<8)throw Error('Clipboard bytes missing');pasted++;return {id:'44444444-4444-4444-8444-444444444444',taskId:id,name,kind:'image',mimeType:'image/png',size:bytes.length};});
+
+  let sends=0, sent;
+  replace('workspace:command', (_event, command) => { if(command.type==='send') { sends++; sent=command; } return overview(); });
+  const owner = BrowserWindow.getAllWindows()[0];
+  const run = code => owner.webContents.executeJavaScript(code);
+  const wait = async code => { for(let i=0;i<200;i++){if(await run(code))return;await new Promise(resolve=>setTimeout(resolve,40));}throw Error(code); };
+  await wait("Boolean(document.querySelector('.topbar .primary-button'))");
+  owner.webContents.reload();
+  await wait("Array.from(document.querySelectorAll('.task-row')).some(button=>button.textContent.includes('Owned parent'))");
+  await run("Array.from(document.querySelectorAll('.task-row')).find(button=>button.textContent.includes('Owned parent')).click()");
+  if(!await run("Boolean(document.querySelector('.task-row .harness-logo'))"))throw Error('Chat row logo missing');
+  if(!await run("(()=>{const row=Array.from(document.querySelectorAll('.task-row')).find(row=>row.textContent.includes('Owned reference'));return row.querySelector('.harness-logo')?.dataset.modelLab==='openai'&&!row.querySelector('.brand-mark');})()"))throw Error('Model lab logo replaced by harness logo');
+
+  const spacing = await run("Array.from(document.querySelectorAll('.task-row')).map(row=>{const logo=row.querySelector('.harness-logo'),title=row.querySelector('span:not(.harness-logo)');if(!logo||!title)return null;const a=logo.getBoundingClientRect(),b=title.getBoundingClientRect();return {width:a.width,gap:b.left-a.right};}).filter(Boolean)");
+  if(spacing.some(row=>row.width>15||row.gap>9||row.gap<3))throw Error('Sidebar logo/title spacing '+JSON.stringify(spacing));
+
+  const hover = await run("(()=>{const rect=Array.from(document.querySelectorAll('.task-row')).find(button=>button.textContent.includes('Owned parent')).getBoundingClientRect();return {x:Math.round(rect.x+20),y:Math.round(rect.y+rect.height/2)};})()");
+  owner.webContents.sendInputEvent({type:'mouseMove',...hover});
+  await wait("document.querySelector('.chat-preview')?.textContent.includes('owned-model')");
+  if(!await run("document.querySelector('.chat-preview')?.textContent.includes('Personal')"))throw Error('Chat hover metadata missing');
+  owner.webContents.sendInputEvent({type:'mouseMove',x:600,y:50});
+
+  await wait("Boolean(document.querySelector('[data-conversation-id=\"turn:result\"]'))");
+  if(!await run("!document.querySelector('[data-conversation-id=\"turn:result\"]').open && !document.querySelector('[data-conversation-id=\"message:final\"]').closest('.turn-work')"))throw Error('Completed turn did not collapse around final answer');
+  tasks[0].status='running';tasks[0].revision++;
+  tasks[0].activities.push({id:'result:reasoning',type:'reasoning',title:'Thinking',text:'Reviewing the current time',timelineOrder:2.5,status:'running'});
+  owner.webContents.send('workspace:overview-changed',overview());
+  await wait("Boolean(document.querySelector('.turn-work-live .task-activity[data-kind=reasoning][open]'))");
+  if(!await run("(()=>{const thinking=document.querySelector('.turn-work-live .task-activity[data-kind=reasoning] > summary'),tools=document.querySelector('.turn-work-live .activity-group > summary, .turn-work-live .task-activity[data-kind=tool] > summary');return thinking&&tools&&getComputedStyle(thinking).paddingLeft===getComputedStyle(tools).paddingLeft&&thinking.querySelector('.live-shimmer');})()"))throw Error('Live shimmer or disclosure alignment missing');
+
+  tasks[0].status='completed';tasks[0].revision++;tasks[0].messages[0].startedAt='2026-10-05T00:00:00Z';tasks[0].messages[0].completedAt='2026-10-05T00:01:06Z';
+  owner.webContents.send('workspace:overview-changed',overview());
+  await wait("document.querySelector('[data-conversation-id=\"turn:result\"] > summary')?.textContent.includes('Worked for 1m 6s') && !document.querySelector('[data-conversation-id=\"turn:result\"]').open");
+  await run("document.querySelector('[data-conversation-id=\"turn:result\"] > summary').click(); document.querySelector('.turn-work-content .task-activity[data-kind=reasoning] > summary').click()");
+  if(!await run("getComputedStyle(document.querySelector('.turn-work-content .task-activity[data-kind=reasoning] .activity-result')).backgroundColor==='rgba(0, 0, 0, 0)'"))throw Error('Completed thinking retained card background');
+  if(await run("Boolean(document.querySelector('.turn-work-content .activity-group'))"))throw Error('Single tool has redundant group');
+  await run("Array.from(document.querySelectorAll('.topbar button')).find(button=>button.textContent.trim()==='Tools').click()");
+  await wait("Boolean(document.querySelector('.chat-tools-header nav'))");
+  await run("Array.from(document.querySelectorAll('.chat-tools-header nav button')).find(button=>button.textContent.trim()==='Agents').click()");
+  await wait("Boolean(document.querySelector('[aria-label=\"Delegated agents\"]'))");
+  if(!await run("document.querySelector('[aria-label=\"Delegated agents\"]')?.textContent.includes('Owned child')"))throw Error('Child not tracked');
+  await wait("document.querySelector('.native-agent-row')?.textContent.includes('Native findings')");
+  if(!await run("Boolean(document.querySelector('.chat-tools [aria-label=\"Delegated agents\"]'))"))throw Error('Agents outside right pane');
+  if(!await run("Boolean(document.querySelector('.subagent-result summary svg'))"))throw Error('Agent result missing');
+  const ordered = await run("Array.from(document.querySelectorAll('[data-conversation-id]')).map(element=>element.dataset.conversationId)");
+  if(!(ordered.indexOf('message:preface') < ordered.indexOf('activity:result:command') && ordered.indexOf('activity:result:command') < ordered.indexOf('message:final')))throw Error('Conversation events out of order');
+
+  await run("document.activeElement.blur()");
+  owner.webContents.sendInputEvent({type:'keyDown',keyCode:'H'});owner.webContents.sendInputEvent({type:'keyUp',keyCode:'H'});
+  await wait("document.activeElement?.getAttribute('aria-label')==='Message' && document.activeElement.value.toLowerCase()==='h'");
+  owner.webContents.sendInputEvent({type:'keyDown',keyCode:'Backspace'});owner.webContents.sendInputEvent({type:'keyUp',keyCode:'Backspace'});
+  await run("(()=>{const data=new DataTransfer();data.items.add(new File([new Uint8Array([137,80,78,71,13,10,26,10])],'Pasted image.png',{type:'image/png'}));document.querySelector('[aria-label=\"Message\"]').dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data}));})()");
+  await wait("Boolean(document.querySelector('.attachment-chip'))");
+  if(pasted!==1)throw Error('Image paste did not reach attachment transport');
+  await run("document.querySelector('[aria-label=\"Message\"]').focus()");
+  await owner.webContents.insertText('@Owned reference');
+  await wait("Boolean(document.querySelector('.thread-reference-menu'))");
+  owner.webContents.sendInputEvent({type:'keyDown',keyCode:'Enter'});owner.webContents.sendInputEvent({type:'keyUp',keyCode:'Enter'});
+  await wait("Boolean(document.querySelector('[aria-label=\"Remove chat reference\"]'))&&!document.querySelector('.thread-reference-menu')");
+  if(sends)throw Error('Reference selection sent a message');
+  await owner.webContents.insertText('Summarize this chat');
+  owner.webContents.sendInputEvent({type:'keyDown',keyCode:'Enter'});owner.webContents.sendInputEvent({type:'keyUp',keyCode:'Enter'});
+  await wait("!document.querySelector('[aria-label=\"Remove chat reference\"]')");
+  if(sends!==1||sent.threadReferences?.[0]!==referenceId)throw Error('Reference not sent durably');
+  await run(`(()=>{const data=new DataTransfer();data.setData('application/x-phaseo-chat',${JSON.stringify(referenceId)});document.querySelector('.task-composer').dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data}));})()`);
+  await wait("Boolean(document.querySelector('[aria-label=\"Remove chat reference\"]'))");
+  owner.setSize(1440,920);mkdirSync('../../output/playwright/orchestration',{recursive:true});
+  writeFileSync('../../output/playwright/orchestration/agents-pane.png',(await owner.webContents.capturePage()).toPNG());
+  await run("document.querySelector('[aria-label=\"Delegated agents\"] .delegated-thread').click()");
+  await wait("document.querySelector('.task-title')?.value==='Owned child'&&Boolean(document.querySelector('.child-chat-controls'))");
+  await new Promise(resolve=>setTimeout(resolve,100));
+  owner.setSize(1440,920);mkdirSync('../../output/playwright/orchestration',{recursive:true});
+  writeFileSync('../../output/playwright/orchestration/child-chat.png',(await owner.webContents.capturePage()).toPNG());
+  console.log('ORCHESTRATION_UI_SMOKE',JSON.stringify({imagePaste:true,typeToCompose:true,sidebarLogos:true,sidebarHover:true,liveReasoning:true,completedTurnCollapse:true,eventOrdering:true,childTracking:true,childNavigation:true,collapsedResults:true,keyboardReferences:true,referenceDelivery:true,dragReferences:true,inferenceCalls:0}));
+  clearTimeout(deadline);app.quit();
+ } catch(error){console.error(error);app.exit(1);}
+});
