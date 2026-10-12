@@ -1,20 +1,20 @@
 ---
 title: "माइग्रेशन गाइड"
-description: "प्लेटफ़ॉर्म बदलने या model के किसी खास संस्करण को अपनाने की गाइड।"
+description: "प्लेटफ़ॉर्म बदलने या किसी ख़ास मॉडल रिलीज़ को अपनाने के लिए गाइड।"
 icon: "compass"
 ---
 
 Phaseo की माइग्रेशन गाइड दो तरह के बदलावों को कवर करती हैं:
 
-- किसी दूसरे platform या gateway से Phaseo पर जाना
-- उसी platform पर model का नया version अपनाना
+- किसी दूसरे प्लेटफ़ॉर्म या गेटवे से Phaseo पर जाना
+- उसी प्लेटफ़ॉर्म पर किसी ख़ास मॉडल रिलीज़ को अपनाना
 
 <Columns cols={2}>
-	<Card title="Model migrations" icon="brain-circuit" href="../model-migrations/index.mdx">
-		आसपास का integration लगभग वैसा रखते हुए model upgrade करें।
+	<Card title="मॉडल माइग्रेशन" icon="brain-circuit" href="../model-migrations/index.mdx">
+		आसपास का इंटीग्रेशन लगभग वैसा ही रखते हुए मॉडल अपग्रेड करें।
 	</Card>
 	<Card title="प्लेटफ़ॉर्म माइग्रेशन" icon="arrow-right-left" href="./gateway-parity-review.mdx">
-		SDK, provider या gateway बदलकर मौजूदा integration को Phaseo के लिए अनुकूल करें।
+		किसी SDK, प्रदाता या गेटवे इंटीग्रेशन को Phaseo पर ले जाएँ।
 	</Card>
 </Columns>
 
@@ -22,16 +22,16 @@ Phaseo की माइग्रेशन गाइड दो तरह के �
 
 अनुकूलित शुरुआती चेकलिस्ट के लिए [माइग्रेशन सहायक](https://phaseo.app/migrate) इस्तेमाल करें।
 
-जब integration लगभग वैसा ही रहे, लेकिन इस्तेमाल होने वाला model बदले, तब इन गाइड का उपयोग करें।
+जब इंटीग्रेशन लगभग वैसा ही रहे, लेकिन उसके नीचे इस्तेमाल होने वाला मॉडल बदले, तब मॉडल माइग्रेशन गाइड का उपयोग करें।
 
-इनमें शामिल हैं:
+इन गाइड में मुख्य रूप से ये बातें शामिल हैं:
 
-- request parameters में बदलाव
-- prompts और reasoning के व्यवहार में अंतर
-- structured output और tool-calling में अंतर
-- rollout, fallback और rollback की रणनीति
+- अनुरोध पैरामीटर में बदलाव
+- प्रॉम्प्ट और रीज़निंग के व्यवहार में बदलाव
+- संरचित आउटपुट और टूल कॉलिंग में अंतर
+- रोलआउट, फ़ॉलबैक और रोलबैक की रणनीति
 
-मौजूदा model migration गाइड:
+मौजूदा मॉडल माइग्रेशन गाइड:
 
 - [Anthropic Claude Opus 5](../model-migrations/anthropic-claude-opus-5.mdx)
 - [OpenAI GPT-5.6](../model-migrations/openai-migrating-to-gpt-5-6.mdx)
@@ -47,31 +47,31 @@ Phaseo की माइग्रेशन गाइड दो तरह के �
 
 ## प्लेटफ़ॉर्म माइग्रेशन
 
-अगर आप SDK, provider या gateway बदल रहे हैं और मौजूदा integration को Phaseo से जोड़ना चाहते हैं, तो इन गाइड का उपयोग करें।
+अगर आप SDK, प्रदाता या गेटवे बदल रहे हैं और अपने मौजूदा इंटीग्रेशन को Phaseo से मैप करना है, तो प्लेटफ़ॉर्म माइग्रेशन गाइड का उपयोग करें।
 
 <Card title="माइग्रेशन चेकलिस्ट बनाएँ" icon="list-checks" href="https://phaseo.app/migrate">
-	मौजूदा integration चुनें और इंटरैक्टिव माइग्रेशन सहायक खोलें।
+	अपना मौजूदा इंटीग्रेशन चुनें और इंटरैक्टिव माइग्रेशन सहायक खोलें।
 </Card>
 
-मौजूदा platform migration गाइड:
+मौजूदा प्लेटफ़ॉर्म माइग्रेशन गाइड:
 
 - [OpenAI SDK से माइग्रेशन](./from-openai.mdx)
 - [Anthropic SDK से माइग्रेशन](./from-anthropic.mdx)
-- [OpenRouter से माइग्रेशन](./from-openrouter.mdx): endpoint और key बदलें, models जाँचें और streaming व rollback परखें।
+- [OpenRouter से माइग्रेशन](./from-openrouter.mdx): एंडपॉइंट और कुंजी बदलें, मॉडल ID सत्यापित करें, और स्ट्रीमिंग व रोलबैक का परीक्षण करें।
 - [Vercel AI Gateway से माइग्रेशन](./from-vercel.mdx)
 - [LLMGateway से माइग्रेशन](./from-llmgateway.mdx)
 - [LiteLLM से माइग्रेशन](./from-litellm.mdx)
 - [Cloudflare AI Gateway से माइग्रेशन](./from-cloudflare.mdx)
 - [Helicone AI Gateway से माइग्रेशन](./from-helicone.mdx)
 
-Rollout की योजना बनाएँ और उसे validate करें:
+रोलआउट की योजना बनाएँ और उसे सत्यापित करें:
 
 - [माइग्रेशन तैयारी की समीक्षा](./gateway-parity-review.mdx)
-- [माइग्रेशन feature checklist](./feature-parity-matrix.mdx)
+- [माइग्रेशन फ़ीचर चेकलिस्ट](./feature-parity-matrix.mdx)
 
 ## इन गाइड का उपयोग कैसे करें
 
-1. तय करें कि platform, model या दोनों बदल रहे हैं।
+1. तय करें कि आप प्लेटफ़ॉर्म, मॉडल या दोनों बदल रहे हैं।
 2. माइग्रेशन के सबसे जोखिम वाले हिस्से वाली गाइड से शुरू करें।
-3. output quality की तुलना से पहले request parameters और endpoint behavior जाँचें।
-4. live traffic बदलने से पहले production-जैसे evaluations चलाएँ।
+3. आउटपुट की गुणवत्ता की तुलना करने से पहले अनुरोध पैरामीटर और एंडपॉइंट का व्यवहार जाँचें।
+4. लाइव ट्रैफ़िक बदलने से पहले प्रोडक्शन जैसे मूल्यांकन चलाएँ।

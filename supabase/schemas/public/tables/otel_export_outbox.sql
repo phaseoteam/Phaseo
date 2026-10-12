@@ -23,6 +23,8 @@ CREATE TABLE "public"."otel_export_outbox" (
 ALTER TABLE "public"."otel_export_outbox"
   ENABLE ROW LEVEL SECURITY;
 
+CREATE INDEX otel_export_outbox_created_at_idx ON public.otel_export_outbox USING btree (created_at);
+
 CREATE INDEX otel_export_outbox_pending_idx ON public.otel_export_outbox USING btree (next_attempt_at, created_at)
   WHERE (status = ANY (ARRAY['pending'::text, 'processing'::text]));
 

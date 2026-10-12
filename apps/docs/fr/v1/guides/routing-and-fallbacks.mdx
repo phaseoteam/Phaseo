@@ -225,6 +225,49 @@ Les nœuds de modèle d’une route dynamique peuvent également définir une li
 
 Chaque modèle de repli est vérifié indépendamment au regard des restrictions de modèles de l’espace de travail, des garde-fous, de la politique fournisseur, des prix et des capacités prises en charge. Une route peut enregistrer jusqu’à huit modèles de repli.
 
+<span id="request-level-model-fallbacks"></span>
+### Modèles de repli au niveau de la requête
+
+`model` est obligatoire et désigne toujours le modèle principal. Ajoutez le tableau facultatif `models` pour lister des modèles de repli pour une seule requête. Phaseo essaie d’abord `model`, puis chaque entrée de `models` dans l’ordre :
+
+```json
+{
+  "model": "openai/gpt-5-mini",
+  "models": ["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"],
+  "input": "Summarize this incident report."
+}
+```
+
+Une requête qui envoie `models` sans `model` est rejetée avec `400`. Les replis au niveau de la requête reposent sur le même mécanisme que les replis des routes dynamiques :
+
+- **Déclencheurs.** Le modèle suivant n’est essayé que si la tentative précédente, après ses propres nouvelles tentatives auprès des fournisseurs, se termine par `429`, `500`, `502`, `503` ou `504`. Les erreurs client comme `400`, `401`, `402`, `403`, `404`, `408`, `413` et `422` sont renvoyées sans changer de modèle. Une réponse `429` due à un budget Phaseo ou au quota d’un modèle gratuit atteint pendant l’exécution de la requête fait également passer au modèle suivant, car un autre modèle peut tenir dans la limite restante. L’authentification, les limites de débit des clés d’API et les autres vérifications qui échouent avant l’exécution du modèle principal sont renvoyées immédiatement.
+- **Limites.** `models` accepte de 1 à 25 entrées. Les doublons et les entrées identiques à `model` sont ignorés. Les routes dynamiques conservent leur propre limite de huit modèles de repli.
+- **Validation.** Chaque entrée peut être un identifiant de modèle, un identifiant de modèle qualifié par fournisseur ou un préréglage tel que `@support`. Chaque tentative est validée comme une requête distincte : prise en charge du point de terminaison et de la modalité, paramètres demandés, restrictions de modèles de l’espace de travail, garde-fous, préréglages, prix et identifiants BYOK. Un modèle de repli qui ne peut pas traiter la requête est ignoré et consigné dans les journaux de requêtes ; il ne remplace jamais l’erreur que vous auriez reçue autrement. Un modèle de repli qui aboutit à une tentative déjà effectuée, avec le même modèle et les mêmes fournisseurs éligibles, est ignoré.
+- **Journalisation et facturation.** Chaque tentative apparaît comme une requête distincte dans vos journaux, avec sa propre utilisation et sa propre ligne de facturation. Chaque tentative est donc facturée exactement comme elle le serait sans repli.
+- **Modèle ayant traité la requête.** Le champ `model` de la réponse indique le modèle qui a traité la requête. Sa trace de routage liste l’identifiant de la requête principale, l’ordre de repli et chaque tentative précédente avec son statut.
+- **Diffusion en continu.** Le repli n’a lieu qu’avant l’envoi du premier octet. Une erreur survenant après le début d’un flux est renvoyée dans ce flux.
+- **Vidéo et musique.** Ces requêtes ne basculent vers un modèle de repli que pendant la soumission de la tâche. Une fois qu’un fournisseur a accepté une tâche, un échec ultérieur ne lance pas de nouvelle tâche avec un autre modèle.
+
+`models` interagit avec les autres contrôles de routage comme suit :
+
+- **Routes dynamiques.** Les modèles de repli configurés sur une route dynamique associée ont priorité sur `models`. Un modèle fixe sélectionné par une route dynamique s’applique toujours à chaque tentative.
+- **Préréglages.** Un préréglage peut être le `model` principal ou une entrée de `models`. Chaque tentative applique les contraintes de son propre préréglage : un préréglage peut donc restreindre les fournisseurs qu’un modèle de repli peut utiliser.
+- **Routage automatique.** `phaseo/auto` gère déjà des replis classés : il ne peut donc pas être combiné avec `models` ni figurer dans `models`.
+
+| Point de terminaison | Prise en charge de `models` |
+| --- | --- |
+| Chat Completions, Responses, Messages | Pris en charge, y compris en streaming avant le premier octet |
+| Embeddings, Moderations, Rerank | Pris en charge |
+| Génération et modification d’images | Pris en charge, y compris les envois multipart |
+| Synthèse vocale, transcriptions et traductions | Pris en charge, y compris les envois multipart |
+| OCR, Parse, Decisions | Pris en charge |
+| Génération de vidéo et de musique | Pris en charge lors de la soumission de la tâche |
+| Lots | Rejeté avec `400` ; chaque ligne du lot cible un seul modèle |
+| Sessions en temps réel et en direct | Rejeté avec `400` ; une session est liée à un seul modèle |
+| Exécutions Council | Rejeté avec `400` ; les modèles proviennent de la configuration de l’exécution |
+
+Les points de terminaison multipart acceptent des champs `models` répétés, des champs `models[]` ou une seule chaîne contenant un tableau JSON.
+
 Pour en savoir plus :
 
 - [Limites de débit](../api-reference/limits.mdx)

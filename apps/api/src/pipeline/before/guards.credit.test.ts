@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { guardContext } from "./guards";
+import { guardContext, keyLimitRetryAfterSeconds } from "./guards";
 import { fetchGatewayContext } from "./context";
 
 vi.mock("./context", () => ({
@@ -371,6 +371,7 @@ describe("guardContext credit gating for free models", () => {
 		expect(result.ok).toBe(false);
 		if (result.ok) return;
 		expect(result.response.status).toBe(429);
+		expect(result.response.headers.get("Retry-After")).toBe("43199");
 		const payload = await result.response.json();
 		expect(payload).toMatchObject({
 			error: "key_limit_exceeded",
@@ -395,6 +396,42 @@ describe("guardContext credit gating for free models", () => {
 			request_id: "req_key_limit_1",
 			workspace_id: "team_123",
 		});
+	});
+
+	it("omits Retry-After when the limit has no reset", async () => {
+		fetchGatewayContextMock.mockResolvedValue(
+			makeContext({
+				model: "openai/gpt-4.1-mini",
+				creditOk: true,
+				keyLimit: { ok: false, reason: "key_limit_soft_blocked", resetAt: null, limitMetric: "soft_blocked" },
+			}) as any,
+		);
+
+		const result = await guardContext({
+			workspaceId: "team_123",
+			apiKeyId: "key_123",
+			endpoint: "responses",
+			capability: "text.generate",
+			model: "openai/gpt-4.1-mini",
+			requestId: "req_key_limit_2",
+		});
+
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(429);
+		expect(result.response.headers.get("Retry-After")).toBeNull();
+	});
+});
+
+describe("keyLimitRetryAfterSeconds", () => {
+	it("rounds up to whole seconds and never returns less than one", () => {
+		expect(keyLimitRetryAfterSeconds("2026-05-09T12:00:01.200Z", "2026-05-09T12:00:00.000Z")).toBe(2);
+		expect(keyLimitRetryAfterSeconds("2026-05-09T11:59:00.000Z", "2026-05-09T12:00:00.000Z")).toBe(1);
+	});
+
+	it("returns null without a parseable reset time", () => {
+		expect(keyLimitRetryAfterSeconds(null)).toBeNull();
+		expect(keyLimitRetryAfterSeconds("not-a-date", "2026-05-09T12:00:00.000Z")).toBeNull();
 	});
 });
 

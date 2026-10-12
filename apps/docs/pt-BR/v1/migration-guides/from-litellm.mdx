@@ -14,7 +14,7 @@ Use este guia se seu aplicativo chama um proxy LiteLLM por meio de um cliente co
 | URL base | Seu proxy LiteLLM | `https://api.phaseo.app/v1` |
 | Chave de API | Chave do proxy LiteLLM | `PHASEO_API_KEY` |
 | Aliases de modelos | Configuração do LiteLLM | IDs de modelos do Phaseo ou aliases do aplicativo |
-| Padrões de roteamento | Configuração do LiteLLM | Presets e configurações de roteamento do Phaseo |
+| Padrões de roteamento | Configuração do LiteLLM | Predefinições e configurações de roteamento do Phaseo |
 
 <Steps>
 <Step title="Faça o inventário da configuração do proxy">
@@ -69,7 +69,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 Verifique cada modelo de produção com `GET /v1/models`. Se os clientes dependerem de aliases internos, normalize-os em um único limite do aplicativo em vez de editar cada solicitação.
 
-Mova prompts, parâmetros e restrições de provedores reutilizáveis para [Presets](../guides/presets.mdx). Configure a classificação de provedores e os fallbacks em [Roteamento e fallbacks](../guides/routing-and-fallbacks.mdx).
+Mova prompts, parâmetros e restrições de provedores reutilizáveis para [Predefinições](../guides/presets.mdx). Configure a classificação de provedores e os fallbacks em [Roteamento e fallbacks](../guides/routing-and-fallbacks.mdx).
 
 </Step>
 
@@ -84,13 +84,13 @@ Teste streaming, ferramentas, saídas estruturadas, novas tentativas, mapeamento
 
 - URLs, chaves e dependências de implantação do LiteLLM foram identificadas.
 - Cada modelo e alias de produção tem um mapeamento explícito no Phaseo.
-- Os padrões compartilhados foram movidos para presets ou para um único limite do aplicativo.
+- Os padrões compartilhados foram movidos para predefinições ou para um único limite do aplicativo.
 - Streaming, ferramentas e saídas estruturadas passam no staging quando usados.
 - Callbacks e telemetria necessários têm uma substituição planejada.
 - A reversão continua limitada à alteração do endpoint e da chave.
 
 ## Próximas etapas
 
-- [Presets](../guides/presets.mdx)
+- [Predefinições](../guides/presets.mdx)
 - [Roteamento e fallbacks](../guides/routing-and-fallbacks.mdx)
 - [Observabilidade](../guides/integrations/observability.mdx)

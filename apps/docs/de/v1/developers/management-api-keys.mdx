@@ -1,12 +1,12 @@
 ---
 title: Management-API-Schlüssel
-description: Erstellen Sie Management-Schlüssel mit gezielten Berechtigungen für Phaseo-Control-Plane-APIs.
+description: Erstelle Management-Schlüssel mit gezielten Berechtigungen für Phaseo-Control-Plane-APIs.
 icon: "key-round"
 ---
 
 Management-API-Schlüssel sind serverseitige Zugangsdaten für die Control Plane von Phaseo: Guthaben, Aktivitäten, Workspace-Verwaltung, Schlüsselverwaltung, Voreinstellungen, Einstellungen und Guardrails. Sie sind nicht für Inferenzanfragen gedacht.
 
-Erstellen Sie sie unter **Dashboard → Einstellungen → Management-Schlüssel**. Das Geheimnis wird nur einmal angezeigt. Speichern Sie es in Ihrem Geheimnismanager, bevor Sie den Dialog schließen.
+Erstelle sie unter **Dashboard → Einstellungen → Management-Schlüssel**. Das Geheimnis wird nur einmal angezeigt. Speichere es in deinem Geheimnismanager, bevor du den Dialog schließt.
 
 ## Zugangsdaten
 
@@ -18,7 +18,7 @@ Erstellen Sie sie unter **Dashboard → Einstellungen → Management-Schlüssel*
 
 Management-Routen akzeptieren nur `phaseo_v1_mk_<kid>_<secret>`. Gateway-API-Schlüssel verwenden `phaseo_v1_sk_<kid>_<secret>` und sind ausschließlich für Inferenz vorgesehen. Sie erhalten keinen Zugriff auf Control-Plane-Endpunkte.
 
-Verwenden Sie Management-Schlüssel nur in serverseitigem Code:
+Verwende Management-Schlüssel nur in serverseitigem Code:
 
 ```http
 Authorization: Bearer phaseo_v1_mk_<kid>_<secret>
@@ -42,7 +42,7 @@ Das Dashboard bietet explizite Vorlagen. Beim Erstellen eines Schlüssels wird j
 
 ## Funktionsübersicht
 
-Verwenden Sie für gängige Fälle eine Zugriffsvorlage. Wählen Sie explizite Funktionen aus, wenn eine Integration eng begrenzte, zweckgebundene Berechtigungen benötigt.
+Verwende für gängige Fälle eine Zugriffsvorlage. Wähle explizite Funktionen aus, wenn eine Integration eng begrenzte, zweckgebundene Berechtigungen benötigt.
 
 | Bereich | Lesen | Schreiben | Löschen |
 | --- | --- | --- | --- |
@@ -57,6 +57,7 @@ Verwenden Sie für gängige Fälle eine Zugriffsvorlage. Wählen Sie explizite F
 | Private Modelle | `private_models:read` | `private_models:write` | `private_models:delete` |
 | Guardrails | `guardrails:read` | `guardrails:write` | `guardrails:delete` |
 | Budgets | `budgets:read` | `budgets:write` | `budgets:delete` |
+| Ratenlimits | `rate_limits:read` | `rate_limits:write` | `rate_limits:delete` |
 | OAuth-Clients | `oauth_clients:read` | `oauth_clients:write` | `oauth_clients:delete` |
 
 `Write`-Vorlagen enthalten die zugehörigen Leseberechtigungen. So kann eine Integration eine Ressource vor einer Aktualisierung prüfen. `All` umfasst Löschberechtigungen und sollte nur für vertrauenswürdige Verwaltungsautomatisierungen verwendet werden.
@@ -71,13 +72,13 @@ Beispielsweise erlaubt `keys:write` Schlüsselverwaltungsaktionen. Die Workspace
 
 Guardrails gelten für **Gateway-API-Schlüssel** und steuern den Inferenzverkehr: Routing-Beschränkungen, Budgets, den Umgang mit Prompt-Injection und Regeln für vertrauliche Informationen. Die Bereiche eines Management-Schlüssels legen fest, welche Verwaltungs-APIs ein Zugang aufrufen darf. Diese Kontrollen ergänzen sich und ersetzen einander nicht.
 
-Unter [Guardrails für API-Schlüssel einführen](../cookbook/guardrails-for-api-keys.mdx) erfahren Sie, wie Sie Guardrails für einen Inferenzschlüssel einrichten.
+Unter [Guardrails für API-Schlüssel einführen](../cookbook/guardrails-for-api-keys.mdx) erfährst du, wie du Guardrails für einen Inferenzschlüssel einrichtest.
 
 ## Sicherheit und Rotation
 
-- Halten Sie Management-Schlüssel aus Browsern, Desktop-Protokollen, der Versionsverwaltung und Chats heraus.
-- Verwenden Sie pro Integration einen eigenen Schlüssel und bevorzugen Sie die engste Vorlage.
-- Legen Sie ein Ablaufdatum fest, wenn die Integration keinen unbegrenzten Zugriff benötigt.
-- Sperren oder löschen Sie nicht mehr benötigte Schlüssel sofort.
-- Ersetzen Sie einen offengelegten Schlüssel, bevor Sie den Vorfall weiter untersuchen.
+- Halte Management-Schlüssel aus Browsern, Desktop-Protokollen, der Versionsverwaltung und Chats heraus.
+- Verwende pro Integration einen eigenen Schlüssel und bevorzuge die engste Vorlage.
+- Lege ein Ablaufdatum fest, wenn die Integration keinen unbegrenzten Zugriff benötigt.
+- Sperre oder lösche nicht mehr benötigte Schlüssel sofort.
+- Ersetze einen offengelegten Schlüssel, bevor du den Vorfall weiter untersuchst.
 

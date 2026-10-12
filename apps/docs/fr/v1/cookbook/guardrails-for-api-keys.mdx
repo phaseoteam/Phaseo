@@ -4,7 +4,7 @@ icon: "shield-check"
 description: "Appliquez des garde-fous aux clés d’API, testez leur application avant le déploiement et vérifiez les blocages, masquages et alertes dans l’activité."
 ---
 
-Utilisez ce guide si vous devez protéger une ou plusieurs clés d’API à l’aide de limites de budget, de restrictions de routage, de vérifications contre l’injection de prompt ou de règles sur les informations sensibles.
+Utilisez cette recette lorsque vous devez protéger une ou plusieurs clés API avec des restrictions de routage, des vérifications d'injection de prompt ou un traitement des informations sensibles.
 
 ## 1. Créer le garde-fou dans l’espace de travail
 
@@ -26,13 +26,14 @@ Procédez dans cet ordre :
 2. si possible, associez un seul garde-fou à la fois
 3. vérifiez que la fenêtre des détails de la clé affiche le garde-fou appliqué
 
-## 3. Définir la politique de budget et les restrictions de routage
+## 3. Définir les restrictions de routage
 
 Combinaison courante :
 
-- limite de coût quotidienne
 - liste de blocage des fournisseurs considérés comme peu fiables
 - liste d’autorisation des modèles exacts de production qui doivent rester routables
+
+Les garde-fous n'appliquent pas de limites de dépenses. Pour plafonner les dépenses, définissez une limite sur la clé API elle-même ou créez un [budget d'espace de travail](../api-reference/endpoint/budgets-list.mdx).
 
 Utilisez l’aperçu en direct de l’éditeur de garde-fous pour vérifier :
 

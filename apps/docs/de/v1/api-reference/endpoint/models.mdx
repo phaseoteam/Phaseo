@@ -6,17 +6,31 @@ openapi: "/de/openapi/v1/openapi.localized.yaml GET /models"
 description: "Gateway-native Modelle über das Phaseo Gateway durchsuchen, einschließlich optionaler Verfügbarkeitsdetails für nicht routbare Modelle."
 ---
 
-Standardmäßig gibt dieser Endpunkt nur Modelle zurück, die aktuell geroutet werden können. Setzen Sie `availability=all`, um bekannte, derzeit aber nicht verfügbare Modelle einzuschließen.
+Standardmäßig gibt dieser Endpunkt nur Modelle zurück, die aktuell geroutet werden können. Setze `availability=all`, um bekannte, derzeit aber nicht verfügbare Modelle einzuschließen.
 
 Katalogantworten werden fünf Minuten zwischengespeichert und können während der Cache-Revalidierung weitere fünf Minuten ausgeliefert werden. Dies gilt für die JSON-, RSS- und Atom-Darstellungen des aktuellen Katalogs; der Veröffentlichungsfeed hat einen eigenen, kürzeren Abfrage-Cache.
 
-`GET /models/me` ist für eine künftige Filterung nach den Guardrails des aktuellen Aufrufers vorgesehen. Der Endpunkt gibt derzeit `501 not implemented` zurück. Verwenden Sie deshalb vorerst `GET /models` für den gemeinsamen Gateway-Katalog.
+`GET /models/me` ist für eine künftige Filterung nach den Guardrails des aktuellen Aufrufers vorgesehen. Der Endpunkt gibt derzeit `501 not implemented` zurück. Verwende deshalb vorerst `GET /models` für den gemeinsamen Gateway-Katalog.
 
 ## OpenAI-Format
 
-Verwende `GET /v1/models?format=openai` mit deinem Phaseo-API-Schlüssel für `{"object":"list","data":[{"id":"openai/gpt-4o-mini","object":"model","created":1721260800,"owned_by":"openai"}]}`. Das Standardformat `json` enthält weiterhin die Phaseo-Metadaten.
+Verwende `GET /v1/models?format=openai` für Clients, die die Modelllisten-Antwort von OpenAI erwarten. Der Standardwert `format=json` liefert die ausführlicheren Modellmetadaten von Phaseo.
 
-Authentifizierung, regionale Verfügbarkeit, private Workspace-Modelle und Filter gelten weiterhin. Ohne `limit` werden alle Ergebnisse zurückgegeben; `offset` gilt weiterhin. IDs behalten das kanonische Phaseo-Format. `created` ist der Veröffentlichungszeitpunkt in Unix-Sekunden oder `0`, wenn unbekannt. `owned_by` ist die Katalogorganisation, `private` für Workspace-Modelle oder `phaseo`, wenn unbekannt.
+```bash
+curl 'https://api.phaseo.app/v1/models?format=openai' \
+  -H 'Authorization: Bearer YOUR_PHASEO_API_KEY'
+```
+
+```json
+{
+  "object": "list",
+  "data": [
+    { "id": "openai/gpt-4o-mini", "object": "model", "created": 1721260800, "owned_by": "openai" }
+  ]
+}
+```
+
+Das OpenAI-Format verwendet dieselbe Authentifizierung, regionale Verfügbarkeit, privaten Workspace-Modelle und Filter wie das native JSON. Es gibt alle passenden Modelle zurück, sofern du kein `limit` angibst; `offset` gilt weiterhin. IDs bleiben für die Inferenz in der kanonischen Form von Phaseo. `created` verwendet das Veröffentlichungsdatum aus dem Katalog oder `0`, wenn es unbekannt ist; `owned_by` verwendet die Katalogorganisation, `private` für Workspace-Modelle oder `phaseo`, wenn sie unbekannt ist.
 
 ## Nützliche Filter
 
@@ -36,7 +50,7 @@ Authentifizierung, regionale Verfügbarkeit, private Workspace-Modelle und Filte
 - `output_modalities` ist ein Alias für `output_types`
 - `supported_parameters` ist ein Alias für `params`
 
-Rufen Sie `GET /models/{author}/{slug}/endpoints` auf, um den Endpunktvertrag für ein Modell abzurufen. Die Antwort trennt die Anbieter-Routen und enthält für jede Zeile den öffentlichen Pfad, Modalitäten, Details zu unterstützten Parametern, Verfügbarkeit, Routing-Status, den Modell-Slug des Anbieters und eine Preisübersicht.
+Rufe `GET /models/{author}/{slug}/endpoints` auf, um den Endpunktvertrag für ein Modell abzurufen. Die Antwort trennt die Anbieter-Routen und enthält für jede Zeile den öffentlichen Pfad, Modalitäten, Details zu unterstützten Parametern, Verfügbarkeit, Routing-Status, den Modell-Slug des Anbieters und eine Preisübersicht.
 
 Anbietereinträge können außerdem Folgendes enthalten:
 

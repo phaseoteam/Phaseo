@@ -2,6 +2,7 @@ export interface ApiKeyWithValue {
   created_at: string | null;
   created_by: string | null;
   creator_user_id: string | null;
+  department_id?: string | null;
   disabled: boolean;
   expires_at: string | null;
   hash: string;

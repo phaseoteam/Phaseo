@@ -1,28 +1,28 @@
 ---
 title: "प्रॉम्प्ट कैशिंग"
-description: "Chat Completions, Responses और Anthropic Messages requests में स्थिर prompt context दोबारा उपयोग करें।"
+description: "Chat Completions, Responses और Anthropic Messages अनुरोधों में स्थिर प्रॉम्प्ट संदर्भ को दोबारा उपयोग करें।"
 icon: "database-zap"
 ---
 
-जब कई requests में वही बड़ा context आता है, तब prompt caching उपयोग करें। स्थिर निर्देशों, दस्तावेज़ों, उदाहरणों, tool outputs या tool definitions को cacheable चिह्नित करें, ताकि supported providers बाद की calls में context दोबारा उपयोग कर सकें।
+जब कई अनुरोधों में वही बड़ा संदर्भ आता है, तब प्रॉम्प्ट कैशिंग उपयोग करें। स्थिर निर्देशों, दस्तावेज़ों, उदाहरणों, टूल आउटपुट या टूल परिभाषाओं को कैश करने योग्य चिह्नित करें, ताकि समर्थित प्रदाता बाद की कॉल में उस संदर्भ को दोबारा उपयोग कर सकें।
 
-Prompt caching, [response caching](../cookbook/response-caching-with-presets.mdx) से अलग है। Prompt caching में inference चलता रहता है, लेकिन बार-बार input process करने की लागत और latency कम हो सकती है। Response caching समान request के लिए पहले से बना उत्तर लौटाता है।
+प्रॉम्प्ट कैशिंग, [प्रतिक्रिया कैशिंग](../cookbook/response-caching-with-presets.mdx) से अलग है। प्रॉम्प्ट कैशिंग में इन्फ़रेंस फिर भी चलता है, लेकिन बार-बार इनपुट प्रोसेस करने की लागत और लेटेंसी कम हो सकती है। प्रतिक्रिया कैशिंग एक जैसे अनुरोध के लिए पहले से जनरेट किया गया उत्तर लौटाती है।
 
 <Note>
-Prompt caching provider और model के अनुसार बदलती है। Unsupported providers cache hints अनदेखा करते हैं या cached pricing के बिना route करते हैं। Cache read/write rates के लिए model page की pricing table देखें।
+प्रॉम्प्ट कैशिंग प्रदाता और मॉडल के अनुसार बदलती है। असमर्थित प्रदाता कैश संकेतों को अनदेखा करते हैं या कैश वाली कीमतों के बिना अनुरोध रूट करते हैं। कैश से पढ़ने/उसमें लिखने की दरों के लिए मॉडल पेज की मूल्य तालिका देखें।
 </Note>
 
-## कौन-सी सामग्री cache करें
+## कौन-सी सामग्री कैश करें
 
-ऐसी सामग्री cache करें जो requests के बीच स्थिर रहती है:
+ऐसी सामग्री कैश करें जो अनुरोधों के बीच स्थिर रहती है:
 
-- लंबे system instructions
+- लंबे सिस्टम निर्देश
 - दोबारा उपयोग किए जाने वाले RAG दस्तावेज़
-- few-shot के उदाहरण
+- फ़्यू-शॉट उदाहरण
 - टूल की परिभाषाएँ
-- बड़े tool results जिन्हें अगले turn में दोबारा उपयोग किया जाए
+- बड़े टूल परिणाम, जिन्हें अगले टर्न में दोबारा उपयोग किया जाता है
 
-हर request में बदलने वाली सामग्री, छोटे one-off user input या ऐसा संवेदनशील data cache न करें जिसे चुने गए provider पर store करने की आपकी policy अनुमति नहीं देती।
+हर अनुरोध में बदलने वाली सामग्री, उपयोगकर्ता का छोटा और एक बार का इनपुट, या ऐसा संवेदनशील डेटा कैश न करें जिसे चुने गए प्रदाता पर संग्रहीत करने की अनुमति आपकी नीति नहीं देती।
 
 ## कैश नियंत्रण
 
@@ -37,9 +37,9 @@ Phaseo, Chat Completions, Responses और Anthropic Messages अनुरोध
 }
 ```
 
-कम समय के shared context के लिए `ttl: "5m"` और provider तथा model support करें तो लंबे समय के prompt cache entries के लिए `ttl: "1h"` चुनें। Supported providers top-level cache control को automatic/default cache policy मानते हैं।
+कम समय तक रहने वाले साझा संदर्भ के लिए `ttl: "5m"` चुनें, और जब प्रदाता तथा मॉडल लंबे समय तक रहने वाली प्रॉम्प्ट कैश प्रविष्टियों का समर्थन करें, तब `ttl: "1h"` चुनें। जो प्रदाता इसका समर्थन करते हैं, वे शीर्ष-स्तरीय कैश नियंत्रण को स्वचालित/डिफ़ॉल्ट कैश नीति मानते हैं।
 
-स्पष्ट cache breakpoints के लिए supported text, image, tool result और tool definition blocks पर सीधे `cache_control` भी रख सकते हैं:
+स्पष्ट कैश ब्रेकपॉइंट के लिए आप समर्थित टेक्स्ट, इमेज, टूल परिणाम और टूल परिभाषा ब्लॉक पर सीधे `cache_control` भी रख सकते हैं:
 
 ```json
 {
@@ -52,7 +52,7 @@ Phaseo, Chat Completions, Responses और Anthropic Messages अनुरोध
 }
 ```
 
-Provider-specific aliases अब भी supported हैं। उदाहरण के लिए, `provider_options` के ज़रिए default Anthropic cache policy लागू कर सकते हैं:
+प्रदाता-विशिष्ट उपनाम अब भी समर्थित हैं। उदाहरण के लिए, आप `provider_options` के ज़रिए डिफ़ॉल्ट Anthropic कैश नीति लागू कर सकते हैं:
 
 ```json
 {
@@ -70,17 +70,17 @@ Provider-specific aliases अब भी supported हैं। उदाहर�
 
 `scope` के समर्थित मान:
 
-| Scope | व्यवहार |
+| स्कोप | व्यवहार |
 | --- | --- |
-| `all_text` | जिन system text और user text/image blocks में पहले से cache control नहीं है, उनमें इसे जोड़ें। |
-| `last_user_message` | केवल सबसे नए user message में cache control जोड़ें। |
-| `none` | Default cache policy लागू न करें। |
+| `all_text` | सिस्टम टेक्स्ट और उपयोगकर्ता के टेक्स्ट/इमेज ब्लॉक में, जिनमें पहले से कैश नियंत्रण नहीं है, कैश नियंत्रण जोड़ें। |
+| `last_user_message` | केवल उपयोगकर्ता के सबसे नए संदेश में कैश नियंत्रण जोड़ें। |
+| `none` | डिफ़ॉल्ट कैश नीति लागू न करें। |
 
-Block-level `cache_control` default policy पर प्राथमिकता रखता है।
+किसी ब्लॉक पर सीधे रखा गया `cache_control` डिफ़ॉल्ट नीति पर प्राथमिकता पाता है।
 
 ## Chat Completions
 
-OpenAI-compatible chat clients उपयोग करते समय `/v1/chat/completions` उपयोग करें।
+OpenAI-संगत चैट क्लाइंट उपयोग करते समय `/v1/chat/completions` उपयोग करें।
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
@@ -115,7 +115,7 @@ OpenAI के माध्यम से भेजे जाने वाले �
 }
 ```
 
-Provider-specific alias भी स्वीकार किया जाता है:
+प्रदाता-विशिष्ट उपनाम भी स्वीकार किया जाता है:
 
 ```json
 {
@@ -129,7 +129,7 @@ Provider-specific alias भी स्वीकार किया जाता �
 
 ## Responses
 
-नए OpenAI-compatible text integrations और agent flows के लिए `/v1/responses` उपयोग करें।
+नए OpenAI-संगत टेक्स्ट इंटीग्रेशन और एजेंट फ़्लो के लिए `/v1/responses` उपयोग करें।
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
@@ -156,7 +156,7 @@ curl https://api.phaseo.app/v1/responses \
   }'
 ```
 
-पहले से Google Gemini cached content resource हो, तो उसे `provider_options.google.cached_content` से पास करें:
+अगर आपके पास पहले से Google Gemini का कैश किया गया कंटेंट रिसोर्स है, तो उसे `provider_options.google.cached_content` के ज़रिए पास करें:
 
 ```json
 {
@@ -170,7 +170,7 @@ curl https://api.phaseo.app/v1/responses \
 
 ## Anthropic Messages
 
-आपका client Anthropic-compatible हो, तो `/v1/messages` उपयोग करें।
+अगर आपका क्लाइंट Anthropic-संगत है, तो `/v1/messages` उपयोग करें।
 
 ```bash
 curl https://api.phaseo.app/v1/messages \
@@ -219,36 +219,36 @@ curl https://api.phaseo.app/v1/messages \
   }'
 ```
 
-Anthropic Messages में इन पर cache control समर्थित है:
+Anthropic Messages में इन पर कैश नियंत्रण समर्थित है:
 
 - `system` के टेक्स्ट ब्लॉक
-- संदेश का पाठ और इमेज ब्लॉक
+- संदेश के टेक्स्ट और इमेज ब्लॉक
 - टूल परिणाम ब्लॉक
 - टूल की परिभाषाएँ
 
 ## उपयोग और मूल्य निर्धारण के फ़ील्ड
 
-Provider cache usage लौटाए, तो Phaseo उसे common usage fields में normalize करता है।
+जब प्रदाता कैश का उपयोग लौटाता है, तो Phaseo उसे सामान्य उपयोग फ़ील्ड में मानकीकृत करता है।
 
-| Field | अर्थ |
+| फ़ील्ड | अर्थ |
 | --- | --- |
-| `input_tokens_details.cached_tokens` | Provider prompt cache से पढ़े गए cached input tokens। |
-| `output_tokens_details.cached_tokens` | Provider prompt cache में लिखे गए cached input tokens। |
-| `cached_read_text_tokens` | Cache reads का pricing meter। यह provider cache से दोबारा उपयोग किया गया cached input text है। |
-| `cached_write_text_tokens` | Provider का cache-write price एक हो, तो यह cache writes का pricing meter है। |
-| `cached_write_text_tokens_5m` | Provider TTL-specific writes report करे, तो 5 minute TTL के लिए cache-write tokens। |
-| `cached_write_text_tokens_1h` | Provider TTL-specific writes report करे, तो 1 hour TTL के लिए cache-write tokens। |
+| `input_tokens_details.cached_tokens` | प्रदाता के प्रॉम्प्ट कैश से पढ़े गए कैश्ड इनपुट टोकन। |
+| `output_tokens_details.cached_tokens` | प्रदाता के प्रॉम्प्ट कैश में लिखे गए कैश्ड इनपुट टोकन। |
+| `cached_read_text_tokens` | कैश से पढ़ने का मूल्य निर्धारण मीटर। यह प्रदाता के कैश से दोबारा उपयोग किया गया कैश्ड इनपुट टेक्स्ट है। |
+| `cached_write_text_tokens` | जब प्रदाता के पास कैश में लिखने की एक ही कीमत हो, तब कैश में लिखने का मूल्य निर्धारण मीटर। |
+| `cached_write_text_tokens_5m` | जब प्रदाता TTL के अनुसार अलग-अलग लेखन रिपोर्ट करे, तब 5 मिनट के TTL के लिए कैश में लिखे गए टोकन। |
+| `cached_write_text_tokens_1h` | जब प्रदाता TTL के अनुसार अलग-अलग लेखन रिपोर्ट करे, तब 1 घंटे के TTL के लिए कैश में लिखे गए टोकन। |
 
-Cache writes आम तौर पर सामान्य input tokens से महँगे होते हैं; cache reads सस्ते। सही pricing provider, model और TTL पर निर्भर करती है।
+कैश में लिखना आम तौर पर सामान्य इनपुट टोकन से महँगा होता है, जबकि कैश से पढ़ना आम तौर पर सस्ता होता है। सटीक कीमत प्रदाता, मॉडल और TTL पर निर्भर करती है।
 
 ## व्यावहारिक जाँच
 
-Prompt caching जोड़ने के बाद:
+प्रॉम्प्ट कैशिंग जोड़ने के बाद:
 
-1. Cache बनाने या warm करने के लिए एक request भेजें।
-2. उसी cacheable content के साथ दूसरा request भेजें।
+1. कैश बनाने या उसे वार्म करने के लिए एक अनुरोध भेजें।
+2. उसी कैश करने योग्य सामग्री के साथ दूसरा अनुरोध भेजें।
 3. जवाब के उपयोग आँकड़ों और अनुरोध विवरण में कैश-पठन/कैश-लेखन फ़ील्ड देखें।
-4. केवल पहली call नहीं, कई calls में latency और cost की तुलना करें।
+4. केवल पहली कॉल नहीं, बल्कि बार-बार की गई कॉल में लेटेंसी और लागत की तुलना करें।
 
 ## प्रदाता से जुड़ाव
 
@@ -257,12 +257,12 @@ Prompt caching जोड़ने के बाद:
 15 मिनट तक उसी प्रदाता को प्राथमिकता देते हैं। इससे दूसरे प्रदाता को भुगतान करके
 उसी प्रॉम्प्ट कैश को फिर से बनाने से बचा जा सकता है।
 
-`session_id` शामिल करने पर, कैश रीड दिखाई देने से सेशन एफिनिटी भी बनती है।
-Phaseo सक्रिय सेशन अवधि के दौरान यह एफिनिटी बनाए रखता है, फिर भी
+`session_id` शामिल करने पर, कैश रीड दिखाई देने से सत्र एफिनिटी भी बनती है।
+Phaseo सक्रिय सत्र अवधि के दौरान यह एफिनिटी बनाए रखता है, फिर भी
 यदि प्रदाता अस्वस्थ हो या नीति के अनुसार पात्र न रहे, तो फ़ेलओवर की अनुमति देता है।
 
-एक request के लिए इसे बंद करने हेतु `provider.cache_aware_routing` को `false` सेट करें। इसके बाद
-request में `session_id` हो, लेकिन केवल सामान्य context-based routing चाहिए, तो
+किसी एक अनुरोध के लिए इसे बंद करने हेतु `provider.cache_aware_routing` को `false` सेट करें। जब
+अनुरोध में `session_id` हो, लेकिन उसे केवल सामान्य संदर्भ-आधारित रूटिंग उपयोग करनी हो, तो
 `routing.session_affinity` को `false` सेट करें।
 
 ## संबंधित पेज
@@ -272,4 +272,4 @@ request में `session_id` हो, लेकिन केवल सामा
 - [Anthropic Messages](../api-reference/endpoint/anthropic-messages.mdx)
 - [पैरामीटर](../api-reference/parameters.mdx)
 - [संदर्भ और टोकन बजट](./context-and-token-budgeting.mdx)
-- [Presets के साथ response caching उपयोग करें](../cookbook/response-caching-with-presets.mdx)
+- [प्रीसेट के साथ प्रतिक्रिया कैशिंग उपयोग करें](../cookbook/response-caching-with-presets.mdx)

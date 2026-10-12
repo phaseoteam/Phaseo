@@ -233,6 +233,8 @@
 			"modalityMusic": "Music",
 			"modalityFile": "File",
 			"modalityRerank": "Reranking",
+			"modalityDocuments": "Documents",
+			"modalityTranslation": "Translation",
 			"endpointResponses": "Responses",
 			"endpointChatCompletions": "Chat completions",
 			"endpointMessages": "Messages",

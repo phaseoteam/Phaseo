@@ -22,6 +22,7 @@ Die Parameterunterstützung variiert weiterhin je nach Endpunkt, Modell und Anbi
 | Parameter | Typ | Zweck |
 | --- | --- | --- |
 | [`model`](#model) | `string` | Auswahl der auszuführenden Gateway-Modell-ID. |
+| [`models`](#models) | `string[]` | Angabe geordneter Fallback-Modelle, die bei wiederholbaren Fehlern nach `model` versucht werden. |
 | [`stream`](#stream) | `boolean` | Schrittweise SSE-Ausgabe statt einer einzelnen vollständigen Antwort. |
 | [`temperature`](#temperature) | `number` | Zufälligkeit erhöhen oder verringern. |
 | [`top_p`](#top_p) | `number` | Den Pool für Nucleus Sampling verkleinern oder erweitern. |
@@ -33,11 +34,11 @@ Die Parameterunterstützung variiert weiterhin je nach Endpunkt, Modell und Anbi
 | [`presence_penalty`](#presence_penalty) | `number` | Themen- oder Wortschatzwechsel fördern. |
 | [`repetition_penalty`](#repetition_penalty) | `number` | Anbieterspezifische Wiederholungskontrolle. |
 | [`seed`](#seed) | `integer` | Reproduzierbarkeit verbessern, sofern der Upstream-Anbieter dies unterstützt. |
-| [`stop`](#stop) | `string` or `string[]` | Explizite Stoppsequenzen festlegen. |
+| [`stop`](#stop) | `string` oder `string[]` | Explizite Stoppsequenzen festlegen. |
 | [`logprobs`](#logprobs) / [`top_logprobs`](#top_logprobs) | `boolean` / `integer` | Token-Wahrscheinlichkeitsdaten anfordern. |
 | [`tools`](#tools), [`tool_choice`](#tool_choice) | `array`, `string`, `object` | Steuerung von Tool-Aufrufen und Funktionsausführung. |
 | [`parallel_tool_calls`](#parallel_tool_calls) | `boolean` | Sequenzielle Tool-Ausführung erlauben oder erzwingen. |
-| [`response_format`](#response_format) | `string` or `object` | Klartext-, JSON- oder schema-konforme Ausgabe. |
+| [`response_format`](#response_format) | `string` oder `object` | Klartext-, JSON- oder schema-konforme Ausgabe. |
 | [`json_schema`](#json_schema) | `object` | Das Schema für strukturierte Ausgaben festlegen. |
 | [`structured_outputs`](#structured_outputs) | `boolean` | Fähigkeitssignal für zuverlässige schema-konforme Ausgaben. |
 | [`reasoning`](#reasoning) | `object` | Anbieterspezifische Reasoning-Konfiguration. |
@@ -85,6 +86,20 @@ Wählt die Gateway-Modell-ID für die Anfrage aus.
 
 Verwende die kanonische Modell-ID aus dem Schnellstart der jeweiligen Modellseite, es sei denn, du möchtest bewusst einen unterstützten Alias nutzen. Kanonische IDs sind die sicherste Wahl für Beispiele, Automatisierung und langfristige Integrationen.
 
+<span id="models"></span>
+<h3 id="parameter-models"><code>models</code></h3>
+
+Listet optionale Fallback-Modelle auf, die in der angegebenen Reihenfolge nach `model` versucht werden. `model` ist erforderlich und immer das primäre Modell. Der nächste Eintrag wird nur versucht, wenn ein Versuch mit `429`, `500`, `502`, `503` oder `504` fehlschlägt.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `string[]` |
+| Erforderlich | Nein. Eine Anfrage mit `models` muss auch `model` festlegen. |
+| Limits | 1 bis 25 Einträge. Duplikate und Einträge, die `model` entsprechen, werden ignoriert. |
+| Beispiel | `["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"]` |
+
+Jeder Versuch wird als eigene Anfrage validiert, protokolliert und abgerechnet. Das Feld `model` der Antwort und der Routing-Trace zeigen das Modell, das die Anfrage bedient hat. Streaming-Anfragen greifen nur vor dem ersten Byte auf Fallbacks zurück, Video- und Musik-Jobs nur bei der Übermittlung. Fallbacks einer zugeordneten dynamischen Route haben Vorrang, Voreinstellungen werden als Einträge akzeptiert und `phaseo/auto` kann nicht mit `models` kombiniert werden. Batch-, Realtime- und Council-Anfragen lehnen `models` mit `400` ab. Multipart-Endpunkte akzeptieren wiederholte `models`-Felder, `models[]`-Felder oder ein einzelnes JSON-Array. Unter [Fallback-Modelle auf Anfrageebene](../guides/routing-and-fallbacks.mdx#request-level-model-fallbacks) findest du Details zu Priorität, Validierung, Streaming und Abrechnung.
+
 <span id="stream"></span>
 <h3 id="parameter-stream"><code>stream</code></h3>
 
@@ -100,9 +115,9 @@ Aktiviere die Option für Chat-Oberflächen, die Token-für-Token-Anzeige oder l
 
 Hinweise:
 
-Die Streaming-Unterstützung variiert je nach Endpunkt.
-Streaming ist normalerweise eine Transportoption und keine Qualitätssteuerung.
-Tool-Aufrufe und strukturierte Ausgaben können je nach Anbieter unterschiedlich gestreamt werden.
+- Die Streaming-Unterstützung variiert je nach Endpunkt.
+- Streaming ist normalerweise eine Transportoption und keine Qualitätssteuerung.
+- Tool-Aufrufe und strukturierte Ausgaben können je nach Anbieter unterschiedlich gestreamt werden.
 
 <span id="temperature"></span>
 <h3 id="parameter-temperature"><code>temperature</code></h3>
@@ -127,9 +142,9 @@ Geeignete Anwendungsfälle:
 
 Praktische Hinweise:
 
-Beginne bei strukturierten Aufgaben mit einem niedrigen Wert.
-Ändere zuerst `temperature` oder `top_p`, nicht beide gleichzeitig.
-Hohe Temperatur kann zusammen mit aggressiver Quantisierung die Instabilität verstärken.
+- Beginne bei strukturierten Aufgaben mit einem niedrigen Wert.
+- Ändere zuerst `temperature` oder `top_p`, nicht beide gleichzeitig.
+- Hohe Temperatur kann zusammen mit aggressiver Quantisierung die Instabilität verstärken.
 
 <span id="top_p"></span>
 <h3 id="parameter-top_p"><code>top_p</code></h3>
@@ -147,8 +162,8 @@ Niedrige Werte beschränken die Wahrscheinlichkeitsmasse, aus der das Modell aus
 
 Hinweise:
 
-Passe `top_p` an, wenn du den Suchraum verkleinern oder vergrößern möchtest, ohne die Temperatur direkt zu ändern.
-Für die meisten Anwendungen sind eine moderate `temperature` und ein `top_p` nahe 1,0 ein sinnvoller Ausgangspunkt.
+- Passe `top_p` an, wenn du den Suchraum verkleinern oder vergrößern möchtest, ohne die Temperatur direkt zu ändern.
+- Für die meisten Anwendungen sind eine moderate `temperature` und ein `top_p` nahe 1,0 ein sinnvoller Ausgangspunkt.
 
 <span id="top_k"></span>
 <h3 id="parameter-top_k"><code>top_k</code></h3>
@@ -165,8 +180,8 @@ Niedrige `top_k`-Werte schränken die Auswahl des Modells ein und können die Au
 
 Hinweise:
 
-`top_k` ist nicht bei allen Anbietern verfügbar.
-Betrachte es als eine explizitere Begrenzung des Token-Pools als `top_p`.
+- `top_k` ist nicht bei allen Anbietern verfügbar.
+- Betrachte es als eine explizitere Begrenzung des Token-Pools als `top_p`.
 
 <span id="max_tokens"></span>
 <h3 id="parameter-max_tokens"><code>max_tokens</code></h3>
@@ -265,7 +280,7 @@ Definiert eine oder mehrere Sequenzen, die die Generierung vorzeitig beenden.
 
 | Feld | Wert |
 | --- | --- |
-| Typ | `string` or `string[]` |
+| Typ | `string` oder `string[]` |
 | Standard | Nicht gesetzt |
 | Häufige Verwendung | Parser-Grenzen, Vorlagenenden und Protokollmarker |
 
@@ -315,7 +330,7 @@ Legt fest, ob das Modell Tools automatisch aufrufen darf, keine Tools aufrufen d
 
 | Feld | Wert |
 | --- | --- |
-| Typ | `string` or `object` |
+| Typ | `string` oder `object` |
 | Häufige Werte | `none`, `auto`, `required` |
 
 Verwende `none`, wenn du nur Inhalte möchtest, `auto`, wenn das Modell selbst entscheiden darf, und strengere Werte, wenn die nachgelagerte Orchestrierung einen Tool-Aufruf verlangt.
@@ -339,7 +354,7 @@ Fordert ein bestimmtes Ausgabeformat an, etwa Klartext, JSON oder schema-konform
 
 | Feld | Wert |
 | --- | --- |
-| Typ | `string` or `object` |
+| Typ | `string` oder `object` |
 | Standard | Endpunkt- und anbieterspezifisch |
 
 Die genau akzeptierten Formen hängen vom Endpunkt und Provider-Adapter ab. Nutze den Parameter für mehr als freien Text, besonders für JSON-Antworten und strukturierte Extraktion.
@@ -434,8 +449,8 @@ Phaseo ordnet diese vom Gateway normalisierten Stufenwerte intern den anbieterei
 
 Hinweise:
 
-`Batch` ist ein separater API-Ablauf und kein Wert für die Service-Stufe.
-Die Unterstützung variiert je nach Endpunkt und Anbieter.
+- `Batch` ist ein separater API-Ablauf und kein Wert für die Service-Stufe.
+- Die Unterstützung variiert je nach Endpunkt und Anbieter.
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>
@@ -510,7 +525,7 @@ Häufige Felder sind:
 | `only` | `string[]` | Beschränkt das Routing auf bestimmte Anbieter. |
 | `ignore` | `string[]` | Schließt bestimmte Anbieter aus. |
 | `include_alpha` | `boolean` | Lässt Alpha-Anbieter bei Routing-Entscheidungen zu. |
-| `sort` | `string` or `object` | Ordnet Anbieter, häufig nach `price`, `latency` oder `throughput`. |
+| `sort` | `string` oder `object` | Ordnet Anbieter, häufig nach `price`, `latency` oder `throughput`. |
 | `required_execution_region` | `string` | Beschränkt die Ausführung auf eine vorgeschriebene Region. |
 | `required_data_region` | `string` | Beschränkt die Datenverarbeitung auf eine vorgeschriebene Region. |
 | `require_zero_data_retention` | `boolean` | Verlangt Anbieter, die die Anforderungen an Zero Data Retention erfüllen. |
@@ -583,7 +598,7 @@ Zu den unterstützten Debug-Feldern gehören:
 | `return_upstream_request` | `boolean` | Fügt den transformierten Upstream-Anfrage-Payload ein. |
 | `return_upstream_response` | `boolean` | Fügt nach Möglichkeit den Upstream-Antwort-Payload ein. |
 | `trace` | `boolean` | Gibt Routing- oder Debug-Traces zurück. |
-| `trace_level` | `summary` or `full` | Steuert den Detailgrad der Traces. |
+| `trace_level` | `summary` oder `full` | Steuert den Detailgrad der Traces. |
 
 Debug-Payloads können vertraulichen Anfragekontext enthalten. Verwende sie nur während der Entwicklung oder in streng kontrollierten Umgebungen.
 

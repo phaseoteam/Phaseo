@@ -29,7 +29,7 @@ Identifique os arquivos exatos que criam e configuram o cliente do LLM Gateway.
 - Localize todos os usos de variáveis de ambiente `LLM_GATEWAY_*`.
 - Encontre todas as referências à URL base na configuração de execução.
 - Registre os IDs dos modelos ativos e as cadeias de fallback.
-- Anote padrões compartilhados de prompts, regras de permissão ou bloqueio de provedores e presets de parâmetros que devem migrar para os presets do Gateway.
+- Anote padrões compartilhados de prompts, regras de permissão ou bloqueio de provedores e predefinições de parâmetros que devem migrar para as predefinições do Gateway.
 
 ## 2) Troque o endpoint e as credenciais
 
@@ -73,7 +73,7 @@ Consulte o catálogo de modelos do Phaseo e verifique cada modelo usado em produ
 
 Se sua configuração atual usa aliases sem prefixo, como `gpt-4o`, normalize-os em um único limite em vez de alterar cada cliente.
 
-Se a camada atual do gateway também centraliza padrões de solicitação ou restrições de provedores, mapeie esse comportamento para [Presets](../guides/presets.mdx) e [Roteamento e fallbacks](../guides/routing-and-fallbacks.mdx) durante a migração, em vez de reimplementá-lo para cada cliente.
+Se a camada atual do gateway também centraliza padrões de solicitação ou restrições de provedores, mapeie esse comportamento para [Predefinições](../guides/presets.mdx) e [Roteamento e fallbacks](../guides/routing-and-fallbacks.mdx) durante a migração, em vez de reimplementá-lo para cada cliente.
 
 ```bash
 curl -s "https://api.phaseo.app/v1/models" \
@@ -88,7 +88,7 @@ curl -s "https://api.phaseo.app/v1/models" \
 - Os IDs dos modelos de produção foram verificados em `/v1/models`.
 - Uma solicitação com streaming e outra sem streaming foram validadas no staging.
 - O tratamento de falhas para chaves e modelos inválidos foi revisado.
-- Padrões compartilhados de prompts e roteamento foram movidos para presets quando adequado.
+- Padrões compartilhados de prompts e roteamento foram movidos para predefinições quando adequado.
 - As consultas de gerações foram verificadas novamente por meio de `GET /v1/generations?id=<request_id>`, para permitir a reprodução de solicitações com falha usando o conteúdo armazenado de `replay_request` quando `replay_supported=true`.
 
 ## 5) Valide e faça o rollout

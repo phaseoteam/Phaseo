@@ -22,6 +22,7 @@ export interface DecisionsRequest {
     [key: string]: unknown;
   };
   model: string;
+  models?: string[];
   provider?: {
     allow_fallbacks?: boolean | null;
     data_collection?: "allow" | "deny" | null;

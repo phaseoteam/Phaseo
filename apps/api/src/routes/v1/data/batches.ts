@@ -11,6 +11,7 @@ import { withRuntime } from "../../utils";
 import { authenticate } from "@pipeline/before/auth";
 import type { AuthFailure, AuthSuccess } from "@pipeline/before/auth";
 import { err } from "@pipeline/before/http";
+import { hasRequestModelFallbacksField } from "@pipeline/before/requestModelFallbacks";
 import { generatePublicId } from "@pipeline/before/genId";
 import { guardContext } from "@pipeline/before/guards";
 import { readProviderCatalogTier } from "@core/serviceTiers";
@@ -1730,6 +1731,16 @@ async function handleCreate(req: Request) {
 	if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
 		return err("validation_error", { reason: "batch_body_must_be_object", request_id: requestId });
 	}
+	if (hasRequestModelFallbacksField(payload)) {
+		// Batch rows run asynchronously inside the provider batch; there is no
+		// synchronous submission per row to retry with another model.
+		return err("validation_error", {
+			reason: "models_not_supported_for_endpoint",
+			message: "Batches use one model per request row; remove models from the batch and its rows.",
+			request_id: requestId,
+			workspace_id: auth.workspaceId,
+		});
+	}
 	const { upstreamPayload, webhook, invalidWebhook } = splitGatewayBatchCreatePayload(payload);
 	if (invalidWebhook) {
 		return err("validation_error", {
@@ -2057,6 +2068,16 @@ async function handleCreate(req: Request) {
 				provider: providerId,
 			});
 		}
+	}
+	if (policyRows.some((row) => hasRequestModelFallbacksField(row.body))) {
+		// Batch rows run asynchronously inside the provider batch; there is no
+		// synchronous submission per row to retry with another model.
+		return err("validation_error", {
+			reason: "models_not_supported_for_endpoint",
+			message: "Batches use one model per request row; remove models from the batch and its rows.",
+			request_id: requestId,
+			workspace_id: auth.workspaceId,
+		});
 	}
 	if (!providerSupportsMultipleModelsPerBatch(providerId)) {
 		const nativeModels = [...new Set(policyRows

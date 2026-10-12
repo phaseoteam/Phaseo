@@ -52,7 +52,7 @@ Initialisez les valeurs par défaut avec `ContinueOptions::new(result)`.
 | `Tool::new(id, description, parameters, executor)` | Définit un outil local synchrone. |
 | `Tool::external(id, description, parameters)` | Définit un outil dont le résultat est fourni par l’application après une pause. |
 | `Tool::require_approval()` | Exige une approbation avec l’identifiant exact avant l’exécution locale. |
-| `define_tool(tool)` | Renvoie l’outil fourni pour conserver un style de définition cohérent. |
+| `define_tool(tool)` | Renvoie le `Tool` fourni pour conserver un style de définition cohérent. |
 
 La signature de l’exécuteur est :
 
@@ -132,7 +132,7 @@ Renvoyez `HumanReviewRequest { reason, payload }` depuis la fonction de revue po
 - `kind`
 - `pending_tool_calls`
 
-Chaque `PendingToolCall` contient le `ToolCall` d’origine, le type d’entrée requis `kind` et une explication lisible.
+Chaque `PendingToolCall` contient le `ToolCall` d’origine, le type d’entrée requis `kind` et une raison `reason` lisible par un humain.
 
 `ToolDecision` fournit un `tool_call_id` approuvé et une explication facultative. `ToolOutput` fournit un `tool_call_id` et une sortie JSON.
 
@@ -152,7 +152,7 @@ Chaque `PendingToolCall` contient le `ToolCall` d’origine, le type d’entrée
 
 `UsageSummary` contient `input_tokens`, `output_tokens`, `cached_tokens`, `total_tokens` et `cost`.
 
-Le client de modèle fournit `cost`. L’adaptateur Gateway intégré 0.1 ne reporte actuellement pas les valeurs Gateway `cost_nanos` ou `cost_cents` dans ce champ.
+Le client de modèle fournit `cost`. L’adaptateur Gateway intégré `0.1` ne reporte actuellement pas les valeurs Gateway `cost_nanos` ou `cost_cents` dans ce champ.
 
 `RunResult`, `RunRecord`, `RunStep`, `Message`, `ToolCall`, `HumanPause`, `PendingToolCall`, `ToolDecision`, `ToolOutput` et `UsageSummary` prennent en charge la sérialisation Serde lorsque leurs définitions dérivent `Serialize` et `Deserialize`.
 

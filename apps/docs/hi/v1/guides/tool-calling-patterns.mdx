@@ -1,17 +1,17 @@
 ---
 icon: "waypoints"
 title: "टूल कॉलिंग पैटर्न"
-description: "Chat completions और responses endpoints के लिए भरोसेमंद tool-calling loops।"
+description: "Chat Completions और Responses एंडपॉइंट के लिए भरोसेमंद टूल कॉलिंग चक्र।"
 ---
 
-Tool-calling loops को deterministic और debug करने योग्य रखने के लिए ये patterns अपनाएँ।
+टूल कॉलिंग को नियतात्मक और डीबग करने योग्य रखने के लिए ये पैटर्न अपनाएँ।
 
 ## पैटर्न 1: Chat Completions चक्र
 
-1. User message और tool definitions भेजें।
-2. अगर `finish_reason` `tool_calls` हो, तो हर tool call execute करें।
-3. Tool outputs को `role: "tool"` messages के रूप में वापस भेजें।
-4. Assistant का final answer पढ़ें।
+1. उपयोगकर्ता का संदेश और टूल परिभाषाएँ भेजें।
+2. अगर `finish_reason` का मान `tool_calls` हो, तो हर टूल कॉल निष्पादित करें।
+3. टूल आउटपुट को `role: "tool"` संदेशों के रूप में वापस भेजें।
+4. असिस्टेंट का अंतिम उत्तर पढ़ें।
 
 ### अनुरोध (आगे की कड़ी)
 
@@ -58,8 +58,8 @@ Tool-calling loops को deterministic और debug करने योग्�
 
 ## पैटर्न 2: Responses चक्र
 
-`/v1/responses` में model tool calls `function_call` type के output items के रूप में दिखते हैं।
-फिर `function_call_output` input items के साथ follow-up request भेजें।
+`/v1/responses` में मॉडल के टूल कॉल `function_call` प्रकार के आउटपुट आइटम के रूप में दिखते हैं।
+फिर `function_call_output` इनपुट आइटम के साथ अनुवर्ती अनुरोध भेजें।
 
 ### अनुरोध (अनुवर्ती)
 
@@ -89,6 +89,6 @@ Tool-calling loops को deterministic और debug करने योग्�
 
 ## एंडपॉइंट चुनें
 
-- OpenAI-style message loops पहले से हों, तो `/v1/chat/completions` को प्राथमिकता दें।
-- App Responses API पर standardized हो, तो `/v1/responses` चुनें।
-- App Anthropic-native हो, तो `/v1/messages` उपयोग करें।
+- अगर आप पहले से OpenAI-शैली के संदेश चक्र इस्तेमाल करते हैं, तो `/v1/chat/completions` को प्राथमिकता दें।
+- अगर आपका ऐप Responses API पर मानकीकृत है, तो `/v1/responses` को प्राथमिकता दें।
+- अगर आपका ऐप Anthropic-नेटिव है, तो `/v1/messages` इस्तेमाल करें।

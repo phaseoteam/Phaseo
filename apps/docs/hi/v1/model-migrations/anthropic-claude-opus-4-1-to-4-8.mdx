@@ -1,80 +1,80 @@
 ---
 title: "Anthropic Claude Opus 4.8"
-description: "Claude Opus 4.8 अपनाने के लिए adaptive thinking, sampling controls और लंबे context की जानकारी।"
+description: "Claude Opus 4.8 अपनाते समय एडैप्टिव थिंकिंग, सैंपलिंग नियंत्रण और लंबे कॉन्टेक्स्ट के बारे में क्या जानना ज़रूरी है।"
 icon: "/icons/brands/anthropic.svg"
 ---
 
 # Anthropic Claude Opus 4.8
 
-Production में `anthropic/claude-opus-4.8` सुरक्षित रूप से अपनाने के लिए यह गाइड इस्तेमाल करें।
+प्रोडक्शन में `anthropic/claude-opus-4.8` को सुरक्षित रूप से अपनाने के लिए यह गाइड इस्तेमाल करें।
 
-Anthropic ने 5 जून 2026 को Claude Opus 4.1 को deprecated किया और 5 अगस्त 2026 को retirement तय की। Migration guidance चरणबद्ध है: पहले Opus 4.7 के request-format बदलाव लागू करें, फिर Opus 4.8 के व्यवहार में बदलाव देखें।
+Anthropic ने 5 जून 2026 को Claude Opus 4.1 को अप्रचलित घोषित किया और 5 अगस्त 2026 को इसे सेवा से हटाना तय किया। Opus 4.1 के लिए उनका माइग्रेशन मार्गदर्शन संचयी है: पहले Claude Opus 4.7 के अनुरोध-संरचना वाले बदलाव लागू करें, फिर Claude Opus 4.8 के व्यवहार संबंधी बदलावों की समीक्षा करें।
 
 ## नया क्या है
 
-- Phaseo model ID `anthropic/claude-opus-4.8` है।
-- Opus 4.7 और बाद के models `temperature`, `top_p` और `top_k` जैसे non-default sampling params अस्वीकार करते हैं।
-- Opus 4.7 और बाद के models manual extended-thinking budgets अस्वीकार करते हैं; adaptive thinking इस्तेमाल करें।
-- Opus 4.8 में `output_config.effort` default रूप से `high` है।
-- Opus 4.8 बातचीत के बीच में system messages जोड़ने देता है।
-- Claude API, AWS पर Claude Platform, Amazon Bedrock और Vertex AI के लिए Opus 4.8 आधारभूत सीमाओं को 1M टोकन संदर्भ और अधिकतम 128K आउटपुट टोकन तक बढ़ाता है।
+- Phaseo मॉडल ID `anthropic/claude-opus-4.8` है।
+- Opus 4.7 और बाद के मॉडल `temperature`, `top_p` और `top_k` जैसे गैर-डिफ़ॉल्ट सैंपलिंग पैरामीटर अस्वीकार करते हैं।
+- Opus 4.7 और बाद के मॉडल मैन्युअल एक्सटेंडेड थिंकिंग बजट अस्वीकार करते हैं; इसके बजाय एडैप्टिव थिंकिंग इस्तेमाल करें।
+- Opus 4.8 में `output_config.effort` डिफ़ॉल्ट रूप से `high` है।
+- Opus 4.8 बातचीत के बीच में सिस्टम संदेश जोड़ने देता है।
+- Claude API, AWS पर Claude Platform, Amazon Bedrock और Vertex AI के लिए Opus 4.8 आधारभूत सीमाओं को 1M टोकन कॉन्टेक्स्ट और अधिकतम 128K आउटपुट टोकन तक बढ़ाता है।
 
-## माइग्रेशन quickstart
+## माइग्रेशन की त्वरित शुरुआत
 
-### 1. Model ID अपडेट करें
+### 1. मॉडल ID अपडेट करें
 
-Model ID को `anthropic/claude-opus-4.8` सेट करें।
+मॉडल ID को `anthropic/claude-opus-4.8` पर सेट करें।
 
-### 2. Non-default sampling parameters हटाएँ
+### 2. गैर-डिफ़ॉल्ट सैंपलिंग पैरामीटर हटाएँ
 
-अगर Opus 4.1 requests अभी इनमें से कोई value सेट करती हैं, तो rollout से पहले हटाएँ:
+अगर आपके Opus 4.1 अनुरोध अब भी इनमें से कोई मान सेट करते हैं, तो रोलआउट से पहले उन्हें हटाएँ:
 
 - `temperature`
 - `top_p`
 - `top_k`
 
-Opus 4.7 और बाद में इन fields की non-default values `400` लौटाती हैं।
+Opus 4.7 और बाद के मॉडल पर इन फ़ील्ड के गैर-डिफ़ॉल्ट मान `400` लौटाते हैं।
 
-### 3. Manual thinking budgets को adaptive thinking से बदलें
+### 3. मैन्युअल थिंकिंग बजट को एडैप्टिव थिंकिंग से बदलें
 
-अगर पुराने thinking payloads भेजते हैं, जैसे:
+अगर आप पुराने थिंकिंग पेलोड भेजते हैं, जैसे:
 
 - `thinking: { "type": "enabled", "budget_tokens": 32000 }`
 
-तो इनके बजाय इस्तेमाल करें:
+तो इनके बजाय यह इस्तेमाल करें:
 
 - `thinking: { "type": "adaptive" }`
-- शुरुआती baseline के रूप में `output_config.effort = "high"`
+- बेसलाइन के रूप में `output_config.effort = "high"`
 
-### 4. Effort और long-context expectations फिर तय करें
+### 4. प्रयास स्तर और लंबे कॉन्टेक्स्ट की अपेक्षाओं की बेसलाइन दोबारा तय करें
 
-Opus 4.8 default रूप से `high` effort रखता है और Anthropic-operated API surfaces पर Opus 4.1 से बड़ा context window सपोर्ट करता है। फिर जाँचें:
+Opus 4.8 डिफ़ॉल्ट रूप से प्रयास स्तर `high` रखता है, और Anthropic द्वारा संचालित API इंटरफ़ेस पर यह Opus 4.1 की तुलना में कहीं बड़ी कॉन्टेक्स्ट विंडो का समर्थन करता है। दोबारा जाँचें:
 
-- latency budgets
-- token usage
-- prompt-cache behavior
-- लंबे documents और agent traces
+- लेटेंसी बजट
+- टोकन उपयोग
+- प्रॉम्प्ट कैशिंग का व्यवहार
+- लंबे दस्तावेज़ और लंबे एजेंट ट्रेस
 
-Microsoft Foundry पर लॉन्च के समय 1M context window उपलब्ध मानकर न चलें; Anthropic वहाँ Opus 4.8 के लिए 200K context window बताता है।
+अगर आप Microsoft Foundry पर चलाते हैं, तो लॉन्च के समय वहाँ 1M कॉन्टेक्स्ट विंडो उपलब्ध मानकर न चलें; Anthropic, Foundry पर Opus 4.8 के लिए 200K कॉन्टेक्स्ट विंडो बताता है।
 
-### 5. लंबी बातचीत में instruction updates फिर जाँचें
+### 5. लंबी बातचीत में निर्देशों के अपडेट दोबारा जाँचें
 
-Opus 4.8 बातचीत के बीच system messages सपोर्ट करता है। अगर agent loop हर turn पर पूरा system prompt फिर लिखता है, तो flow सरल बनाकर अधिक cache hits बचाए जा सकते हैं।
+Opus 4.8 बातचीत के बीच सिस्टम संदेशों का समर्थन करता है। अगर आपका एजेंट लूप अभी हर टर्न पर पूरा सिस्टम प्रॉम्प्ट दोबारा लिखता है, तो आप उस फ़्लो को सरल बनाकर ज़्यादा कैश हिट बचा सकते हैं।
 
 ## क्या जाँचें
 
-- वे requests जो अब भी `temperature`, `top_p` या `top_k` भेजती हैं।
-- `budget_tokens` पर निर्भर thinking-enabled routes।
-- लंबे agent और tool workflows।
-- स्पष्ट `effort` levels वाली schema-sensitive outputs।
-- सबसे अधिक उपयोग होने वाली Opus 4.1 prompt classes पर token cost और latency का अंतर।
+- वे अनुरोध जो अब भी `temperature`, `top_p` या `top_k` भेजते हैं।
+- थिंकिंग-सक्षम रूट जो पहले `budget_tokens` पर निर्भर थे।
+- लंबी अवधि वाले एजेंट और टूल वर्कफ़्लो।
+- स्पष्ट `effort` स्तरों पर स्कीमा-संवेदनशील आउटपुट।
+- सबसे अधिक मात्रा वाली Opus 4.1 प्रॉम्प्ट श्रेणियों पर टोकन लागत और लेटेंसी का अंतर।
 
-## सुरक्षित rollout
+## सुरक्षित रोलआउट
 
-1. Traffic बदलने से पहले sampling params और पुराने thinking budgets हटाएँ।
-2. Production-जैसे prompts और tool flows पर Opus 4.8 को shadow करें।
-3. 5 अगस्त 2026 से पहले की overlap window में fallback route रखते हुए canary करें।
-4. Latency, cost और task completion का अंतर लक्ष्य में हो तभी rollout बढ़ाएँ।
+1. ट्रैफ़िक बदलने से पहले सैंपलिंग पैरामीटर और पुराने थिंकिंग बजट हटाएँ।
+2. प्रोडक्शन जैसे प्रॉम्प्ट और टूल फ़्लो पर Opus 4.8 को शैडो मोड में चलाएँ।
+3. 5 अगस्त 2026 से पहले की ओवरलैप अवधि में फ़ॉलबैक पथ उपलब्ध रखते हुए कैनरी रिलीज़ करें।
+4. लेटेंसी, लागत और कार्य पूरा होने की दर का अंतर लक्ष्य के भीतर हो, तभी इसे सभी ट्रैफ़िक पर लागू करें।
 
 ## स्रोत
 

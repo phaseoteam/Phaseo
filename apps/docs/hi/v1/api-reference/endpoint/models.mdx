@@ -3,42 +3,56 @@ title: "मॉडल सूची"
 sidebarTitle: "मॉडल सूची"
 badge: "Beta"
 openapi: "/hi/openapi/v1/openapi.localized.yaml GET /models"
-description: "Phaseo Gateway पर Gateway-native मॉडल देखें; इसमें वैकल्पिक रूप से उन मॉडलों की उपलब्धता जानकारी भी शामिल है जिन्हें अभी रूट नहीं किया जा सकता।"
+description: "Phaseo Gateway के ज़रिए Gateway के नेटिव मॉडल देखें, साथ ही वैकल्पिक रूप से उन मॉडलों की उपलब्धता का विवरण भी, जिन्हें अभी रूट नहीं किया जा सकता।"
 ---
 
-डिफ़ॉल्ट रूप से यह endpoint केवल वही मॉडल लौटाता है जिन्हें अभी रूट किया जा सकता है। ज्ञात लेकिन फिलहाल अनुपलब्ध मॉडल भी शामिल करने के लिए `availability=all` सेट करें।
+डिफ़ॉल्ट रूप से यह एंडपॉइंट केवल वही मॉडल लौटाता है जिन्हें अभी रूट किया जा सकता है। ज्ञात लेकिन फ़िलहाल अनुपलब्ध मॉडल भी शामिल करने के लिए `availability=all` सेट करें।
 
 कैटलॉग प्रतिक्रियाएँ पाँच मिनट कैश की जाती हैं और कैश के दोबारा सत्यापन के दौरान अगले पाँच मिनट भी दी जा सकती हैं। यह वर्तमान कैटलॉग के JSON, RSS और Atom रूपों पर लागू है; रिलीज़ फ़ीड का अपना कम अवधि वाला पोलिंग कैश है।
 
-`GET /models/me` भविष्य में मौजूदा caller के guardrail के आधार पर मॉडल फ़िल्टर करने के लिए आरक्षित है। अभी यह `501 not implemented` लौटाता है, इसलिए साझा Gateway catalogue के लिए फिलहाल `GET /models` उपयोग करें।
+`GET /models/me` भविष्य में मौजूदा कॉल करने वाले के लिए गार्डरेल-आधारित मॉडल फ़िल्टरिंग के लिए आरक्षित है। अभी यह `501 not implemented` लौटाता है, इसलिए साझा Gateway कैटलॉग के लिए फ़िलहाल `GET /models` का उपयोग करें।
 
 ## OpenAI प्रारूप
 
-अपने Phaseo API कुंजी के साथ `GET /v1/models?format=openai` का उपयोग करें। प्रतिक्रिया का रूप है: `{"object":"list","data":[{"id":"openai/gpt-4o-mini","object":"model","created":1721260800,"owned_by":"openai"}]}`। डिफ़ॉल्ट `json` प्रारूप में Phaseo के मेटाडेटा बने रहते हैं।
+जो क्लाइंट OpenAI की मॉडल-सूची प्रतिक्रिया की अपेक्षा करते हैं, उनके लिए `GET /v1/models?format=openai` का उपयोग करें। डिफ़ॉल्ट `format=json`, Phaseo का अधिक विस्तृत मॉडल मेटाडेटा लौटाता है।
 
-प्रमाणीकरण, क्षेत्रीय उपलब्धता, कार्यक्षेत्र के निजी मॉडल और फ़िल्टर समान रहते हैं। `limit` न देने पर सभी परिणाम मिलते हैं; `offset` लागू रहता है। ID का मानक Phaseo रूप बना रहता है। `created` रिलीज़ का समय Unix सेकंड में है, या अज्ञात होने पर `0`। `owned_by` कैटलॉग का संगठन है, कार्यक्षेत्र मॉडल के लिए `private`, या अज्ञात होने पर `phaseo`।
+```bash
+curl 'https://api.phaseo.app/v1/models?format=openai' \
+  -H 'Authorization: Bearer YOUR_PHASEO_API_KEY'
+```
+
+```json
+{
+  "object": "list",
+  "data": [
+    { "id": "openai/gpt-4o-mini", "object": "model", "created": 1721260800, "owned_by": "openai" }
+  ]
+}
+```
+
+OpenAI प्रारूप में नेटिव JSON वाला ही प्रमाणीकरण, क्षेत्रीय उपलब्धता, वर्कस्पेस के निजी मॉडल और फ़िल्टर लागू होते हैं। जब तक आप `limit` न दें, यह सभी मेल खाने वाले मॉडल लौटाता है; `offset` फिर भी लागू रहता है। इन्फ़रेंस के लिए ID, Phaseo के कैनोनिकल रूप में ही रहती हैं। `created` कैटलॉग की रिलीज़ तिथि का उपयोग करता है, या अज्ञात होने पर `0`; `owned_by` कैटलॉग के संगठन का उपयोग करता है, वर्कस्पेस मॉडल के लिए `private`, या अज्ञात होने पर `phaseo`।
 
 ## उपयोगी फ़िल्टर
 
 - `endpoints` में `chat.completions`, `responses` और `messages` जैसे सार्वजनिक नाम आते हैं
 - `status` मॉडल जीवनचक्र के आधार पर फ़िल्टर करता है, जैसे `active`, `deprecated` या `retired`
-- `provider` सार्वजनिक provider ID से फ़िल्टर करता है, जैसे `openai`, `anthropic` या `google_vertex`
-- `provider_status` provider rollout tier से फ़िल्टर करता है, जैसे `active`, `beta`, `alpha` या `not_ready`
-- `provider_routing_status` provider-स्तर की routing स्थिति से फ़िल्टर करता है
-- `model_routing_status` model-स्तर की routing स्थिति से फ़िल्टर करता है
-- `capability_status` अनुरोधित endpoint mapping के लिए provider capability स्थिति से फ़िल्टर करता है
-- `provider_availability_status` provider उपलब्धता से फ़िल्टर करता है, जैसे `active`, `coming_soon` या `inactive`
-- `provider_availability_reason` provider उपलब्धता के कारण से फ़िल्टर करता है, जैसे `preview_only`, `provider_not_ready`, `gated`, `access_limited` या `region_limited`
-- `organisation` सार्वजनिक model ID के prefix से फ़िल्टर करता है, जैसे `anthropic/claude-3-haiku` में `anthropic`
+- `provider` सार्वजनिक प्रदाता ID से फ़िल्टर करता है, जैसे `openai`, `anthropic` या `google_vertex`
+- `provider_status` प्रदाता के रोलआउट स्तर से फ़िल्टर करता है, जैसे `active`, `beta`, `alpha` या `not_ready`
+- `provider_routing_status` प्रदाता-स्तर की रूटिंग स्थिति से फ़िल्टर करता है
+- `model_routing_status` मॉडल-स्तर की रूटिंग स्थिति से फ़िल्टर करता है
+- `capability_status` अनुरोधित एंडपॉइंट मैपिंग के लिए प्रदाता की क्षमता-स्थिति से फ़िल्टर करता है
+- `provider_availability_status` प्रदाता की ओर की उपलब्धता से फ़िल्टर करता है, जैसे `active`, `coming_soon` या `inactive`
+- `provider_availability_reason` प्रदाता की ओर की उपलब्धता के कारण से फ़िल्टर करता है, जैसे `preview_only`, `provider_not_ready`, `gated`, `access_limited` या `region_limited`
+- `organisation` सार्वजनिक मॉडल ID के उपसर्ग से फ़िल्टर करता है, जैसे `anthropic/claude-3-haiku` में `anthropic`
 - `availability=active` डिफ़ॉल्ट है
-- `availability=all` में `coming_soon`, `inactive` या अभी सार्वजनिक रूप से रूट न किए जा सकने वाले मॉडल और प्रोवाइडर भी आते हैं
-- `input_modalities`, `input_types` का alias है
-- `output_modalities`, `output_types` का alias है
-- `supported_parameters`, `params` का alias है
+- `availability=all` में ऐसे मॉडल या प्रदाता भी शामिल होते हैं जो `coming_soon`, `inactive` हैं या अभी सार्वजनिक रूप से रूट नहीं किए जा सकते
+- `input_modalities`, `input_types` का उपनाम है
+- `output_modalities`, `output_types` का उपनाम है
+- `supported_parameters`, `params` का उपनाम है
 
-किसी मॉडल का एंडपॉइंट अनुबंध देखने के लिए `GET /models/{author}/{slug}/endpoints` कॉल करें। प्रतिक्रिया में हर प्रदाता रूट अलग रहता है और प्रत्येक पंक्ति में सार्वजनिक पथ, समर्थित मोडैलिटी और पैरामीटर का विवरण, उपलब्धता, रूटिंग स्थिति, प्रदाता मॉडल स्लग और मूल्य सारांश दिया जाता है।
+किसी मॉडल का एंडपॉइंट अनुबंध देखने के लिए `GET /models/{author}/{slug}/endpoints` कॉल करें। प्रतिक्रिया में हर प्रदाता रूट अलग रहता है और प्रत्येक पंक्ति में सार्वजनिक पथ, मोडैलिटी, समर्थित पैरामीटर का विवरण, उपलब्धता, रूटिंग स्थिति, प्रदाता मॉडल स्लग और मूल्य सारांश दिया जाता है।
 
-Provider entries में ये फ़ील्ड भी हो सकते हैं:
+प्रदाता प्रविष्टियों में ये फ़ील्ड भी हो सकते हैं:
 
 - `availability_status`
 - `availability_reason`
@@ -47,7 +61,7 @@ Provider entries में ये फ़ील्ड भी हो सकते 
 - `model_routing_status`
 - `capability_status`
 
-### रिस्पॉन्स
+### प्रतिक्रिया
 
 ```json
 {
@@ -203,4 +217,4 @@ Provider entries में ये फ़ील्ड भी हो सकते 
 }
 ```
 
-`availability_reason` एकल फ़ील्ड है जो बताता है कि provider entry active, केवल preview के लिए या inactive क्यों है।
+`availability_reason` वह एकल फ़ील्ड है जो बताता है कि कोई प्रदाता प्रविष्टि सक्रिय, केवल प्रीव्यू के लिए या निष्क्रिय क्यों है।

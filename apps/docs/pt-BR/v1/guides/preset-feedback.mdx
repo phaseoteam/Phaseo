@@ -4,10 +4,10 @@ description: "Registre avaliações de respostas e compare a qualidade das prede
 icon: "message-square-more"
 ---
 
-O Preset Feedback permite associar avaliações do seu aplicativo à predefinição que gerou uma resposta. Use-o para comparar alterações em prompts e roteamento com sinais reais dos usuários, em vez de considerar apenas latência e custo.
+O Feedback de predefinições permite associar avaliações do seu aplicativo à predefinição que gerou uma resposta. Use-o para comparar alterações em prompts e roteamento com sinais reais dos usuários, em vez de considerar apenas latência e custo.
 
 <Note>
-O Preset Feedback está em Alpha. Estamos aprimorando a API e o painel com base em como as equipes avaliam respostas de IA em produção. Use o botão **Feedback** na [página Preset Feedback](https://phaseo.app/settings/presets/experiments) para contar o que tornaria o recurso mais útil.
+O Feedback de predefinições está em Alpha. Estamos aprimorando a API e o painel com base em como as equipes avaliam respostas de IA em produção. Use o botão **Feedback** na [página de feedback de predefinições](https://phaseo.app/settings/presets/experiments) para contar o que tornaria o recurso mais útil.
 </Note>
 
 ## Antes de começar
@@ -83,13 +83,13 @@ curl "https://api.phaseo.app/v1/feedback/summary?group_by=preset&since=2026-08-0
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-As operações de leitura exigem `feedback:read`. Os resultados ficam limitados ao workspace autenticado e às predefinições visíveis para quem fez a chamada.
+As operações de leitura exigem `feedback:read`. Os resultados ficam limitados ao espaço de trabalho autenticado e às predefinições visíveis para quem fez a chamada.
 
 ## Limites atuais da Alpha
 
-O painel analisa no máximo as 10.000 linhas de feedback correspondentes mais recentes no período selecionado.
-As comparações de predefinições usam avaliações explícitas; pontuações numéricas aparecem como informação complementar.
-As APIs para execuções de teste e eventos de resultado personalizados estão disponíveis, mas os fluxos no painel ainda estão evoluindo.
+- O painel analisa no máximo as 10.000 linhas de feedback correspondentes mais recentes no período selecionado.
+- As comparações de predefinições usam avaliações explícitas; pontuações numéricas aparecem como informação complementar.
+- As APIs para execuções de teste e eventos de resultado personalizados estão disponíveis, mas os fluxos no painel ainda estão evoluindo.
 
 ## Guias relacionados
 

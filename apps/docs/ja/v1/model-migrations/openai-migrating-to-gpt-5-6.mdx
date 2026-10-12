@@ -8,7 +8,7 @@ icon: "/icons/brands/openai.svg"
 
 このガイドでは、GPT-5.6 ファミリーを本番環境へ安全に導入する方法を説明します。
 
-GPT-5.6 は、複雑な本番ワークフロー向けの OpenAI の現行 GPT ファミリーです。AI Stats では、固定のティア ID が OpenAI のモデル ID `gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna` に対応します。
+GPT-5.6 は、複雑な本番ワークフロー向けの OpenAI の現行 GPT ファミリーです。Phaseo では、固定のティア ID が OpenAI のモデル ID `gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna` に対応します。
 
 ## 移行クイックスタート
 
@@ -25,9 +25,9 @@ GPT-5.6 は、複雑な本番ワークフロー向けの OpenAI の現行 GPT �
 | `openai/gpt-5.6-terra` | 推論、コーディング、アシスタントワークフローを含む日常業務全般 | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 | `openai/gpt-5.6-luna` | 低レイテンシとコストを重視する GPT-5.6 ワークロード | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 
-OpenAI の `gpt-5.6` エイリアスは `gpt-5.6-sol` にルーティングされます。AI Stats で Sol ティアを既定にするには `openai/gpt-5.6` または `openai/gpt-sol-latest` を使い、ルーティングを制御する場合は固定ティア ID を使います。
+OpenAI の `gpt-5.6` エイリアスは `gpt-5.6-sol` にルーティングされます。Phaseo で Sol ティアを既定にするには `openai/gpt-5.6` または `openai/gpt-sol-latest` を使い、ルーティングを制御する場合は固定ティア ID を使います。
 
-AI Stats は各ティアの最新モデルを指すティアエイリアスも追跡します: `openai/gpt-sol-latest`、`openai/gpt-terra-latest`、`openai/gpt-luna-latest`。制御された移行には固定 GPT-5.6 ID を使い、将来の Sol、Terra、Luna リリースも同じルートで順次使いたい場合に限りティアエイリアスを使います。
+Phaseo は各ティアの最新モデルを指すティアエイリアスも追跡します: `openai/gpt-sol-latest`、`openai/gpt-terra-latest`、`openai/gpt-luna-latest`。制御された移行には固定 GPT-5.6 ID を使い、将来の Sol、Terra、Luna リリースも同じルートで順次使いたい場合に限りティアエイリアスを使います。
 
 ## 新機能
 
@@ -67,7 +67,7 @@ AI Stats は各ティアの最新モデルを指すティアエイリアスも�
 }
 ```
 
-OpenAI互換のフラットフィールドを引き続き送信する統合では、ルートが対応している場合、AI Statsは`reasoning_effort`も受け付けます:
+OpenAI互換のフラットフィールドを引き続き送信する統合では、ルートが対応している場合、Phaseoは`reasoning_effort`も受け付けます:
 
 ```json
 {
@@ -158,4 +158,4 @@ OpenAI互換のフラットフィールドを引き続き送信する統合で�
 - [OpenAI GPT-5.6 モデルガイド](https://developers.openai.com/api/docs/guides/latest-model)
 - [OpenAI model catalog](https://developers.openai.com/api/docs/models)
 - [GPT-5.6 プレビューのシステムカード](https://deploymentsafety.openai.com/gpt-5-6-preview)
-- [AI Stats のプロンプトキャッシュガイド](../guides/prompt-caching.mdx)
+- [Phaseo のプロンプトキャッシュガイド](../guides/prompt-caching.mdx)

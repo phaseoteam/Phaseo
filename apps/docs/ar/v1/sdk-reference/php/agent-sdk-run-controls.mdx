@@ -22,15 +22,8 @@ $agent = AgentSdk::createAgent(new AgentDefinition(
 
 يتضمن ناتج التشغيل الحالة والخطوات والرسائل والاستخدام الموحّد وسبب الإيقاف والمخرجات النهائية. افحص هذه الحقول بدلًا من اعتبار النص النهائي سجل التشغيل الكامل.
 
-## التحقق من النتيجة النهائية
 ```php
 $result = $agent->run(input: $prompt, client: $client);
-
-echo $result->output;
-echo $result->run->status;
-echo $result->usage["total_tokens"];
-echo $result->usage["cost"];
-```
 
 echo $result->output;
 echo $result->run->status;

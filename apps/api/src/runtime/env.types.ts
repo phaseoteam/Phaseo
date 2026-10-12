@@ -41,6 +41,10 @@ export type GatewayBindings = {
 	V2_ANALYTICS_OUTBOX_LIMIT?: string;
 	OTEL_EXPORT_ENABLED?: string;
 	OTEL_EXPORT_OUTBOX_LIMIT?: string;
+	/** Broadcast event queue; consumed by this worker's queue handler. */
+	BROADCAST_QUEUE?: Queue<import("@/observability/broadcast-event").BroadcastQueueMessage>;
+	/** "true" sends Broadcast events to BROADCAST_QUEUE instead of otel_export_outbox. */
+	BROADCAST_QUEUE_ENABLED?: string;
 	INVITE_ENCRYPTION_KEY?: string;
 	HMAC_ENCRYPTION_KEY?: string;
 	SCIM_TOKEN_PEPPER?: string;

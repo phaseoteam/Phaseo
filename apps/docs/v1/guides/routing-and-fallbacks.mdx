@@ -278,6 +278,79 @@ Each fallback is independently checked against workspace model restrictions,
 guardrails, provider policy, pricing, and capability support. A route can store
 up to eight fallback models.
 
+### Request-level model fallbacks
+
+`model` is required and is always the primary model. Add the optional
+`models` array to list fallback models for one request. Phaseo tries `model`
+first, then each `models` entry in order:
+
+```json
+{
+  "model": "openai/gpt-5-mini",
+  "models": ["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"],
+  "input": "Summarize this incident report."
+}
+```
+
+A request that sends `models` without `model` is rejected with `400`.
+Request-level fallbacks use the same machinery as dynamic-route fallbacks:
+
+- **Triggers.** The next model is tried only when the previous attempt, after
+  its own provider retries, ends with `429`, `500`, `502`, `503`, or `504`.
+  Client errors such as `400`, `401`, `402`, `403`, `404`, `408`, `413`, and
+  `422` are returned without switching models. A `429` from a Phaseo budget or
+  free-model quota reached while executing the request also moves to the next
+  model, because a different model may fit within the remaining limit.
+  Authentication, API key rate limits, and other checks that fail before the
+  primary model runs return immediately.
+- **Limits.** `models` accepts 1 to 25 entries. Duplicates and entries equal to
+  `model` are ignored. Dynamic routes keep their own limit of eight fallbacks.
+- **Validation.** Each entry can be a model ID, a provider-qualified model ID,
+  or a preset such as `@support`. Each attempt is validated as its own request:
+  endpoint and modality support, requested parameters, workspace model
+  restrictions, guardrails, presets, pricing, and BYOK credentials. A fallback
+  that cannot serve the request is skipped and recorded in request logs; it
+  never replaces the failure you would otherwise receive. A fallback that
+  resolves to an attempt already made, with the same model and eligible
+  providers, is skipped.
+- **Logging and billing.** Every attempt is a separate request in your logs,
+  with its own usage and billing record, so each attempt is billed exactly as
+  it would be without fallbacks.
+- **Which model served the request.** The response `model` field shows the
+  model that served the request. Its routing trace lists the primary request
+  ID, the fallback order, and each earlier attempt with its status.
+- **Streaming.** Fallbacks happen only before the first byte is sent. An error
+  after a stream has started is returned in that stream.
+- **Video and music.** These requests fall back only while submitting the job.
+  Once a provider accepts a job, a later failure does not start a new job with
+  another model.
+
+`models` interacts with other routing controls as follows:
+
+- **Dynamic routes.** Fallbacks configured on an attached dynamic route take
+  precedence over `models`. A fixed model selected by a dynamic route still
+  applies to each attempt.
+- **Presets.** A preset can be the primary `model` or a `models` entry. Each
+  attempt applies its own preset constraints, so a preset can narrow the
+  providers a fallback may use.
+- **Auto Routing.** `phaseo/auto` already manages ranked fallbacks, so it
+  cannot be combined with `models` and cannot appear inside `models`.
+
+| Endpoint | `models` support |
+| --- | --- |
+| Chat Completions, Responses, Messages | Supported, including streaming before the first byte |
+| Embeddings, Moderations, Rerank | Supported |
+| Image generations and edits | Supported, including multipart uploads |
+| Speech, transcriptions, and translations | Supported, including multipart uploads |
+| OCR, Parse, Decisions | Supported |
+| Video and music generation | Supported at job submission |
+| Batches | Rejected with `400`; each batch row targets one model |
+| Realtime and live sessions | Rejected with `400`; a session binds one model |
+| Council runs | Rejected with `400`; models come from the run configuration |
+
+Multipart endpoints accept repeated `models` fields, `models[]` fields, or one
+JSON array string.
+
 Read more in:
 
 - [Rate limits](../api-reference/limits.mdx)

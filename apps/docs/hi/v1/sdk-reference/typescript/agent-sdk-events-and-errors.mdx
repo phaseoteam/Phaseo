@@ -1,14 +1,14 @@
 ---
 icon: "triangle-alert"
-title: "त्रुटियाँ और समाधान"
-description: "Gateway failures, validation errors और failed agent runs संभालें।"
+title: "त्रुटियाँ और समस्या निवारण"
+description: "गेटवे की विफलताएँ, सत्यापन त्रुटियाँ और विफल एजेंट रन संभालें।"
 ---
 
-जब app को तय करना हो कि retry करना है, user से अलग input माँगना है या operator को request details दिखानी हैं, तब Agent SDK structured errors उपयोग करें।
+जब आपके ऐप्लिकेशन को तय करना हो कि पुनः प्रयास करना है, उपयोगकर्ता से अलग इनपुट माँगना है या ऑपरेटर को अनुरोध का विवरण दिखाना है, तब Agent SDK की संरचित त्रुटियों का उपयोग करें।
 
 ## गेटवे विफलताओं को संभालें
 
-Gateway failures को `AgentGatewayError` के रूप में rethrow किया जाता है:
+गेटवे की विफलताएँ `AgentGatewayError` के रूप में फिर से थ्रो की जाती हैं:
 
 ```typescript
 import { AgentGatewayError } from "@phaseo/agent-sdk";
@@ -23,11 +23,11 @@ try {
 }
 ```
 
-Failed runs और steps में उपलब्ध होने पर gateway error details सुरक्षित रहते हैं।
+उपलब्ध होने पर, विफल रन और चरणों में गेटवे त्रुटि का विवरण बना रहता है।
 
 ## स्कीमा विफलताओं को संभालें
 
-`AgentSchemaValidationError` अमान्य टूल इनपुट/आउटपुट, प्रगति घटनाओं या अंतिम आउटपुट की पहचान करता है। इन्हें अस्थायी मॉडल विफलताओं के बजाय अनुबंध विफलताएँ मानें।
+`AgentSchemaValidationError` अमान्य टूल इनपुट, टूल आउटपुट, प्रगति इवेंट या अंतिम आउटपुट की पहचान करता है। इन्हें अस्थायी मॉडल विफलताओं के बजाय अनुबंध विफलताएँ मानें।
 
 ```typescript
 import { AgentSchemaValidationError } from "@phaseo/agent-sdk";
@@ -44,23 +44,23 @@ try {
 
 ## विफल रन की जाँच करें
 
-Runtime failure को checkpoint कर सके, तो ये देखें:
+अगर रनटाइम विफलता का चेकपॉइंट बना सके, तो ये देखें:
 
 - `result.run.status`
 - `result.run.error`
-- latest step का `status`, `error` और `modelAttempts`
-- Gateway logs से correlate करने के लिए `requestId` और `nativeResponseId`
+- सबसे हाल के चरण का `status`, `error` और `modelAttempts`
+- गेटवे लॉग से मिलान करने के लिए `requestId` और `nativeResponseId`
 
 ## सामान्य जाँचें
 
-- Confirm करें कि server process को `PHASEO_API_KEY` उपलब्ध है।
-- हर tool को unique और stable `id` दें।
-- Approve, reject या manual output देते समय exact tool-call IDs का उपयोग करें।
-- Model retries सीमित रखें; validation और approval failures पर blindly retry न करें।
-- Browser या queue worker को control लौटाने से पहले paused run state persist करें।
+- पुष्टि करें कि सर्वर प्रोसेस के लिए `PHASEO_API_KEY` उपलब्ध है।
+- हर टूल को अद्वितीय और स्थिर `id` दें।
+- अनुमोदन, अस्वीकृति या मैन्युअल आउटपुट देते समय टूल कॉल की सटीक ID इस्तेमाल करें।
+- मॉडल के पुनः प्रयास सीमित रखें; सत्यापन और अनुमोदन की विफलताओं पर आँख मूँदकर पुनः प्रयास नहीं होना चाहिए।
+- ब्राउज़र या कतार वर्कर को नियंत्रण लौटाने से पहले रुके हुए रन की स्थिति सहेजें।
 
 ## संबंधित गाइड
 
-- [लाइफसाइकल हुक](./agent-sdk-lifecycle-hooks.mdx)
+- [लाइफ़साइकल हुक](./agent-sdk-lifecycle-hooks.mdx)
 - [DevTools](./agent-sdk-devtools.mdx)
 - [स्थिति और अनुमोदन](./agent-sdk-state-and-approval.mdx)

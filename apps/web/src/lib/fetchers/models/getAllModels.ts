@@ -77,6 +77,8 @@ export interface ModelCard {
         | { kind: "tokens"; from: boolean; input: number | null; output: number | null; unit: string }
         | { kind: "usage"; from: boolean; price: number; unit: string }
         | null;
+    /** Provider whose prices the headline and details show; null for stealth routes. */
+    pricing_provider_id?: string | null;
     popularity_tokens_week?: number | null;
     weekly_usage_metric?: string | null;
     weekly_usage_quantity?: number | null;

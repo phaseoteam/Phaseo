@@ -36,6 +36,34 @@ describe("guardJson", () => {
 		expect(result.ok).toBe(false);
 		if (!result.ok) expect(result.response.status).toBe(413);
 	});
+	it.each([
+		["repeated fields", (form: FormData) => { form.append("models", "a/one"); form.append("models", "b/two"); }],
+		["bracket fields", (form: FormData) => { form.append("models[]", "a/one"); form.append("models[]", "b/two"); }],
+		["a JSON array", (form: FormData) => { form.append("models", JSON.stringify(["a/one", "b/two"])); }],
+	])("parses multipart models fallbacks sent as %s", async (_label, appendModels) => {
+		const form = new FormData();
+		form.set("model", "openai/gpt-4o-transcribe");
+		appendModels(form);
+		const result = await guardJson(new Request("https://gateway.local/v1/audio/transcriptions", {
+			method: "POST",
+			body: form,
+		}), "team_test", "req_test");
+
+		expect(result.ok && result.value.models).toEqual(["a/one", "b/two"]);
+	});
+
+	it("parses a single multipart models field as a one-entry list", async () => {
+		const form = new FormData();
+		form.set("model", "openai/gpt-4o-transcribe");
+		form.set("models", "a/one");
+		const result = await guardJson(new Request("https://gateway.local/v1/audio/transcriptions", {
+			method: "POST",
+			body: form,
+		}), "team_test", "req_test");
+
+		expect(result.ok && result.value.models).toEqual(["a/one"]);
+	});
+
 	it("parses multipart form-data bodies including files and array fields", async () => {
 		const form = new FormData();
 		form.set("model", "openai/gpt-4o-transcribe");

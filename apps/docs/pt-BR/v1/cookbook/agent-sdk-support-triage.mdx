@@ -1,19 +1,19 @@
 ---
-title: "Triagem de suporte com presets e falhas com reconhecimento de guardrails"
+title: "Triagem de suporte com predefinições e falhas com reconhecimento de guardrails"
 icon: "life-buoy"
-description: "Execute um agente de triagem de suporte orientado por preset que retorna JSON estrito, pausa casos de alto risco para revisão e mantém as falhas de guardrail visíveis."
+description: "Execute um agente de triagem de suporte orientado por predefinição que retorna JSON estrito, pausa casos de alto risco para revisão e mantém as falhas de guardrail visíveis."
 ---
 
 Use esta receita quando um fluxo de suporte precisar:
 
-- herdar o roteamento e os padrões de prompt de um preset do painel
+- herdar o roteamento e os padrões de prompt de uma predefinição do painel
 - retornar uma saída estruturada estrita
 - pausar casos arriscados para revisão humana
 - manter as falhas do gateway visíveis nos logs em vez de ocultá-las no código do agente
 
-## 1. Comece com um preset
+## 1. Comece com uma predefinição
 
-Crie um preset como `support-triage` para definir:
+Crie uma predefinição como `support-triage` para definir:
 
 - o modelo roteado padrão ou o destino do roteador
 - preferências de provedor
@@ -35,7 +35,7 @@ type SupportTriageDecision = {
 
 Mantenha o formato da primeira saída pequeno o suficiente para que a equipe de operação possa inspecioná-lo rapidamente.
 
-## 3. Crie o agente orientado por preset
+## 3. Crie o agente orientado por predefinição
 
 ```ts
 import { createAgent } from "@phaseo/agent-sdk";
@@ -169,7 +169,7 @@ Depois:
 Isso é especialmente importante quando:
 
 - uma guardrail bloqueia a solicitação
-- a lista de permissões do preset rejeita o modelo solicitado
+- a lista de permissões da predefinição rejeita o modelo solicitado
 - credenciais do provedor ou filtros de ativação removem os candidatos roteados
 - o response healing não consegue recuperar um JSON válido conforme o schema
 
@@ -177,10 +177,10 @@ Isso é especialmente importante quando:
 
 Após uma execução bem-sucedida e outra propositalmente arriscada, confirme:
 
-- a visualização de detalhes da solicitação mostra o destino definido pelo preset
+- a visualização de detalhes da solicitação mostra o destino definido pela predefinição
 - casos de alto risco são pausados em `waiting_for_human`
 - etapas de modelo repetidas persistem `modelAttempts`
-- falhas de guardrail ou do preset continuam visíveis nos detalhes da solicitação, sem ficarem ocultas nas exceções do agente
+- falhas de guardrail ou da predefinição continuam visíveis nos detalhes da solicitação, sem ficarem ocultas nas exceções do agente
 
 ## Guias relacionados
 
@@ -188,6 +188,6 @@ Após uma execução bem-sucedida e outra propositalmente arriscada, confirme:
 - [Predefinições](../guides/presets.mdx)
 - [Roteamento e alternativas](../guides/routing-and-fallbacks.mdx)
 - [Validar saídas estruturadas](../guides/structured-outputs.mdx)
-- [Implantar presets e depurar o roteamento](./preset-rollout-and-routing-debug.mdx)
+- [Implantar predefinições e depurar o roteamento](./preset-rollout-and-routing-debug.mdx)
 - [Recuperar JSON estruturado malformado](./response-healing-for-structured-json.mdx)
 - [Criar um loop de agente durável em TypeScript](./agent-sdk-durable-loop.mdx)

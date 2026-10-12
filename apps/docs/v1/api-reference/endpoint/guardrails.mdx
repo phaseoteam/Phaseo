@@ -8,6 +8,8 @@ description: "Programmatic guardrails management for workspaces and keys."
 Guardrail management requires a management API key. Read operations require `guardrails:read`; mutations require `guardrails:write` or `guardrails:delete`.
 </Info>
 
-Use guardrails to apply privacy controls, provider and model restrictions, prompt-injection handling, sensitive-information policies, and request or cost budgets. A guardrail can be assigned to API keys, workspace members, or both.
+Use guardrails to apply privacy controls, provider and model restrictions, prompt-injection handling and sensitive-information policies. A guardrail can be assigned to API keys, workspace members, or both.
+
+Guardrails do not enforce request or spend limits. The `budgets` input and the `*_limit_requests` and `*_limit_cost_nanos` fields are accepted and returned for compatibility, but have no effect. Use [API key limits](./keys-update.mdx) or [workspace budgets](./budgets-list.mdx) instead.
 
 Successful mutations refresh workspace policy state and appear in the workspace audit log.

@@ -10,7 +10,7 @@ Utilisez cette recette lorsqu’une requête doit privilégier une route fournis
 
 - Essayez les fournisseurs dans l’ordre souhaité.
 - Limitez une requête à un sous-ensemble de fournisseurs approuvés.
-- Ignorez temporairement un fournisseur sans modifier les presets.
+- Ignorez temporairement un fournisseur sans modifier les préréglages.
 
 ## 1. Essayez les fournisseurs dans un ordre précis
 
@@ -182,7 +182,7 @@ Cette option est utile lorsque :
 
 - un fournisseur est dégradé
 - vous validez une autre route fournisseur
-- vous souhaitez comparer les résultats du routage sans modifier un preset
+- vous souhaitez comparer les résultats du routage sans modifier un préréglage
 
 ## 4. Combinez les paramètres avec précaution
 
@@ -198,9 +198,9 @@ Un exemple concret combine :
 - `order` pour privilégier `google-vertex-eu` en premier
 - `sort: "latency"` pour classer les options de cet ensemble autorisé
 
-## 5. Quand intégrer ces règles dans un preset
+## 5. Quand intégrer ces règles dans un préréglage
 
-Si les mêmes règles fournisseur apparaissent dans plusieurs services, cessez de les recopier dans chaque requête et placez-les plutôt dans un preset.
+Si les mêmes règles fournisseur apparaissent dans plusieurs services, cessez de les recopier dans chaque requête et placez-les plutôt dans un préréglage.
 
 Utilisez le routage au niveau de la requête lorsque la dérogation est :
 
@@ -211,4 +211,4 @@ Utilisez le routage au niveau de la requête lorsque la dérogation est :
 ## Guides associés
 
 - [Routage et solutions de repli](../guides/routing-and-fallbacks.mdx)
-- [Déployer des presets et déboguer le routage](./preset-rollout-and-routing-debug.mdx)
+- [Déployer des préréglages et déboguer le routage](./preset-rollout-and-routing-debug.mdx)

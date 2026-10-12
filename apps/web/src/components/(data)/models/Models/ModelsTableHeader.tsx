@@ -79,6 +79,8 @@ export default function ModelsTableHeader({
 		embeddings: tDetail("sections.embeddings"),
 		file: t("filtersUi.modalityFile"),
 		rerank: t("filtersUi.modalityRerank"),
+		documents: t("filtersUi.modalityDocuments"),
+		translation: t("filtersUi.modalityTranslation"),
 	};
 	const featureTranslationKeys: Record<string, string> = {
 		reasoning: t("filtersUi.featureReasoning"),

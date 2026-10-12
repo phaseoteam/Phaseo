@@ -1674,7 +1674,7 @@ paths:
         - Gateway
       operationId: uploadFile
       summary: Enviar arquivo
-      description: Alias de compatibilidade para `/batches/files`. Envia um arquivo para processamento em lote e retorna os metadados do arquivo no provedor. Passe `model` para que AI Stats possa inferir o provedor. O padrão é OpenAI para clientes legados que omitem tanto `model` quanto `provider`.
+      description: Alias de compatibilidade para `/batches/files`. Envia um arquivo para processamento em lote e retorna os metadados do arquivo no provedor. Passe `model` para que Phaseo possa inferir o provedor. O padrão é OpenAI para clientes legados que omitem tanto `model` quanto `provider`.
       parameters:
         - name: model
           in: query
@@ -2862,8 +2862,8 @@ paths:
       tags:
         - Gateway
       operationId: getWorkspaceSso
-      summary: Obter as configurações de SSO do workspace
-      description: Retorna as configurações SAML ou OIDC personalizadas do workspace. Requer `settings:read` e uma identidade de proprietário ou administrador.
+      summary: Obter as configurações de SSO do espaço de trabalho
+      description: Retorna as configurações SAML ou OIDC personalizadas do espaço de trabalho. Requer `settings:read` e uma identidade de proprietário ou administrador.
       responses:
         '200':
           description: Configurações de SSO
@@ -3012,7 +3012,7 @@ paths:
         - Gateway
       operationId: listWorkspaceScimAuditEvents
       summary: Listar eventos de auditoria do SCIM
-      description: Lista a atividade recente de provisionamento SCIM do workspace.
+      description: Lista a atividade recente de provisionamento SCIM do espaço de trabalho.
       parameters:
         - name: limit
           in: query
@@ -3100,11 +3100,11 @@ paths:
       tags:
         - Gateway
       operationId: listWorkspaceDepartments
-      summary: Listar departamentos do workspace
+      summary: Listar departamentos do espaço de trabalho
       description: Lista departamentos gerenciados manualmente e sincronizados com o diretório.
       responses:
         '200':
-          description: Departamentos do workspace
+          description: Departamentos do espaço de trabalho
           content:
             application/json:
               schema:
@@ -3180,7 +3180,7 @@ paths:
       tags:
         - Gateway
       operationId: deleteWorkspaceDepartment
-      summary: Excluir um departamento do workspace
+      summary: Excluir um departamento do espaço de trabalho
       description: Exclui um departamento gerenciado manualmente. Departamentos sincronizados com o diretório não podem ser excluídos aqui.
       parameters:
         - name: id
@@ -3282,7 +3282,7 @@ paths:
         - Gateway
       operationId: listWorkspaceGroupMappings
       summary: Listar mapeamentos de grupos do diretório
-      description: Lista os mapeamentos de grupos provisionados para funções e departamentos do workspace.
+      description: Lista os mapeamentos de grupos provisionados para funções e departamentos do espaço de trabalho.
       responses:
         '200':
           description: Mapeamentos de grupos do diretório
@@ -3362,7 +3362,7 @@ paths:
         - Gateway
       operationId: deleteWorkspaceGroupMapping
       summary: Excluir um mapeamento de grupo do diretório
-      description: Remove do workspace um mapeamento de grupo provisionado.
+      description: Remove do espaço de trabalho um mapeamento de grupo provisionado.
       parameters:
         - name: id
           in: path
@@ -3437,8 +3437,8 @@ paths:
       tags:
         - Gateway
       operationId: listWorkspaceApps
-      summary: Listar aplicativos do workspace
-      description: Lista os aplicativos do workspace atribuídos automaticamente e seus metadados editáveis. Requer a permissão `settings:read`.
+      summary: Listar aplicativos do espaço de trabalho
+      description: Lista os aplicativos do espaço de trabalho atribuídos automaticamente e seus metadados editáveis. Requer a permissão `settings:read`.
       parameters:
         - name: offset
           in: query
@@ -3455,7 +3455,7 @@ paths:
             default: 100
       responses:
         '200':
-          description: Aplicativos do workspace
+          description: Aplicativos do espaço de trabalho
           content:
             application/json:
               schema:
@@ -3472,7 +3472,7 @@ paths:
       tags:
         - Gateway
       operationId: updateWorkspaceApp
-      summary: Atualizar aplicativo do workspace
+      summary: Atualizar aplicativo do espaço de trabalho
       description: Atualiza os metadados de exibição, a visibilidade no catálogo ou o status ativo de um aplicativo atribuído. Aplicativos gerenciados pela plataforma não podem ser editados.
       parameters:
         - name: id
@@ -3506,7 +3506,7 @@ paths:
       tags:
         - Gateway
       operationId: mergeWorkspaceApp
-      summary: Mesclar aplicativos do workspace
+      summary: Mesclar aplicativos do espaço de trabalho
       description: Move atomicamente o histórico de solicitações e as análises do aplicativo de origem para outro aplicativo no mesmo espaço de trabalho e, em seguida, remove a origem.
       parameters:
         - name: id
@@ -3650,7 +3650,7 @@ paths:
         - Gateway
       operationId: listGatewayFeedback
       summary: Listar feedback do gateway
-      description: Lista o feedback do workspace com filtros por destino, data, avaliação e dimensão de metadados. Requer `feedback:read`.
+      description: Lista o feedback do espaço de trabalho com filtros por destino, data, avaliação e dimensão de metadados. Requer `feedback:read`.
       parameters:
         - name: request_id
           in: query
@@ -3743,7 +3743,7 @@ paths:
         - Gateway
       operationId: summarizeGatewayFeedback
       summary: Resumir o feedback do gateway
-      description: Agrupa o feedback do workspace por preset, execução de teste ou dimensão de metadados.
+      description: Agrupa o feedback do espaço de trabalho por predefinição, execução de teste ou dimensão de metadados.
       parameters:
         - name: group_by
           in: query
@@ -3800,7 +3800,7 @@ paths:
         - Gateway
       operationId: listGatewayObservabilityEvents
       summary: Listar eventos de observabilidade do gateway
-      description: Lista eventos personalizados de resultados e comportamento do workspace. Requer `feedback:read`.
+      description: Lista eventos personalizados de resultados e comportamento do espaço de trabalho. Requer `feedback:read`.
       parameters:
         - name: request_id
           in: query
@@ -4393,15 +4393,308 @@ paths:
       tags:
         - Gateway
       operationId: deleteWorkspaceBudget
-      summary: Excluir um limite de gastos do workspace
-      description: Remove o limite de gastos do workspace e deixa de aplicá-lo nesse intervalo.
+      summary: Excluir um limite de gastos do espaço de trabalho
+      description: Remove o limite de gastos do espaço de trabalho e deixa de aplicá-lo nesse intervalo.
       responses:
         '200':
-          description: Orçamento do workspace excluído
+          description: Orçamento do espaço de trabalho excluído
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkspaceBudgetDeleteResponse'
+        default:
+          description: A solicitação falhou
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /rate-limits/policies:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listRateLimitPolicies
+      parameters:
+        - name: offset
+          in: query
+          required: false
+          description: Number of rate limit policies to skip for pagination.
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of rate limit policies to return.
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 250
+      summary: List rate limit policies
+      description: Lists the workspace's named rate limit policies. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      responses:
+        '200':
+          description: Rate limit policies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitPolicyListResponse'
+        default:
+          description: A solicitação falhou
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createRateLimitPolicy
+      summary: Create a rate limit policy
+      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RateLimitPolicyInput'
+      responses:
+        '201':
+          description: Rate limit policy created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitPolicyResponse'
+        default:
+          description: A solicitação falhou
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /rate-limits/policies/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Rate limit policy id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getRateLimitPolicy
+      summary: Get a rate limit policy
+      description: Returns one rate limit policy. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      responses:
+        '200':
+          description: Rate limit policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitPolicyResponse'
+        default:
+          description: A solicitação falhou
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateRateLimitPolicy
+      summary: Update a rate limit policy
+      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RateLimitPolicyUpdateInput'
+      responses:
+        '200':
+          description: Rate limit policy updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitPolicyResponse'
+        default:
+          description: A solicitação falhou
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteRateLimitPolicy
+      summary: Delete a rate limit policy
+      description: Deletes a policy and every assignment that uses it. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      responses:
+        '200':
+          description: Rate limit policy deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitDeleteResponse'
+        default:
+          description: A solicitação falhou
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /rate-limits/assignments:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listRateLimitAssignments
+      summary: List rate limit assignments
+      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      parameters:
+        - name: policy_id
+          in: query
+          required: false
+          description: Only return assignments of this policy.
+          schema:
+            type: string
+            format: uuid
+        - name: target_type
+          in: query
+          required: false
+          description: Only return assignments of this target type.
+          schema:
+            $ref: '#/components/schemas/RateLimitTargetType'
+        - name: offset
+          in: query
+          required: false
+          description: Number of rate limit assignments to skip for pagination.
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of rate limit assignments to return.
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 250
+      responses:
+        '200':
+          description: Rate limit assignments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitAssignmentListResponse'
+        default:
+          description: A solicitação falhou
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createRateLimitAssignment
+      summary: Assign a rate limit policy
+      description: Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RateLimitAssignmentInput'
+      responses:
+        '201':
+          description: Rate limit assignment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitAssignmentResponse'
+        default:
+          description: A solicitação falhou
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /rate-limits/assignments/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Rate limit assignment id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getRateLimitAssignment
+      summary: Get a rate limit assignment
+      description: Returns one rate limit assignment. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      responses:
+        '200':
+          description: Rate limit assignment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitAssignmentResponse'
+        default:
+          description: A solicitação falhou
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateRateLimitAssignment
+      summary: Change an assignment's policy
+      description: Switches the policy applied to an assignment's target. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RateLimitAssignmentUpdateInput'
+      responses:
+        '200':
+          description: Rate limit assignment updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitAssignmentResponse'
+        default:
+          description: A solicitação falhou
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteRateLimitAssignment
+      summary: Delete a rate limit assignment
+      description: Removes a policy from its target. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+      responses:
+        '200':
+          description: Rate limit assignment deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitDeleteResponse'
         default:
           description: A solicitação falhou
           content:
@@ -4462,7 +4755,7 @@ paths:
         - Gateway
       operationId: deleteWorkspaceNotificationDestination
       summary: Excluir um destino de notificação
-      description: Desativa logicamente um destino de notificação do workspace e o remove dos roteamentos futuros.
+      description: Desativa logicamente um destino de notificação do espaço de trabalho e o remove dos roteamentos futuros.
       parameters:
         - name: id
           in: path
@@ -4517,7 +4810,7 @@ paths:
         - Gateway
       operationId: testWorkspaceNotificationDestination
       summary: Testar um destino de notificação salvo
-      description: Envia um teste por meio de um destino criptografado existente do workspace.
+      description: Envia um teste por meio de um destino criptografado existente do espaço de trabalho.
       parameters:
         - name: id
           in: path
@@ -4723,7 +5016,7 @@ paths:
         - Gateway
       operationId: listOAuthClients
       summary: Listar clientes OAuth
-      description: Lista os aplicativos OAuth ativos do workspace. Requer `oauth_clients:read` e o recurso beta de OAuth.
+      description: Lista os aplicativos OAuth ativos do espaço de trabalho. Requer `oauth_clients:read` e o recurso beta de OAuth.
       responses:
         '200':
           description: Lista de clientes OAuth
@@ -7628,8 +7921,8 @@ paths:
       tags:
         - Gateway
       operationId: getPresetPublisher
-      summary: Obter o identificador público do publicador de presets
-      description: Retorna o identificador canônico do publicador de presets públicos do workspace.
+      summary: Obter o identificador público do publicador de predefinições
+      description: Retorna o identificador canônico do publicador de predefinições públicas do espaço de trabalho.
       responses:
         '200':
           description: Identificador do publicador
@@ -9021,6 +9314,17 @@ components:
             type: string
         organisation:
           $ref: '#/components/schemas/DataModelOrganisation'
+    ModelFallbacks:
+      type: array
+      minItems: 1
+      maxItems: 25
+      items:
+        type: string
+        minLength: 1
+      description: Modelos de fallback opcionais e ordenados, tentados depois de `model`. `model` é obrigatório e é sempre o modelo principal. Quando uma tentativa falha com `429`, `500`, `502`, `503` ou `504`, a próxima entrada é tentada; os demais erros são retornados sem alteração. Aceita até 25 IDs de modelo ou predefinições; duplicatas e entradas iguais a `model` são ignoradas. Cada tentativa é validada, registrada e cobrada como uma solicitação separada, e o campo `model` da resposta e o rastreamento de roteamento mostram o modelo que atendeu a solicitação. Solicitações em streaming só recorrem a um fallback antes do primeiro byte, e trabalhos de vídeo e música apenas no envio. Solicitações de batch, realtime e council rejeitam `models`. Fallbacks definidos em uma rota dinâmica têm precedência, e `phaseo/auto` não pode ser combinado com `models`.
+      example:
+        - anthropic/claude-sonnet-5-5
+        - google/gemini-2.5-flash
     ChatCompletionsRequest:
       type: object
       required:
@@ -9029,6 +9333,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         messages:
           type: array
           minItems: 1
@@ -9787,6 +10093,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         system:
           oneOf:
             - type: string
@@ -9980,6 +10288,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         input:
           oneOf:
             - type: string
@@ -10429,6 +10739,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         input:
           oneOf:
             - type: string
@@ -10512,6 +10824,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         meta:
           type: boolean
           default: false
@@ -10586,6 +10900,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         query:
           type: string
         documents:
@@ -10681,6 +10997,8 @@ components:
           type: string
           minLength: 1
           description: Identificador canônico do modelo da Phaseo ou alias do modelo do provedor.
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         input:
           description: Texto ou mensagens com imagens incorporadas. Áudio e vídeo são extensões do Phaseo para modelos compatíveis; as rotas de decisões OpenAI não as aceitam.
           oneOf:
@@ -10945,6 +11263,8 @@ components:
           type: string
           description: Identificador canônico do modelo da Phaseo ou alias do modelo do provedor.
           default: typesafe/jev-1.13.0
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         state:
           description: Estado estruturado avaliado pelo modelo.
           oneOf:
@@ -11470,6 +11790,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         input:
           type: string
         voice:
@@ -11516,6 +11838,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         audio_url:
           type: string
           format: uri
@@ -11570,6 +11894,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         audio_url:
           type: string
           format: uri
@@ -11598,6 +11924,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         prompt:
           type: string
         size:
@@ -11672,6 +12000,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         image:
           oneOf:
             - type: string
@@ -11760,6 +12090,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         prompt:
           type: string
         duration:
@@ -12446,6 +12778,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         image:
           type: string
         language:
@@ -12612,6 +12946,8 @@ components:
         model:
           type: string
           example: cohere/parse-v5.0
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         document:
           type: object
           additionalProperties: false
@@ -12676,6 +13012,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         prompt:
           type: string
         duration:
@@ -14495,6 +14833,11 @@ components:
           format: date-time
           nullable: true
           example: 2027-12-31T23:59:59Z
+        department_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Departamento ao qual esta chave pertence para os limites de taxa e os orçamentos do departamento. Null significa que a chave conta apenas para os limites de todo o espaço de trabalho.
         include_byok_in_limit:
           type: boolean
           description: Indica se as credenciais do provedor contam para o limite de gastos da chave. Atualmente, o valor é sempre false.
@@ -14694,6 +15037,11 @@ components:
           default: false
         limits:
           $ref: '#/components/schemas/ApiKeyLimitInputWindows'
+        department_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Departamento ao qual esta chave pertence para os limites de taxa e os orçamentos do departamento. Null significa que a chave conta apenas para os limites de todo o espaço de trabalho.
       additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
@@ -14728,6 +15076,11 @@ components:
           type: boolean
         limits:
           $ref: '#/components/schemas/ApiKeyLimitInputWindows'
+        department_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Departamento ao qual esta chave pertence para os limites de taxa e os orçamentos do departamento. Null significa que a chave conta apenas para os limites de todo o espaço de trabalho.
       additionalProperties: false
     ApiKeyRotateRequest:
       type: object
@@ -16542,7 +16895,7 @@ components:
           minimum: 0
         owned_by:
           type: string
-          description: ID da organização no catálogo, private para modelos do workspace ou phaseo quando desconhecido.
+          description: ID da organização no catálogo, private para modelos do espaço de trabalho ou phaseo quando desconhecido.
           example: openai
       additionalProperties: false
     GatewayModelsResponse:
@@ -18953,6 +19306,276 @@ components:
               type: boolean
           additionalProperties: false
       additionalProperties: false
+    RateLimitPolicy:
+      type: object
+      description: A named set of gateway rate limits. When several policies apply to a request, the most restrictive limit wins.
+      required:
+        - id
+        - workspace_id
+        - name
+        - description
+        - requests_per_minute
+        - tokens_per_minute
+        - concurrent_requests
+        - fail_closed
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        requests_per_minute:
+          type: integer
+          format: int32
+          maximum: 2147483647
+          nullable: true
+          description: Requests allowed per minute. Null means requests are not limited.
+        tokens_per_minute:
+          type: integer
+          format: int64
+          nullable: true
+          description: Input and output tokens allowed per minute. Null means tokens are not limited.
+        concurrent_requests:
+          type: integer
+          format: int32
+          maximum: 2147483647
+          nullable: true
+          description: Requests allowed in flight at once. Null means concurrency is not limited.
+        fail_closed:
+          type: boolean
+          description: Reject requests when the limit cannot be checked, instead of allowing them. Adds latency to every request the policy covers.
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    RateLimitPolicyInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        requests_per_minute:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 2147483647
+          nullable: true
+          description: Requests allowed per minute. Null means requests are not limited.
+        tokens_per_minute:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+          nullable: true
+          description: Input and output tokens allowed per minute. Null means tokens are not limited.
+        concurrent_requests:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 2147483647
+          nullable: true
+          description: Requests allowed in flight at once. Null means concurrency is not limited.
+        fail_closed:
+          type: boolean
+          default: false
+          description: Reject requests when the limit cannot be checked, instead of allowing them. Adds latency to every request the policy covers.
+      additionalProperties: false
+    RateLimitPolicyUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        requests_per_minute:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 2147483647
+          nullable: true
+          description: Requests allowed per minute. Null means requests are not limited.
+        tokens_per_minute:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+          nullable: true
+          description: Input and output tokens allowed per minute. Null means tokens are not limited.
+        concurrent_requests:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 2147483647
+          nullable: true
+          description: Requests allowed in flight at once. Null means concurrency is not limited.
+        fail_closed:
+          type: boolean
+          description: Reject requests when the limit cannot be checked, instead of allowing them. Adds latency to every request the policy covers.
+      additionalProperties: false
+    RateLimitPolicyResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/RateLimitPolicy'
+      additionalProperties: false
+    RateLimitPolicyListResponse:
+      type: object
+      required:
+        - data
+        - has_more
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RateLimitPolicy'
+        has_more:
+          type: boolean
+          description: Whether more results follow this page.
+      additionalProperties: false
+    RateLimitTargetType:
+      type: string
+      description: What a policy applies to. A department policy is one allowance shared by its members and linked keys. A guardrail policy gives each key and member the guardrail covers its own allowance. end_user_default applies to each end user identified on a request.
+      enum:
+        - key
+        - member
+        - department
+        - guardrail
+        - end_user_default
+    RateLimitAssignment:
+      type: object
+      required:
+        - id
+        - workspace_id
+        - policy_id
+        - target_type
+        - target_id
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        policy_id:
+          type: string
+          format: uuid
+        target_type:
+          $ref: '#/components/schemas/RateLimitTargetType'
+        target_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Id of the key, member (user id), department, or guardrail. Null for end_user_default.
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    RateLimitAssignmentInput:
+      type: object
+      required:
+        - policy_id
+        - target_type
+      properties:
+        policy_id:
+          type: string
+          format: uuid
+        target_type:
+          $ref: '#/components/schemas/RateLimitTargetType'
+        target_id:
+          type: string
+          format: uuid
+          description: Id of the key, member (user id), department, or guardrail. Omit for end_user_default.
+      additionalProperties: false
+    RateLimitAssignmentUpdateInput:
+      type: object
+      required:
+        - policy_id
+      properties:
+        policy_id:
+          type: string
+          format: uuid
+      additionalProperties: false
+    RateLimitAssignmentResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/RateLimitAssignment'
+      additionalProperties: false
+    RateLimitAssignmentListResponse:
+      type: object
+      required:
+        - data
+        - has_more
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RateLimitAssignment'
+        has_more:
+          type: boolean
+          description: Whether more results follow this page.
+      additionalProperties: false
+    RateLimitDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+          additionalProperties: false
+      additionalProperties: false
     WorkspaceApp:
       type: object
       required:
@@ -20093,6 +20716,8 @@ components:
       additionalProperties: false
     GuardrailBudgetInput:
       type: object
+      deprecated: true
+      description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
       properties:
         dailyRequests:
           type: integer
@@ -20297,26 +20922,38 @@ components:
           type: integer
           format: int64
           nullable: true
+          deprecated: true
+          description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
         weekly_limit_requests:
           type: integer
           format: int64
           nullable: true
+          deprecated: true
+          description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
         monthly_limit_requests:
           type: integer
           format: int64
           nullable: true
+          deprecated: true
+          description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
         daily_limit_cost_nanos:
           type: integer
           format: int64
           nullable: true
+          deprecated: true
+          description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
         weekly_limit_cost_nanos:
           type: integer
           format: int64
           nullable: true
+          deprecated: true
+          description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
         monthly_limit_cost_nanos:
           type: integer
           format: int64
           nullable: true
+          deprecated: true
+          description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
         created_at:
           type: string
           format: date-time
@@ -20432,26 +21069,38 @@ components:
               type: integer
               format: int64
               nullable: true
+              deprecated: true
+              description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
             weekly_limit_requests:
               type: integer
               format: int64
               nullable: true
+              deprecated: true
+              description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
             monthly_limit_requests:
               type: integer
               format: int64
               nullable: true
+              deprecated: true
+              description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
             daily_limit_cost_nanos:
               type: integer
               format: int64
               nullable: true
+              deprecated: true
+              description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
             weekly_limit_cost_nanos:
               type: integer
               format: int64
               nullable: true
+              deprecated: true
+              description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
             monthly_limit_cost_nanos:
               type: integer
               format: int64
               nullable: true
+              deprecated: true
+              description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
             created_at:
               type: string
               format: date-time

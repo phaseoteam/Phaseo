@@ -10,7 +10,7 @@ Usa esta guía para conectar agentes de programación a Phaseo. Elige Phaseo CLI
 
 | Quieres… | Usa |
 | --- | --- |
-| Iniciar Cline, Kilo Code, oh-my-pi, Muse Code o MiniMax Code con ajustes temporales y aislados | `phaseo cline`, `phaseo kilo`, `phaseo omp`, `phaseo muse`, o `phaseo minimax` |
+| Iniciar Cline, Kilo Code, oh-my-pi, Muse Code o MiniMax Code con ajustes temporales y aislados | `phaseo cline`, `phaseo kilo`, `phaseo omp`, `phaseo muse` o `phaseo minimax` |
 | Configurar un agente instalado y conservar sus ajustes | `phaseo <integration>` |
 | Configurar un agente sin Phaseo CLI | Sigue los pasos manuales del proveedor en la guía específica |
 
@@ -31,7 +31,7 @@ Usa el comando con el nombre del producto para cualquier integración persistent
 phaseo codex
 ```
 
-Supported integration names are `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor`, and `zed`. Los ejecutores aislados de la CLI son `cline`, `kilo`, `omp`, `muse` y `minimax`.
+Los nombres de integración admitidos son `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor` y `zed`. Los ejecutores aislados de la CLI son `cline`, `kilo`, `omp`, `muse` y `minimax`.
 
 La CLI crea una clave de API independiente, sin caducidad y con el nombre de cada asistente. Configura Aider y Continue automáticamente en instalaciones limpias y también escribe los ajustes de proveedor/modelo de Zed. Para asistentes que guardan secretos exclusivamente en la interfaz del editor, muestra los campos que faltan, enlaza la guía correspondiente y permite copiar solo la clave de ese asistente:
 
@@ -71,7 +71,7 @@ Para herramientas compatibles con Anthropic, usa:
 
 Cursor permite configurar endpoints personalizados compatibles con OpenAI desde los ajustes de clave de API de OpenAI.
 
-1. Abre Cursor Settings.
+1. Abre `Cursor Settings`.
 2. Ve a `Models`.
 3. Activa o añade la opción `OpenAI API Key`.
 4. Pega tu clave de API de Phaseo.
@@ -151,6 +151,7 @@ Aider suele esperar que los modelos personalizados compatibles con OpenAI lleven
 ## MiniMax Code
 
 Usa la [guía de MiniMax Code](./minimax-code.mdx) para la CLI `mcode`. `phaseo minimax` crea un proveedor MiniMax temporal con el endpoint compatible con OpenAI de Phaseo, inicia la CLI y elimina el directorio de datos temporal al terminar la sesión. MiniMax Code también admite ACP mediante `mcode acp` si el editor o anfitrión usa ACP directamente.
+
 ## Zed
 
 Ejecuta `phaseo zed` y sigue los pasos que aparezcan para añadir un proveedor compatible con OpenAI en los ajustes de Zed. Usa la clave generada únicamente en el campo de credenciales de Zed.

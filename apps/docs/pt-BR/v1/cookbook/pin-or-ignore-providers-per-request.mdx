@@ -4,13 +4,13 @@ icon: "pin"
 description: "Use os controles de provedor por solicitação para definir uma ordem de preferência, limitar as opções ou remover um provedor da seleção."
 ---
 
-Use esta receita quando uma solicitação precisar priorizar uma rota de provedor específica sem alterar os padrões de roteamento de todo o workspace.
+Use esta receita quando uma solicitação precisar priorizar uma rota de provedor específica sem alterar os padrões de roteamento de todo o espaço de trabalho.
 
 ## Objetivo
 
 - Tente os provedores na ordem preferida.
 - Restrinja uma solicitação a um subconjunto aprovado de provedores.
-- Ignore um provedor temporariamente sem editar presets.
+- Ignore um provedor temporariamente sem editar predefinições.
 
 ## 1. Tente os provedores em uma ordem específica
 
@@ -182,7 +182,7 @@ Isso é útil quando:
 
 - um provedor está degradado
 - você está validando outra rota de provedor
-- você quer comparar resultados de roteamento sem editar um preset
+- você quer comparar resultados de roteamento sem editar uma predefinição
 
 ## 4. Combine os controles com cuidado
 
@@ -198,9 +198,9 @@ Um padrão prático combina:
 - `order` para priorizar `google-vertex-eu` primeiro
 - `sort: "latency"` para classificar esse conjunto permitido
 
-## 5. Quando mover isso para um preset
+## 5. Quando mover isso para uma predefinição
 
-Se as mesmas regras de provedor aparecem em vários serviços, pare de copiá-las por solicitação e mova-as para um preset.
+Se as mesmas regras de provedor aparecem em vários serviços, pare de copiá-las por solicitação e mova-as para uma predefinição.
 
 Use o roteamento por solicitação quando a substituição for:
 
@@ -211,4 +211,4 @@ Use o roteamento por solicitação quando a substituição for:
 ## Guias relacionados
 
 - [Roteamento e alternativas](../guides/routing-and-fallbacks.mdx)
-- [Implantar presets e depurar o roteamento](./preset-rollout-and-routing-debug.mdx)
+- [Implantar predefinições e depurar o roteamento](./preset-rollout-and-routing-debug.mdx)

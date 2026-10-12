@@ -1,18 +1,18 @@
 ---
 icon: "shield-check"
-title: "Tool calling की सुरक्षा और validation"
-description: "Tool arguments validate करें, execution को सुरक्षित बनाएँ और model की unsafe actions रोकें।"
+title: "टूल कॉलिंग की सुरक्षा और सत्यापन"
+description: "टूल आर्ग्युमेंट सत्यापित करें, निष्पादन को सुरक्षित बनाएँ और मॉडल की असुरक्षित कार्रवाइयों से बचें।"
 ---
 
-Model द्वारा बनाए गए tool arguments को untrusted input मानें।
+मॉडल द्वारा बनाए गए टूल आर्ग्युमेंट को अविश्वसनीय इनपुट मानें।
 
 ## सुरक्षा जाँच-सूची
 
-- Tool schemas को छोटा और स्पष्ट रखें।
-- Tool execute करने से पहले parsed arguments validate करें।
-- Tool names को allowlist करें और unknown tools अस्वीकार करें।
-- External calls के लिए timeouts और retries जोड़ें।
-- Call ID, tool name और validation failures log करें।
+- टूल स्कीमा को छोटा और स्पष्ट रखें।
+- निष्पादन से पहले पार्स किए गए आर्ग्युमेंट सत्यापित करें।
+- टूल के नामों की अनुमति सूची रखें और अज्ञात टूल अस्वीकार करें।
+- बाहरी कॉल के लिए टाइमआउट और पुनः प्रयास जोड़ें।
+- कॉल ID, टूल का नाम और सत्यापन की विफलताएँ लॉग करें।
 
 ## अनुरोध सत्यापन का उदाहरण (TypeScript + Zod)
 
@@ -35,11 +35,11 @@ function executeToolCall(name: string, rawArgs: string) {
 
 ## विफलता से निपटने की रणनीति
 
-Validation विफल होने पर:
+सत्यापन विफल होने पर:
 
-1. Tool execute न करें।
-2. अगले model turn में controlled error payload लौटाएँ।
-3. Model से corrected arguments के साथ फिर कोशिश करने को कहें।
+1. टूल निष्पादित न करें।
+2. अगले मॉडल टर्न में नियंत्रित त्रुटि पेलोड लौटाएँ।
+3. मॉडल से सुधरे हुए आर्ग्युमेंट के साथ पुनः प्रयास करने को कहें।
 
 ## स्ट्रीमिंग पर ध्यान दें
 

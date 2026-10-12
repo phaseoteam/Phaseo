@@ -22,6 +22,7 @@ La compatibilidad de los parámetros sigue variando según el endpoint, el model
 | Parámetro | Tipo | Úsalo para |
 | --- | --- | --- |
 | [`model`](#model) | `string` | Seleccionar el ID del modelo del gateway que se ejecutará. |
+| [`models`](#models) | `string[]` | Indicar modelos alternativos ordenados que se prueban después de `model` ante fallos que permiten reintentar. |
 | [`stream`](#stream) | `boolean` | Devolver la salida SSE progresivamente en lugar de un único resultado final. |
 | [`temperature`](#temperature) | `number` | Aumentar o reducir la aleatoriedad. |
 | [`top_p`](#top_p) | `number` | Ampliar o reducir el conjunto de nucleus sampling. |
@@ -33,11 +34,11 @@ La compatibilidad de los parámetros sigue variando según el endpoint, el model
 | [`presence_penalty`](#presence_penalty) | `number` | Fomentar cambios de tema o vocabulario. |
 | [`repetition_penalty`](#repetition_penalty) | `number` | Control de repetición específico del proveedor. |
 | [`seed`](#seed) | `integer` | Mejorar la reproducibilidad cuando el proveedor ascendente lo admite. |
-| [`stop`](#stop) | `string` or `string[]` | Definir secuencias de parada explícitas. |
+| [`stop`](#stop) | `string` o `string[]` | Definir secuencias de parada explícitas. |
 | [`logprobs`](#logprobs) / [`top_logprobs`](#top_logprobs) | `boolean` / `integer` | Solicitar datos de probabilidad de tokens. |
 | [`tools`](#tools), [`tool_choice`](#tool_choice) | `array`, `string`, `object` | Control de llamadas a herramientas y ejecución de funciones. |
 | [`parallel_tool_calls`](#parallel_tool_calls) | `boolean` | Permitir o forzar la ejecución secuencial de herramientas. |
-| [`response_format`](#response_format) | `string` or `object` | Salida de texto sin formato, JSON o restringida por esquema. |
+| [`response_format`](#response_format) | `string` o `object` | Salida de texto sin formato, JSON o restringida por esquema. |
 | [`json_schema`](#json_schema) | `object` | Definir el esquema para flujos de salida estructurada. |
 | [`structured_outputs`](#structured_outputs) | `boolean` | Indicador de capacidad para generar salidas fiables restringidas por esquema. |
 | [`reasoning`](#reasoning) | `object` | Configuración de razonamiento específica del proveedor. |
@@ -84,6 +85,20 @@ Selecciona el ID del modelo del gateway para la solicitud.
 | Ejemplo | `openai/gpt-5-nano` |
 
 Salvo que quieras usar intencionalmente un alias aceptado, utiliza el ID canónico que aparece en el inicio rápido de cada página de modelo. Los ID canónicos son la opción más segura para ejemplos, automatizaciones e integraciones duraderas.
+
+<span id="models"></span>
+<h3 id="parameter-models"><code>models</code></h3>
+
+Indica modelos alternativos opcionales, que se prueban en orden después de `model`. `model` es obligatorio y siempre es el modelo principal. La siguiente entrada solo se prueba cuando un intento falla con `429`, `500`, `502`, `503` o `504`.
+
+| Campo | Valor |
+| --- | --- |
+| Tipo | `string[]` |
+| Obligatorio | No. Una solicitud con `models` también debe definir `model`. |
+| Límites | De 1 a 25 entradas. Las entradas duplicadas y las iguales a `model` se ignoran. |
+| Ejemplo | `["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"]` |
+
+Cada intento se valida, se registra y se factura como una solicitud independiente. El campo `model` de la respuesta y el rastro de enrutamiento muestran el modelo que atendió la solicitud. Las solicitudes con transmisión solo recurren a alternativas antes del primer byte, y los trabajos de vídeo y música, solo al enviarse. Las alternativas de una ruta dinámica asociada tienen prioridad, se aceptan preajustes como entradas y `phaseo/auto` no se puede combinar con `models`. Las solicitudes por lotes, en tiempo real y de Council rechazan `models` con `400`. Los endpoints multipart aceptan campos `models` repetidos, campos `models[]` o un único array JSON. Consulta [Modelos alternativos a nivel de solicitud](../guides/routing-and-fallbacks.mdx#request-level-model-fallbacks) para conocer la precedencia, la validación, la transmisión y la facturación.
 
 <span id="stream"></span>
 <h3 id="parameter-stream"><code>stream</code></h3>
@@ -265,7 +280,7 @@ Define una o más secuencias que detienen la generación antes de tiempo.
 
 | Campo | Valor |
 | --- | --- |
-| Tipo | `string` or `string[]` |
+| Tipo | `string` o `string[]` |
 | Predeterminado | Sin establecer |
 | Uso habitual | Límites del analizador, finales de plantilla e indicadores de protocolo |
 
@@ -315,7 +330,7 @@ Controla si el modelo puede llamar herramientas automáticamente, no debe llamar
 
 | Campo | Valor |
 | --- | --- |
-| Tipo | `string` or `object` |
+| Tipo | `string` o `object` |
 | Valores habituales | `none`, `auto`, `required` |
 
 Usa `none` si solo quieres contenido, `auto` si el modelo puede decidir y valores más estrictos si la orquestación posterior requiere una llamada a herramienta.
@@ -339,7 +354,7 @@ Solicita un formato de salida concreto, como texto sin formato, JSON o respuesta
 
 | Campo | Valor |
 | --- | --- |
-| Tipo | `string` or `object` |
+| Tipo | `string` o `object` |
 | Predeterminado | Específico del endpoint y del proveedor |
 
 Las estructuras exactas aceptadas dependen del endpoint y del adaptador del proveedor. Úsalo si necesitas algo más que texto libre, sobre todo para respuestas JSON y flujos de extracción estructurada.
@@ -510,7 +525,7 @@ Entre los campos habituales se incluyen:
 | `only` | `string[]` | Limita el enrutamiento a proveedores específicos. |
 | `ignore` | `string[]` | Excluye proveedores específicos. |
 | `include_alpha` | `boolean` | Permite proveedores alpha en las decisiones de enrutamiento. |
-| `sort` | `string` or `object` | Ordena los proveedores, normalmente por `price`, `latency` o `throughput`. |
+| `sort` | `string` o `object` | Ordena los proveedores, normalmente por `price`, `latency` o `throughput`. |
 | `required_execution_region` | `string` | Limita la ejecución a una región obligatoria. |
 | `required_data_region` | `string` | Limita el tratamiento de datos a una región obligatoria. |
 | `require_zero_data_retention` | `boolean` | Exige proveedores que cumplan las condiciones de retención cero de datos. |
@@ -583,7 +598,7 @@ Entre los campos de depuración compatibles se incluyen:
 | `return_upstream_request` | `boolean` | Incluye el contenido transformado de la solicitud enviada al proveedor ascendente. |
 | `return_upstream_response` | `boolean` | Incluye el contenido de la respuesta ascendente cuando está disponible. |
 | `trace` | `boolean` | Devuelve trazas de enrutamiento o depuración. |
-| `trace_level` | `summary` or `full` | Controla el nivel de detalle de las trazas. |
+| `trace_level` | `summary` o `full` | Controla el nivel de detalle de las trazas. |
 
 Los datos de depuración pueden contener contexto confidencial de la solicitud. Úsalos solo durante el desarrollo o en entornos estrictamente controlados.
 

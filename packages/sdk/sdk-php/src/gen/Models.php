@@ -111,6 +111,8 @@ class AnthropicMessagesRequest
 	public $metadata;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -189,6 +191,8 @@ class ApiKey
 	public $created_by;
 	/** @var string|null */
 	public $creator_user_id;
+	/** @var string|null */
+	public $department_id;
 	/** @var bool */
 	public $disabled;
 	/** @var string|null */
@@ -239,6 +243,8 @@ class ApiKey
 
 class ApiKeyCreateRequest
 {
+	/** @var string|null */
+	public $department_id;
 	/** @var bool|null */
 	public $disabled;
 	/** @var string|null */
@@ -331,6 +337,8 @@ class ApiKeyScopeValue { }
 
 class ApiKeyUpdateRequest
 {
+	/** @var string|null */
+	public $department_id;
 	/** @var bool|null */
 	public $disabled;
 	/** @var string|null */
@@ -379,6 +387,8 @@ class ApiKeyWithValue
 	public $created_by;
 	/** @var string|null */
 	public $creator_user_id;
+	/** @var string|null */
+	public $department_id;
 	/** @var bool */
 	public $disabled;
 	/** @var string|null */
@@ -541,6 +551,8 @@ class AudioSpeechRequest
 	public $input;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var float|null */
@@ -565,6 +577,8 @@ class AudioTranscriptionRequest
 	public $language;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 }
@@ -585,6 +599,8 @@ class AudioTranslationRequest
 	public $language;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var string|null */
 	public $prompt;
 	/** @var array<string, mixed>|null */
@@ -977,6 +993,8 @@ class ChatCompletionsRequest
 	public $modalities;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var bool|null */
 	public $parallel_tool_calls;
 	/** @var float|null */
@@ -1421,6 +1439,8 @@ class DecisionsRequest
 	public $metadata;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed> */
@@ -1687,6 +1707,8 @@ class EmbeddingsRequest
 	public $input;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -2747,6 +2769,8 @@ class ImagesEditRequest
 	public $meta;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var string|null */
 	public $moderation;
 	/** @var int|null */
@@ -2789,6 +2813,8 @@ class ImagesGenerationRequest
 	public $background;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var string|null */
 	public $moderation;
 	/** @var int|null */
@@ -2865,6 +2891,8 @@ class LegacyDecisionsRequest
 	public $metadata;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed> */
@@ -3221,6 +3249,8 @@ class ModelEndpointsResponse
 	public $organization;
 }
 
+class ModelFallbacks { }
+
 class ModelId { }
 
 class ModelLifecycle
@@ -3351,6 +3381,8 @@ class ModerationsRequest
 	public $meta;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 }
@@ -3381,6 +3413,8 @@ class MusicGenerateRequest
 	public $format;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var string|null */
 	public $prompt;
 	/** @var array<string, mixed>|null */
@@ -3807,6 +3841,8 @@ class OcrRequest
 	public $language;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 }
@@ -3853,6 +3889,8 @@ class OpenAIDecisionsRequest
 	public $metadata;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array */
@@ -3955,6 +3993,8 @@ class ParseRequest
 	public $echo_upstream_request;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var string|null */
 	public $output_format;
 	/** @var array<string, mixed>|null */
@@ -4633,6 +4673,136 @@ class ProvisioningKeyWithValue
 	public $status;
 }
 
+class RateLimitAssignment
+{
+	/** @var string */
+	public $created_at;
+	/** @var string|null */
+	public $created_by;
+	/** @var string */
+	public $id;
+	/** @var string */
+	public $policy_id;
+	/** @var string|null */
+	public $target_id;
+	/** @var string */
+	public $target_type;
+	/** @var string */
+	public $updated_at;
+	/** @var string */
+	public $workspace_id;
+}
+
+class RateLimitAssignmentInput
+{
+	/** @var string */
+	public $policy_id;
+	/** @var string|null */
+	public $target_id;
+	/** @var string */
+	public $target_type;
+}
+
+class RateLimitAssignmentListResponse
+{
+	/** @var array */
+	public $data;
+	/** @var bool */
+	public $has_more;
+}
+
+class RateLimitAssignmentResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class RateLimitAssignmentUpdateInput
+{
+	/** @var string */
+	public $policy_id;
+}
+
+class RateLimitDeleteResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class RateLimitPolicy
+{
+	/** @var int|null */
+	public $concurrent_requests;
+	/** @var string */
+	public $created_at;
+	/** @var string|null */
+	public $created_by;
+	/** @var string|null */
+	public $description;
+	/** @var bool */
+	public $fail_closed;
+	/** @var string */
+	public $id;
+	/** @var string */
+	public $name;
+	/** @var int|null */
+	public $requests_per_minute;
+	/** @var int|null */
+	public $tokens_per_minute;
+	/** @var string */
+	public $updated_at;
+	/** @var string */
+	public $workspace_id;
+}
+
+class RateLimitPolicyInput
+{
+	/** @var int|null */
+	public $concurrent_requests;
+	/** @var string|null */
+	public $description;
+	/** @var bool|null */
+	public $fail_closed;
+	/** @var string */
+	public $name;
+	/** @var int|null */
+	public $requests_per_minute;
+	/** @var int|null */
+	public $tokens_per_minute;
+}
+
+class RateLimitPolicyListResponse
+{
+	/** @var array */
+	public $data;
+	/** @var bool */
+	public $has_more;
+}
+
+class RateLimitPolicyResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class RateLimitPolicyUpdateInput
+{
+	/** @var int|null */
+	public $concurrent_requests;
+	/** @var string|null */
+	public $description;
+	/** @var bool|null */
+	public $fail_closed;
+	/** @var string|null */
+	public $name;
+	/** @var int|null */
+	public $requests_per_minute;
+	/** @var int|null */
+	public $tokens_per_minute;
+}
+
+class RateLimitTargetType { }
+
 class ReasoningConfig
 {
 	/** @var string|null */
@@ -4661,6 +4831,8 @@ class RerankRequest
 	public $metadata;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -4795,6 +4967,8 @@ class ResponsesRequest
 	public $modalities;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var bool|null */
 	public $parallel_tool_calls;
 	/** @var string|null */
@@ -5133,6 +5307,8 @@ class VideoGenerationRequest
 	public $input_video_duration;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var string|null */
 	public $negative_prompt;
 	/** @var array<string, mixed>|null */

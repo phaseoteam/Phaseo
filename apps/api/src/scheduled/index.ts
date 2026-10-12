@@ -25,7 +25,8 @@ import { runBatchProviderWebhookReplayJob } from "@/routes/internal/batch-webhoo
 import { runRealtimeSessionReconciliationJob } from "@core/realtime-sessions";
 import { runDataContributionClassifierJob } from "@/pipeline/classification/classifier-worker";
 import { pruneExpiredDataContributions } from "@/pipeline/classification/data-contribution";
-import { drainGatewayOtlpOutbox } from "@/observability/otlp-export";
+import { drainGatewayOtlpOutbox, pruneBroadcastEventReceipts, pruneGatewayOtlpOutbox } from "@/observability/otlp-export";
+import { pruneBroadcastSpill } from "@/observability/broadcast-event";
 import { runAccountDeletionPurgeJob } from "@/pipeline/privacy/account-deletion";
 import { pruneExpiredGatewayIoLogs } from "@/pipeline/audit/io-retention-expiry";
 import { publishCatalogueRevision } from "@core/catalogue-revision";
@@ -484,6 +485,21 @@ async function handleOtelExportScheduledEvent(env: GatewayBindings): Promise<voi
 	}
 }
 
+async function handleOtelExportPruneScheduledEvent(env: GatewayBindings): Promise<void> {
+	configureRuntime(env);
+	try {
+		const deleted = await pruneGatewayOtlpOutbox();
+		if (deleted > 0) console.log("otel_export_outbox_pruned", { deleted });
+		const bucket = env.GATEWAY_IO_LOGS_BUCKET;
+		const spilled = bucket ? await pruneBroadcastSpill(bucket) : 0;
+		if (spilled > 0) console.log("broadcast_spill_pruned", { deleted: spilled });
+		const receipts = await pruneBroadcastEventReceipts();
+		if (receipts > 0) console.log("broadcast_event_receipts_pruned", { deleted: receipts });
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handleDataContributionClassifierScheduledEvent(env: GatewayBindings): Promise<void> {
 	if (!toBool(env.DATA_CONTRIBUTION_CLASSIFIER_ENABLED, false)) return;
 	configureRuntime(env);
@@ -644,6 +660,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleOAuthCleanupScheduledEvent(env);
 		} catch (error) {
 			console.error("oauth_cleanup_scheduled_failed", serializeError(error));
+		}
+		try {
+			await handleOtelExportPruneScheduledEvent(env);
+		} catch (error) {
+			console.error("otel_export_prune_scheduled_failed", serializeError(error));
 		}
 		try {
 			await handleEmailOutboxScheduledEvent(event, env);

@@ -798,6 +798,11 @@ function ModelCardImpl({
 	const pillValue = priceSummary
 		?? ((model.pricing_detail_rows?.length ?? 0) > 0 ? t("pricing") : null);
 	const pillLabel = priceSummary ? priceLabel : null;
+	// The provider whose prices the hover card lists (none for stealth routes).
+	const pricingProviderId = headlineSummary ? model.pricing_provider_id ?? null : null;
+	const pricingProviderName = pricingProviderId
+		? providerDetails.find((provider) => provider.id === pricingProviderId)?.name ?? null
+		: null;
 	const fallbackInputLabel =
 		primaryInputKey === "image"
 			? t("imageInputs")
@@ -1172,6 +1177,24 @@ function ModelCardImpl({
 									>
 										{headlineSummary ? (
 											<div className="space-y-2 text-xs">
+												<div className="flex items-center justify-between gap-4">
+													<span className="flex items-center gap-2 font-medium text-foreground">
+														{pricingProviderId && pricingProviderName ? (
+															<span className="relative h-4 w-4 shrink-0 rounded-[4px] border bg-background">
+																<Logo
+																	id={resolveProviderLogoId({ providerId: pricingProviderId })}
+																	alt={pricingProviderName}
+																	className="object-contain p-[1px]"
+																	fill
+																/>
+															</span>
+														) : null}
+														{t("pricing")}
+													</span>
+													{pricingProviderName ? (
+														<span className="truncate text-muted-foreground">{pricingProviderName}</span>
+													) : null}
+												</div>
 												{pricingDetailGroups.map((group) =>
 													group.items.some((item) => item.variant) ? (
 														// One price per variant (resolution, audio, quality)

@@ -1,4 +1,5 @@
 import { modelOutputFilterValues } from "@/lib/models/modelCapabilities";
+import { canonicalOutputGroup } from "@/lib/models/modelGroupModalities";
 import { modelRowKey, type ModelData } from "./modelTableGrouping";
 
 export type ModelTableFilters = {
@@ -94,7 +95,7 @@ export function matchesModelTableRow(
 	}
 	if (active("outputModalities") && filters.outputModalities.length > 0) {
 		const outputs = modelOutputFilterValues(row.outputModalities, [row.endpoint]);
-		if (!filters.outputModalities.every((mod) => outputs.includes(mod))) return false;
+		if (!filters.outputModalities.every((mod) => outputs.includes(canonicalOutputGroup(mod)))) return false;
 	}
 	if (active("features") && !filters.features.every((feature) => row.provider.features.includes(feature))) {
 		return false;

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { deliverGatewayOtlpPayload, deliverGatewayWebhookPayload, filterMetadata, selected } from "./otlp-export";
+import { deliverGatewayOtlpPayload, deliverGatewayWebhookPayload, drainGatewayOtlpOutbox, filterMetadata, selected } from "./otlp-export";
+import { encodeOtlpTraceRequest } from "./otlp-protobuf";
 
 vi.mock("@core/webhook-endpoints", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("@core/webhook-endpoints")>();
@@ -13,6 +14,45 @@ vi.mock("@core/webhook-endpoints", async (importOriginal) => {
 				return { ok: false as const, reason: "webhook_url_private_network_not_allowed" as const };
 			}
 			return validated;
+		}),
+	};
+});
+
+const supabase = vi.hoisted(() => ({
+	claimed: [] as Array<{ id: string; destination_id: string; payload: unknown; attempts: number }>,
+	updates: [] as Array<{ id: string; patch: Record<string, unknown> }>,
+}));
+
+vi.mock("@/runtime/env", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@/runtime/env")>();
+	return {
+		...actual,
+		getSupabaseAdmin: () => ({
+			rpc: async () => ({ data: supabase.claimed, error: null }),
+			from: (table: string) => table === "workspace_broadcast_destinations"
+				? {
+					select: () => ({
+						eq: () => ({
+							maybeSingle: async () => ({
+								data: {
+									id: "destination-1",
+									destination_id: "otel_collector",
+									destination_config: { endpoint: "https://collector.example.com" },
+									enabled: true,
+								},
+								error: null,
+							}),
+						}),
+					}),
+				}
+				: {
+					update: (patch: Record<string, unknown>) => ({
+						eq: async (_column: string, id: string) => {
+							supabase.updates.push({ id, patch });
+							return { error: null };
+						},
+					}),
+				},
 		}),
 	};
 });
@@ -200,6 +240,69 @@ describe("deliverGatewayOtlpPayload", () => {
 			status: null,
 			error: "Invalid OTLP endpoint: webhook_url_private_network_not_allowed",
 		});
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+});
+
+describe("drainGatewayOtlpOutbox", () => {
+	it("drops payloads from rows that will not be sent again", async () => {
+		const payload = { resourceSpans: [{ prompt: "secret prompt" }] };
+		supabase.claimed = [
+			{ id: "delivered", destination_id: "destination-1", payload, attempts: 1 },
+			{ id: "retry", destination_id: "destination-1", payload, attempts: 1 },
+			{ id: "rejected", destination_id: "destination-1", payload, attempts: 1 },
+		];
+		supabase.updates = [];
+		vi.stubGlobal("fetch", vi.fn()
+			.mockResolvedValueOnce(new Response(null, { status: 200 }))
+			.mockResolvedValueOnce(new Response(null, { status: 503 }))
+			.mockResolvedValueOnce(new Response(null, { status: 400 })));
+
+		const summary = await drainGatewayOtlpOutbox();
+
+		expect(summary).toEqual({ claimed: 3, delivered: 1, retried: 1, failed: 1 });
+		const patches = Object.fromEntries(supabase.updates.map(({ id, patch }) => [id, patch]));
+		expect(patches.delivered).toMatchObject({ status: "delivered", payload: {} });
+		expect(patches.rejected).toMatchObject({ status: "failed", payload: {} });
+		expect(patches.retry).toMatchObject({ status: "pending" });
+		expect(patches.retry).not.toHaveProperty("payload");
+	});
+});
+
+describe("deliverGatewayOtlpPayload over protobuf", () => {
+	const payload = { resourceSpans: [{ scopeSpans: [{ spans: [{ traceId: "0af7651916cd43dd8448eb211c80319c", spanId: "b7ad6b7169203331", name: "chat" }] }] }] };
+
+	it("sends protobuf when the destination asks for it, whatever the configured headers say", async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(new Uint8Array(), { status: 200, headers: { "content-type": "application/x-protobuf" } }));
+		vi.stubGlobal("fetch", fetchMock);
+		const result = await deliverGatewayOtlpPayload(payload, {
+			endpoint: "https://collector.example.com",
+			otlp_protocol: "http/protobuf",
+			headers_json: JSON.stringify({ "Content-Type": "application/json", "x-tenant": "phaseo" }),
+		});
+		expect(result).toMatchObject({ delivered: true, status: 200 });
+		const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+		expect(url.toString()).toBe("https://collector.example.com/v1/traces");
+		const sent = new Headers(init.headers);
+		expect(sent.get("content-type")).toBe("application/x-protobuf");
+		expect(sent.get("accept")).toBe("application/x-protobuf");
+		expect(sent.get("x-tenant")).toBe("phaseo");
+		expect(init.body).toEqual(encodeOtlpTraceRequest(payload));
+	});
+
+	it("reports spans a protobuf collector rejected", async () => {
+		// partial_success { rejected_spans: 1, error_message: "bad" }, under a media type in another case.
+		const body = Uint8Array.from([0x0a, 0x07, 0x08, 0x01, 0x12, 0x03, 0x62, 0x61, 0x64]);
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(body, { status: 200, headers: { "content-type": "Application/X-Protobuf; charset=binary" } })));
+		const result = await deliverGatewayOtlpPayload(payload, { endpoint: "https://collector.example.com", otlp_protocol: "http/protobuf" });
+		expect(result).toMatchObject({ delivered: false, retryable: false, error: "OTLP partial success rejected 1 spans: bad" });
+	});
+
+	it("rejects an unknown protocol without sending", async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const result = await deliverGatewayOtlpPayload(payload, { endpoint: "https://collector.example.com", otlp_protocol: "grpc" });
+		expect(result).toMatchObject({ delivered: false, retryable: false, error: "OTLP protocol must be http/json or http/protobuf" });
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 });

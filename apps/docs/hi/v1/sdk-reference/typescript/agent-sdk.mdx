@@ -1,29 +1,29 @@
 ---
 icon: "blocks"
 title: "उपयोग"
-description: "Phaseo Gateway के साथ TypeScript Agent SDK पर अपने agentic applications बनाएँ।"
+description: "TypeScript Agent SDK से Phaseo Gateway पर आधारित अपने एजेंटिक ऐप्लिकेशन बनाएँ।"
 ---
 
-जब आपके application को एक बार के text generation से अधिक चाहिए, तब `@phaseo/agent-sdk` उपयोग करें:
+जब आपके ऐप्लिकेशन को एक बार के टेक्स्ट जनरेशन से अधिक चाहिए, तब `@phaseo/agent-sdk` उपयोग करें:
 
-- कई चरणों वाले tool loops
-- local runtime tools
-- SDK द्वारा लौटाए गए state से resumable runs
-- स्पष्ट human approval pauses
-- typed final outputs
+- कई चरणों वाले टूल लूप
+- स्थानीय रनटाइम टूल
+- SDK द्वारा लौटाई गई स्थिति से फिर शुरू किए जा सकने वाले रन
+- मानवीय अनुमोदन के लिए स्पष्ट विराम
+- टाइप किए गए अंतिम आउटपुट
 - मौजूदा TypeScript SDK के ज़रिए Gateway मॉडल टर्न
 
-यह पैकेज installable SDK है, hosted agent platform नहीं। लौटाए गए run state के लिए application, deployment model और persistence strategy आपको स्वयं देनी होगी।
+यह पैकेज इंस्टॉल किया जा सकने वाला SDK है, होस्ट किया गया एजेंट प्लेटफ़ॉर्म नहीं। ऐप्लिकेशन, डिप्लॉयमेंट मॉडल और लौटाई गई रन स्थिति को सहेजने की रणनीति आप स्वयं तय करते हैं।
 
 ## स्थिति मॉडल
 
-Agent SDK runs को किसी भी Phaseo-hosted service में persist नहीं करता।
+Agent SDK रन को Phaseo द्वारा होस्ट की गई किसी भी सेवा में नहीं सहेजता।
 
-- `run()` बाद में जारी रखने के लिए आवश्यक पूरा state लौटाता है।
-- यदि application को requests के बीच या process restart के बाद run फिर से शुरू करना हो, तो लौटाया गया state अपने application store में persist करें।
-- `continueRun()` उस पिछले run state को सीधे स्वीकार करता है।
+- `run()` बाद में जारी रखने के लिए आवश्यक पूरी स्थिति लौटाता है।
+- यदि आपके ऐप्लिकेशन को अनुरोधों के बीच या प्रोसेस के पुनरारंभ के बाद रन फिर से शुरू करना हो, तो लौटाई गई स्थिति को अपने ऐप्लिकेशन स्टोर में सहेजें।
+- `continueRun()` उस पिछली रन स्थिति को सीधे स्वीकार करता है।
 
-Phaseo आपके application के बाहर कुछ भी persist नहीं करता।
+Phaseo आपके ऐप्लिकेशन के बाहर कुछ भी नहीं सहेजता।
 
 ## इंस्टॉल करें
 
@@ -36,11 +36,11 @@ pnpm add @phaseo/sdk @phaseo/agent-sdk
 - `createAgent()`
 - `defineTool()`
 - `createGatewayAgentClient()`
-- पहले लौटाए गए run state से जारी रखने के लिए `continueRun()`
-- incremental और replayable results के लिए `stream()` और `continueStream()`
-- `stepCountIs()`, `maxCost()` और `hasToolCall()` जैसे stop-condition helpers
+- पहले लौटाई गई रन स्थिति से जारी रखने के लिए `continueRun()`
+- क्रमिक और दोबारा चलाए जा सकने वाले परिणामों के लिए `stream()` और `continueStream()`
+- `stepCountIs()`, `maxCost()` और `hasToolCall()` जैसे रोकने की शर्त वाले हेल्पर
 
-## पहला agent
+## पहला एजेंट
 
 ```typescript
 import {
@@ -89,42 +89,42 @@ console.log(result.output);
 
 ## मानसिक मॉडल
 
-runtime loop चार काम करता है:
+रनटाइम लूप चार काम करता है:
 
-1. मौजूदा message state को model client को भेजता है
-2. लौटाए गए local tool calls को चलाता है
-3. tool results को अगले turn में जोड़ता है
-4. हर step boundary पूरा होने पर updated run state लौटाता है
+1. संदेशों की मौजूदा स्थिति को मॉडल क्लाइंट को भेजता है
+2. लौटाई गई स्थानीय टूल कॉल को निष्पादित करता है
+3. टूल परिणामों को अगले टर्न में जोड़ता है
+4. हर चरण की सीमा पूरी होने के बाद अपडेट की गई रन स्थिति लौटाता है
 
-इससे hosted orchestration product पर निर्भर हुए बिना application को resumable loop मिलता है।
+इससे होस्ट किए गए ऑर्केस्ट्रेशन उत्पाद पर निर्भर हुए बिना आपके ऐप्लिकेशन को फिर से शुरू किया जा सकने वाला लूप मिलता है।
 
-## मुख्य primitives
+## मुख्य प्रिमिटिव
 
 ### `createAgent()`
 
 `createAgent()` से ये परिभाषित करें:
 
 - एक स्थिर `id`
-- instructions
-- एक model या preset
-- tools की एक छोटी सूची
-- वैकल्पिक output parsing
-- वैकल्पिक human review नियम
-- वैकल्पिक retry और tool-execution controls
+- निर्देश
+- एक मॉडल या प्रीसेट
+- टूल की एक छोटी सूची
+- वैकल्पिक आउटपुट पार्सिंग
+- वैकल्पिक मानवीय समीक्षा नियम
+- वैकल्पिक पुनः प्रयास और टूल निष्पादन नियंत्रण
 
-पहले agent का दायरा छोटा रखें। आमतौर पर एक workflow और एक या दो tools पर्याप्त हैं।
+पहले एजेंट का दायरा छोटा रखें। आम तौर पर एक वर्कफ़्लो और एक या दो टूल पर्याप्त होते हैं।
 
 ### `defineTool()`
 
-स्थानीय runtime tools को इनसे परिभाषित करें:
+स्थानीय रनटाइम टूल को इनसे परिभाषित करें:
 
 - `id`
 - `description`
 - वैकल्पिक JSON `parameters`
 - वैकल्पिक `timeoutMs`
-- `inputSchema` और `outputSchema` runtime validators
+- `inputSchema` और `outputSchema` रनटाइम वैलिडेटर
 - `execute()`, `execute: false` या मानवीय समीक्षा के कॉलबैक
-- `requireApproval`, `onError`, `nextTurnParams` और progress events
+- `requireApproval`, `onError`, `nextTurnParams` और प्रगति इवेंट
 
 ```typescript
 const fetchTicket = defineTool({
@@ -149,13 +149,13 @@ const fetchTicket = defineTool({
 });
 ```
 
-timeout होने पर runtime `context.signal` abort करता है, run को `failed` mark करता है और timeout error फिर से throw करता है।
+टाइमआउट होने पर रनटाइम `context.signal` को निरस्त करता है, रन को `failed` चिह्नित करता है और टाइमआउट त्रुटि फिर से थ्रो करता है।
 
-Schemas function या `parse()`/`safeParse()` देने वाले किसी भी object के रूप में हो सकते हैं। गलत model arguments और tool results, tool boundary पार करने से पहले fail होते हैं।
+स्कीमा कोई फ़ंक्शन या `parse()`/`safeParse()` उपलब्ध कराने वाला कोई भी ऑब्जेक्ट हो सकता है। अमान्य मॉडल आर्ग्युमेंट और अमान्य टूल परिणाम, टूल की सीमा पार करने से पहले ही विफल हो जाते हैं।
 
 ## अनुमोदन, HITL और मैन्युअल टूल
 
-side effects वाले tool को हर call पर gate करें:
+साइड इफ़ेक्ट वाले टूल को हर कॉल के स्तर पर अनुमोदन से नियंत्रित करें:
 
 ```typescript
 const deploy = defineTool({
@@ -167,7 +167,7 @@ const deploy = defineTool({
 });
 ```
 
-run `run.pause.pendingToolCalls` पर pause होता है। concurrent calls को अलग पहचानने के लिए exact call ID से resume करें:
+रन `run.pause.pendingToolCalls` के साथ रुकता है। सटीक कॉल ID से फिर शुरू करें, ताकि समवर्ती कॉल आपस में न उलझें:
 
 ```typescript
 const resumed = await agent.continueRun({
@@ -178,11 +178,11 @@ const resumed = await agent.continueRun({
 });
 ```
 
-application द्वारा किए जाने वाले काम के लिए `execute: false` रखें और उसका परिणाम `toolOutputs` से दें। Interactive tool के लिए `onToolCalled` से `null` लौटाएँ; जारी रखने के बाद `onResponseReceived` मानव response को validate या transform कर सकता है।
+आपके ऐप्लिकेशन द्वारा किए जाने वाले काम के लिए `execute: false` रखें और उसका परिणाम `toolOutputs` के ज़रिए दें। इंटरैक्टिव टूल के लिए `onToolCalled` से `null` लौटाएँ; जारी रखने के बाद `onResponseReceived` दी गई मानवीय प्रतिक्रिया को सत्यापित या रूपांतरित कर सकता है।
 
-## प्रगति देने वाले tools
+## प्रगति देने वाले टूल
 
-एक async generator शुरुआती नतीजे प्रकाशित करके एक अंतिम परिणाम लौटा सकता है:
+एक एसिंक्रोनस जनरेटर शुरुआती परिणाम प्रकाशित कर सकता है और एक अंतिम परिणाम लौटा सकता है:
 
 ```typescript
 const indexRepository = defineTool({
@@ -195,11 +195,11 @@ const indexRepository = defineTool({
 });
 ```
 
-Progress `tool.preliminary_result` events और step के `preliminaryResults` में दिखता है।
+प्रगति `tool.preliminary_result` इवेंट के रूप में और चरण के `preliminaryResults` में दिखती है।
 
 ## स्ट्रीमिंग परिणाम
 
-`stream()` streaming model client के साथ वही state machine शुरू करता है। इसके consumers को replay किया जा सकता है, इसलिए UI, telemetry और persistence code एक साथ पढ़ सकते हैं:
+`stream()` स्ट्रीमिंग मॉडल क्लाइंट के साथ वही स्टेट मशीन शुरू करता है। इसके उपभोक्ता स्ट्रीम को दोबारा पढ़ सकते हैं, इसलिए UI, टेलीमेट्री और सहेजने वाला कोड एक साथ पढ़ सकते हैं:
 
 ```typescript
 const result = agent.stream({ input, client });
@@ -211,11 +211,11 @@ for await (const delta of result.getTextStream()) {
 const [text, completed] = await Promise.all([result.getText(), result.getResult()]);
 ```
 
-विशिष्ट consumers के लिए `getReasoningStream()`, `getItemsStream()`, `getToolStream()` या `getFullStream()` उपयोग करें। `cancel()` run को abort करता है।
+अधिक विशिष्ट उपभोक्ताओं के लिए `getReasoningStream()`, `getItemsStream()`, `getToolStream()` या `getFullStream()` उपयोग करें। `cancel()` रन को निरस्त करता है।
 
 ### टाइप किए गए रन आइटम रेंडर करें
 
-`getItemsStream()` `AgentItem<TOutput>` देता है, एक discriminated union जिसे `switch` में सुरक्षित रूप से उपयोग किया जा सकता है:
+`getItemsStream()` `AgentItem<TOutput>` देता है, जो एक डिस्क्रिमिनेटेड यूनियन है और जिसे `switch` में सुरक्षित रूप से उपयोग किया जा सकता है:
 
 ```typescript
 for await (const item of result.getItemsStream()) {
@@ -246,7 +246,7 @@ for await (const item of result.getItemsStream()) {
 
 ## रोकने की शर्तें और डायनामिक टर्न
 
-Stop conditions array के रूप में जुड़ती हैं; पहली matching condition कारण दर्ज करती है और `stopped` run लौटाती है:
+रोकने की शर्तें एक ऐरे के रूप में जुड़ती हैं; पहली मेल खाने वाली शर्त अपना कारण दर्ज करती है और `stopped` रन लौटाती है:
 
 ```typescript
 import { maxCost, maxTokensUsed, stepCountIs } from "@phaseo/agent-sdk";
@@ -259,13 +259,13 @@ const agent = createAgent({
 });
 ```
 
-Tools `context.setContext()` से application context सेट कर सकते हैं और तुरंत अगले turn को `nextTurnParams` से override कर सकते हैं।
+टूल `context.setContext()` से ऐप्लिकेशन संदर्भ सेट कर सकते हैं और `nextTurnParams` से ठीक अगले टर्न को ओवरराइड कर सकते हैं।
 
 ### `createGatewayAgentClient()`
 
-जब model turns को Phaseo Gateway के ज़रिए चलना चाहिए, तब gateway-backed adapter उपयोग करें।
+जब मॉडल टर्न Phaseo Gateway के ज़रिए चलने चाहिए, तब Gateway-आधारित एडैप्टर उपयोग करें।
 
-यह gateway-native controls जैसे इन विकल्पों को ले जा सकता है:
+यह Gateway के अपने नियंत्रण भी साथ ले जा सकता है, जैसे:
 
 - `responseFormat`
 - `plugins`
@@ -276,23 +276,23 @@ Tools `context.setContext()` से application context सेट कर सक�
 - `promptCacheKey`
 - `includeMeta`
 
-इससे हर run पर raw request payload दोबारा बनाने के बजाय routing, search, structured outputs और plugin defaults को model client के पास रखा जा सकता है।
+इससे आपका ऐप हर रन पर कच्चा अनुरोध पेलोड दोबारा बनाने के बजाय रूटिंग, खोज, संरचित आउटपुट और प्लगइन डिफ़ॉल्ट को मॉडल क्लाइंट के पास ही रख सकता है।
 
 ## एप्लिकेशन द्वारा प्रबंधित स्थायित्व
 
-अगर application को resumability चाहिए, तो लौटाया गया `AgentRunResult` सीधे persist करें या asynchronous `load(runId)` और `save(result)` methods वाला `state` accessor दें। फिर जारी run हर layer से serialized record गुज़ारे बिना `runId` उपयोग कर सकता है।
+अगर आपके ऐप्लिकेशन को रन फिर से शुरू करने की क्षमता चाहिए, तो लौटाए गए `AgentRunResult` को सीधे सहेजें, या एसिंक्रोनस `load(runId)` और `save(result)` मेथड वाला `state` एक्सेसर दें। इसके बाद जारी रखा गया रन हर परत से सीरियलाइज़ किया गया रिकॉर्ड गुज़ारे बिना `runId` उपयोग कर सकता है।
 
-SDK जानबूझकर persistence adapters या hosted state backend शामिल नहीं करता।
+SDK जानबूझकर स्थायित्व एडैप्टर या होस्ट किया गया स्टेट बैकएंड शामिल नहीं करता।
 
-इसका मतलब है कि आप:
+इसका मतलब है कि आप ये कर सकते हैं:
 
-- one-shot runs को पूरी तरह process में रखना
-- paused या incomplete runs को अपने application records में serialize करना
-- बाद में saved run state फिर लोड करके `continueRun()` को देना
+- एक बार चलने वाले रन को पूरी तरह प्रोसेस के भीतर रखना
+- रोके गए या अधूरे रन को अपने ऐप्लिकेशन रिकॉर्ड में सीरियलाइज़ करना
+- बाद में सहेजी गई रन स्थिति फिर से लोड करके `continueRun()` को देना
 
 ## मानवीय समीक्षा और आगे जारी रखना
 
-जब run को checkpoint बनाकर approval की प्रतीक्षा करनी हो, तब `humanReview` उपयोग करें:
+जब रन को चेकपॉइंट बनाकर अनुमोदन की प्रतीक्षा करनी हो, तब `humanReview` उपयोग करें:
 
 ```typescript
 const agent = createAgent({
@@ -307,7 +307,7 @@ const agent = createAgent({
 });
 ```
 
-स्पष्ट human input के साथ जारी रखें:
+स्पष्ट मानवीय इनपुट के साथ जारी रखें:
 
 ```typescript
 const continued = await agent.continueRun({
@@ -317,9 +317,9 @@ const continued = await agent.continueRun({
 });
 ```
 
-## प्रकारित आउटपुट
+## टाइप किए गए आउटपुट
 
-जब app को typed final value चाहिए, तब `parseOutput` उपयोग करें:
+जब आपके ऐप को टाइप किया गया अंतिम मान चाहिए, तब `parseOutput` उपयोग करें:
 
 ```typescript
 const agent = createAgent<string, { summary: string }>({
@@ -330,7 +330,7 @@ const agent = createAgent<string, { summary: string }>({
 });
 ```
 
-अधिक सख्त model behavior के लिए इसे gateway adapter के structured outputs के साथ जोड़ें:
+मॉडल के अधिक सख्त व्यवहार के लिए इसे Gateway एडैप्टर के संरचित आउटपुट के साथ जोड़ें:
 
 ```typescript
 const client = createGatewayAgentClient({
@@ -357,7 +357,7 @@ const client = createGatewayAgentClient({
 
 ### मॉडल पुनः प्रयास
 
-जब अस्थायी model failures पर run को `failed` persist करने से पहले retry करना हो, तब `modelRetry` उपयोग करें:
+जब अस्थायी मॉडल विफलताओं पर रन को `failed` के रूप में सहेजने से पहले पुनः प्रयास होना चाहिए, तब `modelRetry` उपयोग करें:
 
 ```typescript
 const agent = createAgent({
@@ -369,12 +369,12 @@ const agent = createAgent({
 });
 ```
 
-पहली model request के बाद के अतिरिक्त प्रयास `maxRetries` में गिने जाते हैं।
-Persist किए गए step record में अंतिम retry count `modelAttempts` के रूप में रखा जाता है।
+पहले मॉडल अनुरोध के बाद के अतिरिक्त प्रयास `maxRetries` में गिने जाते हैं।
+सहेजे गए चरण रिकॉर्ड में पुनः प्रयासों की अंतिम संख्या `modelAttempts` के रूप में रखी जाती है।
 
 ### समवर्ती स्थानीय टूल
 
-एक model turn कई independent tools को सुरक्षित रूप से call कर सकता हो तो `toolExecution.toolConcurrency` सेट करें:
+अगर एक मॉडल टर्न कई स्वतंत्र टूल को सुरक्षित रूप से कॉल कर सकता है, तो `toolExecution.toolConcurrency` सेट करें:
 
 ```typescript
 const agent = createAgent({
@@ -386,11 +386,11 @@ const agent = createAgent({
 });
 ```
 
-runtime अब भी tool-result messages का क्रम बनाए रखता है।
+रनटाइम फिर भी टूल परिणाम संदेशों का क्रम बनाए रखता है।
 
 ### प्रीसेट-आधारित रूटिंग
 
-routing, prompt या parameter defaults को app code में hard-code करने के बजाय dashboard में manage करना हो तो `preset` उपयोग करें:
+जब रूटिंग, प्रॉम्प्ट या पैरामीटर डिफ़ॉल्ट को ऐप कोड में हार्ड-कोड करने के बजाय डैशबोर्ड में प्रबंधित रखना हो, तब `preset` उपयोग करें:
 
 ```typescript
 const agent = createAgent({
@@ -401,9 +401,9 @@ const agent = createAgent({
 
 ## इवेंट हुक
 
-logs, telemetry या internal workflows के lifecycle hooks चाहिए हों तो `onEvent` उपयोग करें।
+जब आपके ऐप्लिकेशन को लॉग, टेलीमेट्री या आंतरिक वर्कफ़्लो के लिए लाइफ़साइकल हुक चाहिए, तब `onEvent` उपयोग करें।
 
-मौजूदा events में शामिल हैं:
+मौजूदा इवेंट में शामिल हैं:
 
 - `run.started`
 - `run.resumed`
@@ -423,11 +423,11 @@ logs, telemetry या internal workflows के lifecycle hooks चाहिए
 - `run.completed`
 - `run.failed`
 
-एक step सफल होने पर, checkpoint वाला step persist होने के बाद runtime `step.completed` emit करता है।
+जब कोई चरण सफल होता है, तो चेकपॉइंट वाला चरण सहेजे जाने के बाद रनटाइम `step.completed` इवेंट भेजता है।
 
 ## त्रुटि प्रबंधन
 
-Gateway failures को `AgentGatewayError` के रूप में फिर throw किया जाता है:
+Gateway विफलताओं को `AgentGatewayError` के रूप में फिर से थ्रो किया जाता है:
 
 ```typescript
 import { AgentGatewayError } from "@phaseo/agent-sdk";
@@ -442,7 +442,7 @@ try {
 }
 ```
 
-Failure gateway से आई हो तो failed runs और steps में `errorDetails` भी persist होता है।
+अगर विफलता Gateway से आई हो, तो विफल रन और चरणों में `errorDetails` भी सहेजा जाता है।
 
 ## शामिल उदाहरण
 
@@ -455,7 +455,7 @@ Failure gateway से आई हो तो failed runs और steps में `
 
 ## मौजूदा दायरा
 
-SDK जानबूझकर application-building primitives पर केंद्रित है:
+SDK जानबूझकर ऐप्लिकेशन बनाने वाले प्रिमिटिव पर केंद्रित है:
 
 - स्थानीय या ऐप-प्रबंधित चेकपॉइंट सहेजना
 - Gateway के ज़रिए मॉडल टर्न
@@ -467,8 +467,8 @@ SDK जानबूझकर application-building primitives पर केंद
 
 ## संबंधित मार्गदर्शिकाएँ
 
-- [TypeScript में टिकाऊ agent loop बनाएँ](../../cookbook/agent-sdk-durable-loop.mdx)
-- [agent-backed web search से शोध करें](../../cookbook/agent-sdk-research-brief.mdx)
-- [preset-driven agents से support triage करें](../../cookbook/agent-sdk-support-triage.mdx)
-- [स्थानीय runtime tools से code review करें](../../cookbook/agent-sdk-coding-review.mdx)
-- [local tools को एक साथ चलाएँ](../../cookbook/agent-sdk-parallel-tools.mdx)
+- [TypeScript में टिकाऊ एजेंट लूप बनाएँ](../../cookbook/agent-sdk-durable-loop.mdx)
+- [एजेंट-आधारित वेब खोज से शोध करें](../../cookbook/agent-sdk-research-brief.mdx)
+- [प्रीसेट-आधारित एजेंट से सपोर्ट ट्राइएज करें](../../cookbook/agent-sdk-support-triage.mdx)
+- [स्थानीय रनटाइम टूल से कोड समीक्षा करें](../../cookbook/agent-sdk-coding-review.mdx)
+- [स्थानीय टूल को समानांतर चलाएँ](../../cookbook/agent-sdk-parallel-tools.mdx)

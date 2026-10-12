@@ -22,6 +22,7 @@ icon: "sliders-horizontal"
 | パラメーター | 型 | 用途 |
 | --- | --- | --- |
 | [`model`](#model) | `string` | 実行するゲートウェイモデルIDを選択します。 |
+| [`models`](#models) | `string[]` | 再試行可能な失敗時に `model` の後で順番に試すフォールバックモデルを列挙します。 |
 | [`stream`](#stream) | `boolean` | 最終ペイロード一括ではなく、SSE出力を逐次返します。 |
 | [`temperature`](#temperature) | `number` | ランダム性を高めたり抑えたりします。 |
 | [`top_p`](#top_p) | `number` | nucleus samplingの候補範囲を狭めたり広げたりします。 |
@@ -33,11 +34,11 @@ icon: "sliders-horizontal"
 | [`presence_penalty`](#presence_penalty) | `number` | 話題や語彙の変化を促します。 |
 | [`repetition_penalty`](#repetition_penalty) | `number` | プロバイダー固有の反復抑制制御。 |
 | [`seed`](#seed) | `integer` | 上流プロバイダーが対応している場合に再現性を高めます。 |
-| [`stop`](#stop) | `string` or `string[]` | 明示的な停止シーケンスを指定します。 |
+| [`stop`](#stop) | `string` または `string[]` | 明示的な停止シーケンスを指定します。 |
 | [`logprobs`](#logprobs) / [`top_logprobs`](#top_logprobs) | `boolean` / `integer` | トークンの確率データを要求します。 |
 | [`tools`](#tools), [`tool_choice`](#tool_choice) | `array`, `string`, `object` | ツール呼び出しと関数実行を制御します。 |
 | [`parallel_tool_calls`](#parallel_tool_calls) | `boolean` | ツールの逐次実行を許可または強制します。 |
-| [`response_format`](#response_format) | `string` or `object` | プレーンテキスト、JSON、またはスキーマ制約付きの出力。 |
+| [`response_format`](#response_format) | `string` または `object` | プレーンテキスト、JSON、またはスキーマ制約付きの出力。 |
 | [`json_schema`](#json_schema) | `object` | 構造化出力ワークフローのスキーマを定義します。 |
 | [`structured_outputs`](#structured_outputs) | `boolean` | スキーマ制約付き出力の信頼性を示す機能シグナル。 |
 | [`reasoning`](#reasoning) | `object` | プロバイダー固有の推論設定。 |
@@ -85,6 +86,20 @@ Phaseoを指すカスタムベースURLでAnthropic公式SDKを使用する場�
 
 意図的に対応エイリアスを使う場合を除き、各モデルページのクイックスタートに記載された正規モデルIDを使用してください。正規IDは、例、自動化、長期的な統合で最も安全な選択です。
 
+<span id="models"></span>
+<h3 id="parameter-models"><code>models</code></h3>
+
+`model` の後に順番に試す、省略可能なフォールバックモデルを列挙します。`model` は必須で、常にプライマリモデルです。次のエントリが試されるのは、試行が `429`、`500`、`502`、`503`、`504` で失敗した場合だけです。
+
+| 項目 | 値 |
+| --- | --- |
+| 型 | `string[]` |
+| 必須 | いいえ。`models` を指定するリクエストでは、`model` も設定する必要があります。 |
+| 上限 | 1〜25 個のエントリ。重複するエントリと、`model` と同じエントリは無視されます。 |
+| 例 | `["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"]` |
+
+各試行は、個別のリクエストとして検証、記録、課金されます。レスポンスの `model` フィールドとルーティングトレースには、リクエストを処理したモデルが表示されます。ストリーミングリクエストは最初のバイトの前にのみ、動画と音楽のジョブは送信時にのみフォールバックします。関連付けられた動的ルートのフォールバックが優先され、プリセットはエントリとして指定でき、`phaseo/auto` は `models` と組み合わせられません。Batch、リアルタイム、Council のリクエストでは、`models` は `400` で拒否されます。マルチパートエンドポイントでは、繰り返しの `models` フィールド、`models[]` フィールド、または 1 つの JSON 配列を指定できます。優先順位、検証、ストリーミング、課金の動作については、[リクエスト単位のモデルフォールバック](../guides/routing-and-fallbacks.mdx#request-level-model-fallbacks)を参照してください。
+
 <span id="stream"></span>
 <h3 id="parameter-stream"><code>stream</code></h3>
 
@@ -100,9 +115,9 @@ Phaseoを指すカスタムベースURLでAnthropic公式SDKを使用する場�
 
 注意:
 
-ストリーミングの対応状況はエンドポイントによって異なります。
-ストリーミングは通常、品質制御ではなく転送方法の選択です。
-ツール呼び出しや構造化出力のフローでは、プロバイダーによってストリーミングの動作が異なる場合があります。
+- ストリーミングの対応状況はエンドポイントによって異なります。
+- ストリーミングは通常、品質制御ではなく転送方法の選択です。
+- ツール呼び出しや構造化出力のフローでは、プロバイダーによってストリーミングの動作が異なる場合があります。
 
 <span id="temperature"></span>
 <h3 id="parameter-temperature"><code>temperature</code></h3>
@@ -127,9 +142,9 @@ Phaseoを指すカスタムベースURLでAnthropic公式SDKを使用する場�
 
 実用上の指針:
 
-構造化タスクでは低い値から始めてください。
-`temperature`と`top_p`は、まずどちらか一方だけ変更してください。
-高いtemperatureと強い量子化を組み合わせると、不安定さが増すことがあります。
+- 構造化タスクでは低い値から始めてください。
+- `temperature`と`top_p`は、まずどちらか一方だけ変更してください。
+- 高いtemperatureと強い量子化を組み合わせると、不安定さが増すことがあります。
 
 <span id="top_p"></span>
 <h3 id="parameter-top_p"><code>top_p</code></h3>
@@ -147,8 +162,8 @@ Phaseoを指すカスタムベースURLでAnthropic公式SDKを使用する場�
 
 注意:
 
-temperatureを直接変えずに探索範囲を狭めたり広げたりするには、`top_p`を調整します。
-多くの用途では、中程度の`temperature`と1.0に近い`top_p`が妥当な初期値です。
+- temperatureを直接変えずに探索範囲を狭めたり広げたりするには、`top_p`を調整します。
+- 多くの用途では、中程度の`temperature`と1.0に近い`top_p`が妥当な初期値です。
 
 <span id="top_k"></span>
 <h3 id="parameter-top_k"><code>top_k</code></h3>
@@ -165,8 +180,8 @@ temperatureを直接変えずに探索範囲を狭めたり広げたりするに
 
 注意:
 
-`top_k`はすべてのプロバイダーで利用できるわけではありません。
-`top_p`より明示的に候補トークン数を制限する方法として使います。
+- `top_k`はすべてのプロバイダーで利用できるわけではありません。
+- `top_p`より明示的に候補トークン数を制限する方法として使います。
 
 <span id="max_tokens"></span>
 <h3 id="parameter-max_tokens"><code>max_tokens</code></h3>
@@ -265,7 +280,7 @@ temperatureを直接変えずに探索範囲を狭めたり広げたりするに
 
 | 項目 | 値 |
 | --- | --- |
-| 型 | `string` or `string[]` |
+| 型 | `string` または `string[]` |
 | デフォルト | 未設定 |
 | 一般的な用途 | パーサーの境界、テンプレートの終端、プロトコルマーカー |
 
@@ -315,7 +330,7 @@ temperatureを直接変えずに探索範囲を狭めたり広げたりするに
 
 | 項目 | 値 |
 | --- | --- |
-| 型 | `string` or `object` |
+| 型 | `string` または `object` |
 | よく使う値 | `none`, `auto`, `required` |
 
 コンテンツのみを返す場合は`none`、モデルに判断させる場合は`auto`を使い、後続のオーケストレーションでツール呼び出しが必要なら、より厳しい値を指定します。
@@ -339,7 +354,7 @@ temperatureを直接変えずに探索範囲を狭めたり広げたりするに
 
 | 項目 | 値 |
 | --- | --- |
-| 型 | `string` or `object` |
+| 型 | `string` または `object` |
 | デフォルト | エンドポイントとプロバイダーによって異なります |
 
 受け付けられる形式はエンドポイントとプロバイダーアダプターによって異なります。自由形式のテキスト以外、特にJSONレスポンスや構造化抽出フローが必要な場合に使用します。
@@ -434,8 +449,8 @@ Phaseoは、ゲートウェイで正規化されたティア値を内部でプ�
 
 注意:
 
-`Batch`は独立したAPIフローであり、サービスティアの値ではありません。
-対応状況はエンドポイントとプロバイダーによって異なります。
+- `Batch`は独立したAPIフローであり、サービスティアの値ではありません。
+- 対応状況はエンドポイントとプロバイダーによって異なります。
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>
@@ -510,7 +525,7 @@ OpenAIのキャッシュ保持オプションをプロバイダー固有のオ�
 | `only` | `string[]` | 特定のプロバイダーにルーティングを限定します。 |
 | `ignore` | `string[]` | 特定のプロバイダーを除外します。 |
 | `include_alpha` | `boolean` | ルーティングの判断でalphaプロバイダーを許可します。 |
-| `sort` | `string` or `object` | 通常は`price`、`latency`、`throughput`などに基づいてプロバイダーを並べ替えます。 |
+| `sort` | `string` または `object` | 通常は`price`、`latency`、`throughput`などに基づいてプロバイダーを並べ替えます。 |
 | `required_execution_region` | `string` | 実行を指定リージョンに限定します。 |
 | `required_data_region` | `string` | データ処理を指定リージョンに限定します。 |
 | `require_zero_data_retention` | `boolean` | ゼロデータ保持の要件を満たすプロバイダーを必須にします。 |
@@ -583,7 +598,7 @@ Chat Completions、Responses、Anthropic Messagesでのプロバイダー別プ�
 | `return_upstream_request` | `boolean` | 変換後の上流リクエストペイロードを含めます。 |
 | `return_upstream_response` | `boolean` | 利用可能な場合に上流レスポンスペイロードを含めます。 |
 | `trace` | `boolean` | ルーティングまたはデバッグのトレースを返します。 |
-| `trace_level` | `summary` or `full` | トレースの詳細度を制御します。 |
+| `trace_level` | `summary` または `full` | トレースの詳細度を制御します。 |
 
 デバッグペイロードには機密性の高いリクエストコンテキストが含まれる場合があります。開発環境または厳格に管理された環境でのみ使用してください。
 

@@ -1,3 +1,4 @@
+import { getModelAccessLayout } from "@/lib/models/modelAccessLayout";
 import {
 	fetchFrontendModelBenchmarkHighlights,
 	fetchFrontendModelAvailability,
@@ -180,6 +181,7 @@ async function ModelFaqSectionContent({
 }
 
 function getModelPageTocItems({
+	subscriptionOnly,
 	showBenchmarks,
 	showSubscriptions,
 	status,
@@ -189,6 +191,7 @@ function getModelPageTocItems({
 	labels,
 	isPrivateModel = false,
 }: {
+	subscriptionOnly: boolean;
 	showBenchmarks: boolean;
 	showSubscriptions: boolean;
 	status?: string | null;
@@ -221,10 +224,16 @@ function getModelPageTocItems({
 		});
 	}
 
-	return baseModelPageTocItems.filter((item) => {
+	const orderedItems = subscriptionOnly
+		? [
+			...baseModelPageTocItems.filter((item) => item.id === "subscriptions"),
+			...baseModelPageTocItems.filter((item) => item.id !== "subscriptions"),
+		]
+		: baseModelPageTocItems;
+	return orderedItems.filter((item) => {
 		if (item.id === "providers") return showProviders;
 		if (
-			!isGatewayActive &&
+			(!isGatewayActive || subscriptionOnly) &&
 			["performance", "pricing", "activity", "apps", "uptime"].includes(item.id)
 		) {
 			return false;
@@ -385,15 +394,22 @@ async function ModelDetailPageBody({
 	const privatePerformance = isPrivateModel ? await fetchPrivateModelPerformance(modelId) : null;
 	const showBenchmarks = benchmarkHighlights.length > 0;
 	const showSubscriptions = subscriptionPlans.length > 0;
-	const isGatewayActive = isPrivateModel
-		? true
-		: availability?.isGatewayActive ?? true;
-	const showProviders =
-		modelOverview.status === "Announced" ||
+	const hasApiProviders =
 		(availability?.activeProviderCount ?? 0) > 0 ||
 		(effectiveGatewayMetadata?.providers.length ?? 0) > 0 ||
-		pricingProviders.some((provider) => provider.provider_models.length > 0) ||
-		providerPreviews.length > 0;
+		pricingProviders.some((provider) => provider.provider_models.length > 0);
+	const { subscriptionOnly, showProviders } = getModelAccessLayout({
+		hasSubscriptions: showSubscriptions,
+		hasApiProviders,
+		isPrivateModel,
+		status: modelOverview.status,
+		hasProviderPreviews: providerPreviews.length > 0,
+	});
+	const isGatewayActive = isPrivateModel
+		? true
+		: subscriptionOnly
+		? false
+		: availability?.isGatewayActive ?? true;
 	const resolvedPerformancePromise = isPrivateModel
 		? Promise.resolve(privateModelPerformanceMetrics(modelOverview, privatePerformance))
 		: isGatewayActive
@@ -402,6 +418,7 @@ async function ModelDetailPageBody({
 	const isRetired = modelOverview?.status === "Retired";
 	const t = await getTranslations("Catalogue.models.detail.navigation");
 	const modelPageTocItems = getModelPageTocItems({
+		subscriptionOnly,
 		showBenchmarks,
 		showSubscriptions,
 		status: modelOverview?.status,
@@ -525,6 +542,7 @@ async function ModelDetailPageBody({
 								includeHidden={includeHidden}
 								showBenchmarks={showBenchmarks}
 								showSubscriptions={showSubscriptions}
+								subscriptionOnly={subscriptionOnly}
 								showProviders={showProviders}
 								status={modelOverview?.status}
 								isGatewayActive={isGatewayActive}

@@ -64,6 +64,7 @@ public final class Models {
 		public Boolean meta;
 		public Object metadata;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
@@ -107,6 +108,7 @@ public final class Models {
 		public String created_at;
 		public String created_by;
 		public String creator_user_id;
+		public String department_id;
 		public Boolean disabled;
 		public String expires_at;
 		public String hash;
@@ -133,6 +135,7 @@ public final class Models {
 	}
 
 	public static class ApiKeyCreateRequest {
+		public String department_id;
 		public Boolean disabled;
 		public String expires_at;
 		public Boolean include_byok_in_limit;
@@ -190,6 +193,7 @@ public final class Models {
 	}
 
 	public static class ApiKeyUpdateRequest {
+		public String department_id;
 		public Boolean disabled;
 		public String expires_at;
 		public Boolean include_byok_in_limit;
@@ -217,6 +221,7 @@ public final class Models {
 		public String created_at;
 		public String created_by;
 		public String creator_user_id;
+		public String department_id;
 		public Boolean disabled;
 		public String expires_at;
 		public String hash;
@@ -307,6 +312,7 @@ public final class Models {
 		public Object format;
 		public String input;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 		public Double speed;
 		public String voice;
@@ -320,6 +326,7 @@ public final class Models {
 		public java.util.List<String> known_speaker_references;
 		public String language;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 	}
 
@@ -332,6 +339,7 @@ public final class Models {
 		public String audio_url;
 		public String language;
 		public String model;
+		public java.util.List<String> models;
 		public String prompt;
 		public Object provider;
 		public Double temperature;
@@ -546,6 +554,7 @@ public final class Models {
 		public Object metadata;
 		public java.util.List<Object> modalities;
 		public String model;
+		public java.util.List<String> models;
 		public Boolean parallel_tool_calls;
 		public Double presence_penalty;
 		public String prompt_cache_key;
@@ -808,6 +817,7 @@ public final class Models {
 		public Boolean meta;
 		public Object metadata;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 		public Object questions;
 		public Object routing;
@@ -963,6 +973,7 @@ public final class Models {
 		public Object encoding_format;
 		public Object input;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 		public Object provider_options;
 		public String user;
@@ -1566,6 +1577,7 @@ public final class Models {
 		public String mask;
 		public Boolean meta;
 		public String model;
+		public java.util.List<String> models;
 		public Object moderation;
 		public Integer n;
 		public Integer output_compression;
@@ -1589,6 +1601,7 @@ public final class Models {
 	public static class ImagesGenerationRequest {
 		public Object background;
 		public String model;
+		public java.util.List<String> models;
 		public Object moderation;
 		public Integer n;
 		public Integer output_compression;
@@ -1633,6 +1646,7 @@ public final class Models {
 		public Boolean meta;
 		public Object metadata;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 		public Object questions;
 		public Object routing;
@@ -1835,6 +1849,9 @@ public final class Models {
 		public Object organization;
 	}
 
+	public static class ModelFallbacks {
+	}
+
 	public static class ModelId {
 	}
 
@@ -1907,6 +1924,7 @@ public final class Models {
 		public Object input;
 		public Boolean meta;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 	}
 
@@ -1924,6 +1942,7 @@ public final class Models {
 		public Object elevenlabs;
 		public Object format;
 		public String model;
+		public java.util.List<String> models;
 		public String prompt;
 		public Object provider;
 		public Object suno;
@@ -2162,6 +2181,7 @@ public final class Models {
 		public String image;
 		public String language;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 	}
 
@@ -2189,6 +2209,7 @@ public final class Models {
 		public Boolean meta;
 		public Object metadata;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 		public java.util.List<Object> questions;
 		public Object routing;
@@ -2255,6 +2276,7 @@ public final class Models {
 		public Object document;
 		public Boolean echo_upstream_request;
 		public String model;
+		public java.util.List<String> models;
 		public Object output_format;
 		public Object provider;
 		public Object routing;
@@ -2645,6 +2667,84 @@ public final class Models {
 		public Object status;
 	}
 
+	public static class RateLimitAssignment {
+		public String created_at;
+		public String created_by;
+		public String id;
+		public String policy_id;
+		public String target_id;
+		public Object target_type;
+		public String updated_at;
+		public String workspace_id;
+	}
+
+	public static class RateLimitAssignmentInput {
+		public String policy_id;
+		public String target_id;
+		public Object target_type;
+	}
+
+	public static class RateLimitAssignmentListResponse {
+		public java.util.List<Object> data;
+		public Boolean has_more;
+	}
+
+	public static class RateLimitAssignmentResponse {
+		public Object data;
+	}
+
+	public static class RateLimitAssignmentUpdateInput {
+		public String policy_id;
+	}
+
+	public static class RateLimitDeleteResponse {
+		public Object data;
+	}
+
+	public static class RateLimitPolicy {
+		public Integer concurrent_requests;
+		public String created_at;
+		public String created_by;
+		public String description;
+		public Boolean fail_closed;
+		public String id;
+		public String name;
+		public Integer requests_per_minute;
+		public Integer tokens_per_minute;
+		public String updated_at;
+		public String workspace_id;
+	}
+
+	public static class RateLimitPolicyInput {
+		public Integer concurrent_requests;
+		public String description;
+		public Boolean fail_closed;
+		public String name;
+		public Integer requests_per_minute;
+		public Integer tokens_per_minute;
+	}
+
+	public static class RateLimitPolicyListResponse {
+		public java.util.List<Object> data;
+		public Boolean has_more;
+	}
+
+	public static class RateLimitPolicyResponse {
+		public Object data;
+	}
+
+	public static class RateLimitPolicyUpdateInput {
+		public Integer concurrent_requests;
+		public String description;
+		public Boolean fail_closed;
+		public String name;
+		public Integer requests_per_minute;
+		public Integer tokens_per_minute;
+	}
+
+	public static class RateLimitTargetType {
+	}
+
 	public static class ReasoningConfig {
 		public Object effort;
 		public Boolean enabled;
@@ -2662,6 +2762,7 @@ public final class Models {
 		public Integer max_chunks_per_doc;
 		public Object metadata;
 		public String model;
+		public java.util.List<String> models;
 		public Object provider;
 		public Object provider_options;
 		public String query;
@@ -2739,6 +2840,7 @@ public final class Models {
 		public Object metadata;
 		public java.util.List<Object> modalities;
 		public String model;
+		public java.util.List<String> models;
 		public Boolean parallel_tool_calls;
 		public String previous_response_id;
 		public String prompt_cache_key;
@@ -2935,6 +3037,7 @@ public final class Models {
 		public java.util.List<Object> input_references;
 		public Double input_video_duration;
 		public String model;
+		public java.util.List<String> models;
 		public String negative_prompt;
 		public Object output;
 		public String person_generation;

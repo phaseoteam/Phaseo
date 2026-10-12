@@ -1,6 +1,6 @@
 ---
 title: "Voreinstellungen"
-description: "Speichern Sie wiederverwendbare Gateway-Konfigurationen für Ihr Team."
+description: "Speichere wiederverwendbare Gateway-Konfigurationen für dein Team."
 icon: "sliders-horizontal"
 ---
 
@@ -11,7 +11,7 @@ Voreinstellungen sind wiederverwendbare Konfigurationen, mit denen Teams Prompts
 <Steps>
 <Step title="Voreinstellung erstellen">
 
-Öffnen Sie **Dashboard -> Einstellungen -> Voreinstellungen** und erstellen Sie eine Voreinstellung mit einem eindeutigen Slug, z. B. `release-summary`. Fügen Sie nur Standards hinzu, die von allen Aufrufern verwendet werden sollen.
+Öffne **Dashboard -> Einstellungen -> Voreinstellungen** und erstelle eine Voreinstellung mit einem eindeutigen Slug, z. B. `release-summary`. Füge nur Standards hinzu, die von allen Aufrufern verwendet werden sollen.
 
 </Step>
 
@@ -59,7 +59,7 @@ response = client.generate_response({
 
 <Step title="Routing-Ergebnis prüfen">
 
-Öffnen Sie die Anfrage unter **Gateway -> Nutzung**, um zu prüfen, welche Standards angewendet wurden und welcher Anbieter sie ausgeführt hat.
+Öffne die Anfrage unter **Gateway -> Nutzung**, um zu prüfen, welche Standards angewendet wurden und welcher Anbieter sie ausgeführt hat.
 
 </Step>
 </Steps>
@@ -74,7 +74,7 @@ response = client.generate_response({
 
 Voreinstellungsnamen beginnen mit `@`, damit sie leicht erkennbar sind.
 
-Rufen Sie eine Voreinstellung ausschließlich über das Feld `model` der Anfrage auf. Phaseo stellt kein separates `preset`-Anfragefeld bereit.
+Rufe eine Voreinstellung ausschließlich über das Feld `model` der Anfrage auf. Phaseo stellt kein separates `preset`-Anfragefeld bereit.
 
 - Private Voreinstellungen und Workspace-Voreinstellungen verwenden `@{slug}` und werden im Workspace des API-Schlüssels aufgelöst.
 - Öffentliche Voreinstellungen verwenden `@{username}/{slug}` und können aus jedem Workspace aufgelöst werden. Beispiel: `@octavia/release-summary`.
@@ -83,7 +83,7 @@ Für eine öffentliche Veröffentlichung sind ein aktiviertes öffentliches Prof
 
 ## Versionen und Marketplace-Forks
 
-Beim Speichern werden Änderungen in einem privaten Entwurf übernommen. Sobald sie bereit sind, verwenden Sie **Neue Version veröffentlichen**. Phaseo erstellt eine unveränderliche Version mit Nummer und behält frühere Versionen zur Prüfung bei.
+Beim Speichern werden Änderungen in einem privaten Entwurf übernommen. Sobald sie bereit sind, verwende **Neue Version veröffentlichen**. Phaseo erstellt eine unveränderliche Version mit Nummer und behält frühere Versionen zur Prüfung bei.
 
 Eigentümer können festlegen, wie Versionsbezeichnungen angezeigt werden:
 
@@ -118,11 +118,11 @@ Der Ablauf für Voreinstellungen im Dashboard ist bewusst auf eine stabile, klar
 - Standardwerte für Decoding und Generierung
 - Reasoning-Standards
 
-Wenn Sie komplexere Transformationen pro Aufrufer benötigen, bündeln Sie sie in einer Anwendungsschicht und verwenden Sie Voreinstellungen für teamweit wiederverwendbare Standards.
+Wenn du komplexere Transformationen pro Aufrufer benötigst, bündle sie in einer Anwendungsschicht und verwende Voreinstellungen für teamweit wiederverwendbare Standards.
 
 ## Voreinstellungen verwalten
 
-Erstellen und verwalten Sie Voreinstellungen unter **Dashboard -> Einstellungen -> Voreinstellungen**. Nutzen Sie verschiedene Slugs, wenn Workflows deutlich unterschiedliche Prompts, Routing- oder Cache-Einstellungen benötigen.
+Erstelle und verwalte Voreinstellungen unter **Dashboard -> Einstellungen -> Voreinstellungen**. Nutze verschiedene Slugs, wenn Workflows deutlich unterschiedliche Prompts, Routing- oder Cache-Einstellungen benötigen.
 
 ## Wann Voreinstellungen sinnvoll sind
 

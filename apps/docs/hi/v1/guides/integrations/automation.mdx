@@ -1,21 +1,21 @@
 ---
 title: "वर्कफ़्लो ऑटोमेशन"
 icon: "workflow"
-description: "Zapier, n8n, Pipedream और अन्य automation platform से Phaseo उपयोग करें।"
+description: "Zapier, n8n, Pipedream और दूसरे ऑटोमेशन प्लेटफ़ॉर्म से Phaseo इस्तेमाल करें।"
 ---
 
-Authenticated HTTP requests भेजने वाले automation products में Phaseo अभी काम करता है। आगे चलकर native marketplace app अधिक guided अनुभव दे सकते हैं।
+Phaseo आज ही उन ऑटोमेशन प्रोडक्ट में काम करता है जो प्रमाणित HTTP अनुरोध भेज सकते हैं। आगे चलकर नेटिव मार्केटप्लेस ऐप ज़्यादा निर्देशित अनुभव दे सकते हैं।
 
 ## साझा अनुरोध
 
-HTTP, webhook या code action में ये settings उपयोग करें:
+HTTP, वेबहुक या कोड ऐक्शन में ये सेटिंग्स इस्तेमाल करें:
 
 | सेटिंग | मान |
 | --- | --- |
 | तरीका | `POST` |
 | URL | `https://api.phaseo.app/v1/responses` |
-| Header | `Authorization: Bearer <PHASEO_API_KEY>` |
-| Header | `Content-Type: application/json` |
+| हेडर | `Authorization: Bearer <PHASEO_API_KEY>` |
+| हेडर | `Content-Type: application/json` |
 
 ```json
 {
@@ -24,40 +24,40 @@ HTTP, webhook या code action में ये settings उपयोग क�
 }
 ```
 
-Phaseo API key को platform के credential या secret store में रखें। इसे shared workflow definition में सीधे न डालें।
+Phaseo API कुंजी को प्लेटफ़ॉर्म के क्रेडेंशियल या सीक्रेट स्टोर में रखें। इसे साझा वर्कफ़्लो परिभाषा में सीधे न डालें।
 
 ## Zapier
 
-**Webhooks by Zapier → Custom Request** उपयोग करें:
+**Webhooks by Zapier → Custom Request** इस्तेमाल करें:
 
 1. `POST` चुनें।
 2. `https://api.phaseo.app/v1/responses` दर्ज करें।
-3. bearer और content-type headers जोड़ें।
-4. पिछले Zap steps के fields को `input` से map करें।
-5. गैर-संवेदनशील data से Zap जाँचें।
+3. Bearer और Content-Type हेडर जोड़ें।
+4. पिछले Zap चरणों के फ़ील्ड को `input` में मैप करें।
+5. गैर-संवेदनशील डेटा से Zap को जाँचें।
 
-Native Phaseo Zapier app में model selection, structured-output actions और Phaseo authentication जोड़ी जा सकती है, लेकिन इसे Zapier developer platform पर प्रकाशित करना होगा।
+Phaseo का नेटिव Zapier ऐप मॉडल चयन, संरचित आउटपुट वाली कार्रवाइयाँ और Phaseo-विशिष्ट प्रमाणीकरण जोड़ सकता है, लेकिन इसके लिए उसे Zapier के डेवलपर प्लेटफ़ॉर्म के ज़रिए प्रकाशित करना ज़रूरी है।
 
 ## n8n
 
-Bearer प्रमाणीकरण और JSON बॉडी वाले **HTTP Request** नोड का उपयोग करें। संरचित कार्यप्रवाह डेटा के लिए n8n एक्सप्रेशन से ऊपर से आए आइटम को `input` फ़ील्ड में मैप करें।
+Bearer प्रमाणीकरण और JSON बॉडी वाले **HTTP Request** नोड का उपयोग करें। संरचित वर्कफ़्लो डेटा के लिए n8n एक्सप्रेशन से ऊपर से आए आइटम को `input` फ़ील्ड में मैप करें।
 
 आगे चलकर n8n का आधिकारिक कम्युनिटी नोड बिना मैन्युअल HTTP सेटअप के Generate Response, List Models, Get Model Pricing और Create Embedding जैसी कार्रवाइयाँ दे सकता है।
 
 ## Pipedream
 
-HTTP request step या Node.js code step उपयोग करें। `PHASEO_API_KEY` को Pipedream secret में रखें और step environment से पढ़ें।
+HTTP अनुरोध चरण या Node.js कोड चरण इस्तेमाल करें। `PHASEO_API_KEY` को Pipedream सीक्रेट के रूप में रखें और उसे चरण के एनवायरनमेंट से पढ़ें।
 
 ## प्रोडक्शन संबंधी सुझाव
 
-- हर automation की Gateway API key पर spending limit तय करें।
-- उपयोग और revocation अलग रखने के लिए हर automation को अलग key दें।
-- जब अगले steps को machine-readable fields चाहिए, तो structured output उपयोग करें।
-- `429` और recoverable `5xx` responses के लिए retry handling जोड़ें।
-- केवल model step retry होने के कारण non-idempotent बाहरी actions दोबारा न चलाएँ।
+- हर ऑटोमेशन में इस्तेमाल होने वाली Gateway API कुंजी पर खर्च की सीमा तय करें।
+- हर ऑटोमेशन को उसकी अपनी कुंजी दें, ताकि उपयोग का हिसाब और कुंजी रद्द करने का असर अलग-अलग रहे।
+- जब आगे के चरणों को मशीन से पढ़े जा सकने वाले फ़ील्ड चाहिए हों, तब संरचित आउटपुट इस्तेमाल करें।
+- `429` और ठीक हो सकने वाली `5xx` प्रतिक्रियाओं के लिए पुनः प्रयास का प्रबंधन जोड़ें।
+- जिन बाहरी कार्रवाइयों को दोहराना सुरक्षित नहीं है (नॉन-इडेम्पोटेंट), उन्हें सिर्फ़ इसलिए दोबारा न चलाएँ कि मॉडल चरण का पुनः प्रयास हुआ।
 
 ## संबंधित विषय
 
-- [उत्तर](../../api-reference/endpoint/responses.mdx)
-- [Structured Outputs](../structured-outputs.mdx)
+- [Responses](../../api-reference/endpoint/responses.mdx)
+- [संरचित आउटपुट](../structured-outputs.mdx)
 - [त्रुटि प्रबंधन](../../api-reference/errors.mdx)

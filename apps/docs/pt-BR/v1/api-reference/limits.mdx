@@ -8,13 +8,28 @@ Uma requisição pode ser limitada pelo provedor selecionado ou por uma polític
 
 ## Limites do gateway
 
-A cota padrão é de **25 requisições por minuto em uma janela móvel** para cada usuário em cada espaço de trabalho. As chaves de API criadas pelo mesmo usuário compartilham essa cota. Requisições OAuth usam o usuário autenticado. Chaves sem proprietário compartilham uma cota do espaço de trabalho.
+Cada usuário em cada espaço de trabalho tem uma cota de requisições por minuto, medida em uma janela móvel de um minuto. As chaves de API criadas pelo mesmo usuário compartilham essa cota. Requisições OAuth usam o usuário autenticado. Chaves sem proprietário compartilham uma cota do espaço de trabalho.
+
+A cota depende da situação da conta do espaço de trabalho e aumenta automaticamente à medida que o espaço de trabalho se consolida:
+
+| Espaço de trabalho | Requisições por minuto |
+| --- | --- |
+| Espaço de trabalho novo | 10 |
+| Pelo menos 7 dias de existência ou com uma recarga paga | 25 |
+| Pelo menos 30 dias de existência e pelo menos US$ 50 em recargas pagas, descontados os reembolsos | 60 |
+| Cobrança por fatura | 120 |
+
+Um espaço de trabalho recebe a maior cota para a qual se qualifica. As alterações entram em vigor em poucos minutos.
 
 As rotas de modelos gratuitos também têm uma cota de **1500 requisições por dia UTC**, compartilhada entre todos os modelos gratuitos do mesmo usuário e espaço de trabalho. Requisições a modelos pagos não consomem essa cota diária. Uma requisição gratuita admitida conta mesmo se o provedor falhar depois; fallbacks dentro dessa requisição contam uma única vez.
 
 Esses limites valem para todas as regiões do gateway e podem ser aumentados para um usuário e espaço de trabalho específicos. Operações com arquivos e consultas de status de tarefas consomem a cota por minuto; endpoints de administração não.
 
 Quando uma cota do gateway se esgota, a resposta é `429` com `Retry-After` em segundos. O motivo do erro é `customer_requests_per_minute` ou `free_requests_per_day`. Aguarde esse intervalo antes de tentar novamente. Se a verificação de cotas estiver temporariamente indisponível, o gateway retorna `503` com orientação para uma nova tentativa.
+
+## Limites de chaves e orçamentos
+
+Ao atingir os limites diários, semanais ou mensais de requisições e gastos de uma chave de API, ou os [orçamentos](./endpoint/budgets-list.mdx) do espaço de trabalho, a resposta é `429` com o código de erro `key_limit_exceeded`. Os campos `reason`, `limit_window` e `reset_at` do corpo identificam o limite e quando seu período é redefinido. `Retry-After` informa os segundos até essa redefinição. Ele é omitido quando o limite não é redefinido sozinho, como um orçamento vitalício ou uma chave bloqueada temporariamente; nesse caso, em vez de tentar novamente, aumente o orçamento do espaço de trabalho ou, se for um limite de chave, aumente o limite da chave ou use outra chave.
 
 ## Limites do provedor
 

@@ -1,47 +1,47 @@
 ---
 title: "Infisical"
 icon: "key-round"
-description: "Infisical के साथ Phaseo API key के automatic rotation की तैयारी करें।"
+description: "Infisical के साथ Phaseo API कुंजी के स्वचालित रोटेशन की तैयारी करें।"
 ---
 
-Infisical सीमित permissions वाली Phaseo Management API key से authenticate करके Phaseo Gateway API keys rotate कर सकता है। Phaseo zero-downtime दो-चरण rotation के लिए आवश्यक key lifecycle पहले से देता है।
+Infisical सीमित दायरे वाली Phaseo प्रबंधन API कुंजी से प्रमाणीकरण करके Phaseo Gateway API कुंजियाँ रोटेट कर सकता है। Phaseo दो-चरण, बिना डाउनटाइम वाले रोटेशन के लिए ज़रूरी कुंजी जीवनचक्र पहले से उपलब्ध कराता है।
 
 <Warning>
-Infisical में Phaseo अभी selectable App Connection नहीं है। यह पृष्ठ समर्थित Phaseo contract और Infisical connection उपलब्ध होने पर उपयोग होने वाली configuration बताता है।
+Infisical में Phaseo अभी चुनने योग्य App Connection नहीं है। यह पेज समर्थित Phaseo अनुबंध और वह कॉन्फ़िगरेशन बताता है जिसका इस्तेमाल Infisical कनेक्शन उपलब्ध होने पर करना है।
 </Warning>
 
 ## कुंजी बदलने की प्रक्रिया कैसे काम करती है
 
-1. Infisical Management API key से Phaseo में authenticate करता है।
-2. Infisical `POST /v1/keys` से replacement Gateway API key बनाता है।
-3. Infisical लौटाई गई plain-text key को configured secret में सहेजता है।
-4. ऐप replacement key का उपयोग शुरू करता है।
-5. Infisical `DELETE /v1/keys/{id}` से पिछली key revoke करता है।
+1. Infisical, प्रबंधन API कुंजी से Phaseo में प्रमाणीकरण करता है।
+2. Infisical `POST /v1/keys` से एक प्रतिस्थापन Gateway API कुंजी बनाता है।
+3. Infisical लौटाई गई सादा टेक्स्ट कुंजी को कॉन्फ़िगर किए गए सीक्रेट में सहेजता है।
+4. ऐप्लिकेशन प्रतिस्थापन कुंजी का इस्तेमाल शुरू करता है।
+5. Infisical `DELETE /v1/keys/{id}` से पिछली कुंजी रद्द करता है।
 
-Phaseo Gateway API key की plain-text value केवल बनाते समय लौटाता है। Secret update के दौरान पुरानी और replacement keys साथ रह सकती हैं।
+Phaseo किसी Gateway API कुंजी का सादा टेक्स्ट मान केवल उसे बनाते समय लौटाता है। सीक्रेट अपडेट होने के दौरान पुरानी और प्रतिस्थापन कुंजियाँ कुछ समय तक साथ-साथ मान्य रह सकती हैं।
 
-## सीमित scope वाली Management API key बनाएँ
+## सीमित दायरे वाली प्रबंधन API कुंजी बनाएँ
 
-**Dashboard → Settings → Management Keys** में इन capabilities वाली key बनाएँ:
+**डैशबोर्ड → सेटिंग्स → प्रबंधन कुंजियाँ** में इन क्षमताओं वाली कुंजी बनाएँ:
 
-- Connection जाँचने और managed keys देखने के लिए `keys:read`
-- Replacement keys बनाने के लिए `keys:write`
-- पुरानी keys revoke करने के लिए `keys:delete`
+- कनेक्शन सत्यापित करने और प्रबंधित कुंजियाँ देखने के लिए `keys:read`
+- प्रतिस्थापन कुंजियाँ बनाने के लिए `keys:write`
+- पिछली कुंजियाँ रद्द करने के लिए `keys:delete`
 
-बनी हुई `phaseo_v1_mk_...` secret को Infisical में रखें। Management API keys control-plane credentials हैं और inference के लिए उपयोग नहीं हो सकतीं।
+बनने वाले `phaseo_v1_mk_...` सीक्रेट को Infisical में सहेजें। प्रबंधन API कुंजियाँ कंट्रोल-प्लेन क्रेडेंशियल हैं और इनका इस्तेमाल इन्फ़रेंस के लिए नहीं किया जा सकता।
 
 ## कनेक्शन विवरण
 
-| Field | मान |
+| फ़ील्ड | मान |
 | --- | --- |
-| Base URL | `https://api.phaseo.app/v1` |
-| Authentication | `Authorization: Bearer <PHASEO_MANAGEMENT_KEY>` |
-| जाँचें | `GET /keys` |
-| Gateway keys की सूची | `GET /keys` |
-| Gateway key बनाएँ | `POST /keys` |
-| Gateway key revoke करें | `DELETE /keys/{id}` |
+| बेस URL | `https://api.phaseo.app/v1` |
+| प्रमाणीकरण | `Authorization: Bearer <PHASEO_MANAGEMENT_KEY>` |
+| सत्यापन | `GET /keys` |
+| Gateway कुंजियों की सूची | `GET /keys` |
+| Gateway कुंजी बनाएँ | `POST /keys` |
+| Gateway कुंजी रद्द करें | `DELETE /keys/{id}` |
 
-## नई rotated key बनाएँ
+## रोटेशन के लिए नई कुंजी बनाएँ
 
 ```bash
 curl https://api.phaseo.app/v1/keys \
@@ -55,20 +55,20 @@ curl https://api.phaseo.app/v1/keys \
   }'
 ```
 
-Response में नई Gateway key एक बार `data.key` में और उसका stable identifier `data.id` में होता है।
+प्रतिक्रिया में नई Gateway कुंजी केवल एक बार `data.key` में मिलती है, साथ ही उसका स्थायी पहचानकर्ता `data.id` में होता है।
 
-## पिछली key revoke करें
+## पिछली कुंजी रद्द करें
 
 ```bash
 curl -X DELETE https://api.phaseo.app/v1/keys/$PREVIOUS_KEY_ID \
   -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY"
 ```
 
-Deletion idempotent है। पहले से deleted key सफल deleted state लौटाती है, इसलिए rotation retry सुरक्षित है।
+कुंजी हटाना इडेम्पोटेंट है, यानी इसे दोहराने से परिणाम नहीं बदलता। पहले से हटाई गई कुंजी के लिए भी सफल "हटाई गई" स्थिति लौटती है, इसलिए रोटेशन का पुनः प्रयास सुरक्षित रहता है।
 
 ## सीमाएँ और BYOK
 
-Phaseo compatibility fields `limit`, `limit_reset` और `include_byok_in_limit` स्वीकार करता है। Reset अवधि daily, weekly और monthly हैं। `include_byok_in_limit` अभी केवल compatibility के लिए है; Phaseo इस key limit से BYOK usage को बाहर रखता है।
+Phaseo संगतता के लिए `limit`, `limit_reset` और `include_byok_in_limit` फ़ील्ड स्वीकार करता है। समर्थित रीसेट अवधियाँ दैनिक, साप्ताहिक और मासिक हैं। `include_byok_in_limit` अभी केवल संगतता के लिए है; Phaseo इस कुंजी-सीमा फ़ील्ड से BYOK उपयोग को बाहर रखता है।
 
 ## साझेदार स्थिति
 
@@ -76,6 +76,6 @@ Infisical का मूल कनेक्शन तभी उपलब्ध �
 
 ## संबंधित विषय
 
-- [Management API keys](../../developers/management-api-keys.mdx)
-- [API key बनाएँ](../../api-reference/endpoint/keys-create.mdx)
-- [API key हटाएँ](../../api-reference/endpoint/keys-delete.mdx)
+- [प्रबंधन API कुंजियाँ](../../developers/management-api-keys.mdx)
+- [API कुंजी बनाएँ](../../api-reference/endpoint/keys-create.mdx)
+- [API कुंजी हटाएँ](../../api-reference/endpoint/keys-delete.mdx)

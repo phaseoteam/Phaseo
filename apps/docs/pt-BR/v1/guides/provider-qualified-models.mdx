@@ -17,7 +17,6 @@ Por exemplo:
 ```text
 baseten:thinking-machines/inkling-small
 deepinfra:deepseek/deepseek-v3
-crofai:moonshotai/kimi-k3
 ```
 
 Os dois-pontos iniciais separam o provedor do ID canônico do modelo. Os dois-pontos depois do namespace do modelo continuam sendo sufixos do modelo, então não há ambiguidade:
@@ -143,7 +142,7 @@ A Phaseo falha de forma segura, a menos que a rota selecionada tenha uma tabela 
 - esteja explicitamente marcada como `free`
 - tenha preço exatamente igual a zero
 
-A falta de preços, preços pagos, preços mistos, preços negativos ou uma regra de preço zero sem o rótulo explícito de gratuito faz com que a solicitação seja rejeitada antes da execução no provedor.
+A falta de preços, preços pagos, preços mistos, preços negativos ou uma regra de preço zero que não esteja explicitamente marcada como `free` faz com que a solicitação seja rejeitada antes da execução no provedor.
 
 <Note>
 A existência de um modelo canônico `:free` não significa que todos os provedores do modelo subjacente ofereçam uma rota gratuita.

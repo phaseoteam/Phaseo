@@ -1,48 +1,48 @@
 ---
 title: "OpenRouter से Phaseo पर माइग्रेट करना"
 sidebarTitle: "OpenRouter"
-description: "Gateway URL और API key बदलकर, model IDs की पुष्टि करके और चरणबद्ध rollout जाँचकर Phaseo को OpenRouter के विकल्प के रूप में इस्तेमाल करें।"
+description: "अपना गेटवे URL और API कुंजी बदलकर, मॉडल ID की पुष्टि करके और नियंत्रित रोलआउट का परीक्षण करके Phaseo को OpenRouter के विकल्प के रूप में इस्तेमाल करें।"
 icon: "arrow-right-left"
 ---
 
-Phaseo, OpenRouter का OpenAI-संगत विकल्प है। अगर ऐप पहले से OpenAI SDK या सीधे HTTP calls के ज़रिए OpenRouter इस्तेमाल करता है, तो आमतौर पर prompts या ऐप का लॉजिक दोबारा लिखे बिना client boundary पर माइग्रेट किया जा सकता है।
+Phaseo, OpenRouter का OpenAI-संगत विकल्प है। अगर आपका ऐप पहले से OpenAI SDK या सीधे HTTP कॉल के ज़रिए OpenRouter इस्तेमाल करता है, तो आम तौर पर प्रॉम्प्ट या ऐप्लिकेशन लॉजिक दोबारा लिखे बिना क्लाइंट की सीमा पर ही माइग्रेट किया जा सकता है।
 
 ## क्या बदलता है
 
 | सेटिंग | OpenRouter | Phaseo |
 | --- | --- | --- |
-| Base URL | `https://openrouter.ai/api/v1` | `https://api.phaseo.app/v1` |
-| API key variable | `OPENROUTER_API_KEY` | `PHASEO_API_KEY` |
-| Authentication | `Authorization: Bearer <key>` | `Authorization: Bearer <key>` |
-| Request payload | OpenAI-संगत | पहली माइग्रेशन में वैसा ही रखें |
-| Model IDs | OpenRouter catalog | हर ID को `GET /v1/models` से जाँचें |
+| बेस URL | `https://openrouter.ai/api/v1` | `https://api.phaseo.app/v1` |
+| API कुंजी वैरिएबल | `OPENROUTER_API_KEY` | `PHASEO_API_KEY` |
+| प्रमाणीकरण | `Authorization: Bearer <key>` | `Authorization: Bearer <key>` |
+| अनुरोध पेलोड | OpenAI-संगत | पहले माइग्रेशन चरण में बिना बदलाव के रखें |
+| मॉडल ID | OpenRouter कैटलॉग | हर ID को `GET /v1/models` से जाँचें |
 
 माइग्रेशन के चार हिस्से हैं:
 
-1. Payload का आकार वही रखें।
-2. Base URL और API key का स्रोत बदलें।
-3. Model IDs और OpenRouter-only headers जाँचें।
-4. Traffic धीरे-धीरे बढ़ाते हुए latency, output और cost की तुलना करें।
+1. पेलोड की संरचना वैसी ही रखें।
+2. बेस URL और API कुंजी का स्रोत बदलें।
+3. मॉडल ID और केवल OpenRouter वाले हेडर जाँचें।
+4. ट्रैफ़िक धीरे-धीरे बढ़ाएँ और साथ में लेटेंसी, आउटपुट और लागत के व्यवहार की तुलना करें।
 
 ## शुरू करने से पहले
 
 - मौजूदा OpenRouter एकीकरण कोड और डिप्लॉयमेंट कॉन्फ़िगरेशन तक पहुँच।
-- dev, staging और production में `PHASEO_API_KEY` उपलब्ध हो।
-- production model IDs और प्रतिनिधि prompts की छोटी सूची।
+- डेव, स्टेजिंग और प्रोडक्शन में `PHASEO_API_KEY` उपलब्ध हो।
+- प्रोडक्शन मॉडल ID और प्रतिनिधि प्रॉम्प्ट की एक छोटी सूची।
 
 ## 1) OpenRouter के मौजूदा इस्तेमाल की सूची बनाएँ
 
 OpenRouter से जुड़े सभी संदर्भ खोजें: एंडपॉइंट URL, कुंजियाँ, मॉडल ID और प्रदाता-विशिष्ट हेडर।
 
-- `openrouter.ai` endpoints खोजें।
-- code, CI और hosting environment variables में `OPENROUTER_API_KEY` खोजें।
-- `HTTP-Referer` और `X-Title` जैसे OpenRouter-only headers खोजें।
-- active model IDs और fallback logic दर्ज करें।
-- ऐसे साझा prompt, provider या parameter defaults पहचानें जिन्हें application code में दोहराने के बजाय Gateway presets में ले जाना चाहिए।
+- `openrouter.ai` एंडपॉइंट के संदर्भ खोजें।
+- कोड, CI और होस्टिंग एनवायरनमेंट वैरिएबल में `OPENROUTER_API_KEY` का उपयोग खोजें।
+- `HTTP-Referer` और `X-Title` जैसे केवल OpenRouter वाले हेडर खोजें।
+- सक्रिय मॉडल ID और फ़ॉलबैक शृंखला का लॉजिक दर्ज करें।
+- ऐसे दोबारा उपयोग होने वाले प्रॉम्प्ट, प्रदाता या पैरामीटर डिफ़ॉल्ट दर्ज करें जिन्हें ऐप्लिकेशन कोड में दोहराने के बजाय Gateway प्रीसेट में ले जाना चाहिए।
 
-## 2) Base URL और credentials बदलें
+## 2) बेस URL और क्रेडेंशियल बदलें
 
-पहले request payload को वैसा ही रखें। optimization से पहले व्यवहार की समानता जाँचें।
+पहले अनुरोध पेलोड की संरचना वैसी ही रखें। ऑप्टिमाइज़ेशन से पहले व्यवहार की समानता सुनिश्चित करें।
 
 <CodeGroup>
 ```typescript TypeScript
@@ -96,9 +96,9 @@ curl -s "https://api.phaseo.app/v1/chat/completions" \
 ```
 </CodeGroup>
 
-## 3) Model IDs जाँचें और OpenRouter-only व्यवहार का मिलान करें
+## 3) मॉडल ID सत्यापित करें और केवल OpenRouter वाले व्यवहार का मिलान करें
 
-यह न मानें कि सभी पुराने aliases मान्य हैं। `/v1/models` query करके हर production model ID जाँचें। सामान्य response में सिर्फ़ अभी public routing के लिए उपलब्ध models होते हैं; inactive या आने वाले mappings देखने की ज़रूरत होने पर ही `availability=all` इस्तेमाल करें।
+यह न मानें कि हर पुराना उपनाम मान्य है। `/v1/models` से क्वेरी करें और हर प्रोडक्शन मॉडल ID जाँचें। डिफ़ॉल्ट प्रतिक्रिया में केवल वे मॉडल होते हैं जिन्हें अभी सार्वजनिक रूप से रूट किया जा सकता है; `availability=all` का इस्तेमाल तभी करें जब आपको जानबूझकर निष्क्रिय या जल्द आने वाली मैपिंग देखनी हों।
 
 <CodeGroup>
 ```bash cURL
@@ -107,61 +107,63 @@ curl -s "https://api.phaseo.app/v1/models" \
 ```
 </CodeGroup>
 
-- `Authorization: Bearer` format वैसा ही रखें।
-- ऐप की पहचान के लिए इस्तेमाल होने पर `HTTP-Referer` और `X-Title` रखें। Phaseo इनके lowercase रूप `http-referer` और `x-title` भी स्वीकार करता है।
-- callers OpenRouter-only response fields पर निर्भर हों, तो उन्हें एक compatibility layer में adapt करें।
-- provider allow/deny lists या routing defaults को callers में बिखेरने के बजाय [Presets](../guides/presets.mdx) और [Routing और fallbacks](../guides/routing-and-fallbacks.mdx) में ले जाएँ।
+- `Authorization: Bearer` प्रारूप वैसा ही रखें।
+- अगर `HTTP-Referer` और `X-Title` कॉल करने वाले ऐप्लिकेशन की पहचान करते हैं, तो उन्हें रखें। Phaseo इनके छोटे अक्षरों वाले रूप `http-referer` और `x-title` भी स्वीकार करता है।
+- अगर कॉलर केवल OpenRouter वाले प्रतिक्रिया फ़ील्ड पर निर्भर हैं, तो हर कॉलर को बदलने के बजाय उन्हें एक संगतता परत में ढालें।
+- अगर आपका OpenRouter सेटअप प्रदाता अनुमति/अस्वीकृति सूचियों या रूटिंग डिफ़ॉल्ट पर निर्भर है, तो उन्हें कॉलरों में बिखेरने के बजाय [प्रीसेट](../guides/presets.mdx) और [रूटिंग और फ़ॉलबैक](../guides/routing-and-fallbacks.mdx) में ले जाएँ।
 
-OpenRouter provider preferences या response-only fields को हर call में कॉपी न करें। इन्हें एक adapter में रखें ताकि rollback के लिए केवल URL और credentials बदलने पड़ें।
+OpenRouter की प्रदाता प्राथमिकताओं या केवल प्रतिक्रिया वाले फ़ील्ड को हर कॉल साइट में कॉपी न करें। इन अंतरों को एक एडैप्टर में रखें, ताकि रोलबैक के लिए केवल बेस URL और क्रेडेंशियल बदलने पड़ें।
 
 ### प्रदाता नियंत्रणों का मिलान
 
-| मौजूदा field | Phaseo field | विवरण |
-| --- | --- | --- |
-| `provider.order` | `provider.order` | पसंदीदा क्रम में providers आज़माएँ। |
-| `provider.only` | `provider.only` | अनुरोध को स्वीकृत सूची तक सीमित करें। |
-| `provider.ignore` | `provider.ignore` | चयन से providers हटाएँ। |
-| `provider.sort` | `provider.sort` | `price`, `latency` और `throughput` समर्थित हैं। |
-| `provider.zdr` | `provider.require_zero_data_retention` | zero-data-retention-सक्षम route अनिवार्य करें। |
+कई सामान्य प्रदाता नियंत्रणों के सीधे Phaseo समकक्ष मौजूद हैं:
 
-क्षेत्रीय ज़रूरतों पर Phaseo `provider.required_execution_region` और `provider.required_data_region` भी सपोर्ट करता है। पूरे requests के लिए [Providers को pin या ignore करें](../cookbook/pin-or-ignore-providers-per-request.mdx) और [सिर्फ़ EU या ZDR-सक्षम providers पर route करें](../cookbook/route-only-to-eu-or-zdr-providers.mdx) देखें।
+| मौजूदा फ़ील्ड | Phaseo फ़ील्ड | विवरण |
+| --- | --- | --- |
+| `provider.order` | `provider.order` | प्रदाताओं को पसंदीदा क्रम में आज़माएँ। |
+| `provider.only` | `provider.only` | अनुरोध को स्वीकृत सूची तक सीमित करें। |
+| `provider.ignore` | `provider.ignore` | प्रदाताओं को विचार से हटाएँ। |
+| `provider.sort` | `provider.sort` | `price`, `latency` और `throughput` समर्थित हैं। |
+| `provider.zdr` | `provider.require_zero_data_retention` | शून्य डेटा प्रतिधारण में सक्षम रूट अनिवार्य करें। |
+
+जब किसी वर्कलोड को क्षेत्रीय नियंत्रण चाहिए, तो Phaseo `provider.required_execution_region` और `provider.required_data_region` का भी समर्थन करता है। पूरे अनुरोधों के उदाहरण के लिए [प्रदाताओं को पिन करें या अनदेखा करें](../cookbook/pin-or-ignore-providers-per-request.mdx) और [केवल EU या ZDR-सक्षम प्रदाताओं पर रूट करें](../cookbook/route-only-to-eu-or-zdr-providers.mdx) देखें।
 
 ## 4) OpenRouter व्यवहार-समानता की जाँच-सूची
 
-महत्वपूर्ण traffic बदलने से पहले पुष्टि करें:
+उल्लेखनीय ट्रैफ़िक बदलने से पहले इस जाँच-सूची से पुष्टि करें:
 
-- Base URL `https://api.phaseo.app/v1` है।
-- सभी environments में `OPENROUTER_API_KEY` को `PHASEO_API_KEY` से बदला गया है।
-- सभी production model IDs को `/v1/models` से जाँचा गया है।
-- `/v1/chat/completions` या `/v1/responses` से एक non-streaming request सफल है।
-- production वाला app integration path इस्तेमाल करके एक streaming request सफल है।
-- `GET /v1/generations?id=<request_id>` जाँचा गया है, ताकि `replay_supported=true` होने पर संग्रहीत `replay_request` से failed requests दोबारा चलाई जा सकें।
-- असली prompts के साथ tool-calling और structured-output flows दोबारा जाँचे गए हैं।
-- staging में invalid-key और invalid-model errors जाँचे गए हैं।
-- OpenRouter-only headers और response fields हटाए या स्पष्ट रूप से normalize किए गए हैं।
-- साझा prompt/routing defaults जहाँ उपयुक्त हों, presets में ले जाए गए हैं।
+- बेस URL को `https://api.phaseo.app/v1` पर अपडेट किया गया है।
+- सभी एनवायरनमेंट में `OPENROUTER_API_KEY` को `PHASEO_API_KEY` से बदला गया है।
+- सभी प्रोडक्शन मॉडल ID को `/v1/models` से जाँचा गया है।
+- `/v1/chat/completions` या `/v1/responses` के ज़रिए एक नॉन-स्ट्रीमिंग अनुरोध सत्यापित किया गया है।
+- प्रोडक्शन में इस्तेमाल होने वाले उसी ऐप-स्तरीय इंटीग्रेशन पथ के ज़रिए एक स्ट्रीमिंग अनुरोध सत्यापित किया गया है।
+- `GET /v1/generations?id=<request_id>` के ज़रिए जनरेशन लुकअप दोबारा जाँचे गए हैं, ताकि `replay_supported=true` होने पर विफल अनुरोधों को संग्रहीत `replay_request` पेलोड से दोबारा चलाया जा सके।
+- असली प्रॉम्प्ट के साथ टूल कॉलिंग और संरचित आउटपुट वाले फ़्लो दोबारा जाँचे गए हैं।
+- स्टेजिंग में अमान्य कुंजी और अमान्य मॉडल वाली विफलताएँ जाँची गई हैं।
+- केवल OpenRouter वाले हेडर या प्रतिक्रिया फ़ील्ड या तो हटा दिए गए हैं या स्पष्ट रूप से मानकीकृत किए गए हैं।
+- साझा प्रॉम्प्ट/रूटिंग डिफ़ॉल्ट, जहाँ उपयुक्त हो, प्रीसेट में ले जाए गए हैं।
 
 ### एजेंट के लिए माइग्रेशन जाँच-सूची
 
-Coding agent को यह सीमित क्रम दें:
+किसी कोडिंग एजेंट को यह सीमित क्रम दें:
 
-1. runtime code और deployment config में `openrouter.ai`, `OPENROUTER_API_KEY`, `sk-or-v1`, `HTTP-Referer` और `X-Title` खोजें।
-2. कोई secret source control में जोड़े बिना client boundary को `https://api.phaseo.app/v1` और `PHASEO_API_KEY` पर बदलें।
-3. `GET /v1/models` query कर हर पुराने और नए model mapping को दर्ज करें।
+1. रनटाइम कोड और डिप्लॉयमेंट कॉन्फ़िगरेशन में `openrouter.ai`, `OPENROUTER_API_KEY`, `sk-or-v1`, `HTTP-Referer` और `X-Title` खोजें।
+2. सोर्स कंट्रोल में कोई गुप्त मान जोड़े बिना क्लाइंट की सीमा को `https://api.phaseo.app/v1` और `PHASEO_API_KEY` पर बदलें।
+3. `GET /v1/models` से क्वेरी करें और हर पुराने-से-नए मॉडल की मैपिंग दर्ज करें।
 4. OpenRouter-विशिष्ट रूटिंग विकल्पों या प्रतिक्रिया फ़ील्ड को एक संगतता मॉड्यूल में ढालें।
-5. नीचे दिए health, model, request, streaming और failure checks चलाएँ।
+5. नीचे दी गई हेल्थ, मॉडल, नॉन-स्ट्रीमिंग, स्ट्रीमिंग और विफलता-पथ की जाँचें चलाएँ।
 6. बदली गई फ़ाइलों, गुप्त नामों में परिवर्तनों, मॉडल मैपिंग, परीक्षण के प्रमाण, समानता की कमियों और रोलबैक स्विच की रिपोर्ट दें।
 
-बार-बार इस्तेमाल होने वाली प्रक्रिया के लिए [OpenRouter से Phaseo migration guide](https://github.com/phaseoteam/Phaseo/tree/main/.agents/skills/openrouter-to-phaseo-migration) देखें। इसमें inventory, mapping, validation, reporting और rollback की ज़रूरतें शामिल हैं।
+बार-बार इस्तेमाल होने वाले वर्कफ़्लो के लिए रिपॉज़िटरी का [OpenRouter से Phaseo माइग्रेशन स्किल](https://github.com/phaseoteam/Phaseo/tree/main/.agents/skills/openrouter-to-phaseo-migration) इंस्टॉल करें या चलाएँ। इसमें कोडिंग एजेंट के लिए सूची बनाने, मैपिंग, सत्यापन, रिपोर्टिंग और रोलबैक की ज़रूरतें एक साथ शामिल हैं।
 
-## 5) सुरक्षित rollout करें
+## 5) सुरक्षित रूप से रोलआउट करें
 
-चरणों में बदलाव करें: पहले dev, फिर production का छोटा हिस्सा, और metrics स्थिर होने पर पूरा traffic।
+चरणबद्ध रोलआउट करें: पहले डेव, फिर प्रोडक्शन का छोटा हिस्सा, और मेट्रिक्स स्थिर होने पर पूरा ट्रैफ़िक।
 
-1. शुरुआत सिर्फ़ internal traffic से करें।
-2. production traffic को 5–10% तक बढ़ाकर quality, latency और cost की तुलना करें।
-3. parity की पुष्टि के बाद ही 100% करें।
-4. बदलाव स्थिर होने तक rollback को सिर्फ़ URL और key बदलने तक सीमित रखें।
+1. शुरुआत केवल आंतरिक ट्रैफ़िक से करें।
+2. प्रोडक्शन ट्रैफ़िक को 5–10% तक ले जाएँ और गुणवत्ता, लेटेंसी और लागत के मेट्रिक्स की तुलना करें।
+3. समानता की पुष्टि होने के बाद ही 100% तक बढ़ाएँ।
+4. पूरी तरह बदलाव स्थिर होने तक रोलबैक को केवल कॉन्फ़िगरेशन में एंडपॉइंट/कुंजी बदलने तक सीमित रखें।
 
 ## सत्यापन कमांड
 
@@ -174,7 +176,7 @@ curl -s "https://api.phaseo.app/v1/chat/completions" \
   -d '{"model":"openai/gpt-4.1-mini","messages":[{"role":"user","content":"Say hello"}]}'
 ```
 
-इसी endpoint से streaming को अलग से जाँचें:
+इसी एंडपॉइंट से स्ट्रीमिंग को अलग से जाँचें:
 
 ```bash
 curl -N "https://api.phaseo.app/v1/chat/completions" \
@@ -183,7 +185,7 @@ curl -N "https://api.phaseo.app/v1/chat/completions" \
   -d '{"model":"openai/gpt-4.1-mini","stream":true,"messages":[{"role":"user","content":"Reply with: stream works"}]}'
 ```
 
-यह भी पुष्टि करें कि ऐप credentials दिखाए बिना invalid model संभालता है:
+यह भी पुष्टि करें कि आपका ऐप्लिकेशन क्रेडेंशियल उजागर किए बिना अमान्य मॉडल को सँभालता है:
 
 ```bash
 curl -s "https://api.phaseo.app/v1/chat/completions" \
@@ -194,16 +196,16 @@ curl -s "https://api.phaseo.app/v1/chat/completions" \
 
 इसके बाद:
 
-- ऐप के integration test से एक streaming request चलाएँ।
-- invalid key या model के लिए negative test चलाएँ।
-- छोटे baseline prompt set को दोबारा चलाकर outputs की तुलना करें।
+- ऐप-स्तरीय इंटीग्रेशन टेस्ट के ज़रिए एक स्ट्रीमिंग अनुरोध चलाएँ।
+- अमान्य कुंजी या अमान्य मॉडल के लिए एक नेगेटिव टेस्ट चलाएँ।
+- प्रॉम्प्ट के एक छोटे गोल्डन सेट को दोबारा चलाएँ और आउटपुट की तुलना बेसलाइन से करें।
 
 ## अगले चरण
 
-- [OpenRouter integration को माइग्रेट करने में मुफ़्त मदद पाएँ](https://phaseo.app/contact)
+- [अपने OpenRouter इंटीग्रेशन को माइग्रेट करने में मुफ़्त मदद पाएँ](https://phaseo.app/contact)
 - [OpenRouter की इंटरैक्टिव माइग्रेशन गाइड खोलें](https://phaseo.app/migrate/openrouter)
 - [Phaseo और OpenRouter की तुलना करें](https://phaseo.app/compare/openrouter)
 - [क्विकस्टार्ट](../quickstart.mdx)
-- [API Reference: models](../api-reference/endpoint/models.mdx)
+- [API संदर्भ: मॉडल](../api-reference/endpoint/models.mdx)
 - [उदाहरण](../guides/examples.mdx)
-- [Error handling](../api-reference/errors.mdx)
+- [त्रुटि प्रबंधन](../api-reference/errors.mdx)

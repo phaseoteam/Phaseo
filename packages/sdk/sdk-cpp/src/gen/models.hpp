@@ -67,6 +67,7 @@ struct AnthropicMessagesRequest {
 	std::optional<bool> meta;
 	std::map<std::string, std::any> metadata;
 	std::string model;
+	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
@@ -110,6 +111,7 @@ struct ApiKey {
 	std::optional<std::string> created_at;
 	std::optional<std::string> created_by;
 	std::optional<std::string> creator_user_id;
+	std::optional<std::string> department_id;
 	bool disabled;
 	std::optional<std::string> expires_at;
 	std::string hash;
@@ -136,6 +138,7 @@ struct ApiKey {
 };
 
 struct ApiKeyCreateRequest {
+	std::optional<std::string> department_id;
 	std::optional<bool> disabled;
 	std::optional<std::string> expires_at;
 	std::optional<bool> include_byok_in_limit;
@@ -192,6 +195,7 @@ struct ApiKeyRotateResponse {
 using ApiKeyScopeValue = std::any;
 
 struct ApiKeyUpdateRequest {
+	std::optional<std::string> department_id;
 	std::optional<bool> disabled;
 	std::optional<std::string> expires_at;
 	std::optional<bool> include_byok_in_limit;
@@ -219,6 +223,7 @@ struct ApiKeyWithValue {
 	std::optional<std::string> created_at;
 	std::optional<std::string> created_by;
 	std::optional<std::string> creator_user_id;
+	std::optional<std::string> department_id;
 	bool disabled;
 	std::optional<std::string> expires_at;
 	std::string hash;
@@ -309,6 +314,7 @@ struct AudioSpeechRequest {
 	std::any format;
 	std::string input;
 	std::string model;
+	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
 	std::optional<double> speed;
 	std::string voice;
@@ -322,6 +328,7 @@ struct AudioTranscriptionRequest {
 	std::vector<std::string> known_speaker_references;
 	std::string language;
 	std::string model;
+	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
 };
 
@@ -334,6 +341,7 @@ struct AudioTranslationRequest {
 	std::string audio_url;
 	std::string language;
 	std::string model;
+	std::vector<std::string> models;
 	std::string prompt;
 	std::map<std::string, std::any> provider;
 	std::optional<double> temperature;
@@ -547,6 +555,7 @@ struct ChatCompletionsRequest {
 	std::map<std::string, std::any> metadata;
 	std::vector<std::any> modalities;
 	std::string model;
+	std::vector<std::string> models;
 	std::optional<bool> parallel_tool_calls;
 	std::optional<double> presence_penalty;
 	std::optional<std::string> prompt_cache_key;
@@ -805,6 +814,7 @@ struct DecisionsRequest {
 	std::optional<bool> meta;
 	std::map<std::string, std::any> metadata;
 	std::string model;
+	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> questions;
 	std::map<std::string, std::any> routing;
@@ -960,6 +970,7 @@ struct EmbeddingsRequest {
 	std::any encoding_format;
 	std::any input;
 	std::string model;
+	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> provider_options;
 	std::string user;
@@ -1558,6 +1569,7 @@ struct ImagesEditRequest {
 	std::string mask;
 	std::optional<bool> meta;
 	std::string model;
+	std::vector<std::string> models;
 	std::any moderation;
 	std::optional<int> n;
 	std::optional<int> output_compression;
@@ -1581,6 +1593,7 @@ struct ImagesEditResponse {
 struct ImagesGenerationRequest {
 	std::any background;
 	std::string model;
+	std::vector<std::string> models;
 	std::any moderation;
 	std::optional<int> n;
 	std::optional<int> output_compression;
@@ -1624,6 +1637,7 @@ struct LegacyDecisionsRequest {
 	std::optional<bool> meta;
 	std::map<std::string, std::any> metadata;
 	std::string model;
+	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> questions;
 	std::map<std::string, std::any> routing;
@@ -1825,6 +1839,8 @@ struct ModelEndpointsResponse {
 	std::optional<std::map<std::string, std::any>> organization;
 };
 
+using ModelFallbacks = std::any;
+
 using ModelId = std::any;
 
 struct ModelLifecycle {
@@ -1896,6 +1912,7 @@ struct ModerationsRequest {
 	std::any input;
 	std::optional<bool> meta;
 	std::string model;
+	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
 };
 
@@ -1913,6 +1930,7 @@ struct MusicGenerateRequest {
 	std::map<std::string, std::any> elevenlabs;
 	std::any format;
 	std::string model;
+	std::vector<std::string> models;
 	std::string prompt;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> suno;
@@ -2150,6 +2168,7 @@ struct OcrRequest {
 	std::string image;
 	std::string language;
 	std::string model;
+	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
 };
 
@@ -2177,6 +2196,7 @@ struct OpenAIDecisionsRequest {
 	std::optional<bool> meta;
 	std::map<std::string, std::any> metadata;
 	std::string model;
+	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
 	std::vector<std::any> questions;
 	std::map<std::string, std::any> routing;
@@ -2239,6 +2259,7 @@ struct ParseRequest {
 	std::map<std::string, std::any> document;
 	std::optional<bool> echo_upstream_request;
 	std::string model;
+	std::vector<std::string> models;
 	std::any output_format;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> routing;
@@ -2626,6 +2647,83 @@ struct ProvisioningKeyWithValue {
 	std::any status;
 };
 
+struct RateLimitAssignment {
+	std::string created_at;
+	std::optional<std::string> created_by;
+	std::string id;
+	std::string policy_id;
+	std::optional<std::string> target_id;
+	std::any target_type;
+	std::string updated_at;
+	std::string workspace_id;
+};
+
+struct RateLimitAssignmentInput {
+	std::string policy_id;
+	std::string target_id;
+	std::any target_type;
+};
+
+struct RateLimitAssignmentListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+	bool has_more;
+};
+
+struct RateLimitAssignmentResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct RateLimitAssignmentUpdateInput {
+	std::string policy_id;
+};
+
+struct RateLimitDeleteResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct RateLimitPolicy {
+	std::optional<int> concurrent_requests;
+	std::string created_at;
+	std::optional<std::string> created_by;
+	std::optional<std::string> description;
+	bool fail_closed;
+	std::string id;
+	std::string name;
+	std::optional<int> requests_per_minute;
+	std::optional<int> tokens_per_minute;
+	std::string updated_at;
+	std::string workspace_id;
+};
+
+struct RateLimitPolicyInput {
+	std::optional<int> concurrent_requests;
+	std::optional<std::string> description;
+	std::optional<bool> fail_closed;
+	std::string name;
+	std::optional<int> requests_per_minute;
+	std::optional<int> tokens_per_minute;
+};
+
+struct RateLimitPolicyListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+	bool has_more;
+};
+
+struct RateLimitPolicyResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct RateLimitPolicyUpdateInput {
+	std::optional<int> concurrent_requests;
+	std::optional<std::string> description;
+	std::optional<bool> fail_closed;
+	std::string name;
+	std::optional<int> requests_per_minute;
+	std::optional<int> tokens_per_minute;
+};
+
+using RateLimitTargetType = std::any;
+
 struct ReasoningConfig {
 	std::any effort;
 	std::optional<bool> enabled;
@@ -2642,6 +2740,7 @@ struct RerankRequest {
 	std::optional<int> max_chunks_per_doc;
 	std::map<std::string, std::any> metadata;
 	std::string model;
+	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> provider_options;
 	std::string query;
@@ -2718,6 +2817,7 @@ struct ResponsesRequest {
 	std::map<std::string, std::any> metadata;
 	std::vector<std::any> modalities;
 	std::string model;
+	std::vector<std::string> models;
 	std::optional<bool> parallel_tool_calls;
 	std::string previous_response_id;
 	std::optional<std::string> prompt_cache_key;
@@ -2911,6 +3011,7 @@ struct VideoGenerationRequest {
 	std::vector<std::any> input_references;
 	std::optional<double> input_video_duration;
 	std::string model;
+	std::vector<std::string> models;
 	std::string negative_prompt;
 	std::map<std::string, std::any> output;
 	std::string person_generation;

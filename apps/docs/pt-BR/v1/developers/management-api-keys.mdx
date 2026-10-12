@@ -57,6 +57,7 @@ Use um modelo de acesso para casos comuns. Escolha recursos explícitos quando u
 | Modelos privados | `private_models:read` | `private_models:write` | `private_models:delete` |
 | Guardrails | `guardrails:read` | `guardrails:write` | `guardrails:delete` |
 | Orçamentos | `budgets:read` | `budgets:write` | `budgets:delete` |
+| Limites de taxa | `rate_limits:read` | `rate_limits:write` | `rate_limits:delete` |
 | Clientes OAuth | `oauth_clients:read` | `oauth_clients:write` | `oauth_clients:delete` |
 
 Os modelos `Write` incluem os recursos de leitura correspondentes para que a integração possa consultar um recurso antes de atualizá-lo. `All` inclui recursos de exclusão; use-o somente para automações administrativas confiáveis.

@@ -309,6 +309,21 @@ function usageAttributes(rawUsage: unknown): Array<OtlpAttribute | null> {
 	];
 }
 
+const REQUEST_PARAMETER_KEYS = [
+	"n", "candidate_count", "frequency_penalty", "max_tokens", "max_output_tokens", "max_completion_tokens",
+	"presence_penalty", "seed", "stop", "temperature", "top_k", "top_p", "encoding_format",
+] as const;
+
+// The parts of a request body the payload builders read when sensitive content
+// is excluded: requestAttributes' parameters and the response format type.
+export function requestParametersOnly(requestPayload: unknown): Record<string, unknown> {
+	const body = object(requestPayload);
+	const parameters: Record<string, unknown> = {};
+	for (const key of REQUEST_PARAMETER_KEYS) if (body[key] !== undefined) parameters[key] = body[key];
+	if (body.response_format?.type) parameters.response_format = { type: body.response_format.type };
+	return parameters;
+}
+
 function requestAttributes(args: GatewayGenAiTelemetry): Array<OtlpAttribute | null> {
 	const body = object(args.requestPayload);
 	const stop = Array.isArray(body.stop) ? body.stop : typeof body.stop === "string" ? [body.stop] : null;

@@ -3,7 +3,7 @@ import { filterModelsForRoom } from "@/lib/chat/rooms";
 
 describe("models with Text generation and Decisions", () => {
 	it("shares capability groups between card and table filters", () => {
-		expect(modelOutputFilterValues(["text"], ["audio.transcription"])).toEqual(["text", "audio_stt"]);
+		expect(modelOutputFilterValues(["text"], ["audio.transcription"])).toEqual(["text", "audio_stt", "audio"]);
 		expect(modelOutputFilterValues(["audio"], ["music.generate"])).toEqual(["audio", "audio_music"]);
 		expect(modelOutputFilterValues([], ["text.rerank"])).toEqual(["rerank"]);
 	});

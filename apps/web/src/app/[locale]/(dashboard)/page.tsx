@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { IntentLink as Link } from "@/components/navigation/IntentLink";
 import { Suspense } from "react";
 import {
 	ArrowRight,

@@ -4,7 +4,7 @@ title: "Présentation du SDK Python"
 description: "Client Python officiel pour l’API Phaseo Gateway"
 ---
 
-Installez depuis PyPI le package publié [~phaseo~](https://pypi.org/project/phaseo/).
+Installez depuis PyPI le package publié [`phaseo`](https://pypi.org/project/phaseo/).
 
 Le SDK Python Phaseo fournit les clients synchrone `Phaseo` et asynchrone natif `AsyncPhaseo`.
 
@@ -29,9 +29,9 @@ modération et décisions ; utilisez `await client.request(...)` pour les autres
 Les clients HTTPX injectés restent sous la responsabilité de l’appelant.
 
 Les deux clients prennent en charge `with_options(timeout=30, max_retries=2)` sans modifier le
-client original. Les délais HTTPX limitent l’inactivité réseau en secondes. Les tentatives sont
-nulles par défaut et concernent uniquement GET/HEAD avant lecture de la réponse, jamais les soumissions.
-`PhaseoHTTPError` expose le corps, le code, l’identifiant de requête, l’URL de trace et le délai de nouvelle tentative.
+client original. Les délais HTTPX limitent l’inactivité réseau en secondes. Par défaut, aucune nouvelle
+tentative n’est effectuée ; elles concernent uniquement GET/HEAD avant lecture de la réponse, jamais les soumissions.
+`PhaseoHTTPError` expose le corps, le code, l’identifiant de requête, l’URL de trace du tableau de bord et le délai de nouvelle tentative.
 
 Lors de la mise à niveau, remplacez les captures de `urllib.error.HTTPError` pour les requêtes JSON synchrones
 par `PhaseoHTTPError` (ou `httpx.HTTPStatusError`), et les erreurs de connexion
@@ -41,8 +41,8 @@ le code d’erreur API.
 ## Fonctionnalités supplémentaires
 
 Les ressources de tâches exposent des références `start` et `resume` avec `result`, `events` et
-`to_dict`. Attendez les méthodes asynchrones et parcourez les événements avec `async for`.
-Seuls vidéo et lots permettent l’annulation distante. Diffusez les médias avec
+`to_dict`. Attendez les méthodes asynchrones et parcourez les événements asynchrones avec `async for`.
+Seuls les vidéos et les lots permettent l’annulation à distance. Diffusez les médias avec
 `videos.stream_content(id)` et les lots avec `batches.results(id)`. L’outil synchrone
 `download_to(chunks, binary_file)` écrit sans mettre en tampon le fichier entier.
 Les téléversements acceptent des octets, des objets `Path`, des objets fichier et des tuples fichier HTTPX.
@@ -65,21 +65,21 @@ support = client.models.check_parameters(
 ```
 
 Chaque paramètre porte `supported`, `partial`, `unsupported` ou `unknown`,
-avec les routes correspondantes et les problèmes de contraintes pour l’affichage en ligne.
+avec les routes fournisseur correspondantes et les problèmes de contraintes pour la mise en évidence en ligne.
 `client.models.capabilities(model_id)` renvoie la réponse complète des capacités
 du point d’accès. `AsyncPhaseo` expose les mêmes méthodes attendables.
 
 Pour les tests locaux, injectez `phaseo.testing.MockTransport` via `httpx.Client` ou
 `httpx.AsyncClient`. Les requêtes imprévues échouent localement ; appelez `assert_done()` pour
-vérifier tous les jeux de test. Ils ne vérifient pas le comportement réel des fournisseurs.
+vérifier que tous les jeux de test ont été utilisés. Ces jeux de test ne vérifient pas le comportement réel des fournisseurs.
 Les salons Phaseo exportent le code exécutable de la requête via **Obtenir le code**.
 
 ## Fonctionnalités
 
 -   Modèles de requête typés générés à partir de la spécification OpenAPI.
 -   Méthodes intégrées pour le chat, les réponses, les messages, les images, l’audio, les embeddings, les modérations, les fichiers, les lots, les générations et les tâches vidéo asynchrones.
--   Méthodes de streaming pour le texte, les réponses et les messages (itérateurs ~stream_*~).
-- Fonctions du plan de contrôle pour consulter les modèles, endpoints et organisations, explorer et calculer les tarifs, gérer le cycle de vie des clés API et des espaces de travail, vérifier la clé actuelle et consulter l’état, les fournisseurs, les crédits, l’activité et les analyses.
+-   Méthodes de streaming pour le texte, les réponses et les messages (itérateurs `stream_*`).
+-   Fonctions du plan de contrôle pour consulter les modèles, endpoints et organisations, explorer et calculer les tarifs, gérer le cycle de vie des clés API et des espaces de travail, vérifier la clé actuelle et consulter l’état, les fournisseurs, les crédits, l’activité et les analyses.
 
 ## Exemple rapide
 
@@ -117,13 +117,14 @@ Chaque ressource accepte `wait(id, **options)` pour reprendre une tâche existan
 Les options sont `interval` (secondes ; défaut 5, minimum 0.25), `timeout` (secondes ; défaut 1800), `on_poll` et `cancel_event` (un `threading.Event`). Le délai d’attente débute après le retour de la soumission. Le client synchrone vérifie l’annulation et les échéances entre requêtes et rappels ; ces options ne peuvent interrompre un appel HTTP en cours.
 
 `JobTimeoutError` et `JobCancelledError` conservent `job_id` et `last_response`. Reprenez avec `.wait(error.job_id)`. Le délai ou l’annulation locale n’annulent pas la tâche distante et les soumissions ne sont jamais répétées automatiquement. Ces outils n’ajoutent pas d’exécution en arrière-plan à la passerelle.
-## "Contenu du package"
+
+## Contenu du package
 
 -   Client `Phaseo`
--   `chat.completions.create(...)` and `responses.create(...)` méthodes de compatibilité
--   Des méthodes de ressources telles que `client.batches`, `client.videos`, `client.files`, and `client.async_jobs`
--   Des méthodes pour créer les URL WebSocket des flux de cycle de vie des tâches asynchrones, des lots et des vidéos
+-   Méthodes de compatibilité `chat.completions.create(...)` et `responses.create(...)`
+-   Méthodes de ressources telles que `client.batches`, `client.videos`, `client.files` et `client.async_jobs`
+-   Méthodes de création d’URL WebSocket pour les flux de cycle de vie des tâches asynchrones de lots et de vidéos
 -   `client.batches.stream_results(batch_id)` pour les fragments d’octets JSONL des lots
--   Des méthodes de cycle de vie des modèles telles que `get_model_deprecation_info(...)` and `validate_model(...)`
+-   Méthodes de cycle de vie des modèles telles que `get_model_deprecation_info(...)` et `validate_model(...)`
 -   Itérateurs de streaming pour le texte, les réponses et les messages
--   Modèles de requête/réponse générés dans ~phaseo.models~
+-   Modèles de requête/réponse générés dans `phaseo.models`

@@ -113,8 +113,8 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
   -- SKU; different codes are independent families (for example short and
   -- long context). Without a region filter, a regional price is used only
   -- when the route has no global price for that meter. Rows carry an
-  -- anonymous route group, not the provider, so the API can pick the
-  -- cheapest offer.
+  -- anonymous route group so the API can pick the cheapest offer, and the
+  -- provider's slug (never for stealth routes) so the card can name it.
   pricing_routes as (
     select * from eligible_routes
     union all
@@ -124,8 +124,13 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
     )
   ),
   priced_routes as (
-    select distinct provider_model_id, model_slug, provider_slug
-    from pricing_routes
+    select distinct
+      priced.provider_model_id,
+      priced.model_slug,
+      priced.provider_slug,
+      coalesce(route.is_stealth, false) as is_stealth
+    from pricing_routes priced
+    join public.v2_model_provider_routes route on route.provider_model_id = priced.provider_model_id
   ),
   -- A SKU tied to a variant counts only when it is one of those routes' variants.
   priced_variants as (
@@ -146,6 +151,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
         sku.effective_to,
         route.model_slug,
         route.provider_slug,
+        route.is_stealth,
         sku.provider_model_id,
         sku.service_tier_slug,
         sku.operation,
@@ -197,6 +203,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
     select
       sku.model_slug,
       sku.provider_slug,
+      sku.is_stealth,
       sku.provider_model_id,
       sku.service_tier_slug,
       sku.operation,
@@ -268,6 +275,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
           'display_unit', meter.display_unit,
           'service_tier', meter.service_tier_slug,
           'provider_group', meter.provider_group,
+          'provider', case when not meter.is_stealth then meter.provider_slug end,
           'variant', meter.variant,
           'conditions', meter.conditions
         ))

@@ -21,6 +21,7 @@ export interface MusicGenerateRequest {
   };
   format?: "mp3" | "wav" | "ogg" | "aac";
   model: string;
+  models?: string[];
   prompt?: string;
   provider?: {
     allow_fallbacks?: boolean | null;

@@ -4,7 +4,7 @@ title: "Descripción general del SDK de TypeScript"
 description: "Cliente oficial de TypeScript para la API de Phaseo Gateway"
 ---
 
-Instala desde npm el paquete publicado [~@phaseo/sdk~](https://www.npmjs.com/package/@phaseo/sdk).
+Instala desde npm el paquete publicado [`@phaseo/sdk`](https://www.npmjs.com/package/@phaseo/sdk).
 
 El SDK de TypeScript de Phaseo ofrece una forma cómoda y segura en cuanto a tipos de interactuar con la API de Phaseo Gateway. Basado en la especificación OpenAPI, brinda compatibilidad completa con TypeScript, tipos generados y una interfaz de cliente sencilla.
 
@@ -88,7 +88,7 @@ const support = await client.models.checkParameters(
 Cada parámetro se marca como `supported`, `partial`, `unsupported` o `unknown`,
 con rutas de proveedores y problemas de restricciones para resaltado en línea.
 `client.models.capabilities(modelId)` devuelve la respuesta completa de capacidades
-del endpoint. Estas comprobaciones explícitas no añaden descubrimiento a las llamadas de generación.
+del endpoint. Estas comprobaciones explícitas no añaden una solicitud de descubrimiento a las llamadas de generación.
 
 ## Pruebas locales y exportaciones del sitio
 
@@ -99,11 +99,12 @@ que se realizaron todas las solicitudes esperadas. Las llamadas inesperadas fall
 Tras enviar una solicitud en una sala de Phaseo, **Obtener código** exporta su modelo y
 ajustes como TypeScript o Python. **Ver solicitud** abre el seguimiento del panel si
 hay un ID de solicitud. Ejecuta el código exportado en el servidor con `PHASEO_API_KEY`.
+
 ## Qué incluye
 
 -   Clase de cliente `Phaseo` para todas las interacciones con la API
--   Ayudantes organizados por recurso, como `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
--   Ayudantes para descubrir modelos y consultar precios, como `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
+-   Ayudantes organizados por recurso, como `client.models`, `client.batches`, `client.videos` y `client.asyncJobs`
+-   Ayudantes para descubrir modelos y consultar precios, como `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)` y `client.getCurrentApiKey()`
 -   Ayudantes para generar URL de WebSocket de trabajos asíncronos y seguir el ciclo de vida de lotes y vídeos
 -   `client.batches.streamResults(batchId, { signal })` para descargar JSONL de Anthropic en streaming
 -   Tipos generados para todos los objetos de solicitud y respuesta

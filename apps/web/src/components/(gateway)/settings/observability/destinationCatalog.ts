@@ -1,20 +1,9 @@
-export type DestinationId =
-	| "arize"
-	| "braintrust"
-	| "clickhouse"
-	| "comet_opik"
-	| "datadog"
-	| "grafana_cloud"
-	| "langfuse"
-	| "langsmith"
-	| "new_relic"
-	| "otel_collector"
-	| "posthog"
-	| "s3"
-	| "sentry"
-	| "snowflake"
-	| "wandb_weave"
-	| "webhook";
+import {
+	AVAILABLE_BROADCAST_DESTINATION_IDS,
+	type BroadcastDestinationId,
+} from "./broadcastDestinations";
+
+export type DestinationId = BroadcastDestinationId;
 
 export type ConfigField = {
 	key: string;
@@ -172,13 +161,19 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 	{
 		id: "otel_collector",
 		label: "OpenTelemetry Collector",
-		description: "Export GenAI traces over OTLP/HTTP JSON to your collector.",
+		description: "Export GenAI traces over OTLP/HTTP, as JSON or protobuf, to your collector.",
 		logoId: "observability-opentelemetry",
 		fields: [
 			{
 				key: "otlp_endpoint",
 				label: "Collector Endpoint",
 				placeholder: "https://collector.example.com/v1/traces",
+			},
+			{
+				key: "otlp_protocol",
+				label: "Protocol (Optional)",
+				placeholder: "http/json or http/protobuf",
+				required: false,
 			},
 			{
 				key: "headers_json",
@@ -271,7 +266,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 		fields: [
 			{ key: "account", label: "Account Identifier", placeholder: "xy12345.us-east-1" },
 			{ key: "token", label: "Token", placeholder: "********", type: "password" },
-			{ key: "database", label: "Database", placeholder: "AI_STATS" },
+			{ key: "database", label: "Database", placeholder: "PHASEO" },
 			{ key: "schema", label: "Schema", placeholder: "TRACES" },
 			{ key: "table", label: "Table", placeholder: "EVENTS" },
 			{ key: "warehouse", label: "Warehouse", placeholder: "COMPUTE_WH" },
@@ -316,7 +311,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 	},
 ];
 
-const EXECUTABLE_DESTINATION_IDS = new Set<DestinationId>(["otel_collector", "webhook"]);
+const EXECUTABLE_DESTINATION_IDS = new Set<DestinationId>(AVAILABLE_BROADCAST_DESTINATION_IDS);
 
 export const AVAILABLE_DESTINATIONS: DestinationDefinition[] = DESTINATION_DEFINITIONS.filter(
 	(destination) => EXECUTABLE_DESTINATION_IDS.has(destination.id),

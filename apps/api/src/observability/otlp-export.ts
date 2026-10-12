@@ -1,16 +1,20 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { tieredRead } from "@core/tiered-cache";
+import { AVAILABLE_BROADCAST_DESTINATION_IDS, otlpProtocol, otlpTracesEndpoint } from "./broadcast-destinations";
+import { decodeOtlpTraceResponse, encodeOtlpTraceRequest } from "./otlp-protobuf";
+import { publishBroadcastEvent, type BroadcastTelemetry } from "./broadcast-event";
 import { decryptWebhookSecret, validateWebhookEndpointUrlForDelivery } from "@core/webhook-endpoints";
 import {
 	buildAsyncGenAiOtlpPayload,
 	buildGatewayGenAiOtlpPayload,
+	requestParametersOnly,
 	type AsyncGenAiTelemetry,
 	type GatewayGenAiTelemetry,
 	type GatewayOtlpBuildOptions,
 } from "./otel-genai";
 
 type Rule = { field: string; condition: string; value: string | null };
-type Destination = {
+export type Destination = {
 	id: string;
 	destination_id: "otel_collector" | "webhook";
 	destination_config: Record<string, unknown> | null;
@@ -38,8 +42,11 @@ type OutboxRow = {
 };
 
 const MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
-const MAX_ATTEMPTS = 8;
+export const MAX_ATTEMPTS = 8;
 const RETRYABLE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
+// Rows that will not be sent again drop their payload, which can hold prompts
+// and completions. The row itself stays until prune_otel_export_outbox removes it.
+const SCRUBBED_PAYLOAD = {};
 
 function object(value: unknown): Record<string, any> {
 	return value && typeof value === "object" && !Array.isArray(value)
@@ -173,7 +180,7 @@ async function loadDestinations(workspaceId: string): Promise<Destination[]> {
 			broadcast_destination_rule_groups(match_operator,broadcast_destination_rules(field,condition,value))
 		`)
 		.eq("workspace_id", workspaceId)
-		.in("destination_id", ["otel_collector", "webhook"])
+		.in("destination_id", [...AVAILABLE_BROADCAST_DESTINATION_IDS])
 		.eq("enabled", true);
 	if (error) throw new Error(`otel_destinations_load_failed:${error.message}`);
 	return (data ?? []) as Destination[];
@@ -211,7 +218,7 @@ export function filterMetadata(payload: unknown, destination: Destination): unkn
 	return visit(payload);
 }
 
-async function destinationConfig(destination: Destination): Promise<Record<string, unknown>> {
+export async function destinationConfig(destination: Destination): Promise<Record<string, unknown>> {
 	if (destination.destination_config_ciphertext && destination.destination_config_iv) {
 		return object(JSON.parse(await decryptWebhookSecret({
 			secretCiphertext: destination.destination_config_ciphertext,
@@ -222,24 +229,49 @@ async function destinationConfig(destination: Destination): Promise<Record<strin
 	return object(destination.destination_config);
 }
 
+// The OTLP payload one destination receives for an event.
+export function renderBroadcastPayload(telemetry: BroadcastTelemetry, destination: Destination): unknown {
+	const payload = telemetry.kind === "gateway"
+		? buildGatewayGenAiOtlpPayload(telemetry.args, buildOptions(destination))
+		: buildAsyncGenAiOtlpPayload(telemetry.args, buildOptions(destination)).payload;
+	return filterMetadata(payload, destination);
+}
+
+// Prompts and outputs are left out of the event when no selected destination
+// receives them, so they never reach the queue or its R2 spill.
+function withoutContent(telemetry: BroadcastTelemetry): BroadcastTelemetry {
+	return telemetry.kind === "gateway"
+		? { kind: "gateway", args: { ...telemetry.args, requestPayload: requestParametersOnly(telemetry.args.requestPayload), responsePayload: null } }
+		: { kind: "async", args: { ...telemetry.args, requestPayload: null, responsePayload: null } };
+}
+
 async function enqueuePayloads(args: {
 	eventId: string;
 	workspaceId: string;
 	gatewaySelection: GatewayGenAiTelemetry;
-	build: (destination: Destination) => unknown;
+	telemetry: BroadcastTelemetry;
 }) {
 	if (String(getBindings().OTEL_EXPORT_ENABLED ?? "true").toLowerCase() === "false") return 0;
 	const configured = await destinations(args.workspaceId);
 	const selectedDestinations = configured.filter((destination) => selected(destination, args.gatewaySelection, args.eventId));
+	if (!selectedDestinations.length) return 0;
+	const queued = await publishBroadcastEvent({
+		eventId: args.eventId,
+		workspaceId: args.workspaceId,
+		destinationIds: selectedDestinations.map((destination) => destination.id),
+		telemetry: selectedDestinations.some((destination) => buildOptions(destination).includeSensitiveContent)
+			? args.telemetry
+			: withoutContent(args.telemetry),
+	});
+	if (queued) return selectedDestinations.length;
 	const rows = selectedDestinations.map((destination) => ({
-			workspace_id: args.workspaceId,
-			destination_id: destination.id,
-			event_id: args.eventId,
-			payload: args.build(destination),
-			status: "pending",
-			next_attempt_at: new Date().toISOString(),
-		}));
-	if (!rows.length) return 0;
+		workspace_id: args.workspaceId,
+		destination_id: destination.id,
+		event_id: args.eventId,
+		payload: renderBroadcastPayload(args.telemetry, destination),
+		status: "pending",
+		next_attempt_at: new Date().toISOString(),
+	}));
 	const { error } = await getSupabaseAdmin()
 		.from("otel_export_outbox")
 		.upsert(rows, { onConflict: "destination_id,event_id", ignoreDuplicates: true });
@@ -252,7 +284,7 @@ export async function enqueueGatewayOtlpExport(args: GatewayGenAiTelemetry) {
 		eventId: `gateway:${args.requestId}`,
 		workspaceId: args.workspaceId,
 		gatewaySelection: args,
-		build: (destination) => filterMetadata(buildGatewayGenAiOtlpPayload(args, buildOptions(destination)), destination),
+		telemetry: { kind: "gateway", args },
 	});
 }
 
@@ -289,17 +321,14 @@ export async function enqueueAsyncGenAiOtlpExport(args: AsyncGenAiTelemetry & {
 		eventId: `${args.operation}:${identity}:${args.phase}`,
 		workspaceId: args.workspaceId,
 		gatewaySelection: selection,
-		build: (destination) => filterMetadata(buildAsyncGenAiOtlpPayload(args, buildOptions(destination)).payload, destination),
+		telemetry: { kind: "async", args },
 	});
 }
 
 function endpoint(config: Record<string, unknown>): URL {
-	const traceSpecific = String(config.otlp_traces_endpoint ?? "").trim();
-	const base = traceSpecific || String(
-		config.otlp_endpoint ?? config.collector_endpoint ?? config.endpoint ?? "",
-	).trim();
-	if (!base) throw new Error("OTLP endpoint is required");
-	const url = new URL(base);
+	const resolved = otlpTracesEndpoint(config);
+	if (!resolved) throw new Error("OTLP endpoint is required");
+	const url = new URL(resolved);
 	if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) {
 		throw new Error("OTLP endpoint must use HTTP(S) without URL credentials");
 	}
@@ -310,9 +339,6 @@ function endpoint(config: Record<string, unknown>): URL {
 		/^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
 		host === "::" || host === "::1" || /^(fc|fd)[0-9a-f]{2}:/.test(host) || /^fe[89ab][0-9a-f]:/.test(host)
 	) throw new Error("Private OTLP endpoints are not allowed");
-	if (!traceSpecific && !url.pathname.endsWith("/v1/traces")) {
-		url.pathname = `${url.pathname.replace(/\/$/, "")}/v1/traces`;
-	}
 	return url;
 }
 
@@ -365,6 +391,9 @@ async function boundedResponse(response: Response): Promise<Record<string, any>>
 		bytes.set(chunk, offset);
 		offset += chunk.length;
 	}
+	if (response.headers.get("content-type")?.toLowerCase().includes("protobuf")) {
+		return { partialSuccess: decodeOtlpTraceResponse(bytes) };
+	}
 	try {
 		return object(JSON.parse(new TextDecoder().decode(bytes)));
 	} catch {
@@ -391,9 +420,18 @@ export async function deliverGatewayOtlpPayload(
 ) {
 	let collectorEndpoint: URL;
 	let collectorHeaders: Headers;
+	let body: BodyInit;
 	try {
 		collectorEndpoint = endpoint(config);
 		collectorHeaders = headers(config);
+		const protocol = otlpProtocol(config);
+		if (!protocol) throw new Error("OTLP protocol must be http/json or http/protobuf");
+		if (protocol === "http/protobuf") {
+			// Set after configured headers: the body is protobuf whatever they say.
+			collectorHeaders.set("Content-Type", "application/x-protobuf");
+			collectorHeaders.set("Accept", "application/x-protobuf");
+			body = encodeOtlpTraceRequest(payload);
+		} else body = JSON.stringify(payload);
 		// Reuse the hardened outbound-webhook boundary so mapped IPv6 literals
 		// and DNS records resolving to private networks are rejected immediately
 		// before the collector request.
@@ -418,7 +456,7 @@ export async function deliverGatewayOtlpPayload(
 		response = await fetch(collectorEndpoint, {
 			method: "POST",
 			headers: collectorHeaders,
-			body: JSON.stringify(payload),
+			body,
 			redirect: "manual",
 			signal: AbortSignal.timeout(15_000),
 		});
@@ -431,8 +469,8 @@ export async function deliverGatewayOtlpPayload(
 			error: error instanceof Error ? error.message : "OTLP connection failed",
 		};
 	}
-	const body = await boundedResponse(response);
-	const partial = object(body.partialSuccess ?? body.partial_success);
+	const result = await boundedResponse(response);
+	const partial = object(result.partialSuccess ?? result.partial_success);
 	const rejected = finite(partial.rejectedSpans ?? partial.rejected_spans) ?? 0;
 	if (response.ok && rejected <= 0) {
 		return { delivered: true, retryable: false, status: response.status, delayMs: 0, error: null };
@@ -518,6 +556,7 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 		if (destinationResult.error || !destinationResult.data?.enabled) {
 			await updateOutboxRow(client, row.id, {
 				status: "failed",
+				payload: SCRUBBED_PAYLOAD,
 				last_error: "Broadcast destination unavailable or disabled",
 				lease_expires_at: null,
 				updated_at: new Date().toISOString(),
@@ -544,6 +583,7 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 		if (outcome.delivered) {
 			await updateOutboxRow(client, row.id, {
 				status: "delivered",
+				payload: SCRUBBED_PAYLOAD,
 				delivered_at: new Date().toISOString(),
 				lease_expires_at: null,
 				last_http_status: outcome.status,
@@ -556,6 +596,7 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 		const shouldRetry = outcome.retryable && row.attempts < MAX_ATTEMPTS;
 		await updateOutboxRow(client, row.id, {
 			status: shouldRetry ? "pending" : "failed",
+			...(shouldRetry ? {} : { payload: SCRUBBED_PAYLOAD }),
 			next_attempt_at: new Date(Date.now() + outcome.delayMs).toISOString(),
 			lease_expires_at: null,
 			last_http_status: outcome.status,
@@ -566,4 +607,16 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 		else failed += 1;
 	}
 	return { claimed: rows.length, delivered, retried, failed };
+}
+
+export async function pruneBroadcastEventReceipts(limit = 5000): Promise<number> {
+	const { data, error } = await getSupabaseAdmin().rpc("prune_broadcast_event_receipts", { p_limit: limit });
+	if (error) throw new Error(`broadcast_receipts_prune_failed:${error.message}`);
+	return Number(data ?? 0);
+}
+
+export async function pruneGatewayOtlpOutbox(limit = 5000): Promise<number> {
+	const { data, error } = await getSupabaseAdmin().rpc("prune_otel_export_outbox", { p_limit: limit });
+	if (error) throw new Error(`otel_outbox_prune_failed:${error.message}`);
+	return Number(data ?? 0);
 }

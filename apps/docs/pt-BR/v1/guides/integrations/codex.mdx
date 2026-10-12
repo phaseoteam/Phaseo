@@ -20,7 +20,7 @@ npx skills add phaseoteam/skills --agent codex --skill '*'
 
 <Visibility for="agents">
 <Note>
-Precisa de ajuda para configurar agentes reutilizáveis além de conectar o provedor? Instale as skills públicas da Phaseo em [`phaseoteam/skills`](https://github.com/phaseoteam/skills):
+As skills reutilizáveis da Phaseo estão disponíveis em [`phaseoteam/skills`](https://github.com/phaseoteam/skills). Para instalações do Codex, use:
 
 ```bash
 npx skills add phaseoteam/skills --agent codex --skill '*'
@@ -37,13 +37,14 @@ phaseo codex --model openai/gpt-5.6-terra
 
 Instale primeiro o Codex pela versão oficial. A configuração cria uma chave `Phaseo CLI: Codex API Key` sem expiração, armazena-a no gerenciador de credenciais do sistema operacional e grava um perfil Phaseo dedicado. O Codex obtém a chave pelo auxiliar da CLI, sem gravá-la em texto simples no `config.toml`.
 
-### Inicie o Codex com:
+Inicie o Codex com:
 
 ```bash
 codex --profile phaseo
 ```
 
 O mesmo fluxo da CLI Phaseo também inicia [Cline](./cline), [Kilo Code](./kilo-code), [oh-my-pi](./oh-my-pi), [Muse Code](./muse-code) e [MiniMax Code](./minimax-code) com configuração temporária e isolada do provedor.
+
 ## Configuração manual
 
 Crie ou atualize a configuração do usuário em `~/.codex/config.toml`. Em um projeto confiável, você também pode colocar as mesmas opções em `.codex/config.toml` dentro do repositório.
@@ -72,4 +73,4 @@ O Codex App e a extensão IDE compartilham as mesmas camadas de configuração. 
 
 - `401 Unauthorized`: execute `phaseo whoami` e depois execute `phaseo codex` novamente.
 - `model_not_found`: obtenha um ID atual em [Modelos](../../api-reference/endpoint/models.mdx) e atualize `model`.
-- Problemas específicos do provedor: consulte [Roteamento e fallbacks](../routing-and-fallbacks.mdx) para entender a alternância.
+- Problemas específicos do provedor: consulte [Roteamento e alternativas](../routing-and-fallbacks.mdx) para entender o comportamento de failover.

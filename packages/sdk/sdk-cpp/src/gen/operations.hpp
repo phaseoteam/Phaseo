@@ -180,6 +180,16 @@ inline Response CreateProviderCredential(Client& client, const std::map<std::str
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response CreateRateLimitAssignment(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/assignments";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CreateRateLimitPolicy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/policies";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response CreateRealtimeSession(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/audio/realtime/sessions";
 	return client.request("POST", resolved_path, body);
@@ -317,6 +327,16 @@ inline Response DeletePrivateModel(Client& client, const std::map<std::string, s
 
 inline Response DeleteProviderCredential(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/byok/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("DELETE", resolved_path, body);
+}
+
+inline Response DeleteRateLimitAssignment(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/assignments/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("DELETE", resolved_path, body);
+}
+
+inline Response DeleteRateLimitPolicy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/policies/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("DELETE", resolved_path, body);
 }
 
@@ -512,6 +532,16 @@ inline Response GetProviderCredential(Client& client, const std::map<std::string
 
 inline Response GetProviderDerankStatus(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/health/providers/" + path_segment(path.count("provider_id") ? path.at("provider_id") : std::string{}) + "/derank";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response GetRateLimitAssignment(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/assignments/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response GetRateLimitPolicy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/policies/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("GET", resolved_path, body);
 }
 
@@ -747,6 +777,16 @@ inline Response ListProviderCredentials(Client& client, const std::map<std::stri
 
 inline Response ListProviders(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/providers";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListRateLimitAssignments(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/assignments";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListRateLimitPolicies(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/policies";
 	return client.request("GET", resolved_path, body);
 }
 
@@ -1052,6 +1092,16 @@ inline Response UpdatePrivateModel(Client& client, const std::map<std::string, s
 
 inline Response UpdateProviderCredential(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/byok/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("PATCH", resolved_path, body);
+}
+
+inline Response UpdateRateLimitAssignment(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/assignments/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("PATCH", resolved_path, body);
+}
+
+inline Response UpdateRateLimitPolicy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/rate-limits/policies/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("PATCH", resolved_path, body);
 }
 

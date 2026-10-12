@@ -22,6 +22,7 @@ La prise en charge des paramètres varie toujours selon le point de terminaison,
 | Paramètre | Type | Utilisation |
 | --- | --- | --- |
 | [`model`](#model) | `string` | Sélectionner l’identifiant du modèle de la passerelle à exécuter. |
+| [`models`](#models) | `string[]` | Lister, dans l’ordre, les modèles de repli essayés après `model` en cas d’échec pouvant être réessayé. |
 | [`stream`](#stream) | `boolean` | Renvoyer la sortie SSE progressivement plutôt qu’en une seule réponse finale. |
 | [`temperature`](#temperature) | `number` | Augmenter ou réduire l’aléatoire. |
 | [`top_p`](#top_p) | `number` | Élargir ou réduire l’ensemble d’échantillonnage par noyau. |
@@ -33,11 +34,11 @@ La prise en charge des paramètres varie toujours selon le point de terminaison,
 | [`presence_penalty`](#presence_penalty) | `number` | Encourager le changement de sujet ou de vocabulaire. |
 | [`repetition_penalty`](#repetition_penalty) | `number` | Contrôle anti-répétition propre au fournisseur. |
 | [`seed`](#seed) | `integer` | Améliorer la reproductibilité si le fournisseur en amont le permet. |
-| [`stop`](#stop) | `string` or `string[]` | Définir des séquences d’arrêt explicites. |
+| [`stop`](#stop) | `string` ou `string[]` | Définir des séquences d’arrêt explicites. |
 | [`logprobs`](#logprobs) / [`top_logprobs`](#top_logprobs) | `boolean` / `integer` | Demander les probabilités des tokens. |
 | [`tools`](#tools), [`tool_choice`](#tool_choice) | `array`, `string`, `object` | Contrôle des appels d’outils et de l’exécution des fonctions. |
 | [`parallel_tool_calls`](#parallel_tool_calls) | `boolean` | Autoriser ou imposer l’exécution séquentielle des outils. |
-| [`response_format`](#response_format) | `string` or `object` | Sortie en texte brut, JSON ou contrainte par un schéma. |
+| [`response_format`](#response_format) | `string` ou `object` | Sortie en texte brut, JSON ou contrainte par un schéma. |
 | [`json_schema`](#json_schema) | `object` | Définir le schéma des flux de sortie structurée. |
 | [`structured_outputs`](#structured_outputs) | `boolean` | Indicateur de capacité pour une sortie fiable contrainte par schéma. |
 | [`reasoning`](#reasoning) | `object` | Configuration du raisonnement propre au fournisseur. |
@@ -84,6 +85,20 @@ Sélectionne l’identifiant du modèle de la passerelle pour la requête.
 | Exemple | `openai/gpt-5-nano` |
 
 Sauf si vous souhaitez délibérément utiliser un alias accepté, utilisez l’identifiant canonique indiqué dans le guide de démarrage rapide de chaque modèle. Les identifiants canoniques sont les plus sûrs pour les exemples, l’automatisation et les intégrations durables.
+
+<span id="models"></span>
+<h3 id="parameter-models"><code>models</code></h3>
+
+Liste des modèles de repli facultatifs, essayés dans l’ordre après `model`. `model` est obligatoire et désigne toujours le modèle principal. L’entrée suivante n’est essayée que si une tentative échoue avec `429`, `500`, `502`, `503` ou `504`.
+
+| Champ | Valeur |
+| --- | --- |
+| Type | `string[]` |
+| Obligatoire | Non. Une requête avec `models` doit aussi définir `model`. |
+| Limites | De 1 à 25 entrées. Les doublons et les entrées identiques à `model` sont ignorés. |
+| Exemple | `["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"]` |
+
+Chaque tentative est validée, journalisée et facturée comme une requête distincte. Le champ `model` de la réponse et la trace de routage indiquent le modèle qui a traité la requête. Les requêtes en streaming ne basculent vers un modèle de repli qu’avant le premier octet, et les tâches vidéo et musique uniquement lors de la soumission. Les modèles de repli d’une route dynamique associée sont prioritaires, les préréglages sont acceptés comme entrées et `phaseo/auto` ne peut pas être combiné avec `models`. Les requêtes par lot, en temps réel et Council rejettent `models` avec `400`. Les points de terminaison multipart acceptent des champs `models` répétés, des champs `models[]` ou un seul tableau JSON. Consultez [Modèles de repli au niveau de la requête](../guides/routing-and-fallbacks.mdx#request-level-model-fallbacks) pour en savoir plus sur la priorité, la validation, le streaming et la facturation.
 
 <span id="stream"></span>
 <h3 id="parameter-stream"><code>stream</code></h3>
@@ -265,7 +280,7 @@ Définit une ou plusieurs séquences qui interrompent la génération avant son 
 
 | Champ | Valeur |
 | --- | --- |
-| Type | `string` or `string[]` |
+| Type | `string` ou `string[]` |
 | Valeur par défaut | Non défini |
 | Utilisation courante | Limites de l’analyseur, fins de modèle et marqueurs de protocole |
 
@@ -315,7 +330,7 @@ Détermine si le modèle peut appeler des outils automatiquement, ne doit pas en
 
 | Champ | Valeur |
 | --- | --- |
-| Type | `string` or `object` |
+| Type | `string` ou `object` |
 | Valeurs courantes | `none`, `auto`, `required` |
 
 Utilisez `none` pour obtenir uniquement du contenu, `auto` pour laisser le modèle décider, et des valeurs plus strictes si l’orchestration en aval exige un appel d’outil.
@@ -339,7 +354,7 @@ Demande un format de sortie précis, comme du texte brut, du JSON ou des répons
 
 | Champ | Valeur |
 | --- | --- |
-| Type | `string` or `object` |
+| Type | `string` ou `object` |
 | Valeur par défaut | Spécifique au point de terminaison et au fournisseur |
 
 Les structures acceptées dépendent du point de terminaison et de l’adaptateur fournisseur. Utilisez ce paramètre si vous souhaitez autre chose que du texte libre, notamment pour les réponses JSON et l’extraction structurée.
@@ -510,7 +525,7 @@ Les champs courants incluent :
 | `only` | `string[]` | Restreint le routage à certains fournisseurs. |
 | `ignore` | `string[]` | Exclut certains fournisseurs. |
 | `include_alpha` | `boolean` | Autorise les fournisseurs alpha dans les décisions de routage. |
-| `sort` | `string` or `object` | Classe les fournisseurs, souvent selon le `price`, la `latency` ou le `throughput`. |
+| `sort` | `string` ou `object` | Classe les fournisseurs, souvent selon le `price`, la `latency` ou le `throughput`. |
 | `required_execution_region` | `string` | Restreint l’exécution à une région requise. |
 | `required_data_region` | `string` | Restreint le traitement des données à une région requise. |
 | `require_zero_data_retention` | `boolean` | Exige des fournisseurs respectant les contraintes de conservation nulle des données. |
@@ -583,7 +598,7 @@ Les champs de débogage pris en charge incluent :
 | `return_upstream_request` | `boolean` | Inclut la charge utile transformée de la requête en amont. |
 | `return_upstream_response` | `boolean` | Inclut la charge utile de la réponse en amont si elle est disponible. |
 | `trace` | `boolean` | Renvoie des traces de routage ou de débogage. |
-| `trace_level` | `summary` or `full` | Contrôle le niveau de détail des traces. |
+| `trace_level` | `summary` ou `full` | Contrôle le niveau de détail des traces. |
 
 Les charges utiles de débogage peuvent contenir des éléments sensibles du contexte de la requête. Utilisez-les uniquement en développement ou dans des environnements strictement contrôlés.
 

@@ -233,6 +233,8 @@
 			"modalityMusic": "音乐",
 			"modalityFile": "文件",
 			"modalityRerank": "重排序",
+			"modalityDocuments": "文档",
+			"modalityTranslation": "翻译",
 			"endpointResponses": "Responses",
 			"endpointChatCompletions": "聊天补全",
 			"endpointMessages": "消息",

@@ -17,7 +17,6 @@ Par exemple :
 ```text
 baseten:thinking-machines/inkling-small
 deepinfra:deepseek/deepseek-v3
-crofai:moonshotai/kimi-k3
 ```
 
 Le premier deux-points sépare le fournisseur de l’identifiant du modèle canonique. Les deux-points qui suivent l’espace de noms du modèle restent des suffixes du modèle, ce qui ne crée aucune ambiguïté :
@@ -143,7 +142,7 @@ Phaseo échoue de façon sécurisée, sauf si la route sélectionnée possède u
 - porte explicitement le libellé `free`
 - applique un prix exactement égal à zéro
 
-En l’absence de tarifs, avec des tarifs payants, mixtes ou négatifs, ou avec une règle à prix nul sans libellé gratuit explicite, la requête est rejetée avant l’exécution chez le fournisseur.
+En l’absence de tarifs, avec des tarifs payants, mixtes ou négatifs, ou avec une règle à prix nul qui ne porte pas explicitement le libellé `free`, la requête est rejetée avant l’exécution chez le fournisseur.
 
 <Note>
 L’existence d’un modèle canonique `:free` ne signifie pas que tous les fournisseurs du modèle sous-jacent proposent une route gratuite.

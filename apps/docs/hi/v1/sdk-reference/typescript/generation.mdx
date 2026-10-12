@@ -1,10 +1,10 @@
 ---
 icon: "search-check"
 title: "जनरेशन रिकॉर्ड देखना"
-description: "पिछली generation पाने के लिए /generation call करें।"
+description: "पिछला जनरेशन प्राप्त करने के लिए /generation कॉल करें।"
 ---
 
-**Method**: `client.getGeneration()`।
+**मेथड**: `client.getGeneration()`।
 
 ### उदाहरण
 ```typescript
@@ -12,17 +12,17 @@ const record = await client.getGeneration("G-01ABC...");
 ```
 
 ### पैरामीटर
-- `id` (string, required): पिछली call से मिला request ID।
+- `id` (string, आवश्यक): पिछली कॉल से लौटाया गया अनुरोध ID।
 
 ### रिटर्न मान
-Generation record (JSON)
+जनरेशन रिकॉर्ड (JSON)
 
-Gateway ने पूरी request details सहेजी हों, तो returned record में `replay_supported` और `replay_request` होंगे। नियंत्रित rerun के लिए `replay_request` को original endpoint पर भेजें।
+अगर Gateway ने अनुरोध का पूरा विवरण सहेजा है, तो लौटाए गए रिकॉर्ड में `replay_supported` और `replay_request` शामिल होते हैं, जिसे नियंत्रित रूप से दोबारा चलाने के लिए मूल एंडपॉइंट पर वापस भेजा जा सकता है।
 
-Timing fields पूरे gateway में एक ही semantics का पालन करते हैं:
+समय से जुड़े फ़ील्ड पूरे Gateway में एक जैसे अर्थ का पालन करते हैं:
 
-- `latency_ms`: पहला token या output byte/frame आने तक का समय, यदि track किया गया हो
-- `generation_ms`: latency के बाद generation time, यदि track किया गया हो
+- `latency_ms`: पहले टोकन या आउटपुट के पहले बाइट/फ़्रेम तक का समय, यदि ट्रैक किया गया हो
+- `generation_ms`: लेटेंसी के बाद का जनरेशन समय, यदि ट्रैक किया गया हो
 
 ```json
 {

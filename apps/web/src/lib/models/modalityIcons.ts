@@ -7,9 +7,11 @@ import {
 	FileText,
 	Headphones,
 	Image as ImageIcon,
+	Languages,
 	Music4,
 	Radio,
 	Scale,
+	ScanText,
 	Speech,
 	Type,
 	Video,
@@ -22,6 +24,14 @@ export function getModalityIcon(value: string): LucideIcon {
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return Radio;
 	}
+	if (
+		/\bocr\b/.test(normalized) ||
+		/\bpars(e|ing)\b/.test(normalized) ||
+		normalized === "documents"
+	) {
+		return ScanText;
+	}
+	if (normalized.includes("translat")) return Languages;
 	if (normalized.includes("embed")) return Binary;
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
 		return ArrowUpDown;
