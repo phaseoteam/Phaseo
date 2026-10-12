@@ -6,7 +6,6 @@ import {
 	useDeferredValue,
 	useEffect,
 	useMemo,
-	useRef,
 	useState,
 	type ReactNode,
 } from "react";
@@ -14,6 +13,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { debounce, useQueryState } from "nuqs";
 import { ModelsGrid } from "./ModelsGrid";
+import { OutputModalityChipRow } from "./OutputModalityChipRow";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { ActiveModelFilters, type ActiveModelFilter } from "./ActiveModelFilters";
 import { resolveDefaultGatewayStatuses } from "@/lib/models/defaultGatewayStatuses";
@@ -38,7 +38,6 @@ import {
 	CircleCheck,
 	CircleMinus,
 	Database,
-	FileBraces,
 	FileText,
 	Headphones,
 	Languages,
@@ -184,15 +183,15 @@ const OUTPUT_MODALITY_DISPLAY_ORDER = [
 	"image",
 	"video",
 	"audio",
-	"audio_tts",
-	"realtime",
-	"audio_stt",
-	"translation",
-	"ocr",
-	"parse",
 	"embeddings",
+	"decisions",
 	"moderations",
 	"rerank",
+	"documents",
+	"audio_tts",
+	"audio_stt",
+	"translation",
+	"realtime",
 	"audio_music",
 ] as const;
 const REGION_DISPLAY_ORDER = ["us", "eu", "apac", "jp", "au"] as const;
@@ -295,8 +294,9 @@ function normalizeModalityFilterValue(value: string): string {
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return "realtime";
 	}
-	if (/\bocr\b/.test(normalized)) return "ocr";
-	if (/\bpars(e|ing)\b/.test(normalized)) return "parse";
+	if (/\bocr\b/.test(normalized) || /\bpars(e|ing)\b/.test(normalized)) {
+		return "documents";
+	}
 	if (normalized.includes("translat")) return "translation";
 	if (normalized.includes("image")) return "image";
 	if (normalized.includes("video")) return "video";
@@ -496,8 +496,7 @@ function toTitleCase(value: string): string {
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
-	if (normalized === "ocr") return "OCR";
-	if (normalized === "parse") return "Document parsing";
+	if (normalized === "documents") return "Documents";
 	if (normalized === "translation") return "Translation";
 	return value
 		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
@@ -575,8 +574,13 @@ function getModalityIcon(modality: string): LucideIcon {
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return Radio;
 	}
-	if (/\bocr\b/.test(normalized)) return ScanText;
-	if (/\bpars(e|ing)\b/.test(normalized)) return FileBraces;
+	if (
+		/\bocr\b/.test(normalized) ||
+		/\bpars(e|ing)\b/.test(normalized) ||
+		normalized === "documents"
+	) {
+		return ScanText;
+	}
 	if (normalized.includes("translat")) return Languages;
 	if (normalized.includes("embed")) return Binary;
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
@@ -867,9 +871,10 @@ function filterSupportedInputModalities(options: OptionCount[]): OptionCount[] {
 }
 
 function filterSupportedOutputModalities(options: OptionCount[]): OptionCount[] {
-	return options.filter(
-		(option) => normalizeModalityFilterValue(option.value) !== "action",
-	);
+	return options.filter((option) => {
+		const modality = normalizeModalityFilterValue(option.value);
+		return modality !== "action" && modality !== "file";
+	});
 }
 
 function sortOutputModalityOptions(options: OptionCount[]): OptionCount[] {
@@ -888,111 +893,6 @@ function sortOutputModalityOptions(options: OptionCount[]): OptionCount[] {
 		if (bIndex !== undefined) return 1;
 		return toTitleCase(a.value).localeCompare(toTitleCase(b.value));
 	});
-}
-
-function OutputModalityButtonRow({
-	options,
-	selected,
-	onToggle,
-	labelForValue,
-}: {
-	options: OptionCount[];
-	selected: string[];
-	onToggle: (value: string) => void;
-	labelForValue: (value: string) => string;
-}) {
-	const viewportRef = useRef<HTMLDivElement | null>(null);
-	const contentRef = useRef<HTMLDivElement | null>(null);
-	const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false);
-
-	useEffect(() => {
-		const viewport = viewportRef.current;
-		if (!viewport) return;
-
-		const updateOverflow = () => {
-			setHasHorizontalOverflow(viewport.scrollWidth > viewport.clientWidth + 1);
-		};
-
-		updateOverflow();
-
-		const resizeObserver = new ResizeObserver(updateOverflow);
-		resizeObserver.observe(viewport);
-		if (contentRef.current) resizeObserver.observe(contentRef.current);
-		window.addEventListener("resize", updateOverflow);
-
-		return () => {
-			resizeObserver.disconnect();
-			window.removeEventListener("resize", updateOverflow);
-		};
-	}, [options]);
-
-	if (options.length === 0) return null;
-
-	const buttons = sortOutputModalityOptions(options).map((option) => {
-		const checked = selected.includes(option.value);
-		const Icon = getModalityIcon(option.value);
-		const tone = getModalityTone(option.value);
-
-		return (
-			<Button
-				key={option.value}
-				type="button"
-				variant="ghost"
-				size="sm"
-				onClick={() => onToggle(option.value)}
-				aria-pressed={checked}
-				className={cn(
-					"group h-9 shrink-0 rounded-md px-2 text-sm shadow-none transition-colors",
-					checked
-						? cn(
-								"bg-muted text-foreground hover:bg-muted",
-								tone.badgeClassName,
-								"border-0 hover:border-0",
-							)
-						: "text-muted-foreground hover:text-foreground",
-				)}
-			>
-				<span
-					className={cn(
-						"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm",
-						checked
-							? tone.iconClassName
-							: cn(
-									"bg-transparent text-muted-foreground transition-colors",
-									tone.ghostIconHoverClassName,
-								),
-					)}
-				>
-					<Icon className="h-3.5 w-3.5" />
-				</span>
-				<span>{labelForValue(option.value)}</span>
-				<span
-					className={cn(
-						"inline-flex min-w-5 items-center justify-center px-1 text-[11px] font-medium leading-none tabular-nums",
-						checked ? "text-current" : "text-muted-foreground",
-					)}
-				>
-					{option.count}
-				</span>
-			</Button>
-		);
-	});
-
-	return (
-		<ScrollArea
-			className="w-full [&>[data-orientation=horizontal]]:opacity-100 [&>[data-orientation=horizontal]]:transition-none"
-			scrollBarOrientation="horizontal"
-			viewportClassName={hasHorizontalOverflow ? "pb-2" : "pb-0"}
-			viewportRef={viewportRef}
-		>
-			<div
-				ref={contentRef}
-				className="flex min-w-max items-center gap-1.5 pr-4"
-			>
-				{buttons}
-			</div>
-		</ScrollArea>
-	);
 }
 
 export default function ModelsDisplay({
@@ -1036,8 +936,7 @@ function ModelsDisplayContent({
 			realtime: "modalityRealtime",
 			file: "modalityFile",
 			rerank: "modalityRerank",
-			ocr: "modalityOcr",
-			parse: "modalityParse",
+			documents: "modalityDocuments",
 			translation: "modalityTranslation",
 		};
 		const normalized = value.toLowerCase();
@@ -2367,15 +2266,12 @@ function ModelsDisplayContent({
 					</div>
 
 					<div className="mt-1.5">
-						<OutputModalityButtonRow
-							options={outputModalityOptions}
+						<OutputModalityChipRow
+							options={sortOutputModalityOptions(outputModalityOptions)}
 							selected={selectedOutputModalities}
-							onToggle={(value) =>
-								setSelectedOutputModalities(
-								toggleInList(selectedOutputModalities, value),
-								)
-							}
+							onChange={setSelectedOutputModalities}
 							labelForValue={translateModality}
+							iconForValue={getModalityIcon}
 						/>
 					</div>
 
