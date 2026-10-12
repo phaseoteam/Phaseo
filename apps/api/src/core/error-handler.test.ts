@@ -10,6 +10,7 @@ vi.mock("@/runtime/env", async (importOriginal) => ({
 	dispatchBackground: (promise: Promise<unknown>) => { background.push(promise.catch(() => undefined)); },
 }));
 import {
+	classifyAttribution,
 	classifyErrorOrigin,
 	classifyErrorType,
 	extractUpstreamUnsupportedParamSignal,
@@ -233,6 +234,13 @@ describe("handleError", () => {
 				scope: "workspace",
 			},
 		});
+	});
+
+	it("attributes only policy rejections, not provider rate_limit_exceeded 429s, to the caller", () => {
+		const policy = { stage: "execute" as const, status: 429, errorCode: "rate_limit_exceeded", body: { error: "rate_limit_exceeded", reason: "policy_requests_per_minute" } };
+		const provider = { stage: "execute" as const, status: 429, errorCode: "rate_limit_exceeded", body: { error: { code: "rate_limit_exceeded", message: "Too many requests" } } };
+		expect(classifyAttribution(policy)).toBe("user");
+		expect(classifyAttribution(provider)).toBe(classifyAttribution({ ...provider, errorCode: "upstream_error" }));
 	});
 
 	it("classifies region and residency 403s as user errors", () => {

@@ -906,7 +906,8 @@ function classifyOperationalError(args: EventArgs): OperationalErrorClassificati
         };
     }
 
-    if (rawCode === "rate_limit_exceeded") {
+    // Only the gateway's own policy rejection is user-attributed; providers use the same code.
+    if (code === "user:rate_limit_exceeded") {
         return {
             origin: "user",
             kind: "workspace_rate_limit_policy_exceeded",

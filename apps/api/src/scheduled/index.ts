@@ -32,6 +32,7 @@ import { publishCatalogueRevision } from "@core/catalogue-revision";
 import { drainWorkspacePublications } from "./workspace-publications";
 import { backfillRoutingArchives, pruneDeletedRoutingArchives } from "@/pipeline/audit/routing-archive-backfill";
 import { publishCustomerRateLimitTiers } from "@core/customer-rate-limit-tiers";
+import { reconcileRateLimitPlans } from "@core/rate-limit-policies";
 
 const MODEL_DISCOVERY_TICKS_PER_DAY = Array.from({ length: 24 }, (_value, hour) =>
 	60 / getModelDiscoveryStepMinutesUtc(hour),
@@ -543,6 +544,18 @@ async function handleCustomerRateLimitTierScheduledEvent(env: GatewayBindings): 
 	}
 }
 
+// Backfills and repairs the KV plans the gateway enforces rate limit policies from.
+async function handleRateLimitPlanReconcileScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (env.RATE_LIMIT_POLICIES_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		const summary = await reconcileRateLimitPlans();
+		if (summary.workspaces > 0) console.log("rate_limit_plans_reconciled", summary);
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handleGatewayIoRetentionExpiryScheduledEvent(
 	event: ScheduledController,
 	env: GatewayBindings,
@@ -699,6 +712,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleCustomerRateLimitTierScheduledEvent(env);
 		} catch (error) {
 			console.error("customer_rate_limit_tiers_scheduled_failed", serializeError(error));
+		}
+		try {
+			await handleRateLimitPlanReconcileScheduledEvent(env);
+		} catch (error) {
+			console.error("rate_limit_plans_reconcile_scheduled_failed", serializeError(error));
 		}
 	}
 	if (isModelDiscoveryTick(event)) {

@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
 	store: new Map<string, string>(),
 	failGet: false,
 	failPut: false,
+	onPut: null as null | (() => void),
 	tables: {} as Record<string, Array<Record<string, unknown>>>,
 	selectError: null as { message: string } | null,
 	inserts: [] as Array<{ table: string; payload: Record<string, unknown> }>,
@@ -41,8 +42,15 @@ vi.mock("@/runtime/env", () => ({
 		put: async (key: string, value: string) => {
 			if (mocks.failPut) throw new Error("kv write failed");
 			mocks.store.set(key, value);
+			const onPut = mocks.onPut;
+			mocks.onPut = null;
+			onPut?.();
 		},
 		delete: async (key: string) => { mocks.store.delete(key); },
+		list: async ({ prefix }: { prefix: string }) => ({
+			keys: [...mocks.store.keys()].filter((name) => name.startsWith(prefix)).map((name) => ({ name })),
+			list_complete: true,
+		}),
 	}),
 	getSupabaseAdmin: () => ({
 		from: (table: string) => ({
@@ -62,7 +70,7 @@ vi.mock("@core/customer-rate-limit-tiers", () => ({ readCustomerLimits: vi.fn() 
 import { __resetTieredCacheForTests } from "./tiered-cache";
 import { __resetCustomerQuotaStateForTests } from "./customer-rate-limits";
 import {
-	applicableRateLimits, buildRateLimitPlan, copyKeyRateLimitAssignment, guardRateLimitPolicies, publishRateLimitPlan,
+	applicableRateLimits, buildRateLimitPlan, copyKeyRateLimitAssignment, guardRateLimitPolicies, publishRateLimitPlan, reconcileRateLimitPlans,
 	rateLimitPlanKey, rateLimitPolicyHeaders, readRateLimitPlan, rejectedByRateLimitPolicy, withRateLimitPolicyHeaders,
 	type RateLimitPlan,
 } from "./rate-limit-policies";
@@ -340,5 +348,50 @@ describe("rate limit policy enforcement", () => {
 		expect(await guardRateLimitPolicies(ctx())).toBeNull();
 		await settle();
 		expect(await guardRateLimitPolicies(ctx())).toBeNull();
+	});
+});
+
+describe("plan publication under concurrent changes", () => {
+	beforeEach(() => {
+		mocks.store.clear();
+		mocks.failGet = false;
+		mocks.failPut = false;
+		mocks.onPut = null;
+		mocks.selectError = null;
+		__resetTieredCacheForTests();
+	});
+
+	it("stores the newest plan when the database changes while publishing", async () => {
+		mocks.tables = {
+			workspace_rate_limit_policies: [policy(STRICT, "Strict", 2)],
+			workspace_rate_limit_policy_assignments: [assignment(STRICT, "key", { key_id: "key-1" })],
+		};
+		// Another request adds an assignment after this publish read the database.
+		mocks.onPut = () => {
+			mocks.tables.workspace_rate_limit_policy_assignments.push(assignment(STRICT, "member", { user_id: "user-1" }));
+		};
+		expect(await publishRateLimitPlan(WS)).toBe(true);
+		const stored = JSON.parse(mocks.store.get(rateLimitPlanKey(WS))!).v as RateLimitPlan;
+		expect(stored.keys).toEqual({ "key-1": STRICT });
+		expect(stored.members).toEqual({ "user-1": STRICT });
+	});
+
+	it("reconciles every workspace with assignments or a stored plan", async () => {
+		mocks.tables = {
+			workspace_rate_limit_policies: [policy(STRICT, "Strict", 2), policy(LOOSE, "Loose", 100, "workspace-2")],
+			workspace_rate_limit_policy_assignments: [
+				assignment(STRICT, "key", { key_id: "key-1" }),
+				assignment(LOOSE, "end_user_default", {}, "workspace-2"),
+			],
+		};
+		// A plan whose assignments were removed while a publish failed.
+		mocks.store.set(rateLimitPlanKey("workspace-3"), JSON.stringify({ v: plan, at: 0 }));
+
+		const summary = await reconcileRateLimitPlans();
+
+		expect(summary).toEqual({ workspaces: 3, published: 3, failed: 0, truncated: false });
+		expect(JSON.parse(mocks.store.get(rateLimitPlanKey(WS))!).v.keys).toEqual({ "key-1": STRICT });
+		expect(JSON.parse(mocks.store.get(rateLimitPlanKey("workspace-2"))!).v.endUserDefault).toBe(LOOSE);
+		expect(mocks.store.has(rateLimitPlanKey("workspace-3"))).toBe(false);
 	});
 });

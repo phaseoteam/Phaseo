@@ -8,7 +8,9 @@
 //      them through the customer limiter (core/customer-rate-limits.ts): each
 //      applicable scope is counted exactly by its own CustomerRateLimit Durable
 //      Object, and a scope the isolate knows is exhausted is rejected locally.
-//      Changes therefore take effect within about a minute. Department
+//      Changes therefore take effect within about a minute; a scheduled
+//      reconcile republishes every workspace so a missed or out-of-order
+//      publish cannot persist. Department
 //      assignments, tokens_per_minute and concurrent_requests are not enforced
 //      yet, and fail_closed is ignored: every failure admits the request.
 import { getCache, getSupabaseAdmin } from "@/runtime/env";
@@ -41,6 +43,9 @@ export type ApplicableRateLimit = {
 };
 
 const PAGE_SIZE = 1000;
+const MAX_PUBLISH_ATTEMPTS = 3;
+/** Upper bound on workspaces republished by one scheduled reconcile run. */
+const MAX_RECONCILE_WORKSPACES = 2000;
 const MINUTE_SECONDS = 60;
 
 export const rateLimitPlanKey = (workspaceId: string) => `rate-limit-plan:v1:${workspaceId}`;
@@ -123,12 +128,21 @@ export async function buildRateLimitPlan(workspaceId: string): Promise<RateLimit
  */
 export async function publishRateLimitPlan(workspaceId: string): Promise<boolean> {
 	try {
-		const plan = await buildRateLimitPlan(workspaceId);
 		const kv = getCache();
 		const key = rateLimitPlanKey(workspaceId);
-		// Same envelope as the tiered cache's KV layer (`{ v, at }`).
-		if (isEmptyPlan(plan)) await kv.delete(key);
-		else await kv.put(key, JSON.stringify({ v: plan, at: Date.now() }));
+		let plan = await buildRateLimitPlan(workspaceId);
+		// A concurrent publish that read the database earlier can store its older
+		// plan after this one. Re-reading after each write and storing again until
+		// nothing changed means the publish that writes last stores the newest
+		// state; the scheduled reconcile covers anything still left behind.
+		for (let attempt = 0; attempt < MAX_PUBLISH_ATTEMPTS; attempt++) {
+			// Same envelope as the tiered cache's KV layer (`{ v, at }`).
+			if (isEmptyPlan(plan)) await kv.delete(key);
+			else await kv.put(key, JSON.stringify({ v: plan, at: Date.now() }));
+			const latest = await buildRateLimitPlan(workspaceId);
+			if (JSON.stringify(latest) === JSON.stringify(plan)) break;
+			plan = latest;
+		}
 		invalidateTieredL1(key);
 		return true;
 	} catch (error) {
@@ -138,6 +152,41 @@ export async function publishRateLimitPlan(workspaceId: string): Promise<boolean
 		});
 		return false;
 	}
+}
+
+/**
+ * Republishes the plan of every workspace that has assignments or a stored
+ * plan. Run on a schedule: it backfills workspaces whose assignments predate
+ * enforcement, removes plans whose assignments are gone, and repairs any plan
+ * an out-of-order publish left stale.
+ */
+export async function reconcileRateLimitPlans(): Promise<{ workspaces: number; published: number; failed: number; truncated: boolean }> {
+	const workspaceIds = new Set<string>();
+	for (let offset = 0; workspaceIds.size < MAX_RECONCILE_WORKSPACES; offset += PAGE_SIZE) {
+		const { data, error } = await getSupabaseAdmin().from("workspace_rate_limit_policy_assignments").select("workspace_id")
+			.order("id", { ascending: true }).range(offset, offset + PAGE_SIZE - 1);
+		if (error) throw new Error(error.message || "Failed to list rate limit assignments");
+		for (const row of (data ?? []) as Array<{ workspace_id: string }>) workspaceIds.add(row.workspace_id);
+		if ((data ?? []).length < PAGE_SIZE) break;
+	}
+	const prefix = rateLimitPlanKey("");
+	let cursor: string | undefined;
+	do {
+		const page = await getCache().list({ prefix, cursor });
+		for (const { name } of page.keys) workspaceIds.add(name.slice(prefix.length));
+		cursor = page.list_complete ? undefined : (page as { cursor?: string }).cursor;
+	} while (cursor && workspaceIds.size < MAX_RECONCILE_WORKSPACES);
+	const targets = [...workspaceIds].slice(0, MAX_RECONCILE_WORKSPACES);
+	let published = 0;
+	for (const workspaceId of targets) {
+		if (await publishRateLimitPlan(workspaceId)) published++;
+	}
+	return {
+		workspaces: targets.length,
+		published,
+		failed: targets.length - published,
+		truncated: workspaceIds.size > MAX_RECONCILE_WORKSPACES || Boolean(cursor),
+	};
 }
 
 /**
