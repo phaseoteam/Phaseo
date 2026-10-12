@@ -50,7 +50,9 @@ $regionalSecretNames = @(
     "GOOGLE_VERTEX_API_KEY",
     "GOOGLE_VERTEX_ACCESS_TOKEN",
     "GOOGLE_VERTEX_PROJECT",
-    "GOOGLE_VERTEX_LOCATION"
+    "GOOGLE_VERTEX_LOCATION",
+    "RESPONSE_CACHE_REDIS_REST_URL",
+    "RESPONSE_CACHE_REDIS_REST_TOKEN"
 )
 
 if (-not (Test-Path -LiteralPath $config -PathType Leaf)) {

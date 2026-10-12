@@ -13,6 +13,8 @@ import {
 	logPipelineExecutionError,
 } from "../error-response";
 import type { PipelineRunnerArgs } from "./types";
+import { isResponseCacheEligible } from "@/core/response-cache";
+import { tryServeFromResponseCache } from "./response-cache-lookup";
 
 export async function runEmbeddingsPipeline(args: PipelineRunnerArgs): Promise<Response> {
 	const { pre, req, endpoint, timing } = args;
@@ -24,6 +26,23 @@ export async function runEmbeddingsPipeline(args: PipelineRunnerArgs): Promise<R
 		const ir = decodeOpenAIEmbeddingsRequest(pre.ctx.body);
 		ir.rawRequest = pre.ctx.rawBody;
 		timing.timer.end("ir_decode");
+
+		const cachedResponse = await tryServeFromResponseCache({
+			pre,
+			req,
+			endpoint,
+			timing,
+			protocol: "openai.embeddings",
+			stream: false,
+			eligibility: isResponseCacheEligible({
+				endpoint,
+				stream: false,
+				apiKeyId: pre.ctx.keyId ?? null,
+				debugEnabled: Boolean(pre.ctx.meta?.debug?.enabled),
+				zeroDataRetention: pre.ctx.teamSettings?.privacyZdrOnly === true,
+			}),
+		});
+		if (cachedResponse) return cachedResponse;
 
 		timing.timer.mark("execute_start");
 		const exec = await doRequestWithIR(pre.ctx, ir, timing);

@@ -1023,6 +1023,19 @@ jobs:
                   secret-path: /
                   secret-name: DISCORD_ROLE_ID
 
+            # Optional until the cache is configured, so a missing folder must not block deploys.
+            # EU stays off: only the global and US Workers share this US database.
+            - name: Load response cache Redis credentials from Infisical
+              if: matrix.target == 'api' || matrix.target == 'api-us'
+              continue-on-error: true
+              uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d # v1.0.18
+              with:
+                  method: oidc
+                  identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
+                  project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+                  env-slug: prod
+                  secret-path: /response-cache
+
             - name: Deploy API app to Cloudflare
               if: matrix.target == 'api'
               shell: pwsh

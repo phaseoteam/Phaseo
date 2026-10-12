@@ -103,16 +103,28 @@ describe("response-cache fingerprinting", () => {
 		);
 	});
 
-	it("marks tool-free text requests as eligible, streamed or not", () => {
+	it("marks text and embeddings requests as eligible, streamed or not", () => {
 		const eligible = { endpoint: "responses" as const, stream: false, apiKeyId: "key_123" };
 		expect(isResponseCacheEligible(eligible)).toEqual({ eligible: true, reason: "eligible" });
-		expect(isResponseCacheEligible({ ...eligible, hasTools: true })).toEqual({
-			eligible: false,
-			reason: "tools_present",
-		});
 		expect(isResponseCacheEligible({ ...eligible, stream: true })).toEqual({
 			eligible: true,
 			reason: "eligible",
+		});
+		expect(isResponseCacheEligible({ ...eligible, endpoint: "embeddings" })).toEqual({
+			eligible: true,
+			reason: "eligible",
+		});
+		expect(isResponseCacheEligible({ ...eligible, endpoint: "images.generations" })).toEqual({
+			eligible: false,
+			reason: "unsupported_endpoint",
+		});
+	});
+
+	it("excludes gateway-run server tools but not function tools", () => {
+		const eligible = { endpoint: "chat.completions" as const, stream: false, apiKeyId: "key_123" };
+		expect(isResponseCacheEligible({ ...eligible, serverToolsEnabled: true })).toEqual({
+			eligible: false,
+			reason: "server_tools_enabled",
 		});
 	});
 

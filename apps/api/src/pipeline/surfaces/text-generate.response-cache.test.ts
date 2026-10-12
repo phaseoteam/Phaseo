@@ -305,6 +305,19 @@ describe("runTextGeneratePipeline response cache", () => {
 		expect(doRequestWithIRMock).toHaveBeenCalledTimes(1);
 	});
 
+	it("looks up requests that carry function tools", async () => {
+		const store = { get: vi.fn().mockResolvedValue(null), set: vi.fn(), delete: vi.fn() };
+		getResponseCacheMock.mockReturnValue(store);
+		mockLiveExecution();
+
+		const args = createArgs();
+		args.pre.ctx.body.tools = [{ type: "function", name: "lookup", parameters: { type: "object" } }];
+		await runTextGeneratePipeline(args);
+
+		expect(store.get).toHaveBeenCalledTimes(1);
+		expect(args.pre.ctx.responseCache).toMatchObject({ status: "miss" });
+	});
+
 	it("does not touch the store unless caching is turned on", async () => {
 		const store = { get: vi.fn(), set: vi.fn(), delete: vi.fn() };
 		getResponseCacheMock.mockReturnValue(store);
