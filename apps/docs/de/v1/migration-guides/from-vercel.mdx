@@ -1,11 +1,11 @@
 ---
 title: "Von Vercel AI Gateway migrieren"
 sidebarTitle: "Vercel AI Gateway"
-description: "Ersetzen Sie das Routing von Vercel AI Gateway durch Phaseo Gateway und behalten Sie das Verhalten Ihrer AI-SDK- oder OpenAI-kompatiblen Anwendung bei."
+description: "Ersetze das Routing von Vercel AI Gateway durch Phaseo Gateway und behalte das Verhalten deiner AI-SDK- oder OpenAI-kompatiblen Anwendung bei."
 icon: "/icons/brands/vercel.svg"
 ---
 
-Wenn Sie Vercel AI Gateway bereits über das Vercel AI SDK oder einen OpenAI-kompatiblen Client verwenden, lassen Sie die Anwendungslogik unverändert und tauschen Sie zunächst nur die Anbindung an den Anbieter aus.
+Wenn du Vercel AI Gateway bereits über das Vercel AI SDK oder einen OpenAI-kompatiblen Client verwendest, lass die Anwendungslogik unverändert und tausche zunächst nur die Anbindung an den Anbieter aus.
 
 ## Was sich ändert
 
@@ -22,19 +22,19 @@ Wenn Sie Vercel AI Gateway bereits über das Vercel AI SDK oder einen OpenAI-kom
 - `PHASEO_API_KEY` in lokalen, Test- und Produktionsumgebungen.
 - Eine kleine Prompt-Auswahl oder Integrationstests für Anfragen ohne und mit Streaming sowie verwendete Tool-Aufrufe.
 
-## 1) Dokumentieren Sie die aktuelle Gateway-Anbindung
+## 1) Dokumentiere die aktuelle Gateway-Anbindung
 
-Suchen Sie die zentrale Stelle, an der Ihre Anwendung Modellanbieter oder API-Clients erstellt. Dort sollte die Migration ansetzen.
+Suche die zentrale Stelle, an der deine Anwendung Modellanbieter oder API-Clients erstellt. Dort sollte die Migration ansetzen.
 
-- Finden Sie die Anbieter- oder Client-Fabrik Ihrer Anwendung.
-- Listen Sie die in der Produktion verwendeten Modell-IDs auf.
-- Halten Sie Standardwerte für Wiederholungsversuche, Zeitlimits und Ausweichrouten fest.
-- Notieren Sie, ob Edge- und Serverlaufzeitumgebungen dieselbe Änderung benötigen.
-- Ermitteln Sie gemeinsam verwendete Prompt- oder Parameterstandardwerte, die Gateway-Voreinstellungen werden sollten, statt in einzelnen AI-SDK-Aufrufen eingebettet zu bleiben.
+- Finde die Anbieter- oder Client-Fabrik deiner Anwendung.
+- Liste die in der Produktion verwendeten Modell-IDs auf.
+- Halte Standardwerte für Wiederholungsversuche, Zeitlimits und Ausweichrouten fest.
+- Notiere, ob Edge- und Serverlaufzeitumgebungen dieselbe Änderung benötigen.
+- Ermittle gemeinsam verwendete Prompt- oder Parameterstandardwerte, die Gateway-Voreinstellungen werden sollten, statt in einzelnen AI-SDK-Aufrufen eingebettet zu bleiben.
 
 ## 2) Endpunkt und Schlüssel austauschen
 
-Bei den meisten OpenAI-kompatiblen Clients müssen Sie nur Basis-URL und Schlüssel ersetzen.
+Bei den meisten OpenAI-kompatiblen Clients musst du nur Basis-URL und Schlüssel ersetzen.
 
 <CodeGroup>
 ```typescript TypeScript
@@ -86,17 +86,17 @@ curl -s "https://api.phaseo.app/v1/chat/completions" \
 
 ## 3) Funktionsgleichheit bestätigen
 
-Führen Sie dieselbe Prompt-Auswahl über alten und neuen Pfad aus und vergleichen Sie Latenz, Ausgabeformat und Tokenverbrauch.
+Führe dieselbe Prompt-Auswahl über alten und neuen Pfad aus und vergleiche Latenz, Ausgabeformat und Tokenverbrauch.
 
-- Prüfen Sie die Textgenerierung ohne Streaming.
-- Prüfen Sie Streaming-Abschnitte über denselben Codepfad wie in der Produktion.
-- Prüfen Sie Tool-Aufrufe, falls Ihre Anwendung davon abhängt.
-- Stellen Sie sicher, dass sich die Fehlerzuordnung der Anwendung nicht geändert hat.
-- Verschieben Sie dauerhafte Routingvorgaben und Anbietereinschränkungen in [Voreinstellungen](../guides/presets.mdx) oder [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx), statt sie in jeder Modellfabrik neu einzurichten.
+- Prüfe die Textgenerierung ohne Streaming.
+- Prüfe Streaming-Abschnitte über denselben Codepfad wie in der Produktion.
+- Prüfe Tool-Aufrufe, falls deine Anwendung davon abhängt.
+- Stelle sicher, dass sich die Fehlerzuordnung der Anwendung nicht geändert hat.
+- Verschiebe dauerhafte Routingvorgaben und Anbietereinschränkungen in [Voreinstellungen](../guides/presets.mdx) oder [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx), statt sie in jeder Modellfabrik neu einzurichten.
 
 ## 4) Checkliste für Vercel AI SDK und Gateway
 
-Gehen Sie diese Punkte durch, bevor Sie den Traffic erhöhen:
+Gehe diese Punkte durch, bevor du den Traffic erhöhst:
 
 - Basis-URL auf `https://api.phaseo.app/v1` aktualisiert.
 - `PHASEO_API_KEY` in jeder zuvor mit dem Vercel-Gateway-Schlüssel verwendeten Laufzeitumgebung eingerichtet.
@@ -111,10 +111,10 @@ Gehen Sie diese Punkte durch, bevor Sie den Traffic erhöhen:
 
 ## 5) Risikoarmer Einführungsplan
 
-1. Stellen Sie die Änderung hinter einem Feature-Flag oder schrittweise bereit.
-2. Beginnen Sie mit internem Traffic oder einem sehr kleinen Anteil des Produktionsverkehrs.
-3. Überwachen Sie Latenz, Fehlerrate sowie Token- und Kostenabweichungen.
-4. Halten Sie beide Konfigurationen mindestens für einen Release-Zeitraum verfügbar.
+1. Stelle die Änderung hinter einem Feature-Flag oder schrittweise bereit.
+2. Beginne mit internem Traffic oder einem sehr kleinen Anteil des Produktionsverkehrs.
+3. Überwache Latenz, Fehlerrate sowie Token- und Kostenabweichungen.
+4. Halte beide Konfigurationen mindestens für einen Release-Zeitraum verfügbar.
 
 ## Validierungsbefehle
 
@@ -125,9 +125,9 @@ curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API
 
 Anschließend:
 
-- Führen Sie den wichtigsten Textgenerierungs-Integrationstest Ihrer Anwendung aus.
-- Führen Sie einen Streamingtest in der Testumgebung aus.
-- Vergleichen Sie die Ausgaben Ihrer wichtigsten Prompts, bevor Sie vollständig umstellen.
+- Führe den wichtigsten Textgenerierungs-Integrationstest deiner Anwendung aus.
+- Führe einen Streamingtest in der Testumgebung aus.
+- Vergleiche die Ausgaben deiner wichtigsten Prompts, bevor du vollständig umstellst.
 
 ## Nächste Schritte
 

@@ -6,16 +6,16 @@ icon: "/icons/brands/anthropic.svg"
 
 # Anthropic Claude Opus 5
 
-Mit diesem Leitfaden führen Sie `anthropic/claude-opus-5` sicher in der Produktion ein.
+Mit diesem Leitfaden führst du `anthropic/claude-opus-5` sicher in der Produktion ein.
 
 Claude Opus 5 ist das aktuelle Opus-Modell für komplexes Reasoning, lang laufende agentische Programmierung und hochautonome Abläufe. Der Preis entspricht weiterhin Opus 4.8. Das Modell unterstützt ein Kontextfenster von einer Million Tokens und bis zu 128.000 Ausgabetokens.
 
 ## Schnelleinstieg für die Migration
 
-1. Ändern Sie die Modell-ID zu `anthropic/claude-opus-5` und lassen Sie die übrige Anfrage unverändert.
-2. Wiederholen Sie Ihre Produktionsauswertungen für Prompts, Tools und strukturierte Ausgaben.
-3. Erfassen Sie Latenz, Tokenverbrauch und Aufgabenkosten für lange Kontexte und hohe Aufwandsstufen neu.
-4. Testen Sie das Modell schrittweise mit Claude Opus 4.8 als Fallback, bevor Sie die Standardroute ändern.
+1. Ändere die Modell-ID zu `anthropic/claude-opus-5` und lass die übrige Anfrage unverändert.
+2. Wiederhole deine Produktionsauswertungen für Prompts, Tools und strukturierte Ausgaben.
+3. Erfasse Latenz, Tokenverbrauch und Aufgabenkosten für lange Kontexte und hohe Aufwandsstufen neu.
+4. Teste das Modell schrittweise mit Claude Opus 4.8 als Fallback, bevor du die Standardroute änderst.
 
 ```json
 {
@@ -37,11 +37,11 @@ Claude Opus 5 ist das aktuelle Opus-Modell für komplexes Reasoning, lang laufen
 - Das Modell ist auf längeres Reasoning, Programmierung und autonome Tool-Workflows ausgelegt.
 - Der Preis bleibt auf dem Niveau von Claude Opus 4.8.
 
-## Was Sie testen sollten
+## Was du testen solltest
 
 ### Prompts und Ausgaben
 
-- Befolgung von Anweisungen bei Ihren längsten System-Prompts.
+- Befolgung von Anweisungen bei deinen längsten System-Prompts.
 - Erfolgsraten strukturierter Ausgaben und Schemas.
 - Antwortlänge und Beendigungsverhalten.
 - Regressionen bei Prompts, die speziell für Claude Opus 4.8 optimiert wurden.
@@ -62,10 +62,10 @@ Claude Opus 5 ist das aktuelle Opus-Modell für komplexes Reasoning, lang laufen
 
 ## Sicherer Rollout
 
-1. Halten Sie Claude Opus 4.8 während der Auswertung als Fallback verfügbar.
-2. Führen Sie repräsentativen Produktions-Traffic parallel aus, bevor Nutzeranfragen bedient werden.
-3. Testen Sie schrittweise nach Workload, statt alle Opus-Routen gleichzeitig umzustellen.
-4. Erhöhen Sie den Anteil erst, wenn Qualität, Latenz, Kosten und Tool-Sicherheit Ihre Ziele erfüllen.
+1. Halte Claude Opus 4.8 während der Auswertung als Fallback verfügbar.
+2. Führe repräsentativen Produktions-Traffic parallel aus, bevor Nutzeranfragen bedient werden.
+3. Teste schrittweise nach Workload, statt alle Opus-Routen gleichzeitig umzustellen.
+4. Erhöhe den Anteil erst, wenn Qualität, Latenz, Kosten und Tool-Sicherheit deine Ziele erfüllen.
 
 ## Quellen
 

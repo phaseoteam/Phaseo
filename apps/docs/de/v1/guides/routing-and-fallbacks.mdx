@@ -4,24 +4,24 @@ description: "So wählt Gateway Anbieter aus und sorgt für zuverlässige Anfrag
 icon: "git-branch"
 ---
 
-Das Phaseo Gateway leitet jede Anfrage an einen Anbieter weiter, der das ausgewählte Modell bereitstellen kann. Wenn ein Anbieter langsam ist, Ratenbegrenzungen ausgibt oder Fehler zurückgibt, kann das Gateway Fallbacks versuchen, damit Ihre Anfragen weiterhin abgeschlossen werden.
+Das Phaseo Gateway leitet jede Anfrage an einen Anbieter weiter, der das ausgewählte Modell bereitstellen kann. Wenn ein Anbieter langsam ist, Ratenbegrenzungen ausgibt oder Fehler zurückgibt, kann das Gateway Fallbacks versuchen, damit deine Anfragen weiterhin abgeschlossen werden.
 
 ## Routing-Modus auswählen
 
-Beginnen Sie mit `balanced`, sofern nicht eine Produktionsanforderung eindeutig wichtiger ist als die anderen.
+Beginne mit `balanced`, sofern nicht eine Produktionsanforderung eindeutig wichtiger ist als die anderen.
 
 | Modus | Verwenden, wenn |
 | --- | --- |
-| `balanced` | Sie eine ausgewogene Mischung aus Preis, Latenz, Durchsatz und Verfügbarkeit möchten. |
+| `balanced` | Du eine ausgewogene Mischung aus Preis, Latenz, Durchsatz und Verfügbarkeit möchtest. |
 | `price` | Niedrigere Anbieterkosten wichtiger sind als eine möglichst kurze Antwortzeit. |
 | `latency` | Ein schneller Antwortbeginn die höchste Priorität hat. |
 | `throughput` | Eine dauerhaft hohe Token-Generierungsgeschwindigkeit am wichtigsten ist. |
 
-Legen Sie den Standard für den Workspace unter **Dashboard -> Einstellungen -> Routing** fest. Verwenden Sie Voreinstellungen, wenn ein Workflow eine engere Anbieter- oder Modellrichtlinie als der Workspace-Standard benötigt.
+Lege den Standard für den Workspace unter **Dashboard -> Einstellungen -> Routing** fest. Verwende Voreinstellungen, wenn ein Workflow eine engere Anbieter- oder Modellrichtlinie als der Workspace-Standard benötigt.
 
 ### Routing-Suffixe für Modelle
 
-Fügen Sie ein Routing-Suffix hinzu, wenn die Modell-ID selbst für diese Anfrage den Optimierungsmodus festlegen soll:
+Füge ein Routing-Suffix hinzu, wenn die Modell-ID selbst für diese Anfrage den Optimierungsmodus festlegen soll:
 
 | Suffix | Routing-Modus |
 | --- | --- |
@@ -33,24 +33,24 @@ Beispielsweise priorisiert `openai/gpt-5-mini:nitro` den Durchsatz. Ein erkannte
 
 ## Routing im Überblick
 
-- Sie senden eine Anfrage mit einer Modell-ID.
+- Du sendest eine Anfrage mit einer Modell-ID.
 - Das Gateway bewertet den Zustand, die Latenz und die Fähigkeiten der Anbieter.
 - Ein Anbieter wird ausgewählt und führt die Anfrage aus.
 
-Prüfen Sie bei der Fehlersuche die Anfrageergebnisse in den Aktivitätsprotokollen und den Antwortmetadaten.
+Prüfe bei der Fehlersuche die Anfrageergebnisse in den Aktivitätsprotokollen und den Antwortmetadaten.
 
 ## Mit dem Auto-Router ein Modell auswählen
 
 Auto Routing ist derzeit eine Alpha-Funktion, die nur für ausgewählte Workspaces verfügbar ist.
 
-Verwenden Sie `phaseo/auto`, wenn sich das Modell an die jeweilige Arbeitslast anpassen soll. Phaseo berücksichtigt zunächst alle geeigneten Textmodelle für den Produktionseinsatz, wendet anschließend die Workspace-Einschränkungen an und erstellt eine auf die Arbeitslast zugeschnittene Auswahlliste:
+Verwende `phaseo/auto`, wenn sich das Modell an die jeweilige Arbeitslast anpassen soll. Phaseo berücksichtigt zunächst alle geeigneten Textmodelle für den Produktionseinsatz, wendet anschließend die Workspace-Einschränkungen an und erstellt eine auf die Arbeitslast zugeschnittene Auswahlliste:
 
-1. Öffnen Sie **Dashboard -> Einstellungen -> Routing -> Auto Routing**.
-2. Wählen Sie aus, ob ausgewogene Leistung, Qualität, Kosten oder Latenz optimiert werden sollen.
-3. Wählen Sie ein Ausgabenprofil: Economy, Standard, Premium oder uneingeschränkt. Diese Profile wenden vor der Bewertung feste Preisobergrenzen für Ein- und Ausgabe an.
-4. Optional können Sie geeignete Modelle mithilfe von Mustern wie `anthropic/*`, `openai/gpt-5.*` oder einer exakten Modell-ID einschränken.
-5. Legen Sie fest, ob Phaseo nach einem wiederholbaren Fehler weitere Modelle in der Rangfolge versuchen darf.
-6. Speichern Sie die Konfiguration.
+1. Öffne **Dashboard -> Einstellungen -> Routing -> Auto Routing**.
+2. Wähle aus, ob ausgewogene Leistung, Qualität, Kosten oder Latenz optimiert werden sollen.
+3. Wähle ein Ausgabenprofil: Economy, Standard, Premium oder uneingeschränkt. Diese Profile wenden vor der Bewertung feste Preisobergrenzen für Ein- und Ausgabe an.
+4. Optional kannst du geeignete Modelle mithilfe von Mustern wie `anthropic/*`, `openai/gpt-5.*` oder einer exakten Modell-ID einschränken.
+5. Lege fest, ob Phaseo nach einem wiederholbaren Fehler weitere Modelle in der Rangfolge versuchen darf.
+6. Speichere die Konfiguration.
 
 Anwendungen können den Router anschließend aktivieren, ohne die Routing-Richtlinie des Workspaces in jede Anfrage zu kopieren:
 
@@ -67,7 +67,7 @@ Das Ziel legt fest, wie stark Modellqualität, Anbieterzuverlässigkeit, Latenz 
 
 | Ziel | Verwenden, wenn |
 | --- | --- |
-| `balanced` | Sie einen praxistauglichen Standard für alle vier Signale möchten. |
+| `balanced` | Du einen praxistauglichen Standard für alle vier Signale möchtest. |
 | `quality` | Die Leistung in relevanten Benchmarks am wichtigsten ist. |
 | `cost` | Der niedrigste geschätzte Ein- und Ausgabe-Tokenpreis am wichtigsten ist. |
 | `latency` | Eine niedrigere aktuelle Anbieter-Latenz am wichtigsten ist. |
@@ -98,14 +98,14 @@ Wenn Modell-Fallbacks im Workspace aktiviert sind, versucht Phaseo bei `429`, `5
 Ein festes Modell aus einer angehängten dynamischen Route hat Vorrang. In diesem Fall vermerken die Anfragedetails die Überschreibung und Auto-Router-Modell-Fallbacks sind für die Anfrage deaktiviert.
 
 <Warning>
-  Ausgabenprofile und Modellmuster steuern die Eignung, garantieren aber keine Qualität. Prüfen Sie die resultierende Modellauswahl anhand Ihrer eigenen Arbeitslasten.
+  Ausgabenprofile und Modellmuster steuern die Eignung, garantieren aber keine Qualität. Prüfe die resultierende Modellauswahl anhand deiner eigenen Arbeitslasten.
 </Warning>
 
 ## Eine Routing-Entscheidung erklären
 
-Öffnen Sie **Dashboard -> Einstellungen -> Nutzung -> Anfrageprotokolle**, wählen Sie eine Anfrage aus und klappen Sie unter **Provider Responses** den Bereich **Routing Observability** auf.
+Öffne **Dashboard -> Einstellungen -> Nutzung -> Anfrageprotokolle**, wähle eine Anfrage aus und klappe unter **Provider Responses** den Bereich **Routing Observability** auf.
 
-Im Anfrageprotokoll sehen Sie:
+Im Anfrageprotokoll siehst du:
 
 - alle bewerteten Anbieter und ihre endgültige Punktzahl
 - den von Phaseo ausgewählten Anbieter und alle Anbieter, die versucht wurden
@@ -147,7 +147,7 @@ Routing-Traces sind begrenzt und enthalten keine Inhalte. Sie umfassen Zahlen un
 
 ## Einen konkreten Anbieter in der Modell-ID auswählen
 
-Verwenden Sie `<provider-id>:<canonical-model-id>`, wenn eine Anfrage ein bestimmtes Anbieter-Modell-Paar verwenden muss:
+Verwende `<provider-id>:<canonical-model-id>`, wenn eine Anfrage ein bestimmtes Anbieter-Modell-Paar verwenden muss:
 
 ```json
 {
@@ -158,7 +158,7 @@ Verwenden Sie `<provider-id>:<canonical-model-id>`, wenn eine Anfrage ein bestim
 
 Der Qualifizierer deaktiviert den anbieterübergreifenden Fallback für diese Anfrage. Modell-Suffixe bleiben Teil der kanonischen Modell-ID, auch bei IDs wie `baseten:google/gemma-4-26b-a4b:free`.
 
-Unter [Anbieterqualifizierte Modell-IDs](./provider-qualified-models.mdx) finden Sie die vollständige Syntax, die Validierung kostenloser Routen, die Routing-Priorität, Aliase, Fehlercodes und Anfragebeispiele.
+Unter [Anbieterqualifizierte Modell-IDs](./provider-qualified-models.mdx) findest du die vollständige Syntax, die Validierung kostenloser Routen, die Routing-Priorität, Aliase, Fehlercodes und Anfragebeispiele.
 
 ## Routing und Fallbacks steuern
 
@@ -166,7 +166,7 @@ Die aktuellen öffentlichen Routing- und Fallback-Steuerungen sind bewusst expli
 
 ### Voreinstellungen begrenzen den Fallback-Pool
 
-Unter **Dashboard -> Einstellungen -> Voreinstellungen** können Sie Folgendes festlegen:
+Unter **Dashboard -> Einstellungen -> Voreinstellungen** kannst du Folgendes festlegen:
 
 - erlaubte Modelle
 - Listen erlaubter Anbieter
@@ -192,7 +192,7 @@ Unter **Dashboard -> Einstellungen -> BYOK** können Teams festlegen, ob bei ein
 
 ### Dynamische Routen ordnen API-Schlüsseln Richtlinien zu
 
-Erstellen Sie unter **Dashboard -> Einstellungen -> Routing** eine dynamische Route, wenn verschiedene API-Schlüssel oder Anfrageklassen unterschiedliche Anbieterregeln benötigen. Eine Route kann:
+Erstelle unter **Dashboard -> Einstellungen -> Routing** eine dynamische Route, wenn verschiedene API-Schlüssel oder Anfrageklassen unterschiedliche Anbieterregeln benötigen. Eine Route kann:
 
 - anhand verschachtelter Felder im Anfrage-Body, Anfrage-Headern, benutzerdefinierten Metadaten, Endpunkt, Modell oder Sitzungs-ID verzweigen
 - Traffic für A/B-Tests und schrittweise Rollouts prozentual aufteilen
@@ -219,7 +219,7 @@ Benutzerdefinierte Metadaten sind auf den OpenAI-kompatiblen Text-Inferenzoberfl
 
 ## Fallback-Verhalten
 
-Wenn ein Anbieter Fehler oder Ratenbegrenzungen zurückgibt, kann das Gateway es erneut versuchen oder die Anfrage an einen anderen Anbieter weiterleiten, der dasselbe Modell unterstützt. Behandeln Sie Antworten mit `429` und `5xx` weiterhin mit exponentiellem Backoff.
+Wenn ein Anbieter Fehler oder Ratenbegrenzungen zurückgibt, kann das Gateway es erneut versuchen oder die Anfrage an einen anderen Anbieter weiterleiten, der dasselbe Modell unterstützt. Behandle Antworten mit `429` und `5xx` weiterhin mit exponentiellem Backoff.
 
 Modellknoten einer dynamischen Route können außerdem eine geordnete Liste von Fallback-Modellen definieren. Phaseo schöpft zunächst alle geeigneten Anbieter für das ausgewählte Modell aus. Ist die resultierende Antwort wiederholbar (`429`, `500`, `502`, `503` oder `504`), führt das Gateway die vollständige Richtlinien- und Anbieterauswahl für jedes Fallback-Modell in der angegebenen Reihenfolge erneut aus. Clientfehler werden sofort zurückgegeben und führen nicht zu einem Modellwechsel.
 
@@ -236,7 +236,7 @@ Cache-bewusstes Routing ist für Textgenerierungsendpunkte standardmäßig aktiv
 
 Wenn `session_id` vorhanden ist, wird die Cache-Affinität an die Sitzung statt nur an den Anfangskontext gebunden. Phaseo aktualisiert sie, sobald ein weiterer Cache-Lesezugriff beobachtet wird, und behält sie bis zu 24 Stunden Sitzungsaktivität bei. Schutzschalter und Richtlinienfilter haben immer Vorrang vor der Affinität.
 
-Sie können die Funktion für eine Anfrage deaktivieren, ohne die Workspace- oder dynamischen Routing-Standards zu ändern:
+Du kannst die Funktion für eine Anfrage deaktivieren, ohne die Workspace- oder dynamischen Routing-Standards zu ändern:
 
 ```json
 {
@@ -248,7 +248,7 @@ Sie können die Funktion für eine Anfrage deaktivieren, ohne die Workspace- ode
 }
 ```
 
-Wenn die Cache-Affinität für den Kontext erhalten bleiben, die Sitzungs-ID für eine Anfrage aber ignoriert werden soll, verwenden Sie:
+Wenn die Cache-Affinität für den Kontext erhalten bleiben, die Sitzungs-ID für eine Anfrage aber ignoriert werden soll, verwende:
 
 ```json
 {
@@ -262,18 +262,18 @@ Wenn die Cache-Affinität für den Kontext erhalten bleiben, die Sitzungs-ID fü
 
 ## Hinweise zu BYOK
 
-Verwenden Sie BYOK, wenn Sie Phaseo-Routing und Beobachtbarkeit nutzen, der ausgewählte Anbieter die Modellnutzung aber Ihrem eigenen Konto in Rechnung stellen soll.
+Verwende BYOK, wenn du Phaseo-Routing und Beobachtbarkeit nutzt, der ausgewählte Anbieter die Modellnutzung aber deinem eigenen Konto in Rechnung stellen soll.
 
 - Für die ersten 250.000 abgeschlossenen BYOK-Anfragen pro UTC-Kalendermonat fällt keine Phaseo-Servicegebühr an.
 - Danach berechnet Phaseo 2,5 % der entsprechenden Anbieterkosten.
-- Halten Sie mindestens 1 $ Phaseo-Guthaben bereit. Damit werden verwaltete Fallbacks und Gebühren nach Überschreiten des Freikontingents abgedeckt; Anbietergebühren werden weiterhin direkt über Ihr Anbieterkonto abgerechnet.
-- Kontingente, Datenrichtlinien, Modellzugriff und Kontobeschränkungen Ihres Anbieters gelten weiterhin.
+- Halte mindestens 1 $ Phaseo-Guthaben bereit. Damit werden verwaltete Fallbacks und Gebühren nach Überschreiten des Freikontingents abgedeckt; Anbietergebühren werden weiterhin direkt über dein Anbieterkonto abgerechnet.
+- Kontingente, Datenrichtlinien, Modellzugriff und Kontobeschränkungen deines Anbieters gelten weiterhin.
 
-Anbieterzugangsdaten werden vor der Speicherung mit AES-256-GCM verschlüsselt und an Workspace und Anbieter gebunden. Beschränken Sie jeden Schlüssel auf die Modelle und Phaseo-API-Schlüssel, die ihn benötigen. Deaktivieren Sie verwaltete Fallbacks, wenn eine Anfrage niemals Phaseo-Guthaben nutzen darf.
+Anbieterzugangsdaten werden vor der Speicherung mit AES-256-GCM verschlüsselt und an Workspace und Anbieter gebunden. Beschränke jeden Schlüssel auf die Modelle und Phaseo-API-Schlüssel, die ihn benötigen. Deaktiviere verwaltete Fallbacks, wenn eine Anfrage niemals Phaseo-Guthaben nutzen darf.
 
 ## Was protokolliert werden sollte
 
-Protokollieren Sie in Produktionslasten Anfrage-IDs, Antwortstatuscodes und Modell-IDs. So können Sie Fehler zuordnen und beim Debugging das Routing-Verhalten überprüfen.
+Protokolliere in Produktionslasten Anfrage-IDs, Antwortstatuscodes und Modell-IDs. So kannst du Fehler zuordnen und beim Debugging das Routing-Verhalten überprüfen.
 
 ## Zugehörige Anleitungen
 
