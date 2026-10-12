@@ -1,7 +1,7 @@
 ---
 title: "Cursor"
 icon: "/icons/brands/cursor.svg"
-description: "OpenAI API key और Base URL override setting के ज़रिए Cursor को Phaseo से जोड़ें।"
+description: "Cursor की OpenAI API कुंजी और Base URL ओवरराइड सेटिंग्स के ज़रिए उसे Phaseo से जोड़ें।"
 ---
 
 इस गाइड से समर्थित Cursor चैट मॉडल को Phaseo से रूट करें। Phaseo CLI से समर्पित कुंजी बनाएँ और निरस्त करें, फिर Cursor में सेटअप पूरा करें; या अपनी Phaseo कुंजी देकर वही मैन्युअल सेटिंग्स अपनाएँ।
@@ -13,25 +13,25 @@ phaseo login
 phaseo cursor --model openai/gpt-5.6-terra
 ```
 
-Setup बिना expiry वाली `Phaseo CLI: Cursor API Key` बनाकर नीचे की settings दिखाती है। यह Cursor के private credential store को नहीं बदलती।
+सेटअप कभी समाप्त न होने वाली `Phaseo CLI: Cursor API Key` बनाता है और नीचे दी गई सेटिंग्स दिखाता है। यह Cursor के निजी क्रेडेंशियल स्टोर में बदलाव नहीं करता।
 
 ## Cursor कॉन्फ़िगर करें
 
 1. **Cursor Settings** खोलें।
 2. **Models** चुनें।
-3. **OpenAI API Key** section ढूँढकर उसे चालू करें।
-4. Dedicated key copy करें:
+3. **OpenAI API Key** अनुभाग ढूँढें और उसे चालू करें।
+4. समर्पित कुंजी कॉपी करें:
 
 ```bash
 phaseo integrations credential cursor
 ```
 
-5. Cursor के OpenAI API key field में key paste करें।
+5. कुंजी को Cursor के OpenAI API कुंजी फ़ील्ड में पेस्ट करें।
 6. **Override OpenAI Base URL** चालू करें।
-7. आखिर में slash के बिना `https://api.phaseo.app/v1` दर्ज करें।
-8. जिस Phaseo model का उपयोग करना है उसे जोड़ें या चालू करें।
+7. अंत में स्लैश लगाए बिना `https://api.phaseo.app/v1` दर्ज करें।
+8. जिस Phaseo मॉडल का उपयोग करना है, उसे जोड़ें या चालू करें।
 
-| Cursor field | मान |
+| Cursor फ़ील्ड | मान |
 | --- | --- |
 | OpenAI API Key | `phaseo integrations credential cursor` का आउटपुट |
 | Override OpenAI Base URL | `https://api.phaseo.app/v1` |
@@ -40,17 +40,17 @@ phaseo integrations credential cursor
 Cursor के कस्टम-प्रदाता नियंत्रण अभी हर प्रदाता के लिए अलग होने के बजाय सभी पर लागू होते हैं। मॉडल का नाम कॉन्फ़िगर किए गए एंडपॉइंट को भेजा जाता है, जबकि सक्षम API कुंजी और Base URL अनुरोध का गंतव्य तय करते हैं।
 
 <Warning>
-Cursor अभी OpenAI Base URL override को व्यापक रूप से लागू करता है। Phaseo चालू होने पर Cursor-hosted models विफल हों, तो उन पर वापस जाने से पहले override बंद करें। Built-in model names से टकराने वाले या OpenAI-family routing में फिट न होने वाले custom IDs भी Cursor अस्वीकार कर सकता है।
+Cursor अभी OpenAI Base URL ओवरराइड को व्यापक रूप से लागू करता है। अगर Phaseo चालू रहते हुए Cursor पर होस्ट किए गए मॉडल विफल हों, तो उन पर वापस जाने से पहले ओवरराइड बंद करें। Cursor ऐसे कस्टम ID भी अस्वीकार कर सकता है जो बिल्ट-इन मॉडल नामों से टकराते हों या उसकी OpenAI-परिवार वाली रूटिंग में फिट न होते हों।
 </Warning>
 
 ## जाँचें
 
-1. Phaseo key और Base URL override चालू रखें।
-2. Cursor के model picker में configured model चुनें।
-3. नया chat शुरू करें और `PHASEO_CURSOR_OK` जवाब देने को कहें।
-4. Phaseo activity या logs में request दिखने की पुष्टि करें।
+1. Phaseo कुंजी और Base URL ओवरराइड चालू रखें।
+2. Cursor के मॉडल पिकर में कॉन्फ़िगर किया गया मॉडल चुनें।
+3. नई चैट शुरू करें और उससे `PHASEO_CURSOR_OK` जवाब देने को कहें।
+4. पुष्टि करें कि अनुरोध Phaseo की गतिविधि या लॉग में दिखता है।
 
-Cursor का मानक चैट पथ मुख्य संगतता लक्ष्य है। टैब पूरा करने जैसी सुविधाएँ, जो Cursor-विशिष्ट मॉडलों का उपयोग करती हैं, Cursor के अपने इन्फ़्रास्ट्रक्चर पर निर्भर हो सकती हैं।
+Cursor का मानक चैट पथ ही संगतता का प्रासंगिक लक्ष्य है। टैब कंप्लीशन सहित जो सुविधाएँ Cursor के विशेष मॉडलों का उपयोग करती हैं, वे Cursor के अपने इन्फ़्रास्ट्रक्चर का उपयोग करती रह सकती हैं।
 
 ## हटाएँ
 
@@ -60,28 +60,28 @@ Cursor का मानक चैट पथ मुख्य संगतता �
 phaseo integrations remove cursor
 ```
 
-हटाने पर Cursor का secure credential storage अपने-आप साफ़ नहीं होता। Key configured दिखे तो Cursor की Models settings से हटाएँ।
+हटाने से Cursor का सुरक्षित क्रेडेंशियल स्टोरेज अपने-आप साफ़ नहीं होता। अगर कुंजी अब भी कॉन्फ़िगर की हुई दिखे, तो उसे Cursor की Models सेटिंग्स से हटाएँ।
 
 ## समस्या निवारण
 
 ### Cursor पर होस्ट किए गए मॉडल काम करना बंद कर देते हैं
 
-Cursor-hosted model चुनने से पहले **Override OpenAI Base URL** बंद करें। Cursor अभी हर model के लिए custom Base URL अलग नहीं रखता।
+Cursor पर होस्ट किया गया मॉडल चुनने से पहले **Override OpenAI Base URL** बंद करें। Cursor अभी हर मॉडल के लिए कस्टम Base URL अलग नहीं रखता।
 
 ### मॉडल अस्वीकार होता है
 
-Cursor द्वारा OpenAI-family custom model के रूप में स्वीकार किया जाने वाला Phaseo model आज़माएँ। Built-in catalog से टकराने वाले IDs अस्वीकार हो सकते हैं, और कुछ releases provider prefix वाले IDs नहीं लेते।
+ऐसा Phaseo मॉडल आज़माएँ जिसे Cursor OpenAI-परिवार के कस्टम मॉडल के रूप में स्वीकार करता हो। Cursor अपने बिल्ट-इन कैटलॉग से टकराने वाले ID अस्वीकार कर सकता है, और हो सकता है कि हर रिलीज़ में प्रदाता प्रीफ़िक्स वाले मॉडल ID स्वीकार न किए जाएँ।
 
 ### सत्यापन बटन नहीं दिखता
 
-कुछ Cursor versions अलग Verify action के बिना key save करते हैं। Key और Base URL दर्ज करें, फिर नए chat में जाँचें।
+Cursor की कुछ रिलीज़ अलग Verify कार्रवाई के बिना ही कुंजी सहेज लेती हैं। कुंजी और Base URL दर्ज करें, फिर नई चैट में उनकी जाँच करें।
 
 ### प्रमाणीकरण विफल होता है
 
-`phaseo integrations credential cursor` फिर चलाएँ, Cursor में सहेजी value बदलें और सुनिश्चित करें कि Base URL ठीक `https://api.phaseo.app/v1` हो।
+`phaseo integrations credential cursor` फिर से चलाएँ, Cursor में सहेजा गया मान बदलें और सुनिश्चित करें कि Base URL ठीक `https://api.phaseo.app/v1` हो।
 
 ## संबंधित विषय
 
-- [Cursor API key दस्तावेज़](https://docs.cursor.com/settings/api-keys)
+- [Cursor API कुंजी दस्तावेज़](https://docs.cursor.com/settings/api-keys)
 - [कोडिंग एजेंट](./coding-assistants.mdx)
 - [मॉडल](../../api-reference/endpoint/models.mdx)

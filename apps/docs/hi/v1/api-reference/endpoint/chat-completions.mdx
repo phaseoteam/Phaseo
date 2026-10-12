@@ -1,12 +1,12 @@
 ---
-title: "चैट completion बनाएँ"
-sidebarTitle: "चैट completion बनाएँ"
+title: "चैट कंप्लीशन बनाएँ"
+sidebarTitle: "चैट कंप्लीशन बनाएँ"
 openapi: "/hi/openapi/v1/openapi.localized.yaml POST /chat/completions"
-description: "OpenAI-संगत chat endpoint से chat completions जनरेट करें।"
+description: "OpenAI-संगत चैट एंडपॉइंट से चैट-आधारित कंप्लीशन जनरेट करें।"
 ---
 ## सर्वर टूल
 
-`/v1/chat/completions` सामान्य function tools और Gateway द्वारा प्रबंधित इन server tools को सपोर्ट करता है:
+`/v1/chat/completions` सामान्य फ़ंक्शन टूल और Gateway द्वारा प्रबंधित इन सर्वर टूल का समर्थन करता है:
 
 - `gateway:datetime`
 - `phaseo:web_search`
@@ -36,7 +36,7 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-सर्वर टूल उपयोग होने पर usage में ये शामिल होते हैं:
+सर्वर टूल उपयोग होने पर उपयोग विवरण में ये शामिल होते हैं:
 
 ```json
 {
@@ -55,4 +55,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 ## स्ट्रीमिंग नोट
 
-`stream: true` भी समर्थित है। Gateway-प्रबंधित server tools के लिए Phaseo upstream tool-call turn को materialize करके loop जारी रख सकता है और फिर synthetic stream दोबारा भेज सकता है।
+`stream: true` भी समर्थित है। Gateway द्वारा प्रबंधित सर्वर टूल के लिए Phaseo अपस्ट्रीम टूल कॉल वाला टर्न तैयार कर सकता है, और लूप जारी रखने के बाद सिंथेटिक स्ट्रीम दोबारा भेज सकता है।

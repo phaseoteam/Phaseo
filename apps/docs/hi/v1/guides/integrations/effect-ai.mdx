@@ -1,14 +1,14 @@
 ---
 title: "Effect AI SDK"
 icon: "square-function"
-description: "Effect वाली TypeScript applications से Phaseo उपयोग करें।"
+description: "Effect वाले TypeScript ऐप्लिकेशन से Phaseo इस्तेमाल करें।"
 ---
 
-आपका app पहले से Effect उपयोग करता हो और Effect service या workflow से Phaseo चाहिए, तो यह गाइड उपयोग करें।
+अगर आपका ऐप्लिकेशन पहले से Effect इस्तेमाल करता है और आप Phaseo को किसी Effect सेवा या वर्कफ़्लो के पीछे रखना चाहते हैं, तो यह गाइड इस्तेमाल करें।
 
 ## स्थिति
 
-Phaseo OpenAI-संगत HTTP endpoints देता है। Effect के first-party provider packages तब उपयोगी हैं जब वे आवश्यक provider को सीधे support करते हों; installed Effect OpenAI package में Base URL option न हो, तो Effect HTTP client से Phaseo call करें या [OpenAI SDK](./openai-sdk.mdx) को अपनी Effect layer में wrap करें।
+Phaseo OpenAI-संगत HTTP एंडपॉइंट उपलब्ध कराता है। Effect के अपने प्रदाता पैकेज तब उपयोगी हैं जब वे आपकी ज़रूरत वाले प्रदाता का सीधे समर्थन करते हों; अगर इंस्टॉल किया गया Effect OpenAI पैकेज बेस URL का विकल्प नहीं देता, तो Effect के HTTP क्लाइंट के ज़रिए Phaseo को कॉल करें या [OpenAI SDK](./openai-sdk.mdx) को अपनी Effect लेयर में लपेटें।
 
 ## इंस्टॉल करें
 
@@ -46,7 +46,7 @@ const runnable = generate.pipe(Effect.provide(FetchHttpClient.layer));
 
 ## OpenAI SDK को Effect सेवा में लपेटें
 
-कहीं और official OpenAI SDK उपयोग करते हों, तो Phaseo configuration एक ही layer में रखें:
+अगर आप कहीं और आधिकारिक OpenAI SDK पहले से इस्तेमाल करते हैं, तो Phaseo कॉन्फ़िगरेशन को एक ही लेयर में रखें:
 
 ```ts
 import OpenAI from "openai";
@@ -64,10 +64,10 @@ const makeClient = Effect.gen(function* () {
 
 ## नोट्स
 
-- OpenAI-संगत calls के लिए `https://api.phaseo.app/v1` उपयोग करें।
-- Model IDs को Phaseo format में रखें, जैसे `openai/gpt-5-nano`।
-- पूरे app में साझा provider abstraction चाहिए, तो custom Effect layer उपयोग करें।
-- उत्पादन में लागू करने से पहले, अपने Effect पैकेज के सटीक संस्करणों के साथ स्ट्रीमिंग और टूल कॉल की जाँच करें।
+- OpenAI-संगत कॉल के लिए `https://api.phaseo.app/v1` इस्तेमाल करें।
+- मॉडल ID को Phaseo फ़ॉर्मैट में रखें, जैसे `openai/gpt-5-nano`।
+- जब आप अपने बाकी ऐप्लिकेशन में प्रदाता-शैली का एक साझा एब्स्ट्रैक्शन चाहते हों, तब कस्टम Effect लेयर इस्तेमाल करें।
+- प्रोडक्शन रोलआउट से पहले अपने Effect पैकेज के सटीक संस्करणों के साथ स्ट्रीमिंग और टूल कॉल की जाँच करें।
 
 ## संबंधित विषय
 

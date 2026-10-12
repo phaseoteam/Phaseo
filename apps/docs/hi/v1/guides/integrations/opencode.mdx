@@ -1,28 +1,28 @@
 ---
 title: "OpenCode"
 icon: "/icons/brands/opencode.svg"
-description: "कस्टम OpenAI-संगत provider के ज़रिए OpenCode को Phaseo Gateway से जोड़ें।"
+description: "कस्टम OpenAI-संगत प्रदाता के ज़रिए OpenCode को Phaseo Gateway से जोड़ें।"
 ---
 
-OpenCode कस्टम OpenAI-संगत provider के ज़रिए Phaseo को call कर सकता है। जब आप OpenCode के model selection, usage और routing को एक Phaseo API key से चलाना चाहें, तो यह सेटअप उपयोग करें।
+OpenCode कस्टम OpenAI-संगत प्रदाता के ज़रिए Phaseo को कॉल कर सकता है। जब आप चाहते हैं कि OpenCode में मॉडल चयन, उपयोग और रूटिंग एक ही Phaseo API कुंजी से हों, तब यह सेटअप इस्तेमाल करें।
 
 ## 1) OpenCode कॉन्फ़िगर करें
 
-OpenCode को उसके आधिकारिक release से install करें। फिर Phaseo CLI से global provider जोड़ें, सभी संगत Phaseo models sync करें और OpenCode के credential store में dedicated key सहेजें:
+OpenCode को उसकी आधिकारिक रिलीज़ से इंस्टॉल करें, फिर Phaseo CLI से एक ग्लोबल प्रदाता जोड़ें, सभी संगत Phaseo मॉडल सिंक करें और OpenCode के क्रेडेंशियल स्टोर में एक समर्पित कुंजी सहेजें:
 
 ```bash
 phaseo opencode --model openai/gpt-5.6-terra
 ```
 
-यह command बिना expiry वाली `Phaseo CLI: OpenCode API Key` बनाता है, OpenCode की असंबंधित settings और credentials को सुरक्षित रखता है और `--dry-run` support करता है। मौजूदा global `opencode.jsonc` हो तो उसे update करता है; अन्यथा `~/.config/opencode/opencode.json` उपयोग करता है।
+यह कमांड कभी समाप्त न होने वाली `Phaseo CLI: OpenCode API Key` बनाता है, OpenCode की असंबंधित सेटिंग्स और क्रेडेंशियल को सुरक्षित रखता है और `--dry-run` का समर्थन करता है। मौजूदा ग्लोबल `opencode.jsonc` होने पर यह उसे अपडेट करता है; अन्यथा `~/.config/opencode/opencode.json` इस्तेमाल करता है।
 
-केवल चुने गए model को configure करने के लिए `--catalog default` उपयोग करें।
+केवल चुने गए मॉडल को कॉन्फ़िगर करने के लिए `--catalog default` इस्तेमाल करें।
 
-CLI OS credential store में अपनी एक copy भी रखता है। `phaseo integrations remove opencode` चलाने पर key revoke हो जाती है।
+CLI, OS के क्रेडेंशियल स्टोर में अपनी एक प्रति भी रखता है और `phaseo integrations remove opencode` चलाने पर कुंजी रद्द कर देता है।
 
 ## मैन्युअल कॉन्फ़िगरेशन
 
-अपने project या OpenCode की global config में `opencode.json` बनाएँ या update करें:
+अपने प्रोजेक्ट में `opencode.json` बनाएँ या अपडेट करें, या OpenCode का ग्लोबल कॉन्फ़िगरेशन अपडेट करें:
 
 ```json
 {
@@ -52,13 +52,13 @@ CLI OS credential store में अपनी एक copy भी रखता �
 }
 ```
 
-OpenCode में जिन Phaseo model IDs का उपयोग करना है, उनसे मेल कराने के लिए `models` object में models जोड़ें या हटाएँ।
+OpenCode में आप जिन Phaseo मॉडल ID का उपयोग करना चाहते हैं, उनसे मेल कराने के लिए `models` ऑब्जेक्ट में मॉडल जोड़ें या हटाएँ।
 
 ## 2) OpenCode शुरू करें
 
-Config edit करने के बाद OpenCode restart करें, फिर `/models` से Phaseo model चुनें।
+कॉन्फ़िगरेशन बदलने के बाद OpenCode रीस्टार्ट करें, फिर `/models` से Phaseo मॉडल चुनें।
 
-बाद में केवल Phaseo provider हटाने के लिए यह चलाएँ:
+बाद में केवल Phaseo प्रदाता हटाने के लिए यह चलाएँ:
 
 ```bash
 phaseo integrations remove opencode
@@ -66,10 +66,10 @@ phaseo integrations remove opencode
 
 ## जाँच
 
-- File-editing workflows उपयोग करने से पहले एक छोटा prompt चलाएँ।
-- Model reject हो तो [Models endpoint](../../api-reference/endpoint/models.mdx) में exact ID जाँचें।
-- Authentication विफल हो तो `phaseo opencode` फिर चलाएँ और `opencode auth list` जाँचें।
+- फ़ाइल संपादन वाले वर्कफ़्लो इस्तेमाल करने से पहले एक छोटा प्रॉम्प्ट चलाएँ।
+- अगर कोई मॉडल अस्वीकार होता है, तो [मॉडल एंडपॉइंट](../../api-reference/endpoint/models.mdx) से सटीक ID की पुष्टि करें।
+- अगर प्रमाणीकरण विफल होता है, तो `phaseo opencode` दोबारा चलाएँ और `opencode auth list` जाँचें।
 
 ## दस्तावेज़ संदर्भ जोड़ें
 
-Session के दौरान OpenCode को Phaseo docs पढ़ने देने के लिए [Docs MCP](./docs-mcp.mdx) server भी जोड़ें।
+सत्र के दौरान OpenCode को Phaseo के दस्तावेज़ पढ़ने देने के लिए [Docs MCP](./docs-mcp.mdx) सर्वर भी जोड़ें।

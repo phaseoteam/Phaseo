@@ -1,18 +1,18 @@
 ---
 icon: "scan-text"
-title: "Document images पार्स करें"
-description: "Cohere Parse v5.0 से document images का क्रमबद्ध text, tables, images और layout metadata निकालें।"
+title: "दस्तावेज़ इमेज पार्स करें"
+description: "Cohere Parse v5.0 से दस्तावेज़ इमेज का क्रमबद्ध टेक्स्ट, टेबल, इमेज और लेआउट मेटाडेटा निकालें।"
 ---
 
-साधारण OCR से अधिक की ज़रूरत हो, तो Parse endpoint उपयोग करें। यह pages का क्रम बनाए रखता है और Markdown या text, image तथा table के structured blocks लौटा सकता है।
+जब आपको साधारण OCR से अधिक चाहिए, तब Parse एंडपॉइंट इस्तेमाल करें। यह पेजों का क्रम बनाए रखता है और Markdown या फिर टेक्स्ट, इमेज और टेबल के संरचित ब्लॉक लौटा सकता है।
 
 <Warning>
-  Cohere का public Parse API अभी केवल image URLs और base64 image data URIs स्वीकार करता है। भेजने से पहले PDF pages को images में बदलें। हर image 20 MB, 50 megapixels या decode होने के बाद 200 MB से बड़ी नहीं होनी चाहिए।
+  Cohere का सार्वजनिक Parse API अभी केवल इमेज URL और base64 इमेज डेटा URI स्वीकार करता है। भेजने से पहले PDF पेजों को इमेज में बदलें। हर इमेज 20 MB, 50 मेगापिक्सल या डिकोड होने के बाद 200 MB से बड़ी नहीं होनी चाहिए।
 </Warning>
 
 ## Markdown में पार्स करें
 
-Markdown में पढ़ने का क्रम बना रहता है, tables HTML के रूप में आती हैं और पहचानी गई images पेज के metadata से जुड़ती हैं।
+Markdown पढ़ने का क्रम बनाए रखता है, टेबल को HTML के रूप में इनलाइन करता है और पहचानी गई इमेज को पेज के मेटाडेटा से जोड़ता है।
 
 <CodeGroup>
 ```bash cURL
@@ -73,6 +73,6 @@ print(response.json()["pages"][0]["markdown"]["content"])
 
 ## संरचित ब्लॉक लौटाएँ
 
-`output_format` को `blocks` सेट करें, ताकि क्रमबद्ध text, image और table regions मिलें। उपलब्ध होने पर image और table blocks में pixel और normalized bounding boxes शामिल होते हैं।
+क्रमबद्ध टेक्स्ट, इमेज और टेबल क्षेत्र पाने के लिए `output_format` को `blocks` पर सेट करें। उपलब्ध होने पर इमेज और टेबल ब्लॉक में पिक्सेल और सामान्यीकृत बाउंडिंग बॉक्स शामिल होते हैं।
 
-Parse usage प्रति page मापा जाता है। Provider के billed pages बताने पर response में Cohere metadata और normalized `usage.input_pages` value शामिल होती है। Cohere अभी evaluation के लिए rate-limited API access मुफ़्त देता है और उसने Parse की production दर प्रकाशित नहीं की है।
+Parse का उपयोग प्रति पेज मापा जाता है। जब प्रदाता बिल किए गए पेजों की संख्या बताता है, तब प्रतिक्रिया में Cohere का मेटाडेटा और सामान्यीकृत `usage.input_pages` मान शामिल होता है। Cohere अभी मूल्यांकन के लिए दर-सीमित API एक्सेस मुफ़्त देता है और उसने प्रोडक्शन उपयोग के लिए Parse API की दर प्रकाशित नहीं की है।

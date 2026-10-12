@@ -1,10 +1,10 @@
 ---
 title: "LiteLLM"
 icon: "route"
-description: "LiteLLM के पीछे Phaseo उपयोग करें या LiteLLM calls को Phaseo के ज़रिए route करें।"
+description: "LiteLLM के पीछे Phaseo इस्तेमाल करें या LiteLLM कॉल को Phaseo के ज़रिए रूट करें।"
 ---
 
-अगर आप LiteLLM proxy, budgets या local router पर निर्भर हैं लेकिन Phaseo models, analytics और server tools चाहते हैं, तो LiteLLM के साथ Phaseo उपयोग करें।
+अगर आप पहले से LiteLLM के प्रॉक्सी, बजट या लोकल राउटर पर निर्भर हैं, लेकिन उसके पीछे Phaseo की मॉडल कवरेज, एनालिटिक्स और सर्वर टूल चाहते हैं, तो LiteLLM इस्तेमाल करें।
 
 ## Python से सीधे कॉल करें
 
@@ -26,11 +26,11 @@ response = completion(
 print(response.choices[0].message.content)
 ```
 
-OpenAI-compatible endpoints के लिए LiteLLM आम तौर पर provider prefix `openai/` उपयोग करता है। Phaseo model ID `openai/gpt-5-nano` ही रहता है, इसलिए LiteLLM model string `openai/openai/gpt-5-nano` दिख सकती है।
+OpenAI-संगत एंडपॉइंट के लिए LiteLLM आम तौर पर `openai/` प्रदाता प्रीफ़िक्स इस्तेमाल करता है। Phaseo मॉडल ID `openai/gpt-5-nano` ही रहता है, इसलिए LiteLLM मॉडल स्ट्रिंग `openai/openai/gpt-5-nano` जैसी दिख सकती है।
 
 ## प्रॉक्सी कॉन्फ़िगरेशन
 
-अगर app code में LiteLLM provider prefix नहीं रखना चाहते, तो model alias उपयोग करें:
+अगर आप नहीं चाहते कि ऐप्लिकेशन कोड में LiteLLM प्रदाता प्रीफ़िक्स शामिल हो, तो मॉडल उपनाम इस्तेमाल करें:
 
 ```yaml
 model_list:
@@ -41,16 +41,16 @@ model_list:
       api_base: https://api.phaseo.app/v1
 ```
 
-फिर LiteLLM proxy को `model: "phaseo-gpt-5-nano"` के साथ call करें।
+फिर LiteLLM प्रॉक्सी को `model: "phaseo-gpt-5-nano"` के साथ कॉल करें।
 
 ## नोट
 
-- Production में model names को readable रखने के लिए LiteLLM aliases को प्राथमिकता दें।
-- Phaseo server tools उपयोग करते हों, तो LiteLLM का exact route test करें; कुछ proxy layers अज्ञात tool types को normalize या drop कर देते हैं।
-- तय करें कि pricing के लिए LiteLLM, Phaseo या दोनों system of record होंगे।
+- प्रोडक्शन में मॉडल के नाम पढ़ने में आसान रहें, इसके लिए LiteLLM उपनामों को प्राथमिकता दें।
+- अगर आप Phaseo सर्वर टूल इस्तेमाल करते हैं, तो LiteLLM का सटीक रूट जाँचें, क्योंकि कुछ प्रॉक्सी परतें अज्ञात टूल टाइप को नॉर्मलाइज़ कर देती हैं या हटा देती हैं।
+- मूल्य निर्धारण के लिए तय करें कि आपके रिकॉर्ड का आधिकारिक स्रोत LiteLLM होगा, Phaseo होगा या दोनों।
 
 ## संबंधित
 
 - [OpenAI SDK](./openai-sdk.mdx)
-- [Server tools](../server-tools/index.mdx)
-- [Pricing](../../api-reference/endpoint/pricing-calculate.mdx)
+- [सर्वर टूल](../server-tools/index.mdx)
+- [मूल्य निर्धारण](../../api-reference/endpoint/pricing-calculate.mdx)

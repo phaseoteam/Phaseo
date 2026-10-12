@@ -1,10 +1,10 @@
 ---
 icon: "layers"
 title: "स्ट्रीम आइटम"
-description: "Go agent runs से text, reasoning, tool और provider item events प्राप्त करें।"
+description: "Go एजेंट रन से टेक्स्ट, रीज़निंग, टूल और प्रदाता आइटम इवेंट प्राप्त करें।"
 ---
 
-Live agent interfaces के लिए `Stream` replay की जा सकने वाली event sequence देता है। Text deltas सबसे आसान हैं; पूरी event stream में reasoning, provider items, tool progress, lifecycle changes और final response भी शामिल हैं।
+`Stream` लाइव एजेंट इंटरफ़ेस के लिए दोबारा चलाया जा सकने वाला इवेंट क्रम देता है। टेक्स्ट डेल्टा पढ़ना सबसे आसान है; पूरी इवेंट स्ट्रीम में रीज़निंग, प्रदाता आइटम, टूल की प्रगति, जीवनचक्र के बदलाव और अंतिम प्रतिक्रिया भी शामिल होती है।
 
 ```go
 stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
@@ -26,7 +26,7 @@ result, err := stream.Result()
 ```
 
 <Note>
-Go अभी provider items को बंद typed union के बजाय `AgentEvent` के generic details map से दिखाता है। `event.Type` के आधार पर switch करें, UI boundary पर item payload validate करें और future compatibility के लिए unknown-event fallback रखें।
+Go अभी प्रदाता आइटम को बंद टाइप्ड आइटम यूनियन के बजाय `AgentEvent` के सामान्य विवरण मैप के ज़रिए दिखाता है। `event.Type` के आधार पर स्विच करें, अपने UI की सीमा पर आइटम पेलोड सत्यापित करें और भविष्य के साथ संगतता के लिए अज्ञात इवेंट का फ़ॉलबैक रखें।
 </Note>
 
-Run पूरा होने के बाद event history दोबारा चलाया जा सकता है। इससे अलग consumers text दिखा सकते हैं, events सहेज सकते हैं और दूसरा model request किए बिना audit timeline बना सकते हैं।
+रन पूरा होने के बाद इवेंट इतिहास दोबारा चलाया जा सकता है, इसलिए अलग-अलग उपभोक्ता दूसरा मॉडल अनुरोध शुरू किए बिना टेक्स्ट दिखा सकते हैं, इवेंट सहेज सकते हैं और ऑडिट टाइमलाइन बना सकते हैं।

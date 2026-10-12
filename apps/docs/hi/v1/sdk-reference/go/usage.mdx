@@ -1,7 +1,7 @@
 ---
 icon: "square-terminal"
 title: "Go SDK का उपयोग"
-description: "Go SDK में अभी समर्थित wrapper methods।"
+description: "Go SDK में अभी समर्थित रैपर मेथड।"
 ---
 
 ## सेटअप
@@ -83,4 +83,4 @@ models, err := client.GetModels(ctx, map[string]string{"limit": "10"})
 
 ## मौजूदा सीमाएँ
 
-Go wrapper अब chat, Responses, images, audio, embeddings, moderations, models, providers, batches, files, generation lookup, health और video helpers को कवर करता है। जिन endpoints को अभी handwritten wrapper में नहीं जोड़ा गया है, उनके लिए lower-level generated operations उपलब्ध हैं; सामान्य request types wrapper package से दोबारा export किए जाते हैं।
+Go रैपर अब चैट, Responses, इमेज, ऑडियो, एम्बेडिंग, मॉडरेशन, मॉडल, प्रदाता, बैच, फ़ाइल, जनरेशन लुकअप, स्वास्थ्य जाँच और वीडियो हेल्पर को कवर करता है। जिन एंडपॉइंट को अभी हाथ से लिखे रैपर में शामिल नहीं किया गया है, उनके लिए निचले स्तर के जनरेट किए गए ऑपरेशन उपलब्ध रहते हैं, लेकिन सामान्य अनुरोध टाइप रैपर पैकेज से दोबारा एक्सपोर्ट किए जाते हैं।

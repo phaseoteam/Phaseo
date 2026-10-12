@@ -1,10 +1,10 @@
 ---
 icon: "radio"
 title: "क्रमिक आउटपुट"
-description: "Replayable consumers के साथ Go agent का text और events stream करें।"
+description: "दोबारा चलाए जा सकने वाले कंज़्यूमर के साथ Go एजेंट का टेक्स्ट और इवेंट स्ट्रीम करें।"
 ---
 
-`Agent.Stream(...)` replayable `StreamResult` लौटाता है:
+`Agent.Stream(...)` दोबारा चलाया जा सकने वाला `StreamResult` लौटाता है:
 
 ```go
 stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: input, Client: client})
@@ -16,11 +16,11 @@ for delta := range stream.Text() {
 completed, err := stream.Result()
 ```
 
-Lifecycle और provider events के लिए `Events()` उपयोग करें। Stream context और active model request cancel करने के लिए `Cancel()` call करें।
+लाइफ़साइकल और प्रदाता इवेंट के लिए `Events()` इस्तेमाल करें। स्ट्रीम कॉन्टेक्स्ट और सक्रिय मॉडल अनुरोध रद्द करने के लिए `Cancel()` कॉल करें।
 
-Go अभी TypeScript जैसा मूल टाइप्ड-आइटम उपभोक्ता नहीं देता। संरचित उत्पाद टाइमलाइन के लिए इवेंट क्रम और पूर्ण रन रिकॉर्ड का उपयोग करें। Structured product timelines के लिए event sequence और completed run records लें।
+Go अभी TypeScript जैसा मूल टाइप्ड आइटम कंज़्यूमर नहीं देता; संरचित प्रोडक्ट टाइमलाइन के लिए इवेंट अनुक्रम और पूरे हुए रन के रिकॉर्ड का उपयोग करें।
 
 ## संबंधित विषय
 
 - [टूल](./agent-sdk-tools.mdx)
-- [Observability और DevTools](./agent-sdk-observability.mdx)
+- [ऑब्ज़र्वेबिलिटी और DevTools](./agent-sdk-observability.mdx)

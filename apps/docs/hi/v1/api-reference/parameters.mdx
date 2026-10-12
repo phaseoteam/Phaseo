@@ -100,9 +100,9 @@ Anthropic-संगत Messages अनुरोधों के लिए Anthro
 
 नोट:
 
-Streaming का समर्थन endpoint के अनुसार बदलता है।
-Streaming आमतौर पर transport का विकल्प है, quality control नहीं।
-Tool-calling या structured-output flows में भी provider के अनुसार streaming का व्यवहार अलग हो सकता है।
+- Streaming का समर्थन endpoint के अनुसार बदलता है।
+- Streaming आमतौर पर transport का विकल्प है, quality control नहीं।
+- Tool-calling या structured-output flows में भी provider के अनुसार streaming का व्यवहार अलग हो सकता है।
 
 <span id="temperature"></span>
 <h3 id="parameter-temperature"><code>temperature</code></h3>
@@ -127,9 +127,9 @@ Tool-calling या structured-output flows में भी provider के अ
 
 व्यावहारिक सुझाव:
 
-Structured tasks के लिए कम मान से शुरू करें।
-पहले `temperature` या `top_p` में से किसी एक को बदलें, दोनों को नहीं।
-High temperature और aggressive quantization से अस्थिरता बढ़ सकती है।
+- Structured tasks के लिए कम मान से शुरू करें।
+- पहले `temperature` या `top_p` में से किसी एक को बदलें, दोनों को नहीं।
+- High temperature और aggressive quantization से अस्थिरता बढ़ सकती है।
 
 <span id="top_p"></span>
 <h3 id="parameter-top_p"><code>top_p</code></h3>
@@ -147,8 +147,8 @@ High temperature और aggressive quantization से अस्थिरता 
 
 नोट:
 
-temperature को सीधे बदले बिना खोज क्षेत्र संकरा या चौड़ा करना हो तो `top_p` समायोजित करें।
-अधिकांश अनुप्रयोगों के लिए मध्यम `temperature` और 1.0 के करीब `top_p` उचित शुरुआती आधार हैं।
+- temperature को सीधे बदले बिना खोज क्षेत्र संकरा या चौड़ा करना हो तो `top_p` समायोजित करें।
+- अधिकांश अनुप्रयोगों के लिए मध्यम `temperature` और 1.0 के करीब `top_p` उचित शुरुआती आधार हैं।
 
 <span id="top_k"></span>
 <h3 id="parameter-top_k"><code>top_k</code></h3>
@@ -165,8 +165,8 @@ temperature को सीधे बदले बिना खोज क्षे
 
 नोट:
 
-`top_k` हर provider पर उपलब्ध नहीं है।
-इसे `top_p` से अधिक स्पष्ट token-pool सीमा मानें।
+- `top_k` हर provider पर उपलब्ध नहीं है।
+- इसे `top_p` से अधिक स्पष्ट token-pool सीमा मानें।
 
 <span id="max_tokens"></span>
 <h3 id="parameter-max_tokens"><code>max_tokens</code></h3>
@@ -434,8 +434,8 @@ Phaseo इन gateway-normalized tier मानों को आंतरिक 
 
 नोट:
 
-`Batch` एक अलग API flow है, service-tier मान नहीं।
-समर्थन endpoint और provider के अनुसार बदलता है।
+- `Batch` एक अलग API flow है, service-tier मान नहीं।
+- समर्थन endpoint और provider के अनुसार बदलता है।
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>

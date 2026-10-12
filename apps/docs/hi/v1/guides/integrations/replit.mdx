@@ -1,20 +1,20 @@
 ---
 title: "Replit"
 icon: "box"
-description: "Replit applications और deployments से Phaseo को call करें।"
+description: "Replit ऐप्लिकेशन और डिप्लॉयमेंट से Phaseo को कॉल करें।"
 ---
 
-Replit से Phaseo उपयोग करने के लिए official OpenAI SDK या AI SDK का first-party Phaseo provider लें। API key को source code के बजाय Replit Secrets में रखें।
+Replit से Phaseo इस्तेमाल करने के लिए आधिकारिक OpenAI SDK या Phaseo का अपना AI SDK प्रदाता इस्तेमाल करें। API कुंजी को सोर्स कोड के बजाय Replit Secrets में रखें।
 
 ## गोपनीय कुंजी जोड़ें
 
-अपने Replit workspace में **Tools → Secrets** खोलें और यह जोड़ें:
+अपने Replit वर्कस्पेस में **Tools → Secrets** खोलें और यह जोड़ें:
 
 ```text
 PHASEO_API_KEY=phaseo_v1_sk_...
 ```
 
-यह secret आपकी application को environment variable के रूप में उपलब्ध होगा।
+यह गोपनीय कुंजी आपके ऐप्लिकेशन को एनवायरनमेंट वैरिएबल के रूप में उपलब्ध होगी।
 
 ## OpenAI SDK के साथ TypeScript
 
@@ -58,7 +58,7 @@ console.log(text);
 
 ## डिप्लॉयमेंट
 
-Development workspace के साथ deployment secrets में भी `PHASEO_API_KEY` जोड़ें। जाँचें कि deployment environment variables या request headers को logs में न लिखे।
+डेवलपमेंट वर्कस्पेस के साथ-साथ डिप्लॉयमेंट की गोपनीय कुंजियों में भी `PHASEO_API_KEY` जोड़ें। पुष्टि करें कि डिप्लॉयमेंट एनवायरनमेंट वैरिएबल या अनुरोध हेडर लॉग में प्रिंट न करे।
 
 ## संबंधित विषय
 

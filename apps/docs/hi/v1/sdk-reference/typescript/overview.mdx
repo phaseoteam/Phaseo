@@ -4,7 +4,7 @@ title: "TypeScript SDK का परिचय"
 description: "Phaseo Gateway API के लिए आधिकारिक TypeScript क्लाइंट"
 ---
 
-npm से प्रकाशित [~@phaseo/sdk~](https://www.npmjs.com/package/@phaseo/sdk) पैकेज इंस्टॉल करें।
+npm से प्रकाशित [`@phaseo/sdk`](https://www.npmjs.com/package/@phaseo/sdk) पैकेज इंस्टॉल करें।
 
 Phaseo TypeScript SDK, Phaseo Gateway API के साथ काम करने का सुविधाजनक और टाइप-सुरक्षित तरीका देता है। OpenAPI स्पेसिफ़िकेशन पर आधारित यह जनरेट किए गए टाइप और सरल क्लाइंट इंटरफ़ेस के साथ पूर्ण TypeScript समर्थन देता है।
 
@@ -39,18 +39,18 @@ const music = await client.music.generateAndWait(
 );
 ```
 
-वीडियो के लिए `videos.generateAndWait(request, options)` और बैच के लिए `batches.createAndWait(request, options)` इस्तेमाल करें। सहायक एक बार भेजते हैं; तुरंत पूरी प्रतिक्रिया बिना पोलिंग लौटाते हैं या उसी जॉब को पूरा होने तक पोल करते हैं। पूरी प्रतिक्रिया मिलती है; विफल, रद्द या समाप्त जॉब पर `response` सहित `JobFailedError` आता है। पूरे बैच में अलग अनुरोध विफल हो सकते हैं।
+वीडियो के लिए `videos.generateAndWait(request, options)` और बैच के लिए `batches.createAndWait(request, options)` इस्तेमाल करें। सहायक एक बार भेजते हैं; तुरंत पूरी प्रतिक्रिया बिना पोलिंग लौटाते हैं या उसी जॉब को पूरा होने तक पोल करते हैं। पूरी प्रतिक्रिया मिलती है; विफल, रद्द या समाप्त जॉब पर `response` सहित `JobFailedError` आता है। पूर्ण हुए बैच में भी कुछ अलग-अलग अनुरोध विफल हो सकते हैं।
 
 हर संसाधन में `wait(id, options)` भी है, जो विफलता सहित अंतिम प्रतिक्रिया लौटाता है। विकल्प: `intervalMs` (डिफ़ॉल्ट 5,000; न्यूनतम 250), `timeoutMs` (डिफ़ॉल्ट 1,800,000), `signal` और `onPoll`। प्रतीक्षा समय सीमा सबमिशन लौटने के बाद शुरू होती है; शुरुआती HTTP अनुरोध की अपनी सीमा रहती है। प्रगति कॉलबैक शुरुआती प्रतिक्रिया और हर पोल लेते हैं।
 
-`JobTimeoutError` और `JobCancelledError` `jobId` व `lastResponse` रखते हैं, ताकि `.wait(error.jobId)` से फिर शुरू करें। प्रतीक्षा रोकने पर जारी पोलिंग अनुरोध रद्द होता है, दूरस्थ काम नहीं। HTTP विफलता स्वतः फिर भेजे बिना आगे आती है। SDK सहायक गेटवे में पृष्ठभूमि निष्पादन नहीं जोड़ते।
+`JobTimeoutError` और `JobCancelledError` `jobId` व `lastResponse` रखते हैं, ताकि `.wait(error.jobId)` से फिर शुरू किया जा सके। प्रतीक्षा रोकने पर जारी पोलिंग अनुरोध रद्द होता है, दूरस्थ काम नहीं। HTTP विफलता स्वतः फिर भेजे बिना आगे आती है। SDK सहायक गेटवे में पृष्ठभूमि निष्पादन नहीं जोड़ते।
 
 ## अनुरोध नियंत्रण और निदान
 
 `client.withOptions({ timeoutMs: 30_000, signal, maxRetries: 2 })` से
 अपरिवर्तनीय क्लाइंट लें, जिसमें सभी संसाधन, स्ट्रीम और मीडिया पर नियंत्रण लागू हों।
-समय सीमा में प्रतिक्रिया बॉडी पढ़ना शामिल है। पुनः प्रयास डिफ़ॉल्ट में शून्य हैं और
-केवल GET/HEAD पर `Retry-After` का सम्मान करते हैं। भुगतान वाले सबमिशन कभी पुनः नहीं भेजे जाते।
+समय सीमा में प्रतिक्रिया बॉडी पढ़ना शामिल है। पुनः प्रयास डिफ़ॉल्ट रूप से शून्य हैं,
+केवल GET/HEAD पर लागू होते हैं और `Retry-After` का सम्मान करते हैं। भुगतान वाले सबमिशन कभी पुनः नहीं भेजे जाते।
 
 `responseMetadata(result)` गेटवे अनुरोध ID और डैशबोर्ड ट्रेस URL देता है।
 HTTP त्रुटियाँ `code`, `requestId`, `traceUrl`, `retryAfterMs`, बॉडी और हेडर देती हैं।
@@ -97,15 +97,16 @@ const support = await client.models.checkParameters(
 सभी अपेक्षित अनुरोध हुए। अनपेक्षित कॉल स्थानीय रूप से विफल होते हैं, नेटवर्क फ़ॉलबैक नहीं होता।
 
 Phaseo रूम में अनुरोध भेजने के बाद **कोड लें** मॉडल और
-सेटिंग TypeScript या Python में निर्यात करता है। **अनुरोध देखें**
-ID मिलने पर डैशबोर्ड ट्रेस खोलता है। निर्यात कोड सर्वर पर `PHASEO_API_KEY` के साथ चलाएँ।
+सेटिंग्स TypeScript या Python में निर्यात करता है। अनुरोध ID उपलब्ध होने पर **अनुरोध देखें**
+उसका डैशबोर्ड ट्रेस खोलता है। निर्यात किया गया कोड अपने सर्वर पर `PHASEO_API_KEY` के साथ चलाएँ।
+
 ## इसमें क्या शामिल है
 
 -   सभी API इंटरैक्शन के लिए `Phaseo` क्लाइंट क्लास
--   संसाधन-आधारित हेल्पर, जैसे `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
--   खोज और मूल्य निर्धारण के हेल्पर, जैसे `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
--   बैच और वीडियो लाइफ़साइकल स्ट्रीम के लिए async-job WebSocket URL हेल्पर
--   `client.batches.streamResults(batchId, { signal })` Anthropic JSONL डाउनलोड स्ट्रीम करने के लिए
+-   संसाधन-आधारित हेल्पर, जैसे `client.models`, `client.batches`, `client.videos` और `client.asyncJobs`
+-   खोज और मूल्य निर्धारण के हेल्पर, जैसे `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)` और `client.getCurrentApiKey()`
+-   बैच और वीडियो जीवनचक्र स्ट्रीम के लिए एसिंक्रोनस जॉब WebSocket URL हेल्पर
+-   Anthropic JSONL डाउनलोड स्ट्रीम करने के लिए `client.batches.streamResults(batchId, { signal })`
 -   सभी अनुरोध/प्रतिक्रिया ऑब्जेक्ट के लिए जनरेट किए गए टाइप
 -   Chat Completions, मॉडल, क्रेडिट आदि सहित पूर्ण API कवरेज
 -   बेहतर डेवलपर अनुभव के लिए TypeScript परिभाषाएँ

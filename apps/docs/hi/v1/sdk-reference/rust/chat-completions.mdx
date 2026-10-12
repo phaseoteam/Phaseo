@@ -1,10 +1,10 @@
 ---
 icon: "message-square"
-title: "चैट कम्प्लीशन"
-description: "Rust SDK से OpenAI-compatible Chat Completions requests भेजें।"
+title: "चैट कंप्लीशन"
+description: "Rust SDK से OpenAI-संगत Chat Completions अनुरोध भेजें।"
 ---
 
-जब मौजूदा integration पहले से message-based Chat Completions payloads उपयोग करती हो, तब `chat_completions(...)` उपयोग करें।
+जब कोई मौजूदा इंटीग्रेशन पहले से संदेश-आधारित Chat Completions पेलोड इस्तेमाल करता हो, तब `chat_completions(...)` इस्तेमाल करें।
 
 ```rust
 use phaseo::Phaseo;
@@ -37,7 +37,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-नई integrations के लिए [Responses API](./responses.mdx) का उपयोग करें। यह text, multimodal input, tools और समृद्ध output items के लिए एक request model देता है।
+नए इंटीग्रेशन के लिए [Responses API](./responses.mdx) को प्राथमिकता दें। यह टेक्स्ट, मल्टीमॉडल इनपुट, टूल और ज़्यादा समृद्ध आउटपुट आइटम के लिए एक ही अनुरोध ढाँचा देता है।
 
 ## संबंधित विषय
 
