@@ -59,6 +59,9 @@ CREATE TABLE "public"."workspace_settings" (
   "auto_routing_revision"                        uuid                     NOT NULL DEFAULT gen_random_uuid(),
   "auto_routing_updated_at"                      timestamp with time zone NOT NULL DEFAULT now(),
   "model_deprecation_alerts_include_admins"      boolean                  NOT NULL DEFAULT false,
+  "model_successor_redirect_enabled"             boolean                  NOT NULL DEFAULT false,
+  "model_successor_price_policy"                 text                     NOT NULL DEFAULT 'never'::text,
+  "model_successor_max_price_increase_percent"   integer                  NOT NULL DEFAULT 0,
   CONSTRAINT "workspace_settings_alpha_requires_beta_channel_check" CHECK (((alpha_channel_enabled = false) OR (beta_channel_enabled = true))),
   CONSTRAINT "workspace_settings_auto_routing_custom_prices_valid" CHECK (((auto_routing_spend_profile <> 'custom'::text) OR ((auto_routing_max_input_price_per_million IS
     NOT NULL) AND (auto_routing_max_input_price_per_million >= (0)::numeric) AND (auto_routing_max_output_price_per_million IS
@@ -79,6 +82,10 @@ CREATE TABLE "public"."workspace_settings" (
   CONSTRAINT "workspace_settings_io_logging_retention_days_check" CHECK (((io_logging_retention_days >= 90) AND (io_logging_retention_days <= 365))),
   CONSTRAINT "workspace_settings_low_balance_threshold_nonnegative" CHECK ((low_balance_email_threshold_nanos >= 0)),
   CONSTRAINT "workspace_settings_model_restriction_mode_valid" CHECK ((model_restriction_mode = ANY (ARRAY['none'::text, 'allowlist'::text, 'blocklist'::text]))),
+  CONSTRAINT "workspace_settings_model_successor_max_price_increase_check"
+    CHECK (((model_successor_max_price_increase_percent >= 0) AND (model_successor_max_price_increase_percent <= 1000))),
+  CONSTRAINT "workspace_settings_model_successor_price_policy_check"
+    CHECK ((model_successor_price_policy = ANY (ARRAY['never'::text, 'limit'::text, 'any'::text]))),
   CONSTRAINT "workspace_settings_pkey" PRIMARY KEY (workspace_id),
   CONSTRAINT "workspace_settings_provider_restriction_mode_check" CHECK ((provider_restriction_mode = ANY (ARRAY['none'::text, 'allowlist'::text, 'blocklist'::text]))),
   CONSTRAINT "workspace_settings_response_healing_mode_check" CHECK ((response_healing_mode = ANY (ARRAY['safe'::text, 'strict'::text]))),
@@ -143,5 +150,11 @@ COMMENT ON COLUMN "public"."workspace_settings"."io_logging_price_per_million_un
 COMMENT ON COLUMN "public"."workspace_settings"."model_deprecation_alerts_include_admins" IS 'Also email workspace admins, not only the owner, when a model the workspace recently called is deprecated.';
 
 COMMENT ON COLUMN "public"."workspace_settings"."model_restriction_model_ids" IS 'Canonical API model slugs used by the workspace-wide model restriction mode.';
+
+COMMENT ON COLUMN "public"."workspace_settings"."model_successor_max_price_increase_percent" IS 'With the limit price policy, the largest price increase allowed when redirecting to a successor, as a percentage.';
+
+COMMENT ON COLUMN "public"."workspace_settings"."model_successor_price_policy" IS 'Whether a successor that costs more may serve redirected requests: never, limit (up to the percentage) or any.';
+
+COMMENT ON COLUMN "public"."workspace_settings"."model_successor_redirect_enabled" IS 'Route requests for a model no provider serves any more to its admin-approved successor.';
 
 COMMENT ON COLUMN "public"."workspace_settings"."payment_method_expiring_email_enabled" IS 'Email the workspace owner before a saved card used for billing expires.';
