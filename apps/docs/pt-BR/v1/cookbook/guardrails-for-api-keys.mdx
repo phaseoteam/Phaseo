@@ -4,7 +4,7 @@ icon: "shield-check"
 description: "Aplique guardrails a chaves de API, teste a aplicação antes do rollout e verifique bloqueios, redações e sinalizações na atividade."
 ---
 
-Use este guia quando precisar proteger uma ou mais chaves de API com limites de orçamento, restrições de roteamento, verificações de injeção de prompt ou regras para informações confidenciais.
+Use esta receita quando precisar proteger uma ou mais chaves de API com restrições de roteamento, verificações de injeção de prompt ou tratamento de informações sensíveis.
 
 ## 1. Crie o guardrail no espaço de trabalho
 
@@ -26,13 +26,14 @@ Siga esta sequência:
 2. sempre que possível, associe um guardrail por vez
 3. confirme se o diálogo de detalhes da chave mostra o guardrail aplicado
 
-## 3. Defina a política de orçamento e as restrições de roteamento
+## 3. Defina as restrições de roteamento
 
 Combinação comum:
 
-- limite diário de custo
 - lista de bloqueio de provedores com baixo nível de confiança
 - lista de modelos permitidos com os modelos exatos de produção que devem continuar disponíveis para roteamento
+
+As proteções não aplicam limites de gastos. Para limitar gastos, defina um limite na própria chave de API ou crie um [orçamento do espaço de trabalho](../api-reference/endpoint/budgets-list.mdx).
 
 Use a prévia ao vivo do editor de guardrails para verificar:
 

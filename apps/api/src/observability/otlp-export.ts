@@ -1,5 +1,7 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { tieredRead } from "@core/tiered-cache";
+import { AVAILABLE_BROADCAST_DESTINATION_IDS, otlpProtocol, otlpTracesEndpoint } from "./broadcast-destinations";
+import { decodeOtlpTraceResponse, encodeOtlpTraceRequest } from "./otlp-protobuf";
 import { decryptWebhookSecret, validateWebhookEndpointUrlForDelivery } from "@core/webhook-endpoints";
 import {
 	buildAsyncGenAiOtlpPayload,
@@ -176,7 +178,7 @@ async function loadDestinations(workspaceId: string): Promise<Destination[]> {
 			broadcast_destination_rule_groups(match_operator,broadcast_destination_rules(field,condition,value))
 		`)
 		.eq("workspace_id", workspaceId)
-		.in("destination_id", ["otel_collector", "webhook"])
+		.in("destination_id", [...AVAILABLE_BROADCAST_DESTINATION_IDS])
 		.eq("enabled", true);
 	if (error) throw new Error(`otel_destinations_load_failed:${error.message}`);
 	return (data ?? []) as Destination[];
@@ -297,12 +299,9 @@ export async function enqueueAsyncGenAiOtlpExport(args: AsyncGenAiTelemetry & {
 }
 
 function endpoint(config: Record<string, unknown>): URL {
-	const traceSpecific = String(config.otlp_traces_endpoint ?? "").trim();
-	const base = traceSpecific || String(
-		config.otlp_endpoint ?? config.collector_endpoint ?? config.endpoint ?? "",
-	).trim();
-	if (!base) throw new Error("OTLP endpoint is required");
-	const url = new URL(base);
+	const resolved = otlpTracesEndpoint(config);
+	if (!resolved) throw new Error("OTLP endpoint is required");
+	const url = new URL(resolved);
 	if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) {
 		throw new Error("OTLP endpoint must use HTTP(S) without URL credentials");
 	}
@@ -313,9 +312,6 @@ function endpoint(config: Record<string, unknown>): URL {
 		/^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
 		host === "::" || host === "::1" || /^(fc|fd)[0-9a-f]{2}:/.test(host) || /^fe[89ab][0-9a-f]:/.test(host)
 	) throw new Error("Private OTLP endpoints are not allowed");
-	if (!traceSpecific && !url.pathname.endsWith("/v1/traces")) {
-		url.pathname = `${url.pathname.replace(/\/$/, "")}/v1/traces`;
-	}
 	return url;
 }
 
@@ -368,6 +364,9 @@ async function boundedResponse(response: Response): Promise<Record<string, any>>
 		bytes.set(chunk, offset);
 		offset += chunk.length;
 	}
+	if (response.headers.get("content-type")?.toLowerCase().includes("protobuf")) {
+		return { partialSuccess: decodeOtlpTraceResponse(bytes) };
+	}
 	try {
 		return object(JSON.parse(new TextDecoder().decode(bytes)));
 	} catch {
@@ -394,9 +393,18 @@ export async function deliverGatewayOtlpPayload(
 ) {
 	let collectorEndpoint: URL;
 	let collectorHeaders: Headers;
+	let body: BodyInit;
 	try {
 		collectorEndpoint = endpoint(config);
 		collectorHeaders = headers(config);
+		const protocol = otlpProtocol(config);
+		if (!protocol) throw new Error("OTLP protocol must be http/json or http/protobuf");
+		if (protocol === "http/protobuf") {
+			// Set after configured headers: the body is protobuf whatever they say.
+			collectorHeaders.set("Content-Type", "application/x-protobuf");
+			collectorHeaders.set("Accept", "application/x-protobuf");
+			body = encodeOtlpTraceRequest(payload);
+		} else body = JSON.stringify(payload);
 		// Reuse the hardened outbound-webhook boundary so mapped IPv6 literals
 		// and DNS records resolving to private networks are rejected immediately
 		// before the collector request.
@@ -421,7 +429,7 @@ export async function deliverGatewayOtlpPayload(
 		response = await fetch(collectorEndpoint, {
 			method: "POST",
 			headers: collectorHeaders,
-			body: JSON.stringify(payload),
+			body,
 			redirect: "manual",
 			signal: AbortSignal.timeout(15_000),
 		});
@@ -434,8 +442,8 @@ export async function deliverGatewayOtlpPayload(
 			error: error instanceof Error ? error.message : "OTLP connection failed",
 		};
 	}
-	const body = await boundedResponse(response);
-	const partial = object(body.partialSuccess ?? body.partial_success);
+	const result = await boundedResponse(response);
+	const partial = object(result.partialSuccess ?? result.partial_success);
 	const rejected = finite(partial.rejectedSpans ?? partial.rejected_spans) ?? 0;
 	if (response.ok && rejected <= 0) {
 		return { delivered: true, retryable: false, status: response.status, delayMs: 0, error: null };

@@ -8,7 +8,9 @@ description: "Gestion programmatique des garde-fous pour les espaces de travail 
 La gestion des garde-fous nécessite une clé API de gestion. Les opérations de lecture nécessitent `guardrails:read` ; les modifications nécessitent `guardrails:write` ou `guardrails:delete`.
 </Info>
 
-Utilisez les garde-fous pour appliquer des contrôles de confidentialité, des restrictions de fournisseurs et de modèles, le traitement des injections de prompt, des règles sur les informations sensibles et des limites de requêtes ou de coûts. Un garde-fou peut être attribué à des clés API, à des membres de l’espace de travail ou aux deux.
+Utilisez les garde-fous pour appliquer des contrôles de confidentialité, des restrictions de fournisseurs et de modèles, le traitement des injections de prompt et des politiques sur les informations sensibles. Un garde-fou peut être attribué à des clés API, à des membres de l'espace de travail, ou aux deux.
+
+Les garde-fous n'appliquent pas de limites de requêtes ni de dépenses. L'entrée `budgets` et les champs `*_limit_requests` et `*_limit_cost_nanos` sont acceptés et renvoyés pour des raisons de compatibilité, mais n'ont aucun effet. Utilisez plutôt les [limites de clé API](./keys-update.mdx) ou les [budgets de l'espace de travail](./budgets-list.mdx).
 
 Les modifications réussies actualisent l’état des règles de l’espace de travail et apparaissent dans son journal d’audit.
 

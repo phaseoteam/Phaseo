@@ -131,6 +131,15 @@ function describeKeyLimitExceeded(args: {
 	return `This ${subject} has reached its ${windowLabel} ${metricLabel}.`;
 }
 
+/** Seconds until a key cap or workspace budget window resets, for Retry-After; null when it never resets. */
+export function keyLimitRetryAfterSeconds(resetAt: string | null | undefined, now?: string | null): number | null {
+	const resetMs = resetAt ? Date.parse(resetAt) : NaN;
+	if (!Number.isFinite(resetMs)) return null;
+	const parsedNow = now ? Date.parse(now) : NaN;
+	const nowMs = Number.isFinite(parsedNow) ? parsedNow : Date.now();
+	return Math.max(1, Math.ceil((resetMs - nowMs) / 1000));
+}
+
 function normalizeFormKey(key: string): { key: string; array: boolean } {
     if (/\[\]$/.test(key)) {
         return { key: key.slice(0, -2), array: true };
@@ -468,29 +477,29 @@ export async function guardContext(args: {
         }
 
         if (!args.internal && !context.keyLimit.ok) {
-            return {
-                ok: false,
-                response: err("key_limit_exceeded", {
-                    reason: context.keyLimit.reason ?? "key_limit_exceeded",
-                    reset_at: context.keyLimit.resetAt,
-                    now: context.keyLimit.now ?? null,
-                    limit_window: context.keyLimit.limitWindow ?? null,
-                    limit_metric: context.keyLimit.limitMetric ?? null,
-                    current_value: context.keyLimit.currentValue ?? null,
-                    limit_value: context.keyLimit.limitValue ?? null,
-                    buckets: context.keyLimit.buckets ?? null,
-                    budgets: context.keyLimit.budgets ?? null,
-                    description: describeKeyLimitExceeded({
-                        reason: context.keyLimit.reason ?? null,
-                        limitWindow: context.keyLimit.limitWindow ?? null,
-                        limitMetric: context.keyLimit.limitMetric ?? null,
-                        currentValue: context.keyLimit.currentValue ?? null,
-                        limitValue: context.keyLimit.limitValue ?? null,
-                    }),
-                    request_id: args.requestId,
-                    workspace_id: args.workspaceId,
+            const response = err("key_limit_exceeded", {
+                reason: context.keyLimit.reason ?? "key_limit_exceeded",
+                reset_at: context.keyLimit.resetAt,
+                now: context.keyLimit.now ?? null,
+                limit_window: context.keyLimit.limitWindow ?? null,
+                limit_metric: context.keyLimit.limitMetric ?? null,
+                current_value: context.keyLimit.currentValue ?? null,
+                limit_value: context.keyLimit.limitValue ?? null,
+                buckets: context.keyLimit.buckets ?? null,
+                budgets: context.keyLimit.budgets ?? null,
+                description: describeKeyLimitExceeded({
+                    reason: context.keyLimit.reason ?? null,
+                    limitWindow: context.keyLimit.limitWindow ?? null,
+                    limitMetric: context.keyLimit.limitMetric ?? null,
+                    currentValue: context.keyLimit.currentValue ?? null,
+                    limitValue: context.keyLimit.limitValue ?? null,
                 }),
-            };
+                request_id: args.requestId,
+                workspace_id: args.workspaceId,
+            });
+            const retryAfter = keyLimitRetryAfterSeconds(context.keyLimit.resetAt, context.keyLimit.now);
+            if (retryAfter != null) response.headers.set("Retry-After", String(retryAfter));
+            return { ok: false, response };
         }
 
         const { candidates: providers, diagnostics: candidateDiagnostics } = buildProviderCandidatesWithDiagnostics(context);

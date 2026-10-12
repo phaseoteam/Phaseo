@@ -32,6 +32,11 @@ ALTER TABLE "public"."workspace_broadcast_destinations"
 
 CREATE INDEX workspace_broadcast_destinations_workspace_enabled_idx ON public.workspace_broadcast_destinations USING btree (workspace_id, enabled);
 
+CREATE TRIGGER enforce_broadcast_destination_limit
+  BEFORE INSERT OR UPDATE OF workspace_id, destination_id ON public.workspace_broadcast_destinations
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_broadcast_destination_limit();
+
 CREATE POLICY "team_broadcast_destinations_delete_own_team" ON "public"."workspace_broadcast_destinations"
   FOR DELETE
   TO "authenticated"

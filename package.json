@@ -60,6 +60,7 @@
 		"validate:ci-security": "node --test scripts/validate-ci-secret-boundaries.test.mjs && node scripts/validate-ci-secret-boundaries.mjs",
 		"validate:trust": "node scripts/validate-trust-materials.mjs",
 		"validate:domains": "node scripts/check-canonical-domain.mjs",
+		"validate:broadcast-destinations": "node scripts/sync-broadcast-destinations.mjs --check",
 		"data:update-statuses": "tsx scripts/update-database-model-statuses.ts",
 		"data:sync-artificial-analysis": "tsx scripts/sync-artificial-analysis-benchmarks.ts",
 		"data:sync-epoch-eci": "tsx scripts/sync-epoch-eci-benchmarks.ts",

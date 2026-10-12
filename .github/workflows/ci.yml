@@ -175,6 +175,9 @@ jobs:
             - name: Validate canonical Phaseo domain
               run: pnpm run validate:domains
 
+            - name: Validate shared Broadcast destination registry
+              run: pnpm run validate:broadcast-destinations
+
             - name: Validate unique Supabase migration versions
               shell: bash
               run: |
