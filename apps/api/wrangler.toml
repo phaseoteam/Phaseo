@@ -52,6 +52,8 @@ BATCH_PROVIDER_WEBHOOK_REPLAY_ENABLED = "true"
 BATCH_PROVIDER_WEBHOOK_REPLAY_LIMIT = "100"
 OTEL_EXPORT_ENABLED = "true"
 OTEL_EXPORT_OUTBOX_LIMIT = "100"
+# Send Broadcast exports to BROADCAST_QUEUE; the outbox remains the fallback.
+BROADCAST_QUEUE_ENABLED = "true"
 AXIOM_SUCCESS_SAMPLE_RATE = "0.1"
 AXIOM_DETAIL_SAMPLE_RATE = "0.01"
 AXIOM_SLOW_REQUEST_MS = "8000"
@@ -124,6 +126,19 @@ preview_bucket_name = "phaseo-gateway-io-logs-preview"
 binding = "DATA_CONTRIBUTIONS_BUCKET"
 bucket_name = "phaseo-data-contributions"
 preview_bucket_name = "phaseo-data-contributions-preview"
+
+# Broadcast exports, consumed by this worker's queue handler. Create the queue
+# before deploying: wrangler queues create phaseo-broadcast
+[[queues.producers]]
+binding = "BROADCAST_QUEUE"
+queue = "phaseo-broadcast"
+
+[[queues.consumers]]
+queue = "phaseo-broadcast"
+max_batch_size = 100
+max_batch_timeout = 5
+# Only for batches that throw; delivery failures are requeued by the handler.
+max_retries = 5
 
 # Native per-location Workers rate limiting. Application-level device polling
 # checks remain authoritative because these counters are intentionally approximate.
