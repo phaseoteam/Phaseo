@@ -234,7 +234,7 @@ export default function CreateKeyDialog({
 						</p>
 						<SecretRevealActions
 							secret={plainKey}
-							name={name || "AI Stats API key"}
+							name={name || "Phaseo API key"}
 							kind="api-key"
 						/>
 						<DialogFooter className="pt-1">

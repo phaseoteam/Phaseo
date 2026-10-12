@@ -1,4 +1,4 @@
-export const AI_STATS_GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
+export const PHASEO_GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
 
 export type ApiKeyPresetId = "development" | "production" | "ci" | "sandbox";
 
@@ -75,12 +75,12 @@ type SecretConfigArgs = {
 };
 
 function normalizeBaseUrl(baseUrl?: string): string {
-	return (baseUrl || AI_STATS_GATEWAY_BASE_URL).replace(/\/+$/, "");
+	return (baseUrl || PHASEO_GATEWAY_BASE_URL).replace(/\/+$/, "");
 }
 
 export function buildEnvFile(args: SecretConfigArgs): string {
-	const envVarName = args.envVarName || "AI_STATS_API_KEY";
-	return `${envVarName}="${args.apiKey}"\nAI_STATS_BASE_URL="${normalizeBaseUrl(args.baseUrl)}"\n`;
+	const envVarName = args.envVarName || "PHASEO_API_KEY";
+	return `${envVarName}="${args.apiKey}"\nPHASEO_BASE_URL="${normalizeBaseUrl(args.baseUrl)}"\n`;
 }
 
 export type AppConfigSnippet = {
@@ -97,27 +97,27 @@ export function buildAppConfigSnippets(args: SecretConfigArgs): AppConfigSnippet
 		{
 			id: "shell",
 			label: "Shell exports",
-			value: `export AI_STATS_API_KEY="${apiKey}"\nexport AI_STATS_BASE_URL="${baseUrl}"`,
+			value: `export PHASEO_API_KEY="${apiKey}"\nexport PHASEO_BASE_URL="${baseUrl}"`,
 		},
 		{
 			id: "openai-node",
 			label: "OpenAI SDK (Node)",
-			value: `import OpenAI from "openai";\n\nconst client = new OpenAI({\n  apiKey: process.env.AI_STATS_API_KEY,\n  baseURL: "${baseUrl}",\n});`,
+			value: `import OpenAI from "openai";\n\nconst client = new OpenAI({\n  apiKey: process.env.PHASEO_API_KEY,\n  baseURL: "${baseUrl}",\n});`,
 		},
 		{
 			id: "openai-python",
 			label: "OpenAI SDK (Python)",
-			value: `import os\nfrom openai import OpenAI\n\nclient = OpenAI(\n    api_key=os.environ["AI_STATS_API_KEY"],\n    base_url="${baseUrl}",\n)`,
+			value: `import os\nfrom openai import OpenAI\n\nclient = OpenAI(\n    api_key=os.environ["PHASEO_API_KEY"],\n    base_url="${baseUrl}",\n)`,
 		},
 		{
 			id: "vercel-ai-sdk",
 			label: "Vercel AI SDK",
-			value: `import { createOpenAI } from "@ai-sdk/openai";\n\nexport const aiStats = createOpenAI({\n  apiKey: process.env.AI_STATS_API_KEY,\n  baseURL: "${baseUrl}",\n});`,
+			value: `import { createOpenAI } from "@ai-sdk/openai";\n\nexport const phaseo = createOpenAI({\n  apiKey: process.env.PHASEO_API_KEY,\n  baseURL: "${baseUrl}",\n});`,
 		},
 		{
 			id: "codex",
 			label: "Codex",
-			value: `[model_providers.ai-stats]\nname = "AI Stats"\nbase_url = "${baseUrl}"\nenv_key = "AI_STATS_API_KEY"`,
+			value: `[model_providers.phaseo]\nname = "Phaseo"\nbase_url = "${baseUrl}"\nenv_key = "PHASEO_API_KEY"`,
 		},
 		{
 			id: "claude-code",
@@ -127,7 +127,7 @@ export function buildAppConfigSnippets(args: SecretConfigArgs): AppConfigSnippet
 		{
 			id: "opencode",
 			label: "OpenCode",
-			value: `{\n  "provider": {\n    "ai-stats": {\n      "npm": "@ai-sdk/openai-compatible",\n      "options": {\n        "baseURL": "${baseUrl}",\n        "apiKey": "{env:AI_STATS_API_KEY}"\n      }\n    }\n  }\n}`,
+			value: `{\n  "provider": {\n    "phaseo": {\n      "npm": "@ai-sdk/openai-compatible",\n      "options": {\n        "baseURL": "${baseUrl}",\n        "apiKey": "{env:PHASEO_API_KEY}"\n      }\n    }\n  }\n}`,
 		},
 	];
 }
@@ -140,7 +140,7 @@ export type CollectionExport = {
 	content: string;
 };
 
-export function buildCollectionExports(baseUrl = AI_STATS_GATEWAY_BASE_URL): CollectionExport[] {
+export function buildCollectionExports(baseUrl = PHASEO_GATEWAY_BASE_URL): CollectionExport[] {
 	const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
 	const origin = normalizedBaseUrl.replace(/\/v1$/, "");
 
@@ -148,18 +148,18 @@ export function buildCollectionExports(baseUrl = AI_STATS_GATEWAY_BASE_URL): Col
 		{
 			id: "postman",
 			label: "Postman",
-			filename: "ai-stats-gateway.postman_collection.json",
+			filename: "phaseo-gateway.postman_collection.json",
 			mimeType: "application/json",
 			content: JSON.stringify(
 				{
 					info: {
-						name: "AI Stats Gateway",
+						name: "Phaseo Gateway",
 						schema:
 							"https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 					},
 					variable: [
 						{ key: "base_url", value: normalizedBaseUrl },
-						{ key: "api_key", value: "paste-your-ai-stats-key" },
+						{ key: "api_key", value: "paste-your-phaseo-key" },
 						{ key: "model", value: "openai/gpt-4.1-mini" },
 					],
 					item: [
@@ -190,7 +190,7 @@ export function buildCollectionExports(baseUrl = AI_STATS_GATEWAY_BASE_URL): Col
 											messages: [
 												{
 													role: "user",
-													content: "Say hello from AI Stats.",
+													content: "Say hello from Phaseo.",
 												},
 											],
 										},
@@ -209,34 +209,34 @@ export function buildCollectionExports(baseUrl = AI_STATS_GATEWAY_BASE_URL): Col
 		{
 			id: "insomnia",
 			label: "Insomnia",
-			filename: "ai-stats-gateway.insomnia.json",
+			filename: "phaseo-gateway.insomnia.json",
 			mimeType: "application/json",
 			content: JSON.stringify(
 				{
 					_type: "export",
 					__export_format: 4,
-					__export_source: "ai-stats",
+					__export_source: "phaseo",
 					resources: [
 						{
-							_id: "wrk_ai_stats_gateway",
+							_id: "wrk_phaseo_gateway",
 							_type: "workspace",
-							name: "AI Stats Gateway",
+							name: "Phaseo Gateway",
 						},
 						{
-							_id: "env_ai_stats_gateway",
+							_id: "env_phaseo_gateway",
 							_type: "environment",
-							parentId: "wrk_ai_stats_gateway",
+							parentId: "wrk_phaseo_gateway",
 							name: "Base Environment",
 							data: {
 								base_url: normalizedBaseUrl,
-								api_key: "paste-your-ai-stats-key",
+								api_key: "paste-your-phaseo-key",
 								model: "openai/gpt-4.1-mini",
 							},
 						},
 						{
-							_id: "req_ai_stats_models",
+							_id: "req_phaseo_models",
 							_type: "request",
-							parentId: "wrk_ai_stats_gateway",
+							parentId: "wrk_phaseo_gateway",
 							name: "List models",
 							method: "GET",
 							url: "{{ _.base_url }}/models?endpoints=chat/completions",
@@ -248,9 +248,9 @@ export function buildCollectionExports(baseUrl = AI_STATS_GATEWAY_BASE_URL): Col
 							],
 						},
 						{
-							_id: "req_ai_stats_chat",
+							_id: "req_phaseo_chat",
 							_type: "request",
-							parentId: "wrk_ai_stats_gateway",
+							parentId: "wrk_phaseo_gateway",
 							name: "Chat completion",
 							method: "POST",
 							url: "{{ _.base_url }}/chat/completions",
@@ -269,7 +269,7 @@ export function buildCollectionExports(baseUrl = AI_STATS_GATEWAY_BASE_URL): Col
 										messages: [
 											{
 												role: "user",
-												content: "Say hello from AI Stats.",
+												content: "Say hello from Phaseo.",
 											},
 										],
 									},
@@ -287,9 +287,9 @@ export function buildCollectionExports(baseUrl = AI_STATS_GATEWAY_BASE_URL): Col
 		{
 			id: "http",
 			label: ".http file",
-			filename: "ai-stats-gateway.http",
+			filename: "phaseo-gateway.http",
 			mimeType: "text/plain",
-			content: `@baseUrl = ${normalizedBaseUrl}\n@apiKey = paste-your-ai-stats-key\n@model = openai/gpt-4.1-mini\n\n### List models\nGET {{baseUrl}}/models?endpoints=chat/completions\nAuthorization: Bearer {{apiKey}}\n\n### Chat completion\nPOST {{baseUrl}}/chat/completions\nAuthorization: Bearer {{apiKey}}\nContent-Type: application/json\nOrigin: ${origin}\n\n{\n  "model": "{{model}}",\n  "messages": [\n    {\n      "role": "user",\n      "content": "Say hello from AI Stats."\n    }\n  ]\n}\n`,
+			content: `@baseUrl = ${normalizedBaseUrl}\n@apiKey = paste-your-phaseo-key\n@model = openai/gpt-4.1-mini\n\n### List models\nGET {{baseUrl}}/models?endpoints=chat/completions\nAuthorization: Bearer {{apiKey}}\n\n### Chat completion\nPOST {{baseUrl}}/chat/completions\nAuthorization: Bearer {{apiKey}}\nContent-Type: application/json\nOrigin: ${origin}\n\n{\n  "model": "{{model}}",\n  "messages": [\n    {\n      "role": "user",\n      "content": "Say hello from Phaseo."\n    }\n  ]\n}\n`,
 		},
 	];
 }
