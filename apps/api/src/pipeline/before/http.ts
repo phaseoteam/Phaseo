@@ -20,7 +20,8 @@ export type ErrorCode =
     | "rate_limit_exceeded"
     | "insufficient_funds"
     | "guardrail_blocked"
-    | "unsupported_model_or_endpoint";
+    | "unsupported_model_or_endpoint"
+    | "model_retired";
 
 export function json(data: unknown, status = 200) {
     return new Response(JSON.stringify(data), {
@@ -114,6 +115,7 @@ const STATUS: Record<ErrorCode, number> = {
     insufficient_funds: 402,
     guardrail_blocked: 403,
     unsupported_model_or_endpoint: 400,
+    model_retired: 410,
 };
 
 const FRIENDLY_DESCRIPTIONS: Partial<Record<ErrorCode, string>> = {

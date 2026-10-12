@@ -449,6 +449,41 @@ describe("handleError", () => {
 		});
 	});
 
+	it("keeps the suggested model on retired model errors", async () => {
+		const upstream = new Response(
+			JSON.stringify({
+				error: "model_retired",
+				error_type: "user",
+				error_origin: "user",
+				error_operational_kind: "retired_model",
+				reason: "model_retired_without_providers",
+				description: 'Model "a/b" was retired on 2026-10-01 and no provider serves it any more. Use "a/c" instead.',
+				model: "a/b",
+				retired_at: "2026-10-01T00:00:00Z",
+				replacement_model: "a/c",
+			}),
+			{ status: 410, headers: { "content-type": "application/json" } },
+		);
+
+		const res = await handleError({
+			stage: "before",
+			res: upstream,
+			endpoint: "chat.completions",
+			ctx: { requestId: "G-TEST-RETIRED", meta: {}, model: "a/b" } as any,
+			auditFailure: async () => undefined,
+		});
+
+		expect(res.status).toBe(410);
+		expect(await res.json()).toMatchObject({
+			error: "model_retired",
+			error_type: "user",
+			description: 'Model "a/b" was retired on 2026-10-01 and no provider serves it any more. Use "a/c" instead.',
+			model: "a/b",
+			retired_at: "2026-10-01T00:00:00Z",
+			replacement_model: "a/c",
+		});
+	});
+
 	it("surfaces unsupported model diagnostics from before-stage guards", async () => {
 		let capturedAuditArgs: any = null;
 		const upstream = new Response(

@@ -901,6 +901,11 @@ export async function handleError({
                 .slice(0, 16);
         }
     }
+    if (errCode === "model_retired") {
+        if (typeof body?.model === "string") errorPayload.model = body.model;
+        errorPayload.retired_at = typeof body?.retired_at === "string" ? body.retired_at : null;
+        errorPayload.replacement_model = typeof body?.replacement_model === "string" ? body.replacement_model : null;
+    }
     if (body?.routing_diagnostics && typeof body.routing_diagnostics === "object") {
         errorPayload.routing_diagnostics = body.routing_diagnostics;
     }
