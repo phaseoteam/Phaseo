@@ -4629,7 +4629,9 @@ paths:
       operationId: listRateLimitPolicies
       summary: List rate limit policies
       description: >-
-        Lists the workspace's named rate limit policies. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+        Lists the workspace's named rate limit policies. The gateway does not
+        enforce rate limit policies yet; they are saved for the upcoming
+        enforcement release.
       responses:
         '200':
           description: Rate limit policies
@@ -4650,7 +4652,9 @@ paths:
       operationId: createRateLimitPolicy
       summary: Create a rate limit policy
       description: >-
-        Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+        Creates a named policy with requests per minute, tokens per minute, or
+        concurrent request limits. The gateway does not enforce rate limit
+        policies yet; they are saved for the upcoming enforcement release.
       requestBody:
         required: true
         content:
@@ -4686,7 +4690,8 @@ paths:
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
       description: >-
-        Returns one rate limit policy. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+        Returns one rate limit policy. The gateway does not enforce rate limit
+        policies yet; they are saved for the upcoming enforcement release.
       responses:
         '200':
           description: Rate limit policy
@@ -4707,7 +4712,10 @@ paths:
       operationId: updateRateLimitPolicy
       summary: Update a rate limit policy
       description: >-
-        Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+        Changes a policy's name, description, limits, or fail-closed setting.
+        Set a limit to null to remove it; at least one limit must remain. The
+        gateway does not enforce rate limit policies yet; they are saved for the
+        upcoming enforcement release.
       requestBody:
         required: true
         content:
@@ -4734,7 +4742,9 @@ paths:
       operationId: deleteRateLimitPolicy
       summary: Delete a rate limit policy
       description: >-
-        Deletes a policy and every assignment that uses it. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+        Deletes a policy and every assignment that uses it. The gateway does not
+        enforce rate limit policies yet; they are saved for the upcoming
+        enforcement release.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -4756,7 +4766,9 @@ paths:
       operationId: listRateLimitAssignments
       summary: List rate limit assignments
       description: >-
-        Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+        Lists where rate limit policies apply, optionally filtered by policy or
+        target type. The gateway does not enforce rate limit policies yet; they
+        are saved for the upcoming enforcement release.
       parameters:
         - name: policy_id
           in: query
@@ -4791,7 +4803,10 @@ paths:
       operationId: createRateLimitAssignment
       summary: Assign a rate limit policy
       description: >-
-        Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+        Applies a policy to one API key, workspace member, department, or
+        guardrail, or sets the workspace default for each end user. Each target
+        can have one policy. The gateway does not enforce rate limit policies
+        yet; they are saved for the upcoming enforcement release.
       requestBody:
         required: true
         content:
@@ -4827,7 +4842,8 @@ paths:
       operationId: getRateLimitAssignment
       summary: Get a rate limit assignment
       description: >-
-        Returns one rate limit assignment. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+        Returns one rate limit assignment. The gateway does not enforce rate
+        limit policies yet; they are saved for the upcoming enforcement release.
       responses:
         '200':
           description: Rate limit assignment
@@ -4848,7 +4864,9 @@ paths:
       operationId: updateRateLimitAssignment
       summary: Change an assignment's policy
       description: >-
-        Switches the policy applied to an assignment's target. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+        Switches the policy applied to an assignment's target. The gateway does
+        not enforce rate limit policies yet; they are saved for the upcoming
+        enforcement release.
       requestBody:
         required: true
         content:
@@ -4875,7 +4893,8 @@ paths:
       operationId: deleteRateLimitAssignment
       summary: Delete a rate limit assignment
       description: >-
-        Removes a policy from its target. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+        Removes a policy from its target. The gateway does not enforce rate
+        limit policies yet; they are saved for the upcoming enforcement release.
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -19898,18 +19917,22 @@ components:
           type: integer
           format: int64
           nullable: true
-          description: Input and output tokens allowed per minute. Null means tokens are not limited.
+          description: >-
+            Input and output tokens allowed per minute. Null means tokens are
+            not limited.
         concurrent_requests:
           type: integer
           format: int32
           maximum: 2147483647
           nullable: true
-          description: Requests allowed in flight at once. Null means concurrency is not limited.
+          description: >-
+            Requests allowed in flight at once. Null means concurrency is not
+            limited.
         fail_closed:
           type: boolean
           description: >-
-            Reject requests when the limit cannot be checked, instead of allowing
-            them. Adds latency to every request the policy covers.
+            Reject requests when the limit cannot be checked, instead of
+            allowing them. Adds latency to every request the policy covers.
         created_by:
           type: string
           format: uuid
@@ -19946,20 +19969,24 @@ components:
           format: int64
           minimum: 1
           nullable: true
-          description: Input and output tokens allowed per minute. Null means tokens are not limited.
+          description: >-
+            Input and output tokens allowed per minute. Null means tokens are
+            not limited.
         concurrent_requests:
           type: integer
           format: int32
           minimum: 1
           maximum: 2147483647
           nullable: true
-          description: Requests allowed in flight at once. Null means concurrency is not limited.
+          description: >-
+            Requests allowed in flight at once. Null means concurrency is not
+            limited.
         fail_closed:
           type: boolean
           default: false
           description: >-
-            Reject requests when the limit cannot be checked, instead of allowing
-            them. Adds latency to every request the policy covers.
+            Reject requests when the limit cannot be checked, instead of
+            allowing them. Adds latency to every request the policy covers.
       additionalProperties: false
     RateLimitPolicyUpdateInput:
       type: object
@@ -19985,19 +20012,23 @@ components:
           format: int64
           minimum: 1
           nullable: true
-          description: Input and output tokens allowed per minute. Null means tokens are not limited.
+          description: >-
+            Input and output tokens allowed per minute. Null means tokens are
+            not limited.
         concurrent_requests:
           type: integer
           format: int32
           minimum: 1
           maximum: 2147483647
           nullable: true
-          description: Requests allowed in flight at once. Null means concurrency is not limited.
+          description: >-
+            Requests allowed in flight at once. Null means concurrency is not
+            limited.
         fail_closed:
           type: boolean
           description: >-
-            Reject requests when the limit cannot be checked, instead of allowing
-            them. Adds latency to every request the policy covers.
+            Reject requests when the limit cannot be checked, instead of
+            allowing them. Adds latency to every request the policy covers.
       additionalProperties: false
     RateLimitPolicyResponse:
       type: object
@@ -20020,10 +20051,10 @@ components:
     RateLimitTargetType:
       type: string
       description: >-
-        What a policy applies to. A department policy is one allowance shared
-        by its members and linked keys. A guardrail policy gives each key and
-        member the guardrail covers its own allowance. end_user_default
-        applies to each end user identified on a request.
+        What a policy applies to. A department policy is one allowance shared by
+        its members and linked keys. A guardrail policy gives each key and
+        member the guardrail covers its own allowance. end_user_default applies
+        to each end user identified on a request.
       enum:
         - key
         - member
@@ -21277,7 +21308,8 @@ components:
       type: object
       deprecated: true
       description: >-
-        Deprecated. Guardrails do not enforce request or spend limits; use API key limits or workspace budgets instead.
+        Deprecated. Guardrails do not enforce request or spend limits; use API
+        key limits or workspace budgets instead.
       properties:
         dailyRequests:
           type: integer
@@ -21484,42 +21516,48 @@ components:
           nullable: true
           deprecated: true
           description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use API key limits or workspace budgets instead.
+            Deprecated. Guardrails do not enforce request or spend limits; use
+            API key limits or workspace budgets instead.
         weekly_limit_requests:
           type: integer
           format: int64
           nullable: true
           deprecated: true
           description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use API key limits or workspace budgets instead.
+            Deprecated. Guardrails do not enforce request or spend limits; use
+            API key limits or workspace budgets instead.
         monthly_limit_requests:
           type: integer
           format: int64
           nullable: true
           deprecated: true
           description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use API key limits or workspace budgets instead.
+            Deprecated. Guardrails do not enforce request or spend limits; use
+            API key limits or workspace budgets instead.
         daily_limit_cost_nanos:
           type: integer
           format: int64
           nullable: true
           deprecated: true
           description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use API key limits or workspace budgets instead.
+            Deprecated. Guardrails do not enforce request or spend limits; use
+            API key limits or workspace budgets instead.
         weekly_limit_cost_nanos:
           type: integer
           format: int64
           nullable: true
           deprecated: true
           description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use API key limits or workspace budgets instead.
+            Deprecated. Guardrails do not enforce request or spend limits; use
+            API key limits or workspace budgets instead.
         monthly_limit_cost_nanos:
           type: integer
           format: int64
           nullable: true
           deprecated: true
           description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use API key limits or workspace budgets instead.
+            Deprecated. Guardrails do not enforce request or spend limits; use
+            API key limits or workspace budgets instead.
         created_at:
           type: string
           format: date-time
@@ -21637,42 +21675,48 @@ components:
               nullable: true
               deprecated: true
               description: >-
-                Deprecated. Guardrails do not enforce request or spend limits; use API key limits or workspace budgets instead.
+                Deprecated. Guardrails do not enforce request or spend limits;
+                use API key limits or workspace budgets instead.
             weekly_limit_requests:
               type: integer
               format: int64
               nullable: true
               deprecated: true
               description: >-
-                Deprecated. Guardrails do not enforce request or spend limits; use API key limits or workspace budgets instead.
+                Deprecated. Guardrails do not enforce request or spend limits;
+                use API key limits or workspace budgets instead.
             monthly_limit_requests:
               type: integer
               format: int64
               nullable: true
               deprecated: true
               description: >-
-                Deprecated. Guardrails do not enforce request or spend limits; use API key limits or workspace budgets instead.
+                Deprecated. Guardrails do not enforce request or spend limits;
+                use API key limits or workspace budgets instead.
             daily_limit_cost_nanos:
               type: integer
               format: int64
               nullable: true
               deprecated: true
               description: >-
-                Deprecated. Guardrails do not enforce request or spend limits; use API key limits or workspace budgets instead.
+                Deprecated. Guardrails do not enforce request or spend limits;
+                use API key limits or workspace budgets instead.
             weekly_limit_cost_nanos:
               type: integer
               format: int64
               nullable: true
               deprecated: true
               description: >-
-                Deprecated. Guardrails do not enforce request or spend limits; use API key limits or workspace budgets instead.
+                Deprecated. Guardrails do not enforce request or spend limits;
+                use API key limits or workspace budgets instead.
             monthly_limit_cost_nanos:
               type: integer
               format: int64
               nullable: true
               deprecated: true
               description: >-
-                Deprecated. Guardrails do not enforce request or spend limits; use API key limits or workspace budgets instead.
+                Deprecated. Guardrails do not enforce request or spend limits;
+                use API key limits or workspace budgets instead.
             created_at:
               type: string
               format: date-time

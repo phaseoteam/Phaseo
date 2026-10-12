@@ -180,6 +180,16 @@ pub fn createProviderCredential<T: Transport>(client: &Client<T>, path: &HashMap
 	client.request("POST", &resolved_path, body)
 }
 
+pub fn createRateLimitAssignment<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/rate-limits/assignments");
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn createRateLimitPolicy<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/rate-limits/policies");
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn createRealtimeSession<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/audio/realtime/sessions");
 	client.request("POST", &resolved_path, body)
@@ -317,6 +327,16 @@ pub fn deletePrivateModel<T: Transport>(client: &Client<T>, path: &HashMap<Strin
 
 pub fn deleteProviderCredential<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/byok/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("DELETE", &resolved_path, body)
+}
+
+pub fn deleteRateLimitAssignment<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/rate-limits/assignments/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("DELETE", &resolved_path, body)
+}
+
+pub fn deleteRateLimitPolicy<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/rate-limits/policies/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("DELETE", &resolved_path, body)
 }
 
@@ -512,6 +532,16 @@ pub fn getProviderCredential<T: Transport>(client: &Client<T>, path: &HashMap<St
 
 pub fn getProviderDerankStatus<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/health/providers/{}/derank", path_segment(path.get("provider_id").map(String::as_str).unwrap_or_default())?);
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn getRateLimitAssignment<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/rate-limits/assignments/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn getRateLimitPolicy<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/rate-limits/policies/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("GET", &resolved_path, body)
 }
 
@@ -747,6 +777,16 @@ pub fn listProviderCredentials<T: Transport>(client: &Client<T>, path: &HashMap<
 
 pub fn listProviders<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/providers");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listRateLimitAssignments<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/rate-limits/assignments");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listRateLimitPolicies<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/rate-limits/policies");
 	client.request("GET", &resolved_path, body)
 }
 
@@ -1052,6 +1092,16 @@ pub fn updatePrivateModel<T: Transport>(client: &Client<T>, path: &HashMap<Strin
 
 pub fn updateProviderCredential<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/byok/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("PATCH", &resolved_path, body)
+}
+
+pub fn updateRateLimitAssignment<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/rate-limits/assignments/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("PATCH", &resolved_path, body)
+}
+
+pub fn updateRateLimitPolicy<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/rate-limits/policies/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("PATCH", &resolved_path, body)
 }
 

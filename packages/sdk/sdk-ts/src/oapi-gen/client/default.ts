@@ -1153,6 +1153,7 @@ export type CreateApiKeyParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    department_id?: string | null;
     disabled?: boolean;
     expires_at?: string | null;
     include_byok_in_limit?: boolean;
@@ -1190,6 +1191,7 @@ export async function createApiKey(
     created_at: string | null;
     created_by: string | null;
     creator_user_id: string | null;
+    department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
     hash: string;
@@ -1253,6 +1255,7 @@ export async function createApiKey(
       created_at: string | null;
       created_by: string | null;
       creator_user_id: string | null;
+      department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
       hash: string;
@@ -4751,6 +4754,120 @@ export async function createProviderCredential(
   });
 }
 
+export type CreateRateLimitAssignmentParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    policy_id: string;
+    target_id?: string;
+    target_type:
+      "key" | "member" | "department" | "guardrail" | "end_user_default";
+  };
+};
+
+/**
+ * Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ */
+export async function createRateLimitAssignment(
+  client: Client,
+  args: CreateRateLimitAssignmentParams = {},
+): Promise<{
+  data: {
+    created_at: string;
+    created_by?: string | null;
+    id: string;
+    policy_id: string;
+    target_id: string | null;
+    target_type:
+      "key" | "member" | "department" | "guardrail" | "end_user_default";
+    updated_at: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/rate-limits/assignments";
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by?: string | null;
+      id: string;
+      policy_id: string;
+      target_id: string | null;
+      target_type:
+        "key" | "member" | "department" | "guardrail" | "end_user_default";
+      updated_at: string;
+      workspace_id: string;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateRateLimitPolicyParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    concurrent_requests?: number | null;
+    description?: string | null;
+    fail_closed?: boolean;
+    name: string;
+    requests_per_minute?: number | null;
+    tokens_per_minute?: number | null;
+  };
+};
+
+/**
+ * Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ */
+export async function createRateLimitPolicy(
+  client: Client,
+  args: CreateRateLimitPolicyParams = {},
+): Promise<{
+  data: {
+    concurrent_requests: number | null;
+    created_at: string;
+    created_by?: string | null;
+    description: string | null;
+    fail_closed: boolean;
+    id: string;
+    name: string;
+    requests_per_minute: number | null;
+    tokens_per_minute: number | null;
+    updated_at: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/rate-limits/policies";
+  return client.request<{
+    data: {
+      concurrent_requests: number | null;
+      created_at: string;
+      created_by?: string | null;
+      description: string | null;
+      fail_closed: boolean;
+      id: string;
+      name: string;
+      requests_per_minute: number | null;
+      tokens_per_minute: number | null;
+      updated_at: string;
+      workspace_id: string;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateRealtimeSessionParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -7248,6 +7365,84 @@ export async function deleteProviderCredential(
   });
 }
 
+export type DeleteRateLimitAssignmentParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Removes a policy from its target. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ */
+export async function deleteRateLimitAssignment(
+  client: Client,
+  args: DeleteRateLimitAssignmentParams,
+): Promise<{
+  data: {
+    deleted: boolean;
+    id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/rate-limits/assignments/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      deleted: boolean;
+      id: string;
+    };
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type DeleteRateLimitPolicyParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Deletes a policy and every assignment that uses it. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ */
+export async function deleteRateLimitPolicy(
+  client: Client,
+  args: DeleteRateLimitPolicyParams,
+): Promise<{
+  data: {
+    deleted: boolean;
+    id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/rate-limits/policies/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      deleted: boolean;
+      id: string;
+    };
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type DeleteVideoParams = {
   path: {
     video_id: string;
@@ -8260,6 +8455,7 @@ export async function getApiKey(
     created_at: string | null;
     created_by: string | null;
     creator_user_id: string | null;
+    department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
     hash: string;
@@ -8324,6 +8520,7 @@ export async function getApiKey(
       created_at: string | null;
       created_by: string | null;
       creator_user_id: string | null;
+      department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
       hash: string;
@@ -8452,6 +8649,7 @@ export async function getCurrentApiKey(
     created_at: string | null;
     created_by: string | null;
     creator_user_id: string | null;
+    department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
     hash: string;
@@ -8514,6 +8712,7 @@ export async function getCurrentApiKey(
       created_at: string | null;
       created_by: string | null;
       creator_user_id: string | null;
+      department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
       hash: string;
@@ -10033,6 +10232,116 @@ export async function getProviderDerankStatus(
   });
 }
 
+export type GetRateLimitAssignmentParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns one rate limit assignment. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ */
+export async function getRateLimitAssignment(
+  client: Client,
+  args: GetRateLimitAssignmentParams,
+): Promise<{
+  data: {
+    created_at: string;
+    created_by?: string | null;
+    id: string;
+    policy_id: string;
+    target_id: string | null;
+    target_type:
+      "key" | "member" | "department" | "guardrail" | "end_user_default";
+    updated_at: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/rate-limits/assignments/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by?: string | null;
+      id: string;
+      policy_id: string;
+      target_id: string | null;
+      target_type:
+        "key" | "member" | "department" | "guardrail" | "end_user_default";
+      updated_at: string;
+      workspace_id: string;
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetRateLimitPolicyParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns one rate limit policy. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ */
+export async function getRateLimitPolicy(
+  client: Client,
+  args: GetRateLimitPolicyParams,
+): Promise<{
+  data: {
+    concurrent_requests: number | null;
+    created_at: string;
+    created_by?: string | null;
+    description: string | null;
+    fail_closed: boolean;
+    id: string;
+    name: string;
+    requests_per_minute: number | null;
+    tokens_per_minute: number | null;
+    updated_at: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/rate-limits/policies/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      concurrent_requests: number | null;
+      created_at: string;
+      created_by?: string | null;
+      description: string | null;
+      fail_closed: boolean;
+      id: string;
+      name: string;
+      requests_per_minute: number | null;
+      tokens_per_minute: number | null;
+      updated_at: string;
+      workspace_id: string;
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type GetVideoParams = {
   path: {
     video_id: string;
@@ -11245,6 +11554,7 @@ export async function listApiKeys(
     created_at: string | null;
     created_by: string | null;
     creator_user_id: string | null;
+    department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
     hash: string;
@@ -11308,6 +11618,7 @@ export async function listApiKeys(
       created_at: string | null;
       created_by: string | null;
       creator_user_id: string | null;
+      department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
       hash: string;
@@ -15238,6 +15549,112 @@ export async function listProviders(
   });
 }
 
+export type ListRateLimitAssignmentsParams = {
+  path?: Record<string, never>;
+  query?: {
+    policy_id?: string;
+    target_type?:
+      "key" | "member" | "department" | "guardrail" | "end_user_default";
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ */
+export async function listRateLimitAssignments(
+  client: Client,
+  args: ListRateLimitAssignmentsParams = {},
+): Promise<{
+  data: {
+    created_at: string;
+    created_by?: string | null;
+    id: string;
+    policy_id: string;
+    target_id: string | null;
+    target_type:
+      "key" | "member" | "department" | "guardrail" | "end_user_default";
+    updated_at: string;
+    workspace_id: string;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/rate-limits/assignments";
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by?: string | null;
+      id: string;
+      policy_id: string;
+      target_id: string | null;
+      target_type:
+        "key" | "member" | "department" | "guardrail" | "end_user_default";
+      updated_at: string;
+      workspace_id: string;
+    }[];
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListRateLimitPoliciesParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the workspace's named rate limit policies. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ */
+export async function listRateLimitPolicies(
+  client: Client,
+  args: ListRateLimitPoliciesParams = {},
+): Promise<{
+  data: {
+    concurrent_requests: number | null;
+    created_at: string;
+    created_by?: string | null;
+    description: string | null;
+    fail_closed: boolean;
+    id: string;
+    name: string;
+    requests_per_minute: number | null;
+    tokens_per_minute: number | null;
+    updated_at: string;
+    workspace_id: string;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/rate-limits/policies";
+  return client.request<{
+    data: {
+      concurrent_requests: number | null;
+      created_at: string;
+      created_by?: string | null;
+      description: string | null;
+      fail_closed: boolean;
+      id: string;
+      name: string;
+      requests_per_minute: number | null;
+      tokens_per_minute: number | null;
+      updated_at: string;
+      workspace_id: string;
+    }[];
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListTeamModelsParams = {
   path?: Record<string, never>;
   query?: {
@@ -19110,6 +19527,7 @@ export async function rotateApiKey(
     created_at: string | null;
     created_by: string | null;
     creator_user_id: string | null;
+    department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
     hash: string;
@@ -19176,6 +19594,7 @@ export async function rotateApiKey(
       created_at: string | null;
       created_by: string | null;
       creator_user_id: string | null;
+      department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
       hash: string;
@@ -19542,6 +19961,7 @@ export type UpdateApiKeyParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    department_id?: string | null;
     disabled?: boolean;
     expires_at?: string | null;
     include_byok_in_limit?: boolean;
@@ -19578,6 +19998,7 @@ export async function updateApiKey(
     created_at: string | null;
     created_by: string | null;
     creator_user_id: string | null;
+    department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
     hash: string;
@@ -19642,6 +20063,7 @@ export async function updateApiKey(
       created_at: string | null;
       created_by: string | null;
       creator_user_id: string | null;
+      department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
       hash: string;
@@ -20968,6 +21390,125 @@ export async function updateProviderCredential(
       sort_order: number;
       suffix?: string | null;
       verification_status?: string | null;
+      workspace_id: string;
+    };
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type UpdateRateLimitAssignmentParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    policy_id: string;
+  };
+};
+
+/**
+ * Switches the policy applied to an assignment's target. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ */
+export async function updateRateLimitAssignment(
+  client: Client,
+  args: UpdateRateLimitAssignmentParams,
+): Promise<{
+  data: {
+    created_at: string;
+    created_by?: string | null;
+    id: string;
+    policy_id: string;
+    target_id: string | null;
+    target_type:
+      "key" | "member" | "department" | "guardrail" | "end_user_default";
+    updated_at: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/rate-limits/assignments/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by?: string | null;
+      id: string;
+      policy_id: string;
+      target_id: string | null;
+      target_type:
+        "key" | "member" | "department" | "guardrail" | "end_user_default";
+      updated_at: string;
+      workspace_id: string;
+    };
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type UpdateRateLimitPolicyParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    concurrent_requests?: number | null;
+    description?: string | null;
+    fail_closed?: boolean;
+    name?: string;
+    requests_per_minute?: number | null;
+    tokens_per_minute?: number | null;
+  };
+};
+
+/**
+ * Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ */
+export async function updateRateLimitPolicy(
+  client: Client,
+  args: UpdateRateLimitPolicyParams,
+): Promise<{
+  data: {
+    concurrent_requests: number | null;
+    created_at: string;
+    created_by?: string | null;
+    description: string | null;
+    fail_closed: boolean;
+    id: string;
+    name: string;
+    requests_per_minute: number | null;
+    tokens_per_minute: number | null;
+    updated_at: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/rate-limits/policies/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      concurrent_requests: number | null;
+      created_at: string;
+      created_by?: string | null;
+      description: string | null;
+      fail_closed: boolean;
+      id: string;
+      name: string;
+      requests_per_minute: number | null;
+      tokens_per_minute: number | null;
+      updated_at: string;
       workspace_id: string;
     };
   }>({

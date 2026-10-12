@@ -105,6 +105,7 @@ type ApiKey struct {
 	CreatedAt *string `json:"created_at"`
 	CreatedBy *string `json:"created_by"`
 	CreatorUserId *string `json:"creator_user_id"`
+	DepartmentId *string `json:"department_id,omitempty"`
 	Disabled bool `json:"disabled"`
 	ExpiresAt *string `json:"expires_at"`
 	Hash string `json:"hash"`
@@ -131,6 +132,7 @@ type ApiKey struct {
 }
 
 type ApiKeyCreateRequest struct {
+	DepartmentId *string `json:"department_id,omitempty"`
 	Disabled *bool `json:"disabled,omitempty"`
 	ExpiresAt *string `json:"expires_at,omitempty"`
 	IncludeByokInLimit *bool `json:"include_byok_in_limit,omitempty"`
@@ -187,6 +189,7 @@ type ApiKeyRotateResponse struct {
 type ApiKeyScopeValue = interface{}
 
 type ApiKeyUpdateRequest struct {
+	DepartmentId *string `json:"department_id,omitempty"`
 	Disabled *bool `json:"disabled,omitempty"`
 	ExpiresAt *string `json:"expires_at,omitempty"`
 	IncludeByokInLimit *bool `json:"include_byok_in_limit,omitempty"`
@@ -214,6 +217,7 @@ type ApiKeyWithValue struct {
 	CreatedAt *string `json:"created_at"`
 	CreatedBy *string `json:"created_by"`
 	CreatorUserId *string `json:"creator_user_id"`
+	DepartmentId *string `json:"department_id,omitempty"`
 	Disabled bool `json:"disabled"`
 	ExpiresAt *string `json:"expires_at"`
 	Hash string `json:"hash"`
@@ -4193,6 +4197,90 @@ type ProvisioningKeyWithValue struct {
 	Scopes *string `json:"scopes,omitempty"`
 	Status *string `json:"status,omitempty"`
 }
+
+type RateLimitAssignment struct {
+	CreatedAt string `json:"created_at"`
+	CreatedBy *string `json:"created_by,omitempty"`
+	Id string `json:"id"`
+	PolicyId string `json:"policy_id"`
+	TargetId *string `json:"target_id"`
+	TargetType string `json:"target_type"`
+	UpdatedAt string `json:"updated_at"`
+	WorkspaceId string `json:"workspace_id"`
+}
+
+type RateLimitAssignmentInput struct {
+	PolicyId string `json:"policy_id"`
+	TargetId *string `json:"target_id,omitempty"`
+	TargetType string `json:"target_type"`
+}
+
+type RateLimitAssignmentListResponse struct {
+	Data []map[string]interface{} `json:"data"`
+}
+
+type RateLimitAssignmentResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type RateLimitAssignmentUpdateInput struct {
+	PolicyId string `json:"policy_id"`
+}
+
+type RateLimitDeleteResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type RateLimitPolicy struct {
+	ConcurrentRequests *int `json:"concurrent_requests"`
+	CreatedAt string `json:"created_at"`
+	CreatedBy *string `json:"created_by,omitempty"`
+	Description *string `json:"description"`
+	FailClosed bool `json:"fail_closed"`
+	Id string `json:"id"`
+	Name string `json:"name"`
+	RequestsPerMinute *int `json:"requests_per_minute"`
+	TokensPerMinute *int `json:"tokens_per_minute"`
+	UpdatedAt string `json:"updated_at"`
+	WorkspaceId string `json:"workspace_id"`
+}
+
+type RateLimitPolicyInput struct {
+	ConcurrentRequests *int `json:"concurrent_requests,omitempty"`
+	Description *string `json:"description,omitempty"`
+	FailClosed *bool `json:"fail_closed,omitempty"`
+	Name string `json:"name"`
+	RequestsPerMinute *int `json:"requests_per_minute,omitempty"`
+	TokensPerMinute *int `json:"tokens_per_minute,omitempty"`
+}
+
+type RateLimitPolicyListResponse struct {
+	Data []map[string]interface{} `json:"data"`
+}
+
+type RateLimitPolicyResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type RateLimitPolicyUpdateInput struct {
+	ConcurrentRequests *int `json:"concurrent_requests,omitempty"`
+	Description *string `json:"description,omitempty"`
+	FailClosed *bool `json:"fail_closed,omitempty"`
+	Name *string `json:"name,omitempty"`
+	RequestsPerMinute *int `json:"requests_per_minute,omitempty"`
+	TokensPerMinute *int `json:"tokens_per_minute,omitempty"`
+}
+
+type RateLimitTargetType string
+
+const (
+	RateLimitTargetTypeKey RateLimitTargetType = "key"
+	RateLimitTargetTypeMember RateLimitTargetType = "member"
+	RateLimitTargetTypeDepartment RateLimitTargetType = "department"
+	RateLimitTargetTypeGuardrail RateLimitTargetType = "guardrail"
+	RateLimitTargetTypeEndUserDefault RateLimitTargetType = "end_user_default"
+)
+
 
 type ReasoningConfig struct {
 	Effort *string `json:"effort,omitempty"`
