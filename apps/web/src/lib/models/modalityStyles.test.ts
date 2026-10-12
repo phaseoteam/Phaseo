@@ -9,13 +9,11 @@ const GROUPS = [
 	"audio_tts",
 	"audio_stt",
 	"audio_music",
-	"file",
 	"moderations",
 	"decisions",
 	"rerank",
 	"embeddings",
-	"ocr",
-	"parse",
+	"documents",
 	"translation",
 ] as const;
 
@@ -27,11 +25,12 @@ describe("getModalityTone", () => {
 	});
 
 	it.each([
-		["ocr", "ocr"],
-		["OCR", "ocr"],
-		["parse", "parse"],
-		["document.parse", "parse"],
-		["parsing", "parse"],
+		["ocr", "documents"],
+		["OCR", "documents"],
+		["parse", "documents"],
+		["document.parse", "documents"],
+		["parsing", "documents"],
+		["documents", "documents"],
 		["translation", "translation"],
 		["audio.translations", "translation"],
 		["/v1/audio/translations", "translation"],

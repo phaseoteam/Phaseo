@@ -2,32 +2,34 @@ import { modelGroupModalities } from "./modelGroupModalities";
 
 describe("modelGroupModalities", () => {
 	it.each([
-		["audio.speech", "audio_tts"],
-		["audio.realtime", "realtime"],
-		["audio.music", "audio_music"],
-		["music.generate", "audio_music"],
-		["text.embed", "embeddings"],
-		["text.rerank", "rerank"],
-		["text.moderate", "moderations"],
-		["image.generate", "image"],
-		["image.edit", "image"],
-		["video.generate", "video"],
-		["text.generate", "text"],
-		["ocr", "ocr"],
-		["parse", "parse"],
-		["audio.translations", "translation"],
-	])("groups %s models with missing output metadata", (endpoint, group) => {
-		expect([...modelGroupModalities(new Set(), [endpoint])]).toEqual([group]);
+		["audio.speech", ["audio_tts", "audio"]],
+		["audio.realtime", ["realtime", "audio"]],
+		["realtime", ["realtime", "audio"]],
+		["audio.music", ["audio_music", "audio"]],
+		["music.generate", ["audio_music", "audio"]],
+		["audio.translations", ["translation", "audio"]],
+		["text.embed", ["embeddings"]],
+		["text.rerank", ["rerank"]],
+		["text.moderate", ["moderations"]],
+		["image.generate", ["image"]],
+		["image.edit", ["image"]],
+		["video.generate", ["video"]],
+		["text.generate", ["text"]],
+		["ocr", ["documents"]],
+		["parse", ["documents"]],
+	])("groups %s models with missing output metadata", (endpoint, groups) => {
+		expect([...modelGroupModalities(new Set(), [endpoint])]).toEqual(groups);
 	});
 
 	it("supports several capability groups while preserving actual outputs", () => {
 		expect([...modelGroupModalities(new Set(["text", "audio"]), ["audio.speech", "audio.realtime"])]).toEqual(["text", "audio", "audio_tts", "realtime"]);
 	});
+
 	it.each(["audio.transcription", "audio.transcribe", "/v1/audio/transcriptions"])(
-		"includes text-output transcription models using %s",
+		"counts text-output transcription models using %s as Audio",
 		(endpoint) => {
 			const outputs = new Set(["text"]);
-			expect([...modelGroupModalities(outputs, [endpoint])]).toEqual(["text", "audio_stt"]);
+			expect([...modelGroupModalities(outputs, [endpoint])]).toEqual(["text", "audio_stt", "audio"]);
 			expect([...outputs]).toEqual(["text"]);
 		},
 	);
@@ -35,17 +37,22 @@ describe("modelGroupModalities", () => {
 	it.each(["audio.translate", "audio.translation", "/v1/audio/translations"])(
 		"groups %s models as translation without classifying them as transcription",
 		(endpoint) => {
-			expect([...modelGroupModalities(new Set(["text"]), ["responses", endpoint])]).toEqual(["text", "translation"]);
+			expect([...modelGroupModalities(new Set(["text"]), ["responses", endpoint])]).toEqual(["text", "translation", "audio"]);
 		},
 	);
 
-	it("keeps OCR and parsing models in their own groups while preserving text output", () => {
-		expect([...modelGroupModalities(new Set(["text"]), ["ocr"])]).toEqual(["text", "ocr"]);
-		expect([...modelGroupModalities(new Set(["text"]), ["parse"])]).toEqual(["text", "parse"]);
+	it("puts OCR and parsing models in one Documents group while preserving text output", () => {
+		expect([...modelGroupModalities(new Set(["text"]), ["ocr"])]).toEqual(["text", "documents"]);
+		expect([...modelGroupModalities(new Set(["text"]), ["parse"])]).toEqual(["text", "documents"]);
+		expect([...modelGroupModalities(new Set(["text"]), ["ocr", "parse"])]).toEqual(["text", "documents"]);
 	});
 
-	it("preserves existing groups without duplicating transcription", () => {
-		expect([...modelGroupModalities(new Set(["text", "audio_stt"]), ["audio.transcription"])]).toEqual(["text", "audio_stt"]);
-		expect([...modelGroupModalities(new Set(["audio_tts"]), undefined)]).toEqual(["audio_tts"]);
+	it("keeps plain text models out of Audio", () => {
+		expect([...modelGroupModalities(new Set(["text"]), ["text.generate", "text.embed"])]).toEqual(["text", "embeddings"]);
+	});
+
+	it("preserves existing groups without duplicating transcription or audio", () => {
+		expect([...modelGroupModalities(new Set(["text", "audio_stt"]), ["audio.transcription"])]).toEqual(["text", "audio_stt", "audio"]);
+		expect([...modelGroupModalities(new Set(["audio_tts"]), undefined)]).toEqual(["audio_tts", "audio"]);
 	});
 });

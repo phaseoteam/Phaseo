@@ -1,3 +1,5 @@
+import { AUDIO_FAMILY_GROUPS } from "./audioFamily";
+
 const CAPABILITY_GROUPS: Record<string, string> = {
 	"text.generate": "text",
 	responses: "text",
@@ -12,6 +14,7 @@ const CAPABILITY_GROUPS: Record<string, string> = {
 	"audio.translations": "translation",
 	"audio.speech": "audio_tts",
 	"audio.realtime": "realtime",
+	realtime: "realtime",
 	"audio.music": "audio_music",
 	"music.generate": "audio_music",
 	"text.embed": "embeddings",
@@ -27,11 +30,16 @@ const CAPABILITY_GROUPS: Record<string, string> = {
 	"video.generate": "video",
 	"video.edit": "video",
 	"video.generations": "video",
-	ocr: "ocr",
-	parse: "parse",
+	ocr: "documents",
+	parse: "documents",
 };
 
-/** Add capability-based groups without changing the model's actual outputs. */
+/**
+ * Add capability-based groups without changing the model's actual outputs.
+ * Every audio sub-type (speech, transcription, translation, realtime, music)
+ * also counts as Audio, so the Audio chip covers the whole family even though
+ * transcription and translation models only output text.
+ */
 export function modelGroupModalities(
 	outputModalities: ReadonlySet<string>,
 	endpoints: readonly string[] | undefined,
@@ -44,5 +52,6 @@ export function modelGroupModalities(
 		const group = CAPABILITY_GROUPS[capability];
 		if (group) groups.add(group);
 	}
+	if (AUDIO_FAMILY_GROUPS.some((group) => groups.has(group))) groups.add("audio");
 	return groups;
 }
