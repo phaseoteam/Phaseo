@@ -13,6 +13,9 @@ describe("modelGroupModalities", () => {
 		["image.edit", "image"],
 		["video.generate", "video"],
 		["text.generate", "text"],
+		["ocr", "ocr"],
+		["parse", "parse"],
+		["audio.translations", "translation"],
 	])("groups %s models with missing output metadata", (endpoint, group) => {
 		expect([...modelGroupModalities(new Set(), [endpoint])]).toEqual([group]);
 	});
@@ -29,8 +32,16 @@ describe("modelGroupModalities", () => {
 		},
 	);
 
-	it("does not classify general audio understanding or translation as transcription", () => {
-		expect([...modelGroupModalities(new Set(["text"]), ["responses", "audio.translations"])]).toEqual(["text"]);
+	it.each(["audio.translate", "audio.translation", "/v1/audio/translations"])(
+		"groups %s models as translation without classifying them as transcription",
+		(endpoint) => {
+			expect([...modelGroupModalities(new Set(["text"]), ["responses", endpoint])]).toEqual(["text", "translation"]);
+		},
+	);
+
+	it("keeps OCR and parsing models in their own groups while preserving text output", () => {
+		expect([...modelGroupModalities(new Set(["text"]), ["ocr"])]).toEqual(["text", "ocr"]);
+		expect([...modelGroupModalities(new Set(["text"]), ["parse"])]).toEqual(["text", "parse"]);
 	});
 
 	it("preserves existing groups without duplicating transcription", () => {

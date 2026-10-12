@@ -38,12 +38,15 @@ import {
 	CircleCheck,
 	CircleMinus,
 	Database,
+	FileBraces,
 	FileText,
 	Headphones,
+	Languages,
 	Music4,
 	Radio,
 	RotateCcw,
 	Route,
+	ScanText,
 	SearchX,
 	Sparkles,
 	Speech,
@@ -184,6 +187,9 @@ const OUTPUT_MODALITY_DISPLAY_ORDER = [
 	"audio_tts",
 	"realtime",
 	"audio_stt",
+	"translation",
+	"ocr",
+	"parse",
 	"embeddings",
 	"moderations",
 	"rerank",
@@ -289,6 +295,9 @@ function normalizeModalityFilterValue(value: string): string {
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return "realtime";
 	}
+	if (/\bocr\b/.test(normalized)) return "ocr";
+	if (/\bpars(e|ing)\b/.test(normalized)) return "parse";
+	if (normalized.includes("translat")) return "translation";
 	if (normalized.includes("image")) return "image";
 	if (normalized.includes("video")) return "video";
 	if (normalized.includes("music")) return "audio_music";
@@ -487,6 +496,9 @@ function toTitleCase(value: string): string {
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
+	if (normalized === "ocr") return "OCR";
+	if (normalized === "parse") return "Document parsing";
+	if (normalized === "translation") return "Translation";
 	return value
 		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
 		.replace(/[._/-]+/g, " ")
@@ -563,6 +575,9 @@ function getModalityIcon(modality: string): LucideIcon {
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return Radio;
 	}
+	if (/\bocr\b/.test(normalized)) return ScanText;
+	if (/\bpars(e|ing)\b/.test(normalized)) return FileBraces;
+	if (normalized.includes("translat")) return Languages;
 	if (normalized.includes("embed")) return Binary;
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
 		return ArrowUpDown;
@@ -1021,6 +1036,9 @@ function ModelsDisplayContent({
 			realtime: "modalityRealtime",
 			file: "modalityFile",
 			rerank: "modalityRerank",
+			ocr: "modalityOcr",
+			parse: "modalityParse",
+			translation: "modalityTranslation",
 		};
 		const normalized = value.toLowerCase();
 		if (keys[normalized]) return tMetadata(keys[normalized] as never);
