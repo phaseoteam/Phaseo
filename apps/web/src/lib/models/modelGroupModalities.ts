@@ -34,6 +34,18 @@ const CAPABILITY_GROUPS: Record<string, string> = {
 	parse: "documents",
 };
 
+/** Group names that older links used before OCR and parsing became Documents. */
+const LEGACY_OUTPUT_GROUPS: Record<string, string> = {
+	ocr: "documents",
+	parse: "documents",
+};
+
+/** Canonical output-group name for a value taken from a URL or older bookmark. */
+export function canonicalOutputGroup(value: string): string {
+	const normalized = value.trim().toLowerCase();
+	return LEGACY_OUTPUT_GROUPS[normalized] ?? normalized;
+}
+
 /**
  * Add capability-based groups without changing the model's actual outputs.
  * Every audio sub-type (speech, transcription, translation, realtime, music)

@@ -1,4 +1,23 @@
-import { modelGroupModalities } from "./modelGroupModalities";
+import { canonicalOutputGroup, modelGroupModalities } from "./modelGroupModalities";
+
+describe("canonicalOutputGroup", () => {
+	it.each([
+		["ocr", "documents"],
+		["parse", "documents"],
+		[" OCR ", "documents"],
+		["documents", "documents"],
+		["audio_stt", "audio_stt"],
+		["Text", "text"],
+	])("turns %j from a link into %s", (value, group) => {
+		expect(canonicalOutputGroup(value)).toBe(group);
+	});
+
+	it("lets an old ?outputModalities=ocr link still match Documents models", () => {
+		const groups = modelGroupModalities(new Set(["text"]), ["ocr"]);
+		expect(groups.has(canonicalOutputGroup("ocr"))).toBe(true);
+		expect(groups.has(canonicalOutputGroup("parse"))).toBe(true);
+	});
+});
 
 describe("modelGroupModalities", () => {
 	it.each([
