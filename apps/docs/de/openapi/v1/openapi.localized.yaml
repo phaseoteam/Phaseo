@@ -1674,7 +1674,7 @@ paths:
         - Gateway
       operationId: uploadFile
       summary: Datei hochladen
-      description: Kompatibilitätsalias für `/batches/files`. Lädt eine Datei zur Stapelverarbeitung hoch und gibt Dateimetadaten des Anbieters zurück. `model` übergeben, damit AI Stats den Anbieter ableiten kann. Für ältere Clients ohne `model` und `provider` wird OpenAI verwendet.
+      description: Kompatibilitätsalias für `/batches/files`. Lädt eine Datei zur Stapelverarbeitung hoch und gibt Dateimetadaten des Anbieters zurück. `model` übergeben, damit Phaseo den Anbieter ableiten kann. Für ältere Clients ohne `model` und `provider` wird OpenAI verwendet.
       parameters:
         - name: model
           in: query

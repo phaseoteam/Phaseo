@@ -1674,7 +1674,7 @@ paths:
         - Gateway
       operationId: uploadFile
       summary: Enviar arquivo
-      description: Alias de compatibilidade para `/batches/files`. Envia um arquivo para processamento em lote e retorna os metadados do arquivo no provedor. Passe `model` para que AI Stats possa inferir o provedor. O padrão é OpenAI para clientes legados que omitem tanto `model` quanto `provider`.
+      description: Alias de compatibilidade para `/batches/files`. Envia um arquivo para processamento em lote e retorna os metadados do arquivo no provedor. Passe `model` para que Phaseo possa inferir o provedor. O padrão é OpenAI para clientes legados que omitem tanto `model` quanto `provider`.
       parameters:
         - name: model
           in: query

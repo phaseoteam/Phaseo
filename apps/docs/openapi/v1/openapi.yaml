@@ -1728,8 +1728,8 @@ paths:
       summary: Upload file
       description: >-
         Compatibility alias for `/batches/files`. Uploads a file for batch
-        processing and returns the upstream file metadata. Pass `model` so AI
-        Stats can infer the upstream provider. Defaults to OpenAI for legacy
+        processing and returns the upstream file metadata. Pass `model` so
+        Phaseo can infer the upstream provider. Defaults to OpenAI for legacy
         clients that omit both `model` and `provider`.
       parameters:
         - name: model

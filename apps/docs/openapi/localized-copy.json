@@ -6746,15 +6746,15 @@
 			"hi": "फ़ाइल अपलोड करें",
 			"ar": "رفع ملف"
 		},
-		"Compatibility alias for `/batches/files`. Uploads a file for batch processing and returns the upstream file metadata. Pass `model` so AI Stats can infer the upstream provider. Defaults to OpenAI for legacy clients that omit both `model` and `provider`.": {
-			"es": "Alias de compatibilidad de `/batches/files`. Sube un archivo para procesamiento por lotes y devuelve los metadatos del archivo del proveedor. Pase `model` para que AI Stats pueda inferir el proveedor. El valor predeterminado es OpenAI para clientes antiguos que omitan tanto `model` como `provider`.",
-			"fr": "Alias de compatibilité de `/batches/files`. Téléverse un fichier pour le traitement par lots et renvoie les métadonnées du fichier du fournisseur. Passez `model` pour qu’AI Stats puisse déduire le fournisseur. OpenAI est utilisé par défaut pour les anciens clients omettant à la fois `model` et `provider`.",
-			"de": "Kompatibilitätsalias für `/batches/files`. Lädt eine Datei zur Stapelverarbeitung hoch und gibt Dateimetadaten des Anbieters zurück. `model` übergeben, damit AI Stats den Anbieter ableiten kann. Für ältere Clients ohne `model` und `provider` wird OpenAI verwendet.",
-			"pt-BR": "Alias de compatibilidade para `/batches/files`. Envia um arquivo para processamento em lote e retorna os metadados do arquivo no provedor. Passe `model` para que AI Stats possa inferir o provedor. O padrão é OpenAI para clientes legados que omitem tanto `model` quanto `provider`.",
-			"ja": "`/batches/files`の互換エイリアス。バッチ処理用にファイルをアップロードし、上流のファイルメタデータを返します。AI Statsが上流プロバイダーを推定できるよう`model`を指定してください。`model`と`provider`を両方省略する旧クライアントではOpenAIが既定です。",
-			"zh-Hans": "`/batches/files`的兼容别名。上传文件以进行批处理，并返回上游文件元数据。传入`model`以便AI Stats推断上游提供商。对于同时省略`model`和`provider`的旧客户端，默认使用OpenAI。",
-			"hi": "`/batches/files` का संगतता alias। बैच प्रोसेसिंग के लिए फ़ाइल अपलोड करता है और अपस्ट्रीम फ़ाइल मेटाडेटा लौटाता है। `model` दें ताकि AI Stats अपस्ट्रीम प्रदाता का अनुमान लगा सके। `model` और `provider` दोनों छोड़ने वाले पुराने क्लाइंट के लिए डिफ़ॉल्ट OpenAI है।",
-			"ar": "اسم بديل للتوافق مع `/batches/files`. يرفع ملفاً للمعالجة الدفعية ويرجع بيانات الملف الوصفية لدى المزوّد الأعلى. مرر `model` كي يتمكن AI Stats من استنتاج المزوّد. يُستخدم OpenAI افتراضياً للعملاء القدامى الذين يغفلون كلاً من `model` و`provider`."
+		"Compatibility alias for `/batches/files`. Uploads a file for batch processing and returns the upstream file metadata. Pass `model` so Phaseo can infer the upstream provider. Defaults to OpenAI for legacy clients that omit both `model` and `provider`.": {
+			"es": "Alias de compatibilidad de `/batches/files`. Sube un archivo para procesamiento por lotes y devuelve los metadatos del archivo del proveedor. Pase `model` para que Phaseo pueda inferir el proveedor. El valor predeterminado es OpenAI para clientes antiguos que omitan tanto `model` como `provider`.",
+			"fr": "Alias de compatibilité de `/batches/files`. Téléverse un fichier pour le traitement par lots et renvoie les métadonnées du fichier du fournisseur. Passez `model` pour qu’Phaseo puisse déduire le fournisseur. OpenAI est utilisé par défaut pour les anciens clients omettant à la fois `model` et `provider`.",
+			"de": "Kompatibilitätsalias für `/batches/files`. Lädt eine Datei zur Stapelverarbeitung hoch und gibt Dateimetadaten des Anbieters zurück. `model` übergeben, damit Phaseo den Anbieter ableiten kann. Für ältere Clients ohne `model` und `provider` wird OpenAI verwendet.",
+			"pt-BR": "Alias de compatibilidade para `/batches/files`. Envia um arquivo para processamento em lote e retorna os metadados do arquivo no provedor. Passe `model` para que Phaseo possa inferir o provedor. O padrão é OpenAI para clientes legados que omitem tanto `model` quanto `provider`.",
+			"ja": "`/batches/files`の互換エイリアス。バッチ処理用にファイルをアップロードし、上流のファイルメタデータを返します。Phaseoが上流プロバイダーを推定できるよう`model`を指定してください。`model`と`provider`を両方省略する旧クライアントではOpenAIが既定です。",
+			"zh-Hans": "`/batches/files`的兼容别名。上传文件以进行批处理，并返回上游文件元数据。传入`model`以便Phaseo推断上游提供商。对于同时省略`model`和`provider`的旧客户端，默认使用OpenAI。",
+			"hi": "`/batches/files` का संगतता alias। बैच प्रोसेसिंग के लिए फ़ाइल अपलोड करता है और अपस्ट्रीम फ़ाइल मेटाडेटा लौटाता है। `model` दें ताकि Phaseo अपस्ट्रीम प्रदाता का अनुमान लगा सके। `model` और `provider` दोनों छोड़ने वाले पुराने क्लाइंट के लिए डिफ़ॉल्ट OpenAI है।",
+			"ar": "اسم بديل للتوافق مع `/batches/files`. يرفع ملفاً للمعالجة الدفعية ويرجع بيانات الملف الوصفية لدى المزوّد الأعلى. مرر `model` كي يتمكن Phaseo من استنتاج المزوّد. يُستخدم OpenAI افتراضياً للعملاء القدامى الذين يغفلون كلاً من `model` و`provider`."
 		},
 		"Model id used to infer the upstream batch file provider.": {
 			"es": "ID del modelo usado para inferir el proveedor del archivo por lotes.",

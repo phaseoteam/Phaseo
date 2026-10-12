@@ -1674,7 +1674,7 @@ paths:
         - Gateway
       operationId: uploadFile
       summary: Téléverser un fichier
-      description: Alias de compatibilité de `/batches/files`. Téléverse un fichier pour le traitement par lots et renvoie les métadonnées du fichier du fournisseur. Passez `model` pour qu’AI Stats puisse déduire le fournisseur. OpenAI est utilisé par défaut pour les anciens clients omettant à la fois `model` et `provider`.
+      description: Alias de compatibilité de `/batches/files`. Téléverse un fichier pour le traitement par lots et renvoie les métadonnées du fichier du fournisseur. Passez `model` pour qu’Phaseo puisse déduire le fournisseur. OpenAI est utilisé par défaut pour les anciens clients omettant à la fois `model` et `provider`.
       parameters:
         - name: model
           in: query

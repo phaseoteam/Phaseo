@@ -21955,7 +21955,7 @@ export type UploadFileParams = {
 };
 
 /**
- * Compatibility alias for `/batches/files`. Uploads a file for batch processing and returns the upstream file metadata. Pass `model` so AI Stats can infer the upstream provider. Defaults to OpenAI for legacy clients that omit both `model` and `provider`.
+ * Compatibility alias for `/batches/files`. Uploads a file for batch processing and returns the upstream file metadata. Pass `model` so Phaseo can infer the upstream provider. Defaults to OpenAI for legacy clients that omit both `model` and `provider`.
  */
 export async function uploadFile(
   client: Client,
