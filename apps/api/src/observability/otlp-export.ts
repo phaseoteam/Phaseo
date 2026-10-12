@@ -609,6 +609,12 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 	return { claimed: rows.length, delivered, retried, failed };
 }
 
+export async function pruneBroadcastEventReceipts(limit = 5000): Promise<number> {
+	const { data, error } = await getSupabaseAdmin().rpc("prune_broadcast_event_receipts", { p_limit: limit });
+	if (error) throw new Error(`broadcast_receipts_prune_failed:${error.message}`);
+	return Number(data ?? 0);
+}
+
 export async function pruneGatewayOtlpOutbox(limit = 5000): Promise<number> {
 	const { data, error } = await getSupabaseAdmin().rpc("prune_otel_export_outbox", { p_limit: limit });
 	if (error) throw new Error(`otel_outbox_prune_failed:${error.message}`);

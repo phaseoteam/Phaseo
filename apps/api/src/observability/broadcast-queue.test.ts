@@ -11,13 +11,22 @@ const state = vi.hoisted(() => ({
 	bindings: {} as Record<string, any>,
 	destinations: [] as Array<Record<string, unknown>>,
 	loadError: null as { message: string } | null,
+	receipts: new Set<string>(),
 }));
 
 vi.mock("@/runtime/env", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@/runtime/env")>()),
 	getBindings: () => state.bindings,
 	getSupabaseAdmin: () => ({
-		from: () => ({
+		from: (table: string) => table === "broadcast_event_receipts" ? {
+			upsert: (rows: Array<{ event_id: string }>) => ({
+				select: async () => {
+					const inserted = rows.filter((row) => !state.receipts.has(row.event_id));
+					for (const row of inserted) state.receipts.add(row.event_id);
+					return { data: inserted, error: null };
+				},
+			}),
+		} : ({
 			select: () => ({
 				in: async (_column: string, ids: string[]) => ({
 					data: state.loadError ? null : state.destinations.filter((row) => ids.includes(String(row.id))),
@@ -74,6 +83,7 @@ describe("processBroadcastQueueBatch", () => {
 		state.bindings = { BROADCAST_QUEUE: { sendBatch }, GATEWAY_IO_LOGS_BUCKET: bucket };
 		state.destinations = [otlp("collector"), webhook("hook")];
 		state.loadError = null;
+		state.receipts = new Set();
 		vi.spyOn(console, "warn").mockImplementation(() => undefined);
 		vi.spyOn(console, "error").mockImplementation(() => undefined);
 	});
@@ -91,7 +101,7 @@ describe("processBroadcastQueueBatch", () => {
 
 		const summary = await processBroadcastQueueBatch(batch(first, second));
 
-		expect(summary).toEqual({ messages: 2, requests: 1, delivered: 2, retried: 0, failed: 0 });
+		expect(summary).toEqual({ messages: 2, duplicates: 0, requests: 1, delivered: 2, retried: 0, failed: 0 });
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 		const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
 		expect(url.toString()).toBe("https://collector.example.com/v1/traces");
@@ -182,6 +192,54 @@ describe("processBroadcastQueueBatch", () => {
 
 		expect(event.retry).toHaveBeenCalledWith({ delaySeconds: 30 });
 		expect(event.ack).not.toHaveBeenCalled();
+	});
+
+	it("delivers an event emitted twice only once", async () => {
+		const fetchMock = vi.fn().mockImplementation(async () => new Response(null, { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+		await processBroadcastQueueBatch(batch(message({ eventId: "req_1", destinationIds: ["collector"] })));
+		const again = message({ eventId: "req_1", destinationIds: ["collector"] });
+		const retried = message({ eventId: "req_1", destinationIds: ["collector"], attempt: 2 });
+
+		const summary = await processBroadcastQueueBatch(batch(again, retried));
+
+		expect(summary).toMatchObject({ duplicates: 1, delivered: 1 });
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+		expect(again.ack).toHaveBeenCalled();
+	});
+
+	it("delivers spilled events one at a time", async () => {
+		const order: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async () => {
+			order.push("send");
+			return new Response(null, { status: 200 });
+		}));
+		bucket.get.mockImplementation(async (key: string) => {
+			order.push(`load ${key}`);
+			return { json: async () => telemetry(key) };
+		});
+
+		const summary = await processBroadcastQueueBatch(batch(
+			message({ eventId: "req_1", destinationIds: ["collector"], telemetry: undefined, spillKey: "a" }),
+			message({ eventId: "req_2", destinationIds: ["collector"], telemetry: undefined, spillKey: "b" }),
+		));
+
+		expect(order).toEqual(["load a", "send", "load b", "send"]);
+		expect(summary).toMatchObject({ requests: 2, delivered: 2 });
+		expect(bucket.delete).toHaveBeenCalledWith(["a", "b"]);
+	});
+
+	it("splits retries to stay under the queue's batch size limit", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 503 })));
+		const large = (eventId: string) => {
+			const event = telemetry(eventId);
+			event.args.requestPayload = { messages: [{ role: "user", content: "x".repeat(90_000) }] };
+			return message({ eventId, destinationIds: ["collector"], telemetry: event });
+		};
+
+		await processBroadcastQueueBatch(batch(large("req_1"), large("req_2"), large("req_3")));
+
+		expect(sendBatch.mock.calls.map(([messages]) => messages.length)).toEqual([2, 1]);
 	});
 
 	it("acknowledges messages it cannot read", async () => {

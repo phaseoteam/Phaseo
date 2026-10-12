@@ -85,11 +85,11 @@ describe("publishBroadcastEvent", () => {
 });
 
 describe("pruneBroadcastSpill", () => {
-	it("deletes spilled events from before yesterday", async () => {
+	it("deletes spilled events older than the queue keeps messages", async () => {
 		const now = new Date("2026-10-12T09:00:00Z");
 		const keys = [
-			broadcastSpillKey("a", new Date("2026-10-10T23:00:00Z")),
-			broadcastSpillKey("b", new Date("2026-10-11T01:00:00Z")),
+			broadcastSpillKey("a", new Date("2026-10-06T23:00:00Z")),
+			broadcastSpillKey("b", new Date("2026-10-07T01:00:00Z")),
 			broadcastSpillKey("c", now),
 		];
 		const bucket = {

@@ -16,17 +16,24 @@ import {
 const DELIVERY_CONCURRENCY = 6;
 // OTLP vendors cap request bodies at 1-5 MB; batches are split below that.
 const MAX_OTLP_REQUEST_BYTES = 3 * 1024 * 1024;
-// Used when the destinations could not be loaded, so nothing was attempted.
-const LOAD_FAILURE_RETRY_SECONDS = 30;
+// Cloudflare caps one sendBatch call at 256 KB and 100 messages.
+const MAX_REQUEUE_BATCH_BYTES = 200_000;
+const MAX_REQUEUE_BATCH_MESSAGES = 100;
+// Used when receipts or destinations could not be loaded, so nothing was attempted.
+const SETUP_FAILURE_RETRY_SECONDS = 30;
 
 type Outcome = Awaited<ReturnType<typeof deliverGatewayOtlpPayload>>;
 type QueuedDestination = Destination & { enabled: boolean };
-type Event = { message: Message<BroadcastQueueMessage>; body: BroadcastQueueMessage; telemetry: BroadcastTelemetry };
+type QueuedMessage = Message<BroadcastQueueMessage>;
+type Event = { message: QueuedMessage; body: BroadcastQueueMessage; telemetry: BroadcastTelemetry };
 // One request: an OTLP batch of events for a destination, or one webhook event.
 type Delivery = { destination: QueuedDestination; config: Record<string, unknown>; events: Event[]; payload: unknown };
+// Destinations an event still needs, and the soonest any may be retried.
+type Pending = { ids: string[]; delayMs: number };
 
 export type BroadcastQueueSummary = {
 	messages: number;
+	duplicates: number;
 	requests: number;
 	delivered: number;
 	retried: number;
@@ -41,6 +48,26 @@ function isBroadcastMessage(body: unknown): body is BroadcastQueueMessage {
 	const value = body as BroadcastQueueMessage | null;
 	return Boolean(value && value.v === 1 && typeof value.eventId === "string" && Array.isArray(value.destinationIds) &&
 		(value.telemetry || typeof value.spillKey === "string"));
+}
+
+// Only an event's first message needs a receipt. Requeued retries and
+// redelivered messages were checked when the event was first received.
+function isFirstDelivery(message: QueuedMessage): boolean {
+	return message.body.attempt === 1 && message.attempts <= 1;
+}
+
+// Records each newly received event id and returns those already recorded,
+// so an event emitted twice is delivered once.
+async function claimReceipts(messages: QueuedMessage[]): Promise<Set<string>> {
+	const ids = [...new Set(messages.filter(isFirstDelivery).map((message) => message.body.eventId))];
+	if (!ids.length) return new Set();
+	const { data, error } = await getSupabaseAdmin()
+		.from("broadcast_event_receipts")
+		.upsert(ids.map((event_id) => ({ event_id })), { onConflict: "event_id", ignoreDuplicates: true })
+		.select("event_id");
+	if (error) throw new Error(`broadcast_receipts_claim_failed:${error.message}`);
+	const claimed = new Set(((data ?? []) as Array<{ event_id: string }>).map((row) => row.event_id));
+	return new Set(ids.filter((id) => !claimed.has(id)));
 }
 
 async function loadTelemetry(body: BroadcastQueueMessage): Promise<BroadcastTelemetry | null> {
@@ -93,41 +120,14 @@ async function deliver(delivery: Delivery): Promise<Outcome> {
 	}
 }
 
-export async function processBroadcastQueueBatch(batch: MessageBatch<unknown>): Promise<BroadcastQueueSummary> {
-	const summary: BroadcastQueueSummary = { messages: batch.messages.length, requests: 0, delivered: 0, retried: 0, failed: 0 };
-	const events: Event[] = [];
-	for (const message of batch.messages) {
-		if (!isBroadcastMessage(message.body)) {
-			console.error("broadcast_queue_message_invalid", { id: message.id });
-			message.ack();
-			continue;
-		}
-		const body = message.body;
-		try {
-			const telemetry = await loadTelemetry(body);
-			if (telemetry) events.push({ message: message as Message<BroadcastQueueMessage>, body, telemetry });
-			else {
-				console.error("broadcast_queue_spill_missing", { eventId: body.eventId });
-				message.ack();
-			}
-		} catch (error) {
-			console.error("broadcast_queue_spill_load_failed", { eventId: body.eventId, error: errorMessage(error) });
-			message.retry();
-		}
-	}
-	if (!events.length) return summary;
-
-	let destinations: Map<string, QueuedDestination>;
-	try {
-		destinations = await loadDestinations([...new Set(events.flatMap((event) => event.body.destinationIds))]);
-	} catch (error) {
-		console.error("broadcast_queue_destinations_load_failed", { error: errorMessage(error) });
-		for (const event of events) event.message.retry({ delaySeconds: LOAD_FAILURE_RETRY_SECONDS });
-		return summary;
-	}
-
-	// Destinations each event still needs, and the soonest any may be retried.
-	const remaining = new Map<Event, { ids: string[]; delayMs: number }>(events.map((event) => [event, { ids: [], delayMs: 0 }]));
+// Delivers loaded events to their destinations and returns what each still needs.
+async function deliverEvents(
+	events: Event[],
+	destinations: Map<string, QueuedDestination>,
+	configs: Map<string, Promise<Record<string, unknown>>>,
+	summary: BroadcastQueueSummary,
+): Promise<Map<Event, Pending>> {
+	const remaining = new Map<Event, Pending>(events.map((event) => [event, { ids: [], delayMs: 0 }]));
 	const record = (event: Event, destinationId: string, outcome: Outcome) => {
 		if (outcome.delivered) {
 			summary.delivered += 1;
@@ -161,7 +161,8 @@ export async function processBroadcastQueueBatch(batch: MessageBatch<unknown>): 
 		}
 		let config: Record<string, unknown>;
 		try {
-			config = await destinationConfig(destination);
+			if (!configs.has(destinationId)) configs.set(destinationId, destinationConfig(destination));
+			config = await configs.get(destinationId)!;
 		} catch (error) {
 			console.error("broadcast_destination_config_failed", { destinationId, error: errorMessage(error) });
 			for (const event of destinationEvents) record(event, destinationId, { delivered: false, retryable: false, status: null, delayMs: 0, error: errorMessage(error) });
@@ -175,7 +176,7 @@ export async function processBroadcastQueueBatch(batch: MessageBatch<unknown>): 
 		}
 	}
 
-	summary.requests = deliveries.length;
+	summary.requests += deliveries.length;
 	await mapWithConcurrency(deliveries, DELIVERY_CONCURRENCY, async (delivery) => {
 		const outcome = await deliver(delivery);
 		if (!outcome.delivered) {
@@ -189,38 +190,117 @@ export async function processBroadcastQueueBatch(batch: MessageBatch<unknown>): 
 		}
 		for (const event of delivery.events) record(event, delivery.destination.id, outcome);
 	});
+	return remaining;
+}
 
-	// A retry is a new message for only the destinations that failed, so the
-	// others are not sent the event twice.
-	const retries = events.filter((event) => remaining.get(event)!.ids.length);
-	let requeued = false;
-	if (retries.length) {
+const delaySeconds = (delayMs: number) => Math.min(Math.ceil(delayMs / 1_000), 86_400);
+
+// A retry is a new message for only the destinations that failed, so the others
+// are not sent the event twice. Returns the events whose retry could not be sent.
+async function requeue(retries: Array<{ event: Event } & Pending>): Promise<Set<Event>> {
+	const chunks: Array<typeof retries> = [];
+	let current: typeof retries = [];
+	let bytes = 0;
+	for (const retry of retries) {
+		const size = JSON.stringify(retry.event.body).length;
+		if (current.length && (bytes + size > MAX_REQUEUE_BATCH_BYTES || current.length >= MAX_REQUEUE_BATCH_MESSAGES)) {
+			chunks.push(current);
+			current = [];
+			bytes = 0;
+		}
+		current.push(retry);
+		bytes += size;
+	}
+	if (current.length) chunks.push(current);
+
+	const unsent = new Set<Event>();
+	for (const chunk of chunks) {
 		try {
-			await getBindings().BROADCAST_QUEUE!.sendBatch(retries.map((event) => {
-				const pending = remaining.get(event)!;
-				return {
-					body: { ...event.body, destinationIds: pending.ids, attempt: event.body.attempt + 1 },
-					contentType: "json" as const,
-					delaySeconds: Math.min(Math.ceil(pending.delayMs / 1_000), 86_400),
-				};
-			}));
-			requeued = true;
+			await getBindings().BROADCAST_QUEUE!.sendBatch(chunk.map((retry) => ({
+				body: { ...retry.event.body, destinationIds: retry.ids, attempt: retry.event.body.attempt + 1 },
+				contentType: "json" as const,
+				delaySeconds: delaySeconds(retry.delayMs),
+			})));
 		} catch (error) {
-			console.error("broadcast_queue_requeue_failed", { events: retries.length, error: errorMessage(error) });
+			console.error("broadcast_queue_requeue_failed", { events: chunk.length, error: errorMessage(error) });
+			for (const retry of chunk) unsent.add(retry.event);
+		}
+	}
+	return unsent;
+}
+
+export async function processBroadcastQueueBatch(batch: MessageBatch<unknown>): Promise<BroadcastQueueSummary> {
+	const summary: BroadcastQueueSummary = { messages: batch.messages.length, duplicates: 0, requests: 0, delivered: 0, retried: 0, failed: 0 };
+	let messages: QueuedMessage[] = [];
+	for (const message of batch.messages) {
+		if (isBroadcastMessage(message.body)) messages.push(message as QueuedMessage);
+		else {
+			console.error("broadcast_queue_message_invalid", { id: message.id });
+			message.ack();
+		}
+	}
+	if (!messages.length) return summary;
+
+	let destinations: Map<string, QueuedDestination>;
+	try {
+		const duplicates = await claimReceipts(messages);
+		// A duplicate shares its spill key with the original, which deletes it.
+		const isDuplicate = (message: QueuedMessage) => isFirstDelivery(message) && duplicates.has(message.body.eventId);
+		for (const message of messages.filter(isDuplicate)) {
+			summary.duplicates += 1;
+			message.ack();
+		}
+		messages = messages.filter((message) => !isDuplicate(message));
+		if (!messages.length) return summary;
+		destinations = await loadDestinations([...new Set(messages.flatMap((message) => message.body.destinationIds))]);
+	} catch (error) {
+		console.error("broadcast_queue_batch_setup_failed", { error: errorMessage(error) });
+		for (const message of messages) message.retry({ delaySeconds: SETUP_FAILURE_RETRY_SECONDS });
+		return summary;
+	}
+
+	// Inline events are delivered together. A spilled event can be many megabytes,
+	// so each is loaded and delivered on its own, then released.
+	const inline = messages.filter((message) => message.body.telemetry);
+	const rounds = [
+		...(inline.length ? [inline] : []),
+		...messages.filter((message) => !message.body.telemetry).map((message) => [message]),
+	];
+	const configs = new Map<string, Promise<Record<string, unknown>>>();
+	const retries: Array<{ event: Event } & Pending> = [];
+	const finished: Event[] = [];
+	for (const round of rounds) {
+		const events: Event[] = [];
+		for (const message of round) {
+			try {
+				const telemetry = await loadTelemetry(message.body);
+				if (telemetry) events.push({ message, body: message.body, telemetry });
+				else {
+					console.error("broadcast_queue_spill_missing", { eventId: message.body.eventId });
+					message.ack();
+				}
+			} catch (error) {
+				console.error("broadcast_queue_spill_load_failed", { eventId: message.body.eventId, error: errorMessage(error) });
+				message.retry();
+			}
+		}
+		if (!events.length) continue;
+		const remaining = await deliverEvents(events, destinations, configs, summary);
+		for (const event of events) {
+			const pending = remaining.get(event)!;
+			if (pending.ids.length) retries.push({ event, ...pending });
+			else finished.push(event);
 		}
 	}
 
-	const finishedSpills: string[] = [];
-	for (const event of events) {
-		const pending = remaining.get(event)!;
-		if (pending.ids.length && !requeued) {
-			// Retrying the original message resends it to every destination.
-			event.message.retry({ delaySeconds: Math.min(Math.ceil(pending.delayMs / 1_000), 86_400) });
-			continue;
-		}
-		if (!pending.ids.length && event.body.spillKey) finishedSpills.push(event.body.spillKey);
-		event.message.ack();
+	const unsent = retries.length ? await requeue(retries) : new Set<Event>();
+	for (const retry of retries) {
+		// Retrying the original message resends it to every destination.
+		if (unsent.has(retry.event)) retry.event.message.retry({ delaySeconds: delaySeconds(retry.delayMs) });
+		else retry.event.message.ack();
 	}
+	for (const event of finished) event.message.ack();
+	const finishedSpills = finished.flatMap((event) => event.body.spillKey ? [event.body.spillKey] : []);
 	if (finishedSpills.length) {
 		try {
 			await getBindings().GATEWAY_IO_LOGS_BUCKET?.delete(finishedSpills);

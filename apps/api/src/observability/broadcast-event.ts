@@ -77,11 +77,14 @@ export async function publishBroadcastEvent(args: {
 	}
 }
 
+// Longer than the queue's message retention (four days, the default), so no
+// message still in the queue can point at a pruned object.
+const SPILL_RETENTION_DAYS = 5;
+
 // Spilled events are deleted once delivered or given up on. This removes any
 // left behind, for example by messages the queue dropped after its own retries.
-// Retry chains end within hours, so objects from before yesterday are unused.
 export async function pruneBroadcastSpill(bucket: R2Bucket, now = new Date()): Promise<number> {
-	const cutoff = new Date(now.getTime() - 86_400_000).toISOString().slice(0, 10);
+	const cutoff = new Date(now.getTime() - SPILL_RETENTION_DAYS * 86_400_000).toISOString().slice(0, 10);
 	const listed = await bucket.list({ prefix: BROADCAST_SPILL_PREFIX, limit: 1000 });
 	const stale = listed.objects
 		.map((object) => object.key)
