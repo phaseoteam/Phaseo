@@ -20,7 +20,7 @@ npx skills add phaseoteam/skills --agent codex --skill '*'
 
 <Visibility for="agents">
 <Note>
-هل تحتاج إلى مساعدة في إعداد وكلاء قابلة لإعادة الاستخدام إلى جانب توصيل المزوّد؟ ثبّت مهارات Phaseo العامة من [`phaseoteam/skills`](https://github.com/phaseoteam/skills):
+تتوفر مهارات Phaseo القابلة لإعادة الاستخدام في [`phaseoteam/skills`](https://github.com/phaseoteam/skills). لعمليات تثبيت Codex، استخدم:
 
 ```bash
 npx skills add phaseoteam/skills --agent codex --skill '*'
@@ -37,13 +37,14 @@ phaseo codex --model openai/gpt-5.6-terra
 
 ثبّت Codex أولًا من إصداره الرسمي. ينشئ الإعداد مفتاحًا دائمًا باسم `Phaseo CLI: Codex API Key`، ويحفظه في مخزن بيانات الاعتماد بنظام التشغيل، ويكتب ملف تعريف مخصصًا لـ Phaseo. يسترجع Codex المفتاح عبر مساعد CLI، لذلك لا يُكتب كنص صريح في `config.toml`.
 
-### ابدأ Codex باستخدام:
+ابدأ Codex باستخدام:
 
 ```bash
 codex --profile phaseo
 ```
 
 يشغّل سير عمل Phaseo CLI نفسه أيضًا [Cline](./cline) و[Kilo Code](./kilo-code) و[oh-my-pi](./oh-my-pi) و[Muse Code](./muse-code) و[MiniMax Code](./minimax-code) بإعداد مزوّد مؤقت ومعزول.
+
 ## الإعداد اليدوي
 
 أنشئ إعدادات المستخدم أو حدّثها في `~/.codex/config.toml`. وفي مشروع موثوق، يمكنك وضع الإعدادات نفسها في `.codex/config.toml` داخل المستودع.
@@ -59,7 +60,7 @@ env_key = "PHASEO_API_KEY"
 wire_api = "responses"
 ```
 
-يستخدم Codex حاليًا بروتوكول Responses wire للمزوّدين المخصّصين. أبقِ `wire_api = "responses"` أو احذف الإعداد لاستخدام القيمة الافتراضية.
+يستخدم Codex حاليًا بروتوكول النقل الخاص بـ Responses للمزوّدين المخصّصين. أبقِ `wire_api = "responses"` أو احذف الإعداد لاستخدام القيمة الافتراضية.
 
 تشترك Codex App وإضافة IDE في طبقات الإعداد نفسها. وفي إضافة IDE، افتح الملف عبر `Codex Settings > Open config.toml`.
 

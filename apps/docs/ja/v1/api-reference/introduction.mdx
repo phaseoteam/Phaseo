@@ -12,11 +12,11 @@ icon: "map"
 | 目的 | 参照先 |
 | --- | --- |
 | 最初のリクエストを送信する | [クイックスタート](../quickstart.mdx) |
-| テキストを生成する、またはツールを使う | `POST /responses` |
+| テキストを生成する、またはツールを使う | [`POST /responses`](./endpoint/responses) |
 | 型付きの判断を行う | [`POST /decisions`](./endpoint/decisions) |
-| 既存の OpenAI 互換連携を維持する | `POST /chat/completions` |
-| モデルとプロバイダーを確認する | `GET /models` と `GET /providers` |
-| 音楽を作成する、またはファイルを管理する | `POST /music/generations` と `POST /files` |
+| 既存の OpenAI 互換連携を維持する | [`POST /chat/completions`](./endpoint/chat-completions) |
+| モデルとプロバイダーを確認する | [`GET /models`](./endpoint/models) と [`GET /providers`](./endpoint/providers) |
+| 音楽を作成する、またはファイルを管理する | [`POST /music/generations`](./endpoint/music-generate) と [`POST /files`](./endpoint/files) |
 | 動画を生成（ベータ） | [`POST /videos`](./endpoint/video-create) |
 | バッチ送信または結果のダウンロード（ベータ） | [`POST /batches`](./endpoint/batches-create) と [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
@@ -43,6 +43,7 @@ OpenAPI ファイルを使うと、Postman、Hoppscotch、SDK ジェネレータ
 </Card>
 
 ドキュメントとSDKは同じ仕様を使います。Video、Batch、Decisionsのエンドポイントは**ベータ**で、ワークスペースのプレビューアクセスが必要な場合があります。
+
 ## 認証
 
 推論には標準のGateway APIキー、管理には適切な権限を持つ管理APIキーを使います。[認証](../developers/authentication.mdx)と[管理APIキー](../developers/management-api-keys.mdx)を参照してください。

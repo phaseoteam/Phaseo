@@ -1,23 +1,23 @@
 ---
 icon: "braces"
 title: "API संदर्भ"
-description: "मुख्य C# Agent SDK types और methods का reference।"
+description: "मुख्य C# Agent SDK टाइप और मेथड का संदर्भ।"
 ---
 
-| API | Purpose |
+| API | उद्देश्य |
 | --- | --- |
 | `AgentSdk.CreateAgent(...)` | एजेंट परिभाषित करें |
-| `AgentSdk.DefineTool(...)` | Local या manual tool परिभाषित करें |
-| `AgentSdk.CreateGatewayAgentClient(...)` | Model turns को Phaseo से connect करें |
-| `Agent.Run(...)` | Terminal या paused state तक चलाएँ |
-| `Agent.Stream(...)` | Replayable async streams के साथ चलाएँ |
-| `Agent.ContinueRun(...)` | Saved या paused state जारी रखें |
-| `AgentStreamResult.GetResult()` | Completed run की प्रतीक्षा करें |
-| `AgentStreamResult.TextStream()` | Text deltas पढ़ें |
-| `AgentStreamResult.FullStream()` | सभी lifecycle events पढ़ें |
-| `AgentStreamResult.Cancel()` | Active run cancel करें |
+| `AgentSdk.DefineTool(...)` | लोकल या मैनुअल टूल परिभाषित करें |
+| `AgentSdk.CreateGatewayAgentClient(...)` | मॉडल टर्न को Phaseo से जोड़ें |
+| `Agent.Run(...)` | अंतिम या रुकी हुई स्थिति तक चलाएँ |
+| `Agent.Stream(...)` | दोबारा चलाई जा सकने वाली एसिंक्रोनस स्ट्रीम के साथ चलाएँ |
+| `Agent.ContinueRun(...)` | सहेजी गई या रुकी हुई स्थिति से आगे जारी रखें |
+| `AgentStreamResult.GetResult()` | पूरे हुए रन की प्रतीक्षा करें |
+| `AgentStreamResult.TextStream()` | टेक्स्ट डेल्टा पढ़ें |
+| `AgentStreamResult.FullStream()` | जीवनचक्र के सभी इवेंट पढ़ें |
+| `AgentStreamResult.Cancel()` | सक्रिय रन रद्द करें |
 
-महत्वपूर्ण records और interfaces में `AgentDefinition`, `RunOptions`, `RunResult`, `RunRecord`, `RunStep`, `Tool`, `ToolDecision`, `ToolOutput`, `RuntimeContext`, `IStateAccessor`, `ModelRetryConfig` और `ToolExecutionConfig` शामिल हैं।
+महत्वपूर्ण रिकॉर्ड और इंटरफ़ेस में `AgentDefinition`, `RunOptions`, `RunResult`, `RunRecord`, `RunStep`, `Tool`, `ToolDecision`, `ToolOutput`, `RuntimeContext`, `IStateAccessor`, `ModelRetryConfig` और `ToolExecutionConfig` शामिल हैं।
 
 ## संबंधित विषय
 

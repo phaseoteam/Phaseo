@@ -1,7 +1,7 @@
 ---
 icon: "image"
-title: "छवियाँ (AI SDK)"
-description: "Vercel AI SDK और Phaseo provider से images बनाएँ।"
+title: "इमेज (AI SDK)"
+description: "Vercel AI SDK और Phaseo प्रदाता से इमेज बनाएँ।"
 ---
 
 `phaseo.imageModel(...)` के साथ `generateImage` का उपयोग करें।
@@ -23,7 +23,7 @@ console.log(result.providerMetadata);
 
 ## नोट्स
 
-- उपलब्ध `size` values चुने गए model पर निर्भर करते हैं।
-- URL-आधारित gateway image responses को AI SDK file output format में normalize किया जाता है, इसलिए पहले स्थिर `uint8Array` और `mediaType` fields पढ़ें।
-- Deterministic workflows के लिए prompt, model और parameters को साथ में सहेजें।
-- लौटाए गए image metadata को asset references के साथ सहेजें।
+- उपलब्ध `size` मान चुने गए मॉडल पर निर्भर करते हैं।
+- URL-आधारित गेटवे इमेज प्रतिक्रियाओं को AI SDK के फ़ाइल आउटपुट प्रारूप में सामान्यीकृत किया जाता है, इसलिए सबसे पहले स्थिर फ़ील्ड `uint8Array` और `mediaType` पढ़ें।
+- नियतात्मक वर्कफ़्लो के लिए प्रॉम्प्ट, मॉडल और पैरामीटर एक साथ सहेजें।
+- लौटाए गए इमेज मेटाडेटा को एसेट संदर्भों के साथ सहेजना बेहतर है।

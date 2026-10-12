@@ -14,9 +14,23 @@ description: "Phaseo Gateway で Gateway ネイティブモデルを確認しま
 
 ## OpenAI 形式
 
-Phaseo API キーで `GET /v1/models?format=openai` を呼び出すと、`{"object":"list","data":[{"id":"openai/gpt-4o-mini","object":"model","created":1721260800,"owned_by":"openai"}]}` 形式の応答を取得できます。既定の `json` 形式は Phaseo のメタデータを引き続き返します。
+OpenAI のモデル一覧レスポンスを想定しているクライアントには、`GET /v1/models?format=openai` を使用します。既定の `format=json` は、より詳細な Phaseo のモデルメタデータを返します。
 
-認証、地域別の利用可否、ワークスペースのプライベートモデル、フィルターは同じです。`limit` を指定しない限りすべての結果を返し、`offset` は引き続き適用されます。ID は Phaseo の正規形式を維持します。`created` はリリース日時の Unix 秒で、不明な場合は `0` です。`owned_by` はカタログの組織 ID、ワークスペースのモデルは `private`、不明な場合は `phaseo` です。
+```bash
+curl 'https://api.phaseo.app/v1/models?format=openai' \
+  -H 'Authorization: Bearer YOUR_PHASEO_API_KEY'
+```
+
+```json
+{
+  "object": "list",
+  "data": [
+    { "id": "openai/gpt-4o-mini", "object": "model", "created": 1721260800, "owned_by": "openai" }
+  ]
+}
+```
+
+OpenAI 形式では、ネイティブの JSON 形式と同じ認証、地域別の利用可否、ワークスペースのプライベートモデル、フィルターが使用されます。`limit` を指定しない限り一致するすべてのモデルを返し、`offset` は引き続き適用されます。ID は推論に使用する Phaseo の正規形式のままです。`created` にはカタログのリリース日が入り、不明な場合は `0` になります。`owned_by` にはカタログの組織が入り、ワークスペースのモデルでは `private`、不明な場合は `phaseo` になります。
 
 ## 便利なフィルター
 

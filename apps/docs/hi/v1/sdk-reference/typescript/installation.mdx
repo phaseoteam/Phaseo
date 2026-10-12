@@ -1,14 +1,14 @@
 ---
 icon: "package"
-title: "TypeScript SDK की स्थापना"
-description: "Phaseo TypeScript SDK को install और set up करने का तरीका।"
+title: "TypeScript SDK इंस्टॉलेशन"
+description: "Phaseo TypeScript SDK को इंस्टॉल और सेट अप करने का तरीका।"
 ---
 
 SDK npm पर [`@phaseo/sdk`](https://www.npmjs.com/package/@phaseo/sdk) के रूप में प्रकाशित है।
 
 ## इंस्टॉलेशन
 
-अपने पसंदीदा package manager से SDK install करें:
+अपने पसंदीदा पैकेज मैनेजर से SDK इंस्टॉल करें:
 
 <CodeGroup>
 
@@ -29,17 +29,17 @@ SDK npm पर [`@phaseo/sdk`](https://www.npmjs.com/package/@phaseo/sdk) के
 ## आवश्यकताएँ
 
 - Node.js 18+
-- TypeScript 4.5+ (type definitions के लिए)
+- TypeScript 4.5+ (टाइप परिभाषाओं के लिए)
 
 ## सेटअप
 
 ### API कुंजी
 
-SDK के लिए Phaseo API key चाहिए। [Gateway Keys](https://phaseo.app/gateway/keys) पर एक बनाएँ।
+SDK इस्तेमाल करने के लिए Phaseo API कुंजी चाहिए। [Gateway कुंजियाँ](https://phaseo.app/settings/keys) पेज पर एक बनाएँ।
 
 ### एनवायरनमेंट वैरिएबल
 
-API key को environment variable के रूप में set करें:
+API कुंजी को एनवायरनमेंट वैरिएबल के रूप में सेट करें:
 
 ```bash
 export PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
@@ -66,5 +66,5 @@ console.log(response.choices[0].message.content);
 
 ## अगले कदम
 
-- Detailed examples के लिए [Usage guide](./usage.mdx) देखें
-- Endpoint documentation के लिए [API reference](../../api-reference/introduction.mdx) देखें
+- विस्तृत उदाहरणों के लिए [उपयोग गाइड](./usage.mdx) देखें
+- एंडपॉइंट दस्तावेज़ीकरण के लिए [API संदर्भ](../../api-reference/introduction.mdx) देखें

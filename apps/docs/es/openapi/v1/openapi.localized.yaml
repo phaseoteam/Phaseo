@@ -1674,7 +1674,7 @@ paths:
         - Gateway
       operationId: uploadFile
       summary: Subir archivo
-      description: Alias de compatibilidad de `/batches/files`. Sube un archivo para procesamiento por lotes y devuelve los metadatos del archivo del proveedor. Pase `model` para que AI Stats pueda inferir el proveedor. El valor predeterminado es OpenAI para clientes antiguos que omitan tanto `model` como `provider`.
+      description: Alias de compatibilidad de `/batches/files`. Sube un archivo para procesamiento por lotes y devuelve los metadatos del archivo del proveedor. Pase `model` para que Phaseo pueda inferir el proveedor. El valor predeterminado es OpenAI para clientes antiguos que omitan tanto `model` como `provider`.
       parameters:
         - name: model
           in: query

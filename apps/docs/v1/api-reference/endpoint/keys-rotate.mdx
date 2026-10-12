@@ -1,6 +1,6 @@
 ---
 title: "Rotate API key"
 badge: "Beta"
-openapi: "POST /keys/{id}/rotate"
+openapi: "/openapi/v1/openapi.yaml POST /keys/{id}/rotate"
 ---
 <Note>The replacement secret is returned once. Set `previous_key_expires_at` to overlap the old and new credentials during rollout.</Note>

@@ -22,6 +22,7 @@ import { fireworksQuirks } from "../providers/fireworks/quirks";
 import { novitaQuirks } from "../providers/novitaai/quirks";
 import { perplexityQuirks } from "../providers/perplexity/quirks";
 import { openAIQuirks } from "../providers/openai/quirks";
+import { metaQuirks } from "../providers/meta/quirks";
 import { basetenQuirks } from "../providers/baseten/quirks";
 import { cohereQuirks } from "../providers/cohere/quirks";
 import { togetherQuirks } from "../providers/together/quirks";
@@ -91,6 +92,8 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	"novita-ai": novitaQuirks,
 	perplexity: perplexityQuirks,
 	openai: openAIQuirks,
+	meta: metaQuirks,
+	"meta-contributor": metaQuirks,
 	baseten: basetenQuirks,
 	cohere: cohereQuirks,
 	together: togetherQuirks,

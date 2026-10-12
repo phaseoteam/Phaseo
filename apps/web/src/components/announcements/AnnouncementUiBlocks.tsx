@@ -49,7 +49,7 @@ const socialLinks: Array<{
 
 const getStartedLinks = [
 	{
-		href: "https://phaseo.app/gateway/keys",
+		href: "https://phaseo.app/settings/keys",
 		label: "getGatewayKey",
 		external: true,
 		variant: "primary",

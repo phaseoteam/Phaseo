@@ -3335,7 +3335,7 @@
           "primary": {
             "type": "button",
             "label": "Obtener clave de API",
-            "href": "https://phaseo.app/es-ES/gateway/keys"
+            "href": "https://phaseo.app/es-ES/settings/keys"
           }
         }
       },
@@ -4996,7 +4996,7 @@
           "primary": {
             "type": "button",
             "label": "Obtenir une clé API",
-            "href": "https://phaseo.app/fr-FR/gateway/keys"
+            "href": "https://phaseo.app/fr-FR/settings/keys"
           }
         }
       },
@@ -6657,7 +6657,7 @@
           "primary": {
             "type": "button",
             "label": "API-Schlüssel erstellen",
-            "href": "https://phaseo.app/de-DE/gateway/keys"
+            "href": "https://phaseo.app/de-DE/settings/keys"
           }
         }
       },
@@ -8318,7 +8318,7 @@
           "primary": {
             "type": "button",
             "label": "Obter chave de API",
-            "href": "https://phaseo.app/pt-BR/gateway/keys"
+            "href": "https://phaseo.app/pt-BR/settings/keys"
           }
         }
       },
@@ -9979,7 +9979,7 @@
           "primary": {
             "type": "button",
             "label": "API キーを取得",
-            "href": "https://phaseo.app/ja/gateway/keys"
+            "href": "https://phaseo.app/ja/settings/keys"
           }
         }
       },
@@ -11640,7 +11640,7 @@
           "primary": {
             "type": "button",
             "label": "获取 API 密钥",
-            "href": "https://phaseo.app/zh-Hans/gateway/keys"
+            "href": "https://phaseo.app/zh-Hans/settings/keys"
           }
         }
       },
@@ -13301,7 +13301,7 @@
           "primary": {
             "type": "button",
             "label": "API कुंजी प्राप्त करें",
-            "href": "https://phaseo.app/hi/gateway/keys"
+            "href": "https://phaseo.app/hi/settings/keys"
           }
         }
       },
@@ -14962,7 +14962,7 @@
           "primary": {
             "type": "button",
             "label": "احصل على مفتاح API",
-            "href": "https://phaseo.app/ar-SA/gateway/keys"
+            "href": "https://phaseo.app/ar-SA/settings/keys"
           }
         }
       }
@@ -14991,7 +14991,7 @@
     "primary": {
       "type": "button",
       "label": "Get API Key",
-      "href": "https://phaseo.app/gateway/keys"
+      "href": "https://phaseo.app/settings/keys"
     }
   },
   "seo": {

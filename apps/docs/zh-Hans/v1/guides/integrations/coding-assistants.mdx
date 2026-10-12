@@ -10,7 +10,7 @@ description: "通过 CLI 或手动提供商设置将编程智能体连接到 Pha
 
 | 目标… | 使用 |
 | --- | --- |
-| 使用隔离的临时设置启动 Cline、Kilo Code、oh-my-pi、Muse Code 或 MiniMax Code | `phaseo cline`, `phaseo kilo`, `phaseo omp`, `phaseo muse`, 或 `phaseo minimax` |
+| 使用隔离的临时设置启动 Cline、Kilo Code、oh-my-pi、Muse Code 或 MiniMax Code | `phaseo cline`、`phaseo kilo`、`phaseo omp`、`phaseo muse` 或 `phaseo minimax` |
 | 配置已安装的智能体并保留其设置 | `phaseo <integration>` |
 | 不使用 Phaseo CLI 配置智能体 | 按照专用指南中的手动提供商步骤操作 |
 
@@ -31,9 +31,9 @@ phaseo codex
 phaseo codex
 ```
 
-Supported integration names are `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor`, and `zed`. 隔离的 CLI 启动器为 `cline`、`kilo`、`omp`、`muse` 和 `minimax`。
+支持的集成名称为 `codex`、`claude-code`、`opencode`、`deepseek-harness`、`pi`、`openclaw`、`hermes`、`aider`、`cline`、`roo-code`、`kilo-code`、`continue`、`cursor` 和 `zed`。隔离的 CLI 启动器为 `cline`、`kilo`、`omp`、`muse` 和 `minimax`。
 
-CLI 会为每个助手创建单独且永不过期的 API 密钥。在全新安装中，它会自动配置 Aider 和 Continue，并自动写入 Zed 的提供商/模型设置。对于只能在编辑器 UI 中保存密钥的助手，它会显示需要填写的字段、链接到专用指南，并允许你仅复制该助手的密钥：
+CLI 会为该助手创建一个以其命名的独立 API 密钥，且该密钥永不过期。在全新安装中，它会自动配置 Aider 和 Continue，并自动写入 Zed 的提供商/模型设置。对于只能在编辑器 UI 中保存密钥的助手，它会显示需要填写的字段、链接到专用指南，并允许你仅复制该助手的密钥：
 
 ```bash
 phaseo integrations credential codex
@@ -71,7 +71,7 @@ phaseo integrations remove codex
 
 Cursor 可通过 OpenAI API 密钥设置添加自定义的 OpenAI 兼容端点。
 
-1. 打开 Cursor Settings。
+1. 打开 `Cursor Settings`。
 2. 进入 `Models`。
 3. 启用或添加 `OpenAI API Key` 项。
 4. 粘贴你的 Phaseo API 密钥。
@@ -86,7 +86,7 @@ Cursor 可通过 OpenAI API 密钥设置添加自定义的 OpenAI 兼容端点�
 
 如果你的 VS Code 或 Insiders 版本提供 OpenAI 兼容提供商，可以通过 VS Code 的 Language Models 编辑器添加模型。
 
-1. 打开命令面板。
+1. 打开命令面板（Command Palette）。
 2. 运行 `Chat: Manage Language Models`。
 3. 选择 `OpenAI Compatible` 或 `OAI Compatible`。
 4. 输入你的 Phaseo API 密钥。
@@ -140,17 +140,18 @@ export OPENAI_API_KEY="your_phaseo_api_key"
 aider --model openai/openai/gpt-5-nano
 ```
 
-Aider 通常要求 OpenAI 兼容的自定义模型带有 `openai/` 前缀。 由于 Phaseo 模型 ID 已包含提供商前缀，Aider 的完整模型字符串可能类似 `openai/openai/gpt-5-nano`。
+Aider 通常要求 OpenAI 兼容的自定义模型带有 `openai/` 前缀。由于 Phaseo 模型 ID 已包含提供商前缀，Aider 的完整模型字符串可能类似 `openai/openai/gpt-5-nano`。
 
 ## Pi、Prime Agent、OpenClaw 和 Hermes Agent
 
 `phaseo pi` 会添加专用提供商扩展，并在运行时从 Phaseo CLI 获取密钥。`phaseo prime-agent` 会将命令支持的提供商写入 `~/.prime/agent/models.json`。二者都会获得兼容的 Phaseo 模型目录。`phaseo openclaw` 会注册兼容模型目录和基于 exec 的 SecretRef，但不会将 API 密钥写入 `openclaw.json`。
 
-如果 Hermes 尚未安装，`phaseo hermes` 会提示运行 Nous Research 官方安装程序，随后配置已安装的代理。它会保存 Hermes 原有模型设置，将 Phaseo 配置为自定义端点，并使用 Hermes 官方命令 `hermes config set` 将专用密钥写入 `~/.hermes/.env` 的 `OPENAI_API_KEY`。Hermes 有意使用此纯文本文件存储提供商凭证；请像保护其他 API 密钥文件一样保护它。移除时会恢复之前的模型设置、删除 `OPENAI_API_KEY` 和 Phaseo 恢复状态，并撤销密钥。
+如果 Hermes 尚未安装，`phaseo hermes` 会提示运行 Nous Research 官方安装程序，随后配置已安装的智能体。它会保存 Hermes 原有模型设置，将 Phaseo 配置为自定义端点，并使用 Hermes 官方命令 `hermes config set` 将专用密钥写入 `~/.hermes/.env` 的 `OPENAI_API_KEY`。Hermes 有意使用此纯文本文件存储提供商凭证；请像保护其他 API 密钥文件一样保护它。移除时会恢复之前的模型设置、删除 `OPENAI_API_KEY` 和 Phaseo 恢复状态，并撤销密钥。
 
 ## MiniMax Code
 
 `mcode` CLI 请参阅专用的 [MiniMax Code 指南](./minimax-code.mdx)。`phaseo minimax` 使用 Phaseo 的 OpenAI 兼容端点创建临时 MiniMax 提供商、启动 CLI，并在会话结束时删除临时数据目录。编辑器或宿主直接使用 ACP 时，MiniMax Code 也支持通过 `mcode acp` 使用 ACP。
+
 ## Zed
 
 运行 `phaseo zed`，然后按照显示的步骤在 Zed 设置中添加 OpenAI 兼容提供商。生成的密钥仅用于 Zed 的凭证输入框。
@@ -194,7 +195,7 @@ claude
 
 ## Claude Desktop
 
-Claude Desktop 支持 MCP 服务器，但不提供 Cursor、Codex 或 Claude Code 等编程智能体所具备的同类自定义模型提供商设置。 使用 [Docs MCP](./docs-mcp.mdx) 可将 Phaseo 文档上下文添加到 Claude Desktop。如果需要 Phaseo 作为模型网关，请使用 Claude Code。
+Claude Desktop 支持 MCP 服务器，但不提供 Cursor、Codex 或 Claude Code 等编程智能体所具备的同类自定义模型提供商设置。使用 [Docs MCP](./docs-mcp.mdx) 可将 Phaseo 文档上下文添加到 Claude Desktop。如果需要 Phaseo 作为模型网关，请使用 Claude Code。
 
 ## Deep Agents CLI 和 LangChain 工具
 

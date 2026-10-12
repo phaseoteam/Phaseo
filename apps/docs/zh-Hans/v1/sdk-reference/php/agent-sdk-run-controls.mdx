@@ -22,15 +22,8 @@ $agent = AgentSdk::createAgent(new AgentDefinition(
 
 运行结果包含状态、步骤、消息、规范化用量、停止原因和最终输出。请检查这些字段，不要将最终文本视为完整的运行记录。
 
-## 验证最终结果
 ```php
 $result = $agent->run(input: $prompt, client: $client);
-
-echo $result->output;
-echo $result->run->status;
-echo $result->usage["total_tokens"];
-echo $result->usage["cost"];
-```
 
 echo $result->output;
 echo $result->run->status;

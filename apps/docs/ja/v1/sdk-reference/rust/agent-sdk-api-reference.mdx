@@ -132,7 +132,7 @@ pub trait ModelClient {
 - `kind`
 - `pending_tool_calls`
 
-各 `PendingToolCall` には、元の `ToolCall`、必要な入力の種類 `kind`、人が読める理由が含まれます。
+各 `PendingToolCall` には、元の `ToolCall`、必要な入力の種類 `kind`、人が読める理由 `reason` が含まれます。
 
 `ToolDecision` は承認済みの `tool_call_id` と省略可能な理由を指定します。`ToolOutput` は `tool_call_id` と JSON 出力を指定します。
 
@@ -152,7 +152,7 @@ pub trait ModelClient {
 
 `UsageSummary` には `input_tokens`、`output_tokens`、`cached_tokens`、`total_tokens`、`cost` が含まれます。
 
-`cost` はモデルクライアントから提供されます。組み込みの Gateway 0.1 アダプターは現在、Gateway の `cost_nanos` または `cost_cents` をこのフィールドに割り当てません。
+`cost` はモデルクライアントから提供されます。組み込みの `0.1` Gateway アダプターは現在、Gateway の `cost_nanos` または `cost_cents` をこのフィールドに割り当てません。
 
 `RunResult`、`RunRecord`、`RunStep`、`Message`、`ToolCall`、`HumanPause`、`PendingToolCall`、`ToolDecision`、`ToolOutput`、`UsageSummary` は、定義に `Serialize` と `Deserialize` が導出されている場合に Serde シリアライズをサポートします。
 

@@ -4,7 +4,7 @@ title: "Python SDK का परिचय"
 description: "Phaseo Gateway API के लिए आधिकारिक Python क्लाइंट"
 ---
 
-PyPI से प्रकाशित [~phaseo~](https://pypi.org/project/phaseo/) पैकेज इंस्टॉल करें।
+PyPI से प्रकाशित [`phaseo`](https://pypi.org/project/phaseo/) पैकेज इंस्टॉल करें।
 
 Phaseo Python SDK सिंक्रोनस `Phaseo` और मूल असिंक्रोनस `AsyncPhaseo` क्लाइंट देता है।
 
@@ -24,7 +24,7 @@ asyncio.run(main())
 
 पार्स किए टेक्स्ट इवेंट के लिए `async for event in client.responses.stream(request)` इस्तेमाल करें।
 मूल asyncio रद्द करना HTTP और पोलिंग रोकता है। संसाधन नेमस्पेस टेक्स्ट,
-छवियाँ, ऑडियो, संगीत, वीडियो, बैच, फ़ाइल, मॉडल, एम्बेडिंग, OCR, पुनः क्रमांकन, पार्स,
+इमेज, ऑडियो, संगीत, वीडियो, बैच, फ़ाइल, मॉडल, एम्बेडिंग, OCR, पुनः क्रमांकन, पार्स,
 मॉडरेशन और निर्णय सँभालते हैं; अन्य HTTP काम के लिए `await client.request(...)` इस्तेमाल करें।
 दिए गए HTTPX क्लाइंट का स्वामित्व कॉल करने वाले के पास रहता है।
 
@@ -44,7 +44,7 @@ API त्रुटि कोड है।
 `to_dict` वाले `start` और `resume` हैंडल देते हैं। असिंक्रोनस विधियों की प्रतीक्षा करें और इवेंट `async for` से पढ़ें।
 केवल वीडियो और बैच दूरस्थ रद्द करना स्वीकार करते हैं। मीडिया
 `videos.stream_content(id)` और बैच `batches.results(id)` से स्ट्रीम करें। सिंक्रोनस
-`download_to(chunks, binary_file)` पूरा फ़ाइल बफ़र किए बिना लिखता है।
+`download_to(chunks, binary_file)` हेल्पर पूरी फ़ाइल बफ़र किए बिना लिखता है।
 अपलोड बाइट, `Path` ऑब्जेक्ट, फ़ाइल ऑब्जेक्ट और HTTPX फ़ाइल टपल स्वीकार करते हैं।
 
 `responses.parse(request, PydanticModel)` पूरा JSON आउटपुट सत्यापित करता है;
@@ -77,8 +77,8 @@ Phaseo रूम **कोड लें** से भेजे अनुरोध 
 ## सुविधाएँ
 
 -   OpenAPI स्पेसिफ़िकेशन से जनरेट किए गए टाइप्ड अनुरोध मॉडल।
--   चैट, responses, messages, इमेज, ऑडियो, एम्बेडिंग, मॉडरेशन, फ़ाइल, बैच, जनरेशन और async वीडियो जॉब के लिए अंतर्निहित हेल्पर।
--   टेक्स्ट, responses और messages के लिए streaming हेल्पर (~stream_*~ iterators)।
+-   चैट, Responses, Messages, इमेज, ऑडियो, एम्बेडिंग, मॉडरेशन, फ़ाइल, बैच, जनरेशन और असिंक्रोनस वीडियो जॉब के लिए अंतर्निहित हेल्पर।
+-   टेक्स्ट, Responses और Messages के लिए स्ट्रीमिंग हेल्पर (`stream_*` इटरेटर)।
 - कंट्रोल-प्लेन हेल्पर से मॉडल, एंडपॉइंट और संगठन देखे जा सकते हैं; कीमतें खोजी और गणना की जा सकती हैं; API कुंजी और वर्कस्पेस का जीवनचक्र प्रबंधित किया जा सकता है; और मौजूदा कुंजी, स्वास्थ्य स्थिति, प्रदाता, क्रेडिट, गतिविधि तथा विश्लेषण की जाँच की जा सकती है।
 
 ## त्वरित उदाहरण
@@ -110,20 +110,21 @@ music = client.music.generate_and_wait(
 )
 ```
 
-वीडियो के लिए `videos.generate_and_wait(request, **options)` और बैच के लिए `batches.create_and_wait(request, **options)` इस्तेमाल करें। सिंक्रोनस सहायक एक बार भेजकर पूरी पूर्ण प्रतिक्रिया देते हैं, केवल ज़रूरत पर पोलिंग करते हैं। `JobFailedError.response` विफल, रद्द या समाप्त जॉब विवरण रखता है। पूरे बैच में अलग अनुरोध विफल हो सकते हैं।
+वीडियो के लिए `videos.generate_and_wait(request, **options)` और बैच के लिए `batches.create_and_wait(request, **options)` इस्तेमाल करें। सिंक्रोनस सहायक एक बार भेजकर पूरी पूर्ण प्रतिक्रिया देते हैं, केवल ज़रूरत पर पोलिंग करते हैं। `JobFailedError.response` विफल, रद्द या समाप्त जॉब विवरण रखता है। पूर्ण हुए बैच में भी कुछ अलग-अलग अनुरोध विफल हो सकते हैं।
 
 हर संसाधन `wait(id, **options)` से मौजूदा जॉब फिर शुरू करके कोई भी अंतिम प्रतिक्रिया देता है। संगीत में सीधे `create(request)` और `retrieve(id)` भी हैं।
 
 विकल्प हैं `interval` (सेकंड; डिफ़ॉल्ट 5, न्यूनतम 0.25), `timeout` (सेकंड; डिफ़ॉल्ट 1800), `on_poll` और `cancel_event` (एक `threading.Event`)। प्रतीक्षा समय सीमा सबमिशन लौटने के बाद शुरू होती है। सिंक्रोनस क्लाइंट अनुरोधों और कॉलबैक के बीच रद्द करना व समय सीमा जाँचता है; इन विकल्पों से जारी HTTP कॉल नहीं रुक सकती।
 
 `JobTimeoutError` और `JobCancelledError` `job_id` व `last_response` रखते हैं। `.wait(error.job_id)` से फिर शुरू करें। स्थानीय समय सीमा या रद्द करने से दूरस्थ जॉब नहीं रुकता और सबमिशन स्वतः फिर नहीं भेजे जाते। सहायक गेटवे में पृष्ठभूमि निष्पादन नहीं जोड़ते।
-## "इसमें क्या शामिल है"
+
+## इसमें क्या शामिल है
 
 -   `Phaseo` क्लाइंट
--   `chat.completions.create(...)` and `responses.create(...)` संगतता हेल्पर
--   रिसोर्स हेल्पर, जैसे `client.batches`, `client.videos`, `client.files`, and `client.async_jobs`
--   बैच और वीडियो लाइफ़साइकल स्ट्रीम के लिए async-job WebSocket URL हेल्पर
--   `client.batches.stream_results(batch_id)` बैच JSONL बाइट खंड के लिए
--   मॉडल लाइफ़साइकल हेल्पर, जैसे `get_model_deprecation_info(...)` and `validate_model(...)`
--   टेक्स्ट, responses और messages के लिए streaming iterators
--   ~phaseo.models~ में जनरेट किए गए अनुरोध/प्रतिक्रिया मॉडल
+-   `chat.completions.create(...)` और `responses.create(...)` संगतता हेल्पर
+-   संसाधन हेल्पर, जैसे `client.batches`, `client.videos`, `client.files` और `client.async_jobs`
+-   बैच और वीडियो जीवनचक्र स्ट्रीम के लिए असिंक्रोनस जॉब WebSocket URL हेल्पर
+-   बैच JSONL बाइट खंडों के लिए `client.batches.stream_results(batch_id)`
+-   मॉडल जीवनचक्र हेल्पर, जैसे `get_model_deprecation_info(...)` और `validate_model(...)`
+-   टेक्स्ट, Responses और Messages के लिए स्ट्रीमिंग इटरेटर
+-   `phaseo.models` में जनरेट किए गए अनुरोध/प्रतिक्रिया मॉडल

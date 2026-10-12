@@ -1,10 +1,10 @@
 ---
 icon: "image"
-title: "छवि जनरेशन"
-description: "Phaseo server tool के ज़रिए models को images बनाने दें।"
+title: "इमेज जनरेशन"
+description: "Phaseo सर्वर टूल के ज़रिए मॉडलों को इमेज बनाने दें।"
 ---
 
-जवाब देते समय model को image बनानी हो, तो `phaseo:image_generation` उपयोग करें। Phaseo model को managed tool देता है, image request server-side चलाता है और परिणाम model loop में लौटाता है।
+जब मॉडल को जवाब देते समय इमेज बना पाने की क्षमता चाहिए, तो `phaseo:image_generation` उपयोग करें। Phaseo मॉडल को एक प्रबंधित टूल देता है, इमेज अनुरोध को सर्वर पर चलाता है और इमेज का परिणाम वापस मॉडल लूप में भेजता है।
 
 ## अनुरोध
 
@@ -42,13 +42,13 @@ curl https://api.phaseo.app/v1/responses \
 | `output_compression` | integer | प्रदाता के लिए वैकल्पिक कम्प्रेशन संकेत। |
 | `moderation` | string | प्रदाता के लिए वैकल्पिक मॉडरेशन संकेत। |
 
-Tool call के समय final `prompt` model देता है। Tool-level parameters उस call के defaults और constraints तय करते हैं।
+टूल कॉल करते समय अंतिम `prompt` मॉडल देता है। टूल-स्तर के पैरामीटर उस कॉल के डिफ़ॉल्ट और पाबंदियाँ तय करते हैं।
 
-Tool call में `prompt` के बजाय `description` भी भेज सकते हैं। Model-generated image descriptions के साथ compatibility के लिए Phaseo `description` को prompt alias मानता है।
+टूल कॉल में `prompt` के बजाय `description` भी भेजा जा सकता है। मॉडल द्वारा जनरेट किए गए इमेज विवरणों के साथ संगतता के लिए Phaseo `description` को प्रॉम्प्ट का उपनाम मानता है।
 
 ## टूल का परिणाम
 
-Result model को JSON के रूप में लौटाया जाता है:
+परिणाम मॉडल को JSON के रूप में लौटाया जाता है:
 
 ```json
 {
@@ -59,7 +59,7 @@ Result model को JSON के रूप में लौटाया जात
 }
 ```
 
-कुछ providers इसके बजाय base64 image data लौटाते हैं:
+कुछ प्रदाता इसके बजाय base64 इमेज डेटा लौटाते हैं:
 
 ```json
 {
@@ -72,7 +72,7 @@ Result model को JSON के रूप में लौटाया जात
 
 ## उपयोग और मूल्य निर्धारण
 
-Image model द्वारा token usage report किए जाने पर image generation usage parent response usage में शामिल होता है। Phaseo यह भी record करता है:
+जब इमेज मॉडल टोकन उपयोग रिपोर्ट करता है, तो इमेज जनरेशन का उपयोग मूल प्रतिक्रिया के उपयोग में शामिल होता है। Phaseo यह भी दर्ज करता है:
 
 ```json
 {
@@ -84,9 +84,9 @@ Image model द्वारा token usage report किए जाने पर 
 }
 ```
 
-Pricing cards इसे `server_tool_image_generation_requests` meter से bill कर सकते हैं। Underlying image model usage पर उसकी सामान्य model pricing के अनुसार शुल्क भी लग सकता है।
+मूल्य निर्धारण कार्ड इसका बिल `server_tool_image_generation_requests` मीटर से बना सकते हैं। अंतर्निहित इमेज मॉडल के उपयोग पर फिर भी उसके सामान्य मॉडल मूल्य निर्धारण के अनुसार शुल्क लग सकता है।
 
 ## संबंधित
 
-- [Server tools](./index.mdx)
-- [Tool calling](../tool-calling.mdx)
+- [सर्वर टूल](./index.mdx)
+- [टूल कॉलिंग](../tool-calling.mdx)

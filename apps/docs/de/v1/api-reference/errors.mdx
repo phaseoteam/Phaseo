@@ -1,12 +1,12 @@
 ---
 title: "Fehler und Debugging"
-description: "Verstehen Sie Phaseo-Fehler und beheben Sie häufige Probleme mit Anfragen, Anbietern und Routing schneller."
+description: "Verstehe Phaseo-Fehler und behebe häufige Probleme mit Anfragen, Anbietern und Routing schneller."
 icon: "bug"
 ---
 
-Auf dieser Seite erfahren Sie, was ein Phaseo-Fehler bedeutet und was als Nächstes zu tun ist.
+Auf dieser Seite erfährst du, was ein Phaseo-Fehler bedeutet und was als Nächstes zu tun ist.
 
-Alle Fehlerantworten verwenden dasselbe JSON-Format. So kann Ihre Anwendung Fehler bei allen Modellen und Anbietern einheitlich behandeln.
+Alle Fehlerantworten verwenden dasselbe JSON-Format. So kann deine Anwendung Fehler bei allen Modellen und Anbietern einheitlich behandeln.
 
 ## Beispiel einer Fehlerantwort
 
@@ -51,7 +51,7 @@ Alle Fehlerantworten verwenden dasselbe JSON-Format. So kann Ihre Anwendung Fehl
 
 ## Felder, die immer zurückgegeben werden
 
-- `generation_id`: stabile Anfrage-ID, die Sie an den Support weitergeben können.
+- `generation_id`: stabile Anfrage-ID, die du an den Support weitergeben kannst.
 - `status_code`: entspricht dem HTTP-Statuscode.
 - `error`: maschinenlesbarer Fehlercode, z. B. `validation_error`.
 - `error_type`: allgemeine Klasse, meist `user` oder `system`.
@@ -74,9 +74,9 @@ Einige Fehler enthalten zusätzliche Informationen, die bei der schnelleren Behe
 
 | Status | Bedeutung | Empfohlene Aktion |
 | --- | --- | --- |
-| `400-499` | Problem mit Anfrage, Authentifizierung oder Berechtigung | Korrigieren Sie die Anfrage oder Zugangsdaten, bevor Sie es erneut versuchen. |
-| `429` | Ratenbegrenzung durch Anbieter oder Route | Versuchen Sie es mit Backoff erneut und beachten Sie `Retry-After`. |
-| `500-599` | Phaseo- oder Upstream-Anbieterfehler | Versuchen Sie es mit zufälligem Backoff erneut und protokollieren Sie die Anfrage-ID. |
+| `400-499` | Problem mit Anfrage, Authentifizierung oder Berechtigung | Korrigiere die Anfrage oder Zugangsdaten, bevor du es erneut versuchst. |
+| `429` | Ratenbegrenzung durch Anbieter oder Route | Versuche es mit Backoff erneut und beachte `Retry-After`. |
+| `500-599` | Phaseo- oder Upstream-Anbieterfehler | Versuche es mit zufälligem Backoff erneut und protokolliere die Anfrage-ID. |
 
 ## Häufige Fehlercodes
 
@@ -85,15 +85,15 @@ Einige Fehler enthalten zusätzliche Informationen, die bei der schnelleren Behe
 | `authentication_error` | `401` | API-Schlüssel fehlt oder ist ungültig. |
 | `authorization_error` | `403` | Der Schlüssel hat keinen Zugriff auf diese Ressource. |
 | `not_found_error` | `404` | Endpunkt oder Ressource wurde nicht gefunden. |
-| `rate_limit_error` | `429` | Zu viele Anfragen. Versuchen Sie es nach der angegebenen Wartezeit erneut. |
-| `phaseo_free_model_limit_exceeded` | `429` | Das gemeinsame Tageskontingent für kostenlose Phaseo-Modelle ist ausgeschöpft (standardmäßig 1.500 Anfragen). Beachten Sie `Retry-After`, warten Sie bis zur Zurücksetzung um 00:00 UTC oder wählen Sie ein kostenpflichtiges Modell. |
+| `rate_limit_error` | `429` | Zu viele Anfragen. Versuche es nach der angegebenen Wartezeit erneut. |
+| `phaseo_free_model_limit_exceeded` | `429` | Das gemeinsame Tageskontingent für kostenlose Phaseo-Modelle ist ausgeschöpft (standardmäßig 1.500 Anfragen). Beachte `Retry-After`, warte bis zur Zurücksetzung um 00:00 UTC oder wähle ein kostenpflichtiges Modell. |
 | `validation_error` | `400` | Ungültige Parameter oder ungültiger Anfrage-Body. |
 | `provider_error` | `502` | Der Upstream-Modellanbieter hat nicht korrekt geantwortet. |
 | `server_error` | `500` | In Phaseo ist ein unerwartetes Problem aufgetreten. |
 
 ## Wenn ein Anbieter ausfällt
 
-Wenn Phaseo einen Anbieter erreicht hat, die Anfrage aber trotzdem fehlgeschlagen ist, sehen Sie möglicherweise:
+Wenn Phaseo einen Anbieter erreicht hat, die Anfrage aber trotzdem fehlgeschlagen ist, siehst du möglicherweise:
 
 - `provider_failure_diagnostics.category`
 - `provider_failure_diagnostics.hint`
@@ -120,7 +120,7 @@ Bei Antworten mit `unsupported_model_or_endpoint` kann Phaseo Folgendes zurückg
 - `missing_pricing_providers`
 - `routing_diagnostics`
 
-So können Sie unterscheiden zwischen:
+So kannst du unterscheiden zwischen:
 
 - einem bekannten Modell, das noch nicht aktiv ist
 - einem Modell, das den angeforderten Endpunkt nicht unterstützt
@@ -214,27 +214,27 @@ Verfügbare Felder:
 - `trace`
 - `trace_level` (`summary` oder `full`)
 
-Verwenden Sie den Debug-Modus nur in der Entwicklung oder in streng kontrollierten Umgebungen.
+Verwende den Debug-Modus nur in der Entwicklung oder in streng kontrollierten Umgebungen.
 
 ## Wiederholungsstrategie
 
-- **400er-Fehler außer 429:** Korrigieren Sie die Anfrage, Zugangsdaten oder Zugriffsrichtlinie vor einem erneuten Versuch.
-- **429:** Verwenden Sie exponentielles Backoff und beachten Sie den `Retry-After`-Header.
-- **500er-Fehler:** Verwenden Sie begrenzte Wiederholungsversuche nur, wenn die Wiederholung sicher ist. Eine Übermittlung mit unklarem Ergebnis kann bereits einen Job erstellt oder Kosten verursacht haben; rufen Sie einen angenommenen Job ab, statt ihn erneut zu übermitteln.
+- **400er-Fehler außer 429:** Korrigiere die Anfrage, Zugangsdaten oder Zugriffsrichtlinie vor einem erneuten Versuch.
+- **429:** Verwende exponentielles Backoff und beachte den `Retry-After`-Header.
+- **500er-Fehler:** Verwende begrenzte Wiederholungsversuche nur, wenn die Wiederholung sicher ist. Eine Übermittlung mit unklarem Ergebnis kann bereits einen Job erstellt oder Kosten verursacht haben; rufe einen angenommenen Job ab, statt ihn erneut zu übermitteln.
 
-Legen Sie eine maximale Anzahl von Versuchen und eine Gesamtfrist fest und ergänzen Sie die Backoff-Wartezeiten um zufällige Streuung. Informationen zu Antwort-Headern und Wiederholungsversuchen finden Sie unter [Anfragelimits](./limits.mdx).
+Lege eine maximale Anzahl von Versuchen und eine Gesamtfrist fest und ergänze die Backoff-Wartezeiten um zufällige Streuung. Informationen zu Antwort-Headern und Wiederholungsversuchen findest du unter [Anfragelimits](./limits.mdx).
 
 ## Hinweise speziell für Streaming
 
-- Schlägt die Anfrage vor Beginn des Streamings fehl, erhalten Sie eine standardmäßige JSON-Fehlerantwort.
-- Schlägt sie während des Streams fehl, behandeln Sie den Teilstream als unvollständig und bieten Sie einen erneuten Versuch an.
-- Protokollieren Sie immer `generation_id` sowie Endpunkt- und Modellmetadaten.
+- Schlägt die Anfrage vor Beginn des Streamings fehl, erhältst du eine standardmäßige JSON-Fehlerantwort.
+- Schlägt sie während des Streams fehl, behandle den Teilstream als unvollständig und biete einen erneuten Versuch an.
+- Protokolliere immer `generation_id` sowie Endpunkt- und Modellmetadaten.
 
 ## Tipps zur Fehlerbehebung
 
-- Prüfen Sie auf der [Gateway-Statusseite](https://status.phaseo.app), ob gerade eine Störung vorliegt.
-- Vergleichen Sie den Anfrage-Body mit der Endpunktdokumentation.
-- Geben Sie bei einer Supportanfrage die `generation_id` an.
+- Prüfe auf der [Gateway-Statusseite](https://status.phaseo.app), ob gerade eine Störung vorliegt.
+- Vergleiche den Anfrage-Body mit der Endpunktdokumentation.
+- Gib bei einer Supportanfrage die `generation_id` an.
 
 ## Zugehörige Ressourcen
 
@@ -244,28 +244,28 @@ Legen Sie eine maximale Anzahl von Versuchen und eine Gesamtfrist fest und ergä
 		icon="key"
 		href="../developers/authentication.mdx"
 	>
-		Authentifizieren Sie sich mit Bearer-API-Schlüsseln.
+		Authentifiziere dich mit Bearer-API-Schlüsseln.
 	</Card>
 	<Card
 		title="Limits"
 		icon="gauge"
 		href="./limits.mdx"
 	>
-		Behandeln Sie anbietergesteuerte Drosselungen und Wiederholungen.
+		Behandle anbietergesteuerte Drosselungen und Wiederholungen.
 	</Card>
 	<Card
 		title="Streaming"
 		icon="radio"
 		href="../guides/streaming.mdx"
 	>
-		Verwenden Sie SSE sicher in Produktionsabläufen.
+		Verwende SSE sicher in Produktionsabläufen.
 	</Card>
 </Columns>
 
 <Visibility for="agents">
-Wenn Sie als Agent die Fehlerbehandlung implementieren:
+Wenn du als Agent die Fehlerbehandlung implementierst:
 
-- Verwenden Sie Repository-Skills für Wiederholungslogik, strukturierte Protokollierung und schema-sicheres Parsen von Fehlern.
-- Behandeln Sie Debug-Payloads als potenziell vertraulich und schwärzen Sie sie vor der dauerhaften Protokollierung.
-- Bevorzugen Sie deterministische Wiederholungen (begrenzte Versuche mit Jitter) gegenüber Endlosschleifen.
+- Verwende Repository-Skills für Wiederholungslogik, strukturierte Protokollierung und schema-sicheres Parsen von Fehlern.
+- Behandle Debug-Payloads als potenziell vertraulich und schwärze sie vor der dauerhaften Protokollierung.
+- Bevorzuge deterministische Wiederholungen (begrenzte Versuche mit Jitter) gegenüber Endlosschleifen.
 </Visibility>

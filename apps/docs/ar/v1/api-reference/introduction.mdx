@@ -12,11 +12,11 @@ icon: "map"
 | إذا أردت | ابدأ من |
 | --- | --- |
 | إرسال طلبك الأول | [البدء السريع](../quickstart.mdx) |
-| توليد النص أو استخدام الأدوات | `POST /responses` |
+| توليد النص أو استخدام الأدوات | [`POST /responses`](./endpoint/responses) |
 | اتخاذ قرارات ذات أنواع محددة | [`POST /decisions`](./endpoint/decisions) |
-| الإبقاء على تكامل OpenAI متوافق موجود | `POST /chat/completions` |
-| تصفح النماذج والمزوّدين | `GET /models` و`GET /providers` |
-| إنشاء الموسيقى أو إدارة الملفات | `POST /music/generations` و`POST /files` |
+| الإبقاء على تكامل موجود متوافق مع OpenAI | [`POST /chat/completions`](./endpoint/chat-completions) |
+| تصفح النماذج والمزوّدين | [`GET /models`](./endpoint/models) و[`GET /providers`](./endpoint/providers) |
+| إنشاء الموسيقى أو إدارة الملفات | [`POST /music/generations`](./endpoint/music-generate) و[`POST /files`](./endpoint/files) |
 | توليد فيديو (تجريبي) | [`POST /videos`](./endpoint/video-create) |
 | إرسال دفعة أو تنزيل النتائج (تجريبي) | [`POST /batches`](./endpoint/batches-create) و[`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
@@ -43,6 +43,7 @@ https://api.phaseo.app/v1
 </Card>
 
 يستخدم التوثيق وSDKs المواصفة نفسها. نقاط نهاية Video وBatch وDecisions موسومة بأنها **تجريبية**؛ وقد يلزم وصول معاينة لمساحة العمل.
+
 ## المصادقة
 
 استخدم مفتاح API قياسيًا للبوابة للاستدلال ومفتاح API للإدارة بالأذونات المناسبة للمهام الإدارية. راجع [المصادقة](../developers/authentication.mdx) و[مفاتيح API للإدارة](../developers/management-api-keys.mdx).
@@ -58,7 +59,7 @@ Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 | المورد | وظيفته |
 | --- | --- |
 | الاستدلال | ولّد نصوصًا وصورًا وصوتًا وتضمينات؛ واتخذ قرارات وأعد الترتيب وراجع المحتوى أو حلّله. ابدأ بـ[Responses](./endpoint/responses.mdx) أو[Decisions](./endpoint/decisions.mdx). |
-| المهام غير المتزامنة والملفات | أرسل مهام [فيديو](./endpoint/video-create.mdx) أو[دفعات](./endpoint/batches-create.mdx)، وانقل الملفات واضبط Webhooks. |
+| المهام غير المتزامنة والملفات | أرسل مهام [فيديو](./endpoint/video-create.mdx) أو[دفعات](./endpoint/batches-create.mdx)، وانقل الملفات واضبط الويب هوك. |
 | النماذج والتسعير | اكتشف [النماذج](./endpoint/models.mdx) وعروض المزوّدين و[التكاليف التقديرية](./endpoint/pricing-calculate.mdx). |
 | التوجيه والسياسات | اضبط الإعدادات المسبقة وبيانات اعتماد المزوّدين والنماذج الخاصة و[ضوابط الحماية](./endpoint/guardrails.mdx). |
 | الاستخدام والمراقبة | افحص [السجلات](./endpoint/logs-list.mdx) والنشاط والتحليلات والتقييمات وحالة الخدمة. |

@@ -20,7 +20,7 @@ icon: "plug-zap"
 开始之前，请准备好以下内容：
 
 - 一个已开通 Gateway 访问权限的 Phaseo 账户。
-- 从[控制台](https://phaseo.app/gateway/keys)获取的 API 密钥。
+- 从[控制台](https://phaseo.app/settings/keys)获取的 API 密钥。
 - 一个 HTTP 客户端、OpenAI 兼容 SDK 或 Phaseo SDK。
 - 一个受支持的模型 ID，例如 `google/gemma-3-27b:free`，可用于零积分起步。
 
@@ -127,7 +127,7 @@ import (
   "context"
   "fmt"
 
-  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
 )
 
 func main() {

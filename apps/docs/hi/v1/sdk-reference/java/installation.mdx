@@ -1,6 +1,6 @@
 ---
 title: "Java SDK इंस्टॉलेशन (विकासाधीन)"
-description: "अभी विकासाधीन Java SDK को source से build करें।"
+description: "अभी विकासाधीन Java SDK को सोर्स से बिल्ड करें।"
 ---
 
 <Note type="warning">Java SDK अभी विकासाधीन है और Maven Central पर प्रकाशित नहीं हुआ है।</Note>
@@ -10,7 +10,7 @@ description: "अभी विकासाधीन Java SDK को source स�
 - Java 17+
 - Maven 3.8+
 
-## स्थानीय रूप से build करें
+## स्थानीय रूप से बिल्ड करें
 
 ```bash
 cd packages/sdk/sdk-java
@@ -21,7 +21,7 @@ mvn -DskipTests package
 
 ## अपने प्रोजेक्ट में उपयोग करें
 
-Generated JAR को local Maven cache में install करें:
+जनरेट की गई JAR फ़ाइल को अपने स्थानीय Maven कैश में इंस्टॉल करें:
 
 ```bash
 mvn install:install-file \
@@ -32,7 +32,7 @@ mvn install:install-file \
   -Dpackaging=jar
 ```
 
-इसके बाद इसे अपनी app की `pom.xml` में dependency के रूप में जोड़ें:
+इसके बाद इसे अपने ऐप की `pom.xml` में डिपेंडेंसी के रूप में जोड़ें:
 
 ```xml
 <dependency>

@@ -8,7 +8,7 @@ icon: "/icons/brands/openai.svg"
 
 استخدم هذا الدليل لاعتماد عائلة GPT-5.6 بأمان في بيئة الإنتاج.
 
-GPT-5.6 هي عائلة GPT الحالية من OpenAI لسير العمل الإنتاجي المعقد. وفي AI Stats، تقابل معرّفات المستويات الثابتة معرّفات نماذج OpenAI `gpt-5.6-sol` و`gpt-5.6-terra` و`gpt-5.6-luna`.
+GPT-5.6 هي عائلة GPT الحالية من OpenAI لسير العمل الإنتاجي المعقد. وفي Phaseo، تقابل معرّفات المستويات الثابتة معرّفات نماذج OpenAI `gpt-5.6-sol` و`gpt-5.6-terra` و`gpt-5.6-luna`.
 
 ## البدء السريع للترحيل
 
@@ -25,9 +25,9 @@ GPT-5.6 هي عائلة GPT الحالية من OpenAI لسير العمل ال�
 | `openai/gpt-5.6-terra` | عمل يومي متوازن يشمل الاستدلال والبرمجة وسير عمل المساعد | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 | `openai/gpt-5.6-luna` | أعباء GPT-5.6 الحساسة لزمن الاستجابة والتكلفة | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 
-يوجّه الاسم المستعار `gpt-5.6` من OpenAI إلى `gpt-5.6-sol`. في AI Stats، استخدم `openai/gpt-5.6` أو `openai/gpt-sol-latest` عند الرغبة في اعتماد Sol افتراضيًا، واستخدم معرّفات المستويات الثابتة للتحكم في التوجيه.
+يوجّه الاسم المستعار `gpt-5.6` من OpenAI إلى `gpt-5.6-sol`. في Phaseo، استخدم `openai/gpt-5.6` أو `openai/gpt-sol-latest` عند الرغبة في اعتماد Sol افتراضيًا، واستخدم معرّفات المستويات الثابتة للتحكم في التوجيه.
 
-يتتبع AI Stats أيضًا الأسماء المستعارة لأحدث نموذج في كل مستوى: `openai/gpt-sol-latest` و`openai/gpt-terra-latest` و`openai/gpt-luna-latest`. استخدم معرّفات GPT-5.6 الثابتة للترحيلات المضبوطة، ولا تستخدم أسماء المستويات المستعارة إلا إذا أردت عمدًا تمرير إصدارات Sol أو Terra أو Luna المستقبلية عبر المسار نفسه.
+يتتبع Phaseo أيضًا الأسماء المستعارة لأحدث نموذج في كل مستوى: `openai/gpt-sol-latest` و`openai/gpt-terra-latest` و`openai/gpt-luna-latest`. استخدم معرّفات GPT-5.6 الثابتة للترحيلات المضبوطة، ولا تستخدم أسماء المستويات المستعارة إلا إذا أردت عمدًا تمرير إصدارات Sol أو Terra أو Luna المستقبلية عبر المسار نفسه.
 
 ## ما الجديد
 
@@ -67,7 +67,7 @@ GPT-5.6 هي عائلة GPT الحالية من OpenAI لسير العمل ال�
 }
 ```
 
-إذا كان تكاملك لا يزال يرسل الحقل المسطح المتوافق مع OpenAI، فإن AI Stats يقبل أيضًا `reasoning_effort` عندما يدعمه المسار:
+إذا كان تكاملك لا يزال يرسل الحقل المسطح المتوافق مع OpenAI، فإن Phaseo يقبل أيضًا `reasoning_effort` عندما يدعمه المسار:
 
 ```json
 {
@@ -158,4 +158,4 @@ GPT-5.6 هي عائلة GPT الحالية من OpenAI لسير العمل ال�
 - [إرشادات نماذج OpenAI GPT-5.6](https://developers.openai.com/api/docs/guides/latest-model)
 - [OpenAI model catalog](https://developers.openai.com/api/docs/models)
 - [بطاقة نظام معاينة GPT-5.6](https://deploymentsafety.openai.com/gpt-5-6-preview)
-- [دليل التخزين المؤقت للمطالبات في AI Stats](../guides/prompt-caching.mdx)
+- [دليل التخزين المؤقت للمطالبات في Phaseo](../guides/prompt-caching.mdx)

@@ -233,6 +233,8 @@
 			"modalityMusic": "الموسيقى",
 			"modalityFile": "ملف",
 			"modalityRerank": "إعادة الترتيب",
+			"modalityDocuments": "المستندات",
+			"modalityTranslation": "الترجمة",
 			"endpointResponses": "Responses",
 			"endpointChatCompletions": "إكمال المحادثات",
 			"endpointMessages": "الرسائل",

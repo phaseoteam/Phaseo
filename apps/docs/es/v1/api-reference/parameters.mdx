@@ -34,11 +34,11 @@ La compatibilidad de los parámetros sigue variando según el endpoint, el model
 | [`presence_penalty`](#presence_penalty) | `number` | Fomentar cambios de tema o vocabulario. |
 | [`repetition_penalty`](#repetition_penalty) | `number` | Control de repetición específico del proveedor. |
 | [`seed`](#seed) | `integer` | Mejorar la reproducibilidad cuando el proveedor ascendente lo admite. |
-| [`stop`](#stop) | `string` or `string[]` | Definir secuencias de parada explícitas. |
+| [`stop`](#stop) | `string` o `string[]` | Definir secuencias de parada explícitas. |
 | [`logprobs`](#logprobs) / [`top_logprobs`](#top_logprobs) | `boolean` / `integer` | Solicitar datos de probabilidad de tokens. |
 | [`tools`](#tools), [`tool_choice`](#tool_choice) | `array`, `string`, `object` | Control de llamadas a herramientas y ejecución de funciones. |
 | [`parallel_tool_calls`](#parallel_tool_calls) | `boolean` | Permitir o forzar la ejecución secuencial de herramientas. |
-| [`response_format`](#response_format) | `string` or `object` | Salida de texto sin formato, JSON o restringida por esquema. |
+| [`response_format`](#response_format) | `string` o `object` | Salida de texto sin formato, JSON o restringida por esquema. |
 | [`json_schema`](#json_schema) | `object` | Definir el esquema para flujos de salida estructurada. |
 | [`structured_outputs`](#structured_outputs) | `boolean` | Indicador de capacidad para generar salidas fiables restringidas por esquema. |
 | [`reasoning`](#reasoning) | `object` | Configuración de razonamiento específica del proveedor. |
@@ -280,7 +280,7 @@ Define una o más secuencias que detienen la generación antes de tiempo.
 
 | Campo | Valor |
 | --- | --- |
-| Tipo | `string` or `string[]` |
+| Tipo | `string` o `string[]` |
 | Predeterminado | Sin establecer |
 | Uso habitual | Límites del analizador, finales de plantilla e indicadores de protocolo |
 
@@ -330,7 +330,7 @@ Controla si el modelo puede llamar herramientas automáticamente, no debe llamar
 
 | Campo | Valor |
 | --- | --- |
-| Tipo | `string` or `object` |
+| Tipo | `string` o `object` |
 | Valores habituales | `none`, `auto`, `required` |
 
 Usa `none` si solo quieres contenido, `auto` si el modelo puede decidir y valores más estrictos si la orquestación posterior requiere una llamada a herramienta.
@@ -354,7 +354,7 @@ Solicita un formato de salida concreto, como texto sin formato, JSON o respuesta
 
 | Campo | Valor |
 | --- | --- |
-| Tipo | `string` or `object` |
+| Tipo | `string` o `object` |
 | Predeterminado | Específico del endpoint y del proveedor |
 
 Las estructuras exactas aceptadas dependen del endpoint y del adaptador del proveedor. Úsalo si necesitas algo más que texto libre, sobre todo para respuestas JSON y flujos de extracción estructurada.
@@ -525,7 +525,7 @@ Entre los campos habituales se incluyen:
 | `only` | `string[]` | Limita el enrutamiento a proveedores específicos. |
 | `ignore` | `string[]` | Excluye proveedores específicos. |
 | `include_alpha` | `boolean` | Permite proveedores alpha en las decisiones de enrutamiento. |
-| `sort` | `string` or `object` | Ordena los proveedores, normalmente por `price`, `latency` o `throughput`. |
+| `sort` | `string` o `object` | Ordena los proveedores, normalmente por `price`, `latency` o `throughput`. |
 | `required_execution_region` | `string` | Limita la ejecución a una región obligatoria. |
 | `required_data_region` | `string` | Limita el tratamiento de datos a una región obligatoria. |
 | `require_zero_data_retention` | `boolean` | Exige proveedores que cumplan las condiciones de retención cero de datos. |
@@ -598,7 +598,7 @@ Entre los campos de depuración compatibles se incluyen:
 | `return_upstream_request` | `boolean` | Incluye el contenido transformado de la solicitud enviada al proveedor ascendente. |
 | `return_upstream_response` | `boolean` | Incluye el contenido de la respuesta ascendente cuando está disponible. |
 | `trace` | `boolean` | Devuelve trazas de enrutamiento o depuración. |
-| `trace_level` | `summary` or `full` | Controla el nivel de detalle de las trazas. |
+| `trace_level` | `summary` o `full` | Controla el nivel de detalle de las trazas. |
 
 Los datos de depuración pueden contener contexto confidencial de la solicitud. Úsalos solo durante el desarrollo o en entornos estrictamente controlados.
 

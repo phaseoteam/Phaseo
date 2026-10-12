@@ -4,7 +4,7 @@ title: "Visão geral do SDK TypeScript"
 description: "Cliente TypeScript oficial da API do Phaseo Gateway"
 ---
 
-Instale pelo npm o pacote publicado [~@phaseo/sdk~](https://www.npmjs.com/package/@phaseo/sdk).
+Instale pelo npm o pacote publicado [`@phaseo/sdk`](https://www.npmjs.com/package/@phaseo/sdk).
 
 O SDK TypeScript do Phaseo oferece uma forma prática e segura em termos de tipos para interagir com a API do Phaseo Gateway. Baseado na especificação OpenAPI, ele oferece suporte completo a TypeScript, tipos gerados e uma interface simples de cliente.
 
@@ -72,7 +72,7 @@ saída validada. Defina também o formato de saída estruturada do servidor na s
 
 `checkModelCapabilities(id, { inputTypes, outputTypes, endpoints, parameters,
 parameterValues })` verifica capacidades anunciadas e restrições escalares em uma
-oferta ativa de provedor. Metadados ausentes são desconhecidos. Nunca altera
+oferta ativa de provedor. Metadados ausentes são informados como desconhecidos. Nunca altera
 o modelo nem remove parâmetros e não garante que um provedor real aceite a solicitação.
 
 Para seletores de modelos e editores de parâmetros, use metadados atuais dos endpoints:
@@ -88,23 +88,24 @@ const support = await client.models.checkParameters(
 Cada parâmetro recebe `supported`, `partial`, `unsupported` ou `unknown`,
 com rotas de provedores e problemas de restrição para destaque em linha.
 `client.models.capabilities(modelId)` retorna a resposta completa de capacidades
-do endpoint. Essas verificações explícitas não adicionam descoberta às chamadas de geração.
+do endpoint. Essas verificações explícitas não adicionam uma solicitação de descoberta às chamadas de geração.
 
 ## Testes locais e exportações do site
 
 Importe `createMockTransport` e `jobFixtures` de `@phaseo/sdk/testing` para injetar
 fixtures estritas e ordenadas por `fetchImpl`. Chame `mock.assertDone()` para verificar
-todas as solicitações esperadas. Chamadas inesperadas falham localmente sem recorrer à rede.
+se todas as solicitações esperadas aconteceram. Chamadas inesperadas falham localmente sem recorrer à rede.
 
 Após enviar uma solicitação em uma sala Phaseo, **Obter código** exporta modelo e
 configurações como TypeScript ou Python. **Ver solicitação** abre o rastreamento no painel quando
-há um ID. Execute o código exportado no servidor com `PHASEO_API_KEY`.
+há um ID de solicitação disponível. Execute o código exportado no servidor com `PHASEO_API_KEY`.
+
 ## O que está incluído
 
 -   Classe de cliente `Phaseo` para todas as interações com a API
--   Helpers organizados por recurso, como `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
--   Helpers de descoberta e preços, como `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
--   Helpers de URL WebSocket para fluxos do ciclo de vida de trabalhos assíncronos, lotes e vídeos
+-   Auxiliares organizados por recurso, como `client.models`, `client.batches`, `client.videos` e `client.asyncJobs`
+-   Auxiliares de descoberta e preços, como `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)` e `client.getCurrentApiKey()`
+-   Auxiliares de URL WebSocket de trabalhos assíncronos para fluxos do ciclo de vida de lotes e vídeos
 -   `client.batches.streamResults(batchId, { signal })` para downloads JSONL da Anthropic em streaming
 -   Tipos gerados para todos os objetos de solicitação e resposta
 -   Cobertura completa da API, incluindo conclusões de chat, modelos, créditos e muito mais

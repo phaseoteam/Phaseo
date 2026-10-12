@@ -8,7 +8,7 @@ icon: "/icons/brands/openai.svg"
 
 Nutze diesen Leitfaden, um die GPT-5.6-Familie sicher in der Produktion einzusetzen.
 
-GPT-5.6 ist die aktuelle GPT-Familie von OpenAI für komplexe Produktions-Workflows. In AI Stats entsprechen die festen Tier-IDs den OpenAI-Modell-IDs `gpt-5.6-sol`, `gpt-5.6-terra` und `gpt-5.6-luna`.
+GPT-5.6 ist die aktuelle GPT-Familie von OpenAI für komplexe Produktions-Workflows. In Phaseo entsprechen die festen Tier-IDs den OpenAI-Modell-IDs `gpt-5.6-sol`, `gpt-5.6-terra` und `gpt-5.6-luna`.
 
 ## Schnellstart für die Migration
 
@@ -25,9 +25,9 @@ GPT-5.6 ist die aktuelle GPT-Familie von OpenAI für komplexe Produktions-Workfl
 | `openai/gpt-5.6-terra` | Ausgewogene Alltagsarbeit mit Reasoning, Programmierung und Assistant-Workflows | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 | `openai/gpt-5.6-luna` | GPT-5.6-Workloads mit geringerer Latenz und Kostenempfindlichkeit | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 
-Der OpenAI-Alias `gpt-5.6` leitet auf `gpt-5.6-sol`. Verwende in AI Stats `openai/gpt-5.6` oder `openai/gpt-sol-latest` als Sol-Standard und für kontrolliertes Routing die festen Tier-IDs.
+Der OpenAI-Alias `gpt-5.6` leitet auf `gpt-5.6-sol`. Verwende in Phaseo `openai/gpt-5.6` oder `openai/gpt-sol-latest` als Sol-Standard und für kontrolliertes Routing die festen Tier-IDs.
 
-AI Stats erfasst auch Tier-Aliase für das jeweils neueste Modell jeder Stufe: `openai/gpt-sol-latest`, `openai/gpt-terra-latest` und `openai/gpt-luna-latest`. Verwende für kontrollierte Migrationen die festen GPT-5.6-IDs. Nutze Tier-Aliase nur, wenn künftige Sol-, Terra- oder Luna-Versionen bewusst über dieselbe Route weiterlaufen sollen.
+Phaseo erfasst auch Tier-Aliase für das jeweils neueste Modell jeder Stufe: `openai/gpt-sol-latest`, `openai/gpt-terra-latest` und `openai/gpt-luna-latest`. Verwende für kontrollierte Migrationen die festen GPT-5.6-IDs. Nutze Tier-Aliase nur, wenn künftige Sol-, Terra- oder Luna-Versionen bewusst über dieselbe Route weiterlaufen sollen.
 
 ## Neuerungen
 
@@ -67,7 +67,7 @@ Nutze den Aufwand `max` nur bei Routen, bei denen das zusätzliche Reasoning-Bud
 }
 ```
 
-Wenn deine Integration weiterhin das flache OpenAI-kompatible Feld sendet, akzeptiert AI Stats `reasoning_effort` ebenfalls, sofern die Route es unterstützt:
+Wenn deine Integration weiterhin das flache OpenAI-kompatible Feld sendet, akzeptiert Phaseo `reasoning_effort` ebenfalls, sofern die Route es unterstützt:
 
 ```json
 {

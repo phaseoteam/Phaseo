@@ -1,16 +1,16 @@
 ---
-title: "## टूल कॉलिंग"
-description: "Gateway के ज़रिए model-driven function calls का सुरक्षित उपयोग करें।"
+title: "टूल कॉलिंग"
+description: "Gateway के ज़रिए मॉडल-संचालित फ़ंक्शन कॉल का सुरक्षित उपयोग करें।"
 icon: "wrench"
 ---
 
 टूल कॉलिंग से मॉडल, उत्तरों का अनुमान लगाने के बजाय संरचित कार्रवाइयों (जैसे डेटाबेस खोज, मौसम की जाँच या आंतरिक API कॉल) का अनुरोध कर सकते हैं।
 
-Gateway इन text endpoints पर tool payloads support करता है:
+Gateway इन टेक्स्ट एंडपॉइंट पर टूल पेलोड का समर्थन करता है:
 
-- `/v1/chat/completions` (OpenAI-style `tools` और `tool_calls`)
-- `/v1/responses` (प्रतिक्रियाs-style `function_call` output items)
-- `/v1/messages` (Anthropic के `tool_use` blocks)
+- `/v1/chat/completions` (OpenAI-शैली के `tools` और `tool_calls`)
+- `/v1/responses` (Responses-शैली के `function_call` आउटपुट आइटम)
+- `/v1/messages` (Anthropic-शैली के `tool_use` ब्लॉक)
 
 ## अनुरोध
 
@@ -76,11 +76,11 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-Tool चलाएँ, फिर अगली request में उसका परिणाम वापस भेजें ताकि assistant जवाब पूरा कर सके।
+अपना टूल चलाएँ, फिर अगले अनुरोध में टूल का परिणाम वापस भेजें, ताकि असिस्टेंट जवाब पूरा कर सके।
 
 ## इन-बिल्ट सर्वर टूल
 
-Gateway अभी ये built-in server tools देता है:
+Gateway अभी ये इन-बिल्ट सर्वर टूल उपलब्ध कराता है:
 
 - `gateway:datetime`
 - `phaseo:web_search`
@@ -89,11 +89,11 @@ Gateway अभी ये built-in server tools देता है:
 - `phaseo:image_generation`
 - `phaseo:apply_patch`
 
-यह tool Gateway पर चलता है; client-side executor की ज़रूरत नहीं। Gateway इसे upstream tool/function call में rewrite करके चलाता है और परिणाम model loop को देता है।
+यह टूल Gateway की ओर चलता है (क्लाइंट-साइड एक्ज़ीक्यूटर की ज़रूरत नहीं)। Gateway इसे अपस्ट्रीम टूल/फ़ंक्शन कॉल में बदलता है, उसे चलाता है और टूल का परिणाम वापस मॉडल लूप में भेजता है।
 
-पूरी configuration, usage और pricing जानकारी के लिए [Server tools](./server-tools/index.mdx) देखें।
+पूरे कॉन्फ़िगरेशन, उपयोग और मूल्य निर्धारण की जानकारी के लिए [सर्वर टूल](./server-tools/index.mdx) देखें।
 
-समर्थित request shape:
+समर्थित अनुरोध संरचना:
 
 ```json
 {
@@ -110,10 +110,10 @@ Gateway अभी ये built-in server tools देता है:
 
 ध्यान दें:
 
-- `parameters.timezones` optional है और एक call में अधिकतम 5 valid IANA timezones माँग सकता है।
-- Result में `timezones` array होता है जिसमें हर अनुरोधित zone के लिए ISO datetime और resolved timezone शामिल हैं।
-- Usage में `usage.server_tool_use.datetime_requests` शामिल है।
-- मॉडल को call का समय तय करने देने के लिए `tool_choice: "auto"` को प्राथमिकता दें।
+- `parameters.timezones` वैकल्पिक है और एक कॉल में अधिकतम 5 मान्य IANA टाइमज़ोन माँग सकता है।
+- परिणाम में `timezones` ऐरे होता है, जिसमें हर अनुरोधित ज़ोन के लिए ISO दिनांक-समय और निर्धारित टाइमज़ोन शामिल होते हैं।
+- उपयोग में `usage.server_tool_use.datetime_requests` शामिल है।
+- मॉडल को यह तय करने देने के लिए कि टूल कब कॉल करना है, `tool_choice: "auto"` को प्राथमिकता दें।
 
 ### वेब खोज का उदाहरण
 
@@ -138,14 +138,14 @@ Gateway अभी ये built-in server tools देता है:
 
 ध्यान दें:
 
-- Tool call करते समय मॉडल search query देता है।
+- टूल कॉल करते समय मॉडल खोज क्वेरी देता है।
 - `engine: "auto"` प्रबंधित Exa खोज चुनता है। संबंधित प्रदाता कुंजी सेट होने पर `engine: "exa"`, `engine: "parallel"`, `engine: "firecrawl"` और `engine: "tinyfish"` प्रबंधित गेटवे खोज चलाते हैं।
 - TinyFish Search स्थानीयकृत, पृष्ठों में विभाजित और क्रमबद्ध नतीजे देता है और प्रकाशित योजनाओं में मुफ़्त है; आवश्यकता पर टूल पैरामीटर में `language` और `page` इस्तेमाल करें।
-- `phaseo:web_search` पर `engine: "native"` को request surface के लिए provider-native web-search tool में बदला जाता है, जैसे OpenAI का `web_search_preview` या Anthropic का `web_search_20250305`।
-- `max_results` हर search call के results सीमित करता है; `max_total_results` पूरे server-tool loop के cumulative results सीमित करता है।
-- चुना गया engine matching controls देता हो, तो managed search में `allowed_domains` / `excluded_domains`, `search_context_size` और `max_characters` supported हैं।
-- Usage में `usage.server_tool_use.web_search_requests`, `usage.server_tool_use.web_search_results` और `usage.server_tool_use.web_search_extra_results` शामिल हैं।
-- Managed Exa search को `server_tool_web_search_requests` और `server_tool_web_search_extra_results` meters से bill किया जा सकता है।
+- `phaseo:web_search` पर `engine: "native"` को अनुरोध इंटरफ़ेस के लिए प्रदाता के अपने वेब खोज टूल में बदला जाता है, जैसे OpenAI का `web_search_preview` या Anthropic का `web_search_20250305`।
+- `max_results` हर खोज कॉल के परिणाम सीमित करता है; `max_total_results` पूरे सर्वर टूल लूप के कुल परिणाम सीमित करता है।
+- जहाँ चुना गया इंजन संबंधित नियंत्रण देता है, वहाँ प्रबंधित खोज `allowed_domains` / `excluded_domains`, `search_context_size` और `max_characters` का समर्थन करती है।
+- उपयोग में `usage.server_tool_use.web_search_requests`, `usage.server_tool_use.web_search_results` और `usage.server_tool_use.web_search_extra_results` शामिल हैं।
+- प्रबंधित Exa खोज का बिल `server_tool_web_search_requests` और `server_tool_web_search_extra_results` मीटर से बनाया जा सकता है।
 
 ### वेब फ़ेच का उदाहरण
 
@@ -167,19 +167,19 @@ Gateway अभी ये built-in server tools देता है:
 
 ध्यान दें:
 
-- Tool call करते समय मॉडल target `url` देता है।
+- टूल कॉल करते समय मॉडल लक्ष्य `url` देता है।
 - केवल HTTP(S) URL और टेक्स्ट-आधारित सामग्री प्रकार समर्थित हैं।
-- `engine: "auto"` Anthropic Messages surface पर native fetch उपयोग करता है; अन्यथा `EXA_API_KEY` configured हो तो Exa, और नहीं तो direct gateway HTTP fetch।
-- `engine: "direct"` direct gateway HTTP fetch करता है। `EXA_API_KEY` configured हो, तो `engine: "exa"` Exa से content extract करता है।
-- `PARALLEL_API_KEY` configured हो, तो `engine: "parallel"` Parallel Extract उपयोग करता है। `FIRECRAWL_API_KEY` configured हो, तो `engine: "firecrawl"` Firecrawl Scrape उपयोग करता है।
-- Anthropic Messages surface पर `engine: "native"` को Anthropic के native `web_fetch_20260209` tool में बदला जाता है। अन्य request surfaces पर `engine: "direct"` या managed extraction engine उपयोग करें।
-- `max_chars` छोड़ने पर `max_content_tokens` को token-आधारित bounded fetch size alias के रूप में उपयोग किया जा सकता है।
-- `allowed_domains` और `blocked_domains` तय करते हैं कि कौन-से URLs fetch किए जा सकते हैं।
-- HTML content को model loop में वापस भेजने से पहले सीमित plain text में बदला जाता है।
-- Usage में `usage.server_tool_use.web_fetch_requests` शामिल है।
-- Managed fetch को `server_tool_web_fetch_requests` meter से bill किया जा सकता है। Provider-native fetch/search की pricing `native_web_fetch_requests` और `native_web_search_requests` से होती है; model price cards provider defaults override कर सकते हैं।
+- `engine: "auto"` Anthropic Messages इंटरफ़ेस पर नेटिव फ़ेच उपयोग करता है; अन्यथा `EXA_API_KEY` कॉन्फ़िगर हो तो Exa, और नहीं तो Gateway से सीधा HTTP फ़ेच।
+- `engine: "direct"` Gateway से सीधा HTTP फ़ेच करता है। `EXA_API_KEY` कॉन्फ़िगर हो, तो `engine: "exa"` Exa से सामग्री निकालता है।
+- `PARALLEL_API_KEY` कॉन्फ़िगर हो, तो `engine: "parallel"` Parallel Extract उपयोग करता है। `FIRECRAWL_API_KEY` कॉन्फ़िगर हो, तो `engine: "firecrawl"` Firecrawl Scrape उपयोग करता है।
+- Anthropic Messages इंटरफ़ेस पर `engine: "native"` को Anthropic के नेटिव `web_fetch_20260209` टूल में बदला जाता है। अन्य अनुरोध इंटरफ़ेस पर `engine: "direct"` या कोई प्रबंधित एक्सट्रैक्शन इंजन उपयोग करें।
+- `max_chars` छोड़ने पर `max_content_tokens` को टोकन-आधारित, सीमित फ़ेच आकार के उपनाम के रूप में स्वीकार किया जाता है।
+- `allowed_domains` और `blocked_domains` तय करते हैं कि कौन-से URL फ़ेच किए जा सकते हैं।
+- HTML सामग्री को मॉडल लूप में वापस भेजने से पहले सीमित सादे टेक्स्ट में बदला जाता है।
+- उपयोग में `usage.server_tool_use.web_fetch_requests` शामिल है।
+- प्रबंधित फ़ेच का बिल `server_tool_web_fetch_requests` मीटर से बनाया जा सकता है। प्रदाता के नेटिव फ़ेच/खोज उपयोग का मूल्य `native_web_fetch_requests` और `native_web_search_requests` से तय होता है; मॉडल के मूल्य कार्ड प्रदाता के इन-बिल्ट डिफ़ॉल्ट को ओवरराइड कर सकते हैं।
 
-Native Anthropic fetch उदाहरण:
+Anthropic के नेटिव फ़ेच का उदाहरण:
 
 ```json
 {
@@ -197,7 +197,7 @@ Native Anthropic fetch उदाहरण:
 }
 ```
 
-### Advisor उदाहरण
+### Advisor का उदाहरण
 
 ```json
 {
@@ -221,12 +221,12 @@ Native Anthropic fetch उदाहरण:
 
 ध्यान दें:
 
-- Advisor gateway-managed है और supported text models पर काम करता है। Calling model को `phaseo_advisor` tool या `phaseo_advisor_reviewer` जैसा named variant मिलता है; gateway Advisor request चलाता है।
+- Advisor का प्रबंधन Gateway करता है और यह समर्थित टेक्स्ट मॉडलों पर काम करता है। कॉल करने वाले मॉडल को `phaseo_advisor` टूल, या `phaseo_advisor_reviewer` जैसा नामित वैरिएंट मिलता है, और Gateway Advisor अनुरोध चलाता है।
 - `parameters.name` वैकल्पिक है। कई सलाहकारों को उपलब्ध कराने के लिए अद्वितीय नाम रखें; नामों में अक्षर, अंक, रिक्त स्थान, अंडरस्कोर और हाइफ़न हो सकते हैं।
 - `parameters.model` सलाहकार मॉडल निर्धारित करता है। यदि इसे छोड़ दिया जाए, तो टूल कॉल `model` दे सकता है; अन्यथा Gateway बाहरी अनुरोध मॉडल पर वापस जाता है।
 - `parameters.forward_transcript` का डिफ़ॉल्ट `false` है। यदि सलाहकार को मौजूदा बातचीत का प्रतिलेख देना हो, तो इसे `true` करें।
-- Tool call के समय मॉडल आम तौर पर Advisor `prompt` देता है। `forward_transcript` `true` हो और prompt न दिया गया हो, तो gateway केवल transcript के साथ Advisor call चला सकता है। `max_tokens`, `max_completion_tokens` का legacy alias है।
-- Usage में `usage.server_tool_use.advisor_requests` शामिल है।
+- टूल कॉल करते समय मॉडल आम तौर पर Advisor `prompt` देता है। `forward_transcript` के `true` होने पर, अगर प्रॉम्प्ट न दिया गया हो, तो Gateway केवल प्रतिलेख के साथ Advisor कॉल चला सकता है। `max_tokens` को `max_completion_tokens` के पुराने उपनाम के रूप में स्वीकार किया जाता है।
+- उपयोग में `usage.server_tool_use.advisor_requests` शामिल है।
 
 ### इमेज जनरेशन का उदाहरण
 
@@ -248,10 +248,10 @@ Native Anthropic fetch उदाहरण:
 
 ध्यान दें:
 
-- Tool call करते समय मॉडल image `prompt` देता है। `description` को prompt alias के रूप में भी स्वीकार किया जाता है।
-- `parameters.model` image model तय करता है। इसे छोड़ने पर tool call `model` दे सकता है; अन्यथा Phaseo default image model उपयोग करता है।
-- Provider response के अनुसार tool result में `imageUrl` या base64 image data होता है।
-- Usage में `usage.server_tool_use.image_generation_requests` शामिल हैं; image-model token usage parent request में जोड़ा जाता है।
+- टूल कॉल करते समय मॉडल इमेज का `prompt` देता है। `description` को भी प्रॉम्प्ट के उपनाम के रूप में स्वीकार किया जाता है।
+- `parameters.model` इमेज मॉडल तय करता है। इसे छोड़ने पर टूल कॉल `model` दे सकती है; अन्यथा Phaseo डिफ़ॉल्ट इमेज मॉडल उपयोग करता है।
+- प्रदाता की प्रतिक्रिया के अनुसार टूल परिणाम में `imageUrl` या base64 इमेज डेटा होता है।
+- उपयोग में `usage.server_tool_use.image_generation_requests` शामिल है; इमेज मॉडल का टोकन उपयोग मूल अनुरोध में जोड़ा जाता है।
 
 ### पैच लागू करने का उदाहरण
 
@@ -271,22 +271,22 @@ Native Anthropic fetch उदाहरण:
 - Responses API के साथ `phaseo:apply_patch` का उपयोग किया जा सकता है।
 - Phaseo पैच कार्रवाइयों को सत्यापित करके टूल परिणाम में लौटाता है। पैच लागू करना या अस्वीकार करना आपका क्लाइंट तय करता है।
 - समर्थित कार्रवाई के प्रकार `create_file`, `update_file` और `delete_file` हैं।
-- Usage में `usage.server_tool_use.apply_patch_requests` शामिल है।
+- उपयोग में `usage.server_tool_use.apply_patch_requests` शामिल है।
 
 ## स्ट्रीमिंग का व्यवहार
 
-Tool-calling requests में `stream: true` भी उपयोग किया जा सकता है।
+टूल कॉलिंग वाले अनुरोधों में `stream: true` भी उपयोग किया जा सकता है।
 
-Gateway-managed server tools के लिए Gateway ये काम कर सकता है:
+Gateway द्वारा प्रबंधित सर्वर टूल के लिए Gateway ये काम कर सकता है:
 
-- upstream tool-call turn को materialize करना
-- server tool चलाना
-- model loop जारी रखना
-- client को synthetic stream दोबारा भेजना
+- अपस्ट्रीम टूल कॉल वाला टर्न तैयार करना
+- सर्वर टूल चलाना
+- मॉडल लूप जारी रखना
+- क्लाइंट को सिंथेटिक स्ट्रीम दोबारा भेजना
 
-इससे Gateway द्वारा tool loop का कुछ हिस्सा चलाने पर भी client-side contract streaming-friendly रहता है।
+इससे, Gateway के स्वयं टूल लूप का कुछ हिस्सा चलाने पर भी, क्लाइंट-साइड अनुबंध स्ट्रीमिंग के अनुकूल बना रहता है।
 
-## आगे की guides
+## आगे की गाइड
 
 1. [टूल कॉलिंग के पैटर्न](./tool-calling-patterns.mdx)
 2. [टूल कॉलिंग की सुरक्षा और सत्यापन](./tool-calling-safety.mdx)

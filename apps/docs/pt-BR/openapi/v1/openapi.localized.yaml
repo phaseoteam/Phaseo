@@ -1674,7 +1674,7 @@ paths:
         - Gateway
       operationId: uploadFile
       summary: Enviar arquivo
-      description: Alias de compatibilidade para `/batches/files`. Envia um arquivo para processamento em lote e retorna os metadados do arquivo no provedor. Passe `model` para que AI Stats possa inferir o provedor. O padrão é OpenAI para clientes legados que omitem tanto `model` quanto `provider`.
+      description: Alias de compatibilidade para `/batches/files`. Envia um arquivo para processamento em lote e retorna os metadados do arquivo no provedor. Passe `model` para que Phaseo possa inferir o provedor. O padrão é OpenAI para clientes legados que omitem tanto `model` quanto `provider`.
       parameters:
         - name: model
           in: query
@@ -2862,8 +2862,8 @@ paths:
       tags:
         - Gateway
       operationId: getWorkspaceSso
-      summary: Obter as configurações de SSO do workspace
-      description: Retorna as configurações SAML ou OIDC personalizadas do workspace. Requer `settings:read` e uma identidade de proprietário ou administrador.
+      summary: Obter as configurações de SSO do espaço de trabalho
+      description: Retorna as configurações SAML ou OIDC personalizadas do espaço de trabalho. Requer `settings:read` e uma identidade de proprietário ou administrador.
       responses:
         '200':
           description: Configurações de SSO
@@ -3012,7 +3012,7 @@ paths:
         - Gateway
       operationId: listWorkspaceScimAuditEvents
       summary: Listar eventos de auditoria do SCIM
-      description: Lista a atividade recente de provisionamento SCIM do workspace.
+      description: Lista a atividade recente de provisionamento SCIM do espaço de trabalho.
       parameters:
         - name: limit
           in: query
@@ -3100,11 +3100,11 @@ paths:
       tags:
         - Gateway
       operationId: listWorkspaceDepartments
-      summary: Listar departamentos do workspace
+      summary: Listar departamentos do espaço de trabalho
       description: Lista departamentos gerenciados manualmente e sincronizados com o diretório.
       responses:
         '200':
-          description: Departamentos do workspace
+          description: Departamentos do espaço de trabalho
           content:
             application/json:
               schema:
@@ -3180,7 +3180,7 @@ paths:
       tags:
         - Gateway
       operationId: deleteWorkspaceDepartment
-      summary: Excluir um departamento do workspace
+      summary: Excluir um departamento do espaço de trabalho
       description: Exclui um departamento gerenciado manualmente. Departamentos sincronizados com o diretório não podem ser excluídos aqui.
       parameters:
         - name: id
@@ -3282,7 +3282,7 @@ paths:
         - Gateway
       operationId: listWorkspaceGroupMappings
       summary: Listar mapeamentos de grupos do diretório
-      description: Lista os mapeamentos de grupos provisionados para funções e departamentos do workspace.
+      description: Lista os mapeamentos de grupos provisionados para funções e departamentos do espaço de trabalho.
       responses:
         '200':
           description: Mapeamentos de grupos do diretório
@@ -3362,7 +3362,7 @@ paths:
         - Gateway
       operationId: deleteWorkspaceGroupMapping
       summary: Excluir um mapeamento de grupo do diretório
-      description: Remove do workspace um mapeamento de grupo provisionado.
+      description: Remove do espaço de trabalho um mapeamento de grupo provisionado.
       parameters:
         - name: id
           in: path
@@ -3437,8 +3437,8 @@ paths:
       tags:
         - Gateway
       operationId: listWorkspaceApps
-      summary: Listar aplicativos do workspace
-      description: Lista os aplicativos do workspace atribuídos automaticamente e seus metadados editáveis. Requer a permissão `settings:read`.
+      summary: Listar aplicativos do espaço de trabalho
+      description: Lista os aplicativos do espaço de trabalho atribuídos automaticamente e seus metadados editáveis. Requer a permissão `settings:read`.
       parameters:
         - name: offset
           in: query
@@ -3455,7 +3455,7 @@ paths:
             default: 100
       responses:
         '200':
-          description: Aplicativos do workspace
+          description: Aplicativos do espaço de trabalho
           content:
             application/json:
               schema:
@@ -3472,7 +3472,7 @@ paths:
       tags:
         - Gateway
       operationId: updateWorkspaceApp
-      summary: Atualizar aplicativo do workspace
+      summary: Atualizar aplicativo do espaço de trabalho
       description: Atualiza os metadados de exibição, a visibilidade no catálogo ou o status ativo de um aplicativo atribuído. Aplicativos gerenciados pela plataforma não podem ser editados.
       parameters:
         - name: id
@@ -3506,7 +3506,7 @@ paths:
       tags:
         - Gateway
       operationId: mergeWorkspaceApp
-      summary: Mesclar aplicativos do workspace
+      summary: Mesclar aplicativos do espaço de trabalho
       description: Move atomicamente o histórico de solicitações e as análises do aplicativo de origem para outro aplicativo no mesmo espaço de trabalho e, em seguida, remove a origem.
       parameters:
         - name: id
@@ -3650,7 +3650,7 @@ paths:
         - Gateway
       operationId: listGatewayFeedback
       summary: Listar feedback do gateway
-      description: Lista o feedback do workspace com filtros por destino, data, avaliação e dimensão de metadados. Requer `feedback:read`.
+      description: Lista o feedback do espaço de trabalho com filtros por destino, data, avaliação e dimensão de metadados. Requer `feedback:read`.
       parameters:
         - name: request_id
           in: query
@@ -3743,7 +3743,7 @@ paths:
         - Gateway
       operationId: summarizeGatewayFeedback
       summary: Resumir o feedback do gateway
-      description: Agrupa o feedback do workspace por preset, execução de teste ou dimensão de metadados.
+      description: Agrupa o feedback do espaço de trabalho por predefinição, execução de teste ou dimensão de metadados.
       parameters:
         - name: group_by
           in: query
@@ -3800,7 +3800,7 @@ paths:
         - Gateway
       operationId: listGatewayObservabilityEvents
       summary: Listar eventos de observabilidade do gateway
-      description: Lista eventos personalizados de resultados e comportamento do workspace. Requer `feedback:read`.
+      description: Lista eventos personalizados de resultados e comportamento do espaço de trabalho. Requer `feedback:read`.
       parameters:
         - name: request_id
           in: query
@@ -4393,11 +4393,11 @@ paths:
       tags:
         - Gateway
       operationId: deleteWorkspaceBudget
-      summary: Excluir um limite de gastos do workspace
-      description: Remove o limite de gastos do workspace e deixa de aplicá-lo nesse intervalo.
+      summary: Excluir um limite de gastos do espaço de trabalho
+      description: Remove o limite de gastos do espaço de trabalho e deixa de aplicá-lo nesse intervalo.
       responses:
         '200':
-          description: Orçamento do workspace excluído
+          description: Orçamento do espaço de trabalho excluído
           content:
             application/json:
               schema:
@@ -4462,7 +4462,7 @@ paths:
         - Gateway
       operationId: deleteWorkspaceNotificationDestination
       summary: Excluir um destino de notificação
-      description: Desativa logicamente um destino de notificação do workspace e o remove dos roteamentos futuros.
+      description: Desativa logicamente um destino de notificação do espaço de trabalho e o remove dos roteamentos futuros.
       parameters:
         - name: id
           in: path
@@ -4517,7 +4517,7 @@ paths:
         - Gateway
       operationId: testWorkspaceNotificationDestination
       summary: Testar um destino de notificação salvo
-      description: Envia um teste por meio de um destino criptografado existente do workspace.
+      description: Envia um teste por meio de um destino criptografado existente do espaço de trabalho.
       parameters:
         - name: id
           in: path
@@ -4723,7 +4723,7 @@ paths:
         - Gateway
       operationId: listOAuthClients
       summary: Listar clientes OAuth
-      description: Lista os aplicativos OAuth ativos do workspace. Requer `oauth_clients:read` e o recurso beta de OAuth.
+      description: Lista os aplicativos OAuth ativos do espaço de trabalho. Requer `oauth_clients:read` e o recurso beta de OAuth.
       responses:
         '200':
           description: Lista de clientes OAuth
@@ -7628,8 +7628,8 @@ paths:
       tags:
         - Gateway
       operationId: getPresetPublisher
-      summary: Obter o identificador público do publicador de presets
-      description: Retorna o identificador canônico do publicador de presets públicos do workspace.
+      summary: Obter o identificador público do publicador de predefinições
+      description: Retorna o identificador canônico do publicador de predefinições públicas do espaço de trabalho.
       responses:
         '200':
           description: Identificador do publicador
@@ -9028,7 +9028,7 @@ components:
       items:
         type: string
         minLength: 1
-      description: Modelos de fallback opcionais e ordenados, tentados depois de `model`. `model` é obrigatório e é sempre o modelo principal. Quando uma tentativa falha com `429`, `500`, `502`, `503` ou `504`, a próxima entrada é tentada; os demais erros são retornados sem alteração. Aceita até 25 IDs de modelo ou presets; duplicatas e entradas iguais a `model` são ignoradas. Cada tentativa é validada, registrada e cobrada como uma solicitação separada, e o campo `model` da resposta e o rastreamento de roteamento mostram o modelo que atendeu a solicitação. Solicitações em streaming só recorrem a um fallback antes do primeiro byte, e trabalhos de vídeo e música apenas no envio. Solicitações de batch, realtime e council rejeitam `models`. Fallbacks definidos em uma rota dinâmica têm precedência, e `phaseo/auto` não pode ser combinado com `models`.
+      description: Modelos de fallback opcionais e ordenados, tentados depois de `model`. `model` é obrigatório e é sempre o modelo principal. Quando uma tentativa falha com `429`, `500`, `502`, `503` ou `504`, a próxima entrada é tentada; os demais erros são retornados sem alteração. Aceita até 25 IDs de modelo ou predefinições; duplicatas e entradas iguais a `model` são ignoradas. Cada tentativa é validada, registrada e cobrada como uma solicitação separada, e o campo `model` da resposta e o rastreamento de roteamento mostram o modelo que atendeu a solicitação. Solicitações em streaming só recorrem a um fallback antes do primeiro byte, e trabalhos de vídeo e música apenas no envio. Solicitações de batch, realtime e council rejeitam `models`. Fallbacks definidos em uma rota dinâmica têm precedência, e `phaseo/auto` não pode ser combinado com `models`.
       example:
         - anthropic/claude-sonnet-5-5
         - google/gemini-2.5-flash
@@ -16587,7 +16587,7 @@ components:
           minimum: 0
         owned_by:
           type: string
-          description: ID da organização no catálogo, private para modelos do workspace ou phaseo quando desconhecido.
+          description: ID da organização no catálogo, private para modelos do espaço de trabalho ou phaseo quando desconhecido.
           example: openai
       additionalProperties: false
     GatewayModelsResponse:

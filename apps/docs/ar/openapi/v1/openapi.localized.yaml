@@ -1674,7 +1674,7 @@ paths:
         - Gateway
       operationId: uploadFile
       summary: رفع ملف
-      description: اسم بديل للتوافق مع `/batches/files`. يرفع ملفاً للمعالجة الدفعية ويرجع بيانات الملف الوصفية لدى المزوّد الأعلى. مرر `model` كي يتمكن AI Stats من استنتاج المزوّد. يُستخدم OpenAI افتراضياً للعملاء القدامى الذين يغفلون كلاً من `model` و`provider`.
+      description: اسم بديل للتوافق مع `/batches/files`. يرفع ملفاً للمعالجة الدفعية ويرجع بيانات الملف الوصفية لدى المزوّد الأعلى. مرر `model` كي يتمكن Phaseo من استنتاج المزوّد. يُستخدم OpenAI افتراضياً للعملاء القدامى الذين يغفلون كلاً من `model` و`provider`.
       parameters:
         - name: model
           in: query

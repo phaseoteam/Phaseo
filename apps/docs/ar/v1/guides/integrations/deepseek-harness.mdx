@@ -20,13 +20,13 @@ description: "أضف Phaseo كمزوّد مخصص متوافق مع OpenAI في 
 
 ```bash
 phaseo login
-phaseo dsh
+phaseo deepseek-harness
 ```
 
 تحافظ CLI على الإدخالات الأخرى في `$DSH_HOME/cordis.patch.yml` وتضع علامة على كتلة Phaseo كي تحدّث الإعدادات التي تديرها أو تحذفها فقط. وتزامن كل نماذج Phaseo النصية النشطة المتوافقة مع Chat Completions. استخدم نموذجًا افتراضيًا آخر عند الحاجة:
 
 ```bash
-phaseo dsh --model YOUR_PHASEO_MODEL_ID
+phaseo deepseek-harness --model YOUR_PHASEO_MODEL_ID
 ```
 
 ينشئ الإعداد أيضًا مفتاح Gateway غير منتهي الصلاحية باسم `Phaseo CLI: DeepSeek Harness API Key` ويكتبه مباشرةً في مخزن Harness المحمي `$DSH_HOME/.credentials.yaml`. استخدم `--catalog default` لتهيئة النموذج المحدد فقط.

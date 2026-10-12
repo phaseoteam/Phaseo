@@ -20,7 +20,7 @@ icon: "plug-zap"
 開始する前に、次のものがそろっていることを確認してください。
 
 - Gateway にアクセスできる Phaseo アカウント
-- [ダッシュボード](https://phaseo.app/gateway/keys)で取得した API キー
+- [ダッシュボード](https://phaseo.app/settings/keys)で取得した API キー
 - HTTP クライアント、OpenAI 互換 SDK、または Phaseo SDK
 - クレジットなしで試す場合は、`google/gemma-3-27b:free` などの対応モデル ID
 
@@ -127,7 +127,7 @@ import (
   "context"
   "fmt"
 
-  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
 )
 
 func main() {
