@@ -51,7 +51,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | --- | --- | --- | --- |
 | `engine` | string | 取决于接口 | 抓取引擎：`auto`、`native`、`direct`、`exa`、`parallel` 或 `firecrawl`。 |
 | `max_chars` | integer | `12000` | 返回给模型的提取字符数上限。 |
-| `max_content_tokens` | integer | 无 | 以令牌数表示的别名；未设置 `max_chars` 时使用。 |
+| `max_content_tokens` | integer | 无 | 以 token 数表示的别名；未设置 `max_chars` 时使用。 |
 | `max_uses` | integer | `10` | 服务器工具循环中的最大抓取次数。 |
 | `allowed_domains` | string[] | 无 | 仅允许从这些域名抓取。 |
 | `blocked_domains` | string[] | 无 | 拒绝从这些域名抓取。别名：`excluded_domains`。 |

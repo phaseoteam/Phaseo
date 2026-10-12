@@ -4,7 +4,7 @@ title: "Textanfragen nach Region routen"
 description: "Die Texterzeugung von Phaseo auf Anbieterrouten in der EU oder den USA beschränken."
 ---
 
-Verwenden Sie einen regionalen Phaseo-Endpunkt, damit die Ausführung beim Anbieter und dessen Datenverarbeitung innerhalb der von Phaseo dokumentierten EU- oder US-Routen bleiben. Regionales Routing funktioniert mit Chat Completions, Responses und Messages, ohne Modell-IDs oder API-Schlüssel zu ändern.
+Verwende einen regionalen Phaseo-Endpunkt, damit die Ausführung beim Anbieter und dessen Datenverarbeitung innerhalb der von Phaseo dokumentierten EU- oder US-Routen bleiben. Regionales Routing funktioniert mit Chat Completions, Responses und Messages, ohne Modell-IDs oder API-Schlüssel zu ändern.
 
 <Warning>
 Regionales Routing garantiert derzeit keine durchgängige Datenresidenz. Phaseo beschränkt die Anbieterauswahl und verwendet einen Cloudflare-Platzierungshinweis nahe der ausgewählten Region. Gemeinsame Konto-, Abrechnungs-, Cache- und Betriebssysteme können Daten jedoch außerhalb dieser Region verarbeiten.
@@ -22,7 +22,7 @@ Der regionale Hostname bildet die Richtliniengrenze. Eine Anfrage kann sie nicht
 
 ## Das Phaseo SDK verwenden
 
-Legen Sie `region` beim Erstellen des Clients fest. Jede unterstützte Anfrage dieses Clients verwendet die entsprechende regionale Basis-URL.
+Lege `region` beim Erstellen des Clients fest. Jede unterstützte Anfrage dieses Clients verwendet die entsprechende regionale Basis-URL.
 
 <CodeGroup>
 ```ts TypeScript
@@ -59,7 +59,7 @@ print(response.get("output_text"))
 ```
 </CodeGroup>
 
-Verwenden Sie `"us"` für US-Routing. Lassen Sie `region` weg oder verwenden Sie `"global"` für globales Routing. Das SDK lehnt Konfigurationen ab, die `region` mit einer benutzerdefinierten `baseUrl` oder `base_url` kombinieren, da beide Optionen konkurrierende Hosts auswählen würden.
+Verwende `"us"` für US-Routing. Lass `region` weg oder verwende `"global"` für globales Routing. Das SDK lehnt Konfigurationen ab, die `region` mit einer benutzerdefinierten `baseUrl` oder `base_url` kombinieren, da beide Optionen konkurrierende Hosts auswählen würden.
 
 ## Chat Completions verwenden
 
@@ -124,11 +124,11 @@ Die regionalen Endpunkte lehnen Folgendes ab:
 - Vom Anbieter gehostete Werkzeuge wie Websuche, Dateisuche, Codeausführung, Computerbedienung und Bilderzeugung
 - Endpunkte für Bilder, Audio, Video, Embeddings, Moderation, Stapelverarbeitung, Dateien, Webhooks und Echtzeit
 
-Funktionswerkzeuge sind erlaubt, da sie in Ihrer Anwendung ausgeführt werden. Ein beim Anbieter gehostetes Werkzeug wird blockiert, weil sein Ausführungsort möglicherweise nicht der regionalen Richtlinie entspricht.
+Funktionswerkzeuge sind erlaubt, da sie in deiner Anwendung ausgeführt werden. Ein beim Anbieter gehostetes Werkzeug wird blockiert, weil sein Ausführungsort möglicherweise nicht der regionalen Richtlinie entspricht.
 
 ## In einer Region verfügbare Modelle ermitteln
 
-Rufen Sie `/v1/models` über denselben regionalen Hostnamen auf, den Sie für die Generierung verwenden:
+Rufe `/v1/models` über denselben regionalen Hostnamen auf, den du für die Generierung verwendest:
 
 ```bash
 curl https://eu.api.phaseo.app/v1/models \
@@ -149,7 +149,7 @@ Jedes Angebot enthält seine regionalen Metadaten:
 }
 ```
 
-Die Modellverfügbarkeit kann sich zwischen EU-, US- und globalen Endpunkten unterscheiden. Ermitteln Sie Modelle immer über den Endpunkt, den Ihre Anwendung aufrufen wird.
+Die Modellverfügbarkeit kann sich zwischen EU-, US- und globalen Endpunkten unterscheiden. Ermittle Modelle immer über den Endpunkt, den deine Anwendung aufrufen wird.
 
 ## Das ausgewählte Gateway prüfen
 
@@ -159,7 +159,7 @@ Regionale Antworten enthalten:
 X-Phaseo-Gateway-Region: eu
 ```
 
-Bestätigen Sie mit diesem Header, dass die Anfrage die erwartete Phaseo-Bereitstellung erreicht hat. Die Anfragedetails protokollieren die erforderliche Ausführungsregion, die erforderliche Datenregion, den ausgewählten Anbieter und dessen deklarierte regionale Metadaten.
+Bestätige mit diesem Header, dass die Anfrage die erwartete Phaseo-Bereitstellung erreicht hat. Die Anfragedetails protokollieren die erforderliche Ausführungsregion, die erforderliche Datenregion, den ausgewählten Anbieter und dessen deklarierte regionale Metadaten.
 
 <Note>
 Der Header kennzeichnet die regionale Phaseo-Richtlinie, die die Anfrage verarbeitet hat. Er belegt keine garantierte Ausführungsresidenz von Cloudflare.
@@ -171,12 +171,12 @@ Regionales Routing bricht ab, wenn die Richtlinie nicht erfüllt werden kann. Ph
 
 | Fehler | Bedeutung | Maßnahme |
 | --- | --- | --- |
-| `regional_endpoint_not_supported` | Der Pfad ist auf regionalen Workers nicht verfügbar | Verwenden Sie einen der drei unterstützten Textendpunkte oder die globale API |
-| `regional_non_text_content` | Die Anfrage enthält Medien, eine Datei oder einen Anhang | Entfernen Sie nichttextuelle Inhalte oder verwenden Sie die globale API |
-| `regional_non_text_output` | Die Anfrage verlangt eine nichttextuelle Antwort | Fordern Sie Textausgabe an oder verwenden Sie die globale API |
-| `regional_hosted_tool_not_supported` | Ein beim Anbieter gehostetes Werkzeug wurde angefordert | Verwenden Sie ein vom Client definiertes Funktionswerkzeug oder die globale API |
-| `deployment_region_conflict` | Die Anfrage oder Voreinstellung gibt eine andere Region an | Entfernen Sie die widersprüchliche Einstellung |
-| Keine Anbieterroute verfügbar | Kein funktionsfähiger Anbieter erfüllt die Modellanforderungen und die regionale Richtlinie | Wählen Sie ein anderes Modell aus dem regionalen Endpunkt `/v1/models` |
+| `regional_endpoint_not_supported` | Der Pfad ist auf regionalen Workers nicht verfügbar | Verwende einen der drei unterstützten Textendpunkte oder die globale API |
+| `regional_non_text_content` | Die Anfrage enthält Medien, eine Datei oder einen Anhang | Entferne nichttextuelle Inhalte oder verwende die globale API |
+| `regional_non_text_output` | Die Anfrage verlangt eine nichttextuelle Antwort | Fordere Textausgabe an oder verwende die globale API |
+| `regional_hosted_tool_not_supported` | Ein beim Anbieter gehostetes Werkzeug wurde angefordert | Verwende ein vom Client definiertes Funktionswerkzeug oder die globale API |
+| `deployment_region_conflict` | Die Anfrage oder Voreinstellung gibt eine andere Region an | Entferne die widersprüchliche Einstellung |
+| Keine Anbieterroute verfügbar | Kein funktionsfähiger Anbieter erfüllt die Modellanforderungen und die regionale Richtlinie | Wähle ein anderes Modell aus dem regionalen Endpunkt `/v1/models` |
 
 ## Was regionales Routing abdeckt
 

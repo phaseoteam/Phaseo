@@ -4,7 +4,7 @@ title: "TypeScript SDK 概览"
 description: "Phaseo Gateway API 的官方 TypeScript 客户端"
 ---
 
-从 npm 安装已发布的 [~@phaseo/sdk~](https://www.npmjs.com/package/@phaseo/sdk) 软件包。
+从 npm 安装已发布的 [`@phaseo/sdk`](https://www.npmjs.com/package/@phaseo/sdk) 软件包。
 
 Phaseo TypeScript SDK 提供了类型安全且便捷的 Phaseo Gateway API 交互方式。它基于 OpenAPI 规范构建，提供完整的 TypeScript 支持、生成的类型和简洁的客户端接口。
 
@@ -99,11 +99,12 @@ const support = await client.models.checkParameters(
 在 Phaseo 房间提交请求后，**获取代码**将模型和
 设置导出为 TypeScript 或 Python。**查看请求**在
 请求 ID 可用时打开控制台追踪。在服务器上设置 `PHASEO_API_KEY` 后运行导出代码。
+
 ## 包含内容
 
 -   用于所有 API 交互的 `Phaseo` 客户端类
--   按资源组织的辅助方法，例如 `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
--   用于发现和查询价格的辅助方法，例如 `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
+-   按资源组织的辅助方法，例如 `client.models`、`client.batches`、`client.videos` 和 `client.asyncJobs`
+-   用于发现和查询价格的辅助方法，例如 `client.getModels()`、`client.listProviders()`、`client.getCredits()`、`client.getActivity()`、`client.getAnalytics()`、`client.listEndpoints()`、`client.listOrganisations()`、`client.listPricingModels()`、`client.calculatePricing()`、`client.listApiKeys()`、`client.createApiKey()`、`client.getApiKey(id)`、`client.updateApiKey(id, ...)`、`client.deleteApiKey(id)`、`client.listWorkspaces()`、`client.getWorkspace(id)`、`client.createWorkspace(...)`、`client.updateWorkspace(id, ...)`、`client.deleteWorkspace(id)` 和 `client.getCurrentApiKey()`
 -   用于批处理和视频生命周期流的异步任务 WebSocket URL 辅助方法
 -   `client.batches.streamResults(batchId, { signal })` 用于流式下载 Anthropic JSONL
 -   为所有请求和响应对象生成的类型

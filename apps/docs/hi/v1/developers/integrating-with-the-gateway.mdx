@@ -20,7 +20,7 @@ icon: "plug-zap"
 शुरू करने से पहले, सुनिश्चित करें कि आपके पास ये चीज़ें मौजूद हैं:
 
 - Gateway एक्सेस वाला Phaseo अकाउंट।
-- [डैशबोर्ड](https://phaseo.app/gateway/keys) से एक API key।
+- [डैशबोर्ड](https://phaseo.app/settings/keys) से एक API key।
 - एक HTTP client, OpenAI-संगत SDK या Phaseo SDK।
 - एक समर्थित मॉडल ID, जैसे बिना क्रेडिट खर्च किए शुरू करने के लिए `google/gemma-3-27b:free`।
 
@@ -127,7 +127,7 @@ import (
   "context"
   "fmt"
 
-  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
 )
 
 func main() {

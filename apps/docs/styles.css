@@ -35,3 +35,24 @@
 :is(html.dark, html[data-theme="dark"]) img[src$="/icons/brands/zed.svg"] {
 	filter: invert(1);
 }
+
+/* Mintlify lays out every language left to right. Read Arabic pages right to left; code stays left to right. */
+html[lang="ar"] :is(#content-area, #sidebar-content, #table-of-contents-content) {
+	direction: rtl;
+}
+
+html[lang="ar"] #content-area :is(pre, code) {
+	direction: ltr;
+	unicode-bidi: isolate;
+}
+
+/* Prose bullets are absolutely positioned from the left edge, so mirror them. */
+html[lang="ar"] #content-area .prose li:not(.not-prose li) {
+	padding-left: 6px;
+	padding-right: 32px;
+}
+
+html[lang="ar"] #content-area .prose li:not(.not-prose li)::before {
+	left: auto;
+	right: 8px;
+}

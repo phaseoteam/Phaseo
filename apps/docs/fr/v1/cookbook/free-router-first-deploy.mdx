@@ -7,7 +7,15 @@ description: "Commencez avec phaseo/free pour exécuter votre première intégra
 Suivez cette recette pour lancer votre première intégration Phaseo sans choisir encore de modèle payant.
 
 Au lieu de choisir vous-même un modèle gratuit, envoyez les requêtes à `phaseo/free`. Phaseo choisira un modèle gratuit disponible qui prend en charge la requête.
+
+## Quand l’utiliser
+
+- Vous voulez un prototype fonctionnel avant de choisir un modèle payant.
+- Vous vous attendez à ce que la meilleure option gratuite évolue au fil du temps.
+- Vous voulez un identifiant de modèle stable dans le code de l’application, tandis que Phaseo gère en coulisses les changements de fournisseurs gratuits.
+
 ## Exemple de requête
+
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
@@ -130,6 +138,7 @@ response = client.generate_response(
 puts response
 ```
 </CodeGroup>
+
 ## Ce qui se passe en coulisses
 
 1. Votre requête est envoyée à l’alias partagé `phaseo/free`.
@@ -147,7 +156,7 @@ puts response
 
 - Réservez `phaseo/free` aux prototypes, aux démos et au trafic sans enjeu élevé.
 - Si vous avez besoin d’une latence, d’un style de sortie ou d’un fournisseur prévisible, passez à un modèle précis une fois votre choix validé.
-- Pour obtenir un comportement de prompt cohérent entre les services, associez cette recette aux [Presets](../guides/presets.mdx).
+- Pour obtenir un comportement de prompt cohérent entre les services, associez cette recette aux [Préréglages](../guides/presets.mdx).
 
 ## Guides associés
 

@@ -8,6 +8,7 @@ import {
 	useState,
 	type ReactNode,
 } from "react";
+import { OutputModalityChipRow } from "./OutputModalityChipRow";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { debounce, useQueryState } from "nuqs";
@@ -30,9 +31,11 @@ import {
 	FileText,
 	Globe2,
 	Headphones,
+	Languages,
 	Music4,
 	Radio,
 	Route,
+	ScanText,
 	Sparkles,
 	Speech,
 	Type as TypeIcon,
@@ -140,15 +143,16 @@ const MODALITY_FILTER_DISPLAY_ORDER = [
 	"image",
 	"video",
 	"audio",
-	"audio_tts",
-	"realtime",
-	"audio_stt",
-	"audio_music",
-	"file",
-	"moderations",
-	"rerank",
 	"embeddings",
 	"decisions",
+	"moderations",
+	"rerank",
+	"documents",
+	"audio_tts",
+	"audio_stt",
+	"translation",
+	"realtime",
+	"audio_music",
 ] as const;
 
 const STATUS_FILTER_DISPLAY_ORDER = [
@@ -249,6 +253,10 @@ function normalizeModalityFilterValue(value: string): string {
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return "realtime";
 	}
+	if (/\bocr\b/.test(normalized) || /\bpars(e|ing)\b/.test(normalized)) {
+		return "documents";
+	}
+	if (normalized.includes("translat")) return "translation";
 	if (normalized.includes("image")) return "image";
 	if (normalized.includes("video")) return "video";
 	if (normalized.includes("music")) return "audio_music";
@@ -346,6 +354,8 @@ function toTitleCase(value: string): string {
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
+	if (normalized === "documents") return "Documents";
+	if (normalized === "translation") return "Translation";
 	return value
 		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
 		.replace(/[._/-]+/g, " ")
@@ -365,6 +375,14 @@ function getModalityIcon(modality: string): LucideIcon {
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return Radio;
 	}
+	if (
+		/\bocr\b/.test(normalized) ||
+		/\bpars(e|ing)\b/.test(normalized) ||
+		normalized === "documents"
+	) {
+		return ScanText;
+	}
+	if (normalized.includes("translat")) return Languages;
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
 		return ArrowUpDown;
 	}
@@ -563,110 +581,6 @@ function getModalityOptions(
 	return [...canonical, ...additional];
 }
 
-function OutputModalityButtonRow({
-	options,
-	selected,
-	onToggle,
-	labelForValue,
-}: {
-	options: OptionCount[];
-	selected: string[];
-	onToggle: (value: string) => void;
-	labelForValue: (value: string) => string;
-}) {
-	const viewportRef = useRef<HTMLDivElement | null>(null);
-	const contentRef = useRef<HTMLDivElement | null>(null);
-	const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false);
-
-	useEffect(() => {
-		const viewport = viewportRef.current;
-		if (!viewport) return;
-
-		const updateOverflow = () => {
-			setHasHorizontalOverflow(viewport.scrollWidth > viewport.clientWidth + 1);
-		};
-
-		updateOverflow();
-		const resizeObserver = new ResizeObserver(updateOverflow);
-		resizeObserver.observe(viewport);
-		if (contentRef.current) resizeObserver.observe(contentRef.current);
-		window.addEventListener("resize", updateOverflow);
-
-		return () => {
-			resizeObserver.disconnect();
-			window.removeEventListener("resize", updateOverflow);
-		};
-	}, [options]);
-
-	if (options.length === 0) return null;
-
-	const buttons = options.map((option) => {
-		const checked = selected.includes(option.value);
-		const Icon = getModalityIcon(option.value);
-		const tone = getModalityTone(option.value);
-
-		return (
-			<Button
-				key={option.value}
-				type="button"
-				variant="ghost"
-				size="sm"
-				onClick={() => onToggle(option.value)}
-				aria-pressed={checked}
-				className={cn(
-					"group h-9 shrink-0 rounded-md px-2 text-sm shadow-none transition-colors",
-					checked
-						? cn(
-								"bg-muted text-foreground hover:bg-muted",
-								tone.badgeClassName,
-								"border-0 hover:border-0",
-							)
-						: "text-muted-foreground hover:text-foreground",
-				)}
-			>
-				<span
-					className={cn(
-						"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm",
-						checked
-							? tone.iconClassName
-							: cn(
-									"bg-transparent text-muted-foreground transition-colors",
-									tone.ghostIconHoverClassName,
-								),
-					)}
-				>
-					<Icon className="h-3.5 w-3.5" />
-				</span>
-				<span>{labelForValue(option.value)}</span>
-				<span
-					className={cn(
-						"inline-flex min-w-5 items-center justify-center px-1 text-[11px] font-medium leading-none tabular-nums",
-						checked ? "text-current" : "text-muted-foreground",
-					)}
-				>
-					{option.count}
-				</span>
-			</Button>
-		);
-	});
-
-	return (
-		<ScrollArea
-			className="w-full [&>[data-orientation=horizontal]]:opacity-100 [&>[data-orientation=horizontal]]:transition-none"
-			scrollBarOrientation="horizontal"
-			viewportClassName={hasHorizontalOverflow ? "pb-2" : "pb-0"}
-			viewportRef={viewportRef}
-		>
-			<div
-				ref={contentRef}
-				className="flex min-w-max items-center gap-1.5 pr-4"
-			>
-				{buttons}
-			</div>
-		</ScrollArea>
-	);
-}
-
 export default function ModelsTableDisplay({
 	initialModelData,
 	allEndpoints,
@@ -692,10 +606,18 @@ export default function ModelsTableDisplay({
 			realtime: "modalityRealtime",
 			file: "modalityFile",
 			rerank: "modalityRerank",
+			documents: "modalityDocuments",
+			translation: "modalityTranslation",
 		};
 		const key = keys[String(value ?? "").trim().toLowerCase()];
 		if (!key) return toTitleCase(value);
-		return ["modalityRealtime", "modalityFile", "modalityRerank"].includes(key)
+		return [
+			"modalityRealtime",
+			"modalityFile",
+			"modalityRerank",
+			"modalityDocuments",
+			"modalityTranslation",
+		].includes(key)
 			? tFilters(key as never)
 			: tMetadata(key as never);
 	};
@@ -1068,9 +990,10 @@ export default function ModelsTableDisplay({
 	);
 	const outputModalityOptions = useMemo(
 		() =>
-			getModalityOptions(counts.outputMap, allModalities).filter(
-				(option) => normalizeModalityFilterValue(option.value) !== "action",
-			),
+			getModalityOptions(counts.outputMap, allModalities).filter((option) => {
+				const modality = normalizeModalityFilterValue(option.value);
+				return modality !== "action" && modality !== "file";
+			}),
 		[allModalities, counts.outputMap],
 	);
 	const featureOptions = useMemo(
@@ -1810,15 +1733,12 @@ export default function ModelsTableDisplay({
 					</div>
 
 					<div className="mt-1.5">
-						<OutputModalityButtonRow
+						<OutputModalityChipRow
 							options={outputModalityOptions}
 							selected={selectedOutputModalities}
-							onToggle={(value) =>
-								setSelectedOutputModalities(
-									toggleInList(selectedOutputModalities, value),
-								)
-							}
+							onChange={setSelectedOutputModalities}
 							labelForValue={translateModality}
+							iconForValue={getModalityIcon}
 						/>
 					</div>
 					<ActiveModelFilters filters={activeFilters} onClear={resetFilters} />

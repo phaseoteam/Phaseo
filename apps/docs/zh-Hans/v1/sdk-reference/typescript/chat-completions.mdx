@@ -32,7 +32,7 @@ for await (const chunk of client.streamChat({
 - `model` (required): 目标模型 ID。
 - `messages` (required): 按顺序排列的消息，角色为 `system|user|assistant|tool`；内容可以是字符串或多个部分。
 - 采样： `temperature` (0–2), `top_p` (0–1), `top_k` (>=1), `seed` (int, optional).
-- 长度/惩罚： `max_output_tokens` (int), `presence_penalty` and `frequency_penalty` (-2 to 2), `stop` (string|string[]).
+- 长度/惩罚： `max_output_tokens` (int), `presence_penalty` 和 `frequency_penalty`（-2 到 2）, `stop` (string|string[]).
 - 工具： `tools` (定义), `tool_choice` (`auto`/`none`/特定工具), `max_tool_calls` (int), `parallel_tool_calls` (bool).
 - Logprobs： `logprobs` (bool), `top_logprobs` (0–20).
 - 输出： `response_format` (json/text), `metadata` (object passthrough), `stream` (bool), `service_tier`.

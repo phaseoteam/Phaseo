@@ -1,45 +1,45 @@
 ---
 title: "DeepSeek Harness"
 icon: "/icons/brands/deepseek.svg"
-description: "DeepSeek Harness में Phaseo को custom OpenAI-संगत provider के रूप में जोड़ें।"
+description: "DeepSeek Harness में Phaseo को कस्टम OpenAI-संगत प्रदाता के रूप में जोड़ें।"
 ---
 
-Harness web interface से Phaseo models और routing उपयोग करने के लिए DeepSeek Harness को Phaseo से जोड़ें। Custom adapter की ज़रूरत नहीं; Harness सीधे Phaseo को OpenAI-संगत Chat Completions requests भेज सकता है।
+Harness के वेब इंटरफ़ेस से Phaseo के मॉडल और रूटिंग का उपयोग करने के लिए DeepSeek Harness को Phaseo से जोड़ें। किसी कस्टम अडैप्टर की ज़रूरत नहीं है: Harness OpenAI-संगत Chat Completions अनुरोध सीधे Phaseo को भेज सकता है।
 
-**नतीजा:** Harness के model picker में Phaseo provider दिखता है और नए Harness sessions Phaseo द्वारा दिए गए model का उपयोग कर सकते हैं।
+**नतीजा:** Harness के मॉडल पिकर में Phaseo एक प्रदाता के रूप में दिखता है, और Harness के नए सत्र Phaseo द्वारा उपलब्ध कराए गए मॉडल का उपयोग कर सकते हैं।
 
 ## ज़रूरी चीज़ें
 
 - Phaseo CLI, Phaseo खाता और DeepSeek Harness का स्थापित संस्करण
 
-इस गाइड की live request provider credentials का उपयोग करती है और model usage charges लग सकते हैं।
+इस गाइड का लाइव अनुरोध प्रदाता क्रेडेंशियल का उपयोग करता है और इससे मॉडल उपयोग के शुल्क लग सकते हैं।
 
 ## Phaseo CLI से सेट अप करें
 
-एक कमांड से प्रदाता, Base URL, प्रोटोकॉल, मॉडल कैटलॉग और डिफ़ॉल्ट मॉडल सेट करें:
+एक कमांड से प्रदाता, बेस URL, प्रोटोकॉल, मॉडल कैटलॉग और डिफ़ॉल्ट मॉडल सेट करें:
 
 ```bash
 phaseo login
-phaseo dsh
+phaseo deepseek-harness
 ```
 
-CLI `$DSH_HOME/cordis.patch.yml` में अन्य entries सुरक्षित रखती है और Phaseo block को mark करती है, ताकि केवल managed settings बदली या हटाई जाएँ। यह Chat Completions-संगत सभी active Phaseo text models sync करती है। ज़रूरत हो तो अलग default model दें:
+CLI `$DSH_HOME/cordis.patch.yml` में असंबंधित प्रविष्टियों को सुरक्षित रखती है और Phaseo ब्लॉक को चिह्नित करती है, ताकि वह केवल अपने स्वामित्व वाली सेटिंग्स को अपडेट कर सके या हटा सके। यह Chat Completions के साथ संगत हर सक्रिय Phaseo टेक्स्ट मॉडल को सिंक करती है। ज़रूरत हो तो अलग डिफ़ॉल्ट मॉडल इस्तेमाल करें:
 
 ```bash
-phaseo dsh --model YOUR_PHASEO_MODEL_ID
+phaseo deepseek-harness --model YOUR_PHASEO_MODEL_ID
 ```
 
-Setup `Phaseo CLI: DeepSeek Harness API Key` नाम की बिना expiry वाली Gateway key बनाकर Harness के protected `$DSH_HOME/.credentials.yaml` store में लिखती है। केवल चुना model configure करने के लिए `--catalog default` उपयोग करें।
+सेटअप `Phaseo CLI: DeepSeek Harness API Key` नाम की, बिना समाप्ति तिथि वाली एक गेटवे कुंजी भी बनाता है और उसे सीधे Harness के सुरक्षित `$DSH_HOME/.credentials.yaml` स्टोर में लिखता है। केवल चुने गए मॉडल को कॉन्फ़िगर करने के लिए `--catalog default` का उपयोग करें।
 
-`phaseo integrations remove deepseek-harness` से integration हटाने पर केवल Phaseo-managed configuration हटती है और CLI की बनाई key revoke होती है।
+`phaseo integrations remove deepseek-harness` से इंटीग्रेशन हटाने पर केवल Phaseo के स्वामित्व वाला कॉन्फ़िगरेशन हटता है और CLI द्वारा बनाई गई कुंजी निरस्त हो जाती है।
 
 ## Harness UI में Phaseo को स्वयं जोड़ें
 
 1. DeepSeek Harness में **Settings > Models** खोलें।
 2. **Add a custom provider** चुनें।
-3. ये values दर्ज करें:
+3. ये मान दर्ज करें:
 
-| Field | मान |
+| फ़ील्ड | मान |
 | --- | --- |
 | Provider ID | `phaseo` |
 | Display name | `Phaseo` |
@@ -48,14 +48,14 @@ Setup `Phaseo CLI: DeepSeek Harness API Key` नाम की बिना expir
 | API key | आपकी Phaseo API कुंजी |
 
 4. **Model catalog** में **Fetch available models** चुनें।
-5. Tool सपोर्ट वाला Chat Completions model चुनें, जैसे `anthropic/claude-sonnet-4.6`, फिर provider save करें।
-6. Composer पर लौटें, Phaseo model चुनें और नया session शुरू करें।
+5. टूल सपोर्ट वाला Chat Completions मॉडल चुनें, जैसे `anthropic/claude-sonnet-4.6`, फिर प्रदाता को सहेजें।
+6. कंपोज़र पर लौटें, Phaseo मॉडल चुनें और नया सत्र शुरू करें।
 
-Harness saved sessions और credential references में provider ID रखता है, इसलिए `phaseo` को स्थायी मानें। Display name, URL, credential और model list बाद में बदली जा सकती है।
+Harness सहेजे गए सत्र और क्रेडेंशियल संदर्भों में प्रदाता ID रखता है, इसलिए `phaseo` को स्थायी मानें। डिस्प्ले नाम, URL, क्रेडेंशियल और मॉडल सूची को बाद में भी संपादित किया जा सकता है।
 
 ## YAML से Phaseo कॉन्फ़िगर करें
 
-इसी provider को `$DSH_HOME/settings.yaml` में सीधे configure कर सकते हैं। API key इस file में न रखें; `apiKeyEnv` वह credential बताता है जिसे Harness resolve करे।
+आप इसी प्रदाता को सीधे `$DSH_HOME/settings.yaml` में कॉन्फ़िगर कर सकते हैं। API कुंजी इस फ़ाइल में न रखें; `apiKeyEnv` उस क्रेडेंशियल का नाम बताता है जिसे Harness को रिज़ॉल्व करना चाहिए।
 
 ```yaml
 llm-pi-ai:
@@ -69,40 +69,40 @@ llm-pi-ai:
         - id: YOUR_PHASEO_MODEL_ID
 ```
 
-Harness लॉन्च करने वाले environment में `PHASEO_API_KEY` दें या Models page से वही credential सहेजें। `YOUR_PHASEO_MODEL_ID` को Phaseo model discovery के सटीक ID से बदलें। Coding-agent workflow के लिए `anthropic/claude-sonnet-4.6` से शुरू करें।
+Harness लॉन्च करने वाले एनवायरनमेंट में `PHASEO_API_KEY` उपलब्ध कराएँ, या वही क्रेडेंशियल Models पेज से सहेजें। `YOUR_PHASEO_MODEL_ID` को Phaseo की मॉडल खोज से लौटाई गई सटीक ID से बदलें। कोडिंग एजेंट वर्कफ़्लो के लिए `anthropic/claude-sonnet-4.6` से शुरू करें।
 
 <Note>
-  `settings.yaml` में `models` list saved catalog है, live query नहीं। Harness में और Phaseo models दिखाने हों तो इसे update करें।
+  `settings.yaml` में `models` सूची एक सहेजा गया कैटलॉग है, लाइव क्वेरी नहीं। Harness में और Phaseo मॉडल दिखाने हों, तो इसे अपडेट करें।
 </Note>
 
 ## कनेक्शन जाँचें
 
-Harness जाँचने से पहले credential और model discovery route अलग-अलग confirm करें:
+Harness को जाँचने से पहले क्रेडेंशियल और मॉडल खोज रूट की अलग से पुष्टि करें:
 
 ```bash
 curl https://api.phaseo.app/v1/models \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-फिर नए Harness session में Phaseo model चुनें और यह भेजें:
+फिर Harness के नए सत्र में Phaseo मॉडल चुनें और यह भेजें:
 
 ```text
 Reply with exactly: Phaseo is connected.
 ```
 
-सफल response से Harness से Phaseo होकर चुने गए model provider तक का पूरा path verify होता है।
+सफल प्रतिक्रिया से Harness से Phaseo होते हुए चुने गए मॉडल प्रदाता तक के पूरे पथ की पुष्टि होती है।
 
 ## समस्या निवारण
 
-- **Model fetch पर `401` मिलता है** - जाँचें कि Phaseo API key चालू है और Base URL में `/v1` है।
-- **Picker में model नहीं है** - Catalog दोबारा fetch करें या `$DSH_HOME/settings.yaml` के `models` में Phaseo का exact model ID जोड़ें।
-- **Harness `MISSING_CREDENTIAL` बताता है** - Models page में key सहेजें या Harness process को `PHASEO_API_KEY` उपलब्ध कराएँ।
-- **Request गलत endpoint का उपयोग करता है** - `OpenAI Completions` / `openai-completions` चुनें। यह Harness integration Phaseo का `/v1/chat/completions` compatibility route उपयोग करता है।
-- **Reasoning चालू होने पर model function tools अस्वीकार करता है** - Chat Completions पर tools सपोर्ट करने वाला model चुनें। Tools के साथ reasoning के लिए Responses API चाहने वाले models इस Harness provider protocol से संगत नहीं हैं।
-- **मौजूदा session पुराना model रखता है** - नया session शुरू करें। Harness request भेज चुकी sessions में चुने provider और model को दर्ज करता है।
+- **मॉडल लाने पर `401` मिलता है** - जाँचें कि Phaseo API कुंजी चालू है और बेस URL में `/v1` शामिल है।
+- **पिकर में मॉडल नहीं है** - कैटलॉग दोबारा लाएँ, या `$DSH_HOME/settings.yaml` में `models` के अंतर्गत उसकी सटीक Phaseo मॉडल ID जोड़ें।
+- **Harness `MISSING_CREDENTIAL` बताता है** - Models पेज में कुंजी सहेजें, या Harness प्रोसेस को `PHASEO_API_KEY` उपलब्ध कराएँ।
+- **अनुरोध गलत एंडपॉइंट का उपयोग करता है** - `OpenAI Completions` / `openai-completions` चुनें। यह Harness इंटीग्रेशन Phaseo के `/v1/chat/completions` संगतता रूट का उपयोग करता है।
+- **रीज़निंग चालू होने पर मॉडल फ़ंक्शन टूल अस्वीकार करता है** - ऐसा मॉडल चुनें जो Chat Completions पर टूल सपोर्ट करता हो। जिन मॉडलों को टूल के साथ रीज़निंग के लिए Responses API चाहिए, वे Harness के इस प्रदाता प्रोटोकॉल के साथ संगत नहीं हैं।
+- **मौजूदा सत्र पुराना मॉडल ही रखता है** - नया सत्र शुरू करें। जो सत्र पहले ही अनुरोध भेज चुके हैं, उनमें Harness चुने गए प्रदाता और मॉडल को दर्ज कर लेता है।
 
 ## संबंधित गाइड
 
 - [त्वरित शुरुआत](../../quickstart.mdx)
-- [Node REST smoke app बनाएँ](../../cookbook/build-a-node-rest-smoke-app.mdx)
-- [Routing और fallbacks](../routing-and-fallbacks.mdx)
+- [Node REST स्मोक ऐप बनाएँ](../../cookbook/build-a-node-rest-smoke-app.mdx)
+- [रूटिंग और फ़ॉलबैक](../routing-and-fallbacks.mdx)

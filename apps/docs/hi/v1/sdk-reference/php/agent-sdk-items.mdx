@@ -1,10 +1,10 @@
 ---
 icon: "layers"
 title: "स्ट्रीम आइटम"
-description: "PHP एजेंट रन से टेक्स्ट, reasoning, टूल और provider item इवेंट प्राप्त करें।"
+description: "PHP एजेंट रन से टेक्स्ट, रीज़निंग, टूल और प्रदाता आइटम इवेंट प्राप्त करें।"
 ---
 
-stream result में टेक्स्ट और structured event के लिए दोबारा चलाए जा सकने वाले consumer मिलते हैं।
+स्ट्रीम परिणाम टेक्स्ट और संरचित इवेंट के लिए ऐसे कंज़्यूमर देता है जिन्हें दोबारा चलाया जा सकता है।
 
 ```php
 $stream = $agent->stream(input: $prompt, client: $client);
@@ -16,10 +16,10 @@ foreach ($stream->itemStream() as $item) {
 $result = $stream->getResult();
 ```
 
-अगर UI को provider item के साथ reasoning delta, tool progress, approval checkpoint या lifecycle बदलाव भी चाहिए, तो पूरा event stream उपयोग करें।
+अगर UI को प्रदाता आइटम के साथ रीज़निंग डेल्टा, टूल की प्रगति, अनुमोदन चेकपॉइंट या लाइफ़साइकल बदलाव भी चाहिए, तो पूरी इवेंट स्ट्रीम इस्तेमाल करें।
 
 <Note>
-PHP item वैल्यू सामान्य array या object हैं, typed item का बंद union नहीं। UI जिन fields का उपयोग करे उन्हें validate करें और अज्ञात item व भविष्य के provider event के लिए fallback रखें।
+PHP में आइटम मान सामान्य ऐरे या ऑब्जेक्ट होते हैं, टाइप किए गए आइटम का बंद यूनियन नहीं। आपका UI जिन फ़ील्ड का उपयोग करता है, उन्हें सत्यापित करें और नए प्रदाता इवेंट के लिए अज्ञात आइटम का फ़ॉलबैक बनाए रखें।
 </Note>
 
-PHP provider stream को synchronous रूप से consume करता है और एकत्रित sequence को दोबारा चलाने देता है। यह request worker और CLI प्रोग्राम के लिए ठीक है, लेकिन अपने आप background push channel नहीं बनाता।
+PHP प्रदाता स्ट्रीम को सिंक्रोनस रूप से पढ़ता है और एकत्रित अनुक्रम को दोबारा चलाने योग्य बनाता है। यह अनुरोध वर्कर और CLI प्रोग्राम के लिए उपयुक्त है, लेकिन अपने आप में कोई बैकग्राउंड पुश चैनल नहीं है।

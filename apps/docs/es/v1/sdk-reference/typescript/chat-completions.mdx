@@ -32,7 +32,7 @@ for await (const chunk of client.streamChat({
 - `model` (required): ID del modelo de destino.
 - `messages` (required): Mensajes ordenados con roles `system|user|assistant|tool`; el contenido puede ser una cadena o varias partes.
 - Muestreo: `temperature` (0–2), `top_p` (0–1), `top_k` (>=1), `seed` (int, optional).
-- Longitud/penalizaciones: `max_output_tokens` (int), `presence_penalty` and `frequency_penalty` (-2 to 2), `stop` (string|string[]).
+- Longitud/penalizaciones: `max_output_tokens` (int), `presence_penalty` y `frequency_penalty` (de -2 a 2), `stop` (string|string[]).
 - Herramientas: `tools` (definiciones), `tool_choice` (`auto`/`none`/herramienta específica), `max_tool_calls` (int), `parallel_tool_calls` (bool).
 - Logprobs: `logprobs` (bool), `top_logprobs` (0–20).
 - Salida: `response_format` (json/text), `metadata` (object passthrough), `stream` (bool), `service_tier`.

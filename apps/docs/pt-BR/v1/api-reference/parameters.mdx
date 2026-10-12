@@ -34,11 +34,11 @@ O suporte a parâmetros ainda varia conforme o endpoint, o modelo e o provedor. 
 | [`presence_penalty`](#presence_penalty) | `number` | Incentivar mudanças de assunto ou vocabulário. |
 | [`repetition_penalty`](#repetition_penalty) | `number` | Controle antirrepetição específico do provedor. |
 | [`seed`](#seed) | `integer` | Melhorar a reprodutibilidade quando o provedor upstream oferecer suporte. |
-| [`stop`](#stop) | `string` or `string[]` | Definir sequências explícitas de parada. |
+| [`stop`](#stop) | `string` ou `string[]` | Definir sequências explícitas de parada. |
 | [`logprobs`](#logprobs) / [`top_logprobs`](#top_logprobs) | `boolean` / `integer` | Solicitar dados de probabilidade dos tokens. |
 | [`tools`](#tools), [`tool_choice`](#tool_choice) | `array`, `string`, `object` | Controle de chamadas de ferramentas e execução de funções. |
 | [`parallel_tool_calls`](#parallel_tool_calls) | `boolean` | Permitir ou exigir execução sequencial de ferramentas. |
-| [`response_format`](#response_format) | `string` or `object` | Saída em texto simples, JSON ou limitada por esquema. |
+| [`response_format`](#response_format) | `string` ou `object` | Saída em texto simples, JSON ou limitada por esquema. |
 | [`json_schema`](#json_schema) | `object` | Definir o esquema para fluxos de saída estruturada. |
 | [`structured_outputs`](#structured_outputs) | `boolean` | Sinal de capacidade para saídas confiáveis limitadas por esquema. |
 | [`reasoning`](#reasoning) | `object` | Configuração de raciocínio específica do provedor. |
@@ -115,9 +115,9 @@ Ative para interfaces de chat, exibição token a token ou respostas longas em q
 
 Observações:
 
-O suporte a streaming varia conforme o endpoint.
-Streaming costuma ser uma opção de transporte, não um controle de qualidade.
-Fluxos com chamadas de ferramentas ou saídas estruturadas também podem ser transmitidos de forma diferente conforme o provedor.
+- O suporte a streaming varia conforme o endpoint.
+- Streaming costuma ser uma opção de transporte, não um controle de qualidade.
+- Fluxos com chamadas de ferramentas ou saídas estruturadas também podem ser transmitidos de forma diferente conforme o provedor.
 
 <span id="temperature"></span>
 <h3 id="parameter-temperature"><code>temperature</code></h3>
@@ -142,9 +142,9 @@ Boas aplicações:
 
 Orientações práticas:
 
-Comece com um valor baixo para tarefas estruturadas.
-Altere primeiro `temperature` ou `top_p`, não os dois.
-Temperatura alta combinada com quantização agressiva pode ampliar a instabilidade.
+- Comece com um valor baixo para tarefas estruturadas.
+- Altere primeiro `temperature` ou `top_p`, não os dois.
+- Temperatura alta combinada com quantização agressiva pode ampliar a instabilidade.
 
 <span id="top_p"></span>
 <h3 id="parameter-top_p"><code>top_p</code></h3>
@@ -162,8 +162,8 @@ Valores menores restringem a massa de probabilidade da escolha do modelo e costu
 
 Observações:
 
-Ajuste `top_p` quando quiser ampliar ou reduzir o espaço de busca sem alterar a temperatura diretamente.
-Para a maioria das aplicações, uma `temperature` moderada e um `top_p` próximo de 1,0 são um ponto de partida razoável.
+- Ajuste `top_p` quando quiser ampliar ou reduzir o espaço de busca sem alterar a temperatura diretamente.
+- Para a maioria das aplicações, uma `temperature` moderada e um `top_p` próximo de 1,0 são um ponto de partida razoável.
 
 <span id="top_k"></span>
 <h3 id="parameter-top_k"><code>top_k</code></h3>
@@ -180,8 +180,8 @@ Valores menores de `top_k` restringem as escolhas do modelo e podem tornar a sa�
 
 Observações:
 
-`top_k` não está disponível em todos os provedores.
-Considere-o um limitador mais explícito do conjunto de tokens do que `top_p`.
+- `top_k` não está disponível em todos os provedores.
+- Considere-o um limitador mais explícito do conjunto de tokens do que `top_p`.
 
 <span id="max_tokens"></span>
 <h3 id="parameter-max_tokens"><code>max_tokens</code></h3>
@@ -280,7 +280,7 @@ Define uma ou mais sequências que encerram a geração antecipadamente.
 
 | Campo | Valor |
 | --- | --- |
-| Tipo | `string` or `string[]` |
+| Tipo | `string` ou `string[]` |
 | Padrão | Não definido |
 | Uso comum | Limites do parser, finais de modelo e marcadores de protocolo |
 
@@ -330,7 +330,7 @@ Controla se o modelo pode chamar ferramentas automaticamente, não deve chamá-l
 
 | Campo | Valor |
 | --- | --- |
-| Tipo | `string` or `object` |
+| Tipo | `string` ou `object` |
 | Valores comuns | `none`, `auto`, `required` |
 
 Use `none` quando quiser somente conteúdo, `auto` quando o modelo puder decidir e valores mais restritivos quando a orquestração downstream exigir uma chamada de ferramenta.
@@ -354,7 +354,7 @@ Solicita um formato de saída específico, como texto simples, JSON ou respostas
 
 | Campo | Valor |
 | --- | --- |
-| Tipo | `string` or `object` |
+| Tipo | `string` ou `object` |
 | Padrão | Específico do endpoint e do provedor |
 
 Os formatos aceitos dependem do endpoint e do adaptador do provedor. Use-o quando precisar de mais do que texto livre, especialmente para respostas JSON e fluxos de extração estruturada.
@@ -449,8 +449,8 @@ O Phaseo mapeia internamente esses níveis normalizados do gateway para controle
 
 Observações:
 
-`Batch` é um fluxo de API separado, não um valor de nível de serviço.
-O suporte varia conforme o endpoint e o provedor.
+- `Batch` é um fluxo de API separado, não um valor de nível de serviço.
+- O suporte varia conforme o endpoint e o provedor.
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>
@@ -525,7 +525,7 @@ Campos comuns incluem:
 | `only` | `string[]` | Restringe o roteamento a provedores específicos. |
 | `ignore` | `string[]` | Exclui provedores específicos. |
 | `include_alpha` | `boolean` | Permite provedores alpha nas decisões de roteamento. |
-| `sort` | `string` or `object` | Classifica provedores, geralmente por `price`, `latency` ou `throughput`. |
+| `sort` | `string` ou `object` | Classifica provedores, geralmente por `price`, `latency` ou `throughput`. |
 | `required_execution_region` | `string` | Restringe a execução a uma região obrigatória. |
 | `required_data_region` | `string` | Restringe o tratamento de dados a uma região obrigatória. |
 | `require_zero_data_retention` | `boolean` | Exige provedores que atendam às restrições de retenção zero de dados. |
@@ -598,7 +598,7 @@ Os campos de depuração aceitos incluem:
 | `return_upstream_request` | `boolean` | Inclui o payload transformado da solicitação upstream. |
 | `return_upstream_response` | `boolean` | Inclui o payload da resposta upstream quando disponível. |
 | `trace` | `boolean` | Retorna rastros de roteamento ou depuração. |
-| `trace_level` | `summary` or `full` | Controla o nível de detalhe dos rastros. |
+| `trace_level` | `summary` ou `full` | Controla o nível de detalhe dos rastros. |
 
 Payloads de depuração podem conter contexto sensível da solicitação. Use-os somente em desenvolvimento ou em ambientes rigorosamente controlados.
 

@@ -1,14 +1,14 @@
 ---
 title: "अनुरोध लेबल"
-description: "Gateway requests को code-defined teams, features या environments से जोड़ें और label के अनुसार खर्च देखें।"
+description: "Gateway अनुरोधों को कोड में परिभाषित टीमों, फ़ीचर या एनवायरनमेंट से जोड़ें और लेबल के अनुसार खर्च बाँटकर देखें।"
 icon: "tags"
 ---
 
-जब application code को API key या application से अधिक specific और स्थिर cost dimension चाहिए, तब request labels उपयोग करें। Labels request audit में दर्ज होते हैं और model request बदले बिना analytics में filter किए जा सकते हैं।
+जब ऐप्लिकेशन कोड को खर्च का ऐसा स्थिर आयाम चाहिए जो API कुंजी या ऐप्लिकेशन से ज़्यादा विशिष्ट हो, तब अनुरोध लेबल इस्तेमाल करें। लेबल अनुरोध के ऑडिट रिकॉर्ड के साथ दर्ज होते हैं और मॉडल अनुरोध बदले बिना एनालिटिक्स में उनके आधार पर फ़िल्टर किया जा सकता है।
 
 ## लेबल भेजें
 
-`X-Phaseo-Metadata` को अधिकतम 32 unique key/value labels वाले JSON object पर सेट करें:
+`X-Phaseo-Metadata` को ऐसे JSON ऑब्जेक्ट पर सेट करें जिसमें अधिकतम 32 अद्वितीय कुंजी/मान लेबल हों:
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
@@ -21,22 +21,22 @@ curl https://api.phaseo.app/v1/responses \
   }'
 ```
 
-TypeScript और Python SDKs custom headers लेते हैं, इसलिए वही header client पर configure किया जा सकता है। Labels providers को forward नहीं होते।
+TypeScript और Python SDK कस्टम हेडर स्वीकार करते हैं, इसलिए वही हेडर क्लाइंट पर कॉन्फ़िगर किया जा सकता है। लेबल प्रदाताओं को आगे नहीं भेजे जाते।
 
 ## खर्च का विश्लेषण करें
 
-`label_key` और `label_value` के साथ analytics endpoint उपयोग करें:
+`label_key` और `label_value` दोनों के साथ एनालिटिक्स एंडपॉइंट इस्तेमाल करें:
 
 ```text
 GET /v1/analytics?label_key=team&label_value=support
 ```
 
-Response में unfiltered analytics जैसा grouped-spend format होता है, लेकिन केवल वही requests शामिल होते हैं जिन पर यही सटीक label pair लगा हो।
+प्रतिक्रिया में बिना फ़िल्टर वाले एनालिटिक्स जैसा ही समूहबद्ध खर्च का फ़ॉर्मैट होता है, लेकिन इसमें केवल वे अनुरोध शामिल होते हैं जिन पर ठीक यही लेबल जोड़ी लगी हो।
 
 ## नियम
 
-- Keys में केवल letters, numbers, `_`, `.`, `:` या `-` का उपयोग कर सकते हैं; अधिकतम लंबाई 64 characters है।
-- Values 256 characters तक की strings होते हैं।
-- एक request में अधिकतम 32 labels हो सकते हैं और header की सीमा 8 KiB है।
-- Duplicate keys या गलत format वाला metadata `400 invalid_request` के साथ reject होता है।
-- Labels में prompts, secrets, email addresses या अन्य personal data न डालें।
+- कुंजियों में केवल अक्षर, अंक, `_`, `.`, `:` या `-` इस्तेमाल हो सकते हैं, और उनकी अधिकतम लंबाई 64 वर्ण है।
+- मान 256 वर्णों तक की स्ट्रिंग होते हैं।
+- एक अनुरोध में अधिकतम 32 लेबल हो सकते हैं और हेडर की सीमा 8 KiB है।
+- डुप्लिकेट कुंजियों या गलत फ़ॉर्मैट वाले मेटाडेटा को `400 invalid_request` के साथ अस्वीकार किया जाता है।
+- लेबल में प्रॉम्प्ट, सीक्रेट, ईमेल पते या अन्य व्यक्तिगत डेटा न डालें।

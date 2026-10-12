@@ -20,7 +20,7 @@ npx skills add phaseoteam/skills --agent codex --skill '*'
 
 <Visibility for="agents">
 <Note>
-プロバイダー設定だけでなく、再利用可能なエージェントの設定も必要ですか？[`phaseoteam/skills`](https://github.com/phaseoteam/skills) から Phaseo の公開スキルをインストールしてください。
+再利用可能な Phaseo スキルは [`phaseoteam/skills`](https://github.com/phaseoteam/skills) から入手できます。Codex にインストールする場合は、次のコマンドを使います。
 
 ```bash
 npx skills add phaseoteam/skills --agent codex --skill '*'
@@ -37,13 +37,14 @@ phaseo codex --model openai/gpt-5.6-terra
 
 まず Codex の公式リリースをインストールします。セットアップでは有効期限のない `Phaseo CLI: Codex API Key` を作成し、OS の資格情報ストアに保存して、Phaseo 専用プロファイルを書き込みます。Codex は CLI ヘルパー経由でキーを取得するため、`config.toml` に平文のキーは書き込まれません。
 
-### 次のコマンドで Codex を起動します。
+次のコマンドで Codex を起動します。
 
 ```bash
 codex --profile phaseo
 ```
 
 同じPhaseo CLIの手順で、分離された一時的なプロバイダー設定を使って[Cline](./cline)、[Kilo Code](./kilo-code)、[oh-my-pi](./oh-my-pi)、[Muse Code](./muse-code)、[MiniMax Code](./minimax-code)も起動できます。
+
 ## 手動設定
 
 ユーザー設定ファイル `~/.codex/config.toml` を作成または更新します。信頼できるプロジェクトでは、同じ設定をリポジトリ内の `.codex/config.toml` に置くこともできます。

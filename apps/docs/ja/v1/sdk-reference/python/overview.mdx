@@ -4,7 +4,7 @@ title: "Python SDK の概要"
 description: "Phaseo Gateway API 用の公式 Python クライアント"
 ---
 
-公開済みの [~phaseo~](https://pypi.org/project/phaseo/) パッケージを PyPI からインストールします。
+公開済みの [`phaseo`](https://pypi.org/project/phaseo/) パッケージを PyPI からインストールします。
 
 Phaseo Python SDKは同期クライアント`Phaseo`とネイティブ非同期クライアント`AsyncPhaseo`を提供します。
 
@@ -31,7 +31,7 @@ asyncioのネイティブキャンセルでHTTPとポーリングが停止しま
 両クライアントは元のクライアントを変更せずに`with_options(timeout=30, max_retries=2)`を
 サポートします。HTTPXのタイムアウトはネットワークの無通信時間を秒で制限します。再試行は
 既定で0回で、応答を読む前のGET/HEADにのみ適用され、送信には適用されません。
-`PhaseoHTTPError`は本文、コード、リクエストID、トレースURL、再試行遅延を公開します。
+`PhaseoHTTPError`は本文、コード、リクエストID、ダッシュボードのトレースURL、再試行遅延を公開します。
 
 更新時は同期JSONリクエストでの`urllib.error.HTTPError`の捕捉を
 `PhaseoHTTPError`（または`httpx.HTTPStatusError`）に変更し、接続エラーの捕捉を
@@ -78,8 +78,8 @@ Phaseoルームは**コードを取得**で送信したリクエストの実行�
 
 -   OpenAPI 仕様から生成された型付きリクエストモデル。
 -   チャット、Responses、Messages、画像、音声、埋め込み、モデレーション、ファイル、バッチ、生成、非同期動画ジョブ用の組み込みヘルパー。
--   テキスト、Responses、Messages 用のストリーミングヘルパー（~stream_*~ イテレーター）。
-- 制御プレーン用のヘルパーとして、モデル、エンドポイント、組織、料金の確認と計算、APIキーとワークスペースのライフサイクル管理、現在のキーの確認、ヘルス状態、プロバイダー、クレジット、アクティビティ、分析を利用できます。
+-   テキスト、Responses、Messages 用のストリーミングヘルパー（`stream_*` イテレーター）。
+-   制御プレーン用のヘルパーとして、モデル、エンドポイント、組織、料金の確認と計算、APIキーとワークスペースのライフサイクル管理、現在のキーの確認、ヘルス状態、プロバイダー、クレジット、アクティビティ、分析を利用できます。
 
 ## 簡単な例
 
@@ -112,18 +112,19 @@ music = client.music.generate_and_wait(
 
 動画には`videos.generate_and_wait(request, **options)`、バッチには`batches.create_and_wait(request, **options)`を使います。同期ヘルパーは1回だけ送信し、必要時のみポーリングして完了応答全体を返します。`JobFailedError.response`は失敗、キャンセル、期限切れの詳細を保持します。完了したバッチにも個別の失敗が含まれる場合があります。
 
-各リソースは`wait(id, **options)`で既存ジョブを再開し、すべての最終応答を返せます。音楽には直接呼べる`create(request)`と`retrieve(id)`もあります。
+各リソースは`wait(id, **options)`で既存ジョブを再開し、最終状態に達した応答をその種類にかかわらず返します。音楽には直接呼べる`create(request)`と`retrieve(id)`もあります。
 
 オプションは`interval`（秒、既定5、最小0.25）、`timeout`（秒、既定1800）、`on_poll`、`cancel_event`（`threading.Event`）です。待機タイムアウトは送信から戻った後に開始します。同期クライアントはリクエストとコールバックの間にキャンセルと期限を確認しますが、これらのオプションで進行中のHTTP呼び出しは中断できません。
 
 `JobTimeoutError`と`JobCancelledError`は`job_id`と`last_response`を保持します。`.wait(error.job_id)`で再開してください。ローカルのタイムアウトやキャンセルはリモートジョブを停止せず、送信も自動再試行されません。ヘルパーはGatewayにバックグラウンド実行を追加しません。
-## "含まれるもの"
+
+## 含まれるもの
 
 -   `Phaseo` クライアント
--   `chat.completions.create(...)` and `responses.create(...)` 互換ヘルパー
--   リソースヘルパー（例:） `client.batches`, `client.videos`, `client.files`, and `client.async_jobs`
--   バッチと動画のライフサイクルストリーム用非同期ジョブ WebSocket URL ヘルパー
--   `client.batches.stream_results(batch_id)` バッチJSONLのバイトチャンク用
--   モデルのライフサイクル用ヘルパー（例:） `get_model_deprecation_info(...)` and `validate_model(...)`
+-   `chat.completions.create(...)` と `responses.create(...)` の互換ヘルパー
+-   `client.batches`、`client.videos`、`client.files`、`client.async_jobs` などのリソースヘルパー
+-   バッチと動画のライフサイクルストリーム用の非同期ジョブ WebSocket URL ヘルパー
+-   バッチの JSONL バイトチャンクを返す `client.batches.stream_results(batch_id)`
+-   `get_model_deprecation_info(...)` や `validate_model(...)` などのモデルライフサイクルヘルパー
 -   テキスト、Responses、Messages 用のストリーミングイテレーター
--   ~phaseo.models~ にある生成済みリクエスト/レスポンスモデル
+-   `phaseo.models` にある生成済みリクエスト/レスポンスモデル

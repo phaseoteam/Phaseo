@@ -8,10 +8,10 @@ icon: "sliders-horizontal"
 
 استخدمها لمعرفة:
 
-ما وظيفة المعلمة
-نوع القيمة التي يتوقعها
-النطاق المعتاد أو القيم المقبولة
-ما إذا كانت تؤثر في الجودة أو التكلفة أو زمن الاستجابة أو سلوك التوجيه
+- ما وظيفة المعلمة
+- نوع القيمة التي يتوقعها
+- النطاق المعتاد أو القيم المقبولة
+- ما إذا كانت تؤثر في الجودة أو التكلفة أو زمن الاستجابة أو سلوك التوجيه
 
 إذا كنت تريد نصائح للضبط بدلًا من تعريفات الحقول، فراجع [معلمات الاستدلال](../guides/inference-parameters.mdx) و[أخذ العينات وفك الترميز](../guides/sampling-and-decoding.mdx)。
 
@@ -34,11 +34,11 @@ icon: "sliders-horizontal"
 | [`presence_penalty`](#presence_penalty) | `number` | تشجيع تغيير الموضوع أو المفردات. |
 | [`repetition_penalty`](#repetition_penalty) | `number` | عنصر تحكم خاص بالمزوّد للحد من التكرار. |
 | [`seed`](#seed) | `integer` | تحسين قابلية إعادة الإنتاج عند دعم المزوّد upstream لذلك. |
-| [`stop`](#stop) | `string` or `string[]` | تحديد تسلسلات توقف صريحة. |
+| [`stop`](#stop) | `string` أو `string[]` | تحديد تسلسلات توقف صريحة. |
 | [`logprobs`](#logprobs) / [`top_logprobs`](#top_logprobs) | `boolean` / `integer` | طلب بيانات احتمالات الرموز. |
 | [`tools`](#tools), [`tool_choice`](#tool_choice) | `array`, `string`, `object` | التحكم في استدعاء الأدوات وتنفيذ الوظائف. |
 | [`parallel_tool_calls`](#parallel_tool_calls) | `boolean` | السماح بتنفيذ الأدوات بالتتابع أو فرضه. |
-| [`response_format`](#response_format) | `string` or `object` | مخرجات نصية عادية أو JSON أو مقيدة بمخطط. |
+| [`response_format`](#response_format) | `string` أو `object` | مخرجات نصية عادية أو JSON أو مقيدة بمخطط. |
 | [`json_schema`](#json_schema) | `object` | تحديد المخطط لمسارات المخرجات المنظمة. |
 | [`structured_outputs`](#structured_outputs) | `boolean` | إشارة إلى القدرة على تقديم مخرجات موثوقة مقيدة بمخطط. |
 | [`reasoning`](#reasoning) | `object` | إعدادات استدلال خاصة بالمزوّد. |
@@ -115,9 +115,9 @@ icon: "sliders-horizontal"
 
 ملاحظات:
 
-يختلف دعم البث حسب نقطة النهاية.
-يكون البث عادةً خيارًا للنقل، لا عنصرًا للتحكم في الجودة.
-قد تختلف طريقة البث أيضًا حسب المزوّد في مسارات استدعاء الأدوات أو المخرجات المنظمة.
+- يختلف دعم البث حسب نقطة النهاية.
+- يكون البث عادةً خيارًا للنقل، لا عنصرًا للتحكم في الجودة.
+- قد تختلف طريقة البث أيضًا حسب المزوّد في مسارات استدعاء الأدوات أو المخرجات المنظمة.
 
 <span id="temperature"></span>
 <h3 id="parameter-temperature"><code>temperature</code></h3>
@@ -135,16 +135,16 @@ icon: "sliders-horizontal"
 
 استخدامات مناسبة:
 
-استخراج المعلومات
-التصنيف
-مخرجات JSON أو المخطط
-التوليد الإبداعي
+- استخراج المعلومات
+- التصنيف
+- مخرجات JSON أو المخطط
+- التوليد الإبداعي
 
 إرشادات عملية:
 
-ابدأ بقيمة منخفضة للمهام المنظمة.
-غيّر `temperature` أو `top_p` أولًا، وليس كليهما معًا.
-قد تؤدي الحرارة المرتفعة مع التكميم القوي إلى زيادة عدم الاستقرار.
+- ابدأ بقيمة منخفضة للمهام المنظمة.
+- غيّر `temperature` أو `top_p` أولًا، وليس كليهما معًا.
+- قد تؤدي الحرارة المرتفعة مع التكميم القوي إلى زيادة عدم الاستقرار.
 
 <span id="top_p"></span>
 <h3 id="parameter-top_p"><code>top_p</code></h3>
@@ -162,8 +162,8 @@ icon: "sliders-horizontal"
 
 ملاحظات:
 
-اضبط `top_p` إذا أردت تضييق مساحة البحث أو توسيعها دون تغيير temperature مباشرةً.
-في معظم التطبيقات، تُعد قيمة معتدلة لـ `temperature` وقيمة `top_p` قريبة من 1.0 نقطة بداية معقولة.
+- اضبط `top_p` إذا أردت تضييق مساحة البحث أو توسيعها دون تغيير temperature مباشرةً.
+- في معظم التطبيقات، تُعد قيمة معتدلة لـ `temperature` وقيمة `top_p` قريبة من 1.0 نقطة بداية معقولة.
 
 <span id="top_k"></span>
 <h3 id="parameter-top_k"><code>top_k</code></h3>
@@ -180,8 +180,8 @@ icon: "sliders-horizontal"
 
 ملاحظات:
 
-لا يتوفر `top_k` لدى جميع المزوّدين.
-اعتبره محددًا أكثر صراحةً لمجموعة الرموز مقارنةً بـ `top_p`.
+- لا يتوفر `top_k` لدى جميع المزوّدين.
+- اعتبره محددًا أكثر صراحةً لمجموعة الرموز مقارنةً بـ `top_p`.
 
 <span id="max_tokens"></span>
 <h3 id="parameter-max_tokens"><code>max_tokens</code></h3>
@@ -280,7 +280,7 @@ icon: "sliders-horizontal"
 
 | الحقل | القيمة |
 | --- | --- |
-| النوع | `string` or `string[]` |
+| النوع | `string` أو `string[]` |
 | الافتراضي | غير مضبوط |
 | الاستخدام الشائع | حدود المحلل ونهايات القوالب وعلامات البروتوكول |
 
@@ -330,7 +330,7 @@ icon: "sliders-horizontal"
 
 | الحقل | القيمة |
 | --- | --- |
-| النوع | `string` or `object` |
+| النوع | `string` أو `object` |
 | القيم الشائعة | `none`, `auto`, `required` |
 
 استخدم `none` إذا أردت المحتوى فقط، و`auto` إذا كان للنموذج أن يقرر، وقيمًا أكثر صرامة إذا كان التنسيق اللاحق يتطلب استدعاء أداة.
@@ -354,7 +354,7 @@ icon: "sliders-horizontal"
 
 | الحقل | القيمة |
 | --- | --- |
-| النوع | `string` or `object` |
+| النوع | `string` أو `object` |
 | الافتراضي | خاص بنقطة النهاية والمزوّد |
 
 تعتمد البنى المقبولة بدقة على نقطة النهاية ومحوّل المزوّد. استخدمه عند الحاجة إلى أكثر من نص حر، خصوصًا لاستجابات JSON ومسارات الاستخراج المنظم.
@@ -449,8 +449,8 @@ icon: "sliders-horizontal"
 
 ملاحظات:
 
-`Batch` مسار API منفصل وليس قيمةً لفئة الخدمة.
-يختلف الدعم حسب نقطة النهاية والمزوّد.
+- `Batch` مسار API منفصل وليس قيمةً لفئة الخدمة.
+- يختلف الدعم حسب نقطة النهاية والمزوّد.
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>
@@ -525,7 +525,7 @@ icon: "sliders-horizontal"
 | `only` | `string[]` | يقصر التوجيه على مزوّدين محددين. |
 | `ignore` | `string[]` | يستبعد مزوّدين محددين. |
 | `include_alpha` | `boolean` | يسمح بمزوّدي alpha في قرارات التوجيه. |
-| `sort` | `string` or `object` | يرتب المزوّدين غالبًا حسب `price` أو `latency` أو `throughput`. |
+| `sort` | `string` أو `object` | يرتب المزوّدين غالبًا حسب `price` أو `latency` أو `throughput`. |
 | `required_execution_region` | `string` | يقصر التنفيذ على منطقة مطلوبة. |
 | `required_data_region` | `string` | يقصر معالجة البيانات على منطقة مطلوبة. |
 | `require_zero_data_retention` | `boolean` | يشترط مزوّدين يلتزمون بقيود الاحتفاظ الصفري بالبيانات. |
@@ -598,7 +598,7 @@ icon: "sliders-horizontal"
 | `return_upstream_request` | `boolean` | يتضمن حمولة الطلب upstream بعد تحويلها. |
 | `return_upstream_response` | `boolean` | يتضمن حمولة الاستجابة upstream عند توفرها. |
 | `trace` | `boolean` | يعيد آثار التوجيه أو التصحيح. |
-| `trace_level` | `summary` or `full` | يتحكم في مستوى تفصيل الآثار. |
+| `trace_level` | `summary` أو `full` | يتحكم في مستوى تفصيل الآثار. |
 
 قد تتضمن بيانات التصحيح سياقًا حساسًا للطلب. استخدمها في التطوير أو البيئات الخاضعة لرقابة صارمة فقط.
 

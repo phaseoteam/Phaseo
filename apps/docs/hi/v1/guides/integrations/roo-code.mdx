@@ -1,10 +1,10 @@
 ---
 title: "Roo Code"
 icon: "/icons/brands/roo-code.svg"
-description: "OpenAI-संगत profile के ज़रिए Roo Code को Phaseo से जोड़ें।"
+description: "OpenAI-संगत प्रोफ़ाइल के ज़रिए Roo Code को Phaseo से जोड़ें।"
 ---
 
-Phaseo CLI से समर्पित कुंजी बनाएँ और Roo Code का प्रदाता प्रोफ़ाइल हाथ से सेट करें। Roo Code क्रेडेंशियल VS Code के सीक्रेट स्टोरेज में रखता है, इसलिए अंतिम प्रविष्टि एक्सटेंशन के इंटरफ़ेस में होती है।
+Phaseo CLI से समर्पित कुंजी बनाएँ और Roo Code की प्रदाता प्रोफ़ाइल हाथ से सेट करें। Roo Code क्रेडेंशियल VS Code के सीक्रेट स्टोरेज में रखता है, इसलिए अंतिम प्रविष्टि एक्सटेंशन के इंटरफ़ेस में होती है।
 
 ## Phaseo CLI से सेटअप करें
 
@@ -17,46 +17,46 @@ phaseo roo-code --model anthropic/claude-sonnet-4.6
 
 1. VS Code में Roo Code खोलें।
 2. **Settings** खोलें, फिर **Providers** पर जाएँ।
-3. Provider configuration profile बनाएँ और **OpenAI Compatible** चुनें।
+3. प्रदाता कॉन्फ़िगरेशन प्रोफ़ाइल बनाएँ और **OpenAI Compatible** चुनें।
 4. ये मान दर्ज करें:
 
-| Roo Code field | मान |
+| Roo Code फ़ील्ड | मान |
 | --- | --- |
 | Base URL | `https://api.phaseo.app/v1` |
-| API Key | इस कमांड का आउटपुट `phaseo integrations credential roo-code` |
+| API Key | `phaseo integrations credential roo-code` का आउटपुट |
 | Model | `anthropic/claude-sonnet-4.6` या सेटअप में दिखाया गया मॉडल |
 
-5. Profile save करें और उसे active करें।
+5. प्रोफ़ाइल सहेजें और उसे सक्रिय करें।
 
-अलग-अलग releases में field labels थोड़े बदल सकते हैं, लेकिन profile में endpoint, key और exact model ID होना चाहिए।
+अलग-अलग रिलीज़ में फ़ील्ड लेबल थोड़े बदल सकते हैं, लेकिन प्रोफ़ाइल में एंडपॉइंट, कुंजी और सटीक मॉडल ID होना ज़रूरी है।
 
 ## जाँचें
 
-Roo Code से `PHASEO_ROO_OK` जवाब देने को कहें, फिर Phaseo activity में request दिखने की पुष्टि करें।
+Roo Code से `PHASEO_ROO_OK` जवाब देने को कहें, फिर पुष्टि करें कि अनुरोध Phaseo गतिविधि में दिखता है।
 
 ## हटाएँ
 
-Phaseo profile delete करें या दूसरा profile चुनें, फिर यह चलाएँ:
+Phaseo प्रोफ़ाइल हटाएँ या दूसरी प्रोफ़ाइल चुनें, फिर यह चलाएँ:
 
 ```bash
 phaseo integrations remove roo-code
 ```
 
-CLI, VS Code के private extension storage से values delete नहीं कर सकता, लेकिन removal से key revoke हो जाती है।
+CLI, VS Code के निजी एक्सटेंशन स्टोरेज से मान नहीं हटा सकता, लेकिन हटाने की प्रक्रिया कुंजी को रद्द कर देती है।
 
 ## समस्या निवारण
 
 ### प्रमाणीकरण विफल
 
-`phaseo integrations credential roo-code` से key फिर प्राप्त करें। सुनिश्चित करें कि Base URL का अंत `/v1` से हो।
+`phaseo integrations credential roo-code` से कुंजी फिर से प्राप्त करें। सुनिश्चित करें कि Base URL के अंत में `/v1` हो।
 
 ### Roo Code को मॉडल नहीं मिलता
 
-Provider prefix सहित Phaseo model की exact ID manually दर्ज करें।
+प्रदाता प्रीफ़िक्स सहित सटीक Phaseo मॉडल ID हाथ से दर्ज करें।
 
 ### चैट काम करता है, लेकिन टूल विफल होते हैं
 
-Tool calling support वाले model पर switch करें।
+टूल कॉलिंग का समर्थन करने वाले मॉडल पर स्विच करें।
 
 ## संबंधित विषय
 

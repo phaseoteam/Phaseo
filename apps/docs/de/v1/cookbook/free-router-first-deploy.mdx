@@ -7,7 +7,15 @@ description: "Starte mit phaseo/free, damit deine erste Integration ohne die vor
 Mit dieser Anleitung bringst du deine erste Phaseo-Integration zum Laufen, ohne zunächst ein kostenpflichtiges Modell auszuwählen.
 
 Anstatt selbst ein kostenloses Modell auszuwählen, sendest du Anfragen an `phaseo/free`. Phaseo wählt ein verfügbares kostenloses Modell aus, das die jeweilige Anfrage unterstützt.
+
+## Wann du es verwenden solltest
+
+- Du möchtest einen funktionierenden Prototyp, bevor du ein kostenpflichtiges Modell auswählst.
+- Du gehst davon aus, dass sich die beste kostenlose Option mit der Zeit ändert.
+- Du möchtest eine stabile Modell-ID im Anwendungscode, während Phaseo Änderungen bei kostenlosen Anbietern im Hintergrund übernimmt.
+
 ## Beispielanfrage
+
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
@@ -130,6 +138,7 @@ response = client.generate_response(
 puts response
 ```
 </CodeGroup>
+
 ## Was im Hintergrund geschieht
 
 1. Deine Anfrage geht an den gemeinsamen Alias `phaseo/free`.
@@ -140,14 +149,14 @@ puts response
 ## Nach deiner ersten Anfrage
 
 - Öffne unter **Gateway -> Nutzung** die Anfragedetails und prüfe, welches Modell verwendet wurde.
-- Wenn eine Workspace-Richtlinie die Anfrage blockiert, findest du in den Details den ausschlaggebenden Parameter.
-- Unterstützt kein kostenloses Modell die benötigte Funktion, wechsle zu einem bestimmten kostenpflichtigen Modell, statt dieselbe Anfrage erneut zu senden.
+- Wenn eine Workspace-Richtlinie die Anfrage blockiert, prüfe in den Anfragedetails, welche Einstellung sie gestoppt hat.
+- Unterstützt kein kostenloses Modell die benötigte Funktion, wechsle von `phaseo/free` zu einem bestimmten kostenpflichtigen Modell, statt dieselbe Anfrage erneut zu senden.
 
 ## Hinweise für den Produktionseinsatz
 
 - Nutze `phaseo/free` für Prototypen, Demos und unkritischen Datenverkehr.
-- Wenn du eine vorhersehbare Latenz, Ausgabe oder Anbieterauswahl brauchst, wechsle zu einem bestimmten Modell, sobald du weißt, welches am besten funktioniert.
-- Für einheitliches Prompt-Verhalten über mehrere Dienste hinweg kannst du diese Anleitung mit [Presets](../guides/presets.mdx) kombinieren.
+- Wenn du eine vorhersehbare Latenz, einen vorhersehbaren Ausgabestil oder eine feste Anbieterauswahl brauchst, wechsle zu einem bestimmten Modell, sobald du weißt, welches am besten funktioniert.
+- Für einheitliches Prompt-Verhalten über mehrere Dienste hinweg kannst du diese Anleitung mit [Voreinstellungen](../guides/presets.mdx) kombinieren.
 
 ## Verwandte Anleitungen
 

@@ -233,6 +233,8 @@
 			"modalityMusic": "संगीत",
 			"modalityFile": "फ़ाइल",
 			"modalityRerank": "पुनः क्रमित करना",
+			"modalityDocuments": "दस्तावेज़",
+			"modalityTranslation": "अनुवाद",
 			"endpointResponses": "Responses",
 			"endpointChatCompletions": "चैट कम्प्लीशन",
 			"endpointMessages": "संदेश",

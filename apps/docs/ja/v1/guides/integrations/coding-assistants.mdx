@@ -10,7 +10,7 @@ description: "CLIまたは手動のプロバイダー設定でコーディング
 
 | 目的 | 使用する方法 |
 | --- | --- |
-| 分離された一時設定でCline、Kilo Code、oh-my-pi、Muse Code、MiniMax Codeを起動する | `phaseo cline`, `phaseo kilo`, `phaseo omp`, `phaseo muse`, または `phaseo minimax` |
+| 分離された一時設定でCline、Kilo Code、oh-my-pi、Muse Code、MiniMax Codeを起動する | `phaseo cline`、`phaseo kilo`、`phaseo omp`、`phaseo muse`、または `phaseo minimax` |
 | インストール済みエージェントを設定し、設定を保持する | `phaseo <integration>` |
 | Phaseo CLIを使わずにエージェントを設定する | 専用ガイドの手動プロバイダー設定手順に従う |
 
@@ -31,7 +31,7 @@ phaseo codex
 phaseo codex
 ```
 
-Supported integration names are `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor`, and `zed`. 分離されたCLIランナーは`cline`、`kilo`、`omp`、`muse`、`minimax`です。
+対応している連携名は `codex`、`claude-code`、`opencode`、`deepseek-harness`、`pi`、`openclaw`、`hermes`、`aider`、`cline`、`roo-code`、`kilo-code`、`continue`、`cursor`、`zed` です。分離された CLI ランナーは `cline`、`kilo`、`omp`、`muse`、`minimax` です。
 
 CLI はアシスタントごとに専用の有効期限なし API キーを作成します。クリーンインストールでは Aider と Continue を自動設定し、Zed のプロバイダー/モデル設定も自動で書き込みます。シークレットをエディター UI のみで管理するアシスタントでは、残りの入力項目を表示し、専用ガイドにリンクし、そのアシスタントのキーだけをコピーできます。
 
@@ -71,7 +71,7 @@ Anthropic 互換ツールでは、次の値を使います。
 
 Cursor では、OpenAI API キー設定から OpenAI 互換のカスタムエンドポイントを追加できます。
 
-1. Cursor Settings を開きます。
+1. `Cursor Settings` を開きます。
 2. `Models` に移動します。
 3. `OpenAI API Key` の項目を有効にするか追加します。
 4. Phaseo API キーを貼り付けます。
@@ -117,7 +117,7 @@ models:
       - apply
 ```
 
-Continue の既定は Responses ですが、ワークフローで Chat Completions 互換性が必要な場合は `useResponsesApi: false` を設定します。
+Continue が既定で Responses を使うモデルで、ワークフローに Chat Completions 互換性が必要な場合は `useResponsesApi: false` を設定します。
 
 ## Cline、Roo Code、Kilo Code
 
@@ -140,7 +140,7 @@ export OPENAI_API_KEY="your_phaseo_api_key"
 aider --model openai/openai/gpt-5-nano
 ```
 
-Aider では、OpenAI 互換のカスタムモデルに `openai/` プレフィックスが必要な場合があります。 Phaseo のモデル ID にはプロバイダープレフィックスが含まれるため、Aider でのモデル指定全体は `openai/openai/gpt-5-nano` のようになります。
+Aider では、OpenAI 互換のカスタムモデルに `openai/` プレフィックスが必要な場合があります。Phaseo のモデル ID にはプロバイダープレフィックスが含まれるため、Aider でのモデル指定全体は `openai/openai/gpt-5-nano` のようになります。
 
 ## Pi、Prime Agent、OpenClaw、Hermes Agent
 
@@ -151,6 +151,7 @@ Aider では、OpenAI 互換のカスタムモデルに `openai/` プレフィ�
 ## MiniMax Code
 
 `mcode` CLIには専用の[MiniMax Codeガイド](./minimax-code.mdx)を使ってください。`phaseo minimax`はPhaseoのOpenAI互換エンドポイントで一時的なMiniMaxプロバイダーを作成し、CLIを起動して、セッション終了時に一時データディレクトリを削除します。エディターやホストがACPを直接使う場合は、`mcode acp`によるACPにも対応しています。
+
 ## Zed
 
 `phaseo zed` を実行し、表示された手順に従って Zed の設定に OpenAI 互換プロバイダーを追加します。生成されたキーは Zed の認証情報欄だけに入力してください。
@@ -194,7 +195,7 @@ claude
 
 ## Claude Desktop
 
-Claude Desktop は MCP サーバーに対応していますが、Cursor、Codex、Claude Code などのコーディングエージェントと同じカスタムモデルプロバイダー設定はありません。 [Docs MCP](./docs-mcp.mdx) を使うと、Claude Desktop に Phaseo ドキュメントのコンテキストを追加できます。Phaseo をモデルゲートウェイとして使う場合は Claude Code を利用してください。
+Claude Desktop は MCP サーバーに対応していますが、Cursor、Codex、Claude Code などのコーディングエージェントと同じカスタムモデルプロバイダー設定はありません。[Docs MCP](./docs-mcp.mdx) を使うと、Claude Desktop に Phaseo ドキュメントのコンテキストを追加できます。Phaseo をモデルゲートウェイとして使う場合は Claude Code を利用してください。
 
 ## Deep Agents CLI と LangChain ツール
 

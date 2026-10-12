@@ -1,40 +1,103 @@
 ---
 title: "Publicar um catálogo de provedor"
-description: "Feeds V1 e V1.1 com níveis de serviço padronizados e limites de taxa."
+description: "Publique feeds de modelos V1 ou V1.1 com ofertas de níveis de serviço normalizados e limites de taxa."
 icon: "list"
 ---
 
-Provedores aprovados podem atualizar ofertas de modelos canônicos públicos. Modelos novos precisam de aprovação. Cada catálogo é um retrato completo: ofertas removidas são desativadas e o histórico de preços é preservado.
+Provedores aprovados podem atualizar ofertas de modelos canônicos públicos existentes pelo feed do catálogo ou pelas configurações do provedor. Novos modelos canônicos precisam de aprovação. Cada catálogo é um snapshot completo: remover uma oferta desativa essa oferta gerenciada pelo feed e preserva o histórico de preços dela.
 
 ## Escolher o formato
 
-Feeds V1 sem versão continuam funcionando. `"schema_version": "1.0"` também indica V1. V1.1 declara `"schema_version": "1.1"` e um array `service_tiers` por modelo. A versão vem do documento, não dos parâmetros da URL.
+Os feeds V1 existentes continuam funcionando sem alterações. Um documento `{"data": [...]}` sem versão, ou que declare `"schema_version": "1.0"`, usa o formato existente do nível Standard.
 
-Cada modelo precisa de `standard`. Os outros níveis permitidos são `fast`, `ultrafast`, `flex` e `batch`. Cada nível contém `service_tier`, `provider_model_slug`, `availability` e `pricing`. Capacidades, limites e datas de lançamento são compartilhados pelo modelo.
+O V1.1 declara `"schema_version": "1.1"` e publica `service_tiers` dentro de cada modelo. O importador seleciona o formato a partir do documento. Parâmetros de consulta da URL, como `?format=phaseo-v1.1`, são convenções opcionais do seu endpoint; a Phaseo não deduz a versão a partir da URL.
 
-Fast, Ultrafast e Flex são suportados na geração de texto. Use um ID de modelo distinto ou `upstream_service_tier` para selecionar o nível real. Fast aceita `fast` ou `priority`; Standard aceita `default` ou `standard`. Batch usa a API Batch separada e exige integração do provedor e capacidade Batch.
+Baixe o [esquema V1](https://phaseo.app/api/internal/provider-catalog/schema) ou o [esquema V1.1](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1). Versões sem suporte são rejeitadas explicitamente.
 
-## Preços e atualizações
+## Publicar níveis normalizados
 
-Cada nível precisa de preços explícitos para todas as unidades cobradas. `price_nanos` é o preço efetivo após promoções. Zero é válido; preços negativos, unidades desconhecidas, níveis duplicados e tarifas condicionais são rejeitados. Publique um novo retrato quando os preços mudarem; o histórico permanece disponível.
+| Nível | Significado |
+| --- | --- |
+| `standard` | Execução síncrona normal; obrigatório para todos os modelos. |
+| `fast` | Uma oferta mais rápida ou prioritária. Nomes do provedor, como HighSpeed, ficam no ID do modelo upstream. |
+| `ultrafast` | Uma oferta separada, de velocidade ainda maior, quando houver suporte. |
+| `flex` | Uma oferta síncrona flexível e de menor prioridade. |
+| `batch` | Execução assíncrona pela Batch API. Exige uma capacidade de batch. |
 
-Polling e webhooks assinados aceitam ambas as versões. Selecione o nível antes de editar nas configurações do provedor. Erros de associação aparecem por modelo sem bloquear modelos válidos.
+Não use nomes de níveis específicos do provedor como IDs normalizados. `priority` continua sendo um alias aceito para Fast nas chamadas dos clientes; os catálogos publicam `fast`.
 
-Veja o exemplo completo e os esquemas JSON no [guia do contrato em inglês](/v1/guides/provider-catalog).
+A seleção de Fast, Ultrafast e Flex é compatível com solicitações de geração de texto. Batch é executado pela Batch API separada e continua exigindo uma integração Batch do provedor instalada; publicar um nível não instala essa integração. Para arquivos nativos do provedor enviados por upload, use o ID de modelo Batch declarado ou envie as solicitações inline para que a Phaseo possa traduzi-lo.
 
-Nos catálogos API, as edições do painel são persistentes. Importações atualizam campos sem alterações manuais. **Usar valor do feed** remove uma alteração. O painel mostra os valores do feed e efetivos, o autor e a data; a atividade registra edições e reversões. Modelos adicionados manualmente continuam sendo ofertas locais. Remover um modelo do feed desativa a oferta mesmo com campos editados. Catálogos manuais continuam compatíveis.
-
-## Limites de taxa
-
-Declare os limites de solicitações e tokens que sua plataforma aplica à conta da Phaseo em um array `rate_limits` opcional de nível superior, em V1 e V1.1. Omita `model` para um limite em todos os modelos ou informe o `provider_model_slug` de um modelo ou nível do mesmo documento. Cada entrada aceita `requests_per_minute`, `requests_per_day`, `tokens_per_minute` e `tokens_per_day`, com inteiros positivos ou `null` e pelo menos um valor. O limite de um modelo se aplica além do limite de todos os modelos.
+Use o mesmo ID de modelo canônico para todos os níveis de serviço do modelo. Modelos diferentes precisam de identidades canônicas separadas. Os níveis herdam as capacidades, os limites e o cronograma de lançamento do modelo. Cada nível declara o próprio ID de modelo upstream, a disponibilidade e o preço efetivo.
 
 ```json
 {
+  "schema_version": "1.1",
+  "data": [{
+    "id": "your-provider/example-model",
+    "name": "Example model",
+    "capabilities": ["chat.completions"],
+    "service_tiers": [{
+      "service_tier": "standard",
+      "provider_model_slug": "example-model",
+      "availability": "ready",
+      "pricing": [{
+        "meter_key": "input_text_tokens",
+        "modality": "text",
+        "direction": "input",
+        "unit": "token",
+        "unit_quantity": 1000000,
+        "price_nanos": 100000000,
+        "display_label": "Input",
+        "display_unit": "1M tokens"
+      }, {
+        "meter_key": "output_text_tokens",
+        "modality": "text",
+        "direction": "output",
+        "unit": "token",
+        "unit_quantity": 1000000,
+        "price_nanos": 200000000,
+        "display_label": "Output",
+        "display_unit": "1M tokens"
+      }]
+    }]
+  }]
+}
+```
+
+Para adicionar Fast, inclua outro objeto de nível com `"service_tier": "fast"`, os preços efetivos dele e um ID de modelo upstream distinto para essa oferta. Se, em vez disso, o provedor selecionar a faixa por meio de um parâmetro nativo, use o mesmo ID de modelo upstream e declare `"upstream_service_tier": "priority"` ou `"fast"`. Omita esse campo quando o próprio ID do modelo selecionar a faixa. Standard aceita `default` ou `standard`; Flex e Ultrafast aceitam os valores correspondentes. A Phaseo rejeita níveis síncronos não padrão que não tenham um ID de modelo distinto nem um seletor nativo.
+
+Todo nível precisa de preços explícitos, incluindo a saída e quaisquer medidores de cache/mídia que você cobre. Preços zero são válidos; preços negativos, medidores desconhecidos, níveis duplicados e tarifas condicionais são rejeitados. `price_nanos` continua sendo o preço efetivo após promoções. Publique um novo snapshot quando as tarifas mudarem; a Phaseo mantém os preços efetivos anteriores.
+
+## Declarar limites de taxa
+
+Declare os limites de solicitações e tokens que sua plataforma aplica à conta da Phaseo em um array `rate_limits` opcional de nível superior. Ele funciona da mesma forma em documentos V1 e V1.1. Omita `model` para definir um limite que abranja todos os seus modelos, ou defina-o como o `provider_model_slug` upstream de qualquer modelo ou nível do mesmo documento.
+
+```json
+{
+  "schema_version": "1.1",
+  "data": [{ "id": "your-provider/example-model", "...": "..." }],
   "rate_limits": [
     { "requests_per_minute": 600, "tokens_per_minute": 2000000 },
-    { "model": "example-model", "requests_per_day": 100000 }
+    { "model": "example-model", "requests_per_day": 100000, "tokens_per_day": 500000000 }
   ]
 }
 ```
 
-Os limites nunca bloqueiam solicitações: conforme o tráfego da sua oferta se aproxima de um limite, a Phaseo envia a ela uma parcela gradualmente menor. Ao atingir o limite, a Phaseo classifica sua oferta abaixo de outros provedores até o limite ser redefinido. Por isso, eles entram em vigor sem revisão depois que sua solicitação é aprovada, geralmente em um minuto. Quando o array está presente, ele substitui seus limites a cada importação bem-sucedida de um feed alterado; `[]` os remove e omiti-lo mantém os limites definidos nas configurações do provedor. O snapshot inteiro é rejeitado se uma entrada citar um modelo ausente, repetir um escopo ou usar um valor inválido. Você também pode editá-los em **Configurações do provedor → Seus modelos → Limites de taxa**.
+Cada entrada aceita `requests_per_minute`, `requests_per_day`, `tokens_per_minute` e `tokens_per_day`. Cada valor é um inteiro positivo ou `null`, e cada entrada precisa de pelo menos um valor. A Phaseo contabiliza cada limite globalmente, considerando todo o tráfego que ela envia para você. O limite de um modelo se aplica além do limite que abrange todos os modelos.
+
+Os limites nunca bloqueiam solicitações. Conforme o tráfego de uma oferta se aproxima de um limite, a Phaseo envia a ela uma parcela gradualmente menor. Quando o limite é atingido, a Phaseo classifica a oferta abaixo de outros provedores até que o limite seja redefinido. Um valor baixo demais só reduz a sua própria parcela de tráfego. Por isso, depois que sua inscrição como provedor é aprovada, os limites entram em vigor sem revisão, geralmente em até um minuto.
+
+Quando o array está presente, ele substitui os limites declarados a cada importação bem-sucedida de um feed alterado. Um array vazio os remove. Omita `rate_limits` para manter os limites que você gerencia nas configurações do provedor. A Phaseo rejeita o snapshot inteiro, mantendo seu catálogo e seus limites atuais, se uma entrada citar um modelo que não está no documento, repetir um escopo ou usar um valor que não seja um inteiro positivo. A rejeição aparece como **Alterações solicitadas**.
+
+Você também pode editar os limites em **Configurações do provedor → Seus modelos → Limites de taxa**. Essas edições são salvas separadamente das alterações do catálogo. O editor do catálogo não aceita `rate_limits`.
+
+## Atualizar e verificar
+
+O polling e os webhooks assinados de alteração do catálogo aceitam as duas versões pelo mesmo fluxo de cadastro e atualização. Nas configurações do provedor, selecione um nível antes de editar o ID upstream, a disponibilidade ou os preços dele. Adicionar outro nível muda o catálogo salvo para V1.1.
+
+O catálogo não adiciona um adaptador de inferência nem credenciais. O provedor e as capacidades anunciadas por ele precisam estar integrados antes que o roteamento seja habilitado. O preço de Batch não torna Batch disponível nos endpoints síncronos de chat.
+
+Um modelo canônico indisponível ou um mapeamento de publicador desconhecido aparece como **Alterações solicitadas**, sem impedir a importação dos modelos válidos. Consulte o painel do provedor para ver os motivos específicos de cada modelo.
+
+Em catálogos alimentados por API, as edições feitas no painel são substituições persistentes. As importações atualizam os campos que não têm substituições. Selecione **Usar valor do feed** para remover uma substituição e voltar a seguir esse campo. O painel mostra o valor mais recente do feed, o valor efetivo, o autor da edição e o horário; a atividade do catálogo registra edições e reversões. Modelos adicionados manualmente continuam sendo ofertas locais. Remover um modelo do feed desativa essa oferta do feed, mesmo que alguns dos campos dela tenham sido editados. Os catálogos existentes somente manuais continuam compatíveis.

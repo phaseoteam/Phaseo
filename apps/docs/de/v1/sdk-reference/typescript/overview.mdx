@@ -4,7 +4,7 @@ title: "TypeScript-SDK-Übersicht"
 description: "Offizieller TypeScript-Client für die Phaseo-Gateway-API"
 ---
 
-Installiere das veröffentlichte Paket [~@phaseo/sdk~](https://www.npmjs.com/package/@phaseo/sdk) über npm.
+Installiere das veröffentlichte Paket [`@phaseo/sdk`](https://www.npmjs.com/package/@phaseo/sdk) über npm.
 
 Das Phaseo-TypeScript-SDK bietet eine typsichere und komfortable Möglichkeit, mit der Phaseo-Gateway-API zu arbeiten. Es basiert auf der OpenAPI-Spezifikation und bietet vollständige TypeScript-Unterstützung mit generierten Typen und einer einfachen Client-Schnittstelle.
 
@@ -39,7 +39,7 @@ const music = await client.music.generateAndWait(
 );
 ```
 
-Nutze `videos.generateAndWait(request, options)` für Videos und `batches.createAndWait(request, options)` für Batches. Die Helfer senden einmal, geben sofort vollständige Antworten ohne Polling zurück oder pollen denselben Job bis zum Abschluss. Sie liefern die vollständige Antwort und werfen `JobFailedError` mit `response` bei fehlgeschlagenen, abgebrochenen oder abgelaufenen Jobs. Abgeschlossene Batches können fehlgeschlagene Einzelanfragen enthalten.
+Nutze `videos.generateAndWait(request, options)` für Videos und `batches.createAndWait(request, options)` für Batches. Die Helfer senden einmal, geben sofort vollständige Antworten ohne Polling zurück oder pollen denselben Job bis zum Abschluss. Sie liefern die vollständige Antwort und werfen `JobFailedError` mit `response` bei fehlgeschlagenen, abgebrochenen oder abgelaufenen Jobs. Abgeschlossene Batches können trotzdem fehlgeschlagene Einzelanfragen enthalten.
 
 Jede Ressource besitzt `wait(id, options)` für jede abschließende Antwort, auch Fehler. Optionen sind `intervalMs` (Standard 5.000; Minimum 250), `timeoutMs` (Standard 1.800.000), `signal` und `onPoll`. Die Wartefrist beginnt nach Rückkehr der Einreichung; die erste HTTP-Anfrage behält ihre eigene Frist. Fortschrittscallbacks erhalten die Anfangsantwort und jeden Poll.
 
@@ -87,8 +87,8 @@ const support = await client.models.checkParameters(
 
 Jeder Parameter ist als `supported`, `partial`, `unsupported` oder `unknown` markiert,
 mit Anbieterrouten und Einschränkungsproblemen zur direkten Hervorhebung.
-`client.models.capabilities(modelId)` liefert die vollständige Endpunktfähigkeits-
-antwort. Diese expliziten Prüfungen ergänzen Generierungsaufrufe nicht um eine Suchanfrage.
+`client.models.capabilities(modelId)` liefert die vollständige Antwort zu den
+Endpunktfähigkeiten. Diese expliziten Prüfungen ergänzen Generierungsaufrufe nicht um eine Suchanfrage.
 
 ## Lokale Tests und Website-Exporte
 
@@ -97,13 +97,14 @@ strikte, geordnete Testdaten über `fetchImpl` einzusetzen. Prüfe mit `mock.ass
 erwarteten Anfragen erfolgt sind. Unerwartete Aufrufe scheitern lokal ohne Netzwerk-Fallback.
 
 Nach einer Anfrage im Phaseo-Room exportiert **Code abrufen** Modell und
-Einstellungen als TypeScript oder Python. **Anfrage anzeigen** öffnet den Dashboard-Trace, wenn
+Einstellungen als TypeScript oder Python. **Anfrage ansehen** öffnet den Dashboard-Trace, wenn
 eine Anfrage-ID vorliegt. Führe exportierten Code auf dem Server mit `PHASEO_API_KEY` aus.
+
 ## Lieferumfang
 
 -   `Phaseo`-Clientklasse für sämtliche API-Interaktionen
--   Ressourcenbasierte Hilfsfunktionen wie `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
--   Hilfsfunktionen zur Erkundung und Preisermittlung wie `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
+-   Ressourcenbasierte Hilfsfunktionen wie `client.models`, `client.batches`, `client.videos` und `client.asyncJobs`
+-   Hilfsfunktionen zur Erkundung und Preisermittlung wie `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)` und `client.getCurrentApiKey()`
 -   WebSocket-URL-Hilfsfunktionen für Lebenszyklus-Streams asynchroner Batch- und Videojobs
 -   `client.batches.streamResults(batchId, { signal })` für das Streaming von Anthropic-JSONL-Downloads
 -   Generierte Typen für alle Anfrage- und Antwortobjekte

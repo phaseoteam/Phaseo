@@ -15,6 +15,7 @@ These instructions apply to `apps/docs` and extend the repository-level `AGENTS.
 ## Public Contract and Generated Surfaces
 
 - `openapi/v1/openapi.yaml` is the single v1 contract used by both Mintlify and SDK generation. Do not create a filtered public copy. Mark internal operations with both `x-internal: true` and Mintlify's `x-excluded: true`; document preview operations with Beta labels and retain their API access gates.
+- Endpoint pages must name their spec file: `openapi: "/openapi/v1/openapi.yaml POST /chat/completions"` in English, `/<locale>/openapi/v1/openapi.localized.yaml` in translations. A bare `POST /chat/completions` resolves to the alphabetically first spec defining it, which is a localized one, so English pages render translated text. `validate:locales` enforces this.
 - SDK reference pages must match the current handwritten wrappers and generated operations for their language. Do not claim convenience helpers or parity that the package does not provide.
 - When an API contract changes, update the OpenAPI document, affected guides/examples, generated SDKs, and language reference pages together.
 - Do not manually patch generated SDK source to make a documentation example true; fix the specification or handwritten wrapper and regenerate.
@@ -26,6 +27,7 @@ These instructions apply to `apps/docs` and extend the repository-level `AGENTS.
 - Run both for navigation changes, renamed pages, API-reference changes, or broad link edits.
 - Verify code examples use current Phaseo URLs, model IDs, SDK package names, and authentication conventions. Never include real keys or production customer data.
 - Preserve redirects when moving published pages and update inbound links in the same change.
+- Translated pages (`<locale>/v1`) must translate all English prose and keep its structure: the same headings, components, tables, and lists, with code blocks, inline code, URLs, identifiers, product names, and third-party UI labels unchanged. Do not summarize a page or link readers to the English version instead. See `TRANSLATION_WORKFLOW.md` for recording reviewed translations.
 
 ## Writing and Safety
 

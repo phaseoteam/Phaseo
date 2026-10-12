@@ -52,7 +52,7 @@ Erstelle Standardwerte mit `ContinueOptions::new(result)`.
 | `Tool::new(id, description, parameters, executor)` | Definiert ein lokales, synchrones Tool. |
 | `Tool::external(id, description, parameters)` | Definiert ein Tool, dessen Ergebnis die Anwendung nach einer Pause bereitstellt. |
 | `Tool::require_approval()` | Verlangt vor der lokalen Ausführung eine Freigabe für die exakte ID. |
-| `define_tool(tool)` | Gibt das übergebene Tool zurück, damit Definitionen einheitlich aufgebaut werden können. |
+| `define_tool(tool)` | Gibt das übergebene `Tool` zurück, damit Definitionen einheitlich aufgebaut werden können. |
 
 Die Executor-Signatur lautet:
 
@@ -132,7 +132,7 @@ Gib `HumanReviewRequest { reason, payload }` aus dem Prüfungs-Callback zurück,
 - `kind`
 - `pending_tool_calls`
 
-Jeder `PendingToolCall` enthält den ursprünglichen `ToolCall`, den erforderlichen Eingabetyp `kind` und einen verständlichen Grund.
+Jeder `PendingToolCall` enthält den ursprünglichen `ToolCall`, den erforderlichen Eingabetyp `kind` und einen für Menschen lesbaren `reason`.
 
 `ToolDecision` liefert eine freigegebene `tool_call_id` und einen optionalen Grund. `ToolOutput` liefert eine `tool_call_id` und eine JSON-Ausgabe.
 
@@ -152,7 +152,7 @@ Jeder `PendingToolCall` enthält den ursprünglichen `ToolCall`, den erforderlic
 
 `UsageSummary` enthält `input_tokens`, `output_tokens`, `cached_tokens`, `total_tokens` und `cost`.
 
-`cost` wird vom Modellclient bereitgestellt. Der integrierte Gateway-Adapter 0.1 ordnet die Gateway-Werte `cost_nanos` und `cost_cents` derzeit nicht diesem Feld zu.
+`cost` wird vom Modellclient bereitgestellt. Der integrierte `0.1`-Gateway-Adapter ordnet die Gateway-Werte `cost_nanos` und `cost_cents` derzeit nicht diesem Feld zu.
 
 `RunResult`, `RunRecord`, `RunStep`, `Message`, `ToolCall`, `HumanPause`, `PendingToolCall`, `ToolDecision`, `ToolOutput` und `UsageSummary` unterstützen die Serde-Serialisierung, sofern ihre Definitionen `Serialize` und `Deserialize` ableiten.
 

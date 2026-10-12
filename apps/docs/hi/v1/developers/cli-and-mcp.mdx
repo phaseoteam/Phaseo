@@ -1,22 +1,22 @@
 ---
 title: "CLI और MCP"
-description: "टर्मिनल ऑटोमेशन के लिए Phaseo CLI इस्तेमाल करें या प्रमाणित MCP सर्वर को AI clients से जोड़कर Phaseo का live data केवल पढ़ने के लिए उपलब्ध कराएँ।"
+description: "टर्मिनल ऑटोमेशन के लिए Phaseo CLI इस्तेमाल करें या प्रमाणीकृत MCP सर्वर को AI क्लाइंट से जोड़कर Phaseo का लाइव डेटा केवल पढ़ने के लिए उपलब्ध कराएँ।"
 icon: "square-terminal"
 ---
 
 # CLI और MCP
 
-टर्मिनल से Phaseo इस्तेमाल करने के लिए CLI चलाएँ या MCP के ज़रिए AI client जोड़ें। दोनों Phaseo OAuth इस्तेमाल करते हैं, लेकिन इनके काम अलग हैं।
+टर्मिनल से Phaseo इस्तेमाल करने के लिए CLI चलाएँ या MCP के ज़रिए AI क्लाइंट जोड़ें। दोनों Phaseo OAuth इस्तेमाल करते हैं, लेकिन इन्हें अलग-अलग कामों के लिए बनाया गया है।
 
 | इंटरफ़ेस | किसके लिए उपयुक्त | पहुँच |
 | --- | --- | --- |
-| Phaseo CLI | टर्मिनल वर्कफ़्लो, CI, प्रशासन और ऑटोमेशन | आपके scopes और workspace role के अनुसार सीमित पढ़ने और लिखने की अनुमति |
-| Phaseo MCP | Codex, Claude, ChatGPT और अन्य MCP clients में Phaseo का live data | प्रमाणित और केवल पढ़ने के लिए |
+| Phaseo CLI | टर्मिनल वर्कफ़्लो, CI, प्रशासन और ऑटोमेशन | पढ़ने और लिखने की अनुमति, जो आपके स्कोप और वर्कस्पेस भूमिका से सीमित है |
+| Phaseo MCP | Codex, Claude, ChatGPT और अन्य MCP क्लाइंट में Phaseo का लाइव डेटा | प्रमाणीकृत और केवल पढ़ने के लिए |
 | Docs MCP | कोडिंग के समय Phaseo के वर्तमान दस्तावेज़ देखना | केवल दस्तावेज़, केवल पढ़ने के लिए |
 
 ## Phaseo CLI
 
-Phaseo resources बनाने या बदलने, workflow script करने या shell से अकाउंट डेटा देखने के लिए CLI इस्तेमाल करें।
+जब आपको Phaseo संसाधन बनाने या बदलने हों, किसी वर्कफ़्लो की स्क्रिप्ट लिखनी हो या शेल से खाते का डेटा देखना हो, तब CLI इस्तेमाल करें।
 
 ### इंस्टॉल करें और साइन इन करें
 
@@ -26,7 +26,7 @@ phaseo login
 phaseo whoami
 ```
 
-इंटरैक्टिव टर्मिनल में डिफ़ॉल्ट रूप से browser OAuth इस्तेमाल होता है। SSH, CI और headless वातावरण के लिए device authorization इस्तेमाल करें:
+इंटरैक्टिव टर्मिनल डिफ़ॉल्ट रूप से ब्राउज़र OAuth इस्तेमाल करते हैं। SSH, CI और हेडलेस एनवायरनमेंट के लिए डिवाइस ऑथराइज़ेशन इस्तेमाल करें:
 
 ```bash
 phaseo login --device-code
@@ -43,15 +43,15 @@ phaseo keys create --name "Local development"
 phaseo logs list --since 1h --status error --json
 ```
 
-जब किसी दूसरे टूल या script को structured output चाहिए, तब `--json` इस्तेमाल करें। Secret values केवल वही commands दिखाती हैं जो उन्हें स्पष्ट रूप से बनाती या दिखाती हैं।
+जब किसी दूसरे टूल या स्क्रिप्ट को संरचित आउटपुट चाहिए, तब `--json` इस्तेमाल करें। गुप्त मान केवल वही कमांड दिखाते हैं जो उन्हें स्पष्ट रूप से बनाते या प्रकट करते हैं।
 
 <Card title="Phaseo CLI गाइड" icon="terminal" href="../guides/integrations/phaseo-cli.mdx">
-	Authentication विकल्प, key प्रबंधन, workspaces, guardrails और पूरा command workflow देखें।
+	प्रमाणीकरण के विकल्प, कुंजी प्रबंधन, वर्कस्पेस, गार्डरेल और पूरा कमांड वर्कफ़्लो देखें।
 </Card>
 
 ## Phaseo MCP
 
-जब आप चाहते हैं कि AI client मॉडल, कीमत, प्रोवाइडर, उपयोग और workspace के live data से सवालों का जवाब दे, तब Phaseo MCP server जोड़ें।
+जब आप चाहते हैं कि AI क्लाइंट लाइव मॉडल, मूल्य निर्धारण, प्रदाता, उपयोग और वर्कस्पेस डेटा के आधार पर सवालों के जवाब दे, तब Phaseo MCP सर्वर जोड़ें।
 
 ### सर्वर URL
 
@@ -64,32 +64,32 @@ codex mcp add phaseo --url https://mcp.phaseo.app/mcp
 codex mcp login phaseo
 ```
 
-Login command Phaseo OAuth खोलता है। Workspace चुनें, माँगे गए read scopes को मंज़ूरी दें और connection की पुष्टि करें:
+लॉगिन कमांड Phaseo OAuth खोलता है। एक वर्कस्पेस चुनें और माँगे गए पढ़ने वाले स्कोप को मंज़ूरी दें, फिर कनेक्शन की पुष्टि करें:
 
 ```bash
 codex mcp list
 ```
 
-दूसरे MCP client में यही URL remote Streamable HTTP server के रूप में जोड़ें। Client को OAuth discovery, S256 PKCE वाला authorization code और MCP `resource` parameter सपोर्ट करना चाहिए।
+किसी दूसरे MCP क्लाइंट के लिए यही URL रिमोट Streamable HTTP सर्वर के रूप में जोड़ें। क्लाइंट में OAuth डिस्कवरी, S256 PKCE वाले ऑथराइज़ेशन कोड और MCP `resource` पैरामीटर का समर्थन होना चाहिए।
 
 ### MCP क्या पढ़ सकता है
 
-- मॉडल, प्रोवाइडर, संगठन, endpoint परिवार और कीमत
-- क्रेडिट, गतिविधि, analytics, अनुरोध logs और generation metadata
-- workspaces, सदस्य, presets, settings और guardrails
+- मॉडल, प्रदाता, संगठन, एंडपॉइंट परिवार और मूल्य निर्धारण
+- क्रेडिट, गतिविधि, एनालिटिक्स, अनुरोध लॉग और जनरेशन मेटाडेटा
+- वर्कस्पेस, सदस्य, प्रीसेट, सेटिंग्स और गार्डरेल
 - गुप्त मानों को शामिल किए बिना API कुंजियों, प्रबंधन कुंजियों, OAuth ऐप्लिकेशन और वेबहुक का मेटाडेटा
 
-MCP billable inference नहीं चलाता, secret values नहीं लौटाता और Phaseo resources नहीं बदलता। इन कामों के लिए dashboard, CLI या Management API इस्तेमाल करें।
+MCP बिल योग्य इन्फ़रेंस नहीं चलाता, गुप्त मान नहीं लौटाता और Phaseo संसाधनों में बदलाव नहीं करता। इन कामों के लिए डैशबोर्ड, CLI या प्रबंधन API इस्तेमाल करें।
 
 ## Docs MCP
 
-Docs MCP Phaseo दस्तावेज़ खोजने और पढ़ने का अलग endpoint है। यह आपके अकाउंट या workspace तक पहुँच नहीं करता।
+Docs MCP, Phaseo दस्तावेज़ खोजने और पढ़ने के लिए एक अलग एंडपॉइंट है। यह आपके खाते या वर्कस्पेस तक नहीं पहुँचता।
 
 ```bash
 codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
 ```
 
-जब coding assistant को वर्तमान API examples, इंटीग्रेशन मार्गदर्शन या फ़ीचर दस्तावेज़ चाहिए हों, तब इसका इस्तेमाल करें।
+जब किसी कोडिंग असिस्टेंट को मौजूदा API उदाहरण, इंटीग्रेशन मार्गदर्शन या फ़ीचर दस्तावेज़ चाहिए हों, तब इसका इस्तेमाल करें।
 
 <Card title="Docs MCP गाइड" icon="book-open" href="../guides/integrations/docs-mcp.mdx">
 	दस्तावेज़ सर्वर को Codex, Claude Code, Cursor, OpenCode या VS Code से जोड़ें।
@@ -97,6 +97,6 @@ codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
 
 ## सही इंटरफ़ेस चुनें
 
-- Keys बनाने, settings बदलने, workspaces सँभालने या प्रशासनिक काम ऑटोमेट करने के लिए **CLI** इस्तेमाल करें।
-- AI client को Phaseo के live data तक सुरक्षित पहुँच देने के लिए **Phaseo MCP** इस्तेमाल करें।
-- अकाउंट एक्सेस दिए बिना coding assistant को Phaseo के वर्तमान दस्तावेज़ देने के लिए **Docs MCP** इस्तेमाल करें।
+- कुंजियाँ बनाने, सेटिंग्स बदलने, वर्कस्पेस सँभालने या प्रशासनिक वर्कफ़्लो ऑटोमेट करने के लिए **CLI** इस्तेमाल करें।
+- AI क्लाइंट को Phaseo के लाइव डेटा तक सुरक्षित पहुँच देने के लिए **Phaseo MCP** इस्तेमाल करें।
+- खाते तक पहुँच दिए बिना कोडिंग असिस्टेंट को Phaseo के मौजूदा दस्तावेज़ देने के लिए **Docs MCP** इस्तेमाल करें।

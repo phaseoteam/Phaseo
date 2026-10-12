@@ -14,9 +14,23 @@ Las respuestas del catálogo se almacenan en caché durante cinco minutos y pued
 
 ## Formato OpenAI
 
-Usa `GET /v1/models?format=openai` con tu clave de API de Phaseo para obtener `{"object":"list","data":[{"id":"openai/gpt-4o-mini","object":"model","created":1721260800,"owned_by":"openai"}]}`. El formato predeterminado `json` conserva los metadatos de Phaseo.
+Usa `GET /v1/models?format=openai` con clientes que esperan la respuesta de lista de modelos de OpenAI. El valor predeterminado `format=json` devuelve los metadatos de modelo más completos de Phaseo.
 
-Este formato mantiene la autenticación, la disponibilidad regional, los modelos privados del espacio de trabajo y los filtros. Devuelve todos los resultados salvo que indiques `limit`; `offset` sigue aplicándose. Los ID conservan el formato canónico de Phaseo. `created` es la fecha de lanzamiento en segundos Unix o `0` si se desconoce. `owned_by` es la organización del catálogo, `private` para modelos del espacio de trabajo o `phaseo` si se desconoce.
+```bash
+curl 'https://api.phaseo.app/v1/models?format=openai' \
+  -H 'Authorization: Bearer YOUR_PHASEO_API_KEY'
+```
+
+```json
+{
+  "object": "list",
+  "data": [
+    { "id": "openai/gpt-4o-mini", "object": "model", "created": 1721260800, "owned_by": "openai" }
+  ]
+}
+```
+
+El formato OpenAI usa la misma autenticación, disponibilidad regional, modelos privados del espacio de trabajo y filtros que el JSON nativo. Devuelve todos los modelos coincidentes salvo que indiques `limit`; `offset` sigue aplicándose. Los ID conservan el formato canónico de Phaseo para la inferencia. `created` usa la fecha de lanzamiento del catálogo, o `0` si se desconoce; `owned_by` usa la organización del catálogo, `private` para los modelos del espacio de trabajo o `phaseo` si se desconoce.
 
 ## Filtros útiles
 

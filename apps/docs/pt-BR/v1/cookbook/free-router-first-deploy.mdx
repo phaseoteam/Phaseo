@@ -7,7 +7,15 @@ description: "Comece com phaseo/free para executar sua primeira integração sem
 Use este guia para colocar sua primeira integração com a Phaseo em funcionamento sem escolher um modelo pago ainda.
 
 Em vez de escolher um modelo gratuito por conta própria, envie as solicitações para `phaseo/free`. A Phaseo selecionará um modelo gratuito disponível que aceite a solicitação.
+
+## Quando usar
+
+- Você quer um protótipo funcionando antes de escolher um modelo pago.
+- Você espera que a melhor opção gratuita mude com o tempo.
+- Você quer um ID de modelo estável no código do aplicativo enquanto a Phaseo cuida das mudanças de provedores gratuitos nos bastidores.
+
 ## Exemplo de solicitação
+
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
@@ -130,6 +138,7 @@ response = client.generate_response(
 puts response
 ```
 </CodeGroup>
+
 ## O que acontece nos bastidores
 
 1. Sua solicitação vai para o alias compartilhado `phaseo/free`.
@@ -140,14 +149,14 @@ puts response
 ## Depois da primeira solicitação
 
 - Em **Gateway -> Uso**, abra os detalhes da solicitação e confirme qual modelo foi usado.
-- Se uma política do workspace bloquear a solicitação, consulte os detalhes para identificar a configuração que a interrompeu.
+- Se uma política do espaço de trabalho bloquear a solicitação, consulte os detalhes para identificar a configuração que a interrompeu.
 - Se nenhum modelo gratuito oferecer o recurso necessário, troque `phaseo/free` por um modelo pago específico em vez de repetir a mesma solicitação.
 
 ## Observações para produção
 
 - Use `phaseo/free` em protótipos, demonstrações e tráfego de baixo risco.
 - Se precisar de latência, estilo de saída ou escolha de provedor previsíveis, migre para um modelo específico quando souber qual funciona melhor.
-- Se precisar de um comportamento de prompt estável entre serviços, combine este guia com [Presets](../guides/presets.mdx).
+- Se precisar de um comportamento de prompt estável entre serviços, combine este guia com [Predefinições](../guides/presets.mdx).
 
 ## Guias relacionados
 

@@ -22,15 +22,8 @@ $agent = AgentSdk::createAgent(new AgentDefinition(
 
 Run result में status, steps, messages, normalized usage, stop reason और final output होते हैं। Final text को पूरा execution record मानने के बजाय इन fields की जाँच करें।
 
-## अंतिम परिणाम validate करें
 ```php
 $result = $agent->run(input: $prompt, client: $client);
-
-echo $result->output;
-echo $result->run->status;
-echo $result->usage["total_tokens"];
-echo $result->usage["cost"];
-```
 
 echo $result->output;
 echo $result->run->status;

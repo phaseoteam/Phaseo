@@ -20,13 +20,13 @@ description: "在 DeepSeek Harness 中将 Phaseo 添加为自定义 OpenAI 兼�
 
 ```bash
 phaseo login
-phaseo dsh
+phaseo deepseek-harness
 ```
 
 CLI 会保留 `$DSH_HOME/cordis.patch.yml` 中与 Phaseo 无关的条目，并标记 Phaseo 区块，以便只更新或移除其管理的设置。它会同步所有兼容 Chat Completions 的有效 Phaseo 文本模型。如需指定其他默认模型：
 
 ```bash
-phaseo dsh --model YOUR_PHASEO_MODEL_ID
+phaseo deepseek-harness --model YOUR_PHASEO_MODEL_ID
 ```
 
 设置过程还会创建一个名为 `Phaseo CLI: DeepSeek Harness API Key` 的永不过期 Gateway 密钥，并将其直接写入 Harness 受保护的 `$DSH_HOME/.credentials.yaml` 存储。使用 `--catalog default` 可仅配置选定模型。

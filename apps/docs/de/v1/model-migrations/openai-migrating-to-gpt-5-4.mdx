@@ -6,16 +6,16 @@ icon: "/icons/brands/openai.svg"
 
 # OpenAI GPT-5.4
 
-Mit diesem Leitfaden führen Sie `openai/gpt-5.4` sicher in der Produktion ein.
+Mit diesem Leitfaden führst du `openai/gpt-5.4` sicher in der Produktion ein.
 
 Bei GPT-5.4 geht es weniger um ein völlig neues Anfrageformat als um aktualisierte Reasoning-Steuerung, Bildverarbeitung und Tool-Nutzung. Stand 10. März 2026 hebt die offizielle OpenAI-Dokumentation `reasoning.effort`, verbesserte Computernutzung und eine detailgetreuere Bildeingabe hervor. Ein GPT-5.4-spezifischer Parameter `phase` ist dort nicht dokumentiert.
 
 ## Schnelleinstieg für die Migration
 
-1. Ändern Sie die Modell-ID zu `openai/gpt-5.4` und lassen Sie die übrige Anfrage unverändert.
-2. Wählen und testen Sie die Reasoning-Stufe passend zum Latenzbudget der Route.
-3. Testen Sie Vision, strukturierte Ausgaben und Computernutzung bei Bedarf erneut.
-4. Führen Sie GPT-5.4 schrittweise ein und halten Sie die bisherige Route als Fallback bereit.
+1. Ändere die Modell-ID zu `openai/gpt-5.4` und lass die übrige Anfrage unverändert.
+2. Wähle und teste die Reasoning-Stufe passend zum Latenzbudget der Route.
+3. Teste Vision, strukturierte Ausgaben und Computernutzung bei Bedarf erneut.
+4. Führe GPT-5.4 schrittweise ein und halte die bisherige Route als Fallback bereit.
 
 ## Neuerungen
 
@@ -24,11 +24,11 @@ Bei GPT-5.4 geht es weniger um ein völlig neues Anfrageformat als um aktualisie
 - Das aktualisierte Tool `computer` ist der offizielle Weg für Computernutzungs-Workflows mit GPT-5.4.
 - GPT-5.4 verbessert lang laufende Tool-Nutzung, Arbeit mit großem Kontext und professionelle Dokumentenabläufe.
 
-## Was Sie an Ihrer Integration ändern sollten
+## Was du an deiner Integration ändern solltest
 
 ### 1. Reasoning-Einstellungen prüfen
 
-Kommen Sie von GPT-4.1 oder einer älteren GPT-5-Variante, sollten Sie bisherige Standardwerte nicht ungeprüft übernehmen. Testen Sie jede Route mit der Aufwandsstufe, die zu ihrem Latenzbudget passt:
+Kommst du von GPT-4.1 oder einer älteren GPT-5-Variante, solltest du bisherige Standardwerte nicht ungeprüft übernehmen. Teste jede Route mit der Aufwandsstufe, die zu ihrem Latenzbudget passt:
 
 - `none` oder `low` für Routen mit niedriger Latenz
 - `medium` oder `high` für die meisten strukturierten Aufgaben
@@ -36,13 +36,13 @@ Kommen Sie von GPT-4.1 oder einer älteren GPT-5-Variante, sollten Sie bisherige
 
 ### 2. Vision-Pipelines überprüfen
 
-Wenn Ihr Workflow von detaillierten Screenshots, Dokumenten oder UI-Lokalisierung abhängt, testen Sie den neuen Bilddetailgrad `original`. Er verändert sowohl die Detailtreue als auch die Kosten.
+Wenn dein Workflow von detaillierten Screenshots, Dokumenten oder UI-Lokalisierung abhängt, teste den neuen Bilddetailgrad `original`. Er verändert sowohl die Detailtreue als auch die Kosten.
 
 ### 3. Routen zur Computernutzung erneut prüfen
 
-Wenn Sie Browser- oder Desktop-Automatisierung migrieren, aktualisieren Sie auf den aktuellen Pfad des Tools `computer` und testen Sie den vollständigen Abschluss der Schritte.
+Wenn du Browser- oder Desktop-Automatisierung migrierst, aktualisiere auf den aktuellen Pfad des Tools `computer` und teste den vollständigen Abschluss der Schritte.
 
-## Was Sie testen sollten
+## Was du testen solltest
 
 ### Prompt-Kompatibilität
 
@@ -67,10 +67,10 @@ Wenn Sie Browser- oder Desktop-Automatisierung migrieren, aktualisieren Sie auf 
 
 ## Sicherer Rollout
 
-1. Bewerten Sie GPT-5.4 mit genau den Aufwandsstufen, die Sie später einsetzen möchten.
-2. Testen Sie bei Bildnutzung `original` separat, da es Qualität und Kosten verändert.
-3. Führen Sie Produktions-Prompts parallel aus, bevor Sie eine Standardroute ändern.
-4. Erhöhen Sie den Traffic schrittweise und halten Sie ein älteres OpenAI-Modell oder einen anderen Anbieter als Fallback bereit.
+1. Bewerte GPT-5.4 mit genau den Aufwandsstufen, die du später einsetzen möchtest.
+2. Teste bei Bildnutzung `original` separat, da es Qualität und Kosten verändert.
+3. Führe Produktions-Prompts parallel aus, bevor du eine Standardroute änderst.
+4. Erhöhe den Traffic schrittweise und halte ein älteres OpenAI-Modell oder einen anderen Anbieter als Fallback bereit.
 
 ## Quellen
 

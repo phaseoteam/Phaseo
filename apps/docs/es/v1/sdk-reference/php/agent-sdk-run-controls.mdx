@@ -22,15 +22,8 @@ $agent = AgentSdk::createAgent(new AgentDefinition(
 
 El resultado de la ejecución contiene su estado, pasos, mensajes, uso normalizado, motivo de detención y salida final. Consulta estos campos en vez de tratar el texto final como el registro completo de la ejecución.
 
-## Validar el resultado final
 ```php
 $result = $agent->run(input: $prompt, client: $client);
-
-echo $result->output;
-echo $result->run->status;
-echo $result->usage["total_tokens"];
-echo $result->usage["cost"];
-```
 
 echo $result->output;
 echo $result->run->status;

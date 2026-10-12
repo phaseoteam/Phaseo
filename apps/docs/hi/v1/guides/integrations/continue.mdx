@@ -13,7 +13,7 @@ phaseo login
 phaseo continue --model anthropic/claude-sonnet-4.6
 ```
 
-`~/.continue/config.yaml` और `~/.continue/.env` इस्तेमाल में न हों, तो setup दोनों फ़ाइलें बनाता है:
+`~/.continue/config.yaml` और `~/.continue/.env` इस्तेमाल में न हों, तो सेटअप दोनों फ़ाइलें बनाता है:
 
 ```yaml
 name: Phaseo
@@ -29,19 +29,19 @@ models:
     roles: [chat, edit, apply]
 ```
 
-Key `~/.continue/.env` में `PHASEO_API_KEY` नाम से रखी जाती है। `useResponsesApi: false` requests को Phaseo के Chat Completions path पर रखता है।
+कुंजी `~/.continue/.env` में `PHASEO_API_KEY` नाम से रखी जाती है। `useResponsesApi: false` अनुरोधों को Phaseo के Chat Completions पथ पर रखता है।
 
 <Warning>
-Continue की global `.env` plain text में होती है। इसे कभी commit न करें। IDE extensions सामान्य shell environment variables inherit नहीं करतीं, इसलिए CLI Continue की बताई secret file उपयोग करती है।
+Continue की ग्लोबल `.env` फ़ाइल सादे टेक्स्ट में होती है। इसे कभी कमिट न करें। IDE एक्सटेंशन सामान्य शेल एनवायरनमेंट वैरिएबल इनहेरिट नहीं करते, इसलिए CLI, Continue के दस्तावेज़ों में बताई गई सीक्रेट फ़ाइल उपयोग करती है।
 </Warning>
 
-किसी भी फ़ाइल में user configuration हो तो setup बिना overwrite किए रुक जाता है। Model entry मिलाएँ और मौजूदा `.env` में `PHASEO_API_KEY=<dedicated key>` जोड़ें। `phaseo integrations credential continue` से key पाएँ।
+अगर किसी भी फ़ाइल में पहले से उपयोगकर्ता का कॉन्फ़िगरेशन है, तो सेटअप उसे ओवरराइट किए बिना रुक जाता है। मॉडल प्रविष्टि को मिलाएँ और मौजूदा `.env` में `PHASEO_API_KEY=<dedicated key>` जोड़ें। कुंजी `phaseo integrations credential continue` से प्राप्त करें।
 
 ## जाँचें
 
-VS Code या JetBrains में window reload करें, Continue खोलें, **Phaseo** चुनें और `PHASEO_CONTINUE_OK` जवाब देने को कहें।
+VS Code या JetBrains में विंडो रीलोड करें, Continue खोलें, **Phaseo** चुनें और उससे `PHASEO_CONTINUE_OK` जवाब देने को कहें।
 
-Continue CLI के लिए `cn` चलाएँ। दूसरी saved configuration सक्रिय हो तो `/config` उपयोग करें, फिर वही test prompt भेजें। Phaseo activity में request दिखे इसकी पुष्टि करें।
+Continue CLI के लिए `cn` चलाएँ। अगर कोई दूसरा सहेजा गया कॉन्फ़िगरेशन सक्रिय है, तो `/config` उपयोग करें, फिर वही टेस्ट प्रॉम्प्ट भेजें। पुष्टि करें कि अनुरोध Phaseo की गतिविधि में दिखता है।
 
 ## हटाएँ
 
@@ -49,25 +49,25 @@ Continue CLI के लिए `cn` चलाएँ। दूसरी saved conf
 phaseo integrations remove continue
 ```
 
-हटाने पर key revoke होती है; दोनों फ़ाइलों में Phaseo CLI ownership marker होने पर ही उन्हें हटाया जाता है। मैन्युअल रूप से मिलाई गई entries नहीं बदलतीं।
+हटाने पर कुंजी निरस्त हो जाती है, और दोनों फ़ाइलें तभी हटाई जाती हैं जब उनमें अब भी Phaseo CLI का स्वामित्व चिह्न मौजूद हो। मैन्युअल रूप से मिलाई गई प्रविष्टियाँ नहीं बदली जातीं।
 
 ## समस्या निवारण
 
 ### Phaseo दिखाई नहीं देता
 
-IDE reload करें और जाँचें कि `config.yaml` में आवश्यक top-level fields `name`, `version` और `schema` मौजूद हैं।
+IDE रीलोड करें और जाँचें कि `config.yaml` में आवश्यक शीर्ष-स्तरीय फ़ील्ड `name`, `version` और `schema` मौजूद हैं।
 
 ### Continue कहता है कि गोपनीय कुंजी मौजूद नहीं है
 
-`~/.continue/.env` में `phaseo integrations credential continue` से मिली key की पुष्टि करें, फिर IDE restart करें।
+पुष्टि करें कि `~/.continue/.env` में `phaseo integrations credential continue` से मिली कुंजी मौजूद है, फिर IDE रीस्टार्ट करें।
 
 ### Continue Responses API को कॉल करता है
 
-Phaseo model entry में `useResponsesApi: false` रखें।
+Phaseo मॉडल प्रविष्टि में `useResponsesApi: false` रखें।
 
 ## संबंधित विषय
 
-- [Continue की OpenAI-संगत configuration](https://docs.continue.dev/customize/model-providers/top-level/openai)
-- [Continue के स्थानीय secrets](https://docs.continue.dev/faqs#managing-local-secrets-and-environment-variables)
+- [Continue का OpenAI-संगत कॉन्फ़िगरेशन](https://docs.continue.dev/customize/model-providers/top-level/openai)
+- [Continue के स्थानीय सीक्रेट](https://docs.continue.dev/faqs#managing-local-secrets-and-environment-variables)
 - [कोडिंग एजेंट](./coding-assistants.mdx)
 - [मॉडल](../../api-reference/endpoint/models.mdx)

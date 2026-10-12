@@ -168,7 +168,7 @@ env:
 
 ## Sicherheitsmodell
 
-CLI-Sitzungen erfordern standardmäßig einen sicheren, vom Betriebssystem bereitgestellten Speicher. Setze `PHASEO_SESSION_BACKEND=file` nur ausdrücklich, wenn kein Credential Store des Betriebssystems verfügbar ist; Refresh-Tokens werden dann in einer Klartextdatei mit eingeschränkten Dateirechten gespeichert.
+- CLI-Sitzungen erfordern standardmäßig einen sicheren, vom Betriebssystem bereitgestellten Speicher. Setze `PHASEO_SESSION_BACKEND=file` nur ausdrücklich, wenn kein Credential Store des Betriebssystems verfügbar ist; Refresh-Tokens werden dann in einer Klartextdatei mit eingeschränkten Dateirechten gespeichert.
 - `phaseo logout` widerruft das gespeicherte Refresh-Token, bevor der lokale Zustand gelöscht wird.
 - Verwaltungsschlüssel erfordern ausdrücklich festgelegte Fähigkeiten.
 - Normale Inferenzschlüssel beruhen auf Guardrails, Routing-Richtlinien und Workspace-Einstellungen statt auf einem eigenen Scope-Modell.

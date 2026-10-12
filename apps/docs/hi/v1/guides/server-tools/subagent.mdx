@@ -56,7 +56,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `max_uses` | integer | `10` | सर्वर-टूल लूप के दौरान Subagent कॉल की अधिकतम संख्या। |
 | `max_completion_tokens` | integer | Advisor का डिफ़ॉल्ट | हर सहायक मॉडल उत्तर के अधिकतम आउटपुट टोकन। |
 | `max_tokens` | integer | Advisor का डिफ़ॉल्ट | `max_completion_tokens` का पुराना उपनाम। |
-| `reasoning` | object | प्रदाता का डिफ़ॉल्ट | समर्थित होने पर सहायक मॉडल को भेजा जाने वाला रीजनिंग कॉन्फ़िगरेशन। |
+| `reasoning` | object | प्रदाता का डिफ़ॉल्ट | समर्थित होने पर सहायक मॉडल को भेजा जाने वाला रीज़निंग कॉन्फ़िगरेशन। |
 | `temperature` | number | प्रदाता का डिफ़ॉल्ट | सहायक मॉडल कॉल का सैंपलिंग तापमान। |
 
 ## टूल-कॉल तर्क
@@ -83,7 +83,7 @@ Subagent टूल के परिणाम के रूप में JSON ल
 }
 ```
 
-यदि सहायक मॉडल का अनुरोध नहीं चल सकता, तो Phaseo ऐसा टूल त्रुटि संदेश लौटाता है: `subagent_invalid_request`, `subagent_max_uses_exceeded`, or `subagent_request_failed`.
+यदि सहायक मॉडल का अनुरोध नहीं चल सकता, तो Phaseo `subagent_invalid_request`, `subagent_max_uses_exceeded` या `subagent_request_failed` जैसी टूल त्रुटि लौटाता है।
 
 ## उपयोग और कीमत
 

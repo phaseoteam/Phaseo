@@ -8,7 +8,7 @@ icon: "/icons/brands/openai.svg"
 
 Usa esta guía para incorporar de forma segura la familia GPT-5.6 a producción.
 
-GPT-5.6 es la familia GPT actual de OpenAI para flujos de trabajo de producción complejos. En AI Stats, los ID de nivel fijos corresponden a los ID de modelo de OpenAI `gpt-5.6-sol`, `gpt-5.6-terra` y `gpt-5.6-luna`.
+GPT-5.6 es la familia GPT actual de OpenAI para flujos de trabajo de producción complejos. En Phaseo, los ID de nivel fijos corresponden a los ID de modelo de OpenAI `gpt-5.6-sol`, `gpt-5.6-terra` y `gpt-5.6-luna`.
 
 ## Inicio rápido de la migración
 
@@ -25,9 +25,9 @@ GPT-5.6 es la familia GPT actual de OpenAI para flujos de trabajo de producción
 | `openai/gpt-5.6-terra` | Razonamiento, programación y flujos de asistente equilibrados para el trabajo diario | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 | `openai/gpt-5.6-luna` | Cargas de trabajo de GPT-5.6 sensibles a la latencia y al coste | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 
-El alias `gpt-5.6` de OpenAI dirige al modelo `gpt-5.6-sol`. En AI Stats, usa `openai/gpt-5.6` o `openai/gpt-sol-latest` si quieres ese valor predeterminado del nivel Sol, y usa los ID de nivel fijos para controlar el enrutamiento.
+El alias `gpt-5.6` de OpenAI dirige al modelo `gpt-5.6-sol`. En Phaseo, usa `openai/gpt-5.6` o `openai/gpt-sol-latest` si quieres ese valor predeterminado del nivel Sol, y usa los ID de nivel fijos para controlar el enrutamiento.
 
-AI Stats también registra alias de nivel para el modelo más reciente de cada uno: `openai/gpt-sol-latest`, `openai/gpt-terra-latest` y `openai/gpt-luna-latest`. Usa los ID fijos de GPT-5.6 para migraciones controladas y los alias de nivel solo si quieres deliberadamente que futuras versiones de Sol, Terra o Luna avancen por la misma ruta.
+Phaseo también registra alias de nivel para el modelo más reciente de cada uno: `openai/gpt-sol-latest`, `openai/gpt-terra-latest` y `openai/gpt-luna-latest`. Usa los ID fijos de GPT-5.6 para migraciones controladas y los alias de nivel solo si quieres deliberadamente que futuras versiones de Sol, Terra o Luna avancen por la misma ruta.
 
 ## Novedades
 
@@ -67,7 +67,7 @@ Usa el nivel `max` solo en rutas donde el presupuesto adicional de razonamiento 
 }
 ```
 
-Si tu integración aún envía el campo plano compatible con OpenAI, AI Stats también acepta `reasoning_effort` en las rutas que lo admiten:
+Si tu integración aún envía el campo plano compatible con OpenAI, Phaseo también acepta `reasoning_effort` en las rutas que lo admiten:
 
 ```json
 {
@@ -158,4 +158,4 @@ Usa `cache_control` para indicar sugerencias de caché independientes del provee
 - [Guía de modelos GPT-5.6 de OpenAI](https://developers.openai.com/api/docs/guides/latest-model)
 - [OpenAI model catalog](https://developers.openai.com/api/docs/models)
 - [Ficha de seguridad de la vista previa de GPT-5.6](https://deploymentsafety.openai.com/gpt-5-6-preview)
-- [Guía de AI Stats sobre el almacenamiento en caché de prompts](../guides/prompt-caching.mdx)
+- [Guía de Phaseo sobre el almacenamiento en caché de prompts](../guides/prompt-caching.mdx)

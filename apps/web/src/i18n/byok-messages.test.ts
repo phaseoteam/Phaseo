@@ -12,7 +12,7 @@ describe("BYOK localized display boundaries", () => {
 	it.each(locales)("renders key management labels, warnings, and counts in %s", (locale) => {
 		const t = translator(locale);
 		for (const key of ["apiKeyTitle", "managementKeyNote", "gatewayKeyNote"]) {
-			expect(t(`finalSettingsCopy.${key}` as never)).toContain("AI Stats");
+			expect(t(`finalSettingsCopy.${key}` as never)).toContain("Phaseo");
 		}
 		expect(t("finalSettingsCopy.providerKeyCounts" as never, { priority: 2, fallback: 3 } as never)).toContain("2");
 		expect(t("finalSettingsCopy.providerKeyCounts" as never, { priority: 2, fallback: 3 } as never)).toContain("3");

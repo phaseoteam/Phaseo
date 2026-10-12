@@ -34,11 +34,11 @@ icon: "sliders-horizontal"
 | [`presence_penalty`](#presence_penalty) | `number` | 鼓励切换主题或词汇。 |
 | [`repetition_penalty`](#repetition_penalty) | `number` | 提供商专用的重复抑制控制。 |
 | [`seed`](#seed) | `integer` | 在上游提供商支持时提高可复现性。 |
-| [`stop`](#stop) | `string` or `string[]` | 定义明确的停止序列。 |
+| [`stop`](#stop) | `string` 或 `string[]` | 定义明确的停止序列。 |
 | [`logprobs`](#logprobs) / [`top_logprobs`](#top_logprobs) | `boolean` / `integer` | 请求 token 概率数据。 |
 | [`tools`](#tools), [`tool_choice`](#tool_choice) | `array`, `string`, `object` | 控制工具调用和函数执行。 |
 | [`parallel_tool_calls`](#parallel_tool_calls) | `boolean` | 允许或强制工具按顺序执行。 |
-| [`response_format`](#response_format) | `string` or `object` | 纯文本、JSON 或受 schema 约束的输出。 |
+| [`response_format`](#response_format) | `string` 或 `object` | 纯文本、JSON 或受 schema 约束的输出。 |
 | [`json_schema`](#json_schema) | `object` | 定义结构化输出流程所用的 schema。 |
 | [`structured_outputs`](#structured_outputs) | `boolean` | 可靠 schema 约束输出的能力信号。 |
 | [`reasoning`](#reasoning) | `object` | 提供商专用的推理配置。 |
@@ -115,9 +115,9 @@ icon: "sliders-horizontal"
 
 注意事项：
 
-流式传输支持情况因端点而异。
-流式传输通常是传输方式的选择，而非质量控制。
-工具调用或结构化输出流程的流式传输方式也可能因提供商而异。
+- 流式传输支持情况因端点而异。
+- 流式传输通常是传输方式的选择，而非质量控制。
+- 工具调用或结构化输出流程的流式传输方式也可能因提供商而异。
 
 <span id="temperature"></span>
 <h3 id="parameter-temperature"><code>temperature</code></h3>
@@ -142,9 +142,9 @@ icon: "sliders-horizontal"
 
 实用建议：
 
-对于结构化任务，请从较低值开始。
-请先调整 `temperature` 或 `top_p`，不要同时调整两者。
-较高的 temperature 与激进量化结合可能会放大不稳定性。
+- 对于结构化任务，请从较低值开始。
+- 请先调整 `temperature` 或 `top_p`，不要同时调整两者。
+- 较高的 temperature 与激进量化结合可能会放大不稳定性。
 
 <span id="top_p"></span>
 <h3 id="parameter-top_p"><code>top_p</code></h3>
@@ -162,8 +162,8 @@ icon: "sliders-horizontal"
 
 注意事项：
 
-如果想在不直接更改 temperature 的情况下缩小或扩大搜索空间，请调整 `top_p`。
-对大多数应用而言，适中的 `temperature` 和接近 1.0 的 `top_p` 是合理的基准。
+- 如果想在不直接更改 temperature 的情况下缩小或扩大搜索空间，请调整 `top_p`。
+- 对大多数应用而言，适中的 `temperature` 和接近 1.0 的 `top_p` 是合理的基准。
 
 <span id="top_k"></span>
 <h3 id="parameter-top_k"><code>top_k</code></h3>
@@ -180,8 +180,8 @@ icon: "sliders-horizontal"
 
 注意事项：
 
-并非所有提供商都支持 `top_k`。
-相比 `top_p`，它能更明确地限制候选 token 集。
+- 并非所有提供商都支持 `top_k`。
+- 相比 `top_p`，它能更明确地限制候选 token 集。
 
 <span id="max_tokens"></span>
 <h3 id="parameter-max_tokens"><code>max_tokens</code></h3>
@@ -280,7 +280,7 @@ token 一旦出现过，就会降低其再次使用的倾向，从而帮助模�
 
 | 字段 | 值 |
 | --- | --- |
-| 类型 | `string` or `string[]` |
+| 类型 | `string` 或 `string[]` |
 | 默认值 | 未设置 |
 | 常见用途 | 解析器边界、模板结尾和协议标记 |
 
@@ -330,7 +330,7 @@ token 一旦出现过，就会降低其再次使用的倾向，从而帮助模�
 
 | 字段 | 值 |
 | --- | --- |
-| 类型 | `string` or `object` |
+| 类型 | `string` 或 `object` |
 | 常见值 | `none`, `auto`, `required` |
 
 只需内容时使用 `none`，由模型决定时使用 `auto`；若下游编排要求调用工具，则使用更严格的取值。
@@ -354,7 +354,7 @@ token 一旦出现过，就会降低其再次使用的倾向，从而帮助模�
 
 | 字段 | 值 |
 | --- | --- |
-| 类型 | `string` or `object` |
+| 类型 | `string` 或 `object` |
 | 默认值 | 因端点和提供商而异 |
 
 确切支持的结构取决于端点和提供商适配器。需要自由文本以外的格式时使用，尤其适合 JSON 响应和结构化提取流程。
@@ -449,8 +449,8 @@ Phaseo 会在内部将网关规范化的级别值映射为提供商原生控制�
 
 注意事项：
 
-`Batch` 是独立的 API 流程，并非服务级别的取值。
-支持情况因端点和提供商而异。
+- `Batch` 是独立的 API 流程，并非服务级别的取值。
+- 支持情况因端点和提供商而异。
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>
@@ -525,7 +525,7 @@ Phaseo 会在内部将网关规范化的级别值映射为提供商原生控制�
 | `only` | `string[]` | 将路由限制为指定提供商。 |
 | `ignore` | `string[]` | 排除指定提供商。 |
 | `include_alpha` | `boolean` | 允许在路由决策中使用 alpha 提供商。 |
-| `sort` | `string` or `object` | 通常按 `price`、`latency` 或 `throughput` 对提供商排序。 |
+| `sort` | `string` 或 `object` | 通常按 `price`、`latency` 或 `throughput` 对提供商排序。 |
 | `required_execution_region` | `string` | 将执行限制在指定区域。 |
 | `required_data_region` | `string` | 将数据处理限制在指定区域。 |
 | `require_zero_data_retention` | `boolean` | 要求提供商满足零数据保留约束。 |
@@ -598,7 +598,7 @@ Phaseo 会在内部将网关规范化的级别值映射为提供商原生控制�
 | `return_upstream_request` | `boolean` | 包含转换后的上游请求负载。 |
 | `return_upstream_response` | `boolean` | 在可用时包含上游响应负载。 |
 | `trace` | `boolean` | 返回路由或调试跟踪。 |
-| `trace_level` | `summary` or `full` | 控制跟踪信息的详细程度。 |
+| `trace_level` | `summary` 或 `full` | 控制跟踪信息的详细程度。 |
 
 调试负载可能包含敏感请求上下文。仅在开发或严格受控的环境中使用。
 

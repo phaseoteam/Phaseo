@@ -1,23 +1,23 @@
 ---
 title: "Prime Agent"
 icon: "/icons/brands/prime-agent.svg"
-description: "इंस्टॉल किए गए Prime Agent model catalog को Phaseo से जोड़ें।"
+description: "इंस्टॉल किए गए Prime Agent के मॉडल कैटलॉग को Phaseo से जोड़ें।"
 ---
 
 ## Phaseo CLI से सेटअप करें
 
-इन उत्पादन-तैयार कमांडों के लिए Phaseo खाते की ज़रूरत है। CLI में लॉग इन और सेटअप करते समय गेटवे का अलग क्रेडेंशियल बनाया जाता है।
+प्रोडक्शन के लिए तैयार इन कमांड के लिए Phaseo खाते की ज़रूरत है; साइन-इन और सेटअप के दौरान CLI गेटवे के लिए एक अलग क्रेडेंशियल बनाता है।
 
 ```bash
 phaseo login
 phaseo prime-agent
 ```
 
-पहले Prime Agent का आधिकारिक release install करें। Setup `~/.prime/agent/models.json` में managed `phaseo` provider लिखता है। यह Chat Completions-संगत सभी active Phaseo text models उपलब्ध कराता है और हर request के समय Phaseo CLI से dedicated API key प्राप्त करता है।
+पहले Prime Agent को उसकी आधिकारिक रिलीज़ से इंस्टॉल करें। सेटअप `~/.prime/agent/models.json` में प्रबंधित `phaseo` प्रदाता लिखता है। यह प्रदाता Chat Completions के साथ संगत सभी सक्रिय Phaseo टेक्स्ट मॉडल उपलब्ध कराता है और अनुरोध के समय Phaseo CLI से अपनी समर्पित API कुंजी प्राप्त करता है।
 
-Prime Agent अभी macOS और Linux support करता है। Windows पर executable install करने के बाद WSL के अंदर setup चलाएँ।
+Prime Agent अभी macOS और Linux पर समर्थित है। Windows पर, WSL के अंदर एक्ज़ीक्यूटेबल इंस्टॉल करने के बाद वहीं सेटअप चलाएँ।
 
-शुरुआती catalog entry चुनें या ज़रूरत पड़ने पर सिर्फ़ एक model configure करें:
+शुरुआती कैटलॉग एंट्री चुनें या ज़रूरत हो तो केवल एक मॉडल कॉन्फ़िगर करें:
 
 ```bash
 phaseo prime-agent --model anthropic/claude-sonnet-4.6
@@ -30,13 +30,13 @@ phaseo prime-agent --catalog default
 prime-agent
 ```
 
-`/model` खोलें, `phaseo` provider चुनें और एक छोटा prompt भेजें। बनाया गया provider, Prime Agent के समर्थित command-backed key format का उपयोग करता है:
+`/model` खोलें, `phaseo` प्रदाता चुनें और एक छोटा प्रॉम्प्ट भेजें। जनरेट किया गया प्रदाता Prime Agent के समर्थित कमांड-आधारित कुंजी फ़ॉर्मैट का उपयोग करता है:
 
 ```text
 !phaseo integrations credential prime-agent
 ```
 
-केवल Phaseo-managed provider हटाकर उसकी dedicated key revoke करने के लिए यह चलाएँ:
+केवल Phaseo के स्वामित्व वाले प्रदाता को हटाने और उसकी समर्पित कुंजी रद्द करने के लिए यह चलाएँ:
 
 ```bash
 phaseo integrations remove prime-agent

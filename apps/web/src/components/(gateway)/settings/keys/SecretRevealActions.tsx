@@ -21,7 +21,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-	AI_STATS_GATEWAY_BASE_URL,
+	PHASEO_GATEWAY_BASE_URL,
 	buildAppConfigSnippets,
 	buildCollectionExports,
 	buildEnvFile,
@@ -93,9 +93,9 @@ export function SecretRevealActions({
 	name,
 	kind = "api-key",
 	envVarName = kind === "management-key"
-		? "AI_STATS_MANAGEMENT_KEY"
-		: "AI_STATS_API_KEY",
-	baseUrl = AI_STATS_GATEWAY_BASE_URL,
+		? "PHASEO_MANAGEMENT_KEY"
+		: "PHASEO_API_KEY",
+	baseUrl = PHASEO_GATEWAY_BASE_URL,
 	enableTest = kind === "api-key",
 }: SecretRevealActionsProps) {
 	const t = useTranslations("SettingsUI");

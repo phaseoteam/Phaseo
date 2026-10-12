@@ -15,14 +15,14 @@ description: "البنى والسمات والأساليب العامة في pha
 | `.tool(tool)` | إضافة أداة. |
 | `.max_steps(limit)` | تعيين حد أدوار النموذج، على ألا يقل عن واحد. |
 | `.model_retries(count, backoff)` | إعادة طلبات النموذج الفاشلة بفاصل `Duration` ثابت. |
-| `.human_review(callback)` | إيقاف الجولة مؤقتًا بعد رد النموذج إذا أعادت دالة callback القيمة `Some(HumanReviewRequest)`. |
+| `.human_review(callback)` | إيقاف الجولة مؤقتًا بعد رد النموذج إذا أعادت دالة رد النداء القيمة `Some(HumanReviewRequest)`. |
 | `create_agent(definition)` | إنشاء `Agent`. |
 
 ## التشغيل والمتابعة
 
 | الأسلوب | الغرض |
 | --- | --- |
-| `Agent::run(client, options)` | التشغيل بالتزامن من دون callback للأحداث. |
+| `Agent::run(client, options)` | التشغيل بالتزامن من دون دالة رد نداء للأحداث. |
 | `Agent::run_with_events(client, options, callback)` | التشغيل بالتزامن وإصدار قيم `AgentEvent`. |
 | `Agent::continue_run(client, options)` | متابعة جولة متوقفة مؤقتًا. |
 | `Agent::continue_with_events(client, options, callback)` | متابعة الجولة وإصدار الأحداث. |
@@ -66,7 +66,7 @@ Fn(
     + 'static
 ```
 
-يكشف `Tool` الحقول `id` و`description` و`parameters` و`execute` و`require_approval`. فضّل استخدام البُناة وطريقة builder للحفاظ على اتساق أنواع المنفّذات والقيم الافتراضية.
+يكشف `Tool` الحقول `id` و`description` و`parameters` و`execute` و`require_approval`. فضّل استخدام البُناة وطريقة الباني للحفاظ على اتساق أنواع المنفّذات والقيم الافتراضية.
 
 يحتوي `RuntimeContext` الذي يُمرّر إلى المنفّذ على:
 
@@ -123,7 +123,7 @@ pub trait ModelClient {
 
 يحتوي `HumanReviewContext` على معرّفي الجولة والوكيل وفهرس الخطوة والرسائل الحالية واستجابة النموذج الموحّدة وسياق التطبيق.
 
-أعِد `HumanReviewRequest { reason, payload }` من callback المراجعة لإيقاف الجولة مؤقتًا.
+أعِد `HumanReviewRequest { reason, payload }` من دالة رد نداء المراجعة لإيقاف الجولة مؤقتًا.
 
 يحتوي `HumanPause` على:
 
@@ -132,7 +132,7 @@ pub trait ModelClient {
 - `kind`
 - `pending_tool_calls`
 
-يحتوي كل `PendingToolCall` على `ToolCall` الأصلي ونوع الإدخال المطلوب `kind` وسبب مكتوب بلغة واضحة.
+يحتوي كل `PendingToolCall` على `ToolCall` الأصلي ونوع الإدخال المطلوب `kind` وسبب `reason` مكتوب بلغة يقرؤها البشر.
 
 يوفّر `ToolDecision` معرّف `tool_call_id` الموافق عليه وسببًا اختياريًا. ويوفّر `ToolOutput` معرّف `tool_call_id` ومخرجات JSON.
 
@@ -152,7 +152,7 @@ pub trait ModelClient {
 
 يحتوي `UsageSummary` على `input_tokens` و`output_tokens` و`cached_tokens` و`total_tokens` و`cost`.
 
-يوفّر عميل النموذج قيمة `cost`. ولا يربط محوّل Gateway 0.1 المضمّن حاليًا قيم `cost_nanos` أو `cost_cents` من Gateway بهذا الحقل.
+يوفّر عميل النموذج قيمة `cost`. ولا يربط محوّل Gateway `0.1` المضمّن حاليًا قيم `cost_nanos` أو `cost_cents` من Gateway بهذا الحقل.
 
 تدعم الأنواع `RunResult` و`RunRecord` و`RunStep` و`Message` و`ToolCall` و`HumanPause` و`PendingToolCall` و`ToolDecision` و`ToolOutput` و`UsageSummary` تسلسل Serde عندما تشتق تعريفاتها السمات `Serialize` و`Deserialize`.
 
