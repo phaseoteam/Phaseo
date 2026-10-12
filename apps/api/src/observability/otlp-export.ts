@@ -364,7 +364,7 @@ async function boundedResponse(response: Response): Promise<Record<string, any>>
 		bytes.set(chunk, offset);
 		offset += chunk.length;
 	}
-	if (response.headers.get("content-type")?.includes("protobuf")) {
+	if (response.headers.get("content-type")?.toLowerCase().includes("protobuf")) {
 		return { partialSuccess: decodeOtlpTraceResponse(bytes) };
 	}
 	try {

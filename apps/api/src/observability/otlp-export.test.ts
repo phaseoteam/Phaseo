@@ -291,9 +291,9 @@ describe("deliverGatewayOtlpPayload over protobuf", () => {
 	});
 
 	it("reports spans a protobuf collector rejected", async () => {
-		// partial_success { rejected_spans: 1, error_message: "bad" }
+		// partial_success { rejected_spans: 1, error_message: "bad" }, under a media type in another case.
 		const body = Uint8Array.from([0x0a, 0x07, 0x08, 0x01, 0x12, 0x03, 0x62, 0x61, 0x64]);
-		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(body, { status: 200, headers: { "content-type": "application/x-protobuf" } })));
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(body, { status: 200, headers: { "content-type": "Application/X-Protobuf; charset=binary" } })));
 		const result = await deliverGatewayOtlpPayload(payload, { endpoint: "https://collector.example.com", otlp_protocol: "http/protobuf" });
 		expect(result).toMatchObject({ delivered: false, retryable: false, error: "OTLP partial success rejected 1 spans: bad" });
 	});

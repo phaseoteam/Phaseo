@@ -87,7 +87,7 @@ async function sendOtlpSample(config: Record<string, any>, payload: unknown) {
 		signal: AbortSignal.timeout(10_000),
 	});
 	const bytes = new Uint8Array(await response.arrayBuffer());
-	const protobufResponse = response.headers.get("content-type")?.includes("protobuf") ?? false;
+	const protobufResponse = response.headers.get("content-type")?.toLowerCase().includes("protobuf") ?? false;
 	const raw = protobufResponse ? "" : new TextDecoder().decode(bytes);
 	let body: Record<string, any> = {};
 	if (protobufResponse) body = { partialSuccess: decodeOtlpTraceResponse(bytes) };
