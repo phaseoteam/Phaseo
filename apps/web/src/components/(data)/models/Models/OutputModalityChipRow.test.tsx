@@ -105,6 +105,15 @@ describe("OutputModalityChipRow", () => {
 		expect(render(["audio"], MAIN).html).toContain('data-scrollbar="shown"');
 	});
 
+	it("swaps quickly, with every chip moving together and no stagger", () => {
+		const { main, audio } = render(["audio"]);
+		expect(main).toContain("150ms, 150ms, 110ms, 110ms");
+		expect(audio).toContain("150ms, 150ms, 160ms, 160ms");
+		// Only the rows' visibility switch has a delay, never an individual chip.
+		const chipDelays = `${main}${audio}`.match(/transition-delay:[^;"]*/g) ?? [];
+		expect(chipDelays.every((value) => !value.includes(", "))).toBe(true);
+	});
+
 	it("keeps sub-type chips out of the main row", () => {
 		const { main } = render([]);
 		for (const label of ["Speech", "Transcription", "Translation", "Realtime", "Music"]) {
