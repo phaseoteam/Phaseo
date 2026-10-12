@@ -3393,6 +3393,9 @@
 	},
 	"credits": {
 		"currentBalance": "Aktueller Kontostand",
+		"runwayAutoTopUp": "Automatische Aufladung voraussichtlich ~{date} · ~{amount}/Tag aus Guthaben",
+		"runwayRunsOut": "Reicht bis ~{date} bei ~{amount}/Tag",
+		"runwayBeyond": "Reicht mehr als {days} Tage bei ~{amount}/Tag",
 		"refreshBalance": "Kontostand aktualisieren",
 		"refreshing": "Guthaben wird aktualisiert…",
 		"refreshed": "Guthaben aktualisiert",

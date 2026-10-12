@@ -3393,6 +3393,9 @@
 	},
 	"credits": {
 		"currentBalance": "الرصيد الحالي",
+		"runwayAutoTopUp": "إعادة الشحن التلقائي متوقعة ~{date} · ~{amount}/يوم من الرصيد",
+		"runwayRunsOut": "يكفي حتى ~{date} بمعدل ~{amount}/يوم",
+		"runwayBeyond": "يكفي أكثر من {days} يومًا بمعدل ~{amount}/يوم",
 		"refreshBalance": "الرصيد الحر",
 		"refreshing": "إعادة تجديد الائتمانات",
 		"refreshed": "الأرصدة المقيدة",

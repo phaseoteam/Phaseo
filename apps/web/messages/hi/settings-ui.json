@@ -3393,6 +3393,9 @@
 	},
 	"credits": {
 		"currentBalance": "वर्तमान शेष",
+		"runwayAutoTopUp": "ऑटो टॉप-अप ~{date} को अपेक्षित · क्रेडिट से ~{amount}/दिन",
+		"runwayRunsOut": "~{amount}/दिन पर ~{date} तक चलेगा",
+		"runwayBeyond": "~{amount}/दिन पर {days} दिन से ज़्यादा चलेगा",
 		"refreshBalance": "संतुलन ताज़ा करें",
 		"refreshing": "ताज़ा क्रेडिट...",
 		"refreshed": "क्रेडिट ताज़ा किया गया",

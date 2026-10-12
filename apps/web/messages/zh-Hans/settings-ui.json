@@ -3393,6 +3393,9 @@
 	},
 	"credits": {
 		"currentBalance": "当前余额",
+		"runwayAutoTopUp": "预计约 {date} 自动充值 · 每天约从额度中使用 {amount}",
+		"runwayRunsOut": "按每天约 {amount}，可用到约 {date}",
+		"runwayBeyond": "按每天约 {amount}，可用超过 {days} 天",
 		"refreshBalance": "刷新平衡",
 		"refreshing": "刷新积分…",
 		"refreshed": "制作人员已刷新",

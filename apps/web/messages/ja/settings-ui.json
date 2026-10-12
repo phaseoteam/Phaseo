@@ -3393,6 +3393,9 @@
 	},
 	"credits": {
 		"currentBalance": "現在の残高",
+		"runwayAutoTopUp": "自動チャージ予定 ~{date} · クレジットから 1 日あたり ~{amount}",
+		"runwayRunsOut": "1 日あたり ~{amount} で ~{date} まで持ちます",
+		"runwayBeyond": "1 日あたり ~{amount} で {days} 日以上持ちます",
 		"refreshBalance": "残高を更新",
 		"refreshing": "クレジットを更新中…",
 		"refreshed": "クレジットを更新しました",

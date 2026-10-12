@@ -313,6 +313,8 @@ export type SettingsCreditsInitialData = {
 	notificationDestinations: NotificationDestination[];
 	notificationRoutes: Partial<Record<NotificationEventKind, string[]>>;
 	obfuscateInfo: boolean;
+	/** Average daily credits charged recently; null when it could not be measured. */
+	recentCreditSpend?: { dailyNanos: number; windowDays: number; observedAt: number } | null;
 	stripeInfo: {
 		customer: { email: string | null; id: string | null };
 		defaultPaymentMethodId: string | null;
