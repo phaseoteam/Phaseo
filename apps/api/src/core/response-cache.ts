@@ -30,6 +30,7 @@ const RESPONSE_CACHE_ELIGIBLE_ENDPOINTS = new Set<Endpoint>([
 	"responses",
 	"chat.completions",
 	"messages",
+	"embeddings",
 ]);
 
 type JsonPrimitive = string | number | boolean | null;
@@ -211,7 +212,6 @@ export function isResponseCacheEligible(args: {
 	stream: boolean;
 	apiKeyId?: string | null;
 	debugEnabled?: boolean;
-	hasTools?: boolean;
 	serverToolsEnabled?: boolean;
 	zeroDataRetention?: boolean;
 }): { eligible: boolean; reason: string } {
@@ -230,11 +230,11 @@ export function isResponseCacheEligible(args: {
 	if (args.debugEnabled) {
 		return { eligible: false, reason: "debug_enabled" };
 	}
+	// Function tools are cached like any other request: the tool call the
+	// model returned is replayed. Gateway-run server tools (web search, fetch)
+	// are not, because their results depend on when they run.
 	if (args.serverToolsEnabled) {
 		return { eligible: false, reason: "server_tools_enabled" };
-	}
-	if (args.hasTools) {
-		return { eligible: false, reason: "tools_present" };
 	}
 	return { eligible: true, reason: "eligible" };
 }
