@@ -57,6 +57,7 @@ https://api.phaseo.app/v1
 | 私有模型 | `private_models:read` | `private_models:write` | `private_models:delete` |
 | 护栏 | `guardrails:read` | `guardrails:write` | `guardrails:delete` |
 | 预算 | `budgets:read` | `budgets:write` | `budgets:delete` |
+| 速率限制 | `rate_limits:read` | `rate_limits:write` | `rate_limits:delete` |
 | OAuth 客户端 | `oauth_clients:read` | `oauth_clients:write` | `oauth_clients:delete` |
 
 `Write` 模板包含对应的读取能力，以便集成在更新资源前先进行检查。`All` 包含删除能力；仅将其用于可信的管理自动化。

@@ -57,6 +57,7 @@ https://api.phaseo.app/v1
 | プライベートモデル | `private_models:read` | `private_models:write` | `private_models:delete` |
 | ガードレール | `guardrails:read` | `guardrails:write` | `guardrails:delete` |
 | 予算 | `budgets:read` | `budgets:write` | `budgets:delete` |
+| レート制限 | `rate_limits:read` | `rate_limits:write` | `rate_limits:delete` |
 | OAuth クライアント | `oauth_clients:read` | `oauth_clients:write` | `oauth_clients:delete` |
 
 `Write` テンプレートには対応する読み取り権限も含まれるため、連携側でリソースを確認してから更新できます。`All` には削除権限も含まれます。信頼できる管理用自動化にのみ使用してください。

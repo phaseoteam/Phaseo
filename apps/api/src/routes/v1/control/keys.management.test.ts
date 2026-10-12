@@ -22,6 +22,8 @@ const state = vi.hoisted(() => ({
 	updatePayloads: [] as Array<Record<string, unknown>>,
 	insertPayloads: [] as Array<Record<string, unknown>>,
 	membershipRows: [] as Array<Record<string, unknown> | null>,
+	departmentRows: [] as Array<Record<string, unknown> | null>,
+	departmentLookups: [] as Array<Array<{ column: string; value: unknown }>>,
 	updateFilters: [] as Array<Array<{ column: string; value: unknown }>>,
 	deleteFilters: [] as Array<{ table: string; column: string; value: unknown }>,
 	enforceWorkspaceKeyLimit: vi.fn(async (_workspaceId: string, _keyType: string, _excludeKeyId?: string) => undefined),
@@ -49,7 +51,7 @@ function buildKeysSupabaseMock() {
 	return {
 		rpc: async () => ({ data: state.keyUsageRows, error: null }),
 		from(table: string) {
-			if (table !== "keys" && table !== "workspaces" && table !== "workspace_members" && table !== "key_guardrails" && table !== "broadcast_destination_keys") {
+			if (table !== "keys" && table !== "workspaces" && table !== "workspace_members" && table !== "workspace_departments" && table !== "key_guardrails" && table !== "broadcast_destination_keys") {
 				throw new Error(`Unexpected table: ${table}`);
 			}
 
@@ -75,6 +77,17 @@ function buildKeysSupabaseMock() {
 						}),
 					}),
 				};
+			}
+
+			if (table === "workspace_departments") {
+				const filters: Array<{ column: string; value: unknown }> = [];
+				state.departmentLookups.push(filters);
+				const lookup: any = {
+					select: () => lookup,
+					eq: (column: string, value: unknown) => { filters.push({ column, value }); return lookup; },
+					maybeSingle: async () => ({ data: state.departmentRows.shift() ?? null, error: null }),
+				};
+				return lookup;
 			}
 
 			if (table === "workspace_members") {
@@ -194,6 +207,8 @@ describe("management key routes", () => {
 		state.keyUsageRows.length = 0;
 		state.workspaceRows.length = 0;
 		state.membershipRows.length = 0;
+		state.departmentRows.length = 0;
+		state.departmentLookups.length = 0;
 		state.updatePayloads.length = 0;
 		state.updateFilters.length = 0;
 		state.deleteFilters.length = 0;
@@ -491,6 +506,73 @@ describe("management key routes", () => {
 			hash: "hash_1",
 			limit: 10,
 			limit_reset: "daily",
+		});
+	});
+
+	describe("department link", () => {
+		const DEPARTMENT_ID = "4b1f0c7e-2d3a-4c5b-8e6f-7a8b9c0d1e2f";
+		const keyRow = (overrides: Record<string, unknown> = {}) => ({
+			id: "key_1",
+			hash: "hash_1",
+			workspace_id: "ws_1",
+			kid: "kid_1",
+			name: "Primary Key",
+			prefix: "phaseo_v1_sk_abc",
+			status: "active",
+			scopes: "[]",
+			created_by: "user_1",
+			created_at: "2026-04-28T10:00:00Z",
+			updated_at: "2026-04-28T10:30:00Z",
+			soft_blocked: false,
+			expires_at: null,
+			department_id: null,
+			...overrides,
+		});
+		const patch = async (body: Record<string, unknown>) => {
+			const { keysRoutes } = await import("./keys");
+			return keysRoutes.request("https://example.com/hash_1", {
+				method: "PATCH",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify(body),
+			});
+		};
+
+		it("links a key to a department in its workspace", async () => {
+			state.keyRows.push(keyRow(), keyRow({ department_id: DEPARTMENT_ID }));
+			state.departmentRows.push({ id: DEPARTMENT_ID });
+
+			const response = await patch({ department_id: DEPARTMENT_ID.toUpperCase() });
+			const body = await response.json();
+
+			expect(response.status).toBe(200);
+			expect(state.departmentLookups[0]).toEqual([
+				{ column: "workspace_id", value: "ws_1" },
+				{ column: "id", value: DEPARTMENT_ID },
+			]);
+			expect(state.updatePayloads[0]).toEqual({ department_id: DEPARTMENT_ID });
+			expect(body.data.department_id).toBe(DEPARTMENT_ID);
+		});
+
+		it("rejects a department outside the workspace or a malformed id", async () => {
+			state.keyRows.push(keyRow());
+			const foreign = await patch({ department_id: DEPARTMENT_ID });
+			expect(foreign.status).toBe(400);
+			await expect(foreign.json()).resolves.toMatchObject({ error: "bad_request", message: expect.stringContaining("department") });
+
+			const malformed = await patch({ department_id: "sales" });
+			expect(malformed.status).toBe(400);
+			expect(state.updatePayloads).toHaveLength(0);
+		});
+
+		it("unlinks a key with null without a department lookup", async () => {
+			state.keyRows.push(keyRow({ department_id: DEPARTMENT_ID }), keyRow());
+
+			const response = await patch({ department_id: null });
+
+			expect(response.status).toBe(200);
+			expect(state.departmentLookups).toHaveLength(0);
+			expect(state.updatePayloads[0]).toEqual({ department_id: null });
+			await expect(response.json()).resolves.toMatchObject({ data: { department_id: null } });
 		});
 	});
 

@@ -135,6 +135,9 @@ test("parses explicit login scopes and removes duplicates", () => {
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("budgets:read"), true);
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("budgets:write"), true);
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("budgets:delete"), true);
+	assert.equal(DEFAULT_LOGIN_SCOPES.includes("rate_limits:read"), true);
+	assert.equal(DEFAULT_LOGIN_SCOPES.includes("rate_limits:write"), true);
+	assert.equal(DEFAULT_LOGIN_SCOPES.includes("rate_limits:delete"), true);
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("provider_credentials:read"), true);
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("provider_credentials:write"), true);
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("provider_credentials:delete"), true);
