@@ -10,7 +10,7 @@ Use-a quando quiser:
 
 - entrar como usuário do Phaseo em um shell local ou remoto ou em um ambiente de agente
 - criar e alternar chaves de API ou chaves de gerenciamento
-- gerenciar workspaces, predefinições, configurações e proteções
+- gerenciar espaços de trabalho, predefinições, configurações e proteções
 - usar o OAuth oficial da CLI enquanto os apps OAuth criados por usuários ainda estão em testes privados
 - consultar modelos, provedores, preços, créditos, atividade, análises e gerações
 
@@ -83,7 +83,7 @@ phaseo whoami
 phaseo whoami --json
 ```
 
-Isso retorna seu usuário atual do Phaseo, os escopos, o workspace ativo e os workspaces disponíveis.
+Isso retorna seu usuário atual do Phaseo, os escopos, o espaço de trabalho ativo e os espaços de trabalho disponíveis.
 
 ## Criar chaves
 
@@ -95,7 +95,7 @@ phaseo keys current
 
 Use `--json` quando um agente ou uma automação precisar receber a chave criada em formato bruto uma única vez.
 
-## Gerenciar workspaces e proteções
+## Gerenciar espaços de trabalho e proteções
 
 ```bash
 phaseo workspaces list
@@ -148,9 +148,9 @@ phaseo cline --model openai/gpt-5.6-terra --dry-run --json
 Instalações ausentes de Cline, Kilo Code e oh-my-pi são oferecidas interativamente. Muse Code e MiniMax Code usam seus instaladores oficiais quando o comando não existe. No Windows, MiniMax Code usa o instalador oficial do PowerShell; use `--skip-install` se gerencia os ambientes separadamente. Os executores não sobrescrevem configurações existentes de Cline, Kilo, oh-my-pi, Muse Code ou MiniMax Code.
 ## Aplicativos OAuth
 
-O Phaseo usa um único servidor de autorização OAuth para a CLI oficial, aplicativos criados por usuários e clientes MCP registrados dinamicamente. A CLI usa login pelo navegador ou por código do dispositivo, com tokens de atualização rotativos. Clientes de terceiros usam código de autorização com PKCE, escopos explícitos e consentimento do workspace, tokens de acesso delegados revogáveis e associação opcional a um recurso protegido.
+O Phaseo usa um único servidor de autorização OAuth para a CLI oficial, aplicativos criados por usuários e clientes MCP registrados dinamicamente. A CLI usa login pelo navegador ou por código do dispositivo, com tokens de atualização rotativos. Clientes de terceiros usam código de autorização com PKCE, escopos explícitos e consentimento do espaço de trabalho, tokens de acesso delegados revogáveis e associação opcional a um recurso protegido.
 
-A API hospedada do Phaseo habilita OAuth de terceiros. Implantações próprias ou de prévia mantêm o recurso desativado, a menos que `PHASEO_THIRD_PARTY_OAUTH_ENABLED` receba um valor verdadeiro. São aceitos `1`, `true`, `yes` e `on`, sem distinção entre maiúsculas e minúsculas e após remover espaços. A ativação expõe o gerenciamento de apps OAuth criados por usuários e o registro dinâmico de clientes; por isso, revise a configuração de URIs de redirecionamento, consentimento, segredos de cliente, limites de taxa e autorização do workspace.
+A API hospedada do Phaseo habilita OAuth de terceiros. Implantações próprias ou de prévia mantêm o recurso desativado, a menos que `PHASEO_THIRD_PARTY_OAUTH_ENABLED` receba um valor verdadeiro. São aceitos `1`, `true`, `yes` e `on`, sem distinção entre maiúsculas e minúsculas e após remover espaços. A ativação expõe o gerenciamento de apps OAuth criados por usuários e o registro dinâmico de clientes; por isso, revise a configuração de URIs de redirecionamento, consentimento, segredos de cliente, limites de taxa e autorização do espaço de trabalho.
 
 ```bash title=".env"
 PHASEO_THIRD_PARTY_OAUTH_ENABLED=true
@@ -171,7 +171,7 @@ env:
 - Por padrão, as sessões da CLI exigem armazenamento seguro fornecido pelo sistema operacional. Defina `PHASEO_SESSION_BACKEND=file` explicitamente somente quando não houver um cofre de credenciais do sistema; os tokens de atualização serão armazenados em um arquivo de texto com permissões restritas.
 - `phaseo logout` revoga o token de atualização armazenado antes de limpar o estado local.
 - Chaves de gerenciamento exigem capacidades explícitas.
-- As chaves comuns de inferência dependem de proteções, políticas de roteamento e configurações do workspace, e não de um modelo de escopos separado.
+- As chaves comuns de inferência dependem de proteções, políticas de roteamento e configurações do espaço de trabalho, e não de um modelo de escopos separado.
 
 ## Atualizar
 

@@ -1,7 +1,7 @@
 ---
 title: "Définir les valeurs par défaut des plugins pour les workflows JSON structurés"
 icon: "puzzle"
-description: "Utilisez les règles de plugin du workspace, des presets et des requêtes pour assurer une réparation cohérente des réponses."
+description: "Utilisez les règles de plugin de l’espace de travail, des préréglages et des requêtes pour assurer une réparation cohérente des réponses."
 ---
 
 Suivez cette recette si les requêtes à sortie structurée ont besoin d’une règle de plugin stable, plutôt que de paramètres différents pour chaque requête.
@@ -10,15 +10,15 @@ Suivez cette recette si les requêtes à sortie structurée ont besoin d’une r
 
 La règle des plugins du gateway est résolue dans cet ordre :
 
-1. valeurs par défaut du workspace
-2. valeurs par défaut des presets
+1. valeurs par défaut de l’espace de travail
+2. valeurs par défaut des préréglages
 3. plugins au niveau de la requête
 
-Les couches moins prioritaires peuvent remplacer celles qui les précèdent, sauf si la valeur par défaut du workspace est explicitement verrouillée.
+Les couches moins prioritaires peuvent remplacer celles qui les précèdent, sauf si la valeur par défaut de l’espace de travail est explicitement verrouillée.
 
-## 2. Définir la valeur par défaut du workspace
+## 2. Définir la valeur par défaut de l’espace de travail
 
-Utilisez les paramètres de routage lorsqu’un workspace doit activer par défaut la réparation des réponses pour les requêtes JSON structurées.
+Utilisez les paramètres de routage lorsqu’un espace de travail doit activer par défaut la réparation des réponses pour les requêtes JSON structurées.
 
 C’est le bon endroit pour définir :
 
@@ -28,17 +28,17 @@ C’est le bon endroit pour définir :
 
 ## 3. Verrouiller la règle si elle n’est pas négociable
 
-Si la réparation des réponses doit toujours rester activée dans un workspace, verrouillez cette valeur par défaut.
+Si la réparation des réponses doit toujours rester activée dans un espace de travail, verrouillez cette valeur par défaut.
 
-Avec une valeur par défaut du workspace verrouillée :
+Avec une valeur par défaut de l’espace de travail verrouillée :
 
-- les presets ne peuvent pas la désactiver
+- les préréglages ne peuvent pas la désactiver
 - le contenu des requêtes ne peut pas la désactiver
 - les journaux indiquent toujours si le plugin a été appliqué, ignoré ou a échoué
 
-## 4. Utiliser des presets pour les workflows spécifiques
+## 4. Utiliser des préréglages pour les workflows spécifiques
 
-Les presets constituent la bonne couche si une famille de requêtes doit combiner :
+Les préréglages constituent la bonne couche si une famille de requêtes doit combiner :
 
 - des paramètres de sortie structurée
 - des valeurs par défaut du plugin de réparation des réponses
@@ -50,9 +50,9 @@ Cette couche peut aussi sélectionner le mode de réparation :
 
 Le corps des requêtes reste ainsi plus compact, et le routage comme le comportement de sortie sont plus faciles à réutiliser entre les services.
 
-## 5. Remplacer la configuration au niveau de la requête uniquement si le workspace l’autorise
+## 5. Remplacer la configuration au niveau de la requête uniquement si l’espace de travail l’autorise
 
-Si la valeur par défaut du workspace n’est pas verrouillée, une requête peut toujours remplacer directement la configuration du plugin :
+Si la valeur par défaut de l’espace de travail n’est pas verrouillée, une requête peut toujours remplacer directement la configuration du plugin :
 
 <CodeGroup>
 ```bash cURL
@@ -159,15 +159,15 @@ Après une requête, examinez la vue détaillée et vérifiez les éléments sui
 
 Si deux services se comportent différemment, comparez :
 
-- les paramètres de routage du workspace
-- les valeurs par défaut des plugins dans les presets
+- les paramètres de routage de l’espace de travail
+- les valeurs par défaut des plugins dans les préréglages
 - les `plugins` de chaque requête
-- le verrouillage ou non de la valeur par défaut du workspace
+- le verrouillage ou non de la valeur par défaut de l’espace de travail
 
 Ne cherchez pas d’abord du côté de la qualité du modèle : vérifiez que ces couches de règles sont identiques.
 
 ## Voir aussi
 
 - [Récupérer un JSON structuré mal formé](./response-healing-for-structured-json.mdx)
-- [Utiliser le cache de réponses avec des presets](./response-caching-with-presets.mdx)
+- [Utiliser le cache de réponses avec des préréglages](./response-caching-with-presets.mdx)
 - [Agent SDK TypeScript](../sdk-reference/typescript/agent-sdk.mdx)

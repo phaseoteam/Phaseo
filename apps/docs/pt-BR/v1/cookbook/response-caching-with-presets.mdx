@@ -1,14 +1,14 @@
 ---
-title: "Usar cache de respostas com presets"
+title: "Usar cache de respostas com predefinições"
 icon: "database"
-description: "Combine padrões de preset com cache determinístico de respostas para retornar solicitações repetidas com rapidez e previsibilidade."
+description: "Combine padrões de predefinições com cache determinístico de respostas para retornar solicitações repetidas com rapidez e previsibilidade."
 ---
 
 Use esta receita quando houver solicitações repetidas com prompts estáveis e você quiser reduzir a latência e o custo de inferências repetidas.
 
-## 1. Comece com um preset, não com solicitações avulsas
+## 1. Comece com uma predefinição, não com solicitações avulsas
 
-Crie um preset para manter estáveis:
+Crie uma predefinição para manter estáveis:
 
 - o modelo de destino
 - as preferências de provedor
@@ -18,7 +18,7 @@ Crie um preset para manter estáveis:
 
 Isso mantém a chave de cache estável porque a solicitação também permanece estável.
 
-## 2. Ative o cache de respostas no preset
+## 2. Ative o cache de respostas na predefinição
 
 Configure:
 
@@ -42,7 +42,7 @@ Evite alterar:
 - a configuração de raciocínio
 - as listas de ferramentas
 
-Se um chamador mudar esses valores constantemente, use outro preset para ele em vez de impedir a reutilização do cache por todos os demais.
+Se um chamador mudar esses valores constantemente, use outra predefinição para ele em vez de impedir a reutilização do cache por todos os demais.
 
 ## 4. Confira o comportamento do cache nos detalhes da solicitação
 
@@ -58,8 +58,8 @@ Verifique:
 
 Padrões recomendados:
 
-1. use um preset com cache ativado para saídas estruturadas determinísticas
-2. use outro preset sem cache para solicitações exploratórias ou com temperatura mais alta
+1. use uma predefinição com cache ativado para saídas estruturadas determinísticas
+2. use outra predefinição sem cache para solicitações exploratórias ou com temperatura mais alta
 
 Assim, o cache mantém sinal útil em vez de misturar tráfego incompatível.
 
@@ -72,7 +72,7 @@ Se você espera acertos, mas continua tendo falhas, compare:
 - as opções do provedor
 - o formato da resposta
 - as ferramentas e a seleção de ferramentas
-- o slug e a configuração do preset
+- o slug e a configuração da predefinição
 
 Aumentar o TTL não corrige divergências de fingerprint.
 
@@ -87,6 +87,6 @@ Não ative o cache de respostas por padrão para:
 
 ## Conteúdo relacionado
 
-- [Lançar presets e depurar o roteamento](./preset-rollout-and-routing-debug.mdx)
+- [Lançar predefinições e depurar o roteamento](./preset-rollout-and-routing-debug.mdx)
 - [Exemplos](../guides/examples.mdx)
 - [SDK TypeScript](../sdk-reference/typescript/overview.mdx)

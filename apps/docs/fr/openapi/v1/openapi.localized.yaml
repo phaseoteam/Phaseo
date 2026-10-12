@@ -2862,8 +2862,8 @@ paths:
       tags:
         - Gateway
       operationId: getWorkspaceSso
-      summary: Récupérer les paramètres SSO du workspace
-      description: Renvoie les paramètres SAML ou OIDC personnalisés du workspace. Nécessite `settings:read` et une identité de propriétaire ou d’administrateur.
+      summary: Récupérer les paramètres SSO de l’espace de travail
+      description: Renvoie les paramètres SAML ou OIDC personnalisés de l’espace de travail. Nécessite `settings:read` et une identité de propriétaire ou d’administrateur.
       responses:
         '200':
           description: Paramètres SSO
@@ -3012,7 +3012,7 @@ paths:
         - Gateway
       operationId: listWorkspaceScimAuditEvents
       summary: Lister les événements d’audit SCIM
-      description: Liste l’activité récente de provisionnement SCIM du workspace.
+      description: Liste l’activité récente de provisionnement SCIM de l’espace de travail.
       parameters:
         - name: limit
           in: query
@@ -3100,11 +3100,11 @@ paths:
       tags:
         - Gateway
       operationId: listWorkspaceDepartments
-      summary: Lister les services du workspace
+      summary: Lister les services de l’espace de travail
       description: Liste les services gérés manuellement et ceux synchronisés avec l’annuaire.
       responses:
         '200':
-          description: Services du workspace
+          description: Services de l’espace de travail
           content:
             application/json:
               schema:
@@ -3282,7 +3282,7 @@ paths:
         - Gateway
       operationId: listWorkspaceGroupMappings
       summary: Lister les mappages de groupes d’annuaire
-      description: Liste les mappages des groupes provisionnés vers les rôles et services du workspace.
+      description: Liste les mappages des groupes provisionnés vers les rôles et services de l’espace de travail.
       responses:
         '200':
           description: Mappages de groupes d’annuaire
@@ -3362,7 +3362,7 @@ paths:
         - Gateway
       operationId: deleteWorkspaceGroupMapping
       summary: Supprimer un mappage de groupe d’annuaire
-      description: Supprime du workspace un mappage de groupe provisionné.
+      description: Supprime de l’espace de travail un mappage de groupe provisionné.
       parameters:
         - name: id
           in: path
@@ -3650,7 +3650,7 @@ paths:
         - Gateway
       operationId: listGatewayFeedback
       summary: Lister les retours de la passerelle
-      description: Liste les retours du workspace avec des filtres par cible, date, note et dimension de métadonnées. Nécessite `feedback:read`.
+      description: Liste les retours de l’espace de travail avec des filtres par cible, date, note et dimension de métadonnées. Nécessite `feedback:read`.
       parameters:
         - name: request_id
           in: query
@@ -3743,7 +3743,7 @@ paths:
         - Gateway
       operationId: summarizeGatewayFeedback
       summary: Résumer les retours de la passerelle
-      description: Regroupe les retours du workspace par preset, exécution de test ou dimension de métadonnées.
+      description: Regroupe les retours de l’espace de travail par préréglage, exécution de test ou dimension de métadonnées.
       parameters:
         - name: group_by
           in: query
@@ -3800,7 +3800,7 @@ paths:
         - Gateway
       operationId: listGatewayObservabilityEvents
       summary: Lister les événements d’observabilité de la passerelle
-      description: Liste les événements personnalisés de résultat et de comportement du workspace. Nécessite `feedback:read`.
+      description: Liste les événements personnalisés de résultat et de comportement de l’espace de travail. Nécessite `feedback:read`.
       parameters:
         - name: request_id
           in: query
@@ -4462,7 +4462,7 @@ paths:
         - Gateway
       operationId: deleteWorkspaceNotificationDestination
       summary: Supprimer une destination de notification
-      description: Désactive logiquement une destination de notification du workspace et la retire des prochains acheminements.
+      description: Désactive logiquement une destination de notification de l’espace de travail et la retire des prochains acheminements.
       parameters:
         - name: id
           in: path
@@ -4517,7 +4517,7 @@ paths:
         - Gateway
       operationId: testWorkspaceNotificationDestination
       summary: Tester une destination de notification enregistrée
-      description: Envoie un test via une destination chiffrée existante du workspace.
+      description: Envoie un test via une destination chiffrée existante de l’espace de travail.
       parameters:
         - name: id
           in: path
@@ -4723,7 +4723,7 @@ paths:
         - Gateway
       operationId: listOAuthClients
       summary: Lister les clients OAuth
-      description: Liste les applications OAuth actives du workspace. Nécessite `oauth_clients:read` et la fonctionnalité bêta OAuth.
+      description: Liste les applications OAuth actives de l’espace de travail. Nécessite `oauth_clients:read` et la fonctionnalité bêta OAuth.
       responses:
         '200':
           description: Liste des clients OAuth
@@ -7628,8 +7628,8 @@ paths:
       tags:
         - Gateway
       operationId: getPresetPublisher
-      summary: Obtenir l’identifiant public de l’éditeur de presets
-      description: Renvoie l’identifiant canonique de l’éditeur de presets publics de l’espace de travail.
+      summary: Obtenir l’identifiant public de l’éditeur de préréglages
+      description: Renvoie l’identifiant canonique de l’éditeur de préréglages publics de l’espace de travail.
       responses:
         '200':
           description: Identifiant de l’éditeur
@@ -9028,7 +9028,7 @@ components:
       items:
         type: string
         minLength: 1
-      description: Modèles de repli facultatifs et ordonnés, essayés après `model`. `model` est obligatoire et reste toujours le modèle principal. Lorsqu'une tentative échoue avec `429`, `500`, `502`, `503` ou `504`, l'entrée suivante est essayée ; les autres erreurs sont renvoyées telles quelles. Accepte jusqu'à 25 identifiants de modèle ou presets ; les doublons et les entrées identiques à `model` sont ignorés. Chaque tentative est validée, journalisée et facturée comme une requête distincte, et le champ `model` de la réponse ainsi que la trace de routage indiquent le modèle qui a servi la requête. Les requêtes en streaming ne basculent qu'avant le premier octet, et les tâches vidéo et musique uniquement lors de leur soumission. Les requêtes batch, realtime et council rejettent `models`. Les replis définis sur une route dynamique sont prioritaires, et `phaseo/auto` ne peut pas être combiné avec `models`.
+      description: Modèles de repli facultatifs et ordonnés, essayés après `model`. `model` est obligatoire et reste toujours le modèle principal. Lorsqu'une tentative échoue avec `429`, `500`, `502`, `503` ou `504`, l'entrée suivante est essayée ; les autres erreurs sont renvoyées telles quelles. Accepte jusqu'à 25 identifiants de modèle ou préréglages ; les doublons et les entrées identiques à `model` sont ignorés. Chaque tentative est validée, journalisée et facturée comme une requête distincte, et le champ `model` de la réponse ainsi que la trace de routage indiquent le modèle qui a servi la requête. Les requêtes en streaming ne basculent qu'avant le premier octet, et les tâches vidéo et musique uniquement lors de leur soumission. Les requêtes batch, realtime et council rejettent `models`. Les replis définis sur une route dynamique sont prioritaires, et `phaseo/auto` ne peut pas être combiné avec `models`.
       example:
         - anthropic/claude-sonnet-5-5
         - google/gemini-2.5-flash

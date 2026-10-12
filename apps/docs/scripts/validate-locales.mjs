@@ -69,6 +69,17 @@ function unclosedFenceIssue(path) {
 	return fence ? `${relative(docsRoot, path).split(sep).join("/")} has an unclosed code fence` : undefined;
 }
 
+// Translation tooling has left UTF-8 decoded as Windows-1252 ("DÃ©couvrez") and callouts with no text.
+function damagedTextIssue(path) {
+	const page = relative(docsRoot, path).split(sep).join("/");
+	const source = readFileSync(path, "utf8");
+	if (/Ã[\u0080-¿]|â€[‘-„†-…™œ\u0080-¿]/.test(source)) {
+		return `${page} contains mis-encoded text such as "Ã©" or "â€™"`;
+	}
+	const empty = source.match(/<(Note|Tip|Info|Warning|Check|Danger)>\s*<\/\1>/);
+	return empty ? `${page} has an empty <${empty[1]}>` : undefined;
+}
+
 const sourcePages = listPages(sourceRoot);
 if (sourcePages.size === 0) {
 	throw new Error(`No Markdown or MDX pages found in ${sourceRoot}`);
@@ -77,7 +88,7 @@ if (sourcePages.size === 0) {
 const issues = [];
 for (const page of sourcePages) {
 	const path = join(sourceRoot, page);
-	for (const issue of [openApiReferenceIssue(path, "/openapi/v1/openapi.yaml"), unclosedFenceIssue(path)]) {
+	for (const issue of [openApiReferenceIssue(path, "/openapi/v1/openapi.yaml"), unclosedFenceIssue(path), damagedTextIssue(path)]) {
 		if (issue) issues.push(issue);
 	}
 }
@@ -87,7 +98,7 @@ for (const locale of locales) {
 	for (const page of translatedPages) {
 		const path = join(localeRoot, page);
 		const specFile = `/${locale}/openapi/v1/openapi.localized.yaml`;
-		const checks = [openApiReferenceIssue(path, specFile), unclosedFenceIssue(path)];
+		const checks = [openApiReferenceIssue(path, specFile), unclosedFenceIssue(path), damagedTextIssue(path)];
 		if (sourcePages.has(page)) checks.push(openApiParityIssue(join(sourceRoot, page), path));
 		for (const issue of checks) {
 			if (issue) issues.push(issue);
@@ -113,5 +124,5 @@ if (issues.length > 0) {
 }
 
 process.stdout.write(
-	`Localized docs coverage, OpenAPI references and code fences valid: ${sourcePages.size} pages across ${locales.length} locales\n`,
+	`Localized docs coverage, OpenAPI references, code fences and text encoding valid: ${sourcePages.size} pages across ${locales.length} locales\n`,
 );
