@@ -88,7 +88,7 @@ Cada entrada aceita `requests_per_minute`, `requests_per_day`, `tokens_per_minut
 
 Os limites nunca bloqueiam solicitações. Conforme o tráfego de uma oferta se aproxima de um limite, a Phaseo envia a ela uma parcela gradualmente menor. Quando o limite é atingido, a Phaseo classifica a oferta abaixo de outros provedores até que o limite seja redefinido. Um valor baixo demais só reduz a sua própria parcela de tráfego. Por isso, depois que sua inscrição como provedor é aprovada, os limites entram em vigor sem revisão, geralmente em até um minuto.
 
-Quando o array está presente, ele substitui os limites declarados a cada importação bem-sucedida de um feed alterado. Um array vazio os remove. Omita `rate_limits` para manter os limites que você gerencia nas configurações do provedor. A Phaseo rejeita o snapshot inteiro, mantendo seu catálogo e seus limites atuais, se uma entrada citar um modelo que não está no documento, repetir um escopo ou usar um valor que não seja um inteiro positivo. A rejeição aparece como **Precisa de alterações**.
+Quando o array está presente, ele substitui os limites declarados a cada importação bem-sucedida de um feed alterado. Um array vazio os remove. Omita `rate_limits` para manter os limites que você gerencia nas configurações do provedor. A Phaseo rejeita o snapshot inteiro, mantendo seu catálogo e seus limites atuais, se uma entrada citar um modelo que não está no documento, repetir um escopo ou usar um valor que não seja um inteiro positivo. A rejeição aparece como **Alterações solicitadas**.
 
 Você também pode editar os limites em **Configurações do provedor → Seus modelos → Limites de taxa**. Essas edições são salvas separadamente das alterações do catálogo. O editor do catálogo não aceita `rate_limits`.
 
@@ -98,6 +98,6 @@ O polling e os webhooks assinados de alteração do catálogo aceitam as duas ve
 
 O catálogo não adiciona um adaptador de inferência nem credenciais. O provedor e as capacidades anunciadas por ele precisam estar integrados antes que o roteamento seja habilitado. O preço de Batch não torna Batch disponível nos endpoints síncronos de chat.
 
-Um modelo canônico indisponível ou um mapeamento de publicador desconhecido aparece como **Precisa de alterações**, sem impedir a importação dos modelos válidos. Consulte o painel do provedor para ver os motivos específicos de cada modelo.
+Um modelo canônico indisponível ou um mapeamento de publicador desconhecido aparece como **Alterações solicitadas**, sem impedir a importação dos modelos válidos. Consulte o painel do provedor para ver os motivos específicos de cada modelo.
 
 Em catálogos alimentados por API, as edições feitas no painel são substituições persistentes. As importações atualizam os campos que não têm substituições. Selecione **Usar valor do feed** para remover uma substituição e voltar a seguir esse campo. O painel mostra o valor mais recente do feed, o valor efetivo, o autor da edição e o horário; a atividade do catálogo registra edições e reversões. Modelos adicionados manualmente continuam sendo ofertas locais. Remover um modelo do feed desativa essa oferta do feed, mesmo que alguns dos campos dela tenham sido editados. Os catálogos existentes somente manuais continuam compatíveis.
