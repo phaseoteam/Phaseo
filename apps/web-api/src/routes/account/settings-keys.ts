@@ -124,7 +124,9 @@ accountSettingsKeysRouter.get("/keys/:keyId", async (c) => {
 	const [creator, workspace, usage, chart] = await Promise.all([
 		key.created_by ? workspaceUserProfile(context, key.created_by) : Promise.resolve(null),
 		context.client.from("workspaces").select("name").eq("id", key.workspace_id).maybeSingle(),
-		context.userClient.rpc("get_workspace_key_usage", { p_workspace_id: key.workspace_id, p_day_start: dayStart.toISOString() }),
+		// Weekly and monthly totals come from the gateway's UTC windows; get_workspace_key_usage
+		// only returns daily totals. Service-only RPC, scoped to the authorized workspace and key.
+		context.client.rpc("gateway_workspace_key_usage", { p_workspace_id: key.workspace_id, p_key_ids: [key.id] }),
 		// This RPC reads a private view. Workspace membership was verified above;
 		// keep its service-client query scoped to the authorized workspace and key.
 		context.client.rpc("get_usage_chart_rollup", { p_team: context.workspaceId, p_from: chartFrom, p_to: chartTo, p_bucket: "day", p_key_id: key.id }),

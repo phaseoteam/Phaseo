@@ -85,6 +85,14 @@ import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
+import { ForecastMeter } from "@/components/(gateway)/usage/ForecastMeter";
+import {
+	forecastLimitWindow,
+	formatLimitResetCountdown,
+	type LimitWindow,
+	type LimitWindowForecast,
+} from "@/lib/gateway/usage/limitForecast";
+
 import { getKeyState, organiseKeys, type KeyState } from "./keyOrdering";
 type KeyDialogType = "rotate" | "delete";
 type ActiveKeyDialog = { type: KeyDialogType; key: any } | null;
@@ -202,19 +210,38 @@ type LimitWindowUsage = {
 };
 type LimitTone = "ok" | "warn" | "danger" | "muted";
 
+const LIMIT_WINDOWS: Record<LimitWindowUsage["label"], LimitWindow> = { D: "day", W: "week", M: "month" };
+
 function getWindowPercent(window: LimitWindowUsage): number | null {
 	return window.limit > 0 ? (window.used / window.limit) * 100 : null;
 }
 
-function getWindowTone(window: LimitWindowUsage, state: KeyState): LimitTone {
+function getWindowTone(window: LimitWindowUsage, state: KeyState, forecast: LimitWindowForecast | null): LimitTone {
 	if (state === "disabled" || state === "expired" || window.limit <= 0) {
 		return "muted";
 	}
 
 	const pct = getWindowPercent(window) ?? 0;
 	if (pct >= 100) return "danger";
-	if (pct >= 80) return "warn";
+	if (pct >= 80 || forecast?.reachesLimitAt != null) return "warn";
 	return "ok";
+}
+
+// Projections depend on the current time, so render them only after hydration
+// and refresh them each minute while the page stays open.
+let limitClockNow: number | null = null;
+function subscribeLimitClock(onChange: () => void) {
+	const id = window.setInterval(() => {
+		limitClockNow = Date.now();
+		onChange();
+	}, 60_000);
+	return () => window.clearInterval(id);
+}
+const getLimitClockNow = () => (limitClockNow ??= Date.now());
+const getServerLimitClockNow = () => null;
+
+function useLimitClock() {
+	return useSyncExternalStore(subscribeLimitClock, getLimitClockNow, getServerLimitClockNow);
 }
 
 function getKeyUsageVisuals(k: any) {
@@ -249,9 +276,11 @@ function getKeyUsageVisuals(k: any) {
 
 function LimitRadial({
 	pct,
+	projectedPct,
 	tone,
 }: {
 	pct: number | null;
+	projectedPct: number | null;
 	tone: LimitTone;
 }) {
 	if (pct === null) {
@@ -266,6 +295,10 @@ function LimitRadial({
 	const radius = 6;
 	const circumference = 2 * Math.PI * radius;
 	const strokeDashoffset = circumference - (clamped / 100) * circumference;
+	const projectedArc =
+		projectedPct !== null && projectedPct > clamped
+			? ((Math.min(100, projectedPct) - clamped) / 100) * circumference
+			: 0;
 	const ringClass =
 		tone === "danger"
 			? "text-red-600"
@@ -290,6 +323,20 @@ function LimitRadial({
 				stroke="currentColor"
 				strokeWidth="2"
 			/>
+			{projectedArc > 0 ? (
+				<circle
+					className={ringClass}
+					cx="8"
+					cy="8"
+					fill="none"
+					r={radius}
+					stroke="currentColor"
+					strokeDasharray={`${projectedArc} ${circumference}`}
+					strokeDashoffset={-(clamped / 100) * circumference}
+					strokeOpacity={0.4}
+					strokeWidth="2"
+				/>
+			) : null}
 			<circle
 				className={ringClass}
 				cx="8"
@@ -306,57 +353,6 @@ function LimitRadial({
 	);
 }
 
-function getNextLimitResetAt(label: LimitWindowUsage["label"]) {
-	const now = new Date();
-
-	if (label === "D") {
-		return new Date(
-			now.getFullYear(),
-			now.getMonth(),
-			now.getDate() + 1,
-			0,
-			0,
-			0,
-			0
-		);
-	}
-
-	if (label === "W") {
-		const day = now.getDay();
-		const daysUntilMonday = day === 0 ? 1 : 8 - day;
-		return new Date(
-			now.getFullYear(),
-			now.getMonth(),
-			now.getDate() + daysUntilMonday,
-			0,
-			0,
-			0,
-			0
-		);
-	}
-
-	return new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0);
-}
-
-function formatResetCountdown(label: LimitWindowUsage["label"]) {
-	const resetAt = getNextLimitResetAt(label);
-	const diffMs = Math.max(0, resetAt.getTime() - Date.now());
-	const totalMinutes = Math.ceil(diffMs / (60 * 1000));
-	const days = Math.floor(totalMinutes / (24 * 60));
-	const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
-	const minutes = totalMinutes % 60;
-
-	if (days > 0) {
-		return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
-	}
-
-	if (hours > 0) {
-		return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-	}
-
-	return `${Math.max(1, minutes)}m`;
-}
-
 const LimitPillStack = memo(function LimitPillStack({
 	windows,
 	formatter,
@@ -369,14 +365,21 @@ const LimitPillStack = memo(function LimitPillStack({
 	metricLabel: "requests" | "spend";
 }) {
 	const t = useTranslations("SettingsUI");
+	const format = useDisplayFormatters();
+	const now = useLimitClock();
 	return (
 		<div className="flex min-w-0 flex-col gap-1">
 			{windows.map((window) => {
+				const forecast =
+					now === null || state === "disabled" || state === "expired"
+						? null
+						: forecastLimitWindow({ window: LIMIT_WINDOWS[window.label], used: window.used, limit: window.limit, now });
+				const reachesLimitAt = forecast?.reachesLimitAt ?? null;
 				const pct = getWindowPercent(window);
 				const clamped = pct === null ? null : Math.max(0, Math.min(100, pct));
-				const tone = getWindowTone(window, state);
+				const projectedPct = forecast && window.limit > 0 ? (forecast.projected / window.limit) * 100 : null;
+				const tone = getWindowTone(window, state, forecast);
 				const remaining = Math.max(0, window.limit - window.used);
-				const progressWidth = clamped ?? 100;
 				const pillClass =
 					tone === "danger"
 						? "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300"
@@ -385,20 +388,31 @@ const LimitPillStack = memo(function LimitPillStack({
 							: tone === "ok"
 								? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
 								: "border-border/60 bg-muted/50 text-muted-foreground";
-				const progressClass =
-					tone === "danger"
-						? "bg-red-600"
-						: tone === "warn"
-							? "bg-amber-500"
-							: tone === "ok"
-								? "bg-emerald-600"
-								: "bg-muted-foreground/40";
 				const value = clamped !== null ? `${Math.round(clamped)}%` : t("strings.No cap" as never);
+				const projectedValue =
+					reachesLimitAt !== null && projectedPct !== null ? `${Math.min(999, Math.round(projectedPct))}%` : null;
+				const reachesLimitText =
+					reachesLimitAt === null
+						? null
+						: format.dateParts(
+								reachesLimitAt,
+								window.label === "D" ? { hour: "numeric", minute: "2-digit" } : { month: "short", day: "numeric" },
+							);
 				const title =
 					metricLabel === "requests"
 						? `${t(settingsStringKey(window.name) as never)} ${t("strings.requests" as never)}`
 						: `${t(settingsStringKey(window.name) as never)} ${t("strings.spend" as never)}`;
-				const resetText = formatResetCountdown(window.label);
+				// Limits reset on UTC boundaries, not the viewer's local midnight. The hover card
+				// only opens after hydration, so the countdown is never needed without a clock.
+				const resetText = now === null ? "" : formatLimitResetCountdown(LIMIT_WINDOWS[window.label], now);
+				const showMeter = window.limit > 0 || (forecast !== null && forecast.projected > window.used);
+				const meterLabel = [
+					`${title}: ${t("labels.used")} ${formatter(window.used)}`,
+					window.limit > 0 ? `${t("labels.limit")} ${formatter(window.limit)}` : null,
+					forecast && forecast.projected > window.used
+						? `${t("strings.On pace for" as never)} ${formatter(forecast.projected)}`
+						: null,
+				].filter(Boolean).join(", ");
 
 				return (
 					<HoverCard key={window.label} openDelay={120} closeDelay={100}>
@@ -407,8 +421,13 @@ const LimitPillStack = memo(function LimitPillStack({
 								className={`flex h-6 min-w-0 cursor-help items-center gap-1.5 rounded-md border px-1.5 text-[11px] leading-none ${pillClass}`}
 							>
 								<span className="w-3 shrink-0 font-medium">{window.label}</span>
-								<LimitRadial pct={clamped} tone={tone} />
-								<span className="min-w-0 truncate font-medium">{value}</span>
+								<LimitRadial pct={clamped} projectedPct={projectedPct} tone={tone} />
+								<span className="min-w-0 truncate font-medium">
+									{value}
+									{projectedValue ? (
+										<span className="font-normal opacity-75"> → {projectedValue}</span>
+									) : null}
+								</span>
 							</div>
 						</HoverCardTrigger>
 						<HoverCardContent align="start" className="w-64 p-3">
@@ -426,12 +445,14 @@ const LimitPillStack = memo(function LimitPillStack({
 									{t("strings.Resets in {time}" as never, { time: resetText } as never)}
 									</div>
 								</div>
-								<div className="h-1.5 overflow-hidden rounded-full bg-muted">
-									<div
-										className={`h-full rounded-full ${progressClass}`}
-										style={{ width: `${progressWidth}%` }}
+								{showMeter ? (
+									<ForecastMeter
+										used={window.used}
+										projected={forecast?.projected}
+										limit={window.limit}
+										label={meterLabel}
 									/>
-								</div>
+								) : null}
 								<div className="space-y-1.5">
 									<div className="flex items-center justify-between gap-4">
 											<span className="text-muted-foreground">{t("labels.used")}</span>
@@ -450,6 +471,24 @@ const LimitPillStack = memo(function LimitPillStack({
 													<span className="text-muted-foreground">{t("labels.remaining")}</span>
 											<span className="font-mono font-semibold tabular-nums text-foreground">
 												{formatter(remaining)}
+											</span>
+										</div>
+									) : null}
+									{forecast && forecast.projected > window.used ? (
+										<div className="flex items-center justify-between gap-4">
+											<span className="text-muted-foreground">{t("strings.On pace for" as never)}</span>
+											<span
+												className={`font-mono font-medium tabular-nums ${reachesLimitAt !== null ? "text-amber-700 dark:text-amber-300" : ""}`}
+											>
+												{formatter(forecast.projected)}
+											</span>
+										</div>
+									) : null}
+									{reachesLimitText ? (
+										<div className="flex items-center justify-between gap-4">
+											<span className="text-muted-foreground">{t("strings.Reaches limit" as never)}</span>
+											<span className="font-mono font-medium tabular-nums text-amber-700 dark:text-amber-300">
+												~{reachesLimitText}
 											</span>
 										</div>
 									) : null}

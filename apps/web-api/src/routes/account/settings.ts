@@ -1097,14 +1097,14 @@ accountSettingsRouter.get("/keys", async (c) => {
 		: workspaces[0]?.id ?? null;
 	let keys: Array<Record<string, unknown>> = [];
 	if (initialWorkspaceId) {
-		const dayStart = new Date();
-		dayStart.setUTCHours(0, 0, 0, 0);
 		const [keysResult, usageResult] = await Promise.all([
 			client.from("keys").select("*").eq("workspace_id", initialWorkspaceId)
 				.neq("status", "deleted").neq("name", "__chat_route_managed_key__"),
-			userClient.rpc("get_workspace_key_usage", {
+			// get_workspace_key_usage only returns daily totals in production, which left
+			// weekly and monthly limits at zero. This service-only RPC uses the gateway's
+			// UTC day/week/month windows; membership in this workspace was checked above.
+			client.rpc("gateway_workspace_key_usage", {
 				p_workspace_id: initialWorkspaceId,
-				p_day_start: dayStart.toISOString(),
 			}),
 		]);
 		if (keysResult.error) {

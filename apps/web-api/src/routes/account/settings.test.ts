@@ -18,6 +18,23 @@ it.each(["keys", "management-api-keys"])("omits credential material from the %s 
 	expect(await response.text()).not.toContain("do-not-send");
 });
 
+it("reports weekly and monthly key usage from the gateway's window totals", async () => {
+	const fetchMock = vi.fn(async (input: RequestInfo | URL) => authenticatedFetch(input));
+	vi.stubGlobal("fetch", fetchMock);
+	const response = await app.request("https://phaseo.app/api/account/settings/keys?workspaceId=workspace-1", { headers: { authorization: "Bearer token" } }, env);
+	const payload = await response.json() as { teamsWithKeys: Array<{ keys: Array<Record<string, unknown>> }> };
+	expect(payload.teamsWithKeys[0]?.keys[0]).toMatchObject({
+		current_usage_daily: 3,
+		current_usage_weekly: 20,
+		current_usage_monthly: 80,
+		current_usage_daily_cost_nanos: 100,
+		current_usage_weekly_cost_nanos: 500,
+		current_usage_monthly_cost_nanos: 2000,
+	});
+	const urls = fetchMock.mock.calls.map(([input]) => input instanceof Request ? input.url : String(input));
+	expect(urls.some((url) => url.includes("/rpc/get_workspace_key_usage"))).toBe(false);
+});
+
 function authenticatedFetch(input: RequestInfo | URL): Response {
 	const url = input instanceof Request ? input.url : String(input);
 	if (url.includes("/auth/v1/user")) {
@@ -191,7 +208,7 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 			status: "active", last_used_at: null,
 		}]), { status: 200 });
 	}
-	if (url.includes("/rpc/get_workspace_key_usage")) {
+	if (url.includes("/rpc/gateway_workspace_key_usage")) {
 		return new Response(JSON.stringify([{
 			key_id: "key-1", daily_request_count: 3, weekly_request_count: 20,
 			monthly_request_count: 80, daily_cost_nanos: 100, weekly_cost_nanos: 500,
