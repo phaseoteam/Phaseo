@@ -3,7 +3,7 @@
 import { ChevronRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { startTransition, useEffect, useOptimistic, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,11 +17,15 @@ import { getModalityTone } from "@/lib/models/modalityStyles";
 import { cn } from "@/lib/utils";
 import type { OptionCount } from "./modelsDisplay.types";
 
-/** Main chips leave before the audio chips arrive, then the main row stops taking width. */
-const LAYER_SWAP_MS = 350;
-const MAIN_STAGGER_MS = 18;
-const AUDIO_STAGGER_MS = 45;
-const AUDIO_ENTER_DELAY_MS = 140;
+/**
+ * The swap is quick on purpose: both rows move at once with no stagger, so the
+ * filter feels like it responds the moment it is pressed.
+ */
+const MAIN_OUT_MS = 110;
+const AUDIO_IN_MS = 160;
+/** A row stops being visible once its chips have finished fading. */
+const MAIN_HIDE_MS = MAIN_OUT_MS + 10;
+const AUDIO_HIDE_MS = AUDIO_IN_MS + 10;
 
 type ChipProps = {
 	option: OptionCount;
@@ -32,7 +36,7 @@ type ChipProps = {
 	/** Slide distance in px while the chip is out of view. */
 	hiddenShift: number;
 	hidden: boolean;
-	delayMs: number;
+	durationMs: number;
 	reduceMotion: boolean;
 	expanded?: boolean;
 	leading?: ReactNode;
@@ -47,7 +51,7 @@ function Chip({
 	onClick,
 	hiddenShift,
 	hidden,
-	delayMs,
+	durationMs,
 	reduceMotion,
 	expanded,
 	leading,
@@ -78,10 +82,11 @@ function Chip({
 				opacity: hidden ? 0 : 1,
 				transform: hidden ? `translateX(${hiddenShift}px)` : "none",
 				transitionProperty: "background-color, color, opacity, transform",
-				transitionDuration: reduceMotion ? "0ms" : "200ms, 200ms, 250ms, 320ms",
+				transitionDuration: reduceMotion
+					? "0ms"
+					: `150ms, 150ms, ${durationMs}ms, ${durationMs}ms`,
 				transitionTimingFunction:
 					"ease, ease, ease, cubic-bezier(0.2, 0.8, 0.2, 1)",
-				transitionDelay: reduceMotion ? "0ms" : `0ms, 0ms, ${delayMs}ms, ${delayMs}ms`,
 			}}
 		>
 			{leading}
@@ -116,6 +121,9 @@ function Chip({
  * The output-modality chips above the models list. Audio opens its own row in
  * place: the main chips slide out, the audio sub-types (speech, transcription,
  * translation, realtime, music) slide in, and the Audio chip becomes the way back.
+ *
+ * Pressing a chip updates the row at once and applies the filter in a
+ * transition, so re-filtering the whole catalogue does not hold the row back.
  */
 export function OutputModalityChipRow({
 	options,
@@ -134,6 +142,7 @@ export function OutputModalityChipRow({
 	const contentRef = useRef<HTMLDivElement | null>(null);
 	const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false);
 	const [mainSettledHidden, setMainSettledHidden] = useState(false);
+	const [shownSelected, setShownSelected] = useOptimistic(selected);
 	const reduceMotion = Boolean(useReducedMotion());
 
 	const audioOption = options.find((option) => option.value === "audio");
@@ -143,9 +152,9 @@ export function OutputModalityChipRow({
 	});
 	const mainOptions = options.filter((option) => !isAudioFamilyGroup(option.value));
 	const hasFamily = Boolean(audioOption) && subOptions.length > 0;
-	const open = hasFamily && isAudioFamilyOpen(selected);
+	const open = hasFamily && isAudioFamilyOpen(shownSelected);
 	const mainCollapsed = open && mainSettledHidden;
-	const hiddenSelectionCount = selected.filter(
+	const hiddenSelectionCount = shownSelected.filter(
 		(value) => value !== "audio" && !isAudioFamilyGroup(value),
 	).length;
 
@@ -175,7 +184,7 @@ export function OutputModalityChipRow({
 		if (!open) return;
 		const timer = window.setTimeout(
 			() => setMainSettledHidden(true),
-			reduceMotion ? 0 : LAYER_SWAP_MS + 10,
+			reduceMotion ? 0 : MAIN_HIDE_MS + 10,
 		);
 		return () => {
 			window.clearTimeout(timer);
@@ -185,8 +194,15 @@ export function OutputModalityChipRow({
 
 	if (options.length === 0) return null;
 
-	const toggle = (value: string) => onChange(toggleOutputModality(selected, value));
-	const swapDelay = reduceMotion ? 0 : LAYER_SWAP_MS;
+	const toggle = (value: string) => {
+		const next = toggleOutputModality(shownSelected, value);
+		startTransition(() => {
+			setShownSelected(next);
+			onChange(next);
+		});
+	};
+	const mainHideDelay = reduceMotion ? 0 : MAIN_HIDE_MS;
+	const audioHideDelay = reduceMotion ? 0 : AUDIO_HIDE_MS;
 
 	return (
 		<ScrollArea
@@ -198,7 +214,7 @@ export function OutputModalityChipRow({
 			// from the wider main row.
 			scrollBarClassName={open ? "hidden" : undefined}
 			viewportClassName={cn(
-				"transition-[padding-bottom] duration-300 motion-reduce:transition-none",
+				"transition-[padding-bottom] duration-150 motion-reduce:transition-none",
 				hasHorizontalOverflow && !open ? "pb-2" : "pb-0",
 			)}
 			viewportRef={viewportRef}
@@ -214,11 +230,11 @@ export function OutputModalityChipRow({
 						pointerEvents: open ? "none" : undefined,
 						transitionProperty: "visibility",
 						transitionDuration: "0ms",
-						transitionDelay: open ? `${swapDelay}ms` : "0ms",
+						transitionDelay: open ? `${mainHideDelay}ms` : "0ms",
 					}}
 					aria-hidden={open}
 				>
-					{mainOptions.map((option, index) => {
+					{mainOptions.map((option) => {
 						const isAudio = option.value === "audio";
 						return (
 							<Chip
@@ -227,12 +243,14 @@ export function OutputModalityChipRow({
 								label={labelForValue(option.value)}
 								Icon={iconForValue(option.value)}
 								checked={
-									isAudio ? !hasFamily && selected.includes("audio") : selected.includes(option.value)
+									isAudio
+										? !hasFamily && shownSelected.includes("audio")
+										: shownSelected.includes(option.value)
 								}
 								onClick={() => toggle(option.value)}
 								hidden={open}
 								hiddenShift={-14}
-								delayMs={index * MAIN_STAGGER_MS}
+								durationMs={MAIN_OUT_MS}
 								reduceMotion={reduceMotion}
 								expanded={isAudio && hasFamily ? false : undefined}
 								trailing={
@@ -253,7 +271,7 @@ export function OutputModalityChipRow({
 							pointerEvents: open ? undefined : "none",
 							transitionProperty: "visibility",
 							transitionDuration: "0ms",
-							transitionDelay: open ? "0ms" : `${swapDelay}ms`,
+							transitionDelay: open ? "0ms" : `${audioHideDelay}ms`,
 						}}
 						aria-hidden={!open}
 					>
@@ -265,7 +283,7 @@ export function OutputModalityChipRow({
 							onClick={() => toggle("audio")}
 							hidden={!open}
 							hiddenShift={14}
-							delayMs={open ? AUDIO_ENTER_DELAY_MS : 0}
+							durationMs={AUDIO_IN_MS}
 							reduceMotion={reduceMotion}
 							expanded
 							trailing={
@@ -290,23 +308,20 @@ export function OutputModalityChipRow({
 							className="mx-1 h-4 w-px shrink-0 bg-border"
 							style={{
 								opacity: open ? 1 : 0,
-								transition: reduceMotion ? "none" : "opacity 250ms ease",
-								transitionDelay: open ? `${AUDIO_ENTER_DELAY_MS}ms` : "0ms",
+								transition: reduceMotion ? "none" : `opacity ${AUDIO_IN_MS}ms ease`,
 							}}
 						/>
-						{subOptions.map((option, index) => (
+						{subOptions.map((option) => (
 							<Chip
 								key={option.value}
 								option={option}
 								label={labelForValue(option.value)}
 								Icon={iconForValue(option.value)}
-								checked={selected.includes(option.value)}
+								checked={shownSelected.includes(option.value)}
 								onClick={() => toggle(option.value)}
 								hidden={!open}
 								hiddenShift={14}
-								delayMs={
-									open ? AUDIO_ENTER_DELAY_MS + (index + 1) * AUDIO_STAGGER_MS : 0
-								}
+								durationMs={AUDIO_IN_MS}
 								reduceMotion={reduceMotion}
 							/>
 						))}
