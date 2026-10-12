@@ -22,6 +22,7 @@ La prise en charge des paramètres varie toujours selon le point de terminaison,
 | Paramètre | Type | Utilisation |
 | --- | --- | --- |
 | [`model`](#model) | `string` | Sélectionner l’identifiant du modèle de la passerelle à exécuter. |
+| [`models`](#models) | `string[]` | Lister, dans l’ordre, les modèles de repli essayés après `model` en cas d’échec pouvant être réessayé. |
 | [`stream`](#stream) | `boolean` | Renvoyer la sortie SSE progressivement plutôt qu’en une seule réponse finale. |
 | [`temperature`](#temperature) | `number` | Augmenter ou réduire l’aléatoire. |
 | [`top_p`](#top_p) | `number` | Élargir ou réduire l’ensemble d’échantillonnage par noyau. |
@@ -84,6 +85,20 @@ Sélectionne l’identifiant du modèle de la passerelle pour la requête.
 | Exemple | `openai/gpt-5-nano` |
 
 Sauf si vous souhaitez délibérément utiliser un alias accepté, utilisez l’identifiant canonique indiqué dans le guide de démarrage rapide de chaque modèle. Les identifiants canoniques sont les plus sûrs pour les exemples, l’automatisation et les intégrations durables.
+
+<span id="models"></span>
+<h3 id="parameter-models"><code>models</code></h3>
+
+Liste des modèles de repli facultatifs, essayés dans l’ordre après `model`. `model` est obligatoire et désigne toujours le modèle principal. L’entrée suivante n’est essayée que si une tentative échoue avec `429`, `500`, `502`, `503` ou `504`.
+
+| Champ | Valeur |
+| --- | --- |
+| Type | `string[]` |
+| Obligatoire | Non. Une requête avec `models` doit aussi définir `model`. |
+| Limites | De 1 à 25 entrées. Les doublons et les entrées identiques à `model` sont ignorés. |
+| Exemple | `["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"]` |
+
+Chaque tentative est validée, journalisée et facturée comme une requête distincte. Le champ `model` de la réponse et la trace de routage indiquent le modèle qui a traité la requête. Les requêtes en streaming ne basculent vers un modèle de repli qu’avant le premier octet, et les tâches vidéo et musique uniquement lors de la soumission. Les modèles de repli d’une route dynamique associée sont prioritaires, les préréglages sont acceptés comme entrées et `phaseo/auto` ne peut pas être combiné avec `models`. Les requêtes par lot, en temps réel et Council rejettent `models` avec `400`. Les points de terminaison multipart acceptent des champs `models` répétés, des champs `models[]` ou un seul tableau JSON. Consultez [Modèles de repli au niveau de la requête](../guides/routing-and-fallbacks.mdx#request-level-model-fallbacks) pour en savoir plus sur la priorité, la validation, le streaming et la facturation.
 
 <span id="stream"></span>
 <h3 id="parameter-stream"><code>stream</code></h3>

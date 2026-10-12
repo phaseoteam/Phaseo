@@ -1,6 +1,6 @@
 // Purpose: Parse and validate the request-level `models` fallback list.
-// Why: `models` names ordered models to try; `model`, when set, is tried first.
-// Fallbacks reuse the same rerun-the-pipeline machinery as dynamic-route fallbacks.
+// Why: `model` is the required primary model and `models` names ordered
+// fallbacks that reuse the same rerun-the-pipeline machinery as dynamic-route fallbacks.
 // How: Validates shape and limits, dedupes, and strips the field before schema
 // validation so providers and parameter checks never see it.
 
@@ -11,7 +11,7 @@ export const MAX_REQUEST_MODEL_FALLBACKS = 25;
 export const REQUEST_MODEL_FALLBACKS_FIELD = "models";
 
 export type RequestModelFallbackParseResult =
-	| { ok: true; primary: string | null; fallbacks: string[]; requested: string[] | null }
+	| { ok: true; fallbacks: string[]; requested: string[] | null }
 	| { ok: false; reason: string; message: string };
 
 export function hasRequestModelFallbacksField(body: unknown): boolean {
@@ -25,16 +25,15 @@ export function hasRequestModelFallbacksField(body: unknown): boolean {
 }
 
 /**
- * Returns the primary model and ordered fallbacks for a request. `model` is
- * tried first when present; otherwise the first `models` entry is the primary.
- * Repeated entries and entries equal to the primary are dropped. A request
- * without `models` returns no fallbacks.
+ * Returns the ordered fallback models for a request. The required `model` is
+ * always tried first; `models` entries equal to it, and repeated entries, are
+ * dropped. A request without `models` returns no fallbacks.
  */
 export function parseRequestModelFallbacks(body: unknown): RequestModelFallbackParseResult {
-	if (!hasRequestModelFallbacksField(body)) return { ok: true, primary: null, fallbacks: [], requested: null };
+	if (!hasRequestModelFallbacksField(body)) return { ok: true, fallbacks: [], requested: null };
 	const record = body as Record<string, unknown>;
 	const raw = record[REQUEST_MODEL_FALLBACKS_FIELD];
-	if (raw === null) return { ok: true, primary: null, fallbacks: [], requested: null };
+	if (raw === null) return { ok: true, fallbacks: [], requested: null };
 	if (!Array.isArray(raw)) {
 		return { ok: false, reason: "invalid_models", message: "models must be an array of model IDs" };
 	}
@@ -45,7 +44,7 @@ export function parseRequestModelFallbacks(body: unknown): RequestModelFallbackP
 		return {
 			ok: false,
 			reason: "too_many_models",
-			message: `models accepts at most ${MAX_REQUEST_MODEL_FALLBACKS} model IDs`,
+			message: `models accepts at most ${MAX_REQUEST_MODEL_FALLBACKS} fallback model IDs`,
 		};
 	}
 	const requested: string[] = [];
@@ -55,12 +54,14 @@ export function parseRequestModelFallbacks(body: unknown): RequestModelFallbackP
 		}
 		requested.push(value.trim());
 	}
-	const explicitModel = typeof record.model === "string" ? record.model.trim() : record.model;
-	if (explicitModel !== undefined && explicitModel !== null && explicitModel !== "" && typeof explicitModel !== "string") {
-		// Leave an invalid `model` for schema validation to reject.
-		return { ok: true, primary: null, fallbacks: [...new Set(requested)], requested };
+	const primary = typeof record.model === "string" ? record.model.trim() : "";
+	if (!primary) {
+		return {
+			ok: false,
+			reason: "model_required_with_models",
+			message: "model is required; models lists the fallbacks tried after it",
+		};
 	}
-	const primary = typeof explicitModel === "string" && explicitModel ? explicitModel : requested[0]!;
 	if (isAutoRouterModel(primary)) {
 		return {
 			ok: false,
@@ -76,7 +77,7 @@ export function parseRequestModelFallbacks(body: unknown): RequestModelFallbackP
 		};
 	}
 	const fallbacks = [...new Set(requested)].filter((model) => model !== primary);
-	return { ok: true, primary, fallbacks, requested };
+	return { ok: true, fallbacks, requested };
 }
 
 export function withoutRequestModelFallbacks<T>(body: T): T {

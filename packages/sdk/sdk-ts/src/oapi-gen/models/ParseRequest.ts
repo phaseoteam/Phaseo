@@ -11,7 +11,7 @@ export interface ParseRequest {
     type: "image_url";
   };
   echo_upstream_request?: boolean;
-  model?: string;
+  model: string;
   models?: string[];
   output_format?: "markdown" | "blocks";
   provider?: {

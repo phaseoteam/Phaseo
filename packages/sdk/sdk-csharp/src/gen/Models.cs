@@ -149,7 +149,7 @@ public sealed class AnthropicMessagesRequest
 	public Dictionary<string, object>? Metadata { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
@@ -744,7 +744,7 @@ public sealed class AudioSpeechRequest
 	public string Input { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
@@ -781,7 +781,7 @@ public sealed class AudioTranscriptionRequest
 	public string? Language { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
@@ -810,7 +810,7 @@ public sealed class AudioTranslationRequest
 	public string? Language { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
@@ -1368,7 +1368,7 @@ public sealed class ChatCompletionsRequest
 	public List<string>? Modalities { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
@@ -1969,7 +1969,7 @@ public sealed class DecisionsRequest
 	public Dictionary<string, object>? Metadata { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
@@ -2327,7 +2327,7 @@ public sealed class EmbeddingsRequest
 	public object Input { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
@@ -3789,7 +3789,7 @@ public sealed class ImagesEditRequest
 	public bool? Meta { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
@@ -3851,7 +3851,7 @@ public sealed class ImagesGenerationRequest
 	public string? Background { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
@@ -3959,7 +3959,7 @@ public sealed class LegacyDecisionsRequest
 	public Dictionary<string, object>? Metadata { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
@@ -4637,7 +4637,7 @@ public sealed class ModerationsRequest
 	public bool? Meta { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
@@ -4681,7 +4681,7 @@ public sealed class MusicGenerateRequest
 	public string? Format { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
@@ -5276,7 +5276,7 @@ public sealed class OcrRequest
 	public string? Language { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
@@ -5340,7 +5340,7 @@ public sealed class OpenAIDecisionsRequest
 	public Dictionary<string, object>? Metadata { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
@@ -5478,7 +5478,7 @@ public sealed class ParseRequest
 	public bool? EchoUpstreamRequest { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
@@ -6444,7 +6444,7 @@ public sealed class RerankRequest
 	public Dictionary<string, object>? Metadata { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
@@ -6631,7 +6631,7 @@ public sealed class ResponsesRequest
 	public List<string>? Modalities { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
@@ -7096,7 +7096,7 @@ public sealed class VideoGenerationRequest
 	public double? InputVideoDuration { get; set; }
 
 	[JsonPropertyName("model")]
-	public string? Model { get; set; }
+	public string Model { get; set; }
 
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }

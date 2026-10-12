@@ -22,7 +22,7 @@ Parameter support still varies by endpoint, model, and provider. The model quick
 | Parameter | Type | Use it for |
 | --- | --- | --- |
 | [`model`](#model) | `string` | Selecting the gateway model id to run. |
-| [`models`](#models) | `string[]` | Listing ordered models to try, with or without `model`, on retryable failures. |
+| [`models`](#models) | `string[]` | Listing ordered fallback models tried after `model` on retryable failures. |
 | [`stream`](#stream) | `boolean` | Returning SSE output incrementally instead of one final payload. |
 | [`temperature`](#temperature) | `number` | Increasing or reducing randomness. |
 | [`top_p`](#top_p) | `number` | Narrowing or widening the nucleus sampling pool. |
@@ -81,7 +81,7 @@ Selects the gateway model id for the request.
 | Field | Value |
 | --- | --- |
 | Type | `string` |
-| Required | Yes, unless [`models`](#models) is set |
+| Required | Yes |
 | Example | `openai/gpt-5-nano` |
 
 Use the canonical model id shown on each model page quickstart unless you intentionally want to rely on an accepted alias. Canonical ids are the safest choice for examples, automation, and long-lived integrations.
@@ -89,16 +89,16 @@ Use the canonical model id shown on each model page quickstart unless you intent
 <span id="models"></span>
 <h3 id="parameter-models"><code>models</code></h3>
 
-Lists models to try in order. When `model` is set it runs first and `models` lists its fallbacks; when `model` is omitted, the first `models` entry runs first. The next model is tried when an attempt fails with `429`, `500`, `502`, `503`, or `504`.
+Lists optional fallback models, tried in order after `model`. `model` is required and is always the primary model. The next entry is tried only when an attempt fails with `429`, `500`, `502`, `503`, or `504`.
 
 | Field | Value |
 | --- | --- |
 | Type | `string[]` |
-| Required | No. Send `model`, `models`, or both. |
-| Limits | 1 to 25 entries. Duplicates and entries equal to the primary model are ignored. |
+| Required | No. A request with `models` must also set `model`. |
+| Limits | 1 to 25 entries. Duplicates and entries equal to `model` are ignored. |
 | Example | `["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"]` |
 
-`models` is accepted on every synchronous inference endpoint and on video and music submission. It is rejected with `400` on realtime sessions and batches. Multipart endpoints accept repeated `models` fields, `models[]` fields, or one JSON array. Read [Request-level model fallbacks](../guides/routing-and-fallbacks#request-level-model-fallbacks) for precedence, validation, streaming, and billing behavior.
+Each attempt is validated, logged, and billed as its own request. The response `model` field and routing trace show the model that served the request. Streaming requests fall back only before the first byte, and video and music jobs only at submission. Fallbacks on an attached dynamic route take precedence, presets are accepted as entries, and `phaseo/auto` cannot be combined with `models`. Batch, realtime, and council requests reject `models` with `400`. Multipart endpoints accept repeated `models` fields, `models[]` fields, or one JSON array. Read [Request-level model fallbacks](../guides/routing-and-fallbacks#request-level-model-fallbacks) for precedence, validation, streaming, and billing behavior.
 
 <span id="stream"></span>
 <h3 id="parameter-stream"><code>stream</code></h3>

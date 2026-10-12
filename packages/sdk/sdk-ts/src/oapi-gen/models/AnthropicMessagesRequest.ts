@@ -38,7 +38,7 @@ export interface AnthropicMessagesRequest {
   metadata?: {
     [key: string]: unknown;
   };
-  model?: string;
+  model: string;
   models?: string[];
   provider?: {
     allow_fallbacks?: boolean | null;

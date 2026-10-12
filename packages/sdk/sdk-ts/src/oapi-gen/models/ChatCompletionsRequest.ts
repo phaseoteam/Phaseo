@@ -98,7 +98,7 @@ export interface ChatCompletionsRequest {
     [key: string]: string;
   };
   modalities?: ("text" | "image" | "audio")[];
-  model?: string;
+  model: string;
   models?: string[];
   parallel_tool_calls?: boolean;
   presence_penalty?: number;

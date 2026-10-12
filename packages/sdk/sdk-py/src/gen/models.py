@@ -56,7 +56,7 @@ class AnthropicMessagesRequest(TypedDict):
 	messages: List[AnthropicMessage]
 	meta: NotRequired[bool]
 	metadata: NotRequired[Dict[str, Any]]
-	model: NotRequired[str]
+	model: str
 	models: NotRequired[List[str]]
 	provider: NotRequired[ProviderRoutingOptions]
 	provider_options: NotRequired[ProviderOptions]
@@ -274,7 +274,7 @@ class AudioSpeechRequest(TypedDict):
 	config: NotRequired[Dict[str, Any]]
 	format: NotRequired[Literal["mp3", "wav", "ogg", "aac"]]
 	input: str
-	model: NotRequired[str]
+	model: str
 	models: NotRequired[List[str]]
 	provider: NotRequired[ProviderRoutingOptions]
 	speed: NotRequired[float]
@@ -287,7 +287,7 @@ class AudioTranscriptionRequest(TypedDict):
 	known_speaker_names: NotRequired[List[str]]
 	known_speaker_references: NotRequired[List[str]]
 	language: NotRequired[str]
-	model: NotRequired[str]
+	model: str
 	models: NotRequired[List[str]]
 	provider: NotRequired[ProviderRoutingOptions]
 
@@ -298,7 +298,7 @@ class AudioTranslationRequest(TypedDict):
 	audio_b64: NotRequired[str]
 	audio_url: NotRequired[str]
 	language: NotRequired[str]
-	model: NotRequired[str]
+	model: str
 	models: NotRequired[List[str]]
 	prompt: NotRequired[str]
 	provider: NotRequired[ProviderRoutingOptions]
@@ -496,7 +496,7 @@ class ChatCompletionsRequest(TypedDict):
 	meta: NotRequired[bool]
 	metadata: NotRequired[Dict[str, Any]]
 	modalities: NotRequired[List[Literal["text", "image", "audio"]]]
-	model: NotRequired[str]
+	model: str
 	models: NotRequired[List[str]]
 	parallel_tool_calls: NotRequired[bool]
 	presence_penalty: NotRequired[float]
@@ -724,7 +724,7 @@ class DecisionsRequest(TypedDict):
 	images: NotRequired[List[Union[str, DecisionImage]]]
 	meta: NotRequired[bool]
 	metadata: NotRequired[Dict[str, Any]]
-	model: NotRequired[str]
+	model: str
 	models: NotRequired[List[str]]
 	provider: NotRequired[ProviderRoutingOptions]
 	questions: Dict[str, Any]
@@ -858,7 +858,7 @@ class EmbeddingsRequest(TypedDict):
 	dimensions: NotRequired[int]
 	encoding_format: NotRequired[Literal["float", "base64"]]
 	input: Union[str, List[int], EmbeddingsMultimodalInput, List[Union[str, List[int], EmbeddingsMultimodalInput]]]
-	model: NotRequired[str]
+	model: str
 	models: NotRequired[List[str]]
 	provider: NotRequired[ProviderRoutingOptions]
 	provider_options: NotRequired[Dict[str, Any]]
@@ -1395,7 +1395,7 @@ class ImagesEditRequest(TypedDict):
 	input_fidelity: NotRequired[Literal["high", "low"]]
 	mask: NotRequired[str]
 	meta: NotRequired[bool]
-	model: NotRequired[str]
+	model: str
 	models: NotRequired[List[str]]
 	moderation: NotRequired[Literal["auto", "low"]]
 	n: NotRequired[int]
@@ -1417,7 +1417,7 @@ class ImagesEditResponse(TypedDict):
 
 class ImagesGenerationRequest(TypedDict):
 	background: NotRequired[Literal["transparent", "opaque", "auto"]]
-	model: NotRequired[str]
+	model: str
 	models: NotRequired[List[str]]
 	moderation: NotRequired[Literal["auto", "low"]]
 	n: NotRequired[int]
@@ -1457,7 +1457,7 @@ class LegacyDecisionsRequest(TypedDict):
 	images: NotRequired[List[Union[str, DecisionImage]]]
 	meta: NotRequired[bool]
 	metadata: NotRequired[Dict[str, Any]]
-	model: NotRequired[str]
+	model: str
 	models: NotRequired[List[str]]
 	provider: NotRequired[ProviderRoutingOptions]
 	questions: Dict[str, Any]
@@ -1707,7 +1707,7 @@ class ModerationsRequest(TypedDict):
 	debug: NotRequired[DebugOptions]
 	input: Union[str, List[Union[Dict[str, Any], Dict[str, Any]]]]
 	meta: NotRequired[bool]
-	model: NotRequired[str]
+	model: str
 	models: NotRequired[List[str]]
 	provider: NotRequired[ProviderRoutingOptions]
 
@@ -1723,7 +1723,7 @@ class MusicGenerateRequest(TypedDict):
 	echo_upstream_request: NotRequired[bool]
 	elevenlabs: NotRequired[Dict[str, Any]]
 	format: NotRequired[Literal["mp3", "wav", "ogg", "aac"]]
-	model: NotRequired[str]
+	model: str
 	models: NotRequired[List[str]]
 	prompt: NotRequired[str]
 	provider: NotRequired[ProviderRoutingOptions]
@@ -1938,7 +1938,7 @@ class OcrRequest(TypedDict):
 	echo_upstream_request: NotRequired[bool]
 	image: str
 	language: NotRequired[str]
-	model: NotRequired[str]
+	model: str
 	models: NotRequired[List[str]]
 	provider: NotRequired[ProviderRoutingOptions]
 
@@ -1963,7 +1963,7 @@ class OpenAIDecisionsRequest(TypedDict):
 	input: Union[str, List[DecisionInputMessage]]
 	meta: NotRequired[bool]
 	metadata: NotRequired[Dict[str, Any]]
-	model: NotRequired[str]
+	model: str
 	models: NotRequired[List[str]]
 	provider: NotRequired[ProviderRoutingOptions]
 	questions: List[Union[DecisionPredicateQuestion, OpenAIDecisionChoiceQuestion, OpenAIDecisionScoreQuestion]]
@@ -2019,7 +2019,7 @@ class ParseRequest(TypedDict):
 	debug: NotRequired[DebugOptions]
 	document: Dict[str, Any]
 	echo_upstream_request: NotRequired[bool]
-	model: NotRequired[str]
+	model: str
 	models: NotRequired[List[str]]
 	output_format: NotRequired[Literal["markdown", "blocks"]]
 	provider: NotRequired[ProviderRoutingOptions]
@@ -2378,7 +2378,7 @@ class RerankRequest(TypedDict):
 	documents: Union[List[str], List[Dict[str, Any]]]
 	max_chunks_per_doc: NotRequired[int]
 	metadata: NotRequired[Dict[str, Any]]
-	model: NotRequired[str]
+	model: str
 	models: NotRequired[List[str]]
 	provider: NotRequired[ProviderRoutingOptions]
 	provider_options: NotRequired[Dict[str, Any]]
@@ -2447,7 +2447,7 @@ class ResponsesRequest(TypedDict):
 	meta: NotRequired[bool]
 	metadata: NotRequired[Dict[str, Any]]
 	modalities: NotRequired[List[Literal["text", "image", "audio"]]]
-	model: NotRequired[str]
+	model: str
 	models: NotRequired[List[str]]
 	parallel_tool_calls: NotRequired[bool]
 	previous_response_id: NotRequired[str]
@@ -2621,7 +2621,7 @@ class VideoGenerationRequest(TypedDict):
 	input_audio_duration: NotRequired[float]
 	input_references: NotRequired[List[Union[Dict[str, Any], Dict[str, Any]]]]
 	input_video_duration: NotRequired[float]
-	model: NotRequired[str]
+	model: str
 	models: NotRequired[List[str]]
 	negative_prompt: NotRequired[str]
 	output: NotRequired[VideoOutputConfig]

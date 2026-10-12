@@ -291,26 +291,6 @@ describe("beforeRequest request model fallbacks", () => {
 		}
 	});
 
-	it("uses the first models entry as the primary model when model is omitted", async () => {
-		const rawBody = { models: ["openai/gpt-5-nano", "openai/gpt-4.1-mini", "openai/gpt-5-nano"], input: "hi" };
-		guardJsonMock.mockResolvedValue({ ok: true, value: rawBody });
-		guardZodMock.mockImplementation((_schema: unknown, body: unknown) => ({ ok: true, value: body }));
-		guardModelMock.mockImplementation((body: any) => ({ ok: true, value: { body, model: body.model, stream: false } }));
-		guardContextMock.mockResolvedValue(contextFor("openai/gpt-5-nano"));
-
-		const result = await beforeRequest(request(rawBody), "responses", new Timer(), null);
-
-		expect(result.ok).toBe(true);
-		expect(guardZodMock.mock.calls[0]?.[1]).toEqual({ model: "openai/gpt-5-nano", input: "hi" });
-		if (result.ok) {
-			expect(result.ctx.model).toBe("openai/gpt-5-nano");
-			expect(result.ctx.routingDiagnostics?.requestModelFallbacks).toEqual({
-				requested: rawBody.models,
-				models: ["openai/gpt-4.1-mini"],
-			});
-		}
-	});
-
 	it("accepts the maximum of 25 models entries", async () => {
 		const models = Array.from({ length: 25 }, (_, i) => `openai/model-${i}`);
 		const rawBody = { model: "openai/gpt-4.1-mini", models, input: "hi" };
@@ -324,24 +304,14 @@ describe("beforeRequest request model fallbacks", () => {
 		if (result.ok) expect(result.ctx.routingDiagnostics?.requestModelFallbacks?.models).toEqual(models);
 	});
 
-	it("leaves a non-string model for schema validation instead of replacing it", async () => {
-		const rawBody = { model: 42, models: ["openai/gpt-5-nano"], input: "hi" };
-		guardJsonMock.mockResolvedValue({ ok: true, value: rawBody });
-		guardZodMock.mockReturnValue({ ok: false, response: new Response(null, { status: 400 }) });
-
-		const result = await beforeRequest(request(rawBody), "responses", new Timer(), null);
-
-		expect(result.ok).toBe(false);
-		expect(guardZodMock.mock.calls[0]?.[1]).toEqual({ model: 42, input: "hi" });
-	});
-
 	it.each([
 		[{ model: "openai/gpt-4.1-mini", models: "openai/gpt-5-nano" }, "invalid_models"],
 		[{ model: "openai/gpt-4.1-mini", models: [] }, "invalid_models"],
 		[{ model: "openai/gpt-4.1-mini", models: [""] }, "invalid_models"],
 		[{ model: "openai/gpt-4.1-mini", models: Array.from({ length: 26 }, (_, i) => `m/${i}`) }, "too_many_models"],
 		[{ model: "phaseo/auto", models: ["openai/gpt-5-nano"] }, "models_not_supported_with_auto_router"],
-		[{ models: ["phaseo/auto", "openai/gpt-5-nano"] }, "models_not_supported_with_auto_router"],
+		[{ models: ["openai/gpt-5-nano"] }, "model_required_with_models"],
+		[{ model: 42, models: ["openai/gpt-5-nano"] }, "model_required_with_models"],
 		[{ model: "openai/gpt-4.1-mini", models: ["phaseo/auto"] }, "auto_router_not_allowed_in_models"],
 	])("rejects invalid models with a 400 before routing (%j)", async (rawBody, reason) => {
 		guardJsonMock.mockResolvedValue({ ok: true, value: rawBody });

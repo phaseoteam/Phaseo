@@ -225,6 +225,49 @@ Os nós de modelo em uma rota dinâmica também podem definir uma lista ordenada
 
 Cada alternativa é verificada de forma independente em relação às restrições de modelos do espaço de trabalho, aos guardrails, à política de provedores, aos preços e ao suporte de recursos. Uma rota pode armazenar até oito modelos alternativos.
 
+<span id="request-level-model-fallbacks"></span>
+### Modelos alternativos no nível da solicitação
+
+`model` é obrigatório e é sempre o modelo principal. Adicione o array opcional `models` para listar modelos alternativos para uma única solicitação. A Phaseo tenta primeiro `model` e, depois, cada entrada de `models`, na ordem:
+
+```json
+{
+  "model": "openai/gpt-5-mini",
+  "models": ["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"],
+  "input": "Summarize this incident report."
+}
+```
+
+Uma solicitação que envia `models` sem `model` é rejeitada com `400`. As alternativas no nível da solicitação usam o mesmo mecanismo das alternativas de rotas dinâmicas:
+
+- **Gatilhos.** O próximo modelo só é tentado quando a tentativa anterior, depois das próprias novas tentativas com provedores, termina com `429`, `500`, `502`, `503` ou `504`. Erros do cliente, como `400`, `401`, `402`, `403`, `404`, `408`, `413` e `422`, são retornados sem trocar de modelo. Um `429` causado por um orçamento da Phaseo ou pela cota de um modelo gratuito atingidos durante a execução da solicitação também passa para o próximo modelo, porque outro modelo pode caber no limite restante. Autenticação, limites de taxa de chaves de API e outras verificações que falham antes da execução do modelo principal retornam imediatamente.
+- **Limites.** `models` aceita de 1 a 25 entradas. Entradas duplicadas e entradas iguais a `model` são ignoradas. Rotas dinâmicas mantêm o próprio limite de oito alternativas.
+- **Validação.** Cada entrada pode ser um ID de modelo, um ID de modelo qualificado por provedor ou uma predefinição como `@support`. Cada tentativa é validada como uma solicitação própria: suporte ao endpoint e à modalidade, parâmetros solicitados, restrições de modelos do espaço de trabalho, guardrails, predefinições, preços e credenciais BYOK. Uma alternativa que não consegue atender à solicitação é ignorada e registrada nos logs de solicitações; ela nunca substitui o erro que você receberia de outra forma. Uma alternativa que resulta em uma tentativa já feita, com o mesmo modelo e os mesmos provedores elegíveis, é ignorada.
+- **Logs e cobrança.** Cada tentativa é uma solicitação separada nos seus logs, com uso e registro de cobrança próprios, então cada tentativa é cobrada exatamente como seria sem alternativas.
+- **Qual modelo atendeu à solicitação.** O campo `model` da resposta mostra o modelo que atendeu à solicitação. O rastro de roteamento lista o ID da solicitação principal, a ordem das alternativas e cada tentativa anterior com seu status.
+- **Streaming.** As alternativas só são usadas antes do envio do primeiro byte. Um erro que ocorre depois do início de um stream é retornado nesse mesmo stream.
+- **Vídeo e música.** Essas solicitações só recorrem a alternativas durante o envio do job. Depois que um provedor aceita um job, uma falha posterior não inicia um novo job com outro modelo.
+
+`models` interage com outros controles de roteamento da seguinte forma:
+
+- **Rotas dinâmicas.** As alternativas configuradas em uma rota dinâmica associada têm precedência sobre `models`. Um modelo fixo selecionado por uma rota dinâmica continua valendo para cada tentativa.
+- **Predefinições.** Uma predefinição pode ser o `model` principal ou uma entrada de `models`. Cada tentativa aplica as restrições da própria predefinição, então uma predefinição pode restringir os provedores que uma alternativa pode usar.
+- **Roteamento automático.** `phaseo/auto` já gerencia alternativas classificadas, por isso não pode ser combinado com `models` nem aparecer dentro de `models`.
+
+| Endpoint | Suporte a `models` |
+| --- | --- |
+| Chat Completions, Responses, Messages | Compatível, incluindo streaming antes do primeiro byte |
+| Embeddings, Moderations, Rerank | Compatível |
+| Geração e edição de imagens | Compatível, incluindo uploads multipart |
+| Fala, transcrições e traduções | Compatível, incluindo uploads multipart |
+| OCR, Parse, Decisions | Compatível |
+| Geração de vídeo e música | Compatível no envio do job |
+| Lotes | Rejeitado com `400`; cada linha do lote usa um único modelo |
+| Sessões em tempo real e ao vivo | Rejeitado com `400`; uma sessão fica vinculada a um único modelo |
+| Execuções do Council | Rejeitado com `400`; os modelos vêm da configuração da execução |
+
+Endpoints multipart aceitam campos `models` repetidos, campos `models[]` ou uma única string com um array JSON.
+
 Saiba mais:
 
 - [Limites de taxa](../api-reference/limits.mdx)

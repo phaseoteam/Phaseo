@@ -22,6 +22,7 @@ Die Parameterunterstützung variiert weiterhin je nach Endpunkt, Modell und Anbi
 | Parameter | Typ | Zweck |
 | --- | --- | --- |
 | [`model`](#model) | `string` | Auswahl der auszuführenden Gateway-Modell-ID. |
+| [`models`](#models) | `string[]` | Angabe geordneter Fallback-Modelle, die bei wiederholbaren Fehlern nach `model` versucht werden. |
 | [`stream`](#stream) | `boolean` | Schrittweise SSE-Ausgabe statt einer einzelnen vollständigen Antwort. |
 | [`temperature`](#temperature) | `number` | Zufälligkeit erhöhen oder verringern. |
 | [`top_p`](#top_p) | `number` | Den Pool für Nucleus Sampling verkleinern oder erweitern. |
@@ -84,6 +85,20 @@ Wählt die Gateway-Modell-ID für die Anfrage aus.
 | Beispiel | `openai/gpt-5-nano` |
 
 Verwende die kanonische Modell-ID aus dem Schnellstart der jeweiligen Modellseite, es sei denn, du möchtest bewusst einen unterstützten Alias nutzen. Kanonische IDs sind die sicherste Wahl für Beispiele, Automatisierung und langfristige Integrationen.
+
+<span id="models"></span>
+<h3 id="parameter-models"><code>models</code></h3>
+
+Listet optionale Fallback-Modelle auf, die in der angegebenen Reihenfolge nach `model` versucht werden. `model` ist erforderlich und immer das primäre Modell. Der nächste Eintrag wird nur versucht, wenn ein Versuch mit `429`, `500`, `502`, `503` oder `504` fehlschlägt.
+
+| Feld | Wert |
+| --- | --- |
+| Typ | `string[]` |
+| Erforderlich | Nein. Eine Anfrage mit `models` muss auch `model` festlegen. |
+| Limits | 1 bis 25 Einträge. Duplikate und Einträge, die `model` entsprechen, werden ignoriert. |
+| Beispiel | `["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"]` |
+
+Jeder Versuch wird als eigene Anfrage validiert, protokolliert und abgerechnet. Das Feld `model` der Antwort und der Routing-Trace zeigen das Modell, das die Anfrage bedient hat. Streaming-Anfragen greifen nur vor dem ersten Byte auf Fallbacks zurück, Video- und Musik-Jobs nur bei der Übermittlung. Fallbacks einer zugeordneten dynamischen Route haben Vorrang, Voreinstellungen werden als Einträge akzeptiert und `phaseo/auto` kann nicht mit `models` kombiniert werden. Batch-, Realtime- und Council-Anfragen lehnen `models` mit `400` ab. Multipart-Endpunkte akzeptieren wiederholte `models`-Felder, `models[]`-Felder oder ein einzelnes JSON-Array. Unter [Fallback-Modelle auf Anfrageebene](../guides/routing-and-fallbacks.mdx#request-level-model-fallbacks) findest du Details zu Priorität, Validierung, Streaming und Abrechnung.
 
 <span id="stream"></span>
 <h3 id="parameter-stream"><code>stream</code></h3>

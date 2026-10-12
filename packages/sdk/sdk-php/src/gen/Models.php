@@ -109,7 +109,7 @@ class AnthropicMessagesRequest
 	public $meta;
 	/** @var array<string, mixed>|null */
 	public $metadata;
-	/** @var string|null */
+	/** @var string */
 	public $model;
 	/** @var array|null */
 	public $models;
@@ -541,7 +541,7 @@ class AudioSpeechRequest
 	public $format;
 	/** @var string */
 	public $input;
-	/** @var string|null */
+	/** @var string */
 	public $model;
 	/** @var array|null */
 	public $models;
@@ -567,7 +567,7 @@ class AudioTranscriptionRequest
 	public $known_speaker_references;
 	/** @var string|null */
 	public $language;
-	/** @var string|null */
+	/** @var string */
 	public $model;
 	/** @var array|null */
 	public $models;
@@ -589,7 +589,7 @@ class AudioTranslationRequest
 	public $audio_url;
 	/** @var string|null */
 	public $language;
-	/** @var string|null */
+	/** @var string */
 	public $model;
 	/** @var array|null */
 	public $models;
@@ -983,7 +983,7 @@ class ChatCompletionsRequest
 	public $metadata;
 	/** @var array|null */
 	public $modalities;
-	/** @var string|null */
+	/** @var string */
 	public $model;
 	/** @var array|null */
 	public $models;
@@ -1429,7 +1429,7 @@ class DecisionsRequest
 	public $meta;
 	/** @var array<string, mixed>|null */
 	public $metadata;
-	/** @var string|null */
+	/** @var string */
 	public $model;
 	/** @var array|null */
 	public $models;
@@ -1697,7 +1697,7 @@ class EmbeddingsRequest
 	public $encoding_format;
 	/** @var string|array|array<string, mixed> */
 	public $input;
-	/** @var string|null */
+	/** @var string */
 	public $model;
 	/** @var array|null */
 	public $models;
@@ -2759,7 +2759,7 @@ class ImagesEditRequest
 	public $mask;
 	/** @var bool|null */
 	public $meta;
-	/** @var string|null */
+	/** @var string */
 	public $model;
 	/** @var array|null */
 	public $models;
@@ -2803,7 +2803,7 @@ class ImagesGenerationRequest
 {
 	/** @var string|null */
 	public $background;
-	/** @var string|null */
+	/** @var string */
 	public $model;
 	/** @var array|null */
 	public $models;
@@ -2881,7 +2881,7 @@ class LegacyDecisionsRequest
 	public $meta;
 	/** @var array<string, mixed>|null */
 	public $metadata;
-	/** @var string|null */
+	/** @var string */
 	public $model;
 	/** @var array|null */
 	public $models;
@@ -3371,7 +3371,7 @@ class ModerationsRequest
 	public $input;
 	/** @var bool|null */
 	public $meta;
-	/** @var string|null */
+	/** @var string */
 	public $model;
 	/** @var array|null */
 	public $models;
@@ -3403,7 +3403,7 @@ class MusicGenerateRequest
 	public $elevenlabs;
 	/** @var string|null */
 	public $format;
-	/** @var string|null */
+	/** @var string */
 	public $model;
 	/** @var array|null */
 	public $models;
@@ -3831,7 +3831,7 @@ class OcrRequest
 	public $image;
 	/** @var string|null */
 	public $language;
-	/** @var string|null */
+	/** @var string */
 	public $model;
 	/** @var array|null */
 	public $models;
@@ -3879,7 +3879,7 @@ class OpenAIDecisionsRequest
 	public $meta;
 	/** @var array<string, mixed>|null */
 	public $metadata;
-	/** @var string|null */
+	/** @var string */
 	public $model;
 	/** @var array|null */
 	public $models;
@@ -3983,7 +3983,7 @@ class ParseRequest
 	public $document;
 	/** @var bool|null */
 	public $echo_upstream_request;
-	/** @var string|null */
+	/** @var string */
 	public $model;
 	/** @var array|null */
 	public $models;
@@ -4691,7 +4691,7 @@ class RerankRequest
 	public $max_chunks_per_doc;
 	/** @var array<string, mixed>|null */
 	public $metadata;
-	/** @var string|null */
+	/** @var string */
 	public $model;
 	/** @var array|null */
 	public $models;
@@ -4827,7 +4827,7 @@ class ResponsesRequest
 	public $metadata;
 	/** @var array|null */
 	public $modalities;
-	/** @var string|null */
+	/** @var string */
 	public $model;
 	/** @var array|null */
 	public $models;
@@ -5167,7 +5167,7 @@ class VideoGenerationRequest
 	public $input_references;
 	/** @var float|null */
 	public $input_video_duration;
-	/** @var string|null */
+	/** @var string */
 	public $model;
 	/** @var array|null */
 	public $models;
