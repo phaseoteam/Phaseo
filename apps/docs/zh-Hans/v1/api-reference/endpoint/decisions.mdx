@@ -114,7 +114,7 @@ Jev 支持在同一请求中混合全部三种问题类型；Span-01 仅支持 `
 
 ### 使用 Clef 进行图像决策
 
-`cloudflare/clef` 和 `cloudflare/clef-flash` 通过 Cloudflare Workers AI 支持全部三种问题类型及嵌入图像。Clef 的上下文为 65,536 个令牌，Clef Flash 为 24,576 个令牌。每百万输入令牌费用分别为 $0.24 和 $0.038。
+`cloudflare/clef` 和 `cloudflare/clef-flash` 通过 Cloudflare Workers AI 支持全部三种问题类型及嵌入图像。Clef 的上下文为 65,536 个 token，Clef Flash 为 24,576 个 token。每百万输入 token 费用分别为 $0.24 和 $0.038。
 
 ```json
 {
@@ -156,4 +156,4 @@ Clef 最多接受 64 个问题，ID 最多 100 个字母、数字、下划线、
 
 Omni 最多接受四段音频（每段 8 MiB、300 秒）和两段视频（每段 16 MiB、60 秒），音频与视频解码后合计不超过 16 MiB。Omni 保留上述每张图像及图像合计的限制；其请求体限制取代 Clef/Flash 的 13 MiB 限制。Phaseo 将完整的 Omni 请求体限制为 37 MiB。Cloudflare 会验证媒体编码、图像尺寸和片段时长，并以每秒两帧采样视频。当每段视频都包含音轨时，会使用音轨。
 
-根据文档，Omni 的上下文为 64,000 个令牌，每百万聚合输入令牌收费 $0.15。媒体令牌计入上下文和费用，输出免费。Phaseo 按 Cloudflare 报告的输入用量结算，不另收音频或视频费用。请参阅 [Cloudflare 的 Omni 约定](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json)。
+根据文档，Omni 的上下文为 64,000 个 token，每百万聚合输入 token 收费 $0.15。媒体 token 计入上下文和费用，输出免费。Phaseo 按 Cloudflare 报告的输入用量结算，不另收音频或视频费用。请参阅 [Cloudflare 的 Omni 约定](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json)。

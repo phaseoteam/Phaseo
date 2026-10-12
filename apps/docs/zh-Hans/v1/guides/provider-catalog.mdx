@@ -71,7 +71,7 @@ V1.1 声明 `"schema_version": "1.1"`，并在每个模型中发布 `service_tie
 
 ## 声明速率限制
 
-在可选的顶层数组 `rate_limits` 中声明你的平台对 Phaseo 账户施加的请求数和令牌数上限。该数组在 V1 和 V1.1 文档中的用法相同。省略 `model` 表示该限制适用于你的所有模型，也可以将其设为同一文档中任一模型或层级的上游 `provider_model_slug`。
+在可选的顶层数组 `rate_limits` 中声明你的平台对 Phaseo 账户施加的请求数和 token 数上限。该数组在 V1 和 V1.1 文档中的用法相同。省略 `model` 表示该限制适用于你的所有模型，也可以将其设为同一文档中任一模型或层级的上游 `provider_model_slug`。
 
 ```json
 {

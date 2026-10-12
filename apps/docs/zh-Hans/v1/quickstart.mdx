@@ -308,7 +308,7 @@ console.log(result.text);
 应用需要带类型的答案而非生成文本时，请使用 `POST /v1/decisions`。Phaseo 提供 TypeSafe 的 Jev 1.13，模型 ID 为 `typesafe/jev-1.13.0`。发送 `state` 值和一个或多个具名问题；每个答案都以相同名称返回。
 
 <Note>
-Decisions 是测试版功能，可能需要在工作区启用。Jev 1.13 按每百万输入令牌 $0.042 计费；输出令牌免费。
+Decisions 是测试版功能，可能需要在工作区启用。Jev 1.13 按每百万输入 token $0.042 计费；输出 token 免费。
 </Note>
 
 请在设置了 `PHASEO_API_KEY` 的服务器上运行这些示例。切勿在浏览器代码中暴露 Gateway API 密钥。
