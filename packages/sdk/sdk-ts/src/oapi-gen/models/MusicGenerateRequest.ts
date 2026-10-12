@@ -20,7 +20,7 @@ export interface MusicGenerateRequest {
     with_timestamps?: boolean;
   };
   format?: "mp3" | "wav" | "ogg" | "aac";
-  model: string;
+  model?: string;
   models?: string[];
   prompt?: string;
   provider?: {

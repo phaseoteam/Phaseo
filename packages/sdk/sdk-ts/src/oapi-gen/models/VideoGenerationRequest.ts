@@ -31,7 +31,7 @@ export interface VideoGenerationRequest {
       }
   )[];
   input_video_duration?: number;
-  model: string;
+  model?: string;
   models?: string[];
   negative_prompt?: string;
   output?: {

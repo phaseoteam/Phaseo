@@ -9,7 +9,7 @@ export interface OcrRequest {
   echo_upstream_request?: boolean;
   image: string;
   language?: string;
-  model: string;
+  model?: string;
   models?: string[];
   provider?: {
     allow_fallbacks?: boolean | null;

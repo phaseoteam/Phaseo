@@ -99,7 +99,7 @@ export interface EmbeddingsRequest {
             )[];
           }
       )[];
-  model: string;
+  model?: string;
   models?: string[];
   provider?: {
     allow_fallbacks?: boolean | null;

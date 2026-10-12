@@ -9372,15 +9372,16 @@ components:
     ModelFallbacks:
       type: array
       minItems: 1
-      maxItems: 8
+      maxItems: 25
       items:
         type: string
         minLength: 1
       description: >-
-        Ordered fallback model IDs or presets tried after `model` when the
-        primary attempt fails with `429`, `500`, `502`, `503`, or `504`. `model`
-        is still required and is always tried first. Duplicates and entries
-        equal to `model` are ignored. Each fallback reruns the full request
+        Ordered model IDs or presets to try. When `model` is set it is tried
+        first and `models` lists the fallbacks; when `model` is omitted the
+        first entry is tried first. Later entries run in order after a `429`,
+        `500`, `502`, `503`, or `504`. Duplicates and entries equal to the
+        primary model are ignored. Each fallback reruns the full request
         pipeline, including capability, policy, guardrail, pricing, and BYOK
         checks, and a fallback that cannot serve the request is skipped.
         Streaming requests fall back only before the first byte is sent, and
@@ -9393,10 +9394,12 @@ components:
     ChatCompletionsRequest:
       type: object
       required:
-        - model
         - messages
       properties:
         model:
+          description: >-
+            Model to run first. Required unless `models` is set, in which case
+            the first `models` entry is used.
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
@@ -10172,11 +10175,13 @@ components:
     AnthropicMessagesRequest:
       type: object
       required:
-        - model
         - messages
         - max_tokens
       properties:
         model:
+          description: >-
+            Model to run first. Required unless `models` is set, in which case
+            the first `models` entry is used.
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
@@ -10375,10 +10380,12 @@ components:
     ResponsesRequest:
       type: object
       required:
-        - model
         - input
       properties:
         model:
+          description: >-
+            Model to run first. Required unless `models` is set, in which case
+            the first `models` entry is used.
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
@@ -10835,10 +10842,12 @@ components:
     EmbeddingsRequest:
       type: object
       required:
-        - model
         - input
       properties:
         model:
+          description: >-
+            Model to run first. Required unless `models` is set, in which case
+            the first `models` entry is used.
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
@@ -10920,10 +10929,12 @@ components:
     ModerationsRequest:
       type: object
       required:
-        - model
         - input
       properties:
         model:
+          description: >-
+            Model to run first. Required unless `models` is set, in which case
+            the first `models` entry is used.
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
@@ -10999,11 +11010,13 @@ components:
     RerankRequest:
       type: object
       required:
-        - model
         - query
         - documents
       properties:
         model:
+          description: >-
+            Model to run first. Required unless `models` is set, in which case
+            the first `models` entry is used.
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
@@ -11099,14 +11112,15 @@ components:
     OpenAIDecisionsRequest:
       type: object
       required:
-        - model
         - input
         - questions
       properties:
         model:
           type: string
           minLength: 1
-          description: Canonical Phaseo model id or provider model alias.
+          description: >-
+            Canonical Phaseo model id or provider model alias. Required unless
+            `models` is set, in which case the first `models` entry is used.
         models:
           $ref: '#/components/schemas/ModelFallbacks'
         input:
@@ -11383,13 +11397,14 @@ components:
         questions.
       type: object
       required:
-        - model
         - state
         - questions
       properties:
         model:
           type: string
-          description: Canonical Phaseo model id or provider model alias.
+          description: >-
+            Canonical Phaseo model id or provider model alias. Required unless
+            `models` is set, in which case the first `models` entry is used.
           default: typesafe/jev-1.13.0
         models:
           $ref: '#/components/schemas/ModelFallbacks'
@@ -11924,10 +11939,12 @@ components:
     AudioSpeechRequest:
       type: object
       required:
-        - model
         - input
       properties:
         model:
+          description: >-
+            Model to run first. Required unless `models` is set, in which case
+            the first `models` entry is used.
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
@@ -11972,10 +11989,11 @@ components:
                       type: number
     AudioTranscriptionRequest:
       type: object
-      required:
-        - model
       properties:
         model:
+          description: >-
+            Model to run first. Required unless `models` is set, in which case
+            the first `models` entry is used.
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
@@ -12028,10 +12046,11 @@ components:
           type: string
     AudioTranslationRequest:
       type: object
-      required:
-        - model
       properties:
         model:
+          description: >-
+            Model to run first. Required unless `models` is set, in which case
+            the first `models` entry is used.
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
@@ -12058,10 +12077,12 @@ components:
     ImagesGenerationRequest:
       type: object
       required:
-        - model
         - prompt
       properties:
         model:
+          description: >-
+            Model to run first. Required unless `models` is set, in which case
+            the first `models` entry is used.
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
@@ -12133,11 +12154,13 @@ components:
     ImagesEditRequest:
       type: object
       required:
-        - model
         - image
         - prompt
       properties:
         model:
+          description: >-
+            Model to run first. Required unless `models` is set, in which case
+            the first `models` entry is used.
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
@@ -12226,10 +12249,12 @@ components:
     VideoGenerationRequest:
       type: object
       required:
-        - model
         - prompt
       properties:
         model:
+          description: >-
+            Model to run first. Required unless `models` is set, in which case
+            the first `models` entry is used.
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
@@ -12973,10 +12998,12 @@ components:
     OcrRequest:
       type: object
       required:
-        - model
         - image
       properties:
         model:
+          description: >-
+            Model to run first. Required unless `models` is set, in which case
+            the first `models` entry is used.
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
@@ -13140,10 +13167,12 @@ components:
       type: object
       additionalProperties: false
       required:
-        - model
         - document
       properties:
         model:
+          description: >-
+            Model to run first. Required unless `models` is set, in which case
+            the first `models` entry is used.
           type: string
           example: cohere/parse-v5.0
         models:
@@ -13209,10 +13238,11 @@ components:
           additionalProperties: true
     MusicGenerateRequest:
       type: object
-      required:
-        - model
       properties:
         model:
+          description: >-
+            Model to run first. Required unless `models` is set, in which case
+            the first `models` entry is used.
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'

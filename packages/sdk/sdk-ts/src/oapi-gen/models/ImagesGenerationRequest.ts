@@ -1,6 +1,6 @@
 export interface ImagesGenerationRequest {
   background?: "transparent" | "opaque" | "auto";
-  model: string;
+  model?: string;
   models?: string[];
   moderation?: "auto" | "low";
   n?: number;

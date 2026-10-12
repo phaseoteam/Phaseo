@@ -4,7 +4,7 @@ export interface ImagesEditRequest {
   input_fidelity?: "high" | "low";
   mask?: string;
   meta?: boolean;
-  model: string;
+  model?: string;
   models?: string[];
   moderation?: "auto" | "low";
   n?: number;

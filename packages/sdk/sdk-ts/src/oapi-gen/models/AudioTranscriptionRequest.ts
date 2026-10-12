@@ -12,7 +12,7 @@ export interface AudioTranscriptionRequest {
   known_speaker_names?: string[];
   known_speaker_references?: string[];
   language?: string;
-  model: string;
+  model?: string;
   models?: string[];
   provider?: {
     allow_fallbacks?: boolean | null;

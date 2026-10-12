@@ -38,7 +38,7 @@ export interface ResponsesRequest {
     [key: string]: string;
   };
   modalities?: ("text" | "image" | "audio")[];
-  model: string;
+  model?: string;
   models?: string[];
   parallel_tool_calls?: boolean;
   previous_response_id?: string;

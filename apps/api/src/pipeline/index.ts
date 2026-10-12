@@ -21,6 +21,8 @@ import {
 
 const EARLY_OBSERVABILITY_BODY_LIMIT_BYTES = 256 * 1024;
 const MODEL_FALLBACK_STATUSES = new Set([429, 500, 502, 503, 504]);
+// Dynamic routes store at most eight fallbacks; the auto-router is capped to match.
+const CONFIGURED_MODEL_FALLBACK_LIMIT = 8;
 let autoRouterClassifierHandler: ReturnType<typeof makeEndpointHandler> | null = null;
 
 function getAutoRouterClassifierHandler() {
@@ -31,11 +33,11 @@ function getAutoRouterClassifierHandler() {
 type ModelFallbackSource = "dynamic_route" | "request" | "auto_router";
 type ModelFallbackAttempt = { model: string; status: number | null; stage: "before" | "execute" | "skipped" };
 
-function cleanFallbackModels(values: unknown, primaryModel: string | null): string[] {
+function cleanFallbackModels(values: unknown, primaryModel: string | null, limit: number): string[] {
 	if (!Array.isArray(values)) return [];
 	return [...new Set(values.filter((value): value is string => typeof value === "string" && value.trim().length > 0))]
 		.filter((value) => value !== primaryModel)
-		.slice(0, MAX_REQUEST_MODEL_FALLBACKS);
+		.slice(0, limit);
 }
 
 // Workspace dynamic-route fallbacks are operator policy and take precedence
@@ -53,7 +55,9 @@ function configuredModelFallbacks(ctx: { model: string; routingDiagnostics?: Rec
 		// Request entries were already deduped against the requested model; a
 		// provider-qualified or preset entry may resolve to the same model ID
 		// with different routing, so it is not dropped here.
-		const models = cleanFallbackModels(values, source === "request" ? null : ctx.model);
+		const models = source === "request"
+			? cleanFallbackModels(values, null, MAX_REQUEST_MODEL_FALLBACKS)
+			: cleanFallbackModels(values, ctx.model, CONFIGURED_MODEL_FALLBACK_LIMIT);
 		if (models.length) return { source, models };
 	}
 	return null;

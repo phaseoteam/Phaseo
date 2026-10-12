@@ -238,6 +238,37 @@ describe("request-level models fallbacks", () => {
 		expect(beforeRequestMock).toHaveBeenCalledTimes(2);
 	});
 
+	it("tries every request fallback beyond the dynamic-route limit of eight", async () => {
+		const fallbacks = Array.from({ length: 12 }, (_, i) => `fallback/model-${i}`);
+		beforeRequestMock.mockResolvedValueOnce({ ok: true, ctx: requestContext("primary/model", fallbacks) });
+		for (const model of fallbacks) beforeRequestMock.mockResolvedValueOnce({ ok: true, ctx: requestContext(model) });
+		for (let i = 0; i < 12; i += 1) runnerMock.mockResolvedValueOnce(new Response("unavailable", { status: 503 }));
+		runnerMock.mockResolvedValueOnce(new Response("ok", { status: 200 }));
+
+		const response = await makeEndpointHandler({ endpoint: "responses", schema: null })(post());
+
+		expect(response.status).toBe(200);
+		expect(runnerMock).toHaveBeenCalledTimes(13);
+		expect(runnerMock.mock.calls[12]?.[0].pre.ctx.model).toBe("fallback/model-11");
+	});
+
+	it("keeps dynamic-route fallbacks capped at eight", async () => {
+		const routeFallbacks = Array.from({ length: 12 }, (_, i) => `route/model-${i}`);
+		beforeRequestMock.mockResolvedValueOnce({
+			ok: true,
+			ctx: requestContext("primary/model", [], {
+				routingDiagnostics: { dynamicRoute: { action: { modelFallbacks: routeFallbacks } } },
+			}),
+		});
+		for (const model of routeFallbacks) beforeRequestMock.mockResolvedValueOnce({ ok: true, ctx: requestContext(model) });
+		runnerMock.mockResolvedValue(new Response("unavailable", { status: 503 }));
+
+		const response = await makeEndpointHandler({ endpoint: "responses", schema: null })(post());
+
+		expect(response.status).toBe(503);
+		expect(runnerMock).toHaveBeenCalledTimes(9);
+	});
+
 	it("returns the last failure once every fallback is exhausted", async () => {
 		beforeRequestMock
 			.mockResolvedValueOnce({ ok: true, ctx: requestContext("primary/model", ["fallback/model"]) })

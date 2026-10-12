@@ -333,6 +333,10 @@ export async function beforeRequest(
             };
         }
         rawBody = withoutRequestModelFallbacks(rawBody);
+        // `models` alone is allowed: its first entry becomes the primary model.
+        if (parsedModelFallbacks.primary && rawBody?.model !== parsedModelFallbacks.primary) {
+            rawBody = { ...rawBody, model: parsedModelFallbacks.primary };
+        }
     }
     // Guardrails replace rawBody with redacted clones; fallbacks re-send this original.
     const retryRawBody = rawBody;

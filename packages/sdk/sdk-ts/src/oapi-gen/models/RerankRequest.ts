@@ -15,7 +15,7 @@ export interface RerankRequest {
   metadata?: {
     [key: string]: string;
   };
-  model: string;
+  model?: string;
   models?: string[];
   provider?: {
     allow_fallbacks?: boolean | null;

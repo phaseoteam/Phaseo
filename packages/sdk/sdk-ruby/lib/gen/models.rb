@@ -84,7 +84,7 @@ module Phaseo
     # @!attribute [rw] metadata
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] model
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     # @!attribute [rw] provider
@@ -437,7 +437,7 @@ module Phaseo
     # @!attribute [rw] input
     #   @return [String]
     # @!attribute [rw] model
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     # @!attribute [rw] provider
@@ -460,7 +460,7 @@ module Phaseo
     # @!attribute [rw] language
     #   @return [String, nil]
     # @!attribute [rw] model
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     # @!attribute [rw] provider
@@ -476,7 +476,7 @@ module Phaseo
     # @!attribute [rw] language
     #   @return [String, nil]
     # @!attribute [rw] model
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     # @!attribute [rw] prompt
@@ -821,7 +821,7 @@ module Phaseo
     # @!attribute [rw] modalities
     #   @return [Array<String>, nil]
     # @!attribute [rw] model
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     # @!attribute [rw] parallel_tool_calls
@@ -1167,7 +1167,7 @@ module Phaseo
     # @!attribute [rw] metadata
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] model
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     # @!attribute [rw] provider
@@ -1369,7 +1369,7 @@ module Phaseo
     # @!attribute [rw] input
     #   @return [String, Array<Integer>, Hash{String => Object}, Array<String, Array<Integer>, Hash{String => Object}>]
     # @!attribute [rw] model
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     # @!attribute [rw] provider
@@ -2237,7 +2237,7 @@ module Phaseo
     # @!attribute [rw] meta
     #   @return [Boolean, nil]
     # @!attribute [rw] model
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     # @!attribute [rw] moderation
@@ -2275,7 +2275,7 @@ module Phaseo
     # @!attribute [rw] background
     #   @return [String, nil]
     # @!attribute [rw] model
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     # @!attribute [rw] moderation
@@ -2340,7 +2340,7 @@ module Phaseo
     # @!attribute [rw] metadata
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] model
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     # @!attribute [rw] provider
@@ -2746,7 +2746,7 @@ module Phaseo
     # @!attribute [rw] meta
     #   @return [Boolean, nil]
     # @!attribute [rw] model
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     # @!attribute [rw] provider
@@ -2772,7 +2772,7 @@ module Phaseo
     # @!attribute [rw] format
     #   @return [String, nil]
     # @!attribute [rw] model
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     # @!attribute [rw] prompt
@@ -3130,7 +3130,7 @@ module Phaseo
     # @!attribute [rw] language
     #   @return [String, nil]
     # @!attribute [rw] model
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     # @!attribute [rw] provider
@@ -3166,7 +3166,7 @@ module Phaseo
     # @!attribute [rw] metadata
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] model
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     # @!attribute [rw] provider
@@ -3245,7 +3245,7 @@ module Phaseo
     # @!attribute [rw] echo_upstream_request
     #   @return [Boolean, nil]
     # @!attribute [rw] model
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     # @!attribute [rw] output_format
@@ -3811,7 +3811,7 @@ module Phaseo
     # @!attribute [rw] metadata
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] model
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     # @!attribute [rw] provider
@@ -3922,7 +3922,7 @@ module Phaseo
     # @!attribute [rw] modalities
     #   @return [Array<String>, nil]
     # @!attribute [rw] model
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     # @!attribute [rw] parallel_tool_calls
@@ -4196,7 +4196,7 @@ module Phaseo
     # @!attribute [rw] input_video_duration
     #   @return [Float, nil]
     # @!attribute [rw] model
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     # @!attribute [rw] negative_prompt

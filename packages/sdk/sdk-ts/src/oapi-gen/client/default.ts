@@ -889,7 +889,7 @@ export type CreateAnthropicMessageParams = {
     metadata?: {
       [key: string]: unknown;
     };
-    model: string;
+    model?: string;
     models?: string[];
     provider?: {
       allow_fallbacks?: boolean | null;
@@ -2081,7 +2081,7 @@ export type CreateChatCompletionParams = {
       [key: string]: string;
     };
     modalities?: ("text" | "image" | "audio")[];
-    model: string;
+    model?: string;
     models?: string[];
     parallel_tool_calls?: boolean;
     presence_penalty?: number;
@@ -2941,7 +2941,7 @@ export type CreateEmbeddingParams = {
               )[];
             }
         )[];
-    model: string;
+    model?: string;
     models?: string[];
     provider?: {
       allow_fallbacks?: boolean | null;
@@ -3371,7 +3371,7 @@ export type CreateImageParams = {
   headers?: Record<string, never>;
   body?: {
     background?: "transparent" | "opaque" | "auto";
-    model: string;
+    model?: string;
     models?: string[];
     moderation?: "auto" | "low";
     n?: number;
@@ -3468,7 +3468,7 @@ export type CreateImageEditParams = {
     input_fidelity?: "high" | "low";
     mask?: string;
     meta?: boolean;
-    model: string;
+    model?: string;
     models?: string[];
     moderation?: "auto" | "low";
     n?: number;
@@ -3656,7 +3656,7 @@ export type CreateModerationParams = {
             }
         )[];
     meta?: boolean;
-    model: string;
+    model?: string;
     models?: string[];
     provider?: {
       allow_fallbacks?: boolean | null;
@@ -4059,7 +4059,7 @@ export type CreateOcrParams = {
     echo_upstream_request?: boolean;
     image: string;
     language?: string;
-    model: string;
+    model?: string;
     models?: string[];
     provider?: {
       allow_fallbacks?: boolean | null;
@@ -4140,7 +4140,7 @@ export type CreateParseParams = {
       type: "image_url";
     };
     echo_upstream_request?: boolean;
-    model: string;
+    model?: string;
     models?: string[];
     output_format?: "markdown" | "blocks";
     provider?: {
@@ -4811,7 +4811,7 @@ export type CreateRerankParams = {
     metadata?: {
       [key: string]: string;
     };
-    model: string;
+    model?: string;
     models?: string[];
     provider?: {
       allow_fallbacks?: boolean | null;
@@ -4984,7 +4984,7 @@ export type CreateResponseParams = {
       [key: string]: string;
     };
     modalities?: ("text" | "image" | "audio")[];
-    model: string;
+    model?: string;
     models?: string[];
     parallel_tool_calls?: boolean;
     previous_response_id?: string;
@@ -5421,7 +5421,7 @@ export type CreateSpeechParams = {
     };
     format?: "mp3" | "wav" | "ogg" | "aac";
     input: string;
-    model: string;
+    model?: string;
     models?: string[];
     provider?: {
       allow_fallbacks?: boolean | null;
@@ -5501,7 +5501,7 @@ export type CreateTranscriptionParams = {
     known_speaker_names?: string[];
     known_speaker_references?: string[];
     language?: string;
-    model: string;
+    model?: string;
     models?: string[];
     provider?: {
       allow_fallbacks?: boolean | null;
@@ -5573,7 +5573,7 @@ export type CreateTranslationParams = {
     audio_b64?: string;
     audio_url?: string;
     language?: string;
-    model: string;
+    model?: string;
     models?: string[];
     prompt?: string;
     provider?: {
@@ -5676,7 +5676,7 @@ export type CreateVideoParams = {
         }
     )[];
     input_video_duration?: number;
-    model: string;
+    model?: string;
     models?: string[];
     negative_prompt?: string;
     output?: {
@@ -6015,7 +6015,7 @@ export type CreateVideoAliasParams = {
         }
     )[];
     input_video_duration?: number;
-    model: string;
+    model?: string;
     models?: string[];
     negative_prompt?: string;
     output?: {
@@ -7854,7 +7854,7 @@ export type GenerateMusicParams = {
       with_timestamps?: boolean;
     };
     format?: "mp3" | "wav" | "ogg" | "aac";
-    model: string;
+    model?: string;
     models?: string[];
     prompt?: string;
     provider?: {
@@ -7990,7 +7990,7 @@ export type GenerateMusicAliasParams = {
       with_timestamps?: boolean;
     };
     format?: "mp3" | "wav" | "ogg" | "aac";
-    model: string;
+    model?: string;
     models?: string[];
     prompt?: string;
     provider?: {
@@ -17431,7 +17431,7 @@ export type MakeDecisionParams = {
         metadata?: {
           [key: string]: unknown;
         };
-        model: string;
+        model?: string;
         models?: string[];
         provider?: {
           allow_fallbacks?: boolean | null;
@@ -17554,7 +17554,7 @@ export type MakeDecisionParams = {
         metadata?: {
           [key: string]: unknown;
         };
-        model: string;
+        model?: string;
         models?: string[];
         provider?: {
           allow_fallbacks?: boolean | null;

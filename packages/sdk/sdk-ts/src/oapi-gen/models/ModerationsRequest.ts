@@ -21,7 +21,7 @@ export interface ModerationsRequest {
           }
       )[];
   meta?: boolean;
-  model: string;
+  model?: string;
   models?: string[];
   provider?: {
     allow_fallbacks?: boolean | null;

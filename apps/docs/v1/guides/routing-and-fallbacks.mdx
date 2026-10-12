@@ -280,7 +280,7 @@ up to eight fallback models.
 
 ### Request-level model fallbacks
 
-Send `models` with `model` to choose fallback models for one request:
+Send `models` to choose the models one request may use, in order:
 
 ```json
 {
@@ -290,8 +290,18 @@ Send `models` with `model` to choose fallback models for one request:
 }
 ```
 
-Phaseo always tries `model` first, then each `models` entry in order. It uses
-the same fallback machinery as dynamic routes:
+When `model` is set, Phaseo tries it first, then each `models` entry in order.
+You can also omit `model` and send only `models`; the first entry is then
+tried first:
+
+```json
+{
+  "models": ["openai/gpt-5-mini", "anthropic/claude-sonnet-5-5"],
+  "input": "Summarize this incident report."
+}
+```
+
+Fallbacks use the same machinery as dynamic routes:
 
 - **Triggers.** A fallback runs only when the previous attempt, after its own
   provider retries, ends with `429`, `500`, `502`, `503`, or `504`. Client
@@ -301,9 +311,9 @@ the same fallback machinery as dynamic routes:
   because a different model may fit within the remaining limit. Authentication,
   API key rate limits, and other checks that fail before execution return
   immediately.
-- **Limits.** `models` accepts 1 to 8 entries. Duplicates and entries equal to
-  `model` are ignored. `model` is required; a request that sends only `models`
-  is rejected with `400`.
+- **Limits.** `models` accepts 1 to 25 entries. Duplicates and entries equal to
+  the primary model are ignored. A request must set `model`, `models`, or both.
+  Dynamic routes keep their own limit of eight fallbacks.
 - **Validation.** Each entry can be a model ID, a provider-qualified model ID,
   or a preset such as `@support`. Each fallback reruns the complete pipeline
   for that model: endpoint and modality support, requested parameters,
