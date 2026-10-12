@@ -1509,6 +1509,7 @@
 		"Top Models": "热门模型",
 		"Unlimited": "无限",
 		"phraseKeyNameIsRequired": "密钥名称是必需的。",
+		"Destination limit reached for this type": "此类型的目标数量已达上限",
 		"phraseSavingKey": "正在保存密钥...",
 		"Key updated": "密钥已更新",
 		"Failed to update key": "更新密钥失败",

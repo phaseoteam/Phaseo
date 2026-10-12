@@ -1509,6 +1509,7 @@
 		"Top Models": "热門モデル",
 		"Unlimited": "なし限",
 		"phraseKeyNameIsRequired": "キー名前は必需の。",
+		"Destination limit reached for this type": "この種類の送信先の上限に達しました",
 		"phraseSavingKey": "保存キー...",
 		"Key updated": "キー更新",
 		"Failed to update key": "更新キー失敗",

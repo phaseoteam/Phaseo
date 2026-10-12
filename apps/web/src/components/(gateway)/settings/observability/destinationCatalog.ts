@@ -1,20 +1,9 @@
-export type DestinationId =
-	| "arize"
-	| "braintrust"
-	| "clickhouse"
-	| "comet_opik"
-	| "datadog"
-	| "grafana_cloud"
-	| "langfuse"
-	| "langsmith"
-	| "new_relic"
-	| "otel_collector"
-	| "posthog"
-	| "s3"
-	| "sentry"
-	| "snowflake"
-	| "wandb_weave"
-	| "webhook";
+import {
+	AVAILABLE_BROADCAST_DESTINATION_IDS,
+	type BroadcastDestinationId,
+} from "./broadcastDestinations";
+
+export type DestinationId = BroadcastDestinationId;
 
 export type ConfigField = {
 	key: string;
@@ -316,7 +305,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 	},
 ];
 
-const EXECUTABLE_DESTINATION_IDS = new Set<DestinationId>(["otel_collector", "webhook"]);
+const EXECUTABLE_DESTINATION_IDS = new Set<DestinationId>(AVAILABLE_BROADCAST_DESTINATION_IDS);
 
 export const AVAILABLE_DESTINATIONS: DestinationDefinition[] = DESTINATION_DEFINITIONS.filter(
 	(destination) => EXECUTABLE_DESTINATION_IDS.has(destination.id),

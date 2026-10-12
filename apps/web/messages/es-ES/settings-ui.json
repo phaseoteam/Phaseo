@@ -1509,6 +1509,7 @@
 		"Top Models": "Mejores modelos",
 		"Unlimited": "Ilimitado",
 		"phraseKeyNameIsRequired": "Se requiere el nombre de la clave.",
+		"Destination limit reached for this type": "Se alcanzó el límite de destinos de este tipo",
 		"phraseSavingKey": "Guardando clave...",
 		"Key updated": "Clave actualizada",
 		"Failed to update key": "No se pudo actualizar la clave",
