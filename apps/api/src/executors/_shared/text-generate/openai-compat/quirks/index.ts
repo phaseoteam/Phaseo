@@ -93,6 +93,7 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	perplexity: perplexityQuirks,
 	openai: openAIQuirks,
 	meta: metaQuirks,
+	"meta-contributor": metaQuirks,
 	baseten: basetenQuirks,
 	cohere: cohereQuirks,
 	together: togetherQuirks,
