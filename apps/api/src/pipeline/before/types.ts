@@ -614,6 +614,12 @@ export type ResponseCacheDiagnostics = {
     createdAt?: string | null;
     ageMs?: number | null;
     providerId?: string | null;
+    /** On a hit, the request that produced the cached response. */
+    sourceRequestId?: string | null;
+    /** On a hit, the usage the original request was billed for. */
+    savedUsage?: unknown;
+    /** The request asked to replace this entry. */
+    cleared?: boolean;
 };
 
 export type SearchObservabilityResultItem = {

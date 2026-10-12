@@ -158,6 +158,7 @@ function extractRoutingContext(ctx: PipelineContext, result?: RequestResult): an
             response_cache_key: ctx.responseCache?.key ?? null,
             response_cache_ttl_seconds: ctx.responseCache?.ttlSeconds ?? null,
             response_cache_provider: ctx.responseCache?.providerId ?? null,
+            response_cache_source_request_id: ctx.responseCache?.sourceRequestId ?? null,
         };
     } catch (err) {
         console.error("extractRoutingContext error", err);

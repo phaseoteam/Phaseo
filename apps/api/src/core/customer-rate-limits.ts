@@ -50,6 +50,7 @@ export function parseCustomerLimits(value: unknown): CustomerLimits {
 
 type CustomerStub = {
 	admit(scopeKey: string, kind: CustomerQuotaKind, admissionId: string, limits: CustomerLimits): Promise<CustomerAdmission>;
+	release(scopeKey: string, kind: "minute", admissionId: string): Promise<void>;
 };
 
 const MAX_DENIALS = 10_000;
@@ -200,6 +201,32 @@ export function guardCustomerQuota(args: QuotaArgs): Response | null {
 	if (args.kind === "free-day") remember(admissions, check.admissionKey, check.now + ADMISSION_MEMORY_MS, MAX_ADMISSIONS);
 	countInBackground(check.bindings, check.scopeKey, args);
 	return null;
+}
+
+/**
+ * Gives back a request's per-minute slot, for requests answered from the
+ * response cache. Runs in the background and fails quietly: at worst the
+ * request stays counted.
+ */
+export function releaseCustomerQuota(args: CustomerScope & { admissionId: string; internal?: boolean }): void {
+	if (args.internal) return;
+	const bindings = getBindingsIfConfigured();
+	if (!bindings || bindings.CUSTOMER_RATE_LIMITS_ENABLED !== "true" || !bindings.CUSTOMER_RATE_LIMITS) return;
+	const scopeKey = customerScopeKey(args);
+	const namespace = bindings.CUSTOMER_RATE_LIMITS;
+	const release = ensureRuntimeForBackground();
+	dispatchBackground((async () => {
+		try {
+			const stub = namespace.getByName(scopeKey) as unknown as CustomerStub;
+			await stub.release(scopeKey, "minute", args.admissionId);
+		} catch (error) {
+			console.warn("customer_rate_limit_release_failed", {
+				error: error instanceof Error ? error.message : String(error),
+			});
+		} finally {
+			release();
+		}
+	})());
 }
 
 /**

@@ -35,12 +35,18 @@ import {
 	prepareServerToolsForTextRequest,
 } from "./server-tools";
 import {
+	applyResponseCacheHeaders,
+	buildCachedResponseBody,
 	buildResponseCacheFingerprint,
 	buildResponseCacheKey,
 	isResponseCacheEligible,
+	parseResponseCacheFlag,
+	parseResponseCacheTtl,
 	resolveResponseCachePolicy,
+	RESPONSE_CACHE_REQUEST_HEADERS,
 	type CachedResponseRecord,
 } from "@/core/response-cache";
+import { releaseCustomerRequest } from "@/routes/v1/data/customer-quota";
 import {
 	dispatchBackground,
 	ensureRuntimeForBackground,
@@ -464,16 +470,29 @@ async function executeImageGenerationModel(args: {
 	};
 }
 
+/**
+ * Serves a cache hit. Hits are free: the request is logged with zero usage and
+ * zero cost (the original usage is kept in the cache diagnostics as
+ * `savedUsage`), and it gives back its slot in the customer's per-minute limit.
+ */
 async function handleCachedTextResponse(args: {
 	pre: PipelineRunnerArgs["pre"];
+	req: Request;
 	endpoint: PipelineRunnerArgs["endpoint"];
 	timingHeader?: string;
 	record: CachedResponseRecord;
 }): Promise<Response> {
-	const { pre, endpoint, timingHeader, record } = args;
+	const { pre, req, endpoint, timingHeader, record } = args;
 	const ctx = pre.ctx;
 	ctx.meta.generation_ms = 0;
 	ctx.meta.latency_ms = ctx.meta.before_ms ?? 0;
+	releaseCustomerRequest(req);
+
+	const responseBody = buildCachedResponseBody({
+		responseBody: record.responseBody,
+		sourceRequestId: record.sourceRequestId,
+		requestId: ctx.requestId,
+	});
 
 	const result = {
 		kind: "completed" as const,
@@ -486,10 +505,7 @@ async function handleCachedTextResponse(args: {
 		bill: {
 			cost_cents: 0,
 			currency: record.currency ?? "USD",
-			usage:
-				record.usage && typeof record.usage === "object"
-					? cloneJsonValue(record.usage)
-					: undefined,
+			usage: undefined,
 			upstream_id: record.nativeResponseId ?? null,
 			finish_reason: record.finishReason ?? null,
 		},
@@ -515,14 +531,14 @@ async function handleCachedTextResponse(args: {
 					ctx,
 					result as any,
 					false,
-					record.usage ?? {},
+					{},
 					0,
 					0,
 					record.currency ?? "USD",
 					record.finishReason ?? null,
 					record.statusCode,
 					record.nativeResponseId ?? null,
-					record.responseBody,
+					responseBody,
 				);
 			} finally {
 				releaseRuntime();
@@ -530,7 +546,6 @@ async function handleCachedTextResponse(args: {
 		})(),
 	);
 
-	const responseBody = cloneJsonValue(record.responseBody);
 	if (
 		(ctx.meta?.debug?.enabled || ctx.meta.returnMeta) &&
 		responseBody &&
@@ -551,7 +566,12 @@ async function handleCachedTextResponse(args: {
 	}
 
 	const headers = makeHeaders(timingHeader);
-	headers.set("X-Phaseo-Response-Cache", "hit");
+	applyResponseCacheHeaders(headers, {
+		status: "hit",
+		ttlSeconds: record.ttlSeconds,
+		ageMs: ctx.responseCache?.ageMs ?? null,
+		sourceRequestId: record.sourceRequestId,
+	});
 	return createResponse(responseBody, record.statusCode, headers);
 }
 
@@ -692,9 +712,11 @@ async function runTextGeneratePipelineInner(
 		const responseCacheEligibility = isResponseCacheEligible({
 			endpoint,
 			stream: requestedStream,
+			apiKeyId: pre.ctx.keyId ?? null,
 			debugEnabled: Boolean(pre.ctx.meta?.debug?.enabled),
 			hasTools: Array.isArray(pre.ctx.body?.tools) && pre.ctx.body.tools.length > 0,
 			serverToolsEnabled: preparedServerTools.config.enabled,
+			zeroDataRetention: pre.ctx.teamSettings?.privacyZdrOnly === true,
 		});
 		pre.ctx.responseCache = {
 			enabled: false,
@@ -707,17 +729,19 @@ async function runTextGeneratePipelineInner(
 		};
 
 		const responseCacheStore = getResponseCache();
-		if (responseCacheEligibility.eligible && responseCacheStore) {
+		if (responseCacheEligibility.eligible && responseCacheStore && pre.ctx.keyId) {
 			const presetResponseCaching = pre.ctx.preset?.config?.responseCaching ?? null;
 			const responseCachePolicy = resolveResponseCachePolicy({
+				requestEnabled: parseResponseCacheFlag(req.headers.get(RESPONSE_CACHE_REQUEST_HEADERS.enabled)),
+				requestTtlSeconds: parseResponseCacheTtl(req.headers.get(RESPONSE_CACHE_REQUEST_HEADERS.ttl)),
+				presetEnabled: presetResponseCaching?.enabled ?? null,
 				presetTtlSeconds: presetResponseCaching?.ttlSeconds ?? null,
-				presetDisabled: presetResponseCaching?.enabled === false,
 			});
-			if (!responseCachePolicy.enabled || !responseCachePolicy.ttlSeconds) {
+			if (responseCachePolicy.enabled === false) {
 				pre.ctx.responseCache = {
 					enabled: false,
 					status: "bypass",
-					reason: "disabled_by_policy",
+					reason: responseCachePolicy.reason,
 					key: null,
 					fingerprint: null,
 					ttlSeconds: null,
@@ -726,8 +750,10 @@ async function runTextGeneratePipelineInner(
 			} else {
 				const fingerprint = await buildResponseCacheFingerprint({
 					workspaceId: pre.ctx.workspaceId,
+					apiKeyId: pre.ctx.keyId,
 					endpoint,
 					model: pre.ctx.model,
+					stream: requestedStream,
 					body: pre.ctx.body,
 					protocol,
 					presetId: pre.ctx.preset?.id ?? null,
@@ -735,9 +761,12 @@ async function runTextGeneratePipelineInner(
 					routingMode: pre.ctx.routingMode ?? null,
 				});
 				const cacheKey = buildResponseCacheKey(
-					pre.ctx.workspaceId,
+					pre.ctx.keyId,
 					fingerprint.digest,
 				);
+				const clearRequested = parseResponseCacheFlag(
+					req.headers.get(RESPONSE_CACHE_REQUEST_HEADERS.clear),
+				) === true;
 				pre.ctx.responseCache = {
 					enabled: true,
 					status: "miss",
@@ -746,14 +775,29 @@ async function runTextGeneratePipelineInner(
 					fingerprint: fingerprint.digest,
 					ttlSeconds: responseCachePolicy.ttlSeconds,
 					ttlSource: responseCachePolicy.source,
+					...(clearRequested ? { cleared: true } : {}),
 				};
 				const cacheLookupStartedAt = performance.now();
-				const cachedRecord = await responseCacheStore.get<CachedResponseRecord>(cacheKey);
+				let cachedRecord: CachedResponseRecord | null = null;
+				try {
+					if (clearRequested) {
+						// Drop the entry and fall through: this request refetches and re-stores it.
+						await responseCacheStore.delete(cacheKey);
+					} else {
+						cachedRecord = await responseCacheStore.get<CachedResponseRecord>(cacheKey);
+					}
+				} catch (error) {
+					// The cache is best-effort: an unavailable store is treated as a miss.
+					console.warn("[gateway] response cache lookup failed", {
+						requestId: pre.ctx.requestId,
+						error: error instanceof Error ? error.message : String(error),
+					});
+				}
 				timing.timer.record(
 					"response_cache_lookup",
 					performance.now() - cacheLookupStartedAt,
 				);
-				if (cachedRecord?.responseBody) {
+				if (cachedRecord?.responseBody && cachedRecord.statusCode === 200) {
 					const ageMs = Math.max(
 						0,
 						Date.now() - new Date(cachedRecord.createdAt).getTime(),
@@ -769,6 +813,8 @@ async function runTextGeneratePipelineInner(
 						createdAt: cachedRecord.createdAt,
 						ageMs,
 						providerId: cachedRecord.providerId ?? null,
+						sourceRequestId: cachedRecord.sourceRequestId ?? null,
+						savedUsage: cachedRecord.usage ?? null,
 					};
 					timing.timer.record("execute_total", 0);
 					const header = timing.timer.header();
@@ -776,6 +822,7 @@ async function runTextGeneratePipelineInner(
 					pre.ctx.timer = timing.timer;
 					return await handleCachedTextResponse({
 						pre,
+						req,
 						endpoint,
 						timingHeader: header || undefined,
 						record: cachedRecord,

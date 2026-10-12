@@ -7,6 +7,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@supabase/supabase-js";
 import type { ResponseCacheStore } from "@/core/response-cache";
+import { createUpstashResponseCacheStore } from "@/core/response-cache-store";
 
 import { BINDING_KEYS } from "./env.binding-keys";
 import type { GatewayBindings } from "./env.types";
@@ -23,6 +24,7 @@ let runtimeState: RuntimeState | null = null;
 let runtimeActiveCount = 0;
 let lastBindingsSnapshot: GatewayBindings | null = null;
 let cachedSupabase: { url: string; key: string; client: SupabaseClient } | null = null;
+let cachedResponseCache: { url: string; token: string; store: ResponseCacheStore } | null = null;
 type WaitUntilEntry = {
     id: number;
     handler: (promise: Promise<unknown>) => void;
@@ -171,8 +173,17 @@ export function getSupabaseAdmin(): SupabaseClient {
     return ensureRuntime().supabase;
 }
 
+/** The response cache store, or null unless it is switched on and configured. */
 export function getResponseCache(): ResponseCacheStore | null {
-    return null;
+    const bindings = runtimeState?.bindings ?? lastBindingsSnapshot;
+    if (!bindings || bindings.RESPONSE_CACHE_ENABLED !== "true") return null;
+    const url = bindings.RESPONSE_CACHE_REDIS_REST_URL?.trim();
+    const token = bindings.RESPONSE_CACHE_REDIS_REST_TOKEN?.trim();
+    if (!url || !token) return null;
+    if (cachedResponseCache?.url !== url || cachedResponseCache.token !== token) {
+        cachedResponseCache = { url, token, store: createUpstashResponseCacheStore({ url, token }) };
+    }
+    return cachedResponseCache.store;
 }
 
 export function getByokKey(version: number): string {

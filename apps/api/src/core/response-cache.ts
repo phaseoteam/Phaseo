@@ -1,10 +1,31 @@
+// Purpose: Opt-in response caching for repeated text requests.
+// Why: Identical requests can be answered without a provider call, for free.
+// How: Caching is off unless a request header or the preset turns it on. Entries
+//      are scoped to the API key and keyed by a hash of the normalized request,
+//      so a key only ever sees responses produced under its own policy. Storage
+//      is best-effort: an entry may be evicted before its TTL expires.
 import type { Endpoint } from "@core/types";
 
-const RESPONSE_CACHE_VERSION = "v1";
+const RESPONSE_CACHE_VERSION = "v2";
 const RESPONSE_CACHE_PREFIX = "gateway:response-cache";
-const DEFAULT_RESPONSE_CACHE_TTL_SECONDS = 300;
-const MIN_RESPONSE_CACHE_TTL_SECONDS = 30;
+export const DEFAULT_RESPONSE_CACHE_TTL_SECONDS = 300;
+const MIN_RESPONSE_CACHE_TTL_SECONDS = 1;
 const MAX_RESPONSE_CACHE_TTL_SECONDS = 86_400;
+/** Serialized records above this size are not stored. */
+export const MAX_RESPONSE_CACHE_RECORD_BYTES = 1_000_000;
+
+export const RESPONSE_CACHE_REQUEST_HEADERS = {
+	enabled: "x-phaseo-cache",
+	ttl: "x-phaseo-cache-ttl",
+	clear: "x-phaseo-cache-clear",
+} as const;
+
+export const RESPONSE_CACHE_RESPONSE_HEADERS = {
+	status: "X-Phaseo-Cache-Status",
+	age: "X-Phaseo-Cache-Age",
+	ttl: "X-Phaseo-Cache-TTL",
+	sourceId: "X-Phaseo-Cache-Source-Id",
+} as const;
 const RESPONSE_CACHE_ELIGIBLE_ENDPOINTS = new Set<Endpoint>([
 	"responses",
 	"chat.completions",
@@ -14,23 +35,20 @@ const RESPONSE_CACHE_ELIGIBLE_ENDPOINTS = new Set<Endpoint>([
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 
-export type ResponseCacheTtlSource =
-	| "request"
-	| "preset"
-	| "workspace_default"
-	| "platform_default"
-	| "disabled";
+export type ResponseCacheTtlSource = "request" | "preset" | "default" | "disabled";
 
-export type ResponseCachePolicy = {
-	enabled: boolean;
-	ttlSeconds: number | null;
-	source: ResponseCacheTtlSource;
-};
+export type ResponseCacheDisabledReason = "preset_disabled" | "request_disabled" | "not_enabled";
+
+export type ResponseCachePolicy =
+	| { enabled: true; ttlSeconds: number; source: Exclude<ResponseCacheTtlSource, "disabled"> }
+	| { enabled: false; ttlSeconds: null; source: "disabled"; reason: ResponseCacheDisabledReason };
 
 export type ResponseCacheFingerprintInput = {
 	workspaceId: string;
+	apiKeyId: string;
 	endpoint: Endpoint;
 	model: string;
+	stream: boolean;
 	body: unknown;
 	protocol?: string | null;
 	presetId?: string | null;
@@ -47,7 +65,8 @@ export type ResponseCacheFingerprint = {
 export type ResponseCacheStore = {
 	kind: "upstash";
 	get<T>(key: string): Promise<T | null>;
-	set<T>(key: string, value: T, ttlSeconds: number): Promise<void>;
+	/** Resolves false when the value was not stored (for example, too large). */
+	set<T>(key: string, value: T, ttlSeconds: number): Promise<boolean>;
 	delete(key: string): Promise<void>;
 };
 
@@ -70,6 +89,8 @@ export type CachedResponseRecord = {
 		id: string | null;
 		slug: string | null;
 	};
+	/** Gateway request ID of the request that produced this entry. */
+	sourceRequestId: string;
 	createdAt: string;
 	expiresAt: string;
 	ttlSeconds: number;
@@ -143,8 +164,10 @@ export function buildResponseCacheFingerprintPayload(
 	return {
 		version: RESPONSE_CACHE_VERSION,
 		workspace_id: input.workspaceId,
+		api_key_id: input.apiKeyId,
 		endpoint: input.endpoint,
 		model: input.model,
+		stream: input.stream,
 		protocol: normalizeOptionalText(input.protocol),
 		preset: {
 			id: normalizeOptionalText(input.presetId),
@@ -170,19 +193,29 @@ export async function buildResponseCacheFingerprint(
 	};
 }
 
-export function buildResponseCacheKey(workspaceId: string, digest: string): string {
-	return `${RESPONSE_CACHE_PREFIX}:${RESPONSE_CACHE_VERSION}:${workspaceId}:${digest}`;
+/** Entries belong to one API key: rotating or revoking the key leaves them unreachable. */
+export function buildResponseCacheKey(apiKeyId: string, digest: string): string {
+	return `${RESPONSE_CACHE_PREFIX}:${RESPONSE_CACHE_VERSION}:${apiKeyId}:${digest}`;
 }
 
 export function isResponseCacheEligible(args: {
 	endpoint: Endpoint;
 	stream: boolean;
+	apiKeyId?: string | null;
 	debugEnabled?: boolean;
 	hasTools?: boolean;
 	serverToolsEnabled?: boolean;
+	zeroDataRetention?: boolean;
 }): { eligible: boolean; reason: string } {
 	if (!RESPONSE_CACHE_ELIGIBLE_ENDPOINTS.has(args.endpoint)) {
 		return { eligible: false, reason: "unsupported_endpoint" };
+	}
+	// Storing a response would break the workspace's retention promise.
+	if (args.zeroDataRetention) {
+		return { eligible: false, reason: "zero_data_retention" };
+	}
+	if (!args.apiKeyId) {
+		return { eligible: false, reason: "no_api_key" };
 	}
 	if (args.stream) {
 		return { eligible: false, reason: "streaming_request" };
@@ -212,48 +245,109 @@ export function clampResponseCacheTtlSeconds(ttlSeconds: number): number {
 	);
 }
 
+/** Reads a boolean cache header; anything unrecognised counts as absent. */
+export function parseResponseCacheFlag(value: string | null | undefined): boolean | null {
+	const normalized = value?.trim().toLowerCase();
+	if (normalized === "true" || normalized === "1") return true;
+	if (normalized === "false" || normalized === "0") return false;
+	return null;
+}
+
+/**
+ * Reads the TTL header leniently: leading digits are used (`60abc` is 60,
+ * `1.5` is 1) and later clamped; a value with no leading digits is ignored.
+ */
+export function parseResponseCacheTtl(value: string | null | undefined): number | null {
+	const match = value?.trim().match(/^\d+/);
+	if (!match) return null;
+	return clampResponseCacheTtlSeconds(Number(match[0]));
+}
+
+/**
+ * Precedence: a preset that disables caching cannot be overridden; a request
+ * header can disable it; otherwise the request header or the preset enables
+ * it. With neither, caching is off. TTL comes from the request, then the
+ * preset, then the default.
+ */
 export function resolveResponseCachePolicy(args: {
+	requestEnabled?: boolean | null;
 	requestTtlSeconds?: number | null;
+	presetEnabled?: boolean | null;
 	presetTtlSeconds?: number | null;
-	workspaceDefaultTtlSeconds?: number | null;
-	platformDefaultTtlSeconds?: number | null;
-	requestDisabled?: boolean;
-	presetDisabled?: boolean;
-	workspaceDisabled?: boolean;
 }): ResponseCachePolicy {
-	if (args.requestDisabled || args.presetDisabled || args.workspaceDisabled) {
-		return {
-			enabled: false,
-			ttlSeconds: null,
-			source: "disabled",
-		};
+	if (args.presetEnabled === false) {
+		return { enabled: false, ttlSeconds: null, source: "disabled", reason: "preset_disabled" };
+	}
+	if (args.requestEnabled === false) {
+		return { enabled: false, ttlSeconds: null, source: "disabled", reason: "request_disabled" };
+	}
+	if (args.requestEnabled !== true && args.presetEnabled !== true) {
+		return { enabled: false, ttlSeconds: null, source: "disabled", reason: "not_enabled" };
 	}
 
-	const sources: Array<[ResponseCacheTtlSource, number | null]> = [
-		["request", coercePositiveInteger(args.requestTtlSeconds)],
-		["preset", coercePositiveInteger(args.presetTtlSeconds)],
-		["workspace_default", coercePositiveInteger(args.workspaceDefaultTtlSeconds)],
-		[
-			"platform_default",
-			coercePositiveInteger(args.platformDefaultTtlSeconds) ??
-				DEFAULT_RESPONSE_CACHE_TTL_SECONDS,
-		],
-	];
-
-	for (const [source, ttlSeconds] of sources) {
-		if (ttlSeconds === null) continue;
-		return {
-			enabled: true,
-			ttlSeconds: clampResponseCacheTtlSeconds(ttlSeconds),
-			source,
-		};
+	const requestTtl = coercePositiveInteger(args.requestTtlSeconds);
+	if (requestTtl !== null) {
+		return { enabled: true, ttlSeconds: clampResponseCacheTtlSeconds(requestTtl), source: "request" };
 	}
+	const presetTtl = coercePositiveInteger(args.presetTtlSeconds);
+	if (presetTtl !== null) {
+		return { enabled: true, ttlSeconds: clampResponseCacheTtlSeconds(presetTtl), source: "preset" };
+	}
+	return { enabled: true, ttlSeconds: DEFAULT_RESPONSE_CACHE_TTL_SECONDS, source: "default" };
+}
 
-	return {
-		enabled: false,
-		ttlSeconds: null,
-		source: "disabled",
-	};
+/** Sets every numeric usage counter to zero, keeping the protocol's shape. */
+export function zeroUsageCounters(value: unknown): unknown {
+	if (typeof value === "number") return 0;
+	if (Array.isArray(value)) return value.map((entry) => zeroUsageCounters(entry));
+	if (isPlainObject(value)) {
+		const out: Record<string, unknown> = {};
+		for (const [key, entry] of Object.entries(value)) out[key] = zeroUsageCounters(entry);
+		return out;
+	}
+	return value;
+}
+
+/**
+ * Prepares a stored response body for replay: the hit gets its own request ID
+ * and creation time, and reports zero usage because it is not billed.
+ */
+export function buildCachedResponseBody(args: {
+	responseBody: unknown;
+	sourceRequestId: string;
+	requestId: string;
+	now?: Date;
+}): unknown {
+	if (!isPlainObject(args.responseBody)) return args.responseBody;
+	const body: Record<string, unknown> = structuredClone(args.responseBody);
+	const nowSeconds = Math.floor((args.now ?? new Date()).getTime() / 1000);
+	if (body.id === args.sourceRequestId) body.id = args.requestId;
+	if (typeof body.created === "number") body.created = nowSeconds;
+	if (typeof body.created_at === "number") body.created_at = nowSeconds;
+	if (body.usage !== undefined) body.usage = zeroUsageCounters(body.usage);
+	return body;
+}
+
+export function applyResponseCacheHeaders(
+	headers: Headers,
+	state: {
+		status: "hit" | "miss";
+		ttlSeconds: number | null;
+		ageMs?: number | null;
+		sourceRequestId?: string | null;
+	},
+): void {
+	headers.set(RESPONSE_CACHE_RESPONSE_HEADERS.status, state.status === "hit" ? "HIT" : "MISS");
+	const ageSeconds = Math.floor(Math.max(0, state.ageMs ?? 0) / 1000);
+	if (typeof state.ttlSeconds === "number") {
+		// On a hit, the time left before the entry expires; on a miss, the full TTL.
+		const ttl = state.status === "hit" ? Math.max(0, state.ttlSeconds - ageSeconds) : state.ttlSeconds;
+		headers.set(RESPONSE_CACHE_RESPONSE_HEADERS.ttl, String(ttl));
+	}
+	if (state.status === "hit") {
+		headers.set(RESPONSE_CACHE_RESPONSE_HEADERS.age, String(ageSeconds));
+		if (state.sourceRequestId) headers.set(RESPONSE_CACHE_RESPONSE_HEADERS.sourceId, state.sourceRequestId);
+	}
 }
 
 export function buildCachedResponseRecord(args: {
@@ -272,6 +366,7 @@ export function buildCachedResponseRecord(args: {
 	routingMode?: string | null;
 	presetId?: string | null;
 	presetSlug?: string | null;
+	sourceRequestId: string;
 	ttlSeconds: number;
 	now?: Date;
 }): CachedResponseRecord {
@@ -296,6 +391,7 @@ export function buildCachedResponseRecord(args: {
 			id: args.presetId ?? null,
 			slug: args.presetSlug ?? null,
 		},
+		sourceRequestId: args.sourceRequestId,
 		createdAt: createdAt.toISOString(),
 		expiresAt: expiresAt.toISOString(),
 		ttlSeconds: args.ttlSeconds,

@@ -15,6 +15,11 @@ const dispatchBackgroundMock = vi.fn();
 const validateTextIRContractMock = vi.fn();
 const prepareServerToolsForTextRequestMock = vi.fn();
 const consumeTextProtocolStreamToIRMock = vi.fn();
+const releaseCustomerRequestMock = vi.fn();
+
+vi.mock("@/routes/v1/data/customer-quota", () => ({
+	releaseCustomerRequest: (...args: any[]) => releaseCustomerRequestMock(...args),
+}));
 
 vi.mock("@protocols/detect", () => ({
 	detectTextProtocol: (...args: any[]) => detectTextProtocolMock(...args),
@@ -88,6 +93,7 @@ function createPre() {
 			},
 			model: "openai/gpt-5.4-nano",
 			workspaceId: "ws_123",
+			keyId: "key_123",
 			stream: false,
 			providers: [],
 			pricing: {},
@@ -109,11 +115,36 @@ function createPre() {
 	};
 }
 
-function createArgs() {
+function mockLiveExecution() {
+	doRequestWithIRMock.mockResolvedValue({
+		result: {
+			kind: "completed",
+			ir: {
+				id: "ir_123",
+				model: "openai/gpt-5.4-nano",
+				choices: [{
+					index: 0,
+					message: { role: "assistant", content: [{ type: "text", text: "hello" }] },
+					finishReason: "stop",
+				}],
+			},
+			upstream: new Response(JSON.stringify({ ok: true }), { status: 200 }),
+			provider: "openai",
+			generationTimeMs: 4,
+			bill: { cost_cents: 0, currency: "USD" },
+		},
+	});
+	finalizeRequestMock.mockResolvedValue(
+		new Response(JSON.stringify({ ok: true }), { status: 200 }),
+	);
+}
+
+function createArgs(headers: Record<string, string> = { "X-Phaseo-Cache": "true" }) {
 	return {
 		pre: createPre(),
 		req: new Request("https://example.com/v1/responses", {
 			method: "POST",
+			headers,
 		}),
 		endpoint: "responses" as const,
 		timing: {
@@ -153,8 +184,8 @@ describe("runTextGeneratePipeline response cache", () => {
 
 	it("returns cached responses without executing providers", async () => {
 		const cachedRecord: CachedResponseRecord = {
-			version: "v1",
-			key: "gateway:response-cache:v1:ws_123:abc123",
+			version: "v2",
+			key: "gateway:response-cache:v2:key_123:abc123",
 			fingerprint: "abc123",
 			endpoint: "responses",
 			model: "openai/gpt-5.4-nano",
@@ -168,6 +199,7 @@ describe("runTextGeneratePipeline response cache", () => {
 			nativeResponseId: "native_123",
 			routingMode: "balanced",
 			preset: { id: null, slug: null },
+			sourceRequestId: "resp_cached",
 			createdAt: new Date(Date.now() - 500).toISOString(),
 			expiresAt: new Date(Date.now() + 60_000).toISOString(),
 			ttlSeconds: 300,
@@ -184,25 +216,114 @@ describe("runTextGeneratePipeline response cache", () => {
 		await Promise.all(pendingBackground);
 
 		expect(response.status).toBe(200);
-		expect(response.headers.get("X-Phaseo-Response-Cache")).toBe("hit");
+		expect(response.headers.get("X-Phaseo-Cache-Status")).toBe("HIT");
+		expect(response.headers.get("X-Phaseo-Cache-Source-Id")).toBe("resp_cached");
+		expect(response.headers.get("X-Phaseo-Cache-Age")).toBe("0");
+		expect(Number(response.headers.get("X-Phaseo-Cache-TTL"))).toBe(300);
 		expect(await response.json()).toEqual({
-			id: "resp_cached",
+			id: "req_test_cache",
 			object: "response",
 		});
 		expect(doRequestWithIRMock).not.toHaveBeenCalled();
 		expect(finalizeRequestMock).not.toHaveBeenCalled();
 		expect(handleSuccessAuditMock).toHaveBeenCalledTimes(1);
+		// Hits are logged with zero usage and zero cost.
+		expect(handleSuccessAuditMock.mock.calls[0]?.slice(3, 6)).toEqual([{}, 0, 0]);
+		expect(releaseCustomerRequestMock).toHaveBeenCalledWith(args.req);
 		expect(args.pre.ctx.responseCache).toMatchObject({
 			enabled: true,
 			status: "hit",
 			providerId: "openai",
+			sourceRequestId: "resp_cached",
+			savedUsage: { input_tokens: 10, output_tokens: 4 },
 		});
+	});
+
+	it("does not touch the store unless caching is turned on", async () => {
+		const store = { get: vi.fn(), set: vi.fn(), delete: vi.fn() };
+		getResponseCacheMock.mockReturnValue(store);
+		mockLiveExecution();
+
+		const args = createArgs({});
+		await runTextGeneratePipeline(args);
+
+		expect(store.get).not.toHaveBeenCalled();
+		expect(doRequestWithIRMock).toHaveBeenCalledTimes(1);
+		expect(args.pre.ctx.responseCache).toMatchObject({ status: "bypass", reason: "not_enabled" });
+	});
+
+	it("enables caching from the preset without a request header", async () => {
+		const store = { get: vi.fn().mockResolvedValue(null), set: vi.fn(), delete: vi.fn() };
+		getResponseCacheMock.mockReturnValue(store);
+		mockLiveExecution();
+
+		const args = createArgs({});
+		args.pre.ctx.preset = { id: "preset_1", slug: "cached", config: { responseCaching: { enabled: true, ttlSeconds: 90 } } };
+		await runTextGeneratePipeline(args);
+
+		expect(store.get).toHaveBeenCalledTimes(1);
+		expect(args.pre.ctx.responseCache).toMatchObject({ status: "miss", ttlSeconds: 90, ttlSource: "preset" });
+	});
+
+	it("keeps caching off when the preset disables it, whatever the header says", async () => {
+		const store = { get: vi.fn(), set: vi.fn(), delete: vi.fn() };
+		getResponseCacheMock.mockReturnValue(store);
+		mockLiveExecution();
+
+		const args = createArgs();
+		args.pre.ctx.preset = { id: "preset_1", slug: "uncached", config: { responseCaching: { enabled: false } } };
+		await runTextGeneratePipeline(args);
+
+		expect(store.get).not.toHaveBeenCalled();
+		expect(args.pre.ctx.responseCache).toMatchObject({ status: "bypass", reason: "preset_disabled" });
+	});
+
+	it("bypasses the cache for zero data retention workspaces", async () => {
+		const store = { get: vi.fn(), set: vi.fn(), delete: vi.fn() };
+		getResponseCacheMock.mockReturnValue(store);
+		mockLiveExecution();
+
+		const args = createArgs();
+		args.pre.ctx.teamSettings.privacyZdrOnly = true;
+		await runTextGeneratePipeline(args);
+
+		expect(store.get).not.toHaveBeenCalled();
+		expect(args.pre.ctx.responseCache).toMatchObject({ status: "bypass", reason: "zero_data_retention" });
+	});
+
+	it("clears the entry and refetches when asked to", async () => {
+		const store = { get: vi.fn(), set: vi.fn(), delete: vi.fn().mockResolvedValue(undefined) };
+		getResponseCacheMock.mockReturnValue(store);
+		mockLiveExecution();
+
+		const args = createArgs({ "X-Phaseo-Cache": "true", "X-Phaseo-Cache-Clear": "true", "X-Phaseo-Cache-TTL": "60abc" });
+		await runTextGeneratePipeline(args);
+
+		expect(store.delete).toHaveBeenCalledTimes(1);
+		expect(store.get).not.toHaveBeenCalled();
+		expect(doRequestWithIRMock).toHaveBeenCalledTimes(1);
+		expect(args.pre.ctx.responseCache).toMatchObject({ status: "miss", cleared: true, ttlSeconds: 60, ttlSource: "request" });
+	});
+
+	it("treats an unavailable store as a miss", async () => {
+		const store = { get: vi.fn().mockRejectedValue(new Error("timeout")), set: vi.fn(), delete: vi.fn() };
+		getResponseCacheMock.mockReturnValue(store);
+		mockLiveExecution();
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+		const args = createArgs();
+		const response = await runTextGeneratePipeline(args);
+
+		expect(response.status).toBe(200);
+		expect(doRequestWithIRMock).toHaveBeenCalledTimes(1);
+		expect(args.pre.ctx.responseCache).toMatchObject({ status: "miss" });
+		warn.mockRestore();
 	});
 
 	it("overrides cached response meta with current cache-hit and guardrail metadata", async () => {
 		const cachedRecord: CachedResponseRecord = {
-			version: "v1",
-			key: "gateway:response-cache:v1:ws_123:abc123",
+			version: "v2",
+			key: "gateway:response-cache:v2:key_123:abc123",
 			fingerprint: "abc123",
 			endpoint: "responses",
 			model: "openai/gpt-5.4-nano",
@@ -227,6 +348,7 @@ describe("runTextGeneratePipeline response cache", () => {
 			nativeResponseId: "native_123",
 			routingMode: "balanced",
 			preset: { id: null, slug: null },
+			sourceRequestId: "resp_cached",
 			createdAt: new Date(Date.now() - 500).toISOString(),
 			expiresAt: new Date(Date.now() + 60_000).toISOString(),
 			ttlSeconds: 300,

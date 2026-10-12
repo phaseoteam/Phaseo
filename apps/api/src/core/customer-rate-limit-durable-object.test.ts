@@ -68,6 +68,32 @@ describe("customer quota coordinator", () => {
 		expect(await limiter.admit(key, "minute", "c", limits)).toMatchObject({ allowed: false, retryAfterSeconds: 50 });
 	});
 
+	it("frees a released minute slot", async () => {
+		const limiter = object();
+		const limits = { requestsPerMinute: 2 };
+		await limiter.admit(key, "minute", "a", limits);
+		await limiter.admit(key, "minute", "b", limits);
+		expect(await limiter.admit(key, "minute", "c", limits)).toMatchObject({ allowed: false });
+		await limiter.release(key, "minute", "a");
+		expect(await limiter.admit(key, "minute", "c", limits)).toMatchObject({ allowed: true, remaining: 0 });
+	});
+
+	it("does not count an admission whose release arrived first", async () => {
+		const limiter = object();
+		const limits = { requestsPerMinute: 1 };
+		await limiter.release(key, "minute", "cached");
+		expect(await limiter.admit(key, "minute", "cached", limits)).toMatchObject({ allowed: true, remaining: 1 });
+		expect(await limiter.admit(key, "minute", "live", limits)).toMatchObject({ allowed: true, remaining: 0 });
+	});
+
+	it("forgets early releases after a minute", async () => {
+		const limiter = object();
+		const limits = { requestsPerMinute: 1 };
+		await limiter.release(key, "minute", "late");
+		vi.advanceTimersByTime(61_000);
+		expect(await limiter.admit(key, "minute", "late", limits)).toMatchObject({ allowed: true, remaining: 0 });
+	});
+
 	it("counts one free admission through fallback and resets at midnight UTC", async () => {
 		const limiter = object();
 		for (let index = 0; index < 1499; index++) await limiter.admit(key, "free-day", String(index));

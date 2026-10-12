@@ -55,6 +55,11 @@ export type GatewayBindings = {
 	CUSTOMER_RATE_LIMIT_LADDER?: string;
 	CUSTOMER_RATE_LIMIT_LADDER_ENABLED?: string;
 	CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED?: string;
+	/** "true" turns the response cache store on when its URL and token are set. */
+	RESPONSE_CACHE_ENABLED?: string;
+	/** Upstash Redis REST endpoint for this deployment's region. */
+	RESPONSE_CACHE_REDIS_REST_URL?: string;
+	RESPONSE_CACHE_REDIS_REST_TOKEN?: string;
 	SPEND_LIMITS?: DurableObjectNamespace;
 	/** off | shadow | enforce for the SpendLimit Durable Object (default off). */
 	GATEWAY_SPEND_LIMIT_DO_MODE?: string;
