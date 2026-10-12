@@ -2,6 +2,7 @@ import {
 	applyResponseCacheHeaders,
 	buildCachedResponseBody,
 	buildCachedResponseRecord,
+	buildCachedSseBody,
 	buildResponseCacheFingerprint,
 	buildResponseCacheFingerprintPayload,
 	buildResponseCacheKey,
@@ -102,7 +103,7 @@ describe("response-cache fingerprinting", () => {
 		);
 	});
 
-	it("marks only non-stream tool-free text requests as eligible", () => {
+	it("marks tool-free text requests as eligible, streamed or not", () => {
 		const eligible = { endpoint: "responses" as const, stream: false, apiKeyId: "key_123" };
 		expect(isResponseCacheEligible(eligible)).toEqual({ eligible: true, reason: "eligible" });
 		expect(isResponseCacheEligible({ ...eligible, hasTools: true })).toEqual({
@@ -110,8 +111,8 @@ describe("response-cache fingerprinting", () => {
 			reason: "tools_present",
 		});
 		expect(isResponseCacheEligible({ ...eligible, stream: true })).toEqual({
-			eligible: false,
-			reason: "streaming_request",
+			eligible: true,
+			reason: "eligible",
 		});
 	});
 
@@ -246,6 +247,54 @@ describe("response-cache replay", () => {
 			},
 		});
 		expect(stored.usage.total_tokens).toBe(14);
+	});
+
+	it("rewrites derived IDs and nested usage in a buffered body", () => {
+		const body = buildCachedResponseBody({
+			responseBody: {
+				id: "req_source",
+				output: [{ id: "req_source-reasoning-0-1", type: "reasoning" }],
+				response: { usage: { input_tokens: 5 } },
+				nativeResponseId: "resp_native",
+			},
+			sourceRequestId: "req_source",
+			requestId: "req_hit",
+		});
+		expect(body).toEqual({
+			id: "req_hit",
+			output: [{ id: "req_hit-reasoning-0-1", type: "reasoning" }],
+			response: { usage: { input_tokens: 0 } },
+			nativeResponseId: "resp_native",
+		});
+	});
+
+	it("replays a stored stream as SSE with a new ID and zero usage", () => {
+		const sse = buildCachedSseBody({
+			frames: [
+				{ eventName: null, data: { id: "req_source", created: 1, choices: [{ delta: { content: "hi" } }] } },
+				{ eventName: null, data: { id: "req_source", choices: [], usage: { prompt_tokens: 3, completion_tokens: 1 } } },
+				{ raw: "data: [DONE]" },
+			],
+			sourceRequestId: "req_source",
+			requestId: "req_hit",
+			now: new Date("2026-10-12T00:00:00.000Z"),
+		});
+		expect(sse).toBe(
+			`data: {"id":"req_hit","created":1791763200,"choices":[{"delta":{"content":"hi"}}]}\n\n` +
+			`data: {"id":"req_hit","choices":[],"usage":{"prompt_tokens":0,"completion_tokens":0}}\n\n` +
+			"data: [DONE]\n\n",
+		);
+	});
+
+	it("keeps event names when replaying Messages and Responses streams", () => {
+		const sse = buildCachedSseBody({
+			frames: [{ eventName: "message_start", data: { type: "message_start", message: { id: "req_source", usage: { input_tokens: 9 } } } }],
+			sourceRequestId: "req_source",
+			requestId: "req_hit",
+		});
+		expect(sse).toBe(
+			`event: message_start\ndata: {"type":"message_start","message":{"id":"req_hit","usage":{"input_tokens":0}}}\n\n`,
+		);
 	});
 
 	it("sets status, age, remaining TTL and source headers on a hit", () => {

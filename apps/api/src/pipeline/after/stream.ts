@@ -46,6 +46,8 @@ import { applyResponsePlugins } from "@/plugins/registry";
 import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } from "./billing-policy";
 import { calculateOutputPerformanceMetrics } from "./performance-metrics";
 import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
+import { applyResponseCacheHeaders } from "@/core/response-cache";
+import { createStreamCacheCapture } from "./response-cache-stream";
 
 function shouldAttachRoutingDiagnostics(ctx: PipelineContext): boolean {
 	return Boolean(ctx.meta?.debug?.enabled || ctx.meta?.returnRoutingDiagnostics);
@@ -243,11 +245,20 @@ export async function handleStreamResponse(
         }
     };
 
+    const cacheCapture = createStreamCacheCapture({
+        ctx,
+        result,
+        failed: () => streamFailed,
+        finishReason: () => cachedFinishReason,
+    });
+
     const resp = await passthroughWithPricing({
         upstream,
         ctx,
         provider: result.provider,
         priceCard: card,
+        onOutboundFrame: cacheCapture?.onOutboundFrame,
+        onStreamEnd: cacheCapture?.onStreamEnd,
         rewriteFrame: (frame: any) => {
             if (!frame || typeof frame !== "object") return frame;
             const includeMeta = ctx.meta.returnMeta ?? false;
@@ -881,6 +892,9 @@ export async function handleStreamResponse(
         timingHeader,
     });
 
+    if (ctx.responseCache?.status === "miss") {
+        applyResponseCacheHeaders(resp.headers, { status: "miss", ttlSeconds: ctx.responseCache.ttlSeconds });
+    }
     return resp;
 }
 

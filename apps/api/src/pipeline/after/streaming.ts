@@ -27,6 +27,10 @@ export function passthrough(upstream: Response): Response {
     });
 }
 
+export type OutboundStreamFrame =
+    | { eventName: string | null; data: unknown }
+    | { raw: string };
+
 type PassthroughWithPricingOpts = {
     upstream: Response;
     ctx: PipelineContext;
@@ -50,6 +54,16 @@ type PassthroughWithPricingOpts = {
      * Called for each canonical stream event extracted from protocol frames.
      */
     onStreamEvent?: (event: UnifiedStreamEvent) => void | Promise<void>;
+    /**
+     * Called with each frame exactly as written downstream: parsed JSON, or
+     * the raw block (such as `data: [DONE]`) when it is not JSON.
+     */
+    onOutboundFrame?: (frame: OutboundStreamFrame) => void;
+    /**
+     * Called once after the upstream ends and the downstream is closed.
+     * `aborted` means no terminal frame was seen.
+     */
+    onStreamEnd?: (info: { aborted: boolean; downstreamClosed: boolean }) => void;
     /**
      * Optional Server-Timing value; if present we'll include it.
      */
@@ -82,7 +96,11 @@ function frameMayCarryAccountingState(frame: any): boolean {
  *  - detecting the final snapshot frame with `usage` to trigger onFinalUsage
  */
 export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): Promise<Response> {
-    const { upstream, rewriteFrame, onFinalUsage, onFinalSnapshot, onStreamEvent, timingHeader, ctx, provider } = opts;
+    const { upstream, rewriteFrame, onFinalUsage, onFinalSnapshot, onStreamEvent, onOutboundFrame, onStreamEnd, timingHeader, ctx, provider } = opts;
+    const observeOutbound = (frame: OutboundStreamFrame) => {
+        if (!onOutboundFrame) return;
+        try { onOutboundFrame(frame); } catch { }
+    };
     const cancellationPolicy = getProviderStreamCancellationPolicy(provider);
     const providerMetadata = ctx.providers?.find((candidate) => candidate.providerId === provider);
     ctx.meta.streamCancellationSupport =
@@ -156,6 +174,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         if (downstreamClosed) return;
         const prefix = eventName ? `event: ${eventName}\n` : "";
         const line = `${prefix}data: ${JSON.stringify(obj)}\n\n`;
+        observeOutbound({ eventName: eventName ?? null, data: obj });
         try {
             await writer.write(enc.encode(line));
         } catch {
@@ -233,6 +252,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     } catch {
                         // not JSON - just forward raw block
                         if (!downstreamClosed) {
+                            observeOutbound({ raw: frame.raw });
                             try {
                                 await writer.write(enc.encode(frame.raw + "\n\n"));
                             } catch {
@@ -438,8 +458,12 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     sawFinalUsage: false,
                 });
             }
+            const closedEarly = downstreamClosed;
             if (!downstreamClosed) {
                 try { await writer.close(); } catch { }
+            }
+            if (onStreamEnd) {
+                try { onStreamEnd({ aborted: !sawTerminalSnapshot, downstreamClosed: closedEarly }); } catch { }
             }
         }
     })();
