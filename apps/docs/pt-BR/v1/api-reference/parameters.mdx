@@ -100,9 +100,9 @@ Ative para interfaces de chat, exibição token a token ou respostas longas em q
 
 Observações:
 
-O suporte a streaming varia conforme o endpoint.
-Streaming costuma ser uma opção de transporte, não um controle de qualidade.
-Fluxos com chamadas de ferramentas ou saídas estruturadas também podem ser transmitidos de forma diferente conforme o provedor.
+- O suporte a streaming varia conforme o endpoint.
+- Streaming costuma ser uma opção de transporte, não um controle de qualidade.
+- Fluxos com chamadas de ferramentas ou saídas estruturadas também podem ser transmitidos de forma diferente conforme o provedor.
 
 <span id="temperature"></span>
 <h3 id="parameter-temperature"><code>temperature</code></h3>
@@ -127,9 +127,9 @@ Boas aplicações:
 
 Orientações práticas:
 
-Comece com um valor baixo para tarefas estruturadas.
-Altere primeiro `temperature` ou `top_p`, não os dois.
-Temperatura alta combinada com quantização agressiva pode ampliar a instabilidade.
+- Comece com um valor baixo para tarefas estruturadas.
+- Altere primeiro `temperature` ou `top_p`, não os dois.
+- Temperatura alta combinada com quantização agressiva pode ampliar a instabilidade.
 
 <span id="top_p"></span>
 <h3 id="parameter-top_p"><code>top_p</code></h3>
@@ -147,8 +147,8 @@ Valores menores restringem a massa de probabilidade da escolha do modelo e costu
 
 Observações:
 
-Ajuste `top_p` quando quiser ampliar ou reduzir o espaço de busca sem alterar a temperatura diretamente.
-Para a maioria das aplicações, uma `temperature` moderada e um `top_p` próximo de 1,0 são um ponto de partida razoável.
+- Ajuste `top_p` quando quiser ampliar ou reduzir o espaço de busca sem alterar a temperatura diretamente.
+- Para a maioria das aplicações, uma `temperature` moderada e um `top_p` próximo de 1,0 são um ponto de partida razoável.
 
 <span id="top_k"></span>
 <h3 id="parameter-top_k"><code>top_k</code></h3>
@@ -165,8 +165,8 @@ Valores menores de `top_k` restringem as escolhas do modelo e podem tornar a sa�
 
 Observações:
 
-`top_k` não está disponível em todos os provedores.
-Considere-o um limitador mais explícito do conjunto de tokens do que `top_p`.
+- `top_k` não está disponível em todos os provedores.
+- Considere-o um limitador mais explícito do conjunto de tokens do que `top_p`.
 
 <span id="max_tokens"></span>
 <h3 id="parameter-max_tokens"><code>max_tokens</code></h3>
@@ -434,8 +434,8 @@ O Phaseo mapeia internamente esses níveis normalizados do gateway para controle
 
 Observações:
 
-`Batch` é um fluxo de API separado, não um valor de nível de serviço.
-O suporte varia conforme o endpoint e o provedor.
+- `Batch` é um fluxo de API separado, não um valor de nível de serviço.
+- O suporte varia conforme o endpoint e o provedor.
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>

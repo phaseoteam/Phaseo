@@ -100,9 +100,9 @@ Phaseoを指すカスタムベースURLでAnthropic公式SDKを使用する場�
 
 注意:
 
-ストリーミングの対応状況はエンドポイントによって異なります。
-ストリーミングは通常、品質制御ではなく転送方法の選択です。
-ツール呼び出しや構造化出力のフローでは、プロバイダーによってストリーミングの動作が異なる場合があります。
+- ストリーミングの対応状況はエンドポイントによって異なります。
+- ストリーミングは通常、品質制御ではなく転送方法の選択です。
+- ツール呼び出しや構造化出力のフローでは、プロバイダーによってストリーミングの動作が異なる場合があります。
 
 <span id="temperature"></span>
 <h3 id="parameter-temperature"><code>temperature</code></h3>
@@ -127,9 +127,9 @@ Phaseoを指すカスタムベースURLでAnthropic公式SDKを使用する場�
 
 実用上の指針:
 
-構造化タスクでは低い値から始めてください。
-`temperature`と`top_p`は、まずどちらか一方だけ変更してください。
-高いtemperatureと強い量子化を組み合わせると、不安定さが増すことがあります。
+- 構造化タスクでは低い値から始めてください。
+- `temperature`と`top_p`は、まずどちらか一方だけ変更してください。
+- 高いtemperatureと強い量子化を組み合わせると、不安定さが増すことがあります。
 
 <span id="top_p"></span>
 <h3 id="parameter-top_p"><code>top_p</code></h3>
@@ -147,8 +147,8 @@ Phaseoを指すカスタムベースURLでAnthropic公式SDKを使用する場�
 
 注意:
 
-temperatureを直接変えずに探索範囲を狭めたり広げたりするには、`top_p`を調整します。
-多くの用途では、中程度の`temperature`と1.0に近い`top_p`が妥当な初期値です。
+- temperatureを直接変えずに探索範囲を狭めたり広げたりするには、`top_p`を調整します。
+- 多くの用途では、中程度の`temperature`と1.0に近い`top_p`が妥当な初期値です。
 
 <span id="top_k"></span>
 <h3 id="parameter-top_k"><code>top_k</code></h3>
@@ -165,8 +165,8 @@ temperatureを直接変えずに探索範囲を狭めたり広げたりするに
 
 注意:
 
-`top_k`はすべてのプロバイダーで利用できるわけではありません。
-`top_p`より明示的に候補トークン数を制限する方法として使います。
+- `top_k`はすべてのプロバイダーで利用できるわけではありません。
+- `top_p`より明示的に候補トークン数を制限する方法として使います。
 
 <span id="max_tokens"></span>
 <h3 id="parameter-max_tokens"><code>max_tokens</code></h3>
@@ -434,8 +434,8 @@ Phaseoは、ゲートウェイで正規化されたティア値を内部でプ�
 
 注意:
 
-`Batch`は独立したAPIフローであり、サービスティアの値ではありません。
-対応状況はエンドポイントとプロバイダーによって異なります。
+- `Batch`は独立したAPIフローであり、サービスティアの値ではありません。
+- 対応状況はエンドポイントとプロバイダーによって異なります。
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>

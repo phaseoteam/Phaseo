@@ -100,9 +100,9 @@ icon: "sliders-horizontal"
 
 注意事项：
 
-流式传输支持情况因端点而异。
-流式传输通常是传输方式的选择，而非质量控制。
-工具调用或结构化输出流程的流式传输方式也可能因提供商而异。
+- 流式传输支持情况因端点而异。
+- 流式传输通常是传输方式的选择，而非质量控制。
+- 工具调用或结构化输出流程的流式传输方式也可能因提供商而异。
 
 <span id="temperature"></span>
 <h3 id="parameter-temperature"><code>temperature</code></h3>
@@ -127,9 +127,9 @@ icon: "sliders-horizontal"
 
 实用建议：
 
-对于结构化任务，请从较低值开始。
-请先调整 `temperature` 或 `top_p`，不要同时调整两者。
-较高的 temperature 与激进量化结合可能会放大不稳定性。
+- 对于结构化任务，请从较低值开始。
+- 请先调整 `temperature` 或 `top_p`，不要同时调整两者。
+- 较高的 temperature 与激进量化结合可能会放大不稳定性。
 
 <span id="top_p"></span>
 <h3 id="parameter-top_p"><code>top_p</code></h3>
@@ -147,8 +147,8 @@ icon: "sliders-horizontal"
 
 注意事项：
 
-如果想在不直接更改 temperature 的情况下缩小或扩大搜索空间，请调整 `top_p`。
-对大多数应用而言，适中的 `temperature` 和接近 1.0 的 `top_p` 是合理的基准。
+- 如果想在不直接更改 temperature 的情况下缩小或扩大搜索空间，请调整 `top_p`。
+- 对大多数应用而言，适中的 `temperature` 和接近 1.0 的 `top_p` 是合理的基准。
 
 <span id="top_k"></span>
 <h3 id="parameter-top_k"><code>top_k</code></h3>
@@ -165,8 +165,8 @@ icon: "sliders-horizontal"
 
 注意事项：
 
-并非所有提供商都支持 `top_k`。
-相比 `top_p`，它能更明确地限制候选 token 集。
+- 并非所有提供商都支持 `top_k`。
+- 相比 `top_p`，它能更明确地限制候选 token 集。
 
 <span id="max_tokens"></span>
 <h3 id="parameter-max_tokens"><code>max_tokens</code></h3>
@@ -434,8 +434,8 @@ Phaseo 会在内部将网关规范化的级别值映射为提供商原生控制�
 
 注意事项：
 
-`Batch` 是独立的 API 流程，并非服务级别的取值。
-支持情况因端点和提供商而异。
+- `Batch` 是独立的 API 流程，并非服务级别的取值。
+- 支持情况因端点和提供商而异。
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>

@@ -100,9 +100,9 @@ Aktiviere die Option für Chat-Oberflächen, die Token-für-Token-Anzeige oder l
 
 Hinweise:
 
-Die Streaming-Unterstützung variiert je nach Endpunkt.
-Streaming ist normalerweise eine Transportoption und keine Qualitätssteuerung.
-Tool-Aufrufe und strukturierte Ausgaben können je nach Anbieter unterschiedlich gestreamt werden.
+- Die Streaming-Unterstützung variiert je nach Endpunkt.
+- Streaming ist normalerweise eine Transportoption und keine Qualitätssteuerung.
+- Tool-Aufrufe und strukturierte Ausgaben können je nach Anbieter unterschiedlich gestreamt werden.
 
 <span id="temperature"></span>
 <h3 id="parameter-temperature"><code>temperature</code></h3>
@@ -127,9 +127,9 @@ Geeignete Anwendungsfälle:
 
 Praktische Hinweise:
 
-Beginne bei strukturierten Aufgaben mit einem niedrigen Wert.
-Ändere zuerst `temperature` oder `top_p`, nicht beide gleichzeitig.
-Hohe Temperatur kann zusammen mit aggressiver Quantisierung die Instabilität verstärken.
+- Beginne bei strukturierten Aufgaben mit einem niedrigen Wert.
+- Ändere zuerst `temperature` oder `top_p`, nicht beide gleichzeitig.
+- Hohe Temperatur kann zusammen mit aggressiver Quantisierung die Instabilität verstärken.
 
 <span id="top_p"></span>
 <h3 id="parameter-top_p"><code>top_p</code></h3>
@@ -147,8 +147,8 @@ Niedrige Werte beschränken die Wahrscheinlichkeitsmasse, aus der das Modell aus
 
 Hinweise:
 
-Passe `top_p` an, wenn du den Suchraum verkleinern oder vergrößern möchtest, ohne die Temperatur direkt zu ändern.
-Für die meisten Anwendungen sind eine moderate `temperature` und ein `top_p` nahe 1,0 ein sinnvoller Ausgangspunkt.
+- Passe `top_p` an, wenn du den Suchraum verkleinern oder vergrößern möchtest, ohne die Temperatur direkt zu ändern.
+- Für die meisten Anwendungen sind eine moderate `temperature` und ein `top_p` nahe 1,0 ein sinnvoller Ausgangspunkt.
 
 <span id="top_k"></span>
 <h3 id="parameter-top_k"><code>top_k</code></h3>
@@ -165,8 +165,8 @@ Niedrige `top_k`-Werte schränken die Auswahl des Modells ein und können die Au
 
 Hinweise:
 
-`top_k` ist nicht bei allen Anbietern verfügbar.
-Betrachte es als eine explizitere Begrenzung des Token-Pools als `top_p`.
+- `top_k` ist nicht bei allen Anbietern verfügbar.
+- Betrachte es als eine explizitere Begrenzung des Token-Pools als `top_p`.
 
 <span id="max_tokens"></span>
 <h3 id="parameter-max_tokens"><code>max_tokens</code></h3>
@@ -434,8 +434,8 @@ Phaseo ordnet diese vom Gateway normalisierten Stufenwerte intern den anbieterei
 
 Hinweise:
 
-`Batch` ist ein separater API-Ablauf und kein Wert für die Service-Stufe.
-Die Unterstützung variiert je nach Endpunkt und Anbieter.
+- `Batch` ist ein separater API-Ablauf und kein Wert für die Service-Stufe.
+- Die Unterstützung variiert je nach Endpunkt und Anbieter.
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>

@@ -168,7 +168,7 @@ env:
 
 ## Modelo de segurança
 
-Por padrão, as sessões da CLI exigem armazenamento seguro fornecido pelo sistema operacional. Defina `PHASEO_SESSION_BACKEND=file` explicitamente somente quando não houver um cofre de credenciais do sistema; os tokens de atualização serão armazenados em um arquivo de texto com permissões restritas.
+- Por padrão, as sessões da CLI exigem armazenamento seguro fornecido pelo sistema operacional. Defina `PHASEO_SESSION_BACKEND=file` explicitamente somente quando não houver um cofre de credenciais do sistema; os tokens de atualização serão armazenados em um arquivo de texto com permissões restritas.
 - `phaseo logout` revoga o token de atualização armazenado antes de limpar o estado local.
 - Chaves de gerenciamento exigem capacidades explícitas.
 - As chaves comuns de inferência dependem de proteções, políticas de roteamento e configurações do workspace, e não de um modelo de escopos separado.
