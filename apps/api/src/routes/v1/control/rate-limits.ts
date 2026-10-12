@@ -102,15 +102,15 @@ type PolicyFields = Partial<Pick<PolicyRow, "name" | "description" | "requests_p
 
 function parsePolicyFields(body: Record<string, unknown>): Parsed<PolicyFields> {
 	const name = parseName(body.name);
-	if (!name.ok) return name;
+	if (name.ok === false) return { ok: false, message: name.message };
 	const description = parseDescription(body.description);
-	if (!description.ok) return description;
+	if (description.ok === false) return { ok: false, message: description.message };
 	const requests = parseLimit(body.requests_per_minute, "requests_per_minute", MAX_INT4);
-	if (!requests.ok) return requests;
+	if (requests.ok === false) return { ok: false, message: requests.message };
 	const tokens = parseLimit(body.tokens_per_minute, "tokens_per_minute", Number.MAX_SAFE_INTEGER);
-	if (!tokens.ok) return tokens;
+	if (tokens.ok === false) return { ok: false, message: tokens.message };
 	const concurrent = parseLimit(body.concurrent_requests, "concurrent_requests", MAX_INT4);
-	if (!concurrent.ok) return concurrent;
+	if (concurrent.ok === false) return { ok: false, message: concurrent.message };
 	if (body.fail_closed !== undefined && typeof body.fail_closed !== "boolean") {
 		return { ok: false, message: "fail_closed must be a boolean" };
 	}
@@ -228,7 +228,7 @@ async function handleCreatePolicy(req: Request) {
 	if (isResponse(body)) return body;
 	if (body.name === undefined) return badRequest("name is required");
 	const fields = parsePolicyFields(body);
-	if (!fields.ok) return badRequest(fields.message);
+	if (fields.ok === false) return badRequest(fields.message);
 	if (!hasLimit({ requests_per_minute: null, tokens_per_minute: null, concurrent_requests: null, ...fields.value })) {
 		return badRequest("Set at least one of requests_per_minute, tokens_per_minute, or concurrent_requests");
 	}
@@ -274,7 +274,7 @@ async function handleUpdatePolicy(req: Request) {
 	const body = await requireJsonBody(req);
 	if (isResponse(body)) return body;
 	const fields = parsePolicyFields(body);
-	if (!fields.ok) return badRequest(fields.message);
+	if (fields.ok === false) return badRequest(fields.message);
 	if (Object.keys(fields.value).length === 0) return badRequest("Provide at least one field to update");
 	try {
 		const supabase = getSupabaseAdmin();
