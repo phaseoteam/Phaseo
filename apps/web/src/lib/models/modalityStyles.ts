@@ -7,6 +7,9 @@ function normalizeModalityStyleKey(value: string): string {
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return "realtime";
 	}
+	if (/\bocr\b/.test(normalized)) return "ocr";
+	if (/\bpars(e|ing)\b/.test(normalized)) return "parse";
+	if (normalized.includes("translat")) return "translation";
 	if (normalized.includes("embed")) return "embeddings";
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
 		return "rerank";
@@ -200,6 +203,39 @@ const MODALITY_TONES: Record<string, ModalityTone> = {
 			"group-hover:border-transparent group-hover:bg-[#E2EAF3] group-hover:text-[#334155] dark:group-hover:border-transparent dark:group-hover:bg-[#202936] dark:group-hover:text-[#CBD5E1]",
 		sidebarIconSelectedClassName:
 			"border-transparent bg-[#E2EAF3] text-[#334155] dark:border-transparent dark:bg-[#202936] dark:text-[#CBD5E1]",
+	},
+	ocr: {
+		badgeClassName:
+			"border-transparent bg-[#DEDDFC] text-[#3730A3] dark:border-transparent dark:bg-[#1A1840] dark:text-[#A5A9FC]",
+		iconClassName: "text-[#3730A3] dark:text-[#A5A9FC]",
+		ghostIconHoverClassName:
+			"group-hover:text-[#3730A3] dark:group-hover:text-[#A5A9FC]",
+		sidebarIconHoverClassName:
+			"group-hover:border-transparent group-hover:bg-[#DEDDFC] group-hover:text-[#3730A3] dark:group-hover:border-transparent dark:group-hover:bg-[#1A1840] dark:group-hover:text-[#A5A9FC]",
+		sidebarIconSelectedClassName:
+			"border-transparent bg-[#DEDDFC] text-[#3730A3] dark:border-transparent dark:bg-[#1A1840] dark:text-[#A5A9FC]",
+	},
+	parse: {
+		badgeClassName:
+			"border-transparent bg-[#E4F6C8] text-[#3F6212] dark:border-transparent dark:bg-[#1D2A0B] dark:text-[#BEF264]",
+		iconClassName: "text-[#3F6212] dark:text-[#BEF264]",
+		ghostIconHoverClassName:
+			"group-hover:text-[#3F6212] dark:group-hover:text-[#BEF264]",
+		sidebarIconHoverClassName:
+			"group-hover:border-transparent group-hover:bg-[#E4F6C8] group-hover:text-[#3F6212] dark:group-hover:border-transparent dark:group-hover:bg-[#1D2A0B] dark:group-hover:text-[#BEF264]",
+		sidebarIconSelectedClassName:
+			"border-transparent bg-[#E4F6C8] text-[#3F6212] dark:border-transparent dark:bg-[#1D2A0B] dark:text-[#BEF264]",
+	},
+	translation: {
+		badgeClassName:
+			"border-transparent bg-[#F1E4D3] text-[#7C4A1E] dark:border-transparent dark:bg-[#2A1C10] dark:text-[#E2B98C]",
+		iconClassName: "text-[#7C4A1E] dark:text-[#E2B98C]",
+		ghostIconHoverClassName:
+			"group-hover:text-[#7C4A1E] dark:group-hover:text-[#E2B98C]",
+		sidebarIconHoverClassName:
+			"group-hover:border-transparent group-hover:bg-[#F1E4D3] group-hover:text-[#7C4A1E] dark:group-hover:border-transparent dark:group-hover:bg-[#2A1C10] dark:group-hover:text-[#E2B98C]",
+		sidebarIconSelectedClassName:
+			"border-transparent bg-[#F1E4D3] text-[#7C4A1E] dark:border-transparent dark:bg-[#2A1C10] dark:text-[#E2B98C]",
 	},
 };
 

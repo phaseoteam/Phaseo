@@ -7,6 +7,9 @@ const CAPABILITY_GROUPS: Record<string, string> = {
 	"audio.transcribe": "audio_stt",
 	"audio.transcription": "audio_stt",
 	"audio.transcriptions": "audio_stt",
+	"audio.translate": "translation",
+	"audio.translation": "translation",
+	"audio.translations": "translation",
 	"audio.speech": "audio_tts",
 	"audio.realtime": "realtime",
 	"audio.music": "audio_music",
@@ -24,6 +27,8 @@ const CAPABILITY_GROUPS: Record<string, string> = {
 	"video.generate": "video",
 	"video.edit": "video",
 	"video.generations": "video",
+	ocr: "ocr",
+	parse: "parse",
 };
 
 /** Add capability-based groups without changing the model's actual outputs. */
