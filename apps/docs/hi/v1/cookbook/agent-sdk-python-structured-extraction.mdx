@@ -1,18 +1,18 @@
 ---
 title: "Python Agent SDK से संरचित JSON निकालें"
 icon: "file-code"
-description: "Phaseo Gateway के ज़रिए strict JSON लौटाने वाले सीमित local-tool loop के लिए Python Agent SDK उपयोग करें।"
+description: "Phaseo Gateway के ज़रिए सख्त JSON लौटाने वाले, सीमित स्थानीय टूल लूप के लिए Python Agent SDK उपयोग करें।"
 ---
 
-Python workflow को इनकी ज़रूरत हो, तो यह रेसिपी उपयोग करें:
+जब किसी Python वर्कफ़्लो को इनकी ज़रूरत हो, तो यह रेसिपी उपयोग करें:
 
-- एक स्थानीय lookup टूल
-- एक सीमित agent loop
-- एक सख्त JSON output shape
+- एक स्थानीय लुकअप टूल
+- एक सीमित एजेंट लूप
+- एक सख्त JSON आउटपुट संरचना
 
 ## 1. SDK तैयार करें
 
-<Note type="warning">Python Agent SDK पैकेज अभी PyPI पर उपलब्ध नहीं है।[सोर्स से इंस्टॉल करने के निर्देश](../sdk-reference/python/agent-sdk-installation.mdx) देखें।</Note>
+<Note type="warning">Python Agent SDK पैकेज अभी PyPI पर उपलब्ध नहीं है। [सोर्स से इंस्टॉल करने के निर्देश](../sdk-reference/python/agent-sdk-installation.mdx) देखें।</Note>
 
 ## 2. स्थानीय टूल तय करें
 
@@ -55,7 +55,7 @@ agent = create_agent(
 )
 ```
 
-## 4. Gateway client के ज़रिए एजेंट चलाएँ
+## 4. Gateway-आधारित क्लाइंट के ज़रिए एजेंट चलाएँ
 
 ```python
 from phaseo_agent import create_gateway_agent_client
@@ -70,11 +70,11 @@ print(result.output)
 
 ## 5. यह रेसिपी कब उपयुक्त है
 
-- orchestration एक Python worker के पास हो
-- tool स्थानीय और नियतात्मक हों
-- बड़ी orchestration layer बनाने से पहले strict output चाहिए
+- ऑर्केस्ट्रेशन की ज़िम्मेदारी एक Python वर्कर के पास हो
+- टूल स्थानीय और नियतात्मक हों
+- पहले कोई बड़ी ऑर्केस्ट्रेशन परत बनाए बिना आपको सख्त आउटपुट चाहिए
 
 ## संबंधित विषय
 
 - [Python Agent SDK](../sdk-reference/python/agent-sdk.mdx)
-- [Python से structured JSON भेजें](./sdk-python-presets-and-json.mdx)
+- [Python से संरचित JSON भेजें](./sdk-python-presets-and-json.mdx)

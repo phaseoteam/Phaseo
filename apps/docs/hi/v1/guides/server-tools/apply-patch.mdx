@@ -1,13 +1,13 @@
 ---
-title: "Patch लागू करें"
-description: "Responses models से validated patch operations लौटाएँ।"
+title: "पैच लागू करें"
+description: "Responses API में मॉडल को सत्यापित पैच ऑपरेशन लौटाने दें।"
 icon: "file-pen-line"
 ---
 
-जब Responses workflow में file changes को structured patch operations के रूप में लौटाना हो, तो `phaseo:apply_patch` उपयोग करें। Phaseo operation validate करके client को लौटाता है; यह filesystem या repository को नहीं बदलता।
+जब किसी Responses वर्कफ़्लो को फ़ाइलों में किए गए बदलाव संरचित पैच ऑपरेशन के रूप में लौटाने हों, तब `phaseo:apply_patch` इस्तेमाल करें। Phaseo ऑपरेशन को सत्यापित करके आपके क्लाइंट को लौटाता है; यह आपके फ़ाइल सिस्टम या रिपॉज़िटरी में कोई बदलाव नहीं करता।
 
 <Note>
-`phaseo:apply_patch` is available on `/v1/responses`.
+`phaseo:apply_patch` `/v1/responses` पर उपलब्ध है।
 </Note>
 
 ## अनुरोध
@@ -27,7 +27,7 @@ curl https://api.phaseo.app/v1/responses \
 
 ## ऑपरेशन की संरचना
 
-जब model tool call करता है, तो operation object भेजता है:
+जब मॉडल टूल को कॉल करता है, तो वह एक ऑपरेशन ऑब्जेक्ट भेजता है:
 
 ```json
 {
@@ -39,9 +39,9 @@ curl https://api.phaseo.app/v1/responses \
 }
 ```
 
-Supported operation types:
+समर्थित ऑपरेशन प्रकार:
 
-| Type | Required fields |
+| प्रकार | आवश्यक फ़ील्ड |
 | --- | --- |
 | `create_file` | `path`, `diff` |
 | `update_file` | `path`, `diff` |
@@ -49,7 +49,7 @@ Supported operation types:
 
 ## टूल का परिणाम
 
-Phaseo validated operation को model loop में लौटाता है:
+Phaseo सत्यापित ऑपरेशन को मॉडल लूप में लौटाता है:
 
 ```json
 {
@@ -63,7 +63,7 @@ Phaseo validated operation को model loop में लौटाता है
 }
 ```
 
-Patch लागू करना, user को दिखाना, reject करना या model से संशोधित operation माँगना आपकी application की ज़िम्मेदारी है।
+पैच लागू करना, उसे उपयोगकर्ता को दिखाना, अस्वीकार करना या मॉडल से संशोधित ऑपरेशन माँगना आपके ऐप्लिकेशन की ही ज़िम्मेदारी है।
 
 ## उपयोग और मूल्य निर्धारण
 
@@ -79,9 +79,9 @@ Phaseo यह दर्ज करता है:
 }
 ```
 
-Pricing cards इसे `server_tool_apply_patch_requests` meter से bill कर सकते हैं।
+मूल्य निर्धारण कार्ड इसका बिल `server_tool_apply_patch_requests` मीटर से बना सकते हैं।
 
 ## संबंधित
 
-- [Server tools](./index.mdx)
+- [सर्वर टूल](./index.mdx)
 - [Responses API](../../api-reference/endpoint/responses.mdx)

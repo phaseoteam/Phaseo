@@ -6,23 +6,7 @@ openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "Avalie perguntas tipadas sobre o estado da aplicação com os modelos de decisão suportados."
 ---
 
-Para novas chamadas, use o formato compatível com OpenAI: `input` contém texto ou mensagens do usuário com partes `input_image` incorporadas, e `questions` é uma lista ordenada de perguntas `predicate`, `choice` ou `score`. As respostas mantêm a ordem e os nomes opcionais. Valores booleanos continuam booleanos. URLs de imagens hospedadas não são aceitas; Luna aceita até 128 imagens incorporadas, enquanto outros provedores têm limites próprios. Detalhes explícitos de imagem e `safety_identifier` exigem uma rota OpenAI. O formato anterior com `state`, perguntas nomeadas, `noul` e `criteria` continua aceito e retorna um mapa de respostas. Together Tev exige esse formato porque retorna rótulos sem probabilidades. Os exemplos anteriores continuam válidos.
-
-Mercury Decide (`inception/mercury-decide`) aceita perguntas `predicate`, `choice` e `score` com texto ou JSON. Cada pergunta de escolha aceita até 255 opções, e cada pergunta de pontuação até 10 níveis. Imagens, streaming e chamadas de ferramentas não são compatíveis. A entrada custa atualmente US$ 0,02 por milhão de tokens com o desconto de 50% da Inception; os tokens de saída são registrados, mas gratuitos. A Inception não publicou uma data de término. Verifique a disponibilidade do modelo e os [preços atuais](https://docs.inceptionlabs.ai/get-started/models) antes de usar.
-
-Microsoft Decision (`microsoft/microsoft-decision-1`) usa uma implantação no Azure Foundry e aceita perguntas `predicate`, `choice` e `score` com texto ou JSON. O limite de entrada é de 32.768 tokens. A entrada custa US$ 0,042 por milhão de tokens; a saída é gratuita. Mídia, streaming, ferramentas, `safety_identifier` e `service_tier` não são suportados. Verifique a disponibilidade do modelo. Consulte o [guia da Microsoft](https://learn.microsoft.com/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision).
-
-```json
-{
-  "model": "inception/mercury-decide",
-  "input": "Please refund the duplicate charge on my account.",
-  "questions": [{
-    "type": "predicate",
-    "name": "billing",
-    "instructions": "Is this request about billing?"
-  }]
-}
-```
+Para novas chamadas, use o formato compatível com OpenAI: `input` contém texto ou mensagens do usuário com partes `input_image` incorporadas, e `questions` é uma lista ordenada de perguntas `predicate`, `choice` ou `score`. As respostas mantêm a ordem e os nomes opcionais. Valores booleanos de escolha continuam booleanos. URLs de imagens hospedadas não são aceitas; Luna aceita até 128 imagens incorporadas, enquanto outros provedores têm limites próprios. Detalhes explícitos de imagem e `safety_identifier` exigem uma rota OpenAI. O formato anterior com `state`, mapas de perguntas nomeadas, `noul` e `criteria` continua aceito e retorna o mapa de respostas original. Together Tev exige esse formato anterior porque retorna rótulos sem probabilidades. Os exemplos no formato anterior, mais abaixo, continuam válidos.
 
 ```json
 {
@@ -52,6 +36,38 @@ A solicitação contém:
 
 Liquid D1 (`liquid-ai/d1:free`, também disponível como `liquid-ai/d1`) e Perplexity Decider 27B (`perplexity/decider-27b`) suportam os três tipos de perguntas. D1 é gratuito durante o acesso antecipado experimental. Decider custa US$ 0,04 por milhão de tokens de entrada, incluindo tokens de imagem; os tokens de saída são gratuitos. Adicione uma credencial do provedor Perplexity na Phaseo para usar Decider. Seu estado com imagens usa URLs de dados base64 PNG, JPEG ou WebP; URLs de imagens remotas não são suportadas. Cada pergunta de escolha aceita até 255 opções, e cada pergunta de pontuação até 10 níveis. Verifique a disponibilidade antes de chamar qualquer um dos modelos.
 
+Mercury Decide (`inception/mercury-decide`) aceita perguntas de predicado, de escolha e de pontuação com evidências em texto ou JSON. Cada pergunta de escolha aceita até 255 opções, e cada pergunta de pontuação até 10 níveis. Imagens, streaming e chamadas de ferramentas não são compatíveis. A entrada custa atualmente US$ 0,02 por milhão de tokens com a promoção de 50% da Inception; os tokens de saída são registrados, mas gratuitos. A Inception não publicou a data de término da promoção. Verifique a disponibilidade do modelo e os [preços upstream atuais](https://docs.inceptionlabs.ai/get-started/models) antes de usar.
+
+```json
+{
+  "model": "inception/mercury-decide",
+  "input": "Please refund the duplicate charge on my account.",
+  "questions": [{
+    "type": "predicate",
+    "name": "billing",
+    "instructions": "Is this request about billing?"
+  }]
+}
+```
+
+Microsoft Decision (`microsoft/microsoft-decision-1`) usa uma implantação no Azure Foundry e aceita perguntas de predicado, de escolha e de pontuação com evidências em texto ou JSON. O limite de entrada é de 32.768 tokens. O preço publicado é de US$ 0,042 por milhão de tokens de entrada, com saída gratuita. Mídia, streaming, ferramentas, `safety_identifier` e `service_tier` não são suportados. Verifique a disponibilidade do modelo antes de chamá-lo. Consulte o [guia da Microsoft](https://learn.microsoft.com/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision).
+
+```json
+{
+  "model": "microsoft/microsoft-decision-1",
+  "input": "The API returns 500 on every call.",
+  "questions": [{
+    "type": "choice",
+    "name": "team",
+    "instructions": "Which team should handle this ticket?",
+    "choices": [
+      { "value": "engineering", "description": "Bugs, errors, and outages" },
+      { "value": "support", "description": "How-to and account questions" }
+    ]
+  }]
+}
+```
+
 Para Respan Span-01, `state` deve ser um trecho de conversa com um array `input` de mensagens anteriores e uma mensagem `output` do assistente. Span-01 suporta apenas perguntas `noul`. A resposta `noul` é a probabilidade de o comportamento estar presente; `probabilities` também inclui as probabilidades de ausência e de não ser observável.
 
 ```json
@@ -70,7 +86,7 @@ Para Respan Span-01, `state` deve ser um trecho de conversa com um array `input`
 }
 ```
 
-`respan/span-01:free` é o modelo Lite gratuito com limite diário; a Phaseo o mapeia para o identificador de modelo API `span-01-free` da Respan. `respan/span-01` é mapeado para `span-01-pro` e cobrado pela Respan a US$ 0,02 por milhão de tokens de entrada; os tokens de saída são gratuitos. Span-01 está em acesso antecipado, então a Respan precisa habilitar o acesso para sua organização. Adicione sua chave de API da Respan como credencial do provedor Respan na Phaseo antes de chamar esses modelos.
+`respan/span-01:free` é o modelo Lite gratuito com limite diário; a Phaseo o mapeia para o identificador de modelo API `span-01-free` da Respan. `respan/span-01` é mapeado para o identificador de modelo API `span-01-pro` da Respan e cobrado pela Respan a US$ 0,02 por milhão de tokens de entrada; os tokens de saída são gratuitos. Span-01 está em acesso antecipado, então a Respan precisa habilitar o acesso para sua organização. Adicione sua chave de API da Respan como credencial do provedor Respan na Phaseo antes de chamar esses modelos.
 
 As respostas usam as mesmas chaves de `questions`. Respostas `choice` incluem a opção selecionada, probabilidades e confiança; respostas `noul` incluem uma probabilidade de 0 a 1; e respostas `score` incluem uma pontuação ponderada por probabilidade, legenda, probabilidades e confiança.
 
@@ -115,11 +131,11 @@ Você também pode fornecer uma string `data:image/png;base64,...` em `images`. 
 
 O Clef aceita no máximo 64 perguntas, com IDs de até 100 letras, dígitos, sublinhados, pontos ou hífens. Perguntas de escolha exigem de 2 a 255 opções; perguntas de pontuação exigem de 2 a 10 níveis. Consulte a [documentação do Clef](https://developers.cloudflare.com/workers-ai/models/clef/) do Cloudflare.
 
-### Áudio e vídeo com Clef Omni
+### Decisões sobre áudio e vídeo com Clef Omni
 
-`cloudflare/clef-omni` aceita texto, imagens, áudio e vídeo com as mesmas perguntas ordenadas e respostas. Áudio e vídeo são extensões do Phaseo ao contrato de entrada da OpenAI; as rotas de decisões da OpenAI aceitam apenas texto e imagens. Verifique a disponibilidade do modelo antes de usar.
+`cloudflare/clef-omni` aceita texto, imagens, áudio e vídeo com as mesmas `questions` ordenadas e as mesmas respostas dos outros modelos de Decisions. Áudio e vídeo são extensões da Phaseo ao contrato de entrada no estilo OpenAI; atualmente, as rotas de Decisions da OpenAI aceitam apenas texto e imagens. Verifique a disponibilidade do modelo antes de usar.
 
-Este exemplo requer uma rota Omni disponível e uma chave API do Phaseo. Substitua os dados de áudio ilustrativos e a URL de vídeo pela sua mídia antes de enviar.
+Este exemplo requer uma rota Omni disponível e uma chave de API da Phaseo. Substitua os dados de áudio ilustrativos e a URL de vídeo pela sua mídia antes de enviar.
 
 ```json
 {
@@ -136,8 +152,8 @@ Este exemplo requer uma rota Omni disponível e uma chave API do Phaseo. Substit
 }
 ```
 
-Use `input_audio.data` com `format: "wav"` ou `"mp3"`, ou `input_audio.url` com uma URL HTTPS pública ou de dados de áudio. `input_video.video_url` aceita uma string ou `{ "url": "..." }` com uma URL HTTPS pública ou de dados MP4/WebM. O servidor deve retornar o Content-Type correspondente. Phaseo busca os arquivos com limites de tamanho e verificações de endereços privados e redirecionamentos, e os incorpora para Cloudflare sem enviar credenciais do provedor ao servidor de mídia.
+Use `input_audio.data` com `format: "wav"` ou `"mp3"`, ou `input_audio.url` com uma URL HTTPS pública ou uma URL de dados de áudio inline. `input_video.video_url` aceita uma string ou `{ "url": "..." }` contendo uma URL HTTPS pública ou uma URL de dados MP4/WebM inline. Os servidores remotos devem retornar o Content-Type de mídia correspondente. A Phaseo busca as URLs com limites de tamanho e verificações de endereços privados e de redirecionamentos e, em seguida, incorpora a mídia para a Cloudflare; as credenciais do provedor nunca são enviadas ao servidor de mídia.
 
-Omni aceita até quatro áudios (8 MiB e 300 segundos cada) e dois vídeos (16 MiB e 60 segundos cada), com limite conjunto de 16 MiB decodificados. Os limites por imagem e de dados de imagens combinados continuam válidos; o limite do corpo Omni substitui os 13 MiB de Clef/Flash. Phaseo limita o corpo completo a 37 MiB. Cloudflare valida codificação, dimensões e duração, e amostra o vídeo em dois quadros por segundo. A trilha sonora é usada quando todos os vídeos têm uma.
+O Omni aceita até quatro clipes de áudio (8 MiB e 300 segundos cada) e dois vídeos (16 MiB e 60 segundos cada). Juntos, áudio e vídeo não podem exceder 16 MiB decodificados. O Omni mantém os limites por imagem e de imagens combinadas descritos acima; o limite do corpo da requisição dele substitui o limite de 13 MiB do Clef/Flash. A Phaseo limita o corpo completo da requisição Omni a 37 MiB. A Cloudflare valida a codificação da mídia, as dimensões das imagens e a duração dos clipes, e amostra o vídeo a dois quadros por segundo. A trilha sonora de um vídeo é usada quando todos os vídeos da requisição têm uma.
 
-O contexto documentado é de 64.000 tokens; o preço é US$ 0,15 por milhão de tokens de entrada agregados. Tokens de mídia contam para contexto e cobrança; a saída é gratuita. Phaseo usa o consumo de entrada informado pela Cloudflare sem cobranças adicionais de áudio ou vídeo. [Cloudflare](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).
+O Omni tem um contexto documentado de 64.000 tokens e custa US$ 0,15 por milhão de tokens de entrada agregados. Tokens de mídia contam para o contexto e a cobrança; a saída é gratuita. A Phaseo cobra com base no consumo de entrada informado pela Cloudflare, sem adicionar cobranças separadas de áudio ou vídeo. Consulte o [contrato do Omni da Cloudflare](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).

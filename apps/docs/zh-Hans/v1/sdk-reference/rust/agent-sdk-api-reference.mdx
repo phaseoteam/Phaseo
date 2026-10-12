@@ -132,7 +132,7 @@ pub trait ModelClient {
 - `kind`
 - `pending_tool_calls`
 
-每个 `PendingToolCall` 包含原始 `ToolCall`、所需输入类型 `kind` 和便于阅读的原因。
+每个 `PendingToolCall` 包含原始 `ToolCall`、所需输入类型 `kind` 和便于阅读的原因 `reason`。
 
 `ToolDecision` 提供已批准的 `tool_call_id` 和可选原因。`ToolOutput` 提供 `tool_call_id` 和 JSON 输出。
 
@@ -148,11 +148,11 @@ pub trait ModelClient {
 
 `RunRecord` 包含运行 ID 和智能体 ID、实际模型和步数上限、状态、原始输入、应用上下文、步数、可选的暂停信息、可选的停止原因和时间戳。
 
-`RunStep` 包含索引、状态、模型尝试次数、工具调用、请求 ID、提供方、模型、结束原因、可选错误和用量。
+`RunStep` 包含索引、状态、模型尝试次数、工具调用、请求 ID、提供商、模型、结束原因、可选错误和用量。
 
 `UsageSummary` 包含 `input_tokens`、`output_tokens`、`cached_tokens`、`total_tokens` 和 `cost`。
 
-`cost` 由模型客户端提供。内置 Gateway 0.1 适配器目前不会将 Gateway 的 `cost_nanos` 或 `cost_cents` 映射到此字段。
+`cost` 由模型客户端提供。内置的 `0.1` Gateway 适配器目前不会将 Gateway 的 `cost_nanos` 或 `cost_cents` 映射到此字段。
 
 如果定义派生了 `Serialize` 和 `Deserialize`，`RunResult`、`RunRecord`、`RunStep`、`Message`、`ToolCall`、`HumanPause`、`PendingToolCall`、`ToolDecision`、`ToolOutput` 和 `UsageSummary` 均支持 Serde 序列化。
 

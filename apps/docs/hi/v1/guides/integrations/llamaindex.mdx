@@ -1,10 +1,10 @@
 ---
 title: "LlamaIndex"
 icon: "database"
-description: "LlamaIndex RAG workflows में Phaseo उपयोग करें।"
+description: "LlamaIndex के RAG वर्कफ़्लो में Phaseo इस्तेमाल करें।"
 ---
 
-LlamaIndex app से generation या embeddings को Phaseo के ज़रिए route करना हो, तो यह गाइड उपयोग करें।
+अगर आपके LlamaIndex ऐप को जनरेशन या एम्बेडिंग Phaseo के ज़रिए रूट करनी है, तो यह गाइड इस्तेमाल करें।
 
 ## इंस्टॉल करें
 
@@ -29,7 +29,7 @@ response = llm.complete("Write one sentence about retrieval quality.")
 print(response)
 ```
 
-## Index में उपयोग करें
+## इंडेक्स में उपयोग करें
 
 ```python
 from llama_index.core import Settings
@@ -37,16 +37,16 @@ from llama_index.core import Settings
 Settings.llm = llm
 ```
 
-इसके बाद सामान्य तरीके से index बनाएँ या query करें।
+इसके बाद सामान्य तरीके से अपना इंडेक्स बनाएँ या उस पर क्वेरी करें।
 
 ## नोट्स
 
-- Third-party OpenAI-संगत APIs के लिए `OpenAILike` उपयोग करें।
-- Generation और embedding model IDs स्पष्ट दें। यह न मानें कि LlamaIndex defaults Phaseo पर point करते हैं।
-- Phaseo embeddings उपयोग करने पर embedding model को Phaseo model ID और उसी Base URL से सेट करें।
+- तृतीय-पक्ष OpenAI-संगत API के लिए `OpenAILike` इस्तेमाल करें।
+- जनरेशन और एम्बेडिंग मॉडल ID स्पष्ट रूप से दें। यह न मानें कि LlamaIndex के डिफ़ॉल्ट Phaseo की ओर इशारा करते हैं।
+- अगर आप Phaseo एम्बेडिंग इस्तेमाल करते हैं, तो एम्बेडिंग मॉडल को Phaseo मॉडल ID और उसी बेस URL के साथ सेट करें।
 
 ## संबंधित विषय
 
-- [Embeddings](../../api-reference/endpoint/embeddings.mdx)
+- [एम्बेडिंग](../../api-reference/endpoint/embeddings.mdx)
 - [मॉडल](../../api-reference/endpoint/models.mdx)
 - [OpenAI SDK](./openai-sdk.mdx)

@@ -8,13 +8,13 @@ icon: "/icons/brands/openai.svg"
 
 प्रोडक्शन में GPT-5.6 परिवार को सुरक्षित रूप से अपनाने के लिए यह गाइड देखें।
 
-GPT-5.6 जटिल प्रोडक्शन वर्कफ़्लो के लिए OpenAI का मौजूदा GPT परिवार है। AI Stats में तय tier ID, OpenAI मॉडल ID `gpt-5.6-sol`, `gpt-5.6-terra` और `gpt-5.6-luna` से मैप होते हैं।
+GPT-5.6 जटिल प्रोडक्शन वर्कफ़्लो के लिए OpenAI का मौजूदा GPT परिवार है। Phaseo में तय tier ID, OpenAI मॉडल ID `gpt-5.6-sol`, `gpt-5.6-terra` और `gpt-5.6-luna` से मैप होते हैं।
 
 ## माइग्रेशन क्विकस्टार्ट
 
 1. वर्कलोड से मेल खाने वाला तय Sol, Terra या Luna मॉडल चुनें।
 2. केवल मॉडल ID बदलें और अनुरोध का बाकी हिस्सा स्थिर रखें।
-3. रीजनिंग प्रयास, संरचित आउटपुट, टूल, लेटेंसी और प्रति-कार्य लागत को फिर से जाँचें।
+3. रीज़निंग प्रयास, संरचित आउटपुट, टूल, लेटेंसी और प्रति-कार्य लागत को फिर से जाँचें।
 4. पुराने GPT-5 मॉडल को फ़ॉलबैक के रूप में उपलब्ध रखते हुए नई रूट को कैनरी करें।
 
 ## मॉडल चुनें
@@ -25,9 +25,9 @@ GPT-5.6 जटिल प्रोडक्शन वर्कफ़्लो क
 | `openai/gpt-5.6-terra` | तर्क, कोडिंग और असिस्टेंट वर्कफ़्लो में संतुलित रोज़मर्रा का काम | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 | `openai/gpt-5.6-luna` | कम लेटेंसी और लागत-संवेदनशील GPT-5.6 वर्कलोड | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 
-OpenAI का `gpt-5.6` alias `gpt-5.6-sol` पर रूट करता है। AI Stats में Sol-स्तर को डिफ़ॉल्ट बनाने के लिए `openai/gpt-5.6` या `openai/gpt-sol-latest` उपयोग करें और नियंत्रित रूटिंग के लिए तय tier ID चुनें।
+OpenAI का `gpt-5.6` alias `gpt-5.6-sol` पर रूट करता है। Phaseo में Sol-स्तर को डिफ़ॉल्ट बनाने के लिए `openai/gpt-5.6` या `openai/gpt-sol-latest` उपयोग करें और नियंत्रित रूटिंग के लिए तय tier ID चुनें।
 
-AI Stats हर tier के नवीनतम मॉडल के लिए tier alias भी ट्रैक करता है: `openai/gpt-sol-latest`, `openai/gpt-terra-latest` और `openai/gpt-luna-latest`। नियंत्रित माइग्रेशन के लिए तय GPT-5.6 ID उपयोग करें; tier alias तभी चुनें जब आप जानबूझकर चाहते हों कि भविष्य के Sol, Terra या Luna रिलीज़ उसी रूट से आगे बढ़ें।
+Phaseo हर tier के नवीनतम मॉडल के लिए tier alias भी ट्रैक करता है: `openai/gpt-sol-latest`, `openai/gpt-terra-latest` और `openai/gpt-luna-latest`। नियंत्रित माइग्रेशन के लिए तय GPT-5.6 ID उपयोग करें; tier alias तभी चुनें जब आप जानबूझकर चाहते हों कि भविष्य के Sol, Terra या Luna रिलीज़ उसी रूट से आगे बढ़ें।
 
 ## नया क्या है
 
@@ -67,7 +67,7 @@ AI Stats हर tier के नवीनतम मॉडल के लिए tie
 }
 ```
 
-आपका integration अब भी flat OpenAI-compatible field भेजता हो, तो route के समर्थन पर AI Stats `reasoning_effort` भी स्वीकार करता है:
+आपका integration अब भी flat OpenAI-compatible field भेजता हो, तो route के समर्थन पर Phaseo `reasoning_effort` भी स्वीकार करता है:
 
 ```json
 {
@@ -158,4 +158,4 @@ Cache reads और writes की कीमत अलग-अलग होती �
 - [OpenAI GPT-5.6 मॉडल मार्गदर्शिका](https://developers.openai.com/api/docs/guides/latest-model)
 - [OpenAI model catalog](https://developers.openai.com/api/docs/models)
 - [GPT-5.6 प्रीव्यू सिस्टम कार्ड](https://deploymentsafety.openai.com/gpt-5-6-preview)
-- [AI Stats प्रॉम्प्ट कैशिंग गाइड](../guides/prompt-caching.mdx)
+- [Phaseo प्रॉम्प्ट कैशिंग गाइड](../guides/prompt-caching.mdx)

@@ -22,15 +22,8 @@ $agent = AgentSdk::createAgent(new AgentDefinition(
 
 Das Laufergebnis enthält Status, Schritte, Nachrichten, normalisierte Nutzung, Stoppgrund und endgültige Ausgabe. Prüfe diese Felder, statt den endgültigen Text als vollständigen Laufdatensatz zu betrachten.
 
-## Endgültiges Ergebnis validieren
 ```php
 $result = $agent->run(input: $prompt, client: $client);
-
-echo $result->output;
-echo $result->run->status;
-echo $result->usage["total_tokens"];
-echo $result->usage["cost"];
-```
 
 echo $result->output;
 echo $result->run->status;

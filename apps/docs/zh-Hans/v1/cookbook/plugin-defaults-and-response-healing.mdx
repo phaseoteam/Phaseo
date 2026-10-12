@@ -45,8 +45,8 @@ Gateway 插件策略按以下顺序解析：
 
 这一层还可以选择响应修复模式：
 
-- `safe`用于范围受限的语法清理
-- `strict`用于仅移除外层包装的行为
+- `safe` 用于范围受限的语法清理
+- `strict` 用于仅移除外层包装的行为
 
 这样可以缩短请求正文，也更容易在不同服务间复用路由和输出行为。
 
@@ -54,7 +54,6 @@ Gateway 插件策略按以下顺序解析：
 
 如果工作区默认值未锁定，请求仍可直接覆盖插件配置：
 
-## 请求示例
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
@@ -143,11 +142,12 @@ response = client.generate_response(
 print(response.get("output_text"))
 ```
 </CodeGroup>
+
 ## 6. 在日志中验证行为
 
 发送一次请求后，检查请求详情并确认：
 
-- `plugin_executions`包含`response-healing`
+- `plugin_executions` 包含 `response-healing`
 - 状态为以下之一：
   - `applied`
   - `skipped`
@@ -161,7 +161,7 @@ print(response.get("output_text"))
 
 - 工作区路由设置
 - 预设插件默认值
-- 请求级`plugins`
+- 请求级 `plugins`
 - 工作区默认值是否已锁定
 
 确认这些策略层一致后，再排查模型质量问题。

@@ -20,13 +20,13 @@ DeepSeek HarnessをPhaseoに接続すると、HarnessのWeb画面からPhaseoの
 
 ```bash
 phaseo login
-phaseo dsh
+phaseo deepseek-harness
 ```
 
 `$DSH_HOME/cordis.patch.yml`のPhaseo以外の項目は維持され、Phaseoのブロックにマーカーを付けて管理対象の設定だけを更新・削除できるようにします。Chat Completionsに対応したPhaseoの有効なテキストモデルをすべて同期します。必要なら別のデフォルトモデルを指定します。
 
 ```bash
-phaseo dsh --model YOUR_PHASEO_MODEL_ID
+phaseo deepseek-harness --model YOUR_PHASEO_MODEL_ID
 ```
 
 セットアップでは有効期限のないGatewayキー`Phaseo CLI: DeepSeek Harness API Key`も作成し、Harnessの保護された`$DSH_HOME/.credentials.yaml`ストアに直接書き込みます。選択したモデルのみ設定する場合は`--catalog default`を使います。

@@ -1674,7 +1674,7 @@ paths:
         - Gateway
       operationId: uploadFile
       summary: ファイルをアップロード
-      description: '`/batches/files`の互換エイリアス。バッチ処理用にファイルをアップロードし、上流のファイルメタデータを返します。AI Statsが上流プロバイダーを推定できるよう`model`を指定してください。`model`と`provider`を両方省略する旧クライアントではOpenAIが既定です。'
+      description: '`/batches/files`の互換エイリアス。バッチ処理用にファイルをアップロードし、上流のファイルメタデータを返します。Phaseoが上流プロバイダーを推定できるよう`model`を指定してください。`model`と`provider`を両方省略する旧クライアントではOpenAIが既定です。'
       parameters:
         - name: model
           in: query

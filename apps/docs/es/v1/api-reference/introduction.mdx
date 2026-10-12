@@ -12,11 +12,11 @@ Usa esta página para encontrar la ruta de API adecuada antes de abrir la refere
 | Si quieres | Empieza por |
 | --- | --- |
 | Enviar tu primera solicitud | [Guía de inicio rápido](../quickstart.mdx) |
-| Generar texto o usar herramientas | `POST /responses` |
+| Generar texto o usar herramientas | [`POST /responses`](./endpoint/responses) |
 | Tomar decisiones tipadas | [`POST /decisions`](./endpoint/decisions) |
-| Mantener una integración OpenAI compatible existente | `POST /chat/completions` |
-| Explorar modelos y proveedores | `GET /models` y `GET /providers` |
-| Crear música o gestionar archivos | `POST /music/generations` y `POST /files` |
+| Mantener una integración existente compatible con OpenAI | [`POST /chat/completions`](./endpoint/chat-completions) |
+| Explorar modelos y proveedores | [`GET /models`](./endpoint/models) y [`GET /providers`](./endpoint/providers) |
+| Crear música o gestionar archivos | [`POST /music/generations`](./endpoint/music-generate) y [`POST /files`](./endpoint/files) |
 | Generar vídeo (Beta) | [`POST /videos`](./endpoint/video-create) |
 | Enviar un lote o descargar resultados (Beta) | [`POST /batches`](./endpoint/batches-create) y [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
@@ -43,6 +43,7 @@ Usa el archivo OpenAPI para importar la API en Postman, Hoppscotch o un generado
 </Card>
 
 La documentación y los SDK usan esta misma especificación. Los endpoints de Video, Batch y Decisions están marcados como **Beta**; puede requerirse acceso de prueba para el espacio de trabajo.
+
 ## Autenticación
 
 Usa una clave de API estándar del Gateway para inferencia y una clave de API de administración con los permisos adecuados para administrar. Consulta [Autenticación](../developers/authentication.mdx) y [Claves de API de administración](../developers/management-api-keys.mdx).

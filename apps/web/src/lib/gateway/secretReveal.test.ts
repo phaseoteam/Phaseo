@@ -10,12 +10,12 @@ describe("secret reveal helpers", () => {
 	it("builds .env content with the selected env var and base URL", () => {
 		expect(
 			buildEnvFile({
-				apiKey: "aistats_v1_sk_kid_secret",
-				envVarName: "AI_STATS_MANAGEMENT_KEY",
+				apiKey: "phaseo_v1_sk_kid_secret",
+				envVarName: "PHASEO_MANAGEMENT_KEY",
 				baseUrl: "https://api.phaseo.app/v1/",
 			}),
 		).toBe(
-			'AI_STATS_MANAGEMENT_KEY="aistats_v1_sk_kid_secret"\nAI_STATS_BASE_URL="https://api.phaseo.app/v1"\n',
+			'PHASEO_MANAGEMENT_KEY="phaseo_v1_sk_kid_secret"\nPHASEO_BASE_URL="https://api.phaseo.app/v1"\n',
 		);
 	});
 
@@ -23,14 +23,14 @@ describe("secret reveal helpers", () => {
 		const exports = buildCollectionExports();
 		expect(exports.length).toBeGreaterThanOrEqual(3);
 		for (const item of exports) {
-			expect(item.content).toContain("paste-your-ai-stats-key");
-			expect(item.content).not.toContain("aistats_v1_sk_real");
+			expect(item.content).toContain("paste-your-phaseo-key");
+			expect(item.content).not.toContain("phaseo_v1_sk_real");
 		}
 	});
 
 	it("includes ready app config snippets for common clients", () => {
 		const snippets = buildAppConfigSnippets({
-			apiKey: "aistats_v1_sk_real",
+			apiKey: "phaseo_v1_sk_real",
 		});
 		expect(snippets.map((snippet) => snippet.id)).toEqual(
 			expect.arrayContaining([

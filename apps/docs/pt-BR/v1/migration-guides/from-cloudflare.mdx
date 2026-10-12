@@ -13,7 +13,7 @@ Use este guia se seu aplicativo já envia solicitações compatíveis com OpenAI
 | --- | --- | --- |
 | URL do Gateway | URL do Cloudflare específica da conta e do gateway | `https://api.phaseo.app/v1` |
 | Autenticação | Credenciais do Cloudflare e do provedor | `PHASEO_API_KEY` |
-| Política de roteamento | Configuração do Cloudflare Gateway | Configurações de roteamento e presets do Phaseo |
+| Política de roteamento | Configuração do Cloudflare Gateway | Configurações de roteamento e predefinições do Phaseo |
 | Visibilidade das solicitações | Análises do Cloudflare | Atividade e detalhes das solicitações no Phaseo |
 
 <Steps>
@@ -67,7 +67,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 <Step title="Recrie o roteamento e os padrões compartilhados">
 
-Mova restrições estáveis de provedores, padrões de prompts e parâmetros de geração para [Presets](../guides/presets.mdx). Configure a classificação de provedores e os fallbacks em [Roteamento e fallbacks](../guides/routing-and-fallbacks.mdx).
+Mova restrições estáveis de provedores, padrões de prompts e parâmetros de geração para [Predefinições](../guides/presets.mdx). Configure a classificação de provedores e os fallbacks em [Roteamento e fallbacks](../guides/routing-and-fallbacks.mdx).
 
 As configurações de cache e análise do Cloudflare não são transferidas automaticamente. Decida explicitamente se cada comportamento deve ficar no Phaseo, no aplicativo ou na camada de borda.
 
@@ -90,6 +90,6 @@ Quando aplicável, teste respostas sem streaming, streaming, erros, ferramentas 
 
 ## Próximas etapas
 
-- [Presets](../guides/presets.mdx)
+- [Predefinições](../guides/presets.mdx)
 - [Roteamento e fallbacks](../guides/routing-and-fallbacks.mdx)
 - [Observabilidade](../guides/integrations/observability.mdx)

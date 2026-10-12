@@ -1,10 +1,10 @@
 ---
 icon: "shuffle"
 title: "डायनामिक टर्न"
-description: "Go agent के turns के बीच model, instructions, tools और sampling settings बदलें।"
+description: "Go एजेंट के टर्न के बीच मॉडल, निर्देश, टूल और सैंपलिंग सेटिंग्स बदलें।"
 ---
 
-Dynamic turn callbacks agent को दोबारा बनाए बिना routing को run state के अनुसार प्रतिक्रिया देने देते हैं। वे हर model request से पहले चलते हैं और मौजूदा turn context पाते हैं।
+डायनामिक टर्न कॉलबैक, एजेंट को दोबारा बनाए बिना रूटिंग को रन की स्थिति के अनुसार बदलने देते हैं। वे हर मॉडल अनुरोध से पहले चलते हैं और उन्हें मौजूदा टर्न का संदर्भ मिलता है।
 
 ```go
 agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
@@ -19,10 +19,10 @@ agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
 })
 ```
 
-Dynamic tools और हर turn के लिए `Temperature`, `MaxOutputTokens` व `TopP` values भी configure कर सकते हैं।
+आप डायनामिक टूल और हर टर्न के लिए `Temperature`, `MaxOutputTokens` व `TopP` मान भी कॉन्फ़िगर कर सकते हैं।
 
-## अगले turn को tool से प्रभावित करें
+## टूल से अगले टर्न को प्रभावित करें
 
-अगली model request बदलने के लिए tool पर `NextTurn` सेट करें। ये overrides paused state में सहेजे जाते हैं, इसलिए approval checkpoint के बाद भी बने रहते हैं और अगले turn के बाद समाप्त होते हैं।
+ठीक अगले मॉडल अनुरोध को बदलने के लिए टूल पर `NextTurn` सेट करें। ये ओवरराइड रोकी गई स्थिति में सहेजे जाते हैं, इसलिए अनुमोदन चेकपॉइंट के बाद भी बने रहते हैं और अगले टर्न के बाद समाप्त हो जाते हैं।
 
-हर turn पर दोबारा calculate होने वाली policy के लिए dynamic callbacks उपयोग करें। Repository की जाँच के बाद model बदलने जैसे tool-specific handoff के लिए `NextTurn` उपयोग करें।
+जिस नीति की हर टर्न पर दोबारा गणना होनी चाहिए, उसके लिए डायनामिक कॉलबैक उपयोग करें। रिपॉज़िटरी की जाँच के बाद मॉडल बदलने जैसे टूल-विशिष्ट हैंडऑफ़ के लिए `NextTurn` उपयोग करें।

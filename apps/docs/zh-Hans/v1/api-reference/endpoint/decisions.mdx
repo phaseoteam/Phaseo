@@ -6,23 +6,7 @@ openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "使用受支持的决策模型，针对应用状态评估带类型的问题。"
 ---
 
-新调用请使用兼容 OpenAI 的格式：`input` 包含文本或带有内联 `input_image` 的用户消息，`questions` 是按顺序排列的 `predicate`、`choice` 或 `score` 问题数组。回答保持相同顺序及可选名称。布尔选项仍为布尔值。不支持托管图片 URL；Luna 支持最多128张内联图片，其他提供商有各自的限制。显式图片细节和 `safety_identifier` 需要 OpenAI 路由。原有的 `state`、命名问题映射、`noul` 和 `criteria` 格式仍受支持，并返回回答映射。Together Tev 返回不含概率的标签，因此需要原有格式。原有示例仍然有效。
-
-Mercury Decide (`inception/mercury-decide`) 支持使用文本或 JSON 的 `predicate`、`choice` 和 `score` 问题。每个选择题最多支持 255 个选项，每个评分题最多支持 10 个等级。不支持图片、流式响应或工具调用。Inception 当前提供五折优惠，输入价格为每百万 token 0.02 美元；输出 token 会计入用量，但免费。Inception 尚未公布优惠结束日期。使用前请检查模型可用性和[当前价格](https://docs.inceptionlabs.ai/get-started/models)。
-
-Microsoft Decision（`microsoft/microsoft-decision-1`）使用 Azure Foundry 部署，支持针对文本或 JSON 的 `predicate`、`choice` 和 `score` 问题。输入上限为 32,768 个 token。输入价格为每百万 token 0.042 美元，输出免费。不支持媒体、流式输出、工具、`safety_identifier` 或 `service_tier`。调用前请确认模型可用性。参阅 [Microsoft 指南](https://learn.microsoft.com/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision)。
-
-```json
-{
-  "model": "inception/mercury-decide",
-  "input": "Please refund the duplicate charge on my account.",
-  "questions": [{
-    "type": "predicate",
-    "name": "billing",
-    "instructions": "Is this request about billing?"
-  }]
-}
-```
+新调用请使用兼容 OpenAI 的格式：`input` 包含文本或带有内联 `input_image` 的用户消息，`questions` 是按顺序排列的 `predicate`、`choice` 或 `score` 问题数组。回答保持相同顺序及可选名称。布尔选项仍为布尔值。不支持托管图片 URL；Luna 支持最多 128 张内联图片，其他提供商有各自的限制。显式图片细节和 `safety_identifier` 需要 OpenAI 路由。原有的 `state`、命名问题映射、`noul` 和 `criteria` 格式仍受支持，并返回原来的回答映射。Together Tev 返回不含概率的标签，因此需要原有格式。下面的原有示例仍然有效。
 
 ```json
 {
@@ -42,7 +26,7 @@ Microsoft Decision（`microsoft/microsoft-decision-1`）使用 Azure Foundry 部
 
 
 
-当应用需要代码可直接使用的结构化答案时，请使用 `POST /v1/decisions`。受支持的模型包括 TypeSafe Jev 1.13 (`typesafe/jev-1.13.0`)、Together Tev1 4B Experimental (`together/tev1-4b-experimental`) 和 Respan Span-01（`respan/span-01:free` 和 `respan/span-01`）。
+当应用需要代码可直接使用的结构化答案时，请使用 `POST /v1/decisions`。受支持的模型包括 TypeSafe Jev 1.13（`typesafe/jev-1.13.0`）、Together Tev1 4B Experimental（`together/tev1-4b-experimental`）和 Respan Span-01（`respan/span-01:free` 和 `respan/span-01`）。
 
 请求包含：
 
@@ -50,7 +34,39 @@ Microsoft Decision（`microsoft/microsoft-decision-1`）使用 Azure Foundry 部
 - `questions`：具名问题的映射。每个问题将 `type` 设置为 `noul`、`choice` 或 `score`，并包含 `instructions`；支持的类型取决于所选模型。
 - `model`：Phaseo 模型 ID。使用 `typesafe/jev-1.13.0` 指定 Jev 1.13，或使用 `typesafe/jev-latest` 跟随最新 Jev 版本。
 
-Liquid D1（`liquid-ai/d1:free`，也可使用 `liquid-ai/d1`）和 Perplexity Decider 27B (`perplexity/decider-27b`) 支持全部三种问题类型。D1 在实验性早期访问期间免费。Decider 每百万输入 token 收费 0.04 美元，包括图像 token；输出 token 免费。使用 Decider 前，请在 Phaseo 中添加 Perplexity 提供商凭证。其图像状态使用 PNG、JPEG 或 WebP 的 base64 数据 URL；不支持远程图像 URL。每个选择问题最多接受 255 个选项，每个评分问题最多接受 10 个等级。调用任一模型前请检查其可用性。
+Liquid D1（`liquid-ai/d1:free`，也可使用 `liquid-ai/d1`）和 Perplexity Decider 27B（`perplexity/decider-27b`）支持全部三种问题类型。D1 在实验性早期访问期间免费。Decider 每百万输入 token 收费 0.04 美元，包括图像 token；输出 token 免费。使用 Decider 前，请在 Phaseo 中添加 Perplexity 提供商凭证。其图像状态使用 PNG、JPEG 或 WebP 的 base64 数据 URL；不支持远程图像 URL。每个选择问题最多接受 255 个选项，每个评分问题最多接受 10 个等级。调用任一模型前请检查其可用性。
+
+Mercury Decide（`inception/mercury-decide`）支持判断题、选择题和评分题，可使用文本或 JSON 作为证据。选择题最多支持 255 个选项；评分题最多支持 10 个等级。不支持图片、流式响应或工具调用。在 Inception 的 50% 折扣促销期间，输入价格目前为每百万 token 0.02 美元；输出 token 会计入用量，但免费。Inception 尚未公布优惠结束日期。使用前请检查模型可用性和[当前上游价格](https://docs.inceptionlabs.ai/get-started/models)。
+
+```json
+{
+  "model": "inception/mercury-decide",
+  "input": "Please refund the duplicate charge on my account.",
+  "questions": [{
+    "type": "predicate",
+    "name": "billing",
+    "instructions": "Is this request about billing?"
+  }]
+}
+```
+
+Microsoft Decision（`microsoft/microsoft-decision-1`）使用 Azure Foundry 部署，支持判断题、选择题和评分题，可使用文本或 JSON 作为证据。输入上限为 32,768 个 token。公布的价格为每百万输入 token 0.042 美元，输出免费。不支持媒体、流式输出、工具、`safety_identifier` 或 `service_tier`。调用前请确认模型可用性。请参阅 [Microsoft 指南](https://learn.microsoft.com/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision)。
+
+```json
+{
+  "model": "microsoft/microsoft-decision-1",
+  "input": "The API returns 500 on every call.",
+  "questions": [{
+    "type": "choice",
+    "name": "team",
+    "instructions": "Which team should handle this ticket?",
+    "choices": [
+      { "value": "engineering", "description": "Bugs, errors, and outages" },
+      { "value": "support", "description": "How-to and account questions" }
+    ]
+  }]
+}
+```
 
 对于 Respan Span-01，`state` 必须是一个会话片段，包含先前消息的 `input` 数组和一条助手的 `output` 消息。Span-01 仅支持 `noul` 问题。`noul` 答案表示该行为存在的概率；`probabilities` 还包含不存在和不可观察的概率。
 
@@ -70,7 +86,7 @@ Liquid D1（`liquid-ai/d1:free`，也可使用 `liquid-ai/d1`）和 Perplexity D
 }
 ```
 
-`respan/span-01:free` 是有每日限额的免费 Lite 模型；Phaseo 将其映射为 Respan 的 API 模型 ID `span-01-free`。`respan/span-01` 映射为 Respan 的 API 模型 ID `span-01-pro`，由 Respan 按每百万输入 token 0.02 美元计费；输出 token 免费。Span-01 处于早期访问阶段，因此 Respan 必须为您的组织启用访问权限。调用这些模型前，请将 Respan API 密钥添加为 Phaseo 中的 Respan 提供商凭证。
+`respan/span-01:free` 是有每日限额的免费 Lite 模型；Phaseo 将其映射为 Respan 的 API 模型 ID `span-01-free`。`respan/span-01` 映射为 Respan 的 API 模型 ID `span-01-pro`，由 Respan 按每百万输入 token 0.02 美元计费；输出 token 免费。Span-01 处于早期访问阶段，因此 Respan 必须为你的组织启用访问权限。调用这些模型前，请将 Respan API 密钥添加为 Phaseo 中的 Respan 提供商凭证。
 
 答案使用与 `questions` 相同的键。`choice` 答案包含所选选项、概率和置信度；`noul` 答案包含 0–1 的概率；`score` 答案包含概率加权分数、图例、概率和置信度。
 
@@ -92,13 +108,13 @@ Liquid D1（`liquid-ai/d1:free`，也可使用 `liquid-ai/d1`）和 Perplexity D
 }
 ```
 
-Jev 支持在同一请求中混合全部三种问题类型；Span-01 仅支持 `noul` 问题。请参阅[快速开始](../../quickstart)，获取可直接复制的 cURL、JavaScript、TypeScript SDK 和 Python SDK 示例。Jev 1.13 按每百万输入 token 0.042 美元计费；输出 token 免费。
+Jev 支持在同一请求中混合全部三种问题类型；Span-01 仅支持 `noul` 问题。请参阅[快速入门](../../quickstart)，获取可直接复制的 cURL、JavaScript、TypeScript SDK 和 Python SDK 示例。Jev 1.13 按每百万输入 token 0.042 美元计费；输出 token 免费。
 
 有关上游问题语义，请参阅 TypeSafe 的 [API 参考](https://docs.typesafe.ai/api)。
 
-### 使用Clef进行图像决策
+### 使用 Clef 进行图像决策
 
-`cloudflare/clef` 和 `cloudflare/clef-flash` 通过 Cloudflare Workers AI 支持三种问题类型及嵌入图像。Clef 的上下文为 65,536 个令牌，Clef Flash 为 24,576 个令牌。每百万输入令牌费用分别为 $0.24 和 $0.038。
+`cloudflare/clef` 和 `cloudflare/clef-flash` 通过 Cloudflare Workers AI 支持全部三种问题类型及嵌入图像。Clef 的上下文为 65,536 个 token，Clef Flash 为 24,576 个 token。每百万输入 token 费用分别为 $0.24 和 $0.038。
 
 ```json
 {
@@ -111,13 +127,13 @@ Jev 支持在同一请求中混合全部三种问题类型；Span-01 仅支持 `
 }
 ```
 
-也可以在`images`中提供`data:image/png;base64,...`字符串。Clef最多接受四张PNG、JPEG或WebP图像，每张最多4 MiB和1,600万像素，解码后图像数据总量最多8 MiB，请求体最多13 MiB。不支持远程URL。Cloudflare会验证图像格式和尺寸。不支持图像的模型会拒绝图像请求。
+也可以在 `images` 中提供 `data:image/png;base64,...` 字符串。Clef 最多接受四张 PNG、JPEG 或 WebP 图像，每张最多 4 MiB 和 1,600 万像素，解码后图像数据总量最多 8 MiB，请求体最多 13 MiB。不支持远程 URL。Cloudflare 会验证图像格式和尺寸。不支持图像的模型会拒绝图像请求。
 
-Clef最多接受64个问题，ID最多100个字母、数字、下划线、点或连字符。选择题需要2–255个选项，评分题需要2–10个等级。请参阅Cloudflare的[Clef文档](https://developers.cloudflare.com/workers-ai/models/clef/)。
+Clef 最多接受 64 个问题，ID 最多 100 个字母、数字、下划线、点或连字符。选择题需要 2–255 个选项，评分题需要 2–10 个等级。请参阅 Cloudflare 的 [Clef 文档](https://developers.cloudflare.com/workers-ai/models/clef/)。
 
 ### Clef Omni 音频和视频决策
 
-`cloudflare/clef-omni` 支持文本、图像、音频和视频，使用相同的有序问题和答案。音频和视频是 Phaseo 对 OpenAI 风格输入协议的扩展；OpenAI 决策路由目前仅支持文本和图像。使用前请检查模型可用性。
+`cloudflare/clef-omni` 接受文本、图像、音频和视频，并使用与其他 Decisions 模型相同的有序 `questions` 和答案。音频和视频是 Phaseo 对 OpenAI 风格输入协议的扩展；OpenAI 决策路由目前仅支持文本和图像。使用前请检查模型可用性。
 
 此示例需要可用的 Omni 路由和 Phaseo API 密钥。发送前请将音频占位数据和视频 URL 替换为自己的媒体。
 
@@ -136,8 +152,8 @@ Clef最多接受64个问题，ID最多100个字母、数字、下划线、点或
 }
 ```
 
-使用 `input_audio.data` 时指定 `format: "wav"` 或 `"mp3"`，或通过 `input_audio.url` 提供公共 HTTPS URL 或音频数据 URL。`input_video.video_url` 接受包含公共 HTTPS URL 或 MP4/WebM 数据 URL 的字符串或 `{ "url": "..." }`。远程服务器必须返回对应的 Content-Type。Phaseo 在大小限制及私有地址和重定向检查下获取媒体，再嵌入 Cloudflare 请求；不会向媒体服务器发送提供商凭据。
+使用 `input_audio.data` 时指定 `format: "wav"` 或 `"mp3"`，或通过 `input_audio.url` 提供公共 HTTPS URL 或内联音频数据 URL。`input_video.video_url` 接受包含公共 HTTPS URL 或内联 MP4/WebM 数据 URL 的字符串或 `{ "url": "..." }`。远程服务器必须返回对应的媒体 Content-Type。Phaseo 在大小限制及私有地址和重定向检查下获取媒体，再嵌入 Cloudflare 请求；不会向媒体服务器发送提供商凭据。
 
-Omni 最多接受四段音频（每段 8 MiB、300 秒）和两段视频（每段 16 MiB、60 秒），音频与视频解码后合计不超过 16 MiB。每张图像及图像合计的限制仍适用；Omni 的请求体限制取代 Clef/Flash 的 13 MiB 限制。Phaseo 将完整请求体限制为 37 MiB。Cloudflare 验证编码、图像尺寸和时长，并以每秒两帧采样视频。当每段视频都包含音轨时，会使用音轨。
+Omni 最多接受四段音频（每段 8 MiB、300 秒）和两段视频（每段 16 MiB、60 秒），音频与视频解码后合计不超过 16 MiB。Omni 保留上述每张图像及图像合计的限制；其请求体限制取代 Clef/Flash 的 13 MiB 限制。Phaseo 将完整的 Omni 请求体限制为 37 MiB。Cloudflare 会验证媒体编码、图像尺寸和片段时长，并以每秒两帧采样视频。当每段视频都包含音轨时，会使用音轨。
 
-官方上下文为 64,000 个令牌，合计每百万输入令牌费用为 $0.15。媒体令牌计入上下文和费用，输出免费。Phaseo 按 Cloudflare 报告的输入用量结算，不另收音频或视频费用。 [Cloudflare](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).
+根据文档，Omni 的上下文为 64,000 个 token，每百万聚合输入 token 收费 $0.15。媒体 token 计入上下文和费用，输出免费。Phaseo 按 Cloudflare 报告的输入用量结算，不另收音频或视频费用。请参阅 [Cloudflare 的 Omni 约定](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json)。

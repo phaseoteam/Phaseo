@@ -10,7 +10,7 @@ Diese Anleitung verbindet Programmieragenten mit Phaseo. Wähle die Phaseo CLI f
 
 | Du möchtest… | Verwende |
 | --- | --- |
-| Cline, Kilo Code, oh-my-pi, Muse Code oder MiniMax Code mit isolierten temporären Einstellungen starten | `phaseo cline`, `phaseo kilo`, `phaseo omp`, `phaseo muse`, oder `phaseo minimax` |
+| Cline, Kilo Code, oh-my-pi, Muse Code oder MiniMax Code mit isolierten temporären Einstellungen starten | `phaseo cline`, `phaseo kilo`, `phaseo omp`, `phaseo muse` oder `phaseo minimax` |
 | Einen installierten Agenten konfigurieren und seine Einstellungen behalten | `phaseo <integration>` |
 | Einen Agenten ohne Phaseo CLI konfigurieren | Befolge die manuellen Anbieterschritte in der jeweiligen Anleitung |
 
@@ -31,7 +31,7 @@ Verwende für dauerhafte Integrationen den Befehl mit dem Produktnamen:
 phaseo codex
 ```
 
-Supported integration names are `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor`, and `zed`. Die isolierten CLI-Runner sind `cline`, `kilo`, `omp`, `muse` und `minimax`.
+Unterstützte Integrationsnamen sind `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor` und `zed`. Die isolierten CLI-Runner sind `cline`, `kilo`, `omp`, `muse` und `minimax`.
 
 Die CLI erstellt einen eigenen, nicht ablaufenden API-Schlüssel für den jeweiligen Assistenten. Bei Neuinstallationen konfiguriert sie Aider und Continue automatisch und schreibt auch Zeds Anbieter-/Modelleinstellungen. Bei Assistenten, die Geheimnisse ausschließlich in einer Editor-Oberfläche speichern, zeigt sie die noch fehlenden Felder an, verlinkt den passenden Leitfaden und ermöglicht das Kopieren nur dieses Assistentenschlüssels:
 
@@ -71,14 +71,14 @@ Für Anthropic-kompatible Tools verwende:
 
 Cursor unterstützt benutzerdefinierte OpenAI-kompatible Endpoints über die Einstellungen für den OpenAI-API-Schlüssel.
 
-1. Öffne Cursor Settings.
+1. Öffne `Cursor Settings`.
 2. Öffne `Models`.
 3. Aktiviere den Eintrag `OpenAI API Key` oder füge ihn hinzu.
 4. Füge deinen Phaseo-API-Schlüssel ein.
 5. Aktiviere `Override OpenAI Base URL`.
 6. Setze die Base-URL auf `https://api.phaseo.app/v1`.
-Füge ein benutzerdefiniertes Modell mit einer Phaseo-Modell-ID hinzu, zum Beispiel `openai/gpt-5-nano`.
-Aktiviere das Modell und prüfe es in der Modellauswahl von Cursor.
+7. Füge ein benutzerdefiniertes Modell mit einer Phaseo-Modell-ID hinzu, zum Beispiel `openai/gpt-5-nano`.
+8. Aktiviere das Modell und prüfe es in der Modellauswahl von Cursor.
 
 Wenn Cursor eine Modell-ID mit `/` ablehnt, erstelle den ähnlichsten lokalen Alias, den die UI zulässt, und leite ihn in deiner Konfiguration auf das Phaseo-Modell, sofern der Client Aliase unterstützt.
 
@@ -90,9 +90,9 @@ In VS Code lassen sich Modelle im Editor Language Models hinzufügen, wenn der O
 2. Führe `Chat: Manage Language Models` aus.
 3. Wähle `OpenAI Compatible` oder `OAI Compatible`.
 4. Gib deinen Phaseo-API-Schlüssel ein.
-Setze Endpoint oder Base-URL auf `https://api.phaseo.app/v1`.
-Füge eine Phaseo-Modell-ID hinzu, zum Beispiel `openai/gpt-5-nano`.
-Wähle das neue Modell in der Chat-Modellauswahl aus.
+5. Setze Endpoint oder Base-URL auf `https://api.phaseo.app/v1`.
+6. Füge eine Phaseo-Modell-ID hinzu, zum Beispiel `openai/gpt-5-nano`.
+7. Wähle das neue Modell in der Chat-Modellauswahl aus.
 
 Wenn deine VS-Code-Version keinen OpenAI-kompatiblen Anbieter anzeigt, nutze eine Erweiterung mit Unterstützung für benutzerdefinierte Anbieter, etwa Continue, Cline, Roo Code oder Kilo Code.
 
@@ -128,7 +128,7 @@ Diese Tools bieten ähnliche Anbietereinstellungen.
 3. Setze die Base-URL auf `https://api.phaseo.app/v1`.
 4. Füge deinen Phaseo-API-Schlüssel ein.
 5. Gib eine Phaseo-Modell-ID ein.
-Speichere die Einstellungen und sende eine kurze Chat-Anfrage, bevor du Dateiänderungstools verwendest.
+6. Speichere die Einstellungen und sende eine kurze Chat-Anfrage, bevor du Dateiänderungstools verwendest.
 
 ## Aider
 
@@ -151,6 +151,7 @@ Aider erwartet bei benutzerdefinierten OpenAI-kompatiblen Modellen häufig das P
 ## MiniMax Code
 
 Verwende die [MiniMax-Code-Anleitung](./minimax-code.mdx) für die `mcode` CLI. `phaseo minimax` erstellt einen temporären MiniMax-Anbieter mit Phaseos OpenAI-kompatiblem Endpunkt, startet die CLI und entfernt das temporäre Datenverzeichnis nach der Sitzung. MiniMax Code unterstützt auch ACP über `mcode acp`, wenn Editor oder Host direkt ACP verwenden.
+
 ## Zed
 
 Führe `phaseo zed` aus und befolge die angezeigten Schritte, um in den Zed-Einstellungen einen OpenAI-kompatiblen Anbieter hinzuzufügen. Verwende den generierten Schlüssel nur im Zugangsdatenfeld von Zed.

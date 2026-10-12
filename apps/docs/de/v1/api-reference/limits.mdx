@@ -1,6 +1,6 @@
 ---
 title: "Anfragelimits"
-description: "Behandeln Sie Drosselung, Anbieterkontingente und begrenzte Wiederholungsversuche."
+description: "Behandle Drosselung, Anbieterkontingente und begrenzte Wiederholungsversuche."
 icon: "gauge"
 ---
 
@@ -14,26 +14,26 @@ Für kostenlose Modellrouten gelten zusätzlich **1500 Anfragen pro UTC-Tag**, g
 
 Die Limits gelten über alle Gateway-Regionen hinweg und können für einen bestimmten Benutzer und Arbeitsbereich erhöht werden. Dateioperationen und Statusabfragen für Jobs verbrauchen das Minutenkontingent; Verwaltungsendpunkte nicht.
 
-Bei ausgeschöpftem Gateway-Kontingent wird `429` mit `Retry-After` in Sekunden zurückgegeben. Der Fehlergrund ist `customer_requests_per_minute` oder `free_requests_per_day`. Warten Sie diese Zeit vor einem erneuten Versuch. Ist die Kontingentprüfung vorübergehend nicht verfügbar, gibt das Gateway `503` mit Wiederholungshinweisen zurück.
+Bei ausgeschöpftem Gateway-Kontingent wird `429` mit `Retry-After` in Sekunden zurückgegeben. Der Fehlergrund ist `customer_requests_per_minute` oder `free_requests_per_day`. Warte diese Zeit vor einem erneuten Versuch. Ist die Kontingentprüfung vorübergehend nicht verfügbar, gibt das Gateway `503` mit Wiederholungshinweisen zurück.
 
 ## Anbieterlimits
 
-BYOK-Anfragen verwenden die Limits Ihres Anbieterkontos. Verwaltete Anfragen nutzen gemeinsame Anbieterkapazität; diese Kapazität ist kein individuelles Arbeitsbereichskontingent.
+BYOK-Anfragen verwenden die Limits deines Anbieterkontos. Verwaltete Anfragen nutzen gemeinsame Anbieterkapazität; diese Kapazität ist kein individuelles Arbeitsbereichskontingent.
 
 Phaseo leitet einen validierten `Retry-After`-Wert weiter, wenn der Anbieter, an den die Anfrage geroutet wird, einen bereitstellt. BYOK-Antworten können auch `X-Phaseo-Upstream-RateLimit-*`-Header enthalten. Diese Kontingent-Header werden bei verwalteten Anfragen weggelassen, da sie gemeinsame Anbieterkapazität beschreiben. Andere Upstream-Header werden nicht weitergeleitet.
 
 ## Gedrosselte Anfragen behandeln
 
-1. Prüfen Sie den [Fehlercode](./errors.mdx), um vorübergehende Anbieterdrosselung von einer Richtlinien- oder Budgetbeschränkung zu unterscheiden, die Konfigurationsänderungen erfordert.
-2. Beachten Sie `Retry-After`, falls vorhanden. Der Wert kann eine Wartezeit in Sekunden oder ein HTTP-Datum sein; validieren Sie ihn, bevor Sie einen Wiederholungsversuch planen.
-3. Verwenden Sie andernfalls exponentielles Backoff mit zufälliger Streuung und einer maximalen Wartezeit.
-4. Begrenzen Sie Wiederholungsversuche sowohl durch eine maximale Anzahl als auch durch eine Gesamtfrist. Brechen Sie aufgegebene Arbeit ab und geben Sie jeden fehlgeschlagenen Antwortkörper vor einem erneuten Versuch frei.
-5. Reduzieren Sie die Parallelität, wenn die Drosselung anhält.
+1. Prüfe den [Fehlercode](./errors.mdx), um vorübergehende Anbieterdrosselung von einer Richtlinien- oder Budgetbeschränkung zu unterscheiden, die Konfigurationsänderungen erfordert.
+2. Beachte `Retry-After`, falls vorhanden. Der Wert kann eine Wartezeit in Sekunden oder ein HTTP-Datum sein; validiere ihn, bevor du einen Wiederholungsversuch planst.
+3. Verwende andernfalls exponentielles Backoff mit zufälliger Streuung und einer maximalen Wartezeit.
+4. Begrenze Wiederholungsversuche sowohl durch eine maximale Anzahl als auch durch eine Gesamtfrist. Brich aufgegebene Arbeit ab und gib jeden fehlgeschlagenen Antwortkörper vor einem erneuten Versuch frei.
+5. Reduziere die Parallelität, wenn die Drosselung anhält.
 
-Wiederholen Sie eine Jobübermittlung mit unklarem Ergebnis nicht automatisch und führen Sie abgeschlossene Toolaktionen nicht erneut aus. Eine Anfrage kann den Anbieter erreicht haben, auch wenn der Client die Antwort verloren hat; Wiederholungsversuche können Arbeit und Kosten verdoppeln. Verwenden Sie für einen angenommenen Video- oder Batch-Job dessen Status-Endpunkt, statt ihn erneut zu übermitteln.
+Wiederhole eine Jobübermittlung mit unklarem Ergebnis nicht automatisch und führe abgeschlossene Toolaktionen nicht erneut aus. Eine Anfrage kann den Anbieter erreicht haben, auch wenn der Client die Antwort verloren hat; Wiederholungsversuche können Arbeit und Kosten verdoppeln. Verwende für einen angenommenen Video- oder Batch-Job dessen Status-Endpunkt, statt ihn erneut zu übermitteln.
 
 ## Drosselung überwachen
 
-Erfassen Sie die Häufigkeit von `429` nach Endpunkt und Modell und prüfen Sie die Fallback-Häufigkeit in den Anfrageprotokollen. Vergleichen Sie Ihre Anwendungsprotokolle mit den [Routing-Einstellungen](../guides/routing-and-fallbacks.mdx) und den Anbieterkontingenten für BYOK-Traffic.
+Erfasse die Häufigkeit von `429` nach Endpunkt und Modell und prüfe die Fallback-Häufigkeit in den Anfrageprotokollen. Vergleiche deine Anwendungsprotokolle mit den [Routing-Einstellungen](../guides/routing-and-fallbacks.mdx) und den Anbieterkontingenten für BYOK-Traffic.
 
-Informationen zu Ausgaben- und Zugriffskontrollen im Arbeitsbereich finden Sie unter [Budgets](./endpoint/budgets-list.mdx) und [Schutzregeln](./endpoint/guardrails.mdx).
+Informationen zu Ausgaben- und Zugriffskontrollen im Arbeitsbereich findest du unter [Budgets](./endpoint/budgets-list.mdx) und [Schutzregeln](./endpoint/guardrails.mdx).

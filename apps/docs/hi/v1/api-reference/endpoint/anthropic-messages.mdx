@@ -1,25 +1,26 @@
 ---
-title: "मैसेज बनाएँ"
-sidebarTitle: "मैसेज बनाएँ"
+title: "संदेश बनाएँ"
+sidebarTitle: "संदेश बनाएँ"
 openapi: "/hi/openapi/v1/openapi.localized.yaml POST /messages"
-description: "`/v1/messages` पर Anthropic-संगत Messages endpoint।"
+description: "/v1/messages पर Anthropic-संगत Messages एंडपॉइंट।"
 ---
-`/v1/messages` Anthropic Messages API payload स्वीकार करता है और Anthropic फ़ॉर्मैट में प्रतिक्रिया देता है।
+
+`/v1/messages` Anthropic Messages API के पेलोड स्वीकार करता है और Anthropic फ़ॉर्मैट में प्रतिक्रियाएँ लौटाता है।
 
 ## स्ट्रीमिंग
 
-Anthropic फ़ॉर्मैट में server-sent events (`message_start`, `content_block_*`, `message_delta`, `message_stop`) पाने के लिए `stream: true` सेट करें।
+Anthropic फ़ॉर्मैट में सर्वर से भेजे गए इवेंट (`message_start`, `content_block_*`, `message_delta`, `message_stop`) पाने के लिए `stream: true` सेट करें।
 
 ## ध्यान दें
 
-- Anthropic tool-use fields समर्थित हैं।
-- `stream: true` tool loops के साथ भी काम करता है। Gateway-प्रबंधित server tools के लिए Phaseo upstream turn को materialize करके loop जारी रख सकता है और synthetic stream फिर से भेज सकता है।
-- Anthropic-native web search tool shape को `tools` में सीधे भी दिया जा सकता है, जैसे `type: "web_search_20250305"`।
-- `X-Phaseo-Strictness` header तय करता है कि असमर्थित parameters को कैसे संभालना है।
+- Anthropic के टूल उपयोग वाले फ़ील्ड समर्थित हैं।
+- `stream: true` टूल लूप के साथ भी काम करता है। गेटवे द्वारा प्रबंधित सर्वर टूल के लिए Phaseo अपस्ट्रीम टूल कॉल वाले टर्न को पूरा प्राप्त करके लूप जारी रख सकता है और एक सिंथेटिक स्ट्रीम फिर से भेज सकता है।
+- Anthropic का मूल वेब खोज टूल स्वरूप भी सीधे `tools` में स्वीकार किया जाता है, जैसे `type: "web_search_20250305"`।
+- `X-Phaseo-Strictness` हेडर तय करता है कि असमर्थित पैरामीटर कैसे संभाले जाएँ।
 
 ## सर्वर टूल
 
-`/v1/messages` इन Gateway-प्रबंधित server tools को भी सपोर्ट करता है:
+`/v1/messages` गेटवे द्वारा प्रबंधित इन सर्वर टूल का भी समर्थन करता है:
 
 - `gateway:datetime`
 - `phaseo:web_search`
@@ -27,11 +28,11 @@ Anthropic फ़ॉर्मैट में server-sent events (`message_start`
 - `phaseo:advisor`
 - `phaseo:image_generation`
 
-Phaseo इन tools को upstream provider के लिए Anthropic-संगत फ़ॉर्मैट में बदलता है, सर्वर पर चलाता है और tool loop जारी रखता है।
+Phaseo इन टूल को अपस्ट्रीम के लिए Anthropic-संगत फ़ॉर्मैट में बदलता है, उन्हें सर्वर पर चलाता है और टूल लूप जारी रखता है।
 
-## प्रदाता की native web search
+## प्रदाता की मूल वेब खोज
 
-जब कोई संगत Anthropic model/provider जोड़ी native web search सपोर्ट करती है, तो आप native tool definition सीधे भी भेज सकते हैं:
+जब कोई संगत Anthropic मॉडल/प्रदाता जोड़ी मूल वेब खोज का समर्थन करती है, तो आप मूल टूल परिभाषा सीधे भी भेज सकते हैं:
 
 ```bash
 curl https://api.phaseo.app/v1/messages \
@@ -55,7 +56,7 @@ curl https://api.phaseo.app/v1/messages \
   }'
 ```
 
-चलाने से पहले provider routing `web_search_options` support की जाँच करता है।
+प्रदाता रूटिंग निष्पादन से पहले अब भी `web_search_options` समर्थन के आधार पर फ़िल्टर करती है।
 
 ### दिनांक और समय का उदाहरण
 
@@ -80,4 +81,4 @@ curl https://api.phaseo.app/v1/messages \
   }'
 ```
 
-उपयोग होने पर `usage.server_tool_use.*` counters server-tool invocations बताते हैं।
+उपयोग होने पर `usage.server_tool_use.*` काउंटर सर्वर टूल कॉल की गिनती बताते हैं।

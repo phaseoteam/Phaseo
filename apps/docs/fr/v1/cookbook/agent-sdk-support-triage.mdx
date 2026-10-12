@@ -1,19 +1,19 @@
 ---
-title: "Triage du support avec des presets et des échecs tenant compte des guardrails"
+title: "Triage du support avec des préréglages et des échecs tenant compte des guardrails"
 icon: "life-buoy"
-description: "Exécutez un agent de triage du support piloté par un preset qui renvoie du JSON strict, suspend les cas à haut risque pour examen et laisse les échecs des guardrails visibles."
+description: "Exécutez un agent de triage du support piloté par un préréglage qui renvoie du JSON strict, suspend les cas à haut risque pour examen et laisse les échecs des guardrails visibles."
 ---
 
 Utilisez cette recette lorsqu’un workflow de support doit :
 
-- hériter des paramètres de routage et de prompt d’un preset du tableau de bord
+- hériter des paramètres de routage et de prompt d’un préréglage du tableau de bord
 - renvoyer une sortie structurée stricte
 - suspendre les cas à risque pour examen humain
 - laisser les échecs du gateway visibles dans les journaux au lieu de les masquer dans le code de l’agent
 
-## 1. Commencez par un preset
+## 1. Commencez par un préréglage
 
-Créez un preset tel que `support-triage` qui gère :
+Créez un préréglage tel que `support-triage` qui gère :
 
 - le modèle routé par défaut ou la cible du routeur
 - les préférences de fournisseur
@@ -35,7 +35,7 @@ type SupportTriageDecision = {
 
 Gardez le format de la première sortie assez simple pour que les opérateurs puissent l’examiner rapidement.
 
-## 3. Créez l’agent piloté par un preset
+## 3. Créez l’agent piloté par un préréglage
 
 ```ts
 import { createAgent } from "@phaseo/agent-sdk";
@@ -169,7 +169,7 @@ Ensuite :
 C’est particulièrement important lorsque :
 
 - un guardrail bloque la requête
-- la liste d’autorisation du preset rejette le modèle demandé
+- la liste d’autorisation du préréglage rejette le modèle demandé
 - les identifiants du fournisseur ou les filtres d’activation éliminent les candidats routés
 - la réparation de réponse ne parvient pas à rétablir un JSON valide selon le schéma
 
@@ -177,10 +177,10 @@ C’est particulièrement important lorsque :
 
 Après une exécution réussie et une exécution volontairement risquée, vérifiez les points suivants :
 
-- la vue détaillée de la requête affiche la cible définie par le preset
+- la vue détaillée de la requête affiche la cible définie par le préréglage
 - les cas à haut risque sont suspendus avec le statut `waiting_for_human`
 - les étapes de modèle réessayées conservent `modelAttempts`
-- les échecs liés aux guardrails ou au preset restent visibles dans les détails de la requête, et ne sont pas masqués dans les exceptions de l’agent
+- les échecs liés aux guardrails ou au préréglage restent visibles dans les détails de la requête, et ne sont pas masqués dans les exceptions de l’agent
 
 ## Guides associés
 
@@ -188,6 +188,6 @@ Après une exécution réussie et une exécution volontairement risquée, vérif
 - [Préréglages](../guides/presets.mdx)
 - [Routage et solutions de repli](../guides/routing-and-fallbacks.mdx)
 - [Valider les sorties structurées](../guides/structured-outputs.mdx)
-- [Déployer des presets et déboguer le routage](./preset-rollout-and-routing-debug.mdx)
+- [Déployer des préréglages et déboguer le routage](./preset-rollout-and-routing-debug.mdx)
 - [Récupérer un JSON structuré mal formé](./response-healing-for-structured-json.mdx)
 - [Créer une boucle d’agent durable en TypeScript](./agent-sdk-durable-loop.mdx)

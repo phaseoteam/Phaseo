@@ -1,40 +1,40 @@
 ---
 title: "Coding-Agenten mit SKILL.md einrichten"
 icon: "file-code"
-description: "Kombinieren Sie das SDK mit einer SKILL.md-Datei, damit lokale Coding-Agenten Ihre Phaseo-Integration einheitlich verwenden."
+description: "Kombiniere das SDK mit einer SKILL.md-Datei, damit lokale Coding-Agenten deine Phaseo-Integration einheitlich verwenden."
 ---
 
 Diese Anleitung richtet sich an Teams, die interne Tools, CLIs oder Coding-Agent-Workflows auf Basis der Gateway-SDKs erstellen.
 
 <Visibility for="humans">
 <Note>
-Wenn Sie eine wiederverwendbare Grundlage nutzen möchten, statt jede Skill-Datei selbst zu schreiben, installieren Sie die öffentlichen Phaseo-Skills unter [phaseoteam/skills](https://github.com/phaseoteam/skills):
+Wenn du eine wiederverwendbare Grundlage nutzen möchtest, statt jede Skill-Datei selbst zu schreiben, installiere die öffentlichen Phaseo-Skills aus [`phaseoteam/skills`](https://github.com/phaseoteam/skills):
 
 ```bash
 npx skills add phaseoteam/skills --agent codex --skill '*'
 ```
 
-Halten Sie projektspezifische Anweisungen anschließend in Ihrer lokalen Datei `SKILL.md` fest.
+Halte projektspezifische Anweisungen anschließend in deiner lokalen Datei `SKILL.md` fest.
 </Note>
 </Visibility>
 
 <Visibility for="agents">
 <Note>
-Wiederverwendbare Phaseo-Skills finden Sie unter [phaseoteam/skills](https://github.com/phaseoteam/skills). Installieren Sie sie zuerst mit:
+Wiederverwendbare Phaseo-Skills findest du unter [`phaseoteam/skills`](https://github.com/phaseoteam/skills). Installiere sie zuerst mit:
 
 ```bash
 npx skills add phaseoteam/skills --agent codex --skill '*'
 ```
 
-Ergänzen Sie anschließend projektspezifische Anweisungen in der `SKILL.md` des Repositorys.
+Ergänze anschließend projektspezifische Anweisungen in der `SKILL.md` des Repositorys.
 </Note>
 </Visibility>
 
 Das Grundprinzip ist einfach:
 
-- Bewahren Sie die SDK-Einrichtung im Repository auf.
-- Ergänzen Sie eine `SKILL.md`, die dem Agenten erklärt, wie das Projekt Anfragen erwartet.
-- Verweisen Sie den Agenten bei der Einrichtung auf diese Datei, damit die Anfragekonventionen einheitlich bleiben.
+- Bewahre deine SDK-Einrichtung im Repository auf.
+- Ergänze eine `SKILL.md`, die dem Agenten erklärt, wie das Projekt Anfragen erwartet.
+- Verweise den Agenten bei der Einrichtung auf diese Datei, damit die Anfragekonventionen einheitlich bleiben.
 
 ## 1. SDK installieren
 
@@ -68,7 +68,7 @@ pip install phaseo
 
 ## 2. Eine projektspezifische Skill-Datei hinzufügen
 
-Erstellen Sie `SKILL.md` im Stammverzeichnis des Repositorys oder im Skill-Verzeichnis Ihres Teams.
+Erstelle `SKILL.md` im Stammverzeichnis des Repositorys oder im Skill-Verzeichnis deines Teams.
 
 ```md
 # Phaseo Gateway
@@ -93,7 +93,7 @@ export const gateway = new Phaseo({
 });
 ```
 
-Legen Sie anschließend pro Oberfläche einen klaren Aufrufpfad fest:
+Lege anschließend pro Oberfläche einen klaren Aufrufpfad fest:
 
 - Textgenerierung
 - asynchrone Videogenerierung
@@ -102,7 +102,7 @@ Legen Sie anschließend pro Oberfläche einen klaren Aufrufpfad fest:
 
 ## 4. Welche Informationen der Skill enthalten sollte
 
-Ihre `SKILL.md` sollte die Fragen beantworten, die Agenten am meisten Zeit kosten:
+Deine `SKILL.md` sollte die Fragen beantworten, die Agenten am meisten Zeit kosten:
 
 - welche Endpunktfamilie bevorzugt werden soll
 - welche Umgebungsvariable die Zugangsdaten enthält

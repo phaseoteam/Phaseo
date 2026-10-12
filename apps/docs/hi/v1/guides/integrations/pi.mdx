@@ -1,7 +1,7 @@
 ---
 title: "Pi"
 icon: "/icons/brands/pi.svg"
-description: "इंस्टॉल किए गए Pi model catalog को Phaseo Gateway से जोड़ें।"
+description: "इंस्टॉल किए गए Pi मॉडल कैटलॉग को Phaseo Gateway से जोड़ें।"
 ---
 
 ## Phaseo CLI से सेटअप करें
@@ -13,16 +13,16 @@ phaseo login
 phaseo pi
 ```
 
-पहले Pi का आधिकारिक release install करें। Setup `~/.pi/agent/extensions/phaseo.ts` में managed provider extension लिखता है। यह Chat Completions-संगत सभी active Phaseo text models उपलब्ध कराता है और हर request के समय Phaseo CLI से dedicated API key प्राप्त करता है।
+पहले Pi की आधिकारिक रिलीज़ इंस्टॉल करें। सेटअप `~/.pi/agent/extensions/phaseo.ts` में एक प्रबंधित प्रदाता एक्सटेंशन लिखता है। यह एक्सटेंशन Chat Completions के साथ संगत सभी सक्रिय Phaseo टेक्स्ट मॉडल उपलब्ध कराता है और हर अनुरोध के समय Phaseo CLI से अपनी समर्पित API कुंजी प्राप्त करता है।
 
-शुरुआती model चुनें या ज़रूरत पड़ने पर सिर्फ़ एक model configure करें:
+शुरुआती मॉडल चुनें, या ज़रूरत पड़ने पर केवल एक मॉडल कॉन्फ़िगर करें:
 
 ```bash
 phaseo pi --model anthropic/claude-sonnet-4.6
 phaseo pi --catalog default
 ```
 
-File changes का preview देखने के लिए `--dry-run` उपयोग करें।
+फ़ाइलों में होने वाले बदलावों का पूर्वावलोकन देखने के लिए `--dry-run` उपयोग करें।
 
 ## शुरू करें और जाँचें
 
@@ -30,7 +30,7 @@ File changes का preview देखने के लिए `--dry-run` उप�
 pi
 ```
 
-`/model` खोलें, `phaseo` provider चुनें और एक छोटा prompt भेजें। केवल managed extension हटाकर उसकी dedicated key revoke करने के लिए यह चलाएँ:
+`/model` खोलें, `phaseo` प्रदाता चुनें और एक छोटा प्रॉम्प्ट भेजें। केवल प्रबंधित एक्सटेंशन को हटाने और उसकी समर्पित कुंजी निरस्त करने के लिए यह चलाएँ:
 
 ```bash
 phaseo integrations remove pi
@@ -38,10 +38,10 @@ phaseo integrations remove pi
 
 ## क्रेडेंशियल को मैन्युअल रूप से ऐक्सेस करें
 
-बनाया गया extension, Pi के command-backed key syntax का उपयोग करता है:
+जनरेट किया गया एक्सटेंशन, Pi के कमांड-आधारित कुंजी सिंटैक्स का उपयोग करता है:
 
 ```text
 !phaseo integrations credential pi
 ```
 
-Extension में कोई plaintext key नहीं लिखी जाती।
+एक्सटेंशन में कोई भी कुंजी सादे टेक्स्ट में नहीं लिखी जाती।

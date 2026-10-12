@@ -1,10 +1,10 @@
 ---
-title: "प्रोवाइडर-योग्य मॉडल ID"
-description: "एक ही मॉडल पहचानकर्ता से अनुरोध को सटीक प्रोवाइडर और मॉडल तक रूट करें।"
+title: "प्रदाता-योग्य मॉडल ID"
+description: "एक ही मॉडल पहचानकर्ता से अनुरोध को सटीक प्रदाता और मॉडल तक रूट करें।"
 icon: "route"
 ---
 
-Provider-qualified model IDs से आप `model` फ़ील्ड में सटीक provider और canonical model चुन सकते हैं। इन्हें तब उपयोग करें जब provider का चुनाव routing preference के बजाय request contract का हिस्सा हो।
+प्रदाता-योग्य मॉडल ID से आप `model` फ़ील्ड में सटीक प्रदाता और कैनोनिकल मॉडल चुन सकते हैं। इनका उपयोग तब करें जब प्रदाता का चुनाव रूटिंग की प्राथमिकता नहीं, बल्कि अनुरोध के अनुबंध का हिस्सा हो।
 
 ## वाक्यविन्यास
 
@@ -17,10 +17,9 @@ Provider-qualified model IDs से आप `model` फ़ील्ड में 
 ```text
 baseten:thinking-machines/inkling-small
 deepinfra:deepseek/deepseek-v3
-crofai:moonshotai/kimi-k3
 ```
 
-पहला colon provider और canonical model ID को अलग करता है। Model namespace के बाद के colons model suffix बने रहते हैं, इसलिए पहचान अस्पष्ट नहीं होती:
+पहला कोलन प्रदाता को कैनोनिकल मॉडल ID से अलग करता है। मॉडल नेमस्पेस के बाद आने वाले कोलन मॉडल सफ़िक्स ही बने रहते हैं, इसलिए यह पहचानकर्ता अस्पष्ट नहीं है:
 
 ```text
 baseten:google/gemma-4-26b-a4b:free
@@ -28,12 +27,12 @@ baseten:google/gemma-4-26b-a4b:free
 
 इस उदाहरण में:
 
-- `baseten` अनुरोधित provider है
-- `google/gemma-4-26b-a4b:free` Phaseo का canonical model ID है
+- `baseten` अनुरोधित प्रदाता है
+- `google/gemma-4-26b-a4b:free` Phaseo का कैनोनिकल मॉडल ID है
 
 ## अनुरोध भेजें
 
-किसी भी ऐसे endpoint पर qualified identifier उपयोग करें जो model ID स्वीकार करता हो।
+जहाँ भी एंडपॉइंट मॉडल ID स्वीकार करता है, वहाँ योग्य पहचानकर्ता का उपयोग करें।
 
 <CodeGroup>
 
@@ -86,22 +85,22 @@ result = response.json()
 
 ## सटीक रूटिंग का व्यवहार
 
-Provider qualifier सटीक पाबंदी है। Phaseo पात्र providers को अनुरोधित provider तक सीमित करता है और उस request में किसी दूसरे provider पर fallback नहीं करता।
+प्रदाता क्वालिफ़ायर एक सटीक पाबंदी है। Phaseo पात्र प्रदाताओं के समूह को अनुरोधित प्रदाता तक सीमित कर देता है और उस अनुरोध के लिए किसी दूसरे प्रदाता पर फ़ॉलबैक नहीं करता।
 
-Qualifier अन्य controls को bypass नहीं करता। Provider को फिर भी:
+क्वालिफ़ायर अन्य नियंत्रणों को बायपास नहीं करता। प्रदाता के लिए फिर भी ज़रूरी है कि वह:
 
-- अनुरोधित endpoint पर canonical model देना चाहिए
-- endpoint capability के लिए enabled होना चाहिए
-- workspace और API key policies पूरी करनी चाहिए
-- preset और privacy restrictions पूरी करनी चाहिए
-- अनुरोधित service tier और parameters support करने चाहिए
-- valid pricing configured होनी चाहिए
+- अनुरोधित एंडपॉइंट पर कैनोनिकल मॉडल उपलब्ध कराए
+- एंडपॉइंट की क्षमता के लिए सक्षम हो
+- वर्कस्पेस और API कुंजी की नीतियाँ पूरी करे
+- प्रीसेट और गोपनीयता संबंधी पाबंदियाँ पूरी करे
+- अनुरोधित सेवा स्तर और पैरामीटर का समर्थन करे
+- मान्य मूल्य निर्धारण के साथ कॉन्फ़िगर हो
 
-इनमें से कोई भी जाँच विफल हो, तो Phaseo चुपचाप दूसरा provider चुनने के बजाय request reject करता है।
+इनमें से कोई भी जाँच विफल हो, तो Phaseo चुपचाप दूसरा प्रदाता चुनने के बजाय अनुरोध अस्वीकार कर देता है।
 
 ## रूटिंग फ़ील्ड के साथ तालमेल
 
-Qualified provider और explicit routing fields आपस में मेल खाने चाहिए।
+योग्य प्रदाता और स्पष्ट रूटिंग फ़ील्ड आपस में मेल खाने चाहिए।
 
 ```json
 {
@@ -112,9 +111,9 @@ Qualified provider और explicit routing fields आपस में मेल 
 }
 ```
 
-मेल खाता `provider.only` या `routing.only` value स्वीकार किया जाता है। परस्पर विरोधी allowlist या qualified provider को शामिल करने वाली ignore list validation error लौटाती है।
+मेल खाता `provider.only` या `routing.only` मान स्वीकार किया जाता है। परस्पर विरोधी अनुमति सूची, या योग्य प्रदाता को शामिल करने वाली अनदेखी सूची, सत्यापन त्रुटि लौटाती है।
 
-उदाहरण के लिए, यह request विरोधाभासी है और reject होगी:
+उदाहरण के लिए, यह अनुरोध विरोधाभासी है और अस्वीकार कर दिया जाता है:
 
 ```json
 {
@@ -125,11 +124,11 @@ Qualified provider और explicit routing fields आपस में मेल 
 }
 ```
 
-Provider केवल preference हो और दूसरे provider पर fallback चाहिए, तो बिना qualification वाला canonical model ID तथा सामान्य [routing और fallback controls](./routing-and-fallbacks.mdx) उपयोग करें।
+अगर प्रदाता का चुनाव केवल एक प्राथमिकता है और दूसरे प्रदाता पर फ़ॉलबैक वांछनीय है, तो सामान्य [रूटिंग और फ़ॉलबैक नियंत्रणों](./routing-and-fallbacks.mdx) के साथ बिना क्वालिफ़ायर वाले कैनोनिकल मॉडल ID का उपयोग जारी रखें।
 
 ## प्रदाता के नाम से निर्दिष्ट मुफ़्त मॉडल
 
-`:free` वाली qualified request केवल तभी स्वीकार होती है जब वही सटीक provider canonical model और endpoint के लिए पात्र free route देता हो।
+योग्य `:free` अनुरोध केवल तभी स्वीकार होता है जब उसी सटीक प्रदाता के पास उस कैनोनिकल मॉडल और एंडपॉइंट के लिए पात्र मुफ़्त रूट हो।
 
 ```json
 {
@@ -138,39 +137,39 @@ Provider केवल preference हो और दूसरे provider पर f
 }
 ```
 
-Phaseo अनुरोध को तभी स्वीकार करता है जब चुने गए route में खाली न हो ऐसी pricing card हो और हर मौजूदा pricing rule:
+Phaseo अनुरोध को तभी स्वीकार करता है जब चुने गए रूट में ऐसा मूल्य कार्ड हो जो खाली न हो और जिसका हर मौजूदा मूल्य नियम:
 
 - स्पष्ट रूप से `free` लेबल किया गया हो
-- उसकी कीमत बिल्कुल शून्य हो
+- बिल्कुल शून्य कीमत वाला हो
 
-Pricing न होना, paid या mixed pricing, negative pricing, या शून्य मूल्य वाला ऐसा नियम जिस पर स्पष्ट free label न हो—इन सभी स्थितियों में provider execution से पहले request reject होती है।
+मूल्य निर्धारण न होना, सशुल्क मूल्य, मिश्रित मूल्य, ऋणात्मक मूल्य, या शून्य मूल्य वाला ऐसा नियम जिसे स्पष्ट रूप से `free` लेबल न किया गया हो—इनमें से किसी भी स्थिति में प्रदाता पर निष्पादन से पहले ही अनुरोध अस्वीकार कर दिया जाता है।
 
 <Note>
-Canonical `:free` model मौजूद होने का अर्थ यह नहीं है कि उस underlying model को देने वाले सभी providers free route भी देते हैं।
+कैनोनिकल `:free` मॉडल मौजूद होने का अर्थ यह नहीं है कि मूल मॉडल उपलब्ध कराने वाला हर प्रदाता मुफ़्त रूट भी देता है।
 </Note>
 
 ## प्रदाता स्लग और उपनाम
 
-Phaseo provider catalogue में उपलब्ध slug उपयोग करें। Slugs lowercase में normalize होते हैं और समर्थित legacy या brand aliases canonical provider ID से map होते हैं।
+Phaseo के प्रदाता कैटलॉग में उपलब्ध प्रदाता स्लग का उपयोग करें। स्लग छोटे अक्षरों में सामान्यीकृत किए जाते हैं, और समर्थित पुराने या ब्रांड उपनाम उनके कैनोनिकल प्रदाता ID से मैप किए जाते हैं।
 
-उदाहरण के लिए, `NovitaAI` और `novita-ai` दोनों अभी `novita` में normalize होते हैं।
+उदाहरण के लिए, `NovitaAI` और `novita-ai` दोनों अभी `novita` में सामान्यीकृत होते हैं।
 
-Malformed और अज्ञात slugs provider selection से पहले reject होते हैं। Phaseo उन्हें model name के हिस्से के रूप में upstream नहीं भेजता।
+गलत प्रारूप वाले और अज्ञात स्लग प्रदाता चयन से पहले ही अस्वीकार कर दिए जाते हैं। Phaseo उन्हें मॉडल नाम के हिस्से के रूप में अपस्ट्रीम नहीं भेजता।
 
-## वैलिडेशन त्रुटियाँ
+## सत्यापन त्रुटियाँ
 
-Provider-qualified ID की विफलताओं में HTTP `400` और top-level error code `validation_error` आता है। सही कारण के लिए `reason` या `details[].keyword` देखें।
+प्रदाता-योग्य पहचानकर्ता की विफलताओं में HTTP `400` और शीर्ष-स्तरीय त्रुटि कोड `validation_error` लौटता है। सटीक कारण के लिए `reason` या `details[].keyword` देखें।
 
 | कारण | अर्थ |
 | --- | --- |
-| `invalid_provider_slug` | Provider वाला भाग खाली है या उसमें असमर्थित characters हैं। |
-| `unknown_provider_slug` | Slug का प्रारूप सही है, लेकिन वह पहचाना हुआ Phaseo provider नहीं है। |
-| `invalid_provider_qualified_model` | संयुक्त identifier `<provider>:<publisher>/<model>` से मेल नहीं खाता। |
-| `provider_qualified_model_conflict` | `provider.only`, `provider.ignore`, `routing.only` या `routing.ignore` qualifier का विरोध करता है। |
-| `qualified_provider_unavailable` | Provider पहचाना गया है, लेकिन अनुरोधित endpoint पर वह मॉडल उपलब्ध नहीं कराता। |
-| `qualified_free_provider_unavailable` | सटीक provider route को सभी नियमों में शून्य pricing के साथ स्पष्ट रूप से free सत्यापित नहीं किया गया। |
+| `invalid_provider_slug` | प्रदाता वाला भाग खाली है या उसमें असमर्थित वर्ण हैं। |
+| `unknown_provider_slug` | स्लग का प्रारूप सही है, लेकिन वह कोई पहचाना हुआ Phaseo प्रदाता नहीं है। |
+| `invalid_provider_qualified_model` | संयुक्त पहचानकर्ता `<provider>:<publisher>/<model>` से मेल नहीं खाता। |
+| `provider_qualified_model_conflict` | `provider.only`, `provider.ignore`, `routing.only` या `routing.ignore` क्वालिफ़ायर का विरोध करता है। |
+| `qualified_provider_unavailable` | प्रदाता पहचाना गया है, लेकिन अनुरोधित एंडपॉइंट पर वह मॉडल उपलब्ध नहीं कराता। |
+| `qualified_free_provider_unavailable` | सटीक प्रदाता रूट को सभी नियमों में शून्य मूल्य के साथ स्पष्ट रूप से मुफ़्त सत्यापित नहीं किया गया है। |
 
-Error example:
+त्रुटि का उदाहरण:
 
 ```json
 {
@@ -191,16 +190,16 @@ Error example:
 
 ## दोनों रूपों में से चुनें
 
-| ज़रूरत | सुझाया गया model value |
+| ज़रूरत | सुझाया गया मॉडल मान |
 | --- | --- |
-| Phaseo को provider चुनने और providers के बीच fallback करने दें | `thinking-machines/inkling-small` |
-| दूसरे provider पर fallback के बिना Baseten आवश्यक करें | `baseten:thinking-machines/inkling-small` |
-| एक सत्यापित free provider route आवश्यक करें | `baseten:google/gemma-4-26b-a4b:free` |
+| Phaseo को प्रदाता चुनने और प्रदाताओं के बीच फ़ॉलबैक करने दें | `thinking-machines/inkling-small` |
+| दूसरे प्रदाता पर फ़ॉलबैक के बिना Baseten आवश्यक करें | `baseten:thinking-machines/inkling-small` |
+| एक सत्यापित मुफ़्त प्रदाता रूट आवश्यक करें | `baseten:google/gemma-4-26b-a4b:free` |
 
 ## संबंधित गाइड
 
 - [रूटिंग और फ़ॉलबैक](./routing-and-fallbacks.mdx)
-- [API प्रोवाइडर](../exploring/api-providers.mdx)
+- [API प्रदाताओं को समझें](../exploring/api-providers.mdx)
 - [मॉडल](../exploring/models.mdx)
 - [त्रुटि प्रबंधन](../api-reference/errors.mdx)
 - [प्रीसेट](./presets.mdx)

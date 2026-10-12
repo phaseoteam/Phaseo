@@ -20,7 +20,7 @@ npx skills add phaseoteam/skills --agent codex --skill '*'
 
 <Visibility for="agents">
 <Note>
-Vous avez besoin d’aide pour configurer des agents réutilisables en plus du fournisseur ? Installez les skills publiques Phaseo depuis [`phaseoteam/skills`](https://github.com/phaseoteam/skills) :
+Les skills Phaseo réutilisables sont disponibles dans [`phaseoteam/skills`](https://github.com/phaseoteam/skills). Pour une installation dans Codex, utilisez :
 
 ```bash
 npx skills add phaseoteam/skills --agent codex --skill '*'
@@ -37,13 +37,14 @@ phaseo codex --model openai/gpt-5.6-terra
 
 Installez d’abord Codex depuis sa version officielle. La configuration crée une clé `Phaseo CLI: Codex API Key` sans expiration, la stocke dans le trousseau de clés du système et écrit un profil Phaseo dédié. Codex récupère la clé via l’assistant CLI ; elle n’est donc pas écrite en clair dans `config.toml`.
 
-### Démarrez Codex avec :
+Démarrez Codex avec :
 
 ```bash
 codex --profile phaseo
 ```
 
 Le même processus CLI Phaseo lance aussi [Cline](./cline), [Kilo Code](./kilo-code), [oh-my-pi](./oh-my-pi), [Muse Code](./muse-code) et [MiniMax Code](./minimax-code) avec une configuration fournisseur temporaire et isolée.
+
 ## Configuration manuelle
 
 Créez ou modifiez votre configuration utilisateur dans `~/.codex/config.toml`. Pour un projet de confiance, vous pouvez aussi placer les mêmes paramètres dans `.codex/config.toml` à la racine du dépôt.

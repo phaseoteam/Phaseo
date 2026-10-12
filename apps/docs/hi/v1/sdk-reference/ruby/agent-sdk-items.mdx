@@ -1,10 +1,10 @@
 ---
 icon: "layers"
 title: "स्ट्रीम आइटम"
-description: "Ruby एजेंट रन से टेक्स्ट, reasoning, टूल और provider item इवेंट प्राप्त करें।"
+description: "Ruby एजेंट रन से टेक्स्ट, रीज़निंग, टूल और प्रदाता आइटम इवेंट प्राप्त करें।"
 ---
 
-stream result में टेक्स्ट और provider item के लिए दोबारा चलाए जा सकने वाले consumer मिलते हैं।
+स्ट्रीम परिणाम टेक्स्ट और प्रदाता आइटम के लिए ऐसे कंज़्यूमर देता है जिन्हें दोबारा चलाया जा सकता है।
 
 ```ruby
 stream = agent.stream(input: prompt, client: client)
@@ -16,10 +16,10 @@ end
 result = stream.result
 ```
 
-अगर UI को reasoning delta, tool progress, approval checkpoint या lifecycle event भी चाहिए, तो `full_stream` उपयोग करें।
+अगर इंटरफ़ेस को रीज़निंग डेल्टा, टूल की प्रगति, अनुमोदन चेकपॉइंट या लाइफ़साइकल इवेंट भी चाहिए, तो `full_stream` इस्तेमाल करें।
 
 <Note>
-Ruby item वैल्यू सामान्य hash हैं, typed item का बंद union नहीं। UI जिन fields का उपयोग करे उन्हें validate करें और अज्ञात item व भविष्य के provider event के लिए fallback रखें।
+Ruby में आइटम मान सामान्य हैश होते हैं, टाइप किए गए आइटम का बंद यूनियन नहीं। आपका UI जिन फ़ील्ड का उपयोग करता है, उन्हें सत्यापित करें और भविष्य के प्रदाता इवेंट के लिए अज्ञात आइटम का फ़ॉलबैक रखें।
 </Note>
 
-Ruby provider stream को synchronous रूप से consume करता है और एकत्रित sequence को दोबारा चलाने देता है। इससे अपने आप background push service नहीं बनती।
+Ruby प्रदाता स्ट्रीम को सिंक्रोनस रूप से पढ़ता है और एकत्रित अनुक्रम को दोबारा चलाने योग्य बनाता है। यह अपने आप कोई बैकग्राउंड पुश सेवा नहीं बनाता।

@@ -271,7 +271,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 		fields: [
 			{ key: "account", label: "Account Identifier", placeholder: "xy12345.us-east-1" },
 			{ key: "token", label: "Token", placeholder: "********", type: "password" },
-			{ key: "database", label: "Database", placeholder: "AI_STATS" },
+			{ key: "database", label: "Database", placeholder: "PHASEO" },
 			{ key: "schema", label: "Schema", placeholder: "TRACES" },
 			{ key: "table", label: "Table", placeholder: "EVENTS" },
 			{ key: "warehouse", label: "Warehouse", placeholder: "COMPUTE_WH" },

@@ -1674,7 +1674,7 @@ paths:
         - Gateway
       operationId: uploadFile
       summary: 上传文件
-      description: '`/batches/files`的兼容别名。上传文件以进行批处理，并返回上游文件元数据。传入`model`以便AI Stats推断上游提供商。对于同时省略`model`和`provider`的旧客户端，默认使用OpenAI。'
+      description: '`/batches/files`的兼容别名。上传文件以进行批处理，并返回上游文件元数据。传入`model`以便Phaseo推断上游提供商。对于同时省略`model`和`provider`的旧客户端，默认使用OpenAI。'
       parameters:
         - name: model
           in: query

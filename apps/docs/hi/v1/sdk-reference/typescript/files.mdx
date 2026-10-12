@@ -1,10 +1,10 @@
 ---
 icon: "files"
 title: "फ़ाइलें"
-description: "TypeScript SDK से /files call करें।"
+description: "TypeScript SDK से /files कॉल करें।"
 ---
 
-**Methods**: `client.uploadFile()`, `client.listFiles()`, `client.getFile()`, `client.getFileContent()`।
+**मेथड**: `client.uploadFile()`, `client.listFiles()`, `client.getFile()`, `client.getFileContent()`।
 
 ### उदाहरण
 ```typescript
@@ -14,16 +14,16 @@ const content = await client.getFileContent(uploaded.id);
 ```
 
 <Note>
-`client.listFiles()` मौजूद है, लेकिन `GET /files` अभी `file_list_not_supported_with_shared_gateway_key` लौटाता है
-shared gateway key का उपयोग करने पर। `uploaded.id` value सहेजें और files सीधे retrieve करें।
+`client.listFiles()` मौजूद है, लेकिन साझा Gateway कुंजी इस्तेमाल करने पर `GET /files` अभी `file_list_not_supported_with_shared_gateway_key`
+लौटाता है। `uploaded.id` मान सहेजें और फ़ाइलें सीधे प्राप्त करें।
 </Note>
 
-### मुख्य parameters
-- `file` (upload के लिए required): Blob/File/base64/string।
-- `purpose` (upload के लिए required): उदाहरण के लिए `batch`।
+### मुख्य पैरामीटर
+- `file` (अपलोड के लिए आवश्यक): Blob/File/base64/string।
+- `purpose` (अपलोड के लिए आवश्यक): उदाहरण के लिए `batch`।
 
 ### रिटर्न मान
-`FileObject` (upload/get)
+`FileObject` (अपलोड करने और प्राप्त करने पर)
 
 ```json
 {
@@ -37,7 +37,7 @@ shared gateway key का उपयोग करने पर। `uploaded.id` v
 }
 ```
 
-या `FileListResponse` (जब underlying provider key file listing support करे)
+या `FileListResponse` (सूची के लिए, जब मूल प्रदाता कुंजी फ़ाइलों की सूची बनाने का समर्थन करती हो)
 
 ```json
 {

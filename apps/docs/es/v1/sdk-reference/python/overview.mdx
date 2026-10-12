@@ -4,7 +4,7 @@ title: "Descripción general del SDK de Python"
 description: "Cliente oficial de Python para la API de Phaseo Gateway"
 ---
 
-Instala desde PyPI el paquete publicado [~phaseo~](https://pypi.org/project/phaseo/).
+Instala desde PyPI el paquete publicado [`phaseo`](https://pypi.org/project/phaseo/).
 
 El SDK Python de Phaseo ofrece los clientes síncrono `Phaseo` y asíncrono nativo `AsyncPhaseo`.
 
@@ -78,7 +78,7 @@ Las salas de Phaseo exportan código ejecutable de la solicitud enviada mediante
 
 -   Modelos de solicitud tipados y generados a partir de la especificación OpenAPI.
 -   Ayudantes integrados para chat, respuestas, mensajes, imágenes, audio, embeddings, moderaciones, archivos, lotes, generaciones y trabajos de vídeo asíncronos.
--   Ayudantes de streaming para texto, respuestas y mensajes (iteradores ~stream_*~).
+-   Ayudantes de streaming para texto, respuestas y mensajes (iteradores `stream_*`).
 - Funciones del plano de control para consultar modelos, endpoints y organizaciones; descubrir y calcular precios; gestionar el ciclo de vida de claves de API y espacios de trabajo; inspeccionar la clave actual y revisar el estado, los proveedores, los créditos, la actividad y la analítica.
 
 ## Ejemplo rápido
@@ -117,13 +117,14 @@ Cada recurso admite `wait(id, **options)` para reanudar una tarea existente y de
 Las opciones son `interval` (segundos; predeterminado 5, mínimo 0.25), `timeout` (segundos; predeterminado 1800), `on_poll` y `cancel_event` (un `threading.Event`). El límite de espera empieza al retornar el envío. El cliente síncrono comprueba cancelación y plazos entre solicitudes y callbacks; estas opciones no interrumpen una llamada HTTP en curso.
 
 `JobTimeoutError` y `JobCancelledError` conservan `job_id` y `last_response`. Reanuda con `.wait(error.job_id)`. La cancelación o tiempo de espera local no cancela la tarea remota y los envíos nunca se reintentan automáticamente. Estos asistentes no añaden ejecución en segundo plano al gateway.
-## "Qué incluye"
+
+## Qué incluye
 
 -   Cliente `Phaseo`
--   `chat.completions.create(...)` and `responses.create(...)` ayudantes de compatibilidad
--   Ayudantes de recursos como `client.batches`, `client.videos`, `client.files`, and `client.async_jobs`
+-   Ayudantes de compatibilidad `chat.completions.create(...)` y `responses.create(...)`
+-   Ayudantes de recursos como `client.batches`, `client.videos`, `client.files` y `client.async_jobs`
 -   Ayudantes para generar URL de WebSocket de trabajos asíncronos y seguir el ciclo de vida de lotes y vídeos
 -   `client.batches.stream_results(batch_id)` para fragmentos de bytes JSONL de lotes
--   Ayudantes del ciclo de vida de modelos como `get_model_deprecation_info(...)` and `validate_model(...)`
+-   Ayudantes del ciclo de vida de modelos como `get_model_deprecation_info(...)` y `validate_model(...)`
 -   Iteradores de streaming para texto, respuestas y mensajes
--   Modelos generados de solicitud y respuesta en ~phaseo.models~
+-   Modelos generados de solicitud y respuesta en `phaseo.models`

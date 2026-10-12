@@ -52,7 +52,7 @@ Crea los valores predeterminados con `ContinueOptions::new(result)`.
 | `Tool::new(id, description, parameters, executor)` | Define una herramienta local y síncrona. |
 | `Tool::external(id, description, parameters)` | Define una herramienta cuyo resultado proporciona la aplicación tras una pausa. |
 | `Tool::require_approval()` | Exige aprobación con el ID exacto antes de ejecutar la herramienta local. |
-| `define_tool(tool)` | Devuelve la herramienta proporcionada para mantener un estilo de definición coherente. |
+| `define_tool(tool)` | Devuelve el `Tool` proporcionado para mantener un estilo de definición coherente. |
 
 La firma del ejecutor es:
 
@@ -132,7 +132,7 @@ Devuelve `HumanReviewRequest { reason, payload }` desde la función de revisión
 - `kind`
 - `pending_tool_calls`
 
-Cada `PendingToolCall` contiene la llamada `ToolCall` original, el tipo de entrada requerido `kind` y un motivo legible.
+Cada `PendingToolCall` contiene la llamada `ToolCall` original, el tipo de entrada requerido `kind` y un motivo legible `reason`.
 
 `ToolDecision` proporciona el `tool_call_id` aprobado y un motivo opcional. `ToolOutput` proporciona un `tool_call_id` y una salida JSON.
 
@@ -152,7 +152,7 @@ Cada `PendingToolCall` contiene la llamada `ToolCall` original, el tipo de entra
 
 `UsageSummary` contiene `input_tokens`, `output_tokens`, `cached_tokens`, `total_tokens` y `cost`.
 
-El cliente del modelo proporciona `cost`. El adaptador integrado de Gateway 0.1 no asigna actualmente `cost_nanos` ni `cost_cents` de Gateway a este campo.
+El cliente del modelo proporciona `cost`. El adaptador integrado de Gateway `0.1` no asigna actualmente `cost_nanos` ni `cost_cents` de Gateway a este campo.
 
 `RunResult`, `RunRecord`, `RunStep`, `Message`, `ToolCall`, `HumanPause`, `PendingToolCall`, `ToolDecision`, `ToolOutput` y `UsageSummary` admiten la serialización de Serde cuando sus definiciones derivan `Serialize` y `Deserialize`.
 

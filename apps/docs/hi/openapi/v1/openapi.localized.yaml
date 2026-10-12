@@ -1674,7 +1674,7 @@ paths:
         - Gateway
       operationId: uploadFile
       summary: फ़ाइल अपलोड करें
-      description: '`/batches/files` का संगतता alias। बैच प्रोसेसिंग के लिए फ़ाइल अपलोड करता है और अपस्ट्रीम फ़ाइल मेटाडेटा लौटाता है। `model` दें ताकि AI Stats अपस्ट्रीम प्रदाता का अनुमान लगा सके। `model` और `provider` दोनों छोड़ने वाले पुराने क्लाइंट के लिए डिफ़ॉल्ट OpenAI है।'
+      description: '`/batches/files` का संगतता alias। बैच प्रोसेसिंग के लिए फ़ाइल अपलोड करता है और अपस्ट्रीम फ़ाइल मेटाडेटा लौटाता है। `model` दें ताकि Phaseo अपस्ट्रीम प्रदाता का अनुमान लगा सके। `model` और `provider` दोनों छोड़ने वाले पुराने क्लाइंट के लिए डिफ़ॉल्ट OpenAI है।'
       parameters:
         - name: model
           in: query

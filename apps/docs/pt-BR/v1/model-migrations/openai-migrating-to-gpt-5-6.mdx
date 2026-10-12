@@ -8,7 +8,7 @@ icon: "/icons/brands/openai.svg"
 
 Use este guia para adotar com segurança a família GPT-5.6 em produção.
 
-GPT-5.6 é a família GPT atual da OpenAI para fluxos de trabalho complexos em produção. No AI Stats, os IDs fixos das faixas correspondem aos IDs de modelo da OpenAI `gpt-5.6-sol`, `gpt-5.6-terra` e `gpt-5.6-luna`.
+GPT-5.6 é a família GPT atual da OpenAI para fluxos de trabalho complexos em produção. No Phaseo, os IDs fixos das faixas correspondem aos IDs de modelo da OpenAI `gpt-5.6-sol`, `gpt-5.6-terra` e `gpt-5.6-luna`.
 
 ## Início rápido da migração
 
@@ -25,9 +25,9 @@ GPT-5.6 é a família GPT atual da OpenAI para fluxos de trabalho complexos em p
 | `openai/gpt-5.6-terra` | Trabalho diário equilibrado entre raciocínio, programação e fluxos de assistente | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 | `openai/gpt-5.6-luna` | Cargas de trabalho GPT-5.6 sensíveis a latência e custo | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 
-O alias `gpt-5.6` da OpenAI direciona para `gpt-5.6-sol`. No AI Stats, use `openai/gpt-5.6` ou `openai/gpt-sol-latest` para escolher Sol como padrão e use os IDs fixos das faixas para controlar o roteamento.
+O alias `gpt-5.6` da OpenAI direciona para `gpt-5.6-sol`. No Phaseo, use `openai/gpt-5.6` ou `openai/gpt-sol-latest` para escolher Sol como padrão e use os IDs fixos das faixas para controlar o roteamento.
 
-O AI Stats também acompanha aliases de faixa para o modelo mais recente de cada uma: `openai/gpt-sol-latest`, `openai/gpt-terra-latest` e `openai/gpt-luna-latest`. Use os IDs fixos do GPT-5.6 para migrações controladas e os aliases somente quando quiser deliberadamente que futuras versões de Sol, Terra ou Luna avancem pela mesma rota.
+O Phaseo também acompanha aliases de faixa para o modelo mais recente de cada uma: `openai/gpt-sol-latest`, `openai/gpt-terra-latest` e `openai/gpt-luna-latest`. Use os IDs fixos do GPT-5.6 para migrações controladas e os aliases somente quando quiser deliberadamente que futuras versões de Sol, Terra ou Luna avancem pela mesma rota.
 
 ## Novidades
 
@@ -67,7 +67,7 @@ Use o esforço `max` somente em rotas nas quais o orçamento extra de raciocíni
 }
 ```
 
-Se a integração ainda envia o campo simples compatível com OpenAI, o AI Stats também aceita `reasoning_effort` quando a rota oferece suporte:
+Se a integração ainda envia o campo simples compatível com OpenAI, o Phaseo também aceita `reasoning_effort` quando a rota oferece suporte:
 
 ```json
 {
@@ -148,7 +148,7 @@ Use `cache_control` para indicar instruções de cache independentes do provedor
 ### Reversão
 
 - mantenha a rota anterior do GPT-5.x disponível como alternativa
-- mantenha `max` atrás de uma flag de configuração ou preset até validá-lo com prompts semelhantes aos de produção
+- mantenha `max` atrás de uma flag de configuração ou de uma predefinição até validá-lo com prompts semelhantes aos de produção
 - monitore separadamente o volume de gravações e leituras de cache
 - coloque GPT-5.6 no roteamento padrão somente depois que suas avaliações confirmarem o sucesso das tarefas, o custo e a latência
 
@@ -158,4 +158,4 @@ Use `cache_control` para indicar instruções de cache independentes do provedor
 - [Orientações de modelos do OpenAI GPT-5.6](https://developers.openai.com/api/docs/guides/latest-model)
 - [OpenAI model catalog](https://developers.openai.com/api/docs/models)
 - [Ficha do sistema da prévia do GPT-5.6](https://deploymentsafety.openai.com/gpt-5-6-preview)
-- [Guia do AI Stats sobre cache de prompts](../guides/prompt-caching.mdx)
+- [Guia do Phaseo sobre cache de prompts](../guides/prompt-caching.mdx)

@@ -4,7 +4,7 @@ title: "TypeScript SDK の概要"
 description: "Phaseo Gateway API 用の公式 TypeScript クライアント"
 ---
 
-公開済みの [~@phaseo/sdk~](https://www.npmjs.com/package/@phaseo/sdk) パッケージを npm からインストールします。
+公開済みの [`@phaseo/sdk`](https://www.npmjs.com/package/@phaseo/sdk) パッケージを npm からインストールします。
 
 Phaseo TypeScript SDK は、型安全で使いやすい Phaseo Gateway API の操作方法を提供します。OpenAPI 仕様を基盤とし、生成済み型による完全な TypeScript サポートとシンプルなクライアントインターフェースを備えています。
 
@@ -41,7 +41,7 @@ const music = await client.music.generateAndWait(
 
 動画には`videos.generateAndWait(request, options)`、バッチには`batches.createAndWait(request, options)`を使います。1回だけ送信し、即時完了の応答はポーリングせずに返し、それ以外は同じジョブを完了までポーリングします。応答全体を返し、失敗、キャンセル、期限切れでは`response`を持つ`JobFailedError`を送出します。完了したバッチにも個別の失敗が含まれる場合があります。
 
-各リソースには、失敗を含むすべての最終応答を返す`wait(id, options)`もあります。オプションは`intervalMs`（既定5,000、最小250）、`timeoutMs`（既定1,800,000）、`signal`、`onPoll`です。待機タイムアウトは送信から戻った後に開始し、最初のHTTPリクエストには独自のタイムアウトが適用されます。進行状況コールバックは初回応答と各ポーリングを受け取ります。
+各リソースには、失敗を含め、最終状態に達した応答をその種類にかかわらず返す`wait(id, options)`もあります。オプションは`intervalMs`（既定5,000、最小250）、`timeoutMs`（既定1,800,000）、`signal`、`onPoll`です。待機タイムアウトは送信から戻った後に開始し、最初のHTTPリクエストには独自のタイムアウトが適用されます。進行状況コールバックは初回応答と各ポーリングを受け取ります。
 
 `JobTimeoutError`と`JobCancelledError`は`jobId`と`lastResponse`を保持し、`.wait(error.jobId)`で再開できます。待機の停止は進行中のポーリングをキャンセルしますが、リモートの処理は停止しません。HTTP失敗は自動再送信せずに伝播します。SDKヘルパーはGatewayにバックグラウンド実行を追加しません。
 
@@ -59,7 +59,7 @@ HTTPエラーは`code`、`requestId`、`traceUrl`、`retryAfterMs`、本文、�
 
 `music.start`、`videos.start`、`batches.start`は`result()`、
 `events()`、`toJSON()`を持つハンドルを返します。種類とIDを保存し、`resume(id)`で復元します。
-`result()`は最終的な失敗を拒否します。リモートキャンセルは動画とバッチのみ対応します。
+`result()`は、ジョブが失敗状態で終了した場合に reject します。リモートキャンセルは動画とバッチのみ対応します。
 
 `videos.streamContent(id)`と`downloadTo(stream, writable)`は大きな
 出力をストリーミングします。`toFile(bytes, filename, contentType)`はアップロードを準備します。
@@ -98,14 +98,15 @@ const support = await client.models.checkParameters(
 
 Phaseoのルームで送信した後、**コードを取得**はモデルと
 設定をTypeScriptまたはPythonでエクスポートします。**リクエストを表示**は
-リクエストIDがある場合にダッシュボードのトレースを開きます。`PHASEO_API_KEY`を設定したサーバーで実行してください。
+リクエストIDがある場合にダッシュボードのトレースを開きます。エクスポートしたコードは、`PHASEO_API_KEY`を設定したサーバーで実行してください。
+
 ## 含まれるもの
 
 -   すべての API 操作に使う `Phaseo` クライアントクラス
--   リソース別ヘルパー（例:） `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
--   モデルの検索や料金確認に使うヘルパー（例:） `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
--   バッチと動画のライフサイクルストリーム用非同期ジョブ WebSocket URL ヘルパー
--   `client.batches.streamResults(batchId, { signal })` Anthropic JSONLのストリーミングダウンロード用
+-   `client.models`、`client.batches`、`client.videos`、`client.asyncJobs` などのリソース形式のヘルパー
+-   `client.getModels()`、`client.listProviders()`、`client.getCredits()`、`client.getActivity()`、`client.getAnalytics()`、`client.listEndpoints()`、`client.listOrganisations()`、`client.listPricingModels()`、`client.calculatePricing()`、`client.listApiKeys()`、`client.createApiKey()`、`client.getApiKey(id)`、`client.updateApiKey(id, ...)`、`client.deleteApiKey(id)`、`client.listWorkspaces()`、`client.getWorkspace(id)`、`client.createWorkspace(...)`、`client.updateWorkspace(id, ...)`、`client.deleteWorkspace(id)`、`client.getCurrentApiKey()` などの検出・料金ヘルパー
+-   バッチと動画のライフサイクルストリーム用の非同期ジョブ WebSocket URL ヘルパー
+-   Anthropic の JSONL をストリーミングでダウンロードするための `client.batches.streamResults(batchId, { signal })`
 -   すべてのリクエストとレスポンスオブジェクト用の生成済み型
 -   Chat Completions、モデル、クレジットなどを含む API 全体のカバー
 -   開発体験を高める TypeScript 定義

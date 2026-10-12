@@ -8,7 +8,7 @@ icon: "/icons/brands/openai.svg"
 
 Utilisez ce guide pour adopter en toute sécurité la famille GPT-5.6 en production.
 
-GPT-5.6 est la famille GPT actuelle d’OpenAI pour les workflows de production complexes. Dans AI Stats, les identifiants de niveau fixes correspondent aux identifiants de modèle OpenAI `gpt-5.6-sol`, `gpt-5.6-terra` et `gpt-5.6-luna`.
+GPT-5.6 est la famille GPT actuelle d’OpenAI pour les workflows de production complexes. Dans Phaseo, les identifiants de niveau fixes correspondent aux identifiants de modèle OpenAI `gpt-5.6-sol`, `gpt-5.6-terra` et `gpt-5.6-luna`.
 
 ## Démarrage rapide de la migration
 
@@ -25,9 +25,9 @@ GPT-5.6 est la famille GPT actuelle d’OpenAI pour les workflows de production 
 | `openai/gpt-5.6-terra` | Travail quotidien équilibré entre raisonnement, programmation et workflows d’assistant | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 | `openai/gpt-5.6-luna` | Charges GPT-5.6 sensibles à la latence et au coût | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 
-L’alias OpenAI `gpt-5.6` route vers `gpt-5.6-sol`. Dans AI Stats, utilisez `openai/gpt-5.6` ou `openai/gpt-sol-latest` pour choisir Sol par défaut, et les identifiants de niveau fixes pour contrôler le routage.
+L’alias OpenAI `gpt-5.6` route vers `gpt-5.6-sol`. Dans Phaseo, utilisez `openai/gpt-5.6` ou `openai/gpt-sol-latest` pour choisir Sol par défaut, et les identifiants de niveau fixes pour contrôler le routage.
 
-AI Stats suit également les alias de niveau correspondant au modèle le plus récent de chaque niveau : `openai/gpt-sol-latest`, `openai/gpt-terra-latest` et `openai/gpt-luna-latest`. Utilisez les identifiants GPT-5.6 fixes pour les migrations contrôlées et les alias de niveau uniquement si vous souhaitez que les prochaines versions Sol, Terra ou Luna suivent volontairement la même route.
+Phaseo suit également les alias de niveau correspondant au modèle le plus récent de chaque niveau : `openai/gpt-sol-latest`, `openai/gpt-terra-latest` et `openai/gpt-luna-latest`. Utilisez les identifiants GPT-5.6 fixes pour les migrations contrôlées et les alias de niveau uniquement si vous souhaitez que les prochaines versions Sol, Terra ou Luna suivent volontairement la même route.
 
 ## Nouveautés
 
@@ -67,7 +67,7 @@ N’utilisez l’effort `max` que sur les routes où le budget de raisonnement s
 }
 ```
 
-Si votre intégration envoie encore le champ plat compatible avec OpenAI, AI Stats accepte aussi `reasoning_effort` lorsque la route le prend en charge :
+Si votre intégration envoie encore le champ plat compatible avec OpenAI, Phaseo accepte aussi `reasoning_effort` lorsque la route le prend en charge :
 
 ```json
 {
@@ -158,4 +158,4 @@ Utilisez `cache_control` pour des indications de cache indépendantes du fournis
 - [Guide des modèles OpenAI GPT-5.6](https://developers.openai.com/api/docs/guides/latest-model)
 - [OpenAI model catalog](https://developers.openai.com/api/docs/models)
 - [Fiche système de la préversion GPT-5.6](https://deploymentsafety.openai.com/gpt-5-6-preview)
-- [Guide AI Stats sur la mise en cache des prompts](../guides/prompt-caching.mdx)
+- [Guide Phaseo sur la mise en cache des prompts](../guides/prompt-caching.mdx)

@@ -1,6 +1,6 @@
 ---
 title: "Mistral Small 4"
-description: "Mistral Small 4 अपनाते समय reasoning controls और normalized response fields के बारे में जानें।"
+description: "Mistral Small 4 अपनाते समय रीज़निंग नियंत्रण और मानकीकृत प्रतिक्रिया फ़ील्ड के बारे में जानें।"
 icon: "/icons/brands/mistral.svg"
 ---
 
@@ -12,29 +12,29 @@ Phaseo Gateway के ज़रिए Mistral Small 4 को सुरक्ष�
 
 ## नया क्या है
 
-- Mistral Small 4 में `reasoning_effort` से reasoning mode नियंत्रित किया जाता है।
-- Gateway इस model route के लिए upstream को केवल दो values भेजता है:
-  - `none` (reasoning बंद)
-  - `high` (reasoning चालू)
-- Gateway, Mistral के thinking blocks को मानक response फ़ील्ड में सामान्यीकृत करता है:
-  - `message.content` में user को दिखने वाला assistant text
-  - `message.reasoning_content` और `message.reasoning_details` में reasoning text
+- Mistral Small 4 में `reasoning_effort` के ज़रिए रीज़निंग मोड नियंत्रित किया जाता है।
+- Gateway इस मॉडल रूट के लिए अपस्ट्रीम को केवल दो मान भेजता है:
+  - `none` (रीज़निंग बंद)
+  - `high` (रीज़निंग चालू)
+- Gateway, Mistral के थिंकिंग ब्लॉक को वापस मानक प्रतिक्रिया फ़ील्ड में मानकीकृत करता है:
+  - `message.content` में असिस्टेंट का दिखाई देने वाला टेक्स्ट
+  - `message.reasoning_content` और `message.reasoning_details` में रीज़निंग टेक्स्ट
 
-## माइग्रेशन quickstart
+## माइग्रेशन क्विकस्टार्ट
 
-इस route पर reasoning default रूप से बंद है।
+इस रूट पर रीज़निंग डिफ़ॉल्ट रूप से बंद है।
 
-Gateway mapping नियम:
+Gateway के मैपिंग नियम:
 
-- reasoning controls न देने पर Gateway `reasoning_effort: "none"` भेजता है।
+- रीज़निंग नियंत्रण न देने पर Gateway `reasoning_effort: "none"` भेजता है।
 - `reasoning.enabled: true` देने पर Gateway `reasoning_effort: "high"` भेजता है।
 - `reasoning.effort: "none"` देने पर Gateway `reasoning_effort: "none"` भेजता है।
-- `reasoning.effort` की कोई दूसरी value देने पर Gateway `reasoning_effort: "high"` भेजता है।
+- `reasoning.effort` का कोई दूसरा मान देने पर Gateway `reasoning_effort: "high"` भेजता है।
 
 अनुशंसित उपयोग:
 
 - हल्के काम के लिए `reasoning.effort: "none"`।
-- गहरे reasoning के लिए `reasoning.effort: "high"`।
+- गहन रीज़निंग के लिए `reasoning.effort: "high"`।
 
 उदाहरण:
 
@@ -52,16 +52,16 @@ Gateway mapping नियम:
 
 ## जवाब संभालने संबंधी नोट
 
-Mistral मिश्रित assistant content blocks लौटा सकता है (जैसे `thinking` और `text`)। Gateway उन्हें स्थिर रूप में बदलता है:
+Mistral असिस्टेंट सामग्री के मिश्रित ब्लॉक लौटा सकता है (जैसे `thinking` और `text`)। Gateway उन्हें एक स्थिर संरचना में बदलता है, ताकि आप इन्हें उपयोग कर सकें:
 
-- अंतिम user-visible उत्तर: `choices[0].message.content`।
-- reasoning text: `choices[0].message.reasoning_content`।
+- उपयोगकर्ता को दिखने वाला अंतिम उत्तर: `choices[0].message.content`।
+- रीज़निंग टेक्स्ट: `choices[0].message.reasoning_content`।
 
-इससे OpenAI-style chat-completion fields पर निर्भर downstream behavior बना रहता है।
+इससे OpenAI-शैली के चैट कंप्लीशन फ़ील्ड की अपेक्षा रखने वाला डाउनस्ट्रीम व्यवहार बना रहता है।
 
 ## रिलीज़ जाँच-सूची
 
-1. Model ID को `mistral/mistral-small-4-2026-03-16` पर अपडेट करें।
-2. reasoning controls को सिर्फ़ `none` और `high` से validate करें।
-3. high-effort routes पर output quality और schema tests फिर चलाएँ।
-4. पूरी तरह बदलने से पहले `none` और `high` की latency और लागत की तुलना करें।
+1. मॉडल ID को `mistral/mistral-small-4-2026-03-16` पर अपडेट करें।
+2. रीज़निंग नियंत्रणों को केवल `none` और `high` के साथ सत्यापित करें।
+3. उच्च प्रयास वाले रूट पर आउटपुट गुणवत्ता और स्कीमा परीक्षण फिर से चलाएँ।
+4. पूरी तरह बदलने से पहले `none` और `high` की लेटेंसी और लागत की तुलना करें।

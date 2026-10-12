@@ -1,7 +1,7 @@
 ---
 icon: "audio-lines"
 title: "टेक्स्ट-टू-स्पीच / स्पीच-टू-टेक्स्ट (AI SDK)"
-description: "Phaseo provider models से speech-to-text (STT) और text-to-speech (TTS)।"
+description: "Phaseo प्रदाता के मॉडल से स्पीच-टू-टेक्स्ट (STT) और टेक्स्ट-टू-स्पीच (TTS)।"
 ---
 
 `transcriptionModel` के साथ `experimental_transcribe` और `speechModel` के साथ `experimental_generateSpeech` उपयोग करें।
@@ -34,7 +34,7 @@ console.log(speech.providerMetadata);
 
 ## नोट्स
 
-- AI SDK के मौजूदा audio helpers अभी experimental हैं; upstream stable APIs आने पर इनके नाम बदल सकते हैं।
-- Audio input/output formats model के अनुसार अलग होते हैं।
-- लंबी files के अनुसार payload sizes और timeouts सेट करें।
-- अस्थायी `429` और `5xx` responses पर retry करें।
+- AI SDK के मौजूदा ऑडियो हेल्पर अभी प्रायोगिक हैं, इसलिए अपस्ट्रीम में स्थिर API आने पर इनके नाम बदलने की उम्मीद रखें।
+- ऑडियो इनपुट/आउटपुट फ़ॉर्मैट मॉडल के अनुसार अलग होते हैं।
+- लंबी फ़ाइलों के लिए पेलोड का आकार और टाइमआउट सेटिंग्स उपयुक्त रखें।
+- अस्थायी 429/5xx प्रतिक्रियाओं के लिए पुनः प्रयास का लॉजिक चलाएँ।

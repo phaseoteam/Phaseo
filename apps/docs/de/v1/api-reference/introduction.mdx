@@ -5,18 +5,18 @@ description: "Basis-URL, Authentifizierung und Endpunktfamilien des Phaseo Gatew
 icon: "map"
 ---
 
-Auf dieser Seite finden Sie den passenden API-Pfad, bevor Sie eine Endpunktreferenz öffnen. Alle Phaseo-Gateway-Endpunkte verwenden dieselbe Basis-URL und Bearer-Authentifizierung.
+Auf dieser Seite findest du den passenden API-Pfad, bevor du eine Endpunktreferenz öffnest. Alle Phaseo-Gateway-Endpunkte verwenden dieselbe Basis-URL und Bearer-Authentifizierung.
 
 ## Pfad auswählen
 
-| Wenn Sie Folgendes möchten | Beginnen Sie mit |
+| Wenn du Folgendes möchtest | Beginne mit |
 | --- | --- |
-| Ihre erste Anfrage senden | [Schnellstart](../quickstart.mdx) |
-| Text generieren oder Tools verwenden | `POST /responses` |
+| Deine erste Anfrage senden | [Schnellstart](../quickstart.mdx) |
+| Text generieren oder Tools verwenden | [`POST /responses`](./endpoint/responses) |
 | Typisierte Entscheidungen treffen | [`POST /decisions`](./endpoint/decisions) |
-| Eine bestehende OpenAI-kompatible Integration beibehalten | `POST /chat/completions` |
-| Modelle und Anbieter durchsuchen | `GET /models` und `GET /providers` |
-| Musik erstellen oder Dateien verwalten | `POST /music/generations` und `POST /files` |
+| Eine bestehende OpenAI-kompatible Integration beibehalten | [`POST /chat/completions`](./endpoint/chat-completions) |
+| Modelle und Anbieter durchsuchen | [`GET /models`](./endpoint/models) und [`GET /providers`](./endpoint/providers) |
+| Musik erstellen oder Dateien verwalten | [`POST /music/generations`](./endpoint/music-generate) und [`POST /files`](./endpoint/files) |
 | Video generieren (Beta) | [`POST /videos`](./endpoint/video-create) |
 | Batch einreichen oder Ergebnisse herunterladen (Beta) | [`POST /batches`](./endpoint/batches-create) und [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
@@ -32,7 +32,7 @@ Alle Endpunktpfade in dieser Referenz beziehen sich auf die Basis-URL `/v1`.
 
 ## OpenAPI
 
-Verwenden Sie die OpenAPI-Datei, um die API in Postman, Hoppscotch oder einen SDK-Generator zu importieren.
+Verwende die OpenAPI-Datei, um die API in Postman, Hoppscotch oder einen SDK-Generator zu importieren.
 
 <Card
   title="Phaseo-Gateway-OpenAPI"
@@ -43,6 +43,7 @@ Verwenden Sie die OpenAPI-Datei, um die API in Postman, Hoppscotch oder einen SD
 </Card>
 
 Dokumentation und SDKs nutzen dieselbe Spezifikation. Die Endpunkte Video, Batch und Decisions sind als **Beta** gekennzeichnet; möglicherweise ist ein Vorschauzugang für den Workspace erforderlich.
+
 ## Authentifizierung
 
 Nutze einen normalen Gateway-API-Schlüssel für Inferenz und einen Verwaltungs-API-Schlüssel mit passenden Berechtigungen für Administration. Siehe [Authentifizierung](../developers/authentication.mdx) und [Verwaltungs-API-Schlüssel](../developers/management-api-keys.mdx).
