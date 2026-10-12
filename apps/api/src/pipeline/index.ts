@@ -31,7 +31,7 @@ function getAutoRouterClassifierHandler() {
 type ModelFallbackSource = "dynamic_route" | "request" | "auto_router";
 type ModelFallbackAttempt = { model: string; status: number | null; stage: "before" | "execute" | "skipped" };
 
-function cleanFallbackModels(values: unknown, primaryModel: string): string[] {
+function cleanFallbackModels(values: unknown, primaryModel: string | null): string[] {
 	if (!Array.isArray(values)) return [];
 	return [...new Set(values.filter((value): value is string => typeof value === "string" && value.trim().length > 0))]
 		.filter((value) => value !== primaryModel)
@@ -50,10 +50,20 @@ function configuredModelFallbacks(ctx: { model: string; routingDiagnostics?: Rec
 		["auto_router", ctx.routingDiagnostics?.autoRouter?.fallbackModels],
 	];
 	for (const [source, values] of candidates) {
-		const models = cleanFallbackModels(values, ctx.model);
+		// Request entries were already deduped against the requested model; a
+		// provider-qualified or preset entry may resolve to the same model ID
+		// with different routing, so it is not dropped here.
+		const models = cleanFallbackModels(values, source === "request" ? null : ctx.model);
 		if (models.length) return { source, models };
 	}
 	return null;
+}
+
+// An attempt is identified by its resolved model and eligible providers, so a
+// provider-pinned or preset fallback for the same model is still tried.
+function modelFallbackAttemptKey(ctx: { model: string; providers?: Array<{ providerId: string }> | null }): string {
+	const providers = (ctx.providers ?? []).map((provider) => provider.providerId).sort().join(",");
+	return `${ctx.model}|${providers}`;
 }
 
 function shouldTryModelFallback(response: Response): boolean {
@@ -82,6 +92,8 @@ function formDataForModelFallback(rawBody: Record<string, unknown>): FormData {
 	const form = new FormData();
 	for (const [key, value] of Object.entries(rawBody)) {
 		if (Array.isArray(value)) {
+			// Empty arrays only come from JSON-encoded form fields; keep them present.
+			if (value.length === 0) form.append(key, "[]");
 			for (const item of value) appendFallbackFormValue(form, `${key}[]`, item);
 			continue;
 		}
@@ -210,9 +222,9 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 			if (!fallbackPlan) return response;
 
 			const attempts: ModelFallbackAttempt[] = [{ model: pre.ctx.model, status: response.status, stage: "execute" }];
-			const attemptedModels = new Set([pre.ctx.model]);
+			const attemptedModels = new Set([modelFallbackAttemptKey(pre.ctx)]);
 			for (const [fallbackIndex, fallbackModel] of fallbackPlan.models.entries()) {
-				const fallbackReq = requestForModelFallback(req, pre.ctx.rawBody) as unknown as typeof req;
+				const fallbackReq = requestForModelFallback(req, pre.ctx.retryRawBody ?? pre.ctx.rawBody) as unknown as typeof req;
 				const fallbackObservabilityReq = cloneRequestForEarlyObservability(fallbackReq);
 				let fallbackRequestObservability: BeforeRequestObservabilitySnapshot | undefined;
 				const fallbackTimer = new Timer();
@@ -253,11 +265,11 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 					discardResponseBody(rejected);
 					continue;
 				}
-				if (attemptedModels.has(fallbackPre.ctx.model)) {
+				if (attemptedModels.has(modelFallbackAttemptKey(fallbackPre.ctx))) {
 					attempts.push({ model: fallbackPre.ctx.model, status: null, stage: "skipped" });
 					continue;
 				}
-				attemptedModels.add(fallbackPre.ctx.model);
+				attemptedModels.add(modelFallbackAttemptKey(fallbackPre.ctx));
 				if (typeof fallbackBeforeMsRaw === "number") {
 					fallbackPre.ctx.meta.before_ms = Math.round(fallbackBeforeMsRaw * 1000) / 1000;
 				}

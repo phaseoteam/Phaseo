@@ -262,6 +262,8 @@ describe("beforeRequest request model fallbacks", () => {
 		expect(validateCapabilitiesMock.mock.calls[0]?.[0].rawBody).not.toHaveProperty("models");
 		if (result.ok) {
 			expect(result.ctx.rawBody).not.toHaveProperty("models");
+			expect(result.ctx.retryRawBody).toEqual(result.ctx.rawBody);
+			expect(Object.keys(result.ctx)).not.toContain("retryRawBody");
 			expect(result.ctx.routingDiagnostics?.requestModelFallbacks).toEqual({
 				requested: rawBody.models,
 				models: ["anthropic/claude-haiku-5-5", "@support"],

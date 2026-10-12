@@ -296,7 +296,11 @@ the same fallback machinery as dynamic routes:
 - **Triggers.** A fallback runs only when the previous attempt, after its own
   provider retries, ends with `429`, `500`, `502`, `503`, or `504`. Client
   errors such as `400`, `401`, `402`, `403`, `404`, `408`, `413`, and `422` are
-  returned without switching models.
+  returned without switching models. A `429` from a Phaseo budget or free-model
+  quota reached while executing the request also moves to the next model,
+  because a different model may fit within the remaining limit. Authentication,
+  API key rate limits, and other checks that fail before execution return
+  immediately.
 - **Limits.** `models` accepts 1 to 8 entries. Duplicates and entries equal to
   `model` are ignored. `model` is required; a request that sends only `models`
   is rejected with `400`.

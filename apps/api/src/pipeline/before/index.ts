@@ -334,6 +334,8 @@ export async function beforeRequest(
         }
         rawBody = withoutRequestModelFallbacks(rawBody);
     }
+    // Guardrails replace rawBody with redacted clones; fallbacks re-send this original.
+    const retryRawBody = rawBody;
     const requestedModel = typeof rawBody?.model === "string" && rawBody.model.trim()
         ? rawBody.model.trim()
         : null;
@@ -1503,6 +1505,8 @@ export async function beforeRequest(
         billableInternalTesting: testingMode.reason === "admin",
         pricingInternalOnly,
     };
+
+    Object.defineProperty(ctx, "retryRawBody", { value: retryRawBody, enumerable: false });
 
     // console.log(`[DEBUG] beforeRequest: final ctx.model: ${ctx.model}`);
 

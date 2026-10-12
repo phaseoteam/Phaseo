@@ -195,6 +195,49 @@ describe("request-level models fallbacks", () => {
 		expect(runnerMock.mock.calls[1]?.[0].pre.ctx.model).toBe("other/model");
 	});
 
+	it("tries a provider-pinned fallback for the same model on a different provider", async () => {
+		const pinned = (providerId: string) => ({ providers: [{ providerId }] });
+		beforeRequestMock
+			.mockResolvedValueOnce({
+				ok: true,
+				ctx: requestContext("openai/gpt-5", ["azure:openai/gpt-5"], pinned("openai")),
+			})
+			.mockResolvedValueOnce({ ok: true, ctx: requestContext("openai/gpt-5", [], pinned("azure")) });
+		runnerMock
+			.mockResolvedValueOnce(new Response("unavailable", { status: 503 }))
+			.mockResolvedValueOnce(new Response("ok", { status: 200 }));
+
+		const response = await makeEndpointHandler({ endpoint: "chat.completions", schema: null })(post("chat/completions"));
+
+		expect(response.status).toBe(200);
+		expect(beforeRequestMock.mock.calls[1]?.[4]).toEqual(expect.objectContaining({ requestModelOverride: "azure:openai/gpt-5" }));
+		expect(runnerMock).toHaveBeenCalledTimes(2);
+	});
+
+	it("re-sends the body as received rather than the guardrail-redacted copy", async () => {
+		const primary = requestContext("primary/model", ["fallback/model"], {
+			rawBody: { model: "primary/model", input: "call [REDACTED]" },
+		});
+		Object.defineProperty(primary, "retryRawBody", {
+			value: { model: "primary/model", input: "call 555-0100" },
+			enumerable: false,
+		});
+		beforeRequestMock
+			.mockResolvedValueOnce({ ok: true, ctx: primary })
+			.mockImplementationOnce(async (fallbackReq: Request) => {
+				await expect(fallbackReq.json()).resolves.toEqual({ model: "primary/model", input: "call 555-0100" });
+				return { ok: true, ctx: requestContext("fallback/model") };
+			});
+		runnerMock
+			.mockResolvedValueOnce(new Response("unavailable", { status: 503 }))
+			.mockResolvedValueOnce(new Response("ok", { status: 200 }));
+
+		const response = await makeEndpointHandler({ endpoint: "responses", schema: null })(post());
+
+		expect(response.status).toBe(200);
+		expect(beforeRequestMock).toHaveBeenCalledTimes(2);
+	});
+
 	it("returns the last failure once every fallback is exhausted", async () => {
 		beforeRequestMock
 			.mockResolvedValueOnce({ ok: true, ctx: requestContext("primary/model", ["fallback/model"]) })
