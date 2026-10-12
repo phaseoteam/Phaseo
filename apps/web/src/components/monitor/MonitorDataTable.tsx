@@ -76,6 +76,7 @@ import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
 import { cn } from "@/lib/utils";
 import {
 	groupModelRows,
+	lowestDisplayedPrice,
 	type GroupedModelData,
 	type ModelData,
 	type ModelOperationPrices,
@@ -724,12 +725,12 @@ export function MonitorDataTable({
 						bValue = b.endpoints[0] ?? "";
 						break;
 					case "inputPrice":
-						aValue = a.inputPrices[0] ?? Number.POSITIVE_INFINITY;
-						bValue = b.inputPrices[0] ?? Number.POSITIVE_INFINITY;
+						aValue = lowestDisplayedPrice(a, "inputPrices");
+						bValue = lowestDisplayedPrice(b, "inputPrices");
 						break;
 					case "outputPrice":
-						aValue = a.outputPrices[0] ?? Number.POSITIVE_INFINITY;
-						bValue = b.outputPrices[0] ?? Number.POSITIVE_INFINITY;
+						aValue = lowestDisplayedPrice(a, "outputPrices");
+						bValue = lowestDisplayedPrice(b, "outputPrices");
 						break;
 					case "status":
 						aValue = normalizeStatusValue(a.statusEndpoints[0]?.status ?? "");

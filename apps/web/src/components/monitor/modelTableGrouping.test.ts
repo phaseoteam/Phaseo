@@ -1,4 +1,4 @@
-import { groupModelRows, type ModelData } from "./modelTableGrouping";
+import { groupModelRows, lowestDisplayedPrice, type ModelData } from "./modelTableGrouping";
 
 function row(overrides: Partial<ModelData>): ModelData {
 	return {
@@ -175,6 +175,20 @@ describe("groupModelRows", () => {
 		expect(group.usagePrices).toEqual([]);
 	});
 
+	it("sorts by the cheapest rate shown for any capability", () => {
+		const [group] = groupModelRows([
+			row({ endpoint: "text.generate", provider: { id: "openai", name: "OpenAI", inputPrice: 10, outputPrice: 30, features: [] } }),
+			row({ endpoint: "image.generate", provider: { id: "openai", name: "OpenAI", inputPrice: 1, outputPrice: 8, features: [] } }),
+		]);
+		expect(group.inputPrices).toEqual([10]);
+		expect(lowestDisplayedPrice(group, "inputPrices")).toBe(1);
+		expect(lowestDisplayedPrice(group, "outputPrices")).toBe(8);
+		const [unpriced] = groupModelRows([
+			row({ endpoint: "image.generate", provider: { id: "openai", name: "OpenAI", inputPrice: null, outputPrice: null, features: [] } }),
+		]);
+		expect(lowestDisplayedPrice(unpriced, "inputPrices")).toBe(Number.POSITIVE_INFINITY);
+	});
+
 	it("keeps a per-image charge beside the text token rate", () => {
 		const [group] = groupModelRows([
 			row({ endpoint: "text.generate", provider: { id: "google", name: "Google", inputPrice: 0.3, outputPrice: 2.5, features: [] } }),
@@ -195,6 +209,7 @@ describe("groupModelRows", () => {
 			row({ endpoint: "text.generate", provider: { id: "atlascloud", name: "AtlasCloud", inputPrice: 0.04, outputPrice: 0.08, features: [] } }),
 		]);
 		expect(group.inputPrices).toEqual([0.04]);
+		expect(lowestDisplayedPrice(group, "inputPrices")).toBe(0.04);
 		expect(group.operationPrices).toEqual([
 			{ capability: "text.generate", inputPrices: [0.04], outputPrices: [0.08], usagePrices: [] },
 			{ capability: "ocr", inputPrices: [0.05], outputPrices: [0.08], usagePrices: [] },

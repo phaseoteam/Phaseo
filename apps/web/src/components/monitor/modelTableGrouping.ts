@@ -119,6 +119,14 @@ function samePrices(left: ModelOperationPrices, right: ModelOperationPrices): bo
 		&& JSON.stringify(left.usagePrices) === JSON.stringify(right.usagePrices);
 }
 
+// The lowest token rate a row displays, including per-capability rates, for sorting.
+export function lowestDisplayedPrice(
+	group: GroupedModelData,
+	column: "inputPrices" | "outputPrices",
+): number {
+	return Math.min(...group[column], ...group.operationPrices.flatMap(operation => operation[column]));
+}
+
 export function groupModelRows(rows: readonly ModelData[]): GroupedModelData[] {
 	const groups = new Map<string, ModelData[]>();
 	for (const row of rows) {
