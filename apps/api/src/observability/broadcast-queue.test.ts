@@ -192,6 +192,10 @@ describe("processBroadcastQueueBatch", () => {
 
 		expect(event.retry).toHaveBeenCalledWith({ delaySeconds: 30 });
 		expect(event.ack).not.toHaveBeenCalled();
+
+		const later = { ...message({ eventId: "req_2", destinationIds: ["collector"] }), attempts: 40 };
+		await processBroadcastQueueBatch(batch(later));
+		expect(later.retry).toHaveBeenCalledWith({ delaySeconds: 900 });
 	});
 
 	it("delivers an event emitted twice only once", async () => {
