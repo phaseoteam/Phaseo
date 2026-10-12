@@ -7,7 +7,9 @@ jest.mock("@/lib/web-api/client", () => ({
 import { fetchFrontendFamilies, fetchFrontendAPIProviders, fetchFrontendModelSubscriptionPlans } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 describe("subscription access lookup", () => {
-	beforeEach(() => mockFetchPublicWebApi.mockReset());
+	beforeEach(() => {
+		mockFetchPublicWebApi.mockReset();
+	});
 
 	it("preserves a successful empty response", async () => {
 		mockFetchPublicWebApi.mockResolvedValueOnce({ subscription_plans: [] });
