@@ -387,10 +387,13 @@ export async function fetchFrontendModelSubscriptionPlans(
 	includeHidden = false,
 ): Promise<SubscriptionPlan[]> {
 	if (includeHidden) return getModelSubscriptionPlans(modelId, true);
-	const payload = await fetchOptionalPublicWebApi<{
+	const payload = await fetchPublicWebApi<{
 		subscription_plans: SubscriptionPlan[];
 	}>(`/api/_web/models/${encodeURIComponent(modelId)}/subscription-plans`);
-	return payload?.subscription_plans ?? [];
+	if (!Array.isArray(payload?.subscription_plans)) {
+		throw new Error("Invalid subscription plans response");
+	}
+	return payload.subscription_plans;
 }
 
 export async function fetchFrontendModelGatewayMetadata(

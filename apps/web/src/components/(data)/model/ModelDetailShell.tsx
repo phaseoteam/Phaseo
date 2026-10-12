@@ -143,7 +143,7 @@ export default async function ModelDetailShell({
 		: fetchFrontendModelGatewayMetadata(modelId).catch(() => null);
 	const subscriptionPlansPromise = isFreeRouter
 		? Promise.resolve([])
-		: fetchFrontendModelSubscriptionPlans(modelId).catch(() => []);
+		: fetchFrontendModelSubscriptionPlans(modelId).catch(() => null);
 	const [header, modelOverview] = isFreeRouter
 		? [
 				{
@@ -186,12 +186,12 @@ export default async function ModelDetailShell({
 		gatewayMetadataPromise,
 		subscriptionPlansPromise,
 	]);
-	const { subscriptionOnly } = getModelAccessLayout({
-		hasSubscriptions: subscriptionPlans.length > 0,
+	const { canUseApi } = getModelAccessLayout({
+		hasSubscriptions: subscriptionPlans === null ? null : subscriptionPlans.length > 0,
 		hasApiProviders: (gatewayMetadata?.providers.length ?? 0) > 0,
 		isPrivateModel: header.is_private === true,
 	});
-	const canChat = !subscriptionOnly && (canChatOverride ?? header.status !== "Retired");
+	const canChat = canUseApi && (canChatOverride ?? header.status !== "Retired");
 	const capabilities = decisionModelCapabilities(gatewayMetadata?.activeProviders.map(provider => provider.endpoint) ?? []);
 	const isDecisionsModel = !isFreeRouter && (gatewayMetadata?.activeProviders.length
 		? capabilities.includes("decisions.make") : matchesDecisionsModel(modelId, modelOverview));
