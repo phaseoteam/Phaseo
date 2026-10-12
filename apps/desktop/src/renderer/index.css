@@ -1,0 +1,263 @@
+/* Phaseo desktop design system. Tokens mirror apps/web/src/app/globals.css so
+   the desktop app and the website share one visual language. */
+@layer theme, base, legacy, components, utilities;
+
+@import "tailwindcss";
+@import "tw-animate-css";
+/* Styles for views that have not moved to Tailwind yet. Layered below the
+   utilities so they never override new components. */
+@import "./styles.css" layer(legacy);
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--color-success: var(--success);
+	--color-warning: var(--warning);
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-border: var(--sidebar-border);
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 4px);
+	--radius-2xl: calc(var(--radius) * 1.8);
+	--font-sans: Montserrat, ui-sans-serif, system-ui, sans-serif;
+	--font-mono: "Cascadia Code", "SF Mono", Consolas, ui-monospace, monospace;
+}
+
+:root {
+	--radius: 0.625rem;
+	--background: oklch(1 0 0);
+	--foreground: oklch(0.145 0 0);
+	--card: oklch(1 0 0);
+	--card-foreground: oklch(0.145 0 0);
+	--popover: oklch(1 0 0);
+	--popover-foreground: oklch(0.145 0 0);
+	--primary: #0069a8;
+	--primary-foreground: #ffffff;
+	--secondary: oklch(0.967 0.001 286.375);
+	--secondary-foreground: oklch(0.21 0.006 285.885);
+	--muted: oklch(0.97 0 0);
+	--muted-foreground: oklch(0.556 0 0);
+	--accent: oklch(0.97 0 0);
+	--accent-foreground: oklch(0.205 0 0);
+	--destructive: oklch(0.577 0.245 27.325);
+	--success: oklch(0.6 0.15 150);
+	--warning: oklch(0.7 0.15 70);
+	--border: oklch(0.922 0 0);
+	--input: oklch(0.922 0 0);
+	--ring: #0069a8;
+	--sidebar: oklch(0.985 0 0);
+	--sidebar-foreground: oklch(0.145 0 0);
+	--sidebar-accent: oklch(0.95 0 0);
+	--sidebar-accent-foreground: oklch(0.205 0 0);
+	--sidebar-border: oklch(0.922 0 0);
+}
+
+.dark {
+	--background: oklch(0.145 0 0);
+	--foreground: oklch(0.985 0 0);
+	--card: oklch(0.205 0 0);
+	--card-foreground: oklch(0.985 0 0);
+	--popover: oklch(0.205 0 0);
+	--popover-foreground: oklch(0.985 0 0);
+	--primary: #0078b8;
+	--primary-foreground: #ffffff;
+	--secondary: oklch(0.274 0.006 286.033);
+	--secondary-foreground: oklch(0.985 0 0);
+	--muted: oklch(0.269 0 0);
+	--muted-foreground: oklch(0.708 0 0);
+	--accent: oklch(0.269 0 0);
+	--accent-foreground: oklch(0.985 0 0);
+	--destructive: oklch(0.704 0.191 22.216);
+	--success: oklch(0.72 0.17 150);
+	--warning: oklch(0.8 0.15 80);
+	--border: oklch(1 0 0 / 10%);
+	--input: oklch(1 0 0 / 15%);
+	--ring: #0078b8;
+	--sidebar: oklch(0.17 0 0);
+	--sidebar-foreground: oklch(0.985 0 0);
+	--sidebar-accent: oklch(0.25 0 0);
+	--sidebar-accent-foreground: oklch(0.985 0 0);
+	--sidebar-border: oklch(1 0 0 / 8%);
+}
+
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+	}
+	html,
+	body,
+	#root {
+		height: 100%;
+		overflow: hidden;
+	}
+	body {
+		@apply bg-background text-foreground font-sans antialiased;
+		font-size: 13px;
+		user-select: none;
+	}
+	/* Conversation and document text stays selectable. */
+	[data-selectable],
+	input,
+	textarea,
+	[contenteditable] {
+		user-select: text;
+	}
+	button:not(:disabled),
+	[role="button"]:not(:disabled) {
+		cursor: pointer;
+	}
+}
+
+@utility drag-region {
+	-webkit-app-region: drag;
+}
+
+@utility no-drag {
+	-webkit-app-region: no-drag;
+}
+
+@utility scrollbar-thin {
+	scrollbar-width: thin;
+	scrollbar-color: color-mix(in oklch, var(--muted-foreground) 35%, transparent) transparent;
+}
+
+/* Conversation markdown. Overrides the legacy layer's message styles. */
+@layer components {
+	.message-markdown {
+		line-height: 1.7;
+		overflow-wrap: anywhere;
+	}
+	.message-markdown :where(p, ul, ol, blockquote, table) {
+		margin-block: 0 0.85em;
+	}
+	.message-markdown > :last-child {
+		margin-bottom: 0;
+	}
+	.message-markdown :not(pre) > code {
+		border-radius: 5px;
+		background: var(--muted);
+		padding: 0.1em 0.35em;
+		font-family: var(--font-mono);
+		font-size: 0.86em;
+	}
+	.message-markdown a {
+		color: var(--primary);
+		text-decoration: underline;
+		text-decoration-color: color-mix(in oklch, var(--primary) 40%, transparent);
+		text-underline-offset: 3px;
+	}
+	.message-markdown blockquote {
+		border-left: 3px solid var(--border);
+		padding-left: 0.9em;
+		color: var(--muted-foreground);
+	}
+	.message-markdown table {
+		display: block;
+		width: max-content;
+		max-width: 100%;
+		overflow-x: auto;
+		border-collapse: separate;
+		border-spacing: 0;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		font-size: 0.93em;
+	}
+	.message-markdown th,
+	.message-markdown td {
+		border: 0;
+		border-bottom: 1px solid var(--border);
+		padding: 0.45em 0.9em;
+		text-align: left;
+	}
+	.message-markdown tr:last-child td {
+		border-bottom: 0;
+	}
+	.message-markdown th {
+		background: color-mix(in oklch, var(--muted) 60%, transparent);
+		font-weight: 600;
+	}
+	.message-code-block {
+		margin-bottom: 0.85em;
+		overflow: hidden;
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		background: var(--card);
+	}
+	.message-code-actions {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 4px 6px 4px 12px;
+		border-bottom: 1px solid var(--border);
+		color: var(--muted-foreground);
+		font-size: 11.5px;
+	}
+	.message-code-actions button {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		min-height: 0;
+		height: 26px;
+		border: 0;
+		border-radius: 6px;
+		background: transparent;
+		padding: 0 8px;
+		color: inherit;
+		font-size: 11.5px;
+		font-weight: 500;
+	}
+	.message-code-actions button:hover {
+		background: var(--muted);
+		color: var(--foreground);
+	}
+	.message-code-actions svg {
+		width: 13px;
+		height: 13px;
+	}
+	.message-code-block pre {
+		margin: 0;
+		padding: 14px 16px;
+		overflow: auto;
+		border: 0;
+		border-radius: 0;
+		background: color-mix(in oklch, var(--muted) 35%, var(--card));
+		font: 12.5px/1.65 var(--font-mono);
+	}
+
+	/* Legacy views hosted in the tools panel and settings dialog. */
+	.legacy-panel {
+		font-size: 13px;
+	}
+	.legacy-panel > .page,
+	.legacy-panel > * > .page {
+		width: auto;
+		margin: 0;
+		padding: 20px 24px 32px;
+	}
+	.chat-tools-content.legacy-panel :is(.page h1, .page-heading) {
+		display: none;
+	}
+}

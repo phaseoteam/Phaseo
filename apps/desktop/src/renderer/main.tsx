@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { DesktopFlags } from "./lib/DesktopFlags";
-import "./styles.css";
+import "./index.css";
 import developmentIcon from "../../assets/icon-development.svg";
 import productionIcon from "../../assets/icon-production.svg";
 

@@ -58,6 +58,7 @@ packages/sdk/sdk-ruby/*.gem
 .vercel
 /apps/desktop/out/
 /apps/desktop/release/
+/apps/desktop/output/
 
 # React Doctor local scan outputs
 /apps/web/.react-doctor-current.json
