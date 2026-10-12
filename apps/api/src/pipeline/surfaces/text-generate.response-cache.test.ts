@@ -239,6 +239,72 @@ describe("runTextGeneratePipeline response cache", () => {
 		});
 	});
 
+	it("replays a streamed hit as SSE", async () => {
+		decodeProtocolMock.mockReturnValue({
+			stream: true,
+			messages: [{ role: "user", content: "hello" }],
+		});
+		const cachedRecord: CachedResponseRecord = {
+			version: "v2",
+			key: "gateway:response-cache:v2:key_123:abc123",
+			fingerprint: "abc123",
+			endpoint: "responses",
+			model: "openai/gpt-5.4-nano",
+			statusCode: 200,
+			responseBody: null,
+			streamFrames: [
+				{ eventName: "response.completed", data: { response: { id: "req_source", usage: { input_tokens: 4 } } } },
+			],
+			providerId: "openai",
+			providerModelSlug: null,
+			usage: { input_tokens: 4 },
+			currency: "USD",
+			finishReason: "stop",
+			nativeResponseId: null,
+			routingMode: "balanced",
+			preset: { id: null, slug: null },
+			sourceRequestId: "req_source",
+			createdAt: new Date().toISOString(),
+			expiresAt: new Date(Date.now() + 60_000).toISOString(),
+			ttlSeconds: 300,
+		};
+		getResponseCacheMock.mockReturnValue({
+			get: vi.fn().mockResolvedValue(cachedRecord),
+			set: vi.fn(),
+			delete: vi.fn(),
+		});
+
+		const args = createArgs();
+		args.pre.ctx.stream = true;
+		const response = await runTextGeneratePipeline(args);
+		await Promise.all(pendingBackground);
+
+		expect(response.headers.get("Content-Type")).toBe("text/event-stream");
+		expect(response.headers.get("X-Phaseo-Cache-Status")).toBe("HIT");
+		expect(await response.text()).toBe(
+			"event: response.completed\ndata: {\"response\":{\"id\":\"req_test_cache\",\"usage\":{\"input_tokens\":0}}}\n\n",
+		);
+		expect(doRequestWithIRMock).not.toHaveBeenCalled();
+		// Audited as a stream with zero usage and cost.
+		expect(handleSuccessAuditMock.mock.calls[0]?.slice(2, 6)).toEqual([true, {}, 0, 0]);
+	});
+
+	it("does not replay a buffered entry for a streamed request", async () => {
+		decodeProtocolMock.mockReturnValue({ stream: true, messages: [{ role: "user", content: "hello" }] });
+		getResponseCacheMock.mockReturnValue({
+			get: vi.fn().mockResolvedValue({ statusCode: 200, responseBody: { id: "x" }, streamFrames: null }),
+			set: vi.fn(),
+			delete: vi.fn(),
+		});
+		mockLiveExecution();
+
+		const args = createArgs();
+		args.pre.ctx.stream = true;
+		await runTextGeneratePipeline(args);
+
+		expect(doRequestWithIRMock).toHaveBeenCalledTimes(1);
+	});
+
 	it("does not touch the store unless caching is turned on", async () => {
 		const store = { get: vi.fn(), set: vi.fn(), delete: vi.fn() };
 		getResponseCacheMock.mockReturnValue(store);

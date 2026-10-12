@@ -37,6 +37,7 @@ import {
 import {
 	applyResponseCacheHeaders,
 	buildCachedResponseBody,
+	buildCachedSseBody,
 	buildResponseCacheFingerprint,
 	buildResponseCacheKey,
 	isResponseCacheEligible,
@@ -481,18 +482,28 @@ async function handleCachedTextResponse(args: {
 	endpoint: PipelineRunnerArgs["endpoint"];
 	timingHeader?: string;
 	record: CachedResponseRecord;
+	stream: boolean;
 }): Promise<Response> {
-	const { pre, req, endpoint, timingHeader, record } = args;
+	const { pre, req, endpoint, timingHeader, record, stream } = args;
 	const ctx = pre.ctx;
 	ctx.meta.generation_ms = 0;
 	ctx.meta.latency_ms = ctx.meta.before_ms ?? 0;
 	releaseCustomerRequest(req);
 
-	const responseBody = buildCachedResponseBody({
-		responseBody: record.responseBody,
-		sourceRequestId: record.sourceRequestId,
-		requestId: ctx.requestId,
-	});
+	const responseBody = stream
+		? null
+		: buildCachedResponseBody({
+			responseBody: record.responseBody,
+			sourceRequestId: record.sourceRequestId,
+			requestId: ctx.requestId,
+		});
+	const sseBody = stream
+		? buildCachedSseBody({
+			frames: record.streamFrames ?? [],
+			sourceRequestId: record.sourceRequestId,
+			requestId: ctx.requestId,
+		})
+		: null;
 
 	const result = {
 		kind: "completed" as const,
@@ -530,7 +541,7 @@ async function handleCachedTextResponse(args: {
 				await handleSuccessAudit(
 					ctx,
 					result as any,
-					false,
+					stream,
 					{},
 					0,
 					0,
@@ -572,6 +583,10 @@ async function handleCachedTextResponse(args: {
 		ageMs: ctx.responseCache?.ageMs ?? null,
 		sourceRequestId: record.sourceRequestId,
 	});
+	if (sseBody !== null) {
+		headers.set("Content-Type", "text/event-stream");
+		return new Response(sseBody, { status: record.statusCode, headers });
+	}
 	return createResponse(responseBody, record.statusCode, headers);
 }
 
@@ -797,7 +812,10 @@ async function runTextGeneratePipelineInner(
 					"response_cache_lookup",
 					performance.now() - cacheLookupStartedAt,
 				);
-				if (cachedRecord?.responseBody && cachedRecord.statusCode === 200) {
+				const replayable = requestedStream
+					? Array.isArray(cachedRecord?.streamFrames) && cachedRecord.streamFrames.length > 0
+					: Boolean(cachedRecord?.responseBody);
+				if (cachedRecord && replayable && cachedRecord.statusCode === 200) {
 					const ageMs = Math.max(
 						0,
 						Date.now() - new Date(cachedRecord.createdAt).getTime(),
@@ -826,6 +844,7 @@ async function runTextGeneratePipelineInner(
 						endpoint,
 						timingHeader: header || undefined,
 						record: cachedRecord,
+						stream: requestedStream,
 					});
 				}
 			}

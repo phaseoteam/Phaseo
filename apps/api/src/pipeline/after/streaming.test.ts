@@ -107,6 +107,42 @@ describe("passthroughWithPricing", () => {
 		});
 	});
 
+	it("reports each outbound frame and the end of the stream", async () => {
+		const outbound: unknown[] = [];
+		let resolveEnd!: (info: unknown) => void;
+		const ended = new Promise((resolve) => { resolveEnd = resolve; });
+		const text = [
+			`event: response.completed\ndata: ${JSON.stringify({ response: { object: "response", status: "completed", usage: { input_tokens: 1, output_tokens: 1 } } })}\n\n`,
+			"data: [DONE]\n\n",
+		].join("");
+		const upstream = new Response(new ReadableStream<Uint8Array>({
+			start(controller) {
+				controller.enqueue(new TextEncoder().encode(text));
+				controller.close();
+			},
+		}), { status: 200, headers: { "Content-Type": "text/event-stream" } });
+
+		const response = await passthroughWithPricing({
+			upstream,
+			ctx: baseCtx(),
+			provider: "openai",
+			priceCard: null,
+			rewriteFrame: (frame) => ({ ...frame, rewritten: true }),
+			onOutboundFrame: (frame) => outbound.push(frame),
+			onStreamEnd: (info) => resolveEnd(info),
+		});
+		await drain(response);
+
+		expect(await ended).toEqual({ aborted: false, downstreamClosed: false });
+		expect(outbound).toEqual([
+			{
+				eventName: "response.completed",
+				data: expect.objectContaining({ rewritten: true }),
+			},
+			{ raw: "data: [DONE]" },
+		]);
+	});
+
 	it("reuses last seen usage when terminal frame lacks explicit usage", async () => {
 		const usageCalls: Array<any> = [];
 		const upstream = makeSseResponse([

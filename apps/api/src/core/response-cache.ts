@@ -70,6 +70,11 @@ export type ResponseCacheStore = {
 	delete(key: string): Promise<void>;
 };
 
+/** One SSE frame as it was sent to the client: parsed JSON, or a raw block. */
+export type CachedStreamFrame =
+	| { eventName: string | null; data: unknown }
+	| { raw: string };
+
 export type CachedResponseRecord = {
 	version: string;
 	key: string;
@@ -77,7 +82,10 @@ export type CachedResponseRecord = {
 	endpoint: Endpoint;
 	model: string;
 	statusCode: number;
+	/** The JSON body for buffered requests; null for streamed ones. */
 	responseBody: unknown;
+	/** The SSE frames for streamed requests; absent for buffered ones. */
+	streamFrames?: CachedStreamFrame[] | null;
 	providerId: string | null;
 	providerModelSlug: string | null;
 	usage: unknown;
@@ -207,6 +215,8 @@ export function isResponseCacheEligible(args: {
 	serverToolsEnabled?: boolean;
 	zeroDataRetention?: boolean;
 }): { eligible: boolean; reason: string } {
+	// Streamed and buffered requests are both eligible; stream mode is part of
+	// the fingerprint, so each gets its own entry.
 	if (!RESPONSE_CACHE_ELIGIBLE_ENDPOINTS.has(args.endpoint)) {
 		return { eligible: false, reason: "unsupported_endpoint" };
 	}
@@ -216,9 +226,6 @@ export function isResponseCacheEligible(args: {
 	}
 	if (!args.apiKeyId) {
 		return { eligible: false, reason: "no_api_key" };
-	}
-	if (args.stream) {
-		return { eligible: false, reason: "streaming_request" };
 	}
 	if (args.debugEnabled) {
 		return { eligible: false, reason: "debug_enabled" };
@@ -308,6 +315,44 @@ export function zeroUsageCounters(value: unknown): unknown {
 	return value;
 }
 
+type ReplayRewrite = { sourceRequestId: string; requestId: string; nowSeconds: number };
+
+/**
+ * Gives a replayed payload the hit's own identity: IDs derived from the source
+ * request ID (the ID itself, or `{id}-…`) take the new request ID, creation
+ * times become now, and every `usage` object reports zero.
+ */
+function rewriteReplayValue(value: unknown, rewrite: ReplayRewrite): unknown {
+	if (typeof value === "string") {
+		if (value === rewrite.sourceRequestId) return rewrite.requestId;
+		if (value.startsWith(`${rewrite.sourceRequestId}-`)) {
+			return rewrite.requestId + value.slice(rewrite.sourceRequestId.length);
+		}
+		return value;
+	}
+	if (Array.isArray(value)) return value.map((entry) => rewriteReplayValue(entry, rewrite));
+	if (!isPlainObject(value)) return value;
+	const out: Record<string, unknown> = {};
+	for (const [key, entry] of Object.entries(value)) {
+		if (key === "usage" && entry && typeof entry === "object") {
+			out[key] = zeroUsageCounters(entry);
+		} else if ((key === "created" || key === "created_at") && typeof entry === "number") {
+			out[key] = rewrite.nowSeconds;
+		} else {
+			out[key] = rewriteReplayValue(entry, rewrite);
+		}
+	}
+	return out;
+}
+
+function replayRewrite(args: { sourceRequestId: string; requestId: string; now?: Date }): ReplayRewrite {
+	return {
+		sourceRequestId: args.sourceRequestId,
+		requestId: args.requestId,
+		nowSeconds: Math.floor((args.now ?? new Date()).getTime() / 1000),
+	};
+}
+
 /**
  * Prepares a stored response body for replay: the hit gets its own request ID
  * and creation time, and reports zero usage because it is not billed.
@@ -318,14 +363,24 @@ export function buildCachedResponseBody(args: {
 	requestId: string;
 	now?: Date;
 }): unknown {
-	if (!isPlainObject(args.responseBody)) return args.responseBody;
-	const body: Record<string, unknown> = structuredClone(args.responseBody);
-	const nowSeconds = Math.floor((args.now ?? new Date()).getTime() / 1000);
-	if (body.id === args.sourceRequestId) body.id = args.requestId;
-	if (typeof body.created === "number") body.created = nowSeconds;
-	if (typeof body.created_at === "number") body.created_at = nowSeconds;
-	if (body.usage !== undefined) body.usage = zeroUsageCounters(body.usage);
-	return body;
+	return rewriteReplayValue(args.responseBody, replayRewrite(args));
+}
+
+/** Rebuilds a stored stream as SSE text, rewritten the same way as a buffered body. */
+export function buildCachedSseBody(args: {
+	frames: CachedStreamFrame[];
+	sourceRequestId: string;
+	requestId: string;
+	now?: Date;
+}): string {
+	const rewrite = replayRewrite(args);
+	return args.frames
+		.map((frame) => {
+			if ("raw" in frame) return `${frame.raw}\n\n`;
+			const prefix = frame.eventName ? `event: ${frame.eventName}\n` : "";
+			return `${prefix}data: ${JSON.stringify(rewriteReplayValue(frame.data, rewrite))}\n\n`;
+		})
+		.join("");
 }
 
 export function applyResponseCacheHeaders(
@@ -357,6 +412,7 @@ export function buildCachedResponseRecord(args: {
 	model: string;
 	statusCode: number;
 	responseBody: unknown;
+	streamFrames?: CachedStreamFrame[] | null;
 	providerId?: string | null;
 	providerModelSlug?: string | null;
 	usage?: unknown;
@@ -380,6 +436,7 @@ export function buildCachedResponseRecord(args: {
 		model: args.model,
 		statusCode: args.statusCode,
 		responseBody: args.responseBody,
+		streamFrames: args.streamFrames ?? null,
 		providerId: args.providerId ?? null,
 		providerModelSlug: args.providerModelSlug ?? null,
 		usage: args.usage ?? null,
