@@ -176,6 +176,19 @@ describe("observability destination management", () => {
 		expect((await create({ collector_endpoint: "https://collector.example.com" })).status).toBe(201);
 	});
 
+	it("accepts only the supported OTLP protocols", async () => {
+		const { observabilityRoutes } = await import("./observability");
+		const create = (otlp_protocol: string) => observabilityRoutes.request("https://example.com/destinations", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ type: "otel_collector", name: "Collector", config: { endpoint: "https://collector.example.com", otlp_protocol } }),
+		});
+		expect((await create("http/protobuf")).status).toBe(201);
+		const rejected = await create("grpc");
+		expect(rejected.status).toBe(400);
+		expect(await rejected.json()).toMatchObject({ message: "otlp_protocol must be one of: http/json, http/protobuf" });
+	});
+
 	it("bounds rule groups and key filters", async () => {
 		const { observabilityRoutes } = await import("./observability");
 		const response = await observabilityRoutes.request("https://example.com/destinations", {

@@ -74,6 +74,18 @@ export const BROADCAST_RULE_CONDITIONS = [
 	"equals", "not_equals", "contains", "not_contains", "starts_with", "ends_with", "exists", "not_exists", "matches_regex",
 ] as const;
 
+export const OTLP_PROTOCOLS = ["http/json", "http/protobuf"] as const;
+export type OtlpProtocol = (typeof OTLP_PROTOCOLS)[number];
+
+// The OTLP/HTTP encoding set in otlp_protocol, using the values of
+// OTEL_EXPORTER_OTLP_PROTOCOL. Unset means JSON, which every destination created
+// before protobuf support uses. Returns null for an unsupported value.
+export function otlpProtocol(config: Record<string, unknown>): OtlpProtocol | null {
+	const value = String(config.otlp_protocol ?? "").trim().toLowerCase();
+	if (!value) return "http/json";
+	return OTLP_PROTOCOLS.includes(value as OtlpProtocol) ? value as OtlpProtocol : null;
+}
+
 const OTLP_BASE_ENDPOINT_KEYS = ["otlp_endpoint", "collector_endpoint", "endpoint"] as const;
 
 // The endpoint the exporter will call, before network validation.

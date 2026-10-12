@@ -161,13 +161,19 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 	{
 		id: "otel_collector",
 		label: "OpenTelemetry Collector",
-		description: "Export GenAI traces over OTLP/HTTP JSON to your collector.",
+		description: "Export GenAI traces over OTLP/HTTP, as JSON or protobuf, to your collector.",
 		logoId: "observability-opentelemetry",
 		fields: [
 			{
 				key: "otlp_endpoint",
 				label: "Collector Endpoint",
 				placeholder: "https://collector.example.com/v1/traces",
+			},
+			{
+				key: "otlp_protocol",
+				label: "Protocol (Optional)",
+				placeholder: "http/json or http/protobuf",
+				required: false,
 			},
 			{
 				key: "headers_json",
