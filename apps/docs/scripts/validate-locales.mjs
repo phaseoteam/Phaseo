@@ -33,15 +33,49 @@ function listPages(root, parent = root, pages = new Set()) {
 	return pages;
 }
 
+// Mintlify resolves an `openapi: "METHOD /path"` reference against the alphabetically first spec
+// that defines the operation, which is a localized spec. Every page must name its own spec file.
+function openApiReferenceIssue(path, specFile) {
+	const frontmatter = readFileSync(path, "utf8").match(/^---\s*\r?\n([\s\S]*?)\r?\n---/);
+	const reference = frontmatter?.[1].match(/^openapi:\s*["']?(.*?)["']?\s*$/m)?.[1];
+	if (reference === undefined || reference.startsWith(`${specFile} `)) return undefined;
+	return `${relative(docsRoot, path).split(sep).join("/")} must reference "${specFile} METHOD /path", found "${reference}"`;
+}
+
+// An unclosed code fence renders the rest of the page as code.
+function unclosedFenceIssue(path) {
+	let fence;
+	for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
+		const marker = line.match(/^\s*(`{3,}|~{3,})(.*)$/);
+		if (!marker) continue;
+		if (!fence) fence = marker[1];
+		else if (marker[1][0] === fence[0] && marker[1].length >= fence.length && !marker[2].trim()) fence = undefined;
+	}
+	return fence ? `${relative(docsRoot, path).split(sep).join("/")} has an unclosed code fence` : undefined;
+}
+
 const sourcePages = listPages(sourceRoot);
 if (sourcePages.size === 0) {
 	throw new Error(`No Markdown or MDX pages found in ${sourceRoot}`);
 }
 
 const issues = [];
+for (const page of sourcePages) {
+	const path = join(sourceRoot, page);
+	for (const issue of [openApiReferenceIssue(path, "/openapi/v1/openapi.yaml"), unclosedFenceIssue(path)]) {
+		if (issue) issues.push(issue);
+	}
+}
 for (const locale of locales) {
 	const localeRoot = join(docsRoot, locale, "v1");
 	const translatedPages = listPages(localeRoot);
+	for (const page of translatedPages) {
+		const path = join(localeRoot, page);
+		const specFile = `/${locale}/openapi/v1/openapi.localized.yaml`;
+		for (const issue of [openApiReferenceIssue(path, specFile), unclosedFenceIssue(path)]) {
+			if (issue) issues.push(issue);
+		}
+	}
 	const missing = [...sourcePages].filter((page) => !translatedPages.has(page));
 	const unexpected = [...translatedPages].filter(
 		(page) => !sourcePages.has(page) && !hasLocalizedRedirect(page, locale),
@@ -58,9 +92,9 @@ for (const locale of locales) {
 }
 
 if (issues.length > 0) {
-	throw new Error(`Localized docs coverage failed:\n- ${issues.join("\n- ")}`);
+	throw new Error(`Localized docs validation failed:\n- ${issues.join("\n- ")}`);
 }
 
 process.stdout.write(
-	`Localized docs coverage valid: ${sourcePages.size} pages across ${locales.length} locales\n`,
+	`Localized docs coverage, OpenAPI references and code fences valid: ${sourcePages.size} pages across ${locales.length} locales\n`,
 );
