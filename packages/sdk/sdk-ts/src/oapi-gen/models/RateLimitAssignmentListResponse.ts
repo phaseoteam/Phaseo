@@ -10,4 +10,5 @@ export interface RateLimitAssignmentListResponse {
     updated_at: string;
     workspace_id: string;
   }[];
+  has_more: boolean;
 }

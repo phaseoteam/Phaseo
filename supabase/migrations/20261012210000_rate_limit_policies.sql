@@ -39,6 +39,8 @@ ALTER TABLE "public"."workspace_rate_limit_policies"
 
 CREATE INDEX workspace_rate_limit_policies_created_by_idx ON public.workspace_rate_limit_policies USING btree (created_by);
 
+CREATE INDEX workspace_rate_limit_policies_workspace_created_idx ON public.workspace_rate_limit_policies USING btree (workspace_id, created_at, id);
+
 CREATE UNIQUE INDEX workspace_rate_limit_policies_workspace_name_idx ON public.workspace_rate_limit_policies USING btree (workspace_id, lower(btrim(name)));
 
 CREATE TRIGGER workspace_rate_limit_policies_set_updated_at
@@ -105,6 +107,8 @@ CREATE UNIQUE INDEX workspace_rate_limit_policy_assignments_member_uidx ON publi
   WHERE (user_id IS NOT NULL);
 
 CREATE INDEX workspace_rate_limit_policy_assignments_policy_idx ON public.workspace_rate_limit_policy_assignments USING btree (policy_id, workspace_id);
+
+CREATE INDEX workspace_rate_limit_policy_assignments_workspace_created_idx ON public.workspace_rate_limit_policy_assignments USING btree (workspace_id, created_at, id);
 
 CREATE TRIGGER workspace_rate_limit_policy_assignments_set_updated_at
   BEFORE UPDATE ON public.workspace_rate_limit_policy_assignments

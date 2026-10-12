@@ -6466,6 +6466,9 @@ public sealed class RateLimitAssignmentListResponse
 	[JsonPropertyName("data")]
 	public List<Dictionary<string, object>> Data { get; set; }
 
+	[JsonPropertyName("has_more")]
+	public bool HasMore { get; set; }
+
 }
 
 public sealed class RateLimitAssignmentResponse
@@ -6552,6 +6555,9 @@ public sealed class RateLimitPolicyListResponse
 {
 	[JsonPropertyName("data")]
 	public List<Dictionary<string, object>> Data { get; set; }
+
+	[JsonPropertyName("has_more")]
+	public bool HasMore { get; set; }
 
 }
 

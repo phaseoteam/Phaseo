@@ -2666,6 +2666,7 @@ struct RateLimitAssignmentInput {
 
 struct RateLimitAssignmentListResponse {
 	std::vector<std::map<std::string, std::any>> data;
+	bool has_more;
 };
 
 struct RateLimitAssignmentResponse {
@@ -2705,6 +2706,7 @@ struct RateLimitPolicyInput {
 
 struct RateLimitPolicyListResponse {
 	std::vector<std::map<std::string, std::any>> data;
+	bool has_more;
 };
 
 struct RateLimitPolicyResponse {

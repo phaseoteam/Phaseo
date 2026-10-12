@@ -19,6 +19,7 @@ const UNIQUE_TARGET_COLUMNS = ["key_id", "user_id", "department_id", "guardrail_
 
 function tableQuery(table: string, operation: "select" | "insert" | "update" | "delete", payload?: Record<string, unknown>) {
 	const filters: Array<(row: any) => boolean> = [];
+	let range: [number, number] | null = null;
 	const rows = () => (state.tables[table] ??= []);
 	const matches = () => rows().filter((row) => filters.every((filter) => filter(row)));
 	const run = () => {
@@ -46,6 +47,7 @@ function tableQuery(table: string, operation: "select" | "insert" | "update" | "
 			return { data: [row], error: null };
 		}
 		const found = matches();
+		if (operation === "select" && range) return { data: found.slice(range[0], range[1] + 1), error: null };
 		if (operation === "update") found.forEach((row) => Object.assign(row, payload));
 		if (operation === "delete") state.tables[table] = rows().filter((row) => !found.includes(row));
 		return { data: found, error: null };
@@ -55,6 +57,7 @@ function tableQuery(table: string, operation: "select" | "insert" | "update" | "
 		eq: (column: string, value: unknown) => { filters.push((row) => row[column] === value); return query; },
 		neq: (column: string, value: unknown) => { filters.push((row) => row[column] !== value); return query; },
 		order: () => query,
+		range: (from: number, to: number) => { range = [from, to]; return query; },
 		maybeSingle: async () => {
 			const result = run();
 			return { data: result.data?.[0] ?? null, error: result.error };
@@ -117,6 +120,7 @@ describe("rate limit policy management", () => {
 		expect(response.status).toBe(200);
 		const body = await response.json() as any;
 		expect(body.data).toEqual([expect.objectContaining({ name: "Standard", requests_per_minute: 60, tokens_per_minute: null, fail_closed: false })]);
+		expect(body.has_more).toBe(false);
 	});
 
 	it("creates and audits a policy", async () => {
@@ -200,6 +204,23 @@ describe("rate limit policy management", () => {
 		const deleted = await call(`/assignments/${data.id}`, "DELETE");
 		expect(deleted.status).toBe(200);
 		expect(state.tables.workspace_rate_limit_policy_assignments).toHaveLength(0);
+	});
+
+	it("pages assignment listings with offset and limit", async () => {
+		const policyId = "00000000-0000-4000-8000-000000000002";
+		state.tables.workspace_rate_limit_policy_assignments = [KEY, MEMBER, OTHER_KEY].map((target, index) => ({
+			id: `00000000-0000-4000-8000-00000000002${index}`, workspace_id: WORKSPACE, policy_id: policyId,
+			target_type: "key", key_id: target, user_id: null, department_id: null, guardrail_id: null,
+			created_by: null, created_at: "2026-10-12T12:00:00Z", updated_at: "2026-10-12T12:00:00Z",
+		}));
+		const first = await (await call("/assignments?limit=2")).json() as any;
+		expect(first.data.map((row: any) => row.target_id)).toEqual([KEY, MEMBER]);
+		expect(first.has_more).toBe(true);
+		const second = await (await call("/assignments?limit=2&offset=2")).json() as any;
+		expect(second.data.map((row: any) => row.target_id)).toEqual([OTHER_KEY]);
+		expect(second.has_more).toBe(false);
+		expect((await call("/assignments?limit=251")).status).toBe(400);
+		expect((await call("/policies?offset=-1")).status).toBe(400);
 	});
 
 	it("requires the matching rate_limits scope", async () => {

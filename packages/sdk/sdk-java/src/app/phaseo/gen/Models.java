@@ -2686,6 +2686,7 @@ public final class Models {
 
 	public static class RateLimitAssignmentListResponse {
 		public java.util.List<Object> data;
+		public Boolean has_more;
 	}
 
 	public static class RateLimitAssignmentResponse {
@@ -2725,6 +2726,7 @@ public final class Models {
 
 	public static class RateLimitPolicyListResponse {
 		public java.util.List<Object> data;
+		public Boolean has_more;
 	}
 
 	public static class RateLimitPolicyResponse {

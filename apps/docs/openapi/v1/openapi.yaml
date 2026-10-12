@@ -4627,6 +4627,24 @@ paths:
       tags:
         - Gateway
       operationId: listRateLimitPolicies
+      parameters:
+        - name: offset
+          in: query
+          required: false
+          description: Number of rate limit policies to skip for pagination.
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of rate limit policies to return.
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 250
       summary: List rate limit policies
       description: >-
         Lists the workspace's named rate limit policies. The gateway does not
@@ -4783,6 +4801,23 @@ paths:
           description: Only return assignments of this target type.
           schema:
             $ref: '#/components/schemas/RateLimitTargetType'
+        - name: offset
+          in: query
+          required: false
+          description: Number of rate limit assignments to skip for pagination.
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of rate limit assignments to return.
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 250
       responses:
         '200':
           description: Rate limit assignments
@@ -19968,6 +20003,7 @@ components:
           type: integer
           format: int64
           minimum: 1
+          maximum: 9007199254740991
           nullable: true
           description: >-
             Input and output tokens allowed per minute. Null means tokens are
@@ -20011,6 +20047,7 @@ components:
           type: integer
           format: int64
           minimum: 1
+          maximum: 9007199254740991
           nullable: true
           description: >-
             Input and output tokens allowed per minute. Null means tokens are
@@ -20042,11 +20079,15 @@ components:
       type: object
       required:
         - data
+        - has_more
       properties:
         data:
           type: array
           items:
             $ref: '#/components/schemas/RateLimitPolicy'
+        has_more:
+          type: boolean
+          description: Whether more results follow this page.
       additionalProperties: false
     RateLimitTargetType:
       type: string
@@ -20140,11 +20181,15 @@ components:
       type: object
       required:
         - data
+        - has_more
       properties:
         data:
           type: array
           items:
             $ref: '#/components/schemas/RateLimitAssignment'
+        has_more:
+          type: boolean
+          description: Whether more results follow this page.
       additionalProperties: false
     RateLimitDeleteResponse:
       type: object

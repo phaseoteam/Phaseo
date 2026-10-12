@@ -3824,7 +3824,9 @@ module Phaseo
     RateLimitAssignmentInput = Struct.new(:policy_id, :target_id, :target_type, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Array<Hash{String => Object}>]
-    RateLimitAssignmentListResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] has_more
+    #   @return [Boolean]
+    RateLimitAssignmentListResponse = Struct.new(:data, :has_more, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     RateLimitAssignmentResponse = Struct.new(:data, keyword_init: true)
@@ -3872,7 +3874,9 @@ module Phaseo
     RateLimitPolicyInput = Struct.new(:concurrent_requests, :description, :fail_closed, :name, :requests_per_minute, :tokens_per_minute, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Array<Hash{String => Object}>]
-    RateLimitPolicyListResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] has_more
+    #   @return [Boolean]
+    RateLimitPolicyListResponse = Struct.new(:data, :has_more, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     RateLimitPolicyResponse = Struct.new(:data, keyword_init: true)

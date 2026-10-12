@@ -15552,6 +15552,8 @@ export async function listProviders(
 export type ListRateLimitAssignmentsParams = {
   path?: Record<string, never>;
   query?: {
+    limit?: number;
+    offset?: number;
     policy_id?: string;
     target_type?:
       "key" | "member" | "department" | "guardrail" | "end_user_default";
@@ -15578,6 +15580,7 @@ export async function listRateLimitAssignments(
     updated_at: string;
     workspace_id: string;
   }[];
+  has_more: boolean;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/rate-limits/assignments";
@@ -15593,6 +15596,7 @@ export async function listRateLimitAssignments(
       updated_at: string;
       workspace_id: string;
     }[];
+    has_more: boolean;
   }>({
     method: "GET",
     path: resolvedPath,
@@ -15604,7 +15608,10 @@ export async function listRateLimitAssignments(
 
 export type ListRateLimitPoliciesParams = {
   path?: Record<string, never>;
-  query?: Record<string, never>;
+  query?: {
+    limit?: number;
+    offset?: number;
+  };
   headers?: Record<string, never>;
   body?: never;
 };
@@ -15629,6 +15636,7 @@ export async function listRateLimitPolicies(
     updated_at: string;
     workspace_id: string;
   }[];
+  has_more: boolean;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/rate-limits/policies";
@@ -15646,6 +15654,7 @@ export async function listRateLimitPolicies(
       updated_at: string;
       workspace_id: string;
     }[];
+    has_more: boolean;
   }>({
     method: "GET",
     path: resolvedPath,

@@ -27,6 +27,8 @@ const TARGET_COLUMNS: Record<Exclude<TargetType, "end_user_default">, "key_id" |
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_INT4 = 2_147_483_647;
 const NO_STORE = { "Cache-Control": "no-store" };
+const DEFAULT_PAGE_SIZE = 100;
+const MAX_PAGE_SIZE = 250;
 
 type PolicyRow = {
 	id: string;
@@ -57,6 +59,23 @@ type AssignmentRow = {
 };
 
 type Parsed<T> = { ok: true; value: T } | { ok: false; message: string };
+
+/** Offset pagination matching the key list; one extra row is read to report has_more without a count query. */
+function parsePage(url: URL): Parsed<{ offset: number; limit: number }> {
+	const rawOffset = url.searchParams.get("offset");
+	const rawLimit = url.searchParams.get("limit");
+	const offset = rawOffset === null ? 0 : Number(rawOffset);
+	const limit = rawLimit === null ? DEFAULT_PAGE_SIZE : Number(rawLimit);
+	if (!Number.isSafeInteger(offset) || offset < 0) return { ok: false, message: "offset must be a whole number of at least 0" };
+	if (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_PAGE_SIZE) {
+		return { ok: false, message: `limit must be a whole number from 1 to ${MAX_PAGE_SIZE}` };
+	}
+	return { ok: true, value: { offset, limit } };
+}
+
+function pageResponse<T>(rows: T[], limit: number) {
+	return { data: rows.slice(0, limit), has_more: rows.length > limit };
+}
 
 function badRequest(message: string) {
 	return json({ error: "bad_request", message }, 400, NO_STORE);
@@ -211,11 +230,16 @@ async function auditAssignment(
 async function handleListPolicies(req: Request) {
 	const authorization = await authorize(req, CAPABILITIES.RATE_LIMITS_READ);
 	if ("response" in authorization) return authorization.response;
+	const page = parsePage(new URL(req.url));
+	if (page.ok === false) return badRequest(page.message);
+	const { offset, limit } = page.value;
 	try {
 		const { data, error } = await getSupabaseAdmin().from("workspace_rate_limit_policies").select(POLICY_COLUMNS)
-			.eq("workspace_id", authorization.auth.workspaceId).order("created_at", { ascending: true });
+			.eq("workspace_id", authorization.auth.workspaceId)
+			.order("created_at", { ascending: true }).order("id", { ascending: true })
+			.range(offset, offset + limit);
 		if (error) throw error;
-		return json({ data: (data ?? []).map((row) => formatPolicy(row as PolicyRow)) }, 200, NO_STORE);
+		return json(pageResponse((data ?? []).map((row) => formatPolicy(row as PolicyRow)), limit), 200, NO_STORE);
 	} catch (error) {
 		return internalServerError("rate_limits.policies.list", error);
 	}
@@ -351,14 +375,19 @@ async function handleListAssignments(req: Request) {
 	const targetType = targetTypeParam === null ? null : parseTargetType(targetTypeParam);
 	if (policyIdParam !== null && !policyId) return badRequest("policy_id must be a rate limit policy id");
 	if (targetTypeParam !== null && !targetType) return badRequest(`target_type must be one of: ${TARGET_TYPES.join(", ")}`);
+	const page = parsePage(url);
+	if (page.ok === false) return badRequest(page.message);
+	const { offset, limit } = page.value;
 	try {
 		let query = getSupabaseAdmin().from("workspace_rate_limit_policy_assignments").select(ASSIGNMENT_COLUMNS)
 			.eq("workspace_id", authorization.auth.workspaceId);
 		if (policyId) query = query.eq("policy_id", policyId);
 		if (targetType) query = query.eq("target_type", targetType);
-		const { data, error } = await query.order("created_at", { ascending: true });
+		const { data, error } = await query
+			.order("created_at", { ascending: true }).order("id", { ascending: true })
+			.range(offset, offset + limit);
 		if (error) throw error;
-		return json({ data: (data ?? []).map((row) => formatAssignment(row as AssignmentRow)) }, 200, NO_STORE);
+		return json(pageResponse((data ?? []).map((row) => formatAssignment(row as AssignmentRow)), limit), 200, NO_STORE);
 	} catch (error) {
 		return internalServerError("rate_limits.assignments.list", error);
 	}

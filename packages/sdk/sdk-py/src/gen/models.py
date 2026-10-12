@@ -2385,6 +2385,7 @@ class RateLimitAssignmentInput(TypedDict):
 
 class RateLimitAssignmentListResponse(TypedDict):
 	data: List[RateLimitAssignment]
+	has_more: bool
 
 class RateLimitAssignmentResponse(TypedDict):
 	data: RateLimitAssignment
@@ -2418,6 +2419,7 @@ class RateLimitPolicyInput(TypedDict):
 
 class RateLimitPolicyListResponse(TypedDict):
 	data: List[RateLimitPolicy]
+	has_more: bool
 
 class RateLimitPolicyResponse(TypedDict):
 	data: RateLimitPolicy

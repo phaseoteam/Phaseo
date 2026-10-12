@@ -4707,6 +4707,8 @@ class RateLimitAssignmentListResponse
 {
 	/** @var array */
 	public $data;
+	/** @var bool */
+	public $has_more;
 }
 
 class RateLimitAssignmentResponse
@@ -4773,6 +4775,8 @@ class RateLimitPolicyListResponse
 {
 	/** @var array */
 	public $data;
+	/** @var bool */
+	public $has_more;
 }
 
 class RateLimitPolicyResponse

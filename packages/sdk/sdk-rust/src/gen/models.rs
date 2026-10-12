@@ -2667,6 +2667,7 @@ pub struct RateLimitAssignmentInput {
 
 pub struct RateLimitAssignmentListResponse {
 	pub data: Vec<HashMap<String, String>>,
+	pub has_more: bool,
 }
 
 pub struct RateLimitAssignmentResponse {
@@ -2706,6 +2707,7 @@ pub struct RateLimitPolicyInput {
 
 pub struct RateLimitPolicyListResponse {
 	pub data: Vec<HashMap<String, String>>,
+	pub has_more: bool,
 }
 
 pub struct RateLimitPolicyResponse {

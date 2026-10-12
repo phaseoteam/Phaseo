@@ -4217,6 +4217,7 @@ type RateLimitAssignmentInput struct {
 
 type RateLimitAssignmentListResponse struct {
 	Data []map[string]interface{} `json:"data"`
+	HasMore bool `json:"has_more"`
 }
 
 type RateLimitAssignmentResponse struct {
@@ -4256,6 +4257,7 @@ type RateLimitPolicyInput struct {
 
 type RateLimitPolicyListResponse struct {
 	Data []map[string]interface{} `json:"data"`
+	HasMore bool `json:"has_more"`
 }
 
 type RateLimitPolicyResponse struct {
