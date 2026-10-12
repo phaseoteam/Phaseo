@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { deliverGatewayOtlpPayload, deliverGatewayWebhookPayload, filterMetadata, selected } from "./otlp-export";
+import { deliverGatewayOtlpPayload, deliverGatewayWebhookPayload, drainGatewayOtlpOutbox, filterMetadata, selected } from "./otlp-export";
 
 vi.mock("@core/webhook-endpoints", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("@core/webhook-endpoints")>();
@@ -13,6 +13,45 @@ vi.mock("@core/webhook-endpoints", async (importOriginal) => {
 				return { ok: false as const, reason: "webhook_url_private_network_not_allowed" as const };
 			}
 			return validated;
+		}),
+	};
+});
+
+const supabase = vi.hoisted(() => ({
+	claimed: [] as Array<{ id: string; destination_id: string; payload: unknown; attempts: number }>,
+	updates: [] as Array<{ id: string; patch: Record<string, unknown> }>,
+}));
+
+vi.mock("@/runtime/env", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@/runtime/env")>();
+	return {
+		...actual,
+		getSupabaseAdmin: () => ({
+			rpc: async () => ({ data: supabase.claimed, error: null }),
+			from: (table: string) => table === "workspace_broadcast_destinations"
+				? {
+					select: () => ({
+						eq: () => ({
+							maybeSingle: async () => ({
+								data: {
+									id: "destination-1",
+									destination_id: "otel_collector",
+									destination_config: { endpoint: "https://collector.example.com" },
+									enabled: true,
+								},
+								error: null,
+							}),
+						}),
+					}),
+				}
+				: {
+					update: (patch: Record<string, unknown>) => ({
+						eq: async (_column: string, id: string) => {
+							supabase.updates.push({ id, patch });
+							return { error: null };
+						},
+					}),
+				},
 		}),
 	};
 });
@@ -201,5 +240,30 @@ describe("deliverGatewayOtlpPayload", () => {
 			error: "Invalid OTLP endpoint: webhook_url_private_network_not_allowed",
 		});
 		expect(fetchMock).not.toHaveBeenCalled();
+	});
+});
+
+describe("drainGatewayOtlpOutbox", () => {
+	it("drops payloads from rows that will not be sent again", async () => {
+		const payload = { resourceSpans: [{ prompt: "secret prompt" }] };
+		supabase.claimed = [
+			{ id: "delivered", destination_id: "destination-1", payload, attempts: 1 },
+			{ id: "retry", destination_id: "destination-1", payload, attempts: 1 },
+			{ id: "rejected", destination_id: "destination-1", payload, attempts: 1 },
+		];
+		supabase.updates = [];
+		vi.stubGlobal("fetch", vi.fn()
+			.mockResolvedValueOnce(new Response(null, { status: 200 }))
+			.mockResolvedValueOnce(new Response(null, { status: 503 }))
+			.mockResolvedValueOnce(new Response(null, { status: 400 })));
+
+		const summary = await drainGatewayOtlpOutbox();
+
+		expect(summary).toEqual({ claimed: 3, delivered: 1, retried: 1, failed: 1 });
+		const patches = Object.fromEntries(supabase.updates.map(({ id, patch }) => [id, patch]));
+		expect(patches.delivered).toMatchObject({ status: "delivered", payload: {} });
+		expect(patches.rejected).toMatchObject({ status: "failed", payload: {} });
+		expect(patches.retry).toMatchObject({ status: "pending" });
+		expect(patches.retry).not.toHaveProperty("payload");
 	});
 });

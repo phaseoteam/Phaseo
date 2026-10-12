@@ -40,6 +40,9 @@ type OutboxRow = {
 const MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
 const MAX_ATTEMPTS = 8;
 const RETRYABLE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
+// Rows that will not be sent again drop their payload, which can hold prompts
+// and completions. The row itself stays until prune_otel_export_outbox removes it.
+const SCRUBBED_PAYLOAD = {};
 
 function object(value: unknown): Record<string, any> {
 	return value && typeof value === "object" && !Array.isArray(value)
@@ -518,6 +521,7 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 		if (destinationResult.error || !destinationResult.data?.enabled) {
 			await updateOutboxRow(client, row.id, {
 				status: "failed",
+				payload: SCRUBBED_PAYLOAD,
 				last_error: "Broadcast destination unavailable or disabled",
 				lease_expires_at: null,
 				updated_at: new Date().toISOString(),
@@ -544,6 +548,7 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 		if (outcome.delivered) {
 			await updateOutboxRow(client, row.id, {
 				status: "delivered",
+				payload: SCRUBBED_PAYLOAD,
 				delivered_at: new Date().toISOString(),
 				lease_expires_at: null,
 				last_http_status: outcome.status,
@@ -556,6 +561,7 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 		const shouldRetry = outcome.retryable && row.attempts < MAX_ATTEMPTS;
 		await updateOutboxRow(client, row.id, {
 			status: shouldRetry ? "pending" : "failed",
+			...(shouldRetry ? {} : { payload: SCRUBBED_PAYLOAD }),
 			next_attempt_at: new Date(Date.now() + outcome.delayMs).toISOString(),
 			lease_expires_at: null,
 			last_http_status: outcome.status,
@@ -566,4 +572,10 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 		else failed += 1;
 	}
 	return { claimed: rows.length, delivered, retried, failed };
+}
+
+export async function pruneGatewayOtlpOutbox(limit = 5000): Promise<number> {
+	const { data, error } = await getSupabaseAdmin().rpc("prune_otel_export_outbox", { p_limit: limit });
+	if (error) throw new Error(`otel_outbox_prune_failed:${error.message}`);
+	return Number(data ?? 0);
 }

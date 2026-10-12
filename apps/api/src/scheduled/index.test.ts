@@ -198,6 +198,7 @@ describe("handleScheduledEvent", () => {
 		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("process_v2_analytics_outbox", {
 			p_limit: 250,
 		});
+		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("prune_otel_export_outbox", { p_limit: 5000 });
 		expect(runModelDiscoveryJobMock).not.toHaveBeenCalled();
 		expect(pruneExpiredDataContributionsMock).toHaveBeenCalledWith(1000);
 		expect(pruneExpiredGatewayIoLogsMock).toHaveBeenCalledWith({
@@ -240,6 +241,15 @@ describe("handleScheduledEvent", () => {
 		);
 
 		expect(runAccountDeletionPurgeJobMock).not.toHaveBeenCalled();
+	});
+
+	it("prunes the Broadcast export outbox only on core ticks, even with export disabled", async () => {
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:06:00.000Z"), {} as any);
+		expect(oauthCleanupRpcMock).not.toHaveBeenCalledWith("prune_otel_export_outbox", expect.anything());
+		oauthCleanupRpcMock.mockClear();
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:05:00.000Z"), { OTEL_EXPORT_ENABLED: "false" } as any);
+		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("prune_otel_export_outbox", { p_limit: 5000 });
+		expect(oauthCleanupRpcMock).not.toHaveBeenCalledWith("claim_otel_export_outbox", expect.anything());
 	});
 
 	it("allows the v2 analytics outbox batch size to be configured", async () => {
