@@ -13,11 +13,18 @@ import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { json, withRuntime } from "@/routes/utils";
 import { internalServerError, requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
 import { encryptBroadcastConfig } from "./broadcast-config-crypto";
+import {
+	AVAILABLE_BROADCAST_DESTINATION_IDS,
+	BROADCAST_RULE_CONDITIONS,
+	BROADCAST_RULE_FIELDS,
+	broadcastDestinationEndpoint,
+	isBroadcastDestinationLimitError,
+} from "@/observability/broadcast-destinations";
 
 const NO_STORE = { "Cache-Control": "no-store" };
-const TYPES = new Set(["otel_collector", "webhook"]);
-const FIELDS = new Set(["model", "provider", "session_id", "user_id", "api_key_name", "finish_reason", "input", "output", "token_cost", "total_cost", "total_tokens", "prompt_tokens", "completion_tokens"]);
-const CONDITIONS = new Set(["equals", "not_equals", "contains", "not_contains", "starts_with", "ends_with", "exists", "not_exists", "matches_regex"]);
+const TYPES = new Set<string>(AVAILABLE_BROADCAST_DESTINATION_IDS);
+const FIELDS = new Set<string>(BROADCAST_RULE_FIELDS);
+const CONDITIONS = new Set<string>(BROADCAST_RULE_CONDITIONS);
 const COLUMNS = "id,workspace_id,destination_id,name,enabled,privacy_exclude_prompts_and_outputs,sampling_rate,group_join_operator,include_generation_metadata,include_cost_metadata,include_identity_metadata,include_request_context,destination_config_ciphertext,created_at,updated_at";
 
 type KeyFilter = { key_id: string; mode: "include" | "exclude" };
@@ -49,18 +56,9 @@ function config(value: unknown): Record<string, string> | null {
 	return Object.fromEntries(entries.map(([key, item]) => [key.trim(), String(item)]));
 }
 
-function destinationEndpoint(type: string, values: Record<string, string>): string {
-	if (type === "webhook") return String(values.url ?? "").trim();
-	for (const key of ["otlp_traces_endpoint", "otlp_endpoint", "endpoint", "collector_endpoint", "url"]) {
-		const value = String(values[key] ?? "").trim();
-		if (value) return value;
-	}
-	return "";
-}
-
 function validateEndpoint(type: string, values: Record<string, string>) {
 	let url: URL;
-	try { url = new URL(destinationEndpoint(type, values)); } catch { throw new Error("Destination endpoint must be a valid absolute URL"); }
+	try { url = new URL(broadcastDestinationEndpoint(type, values)); } catch { throw new Error("Destination endpoint must be a valid absolute URL"); }
 	if (url.protocol !== "https:" || url.username || url.password) throw new Error("Destination endpoint must use HTTPS without URL credentials");
 	const validated = validateWebhookEndpointUrl(url.toString());
 	if (!validated.ok) throw new Error("Private or loopback destination addresses are not allowed");
@@ -223,7 +221,7 @@ async function createDestination(req: Request) {
 	const access = await authorize(req, CAPABILITIES.SETTINGS_WRITE); if ("response" in access) return access.response;
 	const body = await req.json<Record<string, unknown>>().catch(() => null); if (!body) return json({ error: "invalid_json", message: "Invalid JSON body" }, 400, NO_STORE);
 	const type = String(body.type ?? "").trim(); const secretConfig = config(body.config); const normalized = payload(body, false); const filters = keyFilters(body.key_filters); const groups = ruleGroups(body.rule_groups);
-	if (!TYPES.has(type)) return json({ error: "bad_request", message: "type must be webhook or otel_collector" }, 400, NO_STORE);
+	if (!TYPES.has(type)) return json({ error: "bad_request", message: `type must be one of: ${AVAILABLE_BROADCAST_DESTINATION_IDS.join(", ")}` }, 400, NO_STORE);
 	if (!secretConfig) return json({ error: "bad_request", message: "config must be a non-empty string map" }, 400, NO_STORE);
 	if ("error" in normalized) return json({ error: "bad_request", message: normalized.error }, 400, NO_STORE);
 	if (!filters || !groups) return json({ error: "bad_request", message: "Invalid key_filters or rule_groups" }, 400, NO_STORE);
@@ -232,6 +230,7 @@ async function createDestination(req: Request) {
 	try {
 		await validateKeys(access.auth.workspaceId, filters); const encrypted = await encryptBroadcastConfig(secretConfig); const client = getSupabaseAdmin();
 		const created = await client.from("workspace_broadcast_destinations").insert({ workspace_id: access.auth.workspaceId, destination_id: type, destination_config: {}, destination_config_ciphertext: encrypted.ciphertext, destination_config_iv: encrypted.iv, destination_config_key_version: encrypted.keyVersion, ...normalized.data }).select(COLUMNS).maybeSingle();
+		if (isBroadcastDestinationLimitError(created.error)) return json({ error: "destination_limit_reached", message: "Destination limit reached for this type" }, 400, NO_STORE);
 		if (created.error || !created.data?.id) throw new Error(created.error?.message || "Failed to create observability destination");
 		id = String(created.data.id); await replaceRelations(access.auth.workspaceId, id, filters, groups);
 		await recordWorkspaceAuditEvent(client, { workspaceId: access.auth.workspaceId, actorUserId: access.auth.userId, action: "observability.destination.created", targetType: "observability_destination", targetId: id, targetName: String(created.data.name), metadata: { type }, requestId: access.auth.requestId });

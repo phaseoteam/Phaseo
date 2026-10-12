@@ -1,5 +1,6 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { tieredRead } from "@core/tiered-cache";
+import { AVAILABLE_BROADCAST_DESTINATION_IDS, otlpTracesEndpoint } from "./broadcast-destinations";
 import { decryptWebhookSecret, validateWebhookEndpointUrlForDelivery } from "@core/webhook-endpoints";
 import {
 	buildAsyncGenAiOtlpPayload,
@@ -176,7 +177,7 @@ async function loadDestinations(workspaceId: string): Promise<Destination[]> {
 			broadcast_destination_rule_groups(match_operator,broadcast_destination_rules(field,condition,value))
 		`)
 		.eq("workspace_id", workspaceId)
-		.in("destination_id", ["otel_collector", "webhook"])
+		.in("destination_id", [...AVAILABLE_BROADCAST_DESTINATION_IDS])
 		.eq("enabled", true);
 	if (error) throw new Error(`otel_destinations_load_failed:${error.message}`);
 	return (data ?? []) as Destination[];
@@ -297,12 +298,9 @@ export async function enqueueAsyncGenAiOtlpExport(args: AsyncGenAiTelemetry & {
 }
 
 function endpoint(config: Record<string, unknown>): URL {
-	const traceSpecific = String(config.otlp_traces_endpoint ?? "").trim();
-	const base = traceSpecific || String(
-		config.otlp_endpoint ?? config.collector_endpoint ?? config.endpoint ?? "",
-	).trim();
-	if (!base) throw new Error("OTLP endpoint is required");
-	const url = new URL(base);
+	const resolved = otlpTracesEndpoint(config);
+	if (!resolved) throw new Error("OTLP endpoint is required");
+	const url = new URL(resolved);
 	if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) {
 		throw new Error("OTLP endpoint must use HTTP(S) without URL credentials");
 	}
@@ -313,9 +311,6 @@ function endpoint(config: Record<string, unknown>): URL {
 		/^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
 		host === "::" || host === "::1" || /^(fc|fd)[0-9a-f]{2}:/.test(host) || /^fe[89ab][0-9a-f]:/.test(host)
 	) throw new Error("Private OTLP endpoints are not allowed");
-	if (!traceSpecific && !url.pathname.endsWith("/v1/traces")) {
-		url.pathname = `${url.pathname.replace(/\/$/, "")}/v1/traces`;
-	}
 	return url;
 }
 

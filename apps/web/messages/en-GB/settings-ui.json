@@ -1509,6 +1509,7 @@
 		"Top Models": "Top Models",
 		"Unlimited": "Unlimited",
 		"phraseKeyNameIsRequired": "Key name is required.",
+		"Destination limit reached for this type": "Destination limit reached for this type",
 		"phraseSavingKey": "Saving key...",
 		"Key updated": "Key updated",
 		"Failed to update key": "Failed to update key",

@@ -1509,6 +1509,7 @@
 		"Top Models": "Top-Modelle",
 		"Unlimited": "Unbegrenzt",
 		"phraseKeyNameIsRequired": "Schlüsselname ist erforderlich.",
+		"Destination limit reached for this type": "Maximale Anzahl an Zielen dieses Typs erreicht",
 		"phraseSavingKey": "Schlüssel wird gespeichert …",
 		"Key updated": "Schlüssel aktualisiert",
 		"Failed to update key": "Schlüssel konnte nicht aktualisiert werden",

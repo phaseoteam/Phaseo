@@ -4,6 +4,7 @@ const state = vi.hoisted(() => ({
 	inserted: null as Record<string, unknown> | null,
 	auditEvents: [] as Array<Record<string, unknown>>,
 	loggingUpdate: null as Record<string, unknown> | null,
+	insertError: null as Record<string, unknown> | null,
 }));
 
 const destination = {
@@ -51,7 +52,7 @@ function supabase() {
 				const base = chain({ data: destination, error: null });
 				base.insert = (payload: Record<string, unknown>) => {
 					state.inserted = payload;
-					return chain({ data: destination, error: null });
+					return chain(state.insertError ? { data: null, error: state.insertError } : { data: destination, error: null });
 				};
 				return base;
 			}
@@ -102,6 +103,7 @@ describe("observability destination management", () => {
 		state.inserted = null;
 		state.auditEvents.length = 0;
 		state.loggingUpdate = null;
+		state.insertError = null;
 		vi.resetModules();
 	});
 
@@ -147,6 +149,31 @@ describe("observability destination management", () => {
 			body: JSON.stringify({ type: "langfuse", name: "Unsupported", config: { url: "https://example.com" } }),
 		});
 		expect(response.status).toBe(400);
+	});
+
+	it("reports the per-type destination cap as a bad request", async () => {
+		state.insertError = { code: "23514", message: "broadcast_destination_limit_reached" };
+		const { observabilityRoutes } = await import("./observability");
+		const response = await observabilityRoutes.request("https://example.com/destinations", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ type: "webhook", name: "Sixth", config: { url: "https://telemetry.example.com/traces" } }),
+		});
+		expect(response.status).toBe(400);
+		expect(await response.json()).toEqual({ error: "destination_limit_reached", message: "Destination limit reached for this type" });
+		expect(state.auditEvents).toHaveLength(0);
+	});
+
+	it("validates the OTLP endpoint the exporter will call", async () => {
+		const { observabilityRoutes } = await import("./observability");
+		const create = (config: Record<string, string>) => observabilityRoutes.request("https://example.com/destinations", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ type: "otel_collector", name: "Collector", config }),
+		});
+		// The exporter never reads `url` for OTLP, so it cannot stand in for an endpoint.
+		expect((await create({ url: "https://collector.example.com" })).status).toBe(400);
+		expect((await create({ collector_endpoint: "https://collector.example.com" })).status).toBe(201);
 	});
 
 	it("bounds rule groups and key filters", async () => {
