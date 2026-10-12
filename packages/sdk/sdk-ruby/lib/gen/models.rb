@@ -85,6 +85,8 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] provider_options
@@ -113,7 +115,7 @@ module Phaseo
     #   @return [Float, nil]
     # @!attribute [rw] usage
     #   @return [Boolean, nil]
-    AnthropicMessagesRequest = Struct.new(:debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :provider, :provider_options, :reasoning, :service_tier, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, keyword_init: true)
+    AnthropicMessagesRequest = Struct.new(:debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :models, :provider, :provider_options, :reasoning, :service_tier, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, keyword_init: true)
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] id
@@ -436,13 +438,15 @@ module Phaseo
     #   @return [String]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] speed
     #   @return [Float, nil]
     # @!attribute [rw] voice
     #   @return [String, nil]
-    AudioSpeechRequest = Struct.new(:config, :format, :input, :model, :provider, :speed, :voice, keyword_init: true)
+    AudioSpeechRequest = Struct.new(:config, :format, :input, :model, :models, :provider, :speed, :voice, keyword_init: true)
     # @!attribute [rw] audio_b64
     #   @return [String, nil]
     # @!attribute [rw] audio_url
@@ -457,9 +461,11 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
-    AudioTranscriptionRequest = Struct.new(:audio_b64, :audio_url, :chunking_strategy, :known_speaker_names, :known_speaker_references, :language, :model, :provider, keyword_init: true)
+    AudioTranscriptionRequest = Struct.new(:audio_b64, :audio_url, :chunking_strategy, :known_speaker_names, :known_speaker_references, :language, :model, :models, :provider, keyword_init: true)
     # @!attribute [rw] text
     #   @return [String, nil]
     AudioTranscriptionResponse = Struct.new(:text, keyword_init: true)
@@ -471,13 +477,15 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
     # @!attribute [rw] prompt
     #   @return [String, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] temperature
     #   @return [Float, nil]
-    AudioTranslationRequest = Struct.new(:audio_b64, :audio_url, :language, :model, :prompt, :provider, :temperature, keyword_init: true)
+    AudioTranslationRequest = Struct.new(:audio_b64, :audio_url, :language, :model, :models, :prompt, :provider, :temperature, keyword_init: true)
     # @!attribute [rw] text
     #   @return [String, nil]
     AudioTranslationResponse = Struct.new(:text, keyword_init: true)
@@ -814,6 +822,8 @@ module Phaseo
     #   @return [Array<String>, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
     # @!attribute [rw] parallel_tool_calls
     #   @return [Boolean, nil]
     # @!attribute [rw] presence_penalty
@@ -862,7 +872,7 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] user_id
     #   @return [String, nil]
-    ChatCompletionsRequest = Struct.new(:debug, :echo_upstream_request, :frequency_penalty, :image_config, :logit_bias, :logprobs, :max_completion_tokens, :max_tokens, :max_tool_calls, :messages, :meta, :metadata, :modalities, :model, :parallel_tool_calls, :presence_penalty, :prompt_cache_key, :provider, :provider_options, :reasoning, :reasoning_effort, :response_format, :safety_identifier, :seed, :service_tier, :session_id, :stop, :store, :stream, :stream_options, :temperature, :tool_choice, :tools, :top_logprobs, :top_p, :usage, :user, :user_id, keyword_init: true)
+    ChatCompletionsRequest = Struct.new(:debug, :echo_upstream_request, :frequency_penalty, :image_config, :logit_bias, :logprobs, :max_completion_tokens, :max_tokens, :max_tool_calls, :messages, :meta, :metadata, :modalities, :model, :models, :parallel_tool_calls, :presence_penalty, :prompt_cache_key, :provider, :provider_options, :reasoning, :reasoning_effort, :response_format, :safety_identifier, :seed, :service_tier, :session_id, :stop, :store, :stream, :stream_options, :temperature, :tool_choice, :tools, :top_logprobs, :top_p, :usage, :user, :user_id, keyword_init: true)
     # @!attribute [rw] choices
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] created
@@ -1158,6 +1168,8 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] questions
@@ -1166,7 +1178,7 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] state
     #   @return [String, Hash{String => Object}, Array<Object>]
-    DecisionsRequest = Struct.new(:debug, :echo_upstream_request, :images, :meta, :metadata, :model, :provider, :questions, :routing, :state, keyword_init: true)
+    DecisionsRequest = Struct.new(:debug, :echo_upstream_request, :images, :meta, :metadata, :model, :models, :provider, :questions, :routing, :state, keyword_init: true)
     # @!attribute [rw] answers
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] meta
@@ -1358,13 +1370,15 @@ module Phaseo
     #   @return [String, Array<Integer>, Hash{String => Object}, Array<String, Array<Integer>, Hash{String => Object}>]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] provider_options
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    EmbeddingsRequest = Struct.new(:debug, :dimensions, :encoding_format, :input, :model, :provider, :provider_options, :user, keyword_init: true)
+    EmbeddingsRequest = Struct.new(:debug, :dimensions, :encoding_format, :input, :model, :models, :provider, :provider_options, :user, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] model
@@ -2224,6 +2238,8 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
     # @!attribute [rw] moderation
     #   @return [String, nil]
     # @!attribute [rw] n
@@ -2250,7 +2266,7 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    ImagesEditRequest = Struct.new(:background, :image, :input_fidelity, :mask, :meta, :model, :moderation, :n, :output_compression, :output_format, :partial_images, :prompt, :provider, :quality, :resolution, :size, :stream, :usage, :user, keyword_init: true)
+    ImagesEditRequest = Struct.new(:background, :image, :input_fidelity, :mask, :meta, :model, :models, :moderation, :n, :output_compression, :output_format, :partial_images, :prompt, :provider, :quality, :resolution, :size, :stream, :usage, :user, keyword_init: true)
     # @!attribute [rw] created
     #   @return [Integer, nil]
     # @!attribute [rw] data
@@ -2260,6 +2276,8 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
     # @!attribute [rw] moderation
     #   @return [String, nil]
     # @!attribute [rw] n
@@ -2288,7 +2306,7 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    ImagesGenerationRequest = Struct.new(:background, :model, :moderation, :n, :output_compression, :output_format, :partial_images, :prompt, :provider, :quality, :resolution, :response_format, :size, :stream, :style, :user, keyword_init: true)
+    ImagesGenerationRequest = Struct.new(:background, :model, :models, :moderation, :n, :output_compression, :output_format, :partial_images, :prompt, :provider, :quality, :resolution, :response_format, :size, :stream, :style, :user, keyword_init: true)
     # @!attribute [rw] created
     #   @return [Integer, nil]
     # @!attribute [rw] data
@@ -2323,6 +2341,8 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] questions
@@ -2331,7 +2351,7 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] state
     #   @return [String, Hash{String => Object}, Array<Object>]
-    LegacyDecisionsRequest = Struct.new(:debug, :echo_upstream_request, :images, :meta, :metadata, :model, :provider, :questions, :routing, :state, keyword_init: true)
+    LegacyDecisionsRequest = Struct.new(:debug, :echo_upstream_request, :images, :meta, :metadata, :model, :models, :provider, :questions, :routing, :state, keyword_init: true)
     # @!attribute [rw] answers
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] meta
@@ -2614,6 +2634,7 @@ module Phaseo
     # @!attribute [rw] organization
     #   @return [Hash{String => Object}, nil]
     ModelEndpointsResponse = Struct.new(:availability_mode, :description, :endpoints, :id, :modalities, :name, :ok, :organization, keyword_init: true)
+    ModelFallbacks = Object
     ModelId = Object
     # @!attribute [rw] deprecation_date
     #   @return [String, nil]
@@ -2726,9 +2747,11 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
-    ModerationsRequest = Struct.new(:debug, :input, :meta, :model, :provider, keyword_init: true)
+    ModerationsRequest = Struct.new(:debug, :input, :meta, :model, :models, :provider, keyword_init: true)
     # @!attribute [rw] id
     #   @return [String, nil]
     # @!attribute [rw] meta
@@ -2750,13 +2773,15 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
     # @!attribute [rw] prompt
     #   @return [String, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] suno
     #   @return [Hash{String => Object}, nil]
-    MusicGenerateRequest = Struct.new(:debug, :duration, :echo_upstream_request, :elevenlabs, :format, :model, :prompt, :provider, :suno, keyword_init: true)
+    MusicGenerateRequest = Struct.new(:debug, :duration, :echo_upstream_request, :elevenlabs, :format, :model, :models, :prompt, :provider, :suno, keyword_init: true)
     # @!attribute [rw] audio_base64
     #   @return [String, nil]
     # @!attribute [rw] audio_url
@@ -3106,9 +3131,11 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
-    OcrRequest = Struct.new(:debug, :echo_upstream_request, :image, :language, :model, :provider, keyword_init: true)
+    OcrRequest = Struct.new(:debug, :echo_upstream_request, :image, :language, :model, :models, :provider, keyword_init: true)
     OcrResponse = Struct.new(:_unused, keyword_init: true)
     # @!attribute [rw] choices
     #   @return [Array<Hash{String => Object}>]
@@ -3140,6 +3167,8 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] questions
@@ -3148,7 +3177,7 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] safety_identifier
     #   @return [String, nil]
-    OpenAIDecisionsRequest = Struct.new(:debug, :echo_upstream_request, :input, :meta, :metadata, :model, :provider, :questions, :routing, :safety_identifier, keyword_init: true)
+    OpenAIDecisionsRequest = Struct.new(:debug, :echo_upstream_request, :input, :meta, :metadata, :model, :models, :provider, :questions, :routing, :safety_identifier, keyword_init: true)
     # @!attribute [rw] answers
     #   @return [Array<Hash{String => Object}>]
     # @!attribute [rw] meta
@@ -3217,13 +3246,15 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
     # @!attribute [rw] output_format
     #   @return [String, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] routing
     #   @return [Hash{String => Object}, nil]
-    ParseRequest = Struct.new(:debug, :document, :echo_upstream_request, :model, :output_format, :provider, :routing, keyword_init: true)
+    ParseRequest = Struct.new(:debug, :document, :echo_upstream_request, :model, :models, :output_format, :provider, :routing, keyword_init: true)
     # @!attribute [rw] id
     #   @return [String]
     # @!attribute [rw] meta
@@ -3781,6 +3812,8 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] provider_options
@@ -3797,7 +3830,7 @@ module Phaseo
     #   @return [Integer, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    RerankRequest = Struct.new(:debug, :documents, :max_chunks_per_doc, :metadata, :model, :provider, :provider_options, :query, :rank_fields, :return_documents, :top_k, :top_n, :user, keyword_init: true)
+    RerankRequest = Struct.new(:debug, :documents, :max_chunks_per_doc, :metadata, :model, :models, :provider, :provider_options, :query, :rank_fields, :return_documents, :top_k, :top_n, :user, keyword_init: true)
     # @!attribute [rw] id
     #   @return [String, nil]
     # @!attribute [rw] model
@@ -3890,6 +3923,8 @@ module Phaseo
     #   @return [Array<String>, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
     # @!attribute [rw] parallel_tool_calls
     #   @return [Boolean, nil]
     # @!attribute [rw] previous_response_id
@@ -3928,7 +3963,7 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    ResponsesRequest = Struct.new(:background, :debug, :echo_upstream_request, :image_config, :include, :input, :instructions, :max_output_tokens, :meta, :metadata, :modalities, :model, :parallel_tool_calls, :previous_response_id, :prompt_cache_key, :provider, :provider_options, :reasoning, :safety_identifier, :service_tier, :session_id, :store, :stream, :temperature, :text, :tool_choice, :tools, :top_p, :truncation, :usage, :user, keyword_init: true)
+    ResponsesRequest = Struct.new(:background, :debug, :echo_upstream_request, :image_config, :include, :input, :instructions, :max_output_tokens, :meta, :metadata, :modalities, :model, :models, :parallel_tool_calls, :previous_response_id, :prompt_cache_key, :provider, :provider_options, :reasoning, :safety_identifier, :service_tier, :session_id, :store, :stream, :temperature, :text, :tool_choice, :tools, :top_p, :truncation, :usage, :user, keyword_init: true)
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] cost_cents
@@ -4162,6 +4197,8 @@ module Phaseo
     #   @return [Float, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
     # @!attribute [rw] negative_prompt
     #   @return [String, nil]
     # @!attribute [rw] output
@@ -4188,7 +4225,7 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] webhook
     #   @return [Hash{String => Object}, nil]
-    VideoGenerationRequest = Struct.new(:aspect_ratio, :compression_quality, :duration, :enhance_prompt, :frame_images, :generate_audio, :input_audio_duration, :input_references, :input_video_duration, :model, :negative_prompt, :output, :person_generation, :prompt, :provider, :provider_options, :provider_params, :resize_mode, :resolution, :sample_count, :seed, :size, :webhook, keyword_init: true)
+    VideoGenerationRequest = Struct.new(:aspect_ratio, :compression_quality, :duration, :enhance_prompt, :frame_images, :generate_audio, :input_audio_duration, :input_references, :input_video_duration, :model, :models, :negative_prompt, :output, :person_generation, :prompt, :provider, :provider_options, :provider_params, :resize_mode, :resolution, :sample_count, :seed, :size, :webhook, keyword_init: true)
     # @!attribute [rw] asset
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] audio

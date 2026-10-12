@@ -22,6 +22,7 @@ O suporte a parâmetros ainda varia conforme o endpoint, o modelo e o provedor. 
 | Parâmetro | Tipo | Use para |
 | --- | --- | --- |
 | [`model`](#model) | `string` | Selecionar o ID do modelo do gateway a ser executado. |
+| [`models`](#models) | `string[]` | Listar modelos alternativos, em ordem, tentados após `model` em falhas que permitem nova tentativa. |
 | [`stream`](#stream) | `boolean` | Retornar a saída SSE gradualmente, em vez de uma única resposta final. |
 | [`temperature`](#temperature) | `number` | Aumentar ou reduzir a aleatoriedade. |
 | [`top_p`](#top_p) | `number` | Ampliar ou restringir o conjunto de nucleus sampling. |
@@ -84,6 +85,20 @@ Seleciona o ID do modelo do gateway para a solicitação.
 | Exemplo | `openai/gpt-5-nano` |
 
 Aceite um alias compatível somente se essa for sua intenção; nos demais casos, use o ID canônico exibido no início rápido de cada página de modelo. IDs canônicos são a opção mais segura para exemplos, automações e integrações duradouras.
+
+<span id="models"></span>
+<h3 id="parameter-models"><code>models</code></h3>
+
+Lista modelos alternativos opcionais, tentados em ordem após `model`. `model` é obrigatório e é sempre o modelo principal. A próxima entrada só é tentada quando uma tentativa falha com `429`, `500`, `502`, `503` ou `504`.
+
+| Campo | Valor |
+| --- | --- |
+| Tipo | `string[]` |
+| Obrigatório | Não. Uma solicitação com `models` também precisa definir `model`. |
+| Limites | De 1 a 25 entradas. Entradas duplicadas e entradas iguais a `model` são ignoradas. |
+| Exemplo | `["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"]` |
+
+Cada tentativa é validada, registrada e cobrada como uma solicitação própria. O campo `model` da resposta e o rastro de roteamento mostram o modelo que atendeu à solicitação. Solicitações com streaming só recorrem a alternativas antes do primeiro byte, e jobs de vídeo e música, apenas no envio. As alternativas de uma rota dinâmica associada têm precedência, predefinições são aceitas como entradas e `phaseo/auto` não pode ser combinado com `models`. Solicitações em lote, em tempo real e do Council rejeitam `models` com `400`. Endpoints multipart aceitam campos `models` repetidos, campos `models[]` ou um único array JSON. Consulte [Modelos alternativos no nível da solicitação](../guides/routing-and-fallbacks.mdx#request-level-model-fallbacks) para ver precedência, validação, streaming e cobrança.
 
 <span id="stream"></span>
 <h3 id="parameter-stream"><code>stream</code></h3>

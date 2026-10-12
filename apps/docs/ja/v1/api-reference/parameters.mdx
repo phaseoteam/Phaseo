@@ -22,6 +22,7 @@ icon: "sliders-horizontal"
 | パラメーター | 型 | 用途 |
 | --- | --- | --- |
 | [`model`](#model) | `string` | 実行するゲートウェイモデルIDを選択します。 |
+| [`models`](#models) | `string[]` | 再試行可能な失敗時に `model` の後で順番に試すフォールバックモデルを列挙します。 |
 | [`stream`](#stream) | `boolean` | 最終ペイロード一括ではなく、SSE出力を逐次返します。 |
 | [`temperature`](#temperature) | `number` | ランダム性を高めたり抑えたりします。 |
 | [`top_p`](#top_p) | `number` | nucleus samplingの候補範囲を狭めたり広げたりします。 |
@@ -84,6 +85,20 @@ Phaseoを指すカスタムベースURLでAnthropic公式SDKを使用する場�
 | 例 | `openai/gpt-5-nano` |
 
 意図的に対応エイリアスを使う場合を除き、各モデルページのクイックスタートに記載された正規モデルIDを使用してください。正規IDは、例、自動化、長期的な統合で最も安全な選択です。
+
+<span id="models"></span>
+<h3 id="parameter-models"><code>models</code></h3>
+
+`model` の後に順番に試す、省略可能なフォールバックモデルを列挙します。`model` は必須で、常にプライマリモデルです。次のエントリが試されるのは、試行が `429`、`500`、`502`、`503`、`504` で失敗した場合だけです。
+
+| 項目 | 値 |
+| --- | --- |
+| 型 | `string[]` |
+| 必須 | いいえ。`models` を指定するリクエストでは、`model` も設定する必要があります。 |
+| 上限 | 1〜25 個のエントリ。重複するエントリと、`model` と同じエントリは無視されます。 |
+| 例 | `["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"]` |
+
+各試行は、個別のリクエストとして検証、記録、課金されます。レスポンスの `model` フィールドとルーティングトレースには、リクエストを処理したモデルが表示されます。ストリーミングリクエストは最初のバイトの前にのみ、動画と音楽のジョブは送信時にのみフォールバックします。関連付けられた動的ルートのフォールバックが優先され、プリセットはエントリとして指定でき、`phaseo/auto` は `models` と組み合わせられません。Batch、リアルタイム、Council のリクエストでは、`models` は `400` で拒否されます。マルチパートエンドポイントでは、繰り返しの `models` フィールド、`models[]` フィールド、または 1 つの JSON 配列を指定できます。優先順位、検証、ストリーミング、課金の動作については、[リクエスト単位のモデルフォールバック](../guides/routing-and-fallbacks.mdx#request-level-model-fallbacks)を参照してください。
 
 <span id="stream"></span>
 <h3 id="parameter-stream"><code>stream</code></h3>

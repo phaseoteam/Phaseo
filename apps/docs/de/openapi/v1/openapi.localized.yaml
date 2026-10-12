@@ -9021,6 +9021,17 @@ components:
             type: string
         organisation:
           $ref: '#/components/schemas/DataModelOrganisation'
+    ModelFallbacks:
+      type: array
+      minItems: 1
+      maxItems: 25
+      items:
+        type: string
+        minLength: 1
+      description: Optionale, geordnete Fallback-Modelle, die nach `model` versucht werden. `model` ist erforderlich und immer das primäre Modell. Schlägt ein Versuch mit `429`, `500`, `502`, `503` oder `504` fehl, wird der nächste Eintrag versucht; andere Fehler werden unverändert zurückgegeben. Akzeptiert bis zu 25 Modell-IDs oder Presets; Duplikate und Einträge, die `model` entsprechen, werden ignoriert. Jeder Versuch wird als eigene Anfrage validiert, protokolliert und abgerechnet, und das Feld `model` der Antwort sowie der Routing-Trace zeigen das Modell, das die Anfrage bedient hat. Streaming-Anfragen weichen nur vor dem ersten Byte aus, Video- und Musikjobs nur bei der Übermittlung. Batch-, Realtime- und Council-Anfragen lehnen `models` ab. Auf einer dynamischen Route festgelegte Fallbacks haben Vorrang, und `phaseo/auto` kann nicht mit `models` kombiniert werden.
+      example:
+        - anthropic/claude-sonnet-5-5
+        - google/gemini-2.5-flash
     ChatCompletionsRequest:
       type: object
       required:
@@ -9029,6 +9040,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         messages:
           type: array
           minItems: 1
@@ -9787,6 +9800,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         system:
           oneOf:
             - type: string
@@ -9980,6 +9995,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         input:
           oneOf:
             - type: string
@@ -10429,6 +10446,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         input:
           oneOf:
             - type: string
@@ -10512,6 +10531,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         meta:
           type: boolean
           default: false
@@ -10586,6 +10607,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         query:
           type: string
         documents:
@@ -10681,6 +10704,8 @@ components:
           type: string
           minLength: 1
           description: Kanonische Phaseo-Modell-ID oder Modellalias des Anbieters.
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         input:
           description: Text oder Nachrichten mit eingebetteten Bildern. Audio und Video sind Phaseo-Erweiterungen für unterstützende Modelle; OpenAI-Entscheidungsrouten unterstützen diese nicht.
           oneOf:
@@ -10945,6 +10970,8 @@ components:
           type: string
           description: Kanonische Phaseo-Modell-ID oder Modellalias des Anbieters.
           default: typesafe/jev-1.13.0
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         state:
           description: Vom Modell bewerteter strukturierter Zustand.
           oneOf:
@@ -11470,6 +11497,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         input:
           type: string
         voice:
@@ -11516,6 +11545,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         audio_url:
           type: string
           format: uri
@@ -11570,6 +11601,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         audio_url:
           type: string
           format: uri
@@ -11598,6 +11631,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         prompt:
           type: string
         size:
@@ -11672,6 +11707,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         image:
           oneOf:
             - type: string
@@ -11760,6 +11797,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         prompt:
           type: string
         duration:
@@ -12446,6 +12485,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         image:
           type: string
         language:
@@ -12612,6 +12653,8 @@ components:
         model:
           type: string
           example: cohere/parse-v5.0
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         document:
           type: object
           additionalProperties: false
@@ -12676,6 +12719,8 @@ components:
       properties:
         model:
           type: string
+        models:
+          $ref: '#/components/schemas/ModelFallbacks'
         prompt:
           type: string
         duration:

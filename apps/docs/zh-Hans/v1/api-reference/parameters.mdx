@@ -22,6 +22,7 @@ icon: "sliders-horizontal"
 | 参数 | 类型 | 用途 |
 | --- | --- | --- |
 | [`model`](#model) | `string` | 选择要运行的网关模型 ID。 |
+| [`models`](#models) | `string[]` | 列出在可重试的失败发生后，于 `model` 之后按顺序尝试的回退模型。 |
 | [`stream`](#stream) | `boolean` | 逐步返回 SSE 输出，而不是一次性返回最终内容。 |
 | [`temperature`](#temperature) | `number` | 提高或降低随机性。 |
 | [`top_p`](#top_p) | `number` | 缩小或扩大核采样候选范围。 |
@@ -84,6 +85,20 @@ icon: "sliders-horizontal"
 | 示例 | `openai/gpt-5-nano` |
 
 除非你有意使用受支持的别名，否则请使用各模型页面快速入门中显示的规范模型 ID。规范 ID 是示例、自动化和长期集成中最稳妥的选择。
+
+<span id="models"></span>
+<h3 id="parameter-models"><code>models</code></h3>
+
+列出可选的回退模型，在 `model` 之后按顺序尝试。`model` 为必填项，并且始终是主模型。只有当某次尝试以 `429`、`500`、`502`、`503` 或 `504` 失败时，才会尝试下一个条目。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `string[]` |
+| 必填 | 否。包含 `models` 的请求也必须设置 `model`。 |
+| 限制 | 1 到 25 个条目。重复条目以及与 `model` 相同的条目会被忽略。 |
+| 示例 | `["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"]` |
+
+每次尝试都会作为独立请求进行验证、记录和计费。响应中的 `model` 字段和路由跟踪会显示实际处理请求的模型。流式请求只会在第一个字节之前回退，视频和音乐任务只会在提交时回退。已附加动态路由上的回退优先，预设可以作为条目，`phaseo/auto` 不能与 `models` 组合使用。批处理、实时和 council 请求会拒绝 `models` 并返回 `400`。Multipart 端点接受重复的 `models` 字段、`models[]` 字段或一个 JSON 数组。有关优先级、验证、流式传输和计费行为，请参阅[请求级模型回退](../guides/routing-and-fallbacks.mdx#request-level-model-fallbacks)。
 
 <span id="stream"></span>
 <h3 id="parameter-stream"><code>stream</code></h3>

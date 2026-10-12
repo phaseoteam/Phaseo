@@ -99,6 +99,7 @@ export interface ChatCompletionsRequest {
   };
   modalities?: ("text" | "image" | "audio")[];
   model: string;
+  models?: string[];
   parallel_tool_calls?: boolean;
   presence_penalty?: number;
   prompt_cache_key?: string | null;
