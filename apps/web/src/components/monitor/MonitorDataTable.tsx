@@ -78,6 +78,8 @@ import {
 	groupModelRows,
 	type GroupedModelData,
 	type ModelData,
+	type ModelOperationPrices,
+	type ModelUsagePrice,
 } from "./modelTableGrouping";
 
 export type { ModelData } from "./modelTableGrouping";
@@ -973,8 +975,20 @@ export function MonitorDataTable({
 		);
 	};
 
+	// Per-unit charges can be fractions of a cent, so keep three significant digits.
+	const formatUsagePrice = (value: number) => format.number(value, {
+		style: "currency",
+		currency: "USD",
+		...(value > 0 && value < 0.01
+			? { maximumSignificantDigits: 3 }
+			: { minimumFractionDigits: 2, maximumFractionDigits: 3 }),
+		notation: "standard",
+	});
+
 	const renderPriceRange = (prices: number[]) => {
-		if (!prices.length) return "-";
+		if (!prices.length) {
+			return <span title={comparisonT("priceUnavailable")} aria-label={comparisonT("priceUnavailable")}>-</span>;
+		}
 		const minimum = prices[0];
 		const maximum = prices[prices.length - 1];
 		return minimum === maximum
@@ -1181,21 +1195,45 @@ export function MonitorDataTable({
 		</div>
 	);
 
+	// Charges without a token rate (per image, per second, ...) sit in the output
+	// column with their unit, so they never read as a $0 token price.
+	const renderPriceCell = (
+		prices: number[],
+		usage: ModelUsagePrice[],
+		column: "inputPrices" | "outputPrices",
+	) => {
+		if (column === "inputPrices" || !usage.length) return renderPriceRange(prices);
+		return (
+			<div className="space-y-0.5">
+				{prices.length ? <div>{renderPriceRange(prices)}</div> : null}
+				{usage.map(({ price, unit }) => (
+					<div key={unit} className="whitespace-nowrap leading-tight">
+						<span className="mr-1 text-[10px] text-muted-foreground">{sectionsT("from")}</span>
+						{formatUsagePrice(price)}
+						<div className="text-[10px] text-muted-foreground">/ {unit}</div>
+					</div>
+				))}
+			</div>
+		);
+	};
+
 	// Per-capability rows only when this column's prices differ between capabilities.
 	const renderOperationPrices = (
 		item: GroupedModelData,
 		column: "inputPrices" | "outputPrices",
 	) => {
 		const operations = item.operationPrices;
-		const differs = operations.some(operation =>
-			operation[column].join() !== operations[0][column].join());
-		if (!differs) return renderPriceRange(item[column]);
+		const columnKey = (operation: ModelOperationPrices) => column === "inputPrices"
+			? operation.inputPrices.join()
+			: `${operation.outputPrices.join()}|${JSON.stringify(operation.usagePrices)}`;
+		const differs = operations.some(operation => columnKey(operation) !== columnKey(operations[0]));
+		if (!differs) return renderPriceCell(item[column], item.usagePrices, column);
 		return (
 			<div className="space-y-1">
 				{operations.map(operation => (
 					<div key={operation.capability} className="whitespace-nowrap">
 						<span className="mr-1 text-[10px] text-muted-foreground">{capabilityLabel(operation.capability)}</span>
-						{renderPriceRange(operation[column])}
+						{renderPriceCell(operation[column], operation.usagePrices, column)}
 					</div>
 				))}
 			</div>

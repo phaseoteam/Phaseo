@@ -32,7 +32,7 @@ describe("groupModelRows", () => {
 		const groups = groupModelRows([
 			row({ modelId: "openai/gpt-6-luna", endpoint: "text.generate" }),
 			row({ modelId: "openai/gpt-6-luna", endpoint: "decisions.make",
-				provider: { id: "openai", name: "OpenAI", inputPrice: 0.1, outputPrice: 0, features: [] } }),
+				provider: { id: "openai", name: "OpenAI", inputPrice: 0.1, outputPrice: null, features: [] } }),
 		]);
 		expect(groups).toHaveLength(1);
 		expect(groups[0].endpoints).toEqual(["text.generate", "decisions.make"]);
@@ -40,8 +40,8 @@ describe("groupModelRows", () => {
 		expect(groups[0].inputPrices).toEqual([1]);
 		expect(groups[0].outputPrices).toEqual([2]);
 		expect(groups[0].operationPrices).toEqual([
-			{ capability: "text.generate", inputPrices: [1], outputPrices: [2] },
-			{ capability: "decisions.make", inputPrices: [0.1], outputPrices: [0] },
+			{ capability: "text.generate", inputPrices: [1], outputPrices: [2], usagePrices: [] },
+			{ capability: "decisions.make", inputPrices: [0.1], outputPrices: [], usagePrices: [] },
 		]);
 	});
 	it("renders one aggregate per canonical model with deduplicated providers", () => {
@@ -115,7 +115,7 @@ describe("groupModelRows", () => {
 
 	it("does not let a batch row without a token rate become a $0 price floor", () => {
 		const [group] = groupModelRows([
-			row({ endpoint: "batch", tier: "batch", provider: { id: "openai", name: "OpenAI", inputPrice: 0, outputPrice: 0, features: [] } }),
+			row({ endpoint: "batch", tier: "batch", provider: { id: "openai", name: "OpenAI", inputPrice: null, outputPrice: null, features: [] } }),
 			row({ endpoint: "text.generate", provider: { id: "openai", name: "OpenAI", inputPrice: 2, outputPrice: 10, features: [] } }),
 		]);
 		expect(group.endpoints).toEqual(["text.generate", "batch"]);
@@ -135,11 +135,58 @@ describe("groupModelRows", () => {
 		expect(group.outputPrices).toEqual([0, 2, 2.2]);
 	});
 
-	it("keeps $0 when no row has a token rate", () => {
+	it("keeps a listed $0 standard rate", () => {
 		const [group] = groupModelRows([
-			row({ endpoint: "video.generate", provider: { id: "openai", name: "OpenAI", inputPrice: 0, outputPrice: 0, features: [] } }),
+			row({ provider: { id: "openai", name: "OpenAI", inputPrice: 0, outputPrice: 0, features: [] } }),
 		]);
 		expect(group.inputPrices).toEqual([0]);
+		expect(group.outputPrices).toEqual([0]);
+	});
+
+	it("shows a per-second video model's charge instead of a $0 token price", () => {
+		const video = (providerId: string, usagePrice: number) => row({
+			modelId: "alibaba/happyhorse-1.0",
+			endpoint: "video.generate",
+			provider: { id: providerId, name: providerId, inputPrice: null, outputPrice: null, usagePrice, usageUnit: "second", features: [] },
+		});
+		const [group] = groupModelRows([video("venice", 0.2), video("alibaba-cloud", 0.14), video("runway", 0.14)]);
+		expect(group.inputPrices).toEqual([]);
+		expect(group.outputPrices).toEqual([]);
+		expect(group.usagePrices).toEqual([{ price: 0.14, unit: "second" }]);
+		expect(group.operationPrices).toEqual([]);
+	});
+
+	it("states per-pixel and per-character charges per million", () => {
+		const [group] = groupModelRows([
+			row({ endpoint: "image.generate", provider: { id: "together", name: "Together", inputPrice: null, outputPrice: null, usagePrice: 5.8e-9, usageUnit: "pixel", features: [] } }),
+			row({ endpoint: "audio.speech", provider: { id: "deepinfra", name: "DeepInfra", inputPrice: null, outputPrice: null, usagePrice: 6.2e-7, usageUnit: "character", features: [] } }),
+		]);
+		expect(group.usagePrices.map(({ unit }) => unit)).toEqual(["megapixel", "1M characters"]);
+		expect(group.usagePrices[0].price).toBeCloseTo(0.0058);
+		expect(group.usagePrices[1].price).toBeCloseTo(0.62);
+	});
+
+	it("shows no price for an image model whose routes list none", () => {
+		const [group] = groupModelRows([
+			row({ endpoint: "image.generate", provider: { id: "openai", name: "OpenAI", inputPrice: null, outputPrice: null, features: [] } }),
+		]);
+		expect(group.inputPrices).toEqual([]);
+		expect(group.outputPrices).toEqual([]);
+		expect(group.usagePrices).toEqual([]);
+	});
+
+	it("keeps a per-image charge beside the text token rate", () => {
+		const [group] = groupModelRows([
+			row({ endpoint: "text.generate", provider: { id: "google", name: "Google", inputPrice: 0.3, outputPrice: 2.5, features: [] } }),
+			row({ endpoint: "image.generate", provider: { id: "google", name: "Google", inputPrice: null, outputPrice: null, usagePrice: 0.039, usageUnit: "image", features: [] } }),
+		]);
+		expect(group.inputPrices).toEqual([0.3]);
+		expect(group.outputPrices).toEqual([2.5]);
+		expect(group.usagePrices).toEqual([{ price: 0.039, unit: "image" }]);
+		expect(group.operationPrices).toEqual([
+			{ capability: "text.generate", inputPrices: [0.3], outputPrices: [2.5], usagePrices: [] },
+			{ capability: "image.generate", inputPrices: [], outputPrices: [], usagePrices: [{ price: 0.039, unit: "image" }] },
+		]);
 	});
 
 	it("keeps per-capability prices when capabilities charge different rates", () => {
@@ -149,8 +196,8 @@ describe("groupModelRows", () => {
 		]);
 		expect(group.inputPrices).toEqual([0.04]);
 		expect(group.operationPrices).toEqual([
-			{ capability: "text.generate", inputPrices: [0.04], outputPrices: [0.08] },
-			{ capability: "ocr", inputPrices: [0.05], outputPrices: [0.08] },
+			{ capability: "text.generate", inputPrices: [0.04], outputPrices: [0.08], usagePrices: [] },
+			{ capability: "ocr", inputPrices: [0.05], outputPrices: [0.08], usagePrices: [] },
 		]);
 	});
 

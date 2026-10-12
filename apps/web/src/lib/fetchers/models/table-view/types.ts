@@ -64,7 +64,14 @@ export type MonitorModelTableRow = Pick<
     | "added"
     | "retired"
 > & {
-    provider: Pick<MonitorModelData["provider"], "name" | "id" | "inputPrice" | "outputPrice" | "features" | "executionRegions">;
+    provider: Pick<MonitorModelData["provider"], "name" | "id" | "features" | "executionRegions"> & {
+        // Standard per-1M token rates; null when the route lists none.
+        inputPrice: number | null;
+        outputPrice: number | null;
+        // Cheapest non-token charge, such as per image or per second.
+        usagePrice?: number;
+        usageUnit?: string;
+    };
     popularityTokensWeek?: number;
 };
 
