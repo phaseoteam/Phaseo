@@ -13,6 +13,8 @@ try {
     create schema auth; create table auth.users(id uuid primary key);
     create schema cron; create function cron.schedule(text, text, text) returns bigint language sql as $$ select 1::bigint $$;
     create table public.users(user_id uuid primary key, role text);
+    create table public.workspaces(id uuid primary key);
+    insert into public.workspaces values ('20000000-0000-4000-8000-000000000001');
     create table public.workspace_settings(workspace_id uuid primary key);
     insert into public.workspace_settings values ('20000000-0000-4000-8000-000000000001');
     create table public.v2_models(model_slug text primary key, status text not null default 'active', hidden boolean not null default false,
@@ -30,8 +32,9 @@ try {
       billable boolean not null default true);
   `);
   await db.exec(await read('../schemas/public/tables/v2_catalogue_admin_changes.sql'));
-  await db.exec(await read('../migrations/20261015111100_model_successor_routing_approval.sql'));
-  await db.exec(await read('../migrations/20261015111200_gateway_model_successor_redirect.sql'));
+  await db.exec(await read('../migrations/20261012213500_model_successor_routing_approval.sql'));
+  await db.exec(await read('../migrations/20261012214000_gateway_model_successor_redirect.sql'));
+  await db.exec(await read('../migrations/20261012214500_workspace_model_successor_overrides.sql'));
   assert.deepEqual((await db.query(`select model_successor_redirect_enabled e, model_successor_price_policy p, model_successor_max_price_increase_percent m from public.workspace_settings`)).rows,
     [{ e: false, p: 'never', m: 0 }]);
   await rejects(db.query(`update public.workspace_settings set model_successor_price_policy='sometimes'`), /price_policy_check/);
@@ -120,6 +123,30 @@ try {
   await db.exec(`update public.v2_pricing_sku_meters set meter_key='image_units' where sku_id='new-sku'`);
   result = await resolve('lab/old');
   assert.deepEqual([result.target, result.price_ratio, result.price_comparable], ['lab/new', null, false]);
+
+  // A workspace's own replacement: one hop, no approval needed, same grace and free-to-paid rules.
+  const resolveFor = async (slug, successor) =>
+    (await db.query('select public.gateway_resolve_workspace_model_successor($1,$2) as value', [slug, successor])).rows[0].value;
+  await db.exec(`update public.v2_model_successor_routing set auto_route_enabled=false, approved_successor_slug=null, approved_at=null`);
+  await db.exec(`update public.v2_pricing_sku_meters set meter_key='input_tokens' where sku_id='new-sku' and price_nanos=2500000000`);
+  result = await resolveFor('lab/old', 'lab/new');
+  assert.deepEqual([result.target, result.reason, result.workspace_override, Number(result.price_ratio)], ['lab/new', 'eligible', true, 1.25]);
+  assert.deepEqual([(await resolveFor('lab/old', 'lab/mid')).target, (await resolveFor('lab/old', 'lab/mid')).reason], [null, 'no_served_successor']);
+  assert.equal((await resolveFor('lab/old:free', 'lab/new')).reason, 'free_to_paid');
+  await db.exec(`update public.v2_model_successor_routing set unserved_since=now() where model_slug='lab/old'`);
+  assert.equal((await resolveFor('lab/old', 'lab/new')).reason, 'within_grace_period');
+
+  // Overrides belong to a workspace and cannot point a model at itself.
+  await db.exec(`insert into public.workspace_model_successor_overrides(workspace_id, model_slug, successor_model_slug)
+    values ('20000000-0000-4000-8000-000000000001', 'lab/old', 'lab/new'), ('20000000-0000-4000-8000-000000000001', 'lab/mid', null)`);
+  await rejects(db.query(`insert into public.workspace_model_successor_overrides(workspace_id, model_slug, successor_model_slug)
+    values ('20000000-0000-4000-8000-000000000001', 'lab/new', 'lab/new')`), /not_self_check/);
+  for (const role of ['anon', 'authenticated']) {
+    await db.exec(`set role ${role}`);
+    await rejects(db.query('select * from public.workspace_model_successor_overrides'), /permission denied/);
+    await rejects(db.query(`select public.gateway_resolve_workspace_model_successor('lab/old', 'lab/new')`), /permission denied/);
+    await db.exec('reset role');
+  }
   console.log('gateway resolves model successors');
 } finally {
   await db.close();
