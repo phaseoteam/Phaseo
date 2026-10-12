@@ -8,13 +8,28 @@ Une requête peut être limitée par le fournisseur sélectionné ou par une pol
 
 ## Limites du gateway
 
-Le quota par défaut est de **25 requêtes par minute glissante** pour chaque utilisateur dans chaque espace de travail. Les clés API créées par le même utilisateur partagent ce quota. Les requêtes OAuth utilisent l'utilisateur authentifié. Les clés sans propriétaire partagent un quota au niveau de l'espace de travail.
+Chaque utilisateur de chaque espace de travail dispose d'un quota de requêtes par minute, mesuré sur une minute glissante. Les clés API créées par le même utilisateur partagent ce quota. Les requêtes OAuth utilisent l'utilisateur authentifié. Les clés sans propriétaire partagent un quota au niveau de l'espace de travail.
+
+Le quota dépend de la situation du compte de l'espace de travail et augmente automatiquement à mesure que l'espace de travail s'établit :
+
+| Espace de travail | Requêtes par minute |
+| --- | --- |
+| Nouvel espace de travail | 10 |
+| Au moins 7 jours d'ancienneté, ou une recharge payante effectuée | 25 |
+| Au moins 30 jours d'ancienneté et au moins 50 $ d'utilisation payée | 60 |
+| Facturation sur facture | 120 |
+
+Un espace de travail reçoit le quota le plus élevé auquel il a droit. Les changements prennent effet en quelques minutes.
 
 Les routes de modèles gratuits disposent également de **1500 requêtes par jour UTC**, partagées entre tous les modèles gratuits du même utilisateur et espace de travail. Les requêtes aux modèles payants ne consomment pas ce quota quotidien. Une requête gratuite admise compte même si le fournisseur échoue ensuite ; les fallbacks au sein de cette requête comptent une seule fois.
 
 Ces limites s'appliquent à toutes les régions du gateway et peuvent être augmentées pour un utilisateur et un espace de travail précis. Les opérations sur les fichiers et les consultations du statut des tâches consomment le quota par minute ; les endpoints d'administration ne le consomment pas.
 
 Un quota du gateway épuisé entraîne une réponse `429` avec `Retry-After` en secondes. Le motif de l'erreur est `customer_requests_per_minute` ou `free_requests_per_day`. Attendez ce délai avant de réessayer. Si la vérification des quotas est temporairement indisponible, le gateway renvoie `503` avec des indications pour réessayer.
+
+## Limites des clés et budgets
+
+Lorsque les limites quotidiennes, hebdomadaires ou mensuelles de requêtes et de dépenses d'une clé API, ou les [budgets](./endpoint/budgets-list.mdx) de l'espace de travail, sont atteintes, la réponse est `429` avec le code d'erreur `key_limit_exceeded`. Les champs `reason`, `limit_window` et `reset_at` du corps identifient la limite et le moment où sa période se réinitialise. `Retry-After` indique le nombre de secondes avant cette réinitialisation. Il est omis lorsque la limite ne se réinitialise pas d'elle-même, comme un budget à vie ou une clé temporairement bloquée ; augmentez alors la limite ou utilisez une autre clé au lieu de réessayer.
 
 ## Limites des fournisseurs
 

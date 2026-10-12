@@ -8,13 +8,28 @@ Eine Anfrage kann durch den ausgewählten Anbieter oder eine geltende Arbeitsber
 
 ## Gateway-Limits
 
-Standardmäßig gelten **25 Anfragen pro gleitender Minute** für jeden Benutzer in jedem Arbeitsbereich. API-Schlüssel desselben Benutzers teilen dieses Kontingent. OAuth-Anfragen verwenden den authentifizierten Benutzer. Schlüssel ohne Besitzer teilen ein Arbeitsbereichskontingent.
+Für jeden Benutzer in jedem Arbeitsbereich gilt ein Kontingent an Anfragen pro Minute, gemessen über eine gleitende Minute. API-Schlüssel desselben Benutzers teilen dieses Kontingent. OAuth-Anfragen verwenden den authentifizierten Benutzer. Schlüssel ohne Besitzer teilen ein Arbeitsbereichskontingent.
+
+Das Kontingent hängt vom Kontostatus des Arbeitsbereichs ab und steigt automatisch, sobald sich der Arbeitsbereich etabliert:
+
+| Arbeitsbereich | Anfragen pro Minute |
+| --- | --- |
+| Neuer Arbeitsbereich | 10 |
+| Mindestens 7 Tage alt oder mit einer bezahlten Aufladung | 25 |
+| Mindestens 30 Tage alt mit mindestens 50 $ bezahlter Nutzung | 60 |
+| Abrechnung per Rechnung | 120 |
+
+Ein Arbeitsbereich erhält das höchste Kontingent, für das er sich qualifiziert. Änderungen werden innerhalb weniger Minuten wirksam.
 
 Für kostenlose Modellrouten gelten zusätzlich **1500 Anfragen pro UTC-Tag**, gemeinsam für alle kostenlosen Modelle desselben Benutzers und Arbeitsbereichs. Bezahlte Modellanfragen verbrauchen dieses Tageskontingent nicht. Eine zugelassene kostenlose Anfrage zählt auch bei einem anschließenden Anbieterfehler; Fallbacks innerhalb dieser Anfrage zählen einmal.
 
 Die Limits gelten über alle Gateway-Regionen hinweg und können für einen bestimmten Benutzer und Arbeitsbereich erhöht werden. Dateioperationen und Statusabfragen für Jobs verbrauchen das Minutenkontingent; Verwaltungsendpunkte nicht.
 
 Bei ausgeschöpftem Gateway-Kontingent wird `429` mit `Retry-After` in Sekunden zurückgegeben. Der Fehlergrund ist `customer_requests_per_minute` oder `free_requests_per_day`. Warten Sie diese Zeit vor einem erneuten Versuch. Ist die Kontingentprüfung vorübergehend nicht verfügbar, gibt das Gateway `503` mit Wiederholungshinweisen zurück.
+
+## Schlüssellimits und Budgets
+
+Sind die täglichen, wöchentlichen oder monatlichen Anfrage- und Ausgabenlimits eines API-Schlüssels oder die [Budgets](./endpoint/budgets-list.mdx) des Arbeitsbereichs erreicht, wird `429` mit dem Fehlercode `key_limit_exceeded` zurückgegeben. Die Felder `reason`, `limit_window` und `reset_at` im Antworttext nennen das Limit und den Zeitpunkt, zu dem sein Zeitraum zurückgesetzt wird. `Retry-After` gibt die Sekunden bis zu diesem Zurücksetzen an. Der Header fehlt, wenn sich das Limit nicht von selbst zurücksetzt, etwa bei einem Gesamtbudget oder einem vorübergehend gesperrten Schlüssel; erhöhen Sie dann das Limit oder verwenden Sie einen anderen Schlüssel, statt es erneut zu versuchen.
 
 ## Anbieterlimits
 

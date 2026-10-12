@@ -8,13 +8,28 @@ A request can be throttled by the selected provider or by an applicable workspac
 
 ## Gateway limits
 
-The default allowance is **25 requests per rolling minute** for each user in each workspace. API keys created by the same user share that allowance. OAuth requests use the authenticated user. Keys without an owner share a workspace allowance.
+Each user in each workspace has a requests-per-minute allowance, measured over a rolling minute. API keys created by the same user share that allowance. OAuth requests use the authenticated user. Keys without an owner share a workspace allowance.
+
+The allowance depends on the workspace's account standing and rises automatically as the workspace becomes established:
+
+| Workspace | Requests per minute |
+| --- | --- |
+| New workspace | 10 |
+| At least 7 days old, or has made a paid top-up | 25 |
+| At least 30 days old with at least $50 of paid usage | 60 |
+| Invoiced billing | 120 |
+
+A workspace receives the highest allowance it qualifies for. Changes take effect within a few minutes.
 
 Free-model routes also have a default allowance of **1500 requests per UTC day**, shared across free models for the same user and workspace. Paid-model requests do not consume this daily allowance. An admitted free request counts even if the provider subsequently fails; provider fallbacks within that request count once.
 
 These limits apply across gateway regions. They can be increased for a specific user and workspace. File operations and job-status polling use the minute allowance; management endpoints do not.
 
 A gateway quota rejection returns `429` with `Retry-After` in seconds. Its error reason is `customer_requests_per_minute` or `free_requests_per_day`. Wait for that delay before retrying. If quota enforcement is temporarily unavailable, the gateway returns `503` with retry guidance.
+
+## Key limits and budgets
+
+An API key's daily, weekly or monthly request and spend limits, and the workspace's [budgets](./endpoint/budgets-list.mdx), return `429` with the `key_limit_exceeded` error code once reached. The body's `reason`, `limit_window` and `reset_at` fields identify the limit and when its window resets. `Retry-After` gives the seconds until that reset. It is omitted when the limit does not reset by itself, such as a lifetime budget or a soft-blocked key; raise the limit or use a different key instead of retrying.
 
 ## Provider limits
 

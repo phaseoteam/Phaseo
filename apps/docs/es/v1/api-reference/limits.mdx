@@ -8,13 +8,28 @@ El proveedor seleccionado o una política aplicable del espacio de trabajo o de 
 
 ## Límites del gateway
 
-La cuota predeterminada es de **25 solicitudes por minuto en una ventana móvil** para cada usuario en cada espacio de trabajo. Las claves API creadas por el mismo usuario comparten esa cuota. Las solicitudes OAuth usan el usuario autenticado. Las claves sin propietario comparten una cuota del espacio de trabajo.
+Cada usuario de cada espacio de trabajo tiene una cuota de solicitudes por minuto, medida en una ventana móvil de un minuto. Las claves API creadas por el mismo usuario comparten esa cuota. Las solicitudes OAuth usan el usuario autenticado. Las claves sin propietario comparten una cuota del espacio de trabajo.
+
+La cuota depende de la situación de la cuenta del espacio de trabajo y aumenta automáticamente a medida que el espacio de trabajo se consolida:
+
+| Espacio de trabajo | Solicitudes por minuto |
+| --- | --- |
+| Espacio de trabajo nuevo | 10 |
+| Al menos 7 días de antigüedad o con una recarga de pago | 25 |
+| Al menos 30 días de antigüedad y al menos 50 $ de uso pagado | 60 |
+| Facturación por factura | 120 |
+
+Un espacio de trabajo recibe la cuota más alta para la que cumple los requisitos. Los cambios se aplican en pocos minutos.
 
 Las rutas de modelos gratuitos tienen además una cuota de **1500 solicitudes por día UTC**, compartida entre todos los modelos gratuitos del mismo usuario y espacio de trabajo. Las solicitudes a modelos de pago no consumen esta cuota diaria. Una solicitud gratuita admitida cuenta aunque el proveedor falle después; los fallbacks dentro de esa solicitud cuentan una sola vez.
 
 Estos límites se aplican en todas las regiones del gateway y pueden aumentarse para un usuario y espacio de trabajo específicos. Las operaciones con archivos y las consultas de estado de trabajos consumen la cuota por minuto; los endpoints de administración no.
 
 Cuando se agota una cuota del gateway, se devuelve `429` con `Retry-After` en segundos. El motivo del error es `customer_requests_per_minute` o `free_requests_per_day`. Espere ese intervalo antes de reintentar. Si la comprobación de cuotas no está disponible temporalmente, el gateway devuelve `503` con indicaciones para reintentar.
+
+## Límites de claves y presupuestos
+
+Al alcanzar los límites diarios, semanales o mensuales de solicitudes y gasto de una clave API, o los [presupuestos](./endpoint/budgets-list.mdx) del espacio de trabajo, se devuelve `429` con el código de error `key_limit_exceeded`. Los campos `reason`, `limit_window` y `reset_at` del cuerpo identifican el límite y cuándo se restablece su periodo. `Retry-After` indica los segundos que faltan para ese restablecimiento. Se omite cuando el límite no se restablece por sí solo, como un presupuesto vitalicio o una clave bloqueada temporalmente; en ese caso, aumente el límite o use otra clave en lugar de reintentar.
 
 ## Límites del proveedor
 
