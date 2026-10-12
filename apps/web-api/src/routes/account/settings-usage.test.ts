@@ -380,6 +380,11 @@ describe("account usage settings routes", () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
+			if (url.includes("v2_private_usage_daily")) return new Response(JSON.stringify([
+				{ usage_date: "2026-07-16", cost_nanos: "3000" },
+				{ usage_date: "2026-07-17", cost_nanos: 1000 },
+				{ usage_date: "2026-07-17", cost_nanos: 500 },
+			]), { status: 200 });
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
 			if (url.includes("v2_request_facts")) return new Response(JSON.stringify([{ safe_metadata: { labels: [{ key: "team", value: "support" }] }, cost_nanos: 1000 }]), { status: 200, headers: { "content-range": "0-0/1" } });
@@ -410,6 +415,30 @@ describe("account usage settings routes", () => {
 			modelMetadataEntries: [["openai/gpt-test", { modelName: "GPT Test" }]],
 			appMetadataEntries: [["app-1", { title: "Example App", imageUrl: null }]],
 			appNameEntries: [["app-1", "Example App"]],
+			monthSpend: { days: [{ date: "2026-07-16", costNanos: 3000 }, { date: "2026-07-17", costNanos: 1500 }] },
 		});
+	});
+	it("leaves the month forecast out of filtered views, where the workspace rollup would be wrong", async () => {
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
+			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
+			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
+			return new Response(JSON.stringify([]), { status: 200 });
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		const params = new URLSearchParams({
+			workspaceId: "workspace-1",
+			key: "key-1",
+			from: "2026-07-17T00:00:00Z",
+			to: "2026-07-18T00:00:00Z",
+			previousFrom: "2026-07-16T00:00:00Z",
+			previousTo: "2026-07-17T00:00:00Z",
+		});
+		const response = await app.request(`https://phaseo.app/api/account/settings/usage/observability?${params}`, { headers: { authorization: "Bearer token" } }, env);
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toMatchObject({ monthSpend: null });
+		const urls = fetchMock.mock.calls.map(([input]) => input instanceof Request ? input.url : String(input));
+		expect(urls.some((url) => url.includes("v2_private_usage_daily"))).toBe(false);
 	});
 });

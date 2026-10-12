@@ -29,6 +29,7 @@ import {
 	resolveUsageTimeRange,
 	type UsageRangePreset,
 } from "@/lib/gateway/usage/timeRange";
+import { forecastMonthSpend } from "@/lib/gateway/usage/monthSpendForecast";
 import {
 	buildGuardrailEnforcementMetrics,
 	type GuardrailEnforcementMetricsResult,
@@ -948,6 +949,7 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 		isSampled: currentRequestResult.isSampled,
 		sampleLimit: currentRequestResult.limit,
 		kpis,
+		monthSpend: initial.monthSpend ? forecastMonthSpend(initial.monthSpend) : null,
 		topApiKeys,
 		topApps,
 		trendingModels,

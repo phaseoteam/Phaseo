@@ -30,6 +30,8 @@ export type SettingsObservabilityData = {
 	labelFacets: UsageLabelFacet[];
 	labelSummary: UsageLabelSummary | null;
 	modelMetadataEntries: Array<[string, { organisationId: string; organisationName: string; canonicalModelId?: string; modelName?: string }]>;
+	/** Exact daily workspace spend since the start of last month; null for filtered views. */
+	monthSpend?: { observedAt: number; days: Array<{ date: string; costNanos: number }> } | null;
 	previous: ObservabilityRequestResult;
 	signedIn: boolean;
 	workspaceId: string | null;

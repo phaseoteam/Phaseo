@@ -1,3 +1,5 @@
+import type { MonthSpendForecast } from "@/lib/gateway/usage/monthSpendForecast";
+
 export type ObservabilityRange = "1h" | "1d" | "1w" | "1m" | "1y";
 
 export type ObservabilityTab =
@@ -93,6 +95,8 @@ export type ObservabilityData = {
 	isSampled?: boolean;
 	sampleLimit?: number;
 	kpis: ObservabilityKpi[];
+	/** This UTC month's spend and projection from exact rollups; absent for filtered views. */
+	monthSpend?: MonthSpendForecast | null;
 	topApiKeys: ObservabilityRankedItem[];
 	topApps: ObservabilityRankedItem[];
 	trendingModels: ObservabilityRankedItem[];
