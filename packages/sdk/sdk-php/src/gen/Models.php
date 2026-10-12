@@ -111,6 +111,8 @@ class AnthropicMessagesRequest
 	public $metadata;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -541,6 +543,8 @@ class AudioSpeechRequest
 	public $input;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var float|null */
@@ -565,6 +569,8 @@ class AudioTranscriptionRequest
 	public $language;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 }
@@ -585,6 +591,8 @@ class AudioTranslationRequest
 	public $language;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var string|null */
 	public $prompt;
 	/** @var array<string, mixed>|null */
@@ -977,6 +985,8 @@ class ChatCompletionsRequest
 	public $modalities;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var bool|null */
 	public $parallel_tool_calls;
 	/** @var float|null */
@@ -1421,6 +1431,8 @@ class DecisionsRequest
 	public $metadata;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed> */
@@ -1687,6 +1699,8 @@ class EmbeddingsRequest
 	public $input;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -2747,6 +2761,8 @@ class ImagesEditRequest
 	public $meta;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var string|null */
 	public $moderation;
 	/** @var int|null */
@@ -2789,6 +2805,8 @@ class ImagesGenerationRequest
 	public $background;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var string|null */
 	public $moderation;
 	/** @var int|null */
@@ -2865,6 +2883,8 @@ class LegacyDecisionsRequest
 	public $metadata;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed> */
@@ -3221,6 +3241,8 @@ class ModelEndpointsResponse
 	public $organization;
 }
 
+class ModelFallbacks { }
+
 class ModelId { }
 
 class ModelLifecycle
@@ -3351,6 +3373,8 @@ class ModerationsRequest
 	public $meta;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 }
@@ -3381,6 +3405,8 @@ class MusicGenerateRequest
 	public $format;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var string|null */
 	public $prompt;
 	/** @var array<string, mixed>|null */
@@ -3807,6 +3833,8 @@ class OcrRequest
 	public $language;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 }
@@ -3853,6 +3881,8 @@ class OpenAIDecisionsRequest
 	public $metadata;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array */
@@ -3955,6 +3985,8 @@ class ParseRequest
 	public $echo_upstream_request;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var string|null */
 	public $output_format;
 	/** @var array<string, mixed>|null */
@@ -4661,6 +4693,8 @@ class RerankRequest
 	public $metadata;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -4795,6 +4829,8 @@ class ResponsesRequest
 	public $modalities;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var bool|null */
 	public $parallel_tool_calls;
 	/** @var string|null */
@@ -5133,6 +5169,8 @@ class VideoGenerationRequest
 	public $input_video_duration;
 	/** @var string */
 	public $model;
+	/** @var array|null */
+	public $models;
 	/** @var string|null */
 	public $negative_prompt;
 	/** @var array<string, mixed>|null */

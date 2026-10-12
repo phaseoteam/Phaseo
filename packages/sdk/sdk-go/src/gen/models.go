@@ -61,6 +61,7 @@ type AnthropicMessagesRequest struct {
 	Meta *bool `json:"meta,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Model string `json:"model"`
+	Models *[]string `json:"models,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
@@ -303,6 +304,7 @@ type AudioSpeechRequest struct {
 	Format *string `json:"format,omitempty"`
 	Input string `json:"input"`
 	Model string `json:"model"`
+	Models *[]string `json:"models,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	Speed *float64 `json:"speed,omitempty"`
 	Voice *string `json:"voice,omitempty"`
@@ -316,6 +318,7 @@ type AudioTranscriptionRequest struct {
 	KnownSpeakerReferences *[]string `json:"known_speaker_references,omitempty"`
 	Language *string `json:"language,omitempty"`
 	Model string `json:"model"`
+	Models *[]string `json:"models,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 }
 
@@ -328,6 +331,7 @@ type AudioTranslationRequest struct {
 	AudioUrl *string `json:"audio_url,omitempty"`
 	Language *string `json:"language,omitempty"`
 	Model string `json:"model"`
+	Models *[]string `json:"models,omitempty"`
 	Prompt *string `json:"prompt,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	Temperature *float64 `json:"temperature,omitempty"`
@@ -1219,6 +1223,7 @@ type ChatCompletionsRequest struct {
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Modalities *[]string `json:"modalities,omitempty"`
 	Model string `json:"model"`
+	Models *[]string `json:"models,omitempty"`
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
 	PresencePenalty *float64 `json:"presence_penalty,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
@@ -1477,6 +1482,7 @@ type DecisionsRequest struct {
 	Meta *bool `json:"meta,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Model string `json:"model"`
+	Models *[]string `json:"models,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	Questions map[string]interface{} `json:"questions"`
 	Routing *map[string]interface{} `json:"routing,omitempty"`
@@ -1632,6 +1638,7 @@ type EmbeddingsRequest struct {
 	EncodingFormat *string `json:"encoding_format,omitempty"`
 	Input interface{} `json:"input"`
 	Model string `json:"model"`
+	Models *[]string `json:"models,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	User *string `json:"user,omitempty"`
@@ -2275,6 +2282,7 @@ type ImagesEditRequest struct {
 	Mask *string `json:"mask,omitempty"`
 	Meta *bool `json:"meta,omitempty"`
 	Model string `json:"model"`
+	Models *[]string `json:"models,omitempty"`
 	Moderation *string `json:"moderation,omitempty"`
 	N *int `json:"n,omitempty"`
 	OutputCompression *int `json:"output_compression,omitempty"`
@@ -2298,6 +2306,7 @@ type ImagesEditResponse struct {
 type ImagesGenerationRequest struct {
 	Background *string `json:"background,omitempty"`
 	Model string `json:"model"`
+	Models *[]string `json:"models,omitempty"`
 	Moderation *string `json:"moderation,omitempty"`
 	N *int `json:"n,omitempty"`
 	OutputCompression *int `json:"output_compression,omitempty"`
@@ -3025,6 +3034,7 @@ type LegacyDecisionsRequest struct {
 	Meta *bool `json:"meta,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Model string `json:"model"`
+	Models *[]string `json:"models,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	Questions map[string]interface{} `json:"questions"`
 	Routing *map[string]interface{} `json:"routing,omitempty"`
@@ -3226,6 +3236,8 @@ type ModelEndpointsResponse struct {
 	Organization *map[string]interface{} `json:"organization"`
 }
 
+type ModelFallbacks = []string
+
 type ModelId = string
 
 type ModelLifecycle struct {
@@ -3297,6 +3309,7 @@ type ModerationsRequest struct {
 	Input interface{} `json:"input"`
 	Meta *bool `json:"meta,omitempty"`
 	Model string `json:"model"`
+	Models *[]string `json:"models,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 }
 
@@ -3314,6 +3327,7 @@ type MusicGenerateRequest struct {
 	Elevenlabs *map[string]interface{} `json:"elevenlabs,omitempty"`
 	Format *string `json:"format,omitempty"`
 	Model string `json:"model"`
+	Models *[]string `json:"models,omitempty"`
 	Prompt *string `json:"prompt,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	Suno *map[string]interface{} `json:"suno,omitempty"`
@@ -3557,6 +3571,7 @@ type OcrRequest struct {
 	Image string `json:"image"`
 	Language *string `json:"language,omitempty"`
 	Model string `json:"model"`
+	Models *[]string `json:"models,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 }
 
@@ -3584,6 +3599,7 @@ type OpenAIDecisionsRequest struct {
 	Meta *bool `json:"meta,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Model string `json:"model"`
+	Models *[]string `json:"models,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	Questions []interface{} `json:"questions"`
 	Routing *map[string]interface{} `json:"routing,omitempty"`
@@ -3770,6 +3786,7 @@ type ParseRequest struct {
 	Document map[string]interface{} `json:"document"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	Model string `json:"model"`
+	Models *[]string `json:"models,omitempty"`
 	OutputFormat *string `json:"output_format,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	Routing *map[string]interface{} `json:"routing,omitempty"`
@@ -4193,6 +4210,7 @@ type RerankRequest struct {
 	MaxChunksPerDoc *int `json:"max_chunks_per_doc,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Model string `json:"model"`
+	Models *[]string `json:"models,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Query string `json:"query"`
@@ -4269,6 +4287,7 @@ type ResponsesRequest struct {
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Modalities *[]string `json:"modalities,omitempty"`
 	Model string `json:"model"`
+	Models *[]string `json:"models,omitempty"`
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
 	PreviousResponseId *string `json:"previous_response_id,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
@@ -4462,6 +4481,7 @@ type VideoGenerationRequest struct {
 	InputReferences *[]interface{} `json:"input_references,omitempty"`
 	InputVideoDuration *float64 `json:"input_video_duration,omitempty"`
 	Model string `json:"model"`
+	Models *[]string `json:"models,omitempty"`
 	NegativePrompt *string `json:"negative_prompt,omitempty"`
 	Output *map[string]interface{} `json:"output,omitempty"`
 	PersonGeneration *string `json:"person_generation,omitempty"`

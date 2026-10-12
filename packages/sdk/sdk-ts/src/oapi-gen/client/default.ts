@@ -890,6 +890,7 @@ export type CreateAnthropicMessageParams = {
       [key: string]: unknown;
     };
     model: string;
+    models?: string[];
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -2081,6 +2082,7 @@ export type CreateChatCompletionParams = {
     };
     modalities?: ("text" | "image" | "audio")[];
     model: string;
+    models?: string[];
     parallel_tool_calls?: boolean;
     presence_penalty?: number;
     prompt_cache_key?: string | null;
@@ -2940,6 +2942,7 @@ export type CreateEmbeddingParams = {
             }
         )[];
     model: string;
+    models?: string[];
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -3369,6 +3372,7 @@ export type CreateImageParams = {
   body?: {
     background?: "transparent" | "opaque" | "auto";
     model: string;
+    models?: string[];
     moderation?: "auto" | "low";
     n?: number;
     output_compression?: number;
@@ -3465,6 +3469,7 @@ export type CreateImageEditParams = {
     mask?: string;
     meta?: boolean;
     model: string;
+    models?: string[];
     moderation?: "auto" | "low";
     n?: number;
     output_compression?: number;
@@ -3652,6 +3657,7 @@ export type CreateModerationParams = {
         )[];
     meta?: boolean;
     model: string;
+    models?: string[];
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -4054,6 +4060,7 @@ export type CreateOcrParams = {
     image: string;
     language?: string;
     model: string;
+    models?: string[];
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -4134,6 +4141,7 @@ export type CreateParseParams = {
     };
     echo_upstream_request?: boolean;
     model: string;
+    models?: string[];
     output_format?: "markdown" | "blocks";
     provider?: {
       allow_fallbacks?: boolean | null;
@@ -4804,6 +4812,7 @@ export type CreateRerankParams = {
       [key: string]: string;
     };
     model: string;
+    models?: string[];
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -4976,6 +4985,7 @@ export type CreateResponseParams = {
     };
     modalities?: ("text" | "image" | "audio")[];
     model: string;
+    models?: string[];
     parallel_tool_calls?: boolean;
     previous_response_id?: string;
     prompt_cache_key?: string | null;
@@ -5412,6 +5422,7 @@ export type CreateSpeechParams = {
     format?: "mp3" | "wav" | "ogg" | "aac";
     input: string;
     model: string;
+    models?: string[];
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -5491,6 +5502,7 @@ export type CreateTranscriptionParams = {
     known_speaker_references?: string[];
     language?: string;
     model: string;
+    models?: string[];
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -5562,6 +5574,7 @@ export type CreateTranslationParams = {
     audio_url?: string;
     language?: string;
     model: string;
+    models?: string[];
     prompt?: string;
     provider?: {
       allow_fallbacks?: boolean | null;
@@ -5664,6 +5677,7 @@ export type CreateVideoParams = {
     )[];
     input_video_duration?: number;
     model: string;
+    models?: string[];
     negative_prompt?: string;
     output?: {
       access?: "bytes" | "signed_url" | "both";
@@ -6002,6 +6016,7 @@ export type CreateVideoAliasParams = {
     )[];
     input_video_duration?: number;
     model: string;
+    models?: string[];
     negative_prompt?: string;
     output?: {
       access?: "bytes" | "signed_url" | "both";
@@ -7840,6 +7855,7 @@ export type GenerateMusicParams = {
     };
     format?: "mp3" | "wav" | "ogg" | "aac";
     model: string;
+    models?: string[];
     prompt?: string;
     provider?: {
       allow_fallbacks?: boolean | null;
@@ -7975,6 +7991,7 @@ export type GenerateMusicAliasParams = {
     };
     format?: "mp3" | "wav" | "ogg" | "aac";
     model: string;
+    models?: string[];
     prompt?: string;
     provider?: {
       allow_fallbacks?: boolean | null;
@@ -17415,6 +17432,7 @@ export type MakeDecisionParams = {
           [key: string]: unknown;
         };
         model: string;
+        models?: string[];
         provider?: {
           allow_fallbacks?: boolean | null;
           data_collection?: "allow" | "deny" | null;
@@ -17537,6 +17555,7 @@ export type MakeDecisionParams = {
           [key: string]: unknown;
         };
         model: string;
+        models?: string[];
         provider?: {
           allow_fallbacks?: boolean | null;
           data_collection?: "allow" | "deny" | null;

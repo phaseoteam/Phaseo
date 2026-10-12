@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { customerQuotaMiddleware } from "@/routes/v1/data/customer-quota";
 import { authenticate, type AuthFailure } from "@pipeline/before/auth";
+import { hasRequestModelFallbacksField } from "@pipeline/before/requestModelFallbacks";
 import { dispatchBackground } from "@/runtime/env";
 import { json, withRuntime } from "@/routes/utils";
 import { buildTaskSpec } from "@/foundry/council/prompts";
@@ -78,6 +79,18 @@ async function handleCreateCouncilRun(req: Request) {
 	} catch {
 		return json(
 			{ ok: false, error: "invalid_json" },
+			400,
+			{ "Cache-Control": "no-store" },
+		);
+	}
+
+	if (hasRequestModelFallbacksField(body)) {
+		return json(
+			{
+				ok: false,
+				error: "models_not_supported_for_endpoint",
+				description: "Council runs choose their models in config.source_models; remove the top-level models field.",
+			},
 			400,
 			{ "Cache-Control": "no-store" },
 		);

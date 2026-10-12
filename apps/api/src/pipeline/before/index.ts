@@ -11,6 +11,12 @@ import type { Endpoint, RequestBetaOptions, RequestMeta } from "@core/types";
 import type { PipelineContext } from "./types";
 import { guardAuth, guardJson, guardZod, guardModel, guardContext, makeMeta, normalizeReturnFlag } from "./guards";
 import { err } from "./http";
+import {
+    MAX_REQUEST_MODEL_FALLBACKS,
+    REQUEST_MODEL_FALLBACKS_FIELD,
+    parseRequestModelFallbacks,
+    withoutRequestModelFallbacks,
+} from "./requestModelFallbacks";
 import { reviewedMcpRunMatches } from "./mcp-inference";
 import { Timer } from "../telemetry/timer";
 import { resolveCapabilityFromEndpoint } from "@/lib/config/capabilityToEndpoints";
@@ -229,6 +235,8 @@ export async function beforeRequest(
     zodSchema: z.ZodTypeAny | null = schemaFor(endpoint),
     options?: {
         dynamicRouteModelOverride?: string | null;
+		/** Replaces the request `model` for a request-level `models` fallback attempt. */
+		requestModelOverride?: string | null;
 		autoRouterModelOverride?: string | null;
 		autoRouterClassificationOverride?: AutoRouterClassification | null;
 		classifyAutoRouterRequest?: (args: {
@@ -293,6 +301,38 @@ export async function beforeRequest(
                 workspace_id: workspaceId,
             }),
         };
+    }
+    let requestModelFallbacks: { requested: string[]; models: string[] } | null = null;
+    if (options?.requestModelOverride) {
+        rawBody = { ...withoutRequestModelFallbacks(rawBody), model: options.requestModelOverride };
+    } else {
+        const parsedModelFallbacks = parseRequestModelFallbacks(rawBody);
+        if (parsedModelFallbacks.ok === false) {
+            return {
+                ok: false,
+                response: err("validation_error", {
+                    reason: parsedModelFallbacks.reason,
+                    description: parsedModelFallbacks.message,
+                    error_type: "user",
+                    error_origin: "user",
+                    details: [{
+                        message: parsedModelFallbacks.message,
+                        path: [REQUEST_MODEL_FALLBACKS_FIELD],
+                        keyword: parsedModelFallbacks.reason,
+                        params: { max_items: MAX_REQUEST_MODEL_FALLBACKS },
+                    }],
+                    request_id: requestId,
+                    workspace_id: workspaceId,
+                }),
+            };
+        }
+        if (parsedModelFallbacks.requested) {
+            requestModelFallbacks = {
+                requested: parsedModelFallbacks.requested,
+                models: parsedModelFallbacks.fallbacks,
+            };
+        }
+        rawBody = withoutRequestModelFallbacks(rawBody);
     }
     const requestedModel = typeof rawBody?.model === "string" && rawBody.model.trim()
         ? rawBody.model.trim()
@@ -1456,6 +1496,7 @@ export async function beforeRequest(
             workspacePolicy: workspacePolicyResult.diagnostics,
             dynamicRoute: dynamicRouteEvaluation,
 			autoRouter: autoRouterEvaluation,
+			...(requestModelFallbacks ? { requestModelFallbacks } : {}),
         },
         guardrailEnforcement: sensitiveInfoResult.enforcement,
         // Billing eligibility is server-owned, never a request body flag.

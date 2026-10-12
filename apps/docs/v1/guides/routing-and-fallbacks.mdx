@@ -278,6 +278,66 @@ Each fallback is independently checked against workspace model restrictions,
 guardrails, provider policy, pricing, and capability support. A route can store
 up to eight fallback models.
 
+### Request-level model fallbacks
+
+Send `models` with `model` to choose fallback models for one request:
+
+```json
+{
+  "model": "openai/gpt-5-mini",
+  "models": ["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"],
+  "input": "Summarize this incident report."
+}
+```
+
+Phaseo always tries `model` first, then each `models` entry in order. It uses
+the same fallback machinery as dynamic routes:
+
+- **Triggers.** A fallback runs only when the previous attempt, after its own
+  provider retries, ends with `429`, `500`, `502`, `503`, or `504`. Client
+  errors such as `400`, `401`, `402`, `403`, `404`, `408`, `413`, and `422` are
+  returned without switching models.
+- **Limits.** `models` accepts 1 to 8 entries. Duplicates and entries equal to
+  `model` are ignored. `model` is required; a request that sends only `models`
+  is rejected with `400`.
+- **Validation.** Each entry can be a model ID, a provider-qualified model ID,
+  or a preset such as `@support`. Each fallback reruns the complete pipeline
+  for that model: endpoint and modality support, requested parameters,
+  workspace model restrictions, guardrails, presets, pricing, and BYOK
+  credentials. A fallback that cannot serve the request is skipped and
+  recorded in request logs; it never replaces the failure you would otherwise
+  receive. A fallback that resolves to a model already attempted is skipped.
+- **Streaming.** Fallbacks happen only before the first byte is sent. An error
+  after a stream has started is returned in that stream.
+- **Asynchronous jobs.** Video and music requests fall back only while
+  submitting the job. Once a provider accepts a job, its later failure does not
+  start a new job with another model.
+- **Recording.** Every attempt is a separate request in your logs, with its own
+  usage and billing record, so each attempt is billed exactly as it would be
+  without fallbacks. The response `model` field, usage, and billing show the
+  model that served the request. The serving request's routing details list the
+  primary request ID, the fallback order, and each previous attempt with its
+  status.
+- **Precedence.** Fallbacks configured on an attached dynamic route take
+  precedence over `models`. A fixed model selected by a dynamic route still
+  applies to each attempt.
+- **Auto Routing.** `phaseo/auto` already manages ranked fallbacks, so it
+  cannot be combined with `models` and cannot appear inside `models`.
+
+| Endpoint | `models` support |
+| --- | --- |
+| Chat Completions, Responses, Messages | Supported, including streaming before the first byte |
+| Embeddings, Moderations, Rerank | Supported |
+| Image generations and edits | Supported, including multipart uploads |
+| Speech, transcriptions, and translations | Supported, including multipart uploads |
+| OCR, Parse, Decisions | Supported |
+| Video and music generation | Supported at job submission |
+| Batches | Rejected with `400`; each batch row targets one model |
+| Realtime and live sessions | Rejected with `400`; a session binds one model |
+
+Multipart endpoints accept repeated `models` fields, `models[]` fields, or one
+JSON array string.
+
 Read more in:
 
 - [Rate limits](../api-reference/limits.mdx)

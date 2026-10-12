@@ -16,6 +16,7 @@ export interface AudioSpeechRequest {
   format?: "mp3" | "wav" | "ogg" | "aac";
   input: string;
   model: string;
+  models?: string[];
   provider?: {
     allow_fallbacks?: boolean | null;
     data_collection?: "allow" | "deny" | null;

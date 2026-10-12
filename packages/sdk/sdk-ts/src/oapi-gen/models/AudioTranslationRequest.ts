@@ -3,6 +3,7 @@ export interface AudioTranslationRequest {
   audio_url?: string;
   language?: string;
   model: string;
+  models?: string[];
   prompt?: string;
   provider?: {
     allow_fallbacks?: boolean | null;

@@ -39,6 +39,7 @@ export interface ResponsesRequest {
   };
   modalities?: ("text" | "image" | "audio")[];
   model: string;
+  models?: string[];
   parallel_tool_calls?: boolean;
   previous_response_id?: string;
   prompt_cache_key?: string | null;
