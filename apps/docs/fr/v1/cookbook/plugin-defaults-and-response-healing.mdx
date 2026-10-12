@@ -54,7 +54,6 @@ Le corps des requêtes reste ainsi plus compact, et le routage comme le comporte
 
 Si la valeur par défaut du workspace n’est pas verrouillée, une requête peut toujours remplacer directement la configuration du plugin :
 
-## Exemple de requête
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
@@ -143,6 +142,7 @@ response = client.generate_response(
 print(response.get("output_text"))
 ```
 </CodeGroup>
+
 ## 6. Vérifier le comportement dans les journaux
 
 Après une requête, examinez la vue détaillée et vérifiez les éléments suivants :

@@ -1,10 +1,10 @@
 ---
 title: "Anbieterqualifizierte Modell-IDs"
-description: "Leiten Sie eine Anfrage mit einer einzelnen Modell-ID an einen bestimmten Anbieter und ein bestimmtes Modell."
+description: "Leite eine Anfrage mit einer einzelnen Modell-ID an einen bestimmten Anbieter und ein bestimmtes Modell."
 icon: "route"
 ---
 
-Mit anbieterqualifizierten Modell-IDs können Sie im Feld `model` einen bestimmten Anbieter und ein kanonisches Modell auswählen. Verwenden Sie sie, wenn die Anbieterauswahl Teil des Anfragevertrags und keine bloße Routing-Präferenz ist.
+Mit anbieterqualifizierten Modell-IDs kannst du im Feld `model` einen bestimmten Anbieter und ein kanonisches Modell auswählen. Verwende sie, wenn die Anbieterauswahl Teil des Anfragevertrags und keine bloße Routing-Präferenz ist.
 
 ## Syntax
 
@@ -32,7 +32,7 @@ In diesem Beispiel:
 
 ## Anfrage senden
 
-Verwenden Sie die qualifizierte ID überall dort, wo der Endpunkt eine Modell-ID akzeptiert.
+Verwende die qualifizierte ID überall dort, wo der Endpunkt eine Modell-ID akzeptiert.
 
 <CodeGroup>
 
@@ -124,7 +124,7 @@ Beispielsweise ist diese Anfrage widersprüchlich und wird abgelehnt:
 }
 ```
 
-Wenn die Anbieterauswahl nur eine Präferenz ist und anbieterübergreifende Fallbacks gewünscht sind, verwenden Sie weiterhin eine nicht qualifizierte kanonische Modell-ID mit den normalen [Routing- und Fallback-Steuerungen](./routing-and-fallbacks.mdx).
+Wenn die Anbieterauswahl nur eine Präferenz ist und anbieterübergreifende Fallbacks gewünscht sind, verwende weiterhin eine nicht qualifizierte kanonische Modell-ID mit den normalen [Routing- und Fallback-Steuerungen](./routing-and-fallbacks.mdx).
 
 ## Anbieterqualifizierte kostenlose Modelle
 
@@ -137,12 +137,12 @@ Eine qualifizierte `:free`-Anfrage wird nur akzeptiert, wenn genau dieser Anbiet
 }
 ```
 
-Phaseo lehnt die Anfrage standardmäßig ab, sofern die ausgewählte Route keine nicht leere Preisliste besitzt und jede aktuelle Preisregel:
+Phaseo lehnt die Anfrage sicherheitshalber ab, es sei denn, die ausgewählte Route hat eine nicht leere Preiskarte, bei der jede aktuelle Preisregel:
 
 - ausdrücklich als `free` gekennzeichnet ist
 - exakt den Preis null hat
 
-Fehlende, kostenpflichtige, gemischte oder negative Preise sowie eine Nullpreisregel ohne ausdrückliche Kennzeichnung als kostenlos führen zur Ablehnung, bevor der Anbieter aufgerufen wird.
+Fehlende, kostenpflichtige, gemischte oder negative Preise sowie eine Regel mit Nullpreis, die nicht ausdrücklich als `free` gekennzeichnet ist, führen zur Ablehnung der Anfrage, bevor der Anbieter sie ausführt.
 
 <Note>
 Ein kanonisches Modell mit `:free` bedeutet nicht, dass jeder Anbieter des zugrunde liegenden Modells eine kostenlose Route anbietet.
@@ -150,7 +150,7 @@ Ein kanonisches Modell mit `:free` bedeutet nicht, dass jeder Anbieter des zugru
 
 ## Anbieter-Slugs und Aliase
 
-Verwenden Sie einen Anbieter-Slug aus dem Phaseo-Anbieterkatalog. Slugs werden in Kleinbuchstaben normalisiert; unterstützte ältere oder Marken-Aliase werden der kanonischen Anbieter-ID zugeordnet.
+Verwende einen Anbieter-Slug aus dem Phaseo-Anbieterkatalog. Slugs werden in Kleinbuchstaben normalisiert; unterstützte ältere oder Marken-Aliase werden der kanonischen Anbieter-ID zugeordnet.
 
 Zum Beispiel werden `NovitaAI` und `novita-ai` derzeit zu `novita` normalisiert.
 
@@ -158,7 +158,7 @@ Fehlerhafte und unbekannte Slugs werden vor der Anbieterauswahl abgelehnt. Phase
 
 ## Validierungsfehler
 
-Fehler bei anbieterqualifizierten IDs verwenden HTTP `400` und den übergeordneten Fehlercode `validation_error`. Prüfen Sie `reason` oder `details[].keyword` auf den genauen Grund.
+Fehler bei anbieterqualifizierten IDs verwenden HTTP `400` und den übergeordneten Fehlercode `validation_error`. Prüfe `reason` oder `details[].keyword` auf den genauen Grund.
 
 | Grund | Bedeutung |
 | --- | --- |

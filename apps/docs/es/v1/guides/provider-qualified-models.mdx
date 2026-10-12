@@ -137,12 +137,12 @@ Una solicitud calificada con `:free` se acepta solo si ese proveedor exacto ofre
 }
 ```
 
-Phaseo rechaza la solicitud si la ruta seleccionada no incluye una lista de precios no vacía y cada regla de precios actual:
+Phaseo rechaza la solicitud salvo que la ruta seleccionada tenga una lista de precios no vacía en la que cada regla de precios actual:
 
 - está etiquetada explícitamente como `free`
 - tiene un precio exactamente igual a cero
 
-La solicitud se rechaza antes de ejecutar el proveedor si faltan los precios, son de pago, están mezclados, son negativos o incluyen una regla de precio cero que no esté etiquetada explícitamente como gratuita.
+La solicitud se rechaza antes de ejecutar el proveedor si faltan los precios, son de pago, están mezclados, son negativos o incluyen una regla de precio cero que no esté etiquetada explícitamente como `free`.
 
 <Note>
 La existencia de un modelo canónico `:free` no significa que todos los proveedores que ofrecen el modelo subyacente tengan una ruta gratuita.
@@ -167,7 +167,7 @@ Los errores de IDs calificados por proveedor usan HTTP `400` y el código de err
 | `invalid_provider_qualified_model` | El identificador combinado no coincide con `<provider>:<publisher>/<model>`. |
 | `provider_qualified_model_conflict` | `provider.only`, `provider.ignore`, `routing.only` o `routing.ignore` contradice el calificador. |
 | `qualified_provider_unavailable` | El proveedor se reconoce, pero no ofrece ese modelo para el endpoint solicitado. |
-| `qualified_free_provider_unavailable` | No se ha verificado que la ruta exacta del proveedor sea gratuita con precios cero en todas sus reglas. |
+| `qualified_free_provider_unavailable` | No se ha verificado que la ruta exacta del proveedor sea explícitamente gratuita con precios cero en todas sus reglas. |
 
 Ejemplo de error:
 

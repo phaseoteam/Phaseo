@@ -4,7 +4,7 @@ title: "نظرة عامة على TypeScript SDK"
 description: "عميل TypeScript الرسمي لواجهة Phaseo Gateway API"
 ---
 
-ثبّت الحزمة المنشورة [~@phaseo/sdk~](https://www.npmjs.com/package/@phaseo/sdk) من npm.
+ثبّت الحزمة المنشورة [`@phaseo/sdk`](https://www.npmjs.com/package/@phaseo/sdk) من npm.
 
 يوفّر Phaseo TypeScript SDK طريقة مريحة وآمنة من ناحية الأنواع للتعامل مع Phaseo Gateway API. وهو مبني على مواصفات OpenAPI، ويوفّر دعمًا كاملًا لـ TypeScript مع أنواع مُنشأة وواجهة عميل بسيطة.
 
@@ -94,17 +94,18 @@ const support = await client.models.checkParameters(
 
 استورد `createMockTransport` و`jobFixtures` من `@phaseo/sdk/testing` لحقن
 بيانات اختبار صارمة ومرتبة عبر `fetchImpl`. استدعِ `mock.assertDone()` للتحقق من
-كل الطلبات المتوقعة. تفشل الاستدعاءات غير المتوقعة محليًا دون الرجوع إلى الشبكة.
+تنفيذ كل الطلبات المتوقعة. تفشل الاستدعاءات غير المتوقعة محليًا دون الرجوع إلى الشبكة.
 
 بعد إرسال طلب في غرفة Phaseo، يصدّر **الحصول على الكود** النموذج
 والإعدادات بصيغة TypeScript أوPython. يفتح **عرض الطلب** تتبعه في لوحة التحكم عند
-توفر معرّف طلب. شغّل الكود على خادمك مع `PHASEO_API_KEY`.
+توفر معرّف طلب. شغّل الكود المُصدَّر على خادمك مع `PHASEO_API_KEY`.
+
 ## ما الذي يتضمنه
 
 -   فئة العميل `Phaseo` لجميع تفاعلات API
--   مساعدات منظّمة حسب المورد مثل `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
--   مساعدات الاستكشاف والتسعير مثل `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
--   مساعدات لعناوين WebSocket لتدفّقات دورة حياة المهام غير المتزامنة والدفعات والفيديو
+-   مساعدات منظّمة حسب المورد مثل `client.models` و`client.batches` و`client.videos` و`client.asyncJobs`
+-   مساعدات الاستكشاف والتسعير مثل `client.getModels()`، `client.listProviders()`، `client.getCredits()`، `client.getActivity()`، `client.getAnalytics()`، `client.listEndpoints()`، `client.listOrganisations()`، `client.listPricingModels()`، `client.calculatePricing()`، `client.listApiKeys()`، `client.createApiKey()`، `client.getApiKey(id)`، `client.updateApiKey(id, ...)`، `client.deleteApiKey(id)`، `client.listWorkspaces()`، `client.getWorkspace(id)`، `client.createWorkspace(...)`، `client.updateWorkspace(id, ...)`، `client.deleteWorkspace(id)` و`client.getCurrentApiKey()`
+-   مساعدات عناوين WebSocket للمهام غير المتزامنة لتدفّقات دورة حياة الدفعات والفيديو
 -   `client.batches.streamResults(batchId, { signal })` لتنزيلات Anthropic JSONL المتدفقة
 -   أنواع مُنشأة لجميع كائنات الطلب والاستجابة
 -   تغطية كاملة لواجهة API، بما في ذلك إكمالات الدردشة والنماذج والأرصدة وغيرها

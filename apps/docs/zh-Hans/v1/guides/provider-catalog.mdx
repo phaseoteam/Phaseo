@@ -1,40 +1,103 @@
 ---
 title: "发布提供商目录"
-description: "支持标准化服务层级和速率限制的 V1 和 V1.1 数据源。"
+description: "发布包含标准化服务层级报价和速率限制的 V1 或 V1.1 模型数据源。"
 icon: "list"
 ---
 
-获批提供商可以自行更新公开规范模型的报价。新模型需要审批。每份目录都是完整快照：删除的报价会停用，历史价格仍然保留。
+获批提供商可以通过目录数据源或提供商设置，更新现有公开规范模型的报价。新的规范模型需要审批。每份目录都是完整快照：删除某个报价会停用这个由数据源管理的报价，并保留其价格历史。
 
 ## 选择格式
 
-没有版本字段的 V1 数据源继续有效。`"schema_version": "1.0"` 也表示 V1。V1.1 声明 `"schema_version": "1.1"`，并为每个模型提供 `service_tiers` 数组。版本由文档决定，而不是 URL 查询参数。
+现有 V1 数据源无需更改即可继续使用。未声明版本的 `{"data": [...]}` 文档，或声明了 `"schema_version": "1.0"` 的文档，使用现有的标准层级格式。
 
-每个模型必须提供 `standard`。其他允许的层级是 `fast`、`ultrafast`、`flex` 和 `batch`。每个层级包含 `service_tier`、`provider_model_slug`、`availability` 和 `pricing`。功能、限制和发布日期由模型共享。
+V1.1 声明 `"schema_version": "1.1"`，并在每个模型中发布 `service_tiers`。导入程序根据文档本身选择格式。`?format=phaseo-v1.1` 等 URL 查询参数只是你的端点可选采用的约定；Phaseo 不会根据 URL 推断版本。
 
-Fast、Ultrafast 和 Flex 支持文本生成。使用不同的上游模型 ID 或 `upstream_service_tier` 来选择实际层级。Fast 接受 `fast` 或 `priority`；Standard 接受 `default` 或 `standard`。Batch 使用独立的 Batch API，仍然需要提供商 Batch 集成和对应功能。
+下载 [V1 Schema](https://phaseo.app/api/internal/provider-catalog/schema) 或 [V1.1 Schema](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1)。不受支持的版本会被明确拒绝。
 
-## 价格与更新
+## 发布标准化层级
 
-每个层级必须明确列出所有计费单位的价格。`price_nanos` 是优惠后的实际价格。零价格有效；负数价格、未知单位、重复层级和条件价格会被拒绝。价格变化时发布新快照，历史价格会保留。
+| 层级 | 含义 |
+| --- | --- |
+| `standard` | 常规同步执行；每个模型都必须提供。 |
+| `fast` | 更快或优先级更高的报价。HighSpeed 等提供商自有名称保留在上游模型 ID 中。 |
+| `ultrafast` | 在支持时提供的独立、更高速报价。 |
+| `flex` | 灵活、优先级较低的同步报价。 |
+| `batch` | 通过 Batch API 异步执行。需要具备批处理能力。 |
 
-轮询和签名 Webhook 支持两种版本。在提供商设置中，先选择层级再编辑。模型映射错误会单独显示，不会阻止有效模型导入。
+不要将提供商特定的层级名称用作标准化 ID。`priority` 仍是调用方可用的 Fast 别名；目录中应发布 `fast`。
 
-完整示例和 JSON Schema 请参阅[英文契约指南](/v1/guides/provider-catalog)。
+文本生成请求支持选择 Fast、Ultrafast 和 Flex。Batch 通过独立的 Batch API 运行，仍需要已安装的提供商 Batch 集成；发布层级并不会安装该集成。对于上传的提供商原生文件，请使用声明的 Batch 模型 ID，或以内联方式提交请求，以便 Phaseo 进行转换。
 
-API 目录中的手动编辑会持续保留。导入只更新没有手动覆盖的字段。选择**使用数据源值**可取消覆盖。页面显示数据源值、生效值、编辑者和时间；活动记录编辑与恢复。手动添加的模型保留为本地报价。模型从数据源删除后，其报价会停用，即使部分字段曾被编辑。纯手动目录仍受支持。
-
-## 速率限制
-
-在可选的顶层数组 `rate_limits` 中声明你的平台对 Phaseo 账户施加的请求数和令牌数上限，V1 和 V1.1 均适用。省略 `model` 表示适用于所有模型的限制，或填写同一文档中某个模型或层级的 `provider_model_slug`。每个条目接受 `requests_per_minute`、`requests_per_day`、`tokens_per_minute` 和 `tokens_per_day`，取值为正整数或 `null`，且至少有一个值。模型限制与所有模型的限制同时生效。
+同一模型的各个服务层级使用相同的规范模型 ID。不同的模型需要各自独立的规范标识。层级会继承模型的能力、限制和发布时间表。每个层级各自声明上游模型 ID、可用性和生效价格。
 
 ```json
 {
+  "schema_version": "1.1",
+  "data": [{
+    "id": "your-provider/example-model",
+    "name": "Example model",
+    "capabilities": ["chat.completions"],
+    "service_tiers": [{
+      "service_tier": "standard",
+      "provider_model_slug": "example-model",
+      "availability": "ready",
+      "pricing": [{
+        "meter_key": "input_text_tokens",
+        "modality": "text",
+        "direction": "input",
+        "unit": "token",
+        "unit_quantity": 1000000,
+        "price_nanos": 100000000,
+        "display_label": "Input",
+        "display_unit": "1M tokens"
+      }, {
+        "meter_key": "output_text_tokens",
+        "modality": "text",
+        "direction": "output",
+        "unit": "token",
+        "unit_quantity": 1000000,
+        "price_nanos": 200000000,
+        "display_label": "Output",
+        "display_unit": "1M tokens"
+      }]
+    }]
+  }]
+}
+```
+
+要添加 Fast，请再添加一个层级对象，其中包含 `"service_tier": "fast"`、该层级的生效价格，以及该报价独有的上游模型 ID。如果提供商改用原生参数选择通道，请使用相同的上游模型 ID，并声明 `"upstream_service_tier": "priority"` 或 `"fast"`。如果由模型 ID 选择通道，请省略该字段。Standard 接受 `default` 或 `standard`；Flex 和 Ultrafast 接受各自对应的值。如果非标准同步层级既没有独立的模型 ID，也没有原生选择器，Phaseo 会拒绝该层级。
+
+每个层级都需要明确的价格，包括输出以及你计费的所有缓存/媒体计量项。零价格有效；负数价格、未知计量项、重复层级和条件费率会被拒绝。`price_nanos` 仍表示优惠后的生效价格。费率变化时请发布新快照；Phaseo 会保留以前的生效价格。
+
+## 声明速率限制
+
+在可选的顶层数组 `rate_limits` 中声明你的平台对 Phaseo 账户施加的请求数和令牌数上限。该数组在 V1 和 V1.1 文档中的用法相同。省略 `model` 表示该限制适用于你的所有模型，也可以将其设为同一文档中任一模型或层级的上游 `provider_model_slug`。
+
+```json
+{
+  "schema_version": "1.1",
+  "data": [{ "id": "your-provider/example-model", "...": "..." }],
   "rate_limits": [
     { "requests_per_minute": 600, "tokens_per_minute": 2000000 },
-    { "model": "example-model", "requests_per_day": 100000 }
+    { "model": "example-model", "requests_per_day": 100000, "tokens_per_day": 500000000 }
   ]
 }
 ```
 
-限制绝不会阻止请求：流量接近上限时，Phaseo 会逐步减少发送给你的报价的流量份额；达到上限后，在限制重置之前，你的报价会排在其他提供商之后。因此，在你的申请获批后，限制无需审核即可生效，通常在一分钟内。数组存在时，每次成功导入已更改的数据源都会替换你的限制；`[]` 会移除限制，省略该数组则保留在提供商设置中定义的限制。如果某个条目引用了不存在的模型、重复了范围或使用了无效值，整个快照都会被拒绝。你也可以在 **提供商设置 → 你的模型 → 速率限制** 中编辑。
+每个条目接受 `requests_per_minute`、`requests_per_day`、`tokens_per_minute` 和 `tokens_per_day`。每个值为正整数或 `null`，且每个条目至少需要一个值。Phaseo 会对发送给你的全部流量在全局范围内统计每项限制。模型限制与适用于所有模型的限制同时生效。
+
+限制绝不会阻止请求。当某个报价的流量接近上限时，Phaseo 会逐步减少分配给它的流量份额。达到上限后，在限制重置之前，Phaseo 会将该报价排在其他提供商之后。设置过低的值只会减少你自己的流量份额。因此，在你的提供商申请获批后，限制无需审核即可生效，通常在一分钟内。
+
+数组存在时，每次成功导入已更改的数据源，都会替换你声明的限制。空数组会移除这些限制。省略 `rate_limits` 可保留你在提供商设置中管理的限制。如果某个条目引用了文档中不存在的模型、重复了某个范围，或使用了不是正整数的值，Phaseo 会拒绝整个快照，并保留你当前的目录和限制。拒绝结果会显示为**需要修改**。
+
+你也可以在**提供商设置 → 你的模型 → 速率限制**中编辑限制。这些编辑与目录更改分开保存。目录编辑器不接受 `rate_limits`。
+
+## 更新与验证
+
+轮询和签名的目录变更 Webhook 通过相同的接入和刷新流程支持这两种版本。在提供商设置中，先选择层级，再编辑其上游 ID、可用性或价格。添加另一个层级会将已保存的目录改为 V1.1。
+
+目录不会添加推理适配器或凭证。必须先集成提供商及其宣称的能力，才能启用路由。Batch 定价不会让 Batch 在同步聊天端点上可用。
+
+不可用的规范模型或未知的发布方映射会显示为**需要修改**，但不会阻止有效模型导入。请在提供商控制台中查看各模型的具体原因。
+
+对于通过 API 提供的目录，控制台中的编辑会作为持久覆盖保留。导入只更新没有覆盖的字段。选择**使用数据源值**可移除覆盖，并恢复跟随数据源更新该字段。控制台会显示最新的数据源值、生效值、编辑者和时间；目录活动会记录编辑和恢复操作。手动添加的模型仍是本地报价。从数据源中删除某个模型后，即使其部分字段曾被编辑，该数据源报价也会停用。现有的纯手动目录仍受支持。

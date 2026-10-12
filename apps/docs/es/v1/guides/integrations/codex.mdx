@@ -20,7 +20,7 @@ npx skills add phaseoteam/skills --agent codex --skill '*'
 
 <Visibility for="agents">
 <Note>
-¿Necesitas ayuda para configurar agentes reutilizables además de conectar el proveedor? Instala las skills públicas de Phaseo desde [`phaseoteam/skills`](https://github.com/phaseoteam/skills):
+Las skills reutilizables de Phaseo están disponibles en [`phaseoteam/skills`](https://github.com/phaseoteam/skills). Para instalarlas en Codex, usa:
 
 ```bash
 npx skills add phaseoteam/skills --agent codex --skill '*'
@@ -37,13 +37,14 @@ phaseo codex --model openai/gpt-5.6-terra
 
 Instala primero Codex desde su versión oficial. La configuración crea una clave `Phaseo CLI: Codex API Key` que no caduca, la guarda en el almacén de credenciales del sistema operativo y crea un perfil de Phaseo independiente. Codex obtiene la clave mediante el ayudante de CLI, por lo que no se guarda en texto sin formato en `config.toml`.
 
-### Inicia Codex con:
+Inicia Codex con:
 
 ```bash
 codex --profile phaseo
 ```
 
 El mismo flujo de Phaseo CLI también inicia [Cline](./cline), [Kilo Code](./kilo-code), [oh-my-pi](./oh-my-pi), [Muse Code](./muse-code) y [MiniMax Code](./minimax-code) con una configuración temporal y aislada del proveedor.
+
 ## Configuración manual
 
 Crea o actualiza tu configuración de usuario en `~/.codex/config.toml`. En un proyecto de confianza, también puedes guardar los mismos ajustes en `.codex/config.toml` dentro del repositorio.
@@ -72,4 +73,4 @@ La aplicación Codex y la extensión IDE comparten las mismas capas de configura
 
 - `401 Unauthorized`: ejecuta `phaseo whoami` y luego vuelve a ejecutar `phaseo codex`.
 - `model_not_found`: obtén un ID actual en [Modelos](../../api-reference/endpoint/models.mdx) y actualiza `model`.
-- Problemas específicos del proveedor: consulta [Enrutamiento y fallbacks](../routing-and-fallbacks.mdx) para conocer el comportamiento de conmutación por error.
+- Problemas específicos del proveedor: consulta [Enrutamiento y alternativas](../routing-and-fallbacks.mdx) para conocer el comportamiento de conmutación por error.

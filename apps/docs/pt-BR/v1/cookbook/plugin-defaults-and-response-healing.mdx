@@ -1,7 +1,7 @@
 ---
 title: "Defina padrões de plugins para fluxos de trabalho com JSON estruturado"
 icon: "puzzle"
-description: "Use políticas de plugins do workspace, de presets e por solicitação para manter a correção de respostas consistente."
+description: "Use políticas de plugins do espaço de trabalho, das predefinições e por solicitação para manter a correção de respostas consistente."
 ---
 
 Use este guia quando solicitações com saída estruturada precisarem de uma política de plugins estável, em vez de configurações diferentes a cada solicitação.
@@ -10,15 +10,15 @@ Use este guia quando solicitações com saída estruturada precisarem de uma pol
 
 A política de plugins do gateway é resolvida nesta ordem:
 
-1. padrões do workspace
-2. padrões de presets
+1. padrões do espaço de trabalho
+2. padrões das predefinições
 3. plugins por solicitação
 
-Camadas com prioridade menor podem substituir as de prioridade maior, a menos que o padrão do workspace esteja explicitamente bloqueado.
+Camadas com prioridade menor podem substituir as de prioridade maior, a menos que o padrão do espaço de trabalho esteja explicitamente bloqueado.
 
-## 2. Defina o padrão do workspace
+## 2. Defina o padrão do espaço de trabalho
 
-Use as configurações de roteamento quando um workspace precisar habilitar por padrão a correção de respostas para solicitações com JSON estruturado.
+Use as configurações de roteamento quando um espaço de trabalho precisar habilitar por padrão a correção de respostas para solicitações com JSON estruturado.
 
 Este é o lugar certo para definir:
 
@@ -28,17 +28,17 @@ Este é o lugar certo para definir:
 
 ## 3. Bloqueie a política quando ela não puder ser negociada
 
-Se um workspace precisar manter a correção de respostas sempre habilitada, bloqueie esse padrão.
+Se um espaço de trabalho precisar manter a correção de respostas sempre habilitada, bloqueie esse padrão.
 
-Com um padrão de workspace bloqueado:
+Com um padrão de espaço de trabalho bloqueado:
 
-- presets não podem desabilitá-lo
+- as predefinições não podem desabilitá-lo
 - o corpo das solicitações não pode desabilitá-lo
 - os logs continuam mostrando se o plugin foi aplicado, ignorado ou falhou
 
-## 4. Use presets para padrões específicos do fluxo de trabalho
+## 4. Use predefinições para padrões específicos do fluxo de trabalho
 
-Presets são a camada certa quando uma família de solicitações precisa incluir:
+As predefinições são a camada certa quando uma família de solicitações precisa incluir ambos:
 
 - configurações de saída estruturada
 - padrões do plugin de correção de respostas
@@ -50,11 +50,10 @@ Essa camada também pode escolher o modo de correção:
 
 Assim, o corpo da solicitação fica menor e o roteamento e o comportamento da saída podem ser reutilizados com mais facilidade entre serviços.
 
-## 5. Substitua a configuração por solicitação somente quando o workspace permitir
+## 5. Substitua a configuração por solicitação somente quando o espaço de trabalho permitir
 
-Se o padrão do workspace não estiver bloqueado, uma solicitação ainda poderá substituir diretamente a configuração do plugin:
+Se o padrão do espaço de trabalho não estiver bloqueado, uma solicitação ainda poderá substituir diretamente a configuração do plugin:
 
-## Exemplo de solicitação
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
@@ -143,9 +142,10 @@ response = client.generate_response(
 print(response.get("output_text"))
 ```
 </CodeGroup>
+
 ## 6. Verifique o comportamento nos logs
 
-Após uma solicitação, inspecione a visualização de detalhes e confirme:
+Após uma solicitação, inspecione a visualização de detalhes da solicitação e confirme:
 
 - `plugin_executions` inclui `response-healing`
 - o status é um destes:
@@ -159,10 +159,10 @@ Após uma solicitação, inspecione a visualização de detalhes e confirme:
 
 Se dois serviços se comportarem de forma diferente, compare:
 
-- as configurações de roteamento do workspace
-- os padrões de plugins dos presets
+- as configurações de roteamento do espaço de trabalho
+- os padrões de plugins das predefinições
 - `plugins` por solicitação
-- se o padrão do workspace está bloqueado
+- se o padrão do espaço de trabalho está bloqueado
 
 Não investigue isso como um problema de qualidade do modelo antes de confirmar que essas camadas de política estão iguais.
 

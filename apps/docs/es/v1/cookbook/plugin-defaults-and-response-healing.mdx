@@ -54,7 +54,6 @@ Así se reduce el cuerpo de la solicitud y se facilita la reutilización del enr
 
 Si el valor predeterminado del espacio de trabajo no está bloqueado, una solicitud puede sobrescribir directamente la configuración del plugin:
 
-## Ejemplo de solicitud
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
@@ -143,6 +142,7 @@ response = client.generate_response(
 print(response.get("output_text"))
 ```
 </CodeGroup>
+
 ## 6. Verifica el comportamiento en los registros
 
 Después de una solicitud, inspecciona la vista de detalles y confirma lo siguiente:

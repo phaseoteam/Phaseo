@@ -10,7 +10,7 @@ description: "صِل وكلاء البرمجة بـPhaseo باستخدام CLI �
 
 | تريد… | استخدم |
 | --- | --- |
-| تشغيل Cline أوKilo Code أوoh-my-pi أوMuse Code أوMiniMax Code بإعدادات مؤقتة معزولة | `phaseo cline`, `phaseo kilo`, `phaseo omp`, `phaseo muse`, أو `phaseo minimax` |
+| تشغيل Cline أوKilo Code أوoh-my-pi أوMuse Code أوMiniMax Code بإعدادات مؤقتة معزولة | `phaseo cline` أو `phaseo kilo` أو `phaseo omp` أو `phaseo muse` أو `phaseo minimax` |
 | إعداد وكيل مثبت والاحتفاظ بإعداداته | `phaseo <integration>` |
 | إعداد وكيل دون Phaseo CLI | اتبع خطوات المزوّد اليدوية في الدليل المخصص |
 
@@ -31,9 +31,9 @@ phaseo codex
 phaseo codex
 ```
 
-Supported integration names are `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor`, and `zed`. مشغّلات CLI المعزولة هي `cline` و`kilo` و`omp` و`muse` و`minimax`.
+أسماء التكاملات المدعومة هي `codex` و`claude-code` و`opencode` و`deepseek-harness` و`pi` و`openclaw` و`hermes` و`aider` و`cline` و`roo-code` و`kilo-code` و`continue` و`cursor` و`zed`. مشغّلات CLI المعزولة هي `cline` و`kilo` و`omp` و`muse` و`minimax`.
 
-تنشئ CLI مفتاح API مستقلًا غير منتهي الصلاحية باسم كل مساعد. وتضبط Aider وContinue تلقائيًا في التثبيتات النظيفة، كما تكتب إعدادات مزود/نموذج Zed تلقائيًا. أما المساعدون الذين يحتفظون بالأسرار حصريًا في واجهة المحرر، فتعرض CLI الحقول المتبقية، وتربط بالدليل المخصص، وتتيح نسخ مفتاح ذلك المساعد فقط:
+تنشئ CLI مفتاح API مستقلًا غير منتهي الصلاحية باسم كل مساعد. وتضبط Aider وContinue تلقائيًا في التثبيتات النظيفة، كما تكتب إعدادات مزود/نموذج Zed تلقائيًا. أما المساعدون الذين يحتفظون بالأسرار حصريًا في واجهة المحرر، فتعرض CLI الحقول المتبقية بدقة، وتربط بالدليل المخصص، وتتيح نسخ مفتاح ذلك المساعد فقط:
 
 ```bash
 phaseo integrations credential codex
@@ -71,7 +71,7 @@ phaseo integrations remove codex
 
 يدعم Cursor نقاط النهاية المخصصة المتوافقة مع OpenAI من خلال إعدادات مفتاح OpenAI API.
 
-1. افتح Cursor Settings.
+1. افتح `Cursor Settings`.
 2. انتقل إلى `Models`.
 3. فعّل خيار `OpenAI API Key` أو أضفه.
 4. ألصق مفتاح API الخاص بك من Phaseo.
@@ -86,7 +86,7 @@ phaseo integrations remove codex
 
 يمكن إضافة النماذج من محرر Language Models في VS Code إذا كان المزوّد المتوافق مع OpenAI متاحًا في إصدار VS Code أو Insiders لديك.
 
-1. افتح لوحة الأوامر.
+1. افتح لوحة الأوامر (Command Palette).
 2. شغّل `Chat: Manage Language Models`.
 3. اختر `OpenAI Compatible` أو `OAI Compatible`.
 4. أدخل مفتاح API الخاص بك من Phaseo.
@@ -151,13 +151,14 @@ aider --model openai/openai/gpt-5-nano
 ## MiniMax Code
 
 استخدم [دليل MiniMax Code](./minimax-code.mdx) لواجهة `mcode` CLI. ينشئ `phaseo minimax` مزوّد MiniMax مؤقتًا بنقطة نهاية Phaseo المتوافقة مع OpenAI، ويشغّل CLI ويحذف مجلد البيانات المؤقت عند انتهاء الجلسة. يدعم MiniMax Code أيضًا ACP عبر `mcode acp` إذا كان المحرر أو المضيف يستخدم ACP مباشرةً.
+
 ## Zed
 
 شغّل `phaseo zed`، ثم اتبع الخطوات الظاهرة لإضافة مزود متوافق مع OpenAI في إعدادات Zed. استخدم المفتاح الذي تم إنشاؤه في حقل بيانات اعتماد Zed فقط.
 
 ## Codex
 
-استخدم [دليل Codex المخصص](./codex.mdx) لـCodex CLI وتطبيق Codex وإضافة IDE. والخلاصة:
+استخدم [دليل Codex المخصص](./codex.mdx) لـCodex CLI وتطبيق Codex وإضافة Codex لبيئات IDE. والخلاصة:
 
 ```toml
 model = "openai/gpt-5.5"
@@ -170,7 +171,7 @@ env_key = "PHASEO_API_KEY"
 wire_api = "responses"
 ```
 
-تستخدم مزودات Codex المخصصة بروتوكول Responses wire.
+تستخدم مزودات Codex المخصصة بروتوكول النقل الخاص بـ Responses.
 
 ## OpenCode
 

@@ -6,23 +6,7 @@ openapi: "/ar/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "قيّم أسئلة ذات أنواع محددة بناءً على حالة التطبيق باستخدام نماذج القرار المدعومة."
 ---
 
-استخدم التنسيق المتوافق مع OpenAI للمكالمات الجديدة: يحتوي `input` على نص أو رسائل مستخدم تتضمن أجزاء `input_image` مضمنة، و`questions` مصفوفة مرتبة من أسئلة `predicate` أو `choice` أو `score`. تحافظ الإجابات على الترتيب والأسماء الاختيارية، وتبقى قيم الخيارات المنطقية منطقية. روابط الصور المستضافة غير مدعومة؛ يدعم Luna حتى 128 صورة مضمنة وللمزودين الآخرين حدودهم الخاصة. تتطلب تفاصيل الصور الصريحة و`safety_identifier` مسار OpenAI. يظل التنسيق القديم باستخدام `state` وخرائط الأسئلة المسماة و`noul` و`criteria` مدعومًا ويعيد خريطة إجابات. يتطلب Together Tev هذا التنسيق لأنه يعيد تسميات دون احتمالات. تظل الأمثلة القديمة صالحة.
-
-يدعم Mercury Decide (`inception/mercury-decide`) أسئلة `predicate` و`choice` و`score` باستخدام نص أو JSON. الحد الأقصى هو 255 خيارًا لكل سؤال اختيار و10 مستويات لكل سؤال تقييم. لا يدعم الصور أو البث أو استدعاء الأدوات. يبلغ سعر الإدخال حاليًا 0.02 دولار لكل مليون رمز ضمن خصم Inception بنسبة 50%؛ تُبلّغ رموز الإخراج دون رسوم. لم تُعلن Inception موعد انتهاء العرض. تحقّق من توفر النموذج و[الأسعار الحالية](https://docs.inceptionlabs.ai/get-started/models) قبل الاستخدام.
-
-يستخدم Microsoft Decision (`microsoft/microsoft-decision-1`) نشرًا في Azure Foundry، ويدعم أسئلة `predicate` و`choice` و`score` للنص أو JSON. حد الإدخال هو 32,768 رمزًا. سعر الإدخال 0.042 دولار أمريكي لكل مليون رمز، والإخراج مجاني. لا يدعم الوسائط أو البث أو الأدوات أو `safety_identifier` أو `service_tier`. تحقق من توفر النموذج قبل استدعائه. راجع [دليل Microsoft](https://learn.microsoft.com/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision).
-
-```json
-{
-  "model": "inception/mercury-decide",
-  "input": "Please refund the duplicate charge on my account.",
-  "questions": [{
-    "type": "predicate",
-    "name": "billing",
-    "instructions": "Is this request about billing?"
-  }]
-}
-```
+استخدم التنسيق المتوافق مع OpenAI للمكالمات الجديدة: يحتوي `input` على نص أو رسائل مستخدم تتضمن أجزاء `input_image` مضمنة، و`questions` مصفوفة مرتبة من أسئلة `predicate` أو `choice` أو `score`. تحافظ الإجابات على الترتيب والأسماء الاختيارية، وتبقى قيم الخيارات المنطقية منطقية. روابط الصور المستضافة غير مدعومة؛ يدعم Luna حتى 128 صورة مضمنة وللمزودين الآخرين حدودهم الخاصة. تتطلب تفاصيل الصور الصريحة و`safety_identifier` مسار OpenAI. يظل التنسيق القديم باستخدام `state` وخرائط الأسئلة المسماة و`noul` و`criteria` مدعومًا ويعيد خريطة الإجابات الأصلية. يتطلب Together Tev هذا التنسيق القديم لأنه يعيد تسميات دون احتمالات. تظل الأمثلة القديمة أدناه صالحة.
 
 ```json
 {
@@ -52,6 +36,38 @@ description: "قيّم أسئلة ذات أنواع محددة بناءً على
 
 يدعم Liquid D1 (`liquid-ai/d1:free`، والمتاح أيضًا باسم `liquid-ai/d1`) وPerplexity Decider 27B (`perplexity/decider-27b`) أنواع الأسئلة الثلاثة. D1 مجاني خلال الوصول المبكر التجريبي. تبلغ تكلفة Decider ‏0.04 دولار لكل مليون رمز إدخال، بما فيها رموز الصور؛ ورموز الإخراج مجانية. أضف بيانات اعتماد لمزود Perplexity في Phaseo لاستخدام Decider. تستخدم حالته المصورة عناوين URL لبيانات base64 بصيغ PNG أو JPEG أو WebP؛ ولا يدعم عناوين الصور البعيدة. يقبل كل سؤال اختيار ما يصل إلى 255 خيارًا، وكل سؤال تقييم ما يصل إلى 10 مستويات. تحقّق من توفر النموذج قبل استدعاء أي منهما.
 
+يدعم Mercury Decide (`inception/mercury-decide`) أسئلة predicate وchoice وscore مع أدلة نصية أو بتنسيق JSON. الحد الأقصى هو 255 خيارًا لكل سؤال اختيار و10 مستويات لكل سؤال تقييم. لا يدعم الصور أو البث أو استدعاء الأدوات. يبلغ سعر الإدخال حاليًا 0.02 دولار لكل مليون رمز ضمن خصم Inception بنسبة 50%؛ تُبلّغ رموز الإخراج دون رسوم. لم تُعلن Inception موعد انتهاء العرض. تحقّق من توفر النموذج و[الأسعار الحالية لدى المزوّد](https://docs.inceptionlabs.ai/get-started/models) قبل الاستخدام.
+
+```json
+{
+  "model": "inception/mercury-decide",
+  "input": "Please refund the duplicate charge on my account.",
+  "questions": [{
+    "type": "predicate",
+    "name": "billing",
+    "instructions": "Is this request about billing?"
+  }]
+}
+```
+
+يستخدم Microsoft Decision (`microsoft/microsoft-decision-1`) نشرًا في Azure Foundry، ويدعم أسئلة predicate وchoice وscore مع أدلة نصية أو بتنسيق JSON. حد الإدخال هو 32,768 رمزًا. السعر المنشور هو 0.042 دولار أمريكي لكل مليون رمز إدخال، والإخراج مجاني. لا يدعم الوسائط أو البث أو الأدوات أو `safety_identifier` أو `service_tier`. تحقق من توفر النموذج قبل استدعائه. راجع [دليل Microsoft](https://learn.microsoft.com/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision).
+
+```json
+{
+  "model": "microsoft/microsoft-decision-1",
+  "input": "The API returns 500 on every call.",
+  "questions": [{
+    "type": "choice",
+    "name": "team",
+    "instructions": "Which team should handle this ticket?",
+    "choices": [
+      { "value": "engineering", "description": "Bugs, errors, and outages" },
+      { "value": "support", "description": "How-to and account questions" }
+    ]
+  }]
+}
+```
+
 في Respan Span-01، يجب أن تكون `state` مقطع محادثة يتضمن مصفوفة `input` للرسائل السابقة ورسالة مساعد `output`. يدعم Span-01 أسئلة `noul` فقط. إجابة `noul` هي احتمال وجود السلوك؛ وتتضمن `probabilities` أيضًا احتمالات غيابه وتعذّر ملاحظته.
 
 ```json
@@ -70,7 +86,7 @@ description: "قيّم أسئلة ذات أنواع محددة بناءً على
 }
 ```
 
-`respan/span-01:free` هو نموذج Lite المجاني ذو الحد اليومي؛ ويطابقه Phaseo مع معرّف نموذج API الخاص بـ Respan وهو `span-01-free`. يطابق `respan/span-01` المعرّف `span-01-pro`، وتفرض Respan عليه 0.02 دولار لكل مليون رمز إدخال؛ ورموز الإخراج مجانية. Span-01 في مرحلة الوصول المبكر، لذا يجب أن تفعّل Respan الوصول لمؤسستك. أضف مفتاح API الخاص بك لدى Respan كبيانات اعتماد لمزود Respan في Phaseo قبل استدعاء هذه النماذج.
+`respan/span-01:free` هو نموذج Lite المجاني ذو الحد اليومي؛ ويطابقه Phaseo مع معرّف نموذج API الخاص بـ Respan وهو `span-01-free`. يطابق `respan/span-01` معرّف نموذج API الخاص بـ Respan وهو `span-01-pro`، وتفرض Respan عليه 0.02 دولار لكل مليون رمز إدخال؛ ورموز الإخراج مجانية. Span-01 في مرحلة الوصول المبكر، لذا يجب أن تفعّل Respan الوصول لمؤسستك. أضف مفتاح API الخاص بك لدى Respan كبيانات اعتماد لمزود Respan في Phaseo قبل استدعاء هذه النماذج.
 
 تستخدم الإجابات المفاتيح نفسها الموجودة في `questions`. تتضمن إجابات `choice` الخيار المحدد والاحتمالات والثقة؛ وتتضمن إجابات `noul` احتمالًا من 0 إلى 1؛ وتتضمن إجابات `score` درجة مرجّحة بالاحتمالات ودليلًا توضيحيًا والاحتمالات والثقة.
 
@@ -96,6 +112,7 @@ description: "قيّم أسئلة ذات أنواع محددة بناءً على
 
 لمعرفة دلالات الأسئلة لدى المزود الأصلي، راجع [مرجع API](https://docs.typesafe.ai/api) الخاص بـ TypeSafe.
 
+
 ### قرارات الصور باستخدام Clef
 
 يدعم `cloudflare/clef` و`cloudflare/clef-flash` أنواع الأسئلة الثلاثة والصور المضمّنة عبر Cloudflare Workers AI. سياق Clef هو 65,536 رمزًا وسياق Clef Flash هو 24,576 رمزًا. تكلفة مليون رمز إدخال هي $0.24 لـ Clef و$0.038 لـ Clef Flash.
@@ -117,7 +134,7 @@ description: "قيّم أسئلة ذات أنواع محددة بناءً على
 
 ### قرارات الصوت والفيديو مع Clef Omni
 
-يقبل `cloudflare/clef-omni` النصوص والصور والصوت والفيديو بنفس الأسئلة المرتبة والإجابات. الصوت والفيديو امتدادان من Phaseo لعقد الإدخال بأسلوب OpenAI؛ تدعم مسارات قرارات OpenAI حاليًا النصوص والصور فقط. تحقّق من توفر النموذج قبل الاستخدام.
+يقبل `cloudflare/clef-omni` النصوص والصور والصوت والفيديو مع `questions` المرتبة والإجابات نفسها المستخدمة في نماذج Decisions الأخرى. الصوت والفيديو امتدادان من Phaseo لعقد الإدخال بأسلوب OpenAI؛ تدعم مسارات قرارات OpenAI حاليًا النصوص والصور فقط. تحقّق من توفر النموذج قبل الاستخدام.
 
 يتطلب هذا المثال مسار Omni متاحًا ومفتاح API من Phaseo. استبدل بيانات الصوت التوضيحية ورابط الفيديو بوسائطك قبل الإرسال.
 
@@ -136,8 +153,8 @@ description: "قيّم أسئلة ذات أنواع محددة بناءً على
 }
 ```
 
-استخدم `input_audio.data` مع `format: "wav"` أو `"mp3"`، أو `input_audio.url` مع رابط HTTPS عام أو رابط بيانات صوتية. يقبل `input_video.video_url` سلسلة أو `{ "url": "..." }` تتضمن رابط HTTPS عامًا أو رابط بيانات MP4/WebM. يجب أن يعيد الخادم Content-Type المطابق. يجلب Phaseo الوسائط مع حدود للحجم وفحوص للعناوين الخاصة وإعادة التوجيه ثم يضمّنها لـ Cloudflare؛ ولا يرسل بيانات اعتماد المزوّد إلى خادم الوسائط.
+استخدم `input_audio.data` مع `format: "wav"` أو `"mp3"`، أو `input_audio.url` مع رابط HTTPS عام أو رابط بيانات صوتية مضمّن. يقبل `input_video.video_url` سلسلة أو `{ "url": "..." }` تتضمن رابط HTTPS عامًا أو رابط بيانات MP4/WebM مضمّنًا. يجب أن تعيد الخوادم البعيدة ترويسة Content-Type المطابقة للوسائط. يجلب Phaseo الروابط مع حدود للحجم وفحوص للعناوين الخاصة وإعادة التوجيه، ثم يضمّن الوسائط لـ Cloudflare؛ ولا تُرسل بيانات اعتماد المزوّد إلى خادم الوسائط أبدًا.
 
-يقبل Omni حتى أربعة مقاطع صوتية (8 MiB و300 ثانية لكل مقطع) وفيديوهين (16 MiB و60 ثانية لكل فيديو)، بحد إجمالي 16 MiB للصوت والفيديو بعد فك الترميز. تبقى حدود كل صورة ومجموع بيانات الصور سارية؛ يحل حد جسم طلب Omni محل حد Clef/Flash البالغ 13 MiB. يحد Phaseo جسم الطلب الكامل بـ37 MiB. تتحقق Cloudflare من الترميز وأبعاد الصور والمدة وتأخذ إطارين من الفيديو كل ثانية. يُستخدم المسار الصوتي إذا احتوت عليه جميع الفيديوهات.
+يقبل Omni حتى أربعة مقاطع صوتية (8 MiB و300 ثانية لكل مقطع) وفيديوهين (16 MiB و60 ثانية لكل فيديو). لا يمكن أن يتجاوز الصوت والفيديو معًا 16 MiB بعد فك الترميز. تبقى حدود كل صورة ومجموع بيانات الصور المذكورة أعلاه سارية على Omni؛ ويحل حد جسم طلب Omni محل حد Clef/Flash البالغ 13 MiB. يحد Phaseo جسم طلب Omni الكامل بـ37 MiB. تتحقق Cloudflare من ترميز الوسائط وأبعاد الصور ومدة المقاطع، وتأخذ إطارين من الفيديو كل ثانية. يُستخدم المسار الصوتي للفيديو عندما تحتوي عليه جميع الفيديوهات في الطلب.
 
-السياق الموثّق هو 64,000 رمز، والتكلفة $0.15 لكل مليون رمز إدخال إجمالي. تُحتسب رموز الوسائط ضمن السياق والفوترة؛ والإخراج مجاني. يسوّي Phaseo التكلفة حسب استخدام الإدخال الذي تبلغ عنه Cloudflare دون رسوم إضافية للصوت أو الفيديو. [Cloudflare](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).
+لدى Omni سياق موثّق يبلغ 64,000 رمز، وتبلغ تكلفته $0.15 لكل مليون رمز إدخال إجمالي. تُحتسب رموز الوسائط ضمن السياق والفوترة؛ والإخراج مجاني. يسوّي Phaseo التكلفة حسب استخدام الإدخال الذي تبلغ عنه Cloudflare دون إضافة رسوم منفصلة للصوت أو الفيديو. راجع [عقد Omni من Cloudflare](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).

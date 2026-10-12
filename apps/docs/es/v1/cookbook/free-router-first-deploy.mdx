@@ -7,7 +7,15 @@ description: "Empieza con phaseo/free para que tu primera integración funcione 
 Usa esta guía para poner en marcha tu primera integración con Phaseo sin elegir todavía un modelo de pago.
 
 En lugar de elegir tú un modelo gratuito, envía las solicitudes a `phaseo/free`. Phaseo seleccionará un modelo gratuito disponible que admita la solicitud.
+
+## Cuándo usarlo
+
+- Quieres un prototipo funcional antes de elegir un modelo de pago.
+- Esperas que la mejor opción gratuita cambie con el tiempo.
+- Quieres un ID de modelo estable en el código de la aplicación mientras Phaseo gestiona en segundo plano los cambios de proveedores gratuitos.
+
 ## Ejemplo de solicitud
+
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
@@ -130,6 +138,7 @@ response = client.generate_response(
 puts response
 ```
 </CodeGroup>
+
 ## Qué ocurre en segundo plano
 
 1. La solicitud se envía al alias compartido `phaseo/free`.
@@ -147,7 +156,7 @@ puts response
 
 - Reserva `phaseo/free` para prototipos, demostraciones y tráfico de bajo riesgo.
 - Si necesitas latencia, estilo de salida o proveedor predecibles, cambia a un modelo específico cuando sepas cuál funciona mejor.
-- Si necesitas un comportamiento estable de los prompts entre servicios, combina esta guía con [Presets](../guides/presets.mdx).
+- Si necesitas un comportamiento estable de los prompts entre servicios, combina esta guía con [Preajustes](../guides/presets.mdx).
 
 ## Guías relacionadas
 

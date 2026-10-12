@@ -54,7 +54,6 @@ Gatewayのプラグインポリシーは、次の順に適用されます。
 
 ワークスペースのデフォルトがロックされていなければ、リクエストからプラグイン設定を直接上書きできます。
 
-## リクエスト例
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
@@ -143,6 +142,7 @@ response = client.generate_response(
 print(response.get("output_text"))
 ```
 </CodeGroup>
+
 ## 6. ログで動作を確認する
 
 リクエストを1回実行したら、詳細画面を開いて次を確認します。
