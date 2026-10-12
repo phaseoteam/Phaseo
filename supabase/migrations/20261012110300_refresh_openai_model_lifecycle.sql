@@ -1,39 +1,44 @@
--- OpenAI lifecycle status for 11 rows, checked 2026-10-12 against https://developers.openai.com/api/docs/deprecations.
+-- OpenAI lifecycle status for 10 rows, checked 2026-10-12 against https://developers.openai.com/api/docs/deprecations.
 --   retired (shutdown date already passed): gpt-5-chat-latest, gpt-5.1-chat-latest (2026-07-23),
 --     gpt-3.5-turbo-1106 / gpt-3.5-turbo-2023-11-06 (2026-09-28), gpt-3.5-turbo-0613 (2024-09-13).
---   deprecated (announced, still served until the shutdown date): gpt-4o-mini-tts-2025-03-20 and
---     -2025-12-15 (2027-01-06), gpt-4-turbo-2024-04-09 and gpt-4.1-nano-2025-04-14 (2026-10-23),
+--   deprecated (announced, still served until the shutdown date): gpt-4o-mini-tts-2025-12-15
+--     (2027-01-06), gpt-4-turbo-2024-04-09 and gpt-4.1-nano-2025-04-14 (2026-10-23),
 --     gpt-5.1-2025-11-13 and gpt-5.4-nano-2026-03-17 (2027-04-01).
+-- status and catalogue_status (what the public API shows; it takes precedence over status) change together.
 -- All of these rows already carry deprecated_at <= now, so customers with deprecation alerts enabled
 -- are already being notified; setting status does not create a new notification. Gateway routing is
 -- unchanged: it is driven by retired_at, which this migration does not move (except codex-mini below).
+-- Not changed, on purpose: gpt-4o-mini-tts-2025-03-20 is retired in the catalogue but OpenAI serves it
+-- until 2027-01-06 (retired_at already says so). Marking it deprecated would make the gateway route it
+-- again, so it stays retired until the owner decides.
 
 -- Each update is guarded on the values observed during the 2026-10-12 audit, so
 -- a newer admin edit is never overwritten. Row-level history is recorded by the
 -- catalogue_row_history trigger on public.v2_models.
-with fixes (model_slug, old_status, new_status) as (
+with fixes (model_slug, old_status, new_status, old_catalogue_status, new_catalogue_status) as (
 values
-  ('openai/gpt-5-chat-latest'::text, 'active'::text, 'retired'::text),
-  ('openai/gpt-5.1-chat-latest'::text, 'active'::text, 'retired'::text),
-  ('openai/gpt-3.5-turbo-1106'::text, 'deprecated'::text, 'retired'::text),
-  ('openai/gpt-3.5-turbo-2023-11-06'::text, 'deprecated'::text, 'retired'::text),
-  ('openai/gpt-3.5-turbo-0613'::text, 'deprecated'::text, 'retired'::text),
-  ('openai/gpt-4o-mini-tts-2025-03-20'::text, 'retired'::text, 'deprecated'::text),
-  ('openai/gpt-4o-mini-tts-2025-12-15'::text, 'active'::text, 'deprecated'::text),
-  ('openai/gpt-4-turbo-2024-04-09'::text, 'active'::text, 'deprecated'::text),
-  ('openai/gpt-4.1-nano-2025-04-14'::text, 'active'::text, 'deprecated'::text),
-  ('openai/gpt-5.1-2025-11-13'::text, 'active'::text, 'deprecated'::text),
-  ('openai/gpt-5.4-nano-2026-03-17'::text, 'active'::text, 'deprecated'::text)
+  ('openai/gpt-5-chat-latest'::text, 'active'::text, 'retired'::text, 'available'::text, 'retired'::text),
+  ('openai/gpt-5.1-chat-latest'::text, 'active'::text, 'retired'::text, 'available'::text, 'retired'::text),
+  ('openai/gpt-3.5-turbo-1106'::text, 'deprecated'::text, 'retired'::text, 'deprecated'::text, 'retired'::text),
+  ('openai/gpt-3.5-turbo-2023-11-06'::text, 'deprecated'::text, 'retired'::text, 'deprecated'::text, 'retired'::text),
+  ('openai/gpt-3.5-turbo-0613'::text, 'deprecated'::text, 'retired'::text, 'deprecated'::text, 'retired'::text),
+  ('openai/gpt-4o-mini-tts-2025-12-15'::text, 'active'::text, 'deprecated'::text, 'available'::text, 'deprecated'::text),
+  ('openai/gpt-4-turbo-2024-04-09'::text, 'active'::text, 'deprecated'::text, 'available'::text, 'deprecated'::text),
+  ('openai/gpt-4.1-nano-2025-04-14'::text, 'active'::text, 'deprecated'::text, 'available'::text, 'deprecated'::text),
+  ('openai/gpt-5.1-2025-11-13'::text, 'active'::text, 'deprecated'::text, 'available'::text, 'deprecated'::text),
+  ('openai/gpt-5.4-nano-2026-03-17'::text, 'active'::text, 'deprecated'::text, 'available'::text, 'deprecated'::text)
 ), applied as (
   update public.v2_models m
   set status = f.new_status,
+      catalogue_status = f.new_catalogue_status,
       updated_at = now()
   from fixes f
   where m.model_slug = f.model_slug
     and m.status is not distinct from f.old_status
+    and m.catalogue_status is not distinct from f.old_catalogue_status
   returning m.model_slug
 )
-select count(*) as updated_rows, 11 as expected_rows from applied;
+select count(*) as updated_rows, 10 as expected_rows from applied;
 
 -- OpenAI codex-mini: codex-mini-latest shut down 2026-02-12 (2025-11-17 deprecation entry).
 with fixes (model_slug, old_retired_at, new_retired_at) as (

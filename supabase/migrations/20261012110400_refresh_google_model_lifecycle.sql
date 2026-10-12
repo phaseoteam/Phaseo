@@ -10,36 +10,24 @@
 -- Each update is guarded on the values observed during the 2026-10-12 audit, so
 -- a newer admin edit is never overwritten. Row-level history is recorded by the
 -- catalogue_row_history trigger on public.v2_models.
-with fixes (model_slug, old_status, new_status) as (
+-- status, catalogue_status (what the public API shows) and retired_at move together in one guarded
+-- update, so a row edited after the audit is skipped as a whole instead of ending up half changed.
+with fixes (model_slug, old_status, new_status, old_catalogue_status, new_catalogue_status, old_retired_at, new_retired_at) as (
 values
-  ('google/gemini-2.5-computer-use-preview'::text, 'active'::text, 'retired'::text),
-  ('google/antigravity-preview-05-2026'::text, 'active'::text, 'retired'::text),
-  ('google/gemini-2.5-pro-preview-05-06'::text, 'active'::text, 'retired'::text),
-  ('google/gemini-2.5-pro-preview'::text, 'active'::text, 'retired'::text)
+  ('google/gemini-2.5-computer-use-preview'::text, 'active'::text, 'retired'::text, 'available'::text, 'retired'::text, null::timestamptz, '2026-07-28T00:00:00Z'::timestamptz),
+  ('google/antigravity-preview-05-2026'::text, 'active'::text, 'retired'::text, 'preview'::text, 'retired'::text, null::timestamptz, '2026-10-05T00:00:00Z'::timestamptz),
+  ('google/gemini-2.5-pro-preview-05-06'::text, 'active'::text, 'retired'::text, 'available'::text, 'retired'::text, null::timestamptz, '2025-12-02T00:00:00Z'::timestamptz),
+  ('google/gemini-2.5-pro-preview'::text, 'active'::text, 'retired'::text, 'available'::text, 'retired'::text, null::timestamptz, '2025-12-02T00:00:00Z'::timestamptz)
 ), applied as (
   update public.v2_models m
   set status = f.new_status,
+      catalogue_status = f.new_catalogue_status,
+      retired_at = f.new_retired_at,
       updated_at = now()
   from fixes f
   where m.model_slug = f.model_slug
     and m.status is not distinct from f.old_status
-  returning m.model_slug
-)
-select count(*) as updated_rows, 4 as expected_rows from applied;
-
--- Retirement dates for the four rows above.
-with fixes (model_slug, old_retired_at, new_retired_at) as (
-values
-  ('google/gemini-2.5-computer-use-preview'::text, null::timestamptz, '2026-07-28T00:00:00Z'::timestamptz),
-  ('google/antigravity-preview-05-2026'::text, null::timestamptz, '2026-10-05T00:00:00Z'::timestamptz),
-  ('google/gemini-2.5-pro-preview-05-06'::text, null::timestamptz, '2025-12-02T00:00:00Z'::timestamptz),
-  ('google/gemini-2.5-pro-preview'::text, null::timestamptz, '2025-12-02T00:00:00Z'::timestamptz)
-), applied as (
-  update public.v2_models m
-  set retired_at = f.new_retired_at,
-      updated_at = now()
-  from fixes f
-  where m.model_slug = f.model_slug
+    and m.catalogue_status is not distinct from f.old_catalogue_status
     and m.retired_at is not distinct from f.old_retired_at
   returning m.model_slug
 )
