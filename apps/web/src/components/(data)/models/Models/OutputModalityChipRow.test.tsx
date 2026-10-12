@@ -8,10 +8,16 @@ jest.mock("@/components/ui/scroll-area", () => ({
 	ScrollArea: ({
 		children,
 		scrollBarClassName,
+		viewportClassName,
 	}: {
 		children: ReactNode;
 		scrollBarClassName?: string;
-	}) => <div data-scrollbar={scrollBarClassName ?? "shown"}>{children}</div>,
+		viewportClassName?: string;
+	}) => (
+		<div data-scrollbar={scrollBarClassName} data-viewport={viewportClassName}>
+			{children}
+		</div>
+	),
 }));
 
 const Icon = (() => <svg />) as unknown as LucideIcon;
@@ -98,11 +104,41 @@ describe("OutputModalityChipRow", () => {
 	});
 
 	it("hides the scrollbar in the audio row but keeps it for the main row", () => {
-		expect(render([]).html).toContain('data-scrollbar="shown"');
-		expect(render(["audio"]).html).toContain('data-scrollbar="hidden"');
-		expect(render(["audio_music"]).html).toContain('data-scrollbar="hidden"');
+		// Touch screens never get it; the row has edge fades there instead.
+		const scrollbarHidden = (html: string) => /data-scrollbar="hidden /.test(html);
+		expect(scrollbarHidden(render([]).html)).toBe(false);
+		expect(scrollbarHidden(render(["audio"]).html)).toBe(true);
+		expect(scrollbarHidden(render(["audio_music"]).html)).toBe(true);
 		// Audio is a plain chip without sub-types, so the row never swaps.
-		expect(render(["audio"], MAIN).html).toContain('data-scrollbar="shown"');
+		expect(scrollbarHidden(render(["audio"], MAIN).html)).toBe(false);
+	});
+
+	it("keeps swipes on the row from scrolling the page or navigating back", () => {
+		for (const selected of [[], ["audio"]]) {
+			const { html } = render(selected);
+			expect(html).toMatch(/data-viewport="[^"]*overflow-y-hidden!/);
+			expect(html).toMatch(/data-viewport="[^"]*overscroll-x-contain/);
+		}
+	});
+
+	it("swaps the scrollbar for edge fades on touch screens", () => {
+		for (const selected of [[], ["audio"]]) {
+			const { html } = render(selected);
+			expect(html).toMatch(/data-scrollbar="[^"]*pointer-coarse:hidden/);
+			expect(html).toMatch(/data-viewport="[^"]*pointer-coarse:pb-0/);
+			expect(html).toMatch(
+				/data-viewport="[^"]*pointer-coarse:\[mask-image:linear-gradient\([^"]*--scroll-area-overflow-x-start[^"]*--scroll-area-overflow-x-end/,
+			);
+		}
+	});
+
+	it("drops counts from unselected chips on phones so Audio fits on screen", () => {
+		const { main } = render(["text"]);
+		const countClass = (label: string) =>
+			main.match(new RegExp(`<span>${label}</span><span class="([^"]*)"`))?.[1] ?? "";
+		expect(countClass("Text")).not.toContain("max-sm:hidden");
+		expect(countClass("Image")).toContain("max-sm:hidden");
+		expect(countClass("Audio")).toContain("max-sm:hidden");
 	});
 
 	it("swaps quickly, with every chip moving together and no stagger", () => {

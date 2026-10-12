@@ -26,13 +26,24 @@ const AUDIO_IN_MS = 160;
 /** A row stops being visible once its chips have finished fading. */
 const MAIN_HIDE_MS = MAIN_OUT_MS + 10;
 const AUDIO_HIDE_MS = AUDIO_IN_MS + 10;
+/** Width of the fade at a scrollable edge, and the gap a revealed chip keeps from it. */
+const EDGE_PX = 24;
+
+/**
+ * Touch screens get edge fades instead of a scrollbar: Base UI exposes how far
+ * the row can still scroll each way, so a fade only shows where there is more.
+ * Written out in full because Tailwind only generates classes it can read in
+ * the source; keep the 24px in step with `EDGE_PX`.
+ */
+const EDGE_FADE =
+	"pointer-coarse:[mask-image:linear-gradient(to_right,transparent,#000_min(24px,var(--scroll-area-overflow-x-start)),#000_calc(100%_-_min(24px,var(--scroll-area-overflow-x-end))),transparent)]";
 
 type ChipProps = {
 	option: OptionCount;
 	label: string;
 	Icon: LucideIcon;
 	checked: boolean;
-	onClick: () => void;
+	onClick: (chip: HTMLElement) => void;
 	/** Slide distance in px while the chip is out of view. */
 	hiddenShift: number;
 	hidden: boolean;
@@ -64,7 +75,7 @@ function Chip({
 			type="button"
 			variant="ghost"
 			size="sm"
-			onClick={onClick}
+			onClick={(event) => onClick(event.currentTarget)}
 			aria-pressed={checked}
 			aria-expanded={expanded}
 			tabIndex={hidden ? -1 : undefined}
@@ -107,7 +118,9 @@ function Chip({
 			<span
 				className={cn(
 					"inline-flex min-w-5 items-center justify-center px-1 text-[11px] font-medium leading-none tabular-nums",
-					checked ? "text-current" : "text-muted-foreground",
+					// Phones are too narrow for every count: without them Audio, the way
+					// into the sub-types, fits on screen instead of sitting off the edge.
+					checked ? "text-current" : "text-muted-foreground max-sm:hidden",
 				)}
 			>
 				{option.count}
@@ -194,8 +207,31 @@ export function OutputModalityChipRow({
 
 	if (options.length === 0) return null;
 
-	const toggle = (value: string) => {
+	/** Nudges a chip that is cut off by the edge of the row fully into view. */
+	const revealChip = (chip: HTMLElement) => {
+		const viewport = viewportRef.current;
+		if (!viewport) return;
+		const view = viewport.getBoundingClientRect();
+		const box = chip.getBoundingClientRect();
+		const shift =
+			box.left < view.left + EDGE_PX
+				? box.left - view.left - EDGE_PX
+				: box.right > view.right - EDGE_PX
+					? box.right - view.right + EDGE_PX
+					: 0;
+		if (shift !== 0) {
+			viewport.scrollBy({ left: shift, behavior: reduceMotion ? "auto" : "smooth" });
+		}
+	};
+
+	const toggle = (value: string, chip: HTMLElement) => {
 		const next = toggleOutputModality(shownSelected, value);
+		// Swapping rows resets the scroll position itself; otherwise keep the pressed
+		// chip in view. A frame later, so a chip that grows when selected is measured
+		// at its final width.
+		if ((hasFamily && isAudioFamilyOpen(next)) === open) {
+			requestAnimationFrame(() => revealChip(chip));
+		}
 		startTransition(() => {
 			setShownSelected(next);
 			onChange(next);
@@ -212,9 +248,14 @@ export function OutputModalityChipRow({
 			// touch or keyboard if it is wider than the window. The scroll area only
 			// re-measures when its viewport resizes, so it can keep a bar left over
 			// from the wider main row.
-			scrollBarClassName={open ? "hidden" : undefined}
+			scrollBarClassName={cn(open && "hidden", "pointer-coarse:hidden")}
 			viewportClassName={cn(
-				"transition-[padding-bottom] duration-150 motion-reduce:transition-none",
+				// Base UI sets overflow: scroll on both axes. Vertical stays off so
+				// swipes over the row scroll the page, and the row keeps horizontal
+				// swipes to itself instead of handing them to the browser's back gesture.
+				"overflow-y-hidden! overscroll-x-contain transition-[padding-bottom] duration-150 motion-reduce:transition-none",
+				"pointer-coarse:pb-0",
+				EDGE_FADE,
 				hasHorizontalOverflow && !open ? "pb-2" : "pb-0",
 			)}
 			viewportRef={viewportRef}
@@ -247,7 +288,7 @@ export function OutputModalityChipRow({
 										? !hasFamily && shownSelected.includes("audio")
 										: shownSelected.includes(option.value)
 								}
-								onClick={() => toggle(option.value)}
+								onClick={(chip) => toggle(option.value, chip)}
 								hidden={open}
 								hiddenShift={-14}
 								durationMs={MAIN_OUT_MS}
@@ -280,7 +321,7 @@ export function OutputModalityChipRow({
 							label={labelForValue("audio")}
 							Icon={iconForValue("audio")}
 							checked
-							onClick={() => toggle("audio")}
+							onClick={(chip) => toggle("audio", chip)}
 							hidden={!open}
 							hiddenShift={14}
 							durationMs={AUDIO_IN_MS}
@@ -318,7 +359,7 @@ export function OutputModalityChipRow({
 								label={labelForValue(option.value)}
 								Icon={iconForValue(option.value)}
 								checked={shownSelected.includes(option.value)}
-								onClick={() => toggle(option.value)}
+								onClick={(chip) => toggle(option.value, chip)}
 								hidden={!open}
 								hiddenShift={14}
 								durationMs={AUDIO_IN_MS}
