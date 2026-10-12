@@ -8,7 +8,7 @@ icon: "/icons/brands/openai.svg"
 
 使用本指南在生产环境中安全采用 GPT-5.6 系列。
 
-GPT-5.6 是 OpenAI 当前面向复杂生产工作流的 GPT 系列。在 AI Stats 中，固定档位 ID 对应 OpenAI 模型 ID：`gpt-5.6-sol`、`gpt-5.6-terra` 和 `gpt-5.6-luna`。
+GPT-5.6 是 OpenAI 当前面向复杂生产工作流的 GPT 系列。在 Phaseo 中，固定档位 ID 对应 OpenAI 模型 ID：`gpt-5.6-sol`、`gpt-5.6-terra` 和 `gpt-5.6-luna`。
 
 ## 迁移快速入门
 
@@ -25,9 +25,9 @@ GPT-5.6 是 OpenAI 当前面向复杂生产工作流的 GPT 系列。在 AI Stat
 | `openai/gpt-5.6-terra` | 覆盖推理、编程和助手工作流的均衡日常任务 | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 | `openai/gpt-5.6-luna` | 对延迟和成本敏感的 GPT-5.6 工作负载 | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 
-OpenAI 的 `gpt-5.6` 别名会路由到 `gpt-5.6-sol`。在 AI Stats 中，如果要使用 Sol 档位作为默认值，请使用 `openai/gpt-5.6` 或 `openai/gpt-sol-latest`；如需控制路由，则使用固定档位 ID。
+OpenAI 的 `gpt-5.6` 别名会路由到 `gpt-5.6-sol`。在 Phaseo 中，如果要使用 Sol 档位作为默认值，请使用 `openai/gpt-5.6` 或 `openai/gpt-sol-latest`；如需控制路由，则使用固定档位 ID。
 
-AI Stats 还会跟踪每个档位最新模型的档位别名：`openai/gpt-sol-latest`、`openai/gpt-terra-latest` 和 `openai/gpt-luna-latest`。受控迁移请使用固定 GPT-5.6 ID；只有在你明确希望未来的 Sol、Terra 或 Luna 版本沿用同一路由时，才使用档位别名。
+Phaseo 还会跟踪每个档位最新模型的档位别名：`openai/gpt-sol-latest`、`openai/gpt-terra-latest` 和 `openai/gpt-luna-latest`。受控迁移请使用固定 GPT-5.6 ID；只有在你明确希望未来的 Sol、Terra 或 Luna 版本沿用同一路由时，才使用档位别名。
 
 ## 新增内容
 
@@ -67,7 +67,7 @@ AI Stats 还会跟踪每个档位最新模型的档位别名：`openai/gpt-sol-l
 }
 ```
 
-如果集成仍发送 OpenAI 兼容的扁平字段，AI Stats 也会在路由支持时接受 `reasoning_effort`：
+如果集成仍发送 OpenAI 兼容的扁平字段，Phaseo 也会在路由支持时接受 `reasoning_effort`：
 
 ```json
 {
@@ -158,4 +158,4 @@ AI Stats 还会跟踪每个档位最新模型的档位别名：`openai/gpt-sol-l
 - [OpenAI GPT-5.6 模型指南](https://developers.openai.com/api/docs/guides/latest-model)
 - [OpenAI model catalog](https://developers.openai.com/api/docs/models)
 - [GPT-5.6 预览系统卡](https://deploymentsafety.openai.com/gpt-5-6-preview)
-- [AI Stats 提示缓存指南](../guides/prompt-caching.mdx)
+- [Phaseo 提示缓存指南](../guides/prompt-caching.mdx)
