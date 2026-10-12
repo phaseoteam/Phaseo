@@ -5917,5 +5917,43 @@
 		"emptyModel": "Informe pelo menos um limite para {model} ou remova-o.",
 		"stale": "Os limites de taxa foram alterados em outro lugar. Recarregue antes de salvar novamente.",
 		"saveFailed": "Não foi possível salvar os limites de taxa."
+	},
+	"modelSuccessorRouting": {
+		"title": "Roteamento de modelos aposentados",
+		"description": "Quando nenhum provedor atender um modelo por 72 horas, envie as solicitações dele para um substituto em vez de falhar. As restrições de modelos e chaves também valem para o substituto.",
+		"enable": "Rotear para modelos substitutos",
+		"enableDescription": "Desativado por padrão. A Phaseo escolhe os substitutos, a menos que você defina os seus abaixo. Um modelo gratuito nunca é substituído por um pago.",
+		"price": "Substitutos mais caros",
+		"priceDescription": "A comparação usa os preços cobrados pelos dois modelos.",
+		"priceNever": "Nunca usar um substituto mais caro",
+		"priceLimit": "Permitir até uma porcentagem a mais",
+		"priceAny": "Permitir qualquer preço",
+		"percent": "Aumento máximo de preço (%)",
+		"delayNotice": "As alterações entram em vigor em cerca de um minuto.",
+		"adminsOnly": "Somente proprietários e administradores do workspace podem alterar essas configurações.",
+		"save": "Salvar",
+		"saved": "Roteamento de modelos aposentados salvo.",
+		"replacements": "Seus próprios substitutos",
+		"replacementsDescription": "Defina seu próprio substituto para um modelo ou digite \"never\" para que as solicitações continuem falhando. Seus substitutos são usados qualquer que seja o preço.",
+		"neverRedirect": "Nunca redirecionar",
+		"noReplacements": "Nenhum substituto definido.",
+		"model": "Modelo",
+		"successor": "Substituto",
+		"modelPlaceholder": "Modelo, por ex. lab/old-model",
+		"successorPlaceholder": "Substituto, ou \"never\"",
+		"add": "Adicionar",
+		"remove": "Remover",
+		"replacementSaved": "Substituto salvo.",
+		"replacementRemoved": "Substituto removido.",
+		"errors": {
+			"forbidden": "Somente proprietários e administradores do workspace podem alterar isso.",
+			"saveFailed": "Não foi possível salvar. Tente novamente.",
+			"unknown_model": "Esse modelo não está no catálogo.",
+			"unknown_successor": "Esse substituto não está no catálogo.",
+			"successor_is_model": "Um modelo não pode substituir a si mesmo.",
+			"invalid_model": "Digite um ID de modelo como lab/model.",
+			"invalid_successor": "Digite um ID de modelo substituto ou \"never\".",
+			"too_many_replacements": "Este workspace atingiu o limite de 500 substitutos."
+		}
 	}
 }

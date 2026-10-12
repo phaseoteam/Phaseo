@@ -5917,5 +5917,43 @@
 		"emptyModel": "请为 {model} 至少输入一个限制，或将其移除。",
 		"stale": "速率限制已在其他地方更改。请重新加载后再保存。",
 		"saveFailed": "无法保存速率限制。"
+	},
+	"modelSuccessorRouting": {
+		"title": "已停用模型的路由",
+		"description": "当某个模型连续 72 小时没有任何提供商提供时，将其请求发送到替代模型，而不是直接失败。模型和密钥限制同样适用于替代模型。",
+		"enable": "路由到替代模型",
+		"enableDescription": "默认关闭。除非你在下方自行设置，否则替代模型由 Phaseo 选择。免费模型绝不会被付费模型替代。",
+		"price": "更贵的替代模型",
+		"priceDescription": "按两个模型都收费的价格进行比较。",
+		"priceNever": "绝不使用更贵的替代模型",
+		"priceLimit": "允许最多贵出一定百分比",
+		"priceAny": "允许任何价格",
+		"percent": "最大涨价幅度 (%)",
+		"delayNotice": "更改将在约一分钟内生效。",
+		"adminsOnly": "只有工作区所有者和管理员可以更改这些设置。",
+		"save": "保存",
+		"saved": "已保存已停用模型的路由设置。",
+		"replacements": "自定义替代模型",
+		"replacementsDescription": "为某个模型指定你自己的替代模型，或输入 \"never\" 让其请求继续失败。自定义替代模型不论价格都会使用。",
+		"neverRedirect": "从不重定向",
+		"noReplacements": "尚未设置替代模型。",
+		"model": "模型",
+		"successor": "替代模型",
+		"modelPlaceholder": "模型，例如 lab/old-model",
+		"successorPlaceholder": "替代模型，或 \"never\"",
+		"add": "添加",
+		"remove": "移除",
+		"replacementSaved": "已保存替代模型。",
+		"replacementRemoved": "已移除替代模型。",
+		"errors": {
+			"forbidden": "只有工作区所有者和管理员可以更改此项。",
+			"saveFailed": "无法保存，请重试。",
+			"unknown_model": "该模型不在目录中。",
+			"unknown_successor": "该替代模型不在目录中。",
+			"successor_is_model": "模型不能替代自身。",
+			"invalid_model": "请输入模型 ID，例如 lab/model。",
+			"invalid_successor": "请输入替代模型 ID，或 \"never\"。",
+			"too_many_replacements": "此工作区已达到 500 个替代模型的上限。"
+		}
 	}
 }

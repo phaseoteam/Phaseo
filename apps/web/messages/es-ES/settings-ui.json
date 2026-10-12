@@ -5917,5 +5917,43 @@
 		"emptyModel": "Introduce al menos un límite para {model} o quítalo.",
 		"stale": "Los límites de uso se han cambiado en otro lugar. Recarga antes de volver a guardar.",
 		"saveFailed": "No se han podido guardar los límites de uso."
+	},
+	"modelSuccessorRouting": {
+		"title": "Enrutamiento de modelos retirados",
+		"description": "Cuando ningún proveedor haya servido un modelo durante 72 horas, envía sus solicitudes a un sustituto en lugar de que fallen. Las restricciones de modelos y claves también se aplican al sustituto.",
+		"enable": "Enrutar a modelos sustitutos",
+		"enableDescription": "Desactivado de forma predeterminada. Phaseo elige los sustitutos salvo que definas los tuyos abajo. Un modelo gratuito nunca se sustituye por uno de pago.",
+		"price": "Sustitutos más caros",
+		"priceDescription": "Se comparan los precios que cobran ambos modelos.",
+		"priceNever": "No usar nunca un sustituto más caro",
+		"priceLimit": "Permitir hasta un porcentaje más",
+		"priceAny": "Permitir cualquier precio",
+		"percent": "Aumento de precio máximo (%)",
+		"delayNotice": "Los cambios se aplican en aproximadamente un minuto.",
+		"adminsOnly": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar estos ajustes.",
+		"save": "Guardar",
+		"saved": "Enrutamiento de modelos retirados guardado.",
+		"replacements": "Tus propios sustitutos",
+		"replacementsDescription": "Define tu propio sustituto para un modelo o escribe \"never\" para que sus solicitudes sigan fallando. Tus propios sustitutos se usan sea cual sea su precio.",
+		"neverRedirect": "No redirigir nunca",
+		"noReplacements": "No hay sustitutos definidos.",
+		"model": "Modelo",
+		"successor": "Sustituto",
+		"modelPlaceholder": "Modelo, p. ej. lab/old-model",
+		"successorPlaceholder": "Sustituto o \"never\"",
+		"add": "Añadir",
+		"remove": "Quitar",
+		"replacementSaved": "Sustituto guardado.",
+		"replacementRemoved": "Sustituto quitado.",
+		"errors": {
+			"forbidden": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar esto.",
+			"saveFailed": "No se pudo guardar. Inténtalo de nuevo.",
+			"unknown_model": "Ese modelo no está en el catálogo.",
+			"unknown_successor": "Ese sustituto no está en el catálogo.",
+			"successor_is_model": "Un modelo no puede sustituirse a sí mismo.",
+			"invalid_model": "Escribe un ID de modelo como lab/model.",
+			"invalid_successor": "Escribe un ID de modelo sustituto o \"never\".",
+			"too_many_replacements": "Este espacio de trabajo ha alcanzado el límite de 500 sustitutos."
+		}
 	}
 }

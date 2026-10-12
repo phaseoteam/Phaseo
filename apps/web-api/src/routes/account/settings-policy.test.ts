@@ -401,3 +401,105 @@ describe("account policy settings routes", () => {
 		});
 	});
 });
+
+describe("successor routing settings", () => {
+	function stub(role: string, writes: Array<{ url: string; method: string; body: unknown }>, models: string[] = ["lab/old", "lab/new"]) {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const request = input instanceof Request ? input : new Request(input, init);
+			const url = request.url;
+			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
+			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role }]), { status: 200 });
+			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "owner-1" }]), { status: 200 });
+			if (request.method !== "GET" && request.method !== "HEAD") {
+				const text = await request.text();
+				writes.push({ url, method: request.method, body: text ? JSON.parse(text) : null });
+				return new Response(null, { status: 201 });
+			}
+			if (url.includes("v2_models")) return new Response(JSON.stringify(models.map((model_slug) => ({ model_slug }))), { status: 200 });
+			if (url.includes("workspace_model_successor_overrides")) {
+				return new Response(JSON.stringify([{ model_slug: "lab/old", successor_model_slug: null, updated_at: "2026-10-12T00:00:00Z" }]), { status: 200, headers: { "content-range": "0-0/1" } });
+			}
+			if (url.includes("workspace_settings")) {
+				return new Response(JSON.stringify([{ model_successor_redirect_enabled: true, model_successor_price_policy: "limit", model_successor_max_price_increase_percent: 20 }]), { status: 200 });
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+	}
+	const send = (path: string, method: string, body: unknown) => app.request(`https://phaseo.app/api/account/settings${path}`, {
+		method,
+		headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+		body: JSON.stringify(body),
+	}, env);
+
+	it("returns the settings, replacements and whether the caller can change them", async () => {
+		stub("member", []);
+		const response = await app.request("https://phaseo.app/api/account/settings/routing/successor?workspaceId=workspace-1", { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(200);
+		expect(response.headers.get("cache-control")).toBe("private, no-store");
+		await expect(response.json()).resolves.toEqual({
+			canManage: false,
+			enabled: true,
+			pricePolicy: "limit",
+			maxPriceIncreasePercent: 20,
+			replacements: [{ model: "lab/old", successor: null, updatedAt: "2026-10-12T00:00:00Z" }],
+			workspaceId: "workspace-1",
+		});
+	});
+
+	it("lets admins save the setting and validates it", async () => {
+		const writes: Array<{ url: string; method: string; body: unknown }> = [];
+		stub("admin", writes);
+		expect((await send("/routing/successor", "PUT", { workspaceId: "workspace-1", enabled: true, pricePolicy: "limit", maxPriceIncreasePercent: 25 })).status).toBe(200);
+		expect(writes[0]?.body).toMatchObject({ workspace_id: "workspace-1", model_successor_redirect_enabled: true, model_successor_price_policy: "limit", model_successor_max_price_increase_percent: 25 });
+		expect((await send("/routing/successor", "PUT", { workspaceId: "workspace-1", enabled: true, pricePolicy: "never", maxPriceIncreasePercent: 25 })).status).toBe(200);
+		expect(writes[1]?.body).toMatchObject({ model_successor_price_policy: "never", model_successor_max_price_increase_percent: 0 });
+		for (const body of [
+			{ workspaceId: "workspace-1", enabled: "yes", pricePolicy: "never" },
+			{ workspaceId: "workspace-1", enabled: true, pricePolicy: "sometimes" },
+			{ workspaceId: "workspace-1", enabled: true, pricePolicy: "limit", maxPriceIncreasePercent: 1001 },
+			{ workspaceId: "workspace-1", enabled: true, pricePolicy: "limit", maxPriceIncreasePercent: 2.5 },
+		]) {
+			expect((await send("/routing/successor", "PUT", body)).status).toBe(400);
+		}
+		expect(writes).toHaveLength(2);
+	});
+
+	it("rejects changes from members", async () => {
+		const writes: Array<{ url: string; method: string; body: unknown }> = [];
+		stub("member", writes);
+		expect((await send("/routing/successor", "PUT", { workspaceId: "workspace-1", enabled: true, pricePolicy: "never" })).status).toBe(403);
+		expect((await send("/routing/successor/replacements", "PUT", { workspaceId: "workspace-1", model: "lab/old", successor: "lab/new" })).status).toBe(403);
+		expect((await send("/routing/successor/replacements", "DELETE", { workspaceId: "workspace-1", model: "lab/old" })).status).toBe(403);
+		expect(writes).toHaveLength(0);
+	});
+
+	it("saves, blocks and removes a workspace replacement", async () => {
+		const writes: Array<{ url: string; method: string; body: unknown }> = [];
+		stub("admin", writes);
+		expect((await send("/routing/successor/replacements", "PUT", { workspaceId: "workspace-1", model: "Lab/Old", successor: "lab/new" })).status).toBe(200);
+		expect(writes[0]?.body).toMatchObject({ workspace_id: "workspace-1", model_slug: "lab/old", successor_model_slug: "lab/new", created_by: "user-1" });
+		expect((await send("/routing/successor/replacements", "PUT", { workspaceId: "workspace-1", model: "lab/old", successor: null })).status).toBe(200);
+		expect(writes[1]?.body).toMatchObject({ model_slug: "lab/old", successor_model_slug: null });
+		expect((await send("/routing/successor/replacements", "DELETE", { workspaceId: "workspace-1", model: "lab/old" })).status).toBe(200);
+		expect(writes[2]).toMatchObject({ method: "DELETE" });
+		expect(writes[2]?.url).toContain("model_slug=eq.lab%2Fold");
+	});
+
+	it("rejects unknown or self-referencing replacements", async () => {
+		const writes: Array<{ url: string; method: string; body: unknown }> = [];
+		stub("admin", writes, ["lab/old"]);
+		const cases: Array<[unknown, string]> = [
+			[{ model: "lab/old", successor: "lab/old" }, "successor_is_model"],
+			[{ model: "lab/old", successor: "lab/missing" }, "unknown_successor"],
+			[{ model: "lab/missing", successor: null }, "unknown_model"],
+			[{ model: "not a slug", successor: null }, "invalid_model"],
+			[{ model: "lab/old" }, "invalid_successor"],
+		];
+		for (const [body, error] of cases) {
+			const response = await send("/routing/successor/replacements", "PUT", { workspaceId: "workspace-1", ...(body as object) });
+			expect(response.status).toBe(400);
+			await expect(response.json()).resolves.toMatchObject({ error });
+		}
+		expect(writes).toHaveLength(0);
+	});
+});
