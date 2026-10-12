@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
+import { IntentLink } from "@/components/navigation/IntentLink";
 import { getLocale, getTranslations } from "next-intl/server";
 import { FooterStatusIndicator } from "@/components/FooterStatusIndicator";
 import { ThemeSelector } from "@/components/theme-toggle";
@@ -145,7 +146,7 @@ async function FooterLinkList({
 					<li key={`${title}-${link.href}`}>
 						<Link
 							href={link.docs ? getLocalizedDocsHref(locale, link.href) : link.href}
-							prefetch={link.external ? undefined : false}
+							prefetch={false}
 							target={link.external ? "_blank" : undefined}
 							rel={link.external ? "noopener noreferrer" : undefined}
 							className={`group inline-flex min-h-7 max-w-full items-center break-words py-0.5 text-sm text-zinc-600 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/70 lg:min-h-0 lg:py-0 dark:text-zinc-400 dark:hover:text-zinc-50 ${link.logoId ? "lg:w-28" : ""}`}
@@ -181,7 +182,7 @@ export default async function Footer() {
 				<div className="grid grid-cols-2 items-start gap-x-4 gap-y-6 sm:gap-x-6 lg:grid-cols-5 xl:grid-cols-[minmax(0,1.25fr)_repeat(5,minmax(0,0.8fr))]">
 					<div className="col-span-2 min-w-0 lg:col-span-5 xl:col-span-1">
 						<div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
-							<Link href="/" className="inline-flex w-fit max-w-full items-center">
+							<IntentLink href="/" className="inline-flex w-fit max-w-full items-center">
 								<Image
 									src="/wordmark_light.svg"
 									alt="Phaseo"
@@ -196,7 +197,7 @@ export default async function Footer() {
 									height={40}
 									className="hidden h-7 w-[108px] dark:block"
 								/>
-							</Link>
+							</IntentLink>
 							<div className="relative order-3 top-px w-full max-w-full md:order-none md:w-auto">
 								<FooterStatusIndicator />
 							</div>
