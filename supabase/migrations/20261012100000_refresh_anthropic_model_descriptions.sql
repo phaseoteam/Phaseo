@@ -54,11 +54,10 @@ values
 select count(*) as updated_rows, 28 as expected_rows from applied;
 
 -- Claude Opus 5.5 is now confirmed by Anthropic's own docs. Record that in the
--- verification metadata, cite the docs, and put it in the Claude 5 family with
--- the other 5.x models. Provider route status is deliberately left untouched.
+-- verification metadata and cite the docs. Family assignment and provider route
+-- status are deliberately left untouched.
 update public.v2_models
-set family_slug = coalesce(family_slug, 'anthropic/claude-5'),
-    metadata = jsonb_set(
+set metadata = jsonb_set(
       jsonb_set(
         metadata,
         '{verification}',
