@@ -2530,5 +2530,13 @@
 			"requestErrorMessage": "Message d’erreur de la requête",
 			"openDetails": "Ouvrir les détails"
 		}
+	},
+	"deprecationNotice": {
+		"oneModel": "{model}, utilisé par votre espace de travail, est en cours d'abandon. Commencez à préparer votre migration.",
+		"manyModels": "{count} modèles utilisés par votre espace de travail sont en cours d'abandon. Commencez à préparer votre migration.",
+		"retiresOn": "Retrait le {date}.",
+		"replacement": "Remplacement suggéré : {replacement}.",
+		"review": "Consulter",
+		"dismiss": "Fermer"
 	}
 }

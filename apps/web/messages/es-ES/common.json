@@ -2530,5 +2530,13 @@
 			"requestErrorMessage": "Mensaje de error de la solicitud",
 			"openDetails": "Abrir detalles"
 		}
+	},
+	"deprecationNotice": {
+		"oneModel": "{model}, que usa tu espacio de trabajo, está quedando obsoleto. Empieza a planificar el cambio.",
+		"manyModels": "{count} modelos que usa tu espacio de trabajo están quedando obsoletos. Empieza a planificar el cambio.",
+		"retiresOn": "Se retira el {date}.",
+		"replacement": "Sustituto recomendado: {replacement}.",
+		"review": "Revisar",
+		"dismiss": "Cerrar"
 	}
 }

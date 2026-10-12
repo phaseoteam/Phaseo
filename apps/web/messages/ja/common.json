@@ -2530,5 +2530,13 @@
 			"requestErrorMessage": "リクエストのエラーメッセージ",
 			"openDetails": "詳細を開く"
 		}
+	},
+	"deprecationNotice": {
+		"oneModel": "ワークスペースで使用中の {model} は非推奨になります。移行の準備を始めてください。",
+		"manyModels": "ワークスペースで使用中の {count} 個のモデルが非推奨になります。移行の準備を始めてください。",
+		"retiresOn": "{date} に提供終了。",
+		"replacement": "推奨される後継モデル: {replacement}。",
+		"review": "確認する",
+		"dismiss": "閉じる"
 	}
 }
