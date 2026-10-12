@@ -221,10 +221,17 @@ function getModelPageTocItems({
 		});
 	}
 
-	return baseModelPageTocItems.filter((item) => {
+	const subscriptionOnly = showSubscriptions && !showProviders && !isPrivateModel;
+	const orderedItems = subscriptionOnly
+		? [
+			...baseModelPageTocItems.filter((item) => item.id === "subscriptions"),
+			...baseModelPageTocItems.filter((item) => item.id !== "subscriptions"),
+		]
+		: baseModelPageTocItems;
+	return orderedItems.filter((item) => {
 		if (item.id === "providers") return showProviders;
 		if (
-			!isGatewayActive &&
+			(!isGatewayActive || subscriptionOnly) &&
 			["performance", "pricing", "activity", "apps", "uptime"].includes(item.id)
 		) {
 			return false;
@@ -385,15 +392,17 @@ async function ModelDetailPageBody({
 	const privatePerformance = isPrivateModel ? await fetchPrivateModelPerformance(modelId) : null;
 	const showBenchmarks = benchmarkHighlights.length > 0;
 	const showSubscriptions = subscriptionPlans.length > 0;
-	const isGatewayActive = isPrivateModel
-		? true
-		: availability?.isGatewayActive ?? true;
 	const showProviders =
 		modelOverview.status === "Announced" ||
 		(availability?.activeProviderCount ?? 0) > 0 ||
 		(effectiveGatewayMetadata?.providers.length ?? 0) > 0 ||
 		pricingProviders.some((provider) => provider.provider_models.length > 0) ||
 		providerPreviews.length > 0;
+	const isGatewayActive = isPrivateModel
+		? true
+		: showSubscriptions && !showProviders
+		? false
+		: availability?.isGatewayActive ?? true;
 	const resolvedPerformancePromise = isPrivateModel
 		? Promise.resolve(privateModelPerformanceMetrics(modelOverview, privatePerformance))
 		: isGatewayActive

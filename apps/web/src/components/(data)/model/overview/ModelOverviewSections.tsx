@@ -1378,6 +1378,7 @@ export default async function ModelOverviewSections({
 }: ModelOverviewSectionsProps) {
 	const t = await getTranslations("Catalogue.models.detail");
 	const tOverview = await getTranslations("Catalogue.modelDetail.overview");
+	const subscriptionOnly = showSubscriptions && !showProviders && !isPrivateModel;
 	const hasInternalModelData = Boolean(model);
 	const isRetired = status === "Retired";
 	const showVerification = supportsProvenanceVerification(model?.output_types);
@@ -1445,9 +1446,25 @@ export default async function ModelOverviewSections({
 		);
 	}
 
-	if (!isGatewayActive && !includeHidden) {
+	if (subscriptionOnly || (!isGatewayActive && !includeHidden)) {
 		return (
 			<div className={MODEL_SECTION_STACK_CLASSNAME}>
+				{subscriptionOnly ? (
+					<Section id="subscriptions">
+						<SectionHeader
+							title={t("navigation.subscriptions")}
+							description={t("sections.subscriptionsDescription")}
+						/>
+						<Suspense fallback={<SubscriptionsSectionSkeleton />}>
+							<ModelSubscriptionsSection
+								includeHidden={includeHidden}
+								modelId={modelId}
+								ownerOrganisationId={model?.organisation_id}
+								ownerOrganisationName={model?.organisation?.name}
+							/>
+						</Suspense>
+					</Section>
+				) : null}
 				{showProviders ? (
 					<Section id="providers">
 						<Suspense fallback={<ProvidersSectionSkeleton />}>
@@ -1501,7 +1518,7 @@ export default async function ModelOverviewSections({
 								<ProviderCatalogPreviewDetailsSection previews={previewOffers} />
 							</Section>
 						) : null}
-						{showSubscriptions ? (
+						{showSubscriptions && !subscriptionOnly ? (
 							<Section id="subscriptions">
 								<SectionHeader
 									title={t("navigation.subscriptions")}
