@@ -2251,6 +2251,7 @@
 		"Instructions": "Instructions",
 		"Categories (JSON)": "Catégories (URL)",
 		"Enable model deprecation alerts": "Activer les alertes de dépréciation de modèle",
+		"Also email admins": "Envoyer aussi un e-mail aux administrateurs",
 		"Could not save alert": "Impossible d'enregistrer l'alerte",
 		"Send test": "Envoyer le test",
 		"Delete {name}": "Supprimer {name}",

@@ -2251,6 +2251,7 @@
 		"Instructions": "Instruções",
 		"Categories (JSON)": "Categorias (JSON)",
 		"Enable model deprecation alerts": "Ativar alertas de descontinuação de modelos",
+		"Also email admins": "Também enviar e-mail aos administradores",
 		"Could not save alert": "Não foi possível salvar o alerta",
 		"Send test": "Enviar teste",
 		"Delete {name}": "Excluir {name}",

@@ -33,7 +33,7 @@ type DestinationType = NotificationDestination["type"];
 type NotificationTestKind = "notification_test" | "model_deprecation";
 type LocalizedProvider = (typeof providers)[number] & { description: string; field: string };
 
-export default function NotificationDestinationsClient({ initialDestinations, initialModelDeprecationEnabled, initialNotificationRoutes }: { initialDestinations: NotificationDestination[]; initialModelDeprecationEnabled: boolean; initialNotificationRoutes: Partial<Record<NotificationEventKind, string[]>> }) {
+export default function NotificationDestinationsClient({ initialDestinations, initialModelDeprecationEnabled, initialModelDeprecationIncludeAdmins, initialNotificationRoutes }: { initialDestinations: NotificationDestination[]; initialModelDeprecationEnabled: boolean; initialModelDeprecationIncludeAdmins: boolean; initialNotificationRoutes: Partial<Record<NotificationEventKind, string[]>> }) {
 	const write = useSettingsWrite();
 	const t = useTranslations("SettingsUI");
 	const localizedProviders = providers.map((provider) => {
@@ -49,6 +49,7 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 	const s = (key: string, values?: Record<string, string>) => (t as unknown as (messageKey: string, messageValues?: Record<string, string>) => string)(settingsStringKey(key), values);
 	const [destinations, setDestinations] = React.useState(initialDestinations ?? []);
 	const [modelDeprecationEnabled, setModelDeprecationEnabled] = React.useState(initialModelDeprecationEnabled);
+	const [modelDeprecationIncludeAdmins, setModelDeprecationIncludeAdmins] = React.useState(initialModelDeprecationIncludeAdmins);
 	const [open, setOpen] = React.useState(false);
 	const [selectedTypes, setSelectedTypes] = React.useState<DestinationType[]>([]);
 	const [name, setName] = React.useState("");
@@ -125,6 +126,10 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 							toast.promise(write(setBillingNotificationPreference({ preference: "modelDeprecationAlerts", enabled: next })), { loading: `${s("Saving")}…`, success: s("Saved"), error: s("Could not save alert") });
 						}} /></div>
 					</div>
+					{modelDeprecationEnabled ? <div className="mt-3 flex items-center justify-between gap-3 border-t pt-3"><Label htmlFor="model-deprecation-include-admins" className="text-sm font-normal text-muted-foreground">{s("Also email admins")}</Label><Switch id="model-deprecation-include-admins" checked={modelDeprecationIncludeAdmins} onCheckedChange={(checked) => {
+						const next = Boolean(checked); setModelDeprecationIncludeAdmins(next);
+						toast.promise(write(setBillingNotificationPreference({ preference: "modelDeprecationAlertsIncludeAdmins", enabled: next })), { loading: `${s("Saving")}…`, success: s("Saved"), error: s("Could not save alert") });
+					}} /></div> : null}
 				</div>
 			</section>
 

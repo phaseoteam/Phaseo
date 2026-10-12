@@ -2251,6 +2251,7 @@
 		"Instructions": "指示",
 		"Categories (JSON)": "カテゴリ（JSON）",
 		"Enable model deprecation alerts": "モデル非推奨アラートを有効にする",
+		"Also email admins": "管理者にもメールで通知",
 		"Could not save alert": "アラートを保存できませんでした",
 		"Send test": "テストを送信",
 		"Delete {name}": "{name}を削除",

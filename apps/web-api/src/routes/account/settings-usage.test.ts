@@ -255,8 +255,7 @@ describe("account usage settings routes", () => {
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
-			if (url.includes("/rpc/get_workspace_model_last_used")) return new Response(JSON.stringify([{ model_id: "gpt-old-api", last_used_at: new Date().toISOString() }]), { status: 200 });
-			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([{ api_model_id: "gpt-old-api", provider_api_model_id: "provider-model-1", internal_model_id: "openai/gpt-old" }]), { status: 200 });
+			if (url.includes("/rpc/get_requested_model_last_used_by_workspace")) return new Response(JSON.stringify([{ workspace_id: "workspace-1", model_slug: "openai/gpt-old", last_used_at: new Date().toISOString() }]), { status: 200 });
 			if (url.includes("v2_models") && url.includes("previous_model_slug=in")) return new Response(JSON.stringify([{ model_id: "openai/gpt-new", previous_model_id: "openai/gpt-old" }]), { status: 200 });
 			if (url.includes("v2_models")) return new Response(JSON.stringify([{ model_id: "openai/gpt-old", name: "GPT Old", organisation_id: "openai", deprecation_date: null, retirement_date: retirementDate, previous_model_id: null, replacement_model_id: null, metadata: { replacement_model_id: "openai/gpt-legacy-successor" } }]), { status: 200 });
 			return new Response(JSON.stringify([]), { status: 200 });

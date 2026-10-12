@@ -2251,6 +2251,7 @@
 		"Instructions": "التعليمات",
 		"Categories (JSON)": "الفئات (JSON)",
 		"Enable model deprecation alerts": "تفعيل تنبيهات إيقاف النماذج",
+		"Also email admins": "إرسال بريد إلكتروني إلى المسؤولين أيضًا",
 		"Could not save alert": "تعذّر حفظ التنبيه",
 		"Send test": "اختبار إرسال",
 		"Delete {name}": "حذف {name}",

@@ -6,9 +6,10 @@ import { getModelDeprecationContent, getModelDeprecationTemplateVariables, rende
 
 const DELIVERABLE_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "notification_test"];
 const EVENT_PAGE_SIZE = 100;
-const WORKSPACE_PAGE_SIZE = 500;
+const WORKSPACE_ID_CHUNK_SIZE = 200;
+const MODEL_DEPRECATION_USAGE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const DELIVERY_TIMEOUT_MS = 60_000;
-const MODEL_DEPRECATION_LEAD_TIME_MS = 7 * 24 * 60 * 60 * 1000;
+const SAMPLE_DEPRECATION_LEAD_TIME_MS = 7 * 24 * 60 * 60 * 1000;
 export type NotificationTestKind = "notification_test" | "model_deprecation";
 
 function configuredModelDeprecationTemplateId(): string {
@@ -19,14 +20,11 @@ function configuredModelDeprecationTemplateId(): string {
 	}
 }
 
-export function shouldNotifyModelDeprecation(
-	model: { status?: unknown; deprecated_at?: unknown },
-	now = new Date(),
-): boolean {
-	const deprecationTimestamp = model.deprecated_at ? Date.parse(String(model.deprecated_at)) : Number.NaN;
-	const isDeprecated = String(model.status ?? "").toLowerCase() === "deprecated" || (Number.isFinite(deprecationTimestamp) && deprecationTimestamp <= now.getTime());
-	const isWithinLeadTime = Number.isFinite(deprecationTimestamp) && deprecationTimestamp <= now.getTime() + MODEL_DEPRECATION_LEAD_TIME_MS;
-	return isDeprecated || isWithinLeadTime;
+// A workspace hears about a deprecation once, as soon as the model is marked: a
+// deprecated or retired status, or an announced deprecation or retirement date.
+export function shouldNotifyModelDeprecation(model: { status?: unknown; deprecated_at?: unknown; retired_at?: unknown }): boolean {
+	const status = String(model.status ?? "").toLowerCase();
+	return status === "deprecated" || status === "retired" || Boolean(model.deprecated_at) || Boolean(model.retired_at);
 }
 
 type EventRow = { id: string; kind: string; subject: string | null; workspace_id: string; payload: Record<string, unknown> | null; created_at: string };
@@ -138,7 +136,7 @@ export async function deliverNotificationTest(input: {
 			? {
 				model_id: "openai/gpt-5.6-sol",
 				model_name: "GPT 5.6 Sol",
-				deprecation_date: new Date(Date.now() + MODEL_DEPRECATION_LEAD_TIME_MS).toISOString(),
+				deprecation_date: new Date(Date.now() + SAMPLE_DEPRECATION_LEAD_TIME_MS).toISOString(),
 				retirement_date: new Date(Date.now() + 37 * 24 * 60 * 60 * 1000).toISOString(),
 				replacement_model_id: "openai/gpt-5.6-terra",
 				replacement_model_name: "GPT 5.6 Terra",
@@ -232,53 +230,116 @@ export async function runNotificationDeliveryJob(limit = 25): Promise<{ queued: 
 	return { queued, sent, failed };
 }
 
+type DeprecatedModelRow = { model_slug: string; name: string | null; status: string | null; deprecated_at: string | null; retired_at: string | null; replacement_model_slug: string | null };
+
+function chunk<T>(values: T[], size: number): T[][] {
+	const chunks: T[][] = [];
+	for (let index = 0; index < values.length; index += size) chunks.push(values.slice(index, index + size));
+	return chunks;
+}
+
 export async function enqueueModelDeprecationNotifications(now = new Date()): Promise<{ workspaces: number; enqueued: number }> {
 	const supabase = getSupabaseAdmin();
-	let enqueued = 0;
-	let workspaces = 0;
-	workspaces = await forEachPage(WORKSPACE_PAGE_SIZE, async (from, to) => {
-		const settingsResult = await supabase.from("workspace_settings").select("workspace_id").eq("model_deprecation_alerts_enabled", true).order("workspace_id", { ascending: true }).range(from, to);
+	const modelsResult = await supabase.from("v2_models").select("model_slug,name,status,deprecated_at,retired_at,replacement_model_slug").or("status.in.(deprecated,retired),deprecated_at.not.is.null,retired_at.not.is.null");
+	if (modelsResult.error) throw new Error(`model_deprecation_models_fetch_failed:${modelsResult.error.message}`);
+	const models = new Map<string, DeprecatedModelRow>();
+	for (const model of (modelsResult.data ?? []) as DeprecatedModelRow[]) {
+		if (model.model_slug && shouldNotifyModelDeprecation(model)) models.set(model.model_slug, model);
+	}
+	if (!models.size) return { workspaces: 0, enqueued: 0 };
+
+	// Start from the deprecated models rather than each workspace's history: few
+	// deprecated models are still called, so this stays a narrow index scan.
+	const usage = await supabase.rpc("get_requested_model_last_used_by_workspace", {
+		p_model_slugs: [...models.keys()],
+		p_since: new Date(now.getTime() - MODEL_DEPRECATION_USAGE_WINDOW_MS).toISOString(),
+	});
+	if (usage.error) throw new Error(`model_deprecation_usage_fetch_failed:${usage.error.message}`);
+	const modelsByWorkspace = new Map<string, Set<string>>();
+	for (const row of (usage.data ?? []) as Array<{ workspace_id: string; model_slug: string }>) {
+		if (!row.workspace_id || !models.has(row.model_slug)) continue;
+		const slugs = modelsByWorkspace.get(row.workspace_id) ?? new Set<string>();
+		slugs.add(row.model_slug);
+		modelsByWorkspace.set(row.workspace_id, slugs);
+	}
+	if (!modelsByWorkspace.size) return { workspaces: 0, enqueued: 0 };
+
+	const includeAdminsByWorkspace = new Map<string, boolean>();
+	for (const workspaceIds of chunk([...modelsByWorkspace.keys()], WORKSPACE_ID_CHUNK_SIZE)) {
+		const settingsResult = await supabase.from("workspace_settings").select("workspace_id,model_deprecation_alerts_include_admins").eq("model_deprecation_alerts_enabled", true).in("workspace_id", workspaceIds);
 		if (settingsResult.error) throw new Error(`model_deprecation_settings_fetch_failed:${settingsResult.error.message}`);
-		return settingsResult.data ?? [];
-	}, async (settings) => {
-		const workspaceId = String(settings.workspace_id);
-		const usage = await supabase.rpc("get_workspace_model_last_used", {
-			p_workspace_id: workspaceId,
-			p_since: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-		});
-		if (usage.error) return;
-		const modelIds = (usage.data ?? []).map((row) => String(row.model_id ?? "").trim()).filter(Boolean);
-		if (!modelIds.length) return;
-		const models = await supabase.from("v2_models").select("model_slug,name,status,deprecated_at,retired_at,replacement_model_slug").in("model_slug", modelIds);
-		if (models.error) return;
-		const replacementIds = [...new Set((models.data ?? []).map((model) => String(model.replacement_model_slug ?? "").trim()).filter(Boolean))];
-		const replacements = replacementIds.length
-			? await supabase.from("v2_models").select("model_slug,name").in("model_slug", replacementIds)
-			: { data: [], error: null };
-		const replacementNames = new Map<string, string>();
+		for (const settings of settingsResult.data ?? []) includeAdminsByWorkspace.set(String(settings.workspace_id), settings.model_deprecation_alerts_include_admins === true);
+	}
+	if (!includeAdminsByWorkspace.size) return { workspaces: 0, enqueued: 0 };
+
+	const replacementIds = [...new Set([...models.values()].map((model) => String(model.replacement_model_slug ?? "").trim()).filter(Boolean))];
+	const replacementNames = new Map<string, string>();
+	if (replacementIds.length) {
+		const replacements = await supabase.from("v2_models").select("model_slug,name").in("model_slug", replacementIds);
+		if (replacements.error) throw new Error(`model_deprecation_replacements_fetch_failed:${replacements.error.message}`);
 		for (const replacement of replacements.data ?? []) {
 			if (replacement.model_slug && replacement.name) replacementNames.set(String(replacement.model_slug), String(replacement.name));
 		}
+	}
+
+	const emailCache = new Map<string, string>();
+	const emailFor = async (userId: string): Promise<string> => {
+		if (!emailCache.has(userId)) {
+			const user = await (supabase as any).auth.admin.getUserById(userId).catch(() => null);
+			emailCache.set(userId, String(user?.data?.user?.email ?? "").trim());
+		}
+		return emailCache.get(userId) ?? "";
+	};
+
+	let enqueued = 0;
+	for (const [workspaceId, includeAdmins] of includeAdminsByWorkspace) {
 		const workspace = await supabase.from("workspaces").select("name,owner_user_id").eq("id", workspaceId).maybeSingle();
-		if (workspace.error || !workspace.data?.owner_user_id) return;
-		const user = await (supabase as any).auth.admin.getUserById(workspace.data.owner_user_id).catch(() => null);
-		const email = String(user?.data?.user?.email ?? "").trim();
-		if (!email) return;
-		for (const model of models.data ?? []) {
-			if (!shouldNotifyModelDeprecation(model, now)) continue;
+		if (workspace.error) throw new Error(`model_deprecation_workspace_fetch_failed:${workspace.error.message}`);
+		const ownerUserId = workspace.data?.owner_user_id ? String(workspace.data.owner_user_id) : "";
+		if (!ownerUserId) continue;
+		const recipientUserIds = [ownerUserId];
+		if (includeAdmins) {
+			const admins = await supabase.from("workspace_members").select("user_id").eq("workspace_id", workspaceId).eq("role", "admin");
+			if (admins.error) throw new Error(`model_deprecation_admins_fetch_failed:${admins.error.message}`);
+			for (const admin of admins.data ?? []) {
+				const userId = String(admin.user_id ?? "");
+				if (userId && !recipientUserIds.includes(userId)) recipientUserIds.push(userId);
+			}
+		}
+		const recipients: Array<{ userId: string; email: string }> = [];
+		for (const userId of recipientUserIds) {
+			const email = await emailFor(userId);
+			if (email) recipients.push({ userId, email });
+		}
+		const ownerEmail = recipients.find((recipient) => recipient.userId === ownerUserId)?.email;
+		if (!ownerEmail) continue;
+
+		for (const modelSlug of modelsByWorkspace.get(workspaceId) ?? []) {
+			const model = models.get(modelSlug);
+			if (!model) continue;
 			const replacementModelId = String(model.replacement_model_slug ?? "").trim() || null;
+			const replacementModelName = replacementModelId ? replacementNames.get(replacementModelId) ?? null : null;
 			const content = getModelDeprecationContent({
 				model_id: model.model_slug,
 				model_name: model.name ?? model.model_slug,
 				deprecation_date: model.deprecated_at,
 				retirement_date: model.retired_at,
 				replacement_model_id: replacementModelId,
-				replacement_model_name: replacementModelId ? replacementNames.get(replacementModelId) : null,
+				replacement_model_name: replacementModelName,
 			}, now);
-			const dedupeKey = `model_deprecation:${workspaceId}:${model.model_slug}:${String(model.deprecated_at ?? model.status ?? "deprecated")}`.slice(0, 500);
-			const inserted = await supabase.from("email_outbox").upsert({ dedupe_key: dedupeKey, kind: "model_deprecation", template: "model_deprecation", to_email: email, subject: content.title, workspace_id: workspaceId, user_id: workspace.data.owner_user_id, payload: { workspace_name: workspace.data.name ?? "your workspace", model_id: model.model_slug, model_name: model.name ?? model.model_slug, deprecation_date: model.deprecated_at, retirement_date: model.retired_at, replacement_model_id: replacementModelId, replacement_model_name: replacementModelId ? replacementNames.get(replacementModelId) ?? null : null, title: content.title } }, { onConflict: "dedupe_key", ignoreDuplicates: true });
-			if (!inserted.error) enqueued += 1;
+			const payload = { workspace_name: workspace.data?.name ?? "your workspace", model_id: model.model_slug, model_name: model.name ?? model.model_slug, deprecation_date: model.deprecated_at, retirement_date: model.retired_at, replacement_model_id: replacementModelId, replacement_model_name: replacementModelName, title: content.title };
+			// One notice per workspace and model, ever: a later date change does not resend it.
+			const dedupeKey = `model_deprecation:${workspaceId}:${model.model_slug}`.slice(0, 450);
+			// The model_deprecation row fans out to the workspace's routed destinations;
+			// the model_deprecation_email rows are the owner (and admin) emails.
+			const rows = [
+				{ dedupe_key: dedupeKey, kind: "model_deprecation", template: "model_deprecation", to_email: ownerEmail, subject: content.title, workspace_id: workspaceId, user_id: ownerUserId, payload },
+				...recipients.map((recipient) => ({ dedupe_key: `${dedupeKey}:email:${recipient.userId}`, kind: "model_deprecation_email", template: "model_deprecation", to_email: recipient.email, subject: content.title, workspace_id: workspaceId, user_id: recipient.userId, payload })),
+			];
+			const inserted = await supabase.from("email_outbox").upsert(rows, { onConflict: "dedupe_key", ignoreDuplicates: true }).select("dedupe_key");
+			if (inserted.error) throw new Error(`model_deprecation_enqueue_failed:${inserted.error.message}`);
+			if ((inserted.data ?? []).some((row) => row.dedupe_key === dedupeKey)) enqueued += 1;
 		}
-	});
-	return { workspaces, enqueued };
+	}
+	return { workspaces: includeAdminsByWorkspace.size, enqueued };
 }
