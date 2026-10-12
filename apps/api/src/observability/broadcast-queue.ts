@@ -19,8 +19,11 @@ const MAX_OTLP_REQUEST_BYTES = 3 * 1024 * 1024;
 // Cloudflare caps one sendBatch call at 256 KB and 100 messages.
 const MAX_REQUEUE_BATCH_BYTES = 200_000;
 const MAX_REQUEUE_BATCH_MESSAGES = 100;
-// Used when receipts or destinations could not be loaded, so nothing was attempted.
-const SETUP_FAILURE_RETRY_SECONDS = 30;
+// Retries after a failure that stopped delivery from being attempted, such as
+// Supabase or R2 being unavailable, back off by 30 seconds per attempt up to 15
+// minutes. With the consumer's max_retries of 100 a message waits out roughly 20
+// hours of outage before the queue deletes it.
+const setupRetrySeconds = (message: QueuedMessage) => Math.min(30 * Math.max(1, message.attempts), 900);
 
 type Outcome = Awaited<ReturnType<typeof deliverGatewayOtlpPayload>>;
 type QueuedDestination = Destination & { enabled: boolean };
@@ -255,7 +258,7 @@ export async function processBroadcastQueueBatch(batch: MessageBatch<unknown>): 
 		destinations = await loadDestinations([...new Set(messages.flatMap((message) => message.body.destinationIds))]);
 	} catch (error) {
 		console.error("broadcast_queue_batch_setup_failed", { error: errorMessage(error) });
-		for (const message of messages) message.retry({ delaySeconds: SETUP_FAILURE_RETRY_SECONDS });
+		for (const message of messages) message.retry({ delaySeconds: setupRetrySeconds(message) });
 		return summary;
 	}
 
@@ -281,7 +284,7 @@ export async function processBroadcastQueueBatch(batch: MessageBatch<unknown>): 
 				}
 			} catch (error) {
 				console.error("broadcast_queue_spill_load_failed", { eventId: message.body.eventId, error: errorMessage(error) });
-				message.retry();
+				message.retry({ delaySeconds: setupRetrySeconds(message) });
 			}
 		}
 		if (!events.length) continue;

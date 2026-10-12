@@ -137,8 +137,10 @@ queue = "phaseo-broadcast"
 queue = "phaseo-broadcast"
 max_batch_size = 100
 max_batch_timeout = 5
-# Only for batches that throw; delivery failures are requeued by the handler.
-max_retries = 5
+# Counts the handler's own retries after Supabase or R2 failures, which back off
+# up to 15 minutes, as well as batches that throw. Delivery failures are requeued
+# as new messages and do not count. 100 is the maximum.
+max_retries = 100
 
 # Native per-location Workers rate limiting. Application-level device polling
 # checks remain authoritative because these counters are intentionally approximate.
