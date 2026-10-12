@@ -8,7 +8,9 @@ description: "Gestión programática de barreras de protección para espacios de
 La gestión de barreras de protección requiere una clave de API de gestión. Las operaciones de lectura requieren `guardrails:read`; las modificaciones requieren `guardrails:write` o `guardrails:delete`.
 </Info>
 
-Usa las barreras de protección para aplicar controles de privacidad, restricciones de proveedores y modelos, tratamiento de inyecciones de instrucciones, políticas de información confidencial y límites de solicitudes o costes. Puedes asignar una barrera a claves de API, miembros del espacio de trabajo o ambos.
+Usa las salvaguardas para aplicar controles de privacidad, restricciones de proveedores y modelos, gestión de inyección de prompts y políticas de información sensible. Una salvaguarda puede asignarse a claves API, a miembros del espacio de trabajo o a ambos.
+
+Las salvaguardas no aplican límites de solicitudes ni de gasto. La entrada `budgets` y los campos `*_limit_requests` y `*_limit_cost_nanos` se aceptan y se devuelven por compatibilidad, pero no tienen ningún efecto. Usa en su lugar los [límites de la clave API](./keys-update.mdx) o los [presupuestos del espacio de trabajo](./budgets-list.mdx).
 
 Las modificaciones correctas actualizan el estado de las políticas del espacio de trabajo y aparecen en su registro de auditoría.
 

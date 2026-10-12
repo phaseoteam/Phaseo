@@ -4,7 +4,7 @@ icon: "shield-check"
 description: "Aplica guardrails a claves de API, prueba su aplicación antes del despliegue y verifica bloqueos, redacciones y alertas en la actividad."
 ---
 
-Usa esta guía cuando necesites proteger una o varias claves de API con límites de presupuesto, restricciones de enrutamiento, comprobaciones de inyección de prompts o controles de información sensible.
+Usa esta receta cuando necesites proteger una o varias claves API con restricciones de enrutamiento, comprobaciones de inyección de prompts o tratamiento de información sensible.
 
 ## 1. Crea el guardrail en el espacio de trabajo
 
@@ -26,13 +26,14 @@ Sigue este orden:
 2. cuando sea posible, asocia un solo guardrail cada vez
 3. confirma que el cuadro de detalles de la clave muestra el guardrail aplicado
 
-## 3. Configura la política de presupuesto y las restricciones de enrutamiento
+## 3. Configura las restricciones de enrutamiento
 
 Una combinación habitual incluye:
 
-- un límite de coste diario
 - una lista de proveedores bloqueados para proveedores de poca confianza
 - una lista de modelos permitidos con los modelos de producción exactos que deben seguir disponibles para el enrutamiento
+
+Las salvaguardas no aplican límites de gasto. Para limitar el gasto, define un límite en la propia clave API o crea un [presupuesto del espacio de trabajo](../api-reference/endpoint/budgets-list.mdx).
 
 Usa la vista previa en tiempo real del editor de guardrails para comprobar:
 

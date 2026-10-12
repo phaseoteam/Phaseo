@@ -4,7 +4,7 @@ icon: "shield-check"
 description: "Apply guardrails to API keys, test enforcement before rollout, and verify blocks, redactions, and flags from activity views."
 ---
 
-Use this recipe when you need to protect one or more API keys with budget limits, routing restrictions, prompt-injection checks, or sensitive-info handling.
+Use this recipe when you need to protect one or more API keys with routing restrictions, prompt-injection checks, or sensitive-info handling.
 
 ## 1. Create the guardrail under the workspace
 
@@ -26,13 +26,14 @@ Use this sequence:
 2. attach one guardrail at a time when possible
 3. confirm the key detail dialog shows the applied guardrail
 
-## 3. Set budget policy and routing restrictions
+## 3. Set routing restrictions
 
 Common combination:
 
-- daily cost limit
 - provider blocklist for low-trust providers
 - model allowlist for the exact production models that should remain routable
+
+Guardrails do not enforce spend limits. To cap spend, set a limit on the API key itself or create a [workspace budget](../api-reference/endpoint/budgets-list.mdx).
 
 Use the live preview in the guardrail editor to verify:
 
