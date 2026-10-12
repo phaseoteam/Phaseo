@@ -20,13 +20,13 @@ Harness web interface से Phaseo models और routing उपयोग कर
 
 ```bash
 phaseo login
-phaseo dsh
+phaseo deepseek-harness
 ```
 
 CLI `$DSH_HOME/cordis.patch.yml` में अन्य entries सुरक्षित रखती है और Phaseo block को mark करती है, ताकि केवल managed settings बदली या हटाई जाएँ। यह Chat Completions-संगत सभी active Phaseo text models sync करती है। ज़रूरत हो तो अलग default model दें:
 
 ```bash
-phaseo dsh --model YOUR_PHASEO_MODEL_ID
+phaseo deepseek-harness --model YOUR_PHASEO_MODEL_ID
 ```
 
 Setup `Phaseo CLI: DeepSeek Harness API Key` नाम की बिना expiry वाली Gateway key बनाकर Harness के protected `$DSH_HOME/.credentials.yaml` store में लिखती है। केवल चुना model configure करने के लिए `--catalog default` उपयोग करें।

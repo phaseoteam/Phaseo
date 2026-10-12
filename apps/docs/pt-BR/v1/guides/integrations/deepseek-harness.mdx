@@ -20,13 +20,13 @@ Configure o provedor, a URL base, o protocolo, o catálogo de modelos e o modelo
 
 ```bash
 phaseo login
-phaseo dsh
+phaseo deepseek-harness
 ```
 
 A CLI preserva entradas que não são do Phaseo em `$DSH_HOME/cordis.patch.yml` e marca o bloco do Phaseo para atualizar ou remover apenas as configurações que administra. Ela sincroniza todos os modelos de texto ativos do Phaseo compatíveis com Chat Completions. Se necessário, use outro modelo padrão:
 
 ```bash
-phaseo dsh --model YOUR_PHASEO_MODEL_ID
+phaseo deepseek-harness --model YOUR_PHASEO_MODEL_ID
 ```
 
 A configuração também cria uma chave do Gateway sem expiração chamada `Phaseo CLI: DeepSeek Harness API Key` e a grava diretamente no armazenamento protegido do Harness em `$DSH_HOME/.credentials.yaml`. Use `--catalog default` para configurar somente o modelo selecionado.
