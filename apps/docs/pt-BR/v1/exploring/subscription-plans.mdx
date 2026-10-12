@@ -1,34 +1,50 @@
 ---
 title: "Planos de assinatura"
-description: "Visão geral dos planos e níveis de assinatura oferecidos por provedores de API e de como eles afetam o acesso e os preços."
-sidebarTitle: "Planos dos provedores"
+description: "Escolha acesso gratuito, uso de modelos pago por consumo, BYOK ou um complemento Enterprise para o workspace."
+sidebarTitle: "Planos"
 icon: "tags"
 ---
 
-## Planos de assinatura
+A Phaseo oferece acesso gratuito e uso de modelos pago por consumo. Equipes que precisam de controles de identidade e diretório podem adicionar uma assinatura mensal Enterprise separada. Todos os preços abaixo estão em USD.
 
-Esta página explica os planos e níveis de assinatura comuns que você pode encontrar ao usar provedores de API listados no Phaseo. Ela aborda limites típicos, frequência de cobrança e como os recursos do plano afetam o acesso aos modelos e os preços.
+## Escolha como usar a Phaseo
 
----
+| Opção | Cobranças da Phaseo | O que inclui |
+| --- | --- | --- |
+| Acesso gratuito | Sem assinatura ou recarga para modelos gratuitos compatíveis | Uso de modelos gratuitos, dados públicos do catálogo, SDKs e integrações |
+| Pay As You Go | Uso aos preços do catálogo, mais taxa de 5% na compra de créditos (mínimo de $1) | Solicitações a modelos pagos com créditos pré-pagos do workspace |
+| Sua própria chave (BYOK) | Quando o uso mensal está disponível, as primeiras 250,000 solicitações concluídas por workspace em cada mês do calendário UTC não têm taxa de serviço da Phaseo; depois, 2.5% do custo equivalente do provedor. Se o contador mensal e a leitura alternativa estiverem indisponíveis, essa solicitação paga a taxa de 2.5% | Roteamento e observabilidade da Phaseo com suas credenciais; o provedor cobra o uso do modelo diretamente |
+| Self Serve Enterprise | Assinatura mensal do workspace a partir de $29, mais uso de modelos e taxas de compra de créditos | SSO, SCIM, gerenciamento de diretório, departamentos e suporte prioritário por e-mail |
 
-### O que os planos de assinatura incluem
+Pay As You Go não exige assinatura mensal, contrato ou gasto mínimo mensal. A taxa se aplica à compra de créditos; depois, as solicitações gerenciadas consomem esses créditos aos preços publicados dos modelos.
 
--   Limites de taxa (solicitações por minuto ou por dia)
--   Franquia incluída de computação ou tokens
--   Acesso a modelos ou recursos premium (por exemplo, modo JSON e endpoints dedicados)
--   SLAs de suporte e termos comerciais
+O acesso a modelos gratuitos está sujeito a cotas. O limite padrão do Gateway é de 25 solicitações por minuto móvel por usuário e workspace, mais 1,500 solicitações a modelos gratuitos por dia UTC. As cotas do provedor também se aplicam. Consulte [Limites de requisições](../api-reference/limits.mdx) para detalhes de escopo e novas tentativas.
 
-### Níveis comuns
+Para configurar BYOK e entender sua cobrança, consulte [Roteamento e alternativas](../guides/routing-and-fallbacks.mdx). Uma solicitação BYOK sem taxa da Phaseo ainda pode gerar cobranças de uso do provedor.
 
-Veja a seguir exemplos de níveis comuns; os nomes e recursos exatos variam conforme o provedor:
+## Preços do Enterprise por membros
 
--   Gratuito / avaliação: uso limitado, limites de taxa menores e sem SLA
--   Desenvolvedor / hobby: mensalidade baixa e limites moderados para prototipagem
--   Empresa / equipe: limites maiores, assentos para a equipe e suporte prioritário
--   Empresarial: limites personalizados, suporte dedicado e SLAs contratuais
+A assinatura inicial inclui até 100 membros do workspace, inclusive para equipes menores. Capacidades maiores têm preço baseado no número de membros; estes são preços de referência, não níveis com recursos diferentes:
 
----
+| Membros incluídos | Assinatura mensal |
+| ---: | ---: |
+| 100 | $29 |
+| 1,000 | $79 |
+| 10,000 | $299 |
+| 25,000 | $599 |
+| 50,000 | $1,099 |
+| 100,000 | $1,999 |
 
-Para ver preços detalhados por modelo e comparar o custo por token, consulte a página [Preços e desempenho](./pricing-performance.mdx).
+Abra [Preços](https://phaseo.app/pricing) para escolher uma capacidade e ver a cotação para sua quantidade de membros. A disponibilidade do autoatendimento depende da liberação para seu workspace. Procure a [Central de ajuda](https://phaseo.app/help) para faturamento, compras ou condições comerciais personalizadas.
 
-Se quiser, posso ampliar esta página com uma análise por provedor ou uma tabela curta comparando os recursos de planos de exemplo.
+Os membros contam enquanto pertencem ao workspace, mesmo sem iniciar sessão. Abaixo de 100,000 membros, novas associações são bloqueadas quando ultrapassariam a capacidade escolhida. Alterações de capacidade por autoatendimento não estão disponíveis atualmente; planeje o crescimento antes de assinar.
+
+Na capacidade de 100,000 membros, cada membro único adicional custa $0.02 por período de cobrança da assinatura, incluindo membros removidos durante esse período.
+
+Enterprise não inclui créditos de modelos nem elimina a taxa padrão de 5% na compra de créditos (mínimo de $1). Consulte [Preços e cobrança](../pricing/tiers.mdx) para exemplos e capacidades de membros.
+
+## Assinaturas dos provedores
+
+O [catálogo de planos de assinatura](https://phaseo.app/subscription-plans) lista assinaturas vendidas pelos provedores de modelos. Elas têm seus próprios preços, modelos incluídos, limites e condições de cobrança. Uma assinatura de provedor não adiciona créditos da Phaseo nem habilita uma rota do Gateway automaticamente.
+
+Confira os termos do provedor e as rotas ativas do modelo antes de escolher um plano. Use [Preços e desempenho](./pricing-performance.mdx) para comparar custos de uso e dados de desempenho disponíveis.

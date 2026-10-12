@@ -4,27 +4,10 @@ description: "Descubre cómo funcionan los límites de frecuencia con Gateway y 
 icon: "gauge"
 ---
 
-Los límites de frecuencia protegen la plataforma y ayudan a garantizar un uso equitativo. En esta página se explica cómo funcionan con Gateway y los proveedores.
+Esta guía se ha trasladado a [Límites de solicitudes](../api-reference/limits.mdx). Esa referencia describe las cuotas actuales del Gateway, los límites del proveedor, `Retry-After` y los reintentos acotados.
 
----
+Las solicitudes pueden recibir `429` por una cuota del Gateway o del proveedor. BYOK también está sujeto a las cuotas de tu cuenta del proveedor. El enrutamiento y las alternativas pueden reducir los fallos, pero no garantizan el éxito de cada solicitud.
 
-## Cómo gestionamos los límites de frecuencia
+## Supervisar el uso
 
-No imponemos límites de frecuencia propios a los usuarios. En su lugar, colaboramos estrechamente con los proveedores de IA para conseguir los límites más altos posibles. Los límites que encuentres procederán directamente de los proveedores a los que se enruten tus solicitudes. Pronto esperamos publicar información sobre la frecuencia con la que se alcanzan estos límites. Mientras tanto, ponte en contacto con nosotros si tienes preguntas o dudas concretas.
-
-Si usas BYOK, se aplicarán los límites de frecuencia de tu cuenta del proveedor en lugar de los nuestros.
-
----
-
-## Cómo gestionar los límites de frecuencia
-
-Sigue enviando solicitudes como siempre. Intentaremos cambiar automáticamente a una alternativa para que sigas recibiendo respuestas correctas.
-
----
-
-## Supervisión del uso
-
--   El panel de Phaseo muestra gráficos por endpoint de solicitudes, latencia y errores.
--   Exporta métricas de uso desde el panel y, próximamente, desde la API para tus propios informes.
-
----
+Revisa los errores `429` y los reintentos en los registros de solicitudes. La API ya permite [consultar los análisis del espacio de trabajo](../api-reference/endpoint/analytics-get.mdx) y [exportarlos como CSV](../api-reference/endpoint/analytics-export.mdx). Ambas operaciones requieren una clave de administración con `analytics:read`.

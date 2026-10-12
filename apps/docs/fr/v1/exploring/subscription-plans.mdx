@@ -1,34 +1,50 @@
 ---
 title: "Offres d’abonnement"
-description: "Présentation des offres et niveaux d’abonnement des fournisseurs d’API et de leur incidence sur l’accès et les tarifs."
-sidebarTitle: "Offres des fournisseurs"
+description: "Choisissez l’accès gratuit, l’utilisation des modèles à l’usage, BYOK ou un module Enterprise pour votre espace de travail."
+sidebarTitle: "Offres"
 icon: "tags"
 ---
 
-## Offres d’abonnement
+Phaseo propose un accès gratuit et une facturation des modèles à l’usage. Les équipes qui ont besoin de contrôles d’identité et d’annuaire peuvent ajouter un abonnement mensuel Enterprise distinct. Tous les prix ci-dessous sont en USD.
 
-Cette page explique les offres et niveaux d’abonnement courants chez les fournisseurs d’API répertoriés sur Phaseo. Elle présente les limites habituelles, la fréquence de facturation et l’incidence des fonctionnalités d’une offre sur l’accès aux modèles et les tarifs.
+## Choisir comment utiliser Phaseo
 
----
+| Option | Frais Phaseo | Ce qu’elle couvre |
+| --- | --- | --- |
+| Accès gratuit | Aucun abonnement ni recharge pour les modèles gratuits pris en charge | Modèles gratuits, données publiques du catalogue, SDK et intégrations |
+| Pay As You Go | Utilisation aux prix du catalogue, plus 5 % de frais d’achat de crédits (minimum de $1) | Requêtes aux modèles payants avec les crédits prépayés de l’espace de travail |
+| Votre propre clé (BYOK) | Lorsque l’utilisation mensuelle est disponible, les 250,000 premières requêtes terminées par espace de travail chaque mois civil UTC sont sans frais de service Phaseo ; ensuite, 2.5 % du coût équivalent du fournisseur. Si le compteur mensuel et la lecture de secours sont tous deux indisponibles, cette requête est soumise aux frais de 2.5 % | Routage et observabilité Phaseo avec vos identifiants ; le fournisseur facture directement l’utilisation du modèle |
+| Self Serve Enterprise | Abonnement mensuel à partir de $29, plus utilisation des modèles et frais d’achat de crédits | SSO, SCIM, gestion de l’annuaire, départements et assistance prioritaire par e-mail |
 
-### Ce que couvrent les offres d’abonnement
+Pay As You Go n’impose ni abonnement mensuel, ni contrat, ni dépense mensuelle minimale. Les frais s’appliquent à l’achat de crédits ; les requêtes gérées consomment ensuite ces crédits aux prix affichés des modèles.
 
--   Limites de débit (requêtes par minute ou par jour)
--   Quota de calcul ou de jetons incluse
--   Accès aux modèles ou fonctionnalités premium (par exemple, mode JSON ou endpoints dédiés)
--   SLA de support et conditions commerciales
+L’accès aux modèles gratuits est soumis à des quotas. La limite par défaut du Gateway est de 25 requêtes par minute glissante, par utilisateur et espace de travail, plus 1,500 requêtes aux modèles gratuits par jour UTC. Les quotas du fournisseur s’appliquent également. Consultez les [Limites de débit](../api-reference/limits.mdx) pour leur portée et les règles de nouvelle tentative.
 
-### Niveaux courants
+Pour configurer BYOK et comprendre sa facturation, consultez [Routage et basculement](../guides/routing-and-fallbacks.mdx). Une requête BYOK sans frais Phaseo reste soumise aux frais d’utilisation du fournisseur.
 
-Voici quelques exemples de niveaux courants ; leurs noms et fonctionnalités exacts varient selon le fournisseur :
+## Tarification Enterprise par membre
 
--   Gratuit / essai : utilisation limitée, limites de débit réduites, sans SLA
--   Développeur / amateur : faible mensualité et limites modérées pour le prototypage
--   Entreprise / équipe : limites plus élevées, accès pour plusieurs membres et assistance prioritaire
--   Entreprise : limites personnalisées, assistance dédiée et SLA contractuels
+L’abonnement d’entrée inclut jusqu’à 100 membres, y compris pour les petites équipes. Les capacités supérieures sont tarifées selon le nombre de membres ; ces prix sont des références, pas des niveaux de fonctionnalités distincts :
 
----
+| Membres inclus | Abonnement mensuel |
+| ---: | ---: |
+| 100 | $29 |
+| 1,000 | $79 |
+| 10,000 | $299 |
+| 25,000 | $599 |
+| 50,000 | $1,099 |
+| 100,000 | $1,999 |
 
-Pour consulter les tarifs détaillés par modèle et comparer le coût par jeton, consultez la page [Tarifs et performances](./pricing-performance.mdx).
+Ouvrez [Tarifs](https://phaseo.app/pricing) pour choisir une capacité et afficher le devis correspondant. La disponibilité du libre-service dépend de l’accès de votre espace de travail au déploiement. Contactez le [Centre d’aide](https://phaseo.app/help) pour la facturation, les achats ou des conditions commerciales personnalisées.
 
-Si vous le souhaitez, je peux compléter cette page avec une analyse par fournisseur ou un tableau comparatif succinct des fonctionnalités des offres types.
+Les membres sont comptés tant qu’ils appartiennent à l’espace de travail, même sans connexion. En dessous de 100,000 membres, les nouvelles adhésions sont bloquées si elles dépassent la capacité choisie. Les changements de capacité en libre-service ne sont pas disponibles actuellement ; prévoyez votre croissance avant de vous abonner.
+
+Avec la capacité de 100,000 membres, chaque membre unique supplémentaire coûte $0.02 par période de facturation de l’abonnement, y compris les membres supprimés pendant cette période.
+
+Enterprise n’inclut pas de crédits pour les modèles et ne supprime pas les frais standard de 5 % à l’achat de crédits (minimum de $1). Consultez [Tarifs et facturation](../pricing/tiers.mdx) pour les exemples et les capacités.
+
+## Abonnements des fournisseurs
+
+Le [catalogue d’abonnements](https://phaseo.app/subscription-plans) présente les offres vendues par les fournisseurs de modèles. Elles ont leurs propres prix, modèles inclus, limites et conditions de facturation. Un abonnement fournisseur n’ajoute pas automatiquement de crédits Phaseo et n’active pas de route Gateway.
+
+Vérifiez les conditions du fournisseur et les routes Gateway actives du modèle avant de choisir une offre. Consultez [Tarifs et performances](./pricing-performance.mdx) pour comparer les coûts d’utilisation et les données de performance disponibles.
