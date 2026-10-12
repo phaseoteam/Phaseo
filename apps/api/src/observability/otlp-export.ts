@@ -2,17 +2,19 @@ import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { tieredRead } from "@core/tiered-cache";
 import { AVAILABLE_BROADCAST_DESTINATION_IDS, otlpProtocol, otlpTracesEndpoint } from "./broadcast-destinations";
 import { decodeOtlpTraceResponse, encodeOtlpTraceRequest } from "./otlp-protobuf";
+import { publishBroadcastEvent, type BroadcastTelemetry } from "./broadcast-event";
 import { decryptWebhookSecret, validateWebhookEndpointUrlForDelivery } from "@core/webhook-endpoints";
 import {
 	buildAsyncGenAiOtlpPayload,
 	buildGatewayGenAiOtlpPayload,
+	requestParametersOnly,
 	type AsyncGenAiTelemetry,
 	type GatewayGenAiTelemetry,
 	type GatewayOtlpBuildOptions,
 } from "./otel-genai";
 
 type Rule = { field: string; condition: string; value: string | null };
-type Destination = {
+export type Destination = {
 	id: string;
 	destination_id: "otel_collector" | "webhook";
 	destination_config: Record<string, unknown> | null;
@@ -40,7 +42,7 @@ type OutboxRow = {
 };
 
 const MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
-const MAX_ATTEMPTS = 8;
+export const MAX_ATTEMPTS = 8;
 const RETRYABLE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
 // Rows that will not be sent again drop their payload, which can hold prompts
 // and completions. The row itself stays until prune_otel_export_outbox removes it.
@@ -216,7 +218,7 @@ export function filterMetadata(payload: unknown, destination: Destination): unkn
 	return visit(payload);
 }
 
-async function destinationConfig(destination: Destination): Promise<Record<string, unknown>> {
+export async function destinationConfig(destination: Destination): Promise<Record<string, unknown>> {
 	if (destination.destination_config_ciphertext && destination.destination_config_iv) {
 		return object(JSON.parse(await decryptWebhookSecret({
 			secretCiphertext: destination.destination_config_ciphertext,
@@ -227,24 +229,49 @@ async function destinationConfig(destination: Destination): Promise<Record<strin
 	return object(destination.destination_config);
 }
 
+// The OTLP payload one destination receives for an event.
+export function renderBroadcastPayload(telemetry: BroadcastTelemetry, destination: Destination): unknown {
+	const payload = telemetry.kind === "gateway"
+		? buildGatewayGenAiOtlpPayload(telemetry.args, buildOptions(destination))
+		: buildAsyncGenAiOtlpPayload(telemetry.args, buildOptions(destination)).payload;
+	return filterMetadata(payload, destination);
+}
+
+// Prompts and outputs are left out of the event when no selected destination
+// receives them, so they never reach the queue or its R2 spill.
+function withoutContent(telemetry: BroadcastTelemetry): BroadcastTelemetry {
+	return telemetry.kind === "gateway"
+		? { kind: "gateway", args: { ...telemetry.args, requestPayload: requestParametersOnly(telemetry.args.requestPayload), responsePayload: null } }
+		: { kind: "async", args: { ...telemetry.args, requestPayload: null, responsePayload: null } };
+}
+
 async function enqueuePayloads(args: {
 	eventId: string;
 	workspaceId: string;
 	gatewaySelection: GatewayGenAiTelemetry;
-	build: (destination: Destination) => unknown;
+	telemetry: BroadcastTelemetry;
 }) {
 	if (String(getBindings().OTEL_EXPORT_ENABLED ?? "true").toLowerCase() === "false") return 0;
 	const configured = await destinations(args.workspaceId);
 	const selectedDestinations = configured.filter((destination) => selected(destination, args.gatewaySelection, args.eventId));
+	if (!selectedDestinations.length) return 0;
+	const queued = await publishBroadcastEvent({
+		eventId: args.eventId,
+		workspaceId: args.workspaceId,
+		destinationIds: selectedDestinations.map((destination) => destination.id),
+		telemetry: selectedDestinations.some((destination) => buildOptions(destination).includeSensitiveContent)
+			? args.telemetry
+			: withoutContent(args.telemetry),
+	});
+	if (queued) return selectedDestinations.length;
 	const rows = selectedDestinations.map((destination) => ({
-			workspace_id: args.workspaceId,
-			destination_id: destination.id,
-			event_id: args.eventId,
-			payload: args.build(destination),
-			status: "pending",
-			next_attempt_at: new Date().toISOString(),
-		}));
-	if (!rows.length) return 0;
+		workspace_id: args.workspaceId,
+		destination_id: destination.id,
+		event_id: args.eventId,
+		payload: renderBroadcastPayload(args.telemetry, destination),
+		status: "pending",
+		next_attempt_at: new Date().toISOString(),
+	}));
 	const { error } = await getSupabaseAdmin()
 		.from("otel_export_outbox")
 		.upsert(rows, { onConflict: "destination_id,event_id", ignoreDuplicates: true });
@@ -257,7 +284,7 @@ export async function enqueueGatewayOtlpExport(args: GatewayGenAiTelemetry) {
 		eventId: `gateway:${args.requestId}`,
 		workspaceId: args.workspaceId,
 		gatewaySelection: args,
-		build: (destination) => filterMetadata(buildGatewayGenAiOtlpPayload(args, buildOptions(destination)), destination),
+		telemetry: { kind: "gateway", args },
 	});
 }
 
@@ -294,7 +321,7 @@ export async function enqueueAsyncGenAiOtlpExport(args: AsyncGenAiTelemetry & {
 		eventId: `${args.operation}:${identity}:${args.phase}`,
 		workspaceId: args.workspaceId,
 		gatewaySelection: selection,
-		build: (destination) => filterMetadata(buildAsyncGenAiOtlpPayload(args, buildOptions(destination)).payload, destination),
+		telemetry: { kind: "async", args },
 	});
 }
 
