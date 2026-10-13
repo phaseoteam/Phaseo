@@ -1,43 +1,38 @@
 ---
-title: "Installation du SDK Java (en cours de développement)"
-description: "Compilez depuis les sources le SDK Java, encore en développement."
+icon: "package"
+title: "Java SDK — Installation"
+description: "Les sources actuelles incluent des contrôles de nouvelles tentatives et des métadonnées de réponse absents de l'ancien artefact 3.0.0 de Maven Central. Compilez la révision indiquée pour utiliser le SDK actuel."
 ---
 
-<Note type="warning">Le SDK Java est en cours de développement et n’est pas encore publié sur Maven Central.</Note>
+Les sources actuelles incluent des contrôles de nouvelles tentatives et des métadonnées de réponse absents de l'ancien artefact 3.0.0 de Maven Central. Compilez la révision indiquée pour utiliser le SDK actuel.
 
 ## Prérequis
 
 - Java 17+
 - Maven 3.8+
+- Git
 
-## Compiler en local
-
-```bash
-cd packages/sdk/sdk-java
-mvn -DskipTests package
-```
-
-Cette commande génère `target/sdk-java-0.0.0-local.jar`.
-
-## L’utiliser dans votre projet
-
-Installez le JAR généré dans le cache Maven local :
+## Compiler depuis les sources
 
 ```bash
-mvn install:install-file \
-  -Dfile=target/sdk-java-0.0.0-local.jar \
-  -DgroupId=app.phaseo \
-  -DartifactId=sdk-java \
-  -Dversion=0.0.0-local \
-  -Dpackaging=jar
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+git checkout 1ff1119f41ceb3ac2c85ed605f6e1c4beca6e011
+mvn -f packages/sdk/sdk-java/pom.xml -DskipTests install
 ```
 
-Ajoutez-le ensuite comme dépendance dans le fichier `pom.xml` de votre application :
+Maven installe `app.phaseo:phaseo-sdk:3.0.0` dans votre dépôt local, avec sa dépendance Jackson.
+
+## Ajouter la dépendance
 
 ```xml
 <dependency>
   <groupId>app.phaseo</groupId>
-  <artifactId>sdk-java</artifactId>
-  <version>0.0.0-local</version>
+  <artifactId>phaseo-sdk</artifactId>
+  <version>3.0.0</version>
 </dependency>
 ```
+
+<Note>L'[artefact Maven Central](https://repo.maven.apache.org/maven2/app/phaseo/phaseo-sdk/3.0.0/) fournit l'ancienne API. Il n'inclut pas les API actuelles de nouvelles tentatives, de métadonnées ou de validation des paramètres.</Note>
+
+[Utilisation](./usage)

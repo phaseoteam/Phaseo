@@ -18,6 +18,7 @@ import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
 import { resolveGatewayPath } from "./endpoint-paths";
 import { EndpointRoutesTable } from "./EndpointRoutesTable";
 import { QuickstartUsageSection } from "./QuickstartUsageSection";
+import { buildJavaSdkQuickstart } from "./javaSdkQuickstart";
 import { buildEndpointRoutes, ENDPOINT_OPTIONS } from "./endpointRoutes";
 import {
 	AI_SDK_ENDPOINTS,
@@ -83,6 +84,7 @@ type LanguageFamilyId =
 	| "python"
 	| "go"
 	| "csharp"
+	| "java"
 	| "php"
 	| "ruby";
 
@@ -94,6 +96,7 @@ const LANGUAGE_FAMILY_ORDER: LanguageFamilyId[] = [
 	"curl",
 	"go",
 	"csharp",
+	"java",
 	"php",
 	"ruby",
 ];
@@ -109,6 +112,7 @@ const LANGUAGE_DEFAULT_ORDER = [
 	"curl",
 	"go-sdk",
 	"csharp-sdk",
+	"java-sdk",
 	"php-sdk",
 	"ruby-sdk",
 	"agent-sdk-ts",
@@ -149,6 +153,7 @@ const LANGUAGE_FAMILY_META: Record<
 	},
 	go: { label: "Go", values: ["go-sdk", "agent-sdk-go"] },
 	csharp: { label: "C#", values: ["csharp-sdk", "agent-sdk-csharp"] },
+	java: { label: "Java", values: ["java-sdk"] },
 	php: { label: "PHP", values: ["php-sdk", "agent-sdk-php"] },
 	ruby: { label: "Ruby", values: ["ruby-sdk", "agent-sdk-ruby"] },
 };
@@ -162,6 +167,7 @@ const LANGUAGE_VARIANT_LABELS: Partial<Record<string, string>> = {
 	"python-sdk": "SDK",
 	"go-sdk": "SDK",
 	"csharp-sdk": "SDK",
+	"java-sdk": "SDK",
 	"php-sdk": "SDK",
 	"ruby-sdk": "SDK",
 	"agent-sdk-ts": "Agent SDK",
@@ -185,6 +191,7 @@ const STREAMING_SNIPPET_LANGUAGES = new Set([
 	"python-sdk",
 	"go-sdk",
 	"csharp-sdk",
+	"java-sdk",
 	"php-sdk",
 	"ruby-sdk",
 ]);
@@ -229,6 +236,10 @@ const LANGUAGE_DOCS_BY_VALUE: Partial<Record<string, { label: string; href: stri
 	"csharp-sdk": {
 		label: "C# SDK",
 		href: `${DOCS_BASE_URL}/sdk-reference/csharp/overview`,
+	},
+	"java-sdk": {
+		label: "Java SDK",
+		href: `${DOCS_BASE_URL}/sdk-reference/java/overview`,
 	},
 	"php-sdk": {
 		label: "PHP SDK",
@@ -415,6 +426,7 @@ export default function Quickstart({
 				"python-requests",
 				"go-sdk",
 				"csharp-sdk",
+				"java-sdk",
 				"php-sdk",
 				"ruby-sdk",
 			]);
@@ -436,6 +448,7 @@ export default function Quickstart({
 		if (GENERIC_PHASEO_SDK_ENDPOINTS.has(normalizedEndpoint)) {
 			supported.add("go-sdk");
 			supported.add("csharp-sdk");
+			supported.add("java-sdk");
 			supported.add("php-sdk");
 			supported.add("ruby-sdk");
 		}
@@ -1201,6 +1214,13 @@ client = Phaseo(api_key=os.environ.get("PHASEO_API_KEY"))
 payload = ${payloadJsonPython}
 ${pythonSdkResponseHandler}`
 					: null;
+
+	const javaSdkUsage = buildJavaSdkQuickstart({
+		path: activeEndpointPath,
+		payloadJson: activePayloadJson,
+		streaming: shouldStream,
+		modelId: isModelMetadataQuickstart ? modelIdentifierInCode : undefined,
+	});
 
 	const goSdkUsage = isModelMetadataQuickstart
 		? `package main
@@ -2053,6 +2073,7 @@ console.log(response);`
 						agentSdkRubyUsage={agentSdkRubyUsage}
 						pythonSdkUsage={pythonSdkUsage}
 						goSdkUsage={goSdkUsage}
+						javaSdkUsage={javaSdkUsage}
 						csharpSdkUsage={csharpSdkUsage}
 						phpSdkUsage={phpSdkUsage}
 						rubySdkUsage={rubySdkUsage}

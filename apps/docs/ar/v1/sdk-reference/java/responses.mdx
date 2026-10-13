@@ -25,7 +25,24 @@ String body = """
 }
 """;
 
-Object response = client.createResponse(body);
+Object response = client.createResponse(new com.fasterxml.jackson.databind.ObjectMapper().readTree(body));
 System.out.println(String.valueOf(response));
+```
+
+## البث
+
+تعيد `streamResponse` و`rawClient().requestLines` أسطر SSE فور وصولها. أغلق البث باستخدام try-with-resources، وعالج أسماء الأحداث وأسطر البيانات وعلامات الاكتمال في تطبيقك.
+
+```java
+import app.phaseo.sdk.Phaseo;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+var payload = Map.of("model", "openai/gpt-6-astra", "input", "Hello");
+try (var lines = client.streamResponse(payload)) {
+    lines.forEach(System.out::println);
+}
 ```
 

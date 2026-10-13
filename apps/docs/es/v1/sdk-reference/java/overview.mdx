@@ -1,27 +1,42 @@
 ---
-title: "SDK de Java (en desarrollo)"
-description: "Compila desde el código fuente el cliente Java, que aún está en desarrollo."
+icon: "book-open"
+title: "Java SDK"
+description: "Llama a Phaseo Gateway desde Java."
 ---
 
-<Note type="warning">
-  El SDK de Java está en desarrollo y aún no se ha publicado en Maven Central. Usa la compilación desde el código fuente solo para evaluarlo.
-</Note>
+Envía solicitudes de texto, embeddings y consulta de modelos con el SDK de Java.
 
-El SDK de Java ahora incluye un wrapper ligero, escrito a mano, sobre el cliente generado:
+<Note>El código fuente actual incluye controles de reintentos y metadatos de respuesta que no están en el antiguo artefacto 3.0.0 de Maven Central. Compila la revisión indicada para usar el SDK actual. [Instalación](./installation)</Note>
 
-- `app.phaseo.sdk.Phaseo` ofrece métodos de alto nivel para chat, respuestas, mensajes de Anthropic, imágenes, embeddings, moderaciones, voz/transcripción/traducción, lotes, archivos, vídeo, modelos/proveedores/endpoints/organizaciones/precios, descubrimiento y cambios del ciclo de vida de claves API, gestión del ciclo de vida del espacio de trabajo y de la clave actual, cálculo de precios, actividad/créditos/analíticas, consulta de generaciones, validación del ciclo de vida, URL de WebSocket de trabajos asíncronos mediante métodos directos o `client.asyncJobs.websocketUrl(...)`, y telemetría compatible con devtools.
-- `app.phaseo.gen.Client` y `app.phaseo.gen.Operations` siguen disponibles debajo para cubrir por completo las operaciones de bajo nivel cuando sea necesario.
+```java
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
 
-`getModelEndpointCapabilities(...)` devuelve metadatos actuales de las rutas de proveedores. `checkModelParameters(...)` clasifica cada parámetro como `supported`, `partial`, `unsupported` o `unknown`, valida los valores y rangos publicados y devuelve las rutas que aceptan el conjunto completo de parámetros.
+public class Main {
+    public static void main(String[] args) throws Exception {
+        var client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+        var response = client.createResponse(Map.of(
+            "model", "openai/gpt-6-astra",
+            "input", "Reply with: Java SDK works"
+        ));
+        System.out.println(response);
+    }
+}
+```
 
-## Estado actual
+## Solicitudes compatibles
 
-- En desarrollo; aún no se ha publicado en Maven Central.
-- El código fuente está en `packages/sdk/sdk-java`.
-- El código generado de bajo nivel está en `packages/sdk/sdk-java/src/gen`.
-- El wrapper escrito a mano está en `packages/sdk/sdk-java/src/app/phaseo/sdk`.
+Usa `createResponse`, `createChatCompletion`, `createEmbedding` y `listModels` para solicitudes JSON. Pasa un `Map` o `JsonNode`; convierte las cadenas JSON antes de pasarlas a los métodos del cliente.
 
-## Próximos pasos
+## Streaming
 
-- [Instalación](./installation.mdx)
-- [Uso](./usage.mdx)
+`streamResponse` y `rawClient().requestLines` devuelven líneas SSE a medida que llegan. Cierra el flujo con try-with-resources y procesa los nombres de eventos, los datos y los marcadores de finalización en tu aplicación.
+
+<Note>El método `createSpeech` espera JSON y no puede decodificar audio binario. Usa `rawClient().requestBytes` para obtener audio.</Note>
+
+## Siguientes pasos
+
+- [Instalación](./installation)
+- [Uso](./usage)
+- [Responses](./responses)
+- [Chat completions](./chat-completions)

@@ -93,7 +93,7 @@ console.log(response.choices[0]?.message?.content);
 | Model and provider catalog | Available | Model metadata, pricing, providers, capabilities, and benchmark context. |
 | Web dashboard | Available | Usage, keys, routing, apps, settings, model pages, and internal tools. |
 | Docs | Available | Guides, API reference, SDK examples, cookbook, and changelog. |
-| SDKs | Available | Public SDK package names, examples, and docs now use Phaseo names across TypeScript, Python, Go, C#, PHP, Ruby, Java, C++, Rust, and Agent SDKs. |
+| SDKs | Available | TypeScript, Python, Go, C#, PHP, Ruby, Rust, and Agent SDKs. The [Java SDK](packages/sdk/sdk-java/README.md) supports a pinned source install; C++ remains a transport-dependent preview. |
 
 ## Local Development
 

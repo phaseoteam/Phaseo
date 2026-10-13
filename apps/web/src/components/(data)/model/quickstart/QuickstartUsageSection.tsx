@@ -120,6 +120,7 @@ type QuickstartUsageSectionProps = {
 	agentSdkRubyUsage: string | null;
 	pythonSdkUsage: string | null;
 	goSdkUsage: string;
+	javaSdkUsage: string;
 	csharpSdkUsage: string;
 	phpSdkUsage: string;
 	rubySdkUsage: string;
@@ -143,6 +144,7 @@ function getLanguageOptionVisual(value: string): QuickstartVisual {
 		value === "python-sdk" ||
 		value === "go-sdk" ||
 		value === "csharp-sdk" ||
+		value === "java-sdk" ||
 		value === "php-sdk" ||
 		value === "ruby-sdk" ||
 		value === "agent-sdk-ts" ||
@@ -428,6 +430,7 @@ export function QuickstartUsageSection({
 	agentSdkRubyUsage,
 	pythonSdkUsage,
 	goSdkUsage,
+	javaSdkUsage,
 	csharpSdkUsage,
 	phpSdkUsage,
 	rubySdkUsage,
@@ -501,6 +504,9 @@ export function QuickstartUsageSection({
 		if (selectedLanguage === "csharp-sdk") {
 			return { code: csharpSdkUsage, lang: "csharp" };
 		}
+		if (selectedLanguage === "java-sdk") {
+			return { code: javaSdkUsage, lang: "java" };
+		}
 		if (selectedLanguage === "php-sdk") {
 			return { code: phpSdkUsage, lang: "php" };
 		}
@@ -547,6 +553,7 @@ export function QuickstartUsageSection({
 		csharpSdkUsage,
 		curlQuickstart,
 		goSdkUsage,
+		javaSdkUsage,
 		nodeFetchQuickstart,
 		nodeFetchStreamingQuickstart,
 		openaiNodeUsage,

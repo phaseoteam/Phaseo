@@ -1,27 +1,42 @@
 ---
-title: "Java SDK（开发中）"
-description: "从源代码构建仍在开发中的 Java 客户端。"
+icon: "book-open"
+title: "Java SDK"
+description: "从 Java 调用 Phaseo Gateway。"
 ---
 
-<Note type="warning">
-  Java SDK 仍在开发中，尚未发布到 Maven Central。请仅通过源码构建进行评估。
-</Note>
+使用 Java SDK 发送文本、嵌入和模型查询请求。
 
-Java SDK 现在在生成的客户端之上提供了一个轻量的手写封装：
+<Note>当前源码包含重试控制和响应元数据，而 Maven Central 中较旧的 3.0.0 构件不包含这些功能。请构建下方指定的版本以使用当前 SDK。 [安装](./installation)</Note>
 
-- `app.phaseo.sdk.Phaseo` 提供聊天、Responses、Anthropic 消息、图像、嵌入、内容审核、语音/转录/翻译、批处理、文件、视频、模型/供应商/端点/组织/定价、API 密钥发现与生命周期管理、工作区和当前密钥管理、价格计算、活动/额度/分析、生成记录查询、生命周期验证、通过直接辅助方法或 `client.asyncJobs.websocketUrl(...)` 获取异步任务 WebSocket URL，以及支持开发工具的遥测等高级辅助功能。
-- 如有需要，底层仍可使用 `app.phaseo.gen.Client` 和 `app.phaseo.gen.Operations`，以覆盖全部低级操作。
+```java
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
 
-`getModelEndpointCapabilities(...)` 返回提供商路由的实时元数据。`checkModelParameters(...)` 将各参数标记为 `supported`、`partial`、`unsupported` 或 `unknown`，验证公布的值和范围，并返回接受完整参数集的路由。
+public class Main {
+    public static void main(String[] args) throws Exception {
+        var client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+        var response = client.createResponse(Map.of(
+            "model", "openai/gpt-6-astra",
+            "input", "Reply with: Java SDK works"
+        ));
+        System.out.println(response);
+    }
+}
+```
 
-## 当前状态
+## 支持的请求
 
-- 开发中；尚未发布到 Maven Central。
-- 源代码位于 `packages/sdk/sdk-java`。
-- 生成的底层代码位于 `packages/sdk/sdk-java/src/gen`。
-- 手写封装位于 `packages/sdk/sdk-java/src/app/phaseo/sdk`。
+使用 `createResponse`、`createChatCompletion`、`createEmbedding` 和 `listModels` 发送 JSON 请求。传入 `Map` 或 `JsonNode`；将 JSON 字符串解析后再传给客户端方法。
+
+## 流式响应
+
+`streamResponse` 和 `rawClient().requestLines` 会逐行返回收到的 SSE 数据。使用 try-with-resources 关闭流，并在应用中处理事件名称、数据行和完成标记。
+
+<Note>`createSpeech` 方法期望 JSON，无法解码二进制音频。请使用 `rawClient().requestBytes` 获取音频输出。</Note>
 
 ## 后续步骤
 
-- [安装](./installation.mdx)
-- [使用方法](./usage.mdx)
+- [安装](./installation)
+- [用法](./usage)
+- [Responses](./responses)
+- [Chat completions](./chat-completions)

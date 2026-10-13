@@ -9,19 +9,29 @@ Maven coordinates:
 
 ## Installation
 
+Requires Java 17+, Maven 3.8+, and Git. Build the current SDK from source to get
+retry controls, response metadata, and parameter checks:
+
+```bash
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+git checkout 1ff1119f41ceb3ac2c85ed605f6e1c4beca6e011
+mvn -f packages/sdk/sdk-java/pom.xml -DskipTests install
+```
+
+Then add the locally installed artifact to your application's `pom.xml`:
+
 ```xml
 <dependency>
   <groupId>app.phaseo</groupId>
   <artifactId>phaseo-sdk</artifactId>
-  <version>2.0.5</version>
+  <version>3.0.0</version>
 </dependency>
 ```
 
-If you are building from this repository instead:
-
-```bash
-pnpm --filter @phaseo/java-sdk run build
-```
+The older `app.phaseo:phaseo-sdk:3.0.0` artifact is available on Maven Central,
+but lacks the current retry, metadata, and parameter-checking APIs. The source
+installation above includes Jackson and uses the same Maven coordinates.
 
 ## Quick start
 
@@ -53,6 +63,9 @@ public class Main {
 ```
 
 ## Common methods
+
+Pass a `Map` or `JsonNode` to JSON request helpers. A Java `String` is serialized
+as a JSON string; use `new ObjectMapper().readTree(body)` for existing JSON text.
 
 - `createResponse(request)`
 - `createChatCompletion(request)`
@@ -116,6 +129,24 @@ System.out.println(resourceSocketUrl);
 
 - Models with `:free` in the model ID can be called with zero deposited credits.
 - Paid models require available wallet balance.
+
+## Streaming and errors
+
+`streamResponse(payload)` returns raw SSE lines. For chat, use
+`rawClient().requestLines("POST", "/chat/completions", null, null, jsonBody)`
+with `stream: true` in the JSON body. Both streams deliver lines incrementally;
+handle SSE event/data framing and completion markers in your application, and
+close the stream with try-with-resources.
+
+Retries default to zero. `setMaxRetries(n)` retries safe GET/HEAD requests;
+writes and streaming calls are not replayed. `Client.ApiException` preserves
+HTTP status, response body, headers, and request ID.
+
+The `createSpeech` wrapper expects JSON and cannot decode binary audio. Use
+`rawClient().requestBytes("POST", "/audio/speech", null, null, jsonBody)` instead.
+
+See the [Java SDK guide](https://phaseo.app/docs/v1/sdk-reference/java/overview)
+for complete examples.
 
 ## Environment variables
 

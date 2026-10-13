@@ -1,43 +1,38 @@
 ---
-title: "Java SDK 安装（开发中）"
-description: "从源代码构建仍在开发中的 Java SDK。"
+icon: "package"
+title: "Java SDK — 安装"
+description: "当前源码包含重试控制和响应元数据，而 Maven Central 中较旧的 3.0.0 构件不包含这些功能。请构建下方指定的版本以使用当前 SDK。"
 ---
 
-<Note type="warning">Java SDK 仍在开发中，尚未发布到 Maven Central。</Note>
+当前源码包含重试控制和响应元数据，而 Maven Central 中较旧的 3.0.0 构件不包含这些功能。请构建下方指定的版本以使用当前 SDK。
 
-## 环境要求
+## 要求
 
 - Java 17+
 - Maven 3.8+
+- Git
 
-## 本地构建
-
-```bash
-cd packages/sdk/sdk-java
-mvn -DskipTests package
-```
-
-此操作会生成 `target/sdk-java-0.0.0-local.jar`。
-
-## 在项目中使用
-
-将生成的 JAR 安装到本地 Maven 缓存：
+## 从源码构建
 
 ```bash
-mvn install:install-file \
-  -Dfile=target/sdk-java-0.0.0-local.jar \
-  -DgroupId=app.phaseo \
-  -DartifactId=sdk-java \
-  -Dversion=0.0.0-local \
-  -Dpackaging=jar
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+git checkout 1ff1119f41ceb3ac2c85ed605f6e1c4beca6e011
+mvn -f packages/sdk/sdk-java/pom.xml -DskipTests install
 ```
 
-然后将其作为依赖项添加到应用的 `pom.xml` 中：
+Maven 会将 `app.phaseo:phaseo-sdk:3.0.0` 及其 Jackson 依赖安装到本地仓库。
+
+## 添加依赖
 
 ```xml
 <dependency>
   <groupId>app.phaseo</groupId>
-  <artifactId>sdk-java</artifactId>
-  <version>0.0.0-local</version>
+  <artifactId>phaseo-sdk</artifactId>
+  <version>3.0.0</version>
 </dependency>
 ```
+
+<Note>[Maven Central 构件](https://repo.maven.apache.org/maven2/app/phaseo/phaseo-sdk/3.0.0/) 提供旧版 API，不包含当前的重试、元数据或参数检查 API。</Note>
+
+[用法](./usage)

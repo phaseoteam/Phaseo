@@ -1,27 +1,42 @@
 ---
-title: "Java SDK（開発中）"
-description: "開発中のJavaクライアントをソースからビルドします。"
+icon: "book-open"
+title: "Java SDK"
+description: "Java から Phaseo Gateway を呼び出します。"
 ---
 
-<Note type="warning">
-  Java SDKは開発中で、Maven Centralにはまだ公開されていません。ソースからのビルドは評価目的でのみ使用してください。
-</Note>
+Java SDK でテキスト、埋め込み、モデル一覧のリクエストを送信します。
 
-Java SDKには、生成されたクライアントを使う軽量な手書きラッパーが追加されています。
+<Note>現在のソースには、Maven Central の古い 3.0.0 アーティファクトにない再試行制御とレスポンスメタデータが含まれます。現在の SDK を使うには、以下の指定リビジョンをビルドしてください。 [インストール](./installation)</Note>
 
-- `app.phaseo.sdk.Phaseo`は、チャット、Responses、Anthropicメッセージ、画像、埋め込み、モデレーション、音声/文字起こし/翻訳、バッチ、ファイル、動画、モデル/プロバイダー/エンドポイント/組織/料金、APIキーの検索とライフサイクル管理、ワークスペースと現在のキーの管理、料金計算、アクティビティ/クレジット/分析、生成結果の検索、ライフサイクル検証、直接ヘルパーまたは`client.asyncJobs.websocketUrl(...)`による非同期ジョブのWebSocket URL、devtools対応テレメトリーのための高レベルヘルパーを提供します。
-- 必要に応じて低レベル操作をすべて利用できるよう、下位層では引き続き`app.phaseo.gen.Client`と`app.phaseo.gen.Operations`を使用できます。
+```java
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
 
-`getModelEndpointCapabilities(...)` は現在のプロバイダールートのメタデータを返します。`checkModelParameters(...)` は各パラメーターを `supported`、`partial`、`unsupported`、`unknown` のいずれかとして示し、公開された値と範囲を検証して、パラメーターの組み合わせ全体を受け入れるルートを返します。
+public class Main {
+    public static void main(String[] args) throws Exception {
+        var client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+        var response = client.createResponse(Map.of(
+            "model", "openai/gpt-6-astra",
+            "input", "Reply with: Java SDK works"
+        ));
+        System.out.println(response);
+    }
+}
+```
 
-## 現在の状況
+## 対応するリクエスト
 
-- 開発中。Maven Centralにはまだ公開されていません。
-- ソースは`packages/sdk/sdk-java`にあります。
-- 生成された低レベルコードは`packages/sdk/sdk-java/src/gen`にあります。
-- 手書きラッパーは`packages/sdk/sdk-java/src/app/phaseo/sdk`にあります。
+JSON リクエストには `createResponse`、`createChatCompletion`、`createEmbedding`、`listModels` を使います。`Map` または `JsonNode` を渡してください。JSON 文字列はクライアントのメソッドに渡す前に解析します。
+
+## ストリーミング
+
+`streamResponse` と `rawClient().requestLines` は、到着した SSE 行を逐次返します。try-with-resources でストリームを閉じ、イベント名、データ行、完了マーカーをアプリケーションで処理してください。
+
+<Note>`createSpeech` は JSON を想定しており、バイナリ音声をデコードできません。音声の取得には `rawClient().requestBytes` を使ってください。</Note>
 
 ## 次のステップ
 
-- [インストール](./installation.mdx)
-- [使い方](./usage.mdx)
+- [インストール](./installation)
+- [使用方法](./usage)
+- [Responses](./responses)
+- [Chat completions](./chat-completions)

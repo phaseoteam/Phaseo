@@ -1,27 +1,42 @@
 ---
-title: "حزمة Java (قيد التطوير)"
-description: "ابنِ عميل Java الذي ما زال قيد التطوير من المصدر."
+icon: "book-open"
+title: "Java SDK"
+description: "استدعِ Phaseo Gateway من Java."
 ---
 
-<Note type="warning">
-  ما تزال حزمة Java قيد التطوير ولم تُنشر بعد على Maven Central. استخدم البناء من المصدر للتقييم فقط.
-</Note>
+أرسل طلبات النص والتضمينات واستكشاف النماذج باستخدام حزمة Java SDK.
 
-تتضمن حزمة Java الآن غلافًا خفيفًا مكتوبًا يدويًا فوق العميل المُولّد:
+<Note>يتضمن المصدر الحالي عناصر للتحكم في إعادة المحاولة وبيانات وصفية للاستجابة غير موجودة في حزمة 3.0.0 القديمة على Maven Central. ابنِ المراجعة المحددة أدناه لاستخدام SDK الحالي. [التثبيت](./installation)</Note>
 
-- يوفّر `app.phaseo.sdk.Phaseo` مساعدات للدردشة والاستجابات ورسائل Anthropic والصور والتضمينات والإشراف على المحتوى والصوت/التفريغ/الترجمة والدفعات والملفات والفيديو والنماذج/المزوّدين/نقاط النهاية/المؤسسات/الأسعار، واكتشاف مفاتيح API وإدارة دورة حياتها، وإدارة مساحة العمل والمفتاح الحالي، وحساب الأسعار والنشاط/الأرصدة/التحليلات والبحث عن عمليات التوليد والتحقق من دورة الحياة، وروابط WebSocket للمهام غير المتزامنة عبر المساعدات المباشرة أو `client.asyncJobs.websocketUrl(...)`، وقياسًا يدعم أدوات التطوير.
-- يظل `app.phaseo.gen.Client` و`app.phaseo.gen.Operations` متاحين في الطبقة الأدنى لتغطية جميع العمليات عند الحاجة.
+```java
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
 
-يعرض `getModelEndpointCapabilities(...)` بيانات وصفية مباشرة لمسارات المزودين. يصنّف `checkModelParameters(...)` كل معلمة على أنها `supported` أو `partial` أو `unsupported` أو `unknown`، ويتحقق من القيم والنطاقات المعلنة، ويعرض المسارات التي تقبل مجموعة المعلمات كاملةً.
+public class Main {
+    public static void main(String[] args) throws Exception {
+        var client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+        var response = client.createResponse(Map.of(
+            "model", "openai/gpt-6-astra",
+            "input", "Reply with: Java SDK works"
+        ));
+        System.out.println(response);
+    }
+}
+```
 
-## الحالة الحالية
+## الطلبات المدعومة
 
-- قيد التطوير؛ لم يُنشر بعد على Maven Central.
-- يوجد المصدر في `packages/sdk/sdk-java`.
-- يوجد الكود المُولّد منخفض المستوى في `packages/sdk/sdk-java/src/gen`.
-- يوجد الغلاف المكتوب يدويًا في `packages/sdk/sdk-java/src/app/phaseo/sdk`.
+استخدم `createResponse` و`createChatCompletion` و`createEmbedding` و`listModels` لطلبات JSON. مرّر `Map` أو `JsonNode`؛ حلّل سلاسل JSON قبل تمريرها إلى طرق العميل.
+
+## البث
+
+تعيد `streamResponse` و`rawClient().requestLines` أسطر SSE فور وصولها. أغلق البث باستخدام try-with-resources، وعالج أسماء الأحداث وأسطر البيانات وعلامات الاكتمال في تطبيقك.
+
+<Note>تتوقع طريقة `createSpeech` بيانات JSON ولا تفك ترميز الصوت الثنائي. استخدم `rawClient().requestBytes` للحصول على الصوت.</Note>
 
 ## الخطوات التالية
 
-- [التثبيت](./installation.mdx)
-- [الاستخدام](./usage.mdx)
+- [التثبيت](./installation)
+- [الاستخدام](./usage)
+- [Responses](./responses)
+- [Chat completions](./chat-completions)

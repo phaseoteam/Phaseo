@@ -4,7 +4,7 @@ title: "TTS（文字转语音）"
 description: "使用 Java SDK 调用 `/audio/speech`。"
 ---
 
-**方法**: `client.createSpeech(...)`
+**方法**: `client.rawClient().requestBytes(...)`
 
 ```java
 import app.phaseo.sdk.Phaseo;
@@ -16,11 +16,11 @@ String body = """
   "model": "openai/gpt-4o-mini-tts",
   "input": "Hello from Java",
   "voice": "alloy",
-  "format": "mp3"
+  "response_format": "mp3"
 }
 """;
 
-Object response = client.createSpeech(body);
-System.out.println(String.valueOf(response));
+byte[] audio = client.rawClient().requestBytes("POST", "/audio/speech", null, null, body);
+java.nio.file.Files.write(java.nio.file.Path.of("speech.mp3"), audio);
 ```
 

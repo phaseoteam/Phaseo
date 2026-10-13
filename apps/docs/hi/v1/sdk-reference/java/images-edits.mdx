@@ -19,7 +19,7 @@ String body = """
 }
 """;
 
-Object response = client.createImageEdit(body);
+Object response = client.createImageEdit(new com.fasterxml.jackson.databind.ObjectMapper().readTree(body));
 System.out.println(String.valueOf(response));
 ```
 

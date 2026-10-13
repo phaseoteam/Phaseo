@@ -18,6 +18,6 @@ String body = """
 }
 """;
 
-Object response = client.createTranslation(body);
+Object response = client.createTranslation(new com.fasterxml.jackson.databind.ObjectMapper().readTree(body));
 System.out.println(String.valueOf(response));
 ```
