@@ -1,16 +1,16 @@
 ---
-title: Rechnungen herunterladen
-description: Finden und laden Sie Rechnungen für abgeschlossene Guthabenkäufe herunter.
+title: Belege herunterladen
+description: Finde Belege für abgeschlossene Guthabenkäufe.
 order: 2
 updated: 2026-02-09
 ---
 
-Rechnungen für abgeschlossene Zahlungen finden Sie unter `Einstellungen -> Guthaben`.
+Belege für abgeschlossene Zahlungen findest du unter `Einstellungen -> Guthaben`.
 
-Für jeden Zahlungseintrag können Sie:
+Für jeden Zahlungseintrag kannst du:
 
 1. die Kaufzeile öffnen,
-2. die Rechnungsaktion auswählen,
-3. die PDF-Rechnung herunterladen.
+2. die Belegaktion auswählen,
+3. die von Stripe gehostete Belegseite öffnen.
 
-Wenn für eine erfolgreiche Abbuchung eine Rechnung fehlt, wenden Sie sich mit Zahlungs-ID und Datum an den Support.
+Wenn für eine erfolgreiche Abbuchung ein Beleg fehlt, wende dich mit Zahlungs-ID und Datum an den Support.

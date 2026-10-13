@@ -12,4 +12,4 @@ Un achat ne peut plus être remboursé lorsque :
 - Le délai de 24 heures est dépassé.
 - Des crédits de cet achat ont été utilisés.
 
-Vous pouvez consulter l’état de l’achat depuis `Settings -> Credits`.
+Vous pouvez consulter l’état de l’achat depuis `Paramètres -> Crédits`.

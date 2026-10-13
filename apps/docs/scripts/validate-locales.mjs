@@ -80,6 +80,22 @@ function damagedTextIssue(path) {
 	return empty ? `${page} has an empty <${empty[1]}>` : undefined;
 }
 
+// Pages address the reader as du in German and 你 in Simplified Chinese, as the web app does.
+// Mid-sentence, a capitalised Sie, Ihnen or Ihr… can only be the formal "you".
+const formalAddress = {
+	de: { pattern: /(?<=[\p{L}\p{N},)][^\S\r\n]+)(?:Sie|Ihnen|Ihr(?:e|en|em|er|es)?)(?!\p{L})/u, use: "du" },
+	"zh-Hans": { pattern: /您/u, use: "你" },
+};
+function formalAddressIssue(path, locale) {
+	const rule = formalAddress[locale];
+	if (!rule) return undefined;
+	const prose = readFileSync(path, "utf8").replace(/```[\s\S]*?```/g, " ").replace(/`[^`\n]*`/g, " ");
+	const match = prose.match(rule.pattern);
+	return match
+		? `${relative(docsRoot, path).split(sep).join("/")} addresses the reader as ${match[0]}; use ${rule.use}`
+		: undefined;
+}
+
 const sourcePages = listPages(sourceRoot);
 if (sourcePages.size === 0) {
 	throw new Error(`No Markdown or MDX pages found in ${sourceRoot}`);
@@ -98,7 +114,12 @@ for (const locale of locales) {
 	for (const page of translatedPages) {
 		const path = join(localeRoot, page);
 		const specFile = `/${locale}/openapi/v1/openapi.localized.yaml`;
-		const checks = [openApiReferenceIssue(path, specFile), unclosedFenceIssue(path), damagedTextIssue(path)];
+		const checks = [
+			openApiReferenceIssue(path, specFile),
+			unclosedFenceIssue(path),
+			damagedTextIssue(path),
+			formalAddressIssue(path, locale),
+		];
 		if (sourcePages.has(page)) checks.push(openApiParityIssue(join(sourceRoot, page), path));
 		for (const issue of checks) {
 			if (issue) issues.push(issue);
@@ -124,5 +145,5 @@ if (issues.length > 0) {
 }
 
 process.stdout.write(
-	`Localized docs coverage, OpenAPI references, code fences and text encoding valid: ${sourcePages.size} pages across ${locales.length} locales\n`,
+	`Localized docs coverage, OpenAPI references, code fences, text encoding and form of address valid: ${sourcePages.size} pages across ${locales.length} locales\n`,
 );

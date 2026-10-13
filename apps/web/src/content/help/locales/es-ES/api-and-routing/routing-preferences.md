@@ -5,7 +5,7 @@ order: 1
 updated: 2026-02-09
 ---
 
-Las preferencias de enrutamiento se gestionan en `Settings -> Routing`.
+Las preferencias de enrutamiento se gestionan en `Ajustes -> Enrutamiento`.
 
 Opciones actuales:
 

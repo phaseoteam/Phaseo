@@ -8694,7 +8694,7 @@ components:
             - type: string
             - type: object
               additionalProperties: true
-          description: رتّب المزوّدين لهذا الطلب، مثلاً حسب السعر أو زمن الاستجابة أو معدل النقل.
+          description: رتّب المزوّدين لهذا الطلب، مثلاً حسب السعر أو زمن الاستجابة أو الإنتاجية.
         max_price:
           type: object
           properties:

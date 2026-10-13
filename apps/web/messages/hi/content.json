@@ -98,7 +98,7 @@
 				"description": "अनजाने में अधिक खर्च कम करने और टीम बजट लागू करने के लिए प्रति-कुंजी खर्च और उपयोग नियंत्रण।"
 			},
 			"guardrails": {
-				"title": "गार्डरेल्स",
+				"title": "गार्डरेल",
 				"description": "गेटवे ट्रैफ़िक में विस्तृत सुरक्षा, नीति और मॉडरेशन नियंत्रण।"
 			},
 			"privacy-settings": {
@@ -236,49 +236,49 @@
 				"integration": "अपना पसंदीदा इंटीग्रेशन चुनें।"
 			},
 			"options": {
-				"keepOpenAiClient": "OpenAI क्लाइंट रखें और base URL बदलें।",
-				"keepAnthropicClient": "Anthropic क्लाइंट को बनाए रखें और base URL बदलें।",
-				"pointPythonSdk": "Python SDK को Phaseo पर भेजें।",
+				"keepOpenAiClient": "OpenAI क्लाइंट रखें और बेस URL बदलें।",
+				"keepAnthropicClient": "Anthropic क्लाइंट को बनाए रखें और बेस URL बदलें।",
+				"pointPythonSdk": "Python SDK को Phaseo से जोड़ें।",
 				"switchRestToGateway": "REST कॉल को Gateway पर स्विच करें।",
-				"switchVercelProvider": "Vercel/OpenAI provider factory की जगह आधिकारिक Phaseo provider इस्तेमाल करें।",
+				"switchVercelProvider": "Vercel/OpenAI प्रदाता फ़ैक्टरी की जगह आधिकारिक Phaseo प्रदाता इस्तेमाल करें।",
 				"restAnyRuntime": "किसी भी रनटाइम में REST कॉल इस्तेमाल करें।",
-				"swapEnvironmentAndBaseUrl": "क्लाइंट रखें और environment variables तथा base URL बदलें।",
+				"swapEnvironmentAndBaseUrl": "क्लाइंट रखें और एनवायरनमेंट वेरिएबल और बेस URL बदलें।",
 				"openAiPythonSettings": "Phaseo के लिए OpenAI Python क्लाइंट सेटिंग इस्तेमाल करें।",
 				"switchRestToPhaseo": "REST कॉल को Phaseo Gateway पर स्विच करें।",
 				"openAiCompatibleConfiguration": "OpenAI SDK-संगत कॉन्फ़िगरेशन इस्तेमाल करें।",
 				"openAiPythonWithPhaseo": "Phaseo के साथ OpenAI Python क्लाइंट इस्तेमाल करें।",
 				"callGatewayDirectly": "Gateway को सीधे कॉल करें।",
 				"typedSdk": "सहायक सुविधाओं वाला पूरी तरह typed क्लाइंट।",
-				"asyncPythonSdk": "async-first Python क्लाइंट।",
+				"asyncPythonSdk": "असिंक्रोनस-प्रथम Python क्लाइंट।",
 				"fastestRequest": "अनुरोध भेजने का सबसे तेज़ तरीका।"
 			},
 			"steps": {
-				"useApiKey": "अपनी Phaseo API key इस्तेमाल करें",
+				"useApiKey": "अपनी Phaseo API कुंजी इस्तेमाल करें",
 				"createApiKey": "Phaseo डैशबोर्ड में key बनाएँ और उसे PHASEO_API_KEY के रूप में सहेजें।",
-				"setBaseUrlTitle": "base URL को Phaseo पर सेट करें",
+				"setBaseUrlTitle": "बेस URL को Phaseo पर सेट करें",
 				"setBaseUrlDescription": "base URL को {baseUrl} पर सेट करें।",
-				"keepPayloadTitle": "अनुरोध का payload वैसा ही रखें",
+				"keepPayloadTitle": "अनुरोध का पेलोड वैसा ही रखें",
 				"keepPayloadDescription": "मॉडल चयन और संदेश नहीं बदलेंगे।",
 				"authorizationHeaderTitle": "Authorization header भेजें",
 				"authorizationHeaderDescription": "हर अनुरोध में Authorization: Bearer <key> जोड़ें।"
 			},
 			"changeTitles": {
-				"useGatewayKey": "अपनी Phaseo Gateway key इस्तेमाल करें",
+				"useGatewayKey": "अपनी Phaseo Gateway कुंजी इस्तेमाल करें",
 				"routeThroughPhaseo": "अनुरोधों को Phaseo के ज़रिए रूट करें",
 				"updateModelIds": "मॉडल ID अपडेट करें",
-				"switchAiSdk": "Phaseo AI SDK provider पर स्विच करें"
+				"switchAiSdk": "Phaseo AI SDK प्रदाता पर स्विच करें"
 			},
 			"changes": {
 				"replaceOpenAiKey": "Phaseo डैशबोर्ड से PHASEO_API_KEY लेकर OPENAI_API_KEY की जगह इस्तेमाल करें।",
 				"replaceAnthropicKey": "Phaseo डैशबोर्ड से PHASEO_API_KEY लेकर ANTHROPIC_API_KEY की जगह इस्तेमाल करें।",
 				"setSdkKey": "SDK क्लाइंट के लिए Phaseo डैशबोर्ड से PHASEO_API_KEY सेट करें।",
 				"sendAuthorization": "हर अनुरोध पर Authorization: Bearer YOUR_API_KEY भेजें।",
-				"replaceVercelProvider": "Vercel OpenAI provider factory को @phaseo/ai-sdk-provider के createPhaseo(...) से बदलें।",
+				"replaceVercelProvider": "Vercel OpenAI प्रदाता फ़ैक्टरी को @phaseo/ai-sdk-provider के createPhaseo(...) से बदलें।",
 				"routeBaseUrl": "ट्रैफ़िक Gateway से भेजने के लिए baseURL को {baseUrl} पर सेट करें।",
 				"routeBaseUrlPython": "ट्रैफ़िक Gateway से भेजने के लिए base_url को {baseUrl} पर सेट करें।",
 				"routeRest": "अनुरोध {endpoint} पर भेजें।",
-				"openAiModelIds": "{modelId} जैसे Phaseo मॉडल ID इस्तेमाल करें। इन्हें हर मॉडल की quickstart गाइड में देखें।",
-				"anthropicModelIds": "{modelId} जैसे Phaseo मॉडल ID इस्तेमाल करें। इन्हें हर मॉडल की quickstart गाइड में देखें।"
+				"openAiModelIds": "{modelId} जैसे Phaseo मॉडल ID इस्तेमाल करें। इन्हें हर मॉडल की त्वरित शुरुआत गाइड में देखें।",
+				"anthropicModelIds": "{modelId} जैसे Phaseo मॉडल ID इस्तेमाल करें। इन्हें हर मॉडल की त्वरित शुरुआत गाइड में देखें।"
 			},
 			"docs": {
 				"apiReference": "API संदर्भ",
@@ -435,7 +435,7 @@
 				"usedFor": "ग्राहक Phaseo क्रेडिट खरीदते और प्रबंधित करते हैं, तब Stripe वित्तीय लेनदेन संभालता है।"
 			},
 			"posthog": {
-				"description": "इवेंट, फ़नल, सेशन डायग्नोस्टिक्स और फ़ीचर व्यवहार को कवर करने वाला खुला उत्पाद एनालिटिक्स प्लेटफ़ॉर्म।",
+				"description": "इवेंट, फ़नल, सत्र डायग्नोस्टिक्स और फ़ीचर व्यवहार को कवर करने वाला खुला उत्पाद एनालिटिक्स प्लेटफ़ॉर्म।",
 				"usedFor": "Phaseo विश्वसनीयता समझने और उपयोगकर्ता प्रवाह बेहतर करने के लिए मापे गए उत्पाद संकेतों का उपयोग करता है, अंतर्ज्ञान को प्रमाण नहीं मानता।"
 			},
 			"statsig": {

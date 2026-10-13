@@ -13,13 +13,13 @@
 		"pricing": "मूल्य निर्धारण",
 		"support": "सहायता",
 		"settings": "सेटिंग्स",
-		"workspaces": "कार्यस्थान",
+		"workspaces": "वर्कस्पेस",
 		"activity": "गतिविधि",
 		"logs": "लॉग",
 		"credits": "क्रेडिट",
 		"keys": "कीज़",
 		"experiments": "प्रयोग",
-		"manageWorkspaces": "कार्यस्थानों का प्रबंधन करें",
+		"manageWorkspaces": "वर्कस्पेसों का प्रबंधन करें",
 		"internal": "आंतरिक",
 		"sendFeedback": "प्रतिक्रिया भेजें",
 		"signUp": "साइन अप करें",
@@ -89,7 +89,7 @@
 		"pages": "पेज",
 		"navigation": "नेविगेशन",
 		"resources": "बाहरी संसाधन",
-		"workspaces": "कार्यस्थान",
+		"workspaces": "वर्कस्पेस",
 		"models": "मॉडल",
 		"apiProviders": "API प्रदाता",
 		"labs": "लैब्स",
@@ -110,8 +110,8 @@
 		"unpin": "{title} से पिन हटाएँ",
 		"pin": "{title} को पिन करें",
 		"pressShortcut": "{first} दबाएँ, फिर {second}",
-		"switchedWorkspace": "{workspace} कार्यस्थान पर स्विच किया गया",
-		"failedSwitchWorkspace": "{workspace} कार्यस्थान पर स्विच नहीं किया जा सका",
+		"switchedWorkspace": "{workspace} वर्कस्पेस पर स्विच किया गया",
+		"failedSwitchWorkspace": "{workspace} वर्कस्पेस पर स्विच नहीं किया जा सका",
 		"apiProvidersPlaceholder": "API प्रदाता खोजें...",
 		"noApiProvidersFound": "चुने गए फ़िल्टर के लिए कोई API प्रदाता नहीं मिला।",
 		"palette": {
@@ -267,7 +267,7 @@
 				"nav-settings-account-mfa": "खाता: MFA",
 				"nav-settings-authorized-apps": "खाता: कनेक्टेड ऐप्स",
 				"nav-settings-account-danger": "खाता: खतरनाक क्षेत्र",
-				"nav-settings-account-workspaces": "कार्यस्थान",
+				"nav-settings-account-workspaces": "वर्कस्पेस",
 				"nav-settings-preferences": "डिस्प्ले प्राथमिकताएँ",
 				"nav-settings-credits-transactions": "बिलिंग: लेनदेन",
 				"nav-settings-payment-methods": "बिलिंग: भुगतान के तरीके",
@@ -591,8 +591,8 @@
 					"description": "टीम की सेटिंग और कॉन्फ़िगरेशन।"
 				},
 				"guardrails": {
-					"title": "सुरक्षा नियम",
-					"description": "सुरक्षा नीतियाँ और नियमों का कॉन्फ़िगरेशन।"
+					"title": "गार्डरेल",
+					"description": "सुरक्षा नीतियाँ और गार्डरेल कॉन्फ़िगरेशन।"
 				},
 				"management-keys": {
 					"title": "प्रबंधन कुंजियाँ",
@@ -621,11 +621,11 @@
 				"presets": "सहेजे गए रूटिंग और प्रॉम्प्ट प्रीसेट",
 				"settings": "टीम की सेटिंग और कॉन्फ़िगरेशन",
 				"providerCredentials": "प्रदाता क्रेडेंशियल",
-				"guardrails": "सुरक्षा नियम और नीतियाँ",
+				"guardrails": "गार्डरेल और नीतियाँ",
 				"budgets": "टीम के खर्च बजट और उपयोग",
 				"managementKeys": "मशीन-स्तर की प्रबंधन कुंजी की जानकारी",
 				"oauthApps": "OAuth ऐप और इंटीग्रेशन की सेटिंग",
-				"privateModels": "कार्यस्थान के निजी मॉडल"
+				"privateModels": "वर्कस्पेस के निजी मॉडल"
 			},
 			"managePermissions": "अनुमतियाँ प्रबंधित करें",
 			"additionalPermissionsDescription": "यह ऐप अब और अनुमतियाँ माँग सकता है। आपका मौजूदा ऐक्सेस नहीं बदला है। ऐप से नया अनुरोध शुरू करने के लिए ऊपर “फिर से अनुमति दें” चुनें।",
@@ -640,8 +640,8 @@
 	},
 	"dropdown": {
 		"jumpToSection": "अनुभाग पर जाएँ",
-		"chooseWorkspace": "कार्यस्थान चुनें",
-		"workspace": "कार्यस्थान"
+		"chooseWorkspace": "वर्कस्पेस चुनें",
+		"workspace": "वर्कस्पेस"
 	},
 	"timeRange": {
 		"label": "समय सीमा",
@@ -1176,8 +1176,8 @@
 			"deleteDestination": "गंतव्य हटाएँ",
 			"openRequestDetails": "अनुरोध विवरण खोलें",
 			"copyRequestId": "अनुरोध ID कॉपी करें",
-			"copySessionId": "सेशन ID कॉपी करें",
-			"copyNativeResponseId": "नेटिव रिस्पॉन्स ID कॉपी करें",
+			"copySessionId": "सत्र ID कॉपी करें",
+			"copyNativeResponseId": "नेटिव प्रतिक्रिया ID कॉपी करें",
 			"copyModelId": "मॉडल ID कॉपी करें",
 			"copied": "{label} कॉपी किया गया",
 			"copyFailed": "{label} कॉपी नहीं हो सका",
@@ -1497,8 +1497,8 @@
 		},
 		"identifiers": {
 			"requestId": "अनुरोध ID",
-			"sessionId": "सेशन ID",
-			"nativeResponseId": "नेटिव रिस्पॉन्स ID",
+			"sessionId": "सत्र ID",
+			"nativeResponseId": "नेटिव प्रतिक्रिया ID",
 			"modelId": "मॉडल ID"
 		},
 		"requestBuilder": {
@@ -1852,7 +1852,7 @@
 				"availabilityWarning": "उपलब्धता चेतावनी",
 				"availabilityWarningDescription": "अनुमत सूची से वैकल्पिक मार्ग हट सकते हैं। महत्वपूर्ण अनुरोधों के लिए कम से कम दो प्रदाता चालू रखें।"
 			},
-			"saveWorkspacePolicyFailed": "कार्यस्थान की डेटा नीति सहेजी नहीं जा सकी"
+			"saveWorkspacePolicyFailed": "वर्कस्पेस की डेटा नीति सहेजी नहीं जा सकी"
 		},
 		"rankings": {
 			"noDataTitle": "अभी लीडरबोर्ड डेटा नहीं है",
@@ -2069,19 +2069,19 @@
 		},
 		"workspaceSwitcher": {
 			"clipboardUnavailable": "क्लिपबोर्ड उपलब्ध नहीं है।",
-			"workspaceCopied": "कार्यस्थान ID क्लिपबोर्ड पर कॉपी किया गया।",
-			"workspaceCopyFailed": "कार्यस्थान ID कॉपी नहीं हो सका।",
-			"switching": "कार्यस्थान बदला जा रहा है…",
+			"workspaceCopied": "वर्कस्पेस ID क्लिपबोर्ड पर कॉपी किया गया।",
+			"workspaceCopyFailed": "वर्कस्पेस ID कॉपी नहीं हो सका।",
+			"switching": "वर्कस्पेस बदला जा रहा है…",
 			"switched": "{workspace} पर स्विच किया गया।",
 			"switchFailed": "{workspace} पर स्विच नहीं हो सका। फिर से कोशिश करें।",
-			"chooseNamed": "कार्यस्थान चुनें: {workspace}",
-			"searchAll": "सभी कार्यस्थानों में खोजें",
-			"searching": "कार्यस्थान खोजे जा रहे हैं…",
-			"searchFailed": "कार्यस्थान खोजे नहीं जा सके।",
+			"chooseNamed": "वर्कस्पेस चुनें: {workspace}",
+			"searchAll": "सभी वर्कस्पेसों में खोजें",
+			"searching": "वर्कस्पेस खोजे जा रहे हैं…",
+			"searchFailed": "वर्कस्पेस खोजे नहीं जा सके।",
 			"tryAgain": "फिर से कोशिश करें",
-			"noResults": "कोई कार्यस्थान नहीं मिला।",
-			"enterMore": "सभी कार्यस्थानों में खोजने के लिए एक और अक्षर दर्ज करें।",
-			"noneAvailable": "कोई कार्यस्थान उपलब्ध नहीं है।",
+			"noResults": "कोई वर्कस्पेस नहीं मिला।",
+			"enterMore": "सभी वर्कस्पेसों में खोजने के लिए एक और अक्षर दर्ज करें।",
+			"noneAvailable": "कोई वर्कस्पेस उपलब्ध नहीं है।",
 			"searchResults": "खोज परिणाम",
 			"loadingMore": "और लोड किया जा रहा है…"
 		},
@@ -2269,7 +2269,7 @@
 			"providerAdmin": "प्रदाता व्यवस्थापक",
 			"phaseoAdmin": "Phaseo व्यवस्थापक",
 			"phaseoEditor": "Phaseo संपादक",
-			"workspaceMember": "कार्यस्थान सदस्य",
+			"workspaceMember": "वर्कस्पेस सदस्य",
 			"usageAndActivity": "उपयोग और गतिविधि",
 			"providerTools": "प्रदाता उपकरण",
 			"pageDetails": "पृष्ठ का विवरण",
@@ -2387,10 +2387,10 @@
 			"unsavedWarning": "आपके अधूरे बदलाव खो जाएँगे। सहेजने के लिए यहीं रहें या उन्हें छोड़कर बाहर जाएँ।",
 			"stay": "यहीं रहें",
 			"discardLeave": "छोड़ें और बाहर जाएँ",
-			"workspaceBlocked": "इस कार्यक्षेत्र में ब्लॉक है",
-			"modelBlocked": "चुने गए कार्यक्षेत्र के अनुरोध इस मॉडल तक रूट नहीं किए जा सकते।",
-			"providerBlocked": "चुने गए कार्यक्षेत्र के अनुरोध इस प्रदाता तक रूट नहीं किए जा सकते।",
-			"blockedByWorkspace": "कार्यक्षेत्र के डेटा नियंत्रणों द्वारा ब्लॉक",
+			"workspaceBlocked": "इस वर्कस्पेस में ब्लॉक है",
+			"modelBlocked": "चुने गए वर्कस्पेस के अनुरोध इस मॉडल तक रूट नहीं किए जा सकते।",
+			"providerBlocked": "चुने गए वर्कस्पेस के अनुरोध इस प्रदाता तक रूट नहीं किए जा सकते।",
+			"blockedByWorkspace": "वर्कस्पेस के डेटा नियंत्रणों द्वारा ब्लॉक",
 			"blockedByGuardrail": "{name} द्वारा ब्लॉक",
 			"hiddenPreview": "व्यवस्थापक पूर्वावलोकन · छिपा मॉडल",
 			"providersCount": "प्रदाता ({count})",
@@ -2449,7 +2449,7 @@
 			"dateUnknown": "तारीख अज्ञात",
 			"rightOnTheMoney": "कीमत बिल्कुल सही",
 			"priceLocked": "कीमत तय कर दी गई",
-			"workspaceSuffix": " {named, select, yes {{workspace} के लिए} other {इस कार्यक्षेत्र के लिए}}",
+			"workspaceSuffix": " {named, select, yes {{workspace} के लिए} other {इस वर्कस्पेस के लिए}}",
 			"noActivity": "कोई गतिविधि नहीं",
 			"requestErrorMessage": "अनुरोध का त्रुटि संदेश",
 			"openDetails": "विवरण खोलें"
