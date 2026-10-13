@@ -36,7 +36,8 @@ create table public.v2_subscription_plan_allowances (
   check (quantity_kind not in ('exact','up_to','approximate','estimated') or quantity is not null),
   check (quantity_kind <> 'unlimited' or (quantity is null and quantity_max is null)),
   check ((window_kind in ('calendar','rolling') and window_unit is not null and window_count is not null) or
-    (window_kind in ('none','unknown') and window_unit is null and window_count is null)),
+    (window_kind='unknown' and ((window_unit is null and window_count is null) or (window_unit is not null and window_count is not null))) or
+    (window_kind='none' and window_unit is null and window_count is null)),
   check (overage_price is null or (overage_policy='payg' and overage_currency is not null and overage_unit_quantity is not null)),
   check (effective_to is null or effective_to > effective_from)
 );

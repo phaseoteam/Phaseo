@@ -95,6 +95,7 @@ try {
   await db.exec(`update v2_subscription_plan_offers set effective_from=now()+interval '1 day' where legacy_plan_uuid=md5('year')::uuid`);
   const current=(await db.query("select * from get_v2_subscription_catalogue('pro')")).rows.map(row=>Object.values(row)[0])[0];
   assert.equal(current.offers.length,1);
+  await assert.rejects(db.exec("insert into v2_subscription_plans(plan_uuid,plan_id,name,lab_slug) values(md5('duplicate')::uuid,'pro','Other Pro','other')"));
   await db.exec(`insert into users values(md5('admin')::uuid,'admin'),(md5('member')::uuid,'member');
     grant select on users to service_role;
     grant select,insert,update on v2_subscription_plans,v2_subscription_plan_models,v2_subscription_plan_features to service_role;

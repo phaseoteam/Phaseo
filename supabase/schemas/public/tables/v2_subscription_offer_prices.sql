@@ -22,7 +22,7 @@ create table public.v2_subscription_offer_prices (
     (pricing_type in ('custom','unknown') and amount is null) or
     (pricing_type='usage_based' and (amount is null or amount >= 0))),
   check (charge_basis <> 'unit' or unit is not null),
-  unique (offer_uuid,component_key,phase,starts_at_cycle)
+  unique (offer_uuid,component_key,phase,starts_at_cycle,effective_from)
 );
 
 alter table public.v2_subscription_offer_prices enable row level security;

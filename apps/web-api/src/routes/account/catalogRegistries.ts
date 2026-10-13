@@ -28,7 +28,7 @@ export const catalogRegistries: Record<string, Registry> = {
 };
 export function registrySchema(registry: Registry) {
   return z.strictObject(Object.fromEntries(registry.fields.map((field) => {
-    let schema: z.ZodType = field.type === "boolean" ? z.boolean() : field.type === "number" ? z.number().finite().nonnegative() : field.type === "json" ? z.record(z.string(), z.unknown()) : field.type === "uuid" ? z.uuid() : field.type === "url" ? z.url() : field.type === "datetime" ? z.iso.datetime({ offset: true }) : z.string().trim().max(2000);
+    let schema: z.ZodType = field.type === "boolean" ? z.boolean() : field.type === "number" ? z.number().finite().nonnegative() : field.type === "json" ? z.json() : field.type === "uuid" ? z.uuid() : field.type === "url" ? z.url() : field.type === "datetime" ? z.iso.datetime({ offset: true }) : z.string().trim().max(2000);
     if (field.required && field.type === "text") schema = z.string().trim().min(1).max(2000);
     // Database constraints validate vocabulary; existing imported values stay editable.
     return [field.key, field.required ? schema : schema.nullable().optional()];

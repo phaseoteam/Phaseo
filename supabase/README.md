@@ -1,5 +1,7 @@
 # Production migrations
 
+See [Subscription catalogue](STRUCTURED-SUBSCRIPTIONS.md) for subscription offers, prices, allowances, migration semantics and rollout checks.
+
 The migration files in `migrations/` are the source of truth for production schema history. The production CI job runs `supabase db push`, which compares their timestamp versions with `supabase_migrations.schema_migrations` in production. A version already recorded there is skipped; a production version with no matching file causes the job to stop.
 
 To apply a migration before CI, create and commit its timestamped SQL file first. From the branch containing that file, link the CLI to the production project and run `supabase db push --linked --include-all --dry-run` to review the pending versions. Then run `supabase db push --linked --include-all` using the same checkout. When CI later runs from that commit, it sees the recorded version and skips it.

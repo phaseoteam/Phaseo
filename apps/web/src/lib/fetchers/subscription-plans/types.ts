@@ -73,6 +73,12 @@ export interface SubscriptionPlanFeature {
 }
 
 export interface SubscriptionPlanModel {
+	access_mode?: string;
+	access_channel?: string | null;
+	conditions?: string | null;
+	mapping_status?: string;
+	source_url?: string | null;
+	verified_at?: string | null;
 	model_id: string;
 	model_info: any;
 	rate_limit: any;

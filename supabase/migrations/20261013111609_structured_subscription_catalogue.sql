@@ -56,7 +56,7 @@ create table public.v2_subscription_offer_prices (
     (pricing_type in ('custom','unknown') and amount is null) or
     (pricing_type='usage_based' and (amount is null or amount >= 0))),
   check (charge_basis <> 'unit' or unit is not null),
-  unique (offer_uuid,component_key,phase,starts_at_cycle)
+  unique (offer_uuid,component_key,phase,starts_at_cycle,effective_from)
 );
 
 create table public.v2_subscription_feature_definitions (
@@ -114,7 +114,8 @@ create table public.v2_subscription_plan_allowances (
   check (quantity_kind not in ('exact','up_to','approximate','estimated') or quantity is not null),
   check (quantity_kind <> 'unlimited' or (quantity is null and quantity_max is null)),
   check ((window_kind in ('calendar','rolling') and window_unit is not null and window_count is not null) or
-    (window_kind in ('none','unknown') and window_unit is null and window_count is null)),
+    (window_kind='unknown' and ((window_unit is null and window_count is null) or (window_unit is not null and window_count is not null))) or
+    (window_kind='none' and window_unit is null and window_count is null)),
   check (overage_price is null or (overage_policy='payg' and overage_currency is not null and overage_unit_quantity is not null)),
   check (effective_to is null or effective_to > effective_from)
 );
@@ -145,11 +146,11 @@ update public.v2_subscription_plans p set canonical_plan_uuid=m.canonical,
   source_url=coalesce(p.other_info->>'source_url',p.link),
   verified_at=coalesce(p.other_info->>'verified_at',p.other_info->>'checked_on',p.other_info->>'verified_on')::timestamptz
 from mapping m where p.plan_uuid=m.plan_uuid;
-create unique index v2_subscription_plan_identity_idx on public.v2_subscription_plans(coalesce(lab_slug,''),plan_id) where status <> 'merged';
+create unique index v2_subscription_plan_identity_idx on public.v2_subscription_plans(plan_id) where status <> 'merged';
 
-insert into public.v2_subscription_plan_offers(offer_uuid,plan_uuid,legacy_plan_uuid,billing_interval,billing_interval_count,
+insert into public.v2_subscription_plan_offers(offer_uuid,plan_uuid,legacy_plan_uuid,label,billing_interval,billing_interval_count,
   currency,purchase_url,source_url,verified_at,effective_to,metadata,tax_treatment,minimum_seats)
-select p.plan_uuid,p.canonical_plan_uuid,p.plan_uuid,
+select p.plan_uuid,p.canonical_plan_uuid,p.plan_uuid,p.name||' · '||coalesce(p.frequency,'custom'),
   case lower(p.frequency) when 'daily' then 'day' when 'day' then 'day' when 'weekly' then 'week'
     when 'monthly' then 'month' when 'month' then 'month' when 'quarterly' then 'month'
     when 'yearly' then 'year' when 'annual' then 'year' when 'year' then 'year' end,
@@ -236,7 +237,7 @@ insert into public.v2_subscription_plan_allowances(plan_uuid,feature_key,allowan
   quantity,quantity_max,quantity_kind,unit,window_kind,window_unit,window_count,allocation_basis,pool_scope,
   grant_condition,display_text,conditions,source_url,effective_to)
 select f.plan_uuid,f.feature_key,f.feature_name,
-  case when f.feature_name ~* 'relative usage|agent limits|^usage$' and f.feature_value ~ '^[0-9.]+x' then 'relative_usage'
+  case when f.feature_value ~ '^[0-9.]+x' then 'relative_usage'
     when f.feature_name in ('Concurrency','Agent Usage') and f.feature_value ~ '^[0-9]' then 'concurrency'
     when f.feature_name ~* '(credits|points)' then 'credit_grant' else 'quota' end,
   case when f.feature_value ~ '^[0-9][0-9,.]*[–-][0-9]' then replace((regexp_match(f.feature_value,'^([0-9,.]+)'))[1],',','')::numeric
@@ -247,7 +248,7 @@ select f.plan_uuid,f.feature_key,f.feature_name,
     when f.feature_value ~* '^up to approx' then 'approximate'
     when f.feature_value ~* '^up to [0-9]' then 'up_to'
     when f.feature_value ~ '^[0-9][0-9,.]*( |x|$)' then 'exact' else 'unknown' end,
-  case when f.feature_name ~* 'relative usage|agent limits|^usage$' and f.feature_value ~ '^[0-9.]+x' then 'multiplier'
+  case when f.feature_value ~ '^[0-9.]+x' then 'multiplier'
     when f.feature_name ~* 'credits' then p.lab_slug||'_credits'
     when f.feature_name='Agent Usage' then 'agents'
     when f.feature_name ~* '5.hour|weekly limit' then 'prompts'
@@ -269,9 +270,29 @@ select f.plan_uuid,f.feature_key,f.feature_name,
   case when f.feature_value ~* 'on login' then 'login' end,
   f.feature_value,f.feature_description,f.source_url,f.effective_to
 from public.v2_subscription_plan_features f join public.v2_subscription_plans p using(plan_uuid)
-where p.status<>'merged' and f.feature_name ~* '(credits|quota|limit|usage|requests|points|concurrency|^RPM$|^TPM$|^TPD$|video generation|java transformations)'
+where p.status<>'merged' and (f.feature_name ~* '(credits|quota|limit|usage|requests|points|concurrency|^RPM$|^TPM$|^TPD$|video generation|java transformations)' or f.feature_value ~ '^[0-9.]+x ')
   and not exists(select 1 from public.v2_subscription_plan_allowances a where a.plan_uuid=f.plan_uuid and a.allowance_key=f.feature_name)
   and f.feature_name not in ('Minimum Seats','Model Access Priority');
+
+update public.v2_subscription_plan_allowances a set comparison_plan_uuid=(
+  select target.plan_uuid from public.v2_subscription_plans target
+  join public.v2_subscription_plans owner on owner.plan_uuid=a.plan_uuid
+  where target.status='active' and target.plan_uuid<>a.plan_uuid and (
+    position(lower(target.name) in lower(regexp_replace(a.display_text,'^[0-9.]+x ','')))>0 or
+    (target.lab_slug=owner.lab_slug and position(lower(regexp_replace(target.name,'^(ChatGPT |Google AI |Cursor |Claude |GLM Coding Plan )','')) in lower(regexp_replace(a.display_text,'^[0-9.]+x ','')))>0))
+  order by (target.lab_slug=owner.lab_slug) desc,length(target.name) desc limit 1)
+where a.allowance_kind='relative_usage';
+
+-- A provider can publish multiple quota windows without an exact allowance.
+insert into public.v2_subscription_plan_allowances(plan_uuid,feature_key,allowance_key,quantity_kind,unit,
+  window_kind,window_unit,window_count,display_text,conditions,source_url,effective_to)
+select a.plan_uuid,a.feature_key,a.allowance_key||':'||w.label,'unknown',a.unit,
+  w.kind,w.unit,w.count,a.display_text,a.conditions,a.source_url,a.effective_to
+from public.v2_subscription_plan_allowances a
+cross join (values ('five_hour','rolling','hour',5),('weekly','unknown','week',1)) w(label,kind,unit,count)
+where a.allowance_key='Quota Windows' and a.display_text='5-hour rolling and weekly';
+update public.v2_subscription_plan_allowances set effective_to=now()
+where allowance_key='Quota Windows' and display_text='5-hour rolling and weekly';
 
 update public.v2_subscription_plan_allowances a set overage_policy='payg',overage_price=0.01,overage_currency='USD',overage_unit_quantity=1,
   overage_source_url=a.source_url
@@ -429,4 +450,3 @@ begin
 end $$;
 revoke all on function public.mutate_v2_admin_subscription_plan(uuid,text,uuid,jsonb) from public,anon,authenticated;
 grant execute on function public.mutate_v2_admin_subscription_plan(uuid,text,uuid,jsonb) to service_role;
-

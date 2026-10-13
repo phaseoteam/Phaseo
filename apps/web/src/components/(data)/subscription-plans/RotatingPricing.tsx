@@ -13,7 +13,7 @@ interface RotatingPricingProps {
 	prices?: SubscriptionPrice[];
 }
 
-export default function RotatingPricing({ prices, locale, messages }: RotatingPricingProps) {
+export default function RotatingPricing({ prices, messages }: RotatingPricingProps) {
 	const format = useDisplayFormatters();
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const priceCount = prices?.length ?? 0;
