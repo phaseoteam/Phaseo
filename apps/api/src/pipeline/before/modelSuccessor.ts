@@ -256,3 +256,37 @@ export function successorRedirectTarget(
 export function modelSubstitutionHeader(substitution: ModelSubstitution): string {
     return `reason=${substitution.reason}; from=${substitution.from}; to=${substitution.to}`;
 }
+
+const MAX_RECORDED_SUBSTITUTIONS = 1_000;
+const recordedSubstitutions = new Set<string>();
+
+/**
+ * Queues the one-off "now served by" notice for the workspace. The database
+ * keeps one notice per workspace, model and replacement; this isolate also
+ * remembers what it already sent so a busy redirect is one call, not one per
+ * request.
+ */
+export function recordModelSubstitution(workspaceId: string | null | undefined, substitution: ModelSubstitution): Promise<void> | null {
+    if (!workspaceId) return null;
+    const key = `${workspaceId}:${substitution.from}:${substitution.to}`;
+    if (recordedSubstitutions.has(key)) return null;
+    if (recordedSubstitutions.size >= MAX_RECORDED_SUBSTITUTIONS) recordedSubstitutions.clear();
+    recordedSubstitutions.add(key);
+    return (async () => {
+        const { error } = await getSupabaseAdmin().rpc("record_model_substitution", {
+            p_workspace_id: workspaceId,
+            p_model_slug: substitution.from,
+            p_successor_slug: substitution.to,
+            p_source: substitution.source,
+        });
+        if (error) {
+            recordedSubstitutions.delete(key);
+            throw new Error(`model_substitution_record_failed:${error.message}`);
+        }
+    })();
+}
+
+/** Test hook: forget which substitutions this isolate has recorded. */
+export function resetRecordedModelSubstitutions(): void {
+    recordedSubstitutions.clear();
+}

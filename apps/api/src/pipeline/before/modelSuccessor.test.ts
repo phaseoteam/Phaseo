@@ -1,6 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
+vi.mock("@/runtime/env", () => ({
+    getBindingsIfConfigured: () => null,
+    getSupabaseAdmin: () => ({ rpc: rpcMock }),
+}));
+
 import {
     modelSubstitutionHeader,
+    recordModelSubstitution,
+    resetRecordedModelSubstitutions,
     parseModelSuccessorResolution,
     parseSuccessorRedirectPolicy,
     successorPriceAllowed,
@@ -83,5 +92,35 @@ describe("model successor redirect", () => {
 
     it("describes the substitution in one header", () => {
         expect(modelSubstitutionHeader(successorRedirectTarget(eligible, on)!)).toBe("reason=unserved; from=lab/old; to=lab/new");
+    });
+});
+
+describe("model substitution notice", () => {
+    const substitution = successorRedirectTarget(eligible, on)!;
+
+    beforeEach(() => {
+        rpcMock.mockReset();
+        resetRecordedModelSubstitutions();
+    });
+
+    it("records each substitution once per isolate", async () => {
+        rpcMock.mockResolvedValue({ data: true, error: null });
+        await recordModelSubstitution("ws_1", substitution);
+        expect(recordModelSubstitution("ws_1", substitution)).toBeNull();
+        expect(rpcMock).toHaveBeenCalledTimes(1);
+        expect(rpcMock).toHaveBeenCalledWith("record_model_substitution", {
+            p_workspace_id: "ws_1", p_model_slug: "lab/old", p_successor_slug: "lab/new", p_source: "approved",
+        });
+
+        await recordModelSubstitution("ws_2", { ...substitution, source: "workspace" });
+        expect(rpcMock).toHaveBeenLastCalledWith("record_model_substitution", expect.objectContaining({ p_workspace_id: "ws_2", p_source: "workspace" }));
+    });
+
+    it("tries again after a failed call, and skips requests without a workspace", async () => {
+        rpcMock.mockResolvedValueOnce({ data: null, error: { message: "timeout" } }).mockResolvedValueOnce({ data: true, error: null });
+        await expect(recordModelSubstitution("ws_1", substitution)).rejects.toThrow("model_substitution_record_failed:timeout");
+        await recordModelSubstitution("ws_1", substitution);
+        expect(rpcMock).toHaveBeenCalledTimes(2);
+        expect(recordModelSubstitution(null, substitution)).toBeNull();
     });
 });

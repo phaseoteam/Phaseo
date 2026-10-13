@@ -1,15 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { beforeRequestMock, handleErrorMock, runnerMock } = vi.hoisted(() => ({
+const { beforeRequestMock, handleErrorMock, runnerMock, recordMock, dispatchMock } = vi.hoisted(() => ({
 	beforeRequestMock: vi.fn(),
 	handleErrorMock: vi.fn(async ({ res }: { res: Response }) => res),
 	runnerMock: vi.fn(),
+	recordMock: vi.fn(),
+	dispatchMock: vi.fn(),
 }));
 
 vi.mock("./before", () => ({ beforeRequest: beforeRequestMock }));
 vi.mock("./registry", () => ({ resolvePipeline: () => runnerMock }));
 vi.mock("@core/error-handler", () => ({ handleError: handleErrorMock }));
 vi.mock("./audit", () => ({ auditFailure: vi.fn() }));
+vi.mock("./before/modelSuccessor", async (importOriginal) => ({
+	...await importOriginal<typeof import("./before/modelSuccessor")>(),
+	recordModelSubstitution: recordMock,
+}));
+vi.mock("@/runtime/env", async (importOriginal) => ({
+	...await importOriginal<typeof import("@/runtime/env")>(),
+	dispatchBackground: dispatchMock,
+}));
 vi.mock("./error-response", () => ({
 	buildPipelineExecutionErrorResponse: vi.fn(() => new Response(null, { status: 500 })),
 	logPipelineExecutionError: vi.fn(),
@@ -47,6 +57,8 @@ describe("model successor routing in the pipeline", () => {
 		beforeRequestMock.mockReset();
 		handleErrorMock.mockClear();
 		runnerMock.mockReset();
+		recordMock.mockReset();
+		dispatchMock.mockReset();
 	});
 
 	it("tells the client which model it asked for when a successor served it", async () => {
@@ -62,6 +74,31 @@ describe("model successor routing in the pipeline", () => {
 		expect(response.headers.get("content-type")).toBe("application/json");
 		expect(response.headers.get("x-phaseo-requested-model")).toBe("lab/old");
 		expect(response.headers.get("x-phaseo-model-substitution")).toBe("reason=unserved; from=lab/old; to=lab/new");
+	});
+
+	it("queues the workspace's one-off notice only when the successor answered", async () => {
+		const substitution = { from: "lab/old", to: "lab/new", reason: "unserved", chain: ["lab/new"], source: "approved" };
+		const recording = Promise.resolve();
+		recordMock.mockReturnValue(recording);
+		const succeed = (overrides: Record<string, unknown> = {}) => beforeRequestMock.mockResolvedValueOnce({
+			ok: true,
+			ctx: { ...requestContext("lab/new", { modelSubstitution: substitution }), workspaceId: "ws_1", ...overrides },
+		});
+
+		succeed();
+		runnerMock.mockResolvedValueOnce(new Response("{}", { status: 200 }));
+		await makeEndpointHandler({ endpoint: "responses", schema: null })(post());
+		expect(recordMock).toHaveBeenCalledWith("ws_1", substitution);
+		expect(dispatchMock).toHaveBeenCalledWith(recording);
+
+		recordMock.mockClear();
+		succeed();
+		runnerMock.mockResolvedValueOnce(new Response("{}", { status: 400 }));
+		await makeEndpointHandler({ endpoint: "responses", schema: null })(post());
+		succeed({ testingMode: true });
+		runnerMock.mockResolvedValueOnce(new Response("{}", { status: 200 }));
+		await makeEndpointHandler({ endpoint: "responses", schema: null })(post());
+		expect(recordMock).not.toHaveBeenCalled();
 	});
 
 	it("adds no headers to ordinary responses", async () => {

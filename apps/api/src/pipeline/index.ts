@@ -4,7 +4,8 @@
 // How: Orchestrates before -> execute -> after with timing hooks.
 
 import { beforeRequest, type BeforeRequestObservabilitySnapshot, type UnservedModelFallback } from "./before";
-import { modelSubstitutionHeader, type ModelSubstitution } from "./before/modelSuccessor";
+import { modelSubstitutionHeader, recordModelSubstitution, type ModelSubstitution } from "./before/modelSuccessor";
+import { dispatchBackground } from "@/runtime/env";
 import type { Endpoint } from "@core/types";
 import { handleError } from "@core/error-handler";
 import { auditFailure } from "./audit";
@@ -160,13 +161,20 @@ function fallbackBeforeOptions(
 	};
 }
 
-/** Tells the client which model it asked for when an approved successor served the request. */
+/**
+ * Tells the client which model it asked for when an approved successor served
+ * the request, and queues the workspace's one-off notice the first time one does.
+ */
 function withModelSubstitutionHeaders(
 	response: Response,
-	ctx: { routingDiagnostics?: Record<string, any> | null },
+	ctx: { routingDiagnostics?: Record<string, any> | null; workspaceId?: string | null; testingMode?: boolean },
 ): Response {
 	const substitution = ctx.routingDiagnostics?.modelSubstitution as ModelSubstitution | undefined;
 	if (!substitution) return response;
+	if (response.ok && !ctx.testingMode) {
+		const recording = recordModelSubstitution(ctx.workspaceId, substitution);
+		if (recording) dispatchBackground(recording);
+	}
 	const headers = new Headers(response.headers);
 	headers.set("X-Phaseo-Requested-Model", substitution.from);
 	headers.set("X-Phaseo-Model-Substitution", modelSubstitutionHeader(substitution));

@@ -1358,7 +1358,9 @@
 		"sendingDeprecationTest": "Sending model deprecation test…",
 		"sendingTest": "Sending test…",
 		"connectionTest": "Connection test",
-		"deprecationSample": "Model deprecation sample"
+		"deprecationSample": "Model deprecation sample",
+		"replacementNoticesTitle": "Model replacement notices",
+		"replacementNoticesDescription": "Sent once when a model your workspace uses has no provider and its requests are answered by a replacement. The owner is always emailed; choose extra destinations here."
 	},
 	"contributionCopy": {
 		"summary": "Every eligible non-BYOK request receives a {discount}% discount. Phaseo retains up to 100% of successful prompts and completions after redacting secrets and personal information, in a dedicated private bucket for no more than 30 days. Only {sampleRate}% is currently selected for upstream classification. Only aggregate task statistics appear here; raw content is never published.",
