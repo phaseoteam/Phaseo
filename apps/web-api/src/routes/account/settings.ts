@@ -28,7 +28,7 @@ import { accountSettingsDynamicRoutesRouter } from "./settings-dynamic-routes";
 import { accountSettingsScimRouter } from "./settings-scim";
 import { accountSettingsProviderOnboardingRouter } from "./settings-provider-onboarding";
 import { accountSettingsProviderCatalogRouter } from "./settings-provider-catalog";
-import { CREDIT_SPEND_ROW_LIMIT, CREDIT_SPEND_WINDOW_DAYS, summariseRecentCreditSpend } from "./creditSpend";
+import { creditSpendWindowStart, recentCreditSpend } from "./creditSpend";
 import { purgeWorkerCacheTags } from "@/http/invalidation";
 import { keyDisplayData } from "./settings-key-display";
 import {
@@ -1305,7 +1305,7 @@ accountSettingsRouter.get("/credits", async (c) => {
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const observedAt = Date.now();
-	const [walletResult, initialSettingsResult, latestPaymentResult, userResult, destinationsResult, routesResult, chargesResult] = await Promise.all([
+	const [walletResult, initialSettingsResult, latestPaymentResult, userResult, destinationsResult, routesResult, creditSpendResult] = await Promise.all([
 		context.client.from("wallets")
 			.select("workspace_id,stripe_customer_id,balance_nanos,reserved_nanos,auto_top_up_enabled,low_balance_threshold,auto_top_up_amount,auto_top_up_account_id")
 			.eq("workspace_id", workspaceId).maybeSingle(),
@@ -1319,12 +1319,9 @@ accountSettingsRouter.get("/credits", async (c) => {
 		context.client.from("users").select("obfuscate_info,declared_country_code").eq("user_id", context.user.id).maybeSingle(),
 		context.client.from("notification_destinations").select("id,name,type,status,target_preview,created_at").eq("workspace_id", workspaceId).eq("is_ephemeral", false).neq("status", "deleted").order("created_at", { ascending: false }),
 		context.client.from("notification_event_destinations").select("event_kind,destination_id").eq("workspace_id", workspaceId),
-		// Every wallet debit records its charge here, so this is what actually drains credits (BYOK
-		// requests only appear when they are charged). Bounded; see summariseRecentCreditSpend.
-		context.client.from("gateway_request_charges").select("cost_nanos,created_at")
-			.eq("workspace_id", workspaceId).eq("status", "applied")
-			.gte("created_at", new Date(observedAt - CREDIT_SPEND_WINDOW_DAYS * 86_400_000).toISOString())
-			.order("created_at", { ascending: false }).limit(CREDIT_SPEND_ROW_LIMIT),
+		// Sums the applied wallet charges in the database: every wallet debit records one, so this is
+		// what actually drains credits (BYOK requests only count when they are charged).
+		context.client.rpc("get_workspace_recent_credit_spend", { p_workspace_id: workspaceId, p_since: creditSpendWindowStart(observedAt) }),
 	]);
 	let settingsResult = initialSettingsResult;
 	if (settingsResult.error?.code === "42703") {
@@ -1353,7 +1350,7 @@ accountSettingsRouter.get("/credits", async (c) => {
 		}, {}),
 		obfuscateInfo: cookieOverride === "1" ? true : cookieOverride === "0" ? false : Boolean(userResult.data?.obfuscate_info),
 		// A spend outage only hides the runway estimate; the rest of billing still loads.
-		recentCreditSpend: chargesResult.error ? null : summariseRecentCreditSpend(chargesResult.data ?? [], observedAt),
+		recentCreditSpend: creditSpendResult.error ? null : recentCreditSpend(creditSpendResult.data, observedAt),
 		stripeInfo: {
 			customer: { id: null, email: null },
 			defaultPaymentMethodId: null,

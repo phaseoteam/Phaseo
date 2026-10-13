@@ -95,13 +95,7 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 			balance_nanos: 12500000000, reserved_nanos: 0, auto_top_up_enabled: false,
 		}]), { status: 200 });
 	}
-	if (url.includes("gateway_request_charges")) {
-		const now = Date.now();
-		return new Response(JSON.stringify([
-			{ cost_nanos: 21_000_000_000, created_at: new Date(now - 3_600_000).toISOString() },
-			{ cost_nanos: 14_000_000_000, created_at: new Date(now - 3 * 86_400_000).toISOString() },
-		]), { status: 200 });
-	}
+	if (url.includes("/rpc/get_workspace_recent_credit_spend")) return new Response(JSON.stringify(35_000_000_000), { status: 200 });
 	if (url.includes("credit_ledger")) {
 		return new Response(JSON.stringify([{
 			event_time: "2026-07-13T00:00:00Z", status: "paid", amount_nanos: 10000000000,
