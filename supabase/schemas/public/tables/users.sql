@@ -26,6 +26,7 @@ CREATE TABLE "public"."users" (
   "display_density"         text                     NOT NULL DEFAULT 'comfortable'::text,
   "display_code_language"   text                     NOT NULL DEFAULT 'typescript'::text,
   "display_landing_page"    text                     NOT NULL DEFAULT 'home'::text,
+  "product_emails_opted_out_at" timestamp with time zone,
   CONSTRAINT "users_declared_country_code_check" CHECK (((declared_country_code IS NULL) OR (declared_country_code ~ '^[A-Z]{2}$'::text))),
   CONSTRAINT "users_display_code_language_check" CHECK ((display_code_language = ANY (ARRAY['typescript'::text, 'python'::text, 'curl'::text]))),
   CONSTRAINT "users_display_dark_accent_check" CHECK ((display_dark_accent ~ '^#[0-9A-Fa-f]{6}$'::text)),
@@ -113,6 +114,8 @@ COMMENT ON COLUMN "public"."users"."country_declared_at" IS 'Time at which the u
 COMMENT ON COLUMN "public"."users"."declared_country_code" IS 'ISO 3166-1 alpha-2 country explicitly selected by the user; separate from request-origin geography.';
 
 COMMENT ON COLUMN "public"."users"."display_code_language" IS 'Preferred language for code samples.';
+
+COMMENT ON COLUMN "public"."users"."product_emails_opted_out_at" IS 'When the user unsubscribed from non-essential email such as feedback requests. Service and billing email is unaffected.';
 
 COMMENT ON COLUMN "public"."users"."display_dark_accent" IS 'Preferred hexadecimal accent colour for dark mode.';
 
