@@ -654,6 +654,8 @@
 	},
 	"ui": {
 		"subscriptionCatalog": {
+			"view_plan": "查看套餐",
+			"on_login": "登录时",
 			"audience": "适用对象",
 			"source_url": "来源网址",
 			"verified_at": "核实时间",

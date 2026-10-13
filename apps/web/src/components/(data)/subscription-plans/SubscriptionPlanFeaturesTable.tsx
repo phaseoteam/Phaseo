@@ -1,14 +1,17 @@
 import type { SubscriptionPlanFeature } from "@/lib/fetchers/subscription-plans/types";
 import type { SubscriptionPlansMessages } from "@/i18n/subscription-plans";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { getTranslations } from "next-intl/server";
 
 interface SubscriptionPlanFeaturesTableProps {
 	features?: SubscriptionPlanFeature[] | null;
 	messages: Pick<SubscriptionPlansMessages["detail"], "feature" | "value" | "description">;
 }
 
-export default function SubscriptionPlanFeaturesTable({ features, messages }: SubscriptionPlanFeaturesTableProps) {
+export default async function SubscriptionPlanFeaturesTable({ features, messages }: SubscriptionPlanFeaturesTableProps) {
 	if (!features?.length) return null;
+	const t = await getTranslations();
+	const availability = (value?: string) => value === "included" ? t("Catalogue.models.included") : value === "excluded" ? t("Common.ui.providerCardCopy.excluded") : value === "limited" ? t("Common.ui.subscriptionCatalog.limited") : value === "conditional" ? t("Common.ui.subscriptionCatalog.conditional") : t("Common.status.unknown");
 
 	return (
 		<div className="overflow-hidden rounded-md border border-border/70">
@@ -24,7 +27,7 @@ export default function SubscriptionPlanFeaturesTable({ features, messages }: Su
 					{features.map((feature) => (
 						<TableRow key={feature.feature_name}>
 							<TableCell className="px-4 py-3 font-medium">{feature.feature_name}</TableCell>
-							<TableCell className="px-4 py-3">{feature.value_number ?? feature.value_text ?? feature.feature_value ?? (feature.availability === "unknown" ? "Unspecified" : feature.availability) ?? "-"}</TableCell>
+							<TableCell className="px-4 py-3">{feature.value_number ?? feature.value_text ?? feature.feature_value ?? availability(feature.availability)}</TableCell>
 							<TableCell className="min-w-48 px-4 py-3 text-muted-foreground">{feature.feature_description || "-"}</TableCell>
 						</TableRow>
 					))}

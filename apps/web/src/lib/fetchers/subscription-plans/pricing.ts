@@ -28,12 +28,30 @@ export interface SubscriptionPrice {
 	tax_treatment?: string;
 }
 
+export interface SubscriptionPriceLabels {
+	custom: string;
+	usage: string;
+	unknown: string;
+	from?: string;
+	seat?: string;
+	introductory?: string;
+	firstCycle?: string;
+	cycleCount?: string;
+	period?: (count: number, interval: string) => string;
+}
+
+export function localizedSubscriptionPriceLabels(locale: string, labels: SubscriptionPriceLabels): SubscriptionPriceLabels {
+	return { ...labels, period: (count, interval) => new Intl.NumberFormat(locale, {
+		style: "unit", unit: interval, unitDisplay: "long",
+	}).format(count) };
+}
+
 export function formatSubscriptionPrice(price: SubscriptionPrice, formatAmount = (value: number, currency: string) =>
-	new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(value),
-	labels = { custom: "Custom pricing", usage: "Usage-based", unknown: "Price unavailable" }): string {
+	new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 8 }).format(value),
+	labels: SubscriptionPriceLabels = { custom: "Custom pricing", usage: "Usage-based", unknown: "Price unavailable" }): string {
 	const interval = price.billing_interval;
 	const count = price.billing_interval_count ?? 1;
-	const period = interval ? ` / ${count === 1 ? interval : `${count} ${interval}s`}` :
+	const period = interval ? ` / ${labels.period ? labels.period(count, interval) : count === 1 ? interval : `${count} ${interval}s`}` :
 		({ monthly: " / month", quarterly: " / 3 months", yearly: " / year", weekly: " / week", daily: " / day" } as Record<string, string>)[price.frequency ?? ""] ?? "";
 	const components: SubscriptionPriceComponent[] = price.components?.length ? price.components : [{ component_key: "base",
 		pricing_type: price.pricing_type ?? (price.frequency === "custom" ? "custom" : price.frequency === "usage" ? "usage_based" : price.price == null ? "unknown" : "fixed"),
@@ -47,9 +65,9 @@ export function formatSubscriptionPrice(price: SubscriptionPrice, formatAmount =
 		if (component.pricing_type === "custom") return labels.custom;
 		if (component.pricing_type === "unknown" || component.amount == null) return component.pricing_type === "usage_based" ? labels.usage : labels.unknown;
 		const amount = price.currency ? formatAmount(component.amount, price.currency) : String(component.amount);
-		const basis = component.charge_basis === "seat" ? " / seat" : component.charge_basis === "unit" ? ` / ${component.unit_quantity ?? 1} ${component.unit ?? "unit"}` : "";
-		const phase = component.phase === "renewal" ? ` (from billing cycle ${component.starts_at_cycle ?? 1})` :
-			component.phase === "introductory" ? ` (introductory${component.duration_cycles ? `, ${component.duration_cycles} cycles` : ""})` : "";
-		return `${component.pricing_type === "starting_at" ? "From " : ""}${amount}${basis}${component.charge_basis === "unit" ? "" : period}${phase}`;
+		const basis = component.charge_basis === "seat" ? ` / ${labels.seat ?? "seat"}` : component.charge_basis === "unit" ? ` / ${component.unit_quantity ?? 1} ${component.unit ?? "unit"}` : "";
+		const phase = component.phase === "renewal" ? ` (${labels.firstCycle ? `${labels.firstCycle}:` : "from billing cycle"} ${component.starts_at_cycle ?? 1})` :
+			component.phase === "introductory" ? ` (${labels.introductory ?? "introductory"}${component.duration_cycles ? labels.cycleCount ? `, ${labels.cycleCount}: ${component.duration_cycles}` : `, ${component.duration_cycles} ${component.duration_cycles === 1 ? "cycle" : "cycles"}` : ""})` : "";
+		return `${component.pricing_type === "starting_at" ? `${labels.from ?? "From"} ` : ""}${amount}${basis}${component.charge_basis === "unit" ? "" : period}${phase}`;
 	}).join(" + ")).join(" → ");
 }

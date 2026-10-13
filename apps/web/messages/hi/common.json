@@ -654,6 +654,8 @@
 	},
 	"ui": {
 		"subscriptionCatalog": {
+			"view_plan": "प्लान देखें",
+			"on_login": "लॉगिन पर",
 			"audience": "लक्षित उपयोगकर्ता",
 			"source_url": "स्रोत URL",
 			"verified_at": "सत्यापन समय",

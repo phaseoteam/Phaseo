@@ -654,6 +654,8 @@
 	},
 	"ui": {
 		"subscriptionCatalog": {
+			"view_plan": "Voir le forfait",
+			"on_login": "À la connexion",
 			"audience": "Public",
 			"source_url": "URL source",
 			"verified_at": "Vérifié le",

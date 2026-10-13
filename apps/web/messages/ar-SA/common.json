@@ -654,6 +654,8 @@
 	},
 	"ui": {
 		"subscriptionCatalog": {
+			"view_plan": "عرض الخطة",
+			"on_login": "عند تسجيل الدخول",
 			"audience": "الفئة المستهدفة",
 			"source_url": "رابط المصدر",
 			"verified_at": "تاريخ التحقق",

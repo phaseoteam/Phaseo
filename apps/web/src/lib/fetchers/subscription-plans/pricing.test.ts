@@ -1,4 +1,4 @@
-import { formatSubscriptionPrice, type SubscriptionPrice } from "./pricing";
+import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, type SubscriptionPrice } from "./pricing";
 
 const monthly: SubscriptionPrice = { price: 30, currency: "USD", frequency: "monthly", billing_interval: "month", billing_interval_count: 1 };
 describe("subscription offer formatting", () => {
@@ -22,7 +22,14 @@ describe("subscription offer formatting", () => {
 		expect(formatSubscriptionPrice({ ...monthly, components: [
 			{ ...composite.components[0], amount: 1, phase: "introductory", starts_at_cycle: 1, duration_cycles: 1 },
 			{ ...composite.components[0], amount: 30, phase: "renewal", starts_at_cycle: 2 },
-		] })).toBe("$1.00 / month (introductory, 1 cycles) → $30.00 / month (from billing cycle 2)");
+		] })).toBe("$1.00 / month (introductory, 1 cycle) → $30.00 / month (from billing cycle 2)");
+	});
+	test("localizes periods and price qualifiers and preserves small unit prices", () => {
+		const labels = localizedSubscriptionPriceLabels("de-DE", { custom: "Individuell", usage: "Nach Nutzung", unknown: "Unbekannt", from: "Ab", seat: "Platz" });
+		const format = (amount: number, currency: string) => new Intl.NumberFormat("de-DE", { style: "currency", currency }).format(amount);
+		const value = formatSubscriptionPrice({ ...monthly, pricing_type: "starting_at", charge_basis: "seat" }, format, labels);
+		expect(value).toContain("Ab 30,00"); expect(value).toContain("Platz / 1 Monat");
+		expect(formatSubscriptionPrice({ ...monthly, components: [{ component_key: "metered", pricing_type: "usage_based", amount: 0.003, charge_basis: "unit", unit: "line" }] })).toBe("$0.003 / 1 line");
 	});
 	test("does not invent a currency or subscription period for metered charges", () => {
 		expect(formatSubscriptionPrice({ ...monthly, currency: null })).toBe("30 / month");

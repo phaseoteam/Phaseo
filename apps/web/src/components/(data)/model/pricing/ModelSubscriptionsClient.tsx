@@ -13,7 +13,7 @@ import {
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import type { SubscriptionPlan } from "@/lib/fetchers/models/getModelSubscriptionPlans";
-import { formatSubscriptionPrice, type SubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
+import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, type SubscriptionPrice, type SubscriptionPriceLabels } from "@/lib/fetchers/subscription-plans/pricing";
 import { getLogoLabel } from "@/lib/logos";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
@@ -35,7 +35,7 @@ type SubscriptionLabelKey =
 	| "daily"
 	| "usageBased"
 	| "customPricing";
-type SubscriptionLabels = Record<SubscriptionLabelKey, string>;
+type SubscriptionLabels = Record<SubscriptionLabelKey, string> & { structured?: SubscriptionPriceLabels };
 
 const PLAN_FREQUENCY_ALIASES: Record<string, string> = {
 	mo: "monthly",
@@ -110,8 +110,8 @@ function getCurrencySortRank(currency: string | null | undefined): number {
 type NumberFormatter = ReturnType<typeof useDisplayFormatters>["number"];
 
 function formatPlanPriceValue(price: SubscriptionPrice, formatNumber: NumberFormatter, labels: SubscriptionLabels): string {
-	if (price.components?.length) return formatSubscriptionPrice(price, (amount, currency) => formatNumber(amount, { style: "currency", currency, notation: "standard", maximumFractionDigits: 2 }), { custom: labels.customPricing, usage: labels.usageBased, unknown: "Price unavailable" });
-	if (price.price == null && price.frequency !== "usage" && price.frequency !== "custom") return "Price unavailable";
+	if (price.components?.length) return formatSubscriptionPrice(price, (amount, currency) => formatNumber(amount, { style: "currency", currency, notation: "standard", maximumFractionDigits: 8 }), labels.structured ?? { custom: labels.customPricing, usage: labels.usageBased, unknown: labels.other });
+	if (price.price == null && price.frequency !== "usage" && price.frequency !== "custom") return labels.structured?.unknown ?? labels.other;
 	const normalized = normalizePlanFrequency(price.frequency);
 	if (normalized === "usage") return labels.usageBased;
 	if (normalized === "custom") return labels.customPricing;
@@ -270,7 +270,7 @@ function getStartingPriceText(plans: SubscriptionPlan[], formatNumber: NumberFor
 	);
 	const first = prices[0];
 	if (!first) return null;
-	if (isNonFixedPlanFrequency(first.frequency)) {
+	if (first.components?.length || isNonFixedPlanFrequency(first.frequency)) {
 		return formatPlanPriceValue(first, formatNumber, labels);
 	}
 	return `${formatPlanPriceValue(first, formatNumber, labels)} ${getFrequencyLabel(first.frequency, labels)}`;
@@ -311,6 +311,8 @@ export default function ModelSubscriptionsClient({
 }) {
 	const tEmpty = useTranslations("Catalogue.modelDetail.emptyStates");
 	const tLabels = useTranslations("Catalogue.modelDetail.sections");
+	const terms = useTranslations("Common.ui.subscriptionCatalog");
+	const status = useTranslations("Common.status");
 	const locale = useLocale();
 	const planLabels: SubscriptionLabels = {
 		other: tLabels("other"),
@@ -321,6 +323,7 @@ export default function ModelSubscriptionsClient({
 		daily: tLabels("daily"),
 		usageBased: tLabels("usageBased"),
 		customPricing: tLabels("customPricing"),
+		structured: localizedSubscriptionPriceLabels(locale, { custom: tLabels("customPricing"), usage: tLabels("usageBased"), unknown: status("unknown"), from: terms("starting_at"), seat: terms("seat"), introductory: terms("introductory"), firstCycle: terms("first_billing_cycle"), cycleCount: terms("number_of_cycles") }),
 	};
 	const format = useDisplayFormatters();
 	const groupedPlans = subscriptionPlans.reduce<SubscriptionPlanGroup[]>((groups, plan) => {

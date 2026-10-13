@@ -654,6 +654,8 @@
 	},
 	"ui": {
 		"subscriptionCatalog": {
+			"view_plan": "Ver plan",
+			"on_login": "Al iniciar sesión",
 			"audience": "Destinatarios",
 			"source_url": "URL de origen",
 			"verified_at": "Verificado el",

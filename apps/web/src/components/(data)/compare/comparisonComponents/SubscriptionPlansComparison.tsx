@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Info } from "lucide-react";
 import { ProviderLogo } from "../ProviderLogo";
-import { formatSubscriptionPrice, type SubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
+import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, type SubscriptionPrice, type SubscriptionPriceLabels } from "@/lib/fetchers/subscription-plans/pricing";
 import { PriceRotator } from "./PriceRotator";
 import { useLocale, useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
@@ -118,16 +118,18 @@ function formatCurrencyAmount(
 		style: "currency",
 		currency: c || "USD",
 		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
+		maximumFractionDigits: 8,
 		notation: "standard",
 	});
 }
 
-function formatPriceLine(
+export function formatPriceLine(
 	p: PlanPrice,
 	formatNumber: ReturnType<typeof useDisplayFormatters>["number"],
-	t: ReturnType<typeof useTranslations<"Catalogue.compare">>
+	t: ReturnType<typeof useTranslations<"Catalogue.compare">>,
+	labels: SubscriptionPriceLabels,
 ): string {
+	if ((p as SubscriptionPrice).components?.length) return formatSubscriptionPrice(p as SubscriptionPrice, (amount, currency) => formatCurrencyAmount(amount, currency, formatNumber), labels);
 	const freq = normalizeFrequency(p.frequency);
 	if (freq.toLowerCase() === "usage") return t("usageBased");
 	if (freq.toLowerCase() === "custom") return t("customPricing");
@@ -161,6 +163,9 @@ export default function SubscriptionPlansComparison({
 }: SubscriptionPlansComparisonProps) {
 	const t = useTranslations("Catalogue.compare");
 	const locale = useLocale();
+	const terms = useTranslations("Common.ui.subscriptionCatalog");
+	const unknown = useTranslations("Common.status");
+	const priceLabels = localizedSubscriptionPriceLabels(locale, { custom: t("customPricing"), usage: t("usageBased"), unknown: unknown("unknown"), from: terms("starting_at"), seat: terms("seat"), introductory: terms("introductory"), firstCycle: terms("first_billing_cycle"), cycleCount: terms("number_of_cycles") });
 	const format = useDisplayFormatters();
 	if (!selectedModels || selectedModels.length === 0) return null;
 
@@ -220,7 +225,7 @@ export default function SubscriptionPlansComparison({
 									.map((plan) => {
 										const sortedPrices = getSortedPlanPrices(plan.prices);
 										const priceLines = sortedPrices.map((price) =>
-											formatPriceLine(price, format.number, t)
+											formatPriceLine(price, format.number, t, priceLabels)
 										);
 										const notes = getPlanNotes(plan);
 										return (

@@ -259,15 +259,16 @@ async function requireAdminContext(request: Request, env: Env) {
 	return { status: 200 as const, context: { user, client } };
 }
 
-async function purgeModelCatalogueCache(c: any) {
+async function purgeModelCatalogueCache(c: any, extraTags: string[] = []) {
+	const tags = [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS, ...extraTags];
 	try {
-		return await purgeWorkerCacheTags(c.executionCtx, [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS]);
+		return await purgeWorkerCacheTags(c.executionCtx, tags);
 	} catch (error) {
 		console.error("[web-api/account/models] catalogue cache purge failed", { error });
 		return {
 			success: false,
 			unavailable: false,
-			tags: [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS],
+			tags,
 		};
 	}
 }
@@ -450,7 +451,8 @@ accountModelsRouter.post("/catalog/registries/:resource", async (c) => {
   if (!envelope.success) return c.json({ error: "invalid_registry_record", issues: envelope.error.issues }, 400, PRIVATE_NO_STORE_HEADERS);
   const result = await admin.context.client.rpc("mutate_v2_admin_registry", { p_actor_user_id: admin.context.user.id, p_resource: resource, p_values: envelope.data.values, p_before: envelope.data.before });
   if (result.error) return c.json({ error: "registry_save_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
-  return c.json({ row: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
+  const cache = registry.table.includes("subscription") ? await purgeModelCatalogueCache(c, ["web-api-reference-data", "web-api-compare"]) : null;
+  return c.json({ row: result.data, cache }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountModelsRouter.get("/catalog/counts", async (c) => {
@@ -682,7 +684,7 @@ async function runCatalogMutation(c: any, resource: keyof typeof catalogMutation
         ? await admin.context.client.rpc("mutate_v2_admin_subscription_plan", { p_actor_user_id: admin.context.user.id, p_action: action, p_plan_uuid: resourceId, p_payload: payload })
         : await admin.context.client.rpc("mutate_v2_admin_catalogue", { p_actor_user_id: admin.context.user.id, p_resource_type: resource, p_action: action, p_resource_id: resourceId, p_payload: payload });
 	if (result.error) return c.json({ error: "admin_catalogue_mutation_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
-	const cache = await purgeModelCatalogueCache(c);
+	const cache = await purgeModelCatalogueCache(c, resource === "subscription-plans" ? ["web-api-reference-data", "web-api-compare"] : []);
 	return c.json({ success: true, record: result.data, cache }, 200, PRIVATE_NO_STORE_HEADERS);
 }
 
@@ -786,7 +788,7 @@ accountModelsRouter.put("/:modelId/graph", async (c) => {
 	if (!parsed.success || parsed.data.modelId !== c.req.param("modelId")) return c.json({ error: "invalid_model_graph", issues: parsed.success ? [] : parsed.error.issues }, 400, PRIVATE_NO_STORE_HEADERS);
 	const result = await admin.context.client.rpc("mutate_v2_admin_model_graph_editable", { p_actor_user_id: admin.context.user.id, p_model_slug: parsed.data.modelId, p_payload: parsed.data });
 	if (result.error) return c.json({ ok: false, error: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
-	const cache = await purgeModelCatalogueCache(c);
+	const cache = await purgeModelCatalogueCache(c, parsed.data.subscription_plan_models ? ["web-api-reference-data", "web-api-compare"] : []);
 	return c.json({ ok: true, graph: result.data, cache }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 

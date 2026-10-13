@@ -654,6 +654,8 @@
 	},
 	"ui": {
 		"subscriptionCatalog": {
+			"view_plan": "Tarif ansehen",
+			"on_login": "Bei Anmeldung",
 			"audience": "Zielgruppe",
 			"source_url": "Quell-URL",
 			"verified_at": "Verifiziert am",

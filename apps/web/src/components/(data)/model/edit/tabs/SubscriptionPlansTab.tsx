@@ -99,18 +99,9 @@ export default function SubscriptionPlansTab({
         nextSelected[row.plan_uuid] = {
           plan_uuid: row.plan_uuid,
           effective_to: row.effective_to,
-          model_info:
-            row.model_info && typeof row.model_info === "object"
-              ? row.model_info
-              : {},
-          rate_limit:
-            row.rate_limit && typeof row.rate_limit === "object"
-              ? row.rate_limit
-              : {},
-          other_info:
-            row.other_info && typeof row.other_info === "object"
-              ? row.other_info
-              : {},
+          model_info: row.model_info ?? {},
+          rate_limit: row.rate_limit ?? {},
+          other_info: row.other_info ?? {},
         }
       }
       setSelectedRows(nextSelected)

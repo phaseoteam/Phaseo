@@ -654,6 +654,8 @@
 	},
 	"ui": {
 		"subscriptionCatalog": {
+			"view_plan": "プランを見る",
+			"on_login": "ログイン時",
 			"audience": "対象",
 			"source_url": "出典URL",
 			"verified_at": "確認日時",

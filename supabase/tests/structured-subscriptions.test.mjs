@@ -56,6 +56,20 @@ try {
       const original=originals.find(row=>row.plan_uuid===plan.plan_uuid);
       assert.equal(original.price == null ? null : Number(original.price),plan.price); assert.equal(original.frequency,plan.frequency);
     }
+    const features=(await db.query('select plan_uuid,feature_name,feature_value,feature_description,other_info from v2_subscription_plan_features')).rows;
+    for (const feature of snapshot.features) {
+      const original=features.find(row=>row.plan_uuid===feature.plan_uuid && row.feature_name===feature.feature_name);
+      assert.equal(original.feature_value,feature.feature_value);
+      assert.equal(original.feature_description,feature.feature_description);
+      assert.deepEqual(original.other_info,feature.other_info);
+    }
+    const mappings=(await db.query('select plan_uuid,model_slug,model_info,rate_limit,other_info from v2_subscription_plan_models')).rows;
+    for (const mapping of snapshot.models) {
+      const original=mappings.find(row=>row.plan_uuid===mapping.plan_uuid && row.model_slug===mapping.model_slug);
+      assert.deepEqual(original.model_info,mapping.model_info);
+      assert.deepEqual(original.rate_limit,mapping.rate_limit);
+      assert.deepEqual(original.other_info,mapping.other_info);
+    }
     for (const relation of snapshot.models.filter(active)) {
       const originalPlan=snapshot.plans.find(plan=>plan.plan_uuid===relation.plan_uuid);
       if (!active(originalPlan)) continue;

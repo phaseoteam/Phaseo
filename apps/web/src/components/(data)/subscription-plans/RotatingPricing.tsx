@@ -1,6 +1,7 @@
 "use client";
 
-import { formatSubscriptionPrice, type SubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
+import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, type SubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
+import { useTranslations } from "next-intl";
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
@@ -13,8 +14,10 @@ interface RotatingPricingProps {
 	prices?: SubscriptionPrice[];
 }
 
-export default function RotatingPricing({ prices, messages }: RotatingPricingProps) {
+export default function RotatingPricing({ prices, locale, messages }: RotatingPricingProps) {
 	const format = useDisplayFormatters();
+	const terms = useTranslations("Common.ui.subscriptionCatalog");
+	const status = useTranslations("Common.status");
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const priceCount = prices?.length ?? 0;
 
@@ -34,7 +37,8 @@ export default function RotatingPricing({ prices, messages }: RotatingPricingPro
 
 	const currentPrice = prices[currentIndex] ?? prices[0];
 
-	const formattedPrice = formatSubscriptionPrice(currentPrice, (amount, currency) => format.number(amount, { style: "currency", currency, notation: "standard", maximumFractionDigits: 2 }), { custom: messages.customPricing, usage: messages.usageBased, unknown: "Price unavailable" });
+	const labels = localizedSubscriptionPriceLabels(locale, { custom: messages.customPricing, usage: messages.usageBased, unknown: status("unknown"), from: terms("starting_at"), seat: terms("seat"), introductory: terms("introductory"), firstCycle: terms("first_billing_cycle"), cycleCount: terms("number_of_cycles") });
+	const formattedPrice = formatSubscriptionPrice(currentPrice, (amount, currency) => format.number(amount, { style: "currency", currency, notation: "standard", maximumFractionDigits: 8 }), labels);
 
 	return (
 		<div className="text-2xl font-bold text-primary">
