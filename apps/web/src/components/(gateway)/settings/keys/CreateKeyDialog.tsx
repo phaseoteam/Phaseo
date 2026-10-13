@@ -226,7 +226,7 @@ export default function CreateKeyDialog({
 					</form>
 				) : (
 					<div className="space-y-5">
-						<div className="select-all break-all rounded-lg border border-border bg-muted/60 p-3 font-mono text-xs leading-5 sm:text-sm">
+						<div className="ph-no-capture select-all break-all rounded-lg border border-border bg-muted/60 p-3 font-mono text-xs leading-5 sm:text-sm">
 							{plainKey}
 						</div>
 						<p className="text-sm leading-5 text-muted-foreground">

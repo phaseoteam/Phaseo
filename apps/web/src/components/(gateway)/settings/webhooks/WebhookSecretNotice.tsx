@@ -38,7 +38,7 @@ export default function WebhookSecretNotice({
 					{w.rich("signatureExplanation", { header: () => <code>x-phaseo-signature</code> })}
 				</p>
 				<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-					<code className="min-w-0 flex-1 overflow-x-auto rounded-md bg-white/70 px-3 py-2 font-mono text-xs dark:bg-black/20">
+					<code className="ph-no-capture min-w-0 flex-1 overflow-x-auto rounded-md bg-white/70 px-3 py-2 font-mono text-xs dark:bg-black/20">
 						{secret}
 					</code>
 					<Button type="button" variant="outline" size="sm" onClick={() => copy(secret, t("strings.Signing secret" as never))}>

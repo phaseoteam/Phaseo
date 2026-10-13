@@ -150,7 +150,7 @@ export default function CreateOAuthAppDialog({
 				<Label>{t("credits.Client Secret" as never)}</Label>
 							<Card className="p-3 mt-1 bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800">
 								<div className="flex items-center justify-between gap-2">
-									<code className="text-xs break-all flex-1">{createdApp.client_secret}</code>
+									<code className="ph-no-capture text-xs break-all flex-1">{createdApp.client_secret}</code>
 									<Button
 										size="sm"
 										variant="outline"

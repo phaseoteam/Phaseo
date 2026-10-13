@@ -3,7 +3,8 @@
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { UserUsageChip } from "@/components/(gateway)/settings/keys/UserUsageChip";
-import { memo } from "react";
+import { memo, useEffect } from "react";
+import { captureProductEventOnce } from "@/lib/productAnalytics";
 import { useSearchParams } from "next/navigation";
 import { PrivateUsageQuery, usePrivateUsageQuery } from "@/components/(gateway)/usage/PrivateUsageQuery";
 import { fetchPrivateUsage } from "@/lib/query/fetchPrivateUsage";
@@ -586,6 +587,12 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 	const { keys, current: currentRequestResult, previous: previousRequestResult } = initial;
 	const rawRows = currentRequestResult.rows;
 	const previousRows = previousRequestResult.rows;
+	const hasUsage = rawRows.length > 0 || previousRows.length > 0;
+
+	useEffect(() => {
+		if (!hasUsage || !initial.workspaceId) return;
+		captureProductEventOnce("gateway_first_usage_seen", { surface: "usage_overview" }, initial.workspaceId);
+	}, [hasUsage, initial.workspaceId]);
 
 	const keyMap = new Map(keys.map((key) => [key.id, key]));
 	const modelMetadata = new Map(initial.modelMetadataEntries);

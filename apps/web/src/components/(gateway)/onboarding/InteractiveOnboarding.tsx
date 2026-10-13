@@ -825,7 +825,7 @@ export default function InteractiveOnboarding({
 													{t("keyShownOnce")}
 												</p>
 												<div className="mt-3 flex items-center gap-2 rounded-md border bg-muted p-2">
-													<code className="min-w-0 flex-1 overflow-auto whitespace-nowrap text-sm">
+													<code className="ph-no-capture min-w-0 flex-1 overflow-auto whitespace-nowrap text-sm">
 														{createdPlaintextKey}
 													</code>
 												</div>
