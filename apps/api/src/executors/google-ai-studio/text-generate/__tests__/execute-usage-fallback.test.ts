@@ -48,6 +48,56 @@ afterAll(() => {
 });
 
 describe("google-ai-studio execute usage fallback", () => {
+	it.each([
+		["chat.completions", "openai.chat.completions"],
+		["responses", "openai.responses"],
+	])("preserves native Gemini output through the public executor for %s", async (endpoint, protocol) => {
+		const payloads = [
+			{
+				candidates: [{ index: 0, content: { role: "model", parts: [{ text: "OK" }] } }],
+			},
+			{
+				candidates: [{ index: 0, content: { role: "model", parts: [] }, finishReason: "STOP" }],
+				usageMetadata: { promptTokenCount: 36, candidatesTokenCount: 5, thoughtsTokenCount: 3, totalTokenCount: 44 },
+			},
+		];
+		const encoder = new TextEncoder();
+		const body = new ReadableStream<Uint8Array>({
+			start(controller) {
+				for (const payload of payloads) {
+					controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\r\n\r\n`));
+				}
+				controller.close();
+			},
+		});
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/v1beta/models/gemini-4-argon:streamGenerateContent?alt=sse"),
+			response: new Response(body, { headers: { "Content-Type": "text/event-stream" } }),
+		}]);
+		try {
+			const result = await executor(buildArgs({ model: "google/gemini-4-argon", stream: true }, {
+				providerModelSlug: "gemini-4-argon", endpoint, protocol,
+			}));
+			expect(result.kind).toBe("stream");
+			if (result.kind !== "stream" || !result.stream) throw new Error("Expected a Gemini stream");
+			const output = await new Response(result.stream).text();
+			expect(output).toContain('"OK"');
+			expect(output).not.toContain("google_empty_response");
+			expect(output).toContain('"reasoning_tokens":3');
+			if (protocol === "openai.chat.completions") {
+				expect(output).toContain('"finish_reason":"stop"');
+				expect(output).toContain('"prompt_tokens":36');
+				expect(output).toContain('"completion_tokens":5');
+				expect(output.match(/data: \[DONE\]/g)).toHaveLength(1);
+			} else {
+				expect(output).toContain("event: response.completed");
+				expect(output).not.toContain("event: response.failed");
+			}
+		} finally {
+			mock.restore();
+		}
+	});
+
 	it("uses generateContent for explicit cached content", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url.endsWith("/v1beta/models/gemini-2.5-flash:generateContent"),
