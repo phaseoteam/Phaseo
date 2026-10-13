@@ -5,7 +5,7 @@ import { Titlebar } from "./shell/Titlebar";
 import { Sidebar } from "./shell/Sidebar";
 import { RightPanel } from "./shell/RightPanel";
 import { CommandPalette } from "./shell/CommandPalette";
-import { SettingsDialog } from "./settings/SettingsDialog";
+import { SettingsPage } from "./settings/SettingsPage";
 import { NewChat } from "./chat/NewChat";
 import { ChatView } from "./chat/ChatView";
 import { CompareView } from "./chat/CompareView";
@@ -36,7 +36,8 @@ function useShortcuts() {
 }
 
 function Main() {
-	const { selectedId, compareId, compareGroups } = useWorkspace();
+	const { selectedId, compareId, compareGroups, settings } = useWorkspace();
+	if (settings) return <SettingsPage />;
 	const group = compareGroups.find(value => value.id === compareId);
 	if (group) return <CompareView key={group.id} group={group} />;
 	if (selectedId) return <ChatView key={selectedId} id={selectedId} />;
@@ -53,18 +54,17 @@ function ErrorBanner() {
 }
 
 function Shell() {
-	const { sidebarOpen } = useWorkspace();
+	const { sidebarOpen, settings } = useWorkspace();
 	useShortcuts();
 	return <div className="flex h-full flex-col">
 		<Titlebar />
 		<div className="relative flex min-h-0 flex-1">
-			{sidebarOpen && <Sidebar />}
+			{(sidebarOpen || settings) && <Sidebar />}
 			<main className="min-w-0 flex-1 bg-background"><Main /></main>
 			<RightPanel />
 			<ErrorBanner />
 		</div>
 		<CommandPalette />
-		<SettingsDialog />
 	</div>;
 }
 

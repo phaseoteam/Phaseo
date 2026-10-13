@@ -139,9 +139,9 @@ export function ChatView({ id }: { id: string }) {
 	return <div className="flex h-full min-w-0 flex-col">
 		<ChatHeader task={task} />
 		<Conversation key={task.id} task={task} onAttachment={setPreview} onBranch={messageId => void branch(messageId)}>
-			{task.error && <div role="alert" className={cn("flex items-center gap-3 rounded-xl border px-3.5 py-2.5 text-[13px]", task.status === "interrupted" ? "border-border bg-muted/40" : "border-destructive/30 bg-destructive/5 text-destructive")}>
-				<span className="min-w-0 flex-1">{task.error}</span>
-				<Button size="sm" variant="outline" onClick={() => void command({ type: "resume", id: task.id })}><RotateCcw />Resume</Button>
+			{task.error && <div role="alert" className={cn("flex items-center gap-2 text-[13px]", task.status === "interrupted" ? "text-muted-foreground" : "text-destructive")}>
+				<span className="min-w-0">{task.error}</span>
+				<Button size="sm" variant="ghost" className="text-foreground" onClick={() => void command({ type: "resume", id: task.id })}><RotateCcw />Resume</Button>
 			</div>}
 			<Requests task={task} />
 			{removed && <p className="text-xs text-muted-foreground">This checkout has been removed. Switch model to continue in another project.</p>}

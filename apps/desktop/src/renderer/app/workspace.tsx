@@ -49,7 +49,7 @@ export function errorText(reason: unknown) {
 	return (reason instanceof Error ? reason.message : String(reason)).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "");
 }
 
-type Location = { mode: WorkspaceMode; selectedId?: string; compareId?: string };
+type Location = { mode: WorkspaceMode; selectedId?: string; compareId?: string; settings?: SettingsPage };
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
 	const api = window.phaseoDesktop?.workspace;
@@ -89,7 +89,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 		return () => media.removeEventListener("change", apply);
 	}, [theme]);
 
-	const location = useMemo(() => ({ mode, selectedId, compareId }), [mode, selectedId, compareId]);
+	const location = useMemo(() => ({ mode, selectedId, compareId, settings }), [mode, selectedId, compareId, settings]);
 	useEffect(() => {
 		setNavigation(previous => {
 			if (JSON.stringify(previous.entries[previous.index]) === JSON.stringify(location)) return previous;
@@ -101,7 +101,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 		const target = navigation.entries[navigation.index + direction];
 		if (!target) return;
 		setNavigation(previous => ({ ...previous, index: previous.index + direction }));
-		setModeState(target.mode); setSelectedId(target.selectedId); setCompareId(target.compareId);
+		setModeState(target.mode); setSelectedId(target.selectedId); setCompareId(target.compareId); setSettings(target.settings);
 	};
 
 	const command = useCallback(async (value: WorkspaceCommand) => {

@@ -260,4 +260,72 @@
 	.chat-tools-content.legacy-panel :is(.page h1, .page-heading) {
 		display: none;
 	}
+
+	/* Diffs and previews sit flush in the files panel. */
+	.files-panel .message-code-block {
+		margin: 0;
+		border: 0;
+		border-radius: 0;
+	}
+	.files-panel .message-code-block pre {
+		background: transparent;
+	}
+	.files-panel .review-diff {
+		margin: 0;
+		border: 0;
+		border-radius: 0;
+	}
+	.files-panel .review-diff + .review-diff {
+		border-top: 1px solid var(--border);
+	}
+	.files-panel .review-diff > .message-code-actions {
+		display: none;
+	}
+	.files-panel .review-diff-content {
+		max-height: none;
+	}
+	.files-panel .git-hunk-panel {
+		margin: 0;
+		padding: 12px;
+		border: 0;
+		border-radius: 0;
+		background: transparent;
+	}
+	.files-panel .git-hunk-panel h2 {
+		font-family: var(--font-mono);
+		font-size: 12px;
+		font-weight: 600;
+	}
+	.files-panel .git-hunk-panel h3 {
+		margin-block: 12px 8px;
+		font-size: 12px;
+		font-weight: 700;
+	}
+
+	/* Settings is a page, not a stack of cards: sections bleed by the legacy
+	   panel padding so their contents line up with the page heading. */
+	.chat-settings-content.legacy-panel .page {
+		max-width: 760px;
+		padding: 40px 48px 64px;
+	}
+	.chat-settings-content.legacy-panel .page-heading h1 {
+		font-size: 22px;
+		font-weight: 700;
+	}
+	.chat-settings-content.legacy-panel .panel {
+		margin-inline: calc(var(--panel-padding) * -1);
+		border: 0;
+		border-radius: 0;
+		background: transparent;
+		box-shadow: none;
+		overflow: visible;
+	}
+	.chat-settings-content.legacy-panel .panel + .panel {
+		margin-top: 8px;
+		background: linear-gradient(var(--border), var(--border)) center top / calc(100% - var(--panel-padding) * 2) 1px no-repeat;
+	}
+	.chat-settings-content.legacy-panel .panel-heading h2 {
+		font-size: 14px;
+		font-weight: 700;
+	}
 }

@@ -7,6 +7,7 @@ import { shortcutLabel } from "../lib/shortcuts";
 import { usePersistedState } from "../lib/persistedState";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { ModelLogo } from "../components/ModelLogo";
+import { SettingsNav } from "../settings/SettingsPage";
 
 const dayMs = 86_400_000;
 function dateBucket(iso: string, now = new Date()) {
@@ -36,7 +37,7 @@ export function StatusDot({ task, className }: { task: TaskOverview; className?:
 }
 
 function SectionLabel({ children, action }: { children: ReactNode; action?: ReactNode }) {
-	return <div className="flex h-7 items-center justify-between px-3 pt-2 text-[10.5px] font-semibold tracking-wider text-muted-foreground uppercase">{children}{action}</div>;
+	return <div className="flex h-8 items-center justify-between px-4 pt-2 text-xs font-bold text-sidebar-foreground/70">{children}{action}</div>;
 }
 
 function RowMenu({ task, onRename }: { task: TaskOverview; onRename: () => void }) {
@@ -102,7 +103,7 @@ function ChatList() {
 	return <>
 		{pinned.length > 0 && <><SectionLabel>Pinned</SectionLabel>{pinned.map(task => <ChatRow key={task.id} task={task} showModel showTime={false} />)}</>}
 		{[...buckets].map(([label, values]) => <div key={label}>
-			<div className="px-4 pt-3 pb-1 text-[11px] font-medium text-muted-foreground">{label}</div>
+			<SectionLabel>{label}</SectionLabel>
 			{values.map(item => item.kind === "task" ? <ChatRow key={item.task.id} task={item.task} showModel showTime={false} /> : <CompareRow key={item.group.id} group={item.group} />)}
 		</div>)}
 	</>;
@@ -115,7 +116,7 @@ function ProjectList() {
 	const addProject = () => { if (api) void api.chooseProject().then(setOverview, reason => setError(errorText(reason))); };
 	return <>
 		<SectionLabel action={<button type="button" aria-label="Add project" title="Add project" onClick={addProject} className="grid size-5 place-items-center rounded text-muted-foreground hover:bg-sidebar-accent hover:text-foreground [&_svg]:size-3.5"><FolderPlus /></button>}>Projects</SectionLabel>
-		{!projects.length && <div className="mx-3 mt-2 rounded-lg border border-dashed border-border p-4 text-center">
+		{!projects.length && <div className="px-4 pt-1 pb-3">
 			<p className="text-xs text-muted-foreground">Open a folder to start coding with an agent.</p>
 			<button type="button" onClick={addProject} className="mt-3 inline-flex h-7 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/85"><FolderOpen className="size-3.5" />Open folder</button>
 		</div>}
@@ -154,8 +155,9 @@ function AccountFooter() {
 }
 
 export function Sidebar() {
-	const { mode, select, selectedId, compareId, setNewChatProjectId } = useWorkspace();
+	const { mode, select, selectedId, compareId, setNewChatProjectId, settings } = useWorkspace();
 	const fresh = !selectedId && !compareId;
+	if (settings) return <aside aria-label="Settings" className="flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground"><SettingsNav /></aside>;
 	return <aside aria-label={mode === "chat" ? "Chats" : "Projects"} className="flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
 		<div className="p-2.5">
 			<button type="button" onClick={() => { if (mode === "chat") setNewChatProjectId(""); select(undefined); }}

@@ -49,7 +49,7 @@ export function NewChat() {
 	const [draft, setDraft] = usePersistedState("phaseo.desktop.newChatDraft", "");
 	const [images, setImages] = useState<File[]>([]);
 	const [busy, setBusy] = useState(false);
-	const [compare, setCompare] = useState(false);
+
 	const [planMode, setPlanMode] = usePersistedState<Task["mode"]>("phaseo.desktop.draftMode", "code");
 	const [permissionMode, setPermissionMode] = usePersistedState<NonNullable<Task["permissionMode"]>>("phaseo.desktop.draftPermissions", "supervised");
 	const preferences = useModelPreferences();
@@ -69,7 +69,8 @@ export function NewChat() {
 		const model = phaseoModels.find(value => value.default) ?? phaseoModels.find(value => /claude-sonnet|gpt-6\b/i.test(value.id)) ?? phaseoModels[0];
 		setSelections([{ harness: "phaseo", accountId: phaseoAccount.id, model: model.id }]);
 	}, [selections.length, phaseoAccount, phaseoModels]);
-	useEffect(() => { if (code && compare) { setCompare(false); setSelections(current => current.slice(0, 1)); } }, [code, compare]);
+	const compare = !code && selections.length > 1;
+	useEffect(() => { if (code) setSelections(current => current.length > 1 ? current.slice(0, 1) : current); }, [code]);
 
 	const recent = useMemo(() => {
 		const seen: ModelSelection[] = [];
@@ -78,7 +79,7 @@ export function NewChat() {
 	}, [preferences]);
 
 	const needsSignIn = !phaseoAccount && ![...connected].some(harness => harness !== "phaseo");
-	const canSend = !busy && (!!draft.trim() || images.length > 0) && selections.length > 0 && (!code || !!project) && (!compare || selections.length > 1);
+	const canSend = !busy && (!!draft.trim() || images.length > 0) && selections.length > 0 && (!code || !!project);
 
 	async function submit() {
 		if (!api || !canSend) return;
@@ -131,24 +132,30 @@ export function NewChat() {
 			</div>
 			<Composer size="large" inputRef={input} value={draft} onChange={setDraft} onSubmit={() => void submit()} onPaste={paste} disabled={busy} canSend={canSend}
 				placeholder={compare ? "Ask every model the same question…" : code ? (project ? `Describe a change to ${project.name}…` : "Choose a project, then describe what to build…") : "Message Phaseo…"}
-				chips={images.length ? images.map((file, index) => <ComposerChip key={index} onRemove={() => setImages(current => current.filter((_, position) => position !== index))}><ImageIcon className="mr-1 inline size-3" />{file.name}</ComposerChip>) : undefined}
+				chips={compare || images.length ? <>
+					{compare && selections.map(value => <ComposerChip key={value.harness + value.model} onRemove={() => setSelections(current => current.filter(item => !sameSelection(item, value)))}>
+						<span className="mr-1 inline-flex size-3.5 align-[-2px] [&_img]:size-3.5 [&_.harness-logo]:size-3.5"><ModelLogo model={knownModel(value.model) ?? { id: value.model, name: value.model }} harness={value.harness} /></span>{knownModel(value.model)?.name ?? modelLabel(value.model)}
+					</ComposerChip>)}
+					{images.map((file, index) => <ComposerChip key={index} onRemove={() => setImages(current => current.filter((_, position) => position !== index))}><ImageIcon className="mr-1 inline size-3" />{file.name}</ComposerChip>)}
+				</> : undefined}
 				tools={code ? <><PlanToggle value={planMode} onChange={setPlanMode} /><PermissionMenu value={permissionMode} onChange={setPermissionMode} /></> : undefined}
-				model={<ModelPicker selections={selections} onChange={setSelections} compare={compare} onCompareChange={setCompare} allowCompare={!code} agents={code} disabled={busy} />}
-				footer={compare && <p className="mt-2 px-2 text-xs text-muted-foreground">{selections.length < 2 ? "Pick at least two models to compare." : `Sends to ${selections.length} models. Each answer is billed separately.`} Up to {MAX_COMPARE}.</p>} />
+				model={<ModelPicker selections={selections} onChange={setSelections} multiple={!code} agents={code} disabled={busy} />}
+				footer={compare && <p className="mt-2 px-2 text-xs text-muted-foreground">Sends to {selections.length} models side by side. Each answer is billed separately.</p>} />
 			{!code && <div className="flex flex-wrap justify-center gap-2">
 				{suggestions.map(({ icon: Icon, label, prompt }) => <button key={label} type="button" onClick={() => { setDraft(prompt); requestAnimationFrame(() => { input.current?.focus(); input.current?.setSelectionRange(prompt.length, prompt.length); }); }}
 					className="flex h-8 items-center gap-2 rounded-full border border-border px-3.5 text-[13px] text-foreground/85 transition-colors hover:bg-muted"><Icon className="size-3.5 text-muted-foreground" />{label}</button>)}
 			</div>}
-			{!code && recent.length > 0 && <div>
-				<p className="mb-2 px-1 text-xs font-medium text-muted-foreground">Recently used</p>
-				<div className="grid grid-cols-3 gap-2">{recent.map(value => {
+			{!code && recent.length > 0 && <div className="flex flex-wrap items-center justify-center gap-1">
+				<span className="mr-1 text-xs font-semibold text-muted-foreground">Recent</span>
+				{recent.map(value => {
 					const active = selections.some(item => sameSelection(item, value));
-					return <button key={value.harness + value.model} type="button" onClick={() => setSelections(compare ? (active ? selections.filter(item => !sameSelection(item, value)) : [...selections, value].slice(0, MAX_COMPARE)) : [value])}
-						className={cn("flex items-center gap-2.5 rounded-xl border border-border bg-card/50 p-3 text-left transition-colors hover:bg-muted", active && "border-ring/60 bg-primary/5")}>
-						<span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-muted [&_img]:size-4.5 [&_.harness-logo]:size-4.5"><ModelLogo model={knownModel(value.model) ?? { id: value.model, name: value.model }} harness={value.harness} /></span>
-						<span className="min-w-0"><span className="block truncate text-[13px] font-semibold">{knownModel(value.model)?.name ?? modelLabel(value.model)}</span><span className="block truncate text-[11px] text-muted-foreground">{knownModel(value.model)?.organisationName ?? (value.harness === "phaseo" ? "via Phaseo" : value.harness)}</span></span>
+					return <button key={value.harness + value.model} type="button" title={`${window.phaseoDesktop?.platform === "darwin" ? "⌘" : "Ctrl"}-click to compare`}
+						onClick={event => setSelections(event.ctrlKey || event.metaKey ? (active ? (selections.length > 1 ? selections.filter(item => !sameSelection(item, value)) : selections) : [...selections, value].slice(0, MAX_COMPARE)) : [value])}
+						className={cn("flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground", active && "text-foreground")}>
+						<span className="flex size-4 items-center justify-center [&_img]:size-3.5 [&_.harness-logo]:size-3.5"><ModelLogo model={knownModel(value.model) ?? { id: value.model, name: value.model }} harness={value.harness} /></span>
+						{knownModel(value.model)?.name ?? modelLabel(value.model)}
 					</button>;
-				})}</div>
+				})}
 			</div>}
 			{code && !projects.length && <p className="text-center text-sm text-muted-foreground"><button type="button" onClick={addProject} className="font-semibold text-primary hover:underline">Open a folder</button> to give the agent a project to work in.</p>}
 			{code && <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground"><Code2 className="size-3.5" />Code chats can read and edit files, run commands and use your MCP tools.</p>}

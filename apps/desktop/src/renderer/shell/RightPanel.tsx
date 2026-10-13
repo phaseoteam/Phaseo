@@ -3,7 +3,7 @@ import { Files, GitBranch, GitPullRequest, Globe, SquareTerminal, X } from "luci
 import { useWorkspace, type RightPanelTab } from "../app/workspace";
 import { usePersistedState } from "../lib/persistedState";
 import { cn } from "../lib/utils";
-import { Projects } from "../views/Projects";
+import { FilesPanel } from "./FilesPanel";
 import { Proposals } from "../views/Proposals";
 import { BrowserPanel } from "../views/BrowserPanel";
 import { AgentThreadsPanel } from "../components/AgentThreadsPanel";
@@ -34,11 +34,11 @@ export function RightPanel() {
 		window.addEventListener("phaseo:open-context-link", open);
 		return () => window.removeEventListener("phaseo:open-context-link", open);
 	}, [setRightPanel]);
-	if (!rightPanel) return null;
+	if (!rightPanel || settings) return null;
 	const task = overview.tasks.find(value => value.id === selectedId);
 	const projectId = task?.projectId ?? (selectedId ? undefined : newChatProjectId || undefined) ?? "";
 	const safeWidth = Number.isFinite(width) ? Math.max(320, Math.min(960, width)) : 440;
-	const content = tab === "changes" ? <Projects key={projectId || "personal"} initialProjectId={projectId} />
+	const content = tab === "changes" ? <FilesPanel key={projectId || "personal"} initialProjectId={projectId} />
 		: tab === "pulls" ? <Proposals key={projectId || "personal"} initialProjectId={projectId} />
 		: tab === "terminal" ? <Suspense fallback={<p className="p-4 text-xs text-muted-foreground">Opening terminal…</p>}><Terminals key={projectId || "personal"} initialProjectId={projectId} /></Suspense>
 		: tab === "browser" ? <BrowserPanel context={selectedId ?? "draft"} covered={commandsOpen || !!settings} requestedLink={link} />
@@ -57,6 +57,6 @@ export function RightPanel() {
 			</button>)}
 			<button type="button" aria-label="Close panel" onClick={() => setRightPanel(undefined)} className="mb-1.5 ml-auto grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-4" /></button>
 		</nav>
-		<div className="chat-tools-content legacy-panel min-h-0 flex-1 overflow-auto">{content}</div>
+		<div className={cn("min-h-0 flex-1", tab === "changes" ? "flex flex-col" : "chat-tools-content legacy-panel overflow-auto")}>{content}</div>
 	</aside>;
 }

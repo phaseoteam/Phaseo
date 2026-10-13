@@ -28,6 +28,11 @@ for (const [id, name, branch] of [["phaseo", "phaseo", "main"], ["blog", "blog",
 	writeFileSync(path.join(directory, "README.md"), `# ${name}\n`);
 	writeFileSync(path.join(directory, "src", "usage.ts"), "export const usage = 1;\n");
 	execFileSync("git", ["init", "-b", branch], { cwd: directory, stdio: "ignore" });
+	execFileSync("git", ["add", "."], { cwd: directory, stdio: "ignore" });
+	execFileSync("git", ["-c", "user.name=Preview", "-c", "user.email=preview@example.com", "commit", "-m", "Initial commit"], { cwd: directory, stdio: "ignore" });
+	// Leave uncommitted work so the changes panel has something to show.
+	writeFileSync(path.join(directory, "src", "usage.ts"), "export const usage = 1;\nexport const byGrant = (clientId: string, userId: string) => ({ clientId, userId });\n");
+	writeFileSync(path.join(directory, "src", "usage.test.ts"), "import { byGrant } from \"./usage\";\n");
 	db.prepare("INSERT INTO projects VALUES (?, ?)").run(id, JSON.stringify({ id, name, directory, createdAt: at(10_000) }));
 }
 db.prepare("INSERT INTO accounts VALUES (?, ?)").run("phaseo-account", JSON.stringify({ id: "phaseo-account", name: "Phaseo", harness: "phaseo", kind: "api", endpoint: "https://api.phaseo.app/v1", configured: true }));
@@ -76,15 +81,17 @@ task("offsite", { title: "Plan a Lisbon offsite agenda", model: "openai/gpt-6", 
 db.close();
 
 const models = [
-	["anthropic/claude-opus-5.5", "Claude Opus 5.5", "anthropic", "Anthropic"],
-	["anthropic/claude-sonnet-5.5", "Claude Sonnet 5.5", "anthropic", "Anthropic"],
-	["openai/gpt-6", "GPT-6", "openai", "OpenAI"],
-	["openai/gpt-6-mini", "GPT-6 mini", "openai", "OpenAI"],
-	["google/gemini-3.5-pro", "Gemini 3.5 Pro", "google", "Google"],
-	["google/gemini-3.5-flash", "Gemini 3.5 Flash", "google", "Google"],
-	["deepseek/deepseek-v4.1", "DeepSeek V4.1", "deepseek", "DeepSeek"],
-	["meta/muse-wonder-1.0", "Muse Wonder", "meta", "Meta"],
-].map(([id, name, organisationId, organisationName]) => ({ id, name, organisationId, organisationName, reasoningEfforts: [{ id: "low", description: "Low" }, { id: "medium", description: "Medium" }, { id: "high", description: "High" }], defaultReasoningEffort: "medium" }));
+	["anthropic/claude-opus-5.5", "Claude Opus 5.5", "anthropic", "Anthropic", 6],
+	["meta/muse-wonder-1.0", "Muse Wonder", "meta", "Meta", 1],
+	["openai/gpt-6", "GPT-6", "openai", "OpenAI", 20],
+	["anthropic/claude-sonnet-5.5", "Claude Sonnet 5.5", "anthropic", "Anthropic", 34],
+	["google/gemini-3.5-pro", "Gemini 3.5 Pro", "google", "Google", 40],
+	["google/gemini-3.5-flash", "Gemini 3.5 Flash", "google", "Google", 40],
+	["openai/gpt-6-mini", "GPT-6 mini", "openai", "OpenAI", 52],
+	["deepseek/deepseek-v4.1", "DeepSeek V4.1", "deepseek", "DeepSeek", 70],
+	["deepseek/deepseek-v4.1:free", "DeepSeek V4.1", "deepseek", "DeepSeek", 70],
+	["qwen/qwen-3.8-max", "Qwen 3.8 Max", "qwen", "Qwen", 9],
+].map(([id, name, organisationId, organisationName, days]) => ({ id, name, organisationId, organisationName, releaseDate: new Date(now - days * 86_400_000).toISOString().slice(0, 10), reasoningEfforts: [{ id: "low", description: "Low" }, { id: "medium", description: "Medium" }, { id: "high", description: "High" }], defaultReasoningEffort: "medium" }));
 
 await import("../dist/main/index.mjs");
 const replace = (channel, handler) => { ipcMain.removeHandler(channel); ipcMain.handle(channel, handler); };
@@ -106,9 +113,12 @@ app.whenReady().then(async () => {
 		"code-thread": { storage: { "phaseo.desktop.workspaceMode": "code", "phaseo.desktop.selectedTask": "usage-fix", "phaseo.desktop.rightPanel": "changes" } },
 		"code-home": { storage: { "phaseo.desktop.workspaceMode": "code", "phaseo.desktop.newChatProject": "phaseo" } },
 		"work-log": { storage: { "phaseo.desktop.workspaceMode": "code", "phaseo.desktop.selectedTask": "usage-fix" }, script: `[...document.querySelectorAll('main button[aria-expanded]')].find(button => /Worked/.test(button.textContent))?.click()` },
-		"model-picker": { storage: { "phaseo.desktop.workspaceMode": "chat" }, script: `document.querySelector('[aria-label="Choose model"]').click()` },
+		"model-picker": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.favouriteModels": ["phaseo:anthropic/claude-opus-5.5", "phaseo:openai/gpt-6"] }, script: `document.querySelector('[aria-label="Choose model"]').click()` },
+		"model-search": { storage: { "phaseo.desktop.workspaceMode": "chat" }, script: `(async () => { document.querySelector('[aria-label="Choose model"]').click(); await new Promise(r => setTimeout(r, 400)); const input = document.querySelector('[cmdk-input]'); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(input, 'gem'); input.dispatchEvent(new Event('input', { bubbles: true })); })()` },
+		"model-compare": { storage: { "phaseo.desktop.workspaceMode": "chat" }, script: `(async () => { const wait = ms => new Promise(r => setTimeout(r, ms)); document.querySelector('[aria-label="Choose model"]').click(); await wait(500); for (const name of ['GPT-6', 'Gemini 3.5 Pro']) { const item = [...document.querySelectorAll('[cmdk-item]')].find(node => node.textContent.trim().endsWith(name)); item.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, ctrlKey: true })); item.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true })); await wait(250); } document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); })()` },
+		"code-files": { storage: { "phaseo.desktop.workspaceMode": "code", "phaseo.desktop.selectedTask": "usage-fix", "phaseo.desktop.rightPanel": "changes", "phaseo.desktop.filesTab": "files" } },
 		"compare": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.selectedCompare": "compare-1", "phaseo.desktop.compareGroups": [{ id: "compare-1", title: "What does a 10k-token prompt with a 2k-token answer cost?", taskIds: ["pricing", "pricing-gpt", "pricing-gemini"], createdAt: at(30) }] } },
-		"settings": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.selectedTask": "pricing" }, script: `document.querySelector('[aria-label="Settings"]').click()`, inspect: `(() => { const o = document.querySelector('[data-slot=dialog-overlay]'); if (!o) return 'no overlay'; const s = getComputedStyle(o); return [s.backgroundColor, s.opacity, s.zIndex, o.getAttributeNames().join(' ')].join(' / '); })()` },
+		"settings": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.selectedTask": "pricing" }, script: `document.querySelector('[aria-label="Settings"]').click()` },
 		"palette": { storage: { "phaseo.desktop.workspaceMode": "chat" }, script: `window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))` },
 	};
 	for (const [name, state] of Object.entries(states)) {

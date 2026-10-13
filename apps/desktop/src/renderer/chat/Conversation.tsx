@@ -46,7 +46,7 @@ function UserMessage({ message, onAttachment, onBranch, canBranch }: { message: 
 function PlanSteps({ activity }: { activity: AgentActivity }) {
 	const steps = activity.steps ?? [];
 	const done = steps.filter(step => step.status === "completed").length;
-	return <div className="rounded-lg border border-border bg-card/60 p-3">
+	return <div className="py-1">
 		<div className="mb-2 flex items-center gap-2 text-xs font-semibold"><ListChecks className="size-3.5 text-muted-foreground" />Plan<span className="font-normal text-muted-foreground">{done} of {steps.length} done</span></div>
 		{activity.explanation && <p className="mb-2 text-xs text-muted-foreground">{activity.explanation}</p>}
 		<ol className="space-y-1">{steps.map((step, index) => <li key={index} className={cn("flex items-start gap-2 text-[13px]", step.status === "completed" && "text-muted-foreground line-through decoration-muted-foreground/40", step.status === "cancelled" && "text-muted-foreground")}>
@@ -66,14 +66,14 @@ function ActivityRow({ activity, live }: { activity: AgentActivity; live: boolea
 	const summary = reasoning ? "" : activity.text.split("\n")[0];
 	const expandable = !!activity.text && (reasoning || activity.text.length > summary.length || activity.text.length > 80);
 	return <div className="text-[12.5px]">
-		<button type="button" disabled={!expandable} onClick={() => setOpen(value => !value)} aria-expanded={open} className="flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left hover:bg-muted/70 disabled:hover:bg-transparent">
+		<button type="button" disabled={!expandable} onClick={() => setOpen(value => !value)} aria-expanded={open} className="group/activity flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground">
 			{running ? <LoaderCircle className="size-3.5 shrink-0 animate-spin text-primary" /> : <Icon className={cn("size-3.5 shrink-0 text-muted-foreground", activity.status === "failed" && "text-destructive")} />}
-			<span className={cn("shrink-0 font-medium", running && "animate-pulse")}>{label}</span>
+			<span className={cn("shrink-0 font-medium text-foreground/85", running && "animate-pulse")}>{label}</span>
 			{summary && <span className="min-w-0 truncate font-mono text-[11.5px] text-muted-foreground">{summary}</span>}
 			{activity.status === "failed" && <X className="size-3.5 shrink-0 text-destructive" />}
-			{expandable && <ChevronRight className={cn("ml-auto size-3.5 shrink-0 text-muted-foreground transition-transform", open && "rotate-90")} />}
+			{expandable && <ChevronRight className={cn("size-3.5 shrink-0 opacity-0 transition group-hover/activity:opacity-100", open && "rotate-90 opacity-100")} />}
 		</button>
-		{open && <div data-selectable className={cn("mx-2 mt-1 mb-2 max-h-72 overflow-auto rounded-md bg-muted/50 p-2.5", reasoning ? "text-[13px] text-muted-foreground" : "font-mono text-[11.5px] whitespace-pre-wrap")}>{reasoning ? <MessageContent text={activity.text} /> : activity.text}</div>}
+		{open && <div data-selectable className={cn("mt-0.5 mb-2 ml-[15px] max-h-72 overflow-auto border-l border-border py-0.5 pl-4", reasoning ? "text-[13px] text-muted-foreground" : "font-mono text-[11.5px] whitespace-pre-wrap")}>{reasoning ? <MessageContent text={activity.text} /> : activity.text}</div>}
 	</div>;
 }
 
@@ -86,14 +86,14 @@ function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]
 	const plan = entries.find(entry => entry.kind === "activity" && entry.value.type === "plan" && entry.value.steps?.length);
 	const onlyReasoning = steps.every(entry => entry.kind === "activity" && entry.value.type === "reasoning");
 	const title = live || !complete ? "Working" : onlyReasoning ? turnDuration(user).replace("Worked", "Thought") : turnDuration(user);
-	return <div className="flex flex-col gap-2">
-		<div className={cn("rounded-xl border border-border", open && "bg-card/40")}>
-			<button type="button" onClick={() => setOpen(value => !value)} aria-expanded={open} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground">
+	return <div className="flex flex-col gap-1">
+		<div>
+			<button type="button" onClick={() => setOpen(value => !value)} aria-expanded={open} className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground hover:text-foreground">
 				{live ? <LoaderCircle className="size-3.5 animate-spin text-primary" /> : <ChevronRight className={cn("size-3.5 transition-transform", open && "rotate-90")} />}
 				<span className={cn("font-medium", live && "animate-pulse")}>{title}</span>
 				{tools > 0 && <span>· {tools} {tools === 1 ? "step" : "steps"}</span>}
 			</button>
-			{open && <div className="flex flex-col gap-0.5 border-t border-border px-1 py-1.5">{steps.map(entry => entry.kind === "activity"
+			{open && <div className="mt-1 ml-[7px] flex flex-col gap-0.5 border-l border-border pl-1.5">{steps.map(entry => entry.kind === "activity"
 				? <ActivityRow key={entry.value.id} activity={entry.value} live={live} />
 				: <div key={entry.value.id} data-selectable className="px-2 py-1 text-[13px] text-foreground/85"><MessageContent text={entry.value.text} projectId={task.projectId} repairLocalLinks /></div>)}</div>}
 		</div>
