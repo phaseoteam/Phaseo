@@ -12,4 +12,4 @@ Uma compra deixa de ser elegível quando:
 - O prazo de 24 horas terminou.
 - Qualquer crédito dessa compra foi utilizado.
 
-Você pode consultar o status em `Settings -> Credits`.
+Você pode consultar o status em `Configurações -> Créditos`.

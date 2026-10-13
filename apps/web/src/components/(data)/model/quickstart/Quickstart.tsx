@@ -1032,7 +1032,7 @@ func main() {
 		: null;
 
 	const agentSdkCsharpUsage = AI_SDK_ENDPOINTS.has(normalizedEndpoint)
-		? `using AiStatsAgentSdk;
+		? `using PhaseoAgentSdk;
 
 var agent = AgentSdk.CreateAgent(new AgentDefinition
 {

@@ -40,7 +40,7 @@ Rust एक समर्थित सिंक्रोनस रनटाइम
 
 SDK, Phaseo द्वारा होस्ट की गई सेवा में रन संग्रहीत नहीं करता। यदि प्रोसेस रीस्टार्ट होने के बाद भी रन जारी रहना चाहिए, तो अपने ऐप्लिकेशन में `RunResult` सहेजें।
 
-Gateway अडैप्टर `0.1` अभी Gateway के `cost_nanos` या `cost_cents` को `UsageSummary.cost` में मैप नहीं करता। खर्च की रिपोर्टिंग के लिए Agent SDK की लागत फ़ील्ड के बजाय Gateway रिस्पॉन्स या जनरेशन रिकॉर्ड का उपयोग करें।
+Gateway अडैप्टर `0.1` अभी Gateway के `cost_nanos` या `cost_cents` को `UsageSummary.cost` में मैप नहीं करता। खर्च की रिपोर्टिंग के लिए Agent SDK की लागत फ़ील्ड के बजाय Gateway प्रतिक्रिया या जनरेशन रिकॉर्ड का उपयोग करें।
 
 <Columns cols={2}>
   <Card title="Agent SDK इंस्टॉल करें" icon="package" href="./agent-sdk-installation.mdx">दोनों Rust crates जोड़ें और अपनी API कुंजी कॉन्फ़िगर करें।</Card>

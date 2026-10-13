@@ -31,7 +31,7 @@ paths:
       parameters:
         - name: search
           in: query
-          description: मॉडल आईडी, नाम, विवरण और संगठनों में बड़े-छोटे अक्षरों का भेद किए बिना खोजें।
+          description: मॉडल ID, नाम, विवरण और संगठनों में बड़े-छोटे अक्षरों का भेद किए बिना खोजें।
           schema:
             type: string
             maxLength: 200
@@ -1104,7 +1104,7 @@ paths:
         - Gateway
       operationId: connectRealtimeSessionRelay
       summary: रीयल-टाइम रिले कनेक्ट करें
-      description: सेशन रिले सीक्रेट को सबप्रोटोकॉल के रूप में उपयोग करके WebSocket रिले पर अपग्रेड करता है।
+      description: सत्र रिले सीक्रेट को सबप्रोटोकॉल के रूप में उपयोग करके WebSocket रिले पर अपग्रेड करता है।
       security: []
       parameters:
         - name: session_id
@@ -2567,7 +2567,7 @@ paths:
         - Gateway
       operationId: listApiKeys
       summary: API कुंजियों की सूची बनाएँ
-      description: प्रमाणित कार्यस्थान की API कुंजियों की सूची देता है। प्रबंधन API कुंजी आवश्यक है।
+      description: प्रमाणित वर्कस्पेस की API कुंजियों की सूची देता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - name: include_disabled
           in: query
@@ -2627,7 +2627,7 @@ paths:
         - Gateway
       operationId: createApiKey
       summary: नई API कुंजी बनाएँ
-      description: प्रमाणित कार्यस्थान में नई API कुंजी बनाता है। प्रबंधन API कुंजी आवश्यक है।
+      description: प्रमाणित वर्कस्पेस में नई API कुंजी बनाता है। प्रबंधन API कुंजी आवश्यक है।
       requestBody:
         required: true
         content:
@@ -2672,7 +2672,7 @@ paths:
         - Gateway
       operationId: getApiKey
       summary: एक API कुंजी प्राप्त करें
-      description: प्रमाणित कार्यस्थान की एक API कुंजी का मेटाडेटा लौटाता है। प्रबंधन API कुंजी आवश्यक है।
+      description: प्रमाणित वर्कस्पेस की एक API कुंजी का मेटाडेटा लौटाता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - name: id
           in: path
@@ -2762,7 +2762,7 @@ paths:
         - Gateway
       operationId: deleteApiKey
       summary: API कुंजी हटाएँ
-      description: प्रमाणित कार्यस्थान की API कुंजी हटाता है। प्रबंधन API कुंजी आवश्यक है।
+      description: प्रमाणित वर्कस्पेस की API कुंजी हटाता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - name: id
           in: path
@@ -2835,7 +2835,7 @@ paths:
         - Gateway
       operationId: invalidateApiKeyCache
       summary: API कुंजी कैश अमान्य करें
-      description: कार्यस्थान API कुंजी की वैश्विक कैश की गई नीति स्थिति रीफ़्रेश करता है। प्रमाणित कार्यस्थान प्रबंधन कॉल आवश्यक है।
+      description: वर्कस्पेस API कुंजी की वैश्विक कैश की गई नीति स्थिति रीफ़्रेश करता है। प्रमाणित वर्कस्पेस प्रबंधन कॉल आवश्यक है।
       parameters:
         - name: id
           in: path
@@ -2882,7 +2882,7 @@ paths:
       tags:
         - Gateway
       operationId: updateWorkspaceSso
-      summary: कार्यस्थान की SSO सेटिंग अपडेट करें
+      summary: वर्कस्पेस की SSO सेटिंग अपडेट करें
       description: SAML या कस्टम OIDC सेटिंग अपडेट करता है। SSO सक्षम करने के लिए identity ऐड-ऑन और `settings:write` आवश्यक हैं।
       requestBody:
         required: true
@@ -2909,7 +2909,7 @@ paths:
       tags:
         - Gateway
       operationId: getWorkspaceScim
-      summary: कार्यस्थान की SCIM सेटिंग प्राप्त करें
+      summary: वर्कस्पेस की SCIM सेटिंग प्राप्त करें
       description: एंडपॉइंट की स्थिति, टोकन मेटाडेटा, प्रोविज़न किए गए ऑब्जेक्ट की संख्या और नवीनतम SCIM इवेंट लौटाता है।
       responses:
         '200':
@@ -2930,7 +2930,7 @@ paths:
         - Gateway
       operationId: updateWorkspaceScim
       summary: SCIM सक्षम या अक्षम करें
-      description: कार्यस्थान के SCIM एंडपॉइंट को अपडेट करता है। SCIM सक्षम करने के लिए identity ऐड-ऑन और `settings:write` आवश्यक हैं।
+      description: वर्कस्पेस के SCIM एंडपॉइंट को अपडेट करता है। SCIM सक्षम करने के लिए identity ऐड-ऑन और `settings:write` आवश्यक हैं।
       requestBody:
         required: true
         content:
@@ -3045,11 +3045,11 @@ paths:
       tags:
         - Gateway
       operationId: getWorkspaceDirectory
-      summary: कार्यस्थान डायरेक्टरी प्राप्त करें
+      summary: वर्कस्पेस डायरेक्टरी प्राप्त करें
       description: एंटरप्राइज़ विभाग और सदस्यों के प्रभावी अधिकार लौटाता है। identity ऐड-ऑन, `settings:read` और `owner` या `admin` पहचान आवश्यक है।
       responses:
         '200':
-          description: कार्यस्थान डायरेक्टरी
+          description: वर्कस्पेस डायरेक्टरी
           content:
             application/json:
               schema:
@@ -3067,7 +3067,7 @@ paths:
         - Gateway
       operationId: updateWorkspaceDirectoryMember
       summary: डायरेक्टरी सदस्य का ओवरराइड अपडेट करें
-      description: कार्यस्थान सदस्य के प्रभावी भूमिका और विभाग ओवरराइड सेट या साफ़ करता है। `settings:write` आवश्यक है।
+      description: वर्कस्पेस सदस्य के प्रभावी भूमिका और विभाग ओवरराइड सेट या साफ़ करता है। `settings:write` आवश्यक है।
       parameters:
         - name: id
           in: path
@@ -3120,7 +3120,7 @@ paths:
       tags:
         - Gateway
       operationId: createWorkspaceDepartment
-      summary: कार्यस्थान का विभाग बनाएँ
+      summary: वर्कस्पेस का विभाग बनाएँ
       description: मैन्युअल रूप से प्रबंधित विभाग बनाता है। `settings:write` आवश्यक है।
       requestBody:
         required: true
@@ -3147,7 +3147,7 @@ paths:
       tags:
         - Gateway
       operationId: updateWorkspaceDepartment
-      summary: कार्यस्थान का विभाग अपडेट करें
+      summary: वर्कस्पेस का विभाग अपडेट करें
       description: डायरेक्टरी मैपिंग हटाए बिना विभाग का नाम, विवरण, आइकन या रंग अपडेट करता है।
       parameters:
         - name: id
@@ -3209,7 +3209,7 @@ paths:
         - Gateway
       operationId: setWorkspaceDepartmentMember
       summary: मैन्युअल विभाग सदस्यता सेट करें
-      description: कार्यस्थान उपयोगकर्ता की मैन्युअल विभाग सदस्यता जोड़ता या अपडेट करता है।
+      description: वर्कस्पेस उपयोगकर्ता की मैन्युअल विभाग सदस्यता जोड़ता या अपडेट करता है।
       parameters:
         - name: departmentId
           in: path
@@ -3302,7 +3302,7 @@ paths:
         - Gateway
       operationId: createWorkspaceGroupMapping
       summary: डायरेक्टरी समूह मैपिंग बनाएँ
-      description: प्रोविज़न किए गए समूह को कार्यस्थान के विभाग और एक्सेस भूमिका से मैप करता है।
+      description: प्रोविज़न किए गए समूह को वर्कस्पेस के विभाग और एक्सेस भूमिका से मैप करता है।
       requestBody:
         required: true
         content:
@@ -3389,8 +3389,8 @@ paths:
       tags:
         - Gateway
       operationId: getWorkspaceNotificationSettings
-      summary: कार्यस्थान की सूचना सेटिंग प्राप्त करें
-      description: ऑटो टॉप-अप नीति, कम बैलेंस ईमेल कॉन्फ़िगरेशन और कार्यस्थान की ईमेल प्राथमिकताएँ लौटाता है। `settings:read` तथा `owner` या `admin` पहचान आवश्यक है।
+      summary: वर्कस्पेस की सूचना सेटिंग प्राप्त करें
+      description: ऑटो टॉप-अप नीति, कम बैलेंस ईमेल कॉन्फ़िगरेशन और वर्कस्पेस की ईमेल प्राथमिकताएँ लौटाता है। `settings:read` तथा `owner` या `admin` पहचान आवश्यक है।
       responses:
         '200':
           description: सूचना सेटिंग
@@ -3410,7 +3410,7 @@ paths:
       tags:
         - Gateway
       operationId: updateWorkspaceNotificationSettings
-      summary: कार्यस्थान की सूचना सेटिंग अपडेट करें
+      summary: वर्कस्पेस की सूचना सेटिंग अपडेट करें
       description: टिकाऊ अधिसूचना नीति के एक या अधिक खंड अपडेट करता है। ऑटो टॉप-अप सक्षम करने के लिए मौजूदा सहेजी गई भुगतान विधि का पहचानकर्ता और सत्यापित दो-कारक प्रमाणीकरण आवश्यक है। मौजूदा कॉन्फ़िगरेशन MFA स्वीकृति दोहराए बिना अपडेट हो सकती है। MFA के बिना सक्षम करने के लिए क्लाइंट को स्पष्ट रूप से `mfa_bypass_acknowledged` को true करना और `mfa_bypass_phrase` में सटीक मान `I ACCEPT THE RISK` देना होगा; भुगतान जानकारी संग्रह खाते का इंटरैक्टिव प्रवाह बना रहता है।
       requestBody:
         required: true
@@ -3541,7 +3541,7 @@ paths:
         - Gateway
       operationId: listGatewayRequestLogs
       summary: गेटवे अनुरोध लॉग की सूची बनाएँ
-      description: सीमित समय-सीमा और फ़ील्ड फ़िल्टर के साथ प्रमाणित कार्यस्थान के संपादित अनुरोध तथ्य सूचीबद्ध करता है। `activity:read` आवश्यक है।
+      description: सीमित समय-सीमा और फ़ील्ड फ़िल्टर के साथ प्रमाणित वर्कस्पेस के संपादित अनुरोध तथ्य सूचीबद्ध करता है। `activity:read` आवश्यक है।
       parameters:
         - name: since
           in: query
@@ -3926,7 +3926,7 @@ paths:
         - Gateway
       operationId: createPresetTestRun
       summary: प्रीसेट टेस्ट रन बनाएँ
-      description: प्रीसेट या बेसलाइन तुलना के लिए कार्यस्थान टेस्ट रन बनाता है। `feedback:write` और `owner` या `admin` पहचान आवश्यक है।
+      description: प्रीसेट या बेसलाइन तुलना के लिए वर्कस्पेस टेस्ट रन बनाता है। `feedback:write` और `owner` या `admin` पहचान आवश्यक है।
       requestBody:
         required: true
         content:
@@ -4007,7 +4007,7 @@ paths:
         - Gateway
       operationId: listProviderCredentials
       summary: प्रदाता क्रेडेंशियल की सूची बनाएँ
-      description: प्रमाणित कार्यस्थान के केवल-लिखने योग्य प्रदाता क्रेडेंशियल का मेटाडेटा लौटाता है।
+      description: प्रमाणित वर्कस्पेस के केवल-लिखने योग्य प्रदाता क्रेडेंशियल का मेटाडेटा लौटाता है।
       parameters:
         - name: provider
           in: query
@@ -4045,7 +4045,7 @@ paths:
         - Gateway
       operationId: createProviderCredential
       summary: प्रदाता क्रेडेंशियल बनाएँ
-      description: प्रमाणित कार्यस्थान के लिए केवल-लिखने योग्य प्रदाता क्रेडेंशियल को एन्क्रिप्ट करके संग्रहीत करता है।
+      description: प्रमाणित वर्कस्पेस के लिए केवल-लिखने योग्य प्रदाता क्रेडेंशियल को एन्क्रिप्ट करके संग्रहीत करता है।
       requestBody:
         required: true
         content:
@@ -4708,7 +4708,7 @@ paths:
         - Gateway
       operationId: listWorkspaceNotificationDestinations
       summary: सूचना गंतव्यों की सूची बनाएँ
-      description: एन्क्रिप्ट किए गए लक्ष्य मान लौटाए बिना कार्यस्थान के सक्रिय और अक्षम गंतव्यों की सूची देता है।
+      description: एन्क्रिप्ट किए गए लक्ष्य मान लौटाए बिना वर्कस्पेस के सक्रिय और अक्षम गंतव्यों की सूची देता है।
       responses:
         '200':
           description: सूचना गंतव्य
@@ -4838,7 +4838,7 @@ paths:
         - Gateway
       operationId: listWorkspaceNotificationRoutes
       summary: सूचना रूट की सूची बनाएँ
-      description: कार्यस्थान के प्रत्येक समर्थित सूचना इवेंट के लिए गंतव्य असाइनमेंट लौटाता है।
+      description: वर्कस्पेस के प्रत्येक समर्थित सूचना इवेंट के लिए गंतव्य असाइनमेंट लौटाता है।
       responses:
         '200':
           description: सूचना रूट
@@ -5155,7 +5155,7 @@ paths:
         - Gateway
       operationId: listWebhookEndpoints
       summary: Webhook एंडपॉइंट की सूची बनाएँ
-      description: एसिंक webhook गंतव्यों की सूची देता है। `settings:read` और async APIs तक कार्यस्थान की पहुँच आवश्यक है।
+      description: एसिंक webhook गंतव्यों की सूची देता है। `settings:read` और async APIs तक वर्कस्पेस की पहुँच आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/Offset'
         - $ref: '#/components/parameters/Limit100'
@@ -5465,7 +5465,7 @@ paths:
       tags:
         - Gateway
       operationId: replaceGuardrailKeys
-      summary: गार्डरेल कुंजियां बदलें
+      summary: गार्डरेल कुंजियाँ बदलें
       description: कुंजी असाइनमेंट के पूरे सेट को बदलता है। इसके लिए `guardrails:write` आवश्यक है।
       requestBody:
         required: true
@@ -5492,7 +5492,7 @@ paths:
       tags:
         - Gateway
       operationId: addGuardrailKeys
-      summary: गार्डरेल कुंजियां जोड़ें
+      summary: गार्डरेल कुंजियाँ जोड़ें
       description: एक या अधिक वर्कस्पेस API कुंजियाँ असाइन करता है। इसके लिए `guardrails:write` आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/GuardrailId'
@@ -5521,7 +5521,7 @@ paths:
       tags:
         - Gateway
       operationId: removeGuardrailKeys
-      summary: गार्डरेल कुंजियां हटाएं
+      summary: गार्डरेल कुंजियाँ हटाएं
       description: एक या अधिक API कुंजी असाइनमेंट हटाता है। इसके लिए `guardrails:write` आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/GuardrailId'
@@ -5632,7 +5632,7 @@ paths:
         - Gateway
       operationId: listManagementKeys
       summary: प्रबंधन कुंजियों की सूची बनाएँ
-      description: प्रमाणित कार्यस्थान की प्रबंधन कुंजियों का मेटाडेटा सूचीबद्ध करता है। `management_keys:read` आवश्यक है।
+      description: प्रमाणित वर्कस्पेस की प्रबंधन कुंजियों का मेटाडेटा सूचीबद्ध करता है। `management_keys:read` आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/Offset'
         - $ref: '#/components/parameters/Limit100'
@@ -5650,7 +5650,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: अपर्याप्त क्षमता या कार्यस्थान भूमिका
+          description: अपर्याप्त क्षमता या वर्कस्पेस भूमिका
           content:
             application/json:
               schema:
@@ -5688,7 +5688,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: अपर्याप्त क्षमता या कार्यस्थान भूमिका
+          description: अपर्याप्त क्षमता या वर्कस्पेस भूमिका
           content:
             application/json:
               schema:
@@ -5723,7 +5723,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: अपर्याप्त क्षमता या कार्यस्थान भूमिका
+          description: अपर्याप्त क्षमता या वर्कस्पेस भूमिका
           content:
             application/json:
               schema:
@@ -5767,7 +5767,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: अपर्याप्त क्षमता या कार्यस्थान भूमिका
+          description: अपर्याप्त क्षमता या वर्कस्पेस भूमिका
           content:
             application/json:
               schema:
@@ -5799,7 +5799,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: अपर्याप्त क्षमता या कार्यस्थान भूमिका
+          description: अपर्याप्त क्षमता या वर्कस्पेस भूमिका
           content:
             application/json:
               schema:
@@ -5947,19 +5947,19 @@ paths:
       tags:
         - Gateway
       operationId: listWorkspaces
-      summary: कार्यस्थानों की सूची बनाएँ
-      description: प्रमाणित प्रबंधन कुंजी धारक के कार्यस्थानों की सूची देता है। प्रबंधन API कुंजी आवश्यक है।
+      summary: वर्कस्पेसों की सूची बनाएँ
+      description: प्रमाणित प्रबंधन कुंजी धारक के वर्कस्पेसों की सूची देता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - name: offset
           in: query
-          description: पृष्ठांकन के लिए छोड़े जाने वाले कार्यस्थानों की संख्या।
+          description: पृष्ठांकन के लिए छोड़े जाने वाले वर्कस्पेसों की संख्या।
           schema:
             type: integer
             default: 0
             minimum: 0
         - name: limit
           in: query
-          description: लौटाए जाने वाले कार्यस्थानों की अधिकतम संख्या।
+          description: लौटाए जाने वाले वर्कस्पेसों की अधिकतम संख्या।
           schema:
             type: integer
             default: 100
@@ -5967,7 +5967,7 @@ paths:
             maximum: 250
       responses:
         '200':
-          description: कार्यस्थानों की सूची
+          description: वर्कस्पेसों की सूची
           content:
             application/json:
               schema:
@@ -5989,8 +5989,8 @@ paths:
       tags:
         - Gateway
       operationId: createWorkspace
-      summary: कार्यस्थान बनाएँ
-      description: प्रमाणित स्वामी के लिए नया कार्यस्थान बनाता है। प्रबंधन API कुंजी आवश्यक है।
+      summary: वर्कस्पेस बनाएँ
+      description: प्रमाणित स्वामी के लिए नया वर्कस्पेस बनाता है। प्रबंधन API कुंजी आवश्यक है।
       requestBody:
         required: true
         content:
@@ -5999,7 +5999,7 @@ paths:
               $ref: '#/components/schemas/WorkspaceCreateRequest'
       responses:
         '201':
-          description: कार्यस्थान बनाया गया
+          description: वर्कस्पेस बनाया गया
           content:
             application/json:
               schema:
@@ -6028,18 +6028,18 @@ paths:
       tags:
         - Gateway
       operationId: getWorkspace
-      summary: कार्यस्थान प्राप्त करें
-      description: UUID या slug से कार्यस्थान लौटाता है। प्रबंधन API कुंजी आवश्यक है।
+      summary: वर्कस्पेस प्राप्त करें
+      description: UUID या slug से वर्कस्पेस लौटाता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - name: id
           in: path
           required: true
-          description: कार्यस्थान का UUID या slug।
+          description: वर्कस्पेस का UUID या slug।
           schema:
             type: string
       responses:
         '200':
-          description: कार्यस्थान मेटाडेटा
+          description: वर्कस्पेस मेटाडेटा
           content:
             application/json:
               schema:
@@ -6051,7 +6051,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: कार्यस्थान नहीं मिला
+          description: वर्कस्पेस नहीं मिला
           content:
             application/json:
               schema:
@@ -6067,13 +6067,13 @@ paths:
       tags:
         - Gateway
       operationId: updateWorkspace
-      summary: कार्यस्थान अपडेट करें
-      description: कार्यस्थान का मेटाडेटा अपडेट करता है। प्रबंधन API कुंजी आवश्यक है।
+      summary: वर्कस्पेस अपडेट करें
+      description: वर्कस्पेस का मेटाडेटा अपडेट करता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - name: id
           in: path
           required: true
-          description: कार्यस्थान का UUID या slug।
+          description: वर्कस्पेस का UUID या slug।
           schema:
             type: string
       requestBody:
@@ -6084,7 +6084,7 @@ paths:
               $ref: '#/components/schemas/WorkspaceUpdateRequest'
       responses:
         '200':
-          description: कार्यस्थान मेटाडेटा अपडेट किया गया
+          description: वर्कस्पेस मेटाडेटा अपडेट किया गया
           content:
             application/json:
               schema:
@@ -6102,7 +6102,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: कार्यस्थान नहीं मिला
+          description: वर्कस्पेस नहीं मिला
           content:
             application/json:
               schema:
@@ -6118,18 +6118,18 @@ paths:
       tags:
         - Gateway
       operationId: deleteWorkspace
-      summary: कार्यस्थान हटाएँ
-      description: UUID या slug से कार्यस्थान हटाता है। प्रबंधन API कुंजी आवश्यक है।
+      summary: वर्कस्पेस हटाएँ
+      description: UUID या slug से वर्कस्पेस हटाता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - name: id
           in: path
           required: true
-          description: कार्यस्थान का UUID या slug।
+          description: वर्कस्पेस का UUID या slug।
           schema:
             type: string
       responses:
         '200':
-          description: कार्यस्थान हटाया गया
+          description: वर्कस्पेस हटाया गया
           content:
             application/json:
               schema:
@@ -6147,7 +6147,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: कार्यस्थान नहीं मिला
+          description: वर्कस्पेस नहीं मिला
           content:
             application/json:
               schema:
@@ -6164,15 +6164,15 @@ paths:
       tags:
         - Gateway
       operationId: listWorkspaceMembers
-      summary: कार्यस्थान के सदस्यों की सूची बनाएँ
-      description: कार्यस्थान के सदस्यों और उनकी भूमिकाओं की सूची देता है। प्रबंधन API कुंजी आवश्यक है।
+      summary: वर्कस्पेस के सदस्यों की सूची बनाएँ
+      description: वर्कस्पेस के सदस्यों और उनकी भूमिकाओं की सूची देता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
         - $ref: '#/components/parameters/Offset'
         - $ref: '#/components/parameters/Limit100'
       responses:
         '200':
-          description: कार्यस्थान के सदस्यों की सूची
+          description: वर्कस्पेस के सदस्यों की सूची
           content:
             application/json:
               schema:
@@ -6184,7 +6184,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: कार्यस्थान नहीं मिला
+          description: वर्कस्पेस नहीं मिला
           content:
             application/json:
               schema:
@@ -6195,8 +6195,8 @@ paths:
       tags:
         - Gateway
       operationId: addWorkspaceMembers
-      summary: कार्यस्थान में सदस्य जोड़ें
-      description: मौजूदा उपयोगकर्ताओं को `admin` या `member` भूमिका के साथ कार्यस्थान में जोड़ता है। प्रबंधन API कुंजी आवश्यक है।
+      summary: वर्कस्पेस में सदस्य जोड़ें
+      description: मौजूदा उपयोगकर्ताओं को `admin` या `member` भूमिका के साथ वर्कस्पेस में जोड़ता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -6225,7 +6225,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: कार्यस्थान नहीं मिला
+          description: वर्कस्पेस नहीं मिला
           content:
             application/json:
               schema:
@@ -6236,8 +6236,8 @@ paths:
       tags:
         - Gateway
       operationId: removeWorkspaceMembers
-      summary: कार्यस्थान से सदस्य हटाएँ
-      description: कार्यस्थान से गैर-स्वामी सदस्यों को हटाता है। प्रबंधन API कुंजी आवश्यक है।
+      summary: वर्कस्पेस से सदस्य हटाएँ
+      description: वर्कस्पेस से गैर-स्वामी सदस्यों को हटाता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -6266,7 +6266,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: कार्यस्थान नहीं मिला
+          description: वर्कस्पेस नहीं मिला
           content:
             application/json:
               schema:
@@ -6277,8 +6277,8 @@ paths:
       tags:
         - Gateway
       operationId: updateWorkspaceMemberRole
-      summary: कार्यस्थान सदस्य की भूमिका अपडेट करें
-      description: गैर-स्वामी सदस्य की भूमिका को `admin` और `member` के बीच बदलता है। कार्यस्थान के स्वामी और प्रबंधन API कुंजी की आवश्यकता है।
+      summary: वर्कस्पेस सदस्य की भूमिका अपडेट करें
+      description: गैर-स्वामी सदस्य की भूमिका को `admin` और `member` के बीच बदलता है। वर्कस्पेस के स्वामी और प्रबंधन API कुंजी की आवश्यकता है।
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
         - name: user_id
@@ -6295,7 +6295,7 @@ paths:
               $ref: '#/components/schemas/WorkspaceMemberRoleUpdateRequest'
       responses:
         '200':
-          description: कार्यस्थान सदस्य अपडेट किया गया
+          description: वर्कस्पेस सदस्य अपडेट किया गया
           content:
             application/json:
               schema:
@@ -6313,7 +6313,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: सदस्य या कार्यस्थान नहीं मिला
+          description: सदस्य या वर्कस्पेस नहीं मिला
           content:
             application/json:
               schema:
@@ -6330,7 +6330,7 @@ paths:
       tags:
         - Gateway
       operationId: listWorkspaceInvites
-      summary: कार्यस्थान के आमंत्रणों की सूची बनाएँ
+      summary: वर्कस्पेस के आमंत्रणों की सूची बनाएँ
       description: आमंत्रण के रहस्य लौटाए बिना उसके मेटाडेटा की सूची देता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
@@ -6338,7 +6338,7 @@ paths:
         - $ref: '#/components/parameters/Limit100'
       responses:
         '200':
-          description: कार्यस्थान आमंत्रण सूची
+          description: वर्कस्पेस आमंत्रण सूची
           content:
             application/json:
               schema:
@@ -6350,7 +6350,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: कार्यस्थान नहीं मिला
+          description: वर्कस्पेस नहीं मिला
           content:
             application/json:
               schema:
@@ -6360,7 +6360,7 @@ paths:
       tags:
         - Gateway
       operationId: createWorkspaceInvite
-      summary: कार्यस्थान का आमंत्रण बनाएँ
+      summary: वर्कस्पेस का आमंत्रण बनाएँ
       description: एन्क्रिप्ट किया गया आमंत्रण बनाता है और उसका plaintext token केवल एक बार लौटाता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
@@ -6372,7 +6372,7 @@ paths:
               $ref: '#/components/schemas/WorkspaceInviteCreateRequest'
       responses:
         '201':
-          description: कार्यस्थान का आमंत्रण बनाया गया
+          description: वर्कस्पेस का आमंत्रण बनाया गया
           content:
             application/json:
               schema:
@@ -6390,7 +6390,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: कार्यस्थान नहीं मिला
+          description: वर्कस्पेस नहीं मिला
           content:
             application/json:
               schema:
@@ -6401,7 +6401,7 @@ paths:
       tags:
         - Gateway
       operationId: deleteWorkspaceInvite
-      summary: कार्यस्थान का आमंत्रण हटाएँ
+      summary: वर्कस्पेस का आमंत्रण हटाएँ
       description: आमंत्रण को स्थायी रूप से रद्द करता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
@@ -6426,7 +6426,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: आमंत्रण या कार्यस्थान नहीं मिला
+          description: आमंत्रण या वर्कस्पेस नहीं मिला
           content:
             application/json:
               schema:
@@ -6437,8 +6437,8 @@ paths:
       tags:
         - Gateway
       operationId: listWorkspaceJoinRequests
-      summary: कार्यस्थान में शामिल होने के अनुरोधों की सूची बनाएँ
-      description: कार्यस्थान में शामिल होने के हाल के अनुरोधों की सूची देता है। प्रबंधन API कुंजी आवश्यक है।
+      summary: वर्कस्पेस में शामिल होने के अनुरोधों की सूची बनाएँ
+      description: वर्कस्पेस में शामिल होने के हाल के अनुरोधों की सूची देता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
         - $ref: '#/components/parameters/Offset'
@@ -6450,7 +6450,7 @@ paths:
             $ref: '#/components/schemas/WorkspaceJoinRequestStatus'
       responses:
         '200':
-          description: कार्यस्थान में शामिल होने के अनुरोधों की सूची
+          description: वर्कस्पेस में शामिल होने के अनुरोधों की सूची
           content:
             application/json:
               schema:
@@ -6468,7 +6468,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: कार्यस्थान नहीं मिला
+          description: वर्कस्पेस नहीं मिला
           content:
             application/json:
               schema:
@@ -6479,7 +6479,7 @@ paths:
       tags:
         - Gateway
       operationId: approveWorkspaceJoinRequest
-      summary: कार्यस्थान में शामिल होने का अनुरोध स्वीकृत करें
+      summary: वर्कस्पेस में शामिल होने का अनुरोध स्वीकृत करें
       description: लंबित अनुरोध को परमाण्विक रूप से स्वीकृत करता है और आमंत्रण की भूमिका लागू करता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
@@ -6498,7 +6498,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: शामिल होने का अनुरोध या कार्यस्थान नहीं मिला
+          description: शामिल होने का अनुरोध या वर्कस्पेस नहीं मिला
           content:
             application/json:
               schema:
@@ -6515,7 +6515,7 @@ paths:
       tags:
         - Gateway
       operationId: rejectWorkspaceJoinRequest
-      summary: कार्यस्थान में शामिल होने का अनुरोध अस्वीकार करें
+      summary: वर्कस्पेस में शामिल होने का अनुरोध अस्वीकार करें
       description: लंबित अनुरोध को परमाण्विक रूप से अस्वीकार करता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
@@ -6534,7 +6534,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: शामिल होने का अनुरोध या कार्यस्थान नहीं मिला
+          description: शामिल होने का अनुरोध या वर्कस्पेस नहीं मिला
           content:
             application/json:
               schema:
@@ -6551,8 +6551,8 @@ paths:
       tags:
         - Gateway
       operationId: getObservabilityLoggingPolicy
-      summary: कार्यस्थान की I/O लॉगिंग नीति प्राप्त करें
-      description: कार्यस्थान के लॉग स्टोरेज और रिटेंशन सेटिंग के साथ केवल-पढ़ने योग्य बिलिंग स्थिति लौटाता है।
+      summary: वर्कस्पेस की I/O लॉगिंग नीति प्राप्त करें
+      description: वर्कस्पेस के लॉग स्टोरेज और रिटेंशन सेटिंग के साथ केवल-पढ़ने योग्य बिलिंग स्थिति लौटाता है।
       responses:
         '200':
           description: लॉगिंग नीति
@@ -6571,7 +6571,7 @@ paths:
       tags:
         - Gateway
       operationId: updateObservabilityLoggingPolicy
-      summary: कार्यस्थान की I/O लॉगिंग नीति अपडेट करें
+      summary: वर्कस्पेस की I/O लॉगिंग नीति अपडेट करें
       description: लॉग स्टोरेज, रिटेंशन और प्रदाता पेलोड कैप्चर सेटिंग अपडेट करता है।
       requestBody:
         required: true
@@ -6605,7 +6605,7 @@ paths:
         - Gateway
       operationId: listObservabilityDestinations
       summary: ऑब्ज़र्वेबिलिटी गंतव्यों की सूची बनाएँ
-      description: प्रबंधन कुंजी के कार्यस्थान के लिए निष्पादन योग्य ऑब्ज़र्वेबिलिटी गंतव्यों की सूची देता है।
+      description: प्रबंधन कुंजी के वर्कस्पेस के लिए निष्पादन योग्य ऑब्ज़र्वेबिलिटी गंतव्यों की सूची देता है।
       parameters:
         - $ref: '#/components/parameters/Offset'
         - $ref: '#/components/parameters/Limit100'
@@ -7854,7 +7854,7 @@ paths:
         - Gateway
       operationId: listPresets
       summary: प्रीसेट की सूची बनाएँ
-      description: प्रबंधन कुंजी के कार्यस्थान में दिखाई देने वाले सक्रिय प्रीसेट की सूची देता है।
+      description: प्रबंधन कुंजी के वर्कस्पेस में दिखाई देने वाले सक्रिय प्रीसेट की सूची देता है।
       parameters:
         - $ref: '#/components/parameters/Offset'
         - name: limit
@@ -7889,7 +7889,7 @@ paths:
         - Gateway
       operationId: createPreset
       summary: प्रीसेट बनाएँ
-      description: स्थायी प्रॉम्प्ट, रूटिंग, पैरामीटर और प्लगइन डिफ़ॉल्ट के साथ कार्यस्थान प्रीसेट बनाता है।
+      description: स्थायी प्रॉम्प्ट, रूटिंग, पैरामीटर और प्लगइन डिफ़ॉल्ट के साथ वर्कस्पेस प्रीसेट बनाता है।
       requestBody:
         required: true
         content:
@@ -7936,7 +7936,7 @@ paths:
         - Gateway
       operationId: updatePresetPublisher
       summary: प्रीसेट प्रकाशक हैंडल अपडेट करें
-      description: पिछले हैंडल को alias के रूप में रखते हुए कार्यस्थान के प्रकाशक हैंडल का नाम बदलता है।
+      description: पिछले हैंडल को alias के रूप में रखते हुए वर्कस्पेस के प्रकाशक हैंडल का नाम बदलता है।
       requestBody:
         required: true
         content:
@@ -8123,7 +8123,7 @@ paths:
         - Gateway
       operationId: forkPreset
       summary: सार्वजनिक प्रीसेट की कॉपी बनाएँ
-      description: सक्रिय या चुने गए सार्वजनिक संस्करण को प्रबंधन कार्यस्थान में निजी प्रीसेट के रूप में कॉपी करता है।
+      description: सक्रिय या चुने गए सार्वजनिक संस्करण को प्रबंधन वर्कस्पेस में निजी प्रीसेट के रूप में कॉपी करता है।
       parameters:
         - $ref: '#/components/parameters/PresetId'
       requestBody:
@@ -8204,11 +8204,11 @@ paths:
       tags:
         - Gateway
       operationId: getWorkspaceSettings
-      summary: कार्यस्थान सेटिंग प्राप्त करें
-      description: कार्यस्थान की स्वचालित की जा सकने वाली रूटिंग, प्रदाता, गोपनीयता और गेटवे डिफ़ॉल्ट लौटाता है।
+      summary: वर्कस्पेस सेटिंग प्राप्त करें
+      description: वर्कस्पेस की स्वचालित की जा सकने वाली रूटिंग, प्रदाता, गोपनीयता और गेटवे डिफ़ॉल्ट लौटाता है।
       responses:
         '200':
-          description: कार्यस्थान सेटिंग
+          description: वर्कस्पेस सेटिंग
           content:
             application/json:
               schema:
@@ -8224,8 +8224,8 @@ paths:
       tags:
         - Gateway
       operationId: updateWorkspaceSettings
-      summary: कार्यस्थान सेटिंग अपडेट करें
-      description: कार्यस्थान की रूटिंग, प्रदाता, गोपनीयता या गेटवे डिफ़ॉल्ट अपडेट करता है और प्रभावित गेटवे नीति कैश रीफ़्रेश करता है।
+      summary: वर्कस्पेस सेटिंग अपडेट करें
+      description: वर्कस्पेस की रूटिंग, प्रदाता, गोपनीयता या गेटवे डिफ़ॉल्ट अपडेट करता है और प्रभावित गेटवे नीति कैश रीफ़्रेश करता है।
       requestBody:
         required: true
         content:
@@ -8234,13 +8234,13 @@ paths:
               $ref: '#/components/schemas/WorkspaceSettingsUpdateRequest'
       responses:
         '200':
-          description: कार्यस्थान सेटिंग अपडेट की गई
+          description: वर्कस्पेस सेटिंग अपडेट की गई
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkspaceSettingsResponse'
         '400':
-          description: अमान्य कार्यस्थान सेटिंग
+          description: अमान्य वर्कस्पेस सेटिंग
           content:
             application/json:
               schema:
@@ -8407,7 +8407,7 @@ paths:
       tags:
         - Gateway
       operationId: replaceDynamicRouteKeys
-      summary: डायनामिक रूट कुंजियां बदलें
+      summary: डायनामिक रूट कुंजियाँ बदलें
       description: API कुंजी संलग्नताओं को परमाणु रूप से बदलता है और प्रभावित गेटवे संदर्भ रीफ़्रेश करता है।
       parameters:
         - $ref: '#/components/parameters/DynamicRouteId'
@@ -8621,7 +8621,7 @@ components:
       name: id
       in: path
       required: true
-      description: कार्यस्थान का UUID या slug।
+      description: वर्कस्पेस का UUID या slug।
       schema:
         type: string
     WorkspaceJoinRequestId:
@@ -10996,7 +10996,7 @@ components:
         model:
           type: string
           minLength: 1
-          description: मानक Phaseo मॉडल आईडी या प्रदाता मॉडल उपनाम।
+          description: मानक Phaseo मॉडल ID या प्रदाता मॉडल उपनाम।
         models:
           $ref: '#/components/schemas/ModelFallbacks'
         input:
@@ -11261,7 +11261,7 @@ components:
       properties:
         model:
           type: string
-          description: मानक Phaseo मॉडल आईडी या प्रदाता मॉडल उपनाम।
+          description: मानक Phaseo मॉडल ID या प्रदाता मॉडल उपनाम।
           default: typesafe/jev-1.13.0
         models:
           $ref: '#/components/schemas/ModelFallbacks'
@@ -11586,7 +11586,7 @@ components:
       properties:
         model:
           type: string
-          description: मानक Phaseo मॉडल आईडी या प्रदाता मॉडल उपनाम।
+          description: मानक Phaseo मॉडल ID या प्रदाता मॉडल उपनाम।
           default: typesafe/jev-1.13.0
         state:
           description: मॉडल द्वारा मूल्यांकित संरचित स्थिति।
@@ -15007,7 +15007,7 @@ components:
         workspace_id:
           type: string
           format: uuid
-          description: आंतरिक कॉल करने वालों के लिए वैकल्पिक कार्यस्थान ओवरराइड।
+          description: आंतरिक कॉल करने वालों के लिए वैकल्पिक वर्कस्पेस ओवरराइड।
         scopes:
           $ref: '#/components/schemas/ApiKeyScopeValue'
         limit:
@@ -16895,7 +16895,7 @@ components:
           minimum: 0
         owned_by:
           type: string
-          description: कैटलॉग का संगठन ID, कार्यक्षेत्र मॉडल के लिए private, या अज्ञात होने पर phaseo।
+          description: कैटलॉग का संगठन ID, वर्कस्पेस मॉडल के लिए private, या अज्ञात होने पर phaseo।
           example: openai
       additionalProperties: false
     GatewayModelsResponse:

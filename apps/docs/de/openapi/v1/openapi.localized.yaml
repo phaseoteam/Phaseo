@@ -9461,7 +9461,7 @@ components:
                 - groq
                 - together
             - $ref: '#/components/schemas/ProviderRoutingOptions'
-          description: 'Anbieterauswahl. Verwenden Sie für einen einzelnen Anbieter eine Zeichenfolge oder Routing-Optionen wie `{ "only": ["groq"] }`.'
+          description: 'Anbieterauswahl. Verwende für einen einzelnen Anbieter eine Zeichenfolge oder Routing-Optionen wie `{ "only": ["groq"] }`.'
         provider_options:
           $ref: '#/components/schemas/ProviderOptions'
         user_id:
@@ -21377,7 +21377,7 @@ components:
       type: object
       required:
         - name
-      description: Geben Sie genau eines der Felder `template` oder `scopes` an.
+      description: Gib genau eines der Felder `template` oder `scopes` an.
       anyOf:
         - required:
             - template

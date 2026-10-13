@@ -1011,7 +1011,7 @@
 					{
 						"stage": "Caché de respuestas",
 						"data": "Clave de caché por espacio de trabajo, cuerpo de respuesta y metadatos de respuesta",
-						"handling": "Las respuestas de texto aptas que no usan streaming pueden guardarse en Upstash Redis durante cinco minutos por defecto. Un ajuste puede establecer entre 30 segundos y 24 horas. El cuerpo de la solicitud contribuye al resumen de la clave de caché SHA-256, pero no se guarda en el registro almacenado en caché."
+						"handling": "Las respuestas de texto aptas que no usan streaming pueden guardarse en Upstash Redis durante cinco minutos por defecto. Un preajuste puede establecer entre 30 segundos y 24 horas. El cuerpo de la solicitud contribuye al resumen de la clave de caché SHA-256, pero no se guarda en el registro almacenado en caché."
 					},
 					{
 						"stage": "Proveedor de IA",
@@ -1377,7 +1377,7 @@
 				},
 				"openai": {
 					"purpose": "Clasificar una muestra configurada de contribuciones de datos aceptadas",
-					"data": "Contenido de prompts y respuestas redactado en la medida de lo posible, e instrucciones del clasificador",
+					"data": "Contenido de prompts y respuestas con los datos sensibles ocultados en la medida de lo posible, e instrucciones del clasificador",
 					"location": "Según la cuenta de API de OpenAI de Phaseo y las condiciones de transferencia aplicables; requiere confirmación factual",
 					"condition": "Solo cuando están habilitadas la contribución de datos y la clasificación ascendente"
 				}
@@ -1426,7 +1426,7 @@
 				},
 				"axiom": {
 					"role": "Observabilidad operativa cuando está habilitada la clave de producción",
-					"data": "Telemetría de espacios de trabajo y solicitudes; detalles de solicitudes muestreados y redactados en la medida de lo posible cuando se configura"
+					"data": "Telemetría de espacios de trabajo y solicitudes; detalles de solicitudes muestreados y con los datos sensibles ocultados en la medida de lo posible cuando se configura"
 				},
 				"mintlify": {
 					"role": "Alojamiento de documentación",

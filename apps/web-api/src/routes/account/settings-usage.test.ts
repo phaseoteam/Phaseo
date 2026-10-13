@@ -377,9 +377,17 @@ describe("account usage settings routes", () => {
 		expect(await response.json()).toMatchObject({ data: { upstreamRequests: [{ request_latency_ms: gatewayLatency, latency_ms: 60 }] } });
 	});
 	it("returns the private observability windows and lookup metadata", async () => {
-		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+		let monthUsageArgs: unknown = null;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
+			if (url.includes("/rpc/get_private_usage_month_days")) {
+				monthUsageArgs = JSON.parse(String(init?.body ?? "{}"));
+				return new Response(JSON.stringify([
+					{ date: "2026-07-16", costNanos: 3000, requests: 2, successfulRequests: 2, tokens: 40, cachedTokens: 0 },
+					{ date: "2026-07-17", costNanos: 1500, requests: 2, successfulRequests: 1, tokens: 12, cachedTokens: 5 },
+				]), { status: 200 });
+			}
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
 			if (url.includes("v2_request_facts")) return new Response(JSON.stringify([{ safe_metadata: { labels: [{ key: "team", value: "support" }] }, cost_nanos: 1000 }]), { status: 200, headers: { "content-range": "0-0/1" } });
@@ -410,6 +418,55 @@ describe("account usage settings routes", () => {
 			modelMetadataEntries: [["openai/gpt-test", { modelName: "GPT Test" }]],
 			appMetadataEntries: [["app-1", { title: "Example App", imageUrl: null }]],
 			appNameEntries: [["app-1", "Example App"]],
+			monthUsage: { days: [
+				{ date: "2026-07-16", costNanos: 3000, requests: 2, successfulRequests: 2, tokens: 40, cachedTokens: 0 },
+				{ date: "2026-07-17", costNanos: 1500, requests: 2, successfulRequests: 1, tokens: 12, cachedTokens: 5 },
+			] },
 		});
+		// From the first of last month, whatever today is.
+		expect(monthUsageArgs).toEqual({ p_workspace_id: "workspace-1", p_from: expect.stringMatching(/^\d{4}-\d{2}-01$/) });
+	});
+	it("hides only the month figures when the month RPC fails", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
+			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
+			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
+			if (url.includes("/rpc/get_private_usage_month_days")) return new Response(JSON.stringify({ code: "57014", message: "canceling statement due to statement timeout" }), { status: 500 });
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+		const params = new URLSearchParams({
+			workspaceId: "workspace-1",
+			from: "2026-07-17T00:00:00Z",
+			to: "2026-07-18T00:00:00Z",
+			previousFrom: "2026-07-16T00:00:00Z",
+			previousTo: "2026-07-17T00:00:00Z",
+		});
+		const response = await app.request(`https://phaseo.app/api/account/settings/usage/observability?${params}`, { headers: { authorization: "Bearer token" } }, env);
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toMatchObject({ workspaceId: "workspace-1", monthUsage: null });
+	});
+	it("leaves the month figures out of filtered views, where the workspace rollup would be wrong", async () => {
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
+			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
+			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
+			return new Response(JSON.stringify([]), { status: 200 });
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		const params = new URLSearchParams({
+			workspaceId: "workspace-1",
+			key: "key-1",
+			from: "2026-07-17T00:00:00Z",
+			to: "2026-07-18T00:00:00Z",
+			previousFrom: "2026-07-16T00:00:00Z",
+			previousTo: "2026-07-17T00:00:00Z",
+		});
+		const response = await app.request(`https://phaseo.app/api/account/settings/usage/observability?${params}`, { headers: { authorization: "Bearer token" } }, env);
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toMatchObject({ monthUsage: null });
+		const urls = fetchMock.mock.calls.map(([input]) => input instanceof Request ? input.url : String(input));
+		expect(urls.some((url) => url.includes("/rpc/get_private_usage_month_days"))).toBe(false);
 	});
 });
