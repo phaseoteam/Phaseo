@@ -45,7 +45,7 @@ alter table public.v2_subscription_plans
   add column source_url text,
   add column verified_at timestamptz;
 
-create unique index v2_subscription_plan_identity_idx on public.v2_subscription_plans(plan_id) where status <> 'merged';
+create unique index v2_subscription_plan_identity_idx on public.v2_subscription_plans(coalesce(lab_slug,''),plan_id) where status <> 'merged';
 
 create trigger subscription_identity before insert on public.v2_subscription_plans for each row execute function public.canonicalize_subscription_identity();
 

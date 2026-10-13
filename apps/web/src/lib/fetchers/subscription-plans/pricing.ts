@@ -56,12 +56,16 @@ export function formatSubscriptionPrice(price: SubscriptionPrice, formatAmount =
 	const components: SubscriptionPriceComponent[] = price.components?.length ? price.components : [{ component_key: "base",
 		pricing_type: price.pricing_type ?? (price.frequency === "custom" ? "custom" : price.frequency === "usage" ? "usage_based" : price.price == null ? "unknown" : "fixed"),
 		amount: price.price, charge_basis: price.charge_basis ?? "account" } satisfies SubscriptionPriceComponent];
-	const phases = new Map<string, SubscriptionPriceComponent[]>();
-	for (const component of components) {
-		const key = `${component.starts_at_cycle ?? 1}:${component.phase ?? "standard"}`;
-		phases.set(key, [...(phases.get(key) ?? []), component]);
-	}
-	return [...phases.values()].sort((a, b) => (a[0].starts_at_cycle ?? 1) - (b[0].starts_at_cycle ?? 1)).map((phaseComponents) => phaseComponents.map((component) => {
+	// Split the timeline at each start/end so overlapping charges stay together.
+	const boundaries = [...new Set(components.flatMap((component) => {
+		const start = component.starts_at_cycle ?? 1;
+		return component.duration_cycles ? [start, start + component.duration_cycles] : [start];
+	}))].sort((a, b) => a - b);
+	const phases = boundaries.map((cycle) => components.filter((component) => {
+		const start = component.starts_at_cycle ?? 1;
+		return start <= cycle && (component.duration_cycles == null || cycle < start + component.duration_cycles);
+	})).filter((phase) => phase.length);
+	return phases.map((phaseComponents) => phaseComponents.map((component) => {
 		if (component.pricing_type === "custom") return labels.custom;
 		if (component.pricing_type === "unknown" || component.amount == null) return component.pricing_type === "usage_based" ? labels.usage : labels.unknown;
 		const amount = price.currency ? formatAmount(component.amount, price.currency) : String(component.amount);

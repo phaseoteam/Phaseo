@@ -210,7 +210,7 @@ export function sortSubscriptionPlanPricesForDisplay(
 			return aFrequencyOrder - bFrequencyOrder;
 		}
 
-		return Number(a.price) - Number(b.price);
+		return Number(a.price ?? Infinity) - Number(b.price ?? Infinity);
 	});
 }
 
@@ -222,7 +222,7 @@ function getPlanSortKey(prices: SubscriptionPrice[]): {
 	const sorted = sortSubscriptionPlanPrices(
 		prices.filter(
 			(price) =>
-				(price.components?.length || price.price != null) && Number.isFinite(Number(price.price)) &&
+				price.price != null && Number.isFinite(Number(price.price)) &&
 				Number(price.price) >= 0 &&
 				Boolean(String(price.currency ?? "").trim()) &&
 				!isNonFixedPlanFrequency(price.frequency),
@@ -264,7 +264,7 @@ function getStartingPriceText(plans: SubscriptionPlan[], formatNumber: NumberFor
 		plans.flatMap((plan) =>
 			(plan.prices ?? []).filter(
 				(price) =>
-					(price.components?.length || price.price != null) && Number.isFinite(Number(price.price)) && Number(price.price) >= 0,
+					price.price != null && Number.isFinite(Number(price.price)) && Number(price.price) >= 0,
 			),
 		),
 	);
@@ -285,7 +285,7 @@ function getVisibleStartingPriceSortKey(plans: SubscriptionPlan[]): {
 		plans.flatMap((plan) =>
 			(plan.prices ?? []).filter(
 				(price) =>
-					(price.components?.length || price.price != null) && Number.isFinite(Number(price.price)) && Number(price.price) >= 0,
+					price.price != null && Number.isFinite(Number(price.price)) && Number(price.price) >= 0,
 			),
 		),
 	)[0];
@@ -463,13 +463,7 @@ export default function ModelSubscriptionsClient({
 							</div>
 							<div>
 								{group.plans.map((plan, index) => {
-									const sortedPrices = sortSubscriptionPlanPricesForDisplay(
-										(plan.prices ?? []).filter(
-											(price) =>
-												(price.components?.length || price.price != null) && Number.isFinite(Number(price.price)) &&
-												Number(price.price) >= 0,
-										),
-									);
+									const sortedPrices = sortSubscriptionPlanPricesForDisplay(plan.prices ?? []);
 
 									return (
 										<div

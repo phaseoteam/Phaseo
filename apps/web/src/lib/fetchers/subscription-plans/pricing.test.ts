@@ -31,6 +31,20 @@ describe("subscription offer formatting", () => {
 		expect(value).toContain("Ab 30,00"); expect(value).toContain("Platz / 1 Monat");
 		expect(formatSubscriptionPrice({ ...monthly, components: [{ component_key: "metered", pricing_type: "usage_based", amount: 0.003, charge_basis: "unit", unit: "line" }] })).toBe("$0.003 / 1 line");
 	});
+	test("keeps ongoing seat charges in both introductory and renewal cycles", () => {
+		const value = formatSubscriptionPrice({ ...monthly, components: [
+			{ component_key: "intro", pricing_type: "fixed", amount: 1, charge_basis: "account", phase: "introductory", starts_at_cycle: 1, duration_cycles: 1 },
+			{ component_key: "base", pricing_type: "fixed", amount: 30, charge_basis: "account", phase: "renewal", starts_at_cycle: 2 },
+			{ component_key: "seat", pricing_type: "fixed", amount: 40, charge_basis: "seat", starts_at_cycle: 1 },
+		] });
+		expect(value).toBe("$1.00 / month (introductory, 1 cycle) + $40.00 / seat / month → $30.00 / month (from billing cycle 2) + $40.00 / seat / month");
+	});
+	test("ends finite overlapping charges at their duration boundary", () => {
+		expect(formatSubscriptionPrice({ ...monthly, components: [
+			{ component_key: "base", pricing_type: "fixed", amount: 30, charge_basis: "account" },
+			{ component_key: "seat", pricing_type: "fixed", amount: 40, charge_basis: "seat", starts_at_cycle: 2, duration_cycles: 2 },
+		] })).toBe("$30.00 / month → $30.00 / month + $40.00 / seat / month → $30.00 / month");
+	});
 	test("does not invent a currency or subscription period for metered charges", () => {
 		expect(formatSubscriptionPrice({ ...monthly, currency: null })).toBe("30 / month");
 		expect(formatSubscriptionPrice({ ...monthly, components: [{ component_key: "overage", pricing_type: "usage_based", amount: 0.01, charge_basis: "unit", unit: "credit", unit_quantity: 1 }] })).toBe("$0.01 / 1 credit");

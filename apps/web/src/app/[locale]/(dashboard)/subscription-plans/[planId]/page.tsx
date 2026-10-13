@@ -1,4 +1,5 @@
-import { formatSubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
+import { formatSubscriptionPrice, localizedSubscriptionPriceLabels } from "@/lib/fetchers/subscription-plans/pricing";
+import { getTranslations } from "next-intl/server";
 import SubscriptionPlanDetailShell from "@/components/(data)/subscription-plans/SubscriptionPlanDetailShell";
 import SubscriptionPlanOverview from "@/components/(data)/subscription-plans/SubscriptionPlanOverview";
 import { fetchFrontendSubscriptionPlan } from "@/lib/fetchers/frontend/fetchPublicCatalog";
@@ -44,7 +45,12 @@ export async function generateMetadata(props: {
 	const primaryPrice = plan.prices?.[0];
 	let priceSnippet: string | undefined;
 	if (primaryPrice) {
-		priceSnippet = formatSubscriptionPrice(primaryPrice, undefined, { custom: messages.metadata.customPricing, usage: messages.metadata.usagePricing, unknown: "Price unavailable" });
+		const t = await getTranslations({ locale });
+		priceSnippet = formatSubscriptionPrice(primaryPrice,
+			(amount, currency) => new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 8 }).format(amount),
+			localizedSubscriptionPriceLabels(locale, { custom: messages.metadata.customPricing, usage: messages.metadata.usagePricing,
+				unknown: t("Common.status.unknown"), from: t("Common.ui.subscriptionCatalog.starting_at"), seat: t("Common.ui.subscriptionCatalog.seat"),
+				introductory: t("Common.ui.subscriptionCatalog.introductory"), firstCycle: t("Common.ui.subscriptionCatalog.first_billing_cycle"), cycleCount: t("Common.ui.subscriptionCatalog.number_of_cycles") }));
 	}
 
 	const descriptionParts = [
