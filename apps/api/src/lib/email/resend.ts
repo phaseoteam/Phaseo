@@ -10,6 +10,9 @@ type SendEmailArgs = {
 		variables?: Record<string, string | number>;
 	};
 	from?: string;
+	replyTo?: string;
+	/** Extra message headers, e.g. List-Unsubscribe. */
+	headers?: Record<string, string>;
 	idempotencyKey?: string;
 	signal?: AbortSignal;
 };
@@ -76,6 +79,8 @@ export async function sendEmail(args: SendEmailArgs): Promise<void> {
 			subject: args.subject,
 			html: args.html,
 			...(args.text ? { text: args.text } : {}),
+			...(args.replyTo ? { reply_to: args.replyTo } : {}),
+			...(args.headers && Object.keys(args.headers).length > 0 ? { headers: args.headers } : {}),
 		}),
 	});
 

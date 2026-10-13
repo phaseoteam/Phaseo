@@ -66,6 +66,7 @@ vi.mock("@/runtime/env", () => ({
 		RESEND_API_KEY: "resend_key",
 		RESEND_FROM_EMAIL: "Phaseo <noreply@example.com>",
 		RESEND_TEMPLATE_LOW_BALANCE_ID: "low_balance_template",
+		FEEDBACK_REQUEST_FROM_EMAIL: "Daniel <daniel@example.com>",
 	}),
 }));
 
@@ -212,6 +213,37 @@ describe("email outbox", () => {
 			html: expect.stringContaining("Card declined"),
 			idempotencyKey: "auto_top_up_failed:pi_123",
 	}));
+	});
+
+	it("sends feedback requests from Daniel with a reply-to and one-click unsubscribe", async () => {
+		const token = "0f8fad5b-d9cb-469f-a165-70867728950e";
+		state.rows.push({
+			id: "email_feedback",
+			created_at: "2026-10-13T10:05:00Z",
+			kind: "feedback_request",
+			template: "feedback_request",
+			to_email: "ada@example.com",
+			subject: null,
+			workspace_id: null,
+			user_id: "user_1",
+			dedupe_key: "feedback_request:v1:user_1",
+			payload: { token, segment: "used_not_paid", recency: "active", first_name: "Ada" },
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await expect(drainEmailOutbox(10)).resolves.toEqual({ processed: 1, sent: 1, failed: 0 });
+
+		expect(state.sendEmail).toHaveBeenCalledWith(expect.objectContaining({
+			to: "ada@example.com",
+			from: "Daniel <daniel@example.com>",
+			replyTo: "Daniel <daniel@example.com>",
+			subject: "Quick question about Phaseo",
+			headers: expect.objectContaining({ "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" }),
+			idempotencyKey: "feedback_request:v1:user_1",
+		}));
 	});
 
 	it("renders expiring payment method details", async () => {

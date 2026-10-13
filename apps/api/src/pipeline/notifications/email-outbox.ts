@@ -3,6 +3,7 @@ import { sendEmail } from "@/lib/email/resend";
 import { getBindings } from "@/runtime/env";
 import { getEmailSuppressionReason } from "@/pipeline/notifications/email-suppressions";
 import { getModelDeprecationTemplateVariables, renderModelDeprecationEmail } from "@/pipeline/notifications/model-deprecation";
+import { renderFeedbackRequestEmail } from "@/pipeline/notifications/feedback-request";
 
 type OutboxRow = {
 	id: string;
@@ -236,8 +237,14 @@ function renderEmailForRow(row: OutboxRow): {
 	variables?: Record<string, string | number>;
 	html?: string;
 	text?: string;
+	from?: string;
+	replyTo?: string;
+	headers?: Record<string, string>;
 } {
 	const bindings = getBindings();
+	if (row.template === "feedback_request" || row.kind === "feedback_request") {
+		return renderFeedbackRequestEmail(row.payload ?? {});
+	}
 	if (row.template === "low_balance" || row.kind === "low_balance") {
 		const templateId = bindings.RESEND_TEMPLATE_LOW_BALANCE_ID?.trim() || "";
 		if (!templateId) throw new Error("missing_resend_template_low_balance_id");
@@ -401,6 +408,9 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 					subject: rendered.subject,
 					html: rendered.html,
 					text: rendered.text,
+					...(rendered.from ? { from: rendered.from } : {}),
+					...(rendered.replyTo ? { replyTo: rendered.replyTo } : {}),
+					...(rendered.headers ? { headers: rendered.headers } : {}),
 					...(row.dedupe_key ? { idempotencyKey: row.dedupe_key } : {}),
 				});
 			}

@@ -15,6 +15,7 @@ const oauthCleanupRpcMock = vi.fn();
 const runGatewayIoRetentionBillingJobMock = vi.fn();
 const pruneExpiredDataContributionsMock = vi.fn();
 const runPaymentMethodExpiryNotificationJobMock = vi.fn();
+const enqueueFeedbackRequestEmailsMock = vi.fn(async () => 0);
 const runNotificationDeliveryJobMock = vi.fn();
 const enqueueModelDeprecationNotificationsMock = vi.fn();
 const runAccountDeletionPurgeJobMock = vi.fn();
@@ -74,6 +75,10 @@ vi.mock("@/pipeline/notifications/email-outbox", () => ({
 vi.mock("@/pipeline/notifications/billing-alerts", () => ({
 	runPaymentMethodExpiryNotificationJob: (...args: unknown[]) =>
 		runPaymentMethodExpiryNotificationJobMock(...args),
+}));
+
+vi.mock("@/pipeline/notifications/feedback-request", () => ({
+	enqueueFeedbackRequestEmails: () => enqueueFeedbackRequestEmailsMock(),
 }));
 
 vi.mock("@/pipeline/notifications/notification-delivery", () => ({
@@ -137,6 +142,7 @@ describe("handleScheduledEvent", () => {
 		runGatewayIoRetentionBillingJobMock.mockReset();
 		pruneExpiredDataContributionsMock.mockReset();
 		runPaymentMethodExpiryNotificationJobMock.mockReset();
+		enqueueFeedbackRequestEmailsMock.mockClear();
 		runNotificationDeliveryJobMock.mockReset().mockResolvedValue({ queued: 0, sent: 0, failed: 0 });
 		enqueueModelDeprecationNotificationsMock.mockReset().mockResolvedValue({ workspaces: 0, enqueued: 0 });
 		runAccountDeletionPurgeJobMock.mockReset().mockResolvedValue({
@@ -379,5 +385,22 @@ describe("handleScheduledEvent", () => {
 		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:20:00.000Z"), env);
 
 		expect(runPaymentMethodExpiryNotificationJobMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("queues feedback request emails once a day only when explicitly enabled with a sender", async () => {
+		const enabled = {
+			FEEDBACK_REQUEST_EMAILS_ENABLED: "true",
+			FEEDBACK_REQUEST_FROM_EMAIL: "Daniel <daniel@phaseo.app>",
+			RESEND_API_KEY: "re_test",
+		} as any;
+
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { ...enabled, FEEDBACK_REQUEST_EMAILS_ENABLED: "false" });
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { ...enabled, FEEDBACK_REQUEST_FROM_EMAIL: "" });
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { ...enabled, FEEDBACK_REQUEST_EMAILS_ENABLED: undefined });
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T10:10:00.000Z"), enabled);
+		expect(enqueueFeedbackRequestEmailsMock).not.toHaveBeenCalled();
+
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), enabled);
+		expect(enqueueFeedbackRequestEmailsMock).toHaveBeenCalledTimes(1);
 	});
 });

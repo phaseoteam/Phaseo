@@ -18,6 +18,7 @@ import { runAsyncWebhookRetriesJob } from "@/core/async-notifications";
 import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
 import { runPaymentMethodExpiryNotificationJob } from "@/pipeline/notifications/billing-alerts";
+import { enqueueFeedbackRequestEmails } from "@/pipeline/notifications/feedback-request";
 import { enqueueModelDeprecationNotifications, runNotificationDeliveryJob } from "@/pipeline/notifications/notification-delivery";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 import { runGatewayIoRetentionBillingJob } from "@/pipeline/audit/io-retention-billing";
@@ -125,6 +126,12 @@ function isDailyRetentionBillingTick(event: ScheduledController): boolean {
 function isDailyPaymentMethodExpiryTick(event: ScheduledController): boolean {
 	const scheduledAt = new Date(event.scheduledTime);
 	return scheduledAt.getUTCHours() === 0 && scheduledAt.getUTCMinutes() === 20;
+}
+
+// A personal email, so queue it mid-morning UK time rather than at midnight.
+function isDailyFeedbackRequestTick(event: ScheduledController): boolean {
+	const scheduledAt = new Date(event.scheduledTime);
+	return scheduledAt.getUTCHours() === 10 && scheduledAt.getUTCMinutes() === 5;
 }
 
 function getModelDiscoveryExecutionIndex(event: ScheduledController): number {
@@ -351,6 +358,19 @@ async function handleEmailOutboxScheduledEvent(_event: ScheduledController, env:
 		if (summary.processed > 0 || summary.failed > 0) {
 			console.log("email_outbox_drain_completed", summary);
 		}
+	} finally {
+		clearRuntime();
+	}
+}
+
+async function handleFeedbackRequestScheduledEvent(env: GatewayBindings): Promise<void> {
+	// Strictly opt-in: nothing is queued unless explicitly enabled with a real sender.
+	if (env.FEEDBACK_REQUEST_EMAILS_ENABLED !== "true") return;
+	if (!env.FEEDBACK_REQUEST_FROM_EMAIL?.trim() || !env.RESEND_API_KEY?.trim()) return;
+	configureRuntime(env);
+	try {
+		const queued = await enqueueFeedbackRequestEmails();
+		console.log("feedback_request_emails_queued", { queued });
 	} finally {
 		clearRuntime();
 	}
@@ -609,6 +629,13 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleModelDeprecationScheduledEvent(event, env);
 		} catch (error) {
 			console.error("model_deprecation_notifications_scheduled_failed", serializeError(error));
+		}
+	}
+	if (isDailyFeedbackRequestTick(event)) {
+		try {
+			await handleFeedbackRequestScheduledEvent(env);
+		} catch (error) {
+			console.error("feedback_request_emails_scheduled_failed", serializeError(error));
 		}
 	}
 	if (isDailyRetentionBillingTick(event)) {
