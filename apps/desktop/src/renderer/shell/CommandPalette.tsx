@@ -1,16 +1,18 @@
-import { Code2, FolderOpen, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Plus, Settings, SquareTerminal, Sun, UserRound, Files } from "lucide-react";
+import { Code2, Columns3, FolderOpen, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Plus, Settings, SquareTerminal, Sun, UserRound, Files } from "lucide-react";
 import { errorText, useWorkspace } from "../app/workspace";
 import { shortcutLabel } from "../lib/shortcuts";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandShortcut } from "../components/ui/command";
 import { StatusDot } from "./Sidebar";
+import { ModelStack, modelName } from "../chat/ModelPicker";
 
 export function CommandPalette() {
-	const { commandsOpen, setCommandsOpen, overview, select, setMode, openSettings, setRightPanel, setSidebarOpen, resolvedTheme, setTheme, api, setOverview, setError, setNewChatProjectId } = useWorkspace();
+	const { commandsOpen, setCommandsOpen, overview, compareGroups, openCompare, taskById, select, setMode, openSettings, setRightPanel, setSidebarOpen, resolvedTheme, setTheme, api, setOverview, setError, setNewChatProjectId } = useWorkspace();
 	const run = (action: () => void) => { setCommandsOpen(false); action(); };
-	const tasks = overview.tasks.filter(task => !task.parentId).slice(0, 200);
+	const grouped = new Set(compareGroups.flatMap(group => group.taskIds));
+	const tasks = overview.tasks.filter(task => !task.parentId && !grouped.has(task.id)).slice(0, 200);
 	const projectName = (id?: string) => overview.projects.find(project => project.id === id)?.name;
 	return <CommandDialog open={commandsOpen} onOpenChange={setCommandsOpen} title="Search" description="Search chats and run commands" className="max-w-xl rounded-2xl! sm:max-w-xl">
-		<CommandInput placeholder="Search chats and commands…" wrapperClassName="p-2" />
+		<CommandInput autoFocus placeholder="Search chats and commands…" wrapperClassName="p-2" />
 		<CommandList className="max-h-[420px] p-1">
 			<CommandEmpty>Nothing matches.</CommandEmpty>
 			<CommandGroup heading="Actions">
@@ -26,11 +28,21 @@ export function CommandPalette() {
 				<CommandItem onSelect={() => run(() => openSettings())}><Settings />Settings<CommandShortcut>{shortcutLabel(",")}</CommandShortcut></CommandItem>
 				<CommandItem onSelect={() => run(() => openSettings("accounts"))}><UserRound />Accounts and sign-in</CommandItem>
 			</CommandGroup>
+			{compareGroups.length > 0 && <CommandGroup heading="Comparisons">
+				{compareGroups.map(group => {
+					const members = group.taskIds.map(taskById).filter((task): task is NonNullable<typeof task> => !!task);
+					return <CommandItem key={group.id} value={`${group.title} ${members.map(task => modelName(task)).join(" ")} ${group.id}`} onSelect={() => run(() => openCompare(group.id))}>
+						<Columns3 />
+						<span className="min-w-0 flex-1 truncate">{group.title}</span>
+						<ModelStack models={members} size="sm" ringClassName="bg-popover ring-popover" />
+					</CommandItem>;
+				})}
+			</CommandGroup>}
 			{tasks.length > 0 && <CommandGroup heading="Chats">
-				{tasks.map(task => <CommandItem key={task.id} value={`${task.title} ${projectName(task.projectId) ?? ""} ${task.id}`} onSelect={() => run(() => select(task.id))}>
-					{task.projectId ? <FolderOpen /> : <MessageSquare />}
+				{tasks.map(task => <CommandItem key={task.id} value={`${task.title} ${projectName(task.projectId) ?? modelName(task)} ${task.id}`} onSelect={() => run(() => select(task.id))}>
+					{task.projectId ? <FolderOpen /> : <ModelStack models={[task]} size="sm" ringClassName="ring-transparent" />}
 					<span className="min-w-0 flex-1 truncate">{task.title}</span>
-					{task.projectId && <span className="text-xs text-muted-foreground">{projectName(task.projectId)}</span>}
+					<span className="text-xs text-muted-foreground">{task.projectId ? projectName(task.projectId) : modelName(task)}</span>
 					<StatusDot task={task} />
 				</CommandItem>)}
 			</CommandGroup>}

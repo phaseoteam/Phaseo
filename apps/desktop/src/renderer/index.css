@@ -155,6 +155,20 @@
 	.message-markdown > :last-child {
 		margin-bottom: 0;
 	}
+	.message-markdown ul {
+		list-style: disc;
+		padding-left: 1.5em;
+	}
+	.message-markdown ol {
+		list-style: decimal;
+		padding-left: 1.5em;
+	}
+	.message-markdown li + li {
+		margin-top: 0.3em;
+	}
+	.message-markdown li::marker {
+		color: var(--muted-foreground);
+	}
 	.message-markdown :not(pre) > code {
 		border-radius: 5px;
 		background: var(--muted);
@@ -295,6 +309,24 @@
 		font-family: var(--font-mono);
 		font-size: 12px;
 		font-weight: 600;
+	}
+	.files-panel .git-hunk > .project-toolbar {
+		margin-bottom: 4px;
+		font-size: 12px;
+		color: var(--muted-foreground);
+	}
+	.files-panel .git-hunk > .project-toolbar button {
+		min-height: 0;
+		padding: 2px 8px;
+		border: 0;
+		border-radius: 6px;
+		background: transparent;
+		color: var(--foreground);
+		font-size: 12px;
+		font-weight: 600;
+	}
+	.files-panel .git-hunk > .project-toolbar button:hover {
+		background: var(--muted);
 	}
 	.files-panel .git-hunk-panel h3 {
 		margin-block: 12px 8px;

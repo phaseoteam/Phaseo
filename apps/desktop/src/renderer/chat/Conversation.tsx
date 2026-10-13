@@ -111,7 +111,10 @@ function AssistantHeader({ task }: { task: Task }) {
 }
 
 function Turn({ user, entries, live, complete, task, onAttachment, onBranch, compact }: { user?: Message; entries: TurnEntry[]; live: boolean; complete: boolean; task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; compact?: boolean }) {
-	const final = complete && !live ? entries.findLast(entry => entry.kind === "message" && entry.value.role === "assistant") : undefined;
+	// Text after the last step is the answer, even while it is still streaming.
+	const latest = entries.findLast(entry => !(entry.kind === "activity" && entry.value.type === "usage"));
+	const isAnswer = (entry?: TurnEntry) => entry?.kind === "message" && entry.value.role === "assistant" && entry.value.delivery !== "subagent";
+	const final = isAnswer(latest) ? latest : complete && !live ? entries.findLast(entry => entry.kind === "message" && entry.value.role === "assistant") : undefined;
 	const work = entries.filter(entry => entry !== final && !(entry.kind === "message" && entry.value.delivery === "subagent"));
 	const delegated = entries.filter(entry => entry.kind === "message" && entry.value.delivery === "subagent");
 	// The timeline omits usage reports, so read them from the turn's activities.
@@ -123,9 +126,10 @@ function Turn({ user, entries, live, complete, task, onAttachment, onBranch, com
 		{hasAssistant && <div data-conversation-id={`turn:${user?.id ?? entries[0]?.value.id}`} className="group/turn flex flex-col gap-3">
 			{!compact && <AssistantHeader task={task} />}
 			<WorkLog entries={work} user={user} live={live} complete={complete} task={task} />
+			{live && !final && !work.some(entry => entry.kind === "message" || entry.value.type !== "usage") && <div className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin text-primary" /><span className="animate-pulse font-medium">Working</span></div>}
 			{delegated.map(entry => <details key={entry.value.id} className="rounded-xl border border-border px-3 py-2 text-[13px]"><summary className="cursor-pointer font-medium text-muted-foreground">Agent result</summary><MessageContent text={entry.value.text} projectId={task.projectId} /></details>)}
 			{final?.kind === "message" && <div data-selectable data-conversation-id={`message:${final.value.id}`} className="text-[14px] leading-relaxed"><MessageContent text={final.value.text} projectId={task.projectId} repairLocalLinks /></div>}
-			{final?.kind === "message" && <div className="-ml-1.5 flex items-center gap-0.5 opacity-60 transition-opacity group-hover/turn:opacity-100">
+			{final?.kind === "message" && !live && <div className="-ml-1.5 flex items-center gap-0.5 opacity-60 transition-opacity group-hover/turn:opacity-100">
 				<CopyButton text={final.value.text} />
 				<ActionButton label="Branch from this answer" disabled={!canBranch} onClick={() => onBranch(final.value.id)}><GitBranch /></ActionButton>
 				{usage.Total !== undefined && <span className="ml-2 font-mono text-[11px] text-muted-foreground">{new Intl.NumberFormat(undefined, { notation: "compact" }).format(usage.Total)} tokens</span>}

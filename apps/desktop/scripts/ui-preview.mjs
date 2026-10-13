@@ -1,22 +1,63 @@
 // Render the desktop app with an owned fixture workspace and save screenshots.
 // Usage: pnpm run build && electron scripts/ui-preview.mjs [--out=dir] [--theme=dark|light] [--states=a,b]
+// With --demo the window stays open on the fixture workspace, chats stream canned
+// replies from a local stand-in for the gateway, and DevTools listens on port 9333.
 import { app, BrowserWindow, ipcMain, nativeTheme } from "electron";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
 const argument = (name, fallback) => process.argv.find(value => value.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
 const out = path.resolve(argument("out", "output/ui-preview"));
-const theme = argument("theme", "dark");
+const theme = argument("theme", process.argv.includes("--demo") ? "system" : "dark");
 const only = argument("states", "")?.split(",").filter(Boolean);
+const demo = process.argv.includes("--demo");
 process.on("unhandledRejection", reason => { console.error("Unhandled preview rejection", reason); app.exit(1); });
+if (demo) app.commandLine.appendSwitch("remote-debugging-port", argument("port", "9333"));
 
 const profile = mkdtempSync(path.join(tmpdir(), "phaseo-ui-preview-"));
 app.setPath("userData", profile);
 mkdirSync(path.join(profile, "workspace"), { recursive: true });
 mkdirSync(out, { recursive: true });
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const demoReply = (model, question) => {
+	const name = model.split("/").at(-1).replace(/-/g, " ").replace(/\b([a-z])/g, letter => letter.toUpperCase()).replace(/\bGpt\b/g, "GPT");
+	const opening = { openai: "Short version:", google: "Here's how I'd think about it.", anthropic: "Good question. Let me break it down." }[model.split("/")[0]] ?? "Here's an overview.";
+	return `${opening} This is a **demo reply from ${name}**, streamed by a local stand-in for the Phaseo gateway, so no tokens were spent.\n\nYou asked: _${question.slice(0, 160)}_\n\n1. **Streaming** – text arrives word by word, just like a real model.\n2. **Markdown** – lists, \`inline code\` and code blocks render as they stream.\n3. **Compare** – send one message to several models and read the answers side by side.\n\n\`\`\`ts\nconst reply = await phaseo.chat({ model: "${model}", messages });\n\`\`\`\n\nAnything else you'd like to try?`;
+};
+let gatewayPort = 0;
+if (demo) {
+	const server = createServer((request, response) => {
+		if (request.method !== "POST" || !request.url?.endsWith("/chat/completions")) { response.writeHead(404).end(); return; }
+		let body = "";
+		request.on("data", chunk => { body += chunk; });
+		request.on("end", async () => {
+			const { model, messages } = JSON.parse(body);
+			const question = [...messages].reverse().find(message => message.role === "user")?.content;
+			response.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" });
+			await sleep(500);
+			for (const piece of demoReply(model, typeof question === "string" ? question : "your message").match(/\S+\s*|\n+/g)) {
+				response.write(`data: ${JSON.stringify({ choices: [{ index: 0, delta: { content: piece } }] })}\n\n`);
+				await sleep(28);
+			}
+			response.write(`data: ${JSON.stringify({ choices: [{ index: 0, delta: {}, finish_reason: "stop" }] })}\n\ndata: [DONE]\n\n`);
+			response.end();
+		});
+	});
+	await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+	gatewayPort = server.address().port;
+	// Store the fixture account's key the way the app does on Windows (DPAPI with the app's entropy).
+	if (process.platform === "win32") {
+		const protect = "$b=[Convert]::FromBase64String([Console]::In.ReadToEnd()); Add-Type -AssemblyName System.Security; $e=[Text.Encoding]::UTF8.GetBytes('Phaseo desktop credentials v1'); [Console]::Out.Write([Convert]::ToBase64String([Security.Cryptography.ProtectedData]::Protect($b,$e,'CurrentUser')))";
+		const sealed = execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", protect], { input: Buffer.from("demo").toString("base64") }).toString().trim();
+		mkdirSync(path.join(profile, "workspace", "credentials"), { recursive: true });
+		writeFileSync(path.join(profile, "workspace", "credentials", "phaseo-account.credential"), Buffer.concat([Buffer.from("phaseo-dpapi-v1\0"), Buffer.from(sealed, "base64")]));
+	}
+}
 
 const now = Date.now();
 const at = minutes => new Date(now - minutes * 60_000).toISOString();
@@ -35,7 +76,7 @@ for (const [id, name, branch] of [["phaseo", "phaseo", "main"], ["blog", "blog",
 	writeFileSync(path.join(directory, "src", "usage.test.ts"), "import { byGrant } from \"./usage\";\n");
 	db.prepare("INSERT INTO projects VALUES (?, ?)").run(id, JSON.stringify({ id, name, directory, createdAt: at(10_000) }));
 }
-db.prepare("INSERT INTO accounts VALUES (?, ?)").run("phaseo-account", JSON.stringify({ id: "phaseo-account", name: "Phaseo", harness: "phaseo", kind: "api", endpoint: "https://api.phaseo.app/v1", configured: true }));
+db.prepare("INSERT INTO accounts VALUES (?, ?)").run("phaseo-account", JSON.stringify({ id: "phaseo-account", name: "Phaseo", harness: "phaseo", kind: "api", endpoint: demo ? `http://127.0.0.1:${gatewayPort}/v1` : "https://api.phaseo.app/v1", configured: true }));
 
 const task = (id, fields) => db.prepare("INSERT INTO tasks VALUES (?, ?)").run(id, JSON.stringify({ id, harness: "phaseo", accountId: "phaseo-account", model: "anthropic/claude-opus-5.5", mode: "chat", status: "completed", pinned: false, archived: false, queue: [], messages: [], activities: [], createdAt: at(fields.age ?? 5), updatedAt: at(fields.age ?? 5), ...fields }));
 const user = (id, text, age, seconds = 41) => ({ id, role: "user", text, createdAt: at(age), startedAt: at(age), completedAt: new Date(Date.parse(at(age)) + seconds * 1000).toISOString() });
@@ -107,6 +148,13 @@ app.whenReady().then(async () => {
 	if (window.webContents.isLoading()) await new Promise(resolve => window.webContents.once("did-finish-load", resolve));
 	const run = code => window.webContents.executeJavaScript(code, true);
 	const settle = (ms = 900) => new Promise(resolve => setTimeout(resolve, ms));
+	if (demo) {
+		await run(`localStorage.clear(); localStorage.setItem("phaseo.desktop.workspaceMode", '"chat"');`);
+		window.webContents.reload();
+		window.center(); window.show(); window.focus();
+		console.log(`Demo running. Gateway stand-in on port ${gatewayPort}; DevTools on ${argument("port", "9333")}. Close the window to finish.`);
+		return;
+	}
 	const states = {
 		"chat-home": { storage: { "phaseo.desktop.workspaceMode": "chat" } },
 		"chat-thread": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.selectedTask": "pricing" } },
