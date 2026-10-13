@@ -665,7 +665,7 @@ function KpiMetric({ kpi }: { kpi: ObservabilityKpi }) {
 			href="/settings/usage/explore"
 			className="group relative block min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 		>
-			<Card className="h-full rounded-lg py-0 transition-colors group-hover:bg-muted/20">
+			<Card className="h-full gap-0 rounded-lg py-0 transition-colors group-hover:bg-muted/20">
 				<div className="grid min-h-[124px] min-w-0 grid-rows-[auto_1fr] gap-2 px-4 py-4 sm:min-h-[112px] sm:gap-2 sm:py-3">
 					<CardTitle className="whitespace-nowrap text-xs font-medium leading-tight text-muted-foreground">
 						{kpi.label}
