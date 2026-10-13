@@ -3317,7 +3317,7 @@
 		"topApps": "Top-Apps",
 		"usageByModel": "Nutzung nach Modell",
 		"dailySpendByModel": "Tägliche Ausgaben in USD nach Modell.",
-		"kpiMonthProjected": "Hochgerechnet {value} diesen Monat",
+		"kpiMonthProjected": "{value} bis Monatsende",
 		"kpiMonthToDate": "{value} diesen Monat",
 		"spendViewDaily": "Täglich",
 		"spendViewMonth": "Dieser Monat",

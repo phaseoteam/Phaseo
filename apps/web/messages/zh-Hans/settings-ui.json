@@ -3317,7 +3317,7 @@
 		"topApps": "应用使用排行",
 		"usageByModel": "按模型查看用量",
 		"dailySpendByModel": "按模型统计的每日 USD 支出。",
-		"kpiMonthProjected": "按当前速度本月 {value}",
+		"kpiMonthProjected": "月底预计 {value}",
 		"kpiMonthToDate": "本月 {value}",
 		"spendViewDaily": "每日",
 		"spendViewMonth": "本月",

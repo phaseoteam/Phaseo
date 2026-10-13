@@ -3317,7 +3317,7 @@
 		"topApps": "Top apps",
 		"usageByModel": "Usage by model",
 		"dailySpendByModel": "Daily spend in USD by model.",
-		"kpiMonthProjected": "On pace for {value} this month",
+		"kpiMonthProjected": "{value} by month end",
 		"kpiMonthToDate": "{value} this month",
 		"spendViewDaily": "Daily",
 		"spendViewMonth": "This month",

@@ -3317,7 +3317,7 @@
 		"topApps": "Principales applications",
 		"usageByModel": "Utilisation par modèle",
 		"dailySpendByModel": "Dépenses quotidiennes en USD par modèle.",
-		"kpiMonthProjected": "Au rythme actuel, {value} ce mois-ci",
+		"kpiMonthProjected": "{value} en fin de mois",
 		"kpiMonthToDate": "{value} ce mois-ci",
 		"spendViewDaily": "Quotidien",
 		"spendViewMonth": "Ce mois-ci",

@@ -3317,7 +3317,7 @@
 		"topApps": "アプリの上位",
 		"usageByModel": "モデル別の使用量",
 		"dailySpendByModel": "モデル別の日次 USD 支出。",
-		"kpiMonthProjected": "このペースで今月 {value}",
+		"kpiMonthProjected": "月末までに {value}",
 		"kpiMonthToDate": "今月 {value}",
 		"spendViewDaily": "日別",
 		"spendViewMonth": "今月",

@@ -3317,7 +3317,7 @@
 		"topApps": "Aplicaciones principales",
 		"usageByModel": "Uso por modelo",
 		"dailySpendByModel": "Gasto diario en USD por modelo.",
-		"kpiMonthProjected": "Al ritmo actual, {value} este mes",
+		"kpiMonthProjected": "{value} a fin de mes",
 		"kpiMonthToDate": "{value} este mes",
 		"spendViewDaily": "Diario",
 		"spendViewMonth": "Este mes",

@@ -3317,7 +3317,7 @@
 		"topApps": "शीर्ष ऐप",
 		"usageByModel": "मॉडल के अनुसार उपयोग",
 		"dailySpendByModel": "मॉडल के अनुसार दैनिक USD खर्च।",
-		"kpiMonthProjected": "मौजूदा रफ़्तार से इस महीने {value}",
+		"kpiMonthProjected": "महीने के अंत तक {value}",
 		"kpiMonthToDate": "इस महीने {value}",
 		"spendViewDaily": "दैनिक",
 		"spendViewMonth": "इस महीने",

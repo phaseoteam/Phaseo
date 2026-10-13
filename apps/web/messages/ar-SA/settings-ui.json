@@ -3317,7 +3317,7 @@
 		"topApps": "أعلى التطبيقات",
 		"usageByModel": "الاستخدام حسب النموذج",
 		"dailySpendByModel": "الإنفاق اليومي بالدولار حسب النموذج.",
-		"kpiMonthProjected": "بالوتيرة الحالية {value} هذا الشهر",
+		"kpiMonthProjected": "{value} بنهاية الشهر",
 		"kpiMonthToDate": "{value} هذا الشهر",
 		"spendViewDaily": "يومي",
 		"spendViewMonth": "هذا الشهر",
