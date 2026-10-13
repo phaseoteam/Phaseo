@@ -23,7 +23,7 @@ await db.exec(`
     ('${other}', 'other-workspace', 4000, 'applied', '2026-10-12T10:00:00Z');
   grant select on public.gateway_request_charges to service_role;
 `);
-await db.exec(await readFile(new URL('../migrations/20261013160000_workspace_recent_credit_spend.sql', import.meta.url), 'utf8'));
+await db.exec(await readFile(new URL('../migrations/20261013120100_workspace_recent_credit_spend.sql', import.meta.url), 'utf8'));
 
 const spend = async (workspaceId) => (await db.query(
   'select public.get_workspace_recent_credit_spend($1, $2) as nanos', [workspaceId, '2026-10-06T00:00:00Z'],
