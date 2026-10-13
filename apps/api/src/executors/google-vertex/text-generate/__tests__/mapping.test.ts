@@ -36,6 +36,28 @@ function buildExecuteArgs(): ExecutorExecuteArgs {
 }
 
 describe("google-vertex route resolution", () => {
+	it.each([
+		["flex", "ON_DEMAND_FLEX"],
+		["priority", "ON_DEMAND_PRIORITY"],
+		["fast", "ON_DEMAND_PRIORITY"],
+	])("selects Vertex Gemini %s using PayGo headers and preserves its actual tier", async (tier, trafficType) => {
+		const mock = installFetchMock([{
+			match: (url) => url.includes("/publishers/google/models/gemini-3.6-flash:streamGenerateContent"),
+			response: new Response(`data: ${JSON.stringify({ candidates: [{ content: { role: "model", parts: [{ text: "OK" }] }, finishReason: "STOP" }], usageMetadata: { promptTokenCount: 5, candidatesTokenCount: 2, totalTokenCount: 7, trafficType } })}\r\n\r\n`, { headers: { "Content-Type": "text/event-stream" } }),
+		}]);
+		try {
+			const args = buildExecuteArgs();
+			(args.ir as IRChatRequest).serviceTier = tier;
+			const result = await execute(args);
+			expect(mock.calls[0].headers["X-Vertex-AI-LLM-Request-Type"]).toBe("shared");
+			expect(mock.calls[0].headers["X-Vertex-AI-LLM-Shared-Request-Type"]).toBe(tier === "fast" ? "priority" : tier);
+			expect(mock.calls[0].bodyJson).not.toHaveProperty("serviceTier");
+			if (result.kind !== "completed") throw new Error("Expected a buffered Vertex response");
+			expect(result.ir?.usage?.serviceTier).toBe(tier === "fast" ? "priority" : tier);
+			expect(result.bill?.usage?.service_tier).toBe(tier === "fast" ? "priority" : tier);
+		} finally { mock.restore(); }
+	});
+
 	it.each(["google-vertex", "google-vertex-eu"])("sends Haiku 5.5 adaptive thinking through %s", async (providerId) => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
@@ -146,7 +168,7 @@ describe("google-vertex empty response handling", () => {
 });
 
 describe("google-vertex irToGemini", () => {
-	it("maps Gemini 3.8 service tier and structured output", async () => {
+	it("keeps Vertex tier controls out of the Gemini body while mapping structured output", async () => {
 		const request = await irToGemini({
 			model: "gemini-3.8-flash",
 			stream: false,
@@ -159,7 +181,7 @@ describe("google-vertex irToGemini", () => {
 			},
 		} as any);
 
-		expect(request.serviceTier).toBe("flex");
+		expect(request).not.toHaveProperty("serviceTier");
 		expect(request.generationConfig).toMatchObject({
 			responseMimeType: "application/json",
 			responseSchema: { type: "object", properties: { answer: { type: "string" } } },

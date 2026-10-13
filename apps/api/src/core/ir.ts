@@ -889,6 +889,8 @@ export type IRUsage = {
 	inputTokens: number;
 	outputTokens: number;
 	totalTokens: number;
+	// Tier actually reported by the provider, which can differ from the request.
+	serviceTier?: string;
 
 	// Optional detailed counts
 	cachedInputTokens?: number; // Prompt caching

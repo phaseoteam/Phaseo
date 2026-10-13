@@ -26,6 +26,7 @@ import {
 	resolveGoogleThinkingLevelForEffort,
 } from "../../google/shared/thinking";
 import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
+import { normalizeGoogleServiceTier } from "../../google/shared/service-tier";
 import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
 import { buildSyntheticServerToolStream } from "@pipeline/surfaces/server-tools.stream";
@@ -146,6 +147,8 @@ async function irToLegacyGemini(
 	}
 
 	const request: any = { contents };
+	const serviceTier = normalizeGoogleServiceTier(ir.serviceTier);
+	if (serviceTier) request.serviceTier = serviceTier;
 	if (ir.googleCachedContent !== undefined) request.cachedContent = ir.googleCachedContent;
 	if (systemInstructionParts.length > 0) request.systemInstruction = { parts: systemInstructionParts };
 
@@ -326,8 +329,9 @@ export async function irToGemini(
 	if (ir.background !== undefined) {
 		request.background = ir.background;
 	}
-	if (ir.serviceTier) {
-		request.service_tier = ir.serviceTier;
+	const serviceTier = normalizeGoogleServiceTier(ir.serviceTier);
+	if (serviceTier) {
+		request.service_tier = serviceTier;
 	}
 
 	const generationConfig: any = {};
@@ -934,6 +938,8 @@ function interactionUsageToIRUsage(usage: any): IRUsage | undefined {
 		outputTokens,
 		totalTokens,
 	};
+	const observedTier = normalizeGoogleServiceTier(usage.service_tier ?? usage.serviceTier);
+	if (observedTier) irUsage.serviceTier = observedTier;
 
 	if (cachedInputTokens != null) {
 		irUsage.cachedInputTokens = cachedInputTokens;
@@ -1155,6 +1161,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		forceSyntheticStream = attempted.candidateForceSyntheticStream;
 		const googleInteractionRequest = attempted.requestBody;
 		const response = attempted.response;
+		const headerServiceTier = response.headers.get("x-gemini-service-tier") ?? undefined;
 		const selectedDispatchAtMs =
 			args.upstreamTiming?.timingFor(response)?.dispatchAtMs ?? Date.now();
 		const mappedRequest = (
@@ -1180,6 +1187,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			const rawData = await response.json();
 			const data = normalizeGeminiResponsePayload(rawData);
 			const irResponse = providerPayloadToIR(data, requestId, model, providerId);
+			const observedTier = irResponse.usage?.serviceTier ?? normalizeGoogleServiceTier(headerServiceTier);
+			if (observedTier && irResponse.usage) irResponse.usage.serviceTier = observedTier;
+			if (observedTier) irResponse.serviceTier = observedTier;
 			applyGoogleOutputTokenFallback(irResponse);
 			const bill: any = {
 				cost_cents: 0,
@@ -1246,7 +1256,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 					...args,
 					providerModelSlug: model,
 				} as ExecutorExecuteArgs;
-				const transformedStream = transformStream(response.body, streamingArgs);
+				const transformedStream = transformStream(response.body, streamingArgs, headerServiceTier);
 				return {
 					kind: "stream",
 					stream: transformedStream,
@@ -1270,7 +1280,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				endpoint: "chat.completions",
 				protocol: "openai.chat.completions",
 			} as ExecutorExecuteArgs;
-			const transformedStream = transformStream(response.body, bufferingArgs);
+			const transformedStream = transformStream(response.body, bufferingArgs, headerServiceTier);
 			const transformedResponse = new Response(transformedStream, {
 				status: response.status,
 				headers: response.headers,
@@ -1330,6 +1340,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		const rawData = await response.json();
 		const data = normalizeGeminiResponsePayload(rawData);
 		const irResponse = providerPayloadToIR(data, requestId, model, providerId);
+		const observedTier = irResponse.usage?.serviceTier ?? normalizeGoogleServiceTier(headerServiceTier);
+		if (observedTier && irResponse.usage) irResponse.usage.serviceTier = observedTier;
+		if (observedTier) irResponse.serviceTier = observedTier;
 		applyGoogleOutputTokenFallback(irResponse);
 		const bill: any = {
 			cost_cents: 0,
@@ -1479,6 +1492,7 @@ export function postprocess(ir: any, args: ExecutorExecuteArgs): any {
 export function transformStream(
 	stream: ReadableStream<Uint8Array>,
 	args: ExecutorExecuteArgs,
+	headerServiceTier?: string,
 ): ReadableStream<Uint8Array> {
 	const reader = stream.getReader();
 	const decoder = new TextDecoder();
@@ -1674,7 +1688,10 @@ export function transformStream(
 					? "tool_calls"
 					: mapInteractionStatusToFinishReason(interaction.status),
 			});
-			if (usage) irChunk.usage = usage;
+			if (usage) {
+				usage.serviceTier ??= normalizeGoogleServiceTier(headerServiceTier);
+				irChunk.usage = usage;
+			}
 			enqueueIRChunk(irChunk, controller);
 			return 1;
 		}
@@ -1822,7 +1839,7 @@ export function transformStream(
 				}
 			}
 
-			const chunkUsage = googleUsageMetadataToIRUsage(payloadEntry?.usageMetadata);
+			const chunkUsage = googleUsageMetadataToIRUsage(payloadEntry?.usageMetadata, headerServiceTier);
 			if (chunkUsage) {
 				irChunk.usage = chunkUsage;
 			}
@@ -2071,9 +2088,11 @@ function encodeIRChunkToOpenAI(chunk: IRStreamChunk): any {
 			prompt_tokens: chunk.usage.inputTokens,
 			completion_tokens: chunk.usage.outputTokens,
 			total_tokens: chunk.usage.totalTokens,
+			...(chunk.usage.serviceTier ? { service_tier: chunk.usage.serviceTier } : {}),
 			...(Object.keys(inputDetails).length > 0 ? { input_tokens_details: inputDetails } : {}),
 			...(Object.keys(outputDetails).length > 0 ? { output_tokens_details: outputDetails } : {}),
 		};
+		if (chunk.usage.serviceTier) response.service_tier = chunk.usage.serviceTier;
 	}
 
 	return response;

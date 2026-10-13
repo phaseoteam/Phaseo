@@ -53,6 +53,19 @@ describe("upstream headers deadline", () => {
 		expect(tracker.snapshot().upstreamRequestCount).toBe(1);
 	});
 
+	it("allows a longer queue deadline without losing caller cancellation", async () => {
+		bindingsState.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "5" };
+		hangingFetch();
+		const caller = new AbortController();
+		const tracker = createUpstreamTimingTracker(undefined, { ...streaming, minimumHeadersTimeoutMs: 1000 });
+		const pending = tracker.timing.fetch(STREAM_URL, { signal: caller.signal }).catch((error) => error);
+		await new Promise((resolve) => setTimeout(resolve, 25));
+		caller.abort(new DOMException("cancelled", "AbortError"));
+		const error = await pending;
+		expect(error).toMatchObject({ name: "AbortError" });
+		expect(tracker.isProviderTransportFailure(error)).toBe(false);
+	});
+
 	it.each([
 		["a non-streaming tracker", () => createUpstreamTimingTracker().timing.fetch("https://provider.test")],
 		["fetchUpstream without a tracker", () => fetchUpstream({} as any, "https://provider.test")],
