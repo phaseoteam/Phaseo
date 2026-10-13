@@ -7,7 +7,7 @@ import { requireUser } from "@/auth/requireUser";
 import { requireAccountWorkspace } from "./context";
 import { usageKeyScope } from "./usageKeyScope";
 import { workspaceUserProfile } from "./workspaceUserProfile";
-import { MONTH_USAGE_ROW_LIMIT, MONTH_USAGE_SELECT, MONTH_USAGE_TOKEN_METERS, dailyUsageTotals, monthUsageStartDate, type MonthUsageRow } from "./monthUsage";
+import { MONTH_USAGE_PAGE_SIZE, MONTH_USAGE_ROW_LIMIT, MONTH_USAGE_SELECT, MONTH_USAGE_TOKEN_METERS, dailyUsageTotals, monthUsageStartDate, type MonthUsageRow } from "./monthUsage";
 
 type Warning = {
 	modelId: string; modelName: string | null; organisationId: string | null;
@@ -257,13 +257,25 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 			: null;
 		// The daily rollup is exact but workspace-wide, so the month figures only apply unfiltered.
 		const observedAt = Date.now();
-		const monthUsageQuery = scope.creatorId || url.searchParams.get("key")?.trim() || labelFilter
-			? null
-			: context.client.from("v2_private_usage_daily").select(MONTH_USAGE_SELECT)
-				.eq("workspace_id", workspaceId).gte("usage_date", monthUsageStartDate(observedAt))
-				.in("v2_private_usage_daily_meters.meter_key", [...MONTH_USAGE_TOKEN_METERS])
-				.limit(MONTH_USAGE_ROW_LIMIT);
-		const [keysResult, current, previous, labelFacetFactsResult, labelSummaryFactsResult, monthUsageResult] = await Promise.all([
+		// PostgREST caps each response (1,000 rows on prod), so page until an empty page rather than trusting a short one.
+		// A rollup error or reaching the row limit hides the month figures; the rest of the overview still loads.
+		const loadMonthUsage = async () => {
+			const rows: MonthUsageRow[] = [];
+			while (rows.length < MONTH_USAGE_ROW_LIMIT) {
+				const result = await context.client.from("v2_private_usage_daily").select(MONTH_USAGE_SELECT)
+					.eq("workspace_id", workspaceId).gte("usage_date", monthUsageStartDate(observedAt))
+					.in("v2_private_usage_daily_meters.meter_key", [...MONTH_USAGE_TOKEN_METERS])
+					.order("usage_date", { ascending: true }).order("rollup_id", { ascending: true })
+					.range(rows.length, rows.length + MONTH_USAGE_PAGE_SIZE - 1);
+				if (result.error) return null;
+				const page = (result.data ?? []) as MonthUsageRow[];
+				if (page.length === 0) return dailyUsageTotals(rows, observedAt);
+				rows.push(...page);
+			}
+			return null;
+		};
+		const monthUsageQuery = scope.creatorId || url.searchParams.get("key")?.trim() || labelFilter ? null : loadMonthUsage();
+		const [keysResult, current, previous, labelFacetFactsResult, labelSummaryFactsResult, monthUsage] = await Promise.all([
 			context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId)
 				.neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: true }),
 			loadWindow(from!, to!),
@@ -273,11 +285,6 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 			monthUsageQuery,
 		]);
 		if (keysResult.error) throw keysResult.error;
-		// A rollup outage or a hit row limit only hides the month figures; the rest of the overview still loads.
-		const monthUsageRows = monthUsageResult && !monthUsageResult.error ? (monthUsageResult.data ?? []) as MonthUsageRow[] : null;
-		const monthUsage = monthUsageRows && monthUsageRows.length < MONTH_USAGE_ROW_LIMIT
-			? dailyUsageTotals(monthUsageRows, observedAt)
-			: null;
 		const labelFacetFacts = labelFacetFactsResult.error ? [] : (labelFacetFactsResult.data ?? []);
 		const labelSummaryFacts = labelSummaryFactsResult?.error ? [] : (labelSummaryFactsResult?.data ?? []);
 		const labelFacetMap = new Map<string, { key: string; value: string }>();

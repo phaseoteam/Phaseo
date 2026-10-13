@@ -1,5 +1,7 @@
 /** Rows are per workspace, day, model, app and colo; this bounds a two-month read generously. */
 export const MONTH_USAGE_ROW_LIMIT = 20_000;
+/** Matches the PostgREST response cap on prod; smaller server caps still work because reads stop on an empty page. */
+export const MONTH_USAGE_PAGE_SIZE = 1_000;
 
 /** Token meters a rollup may carry; requests report a total, an input/output split, or both. */
 export const MONTH_USAGE_TOKEN_METERS = ["total_tokens", "input_tokens", "output_tokens"] as const;
