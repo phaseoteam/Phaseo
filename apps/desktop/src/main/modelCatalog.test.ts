@@ -10,6 +10,11 @@ describe("API model catalog", () => {
 		const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [nativeModel("openai/example", { organization: { id: "openai", name: "OpenAI" }, lifecycle: { status: "active", released_at: "2026-10-04" } })] })));
 		expect(await apiModels(gatewayAccount, "owned-key", fetcher)).toEqual([{ id: "openai/example", name: "openai/example", organisationId: "openai", organisationName: "OpenAI", releaseDate: "2026-10-04" }]);
 	});
+	it("attaches effort and speed settings from routable offer parameter details", async () => {
+		const model = nativeModel("openai/reasoner", { offers: [{ routable: true, capabilities: { parameter_details: { reasoning: { supported: true, supported_values: ["low", "medium", "high"] }, service_tier: { supported: true, supported_values: ["standard", "priority"] } } } }] });
+		const [result] = await apiModels(gatewayAccount, "owned-key", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [model] }))));
+		expect(result.options).toEqual([{ id: "effort", label: "Reasoning", type: "select", options: [{ id: "low", label: "Low" }, { id: "medium", label: "Medium", isDefault: true }, { id: "high", label: "High" }] }, { id: "speed", label: "Speed", type: "select", options: [{ id: "standard", label: "Standard", isDefault: true }, { id: "priority", label: "Fast" }] }]);
+	});
 	it("reads the Phaseo catalog across pages with real gateway IDs and readable names", async () => {
 		const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 0, limit: 250, total: 3, models: [nativeModel("owned/first", { name: "First Model", description: "Owned model" }), nativeModel("owned/second")] }))).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 2, limit: 250, total: 3, models: [nativeModel("owned/last")] })));
 		expect(await apiModels(gatewayAccount, "owned-key", fetcher)).toEqual([{ id: "owned/first", name: "First Model", description: "Owned model" }, { id: "owned/second", name: "owned/second" }, { id: "owned/last", name: "owned/last" }]);

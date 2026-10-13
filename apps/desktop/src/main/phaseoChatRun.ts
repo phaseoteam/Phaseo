@@ -17,6 +17,7 @@ import { ProjectInstructions } from "./projectInstructions";
 import { readChatCompletion } from "./chatCompletionStream";
 import { connectPhaseoMcp } from "./phaseoMcp";
 import type { McpConnection } from "../shared/mcp";
+import { phaseoRequestSettings } from "./phaseoModelOptions";
 
 export async function runPhaseoChat(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, account: Account, attachments: AttachmentContent[], nativeAction: NativeAction | undefined, dependencies: { store: Pick<WorkspaceStore, "loadAgentRun" | "saveAgentRun">; globalRoot?: string; fetcher: typeof fetch; credential: (id: string) => string | Promise<string>; signal: AbortSignal; mcpConnections?: McpConnection[] }) {
  const { store, globalRoot, fetcher, credential, signal } = dependencies;
@@ -45,7 +46,7 @@ export async function runPhaseoChat(task: Task, cwd: string, text: string, callb
   const id = `step:${step++}`;
   const wire = request.messages.map(message => message.role === "tool" ? { role: "tool", content: message.content, tool_call_id: message.toolCallId } : message.role === "assistant" ? { role: "assistant", content: message.content, ...(message.toolCalls?.length ? { tool_calls: message.toolCalls.map(call => ({ id: call.id, type: "function", function: { name: call.name, arguments: JSON.stringify(call.input) } })) } : {}) } : message);
   if (request.instructions) wire.unshift({ role: "system", content: request.instructions });
-  const response = await fetcher(`${account.endpoint!.replace(/\/$/, "")}/chat/completions`, { method: "POST", signal, redirect: "error", headers: { "Content-Type": "application/json", Authorization: `Bearer ${await credential(account.id)}` }, body: JSON.stringify({ model: task.model, messages: wire, stream: true, ...(request.tools.length ? { tools: request.tools.map(tool => ({ type: "function", function: { name: tool.id, description: tool.description, parameters: tool.parameters } })) } : {}) }) });
+  const response = await fetcher(`${account.endpoint!.replace(/\/$/, "")}/chat/completions`, { method: "POST", signal, redirect: "error", headers: { "Content-Type": "application/json", Authorization: `Bearer ${await credential(account.id)}` }, body: JSON.stringify({ model: task.model, messages: wire, stream: true, ...phaseoRequestSettings(task.modelOptions), ...(request.tools.length ? { tools: request.tools.map(tool => ({ type: "function", function: { name: tool.id, description: tool.description, parameters: tool.parameters } })) } : {}) }) });
   if (!response.ok) throw new Error(`The model provider returned HTTP ${response.status}.`);
   const completion = await readChatCompletion(response, delta => callbacks.onDelta(id, delta));
   return { message: { role: "assistant", content: completion.text, toolCalls: completion.calls } };

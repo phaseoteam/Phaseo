@@ -12,7 +12,7 @@ export type StartChat = {
 };
 
 /** Harnesses whose per-model settings travel as `modelOptions` rather than effort and speed fields. */
-export const optionHarnesses: Harness[] = ["claude", "cursor", "pi", "opencode"];
+export const optionHarnesses: Harness[] = ["phaseo", "claude", "cursor", "pi", "opencode"];
 
 /** Reasoning and speed settings are only accepted by harnesses that expose them. */
 export function selectionSettings(selection: ModelSelection) {

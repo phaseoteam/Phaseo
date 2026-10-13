@@ -35,7 +35,8 @@ const current = (selection: ModelSelection, descriptor: ModelOptionDescriptor) =
 	if (descriptor.type === "boolean") return typeof value === "boolean" ? value : descriptor.default ?? false;
 	return typeof value === "string" && descriptor.options.some(option => option.id === value) ? value : descriptor.options.find(option => option.isDefault)?.id ?? descriptor.options[0]?.id;
 };
-const isFast = (descriptor: ModelOptionDescriptor, value: string | boolean | undefined) => (descriptor.id === "fastMode" && value === true) || (descriptor.id === "serviceTier" && typeof value === "string" && value !== "default");
+const speedIds = ["fastMode", "serviceTier", "speed"];
+const isFast = (descriptor: ModelOptionDescriptor, value: string | boolean | undefined) => (descriptor.id === "fastMode" && value === true) || (descriptor.id === "serviceTier" && typeof value === "string" && value !== "default") || (descriptor.id === "speed" && typeof value === "string" && !["standard", "flex"].includes(value));
 
 /** Apply one setting to a selection; the default value is stored as unset so the harness keeps following it. */
 function withSetting(selection: ModelSelection, descriptor: ModelOptionDescriptor, value: string | boolean): ModelSelection {
@@ -50,7 +51,7 @@ function withSetting(selection: ModelSelection, descriptor: ModelOptionDescripto
 /** Composer control for a model's reasoning, speed, context window and similar settings, like T3 Code's traits picker. */
 export function ModelSettings({ selection, onChange, disabled }: { selection: ModelSelection; onChange: (selection: ModelSelection) => void; disabled?: boolean }) {
 	const [open, setOpen] = useState(false);
-	const usesCatalog = selection.harness !== "phaseo" && selection.harness !== "acp";
+	const usesCatalog = selection.harness !== "acp";
 	const { models } = useModels(selection.harness, selection.accountId, undefined, undefined, usesCatalog);
 	const model = models.find(value => selection.model === "default" ? value.default : value.id === selection.model);
 	const descriptors = settingDescriptors(selection.harness, model);
@@ -67,7 +68,7 @@ export function ModelSettings({ selection, onChange, disabled }: { selection: Mo
 
 	const values = descriptors.map(descriptor => ({ descriptor, value: current(selection, descriptor) }));
 	const fast = values.some(({ descriptor, value }) => isFast(descriptor, value));
-	const parts = values.filter(({ descriptor }) => descriptor.id !== "fastMode" && descriptor.id !== "serviceTier").map(({ descriptor, value }) => descriptor.type === "boolean" ? `${descriptor.label} ${value ? "On" : "Off"}` : descriptor.options.find(option => option.id === value)?.label ?? "");
+	const parts = values.filter(({ descriptor }) => !speedIds.includes(descriptor.id) || (descriptor.id === "speed" && current(selection, descriptor) === "flex")).map(({ descriptor, value }) => descriptor.type === "boolean" ? `${descriptor.label} ${value ? "On" : "Off"}` : descriptor.options.find(option => option.id === value)?.label ?? "");
 	const label = parts.filter(Boolean).join(" · ") || (fast ? "Fast" : "Normal");
 	const change = (descriptor: ModelOptionDescriptor, value: string | boolean) => { const next = withSetting(selection, descriptor, value); rememberSettings(next); onChange(next); };
 

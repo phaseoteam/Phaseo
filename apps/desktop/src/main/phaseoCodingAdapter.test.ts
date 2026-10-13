@@ -4,7 +4,9 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { Account, Task } from "../shared/workspace";
 import { WorkspaceStore } from "./workspaceStore";
-import { PhaseoCodingAdapter } from "./phaseoCodingAdapter";
+import { createGatewayAgentClient } from "@phaseo/agent-sdk";
+import type { AgentModelClient } from "@phaseo/agent-sdk";
+import { PhaseoCodingAdapter, phaseoGatewayClientOptions } from "./phaseoCodingAdapter";
 
 const task: Task = { id: "task", title: "Task", harness: "phaseo", model: "model", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 const account: Account = { id: "account", name: "API", harness: "phaseo", kind: "api", configured: true, endpoint: "https://api.phaseo.app/v1" };
@@ -18,6 +20,20 @@ describe("Phaseo coding run loop", () => {
    const onDelta = vi.fn();
    await new PhaseoCodingAdapter(() => "fixture", store, () => ({ generate })).run(task, root, "Delegate", { onSession: () => {}, onDelta, onApproval: async () => "accept", threads: { list: () => [], read: vi.fn(), delegate, wait, interrupt: vi.fn() } }, account);
    expect(delegate).toHaveBeenCalledWith(expect.objectContaining({ requestId: "stable", prompt: "Inspect" })); expect(wait).toHaveBeenCalledWith("child", 0); expect(onDelta).toHaveBeenCalledWith(expect.any(String), "Reviewed child findings");
+  } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
+ });
+ it("builds the gateway client with the task's effort and speed and sends them on the Responses request", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "phaseo-code-settings-")); const store = new WorkspaceStore(path.join(root, "state.sqlite"));
+  try {
+   const current = { ...task, modelOptions: { effort: "xhigh", speed: "flex" } };
+   const factory = vi.fn<(account: Account, key: string, task: Task) => AgentModelClient>(() => ({ generate: async () => ({ message: { role: "assistant" as const, content: "Done" } }) }));
+   await new PhaseoCodingAdapter(() => "owned-key", store, factory).run(current, root, "Go", { onSession: () => {}, onDelta: () => {}, onApproval: async () => "accept" }, account);
+   expect(factory).toHaveBeenCalledWith(account, "owned-key", current);
+   expect(phaseoGatewayClientOptions(account, "owned-key", current)).toEqual({ clientOptions: { apiKey: "owned-key", baseUrl: account.endpoint }, includeMeta: true, reasoning: { effort: "xhigh" }, requestOptions: { service_tier: "flex" } });
+   expect(phaseoGatewayClientOptions(account, "owned-key", { modelOptions: { speed: "standard" } })).toEqual({ clientOptions: { apiKey: "owned-key", baseUrl: account.endpoint }, includeMeta: true });
+   const create = vi.fn(async () => ({ id: "response", model: "model", output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "Done" }] }] }));
+   await createGatewayAgentClient({ ...phaseoGatewayClientOptions(account, "owned-key", { modelOptions: { effort: "high", speed: "priority" } }), client: { responses: { create } } as never }).generate({ model: "model", messages: [{ role: "user", content: "Go" }], tools: [] } as never);
+   expect(create).toHaveBeenCalledWith(expect.objectContaining({ model: "model", reasoning: { effort: "high" }, service_tier: "priority" }));
   } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
  });
  it("reports an empty completed model response instead of silently succeeding", async () => {

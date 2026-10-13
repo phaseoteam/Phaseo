@@ -11,6 +11,7 @@ import { AgentInputRejectedError } from "./agentAdapter";
 import type { WorkspaceStore } from "./workspaceStore";
 import { runPhaseoChat } from "./phaseoChatRun";
 import type { McpConnection } from "../shared/mcp";
+import { phaseoRequestSettings } from "./phaseoModelOptions";
 
 /** Compatible Chat inference, with durable skill execution when a run store is supplied. */
 export class PhaseoAdapter implements AgentAdapter {
@@ -49,7 +50,7 @@ export class PhaseoAdapter implements AgentAdapter {
 		const response = await this.fetcher(endpoint, {
 			method: "POST", signal: this.controller.signal, redirect: "error",
 			headers: { "Content-Type": "application/json", Authorization: `Bearer ${await this.credential(account.id)}` },
-			body: JSON.stringify({ model: task.model, messages, stream: true }),
+			body: JSON.stringify({ model: task.model, messages, stream: true, ...phaseoRequestSettings(task.modelOptions) }),
 		});
 		if (!response.ok) throw new Error(`The model provider returned HTTP ${response.status}.`);
 		const completion = await readChatCompletion(response, delta => callbacks.onDelta("assistant", delta));

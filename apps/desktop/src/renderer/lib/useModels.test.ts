@@ -1,9 +1,12 @@
+import type * as React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import useSWR from "swr";
 import { useModels } from "./useModels";
 import { BACKGROUND_REFRESH_MS } from "./useBackgroundRefresh";
 
-vi.mock("swr", () => ({ default: vi.fn() }));
+vi.mock("swr", () => ({ default: vi.fn(), mutate: vi.fn() }));
+// The hook is called directly here, outside a React render; its change subscription is covered by the app.
+vi.mock("react", async original => ({ ...await original<typeof React>(), useEffect: vi.fn() }));
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.clearAllMocks(); });
 describe("model cache policy", () => {
 	it("preserves stale models, scopes accounts and retries automatically after ten minutes", () => {

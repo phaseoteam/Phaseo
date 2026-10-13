@@ -29,12 +29,43 @@ const demoReply = (model, question) => {
 	const opening = { openai: "Short version:", google: "Here's how I'd think about it.", anthropic: "Good question. Let me break it down." }[model.split("/")[0]] ?? "Here's an overview.";
 	return `${opening} This is a **demo reply from ${name}**, streamed by a local stand-in for the Phaseo gateway, so no tokens were spent.\n\nYou asked: _${question.slice(0, 160)}_\n\n1. **Streaming** – text arrives word by word, just like a real model.\n2. **Markdown** – lists, \`inline code\` and code blocks render as they stream.\n3. **Compare** – send one message to several models and read the answers side by side.\n\n\`\`\`ts\nconst reply = await phaseo.chat({ model: "${model}", messages });\n\`\`\`\n\nAnything else you'd like to try?`;
 };
+// The demo serves the live public catalog in the /v1/models shape, like the gateway's parameter_details normalisation.
+const parameterDetail = value => value == null ? { supported: true } : typeof value === "boolean" ? { supported: value } : Array.isArray(value) ? { supported: true, values: value.filter(entry => entry != null) } : typeof value === "object" ? { supported: true, ...Object.fromEntries(Object.entries(value).filter(([, entry]) => entry != null)) } : { supported: true, default: value };
+const parameterDetails = params => Array.isArray(params)
+	? Object.fromEntries(params.flatMap(entry => {
+		if (typeof entry === "string") return [[entry, { supported: true }]];
+		const { param_id, name, id, ...detail } = entry ?? {}; const key = param_id ?? name ?? id;
+		return typeof key === "string" && key.trim() ? [[key.trim(), parameterDetail(detail)]] : [];
+	}))
+	: params && typeof params === "object" ? Object.fromEntries(Object.entries(params).filter(([name]) => name !== "request").map(([name, value]) => [name, parameterDetail(value)])) : {};
+const nativeCatalog = payload => {
+	const rows = (Array.isArray(payload?.models) ? payload.models : []).filter(row => typeof row?.modelId === "string" && row.isAvailable !== false && row.capabilities?.includes("text.generate"));
+	const grouped = new Map();
+	for (const row of rows) grouped.set(row.modelId, [...grouped.get(row.modelId) ?? [], row]);
+	return [...grouped].map(([id, providers]) => {
+		const offers = providers.map(row => {
+			const parameter_details = parameterDetails(row.capabilityParamsById?.["text.generate"]);
+			const meter = price => typeof price === "number" ? { provider_id: row.providerId, unit: "token", unit_size: 1_000_000, price_per_unit: String(price), currency: "USD" } : null;
+			return { provider: { id: row.providerId, name: row.providerName ?? null }, routable: true, endpoints: ["text.generate"], capabilities: { parameters: Object.keys(parameter_details), parameter_details }, pricing: { pricing_plan: "standard", meters: { input_tokens: meter(row.inputPricePerMillion), output_tokens: meter(row.outputPricePerMillion) } } };
+		});
+		const [first] = providers, parameter_details = Object.assign({}, ...offers.map(offer => offer.capabilities.parameter_details));
+		return { id, name: first.modelName || id, organization: first.organisationId ? { id: first.organisationId, name: first.organisationName ?? null } : null, lifecycle: { status: first.modelStatus === "deprecated" ? "deprecated" : "active", released_at: first.releaseDate?.slice(0, 10) ?? null }, capabilities: { endpoints: ["text.generate"], parameters: Object.keys(parameter_details), parameter_details }, offers };
+	}).sort((left, right) => (right.lifecycle.released_at ?? "").localeCompare(left.lifecycle.released_at ?? ""));
+};
+let liveCatalog;
+const catalog = () => liveCatalog ??= fetch("https://phaseo.app/api/_web/gateway/models?available_only=true", { signal: AbortSignal.timeout(20_000) })
+	.then(response => { if (!response.ok) throw new Error(`HTTP ${response.status}`); return response.json(); })
+	.then(payload => { const models = nativeCatalog(payload); if (!models.length) throw new Error("no text models"); console.log(`Serving ${models.length} live catalog models.`); return models; })
+	.catch(error => { console.warn(`Live catalog unavailable (${error.message}); serving the fixture models.`); return undefined; });
 let gatewayPort = 0;
 if (demo) {
-	const server = createServer((request, response) => {
+	const server = createServer(async (request, response) => {
 		if (request.method === "GET" && request.url?.startsWith("/v1/models")) {
+			const live = await catalog();
 			response.writeHead(200, { "Content-Type": "application/json" });
-			response.end(JSON.stringify({ object: "list", data: models.map(model => ({ id: model.id, name: model.name, organization: { id: model.organisationId, name: model.organisationName }, lifecycle: { released_at: model.releaseDate } })) }));
+			if (!live) { response.end(JSON.stringify({ object: "list", data: models.map(model => ({ id: model.id, name: model.name, organization: { id: model.organisationId, name: model.organisationName }, lifecycle: { released_at: model.releaseDate } })) })); return; }
+			const url = new URL(request.url, "http://127.0.0.1"), offset = Math.max(0, Number.parseInt(url.searchParams.get("offset") ?? "0", 10) || 0), limit = Math.min(250, Math.max(1, Number.parseInt(url.searchParams.get("limit") ?? "250", 10) || 250));
+			response.end(JSON.stringify({ ok: true, offset, limit, total: live.length, models: live.slice(offset, offset + limit) }));
 			return;
 		}
 		if (request.method !== "POST" || !request.url?.endsWith("/chat/completions")) { response.writeHead(404).end(); return; }
@@ -137,14 +168,17 @@ const models = [
 	["deepseek/deepseek-v4.1", "DeepSeek V4.1", "deepseek", "DeepSeek", 70],
 	["deepseek/deepseek-v4.1:free", "DeepSeek V4.1", "deepseek", "DeepSeek", 70],
 	["qwen/qwen-3.8-max", "Qwen 3.8 Max", "qwen", "Qwen", 9],
-].map(([id, name, organisationId, organisationName, days]) => ({ id, name, organisationId, organisationName, releaseDate: new Date(now - days * 86_400_000).toISOString().slice(0, 10), reasoningEfforts: [{ id: "low", description: "Low" }, { id: "medium", description: "Medium" }, { id: "high", description: "High" }], defaultReasoningEffort: "medium" }));
+].map(([id, name, organisationId, organisationName, days]) => ({ id, name, organisationId, organisationName, releaseDate: new Date(now - days * 86_400_000).toISOString().slice(0, 10), reasoningEfforts: [{ id: "low", description: "Low" }, { id: "medium", description: "Medium" }, { id: "high", description: "High" }], defaultReasoningEffort: "medium", options: [
+	{ id: "effort", label: "Reasoning", type: "select", options: [{ id: "low", label: "Low" }, { id: "medium", label: "Medium", isDefault: true }, { id: "high", label: "High" }] },
+	...["anthropic/claude-opus-5.5", "openai/gpt-6"].includes(id) ? [{ id: "speed", label: "Speed", type: "select", options: [{ id: "standard", label: "Standard", isDefault: true }, { id: "priority", label: "Fast" }] }] : [],
+] }));
 
 await import("../dist/main/index.mjs");
 const replace = (channel, handler) => { ipcMain.removeHandler(channel); ipcMain.handle(channel, handler); };
 
 app.whenReady().then(async () => {
 	nativeTheme.themeSource = theme;
-	if (!demo) replace("workspace:models", () => models);
+	if (!demo) { replace("workspace:models", () => models); replace("workspace:refresh-models", () => models); }
 	// Screenshots hide local agents so they look the same on every machine; the demo uses real detection.
 	if (!demo) replace("workspace:installations", () => []);
 	let window;

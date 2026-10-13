@@ -65,6 +65,7 @@ export type ModelOptionDescriptor =
 	| { id: string; label: string; type: "boolean"; default?: boolean };
 export type ModelOptionValues = Record<string, string | boolean>;
 export type ModelOption = { id: string; name: string; description?: string; /** An older model, listed only when searching. */ legacy?: boolean; options?: ModelOptionDescriptor[]; organisationId?: string; organisationName?: string; releaseDate?: string; default?: boolean; reasoningEfforts?: { id: string; description: string }[]; defaultReasoningEffort?: string; serviceTiers?: { id: string; name: string; description: string }[]; defaultServiceTier?: string };
+export type ModelsChange = { harness: Harness; accountId?: string };
 export type UsageWindow = { usedPercent: number; windowDurationMins: number | null; resetsAt: number | null };
 export type AccountStatus = { checkedAt: string; authenticated: boolean | null; method?: string; identity?: string; plan?: string; ordinaryUsageAllowed?: boolean | null; usage?: { id: string; name: string; primary: UsageWindow | null; secondary: UsageWindow | null; spendControlReached: boolean | null }[]; usageError?: string };
 export type ProjectFile = { name: string; path: string; directory: boolean };
@@ -133,6 +134,10 @@ export type WorkspaceApi = {
 	checkAgent: (agentId: string) => Promise<AgentStatus>;
 	mcp: (command: McpCommand) => Promise<WorkspaceOverview>;
 	models: (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;
+	/** Refetches a harness catalog now, ignoring the Phaseo disk cache freshness. */
+	refreshModels: (harness: Harness, accountId?: string) => Promise<ModelOption[]>;
+	/** Fires when a background refresh changes a cached catalog; call models() again for the new list. */
+	onModelsChange: (listener: (change: ModelsChange) => void) => () => void;
 	openLink: (url: string) => Promise<void>;
 	linkTitle: (url: string) => Promise<string | undefined>;
 	terminals: () => Promise<TerminalSession[]>;

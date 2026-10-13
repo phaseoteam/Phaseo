@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
-import { ChevronDown, CircleCheck, LoaderCircle, Star } from "lucide-react";
+import { ChevronDown, CircleCheck, LoaderCircle, RotateCw, Star } from "lucide-react";
 import type { Harness, ModelOption } from "../../shared/workspace";
 import { usablePhaseoAccounts, useWorkspace } from "../app/workspace";
 import type { ModelSelection } from "../lib/modelPreferences";
-import { useModels } from "../lib/useModels";
+import { refreshModels, useModels } from "../lib/useModels";
 import { useConnectedHarnesses } from "../lib/useConnectedHarnesses";
 import { usePersistedState } from "../lib/persistedState";
 import { rememberedSettings } from "../lib/modelSettings";
@@ -178,6 +178,8 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		if (selections.length < MAX_COMPARE) onChange([...selections, selection]);
 	};
 	const shown = harnesses.filter(harness => sourceOf(harness) === active);
+	const [refreshing, setRefreshing] = useState(false);
+	const refresh = async () => { setRefreshing(true); try { await Promise.all(shown.map(harness => refreshModels(harness, harness === "phaseo" ? phaseoAccount?.id : undefined))); } catch { /* Errors surface through each catalog. */ } finally { setRefreshing(false); } };
 	const loading = shown.filter(harness => !catalogs[harness] || (catalogs[harness]!.loading && !catalogs[harness]!.entries.length));
 	const errors = shown.map(harness => catalogs[harness]?.error ? `${harnessNames[harness]}: ${catalogs[harness]!.error}` : "").filter(Boolean);
 
@@ -205,6 +207,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 						<FilterButton active={filters.new} onClick={() => setFilters(current => ({ ...current, new: !current.new }))}>New</FilterButton>
 					</>}
 					{multiple && <span className="ml-auto text-[11px] text-muted-foreground">{isMac() ? "⌘" : "Ctrl"}-click to compare up to {MAX_COMPARE}</span>}
+					<button type="button" aria-label="Refresh models" title="Refresh models" disabled={refreshing} onClick={() => void refresh()} className={cn("grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-60", !multiple && "ml-auto")}><RotateCw className={cn("size-3.5", refreshing && "animate-spin")} /></button>
 				</div>
 				<ScrollArea className="max-h-[min(60vh,440px)]" viewportClassName="max-h-[min(60vh,440px)]">
 					<CommandList className="max-h-none overflow-visible p-1.5">

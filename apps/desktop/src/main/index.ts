@@ -40,6 +40,7 @@ import { signInNative } from "./accountConnections";
 import { gitReview, listProjectFiles, readProjectFile } from "./projectFiles";
 import { editorInstallations, findEditor, launchEditor, openProjectTarget } from "./projectEditors";
 import { apiModels, codexModels } from "./modelCatalog";
+import { ModelCatalogCache } from "./modelCatalogCache";
 import { openCodeModels, piModels } from "./nativeModels";
 import { resolveOpenCodeCommand } from "./openCodeService";
 import { TerminalService } from "./terminalService";
@@ -82,6 +83,7 @@ let credentialVault: SecretVault;
 let terminalService: TerminalService;
 let taskNotifications: TaskNotifications;
 let missionService: MissionService;
+let modelCatalogCache: ModelCatalogCache;
 ipcMain.handle("workspace:missions", event => { if (!senderWindow(event)) throw new Error("Invalid mission request."); return workspaceRuntime.store.missions.list(); });
 ipcMain.handle("workspace:mission", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid mission request."); return missionService.command(validateMissionCommand(value)); });
 ipcMain.handle("workspace:global-instructions", event => { if (!senderWindow(event)) throw new Error("Untrusted instruction request."); return globalInstructions.read(); });
@@ -135,7 +137,7 @@ ipcMain.handle("workspace:phaseo-sign-in", async (event, accountId: unknown) => 
 	finally { owner.webContents.removeListener("destroyed", destroyed); phaseoSignIns.delete(event.sender.id); releaseAccount(); }
 });
 ipcMain.handle("workspace:phaseo-cancel-sign-in", event => { if (!senderWindow(event)) throw new Error("Invalid sign-in request."); phaseoSignIns.get(event.sender.id)?.abort(); });
-async function discoverDesktopModels(harness: Harness, accountId?: string, projectId?: string) {
+async function discoverDesktopModels(harness: Harness, accountId?: string, projectId?: string, force = false) {
 		const project = projectId ? workspaceRuntime.store.getProjects().find(value => value.id === projectId) : undefined;
 		if (projectId && !project) throw new Error("Project is unavailable.");
 		const cwd = project?.directory ?? app.getPath("userData");
@@ -144,7 +146,8 @@ async function discoverDesktopModels(harness: Harness, accountId?: string, proje
 		if (harness === "phaseo") {
 			if (account?.oauthExpiresAt && Date.parse(account.oauthExpiresAt) <= Date.now()) throw new Error("Sign in to Phaseo again to renew this account.");
 			if (!account) throw new Error("Choose an API account.");
-			return await apiModels(account, await credentialVault.get(account.secretId ?? account.id));
+			const key = { endpoint: account.endpoint ?? "", accountId: account.id }, fetchModels = async () => apiModels(account, await credentialVault.get(account.secretId ?? account.id));
+			return await (force ? modelCatalogCache.refresh(key, fetchModels) : modelCatalogCache.get(key, fetchModels));
 		}
 		if (harness === "cursor") { if (!account || account.archived) throw new Error("Choose a connected Cursor account."); return await cursorModels(await credentialVault.get(account.secretId ?? account.id)); }
 		if (harness === "opencode") return await openCodeModels(cwd, await workspaceRuntime.openCode.connect());
@@ -156,15 +159,18 @@ async function discoverDesktopModels(harness: Harness, accountId?: string, proje
 		if (harness === "grok") return await grokModelCatalog(cwd, account);
 		return await codexModels(cwd, account);
 }
-ipcMain.handle("workspace:models", async (event, harness: unknown, accountId: unknown, projectId: unknown) => {
+async function modelRequest(event: Electron.IpcMainInvokeEvent, harness: unknown, accountId: unknown, projectId: unknown, force: boolean) {
 	if (!senderWindow(event) || !["codex", "claude", "phaseo", "opencode", "pi", "cursor", "grok"].includes(String(harness)) || (accountId !== undefined && typeof accountId !== "string") || (projectId !== undefined && typeof projectId !== "string")) throw new Error("Model discovery is unavailable for this harness.");
 	workspaceRuntime.assertHarnessAvailable(harness as Harness);
 	const checkedHarness = harness as Harness;
 	modelChecks.set(checkedHarness, (modelChecks.get(checkedHarness) ?? 0) + 1);
 	try {
-		return await discoverDesktopModels(checkedHarness, accountId as string | undefined, projectId as string | undefined);
+		return await discoverDesktopModels(checkedHarness, accountId as string | undefined, projectId as string | undefined, force);
 	} finally { const remaining = modelChecks.get(checkedHarness)! - 1; if (remaining) modelChecks.set(checkedHarness, remaining); else modelChecks.delete(checkedHarness); }
-});
+}
+ipcMain.handle("workspace:models", (event, harness: unknown, accountId: unknown, projectId: unknown) => modelRequest(event, harness, accountId, projectId, false));
+// Only the Phaseo catalog is cached; other harnesses discover live on every request either way.
+ipcMain.handle("workspace:refresh-models", (event, harness: unknown, accountId: unknown) => modelRequest(event, harness, accountId, undefined, true));
 app.on("before-quit", event => {
 	if (!workspaceRuntime || shutdownComplete) return;
 	event.preventDefault();
@@ -378,9 +384,14 @@ ipcMain.handle("workspace:import-task", async (event, value: unknown) => {
 	if (result.canceled || !result.filePaths[0]) return undefined;
 	return workspaceRuntime.importTask(command, await readConversation(result.filePaths[0]));
 });
-ipcMain.handle("workspace:command", (event, value: unknown) => {
+ipcMain.handle("workspace:command", async (event, value: unknown) => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
-	return workspaceRuntime.command(validateCommand(value));
+	const command = validateCommand(value);
+	// Archiving a Phaseo account or changing its connection discards its cached catalog.
+	const cached = command.type === "update-account" && (command.archived === true || command.apiKey !== undefined || command.endpoint !== undefined) ? workspaceRuntime.store.getAccounts().find(account => account.id === command.id && account.harness === "phaseo" && account.endpoint) : undefined;
+	const result = await workspaceRuntime.command(command);
+	if (cached) void modelCatalogCache.remove({ endpoint: cached.endpoint!, accountId: cached.id }).catch(() => {});
+	return result;
 });
 ipcMain.handle("workspace:choose-project", async event => {
 	const window = senderWindow(event);
@@ -630,6 +641,7 @@ app.whenReady().then(() => {
 		encrypt: value => safeStorage.encryptStringAsync(value), decrypt: async value => (await safeStorage.decryptStringAsync(value)).result,
 	}));
 	credentialVault = vault;
+	modelCatalogCache = new ModelCatalogCache(path.join(app.getPath("userData"), "cache"), ({ accountId }) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness: "phaseo", accountId }); });
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
 	workspaceRuntime.discoverThreadModels = discoverDesktopModels;
 	globalInstructions = new GlobalInstructions(path.join(workspaceDirectory, "instructions"));
