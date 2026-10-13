@@ -380,11 +380,14 @@ describe("account usage settings routes", () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
-			if (url.includes("v2_private_usage_daily")) return new Response(JSON.stringify([
-				{ usage_date: "2026-07-16", cost_nanos: "3000" },
-				{ usage_date: "2026-07-17", cost_nanos: 1000 },
-				{ usage_date: "2026-07-17", cost_nanos: 500 },
-			]), { status: 200 });
+			if (url.includes("v2_private_usage_daily")) {
+				expect(decodeURIComponent(url)).toContain("v2_private_usage_daily_meters.meter_key=in.(total_tokens,input_tokens,output_tokens)");
+				return new Response(JSON.stringify([
+					{ usage_date: "2026-07-16", cost_nanos: "3000", requests: 2, successful_requests: 2, cached_input_tokens: 0, v2_private_usage_daily_meters: [{ meter_key: "total_tokens", quantity: "40" }] },
+					{ usage_date: "2026-07-17", cost_nanos: 1000, requests: 1, successful_requests: 0, cached_input_tokens: 5, v2_private_usage_daily_meters: [] },
+					{ usage_date: "2026-07-17", cost_nanos: 500, requests: 1, successful_requests: 1, cached_input_tokens: 0, v2_private_usage_daily_meters: [{ meter_key: "input_tokens", quantity: 8 }, { meter_key: "output_tokens", quantity: 4 }] },
+				]), { status: 200 });
+			}
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
 			if (url.includes("v2_request_facts")) return new Response(JSON.stringify([{ safe_metadata: { labels: [{ key: "team", value: "support" }] }, cost_nanos: 1000 }]), { status: 200, headers: { "content-range": "0-0/1" } });
@@ -415,10 +418,13 @@ describe("account usage settings routes", () => {
 			modelMetadataEntries: [["openai/gpt-test", { modelName: "GPT Test" }]],
 			appMetadataEntries: [["app-1", { title: "Example App", imageUrl: null }]],
 			appNameEntries: [["app-1", "Example App"]],
-			monthSpend: { days: [{ date: "2026-07-16", costNanos: 3000 }, { date: "2026-07-17", costNanos: 1500 }] },
+			monthUsage: { days: [
+				{ date: "2026-07-16", costNanos: 3000, requests: 2, successfulRequests: 2, tokens: 40, cachedTokens: 0 },
+				{ date: "2026-07-17", costNanos: 1500, requests: 2, successfulRequests: 1, tokens: 12, cachedTokens: 5 },
+			] },
 		});
 	});
-	it("leaves the month forecast out of filtered views, where the workspace rollup would be wrong", async () => {
+	it("leaves the month figures out of filtered views, where the workspace rollup would be wrong", async () => {
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
@@ -437,7 +443,7 @@ describe("account usage settings routes", () => {
 		});
 		const response = await app.request(`https://phaseo.app/api/account/settings/usage/observability?${params}`, { headers: { authorization: "Bearer token" } }, env);
 		expect(response.status).toBe(200);
-		await expect(response.json()).resolves.toMatchObject({ monthSpend: null });
+		await expect(response.json()).resolves.toMatchObject({ monthUsage: null });
 		const urls = fetchMock.mock.calls.map(([input]) => input instanceof Request ? input.url : String(input));
 		expect(urls.some((url) => url.includes("v2_private_usage_daily"))).toBe(false);
 	});

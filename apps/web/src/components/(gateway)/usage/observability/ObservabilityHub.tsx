@@ -107,7 +107,7 @@ import {
 	shouldOpenTrendExplore,
 	stopTrendControlClick,
 } from "./trendChart";
-import { MonthSpendChart, formatSpendRange } from "./MonthSpendChart";
+import { MonthSpendChart } from "./MonthSpendChart";
 
 const CHART_COLORS = ["#2563eb", "#059669", "#d97706", "#7c3aed", "#dc2626"];
 
@@ -636,6 +636,23 @@ function kpiDeltaClass(kpi: ObservabilityKpi): string {
 	return improved ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400";
 }
 
+function KpiMonthFooter({ kpi }: { kpi: ObservabilityKpi }) {
+	const t = useTranslations("SettingsUI.observability");
+	const month = kpi.month;
+	if (!month) return null;
+	const projected = month.kind === "projected";
+	const value = formatKpiValue(kpi, projected ? month.mid : month.value);
+	const lowHigh = projected ? [formatKpiValue(kpi, month.low), formatKpiValue(kpi, month.high)] : null;
+	return (
+		<div
+			className="truncate border-t border-dashed px-4 py-2 text-xs tabular-nums text-muted-foreground"
+			title={lowHigh && lowHigh[0] !== lowHigh[1] ? `${lowHigh[0]}–${lowHigh[1]}` : undefined}
+		>
+			{projected ? t("kpiMonthProjected", { value }) : t("kpiMonthToDate", { value })}
+		</div>
+	);
+}
+
 function KpiMetric({ kpi }: { kpi: ObservabilityKpi }) {
 	const t = useTranslations("SettingsUI.observability");
 	const [hoveredPoint, setHoveredPoint] =
@@ -693,6 +710,7 @@ function KpiMetric({ kpi }: { kpi: ObservabilityKpi }) {
 						</div>
 					</div>
 				</div>
+				<KpiMonthFooter kpi={kpi} />
 			</Card>
 		</Link>
 	);
@@ -1709,36 +1727,18 @@ function Overview({ data }: { data: ObservabilityData }) {
 	const monthSpend = data.monthSpend ?? null;
 	const [spendView, setSpendView] = React.useState<"daily" | "month">("daily");
 	const showMonth = spendView === "month" && monthSpend !== null;
-	const spendChartRef = React.useRef<HTMLDivElement>(null);
-	const openMonthForecast = () => {
-		setSpendView("month");
-		const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-		spendChartRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
-	};
 	return (
 		<div className="space-y-4 sm:space-y-6">
-			<div className="space-y-2">
-				{monthSpend ? (
-					<button
-						type="button"
-						onClick={openMonthForecast}
-						className="inline-flex items-center gap-1 rounded-sm text-sm tabular-nums text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					>
-						{t("monthForecast", { amount: formatSpendRange(monthSpend.lowNanos, monthSpend.highNanos, formatCurrency) })}
-						<ChevronRight className="h-3.5 w-3.5" />
-					</button>
-				) : null}
-				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-6">
-					{data.kpis.map((kpi) => (
-						<KpiMetric key={kpi.id} kpi={kpi} />
-					))}
-				</div>
+			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-6">
+				{data.kpis.map((kpi) => (
+					<KpiMetric key={kpi.id} kpi={kpi} />
+				))}
 			</div>
 			<div className="grid gap-4 xl:grid-cols-2">
 				<RankedList title={t("topApiKeys")} items={data.topApiKeys} kind="key" />
 				<RankedList title={t("topApps")} items={data.topApps} kind="app" />
 			</div>
-			<div ref={spendChartRef} className="grid scroll-mt-24 gap-4 xl:grid-cols-2">
+			<div className="grid gap-4 xl:grid-cols-2">
 				<ChartCard
 					title={showMonth ? t("monthSpendTitle") : t("usageByModel")}
 					subtitle={showMonth ? t("monthSpendSubtitle") : t("dailySpendByModel")}

@@ -7,7 +7,7 @@ import { requireUser } from "@/auth/requireUser";
 import { requireAccountWorkspace } from "./context";
 import { usageKeyScope } from "./usageKeyScope";
 import { workspaceUserProfile } from "./workspaceUserProfile";
-import { MONTH_SPEND_ROW_LIMIT, dailySpendTotals, monthSpendStartDate } from "./monthSpend";
+import { MONTH_USAGE_ROW_LIMIT, MONTH_USAGE_SELECT, MONTH_USAGE_TOKEN_METERS, dailyUsageTotals, monthUsageStartDate, type MonthUsageRow } from "./monthUsage";
 
 type Warning = {
 	modelId: string; modelName: string | null; organisationId: string | null;
@@ -255,27 +255,28 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 		const labelSummaryFactsQuery = labelFilter
 			? scope.apply(context.client.from(scope.factsTable).select("cost_nanos", { count: "exact" }).eq("workspace_id", workspaceId).gte("occurred_at", from!).lte("occurred_at", to!)).contains("safe_metadata", { labels: [{ key: labelFilter.key, value: labelFilter.value }] }).limit(5000)
 			: null;
-		// The daily rollup is exact but workspace-wide, so the month forecast only applies unfiltered.
+		// The daily rollup is exact but workspace-wide, so the month figures only apply unfiltered.
 		const observedAt = Date.now();
-		const monthSpendQuery = scope.creatorId || url.searchParams.get("key")?.trim() || labelFilter
+		const monthUsageQuery = scope.creatorId || url.searchParams.get("key")?.trim() || labelFilter
 			? null
-			: context.client.from("v2_private_usage_daily").select("usage_date,cost_nanos")
-				.eq("workspace_id", workspaceId).gte("usage_date", monthSpendStartDate(observedAt))
-				.limit(MONTH_SPEND_ROW_LIMIT);
-		const [keysResult, current, previous, labelFacetFactsResult, labelSummaryFactsResult, monthSpendResult] = await Promise.all([
+			: context.client.from("v2_private_usage_daily").select(MONTH_USAGE_SELECT)
+				.eq("workspace_id", workspaceId).gte("usage_date", monthUsageStartDate(observedAt))
+				.in("v2_private_usage_daily_meters.meter_key", [...MONTH_USAGE_TOKEN_METERS])
+				.limit(MONTH_USAGE_ROW_LIMIT);
+		const [keysResult, current, previous, labelFacetFactsResult, labelSummaryFactsResult, monthUsageResult] = await Promise.all([
 			context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId)
 				.neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: true }),
 			loadWindow(from!, to!),
 			loadWindow(previousFrom!, previousTo!),
 			labelFacetFactsQuery,
 			labelSummaryFactsQuery,
-			monthSpendQuery,
+			monthUsageQuery,
 		]);
 		if (keysResult.error) throw keysResult.error;
-		// A rollup outage or a hit row limit only hides the forecast; the rest of the overview still loads.
-		const monthSpendRows = monthSpendResult && !monthSpendResult.error ? monthSpendResult.data ?? [] : null;
-		const monthSpend = monthSpendRows && monthSpendRows.length < MONTH_SPEND_ROW_LIMIT
-			? dailySpendTotals(monthSpendRows, observedAt)
+		// A rollup outage or a hit row limit only hides the month figures; the rest of the overview still loads.
+		const monthUsageRows = monthUsageResult && !monthUsageResult.error ? (monthUsageResult.data ?? []) as MonthUsageRow[] : null;
+		const monthUsage = monthUsageRows && monthUsageRows.length < MONTH_USAGE_ROW_LIMIT
+			? dailyUsageTotals(monthUsageRows, observedAt)
 			: null;
 		const labelFacetFacts = labelFacetFactsResult.error ? [] : (labelFacetFactsResult.data ?? []);
 		const labelSummaryFacts = labelSummaryFactsResult?.error ? [] : (labelSummaryFactsResult?.data ?? []);
@@ -307,7 +308,7 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 			labelFacets,
 			labelSummary,
 			modelMetadataEntries: metadata.modelMetadataEntries,
-			monthSpend,
+			monthUsage,
 			previous,
 			signedIn: true,
 			workspaceId,

@@ -1,4 +1,5 @@
 import type { MonthSpendForecast } from "@/lib/gateway/usage/monthSpendForecast";
+import type { MonthKpiFigure } from "@/lib/gateway/usage/monthUsageKpis";
 
 export type ObservabilityRange = "1h" | "1d" | "1w" | "1m" | "1y";
 
@@ -22,6 +23,8 @@ export type ObservabilityKpi = {
 	deltaPercent: number | null;
 	sparkline: ObservabilitySeriesPoint[];
 	format: "currency" | "currency_per_million" | "number" | "percent";
+	/** This UTC month from exact rollups; absent for filtered views. */
+	month?: MonthKpiFigure | null;
 };
 
 export type ObservabilityRankedItem = {

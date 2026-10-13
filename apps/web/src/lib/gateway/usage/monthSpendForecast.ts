@@ -19,20 +19,34 @@ export type MonthSpendForecast = {
 	previousMonthNanos: number | null;
 };
 
+/** One daily series projected to the end of this UTC month. */
+export type MonthSeriesForecast = {
+	monthStart: number;
+	daysInMonth: number;
+	elapsedDays: number;
+	/** This month's total so far. */
+	total: number;
+	cumulative: Array<{ x: number; value: number }>;
+	low: number;
+	mid: number;
+	high: number;
+	previousMonth: number;
+};
+
 const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
 /**
- * Projects this UTC month's spend from daily rollup totals running from the
- * start of last month to today. Returns null too early in the month or when
- * there is no spend to project.
+ * Projects this UTC month's total of a daily series running from the start of
+ * last month to today. Returns null too early in the month or when there is
+ * nothing to project.
  */
-export function forecastMonthSpend({
+export function forecastMonthSeries({
 	days,
 	observedAt,
 }: {
-	days: ReadonlyArray<{ date: string; costNanos: number }>;
+	days: ReadonlyArray<{ date: string; value: number }>;
 	observedAt: number;
-}): MonthSpendForecast | null {
+}): MonthSeriesForecast | null {
 	const now = new Date(observedAt);
 	const monthStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
 	const monthEnd = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1);
@@ -43,39 +57,62 @@ export function forecastMonthSpend({
 
 	const byDay = new Map<string, number>();
 	for (const day of days) {
-		if (Number.isFinite(day.costNanos) && day.costNanos > 0) byDay.set(day.date, (byDay.get(day.date) ?? 0) + day.costNanos);
+		if (Number.isFinite(day.value) && day.value > 0) byDay.set(day.date, (byDay.get(day.date) ?? 0) + day.value);
 	}
-	const spendOn = (ms: number) => byDay.get(isoDay(ms)) ?? 0;
+	const valueOn = (ms: number) => byDay.get(isoDay(ms)) ?? 0;
 
 	const todayStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-	const cumulative: MonthSpendForecast["cumulative"] = [{ x: 0, nanos: 0 }];
-	let spentNanos = 0;
+	const cumulative: MonthSeriesForecast["cumulative"] = [{ x: 0, value: 0 }];
+	let total = 0;
 	for (let dayStart = monthStart; dayStart <= todayStart; dayStart += DAY_MS) {
-		spentNanos += spendOn(dayStart);
+		total += valueOn(dayStart);
 		const x = dayStart === todayStart ? elapsedDays : (dayStart - monthStart) / DAY_MS + 1;
-		cumulative.push({ x, nanos: spentNanos });
+		cumulative.push({ x, value: total });
 	}
 
-	let trailingNanos = 0;
-	for (let i = 1; i <= TRAILING_DAYS; i += 1) trailingNanos += spendOn(todayStart - i * DAY_MS);
-	const monthPace = spentNanos / elapsedDays;
-	const recentPace = trailingNanos / TRAILING_DAYS;
+	let trailing = 0;
+	for (let i = 1; i <= TRAILING_DAYS; i += 1) trailing += valueOn(todayStart - i * DAY_MS);
+	const monthPace = total / elapsedDays;
+	const recentPace = trailing / TRAILING_DAYS;
 	if (!(monthPace > 0) && !(recentPace > 0)) return null;
 
 	const remainingDays = daysInMonth - elapsedDays;
-	const project = (pace: number) => Math.round(spentNanos + pace * remainingDays);
-	let previousMonthNanos = 0;
-	for (let dayStart = previousMonthStart; dayStart < monthStart; dayStart += DAY_MS) previousMonthNanos += spendOn(dayStart);
+	const project = (pace: number) => total + pace * remainingDays;
+	let previousMonth = 0;
+	for (let dayStart = previousMonthStart; dayStart < monthStart; dayStart += DAY_MS) previousMonth += valueOn(dayStart);
 
 	return {
 		monthStart,
 		daysInMonth,
 		elapsedDays,
-		spentNanos,
+		total,
 		cumulative,
-		lowNanos: project(Math.min(monthPace, recentPace)),
-		midNanos: project(monthPace),
-		highNanos: project(Math.max(monthPace, recentPace)),
-		previousMonthNanos: previousMonthNanos > 0 ? previousMonthNanos : null,
+		low: project(Math.min(monthPace, recentPace)),
+		mid: project(monthPace),
+		high: project(Math.max(monthPace, recentPace)),
+		previousMonth,
+	};
+}
+
+/** Projects this UTC month's spend from daily rollup totals; see {@link forecastMonthSeries}. */
+export function forecastMonthSpend({
+	days,
+	observedAt,
+}: {
+	days: ReadonlyArray<{ date: string; costNanos: number }>;
+	observedAt: number;
+}): MonthSpendForecast | null {
+	const forecast = forecastMonthSeries({ days: days.map((day) => ({ date: day.date, value: day.costNanos })), observedAt });
+	if (!forecast) return null;
+	return {
+		monthStart: forecast.monthStart,
+		daysInMonth: forecast.daysInMonth,
+		elapsedDays: forecast.elapsedDays,
+		spentNanos: forecast.total,
+		cumulative: forecast.cumulative.map((point) => ({ x: point.x, nanos: point.value })),
+		lowNanos: Math.round(forecast.low),
+		midNanos: Math.round(forecast.mid),
+		highNanos: Math.round(forecast.high),
+		previousMonthNanos: forecast.previousMonth > 0 ? forecast.previousMonth : null,
 	};
 }
