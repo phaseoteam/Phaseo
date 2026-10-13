@@ -44,8 +44,8 @@ try {
       await db.query(`insert into ${table} select * from jsonb_populate_recordset(null::${table},$1::jsonb)`,[JSON.stringify(snapshot[key])]);
     }
   }
-  await db.exec(await readFile(new URL('../migrations/20261013111609_structured_subscription_catalogue.sql',import.meta.url),'utf8'));
-  await db.exec(await readFile(new URL('../migrations/20261013221058_subscription_identity_and_backfill_corrections.sql',import.meta.url),'utf8'));
+  await db.exec(await readFile(new URL('../migrations/20261013221841_structured_subscription_catalogue.sql',import.meta.url),'utf8'));
+  await db.exec(await readFile(new URL('../migrations/20261013221923_subscription_identity_and_backfill_corrections.sql',import.meta.url),'utf8'));
   if (snapshot) {
     const active=(row)=>!row.effective_to || Date.parse(row.effective_to)>Date.now();
     const expected=new Set(snapshot.plans.filter(active).map(row=>`${row.lab_slug}:${row.plan_id}`));
