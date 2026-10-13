@@ -34,10 +34,10 @@ export function ForecastMeter({
 	return (
 		<div role="img" aria-label={label} className={cn("relative py-[3px]", className)}>
 			<div className="relative h-1.5 overflow-hidden rounded-full bg-muted">
-				<div className="absolute inset-y-0 left-0 rounded-full bg-chart-2" style={{ width: `${usedEnd}%` }} />
+				<div className="absolute inset-y-0 left-0 rounded-full bg-chart-4" style={{ width: `${usedEnd}%` }} />
 				{withinLimitEnd > usedEnd ? (
 					<div
-						className="absolute inset-y-0 text-chart-2/85"
+						className="absolute inset-y-0 text-chart-4/85"
 						style={{ left: `${usedEnd}%`, width: `${withinLimitEnd - usedEnd}%`, backgroundImage: HATCH }}
 					/>
 				) : null}
