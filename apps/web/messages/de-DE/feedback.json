@@ -1,0 +1,53 @@
+{
+	"metaTitle": "Feedback geben",
+	"invalidTitle": "Dieser Feedback-Link funktioniert nicht",
+	"invalidBody": "Prüfe, ob der ganze Link kopiert wurde, oder antworte einfach auf die E-Mail. Antworten erreichen Daniel ebenfalls.",
+	"unavailable": "Feedback ist gerade nicht verfügbar. Bitte versuche es später noch einmal oder antworte auf die E-Mail.",
+	"intro": "Danke, dass du dir kurz Zeit nimmst. Deine Antworten gehen direkt an Daniel, der Phaseo entwickelt.",
+	"rewardNote": "Als kleines Dankeschön bekommst du nach dem Absenden einen einmalig nutzbaren Guthabencode.",
+	"titles": {
+		"never_requested": "Was hat dich davon abgehalten, loszulegen?",
+		"used_not_paid": "Was hat dich davon abgehalten, Guthaben aufzuladen?",
+		"paid": "Was hältst du von Phaseo?"
+	},
+	"reasonLabel": "Wähle den Grund, der am besten passt",
+	"reasons": {
+		"setup_unclear": "Die Einrichtung war unklar",
+		"pricing_unclear": "Die Preise waren unklar",
+		"model_missing": "Das gewünschte Modell war nicht verfügbar",
+		"model_choice_unclear": "Ich wusste nicht, welches Modell ich nehmen soll",
+		"payment_issue": "Ich hatte ein Problem beim Bezahlen",
+		"chose_alternative": "Ich habe mich für ein anderes Tool entschieden",
+		"just_exploring": "Ich habe mich nur umgesehen",
+		"not_ready_yet": "Ich bin noch nicht so weit",
+		"other": "Etwas anderes"
+	},
+	"detailsLabel": "Erzähl uns mehr (optional)",
+	"npsLabel": "Wie wahrscheinlich ist es, dass du Phaseo Freunden oder Kollegen empfiehlst?",
+	"npsLow": "Unwahrscheinlich",
+	"npsHigh": "Sehr wahrscheinlich",
+	"likesLabel": "Was gefällt dir am meisten? (optional)",
+	"improveLabel": "Was sollten wir verbessern oder ergänzen? (optional)",
+	"required": "Bitte beantworte die erste Frage.",
+	"submit": "Feedback senden",
+	"submitting": "Wird gesendet…",
+	"submitError": "Dein Feedback konnte nicht gesendet werden. Bitte versuche es noch einmal.",
+	"thanksTitle": "Danke!",
+	"thanksBody": "Daniel liest jede Antwort.",
+	"rewardIssued": "Hier ist dein Dankeschön-Guthabencode. Er ist einmal nutzbar und läuft in 90 Tagen ab.",
+	"redeem": "Code einlösen",
+	"copy": "Code kopieren",
+	"copied": "Kopiert",
+	"rewardExhausted": "Die Dankeschön-Guthaben dieser Runde sind bereits vergeben, aber deine Antworten helfen trotzdem sehr.",
+	"alreadyAnswered": "Du hast bereits geantwortet. Danke!",
+	"unsubscribeLink": "Keine solchen E-Mails mehr? Abmelden",
+	"unsubscribe": {
+		"metaTitle": "Abmelden",
+		"title": "Von Feedback-E-Mails abmelden",
+		"body": "Du bekommst keine optionalen E-Mails wie Feedback-Anfragen mehr. E-Mails zu Konto und Abrechnung erhältst du weiterhin.",
+		"button": "Abmelden",
+		"working": "Wird abgemeldet…",
+		"done": "Du bist abgemeldet.",
+		"error": "Das hat nicht geklappt. Bitte versuche es noch einmal."
+	}
+}

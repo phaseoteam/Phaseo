@@ -5,6 +5,7 @@ import { fetchRedeemInitialData } from "@/lib/fetchers/internal/fetchRedeemIniti
 import { getSettingsMessages } from "@/i18n/settings";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
 import { getRedeemMessages } from "@/i18n/redeem";
+import { isPromoCodeFormatValid, normalizePromoCodeInput } from "@/lib/credits/promoCodes";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
 	const { locale } = await params;
@@ -12,13 +13,22 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 	return { title: messages.pages.redeem };
 }
 
-export default async function RedeemPage({ params }: { params: Promise<{ locale: string }> }) {
-	const { locale } = await params;
+export default async function RedeemPage({
+	params,
+	searchParams,
+}: {
+	params: Promise<{ locale: string }>;
+	searchParams: Promise<{ code?: string | string[] }>;
+}) {
+	const [{ locale }, { code: rawCode }] = await Promise.all([params, searchParams]);
 	const redeemMessages = getRedeemMessages((isPublicLocale(locale) ? locale : "en-GB") as PublicLocale);
+	// Links such as the feedback thank-you page prefill the code; anything malformed is ignored.
+	const code = typeof rawCode === "string" && isPromoCodeFormatValid(rawCode) ? normalizePromoCodeInput(rawCode) : "";
 	const initialData = await fetchRedeemInitialData();
 
 	if (!initialData.signedIn) {
-		redirect(`/${locale === "en-GB" ? "" : `${locale}/`}sign-in?returnUrl=${encodeURIComponent(`/${locale === "en-GB" ? "" : `${locale}/`}redeem`)}`);
+		const redeemPath = `/${locale === "en-GB" ? "" : `${locale}/`}redeem${code ? `?code=${encodeURIComponent(code)}` : ""}`;
+		redirect(`/${locale === "en-GB" ? "" : `${locale}/`}sign-in?returnUrl=${encodeURIComponent(redeemPath)}`);
 	}
 
 	return (
@@ -33,6 +43,7 @@ export default async function RedeemPage({ params }: { params: Promise<{ locale:
 					submitLabel={redeemMessages.submit}
 					showTeamSelector={initialData.teamOptions.length > 1}
 					showDisclaimer
+					initialCode={code}
 				/>
 			</div>
 		</div>

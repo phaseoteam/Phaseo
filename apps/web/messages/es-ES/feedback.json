@@ -1,0 +1,53 @@
+{
+	"metaTitle": "Comparte tu opinión",
+	"invalidTitle": "Este enlace de opinión no funciona",
+	"invalidBody": "Comprueba que has copiado el enlace completo o simplemente responde al correo. Las respuestas también le llegan a Daniel.",
+	"unavailable": "Ahora mismo no se pueden enviar opiniones. Inténtalo más tarde o responde al correo.",
+	"intro": "Gracias por dedicarnos un minuto. Tus respuestas le llegan directamente a Daniel, que desarrolla Phaseo.",
+	"rewardNote": "Como pequeño agradecimiento, recibirás un código de crédito de un solo uso al enviar tus respuestas.",
+	"titles": {
+		"never_requested": "¿Qué te impidió empezar?",
+		"used_not_paid": "¿Qué te impidió añadir créditos?",
+		"paid": "¿Qué opinas de Phaseo?"
+	},
+	"reasonLabel": "Elige el motivo que más se acerque",
+	"reasons": {
+		"setup_unclear": "La configuración no estaba clara",
+		"pricing_unclear": "Los precios no estaban claros",
+		"model_missing": "El modelo que quería no estaba disponible",
+		"model_choice_unclear": "No sabía qué modelo usar",
+		"payment_issue": "Tuve un problema al pagar",
+		"chose_alternative": "Elegí otra herramienta",
+		"just_exploring": "Solo estaba explorando",
+		"not_ready_yet": "Todavía no estoy listo",
+		"other": "Otro motivo"
+	},
+	"detailsLabel": "Cuéntanos más (opcional)",
+	"npsLabel": "¿Qué probabilidad hay de que recomiendes Phaseo a un amigo o compañero?",
+	"npsLow": "Poco probable",
+	"npsHigh": "Muy probable",
+	"likesLabel": "¿Qué es lo que más te gusta? (opcional)",
+	"improveLabel": "¿Qué deberíamos mejorar o añadir? (opcional)",
+	"required": "Responde a la primera pregunta.",
+	"submit": "Enviar opinión",
+	"submitting": "Enviando…",
+	"submitError": "No se pudo enviar tu opinión. Inténtalo de nuevo.",
+	"thanksTitle": "¡Gracias!",
+	"thanksBody": "Daniel lee todas las respuestas.",
+	"rewardIssued": "Aquí tienes tu código de crédito de agradecimiento. Solo se puede usar una vez y caduca en 90 días.",
+	"redeem": "Canjear código",
+	"copy": "Copiar código",
+	"copied": "Copiado",
+	"rewardExhausted": "Ya se han repartido todos los créditos de agradecimiento de esta ronda, pero tus respuestas nos ayudan muchísimo.",
+	"alreadyAnswered": "Ya has respondido. ¡Gracias!",
+	"unsubscribeLink": "¿No quieres recibir correos como este? Darse de baja",
+	"unsubscribe": {
+		"metaTitle": "Darse de baja",
+		"title": "Darse de baja de los correos de opinión",
+		"body": "Dejarás de recibir correos no esenciales, como las solicitudes de opinión. Los correos de cuenta y facturación seguirán llegando.",
+		"button": "Darse de baja",
+		"working": "Dando de baja…",
+		"done": "Te has dado de baja.",
+		"error": "No ha funcionado. Inténtalo de nuevo."
+	}
+}

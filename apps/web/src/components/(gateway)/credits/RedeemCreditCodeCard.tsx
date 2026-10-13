@@ -43,6 +43,7 @@ type Props = {
 	showDisclaimer?: boolean;
 	disclaimerText?: string;
 	className?: string;
+	initialCode?: string;
 };
 
 export default function RedeemCreditCodeCard(props: Props) {
@@ -61,12 +62,13 @@ export default function RedeemCreditCodeCard(props: Props) {
 		showDisclaimer = false,
 		disclaimerText,
 		className,
+		initialCode = "",
 	} = props;
 	const resolvedTitle = title ?? t("redeemCreditCode");
 	const resolvedDescription = description ?? t("redeemCreditDescription");
 	const resolvedSubmitLabel = submitLabel ?? t("redeemCode");
 	const resolvedDisclaimerText = disclaimerText ?? t("promoDisclaimer");
-	const [code, setCode] = useState("");
+	const [code, setCode] = useState(initialCode);
 	const [selectedTeamId, setSelectedTeamId] = useState<string>(
 		defaultWorkspaceId ?? teams[0]?.id ?? ""
 	);

@@ -1,0 +1,53 @@
+{
+	"metaTitle": "分享你的反馈",
+	"invalidTitle": "此反馈链接无效",
+	"invalidBody": "请检查链接是否完整复制，或者直接回复邮件。回复同样会送达 Daniel。",
+	"unavailable": "暂时无法提交反馈。请稍后再试，或直接回复邮件。",
+	"intro": "感谢你抽出一分钟。你的回答会直接送达开发 Phaseo 的 Daniel。",
+	"rewardNote": "作为小小的谢礼，提交回答后你会获得一个仅限使用一次的额度兑换码。",
+	"titles": {
+		"never_requested": "是什么让你没有开始使用？",
+		"used_not_paid": "是什么让你没有充值额度？",
+		"paid": "你觉得 Phaseo 怎么样？"
+	},
+	"reasonLabel": "选择最接近的原因",
+	"reasons": {
+		"setup_unclear": "设置过程不清楚",
+		"pricing_unclear": "价格不清楚",
+		"model_missing": "没有我想要的模型",
+		"model_choice_unclear": "不确定该用哪个模型",
+		"payment_issue": "付款时遇到了问题",
+		"chose_alternative": "我选择了其他工具",
+		"just_exploring": "我只是随便看看",
+		"not_ready_yet": "我还没准备好",
+		"other": "其他原因"
+	},
+	"detailsLabel": "告诉我们更多（可选）",
+	"npsLabel": "你有多大可能向朋友或同事推荐 Phaseo？",
+	"npsLow": "不太可能",
+	"npsHigh": "非常可能",
+	"likesLabel": "你最喜欢什么？（可选）",
+	"improveLabel": "我们应该改进或增加什么？（可选）",
+	"required": "请回答第一个问题。",
+	"submit": "发送反馈",
+	"submitting": "正在发送…",
+	"submitError": "无法发送你的反馈。请重试。",
+	"thanksTitle": "谢谢！",
+	"thanksBody": "Daniel 会阅读每一条回答。",
+	"rewardIssued": "这是你的感谢额度兑换码。仅可使用一次，90 天后过期。",
+	"redeem": "兑换代码",
+	"copy": "复制代码",
+	"copied": "已复制",
+	"rewardExhausted": "本轮的感谢额度已全部发放，但你的回答依然非常有帮助。",
+	"alreadyAnswered": "你已经回答过了。谢谢！",
+	"unsubscribeLink": "不想再收到此类邮件？退订",
+	"unsubscribe": {
+		"metaTitle": "退订",
+		"title": "退订反馈邮件",
+		"body": "你将不再收到反馈邀请等非必要邮件。账户和账单相关邮件仍会照常发送。",
+		"button": "退订",
+		"working": "正在退订…",
+		"done": "你已退订。",
+		"error": "操作未成功。请重试。"
+	}
+}
