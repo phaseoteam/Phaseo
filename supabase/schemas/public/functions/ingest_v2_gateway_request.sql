@@ -102,6 +102,28 @@ begin
     limit 1;
   end if;
 
+
+  -- The free router is a selector, not a catalogue model. Resolve its exact
+  -- successful attempt before the privacy trigger sees the request. Never
+  -- relax sticky exclusions or guess a route from the provider alone.
+  if lower(v_requested_input) = 'phaseo/free' and v_routed_model_slug is null then
+    select route.model_slug, route.provider_model_id
+      into v_routed_model_slug, v_provider_model_id
+    from jsonb_array_elements(v_attempts) with ordinality as item(value, ordinality)
+    join public.v2_model_provider_routes route
+      on route.provider_slug = nullif(item.value->>'provider', '')
+      and (
+        route.provider_model_id = nullif(item.value->>'provider_model_id', '')
+        or route.provider_model_slug = nullif(item.value->>'provider_api_model_id', '')
+      )
+    where coalesce((item.value->>'success')::boolean, false)
+      and route.provider_slug = v_provider
+    order by item.ordinality desc,
+      case when route.provider_model_id = item.value->>'provider_model_id' then 0 else 1 end,
+      route.provider_model_id
+    limit 1;
+  end if;
+
   insert into public.v2_request_facts (
     workspace_id, request_id, occurred_at, app_id, key_id, endpoint,
     requested_model_input, requested_model_slug, routed_model_slug, provider_model_id,
