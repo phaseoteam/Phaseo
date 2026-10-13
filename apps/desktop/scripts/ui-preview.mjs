@@ -32,6 +32,11 @@ const demoReply = (model, question) => {
 let gatewayPort = 0;
 if (demo) {
 	const server = createServer((request, response) => {
+		if (request.method === "GET" && request.url?.startsWith("/v1/models")) {
+			response.writeHead(200, { "Content-Type": "application/json" });
+			response.end(JSON.stringify({ object: "list", data: models.map(model => ({ id: model.id, name: model.name, organization: { id: model.organisationId, name: model.organisationName }, lifecycle: { released_at: model.releaseDate } })) }));
+			return;
+		}
 		if (request.method !== "POST" || !request.url?.endsWith("/chat/completions")) { response.writeHead(404).end(); return; }
 		let body = "";
 		request.on("data", chunk => { body += chunk; });
@@ -139,8 +144,9 @@ const replace = (channel, handler) => { ipcMain.removeHandler(channel); ipcMain.
 
 app.whenReady().then(async () => {
 	nativeTheme.themeSource = theme;
-	replace("workspace:models", () => models);
-	replace("workspace:installations", () => []);
+	if (!demo) replace("workspace:models", () => models);
+	// Screenshots hide local agents so they look the same on every machine; the demo uses real detection.
+	if (!demo) replace("workspace:installations", () => []);
 	let window;
 	for (let attempt = 0; attempt < 200 && !(window = BrowserWindow.getAllWindows()[0]); attempt++) await new Promise(resolve => setTimeout(resolve, 50));
 	if (!window) throw new Error("The desktop window did not open.");

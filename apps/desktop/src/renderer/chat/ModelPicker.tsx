@@ -98,7 +98,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	onChange: (selections: ModelSelection[]) => void;
 	/** Ctrl/⌘-click adds models alongside the first, to compare their answers. */
 	multiple?: boolean;
-	/** Offer locally connected coding agents (Codex, Claude Code, …) besides Phaseo. */
+	/** Code mode: also offer agents that only run as coding agents (Grok). Local subscriptions such as Codex and Claude Code show in both modes. */
 	agents?: boolean;
 	disabled?: boolean;
 	className?: string;
@@ -112,7 +112,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	const keepOpen = useRef(false);
 	const connected = useConnectedHarnesses();
 	const phaseoAccount = usablePhaseoAccounts(overview)[0];
-	const harnesses = useMemo(() => [...(phaseoAccount ? ["phaseo" as const] : []), ...[...connected].filter(harness => harness !== "phaseo" && harness !== "acp" && agents)], [connected, agents, phaseoAccount]);
+	const harnesses = useMemo(() => [...(phaseoAccount ? ["phaseo" as const] : []), ...[...connected].filter(harness => harness !== "phaseo" && harness !== "acp" && (agents || harness !== "grok"))], [connected, agents, phaseoAccount]);
 	const onLoad = useCallback((harness: Harness, state: { entries: Entry[]; loading: boolean; error: string }) => setCatalogs(current => ({ ...current, [harness]: state })), []);
 
 	const all = useMemo(() => harnesses.flatMap(harness => catalogs[harness]?.entries ?? []), [harnesses, catalogs]);
