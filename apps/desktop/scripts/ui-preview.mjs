@@ -117,6 +117,7 @@ app.whenReady().then(async () => {
 		"model-search": { storage: { "phaseo.desktop.workspaceMode": "chat" }, script: `(async () => { document.querySelector('[aria-label="Choose model"]').click(); await new Promise(r => setTimeout(r, 400)); const input = document.querySelector('[cmdk-input]'); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(input, 'gem'); input.dispatchEvent(new Event('input', { bubbles: true })); })()` },
 		"model-compare": { storage: { "phaseo.desktop.workspaceMode": "chat" }, script: `(async () => { const wait = ms => new Promise(r => setTimeout(r, ms)); document.querySelector('[aria-label="Choose model"]').click(); await wait(500); for (const name of ['GPT-6', 'Gemini 3.5 Pro']) { const item = [...document.querySelectorAll('[cmdk-item]')].find(node => node.textContent.trim().endsWith(name)); item.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, ctrlKey: true })); item.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true })); await wait(250); } document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); })()` },
 		"code-files": { storage: { "phaseo.desktop.workspaceMode": "code", "phaseo.desktop.selectedTask": "usage-fix", "phaseo.desktop.rightPanel": "changes", "phaseo.desktop.filesTab": "files" } },
+		"compare-hover": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.compareGroups": [{ id: "compare-1", title: "What does a 10k-token prompt with a 2k-token answer cost?", taskIds: ["pricing", "pricing-gpt", "pricing-gemini"], createdAt: at(30) }] }, hover: "aside [data-slot=tooltip-trigger]:nth-child(2)" },
 		"compare": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.selectedCompare": "compare-1", "phaseo.desktop.compareGroups": [{ id: "compare-1", title: "What does a 10k-token prompt with a 2k-token answer cost?", taskIds: ["pricing", "pricing-gpt", "pricing-gemini"], createdAt: at(30) }] } },
 		"settings": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.selectedTask": "pricing" }, script: `document.querySelector('[aria-label="Settings"]').click()` },
 		"palette": { storage: { "phaseo.desktop.workspaceMode": "chat" }, script: `window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))` },
@@ -128,6 +129,14 @@ app.whenReady().then(async () => {
 		await new Promise(resolve => window.webContents.once("did-finish-load", resolve));
 		await settle(1400);
 		if (state.script) { await run(state.script); await settle(); }
+		if (state.hover) {
+			const point = await run(`(() => { const r = document.querySelector(${JSON.stringify(state.hover)}).getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; })()`);
+			window.focus(); window.webContents.focus();
+			window.webContents.sendInputEvent({ type: "mouseMove", x: point.x - 30, y: point.y });
+			await settle(200);
+			window.webContents.sendInputEvent({ type: "mouseMove", ...point });
+			await settle(600);
+		}
 		if (state.inspect) console.log(name, await run(state.inspect));
 		writeFileSync(path.join(out, `${name}-${theme}.png`), (await window.webContents.capturePage()).toPNG());
 		console.log("captured", name);

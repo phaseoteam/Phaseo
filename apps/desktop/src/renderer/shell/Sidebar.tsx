@@ -6,8 +6,8 @@ import { cn } from "../lib/utils";
 import { shortcutLabel } from "../lib/shortcuts";
 import { usePersistedState } from "../lib/persistedState";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
-import { ModelLogo } from "../components/ModelLogo";
 import { SettingsNav } from "../settings/SettingsPage";
+import { ModelStack } from "../chat/ModelPicker";
 
 const dayMs = 86_400_000;
 function dateBucket(iso: string, now = new Date()) {
@@ -60,7 +60,7 @@ function ChatRow({ task, indent, showModel, showTime = true }: { task: TaskOverv
 	const busy = task.status === "running" || task.status === "waiting" || !!task.approvalsCount || !!task.answersCount;
 	return <div role="button" tabIndex={0} aria-current={selected ? "page" : undefined} onClick={() => select(task.id)} onKeyDown={event => { if (event.key === "Enter" && !renaming) select(task.id); }}
 		className={cn("group/row mx-2 flex h-8 items-center gap-2 rounded-md px-2 text-[13px] text-sidebar-foreground/85 outline-none hover:bg-sidebar-accent/70 focus-visible:ring-2 focus-visible:ring-ring/40", selected && "bg-sidebar-accent text-sidebar-foreground", indent && "pl-7")}>
-		{showModel ? <span className="flex size-4 shrink-0 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={{ id: task.model, name: task.model }} harness={task.harness} /></span> : <StatusDot task={task} />}
+		{showModel ? <span className="shrink-0"><ModelStack models={[task]} size="sm" ringClassName="ring-transparent" /></span> : <StatusDot task={task} />}
 		{renaming
 			? <input autoFocus defaultValue={task.title} maxLength={200} aria-label="Chat title" onClick={event => event.stopPropagation()} className="h-6 min-w-0 flex-1 rounded border border-ring bg-background px-1.5 text-[13px] outline-none"
 				onBlur={event => { const title = event.target.value.trim(); setRenaming(false); if (title && title !== task.title) void command({ type: "update-task", id: task.id, title }); }}
@@ -79,7 +79,7 @@ function CompareRow({ group }: { group: CompareGroup }) {
 		className={cn("group/row mx-2 flex h-8 items-center gap-2 rounded-md px-2 text-[13px] text-sidebar-foreground/85 hover:bg-sidebar-accent/70", compareId === group.id && "bg-sidebar-accent text-sidebar-foreground")}>
 		<Columns3 className="size-4 shrink-0 text-muted-foreground" />
 		<span className="min-w-0 flex-1 truncate">{group.title}</span>
-		<span className="flex -space-x-1 group-hover/row:hidden">{tasks.slice(0, 3).map(task => <span key={task.id} className="flex size-4 items-center justify-center rounded-full bg-sidebar ring-1 ring-sidebar [&_img]:size-3.5 [&_.harness-logo]:size-3.5"><ModelLogo model={{ id: task.model, name: task.model }} harness={task.harness} /></span>)}</span>
+		<span><ModelStack models={tasks.slice(0, 3)} size="sm" ringClassName="bg-sidebar ring-sidebar" /></span>
 		<DropdownMenu>
 			<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${group.title}`} onClick={event => event.stopPropagation()} className="grid size-5 shrink-0 place-items-center rounded text-muted-foreground opacity-0 group-hover/row:opacity-100 hover:bg-background/70 [&_svg]:size-3.5" />}><Ellipsis /></DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-44"><DropdownMenuItem onClick={() => removeCompareGroup(group.id)}><Archive />Ungroup</DropdownMenuItem></DropdownMenuContent>

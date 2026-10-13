@@ -9,6 +9,7 @@ import { usePersistedState } from "../lib/persistedState";
 import { cn } from "../lib/utils";
 import { ModelLogo } from "../components/ModelLogo";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../components/ui/command";
 
 export const harnessNames: Record<Harness, string> = { phaseo: "Phaseo", codex: "Codex", claude: "Claude Code", opencode: "OpenCode", pi: "Pi", cursor: "Cursor", grok: "Grok", antigravity: "Antigravity", acp: "Agent" };
@@ -24,6 +25,23 @@ export const sameSelection = (a: ModelSelection, b: ModelSelection) => a.harness
 /** Model names are resolved from whichever catalog last listed them. */
 const knownModels = new Map<string, ModelOption>();
 export function knownModel(id: string) { return knownModels.get(id); }
+
+export function modelName(selection: Pick<ModelSelection, "harness" | "model">) {
+	return knownModel(selection.model)?.name ?? (selection.model === "default" ? harnessNames[selection.harness] : modelLabel(selection.model));
+}
+
+/** Resolved when the tooltip opens, after the catalog has loaded. */
+function ModelName({ value }: { value: Pick<ModelSelection, "harness" | "model"> }) { return modelName(value); }
+
+/** Overlapping model logos; hovering one shows its model name. */
+export function ModelStack({ models, size = "md", ringClassName = "bg-card ring-card" }: { models: Pick<ModelSelection, "harness" | "model">[]; size?: "sm" | "md"; ringClassName?: string }) {
+	return <span className="flex -space-x-1">{models.map((value, index) => <Tooltip key={`${value.harness}:${value.model}:${index}`}>
+		<TooltipTrigger delay={150} render={<span className={cn("relative flex items-center justify-center rounded-full hover:z-10", size === "sm" ? "size-4 ring-1 [&_img]:size-3.5 [&_.harness-logo]:size-3.5" : "size-5 ring-2 [&_img]:size-4 [&_.harness-logo]:size-4", ringClassName)} />}>
+			<ModelLogo model={knownModel(value.model) ?? { id: value.model, name: value.model }} harness={value.harness} />
+		</TooltipTrigger>
+		<TooltipContent><ModelName value={value} /></TooltipContent>
+	</Tooltip>)}</span>;
+}
 
 type Entry = { key: string; harness: Harness; accountId?: string; model: ModelOption };
 const entryKey = (harness: Harness, id: string) => `${harness}:${id}`;
@@ -146,7 +164,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		{harnesses.filter(harness => open || harness === "phaseo").map(harness => <Catalog key={harness} harness={harness} accountId={harness === "phaseo" ? phaseoAccount?.id : undefined} onLoad={onLoad} />)}
 		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label="Choose model" className={cn("flex h-8 max-w-64 items-center gap-1.5 rounded-lg px-2 text-[13px] font-semibold transition-colors hover:bg-muted disabled:opacity-50 data-popup-open:bg-muted", className)} />}>
 			{selections.length > 1
-				? <><span className="flex -space-x-1">{selections.map(value => <span key={value.harness + value.model} className="flex size-5 items-center justify-center rounded-full bg-card ring-2 ring-card [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={knownModel(value.model) ?? { id: value.model, name: value.model }} harness={value.harness} /></span>)}</span><span className="truncate">{selections.length} models</span></>
+				? <><ModelStack models={selections} /><span className="truncate">{selections.length} models</span></>
 				: first ? <><span className="flex size-5 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={knownModel(first.model) ?? { id: first.model, name: first.model }} harness={first.harness} /></span><span className="truncate">{label(first)}</span></>
 				: <span className="text-muted-foreground">Choose a model</span>}
 			<ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
