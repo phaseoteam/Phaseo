@@ -316,8 +316,10 @@ export class WorkspaceRuntime {
 			latest.nativeModels = catalog; this.store.saveTask(latest);
 		}
 		// Grok checks a new effort against its model list; load it for chats created without one.
-		if (command.type === "update-task" && command.reasoningEffort && this.store.getTask(command.id).harness === "grok") {
-			const current = this.store.getTask(command.id);
+		const grokTask = command.type === "update-task" && command.reasoningEffort ? this.store.getTask(command.id) : undefined;
+		const grokModel = grokTask?.harness === "grok" ? (command.type === "update-task" ? command.model : undefined) ?? grokTask.model : undefined;
+		if (command.type === "update-task" && grokTask && grokModel && !grokTask.nativeModels?.find(model => grokModel === "default" ? model.default : model.id === grokModel)?.reasoningEfforts?.some(effort => effort.id === command.reasoningEffort)) {
+			const current = grokTask;
 			const catalog = await this.initialModels({ type: "create-task", harness: "grok", projectId: current.projectId, accountId: current.accountId, model: command.model ?? current.model, mode: current.mode, reasoningEffort: command.reasoningEffort });
 			const latest = this.store.getTask(command.id);
 			if (this.executions.has(command.id) || latest.status === "running" || latest.status === "waiting" || latest.archived) throw new Error("Wait for this chat to stop before changing its settings.");

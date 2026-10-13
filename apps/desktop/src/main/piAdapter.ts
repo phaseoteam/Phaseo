@@ -10,6 +10,7 @@ import type { Account, QueuedMessage, Task } from "../shared/workspace";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { spawnNative } from "./nativeProcess";
+import { piThinkingLevels } from "./nativeModels";
 import { PiCommandRejectedError, PiRpc } from "./piRpc";
 import type { PiRecord } from "./piRpc";
 import type { AttachmentContent } from "./attachments";
@@ -107,7 +108,9 @@ export class PiAdapter implements AgentAdapter {
 			if (task.model !== "default") {
 				const separator = task.model.indexOf("/");
 				if (separator < 1 || separator === task.model.length - 1) throw new Error("Pi models use provider/model names.");
-				await rpc.request({ type: "set_model", provider: task.model.slice(0, separator), modelId: task.model.slice(separator + 1) });
+				const selected = await rpc.request({ type: "set_model", provider: task.model.slice(0, separator), modelId: task.model.slice(separator + 1) });
+				const level = task.modelOptions?.thinking;
+				if (typeof level === "string" && piThinkingLevels(selected).includes(level)) await rpc.request({ type: "set_thinking_level", level });
 			}
 			if (nativeAction) {
     const confirm = async () => { try { const catalog = piNativeActionCatalog(await rpc.request({ type: "get_commands" }, 15000)); if (!catalog.actions.some(action => action.kind === nativeAction.kind && action.id === nativeAction.id && action.name === nativeAction.name)) throw new Error("This Pi action is no longer available."); } catch (error) { throw new AgentInputRejectedError("Pi action was not submitted. " + (error instanceof Error ? error.message : "Check the native catalog."), { cause: error }); } };

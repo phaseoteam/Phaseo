@@ -24,4 +24,26 @@ describe("Cursor managed accounts", () => {
 	it("bounds read-only status calls without turning a timeout into signed-out status", async () => {
 		vi.useFakeTimers(); try { sdk.me.mockImplementation(() => new Promise(() => {})); const operation = cursorAccountStatus("fixture-only"); const rejected = expect(operation).rejects.toThrow("30 seconds"); await vi.advanceTimersByTimeAsync(30_000); await rejected; } finally { vi.useRealTimers(); }
 	});
+	it("turns SDK model parameters into ordered settings with the default variant's values", async () => {
+		sdk.models.mockResolvedValue([{
+			id: "gpt", displayName: "GPT",
+			parameters: [
+				{ id: "thinking", values: [{ value: "false" }, { value: "true" }] },
+				{ id: "fast", displayName: "Speed", values: [{ value: "true" }, { value: "false" }] },
+				{ id: "context", values: [{ value: "272k", displayName: "272K" }, { value: "1m", displayName: "1M" }] },
+				{ id: "effort", displayName: "Effort", values: [{ value: "low" }, { value: "high", displayName: "High" }, { value: " " }] },
+				{ id: "empty", values: [{ value: "" }] },
+				{ id: "verbosity_level", values: [{ value: "low" }] },
+			],
+			variants: [{ displayName: "Other", params: [{ id: "effort", value: "low" }] }, { displayName: "Default", isDefault: true, params: [{ id: "effort", value: "high" }, { id: "fast", value: "false" }, { id: "context", value: "272k" }] }],
+		}]);
+		const [model] = await cursorModels("fixture-only");
+		expect(model.options).toEqual([
+			{ id: "effort", label: "Reasoning", type: "select", options: [{ id: "low", label: "low" }, { id: "high", label: "High", isDefault: true }] },
+			{ id: "contextWindow", label: "Context Window", type: "select", options: [{ id: "272k", label: "272K", isDefault: true }, { id: "1m", label: "1M" }] },
+			{ id: "fastMode", label: "Fast Mode", type: "boolean", default: false },
+			{ id: "thinking", label: "Thinking", type: "boolean" },
+			{ id: "verbosity_level", label: "Verbosity Level", type: "select", options: [{ id: "low", label: "low" }] },
+		]);
+	});
 });

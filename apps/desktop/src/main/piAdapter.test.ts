@@ -17,6 +17,29 @@ function fixture(handle: (packet: PiRecord, send: (value: PiRecord) => void) => 
 }
 const task: Task = { id: "task", title: "Task", harness: "pi", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("Pi native harness", () => {
+	it.each([
+		["a chosen level the model offers", { thinking: "xhigh" }, ["set_model", "set_thinking_level", "get_state", "prompt"], "xhigh"],
+		["a level the model does not offer", { thinking: "max" }, ["set_model", "get_state", "prompt"], undefined],
+		["a non-string level", { thinking: true }, ["set_model", "get_state", "prompt"], undefined],
+		["no chosen level", undefined, ["set_model", "get_state", "prompt"], undefined],
+	] as const)("sets the thinking level after the model only for %s", async (_name, modelOptions, expected, level) => {
+		const packets: PiRecord[] = [];
+		fixture((packet, output) => {
+			packets.push(packet);
+			const data = packet.type === "set_model" ? { provider: "native", id: "model", reasoning: true, thinkingLevelMap: { xhigh: "xhigh", max: null } } : packet.type === "get_state" ? { sessionFile: "/session", isStreaming: false, pendingMessageCount: 0 } : packet.type === "prompt" ? { disposition: "handled" } : undefined;
+			output({ type: "response", id: packet.id, success: true, data });
+		});
+		await new PiAdapter().run({ ...task, model: "native/model", modelOptions }, "/project", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+		expect(packets.map(packet => packet.type).filter((type, index, all) => all.indexOf(type) === index)).toEqual(expected);
+		expect(packets.find(packet => packet.type === "set_model")).toMatchObject({ provider: "native", modelId: "model" });
+		expect(packets.find(packet => packet.type === "set_thinking_level")?.level).toBe(level);
+	});
+	it("does not set a thinking level for Pi's default model", async () => {
+		const packets: PiRecord[] = [];
+		fixture((packet, output) => { packets.push(packet); output({ type: "response", id: packet.id, success: true, data: packet.type === "get_state" ? { sessionFile: "/session", isStreaming: false, pendingMessageCount: 0 } : packet.type === "prompt" ? { disposition: "handled" } : undefined }); });
+		await new PiAdapter().run({ ...task, modelOptions: { thinking: "high" } }, "/project", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+		expect(packets.some(packet => packet.type === "set_model" || packet.type === "set_thinking_level")).toBe(false);
+	});
  it.each(["command", "skill"] as const)("executes an explicitly selected %s through the native slash prompt", async kind => {
   const packets: PiRecord[] = []; const id = kind === "skill" ? "skill:research" : "review"; const name = kind === "skill" ? "research" : id;
   const child = fixture((packet, output) => { packets.push(packet); if (packet.type === "get_commands") output({ type: "response", id: packet.id, success: true, data: { commands: [{ name: id, source: kind === "skill" ? "skill" : "extension", description: "Owned" }] } }); if (packet.type === "get_state") output({ type: "response", id: packet.id, success: true, data: { sessionFile: "/session", isStreaming: false, pendingMessageCount: 0 } }); if (packet.type === "prompt") { output({ type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "Owned reply" } }); output({ type: "response", id: packet.id, success: true, data: { disposition: "handled" } }); } });

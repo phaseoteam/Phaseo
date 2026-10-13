@@ -9,6 +9,26 @@ import { AgentInputRejectedError } from "./agentAdapter";
 
 const task: Task = { id: "task", title: "Task", harness: "opencode", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("OpenCode 2 integration", () => {
+	it.each([
+		["an offered variant", "openai/gpt", { variant: "high" }, true, { providerID: "openai", id: "gpt", variant: "high" }],
+		["a variant the model no longer offers", "openai/gpt", { variant: "max" }, true, { providerID: "openai", id: "gpt" }],
+		["a variant for a model missing from the catalog", "openai/other", { variant: "high" }, true, { providerID: "openai", id: "other" }],
+		["no chosen variant", "openai/gpt", undefined, false, { providerID: "openai", id: "gpt" }],
+		["the default model", "default", { variant: "high" }, false, undefined],
+	] as const)("passes the reasoning variant in the model ref only for %s", async (_name, modelId, modelOptions, listed, expected) => {
+		sdk.discover.mockResolvedValue({ url: "http://localhost:4096" }); let prompted!: () => void; const prompt = new Promise<void>(resolve => { prompted = resolve; });
+		const list = vi.fn(async () => ({ data: [{ providerID: "openai", id: "gpt", variants: [{ id: "low" }, { id: "high" }] }] })); const create = vi.fn<(input: { model?: unknown }) => Promise<{ id: string }>>(async () => ({ id: "session" }));
+		sdk.make.mockReturnValue({ model: { list }, session: { create, prompt: async () => { prompted(); }, wait: async () => {} }, event: { subscribe: async function* (options: { onActivity: () => void }) { options.onActivity(); await prompt; yield { type: "session.execution.succeeded", data: { sessionID: "session" } }; } } });
+		await new OpenCodeAdapter().run({ ...task, mode: "chat", model: modelId, modelOptions }, ".", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+		expect(list).toHaveBeenCalledTimes(listed ? 1 : 0); expect(create.mock.lastCall?.[0].model).toEqual(expected);
+	});
+	it("switches a resumed session to the model with its offered variant", async () => {
+		sdk.discover.mockResolvedValue({ url: "http://localhost:4096" }); let prompted!: () => void; const prompt = new Promise<void>(resolve => { prompted = resolve; });
+		const switchModel = vi.fn(async () => {});
+		sdk.make.mockReturnValue({ model: { list: async () => ({ data: [{ providerID: "anthropic", id: "claude", variants: [{ id: "high" }] }] }) }, session: { get: async () => ({ id: "session" }), switchAgent: async () => {}, update: async () => {}, switchModel, form: { list: async () => [] }, prompt: async () => { prompted(); }, wait: async () => {} }, event: { subscribe: async function* (options: { onActivity: () => void }) { options.onActivity(); await prompt; yield { type: "session.execution.succeeded", data: { sessionID: "session" } }; } } });
+		await new OpenCodeAdapter().run({ ...task, mode: "chat", model: "anthropic/claude", modelOptions: { variant: "high" }, nativeSessionId: "session" }, ".", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+		expect(switchModel).toHaveBeenCalledWith({ sessionID: "session", model: { providerID: "anthropic", id: "claude", variant: "high" } }, expect.anything());
+	});
  it.each(["accept", "decline"] as const)("requires explicit command approval and settles state-only commands (%s)", async decision => {
   sdk.discover.mockResolvedValue({ url: "http://localhost:4096" }); const submit = vi.fn(async () => {}); const create = vi.fn(async () => ({ id: "session" }));
   const commandList = vi.fn(async () => ({ data: [{ name: "review" }] })); const skillList = vi.fn(async () => ({ data: [] }));

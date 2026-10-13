@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Account, Task } from "../shared/workspace";
-const sdk = vi.hoisted(() => ({ create: vi.fn(), resume: vi.fn(), store: vi.fn() }));
-vi.mock("@cursor/sdk", () => ({ Agent: { create: sdk.create, resume: sdk.resume }, JsonlLocalAgentStore: class { constructor(directory: string) { sdk.store(directory); } } }));
-import { CursorAdapter, cursorOptions } from "./cursorAdapter";
+const sdk = vi.hoisted(() => ({ create: vi.fn(), resume: vi.fn(), store: vi.fn(), models: vi.fn() }));
+vi.mock("@cursor/sdk", () => ({ Agent: { create: sdk.create, resume: sdk.resume }, Cursor: { models: { list: sdk.models } }, JsonlLocalAgentStore: class { constructor(directory: string) { sdk.store(directory); } } }));
+import { CursorAdapter, cursorModelSelection, cursorOptions } from "./cursorAdapter";
 import { AgentInputRejectedError } from "./agentAdapter";
 const task: Task = { id: "task", title: "Task", harness: "cursor", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 const account: Account = { id: "account", name: "Cursor", harness: "cursor", kind: "api", configured: true };
@@ -31,6 +31,24 @@ describe("Cursor SDK harness", () => {
 	it("disables native tools and inherited settings for Chat and limits Plan tools", () => {
 		const options = cursorOptions(task, "/project", "secret", {} as never, []); expect(options.tools).toEqual([]); expect(options.local?.settingSources).toEqual([]); expect(options.mcpServers).toEqual({});
 		const plan = cursorOptions({ ...task, mode: "plan" }, "/project", "secret", {} as never, []); expect(plan.tools).toContain("read"); expect(plan.tools).not.toContain("shell"); expect(plan.tools).not.toContain("task"); expect(plan.local?.settingSources).toEqual([]);
+	});
+	const catalogModel = { id: "gpt", displayName: "GPT", aliases: ["gpt-latest"], parameters: [{ id: "effort", values: [{ value: "low" }, { value: "high" }] }, { id: "context", values: [{ value: "272k" }, { value: "1m" }] }, { id: "fast", values: [{ value: "False" }, { value: "True" }] }, { id: "thinking", values: [{ value: "true" }, { value: "false" }] }] };
+	it("sends only chosen settings the model offers, under their SDK parameter ids", () => {
+		expect(cursorModelSelection("gpt", { effort: "high", contextWindow: "1m", fastMode: true, thinking: false }, catalogModel)).toEqual({ id: "gpt", params: [{ id: "effort", value: "high" }, { id: "context", value: "1m" }, { id: "fast", value: "True" }, { id: "thinking", value: "false" }] });
+		expect(cursorModelSelection("gpt", { effort: "xhigh", contextWindow: true, fastMode: "true", variant: "fast" }, catalogModel)).toEqual({ id: "gpt" });
+		expect(cursorModelSelection("gpt", undefined, catalogModel)).toEqual({ id: "gpt" });
+		expect(cursorModelSelection("default", { effort: "high" })).toEqual({ id: "auto" });
+	});
+	it("reads the catalog only when settings are chosen and drops them when it cannot", async () => {
+		const { agent, callbacks } = fixture(); sdk.models.mockResolvedValue([catalogModel]);
+		await new CursorAdapter("/data", () => "key").run({ ...task, model: "gpt-latest" }, "/project", "Hello", callbacks, account);
+		expect(sdk.models).not.toHaveBeenCalled(); expect(sdk.create).toHaveBeenLastCalledWith(expect.objectContaining({ model: { id: "gpt-latest" } }));
+		await new CursorAdapter("/data", () => "key").run({ ...task, model: "gpt-latest", modelOptions: { effort: "low", fastMode: false } }, "/project", "Hello", callbacks, account);
+		const model = { id: "gpt-latest", params: [{ id: "effort", value: "low" }, { id: "fast", value: "False" }] };
+		expect(sdk.models).toHaveBeenCalledWith({ apiKey: "key" }); expect(sdk.create).toHaveBeenLastCalledWith(expect.objectContaining({ model })); expect(agent.send).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ model }));
+		sdk.models.mockRejectedValue(new Error("Offline"));
+		await new CursorAdapter("/data", () => "key").run({ ...task, model: "gpt", modelOptions: { effort: "low" } }, "/project", "Hello", callbacks, account);
+		expect(sdk.create).toHaveBeenLastCalledWith(expect.objectContaining({ model: { id: "gpt" } }));
 	});
 	it("does not submit a native tool turn after declined approval", async () => {
 		const { callbacks } = fixture(); callbacks.onApproval.mockResolvedValue("decline");

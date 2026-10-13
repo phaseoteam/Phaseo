@@ -29,11 +29,15 @@ export class OpenCodeAdapter implements AgentAdapter {
 		if (!endpoint) throw new Error("Start an OpenCode 2 service before using this harness. OpenCode 1 is not supported by this adapter.");
 		if (this.controller.signal.aborted) throw new Error("Task stopped.");
 		const client = this.client = OpenCode.make({ baseUrl: endpoint.url, headers: Service.headers(endpoint) });
-		const model = task.model === "default" ? undefined : (() => {
+		const selected = task.model === "default" ? undefined : (() => {
 			const separator = task.model.indexOf("/");
 			if (separator < 1) throw new Error("Use provider/model for an OpenCode model.");
 			return { providerID: task.model.slice(0, separator), id: task.model.slice(separator + 1) };
 		})();
+		// Send a chosen reasoning variant only while the model still offers it.
+		const variant = typeof task.modelOptions?.variant === "string" ? task.modelOptions.variant : undefined;
+		const offered = selected && variant ? await client.model.list({ location: { directory: cwd } }, { signal: AbortSignal.any([this.controller.signal, AbortSignal.timeout(15000)]) }).then(catalog => catalog.data.some(item => item.providerID === selected.providerID && item.id === selected.id && item.variants?.some(option => option.id === variant)), () => false) : false;
+		const model = selected && offered ? { ...selected, variant } : selected;
 		const requestOptions = { signal: this.controller.signal };
 		const confirmAction = async () => {
 			if (!nativeAction) return;

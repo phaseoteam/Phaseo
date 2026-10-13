@@ -1,7 +1,7 @@
 import path from "node:path";
-import { Agent, JsonlLocalAgentStore } from "@cursor/sdk";
-import type { AgentOptions, McpServerConfig, Run, SDKAgent } from "@cursor/sdk";
-import type { Account, QueuedMessage, Task } from "../shared/workspace";
+import { Agent, Cursor, JsonlLocalAgentStore } from "@cursor/sdk";
+import type { AgentOptions, McpServerConfig, ModelListItem, ModelSelection, Run, SDKAgent } from "@cursor/sdk";
+import type { Account, ModelOptionDescriptor, ModelOptionValues, QueuedMessage, Task } from "../shared/workspace";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { AgentInputRejectedError } from "./agentAdapter";
 import type { AttachmentContent } from "./attachments";
@@ -15,10 +15,59 @@ export function assertCursorBackend() {
 	const backend = process.env.CURSOR_BACKEND_URL;
 	if (backend && backend !== "https://api2.cursor.sh" && backend !== "https://api2.cursor.sh/") throw new AgentInputRejectedError("Remove the custom CURSOR_BACKEND_URL before using a managed Cursor account.");
 }
-export function cursorOptions(task: Task, cwd: string, apiKey: string, store: JsonlLocalAgentStore, connections: McpConnection[]): AgentOptions {
+export async function bounded<T>(operation: Promise<T>): Promise<T> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	try { return await Promise.race([operation, new Promise<never>((_resolve, reject) => { timer = setTimeout(() => reject(new Error("Cursor did not respond within 30 seconds.")), 30_000); })]); }
+	finally { clearTimeout(timer); }
+}
+
+const optionIds = new Map([["context", "contextWindow"], ["fast", "fastMode"]]);
+const labels = new Map([["effort", "Reasoning"], ["reasoning", "Reasoning"], ["context", "Context Window"], ["fast", "Fast Mode"]]);
+const priority = new Map([["effort", 0], ["reasoning", 0], ["context", 1], ["fast", 2], ["thinking", 3]]);
+const titleCase = (value: string) => value.split(/[\s_-]+/).filter(Boolean).map(part => part[0].toUpperCase() + part.slice(1).toLowerCase()).join(" ");
+
+/** Cursor's model parameters as settings, keeping each one's SDK id and accepted values. */
+function cursorParameters(model: ModelListItem) {
+	const seen = new Set<string>();
+	const defaults = model.variants?.find(variant => variant.isDefault)?.params ?? [];
+	return (model.parameters ?? []).map((parameter, index) => ({ parameter, native: parameter.id.trim(), index }))
+		.sort((left, right) => (priority.get(left.native) ?? 4) - (priority.get(right.native) ?? 4) || left.index - right.index)
+		.flatMap(({ parameter, native }): { native: string; values: string[]; descriptor: ModelOptionDescriptor }[] => {
+			const id = optionIds.get(native) ?? native;
+			const values = parameter.values.flatMap(entry => { const value = entry.value.trim(); return value ? [{ id: value, label: entry.displayName?.trim() || value }] : []; });
+			if (!native || seen.has(id) || !values.length) return [];
+			seen.add(id);
+			const label = labels.get(native) ?? (parameter.displayName?.trim() || titleCase(id));
+			const fallback = defaults.find(value => value.id === native)?.value;
+			const lower = new Set(values.map(value => value.id.toLowerCase()));
+			const descriptor: ModelOptionDescriptor = values.length === 2 && lower.has("true") && lower.has("false")
+				? { id, label, type: "boolean", ...(fallback === "true" || fallback === "false" ? { default: fallback === "true" } : {}) }
+				: { id, label, type: "select", options: values.map(value => ({ ...value, ...(value.id === fallback ? { isDefault: true } : {}) })) };
+			return [{ native, values: values.map(value => value.id), descriptor }];
+		});
+}
+export const cursorModelDescriptors = (model: ModelListItem) => cursorParameters(model).map(parameter => parameter.descriptor);
+
+/** The SDK model selection, carrying only chosen settings the model still offers. */
+export function cursorModelSelection(model: string, values?: ModelOptionValues, catalog?: ModelListItem): ModelSelection {
+	const id = model === "default" ? "auto" : model;
+	const params = !values || !catalog ? [] : cursorParameters(catalog).flatMap(({ native, values: accepted, descriptor }) => {
+		const chosen = values[descriptor.id];
+		const value = descriptor.type === "boolean" ? typeof chosen === "boolean" && accepted.find(entry => entry.toLowerCase() === String(chosen)) : typeof chosen === "string" && accepted.find(entry => entry === chosen);
+		return value ? [{ id: native, value }] : [];
+	});
+	return params.length ? { id, params } : { id };
+}
+async function cursorCatalogModel(apiKey: string, model: string) {
+	const id = model === "default" ? "auto" : model;
+	try { return (await bounded(Cursor.models.list({ apiKey }))).find(item => item.id === id || item.aliases?.includes(id)); }
+	catch { return undefined; }
+}
+
+export function cursorOptions(task: Task, cwd: string, apiKey: string, store: JsonlLocalAgentStore, connections: McpConnection[], catalog?: ModelListItem): AgentOptions {
 	const mcpServers: Record<string, McpServerConfig> = {};
 	if (task.mode === "code") for (const connection of connections) if (connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === task.projectId)) mcpServers[nativeMcpName(connection)] = connection.transport === "stdio" ? { command: connection.executable, args: connection.arguments, cwd } : { url: connection.url, ...(connection.headers ? { headers: connection.headers } : {}) };
-	return { apiKey, model: { id: task.model === "default" ? "auto" : task.model }, name: `Phaseo ${task.id}`, mode: task.mode === "plan" ? "plan" : "agent", ...(task.mode === "chat" ? { tools: [] } : task.mode === "plan" ? { tools: ["read", "grep", "glob", "ls", "readLints", "semSearch", "webSearch", "webFetch", "readTodos", "updateTodos"] } : {}), mcpServers, local: { cwd, store, autoReview: true, enableAgentRetries: false, settingSources: task.mode === "code" ? ["project", "user", "team", "mdm", "plugins"] : [] } };
+	return { apiKey, model: cursorModelSelection(task.model, task.modelOptions, catalog), name: `Phaseo ${task.id}`, mode: task.mode === "plan" ? "plan" : "agent", ...(task.mode === "chat" ? { tools: [] } : task.mode === "plan" ? { tools: ["read", "grep", "glob", "ls", "readLints", "semSearch", "webSearch", "webFetch", "readTodos", "updateTodos"] } : {}), mcpServers, local: { cwd, store, autoReview: true, enableAgentRetries: false, settingSources: task.mode === "code" ? ["project", "user", "team", "mdm", "plugins"] : [] } };
 }
 export class CursorAdapter implements AgentAdapter {
 	private agent?: SDKAgent;
@@ -37,7 +86,9 @@ export class CursorAdapter implements AgentAdapter {
 			if (task.mode === "code" && await callbacks.onApproval("Cursor native tools", "Allow Cursor to read and change files, run commands, use configured MCP servers and access the network for this turn? Cursor's SDK has no per-tool prompts; native policies and Auto-review apply.") !== "accept") throw new Error("Cursor native execution was declined. Choose Chat or Plan, or retry with approval.");
 			if (this.stopped) throw new Error("Cursor task stopped.");
 			const prompt = attachmentPrompt(task.nativeForkFrom && !task.nativeSessionId ? handoffPrompt({ ...task, handoffFrom: "cursor", nativeForkFrom: undefined }, text) : text, attachments);
-			const options = cursorOptions(task, cwd, apiKey, new JsonlLocalAgentStore(path.join(this.directory, "native", "cursor", account.id)), this.connections);
+			const catalog = task.modelOptions && Object.keys(task.modelOptions).length ? await cursorCatalogModel(apiKey, task.model) : undefined;
+			if (this.stopped) throw new Error("Cursor task stopped.");
+			const options = cursorOptions(task, cwd, apiKey, new JsonlLocalAgentStore(path.join(this.directory, "native", "cursor", account.id)), this.connections, catalog);
 			this.agent = task.nativeSessionId ? await Agent.resume(task.nativeSessionId, options) : await Agent.create(options);
 			callbacks.onSession(this.agent.agentId); if (this.stopped) throw new Error("Cursor task stopped.");
 			submitted = true;
