@@ -7,7 +7,7 @@ import { requireUser } from "@/auth/requireUser";
 import { requireAccountWorkspace } from "./context";
 import { usageKeyScope } from "./usageKeyScope";
 import { workspaceUserProfile } from "./workspaceUserProfile";
-import { MONTH_USAGE_PAGE_SIZE, MONTH_USAGE_ROW_LIMIT, MONTH_USAGE_SELECT, MONTH_USAGE_TOKEN_METERS, dailyUsageTotals, monthUsageStartDate, type MonthUsageRow } from "./monthUsage";
+import { monthUsageStartDate, parseMonthUsageDays } from "./monthUsage";
 
 type Warning = {
 	modelId: string; modelName: string | null; organisationId: string | null;
@@ -257,22 +257,10 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 			: null;
 		// The daily rollup is exact but workspace-wide, so the month figures only apply unfiltered.
 		const observedAt = Date.now();
-		// PostgREST caps each response (1,000 rows on prod), so page until an empty page rather than trusting a short one.
-		// A rollup error or reaching the row limit hides the month figures; the rest of the overview still loads.
+		// Summed per day in the database. An error only hides the month figures; the rest of the overview still loads.
 		const loadMonthUsage = async () => {
-			const rows: MonthUsageRow[] = [];
-			while (rows.length < MONTH_USAGE_ROW_LIMIT) {
-				const result = await context.client.from("v2_private_usage_daily").select(MONTH_USAGE_SELECT)
-					.eq("workspace_id", workspaceId).gte("usage_date", monthUsageStartDate(observedAt))
-					.in("v2_private_usage_daily_meters.meter_key", [...MONTH_USAGE_TOKEN_METERS])
-					.order("usage_date", { ascending: true }).order("rollup_id", { ascending: true })
-					.range(rows.length, rows.length + MONTH_USAGE_PAGE_SIZE - 1);
-				if (result.error) return null;
-				const page = (result.data ?? []) as MonthUsageRow[];
-				if (page.length === 0) return dailyUsageTotals(rows, observedAt);
-				rows.push(...page);
-			}
-			return null;
+			const result = await context.client.rpc("get_private_usage_month_days", { p_workspace_id: workspaceId, p_from: monthUsageStartDate(observedAt) });
+			return result.error ? null : parseMonthUsageDays(result.data, observedAt);
 		};
 		const monthUsageQuery = scope.creatorId || url.searchParams.get("key")?.trim() || labelFilter ? null : loadMonthUsage();
 		const [keysResult, current, previous, labelFacetFactsResult, labelSummaryFactsResult, monthUsage] = await Promise.all([

@@ -377,16 +377,15 @@ describe("account usage settings routes", () => {
 		expect(await response.json()).toMatchObject({ data: { upstreamRequests: [{ request_latency_ms: gatewayLatency, latency_ms: 60 }] } });
 	});
 	it("returns the private observability windows and lookup metadata", async () => {
-		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+		let monthUsageArgs: unknown = null;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
-			if (url.includes("v2_private_usage_daily")) {
-				expect(decodeURIComponent(url)).toContain("v2_private_usage_daily_meters.meter_key=in.(total_tokens,input_tokens,output_tokens)");
-				if (Number(new URL(url).searchParams.get("offset") ?? 0) > 0) return new Response("[]", { status: 200 });
+			if (url.includes("/rpc/get_private_usage_month_days")) {
+				monthUsageArgs = JSON.parse(String(init?.body ?? "{}"));
 				return new Response(JSON.stringify([
-					{ usage_date: "2026-07-16", cost_nanos: "3000", requests: 2, successful_requests: 2, cached_input_tokens: 0, v2_private_usage_daily_meters: [{ meter_key: "total_tokens", quantity: "40" }] },
-					{ usage_date: "2026-07-17", cost_nanos: 1000, requests: 1, successful_requests: 0, cached_input_tokens: 5, v2_private_usage_daily_meters: [] },
-					{ usage_date: "2026-07-17", cost_nanos: 500, requests: 1, successful_requests: 1, cached_input_tokens: 0, v2_private_usage_daily_meters: [{ meter_key: "input_tokens", quantity: 8 }, { meter_key: "output_tokens", quantity: 4 }] },
+					{ date: "2026-07-16", costNanos: 3000, requests: 2, successfulRequests: 2, tokens: 40, cachedTokens: 0 },
+					{ date: "2026-07-17", costNanos: 1500, requests: 2, successfulRequests: 1, tokens: 12, cachedTokens: 5 },
 				]), { status: 200 });
 			}
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
@@ -424,22 +423,18 @@ describe("account usage settings routes", () => {
 				{ date: "2026-07-17", costNanos: 1500, requests: 2, successfulRequests: 1, tokens: 12, cachedTokens: 5 },
 			] },
 		});
+		// From the first of last month, whatever today is.
+		expect(monthUsageArgs).toEqual({ p_workspace_id: "workspace-1", p_from: expect.stringMatching(/^\d{4}-\d{2}-01$/) });
 	});
-	it("pages the month rollup past a server row cap smaller than its page", async () => {
-		const rollups = Array.from({ length: 1_500 }, () => ({ usage_date: "2026-07-17", cost_nanos: 2, requests: 1, successful_requests: 1, cached_input_tokens: 0, v2_private_usage_daily_meters: [] }));
-		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+	it("hides only the month figures when the month RPC fails", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
-			if (url.includes("v2_private_usage_daily")) {
-				const offset = Number(new URL(url).searchParams.get("offset") ?? 0);
-				// The server returns at most 400 rows whatever the client asks for.
-				return new Response(JSON.stringify(rollups.slice(offset, offset + 400)), { status: 200 });
-			}
+			if (url.includes("/rpc/get_private_usage_month_days")) return new Response(JSON.stringify({ code: "57014", message: "canceling statement due to statement timeout" }), { status: 500 });
 			return new Response(JSON.stringify([]), { status: 200 });
-		});
-		vi.stubGlobal("fetch", fetchMock);
+		}));
 		const params = new URLSearchParams({
 			workspaceId: "workspace-1",
 			from: "2026-07-17T00:00:00Z",
@@ -449,9 +444,7 @@ describe("account usage settings routes", () => {
 		});
 		const response = await app.request(`https://phaseo.app/api/account/settings/usage/observability?${params}`, { headers: { authorization: "Bearer token" } }, env);
 		expect(response.status).toBe(200);
-		await expect(response.json()).resolves.toMatchObject({
-			monthUsage: { days: [{ date: "2026-07-17", costNanos: 3_000, requests: 1_500, successfulRequests: 1_500 }] },
-		});
+		await expect(response.json()).resolves.toMatchObject({ workspaceId: "workspace-1", monthUsage: null });
 	});
 	it("leaves the month figures out of filtered views, where the workspace rollup would be wrong", async () => {
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
@@ -474,6 +467,6 @@ describe("account usage settings routes", () => {
 		expect(response.status).toBe(200);
 		await expect(response.json()).resolves.toMatchObject({ monthUsage: null });
 		const urls = fetchMock.mock.calls.map(([input]) => input instanceof Request ? input.url : String(input));
-		expect(urls.some((url) => url.includes("v2_private_usage_daily"))).toBe(false);
+		expect(urls.some((url) => url.includes("/rpc/get_private_usage_month_days"))).toBe(false);
 	});
 });
