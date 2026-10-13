@@ -19,3 +19,9 @@ WHERE a.plan_uuid=p.plan_uuid AND p.lab_slug='spacex-ai'
   AND a.allowance_key IN ('Group-level settings and spend limits','Usage analytics','Video generation')
   AND a.quantity IS NULL AND a.window_kind='none'
   AND a.display_text IN ('Included','Not included') AND a.effective_to IS NULL;
+
+UPDATE public.v2_subscription_plan_allowances a SET effective_to=now()
+FROM public.v2_subscription_plans p
+WHERE a.plan_uuid=p.plan_uuid AND p.lab_slug='windsurf' AND p.plan_id='windsurf-teams'
+  AND a.allowance_key='Team Usage' AND a.quantity IS NULL AND a.window_kind='none'
+  AND a.display_text='$80 base plan plus $40 / full developer seat' AND a.effective_to IS NULL;

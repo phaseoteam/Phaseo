@@ -55,6 +55,7 @@ try {
       assert(plan.features.some(f=>f.feature_name==='Usage analytics'));
     }
     assert.equal(catalogue.find(row=>row.plan_id==='windsurf-teams').offers[0].components.find(c=>c.component_key==='base').charge_basis,'account');
+    assert(!catalogue.find(row=>row.plan_id==='windsurf-teams').allowances.some(a=>a.allowance_key==='Team Usage'));
     assert.deepEqual(new Set(catalogue.map(row=>`${row.lab_slug}:${row.plan_id}`)),expected);
     assert.equal(Number((await db.query('select count(*) from v2_subscription_plan_offers')).rows[0].count),snapshot.plans.length);
     const originals=(await db.query('select plan_uuid,price,frequency from v2_subscription_plans')).rows;

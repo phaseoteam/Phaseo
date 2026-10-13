@@ -23,3 +23,13 @@ test("preserves source wording and numeric ranges", async () => {
 	expect(renderToStaticMarkup(await SubscriptionPlanAllowances({ allowances: [allowance] }))).toContain("Estimated 6–7 agents");
 	expect(renderToStaticMarkup(await SubscriptionPlanAllowances({ allowances: [{ ...allowance, display_text: "Up to approximately 80 prompts" }] }))).toContain("Up to approximately 80 prompts");
 });
+
+test("omits empty columns but keeps published windows and conditions", async () => {
+	const allowance = { allowance_uuid: "test", allowance_key: "Usage", quantity_kind: "exact", quantity: 15, unit: "multiplier", window_kind: "none", allocation_basis: "unknown", pool_scope: "unknown" } as SubscriptionAllowance;
+	const simple = renderToStaticMarkup(await SubscriptionPlanAllowances({ allowances: [allowance] }));
+	expect(simple).not.toContain("SettingsUI.routingStudioLegacy.window");
+	expect(simple).not.toContain("Common.ui.modelEditor.conditions");
+	const detailed = renderToStaticMarkup(await SubscriptionPlanAllowances({ allowances: [{ ...allowance, window_kind: "rolling", window_count: 5, window_unit: "hour", conditions: "Shared across the team" }] }));
+	expect(detailed).toContain("5 hours");
+	expect(detailed).toContain("Shared across the team");
+});

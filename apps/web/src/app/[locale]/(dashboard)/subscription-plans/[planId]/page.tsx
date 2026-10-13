@@ -90,14 +90,18 @@ export default async function Page({
 	const { planId, locale } = await params;
 	const messages = getSubscriptionPlansMessagesFor(locale);
 
-	const plan = await fetchFrontendSubscriptionPlan(planId);
+	const [plan, terms] = await Promise.all([fetchFrontendSubscriptionPlan(planId), getTranslations("Common.ui.subscriptionCatalog")]);
 
 	if (!plan) {
 		return <SubscriptionPlanDetailShell planId={planId}>{null}</SubscriptionPlanDetailShell>;
 	}
 
 	return (
-		<SubscriptionPlanDetailShell planId={planId} tocItems={[{ id: "main-features", label: messages.detail.mainFeatures }, { id: "included-models", label: messages.detail.includedModels }]}>
+		<SubscriptionPlanDetailShell planId={planId} tocItems={[
+			...(plan.offers?.length ? [{ id: "plan-offers", label: terms("plan_offers") }] : []),
+			...(plan.allowances?.length ? [{ id: "plan-allowances", label: terms("plan_allowances") }] : []),
+			{ id: "main-features", label: messages.detail.mainFeatures }, { id: "included-models", label: terms("plan_model_access") },
+		]}>
 			<SubscriptionPlanOverview plan={plan} messages={messages.detail} />
 		</SubscriptionPlanDetailShell>
 	);
