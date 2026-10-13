@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Info } from "lucide-react";
 import { ProviderLogo } from "../ProviderLogo";
+import { formatSubscriptionPrice, type SubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
 import { PriceRotator } from "./PriceRotator";
 import { useLocale, useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
@@ -71,6 +72,7 @@ function normalizeFrequency(freq: string | null | undefined): string {
 
 function monthlyMultiplier(freq: string): number | null {
 	const f = freq.toLowerCase();
+	if (f.includes("quarter")) return 1 / 3;
 	if (f.includes("month")) return 1;
 	if (f.includes("year") || f.includes("annual")) return 1 / 12;
 	if (f.includes("week")) return 4.345;

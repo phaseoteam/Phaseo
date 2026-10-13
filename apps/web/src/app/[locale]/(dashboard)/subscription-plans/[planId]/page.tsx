@@ -1,3 +1,4 @@
+import { formatSubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
 import SubscriptionPlanDetailShell from "@/components/(data)/subscription-plans/SubscriptionPlanDetailShell";
 import SubscriptionPlanOverview from "@/components/(data)/subscription-plans/SubscriptionPlanOverview";
 import { fetchFrontendSubscriptionPlan } from "@/lib/fetchers/frontend/fetchPublicCatalog";
@@ -43,31 +44,7 @@ export async function generateMetadata(props: {
 	const primaryPrice = plan.prices?.[0];
 	let priceSnippet: string | undefined;
 	if (primaryPrice) {
-		const frequencyAliases: Record<string, string> = {
-			mo: "monthly", month: "monthly", monthly: "monthly",
-			qtr: "quarterly", quarter: "quarterly", quarterly: "quarterly",
-			yr: "yearly", year: "yearly", annual: "yearly", yearly: "yearly",
-			week: "weekly", weekly: "weekly", day: "daily", daily: "daily",
-		};
-		const normalizedFrequency = frequencyAliases[primaryPrice.frequency.trim().toLowerCase()] ?? primaryPrice.frequency;
-		const frequencyLabels: Record<string, string> = {
-			monthly: messages.detail.monthlyFrequency,
-			quarterly: messages.detail.quarterlyFrequency,
-			yearly: messages.detail.yearlyFrequency,
-			weekly: messages.detail.weeklyFrequency,
-			daily: messages.detail.dailyFrequency,
-		};
-		const frequency = frequencyLabels[normalizedFrequency] ?? primaryPrice.frequency;
-		priceSnippet =
-			primaryPrice.frequency === "usage"
-				? messages.metadata.usagePricing
-				: primaryPrice.frequency === "custom"
-					? messages.metadata.customPricing
-					: formatSubscriptionPlanMessage(messages.metadata.fromPricing, {
-							currency: primaryPrice.currency,
-							price: primaryPrice.price,
-							frequency,
-						});
+		priceSnippet = formatSubscriptionPrice(primaryPrice, undefined, { custom: messages.metadata.customPricing, usage: messages.metadata.usagePricing, unknown: "Price unavailable" });
 	}
 
 	const descriptionParts = [

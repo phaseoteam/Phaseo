@@ -1,3 +1,4 @@
+import { fetchSubscriptionCatalogue } from "@/models/subscriptions";
 import { Hono } from "hono";
 import { normalizeCatalogueTier, normalizeCatalogueTiers } from "@/models/catalogue-tiers";
 import { PUBLIC_MODEL_CATALOGUE_CACHE } from "@/cache/catalogue";
@@ -1543,37 +1544,8 @@ publicModelsRouter.get("/:modelId/timeline", async (c) => {
 publicModelsRouter.get("/:modelId/subscription-plans", async (c) => {
 	const modelId = c.req.param("modelId");
 	try {
-		const client = getDataClient(c.env);
-		const v2 = await client.rpc("get_v2_model_subscription_plans", { p_model_slug: modelId });
-		if (!v2.error && (v2.data == null || Array.isArray(v2.data))) {
-			const subscriptionRows = (v2.data ?? []) as Array<Record<string, unknown>>;
-			const labSlugs = Array.from(new Set(
-				subscriptionRows.map((row) => String(row.lab_slug ?? "").trim()).filter(Boolean),
-			));
-			const labResult = labSlugs.length
-				? await client.from("v2_labs").select("lab_slug,name,metadata").in("lab_slug", labSlugs)
-				: { data: [], error: null };
-			if (labResult.error) throw labResult.error;
-			const labsBySlug = new Map(
-				((labResult.data ?? []) as Array<Record<string, unknown>>).map((lab) => [
-					String(lab.lab_slug ?? ""),
-					lab,
-				]),
-			);
-			const grouped = new Map<string, Record<string, unknown>>();
-			for (const row of subscriptionRows) {
-				const planId = String(row.plan_id ?? "").trim(); if (!planId) continue;
-				const labSlug = String(row.lab_slug ?? "").trim();
-				const lab = labsBySlug.get(labSlug);
-				const labMetadata = lab?.metadata && typeof lab.metadata === "object"
-					? lab.metadata as Record<string, unknown>
-					: null;
-				const plan = grouped.get(planId) ?? { plan_id: planId, plan_uuid: row.plan_uuid, name: row.name, organisation_id: labSlug || null, description: row.description, link: row.link, other_info: row.other_info, created_at: row.created_at, updated_at: row.updated_at, organisation: labSlug ? { organisation_id: labSlug, name: String(lab?.name ?? labSlug), colour: labMetadata?.colour ?? null } : null, prices: [], model_info: { model_info: row.model_info, rate_limit: row.rate_limit, other_info: row.model_other_info } };
-				(plan.prices as Array<Record<string, unknown>>).push({ price: row.price, currency: row.currency, frequency: row.frequency }); grouped.set(planId, plan);
-			}
-			return withPublicCache(c.json({ subscription_plans: Array.from(grouped.values()), source: "v2" }), sectionPolicy("subscriptions", modelId));
-		}
-		throw v2.error ?? new Error("V2 subscription query returned an invalid payload");
+		const plans = await fetchSubscriptionCatalogue(getDataClient(c.env), undefined, modelId);
+		return withPublicCache(c.json({ subscription_plans: plans, source: "v2" }), sectionPolicy("subscriptions", modelId));
 	} catch (error) {
 		console.error("[web-api/models] subscription plans failed", { modelId, error });
 		return c.json({ error: "model_subscription_plans_unavailable" }, 503);

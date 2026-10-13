@@ -1,15 +1,12 @@
 "use client";
 
+import { formatSubscriptionPrice, type SubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface RotatingPricingProps {
-	prices?: {
-		price: number;
-		currency: string;
-		frequency: string;
-	}[];
+	prices?: SubscriptionPrice[];
 }
 
 export default function RotatingPricing({ prices = [] }: RotatingPricingProps) {
@@ -27,30 +24,6 @@ export default function RotatingPricing({ prices = [] }: RotatingPricingProps) {
 		return () => clearInterval(interval);
 	}, [priceCount]);
 
-	const formatPrice = (
-		price: number,
-		currency: string,
-		frequency: string
-	) => {
-		const formattedPrice = format.number(price, {
-			style: "currency",
-			currency: currency,
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 2,
-			notation: "standard",
-		});
-
-		const period =
-			frequency === "monthly"
-				? "/mo"
-				: frequency === "yearly"
-				? "/yr"
-				: frequency === "daily"
-				? "/day"
-				: "";
-
-		return `${formattedPrice}${period}`;
-	};
 
 	if (!prices || prices.length === 0) {
 		return null;
@@ -67,11 +40,7 @@ export default function RotatingPricing({ prices = [] }: RotatingPricingProps) {
 					exit={{ opacity: 0, y: -10 }}
 					transition={{ duration: 0.3 }}
 				>
-					{formatPrice(
-						currentPrice.price,
-						currentPrice.currency,
-						currentPrice.frequency
-					)}
+					{formatSubscriptionPrice(currentPrice, (amount, currency) => format.number(amount, { style: "currency", currency, notation: "standard", maximumFractionDigits: 2 }))}
 				</motion.div>
 			</AnimatePresence>
 		</div>

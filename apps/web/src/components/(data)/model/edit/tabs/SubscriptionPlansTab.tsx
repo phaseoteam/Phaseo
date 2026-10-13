@@ -170,7 +170,11 @@ export default function SubscriptionPlansTab({
 
     setCreatingPlan(true)
     try {
-      await createAdminSubscriptionPlan({ plan_uuid, plan_id: planId, name, frequency, price: newPlan.price ?? 0, currency, organisation_id: modelOrganisationId })
+      await createAdminSubscriptionPlan({ plan_uuid, plan_id: planId, name, organisation_id: modelOrganisationId,
+        offer: { billing_interval: ({ monthly: "month", quarterly: "month", yearly: "year", weekly: "week", daily: "day" } as Record<string, string>)[frequency] ?? null,
+          billing_interval_count: frequency === "quarterly" ? 3 : 1, currency,
+          components: [{ component_key: "base", pricing_type: frequency === "custom" ? "custom" : frequency === "usage" ? "usage_based" : newPlan.price === 0 ? "free" : "fixed",
+            amount: frequency === "custom" || frequency === "usage" ? null : newPlan.price, charge_basis: "account" }] } })
       setPlans((prev) =>
         [...prev, newPlan].sort((a, b) =>
           formatPlanLabel(a, frequencyLabel).localeCompare(formatPlanLabel(b, frequencyLabel), undefined, {

@@ -1,3 +1,5 @@
+import SubscriptionPlanAllowances from "./SubscriptionPlanAllowances";
+import SubscriptionPlanOffers from "./SubscriptionPlanOffers";
 import type { SubscriptionPlanDetails } from "@/lib/fetchers/subscription-plans/types";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -22,6 +24,8 @@ export default function SubscriptionPlanOverview({
 
 	return (
 		<div className="space-y-10">
+			<SubscriptionPlanOffers plan={plan} />
+			<SubscriptionPlanAllowances allowances={plan.allowances ?? []} />
 			{/* Features */}
 			<section id="main-features" className="scroll-mt-36 space-y-4">
 				<h2 className="text-xl font-semibold">{messages.mainFeatures}</h2>

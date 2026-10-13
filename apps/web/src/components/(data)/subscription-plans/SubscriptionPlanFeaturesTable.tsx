@@ -24,7 +24,7 @@ export default function SubscriptionPlanFeaturesTable({ features, messages }: Su
 					{features.map((feature) => (
 						<TableRow key={feature.feature_name}>
 							<TableCell className="px-4 py-3 font-medium">{feature.feature_name}</TableCell>
-							<TableCell className="px-4 py-3">{feature.feature_value || "-"}</TableCell>
+							<TableCell className="px-4 py-3">{feature.value_number ?? feature.value_text ?? feature.feature_value ?? (feature.availability === "unknown" ? "Unspecified" : feature.availability) ?? "-"}</TableCell>
 							<TableCell className="min-w-48 px-4 py-3 text-muted-foreground">{feature.feature_description || "-"}</TableCell>
 						</TableRow>
 					))}

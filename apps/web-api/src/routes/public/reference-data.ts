@@ -1,3 +1,4 @@
+import { fetchSubscriptionCatalogue } from "@/models/subscriptions";
 import { Hono } from "hono";
 import { PUBLIC_LIVE_DATA_CACHE } from "@/cache/publicLiveData";
 import { getDataClient } from "@/data/supabase";
@@ -349,35 +350,7 @@ publicReferenceDataRouter.get("/families/:familyId", async (c) => {
 
 publicReferenceDataRouter.get("/subscription-plans", async (c) => {
 	try {
-		const client = getDataClient(c.env);
-		const [{ data, error }, labsResult] = await Promise.all([
-			client.from("v2_subscription_plans")
-				.select("plan_uuid,plan_id,name,lab_slug,description,frequency,price,currency,link,other_info")
-				.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
-				.order("name", { ascending: true }),
-			client.from("v2_labs").select("lab_slug,name,country_code,metadata"),
-		]);
-		if (error) throw error;
-		if (labsResult.error) throw labsResult.error;
-		const labs = new Map((labsResult.data ?? []).map((row) => [row.lab_slug, labOrganisation(row)]));
-		const byPlanId = new Map<string, Record<string, unknown>>();
-		for (const row of data ?? []) {
-			if (!row.plan_id) continue;
-			const plan = byPlanId.get(row.plan_id) ?? {
-				plan_uuid: row.plan_uuid,
-				plan_id: row.plan_id,
-				name: row.name,
-				organisation_id: row.lab_slug,
-				description: row.description,
-				link: row.link,
-				other_info: row.other_info,
-				organisation: labs.get(row.lab_slug) ?? null,
-				prices: [],
-			};
-			(plan.prices as Array<Record<string, unknown>>).push({ frequency: row.frequency, price: row.price, currency: row.currency, plan_uuid: row.plan_uuid });
-			byPlanId.set(row.plan_id, plan);
-		}
-		const subscriptionPlans = Array.from(byPlanId.values()).filter((plan) => Array.isArray(plan.prices) && plan.prices.length > 0);
+		const subscriptionPlans = await fetchSubscriptionCatalogue(getDataClient(c.env));
 		return withPublicCache(c.json({ subscription_plans: subscriptionPlans }), policy("web-api-subscription-plans"));
 	} catch (error) {
 		console.error("[web-api/reference] subscription plans failed", error);
@@ -388,58 +361,8 @@ publicReferenceDataRouter.get("/subscription-plans", async (c) => {
 publicReferenceDataRouter.get("/subscription-plans/:planId", async (c) => {
 	const planId = c.req.param("planId");
 	try {
-		const client = getDataClient(c.env);
-		const { data: planRows, error: planError } = await client
-			.from("v2_subscription_plans")
-			.select("plan_uuid,plan_id,name,lab_slug,description,frequency,price,currency,link,other_info")
-			.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
-			.eq("plan_id", planId);
-		if (planError) throw planError;
-		if (!planRows?.length) return notFound(c, "subscription_plan");
-		const primary = planRows[0];
-		const [featuresResult, modelLinksResult, labResult] = await Promise.all([
-			client.from("v2_subscription_plan_features").select("feature_name,feature_value,feature_description,other_info").or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`).eq("plan_uuid", primary.plan_uuid).order("feature_name", { ascending: true }),
-			client.from("v2_subscription_plan_models").select("model_slug,model_info,rate_limit,other_info").or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`).eq("plan_uuid", primary.plan_uuid).order("model_slug", { ascending: true }),
-			client.from("v2_labs").select("lab_slug,name,country_code,metadata").eq("lab_slug", primary.lab_slug).maybeSingle(),
-		]);
-		if (featuresResult.error) throw featuresResult.error;
-		if (modelLinksResult.error) throw modelLinksResult.error;
-		if (labResult.error) throw labResult.error;
-		const modelSlugs = [...new Set((modelLinksResult.data ?? []).map((row) => row.model_slug).filter(Boolean))];
-		const modelRowsResult = modelSlugs.length > 0
-			? await client.from("v2_models").select("model_slug,name,lab_slug,hidden").in("model_slug", modelSlugs)
-			: { data: [], error: null };
-		if (modelRowsResult.error) throw modelRowsResult.error;
-		const modelRows = new Map((modelRowsResult.data ?? []).map((row) => [row.model_slug, row]));
-		const models = (modelLinksResult.data ?? []).flatMap((row) => {
-			const model = modelRows.get(row.model_slug);
-			if (!model || model.hidden) return [];
-			return [{
-				model_id: row.model_slug,
-				model_info: row.model_info,
-				rate_limit: row.rate_limit,
-				other_info: row.other_info,
-				model: {
-					model_id: model.model_slug,
-					name: model.name,
-					organisation_id: model.lab_slug,
-					organisation_name: model.lab_slug === primary.lab_slug ? labResult.data?.name ?? null : null,
-				},
-			}];
-		});
-		const plan = {
-			plan_uuid: primary.plan_uuid,
-			plan_id: primary.plan_id,
-			name: primary.name,
-			organisation_id: primary.lab_slug,
-			description: primary.description,
-			link: primary.link,
-			other_info: primary.other_info,
-			organisation: labResult.data ? labOrganisation(labResult.data) : null,
-			features: featuresResult.data ?? [],
-			models,
-			prices: planRows.map((row) => ({ price: row.price, currency: row.currency, frequency: row.frequency, plan_uuid: row.plan_uuid })),
-		};
+		const [plan] = await fetchSubscriptionCatalogue(getDataClient(c.env), planId);
+		if (!plan) return notFound(c, "subscription_plan");
 		return withPublicCache(c.json({ subscription_plan: plan }), policy(`web-api-subscription-plan-${encodeURIComponent(planId).replace(/%/g, "")}`));
 	} catch (error) {
 		console.error("[web-api/reference] subscription plan failed", { planId, error });

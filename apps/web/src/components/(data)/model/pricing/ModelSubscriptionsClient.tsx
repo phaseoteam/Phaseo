@@ -13,14 +13,11 @@ import {
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import type { SubscriptionPlan } from "@/lib/fetchers/models/getModelSubscriptionPlans";
+import { formatSubscriptionPrice, type SubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
 import { getLogoLabel } from "@/lib/logos";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
-export type SubscriptionPrice = {
-	price: number;
-	currency: string;
-	frequency: string;
-};
+export type { SubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
 
 type SubscriptionPlanGroup = {
 	organisationId: string;
@@ -80,7 +77,7 @@ function normalizePlanFrequency(value: string | null | undefined): string {
 	return PLAN_FREQUENCY_ALIASES[normalized] ?? normalized;
 }
 
-function getFrequencyLabel(value: string, labels: SubscriptionLabels): string {
+function getFrequencyLabel(value: string | null, labels: SubscriptionLabels): string {
 	const normalized = normalizePlanFrequency(value);
 	if (normalized === "monthly" || normalized === "quarterly" || normalized === "yearly" || normalized === "weekly" || normalized === "daily") {
 		return labels[normalized];
@@ -88,12 +85,13 @@ function getFrequencyLabel(value: string, labels: SubscriptionLabels): string {
 	return labels.other;
 }
 
-function isNonFixedPlanFrequency(value: string): boolean {
+function isNonFixedPlanFrequency(value: string | null): boolean {
 	const normalized = normalizePlanFrequency(value);
 	return normalized === "usage" || normalized === "custom";
 }
 
 function toMonthlyEquivalent(price: SubscriptionPrice): number | null {
+	if (price.price == null) return null;
 	const raw = Number(price.price);
 	if (!Number.isFinite(raw) || raw < 0) return null;
 	const normalized = normalizePlanFrequency(price.frequency);
@@ -112,12 +110,14 @@ function getCurrencySortRank(currency: string | null | undefined): number {
 type NumberFormatter = ReturnType<typeof useDisplayFormatters>["number"];
 
 function formatPlanPriceValue(price: SubscriptionPrice, formatNumber: NumberFormatter, labels: SubscriptionLabels): string {
+	if (price.components?.length) return formatSubscriptionPrice(price, (amount, currency) => formatNumber(amount, { style: "currency", currency, notation: "standard", maximumFractionDigits: 2 }), { custom: labels.customPricing, usage: labels.usageBased, unknown: "Price unavailable" });
+	if (price.price == null && price.frequency !== "usage" && price.frequency !== "custom") return "Price unavailable";
 	const normalized = normalizePlanFrequency(price.frequency);
 	if (normalized === "usage") return labels.usageBased;
 	if (normalized === "custom") return labels.customPricing;
 
 	const currency = String(price.currency || "USD").toUpperCase();
-	return formatNumber(price.price, {
+	return formatNumber(price.price ?? 0, {
 		style: "currency",
 		currency,
 		minimumFractionDigits: 0,
@@ -130,7 +130,7 @@ function formatPlanPriceDisplay(price: SubscriptionPrice, formatNumber: NumberFo
 	value: string;
 	frequency: string | null;
 } {
-	if (isNonFixedPlanFrequency(price.frequency)) {
+	if (price.components?.length || isNonFixedPlanFrequency(price.frequency)) {
 		return {
 			value: formatPlanPriceValue(price, formatNumber, labels),
 			frequency: null,
@@ -150,6 +150,7 @@ export function dedupeSubscriptionPlanPrices(
 		new Map(
 			prices.map((price) => [
 				[
+					price.offer_uuid ?? "",
 					normalizePlanFrequency(price.frequency),
 					String(price.currency || "USD").trim().toUpperCase(),
 					Number(price.price),
@@ -177,7 +178,7 @@ function sortSubscriptionPlanPrices(prices: SubscriptionPrice[]): SubscriptionPr
 		if (aMonthly == null && bMonthly != null) return 1;
 		if (aMonthly != null && bMonthly == null) return -1;
 
-		if (a.price !== b.price) return a.price - b.price;
+		if (a.price !== b.price) return Number(a.price ?? Infinity) - Number(b.price ?? Infinity);
 
 		const aFrequencyOrder =
 			PLAN_FREQUENCY_SORT_ORDER[normalizePlanFrequency(a.frequency)] ?? 99;
@@ -221,7 +222,7 @@ function getPlanSortKey(prices: SubscriptionPrice[]): {
 	const sorted = sortSubscriptionPlanPrices(
 		prices.filter(
 			(price) =>
-				Number.isFinite(Number(price.price)) &&
+				(price.components?.length || price.price != null) && Number.isFinite(Number(price.price)) &&
 				Number(price.price) >= 0 &&
 				Boolean(String(price.currency ?? "").trim()) &&
 				!isNonFixedPlanFrequency(price.frequency),
@@ -263,7 +264,7 @@ function getStartingPriceText(plans: SubscriptionPlan[], formatNumber: NumberFor
 		plans.flatMap((plan) =>
 			(plan.prices ?? []).filter(
 				(price) =>
-					Number.isFinite(Number(price.price)) && Number(price.price) >= 0,
+					(price.components?.length || price.price != null) && Number.isFinite(Number(price.price)) && Number(price.price) >= 0,
 			),
 		),
 	);
@@ -284,7 +285,7 @@ function getVisibleStartingPriceSortKey(plans: SubscriptionPlan[]): {
 		plans.flatMap((plan) =>
 			(plan.prices ?? []).filter(
 				(price) =>
-					Number.isFinite(Number(price.price)) && Number(price.price) >= 0,
+					(price.components?.length || price.price != null) && Number.isFinite(Number(price.price)) && Number(price.price) >= 0,
 			),
 		),
 	)[0];
@@ -462,7 +463,7 @@ export default function ModelSubscriptionsClient({
 									const sortedPrices = sortSubscriptionPlanPricesForDisplay(
 										(plan.prices ?? []).filter(
 											(price) =>
-												Number.isFinite(Number(price.price)) &&
+												(price.components?.length || price.price != null) && Number.isFinite(Number(price.price)) &&
 												Number(price.price) >= 0,
 										),
 									);

@@ -1,3 +1,4 @@
+import { fetchSubscriptionCatalogue } from "@/models/subscriptions";
 import { catalogRegistries, registrySchema } from "./catalogRegistries";
 import { Hono } from "hono";
 import { PUBLIC_MODEL_CATALOGUE_CACHE_TAGS } from "@/cache/catalogue";
@@ -15,7 +16,7 @@ const catalogMutationSchemas = {
 	organisations: z.object({ organisation_id: z.string().trim().min(1).optional(), name: z.string().trim().min(1), description: z.string().nullable().optional(), country_code: z.string().trim().min(2).max(3).nullable().optional(), subdivision_code: z.string().trim().regex(/^[A-Z]{2}-[A-Z0-9]{1,3}$/).nullable().optional(), colour: z.string().nullable().optional(), social_links: z.array(z.object({ platform: z.string().trim().min(1), url: z.url() })).default([]) }),
 	providers: z.object({ parent_provider_slug: z.string().trim().min(1).nullable().optional(), offer_scope: z.enum(["global", "regional", "specialized"]).optional(), offer_label: z.string().trim().nullable().optional(), base_url: z.url().nullable().optional(), residency_mode: z.enum(["unknown", "provider_managed", "customer_selectable", "account_selected"]).optional(), default_data_regions: z.array(z.string().trim().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/)).max(100).nullable().optional(), api_provider_id: z.string().trim().min(1).optional(), api_provider_name: z.string().trim().min(1), description: z.string().nullable().optional(), link: z.string().nullable().optional(), country_code: z.string().trim().min(2).max(3).nullable().optional(), subdivision_code: z.string().trim().regex(/^[A-Z]{2}-[A-Z0-9]{1,3}$/).nullable().optional(), default_execution_regions: z.array(z.string().trim().min(1)).optional(), byok_available: z.boolean().optional(), credential_mode: z.enum(["managed_and_byok", "byok_only"]).optional(), prompt_training_policy: z.string().nullable().optional(), prompt_training_notes: z.string().nullable().optional(), prompt_training_source_url: z.string().nullable().optional(), data_policy_tier: z.string().nullable().optional(), data_policy_confidence: z.string().nullable().optional(), data_policy_contract_mode: z.string().nullable().optional(), data_policy_contract_notes: z.string().nullable().optional(), status: z.string().nullable().optional() }),
 	benchmarks: z.object({ id: z.string().trim().min(1).optional(), name: z.string().trim().min(1), category: z.string().nullable().optional(), link: z.string().nullable().optional(), ascending_order: z.boolean().nullable().optional() }),
-	"subscription-plans": z.object({ plan_uuid: z.uuid().optional(), plan_id: z.string().trim().min(1), name: z.string().trim().min(1), organisation_id: z.string().nullable().optional(), description: z.string().nullable().optional(), frequency: z.string().nullable().optional(), price: z.number().finite().nullable().optional(), currency: z.string().nullable().optional(), link: z.string().nullable().optional(), other_info: z.record(z.string(), z.unknown()).default({}) }),
+	"subscription-plans": z.object({ plan_uuid: z.uuid().optional(), plan_id: z.string().trim().min(1), name: z.string().trim().min(1), organisation_id: z.string().nullable().optional(), description: z.string().nullable().optional(), audience: z.enum(["individual", "team", "enterprise", "unknown"]).optional(), status: z.enum(["active", "retired"]).optional(), link: z.string().nullable().optional(), other_info: z.record(z.string(), z.unknown()).default({}), offer: z.object({ offer_uuid: z.uuid().optional(), billing_interval: z.enum(["day", "week", "month", "year"]).nullable().optional(), billing_interval_count: z.number().int().positive().default(1), currency: z.string().regex(/^[A-Z]{3}$/).nullable().optional(), components: z.array(z.object({ price_uuid: z.uuid().optional(), component_key: z.string().min(1), pricing_type: z.enum(["free", "fixed", "starting_at", "custom", "usage_based", "unknown"]), amount: z.number().finite().nonnegative().nullable(), charge_basis: z.enum(["account", "seat", "unit"]).default("account"), unit: z.string().optional() })).min(1) }).optional() }),
 	models: z.object({ modelId: z.string().trim().min(1).optional(), name: z.string().trim().min(1), organisationId: z.string().trim().min(1).optional(), familyId: z.string().nullable().optional(), status: z.string().nullable().optional(), hidden: z.boolean().optional(), inputTypes: z.union([z.string(), z.array(z.string())]).nullable().optional(), outputTypes: z.union([z.string(), z.array(z.string())]).nullable().optional(), announcementDate: z.string().nullable().optional(), releaseDate: z.string().nullable().optional(), deprecationDate: z.string().nullable().optional(), retirementDate: z.string().nullable().optional(), license: z.string().nullable().optional(), previousModelId: z.string().nullable().optional(), replacementModelId: z.string().nullable().optional() }),
 } as const;
 
@@ -421,12 +422,13 @@ accountModelsRouter.get("/catalog/registries/:resource", async (c) => {
   if (!admin.context) return c.json({ error: "unauthorized" }, admin.status, PRIVATE_NO_STORE_HEADERS);
   const resource = c.req.param("resource");
   const registry = Object.hasOwn(catalogRegistries, resource) ? catalogRegistries[resource] : undefined;
-  const lookups: Record<string, { table: string; keys: string[] }> = { organisations: { table: "v2_labs", keys: ["lab_slug"] }, providers: { table: "v2_providers", keys: ["provider_slug"] }, routes: { table: "v2_model_provider_routes", keys: ["provider_model_id"] } };
+  const lookups: Record<string, { table: string; keys: string[] }> = { models: { table: "v2_models", keys: ["model_slug"] }, organisations: { table: "v2_labs", keys: ["lab_slug"] }, providers: { table: "v2_providers", keys: ["provider_slug"] }, routes: { table: "v2_model_provider_routes", keys: ["provider_model_id"] } };
   const source = registry ?? (Object.hasOwn(lookups, resource) ? lookups[resource] : undefined);
   if (!source) return c.json({ error: "unknown_registry" }, 404, PRIVATE_NO_STORE_HEADERS);
   const page = Math.max(1, Math.min(100000, Number(c.req.query("page")) || 1));
   const q = (c.req.query("q") ?? "").replace(/[^a-zA-Z0-9 _:/.-]/g, "").trim().slice(0, 100);
   let query = admin.context.client.from(source.table).select("*", { count: "exact" });
+  if (resource === "plans") query = query.neq("status", "merged");
   if (q) {
     const fields = registry ? registry.fields.filter((f) => f.type === "text" && !f.reference).map((f) => f.key) : [source.keys[0], resource === "routes" ? "provider_model_slug" : "name"];
     if (fields.length) query = query.or(fields.map((key) => `${key}.ilike.%${q}%`).join(","));
@@ -542,7 +544,7 @@ accountModelsRouter.get("/catalog/model-form-options", async (c) => {
 		client.from("v2_model_families").select("family_id:family_slug,family_name:name").order("name", { ascending: true }),
 		client.from("v2_benchmarks").select("id:benchmark_id,name").order("name", { ascending: true }),
 		client.from("v2_models").select("model_id:model_slug,name").order("name", { ascending: true }).limit(500),
-		client.from("v2_subscription_plans").select("plan_uuid,plan_id,name,frequency,price,currency,organisation_id:lab_slug").order("name", { ascending: true }).order("frequency", { ascending: true }).limit(1200),
+		client.from("v2_subscription_plans").select("plan_uuid,plan_id,name,organisation_id:lab_slug,audience,status").eq("status", "active").order("name", { ascending: true }).limit(1200),
 	]);
 	if ([organisations, providers, families, benchmarks, previousModels, subscriptionPlans].some((result) => result.error)) return c.json({ error: "admin_catalog_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ organisations: organisations.data ?? [], providers: (providers.data ?? []).map((provider) => ({ ...provider, api_provider_name: [provider.api_provider_name, provider.offer_label].filter(Boolean).join(" · ") })), families: families.data ?? [], benchmarks: benchmarks.data ?? [], previousModels: previousModels.data ?? [], subscriptionPlans: subscriptionPlans.data ?? [] }, 200, PRIVATE_NO_STORE_HEADERS);
@@ -622,7 +624,7 @@ accountModelsRouter.get("/:modelId/source", async (c) => {
 			client.from("v2_models").select("model_slug,name,status").contains("metadata", { previous_model_id: modelId }).order("model_slug"),
 			client.from("v2_catalogue_admin_changes").select("change_id,resource_type,action,before_state,after_state,created_at").eq("resource_id", modelId).order("created_at", { ascending: false }).limit(100),
 			fetchModelPricingSources(c.env, [modelId], true),
-			client.from("v2_subscription_plan_models").select("*,plan:v2_subscription_plans(*)").eq("model_slug", modelId),
+			fetchSubscriptionCatalogue(client, undefined, modelId, true).then((data) => ({ data, error: null })),
             client.from("v2_benchmark_results").select("*,id:result_id").eq("model_slug", modelId),
             client.from("v2_catalogue_row_history").select("change_id:event_id,resource_type:table_name,action:operation,before_state,after_state,created_at:recorded_at").eq("model_slug", modelId).neq("operation", "BASELINE").order("event_id", { ascending: false }).limit(100),
 		]);
@@ -653,7 +655,7 @@ accountModelsRouter.get("/:modelId/source", async (c) => {
 			previous_model_id: rawModel.metadata?.previous_model_id ?? null,
 			replacement_model_id: rawModel.replacement_model_slug ?? rawModel.metadata?.replacement_model_id ?? null,
 		} : null;
-		return c.json({ source: { requestedModelId, canonicalApiId: modelId, internalModelId: modelId, model: editorModel, links: links.data ?? [], details: details.data ?? [], notice: notice.data ?? null, aliases: aliases.data ?? [], successors: successors.data ?? [], history: [...(history.data ?? []), ...(rowHistory.data ?? []).map((entry) => ({ ...entry, change_id: `row-${entry.change_id}` }))].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 100), providerRows: pricingSource.providerRows, pricingRules: pricingSource.pricingRows, subscriptionPlans: (plans.data ?? []).map((relation) => ({ ...relation.plan, effective_to: relation.effective_to, model_info: { model_info: relation.model_info, rate_limit: relation.rate_limit, other_info: relation.other_info } })) } }, 200, PRIVATE_NO_STORE_HEADERS);
+		return c.json({ source: { requestedModelId, canonicalApiId: modelId, internalModelId: modelId, model: editorModel, links: links.data ?? [], details: details.data ?? [], notice: notice.data ?? null, aliases: aliases.data ?? [], successors: successors.data ?? [], history: [...(history.data ?? []), ...(rowHistory.data ?? []).map((entry) => ({ ...entry, change_id: `row-${entry.change_id}` }))].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 100), providerRows: pricingSource.providerRows, pricingRules: pricingSource.pricingRows, subscriptionPlans: plans.data ?? [] } }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) {
 		console.error("[web-api/account/models] source failed", { requestedModelId, error });
 		return c.json({ error: "admin_model_source_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
@@ -676,7 +678,9 @@ async function runCatalogMutation(c: any, resource: keyof typeof catalogMutation
     ? await admin.context.client.rpc("mutate_v2_admin_provider_offer", { p_actor_user_id: admin.context.user.id, p_action: action, p_provider_slug: resourceId, p_payload: payload })
     : resource === "models"
       ? await admin.context.client.rpc("mutate_v2_admin_model_with_successor", { p_actor_user_id: admin.context.user.id, p_action: action, p_model_slug: resourceId, p_payload: payload })
-      : await admin.context.client.rpc("mutate_v2_admin_catalogue", { p_actor_user_id: admin.context.user.id, p_resource_type: resource, p_action: action, p_resource_id: resourceId, p_payload: payload });
+      : resource === "subscription-plans"
+        ? await admin.context.client.rpc("mutate_v2_admin_subscription_plan", { p_actor_user_id: admin.context.user.id, p_action: action, p_plan_uuid: resourceId, p_payload: payload })
+        : await admin.context.client.rpc("mutate_v2_admin_catalogue", { p_actor_user_id: admin.context.user.id, p_resource_type: resource, p_action: action, p_resource_id: resourceId, p_payload: payload });
 	if (result.error) return c.json({ error: "admin_catalogue_mutation_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
 	const cache = await purgeModelCatalogueCache(c);
 	return c.json({ success: true, record: result.data, cache }, 200, PRIVATE_NO_STORE_HEADERS);
