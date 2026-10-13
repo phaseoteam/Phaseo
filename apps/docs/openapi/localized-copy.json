@@ -599,7 +599,7 @@
 		"Provider selector. Use a string for a single provider, or routing options such as `{ \"only\": [\"groq\"] }`.": {
 			"es": "Selector del proveedor. Usa una cadena para indicar un solo proveedor u opciones de enrutamiento como `{ \"only\": [\"groq\"] }`.",
 			"fr": "Sélecteur de fournisseur. Utilisez une chaîne pour un seul fournisseur ou des options de routage comme `{ \"only\": [\"groq\"] }`.",
-			"de": "Anbieterauswahl. Verwenden Sie für einen einzelnen Anbieter eine Zeichenfolge oder Routing-Optionen wie `{ \"only\": [\"groq\"] }`.",
+			"de": "Anbieterauswahl. Verwende für einen einzelnen Anbieter eine Zeichenfolge oder Routing-Optionen wie `{ \"only\": [\"groq\"] }`.",
 			"pt-BR": "Seletor de provedor. Use uma string para um único provedor ou opções de roteamento como `{ \"only\": [\"groq\"] }`.",
 			"hi": "प्रदाता चयनकर्ता। एकल प्रदाता के लिए string या `{ \"only\": [\"groq\"] }` जैसे रूटिंग विकल्पों का उपयोग करें।",
 			"ja": "プロバイダー選択子です。単一のプロバイダーには文字列を、ルーティングオプションには `{ \"only\": [\"groq\"] }` のような値を使います。",
@@ -4259,7 +4259,7 @@
 		"Provide exactly one of `template` or `scopes`.": {
 			"es": "Proporciona exactamente uno de estos campos: `template` o `scopes`.",
 			"fr": "Fournissez exactement l’un des champs suivants : `template` ou `scopes`.",
-			"de": "Geben Sie genau eines der Felder `template` oder `scopes` an.",
+			"de": "Gib genau eines der Felder `template` oder `scopes` an.",
 			"pt-BR": "Forneça exatamente um dos campos: `template` ou `scopes`.",
 			"hi": "`template` या `scopes` में से ठीक एक दें।",
 			"ja": "`template` または `scopes` のいずれか一方だけを指定してください。",

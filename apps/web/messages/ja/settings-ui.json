@@ -1254,8 +1254,7 @@
 	"settingsCopy": {
 		"byok": {
 			"viewValidModels": "利用可能なモデルを表示",
-			"docsPrefix": "詳細については",
-			"docsSuffix": "をご覧ください。",
+			"docsLink": "詳細については<link>{label}</link>をご覧ください。",
 			"keepAllCredentials": "既存の認証情報を保持するには、すべての欄を空欄にしてください。",
 			"keepBothCredentials": "既存の認証情報を保持するには、両方の欄を空欄にしてください。",
 			"addDeployment": "デプロイメントを追加",
@@ -1372,7 +1371,7 @@
 	},
 	"settingsRouteCopy": {
 		"oauthIntegrationsDescription": "Phaseo アカウントにアクセスできるサードパーティアプリを管理します。アクセスはいつでも取り消せます。",
-		"requestAttributionDocs": "アトリビューションのドキュメントをリクエスト",
+		"requestAttributionDocs": "リクエストのアトリビューションに関するドキュメント",
 		"routingGuide": "ルーティングガイド",
 		"notSignedIn": "ログインしていません。"
 	},

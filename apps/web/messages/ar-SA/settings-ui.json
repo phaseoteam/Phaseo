@@ -1254,8 +1254,7 @@
 	"settingsCopy": {
 		"byok": {
 			"viewValidModels": "عرض النماذج المتاحة",
-			"docsPrefix": "راجع",
-			"docsSuffix": "لمزيد من المعلومات.",
+			"docsLink": "راجع <link>{label}</link> لمزيد من المعلومات.",
 			"keepAllCredentials": "اترك جميع الحقول فارغة للاحتفاظ ببيانات الاعتماد الحالية.",
 			"keepBothCredentials": "اترك كلا الحقلين فارغين للاحتفاظ ببيانات الاعتماد الحالية.",
 			"addDeployment": "إضافة عملية نشر",

@@ -1254,8 +1254,7 @@
 	"settingsCopy": {
 		"byok": {
 			"viewValidModels": "Ver modelos compatibles",
-			"docsPrefix": "Consulta",
-			"docsSuffix": "para obtener más información.",
+			"docsLink": "Consulta <link>{label}</link> para obtener más información.",
 			"keepAllCredentials": "Deja todos los campos en blanco para conservar las credenciales actuales.",
 			"keepBothCredentials": "Deja ambos campos en blanco para conservar las credenciales actuales.",
 			"addDeployment": "Añadir implementación",
@@ -1372,7 +1371,7 @@
 	},
 	"settingsRouteCopy": {
 		"oauthIntegrationsDescription": "Administra las aplicaciones de terceros que tienen acceso a tu cuenta de Phaseo. Puedes revocar el acceso en cualquier momento.",
-		"requestAttributionDocs": "Solicitar documentación sobre atribución",
+		"requestAttributionDocs": "Documentación sobre la atribución de solicitudes",
 		"routingGuide": "Guía de enrutamiento",
 		"notSignedIn": "No has iniciado sesión."
 	},

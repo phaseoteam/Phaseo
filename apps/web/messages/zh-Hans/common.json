@@ -1557,7 +1557,7 @@
 			"disableLoop": "关闭循环",
 			"enableLoop": "开启循环",
 			"muted": "已静音",
-			"unsupportedVideo": "您的浏览器不支持视频播放。",
+			"unsupportedVideo": "你的浏览器不支持视频播放。",
 			"mediaDidNotStart": "媒体未能开始加载。源可能不可用。",
 			"playbackStalled": "播放已停止。音频源可能已过期。",
 			"playbackError": "播放错误（{code}）",
@@ -2060,7 +2060,7 @@
 		},
 		"externalLinkDialog": {
 			"title": "外部链接提醒",
-			"description": "您即将离开我们的网站。我们会尽力验证网站中的每个链接，但无法保证外部网站的内容或安全性。请自行判断是否继续。",
+			"description": "你即将离开我们的网站。我们会尽力验证网站中的每个链接，但无法保证外部网站的内容或安全性。请自行判断是否继续。",
 			"cancel": "取消",
 			"continue": "继续"
 		},
@@ -2191,7 +2191,7 @@
 			"priceCurrency": "价格（{currency}）",
 			"conditionsConditions": "条件 · {conditions}",
 			"scheduleAndAvailabilityStatus": "计划与可用性 · {status}",
-			"timesUseYourLocalTimezoneTimezone": "时间使用您的本地时区（{timezone}）。",
+			"timesUseYourLocalTimezoneTimezone": "时间使用你的本地时区（{timezone}）。",
 			"providerRouteSettings": "{provider}路由设置",
 			"enterAPrice": "输入价格",
 			"addAtLeastOneChargeBeforeSaving": "保存前请至少添加一个收费项。",

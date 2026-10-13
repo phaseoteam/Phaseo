@@ -145,6 +145,46 @@ function translationDamage(
 		: null;
 }
 
+// Catalogs and translated content address the reader as the docs do: du in German and 你 in
+// Simplified Chinese. Mid-sentence, a capitalised Sie, Ihnen or Ihr… can only be the formal
+// "you"; at the start of a sentence it can also mean "they", so that position is not checked.
+const GERMAN_FORMAL_YOU = /(?<=[\p{L}\p{N},)][^\S\r\n]+)(?:Sie|Ihnen|Ihr(?:e|en|em|er|es)?)(?!\p{L})/u;
+const TRANSLATED_CONTENT_DIRECTORIES = [
+	"../src/content/help/locales/",
+	"../src/content/announcements/locales/",
+	"../src/lib/content/migration-locales/",
+];
+
+function formalAddress(locale: CatalogLocale, message: string): string | null {
+	if (locale === "de-DE" && GERMAN_FORMAL_YOU.test(message)) {
+		return "addresses the reader as Sie; use du, as the docs do";
+	}
+	if (locale === "zh-Hans" && message.includes("您")) {
+		return "addresses the reader as 您; use 你, as the docs do";
+	}
+	return null;
+}
+
+function validateTranslatedContentAddress(): string[] {
+	const issues: string[] = [];
+	for (const directory of TRANSLATED_CONTENT_DIRECTORIES) {
+		for (const locale of ["de-DE", "zh-Hans"] as const) {
+			const root = fileURLToPath(new URL(`${directory}${locale}/`, import.meta.url));
+			const files = readdirSync(root, { encoding: "utf8", recursive: true }).filter((file) =>
+				/\.(?:md|mdx|ts)$/.test(file),
+			);
+			for (const file of files) {
+				const lines = readFileSync(join(root, file), "utf8").split("\n");
+				const line = lines.findIndex((text) => formalAddress(locale, text));
+				if (line >= 0) {
+					issues.push(`${directory.slice(3)}${locale}/${file}:${line + 1}: ${formalAddress(locale, lines[line])}`);
+				}
+			}
+		}
+	}
+	return issues;
+}
+
 function readMessageFile(path: string): Map<string, unknown> {
 	return flattenMessages(JSON.parse(readFileSync(path, "utf8")) as unknown);
 }
@@ -235,6 +275,8 @@ function validateFullLocaleCatalogs(): string[] {
 						translatedElements,
 					);
 					if (damage) issues.push(`${locale}/${filename}:${key}: ${damage}`);
+					const address = formalAddress(locale, message);
+					if (address) issues.push(`${locale}/${filename}:${key}: ${address}`);
 					const sourceArguments = collectIcuArguments(sourceElements);
 					const translatedArguments = collectIcuArguments(translatedElements);
 					const missingArguments = [...sourceArguments].filter(
@@ -268,6 +310,11 @@ assertValidCatalogs();
 const fullCatalogIssues = validateFullLocaleCatalogs();
 if (fullCatalogIssues.length > 0) {
 	throw new Error(`Invalid full locale catalogs:\n- ${fullCatalogIssues.join("\n- ")}`);
+}
+
+const contentAddressIssues = validateTranslatedContentAddress();
+if (contentAddressIssues.length > 0) {
+	throw new Error(`Invalid translated content:\n- ${contentAddressIssues.join("\n- ")}`);
 }
 
 const profileSource = getProfileMessages("en-GB");
@@ -308,5 +355,6 @@ process.stdout.write(
 	`Localisation catalogs valid: ${catalogLocales.join(", ")}\n` +
 	`Full message catalogs valid: ${translationLocales.length} locales, ${sourceFilesCount} files each\n` +
 		`Profile catalogs valid: ${publicLocales.length} locales\n` +
+		`Translated help, announcement and migration content uses du and 你\n` +
 		`Apple App Store matrix coverage: ${appleCatalogCount}/${appleAppStoreLocales.length} locales\n`,
 );

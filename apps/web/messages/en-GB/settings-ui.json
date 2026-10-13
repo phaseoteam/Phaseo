@@ -1254,8 +1254,7 @@
 	"settingsCopy": {
 		"byok": {
 			"viewValidModels": "View valid models",
-			"docsPrefix": "See",
-			"docsSuffix": "for more information.",
+			"docsLink": "See <link>{label}</link> for more information.",
 			"keepAllCredentials": "Leave all fields blank to keep existing credentials.",
 			"keepBothCredentials": "Leave both fields blank to keep existing credentials.",
 			"addDeployment": "Add deployment",

@@ -9,7 +9,7 @@
 		"getApiKey": "API-Schlüssel erhalten",
 		"viewGithub": "GitHub öffnen",
 		"openModelDatabase": "Offener Modellkatalog, einheitliches Gateway",
-		"openModelDatabaseDescription": "Durchsuchen Sie den gesamten Modellkatalog und filtern Sie vor dem Start auf Modelle mit einer aktiven Gateway-Route.",
+		"openModelDatabaseDescription": "Durchsuche den gesamten Modellkatalog und filtere vor dem Start auf Modelle mit einer aktiven Gateway-Route.",
 		"transparentPricing": "Klare Preise heute. Weniger Zusatzkosten morgen.",
 		"viewPricing": "Preise ansehen",
 		"usePricingCalculator": "Preiskalkulator verwenden",
@@ -456,44 +456,44 @@
 	},
 	"faq": {
 		"title": "FAQ zu KI-Modellkatalog und Gateway",
-		"intro": "Praktische Antworten zum Vergleichen von Modellen, zu den Daten und zur Nutzung des Gateways. Keine Antwort gefunden? <support>Kontaktieren Sie unser Team</support>.",
+		"intro": "Praktische Antworten zum Vergleichen von Modellen, zu den Daten und zur Nutzung des Gateways. Keine Antwort gefunden? <support>Kontaktiere unser Team</support>.",
 		"metadataDescription": "Antworten zum Entdecken von KI-Modellen und Anbietern, zum Vergleichen von Preisen und Benchmarks sowie zur Nutzung des Phaseo Gateways.",
 		"items": [
 			{
 				"question": "Wie kann ich KI-Modelle auf Phaseo vergleichen?",
-				"answer": "Beginnen Sie im <models>Modellkatalog</models> und öffnen Sie anschließend eine Modellseite, um Preise, Anbieter, Benchmark-Ergebnisse, Latenzsignale und Kompatibilitätsdetails zu vergleichen. Die angezeigten Informationen hängen von den verfügbaren Daten ab."
+				"answer": "Beginne im <models>Modellkatalog</models> und öffne anschließend eine Modellseite, um Preise, Anbieter, Benchmark-Ergebnisse, Latenzsignale und Kompatibilitätsdetails zu vergleichen. Die angezeigten Informationen hängen von den verfügbaren Daten ab."
 			},
 			{
 				"question": "Welche Informationen enthält eine Modellseite?",
-				"answer": "Eine Modellseite bündelt die wichtigen Fakten zu einem Modell: Ersteller, verfügbare Anbieter, veröffentlichte Preise, Benchmark-Abdeckung und Gateway-Verfügbarkeit. Über die Tabs können Sie Preise, Anbieter, Leistung und Schnellstartdetails vertiefen."
+				"answer": "Eine Modellseite bündelt die wichtigen Fakten zu einem Modell: Ersteller, verfügbare Anbieter, veröffentlichte Preise, Benchmark-Abdeckung und Gateway-Verfügbarkeit. Über die Tabs kannst du Preise, Anbieter, Leistung und Schnellstartdetails vertiefen."
 			},
 			{
 				"question": "Wie berechnet Phaseo Modellpreise?",
-				"answer": "Phaseo speichert Zähler, Einheitengröße, Währung, Tarif und Gültigkeitszeiträume jeder Anbieterroute. Eingabe- und Ausgaberaten bleiben getrennt; Tokenpreise werden zum Vergleich pro 1 Mio. Token normalisiert. Lesen Sie die <pricingMethodology>Preismethodik</pricingMethodology> oder verwenden Sie den <calculator>Preiskalkulator</calculator>."
+				"answer": "Phaseo speichert Zähler, Einheitengröße, Währung, Tarif und Gültigkeitszeiträume jeder Anbieterroute. Eingabe- und Ausgaberaten bleiben getrennt; Tokenpreise werden zum Vergleich pro 1 Mio. Token normalisiert und nicht zu einem kombinierten Gesamtpreis zusammengefasst. Lies die <pricingMethodology>Preismethodik</pricingMethodology> oder gib deine eigenen Token-Mengen im <calculator>Preiskalkulator</calculator> ein."
 			},
 			{
 				"question": "Was bedeutet Gateway-Verfügbarkeit?",
-				"answer": "Gateway-Verfügbarkeit beschreibt, ob Phaseo aktuell eine geeignete Route für ein Modell besitzt. Sie ist unabhängig von Qualität oder Benchmark-Leistung. Anbieterstatus können sich ändern; prüfen Sie vor einem Produktionseinsatz die Anbieter- und Verfügbarkeitsinformationen."
+				"answer": "Gateway-Verfügbarkeit beschreibt, ob Phaseo aktuell eine geeignete Route für ein Modell besitzt. Sie ist unabhängig von Qualität oder Benchmark-Leistung. Anbieterstatus können sich ändern; prüfe vor einem Produktionseinsatz die Anbieter- und Verfügbarkeitsinformationen."
 			},
 			{
 				"question": "Kann ich Phaseo als KI-Gateway nutzen?",
-				"answer": "Ja. Phaseo Gateway stellt eine OpenAI-kompatible Schnittstelle für unterstützte Modelle und Anbieter bereit. Erstellen Sie einen API-Schlüssel, wählen Sie ein Modell und behalten Sie dabei die Wahl von Modell und Anbieter."
+				"answer": "Ja. Phaseo Gateway stellt eine OpenAI-kompatible Schnittstelle für unterstützte Modelle und Anbieter bereit. Erstelle einen API-Schlüssel, wähle ein Modell und nutze dieselbe Integration, während du die Wahl von Modell und Anbieter behältst."
 			},
 			{
 				"question": "Kann ich eigene Anbieter-API-Schlüssel verwenden?",
-				"answer": "Ja. Mit eigenen Anbieterschlüsseln behalten Sie die direkte Anbieterbeziehung und Abrechnung und nutzen weiterhin Routing, Zustandsüberwachung und Richtlinien von Phaseo."
+				"answer": "Ja. Mit eigenen Anbieterschlüsseln behältst du die direkte Anbieterbeziehung und Abrechnung und nutzt weiterhin Routing, Zustandsüberwachung und Richtlinien von Phaseo."
 			},
 			{
 				"question": "Welche Anbieter und Modelltypen kann ich erkunden?",
-				"answer": "Durchsuchen Sie den <providers>Anbieterkatalog</providers> oder filtern Sie Modelle nach Fähigkeiten wie Chat, Embeddings, Bild, Audio, Video und Moderation. Auf einer Anbieterseite sehen Sie den aktuell gelisteten Modellkatalog."
+				"answer": "Durchsuche den <providers>Anbieterkatalog</providers> oder filtere Modelle nach Fähigkeiten wie Chat, Embeddings, Bild, Audio, Video und Moderation. Auf einer Anbieterseite siehst du den aktuell gelisteten Modellkatalog."
 			},
 			{
 				"question": "Wie werden Benchmarks und Leistungsdaten behandelt?",
-				"answer": "Benchmarkwerte werden zusammen mit Benchmark und Methodik angezeigt, damit ihr Kontext erhalten bleibt. Lesen Sie, <benchmarkMethodology>wie Phaseo KI-Benchmarks normalisiert</benchmarkMethodology> und <performanceMethodology>wie Latenz und Durchsatz gemessen werden</performanceMethodology>, bevor Sie eine Produktionsentscheidung auf einen einzelnen Wert stützen."
+				"answer": "Benchmarkwerte werden zusammen mit Benchmark und Methodik angezeigt, damit ihr Kontext erhalten bleibt. Lies, <benchmarkMethodology>wie Phaseo KI-Benchmarks normalisiert</benchmarkMethodology> und <performanceMethodology>wie Latenz und Durchsatz gemessen werden</performanceMethodology>, bevor du eine Produktionsentscheidung auf einen einzelnen Wert stützt."
 			},
 			{
 				"question": "Was soll ich tun, wenn ein Eintrag falsch oder unvollständig wirkt?",
-				"answer": "Nutzen Sie die <contribute>Beitragsseite</contribute>, um eine Korrektur zu melden oder fehlende Informationen zu ergänzen. Genaue, quellenbasierte Meldungen halten den Katalog aktuell."
+				"answer": "Nutze die <contribute>Beitragsseite</contribute>, um eine Korrektur zu melden oder fehlende Informationen zu ergänzen. Genaue, quellenbasierte Meldungen halten den Katalog aktuell."
 			}
 		]
 	},
@@ -582,24 +582,24 @@
 	},
 	"contact": {
 		"title": "Phaseo-Support kontaktieren",
-		"intro": "Sagen Sie uns, wobei Sie Hilfe benötigen, und wir leiten Sie an die richtige Stelle weiter. Private Kontoanliegen werden zu Supporttickets; öffentliche Fehler, Funktionswünsche und kurze Fragen gehören in den passenden Kanal.",
+		"intro": "Sag uns, wobei du Hilfe benötigst, und wir leiten dich an die richtige Stelle weiter. Private Kontoanliegen werden zu Supporttickets; öffentliche Fehler, Funktionswünsche und kurze Fragen gehören in den passenden Kanal.",
 		"sendFeedback": "Produktfeedback senden",
 		"stepOne": "Schritt 1",
 		"stepTwo": "Schritt 2",
-		"whatHelp": "Wobei benötigen Sie Hilfe?",
+		"whatHelp": "Wobei benötigst du Hilfe?",
 		"chooseIssue": "Problemtyp auswählen",
-		"pickClosest": "Wählen Sie die passendste Option; der nächste Schritt wird darunter angezeigt.",
+		"pickClosest": "Wähle die passendste Option; der nächste Schritt wird darunter angezeigt.",
 		"recommended": "Empfohlen: {method}",
 		"privateReply": "Lieber eine private Antwort?",
 		"switchPrivate": "Zum privaten Ticket wechseln",
 		"otherMethods": "Weitere Supportmöglichkeiten",
-		"otherMethodsBody": "Nutzen Sie einen anderen Kanal, wenn er besser zu Ihrem Anliegen passt.",
-		"yourTime": "Ihre Zeit {time}",
+		"otherMethodsBody": "Nutze einen anderen Kanal, wenn er besser zu deinem Anliegen passt.",
+		"yourTime": "Deine Zeit {time}",
 		"checking": "wird geprüft ...",
 		"supportTime": "Phaseo-Supportzeit: {time}",
 		"support": "Support",
 		"liveChatTitle": "Live-Chat oder E-Mail",
-		"liveChatDescription": "Starten Sie hier einen Live-Chat oder öffnen Sie eine vorausgefüllte E-Mail mit dem benötigten Kontext.",
+		"liveChatDescription": "Starte hier einen Live-Chat oder öffne eine vorausgefüllte E-Mail mit dem benötigten Kontext.",
 		"signedInAs": "Angemeldet als {email}",
 		"chatNotConfigured": "Der Live-Chat ist für diese Bereitstellung nicht konfiguriert.",
 		"chatOutsideHours": "Der Live-Chat ist während der Supportzeiten verfügbar. E-Mail bleibt geöffnet.",
@@ -610,17 +610,17 @@
 		"sendEmail": "E-Mail senden",
 		"createTicket": "Ticket erstellen",
 		"openChatNewTab": "Chat in neuem Tab öffnen",
-		"privateReplyBody": "Wenn Kontoangaben, Abrechnungsinformationen, Anfrage-IDs oder Screenshots enthalten sind, wählen Sie stattdessen ein privates Supportticket.",
+		"privateReplyBody": "Wenn Kontoangaben, Abrechnungsinformationen, Anfrage-IDs oder Screenshots enthalten sind, wähle stattdessen ein privates Supportticket.",
 		"repliesResumeSoon": "Der Support antwortet bald wieder.",
 		"availableNow": "Jetzt verfügbar",
 		"outsideHours": "Außerhalb der Supportzeiten",
 		"backIn": "Wieder erreichbar in {time}",
-		"availableReplyNotice": "Ich bin gerade erreichbar. Sie erhalten innerhalb von 30 Minuten eine persönliche Antwort.",
-		"supportBackInNotice": "Der Support ist in {time} wieder erreichbar. Antworten können sich verzögern, Sie erhalten aber so bald wie möglich eine persönliche Rückmeldung.",
-		"supportAwayNotice": "Ich bin gerade nicht erreichbar. Antworten können sich verzögern, Sie erhalten aber so bald wie möglich eine persönliche Rückmeldung.",
+		"availableReplyNotice": "Ich bin gerade erreichbar. Du erhältst innerhalb von 30 Minuten eine persönliche Antwort.",
+		"supportBackInNotice": "Der Support ist in {time} wieder erreichbar. Antworten können sich verzögern, du erhältst aber so bald wie möglich eine persönliche Rückmeldung.",
+		"supportAwayNotice": "Ich bin gerade nicht erreichbar. Antworten können sich verzögern, du erhältst aber so bald wie möglich eine persönliche Rückmeldung.",
 		"resumeAfterMinutes": "{count, plural, one {# Minute} other {# Minuten}}",
 		"resumeAfterHours": "{count, plural, one {# Stunde} other {# Stunden}}",
-		"feedbackPrompt": "Sagen Sie uns, was bei Phaseo klarer, schneller oder nützlicher sein sollte. Für Konto- oder Abrechnungshilfe nutzen Sie die Supportoptionen unten.",
+		"feedbackPrompt": "Sag uns, was bei Phaseo klarer, schneller oder nützlicher sein sollte. Für Konto- oder Abrechnungshilfe nutze die Supportoptionen unten.",
 		"emailTemplate": {
 			"subjectWithIssue": "[Phaseo-Support] {issue}",
 			"subjectDefault": "[Phaseo-Support] Supportanfrage",
@@ -665,31 +665,31 @@
 		"issues": {
 			"billing": {
 				"label": "Abrechnung oder Konto",
-				"helper": "Erstellen Sie ein privates Supportticket. Wir antworten an die angegebene E-Mail-Adresse."
+				"helper": "Erstelle ein privates Supportticket. Wir antworten an die angegebene E-Mail-Adresse."
 			},
 			"bug": {
 				"label": "Fehler oder Ausfall",
-				"helper": "Nutzen Sie GitHub, wenn der Fehler reproduzierbar ist und öffentlich verfolgt werden soll."
+				"helper": "Nutze GitHub, wenn der Fehler reproduzierbar ist und öffentlich verfolgt werden soll."
 			},
 			"data": {
 				"label": "Daten- oder Messproblem",
-				"helper": "Erstellen Sie ein privates Ticket mit Modell-IDs, Anbieternamen, URLs und Zeitstempeln."
+				"helper": "Erstelle ein privates Ticket mit Modell-IDs, Anbieternamen, URLs und Zeitstempeln."
 			},
 			"docs": {
 				"label": "Dokumentations- oder Integrationsfrage",
-				"helper": "Beginnen Sie mit der Dokumentation. Fehlt die Antwort, senden Sie ein Ticket mit der genauen Seite."
+				"helper": "Beginne mit der Dokumentation. Fehlt die Antwort, sende ein Ticket mit der genauen Seite."
 			},
 			"feature": {
 				"label": "Funktionswunsch",
-				"helper": "Eröffnen Sie ein GitHub-Issue mit Ablauf, erwartetem Verhalten und dem konkreten Nutzen."
+				"helper": "Eröffne ein GitHub-Issue mit Ablauf, erwartetem Verhalten und dem konkreten Nutzen."
 			},
 			"general": {
 				"label": "Allgemeine Frage",
-				"helper": "Erstellen Sie ein privates Supportticket und geben Sie genügend Kontext für eine direkte Antwort an."
+				"helper": "Erstelle ein privates Supportticket und gib genügend Kontext für eine direkte Antwort an."
 			},
 			"community": {
 				"label": "Community oder kurzes Feedback",
-				"helper": "Nutzen Sie Discord für eine kurze Antwort oder den Austausch mit anderen Nutzern."
+				"helper": "Nutze Discord für eine kurze Antwort oder den Austausch mit anderen Nutzern."
 			}
 		},
 		"loadingSupportHours": "Aktuelle Supportzeiten werden geladen…"
@@ -960,12 +960,12 @@
 		"sections": "Bereiche des Vertrauenszentrums",
 		"claimLabels": "Angabenstatus",
 		"trustDocuments": "Vertrauensdokumente",
-		"trustDocumentsBody": "Nutzen Sie das ausführliche Material für Sicherheitsprüfungen, Anbieterbewertungen oder DPA-Gespräche.",
+		"trustDocumentsBody": "Nutze das ausführliche Material für Sicherheitsprüfungen, Anbieterbewertungen oder DPA-Gespräche.",
 		"security": "Sicherheit",
 		"securityBody": "Produkt- und Betriebsschutzmaßnahmen, die durch aktuellen Code und aktuelle Dokumentation belegt sind.",
 		"securityPage": {
 			"metadataTitle": "Sicherheits-Whitepaper",
-			"metadataDescription": "Informieren Sie sich über Phaseos Architektur, Datenflüsse, aktuelle Sicherheitsmaßnahmen, Einschränkungen und geteilte Verantwortlichkeiten.",
+			"metadataDescription": "Informiere dich über Phaseos Architektur, Datenflüsse, aktuelle Sicherheitsmaßnahmen, Einschränkungen und geteilte Verantwortlichkeiten.",
 			"keywords": [
 				"Phaseo Sicherheits-Whitepaper",
 				"Phaseo Sicherheit",
@@ -976,7 +976,7 @@
 			"status": "Eigene Erklärung · Version 1.0",
 			"assurance": {
 				"title": "Grenzen der Zusicherungen",
-				"body": "Phaseo ist weder SOC 2- noch ISO 27001-zertifiziert und hat keinen unabhängigen Penetrationstest abgeschlossen. Dieses Dokument ist weder Zertifizierung noch Garantie und ersetzt nicht Ihre eigene Risikobewertung."
+				"body": "Phaseo ist weder SOC 2- noch ISO 27001-zertifiziert und hat keinen unabhängigen Penetrationstest abgeschlossen. Dieses Dokument ist weder Zertifizierung noch Garantie und ersetzt nicht deine eigene Risikobewertung."
 			},
 			"sections": {
 				"scope": "1. Geltungsbereich und Servicemodell",
@@ -1100,12 +1100,12 @@
 			},
 			"responsibilities": {
 				"items": [
-					"Senden Sie keine sensiblen oder regulierten Daten, sofern Ihre gewählte Phaseo- und KI-Anbieter-Konfiguration dafür nicht geeignet ist.",
-					"Prüfen Sie vor Aktivierung einer Route die Aufbewahrungs-, Trainings-, Speicherort- und zulässigen Nutzungsbedingungen des Anbieters.",
-					"Verwenden Sie Anbieter-Allowlisten und privates Routing, wenn die Auswahl der Route relevant ist.",
-					"Schützen und rotieren Sie Konto-, API-, Verwaltungs-, BYOK-, Webhook- und OAuth-Zugangsdaten.",
-					"Beschränken Sie Arbeitsbereichsmitglieder und OAuth-Berechtigungen auf den tatsächlichen Bedarf jeder Person oder Anwendung.",
-					"Prüfen Sie vor dem Produktionseinsatz private I/O-Protokollierung, Datenbeitrag, Antwort-Cache, Observability und Benachrichtigungseinstellungen."
+					"Sende keine sensiblen oder regulierten Daten, sofern deine gewählte Phaseo- und KI-Anbieter-Konfiguration dafür nicht geeignet ist.",
+					"Prüfe vor Aktivierung einer Route die Aufbewahrungs-, Trainings-, Speicherort- und zulässigen Nutzungsbedingungen des Anbieters.",
+					"Verwende Anbieter-Allowlisten und privates Routing, wenn die Auswahl der Route relevant ist.",
+					"Schütze und rotiere Konto-, API-, Verwaltungs-, BYOK-, Webhook- und OAuth-Zugangsdaten.",
+					"Beschränke Arbeitsbereichsmitglieder und OAuth-Berechtigungen auf den tatsächlichen Bedarf jeder Person oder Anwendung.",
+					"Prüfe vor dem Produktionseinsatz private I/O-Protokollierung, Datenbeitrag, Antwort-Cache, Observability und Benachrichtigungseinstellungen."
 				]
 			},
 			"gaps": {
@@ -1118,8 +1118,8 @@
 				]
 			},
 			"contact": {
-				"security": "Melden Sie Sicherheitsprobleme an <email>security@phaseo.app</email>.",
-				"privacy": "Fragen zu Datenschutz, DPA und Unterauftragsverarbeitern richten Sie an <email>privacy@phaseo.app</email>."
+				"security": "Melde Sicherheitsprobleme an <email>security@phaseo.app</email>.",
+				"privacy": "Fragen zu Datenschutz, DPA und Unterauftragsverarbeitern richtest du an <email>privacy@phaseo.app</email>."
 			}
 		},
 		"dataHandling": "Datenverarbeitung",
@@ -1331,7 +1331,7 @@
 			"title": "Unterauftragsverarbeiter und Verarbeitung durch Dritte",
 			"description": "Datierte Übersicht der von Phaseo genutzten Dienste, der Daten, die sie erhalten können, und der geltenden Bedingungen. Die rechtliche Rolle eines KI-Anbieters kann je nach Route und Vertrag variieren.",
 			"status": "Öffentliche Übersicht · sachliche und rechtliche Prüfung vermerkt",
-			"calloutTitle": "So lesen Sie diese Übersicht",
+			"calloutTitle": "So liest du diese Übersicht",
 			"calloutBody": "Die erste Tabelle nennt Dienste, die Kundendaten im Auftrag von Phaseo im Rahmen eines Kunden-DPA verarbeiten können. Die folgenden Abschnitte unterscheiden vom Kunden ausgewählte KI-Anbieter und Dienste, die Phaseo hauptsächlich für eigene Tätigkeiten als Verantwortlicher nutzt. Die Aufnahme bedeutet nicht, dass jeder Dienst die Daten jedes Kunden erhält.",
 			"sections": {
 				"core": "1. Zentrale und bedingte Unterauftragsverarbeiter",
@@ -1462,7 +1462,7 @@
 		},
 		"dpaPage": {
 			"metadataTitle": "Zusatz zur Auftragsverarbeitung",
-			"metadataDescription": "Prüfen Sie den Entwurf des Zusatzes zur Auftragsverarbeitung von Phaseo für Auftragsverarbeitungen im Vereinigten Königreich und in der EU.",
+			"metadataDescription": "Prüfe den Entwurf des Zusatzes zur Auftragsverarbeitung von Phaseo für Auftragsverarbeitungen im Vereinigten Königreich und in der EU.",
 			"keywords": [
 				"Phaseo-DPA",
 				"Zusatz zur Auftragsverarbeitung von Phaseo",
@@ -1472,7 +1472,7 @@
 			"description": "Bedingungen für die Verarbeitung personenbezogener Daten über Phaseo im Auftrag eines Kunden. Diese öffentliche Fassung ist ein Prüfentwurf. Sie bindet keine Partei, bevor sie unterzeichnet oder ausdrücklich in eine Vereinbarung aufgenommen wurde.",
 			"status": "Prüfentwurf · rechtliche Freigabe erforderlich",
 			"calloutTitle": "Prüfentwurf",
-			"calloutBody": "Dieser Entwurf soll die zwingenden Bedingungen für Verantwortliche und Auftragsverarbeiter nach Artikel 28 des UK GDPR und des EU GDPR abdecken. Noch erforderlich sind die Geschäftsadresse von Phaseo, bestätigte Übermittlungsbedingungen, eine endgültig genehmigte Liste der von Phaseo verwalteten KI-Unterauftragsverarbeiter sowie die Freigabe durch qualifizierte Rechtsberatung. Ein unterschriftsreifes Exemplar erhalten Sie unter <email>privacy@phaseo.app</email>.",
+			"calloutBody": "Dieser Entwurf soll die zwingenden Bedingungen für Verantwortliche und Auftragsverarbeiter nach Artikel 28 des UK GDPR und des EU GDPR abdecken. Noch erforderlich sind die Geschäftsadresse von Phaseo, bestätigte Übermittlungsbedingungen, eine endgültig genehmigte Liste der von Phaseo verwalteten KI-Unterauftragsverarbeiter sowie die Freigabe durch qualifizierte Rechtsberatung. Ein unterschriftsreifes Exemplar erhältst du unter <email>privacy@phaseo.app</email>.",
 			"sections": {
 				"parties": "Parteien und Datum des Inkrafttretens",
 				"definitions": "1. Definitionen",
@@ -1643,7 +1643,7 @@
 				"annex2Summary": "Diese Maßnahmen beruhen auf Selbstauskunft. Phaseo behauptet weder ein unabhängig geprüftes Sicherheitsprogramm noch ein getestetes Notfallwiederherstellungsprogramm oder eine formelle Zertifizierung.",
 				"annex3Introduction": "Das datierte <subprocessorSchedule>Verzeichnis der Unterauftragsverarbeiter</subprocessorSchedule> wird mit Abschluss dieses DPA zu Anlage 3. Abschnitt 5 regelt Ergänzungen und Ersetzungen.",
 				"annex3Review": "Phaseo hat die aktiven, von Phaseo verwalteten KI-Anbieter vorläufig eingestuft. Vor Abschluss muss Phaseo die im Verzeichnis aufgeführten offenen Prüfungen zu Auftragsverarbeitungsverträgen, Kontoeinstellungen, Übermittlungen und Aufbewahrung abschließen und nicht für personenbezogene Kundendaten zugelassene verwaltete Anbieter entfernen oder beschränken. Vom Kunden mit eigenen Zugangsdaten oder Verträgen genutzte Anbieter werden getrennt ausgewiesen.",
-				"annex4": "Füllen Sie diese Anlage vor Abschluss aus, wenn personenbezogene Kundendaten ohne anwendbaren Angemessenheitsbeschluss oder eine entsprechende Regelung übermittelt werden. Nennen Sie Übermittlungsmechanismus, Exporteur und Importeur, Länder, Daten- und Personenkategorien, Häufigkeit, Zweck, Aufbewahrung, zuständige Aufsichtsbehörde, anwendbares Recht, optionale SCC-Klauseln und ergänzende Maßnahmen.",
+				"annex4": "Fülle diese Anlage vor Abschluss aus, wenn personenbezogene Kundendaten ohne anwendbaren Angemessenheitsbeschluss oder eine entsprechende Regelung übermittelt werden. Nenne Übermittlungsmechanismus, Exporteur und Importeur, Länder, Daten- und Personenkategorien, Häufigkeit, Zweck, Aufbewahrung, zuständige Aufsichtsbehörde, anwendbares Recht, optionale SCC-Klauseln und ergänzende Maßnahmen.",
 				"sourcesIntroduction": "Dieser Entwurf folgt der aktuellen Checkliste für Auftragsverarbeitungsverträge des britischen Information Commissioner's Office sowie den Materialien der Europäischen Kommission zu Artikel 28 und internationalen Übermittlungen. Die ICO weist darauf hin, dass Teile ihrer Hinweise nach dem Data (Use and Access) Act 2025 überprüft werden. Qualifizierte Rechtsberatung sollte die endgültige Fassung anhand der dann geltenden Gesetze und Hinweise prüfen.",
 				"sourceLinks": [
 					"ICO: zwingende Bedingungen für Verträge zwischen Verantwortlichem und Auftragsverarbeiter",
@@ -1682,8 +1682,8 @@
 		"title": "Preise",
 		"description": "Einfache nutzungsbasierte Preise für das KI-Gateway mit optionaler Enterprise-Identitätsverwaltung, Governance und priorisiertem Support.",
 		"everythingIncluded": "Alles enthalten",
-		"everythingIncludedBody": "Erkunden Sie Modellkatalog, Ranglisten, SDKs und kostenlosen Modell-Chat, bevor Kosten entstehen. Kaufen Sie Guthaben nur bei Bedarf, ohne den Tarif zu wechseln.",
-		"swipeCompare": "Wischen Sie horizontal, um Anbieter zu vergleichen.",
+		"everythingIncludedBody": "Erkunde Modellkatalog, Ranglisten, SDKs und kostenlosen Modell-Chat, bevor Kosten entstehen. Kaufe Guthaben nur bei Bedarf, ohne den Tarif zu wechseln.",
+		"swipeCompare": "Wische horizontal, um Anbieter zu vergleichen.",
 		"showFreeAccess": "Kostenlosen Zugang anzeigen",
 		"compareCompetitors": "Wettbewerber vergleichen",
 		"competitorNote": "Wettbewerberangaben beziehen sich auf veröffentlichte Dokumentation, geprüft am 26. Juli 2026. „Nicht beworben“ bedeutet, dass die Funktion in öffentlichen Produkt- oder Preisdokumenten nicht bestätigt werden konnte.",
@@ -1695,14 +1695,14 @@
 		"users": "Nutzer",
 		"enterpriseSubscription": "Unternehmensabo",
 		"monthEstimated": "/Monat geschätzt",
-		"whatYouGet": "Ihre Vorteile",
+		"whatYouGet": "Deine Vorteile",
 		"included": "Enthalten",
 		"creditTopUpFee": "Gebühr für Guthabenaufladung",
 		"modelUsageCredits": "Guthaben für Modellnutzung",
 		"purchasedSeparately": "Separat gekauft",
 		"committedModelSpend": "Zugesagte Modellausgaben",
 		"none": "Keine",
-		"usdNote": "Monatliches Abonnement in USD. Guthabenkäufe bleiben getrennt und verwenden bei allen unterstützten Zahlungsmethoden die Standard-Aufladegebühr von 5 %. Nutzen Sie für Modelle so viel oder wenig wie nötig – der Abonnementpreis bleibt gleich.",
+		"usdNote": "Monatliches Abonnement in USD. Guthabenkäufe bleiben getrennt und verwenden bei allen unterstützten Zahlungsmethoden die Standard-Aufladegebühr von 5 %. Nutze für Modelle so viel oder wenig wie nötig – der Abonnementpreis bleibt gleich.",
 		"features": {
 			"sso": "SAML-SSO und erzwungene Anmeldung",
 			"scim": "SCIM-Nutzer, Gruppen und Sammelvorgänge",
@@ -1716,14 +1716,14 @@
 		"manageProviderKeys": "Anbieterschlüssel verwalten",
 		"modelPricingCalculator": "Preiskalkulator für Modelle",
 		"payg": "Nutzungsbasiert",
-		"paygBodyShort": "Laden Sie Guthaben nur bei Bedarf auf.",
+		"paygBodyShort": "Lade Guthaben nur bei Bedarf auf.",
 		"enterpriseOptional": "Enterprise zur Selbstbedienung",
 		"enterpriseOptionalBody": "Ergänze SSO, SCIM, Governance und bevorzugten Support ohne Änderungen an den Nutzungspreisen.",
 		"pricesPublic": "Preise bleiben öffentlich",
-		"pricesPublicBody": "Beantworten Sie einige Fragen und abonnieren Sie sofort.",
+		"pricesPublicBody": "Beantworte einige Fragen und abonniere sofort.",
 		"faqTitle": "Häufig gestellte Fragen",
 		"ready": "Bereit für den Start?",
-		"readyBody": "Starten Sie kostenlos, fügen Sie bei Bedarf Guthaben hinzu und behalten Sie beim Wachstum dieselben nutzungsbasierten Bedingungen.",
+		"readyBody": "Starte kostenlos, füge bei Bedarf Guthaben hinzu und behalte beim Wachstum dieselben nutzungsbasierten Bedingungen.",
 		"openPlatform": "Plattform öffnen",
 		"askPricing": "Frage zu Preisen stellen",
 		"andReview": "und lies",
@@ -1816,8 +1816,8 @@
 				"invoices": "Ja. PDF-Rechnungen für abgeschlossene Credit-Käufe findest du unter Einstellungen → Credits. Fehlt die Rechnung zu einer erfolgreichen Zahlung, wende dich mit Zahlungs-ID und Datum an den Support.",
 				"enterprise-plan": "Enterprise beginnt bei 29 USD pro Monat für bis zu 100 Mitglieder, auch für kleine Teams. SAML SSO, SCIM, Abteilungen, Rollen, Audit, Governance und bevorzugter E-Mail-Support sind enthalten. Dedizierter Slack-Support und vertragliche SLAs können separat vereinbart werden.",
 				"enterprise-credit-fees": "Nein. Das selbst verwaltete Unternehmensabo deckt Identität, Governance und Support ab. Guthabenkäufe bleiben getrennt und unterliegen bei unterstützten Zahlungsmethoden weiterhin der üblichen Aufladegebühr von 5% mit einem Mindestbetrag von {minimum}.",
-				"enterprise-team-sizes": "Wählen Sie eine Mitgliederkapazität. Der Einstieg umfasst bis zu 100 Mitglieder, größere Kapazitäten reichen bis 100.000. Mitglieder zählen, solange sie zum Arbeitsbereich gehören, auch ohne Anmeldung. Unter 100.000 werden neue Mitgliedschaften nur blockiert, wenn sie die gewählte Kapazität überschreiten würden. Kapazitätsänderungen im Self-Service sind derzeit nicht verfügbar; wählen Sie vor dem Abonnieren genügend Kapazität für das erwartete Wachstum. Über 100.000 kostet jedes zusätzliche eindeutige Mitglied im Abrechnungszeitraum 0,02 USD pro Monat, einschließlich während dieses Zeitraums entfernter Mitglieder.",
-				"enterprise-usage-billing": "Nein. Das Unternehmensabo deckt Identität, Governance und Support ab. Verwaltete Modellnutzung wird weiterhin zu Katalogpreisen vom Guthaben des Arbeitsbereichs abgezogen. Es gibt keine Mindestabnahme für Modelle: Nutzen Sie, was Sie brauchen; der Abo-Preis bleibt gleich.",
+				"enterprise-team-sizes": "Wähle eine Mitgliederkapazität. Der Einstieg umfasst bis zu 100 Mitglieder, größere Kapazitäten reichen bis 100.000. Mitglieder zählen, solange sie zum Arbeitsbereich gehören, auch ohne Anmeldung. Unter 100.000 werden neue Mitgliedschaften nur blockiert, wenn sie die gewählte Kapazität überschreiten würden. Kapazitätsänderungen im Self-Service sind derzeit nicht verfügbar; wähle vor dem Abonnieren genügend Kapazität für das erwartete Wachstum. Über 100.000 kostet jedes zusätzliche eindeutige Mitglied im Abrechnungszeitraum 0,02 USD pro Monat, einschließlich während dieses Zeitraums entfernter Mitglieder.",
+				"enterprise-usage-billing": "Nein. Das Unternehmensabo deckt Identität, Governance und Support ab. Verwaltete Modellnutzung wird weiterhin zu Katalogpreisen vom Guthaben des Arbeitsbereichs abgezogen. Es gibt keine Mindestabnahme für Modelle: Nutze, was du brauchst; der Abo-Preis bleibt gleich.",
 				"enterprise-bank-transfer": "Derzeit nicht. Unterstützte USD-Überweisungen haben dieselbe Credit-Aufladegebühr von 5% wie Kartenzahlungen. Eventuelle Sondergebühren für Überweisung, Erstattung oder Bank werden bei Bedarf separat ausgewiesen.",
 				"how-does-byok-work": "Dein Anbieter rechnet die Modellnutzung direkt über dein Anbieterkonto ab. Phaseo erhebt für die ersten {freeRequests, number} BYOK-Anfragen jedes UTC-Kalendermonats keine Servicegebühr. Danach berechnet Phaseo {serviceFee, number}% der gleichwertigen Anbieterkosten.",
 				"what-is-included-with-byok": "Sichere Speicherung der Anbieterschlüssel, Gateway-Routing, Anfrageprotokolle, Anbieterauswahl sowie die Reihenfolge priorisierter und Fallback-Schlüssel sind enthalten. Quoten, verhandelte Preise und Abrechnung des Anbieters bleiben deinem Anbieterkonto zugeordnet.",
@@ -1825,7 +1825,7 @@
 				"can-i-control-byok-fallback": "Ja. Priorisierte Schlüssel werden vor den von Phaseo verwalteten Anbietern versucht. Du kannst außerdem BYOK-Fallback-Schlüssel aktivieren, die nach den verwalteten Anbietern versucht werden.",
 				"do-you-enforce-rate-limits": "Nein. Phaseo setzt keine plattformweiten Ratenlimits. Vorgelagerte Anbieter können weiterhin eigene Limits anwenden.",
 				"can-i-separate-environments": "Ja. Erstelle für jede Umgebung eigene API-Schlüssel und Richtlinien, damit Nutzung, Kontrollen und Protokolle getrennt bleiben.",
-				"can-i-set-budgets": "Ja. Bei nutzungsbasierter Abrechnung können Sie Limits und Ausgabenkontrollen für API-Schlüssel und Teams festlegen. Für die Nutzung kostenloser Modelle sind keine Ausgabenkontrollen erforderlich.",
+				"can-i-set-budgets": "Ja. Bei nutzungsbasierter Abrechnung kannst du Limits und Ausgabenkontrollen für API-Schlüssel und Teams festlegen. Für die Nutzung kostenloser Modelle sind keine Ausgabenkontrollen erforderlich.",
 				"provider-unavailable": "Wenn ein Anbieter die Rate begrenzt oder einen Fehler zurückgibt, kann Phaseo die Anfrage wiederholen oder an einen anderen Anbieter weiterleiten, der das gewählte Modell unterstützt. Voreinstellungen, Anbieterbeschränkungen und BYOK-Fallback bestimmen die verfügbaren Alternativen.",
 				"routing-mode": "Ja. Routing-Modi im Arbeitsbereich können kompatible Anbieter nach ausgewogener Leistung, Preis, Latenz oder Durchsatz sortieren. Mit Voreinstellungen kannst du die Anbieterauswahl vor Beginn des Routings einschränken.",
 				"region-privacy-routing": "Ja, sofern passende Anbieterangebote verfügbar sind. Anfragen können erforderliche Ausführungs- und Datenregionen oder Zero-Data-Retention-Unterstützung festlegen. Phaseo gibt einen Fehler zurück, statt unbemerkt eine Route zu verwenden, die diese Anforderungen nicht erfüllt.",
@@ -2191,13 +2191,13 @@
 	"legal": {
 		"lastUpdated": "Zuletzt aktualisiert: {date}",
 		"privacyTitle": "Datenschutzerklärung",
-		"privacyIntro": "Diese Datenschutzerklärung erläutert, wie Daniel Butler unter dem Namen Phaseo („Phaseo“, „wir“ oder „unser“) personenbezogene Daten erhebt, verwendet und schützt, wenn Sie unsere Websites, Dashboards und unser API-Gateway (zusammen der „Dienst“) nutzen.",
+		"privacyIntro": "Diese Datenschutzerklärung erläutert, wie Daniel Butler unter dem Namen Phaseo („Phaseo“, „wir“ oder „unser“) personenbezogene Daten erhebt, verwendet und schützt, wenn du unsere Websites, Dashboards und unser API-Gateway (zusammen der „Dienst“) nutzt.",
 		"termsTitle": "Nutzungsbedingungen",
-		"termsIntro": "Diese Nutzungsbedingungen („Bedingungen“) regeln Ihre Nutzung der Phaseo-Website, des Datenkatalogs und des einheitlichen API-Gateways (zusammen der „Dienst“).",
+		"termsIntro": "Diese Nutzungsbedingungen („Bedingungen“) regeln deine Nutzung der Phaseo-Website, des Datenkatalogs und des einheitlichen API-Gateways (zusammen der „Dienst“).",
 		"privacyHeadings": {
 			"scope": "1. Wer wir sind und für wen diese Richtlinie gilt",
 			"dataCollected": "2. Welche Daten wir erheben",
-			"provided": "2.1 Angaben, die Sie uns mitteilen",
+			"provided": "2.1 Angaben, die du uns mitteilst",
 			"gatewayIO": "2.2 Über das Gateway gesendete Eingaben und Ausgaben",
 			"telemetry": "2.3 Telemetrie und technische Daten",
 			"connectedAssistants": "2.4 Verbundene KI-Assistenten und MCP-Clients",
@@ -2206,10 +2206,10 @@
 			"legalBases": "3. Wie wir personenbezogene Daten verwenden (und unsere Rechtsgrundlagen)",
 			"sharing": "4. Wie wir personenbezogene Daten weitergeben",
 			"transfers": "5. Internationale Übermittlungen",
-			"retention": "6. Wie lange wir Ihre Daten speichern",
-			"rights": "7. Ihre Rechte und Wahlmöglichkeiten",
+			"retention": "6. Wie lange wir deine Daten speichern",
+			"rights": "7. Deine Rechte und Wahlmöglichkeiten",
 			"children": "8. Kinder",
-			"security": "9. Wie wir Ihre Daten schützen",
+			"security": "9. Wie wir deine Daten schützen",
 			"thirdParties": "10. Websites und Dienste Dritter",
 			"changes": "11. Änderungen dieser Datenschutzerklärung",
 			"contact": "12. Kontakt und Beschwerden"
@@ -2223,10 +2223,10 @@
 			"autoTopUp": "3.3 Automatische Aufladung",
 			"refundsExpiry": "3.4 Erstattungen und Ablauf",
 			"pricingChanges": "3.5 Preisänderungen und Abrechnungsfehler",
-			"content": "4. Eingaben, Ausgaben und Ihre Inhalte",
+			"content": "4. Eingaben, Ausgaben und deine Inhalte",
 			"handling": "4.1 Wie wir Prompts und Ausgaben verarbeiten",
 			"providerTerms": "4.2 Bedingungen Drittanbieter",
-			"userResponsibilities": "4.3 Ihre Verantwortung für Nutzerinhalte",
+			"userResponsibilities": "4.3 Deine Verantwortung für Nutzerinhalte",
 			"prohibitedUse": "5. Unzulässige Nutzung",
 			"suspensionTermination": "6. Sperrung und Beendigung",
 			"privacy": "7. Datenschutz",
@@ -2241,8 +2241,8 @@
 			"contact": "16. Kontakt"
 		},
 		"privacyBody": {
-			"notice": "Diese Seite gibt einen allgemeinen Überblick darüber, wie wir personenbezogene Daten verarbeiten. Sie stellt keine Rechtsberatung dar. Hier nicht definierte, grossgeschriebene Begriffe haben die Bedeutung, die ihnen in unseren <terms>Nutzungsbedingungen</terms> zugewiesen wird.",
-			"consent": "Wenn Sie den Dienst nutzen, stimmen Sie zu, dass wir Ihre personenbezogenen Daten wie in dieser Datenschutzerklärung und den Nutzungsbedingungen beschrieben verarbeiten. Wenn Sie nicht zustimmen, dürfen Sie den Dienst nicht nutzen.",
+			"notice": "Diese Seite gibt einen allgemeinen Überblick darüber, wie wir personenbezogene Daten verarbeiten. Sie stellt keine Rechtsberatung dar. Hier nicht definierte, großgeschriebene Begriffe haben die Bedeutung, die ihnen in unseren <terms>Nutzungsbedingungen</terms> zugewiesen wird.",
+			"consent": "Wenn du den Dienst nutzt, stimmst du zu, dass wir deine personenbezogenen Daten wie in dieser Datenschutzerklärung und den Nutzungsbedingungen beschrieben verarbeiten. Wenn du nicht zustimmst, darfst du den Dienst nicht nutzen.",
 			"controller": "Im Sinne der Datenschutzgesetze des Vereinigten Königreichs und der EU ist <person>Daniel Butler</person>, tätig unter dem Namen <brand>Phaseo</brand>, der <controller>Verantwortliche</controller> für personenbezogene Daten, die über Phaseo erhoben werden.",
 			"appliesIntro": "Diese Datenschutzerklärung gilt, wenn du:",
 			"appliesItems": [
@@ -2465,7 +2465,7 @@
 		},
 		"termsBody": {
 			"operator": "Der Dienst wird von <person>Daniel Butler</person> unter dem Namen <brand>Phaseo</brand> betrieben („Phaseo“, „wir“, „uns“ oder „unser“).",
-			"acceptance": "Wenn Sie auf den Dienst zugreifen oder ihn nutzen, stimmen Sie diesen Bedingungen und unserer <privacy>Datenschutzerklärung</privacy> zu. Wenn Sie nicht zustimmen, dürfen Sie den Dienst nicht nutzen.",
+			"acceptance": "Wenn du auf den Dienst zugreifst oder ihn nutzt, stimmst du diesen Bedingungen und unserer <privacy>Datenschutzerklärung</privacy> zu. Wenn du nicht zustimmst, darfst du den Dienst nicht nutzen.",
 			"serviceIntro": "Phaseo bietet:",
 			"features": [
 				"ein öffentliches Verzeichnis mit KI-Modellen, Anbietern, Benchmarks, Preisen und weiteren Metadaten;",
@@ -2590,7 +2590,7 @@
 			"contactQuestions": "Bei Fragen zu diesen Bedingungen kannst du uns kontaktieren:",
 			"contactEmailLabel": "E-Mail",
 			"operatorDetails": "Der Service wird von <person>Daniel Butler</person> unter dem Namen <brand>Phaseo</brand> angeboten.",
-			"autoTopUpSecurity": "Aus Sicherheitsgründen können wir vor der Aktivierung der automatischen Aufladung eine Zwei-Faktor-Authentifizierung verlangen. Falls wir eine Fortsetzung ohne Zwei-Faktor-Authentifizierung anbieten, müssen Sie eine gesonderte Bestätigungs- und Zustimmungserklärung abgeben. Damit erkennen Sie das erhöhte Risiko unbefugter Abbuchungen an sowie, dass Erstattungen und Zahlungsstreitigkeiten nach diesen Bedingungen und geltendem Recht beurteilt werden. Dieser Abschnitt schränkt keine zwingenden Verbraucherrechte ein."
+			"autoTopUpSecurity": "Aus Sicherheitsgründen können wir vor der Aktivierung der automatischen Aufladung eine Zwei-Faktor-Authentifizierung verlangen. Falls wir eine Fortsetzung ohne Zwei-Faktor-Authentifizierung anbieten, musst du eine gesonderte Bestätigungs- und Zustimmungserklärung abgeben. Damit erkennst du das erhöhte Risiko unbefugter Abbuchungen an sowie, dass Erstattungen und Zahlungsstreitigkeiten nach diesen Bedingungen und geltendem Recht beurteilt werden. Dieser Abschnitt schränkt keine zwingenden Verbraucherrechte ein."
 		}
 	},
 	"brandMenu": {
@@ -2614,24 +2614,24 @@
 		"downloadFailure": "{asset} konnte nicht als {format} heruntergeladen werden"
 	},
 	"supportPage": {
-		"description": "Kontaktieren Sie den Phaseo-Support bei Fragen zu Konto, Abrechnung und Produkt, mit direkten Antworten des Gründers sowie Dokumentation, Community-Ressourcen und aktueller Supportverfügbarkeit."
+		"description": "Kontaktiere den Phaseo-Support bei Fragen zu Konto, Abrechnung und Produkt, mit direkten Antworten des Gründers sowie Dokumentation, Community-Ressourcen und aktueller Supportverfügbarkeit."
 	},
 	"landingGaps": {
 		"copy001": "Aktuelles Routing über geprüfte Anbieter.",
-		"copy002": "Greifen Sie direkt nach der Anmeldung bei Phaseo Gateway auf einen stetig wachsenden Katalog ausgewählter Modelle zu.",
+		"copy002": "Greife direkt nach der Anmeldung bei Phaseo Gateway auf einen stetig wachsenden Katalog ausgewählter Modelle zu.",
 		"copy003": "Ersetzt Gateway Conduit?",
 		"copy004": "Ja. Phaseo Gateway ist der neue Name und die neue Positionierung von Conduit: eine einzige API für alle Modelle unter Wahrung der Kompatibilitätszusagen.",
 		"copy005": "Kann ich mein vorhandenes OpenAI- oder Anthropic-SDK verwenden?",
 		"copy006": "Ja. Gateway behält OpenAI- und Anthropic-kompatible Endpunkte bei. Bei den meisten Migrationen müssen daher nur Basis-URL und Schlüssel geändert werden.",
 		"copy007": "Wie überwache ich Abkündigungen und Rollouts?",
-		"copy008": "Gateway bündelt Modellstatus und Hinweise auf Stilllegungen, damit Sie migrieren können, bevor Änderungen die Produktion beeinträchtigen.",
+		"copy008": "Gateway bündelt Modellstatus und Hinweise auf Stilllegungen, damit du migrieren kannst, bevor Änderungen die Produktion beeinträchtigen.",
 		"copy009": "Wie werden Compliance und Schlüsselsicherheit unterstützt?",
 		"copy010": "Unterstützt werden Schlüssel mit begrenztem Geltungsbereich, Auditprotokolle und verschlüsselte BYOK-Abläufe. Enterprise kann individuelle Routingrichtlinien und Kontrollen ergänzen.",
 		"copy011": "FAQ",
 		"copy012": "Antworten für Teams, die jetzt migrieren.",
 		"copy013": "Klare Hinweise zu Produktionsrollouts, Kompatibilität und Governance.",
 		"copy014": "Jedes Modell, eine Schnittstelle.",
-		"copy015": "Behalten Sie eine Integration bei, während Sie Anbieter wechseln, Modelle hinzufügen und Modalitäten erweitern, ohne Clients neu zu schreiben.",
+		"copy015": "Behalte eine Integration bei, während du Anbieter wechselst, Modelle hinzufügst und Modalitäten erweiterst, ohne Clients neu zu schreiben.",
 		"copy016": "OpenAI, Anthropic, Google und über 50 weitere.",
 		"copy017": "Text, Bild, Audio, Video, Einbettungen",
 		"copy018": "Einheitliche Antwortschemas.",
@@ -2643,7 +2643,7 @@
 		"copy024": "Circuit-Breaker-Muster",
 		"copy025": "Verfügbarkeit",
 		"copy026": "Intelligentes Routing",
-		"copy027": "Routen Sie nach Latenz, Preis, Standort, Fähigkeiten oder eigenen Regeln. Wenden Sie einheitliches Verhalten auf alle Anbieter an.",
+		"copy027": "Leite Anfragen nach Latenz, Preis, Standort, Fähigkeiten oder eigenen Regeln weiter. Wende einheitliches Verhalten auf alle Anbieter an.",
 		"copy028": "Latenzoptimiertes Routing",
 		"copy029": "Kostenorientierter Lastenausgleich",
 		"copy030": "Individuelle Routingrichtlinien",
@@ -2669,15 +2669,15 @@
 		"copy050": "Eine Steuerungsebene für einen Anbietermarkt, der sich jede Woche verändert.",
 		"copy051": "Das Gateway ist für Teams entwickelt, denen Modellportabilität, Routingqualität und betriebliche Disziplin wichtiger sind als reine Anbieterzahlen auf einer Folie.",
 		"copy052": "Zustandsabhängiges Routing verhindert, dass beeinträchtigte Anbieter zu nächtlichen Zwischenfällen werden.",
-		"copy053": "Wechseln Sie Modelle und Clouds, ohne Produktintegrationen neu zu schreiben.",
-		"copy054": "Halten Sie Richtlinien, Ausgabenkontrollen und Nachvollziehbarkeit am selben Ort wie die Ausführung.",
+		"copy053": "Wechsle Modelle und Clouds, ohne Produktintegrationen neu zu schreiben.",
+		"copy054": "Halte Richtlinien, Ausgabenkontrollen und Nachvollziehbarkeit am selben Ort wie die Ausführung.",
 		"copy055": "Dokumentation ansehen",
 		"copy056": "Schnellstart lesen",
-		"copy057": "Verstehen Sie die einheitliche Anfragestruktur und den direkten Migrationsweg.",
+		"copy057": "Verstehe die einheitliche Anfragestruktur und den direkten Migrationsweg.",
 		"copy058": "Repository ansehen",
-		"copy059": "Prüfen Sie das quelloffene Gateway, die SDKs und öffentliche Änderungen direkt.",
+		"copy059": "Prüfe das quelloffene Gateway, die SDKs und öffentliche Änderungen direkt.",
 		"copy060": "Zuerst Chat ausprobieren",
-		"copy061": "Testen Sie Modelle im Browser, wenn Sie vor der Integration noch ihr Verhalten vergleichen.",
+		"copy061": "Teste Modelle im Browser, wenn du vor der Integration noch ihr Verhalten vergleichst.",
 		"copy062": "Auf dem Gateway aufbauen",
 		"copy063": "Auch die Integration sollte hier unkompliziert sein.",
 		"copy064": "Die experimentelle Version vereinfacht die Einrichtung: eine klare Anfragestruktur, ein direkter Weg zur Dokumentation und wenige eindeutige nächste Schritte.",
@@ -2686,10 +2686,10 @@
 		"copy067": "API-Schlüssel erhalten",
 		"copy068": "Migrationsleitfaden",
 		"copy069": "Modellwissen ohne Ablenkung",
-		"copy070": "Prüfen Sie Benchmarks, Preise, Anbieterabdeckung und neue Veröffentlichungen in einer übersichtlichen Ansicht, bevor Sie Entwicklungszeit investieren.",
+		"copy070": "Prüfe Benchmarks, Preise, Anbieterabdeckung und neue Veröffentlichungen in einer übersichtlichen Ansicht, bevor du Entwicklungszeit investierst.",
 		"copy071": "Datenbank erkunden",
 		"copy072": "Übersichtliche Gateway-Steuerung",
-		"copy073": "Stellen Sie über eine OpenAI-kompatible Schnittstelle bereit und halten Sie Routing-, Fallback- und BYOK-Entscheidungen flexibel, wenn sich Anbieter verändern.",
+		"copy073": "Stelle über eine OpenAI-kompatible Schnittstelle bereit und halte Routing-, Fallback- und BYOK-Entscheidungen flexibel, wenn sich Anbieter verändern.",
 		"copy074": "Plattformübersicht ansehen",
 		"copy075": "Gateway-Route",
 		"copy076": "funktionsfähig",

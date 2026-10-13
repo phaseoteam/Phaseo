@@ -1254,8 +1254,7 @@
 	"settingsCopy": {
 		"byok": {
 			"viewValidModels": "उपलब्ध मॉडल देखें",
-			"docsPrefix": "अधिक जानकारी के लिए",
-			"docsSuffix": "देखें।",
+			"docsLink": "अधिक जानकारी के लिए <link>{label}</link> देखें।",
 			"keepAllCredentials": "मौजूदा क्रेडेंशियल रखने के लिए सभी फ़ील्ड खाली छोड़ें।",
 			"keepBothCredentials": "मौजूदा क्रेडेंशियल रखने के लिए दोनों फ़ील्ड खाली छोड़ें।",
 			"addDeployment": "डिप्लॉयमेंट जोड़ें",
@@ -1372,7 +1371,7 @@
 	},
 	"settingsRouteCopy": {
 		"oauthIntegrationsDescription": "अपने Phaseo खाते का ऐक्सेस रखने वाले तीसरे पक्ष के ऐप्लिकेशन प्रबंधित करें। आप किसी भी समय ऐक्सेस रद्द कर सकते हैं।",
-		"requestAttributionDocs": "एट्रिब्यूशन दस्तावेज़ का अनुरोध करें",
+		"requestAttributionDocs": "अनुरोध एट्रिब्यूशन दस्तावेज़",
 		"routingGuide": "रूटिंग गाइड",
 		"notSignedIn": "साइन इन नहीं है।"
 	},
