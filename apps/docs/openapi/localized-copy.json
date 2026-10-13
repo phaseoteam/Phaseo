@@ -156,7 +156,7 @@
 					"hi": "इस अनुरोध के लिए प्रदाताओं को क्रम दें, जैसे कीमत, विलंबता या थ्रूपुट के आधार पर।",
 					"ja": "このリクエストのプロバイダーを、価格、レイテンシ、スループットなどで並べ替えます。",
 					"zh-Hans": "为此请求排列提供商，例如按价格、延迟或吞吐量排序。",
-					"ar": "رتّب المزوّدين لهذا الطلب، مثلاً حسب السعر أو زمن الاستجابة أو معدل النقل."
+					"ar": "رتّب المزوّدين لهذا الطلب، مثلاً حسب السعر أو زمن الاستجابة أو الإنتاجية."
 				}
 			},
 			"DebugOptions": {
@@ -251,7 +251,7 @@
 			"fr": "Identifiant de l’organisation du catalogue, private pour les modèles de l’espace de travail, ou phaseo s’il est inconnu.",
 			"de": "Organisations-ID im Katalog, private für Workspace-Modelle oder phaseo, wenn unbekannt.",
 			"pt-BR": "ID da organização no catálogo, private para modelos do espaço de trabalho ou phaseo quando desconhecido.",
-			"hi": "कैटलॉग का संगठन ID, कार्यक्षेत्र मॉडल के लिए private, या अज्ञात होने पर phaseo।",
+			"hi": "कैटलॉग का संगठन ID, वर्कस्पेस मॉडल के लिए private, या अज्ञात होने पर phaseo।",
 			"ja": "カタログの組織 ID。ワークスペースのモデルは private、不明な場合は phaseo。",
 			"zh-Hans": "目录中的组织 ID；工作区模型为 private，未知时为 phaseo。",
 			"ar": "معرّف المؤسسة في الكتالوج، أو private لنماذج مساحة العمل، أو phaseo إذا كان غير معروف."
@@ -1801,7 +1801,7 @@
 			"fr": "Lister les espaces de travail",
 			"de": "Arbeitsbereiche auflisten",
 			"pt-BR": "Listar espaços de trabalho",
-			"hi": "कार्यस्थानों की सूची बनाएँ",
+			"hi": "वर्कस्पेसों की सूची बनाएँ",
 			"ja": "ワークスペースを一覧表示",
 			"zh-Hans": "列出工作区",
 			"ar": "عرض مساحات العمل"
@@ -1811,7 +1811,7 @@
 			"fr": "Répertorie les espaces de travail appartenant au titulaire authentifié de la clé de gestion. Une clé API de gestion est requise.",
 			"de": "Listet die Arbeitsbereiche des authentifizierten Inhabers des Management-Schlüssels auf. Ein Management-API-Schlüssel ist erforderlich.",
 			"pt-BR": "Lista os espaços de trabalho pertencentes ao titular autenticado da chave de gerenciamento. É necessária uma chave de API de gerenciamento.",
-			"hi": "प्रमाणित प्रबंधन कुंजी धारक के कार्यस्थानों की सूची देता है। प्रबंधन API कुंजी आवश्यक है।",
+			"hi": "प्रमाणित प्रबंधन कुंजी धारक के वर्कस्पेसों की सूची देता है। प्रबंधन API कुंजी आवश्यक है।",
 			"ja": "認証済みの管理キー所有者が所有するワークスペースを一覧表示します。管理 API キーが必要です。",
 			"zh-Hans": "列出经身份验证的管理密钥所有者所拥有的工作区。需要管理 API 密钥。",
 			"ar": "يعرض مساحات العمل التي يملكها مالك مفتاح الإدارة المصادق عليه. يلزم مفتاح API للإدارة."
@@ -1821,7 +1821,7 @@
 			"fr": "Nombre d’espaces de travail à ignorer pour la pagination.",
 			"de": "Anzahl der Arbeitsbereiche, die bei der Seitennavigation übersprungen werden.",
 			"pt-BR": "Número de espaços de trabalho a ignorar na paginação.",
-			"hi": "पृष्ठांकन के लिए छोड़े जाने वाले कार्यस्थानों की संख्या।",
+			"hi": "पृष्ठांकन के लिए छोड़े जाने वाले वर्कस्पेसों की संख्या।",
 			"ja": "ページネーションでスキップするワークスペースの数です。",
 			"zh-Hans": "分页时要跳过的工作区数量。",
 			"ar": "عدد مساحات العمل التي يتم تخطيها عند تقسيم النتائج إلى صفحات."
@@ -1831,7 +1831,7 @@
 			"fr": "Nombre maximal d’espaces de travail à renvoyer.",
 			"de": "Maximale Anzahl der zurückzugebenden Arbeitsbereiche.",
 			"pt-BR": "Número máximo de espaços de trabalho a retornar.",
-			"hi": "लौटाए जाने वाले कार्यस्थानों की अधिकतम संख्या।",
+			"hi": "लौटाए जाने वाले वर्कस्पेसों की अधिकतम संख्या।",
 			"ja": "返されるワークスペースの最大数です。",
 			"zh-Hans": "要返回的工作区最大数量。",
 			"ar": "الحد الأقصى لعدد مساحات العمل التي سيتم إرجاعها."
@@ -1841,7 +1841,7 @@
 			"fr": "Liste des espaces de travail",
 			"de": "Arbeitsbereichsliste",
 			"pt-BR": "Lista de espaços de trabalho",
-			"hi": "कार्यस्थानों की सूची",
+			"hi": "वर्कस्पेसों की सूची",
 			"ja": "ワークスペースの一覧",
 			"zh-Hans": "工作区列表",
 			"ar": "قائمة مساحات العمل"
@@ -1851,7 +1851,7 @@
 			"fr": "Créer un espace de travail",
 			"de": "Arbeitsbereich erstellen",
 			"pt-BR": "Criar um espaço de trabalho",
-			"hi": "कार्यस्थान बनाएँ",
+			"hi": "वर्कस्पेस बनाएँ",
 			"ja": "ワークスペースを作成",
 			"zh-Hans": "创建工作区",
 			"ar": "إنشاء مساحة عمل"
@@ -1861,7 +1861,7 @@
 			"fr": "Crée un espace de travail pour le propriétaire authentifié. Une clé API de gestion est requise.",
 			"de": "Erstellt einen Arbeitsbereich für den authentifizierten Inhaber. Ein Management-API-Schlüssel ist erforderlich.",
 			"pt-BR": "Cria um espaço de trabalho para o titular autenticado. É necessária uma chave de API de gerenciamento.",
-			"hi": "प्रमाणित स्वामी के लिए नया कार्यस्थान बनाता है। प्रबंधन API कुंजी आवश्यक है।",
+			"hi": "प्रमाणित स्वामी के लिए नया वर्कस्पेस बनाता है। प्रबंधन API कुंजी आवश्यक है।",
 			"ja": "認証済みの所有者用に新しいワークスペースを作成します。管理 API キーが必要です。",
 			"zh-Hans": "为经身份验证的所有者创建新的工作区。需要管理 API 密钥。",
 			"ar": "ينشئ مساحة عمل جديدة للمالك المصادق عليه. يلزم مفتاح API للإدارة."
@@ -1871,7 +1871,7 @@
 			"fr": "Espace de travail créé",
 			"de": "Arbeitsbereich erstellt",
 			"pt-BR": "Espaço de trabalho criado",
-			"hi": "कार्यस्थान बनाया गया",
+			"hi": "वर्कस्पेस बनाया गया",
 			"ja": "ワークスペースを作成しました",
 			"zh-Hans": "工作区已创建",
 			"ar": "تم إنشاء مساحة العمل"
@@ -1891,7 +1891,7 @@
 			"fr": "Récupérer un espace de travail",
 			"de": "Arbeitsbereich abrufen",
 			"pt-BR": "Obter um espaço de trabalho",
-			"hi": "कार्यस्थान प्राप्त करें",
+			"hi": "वर्कस्पेस प्राप्त करें",
 			"ja": "ワークスペースを取得",
 			"zh-Hans": "获取工作区",
 			"ar": "الحصول على مساحة عمل"
@@ -1901,7 +1901,7 @@
 			"fr": "Renvoie un espace de travail par UUID ou slug. Une clé API de gestion est requise.",
 			"de": "Gibt einen Arbeitsbereich anhand von UUID oder Slug zurück. Ein Management-API-Schlüssel ist erforderlich.",
 			"pt-BR": "Retorna um espaço de trabalho por UUID ou slug. É necessária uma chave de API de gerenciamento.",
-			"hi": "UUID या slug से कार्यस्थान लौटाता है। प्रबंधन API कुंजी आवश्यक है।",
+			"hi": "UUID या slug से वर्कस्पेस लौटाता है। प्रबंधन API कुंजी आवश्यक है।",
 			"ja": "UUID または slug でワークスペースを返します。管理 API キーが必要です。",
 			"zh-Hans": "根据 UUID 或 slug 返回工作区。需要管理 API 密钥。",
 			"ar": "يعرض مساحة عمل باستخدام UUID أو slug. يلزم مفتاح API للإدارة."
@@ -1911,7 +1911,7 @@
 			"fr": "UUID ou slug de l’espace de travail.",
 			"de": "UUID oder Slug des Arbeitsbereichs.",
 			"pt-BR": "UUID ou slug do espaço de trabalho.",
-			"hi": "कार्यस्थान का UUID या slug।",
+			"hi": "वर्कस्पेस का UUID या slug।",
 			"ja": "ワークスペースの UUID または slug です。",
 			"zh-Hans": "工作区的 UUID 或 slug。",
 			"ar": "UUID أو slug مساحة العمل."
@@ -1921,7 +1921,7 @@
 			"fr": "Métadonnées de l’espace de travail",
 			"de": "Metadaten des Arbeitsbereichs",
 			"pt-BR": "Metadados do espaço de trabalho",
-			"hi": "कार्यस्थान मेटाडेटा",
+			"hi": "वर्कस्पेस मेटाडेटा",
 			"ja": "ワークスペースのメタデータ",
 			"zh-Hans": "工作区元数据",
 			"ar": "بيانات مساحة العمل الوصفية"
@@ -1931,7 +1931,7 @@
 			"fr": "Espace de travail introuvable",
 			"de": "Arbeitsbereich nicht gefunden",
 			"pt-BR": "Espaço de trabalho não encontrado",
-			"hi": "कार्यस्थान नहीं मिला",
+			"hi": "वर्कस्पेस नहीं मिला",
 			"ja": "ワークスペースが見つかりません",
 			"zh-Hans": "未找到工作区",
 			"ar": "لم يتم العثور على مساحة العمل"
@@ -1941,7 +1941,7 @@
 			"fr": "Mettre à jour un espace de travail",
 			"de": "Arbeitsbereich aktualisieren",
 			"pt-BR": "Atualizar um espaço de trabalho",
-			"hi": "कार्यस्थान अपडेट करें",
+			"hi": "वर्कस्पेस अपडेट करें",
 			"ja": "ワークスペースを更新",
 			"zh-Hans": "更新工作区",
 			"ar": "تحديث مساحة عمل"
@@ -1951,7 +1951,7 @@
 			"fr": "Met à jour les métadonnées de l’espace de travail. Une clé API de gestion est requise.",
 			"de": "Aktualisiert die Metadaten des Arbeitsbereichs. Ein Management-API-Schlüssel ist erforderlich.",
 			"pt-BR": "Atualiza os metadados do espaço de trabalho. É necessária uma chave de API de gerenciamento.",
-			"hi": "कार्यस्थान का मेटाडेटा अपडेट करता है। प्रबंधन API कुंजी आवश्यक है।",
+			"hi": "वर्कस्पेस का मेटाडेटा अपडेट करता है। प्रबंधन API कुंजी आवश्यक है।",
 			"ja": "ワークスペースのメタデータを更新します。管理 API キーが必要です。",
 			"zh-Hans": "更新工作区元数据。需要管理 API 密钥。",
 			"ar": "يحدّث بيانات مساحة العمل الوصفية. يلزم مفتاح API للإدارة."
@@ -1961,7 +1961,7 @@
 			"fr": "Métadonnées de l’espace de travail mises à jour",
 			"de": "Arbeitsbereichsmetadaten aktualisiert",
 			"pt-BR": "Metadados do espaço de trabalho atualizados",
-			"hi": "कार्यस्थान मेटाडेटा अपडेट किया गया",
+			"hi": "वर्कस्पेस मेटाडेटा अपडेट किया गया",
 			"ja": "ワークスペースのメタデータを更新しました",
 			"zh-Hans": "工作区元数据已更新",
 			"ar": "تم تحديث بيانات مساحة العمل الوصفية"
@@ -1971,7 +1971,7 @@
 			"fr": "Supprimer un espace de travail",
 			"de": "Arbeitsbereich löschen",
 			"pt-BR": "Excluir um espaço de trabalho",
-			"hi": "कार्यस्थान हटाएँ",
+			"hi": "वर्कस्पेस हटाएँ",
 			"ja": "ワークスペースを削除",
 			"zh-Hans": "删除工作区",
 			"ar": "حذف مساحة عمل"
@@ -1981,7 +1981,7 @@
 			"fr": "Supprime un espace de travail par UUID ou slug. Une clé API de gestion est requise.",
 			"de": "Löscht einen Arbeitsbereich anhand von UUID oder Slug. Ein Management-API-Schlüssel ist erforderlich.",
 			"pt-BR": "Exclui um espaço de trabalho por UUID ou slug. É necessária uma chave de API de gerenciamento.",
-			"hi": "UUID या slug से कार्यस्थान हटाता है। प्रबंधन API कुंजी आवश्यक है।",
+			"hi": "UUID या slug से वर्कस्पेस हटाता है। प्रबंधन API कुंजी आवश्यक है।",
 			"ja": "UUID または slug でワークスペースを削除します。管理 API キーが必要です。",
 			"zh-Hans": "根据 UUID 或 slug 删除工作区。需要管理 API 密钥。",
 			"ar": "يحذف مساحة عمل باستخدام UUID أو slug. يلزم مفتاح API للإدارة."
@@ -1991,7 +1991,7 @@
 			"fr": "Espace de travail supprimé",
 			"de": "Arbeitsbereich gelöscht",
 			"pt-BR": "Espaço de trabalho excluído",
-			"hi": "कार्यस्थान हटाया गया",
+			"hi": "वर्कस्पेस हटाया गया",
 			"ja": "ワークスペースを削除しました",
 			"zh-Hans": "工作区已删除",
 			"ar": "تم حذف مساحة العمل"
@@ -2001,7 +2001,7 @@
 			"fr": "Lister les membres de l’espace de travail",
 			"de": "Mitglieder des Arbeitsbereichs auflisten",
 			"pt-BR": "Listar os membros do espaço de trabalho",
-			"hi": "कार्यस्थान के सदस्यों की सूची बनाएँ",
+			"hi": "वर्कस्पेस के सदस्यों की सूची बनाएँ",
 			"ja": "ワークスペースのメンバーを一覧表示",
 			"zh-Hans": "列出工作区成员",
 			"ar": "عرض أعضاء مساحة العمل"
@@ -2011,7 +2011,7 @@
 			"fr": "Répertorie les membres et leurs rôles dans un espace de travail. Une clé API de gestion est requise.",
 			"de": "Listet Mitglieder und ihre Rollen in einem Arbeitsbereich auf. Ein Management-API-Schlüssel ist erforderlich.",
 			"pt-BR": "Lista os membros e suas funções em um espaço de trabalho. É necessária uma chave de API de gerenciamento.",
-			"hi": "कार्यस्थान के सदस्यों और उनकी भूमिकाओं की सूची देता है। प्रबंधन API कुंजी आवश्यक है।",
+			"hi": "वर्कस्पेस के सदस्यों और उनकी भूमिकाओं की सूची देता है। प्रबंधन API कुंजी आवश्यक है।",
 			"ja": "ワークスペースのメンバーとロールを一覧表示します。管理 API キーが必要です。",
 			"zh-Hans": "列出工作区成员及其角色。需要管理 API 密钥。",
 			"ar": "يعرض الأعضاء وأدوارهم في مساحة العمل. يلزم مفتاح API للإدارة."
@@ -2021,7 +2021,7 @@
 			"fr": "Liste des membres de l’espace de travail",
 			"de": "Mitgliederliste des Arbeitsbereichs",
 			"pt-BR": "Lista de membros do espaço de trabalho",
-			"hi": "कार्यस्थान के सदस्यों की सूची",
+			"hi": "वर्कस्पेस के सदस्यों की सूची",
 			"ja": "ワークスペースのメンバー一覧",
 			"zh-Hans": "工作区成员列表",
 			"ar": "قائمة أعضاء مساحة العمل"
@@ -2031,7 +2031,7 @@
 			"fr": "Ajouter des membres à l’espace de travail",
 			"de": "Mitglieder zum Arbeitsbereich hinzufügen",
 			"pt-BR": "Adicionar membros ao espaço de trabalho",
-			"hi": "कार्यस्थान में सदस्य जोड़ें",
+			"hi": "वर्कस्पेस में सदस्य जोड़ें",
 			"ja": "ワークスペースにメンバーを追加",
 			"zh-Hans": "向工作区添加成员",
 			"ar": "إضافة أعضاء إلى مساحة العمل"
@@ -2041,7 +2041,7 @@
 			"fr": "Ajoute des utilisateurs existants à un espace de travail avec le rôle `admin` ou `member`. Une clé API de gestion est requise.",
 			"de": "Fügt vorhandene Benutzer mit der Rolle `admin` oder `member` zu einem Arbeitsbereich hinzu. Ein Management-API-Schlüssel ist erforderlich.",
 			"pt-BR": "Adiciona usuários existentes a um espaço de trabalho com a função `admin` ou `member`. É necessária uma chave de API de gerenciamento.",
-			"hi": "मौजूदा उपयोगकर्ताओं को `admin` या `member` भूमिका के साथ कार्यस्थान में जोड़ता है। प्रबंधन API कुंजी आवश्यक है।",
+			"hi": "मौजूदा उपयोगकर्ताओं को `admin` या `member` भूमिका के साथ वर्कस्पेस में जोड़ता है। प्रबंधन API कुंजी आवश्यक है।",
 			"ja": "既存のユーザーを `admin` または `member` ロールでワークスペースに追加します。管理 API キーが必要です。",
 			"zh-Hans": "将现有用户以 `admin` 或 `member` 角色添加到工作区。需要管理 API 密钥。",
 			"ar": "يضيف مستخدمين حاليين إلى مساحة عمل بدور `admin` أو `member`. يلزم مفتاح API للإدارة."
@@ -2071,7 +2071,7 @@
 			"fr": "Supprimer des membres de l’espace de travail",
 			"de": "Mitglieder aus dem Arbeitsbereich entfernen",
 			"pt-BR": "Remover membros do espaço de trabalho",
-			"hi": "कार्यस्थान से सदस्य हटाएँ",
+			"hi": "वर्कस्पेस से सदस्य हटाएँ",
 			"ja": "ワークスペースからメンバーを削除",
 			"zh-Hans": "从工作区移除成员",
 			"ar": "إزالة أعضاء من مساحة العمل"
@@ -2081,7 +2081,7 @@
 			"fr": "Supprime de l’espace de travail les membres qui n’en sont pas propriétaires. Une clé API de gestion est requise.",
 			"de": "Entfernt Mitglieder, die nicht Inhaber sind, aus einem Arbeitsbereich. Ein Management-API-Schlüssel ist erforderlich.",
 			"pt-BR": "Remove do espaço de trabalho os membros que não são titulares. É necessária uma chave de API de gerenciamento.",
-			"hi": "कार्यस्थान से गैर-स्वामी सदस्यों को हटाता है। प्रबंधन API कुंजी आवश्यक है।",
+			"hi": "वर्कस्पेस से गैर-स्वामी सदस्यों को हटाता है। प्रबंधन API कुंजी आवश्यक है।",
 			"ja": "所有者以外のメンバーをワークスペースから削除します。管理 API キーが必要です。",
 			"zh-Hans": "从工作区移除非所有者成员。需要管理 API 密钥。",
 			"ar": "يزيل الأعضاء غير المالكين من مساحة العمل. يلزم مفتاح API للإدارة."
@@ -2101,7 +2101,7 @@
 			"fr": "Modifier le rôle d’un membre de l’espace de travail",
 			"de": "Rolle eines Arbeitsbereichsmitglieds aktualisieren",
 			"pt-BR": "Atualizar a função de um membro do espaço de trabalho",
-			"hi": "कार्यस्थान सदस्य की भूमिका अपडेट करें",
+			"hi": "वर्कस्पेस सदस्य की भूमिका अपडेट करें",
 			"ja": "ワークスペースメンバーのロールを更新",
 			"zh-Hans": "更新工作区成员角色",
 			"ar": "تحديث دور عضو في مساحة العمل"
@@ -2111,7 +2111,7 @@
 			"fr": "Modifie le rôle d’un membre qui n’est pas propriétaire entre `admin` et `member`. Le propriétaire de l’espace de travail et une clé API de gestion sont requis.",
 			"de": "Ändert die Rolle eines Mitglieds, das nicht Inhaber ist, zwischen `admin` und `member`. Arbeitsbereichsinhaber und Management-API-Schlüssel erforderlich.",
 			"pt-BR": "Altera a função de um membro que não é titular entre `admin` e `member`. São necessários o titular do espaço de trabalho e uma chave de API de gerenciamento.",
-			"hi": "गैर-स्वामी सदस्य की भूमिका को `admin` और `member` के बीच बदलता है। कार्यस्थान के स्वामी और प्रबंधन API कुंजी की आवश्यकता है।",
+			"hi": "गैर-स्वामी सदस्य की भूमिका को `admin` और `member` के बीच बदलता है। वर्कस्पेस के स्वामी और प्रबंधन API कुंजी की आवश्यकता है।",
 			"ja": "所有者以外のメンバーのロールを `admin` と `member` の間で変更します。ワークスペース所有者と管理 API キーが必要です。",
 			"zh-Hans": "将非所有者成员的角色在 `admin` 和 `member` 之间更改。需要工作区所有者身份和管理 API 密钥。",
 			"ar": "يغيّر دور العضو غير المالك بين `admin` و`member`. يلزم مالك مساحة العمل ومفتاح API للإدارة."
@@ -2131,7 +2131,7 @@
 			"fr": "Membre de l’espace de travail mis à jour",
 			"de": "Arbeitsbereichsmitglied aktualisiert",
 			"pt-BR": "Membro do espaço de trabalho atualizado",
-			"hi": "कार्यस्थान सदस्य अपडेट किया गया",
+			"hi": "वर्कस्पेस सदस्य अपडेट किया गया",
 			"ja": "ワークスペースメンバーを更新しました",
 			"zh-Hans": "工作区成员已更新",
 			"ar": "تم تحديث عضو مساحة العمل"
@@ -2151,7 +2151,7 @@
 			"fr": "Membre ou espace de travail introuvable",
 			"de": "Mitglied oder Arbeitsbereich nicht gefunden",
 			"pt-BR": "Membro ou espaço de trabalho não encontrado",
-			"hi": "सदस्य या कार्यस्थान नहीं मिला",
+			"hi": "सदस्य या वर्कस्पेस नहीं मिला",
 			"ja": "メンバーまたはワークスペースが見つかりません",
 			"zh-Hans": "未找到成员或工作区",
 			"ar": "لم يتم العثور على العضو أو مساحة العمل"
@@ -2171,7 +2171,7 @@
 			"fr": "Lister les invitations de l’espace de travail",
 			"de": "Einladungen für den Arbeitsbereich auflisten",
 			"pt-BR": "Listar convites do espaço de trabalho",
-			"hi": "कार्यस्थान के आमंत्रणों की सूची बनाएँ",
+			"hi": "वर्कस्पेस के आमंत्रणों की सूची बनाएँ",
 			"ja": "ワークスペースの招待を一覧表示",
 			"zh-Hans": "列出工作区邀请",
 			"ar": "عرض دعوات مساحة العمل"
@@ -2191,7 +2191,7 @@
 			"fr": "Liste des invitations de l’espace de travail",
 			"de": "Einladungsliste des Arbeitsbereichs",
 			"pt-BR": "Lista de convites do espaço de trabalho",
-			"hi": "कार्यस्थान आमंत्रण सूची",
+			"hi": "वर्कस्पेस आमंत्रण सूची",
 			"ja": "ワークスペースの招待一覧",
 			"zh-Hans": "工作区邀请列表",
 			"ar": "قائمة دعوات مساحة العمل"
@@ -2201,7 +2201,7 @@
 			"fr": "Créer une invitation à l’espace de travail",
 			"de": "Einladung für den Arbeitsbereich erstellen",
 			"pt-BR": "Criar um convite para o espaço de trabalho",
-			"hi": "कार्यस्थान का आमंत्रण बनाएँ",
+			"hi": "वर्कस्पेस का आमंत्रण बनाएँ",
 			"ja": "ワークスペースの招待を作成",
 			"zh-Hans": "创建工作区邀请",
 			"ar": "إنشاء دعوة لمساحة العمل"
@@ -2221,7 +2221,7 @@
 			"fr": "Invitation à l’espace de travail créée",
 			"de": "Einladung für den Arbeitsbereich erstellt",
 			"pt-BR": "Convite para o espaço de trabalho criado",
-			"hi": "कार्यस्थान का आमंत्रण बनाया गया",
+			"hi": "वर्कस्पेस का आमंत्रण बनाया गया",
 			"ja": "ワークスペースの招待を作成しました",
 			"zh-Hans": "工作区邀请已创建",
 			"ar": "تم إنشاء دعوة مساحة العمل"
@@ -2251,7 +2251,7 @@
 			"fr": "Supprimer une invitation de l’espace de travail",
 			"de": "Einladung für den Arbeitsbereich löschen",
 			"pt-BR": "Excluir um convite do espaço de trabalho",
-			"hi": "कार्यस्थान का आमंत्रण हटाएँ",
+			"hi": "वर्कस्पेस का आमंत्रण हटाएँ",
 			"ja": "ワークスペースの招待を削除",
 			"zh-Hans": "删除工作区邀请",
 			"ar": "حذف دعوة مساحة العمل"
@@ -2291,7 +2291,7 @@
 			"fr": "Invitation ou espace de travail introuvable",
 			"de": "Einladung oder Arbeitsbereich nicht gefunden",
 			"pt-BR": "Convite ou espaço de trabalho não encontrado",
-			"hi": "आमंत्रण या कार्यस्थान नहीं मिला",
+			"hi": "आमंत्रण या वर्कस्पेस नहीं मिला",
 			"ja": "招待またはワークスペースが見つかりません",
 			"zh-Hans": "未找到邀请或工作区",
 			"ar": "لم يتم العثور على الدعوة أو مساحة العمل"
@@ -2301,7 +2301,7 @@
 			"fr": "Lister les demandes d’adhésion à l’espace de travail",
 			"de": "Beitrittsanfragen für den Arbeitsbereich auflisten",
 			"pt-BR": "Listar solicitações para ingressar no espaço de trabalho",
-			"hi": "कार्यस्थान में शामिल होने के अनुरोधों की सूची बनाएँ",
+			"hi": "वर्कस्पेस में शामिल होने के अनुरोधों की सूची बनाएँ",
 			"ja": "ワークスペースへの参加リクエストを一覧表示",
 			"zh-Hans": "列出工作区加入请求",
 			"ar": "عرض طلبات الانضمام إلى مساحة العمل"
@@ -2311,7 +2311,7 @@
 			"fr": "Répertorie les demandes récentes d’adhésion à l’espace de travail. Une clé API de gestion est requise.",
 			"de": "Listet aktuelle Beitrittsanfragen für den Arbeitsbereich auf. Ein Management-API-Schlüssel ist erforderlich.",
 			"pt-BR": "Lista solicitações recentes para ingressar no espaço de trabalho. É necessária uma chave de API de gerenciamento.",
-			"hi": "कार्यस्थान में शामिल होने के हाल के अनुरोधों की सूची देता है। प्रबंधन API कुंजी आवश्यक है।",
+			"hi": "वर्कस्पेस में शामिल होने के हाल के अनुरोधों की सूची देता है। प्रबंधन API कुंजी आवश्यक है।",
 			"ja": "最近のワークスペース参加リクエストを一覧表示します。管理 API キーが必要です。",
 			"zh-Hans": "列出最近的工作区加入请求。需要管理 API 密钥。",
 			"ar": "يعرض طلبات الانضمام الأخيرة إلى مساحة العمل. يلزم مفتاح API للإدارة."
@@ -2331,7 +2331,7 @@
 			"fr": "Liste des demandes d’adhésion à l’espace de travail",
 			"de": "Liste der Beitrittsanfragen für den Arbeitsbereich",
 			"pt-BR": "Lista de solicitações para ingressar no espaço de trabalho",
-			"hi": "कार्यस्थान में शामिल होने के अनुरोधों की सूची",
+			"hi": "वर्कस्पेस में शामिल होने के अनुरोधों की सूची",
 			"ja": "ワークスペース参加リクエストの一覧",
 			"zh-Hans": "工作区加入请求列表",
 			"ar": "قائمة طلبات الانضمام إلى مساحة العمل"
@@ -2351,7 +2351,7 @@
 			"fr": "Approuver une demande d’adhésion à l’espace de travail",
 			"de": "Beitrittsanfrage für den Arbeitsbereich genehmigen",
 			"pt-BR": "Aprovar uma solicitação para ingressar no espaço de trabalho",
-			"hi": "कार्यस्थान में शामिल होने का अनुरोध स्वीकृत करें",
+			"hi": "वर्कस्पेस में शामिल होने का अनुरोध स्वीकृत करें",
 			"ja": "ワークスペースへの参加リクエストを承認",
 			"zh-Hans": "批准工作区加入请求",
 			"ar": "الموافقة على طلب الانضمام إلى مساحة العمل"
@@ -2391,7 +2391,7 @@
 			"fr": "Demande d’adhésion ou espace de travail introuvable",
 			"de": "Beitrittsanfrage oder Arbeitsbereich nicht gefunden",
 			"pt-BR": "Solicitação de ingresso ou espaço de trabalho não encontrado",
-			"hi": "शामिल होने का अनुरोध या कार्यस्थान नहीं मिला",
+			"hi": "शामिल होने का अनुरोध या वर्कस्पेस नहीं मिला",
 			"ja": "参加リクエストまたはワークスペースが見つかりません",
 			"zh-Hans": "未找到加入请求或工作区",
 			"ar": "لم يتم العثور على طلب الانضمام أو مساحة العمل"
@@ -2411,7 +2411,7 @@
 			"fr": "Rejeter une demande d’adhésion à l’espace de travail",
 			"de": "Beitrittsanfrage für den Arbeitsbereich ablehnen",
 			"pt-BR": "Rejeitar uma solicitação para ingressar no espaço de trabalho",
-			"hi": "कार्यस्थान में शामिल होने का अनुरोध अस्वीकार करें",
+			"hi": "वर्कस्पेस में शामिल होने का अनुरोध अस्वीकार करें",
 			"ja": "ワークスペースへの参加リクエストを拒否",
 			"zh-Hans": "拒绝工作区加入请求",
 			"ar": "رفض طلب الانضمام إلى مساحة العمل"
@@ -2451,7 +2451,7 @@
 			"fr": "Mettre à jour les paramètres SSO de l’espace de travail",
 			"de": "SSO-Einstellungen des Arbeitsbereichs aktualisieren",
 			"pt-BR": "Atualizar as configurações de SSO do espaço de trabalho",
-			"hi": "कार्यस्थान की SSO सेटिंग अपडेट करें",
+			"hi": "वर्कस्पेस की SSO सेटिंग अपडेट करें",
 			"ja": "ワークスペースの SSO 設定を更新",
 			"zh-Hans": "更新工作区 SSO 设置",
 			"ar": "تحديث إعدادات SSO لمساحة العمل"
@@ -2491,7 +2491,7 @@
 			"fr": "Récupérer les paramètres SCIM de l’espace de travail",
 			"de": "SCIM-Einstellungen des Arbeitsbereichs abrufen",
 			"pt-BR": "Obter as configurações de SCIM do espaço de trabalho",
-			"hi": "कार्यस्थान की SCIM सेटिंग प्राप्त करें",
+			"hi": "वर्कस्पेस की SCIM सेटिंग प्राप्त करें",
 			"ja": "ワークスペースの SCIM 設定を取得",
 			"zh-Hans": "获取工作区 SCIM 设置",
 			"ar": "الحصول على إعدادات SCIM لمساحة العمل"
@@ -2531,7 +2531,7 @@
 			"fr": "Met à jour le point de terminaison SCIM de l’espace de travail. Son activation nécessite l’extension d’identité et `settings:write`.",
 			"de": "Aktualisiert den SCIM-Endpunkt des Arbeitsbereichs. Zum Aktivieren von SCIM sind das Identity-Add-on und `settings:write` erforderlich.",
 			"pt-BR": "Atualiza o endpoint SCIM do espaço de trabalho. Para habilitar o SCIM, é necessário o complemento de identidade e `settings:write`.",
-			"hi": "कार्यस्थान के SCIM एंडपॉइंट को अपडेट करता है। SCIM सक्षम करने के लिए identity ऐड-ऑन और `settings:write` आवश्यक हैं।",
+			"hi": "वर्कस्पेस के SCIM एंडपॉइंट को अपडेट करता है। SCIM सक्षम करने के लिए identity ऐड-ऑन और `settings:write` आवश्यक हैं।",
 			"ja": "ワークスペースの SCIM エンドポイントを更新します。SCIM を有効にするには identity アドオンと `settings:write` が必要です。",
 			"zh-Hans": "更新工作区 SCIM 端点。启用 SCIM 需要 identity 附加组件和 `settings:write`。",
 			"ar": "يحدّث نقطة نهاية SCIM لمساحة العمل. يتطلب تفعيل SCIM إضافة الهوية وصلاحية `settings:write`."
@@ -2591,7 +2591,7 @@
 			"fr": "Récupérer l’annuaire de l’espace de travail",
 			"de": "Arbeitsbereichsverzeichnis abrufen",
 			"pt-BR": "Obter o diretório do espaço de trabalho",
-			"hi": "कार्यस्थान डायरेक्टरी प्राप्त करें",
+			"hi": "वर्कस्पेस डायरेक्टरी प्राप्त करें",
 			"ja": "ワークスペースのディレクトリを取得",
 			"zh-Hans": "获取工作区目录",
 			"ar": "الحصول على دليل مساحة العمل"
@@ -2611,7 +2611,7 @@
 			"fr": "Annuaire de l’espace de travail",
 			"de": "Arbeitsbereichsverzeichnis",
 			"pt-BR": "Diretório do espaço de trabalho",
-			"hi": "कार्यस्थान डायरेक्टरी",
+			"hi": "वर्कस्पेस डायरेक्टरी",
 			"ja": "ワークスペースのディレクトリ",
 			"zh-Hans": "工作区目录",
 			"ar": "دليل مساحة العمل"
@@ -2631,7 +2631,7 @@
 			"fr": "Définit ou efface les dérogations de rôle et de service effectives d’un membre de l’espace de travail. `settings:write` est requis.",
 			"de": "Legt effektive Rollen- und Abteilungsüberschreibungen für ein Arbeitsbereichsmitglied fest oder hebt sie auf. `settings:write` erforderlich.",
 			"pt-BR": "Define ou limpa as substituições efetivas de função e departamento para um membro do espaço de trabalho. É necessário `settings:write`.",
-			"hi": "कार्यस्थान सदस्य के प्रभावी भूमिका और विभाग ओवरराइड सेट या साफ़ करता है। `settings:write` आवश्यक है।",
+			"hi": "वर्कस्पेस सदस्य के प्रभावी भूमिका और विभाग ओवरराइड सेट या साफ़ करता है। `settings:write` आवश्यक है।",
 			"ja": "ワークスペースメンバーの有効なロールと部門のオーバーライドを設定または解除します。`settings:write` が必要です。",
 			"zh-Hans": "设置或清除工作区成员的有效角色和部门覆盖项。需要 `settings:write`。",
 			"ar": "يضبط أو يمسح تجاوزات الدور والقسم الفعلية لعضو مساحة العمل. يلزم `settings:write`."
@@ -2651,7 +2651,7 @@
 			"fr": "Créer un service dans l’espace de travail",
 			"de": "Arbeitsbereichsabteilung erstellen",
 			"pt-BR": "Criar um departamento no espaço de trabalho",
-			"hi": "कार्यस्थान का विभाग बनाएँ",
+			"hi": "वर्कस्पेस का विभाग बनाएँ",
 			"ja": "ワークスペースの部門を作成",
 			"zh-Hans": "创建工作区部门",
 			"ar": "إنشاء قسم في مساحة العمل"
@@ -2681,7 +2681,7 @@
 			"fr": "Mettre à jour un service de l’espace de travail",
 			"de": "Arbeitsbereichsabteilung aktualisieren",
 			"pt-BR": "Atualizar um departamento do espaço de trabalho",
-			"hi": "कार्यस्थान का विभाग अपडेट करें",
+			"hi": "वर्कस्पेस का विभाग अपडेट करें",
 			"ja": "ワークスペースの部門を更新",
 			"zh-Hans": "更新工作区部门",
 			"ar": "تحديث قسم مساحة العمل"
@@ -2721,7 +2721,7 @@
 			"fr": "Ajoute ou met à jour l’appartenance manuelle d’un utilisateur de l’espace de travail à un service.",
 			"de": "Fügt eine manuelle Abteilungszugehörigkeit für einen Arbeitsbereichsbenutzer hinzu oder aktualisiert sie.",
 			"pt-BR": "Adiciona ou atualiza a associação manual de um usuário do espaço de trabalho a um departamento.",
-			"hi": "कार्यस्थान उपयोगकर्ता की मैन्युअल विभाग सदस्यता जोड़ता या अपडेट करता है।",
+			"hi": "वर्कस्पेस उपयोगकर्ता की मैन्युअल विभाग सदस्यता जोड़ता या अपडेट करता है।",
 			"ja": "ワークスペースユーザーの部門への手動メンバー登録を追加または更新します。",
 			"zh-Hans": "添加或更新工作区用户的手动部门成员关系。",
 			"ar": "يضيف أو يحدّث عضوية يدوية لمستخدم مساحة العمل في قسم."
@@ -2781,7 +2781,7 @@
 			"fr": "Associe un groupe provisionné à un service de l’espace de travail et à un rôle d’accès.",
 			"de": "Ordnet eine bereitgestellte Gruppe einer Arbeitsbereichsabteilung und einer Zugriffsrolle zu.",
 			"pt-BR": "Mapeia um grupo provisionado para um departamento do espaço de trabalho e uma função de acesso.",
-			"hi": "प्रोविज़न किए गए समूह को कार्यस्थान के विभाग और एक्सेस भूमिका से मैप करता है।",
+			"hi": "प्रोविज़न किए गए समूह को वर्कस्पेस के विभाग और एक्सेस भूमिका से मैप करता है।",
 			"ja": "プロビジョニング済みのグループをワークスペースの部門とアクセスロールに対応付けます。",
 			"zh-Hans": "将已配置的组映射到工作区部门和访问角色。",
 			"ar": "يربط مجموعة مهيأة بقسم في مساحة العمل ودور وصول."
@@ -2841,7 +2841,7 @@
 			"fr": "Répertorie les préréglages actifs visibles pour l’espace de travail de la clé de gestion.",
 			"de": "Listet aktive Voreinstellungen auf, die für den Arbeitsbereich des Management-Schlüssels sichtbar sind.",
 			"pt-BR": "Lista as predefinições ativas visíveis para o espaço de trabalho da chave de gerenciamento.",
-			"hi": "प्रबंधन कुंजी के कार्यस्थान में दिखाई देने वाले सक्रिय प्रीसेट की सूची देता है।",
+			"hi": "प्रबंधन कुंजी के वर्कस्पेस में दिखाई देने वाले सक्रिय प्रीसेट की सूची देता है।",
 			"ja": "管理キーのワークスペースから参照できる有効なプリセットを一覧表示します。",
 			"zh-Hans": "列出管理密钥工作区可见的活动预设。",
 			"ar": "يعرض الإعدادات المسبقة النشطة المرئية لمساحة عمل مفتاح الإدارة."
@@ -2881,7 +2881,7 @@
 			"fr": "Crée un préréglage d’espace de travail avec des valeurs durables pour les prompts, le routage, les paramètres et les plugins.",
 			"de": "Erstellt eine Arbeitsbereichs-Voreinstellung mit dauerhaft gespeicherten Standardwerten für Prompts, Routing, Parameter und Plugins.",
 			"pt-BR": "Cria uma predefinição do espaço de trabalho com padrões persistentes de prompt, roteamento, parâmetros e plugins.",
-			"hi": "स्थायी प्रॉम्प्ट, रूटिंग, पैरामीटर और प्लगइन डिफ़ॉल्ट के साथ कार्यस्थान प्रीसेट बनाता है।",
+			"hi": "स्थायी प्रॉम्प्ट, रूटिंग, पैरामीटर और प्लगइन डिफ़ॉल्ट के साथ वर्कस्पेस प्रीसेट बनाता है।",
 			"ja": "プロンプト、ルーティング、パラメーター、プラグインの既定値を保持するワークスペースプリセットを作成します。",
 			"zh-Hans": "创建工作区预设，其中包含持久的提示、路由、参数和插件默认值。",
 			"ar": "ينشئ إعدادًا مسبقًا لمساحة العمل مع قيم افتراضية دائمة للمطالبات والتوجيه والمعلمات والإضافات."
@@ -2931,7 +2931,7 @@
 			"fr": "Renomme l’identifiant de publication de l’espace de travail tout en conservant l’ancien comme alias.",
 			"de": "Benennt die Publisher-Kennung des Arbeitsbereichs um und behält die vorherige Kennung als Alias bei.",
 			"pt-BR": "Renomeia o identificador de publicação do espaço de trabalho, mantendo o anterior como alias.",
-			"hi": "पिछले हैंडल को alias के रूप में रखते हुए कार्यस्थान के प्रकाशक हैंडल का नाम बदलता है।",
+			"hi": "पिछले हैंडल को alias के रूप में रखते हुए वर्कस्पेस के प्रकाशक हैंडल का नाम बदलता है।",
 			"ja": "以前のハンドルをエイリアスとして残したまま、ワークスペースの発行者ハンドルを変更します。",
 			"zh-Hans": "重命名工作区发布者句柄，并将旧句柄保留为别名。",
 			"ar": "يعيد تسمية معرّف ناشر مساحة العمل مع الاحتفاظ بالمعرّف السابق كاسم مستعار."
@@ -3191,7 +3191,7 @@
 			"fr": "Copie la version publique active ou sélectionnée dans l’espace de travail de gestion sous forme de préréglage privé.",
 			"de": "Kopiert die aktive oder ausgewählte öffentliche Version als private Voreinstellung in den Management-Arbeitsbereich.",
 			"pt-BR": "Copia a versão pública ativa ou selecionada para o espaço de trabalho de gerenciamento como uma predefinição privada.",
-			"hi": "सक्रिय या चुने गए सार्वजनिक संस्करण को प्रबंधन कार्यस्थान में निजी प्रीसेट के रूप में कॉपी करता है।",
+			"hi": "सक्रिय या चुने गए सार्वजनिक संस्करण को प्रबंधन वर्कस्पेस में निजी प्रीसेट के रूप में कॉपी करता है।",
 			"ja": "有効または選択した公開バージョンを、管理ワークスペースに非公開プリセットとしてコピーします。",
 			"zh-Hans": "将活动或选定的公共版本复制到管理工作区，作为私有预设。",
 			"ar": "ينسخ الإصدار العام النشط أو المحدد إلى مساحة عمل الإدارة كإعداد مسبق خاص."
@@ -3311,7 +3311,7 @@
 			"fr": "Répertorie les clés API de l’espace de travail authentifié. Une clé API de gestion est requise.",
 			"de": "Listet API-Schlüssel für den authentifizierten Arbeitsbereich auf. Ein Management-API-Schlüssel ist erforderlich.",
 			"pt-BR": "Lista as chaves de API do espaço de trabalho autenticado. É necessária uma chave de API de gerenciamento.",
-			"hi": "प्रमाणित कार्यस्थान की API कुंजियों की सूची देता है। प्रबंधन API कुंजी आवश्यक है।",
+			"hi": "प्रमाणित वर्कस्पेस की API कुंजियों की सूची देता है। प्रबंधन API कुंजी आवश्यक है।",
 			"ja": "認証済みワークスペースの API キーを一覧表示します。管理 API キーが必要です。",
 			"zh-Hans": "列出经身份验证的工作区的 API 密钥。需要管理 API 密钥。",
 			"ar": "يعرض مفاتيح API لمساحة العمل المصادق عليها. يلزم مفتاح API للإدارة."
@@ -3411,7 +3411,7 @@
 			"fr": "Crée une nouvelle clé API dans l’espace de travail authentifié. Une clé API de gestion est requise.",
 			"de": "Erstellt einen neuen API-Schlüssel im authentifizierten Arbeitsbereich. Ein Management-API-Schlüssel ist erforderlich.",
 			"pt-BR": "Cria uma nova chave de API no espaço de trabalho autenticado. É necessária uma chave de API de gerenciamento.",
-			"hi": "प्रमाणित कार्यस्थान में नई API कुंजी बनाता है। प्रबंधन API कुंजी आवश्यक है।",
+			"hi": "प्रमाणित वर्कस्पेस में नई API कुंजी बनाता है। प्रबंधन API कुंजी आवश्यक है।",
 			"ja": "認証済みワークスペースに新しい API キーを作成します。管理 API キーが必要です。",
 			"zh-Hans": "在经身份验证的工作区中创建新的 API 密钥。需要管理 API 密钥。",
 			"ar": "ينشئ مفتاح API جديدًا في مساحة العمل المصادق عليها. يلزم مفتاح API للإدارة."
@@ -3421,7 +3421,7 @@
 			"fr": "Remplacement facultatif de l’espace de travail pour les appels internes.",
 			"de": "Optionale Arbeitsbereichsüberschreibung für interne Aufrufer.",
 			"pt-BR": "Substituição opcional do espaço de trabalho para chamadas internas.",
-			"hi": "आंतरिक कॉल करने वालों के लिए वैकल्पिक कार्यस्थान ओवरराइड।",
+			"hi": "आंतरिक कॉल करने वालों के लिए वैकल्पिक वर्कस्पेस ओवरराइड।",
 			"ja": "内部呼び出し元向けの任意のワークスペース上書きです。",
 			"zh-Hans": "供内部调用方使用的可选工作区覆盖项。",
 			"ar": "تجاوز اختياري لمساحة العمل للجهات المستدعية الداخلية."
@@ -3491,7 +3491,7 @@
 			"fr": "Renvoie les métadonnées d’une clé API de l’espace de travail authentifié. Une clé API de gestion est requise.",
 			"de": "Gibt Metadaten zu einem API-Schlüssel im authentifizierten Arbeitsbereich zurück. Ein Management-API-Schlüssel ist erforderlich.",
 			"pt-BR": "Retorna os metadados de uma chave de API no espaço de trabalho autenticado. É necessária uma chave de API de gerenciamento.",
-			"hi": "प्रमाणित कार्यस्थान की एक API कुंजी का मेटाडेटा लौटाता है। प्रबंधन API कुंजी आवश्यक है।",
+			"hi": "प्रमाणित वर्कस्पेस की एक API कुंजी का मेटाडेटा लौटाता है। प्रबंधन API कुंजी आवश्यक है।",
 			"ja": "認証済みワークスペースにある 1 つの API キーのメタデータを返します。管理 API キーが必要です。",
 			"zh-Hans": "返回经身份验证的工作区中单个 API 密钥的元数据。需要管理 API 密钥。",
 			"ar": "يعرض بيانات مفتاح API واحد في مساحة العمل المصادق عليها. يلزم مفتاح API للإدارة."
@@ -3581,7 +3581,7 @@
 			"fr": "Supprime une clé API de l’espace de travail authentifié. Une clé API de gestion est requise.",
 			"de": "Löscht einen API-Schlüssel im authentifizierten Arbeitsbereich. Ein Management-API-Schlüssel ist erforderlich.",
 			"pt-BR": "Exclui uma chave de API do espaço de trabalho autenticado. É necessária uma chave de API de gerenciamento.",
-			"hi": "प्रमाणित कार्यस्थान की API कुंजी हटाता है। प्रबंधन API कुंजी आवश्यक है।",
+			"hi": "प्रमाणित वर्कस्पेस की API कुंजी हटाता है। प्रबंधन API कुंजी आवश्यक है।",
 			"ja": "認証済みワークスペースの API キーを削除します。管理 API キーが必要です。",
 			"zh-Hans": "删除经身份验证的工作区中的 API 密钥。需要管理 API 密钥。",
 			"ar": "يحذف مفتاح API في مساحة العمل المصادق عليها. يلزم مفتاح API للإدارة."
@@ -3671,7 +3671,7 @@
 			"fr": "Actualise l’état global mis en cache des politiques d’une clé API d’espace de travail. Nécessite un appel authentifié de gestion de l’espace de travail.",
 			"de": "Aktualisiert den global zwischengespeicherten Richtlinienstatus für einen Arbeitsbereichs-API-Schlüssel. Erfordert einen authentifizierten Aufruf der Arbeitsbereichsverwaltung.",
 			"pt-BR": "Atualiza o estado global em cache das políticas de uma chave de API do espaço de trabalho. Requer uma chamada autenticada de gerenciamento do espaço de trabalho.",
-			"hi": "कार्यस्थान API कुंजी की वैश्विक कैश की गई नीति स्थिति रीफ़्रेश करता है। प्रमाणित कार्यस्थान प्रबंधन कॉल आवश्यक है।",
+			"hi": "वर्कस्पेस API कुंजी की वैश्विक कैश की गई नीति स्थिति रीफ़्रेश करता है। प्रमाणित वर्कस्पेस प्रबंधन कॉल आवश्यक है।",
 			"ja": "ワークスペース API キーのグローバルにキャッシュされたポリシー状態を更新します。認証済みのワークスペース管理呼び出しが必要です。",
 			"zh-Hans": "刷新工作区 API 密钥的全局缓存策略状态。需要经过身份验证的工作区管理调用方。",
 			"ar": "يحدّث حالة السياسة المخزنة مؤقتًا على مستوى العالم لمفتاح API لمساحة العمل. يتطلب جهة مستدعية موثقة لإدارة مساحة العمل."
@@ -3701,7 +3701,7 @@
 			"fr": "Récupérer les paramètres de notification de l’espace de travail",
 			"de": "Benachrichtigungseinstellungen des Arbeitsbereichs abrufen",
 			"pt-BR": "Obter as configurações de notificação do espaço de trabalho",
-			"hi": "कार्यस्थान की सूचना सेटिंग प्राप्त करें",
+			"hi": "वर्कस्पेस की सूचना सेटिंग प्राप्त करें",
 			"ja": "ワークスペースの通知設定を取得",
 			"zh-Hans": "获取工作区通知设置",
 			"ar": "الحصول على إعدادات إشعارات مساحة العمل"
@@ -3711,7 +3711,7 @@
 			"fr": "Renvoie la politique de recharge automatique, la configuration des e-mails de solde faible et les préférences e-mail de l’espace de travail. `settings:read` et une identité `owner` ou `admin` sont requis.",
 			"de": "Gibt die Richtlinie für automatische Aufladung, die E-Mail-Konfiguration bei niedrigem Guthaben und die E-Mail-Einstellungen des Arbeitsbereichs zurück. `settings:read` sowie eine `owner`- oder `admin`-Identität erforderlich.",
 			"pt-BR": "Retorna a política de recarga automática, a configuração de e-mail para saldo baixo e as preferências de e-mail do espaço de trabalho. São necessários `settings:read` e uma identidade `owner` ou `admin`.",
-			"hi": "ऑटो टॉप-अप नीति, कम बैलेंस ईमेल कॉन्फ़िगरेशन और कार्यस्थान की ईमेल प्राथमिकताएँ लौटाता है। `settings:read` तथा `owner` या `admin` पहचान आवश्यक है।",
+			"hi": "ऑटो टॉप-अप नीति, कम बैलेंस ईमेल कॉन्फ़िगरेशन और वर्कस्पेस की ईमेल प्राथमिकताएँ लौटाता है। `settings:read` तथा `owner` या `admin` पहचान आवश्यक है।",
 			"ja": "自動チャージポリシー、残高低下時のメール設定、ワークスペースのメール設定を返します。`settings:read` と `owner` または `admin` の ID が必要です。",
 			"zh-Hans": "返回自动充值策略、余额不足邮件配置和工作区邮件偏好设置。需要 `settings:read` 以及 `owner` 或 `admin` 身份。",
 			"ar": "يعرض سياسة الشحن التلقائي وإعداد البريد الإلكتروني لانخفاض الرصيد وتفضيلات البريد لمساحة العمل. يتطلب `settings:read` وهوية `owner` أو `admin`."
@@ -3731,7 +3731,7 @@
 			"fr": "Mettre à jour les paramètres de notification de l’espace de travail",
 			"de": "Benachrichtigungseinstellungen des Arbeitsbereichs aktualisieren",
 			"pt-BR": "Atualizar as configurações de notificação do espaço de trabalho",
-			"hi": "कार्यस्थान की सूचना सेटिंग अपडेट करें",
+			"hi": "वर्कस्पेस की सूचना सेटिंग अपडेट करें",
 			"ja": "ワークスペースの通知設定を更新",
 			"zh-Hans": "更新工作区通知设置",
 			"ar": "تحديث إعدادات إشعارات مساحة العمل"
@@ -3771,7 +3771,7 @@
 			"fr": "Répertorie les destinations actives et désactivées de l’espace de travail sans renvoyer les valeurs chiffrées des destinations.",
 			"de": "Listet aktive und deaktivierte Ziele des Arbeitsbereichs auf, ohne verschlüsselte Zielwerte zurückzugeben.",
 			"pt-BR": "Lista os destinos ativos e desativados do espaço de trabalho sem retornar os valores criptografados dos destinos.",
-			"hi": "एन्क्रिप्ट किए गए लक्ष्य मान लौटाए बिना कार्यस्थान के सक्रिय और अक्षम गंतव्यों की सूची देता है।",
+			"hi": "एन्क्रिप्ट किए गए लक्ष्य मान लौटाए बिना वर्कस्पेस के सक्रिय और अक्षम गंतव्यों की सूची देता है।",
 			"ja": "暗号化された通知先の値を返さずに、ワークスペースの有効および無効な通知先を一覧表示します。",
 			"zh-Hans": "列出工作区中启用和停用的目标，但不返回加密的目标值。",
 			"ar": "يعرض الوجهات النشطة والمعطّلة لمساحة العمل دون إرجاع قيم الوجهة المشفرة."
@@ -3881,7 +3881,7 @@
 			"fr": "Renvoie les destinations attribuées à chaque événement de notification pris en charge dans l’espace de travail.",
 			"de": "Gibt die Zielzuordnungen für jedes unterstützte Benachrichtigungsereignis des Arbeitsbereichs zurück.",
 			"pt-BR": "Retorna as atribuições de destino para cada evento de notificação compatível do espaço de trabalho.",
-			"hi": "कार्यस्थान के प्रत्येक समर्थित सूचना इवेंट के लिए गंतव्य असाइनमेंट लौटाता है।",
+			"hi": "वर्कस्पेस के प्रत्येक समर्थित सूचना इवेंट के लिए गंतव्य असाइनमेंट लौटाता है।",
 			"ja": "ワークスペースでサポートされる各通知イベントの通知先割り当てを返します。",
 			"zh-Hans": "返回工作区每个受支持通知事件的目标分配。",
 			"ar": "يعرض تعيينات الوجهة لكل حدث إشعار مدعوم في مساحة العمل."
@@ -3931,7 +3931,7 @@
 			"fr": "Récupérer la politique de journalisation I/O de l’espace de travail",
 			"de": "I/O-Protokollierungsrichtlinie des Arbeitsbereichs abrufen",
 			"pt-BR": "Obter a política de registro de I/O do espaço de trabalho",
-			"hi": "कार्यस्थान की I/O लॉगिंग नीति प्राप्त करें",
+			"hi": "वर्कस्पेस की I/O लॉगिंग नीति प्राप्त करें",
 			"ja": "ワークスペースの I/O ログポリシーを取得",
 			"zh-Hans": "获取工作区 I/O 日志策略",
 			"ar": "الحصول على سياسة تسجيل I/O لمساحة العمل"
@@ -3941,7 +3941,7 @@
 			"fr": "Renvoie les paramètres de stockage et de conservation des journaux de l’espace de travail, ainsi que l’état de facturation en lecture seule.",
 			"de": "Gibt Speicher- und Aufbewahrungseinstellungen für Arbeitsbereichsprotokolle sowie den schreibgeschützten Abrechnungsstatus zurück.",
 			"pt-BR": "Retorna as configurações de armazenamento e retenção de logs do espaço de trabalho, além do estado de cobrança somente leitura.",
-			"hi": "कार्यस्थान के लॉग स्टोरेज और रिटेंशन सेटिंग के साथ केवल-पढ़ने योग्य बिलिंग स्थिति लौटाता है।",
+			"hi": "वर्कस्पेस के लॉग स्टोरेज और रिटेंशन सेटिंग के साथ केवल-पढ़ने योग्य बिलिंग स्थिति लौटाता है।",
 			"ja": "ワークスペースのログ保存と保持の設定、および読み取り専用の請求状態を返します。",
 			"zh-Hans": "返回工作区日志存储和保留设置，以及只读计费状态。",
 			"ar": "يعرض إعدادات تخزين سجلات مساحة العمل والاحتفاظ بها، مع حالة فوترة للقراءة فقط."
@@ -3961,7 +3961,7 @@
 			"fr": "Mettre à jour la politique de journalisation I/O de l’espace de travail",
 			"de": "I/O-Protokollierungsrichtlinie des Arbeitsbereichs aktualisieren",
 			"pt-BR": "Atualizar a política de registro de I/O do espaço de trabalho",
-			"hi": "कार्यस्थान की I/O लॉगिंग नीति अपडेट करें",
+			"hi": "वर्कस्पेस की I/O लॉगिंग नीति अपडेट करें",
 			"ja": "ワークスペースの I/O ログポリシーを更新",
 			"zh-Hans": "更新工作区 I/O 日志策略",
 			"ar": "تحديث سياسة تسجيل I/O لمساحة العمل"
@@ -4011,7 +4011,7 @@
 			"fr": "Répertorie les destinations d’observabilité exécutables pour l’espace de travail de la clé de gestion.",
 			"de": "Listet ausführbare Beobachtbarkeitsziele für den Arbeitsbereich des Management-Schlüssels auf.",
 			"pt-BR": "Lista os destinos de observabilidade executáveis para o espaço de trabalho da chave de gerenciamento.",
-			"hi": "प्रबंधन कुंजी के कार्यस्थान के लिए निष्पादन योग्य ऑब्ज़र्वेबिलिटी गंतव्यों की सूची देता है।",
+			"hi": "प्रबंधन कुंजी के वर्कस्पेस के लिए निष्पादन योग्य ऑब्ज़र्वेबिलिटी गंतव्यों की सूची देता है।",
 			"ja": "管理キーのワークスペースで実行可能なオブザーバビリティの送信先を一覧表示します。",
 			"zh-Hans": "列出管理密钥工作区可执行的可观测性目标。",
 			"ar": "يعرض وجهات قابلية المراقبة القابلة للتنفيذ لمساحة عمل مفتاح الإدارة."
@@ -4211,7 +4211,7 @@
 			"fr": "Répertorie les métadonnées des clés de gestion de l’espace de travail authentifié. `management_keys:read` est requis.",
 			"de": "Listet Metadaten zu Management-Schlüsseln des authentifizierten Arbeitsbereichs auf. `management_keys:read` erforderlich.",
 			"pt-BR": "Lista os metadados das chaves de gerenciamento do espaço de trabalho autenticado. É necessário `management_keys:read`.",
-			"hi": "प्रमाणित कार्यस्थान की प्रबंधन कुंजियों का मेटाडेटा सूचीबद्ध करता है। `management_keys:read` आवश्यक है।",
+			"hi": "प्रमाणित वर्कस्पेस की प्रबंधन कुंजियों का मेटाडेटा सूचीबद्ध करता है। `management_keys:read` आवश्यक है।",
 			"ja": "認証済みワークスペースの管理キーのメタデータを一覧表示します。`management_keys:read` が必要です。",
 			"zh-Hans": "列出经身份验证的工作区的管理密钥元数据。需要 `management_keys:read`。",
 			"ar": "يعرض بيانات مفاتيح الإدارة الوصفية لمساحة العمل المصادق عليها. يلزم `management_keys:read`."
@@ -4231,7 +4231,7 @@
 			"fr": "Capacité ou rôle dans l’espace de travail insuffisant",
 			"de": "Unzureichende Berechtigung oder Arbeitsbereichsrolle",
 			"pt-BR": "Capacidade ou função insuficiente no espaço de trabalho",
-			"hi": "अपर्याप्त क्षमता या कार्यस्थान भूमिका",
+			"hi": "अपर्याप्त क्षमता या वर्कस्पेस भूमिका",
 			"ja": "権限またはワークスペースロールが不足しています",
 			"zh-Hans": "能力或工作区角色不足",
 			"ar": "القدرة أو دور مساحة العمل غير كافٍ"
@@ -4421,7 +4421,7 @@
 			"fr": "Renvoie les métadonnées des identifiants fournisseur en écriture seule de l’espace de travail authentifié.",
 			"de": "Gibt Metadaten zu schreibgeschützten Anbieter-Anmeldedaten für den authentifizierten Arbeitsbereich zurück.",
 			"pt-BR": "Retorna os metadados das credenciais de provedor somente para gravação do espaço de trabalho autenticado.",
-			"hi": "प्रमाणित कार्यस्थान के केवल-लिखने योग्य प्रदाता क्रेडेंशियल का मेटाडेटा लौटाता है।",
+			"hi": "प्रमाणित वर्कस्पेस के केवल-लिखने योग्य प्रदाता क्रेडेंशियल का मेटाडेटा लौटाता है।",
 			"ja": "認証済みワークスペースの書き込み専用プロバイダー認証情報のメタデータを返します。",
 			"zh-Hans": "返回经身份验证的工作区的只写提供商凭据元数据。",
 			"ar": "يعرض بيانات اعتماد المزوّد الوصفية المخصصة للكتابة فقط لمساحة العمل المصادق عليها."
@@ -4451,7 +4451,7 @@
 			"fr": "Chiffre et stocke un identifiant fournisseur en écriture seule pour l’espace de travail authentifié.",
 			"de": "Verschlüsselt und speichert schreibgeschützte Anbieter-Anmeldedaten für den authentifizierten Arbeitsbereich.",
 			"pt-BR": "Criptografa e armazena uma credencial de provedor somente para gravação no espaço de trabalho autenticado.",
-			"hi": "प्रमाणित कार्यस्थान के लिए केवल-लिखने योग्य प्रदाता क्रेडेंशियल को एन्क्रिप्ट करके संग्रहीत करता है।",
+			"hi": "प्रमाणित वर्कस्पेस के लिए केवल-लिखने योग्य प्रदाता क्रेडेंशियल को एन्क्रिप्ट करके संग्रहीत करता है।",
 			"ja": "認証済みワークスペースの書き込み専用プロバイダー認証情報を暗号化して保存します。",
 			"zh-Hans": "为经身份验证的工作区加密并存储只写提供商凭据。",
 			"ar": "يشفّر بيانات اعتماد المزوّد المخصصة للكتابة فقط ويخزنها لمساحة العمل المصادق عليها."
@@ -4621,7 +4621,7 @@
 			"fr": "Crée une exécution de test dans l’espace de travail pour un préréglage ou une comparaison de référence. `feedback:write` et une identité `owner` ou `admin` sont requis.",
 			"de": "Erstellt einen Arbeitsbereichs-Testlauf für eine Voreinstellung oder einen Basislinienvergleich. `feedback:write` sowie eine `owner`- oder `admin`-Identität erforderlich.",
 			"pt-BR": "Cria uma execução de teste no espaço de trabalho para uma predefinição ou comparação de referência. São necessários `feedback:write` e uma identidade `owner` ou `admin`.",
-			"hi": "प्रीसेट या बेसलाइन तुलना के लिए कार्यस्थान टेस्ट रन बनाता है। `feedback:write` और `owner` या `admin` पहचान आवश्यक है।",
+			"hi": "प्रीसेट या बेसलाइन तुलना के लिए वर्कस्पेस टेस्ट रन बनाता है। `feedback:write` और `owner` या `admin` पहचान आवश्यक है।",
 			"ja": "プリセットまたはベースライン比較用のワークスペーステスト実行を作成します。`feedback:write` と `owner` または `admin` の ID が必要です。",
 			"zh-Hans": "为预设或基线比较创建工作区测试运行。需要 `feedback:write` 以及 `owner` 或 `admin` 身份。",
 			"ar": "ينشئ عملية اختبار لمساحة العمل لإعداد مسبق أو مقارنة مرجعية. يتطلب `feedback:write` وهوية `owner` أو `admin`."
@@ -4901,7 +4901,7 @@
 			"fr": "Passe à un relais WebSocket en utilisant le secret du relais de session comme sous-protocole.",
 			"de": "Stellt über das Sitzungs-Relay-Geheimnis als Subprotokoll eine WebSocket-Relay-Verbindung her.",
 			"pt-BR": "Conecta a um relay WebSocket usando o segredo do relay da sessão como subprotocolo.",
-			"hi": "सेशन रिले सीक्रेट को सबप्रोटोकॉल के रूप में उपयोग करके WebSocket रिले पर अपग्रेड करता है।",
+			"hi": "सत्र रिले सीक्रेट को सबप्रोटोकॉल के रूप में उपयोग करके WebSocket रिले पर अपग्रेड करता है।",
 			"ja": "セッションリレーのシークレットをサブプロトコルとして使用し、WebSocket リレーにアップグレードします。",
 			"zh-Hans": "使用会话中继密钥作为子协议升级到 WebSocket 中继。",
 			"ar": "يرقي الاتصال إلى ترحيل WebSocket باستخدام سر ترحيل الجلسة كبروتوكول فرعي."
@@ -4961,7 +4961,7 @@
 			"fr": "Répertorie les informations expurgées des requêtes de l’espace de travail authentifié, avec des filtres limités de période et de champs. `activity:read` est requis.",
 			"de": "Listet bereinigte Anfragedaten für den authentifizierten Arbeitsbereich mit begrenzten Zeitbereichs- und Feldfiltern auf. `activity:read` erforderlich.",
 			"pt-BR": "Lista dados de solicitação redigidos do espaço de trabalho autenticado com filtros limitados de período e campos. É necessário `activity:read`.",
-			"hi": "सीमित समय-सीमा और फ़ील्ड फ़िल्टर के साथ प्रमाणित कार्यस्थान के संपादित अनुरोध तथ्य सूचीबद्ध करता है। `activity:read` आवश्यक है।",
+			"hi": "सीमित समय-सीमा और फ़ील्ड फ़िल्टर के साथ प्रमाणित वर्कस्पेस के संपादित अनुरोध तथ्य सूचीबद्ध करता है। `activity:read` आवश्यक है।",
 			"ja": "認証済みワークスペースの編集済みリクエスト情報を、期間とフィールドの範囲指定フィルター付きで一覧表示します。`activity:read` が必要です。",
 			"zh-Hans": "列出经身份验证工作区的脱敏请求信息，并支持受限的时间范围和字段筛选。需要 `activity:read`。",
 			"ar": "يعرض بيانات الطلبات المنقحة لمساحة العمل المصادق عليها مع مرشحات محدودة للنطاق الزمني والحقول. يلزم `activity:read`."
@@ -5011,7 +5011,7 @@
 			"fr": "Récupérer les paramètres de l’espace de travail",
 			"de": "Arbeitsbereichseinstellungen abrufen",
 			"pt-BR": "Obter as configurações do espaço de trabalho",
-			"hi": "कार्यस्थान सेटिंग प्राप्त करें",
+			"hi": "वर्कस्पेस सेटिंग प्राप्त करें",
 			"ja": "ワークスペース設定を取得",
 			"zh-Hans": "获取工作区设置",
 			"ar": "الحصول على إعدادات مساحة العمل"
@@ -5021,7 +5021,7 @@
 			"fr": "Renvoie les paramètres par défaut automatisables de l’espace de travail concernant le routage, les fournisseurs, la confidentialité et la passerelle.",
 			"de": "Gibt automatisierbare Standardwerte des Arbeitsbereichs für Routing, Anbieter, Datenschutz und Gateway zurück.",
 			"pt-BR": "Retorna os padrões automatizáveis do espaço de trabalho para roteamento, provedores, privacidade e gateway.",
-			"hi": "कार्यस्थान की स्वचालित की जा सकने वाली रूटिंग, प्रदाता, गोपनीयता और गेटवे डिफ़ॉल्ट लौटाता है।",
+			"hi": "वर्कस्पेस की स्वचालित की जा सकने वाली रूटिंग, प्रदाता, गोपनीयता और गेटवे डिफ़ॉल्ट लौटाता है।",
 			"ja": "ワークスペースのルーティング、プロバイダー、プライバシー、ゲートウェイの自動化可能な既定値を返します。",
 			"zh-Hans": "返回工作区可自动化的路由、提供商、隐私和网关默认值。",
 			"ar": "يعرض الإعدادات الافتراضية القابلة للأتمتة للتوجيه والمزوّدين والخصوصية والبوابة في مساحة العمل."
@@ -5031,7 +5031,7 @@
 			"fr": "Paramètres de l’espace de travail",
 			"de": "Arbeitsbereichseinstellungen",
 			"pt-BR": "Configurações do espaço de trabalho",
-			"hi": "कार्यस्थान सेटिंग",
+			"hi": "वर्कस्पेस सेटिंग",
 			"ja": "ワークスペース設定",
 			"zh-Hans": "工作区设置",
 			"ar": "إعدادات مساحة العمل"
@@ -5041,7 +5041,7 @@
 			"fr": "Mettre à jour les paramètres de l’espace de travail",
 			"de": "Arbeitsbereichseinstellungen aktualisieren",
 			"pt-BR": "Atualizar as configurações do espaço de trabalho",
-			"hi": "कार्यस्थान सेटिंग अपडेट करें",
+			"hi": "वर्कस्पेस सेटिंग अपडेट करें",
 			"ja": "ワークスペース設定を更新",
 			"zh-Hans": "更新工作区设置",
 			"ar": "تحديث إعدادات مساحة العمل"
@@ -5051,7 +5051,7 @@
 			"fr": "Met à jour les paramètres par défaut de routage, de fournisseurs, de confidentialité ou de passerelle de l’espace de travail et actualise les caches de politique de passerelle concernés.",
 			"de": "Aktualisiert Routing-, Anbieter-, Datenschutz- oder Gateway-Standardwerte des Arbeitsbereichs und aktualisiert betroffene Gateway-Richtlinien-Caches.",
 			"pt-BR": "Atualiza os padrões de roteamento, provedores, privacidade ou gateway do espaço de trabalho e atualiza os caches de políticas de gateway afetados.",
-			"hi": "कार्यस्थान की रूटिंग, प्रदाता, गोपनीयता या गेटवे डिफ़ॉल्ट अपडेट करता है और प्रभावित गेटवे नीति कैश रीफ़्रेश करता है।",
+			"hi": "वर्कस्पेस की रूटिंग, प्रदाता, गोपनीयता या गेटवे डिफ़ॉल्ट अपडेट करता है और प्रभावित गेटवे नीति कैश रीफ़्रेश करता है।",
 			"ja": "ワークスペースのルーティング、プロバイダー、プライバシー、ゲートウェイの既定値を更新し、影響を受けるゲートウェイポリシーキャッシュを更新します。",
 			"zh-Hans": "更新工作区的路由、提供商、隐私或网关默认值，并刷新受影响的网关策略缓存。",
 			"ar": "يحدّث الإعدادات الافتراضية للتوجيه أو المزوّد أو الخصوصية أو البوابة، ويجدّد مخابئ سياسات البوابة المتأثرة."
@@ -5061,7 +5061,7 @@
 			"fr": "Paramètres de l’espace de travail mis à jour",
 			"de": "Arbeitsbereichseinstellungen aktualisiert",
 			"pt-BR": "Configurações do espaço de trabalho atualizadas",
-			"hi": "कार्यस्थान सेटिंग अपडेट की गई",
+			"hi": "वर्कस्पेस सेटिंग अपडेट की गई",
 			"ja": "ワークスペース設定を更新しました",
 			"zh-Hans": "工作区设置已更新",
 			"ar": "تم تحديث إعدادات مساحة العمل"
@@ -5071,7 +5071,7 @@
 			"fr": "Paramètres de l’espace de travail invalides",
 			"de": "Ungültige Arbeitsbereichseinstellungen",
 			"pt-BR": "Configurações do espaço de trabalho inválidas",
-			"hi": "अमान्य कार्यस्थान सेटिंग",
+			"hi": "अमान्य वर्कस्पेस सेटिंग",
 			"ja": "ワークスペース設定が無効です",
 			"zh-Hans": "工作区设置无效",
 			"ar": "إعدادات مساحة العمل غير صالحة"
@@ -5551,7 +5551,7 @@
 			"fr": "Répertorie les destinations webhook asynchrones. `settings:read` et l’accès de l’espace de travail aux API asynchrones sont requis.",
 			"de": "Listet Ziele für asynchrone Webhooks auf. `settings:read` und Arbeitsbereichszugriff auf asynchrone APIs erforderlich.",
 			"pt-BR": "Lista destinos de webhook assíncronos. São necessários `settings:read` e acesso do espaço de trabalho às APIs assíncronas.",
-			"hi": "एसिंक webhook गंतव्यों की सूची देता है। `settings:read` और async APIs तक कार्यस्थान की पहुँच आवश्यक है।",
+			"hi": "एसिंक webhook गंतव्यों की सूची देता है। `settings:read` और async APIs तक वर्कस्पेस की पहुँच आवश्यक है।",
 			"ja": "非同期 webhook の送信先を一覧表示します。`settings:read` と、ワークスペースから非同期 API へのアクセスが必要です。",
 			"zh-Hans": "列出异步 webhook 目标。需要 `settings:read` 和工作区对异步 API 的访问权限。",
 			"ar": "يعرض وجهات webhook غير المتزامنة. يلزم `settings:read` وإمكانية وصول مساحة العمل إلى واجهات API غير المتزامنة."
@@ -5713,7 +5713,7 @@
 			"pt-BR": "Pesquisa sem diferenciar maiúsculas e minúsculas em identificadores, nomes e descrições de modelos e organizações.",
 			"ja": "モデル ID、名前、説明、組織を対象に、大文字と小文字を区別せず検索します。",
 			"zh-Hans": "在模型 ID、名称、描述和组织中搜索，不区分大小写。",
-			"hi": "मॉडल आईडी, नाम, विवरण और संगठनों में बड़े-छोटे अक्षरों का भेद किए बिना खोजें।",
+			"hi": "मॉडल ID, नाम, विवरण और संगठनों में बड़े-छोटे अक्षरों का भेद किए बिना खोजें।",
 			"ar": "بحث غير حساس لحالة الأحرف في معرّفات النماذج وأسمائها وأوصافها والمؤسسات."
 		},
 		"Case-insensitive provider or model-organisation search.": {
@@ -5833,7 +5833,7 @@
 			"pt-BR": "Identificador canônico do modelo da Phaseo ou alias do modelo do provedor.",
 			"ja": "Phaseo の正規モデル ID またはプロバイダーのモデルエイリアス。",
 			"zh-Hans": "Phaseo 的规范模型 ID 或提供商模型别名。",
-			"hi": "मानक Phaseo मॉडल आईडी या प्रदाता मॉडल उपनाम।",
+			"hi": "मानक Phaseo मॉडल ID या प्रदाता मॉडल उपनाम।",
 			"ar": "معرّف نموذج Phaseo الأساسي أو الاسم المستعار لنموذج المزود."
 		},
 		"Structured state evaluated by the model.": {
@@ -8064,7 +8064,7 @@
 			"ja": "このリクエストのプロバイダーを、価格、レイテンシ、スループットなどで並べ替えます。",
 			"zh-Hans": "为此请求排列提供商，例如按价格、延迟或吞吐量排序。",
 			"hi": "इस अनुरोध के लिए प्रदाताओं को क्रम दें, जैसे कीमत, विलंबता या थ्रूपुट के आधार पर।",
-			"ar": "رتّب المزوّدين لهذا الطلب، مثلاً حسب السعر أو زمن الاستجابة أو معدل النقل."
+			"ar": "رتّب المزوّدين لهذا الطلب، مثلاً حسب السعر أو زمن الاستجابة أو الإنتاجية."
 		},
 		"Gateway debug controls. These flags are never forwarded upstream.": {
 			"es": "Controles de depuración de la pasarela. Estas opciones nunca se reenvían al proveedor.",
