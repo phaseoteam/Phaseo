@@ -499,6 +499,7 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 		inputTokens,
 		outputTokens,
 		totalTokens,
+		...(typeof usageRaw.service_tier === "string" ? { serviceTier: usageRaw.service_tier } : {}),
 		...(cachedInputTokens != null ? { cachedInputTokens } : {}),
 		...(reasoningTokens != null ? { reasoningTokens } : {}),
 		...(Object.keys(ext).length > 0 ? { _ext: ext } : {}),

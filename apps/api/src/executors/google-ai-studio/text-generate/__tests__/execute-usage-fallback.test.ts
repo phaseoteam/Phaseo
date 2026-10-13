@@ -48,6 +48,47 @@ afterAll(() => {
 });
 
 describe("google-ai-studio execute usage fallback", () => {
+	it.each([false, true])("forwards native Gemini Priority and preserves its Standard downgrade (stream=%s)", async (stream) => {
+		const payload = {
+			candidates: [{ index: 0, content: { role: "model", parts: [{ text: "OK" }] }, finishReason: "STOP" }],
+			usageMetadata: { promptTokenCount: 6, candidatesTokenCount: 2, totalTokenCount: 8 },
+		};
+		const mock = installFetchMock([{
+			match: (url) => url.includes("/models/gemini-4-argon:"),
+			response: stream
+				? new Response(`data: ${JSON.stringify(payload)}\r\n\r\n`, { headers: { "Content-Type": "text/event-stream", "x-gemini-service-tier": "standard" } })
+				: new Response(JSON.stringify(payload), { headers: { "Content-Type": "application/json", "x-gemini-service-tier": "standard" } }),
+		}]);
+		try {
+			const args = buildArgs({ model: "google/gemini-4-argon", serviceTier: "priority", stream }, { providerModelSlug: "gemini-4-argon", endpoint: "chat.completions", protocol: "openai.chat.completions" });
+			args.capabilityParams = { params: ["max_tokens", "service_tier"] };
+			const result = await executor(args);
+			expect(mock.calls[0].bodyJson.serviceTier).toBe("priority");
+			if (result.kind === "stream" && result.stream) {
+				const output = await new Response(result.stream).text();
+				expect(output).toContain('"service_tier":"standard"');
+				expect(output).toContain('"content":"OK"');
+			} else if (result.kind === "completed") {
+				expect(result.ir?.usage?.serviceTier).toBe("standard");
+				expect(result.bill?.usage?.service_tier).toBe("standard");
+			} else throw new Error("Expected a successful Gemini response");
+		} finally { mock.restore(); }
+	});
+
+	it("preserves an Interactions downgrade for a Flash Lite response", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/v1beta/interactions"),
+			response: new Response(JSON.stringify({ id: "interactions/downgrade", status: "completed", steps: [{ type: "model_output", content: [{ type: "text", text: "OK" }] }], usage: { total_input_tokens: 6, total_output_tokens: 2, total_tokens: 8 } }), { headers: { "Content-Type": "application/json", "x-gemini-service-tier": "standard" } }),
+		}]);
+		try {
+			const result = await executor(buildArgs({ model: "google/gemini-3.1-flash-lite", stream: true, serviceTier: "priority" }, { providerModelSlug: "gemini-3.1-flash-lite", endpoint: "chat.completions", protocol: "openai.chat.completions" }));
+			expect(mock.calls[0].bodyJson.service_tier).toBe("priority");
+			expect(result.bill?.usage?.service_tier).toBe("standard");
+			if (result.kind !== "stream" || !result.stream) throw new Error("Expected a synthetic Interactions stream");
+			expect(await new Response(result.stream).text()).toContain('"service_tier":"standard"');
+		} finally { mock.restore(); }
+	});
+
 	it.each([
 		["chat.completions", "openai.chat.completions"],
 		["responses", "openai.responses"],
