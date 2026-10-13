@@ -636,13 +636,7 @@ function kpiDeltaClass(kpi: ObservabilityKpi): string {
 	return improved ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400";
 }
 
-function KpiMetric({
-	kpi,
-	footer,
-}: {
-	kpi: ObservabilityKpi;
-	footer?: React.ReactNode;
-}) {
+function KpiMetric({ kpi }: { kpi: ObservabilityKpi }) {
 	const t = useTranslations("SettingsUI.observability");
 	const [hoveredPoint, setHoveredPoint] =
 		React.useState<ObservabilitySeriesPoint | null>(null);
@@ -699,11 +693,6 @@ function KpiMetric({
 						</div>
 					</div>
 				</div>
-				{footer ? (
-					<div className="border-t border-dashed px-4 py-2 text-xs tabular-nums text-muted-foreground">
-						{footer}
-					</div>
-				) : null}
 			</Card>
 		</Link>
 	);
@@ -1720,24 +1709,36 @@ function Overview({ data }: { data: ObservabilityData }) {
 	const monthSpend = data.monthSpend ?? null;
 	const [spendView, setSpendView] = React.useState<"daily" | "month">("daily");
 	const showMonth = spendView === "month" && monthSpend !== null;
+	const spendChartRef = React.useRef<HTMLDivElement>(null);
+	const openMonthForecast = () => {
+		setSpendView("month");
+		const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+		spendChartRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+	};
 	return (
 		<div className="space-y-4 sm:space-y-6">
-			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-6">
-				{data.kpis.map((kpi) => (
-					<KpiMetric
-						key={kpi.id}
-						kpi={kpi}
-						footer={kpi.id === "spend" && monthSpend
-							? t("monthForecast", { amount: formatSpendRange(monthSpend.lowNanos, monthSpend.highNanos, formatCurrency) })
-							: undefined}
-					/>
-				))}
+			<div className="space-y-2">
+				{monthSpend ? (
+					<button
+						type="button"
+						onClick={openMonthForecast}
+						className="inline-flex items-center gap-1 rounded-sm text-sm tabular-nums text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					>
+						{t("monthForecast", { amount: formatSpendRange(monthSpend.lowNanos, monthSpend.highNanos, formatCurrency) })}
+						<ChevronRight className="h-3.5 w-3.5" />
+					</button>
+				) : null}
+				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-6">
+					{data.kpis.map((kpi) => (
+						<KpiMetric key={kpi.id} kpi={kpi} />
+					))}
+				</div>
 			</div>
 			<div className="grid gap-4 xl:grid-cols-2">
 				<RankedList title={t("topApiKeys")} items={data.topApiKeys} kind="key" />
 				<RankedList title={t("topApps")} items={data.topApps} kind="app" />
 			</div>
-			<div className="grid gap-4 xl:grid-cols-2">
+			<div ref={spendChartRef} className="grid scroll-mt-24 gap-4 xl:grid-cols-2">
 				<ChartCard
 					title={showMonth ? t("monthSpendTitle") : t("usageByModel")}
 					subtitle={showMonth ? t("monthSpendSubtitle") : t("dailySpendByModel")}
