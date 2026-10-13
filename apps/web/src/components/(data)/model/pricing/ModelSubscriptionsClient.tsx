@@ -153,7 +153,7 @@ export function dedupeSubscriptionPlanPrices(
 					price.offer_uuid ?? "",
 					normalizePlanFrequency(price.frequency),
 					String(price.currency || "USD").trim().toUpperCase(),
-					Number(price.price),
+					price.price == null ? "unknown" : Number(price.price),
 				].join(":"),
 				price,
 			]),

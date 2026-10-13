@@ -40,4 +40,9 @@ describe("subscription price normalization", () => {
 		expect(getStartingPriceText([plan], (value) => `$${value}`, labels)).toBe("$20 monthly");
 		expect(getStartingPriceText([{ ...plan, prices: [unknown] }], (value) => `$${value}`, labels)).toBeNull();
 	});
+	test("does not deduplicate unknown prices with a free offer", () => {
+		const unknown: SubscriptionPrice = { frequency: "monthly", currency: "USD", price: null };
+		const free: SubscriptionPrice = { ...unknown, price: 0 };
+		expect(dedupeSubscriptionPlanPrices([unknown, free])).toEqual([unknown, free]);
+	});
 });
