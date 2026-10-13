@@ -47,7 +47,7 @@ await db.exec(`
     select 1 from public.v2_private_usage_daily d where d.rollup_id = v2_private_usage_daily_meters.rollup_id
   ));
 `);
-await db.exec(await readFile(new URL('../migrations/20261013150000_private_usage_month_days.sql', import.meta.url), 'utf8'));
+await db.exec(await readFile(new URL('../migrations/20261013120000_private_usage_month_days.sql', import.meta.url), 'utf8'));
 
 await db.exec(`set role authenticated; set test.workspace = '${workspace}';`);
 const days = (await db.query('select public.get_private_usage_month_days($1, $2) as days', [workspace, '2026-09-01'])).rows[0].days;
