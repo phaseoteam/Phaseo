@@ -95,6 +95,21 @@ describe("google-vertex route resolution", () => {
 		try { expect((await execute(buildExecuteArgs())).kind).toBe("completed"); }
 		finally { mock.restore(); teardownTestRuntime(); setupTestRuntime(); }
 	});
+	it.each(["gemini-4-argon", "google/gemini-4-argon"])("routes %s to global when the configured region is us-central1", async model => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_LOCATION: "us-central1", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
+		const mock = installFetchMock([{
+			match: url => url === "https://aiplatform.googleapis.com/v1/projects/test-project/locations/global/publishers/google/models/gemini-4-argon:streamGenerateContent?alt=sse",
+			response: Response.json({ candidates: [{ content: { parts: [{ text: "OK" }] }, finishReason: "STOP" }], usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 } }),
+		}]);
+		try { expect((await execute({ ...buildExecuteArgs(), providerId: "google-vertex", providerModelSlug: model })).kind).toBe("completed"); }
+		finally { mock.restore(); teardownTestRuntime(); setupTestRuntime(); }
+	});
+	it("preserves other Gemini regions and rejects a regional Argon base URL", () => {
+		const bindings = { GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_LOCATION: "us-central1" };
+		expect(resolveVertexApiBase(bindings, "google-vertex", "gemini", "gemini-2.5-flash")).toContain("locations/us-central1");
+		expect(() => resolveVertexApiBase({ ...bindings, GOOGLE_VERTEX_BASE_URL: "https://us-central1-aiplatform.googleapis.com" }, "google-vertex", "gemini", "gemini-4-argon")).toThrow("google-vertex_endpoint_region_mismatch");
+	});
 	it("routes prefixed models by family", () => {
 		expect(resolveVertexModelRoute("google/gemini-2.5-flash").family).toBe("gemini");
 		expect(resolveVertexModelRoute("anthropic/claude-sonnet-4@20250514").family).toBe("anthropic");
