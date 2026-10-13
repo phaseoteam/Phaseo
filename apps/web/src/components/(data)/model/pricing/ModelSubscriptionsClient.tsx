@@ -259,7 +259,7 @@ function isOwnerGroup(
 	);
 }
 
-function getStartingPriceText(plans: SubscriptionPlan[], formatNumber: NumberFormatter, labels: SubscriptionLabels): string | null {
+export function getStartingPriceText(plans: SubscriptionPlan[], formatNumber: NumberFormatter, labels: SubscriptionLabels): string | null {
 	const prices = sortSubscriptionPlanPricesForDisplay(
 		plans.flatMap((plan) =>
 			(plan.prices ?? []).filter(

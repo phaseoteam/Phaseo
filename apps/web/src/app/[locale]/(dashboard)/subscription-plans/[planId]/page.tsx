@@ -1,5 +1,6 @@
 import { formatSubscriptionPrice, localizedSubscriptionPriceLabels } from "@/lib/fetchers/subscription-plans/pricing";
 import { getTranslations } from "next-intl/server";
+import { isPublicLocale } from "@/i18n/routing";
 import SubscriptionPlanDetailShell from "@/components/(data)/subscription-plans/SubscriptionPlanDetailShell";
 import SubscriptionPlanOverview from "@/components/(data)/subscription-plans/SubscriptionPlanOverview";
 import { fetchFrontendSubscriptionPlan } from "@/lib/fetchers/frontend/fetchPublicCatalog";
@@ -45,7 +46,7 @@ export async function generateMetadata(props: {
 	const primaryPrice = plan.prices?.[0];
 	let priceSnippet: string | undefined;
 	if (primaryPrice) {
-		const t = await getTranslations({ locale });
+		const t = await getTranslations({ locale: isPublicLocale(locale) ? locale : "en-GB" });
 		priceSnippet = formatSubscriptionPrice(primaryPrice,
 			(amount, currency) => new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 8 }).format(amount),
 			localizedSubscriptionPriceLabels(locale, { custom: messages.metadata.customPricing, usage: messages.metadata.usagePricing,

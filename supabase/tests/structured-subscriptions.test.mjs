@@ -18,7 +18,7 @@ try {
       feature_description text,other_info jsonb not null default '{}',effective_to timestamptz,primary key(plan_uuid,feature_name));
     create table v2_subscription_plan_models(plan_uuid uuid references v2_subscription_plans,model_slug text references v2_models,
       model_info jsonb not null default '{}',rate_limit jsonb not null default '{}',other_info jsonb not null default '{}',effective_to timestamptz,primary key(plan_uuid,model_slug));
-    insert into v2_labs values('test','Test','{}');
+    insert into v2_labs values('test','Test','{}'),('windsurf','Windsurf','{}'),('spacex-ai','xAI','{}');
     insert into v2_models values('model','Model','test',false),('hidden','Hidden','test',true);
     insert into v2_subscription_plans(plan_uuid,plan_id,name,lab_slug,frequency,price,currency,other_info)
     values(md5('month')::uuid,'pro','Pro','test','monthly',20,'USD','{}'),
@@ -26,7 +26,7 @@ try {
       (md5('custom')::uuid,'enterprise','Enterprise','test','monthly',0,'USD','{}'),
       (md5('quarter')::uuid,'coding','Coding','test','quarterly',54,'USD','"From 2nd quarter"'),
       (md5('usage')::uuid,'usage','Usage','test','custom',0,'USD','"Consumption-based API pricing"'),
-      (md5('team')::uuid,'windsurf-teams','Teams','test','monthly',80,'USD','"Base team plan; full developer seats cost an additional $40 per month each"');
+      (md5('team')::uuid,'windsurf-teams','Teams','windsurf','monthly',80,'USD','"Base team plan; full developer seats cost an additional $40 per month each"');
     insert into v2_subscription_plan_features(plan_uuid,feature_name,feature_value,feature_description) values
       (md5('custom')::uuid,'Pricing','Custom',null),(md5('year')::uuid,'Annual Only','Included',null),
       (md5('month')::uuid,'Points','10,000 / Day',null),(md5('month')::uuid,'Daily Credits','$2 / User / Day on login',null),
@@ -45,10 +45,16 @@ try {
     }
   }
   await db.exec(await readFile(new URL('../migrations/20261013111609_structured_subscription_catalogue.sql',import.meta.url),'utf8'));
+  await db.exec(await readFile(new URL('../migrations/20261013221058_subscription_identity_and_backfill_corrections.sql',import.meta.url),'utf8'));
   if (snapshot) {
     const active=(row)=>!row.effective_to || Date.parse(row.effective_to)>Date.now();
     const expected=new Set(snapshot.plans.filter(active).map(row=>`${row.lab_slug}:${row.plan_id}`));
     const catalogue=(await db.query('select * from get_v2_subscription_catalogue()')).rows.map(row=>Object.values(row)[0]);
+    for (const plan of catalogue.filter(row=>row.lab_slug==='spacex-ai')) {
+      assert(!plan.allowances.some(a=>['Group-level settings and spend limits','Usage analytics','Video generation'].includes(a.allowance_key)));
+      assert(plan.features.some(f=>f.feature_name==='Usage analytics'));
+    }
+    assert.equal(catalogue.find(row=>row.plan_id==='windsurf-teams').offers[0].components.find(c=>c.component_key==='base').charge_basis,'account');
     assert.deepEqual(new Set(catalogue.map(row=>`${row.lab_slug}:${row.plan_id}`)),expected);
     assert.equal(Number((await db.query('select count(*) from v2_subscription_plan_offers')).rows[0].count),snapshot.plans.length);
     const originals=(await db.query('select plan_uuid,price,frequency from v2_subscription_plans')).rows;
@@ -102,6 +108,7 @@ try {
   const quarter=rows.find(row=>row.plan_id==='coding').offers[0];
   assert.equal(quarter.billing_interval_count,3); assert.equal(quarter.components[0].starts_at_cycle,2);
   assert.equal(rows.find(row=>row.plan_id==='windsurf-teams').offers[0].components.length,2);
+  assert.equal(rows.find(row=>row.plan_id==='windsurf-teams').offers[0].components.find(c=>c.component_key==='base').charge_basis,'account');
   assert.equal((await db.query("select * from get_v2_subscription_catalogue(null,'hidden')")).rows.length,0);
   assert.equal((await db.query("select * from get_v2_subscription_catalogue(null,'model')")).rows.length,1);
   await assert.rejects(db.exec(`insert into v2_subscription_offer_prices(offer_uuid,component_key,pricing_type,amount) values(md5('month')::uuid,'invalid','custom',0)`));
@@ -109,7 +116,9 @@ try {
   await db.exec(`update v2_subscription_plan_offers set effective_from=now()+interval '1 day' where legacy_plan_uuid=md5('year')::uuid`);
   const current=(await db.query("select * from get_v2_subscription_catalogue('pro')")).rows.map(row=>Object.values(row)[0])[0];
   assert.equal(current.offers.length,1);
-  await assert.rejects(db.exec("insert into v2_subscription_plans(plan_uuid,plan_id,name,lab_slug) values(md5('duplicate')::uuid,'pro','Other Pro','other')"));
+  await assert.rejects(db.exec("insert into v2_subscription_plans(plan_uuid,plan_id,name,lab_slug) values(md5('duplicate')::uuid,'pro','Other Pro','test')"));
+  await db.exec("insert into v2_labs values('other','Other','{}'); insert into v2_subscription_plans(plan_uuid,plan_id,name,lab_slug) values(md5('cross-lab')::uuid,'pro','Other Pro','other')");
+  assert.equal((await db.query("select * from get_v2_subscription_catalogue('pro')")).rows.length,2);
   await db.exec(`insert into users values(md5('admin')::uuid,'admin'),(md5('member')::uuid,'member');
     grant select on users to service_role;
     grant select,insert,update on v2_subscription_plans,v2_subscription_plan_models,v2_subscription_plan_features to service_role;
@@ -125,7 +134,7 @@ try {
   await db.exec('set role anon');
   assert.equal(Number((await db.query('select count(*) from v2_subscription_plan_offers')).rows[0].count),7);
   assert.equal((await db.query("select * from get_v2_subscription_catalogue(null,'hidden',true)")).rows.length,0);
-  assert.equal((await db.query("select * from get_v2_subscription_catalogue('pro')")).rows.length,1);
+  assert.equal((await db.query("select * from get_v2_subscription_catalogue('pro')")).rows.length,2);
   await assert.rejects(db.exec("insert into v2_subscription_feature_definitions values('bad','Bad','General','text')"));
   await assert.rejects(db.exec("select mutate_v2_admin_subscription_plan(md5('admin')::uuid,'create',md5('anon')::uuid,'{}')"));
   await db.exec('reset role');
