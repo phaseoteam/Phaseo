@@ -57,7 +57,7 @@ export type Task = {
 };
 export type Workspace = { version: 1; projects: Project[]; accounts: Account[]; agents: AgentConnection[]; tasks: Task[]; mcpConnections: McpConnection[] };
 export type HarnessInstallation = { harness: Harness; installed: boolean; version?: string; error?: string; maintenance?: { method: "npm" | "native" | "manual"; canUpdate: boolean } };
-export type ModelOption = { id: string; name: string; description?: string; organisationId?: string; organisationName?: string; releaseDate?: string; default?: boolean; reasoningEfforts?: { id: string; description: string }[]; defaultReasoningEffort?: string; serviceTiers?: { id: string; name: string; description: string }[]; defaultServiceTier?: string };
+export type ModelOption = { id: string; name: string; description?: string; /** An older model, listed only when searching. */ legacy?: boolean; organisationId?: string; organisationName?: string; releaseDate?: string; default?: boolean; reasoningEfforts?: { id: string; description: string }[]; defaultReasoningEffort?: string; serviceTiers?: { id: string; name: string; description: string }[]; defaultServiceTier?: string };
 export type UsageWindow = { usedPercent: number; windowDurationMins: number | null; resetsAt: number | null };
 export type AccountStatus = { checkedAt: string; authenticated: boolean | null; method?: string; identity?: string; plan?: string; ordinaryUsageAllowed?: boolean | null; usage?: { id: string; name: string; primary: UsageWindow | null; secondary: UsageWindow | null; spendControlReached: boolean | null }[]; usageError?: string };
 export type ProjectFile = { name: string; path: string; directory: boolean };

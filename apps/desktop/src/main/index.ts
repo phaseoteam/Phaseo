@@ -28,6 +28,7 @@ import type { Harness } from "../shared/workspace";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { resolveNativeCommand } from "./nativeProcess";
 import { harnessVersion } from "./harnessVersion";
+import { claudeModelsFor } from "./claudeModels";
 import { resolveHarnessMaintenance } from "./harnessMaintenance";
 import { runHarnessUpdate } from "./runHarnessUpdate";
 import { resolveGrokCommand } from "./grokLaunch";
@@ -148,7 +149,10 @@ async function discoverDesktopModels(harness: Harness, accountId?: string, proje
 		if (harness === "cursor") { if (!account || account.archived) throw new Error("Choose a connected Cursor account."); return await cursorModels(await credentialVault.get(account.secretId ?? account.id)); }
 		if (harness === "opencode") return await openCodeModels(cwd, await workspaceRuntime.openCode.connect());
 		if (harness === "pi") return await piModels(cwd);
-		if (harness === "claude") return await claudeNativeModels(cwd, AbortSignal.timeout(15000), account);
+		if (harness === "claude") {
+			const [aliases, version] = await Promise.all([claudeNativeModels(cwd, AbortSignal.timeout(15000), account), resolveNativeCommand("claude").then(command => harnessVersion(command, app.getPath("userData"))).catch(() => undefined)]);
+			return claudeModelsFor(aliases, version);
+		}
 		if (harness === "grok") return await grokModelCatalog(cwd, account);
 		return await codexModels(cwd, account);
 }
