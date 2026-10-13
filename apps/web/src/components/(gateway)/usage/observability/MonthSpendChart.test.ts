@@ -1,4 +1,4 @@
-import { buildMonthSpendPoints, formatSpendRange } from "./MonthSpendChart";
+import { buildMonthSpendPoints, formatSpendRange, niceSpendTicks } from "./MonthSpendChart";
 import type { MonthSpendForecast } from "@/lib/gateway/usage/monthSpendForecast";
 
 const usd = (value: number) => value * 1_000_000_000;
@@ -32,5 +32,11 @@ describe("formatSpendRange", () => {
 	test("shows a range, or one value when both ends round the same", () => {
 		expect(formatSpendRange(usd(300), usd(400), format)).toBe("$300–$400");
 		expect(formatSpendRange(usd(300.2), usd(300.4), format)).toBe("$300");
+	});
+
+	test("rounds the axis up to even steps", () => {
+		expect(niceSpendTicks(3592)).toEqual([0, 1000, 2000, 3000, 4000]);
+		expect(niceSpendTicks(870)).toEqual([0, 250, 500, 750, 1000]);
+		expect(niceSpendTicks(0)).toEqual([0, 1]);
 	});
 });

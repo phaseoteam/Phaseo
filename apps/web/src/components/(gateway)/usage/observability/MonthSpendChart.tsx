@@ -4,6 +4,7 @@ import React from "react";
 import { useTranslations } from "next-intl";
 import { Area, CartesianGrid, ComposedChart, Line, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { MonthSpendForecast } from "@/lib/gateway/usage/monthSpendForecast";
 
 const DAY_MS = 86_400_000;
@@ -30,7 +31,14 @@ export function formatSpendRange(lowNanos: number, highNanos: number, format: (u
 	return low === high ? low : `${low}–${high}`;
 }
 
-const dateFormat = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", timeZone: "UTC" });
+/** Even axis steps of 1, 2, 2.5 or 5 × 10ⁿ, so the top tick is a round amount. */
+export function niceSpendTicks(maxUsd: number): number[] {
+	if (!(maxUsd > 0)) return [0, 1];
+	const rough = maxUsd / 4;
+	const magnitude = 10 ** Math.floor(Math.log10(rough));
+	const step = [1, 2, 2.5, 5, 10].map((multiple) => multiple * magnitude).find((candidate) => candidate >= rough) ?? 10 * magnitude;
+	return Array.from({ length: Math.ceil(maxUsd / step) + 1 }, (_, index) => index * step);
+}
 
 export function MonthSpendChart({
 	forecast,
@@ -42,20 +50,23 @@ export function MonthSpendChart({
 	height?: number;
 }) {
 	const t = useTranslations("SettingsUI.observability");
+	const format = useDisplayFormatters();
 	const hatchId = `month-spend-hatch-${React.useId().replace(/:/g, "")}`;
 	const points = buildMonthSpendPoints(forecast);
-	const lastDay = dateFormat.format(forecast.monthStart + (forecast.daysInMonth - 1) * DAY_MS);
+	// Days are UTC calendar days, so label them in UTC whatever the viewer's zone.
+	const dayLabel = (ms: number) => format.dateParts(ms, { month: "short", day: "numeric", timeZone: "UTC" });
+	const lastDay = dayLabel(forecast.monthStart + (forecast.daysInMonth - 1) * DAY_MS);
 	const xLabel = (x: number) => {
 		if (x >= forecast.daysInMonth) return lastDay;
 		if (Math.abs(x - forecast.elapsedDays) < 1e-6) return t("monthSpendToday");
-		return dateFormat.format(forecast.monthStart + Math.max(0, Math.ceil(x) - 1) * DAY_MS);
+		return dayLabel(forecast.monthStart + Math.max(0, Math.ceil(x) - 1) * DAY_MS);
 	};
 	const previousUsd = forecast.previousMonthNanos === null ? null : forecast.previousMonthNanos / NANOS_PER_USD;
-	const yMax = Math.max(forecast.highNanos / NANOS_PER_USD, previousUsd ?? 0) * 1.08;
+	const yTicks = niceSpendTicks(Math.max(forecast.highNanos / NANOS_PER_USD, previousUsd ?? 0) * 1.05);
 	const projectedRange = formatSpendRange(forecast.lowNanos, forecast.highNanos, formatCurrency);
 	const config = {
-		spent: { label: t("monthSpendSpent"), color: "var(--chart-2)" },
-		projected: { label: t("monthSpendProjected"), color: "var(--chart-2)" },
+		spent: { label: t("monthSpendSpent"), color: "var(--chart-4)" },
+		projected: { label: t("monthSpendProjected"), color: "var(--chart-4)" },
 	} satisfies ChartConfig;
 
 	return (
@@ -89,8 +100,8 @@ export function MonthSpendChart({
 						tickLine={false}
 						axisLine={false}
 						width={56}
-						tickCount={4}
-						domain={[0, yMax]}
+						ticks={yTicks}
+						domain={[0, yTicks[yTicks.length - 1]]}
 						tickFormatter={(value) => formatCurrency(Number(value))}
 					/>
 					<Tooltip
@@ -138,13 +149,13 @@ export function MonthSpendChart({
 			</ChartContainer>
 			<div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
 				<span className="inline-flex items-center gap-1.5">
-					<span aria-hidden="true" className="h-1.5 w-3.5 rounded-sm bg-chart-2" />
+					<span aria-hidden="true" className="h-1.5 w-3.5 rounded-sm bg-chart-4" />
 					{t("monthSpendSpent")}
 				</span>
 				<span className="inline-flex items-center gap-1.5">
 					<span
 						aria-hidden="true"
-						className="h-1.5 w-3.5 rounded-sm text-chart-2"
+						className="h-1.5 w-3.5 rounded-sm text-chart-4"
 						style={{ backgroundImage: "repeating-linear-gradient(135deg, currentColor 0 2px, transparent 2px 4px)" }}
 					/>
 					{t("monthSpendProjected")}
