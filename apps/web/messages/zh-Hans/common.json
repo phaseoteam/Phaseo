@@ -735,7 +735,7 @@
 					"placeholder": "例如：70000000000"
 				},
 				"training_tokens": {
-					"label": "训练 Token 数",
+					"label": "训练 token 数",
 					"placeholder": "例如：13000000000000"
 				}
 			},
@@ -1111,7 +1111,7 @@
 					"outputContextLength": "输出上下文长度",
 					"knowledgeCutoff": "知识截止日期",
 					"parameterCount": "参数数量",
-					"trainingTokens": "训练令牌数"
+					"trainingTokens": "训练 token 数"
 				},
 				"detailExamples": {
 					"inputContextLength": "例如：128000",
@@ -1325,12 +1325,12 @@
 		},
 		"apps": {
 			"globalRanking": "全球排行榜",
-			"rankingDescription": "根据 Phaseo Gateway 的令牌使用量排列应用。",
+			"rankingDescription": "根据 Phaseo Gateway 的 token 使用量排列应用。",
 			"noUsageRecorded": "{range}没有使用记录。",
 			"rankingsAppear": "处理公开应用流量后将显示排行榜。",
 			"requests": "{count} 个请求",
 			"models": "{count} 个模型",
-			"tokens": "令牌",
+			"tokens": "token",
 			"page": "第 {page} 页，共 {totalPages} 页",
 			"previousPage": "上一页",
 			"nextPage": "下一页"
@@ -1481,12 +1481,12 @@
 		},
 		"metrics": {
 			"requests": "请求",
-			"tokens": "令牌",
+			"tokens": "Token",
 			"cost": "费用",
 			"usage": "用量",
 			"usageOverview": "用量概览",
 			"requestsBreakdown": "请求明细",
-			"tokensBreakdown": "令牌明细",
+			"tokensBreakdown": "Token 明细",
 			"costBreakdown": "费用明细"
 		},
 		"time": {
@@ -1641,7 +1641,7 @@
 			"shareConversation": "与顾问分享目前为止的对话。",
 			"name": "名称",
 			"maxUses": "最大使用次数",
-			"maxTokens": "最大令牌数",
+			"maxTokens": "最大 token 数",
 			"temperature": "温度",
 			"instructions": "指令",
 			"fusionSettings": "融合设置",
@@ -1729,7 +1729,7 @@
 			"streamResponses": "流式传输响应",
 			"streamResponsesDescription": "在响应生成时逐步显示内容。",
 			"samplingParameters": "采样参数",
-			"maxOutputTokens": "最大输出令牌数",
+			"maxOutputTokens": "最大输出 token 数",
 			"topK": "Top K",
 			"minP": "Min P",
 			"topA": "Top A",
@@ -1769,8 +1769,8 @@
 			"sourceDetection": "来源检测",
 			"directHttp": "直接 HTTP",
 			"unknown": "未知",
-			"inputTokens": "输入令牌",
-			"outputTokens": "输出令牌",
+			"inputTokens": "输入 token",
+			"outputTokens": "输出 token",
 			"generationMs": "生成时间（毫秒）",
 			"finishReason": "结束原因",
 			"exportTitle": "Gateway 请求"
@@ -1959,7 +1959,7 @@
 			"context": "上下文",
 			"output": "输出",
 			"contextLength": "上下文长度",
-			"maxOutputTokens": "最大输出令牌数",
+			"maxOutputTokens": "最大输出 token 数",
 			"routeLifecycle": "路由生命周期",
 			"saving": "正在保存…",
 			"saveRoute": "保存路由",
@@ -2023,14 +2023,14 @@
 			"confirmDelete": "删除 {offer}？其价格计量项将立即移除。",
 			"allRequests": "所有请求",
 			"notSet": "未设置",
-			"tokens": "令牌",
+			"tokens": "token",
 			"and": "和",
 			"routeCount": "{count} 条路由",
 			"offerCount": "{count} 个报价",
 			"contextOutputSummary": "上下文：{context} · 输出：{output}",
-			"inputTokensExample": "输入令牌",
-			"oneMillionTokens": "100 万令牌",
-			"displayUnitExample": "100 万令牌",
+			"inputTokensExample": "输入 token",
+			"oneMillionTokens": "100 万 token",
+			"displayUnitExample": "100 万 token",
 			"dateWindow": {
 				"range": "{from} – {to}",
 				"from": "从 {date} 起",
@@ -2043,9 +2043,9 @@
 				"current": "当前"
 			},
 			"conditionPaths": {
-				"inputTokens": "输入令牌",
-				"outputTokens": "输出令牌",
-				"totalTokens": "令牌总数",
+				"inputTokens": "输入 token",
+				"outputTokens": "输出 token",
+				"totalTokens": "Token 总数",
 				"cacheDuration": "缓存时长",
 				"requestCount": "请求数"
 			},
@@ -2159,7 +2159,7 @@
 			"billable": "可计费",
 			"endDatePrices": "设置价格结束日期",
 			"discardChanges": "放弃更改",
-			"regionalRoutingAvailabilityAndTokenLimits": "区域路由、可用性和令牌限制。",
+			"regionalRoutingAvailabilityAndTokenLimits": "区域路由、可用性和 token 限制。",
 			"modelAvailabilityRegions": "模型可用区域",
 			"catalogAvailabilityForThisModelRouteGatewayResidencyFilteringUsesTheProviderSRegions": "此模型路由的目录可用性。网关驻留筛选使用提供商区域。",
 			"phaseoStatus": "Phaseo状态",
@@ -2406,7 +2406,7 @@
 			"imagePixels": "图像像素",
 			"videoPixels": "视频像素",
 			"textInput": "文本输入",
-			"modalityTokens": "{modality}令牌",
+			"modalityTokens": "{modality} token",
 			"modalityInputs": "{modality}输入",
 			"durationCacheTTL": "缓存 TTL：{duration}",
 			"frame": "帧",

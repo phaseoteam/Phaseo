@@ -1861,7 +1861,7 @@
 			"compare": {
 				"label": "Comparar modelos",
 				"message": "Sugiere tres formas de comparar modelos de IA.",
-				"response": "Compara los modelos según su adecuación a tus capacidades, latencia y fiabilidad, y el coste total del tráfico previsto."
+				"response": "Compara los modelos según la adecuación de sus capacidades, latencia y fiabilidad, y el coste total del tráfico previsto."
 			},
 			"json": {
 				"label": "Borrador JSON",

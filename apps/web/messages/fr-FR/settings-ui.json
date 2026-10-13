@@ -626,7 +626,7 @@
 		"tokenCreateFailed": "Impossible de créer SCIM jeton",
 		"tokenRevoked": "Jeton SCIM révoqué",
 		"tokenRevokeFailed": "Impossible de révoquer le jeton SCIM",
-		"baseUrl": "Base SCIM",
+		"baseUrl": "URL de base",
 		"enableProvisioning": "Activer le provisionnement",
 		"usersGroups": "Utilisateurs {groups} · Groupes {users}",
 		"copyNow": "Copiez ce jeton maintenant",
@@ -2405,7 +2405,7 @@
 		"Preferred Minimum Throughput": "Débit minimum préféré",
 		"Preferred Maximum Latency": "Latence maximale préférée",
 		"Overview / Provider Routing": "Présentation/Routage du fournisseur",
-		"Overview / Generation Parameters": "Présentation/Génération Paramètres",
+		"Overview / Generation Parameters": "Présentation / Paramètres de génération",
 		"Overview / Reasoning Configuration": "Présentation/Configuration du raisonnement",
 		"phraseSetDeterministicAndSamplingDefaultsThatApplyToRequestsUsingThisPreset": "Définir les valeurs par défaut déterministes et d'échantillonnage qui s'appliquent aux requêtes utilisant ce préréglage.",
 		"phraseConfigureReasoningSettingsForModelsThatExposeReasoningSpecificControls": "Configurer les paramètres de raisonnement pour les modèles qui exposent des contrôles spécifiques au raisonnement.",
@@ -3265,6 +3265,10 @@
 			"pricingArray": "Un tableau de compteurs tarifaires est attendu.",
 			"validationFailed": "La validation du catalogue a échoué.",
 			"automaticMatch": "Correspondance automatique avec un modèle canonique existant.",
+			"conditionalPrice": "La facturation V1 ne prend pas en charge les prix conditionnels. Indiquez un prix effectif sans condition.",
+			"dataArray": "Un tableau data de modèles est attendu.",
+			"positiveNumber": "Un nombre JSON positif est attendu.",
+			"nonNegativeNanodollars": "Un nombre JSON positif ou nul, en nanodollars, est attendu.",
 			"fallback": "La validation du catalogue a échoué. Vérifiez le champ indiqué ci-dessus."
 		},
 		"events": {
@@ -3426,6 +3430,7 @@
 		"thisMonth": "Ce mois-ci",
 		"lastMonth": "Le mois dernier",
 		"vsLastMonth": "par rapport au mois dernier",
+		"changeVsLastMonth": "{change} par rapport au mois dernier",
 		"sameAsLastMonth": "Identique au mois dernier",
 		"pricingWorks": "Comment fonctionne la tarification :",
 		"pricingExplanation": "Votre utilisation est mise à jour mensuellement et les frais affichés sont appliqués lors de l'achat de crédits.",
@@ -4515,6 +4520,10 @@
 	},
 	"oauthCardCopy": {
 		"deleteApp": "Supprimer l’application",
+		"deleteDescription": "Cette action supprimera définitivement <strong>{appName}</strong> et révoquera toutes les autorisations des utilisateurs.",
+		"deleteConfirmLabel": "Saisissez <strong>{appName}</strong> pour confirmer.",
+		"deletedToast": "Application OAuth « {appName} » supprimée",
+		"createdToast": "Application OAuth « {appName} » créée",
 		"usersCount": "{count, plural, one {# utilisateur} other {# utilisateurs}}",
 		"requestsCount": "{count, plural, one {# requête} other {# requêtes}}"
 	},

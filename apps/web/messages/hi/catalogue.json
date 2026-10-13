@@ -99,7 +99,7 @@
 			"releasesPerMonth": "प्रति माह रिलीज़"
 		},
 		"organisation": {
-			"metadataTitle": "Modelos de {organisation}",
+			"metadataTitle": "संगठन के अनुसार मॉडल रिलीज़ - {organisation}",
 			"detailsTitle": "विज्ञप्ति विवरण: {organisation}",
 			"backToCalendar": "कैलेंडर पर वापस जाएँ",
 			"description": "आज की रिलीज़ देखें या इस संगठन के मॉडल रिलीज़ का पूरा इतिहास देखें।",
@@ -387,7 +387,7 @@
 					"no": "नहीं",
 					"none": "कोई नहीं"
 				},
-				"codeDialogDescription": "{modelName} के लिए कॉपी करने योग्य कोड, जिसमें raw HTTP, OpenAI SDK और Phaseo SDK इंटीग्रेशन शामिल हैं।",
+				"codeDialogDescription": "{modelName} के लिए कॉपी करने योग्य कोड, जिसमें सीधे HTTP, OpenAI SDK और Phaseo SDK इंटीग्रेशन शामिल हैं।",
 				"snippetIconAlt": "{snippet} आइकन",
 				"snippetDescriptions": {
 					"rawHttp": "Gateway को भेजा गया सबसे निचले स्तर का HTTP अनुरोध।",
@@ -661,7 +661,7 @@
 				"useModelIdFromExample": "कोड उदाहरण में दिखाए गए मॉडल ID का उपयोग करें।",
 				"parameters": "पैरामीटर",
 				"parametersForRoute": "{endpoint} के लिए उपलब्ध पैरामीटर",
-				"routingParameterExplanation": "पैरामीटर सपोर्ट चुने गए प्रोवाइडर रूट पर निर्भर करता है।",
+				"routingParameterExplanation": "पैरामीटर सपोर्ट चुने गए प्रदाता रूट पर निर्भर करता है।",
 				"viewAllParameters": "सभी पैरामीटर देखें",
 				"parameter": "पैरामीटर",
 				"descriptionLabel": "विवरण",
@@ -682,12 +682,12 @@
 				"partialParameterSupport": "कुछ पैरामीटर समर्थित हैं; अन्य को अनदेखा या अस्वीकार किया जा सकता है।",
 				"typeLabel": "प्रकार",
 				"defaultLabel": "डिफ़ॉल्ट",
-				"defaultProviderSpecific": "प्रोवाइडर-विशिष्ट",
+				"defaultProviderSpecific": "प्रदाता-विशिष्ट",
 				"defaultUnset": "सेट नहीं है",
 				"supportNotDocumented": "सपोर्ट का दस्तावेज़ उपलब्ध नहीं",
-				"supportNotDocumentedDescription": "इस प्रोवाइडर रूट के लिए पैरामीटर सपोर्ट डेटा दर्ज नहीं है।",
+				"supportNotDocumentedDescription": "इस प्रदाता रूट के लिए पैरामीटर सपोर्ट डेटा दर्ज नहीं है।",
 				"parameterDescriptions": {
-					"reasoning": "रीज़निंग-सक्षम API के लिए प्रोवाइडर-विशिष्ट रीज़निंग कॉन्फ़िगरेशन।",
+					"reasoning": "रीज़निंग-सक्षम API के लिए प्रदाता-विशिष्ट रीज़निंग कॉन्फ़िगरेशन।",
 					"temperature": "टोकन चयन में यादृच्छिकता को नियंत्रित करता है।",
 					"top_p": "न्यूक्लियस सैंपलिंग के लिए प्रायिकता सीमा के आधार पर विकल्प सीमित करता है।",
 					"top_k": "समर्थित होने पर सैंपलिंग को शीर्ष-k संभावित टोकन तक सीमित करता है।",
@@ -695,11 +695,11 @@
 					"max_tokens": "max_tokens फ़ील्ड वाले रूट पर आउटपुट की लंबाई सीमित करता है।",
 					"max_output_tokens": "max_output_tokens वाले रूट पर आउटपुट की लंबाई सीमित करता है।",
 					"max_completion_tokens": "नए OpenAI-शैली के टेक्स्ट API पर आउटपुट की लंबाई सीमित करता है।",
-					"seed": "प्रोवाइडर द्वारा समर्थित होने पर नियतात्मक सैंपलिंग का अनुरोध करता है।",
+					"seed": "प्रदाता द्वारा समर्थित होने पर नियतात्मक सैंपलिंग का अनुरोध करता है।",
 					"stop": "ऐसे क्रम तय करता है जो जनरेशन को समय से पहले रोकते हैं।",
 					"logprobs": "प्रतिक्रिया में टोकन-स्तरीय प्रायिकता डेटा माँगता है।",
 					"top_logprobs": "वापस आने वाली वैकल्पिक टोकन प्रायिकताओं की संख्या सीमित करता है।",
-					"logit_bias": "प्रोवाइडर द्वारा यह नियंत्रण उपलब्ध कराने पर टोकन चयन का पक्षपात समायोजित करता है।",
+					"logit_bias": "प्रदाता द्वारा यह नियंत्रण उपलब्ध कराने पर टोकन चयन का पक्षपात समायोजित करता है।",
 					"tools": "उन टूल या फ़ंक्शन को तय करता है जिन्हें मॉडल कॉल कर सकता है।",
 					"tool_choice": "नियंत्रित करता है कि मॉडल को कौन-सा टूल कॉल करना चाहिए।",
 					"parallel_tool_calls": "समर्थित होने पर समानांतर टूल निष्पादन की अनुमति देता या सीमित करता है।",
@@ -708,13 +708,13 @@
 					"json_schema": "स्ट्रक्चर्ड आउटपुट पर लागू स्कीमा तय करता है।",
 					"frequency_penalty": "टोकन पहले कितनी बार आया है, उसके अनुपात में उसे दोहराने से हतोत्साहित करता है।",
 					"presence_penalty": "किसी शब्द या विषय के पहली बार आने के बाद नए शब्दों या विषयों को बढ़ावा देता है।",
-					"repetition_penalty": "प्रोवाइडर-विशिष्ट दोहराव-रोधी व्यवहार लागू करता है।",
+					"repetition_penalty": "प्रदाता-विशिष्ट दोहराव-रोधी व्यवहार लागू करता है।",
 					"include_reasoning": "समर्थित होने पर रीज़निंग सामग्री या उसका सार माँगता है।",
 					"reasoning_effort": "उपलब्ध होने पर कम या अधिक रीज़निंग बजट का अनुरोध करता है।",
 					"reasoning_tokens": "रीज़निंग-विशिष्ट टोकन बजट या उपयोग फ़ील्ड दर्शाता है।",
 					"service_tier": "priority या flex जैसे समर्थित अनुरोध स्तर का चयन करता है।",
 					"stream": "एक अंतिम प्रतिक्रिया के बजाय आउटपुट को क्रमशः लौटाता है।",
-					"other": "एंडपॉइंट-विशिष्ट विवरण और प्रोवाइडर नोट्स के लिए पूरी पैरामीटर संदर्भ देखें।"
+					"other": "एंडपॉइंट-विशिष्ट विवरण और प्रदाता नोट्स के लिए पूरा पैरामीटर संदर्भ देखें।"
 				},
 				"support": {
 					"title": "सहायता",
@@ -978,7 +978,7 @@
 					"familyPrefix": "पूरा रिलीज़ इतिहास देखने के लिए",
 					"familySuffix": "देखें।",
 					"benchmarkIntro": "Phaseo ने {model} के {count} बेंचमार्क परिणाम दर्ज किए हैं।",
-					"benchmarkSuffix": "स्कोर, रैंक, पद्धति और उपलब्ध स्रोत देखने के लिए।",
+					"benchmarkSuffix": "में स्कोर, रैंक, पद्धति और उपलब्ध स्रोत देखें।",
 					"modalitiesInput": "{model} इन इनपुट मोडैलिटी को स्वीकार करता है: {modalities}।",
 					"modalitiesOutput": "{model} इन आउटपुट मोडैलिटी को बना सकता है: {modalities}।",
 					"releaseDate": "{model} को {date} को {verb} किया गया।",
@@ -998,7 +998,7 @@
 			"privateModel": {
 				"endpoint": "निजी एंडपॉइंट",
 				"deployment": "निजी डिप्लॉयमेंट",
-				"billingNote": "प्रदाता की बिलिंग सीधे कार्यक्षेत्र द्वारा प्रबंधित की जाती है।"
+				"billingNote": "प्रदाता की बिलिंग सीधे वर्कस्पेस द्वारा प्रबंधित की जाती है।"
 			}
 		},
 		"noModelsAvailableForView": "इस दृश्य के लिए अभी कोई मॉडल उपलब्ध नहीं है।",
@@ -1833,8 +1833,8 @@
 		"noAppDataYet": "अभी तक ऐप का कोई डेटा नहीं है",
 		"appDataAppearsAfterRequests": "Gateway के ज़रिए अनुरोध संसाधित होने पर यहां ऐप का उपयोग दिखेगा।",
 		"totalTokensOverTime": "समय के साथ कुल टोकन",
-		"dailyProviderTokensDescription": "पिछले 30 दिनों में प्रमुख प्रोवाइडर के दैनिक टोकन उपयोग का विवरण।",
-		"providerTokenChartWillPopulate": "प्रोवाइडर के उपयोग का डेटा उपलब्ध होने पर यह चार्ट भर जाएगा।",
+		"dailyProviderTokensDescription": "पिछले 30 दिनों में प्रमुख प्रदाताओं के दैनिक टोकन उपयोग का विवरण।",
+		"providerTokenChartWillPopulate": "प्रदाताओं के उपयोग का डेटा उपलब्ध होने पर यह चार्ट भर जाएगा।",
 		"latestModelsHeading": "नवीनतम मॉडल",
 		"latestModelsSortDescription": "रिलीज़ की तारीख के अनुसार क्रमबद्ध; उपलब्ध न होने पर घोषणा की तारीख का उपयोग किया जाता है।",
 		"availableOnGateway": "Gateway पर उपलब्ध",
@@ -1854,7 +1854,7 @@
 		"missingDescription": "अगर कोई API प्रदाता छूट गया है, तो कृपया GitHub पर योगदान दें।",
 		"contribute": "GitHub पर योगदान दें",
 		"internalPreview": "प्रदाता का आंतरिक पूर्वावलोकन",
-		"internalPreviewDescription": "इस प्रदाता के कैटलॉग सबमिशन अधिकृत हैं, लेकिन अभी सार्वजनिक गेटवे विश्लेषण उपलब्ध नहीं है। नीचे दिए गए मॉडल सबमिशन केवल प्रदाता के कार्यस्थान और Phaseo व्यवस्थापकों को दिखाई देते हैं।",
+		"internalPreviewDescription": "इस प्रदाता के कैटलॉग सबमिशन अधिकृत हैं, लेकिन अभी सार्वजनिक गेटवे विश्लेषण उपलब्ध नहीं है। नीचे दिए गए मॉडल सबमिशन केवल प्रदाता के वर्कस्पेस और Phaseo व्यवस्थापकों को दिखाई देते हैं।",
 		"loadingModels": "मॉडल लोड हो रहे हैं…"
 	},
 	"benchmarks": {
@@ -2707,8 +2707,8 @@
 		"anyModel": "कोई भी मॉडल",
 		"searchModels": "मॉडल खोजें…",
 		"noModelFound": "कोई मॉडल नहीं मिला।",
-		"searchProviders": "प्रोवाइडर खोजें…",
-		"noProviderFound": "कोई प्रोवाइडर नहीं मिला।",
+		"searchProviders": "प्रदाता खोजें…",
+		"noProviderFound": "कोई प्रदाता नहीं मिला।",
 		"searchChangeTypes": "बदलाव के प्रकार खोजें…",
 		"noChangeTypeFound": "बदलाव का कोई प्रकार नहीं मिला।",
 		"changeType": "बदलाव का प्रकार",
@@ -2724,17 +2724,17 @@
 		"loadHistoryError": "मॉनिटर इतिहास लोड नहीं हो सका।",
 		"loadMoreHistoryError": "मॉनिटर इतिहास के और आइटम लोड नहीं हो सके।",
 		"noChangesMatch": "इन फ़िल्टर से कोई बदलाव मेल नहीं खाता।",
-		"broadenSearch": "और नतीजे देखने के लिए मॉडल या प्रोवाइडर की खोज को व्यापक करें।",
+		"broadenSearch": "और नतीजे देखने के लिए मॉडल या प्रदाता की खोज को व्यापक करें।",
 		"loadingCommits": "commits लोड हो रहे हैं…",
 		"loadMoreCommits": "और commits लोड करें",
 		"modelsGroup": "मॉडल",
-		"providersGroup": "प्रोवाइडर",
+		"providersGroup": "प्रदाता",
 		"actionAdded": "जोड़ा गया",
 		"actionRemoved": "हटाया गया",
 		"tier": "टियर",
 		"context": {
 			"model": "मॉडल",
-			"provider": "प्रोवाइडर",
+			"provider": "प्रदाता",
 			"pricingUpdate": "कीमत अपडेट"
 		},
 		"sortModelsBy": "{label} के अनुसार मॉडल क्रमित करें",
@@ -2807,8 +2807,8 @@
 			"unknown": "अज्ञात स्थिति: {status}"
 		},
 		"rowLabels": {
-			"providerListing": "प्रोवाइडर सूची",
-			"providerAvailability": "प्रोवाइडर उपलब्धता",
+			"providerListing": "प्रदाता सूची",
+			"providerAvailability": "प्रदाता उपलब्धता",
 			"status": "स्थिति",
 			"description": "विवरण",
 			"deprecationDate": "बंद करने की तारीख",

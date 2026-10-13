@@ -3265,6 +3265,10 @@
 			"pricingArray": "Expected an array of pricing meters.",
 			"validationFailed": "Catalog validation failed.",
 			"automaticMatch": "Automatically matched to an existing canonical model.",
+			"conditionalPrice": "Conditional prices are not supported by V1 billing. Provide an effective unconditional price.",
+			"dataArray": "Expected a data array of models.",
+			"positiveNumber": "Expected a positive JSON number.",
+			"nonNegativeNanodollars": "Expected a non-negative JSON number in nanodollars.",
 			"fallback": "Catalog validation failed. Check the field shown above."
 		},
 		"events": {
@@ -3426,6 +3430,7 @@
 		"thisMonth": "This Month",
 		"lastMonth": "Last month",
 		"vsLastMonth": "vs last month",
+		"changeVsLastMonth": "{change} vs last month",
 		"sameAsLastMonth": "Same as last month",
 		"pricingWorks": "How pricing works:",
 		"pricingExplanation": "Your usage updates monthly and the displayed fee is applied when purchasing credits.",
@@ -4515,6 +4520,10 @@
 	},
 	"oauthCardCopy": {
 		"deleteApp": "Delete app",
+		"deleteDescription": "This will permanently delete <strong>{appName}</strong> and revoke all user authorizations.",
+		"deleteConfirmLabel": "Type <strong>{appName}</strong> to confirm.",
+		"deletedToast": "OAuth app \"{appName}\" deleted successfully",
+		"createdToast": "OAuth app \"{appName}\" created successfully",
 		"usersCount": "{count, plural, one {# user} other {# users}}",
 		"requestsCount": "{count, plural, one {# request} other {# requests}}"
 	},

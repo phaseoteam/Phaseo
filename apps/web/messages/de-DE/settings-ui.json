@@ -3265,6 +3265,10 @@
 			"pricingArray": "Ein Array mit Preiseinheiten wird erwartet.",
 			"validationFailed": "Katalogvalidierung fehlgeschlagen.",
 			"automaticMatch": "Automatisch einem bestehenden kanonischen Modell zugeordnet.",
+			"conditionalPrice": "Die V1-Abrechnung unterstützt keine bedingten Preise. Geben Sie einen effektiven Preis ohne Bedingungen an.",
+			"dataArray": "Ein Array data mit Modellen wird erwartet.",
+			"positiveNumber": "Eine positive JSON-Zahl wird erwartet.",
+			"nonNegativeNanodollars": "Eine nicht negative JSON-Zahl in Nanodollar wird erwartet.",
 			"fallback": "Katalogvalidierung fehlgeschlagen. Prüfen Sie das oben angezeigte Feld."
 		},
 		"events": {
@@ -3426,6 +3430,7 @@
 		"thisMonth": "Dieser Monat",
 		"lastMonth": "Letzter Monat",
 		"vsLastMonth": "gegenüber dem letzten Monat",
+		"changeVsLastMonth": "{change} gegenüber dem Vormonat",
 		"sameAsLastMonth": "Wie im letzten Monat",
 		"pricingWorks": "So funktioniert die Preisgestaltung:",
 		"pricingExplanation": "Ihre Nutzung wird monatlich aktualisiert; die angezeigte Gebühr wird beim Kauf von Guthaben angewendet.",
@@ -4515,6 +4520,10 @@
 	},
 	"oauthCardCopy": {
 		"deleteApp": "App löschen",
+		"deleteDescription": "Dadurch wird <strong>{appName}</strong> dauerhaft gelöscht, und alle Benutzerautorisierungen werden widerrufen.",
+		"deleteConfirmLabel": "Zur Bestätigung <strong>{appName}</strong> eingeben.",
+		"deletedToast": "OAuth-App „{appName}“ gelöscht",
+		"createdToast": "OAuth-App „{appName}“ erstellt",
 		"usersCount": "{count, plural, one {# Nutzer} other {# Nutzer}}",
 		"requestsCount": "{count, plural, one {# Anfrage} other {# Anfragen}}"
 	},
