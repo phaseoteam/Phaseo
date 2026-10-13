@@ -636,19 +636,26 @@ function kpiDeltaClass(kpi: ObservabilityKpi): string {
 	return improved ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400";
 }
 
+/** A projection to two significant figures, so the range fits a narrow card; one value when both ends round alike. */
+function formatProjectedRange(kpi: ObservabilityKpi, low: number, high: number): string {
+	const format = new Intl.NumberFormat("en", {
+		notation: "compact",
+		maximumSignificantDigits: 2,
+		...(kpi.format === "currency" ? { style: "currency", currency: "USD" } : {}),
+	}).format;
+	const [lowLabel, highLabel] = [format(low), format(high)];
+	return lowLabel === highLabel ? lowLabel : `${lowLabel}–${highLabel}`;
+}
+
 function KpiMonthFooter({ kpi }: { kpi: ObservabilityKpi }) {
 	const t = useTranslations("SettingsUI.observability");
 	const month = kpi.month;
 	if (!month) return null;
-	const projected = month.kind === "projected";
-	const value = formatKpiValue(kpi, projected ? month.mid : month.value);
-	const lowHigh = projected ? [formatKpiValue(kpi, month.low), formatKpiValue(kpi, month.high)] : null;
 	return (
-		<div
-			className="truncate border-t border-dashed px-4 py-2 text-xs tabular-nums text-muted-foreground"
-			title={lowHigh && lowHigh[0] !== lowHigh[1] ? `${lowHigh[0]}–${lowHigh[1]}` : undefined}
-		>
-			{projected ? t("kpiMonthProjected", { value }) : t("kpiMonthToDate", { value })}
+		<div className="truncate border-t border-dashed px-4 py-2 text-xs tabular-nums text-muted-foreground">
+			{month.kind === "projected"
+				? t("kpiMonthProjected", { value: formatProjectedRange(kpi, month.low, month.high) })
+				: t("kpiMonthToDate", { value: formatKpiValue(kpi, month.value) })}
 		</div>
 	);
 }
