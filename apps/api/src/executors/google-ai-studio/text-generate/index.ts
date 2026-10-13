@@ -1250,6 +1250,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				return {
 					kind: "stream",
 					stream: transformedStream,
+					streamAlreadyTransformed: true,
 					bill: { cost_cents: 0, currency: "USD" },
 					upstream: response,
 					keySource: keyInfo.source,
