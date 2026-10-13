@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import {
 	isArgumentElement,
 	isDateElement,
+	isLiteralElement,
 	isNumberElement,
 	isPluralElement,
 	isSelectElement,
@@ -19,6 +20,7 @@ import {
 	getLocaleDefinition,
 	publicLocales,
 	translationLocales,
+	type CatalogLocale,
 } from "../src/i18n/routing";
 import { getProfileMessages } from "../src/i18n/profile";
 
@@ -83,6 +85,64 @@ function collectIcuArguments(
 		}
 	}
 	return result;
+}
+
+function collectLiteralText(elements: MessageFormatElement[], result: string[] = []): string[] {
+	for (const element of elements) {
+		if (isLiteralElement(element)) {
+			result.push(element.value);
+		} else if (isSelectElement(element) || isPluralElement(element)) {
+			for (const option of Object.values(element.options)) {
+				collectLiteralText(option.value, result);
+			}
+		} else if (isTagElement(element)) {
+			collectLiteralText(element.children, result);
+		}
+	}
+	return result;
+}
+
+// Machine translation once left HTML-escaped quotes, padded protected terms ("Phaseox",
+// "Bedrockxx"), mangled English ("Reeem", "Irror") and other languages' text in catalogs.
+const HTML_ENTITY = /&(?:quot|apos|amp|lt|gt|nbsp|#\d+|#x[\da-f]+);/i;
+// Latin-script words translations may add although the English text does not use them
+// (zh-Hans writes LLM tokens as "token"). Acronyms such as SSO, OS or US$ are always allowed.
+const ADDED_LATIN_TERMS = new Set(["phaseo", "token", "web"]);
+// Simplified Chinese forms that Japanese writes differently (们/們, 设/設, 关/関, 试/試 ...).
+const SIMPLIFIED_CHINESE_ONLY =
+	/[们这过获试删选择况仪码级关闭开页设认证计让说请读从对时间发现动头东车门问题应该实际网络线统资务构链显输单费额账户钥键态败错误导处复报览浏载传储滤样么吗还为无专业优价标签册历纪录钟则规图层达适运营产质细节击确总结组织档权测评购订阅销扫见观视频语话记忆虑]/u;
+
+function latinTerms(elements: MessageFormatElement[], skipAcronyms = false): Set<string> {
+	const words = collectLiteralText(elements).join(" ").match(/[A-Za-z]{2,}/g) ?? [];
+	return new Set(
+		words
+			.filter((word) => !skipAcronyms || /[a-z]/.test(word))
+			.map((word) => word.toLowerCase().replace(/(?<=\w{2})(?:ing|s)$/, "")),
+	);
+}
+
+function translationDamage(
+	locale: CatalogLocale,
+	sourceMessage: string,
+	message: string,
+	sourceElements: MessageFormatElement[],
+	elements: MessageFormatElement[],
+): string | null {
+	if (HTML_ENTITY.test(message) && !HTML_ENTITY.test(sourceMessage)) {
+		return "contains an HTML entity; write the character itself";
+	}
+	const script = getLocaleDefinition(locale).script;
+	if (script === "Jpan" && SIMPLIFIED_CHINESE_ONLY.test(message)) {
+		return "contains Simplified Chinese characters";
+	}
+	if (script === "Latn") return null;
+	const sourceTerms = latinTerms(sourceElements);
+	const foreign = [...latinTerms(elements, true)].filter(
+		(term) => !sourceTerms.has(term) && !ADDED_LATIN_TERMS.has(term),
+	);
+	return foreign.length > 0
+		? `contains Latin-script words that are not in the English source (${foreign.join(", ")})`
+		: null;
 }
 
 function readMessageFile(path: string): Map<string, unknown> {
@@ -165,12 +225,18 @@ function validateFullLocaleCatalogs(): string[] {
 				if (NON_MESSAGE_CATALOG_ENTRIES.has(`${filename}:${key}`)) continue;
 
 				try {
-					const sourceArguments = collectIcuArguments(
-						parse(sourceMessage, { ignoreTag: true }),
+					const sourceElements = parse(sourceMessage, { ignoreTag: true });
+					const translatedElements = parse(message, { ignoreTag: true });
+					const damage = translationDamage(
+						locale,
+						sourceMessage,
+						message,
+						sourceElements,
+						translatedElements,
 					);
-					const translatedArguments = collectIcuArguments(
-						parse(message, { ignoreTag: true }),
-					);
+					if (damage) issues.push(`${locale}/${filename}:${key}: ${damage}`);
+					const sourceArguments = collectIcuArguments(sourceElements);
+					const translatedArguments = collectIcuArguments(translatedElements);
 					const missingArguments = [...sourceArguments].filter(
 						(argument) =>
 							!translatedArguments.has(argument) &&
