@@ -11,7 +11,7 @@ import { dispatchBackground, ensureRuntimeForBackground, getSupabaseAdmin } from
 import { BYOK_KEYS_PER_PROVIDER_LIMIT } from "@/core/byok";
 import { getProviderPricingKey } from "../before/context.shared";
 import { selectVideoProviderOptions } from "@core/video-provider-options";
-import { readProviderCatalogTier, readRequestedServiceTier, normalizeTextServiceTier } from "@core/serviceTiers";
+import { readProviderCatalogTier } from "@core/serviceTiers";
 
 export type PipelineTiming = {
 	timer: Timer;
@@ -40,7 +40,7 @@ function dispatchProviderHealthBackground(task: () => Promise<unknown>): void {
 
 import { guardCandidates, guardPricingFound, guardAllFailed } from "./guards";
 import { err, json } from "./http";
-import { getBaseModel, calculateMaxTries } from "./utils";
+import { getBaseModel, calculateMaxTries, googleFlexMinimumHeadersTimeoutMs } from "./utils";
 import { rankProviders } from "./providers";
 import { resolveProviderExecutor } from "../../executors";
 import {
@@ -838,13 +838,11 @@ async function attemptProviderWithIR(
 	// Execute using provider-capability executor
 	let t0 = performance.now();
 	// The headers deadline is only safe when the provider streams (see the tracker).
-	const googleFlex = (candidate.providerId === "google-ai-studio" || candidate.providerId === "google-vertex") &&
-		(readProviderCatalogTier(candidate.capabilityParams)?.name ?? normalizeTextServiceTier(readRequestedServiceTier(ctx.body).value)) === "flex";
 	// Google Flex queues work before returning headers; give it the documented
 	// ten-minute wait while retaining caller cancellation and a bounded deadline.
 	const upstreamTracker = createUpstreamTimingTracker(ctx.gatewayTimingTrace, {
 		applyHeadersDeadline: ctx.stream === true,
-		minimumHeadersTimeoutMs: googleFlex ? 600_000 : undefined,
+		minimumHeadersTimeoutMs: googleFlexMinimumHeadersTimeoutMs(candidate.providerId, candidate.capabilityParams, ctx.body),
 	});
 	let providerRateLimitReservation: ProviderQuotaCharge | null = null;
 	try {

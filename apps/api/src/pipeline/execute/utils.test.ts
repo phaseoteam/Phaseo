@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { calculateMaxTries, getBaseModel, stripPrioritySuffix } from "./utils";
+import { calculateMaxTries, getBaseModel, stripPrioritySuffix, googleFlexMinimumHeadersTimeoutMs } from "./utils";
+
+describe("Google Flex queue deadline", () => {
+	it.each(["google-ai-studio", "google-vertex", "google-vertex-eu"])("extends the deadline for %s Flex", (provider) => {
+		expect(googleFlexMinimumHeadersTimeoutMs(provider, {}, { service_tier: "flex" })).toBe(600_000);
+		expect(googleFlexMinimumHeadersTimeoutMs(provider, {}, { serviceTier: " FLEX " })).toBe(600_000);
+		expect(googleFlexMinimumHeadersTimeoutMs(provider, { service_tier: { provider_catalog: { name: "flex", upstream: "flex" } } }, {})).toBe(600_000);
+		expect(googleFlexMinimumHeadersTimeoutMs(provider, {}, { service_tier: "priority" })).toBeUndefined();
+	});
+	it("respects the selected catalogue tier and leaves other providers unchanged", () => {
+		expect(googleFlexMinimumHeadersTimeoutMs("google-vertex-eu", { service_tier: { provider_catalog: { name: "standard" } } }, { service_tier: "flex" })).toBeUndefined();
+		expect(googleFlexMinimumHeadersTimeoutMs("openai", {}, { service_tier: "flex" })).toBeUndefined();
+	});
+});
 
 describe("priority suffix helpers", () => {
 	it("strips fast/nitro/cheap suffixes", () => {
