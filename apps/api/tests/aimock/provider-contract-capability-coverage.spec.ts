@@ -8,6 +8,7 @@ const contractsRoot = path.resolve(import.meta.dirname, "../../../../packages/te
 const inheritedContractByProvider: Record<string, string> = {
     ambient: "openai",
     empiriolabs: "openai", // OpenAI text wire; provider-specific Decisions tests cover its native contract.
+    scaledown: "openai", // OpenAI chat wire for Summarize/Extract; executor tests cover Decisions.
     baidu: "openai",
     doubleword: "openai",
     modelscope: "openai",

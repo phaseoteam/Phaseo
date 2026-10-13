@@ -254,6 +254,12 @@ export const BYOK_PROVIDER_KEY_SPECS: Record<string, ProviderKeySpec> = {
 		docsUrl: "https://intl.cloud.tencent.com/document/product/1300/78941",
 		minLength: 16,
 	},
+	scaledown: {
+		hint: "ScaleDown API key from the ScaleDown dashboard.",
+		example: "xxxxxxxxxxxxxxxxxxxxxxxx",
+		docsUrl: "https://docs.scaledown.ai/quickstart",
+		minLength: 16,
+	},
 	mistral: {
 		hint: "Mistral API keys are usually OpenAI-style (sk-...).",
 		example: "sk-xxxxxxxx",
