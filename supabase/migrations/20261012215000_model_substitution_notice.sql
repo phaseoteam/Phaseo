@@ -1,3 +1,4 @@
+-- phaseo:allow-destructive-migration reason: re-creates set_notification_event_destinations to accept model_substitution; its DELETE only replaces one workspace alert's routing rows when an administrator saves that alert, as in 20260824113000
 -- One-off notice when a workspace's requests for a model no provider serves
 -- are first served by a replacement. Adds the model_substitution notification
 -- kind and the function the gateway calls to queue it.
