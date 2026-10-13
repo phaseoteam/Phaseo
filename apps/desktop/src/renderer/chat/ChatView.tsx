@@ -13,9 +13,10 @@ import { StatusDot } from "../shell/Sidebar";
 import { Composer, ComposerChip, ToolButton } from "./Composer";
 import { Conversation } from "./Conversation";
 import { ModelPicker } from "./ModelPicker";
+import { ModelSettings } from "./ModelSettings";
 import { PermissionMenu, PlanToggle } from "./NewChat";
 import { Requests } from "./Requests";
-import { selectionSettings } from "./startChat";
+import { optionHarnesses, selectionSettings } from "./startChat";
 
 function ChatHeader({ task }: { task: Task }) {
 	const { overview, command, select, api, setError } = useWorkspace();
@@ -73,7 +74,7 @@ function ChatComposer({ task }: { task: Task }) {
 	const running = ["running", "waiting"].includes(task.status);
 	const code = task.mode !== "chat";
 	useEffect(() => { input.current?.focus(); }, [task.id]);
-	const selection: ModelSelection = { harness: task.harness, model: task.model, accountId: task.accountId, reasoningEffort: task.reasoningEffort, serviceTier: task.serviceTier };
+	const selection: ModelSelection = { harness: task.harness, model: task.model, accountId: task.accountId, reasoningEffort: task.reasoningEffort, serviceTier: task.serviceTier, options: task.modelOptions };
 	const canSend = !busy && !uploading && !task.archived && (!!draft.text.trim() || draft.attachments.length > 0);
 
 	async function send() {
@@ -98,6 +99,15 @@ function ChatComposer({ task }: { task: Task }) {
 		setUploading(true);
 		void (async () => { for (const file of files) draft.addAttachments([await api.pasteImage(task.id, file.name, new Uint8Array(await file.arrayBuffer()))]); })().catch(reason => setError(errorText(reason))).finally(() => setUploading(false));
 	}
+	/** Settings changes send explicit values; an empty effort or speed returns to the model's default. */
+	async function changeSettings(next: ModelSelection) {
+		await command({ type: "update-task", id: task.id,
+			...(task.harness === "codex" || task.harness === "grok" ? { reasoningEffort: next.reasoningEffort ?? "" } : {}),
+			...(task.harness === "codex" ? { serviceTier: next.serviceTier ?? "" } : {}),
+			...(optionHarnesses.includes(task.harness) ? { modelOptions: next.options ?? {} } : {}),
+		});
+	}
+
 	async function changeModel(next: ModelSelection) {
 		if (next.harness === task.harness && (next.accountId ?? "") === (task.accountId ?? "")) { await command({ type: "update-task", id: task.id, model: next.model, ...selectionSettings(next) }); return; }
 		const known = new Set(overview.tasks.map(value => value.id));
@@ -120,7 +130,7 @@ function ChatComposer({ task }: { task: Task }) {
 				{code && <PlanToggle value={task.mode} onChange={mode => void command({ type: "update-task", id: task.id, mode })} />}
 				{code && <PermissionMenu value={task.permissionMode} onChange={permissionMode => void command({ type: "update-task", id: task.id, permissionMode })} />}
 			</>}
-			model={<ModelPicker selections={[selection]} onChange={values => void changeModel(values[0])} agents={code} disabled={running || task.archived} />} />
+			model={<><ModelPicker selections={[selection]} onChange={values => void changeModel(values[0])} agents={code} disabled={running || task.archived} /><ModelSettings selection={selection} onChange={next => void changeSettings(next)} disabled={running || task.archived} /></>} />
 	</div>;
 }
 

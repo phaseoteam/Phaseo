@@ -100,4 +100,15 @@ describe("Claude SDK integration", () => {
 		sdk.query.mockReturnValue(Object.assign((async function* () { yield { type: "result", subtype: "error_during_execution", errors: ["Failed"] }; })(), { close: vi.fn() }));
 		await expect(new ClaudeAdapter().run(task, ".", "Hi", { onDelta: () => {}, onSession: () => {}, onApproval: async () => "decline" })).rejects.toThrow("Failed");
 	});
+	it("passes per-model settings: effort, fast mode, the 1M context suffix and Ultrathink", async () => {
+		const calls: { prompt: unknown; options: Record<string, unknown> }[] = [];
+		sdk.query.mockImplementation(({ prompt, options }) => { calls.push({ prompt, options }); return Object.assign((async function* () { yield { type: "result", subtype: "success", is_error: false, result: "Done" }; })(), { close: vi.fn() }); });
+		const callbacks = { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" as const };
+		await new ClaudeAdapter().run({ ...task, model: "claude-opus-5-5", modelOptions: { effort: "high", fastMode: true } }, ".", "Plan it", callbacks);
+		expect(calls[0].options).toMatchObject({ model: "claude-opus-5-5[1m]", effort: "high", settings: { fastMode: true } });
+		await new ClaudeAdapter().run({ ...task, model: "claude-fable-5-1", modelOptions: { effort: "ultrathink", contextWindow: "200k" } }, ".", "Plan it", callbacks);
+		expect(calls[1].options).toMatchObject({ model: "claude-fable-5-1" });
+		expect(calls[1].options.effort).toBeUndefined();
+		expect(calls[1].prompt).toBe("Ultrathink:\nPlan it");
+	});
 });

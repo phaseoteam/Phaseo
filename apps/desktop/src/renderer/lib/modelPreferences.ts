@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import type { Harness, ModelOption } from "../../shared/workspace";
+import type { Harness, ModelOption, ModelOptionValues } from "../../shared/workspace";
 
-export type ModelSelection = { harness: Harness; model: string; accountId?: string; reasoningEffort?: string; serviceTier?: string };
+export type ModelSelection = { harness: Harness; model: string; accountId?: string; reasoningEffort?: string; serviceTier?: string; /** Per-model settings such as Claude Code effort, context window and fast mode. */ options?: ModelOptionValues };
 export type ModelPreferences = { defaultSelection?: ModelSelection; recentSelection?: ModelSelection; recent: ModelSelection[] };
 const key = "phaseo.desktop.modelPreferences";
 const event = "phaseo-model-preferences-changed";
 const valid = (value: unknown): value is ModelSelection => {
 	if (!value || typeof value !== "object") return false;
 	const selection = value as ModelSelection;
-	return ["codex", "claude", "phaseo", "opencode", "pi", "cursor", "grok", "acp"].includes(selection.harness) && typeof selection.model === "string" && !!selection.model && !["default", "auto"].includes(selection.model) && [selection.accountId, selection.reasoningEffort, selection.serviceTier].every(field => field === undefined || typeof field === "string");
+	return ["codex", "claude", "phaseo", "opencode", "pi", "cursor", "grok", "acp"].includes(selection.harness) && typeof selection.model === "string" && !!selection.model && !["default", "auto"].includes(selection.model) && [selection.accountId, selection.reasoningEffort, selection.serviceTier].every(field => field === undefined || typeof field === "string") && (selection.options === undefined || (!!selection.options && typeof selection.options === "object" && !Array.isArray(selection.options)));
 };
 
 export function readModelPreferences(): ModelPreferences {

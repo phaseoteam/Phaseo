@@ -6,6 +6,7 @@ import type { ModelSelection } from "../lib/modelPreferences";
 import { useModels } from "../lib/useModels";
 import { useConnectedHarnesses } from "../lib/useConnectedHarnesses";
 import { usePersistedState } from "../lib/persistedState";
+import { rememberedSettings } from "../lib/modelSettings";
 import { cn } from "../lib/utils";
 import { ModelLogo } from "../components/ModelLogo";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
@@ -49,7 +50,8 @@ type Source = "phaseo" | "local";
 const sourceOf = (harness: Harness): Source => harness === "phaseo" ? "phaseo" : "local";
 const sourceNames: Record<Source, string> = { phaseo: "Phaseo", local: "Local" };
 const entryKey = (harness: Harness, id: string) => `${harness}:${id}`;
-const selectionOf = (entry: Entry): ModelSelection => ({ harness: entry.harness, accountId: entry.accountId, model: entry.model.id, reasoningEffort: entry.model.defaultReasoningEffort, serviceTier: entry.model.defaultServiceTier });
+/** A picked model starts from the settings last chosen for it; unset settings follow the harness default. */
+const selectionOf = (entry: Entry): ModelSelection => ({ harness: entry.harness, accountId: entry.accountId, model: entry.model.id, ...rememberedSettings(entry.harness, entry.model.id) });
 const isMac = () => window.phaseoDesktop?.platform === "darwin";
 const twoWeeks = 14 * 86_400_000;
 

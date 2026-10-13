@@ -10,6 +10,7 @@ import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { resolveNativeCommand } from "./nativeProcess";
 import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
+import { claudeRunOptions } from "./claudeModels";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
 import { waitClaudeMcp } from "./claudeMcp";
 import { AgentInputRejectedError } from "./agentAdapter";
@@ -23,6 +24,8 @@ export class ClaudeAdapter implements AgentAdapter {
 		if (nativeAction) text = nativeActionText(nativeAction);
 		const manualCompact = !attachments.length && text.trim() === "/compact";
 		if (manualCompact) text = "/compact";
+		const tuning = claudeRunOptions(task.model, task.modelOptions);
+		if (tuning.promptPrefix && !nativeAction && !text.trimStart().startsWith("/")) text = tuning.promptPrefix + text;
 		const images = attachments.filter(attachment => attachment.kind === "image");
 		const content: SDKUserMessage["message"]["content"] = [{ type: "text", text: attachmentPrompt(text, attachments) }, ...images.map(attachment => ({ type: "image" as const, source: { type: "base64" as const, media_type: attachment.mimeType as "image/png" | "image/jpeg" | "image/gif" | "image/webp", data: attachment.dataUrl!.split(",")[1] } }))];
 		const managedMcp = task.mode === "chat" ? [] : this.mcp; const gated = !!nativeAction || !!managedMcp.length; let promptAllowed = !gated; let releasePrompt!: () => void;
@@ -35,7 +38,9 @@ export class ClaudeAdapter implements AgentAdapter {
 			...(account?.configDirectory ? { env: { ...process.env, ...nativeAccountEnvironment(account) } } : {}),
 			pathToClaudeCodeExecutable: command.executable,
 			abortController: this.controller,
-			...(task.model === "default" ? {} : { model: task.model }),
+			...(task.model === "default" ? {} : { model: tuning.model }),
+			...(tuning.effort ? { effort: tuning.effort } : {}),
+			...(tuning.settings ? { settings: tuning.settings } : {}),
 			...(task.nativeSessionId ? { resume: task.nativeSessionId } : task.nativeForkFrom ? { resume: task.nativeForkFrom, forkSession: true } : {}),
 			permissionMode: task.permissionMode === "full-access" ? "bypassPermissions" : task.mode === "plan" ? "plan" : "default",
 			...(task.permissionMode === "full-access" ? { allowDangerouslySkipPermissions: true } : {}),

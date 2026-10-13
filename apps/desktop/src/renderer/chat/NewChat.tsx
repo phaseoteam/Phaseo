@@ -11,6 +11,7 @@ import { ModelLogo } from "../components/ModelLogo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Composer, ComposerChip, ToolButton } from "./Composer";
 import { MAX_COMPARE, ModelPicker, knownModel, modelLabel, sameSelection } from "./ModelPicker";
+import { ModelSettings } from "./ModelSettings";
 import { SignInCard } from "./SignInCard";
 import { startChat } from "./startChat";
 
@@ -139,7 +140,7 @@ export function NewChat() {
 					{images.map((file, index) => <ComposerChip key={index} onRemove={() => setImages(current => current.filter((_, position) => position !== index))}><ImageIcon className="mr-1 inline size-3" />{file.name}</ComposerChip>)}
 				</> : undefined}
 				tools={code ? <><PlanToggle value={planMode} onChange={setPlanMode} /><PermissionMenu value={permissionMode} onChange={setPermissionMode} /></> : undefined}
-				model={<ModelPicker selections={selections} onChange={setSelections} multiple={!code} agents={code} disabled={busy} />}
+				model={<><ModelPicker selections={selections} onChange={setSelections} multiple={!code} agents={code} disabled={busy} />{selections.length === 1 && <ModelSettings selection={selections[0]} onChange={next => setSelections([next])} disabled={busy} />}</>}
 				footer={compare && <p className="mt-2 px-2 text-xs text-muted-foreground">Sends to {selections.length} models side by side. Each answer is billed separately.</p>} />
 			{!code && <div className="flex flex-wrap justify-center gap-2">
 				{suggestions.map(({ icon: Icon, label, prompt }) => <button key={label} type="button" onClick={() => { setDraft(prompt); requestAnimationFrame(() => { input.current?.focus(); input.current?.setSelectionRange(prompt.length, prompt.length); }); }}

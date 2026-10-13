@@ -1,7 +1,8 @@
 import { query, type Query, type SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import { resolveNativeCommand } from "./nativeProcess";
 import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
-import type { Account, ModelOption } from "../shared/workspace";
+import type { Account } from "../shared/workspace";
+import type { ClaudeAlias } from "./claudeModels";
 import type { NativeAction, NativeActionCatalog, NativeActionEntry } from "../shared/nativeActions";
 function identity(value: unknown) { return typeof value === "string" && value.length > 0 && value.length <= 200 && !value.startsWith("/") && !/\s/.test(value) && !Array.from(value).some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127) ? value : undefined; }
 export function claudeNativeActionCatalog(value: unknown): NativeActionCatalog {
@@ -41,15 +42,17 @@ async function claudeDiscovery<T>(cwd: string, signal: AbortSignal, account: Acc
 export async function claudeNativeActions(cwd: string, signal: AbortSignal, account?: Account): Promise<NativeActionCatalog> {
  return claudeNativeActionCatalog(await claudeDiscovery(cwd, signal, account, execution => execution.supportedCommands()));
 }
-export function claudeModelCatalog(value: unknown): ModelOption[] {
+export function claudeModelCatalog(value: unknown): ClaudeAlias[] {
  if (!Array.isArray(value) || value.length > 1000) throw Error("Claude returned an invalid model catalog.");
  const seen = new Set<string>();
  return value.map(item => {
   if (!item || typeof item !== "object" || typeof item.value !== "string" || !item.value || item.value.length > 1000 || Array.from(item.value as string).some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127) || seen.has(item.value) || typeof item.displayName !== "string" || !item.displayName || item.displayName.length > 1000 || typeof item.description !== "string" || item.description.length > 4000) throw Error("Claude returned an invalid model.");
   seen.add(item.value);
-  return { id: item.value, name: item.displayName, description: item.description };
+  const resolved = typeof item.resolvedModel === "string" && /^[\w.[\]-]{1,200}$/.test(item.resolvedModel) ? item.resolvedModel : undefined;
+  const levels = Array.isArray(item.supportedEffortLevels) ? item.supportedEffortLevels.filter((level: unknown): level is string => typeof level === "string" && level.length < 20).slice(0, 10) : undefined;
+  return { id: item.value, name: item.displayName, description: item.description, ...(resolved ? { resolvedModel: resolved } : {}), ...(item.supportsEffort === true ? { supportsEffort: true } : {}), ...(levels?.length ? { supportedEffortLevels: levels } : {}), ...(item.supportsFastMode === true ? { supportsFastMode: true } : {}) };
  });
 }
-export async function claudeNativeModels(cwd: string, signal: AbortSignal, account?: Account): Promise<ModelOption[]> {
+export async function claudeNativeModels(cwd: string, signal: AbortSignal, account?: Account): Promise<ClaudeAlias[]> {
  return claudeModelCatalog(await claudeDiscovery(cwd, signal, account, execution => execution.supportedModels()));
 }

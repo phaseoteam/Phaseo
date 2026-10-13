@@ -200,7 +200,7 @@ export class WorkspaceRuntime {
 		if (this.store.getOverview().tasks.some(task => task.missionId === id && (task.status === "running" || task.status === "waiting" || this.executions.has(task.id)))) throw new Error("This mission already has an active task.");
 		const task = this.store.missions.admit(id, now, mission => {
 			const template = this.store.getTask(mission.templateTaskId); if (template.archived) throw new Error("Restore this mission's template task before running it."); if (template.projectId) this.assertProjectAvailable(template.projectId);
-			const created = this.store.apply({ type: "create-task", harness: template.harness, model: template.model, mode: template.mode, accountId: template.accountId, projectId: template.projectId, agentId: template.agentId }); created.title = mission.title; created.missionId = mission.id; created.reasoningEffort = template.reasoningEffort; created.nativeMode = template.nativeMode; this.store.saveTask(created);
+			const created = this.store.apply({ type: "create-task", harness: template.harness, model: template.model, mode: template.mode, accountId: template.accountId, projectId: template.projectId, agentId: template.agentId }); created.title = mission.title; created.missionId = mission.id; created.reasoningEffort = template.reasoningEffort; created.modelOptions = template.modelOptions; created.nativeMode = template.nativeMode; this.store.saveTask(created);
 			return this.store.apply({ type: "send", id: created.id, text: mission.prompt });
 		});
 		this.broadcast(); this.start(task.id); return task;
@@ -216,7 +216,7 @@ export class WorkspaceRuntime {
 		if (command.type === "send" && command.nativeAction && !["opencode", "pi", "claude", "codex", "phaseo"].includes(this.store.getTask(command.id).harness)) throw new Error("This action requires a supported harness.");
 		if (command.type === "send" && command.nativeAction?.kind === "command" && ["codex", "phaseo"].includes(this.store.getTask(command.id).harness)) throw new Error("Native commands require OpenCode, Pi or Claude; OpenAI supports native skills.");
 		if (command.type === "send" || command.type === "resume") { const projectId = this.store.getTask(command.id).projectId; if (projectId) this.assertProjectAvailable(projectId); }
-		if (command.type === "update-task" && (command.model !== undefined || command.mode !== undefined || command.reasoningEffort !== undefined || command.nativeMode !== undefined || command.serviceTier !== undefined || command.permissionMode !== undefined) && this.executions.has(command.id)) throw new Error("Wait for this task to stop before changing its settings.");
+		if (command.type === "update-task" && (command.model !== undefined || command.mode !== undefined || command.reasoningEffort !== undefined || command.nativeMode !== undefined || command.serviceTier !== undefined || command.modelOptions !== undefined || command.permissionMode !== undefined) && this.executions.has(command.id)) throw new Error("Wait for this task to stop before changing its settings.");
 		if (command.type === "steer") {
 			if (this.steeringExecutions.has(command.id)) throw new Error("Wait for the current steering instruction to finish sending.");
 			const execution = this.steer(command).finally(() => this.steeringExecutions.delete(command.id));
@@ -311,6 +311,14 @@ export class WorkspaceRuntime {
 			if (current.harness !== "codex") throw new Error("This runtime does not offer speed selection.");
 			const catalog = await this.initialModels({ type: "create-task", harness: current.harness, projectId: current.projectId, accountId: current.accountId, model: command.model ?? current.model, mode: current.mode, serviceTier: command.serviceTier });
 			if (!catalog?.find(model => (command.model ?? current.model) === "default" ? model.default : model.id === (command.model ?? current.model))?.serviceTiers?.some(tier => tier.id === command.serviceTier)) throw new Error("The selected model does not offer this speed.");
+			const latest = this.store.getTask(command.id);
+			if (this.executions.has(command.id) || latest.status === "running" || latest.status === "waiting" || latest.archived) throw new Error("Wait for this chat to stop before changing its settings.");
+			latest.nativeModels = catalog; this.store.saveTask(latest);
+		}
+		// Grok checks a new effort against its model list; load it for chats created without one.
+		if (command.type === "update-task" && command.reasoningEffort && this.store.getTask(command.id).harness === "grok") {
+			const current = this.store.getTask(command.id);
+			const catalog = await this.initialModels({ type: "create-task", harness: "grok", projectId: current.projectId, accountId: current.accountId, model: command.model ?? current.model, mode: current.mode, reasoningEffort: command.reasoningEffort });
 			const latest = this.store.getTask(command.id);
 			if (this.executions.has(command.id) || latest.status === "running" || latest.status === "waiting" || latest.archived) throw new Error("Wait for this chat to stop before changing its settings.");
 			latest.nativeModels = catalog; this.store.saveTask(latest);

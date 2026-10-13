@@ -101,7 +101,7 @@ export class WorkspaceThreads {
 				const active = this.host.store.getOverview().tasks.filter(task => task.delegation && ["idle", "running", "waiting"].includes(task.status));
 				if (active.length >= 32 || active.filter(task => task.delegation?.parentTaskId === parentId).length >= 4) throw new Error("Wait for existing delegated work to finish.");
 				if (parent.projectId) this.host.assertProjectAvailable(parent.projectId);
-				const child = this.host.store.createDelegatedTask({ type: "create-task", harness, model, accountId, agentId: harness === parent.harness ? parent.agentId : undefined, projectId: parent.projectId, mode: parent.mode, permissionMode: parent.permissionMode, reasoningEffort: harness === parent.harness ? parent.reasoningEffort : undefined }, { parentTaskId: parentId, requestId: request.requestId, background: request.background, role: request.role }, request.role ? `Role: ${request.role}\n\n${request.prompt}` : request.prompt, request.title);
+				const child = this.host.store.createDelegatedTask({ type: "create-task", harness, model, accountId, agentId: harness === parent.harness ? parent.agentId : undefined, projectId: parent.projectId, mode: parent.mode, permissionMode: parent.permissionMode, reasoningEffort: harness === parent.harness ? parent.reasoningEffort : undefined, modelOptions: harness === parent.harness && model === parent.model ? parent.modelOptions : undefined }, { parentTaskId: parentId, requestId: request.requestId, background: request.background, role: request.role }, request.role ? `Role: ${request.role}\n\n${request.prompt}` : request.prompt, request.title);
 				this.host.broadcast(); this.host.start(child.id); return summary(child);
 			},
 			wait: async (id, timeoutMs = 60000) => {

@@ -37,6 +37,8 @@ export type Task = {
 	agentId?: string;
 	reasoningEffort?: string;
 	serviceTier?: string;
+	/** Per-model settings beyond effort and speed, keyed by option id (Claude Code effort, context window, fast mode, …). */
+	modelOptions?: ModelOptionValues;
 	nativeModels?: ModelOption[];
 	nativeModes?: ModelOption[];
 	nativeMode?: string;
@@ -57,7 +59,12 @@ export type Task = {
 };
 export type Workspace = { version: 1; projects: Project[]; accounts: Account[]; agents: AgentConnection[]; tasks: Task[]; mcpConnections: McpConnection[] };
 export type HarnessInstallation = { harness: Harness; installed: boolean; version?: string; error?: string; maintenance?: { method: "npm" | "native" | "manual"; canUpdate: boolean } };
-export type ModelOption = { id: string; name: string; description?: string; /** An older model, listed only when searching. */ legacy?: boolean; organisationId?: string; organisationName?: string; releaseDate?: string; default?: boolean; reasoningEfforts?: { id: string; description: string }[]; defaultReasoningEffort?: string; serviceTiers?: { id: string; name: string; description: string }[]; defaultServiceTier?: string };
+/** One per-model setting a harness accepts, shown in the composer's settings menu. */
+export type ModelOptionDescriptor =
+	| { id: string; label: string; type: "select"; options: { id: string; label: string; description?: string; isDefault?: boolean }[] }
+	| { id: string; label: string; type: "boolean"; default?: boolean };
+export type ModelOptionValues = Record<string, string | boolean>;
+export type ModelOption = { id: string; name: string; description?: string; /** An older model, listed only when searching. */ legacy?: boolean; options?: ModelOptionDescriptor[]; organisationId?: string; organisationName?: string; releaseDate?: string; default?: boolean; reasoningEfforts?: { id: string; description: string }[]; defaultReasoningEffort?: string; serviceTiers?: { id: string; name: string; description: string }[]; defaultServiceTier?: string };
 export type UsageWindow = { usedPercent: number; windowDurationMins: number | null; resetsAt: number | null };
 export type AccountStatus = { checkedAt: string; authenticated: boolean | null; method?: string; identity?: string; plan?: string; ordinaryUsageAllowed?: boolean | null; usage?: { id: string; name: string; primary: UsageWindow | null; secondary: UsageWindow | null; spendControlReached: boolean | null }[]; usageError?: string };
 export type ProjectFile = { name: string; path: string; directory: boolean };
@@ -76,9 +83,9 @@ export type WorkspaceCommand =
 	| { type: "update-account"; id: string; name?: string; endpoint?: string; apiKey?: string; archived?: boolean }
 	| { type: "add-agent"; name: string; executable: string; arguments: string[] }
 	| { type: "update-agent"; id: string; name?: string; executable?: string; arguments?: string[]; archived?: boolean }
-	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string }
-	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string }
-	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; model?: string; mode?: Task["mode"]; permissionMode?: Task["permissionMode"]; serviceTier?: string; reasoningEffort?: string; nativeMode?: string }
+	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues }
+	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues }
+	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; model?: string; mode?: Task["mode"]; permissionMode?: Task["permissionMode"]; serviceTier?: string; reasoningEffort?: string; nativeMode?: string; modelOptions?: ModelOptionValues }
 	| { type: "send"; id: string; text: string; threadReferences?: string[]; attachments?: string[]; nativeAction?: NativeAction }
 	| { type: "steer"; id: string; text: string; attachments?: string[] }
 	| { type: "steer-queue" | "steer-discard"; id: string; messageId: string }
@@ -158,6 +165,14 @@ export function emptyWorkspace(): Workspace {
 	return { version: 1, projects: [], accounts: [], agents: [], tasks: [], mcpConnections: [] };
 }
 
+const safeText = (value: string, limit: number) => value.length > 0 && value.length <= limit && ![...value].some(character => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127);
+
+function validateModelOptions(value: unknown) {
+	if (value === undefined) return;
+	if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length > 16) throw new Error("Invalid model settings.");
+	for (const [key, option] of Object.entries(value)) if (!safeText(key, 100) || (typeof option !== "boolean" && (typeof option !== "string" || !safeText(option, 100)))) throw new Error("Invalid model settings.");
+}
+
 function validateApiEndpoint(endpoint: string) {
 	const url = new URL(endpoint);
 	if (url.search || url.hash) throw new Error("Use an endpoint URL without query parameters or fragments.");
@@ -191,6 +206,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 		string("model"); string("projectId", false); string("accountId", false); string("agentId", false);
 		if (command.serviceTier !== undefined && (typeof command.serviceTier !== "string" || command.serviceTier.length > 100 || [...command.serviceTier].some(character => character.charCodeAt(0) < 32))) throw new Error("Invalid speed setting.");
 		if (command.reasoningEffort !== undefined && (typeof command.reasoningEffort !== "string" || command.reasoningEffort.length > 100 || [...command.reasoningEffort].some(character => character.charCodeAt(0) < 32))) throw new Error("Invalid reasoning effort.");
+		validateModelOptions(command.modelOptions);
 	} else {
 		string("id");
 		switch (command.type) {
@@ -212,6 +228,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				if (command.nativeMode !== undefined && (typeof command.nativeMode !== "string" || command.nativeMode.length > 1000 || [...command.nativeMode].some(character => character.charCodeAt(0) < 32))) throw new Error("Invalid native mode.");
 				if (command.reasoningEffort !== undefined && (typeof command.reasoningEffort !== "string" || command.reasoningEffort.length > 100 || [...command.reasoningEffort].some(character => character.charCodeAt(0) < 32))) throw new Error("Invalid reasoning effort.");
 				if (command.mode !== undefined && !["chat", "code", "plan"].includes(command.mode as string)) throw new Error("Invalid task mode.");
+				validateModelOptions(command.modelOptions);
 				for (const key of ["pinned", "archived"]) if (command[key] !== undefined && typeof command[key] !== "boolean") throw new Error(`Invalid ${key}.`);
 				break;
 			case "send": case "steer":

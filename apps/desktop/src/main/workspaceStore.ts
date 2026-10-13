@@ -282,7 +282,7 @@ export class WorkspaceStore {
 			if ((command.harness === "phaseo" || command.harness === "cursor") && !command.accountId) throw new Error(`Choose an account for the ${command.harness === "cursor" ? "Cursor" : "Phaseo"} harness.`);
 			if (command.harness === "acp" && !this.getAgents().some(agent => agent.id === command.agentId && !agent.archived)) throw new Error("Choose an active connected ACP agent.");
 			const now = new Date().toISOString();
-			const task: Task = { id: randomUUID(), title: "New task", projectId: command.projectId, harness: command.harness, accountId: command.accountId, agentId: command.agentId, model: command.model, mode: command.mode, permissionMode: command.permissionMode, reasoningEffort: command.reasoningEffort, serviceTier: command.serviceTier, nativeModels: initialModels, status: "idle", messages: [], queue: [], pinned: false, archived: false, createdAt: now, updatedAt: now };
+			const task: Task = { id: randomUUID(), title: "New task", projectId: command.projectId, harness: command.harness, accountId: command.accountId, agentId: command.agentId, model: command.model, mode: command.mode, permissionMode: command.permissionMode, reasoningEffort: command.reasoningEffort, serviceTier: command.serviceTier, modelOptions: command.modelOptions, nativeModels: initialModels, status: "idle", messages: [], queue: [], pinned: false, archived: false, createdAt: now, updatedAt: now };
 			this.saveTask(task); return task;
 		}
 		const task = this.getTask(command.id);
@@ -292,7 +292,7 @@ export class WorkspaceStore {
 					if (task.status === "running" || task.status === "waiting" || task.archived) throw new Error("Stop and restore this chat before changing permissions.");
 					task.permissionMode = command.permissionMode;
 				}
-				if (command.model !== undefined || command.mode !== undefined || command.reasoningEffort !== undefined || command.nativeMode !== undefined || command.serviceTier !== undefined) {
+				if (command.model !== undefined || command.mode !== undefined || command.reasoningEffort !== undefined || command.nativeMode !== undefined || command.serviceTier !== undefined || command.modelOptions !== undefined) {
 					if (task.status === "running" || task.status === "waiting") throw new Error("Stop this task before changing its model or mode.");
 					if (task.archived) throw new Error("Restore this task before changing its settings.");
 					if (task.harness === "grok" && command.mode === "chat") throw new Error("Grok currently supports Code and Plan tasks.");
@@ -304,12 +304,13 @@ export class WorkspaceStore {
 					}
 					if (command.serviceTier && (task.harness !== "codex" || !task.nativeModels?.find(model => (command.model ?? task.model) === "default" ? model.default : model.id === (command.model ?? task.model))?.serviceTiers?.some(tier => tier.id === command.serviceTier))) throw new Error("The selected model does not offer this speed.");
 					if (command.nativeMode !== undefined && task.harness !== "acp") throw new Error("Native mode selection requires an ACP agent.");
-					if (command.model !== undefined && command.model !== task.model) { task.reasoningEffort = task.harness === "codex" ? "" : undefined; task.serviceTier = undefined; }
+					if (command.model !== undefined && command.model !== task.model) { task.reasoningEffort = task.harness === "codex" ? "" : undefined; task.serviceTier = undefined; task.modelOptions = undefined; }
 					if (command.model !== undefined) task.model = command.model;
 					if (command.serviceTier !== undefined) task.serviceTier = command.serviceTier;
 					if (command.mode !== undefined) task.mode = command.mode;
 					if (command.reasoningEffort !== undefined) task.reasoningEffort = command.reasoningEffort;
 					if (command.nativeMode !== undefined) task.nativeMode = command.nativeMode;
+					if (command.modelOptions !== undefined) task.modelOptions = Object.keys(command.modelOptions).length ? command.modelOptions : undefined;
 				}
 				if (command.title !== undefined) task.title = command.title;
 				if (command.pinned !== undefined) task.pinned = command.pinned;
