@@ -117,11 +117,11 @@ describe("google-vertex route resolution", () => {
 		try { expect((await execute(buildExecuteArgs())).kind).toBe("completed"); }
 		finally { mock.restore(); teardownTestRuntime(); setupTestRuntime(); }
 	});
-	it.each(["gemini-4-argon", "google/gemini-4-argon"])("routes %s to global when the configured region is us-central1", async model => {
+	it.each(["gemini-4-argon", "google/gemini-4-argon", "gemini-3.1-flash-lite", "google/gemini-3.1-flash-lite"])("routes %s to global when the configured region is us-central1", async model => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_LOCATION: "us-central1", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
 		const mock = installFetchMock([{
-			match: url => url === "https://aiplatform.googleapis.com/v1/projects/test-project/locations/global/publishers/google/models/gemini-4-argon:streamGenerateContent?alt=sse",
+			match: url => url === `https://aiplatform.googleapis.com/v1/projects/test-project/locations/global/publishers/google/models/${model.replace(/^google\//, "")}:streamGenerateContent?alt=sse`,
 			response: Response.json({ candidates: [{ content: { parts: [{ text: "OK" }] }, finishReason: "STOP" }], usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 } }),
 		}]);
 		try { expect((await execute({ ...buildExecuteArgs(), providerId: "google-vertex", providerModelSlug: model })).kind).toBe("completed"); }
