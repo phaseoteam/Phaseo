@@ -1,5 +1,5 @@
 {
-  "[\"Auth\",\"Catalogue\",\"Common.ui.actions\",\"Common.ui.apiModelConflicts\",\"Common.ui.auditDataTable\",\"Common.ui.benchmarkComparison\",\"Common.ui.chatComposer\",\"Common.ui.datePicker\",\"Common.ui.editorTabs\",\"Common.ui.filters\",\"Common.ui.finalSharedCopy\",\"Common.ui.linkTypes\",\"Common.ui.modelCreation\",\"Common.ui.modelEditor\",\"Common.ui.pricingEditorCopy\",\"Common.ui.select\",\"Common.ui.status\",\"Common.ui.versionedPricing\",\"Product\",\"SettingsUI\"]": [
+  "[\"Auth\",\"Catalogue\",\"Common.ui.actions\",\"Common.ui.apiModelConflicts\",\"Common.ui.auditDataTable\",\"Common.ui.benchmarkComparison\",\"Common.ui.chatComposer\",\"Common.ui.datePicker\",\"Common.ui.editorTabs\",\"Common.ui.filters\",\"Common.ui.finalSharedCopy\",\"Common.ui.linkTypes\",\"Common.ui.modelCreation\",\"Common.ui.modelEditor\",\"Common.ui.pricingEditorCopy\",\"Common.ui.select\",\"Common.ui.status\",\"Common.ui.subscriptionCatalog\",\"Common.ui.versionedPricing\",\"Product\",\"SettingsUI\"]": [
     "Auth",
     "Catalogue",
     "Common.ui.actions",
@@ -17,6 +17,7 @@
     "Common.ui.pricingEditorCopy",
     "Common.ui.select",
     "Common.ui.status",
+    "Common.ui.subscriptionCatalog",
     "Common.ui.versionedPricing",
     "Product",
     "SettingsUI"
@@ -171,7 +172,7 @@
     "SettingsUI.passwordStrength.labels.veryStrong",
     "SettingsUI.passwordStrength.labels.weak"
   ],
-  "[\"Catalogue.apiModelCard\",\"Catalogue.benchmarks\",\"Catalogue.catalogNotFound\",\"Catalogue.common\",\"Catalogue.families\",\"Catalogue.modelDetail\",\"Catalogue.modelTimeline\",\"Catalogue.models.detail\",\"Catalogue.organisations\",\"Catalogue.performance\",\"Catalogue.providers\",\"Catalogue.rankings\",\"Common.authFlows\",\"Common.ui.actions\",\"Common.ui.auditCopy\",\"Common.ui.benchmarkChartCopy\",\"Common.ui.benchmarkComparison\",\"Common.ui.chatComposer.default\",\"Common.ui.chatComposer.reasoning\",\"Common.ui.chatComposer.standard\",\"Common.ui.chatSettings\",\"Common.ui.finalSharedCopy\",\"Common.ui.metrics\",\"Common.ui.modelCreation\",\"Common.ui.modelEditor\",\"Common.ui.pricingDisplayCopy\",\"Common.ui.pricingEditorCopy\",\"Common.ui.providerCardCopy\",\"Common.ui.publicModelCopy\",\"Common.ui.requestBuilder.extraHigh\",\"Common.ui.requestBuilder.high\",\"Common.ui.requestBuilder.low\",\"Common.ui.requestBuilder.max\",\"Common.ui.requestBuilder.medium\",\"Common.ui.requestBuilder.minimal\",\"Common.ui.versionedPricing\",\"Product.gatewayBenchmark.notAvailable\",\"Product.latency.configuration\",\"SettingsUI.apps\",\"SettingsUI.identity\",\"SettingsUI.providerCatalogCopy\",\"SettingsUI.realtimeCopy\"]": [
+  "[\"Catalogue.apiModelCard\",\"Catalogue.benchmarks\",\"Catalogue.catalogNotFound\",\"Catalogue.common\",\"Catalogue.families\",\"Catalogue.modelDetail\",\"Catalogue.modelTimeline\",\"Catalogue.models.detail\",\"Catalogue.organisations\",\"Catalogue.performance\",\"Catalogue.providers\",\"Catalogue.rankings\",\"Common.authFlows\",\"Common.ui.actions\",\"Common.ui.auditCopy\",\"Common.ui.benchmarkChartCopy\",\"Common.ui.benchmarkComparison\",\"Common.ui.chatComposer.default\",\"Common.ui.chatComposer.reasoning\",\"Common.ui.chatComposer.standard\",\"Common.ui.chatSettings\",\"Common.ui.finalSharedCopy\",\"Common.ui.metrics\",\"Common.ui.modelCreation\",\"Common.ui.modelEditor\",\"Common.ui.pricingDisplayCopy\",\"Common.ui.pricingEditorCopy\",\"Common.ui.providerCardCopy\",\"Common.ui.publicModelCopy\",\"Common.ui.requestBuilder.extraHigh\",\"Common.ui.requestBuilder.high\",\"Common.ui.requestBuilder.low\",\"Common.ui.requestBuilder.max\",\"Common.ui.requestBuilder.medium\",\"Common.ui.requestBuilder.minimal\",\"Common.ui.subscriptionCatalog\",\"Common.ui.versionedPricing\",\"Product.gatewayBenchmark.notAvailable\",\"Product.latency.configuration\",\"SettingsUI.apps\",\"SettingsUI.identity\",\"SettingsUI.providerCatalogCopy\",\"SettingsUI.realtimeCopy\"]": [
     "Catalogue.apiModelCard",
     "Catalogue.benchmarks",
     "Catalogue.catalogNotFound",
@@ -207,6 +208,7 @@
     "Common.ui.requestBuilder.max",
     "Common.ui.requestBuilder.medium",
     "Common.ui.requestBuilder.minimal",
+    "Common.ui.subscriptionCatalog",
     "Common.ui.versionedPricing",
     "Product.gatewayBenchmark.notAvailable",
     "Product.latency.configuration",
@@ -897,11 +899,23 @@
     "SettingsUI.identity",
     "SettingsUI.realtimeCopy"
   ],
-  "[\"Catalogue\",\"Product.chatRooms.aiElements\"]": [
+  "[\"Catalogue\",\"Common.ui.subscriptionCatalog\",\"Product.chatRooms.aiElements\"]": [
     "Catalogue.compare",
+    "Common.ui.subscriptionCatalog.first_billing_cycle",
+    "Common.ui.subscriptionCatalog.introductory",
+    "Common.ui.subscriptionCatalog.number_of_cycles",
+    "Common.ui.subscriptionCatalog.seat",
+    "Common.ui.subscriptionCatalog.starting_at",
     "Product.chatRooms.aiElements.close",
     "Product.chatRooms.aiElements.modelSelector",
     "Product.chatRooms.aiElements.providerLogo"
+  ],
+  "[\"Catalogue\",\"Common.ui.subscriptionCatalog\"]": [
+    "Common.ui.subscriptionCatalog.first_billing_cycle",
+    "Common.ui.subscriptionCatalog.introductory",
+    "Common.ui.subscriptionCatalog.number_of_cycles",
+    "Common.ui.subscriptionCatalog.seat",
+    "Common.ui.subscriptionCatalog.starting_at"
   ],
   "[\"Catalogue\"]": [
     "Catalogue.updates.eventTypes",
