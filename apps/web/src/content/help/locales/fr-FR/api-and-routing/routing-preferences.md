@@ -5,7 +5,7 @@ order: 1
 updated: 2026-02-09
 ---
 
-Les préférences de routage se gèrent depuis `Settings -> Routing`.
+Les préférences de routage se gèrent depuis `Paramètres -> Routage`.
 
 Options actuelles :
 

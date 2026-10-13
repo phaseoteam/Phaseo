@@ -1254,8 +1254,7 @@
 	"settingsCopy": {
 		"byok": {
 			"viewValidModels": "View valid models",
-			"docsPrefix": "See",
-			"docsSuffix": "for more information.",
+			"docsLink": "See <link>{label}</link> for more information.",
 			"keepAllCredentials": "Leave all fields blank to keep existing credentials.",
 			"keepBothCredentials": "Leave both fields blank to keep existing credentials.",
 			"addDeployment": "Add deployment",
@@ -3265,6 +3264,10 @@
 			"pricingArray": "Expected an array of pricing meters.",
 			"validationFailed": "Catalog validation failed.",
 			"automaticMatch": "Automatically matched to an existing canonical model.",
+			"conditionalPrice": "Conditional prices are not supported by V1 billing. Provide an effective unconditional price.",
+			"dataArray": "Expected a data array of models.",
+			"positiveNumber": "Expected a positive JSON number.",
+			"nonNegativeNanodollars": "Expected a non-negative JSON number in nanodollars.",
 			"fallback": "Catalog validation failed. Check the field shown above."
 		},
 		"events": {
@@ -3317,6 +3320,17 @@
 		"topApps": "Top apps",
 		"usageByModel": "Usage by model",
 		"dailySpendByModel": "Daily spend in USD by model.",
+		"kpiMonthProjected": "{value} by month end",
+		"kpiMonthToDate": "{value} this month",
+		"spendViewDaily": "Daily",
+		"spendViewMonth": "This month",
+		"monthSpendTitle": "Spend this month",
+		"monthSpendSubtitle": "Cumulative spend in UTC days. The projection assumes the recent pace continues.",
+		"monthSpendSpent": "Spent",
+		"monthSpendProjected": "Projected",
+		"monthSpendLastMonth": "Last month",
+		"monthSpendToday": "Today",
+		"monthSpendByDate": "by {date}",
 		"usageType": "Usage type",
 		"dailyCreditsByokSpend": "Daily Phaseo Credits versus BYOK spend.",
 		"requestVolumeByModel": "Request volume by model",
@@ -3429,6 +3443,7 @@
 		"thisMonth": "This Month",
 		"lastMonth": "Last month",
 		"vsLastMonth": "vs last month",
+		"changeVsLastMonth": "{change} vs last month",
 		"sameAsLastMonth": "Same as last month",
 		"pricingWorks": "How pricing works:",
 		"pricingExplanation": "Your usage updates monthly and the displayed fee is applied when purchasing credits.",
@@ -4518,6 +4533,10 @@
 	},
 	"oauthCardCopy": {
 		"deleteApp": "Delete app",
+		"deleteDescription": "This will permanently delete <strong>{appName}</strong> and revoke all user authorizations.",
+		"deleteConfirmLabel": "Type <strong>{appName}</strong> to confirm.",
+		"deletedToast": "OAuth app \"{appName}\" deleted successfully",
+		"createdToast": "OAuth app \"{appName}\" created successfully",
 		"usersCount": "{count, plural, one {# user} other {# users}}",
 		"requestsCount": "{count, plural, one {# request} other {# requests}}"
 	},

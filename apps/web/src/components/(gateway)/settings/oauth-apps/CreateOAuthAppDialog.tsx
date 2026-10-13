@@ -76,7 +76,7 @@ export default function CreateOAuthAppDialog({
 			// Show the created app with client secret (only shown once!)
 			setCreatedApp(result.data);
 
-			toast.success(`${t("credits.OAuth app" as never)} "${formData.name}" ${t("credits.created successfully" as never)}`);
+			toast.success(t("oauthCardCopy.createdToast", { appName: formData.name }));
 
 		} catch (err: any) {
 			setError(localizedSettingsError(err, t, "Failed to create OAuth app"));

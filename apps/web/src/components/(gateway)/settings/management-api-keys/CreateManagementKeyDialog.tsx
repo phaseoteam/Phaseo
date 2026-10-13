@@ -181,7 +181,7 @@ export default function CreateManagementKeyDialog({
 						{t("strings.phraseChooseTheMinimumAccessThisManagementAPIKeyNeeds" as never)}
 					</DialogDescription>
 					<p className="rounded-md bg-amber-500/10 px-3 py-2 text-sm leading-5 text-amber-700 dark:text-amber-400">
-						{t("keys.keyShownOnce")} <strong>{t("credits.once" as never)}</strong>{" "}
+						<strong>{t("keys.keyShownOnce")}</strong>{" "}
 						{t("strings.phraseAndGrantsElevatedPrivilegesStoreItSecurely" as never)}
 					</p>
 				</DialogHeader>

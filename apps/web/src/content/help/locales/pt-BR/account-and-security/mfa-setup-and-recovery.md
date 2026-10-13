@@ -5,7 +5,7 @@ order: 2
 updated: 2026-07-11
 ---
 
-Ative o MFA em `Settings -> Account` para proteger suas chaves de API e ações de cobrança.
+Ative o MFA em `Configurações -> Conta` para proteger suas chaves de API e ações de cobrança.
 
 Configuração recomendada:
 

@@ -978,7 +978,7 @@
 					"familyPrefix": "完全なリリース履歴は",
 					"familySuffix": "をご覧ください。",
 					"benchmarkIntro": "Phaseoでは{model}のベンチマーク結果を{count}件追跡しています。",
-					"benchmarkSuffix": "スコア、順位、方法論、利用可能な情報源を確認できます。",
+					"benchmarkSuffix": "で、スコア、順位、方法論、利用可能な情報源を確認できます。",
 					"modalitiesInput": "{model}が入力として受け付けるモダリティ: {modalities}。",
 					"modalitiesOutput": "{model}が出力できるモダリティ: {modalities}。",
 					"releaseDate": "{model}は{date}に{verb}。",

@@ -107,6 +107,7 @@ import {
 	shouldOpenTrendExplore,
 	stopTrendControlClick,
 } from "./trendChart";
+import { MonthSpendChart } from "./MonthSpendChart";
 
 const CHART_COLORS = ["#2563eb", "#059669", "#d97706", "#7c3aed", "#dc2626"];
 
@@ -609,7 +610,7 @@ function Sparkline({
 					cx={hovered.x}
 					cy={hovered.y}
 					r={3.1}
-					fill="hsl(var(--background))"
+					fill="var(--background)"
 					stroke="currentColor"
 					strokeWidth={2}
 					pointerEvents="none"
@@ -620,11 +621,46 @@ function Sparkline({
 	);
 }
 
-function KpiMetric({
-	kpi,
-}: {
-	kpi: ObservabilityKpi;
-}) {
+// Only quality metrics have a good direction. More spend, requests or tokens is
+// not good or bad news in itself, so those deltas stay neutral.
+const KPI_GOOD_DIRECTION: Partial<Record<ObservabilityKpi["id"], "up" | "down">> = {
+	success_rate: "up",
+	cache: "up",
+	blended_price: "down",
+};
+
+function kpiDeltaClass(kpi: ObservabilityKpi): string {
+	const direction = KPI_GOOD_DIRECTION[kpi.id];
+	if (!direction || !kpi.deltaPercent) return "text-muted-foreground";
+	const improved = direction === "up" ? kpi.deltaPercent > 0 : kpi.deltaPercent < 0;
+	return improved ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400";
+}
+
+/** A projection to two significant figures, so the range fits a narrow card; one value when both ends round alike. */
+function formatProjectedRange(kpi: ObservabilityKpi, low: number, high: number): string {
+	const format = new Intl.NumberFormat("en", {
+		notation: "compact",
+		maximumSignificantDigits: 2,
+		...(kpi.format === "currency" ? { style: "currency", currency: "USD" } : {}),
+	}).format;
+	const [lowLabel, highLabel] = [format(low), format(high)];
+	return lowLabel === highLabel ? lowLabel : `${lowLabel}–${highLabel}`;
+}
+
+function KpiMonthFooter({ kpi }: { kpi: ObservabilityKpi }) {
+	const t = useTranslations("SettingsUI.observability");
+	const month = kpi.month;
+	if (!month) return null;
+	return (
+		<div className="truncate border-t border-dashed px-4 py-2 text-xs tabular-nums text-muted-foreground">
+			{month.kind === "projected"
+				? t("kpiMonthProjected", { value: formatProjectedRange(kpi, month.low, month.high) })
+				: t("kpiMonthToDate", { value: formatKpiValue(kpi, month.value) })}
+		</div>
+	);
+}
+
+function KpiMetric({ kpi }: { kpi: ObservabilityKpi }) {
 	const t = useTranslations("SettingsUI.observability");
 	const [hoveredPoint, setHoveredPoint] =
 		React.useState<ObservabilitySeriesPoint | null>(null);
@@ -636,7 +672,7 @@ function KpiMetric({
 			href="/settings/usage/explore"
 			className="group relative block min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 		>
-			<Card className="h-full rounded-lg py-0 transition-colors group-hover:bg-muted/20">
+			<Card className="h-full gap-0 rounded-lg py-0 transition-colors group-hover:bg-muted/20">
 				<div className="grid min-h-[124px] min-w-0 grid-rows-[auto_1fr] gap-2 px-4 py-4 sm:min-h-[112px] sm:gap-2 sm:py-3">
 					<CardTitle className="whitespace-nowrap text-xs font-medium leading-tight text-muted-foreground">
 						{kpi.label}
@@ -649,11 +685,7 @@ function KpiMetric({
 							<div
 								className={cn(
 									"mt-2 inline-flex max-w-full items-center gap-1 text-xs font-medium",
-									hoveredPoint
-										? "text-muted-foreground"
-										: positive
-											? "text-emerald-600"
-											: "text-rose-600",
+									hoveredPoint ? "text-muted-foreground" : kpiDeltaClass(kpi),
 								)}
 							>
 								{hoveredPoint ? (
@@ -685,6 +717,7 @@ function KpiMetric({
 						</div>
 					</div>
 				</div>
+				<KpiMonthFooter kpi={kpi} />
 			</Card>
 		</Link>
 	);
@@ -705,11 +738,13 @@ function ExploreButton() {
 function ChartCard({
 	title,
 	subtitle,
+	actions,
 	children,
 	className,
 }: {
 	title: string;
 	subtitle?: string;
+	actions?: React.ReactNode;
 	children: React.ReactNode;
 	className?: string;
 }) {
@@ -722,7 +757,10 @@ function ChartCard({
 						<p className="text-sm text-muted-foreground">{subtitle}</p>
 					) : null}
 				</div>
-				<ExploreButton />
+				<div className="flex shrink-0 items-center gap-2">
+					{actions}
+					<ExploreButton />
+				</div>
 			</CardHeader>
 			<CardContent>
 				{children}
@@ -991,7 +1029,7 @@ function StackedTimeSeriesBarChart({
 						}
 					/>
 					<Tooltip
-						cursor={{ fill: "hsl(var(--muted))", opacity: 0.32 }}
+						cursor={{ fill: "var(--muted)", opacity: 0.32 }}
 						content={(props) => (
 							<TimeSeriesTooltip
 								{...props}
@@ -1087,7 +1125,7 @@ function StackedTimeSeriesAreaChart({
 						}
 					/>
 					<Tooltip
-						cursor={{ stroke: "hsl(var(--muted-foreground))", opacity: 0.28 }}
+						cursor={{ stroke: "var(--muted-foreground)", opacity: 0.28 }}
 						content={(props) => (
 							<TimeSeriesTooltip {...props} activeSeries={activeSeries} />
 						)}
@@ -1194,7 +1232,7 @@ function MultiSeriesLineChart({
 						}
 					/>
 					<Tooltip
-						cursor={{ stroke: "hsl(var(--muted-foreground))", opacity: 0.28 }}
+						cursor={{ stroke: "var(--muted-foreground)", opacity: 0.28 }}
 						content={(props) => (
 							<TimeSeriesTooltip {...props} activeSeries={activeSeries} />
 						)}
@@ -1693,14 +1731,14 @@ function TrendSection({
 
 function Overview({ data }: { data: ObservabilityData }) {
 	const t = useTranslations("SettingsUI.observability");
+	const monthSpend = data.monthSpend ?? null;
+	const [spendView, setSpendView] = React.useState<"daily" | "month">("daily");
+	const showMonth = spendView === "month" && monthSpend !== null;
 	return (
 		<div className="space-y-4 sm:space-y-6">
 			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-6">
 				{data.kpis.map((kpi) => (
-					<KpiMetric
-						key={kpi.id}
-						kpi={kpi}
-					/>
+					<KpiMetric key={kpi.id} kpi={kpi} />
 				))}
 			</div>
 			<div className="grid gap-4 xl:grid-cols-2">
@@ -1709,14 +1747,31 @@ function Overview({ data }: { data: ObservabilityData }) {
 			</div>
 			<div className="grid gap-4 xl:grid-cols-2">
 				<ChartCard
-					title={t("usageByModel")}
-					subtitle={t("dailySpendByModel")}
+					title={showMonth ? t("monthSpendTitle") : t("usageByModel")}
+					subtitle={showMonth ? t("monthSpendSubtitle") : t("dailySpendByModel")}
 					className="xl:col-span-2"
+					actions={monthSpend ? (
+						<ToggleGroup
+							type="single"
+							variant="outline"
+							size="sm"
+							value={showMonth ? "month" : "daily"}
+							onValueChange={(value) => { if (value === "daily" || value === "month") setSpendView(value); }}
+							aria-label={t("monthSpendTitle")}
+						>
+							<ToggleGroupItem value="daily" className="h-7 px-2.5 text-xs">{t("spendViewDaily")}</ToggleGroupItem>
+							<ToggleGroupItem value="month" className="h-7 px-2.5 text-xs">{t("spendViewMonth")}</ToggleGroupItem>
+						</ToggleGroup>
+					) : null}
 				>
-					<StackedTimeSeriesBarChart
-						data={data.charts.usageByModelCost}
-						valueKind="currency"
-					/>
+					{showMonth ? (
+						<MonthSpendChart forecast={monthSpend} formatCurrency={formatCurrency} />
+					) : (
+						<StackedTimeSeriesBarChart
+							data={data.charts.usageByModelCost}
+							valueKind="currency"
+						/>
+					)}
 				</ChartCard>
 				<ChartCard
 					title={t("usageType")}
@@ -1999,7 +2054,7 @@ function ExploreBarChart({
 					width={132}
 				/>
 				<Tooltip
-					cursor={{ fill: "hsl(var(--muted))", opacity: 0.32 }}
+					cursor={{ fill: "var(--muted)", opacity: 0.32 }}
 					content={(props) => {
 						const item = props.payload?.[0]?.payload;
 						if (!props.active || !item) return null;
