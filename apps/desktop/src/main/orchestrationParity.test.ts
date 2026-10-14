@@ -69,6 +69,22 @@ describe("orchestration parity", () => {
 			expect(runtime.store.getTask(parent.id).queue).toEqual([expect.objectContaining({ sourceTaskIds: [child.id] })]);
 		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
+	it("stops a chat's whole agent tree when it is stopped or archived, even after its own turn ended", async () => {
+		const { factory, run } = gated();
+		await withRuntime("stop-tree", factory, async runtime => {
+			const stopped = await parentOf(runtime), archived = await parentOf(runtime);
+			for (const parentId of [stopped, archived]) {
+				const child = await runtime.threadTools(parentId).delegate({ requestId: "c", title: "Child", prompt: "Work", background: true });
+				await vi.waitFor(() => expect(run.mock.calls.some(([task]) => task.id === child.id)).toBe(true));
+				await runtime.threadTools(child.id).delegate({ requestId: "g", title: "Grandchild", prompt: "Work", background: true });
+			}
+			const tree = (parentId: string) => runtime.store.getOverview().tasks.filter(task => task.delegation?.parentTaskId === parentId).flatMap(child => [child, ...runtime.store.getOverview().tasks.filter(task => task.delegation?.parentTaskId === child.id)]);
+			await vi.waitFor(() => expect([...tree(stopped), ...tree(archived)].every(task => task.status === "running")).toBe(true));
+			await runtime.command({ type: "cancel", id: stopped });
+			await runtime.command({ type: "update-task", id: archived, archived: true });
+			await vi.waitFor(() => expect([...tree(stopped), ...tree(archived)].map(task => task.status)).toEqual(["interrupted", "interrupted", "interrupted", "interrupted"]));
+		});
+	});
 	it("picks the single usable account for account-bound harnesses and explains ambiguity", async () => {
 		await withRuntime("account-pick", gated().factory, async runtime => {
 			runtime.discoverThreadModels = async () => [{ id: "gateway/model", name: "Model" }];

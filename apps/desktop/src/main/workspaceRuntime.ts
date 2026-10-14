@@ -344,6 +344,9 @@ export class WorkspaceRuntime {
 		}
 		const task = this.store.apply(command, initialModels);
 		this.broadcast();
+		// Archiving a chat stops the agents it started, as Stop does; they would otherwise keep spending in the background.
+		if (command.type === "update-task" && command.archived === true)
+			for (const child of this.store.getOverview().tasks.filter(value => value.delegation?.parentTaskId === command.id && ["idle", "running", "waiting"].includes(value.status))) await this.command({ type: "cancel", id: child.id });
 		if (command.type === "send" || command.type === "resume" || command.type === "steer-queue") this.start(task.id);
 		return this.store.getOverview();
 	}

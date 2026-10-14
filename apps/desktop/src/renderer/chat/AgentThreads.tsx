@@ -28,6 +28,8 @@ export function AgentThreads({ taskId }: { taskId: string }) {
 		<div className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground">
 			{active ? <LoaderCircle className="size-3.5 animate-spin text-primary" /> : <Network className="size-3.5" />}
 			<span className="font-medium">{children.length === 1 ? "Started 1 agent" : `Started ${children.length} agents`}{active ? ` · ${active} working` : ""}</span>
+			{active > 0 && <button type="button" title="Stop every agent this chat started, and the agents they started" onClick={() => { for (const child of children.filter(working)) void command({ type: "cancel", id: child.id }); }}
+				className="ml-1 flex h-6 items-center gap-1 rounded-md px-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"><Square className="size-2.5 fill-current" />Stop all</button>}
 		</div>
 		<div className="ml-[7px] flex flex-col gap-0.5 border-l border-border pl-1.5">
 			{children.map(child => <div key={child.id} role="button" tabIndex={0} onClick={() => select(child.id)} onKeyDown={event => { if (event.key === "Enter") select(child.id); }}
