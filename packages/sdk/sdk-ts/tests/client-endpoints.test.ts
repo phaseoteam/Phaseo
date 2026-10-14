@@ -2,6 +2,20 @@ import { describe, expect, test, vi } from "vitest";
 import { Phaseo } from "../src/index.js";
 
 describe("Phaseo endpoints discovery helper", () => {
+  test("preserves Jev Box and provider options through the Decisions resource", async () => {
+    const request = { model: "typesafe/jev-1.14.0", input: [{ role: "user" as const, content: [
+      { type: "input_image" as const, image_url: "data:image/png;base64,AQID" },
+    ] }], questions: [{ type: "box" as const, name: "mug", instructions: "The mug" }],
+    provider_options: { typesafe: { long_context: true } } };
+    const box = { top: 0.1, bottom: 0.8, left: 0.2, right: 0.9 };
+    const fetchImpl: typeof fetch = vi.fn(async (input, init) => {
+      expect(String(input)).toBe("https://example.test/decisions");
+      expect(JSON.parse(String(init?.body))).toEqual(request);
+      return jsonResponse({ model: request.model, answers: [{ type: "box", name: "mug", box, confidence: 0.9 }] });
+    });
+    const client = new Phaseo({ apiKey: "sk_test_123", baseUrl: "https://example.test", fetchImpl, enableDeprecationWarnings: false });
+    expect((await client.decisions.create(request)).answers[0]).toMatchObject({ box, confidence: 0.9 });
+  });
   test("serializes Omni audio/video through the native Decisions resource", async () => {
     const request = { model: "cloudflare/clef-omni", input: [{ role: "user" as const, content: [
       { type: "input_audio" as const, input_audio: { data: "AQID", format: "wav" as const } },

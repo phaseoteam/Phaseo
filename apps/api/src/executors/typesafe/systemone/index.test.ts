@@ -37,13 +37,50 @@ beforeEach(() => setupRuntimeFromEnv({ TYPESAFE_API_KEY: "typesafe-test-key" } a
 afterEach(teardownTestRuntime);
 
 describe("TypeSafe System One executor", () => {
+	it.each([undefined, false, true])("maps images and long context headers (long context: %s)", async long_context => {
+		const box = { top: 0.1, bottom: 0.8, left: 0.2, right: 0.9 };
+		const mock = installFetchMock([{ match: url => url === "https://api.typesafe.ai/v1/systemone",
+			response: jsonResponse({ model: "jev-1.14.0", answers: { mug: { type: "box", box, confidence: 0.9 } }, usage: { input_tokens: 400, output_tokens: 21 } }),
+		}]);
+		try {
+			const result = await executor(buildArgs({ providerModelSlug: "jev-1.14.0", ir: {
+				model: "typesafe/jev-1.14.0", state: "Photo", images: ["data:image/png;base64,AQID"],
+				questions: { mug: { type: "box", instructions: "The mug in images[0]" } },
+				providerOptions: { typesafe: { long_context } },
+			} }));
+			expect(mock.calls[0].headers["TypeSafe-Danger-Zone-Images"]).toBe("true");
+			expect(mock.calls[0].headers["TypeSafe-Danger-Zone-Long-Context"]).toBe(long_context === true ? "true" : undefined);
+			const body = mock.calls[0].bodyJson as any;
+			expect(body.state.images).toEqual(Object.keys(body.assets));
+			expect(body.provider_options).toBeUndefined();
+			expect(result.ir).toMatchObject({ answers: { mug: { box, confidence: 0.9 } } });
+			expect(result.bill.usage).toMatchObject({ input_tokens: 400, output_tokens: 21 });
+			expect(result.bill.usage?.input_text_tokens).toBeUndefined();
+		} finally { mock.restore(); }
+	});
+	it("rejects Box on Jev 1.13 before making an upstream call", async () => {
+		const result = await executor(buildArgs({ ir: { state: "Photo", images: ["data:image/png;base64,AQID"],
+			questions: { mug: { type: "box", instructions: "The mug" } } } }));
+		expect(result.upstream.status).toBe(400);
+		expect(result.localClientError).toBe(true);
+	});
+	it("rejects malformed Box responses without billing", async () => {
+		const mock = installFetchMock([{ match: url => url === "https://api.typesafe.ai/v1/systemone",
+			response: jsonResponse({ answers: { mug: { type: "box", box: { top: 0.8, bottom: 0.1, left: 0.2, right: 0.9 }, confidence: 0.9 } }, usage: { input_tokens: 400, output_tokens: 21 } }),
+		}]);
+		try {
+			const result = await executor(buildArgs({ providerModelSlug: "jev-1.14.0", ir: { model: "typesafe/jev-1.14.0", state: "Photo", images: ["data:image/png;base64,AQID"], questions: { mug: { type: "box", instructions: "The mug" } } } }));
+			expect(result.upstream.status).toBe(502);
+			expect(result.bill.usage).toBeUndefined();
+		} finally { mock.restore(); }
+	});
 	it("posts the keyed question map and normalizes usage", async () => {
 		const upstreamTracker = createUpstreamTimingTracker();
 		const mock = installFetchMock([{
 			match: (url) => url === "https://api.typesafe.ai/v1/systemone",
 			response: jsonResponse({
 				model: "jev-1.13.0",
-				answers: { segment: { choice: "startup", confidence: 0.94 } },
+				answers: { segment: { type: "choice", choice: "startup", confidence: 0.94, probabilities: { startup: 0.94, enterprise: 0.06 } } },
 				usage: { input_tokens: 120, output_tokens: 0 },
 			}),
 		}]);
@@ -52,6 +89,8 @@ describe("TypeSafe System One executor", () => {
 			const result = await executor(buildArgs({ upstreamTiming: upstreamTracker.timing }));
 			expect(mock.calls[0]?.method).toBe("POST");
 			expect(mock.calls[0]?.headers.Authorization).toBe("Bearer typesafe-test-key");
+			expect(mock.calls[0]?.headers["TypeSafe-Danger-Zone-Images"]).toBeUndefined();
+			expect(mock.calls[0]?.headers["TypeSafe-Danger-Zone-Long-Context"]).toBeUndefined();
 			expect(mock.calls[0]?.bodyJson).toEqual({
 				model: "jev-1.13.0",
 				state: { plan: "pro", active_users: 42 },

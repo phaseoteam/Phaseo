@@ -516,6 +516,14 @@ export async function doRequestWithIR(
 	if (normalizedCapability === "decisions.make") {
 		candidates = filterDecisionCandidatesByModalities(candidates, ir as IRDecisionsRequest);
 		if (!candidates.length) {
+			const decisions = ir as IRDecisionsRequest;
+			if (Object.values(decisions.questions ?? {}).some(question => question.type === "box") ||
+				decisions.providerOptions?.typesafe?.long_context === true) {
+				return Response.json({ error: "unsupported_parameter", model: ctx.model, endpoint: ctx.endpoint,
+					request_id: ctx.requestId,
+					message: "No route supports the requested decision inputs and Box or TypeSafe long-context capabilities.",
+				}, { status: 400 });
+			}
 			return err("unsupported_modalities", { model: ctx.model, endpoint: ctx.endpoint,
 				request_id: ctx.requestId, reason: "unsupported_modalities" });
 		}

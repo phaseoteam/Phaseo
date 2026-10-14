@@ -16,13 +16,17 @@ import type { ProviderCandidate } from "../before/types";
 export type Modality = "text" | "image" | "audio" | "video";
 
 export function filterDecisionCandidatesByModalities(candidates: ProviderCandidate[], ir: IRDecisionsRequest): ProviderCandidate[] {
+	const requestsBox = Object.values(ir.questions ?? {}).some(question => question.type === "box");
+	const requestsLongContext = ir.providerOptions?.typesafe?.long_context === true;
 	const media = [
 		{ modality: "image", parameter: "images", requested: Boolean(ir.images?.length) },
 		{ modality: "audio", parameter: "audio", requested: Boolean(ir.audio?.length) },
 		{ modality: "video", parameter: "videos", requested: Boolean(ir.videos?.length) },
 	].filter(item => item.requested);
-	return candidates.filter(candidate => media.every(item =>
-		candidate.inputModalities?.includes(item.modality) && candidate.capabilityParams?.[item.parameter] === true));
+	return candidates.filter(candidate =>
+		(!requestsBox || (Boolean(ir.images?.length) && candidate.capabilityParams?.box === true)) &&
+		(!requestsLongContext || (candidate.providerId === "typesafe" && candidate.capabilityParams?.long_context === true)) &&
+		media.every(item => candidate.inputModalities?.includes(item.modality) && candidate.capabilityParams?.[item.parameter] === true));
 }
 
 type ModalityRequirements = {

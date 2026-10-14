@@ -719,6 +719,26 @@ pub struct DecisionAudioSource {
 	pub url: Option<String>,
 }
 
+pub struct DecisionBox {
+	pub bottom: f64,
+	pub left: f64,
+	pub right: f64,
+	pub top: f64,
+}
+
+pub struct DecisionBoxAnswer {
+	pub box: HashMap<String, String>,
+	pub confidence: f64,
+	pub name: Option<String>,
+	pub r#type: String,
+}
+
+pub struct DecisionBoxQuestion {
+	pub instructions: String,
+	pub name: Option<String>,
+	pub r#type: String,
+}
+
 pub struct DecisionChoiceAnswer {
 	pub choice: String,
 	pub confidence: f64,
@@ -789,6 +809,10 @@ pub struct DecisionPredicateQuestion {
 	pub r#type: String,
 }
 
+pub struct DecisionProviderOptions {
+	pub typesafe: Option<HashMap<String, String>>,
+}
+
 pub struct DecisionRefusalAnswer {
 	pub name: Option<String>,
 	pub r#type: String,
@@ -817,6 +841,7 @@ pub struct DecisionsRequest {
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
+	pub provider_options: Option<HashMap<String, String>>,
 	pub questions: HashMap<String, String>,
 	pub routing: Option<HashMap<String, String>>,
 	pub state: String,
@@ -1632,6 +1657,11 @@ pub struct KeyInvalidateResponse {
 
 pub type KnownModelId = JsonValue;
 
+pub struct LegacyDecisionBoxQuestion {
+	pub instructions: String,
+	pub r#type: String,
+}
+
 pub struct LegacyDecisionsRequest {
 	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
@@ -1641,6 +1671,7 @@ pub struct LegacyDecisionsRequest {
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
+	pub provider_options: Option<HashMap<String, String>>,
 	pub questions: HashMap<String, String>,
 	pub routing: Option<HashMap<String, String>>,
 	pub state: String,
@@ -2200,6 +2231,7 @@ pub struct OpenAIDecisionsRequest {
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
+	pub provider_options: Option<HashMap<String, String>>,
 	pub questions: Vec<String>,
 	pub routing: Option<HashMap<String, String>>,
 	pub safety_identifier: Option<Option<String>>,

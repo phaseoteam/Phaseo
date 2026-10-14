@@ -13,6 +13,7 @@ export function decodeDecisionsRequest(req: DecisionsRequest): IRDecisionsReques
 		const legacy = req as z.infer<typeof LegacyDecisionsSchema>;
 		return {
 			model: legacy.model, state: legacy.state,
+			...(legacy.provider_options === undefined ? {} : { providerOptions: legacy.provider_options }),
 			...(legacy.images === undefined ? {} : { images: legacy.images }),
 			questions: legacy.questions as IRDecisionsRequest["questions"],
 		};
@@ -42,6 +43,7 @@ export function decodeDecisionsRequest(req: DecisionsRequest): IRDecisionsReques
 	const questions = Object.fromEntries(native.questions.map((question, index): [string, IRDecisionQuestion] => {
 		const id = decisionQuestionId(index);
 		if (question.type === "predicate") return [id, { type: "noul", instructions: question.instructions }];
+		if (question.type === "box") return [id, { type: "box", instructions: question.instructions }];
 		if (question.type === "choice") return [id, {
 			type: "choice", instructions: question.instructions,
 			criteria: Object.fromEntries(question.choices.map((choice, option) => [String(option),
@@ -54,6 +56,7 @@ export function decodeDecisionsRequest(req: DecisionsRequest): IRDecisionsReques
 	}));
 	return {
 		model: native.model, state, questions,
+		...(native.provider_options === undefined ? {} : { providerOptions: native.provider_options }),
 		...(images.length ? { images } : {}),
 		...(audio.length ? { audio } : {}),
 		...(videos.length ? { videos } : {}),
@@ -70,6 +73,9 @@ export function decodeNativeDecisionAnswer(payload: unknown, question: NativeDec
 	if (!parsed.success || parsed.data.name !== (question.name ?? null)) return null;
 	const answer = parsed.data;
 	if (answer.type === "refusal") return { type: "refusal" };
+	if (question.type === "box") return answer.type === "box"
+		? { type: "box", box: answer.box, confidence: answer.confidence } : null;
+	if (answer.type === "box") return null;
 	if (question.type === "predicate") {
 		return answer.type === "predicate" ? { type: "noul", noul: answer.probability } : null;
 	}

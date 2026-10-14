@@ -1281,6 +1281,40 @@ class DecisionAudioSource
 	public $url;
 }
 
+class DecisionBox
+{
+	/** @var float */
+	public $bottom;
+	/** @var float */
+	public $left;
+	/** @var float */
+	public $right;
+	/** @var float */
+	public $top;
+}
+
+class DecisionBoxAnswer
+{
+	/** @var array<string, mixed> */
+	public $box;
+	/** @var float */
+	public $confidence;
+	/** @var string|null */
+	public $name;
+	/** @var string */
+	public $type;
+}
+
+class DecisionBoxQuestion
+{
+	/** @var string */
+	public $instructions;
+	/** @var string|null */
+	public $name;
+	/** @var string */
+	public $type;
+}
+
 class DecisionChoiceAnswer
 {
 	/** @var string|bool */
@@ -1393,6 +1427,12 @@ class DecisionPredicateQuestion
 	public $type;
 }
 
+class DecisionProviderOptions
+{
+	/** @var array<string, mixed>|null */
+	public $typesafe;
+}
+
 class DecisionRefusalAnswer
 {
 	/** @var string|null */
@@ -1443,6 +1483,8 @@ class DecisionsRequest
 	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
+	/** @var array<string, mixed>|null */
+	public $provider_options;
 	/** @var array<string, mixed> */
 	public $questions;
 	/** @var array<string, mixed>|null */
@@ -2879,6 +2921,14 @@ class KeyInvalidateResponse
 
 class KnownModelId { }
 
+class LegacyDecisionBoxQuestion
+{
+	/** @var string|array<string, mixed>|array */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
 class LegacyDecisionsRequest
 {
 	/** @var array<string, mixed>|null */
@@ -2897,6 +2947,8 @@ class LegacyDecisionsRequest
 	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
+	/** @var array<string, mixed>|null */
+	public $provider_options;
 	/** @var array<string, mixed> */
 	public $questions;
 	/** @var array<string, mixed>|null */
@@ -3895,6 +3947,8 @@ class OpenAIDecisionsRequest
 	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
+	/** @var array<string, mixed>|null */
+	public $provider_options;
 	/** @var array */
 	public $questions;
 	/** @var array<string, mixed>|null */

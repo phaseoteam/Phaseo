@@ -60,6 +60,11 @@ export interface DecisionsRequest {
         };
     zdr?: boolean | null;
   };
+  provider_options?: {
+    typesafe?: {
+      long_context?: boolean;
+    };
+  };
   questions: {
     [key: string]:
       | {
@@ -97,6 +102,15 @@ export interface DecisionsRequest {
               }
             | unknown[];
           type: "score";
+        }
+      | {
+          instructions:
+            | string
+            | {
+                [key: string]: unknown;
+              }
+            | unknown[];
+          type: "box";
         };
   };
   routing?: {

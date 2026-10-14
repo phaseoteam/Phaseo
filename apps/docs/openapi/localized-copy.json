@@ -202,6 +202,54 @@
 					"zh-Hans": "由 Phaseo 标准化的提供商结果元数据。",
 					"ar": "بيانات وصفية لنتيجة المزوّد بعد توحيدها بواسطة Phaseo."
 				}
+			},
+			"DecisionProviderOptions": {
+				"/properties/typesafe/properties/long_context/description": {
+					"es": "Activa el contexto largo experimental de Jev: 262k tokens por solicitud y por pregunta, en lugar de 64k por solicitud y 32k por pregunta. Desactivado de forma predeterminada. Requiere una ruta TypeSafe compatible.",
+					"fr": "Active le contexte long expérimental de Jev : 262k tokens par requête et par question, au lieu de 64k par requête et 32k par question. Désactivé par défaut. Exige une route TypeSafe compatible.",
+					"de": "Experimentellen langen Jev-Kontext aktivieren: 262k Tokens pro Anfrage und pro Frage statt 64k pro Anfrage und 32k pro Frage. Standardmäßig deaktiviert. Erfordert eine unterstützte TypeSafe-Route.",
+					"pt-BR": "Ativa o contexto longo experimental do Jev: 262k tokens por solicitação e por pergunta, em vez de 64k por solicitação e 32k por pergunta. Desativado por padrão. Exige uma rota TypeSafe compatível.",
+					"hi": "Jev के प्रयोगात्मक लंबे संदर्भ को चालू करें: प्रति अनुरोध 64k और प्रति प्रश्न 32k के बजाय दोनों के लिए 262k टोकन। डिफ़ॉल्ट रूप से बंद। समर्थित TypeSafe रूट आवश्यक है।",
+					"ja": "Jev の実験的な長いコンテキストを有効にします。リクエスト単位 64k、質問単位 32k の代わりに、両方が 262k トークンになります。既定では無効です。対応する TypeSafe ルートが必要です。",
+					"zh-Hans": "启用 Jev 的实验性长上下文：每个请求和每个问题均为 262k token，取代默认的每个请求 64k 和每个问题 32k。默认关闭。需要支持的 TypeSafe 路由。",
+					"ar": "تفعيل سياق Jev الطويل التجريبي: 262k رمز لكل طلب ولكل سؤال، بدلًا من 64k لكل طلب و32k لكل سؤال. معطّل افتراضيًا. يتطلب مسار TypeSafe داعمًا."
+				}
+			},
+			"DecisionBoxQuestion": {
+				"/description": {
+					"es": "Extensión de Phaseo para un único cuadro delimitador. Requiere una imagen y una ruta compatible, como Jev 1.14. No acepta criterios ni devuelve un resultado de ausencia.",
+					"fr": "Extension Phaseo pour un seul cadre englobant. Exige une image et une route compatible, comme Jev 1.14. Aucun critère ni résultat d’absence.",
+					"de": "Phaseo-Erweiterung für einen einzelnen Begrenzungsrahmen. Erfordert ein Bild und eine unterstützte Route wie Jev 1.14. Keine Kriterien und kein Ergebnis für nicht gefundene Ziele.",
+					"pt-BR": "Extensão do Phaseo para uma única caixa delimitadora. Exige imagem e rota compatível, como Jev 1.14. Sem critérios ou resultado de alvo ausente.",
+					"hi": "एक bounding box के लिए Phaseo एक्सटेंशन। छवि और Jev 1.14 जैसे समर्थित रूट आवश्यक हैं। criteria या लक्ष्य न मिलने का परिणाम नहीं है।",
+					"ja": "単一のバウンディングボックス向けの Phaseo 拡張です。画像と Jev 1.14 などの対応ルートが必要です。criteria や対象なしの結果はありません。",
+					"zh-Hans": "用于单个边界框的 Phaseo 扩展。需要图像输入和 Jev 1.14 等支持路由。不接受 criteria，也没有未找到结果。",
+					"ar": "امتداد Phaseo لمربع إحاطة واحد. يتطلب صورة ومسارًا داعمًا مثل Jev 1.14. لا يقبل criteria ولا يعيد نتيجة لغياب الهدف."
+				}
+			},
+			"LegacyDecisionBoxQuestion": {
+				"/description": {
+					"es": "Pregunta de cuadro delimitador único para rutas Box con imágenes. Sin criterios.",
+					"fr": "Question de cadre englobant unique pour les routes Box acceptant les images. Aucun critère.",
+					"de": "Frage nach einem einzelnen Begrenzungsrahmen für Box-Routen mit Bildunterstützung. Keine Kriterien.",
+					"pt-BR": "Pergunta de caixa delimitadora única para rotas Box com imagens. Sem critérios.",
+					"hi": "छवियों वाले Box रूट के लिए एक bounding box का प्रश्न। criteria नहीं है।",
+					"ja": "画像対応の Box ルート向けの単一バウンディングボックス質問です。criteria はありません。",
+					"zh-Hans": "用于支持图像的 Box 路由的单个边界框问题。不接受 criteria。",
+					"ar": "سؤال مربع إحاطة واحد لمسارات Box الداعمة للصور. دون criteria."
+				}
+			},
+			"DecisionBox": {
+				"/description": {
+					"es": "Bordes como fracciones de las dimensiones de la imagen desde la esquina superior izquierda. top debe ser menor que bottom; left debe ser menor que right.",
+					"fr": "Bords exprimés en fractions des dimensions de l’image depuis le coin supérieur gauche. top doit être inférieur à bottom ; left doit être inférieur à right.",
+					"de": "Kanten als Anteile der Bildabmessungen ab der oberen linken Ecke. top muss kleiner als bottom sein; left muss kleiner als right sein.",
+					"pt-BR": "Bordas como frações das dimensões da imagem a partir do canto superior esquerdo. top deve ser menor que bottom; left deve ser menor que right.",
+					"hi": "ऊपरी बाएँ कोने से छवि के आयामों के अनुपात के रूप में किनारे। top, bottom से कम होना चाहिए; left, right से कम होना चाहिए।",
+					"ja": "左上を起点とする画像サイズの比率で表した辺です。top は bottom より小さく、left は right より小さい必要があります。",
+					"zh-Hans": "从左上角起，以图像尺寸比例表示的边缘。top 必须小于 bottom；left 必须小于 right。",
+					"ar": "الحواف كنسب من أبعاد الصورة بدءًا من الزاوية العلوية اليسرى. يجب أن تكون top أقل من bottom وleft أقل من right."
+				}
 			}
 		}
 	},
