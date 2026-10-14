@@ -246,6 +246,8 @@ export type SettingsByokInitialData = {
 export type SettingsKeysInitialData = {
 	currentUserId: string | undefined;
 	initialWorkspaceId: string | null;
+	/** When the key usage was read, so limit projections stay anchored to it. */
+	observedAt?: number;
 	teamsWithKeys: Array<{ id: string; name: string; keys: Array<Record<string, unknown>> }>;
 	workspaces: Array<{ id: string; name: string }>;
 };
