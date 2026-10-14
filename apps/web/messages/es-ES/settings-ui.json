@@ -3407,6 +3407,9 @@
 	},
 	"credits": {
 		"currentBalance": "Saldo actual",
+		"runwayAutoTopUp": "Recarga automática prevista ~{date} · ~{amount}/día de créditos",
+		"runwayRunsOut": "Dura hasta ~{date} a ~{amount}/día",
+		"runwayBeyond": "Dura más de {days} días a ~{amount}/día",
 		"refreshBalance": "Actualizar saldo",
 		"refreshing": "Actualizando créditos…",
 		"refreshed": "Créditos actualizados",

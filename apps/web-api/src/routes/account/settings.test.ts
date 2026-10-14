@@ -95,6 +95,7 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 			balance_nanos: 12500000000, reserved_nanos: 0, auto_top_up_enabled: false,
 		}]), { status: 200 });
 	}
+	if (url.includes("/rpc/get_workspace_recent_credit_spend")) return new Response(JSON.stringify(35_000_000_000), { status: 200 });
 	if (url.includes("credit_ledger")) {
 		return new Response(JSON.stringify([{
 			event_time: "2026-07-13T00:00:00Z", status: "paid", amount_nanos: 10000000000,
@@ -571,6 +572,8 @@ describe("account settings routes", () => {
 			notificationRoutes: { low_balance: ["destination-1"] },
 			notificationDestinations: [{ id: "destination-1", name: "Operations" }],
 			obfuscateInfo: true,
+			// $35 of applied charges over the 7-day window.
+			recentCreditSpend: { dailyNanos: 5_000_000_000, windowDays: 7 },
 			stripeInfo: {
 				customer: { id: null, email: null },
 				defaultPaymentMethodId: null,
