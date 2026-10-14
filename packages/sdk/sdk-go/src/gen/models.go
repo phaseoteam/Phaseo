@@ -1390,6 +1390,26 @@ type DecisionAudioSource struct {
 	Url *string `json:"url,omitempty"`
 }
 
+type DecisionBox struct {
+	Bottom float64 `json:"bottom"`
+	Left float64 `json:"left"`
+	Right float64 `json:"right"`
+	Top float64 `json:"top"`
+}
+
+type DecisionBoxAnswer struct {
+	Box map[string]interface{} `json:"box"`
+	Confidence float64 `json:"confidence"`
+	Name *string `json:"name"`
+	Type string `json:"type"`
+}
+
+type DecisionBoxQuestion struct {
+	Instructions string `json:"instructions"`
+	Name *string `json:"name,omitempty"`
+	Type string `json:"type"`
+}
+
 type DecisionChoiceAnswer struct {
 	Choice interface{} `json:"choice"`
 	Confidence float64 `json:"confidence"`
@@ -1460,6 +1480,10 @@ type DecisionPredicateQuestion struct {
 	Type string `json:"type"`
 }
 
+type DecisionProviderOptions struct {
+	Typesafe *map[string]interface{} `json:"typesafe,omitempty"`
+}
+
 type DecisionRefusalAnswer struct {
 	Name *string `json:"name"`
 	Type string `json:"type"`
@@ -1488,6 +1512,7 @@ type DecisionsRequest struct {
 	Model string `json:"model"`
 	Models *[]string `json:"models,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Questions map[string]interface{} `json:"questions"`
 	Routing *map[string]interface{} `json:"routing,omitempty"`
 	State interface{} `json:"state"`
@@ -3032,6 +3057,11 @@ const (
 )
 
 
+type LegacyDecisionBoxQuestion struct {
+	Instructions interface{} `json:"instructions"`
+	Type string `json:"type"`
+}
+
 type LegacyDecisionsRequest struct {
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
@@ -3041,6 +3071,7 @@ type LegacyDecisionsRequest struct {
 	Model string `json:"model"`
 	Models *[]string `json:"models,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Questions map[string]interface{} `json:"questions"`
 	Routing *map[string]interface{} `json:"routing,omitempty"`
 	State interface{} `json:"state"`
@@ -3606,6 +3637,7 @@ type OpenAIDecisionsRequest struct {
 	Model string `json:"model"`
 	Models *[]string `json:"models,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Questions []interface{} `json:"questions"`
 	Routing *map[string]interface{} `json:"routing,omitempty"`
 	SafetyIdentifier *string `json:"safety_identifier,omitempty"`

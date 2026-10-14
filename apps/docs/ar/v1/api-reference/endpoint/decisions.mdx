@@ -113,6 +113,30 @@ description: "قيّم أسئلة ذات أنواع محددة بناءً على
 لمعرفة دلالات الأسئلة لدى المزود الأصلي، راجع [مرجع API](https://docs.typesafe.ai/api) الخاص بـ TypeSafe.
 
 
+### الصور وBox والسياق الطويل مع Jev
+
+في مسارات TypeSafe الداعمة، يقبل Jev 1.13 و1.14 صور PNG أو JPEG المضمنة عبر `input_image` أو الحقل القديم `images`. ينشئ Phaseo أصول الصور الخاصة بـ TypeSafe ويفعّل دعم الصور تلقائيًا. يجب أن تلتزم الصور بـ[حدود الصور](https://docs.typesafe.ai/images) لدى TypeSafe: بحد أقصى 16 MiB لكل صورة، وأبعاد من 256 إلى 1568 بكسل، وما لا يقل عن 78,400 بكسل إجمالًا. يتحقق TypeSafe من الأبعاد والترميز؛ ولا يغيّر حجم الصور المرفوضة. الحد الأقصى لجسم JSON المرسل إلى المزود هو 32 MiB. تُحاسب رموز الصور بسعر الإدخال العادي.
+
+`box` نوع سؤال مستقل للمسارات الداعمة مثل Jev 1.14. يتطلب صورة ولا يقبل criteria، ويعيد مربع إحاطة واحدًا مع confidence. تتراوح حوافه `top` و`bottom` و`left` و`right` من 0 إلى 1، مقاسة من الزاوية العلوية اليسرى. يعيد Box مستطيلًا دائمًا؛ أضف سؤال حضور من نوع `predicate` عندما قد يكون الهدف غائبًا. مع الصور القديمة، أشر إلى `images[0]`؛ ومع الإدخال المرتب، أشر إلى الصورة الأولى أو `[Image 0]`. راجع [عقد Box](https://docs.typesafe.ai/primitives/box).
+
+اضبط `provider_options.typesafe.long_context` على `true` لرفع حدي السياق لكل طلب ولكل سؤال إلى 262k رمز. الحدود الافتراضية هي 64k لكل طلب و32k لكل سؤال. يتطلب السياق الطويل تفعيلًا صريحًا ويحتفظ بالسعر نفسه لكل رمز. الصور وBox والسياق الطويل قدرات تجريبية لدى المزود؛ تحقق من توفر النموذج قبل الاستخدام.
+
+```json
+{
+  "model": "typesafe/jev-1.14.0",
+  "input": [{
+    "role": "user",
+    "content": [{ "type": "input_image", "image_url": "data:image/png;base64,<base64 image bytes>" }]
+  }],
+  "questions": [
+    { "type": "predicate", "name": "visible", "instructions": "Is there a mug in the first image?" },
+    { "type": "box", "name": "mug", "instructions": "The mug in the first image" }
+  ],
+  "provider_options": { "typesafe": { "long_context": true } }
+}
+```
+
+
 ### قرارات الصور باستخدام Clef
 
 يدعم `cloudflare/clef` و`cloudflare/clef-flash` أنواع الأسئلة الثلاثة والصور المضمّنة عبر Cloudflare Workers AI. سياق Clef هو 65,536 رمزًا وسياق Clef Flash هو 24,576 رمزًا. تكلفة مليون رمز إدخال هي $0.24 لـ Clef و$0.038 لـ Clef Flash.

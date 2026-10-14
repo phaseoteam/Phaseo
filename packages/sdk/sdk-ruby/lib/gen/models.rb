@@ -1065,6 +1065,31 @@ module Phaseo
     # @!attribute [rw] url
     #   @return [String, nil]
     DecisionAudioSource = Struct.new(:data, :format, :url, keyword_init: true)
+    # @!attribute [rw] bottom
+    #   @return [Float]
+    # @!attribute [rw] left
+    #   @return [Float]
+    # @!attribute [rw] right
+    #   @return [Float]
+    # @!attribute [rw] top
+    #   @return [Float]
+    DecisionBox = Struct.new(:bottom, :left, :right, :top, keyword_init: true)
+    # @!attribute [rw] box
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] confidence
+    #   @return [Float]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    DecisionBoxAnswer = Struct.new(:box, :confidence, :name, :type, keyword_init: true)
+    # @!attribute [rw] instructions
+    #   @return [String]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    DecisionBoxQuestion = Struct.new(:instructions, :name, :type, keyword_init: true)
     # @!attribute [rw] choice
     #   @return [String, Boolean]
     # @!attribute [rw] confidence
@@ -1141,6 +1166,9 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     DecisionPredicateQuestion = Struct.new(:instructions, :name, :type, keyword_init: true)
+    # @!attribute [rw] typesafe
+    #   @return [Hash{String => Object}, nil]
+    DecisionProviderOptions = Struct.new(:typesafe, keyword_init: true)
     # @!attribute [rw] name
     #   @return [String, nil]
     # @!attribute [rw] type
@@ -1180,13 +1208,15 @@ module Phaseo
     #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] provider_options
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] questions
     #   @return [Hash{String => Object}]
     # @!attribute [rw] routing
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] state
     #   @return [String, Hash{String => Object}, Array<Object>]
-    DecisionsRequest = Struct.new(:debug, :echo_upstream_request, :images, :meta, :metadata, :model, :models, :provider, :questions, :routing, :state, keyword_init: true)
+    DecisionsRequest = Struct.new(:debug, :echo_upstream_request, :images, :meta, :metadata, :model, :models, :provider, :provider_options, :questions, :routing, :state, keyword_init: true)
     # @!attribute [rw] answers
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] meta
@@ -2339,6 +2369,11 @@ module Phaseo
     #   @return [String]
     KeyInvalidateResponse = Struct.new(:key, :message, :ok, keyword_init: true)
     KnownModelId = Object
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] type
+    #   @return [String]
+    LegacyDecisionBoxQuestion = Struct.new(:instructions, :type, keyword_init: true)
     # @!attribute [rw] debug
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] echo_upstream_request
@@ -2355,13 +2390,15 @@ module Phaseo
     #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] provider_options
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] questions
     #   @return [Hash{String => Object}]
     # @!attribute [rw] routing
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] state
     #   @return [String, Hash{String => Object}, Array<Object>]
-    LegacyDecisionsRequest = Struct.new(:debug, :echo_upstream_request, :images, :meta, :metadata, :model, :models, :provider, :questions, :routing, :state, keyword_init: true)
+    LegacyDecisionsRequest = Struct.new(:debug, :echo_upstream_request, :images, :meta, :metadata, :model, :models, :provider, :provider_options, :questions, :routing, :state, keyword_init: true)
     # @!attribute [rw] answers
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] meta
@@ -3181,13 +3218,15 @@ module Phaseo
     #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] provider_options
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] questions
     #   @return [Array<Hash{String => Object}>]
     # @!attribute [rw] routing
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] safety_identifier
     #   @return [String, nil]
-    OpenAIDecisionsRequest = Struct.new(:debug, :echo_upstream_request, :input, :meta, :metadata, :model, :models, :provider, :questions, :routing, :safety_identifier, keyword_init: true)
+    OpenAIDecisionsRequest = Struct.new(:debug, :echo_upstream_request, :input, :meta, :metadata, :model, :models, :provider, :provider_options, :questions, :routing, :safety_identifier, keyword_init: true)
     # @!attribute [rw] answers
     #   @return [Array<Hash{String => Object}>]
     # @!attribute [rw] meta

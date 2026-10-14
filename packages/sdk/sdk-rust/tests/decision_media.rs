@@ -1,5 +1,18 @@
 use std::collections::HashMap;
-use phaseo::gen::models::DecisionInputAudio;
+use phaseo::gen::models::{DecisionBoxAnswer, DecisionInputAudio};
+
+#[test]
+fn decision_box_answer_exposes_the_box_field_as_a_raw_identifier() {
+    let answer = DecisionBoxAnswer {
+        r#box: HashMap::new(),
+        confidence: 0.9,
+        name: Some("mug".into()),
+        r#type: "box".into(),
+    };
+    assert!(answer.r#box.is_empty());
+    assert_eq!(answer.r#type, "box");
+    assert_eq!(answer.name.as_deref(), Some("mug"));
+}
 
 #[test]
 fn decision_audio_accepts_structured_inline_and_remote_sources() {

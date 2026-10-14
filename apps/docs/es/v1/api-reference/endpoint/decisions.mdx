@@ -113,6 +113,30 @@ Jev permite combinar los tres tipos de preguntas en una solicitud; Span-01 solo 
 Para conocer la semántica de las preguntas del proveedor, consulta la [referencia API](https://docs.typesafe.ai/api) de TypeSafe.
 
 
+### Imágenes, Box y contexto largo con Jev
+
+En las rutas TypeSafe compatibles, Jev 1.13 y 1.14 aceptan imágenes PNG o JPEG en línea mediante `input_image` o el campo heredado `images`. Phaseo crea los recursos de imagen de TypeSafe y habilita las imágenes automáticamente. Las imágenes deben cumplir los [límites de imágenes](https://docs.typesafe.ai/images) de TypeSafe: hasta 16 MiB por imagen, dimensiones entre 256 y 1568 píxeles y al menos 78.400 píxeles en total. TypeSafe valida las dimensiones y la codificación; no redimensiona las imágenes rechazadas. El cuerpo JSON enviado al proveedor está limitado a 32 MiB. Los tokens de imagen usan el precio de entrada normal.
+
+`box` es un tipo de pregunta independiente para rutas compatibles, como Jev 1.14. Requiere una imagen, no acepta criterios y devuelve un único cuadro delimitador con confianza. Sus bordes `top`, `bottom`, `left` y `right` van de 0 a 1, medidos desde la esquina superior izquierda. Box siempre devuelve un rectángulo; combínalo con una pregunta de presencia `predicate` si el objetivo puede estar ausente. Con imágenes heredadas, usa `images[0]`; con entrada ordenada, indica la primera imagen o `[Image 0]`. Consulta el [contrato de Box](https://docs.typesafe.ai/primitives/box).
+
+Establece `provider_options.typesafe.long_context` en `true` para aumentar ambos límites de contexto, por solicitud y por pregunta, a 262k tokens. Los valores predeterminados son 64k por solicitud y 32k por pregunta. El contexto largo es opcional y tiene el mismo precio por token. Imágenes, Box y contexto largo son capacidades experimentales del proveedor; comprueba la disponibilidad del modelo antes de usarlas.
+
+```json
+{
+  "model": "typesafe/jev-1.14.0",
+  "input": [{
+    "role": "user",
+    "content": [{ "type": "input_image", "image_url": "data:image/png;base64,<base64 image bytes>" }]
+  }],
+  "questions": [
+    { "type": "predicate", "name": "visible", "instructions": "Is there a mug in the first image?" },
+    { "type": "box", "name": "mug", "instructions": "The mug in the first image" }
+  ],
+  "provider_options": { "typesafe": { "long_context": true } }
+}
+```
+
+
 ### Decisiones sobre imágenes con Clef
 
 `cloudflare/clef` y `cloudflare/clef-flash` admiten los tres tipos de preguntas e imágenes integradas mediante Cloudflare Workers AI. Clef tiene un contexto de 65.536 tokens y Clef Flash de 24.576. La entrada cuesta 0,24 USD por millón de tokens en Clef y 0,038 USD en Clef Flash.

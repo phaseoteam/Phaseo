@@ -718,6 +718,26 @@ public final class Models {
 		public String url;
 	}
 
+	public static class DecisionBox {
+		public Double bottom;
+		public Double left;
+		public Double right;
+		public Double top;
+	}
+
+	public static class DecisionBoxAnswer {
+		public Object box;
+		public Double confidence;
+		public String name;
+		public Object type;
+	}
+
+	public static class DecisionBoxQuestion {
+		public String instructions;
+		public String name;
+		public Object type;
+	}
+
 	public static class DecisionChoiceAnswer {
 		public Object choice;
 		public Double confidence;
@@ -791,6 +811,10 @@ public final class Models {
 		public Object type;
 	}
 
+	public static class DecisionProviderOptions {
+		public Object typesafe;
+	}
+
 	public static class DecisionRefusalAnswer {
 		public String name;
 		public Object type;
@@ -819,6 +843,7 @@ public final class Models {
 		public String model;
 		public java.util.List<String> models;
 		public Object provider;
+		public Object provider_options;
 		public Object questions;
 		public Object routing;
 		public Object state;
@@ -1640,6 +1665,11 @@ public final class Models {
 	public static class KnownModelId {
 	}
 
+	public static class LegacyDecisionBoxQuestion {
+		public Object instructions;
+		public Object type;
+	}
+
 	public static class LegacyDecisionsRequest {
 		public Object debug;
 		public Boolean echo_upstream_request;
@@ -1649,6 +1679,7 @@ public final class Models {
 		public String model;
 		public java.util.List<String> models;
 		public Object provider;
+		public Object provider_options;
 		public Object questions;
 		public Object routing;
 		public Object state;
@@ -2212,6 +2243,7 @@ public final class Models {
 		public String model;
 		public java.util.List<String> models;
 		public Object provider;
+		public Object provider_options;
 		public java.util.List<Object> questions;
 		public Object routing;
 		public String safety_identifier;

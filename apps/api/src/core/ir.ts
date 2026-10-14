@@ -475,13 +475,14 @@ export type IRRerankResponse = {
 // ============================================================================
 
 export type IRDecisionQuestion = {
-	type: "noul" | "choice" | "score";
+	type: "noul" | "choice" | "score" | "box";
 	instructions: string | Record<string, any> | any[];
 	criteria?: Record<string, string | null> | string[] | { true?: string; false?: string };
 	[key: string]: any;
 };
 
 export type IRDecisionsRequest = {
+	providerOptions?: import("./decisions").DecisionProviderOptions;
 	model: string;
 	state: string | Record<string, any> | any[];
 	questions: Record<string, IRDecisionQuestion>;
