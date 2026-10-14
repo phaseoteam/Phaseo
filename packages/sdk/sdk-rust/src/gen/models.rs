@@ -727,7 +727,7 @@ pub struct DecisionBox {
 }
 
 pub struct DecisionBoxAnswer {
-	pub box: HashMap<String, String>,
+	pub r#box: HashMap<String, String>,
 	pub confidence: f64,
 	pub name: Option<String>,
 	pub r#type: String,
