@@ -78,14 +78,16 @@ function toBase64Url(bytes: Uint8Array): string {
 }
 
 /**
- * Strong ETag over the catalogue-describing parts of a model list response.
- * Callers leave out volatile fields such as `gateway_region`, so the same
- * catalogue served from another region keeps the same ETag.
+ * Weak ETag (RFC 9110 §8.8.1) over the catalogue-describing parts of a model
+ * list response. Callers leave out volatile fields such as `gateway_region`,
+ * so the same catalogue served from another region keeps the same ETag. The
+ * bytes can therefore differ between responses that share a validator, which
+ * is exactly what a weak validator promises: semantic, not byte, equivalence.
  */
 export async function computeModelListEtag(parts: Record<string, unknown>): Promise<string> {
     const input = canonicalJson({ etag_version: MODEL_LIST_ETAG_VERSION, ...parts });
     const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
-    return `"${toBase64Url(new Uint8Array(digest))}"`;
+    return `W/"${toBase64Url(new Uint8Array(digest))}"`;
 }
 
 /**
@@ -1095,7 +1097,8 @@ export async function handleModels(req: Request) {
                 models: paged,
             },
             // gateway_region is deliberately left out: the same catalogue served
-            // from another region must keep the same ETag.
+            // from another region keeps the same ETag. That is why the ETag is
+            // weak: responses sharing it are equivalent, not byte-identical.
             {
                 format: "json",
                 availability_mode: availabilityMode,

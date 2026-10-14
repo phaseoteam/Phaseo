@@ -34,9 +34,9 @@ OpenAI format uses the same authentication, regional availability, workspace pri
 
 ## Caching the model list
 
-JSON and OpenAI-format responses include a strong `ETag` header. It changes when the models on the page, `limit`, `offset`, `total`, or the format change. It ignores `gateway_region`, so the same catalogue served from another region has the same `ETag`. RSS, Atom, and error responses do not include one.
+JSON and OpenAI-format responses include a weak `ETag` header (`W/"…"`). It changes when the models on the page, `limit`, `offset`, `total`, or the format change. It ignores `gateway_region`, so the same catalogue served from another region has the same `ETag`. That is why it is weak: responses that share it are equivalent, but their bytes can differ. RSS, Atom, and error responses do not include one.
 
-Send the saved value back in `If-None-Match`. If the catalogue has not changed, the response is `304 Not Modified` with no body and repeats the `ETag`, `Cache-Control`, and `Vary` headers. Otherwise you get a normal `200` with the new list and a new `ETag`. `If-None-Match` also accepts a comma-separated list, weak `W/` validators, and `*`.
+Send the saved value back unchanged in `If-None-Match`. If the catalogue has not changed, the response is `304 Not Modified` with no body and repeats the `ETag`, `Cache-Control`, and `Vary` headers. Otherwise you get a normal `200` with the new list and a new `ETag`. `If-None-Match` also accepts a comma-separated list and `*`, and the comparison is weak, so the value matches with or without its `W/` prefix.
 
 ```ts
 let etag: string | null = null;
@@ -57,7 +57,7 @@ async function refreshModels() {
 }
 ```
 
-Because a `304` has no body, polling is cheap: a client can check every 15 minutes, for example, and download the list again only when the catalogue changes. Keep one `ETag` per request URL, because each page, filter set, and format has its own value.
+A `304` saves transfer and parsing, because it has no body. The server still evaluates the request: it loads the catalogue and recomputes the `ETag`. Polling about every 15 minutes is therefore appropriate, downloading the list again only when the catalogue changes. Keep one `ETag` per request URL, because each page, filter set, and format has its own value.
 
 ### Service tiers per offer
 

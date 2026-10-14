@@ -34,9 +34,9 @@ Le format OpenAI applique la même authentification, la même disponibilité ré
 
 ## Mettre en cache la liste des modèles
 
-Les réponses au format JSON et OpenAI incluent un en-tête `ETag` fort. Il change lorsque les modèles de la page, `limit`, `offset`, `total` ou le format changent. Il ignore `gateway_region` : le même catalogue servi depuis une autre région a donc le même `ETag`. Les réponses RSS, Atom et d’erreur n’en contiennent pas.
+Les réponses au format JSON et OpenAI incluent un en-tête `ETag` faible (`W/"…"`). Il change lorsque les modèles de la page, `limit`, `offset`, `total` ou le format changent. Il ignore `gateway_region` : le même catalogue servi depuis une autre région a donc le même `ETag`. C’est pourquoi il est faible : les réponses qui le partagent sont équivalentes, mais leurs octets peuvent différer. Les réponses RSS, Atom et d’erreur n’en contiennent pas.
 
-Renvoyez la valeur enregistrée dans `If-None-Match`. Si le catalogue n’a pas changé, la réponse est `304 Not Modified`, sans corps, et reprend les en-têtes `ETag`, `Cache-Control` et `Vary`. Sinon, vous recevez une réponse `200` normale avec la nouvelle liste et un nouvel `ETag`. `If-None-Match` accepte aussi une liste séparée par des virgules, des validateurs faibles `W/` et `*`.
+Renvoyez la valeur enregistrée, telle quelle, dans `If-None-Match`. Si le catalogue n’a pas changé, la réponse est `304 Not Modified`, sans corps, et reprend les en-têtes `ETag`, `Cache-Control` et `Vary`. Sinon, vous recevez une réponse `200` normale avec la nouvelle liste et un nouvel `ETag`. `If-None-Match` accepte aussi une liste séparée par des virgules et `*`, et la comparaison est faible : la valeur correspond avec ou sans son préfixe `W/`.
 
 ```ts
 let etag: string | null = null;
@@ -57,7 +57,7 @@ async function refreshModels() {
 }
 ```
 
-Comme une réponse `304` n’a pas de corps, l’interrogation périodique coûte peu : un client peut par exemple vérifier toutes les 15 minutes et ne retélécharger la liste que lorsque le catalogue change. Conservez un `ETag` par URL de requête, car chaque page, ensemble de filtres et format a sa propre valeur.
+Une réponse `304` économise le transfert et l’analyse, car elle n’a pas de corps. Le serveur évalue tout de même la requête : il charge le catalogue et recalcule l’`ETag`. Une vérification toutes les 15 minutes environ est donc appropriée, en ne retéléchargeant la liste que lorsque le catalogue change. Conservez un `ETag` par URL de requête, car chaque page, ensemble de filtres et format a sa propre valeur.
 
 ### Niveaux de service par offre
 

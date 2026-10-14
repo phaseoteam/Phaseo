@@ -8553,7 +8553,7 @@ components:
       schema:
         type: string
     ModelListETag:
-      description: Starker Validator für die Modellliste unter dieser URL, der Seite, limit, offset, total und Format abdeckt. gateway_region wird ignoriert, sodass derselbe Katalog aus einer anderen Region denselben Wert hat. Wird bei RSS-, Atom- und Fehlerantworten nicht gesendet.
+      description: Schwacher Validator (Präfix W/) für die Modellliste unter dieser URL, der Seite, limit, offset, total und Format abdeckt. gateway_region wird ignoriert, sodass derselbe Katalog aus einer anderen Region denselben Wert hat; Antworten mit demselben Wert sind gleichwertig, ihre Bytes können sich aber unterscheiden. Wird bei RSS-, Atom- und Fehlerantworten nicht gesendet.
       schema:
         type: string
   parameters:

@@ -8933,10 +8933,11 @@ components:
         type: string
     ModelListETag:
       description: >-
-        Strong validator for the model list at this URL, covering the page,
-        limit, offset, total, and format. It ignores gateway_region, so the same
-        catalogue served from another region has the same value. Not sent with
-        RSS, Atom, or error responses.
+        Weak validator (W/ prefix) for the model list at this URL, covering the
+        page, limit, offset, total, and format. It ignores gateway_region, so
+        the same catalogue served from another region has the same value;
+        responses that share it are equivalent, but their bytes can differ. Not
+        sent with RSS, Atom, or error responses.
       schema:
         type: string
   parameters:

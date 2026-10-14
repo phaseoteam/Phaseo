@@ -8553,7 +8553,7 @@ components:
       schema:
         type: string
     ModelListETag:
-      description: 此 URL 上模型列表的强校验器，涵盖页面、limit、offset、total 和格式。它会忽略 gateway_region，因此从其他区域提供的同一目录具有相同的值。RSS、Atom 和错误响应不会包含它。
+      description: 此 URL 上模型列表的弱校验器（带 W/ 前缀），涵盖页面、limit、offset、total 和格式。它会忽略 gateway_region，因此从其他区域提供的同一目录具有相同的值；共享该值的响应是等价的，但字节可能不同。RSS、Atom 和错误响应不会包含它。
       schema:
         type: string
   parameters:

@@ -8553,7 +8553,7 @@ components:
       schema:
         type: string
     ModelListETag:
-      description: Validador forte da lista de modelos nesta URL, abrangendo a página, limit, offset, total e o formato. Ele ignora gateway_region, então o mesmo catálogo servido de outra região tem o mesmo valor. Não é enviado em respostas RSS, Atom ou de erro.
+      description: Validador fraco (prefixo W/) da lista de modelos nesta URL, abrangendo a página, limit, offset, total e o formato. Ele ignora gateway_region, então o mesmo catálogo servido de outra região tem o mesmo valor; respostas que o compartilham são equivalentes, mas seus bytes podem ser diferentes. Não é enviado em respostas RSS, Atom ou de erro.
       schema:
         type: string
   parameters:

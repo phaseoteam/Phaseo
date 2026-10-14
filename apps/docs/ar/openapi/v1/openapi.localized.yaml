@@ -8553,7 +8553,7 @@ components:
       schema:
         type: string
     ModelListETag:
-      description: مدقِّق قوي لقائمة النماذج عند عنوان URL هذا، يشمل الصفحة وlimit وoffset وtotal والتنسيق. يتجاهل gateway_region، لذا يحمل الكتالوج نفسه المقدَّم من منطقة أخرى القيمة نفسها. لا يُرسَل مع استجابات RSS أو Atom أو الأخطاء.
+      description: مدقِّق ضعيف (بالبادئة W/) لقائمة النماذج عند عنوان URL هذا، يشمل الصفحة وlimit وoffset وtotal والتنسيق. يتجاهل gateway_region، لذا يحمل الكتالوج نفسه المقدَّم من منطقة أخرى القيمة نفسها؛ والاستجابات التي تشترك فيها متكافئة، لكن قد تختلف بايتاتها. لا يُرسَل مع استجابات RSS أو Atom أو الأخطاء.
       schema:
         type: string
   parameters:

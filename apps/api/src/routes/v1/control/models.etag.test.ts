@@ -109,11 +109,11 @@ describe("GET /v1/models ETag", () => {
         fetchGatewayContextMock.mockResolvedValue({ resolvedModel: "phaseo/free", providers: [], pricing: {} });
     });
 
-    it.each(["", "?format=openai"])("returns a strong ETag on 200 (%s)", async (query) => {
+    it.each(["", "?format=openai"])("returns a weak ETag on 200 (%s)", async (query) => {
         const response = await handleModels(request(query));
         expect(response.status).toBe(200);
         const etag = response.headers.get("etag");
-        expect(etag).toMatch(/^"[A-Za-z0-9_-]{43}"$/);
+        expect(etag).toMatch(/^W\/"[A-Za-z0-9_-]{43}"$/);
         expect(response.headers.get("cache-control")).toBe("private, max-age=300, stale-while-revalidate=300");
         expect(response.headers.get("vary")).toBe("Authorization");
     });
@@ -159,9 +159,10 @@ describe("GET /v1/models ETag", () => {
         expect(eu.headers.get("etag")).toBe(us.headers.get("etag"));
     });
 
-    it("matches weak and list forms of If-None-Match", async () => {
+    it("matches weak, strong and list forms of If-None-Match", async () => {
         const etag = (await handleModels(request())).headers.get("etag")!;
-        for (const header of [`W/${etag}`, `"stale", ${etag}`, `"stale",W/${etag} , "other"`, "*"]) {
+        const opaque = etag.replace(/^W\//, "");
+        for (const header of [opaque, `"stale", ${opaque}`, `"stale",${etag} , "other"`, "*"]) {
             const response = await handleModels(request("", { "If-None-Match": header }));
             expect(response.status, header).toBe(304);
         }
@@ -196,6 +197,9 @@ describe("model list ETag helpers", () => {
         expect(ifNoneMatchMatches("W/\"abc\"", "\"abc\"")).toBe(true);
         expect(ifNoneMatchMatches("\"x\", W/\"abc\"", "\"abc\"")).toBe(true);
         expect(ifNoneMatchMatches(" * ", "\"abc\"")).toBe(true);
+        expect(ifNoneMatchMatches("\"abc\"", "W/\"abc\"")).toBe(true);
+        expect(ifNoneMatchMatches("W/\"abc\"", "W/\"abc\"")).toBe(true);
+        expect(ifNoneMatchMatches("W/\"abcd\"", "W/\"abc\"")).toBe(false);
         expect(ifNoneMatchMatches("\"abcd\"", "\"abc\"")).toBe(false);
     });
 });

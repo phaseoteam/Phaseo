@@ -72,6 +72,7 @@ function buildSupabaseMock(
                 price_nanos: Number(row.price_per_unit ?? 0) * 1_000_000_000,
                 meter_order: meters.length,
                 metadata: {},
+                billable: row.billable ?? true,
             });
         }
 
@@ -117,7 +118,9 @@ function buildSupabaseMock(
                     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null
                 ) {
                     if (table === "v2_pricing_sku_meters") {
-                        return Promise.resolve({ data: pricingMeterRows ?? [], error: null }).then(
+                        // Mirrors the `.eq("billable", true)` filter of the real query.
+                        const billableMeters = (pricingMeterRows ?? []).filter((meter) => meter.billable !== false);
+                        return Promise.resolve({ data: billableMeters, error: null }).then(
                             onfulfilled as any,
                             onrejected as any
                         );
@@ -3009,6 +3012,9 @@ describe("fetchCatalogue service tiers", () => {
                     route("pam_mistral", "mistral"),
                     route("pam_vertex_fast", "google-vertex"),
                     route("pam_plain", "deepinfra"),
+                    route("pam_eur", "together"),
+                    route("pam_unbilled", "fireworks"),
+                    route("pam_eur_only", "nebius"),
                 ],
                 error: null,
             }],
@@ -3021,12 +3027,23 @@ describe("fetchCatalogue service tiers", () => {
                         service_tier: { provider_catalog: { name: "fast", upstream: "priority" } },
                     }),
                     capability("pam_plain", "text.generate"),
+                    capability("pam_eur", "text.generate"),
+                    capability("pam_unbilled", "text.generate"),
+                    capability("pam_eur_only", "text.generate"),
                 ],
                 error: null,
             }],
             data_api_model_aliases: [{ data: [], error: null }],
             data_api_providers: [{
-                data: [provider("openai"), provider("mistral"), provider("google-vertex"), provider("deepinfra")],
+                data: [
+                    provider("openai"),
+                    provider("mistral"),
+                    provider("google-vertex"),
+                    provider("deepinfra"),
+                    provider("together"),
+                    provider("fireworks"),
+                    provider("nebius"),
+                ],
                 error: null,
             }],
             data_api_pricing_rules: [{
@@ -3039,6 +3056,14 @@ describe("fetchCatalogue service tiers", () => {
                     rule("mistral", "text.generate", "standard", "0.000003"),
                     rule("mistral", "text.generate", "priority", "0.000006"),
                     rule("google-vertex", "text.generate", "priority", "0.000005"),
+                    // Not executable: the loader prices USD SKUs only.
+                    rule("together", "text.generate", "standard", "0.000001"),
+                    rule("together", "text.generate", "ultrafast", "0.000002", { currency: "EUR" }),
+                    // Not executable: the priority SKU has no billable meter.
+                    rule("fireworks", "text.generate", "standard", "0.000001"),
+                    rule("fireworks", "text.generate", "priority", "0.000002", { billable: false }),
+                    // Only a non-USD priority SKU: no executable pricing, so standard as for unpriced routes.
+                    rule("nebius", "text.generate", "priority", "0.000002", { currency: "EUR" }),
                 ],
                 error: null,
             }],
@@ -3060,6 +3085,12 @@ describe("fetchCatalogue service tiers", () => {
             "google-vertex": ["priority"],
             // No SKUs at all.
             deepinfra: ["standard"],
+            // EUR ultrafast SKU dropped.
+            together: ["standard"],
+            // Priority SKU without billable meters dropped.
+            fireworks: ["standard"],
+            // Only a EUR priority SKU: treated as unpriced.
+            nebius: ["standard"],
         });
         expect(model?.provider_endpoint_capabilities.openai?.["text.generate"]?.service_tiers).toEqual(["priority", "standard"]);
         expect(model?.provider_endpoint_capabilities.openai?.responses?.service_tiers).toEqual(["flex"]);

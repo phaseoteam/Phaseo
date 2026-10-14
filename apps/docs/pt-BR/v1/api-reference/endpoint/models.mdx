@@ -34,9 +34,9 @@ O formato OpenAI usa a mesma autenticação, a mesma disponibilidade regional, o
 
 ## Armazenar a lista de modelos em cache
 
-As respostas em formato JSON e OpenAI incluem um cabeçalho `ETag` forte. Ele muda quando mudam os modelos da página, `limit`, `offset`, `total` ou o formato. Ele ignora `gateway_region`, então o mesmo catálogo servido de outra região tem o mesmo `ETag`. Respostas RSS, Atom e de erro não o incluem.
+As respostas em formato JSON e OpenAI incluem um cabeçalho `ETag` fraco (`W/"…"`). Ele muda quando mudam os modelos da página, `limit`, `offset`, `total` ou o formato. Ele ignora `gateway_region`, então o mesmo catálogo servido de outra região tem o mesmo `ETag`. Por isso ele é fraco: respostas que o compartilham são equivalentes, mas seus bytes podem ser diferentes. Respostas RSS, Atom e de erro não o incluem.
 
-Envie o valor salvo em `If-None-Match`. Se o catálogo não mudou, a resposta é `304 Not Modified`, sem corpo, e repete os cabeçalhos `ETag`, `Cache-Control` e `Vary`. Caso contrário, você recebe uma resposta `200` normal com a nova lista e um novo `ETag`. `If-None-Match` também aceita uma lista separada por vírgulas, validadores fracos `W/` e `*`.
+Envie o valor salvo, sem alterações, em `If-None-Match`. Se o catálogo não mudou, a resposta é `304 Not Modified`, sem corpo, e repete os cabeçalhos `ETag`, `Cache-Control` e `Vary`. Caso contrário, você recebe uma resposta `200` normal com a nova lista e um novo `ETag`. `If-None-Match` também aceita uma lista separada por vírgulas e `*`, e a comparação é fraca, então o valor corresponde com ou sem o prefixo `W/`.
 
 ```ts
 let etag: string | null = null;
@@ -57,7 +57,7 @@ async function refreshModels() {
 }
 ```
 
-Como uma resposta `304` não tem corpo, consultar periodicamente é barato: um cliente pode verificar, por exemplo, a cada 15 minutos e baixar a lista de novo só quando o catálogo mudar. Guarde um `ETag` por URL de solicitação, porque cada página, conjunto de filtros e formato tem seu próprio valor.
+Uma resposta `304` economiza transferência e processamento, porque não tem corpo. O servidor ainda avalia a solicitação: ele carrega o catálogo e recalcula o `ETag`. Por isso, consultar aproximadamente a cada 15 minutos é adequado, baixando a lista de novo só quando o catálogo mudar. Guarde um `ETag` por URL de solicitação, porque cada página, conjunto de filtros e formato tem seu próprio valor.
 
 ### Níveis de serviço por oferta
 

@@ -34,9 +34,9 @@ Das OpenAI-Format verwendet dieselbe Authentifizierung, regionale Verfügbarkeit
 
 ## Modellliste zwischenspeichern
 
-Antworten im JSON- und OpenAI-Format enthalten einen starken `ETag`-Header. Er ändert sich, wenn sich die Modelle auf der Seite, `limit`, `offset`, `total` oder das Format ändern. `gateway_region` wird ignoriert, sodass derselbe Katalog aus einer anderen Region denselben `ETag` hat. RSS-, Atom- und Fehlerantworten enthalten keinen.
+Antworten im JSON- und OpenAI-Format enthalten einen schwachen `ETag`-Header (`W/"…"`). Er ändert sich, wenn sich die Modelle auf der Seite, `limit`, `offset`, `total` oder das Format ändern. `gateway_region` wird ignoriert, sodass derselbe Katalog aus einer anderen Region denselben `ETag` hat. Deshalb ist er schwach: Antworten mit demselben Wert sind gleichwertig, ihre Bytes können sich aber unterscheiden. RSS-, Atom- und Fehlerantworten enthalten keinen.
 
-Sende den gespeicherten Wert in `If-None-Match` zurück. Hat sich der Katalog nicht geändert, lautet die Antwort `304 Not Modified` ohne Antworttext und wiederholt die Header `ETag`, `Cache-Control` und `Vary`. Andernfalls erhältst du eine normale `200`-Antwort mit der neuen Liste und einem neuen `ETag`. `If-None-Match` akzeptiert außerdem eine durch Kommas getrennte Liste, schwache `W/`-Validatoren und `*`.
+Sende den gespeicherten Wert unverändert in `If-None-Match` zurück. Hat sich der Katalog nicht geändert, lautet die Antwort `304 Not Modified` ohne Antworttext und wiederholt die Header `ETag`, `Cache-Control` und `Vary`. Andernfalls erhältst du eine normale `200`-Antwort mit der neuen Liste und einem neuen `ETag`. `If-None-Match` akzeptiert außerdem eine durch Kommas getrennte Liste und `*`. Der Vergleich ist schwach, daher passt der Wert mit oder ohne sein `W/`-Präfix.
 
 ```ts
 let etag: string | null = null;
@@ -57,7 +57,7 @@ async function refreshModels() {
 }
 ```
 
-Da eine `304`-Antwort keinen Antworttext hat, ist Polling günstig: Ein Client kann zum Beispiel alle 15 Minuten prüfen und die Liste nur dann erneut herunterladen, wenn sich der Katalog ändert. Speichere einen `ETag` pro Anfrage-URL, denn jede Seite, jede Filterkombination und jedes Format hat einen eigenen Wert.
+Eine `304`-Antwort spart Übertragung und Parsing, weil sie keinen Antworttext hat. Der Server wertet die Anfrage trotzdem aus: Er lädt den Katalog und berechnet den `ETag` neu. Polling etwa alle 15 Minuten ist daher angemessen; lade die Liste nur dann erneut herunter, wenn sich der Katalog ändert. Speichere einen `ETag` pro Anfrage-URL, denn jede Seite, jede Filterkombination und jedes Format hat einen eigenen Wert.
 
 ### Service-Stufen pro Angebot
 

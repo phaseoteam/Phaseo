@@ -8553,7 +8553,7 @@ components:
       schema:
         type: string
     ModelListETag:
-      description: この URL のモデル一覧に対する強いバリデーター。ページ、limit、offset、total、形式を対象とします。gateway_region は無視されるため、別のリージョンから提供された同じカタログでも値は同じです。RSS、Atom、エラーのレスポンスには付与されません。
+      description: この URL のモデル一覧に対する弱いバリデーター（W/ プレフィックス付き）。ページ、limit、offset、total、形式を対象とします。gateway_region は無視されるため、別のリージョンから提供された同じカタログでも値は同じです。同じ値を持つレスポンスは同等ですが、バイト列は異なる場合があります。RSS、Atom、エラーのレスポンスには付与されません。
       schema:
         type: string
   parameters:

@@ -90,9 +90,39 @@ export function isCurrentPricingSku(
     return true;
 }
 
-/** Lower-cased service tier of a pricing SKU; null and blank mean "standard". */
+/**
+ * Whether `loadPriceCard` (pipeline/pricing/loader.ts) turns this SKU into
+ * price rules: active, inside its effective window and priced in USD (wallet
+ * debits are USD; foreign-currency quotes are not executable). `status`,
+ * `currency` and `effective_from` are NOT NULL in the database, so the lenient
+ * null handling of `isCurrentPricingSku` matches the loader's SQL filters.
+ * The loader also needs at least one billable meter with a finite price;
+ * callers check that against the meter rows.
+ */
+export function isExecutablePricingSku(
+    sku: Pick<PricingSkuRow, "status" | "currency" | "effective_from" | "effective_to">,
+    nowMs = Date.now(),
+): boolean {
+    return sku.currency === "USD" && isCurrentPricingSku(sku, nowMs);
+}
+
+/** Meter the loader prices: billable (filtered in the query) with a finite price. */
+function isExecutablePricingMeter(meter: Pick<PricingMeterRow, "price_nanos">): boolean {
+    return Number.isFinite(Number(meter.price_nanos));
+}
+
+/**
+ * Pricing plan of a SKU tier, as the loader and tier routing read it:
+ * lower-cased, null and blank mean "standard", and "fast" means "priority".
+ */
+function normalizePricingPlan(tier: string | null | undefined): string {
+    const plan = tier?.trim().toLowerCase() || "standard";
+    return plan === "fast" ? "priority" : plan;
+}
+
+/** Pricing plan of a pricing SKU; null and blank mean "standard", "fast" means "priority". */
 export function pricingSkuServiceTier(sku: Pick<PricingSkuRow, "service_tier_slug">): string {
-    return sku.service_tier_slug?.trim().toLowerCase() || "standard";
+    return normalizePricingPlan(sku.service_tier_slug);
 }
 
 export function isCurrentStandardPricingSku(
@@ -113,9 +143,11 @@ const EXPLICIT_ONLY_PRICING_PLANS = new Set(["priority", "ultrafast", "flex", "b
 
 /**
  * Service tiers one provider route serves for one operation. Mirrors
- * `applyServiceTierRouting` in pipeline/before/serviceTierRouting.ts:
- * - standard: no current SKUs, or at least one current SKU outside the explicit-only plans;
- * - priority, ultrafast, flex: a current SKU priced on that plan;
+ * `applyServiceTierRouting` in pipeline/before/serviceTierRouting.ts. `skuTiers`
+ * must hold only executable SKUs (see `isExecutablePricingSku`, plus a billable
+ * meter), the ones `loadPriceCard` turns into price rules:
+ * - standard: no executable SKUs, or at least one outside the explicit-only plans;
+ * - priority, ultrafast, flex: an executable SKU priced on that plan;
  * - Mistral priority also needs a `service_tier`/`serviceTier` route capability param;
  * - a route catalogued as one tier (`params.service_tier.provider_catalog`) offers only that tier.
  * Hidden `-fast`/`-flex`/`-ultrafast` sibling routes are not considered.
@@ -126,7 +158,7 @@ export function deriveOfferServiceTiers(args: {
     skuTiers: Iterable<string> | null | undefined;
     capabilityParams: unknown;
 }): OfferServiceTier[] {
-    const skuTiers = new Set(Array.from(args.skuTiers ?? [], (tier) => tier.trim().toLowerCase() || "standard"));
+    const skuTiers = new Set(Array.from(args.skuTiers ?? [], normalizePricingPlan));
     const params = args.capabilityParams && typeof args.capabilityParams === "object" && !Array.isArray(args.capabilityParams)
         ? args.capabilityParams as Record<string, unknown>
         : {};
@@ -1525,10 +1557,11 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
         }
     }
 
-    // One SKU query serves two purposes: standard SKUs feed pricing (unchanged),
-    // and every current SKU's tier feeds `service_tiers` per route and operation.
+    // One SKU query serves two purposes: current standard SKUs feed pricing
+    // (unchanged), and SKUs the runtime loader would execute feed
+    // `service_tiers` per route and operation (see below the meter load).
     const skuRows: PricingSkuRow[] = [];
-    const skuTiersByRouteOperation = new Map<string, Set<string>>();
+    const executableSkuRows: PricingSkuRow[] = [];
     const skuNowMs = Date.now();
     for (const providerModelIdChunk of chunkArray(Array.from(new Set(providerModelIds)), 200)) {
         const { data, error: skuError } = await supabase
@@ -1537,16 +1570,13 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
             .in("provider_model_id", providerModelIdChunk);
         if (skuError) throw new Error(`Failed to load pricing SKUs: ${skuError.message || "unknown error"}`);
         for (const sku of (data ?? []) as PricingSkuRow[]) {
-            if (!isCurrentPricingSku(sku, skuNowMs)) continue;
-            const tier = pricingSkuServiceTier(sku);
-            const key = routeOperationKey(sku.provider_model_id, sku.operation);
-            const tiers = skuTiersByRouteOperation.get(key) ?? new Set<string>();
-            tiers.add(tier);
-            skuTiersByRouteOperation.set(key, tiers);
-            if (tier === "standard") skuRows.push(sku);
+            if (isCurrentStandardPricingSku(sku, skuNowMs)) skuRows.push(sku);
+            if (isExecutablePricingSku(sku, skuNowMs)) executableSkuRows.push(sku);
         }
     }
-    const skuIds = (skuRows ?? []).map((row) => row.sku_id).filter(Boolean);
+    // Meters for standard pricing and for tier detection share one load; only
+    // standard SKUs' meters reach `pricingRows` (via `skuById` below).
+    const skuIds = [...skuRows, ...executableSkuRows].map((row) => row.sku_id).filter(Boolean);
     const meterRows: PricingMeterRow[] = [];
     for (const skuIdChunk of chunkArray(Array.from(new Set(skuIds)), 200)) {
         const { data, error: meterError } = await supabase
@@ -1556,6 +1586,17 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
             .in("sku_id", skuIdChunk);
         if (meterError) throw new Error(`Failed to load pricing meters: ${meterError.message || "unknown error"}`);
         meterRows.push(...(data ?? []) as PricingMeterRow[]);
+    }
+    // A tier is offered only when the loader would build price rules for it:
+    // an executable SKU with at least one billable, finitely priced meter.
+    const pricedSkuIds = new Set(meterRows.filter(isExecutablePricingMeter).map((meter) => meter.sku_id));
+    const skuTiersByRouteOperation = new Map<string, Set<string>>();
+    for (const sku of executableSkuRows) {
+        if (!pricedSkuIds.has(sku.sku_id)) continue;
+        const key = routeOperationKey(sku.provider_model_id, sku.operation);
+        const tiers = skuTiersByRouteOperation.get(key) ?? new Set<string>();
+        tiers.add(pricingSkuServiceTier(sku));
+        skuTiersByRouteOperation.set(key, tiers);
     }
     const routeByProviderModel = new Map(providerRows.map((row) => [row.provider_api_model_id, row]));
     const skuById = new Map((skuRows ?? []).map((row) => [row.sku_id, row]));

@@ -4,6 +4,7 @@ import {
     deriveOfferServiceTiers,
     isCurrentPricingSku,
     isCurrentStandardPricingSku,
+    isExecutablePricingSku,
     mergeOfferServiceTiers,
     pricingSkuServiceTier,
 } from "./models.catalogue";
@@ -43,10 +44,30 @@ describe("catalogue pricing SKU selection", () => {
         expect(pricingSkuServiceTier(priority)).toBe("priority");
         expect(pricingSkuServiceTier({ service_tier_slug: null })).toBe("standard");
         expect(pricingSkuServiceTier({ service_tier_slug: "  " })).toBe("standard");
+        expect(pricingSkuServiceTier({ service_tier_slug: "fast" })).toBe("priority");
+    });
+
+    it("treats only current USD SKUs as executable, like loadPriceCard", () => {
+        const sku = {
+            status: "active",
+            currency: "USD",
+            effective_from: "2026-09-01T00:00:00Z",
+            effective_to: null,
+        };
+        expect(isExecutablePricingSku(sku, now)).toBe(true);
+        expect(isExecutablePricingSku({ ...sku, currency: "EUR" }, now)).toBe(false);
+        expect(isExecutablePricingSku({ ...sku, currency: "usd" }, now)).toBe(false);
+        expect(isExecutablePricingSku({ ...sku, status: "draft" }, now)).toBe(false);
+        expect(isExecutablePricingSku({ ...sku, effective_from: "2026-09-23T00:00:00Z" }, now)).toBe(false);
+        expect(isExecutablePricingSku({ ...sku, effective_to: "2026-09-22T11:59:59Z" }, now)).toBe(false);
     });
 });
 
 describe("deriveOfferServiceTiers", () => {
+    it("reads fast SKUs as the priority plan", () => {
+        expect(deriveOfferServiceTiers({ providerId: "openai", skuTiers: ["fast"], capabilityParams: {} })).toEqual(["priority"]);
+    });
+
     it("lists every priced realtime tier in alphabetical order", () => {
         expect(deriveOfferServiceTiers({
             providerId: "openai",

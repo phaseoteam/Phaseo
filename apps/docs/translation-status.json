@@ -2,7 +2,7 @@
   "version": 1,
   "locales": {
     "ar": {
-      "@openapi": "e187eade1658848c1f54c023b81657e3cf4801a329c656d447070f6dac445cbc",
+      "@openapi": "bcbf6565c6ea75418927c5ac9bd2b6a18a7405d9cbdb6bac6b8e4ecba08be10a",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -110,7 +110,7 @@
       "api-reference/endpoint/management-keys-list.mdx": "37eeb073559479f6005f073a6a9db1637e0afb9b610b3ebe0c3b201001429f2b",
       "api-reference/endpoint/management-keys-update.mdx": "1af6aef3c1900eb2a3ce37785696d8cf50ad75a982f2e488babb7d2d04596370",
       "api-reference/endpoint/model-endpoints.mdx": "54b7e189fa53d356380638761bae940206e609878ddeb763655d455f646e4850",
-      "api-reference/endpoint/models.mdx": "7dec5e5c4e2cae0105037d3a9f8a983a50e393da75dc86ee6423ed0e92f95ae0",
+      "api-reference/endpoint/models.mdx": "c9dd9d1312b8b1c5b225d28f4a14d6e3c313eabf5073af665c6d3917c2aafbbd",
       "api-reference/endpoint/moderations.mdx": "935e87f2270c446a3931a08570cdb22f4950728495968841c23ced4588501022",
       "api-reference/endpoint/music-generate.mdx": "2c3e327b819c4412c5b92ae310dd77493e0d9fdb7cc56b00e1a740143b9825ea",
       "api-reference/endpoint/music-status.mdx": "a7be74eeb905d6b57d709ccf70fcc86dc6eecef904289409a04ca2aeb622f49c",
@@ -629,7 +629,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "de": {
-      "@openapi": "e187eade1658848c1f54c023b81657e3cf4801a329c656d447070f6dac445cbc",
+      "@openapi": "bcbf6565c6ea75418927c5ac9bd2b6a18a7405d9cbdb6bac6b8e4ecba08be10a",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -737,7 +737,7 @@
       "api-reference/endpoint/management-keys-list.mdx": "37eeb073559479f6005f073a6a9db1637e0afb9b610b3ebe0c3b201001429f2b",
       "api-reference/endpoint/management-keys-update.mdx": "1af6aef3c1900eb2a3ce37785696d8cf50ad75a982f2e488babb7d2d04596370",
       "api-reference/endpoint/model-endpoints.mdx": "54b7e189fa53d356380638761bae940206e609878ddeb763655d455f646e4850",
-      "api-reference/endpoint/models.mdx": "7dec5e5c4e2cae0105037d3a9f8a983a50e393da75dc86ee6423ed0e92f95ae0",
+      "api-reference/endpoint/models.mdx": "c9dd9d1312b8b1c5b225d28f4a14d6e3c313eabf5073af665c6d3917c2aafbbd",
       "api-reference/endpoint/moderations.mdx": "935e87f2270c446a3931a08570cdb22f4950728495968841c23ced4588501022",
       "api-reference/endpoint/music-generate.mdx": "2c3e327b819c4412c5b92ae310dd77493e0d9fdb7cc56b00e1a740143b9825ea",
       "api-reference/endpoint/music-status.mdx": "a7be74eeb905d6b57d709ccf70fcc86dc6eecef904289409a04ca2aeb622f49c",
@@ -1256,7 +1256,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "es": {
-      "@openapi": "e187eade1658848c1f54c023b81657e3cf4801a329c656d447070f6dac445cbc",
+      "@openapi": "bcbf6565c6ea75418927c5ac9bd2b6a18a7405d9cbdb6bac6b8e4ecba08be10a",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -1364,7 +1364,7 @@
       "api-reference/endpoint/management-keys-list.mdx": "37eeb073559479f6005f073a6a9db1637e0afb9b610b3ebe0c3b201001429f2b",
       "api-reference/endpoint/management-keys-update.mdx": "1af6aef3c1900eb2a3ce37785696d8cf50ad75a982f2e488babb7d2d04596370",
       "api-reference/endpoint/model-endpoints.mdx": "54b7e189fa53d356380638761bae940206e609878ddeb763655d455f646e4850",
-      "api-reference/endpoint/models.mdx": "7dec5e5c4e2cae0105037d3a9f8a983a50e393da75dc86ee6423ed0e92f95ae0",
+      "api-reference/endpoint/models.mdx": "c9dd9d1312b8b1c5b225d28f4a14d6e3c313eabf5073af665c6d3917c2aafbbd",
       "api-reference/endpoint/moderations.mdx": "935e87f2270c446a3931a08570cdb22f4950728495968841c23ced4588501022",
       "api-reference/endpoint/music-generate.mdx": "2c3e327b819c4412c5b92ae310dd77493e0d9fdb7cc56b00e1a740143b9825ea",
       "api-reference/endpoint/music-status.mdx": "a7be74eeb905d6b57d709ccf70fcc86dc6eecef904289409a04ca2aeb622f49c",
@@ -1883,7 +1883,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "fr": {
-      "@openapi": "e187eade1658848c1f54c023b81657e3cf4801a329c656d447070f6dac445cbc",
+      "@openapi": "bcbf6565c6ea75418927c5ac9bd2b6a18a7405d9cbdb6bac6b8e4ecba08be10a",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -1991,7 +1991,7 @@
       "api-reference/endpoint/management-keys-list.mdx": "37eeb073559479f6005f073a6a9db1637e0afb9b610b3ebe0c3b201001429f2b",
       "api-reference/endpoint/management-keys-update.mdx": "1af6aef3c1900eb2a3ce37785696d8cf50ad75a982f2e488babb7d2d04596370",
       "api-reference/endpoint/model-endpoints.mdx": "54b7e189fa53d356380638761bae940206e609878ddeb763655d455f646e4850",
-      "api-reference/endpoint/models.mdx": "7dec5e5c4e2cae0105037d3a9f8a983a50e393da75dc86ee6423ed0e92f95ae0",
+      "api-reference/endpoint/models.mdx": "c9dd9d1312b8b1c5b225d28f4a14d6e3c313eabf5073af665c6d3917c2aafbbd",
       "api-reference/endpoint/moderations.mdx": "935e87f2270c446a3931a08570cdb22f4950728495968841c23ced4588501022",
       "api-reference/endpoint/music-generate.mdx": "2c3e327b819c4412c5b92ae310dd77493e0d9fdb7cc56b00e1a740143b9825ea",
       "api-reference/endpoint/music-status.mdx": "a7be74eeb905d6b57d709ccf70fcc86dc6eecef904289409a04ca2aeb622f49c",
@@ -2510,7 +2510,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "hi": {
-      "@openapi": "e187eade1658848c1f54c023b81657e3cf4801a329c656d447070f6dac445cbc",
+      "@openapi": "bcbf6565c6ea75418927c5ac9bd2b6a18a7405d9cbdb6bac6b8e4ecba08be10a",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -2618,7 +2618,7 @@
       "api-reference/endpoint/management-keys-list.mdx": "37eeb073559479f6005f073a6a9db1637e0afb9b610b3ebe0c3b201001429f2b",
       "api-reference/endpoint/management-keys-update.mdx": "1af6aef3c1900eb2a3ce37785696d8cf50ad75a982f2e488babb7d2d04596370",
       "api-reference/endpoint/model-endpoints.mdx": "54b7e189fa53d356380638761bae940206e609878ddeb763655d455f646e4850",
-      "api-reference/endpoint/models.mdx": "7dec5e5c4e2cae0105037d3a9f8a983a50e393da75dc86ee6423ed0e92f95ae0",
+      "api-reference/endpoint/models.mdx": "c9dd9d1312b8b1c5b225d28f4a14d6e3c313eabf5073af665c6d3917c2aafbbd",
       "api-reference/endpoint/moderations.mdx": "935e87f2270c446a3931a08570cdb22f4950728495968841c23ced4588501022",
       "api-reference/endpoint/music-generate.mdx": "2c3e327b819c4412c5b92ae310dd77493e0d9fdb7cc56b00e1a740143b9825ea",
       "api-reference/endpoint/music-status.mdx": "a7be74eeb905d6b57d709ccf70fcc86dc6eecef904289409a04ca2aeb622f49c",
@@ -3137,7 +3137,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "ja": {
-      "@openapi": "e187eade1658848c1f54c023b81657e3cf4801a329c656d447070f6dac445cbc",
+      "@openapi": "bcbf6565c6ea75418927c5ac9bd2b6a18a7405d9cbdb6bac6b8e4ecba08be10a",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -3245,7 +3245,7 @@
       "api-reference/endpoint/management-keys-list.mdx": "37eeb073559479f6005f073a6a9db1637e0afb9b610b3ebe0c3b201001429f2b",
       "api-reference/endpoint/management-keys-update.mdx": "1af6aef3c1900eb2a3ce37785696d8cf50ad75a982f2e488babb7d2d04596370",
       "api-reference/endpoint/model-endpoints.mdx": "54b7e189fa53d356380638761bae940206e609878ddeb763655d455f646e4850",
-      "api-reference/endpoint/models.mdx": "7dec5e5c4e2cae0105037d3a9f8a983a50e393da75dc86ee6423ed0e92f95ae0",
+      "api-reference/endpoint/models.mdx": "c9dd9d1312b8b1c5b225d28f4a14d6e3c313eabf5073af665c6d3917c2aafbbd",
       "api-reference/endpoint/moderations.mdx": "935e87f2270c446a3931a08570cdb22f4950728495968841c23ced4588501022",
       "api-reference/endpoint/music-generate.mdx": "2c3e327b819c4412c5b92ae310dd77493e0d9fdb7cc56b00e1a740143b9825ea",
       "api-reference/endpoint/music-status.mdx": "a7be74eeb905d6b57d709ccf70fcc86dc6eecef904289409a04ca2aeb622f49c",
@@ -3764,7 +3764,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "pt-BR": {
-      "@openapi": "e187eade1658848c1f54c023b81657e3cf4801a329c656d447070f6dac445cbc",
+      "@openapi": "bcbf6565c6ea75418927c5ac9bd2b6a18a7405d9cbdb6bac6b8e4ecba08be10a",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -3872,7 +3872,7 @@
       "api-reference/endpoint/management-keys-list.mdx": "37eeb073559479f6005f073a6a9db1637e0afb9b610b3ebe0c3b201001429f2b",
       "api-reference/endpoint/management-keys-update.mdx": "1af6aef3c1900eb2a3ce37785696d8cf50ad75a982f2e488babb7d2d04596370",
       "api-reference/endpoint/model-endpoints.mdx": "54b7e189fa53d356380638761bae940206e609878ddeb763655d455f646e4850",
-      "api-reference/endpoint/models.mdx": "7dec5e5c4e2cae0105037d3a9f8a983a50e393da75dc86ee6423ed0e92f95ae0",
+      "api-reference/endpoint/models.mdx": "c9dd9d1312b8b1c5b225d28f4a14d6e3c313eabf5073af665c6d3917c2aafbbd",
       "api-reference/endpoint/moderations.mdx": "935e87f2270c446a3931a08570cdb22f4950728495968841c23ced4588501022",
       "api-reference/endpoint/music-generate.mdx": "2c3e327b819c4412c5b92ae310dd77493e0d9fdb7cc56b00e1a740143b9825ea",
       "api-reference/endpoint/music-status.mdx": "a7be74eeb905d6b57d709ccf70fcc86dc6eecef904289409a04ca2aeb622f49c",
@@ -4391,7 +4391,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "zh-Hans": {
-      "@openapi": "e187eade1658848c1f54c023b81657e3cf4801a329c656d447070f6dac445cbc",
+      "@openapi": "bcbf6565c6ea75418927c5ac9bd2b6a18a7405d9cbdb6bac6b8e4ecba08be10a",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -4499,7 +4499,7 @@
       "api-reference/endpoint/management-keys-list.mdx": "37eeb073559479f6005f073a6a9db1637e0afb9b610b3ebe0c3b201001429f2b",
       "api-reference/endpoint/management-keys-update.mdx": "1af6aef3c1900eb2a3ce37785696d8cf50ad75a982f2e488babb7d2d04596370",
       "api-reference/endpoint/model-endpoints.mdx": "54b7e189fa53d356380638761bae940206e609878ddeb763655d455f646e4850",
-      "api-reference/endpoint/models.mdx": "7dec5e5c4e2cae0105037d3a9f8a983a50e393da75dc86ee6423ed0e92f95ae0",
+      "api-reference/endpoint/models.mdx": "c9dd9d1312b8b1c5b225d28f4a14d6e3c313eabf5073af665c6d3917c2aafbbd",
       "api-reference/endpoint/moderations.mdx": "935e87f2270c446a3931a08570cdb22f4950728495968841c23ced4588501022",
       "api-reference/endpoint/music-generate.mdx": "2c3e327b819c4412c5b92ae310dd77493e0d9fdb7cc56b00e1a740143b9825ea",
       "api-reference/endpoint/music-status.mdx": "a7be74eeb905d6b57d709ccf70fcc86dc6eecef904289409a04ca2aeb622f49c",
