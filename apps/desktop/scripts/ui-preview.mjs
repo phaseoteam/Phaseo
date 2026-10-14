@@ -72,11 +72,22 @@ if (demo) {
 		let body = "";
 		request.on("data", chunk => { body += chunk; });
 		request.on("end", async () => {
-			const { model, messages } = JSON.parse(body);
+			const { model, messages, tools } = JSON.parse(body);
 			const question = [...messages].reverse().find(message => message.role === "user")?.content;
+			const last = messages.at(-1), lastText = typeof last?.content === "string" ? last.content : "";
 			response.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" });
 			await sleep(500);
-			for (const piece of demoReply(model, typeof question === "string" ? question : "your message").match(/\S+\s*|\n+/g)) {
+			const send = packet => response.write(`data: ${JSON.stringify(packet)}\n\n`);
+			// Orchestration demo: asked for agents, the stand-in delegates two background tasks to its own model.
+			if (last?.role === "user" && /\bagents?\b/i.test(lastText) && !lastText.startsWith("Delegated agent") && tools?.some(tool => tool.function?.name === "delegate_task")) {
+				const tasks = [["Research pricing", "List three facts about how model gateways price tokens."], ["Draft summary", "Write a two-sentence summary of why teams use a model gateway."]];
+				tasks.forEach(([title, prompt], index) => send({ choices: [{ index: 0, delta: { tool_calls: [{ index, id: `call_${index}`, type: "function", function: { name: "delegate_task", arguments: JSON.stringify({ requestId: `demo-${index}-${Date.now()}`, title, prompt, background: true, harness: "phaseo", model }) } }] } }] }));
+				send({ choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] }); response.write("data: [DONE]\n\n"); response.end(); return;
+			}
+			const reply = last?.role === "tool" ? "I've started two agents in the background, one researching pricing and one drafting a summary. I'll pull their results together when they report back."
+				: lastText.startsWith("Delegated agent") ? `Both agents have reported back. Here's the combined picture:\n\n- **Pricing research** came back with three facts about token pricing.\n- **Summary draft** gave a two-sentence overview.\n\nWant me to merge them into one note?`
+				: demoReply(model, typeof question === "string" ? question : "your message");
+			for (const piece of reply.match(/\S+\s*|\n+/g)) {
 				response.write(`data: ${JSON.stringify({ choices: [{ index: 0, delta: { content: piece } }] })}\n\n`);
 				await sleep(28);
 			}
