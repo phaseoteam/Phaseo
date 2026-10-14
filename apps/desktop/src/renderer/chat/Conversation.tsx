@@ -9,6 +9,7 @@ import { MessageContent } from "../components/MessageContent";
 import { ModelLogo } from "../components/ModelLogo";
 import { useTextCopy } from "../components/useTextCopy";
 import { harnessNames, knownModel, modelLabel } from "./ModelPicker";
+import { AgentResult } from "./AgentThreads";
 
 const toolLabels: Record<string, string> = { run_project_command: "Ran", read_project_file: "Read", write_project_file: "Edited", list_project_files: "Listed", load_skill: "Loaded skill", ask_user: "Asked" };
 function toolIcon(title: string) {
@@ -122,7 +123,7 @@ function Turn({ user, entries, live, complete, task, onAttachment, onBranch, com
 	const canBranch = !["running", "waiting"].includes(task.status) && !task.archived;
 	const hasAssistant = work.length > 0 || !!final || live;
 	return <div className="flex flex-col gap-4">
-		{user && <UserMessage message={user} onAttachment={onAttachment} onBranch={onBranch} canBranch={canBranch} />}
+		{user && (user.delivery === "subagent" ? <AgentResult message={user} projectId={task.projectId} /> : <UserMessage message={user} onAttachment={onAttachment} onBranch={onBranch} canBranch={canBranch} />)}
 		{hasAssistant && <div data-conversation-id={`turn:${user?.id ?? entries[0]?.value.id}`} className="group/turn flex flex-col gap-3">
 			{!compact && <AssistantHeader task={task} />}
 			<WorkLog entries={work} user={user} live={live} complete={complete} task={task} />

@@ -11,7 +11,9 @@ import { AgentInputRejectedError } from "./agentAdapter";
 import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
 import { readCodexModels } from "./modelCatalog";
 import type { McpConnection } from "../shared/mcp";
-import { codexMcpConfig, waitCodexMcp } from "./codexMcp";
+import { codexMcpConfig, codexMcpEnabled, waitCodexMcp } from "./codexMcp";
+import { nativeMcpName } from "../shared/mcp";
+import { orchestrationInstructions } from "../shared/orchestration";
 import { respondMcpElicitation } from "./mcpElicitation";
 import { confirmCodexNativeAction } from "./codexNativeActions";
 import type { NativeAction } from "../shared/nativeActions";
@@ -39,11 +41,13 @@ export class CodexAdapter implements AgentAdapter {
 		this.child.on("exit", () => { rpc.close(); this.rejectTurn?.(new Error("Codex stopped before completing the turn.")); });
 		// Consume diagnostics without sending credentials or arbitrary stderr to the renderer.
 		this.child.stderr.resume();
+		const orchestration = this.mcp.find(connection => connection.orchestration && codexMcpEnabled(connection, task));
 		rpc.onRequest = async (method, params) => {
 			if (method === "mcpServer/elicitation/request") {
 				const request = params as { threadId: string; serverName: string; message: string; mode: string; requestedSchema?: unknown; url?: string };
 				if (request.threadId !== this.threadId) throw new Error("MCP request belongs to another task.");
-				const result = task.mode === "chat" ? { action: "decline" as const } : await respondMcpElicitation(request, callbacks, this.controller.signal);
+				// Chat declines MCP prompts except Codex's own confirmation of an orchestration call.
+				const result = task.mode === "chat" && request.serverName !== (orchestration && nativeMcpName(orchestration)) ? { action: "decline" as const } : await respondMcpElicitation(request, callbacks, this.controller.signal);
 				return { ...result, content: "content" in result ? result.content : null, _meta: null };
 			}
 			if (method === "item/tool/requestUserInput") {
@@ -73,7 +77,7 @@ export class CodexAdapter implements AgentAdapter {
 				effort ||= model?.defaultReasoningEffort;
 				if (!effort || !model?.reasoningEfforts?.some(value => value.id === effort)) throw new AgentInputRejectedError("The selected model does not support this reasoning effort. Update the task settings.");
 			}
-			const settings = { cwd, model: task.model === "default" ? null : task.model, approvalPolicy: task.permissionMode === "full-access" ? "never" : "untrusted", sandbox: task.permissionMode === "full-access" ? "danger-full-access" : task.mode === "code" ? "workspace-write" : "read-only", ...(this.mcp.length ? { config: codexMcpConfig(this.mcp, task) } : {}) };
+			const settings = { cwd, model: task.model === "default" ? null : task.model, approvalPolicy: task.permissionMode === "full-access" ? "never" : "untrusted", sandbox: task.permissionMode === "full-access" ? "danger-full-access" : task.mode === "code" ? "workspace-write" : "read-only", ...(this.mcp.length ? { config: { ...codexMcpConfig(this.mcp, task), ...(orchestration ? { developer_instructions: orchestrationInstructions } : {}) } } : {}) };
 			const sourceId = task.nativeSessionId ?? task.nativeForkFrom;
 			const result = await rpc.request<{ thread: { id: string } }>(task.nativeSessionId ? "thread/resume" : task.nativeForkFrom ? "thread/fork" : "thread/start", { ...settings, ...(sourceId ? { threadId: sourceId } : {}) });
 			this.threadId = result.thread.id; callbacks.onSession(result.thread.id);
@@ -86,7 +90,7 @@ export class CodexAdapter implements AgentAdapter {
 					this.controller.signal.throwIfAborted();
 				} catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "OpenAI skill admission failed.", { cause: error }); }
 			}
-			try { await waitCodexMcp(rpc, result.thread.id, this.mcp.filter(connection => task.mode !== "chat" && connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === task.projectId)), this.controller.signal); }
+			try { await waitCodexMcp(rpc, result.thread.id, this.mcp.filter(connection => codexMcpEnabled(connection, task)), this.controller.signal); }
 			catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "MCP setup failed.", { cause: error }); }
 			await new Promise<void>((resolve, reject) => {
 				this.rejectTurn = reject;

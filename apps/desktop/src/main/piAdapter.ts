@@ -38,9 +38,11 @@ export class PiAdapter implements AgentAdapter {
 		const args = ["--mode", "rpc"];
 		if (task.nativeSessionId) args.push("--session", task.nativeSessionId);
 		else if (task.nativeForkFrom) args.push("--fork", task.nativeForkFrom);
-		if (task.mode === "chat" || compact) args.push("--no-tools");
-		if (task.mode === "plan" && !compact) args.push("--tools", "read,grep,find,ls");
-		const orchestration = this.connections.find(connection => connection.transport === "http" && connection.headers?.Authorization && connection.name === "Phaseo orchestration");
+		const orchestration = this.connections.find(connection => connection.transport === "http" && connection.headers?.Authorization && (connection.orchestration || connection.name === "Phaseo orchestration"));
+		// --tools is an allowlist over built-in and extension tools, so name the orchestration tools to keep them in Chat and Plan.
+		if (compact || (task.mode === "chat" && !orchestration)) args.push("--no-tools");
+		else if (task.mode === "chat") args.push("--tools", "mcp__phaseo__*");
+		if (task.mode === "plan" && !compact) args.push("--tools", `read,grep,find,ls${orchestration ? ",mcp__phaseo__*" : ""}`);
 		if (orchestration) args.push("--extension", await writePiOrchestrationExtension(path.join(tmpdir(), "phaseo-owned-extensions", task.id)));
 		if (this.cancelled) throw new Error("Task stopped.");
 		const child = this.child = await spawnNative("pi", args, cwd, piEntries, orchestration?.transport === "http" ? { PHASEO_ORCHESTRATOR_URL: orchestration.url, PHASEO_ORCHESTRATOR_AUTH: orchestration.headers!.Authorization } : undefined); child.stderr.resume();

@@ -8,6 +8,7 @@ vi.mock("./nativeProcess", () => ({ spawnNative: native.spawn }));
 import { CodexAdapter } from "./codexAdapter";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
+import { orchestrationInstructions } from "../shared/orchestration";
 
 function fixture(onRequest: (packet: { id: number; method: string; params: Record<string, unknown> }, send: (value: unknown) => void) => void) {
 	const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() });
@@ -116,6 +117,19 @@ describe("Codex native integration", () => {
 		});
 		await new CodexAdapter([connection]).run({ ...task, ...(operation === "resume" ? { nativeSessionId: "source" } : operation === "fork" ? { nativeForkFrom: "source" } : {}) }, ".", "Start", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
 		expect(methods.indexOf("mcpServerStatus/list")).toBeLessThan(methods.indexOf("turn/start"));
+	});
+	it("starts only the orchestration server in Chat with the shared developer instructions", async () => {
+		const user: McpConnection = { id: "12345678-1234-1234-1234-123456789abc", name: "Fixture", enabled: true, transport: "http", url: "https://example.com/mcp" };
+		const orchestration: McpConnection = { id: "12345678-1234-1234-1234-123456789abd", name: "Phaseo orchestration", enabled: true, orchestration: true, transport: "http", url: "http://127.0.0.1:1/mcp" };
+		const waited: string[][] = [];
+		fixture((packet, send) => {
+			if (packet.method === "initialize") send({ id: packet.id, result: {} });
+			if (packet.method === "thread/start") { const config = packet.params.config as Record<string, { enabled?: boolean }> & { developer_instructions?: string }; expect(config.developer_instructions).toBe(orchestrationInstructions); expect(config[`mcp_servers.${nativeMcpName(user)}`].enabled).toBe(false); expect(config[`mcp_servers.${nativeMcpName(orchestration)}`].enabled).toBe(true); send({ id: packet.id, result: { thread: { id: "native" } } }); }
+			if (packet.method === "mcpServerStatus/list") { waited.push([nativeMcpName(orchestration)]); send({ id: packet.id, result: { data: [{ name: nativeMcpName(orchestration), runtimeStatus: "connected" }], nextCursor: null } }); }
+			if (packet.method === "turn/start") { send({ id: packet.id, result: { turn: { id: "turn" } } }); send({ method: "turn/completed", params: { threadId: "native", turn: { id: "turn", status: "completed" } } }); }
+		});
+		await new CodexAdapter([user, orchestration]).run({ ...task, mode: "chat" }, ".", "Start", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+		expect(waited).toHaveLength(1);
 	});
 	it("reports failed MCP as confirmed rejection without submitting input", async () => {
 		const connection: McpConnection = { id: "12345678-1234-1234-1234-123456789abc", name: "Fixture", enabled: true, transport: "http", url: "https://example.com/mcp" }; const methods: string[] = [];

@@ -16,7 +16,7 @@ describe("orchestration MCP transport", () => {
 			expect((await fetch(url, { method: "POST" })).status).toBe(401);
 			expect((await fetch(url, { method: "POST", headers: { ...headers, Origin: "https://untrusted.example" } })).status).toBe(401);
 			await client.connect(new StreamableHTTPClientTransport(new URL(url), { requestInit: { headers } }));
-			expect((await client.listTools()).tools.map(tool => tool.name)).toEqual(["handoff_thread", "rename_thread", "steer_thread", "read_thread_queue", "edit_thread_queue", "fork_thread", "send_thread", "merge_thread_context", "list_models", "list_threads", "read_thread", "delegate_task", "wait_thread", "interrupt_thread"]);
+			expect((await client.listTools()).tools.map(tool => tool.name)).toEqual(["handoff_thread", "rename_thread", "steer_thread", "read_thread_queue", "edit_thread_queue", "fork_thread", "send_thread", "merge_thread_context", "list_agents", "list_models", "list_threads", "read_thread", "delegate_task", "wait_thread", "interrupt_thread"]);
 			expect(await client.callTool({ name: "list_threads", arguments: {} })).toMatchObject({ content: [{ type: "text", text: "[]" }] });
 			expect(await client.callTool({ name: "delegate_task", arguments: { title: "Child", prompt: "Inspect", requestId: "owned" } })).toMatchObject({ isError: true });
 			expect(approve).toHaveBeenCalledOnce(); expect(service.delegate).not.toHaveBeenCalled();

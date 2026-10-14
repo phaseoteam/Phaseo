@@ -40,6 +40,16 @@ export function WorkspaceSettings() {
 			{loadError && !loading && <div className="settings-feedback"><p className="task-error" role="alert">{loadError}</p></div>}
 			{saveError && <div className="settings-feedback"><p className="task-error" role="alert">{saveError.message}</p><button type="button" onClick={() => void save(saveError.value)}>Retry</button></div>}
 		</section>
+		<section className="panel" aria-label="Agents" aria-busy={loading || busy}>
+			<div className="panel-heading"><h2>Agents</h2></div>
+			<div className="settings-fields">
+				<label className="setting-row"><span><strong>Agents running at once</strong><small>The most agents your chats can have working at the same time across the workspace. Each one is a separate model call, billed to your account.</small></span>
+					<input type="number" min={1} max={256} step={1} aria-label="Agents running at once" key={preferences.maxActiveAgents} defaultValue={preferences.maxActiveAgents} disabled={loading || busy || supported === undefined}
+						onBlur={event => { const value = Math.round(Number(event.target.value)); if (Number.isFinite(value) && value >= 1 && value <= 256 && value !== preferences.maxActiveAgents) void save({ ...preferences, maxActiveAgents: value }); else event.target.value = String(preferences.maxActiveAgents); }}
+						onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }}
+						className="h-8 w-20 rounded-md border border-input bg-transparent px-2 text-right text-[13px] outline-none focus:border-ring" /></label>
+			</div>
+		</section>
 		<GlobalInstructionsEditor />
 	</div>;
 }

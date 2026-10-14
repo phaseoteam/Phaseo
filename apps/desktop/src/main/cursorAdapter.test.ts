@@ -4,6 +4,7 @@ const sdk = vi.hoisted(() => ({ create: vi.fn(), resume: vi.fn(), store: vi.fn()
 vi.mock("@cursor/sdk", () => ({ Agent: { create: sdk.create, resume: sdk.resume }, Cursor: { models: { list: sdk.models } }, JsonlLocalAgentStore: class { constructor(directory: string) { sdk.store(directory); } } }));
 import { CursorAdapter, cursorModelSelection, cursorOptions } from "./cursorAdapter";
 import { AgentInputRejectedError } from "./agentAdapter";
+import { nativeMcpName } from "../shared/mcp";
 const task: Task = { id: "task", title: "Task", harness: "cursor", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 const account: Account = { id: "account", name: "Cursor", harness: "cursor", kind: "api", configured: true };
 function fixture() {
@@ -31,6 +32,18 @@ describe("Cursor SDK harness", () => {
 	it("disables native tools and inherited settings for Chat and limits Plan tools", () => {
 		const options = cursorOptions(task, "/project", "secret", {} as never, []); expect(options.tools).toEqual([]); expect(options.local?.settingSources).toEqual([]); expect(options.mcpServers).toEqual({});
 		const plan = cursorOptions({ ...task, mode: "plan" }, "/project", "secret", {} as never, []); expect(plan.tools).toContain("read"); expect(plan.tools).not.toContain("shell"); expect(plan.tools).not.toContain("task"); expect(plan.local?.settingSources).toEqual([]);
+	});
+	it("admits only the orchestration server in Chat and Plan and guides a new session", async () => {
+		const orchestration = { id: "00000000-0000-4000-8000-000000000002", name: "Phaseo orchestration", enabled: true, orchestration: true, transport: "http" as const, url: "http://127.0.0.1:1/mcp", headers: { Authorization: "Bearer owned" } };
+		const user = { id: "00000000-0000-4000-8000-000000000003", name: "User", enabled: true, transport: "http" as const, url: "https://example.invalid/mcp" };
+		const chat = cursorOptions(task, "/project", "secret", {} as never, [user, orchestration]); expect(chat.tools).toEqual(["mcp"]); expect(Object.keys(chat.mcpServers!)).toEqual([nativeMcpName(orchestration)]);
+		const plan = cursorOptions({ ...task, mode: "plan" }, "/project", "secret", {} as never, [user, orchestration]); expect(plan.tools).toContain("mcp"); expect(plan.tools).not.toContain("shell"); expect(Object.keys(plan.mcpServers!)).toEqual([nativeMcpName(orchestration)]);
+		expect(Object.keys(cursorOptions({ ...task, mode: "code" }, "/project", "secret", {} as never, [user, orchestration]).mcpServers!)).toHaveLength(2);
+		const { agent, callbacks } = fixture();
+		await new CursorAdapter("/data", () => "key", [orchestration]).run(task, "/project", "Hello", callbacks, account);
+		expect(agent.send).toHaveBeenLastCalledWith(expect.objectContaining({ text: expect.stringMatching(/^# Phaseo orchestration[\s\S]*Hello$/) }), expect.anything());
+		await new CursorAdapter("/data", () => "key", [orchestration]).run({ ...task, nativeSessionId: "prior" }, "/project", "Again", callbacks, account);
+		expect(agent.send).toHaveBeenLastCalledWith(expect.objectContaining({ text: "Again" }), expect.anything());
 	});
 	const catalogModel = { id: "gpt", displayName: "GPT", aliases: ["gpt-latest"], parameters: [{ id: "effort", values: [{ value: "low" }, { value: "high" }] }, { id: "context", values: [{ value: "272k" }, { value: "1m" }] }, { id: "fast", values: [{ value: "False" }, { value: "True" }] }, { id: "thinking", values: [{ value: "true" }, { value: "false" }] }] };
 	it("sends only chosen settings the model offers, under their SDK parameter ids", () => {

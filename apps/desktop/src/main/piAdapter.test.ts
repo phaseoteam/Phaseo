@@ -96,6 +96,14 @@ describe("Pi native harness", () => {
 		expect(stateCalls).toBe(3); expect(onDelta).toHaveBeenCalledExactlyOnceWith("assistant", "Hello"); expect(onSession).toHaveBeenCalledWith("/sessions/fork.jsonl"); expect(onQuestion).toHaveBeenCalled(); expect(child.kill).toHaveBeenCalled();
 		expect(native.spawn.mock.lastCall?.[1]).toEqual(["--mode", "rpc", "--fork", "/sessions/original.jsonl", "--no-tools"]);
 	});
+	it.each([["chat", ["--tools", "mcp__phaseo__*"]], ["plan", ["--tools", "read,grep,find,ls,mcp__phaseo__*"]]] as const)("keeps only the orchestration extension tools in %s", async (mode, expected) => {
+		fixture((packet, output) => output({ type: "response", id: packet.id, success: true, data: packet.type === "get_state" ? { sessionFile: "/session", isStreaming: false, pendingMessageCount: 0 } : packet.type === "prompt" ? { disposition: "handled" } : undefined }));
+		const orchestration = { id: "00000000-0000-4000-8000-000000000002", name: "Phaseo orchestration", enabled: true, orchestration: true, transport: "http" as const, url: "http://127.0.0.1:1/mcp", headers: { Authorization: "Bearer owned" } };
+		await new PiAdapter([orchestration]).run({ ...task, id: `pi-${mode}`, mode }, "/project", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+		const args = native.spawn.mock.lastCall?.[1] as string[];
+		expect(args).not.toContain("--no-tools"); expect(args.slice(2, 4)).toEqual(expected); expect(args).toContain("--extension");
+		expect(native.spawn.mock.lastCall?.[4]).toEqual({ PHASEO_ORCHESTRATOR_URL: orchestration.url, PHASEO_ORCHESTRATOR_AUTH: "Bearer owned" });
+	});
 	it("does not launch native code tools when their turn approval is declined", async () => {
 		native.spawn.mockClear();
 		await expect(new PiAdapter().run({ ...task, mode: "code" }, "/project", "Edit", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" })).rejects.toThrow("declined");

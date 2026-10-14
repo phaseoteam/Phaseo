@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { WorkspaceStore } from "./workspaceStore";
 import { validateCommand } from "../shared/workspace";
+import { DatabaseSync } from "node:sqlite";
 
 describe("workspace durability", () => {
  it("persists native queued actions and preserves argument edits without guessing plain text intent", () => {
@@ -60,9 +61,9 @@ describe("workspace durability", () => {
 	it("retains notification settings after restart and rejects invalid updates", () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-preferences-")); const filename = path.join(directory, "workspace.sqlite"); let store = new WorkspaceStore(filename);
 		try {
-			expect(store.getPreferences()).toEqual({ notifications: "off", notificationTitles: false });
-			store.savePreferences({ notifications: "attention", notificationTitles: true }); store.close(); store = new WorkspaceStore(filename);
-			expect(store.getPreferences()).toEqual({ notifications: "attention", notificationTitles: true });
+			expect(store.getPreferences()).toEqual({ notifications: "off", notificationTitles: false, maxActiveAgents: 32 });
+			store.savePreferences({ notifications: "attention", notificationTitles: true, maxActiveAgents: 8 }); store.close(); store = new WorkspaceStore(filename);
+			expect(store.getPreferences()).toEqual({ notifications: "attention", notificationTitles: true, maxActiveAgents: 8 });
 			expect(() => store.savePreferences({ notifications: ["all"] } as never)).toThrow(); expect(store.getPreferences().notifications).toBe("attention");
 		} finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
@@ -147,5 +148,55 @@ describe("IPC validation", () => {
 	});
 	it.each([null, {}, { type: "send", id: "x", text: "" }, { type: "update-task", id: "x", pinned: "yes" }, { type: "create-task", harness: "unknown", model: "default", mode: "chat" }])("rejects malformed input %j", value => {
 		expect(() => validateCommand(value)).toThrow();
+	});
+	const finishChild = (store: WorkspaceStore, id: string, text: string, status: "completed" | "interrupted" = "completed") => { const child = store.getTask(id); child.queue = []; child.status = status; child.messages.push({ id: `${id}:answer`, role: "assistant", text, createdAt: new Date().toISOString() }); store.saveTask(child); };
+	it("re-saves a finished background child without raising or delivering twice, including databases with the version 1 trigger", () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-outbox-")); const filename = path.join(directory, "workspace.sqlite"); let store = new WorkspaceStore(filename);
+		try {
+			store.close();
+			// Reinstall the original trigger to prove opening the store replaces it.
+			const legacy = new DatabaseSync(filename); legacy.exec(`DROP TRIGGER delegation_result_updated; CREATE TRIGGER delegation_result_updated AFTER UPDATE OF data ON tasks WHEN json_extract(new.data, '$.delegation.background') = 1 AND json_extract(new.data, '$.status') IN ('completed', 'failed', 'interrupted') BEGIN INSERT OR IGNORE INTO delegation_outbox(result_key, child_id, parent_id, data) VALUES (new.id || ':' || json_extract(new.data, '$.status'), new.id, json_extract(new.data, '$.delegation.parentTaskId'), json_object('title', 'x', 'status', 'x', 'result', 'x')); END; PRAGMA user_version=1;`); legacy.close();
+			store = new WorkspaceStore(filename);
+			const parent = store.apply({ type: "create-task", harness: "codex", model: "owned", mode: "code" });
+			const child = store.createDelegatedTask({ type: "create-task", harness: "codex", model: "owned", mode: "code" }, { parentTaskId: parent.id, requestId: "r", background: true }, "Inspect", "Child");
+			finishChild(store, child.id, "Findings");
+			store.saveTask(store.getTask(child.id));
+			store.apply({ type: "update-task", id: child.id, title: "Renamed" });
+			store.apply({ type: "update-task", id: child.id, archived: true });
+			const saved = store.getTask(child.id); store.apply({ type: "inbox-read", id: child.id, revision: saved.updatedAt });
+			store.apply({ type: "update-task", id: child.id, archived: false }); store.apply({ type: "send", id: child.id, text: "Follow up" });
+			expect(store.collectDelegationResults()).toEqual([parent.id]); expect(store.collectDelegationResults()).toEqual([]);
+			expect(store.getTask(parent.id).queue).toEqual([expect.objectContaining({ sourceTaskId: child.id, sourceTaskIds: [child.id], text: expect.stringContaining("Findings") })]);
+		} finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("batches results into the parent's pending delivery and honours one-shot wakes", () => {
+		const store = new WorkspaceStore(":memory:");
+		try {
+			const parent = store.apply({ type: "create-task", harness: "codex", model: "owned", mode: "code" });
+			const child = (requestId: string, background?: boolean) => store.createDelegatedTask({ type: "create-task", harness: "codex", model: "owned", mode: "code" }, { parentTaskId: parent.id, requestId, background }, "Inspect", requestId);
+			const first = child("first", true), second = child("second", true), foreground = child("foreground");
+			expect(store.activeAgentCount()).toBe(3);
+			finishChild(store, first.id, "First findings"); expect(store.collectDelegationResults()).toEqual([parent.id]);
+			finishChild(store, second.id, "Second findings"); store.requestDelegationWake(foreground.id); finishChild(store, foreground.id, "Foreground findings");
+			expect(store.collectDelegationResults()).toEqual([parent.id]);
+			const [delivery] = store.getTask(parent.id).queue;
+			expect(store.getTask(parent.id).queue).toHaveLength(1); expect(delivery.sourceTaskIds).toEqual([first.id, second.id, foreground.id]); expect(delivery.text.match(/^Delegated agent/gm)).toHaveLength(3);
+			expect(store.activeAgentCount()).toBe(0);
+			// The wake covered one result: the foreground child's next run is not delivered.
+			const again = store.getTask(foreground.id); again.messages.push({ id: "next", role: "user", text: "Again", createdAt: new Date().toISOString() }); store.saveTask(again); finishChild(store, foreground.id, "Unrequested");
+			expect(store.collectDelegationResults()).toEqual([]);
+			const stopped = store.apply({ type: "cancel", id: parent.id }); expect(stopped.status).toBe("interrupted");
+			const third = child("third", true); finishChild(store, third.id, "", "interrupted");
+			expect(store.collectDelegationResults()).toEqual([]); expect(store.getTask(parent.id).queue).toHaveLength(1);
+			expect(store.pendingDeliveryParents()).toEqual([parent.id]);
+		} finally { store.close(); }
+	});
+	it("gives preferences saved before the agent limit the default", () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-legacy-preferences-")); const filename = path.join(directory, "workspace.sqlite"); let store = new WorkspaceStore(filename);
+		try {
+			store.close(); const legacy = new DatabaseSync(filename); legacy.prepare("INSERT INTO preferences (id, data) VALUES ('workspace', ?)").run(JSON.stringify({ notifications: "all", notificationTitles: true })); legacy.close();
+			store = new WorkspaceStore(filename);
+			expect(store.getPreferences()).toEqual({ notifications: "all", notificationTitles: true, maxActiveAgents: 32 });
+		} finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
 });

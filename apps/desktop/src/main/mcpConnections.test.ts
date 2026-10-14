@@ -20,7 +20,8 @@ describe("durable native MCP connections", () => {
 			runtime.mcp({ type: "save", connection }); await runtime.close();
 			const turn=new Promise<void>(resolve=>{release=resolve;}); const factory=vi.fn(()=>({run:async()=>{await turn;},cancel:async()=>{release();}})); runtime=new WorkspaceRuntime(directory,factory);
 			expect(runtime.store.get().mcpConnections).toEqual([connection]); const task=(await runtime.command({type:"create-task",harness:"claude",model:"default",mode:"code"})).tasks[0]; await runtime.command({type:"send",id:task.id,text:"Use tools"}); await vi.waitFor(()=>expect(factory).toHaveBeenCalled());
-			expect(factory.mock.calls[0]).toEqual(expect.arrayContaining([[connection]])); expect(()=>runtime.mcp({type:"save",connection:{...connection,enabled:false}})).toThrow("Stop affected tasks");
+			// Code-mode tasks also receive the orchestration server alongside the user's connections.
+			expect(factory.mock.calls[0]).toEqual(expect.arrayContaining([expect.arrayContaining([connection])])); expect(()=>runtime.mcp({type:"save",connection:{...connection,enabled:false}})).toThrow("Stop affected tasks");
 			release(); await vi.waitFor(()=>expect(runtime.store.getTask(task.id).status).toBe("completed")); runtime.mcp({type:"save",connection:{...connection,enabled:false,archived:true}}); expect(runtime.store.get().mcpConnections[0].archived).toBe(true);
 		} finally { release?.(); await runtime.close(); rmSync(directory,{recursive:true,force:true}); }
 	});

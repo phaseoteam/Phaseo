@@ -19,6 +19,9 @@ Keep these separate from the broader desktop feature ledger; an exposed tool alo
 - [x] Composer thread references and sidebar drag references
 - [x] Child status and result UI
 - [x] Phaseo direct tools, Codex/Claude/Cursor/ACP/Grok MCP configuration and Pi extension bridge (fixture validation)
+- [x] Orchestration tools in Chat, Plan and Code for every MCP-capable harness, with shared orchestration instructions
+- [x] One-call agent catalog (`list_agents`), account auto-pick, workspace agent limit and privilege ceiling
+- [x] Batched result delivery, launch wake and upgrade-to-always-wake for abandoned waits (fixture validation)
 - [ ] OpenCode session isolation and live provider-specific orchestration verification
 - [ ] Native subagent observation
 - [x] Message-boundary forks, child messaging and idempotent conversation-result merge
@@ -35,6 +38,44 @@ Orchestration uses the existing model discovery functions. Catalogs are bounded 
 Owned child chats have a return-to-parent footer, remain visible through their parent and are excluded from ordinary chat history. Native-provider-owned subagents remain a separate missing capability. This increment does not establish full T3 nightly parity.
 
 OpenCode orchestration injection is deliberately not enabled: its MCP configuration is directory-scoped, so injecting one chat's credential could expose it to another session. OpenCode can still execute delegated work, but cannot yet recursively use the desktop orchestration service.
+
+## Engine parity: delivery, limits and capabilities
+
+Children and lineage. An orchestration child is any task with `delegation` (`delegation.parentTaskId` is the owning chat): delegated children, and forks and handoffs made through agent tools. `Task.parentId` is lineage only. Delegated children point at the delegating chat; forks and handoffs, whether user-made or agent-made, point at their source. Ownership checks, `list_threads`, cancellation cascade and limits all use `delegation.parentTaskId`. The renderer hides only tasks with `delegation` (`isOrchestrationChild` in `shared/orchestration.ts`), so user branches and handoffs stay in the sidebar.
+
+Delivery. When a child reaches completed, failed or interrupted, a SQLite trigger records one outbox row per run, keyed by child, last user message and status. A row is written only if the child is background, or if its parent abandoned a wait for it. Version 1 of the trigger used `INSERT OR IGNORE`. Inside a trigger fired by `saveTask`'s upsert, the outer statement's conflict policy applies, so re-saving a finished background child (rename, archive, inbox read, send) raised UNIQUE. The runtime's cleanup was then skipped, the child was marked failed, and the parent ran twice. The trigger is now dropped and recreated on every open, as `INSERT … SELECT … WHERE NOT EXISTS` (schema `user_version` 2).
+
+Collection groups pending rows by parent into one queued message. Each result section starts "Delegated agent …"; `sourceTaskId` is the first child and `sourceTaskIds` lists every child. If the parent's last queued item is still an undelivered result batch, new results are appended to it. The runtime starts an idle or completed parent 250 ms after a delivery, so children finishing together cause one wake. Results arriving while the parent runs share one follow-up turn. A stopped parent is not sent "interrupted" results for children it stopped. At launch, both outbox rows and already-queued deliveries or merges wake idle parents in the same way. A child interrupted by app shutdown therefore wakes an idle parent on the next launch.
+
+Waiting. `wait_thread` defaults to 10 minutes and accepts up to 60. Following T3's upgrade-to-always-wake, the child is marked for delivery in three cases: the wait times out, the caller disconnects (MCP request closed or the Phaseo tool signal aborted), or the parent's turn ends while a foreground child is still active. The child's next result then arrives as a message. Such a wake covers one result; later runs follow the child's own `background` setting. Codex gets `tool_timeout_sec = 3660` for the orchestration server, and the Pi bridge allows 61 minutes per call.
+
+Limits. There is no depth limit and no per-parent limit. One workspace-wide limit caps active orchestration children: running or waiting, or idle with queued work. It is set by `WorkspacePreferences.maxActiveAgents` (default 32, whole numbers 1–256, "Agents running at once" in Settings → General). Preferences saved before the limit existed read as 32. `delegate_task`, `fork_thread` and `handoff_thread` check the limit inside their creating transaction, and `send_thread` checks it before starting a stopped child. The error names the setting.
+
+Privilege ceiling. A child, fork or handoff never gets a broader mode (chat < plan < code) or `permissionMode` (supervised < full-access) than its parent. `delegate_task` accepts optional narrower `mode` and `permissionMode` and rejects broader ones. Forks and handoffs always take the parent's mode and permissions, whatever the source had. Children of a Chat parent run in Chat.
+
+Accounts. When no `accountId` is given, `delegate_task`, `handoff_thread` and `list_models` use the parent's account on the same harness, then the single usable account (configured, not archived, OAuth not expired). For Phaseo and Cursor, which require an account, zero or several usable accounts give an error that names the choices.
+
+Tools in every mode. The orchestration MCP server is created for every mode of every harness except Phaseo, which calls the tools in-process, and OpenCode, which is excluded for the reason above. In Chat the server is the only tool surface:
+- Claude: `tools: []`, `strictMcpConfig` and a `canUseTool` that allows only `mcp__<orchestration>__*`. Those calls are approved by the server, so Code no longer double-prompts for them.
+- Codex: a read-only sandbox, other servers disabled, and Codex's own orchestration-call elicitations are routed to the user.
+- Cursor: `tools: ["mcp"]` with only the orchestration server. Plan mode adds `mcp` to its read-only allowlist.
+- ACP and Grok: only the orchestration server, with file and terminal capabilities still off.
+- Pi: `--tools mcp__phaseo__*` in Chat, and the Plan allowlist adds that pattern. Pi's `--tools` filters extension tools and `--no-tools` disables them.
+
+Drain now reloads the task after the asynchronous server setup, so prompts queued meanwhile are not overwritten.
+
+Instructions. `orchestrationInstructions` (`shared/orchestration.ts`) covers when to delegate, choosing with `list_agents`, stable request ids, background versus wait, results as messages, and limits. It is added to:
+- Phaseo: Chat and Code instructions.
+- Claude: `systemPrompt`. The SDK default is otherwise empty.
+- Codex: `developer_instructions`.
+- Pi: the `before_agent_start` prompt.
+- ACP and Cursor: a leading prompt block on new sessions only. ACP has no system prompt, and Cursor's `systemPrompt` would replace its harness prompt.
+
+Capabilities. `list_agents` (T3's `orchestrator_capabilities`) returns `{ harnesses: [{ harness, accountRequired, accounts: [{ id?, name, total, models: [{ id, name, legacy?, default?, options? }], error? }] }], unavailable: [{ harness, reason }], limits: { activeAgents, maxActiveAgents }, truncated? }`. It uses the composer's `discoverDesktopModels` and installation check (cached 5 minutes) and the 10-minute model cache. Native discovery runs two at a time. Non-legacy models come first. Output is capped at 60,000 characters by trimming option lists, then options, then models per account. Optional `harness` and `query` narrow it. `delegate_task` accepts `modelOptions` and validates them against the chosen model's descriptors.
+
+Approvals carry per-tool labels (`threadToolLabels`): Delegate task, Hand off chat, Fork chat, Send agent prompt, Steer agent, Rename agent chat, Edit agent queue, Merge agent result.
+
+Validation: deterministic fixtures in `orchestrationParity.test.ts`, the store, thread-tool and adapter suites. Unverified against live providers: Claude `tools: []` keeping MCP tools, Codex `developer_instructions` and elicitation for orchestration calls, Cursor `tools: ["mcp"]`, Pi's `mcp__phaseo__*` pattern on older Pi releases, and client-side MCP call timeouts other than Codex and Pi.
 
 Validation uses temporary profiles, mock model clients and an authenticated local MCP server. No paid inference was performed. The Electron UI audit checks keyboard reference selection, drag references, delivery, child navigation and collapsed results. Real subscription/provider end-to-end orchestration remains unverified.
 

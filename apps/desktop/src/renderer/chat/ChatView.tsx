@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ClipboardEvent } from "react";
-import { Archive, Download, Ellipsis, FolderOpen, GitBranch, Layers, Paperclip, Pin, PinOff, RotateCcw, X } from "lucide-react";
+import { Archive, CornerLeftUp, Download, Ellipsis, FolderOpen, GitBranch, Layers, Paperclip, Pin, PinOff, RotateCcw, X } from "lucide-react";
 import type { Attachment, Task } from "../../shared/workspace";
 import { errorText, useWorkspace } from "../app/workspace";
 import { useSelectedTask } from "../lib/useSelectedTask";
@@ -16,6 +16,7 @@ import { ModelPicker } from "./ModelPicker";
 import { ModelSettings } from "./ModelSettings";
 import { PermissionMenu, PlanToggle } from "./NewChat";
 import { Requests } from "./Requests";
+import { AgentThreads } from "./AgentThreads";
 import { optionHarnesses, selectionSettings } from "./startChat";
 
 function ChatHeader({ task }: { task: Task }) {
@@ -25,7 +26,9 @@ function ChatHeader({ task }: { task: Task }) {
 	const [renaming, setRenaming] = useState(false);
 	const fork = async () => { const known = new Set(overview.tasks.map(value => value.id)); const state = await command({ type: "fork", id: task.id }); const id = state?.tasks.find(value => !known.has(value.id))?.id; if (id) select(id); };
 	const canCompact = ["opencode", "codex", "claude", "pi"].includes(task.harness) && !!task.nativeSessionId && !task.archived && !["running", "waiting"].includes(task.status);
+	const parent = task.delegation?.parentTaskId ? overview.tasks.find(value => value.id === task.delegation!.parentTaskId) : undefined;
 	return <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-4">
+		{parent && <><button type="button" title="Open the chat that started this agent" onClick={() => select(parent.id)} className="flex min-w-0 max-w-56 shrink items-center gap-1 rounded-md px-1.5 py-0.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"><CornerLeftUp className="size-3.5 shrink-0" /><span className="truncate">{parent.title}</span></button><span className="text-muted-foreground/60">/</span></>}
 		{renaming
 			? <input autoFocus defaultValue={task.title} maxLength={200} aria-label="Chat title" className="h-7 min-w-0 flex-1 rounded-md border border-ring bg-background px-2 text-sm font-semibold outline-none"
 				onBlur={event => { const title = event.target.value.trim(); setRenaming(false); if (title && title !== task.title) void command({ type: "update-task", id: task.id, title }); }}
@@ -153,6 +156,7 @@ export function ChatView({ id }: { id: string }) {
 				<span className="min-w-0">{task.error}</span>
 				<Button size="sm" variant="ghost" className="text-foreground" onClick={() => void command({ type: "resume", id: task.id })}><RotateCcw />Resume</Button>
 			</div>}
+			<AgentThreads taskId={task.id} />
 			<Requests task={task} />
 			{removed && <p className="text-xs text-muted-foreground">This checkout has been removed. Switch model to continue in another project.</p>}
 		</Conversation>

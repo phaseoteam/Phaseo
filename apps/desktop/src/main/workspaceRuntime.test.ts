@@ -241,7 +241,8 @@ describe("workspace orchestration", () => {
 			const id = state.tasks[0].id;
 			await runtime.command({ type: "send", id, text: "First" });
 			await runtime.command({ type: "send", id, text: "Second" });
-			expect(prompts).toEqual(["First"]); expect(runtime.store.getTask(id).queue).toHaveLength(1);
+			// Chat now starts the orchestration server first; a prompt queued meanwhile must survive the setup.
+			await vi.waitFor(() => expect(prompts).toEqual(["First"])); expect(runtime.store.getTask(id).queue).toHaveLength(1);
 			finish?.(); await vi.waitFor(() => expect(prompts).toEqual(["First", "Second"]));
 			expect(runtime.store.getTask(id).nativeSessionId).toBe("native");
 			await vi.waitFor(() => expect(runtime.store.getTask(id).messages.filter(message => message.role === "assistant")).toHaveLength(2));

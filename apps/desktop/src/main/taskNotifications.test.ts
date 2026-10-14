@@ -6,7 +6,7 @@ import { defaultPreferences, validatePreferences } from "../shared/preferences";
 
 function fixture() {
 	const close = vi.fn(); const ports = { focused: vi.fn(() => false), supported: vi.fn(() => true), show: vi.fn<(title: string, body: string, click: () => void) => () => void>(() => close), open: vi.fn() };
-	const service = new TaskNotifications(ports, { notifications: "all", notificationTitles: false });
+	const service = new TaskNotifications(ports, { ...defaultPreferences, notifications: "all" });
 	const workspace = emptyWorkspace(); workspace.tasks = [{ id: "task", title: "Private title", status: "running", messages: [], archived: false, harness: "codex", model: "default", mode: "chat", pinned: false, queue: [], createdAt: "", updatedAt: "" }];
 	service.update(workspaceOverview(workspace)); return { service, ports, workspace, close };
 }
@@ -31,5 +31,10 @@ describe("desktop task notifications", () => {
 	it("handles unsupported systems and operating-system failures without affecting tasks", () => {
 		const { service, ports, workspace } = fixture(); ports.supported.mockReturnValue(false); workspace.tasks[0].status = "failed"; service.update(workspaceOverview(workspace)); expect(ports.show).not.toHaveBeenCalled(); ports.supported.mockReturnValue(true); ports.show.mockImplementation(() => { throw new Error("OS unavailable"); }); workspace.tasks[0].status = "interrupted"; expect(() => service.update(workspaceOverview(workspace))).not.toThrow(); expect(workspace.tasks[0].status).toBe("interrupted");
 	});
-	it("rejects unsupported preferences and defaults to private, disabled alerts", () => { expect(defaultPreferences).toEqual({ notifications: "off", notificationTitles: false }); expect(() => validatePreferences({ notifications: "all", notificationTitles: "true" })).toThrow(); });
+	it("rejects unsupported preferences and defaults to private, disabled alerts", () => { expect(defaultPreferences).toEqual({ notifications: "off", notificationTitles: false, maxActiveAgents: 32 }); expect(() => validatePreferences({ notifications: "all", notificationTitles: "true" })).toThrow(); });
+	it("defaults a missing agent limit and accepts only whole numbers from 1 to 256", () => {
+		expect(validatePreferences({ notifications: "off", notificationTitles: false })).toEqual(defaultPreferences);
+		expect(validatePreferences({ ...defaultPreferences, maxActiveAgents: 1 }).maxActiveAgents).toBe(1); expect(validatePreferences({ ...defaultPreferences, maxActiveAgents: 256 }).maxActiveAgents).toBe(256);
+		for (const maxActiveAgents of [0, 257, 2.5, "8", null]) expect(() => validatePreferences({ ...defaultPreferences, maxActiveAgents })).toThrow("Agents running at once");
+	});
 });

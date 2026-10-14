@@ -9,7 +9,7 @@ export function CommandPalette() {
 	const { commandsOpen, setCommandsOpen, overview, compareGroups, openCompare, taskById, select, setMode, openSettings, setRightPanel, setSidebarOpen, resolvedTheme, setTheme, api, setOverview, setError, setNewChatProjectId } = useWorkspace();
 	const run = (action: () => void) => { setCommandsOpen(false); action(); };
 	const grouped = new Set(compareGroups.flatMap(group => group.taskIds));
-	const tasks = overview.tasks.filter(task => !task.parentId && !grouped.has(task.id)).slice(0, 200);
+	const tasks = overview.tasks.filter(task => !task.delegation?.parentTaskId && !grouped.has(task.id)).slice(0, 200);
 	const projectName = (id?: string) => overview.projects.find(project => project.id === id)?.name;
 	return <CommandDialog open={commandsOpen} onOpenChange={setCommandsOpen} title="Search" description="Search chats and run commands" className="max-w-xl rounded-2xl! sm:max-w-xl">
 		<CommandInput autoFocus placeholder="Search chats and commands…" wrapperClassName="p-2" />

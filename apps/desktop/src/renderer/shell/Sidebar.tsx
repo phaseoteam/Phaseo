@@ -90,7 +90,7 @@ function CompareRow({ group }: { group: CompareGroup }) {
 function ChatList() {
 	const { overview, compareGroups } = useWorkspace();
 	const grouped = useMemo(() => new Set(compareGroups.flatMap(group => group.taskIds)), [compareGroups]);
-	const chats = overview.tasks.filter(task => !task.projectId && !task.parentId && !task.archived && !grouped.has(task.id));
+	const chats = overview.tasks.filter(task => !task.projectId && !task.delegation?.parentTaskId && !task.archived && !grouped.has(task.id));
 	const pinned = chats.filter(task => task.pinned);
 	type Item = { kind: "task"; task: TaskOverview; at: string } | { kind: "compare"; group: CompareGroup; at: string };
 	const items: Item[] = [
@@ -121,7 +121,7 @@ function ProjectList() {
 			<button type="button" onClick={addProject} className="mt-3 inline-flex h-7 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/85"><FolderOpen className="size-3.5" />Open folder</button>
 		</div>}
 		{projects.map(project => {
-			const tasks = overview.tasks.filter(task => task.projectId === project.id && !task.parentId && !task.archived).sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updatedAt.localeCompare(a.updatedAt));
+			const tasks = overview.tasks.filter(task => task.projectId === project.id && !task.delegation?.parentTaskId && !task.archived).sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updatedAt.localeCompare(a.updatedAt));
 			const open = !closed[project.id];
 			return <div key={project.id} className="mb-1">
 				<div className="group/project mx-2 flex h-8 items-center gap-1.5 rounded-md px-1.5 text-[13px] font-semibold hover:bg-sidebar-accent/60">

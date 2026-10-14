@@ -17,7 +17,7 @@ describe("durable Phaseo Chat skills", () => {
    const fetcher = vi.fn().mockImplementationOnce(async (_url, options) => { const body = JSON.parse(options.body); expect(body.tools.some((tool: {function:{name:string}}) => tool.function.name === "delegate_task")).toBe(true); return call("delegate", "delegate_task", { requestId: "stable", title: "Inspect", prompt: "Inspect" }); }).mockResolvedValueOnce(call("wait", "wait_thread", {id:"child",timeoutMs:0})).mockImplementationOnce(async (_url, options) => { expect(options.body).toContain("Child findings"); return new Response('data: {"choices":[{"delta":{"content":"Reviewed findings"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'); });
    const onDelta = vi.fn();
    await new PhaseoAdapter(() => "fixture", fetcher, undefined, store).run(task, root, "Delegate", { onSession: () => {}, onDelta, onApproval: async () => "accept", threads: { list: () => [], read: vi.fn(), delegate, wait, interrupt: vi.fn() } }, account);
-   expect(delegate).toHaveBeenCalledOnce(); expect(wait).toHaveBeenCalledWith("child", 0); expect(onDelta).toHaveBeenCalledWith(expect.any(String), "Reviewed findings");
+   expect(delegate).toHaveBeenCalledOnce(); expect(wait).toHaveBeenCalledWith("child", 0, expect.any(AbortSignal)); expect(onDelta).toHaveBeenCalledWith(expect.any(String), "Reviewed findings");
   } finally { store.close(); rmSync(root, {recursive:true,force:true}); }
  });
  it.each([[{ effort: "high", speed: "priority" }, { reasoning: { effort: "high" }, service_tier: "priority" }], [{ effort: "low", speed: "standard" }, { reasoning: { effort: "low" } }], [undefined, {}]])("sends model settings %j as gateway fields", async (modelOptions, expected) => {

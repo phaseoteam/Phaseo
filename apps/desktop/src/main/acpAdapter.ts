@@ -19,6 +19,7 @@ import { AgentInputRejectedError } from "./agentAdapter";
 import { GrokCompletion, grokCompletionMethods } from "./grokCompletion";
 import { grokPlanMethods, grokPlanRequest, grokPlanReview, grokPlanReviewResponse, grokQuestionMethods, grokQuestionRequest, grokQuestionResponse } from "./grokInteraction";
 import { grokModels, grokModelStream } from "./grokModels";
+import { orchestrationInstructions } from "../shared/orchestration";
 
 export class AcpAdapter implements AgentAdapter {
 	private child?: ChildProcessWithoutNullStreams;
@@ -110,7 +111,8 @@ export class AcpAdapter implements AgentAdapter {
 			const initialized = await connection.agent.request("initialize", { protocolVersion: PROTOCOL_VERSION, clientInfo: { name: "phaseo-desktop", version: "0.1.0" }, ...(this.grok ? { _meta: { clientType: "extension" } } : {}), clientCapabilities: { fs: { readTextFile: task.mode !== "chat", writeTextFile: task.mode === "code" }, terminal: task.mode === "code", auth: { terminal: Boolean(callbacks.onTerminalAuth) } } });
 			clearTimeout(startup);
 			if (initialized.protocolVersion !== PROTOCOL_VERSION) throw new Error("This agent uses an unsupported ACP protocol version.");
-			const servers = task.mode === "chat" ? [] : this.mcp;
+			// Chat admits only the orchestration server; file and terminal capabilities stay off.
+			const servers = task.mode === "chat" ? this.mcp.filter(server => server.orchestration) : this.mcp;
 			if (servers.some(server => server.transport === "http") && !initialized.agentCapabilities?.mcpCapabilities?.http) throw new Error("This ACP agent does not support HTTP MCP connections.");
 			const mcpServers = servers.map(server => server.transport === "stdio" ? { name: nativeMcpName(server), command: server.executable, args: server.arguments, env: [{ name: "ELECTRON_RUN_AS_NODE", value: "1" }] } : { type: "http" as const, name: nativeMcpName(server), url: server.url, headers: Object.entries(server.headers ?? {}).map(([name, value]) => ({ name, value })) });
 			if (attachments.some(attachment => attachment.kind === "image") && !initialized.agentCapabilities?.promptCapabilities?.image) throw new Error("This ACP agent does not support image attachments.");
@@ -185,7 +187,7 @@ export class AcpAdapter implements AgentAdapter {
 			if (task.reasoningEffort && (!grok || hasModelConfig())) throw new AgentInputRejectedError("This ACP agent does not expose native reasoning selection yet.");
 			clearTimeout(startup); receiving = true;
 			const promptId = randomUUID();
-			const prompt: PromptRequest = { sessionId: session.sessionId, _meta: { promptId, requestId: promptId }, prompt: [{ type: "text", text: attachmentPrompt(text, attachments) }, ...attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "image" as const, data: attachment.dataUrl!.split(",")[1], mimeType: attachment.mimeType }))] };
+			const prompt: PromptRequest = { sessionId: session.sessionId, _meta: { promptId, requestId: promptId }, prompt: [...!task.nativeSessionId && servers.some(server => server.orchestration) ? [{ type: "text" as const, text: orchestrationInstructions }] : [], { type: "text", text: attachmentPrompt(text, attachments) }, ...attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "image" as const, data: attachment.dataUrl!.split(",")[1], mimeType: attachment.mimeType }))] };
 			promptSubmitted = true;
 			const result = await completion.run(session.sessionId, promptId, () => connection.agent.request("session/prompt", prompt), this.controller.signal);
 			if (result.stopReason !== "end_turn") throw new Error(`ACP turn stopped: ${result.stopReason}.`);

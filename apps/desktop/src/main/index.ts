@@ -90,7 +90,7 @@ ipcMain.handle("workspace:mission", (event, value: unknown) => { if (!senderWind
 ipcMain.handle("workspace:global-instructions", event => { if (!senderWindow(event)) throw new Error("Untrusted instruction request."); return globalInstructions.read(); });
 ipcMain.handle("workspace:save-global-instructions", (event, edit: unknown) => { if (!senderWindow(event) || shutdownStarted) throw new Error("Instruction editing is unavailable."); return globalInstructions.save(edit); });
 ipcMain.handle("workspace:preferences", event => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); return { preferences: workspaceRuntime.store.getPreferences(), notificationsSupported: Notification.isSupported() }; });
-ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences(value)); taskNotifications.configure(preferences); return preferences; });
+ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); if (!value || typeof value !== "object") throw new Error("Invalid workspace preferences."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences({ ...workspaceRuntime.store.getPreferences(), ...value })); taskNotifications.configure(preferences); return preferences; });
 ipcMain.handle("workspace:mcp", (event, value: unknown) => {
 	if (!senderWindow(event)) throw new Error("Invalid MCP request.");
 	return workspaceRuntime.mcp(validateMcpCommand(value));
@@ -434,8 +434,7 @@ ipcMain.handle("workspace:attachment", async (event, taskId: unknown, id: unknow
 	const content = await workspaceRuntime.attachments.read(id);
 	return { attachment, text: content.text, dataUrl: content.dataUrl };
 });
-ipcMain.handle("workspace:installations", async event => {
-	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
+function harnessInstallations() {
 	return Promise.all((["codex", "claude", "opencode", "pi", "cursor", "grok"] as const).map(async harness => {
 		try {
 			if (harness === "cursor") return { harness, installed: true, version: "SDK 1.0.31" };
@@ -447,6 +446,10 @@ ipcMain.handle("workspace:installations", async event => {
 			return { harness, installed: true, version, maintenance: { method: maintenance.method, canUpdate: Boolean(maintenance.action) } };
 		} catch (error) { return { harness, installed: false, error: error instanceof Error ? error.message : "Installation is unavailable." }; }
 	}));
+}
+ipcMain.handle("workspace:installations", async event => {
+	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
+	return harnessInstallations();
 });
 
 ipcMain.handle("workspace:update-harness", async (event, harness: unknown) => {
@@ -645,6 +648,7 @@ app.whenReady().then(() => {
 	modelCatalogCache = new ModelCatalogCache(path.join(app.getPath("userData"), "cache"), ({ accountId }) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness: "phaseo", accountId }); });
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
 	workspaceRuntime.discoverThreadModels = discoverDesktopModels;
+	workspaceRuntime.discoverInstallations = harnessInstallations;
 	globalInstructions = new GlobalInstructions(path.join(workspaceDirectory, "instructions"));
 	browserHost.downloads.configure(workspaceRuntime.store.browserDownloads);
 	taskNotifications = new TaskNotifications({

@@ -30,6 +30,18 @@ describe("ACP protocol integration", () => {
 		} finally { connection.close(); }
 	});
 
+	it("admits only the orchestration server in Chat and leads a new session with its guidance", async () => {
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
+		const sessions = vi.fn(), prompts = vi.fn();
+		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => ({ protocolVersion: params.protocolVersion, agentCapabilities: { mcpCapabilities: { http: true } } })).onRequest("session/new", ({ params }) => { sessions(params.mcpServers); return { sessionId: "native" }; }).onRequest("session/prompt", ({ params }) => { prompts(params.prompt); return { stopReason: "end_turn" }; }).connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		const orchestration: McpConnection = { id: "00000000-0000-4000-8000-000000000002", name: "Phaseo orchestration", enabled: true, orchestration: true, transport: "http", url: "http://127.0.0.1:1/mcp", headers: { Authorization: "Bearer owned" } };
+		const user: McpConnection = { id: "00000000-0000-4000-8000-000000000003", name: "User", enabled: true, transport: "http", url: "https://example.invalid/mcp" };
+		try {
+			await new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }, [user, orchestration]).run({ ...task, mode: "chat" }, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+			expect(sessions).toHaveBeenCalledWith([expect.objectContaining({ name: nativeMcpName(orchestration) })]);
+			expect(prompts.mock.calls[0][0][0].text).toContain("# Phaseo orchestration"); expect(prompts.mock.calls[0][0][1].text).toBe("Hello");
+		} finally { connection.close(); }
+	});
 	it("passes the owned Grok profile and interactive client metadata through ACP", async () => {
 		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
 		const initialize = vi.fn();

@@ -19,7 +19,7 @@ describe("Phaseo coding run loop", () => {
    const generate = vi.fn().mockImplementationOnce(async request => { expect(request.tools.some((tool: {id:string}) => tool.id === "delegate_task")).toBe(true); return {message:{role:"assistant",content:"",toolCalls:[{id:"delegate",name:"delegate_task",input:{requestId:"stable",title:"Review",prompt:"Inspect"}}]}}; }).mockResolvedValueOnce({message:{role:"assistant",content:"",toolCalls:[{id:"wait",name:"wait_thread",input:{id:"child",timeoutMs:0}}]}}).mockImplementationOnce(async request => { expect(JSON.stringify(request.messages)).toContain("Child findings"); return { message: { role: "assistant", content: "Reviewed child findings" } }; });
    const onDelta = vi.fn();
    await new PhaseoCodingAdapter(() => "fixture", store, () => ({ generate })).run(task, root, "Delegate", { onSession: () => {}, onDelta, onApproval: async () => "accept", threads: { list: () => [], read: vi.fn(), delegate, wait, interrupt: vi.fn() } }, account);
-   expect(delegate).toHaveBeenCalledWith(expect.objectContaining({ requestId: "stable", prompt: "Inspect" })); expect(wait).toHaveBeenCalledWith("child", 0); expect(onDelta).toHaveBeenCalledWith(expect.any(String), "Reviewed child findings");
+   expect(delegate).toHaveBeenCalledWith(expect.objectContaining({ requestId: "stable", prompt: "Inspect" })); expect(wait).toHaveBeenCalledWith("child", 0, expect.any(AbortSignal)); expect(onDelta).toHaveBeenCalledWith(expect.any(String), "Reviewed child findings");
   } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
  });
  it("builds the gateway client with the task's effort and speed and sends them on the Responses request", async () => {

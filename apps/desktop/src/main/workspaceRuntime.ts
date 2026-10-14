@@ -1,4 +1,4 @@
-import type { ThreadTools } from "../shared/orchestration";
+import { threadToolLabel, type ThreadTools } from "../shared/orchestration";
 import { randomUUID } from "node:crypto";
 import { mkdirSync, realpathSync } from "node:fs";
 import path from "node:path";
@@ -67,8 +67,11 @@ export class WorkspaceRuntime {
 	private readonly worktreeSources = new Map<string, number>();
 	private readonly removingWorktrees = new Set<string>();
 	private readonly projectMutations = new Map<Promise<unknown>, string>();
+	private readonly wakeTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	private closing = false;
 	discoverThreadModels?: (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;
+	/** The composer's installation check, reused by list_agents. */
+	discoverInstallations?: () => Promise<{ harness: Harness; installed: boolean; error?: string }[]>;
 	onChange: (workspace: WorkspaceOverview) => void = () => {};
 	onTerminalAuth?: (request: TerminalAuthRequest, signal: AbortSignal) => TerminalAuthentication;
 	getTerminals?: () => { cwd: string; status: string }[];
@@ -78,16 +81,30 @@ export class WorkspaceRuntime {
 		this.store = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
 		this.attachments = new AttachmentService(path.join(directory, "attachments"), this.store);
 		this.openCode = new OpenCodeService(directory);
-		const modelDiscovery = () => this.discoverThreadModels;
-		this.threads = new WorkspaceThreads({ store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), start: id => this.start(id), command: command => this.command(command), assertHarnessAvailable: harness => this.assertHarnessAvailable(harness), assertProjectAvailable: id => this.assertProjectAvailable(id), get discoverModels() { return modelDiscovery(); }, modelDiscoveries: this.modelDiscoveries });
-		// Recover results atomically without automatically starting paid work on launch.
-		this.store.collectDelegationResults();
+		const modelDiscovery = () => this.discoverThreadModels, installationDiscovery = () => this.discoverInstallations;
+		this.threads = new WorkspaceThreads({ store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), start: id => this.start(id), command: command => this.command(command), assertHarnessAvailable: harness => this.assertHarnessAvailable(harness), assertProjectAvailable: id => this.assertProjectAvailable(id), get discoverModels() { return modelDiscovery(); }, get discoverInstallations() { return installationDiscovery(); }, modelDiscoveries: this.modelDiscoveries }, () => this.store.getPreferences().maxActiveAgents);
+		// Deliveries recorded while the app was closed wake idle parents as they would at runtime, after the host has wired its hooks.
+		// Children cut off by the app quitting are only reported: waking the parent for them would spend tokens nobody asked for.
+		const finished = (id: string) => { try { return this.store.getTask(id).status !== "interrupted"; } catch { return false; } };
+		const worthWaking = (id: string) => { try { return this.store.getTask(id).queue.some(item => (item.sourceTaskIds ?? (item.sourceTaskId ? [item.sourceTaskId] : [])).some(finished)); } catch { return false; } };
+		for (const id of new Set([...this.store.collectDelegationResults(), ...this.store.pendingDeliveryParents()])) if (worthWaking(id)) this.wake(id);
 	}
 	private readonly threads: WorkspaceThreads;
 	private broadcast() {
 		const parents = this.store.collectDelegationResults();
 		this.onChange(this.store.getOverview()); this.threads.changed();
-		if (!this.closing) for (const id of parents) { const task = this.store.getTask(id); if (!task.archived && ["idle", "completed"].includes(task.status)) this.start(id); }
+		if (!this.closing) for (const id of parents) this.wake(id);
+	}
+	/** Starts an idle parent shortly after a delivery, so children finishing together share one wake and one queued message. */
+	private wake(id: string) {
+		if (this.closing || this.wakeTimers.has(id)) return;
+		this.wakeTimers.set(id, setTimeout(() => {
+			this.wakeTimers.delete(id); if (this.closing) return;
+			const collected = this.store.collectDelegationResults();
+			if (collected.length) { this.onChange(this.store.getOverview()); this.threads.changed(); for (const other of collected) if (other !== id) this.wake(other); }
+			let task; try { task = this.store.getTask(id); } catch { return; }
+			if (!task.archived && ["idle", "completed"].includes(task.status)) this.start(id);
+		}, 250));
 	}
 	threadTools(parentId: string): ThreadTools { return this.threads.forThread(parentId); }
 	async createWorktree(projectId: string, branch: string, base: string) {
@@ -367,7 +384,7 @@ export class WorkspaceRuntime {
 	}
 	private async drain(id: string) {
 		if (this.running.has(id)) return;
-		const task = this.store.getTask(id);
+		let task = this.store.getTask(id);
 		if (!task.queue.length) return;
 		let adapter: AgentAdapter;
 		let orchestration: Awaited<ReturnType<OrchestratorMcp["session"]>> | undefined;
@@ -377,13 +394,14 @@ export class WorkspaceRuntime {
 			if (task.queue[0]?.nativeAction && !["opencode", "pi", "claude", "codex", "phaseo"].includes(task.harness)) throw new Error("This native action requires a supported native harness.");
 			if (task.accountId && this.signingInAccounts.has(task.accountId)) throw new Error("Finish this account's sign-in before retrying the instruction.");
 			if (task.accountId && this.credentialChanges.has(task.accountId)) throw new Error("Wait for this account's credential change to finish.");
-			if (task.mode !== "chat" && !["phaseo", "opencode"].includes(task.harness)) orchestration = await this.orchestratorMcp.session(this.threadTools(id), (name, args) => new Promise(resolve => {
+			// Every mode gets the orchestration server; adapters admit only it in Chat. OpenCode's MCP config is per directory, so it is excluded.
+			if (!["phaseo", "opencode"].includes(task.harness)) orchestration = await this.orchestratorMcp.session(this.threadTools(id), (name, args) => new Promise(resolve => {
 				const current = this.store.getTask(id);
 				if (this.closing || current.status === "interrupted") { resolve(false); return; }
 				if (current.permissionMode === "full-access") { resolve(true); return; }
 				const approvalId = randomUUID();
 				this.approvals.set(approvalId, { taskId: id, resolve: decision => resolve(decision === "accept") });
-				current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method: name === "delegate_task" ? "Delegate task" : name === "fork_thread" ? "Fork chat" : name === "send_thread" ? "Send agent prompt" : "Merge agent result", description: `Allow this thread action with this chat's project and permissions?\n\n${JSON.stringify(args, null, 2).slice(0, 8000)}` });
+				current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method: threadToolLabel(name), description: `Allow this thread action with this chat's project and permissions?\n\n${JSON.stringify(args, null, 2).slice(0, 8000)}` });
 				this.store.saveTask(current); this.broadcast();
 			}));
 			if (this.closing || this.store.getTask(id).status === "interrupted") { orchestration?.close(); return; }
@@ -392,9 +410,12 @@ export class WorkspaceRuntime {
 			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential, undefined, path.join(this.directory, "instructions"), this.store, this.store.getMcpConnections()) : new PhaseoCodingAdapter(credential, this.store, undefined, this.store.getMcpConnections(), path.join(this.directory, "instructions")) : task.harness === "cursor" ? new CursorAdapter(this.directory, credential, connections) : this.adapterFactory(task.harness, this.store.getAgents().find(agent => agent.id === task.agentId), this.openCode, connections, task.projectId);
 		}
 		catch (error) {
-			orchestration?.close(); this.orchestrationSessions.delete(id); task.status = "failed"; task.error = error instanceof Error ? error.message : "Harness unavailable.";
-			this.store.saveTask(task); this.broadcast(); return;
+			orchestration?.close(); this.orchestrationSessions.delete(id); const failed = this.store.getTask(id); failed.status = "failed"; failed.error = error instanceof Error ? error.message : "Harness unavailable.";
+			this.store.saveTask(failed); this.broadcast(); return;
 		}
+		// Setup awaited the orchestration server; reload so prompts queued or edited meanwhile are not overwritten.
+		task = this.store.getTask(id);
+		if (!task.queue.length) { orchestration?.close(); this.orchestrationSessions.delete(id); return; }
 		this.running.set(id, adapter);
 		const message = task.queue.shift()!;
 		let timelineOrder = [...task.messages, ...(task.activities ?? [])].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), task.messages.length + (task.activities?.length ?? 0)) + 1;
@@ -501,6 +522,7 @@ export class WorkspaceRuntime {
 			const finished = this.store.getTask(id); const input = finished.messages.find(item => item.id === message.id); if (input) { input.completedAt = new Date().toISOString(); this.store.saveTask(finished); }
 			if (flushTimer) clearTimeout(flushTimer);
 			orchestration?.close(); this.orchestrationSessions.delete(id); this.running.delete(id);
+			if (!this.closing && finished.status !== "interrupted") this.threads.releaseForeground(id);
 			for (const [approvalId, pending] of this.approvals) if (pending.taskId === id) { pending.resolve("decline"); this.approvals.delete(approvalId); }
 			for (const [requestId, pending] of this.questions) if (pending.taskId === id) { pending.resolve({}); this.questions.delete(requestId); }
 			for (const [requestId, pending] of this.forms) if (pending.taskId === id) { pending.resolve(null); this.forms.delete(requestId); }
@@ -508,7 +530,7 @@ export class WorkspaceRuntime {
 		}
 	}
 	async close() {
-		this.closing = true; for (const close of this.orchestrationSessions.values()) close(); this.broadcast();
+		this.closing = true; for (const timer of this.wakeTimers.values()) clearTimeout(timer); this.wakeTimers.clear(); for (const close of this.orchestrationSessions.values()) close(); this.broadcast();
 		for (const id of this.running.keys()) this.store.apply({ type: "cancel", id });
 		for (const pending of this.approvals.values()) pending.resolve("decline");
 		for (const pending of this.questions.values()) pending.resolve({});

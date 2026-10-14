@@ -11,6 +11,12 @@ describe("Codex managed MCP", () => {
 		expect(Object.values(codexMcpConfig([connection], { mode: "chat" }))[0].enabled).toBe(false);
 		expect(Object.values(codexMcpConfig([connection], { mode: "plan" }))[0].enabled).toBe(true);
 	});
+	it("enables only the orchestration server in chat, with a timeout long enough for wait_thread", () => {
+		const orchestration: McpConnection = { id: "12345678-1234-1234-1234-123456789abd", name: "Phaseo orchestration", enabled: true, orchestration: true, transport: "http", url: "http://127.0.0.1:1/mcp", headers: { Authorization: "Bearer owned" } };
+		const config = codexMcpConfig([connection, orchestration], { mode: "chat" });
+		expect(config[`mcp_servers.${nativeMcpName(connection)}`].enabled).toBe(false);
+		expect(config[`mcp_servers.${nativeMcpName(orchestration)}`]).toEqual({ url: orchestration.url, http_headers: { Authorization: "Bearer owned" }, tool_timeout_sec: 3660, enabled: true });
+	});
 	it("reads every status page and waits for the exact managed connection", async () => {
 		const request = vi.fn().mockResolvedValueOnce({ data: [{ name: "foreign", runtimeStatus: "connected" }], nextCursor: "next" }).mockResolvedValueOnce({ data: [{ name: nativeMcpName(connection), runtimeStatus: "connected" }], nextCursor: null });
 		await waitCodexMcp({ request }, "thread", [connection], new AbortController().signal);

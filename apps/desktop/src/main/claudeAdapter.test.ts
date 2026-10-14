@@ -6,6 +6,7 @@ vi.mock("./nativeProcess", () => ({ resolveNativeCommand: async () => ({ executa
 import { ClaudeAdapter } from "./claudeAdapter";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
+import { orchestrationInstructions } from "../shared/orchestration";
 
 const task: Task = { id: "task", title: "Task", harness: "claude", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("Claude SDK integration", () => {
@@ -60,6 +61,22 @@ describe("Claude SDK integration", () => {
 		const server: McpConnection = { id: "00000000-0000-4000-8000-000000000001", name: "Fixture", enabled: true, transport: "stdio", executable: process.execPath, arguments: ["fixture.mjs"] }; const onApproval = vi.fn(async () => "decline" as const);
 		sdk.query.mockImplementation(({ prompt, options }) => Object.assign((async function* () { if (typeof prompt !== "string") for await (const message of prompt) expect(message.message.content).toEqual([{type:"text",text:"Use tools"}]); expect(options.mcpServers).toEqual(mode === "chat" ? {} : { [nativeMcpName(server)]: { command: process.execPath, args: ["fixture.mjs"], env: { ELECTRON_RUN_AS_NODE: "1" } } }); const decision = await options.canUseTool(`mcp__${nativeMcpName(server)}__fixture`, {}); expect(decision.behavior).toBe("deny"); if (mode === "chat") { expect(options.strictMcpConfig).toBe(true); expect(onApproval).not.toHaveBeenCalled(); } else expect(onApproval).toHaveBeenCalledOnce(); yield {type:"result",subtype:"success",is_error:false,result:"Done"}; })(), { close: vi.fn(), mcpServerStatus: async () => [{ name: nativeMcpName(server), status: "connected" }] }));
 		await new ClaudeAdapter([server]).run({ ...task, mode }, ".", "Use tools", { onDelta: vi.fn(), onSession: vi.fn(), onApproval });
+	});
+	it.each(["chat", "code"] as const)("admits the orchestration server with shared guidance and its own approvals (%s)", async mode => {
+		const user: McpConnection = { id: "00000000-0000-4000-8000-000000000001", name: "Fixture", enabled: true, transport: "http", url: "https://example.invalid/mcp" };
+		const orchestration: McpConnection = { id: "00000000-0000-4000-8000-000000000002", name: "Phaseo orchestration", enabled: true, orchestration: true, transport: "http", url: "http://127.0.0.1:1/mcp", headers: { Authorization: "Bearer owned" } };
+		const onApproval = vi.fn(async () => "decline" as const);
+		sdk.query.mockImplementation(({ prompt, options }) => Object.assign((async function* () {
+			if (typeof prompt !== "string") for await (const message of prompt) void message;
+			expect(Object.keys(options.mcpServers)).toEqual(mode === "chat" ? [nativeMcpName(orchestration)] : [nativeMcpName(user), nativeMcpName(orchestration)]);
+			expect(options.systemPrompt).toBe(orchestrationInstructions);
+			if (mode === "chat") expect(options).toMatchObject({ tools: [], strictMcpConfig: true });
+			expect((await options.canUseTool(`mcp__${nativeMcpName(orchestration)}__delegate_task`, { prompt: "Inspect" })).behavior).toBe("allow");
+			expect((await options.canUseTool("Bash", { command: "ls" })).behavior).toBe("deny");
+			expect(onApproval).toHaveBeenCalledTimes(mode === "chat" ? 0 : 1);
+			yield { type: "result", subtype: "success", is_error: false, result: "Done" };
+		})(), { close: vi.fn(), mcpServerStatus: async () => [user, orchestration].map(server => ({ name: nativeMcpName(server), status: "connected" })) }));
+		await new ClaudeAdapter([user, orchestration]).run({ ...task, mode }, ".", "Delegate", { onDelta: vi.fn(), onSession: vi.fn(), onApproval });
 	});
 	it("does not submit a prompt when managed MCP setup fails", async () => {
 		const server: McpConnection = { id: "00000000-0000-4000-8000-000000000001", name: "Fixture", enabled: true, transport: "http", url: "https://example.invalid/mcp" }; let input: AsyncIterable<unknown> | undefined; const close=vi.fn();

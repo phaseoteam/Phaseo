@@ -1,4 +1,5 @@
-export type McpConnection = { id: string; name: string; projectId?: string; enabled: boolean; archived?: boolean } & ({ transport: "stdio"; executable: string; arguments: string[] } | { transport: "http"; url: string; headers?: Record<string, string> });
+/** `orchestration` marks the per-turn Phaseo orchestration server: never saved, and the only MCP server allowed in Chat mode. */
+export type McpConnection = { id: string; name: string; projectId?: string; enabled: boolean; archived?: boolean; orchestration?: boolean } & ({ transport: "stdio"; executable: string; arguments: string[] } | { transport: "http"; url: string; headers?: Record<string, string> });
 export type McpCommand = { type: "save"; connection: McpConnection };
 
 export function validateMcpCommand(value: unknown): McpCommand {

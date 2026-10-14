@@ -10,6 +10,7 @@ import { handoffPrompt } from "./handoffPrompt";
 import { nativeMcpName } from "../shared/mcp";
 import type { McpConnection } from "../shared/mcp";
 import { parsePlanSteps } from "../shared/planSteps";
+import { orchestrationInstructions } from "../shared/orchestration";
 
 export function assertCursorBackend() {
 	const backend = process.env.CURSOR_BACKEND_URL;
@@ -66,8 +67,10 @@ async function cursorCatalogModel(apiKey: string, model: string) {
 
 export function cursorOptions(task: Task, cwd: string, apiKey: string, store: JsonlLocalAgentStore, connections: McpConnection[], catalog?: ModelListItem): AgentOptions {
 	const mcpServers: Record<string, McpServerConfig> = {};
-	if (task.mode === "code") for (const connection of connections) if (connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === task.projectId)) mcpServers[nativeMcpName(connection)] = connection.transport === "stdio" ? { command: connection.executable, args: connection.arguments, cwd } : { url: connection.url, ...(connection.headers ? { headers: connection.headers } : {}) };
-	return { apiKey, model: cursorModelSelection(task.model, task.modelOptions, catalog), name: `Phaseo ${task.id}`, mode: task.mode === "plan" ? "plan" : "agent", ...(task.mode === "chat" ? { tools: [] } : task.mode === "plan" ? { tools: ["read", "grep", "glob", "ls", "readLints", "semSearch", "webSearch", "webFetch", "readTodos", "updateTodos"] } : {}), mcpServers, local: { cwd, store, autoReview: true, enableAgentRetries: false, settingSources: task.mode === "code" ? ["project", "user", "team", "mdm", "plugins"] : [] } };
+	// Chat and Plan admit only the orchestration server; "mcp" in their tool allowlists covers just that server.
+	for (const connection of connections) if (connection.enabled && !connection.archived && (connection.orchestration || (task.mode === "code" && (!connection.projectId || connection.projectId === task.projectId)))) mcpServers[nativeMcpName(connection)] = connection.transport === "stdio" ? { command: connection.executable, args: connection.arguments, cwd } : { url: connection.url, ...(connection.headers ? { headers: connection.headers } : {}) };
+	const orchestration = Object.keys(mcpServers).length && task.mode !== "code" ? ["mcp"] : [];
+	return { apiKey, model: cursorModelSelection(task.model, task.modelOptions, catalog), name: `Phaseo ${task.id}`, mode: task.mode === "plan" ? "plan" : "agent", ...(task.mode === "chat" ? { tools: orchestration } : task.mode === "plan" ? { tools: ["read", "grep", "glob", "ls", "readLints", "semSearch", "webSearch", "webFetch", "readTodos", "updateTodos", ...orchestration] } : {}), mcpServers, local: { cwd, store, autoReview: true, enableAgentRetries: false, settingSources: task.mode === "code" ? ["project", "user", "team", "mdm", "plugins"] : [] } };
 }
 export class CursorAdapter implements AgentAdapter {
 	private agent?: SDKAgent;
@@ -86,13 +89,15 @@ export class CursorAdapter implements AgentAdapter {
 			if (task.mode === "code" && await callbacks.onApproval("Cursor native tools", "Allow Cursor to read and change files, run commands, use configured MCP servers and access the network for this turn? Cursor's SDK has no per-tool prompts; native policies and Auto-review apply.") !== "accept") throw new Error("Cursor native execution was declined. Choose Chat or Plan, or retry with approval.");
 			if (this.stopped) throw new Error("Cursor task stopped.");
 			const prompt = attachmentPrompt(task.nativeForkFrom && !task.nativeSessionId ? handoffPrompt({ ...task, handoffFrom: "cursor", nativeForkFrom: undefined }, text) : text, attachments);
+			// Cursor's systemPrompt replaces its whole harness prompt, so a new session carries the guidance in its first message instead.
+			const guided = !task.nativeSessionId && this.connections.some(connection => connection.orchestration) ? `${orchestrationInstructions}\n\n---\n\n${prompt}` : prompt;
 			const catalog = task.modelOptions && Object.keys(task.modelOptions).length ? await cursorCatalogModel(apiKey, task.model) : undefined;
 			if (this.stopped) throw new Error("Cursor task stopped.");
 			const options = cursorOptions(task, cwd, apiKey, new JsonlLocalAgentStore(path.join(this.directory, "native", "cursor", account.id)), this.connections, catalog);
 			this.agent = task.nativeSessionId ? await Agent.resume(task.nativeSessionId, options) : await Agent.create(options);
 			callbacks.onSession(this.agent.agentId); if (this.stopped) throw new Error("Cursor task stopped.");
 			submitted = true;
-			this.activeRun = await this.agent.send({ text: prompt, images: attachments.filter(value => value.kind === "image").map(value => ({ data: value.dataUrl!.split(",", 2)[1], mimeType: value.mimeType })) }, { model: options.model, mode: options.mode, mcpServers: options.mcpServers, onDelta: ({ update }) => { if (update.type === "text-delta") { hadText = true; callbacks.onDelta("cursor-response", update.text); } } });
+			this.activeRun = await this.agent.send({ text: guided, images: attachments.filter(value => value.kind === "image").map(value => ({ data: value.dataUrl!.split(",", 2)[1], mimeType: value.mimeType })) }, { model: options.model, mode: options.mode, mcpServers: options.mcpServers, onDelta: ({ update }) => { if (update.type === "text-delta") { hadText = true; callbacks.onDelta("cursor-response", update.text); } } });
 			if (this.stopped) await this.activeRun.cancel();
 			for await (const event of this.activeRun.stream()) {
 				if (event.type === "thinking") callbacks.onActivity?.({ id: `${event.run_id}:thinking`, type: "reasoning", title: "Reasoning", text: event.text, append: true });

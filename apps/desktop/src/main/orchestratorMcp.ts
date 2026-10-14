@@ -31,15 +31,17 @@ export class OrchestratorMcp {
 				const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
 				const mcp = new Server({ name: "phaseo-orchestrator", version: "1.0.0" }, { capabilities: { tools: {} } });
 				const tools = threadTools(session.tools);
+				// A client that gives up on a long wait_thread closes the request; the wait then upgrades the child to deliver its result.
+				const disconnected = new AbortController(); response.on("close", () => disconnected.abort());
 				mcp.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: tools.map(tool => ({ name: tool.id, description: tool.description, inputSchema: tool.parameters as { type: "object" } })) }));
-				mcp.setRequestHandler(CallToolRequestSchema, async ({ params }) => {
+				mcp.setRequestHandler(CallToolRequestSchema, async ({ params }, extra) => {
 					try {
 						if (!this.activeSession(token)) throw new Error("This agent session has ended.");
 						const tool = tools.find(value => value.id === params.name);
 						if (!tool) throw new Error("Unknown thread tool.");
 						if ("requireApproval" in tool && tool.requireApproval && !await session.approve(tool.id, params.arguments ?? {})) throw new Error("Delegation was declined.");
 						if (!this.activeSession(token)) throw new Error("This agent session has ended.");
-						const result = await tool.execute(params.arguments ?? {});
+						const result = await tool.execute(params.arguments ?? {}, AbortSignal.any([disconnected.signal, extra.signal]));
 						return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
 					} catch (error) { return { isError: true, content: [{ type: "text" as const, text: error instanceof Error ? error.message : "Thread operation failed." }] }; }
 				});
@@ -55,7 +57,7 @@ export class OrchestratorMcp {
 	async session(tools: ThreadTools, approve: (name: string, args: unknown) => Promise<boolean>): Promise<{ connection: McpConnection; close: () => void }> {
 		const port = await this.listen();
 		const token = randomBytes(32).toString("hex"); this.sessions.set(token, { tools, approve, createdAt: this.now(), lastUsedAt: this.now() });
-		return { connection: { id: randomUUID(), name: "Phaseo orchestration", enabled: true, transport: "http", url: `http://127.0.0.1:${port}/mcp`, headers: { Authorization: `Bearer ${token}` } }, close: () => { this.sessions.delete(token); } };
+		return { connection: { id: randomUUID(), name: "Phaseo orchestration", enabled: true, orchestration: true, transport: "http", url: `http://127.0.0.1:${port}/mcp`, headers: { Authorization: `Bearer ${token}` } }, close: () => { this.sessions.delete(token); } };
 	}
 	async close() {
 		this.sessions.clear(); await Promise.allSettled([...this.transports].map(transport => transport.close()));
