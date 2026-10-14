@@ -19,6 +19,11 @@ describe("projectCreditRunway", () => {
 		expect(new Date((runway as { at: number }).at).toISOString().slice(0, 10)).toBe("2026-10-15");
 	});
 
+	test("dates the auto top-up at zero when the threshold is zero", () => {
+		const runway = projectCreditRunway({ ...base, balanceNanos: usd(90), dailyNanos: usd(30), autoTopUpEnabled: true, autoTopUpThresholdNanos: 0 });
+		expect(runway).toEqual({ kind: "auto_top_up", at: NOW + 3 * 86_400_000, dailyUsd: 30 });
+	});
+
 	test("ignores a threshold when auto top-up is off", () => {
 		expect(projectCreditRunway({ ...base, balanceNanos: usd(100), dailyNanos: usd(10), autoTopUpThresholdNanos: usd(50) })).toMatchObject({ kind: "runs_out" });
 	});

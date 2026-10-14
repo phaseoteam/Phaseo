@@ -30,8 +30,9 @@ export function projectCreditRunway({
 }): CreditRunway | null {
 	if (!(dailyNanos >= MIN_DAILY_NANOS) || !(balanceNanos > 0)) return null;
 	const dailyUsd = dailyNanos / NANOS_PER_USD;
-	const topUp = autoTopUpEnabled && autoTopUpThresholdNanos > 0;
-	const floor = topUp ? autoTopUpThresholdNanos : 0;
+	// The gateway tops up once a charge takes the balance below the threshold, so a zero threshold still tops up.
+	const topUp = autoTopUpEnabled;
+	const floor = topUp ? Math.max(0, autoTopUpThresholdNanos) : 0;
 	// At or under the threshold the next charge triggers the top-up; there is nothing to project.
 	if (balanceNanos <= floor) return null;
 

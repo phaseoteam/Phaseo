@@ -1319,8 +1319,8 @@ accountSettingsRouter.get("/credits", async (c) => {
 		context.client.from("users").select("obfuscate_info,declared_country_code").eq("user_id", context.user.id).maybeSingle(),
 		context.client.from("notification_destinations").select("id,name,type,status,target_preview,created_at").eq("workspace_id", workspaceId).eq("is_ephemeral", false).neq("status", "deleted").order("created_at", { ascending: false }),
 		context.client.from("notification_event_destinations").select("event_kind,destination_id").eq("workspace_id", workspaceId),
-		// Sums the applied wallet charges in the database: every wallet debit records one, so this is
-		// what actually drains credits (BYOK requests only count when they are charged).
+		// Sums every wallet charge in the database (request charges plus async and realtime ledger
+		// charges), so this is what actually drains credits. BYOK requests only count when charged.
 		context.client.rpc("get_workspace_recent_credit_spend", { p_workspace_id: workspaceId, p_since: creditSpendWindowStart(observedAt) }),
 	]);
 	let settingsResult = initialSettingsResult;
