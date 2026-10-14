@@ -70,7 +70,7 @@ export async function runPhaseoChat(task: Task, cwd: string, text: string, callb
     continue;
    }
    let review: { title: string; details: string };
-   try { if (entry.call.name === "load_skill" && toolkit) review = await toolkit.review(entry.call); else if (orchestrationTools.some(tool => tool.id === entry.call.name)) review = { title: threadToolLabel(entry.call.name), details: JSON.stringify(entry.call.input, null, 2) }; else if (mcp.labels[entry.call.name]) review = { title: mcp.labels[entry.call.name], details: JSON.stringify(entry.call.input, null, 2) }; else throw new Error("This tool is unavailable in Chat."); }
+   try { if (entry.call.name === "load_skill" && toolkit) review = await toolkit.review(entry.call); else if (orchestrationTools.some(tool => tool.id === entry.call.name)) review = { title: threadToolLabel(entry.call.name, entry.call.input), details: JSON.stringify(entry.call.input, null, 2) }; else if (mcp.labels[entry.call.name]) review = { title: mcp.labels[entry.call.name], details: JSON.stringify(entry.call.input, null, 2) }; else throw new Error("This tool is unavailable in Chat."); }
    catch (error) { signal.throwIfAborted(); callbacks.onActivity?.({ id: entry.call.id, type: "tool", title: "Skill unavailable", text: error instanceof Error ? error.message : "Could not review skill.", status: "failed" }); rejections.push(entry.call.id); continue; }
    (await callbacks.onApproval(review.title, (entry.executionStartedAt ? "This action started before the interruption and may already have completed. Check its effects before approving again.\n\n" : "") + review.details) === "accept" ? approvals : rejections).push(entry.call.id);
   }

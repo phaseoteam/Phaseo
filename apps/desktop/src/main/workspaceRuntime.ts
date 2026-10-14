@@ -31,6 +31,7 @@ import { createGitWorktree, removeGitWorktree } from "./gitWorktrees";
 import { grokModelCatalog } from "./grokModelCatalog";
 import { GrokAdapter } from "./grokAdapter";
 import { codexModels } from "./modelCatalog";
+import type { Mission, MissionCommand } from "../shared/missions";
 
 const hasRequests = (task: { approvals?: unknown[]; questions?: unknown[]; forms?: unknown[] }) => Boolean(task.approvals?.length || task.questions?.length || task.forms?.length);
 
@@ -72,6 +73,8 @@ export class WorkspaceRuntime {
 	discoverThreadModels?: (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;
 	/** The composer's installation check, reused by list_agents. */
 	discoverInstallations?: () => Promise<{ harness: Harness; installed: boolean; error?: string }[]>;
+	/** Set by MissionService so the scheduled-task tools reuse its validation, timing and change notifications. */
+	missionCommand?: (command: MissionCommand) => Mission[];
 	onChange: (workspace: WorkspaceOverview) => void = () => {};
 	onTerminalAuth?: (request: TerminalAuthRequest, signal: AbortSignal) => TerminalAuthentication;
 	getTerminals?: () => { cwd: string; status: string }[];
@@ -81,8 +84,8 @@ export class WorkspaceRuntime {
 		this.store = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
 		this.attachments = new AttachmentService(path.join(directory, "attachments"), this.store);
 		this.openCode = new OpenCodeService(directory);
-		const modelDiscovery = () => this.discoverThreadModels, installationDiscovery = () => this.discoverInstallations;
-		this.threads = new WorkspaceThreads({ store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), start: id => this.start(id), command: command => this.command(command), assertHarnessAvailable: harness => this.assertHarnessAvailable(harness), assertProjectAvailable: id => this.assertProjectAvailable(id), get discoverModels() { return modelDiscovery(); }, get discoverInstallations() { return installationDiscovery(); }, modelDiscoveries: this.modelDiscoveries }, () => this.store.getPreferences().maxActiveAgents);
+		const modelDiscovery = () => this.discoverThreadModels, installationDiscovery = () => this.discoverInstallations, missions = () => this.missionCommand;
+		this.threads = new WorkspaceThreads({ store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), start: id => this.start(id), command: command => this.command(command), createWorktree: (projectId, branch, base) => this.createWorktree(projectId, branch, base), assertHarnessAvailable: harness => this.assertHarnessAvailable(harness), assertProjectAvailable: id => this.assertProjectAvailable(id), get discoverModels() { return modelDiscovery(); }, get discoverInstallations() { return installationDiscovery(); }, get missions() { return missions(); }, modelDiscoveries: this.modelDiscoveries }, () => this.store.getPreferences().maxActiveAgents);
 		// Deliveries recorded while the app was closed wake idle parents as they would at runtime, after the host has wired its hooks.
 		// Children cut off by the app quitting are only reported: waking the parent for them would spend tokens nobody asked for.
 		const finished = (id: string) => { try { return this.store.getTask(id).status !== "interrupted"; } catch { return false; } };
@@ -404,7 +407,7 @@ export class WorkspaceRuntime {
 				if (current.permissionMode === "full-access") { resolve(true); return; }
 				const approvalId = randomUUID();
 				this.approvals.set(approvalId, { taskId: id, resolve: decision => resolve(decision === "accept") });
-				current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method: threadToolLabel(name), description: `Allow this thread action with this chat's project and permissions?\n\n${JSON.stringify(args, null, 2).slice(0, 8000)}` });
+				current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method: threadToolLabel(name, args), description: `Allow this thread action with this chat's project and permissions?\n\n${JSON.stringify(args, null, 2).slice(0, 8000)}` });
 				this.store.saveTask(current); this.broadcast();
 			}));
 			if (this.closing || this.store.getTask(id).status === "interrupted") { orchestration?.close(); return; }

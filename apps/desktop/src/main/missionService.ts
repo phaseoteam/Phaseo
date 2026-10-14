@@ -17,9 +17,12 @@ export class MissionService {
 			if (mission.enabled && mission.nextRunAt && Date.parse(mission.nextRunAt) <= now) { mission.nextRunAt = nextMissionRun(mission.schedule, now); runtime.store.missions.put(mission); }
 		}
 		this.observe(runtime.store.getOverview());
+		// The scheduled-task orchestration tools go through the same commands as the Missions page.
+		runtime.missionCommand = this.bound;
 	}
+	private readonly bound = (command: MissionCommand) => this.command(command);
 	start() { if (!this.closed && !this.timer) { this.timer = setInterval(() => this.tick(), 1000); this.timer.unref(); } }
-	close() { this.closed = true; if (this.timer) clearInterval(this.timer); this.timer = undefined; }
+	close() { this.closed = true; if (this.timer) clearInterval(this.timer); this.timer = undefined; if (this.runtime.missionCommand === this.bound) this.runtime.missionCommand = undefined; }
 	command(command: MissionCommand) {
 		if (this.closed) throw new Error("The workspace is shutting down."); const store = this.runtime.store.missions; const now = this.clock();
 		if (command.type === "save") { const template = this.runtime.store.getTask(command.templateTaskId); if (template.archived) throw new Error("Choose an active template task."); store.save(command, now); }

@@ -26,9 +26,11 @@ function ChatHeader({ task }: { task: Task }) {
 	const [renaming, setRenaming] = useState(false);
 	const fork = async () => { const known = new Set(overview.tasks.map(value => value.id)); const state = await command({ type: "fork", id: task.id }); const id = state?.tasks.find(value => !known.has(value.id))?.id; if (id) select(id); };
 	const canCompact = ["opencode", "codex", "claude", "pi"].includes(task.harness) && !!task.nativeSessionId && !task.archived && !["running", "waiting"].includes(task.status);
-	const parent = task.delegation?.parentTaskId ? overview.tasks.find(value => value.id === task.delegation!.parentTaskId) : undefined;
+	// Agents link to the chat that started them; launched chats to the chat that launched them.
+	const parentId = task.delegation?.parentTaskId ?? task.launch?.byTaskId;
+	const parent = parentId ? overview.tasks.find(value => value.id === parentId) : undefined;
 	return <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-4">
-		{parent && <><button type="button" title="Open the chat that started this agent" onClick={() => select(parent.id)} className="flex min-w-0 max-w-56 shrink items-center gap-1 rounded-md px-1.5 py-0.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"><CornerLeftUp className="size-3.5 shrink-0" /><span className="truncate">{parent.title}</span></button><span className="text-muted-foreground/60">/</span></>}
+		{parent && <><button type="button" title={task.delegation ? "Open the chat that started this agent" : "Open the chat that launched this one"} onClick={() => select(parent.id)} className="flex min-w-0 max-w-56 shrink items-center gap-1 rounded-md px-1.5 py-0.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"><CornerLeftUp className="size-3.5 shrink-0" /><span className="truncate">{parent.title}</span></button><span className="text-muted-foreground/60">/</span></>}
 		{renaming
 			? <input autoFocus defaultValue={task.title} maxLength={200} aria-label="Chat title" className="h-7 min-w-0 flex-1 rounded-md border border-ring bg-background px-2 text-sm font-semibold outline-none"
 				onBlur={event => { const title = event.target.value.trim(); setRenaming(false); if (title && title !== task.title) void command({ type: "update-task", id: task.id, title }); }}

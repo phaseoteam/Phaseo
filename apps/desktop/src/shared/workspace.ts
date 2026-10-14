@@ -1,4 +1,4 @@
-import type { Delegation } from "./orchestration";
+import type { Delegation, Launch } from "./orchestration";
 import type { PullRequestThreadsQuery, PullRequestThreadsPage } from "./pullRequestThreads";
 import { nativeActionText, validateNativeAction, type NativeAction, type NativeActionCatalog } from "./nativeActions";
 import type { PromptCommandCatalog, PromptCommandPreview, PromptCommandRequest } from "./promptCommands";
@@ -31,6 +31,8 @@ export type AgentActivity = { timelineOrder?: number; nativeAgent?: { id: string
 export type AgentQuestion = { id: string; header: string; question: string; isOther?: boolean; isSecret?: boolean; multiSelect?: boolean; options?: { label: string; description?: string; preview?: string }[] | null };
 export type Task = {
 	delegation?: Delegation;
+	/** Top-level chats started by an agent's launch_thread; not orchestration children. */
+	launch?: Launch;
 	conversationCounts?: { messages: number; activities: number };
 	revision?: number;
 	id: string; projectId?: string; title: string; harness: Harness; accountId?: string;

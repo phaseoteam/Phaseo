@@ -1,5 +1,6 @@
 import type { Account, Harness, ModelOption, Task, WorkspaceCommand } from "../shared/workspace";
-import { agentLimitMessage, type AgentCatalog, type AgentCatalogAccount, type AgentCatalogModel, type ThreadTools, waitDefaultMs, waitMaximumMs } from "../shared/orchestration";
+import { agentLimitMessage, type AgentCatalog, type AgentCatalogAccount, type AgentCatalogModel, type DelegateRequest, type LaunchRequest, type LaunchResult, type LaunchWorkspace, type ScheduledTask, type ThreadTools, waitDefaultMs, waitMaximumMs } from "../shared/orchestration";
+import { validateMissionCommand, type Mission, type MissionCommand } from "../shared/missions";
 import type { WorkspaceOverview } from "../shared/workspaceOverview";
 import type { WorkspaceStore } from "./workspaceStore";
 import { validateDelegate } from "./threadTools";
@@ -10,6 +11,9 @@ type Host = {
 	broadcast: () => void;
 	start: (id: string) => void;
 	command: (command: WorkspaceCommand) => Promise<WorkspaceOverview>;
+	createWorktree?: (projectId: string, branch: string, base: string) => Promise<{ projectId: string }>;
+	/** MissionService's command handler, once the scheduler is running. */
+	missions?: (command: MissionCommand) => Mission[];
 	assertHarnessAvailable: (harness: Harness) => void;
 	assertProjectAvailable: (id: string) => void;
 	discoverModels?: (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;
@@ -32,10 +36,15 @@ const delegationHarnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cur
 const accountRequired = (harness: Harness) => harness === "phaseo" || harness === "cursor";
 const harnessName: Partial<Record<Harness, string>> = { phaseo: "Phaseo", cursor: "Cursor" };
 const catalogBytes = 60000;
+type PreparedLaunch = { request: LaunchRequest; worktree?: { sourceId: string; branch: string; baseRef: string }; command: Extract<WorkspaceCommand, { type: "create-task" }> };
+const message = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback;
+const scheduledTask = ({ id, title, prompt, templateTaskId, schedule, enabled, nextRunAt, lastRunAt, lastTaskId, lastStatus, runCount, error }: Mission): ScheduledTask => ({ id, title, prompt: prompt.slice(0, 8000), templateTaskId, schedule, enabled, nextRunAt, lastRunAt, lastTaskId, lastStatus, runCount, error });
 
 export class WorkspaceThreads {
 	private readonly listeners = new Set<() => void>();
 	private readonly modelCache = new Map<string, { models?: ModelOption[]; checkedAt: number; pending?: Promise<ModelOption[]> }>();
+	/** In-flight launches by caller and requestId, so concurrent retries share one chat and one worktree. */
+	private readonly launching = new Map<string, Promise<LaunchResult>>();
 	private installations?: { checkedAt: number; value: Promise<{ harness: Harness; installed: boolean; error?: string }[]> };
 	constructor(private readonly host: Host, private readonly maxActiveAgents: () => number = () => 32) {}
 	changed() { for (const listener of [...this.listeners]) listener(); }
@@ -123,11 +132,119 @@ export class WorkspaceThreads {
 		for (const [perAccount, options] of [[40, true], [40, false], [20, false], [8, false]] as const) { const value = build(perAccount, options); if (JSON.stringify(value).length <= catalogBytes) return value; }
 		return build(3, false);
 	}
+	/** Shared by delegate_task and launch_thread: an explicit model, account auto-pick, a free agent slot, and the model and its settings checked against the catalog. */
+	private async agentSettings(parent: Task, request: Pick<DelegateRequest, "harness" | "model" | "accountId" | "modelOptions">, projectId = parent.projectId) {
+		const harness = request.harness ?? parent.harness, inherited = harness === parent.harness;
+		const model = request.model ?? (inherited ? parent.model : undefined);
+		if (!model || model === "default") throw new Error("Choose an explicit model for delegated work (see list_agents).");
+		this.host.assertHarnessAvailable(harness);
+		const accountId = this.pickAccount(harness, parent, request.accountId, true);
+		this.assertCapacity();
+		let modelOptions = inherited && model === parent.model ? parent.modelOptions : undefined;
+		if (this.host.discoverModels) {
+			const selected = (await this.discover({ ...parent, projectId }, harness, accountId, model)).models.find(value => value.id === model);
+			if (!selected) throw new Error("This model is not available for the selected account.");
+			if (request.modelOptions) {
+				for (const [id, value] of Object.entries(request.modelOptions)) {
+					const option = selected.options?.find(option => option.id === id);
+					if (!option || (option.type === "boolean" ? typeof value !== "boolean" : typeof value !== "string" || !option.options.some(choice => choice.id === value))) throw new Error(`This model does not offer ${id}=${String(value)}. Use the settings list_agents returns.`);
+				}
+				modelOptions = Object.keys(request.modelOptions).length ? request.modelOptions : undefined;
+			}
+		} else if (request.modelOptions) throw new Error("Model settings cannot be checked right now; omit modelOptions.");
+		return { harness, model, accountId, modelOptions, agentId: inherited ? parent.agentId : undefined, reasoningEffort: inherited ? parent.reasoningEffort : undefined };
+	}
+	/** T3 lets an agent launch top-level threads and change schedules only with full access in its default (non-plan) interaction mode. */
+	private launcher(callerId: string, action: string) {
+		if (this.host.isClosing()) throw new Error("The workspace is shutting down.");
+		const caller = this.host.store.getTask(callerId);
+		if (caller.archived || caller.status === "interrupted") throw new Error("This chat is not accepting work.");
+		if (caller.permissionMode !== "full-access" || caller.mode === "plan") throw new Error(`${action} needs this chat to have full access outside Plan mode. Ask the user to change its permissions.`);
+		return caller;
+	}
+	private launchResult(task: Pick<Task, "id" | "title" | "projectId">): LaunchResult {
+		const project = task.projectId ? this.host.store.getProjects().find(value => value.id === task.projectId) : undefined;
+		return { id: task.id, title: task.title, ...(task.projectId ? { projectId: task.projectId } : {}), ...(project?.worktree ? { worktree: { branch: project.worktree.branch, directory: project.directory } } : {}) };
+	}
+	/** Resolves a workspace strategy without side effects; a new worktree is only created when the launch commits. */
+	private launchTarget(caller: Task, workspace: LaunchWorkspace = { strategy: "same" }): { projectId?: string; worktree?: PreparedLaunch["worktree"] } {
+		const project = (id: string) => { const value = this.host.store.getProjects().find(project => project.id === id); if (!value) throw new Error("Project no longer exists; see list_projects."); this.host.assertProjectAvailable(id); return value; };
+		switch (workspace.strategy) {
+			case "same": if (caller.projectId) project(caller.projectId); return { projectId: caller.projectId };
+			case "none": return {};
+			case "project": project(workspace.projectId); return { projectId: workspace.projectId };
+			case "existing_worktree": if (!project(workspace.projectId).worktree) throw new Error("This project is not a worktree; use the project strategy."); return { projectId: workspace.projectId };
+			case "worktree": {
+				const sourceId = workspace.projectId ?? caller.projectId;
+				if (!sourceId) throw new Error("This chat has no project; pass the projectId to create the worktree from.");
+				project(sourceId); if (!this.host.createWorktree) throw new Error("Worktrees are unavailable.");
+				return { projectId: sourceId, worktree: { sourceId, branch: workspace.branch, baseRef: workspace.baseRef ?? "HEAD" } };
+			}
+		}
+	}
+	/** Every check that can fail before anything is created, so launch_threads can fail fast. Returns an existing chat for a repeated requestId. */
+	private async prepareLaunch(callerId: string, request: LaunchRequest): Promise<PreparedLaunch | { existing: LaunchResult }> {
+		const caller = this.launcher(callerId, "Launching a chat");
+		const existing = this.host.store.findLaunchedTask(callerId, request.requestId);
+		if (existing) return { existing: this.launchResult(existing) };
+		const { mode, permissionMode } = childPrivileges(caller, request);
+		const target = this.launchTarget(caller, request.workspace);
+		const settings = await this.agentSettings(caller, request, target.projectId);
+		this.launcher(callerId, "Launching a chat");
+		return { request, worktree: target.worktree, command: { type: "create-task", ...settings, projectId: target.projectId, mode, permissionMode } };
+	}
+	private commitLaunch(callerId: string, prepared: PreparedLaunch): Promise<LaunchResult> {
+		const key = `${callerId}\n${prepared.request.requestId}`, pending = this.launching.get(key);
+		if (pending) return pending;
+		const operation = (async () => {
+			const existing = this.host.store.findLaunchedTask(callerId, prepared.request.requestId);
+			if (existing) return this.launchResult(existing);
+			let projectId = prepared.command.projectId;
+			if (prepared.worktree) { this.assertCapacity(); ({ projectId } = await this.host.createWorktree!(prepared.worktree.sourceId, prepared.worktree.branch, prepared.worktree.baseRef)); }
+			let task: Task;
+			try { this.launcher(callerId, "Launching a chat"); task = this.host.store.createLaunchedTask({ ...prepared.command, projectId }, { byTaskId: callerId, requestId: prepared.request.requestId }, prepared.request.prompt, prepared.request.title, this.maxActiveAgents()); }
+			catch (error) { if (prepared.worktree) throw new Error(`${message(error, "The chat could not be created.")} Its worktree was created as project ${projectId}; retry with {strategy:"existing_worktree",projectId:"${projectId}"}.`, { cause: error }); throw error; }
+			this.host.broadcast(); this.host.start(task.id); return this.launchResult(task);
+		})().finally(() => this.launching.delete(key));
+		this.launching.set(key, operation); return operation;
+	}
+	private async launchBatch(callerId: string, requests: LaunchRequest[]) {
+		this.launcher(callerId, "Launching chats");
+		if (!requests.length || requests.length > 20 || new Set(requests.map(request => request.requestId)).size !== requests.length) throw new Error("Launch 1 to 20 chats with distinct requestIds.");
+		const prepared: (PreparedLaunch | { existing: LaunchResult })[] = [];
+		for (const request of requests) { try { prepared.push(await this.prepareLaunch(callerId, request)); } catch (error) { throw new Error(`Nothing was launched. ${request.requestId}: ${message(error, "Invalid chat.")}`, { cause: error }); } }
+		const fresh = prepared.filter((value): value is PreparedLaunch => !("existing" in value));
+		const branches = fresh.flatMap(value => value.worktree ? [JSON.stringify([value.worktree.sourceId, value.worktree.branch])] : []);
+		if (new Set(branches).size !== branches.length) throw new Error("Nothing was launched. Use a distinct branch for each new worktree.");
+		const active = this.host.store.activeAgentCount(), maximum = this.maxActiveAgents();
+		if (active + fresh.length > maximum) throw new Error(`Nothing was launched: ${fresh.length} new chats would exceed the limit. ${agentLimitMessage(active, maximum)}`);
+		const results: (LaunchResult | { requestId: string; error: string })[] = [];
+		for (const value of prepared) {
+			if ("existing" in value) { results.push(value.existing); continue; }
+			try { results.push(await this.commitLaunch(callerId, value)); } catch (error) { results.push({ requestId: value.request.requestId, error: message(error, "The chat could not be launched.") }); }
+		}
+		return { results };
+	}
+	/** A schedule's template can be any active chat whose mode and permissions do not exceed the caller's; runs copy its settings, never its history. */
+	private assertTemplate(caller: Task, id: string, allowMissing = false) {
+		let template: Task;
+		try { template = this.host.store.getTask(id); } catch (error) { if (allowMissing) return; throw error; }
+		if (template.archived && !allowMissing) throw new Error("Choose an active template chat.");
+		if (modeRank[template.mode] > modeRank[caller.mode] || permissionRank(template.permissionMode) > permissionRank(caller.permissionMode)) throw new Error("A schedule's template chat cannot have a broader mode or permissions than this chat.");
+		if (!allowMissing) this.host.assertHarnessAvailable(template.harness);
+	}
+	private scheduler(callerId: string, action: string) {
+		const caller = this.launcher(callerId, action), command = this.host.missions;
+		if (!command) throw new Error("Scheduling is unavailable.");
+		return { caller, command };
+	}
 	forThread(parentId: string): ThreadTools {
 		const summary = (task: Pick<Task, "id" | "title" | "harness" | "model" | "status" | "parentId"> & { error?: string }) => ({ id: task.id, title: task.title, harness: task.harness, model: task.model, status: task.status, parentId: task.parentId, error: task.error });
-		const scoped = (id: string, childOnly = false) => {
+		/** Owned: a child this chat delegated, forked or handed off, plus, where `launched`, a top-level chat it launched. */
+		const scoped = (id: string, childOnly = false, launched = false) => {
 			const task = this.host.store.getTask(id);
-			if ((childOnly || id !== parentId) && task.delegation?.parentTaskId !== parentId && (childOnly || !this.host.store.getTask(parentId).messages.some(message => message.role === "user" && message.threadReferences?.includes(id)))) throw new Error("This chat is outside this agent's scope.");
+			const owned = task.delegation?.parentTaskId === parentId || (launched && task.launch?.byTaskId === parentId);
+			if ((childOnly || id !== parentId) && !owned && (childOnly || !this.host.store.getTask(parentId).messages.some(message => message.role === "user" && message.threadReferences?.includes(id)))) throw new Error("This chat is outside this agent's scope.");
 			return task;
 		};
 		const retry = (requestId: string) => this.host.store.getOverview().tasks.find(task => task.delegation?.parentTaskId === parentId && task.delegation.requestId === requestId);
@@ -149,7 +266,7 @@ export class WorkspaceThreads {
 				this.host.broadcast(); return summary(child);
 			},
 			rename: async (id, title) => { scoped(id, true); if (!title.trim() || title.length > 100) throw new Error("Invalid chat title."); await this.host.command({ type: "update-task", id, title }); return summary(scoped(id, true)); },
-			steer: async (id, text) => { scoped(id, true); if (this.host.isClosing() || this.host.store.getTask(parentId).status === "interrupted") throw new Error("This parent is no longer accepting work."); if (!text.trim() || text.length > 100000) throw new Error("Invalid child prompt."); await this.host.command({ type: "steer", id, text }); return summary(scoped(id, true)); },
+			steer: async (id, text) => { scoped(id, true, true); if (this.host.isClosing() || this.host.store.getTask(parentId).status === "interrupted") throw new Error("This parent is no longer accepting work."); if (!text.trim() || text.length > 100000) throw new Error("Invalid child prompt."); await this.host.command({ type: "steer", id, text }); return summary(scoped(id, true, true)); },
 			queue: id => scoped(id, true).queue.map(({ id, text, createdAt }) => ({ id, text: text.slice(0, 8000), createdAt })),
 			editQueue: async (id, messageId, text) => { const child = scoped(id, true); if (!child.queue.some(message => message.id === messageId)) throw new Error("Queued message was not found."); if (text !== undefined && (!text.trim() || text.length > 100000)) throw new Error("Invalid queued prompt."); await this.host.command(text === undefined ? { type: "queue-remove", id, messageId } : { type: "queue-edit", id, messageId, text }); return summary(scoped(id, true)); },
 			fork: async (id, requestId, messageId) => {
@@ -160,16 +277,16 @@ export class WorkspaceThreads {
 				const child = this.host.store.forkDelegatedTask(parentId, id, requestId, messageId, this.maxActiveAgents()); this.host.broadcast(); return summary(child);
 			},
 			send: async (id, text) => {
-				const child = scoped(id, true); if (this.host.isClosing() || this.host.store.getTask(parentId).status === "interrupted") throw new Error("This parent is no longer accepting work."); if (!text.trim() || text.length > 100000) throw new Error("Invalid child prompt.");
+				const child = scoped(id, true, true); if (this.host.isClosing() || this.host.store.getTask(parentId).status === "interrupted") throw new Error("This parent is no longer accepting work."); if (!text.trim() || text.length > 100000) throw new Error("Invalid child prompt.");
 				// Sending to a stopped child starts it, so it needs a free slot.
 				if (!["running", "waiting"].includes(child.status) && !child.queue.length) this.assertCapacity();
-				await this.host.command({ type: "send", id, text }); return summary(scoped(id, true));
+				await this.host.command({ type: "send", id, text }); return summary(scoped(id, true, true));
 			},
 			merge: async (id, requestId) => { scoped(id, true); if (this.host.isClosing() || this.host.store.getTask(parentId).status === "interrupted") throw new Error("This parent is no longer accepting results."); const parent = this.host.store.mergeThreadContext(parentId, id, requestId); this.host.broadcast(); if (!parent.archived && ["idle", "completed"].includes(parent.status)) this.host.start(parentId); return summary(parent); },
 			models: async (harness, accountId, query) => { const { models, total, accounts } = await this.discover(this.host.store.getTask(parentId), harness, accountId, query); return { models, total, accounts }; },
 			agents: async (filter = {}) => this.catalog(this.host.store.getTask(parentId), filter),
-			list: query => this.host.store.getOverview().tasks.filter(task => (task.id === parentId || task.delegation?.parentTaskId === parentId) && (!query || task.title.toLowerCase().includes(query.toLowerCase()))).slice(0, 50).map(summary),
-			read: id => { scoped(id); const task = this.host.store.getTaskView(id); return { thread: summary(task), messages: task.messages.slice(-30).map(({ role, text, createdAt }) => ({ role, text: text.slice(0, 8000), createdAt })), truncated: (task.conversationCounts?.messages ?? task.messages.length) > 30 || task.messages.some(message => message.text.length > 8000) }; },
+			list: query => this.host.store.getOverview().tasks.filter(task => (task.id === parentId || task.delegation?.parentTaskId === parentId || task.launch?.byTaskId === parentId) && (!query || task.title.toLowerCase().includes(query.toLowerCase()))).slice(0, 50).map(summary),
+			read: id => { scoped(id, false, true); const task = this.host.store.getTaskView(id); return { thread: summary(task), messages: task.messages.slice(-30).map(({ role, text, createdAt }) => ({ role, text: text.slice(0, 8000), createdAt })), truncated: (task.conversationCounts?.messages ?? task.messages.length) > 30 || task.messages.some(message => message.text.length > 8000) }; },
 			delegate: async raw => {
 				const request = validateDelegate(raw);
 				if (this.host.isClosing()) throw new Error("The workspace is shutting down.");
@@ -177,42 +294,24 @@ export class WorkspaceThreads {
 				if (parent.archived || parent.status === "interrupted") throw new Error("This parent chat is not accepting delegated work.");
 				const existing = retry(request.requestId);
 				if (existing) return summary(this.host.store.getTask(existing.id));
-				const harness = request.harness ?? parent.harness;
-				const model = request.model ?? (harness === parent.harness ? parent.model : undefined);
-				if (!model || model === "default") throw new Error("Choose an explicit model for delegated work (see list_agents).");
 				const { mode, permissionMode } = childPrivileges(parent, request);
-				this.host.assertHarnessAvailable(harness);
-				const accountId = this.pickAccount(harness, parent, request.accountId, true);
-				this.assertCapacity();
-				let modelOptions = harness === parent.harness && model === parent.model ? parent.modelOptions : undefined;
-				if (this.host.discoverModels) {
-					const catalog = await this.discover(parent, harness, accountId, model);
-					const selected = catalog.models.find(value => value.id === model);
-					if (!selected) throw new Error("This model is not available for the selected account.");
-					if (request.modelOptions) {
-						for (const [id, value] of Object.entries(request.modelOptions)) {
-							const option = selected.options?.find(option => option.id === id);
-							if (!option || (option.type === "boolean" ? typeof value !== "boolean" : typeof value !== "string" || !option.options.some(choice => choice.id === value))) throw new Error(`This model does not offer ${id}=${String(value)}. Use the settings list_agents returns.`);
-						}
-						modelOptions = Object.keys(request.modelOptions).length ? request.modelOptions : undefined;
-					}
-				} else if (request.modelOptions) throw new Error("Model settings cannot be checked right now; omit modelOptions.");
+				const settings = await this.agentSettings(parent, request);
 				parent = scoped(parentId);
 				if (this.host.isClosing() || parent.archived || parent.status === "interrupted") throw new Error("This parent chat is no longer accepting delegated work.");
 				if (parent.projectId) this.host.assertProjectAvailable(parent.projectId);
-				const child = this.host.store.createDelegatedTask({ type: "create-task", harness, model, accountId, agentId: harness === parent.harness ? parent.agentId : undefined, projectId: parent.projectId, mode, permissionMode, reasoningEffort: harness === parent.harness ? parent.reasoningEffort : undefined, modelOptions }, { parentTaskId: parentId, requestId: request.requestId, background: request.background, role: request.role }, request.role ? `Role: ${request.role}\n\n${request.prompt}` : request.prompt, request.title, this.maxActiveAgents());
+				const child = this.host.store.createDelegatedTask({ type: "create-task", ...settings, projectId: parent.projectId, mode, permissionMode }, { parentTaskId: parentId, requestId: request.requestId, background: request.background, role: request.role }, request.role ? `Role: ${request.role}\n\n${request.prompt}` : request.prompt, request.title, this.maxActiveAgents());
 				this.host.broadcast(); this.host.start(child.id); return summary(child);
 			},
 			wait: async (id, timeoutMs = waitDefaultMs, signal) => {
 				if (!Number.isInteger(timeoutMs) || timeoutMs < 0 || timeoutMs > waitMaximumMs) throw new Error("Invalid wait timeout.");
-				scoped(id, true);
+				scoped(id, true, true);
 				return new Promise(resolve => {
 					const check = (abandoned = false) => {
-						const child = scoped(id, true), parent = this.host.store.getTask(parentId);
+						const child = scoped(id, true, true), parent = this.host.store.getTask(parentId);
 						if (!abandoned && !this.host.isClosing() && parent.status !== "interrupted" && active(child.status)) return;
 						clearTimeout(timer); this.listeners.delete(listener); signal?.removeEventListener("abort", abort);
-						// Mirror T3's upgrade-to-always-wake: nobody is waiting any more, so the result is delivered as a message.
-						const deliveryQueued = abandoned && active(child.status) && !this.host.isClosing();
+						// Mirror T3's upgrade-to-always-wake: nobody is waiting any more, so the result is delivered as a message. Launched chats never deliver.
+						const deliveryQueued = abandoned && active(child.status) && !this.host.isClosing() && Boolean(child.delegation);
 						if (deliveryQueued && !child.delegation?.background) this.host.store.requestDelegationWake(id);
 						resolve({ thread: summary(child), timedOut: abandoned, result: child.status === "completed" ? child.messages.findLast(message => message.role === "assistant")?.text.slice(0, 32000) : undefined, ...(deliveryQueued ? { deliveryQueued } : {}) });
 					};
@@ -222,7 +321,57 @@ export class WorkspaceThreads {
 					if (signal?.aborted) abort(); else check();
 				});
 			},
-			interrupt: async id => { scoped(id, true); await this.host.command({ type: "cancel", id }); return summary(scoped(id, true)); },
+			interrupt: async id => { scoped(id, true, true); await this.host.command({ type: "cancel", id }); return summary(scoped(id, true, true)); },
+			launch: async request => { const prepared = await this.prepareLaunch(parentId, request); return "existing" in prepared ? prepared.existing : this.commitLaunch(parentId, prepared); },
+			launchBatch: requests => this.launchBatch(parentId, requests),
+			projects: query => {
+				const current = this.host.store.getTask(parentId).projectId, folder = (directory: string) => directory.split(/[\\/]/).filter(Boolean).at(-1) ?? directory;
+				// Folder names only: full paths stay private to the desktop.
+				return this.host.store.getProjects().filter(project => !query || `${project.name} ${folder(project.directory)}`.toLowerCase().includes(query.toLowerCase())).slice(0, 200).map(project => ({ id: project.id, name: project.name, directory: folder(project.directory), ...(project.id === current ? { current: true } : {}), ...(project.worktree ? { worktree: { branch: project.worktree.branch, baseCommit: project.worktree.baseCommit, sourceProjectId: project.worktree.sourceProjectId } } : {}), ...(project.worktree?.removedAt ? { removed: true } : {}) }));
+			},
+			organize: async (id, action, title) => {
+				const task = id === parentId ? this.host.store.getTask(id) : scoped(id, true, true);
+				if (this.host.isClosing()) throw new Error("The workspace is shutting down.");
+				if (action === "rename") { if (!title?.trim() || title.length > 100) throw new Error("Invalid chat title."); await this.host.command({ type: "update-task", id, title }); }
+				else if (action === "pin" || action === "unpin") await this.host.command({ type: "update-task", id, pinned: action === "pin" });
+				else if (action === "unarchive") await this.host.command({ type: "update-task", id, archived: false });
+				else {
+					if (id === parentId) throw new Error("A chat cannot archive itself; ask the user to archive it.");
+					// Archive stops the chat first, then the runtime's archive path stops the agents it started.
+					if (task.status === "running" || task.status === "waiting" || (task.status === "idle" && task.queue.length)) await this.host.command({ type: "cancel", id });
+					await this.host.command({ type: "update-task", id, archived: true });
+				}
+				const current = this.host.store.getTask(id); return { ...summary(current), pinned: current.pinned, archived: current.archived };
+			},
+			scheduled: () => this.host.store.missions.list().slice(0, 100).map(scheduledTask),
+			schedule: async request => {
+				const { caller, command } = this.scheduler(parentId, "Scheduling a task"), templateTaskId = request.templateTaskId ?? parentId;
+				this.assertTemplate(caller, templateTaskId);
+				const before = new Set(this.host.store.missions.list().map(mission => mission.id));
+				const saved = command(validateMissionCommand({ type: "save", title: request.title, prompt: request.prompt, templateTaskId, schedule: request.schedule })).find(mission => !before.has(mission.id));
+				if (!saved) throw new Error("The schedule could not be saved.");
+				// Missions start paused in the app; an agent asking for a schedule wants it running, as T3's schedule_task does by default.
+				if (request.enabled !== false) command({ type: "enable", id: saved.id, enabled: true });
+				return scheduledTask(this.host.store.missions.get(saved.id));
+			},
+			updateSchedule: async (id, update) => {
+				const { caller, command } = this.scheduler(parentId, "Changing a schedule"), mission = this.host.store.missions.get(id);
+				this.assertTemplate(caller, mission.templateTaskId);
+				if (!Object.values(update).some(value => value !== undefined)) throw new Error("Choose enabled, title, prompt or schedule to change.");
+				if (update.title !== undefined || update.prompt !== undefined || update.schedule !== undefined) command(validateMissionCommand({ type: "save", id, title: update.title ?? mission.title, prompt: update.prompt ?? mission.prompt, templateTaskId: mission.templateTaskId, schedule: update.schedule ?? mission.schedule }));
+				if (update.enabled !== undefined) command({ type: "enable", id, enabled: update.enabled });
+				return scheduledTask(this.host.store.missions.get(id));
+			},
+			deleteSchedule: async id => {
+				const { caller, command } = this.scheduler(parentId, "Deleting a schedule");
+				this.assertTemplate(caller, this.host.store.missions.get(id).templateTaskId, true);
+				command({ type: "delete", id }); return { id, deleted: true as const };
+			},
+			runSchedule: async id => {
+				const { caller, command } = this.scheduler(parentId, "Running a schedule");
+				this.assertTemplate(caller, this.host.store.missions.get(id).templateTaskId);
+				command({ type: "run", id }); return scheduledTask(this.host.store.missions.get(id));
+			},
 		};
 	}
 }

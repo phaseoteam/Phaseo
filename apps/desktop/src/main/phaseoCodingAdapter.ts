@@ -11,7 +11,7 @@ import type { Account, Task } from "../shared/workspace";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import type { WorkspaceStore } from "./workspaceStore";
 import { threadTools } from "./threadTools";
-import { orchestrationInstructions, threadToolLabels } from "../shared/orchestration";
+import { orchestrationInstructions, threadToolLabel, threadToolLabels } from "../shared/orchestration";
 import { phaseoTools } from "./phaseoTools";
 import type { AttachmentContent } from "./attachments";
 import { phaseoConversationMessages } from "./attachmentPrompt";
@@ -95,7 +95,7 @@ export class PhaseoCodingAdapter implements AgentAdapter {
 					try { review = await skillTools?.review(entry.call); if (!review) throw new Error("Skill storage is unavailable."); }
 					catch (error) { this.controller.signal.throwIfAborted(); callbacks.onActivity?.({ id: entry.call.id, type: "tool", title: "Skill unavailable", text: error instanceof Error ? error.message : "Could not review this skill.", status: "failed" }); rejections.push(entry.call.id); continue; }
 				}
-				const decision = await callbacks.onApproval(review?.title ?? mcp.labels[entry.call.name] ?? threadToolLabels[entry.call.name] ?? entry.call.name, (entry.executionStartedAt ? "This action started before the interruption and may already have completed. Check its effects before approving again.\n\n" : "") + (review?.details ?? JSON.stringify(entry.call.input, null, 2)));
+				const decision = await callbacks.onApproval(review?.title ?? mcp.labels[entry.call.name] ?? (threadToolLabels[entry.call.name] ? threadToolLabel(entry.call.name, entry.call.input) : entry.call.name), (entry.executionStartedAt ? "This action started before the interruption and may already have completed. Check its effects before approving again.\n\n" : "") + (review?.details ?? JSON.stringify(entry.call.input, null, 2)));
 				(decision === "accept" ? approvals : rejections).push(entry.call.id);
 			}
 			if (this.controller.signal.aborted) throw new Error("Task stopped.");

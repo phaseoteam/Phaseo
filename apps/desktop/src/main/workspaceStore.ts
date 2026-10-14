@@ -30,6 +30,7 @@ export class WorkspaceStore {
 			CREATE INDEX IF NOT EXISTS delegation_outbox_pending ON delegation_outbox(delivered);
 			CREATE INDEX IF NOT EXISTS task_delegation_owner ON tasks(json_extract(data, '$.delegation.parentTaskId'), json_extract(data, '$.delegation.requestId'));
 			CREATE TABLE IF NOT EXISTS delegation_wakes (child_id TEXT PRIMARY KEY);
+			CREATE INDEX IF NOT EXISTS task_launch_owner ON tasks(json_extract(data, '$.launch.byTaskId'), json_extract(data, '$.launch.requestId'));
 			-- Version 1 used INSERT OR IGNORE here. Inside a trigger fired by saveTask's upsert the outer statement's conflict policy
 			-- applies, so re-saving a finished background child raised UNIQUE. Replace it on every open; NOT EXISTS cannot conflict.
 			DROP TRIGGER IF EXISTS delegation_result_updated;
@@ -118,9 +119,9 @@ export class WorkspaceStore {
 	requestDelegationWake(childId: string) { this.db.prepare("INSERT OR IGNORE INTO delegation_wakes (child_id) VALUES (?)").run(childId); }
 	/** Parents with delivered results or merges still queued, for waking at launch. */
 	pendingDeliveryParents(): string[] { return this.db.prepare("SELECT id FROM tasks WHERE EXISTS (SELECT 1 FROM json_each(tasks.data, '$.queue') AS item WHERE json_extract(item.value, '$.sourceTaskId') IS NOT NULL)").all().map(row => row.id as string); }
-	/** Orchestration children that are working or have queued work; idle forks and handoffs count once they are sent a prompt. */
+	/** Orchestration children and agent-launched chats that are working or have queued work; idle forks and handoffs count once they are sent a prompt. */
 	activeAgentCount(): number {
-		return Number(this.db.prepare(`SELECT count(*) AS count FROM tasks WHERE json_extract(data, '$.delegation.parentTaskId') IS NOT NULL AND coalesce(json_extract(data, '$.archived'), 0) = 0
+		return Number(this.db.prepare(`SELECT count(*) AS count FROM tasks WHERE (json_extract(data, '$.delegation.parentTaskId') IS NOT NULL OR json_extract(data, '$.launch.byTaskId') IS NOT NULL) AND coalesce(json_extract(data, '$.archived'), 0) = 0
 			AND (json_extract(data, '$.status') IN ('running', 'waiting') OR (json_extract(data, '$.status') = 'idle' AND coalesce(json_array_length(data, '$.queue'), 0) > 0))`).get()!.count);
 	}
 	private assertAgentCapacity(maximum?: number) { if (maximum !== undefined) { const active = this.activeAgentCount(); if (active >= maximum) throw new Error(agentLimitMessage(active, maximum)); } }
@@ -174,6 +175,22 @@ export class WorkspaceStore {
 			this.saveTask(child); this.db.exec("COMMIT"); return child;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
 	}
+	findLaunchedTask(byTaskId: string, requestId: string): Task | undefined {
+		const row = this.db.prepare("SELECT data FROM tasks WHERE json_extract(data, '$.launch.byTaskId') = ? AND json_extract(data, '$.launch.requestId') = ? LIMIT 1").get(byTaskId, requestId);
+		return row ? JSON.parse(row.data as string) as Task : undefined;
+	}
+	/** An ordinary top-level chat started by an agent: no `delegation` or `parentId`, so it is listed, stopped and archived like any user chat. */
+	createLaunchedTask(command: Extract<WorkspaceCommand, { type: "create-task" }>, launch: NonNullable<Task["launch"]>, prompt: string, title: string, maxActive?: number): Task {
+		this.db.exec("BEGIN IMMEDIATE");
+		try {
+			const existing = this.findLaunchedTask(launch.byTaskId, launch.requestId);
+			if (existing) { this.db.exec("COMMIT"); return existing; }
+			this.assertAgentCapacity(maxActive);
+			const task = this.apply(command); task.launch = launch; task.title = title;
+			task.queue.push({ id: randomUUID(), text: prompt, createdAt: new Date().toISOString() });
+			this.saveTask(task); this.db.exec("COMMIT"); return task;
+		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
+	}
 	getTask(id: string): Task {
 		const row = this.db.prepare("SELECT data FROM tasks WHERE id = ?").get(id);
 		if (!row) throw new Error("Task no longer exists.");
@@ -214,7 +231,7 @@ export class WorkspaceStore {
 			'pinned', coalesce(json_extract(data, '$.pinned'), 0), 'archived', coalesce(json_extract(data, '$.archived'), 0),
 			'createdAt', json_extract(data, '$.createdAt'), 'updatedAt', json_extract(data, '$.updatedAt'), 'revision', json_extract(data, '$.revision'),
 			'projectId', json_extract(data, '$.projectId'), 'accountId', json_extract(data, '$.accountId'), 'agentId', json_extract(data, '$.agentId'),
-			'parentId', json_extract(data, '$.parentId'), 'delegation', json_extract(data, '$.delegation'), 'missionId', json_extract(data, '$.missionId'), 'inboxReadAt', json_extract(data, '$.inboxReadAt'),
+			'parentId', json_extract(data, '$.parentId'), 'delegation', json_extract(data, '$.delegation'), 'launch', json_extract(data, '$.launch'), 'missionId', json_extract(data, '$.missionId'), 'inboxReadAt', json_extract(data, '$.inboxReadAt'),
 			'approvalsCount', coalesce(json_array_length(data, '$.approvals'), 0),
 			'answersCount', coalesce(json_array_length(data, '$.questions'), 0) + coalesce(json_array_length(data, '$.forms'), 0),
 			'steeringReviewCount', (SELECT count(*) FROM json_each(tasks.data, '$.steering') AS item WHERE json_extract(item.value, '$.status') IN ('unconfirmed', 'rejected')),
@@ -366,7 +383,7 @@ export class WorkspaceStore {
 				const partial = branchIndex < task.messages.length - 1 || task.status === "running" || task.status === "waiting";
 				const messages = task.messages.slice(0, branchIndex + 1);
 				const turnIds = new Set(messages.filter(message => message.role === "user" && message.id !== command.messageId).map(message => message.id));
-				const fork: Task = { ...task, messages, activities: command.messageId ? task.activities?.filter(activity => [...turnIds].some(id => activity.id.startsWith(id + ":"))) : task.activities, id: randomUUID(), title: `${task.title} (fork)`, parentId: task.id, delegation: undefined, missionId: undefined, status: "idle", queue: [], steering: [], pinned: false, archived: false, nativeSessionId: undefined, nativeForkFrom: partial ? undefined : task.nativeSessionId, handoffFrom: partial ? task.harness : task.handoffFrom, approvals: [], questions: [], forms: [], error: undefined, createdAt: new Date().toISOString() };
+				const fork: Task = { ...task, messages, activities: command.messageId ? task.activities?.filter(activity => [...turnIds].some(id => activity.id.startsWith(id + ":"))) : task.activities, id: randomUUID(), title: `${task.title} (fork)`, parentId: task.id, delegation: undefined, launch: undefined, missionId: undefined, status: "idle", queue: [], steering: [], pinned: false, archived: false, nativeSessionId: undefined, nativeForkFrom: partial ? undefined : task.nativeSessionId, handoffFrom: partial ? task.harness : task.handoffFrom, approvals: [], questions: [], forms: [], error: undefined, createdAt: new Date().toISOString() };
 				this.saveTask(fork); return fork;
 			}
 			case "queue-remove": task.queue = task.queue.filter(message => message.id !== command.messageId); break;

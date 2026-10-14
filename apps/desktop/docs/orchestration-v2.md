@@ -26,7 +26,8 @@ Keep these separate from the broader desktop feature ledger; an exposed tool alo
 - [ ] Native subagent observation
 - [x] Message-boundary forks, child messaging and idempotent conversation-result merge
 - [ ] Full provider handoff and Git worktree merge-back tools
-- [ ] Project, worktree, scheduling and preview tools
+- [x] Top-level chat launch (single and batch) with workspace strategies including new Git worktrees, project listing, chat organisation and scheduled-task tools over Missions (fixture validation)
+- [ ] Preview tools
 - [ ] Full latest-nightly parity audit
 
 ## Validation and limits
@@ -73,7 +74,44 @@ Instructions. `orchestrationInstructions` (`shared/orchestration.ts`) covers whe
 
 Capabilities. `list_agents` (T3's `orchestrator_capabilities`) returns `{ harnesses: [{ harness, accountRequired, accounts: [{ id?, name, total, models: [{ id, name, legacy?, default?, options? }], error? }] }], unavailable: [{ harness, reason }], limits: { activeAgents, maxActiveAgents }, truncated? }`. It uses the composer's `discoverDesktopModels` and installation check (cached 5 minutes) and the 10-minute model cache. Native discovery runs two at a time. Non-legacy models come first. Output is capped at 60,000 characters by trimming option lists, then options, then models per account. Optional `harness` and `query` narrow it. `delegate_task` accepts `modelOptions` and validates them against the chosen model's descriptors.
 
-Approvals carry per-tool labels (`threadToolLabels`): Delegate task, Hand off chat, Fork chat, Send agent prompt, Steer agent, Rename agent chat, Edit agent queue, Merge agent result.
+Approvals carry per-tool labels (`threadToolLabels`): Delegate task, Hand off chat, Fork chat, Send agent prompt, Steer agent, Rename agent chat, Edit agent queue, Merge agent result, Launch chat, Launch chats, Organise chat (Archive chat when archiving), Schedule task, Update schedule, Delete schedule, Run schedule now.
+
+## Top-level launches, projects, organisation and schedules
+
+These follow T3 Code's `t3_thread_launch`, `create_threads`, `t3_project_list`, `t3_thread_organize` and scheduled-task tools. They are registered in `threadTools()`, so Phaseo calls them in-process and every other MCP-capable harness gets them from the per-turn orchestration server and the Pi bridge.
+
+Delegate or launch. A delegated child belongs to its parent: it stops and is archived with the parent and reports back. A launched chat is an ordinary top-level chat. It has no `delegation` or `parentId`, so it appears in the sidebar and chat history like a user-created chat. It carries `Task.launch = { byTaskId, requestId }` (also on `TaskOverview`, persisted in the task JSON, with a SQLite index on both fields). The launcher may use `read_thread`, `wait_thread`, `send_thread`, `steer_thread`, `interrupt_thread`, `list_threads` and `organize_thread` on chats it launched. Results are never delivered back: `wait_thread` on a launched chat does not request a wake, so the launcher waits again or reads. Cancelling or archiving the launcher does not stop launched chats; only its orchestration children are cascaded, as in T3. Forks of a launched chat drop `launch`.
+
+`launch_thread` takes `{ requestId, title, prompt, harness?, model?, accountId?, modelOptions?, mode?, permissionMode?, workspace? }` and returns `{ id, title, projectId?, worktree?: { branch, directory } }`. `launch_threads` takes `{ threads: [...] }`, 1 to 20 entries with distinct requestIds, and returns `{ results: [launch result | { requestId, error }] }`. Workspace strategies:
+- `{ strategy: "same" }` (default): the caller's project, or none.
+- `{ strategy: "none" }`: no project.
+- `{ strategy: "project", projectId }`.
+- `{ strategy: "worktree", projectId?, branch, baseRef? }`: `WorkspaceRuntime.createWorktree` on a new branch from `baseRef` (default `HEAD`) of `projectId` (default the caller's project), registered as a worktree project.
+- `{ strategy: "existing_worktree", projectId }`: the project must be a desktop worktree.
+
+Launch guards:
+- The caller must be `permissionMode: "full-access"` and not in Plan mode (T3 requires full access and the default interaction mode).
+- Mode and permissions default to the caller's and can only be narrower (`childPrivileges`).
+- Model, account auto-pick and `modelOptions` validation share `agentSettings` with `delegate_task`.
+- A launched chat counts toward `maxActiveAgents` while it is running or has queued work. `activeAgentCount` counts `delegation.parentTaskId` or `launch.byTaskId`.
+- A repeated requestId from the same caller returns the existing chat. Concurrent identical calls share one in-flight launch, and the store re-checks inside its transaction. T3 has no retry key.
+- `launch_threads` runs every check first: structure, privileges, workspaces, models, distinct worktree branches and capacity for all new entries. If any check fails, nothing is created. Creation then runs serially. A later failure, for example Git refusing a branch, is reported for that entry only.
+- A worktree is created only after validation. If the chat then fails to register, the error names the new worktree project so a retry can use `existing_worktree`.
+
+`list_projects` (`{ query? }`) returns `{ id, name, directory, current?, worktree?: { branch, baseCommit, sourceProjectId }, removed? }`. `directory` is the folder name only, never the full path. Listing needs no approval.
+
+`organize_thread` takes `{ id, action: "pin" | "unpin" | "archive" | "unarchive" | "rename", title? }`. It applies to the caller itself, its orchestration children and chats it launched. A chat cannot archive itself. Archiving first cancels an active or queued chat, then uses the runtime's archive path, which stops that chat's agent tree. Its `requireApproval` is a predicate (`action === "archive"`). The Phaseo agent loop already supports predicates; the MCP server now evaluates them too.
+
+Schedules are Missions. `MissionService` registers its command handler as `WorkspaceRuntime.missionCommand`, so the tools share the Missions page's validation, timing and change notifications:
+- `schedule_task` takes `{ title, prompt, schedule, templateTaskId?, enabled? }`. `schedule` is `{ type: "interval", minutes: 1–10080 }` or `{ type: "daily", time: "HH:MM", weekdays: [0–6] }` (local time; Sunday is 0; `[]` means daily). The template defaults to the caller. Unlike the Missions page, it is enabled unless `enabled: false`, matching T3.
+- `update_scheduled_task` takes `{ id, enabled?, title?, prompt?, schedule? }`.
+- `delete_scheduled_task` and `run_scheduled_task_now` take `{ id }`.
+- `list_scheduled_tasks` takes `{}`.
+
+Scheduling guards:
+- Create, update, delete and run need the full-access, non-Plan caller and approval. Listing needs neither.
+- A template must be an active chat whose mode and permissions are no broader than the caller's. Existing missions are checked against their template the same way; deletion tolerates a deleted template.
+- Mission runs copy the template's harness, model, mode and project, not its permission mode, so they run supervised.
 
 Validation: deterministic fixtures in `orchestrationParity.test.ts`, the store, thread-tool and adapter suites. Unverified against live providers: Claude `tools: []` keeping MCP tools, Codex `developer_instructions` and elicitation for orchestration calls, Cursor `tools: ["mcp"]`, Pi's `mcp__phaseo__*` pattern on older Pi releases, and client-side MCP call timeouts other than Codex and Pi.
 

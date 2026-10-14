@@ -39,7 +39,9 @@ export class OrchestratorMcp {
 						if (!this.activeSession(token)) throw new Error("This agent session has ended.");
 						const tool = tools.find(value => value.id === params.name);
 						if (!tool) throw new Error("Unknown thread tool.");
-						if ("requireApproval" in tool && tool.requireApproval && !await session.approve(tool.id, params.arguments ?? {})) throw new Error("Delegation was declined.");
+						// Approval can depend on the arguments (organize_thread asks only before archiving), as in the Phaseo agent loop.
+						const gated = "requireApproval" in tool && (typeof tool.requireApproval === "function" ? tool.requireApproval(params.arguments ?? {}) : tool.requireApproval);
+						if (gated && !await session.approve(tool.id, params.arguments ?? {})) throw new Error("Delegation was declined.");
 						if (!this.activeSession(token)) throw new Error("This agent session has ended.");
 						const result = await tool.execute(params.arguments ?? {}, AbortSignal.any([disconnected.signal, extra.signal]));
 						return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
