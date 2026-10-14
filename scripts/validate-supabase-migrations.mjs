@@ -193,7 +193,16 @@ function validateAddedMigration(path, files) {
 	return errors;
 }
 
-export function validateSupabaseMigrations(baseSha = "") {
+/**
+ * Migrations an added one must sort after: the diff base plus, when given, the target
+ * branch's current tip. A pull request's base SHA can predate migrations merged since,
+ * so checking the tip catches a stale branch before merge instead of on main.
+ */
+export function orderBaseMigrationFiles(baseSha, targetRef = "", list = listBaseMigrationFiles) {
+	return [...list(baseSha), ...(targetRef ? list(targetRef) : [])];
+}
+
+export function validateSupabaseMigrations(baseSha = "", targetRef = "") {
 	const files = listMigrationFiles();
 	const errors = validateNames(files);
 	const changes = getMigrationChanges(baseSha);
@@ -215,7 +224,7 @@ export function validateSupabaseMigrations(baseSha = "") {
 	for (const path of added) {
 		errors.push(...validateAddedMigration(path, files));
 	}
-	errors.push(...validateMigrationOrder(listBaseMigrationFiles(baseSha), added));
+	errors.push(...validateMigrationOrder(orderBaseMigrationFiles(baseSha, targetRef), added));
 
 	if (errors.length > 0) {
 		throw new Error(`Invalid Supabase migrations:\n- ${errors.join("\n- ")}`);
@@ -228,7 +237,7 @@ const isDirectRun =
 	process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
 
 if (isDirectRun) {
-	const { total, added } = validateSupabaseMigrations(process.argv[2]);
+	const { total, added } = validateSupabaseMigrations(process.argv[2], process.argv[3]);
 	console.log(
 		`Supabase migration history is valid (${total} total, ${added} added in this change).`,
 	);
