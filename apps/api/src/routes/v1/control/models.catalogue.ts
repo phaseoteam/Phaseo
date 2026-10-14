@@ -821,6 +821,51 @@ function matchesRequestedStatus(args: {
     return modelStatus === requested;
 }
 
+/** PostgREST returns at most this many rows per request; larger reads must page. */
+export const CATALOGUE_PAGE_SIZE = 1000;
+
+/** A primary-key column, and the field it appears under when the select aliases it. */
+export type CatalogueKey = { column: string; field?: string };
+
+type PageQuery<T> = PromiseLike<{ data: T[] | null; error: { message?: string } | null }> & {
+    order(column: string): PageQuery<T>;
+    gt(column: string, value: unknown): PageQuery<T>;
+    or(filters: string): PageQuery<T>;
+    limit(count: number): PageQuery<T>;
+};
+
+/** Quotes a value for a PostgREST logical filter, where commas, dots and brackets are reserved. */
+function filterValue(value: unknown): string {
+    return `"${String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+/**
+ * Reads every row of a query in primary-key order, one page past the last key
+ * at a time. A single read stops silently at the PostgREST row cap (which once
+ * dropped every model past the first thousand), and offset paging can skip a
+ * row when an earlier one is deleted mid-read; a key cursor does neither.
+ */
+export async function selectAllRows<T>(label: string, keys: readonly CatalogueKey[], build: () => PageQuery<T>): Promise<T[]> {
+    if (keys.length < 1 || keys.length > 2) throw new Error("selectAllRows supports one or two key columns.");
+    const rows: T[] = [];
+    let last: Record<string, unknown> | undefined;
+    for (;;) {
+        let query = build();
+        for (const key of keys) query = query.order(key.column);
+        if (last) {
+            const [first, second] = keys.map((key) => ({ column: key.column, value: last![key.field ?? key.column] }));
+            query = second
+                ? query.or(`${first.column}.gt.${filterValue(first.value)},and(${first.column}.eq.${filterValue(first.value)},${second.column}.gt.${filterValue(second.value)})`)
+                : query.gt(first.column, first.value);
+        }
+        const { data, error } = await query.limit(CATALOGUE_PAGE_SIZE);
+        if (error) throw new Error(`Failed to load ${label}: ${error.message || "unknown error"}`);
+        rows.push(...(data ?? []));
+        if (!data || data.length < CATALOGUE_PAGE_SIZE) return rows;
+        last = data[data.length - 1] as Record<string, unknown>;
+    }
+}
+
 function chunkArray<T>(values: T[], size: number): T[][] {
     if (!values.length) return [];
     const chunkSize = Math.max(1, Math.floor(size));
@@ -1288,19 +1333,15 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
     const includeNonRoutable = availabilityMode === "all";
     const modelSelection =
         "model_id:model_slug, base_model_id:base_model_slug, variant_kind, previous_model_id:previous_model_slug, replacement_model_id:replacement_model_slug, metadata, name, description, release_date:released_at, deprecation_date:deprecated_at, retirement_date:retired_at, status, organisation_id:lab_slug, input_types:input_modalities, output_types:output_modalities, organisation:v2_labs(lab_slug, name, country_code, metadata)";
-    const modelQuery = supabase
-        .from("v2_models")
-        .select(modelSelection)
-        .eq("hidden", false);
-    if (filter.modelIds?.length) {
-        modelQuery.in("model_slug", filter.modelIds);
-    }
-    const { data: requestedModelRows, error: modelError } = await modelQuery;
-    if (modelError) {
-        throw new Error(`Failed to load model metadata: ${modelError.message || "unknown error"}`);
-    }
+    const requestedModelRows = await selectAllRows<any>("model metadata", [{ column: "model_slug", field: "model_id" }], () => {
+        const modelQuery = supabase
+            .from("v2_models")
+            .select(modelSelection)
+            .eq("hidden", false);
+        return filter.modelIds?.length ? modelQuery.in("model_slug", filter.modelIds) : modelQuery;
+    });
 
-    let modelRows = requestedModelRows ?? [];
+    let modelRows = requestedModelRows;
     if (filter.modelIds?.length && modelRows.length) {
         const dependencyQueries: Array<PromiseLike<{ data: any[] | null; error: any }>> = [];
         const baseModelIds = Array.from(new Set(modelRows.map((row: any) => row.base_model_id ?? row.model_id).filter(Boolean)));
@@ -1385,14 +1426,11 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
 
     const detailsByModel = new Map<string, Record<string, unknown>>();
     for (const modelIdChunk of chunkArray(modelIds, 200)) {
-        const { data, error } = await supabase
+        const data = await selectAllRows<ModelDetailRow>("model details", [{ column: "model_slug" }, { column: "detail_name" }], () => supabase
             .from("v2_model_details")
             .select("model_slug, detail_name, detail_value")
-            .in("model_slug", modelIdChunk);
-        if (error) {
-            throw new Error(`Failed to load model details: ${error.message || "unknown error"}`);
-        }
-        for (const row of (data ?? []) as ModelDetailRow[]) {
+            .in("model_slug", modelIdChunk));
+        for (const row of data) {
             if (!row.model_slug || !row.detail_name) continue;
             const details = detailsByModel.get(row.model_slug) ?? {};
             details[row.detail_name] = row.detail_value;
@@ -1402,16 +1440,12 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
 
     const providerRows: ProviderModelRow[] = [];
     for (const modelIdChunk of chunkArray(modelIds, 200)) {
-        let { data, error: providerError }: { data: any[] | null; error: any } = await supabase
+        const data = await selectAllRows<any>("provider models", [{ column: "provider_model_id" }], () => supabase
             .from("v2_model_provider_routes")
             .select(
                 "provider_model_id, provider_slug, model_slug, provider_model_slug, is_stealth, routing_enabled, status, input_modalities, output_modalities, effective_from, effective_to, metadata"
             )
-            .in("model_slug", modelIdChunk);
-
-        if (providerError) {
-            throw new Error(`Failed to load provider models: ${providerError.message || "unknown error"}`);
-        }
+            .in("model_slug", modelIdChunk));
 
         const chunkRows = (data ?? []).map((row) => publicCatalogueProviderRoute({
             provider_api_model_id: row.provider_model_id,
@@ -1438,15 +1472,11 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
         .filter((id): id is string => Boolean(id));
     let capabilityRows: CapabilityRow[] = [];
     for (const providerModelIdChunk of chunkArray(providerModelIds, 200)) {
-        const { data: capabilityRowsRaw, error: capabilityError } = await supabase
+        const capabilityRowsRaw = await selectAllRows<any>("provider capabilities", [{ column: "provider_model_id" }, { column: "capability_id" }], () => supabase
             .from("v2_route_capabilities")
             .select("provider_model_id, capability_id, status, params, effective_from, effective_to")
-            .in("provider_model_id", providerModelIdChunk);
-
-        if (capabilityError) {
-            throw new Error(`Failed to load provider capabilities: ${capabilityError.message || "unknown error"}`);
-        }
-        capabilityRows.push(...(capabilityRowsRaw ?? []).map((row) => ({
+            .in("provider_model_id", providerModelIdChunk));
+        capabilityRows.push(...capabilityRowsRaw.map((row) => ({
             provider_api_model_id: row.provider_model_id,
             capability_id: row.capability_id,
             status: row.status,
@@ -1463,15 +1493,11 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
     if (apiModelIds.length) {
         const aliases: Array<{ alias_slug: string | null; api_model_id: string | null }> = [];
         for (const apiModelIdChunk of chunkArray(apiModelIds as string[], 200)) {
-            const { data, error: aliasError } = await supabase
+            aliases.push(...await selectAllRows<{ alias_slug: string | null; api_model_id: string | null }>("model aliases", [{ column: "alias_slug" }], () => supabase
                 .from("v2_model_aliases")
                 .select("alias_slug, api_model_id:model_slug")
                 .eq("enabled", true)
-                .in("model_slug", apiModelIdChunk);
-            if (aliasError) {
-                throw new Error(`Failed to load model aliases: ${aliasError.message || "unknown error"}`);
-            }
-            aliases.push(...((data ?? []) as Array<{ alias_slug: string | null; api_model_id: string | null }>));
+                .in("model_slug", apiModelIdChunk)));
         }
         const aliasByApiModel = new Map<string, string[]>();
         for (const alias of aliases) {
@@ -1564,12 +1590,11 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
     const executableSkuRows: PricingSkuRow[] = [];
     const skuNowMs = Date.now();
     for (const providerModelIdChunk of chunkArray(Array.from(new Set(providerModelIds)), 200)) {
-        const { data, error: skuError } = await supabase
+        const data = await selectAllRows<PricingSkuRow>("pricing SKUs", [{ column: "sku_id" }], () => supabase
             .from("v2_pricing_skus")
             .select("sku_id,provider_model_id,operation,service_tier_slug,status,currency,effective_from,effective_to,metadata,description")
-            .in("provider_model_id", providerModelIdChunk);
-        if (skuError) throw new Error(`Failed to load pricing SKUs: ${skuError.message || "unknown error"}`);
-        for (const sku of (data ?? []) as PricingSkuRow[]) {
+            .in("provider_model_id", providerModelIdChunk));
+        for (const sku of data) {
             if (isCurrentStandardPricingSku(sku, skuNowMs)) skuRows.push(sku);
             if (isExecutablePricingSku(sku, skuNowMs)) executableSkuRows.push(sku);
         }
@@ -1579,13 +1604,11 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
     const skuIds = [...skuRows, ...executableSkuRows].map((row) => row.sku_id).filter(Boolean);
     const meterRows: PricingMeterRow[] = [];
     for (const skuIdChunk of chunkArray(Array.from(new Set(skuIds)), 200)) {
-        const { data, error: meterError } = await supabase
+        meterRows.push(...await selectAllRows<PricingMeterRow>("pricing meters", [{ column: "sku_meter_id" }], () => supabase
             .from("v2_pricing_sku_meters")
             .select("sku_meter_id,sku_id,meter_key,unit,unit_quantity,price_nanos,meter_order,metadata")
             .eq("billable", true)
-            .in("sku_id", skuIdChunk);
-        if (meterError) throw new Error(`Failed to load pricing meters: ${meterError.message || "unknown error"}`);
-        meterRows.push(...(data ?? []) as PricingMeterRow[]);
+            .in("sku_id", skuIdChunk)));
     }
     // A tier is offered only when the loader would build price rules for it:
     // an executable SKU with at least one billable, finitely priced meter.
