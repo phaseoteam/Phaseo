@@ -2935,3 +2935,137 @@ describe("fetchCatalogue", () => {
         }
     });
 });
+
+describe("fetchCatalogue service tiers", () => {
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        (await import("@core/tiered-cache")).__resetTieredCacheForTests();
+    });
+
+    function rule(provider: string, operation: string, plan: string, price: string, extra: Record<string, unknown> = {}) {
+        return {
+            model_key: `${provider}:test/tiered:${operation}`,
+            capability_id: operation,
+            pricing_plan: plan,
+            meter: "input_tokens",
+            unit: "token",
+            unit_size: 1,
+            price_per_unit: price,
+            currency: "USD",
+            effective_from: null,
+            effective_to: null,
+            ...extra,
+        };
+    }
+
+    it("derives per-offer tiers from the same SKU load without changing standard pricing", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const route = (id: string, provider: string) => ({
+            provider_api_model_id: id,
+            provider_id: provider,
+            api_model_id: "test/tiered",
+            model_id: "test/tiered",
+            provider_model_slug: "tiered",
+            is_active_gateway: true,
+            routing_status: "active",
+            input_modalities: ["text"],
+            output_modalities: ["text"],
+            effective_from: null,
+            effective_to: null,
+        });
+        const capability = (id: string, capabilityId: string, params: Record<string, unknown> = {}) => ({
+            provider_api_model_id: id,
+            capability_id: capabilityId,
+            status: "active",
+            params,
+            effective_from: null,
+            effective_to: null,
+        });
+        const provider = (id: string) => ({
+            api_provider_id: id,
+            api_provider_name: id,
+            status: "active",
+            routing_status: "active",
+        });
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [{
+                data: [{
+                    model_id: "test/tiered",
+                    name: "Tiered",
+                    release_date: null,
+                    deprecation_date: null,
+                    retirement_date: null,
+                    status: "active",
+                    organisation_id: null,
+                    input_types: ["text"],
+                    output_types: ["text"],
+                    organisation: null,
+                }],
+                error: null,
+            }],
+            data_api_provider_models: [{
+                data: [
+                    route("pam_openai", "openai"),
+                    route("pam_mistral", "mistral"),
+                    route("pam_vertex_fast", "google-vertex"),
+                    route("pam_plain", "deepinfra"),
+                ],
+                error: null,
+            }],
+            data_api_provider_model_capabilities: [{
+                data: [
+                    capability("pam_openai", "text.generate"),
+                    capability("pam_openai", "responses"),
+                    capability("pam_mistral", "text.generate", { temperature: {} }),
+                    capability("pam_vertex_fast", "text.generate", {
+                        service_tier: { provider_catalog: { name: "fast", upstream: "priority" } },
+                    }),
+                    capability("pam_plain", "text.generate"),
+                ],
+                error: null,
+            }],
+            data_api_model_aliases: [{ data: [], error: null }],
+            data_api_providers: [{
+                data: [provider("openai"), provider("mistral"), provider("google-vertex"), provider("deepinfra")],
+                error: null,
+            }],
+            data_api_pricing_rules: [{
+                data: [
+                    rule("openai", "text.generate", "standard", "0.000002"),
+                    rule("openai", "text.generate", "priority", "0.000004"),
+                    rule("openai", "text.generate", "batch", "0.000001"),
+                    rule("openai", "text.generate", "flex", "0.000001", { effective_to: "2020-01-01T00:00:00Z" }),
+                    rule("openai", "responses", "flex", "0.000001"),
+                    rule("mistral", "text.generate", "standard", "0.000003"),
+                    rule("mistral", "text.generate", "priority", "0.000006"),
+                    rule("google-vertex", "text.generate", "priority", "0.000005"),
+                ],
+                error: null,
+            }],
+        };
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+        const [model] = await fetchCatalogue({});
+        const tiersByProvider = Object.fromEntries(
+            (model?.providers ?? []).map((entry) => [entry.api_provider_id, entry.service_tiers]),
+        );
+
+        expect(tiersByProvider).toEqual({
+            // text.generate (standard, priority; expired flex dropped) united with responses (flex only).
+            openai: ["flex", "priority", "standard"],
+            // Priced on priority, but no service_tier route parameter.
+            mistral: ["standard"],
+            // Catalogued as the fast tier.
+            "google-vertex": ["priority"],
+            // No SKUs at all.
+            deepinfra: ["standard"],
+        });
+        expect(model?.provider_endpoint_capabilities.openai?.["text.generate"]?.service_tiers).toEqual(["priority", "standard"]);
+        expect(model?.provider_endpoint_capabilities.openai?.responses?.service_tiers).toEqual(["flex"]);
+        // Pricing stays standard-only: the priority, batch and flex prices never reach the meters.
+        expect(model?.provider_pricing.openai?.meters.input_tokens?.price_per_unit).toBe("0.000002");
+        expect(model?.provider_pricing.mistral?.meters.input_tokens?.price_per_unit).toBe("0.000003");
+        expect(model?.provider_pricing["google-vertex"]?.meters.input_tokens ?? null).toBeNull();
+    });
+});

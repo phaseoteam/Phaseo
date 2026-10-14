@@ -8135,6 +8135,46 @@
 			"ja": "非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。",
 			"zh-Hans": "已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。",
 			"ar": "مهمل. لا تفرض حواجز الحماية حدودًا على الطلبات أو الإنفاق؛ استخدم بدلًا من ذلك حدود مفاتيح API أو ميزانيات مساحة العمل."
+		},
+		"ETag from an earlier JSON or OpenAI-format response for the same URL. If it still matches, the response is 304 Not Modified with no body. Accepts a comma-separated list, weak (W/) validators, and *.": {
+			"es": "ETag de una respuesta anterior en formato JSON u OpenAI para la misma URL. Si todavía coincide, la respuesta es 304 Not Modified sin cuerpo. Acepta una lista separada por comas, validadores débiles (W/) y *.",
+			"fr": "ETag d’une réponse précédente au format JSON ou OpenAI pour la même URL. S’il correspond toujours, la réponse est 304 Not Modified, sans corps. Accepte une liste séparée par des virgules, des validateurs faibles (W/) et *.",
+			"de": "ETag aus einer früheren Antwort im JSON- oder OpenAI-Format für dieselbe URL. Stimmt er noch überein, lautet die Antwort 304 Not Modified ohne Antworttext. Akzeptiert eine durch Kommas getrennte Liste, schwache Validatoren (W/) und *.",
+			"pt-BR": "ETag de uma resposta anterior em formato JSON ou OpenAI para a mesma URL. Se ainda corresponder, a resposta será 304 Not Modified, sem corpo. Aceita uma lista separada por vírgulas, validadores fracos (W/) e *.",
+			"hi": "उसी URL के लिए पिछली JSON या OpenAI प्रारूप वाली प्रतिक्रिया का ETag। अगर यह अब भी मेल खाता है, तो प्रतिक्रिया बिना बॉडी के 304 Not Modified होती है। कॉमा से अलग की गई सूची, कमज़ोर (W/) वैलिडेटर और * स्वीकार करता है।",
+			"ja": "同じ URL に対する以前の JSON 形式または OpenAI 形式のレスポンスの ETag。まだ一致する場合、レスポンスは本文なしの 304 Not Modified になります。カンマ区切りのリスト、弱いバリデーター (W/)、* を受け付けます。",
+			"zh-Hans": "同一 URL 先前 JSON 或 OpenAI 格式响应中的 ETag。如果仍然匹配，则返回不含正文的 304 Not Modified。支持逗号分隔的列表、弱校验器（W/）和 *。",
+			"ar": "قيمة ETag من استجابة سابقة بتنسيق JSON أو OpenAI لعنوان URL نفسه. إذا كانت لا تزال مطابقة، تكون الاستجابة 304 Not Modified دون جسم. يقبل قائمة مفصولة بفواصل، والمدقِّقات الضعيفة (W/)، و*."
+		},
+		"Not modified. If-None-Match still matches the current model list, so the response has no body. It repeats the ETag, Cache-Control, and Vary headers of the 200 response.": {
+			"es": "Sin modificar. If-None-Match todavía coincide con la lista de modelos actual, así que la respuesta no tiene cuerpo. Repite los encabezados ETag, Cache-Control y Vary de la respuesta 200.",
+			"fr": "Non modifié. If-None-Match correspond toujours à la liste de modèles actuelle : la réponse n’a donc pas de corps. Elle reprend les en-têtes ETag, Cache-Control et Vary de la réponse 200.",
+			"de": "Nicht geändert. If-None-Match stimmt weiterhin mit der aktuellen Modellliste überein, daher hat die Antwort keinen Antworttext. Sie wiederholt die Header ETag, Cache-Control und Vary der 200-Antwort.",
+			"pt-BR": "Não modificado. If-None-Match ainda corresponde à lista de modelos atual, então a resposta não tem corpo. Ela repete os cabeçalhos ETag, Cache-Control e Vary da resposta 200.",
+			"hi": "कोई बदलाव नहीं। If-None-Match अब भी मौजूदा मॉडल सूची से मेल खाता है, इसलिए प्रतिक्रिया में कोई बॉडी नहीं होती। यह 200 प्रतिक्रिया के ETag, Cache-Control और Vary हेडर दोहराती है।",
+			"ja": "変更なし。If-None-Match が現在のモデル一覧とまだ一致するため、レスポンスに本文はありません。200 レスポンスの ETag、Cache-Control、Vary ヘッダーを同じように返します。",
+			"zh-Hans": "未修改。If-None-Match 仍与当前模型列表匹配，因此响应不含正文。响应会重复 200 响应中的 ETag、Cache-Control 和 Vary 标头。",
+			"ar": "لم يتغيّر. لا تزال قيمة If-None-Match مطابقة لقائمة النماذج الحالية، لذا لا تحتوي الاستجابة على جسم. وتكرّر ترويسات ETag وCache-Control وVary الخاصة بالاستجابة 200."
+		},
+		"Strong validator for the model list at this URL, covering the page, limit, offset, total, and format. It ignores gateway_region, so the same catalogue served from another region has the same value. Not sent with RSS, Atom, or error responses.": {
+			"es": "Validador fuerte de la lista de modelos en esta URL, que abarca la página, limit, offset, total y el formato. Ignora gateway_region, por lo que el mismo catálogo servido desde otra región tiene el mismo valor. No se envía con respuestas RSS, Atom ni de error.",
+			"fr": "Validateur fort de la liste de modèles à cette URL, couvrant la page, limit, offset, total et le format. Il ignore gateway_region : le même catalogue servi depuis une autre région a donc la même valeur. Non envoyé avec les réponses RSS, Atom ou d’erreur.",
+			"de": "Starker Validator für die Modellliste unter dieser URL, der Seite, limit, offset, total und Format abdeckt. gateway_region wird ignoriert, sodass derselbe Katalog aus einer anderen Region denselben Wert hat. Wird bei RSS-, Atom- und Fehlerantworten nicht gesendet.",
+			"pt-BR": "Validador forte da lista de modelos nesta URL, abrangendo a página, limit, offset, total e o formato. Ele ignora gateway_region, então o mesmo catálogo servido de outra região tem o mesmo valor. Não é enviado em respostas RSS, Atom ou de erro.",
+			"hi": "इस URL पर मॉडल सूची का स्ट्रॉन्ग वैलिडेटर, जिसमें पेज, limit, offset, total और प्रारूप शामिल हैं। यह gateway_region को अनदेखा करता है, इसलिए किसी दूसरे क्षेत्र से दिए गए उसी कैटलॉग का मान भी वही रहता है। RSS, Atom या त्रुटि वाली प्रतिक्रियाओं के साथ नहीं भेजा जाता।",
+			"ja": "この URL のモデル一覧に対する強いバリデーター。ページ、limit、offset、total、形式を対象とします。gateway_region は無視されるため、別のリージョンから提供された同じカタログでも値は同じです。RSS、Atom、エラーのレスポンスには付与されません。",
+			"zh-Hans": "此 URL 上模型列表的强校验器，涵盖页面、limit、offset、total 和格式。它会忽略 gateway_region，因此从其他区域提供的同一目录具有相同的值。RSS、Atom 和错误响应不会包含它。",
+			"ar": "مدقِّق قوي لقائمة النماذج عند عنوان URL هذا، يشمل الصفحة وlimit وoffset وtotal والتنسيق. يتجاهل gateway_region، لذا يحمل الكتالوج نفسه المقدَّم من منطقة أخرى القيمة نفسها. لا يُرسَل مع استجابات RSS أو Atom أو الأخطاء."
+		},
+		"Service tiers this offer accepts, sorted alphabetically. A tier is listed when the provider route has active, currently effective pricing for it; priority is the Fast tier. Other tiers may also be available through separate tier-specific provider routes.": {
+			"es": "Niveles de servicio que acepta esta oferta, en orden alfabético. Un nivel aparece cuando la ruta del proveedor tiene precios activos y vigentes para él; priority es el nivel Fast. Es posible que otros niveles también estén disponibles mediante rutas de proveedor independientes, específicas de cada nivel.",
+			"fr": "Niveaux de service acceptés par cette offre, triés par ordre alphabétique. Un niveau est listé lorsque la route du fournisseur dispose pour lui d’une tarification active et en vigueur ; priority correspond au niveau Fast. D’autres niveaux peuvent aussi être disponibles via des routes de fournisseur distinctes, propres à chaque niveau.",
+			"de": "Service-Stufen, die dieses Angebot akzeptiert, alphabetisch sortiert. Eine Stufe wird aufgeführt, wenn die Anbieterroute dafür aktive, derzeit gültige Preise hat; priority ist die Fast-Stufe. Weitere Stufen können auch über separate, stufenspezifische Anbieterrouten verfügbar sein.",
+			"pt-BR": "Níveis de serviço que esta oferta aceita, em ordem alfabética. Um nível é listado quando a rota do provedor tem preços ativos e vigentes para ele; priority é o nível Fast. Outros níveis também podem estar disponíveis por meio de rotas de provedor separadas, específicas de cada nível.",
+			"hi": "वे सेवा स्तर जिन्हें यह ऑफ़र स्वीकार करता है, वर्णानुक्रम में। कोई स्तर तब सूचीबद्ध होता है जब प्रदाता रूट के पास उसके लिए सक्रिय और अभी प्रभावी मूल्य निर्धारण हो; priority, Fast स्तर है। दूसरे स्तर अलग, स्तर-विशिष्ट प्रदाता रूट के ज़रिए भी उपलब्ध हो सकते हैं।",
+			"ja": "このオファーが受け付けるサービス階層（アルファベット順）。プロバイダールートにその階層の有効かつ現在適用中の料金がある場合に記載されます。priority は Fast 階層です。ほかの階層が、階層専用の別のプロバイダールートを通じて利用できる場合もあります。",
+			"zh-Hans": "此报价接受的服务等级，按字母顺序排列。当提供商路由具有该等级的有效且当前生效的定价时，会列出该等级；priority 即 Fast 等级。其他等级也可能通过单独的等级专用提供商路由提供。",
+			"ar": "مستويات الخدمة التي يقبلها هذا العرض، مرتّبة أبجديًا. يُدرَج المستوى عندما يكون لمسار المزوّد تسعير نشط وساري المفعول حاليًا له؛ وpriority هو مستوى Fast. وقد تتوفر مستويات أخرى أيضًا عبر مسارات مزوّد منفصلة خاصة بكل مستوى."
 		}
 	},
 	"GET /apps": {

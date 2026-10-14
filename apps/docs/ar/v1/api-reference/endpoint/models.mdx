@@ -32,6 +32,37 @@ curl 'https://api.phaseo.app/v1/models?format=openai' \
 
 يستخدم تنسيق OpenAI المصادقة والتوفر الإقليمي ونماذج مساحة العمل الخاصة وعوامل التصفية نفسها المستخدمة في تنسيق JSON الأصلي. يعيد جميع النماذج المطابقة ما لم تحدد `limit`؛ ويظل `offset` مطبقًا. تبقى المعرّفات بتنسيق Phaseo المعتمد للاستدلال. يستخدم `created` تاريخ الإصدار في الكتالوج، أو `0` إذا كان غير معروف؛ ويستخدم `owned_by` مؤسسة الكتالوج، أو `private` لنماذج مساحة العمل، أو `phaseo` إذا كانت غير معروفة.
 
+## تخزين قائمة النماذج مؤقتًا
+
+تتضمن الاستجابات بتنسيق JSON وOpenAI ترويسة `ETag` قوية. تتغيّر قيمتها عندما تتغيّر النماذج في الصفحة أو `limit` أو `offset` أو `total` أو التنسيق. وهي تتجاهل `gateway_region`، لذا يحمل الكتالوج نفسه المقدَّم من منطقة أخرى قيمة `ETag` نفسها. لا تتضمنها استجابات RSS وAtom والأخطاء.
+
+أرسل القيمة المحفوظة مرة أخرى في `If-None-Match`. إذا لم يتغيّر الكتالوج، تكون الاستجابة `304 Not Modified` دون جسم، وتكرّر ترويسات `ETag` و`Cache-Control` و`Vary`. وإلا فستتلقى استجابة `200` عادية تحتوي على القائمة الجديدة وقيمة `ETag` جديدة. يقبل `If-None-Match` أيضًا قائمة مفصولة بفواصل، والمدقِّقات الضعيفة `W/`، و`*`.
+
+```ts
+let etag: string | null = null;
+let models: unknown[] = [];
+
+async function refreshModels() {
+  const response = await fetch("https://api.phaseo.app/v1/models?limit=250", {
+    headers: {
+      Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+      ...(etag ? { "If-None-Match": etag } : {}),
+    },
+  });
+  if (response.status === 304) return models; // Unchanged; a 304 has no body.
+  if (!response.ok) throw new Error(`Model list request failed: ${response.status}`);
+  etag = response.headers.get("ETag");
+  models = (await response.json()).models;
+  return models;
+}
+```
+
+بما أن استجابة `304` لا تحتوي على جسم، فإن الاستعلام الدوري منخفض التكلفة: يمكن للعميل مثلًا التحقق كل 15 دقيقة وإعادة تنزيل القائمة فقط عندما يتغيّر الكتالوج. احتفظ بقيمة `ETag` لكل عنوان URL للطلب، لأن لكل صفحة ومجموعة عوامل تصفية وتنسيق قيمته الخاصة.
+
+### مستويات الخدمة لكل عرض
+
+يتضمن كل إدخال في `offers` الحقل `service_tiers`، وهو [مستويات الخدمة](../../guides/service-tiers.mdx) التي يقبلها عرض المزوّد هذا. وهو مجموعة فرعية مرتّبة أبجديًا من `flex` و`priority` و`standard` و`ultrafast`، حيث يمثّل `priority` مستوى Fast. يُدرَج المستوى عندما يكون لمسار المزوّد تسعير نشط وساري المفعول حاليًا له، ولا يُدرج المسار الذي يخدم مستوى واحدًا إلا ذلك المستوى. وقد تتوفر بعض المستويات أيضًا عبر مسارات مزوّد منفصلة خاصة بكل مستوى لا تظهر هنا. تظل الأسعار ضمن `pricing` أسعار المستوى القياسي.
+
 ## عوامل تصفية مفيدة
 
 - يستخدم `endpoints` أسماء عامة مثل `chat.completions` و`responses` و`messages`

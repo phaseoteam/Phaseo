@@ -32,6 +32,37 @@ curl 'https://api.phaseo.app/v1/models?format=openai' \
 
 OpenAI 格式沿用与原生 JSON 相同的身份验证、区域可用性、工作区私有模型和筛选条件。除非指定 `limit`，否则返回所有匹配的模型；`offset` 仍然适用。ID 保持 Phaseo 的规范格式，可直接用于推理。`created` 使用目录中的发布日期，未知时为 `0`；`owned_by` 使用目录中的组织，工作区模型为 `private`，未知时为 `phaseo`。
 
+## 缓存模型列表
+
+JSON 和 OpenAI 格式的响应包含强 `ETag` 标头。当页面上的模型、`limit`、`offset`、`total` 或格式发生变化时，它也会变化。它会忽略 `gateway_region`，因此从其他区域提供的同一目录具有相同的 `ETag`。RSS、Atom 和错误响应不包含该标头。
+
+在 `If-None-Match` 中发回已保存的值。如果目录没有变化，响应为不含正文的 `304 Not Modified`，并重复 `ETag`、`Cache-Control` 和 `Vary` 标头。否则，你会收到包含新列表和新 `ETag` 的普通 `200` 响应。`If-None-Match` 还接受逗号分隔的列表、弱校验器 `W/` 和 `*`。
+
+```ts
+let etag: string | null = null;
+let models: unknown[] = [];
+
+async function refreshModels() {
+  const response = await fetch("https://api.phaseo.app/v1/models?limit=250", {
+    headers: {
+      Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+      ...(etag ? { "If-None-Match": etag } : {}),
+    },
+  });
+  if (response.status === 304) return models; // Unchanged; a 304 has no body.
+  if (!response.ok) throw new Error(`Model list request failed: ${response.status}`);
+  etag = response.headers.get("ETag");
+  models = (await response.json()).models;
+  return models;
+}
+```
+
+由于 `304` 响应不含正文，轮询的开销很低：例如，客户端可以每 15 分钟检查一次，只在目录变化时重新下载列表。请为每个请求 URL 分别保存 `ETag`，因为每个页面、筛选组合和格式都有各自的值。
+
+### 每个报价的服务等级
+
+`offers` 中的每个条目都包含 `service_tiers`，即该提供商报价接受的[服务等级](../../guides/service-tiers.mdx)。它是 `flex`、`priority`、`standard` 和 `ultrafast` 中按字母顺序排列的子集，其中 `priority` 即 Fast 等级。当提供商路由具有某个等级的有效且当前生效的定价时，会列出该等级；只提供一个等级的路由只会列出该等级。某些等级也可能通过此处未列出的、单独的等级专用提供商路由提供。`pricing` 下的价格仍为标准等级价格。
+
 ## 常用筛选条件
 
 - `endpoints` 使用公开名称，例如 `chat.completions`、`responses` 和 `messages`

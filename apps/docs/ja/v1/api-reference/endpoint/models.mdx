@@ -32,6 +32,37 @@ curl 'https://api.phaseo.app/v1/models?format=openai' \
 
 OpenAI 形式では、ネイティブの JSON 形式と同じ認証、地域別の利用可否、ワークスペースのプライベートモデル、フィルターが使用されます。`limit` を指定しない限り一致するすべてのモデルを返し、`offset` は引き続き適用されます。ID は推論に使用する Phaseo の正規形式のままです。`created` にはカタログのリリース日が入り、不明な場合は `0` になります。`owned_by` にはカタログの組織が入り、ワークスペースのモデルでは `private`、不明な場合は `phaseo` になります。
 
+## モデル一覧のキャッシュ
+
+JSON 形式と OpenAI 形式のレスポンスには、強い `ETag` ヘッダーが含まれます。ページ上のモデル、`limit`、`offset`、`total`、形式のいずれかが変わると値も変わります。`gateway_region` は無視されるため、別のリージョンから提供された同じカタログでも `ETag` は同じです。RSS、Atom、エラーのレスポンスには含まれません。
+
+保存した値を `If-None-Match` で送り返してください。カタログが変わっていなければ、レスポンスは本文なしの `304 Not Modified` になり、`ETag`、`Cache-Control`、`Vary` ヘッダーを同じように返します。変わっている場合は、新しい一覧と新しい `ETag` を含む通常の `200` が返ります。`If-None-Match` には、カンマ区切りのリスト、弱いバリデーター `W/`、`*` も指定できます。
+
+```ts
+let etag: string | null = null;
+let models: unknown[] = [];
+
+async function refreshModels() {
+  const response = await fetch("https://api.phaseo.app/v1/models?limit=250", {
+    headers: {
+      Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+      ...(etag ? { "If-None-Match": etag } : {}),
+    },
+  });
+  if (response.status === 304) return models; // Unchanged; a 304 has no body.
+  if (!response.ok) throw new Error(`Model list request failed: ${response.status}`);
+  etag = response.headers.get("ETag");
+  models = (await response.json()).models;
+  return models;
+}
+```
+
+`304` レスポンスには本文がないため、ポーリングの負荷は小さく済みます。たとえば 15 分ごとに確認し、カタログが変わったときだけ一覧を再ダウンロードできます。ページ、フィルターの組み合わせ、形式ごとに値が異なるため、`ETag` はリクエスト URL ごとに保持してください。
+
+### オファーごとのサービス階層
+
+`offers` の各エントリには `service_tiers` が含まれます。これは、そのプロバイダーのオファーが受け付ける[サービス階層](../../guides/service-tiers.mdx)です。値は `flex`、`priority`、`standard`、`ultrafast` のうち該当するものをアルファベット順に並べたもので、`priority` は Fast 階層を表します。プロバイダールートにその階層の有効かつ現在適用中の料金がある場合に記載され、1 つの階層だけを提供するルートにはその階層のみが記載されます。一部の階層は、ここに記載されない階層専用の別のプロバイダールートを通じて利用できる場合もあります。`pricing` の料金は引き続き標準階層の料金です。
+
 ## 便利なフィルター
 
 - `endpoints` では `chat.completions`、`responses`、`messages` などの公開名を指定します

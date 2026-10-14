@@ -32,6 +32,37 @@ curl 'https://api.phaseo.app/v1/models?format=openai' \
 
 O formato OpenAI usa a mesma autenticação, a mesma disponibilidade regional, os mesmos modelos privados do espaço de trabalho e os mesmos filtros do JSON nativo. Ele retorna todos os modelos correspondentes, a menos que você informe `limit`; `offset` continua valendo. Os IDs permanecem no formato canônico da Phaseo para inferência. `created` usa a data de lançamento do catálogo, ou `0` quando ela é desconhecida; `owned_by` usa a organização do catálogo, `private` para modelos do espaço de trabalho ou `phaseo` quando ela é desconhecida.
 
+## Armazenar a lista de modelos em cache
+
+As respostas em formato JSON e OpenAI incluem um cabeçalho `ETag` forte. Ele muda quando mudam os modelos da página, `limit`, `offset`, `total` ou o formato. Ele ignora `gateway_region`, então o mesmo catálogo servido de outra região tem o mesmo `ETag`. Respostas RSS, Atom e de erro não o incluem.
+
+Envie o valor salvo em `If-None-Match`. Se o catálogo não mudou, a resposta é `304 Not Modified`, sem corpo, e repete os cabeçalhos `ETag`, `Cache-Control` e `Vary`. Caso contrário, você recebe uma resposta `200` normal com a nova lista e um novo `ETag`. `If-None-Match` também aceita uma lista separada por vírgulas, validadores fracos `W/` e `*`.
+
+```ts
+let etag: string | null = null;
+let models: unknown[] = [];
+
+async function refreshModels() {
+  const response = await fetch("https://api.phaseo.app/v1/models?limit=250", {
+    headers: {
+      Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+      ...(etag ? { "If-None-Match": etag } : {}),
+    },
+  });
+  if (response.status === 304) return models; // Unchanged; a 304 has no body.
+  if (!response.ok) throw new Error(`Model list request failed: ${response.status}`);
+  etag = response.headers.get("ETag");
+  models = (await response.json()).models;
+  return models;
+}
+```
+
+Como uma resposta `304` não tem corpo, consultar periodicamente é barato: um cliente pode verificar, por exemplo, a cada 15 minutos e baixar a lista de novo só quando o catálogo mudar. Guarde um `ETag` por URL de solicitação, porque cada página, conjunto de filtros e formato tem seu próprio valor.
+
+### Níveis de serviço por oferta
+
+Cada entrada em `offers` inclui `service_tiers`, os [níveis de serviço](../../guides/service-tiers.mdx) que essa oferta do provedor aceita. É um subconjunto em ordem alfabética de `flex`, `priority`, `standard` e `ultrafast`, em que `priority` é o nível Fast. Um nível é listado quando a rota do provedor tem preços ativos e vigentes para ele, e uma rota que atende a um único nível lista apenas esse nível. Alguns níveis também podem estar disponíveis por meio de rotas de provedor separadas, específicas de cada nível, que não são listadas aqui. Os preços em `pricing` continuam sendo os do nível padrão.
+
 ## Filtros úteis
 
 - `endpoints` usa nomes públicos, como `chat.completions`, `responses` e `messages`

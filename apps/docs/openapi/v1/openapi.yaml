@@ -263,9 +263,21 @@ paths:
               - json
               - rss
               - atom
+        - name: If-None-Match
+          in: header
+          required: false
+          description: >-
+            ETag from an earlier JSON or OpenAI-format response for the same
+            URL. If it still matches, the response is 304 Not Modified with no
+            body. Accepts a comma-separated list, weak (W/) validators, and *.
+          schema:
+            type: string
       responses:
         '200':
           description: List of models
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
           content:
             application/json:
               schema:
@@ -280,6 +292,14 @@ paths:
               schema:
                 type: string
                 description: Atom XML feed
+        '304':
+          description: >-
+            Not modified. If-None-Match still matches the current model list, so
+            the response has no body. It repeats the ETag, Cache-Control, and
+            Vary headers of the 200 response.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
         '400':
           description: Invalid request parameters
           content:
@@ -8911,6 +8931,14 @@ components:
         requests.
       schema:
         type: string
+    ModelListETag:
+      description: >-
+        Strong validator for the model list at this URL, covering the page,
+        limit, offset, total, and format. It ignores gateway_region, so the same
+        catalogue served from another region has the same value. Not sent with
+        RSS, Atom, or error responses.
+      schema:
+        type: string
   parameters:
     DataContributionClassifierId:
       name: id
@@ -9473,6 +9501,20 @@ components:
           $ref: '#/components/schemas/GatewayModalities'
         capabilities:
           $ref: '#/components/schemas/GatewayCapabilities'
+        service_tiers:
+          type: array
+          description: >-
+            Service tiers this offer accepts, sorted alphabetically. A tier is
+            listed when the provider route has active, currently effective
+            pricing for it; priority is the Fast tier. Other tiers may also be
+            available through separate tier-specific provider routes.
+          items:
+            type: string
+            enum:
+              - flex
+              - priority
+              - standard
+              - ultrafast
         routing:
           type: object
           required:

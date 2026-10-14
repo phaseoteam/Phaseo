@@ -248,9 +248,18 @@ paths:
               - json
               - rss
               - atom
+        - name: If-None-Match
+          in: header
+          required: false
+          description: ETag de una respuesta anterior en formato JSON u OpenAI para la misma URL. Si todavía coincide, la respuesta es 304 Not Modified sin cuerpo. Acepta una lista separada por comas, validadores débiles (W/) y *.
+          schema:
+            type: string
       responses:
         '200':
           description: Lista de modelos
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
           content:
             application/json:
               schema:
@@ -265,6 +274,11 @@ paths:
               schema:
                 type: string
                 description: Feed XML Atom
+        '304':
+          description: Sin modificar. If-None-Match todavía coincide con la lista de modelos actual, así que la respuesta no tiene cuerpo. Repite los encabezados ETag, Cache-Control y Vary de la respuesta 200.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
         '400':
           description: Parámetros de solicitud no válidos
           content:
@@ -8538,6 +8552,10 @@ components:
       description: Metadatos de cuota del proveedor, solo para BYOK. Se omiten en las solicitudes gestionadas por Phaseo.
       schema:
         type: string
+    ModelListETag:
+      description: Validador fuerte de la lista de modelos en esta URL, que abarca la página, limit, offset, total y el formato. Ignora gateway_region, por lo que el mismo catálogo servido desde otra región tiene el mismo valor. No se envía con respuestas RSS, Atom ni de error.
+      schema:
+        type: string
   parameters:
     DataContributionClassifierId:
       name: id
@@ -9098,6 +9116,16 @@ components:
           $ref: '#/components/schemas/GatewayModalities'
         capabilities:
           $ref: '#/components/schemas/GatewayCapabilities'
+        service_tiers:
+          type: array
+          description: Niveles de servicio que acepta esta oferta, en orden alfabético. Un nivel aparece cuando la ruta del proveedor tiene precios activos y vigentes para él; priority es el nivel Fast. Es posible que otros niveles también estén disponibles mediante rutas de proveedor independientes, específicas de cada nivel.
+          items:
+            type: string
+            enum:
+              - flex
+              - priority
+              - standard
+              - ultrafast
         routing:
           type: object
           required:

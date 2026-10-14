@@ -4,6 +4,7 @@
 
 import { getSupabaseAdmin } from "@/runtime/env";
 import { tieredRead } from "@core/tiered-cache";
+import { readProviderCatalogTier } from "@core/serviceTiers";
 import type { Endpoint } from "@core/types";
 import {
     normalizeCapabilityStatus,
@@ -14,6 +15,8 @@ import {
 type ProviderModelRow = {
     provider_api_model_id: string | null;
     provider_id: string | null;
+    // Real provider slug, kept when a stealth route replaces `provider_id`.
+    source_provider_id?: string | null;
     api_model_id: string | null;
     model_id: string | null;
     provider_model_slug?: string | null;
@@ -74,19 +77,90 @@ type PricingSkuRow = {
     description: string | null;
 };
 
-export function isCurrentStandardPricingSku(
-    sku: Pick<PricingSkuRow, "status" | "service_tier_slug" | "effective_from" | "effective_to">,
+/** Active and inside its effective window, whatever its service tier. */
+export function isCurrentPricingSku(
+    sku: Pick<PricingSkuRow, "status" | "effective_from" | "effective_to">,
     nowMs = Date.now(),
 ): boolean {
     if (sku.status && sku.status !== "active") return false;
-    const tier = sku.service_tier_slug?.trim().toLowerCase();
-    if (tier && tier !== "standard") return false;
-
     const effectiveFrom = sku.effective_from ? Date.parse(sku.effective_from) : Number.NaN;
     if (Number.isFinite(effectiveFrom) && effectiveFrom > nowMs) return false;
     const effectiveTo = sku.effective_to ? Date.parse(sku.effective_to) : Number.NaN;
     if (Number.isFinite(effectiveTo) && effectiveTo <= nowMs) return false;
     return true;
+}
+
+/** Lower-cased service tier of a pricing SKU; null and blank mean "standard". */
+export function pricingSkuServiceTier(sku: Pick<PricingSkuRow, "service_tier_slug">): string {
+    return sku.service_tier_slug?.trim().toLowerCase() || "standard";
+}
+
+export function isCurrentStandardPricingSku(
+    sku: Pick<PricingSkuRow, "status" | "service_tier_slug" | "effective_from" | "effective_to">,
+    nowMs = Date.now(),
+): boolean {
+    return pricingSkuServiceTier(sku) === "standard" && isCurrentPricingSku(sku, nowMs);
+}
+
+export const OFFER_SERVICE_TIERS = ["flex", "priority", "standard", "ultrafast"] as const;
+export type OfferServiceTier = (typeof OFFER_SERVICE_TIERS)[number];
+
+const NON_STANDARD_OFFER_TIERS = ["priority", "ultrafast", "flex"] as const;
+
+// Pricing plans that make a route unusable without an explicit `service_tier`;
+// mirrors `requiresExplicitServiceTier` in pipeline/pricing/service-tiers.ts.
+const EXPLICIT_ONLY_PRICING_PLANS = new Set(["priority", "ultrafast", "flex", "batch"]);
+
+/**
+ * Service tiers one provider route serves for one operation. Mirrors
+ * `applyServiceTierRouting` in pipeline/before/serviceTierRouting.ts:
+ * - standard: no current SKUs, or at least one current SKU outside the explicit-only plans;
+ * - priority, ultrafast, flex: a current SKU priced on that plan;
+ * - Mistral priority also needs a `service_tier`/`serviceTier` route capability param;
+ * - a route catalogued as one tier (`params.service_tier.provider_catalog`) offers only that tier.
+ * Hidden `-fast`/`-flex`/`-ultrafast` sibling routes are not considered.
+ * Returns tiers in alphabetical order.
+ */
+export function deriveOfferServiceTiers(args: {
+    providerId: string | null | undefined;
+    skuTiers: Iterable<string> | null | undefined;
+    capabilityParams: unknown;
+}): OfferServiceTier[] {
+    const skuTiers = new Set(Array.from(args.skuTiers ?? [], (tier) => tier.trim().toLowerCase() || "standard"));
+    const params = args.capabilityParams && typeof args.capabilityParams === "object" && !Array.isArray(args.capabilityParams)
+        ? args.capabilityParams as Record<string, unknown>
+        : {};
+    const tiers = new Set<OfferServiceTier>();
+    if (skuTiers.size === 0 || Array.from(skuTiers).some((tier) => !EXPLICIT_ONLY_PRICING_PLANS.has(tier))) {
+        tiers.add("standard");
+    }
+    for (const tier of NON_STANDARD_OFFER_TIERS) {
+        if (skuTiers.has(tier)) tiers.add(tier);
+    }
+
+    const catalogTier = readProviderCatalogTier(params);
+    if (catalogTier) {
+        // The gateway skips the Mistral check for catalogued routes but still
+        // requires pricing on the catalogued tier.
+        const plan = catalogTier.name === "fast" ? "priority" : catalogTier.name;
+        return Array.from(tiers).filter((tier) => tier === plan);
+    }
+
+    const providerId = String(args.providerId ?? "").trim().toLowerCase();
+    if ((providerId === "mistral" || providerId === "mistral-eu") && !("service_tier" in params || "serviceTier" in params)) {
+        tiers.delete("priority");
+    }
+    return Array.from(tiers).sort((a, b) => a.localeCompare(b));
+}
+
+export function mergeOfferServiceTiers(
+    ...lists: Array<readonly OfferServiceTier[] | null | undefined>
+): OfferServiceTier[] {
+    return Array.from(new Set(lists.flatMap((list) => list ?? []))).sort((a, b) => a.localeCompare(b));
+}
+
+function routeOperationKey(providerModelId: string | null | undefined, operation: string | null | undefined): string {
+    return `${providerModelId ?? ""}\u0000${operation ?? ""}`;
 }
 
 type PricingMeterRow = {
@@ -186,6 +260,7 @@ type CatalogueProvider = {
     effective_to: string | null;
     params: string[];
     params_detail: SupportedParamDetails;
+    service_tiers: OfferServiceTier[];
 };
 
 export type SupportedParamDetail = Record<string, unknown>;
@@ -250,6 +325,8 @@ export type ProviderInfo = {
     output_modalities: string[];
     params: string[];
     params_detail: SupportedParamDetails;
+    /** Absent on catalogue objects cached before the field existed; read it as ["standard"]. */
+    service_tiers?: OfferServiceTier[];
 };
 
 export type PricingMeterSummary = {
@@ -1307,6 +1384,7 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
         const chunkRows = (data ?? []).map((row) => publicCatalogueProviderRoute({
             provider_api_model_id: row.provider_model_id,
             provider_id: row.provider_slug,
+            source_provider_id: row.provider_slug,
             api_model_id: row.model_slug,
             model_id: row.model_slug,
             provider_model_slug: row.provider_model_slug,
@@ -1447,14 +1525,26 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
         }
     }
 
+    // One SKU query serves two purposes: standard SKUs feed pricing (unchanged),
+    // and every current SKU's tier feeds `service_tiers` per route and operation.
     const skuRows: PricingSkuRow[] = [];
+    const skuTiersByRouteOperation = new Map<string, Set<string>>();
+    const skuNowMs = Date.now();
     for (const providerModelIdChunk of chunkArray(Array.from(new Set(providerModelIds)), 200)) {
         const { data, error: skuError } = await supabase
             .from("v2_pricing_skus")
             .select("sku_id,provider_model_id,operation,service_tier_slug,status,currency,effective_from,effective_to,metadata,description")
             .in("provider_model_id", providerModelIdChunk);
         if (skuError) throw new Error(`Failed to load pricing SKUs: ${skuError.message || "unknown error"}`);
-        skuRows.push(...((data ?? []) as PricingSkuRow[]).filter((sku) => isCurrentStandardPricingSku(sku)));
+        for (const sku of (data ?? []) as PricingSkuRow[]) {
+            if (!isCurrentPricingSku(sku, skuNowMs)) continue;
+            const tier = pricingSkuServiceTier(sku);
+            const key = routeOperationKey(sku.provider_model_id, sku.operation);
+            const tiers = skuTiersByRouteOperation.get(key) ?? new Set<string>();
+            tiers.add(tier);
+            skuTiersByRouteOperation.set(key, tiers);
+            if (tier === "standard") skuRows.push(sku);
+        }
     }
     const skuIds = (skuRows ?? []).map((row) => row.sku_id).filter(Boolean);
     const meterRows: PricingMeterRow[] = [];
@@ -1668,6 +1758,13 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
                     effective_to: effectiveTo,
                     params: toParamsList(cap.params),
                     params_detail: toParamsDetail(cap.params),
+                    service_tiers: deriveOfferServiceTiers({
+                        providerId: row.source_provider_id ?? row.provider_id,
+                        skuTiers: skuTiersByRouteOperation.get(
+                            routeOperationKey(row.provider_api_model_id, cap.capability_id),
+                        ),
+                        capabilityParams: cap.params,
+                    }),
                 });
             }
         }
@@ -1812,6 +1909,7 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
                     output_modalities: [...entry.output_modalities],
                     params: [...entry.params].sort((a, b) => a.localeCompare(b)),
                     params_detail: { ...entry.params_detail },
+                    service_tiers: [...entry.service_tiers],
                 };
             }
             providerEndpointCapabilities[entry.api_provider_id] = providerEndpoints;
@@ -1841,6 +1939,7 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
                     output_modalities: [...entry.output_modalities],
                     params: [...entry.params].sort((a, b) => a.localeCompare(b)),
                     params_detail: { ...entry.params_detail },
+                    service_tiers: [...entry.service_tiers],
                 });
                 continue;
             }
@@ -1854,6 +1953,7 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
             ).sort();
             existing.params = Array.from(new Set([...existing.params, ...entry.params])).sort((a, b) => a.localeCompare(b));
             existing.params_detail = mergeParamDetails(existing.params_detail, entry.params_detail);
+            existing.service_tiers = mergeOfferServiceTiers(existing.service_tiers, entry.service_tiers);
             if (compareProviderInfoCandidate(entry, existing) < 0) {
                 existing.is_active_gateway = entry.is_active_gateway;
                 existing.availability_status = entry.availability_status;

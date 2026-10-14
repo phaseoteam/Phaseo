@@ -2900,6 +2900,9 @@ public sealed class GatewayModelOffer
 	[JsonPropertyName("routing")]
 	public Dictionary<string, object> Routing { get; set; }
 
+	[JsonPropertyName("service_tiers")]
+	public List<string>? ServiceTiers { get; set; }
+
 	[JsonPropertyName("status")]
 	public string Status { get; set; }
 

@@ -248,9 +248,18 @@ paths:
               - json
               - rss
               - atom
+        - name: If-None-Match
+          in: header
+          required: false
+          description: 同一 URL 先前 JSON 或 OpenAI 格式响应中的 ETag。如果仍然匹配，则返回不含正文的 304 Not Modified。支持逗号分隔的列表、弱校验器（W/）和 *。
+          schema:
+            type: string
       responses:
         '200':
           description: 模型列表
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
           content:
             application/json:
               schema:
@@ -265,6 +274,11 @@ paths:
               schema:
                 type: string
                 description: Atom XML 源
+        '304':
+          description: 未修改。If-None-Match 仍与当前模型列表匹配，因此响应不含正文。响应会重复 200 响应中的 ETag、Cache-Control 和 Vary 标头。
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
         '400':
           description: 请求参数无效
           content:
@@ -8538,6 +8552,10 @@ components:
       description: 仅适用于 BYOK 的提供商配额元数据。使用托管提供商的请求不会返回此字段。
       schema:
         type: string
+    ModelListETag:
+      description: 此 URL 上模型列表的强校验器，涵盖页面、limit、offset、total 和格式。它会忽略 gateway_region，因此从其他区域提供的同一目录具有相同的值。RSS、Atom 和错误响应不会包含它。
+      schema:
+        type: string
   parameters:
     DataContributionClassifierId:
       name: id
@@ -9098,6 +9116,16 @@ components:
           $ref: '#/components/schemas/GatewayModalities'
         capabilities:
           $ref: '#/components/schemas/GatewayCapabilities'
+        service_tiers:
+          type: array
+          description: 此报价接受的服务等级，按字母顺序排列。当提供商路由具有该等级的有效且当前生效的定价时，会列出该等级；priority 即 Fast 等级。其他等级也可能通过单独的等级专用提供商路由提供。
+          items:
+            type: string
+            enum:
+              - flex
+              - priority
+              - standard
+              - ultrafast
         routing:
           type: object
           required:

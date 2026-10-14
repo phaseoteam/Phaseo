@@ -248,9 +248,18 @@ paths:
               - json
               - rss
               - atom
+        - name: If-None-Match
+          in: header
+          required: false
+          description: 同じ URL に対する以前の JSON 形式または OpenAI 形式のレスポンスの ETag。まだ一致する場合、レスポンスは本文なしの 304 Not Modified になります。カンマ区切りのリスト、弱いバリデーター (W/)、* を受け付けます。
+          schema:
+            type: string
       responses:
         '200':
           description: モデル一覧
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
           content:
             application/json:
               schema:
@@ -265,6 +274,11 @@ paths:
               schema:
                 type: string
                 description: Atom XML フィード
+        '304':
+          description: 変更なし。If-None-Match が現在のモデル一覧とまだ一致するため、レスポンスに本文はありません。200 レスポンスの ETag、Cache-Control、Vary ヘッダーを同じように返します。
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
         '400':
           description: リクエストパラメーターが無効です
           content:
@@ -8538,6 +8552,10 @@ components:
       description: BYOK 専用のプロバイダー割り当てメタデータです。マネージドプロバイダーへのリクエストでは省略されます。
       schema:
         type: string
+    ModelListETag:
+      description: この URL のモデル一覧に対する強いバリデーター。ページ、limit、offset、total、形式を対象とします。gateway_region は無視されるため、別のリージョンから提供された同じカタログでも値は同じです。RSS、Atom、エラーのレスポンスには付与されません。
+      schema:
+        type: string
   parameters:
     DataContributionClassifierId:
       name: id
@@ -9098,6 +9116,16 @@ components:
           $ref: '#/components/schemas/GatewayModalities'
         capabilities:
           $ref: '#/components/schemas/GatewayCapabilities'
+        service_tiers:
+          type: array
+          description: このオファーが受け付けるサービス階層（アルファベット順）。プロバイダールートにその階層の有効かつ現在適用中の料金がある場合に記載されます。priority は Fast 階層です。ほかの階層が、階層専用の別のプロバイダールートを通じて利用できる場合もあります。
+          items:
+            type: string
+            enum:
+              - flex
+              - priority
+              - standard
+              - ultrafast
         routing:
           type: object
           required:

@@ -32,6 +32,37 @@ curl 'https://api.phaseo.app/v1/models?format=openai' \
 
 Das OpenAI-Format verwendet dieselbe Authentifizierung, regionale Verfügbarkeit, privaten Workspace-Modelle und Filter wie das native JSON. Es gibt alle passenden Modelle zurück, sofern du kein `limit` angibst; `offset` gilt weiterhin. IDs bleiben für die Inferenz in der kanonischen Form von Phaseo. `created` verwendet das Veröffentlichungsdatum aus dem Katalog oder `0`, wenn es unbekannt ist; `owned_by` verwendet die Katalogorganisation, `private` für Workspace-Modelle oder `phaseo`, wenn sie unbekannt ist.
 
+## Modellliste zwischenspeichern
+
+Antworten im JSON- und OpenAI-Format enthalten einen starken `ETag`-Header. Er ändert sich, wenn sich die Modelle auf der Seite, `limit`, `offset`, `total` oder das Format ändern. `gateway_region` wird ignoriert, sodass derselbe Katalog aus einer anderen Region denselben `ETag` hat. RSS-, Atom- und Fehlerantworten enthalten keinen.
+
+Sende den gespeicherten Wert in `If-None-Match` zurück. Hat sich der Katalog nicht geändert, lautet die Antwort `304 Not Modified` ohne Antworttext und wiederholt die Header `ETag`, `Cache-Control` und `Vary`. Andernfalls erhältst du eine normale `200`-Antwort mit der neuen Liste und einem neuen `ETag`. `If-None-Match` akzeptiert außerdem eine durch Kommas getrennte Liste, schwache `W/`-Validatoren und `*`.
+
+```ts
+let etag: string | null = null;
+let models: unknown[] = [];
+
+async function refreshModels() {
+  const response = await fetch("https://api.phaseo.app/v1/models?limit=250", {
+    headers: {
+      Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+      ...(etag ? { "If-None-Match": etag } : {}),
+    },
+  });
+  if (response.status === 304) return models; // Unchanged; a 304 has no body.
+  if (!response.ok) throw new Error(`Model list request failed: ${response.status}`);
+  etag = response.headers.get("ETag");
+  models = (await response.json()).models;
+  return models;
+}
+```
+
+Da eine `304`-Antwort keinen Antworttext hat, ist Polling günstig: Ein Client kann zum Beispiel alle 15 Minuten prüfen und die Liste nur dann erneut herunterladen, wenn sich der Katalog ändert. Speichere einen `ETag` pro Anfrage-URL, denn jede Seite, jede Filterkombination und jedes Format hat einen eigenen Wert.
+
+### Service-Stufen pro Angebot
+
+Jeder Eintrag in `offers` enthält `service_tiers`, die [Service-Stufen](../../guides/service-tiers.mdx), die dieses Anbieterangebot akzeptiert. Das Feld ist eine alphabetisch sortierte Teilmenge von `flex`, `priority`, `standard` und `ultrafast`, wobei `priority` die Fast-Stufe ist. Eine Stufe wird aufgeführt, wenn die Anbieterroute dafür aktive, derzeit gültige Preise hat; eine Route, die nur eine Stufe bedient, führt nur diese Stufe auf. Manche Stufen können auch über separate, stufenspezifische Anbieterrouten verfügbar sein, die hier nicht aufgeführt werden. Die Preise unter `pricing` bleiben Preise der Standard-Stufe.
+
 ## Nützliche Filter
 
 - `endpoints` verwendet öffentliche Namen wie `chat.completions`, `responses` und `messages`

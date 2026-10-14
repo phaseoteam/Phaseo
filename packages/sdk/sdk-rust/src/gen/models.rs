@@ -1202,6 +1202,7 @@ pub struct GatewayModelOffer {
 	pub provider: HashMap<String, String>,
 	pub routable: bool,
 	pub routing: HashMap<String, String>,
+	pub service_tiers: Option<Vec<String>>,
 	pub status: String,
 	pub status_reason: String,
 }
