@@ -1,9 +1,23 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { DecisionsSchema } from "@core/schemas";
 import { decodeDecisionsRequest } from "@protocols/decisions/decode";
-import { buildTypeSafeRequest } from "./request";
+import { assertTypeSafeRequestSize, buildTypeSafeRequest } from "./request";
 
 describe("TypeSafe image request mapping", () => {
+	it("counts UTF-8 and JSON escaping at the exact request boundary", () => {
+		const request = { state: { '☕': ['🙂"\n\u0000\ud800', true, 1.5, null, undefined] }, omitted: undefined };
+		const bytes = new TextEncoder().encode(JSON.stringify(request)).byteLength;
+		expect(() => assertTypeSafeRequestSize(request, bytes)).not.toThrow();
+		expect(() => assertTypeSafeRequestSize(request, bytes - 1)).toThrow("32 MiB");
+	});
+	it("rejects the combined image body before serializing the request", () => {
+		const image = { content_type: "image/png" as const, base64: "A".repeat(16 * 1024 * 1024) };
+		const stringify = vi.spyOn(JSON, "stringify");
+		try {
+			expect(() => buildTypeSafeRequest({ model: "typesafe/jev-1.14.0", state: "Photo", questions: {}, images: [image, image] }, "jev-1.14.0")).toThrow("32 MiB");
+			expect(stringify).not.toHaveBeenCalled();
+		} finally { stringify.mockRestore(); }
+	});
 	it("embeds native images in order and preserves literal placeholder text", () => {
 		const ir = decodeDecisionsRequest(DecisionsSchema.parse({ model: "typesafe/jev-1.14.0",
 			input: [{ role: "user", content: [
