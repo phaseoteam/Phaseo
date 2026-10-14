@@ -1096,6 +1096,7 @@ accountSettingsRouter.get("/keys", async (c) => {
 		? requestedWorkspaceId
 		: workspaces[0]?.id ?? null;
 	let keys: Array<Record<string, unknown>> = [];
+	const observedAt = Date.now();
 	if (initialWorkspaceId) {
 		const [keysResult, usageResult] = await Promise.all([
 			client.from("keys").select("*").eq("workspace_id", initialWorkspaceId)
@@ -1149,6 +1150,7 @@ accountSettingsRouter.get("/keys", async (c) => {
 	return c.json({
 		currentUserId: user.id,
 		initialWorkspaceId,
+		observedAt,
 		teamsWithKeys: activeWorkspace ? [{ ...activeWorkspace, keys }] : [],
 		workspaces,
 	}, 200, PRIVATE_NO_STORE_HEADERS);

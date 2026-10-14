@@ -3,7 +3,7 @@
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
-import React, { memo, useId, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import React, { createContext, memo, useCallback, useContext, useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { settleWrites } from "@/lib/query/settleWrites";
@@ -73,6 +73,7 @@ import {
 } from "@/components/ui/table";
 import { Link, useRouter } from "@/i18n/navigation";
 import { keyDetailHref } from "./keyDetailHref";
+import { useLimitClock } from "./useLimitClock";
 import UsageItem from "./UsageItem";
 import DeleteKeyItem from "./DeleteKeyItem";
 import RotateKeyItem from "./RotateKeyItem";
@@ -227,22 +228,9 @@ function getWindowTone(window: LimitWindowUsage, state: KeyState, forecast: Limi
 	return "ok";
 }
 
-// Projections depend on the current time, so render them only after hydration
-// and refresh them each minute while the page stays open.
-let limitClockNow: number | null = null;
-function subscribeLimitClock(onChange: () => void) {
-	const id = window.setInterval(() => {
-		limitClockNow = Date.now();
-		onChange();
-	}, 60_000);
-	return () => window.clearInterval(id);
-}
-const getLimitClockNow = () => (limitClockNow ??= Date.now());
-const getServerLimitClockNow = () => null;
-
-function useLimitClock() {
-	return useSyncExternalStore(subscribeLimitClock, getLimitClockNow, getServerLimitClockNow);
-}
+// When the listed usage was read. Projections stay anchored to it, because the usage itself
+// does not refresh while the page is open; only reset countdowns follow the live clock.
+const LimitObservedAtContext = createContext<number | null>(null);
 
 function getKeyUsageVisuals(k: any) {
 	const dailyLimit = Number(k?.daily_limit_requests ?? 0) || 0;
@@ -367,13 +355,15 @@ const LimitPillStack = memo(function LimitPillStack({
 	const t = useTranslations("SettingsUI");
 	const format = useDisplayFormatters();
 	const now = useLimitClock();
+	// Without a server observation time, fall back to projecting from the client clock.
+	const forecastAt = useContext(LimitObservedAtContext) ?? now;
 	return (
 		<div className="flex min-w-0 flex-col gap-1">
 			{windows.map((window) => {
 				const forecast =
-					now === null || state === "disabled" || state === "expired"
+					forecastAt === null || state === "disabled" || state === "expired"
 						? null
-						: forecastLimitWindow({ window: LIMIT_WINDOWS[window.label], used: window.used, limit: window.limit, now });
+						: forecastLimitWindow({ window: LIMIT_WINDOWS[window.label], used: window.used, limit: window.limit, now: forecastAt });
 				const reachesLimitAt = forecast?.reachesLimitAt ?? null;
 				const pct = getWindowPercent(window);
 				const clamped = pct === null ? null : Math.max(0, Math.min(100, pct));
@@ -762,7 +752,7 @@ function subscribeToLayout(onChange: () => void) {
 const getDesktopLayout = () => window.matchMedia(desktopQuery).matches;
 const getServerLayout = () => false;
 
-export default function KeysPanel({ teamsWithKeys }: any) {
+export default function KeysPanel({ teamsWithKeys, observedAt }: any) {
 	const t = useTranslations("SettingsUI");
 	const write = useSettingsWrite();
 	const router = useRouter();
@@ -946,7 +936,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 	}
 
 	return (
-		<>
+		<LimitObservedAtContext.Provider value={typeof observedAt === "number" ? observedAt : null}>
 		<div className="mt-6 min-w-0 space-y-6 pb-24">
 			<div className="relative max-w-md">
 				<Search aria-hidden="true" className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -1175,6 +1165,6 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>
-		</>
+		</LimitObservedAtContext.Provider>
 	);
 }

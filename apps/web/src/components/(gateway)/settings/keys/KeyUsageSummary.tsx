@@ -5,6 +5,7 @@ import { ForecastMeter } from "@/components/(gateway)/usage/ForecastMeter";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { KeyDetailData } from "@/lib/fetchers/internal/fetchSettingsKeyDetail";
 import { forecastLimitWindow, formatLimitResetCountdown, type LimitWindow } from "@/lib/gateway/usage/limitForecast";
+import { useLimitClock } from "./useLimitClock";
 
 type KeyLimits = Pick<
 	KeyDetailData["key"],
@@ -34,6 +35,8 @@ export function KeyUsageSummary({
 }) {
 	const t = useTranslations("SettingsUI");
 	const format = useDisplayFormatters();
+	// Countdowns follow the live clock; projections stay anchored to when the usage was read.
+	const now = useLimitClock() ?? observedAt;
 	if (usage === null) return <p className="text-sm text-muted-foreground">{t("keyDetail.usageUnavailable")}</p>;
 
 	const usd = (nanos: number) => {
@@ -78,7 +81,7 @@ export function KeyUsageSummary({
 				<div className="flex items-baseline justify-between gap-3">
 					<h3 className="text-sm font-medium text-muted-foreground">{t(period.label)}</h3>
 					<span className="text-xs tabular-nums text-muted-foreground">
-						{t("strings.Resets in {time}" as never, { time: formatLimitResetCountdown(period.window, observedAt) } as never)}
+						{t("strings.Resets in {time}" as never, { time: formatLimitResetCountdown(period.window, now) } as never)}
 					</span>
 				</div>
 				<p className="mt-3 flex flex-wrap items-baseline gap-x-1.5">

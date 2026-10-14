@@ -43,6 +43,13 @@ describe("forecastLimitWindow", () => {
 		expect(forecast?.reachesLimitAt).toBeNull();
 	});
 
+	test("does not date a limit the pace reaches only as the window resets", () => {
+		// 50 of 100 at noon projects to exactly 100 at midnight, when the day resets.
+		const forecast = forecastLimitWindow({ window: "day", used: 50, limit: 100, now: at("2026-10-13T12:00:00Z") });
+		expect(forecast?.projected).toBe(100);
+		expect(forecast?.reachesLimitAt).toBeNull();
+	});
+
 	test("waits until enough of the window has passed", () => {
 		expect(forecastLimitWindow({ window: "day", used: 5, limit: 10, now: at("2026-10-12T02:59:00Z") })).toBeNull();
 		expect(forecastLimitWindow({ window: "week", used: 5, limit: 10, now: at("2026-10-12T23:00:00Z") })).toBeNull();

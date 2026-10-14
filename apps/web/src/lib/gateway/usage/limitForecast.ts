@@ -74,8 +74,9 @@ export function forecastLimitWindow({
 	if (!(used > 0)) return { projected: 0, reachesLimitAt: null };
 
 	const projected = (used * (end - start)) / elapsed;
+	// Reaching the limit exactly as the window resets is not a hit: the reset comes first.
 	const reachesLimitAt =
-		limit > 0 && used < limit && projected >= limit
+		limit > 0 && used < limit && projected > limit
 			? Math.round(start + (elapsed * limit) / used)
 			: null;
 	return { projected, reachesLimitAt };

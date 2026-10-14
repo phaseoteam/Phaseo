@@ -18,6 +18,7 @@ export default withSettingsResource("keys", function KeysContent({ initialData }
 	const {
 		currentUserId,
 		initialWorkspaceId,
+		observedAt,
 		teamsWithKeys,
 		workspaces,
 	} = initialData;
@@ -48,6 +49,7 @@ export default withSettingsResource("keys", function KeysContent({ initialData }
 			/>
 			<KeysPanel
 				teamsWithKeys={teamsWithKeys}
+				observedAt={observedAt}
 				initialTeamId={initialWorkspaceId}
 				currentUserId={currentUserId}
 			/>
