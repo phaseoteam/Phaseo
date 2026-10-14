@@ -25,6 +25,8 @@ function buildSupabaseMock(
     state: QueryState
 ) {
     const routeRows: any[] = [];
+    // Rows of the v2_models read currently being paged, so cursor pages reuse it.
+    let pagedModelRows: any[] = [];
     let pricingSkuRows: any[] | null = null;
     let pricingMeterRows: any[] | null = null;
 
@@ -89,6 +91,9 @@ function buildSupabaseMock(
                 v2_providers: "data_api_providers",
                 v2_pricing_skus: "data_api_pricing_rules",
             } as Record<string, string>)[table] ?? table;
+            // Keyset paging state; only v2_models honours it, other test reads fit one page.
+            let cursor: string | undefined;
+            let pageLimit: number | undefined;
             const query = {
                 select(_selection: string) {
                     return query;
@@ -116,7 +121,12 @@ function buildSupabaseMock(
                 order(_column: string) {
                     return query;
                 },
-                range(_from: number, _to: number) {
+                gt(_column: string, value: unknown) {
+                    cursor = String(value);
+                    return query;
+                },
+                limit(count: number) {
+                    pageLimit = count;
                     return query;
                 },
                 then<TResult1 = QueryResult, TResult2 = never>(
@@ -133,6 +143,15 @@ function buildSupabaseMock(
                     }
 
                     const queue = responses[responseTable] ?? [];
+                    if (table === "v2_models" && pageLimit !== undefined) {
+                        if (cursor === undefined) {
+                            const first = queue.length ? queue.shift()! : { data: [], error: null };
+                            if (first.error) return Promise.resolve(first).then(onfulfilled as any, onrejected as any);
+                            pagedModelRows = [...(first.data ?? [])].sort((a, b) => (a.model_id < b.model_id ? -1 : a.model_id > b.model_id ? 1 : 0));
+                        }
+                        const after = cursor === undefined ? pagedModelRows : pagedModelRows.filter((row) => row.model_id > cursor!);
+                        return Promise.resolve({ data: after.slice(0, pageLimit), error: null }).then(onfulfilled as any, onrejected as any);
+                    }
                     const next = queue.length ? queue.shift()! : { data: [], error: null };
                     if (table === "v2_model_provider_routes") {
                         const data = (next.data ?? []).map((row: any) => ({
@@ -186,6 +205,8 @@ function buildSupabaseMock(
                             onrejected as any
                         );
                     }
+                    // Like PostgREST, an unpaged read stops at 1,000 rows.
+                    if (table === "v2_models" && Array.isArray(next.data)) return Promise.resolve({ ...next, data: next.data.slice(0, 1000) }).then(onfulfilled as any, onrejected as any);
                     return Promise.resolve(next).then(onfulfilled as any, onrejected as any);
                 },
             };
@@ -345,6 +366,30 @@ describe("fetchCatalogue", () => {
         const serialized = JSON.stringify(models);
         expect(serialized).not.toContain("private-provider");
         expect(serialized).not.toContain("secret-upstream-model");
+    });
+
+    it("lists models past the PostgREST row cap", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const model = (index: number) => ({
+            model_id: `lab/model-${String(index).padStart(5, "0")}`, name: `Model ${index}`, release_date: null, deprecation_date: null, retirement_date: null,
+            status: "available", organisation_id: null, input_types: ["text"], output_types: ["text"], organisation: null,
+        });
+        // Rows arrive unordered; only the last model by key, which sits past row 1,000, is routable.
+        const rows = Array.from({ length: 1050 }, (_, index) => model(1049 - index));
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [{ data: rows, error: null }],
+            data_api_provider_models: [{ data: [{ provider_api_model_id: "pam_last", provider_id: "openai", api_model_id: "lab/model-01049", model_id: "lab/model-01049", provider_model_slug: "last", is_active_gateway: true, routing_status: "active", input_modalities: ["text"], output_modalities: ["text"], effective_from: null, effective_to: null }], error: null }],
+            data_api_provider_model_capabilities: [{ data: [{ provider_api_model_id: "pam_last", capability_id: "responses", status: "active", params: {}, effective_from: null, effective_to: null }], error: null }],
+            data_api_model_aliases: [{ data: [], error: null }],
+            data_api_providers: [{ data: [{ api_provider_id: "openai", api_provider_name: "OpenAI", link: null, country_code: null, status: "active", routing_status: "active" }], error: null }],
+            data_api_pricing_rules: [{ data: [], error: null }],
+        };
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const models = await fetchCatalogue({});
+
+        expect(models.map((entry) => entry.model_id)).toEqual(["lab/model-01049"]);
     });
 
     it("skips capabilities lookup when there are no provider model ids", async () => {
