@@ -248,9 +248,18 @@ paths:
               - json
               - rss
               - atom
+        - name: If-None-Match
+          in: header
+          required: false
+          description: उसी URL के लिए पिछली JSON या OpenAI प्रारूप वाली प्रतिक्रिया का ETag। अगर यह अब भी मेल खाता है, तो प्रतिक्रिया बिना बॉडी के 304 Not Modified होती है। कॉमा से अलग की गई सूची, कमज़ोर (W/) वैलिडेटर और * स्वीकार करता है।
+          schema:
+            type: string
       responses:
         '200':
           description: मॉडल की सूची
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
           content:
             application/json:
               schema:
@@ -265,6 +274,11 @@ paths:
               schema:
                 type: string
                 description: Atom XML फ़ीड
+        '304':
+          description: कोई बदलाव नहीं। If-None-Match अब भी मौजूदा मॉडल सूची से मेल खाता है, इसलिए प्रतिक्रिया में कोई बॉडी नहीं होती। यह 200 प्रतिक्रिया के ETag, Cache-Control और Vary हेडर दोहराती है।
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
         '400':
           description: अमान्य अनुरोध पैरामीटर
           content:
@@ -8538,6 +8552,10 @@ components:
       description: केवल BYOK के लिए प्रदाता कोटा मेटाडेटा। प्रबंधित-प्रदाता अनुरोधों में शामिल नहीं होता।
       schema:
         type: string
+    ModelListETag:
+      description: इस URL पर मॉडल सूची का कमज़ोर वैलिडेटर (W/ प्रीफ़िक्स), जिसमें पेज, limit, offset, total और प्रारूप शामिल हैं। यह gateway_region को अनदेखा करता है, इसलिए किसी दूसरे क्षेत्र से दिए गए उसी कैटलॉग का मान भी वही रहता है; एक ही मान वाली प्रतिक्रियाएँ समान होती हैं, लेकिन उनके बाइट अलग हो सकते हैं। RSS, Atom या त्रुटि वाली प्रतिक्रियाओं के साथ नहीं भेजा जाता।
+      schema:
+        type: string
   parameters:
     DataContributionClassifierId:
       name: id
@@ -9098,6 +9116,16 @@ components:
           $ref: '#/components/schemas/GatewayModalities'
         capabilities:
           $ref: '#/components/schemas/GatewayCapabilities'
+        service_tiers:
+          type: array
+          description: वे सेवा स्तर जिन्हें यह ऑफ़र स्वीकार करता है, वर्णानुक्रम में। कोई स्तर तब सूचीबद्ध होता है जब प्रदाता रूट के पास उसके लिए सक्रिय और अभी प्रभावी मूल्य निर्धारण हो; priority, Fast स्तर है। दूसरे स्तर अलग, स्तर-विशिष्ट प्रदाता रूट के ज़रिए भी उपलब्ध हो सकते हैं।
+          items:
+            type: string
+            enum:
+              - flex
+              - priority
+              - standard
+              - ultrafast
         routing:
           type: object
           required:

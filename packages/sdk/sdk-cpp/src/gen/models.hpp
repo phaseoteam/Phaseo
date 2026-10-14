@@ -1201,6 +1201,7 @@ struct GatewayModelOffer {
 	std::map<std::string, std::any> provider;
 	bool routable;
 	std::map<std::string, std::any> routing;
+	std::vector<std::any> service_tiers;
 	std::any status;
 	std::any status_reason;
 };

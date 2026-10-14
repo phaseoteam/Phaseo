@@ -14484,7 +14484,9 @@ export type ListModelsParams = {
     status?: string[];
     supported_parameters?: string[];
   };
-  headers?: Record<string, never>;
+  headers?: {
+    "If-None-Match"?: string;
+  };
   body?: never;
 };
 
@@ -14595,6 +14597,7 @@ export async function listModels(
               | "deranked_lvl3"
               | "disabled";
           };
+          service_tiers?: ("flex" | "priority" | "standard" | "ultrafast")[];
           status: "active" | "coming_soon" | "inactive";
           status_reason:
             | "active"
@@ -14761,6 +14764,7 @@ export async function listModels(
                 | "deranked_lvl3"
                 | "disabled";
             };
+            service_tiers?: ("flex" | "priority" | "standard" | "ultrafast")[];
             status: "active" | "coming_soon" | "inactive";
             status_reason:
               | "active"
@@ -16038,6 +16042,7 @@ export async function listTeamModels(
           | "deranked_lvl3"
           | "disabled";
       };
+      service_tiers?: ("flex" | "priority" | "standard" | "ultrafast")[];
       status: "active" | "coming_soon" | "inactive";
       status_reason:
         | "active"
@@ -16193,6 +16198,7 @@ export async function listTeamModels(
             | "deranked_lvl3"
             | "disabled";
         };
+        service_tiers?: ("flex" | "priority" | "standard" | "ultrafast")[];
         status: "active" | "coming_soon" | "inactive";
         status_reason:
           | "active"

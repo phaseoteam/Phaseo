@@ -2115,6 +2115,8 @@ class GatewayModelOffer
 	public $routable;
 	/** @var array<string, mixed> */
 	public $routing;
+	/** @var array|null */
+	public $service_tiers;
 	/** @var string */
 	public $status;
 	/** @var string */

@@ -1884,6 +1884,7 @@ type GatewayModelOffer struct {
 	Provider map[string]interface{} `json:"provider"`
 	Routable bool `json:"routable"`
 	Routing map[string]interface{} `json:"routing"`
+	ServiceTiers *[]string `json:"service_tiers,omitempty"`
 	Status string `json:"status"`
 	StatusReason string `json:"status_reason"`
 }

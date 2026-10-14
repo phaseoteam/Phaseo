@@ -1205,6 +1205,7 @@ public final class Models {
 		public Object provider;
 		public Boolean routable;
 		public Object routing;
+		public java.util.List<Object> service_tiers;
 		public Object status;
 		public Object status_reason;
 	}

@@ -248,9 +248,18 @@ paths:
               - json
               - rss
               - atom
+        - name: If-None-Match
+          in: header
+          required: false
+          description: ETag d’une réponse précédente au format JSON ou OpenAI pour la même URL. S’il correspond toujours, la réponse est 304 Not Modified, sans corps. Accepte une liste séparée par des virgules, des validateurs faibles (W/) et *.
+          schema:
+            type: string
       responses:
         '200':
           description: Liste des modèles
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
           content:
             application/json:
               schema:
@@ -265,6 +274,11 @@ paths:
               schema:
                 type: string
                 description: Flux XML Atom
+        '304':
+          description: 'Non modifié. If-None-Match correspond toujours à la liste de modèles actuelle : la réponse n’a donc pas de corps. Elle reprend les en-têtes ETag, Cache-Control et Vary de la réponse 200.'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
         '400':
           description: Paramètres de requête invalides
           content:
@@ -8538,6 +8552,10 @@ components:
       description: Métadonnées de quota du fournisseur, uniquement pour BYOK. Omission pour les requêtes utilisant un fournisseur géré.
       schema:
         type: string
+    ModelListETag:
+      description: 'Validateur faible (préfixe W/) de la liste de modèles à cette URL, couvrant la page, limit, offset, total et le format. Il ignore gateway_region : le même catalogue servi depuis une autre région a donc la même valeur ; les réponses qui le partagent sont équivalentes, mais leurs octets peuvent différer. Non envoyé avec les réponses RSS, Atom ou d’erreur.'
+      schema:
+        type: string
   parameters:
     DataContributionClassifierId:
       name: id
@@ -9098,6 +9116,16 @@ components:
           $ref: '#/components/schemas/GatewayModalities'
         capabilities:
           $ref: '#/components/schemas/GatewayCapabilities'
+        service_tiers:
+          type: array
+          description: Niveaux de service acceptés par cette offre, triés par ordre alphabétique. Un niveau est listé lorsque la route du fournisseur dispose pour lui d’une tarification active et en vigueur ; priority correspond au niveau Fast. D’autres niveaux peuvent aussi être disponibles via des routes de fournisseur distinctes, propres à chaque niveau.
+          items:
+            type: string
+            enum:
+              - flex
+              - priority
+              - standard
+              - ultrafast
         routing:
           type: object
           required:
