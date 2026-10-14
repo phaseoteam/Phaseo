@@ -39,7 +39,8 @@ import { windowsCredentialEncryption } from "./windowsCredentialEncryption";
 import { signInNative } from "./accountConnections";
 import { gitReview, listProjectFiles, readProjectFile } from "./projectFiles";
 import { editorInstallations, findEditor, launchEditor, openProjectTarget } from "./projectEditors";
-import { apiModels, codexModels } from "./modelCatalog";
+import { codexModels } from "./modelCatalog";
+import { apiModelCatalog, type CatalogPageValidator } from "./apiModelCatalog";
 import { ModelCatalogCache } from "./modelCatalogCache";
 import { openCodeModels, piModels } from "./nativeModels";
 import { resolveOpenCodeCommand } from "./openCodeService";
@@ -146,7 +147,7 @@ async function discoverDesktopModels(harness: Harness, accountId?: string, proje
 		if (harness === "phaseo") {
 			if (account?.oauthExpiresAt && Date.parse(account.oauthExpiresAt) <= Date.now()) throw new Error("Sign in to Phaseo again to renew this account.");
 			if (!account) throw new Error("Choose an API account.");
-			const key = { endpoint: account.endpoint ?? "", accountId: account.id }, fetchModels = async () => apiModels(account, await credentialVault.get(account.secretId ?? account.id));
+			const key = { endpoint: account.endpoint ?? "", accountId: account.id }, fetchModels = async (validators?: CatalogPageValidator[]) => apiModelCatalog(account, await credentialVault.get(account.secretId ?? account.id), validators);
 			return await (force ? modelCatalogCache.refresh(key, fetchModels) : modelCatalogCache.get(key, fetchModels));
 		}
 		if (harness === "cursor") { if (!account || account.archived) throw new Error("Choose a connected Cursor account."); return await cursorModels(await credentialVault.get(account.secretId ?? account.id)); }

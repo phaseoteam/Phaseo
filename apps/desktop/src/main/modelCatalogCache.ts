@@ -2,11 +2,14 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ModelOption } from "../shared/workspace";
+import type { ApiModelCatalog, CatalogPageValidator } from "./apiModelCatalog";
 
-/** A cached catalog younger than this is served without a background refresh. */
-export const MODEL_CATALOG_FRESH_MS = 60 * 60 * 1000;
+/** A cached catalog younger than this is served without a background re-check. Re-checks send the saved ETags, so an unchanged catalog costs a bodiless 304 per page. */
+export const MODEL_CATALOG_FRESH_MS = 15 * 60 * 1000;
 export type ModelCatalogKey = { endpoint: string; accountId: string };
-type CatalogFile = { version: 1; endpoint: string; accountId: string; fetchedAt: string; models: ModelOption[] };
+type CatalogFile = { version: 1 | 2; endpoint: string; accountId: string; fetchedAt: string; models: ModelOption[]; validators?: CatalogPageValidator[] };
+/** Fetches the catalog; given the saved page validators it may answer that nothing changed. */
+export type CatalogFetch = (validators?: CatalogPageValidator[]) => Promise<ModelOption[] | ApiModelCatalog>;
 
 /** Per-account model catalogs on disk, served stale-while-revalidate. */
 export class ModelCatalogCache {
@@ -17,27 +20,30 @@ export class ModelCatalogCache {
 	async read(key: ModelCatalogKey): Promise<CatalogFile | undefined> {
 		try {
 			const file = JSON.parse(await readFile(this.filename(key), "utf8")) as CatalogFile;
-			return file?.version === 1 && file.endpoint === key.endpoint && file.accountId === key.accountId && Number.isFinite(Date.parse(file.fetchedAt)) && Array.isArray(file.models) && file.models.every(model => typeof model?.id === "string" && typeof model.name === "string") ? file : undefined;
+			return (file?.version === 1 || file?.version === 2) && file.endpoint === key.endpoint && file.accountId === key.accountId && Number.isFinite(Date.parse(file.fetchedAt)) && Array.isArray(file.models) && file.models.every(model => typeof model?.id === "string" && typeof model.name === "string") ? file : undefined;
 		} catch { return undefined; }
 	}
 	/** Returns the cached list at once, starting a background refresh when it is stale; only an empty cache waits for the network. */
-	async get(key: ModelCatalogKey, fetchModels: () => Promise<ModelOption[]>): Promise<ModelOption[]> {
+	async get(key: ModelCatalogKey, fetchModels: CatalogFetch): Promise<ModelOption[]> {
 		const cached = await this.read(key);
 		if (!cached) return this.refresh(key, fetchModels);
 		if (this.now() - Date.parse(cached.fetchedAt) >= MODEL_CATALOG_FRESH_MS) this.refresh(key, fetchModels).catch(error => this.warn(`Model catalog refresh failed: ${error instanceof Error ? error.message : "unknown error"}`));
 		return cached.models;
 	}
-	/** Fetches now with one shared request per account, then saves the list and reports it if it changed. */
-	refresh(key: ModelCatalogKey, fetchModels: () => Promise<ModelOption[]>): Promise<ModelOption[]> {
+	/** Fetches now with one shared request per account (conditional when ETags are saved), then saves the list and reports it if it changed. */
+	refresh(key: ModelCatalogKey, fetchModels: CatalogFetch): Promise<ModelOption[]> {
 		const file = this.filename(key), pending = this.refreshes.get(file);
 		if (pending) return pending;
 		const generation = this.generations.get(file) ?? 0;
 		const refresh = (async () => {
-			const models = await fetchModels();
+			const previous = await this.read(key);
+			let result = await fetchModels(previous?.validators);
+			if (!Array.isArray(result) && result.notModified && !previous) result = await fetchModels();
+			const models = Array.isArray(result) ? result : result.notModified ? previous!.models : result.models;
+			const validators = Array.isArray(result) ? undefined : result.notModified ? previous!.validators : result.validators;
 			// A removal while fetching means the account is gone; do not resurrect its cache.
 			if ((this.generations.get(file) ?? 0) !== generation) return models;
-			const previous = await this.read(key);
-			try { await this.write(file, { version: 1, ...key, fetchedAt: new Date(this.now()).toISOString(), models }); }
+			try { await this.write(file, { version: 2, ...key, fetchedAt: new Date(this.now()).toISOString(), models, ...(validators?.length ? { validators } : {}) }); }
 			catch (error) { this.warn(`Model catalog cache write failed: ${error instanceof Error ? error.message : "unknown error"}`); }
 			if (previous && JSON.stringify(previous.models) !== JSON.stringify(models)) this.onChange(key);
 			return models;

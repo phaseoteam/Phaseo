@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { apiModels, readCodexModels } from "./modelCatalog";
+import { apiModelCatalog } from "./apiModelCatalog";
 import type { Account } from "../shared/workspace";
 
 const account: Account = { id: "account", name: "API", harness: "phaseo", kind: "api", configured: true, endpoint: "https://api.example.test/v1/" };
@@ -21,6 +22,23 @@ describe("API model catalog", () => {
 		const first = new URL(fetcher.mock.calls[0][0]); const last = new URL(fetcher.mock.calls[1][0]);
 		expect(first.searchParams.get("limit")).toBe("250"); expect(first.searchParams.get("endpoints")).toBe("text.generate"); expect(first.searchParams.get("gateway_available_only")).toBe("true"); expect(last.searchParams.get("offset")).toBe("2");
 		expect(fetcher.mock.calls.every(([, options]) => options.headers.Authorization === "Bearer owned-key" && options.redirect === "error")).toBe(true);
+	});
+	it("records page ETags and re-checks them with If-None-Match, downloading again only when a page changed", async () => {
+		const page = (offset: number, ids: string[], etag: string) => new Response(JSON.stringify({ ok: true, offset, total: 3, models: ids.map(id => nativeModel(id)) }), { headers: { etag } });
+		const fetcher = vi.fn().mockResolvedValueOnce(page(0, ["owned/a", "owned/b"], "\"p0\"")).mockResolvedValueOnce(page(2, ["owned/c"], "\"p1\""));
+		const first = await apiModelCatalog(gatewayAccount, "owned-key", undefined, fetcher);
+		expect(first).toMatchObject({ validators: [{ offset: 0, etag: "\"p0\"" }, { offset: 2, etag: "\"p1\"" }] });
+		const validators = first.notModified ? [] : first.validators;
+		const unchanged = vi.fn().mockResolvedValue(new Response(null, { status: 304 }));
+		expect(await apiModelCatalog(gatewayAccount, "owned-key", validators, unchanged)).toEqual({ notModified: true });
+		expect(unchanged.mock.calls.map(([url, options]) => [new URL(url).searchParams.get("offset"), options.headers["If-None-Match"]])).toEqual([[null, "\"p0\""], ["2", "\"p1\""]]);
+		const changed = vi.fn().mockResolvedValueOnce(new Response(null, { status: 304 })).mockResolvedValueOnce(new Response("{}", { status: 200 })).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [nativeModel("owned/new")] }), { headers: { etag: "\"p2\"" } }));
+		expect(await apiModelCatalog(gatewayAccount, "owned-key", validators, changed)).toEqual({ models: [{ id: "owned/new", name: "owned/new" }], validators: [{ offset: 0, etag: "\"p2\"" }] });
+		expect(changed.mock.calls[2][1].headers["If-None-Match"]).toBeUndefined();
+	});
+	it("skips conditional re-checks when a page arrived without an ETag", async () => {
+		const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 0, total: 2, models: [nativeModel("owned/a")] }), { headers: { etag: "\"p0\"" } })).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 1, total: 2, models: [nativeModel("owned/b")] })));
+		expect(await apiModelCatalog(gatewayAccount, "owned-key", undefined, fetcher)).toMatchObject({ validators: [] });
 	});
 	it("skips unavailable and non-chat models without dropping later valid pages", async () => {
 		const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 0, total: 4, models: [nativeModel("owned/image", { capabilities: { endpoints: ["images/generations"] } }), nativeModel("owned/offline", { offers: [{ routable: false }] })] }))).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 2, total: 4, models: [nativeModel("owned/retired", { lifecycle: { status: "retired" } }), nativeModel("owned/chat")] })));

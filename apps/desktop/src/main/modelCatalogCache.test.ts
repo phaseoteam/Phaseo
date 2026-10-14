@@ -37,7 +37,7 @@ describe("model catalog disk cache", () => {
 		const fetchModels = vi.fn(() => new Promise<typeof first>(done => { resolve = done; }));
 		const requests = [cache.get(key, fetchModels), cache.refresh(key, fetchModels), cache.get(key, fetchModels)];
 		const other = cache.get({ ...key, accountId: "other" }, async () => second);
-		resolve(first);
+		await settle(); resolve(first);
 		expect(await Promise.all(requests)).toEqual([first, first, first]); expect(await other).toEqual(second); expect(fetchModels).toHaveBeenCalledOnce();
 		expect(cache.filename(key)).not.toBe(cache.filename({ ...key, accountId: "other" })); expect(cache.filename(key)).not.toBe(cache.filename({ ...key, endpoint: "https://example.test/v1" }));
 	});
@@ -58,7 +58,17 @@ describe("model catalog disk cache", () => {
 		await cache.refresh(key, async () => first);
 		expect(await cache.refresh(key, async () => second)).toEqual(second); expect(onChange).toHaveBeenCalledOnce();
 		let resolve!: (models: typeof first) => void; const pending = cache.refresh(key, () => new Promise(done => { resolve = done; }));
-		await cache.remove(key); resolve(first); await pending;
+		await settle(); await cache.remove(key); resolve(first); await pending;
 		expect(await cache.read(key)).toBeUndefined(); expect(onChange).toHaveBeenCalledOnce();
+	});
+	it("re-checks with saved validators and keeps the list when nothing changed", async () => {
+		let now = 0; const onChange = vi.fn(); const cache = new ModelCatalogCache(root, onChange, () => now);
+		await cache.refresh(key, async () => ({ models: first, validators: [{ offset: 0, etag: "\"v1\"" }] }));
+		now = MODEL_CATALOG_FRESH_MS + 1;
+		const fetchModels = vi.fn().mockResolvedValue({ notModified: true });
+		expect(await cache.get(key, fetchModels)).toEqual(first); await settle();
+		expect(fetchModels).toHaveBeenCalledWith([{ offset: 0, etag: "\"v1\"" }]); expect(onChange).not.toHaveBeenCalled();
+		expect(await cache.read(key)).toMatchObject({ version: 2, models: first, validators: [{ offset: 0, etag: "\"v1\"" }], fetchedAt: new Date(now).toISOString() });
+		expect(MODEL_CATALOG_FRESH_MS).toBe(15 * 60 * 1000);
 	});
 });

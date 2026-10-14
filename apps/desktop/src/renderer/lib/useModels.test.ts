@@ -18,7 +18,8 @@ describe("model cache policy", () => {
 		expect(vi.mocked(useSWR).mock.calls[0][0]).toEqual(["workspace-models", "phaseo", "first", ""]);
 		expect(vi.mocked(useSWR).mock.calls[1][0]).toEqual(["workspace-models", "phaseo", "second", ""]);
 		const config = vi.mocked(useSWR).mock.calls[0][2]!;
-		expect(config.refreshInterval).toBe(BACKGROUND_REFRESH_MS); expect(config.revalidateOnFocus).toBe(false);
+		expect(config.refreshInterval).toBe(5 * 60 * 1000); expect(config.revalidateOnFocus).toBe(false);
+		useModels("codex"); expect(vi.mocked(useSWR).mock.calls[2][2]!.refreshInterval).toBe(BACKGROUND_REFRESH_MS);
 		const revalidate = vi.fn(); config.onErrorRetry!(Error("Offline"), "key", config as Parameters<NonNullable<typeof config.onErrorRetry>>[2], revalidate, { retryCount: 1, dedupe: true });
 		vi.advanceTimersByTime(BACKGROUND_REFRESH_MS - 1); expect(revalidate).not.toHaveBeenCalled();
 		vi.advanceTimersByTime(1); expect(revalidate).toHaveBeenCalledTimes(1);

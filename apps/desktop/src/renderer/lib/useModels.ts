@@ -3,6 +3,7 @@ import useSWR, { mutate } from "swr";
 import type { Harness, ModelOption } from "../../shared/workspace";
 import { BACKGROUND_REFRESH_MS } from "./useBackgroundRefresh";
 
+const PHASEO_POLL_MS = 5 * 60 * 1000;
 const modelsKey = (harness: Harness, accountId?: string, projectId?: string) => ["workspace-models", harness, accountId ?? "", projectId ?? ""];
 
 /** Re-read a catalog after a refresh; the main process caches Phaseo's on disk and refreshes it in the background. */
@@ -24,7 +25,8 @@ export function useModels(harness: Harness, accountId?: string, projectId?: stri
 	const { data, error } = useSWR<ModelOption[]>(
 		available ? modelsKey(harness, accountId, projectId) : null,
 		() => api!.models(harness, accountId || undefined, projectId || undefined),
-		{ fallbackData: fallback?.length ? fallback : undefined, dedupingInterval: BACKGROUND_REFRESH_MS, refreshInterval: BACKGROUND_REFRESH_MS, revalidateOnFocus: false,
+		// Phaseo reads hit the main process disk cache, which re-checks the gateway once its 15-minute window lapses.
+		{ fallbackData: fallback?.length ? fallback : undefined, dedupingInterval: harness === "phaseo" ? PHASEO_POLL_MS : BACKGROUND_REFRESH_MS, refreshInterval: harness === "phaseo" ? PHASEO_POLL_MS : BACKGROUND_REFRESH_MS, revalidateOnFocus: false,
 			onErrorRetry: (_error, _key, _config, revalidate, options) => { setTimeout(() => { void revalidate(options); }, BACKGROUND_REFRESH_MS); } },
 	);
 	useEffect(() => {

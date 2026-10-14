@@ -35,6 +35,11 @@ describe("Phaseo model option descriptors", () => {
 	it("omits Speed when only standard is offered or a note rules a tier out", () => {
 		for (const details of [{}, { service_tier: { supported: true, enum: ["standard", "default"], provider_catalog: { name: "standard" } } }, { service_tier: { supported: true, notes: "Priority processing is not available for this model." } }, { service_tier: { supported: true } }]) expect(phaseoModelOptions(model(offer(details)))).toEqual([]);
 	});
+	it("prefers the service_tiers each routable offer lists over parameter hints", () => {
+		const model = { offers: [{ routable: true, service_tiers: ["standard", "priority"], capabilities: { parameter_details: {} } }, { routable: true, service_tiers: ["standard", "flex"], capabilities: { parameter_details: {} } }, { routable: false, service_tiers: ["ultrafast"] }] };
+		expect(phaseoModelOptions(model)).toEqual([{ id: "speed", label: "Speed", type: "select", options: [{ id: "standard", label: "Standard", isDefault: true }, { id: "priority", label: "Fast" }, { id: "flex", label: "Flex" }] }]);
+		expect(phaseoModelOptions({ offers: [{ routable: true, service_tiers: ["standard"], capabilities: { parameter_details: { service_tier: { supported_values: ["standard", "priority"] } } } }] })).toEqual([]);
+	});
 });
 
 describe("Phaseo request settings", () => {

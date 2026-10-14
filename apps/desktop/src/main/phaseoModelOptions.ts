@@ -57,7 +57,10 @@ export function phaseoModelOptions(model: Record<string, unknown>): ModelOptionD
 		options.push({ id: "effort", label: "Reasoning", type: "select", options: effort.values.map(id => ({ id, label: efforts[id as keyof typeof efforts], ...(id === fallback ? { isDefault: true } : {}) })) });
 	}
 	// Any routable provider's tier counts: the gateway drops providers that cannot serve the requested tier.
-	const speeds = new Set(routes.flatMap(tierValues));
+	// Offers list their priced tiers in service_tiers; older gateways only hint at them in parameter details.
+	const routable = (Array.isArray(model.offers) ? model.offers : []).flatMap(offer => record(offer)?.routable === true ? [record(offer)!] : []);
+	const listed = routable.filter(offer => Array.isArray(offer.service_tiers));
+	const speeds = new Set(listed.length ? listed.flatMap(offer => parseList(offer.service_tiers, parseTier, Object.keys(tiers))) : routes.flatMap(tierValues));
 	const extra = (["priority", "ultrafast", "flex"] as const).filter(tier => speeds.has(tier));
 	if (extra.length) options.push({ id: "speed", label: "Speed", type: "select", options: [{ id: "standard", label: tiers.standard, isDefault: true }, ...extra.map(id => ({ id, label: tiers[id] }))] });
 	return options;
