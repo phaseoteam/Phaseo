@@ -68,6 +68,20 @@ Keep `Phaseo`, `Gateway`, provider and model names, API paths, identifiers,
 code, email examples, and URLs unchanged unless the reviewed glossary
 explicitly says otherwise.
 
+Address the reader the same way as the docs:
+
+| Locale | Form |
+| --- | --- |
+| `de-DE` | du, written in lowercase (du, dein) |
+| `es-ES` | tú |
+| `fr-FR` | vous |
+| `pt-BR` | você |
+| `ja` | です/ます |
+| `zh-Hans` | 你, not 您 |
+| `hi` | आप |
+
+`validate:i18n` and the docs locale check reject German Sie and Chinese 您.
+
 Native review should settle product terms such as passkey, provider routing,
 workspace, support, billing, and Enterprise SSO. It must also review regional
 tone, German expansion, Chinese and Japanese typography, Hindi code-switching,

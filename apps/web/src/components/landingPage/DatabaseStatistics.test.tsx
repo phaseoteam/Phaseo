@@ -13,16 +13,17 @@ jest.mock("@/lib/fetchers/frontend/fetchPublicCatalog", () => ({
 	fetchFrontendSignInSupportedModelsStats: jest.fn(),
 }));
 
-jest.mock("next/link", () => ({
-	__esModule: true,
-	default: ({
+jest.mock("@/i18n/navigation", () => ({
+	Link: ({
 		href,
 		children,
+		prefetch: _prefetch,
 		...props
 	}: {
 		href: string;
 		children: React.ReactNode;
 		className?: string;
+		prefetch?: boolean | null;
 	}) => React.createElement("a", { ...props, href }, children),
 }));
 

@@ -1,3 +1,4 @@
+import { fetchSubscriptionCatalogue } from "@/models/subscriptions";
 import { Hono } from "hono";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
@@ -83,7 +84,7 @@ publicCompareRouter.get("/compare/selection", async (c) => {
 			client.from("v2_model_links").select("model_id:model_slug,url,platform:link_kind,kind:link_kind").in("model_slug", modelIds),
 			client.from("v2_model_details").select("model_id:model_slug,detail_name,detail_value").in("model_slug", modelIds),
 			client.from("v2_benchmark_results").select("result_id,model_slug,benchmark_id,score,is_self_reported,other_info,source_link,rank,benchmark:v2_benchmarks!v2_benchmark_results_benchmark_id_fkey(benchmark_id,name,category,link,ascending_order,benchmark_type)").or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`).in("model_slug", modelIds),
-			client.from("v2_subscription_plan_models").select("model_slug,plan_uuid,model_info,rate_limit,other_info").or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`).in("model_slug", modelIds),
+			fetchSubscriptionCatalogue(client).then((data) => ({ data, error: null })),
 			fetchModelPricingSources(c.env, modelIds),
 		]);
 		if (modelsResult.error) throw modelsResult.error;
@@ -91,20 +92,6 @@ publicCompareRouter.get("/compare/selection", async (c) => {
 		if (detailsResult.error) throw detailsResult.error;
 		if (benchmarkResults.error) throw benchmarkResults.error;
 		if (modelPlansResult.error) throw modelPlansResult.error;
-		const planUuids = [...new Set((modelPlansResult.data ?? []).map((row) => String(row.plan_uuid ?? "").trim()).filter(Boolean))];
-		const plansResult = planUuids.length > 0
-			? await client.from("v2_subscription_plans")
-				.select("plan_uuid,plan_id,name,lab_slug,description,frequency,price,currency,link")
-				.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
-				.in("plan_uuid", planUuids).order("plan_id", { ascending: true }).order("frequency", { ascending: true })
-			: { data: [], error: null };
-		if (plansResult.error) throw plansResult.error;
-		const planLabSlugs = [...new Set((plansResult.data ?? []).map((row) => row.lab_slug).filter(Boolean))];
-		const planLabsResult = planLabSlugs.length > 0
-			? await client.from("v2_labs").select("lab_slug,name,metadata").in("lab_slug", planLabSlugs)
-			: { data: [], error: null };
-		if (planLabsResult.error) throw planLabsResult.error;
-		const planLabs = new Map((planLabsResult.data ?? []).map((row) => [row.lab_slug, row]));
 		const linksByModel = new Map<string, Array<Record<string, unknown>>>();
 		for (const row of linksResult.data ?? []) linksByModel.set(row.model_id, [...(linksByModel.get(row.model_id) ?? []), row]);
 		const detailsByModel = new Map<string, Array<Record<string, unknown>>>();
@@ -130,16 +117,12 @@ publicCompareRouter.get("/compare/selection", async (c) => {
 				benchmark_results: benchmarksByModel.get(row.model_slug) ?? [],
 			};
 		});
-		const planRows = (plansResult.data ?? []).map((row) => {
-			const lab = planLabs.get(row.lab_slug);
-			const metadata = lab?.metadata && typeof lab.metadata === "object" && !Array.isArray(lab.metadata) ? lab.metadata as Record<string, unknown> : {};
-			return { ...row, organisation_id: row.lab_slug, organisation: lab ? { organisation_id: lab.lab_slug, name: lab.name, colour: metadata.colour ?? null } : null };
-		});
+		const planRows = modelPlansResult.data;
 		const models = composeComparisonModels(modelIds, {
 			models: comparisonModelRows as Array<Record<string, unknown>>,
 			providerRows: pricing.providerRows,
 			pricingRows: pricing.pricingRows,
-			modelPlans: (modelPlansResult.data ?? []).map((row) => ({ ...row, model_id: row.model_slug })) as Array<Record<string, unknown>>,
+			modelPlans: (modelPlansResult.data ?? []).flatMap((plan) => (plan.models ?? []).map((row: Record<string, unknown>) => ({ ...row, plan_uuid: plan.plan_uuid, model_id: row.model_id }))) as Array<Record<string, unknown>>,
 			plans: planRows as Array<Record<string, unknown>>,
 		});
 		return withPublicCache(c.json({ models }), COMPARE_SELECTION_CACHE);

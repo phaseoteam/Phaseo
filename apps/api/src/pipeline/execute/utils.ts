@@ -4,6 +4,13 @@
 // How: Helpers for timing and attempt metadata.
 import type { PipelineContext } from "../before/types";
 import type { PipelineTiming } from "./index";
+import { readProviderCatalogTier, readRequestedServiceTier, normalizeTextServiceTier } from "@core/serviceTiers";
+
+export function googleFlexMinimumHeadersTimeoutMs(providerId: string, capabilityParams: Record<string, unknown> | undefined, body: unknown): number | undefined {
+    const isGoogle = providerId === "google-ai-studio" || providerId === "google-vertex" || providerId === "google-vertex-eu";
+    const tier = readProviderCatalogTier(capabilityParams)?.name ?? normalizeTextServiceTier(readRequestedServiceTier(body).value);
+    return isGoogle && tier === "flex" ? 600_000 : undefined;
+}
 
 export function captureTimingSnapshot(ctx: PipelineContext, timing: PipelineTiming) {
     ctx.timing = timing.timer.snapshot();

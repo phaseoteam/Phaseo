@@ -254,7 +254,9 @@ jobs:
             - name: Validate migration history
               env:
                   MIGRATION_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
-              run: node scripts/validate-supabase-migrations.mjs "${MIGRATION_BASE_SHA}"
+                  # pull_request.base.sha can predate migrations merged since; also check order against the tip.
+                  MIGRATION_TARGET_REF: ${{ github.base_ref && format('origin/{0}', github.base_ref) || '' }}
+              run: node scripts/validate-supabase-migrations.mjs "${MIGRATION_BASE_SHA}" "${MIGRATION_TARGET_REF}"
 
             - name: Test migration history reconciliation
               run: node --test scripts/declarative-replay-history.test.mjs scripts/prepare-production-migrations.test.mjs scripts/validate-supabase-migrations.test.mjs

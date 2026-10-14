@@ -1,11 +1,13 @@
 import { ReactNode, Suspense } from "react";
 import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
+import { getModelAccessLayout } from "@/lib/models/modelAccessLayout";
 import { IntentLink as Link } from "@/components/navigation/IntentLink";
 import {
 	fetchFrontendModelHeader,
 	fetchFrontendModelGatewayMetadata,
 	fetchFrontendModelOverview,
 	fetchFrontendModelPageNotice,
+	fetchFrontendModelSubscriptionPlans,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
@@ -139,6 +141,9 @@ export default async function ModelDetailShell({
 	const gatewayMetadataPromise = isFreeRouter
 		? Promise.resolve(null)
 		: fetchFrontendModelGatewayMetadata(modelId).catch(() => null);
+	const subscriptionPlansPromise = isFreeRouter
+		? Promise.resolve([])
+		: fetchFrontendModelSubscriptionPlans(modelId).catch(() => null);
 	const [header, modelOverview] = isFreeRouter
 		? [
 				{
@@ -177,8 +182,16 @@ export default async function ModelDetailShell({
 	const scopedVisibleTabKeys = isFreeRouter
 		? ["overview"]
 		: visibleTabKeys;
-	const canChat = canChatOverride ?? header.status !== "Retired";
-	const gatewayMetadata = await gatewayMetadataPromise;
+	const [gatewayMetadata, subscriptionPlans] = await Promise.all([
+		gatewayMetadataPromise,
+		subscriptionPlansPromise,
+	]);
+	const { canUseApi } = getModelAccessLayout({
+		hasSubscriptions: subscriptionPlans === null ? null : subscriptionPlans.length > 0,
+		hasApiProviders: (gatewayMetadata?.providers.length ?? 0) > 0,
+		isPrivateModel: header.is_private === true,
+	});
+	const canChat = canUseApi && (canChatOverride ?? header.status !== "Retired");
 	const capabilities = decisionModelCapabilities(gatewayMetadata?.activeProviders.map(provider => provider.endpoint) ?? []);
 	const isDecisionsModel = !isFreeRouter && (gatewayMetadata?.activeProviders.length
 		? capabilities.includes("decisions.make") : matchesDecisionsModel(modelId, modelOverview));

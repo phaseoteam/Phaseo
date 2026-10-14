@@ -1438,8 +1438,8 @@ describe("public model routes", () => {
 	it("returns parity-shaped timeline and subscription-plan sections", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = decodeURIComponent(String(input));
-			if (url.includes("/rpc/get_v2_model_subscription_plans")) {
-				return new Response(JSON.stringify([{ plan_uuid: "plan-uuid", plan_id: "pro", name: "Pro", lab_slug: "phaseo", price: 20, currency: "USD", frequency: "month", model_info: { note: "included" }, rate_limit: { rpm: 10 }, model_other_info: null }]), { status: 200 });
+			if (url.includes("/rpc/get_v2_subscription_catalogue")) {
+				return new Response(JSON.stringify([{ plan_uuid: "plan-uuid", plan_id: "pro", name: "Pro", organisation_id: "phaseo", offers: [{ offer_uuid: "offer", billing_interval: "month", billing_interval_count: 1, currency: "USD", components: [{ component_key: "base", pricing_type: "fixed", amount: 20, charge_basis: "account" }] }], models: [{ model_id: "openai/gpt-test", model_info: { note: "included" }, rate_limit: { rpm: 10 }, other_info: null }] }]), { status: 200 });
 			}
 			if (url.includes("data_subscription_plan_models")) {
 				return new Response(JSON.stringify([{
@@ -1509,7 +1509,7 @@ describe("public model routes", () => {
 		await expect(subscriptions.json()).resolves.toMatchObject({
 			subscription_plans: [{
 				plan_id: "pro",
-				prices: [{ price: 20, frequency: "month" }],
+				prices: [{ price: 20, frequency: "monthly" }],
 				model_info: { rate_limit: { rpm: 10 } },
 			}],
 		});

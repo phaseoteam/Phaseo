@@ -98,4 +98,8 @@ export default {
 		const { handleScheduledEvent } = await import("@/scheduled");
 		await handleScheduledEvent(event, env);
 	},
+	async queue(batch: MessageBatch<unknown>, env: GatewayBindings) {
+		const { handleBroadcastQueue } = await import("@/observability/broadcast-queue");
+		await handleBroadcastQueue(batch, env);
+	},
 };

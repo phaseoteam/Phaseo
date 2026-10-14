@@ -2,6 +2,7 @@ import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { getServerAccountContext } from "./serverAccountContext";
 import { resolveAccessibleWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import type { UsageLabelFacet, UsageLabelSummary } from "./settingsTypes";
+import type { MonthUsageDay } from "@/lib/gateway/usage/monthUsageKpis";
 
 export type ObservabilityRequestRow = {
 	created_at: string;
@@ -30,6 +31,8 @@ export type SettingsObservabilityData = {
 	labelFacets: UsageLabelFacet[];
 	labelSummary: UsageLabelSummary | null;
 	modelMetadataEntries: Array<[string, { organisationId: string; organisationName: string; canonicalModelId?: string; modelName?: string }]>;
+	/** Exact daily workspace usage since the start of last month; null for filtered views. */
+	monthUsage?: { observedAt: number; days: MonthUsageDay[] } | null;
 	previous: ObservabilityRequestResult;
 	signedIn: boolean;
 	workspaceId: string | null;

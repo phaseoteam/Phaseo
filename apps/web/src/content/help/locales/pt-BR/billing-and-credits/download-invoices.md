@@ -1,16 +1,16 @@
 ---
-title: Baixar faturas
-description: Encontre e baixe faturas de compras de créditos concluídas.
+title: Baixar recibos
+description: Encontre recibos de compras de créditos concluídas.
 order: 2
 updated: 2026-02-09
 ---
 
-As faturas de pagamentos concluídos estão disponíveis em `Settings -> Credits`.
+Os recibos de pagamentos concluídos estão disponíveis em `Configurações -> Créditos`.
 
 Para cada registro de pagamento, você pode:
 
 1. Abrir a linha da compra.
-2. Selecionar a ação de fatura.
-3. Baixar a fatura em PDF.
+2. Selecionar a ação de recibo.
+3. Abrir a página do recibo hospedada pela Stripe.
 
-Se uma fatura estiver faltando para uma cobrança concluída com sucesso, entre em contato com o suporte informando o ID e a data do pagamento.
+Se um recibo estiver faltando para uma cobrança concluída com sucesso, entre em contato com o suporte informando o ID e a data do pagamento.

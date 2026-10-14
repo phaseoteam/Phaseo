@@ -1,4 +1,5 @@
 import SubscriptionPlanDetailShell from "@/components/(data)/subscription-plans/SubscriptionPlanDetailShell";
+import { getTranslations } from "next-intl/server";
 import { fetchFrontendSubscriptionPlan } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -70,6 +71,7 @@ export default async function Page({
 	const messages = getSubscriptionPlansMessagesFor(locale);
 
 	const plan = await fetchFrontendSubscriptionPlan(planId);
+	const access = await getTranslations("Common.ui.subscriptionCatalog");
 
 	if (!plan) {
 		return null; // Shell handles not found
@@ -78,7 +80,7 @@ export default async function Page({
 	return (
 		<SubscriptionPlanDetailShell planId={planId} tab="models">
 			<section className="space-y-4">
-				<h2 className="text-xl font-semibold">{messages.detail.allIncludedModels}</h2>
+				<h2 className="text-xl font-semibold">{access("plan_model_access")}</h2>
 					{plan.models && plan.models.length > 0 ? (
 						<div className="divide-y divide-border/70 border-y border-border/70">
 							{plan.models.map((modelInfo) => (
@@ -93,6 +95,7 @@ export default async function Page({
 										>
 											{modelInfo.model.name}
 										</Link>
+										<p className="text-xs text-muted-foreground">{[modelInfo.mapping_status === "example" ? access("example") : modelInfo.mapping_status === "unverified" ? access("unverified") : null, modelInfo.access_channel, modelInfo.conditions].filter(Boolean).join(" · ")}</p>
 										{modelInfo.model.organisation_name && (
 											<p className="text-sm text-muted-foreground">
 												{messages.detail.byOrganisation.replace("{name}", "")}

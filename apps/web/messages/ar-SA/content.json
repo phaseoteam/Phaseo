@@ -87,7 +87,7 @@
 		"milestones": {
 			"gateway": {
 				"title": "توسيع تغطية البوابة",
-				"description": "توسيع مستمر لمزوّدي الخدمة والنماذج والأنماط المدعومة، مع إعدادات توجيه افتراضية أكثر ذكاءً."
+				"description": "توسيع مستمر للمزوّدين والنماذج والأنماط المدعومة، مع إعدادات توجيه افتراضية أكثر ذكاءً."
 			},
 			"expanded-database": {
 				"title": "تغطية قاعدة البيانات",
@@ -98,7 +98,7 @@
 				"description": "ضوابط الإنفاق والاستخدام لكل مفتاح للحد من الإنفاق غير المقصود وفرض ميزانيات الفريق."
 			},
 			"guardrails": {
-				"title": "ضوابط الأمان",
+				"title": "ضوابط الحماية",
 				"description": "توسيع ضوابط الأمان والسياسات والإشراف على المحتوى عبر حركة مرور البوابة."
 			},
 			"privacy-settings": {
@@ -219,7 +219,7 @@
 				"openaiSdk": "تستخدم حاليًا حزم OpenAI الرسمية.",
 				"anthropicSdk": "تستخدم مكتبات عميل Anthropic.",
 				"openrouter": "توجّه الطلبات عبر OpenRouter.",
-				"vercelAi": "تستخدم Vercel AI Gateway أو مجموعة موفّري AI SDK.",
+				"vercelAi": "تستخدم Vercel AI Gateway أو مجموعة مزوّدي AI SDK.",
 				"requesty": "تستخدم Requesty كبوابة متوافقة مع OpenAI.",
 				"llmGateway": "تستخدم LLMGateway كنقطة نهاية متوافقة مع OpenAI.",
 				"compatibleLibraries": "أي SDK أو تكامل REST متوافق مع OpenAI.",
@@ -240,7 +240,7 @@
 				"keepAnthropicClient": "احتفظ بعميل Anthropic وغيّر عنوان URL الأساسي.",
 				"pointPythonSdk": "وجّه Python SDK إلى Phaseo.",
 				"switchRestToGateway": "حوّل طلبات REST إلى Gateway.",
-				"switchVercelProvider": "استبدل مصنع موفّري Vercel/OpenAI بموفّر Phaseo الرسمي.",
+				"switchVercelProvider": "استبدل مصنع مزوّدي Vercel/OpenAI بمزوّد Phaseo الرسمي.",
 				"restAnyRuntime": "استخدم طلبات REST في أي بيئة تشغيل.",
 				"swapEnvironmentAndBaseUrl": "احتفظ بالعميل وغيّر متغيرات البيئة وعنوان URL الأساسي.",
 				"openAiPythonSettings": "استخدم إعدادات عميل OpenAI Python مع Phaseo.",
@@ -266,14 +266,14 @@
 				"useGatewayKey": "استخدم مفتاح Phaseo Gateway الخاص بك",
 				"routeThroughPhaseo": "وجّه الطلبات عبر Phaseo",
 				"updateModelIds": "حدّث معرّفات النماذج",
-				"switchAiSdk": "انتقل إلى موفّر Phaseo AI SDK"
+				"switchAiSdk": "انتقل إلى مزوّد Phaseo AI SDK"
 			},
 			"changes": {
 				"replaceOpenAiKey": "استبدل OPENAI_API_KEY بمفتاح PHASEO_API_KEY من لوحة Phaseo.",
 				"replaceAnthropicKey": "استبدل ANTHROPIC_API_KEY بمفتاح PHASEO_API_KEY من لوحة Phaseo.",
 				"setSdkKey": "اضبط PHASEO_API_KEY من لوحة Phaseo لعميل SDK.",
 				"sendAuthorization": "أرسل Authorization: Bearer YOUR_API_KEY مع كل طلب.",
-				"replaceVercelProvider": "استبدل مصنع موفّري Vercel OpenAI بالدالة createPhaseo(...) من @phaseo/ai-sdk-provider.",
+				"replaceVercelProvider": "استبدل مصنع مزوّدي Vercel OpenAI بالدالة createPhaseo(...) من @phaseo/ai-sdk-provider.",
 				"routeBaseUrl": "اضبط baseURL على {baseUrl} لتمر حركة المرور عبر Gateway.",
 				"routeBaseUrlPython": "اضبط base_url على {baseUrl} لتمر حركة المرور عبر Gateway.",
 				"routeRest": "أرسل الطلبات إلى {endpoint}.",
@@ -352,7 +352,7 @@
 		"disclaimer": "هذا إقرار مستمر بفضل المنتجات، وليس قائمة شاملة بمواد البرمجيات أو إشعار تراخيص. تبقى حقوق النشر وشروط الترخيص على مستوى الحزم لدى مشاريعها المعنية.",
 		"continue": "متابعة",
 		"review": "مراجعة",
-		"accessibleStates": "حالات الوصول",
+		"accessibleStates": "حالات تدعم إمكانية الوصول",
 		"streamingResponse": "استجابة متدفقة",
 		"searchExample": "مثال للبحث",
 		"createdBy": "أنشأه {name}",
@@ -361,7 +361,7 @@
 		"orbWorking": "قيد العمل",
 		"orbSearching": "جارٍ البحث",
 		"orbSolving": "جارٍ الحل",
-		"orbComposing": "جارٍ الإعداد",
+		"orbComposing": "جارٍ الصياغة",
 		"orbLabel": "كرة {state}",
 		"groups": {
 			"interface": {

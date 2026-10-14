@@ -248,9 +248,18 @@ paths:
               - json
               - rss
               - atom
+        - name: If-None-Match
+          in: header
+          required: false
+          description: ETag aus einer früheren Antwort im JSON- oder OpenAI-Format für dieselbe URL. Stimmt er noch überein, lautet die Antwort 304 Not Modified ohne Antworttext. Akzeptiert eine durch Kommas getrennte Liste, schwache Validatoren (W/) und *.
+          schema:
+            type: string
       responses:
         '200':
           description: Modellliste
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
           content:
             application/json:
               schema:
@@ -265,6 +274,11 @@ paths:
               schema:
                 type: string
                 description: Atom-XML-Feed
+        '304':
+          description: Nicht geändert. If-None-Match stimmt weiterhin mit der aktuellen Modellliste überein, daher hat die Antwort keinen Antworttext. Sie wiederholt die Header ETag, Cache-Control und Vary der 200-Antwort.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
         '400':
           description: Ungültige Anfrageparameter
           content:
@@ -8538,6 +8552,10 @@ components:
       description: Anbieter-Kontingentmetadaten nur für BYOK. Bei Anfragen über verwaltete Anbieter werden sie weggelassen.
       schema:
         type: string
+    ModelListETag:
+      description: Schwacher Validator (Präfix W/) für die Modellliste unter dieser URL, der Seite, limit, offset, total und Format abdeckt. gateway_region wird ignoriert, sodass derselbe Katalog aus einer anderen Region denselben Wert hat; Antworten mit demselben Wert sind gleichwertig, ihre Bytes können sich aber unterscheiden. Wird bei RSS-, Atom- und Fehlerantworten nicht gesendet.
+      schema:
+        type: string
   parameters:
     DataContributionClassifierId:
       name: id
@@ -9098,6 +9116,16 @@ components:
           $ref: '#/components/schemas/GatewayModalities'
         capabilities:
           $ref: '#/components/schemas/GatewayCapabilities'
+        service_tiers:
+          type: array
+          description: Service-Stufen, die dieses Angebot akzeptiert, alphabetisch sortiert. Eine Stufe wird aufgeführt, wenn die Anbieterroute dafür aktive, derzeit gültige Preise hat; priority ist die Fast-Stufe. Weitere Stufen können auch über separate, stufenspezifische Anbieterrouten verfügbar sein.
+          items:
+            type: string
+            enum:
+              - flex
+              - priority
+              - standard
+              - ultrafast
         routing:
           type: object
           required:
@@ -9461,7 +9489,7 @@ components:
                 - groq
                 - together
             - $ref: '#/components/schemas/ProviderRoutingOptions'
-          description: 'Anbieterauswahl. Verwenden Sie für einen einzelnen Anbieter eine Zeichenfolge oder Routing-Optionen wie `{ "only": ["groq"] }`.'
+          description: 'Anbieterauswahl. Verwende für einen einzelnen Anbieter eine Zeichenfolge oder Routing-Optionen wie `{ "only": ["groq"] }`.'
         provider_options:
           $ref: '#/components/schemas/ProviderOptions'
         user_id:
@@ -21377,7 +21405,7 @@ components:
       type: object
       required:
         - name
-      description: Geben Sie genau eines der Felder `template` oder `scopes` an.
+      description: Gib genau eines der Felder `template` oder `scopes` an.
       anyOf:
         - required:
             - template

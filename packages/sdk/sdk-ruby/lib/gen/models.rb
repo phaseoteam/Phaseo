@@ -1707,11 +1707,13 @@ module Phaseo
     #   @return [Boolean]
     # @!attribute [rw] routing
     #   @return [Hash{String => Object}]
+    # @!attribute [rw] service_tiers
+    #   @return [Array<String>, nil]
     # @!attribute [rw] status
     #   @return [String]
     # @!attribute [rw] status_reason
     #   @return [String]
-    GatewayModelOffer = Struct.new(:capabilities, :effective, :endpoints, :modalities, :model, :pricing, :provider, :routable, :routing, :status, :status_reason, keyword_init: true)
+    GatewayModelOffer = Struct.new(:capabilities, :effective, :endpoints, :modalities, :model, :pricing, :provider, :routable, :routing, :service_tiers, :status, :status_reason, keyword_init: true)
     GatewayModelOrganization = Object
     # @!attribute [rw] availability_mode
     #   @return [String]

@@ -250,12 +250,12 @@ export default async function Footer() {
 											{t("issue")}
 						</Link>
 						<span aria-hidden="true">·</span>
-						<Link
+						<IntentLink
 							href="/contact"
 							className="text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
 						>
 											{t("support")}
-						</Link>
+						</IntentLink>
 					</p>
 					<p className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 sm:max-md:hidden">
 						<span>{t("needHelp")}</span>
@@ -268,12 +268,12 @@ export default async function Footer() {
 											{t("openIssue")}
 						</Link>
 						<span>{t("or")}</span>
-						<Link
+						<IntentLink
 							href="/contact"
 							className="text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
 						>
 											{t("contactSupport")}
-						</Link>
+						</IntentLink>
 					</p>
 				</div>
 			</div>

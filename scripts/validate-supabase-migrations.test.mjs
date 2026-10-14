@@ -1,6 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { validateMigrationOrder } from "./validate-supabase-migrations.mjs";
+import { orderBaseMigrationFiles, validateMigrationOrder } from "./validate-supabase-migrations.mjs";
+
+test("checks order against the target branch tip as well as a stale pull request base", () => {
+	const trees = {
+		base: ["20261013120000_merged_before_branch_update.sql"],
+		"origin/main": ["20261013120000_merged_before_branch_update.sql", "20261013221923_merged_since.sql"],
+	};
+	const list = (ref) => trees[ref] ?? [];
+	const added = ["supabase/migrations/20261013120100_stale_branch.sql"];
+	assert.deepEqual(validateMigrationOrder(orderBaseMigrationFiles("base", "", list), added, () => "select 1;"), []);
+	assert.match(
+		validateMigrationOrder(orderBaseMigrationFiles("base", "origin/main", list), added, () => "select 1;").join("\n"),
+		/must be newer than the base branch's latest version 20261013221923/,
+	);
+});
 
 test("accepts migrations newer than the latest migration on the base branch", () => {
 	assert.deepEqual(

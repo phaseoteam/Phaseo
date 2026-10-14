@@ -977,7 +977,7 @@
 					"nextSuffix": "is recorded as the next model.",
 					"familyPrefix": "View the",
 					"familySuffix": "for the complete release history.",
-					"benchmarkIntro": "Phaseo currently tracks {count} benchmark results for {model}.",
+					"benchmarkIntro": "Phaseo currently tracks {count} benchmark results for {model}. Review the",
 					"benchmarkSuffix": "for scores, ranks, methodology context, and available sources.",
 					"modalitiesInput": "{model} accepts these input modalities: {modalities}.",
 					"modalitiesOutput": "{model} can produce these output modalities: {modalities}.",

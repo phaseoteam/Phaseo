@@ -13,17 +13,12 @@ afterEach(() => {
 
 describe("public reference-data routes", () => {
     it("excludes retired plan prices from listings and detail pages", async () => {
-        vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
-            const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
-            if (!url.pathname.endsWith("/v2_subscription_plans")) return new Response("[]");
-            const rows = [
-                { plan_uuid: "active", plan_id: "active", name: "Active", price: 10, effective_to: null },
-                { plan_uuid: "retired", plan_id: "retired", name: "Retired", price: 20, effective_to: "2020-01-01T00:00:00Z" },
-            ];
-            const activeOnly = url.searchParams.get("or")?.includes("effective_to.is.null,effective_to.gt.");
-            const selected = rows.filter(row => (!activeOnly || row.effective_to === null)
-                && (!url.searchParams.has("plan_id") || url.searchParams.get("plan_id") === `eq.${row.plan_id}`));
-            return new Response(JSON.stringify(selected));
+        vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+            const url = String(input);
+            if (!url.includes("get_v2_subscription_catalogue")) return Response.json([]);
+            const body = JSON.parse(String(init?.body ?? "{}"));
+            expect(body.p_include_hidden).toBe(false);
+            return Response.json(body.p_plan_id === "retired" ? [] : [{ plan_uuid: "active", plan_id: "active", name: "Active", offers: [] }]);
         }));
         const listing = await app.request("https://phaseo.app/api/_web/subscription-plans", {}, env);
         expect(listing.status).toBe(200);
@@ -71,6 +66,11 @@ describe("public reference-data routes", () => {
 	it("preserves the family and subscription-plan payloads consumed by the web app", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
+            if (url.includes("/rpc/get_v2_subscription_catalogue")) return new Response(JSON.stringify([{
+              plan_uuid: "plan-uuid", plan_id: "pro", name: "Pro", organisation_id: "phaseo", organisation: { organisation_id: "phaseo", name: "Phaseo" },
+              offers: [{ offer_uuid: "offer", billing_interval: "month", billing_interval_count: 1, currency: "USD", components: [{ component_key: "base", pricing_type: "fixed", amount: 20, charge_basis: "account" }] }],
+              features: [{ feature_name: "Requests", availability: "limited" }], allowances: [], models: [{ model_id: "openai/gpt-test" }]
+            }]), { status: 200 });
 			if (url.includes("v2_model_families")) {
 				return new Response(JSON.stringify([{
 					family_id: "openai/gpt",
