@@ -113,6 +113,12 @@ function buildSupabaseMock(
                 or(_filters: string) {
                     return query;
                 },
+                order(_column: string) {
+                    return query;
+                },
+                range(_from: number, _to: number) {
+                    return query;
+                },
                 then<TResult1 = QueryResult, TResult2 = never>(
                     onfulfilled?: ((value: QueryResult) => TResult1 | PromiseLike<TResult1>) | null,
                     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null
