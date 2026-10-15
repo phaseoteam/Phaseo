@@ -71,7 +71,7 @@ describe("native OpenCode compaction", () => {
 		const reopened = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
 		try { expect(reopened.getTask(id).activities?.[0]).toMatchObject({ type: "compaction", text: ended.data.text, status: "completed" }); }
 		finally { reopened.close(); rmSync(directory, { recursive: true, force: true }); }
-	}, 20_000); // Real orchestration: CI runners take up to ~6s.
+	});
 	it("dispatches the native command and preserves the exact confirmed summary", async () => {
 		const { adapter, session } = fixture([started, { ...started, data: { ...started.data, sessionID: "foreign" } }, started, ended, ended, completed]);
 		const sink = callbacks(); await adapter.run(task, ".", "  /compact\n", sink);

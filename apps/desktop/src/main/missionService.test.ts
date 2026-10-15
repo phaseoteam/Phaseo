@@ -19,7 +19,7 @@ describe("desktop missions", () => {
 		const value = fixture(); const fullReads = vi.spyOn(value.runtime.store, "get").mockImplementation(() => { throw new Error("Full history read during scheduling"); });
 		try { value.service.tick(); value.advance(60000); value.service.tick(); expect(fullReads).not.toHaveBeenCalled(); expect(value.execute).not.toHaveBeenCalled(); }
 		finally { fullReads.mockRestore(); await value.close(); }
-	}, 20_000); // Real SQLite and timers: CI runners take up to ~10s.
+	});
 	it("starts paused and admits one fresh task atomically for each due run", async () => {
 		const value = fixture(); try {
 			value.advance(120000); value.service.tick(); expect(value.execute).not.toHaveBeenCalled();
