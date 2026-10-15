@@ -11,6 +11,7 @@ describe("chat browser tabs", () => {
 		const group = browserTabs({ tabs: [{ id: "chat", viewport: "phone-landscape" }, { id: "chat:other", viewport: "bad" }, { id: "chat:tablet", viewport: "tablet" }, { id: "chat:new", viewport: phone }] }, "chat");
 		expect(group.tabs.map(tab => tab.viewport)).toEqual([{ mode: "device", width: 844, height: 390, preset: "iphone-12-pro" }, fill, { mode: "device", width: 768, height: 1024, preset: "ipad-mini" }, phone]);
 	});
+	it("drops the old \"New tab\" title from blank tabs so the pane shows Browser", () => { const group = browserTabs({ tabs: [{ id: "chat", title: "New tab", url: "" }, { id: "chat:2", title: "New tab", url: "https://a.test/" }] }, "chat"); expect(group.tabs.map(tab => browserTabLabel(tab))).toEqual(["Browser", "New tab"]); });
 	it("keeps zoom, colours and the person's name, dropping invalid ones", () => {
 		const group = browserTabs({ tabs: [{ id: "chat", zoom: 1.5, colorScheme: "dark", name: "  Docs  " }, { id: "chat:2", zoom: 1.33, colorScheme: "sepia", name: " " }] }, "chat");
 		expect(group.tabs[0]).toMatchObject({ zoom: 1.5, colorScheme: "dark", name: "Docs" });

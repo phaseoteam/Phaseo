@@ -7,7 +7,7 @@ import { BrowserDeviceToolbar } from "../components/browser/BrowserDeviceToolbar
 import { BrowserMoreMenu } from "../components/browser/BrowserMoreMenu";
 import { BrowserEmptyState, BrowserUnreachable, BrowserZoomIndicator } from "../components/browser/BrowserStates";
 import { browserNavigationAddress, browserRecents, projectRecents, recordBrowserVisit, type BrowserRecent } from "../lib/browserHistory";
-import { browserTabError, browserViewportToRestore, focusedBrowserTab, setFocusedBrowserTab, useBrowserTab } from "../lib/browserTabs";
+import { browserTabError, browserViewportToRestore, focusedBrowserTab, recordBrowserState, setFocusedBrowserTab, useBrowserTab } from "../lib/browserTabs";
 import { shortcut, useCommand } from "../lib/keybindings";
 import { usePersistedState } from "../lib/persistedState";
 import { cn } from "../lib/utils";
@@ -44,7 +44,7 @@ export function BrowserSurface({ context, tabId, covered, requestedLink }: { con
 	const recovery = useRef<BrowserCrashRecovery>({ attempts: 0, since: null });
 	const lastRecorded = useRef("");
 
-	const send = useCallback(async (command: BrowserCommand) => { try { const result = await api?.browser(command); if (result?.id === tabId) setState(result); return result; } catch (reason) { setError(errorText(reason)); } }, [api, tabId]);
+	const send = useCallback(async (command: BrowserCommand) => { try { const result = await api?.browser(command); if (result?.id === tabId) { setState(result); recordBrowserState(result); } return result; } catch (reason) { setError(errorText(reason)); } }, [api, tabId]);
 	const act = (type: "back" | "forward" | "reload" | "hardReload" | "stop" | "devtools") => { setError(""); void send({ id: tabId, type }); };
 	const navigate = (url: string) => { setError(""); void send({ id: tabId, type: "navigate", url }); };
 	const submit = (value: string) => { try { navigate(browserNavigationAddress(value)); } catch (reason) { setError(errorText(reason)); } };
@@ -61,14 +61,16 @@ export function BrowserSurface({ context, tabId, covered, requestedLink }: { con
 				restored = true;
 				const saved = restore.current;
 				if (saved && !value.configured) {
+					// The address goes first, so the tab keeps it while the other settings apply.
+					if (!value.url && saved.url) void send({ id: tabId, type: "navigate", url: saved.url });
 					const viewport = browserViewportToRestore(value, saved.viewport);
 					if (viewport.mode !== "fill") void send({ id: tabId, type: "viewport", viewport });
 					if (saved.zoom && saved.zoom !== value.zoom) void send({ id: tabId, type: "zoom", zoom: saved.zoom });
 					if (saved.colorScheme && saved.colorScheme !== value.colorScheme) void send({ id: tabId, type: "colorScheme", colorScheme: saved.colorScheme });
-					if (!value.url && saved.url) void send({ id: tabId, type: "navigate", url: saved.url });
 				}
 			}
 			setState(value);
+			recordBrowserState(value);
 			if (value.error) setError(value.error);
 		};
 		const unsubscribe = api.onBrowserState(apply);

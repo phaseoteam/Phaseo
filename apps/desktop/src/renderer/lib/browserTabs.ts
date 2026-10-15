@@ -18,7 +18,9 @@ export function browserTabs(value: unknown, context: string): BrowserTabs {
 		if (!item || typeof item !== "object" || typeof item.id !== "string" || item.id.length > 200 || (item.id !== context && !item.id.startsWith(context + ":")) || tabs.some(tab => tab.id === item.id)) continue;
 		let url = ""; try { if (typeof item.url === "string" && item.url) url = browserUrl(item.url); } catch { /* Discard invalid persisted addresses. */ }
 		let viewport: BrowserViewport = { mode: "fill" }; try { viewport = browserViewport(item.viewport); } catch { /* Recover invalid stored previews. */ }
-		const tab: BrowserTab = { viewport, id: item.id, title: typeof item.title === "string" ? item.title.slice(0, 120) : "", url };
+		// Blank tabs were saved as "New tab" before tabs took the page's title.
+		const title = typeof item.title === "string" && !(item.title === "New tab" && !url) ? item.title.slice(0, 120) : "";
+		const tab: BrowserTab = { viewport, id: item.id, title, url };
 		try { if (item.zoom !== undefined && item.zoom !== 1) tab.zoom = browserZoom(item.zoom); } catch { /* Invalid zoom resets to 100%. */ }
 		try { if (item.colorScheme !== undefined && item.colorScheme !== "system") tab.colorScheme = browserColorScheme(item.colorScheme); } catch { /* Invalid scheme follows the system. */ }
 		if (typeof item.name === "string" && item.name.trim()) tab.name = item.name.trim().slice(0, 120);
@@ -82,16 +84,7 @@ function start() {
 	started = true;
 	const api = window.phaseoDesktop;
 	if (!api) return;
-	api.onBrowserState(state => {
-		const previous = live.get(state.id);
-		const next: Live = { loading: state.loading, audible: state.audible, muted: state.muted, ...(state.favicon ? { favicon: state.favicon } : {}) };
-		const context = contextOf(state.id);
-		if (!context) return;
-		const current = group(context), updated = updateBrowserTab(current, state);
-		const statusChanged = JSON.stringify(previous) !== JSON.stringify(next);
-		live.set(state.id, next);
-		if (JSON.stringify(current) !== JSON.stringify(updated)) commit(context, updated); else if (statusChanged) changed();
-	});
+	api.onBrowserState(recordBrowserState);
 	api.onBrowserOpenTab(request => {
 		const context = contextOf(request.sourceId);
 		if (!context) return;
@@ -101,6 +94,17 @@ function start() {
 	});
 	// A shortcut pressed in a page runs as if the page's surface had focus.
 	api.onBrowserKey(input => { focused = input.id; dispatchKeybinding({ key: input.key, ctrlKey: input.ctrl, metaKey: input.meta, altKey: input.alt, shiftKey: input.shift }, { browserFocused: true, textFocused: false, terminalFocused: false }); });
+}
+
+/** Saves what a native page reports, from its events or a command's reply. */
+export function recordBrowserState(state: BrowserState) {
+	const context = contextOf(state.id);
+	if (!context) return;
+	const next: Live = { loading: state.loading, audible: state.audible, muted: state.muted, ...(state.favicon ? { favicon: state.favicon } : {}) };
+	const statusChanged = JSON.stringify(live.get(state.id)) !== JSON.stringify(next);
+	live.set(state.id, next);
+	const current = group(context), updated = updateBrowserTab(current, state);
+	if (JSON.stringify(current) !== JSON.stringify(updated)) commit(context, updated); else if (statusChanged) changed();
 }
 
 /** A chat's browser tabs in order. */
