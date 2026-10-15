@@ -9,7 +9,9 @@ begin
     if tg_op='DELETE' then return old; end if;
     return new;
   end if;
-  if coalesce(old.routed_model_slug,old.requested_model_slug) is not null and (tg_op='DELETE' or row(old.workspace_id,date_trunc('hour',old.occurred_at at time zone 'utc'),old.app_id,
+  -- Queue the old hour even without a model slug: the usage overview rebuilds whole
+  -- workspace hours and counts requests that only name their input model.
+  if (tg_op='DELETE' or row(old.workspace_id,date_trunc('hour',old.occurred_at at time zone 'utc'),old.app_id,
     coalesce(old.routed_model_slug,old.requested_model_slug),old.provider_model_id,old.cloudflare_colo)
     is distinct from row(new.workspace_id,date_trunc('hour',new.occurred_at at time zone 'utc'),new.app_id,
     coalesce(new.routed_model_slug,new.requested_model_slug),new.provider_model_id,new.cloudflare_colo)) then

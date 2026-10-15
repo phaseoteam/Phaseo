@@ -175,6 +175,15 @@ try {
   assert.deepEqual(await output(after),beforeRefresh,'Synchronous range refresh retains exact totals');
   await assertOverviewRollupExact(after, 'A range refresh keeps the 15-minute rollup exact');
   assert.equal(Number((await after.query("select count(*) n from v2_analytics_outbox where status in ('pending','processing','failed')")).rows[0].n),0);
+  // A request that only names its input model still leaves its former hour when moved or deleted.
+  await after.exec("update v2_request_facts set routed_model_slug=null,requested_model_input='custom/input-only' where request_event_id=md5('2')::uuid");
+  await drain(after, true);
+  await after.exec("update v2_request_facts set occurred_at=occurred_at+interval '2 hours' where request_event_id=md5('2')::uuid");
+  await drain(after, true);
+  await assertOverviewRollupExact(after, 'A request without a model slug leaves its former hour when moved');
+  await after.exec("delete from v2_request_usage where request_event_id=md5('2')::uuid; delete from v2_request_facts where request_event_id=md5('2')::uuid");
+  await drain(after, true);
+  await assertOverviewRollupExact(after, 'A deleted request without a model slug leaves the rollup');
   console.log(JSON.stringify({ oldWork,newWork,checks:'All aggregate fields/meters, coalescing cap, workspace boundaries, readiness, public visibility, correction re-enqueue, moved grains, idempotency and grants passed' },null,2));
 } catch (error) {
   console.error(error.message, error.detail ?? '', error.where?.split('\n')[0] ?? '');

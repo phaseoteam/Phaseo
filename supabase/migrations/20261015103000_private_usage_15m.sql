@@ -109,15 +109,15 @@ CREATE VIEW "private"."v2_usage_overview_requests" WITH (security_invoker=true) 
      LEFT JOIN LATERAL ( SELECT COALESCE(sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'input_tokens'::text)), sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'prompt_tokens'::text)), sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'input_text_tokens'::text)), (0)::numeric) AS input_tokens,
             COALESCE(sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'output_tokens'::text)), sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'completion_tokens'::text)), sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'output_text_tokens'::text)), (0)::numeric) AS output_tokens,
             sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'total_tokens'::text)) AS total_tokens,
-            COALESCE(sum(meter.quantity) FILTER (WHERE (meter.meter_key = ANY (ARRAY['reasoning_tokens'::text, 'output_reasoning_tokens'::text]))), (0)::numeric) AS reasoning_tokens,
-            (COALESCE(sum(meter.quantity) FILTER (WHERE (meter.meter_key = ANY (ARRAY['cached_read_tokens'::text, 'cached_input_tokens'::text, 'cache_read_tokens'::text, 'cached_read_text_tokens'::text]))), (0)::numeric) + COALESCE(sum(meter.quantity) FILTER (WHERE (meter.meter_key = ANY (ARRAY['cached_write_tokens'::text, 'cache_write_tokens'::text, 'cached_write_text_tokens'::text]))), (0)::numeric)) AS cached_tokens
+            COALESCE(sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'reasoning_tokens'::text)), sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'output_reasoning_tokens'::text)), (0)::numeric) AS reasoning_tokens,
+            (COALESCE(sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'cached_input_tokens'::text)), sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'cached_read_tokens'::text)), sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'cache_read_tokens'::text)), sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'cached_read_text_tokens'::text)), (0)::numeric) + COALESCE(sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'cache_write_tokens'::text)), sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'cached_write_tokens'::text)), sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'cached_write_text_tokens'::text)), (0)::numeric)) AS cached_tokens
            FROM public.v2_request_usage meter
           WHERE (meter.request_event_id = fact.request_event_id)) usage ON (true))
   WHERE (COALESCE(fact.endpoint, ''::text) <> ALL (ARRAY['video.generation'::text, 'batch'::text, 'music.generate'::text]));
 
 GRANT SELECT ON TABLE "private"."v2_usage_overview_requests" TO "service_role";
 
-COMMENT ON VIEW "private"."v2_usage_overview_requests" IS 'One row per request as the usage overview counts it: the resolved model, tokens as the reported total or input plus output, cached reads and writes, guardrail blocks and request labels. Async job endpoints are left out; their own pages count them. Feeds the 15-minute rollups and the requests at the edges of get_private_usage_overview.';
+COMMENT ON VIEW "private"."v2_usage_overview_requests" IS 'One row per request as the usage overview counts it: the resolved model, tokens as the reported total or input plus output, cached reads and writes (one alias each, since the gateway writes the same count under several), guardrail blocks and request labels. Async job endpoints are left out; their own pages count them. Feeds the 15-minute rollups and the requests at the edges of get_private_usage_overview.';
 
 CREATE OR REPLACE FUNCTION public.process_v2_analytics_outbox (
   p_limit integer DEFAULT 250
@@ -609,6 +609,42 @@ REVOKE ALL ON FUNCTION "public"."process_v2_analytics_outbox"(integer) FROM "pos
 GRANT EXECUTE ON FUNCTION "public"."process_v2_analytics_outbox"(integer) TO "postgres";
 
 REVOKE ALL ON FUNCTION "public"."process_v2_analytics_outbox"(integer) FROM PUBLIC, "anon", "authenticated";
+
+CREATE OR REPLACE FUNCTION private.enqueue_v2_analytics_fact_correction()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+begin
+  if coalesce(current_setting('phaseo.pruning_byok_metadata',true),'')='on' then
+    if tg_op='DELETE' then return old; end if;
+    return new;
+  end if;
+  -- Queue the old hour even without a model slug: the usage overview rebuilds whole
+  -- workspace hours and counts requests that only name their input model.
+  if (tg_op='DELETE' or row(old.workspace_id,date_trunc('hour',old.occurred_at at time zone 'utc'),old.app_id,
+    coalesce(old.routed_model_slug,old.requested_model_slug),old.provider_model_id,old.cloudflare_colo)
+    is distinct from row(new.workspace_id,date_trunc('hour',new.occurred_at at time zone 'utc'),new.app_id,
+    coalesce(new.routed_model_slug,new.requested_model_slug),new.provider_model_id,new.cloudflare_colo)) then
+    insert into private.v2_analytics_previous_grains as queued(workspace_id,occurred_at,app_id,model_slug,provider_model_id,cloudflare_colo)
+    values(old.workspace_id,date_trunc('hour',old.occurred_at at time zone 'utc') at time zone 'utc',old.app_id,
+      coalesce(old.routed_model_slug,old.requested_model_slug),old.provider_model_id,old.cloudflare_colo)
+    on conflict(workspace_id,occurred_at,app_id,model_slug,provider_model_id,cloudflare_colo) do update
+    set grain_id=excluded.grain_id,transaction_id=excluded.transaction_id
+    where queued.transaction_id<>excluded.transaction_id;
+  end if;
+  if tg_op='DELETE' then return old; end if;
+  if old is distinct from new then perform private.enqueue_v2_analytics_correction(new.request_event_id); end if;
+  return new;
+end;
+$function$;
+
+REVOKE ALL ON FUNCTION "private"."enqueue_v2_analytics_fact_correction"() FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION "private"."enqueue_v2_analytics_fact_correction"() FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "private"."enqueue_v2_analytics_fact_correction"() TO "postgres";
 
 CREATE OR REPLACE FUNCTION public.get_private_usage_overview (
   p_workspace_id uuid,

@@ -52,6 +52,10 @@ await db.exec(`
   select request_event_id, meter, quantity from public.v2_request_facts,
     lateral (values ('input_tokens', 100.0), ('input_text_tokens', 100.0), ('output_tokens', 20.0),
       ('cached_input_tokens', case when cost_nanos % 3000 = 0 then 40.0 end),
+      -- The gateway also records the same counts under per-modality aliases.
+      ('cached_read_text_tokens', case when cost_nanos % 3000 = 0 then 40.0 end),
+      ('cache_write_tokens', case when cost_nanos % 5000 = 0 then 12.0 end),
+      ('cached_write_text_tokens', case when cost_nanos % 5000 = 0 then 12.0 end),
       ('reasoning_tokens', case when cost_nanos % 2000 = 0 then 5.0 end),
       ('total_tokens', case when cost_nanos % 7000 = 0 then 500.0 end)) meters(meter, quantity)
   where quantity is not null;
@@ -91,7 +95,8 @@ const expected = async ({ from, to, bucket = null, timeZone = 'UTC', where = 'tr
   from public.v2_request_facts f
   left join lateral (select
       sum(quantity) filter (where meter_key = 'input_tokens') input, sum(quantity) filter (where meter_key = 'output_tokens') output,
-      sum(quantity) filter (where meter_key = 'total_tokens') total, sum(quantity) filter (where meter_key = 'cached_input_tokens') cached,
+      sum(quantity) filter (where meter_key = 'total_tokens') total, coalesce(sum(quantity) filter (where meter_key = 'cached_input_tokens'), 0)
+        + coalesce(sum(quantity) filter (where meter_key = 'cache_write_tokens'), 0) cached,
       sum(quantity) filter (where meter_key = 'reasoning_tokens') reasoning
     from public.v2_request_usage where request_event_id = f.request_event_id) u on true
   where f.workspace_id = '${workspaceId}' and f.occurred_at >= $1 and f.occurred_at <= $2
