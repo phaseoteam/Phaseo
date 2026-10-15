@@ -54,7 +54,11 @@ export default function ModelDescriptionPanel({
 				>
 					<ReactMarkdown
 						remarkPlugins={[remarkGfm]}
-						components={{ ...modelMarkdownComponents, p: ({ node: _node, ...props }) => <p {...props} /> }}
+						components={{
+							...modelMarkdownComponents,
+							p: ({ node: _node, ...props }) => <p {...props} />,
+							a: expanded ? modelMarkdownComponents.a : ({ children }) => <span>{children}</span>,
+						}}
 					>
 						{description}
 					</ReactMarkdown>
