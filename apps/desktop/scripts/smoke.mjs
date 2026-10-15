@@ -269,10 +269,10 @@ app.whenReady().then(async () => {
 		ipcMain.handle("workspace:account-status", () => ({ checkedAt: new Date().toISOString(), authenticated: true, plan: "pro", identity: "fixture@example.invalid", ordinaryUsageAllowed: false, usage: [{ id: "codex", name: "Codex", primary: { usedPercent: 25, windowDurationMins: 300, resetsAt: null }, secondary: null, spendControlReached: null }] }));
 		await window.webContents.executeJavaScript(`(async () => {
 			await window.__auditNavigate('Accounts'); await new Promise(resolve=>setTimeout(resolve,100));
-			const row=Array.from(document.querySelectorAll('article')).find(article=>article.textContent.includes('Codex local login')); if (!row) throw new Error('Native account status control missing');
+			const row=Array.from(document.querySelectorAll('article')).find(article=>article.textContent.includes('Codex login')); if (!row) throw new Error('Native account status control missing');
 			Array.from(row.querySelectorAll('button')).find(button=>button.textContent==='Check status').click();
-			for(let attempt=0;attempt<30 && !row.textContent.includes('75% remaining');attempt++) await new Promise(resolve=>setTimeout(resolve,100));
-			if (!row.textContent.includes('75% remaining') || !row.textContent.includes('Included usage is blocked.') || !row.textContent.includes('Secondary window: unavailable')) throw new Error('Account quota fixture did not render');
+			for(let attempt=0;attempt<30 && !row.textContent.includes('75% left');attempt++) await new Promise(resolve=>setTimeout(resolve,100));
+			if (!row.textContent.includes('75% left') || !row.textContent.includes('5-hour') || !row.textContent.includes('Included usage is used up') || row.textContent.includes('Weekly')) throw new Error('Account quota fixture did not render');
 			await window.__auditNavigate('Tasks'); await new Promise(resolve=>setTimeout(resolve,100));
 		})()`);
 		result.accountStatus = true;
@@ -486,7 +486,7 @@ app.whenReady().then(async () => {
 		})()`);
 		result.inbox = true;
 		await window.webContents.executeJavaScript(`(async () => {
-			const api=window.phaseoDesktop.workspace;let invalid=false;try{await api.savePreferences({notifications:['all'],notificationTitles:false});}catch{invalid=true;}if(!invalid)throw new Error('Invalid notification settings accepted');document.querySelector('aside button[aria-label="Settings"]').click();for(let attempt=0;attempt<30&&!document.querySelector('[aria-label="Desktop alerts"]');attempt++)await new Promise(resolve=>setTimeout(resolve,100));const select=document.querySelector('[aria-label="Desktop alerts"]');if(!select)throw new Error('Settings did not open');for(let attempt=0;attempt<30&&select.disabled;attempt++)await new Promise(resolve=>setTimeout(resolve,100));await window.__auditChoose(select.getAttribute('aria-label'),'attention');for(let attempt=0;attempt<30&&(await api.preferences()).preferences.notifications!=='attention';attempt++)await new Promise(resolve=>setTimeout(resolve,100));if((await api.preferences()).preferences.notifications!=='attention')throw new Error('Notification settings did not persist');await api.savePreferences({notifications:'off',notificationTitles:false});
+			const api=window.phaseoDesktop.workspace;let invalid=false;try{await api.savePreferences({notifications:['all'],notificationTitles:false});}catch{invalid=true;}if(!invalid)throw new Error('Invalid notification settings accepted');await window.__auditSettings('Notifications');for(let attempt=0;attempt<30&&!document.querySelector('[aria-label="Desktop alerts"]');attempt++)await new Promise(resolve=>setTimeout(resolve,100));const select=document.querySelector('[aria-label="Desktop alerts"]');if(!select)throw new Error('Settings did not open');for(let attempt=0;attempt<30&&select.disabled;attempt++)await new Promise(resolve=>setTimeout(resolve,100));await window.__auditChoose(select.getAttribute('aria-label'),'attention');for(let attempt=0;attempt<30&&(await api.preferences()).preferences.notifications!=='attention';attempt++)await new Promise(resolve=>setTimeout(resolve,100));if((await api.preferences()).preferences.notifications!=='attention')throw new Error('Notification settings did not persist');await api.savePreferences({notifications:'off',notificationTitles:false});
 		})()`);
 		result.notificationSettings = true;
 		const notificationTask = await window.webContents.executeJavaScript("window.phaseoDesktop.workspace.get().then(state=>state.tasks.find(value=>value.title==='Owned sign-in fixture task').id)");
