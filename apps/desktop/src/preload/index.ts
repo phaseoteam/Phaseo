@@ -62,6 +62,7 @@ const desktopApi: PhaseoDesktopApi = {
 		cancelPhaseoSignIn: () => ipcRenderer.invoke("workspace:phaseo-cancel-sign-in"),
 		signIn: id => ipcRenderer.invoke("workspace:sign-in", id),
 		accountStatus: (harness, id) => ipcRenderer.invoke("workspace:account-status", harness, id),
+		usageHubs: request => ipcRenderer.invoke("workspace:usage-hubs", request),
 		cancelSignIn: id => ipcRenderer.invoke("workspace:cancel-sign-in", id),
 		listFiles: (id, directory) => ipcRenderer.invoke("workspace:list-files", id, directory),
 		searchFiles: (id, query) => ipcRenderer.invoke("workspace:search-files", id, query),

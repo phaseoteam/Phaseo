@@ -39,6 +39,8 @@ import { windowsCredentialEncryption } from "./windowsCredentialEncryption";
 import { signInNative } from "./accountConnections";
 import { gitReview, listProjectFiles, readProjectFile } from "./projectFiles";
 import { searchProjectFiles } from "./projectFileSearch";
+import { UsageHubs, usageHubFile } from "./usageHubs";
+import { validateUsageHubRequest } from "../shared/usageHubs";
 import { editorInstallations, findEditor, launchEditor, openProjectTarget } from "./projectEditors";
 import { codexModels } from "./modelCatalog";
 import { apiModelCatalog, type CatalogPageValidator } from "./apiModelCatalog";
@@ -227,6 +229,13 @@ ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
 ipcMain.handle("workspace:cancel-sign-in", (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid sign-in request.");
 	signIns.get(id)?.abort();
+});
+// CLIProxyAPI hubs: their accounts' limits, read through the hub with keys kept in the credential vault.
+let usageHubs: UsageHubs | undefined;
+ipcMain.handle("workspace:usage-hubs", async (event, request: unknown) => {
+	if (!senderWindow(event)) throw new Error("Untrusted usage hub request.");
+	if (!usageHubs) throw new Error("Usage hubs are not ready yet.");
+	return usageHubs.request(validateUsageHubRequest(request));
 });
 ipcMain.handle("workspace:account-status", async (event, harness: unknown, id: unknown) => {
 	if (!senderWindow(event) || (harness !== "codex" && harness !== "claude" && harness !== "cursor" && harness !== "grok") || (id !== undefined && typeof id !== "string")) throw new Error("Invalid account status request.");
@@ -654,6 +663,7 @@ app.whenReady().then(() => {
 		encrypt: value => safeStorage.encryptStringAsync(value), decrypt: async value => (await safeStorage.decryptStringAsync(value)).result,
 	}));
 	credentialVault = vault;
+	usageHubs = new UsageHubs(usageHubFile(workspaceDirectory), { set: (id, value) => vault.set(id, value), get: id => vault.get(id), remove: id => vault.remove(id) });
 	modelCatalogCache = new ModelCatalogCache(path.join(app.getPath("userData"), "cache"), ({ accountId }) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness: "phaseo", accountId }); });
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
 	workspaceRuntime.discoverThreadModels = discoverDesktopModels;

@@ -5,6 +5,7 @@ import { errorText, useWorkspace } from "../app/workspace";
 import { HarnessLogo } from "../components/HarnessLogo";
 import { SettingsButton, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection } from "./SettingsLayout";
 import { UsageMeters } from "./UsageMeters";
+import { UsageHubsSection } from "./UsageHubs";
 
 type Checkable = "codex" | "claude" | "cursor" | "grok";
 type Source = { key: string; harness: Checkable; accountId?: string; title: string; description: string };
@@ -32,8 +33,9 @@ export function UsageSettings() {
 	// Each check starts the agent briefly, so they run once per visit rather than on a timer.
 	useEffect(() => { for (const source of sources) void check(source); }, [keys]);
 	const busy = Object.values(checking).some(Boolean);
+	const [hubRefresh, setHubRefresh] = useState(0);
 	return <SettingsPageLayout title="Usage & limits" description="What each subscription allows and how much is left, as reported by the agent."
-		actions={<SettingsButton variant="ghost" disabled={busy || !api} onClick={() => { for (const source of sources) void check(source); }}><RotateCw className={busy ? "animate-spin" : undefined} />{busy ? "Checking…" : "Check again"}</SettingsButton>}>
+		actions={<SettingsButton variant="ghost" disabled={busy || !api} onClick={() => { for (const source of sources) void check(source); setHubRefresh(value => value + 1); }}><RotateCw className={busy ? "animate-spin" : undefined} />{busy ? "Checking…" : "Check again"}</SettingsButton>}>
 		<SettingsSection title="Subscriptions">
 			{sources.map(source => {
 				const status = statuses[source.key];
@@ -44,6 +46,7 @@ export function UsageSettings() {
 			})}
 			{!api && <SettingsNote>Open the desktop application to check usage.</SettingsNote>}
 		</SettingsSection>
+		<UsageHubsSection refresh={hubRefresh} />
 		<p className="px-0.5 text-xs text-muted-foreground">Phaseo API usage and credits are on your dashboard at phaseo.app.</p>
 	</SettingsPageLayout>;
 }
