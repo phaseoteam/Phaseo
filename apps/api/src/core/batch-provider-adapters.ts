@@ -1,4 +1,5 @@
 import { getBindings } from "@/runtime/env";
+import { fetchVertexBatchApi, vertexBatchOutputs } from "@providers/google-vertex/batch";
 import { readResponsePreview, readStreamTextWithLimit } from "@core/bounded-stream";
 import { resolveProviderKey } from "@providers/keys";
 import { reloadBatchCredential, type BatchProviderCredential } from "@core/batch-credentials";
@@ -218,6 +219,7 @@ export async function fetchProviderBatchApi(providerId: string, args: {
 	const suppliedCredential = args.credential ?? (args.credentialContext
 		? await reloadBatchCredential({ providerId, ...args.credentialContext })
 		: undefined);
+	if (providerId === "google-vertex") return fetchVertexBatchApi({ ...args, credential: suppliedCredential });
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	if (providerId === ANTHROPIC_BATCH_PROVIDER_ID) {
 		let keyInfo: { key: string };
@@ -277,6 +279,18 @@ export async function fetchProviderBatchApi(providerId: string, args: {
 
 export function normalizeProviderBatchStatus(providerId: string, raw: unknown, payload?: any): string | null {
 	const status = batchText(raw)?.toLowerCase();
+	if (providerId === "google-vertex") {
+		switch (status) {
+			case "job_state_queued": case "job_state_pending": return "pending";
+			case "job_state_running": case "job_state_updating": case "job_state_paused": return "in_progress";
+			case "job_state_cancelling": return "cancelling";
+			case "job_state_succeeded": case "job_state_partially_succeeded": return "completed";
+			case "job_state_failed": return "failed";
+			case "job_state_cancelled": return "cancelled";
+			case "job_state_expired": return "expired";
+			default: return status;
+		}
+	}
 	if (providerId === MISTRAL_BATCH_PROVIDER_ID) {
 		switch (status) {
 			case "queued":
@@ -426,6 +440,20 @@ export function normalizeProviderBatchPayload(providerId: string, payload: any):
 			failed: toBatchFiniteNumber(payload.state?.num_error),
 		};
 	}
+	if (providerId === "google-vertex") {
+		const stats = payload.completionStats;
+		const completed = toBatchFiniteNumber(stats?.successfulCount);
+		const failed = toBatchFiniteNumber(stats?.failedCount);
+		const incomplete = toBatchFiniteNumber(stats?.incompleteCount);
+		out.request_counts = {
+			total: stats ? (completed ?? 0) + (failed ?? 0) + (incomplete ?? 0) : null,
+			completed: stats ? completed ?? 0 : null,
+			failed: stats ? failed ?? 0 : null,
+		};
+		// GCS paths are internal; results are exposed only through the owned results route.
+		out.output_file_id = null;
+		out.error_file_id = null;
+	}
 	return out;
 }
 
@@ -435,7 +463,7 @@ export function batchMetaFromProviderPayload(payload: any, base: BatchJobMeta): 
 	return {
 		...base,
 		status: batchText(payload?.status) ?? base.status ?? null,
-		model: batchText(payload?.model) ?? base.model ?? null,
+		model: base.provider === "google-vertex" ? base.model : batchText(payload?.model) ?? base.model ?? null,
 		nativeBatchId: nativeId ?? base.nativeBatchId ?? null,
 		endpoint: batchText(payload?.endpoint) ?? base.endpoint ?? null,
 		completionWindow: batchText(payload?.completion_window) ?? base.completionWindow ?? null,
@@ -471,6 +499,7 @@ export async function persistProviderBatchFileOwnership(workspaceId: string, pro
 }
 
 export function buildProviderRetrievePath(providerId: string, nativeBatchId: string): string {
+	if (providerId === "google-vertex") return `/${nativeBatchId}`;
 	if (providerId === MISTRAL_BATCH_PROVIDER_ID) return `/batch/jobs/${encodeURIComponent(nativeBatchId)}`;
 	if (providerId === ANTHROPIC_BATCH_PROVIDER_ID) return `/messages/batches/${encodeURIComponent(nativeBatchId)}`;
 	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
@@ -481,6 +510,7 @@ export function buildProviderRetrievePath(providerId: string, nativeBatchId: str
 }
 
 export function buildProviderCancelPath(providerId: string, nativeBatchId: string): string {
+	if (providerId === "google-vertex") return `/${nativeBatchId}:cancel`;
 	if (providerId === MISTRAL_BATCH_PROVIDER_ID) return `/batch/jobs/${encodeURIComponent(nativeBatchId)}/cancel`;
 	if (providerId === ANTHROPIC_BATCH_PROVIDER_ID) return `/messages/batches/${encodeURIComponent(nativeBatchId)}/cancel`;
 	if (providerId === X_AI_BATCH_PROVIDER_ID) return `/batches/${encodeURIComponent(nativeBatchId)}:cancel`;
@@ -874,6 +904,15 @@ async function fetchProviderFileJsonLines(providerId: string, fileIdRaw: string,
 export async function fetchProviderBatchOutputEntries(meta: BatchJobMeta, workspaceId?: string): Promise<any[]> {
 	const providerId = meta.provider || OPENAI_BATCH_PROVIDER_ID;
 	const credentialContext = workspaceId ? { workspaceId, keySource: meta.keySource, byokKeyId: meta.byokKeyId } : undefined;
+	if (providerId === "google-vertex") {
+		if (!credentialContext) throw new Error("vertex_batch_workspace_required");
+		const credential = await reloadBatchCredential({ providerId, ...credentialContext });
+		const entries: any[] = [];
+		for await (const entry of vertexBatchOutputs({ storage: meta.vertexStorage, workspaceId: credentialContext.workspaceId, credential })) {
+			entries.push(compactOutputEntry(entry, entries.length));
+		}
+		return entries;
+	}
 	const outputFileId = batchText(meta.outputFileId);
 	if (outputFileId) {
 		return fetchProviderFileJsonLines(providerId, outputFileId, credentialContext);

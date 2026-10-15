@@ -17,6 +17,7 @@ import {
 } from "@core/async-operations";
 
 export type BatchJobMeta = {
+	vertexStorage?: import("@providers/google-vertex/batch").VertexBatchStorage;
 	resource?: "job";
 	provider: string;
 	requestId?: string | null;

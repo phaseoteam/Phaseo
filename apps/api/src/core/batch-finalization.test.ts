@@ -64,6 +64,10 @@ vi.mock("@/runtime/env", () => ({
 	getBindings: () => ({
 		OPENAI_API_KEY: "test-openai-key",
 		OPENAI_BASE_URL: "https://api.openai.example/v1",
+		GOOGLE_VERTEX_PROJECT: "test-project",
+		GOOGLE_VERTEX_BATCH_LOCATION: "global",
+		GOOGLE_VERTEX_BATCH_BUCKET: "test-batch-bucket",
+		GOOGLE_VERTEX_ACCESS_TOKEN: "test-vertex-token",
 	}),
 	getSupabaseAdmin: () => ({
 		rpc: vi.fn(async (name: string, args: Record<string, unknown>) => {
@@ -292,6 +296,38 @@ vi.mock("@core/wallet-reservations", () => ({
 }));
 
 describe("batch-finalization", () => {
+	it.each([false, true])("settles Vertex output only against submitted request IDs (unknown=%s)", async (unknown) => {
+		state.canonicalRows = [{ customId: "submitted", meta: { canonical_model: "google/gemini-3.1-flash-lite" } }];
+		state.record = {
+			workspaceId: "ws_batch_test", batchId: "batch_vertex", status: "completed",
+			meta: { provider: "google-vertex", model: "google/gemini-3.1-flash-lite", endpoint: "/v1/generateContent",
+				status: "completed", nativeBatchId: "projects/test-project/locations/global/batchPredictionJobs/123",
+				requestCounts: { total: 1, completed: 1, failed: 0 },
+				vertexStorage: { project: "test-project", location: "global", bucket: "test-batch-bucket",
+					inputObject: "inputs/ws_batch_test/batch_vertex.jsonl", outputPrefix: "outputs/ws_batch_test/batch_vertex/" },
+			},
+		};
+		vi.stubGlobal("fetch", vi.fn()
+			.mockResolvedValueOnce(Response.json({ items: [{ name: "outputs/ws_batch_test/batch_vertex/predictions.jsonl" }] }))
+			.mockResolvedValueOnce(new Response(JSON.stringify({ phaseo_custom_id: unknown ? "not-submitted" : "submitted", status: "", response: {
+				modelVersion: "gemini-3.1-flash-lite", usageMetadata: { promptTokenCount: 2, candidatesTokenCount: 1, totalTokenCount: 3, trafficType: "ON_DEMAND" },
+			} }) + "\n")));
+		const { finalizeBatchJob } = await import("./batch-finalization");
+		const result = await finalizeBatchJob({ workspaceId: "ws_batch_test", batchId: "batch_vertex", status: "completed" });
+		if (unknown) {
+			expect(result.billed).toBe(false);
+			expect(result.reason).toBe("unknown_output_custom_id");
+			expect(state.chargeCalls).toEqual([]);
+		} else {
+			expect(result).toMatchObject({ billed: true, charged: true, reason: "charged" });
+			expect(state.chargeCalls).toMatchObject([{ cost_nanos: 400_000_000 }]);
+			expect(state.requestRows[0]).toMatchObject({ customId: "submitted", costNanos: 400_000_000 });
+			state.alreadyBilled = true;
+			await finalizeBatchJob({ workspaceId: "ws_batch_test", batchId: "batch_vertex", status: "completed" });
+			expect(state.chargeCalls).toHaveLength(1);
+		}
+	});
+
 	it("preserves completion time and duration when an already billed batch is read again", async () => {
 		resetState();
 		state.alreadyBilled = true;

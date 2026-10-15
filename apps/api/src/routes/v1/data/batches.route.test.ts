@@ -144,6 +144,10 @@ vi.mock("@/runtime/env", () => ({
 		OTEL_EXPORT_ENABLED: "false",
 		MOONSHOT_API_KEY: "test-moonshot-key",
 		MOONSHOT_AI_BASE_URL: "https://api.moonshot.example",
+		GOOGLE_VERTEX_PROJECT: "test-project",
+		GOOGLE_VERTEX_PROJECT_NUMBER: "123456789",
+		GOOGLE_VERTEX_BATCH_LOCATION: "global",
+		GOOGLE_VERTEX_BATCH_BUCKET: "test-batch-bucket",
 		...(state.googleApiKey ? { GOOGLE_AI_STUDIO_API_KEY: state.googleApiKey } : {}),
 		BATCH_API_PREVIEW_PROVIDERS: state.previewProviders,
 	}),
@@ -496,7 +500,7 @@ describe("batchRoutes", () => {
 	});
 
 	it.each(["missing", "other-workspace", "gate", "processing", "provider", "auth"])("blocks results before provider access for %s", async (scenario) => {
-		state.batchMeta.set(batchKey(scenario === "other-workspace" ? "ws_other" : "ws_batch_test", "batch_download"), { provider: scenario === "provider" ? "google-vertex" : "anthropic", status: scenario === "processing" ? "in_progress" : "completed", nativeBatchId: "msgbatch_native" });
+		state.batchMeta.set(batchKey(scenario === "other-workspace" ? "ws_other" : "ws_batch_test", "batch_download"), { provider: scenario === "provider" ? "google-vertex-eu" : "anthropic", status: scenario === "processing" ? "in_progress" : "completed", nativeBatchId: "msgbatch_native" });
 		if (scenario === "missing") state.batchMeta.clear();
 		if (scenario === "gate") state.batchApiEnabled = false;
 		if (scenario === "auth") {
@@ -1314,6 +1318,44 @@ describe("batchRoutes", () => {
 			expect.objectContaining({ provider: "anthropic", nativeBatchId: "batch_anthropic", status: "in_progress", apiKeyId: "key_batch_test" }),
 			expect.objectContaining({ provider: "google-ai-studio", nativeBatchId: "batches/batch_gemini", apiKeyId: "key_batch_test" }),
 		]));
+	});
+
+	it.each(["accepted", "rejected", "unknown"])("persists Vertex submission intent before dispatch and handles %s outcomes", async (outcome) => {
+		state.previewProviders = "google-vertex";
+		state.catalogOffers = [{ providerId: "google-vertex" }];
+		const nativeId = "projects/123456789/locations/global/batchPredictionJobs/123";
+		const calls: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = String(input);
+			calls.push(`${init?.method} ${url}`);
+			if (url.startsWith("https://storage.googleapis.com/upload/")) return jsonResponse({});
+			if (init?.method === "DELETE") return new Response(null, { status: 204 });
+			expect(Array.from(state.batchMeta.values())).toEqual(expect.arrayContaining([
+				expect.objectContaining({ status: "submitting", nativeBatchId: null, vertexStorage: expect.objectContaining({ bucket: "test-batch-bucket" }) }),
+			]));
+			if (outcome === "unknown") throw new TypeError("connection lost after dispatch");
+			if (outcome === "rejected") return jsonResponse({ error: { message: "invalid input" } }, 400);
+			return jsonResponse({ name: nativeId, state: "JOB_STATE_PENDING", model: "publishers/google/models/gemini-3.1-flash-lite" });
+		}));
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({
+			provider: "google-vertex", model: "google/gemini-3.1-flash-lite", prompts: ["Reply OK."], max_output_tokens: 64,
+		}) });
+		if (outcome === "accepted") {
+			expect(response.status).toBe(200);
+			expect(await response.json()).toMatchObject({ native_batch_id: nativeId, provider: "google-vertex", status: "pending" });
+			expect(Array.from(state.batchMeta.values())).toEqual(expect.arrayContaining([expect.objectContaining({ model: "google/gemini-3.1-flash-lite", nativeBatchId: nativeId, vertexStorage: expect.any(Object) })]));
+		} else if (outcome === "rejected") {
+			expect(response.status).toBe(400);
+			expect(calls.some((call) => call.startsWith("DELETE "))).toBe(true);
+			expect(state.finalizeCalls).toEqual(expect.arrayContaining([expect.objectContaining({ status: "failed" })]));
+		} else {
+			expect(response.status).toBe(502);
+			expect(calls.some((call) => call.startsWith("DELETE "))).toBe(false);
+			expect(state.releaseCalls).toHaveLength(0);
+			expect(state.statusUpdates).toEqual(expect.arrayContaining([expect.objectContaining({ status: "submission_unknown" })]));
+		}
+		expect(calls.filter((call) => call.includes("aiplatform.googleapis.com"))).toHaveLength(1);
 	});
 
 	it("uploads a normalized Kimi K2.6 JSONL batch and preserves its supported completion window", async () => {
