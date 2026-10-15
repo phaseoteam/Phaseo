@@ -22,7 +22,7 @@ function byteContents(bytes: Buffer) {
 }
 
 const execute = promisify(execFile);
-async function blobContents(root: string, revision: string) {
+export async function blobContents(root: string, revision: string) {
 	try { return byteContents((await execute("git", ["--no-pager", "show", revision], { cwd: root, windowsHide: true, timeout: 30_000, encoding: "buffer", maxBuffer: 1024 * 1024 + 1 })).stdout); }
 	catch (error) {
 		if (error && typeof error === "object" && "code" in error && error.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") throw new Error("Full context supports text files up to 1 MB and 10,000 lines.", { cause: error });
@@ -30,7 +30,7 @@ async function blobContents(root: string, revision: string) {
 	}
 }
 
-async function workingContents(root: string, filename: string) {
+export async function workingContents(root: string, filename: string) {
 	const file = await open(await resolveProjectPath(root, filename), "r");
 	try {
 		const metadata = await file.stat();

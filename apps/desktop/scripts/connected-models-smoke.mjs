@@ -114,7 +114,7 @@ try {
   await wait("Boolean(document.querySelector('.chat-tools-header nav'))");
   await run("Array.from(document.querySelectorAll('.chat-tools-header nav button')).find(button=>button.textContent==='Terminal').click()");
   if (!await run("Boolean(document.querySelector('.task-detail .task-title'))")) throw Error('First terminal open replaced main chat');
-  await wait("Boolean(document.querySelector('.terminal-workspace'))");
+  await wait("Boolean(document.querySelector('.terminal-surface'))");
   await run("document.querySelector('[aria-label=\"Close tools\"]').click()");
   const secondId=await run("(async()=>{const api=window.phaseoDesktop.workspace;const before=await api.overview();const after=await api.command({type:'create-task',harness:'codex',model:'gpt-fixture',mode:'code'});const id=after.tasks.find(task=>!before.tasks.some(previous=>previous.id===task.id)).id;await api.command({type:'update-task',id,title:'Owned cache check'});return id})()");
   await wait("Array.from(document.querySelectorAll('.task-row')).some(row=>row.textContent.includes('Owned cache check'))");

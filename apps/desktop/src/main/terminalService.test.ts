@@ -41,4 +41,22 @@ describe("terminal lifecycle", () => {
 			store.close(); data("After shutdown"); exit({ exitCode: 0 });
 		} finally { rmSync(directory, { recursive: true, force: true }); }
 	});
+	it("numbers terminals per chat and project and checks the chat's project", () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-terminal-titles-"));
+		const store = new WorkspaceStore(":memory:");
+		const pty = { write: vi.fn(), resize: vi.fn(), kill: vi.fn(), onData: () => {}, onExit: () => {} };
+		native.spawn.mockReturnValue(pty);
+		const service = new TerminalService(store, directory);
+		try {
+			const project = store.addProject(directory);
+			const now = new Date().toISOString();
+			store.saveTask({ id: "chat", projectId: project.id, title: "Chat", harness: "codex", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: now, updatedAt: now });
+			const titles = () => service.get().filter(session => session.taskId === "chat").map(session => session.title).sort();
+			service.command({ type: "open", projectId: project.id, taskId: "chat" }); service.command({ type: "open", projectId: project.id, taskId: "chat" });
+			expect(titles()).toEqual(["Terminal 1", "Terminal 2"]);
+			expect(service.command({ type: "open", projectId: project.id }).find(session => !session.taskId)?.title).toBe("Terminal 1");
+			expect(() => service.command({ type: "open", taskId: "chat" })).toThrow("another project");
+			expect(() => service.command({ type: "open", projectId: project.id, taskId: "missing" })).toThrow("no longer exists");
+		} finally { service.close(); store.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
 });

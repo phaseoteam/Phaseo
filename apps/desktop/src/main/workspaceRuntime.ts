@@ -34,6 +34,7 @@ import type { Attachment } from "../shared/workspace";
 import type { McpCommand, McpConnection } from "../shared/mcp";
 import type { TerminalAuthentication, TerminalAuthRequest } from "./terminalAuth";
 import { createGitWorktree, removeGitWorktree } from "./gitWorktrees";
+import { captureCheckpoint } from "./gitCheckpoints";
 import { grokModelCatalog } from "./grokModelCatalog";
 import { GrokAdapter } from "./grokAdapter";
 import { codexModels } from "./modelCatalog";
@@ -179,6 +180,25 @@ export class WorkspaceRuntime {
 		if (!project || project.worktree?.removedAt) throw new Error("This project is unavailable. Use Handoff to continue in another project.");
 		try { realpathSync(project.directory); } catch { throw new Error("The project folder is unavailable. Open its current location or use Handoff."); }
 		if ([...this.removingWorktrees].some(id => { const removing = this.store.getProjects().find(value => value.id === id); if (!removing) return false; try { return !path.relative(realpathSync(removing.directory), realpathSync(project.directory)); } catch { return !path.relative(removing.directory, project.directory); } })) throw new Error("Worktree removal is in progress.");
+	}
+	/** Snapshot work still running git in a project; close waits for it so the folder is released. */
+	private readonly checkpoints = new Set<Promise<unknown>>();
+	private trackCheckpoint<T>(work: Promise<T>) {
+		this.checkpoints.add(work);
+		const done = () => { this.checkpoints.delete(work); };
+		work.then(done, done);
+		return work;
+	}
+	private async recordCheckpoint(id: string, messageId: string, before: Promise<string | undefined>, directory: string) {
+		const start = await before;
+		if (!start || this.closing) return;
+		const end = await captureCheckpoint(directory);
+		if (this.closing) return;
+		try {
+			const task = this.store.getTask(id); const input = task.messages.find(item => item.id === messageId);
+			if (!input) return;
+			input.checkpoint = { before: start, ...(end ? { after: end } : {}) }; this.store.saveTask(task); this.broadcast();
+		} catch { /* The chat was deleted while the snapshot was taken. */ }
 	}
 	async mutateProject<T>(projectId: string, run: () => Promise<T>): Promise<T> {
 		if (this.closing) throw new Error("The workspace is shutting down."); this.assertProjectAvailable(projectId);
@@ -507,6 +527,8 @@ export class WorkspaceRuntime {
 		this.store.saveTask(task); this.broadcast();
 		const project = this.store.getProjects().find(value => value.id === task.projectId);
 		const cwd = project?.directory ?? path.join(this.directory, "tasks", id);
+		// Snapshot the project before the agent edits it, so the turn's changes can be reviewed on their own.
+		const checkpoint = project ? this.trackCheckpoint(captureCheckpoint(project.directory)) : undefined;
 		const deltas = new Map<string, string>();
 		const eventOrder = new Map<string, number>();
 		const order = (key: string) => { if (!eventOrder.has(key)) eventOrder.set(key, timelineOrder++); return eventOrder.get(key)!; };
@@ -608,6 +630,7 @@ export class WorkspaceRuntime {
 			current.approvals = []; current.questions = []; current.forms = []; this.store.saveTask(current);
 		} finally {
 			const finished = this.store.getTask(id); const input = finished.messages.find(item => item.id === message.id); if (input) { input.completedAt = new Date().toISOString(); this.store.saveTask(finished); }
+			if (checkpoint && project) void this.trackCheckpoint(this.recordCheckpoint(id, message.id, checkpoint, project.directory));
 			if (flushTimer) clearTimeout(flushTimer);
 			orchestration?.close(); this.orchestrationSessions.delete(id); this.running.delete(id);
 			if (!this.closing && finished.status !== "interrupted") this.threads.releaseForeground(id);
@@ -626,6 +649,7 @@ export class WorkspaceRuntime {
 		await Promise.allSettled([...this.running.values()].map(adapter => adapter.cancel()));
 		await Promise.allSettled([...this.executions.values()]);
 		await Promise.allSettled([...this.steeringExecutions.values()]);
+		await Promise.allSettled([...this.checkpoints]);
 		await Promise.allSettled([...this.modelDiscoveries]);
 		await Promise.allSettled([...this.imports]);
 		await Promise.allSettled([...this.worktreeOperations]);

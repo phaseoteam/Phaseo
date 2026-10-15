@@ -41,8 +41,10 @@ import { grokModelCatalog } from "./grokModelCatalog";
 import { SecretVault } from "./secretVault";
 import { windowsCredentialEncryption } from "./windowsCredentialEncryption";
 import { signInNative } from "./accountConnections";
-import { gitReview, listProjectFiles, readProjectFile } from "./projectFiles";
-import { searchProjectFiles } from "./projectFileSearch";
+import { gitReview, listProjectFiles, readFilePreview, readProjectFile } from "./projectFiles";
+import { gitRefs, gitScopedDiff, readScopedDiffContents } from "./gitDiffScopes";
+import { extractPdfText } from "./pdfText";
+import { projectTree, refreshProjectIndex, searchProjectFiles } from "./projectFileSearch";
 import { UsageHubs, usageHubFile } from "./usageHubs";
 import { validateUsageHubRequest } from "../shared/usageHubs";
 import { editorInstallations, findEditor, launchEditor, openProjectTarget } from "./projectEditors";
@@ -349,6 +351,11 @@ ipcMain.handle("workspace:git-hunks", (event, id: unknown, filename: unknown, st
 ipcMain.handle("workspace:git-diff-contents", (event, id: unknown, request: unknown) => readGitDiffContents(projectRoot(event, id), request));
 ipcMain.handle("workspace:git-command", (event, id: unknown, command: unknown) => { const root = projectRoot(event, id); return workspaceRuntime.mutateProject(id as string, () => gitCommand(root, command)); });
 ipcMain.handle("workspace:git-branches", (event, id: unknown) => gitBranches(projectRoot(event, id)));
+ipcMain.handle("workspace:git-diff", async (event, id: unknown, request: unknown) => { const { patch, hash, truncated, headRef, baseRef, repository } = await gitScopedDiff(projectRoot(event, id), request); return { patch, hash, truncated, headRef, baseRef, repository }; });
+ipcMain.handle("workspace:git-diff-file", (event, id: unknown, request: unknown) => readScopedDiffContents(projectRoot(event, id), request));
+ipcMain.handle("workspace:git-refs", (event, id: unknown) => gitRefs(projectRoot(event, id)));
+ipcMain.handle("workspace:project-tree", (event, id: unknown, request: unknown, refresh: unknown) => { const root = projectRoot(event, id); if (refresh === true) refreshProjectIndex(root); return projectTree(root, request); });
+ipcMain.handle("workspace:file-preview", (event, id: unknown, filename: unknown) => { const root = projectRoot(event, id); if (typeof filename !== "string") throw new Error("Invalid file request."); return readFilePreview(root, filename, extractPdfText); });
 ipcMain.handle("workspace:create-worktree", (event, id: unknown, branch: unknown, base: unknown) => {
 	projectRoot(event, id);
 	if (typeof id !== "string" || typeof branch !== "string" || typeof base !== "string") throw new Error("Invalid worktree request.");

@@ -90,3 +90,9 @@ export function useKeybindingDispatcher(context: () => WhenContext) {
 		return () => window.removeEventListener("keydown", onKeyDown);
 	}, []);
 }
+
+/** Whether a key event is bound to one of these commands, so a terminal can leave it to the app instead of the shell. */
+export function isCommandKey(event: KeyboardEvent, commands: readonly KeybindingCommand[]) {
+	const mac = isMac();
+	return state.rows.some(row => row.key && commands.includes(row.command) && matchesKey(row.key, event, mac));
+}

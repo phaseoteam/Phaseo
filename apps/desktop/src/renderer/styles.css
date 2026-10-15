@@ -941,6 +941,10 @@ button { color: inherit; }
 .tools-expanded .task-detail { container-type: normal; }
 .message-info-popup .usage-metric { display: contents; }
 .terminal-emulator { contain: paint; }
+/* Terminal surfaces: xterm fills its padded box and uses the app's slim scrollbar. */
+.terminal-view { contain: paint; }
+.terminal-view .xterm { height: 100%; }
+.terminal-view .xterm-viewport { background-color: transparent !important; }
 
 .tools-expanded .new-chat-dock { width: min(768px, calc(100% - 48px)); }
 .composer-actions > .session-picker-trigger { flex-shrink: 1; }
