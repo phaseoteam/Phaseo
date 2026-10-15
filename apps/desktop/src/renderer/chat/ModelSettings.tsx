@@ -1,11 +1,12 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useState } from "react";
+import { useCommand } from "../lib/keybindings";
 import { ChevronDown, Zap } from "lucide-react";
 import type { ModelOption, ModelOptionDescriptor } from "../../shared/workspace";
 import type { ModelSelection } from "../lib/modelPreferences";
 import { rememberSettings } from "../lib/modelSettings";
 import { useModels } from "../lib/useModels";
 import { cn } from "../lib/utils";
-import { shortcutLabel } from "../lib/shortcuts";
+import { shortcut } from "../lib/keybindings";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { optionHarnesses } from "./startChat";
 
@@ -55,15 +56,7 @@ export function ModelSettings({ selection, onChange, disabled }: { selection: Mo
 	const { models } = useModels(selection.harness, selection.accountId, undefined, undefined, usesCatalog);
 	const model = models.find(value => selection.model === "default" ? value.default : value.id === selection.model);
 	const descriptors = settingDescriptors(selection.harness, model);
-	useEffect(() => {
-		if (!descriptors.length || disabled) return;
-		const onKeyDown = (event: KeyboardEvent) => {
-			if (!(event.ctrlKey || event.metaKey) || !event.shiftKey || event.altKey || event.key.toLowerCase() !== "e") return;
-			event.preventDefault(); setOpen(value => !value);
-		};
-		window.addEventListener("keydown", onKeyDown);
-		return () => window.removeEventListener("keydown", onKeyDown);
-	}, [descriptors.length, disabled]);
+	useCommand("modelSettings.toggle", () => setOpen(value => !value), descriptors.length > 0 && !disabled);
 	if (!descriptors.length) return null;
 
 	const values = descriptors.map(descriptor => ({ descriptor, value: current(selection, descriptor) }));
@@ -73,7 +66,7 @@ export function ModelSettings({ selection, onChange, disabled }: { selection: Mo
 	const change = (descriptor: ModelOptionDescriptor, value: string | boolean) => { const next = withSetting(selection, descriptor, value); rememberSettings(next); onChange(next); };
 
 	return <DropdownMenu open={open} onOpenChange={setOpen}>
-		<DropdownMenuTrigger disabled={disabled} render={<button type="button" aria-label={`Model settings: ${label}${fast ? ", fast" : ""}`} title={`Model settings (${shortcutLabel("Shift+E")})`}
+		<DropdownMenuTrigger disabled={disabled} render={<button type="button" aria-label={`Model settings: ${label}${fast ? ", fast" : ""}`} title={`Model settings (${shortcut("modelSettings.toggle")})`}
 			className="flex h-8 max-w-56 shrink-0 items-center gap-1 rounded-lg px-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 data-popup-open:bg-muted data-popup-open:text-foreground" />}>
 			{fast && <Zap className={cn("size-3.5 shrink-0 fill-current", selection.harness === "claude" ? "text-[#d97757]" : "text-amber-500")} />}
 			<span className="truncate">{label}</span>

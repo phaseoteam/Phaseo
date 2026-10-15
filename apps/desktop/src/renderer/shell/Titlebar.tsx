@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight, Code2, Ellipsis, MessageSquare, Minus, PanelLeft
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowState } from "../../shared/desktop";
 import { useWorkspace, type WorkspaceMode } from "../app/workspace";
 import { cn } from "../lib/utils";
-import { shortcutLabel } from "../lib/shortcuts";
+import { shortcut } from "../lib/keybindings";
 import { BrandMark } from "./BrandMark";
 import { Kbd } from "../components/ui/kbd";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
@@ -32,8 +32,8 @@ function AppMenu() {
 	return <DropdownMenu>
 		<DropdownMenuTrigger render={<button type="button" aria-label="Application menu" title="Menu" className="no-drag grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-foreground [&_svg]:size-4" />}><Ellipsis /></DropdownMenuTrigger>
 		<DropdownMenuContent align="end" className="w-60">
-			<DropdownMenuItem onClick={() => select(undefined)}>New chat<DropdownMenuShortcut>{shortcutLabel("N")}</DropdownMenuShortcut></DropdownMenuItem>
-			<DropdownMenuItem onClick={() => openSettings()}>Settings<DropdownMenuShortcut>{shortcutLabel(",")}</DropdownMenuShortcut></DropdownMenuItem>
+			<DropdownMenuItem onClick={() => select(undefined)}>New chat<DropdownMenuShortcut>{shortcut("chat.new")}</DropdownMenuShortcut></DropdownMenuItem>
+			<DropdownMenuItem onClick={() => openSettings()}>Settings<DropdownMenuShortcut>{shortcut("settings.open")}</DropdownMenuShortcut></DropdownMenuItem>
 			<DropdownMenuSeparator />
 			<DropdownMenuSub>
 				<DropdownMenuSubTrigger>Theme</DropdownMenuSubTrigger>
@@ -48,9 +48,9 @@ function AppMenu() {
 			<DropdownMenuSub>
 				<DropdownMenuSubTrigger>View</DropdownMenuSubTrigger>
 				<DropdownMenuSubContent className="w-52">
-					<DropdownMenuItem onClick={() => app("zoom-in")}>Zoom in<DropdownMenuShortcut>{shortcutLabel("+")}</DropdownMenuShortcut></DropdownMenuItem>
-					<DropdownMenuItem onClick={() => app("zoom-out")}>Zoom out<DropdownMenuShortcut>{shortcutLabel("-")}</DropdownMenuShortcut></DropdownMenuItem>
-					<DropdownMenuItem onClick={() => app("zoom-reset")}>Actual size<DropdownMenuShortcut>{shortcutLabel("0")}</DropdownMenuShortcut></DropdownMenuItem>
+					<DropdownMenuItem onClick={() => app("zoom-in")}>Zoom in<DropdownMenuShortcut>{shortcut("view.zoomIn")}</DropdownMenuShortcut></DropdownMenuItem>
+					<DropdownMenuItem onClick={() => app("zoom-out")}>Zoom out<DropdownMenuShortcut>{shortcut("view.zoomOut")}</DropdownMenuShortcut></DropdownMenuItem>
+					<DropdownMenuItem onClick={() => app("zoom-reset")}>Actual size<DropdownMenuShortcut>{shortcut("view.zoomReset")}</DropdownMenuShortcut></DropdownMenuItem>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem onClick={() => app("toggle-full-screen")}>Toggle full screen</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => app("reload")}>Reload</DropdownMenuItem>
@@ -100,7 +100,7 @@ export function Titlebar() {
 		</div>
 		<div className="flex flex-1 justify-center px-3">
 			<button type="button" onClick={() => setCommandsOpen(true)} className="no-drag flex h-7 w-full max-w-md items-center gap-2 rounded-md border border-border bg-background/60 px-2.5 text-xs text-muted-foreground transition-colors hover:bg-background hover:text-foreground">
-				<Search className="size-3.5" /><span>Search chats and commands</span><Kbd className="ml-auto">{shortcutLabel("K")}</Kbd>
+				<Search className="size-3.5" /><span>Search chats and commands</span><Kbd className="ml-auto">{shortcut("commandPalette.toggle")}</Kbd>
 			</button>
 		</div>
 		<div className="flex items-center">

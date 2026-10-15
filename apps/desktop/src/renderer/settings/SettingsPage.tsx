@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowLeft, Bell, Bot, Gauge, Palette, Plug, Search, SlidersHorizontal, UserRound } from "lucide-react";
+import { ArrowLeft, Bell, Bot, Keyboard, Gauge, Palette, Plug, Search, SlidersHorizontal, UserRound } from "lucide-react";
+import { KeyboardShortcuts } from "./KeyboardShortcuts";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { useWorkspace, type SettingsPage as Page } from "../app/workspace";
 import { cn } from "../lib/utils";
@@ -17,6 +18,7 @@ const groups: { label: string; pages: Entry[] }[] = [
 		{ id: "general", label: "General", icon: <SlidersHorizontal />, keywords: "default model new chats agents running at once instructions agents.md" },
 		{ id: "appearance", label: "Appearance", icon: <Palette />, keywords: "theme dark light system colours colors accent font share import export" },
 		{ id: "notifications", label: "Notifications", icon: <Bell />, keywords: "alerts desktop titles" },
+		{ id: "keyboard", label: "Keyboard shortcuts", icon: <Keyboard />, keywords: "keybindings keys hotkeys shortcuts bind remap keybindings.json" },
 	] },
 	{ label: "Accounts", pages: [
 		{ id: "accounts", label: "Accounts", icon: <UserRound />, keywords: "sign in login api key subscription codex claude cursor grok phaseo" },
@@ -66,6 +68,7 @@ export function SettingsPage() {
 	return <ScrollArea className="chat-settings-content h-full">
 		{settings === "general" && <GeneralSettings />}
 		{settings === "notifications" && <NotificationSettings />}
+		{settings === "keyboard" && <KeyboardShortcuts />}
 		{settings === "usage" && <UsageSettings />}
 		{settings === "accounts" && <Accounts />}
 		{settings === "appearance" && <AppearanceSettings />}

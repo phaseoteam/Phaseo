@@ -1,4 +1,5 @@
 import type { BrowserDownload, BrowserDownloadCommand } from "./browserDownloads";
+import type { KeybindingEntry } from "./keybindings";
 import type { BrowserCommand, BrowserState, BrowserOpenTab } from "./browser";
 import type { WorkspaceApi } from "./workspace";
 
@@ -45,6 +46,13 @@ export type PhaseoDesktopApi = {
 	getWindowState: () => Promise<DesktopWindowState>;
 	performWindowAction: (action: DesktopWindowAction) => Promise<void>;
 	performAppAction: (action: DesktopAppAction) => Promise<void>;
+	/** keybindings.json: the person's own shortcuts. */
+	keybindings: {
+		get: () => Promise<KeybindingsState>;
+		save: (entries: KeybindingEntry[]) => Promise<KeybindingsState>;
+		open: () => Promise<void>;
+		onChange: (listener: (state: KeybindingsState) => void) => () => void;
+	};
 	checkForUpdates: () => Promise<DesktopUpdateState>;
 	installUpdate: () => Promise<void>;
 	onWindowStateChange: (listener: (state: DesktopWindowState) => void) => () => void;
@@ -66,3 +74,5 @@ export function isAllowedExternalUrl(value: string): boolean {
 		return false;
 	}
 }
+
+export type KeybindingsState = { entries: KeybindingEntry[]; path: string; error?: string };

@@ -1,7 +1,7 @@
-import { CalendarClock, Code2, Columns3, FolderOpen, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Plus, Settings, SquareTerminal, Sun, UserRound, Files } from "lucide-react";
+import { CalendarClock, Code2, Keyboard, Columns3, FolderOpen, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Plus, Settings, SquareTerminal, Sun, UserRound, Files } from "lucide-react";
 import { errorText, useWorkspace } from "../app/workspace";
 import { ScrollArea } from "../components/ui/scroll-area";
-import { shortcutLabel } from "../lib/shortcuts";
+import { shortcut } from "../lib/keybindings";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandShortcut } from "../components/ui/command";
 import { StatusDot } from "./Sidebar";
 import { ModelStack, modelName } from "../chat/ModelPicker";
@@ -17,18 +17,19 @@ export function CommandPalette() {
 		<ScrollArea className="max-h-[420px]" viewportClassName="max-h-[420px]"><CommandList className="max-h-none overflow-visible p-1">
 			<CommandEmpty>Nothing matches.</CommandEmpty>
 			<CommandGroup heading="Actions">
-				<CommandItem onSelect={() => run(() => select(undefined))}><Plus />New chat<CommandShortcut>{shortcutLabel("N")}</CommandShortcut></CommandItem>
-				<CommandItem onSelect={() => run(() => setMode("chat"))}><MessageSquare />Switch to Chat<CommandShortcut>{shortcutLabel("1")}</CommandShortcut></CommandItem>
-				<CommandItem onSelect={() => run(() => setMode("code"))}><Code2 />Switch to Code<CommandShortcut>{shortcutLabel("2")}</CommandShortcut></CommandItem>
+				<CommandItem onSelect={() => run(() => select(undefined))}><Plus />New chat<CommandShortcut>{shortcut("chat.new")}</CommandShortcut></CommandItem>
+				<CommandItem onSelect={() => run(() => setMode("chat"))}><MessageSquare />Switch to Chat<CommandShortcut>{shortcut("mode.chat")}</CommandShortcut></CommandItem>
+				<CommandItem onSelect={() => run(() => setMode("code"))}><Code2 />Switch to Code<CommandShortcut>{shortcut("mode.code")}</CommandShortcut></CommandItem>
 				<CommandItem onSelect={() => run(() => { if (api) void api.chooseProject().then(state => { setOverview(state); const added = state.projects.find(value => !overview.projects.some(existing => existing.id === value.id)); if (added) { setMode("code"); setNewChatProjectId(added.id); select(undefined); } }, reason => setError(errorText(reason))); })}><FolderPlus />Open project folder…</CommandItem>
 				<CommandItem onSelect={() => run(openScheduled)}><CalendarClock />Scheduled tasks</CommandItem>
-				<CommandItem onSelect={() => run(() => setSidebarOpen(open => !open))}><PanelLeft />Toggle sidebar<CommandShortcut>{shortcutLabel("B")}</CommandShortcut></CommandItem>
+				<CommandItem onSelect={() => run(() => setSidebarOpen(open => !open))}><PanelLeft />Toggle sidebar<CommandShortcut>{shortcut("sidebar.toggle")}</CommandShortcut></CommandItem>
 				<CommandItem onSelect={() => run(() => setRightPanel("changes"))}><Files />Show files and changes</CommandItem>
-				<CommandItem onSelect={() => run(() => setRightPanel("terminal"))}><SquareTerminal />Open terminal<CommandShortcut>{shortcutLabel("J")}</CommandShortcut></CommandItem>
+				<CommandItem onSelect={() => run(() => setRightPanel("terminal"))}><SquareTerminal />Open terminal<CommandShortcut>{shortcut("terminal.toggle")}</CommandShortcut></CommandItem>
 				<CommandItem onSelect={() => run(() => setRightPanel("browser"))}><Globe />Open browser</CommandItem>
 				<CommandItem onSelect={() => run(() => setTheme(resolvedTheme === "dark" ? "light" : "dark"))}>{resolvedTheme === "dark" ? <Sun /> : <Moon />}Use {resolvedTheme === "dark" ? "light" : "dark"} theme</CommandItem>
-				<CommandItem onSelect={() => run(() => openSettings())}><Settings />Settings<CommandShortcut>{shortcutLabel(",")}</CommandShortcut></CommandItem>
+				<CommandItem onSelect={() => run(() => openSettings())}><Settings />Settings<CommandShortcut>{shortcut("settings.open")}</CommandShortcut></CommandItem>
 				<CommandItem onSelect={() => run(() => openSettings("accounts"))}><UserRound />Accounts and sign-in</CommandItem>
+				<CommandItem onSelect={() => run(() => openSettings("keyboard"))}><Keyboard />Keyboard shortcuts</CommandItem>
 			</CommandGroup>
 			{compareGroups.length > 0 && <CommandGroup heading="Comparisons">
 				{compareGroups.map(group => {

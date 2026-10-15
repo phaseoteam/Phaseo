@@ -23,3 +23,9 @@ For every Codex and Claude account on the hub that isn't disabled, Phaseo asks t
 Choose System, Light or Dark, and a colour theme. Every theme has a light and a dark side. The built-ins are Phaseo, themes inspired by ChatGPT, Codex, Claude, Gemini, Grok, Mistral and Perplexity (approximations of their palettes, not official ones), and Graphite.
 
 **New theme** starts from the current theme: pick a background and an accent for each side, and the app previews the result as you edit. Other colours are derived from those two. A theme can be exported as a `.phaseo-theme.json` file or copied as a one-line `phaseo-theme:` share code; **Import** takes either, as well as T3 Code theme files and VS Code colour themes.
+
+## Keyboard shortcuts
+
+**Settings → Keyboard shortcuts** lists every shortcut by area (General, Chats, Panes, View), as T3 Code does. Click a shortcut and press new keys to change it, then Save; Escape cancels and Backspace leaves it unassigned. Each shortcut can have a **When** condition built from `chatMode`, `codeMode`, `chatOpen`, `paneOpen`, `settingsOpen`, `textFocused` and `terminalFocused` with `&&`, `||`, `!` and brackets; it runs only while the condition holds. A warning marks keys used by another command. The row menu resets a changed shortcut to its default or removes it, and **Add keybinding** gives a command an extra shortcut.
+
+Changes are saved in `keybindings.json` in the app's settings folder (the file button opens it). It is a list of `{ "command", "key", "when" }` entries: a command listed there uses those keys instead of its defaults, and an empty key unassigns it. Edits made by hand apply straight away; if the file cannot be read, the defaults stay in use and the page says why. Menus and tooltips show the keys currently bound.

@@ -1,5 +1,6 @@
 import { imageMime } from "./attachments";
 import { linkTitle } from "./linkTitle";
+import { KeybindingsFile } from "./keybindingsFile";
 import { signInPhaseo, PHASEO_GATEWAY_ENDPOINT } from "./phaseoOAuth";
 import { PhaseoSkills } from "./phaseoSkills";
 import { GlobalInstructions } from "./globalInstructions";
@@ -599,6 +600,13 @@ ipcMain.handle("desktop:window-action", (event, action: DesktopWindowAction) => 
 		else window.maximize();
 	}
 });
+
+const keybindings = new KeybindingsFile(path.join(app.getPath("userData"), "settings", "keybindings.json"));
+keybindings.onChange = state => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("desktop:keybindings-changed", state); };
+keybindings.watch();
+ipcMain.handle("desktop:keybindings", event => { if (!senderWindow(event)) throw new Error("Invalid keybindings request."); return keybindings.read(); });
+ipcMain.handle("desktop:save-keybindings", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid keybindings request."); const state = keybindings.save(value); keybindings.onChange(state); return state; });
+ipcMain.handle("desktop:open-keybindings", async event => { if (!senderWindow(event)) throw new Error("Invalid keybindings request."); const problem = await shell.openPath(keybindings.ensure()); if (problem) throw new Error(problem); });
 
 ipcMain.handle("desktop:app-action", (event, action: DesktopAppAction) => {
 	const window = senderWindow(event);

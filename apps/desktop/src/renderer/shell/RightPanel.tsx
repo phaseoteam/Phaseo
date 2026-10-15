@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCommand } from "../lib/keybindings";
 import { ContextMenu } from "@base-ui/react/context-menu";
 import { Files, GitBranch, GitPullRequestArrow, Globe, Maximize2, Minimize2, Plus, SquareTerminal, X } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -121,15 +122,8 @@ export function RightPanel() {
 		window.addEventListener("phaseo:open-context-link", openLink);
 		return () => window.removeEventListener("phaseo:open-context-link", openLink);
 	}, [setRightPanel]);
-	// Ctrl+W closes the active surface while the pane is open.
-	useEffect(() => {
-		const onKeyDown = (event: KeyboardEvent) => {
-			if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey || event.key.toLowerCase() !== "w" || !rightPanel || !state.active) return;
-			event.preventDefault(); close([state.active]);
-		};
-		window.addEventListener("keydown", onKeyDown);
-		return () => window.removeEventListener("keydown", onKeyDown);
-	});
+	// Ctrl+W (by default) closes the active surface while the pane is open.
+	useCommand("rightPanel.closeTab", () => { if (!rightPanel || settings || !state.active) return false; close([state.active]); });
 
 	if (!rightPanel || settings) return null;
 	const task = overview.tasks.find(value => value.id === selectedId);

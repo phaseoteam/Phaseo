@@ -8,7 +8,7 @@ export type WorkspaceMode = "chat" | "code";
 export type RightPanelSurface = "changes" | "terminal" | "browser" | "agents" | "pulls";
 /** A surface to show in the right pane, "files" for Files, or "restore" to reopen the chat's own tabs. */
 export type RightPanelTab = RightPanelSurface | "files" | "restore";
-export type SettingsPage = "general" | "appearance" | "notifications" | "accounts" | "usage" | "agents" | "mcp";
+export type SettingsPage = "general" | "appearance" | "notifications" | "accounts" | "usage" | "agents" | "mcp" | "keyboard";
 export type CompareGroup = { id: string; title: string; taskIds: string[]; createdAt: string };
 
 type WorkspaceState = {

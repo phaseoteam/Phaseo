@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, FolderOpen, Gauge, GitBranch, Layers, ListChecks, Paperclip, PenLine, Pin, PinOff, Plug, RotateCcw, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
-import { shortcutLabel } from "../lib/shortcuts";
+import { shortcut } from "../lib/keybindings";
 import { CustomSnoozeDialog, SnoozeItems, useThreadActions } from "../shell/threadActions";
 import { hasWoken, isSettled, isSnoozed, settleBlocker, shortDuration } from "../../shared/threadLifecycle";
 import type { TaskOverview } from "../../shared/workspaceOverview";
@@ -60,7 +60,7 @@ function ChatHeader({ task }: { task: Task }) {
 					<DropdownMenuItem onClick={() => void command({ type: "update-task", id: task.id, pinned: !task.pinned })}>{task.pinned ? <PinOff /> : <Pin />}{task.pinned ? "Unpin" : "Pin"}</DropdownMenuItem>
 					{snapshot?.projectId && (isSettled(snapshot)
 						? <DropdownMenuItem onClick={() => void threadActions.unsettle(snapshot)}><Undo2 />Un-settle chat</DropdownMenuItem>
-						: <DropdownMenuItem disabled={Boolean(settleBlocker(snapshot))} onClick={() => void threadActions.settle(snapshot)}><CircleCheck />Settle chat<DropdownMenuShortcut>{shortcutLabel("Shift+S")}</DropdownMenuShortcut></DropdownMenuItem>)}
+						: <DropdownMenuItem disabled={Boolean(settleBlocker(snapshot))} onClick={() => void threadActions.settle(snapshot)}><CircleCheck />Settle chat<DropdownMenuShortcut>{shortcut("thread.settle")}</DropdownMenuShortcut></DropdownMenuItem>)}
 					{snapshot?.projectId && !isSettled(snapshot) && (isSnoozed(snapshot)
 						? <DropdownMenuItem onClick={() => void threadActions.wake(snapshot)}><AlarmClockOff />Wake chat</DropdownMenuItem>
 						: <DropdownMenuSub><DropdownMenuSubTrigger><Clock />Snooze</DropdownMenuSubTrigger><DropdownMenuSubContent className="w-56"><SnoozeItems onSnooze={until => void threadActions.snooze(snapshot, until)} onCustom={() => setCustomSnooze(true)} /></DropdownMenuSubContent></DropdownMenuSub>)}

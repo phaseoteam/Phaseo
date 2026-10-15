@@ -5,7 +5,7 @@ import { chatDragType } from "../../shared/mentions";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { usablePhaseoAccounts, useWorkspace, type CompareGroup } from "../app/workspace";
 import { cn } from "../lib/utils";
-import { shortcutLabel } from "../lib/shortcuts";
+import { shortcut } from "../lib/keybindings";
 import { usePersistedState } from "../lib/persistedState";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { SettingsNav } from "../settings/SettingsPage";
@@ -139,7 +139,7 @@ function AccountFooter() {
 				<span className="min-w-0"><span className="block truncate text-[12.5px] font-semibold">{account.name}</span><span className="block truncate text-[11px] text-muted-foreground">Signed in to Phaseo</span></span>
 			</button>
 			: <button type="button" onClick={() => openSettings("accounts")} className="flex flex-1 items-center gap-2 rounded-md p-1.5 text-[12.5px] font-semibold text-primary hover:bg-sidebar-accent/70"><LogIn className="size-4" />Sign in to Phaseo</button>}
-		<button type="button" aria-label="Settings" title={`Settings (${shortcutLabel(",")})`} onClick={() => openSettings()} className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"><Settings className="size-4" /></button>
+		<button type="button" aria-label="Settings" title={`Settings (${shortcut("settings.open")})`} onClick={() => openSettings()} className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"><Settings className="size-4" /></button>
 	</div>;
 }
 
@@ -149,7 +149,7 @@ function UndoNotice() {
 	if (!action) return null;
 	return <div role="status" className="mx-2.5 mb-2 flex items-center gap-2 rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-sm">
 		<span className="min-w-0 flex-1 truncate">{undoLabel(action)}</span>
-		<button type="button" onClick={() => runUndo()} className="font-semibold text-primary hover:underline">Undo <span className="font-normal text-muted-foreground">{shortcutLabel("Z")}</span></button>
+		<button type="button" onClick={() => runUndo()} className="font-semibold text-primary hover:underline">Undo <span className="font-normal text-muted-foreground">{shortcut("thread.undo")}</span></button>
 		<button type="button" aria-label="Dismiss" onClick={dismissUndo} className="text-muted-foreground hover:text-foreground">×</button>
 	</div>;
 }
@@ -199,7 +199,7 @@ export function Sidebar() {
 		<div className="p-2.5">
 			<button type="button" onClick={() => { if (mode === "chat") setNewChatProjectId(""); select(undefined); }}
 				className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] font-semibold transition-colors", fresh ? "bg-sidebar-accent text-foreground" : "bg-primary text-primary-foreground hover:bg-primary/85")}>
-				<Plus className="size-4" />New chat<span className={cn("ml-auto text-[10.5px] font-medium", fresh ? "text-muted-foreground" : "text-primary-foreground/70")}>{shortcutLabel("N")}</span>
+				<Plus className="size-4" />New chat<span className={cn("ml-auto text-[10.5px] font-medium", fresh ? "text-muted-foreground" : "text-primary-foreground/70")}>{shortcut("chat.new")}</span>
 			</button>
 			<ScheduledTasksLink />
 		</div>

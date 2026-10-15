@@ -1,0 +1,82 @@
+import { useEffect, useRef, useSyncExternalStore } from "react";
+import type { KeybindingsState } from "../../shared/desktop";
+import { evaluateWhen, keybindingRows, keyLabel, matchesKey, type KeybindingCommand, type KeybindingRow, type WhenContext } from "../../shared/keybindings";
+import { isMac } from "./shortcuts";
+
+/** The person's keybindings, shared by the whole window and kept in step with keybindings.json. */
+let state: KeybindingsState & { rows: KeybindingRow[] } = { entries: [], path: "", rows: keybindingRows([]) };
+const listeners = new Set<() => void>();
+let started = false;
+const set = (next: KeybindingsState) => { state = { ...next, rows: keybindingRows(next.entries) }; for (const listener of listeners) listener(); };
+
+function start() {
+	if (started) return;
+	started = true;
+	const api = window.phaseoDesktop?.keybindings;
+	if (!api) return;
+	void api.get().then(set, () => undefined);
+	api.onChange(set);
+}
+
+export function useKeybindings() {
+	start();
+	return useSyncExternalStore(listener => { listeners.add(listener); return () => { listeners.delete(listener); }; }, () => state);
+}
+
+export async function saveKeybindings(entries: KeybindingsState["entries"]) {
+	const api = window.phaseoDesktop?.keybindings;
+	if (!api) throw new Error("Open the desktop application to change keyboard shortcuts.");
+	set(await api.save(entries));
+}
+
+/** The label of a command's first binding ("Ctrl+K", "⌘K"), or "" when it has none. Re-rendered by useKeybindings in App. */
+export function shortcut(command: KeybindingCommand) {
+	const row = state.rows.find(value => value.command === command && value.key);
+	return row ? keyLabel(row.key, isMac()) : "";
+}
+
+const handlers = new Map<KeybindingCommand, Set<() => boolean | void>>();
+
+/** Runs handler when command's shortcut is pressed. Returning false lets the key through. */
+export function useCommand(command: KeybindingCommand, handler: () => boolean | void, enabled = true) {
+	const latest = useRef(handler);
+	latest.current = handler;
+	useEffect(() => {
+		if (!enabled) return;
+		const run = () => latest.current();
+		const registered = handlers.get(command) ?? new Set();
+		registered.add(run); handlers.set(command, registered);
+		return () => { registered.delete(run); };
+	}, [command, enabled]);
+}
+
+/** Runs a command as if its shortcut was pressed; false when nothing handles it now. The newest handler goes first. */
+export function runCommand(command: KeybindingCommand) {
+	for (const handler of [...handlers.get(command) ?? []].reverse()) if (handler() !== false) return true;
+	return false;
+}
+
+/** The single key listener: the first binding whose keys and condition match, and that something handles, wins. */
+export function useKeybindingDispatcher(context: () => WhenContext) {
+	const latest = useRef(context);
+	latest.current = context;
+	useEffect(() => {
+		const onKeyDown = (event: KeyboardEvent) => {
+			// A shortcut field records keys instead of running them.
+			if (event.isComposing || event.defaultPrevented || (document.activeElement as HTMLElement | null)?.dataset.keybindingCapture !== undefined) return;
+			const mac = isMac();
+			const candidates = state.rows.filter(row => row.key && matchesKey(row.key, event, mac));
+			if (!candidates.length) return;
+			const active = document.activeElement as HTMLElement | null;
+			const textFocused = Boolean(active && (active.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(active.tagName)));
+			const when = { ...latest.current(), textFocused, terminalFocused: Boolean(active?.closest(".xterm")) };
+			for (const row of candidates) {
+				if (!evaluateWhen(row.when, when)) continue;
+				if (event.repeat && !row.command.startsWith("view.zoom")) { event.preventDefault(); return; }
+				if (runCommand(row.command)) { event.preventDefault(); return; }
+			}
+		};
+		window.addEventListener("keydown", onKeyDown);
+		return () => window.removeEventListener("keydown", onKeyDown);
+	}, []);
+}

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCommand, useKeybindingDispatcher, useKeybindings } from "./lib/keybindings";
 import { X } from "lucide-react";
 import { useThreadActions } from "./shell/threadActions";
 import { runUndo } from "./shell/threadUndo";
@@ -15,43 +15,31 @@ import { NewChat } from "./chat/NewChat";
 import { ChatView } from "./chat/ChatView";
 import { CompareView } from "./chat/CompareView";
 
+/** The app-wide commands behind the keyboard shortcuts (Settings → Keyboard shortcuts). */
 function useShortcuts() {
-	const { setCommandsOpen, select, openSettings, setMode, setSidebarOpen, setRightPanel, rightPanel, overview, selectedId, mode } = useWorkspace();
+	const { setCommandsOpen, select, openSettings, setMode, setSidebarOpen, setRightPanel, rightPanel, overview, selectedId, mode, settings } = useWorkspace();
 	const threadActions = useThreadActions();
-	useEffect(() => {
-		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.isComposing || event.altKey || !(event.metaKey || event.ctrlKey)) return;
-			const key = event.key.toLowerCase();
-			const typing = event.target instanceof HTMLElement && (event.target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName));
-			// T3: Ctrl+Z undoes the last settle, snooze, unpin or archive when no field has focus.
-			if (key === "z" && !event.shiftKey && !typing && runUndo()) { event.preventDefault(); return; }
-			// T3: Ctrl+Shift+S settles the open Code chat and moves to the next one, or un-settles it.
-			if (key === "s" && event.shiftKey && mode === "code") {
-				const task = overview.tasks.find(value => value.id === selectedId);
-				if (!task?.projectId) return;
-				event.preventDefault();
-				if (event.repeat) return;
-				let scope = ""; try { scope = JSON.parse(localStorage.getItem("phaseo.desktop.codeProjectScope") ?? "\"\"") as string; } catch { /* All projects. */ }
-				void (isSettled(task) ? threadActions.unsettle(task) : threadActions.settle(task, scope));
-				return;
-			}
-			const actions: Record<string, () => void> = {
-				k: () => setCommandsOpen(open => !open),
-				n: () => select(undefined),
-				",": () => openSettings(),
-				"1": () => setMode("chat"),
-				"2": () => setMode("code"),
-				b: () => setSidebarOpen(open => !open),
-				j: () => setRightPanel(rightPanel === "terminal" ? undefined : "terminal"),
-			};
-			const action = actions[key];
-			if (!action || event.shiftKey) return;
-			event.preventDefault();
-			if (!event.repeat) action();
-		};
-		window.addEventListener("keydown", onKeyDown);
-		return () => window.removeEventListener("keydown", onKeyDown);
-	}, [setCommandsOpen, select, openSettings, setMode, setSidebarOpen, setRightPanel, rightPanel, overview.tasks, selectedId, mode, threadActions]);
+	useKeybindings();
+	useKeybindingDispatcher(() => ({ chatMode: mode === "chat", codeMode: mode === "code", chatOpen: Boolean(selectedId) && !settings, paneOpen: Boolean(rightPanel) && !settings, settingsOpen: Boolean(settings) }));
+	useCommand("commandPalette.toggle", () => setCommandsOpen(open => !open));
+	useCommand("chat.new", () => select(undefined));
+	useCommand("settings.open", () => openSettings());
+	useCommand("mode.chat", () => setMode("chat"));
+	useCommand("mode.code", () => setMode("code"));
+	useCommand("sidebar.toggle", () => setSidebarOpen(open => !open));
+	useCommand("terminal.toggle", () => setRightPanel(rightPanel === "terminal" ? undefined : "terminal"));
+	useCommand("rightPanel.toggle", () => setRightPanel(rightPanel ? undefined : "restore"));
+	// T3: undo the last settle, snooze, unpin or archive; settle the open Code chat and move to the next, or un-settle it.
+	useCommand("thread.undo", () => runUndo());
+	useCommand("thread.settle", () => {
+		const task = overview.tasks.find(value => value.id === selectedId);
+		if (!task?.projectId) return false;
+		let scope = ""; try { scope = JSON.parse(localStorage.getItem("phaseo.desktop.codeProjectScope") ?? "\"\"") as string; } catch { /* All projects. */ }
+		void (isSettled(task) ? threadActions.unsettle(task) : threadActions.settle(task, scope));
+	});
+	useCommand("view.zoomIn", () => void window.phaseoDesktop?.performAppAction("zoom-in"));
+	useCommand("view.zoomOut", () => void window.phaseoDesktop?.performAppAction("zoom-out"));
+	useCommand("view.zoomReset", () => void window.phaseoDesktop?.performAppAction("zoom-reset"));
 }
 
 function Main() {
