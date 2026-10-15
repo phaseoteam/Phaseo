@@ -9,7 +9,7 @@
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.075,
+      "price_per_unit": 0.15,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "Official DigitalOcean serverless inference price.",
@@ -26,7 +26,7 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.25,
+      "price_per_unit": 0.5,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "Official DigitalOcean serverless inference price.",
@@ -43,7 +43,7 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.8,
+      "price_per_unit": 1.6,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "Official DigitalOcean serverless inference price.",
@@ -115,14 +115,13 @@
     {
       "url": "https://docs.digitalocean.com/products/inference/details/pricing/",
       "kind": "pricing",
-      "accessed_at": "2026-08-23T00:00:00Z",
+      "accessed_at": "2026-09-22T00:00:00Z",
       "notes": "Official pricing."
     }
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-08-23T00:00:00Z",
+    "checked_at": "2026-09-22T00:00:00Z",
     "notes": "Verified against official DigitalOcean pricing."
   }
 }
-

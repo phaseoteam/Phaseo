@@ -1732,5 +1732,29 @@
       "notes": "Live provider slug and availability supplied by Baseten's provider feed; current Baseten pricing was not included in the feed and remains unverified."
     },
     "rate_limits": []
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v4.1-flash",
+    "canonical_model_id": "deepseek/deepseek-v4.1-flash",
+    "provider_api_model_id": "baseten:deepseek-ai/DeepSeek-V4.1-Flash",
+    "provider_model_slug": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "internal_model_id": "deepseek/deepseek-v4.1-flash",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": "2026-09-10T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [{"capability_id":"text.generate","status":"active","params":["reasoning","include_reasoning","max_tokens","temperature","top_p","stop","frequency_penalty","presence_penalty","tools","tool_choice","reasoning_effort"],"reasoning":true,"tool_call":true,"structured_output":null,"temperature":true,"attachment":true,"input_modalities":null,"output_modalities":null,"modes":[]}],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {"execution":null,"data":null},
+    "service_tiers": ["standard"],
+    "api": {"formats":["openai.chat.completions"],"endpoint":null,"deployment":"serverless"},
+    "sources": [{"kind":"documentation","url":"https://www.baseten.co/library/deepseek-v41-flash/","accessed_at":"2026-09-22T00:00:00Z","notes":"Baseten's live model page documents the exact managed Model API slug and current token pricing."}],
+    "verification": {"status":"verified","checked_at":"2026-09-22T00:00:00Z","notes":"Route and current pricing verified against Baseten's live model page."},
+    "rate_limits": []
   }
 ]
