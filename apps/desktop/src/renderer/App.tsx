@@ -1,5 +1,8 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
+import { useThreadActions } from "./shell/threadActions";
+import { runUndo } from "./shell/threadUndo";
+import { isSettled } from "../shared/threadLifecycle";
 import { useAppTheme } from "./lib/appTheme";
 import { useWorkspace, WorkspaceProvider } from "./app/workspace";
 import { Titlebar } from "./shell/Titlebar";
@@ -13,11 +16,25 @@ import { ChatView } from "./chat/ChatView";
 import { CompareView } from "./chat/CompareView";
 
 function useShortcuts() {
-	const { setCommandsOpen, select, openSettings, setMode, setSidebarOpen, setRightPanel, rightPanel } = useWorkspace();
+	const { setCommandsOpen, select, openSettings, setMode, setSidebarOpen, setRightPanel, rightPanel, overview, selectedId, mode } = useWorkspace();
+	const threadActions = useThreadActions();
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (event.isComposing || event.altKey || !(event.metaKey || event.ctrlKey)) return;
 			const key = event.key.toLowerCase();
+			const typing = event.target instanceof HTMLElement && (event.target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName));
+			// T3: Ctrl+Z undoes the last settle, snooze, unpin or archive when no field has focus.
+			if (key === "z" && !event.shiftKey && !typing && runUndo()) { event.preventDefault(); return; }
+			// T3: Ctrl+Shift+S settles the open Code chat and moves to the next one, or un-settles it.
+			if (key === "s" && event.shiftKey && mode === "code") {
+				const task = overview.tasks.find(value => value.id === selectedId);
+				if (!task?.projectId) return;
+				event.preventDefault();
+				if (event.repeat) return;
+				let scope = ""; try { scope = JSON.parse(localStorage.getItem("phaseo.desktop.codeProjectScope") ?? "\"\"") as string; } catch { /* All projects. */ }
+				void (isSettled(task) ? threadActions.unsettle(task) : threadActions.settle(task, scope));
+				return;
+			}
 			const actions: Record<string, () => void> = {
 				k: () => setCommandsOpen(open => !open),
 				n: () => select(undefined),
@@ -34,7 +51,7 @@ function useShortcuts() {
 		};
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
-	}, [setCommandsOpen, select, openSettings, setMode, setSidebarOpen, setRightPanel, rightPanel]);
+	}, [setCommandsOpen, select, openSettings, setMode, setSidebarOpen, setRightPanel, rightPanel, overview.tasks, selectedId, mode, threadActions]);
 }
 
 function Main() {

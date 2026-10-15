@@ -1,5 +1,6 @@
 import { threadToolLabel, type ThreadTools } from "../shared/orchestration";
 import { randomUUID } from "node:crypto";
+import { autoSettleAt } from "../shared/threadLifecycle";
 import { mkdirSync, realpathSync } from "node:fs";
 import path from "node:path";
 import type { AgentActivity, AgentConnection, ModelOption, WorkspaceCommand } from "../shared/workspace";
@@ -95,6 +96,24 @@ export class WorkspaceRuntime {
 		for (const id of new Set([...this.store.collectDelegationResults(), ...this.store.pendingDeliveryParents()])) if (worthWaking(id)) this.wake(id);
 	}
 	private readonly threads: WorkspaceThreads;
+	/** Auto-settle, after T3 Code: Code chats idle for the configured days settle, dated to their last activity. */
+	settleIdleThreads(now = Date.now()) {
+		if (this.closing) return;
+		const days = this.store.getPreferences().autoSettleAfterDays;
+		if (days === null) return;
+		let changed = false;
+		for (const thread of this.store.getOverview().tasks) {
+			if (!thread.projectId || thread.delegation?.parentTaskId || this.executions.has(thread.id)) continue;
+			const at = autoSettleAt(thread, days, now);
+			if (!at) continue;
+			// Skip a chat that changed since the overview was read.
+			const task = this.store.getTask(thread.id);
+			if (task.updatedAt !== thread.updatedAt || task.settledOverride) continue;
+			task.settledOverride = "settled"; task.settledAt = at; task.unsettledAt = undefined;
+			this.store.saveTask(task, true); changed = true;
+		}
+		if (changed) this.broadcast();
+	}
 	private broadcast() {
 		const parents = this.store.collectDelegationResults();
 		this.onChange(this.store.getOverview()); this.threads.changed();

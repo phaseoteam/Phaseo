@@ -1,8 +1,9 @@
 import { activeAgentsLimit } from "./orchestration";
+import { autoSettleDays } from "./threadLifecycle";
 
-/** maxActiveAgents caps concurrently active delegated agents across the workspace (Settings → General). */
-export type WorkspacePreferences = { notifications: "off" | "attention" | "all"; notificationTitles: boolean; maxActiveAgents: number };
-export const defaultPreferences: WorkspacePreferences = { notifications: "off", notificationTitles: false, maxActiveAgents: activeAgentsLimit.default };
+/** maxActiveAgents caps concurrently active delegated agents across the workspace (Settings → General). autoSettleAfterDays settles idle Code chats; null never does. */
+export type WorkspacePreferences = { notifications: "off" | "attention" | "all"; notificationTitles: boolean; maxActiveAgents: number; autoSettleAfterDays: number | null };
+export const defaultPreferences: WorkspacePreferences = { notifications: "off", notificationTitles: false, maxActiveAgents: activeAgentsLimit.default, autoSettleAfterDays: autoSettleDays.default };
 export function validatePreferences(value: unknown): WorkspacePreferences {
 	if (!value || typeof value !== "object") throw new Error("Invalid workspace preferences.");
 	const input = value as Record<string, unknown>;
@@ -10,5 +11,7 @@ export function validatePreferences(value: unknown): WorkspacePreferences {
 	// Preferences saved before the agent limit existed omit it.
 	const maxActiveAgents = input.maxActiveAgents === undefined ? activeAgentsLimit.default : input.maxActiveAgents;
 	if (typeof maxActiveAgents !== "number" || !Number.isInteger(maxActiveAgents) || maxActiveAgents < activeAgentsLimit.minimum || maxActiveAgents > activeAgentsLimit.maximum) throw new Error(`Agents running at once must be a whole number from ${activeAgentsLimit.minimum} to ${activeAgentsLimit.maximum}.`);
-	return { notifications: input.notifications as WorkspacePreferences["notifications"], notificationTitles: input.notificationTitles, maxActiveAgents };
+	const autoSettleAfterDays = input.autoSettleAfterDays === undefined ? autoSettleDays.default : input.autoSettleAfterDays;
+	if (autoSettleAfterDays !== null && (typeof autoSettleAfterDays !== "number" || !Number.isInteger(autoSettleAfterDays) || autoSettleAfterDays < autoSettleDays.minimum || autoSettleAfterDays > autoSettleDays.maximum)) throw new Error(`Auto-settle must be a whole number of days from ${autoSettleDays.minimum} to ${autoSettleDays.maximum}, or never.`);
+	return { notifications: input.notifications as WorkspacePreferences["notifications"], notificationTitles: input.notificationTitles, maxActiveAgents, autoSettleAfterDays };
 }

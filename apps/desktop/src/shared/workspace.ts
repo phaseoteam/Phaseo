@@ -52,6 +52,13 @@ export type Task = {
 	model: string; mode: "chat" | "code" | "plan"; status: TaskStatus; pinned: boolean;
 	/** Labels for grouping and filtering chats, set by the person or the chat's agent. */
 	tags?: string[];
+	/** Code-mode lifecycle after T3 Code (see shared/threadLifecycle.ts). */
+	settledOverride?: "settled" | "active"; settledAt?: string; unsettledAt?: string;
+	snoozedUntil?: string; snoozedAt?: string; lastSnoozeWakeAt?: string;
+	/** The person last had this chat open; turns finished after it are unread. */
+	lastVisitedAt?: string;
+	/** false opts this chat out of auto-settle. */
+	autoSettle?: boolean;
 	archived: boolean; messages: Message[]; queue: QueuedMessage[]; nativeSessionId?: string;
 	parentId?: string; nativeForkFrom?: string; createdAt: string; updatedAt: string; error?: string;
 	handoffFrom?: Harness;
@@ -86,6 +93,10 @@ export type TerminalCommand = { type: "open"; projectId?: string } | { type: "wr
 export type TerminalEvent = { sessionId: string; data?: string; session?: TerminalSession };
 export type WorkspaceCommand =
 	| { type: "inbox-read"; id: string; revision: string }
+	| { type: "settle" | "unsettle" | "wake" | "mark-unread"; id: string }
+	| { type: "snooze"; id: string; until: string }
+	| { type: "visit"; id: string; at: string }
+	| { type: "auto-settle"; id: string; enabled: boolean }
 	| { type: "add-account"; name: string; harness: "codex" | "claude" | "phaseo" | "cursor" | "grok"; kind: "native" | "api"; endpoint?: string; apiKey?: string }
 	| { type: "update-account"; id: string; name?: string; endpoint?: string; apiKey?: string; archived?: boolean }
 	| { type: "add-agent"; name: string; executable: string; arguments: string[] }
@@ -276,6 +287,10 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				break;
 			}
 			case "inbox-read": string("revision", true, 100); break;
+			case "settle": case "unsettle": case "wake": case "mark-unread": break;
+			case "snooze": string("until", true, 100); if (Number.isNaN(Date.parse(command.until as string))) throw new Error("Invalid snooze time."); break;
+			case "visit": string("at", true, 100); if (Number.isNaN(Date.parse(command.at as string))) throw new Error("Invalid visit time."); break;
+			case "auto-settle": if (typeof command.enabled !== "boolean") throw new Error("Invalid auto-settle setting."); break;
 			case "queue-remove": case "steer-queue": case "steer-discard": string("messageId"); break;
 			case "queue-edit": string("messageId"); string("text", true, 100000); break;
 			case "queue-move":

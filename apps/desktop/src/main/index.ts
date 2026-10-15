@@ -87,6 +87,7 @@ let credentialVault: SecretVault;
 let terminalService: TerminalService;
 let taskNotifications: TaskNotifications;
 let missionService: MissionService;
+let settleTimer: ReturnType<typeof setInterval> | undefined;
 let modelCatalogCache: ModelCatalogCache;
 ipcMain.handle("workspace:missions", event => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return workspaceRuntime.store.missions.list(); });
 ipcMain.handle("workspace:mission", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return missionService.command(validateMissionCommand(value)); });
@@ -182,6 +183,7 @@ app.on("before-quit", event => {
 	shutdownStarted = true;
 	browserHost.downloads.close();
 	missionService?.close();
+	if (settleTimer) clearInterval(settleTimer);
 	taskNotifications?.dismiss();
 	terminalService?.close();
 	for (const controller of signIns.values()) controller.abort();
@@ -692,6 +694,8 @@ app.whenReady().then(() => {
 	if (process.platform !== "darwin") Menu.setApplicationMenu(null);
 	createWindow();
 	missionService.start();
+	workspaceRuntime.settleIdleThreads();
+	settleTimer = setInterval(() => workspaceRuntime.settleIdleThreads(), 60_000); settleTimer.unref();
 	app.on("activate", () => {
 		if (BrowserWindow.getAllWindows().length === 0) createWindow();
 	});

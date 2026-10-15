@@ -38,10 +38,10 @@ app.whenReady().then(async()=>{
  const captureNative=async contents=>{if(owner.isMinimized())owner.restore();owner.show();for(let attempt=0;attempt<100;attempt++){const view=owner.contentView.children.find(candidate=>candidate.webContents===contents);if(view?.getVisible()&&view.getBounds().width>0&&view.getBounds().height>0){try{return await contents.capturePage();}catch(error){if(!String(error).includes('Current display surface not available'))throw error;}}await new Promise(resolve=>setTimeout(resolve,30));}throw Error('Visible native browser surface did not become capture-ready');};
  const output=path.resolve('../../output/playwright/chat-shell',entry?'packaged':'source');mkdirSync(output,{recursive:true});
  try{
- // Chat lists personal chats; Code groups chats under their project.
+ // Chat lists personal chats; Code lists chats across projects, each card naming its project.
  await wait(`Array.from(document.querySelectorAll('aside[aria-label="Chats"] nav [role=button]')).map(row=>row.textContent).join()==='Plan a holiday'`);
  await run(`Array.from(document.querySelectorAll('[role=radiogroup][aria-label=Workspace] [role=radio]')).find(button=>button.textContent==='Code').click()`);
- await wait(`Array.from(document.querySelectorAll('aside[aria-label="Projects"] button[aria-expanded]:not([aria-haspopup])')).map(button=>button.textContent).join()==='Website'&&Array.from(document.querySelectorAll('aside[aria-label="Projects"] [role=button]')).some(row=>row.textContent.includes('Improve the website'))`);
+ await wait(`Array.from(document.querySelectorAll('nav[aria-label="Code chats"] [role=button]')).some(row=>row.textContent.includes('Improve the website')&&row.textContent.includes('Website'))`);
  await select('Improve the website');
  await wait(`document.querySelector('main [aria-live=polite] ol')?.textContent.includes('Apply the design')`);
  await capture('chat-plan-checklist');

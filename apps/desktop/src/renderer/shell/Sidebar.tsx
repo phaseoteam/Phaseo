@@ -1,9 +1,9 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Archive, CalendarClock, ChevronRight, Columns3, Ellipsis, FolderOpen, FolderPlus, LogIn, Pencil, Pin, PinOff, Plus, Settings } from "lucide-react";
+import { Archive, CalendarClock, Columns3, Ellipsis, LogIn, Pencil, Pin, PinOff, Plus, Settings } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { chatDragType } from "../../shared/mentions";
 import type { TaskOverview } from "../../shared/workspaceOverview";
-import { errorText, usablePhaseoAccounts, useWorkspace, type CompareGroup } from "../app/workspace";
+import { usablePhaseoAccounts, useWorkspace, type CompareGroup } from "../app/workspace";
 import { cn } from "../lib/utils";
 import { shortcutLabel } from "../lib/shortcuts";
 import { usePersistedState } from "../lib/persistedState";
@@ -11,6 +11,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { SettingsNav } from "../settings/SettingsPage";
 import { ModelStack } from "../chat/ModelPicker";
 import { useScheduledTasks } from "../views/ScheduledTasks";
+import { CodeThreadList } from "./CodeThreadList";
+import { dismissUndo, runUndo, undoLabel, useThreadUndo } from "./threadUndo";
 import { TagChip, TagDots, TagMenu } from "../components/Tags";
 import { tagsInUse } from "../../shared/tags";
 
@@ -127,37 +129,6 @@ function ChatList() {
 	</>;
 }
 
-function ProjectList() {
-	const { overview, api, setOverview, setError, select, setNewChatProjectId } = useWorkspace();
-	const [closed, setClosed] = usePersistedState<Record<string, boolean>>("phaseo.desktop.closedProjects", {});
-	const projects = overview.projects.filter(project => !project.worktree?.removedAt);
-	const addProject = () => { if (api) void api.chooseProject().then(setOverview, reason => setError(errorText(reason))); };
-	return <>
-		<SectionLabel action={<button type="button" aria-label="Add project" title="Add project" onClick={addProject} className="grid size-5 place-items-center rounded text-muted-foreground hover:bg-sidebar-accent hover:text-foreground [&_svg]:size-3.5"><FolderPlus /></button>}>Projects</SectionLabel>
-		{!projects.length && <div className="px-4 pt-1 pb-3">
-			<p className="text-xs text-muted-foreground">Open a folder to start coding with an agent.</p>
-			<button type="button" onClick={addProject} className="mt-3 inline-flex h-7 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/85"><FolderOpen className="size-3.5" />Open folder</button>
-		</div>}
-		{projects.map(project => {
-			const tasks = overview.tasks.filter(task => task.projectId === project.id && !task.delegation?.parentTaskId && !task.archived).sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updatedAt.localeCompare(a.updatedAt));
-			const open = !closed[project.id];
-			return <div key={project.id} className="mb-1">
-				<div className="group/project mx-2 flex h-8 items-center gap-1.5 rounded-md px-1.5 text-[13px] font-semibold hover:bg-sidebar-accent/60">
-					<button type="button" aria-expanded={open} onClick={() => setClosed(current => ({ ...current, [project.id]: open }))} className="flex min-w-0 flex-1 items-center gap-1.5">
-						<ChevronRight className={cn("size-3.5 shrink-0 text-muted-foreground transition-transform", open && "rotate-90")} />
-						<FolderOpen className="size-4 shrink-0 text-muted-foreground" />
-						<span className="truncate">{project.name}</span>
-						{project.worktree && <span className="truncate font-mono text-[10.5px] font-normal text-muted-foreground">⎇ {project.worktree.branch}</span>}
-					</button>
-					<button type="button" aria-label={`New chat in ${project.name}`} title="New chat" onClick={() => { setNewChatProjectId(project.id); select(undefined); }} className="grid size-5 place-items-center rounded text-muted-foreground opacity-0 group-hover/project:opacity-100 hover:bg-background/70 hover:text-foreground [&_svg]:size-3.5"><Plus /></button>
-				</div>
-				{open && tasks.map(task => <ChatRow key={task.id} task={task} indent />)}
-				{open && !tasks.length && <p className="py-1 pr-3 pl-10 text-xs text-muted-foreground">No chats yet</p>}
-			</div>;
-		})}
-	</>;
-}
-
 function AccountFooter() {
 	const { overview, openSettings } = useWorkspace();
 	const account = usablePhaseoAccounts(overview)[0];
@@ -169,6 +140,17 @@ function AccountFooter() {
 			</button>
 			: <button type="button" onClick={() => openSettings("accounts")} className="flex flex-1 items-center gap-2 rounded-md p-1.5 text-[12.5px] font-semibold text-primary hover:bg-sidebar-accent/70"><LogIn className="size-4" />Sign in to Phaseo</button>}
 		<button type="button" aria-label="Settings" title={`Settings (${shortcutLabel(",")})`} onClick={() => openSettings()} className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"><Settings className="size-4" /></button>
+	</div>;
+}
+
+/** T3's undo notice: the last settle, snooze, unpin or archive, for five seconds. */
+function UndoNotice() {
+	const action = useThreadUndo();
+	if (!action) return null;
+	return <div role="status" className="mx-2.5 mb-2 flex items-center gap-2 rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-sm">
+		<span className="min-w-0 flex-1 truncate">{undoLabel(action)}</span>
+		<button type="button" onClick={() => runUndo()} className="font-semibold text-primary hover:underline">Undo <span className="font-normal text-muted-foreground">{shortcutLabel("Z")}</span></button>
+		<button type="button" aria-label="Dismiss" onClick={dismissUndo} className="text-muted-foreground hover:text-foreground">×</button>
 	</div>;
 }
 
@@ -221,7 +203,10 @@ export function Sidebar() {
 			</button>
 			<ScheduledTasksLink />
 		</div>
-		<ScrollArea className="min-h-0 flex-1"><nav className="pb-3">{mode === "chat" ? <ChatList /> : <ProjectList />}</nav></ScrollArea>
+		{mode === "chat"
+			? <ScrollArea className="min-h-0 flex-1"><nav className="pb-3"><ChatList /></nav></ScrollArea>
+			: <ScrollArea className="min-h-0 flex-1" viewportClassName="[&>div]:min-h-full [&>div]:flex [&>div]:flex-col"><nav aria-label="Code chats" className="flex flex-1 flex-col"><CodeThreadList /></nav></ScrollArea>}
+		<UndoNotice />
 		<AccountFooter />
 	</SidebarFrame>;
 }

@@ -67,16 +67,16 @@ app.whenReady().then(async () => {
     await wait("!document.querySelector('aside[aria-label=\"Chats\"]')");
     await run("window.dispatchEvent(new KeyboardEvent('keydown',{key:'b',ctrlKey:true,bubbles:true}))");
     await wait("Boolean(document.querySelector('aside[aria-label=\"Chats\"]'))");
-    // Code lists projects with collapsible chat groups; Back returns to the chat that was open.
+    // Code lists chats across projects, each card naming its project, with Settled folded at the bottom; Back returns to the chat that was open.
     await run("Array.from(document.querySelectorAll('[role=radiogroup][aria-label=Workspace] [role=radio]')).find(button=>button.textContent==='Code').click()");
     await wait("Boolean(document.querySelector('aside[aria-label=\"Projects\"]'))&&window.__auditChatTitle()===undefined");
-    const projectToggle = "Array.from(document.querySelectorAll('aside[aria-label=\"Projects\"] button[aria-expanded]')).find(button=>button.textContent.includes('Owned project'))";
-    const projectChat = "Array.from(document.querySelectorAll('aside[aria-label=\"Projects\"] [role=button]')).some(row=>row.textContent.includes('Owned project chat'))";
-    await wait(`${projectToggle}?.getAttribute('aria-expanded')==='true'&&${projectChat}`);
-    await run(`${projectToggle}.click()`);
-    await wait(`${projectToggle}.getAttribute('aria-expanded')==='false'&&!${projectChat}`);
-    await run(`${projectToggle}.click()`);
-    await wait(`${projectToggle}.getAttribute('aria-expanded')==='true'&&${projectChat}`);
+    const projectChat = "Array.from(document.querySelectorAll('nav[aria-label=\"Code chats\"] [role=button]')).some(row=>row.textContent.includes('Owned project chat')&&row.textContent.includes('Owned project'))";
+    const settledToggle = "Array.from(document.querySelectorAll('nav[aria-label=\"Code chats\"] button[aria-expanded]:not([aria-haspopup])')).find(button=>button.textContent.startsWith('Settled'))";
+    await wait(`${projectChat}&&${settledToggle}?.getAttribute('aria-expanded')==='false'`);
+    await run(`${settledToggle}.click()`);
+    await wait(`${settledToggle}.getAttribute('aria-expanded')==='true'`);
+    await run(`${settledToggle}.click()`);
+    await wait(`${settledToggle}.getAttribute('aria-expanded')==='false'&&${projectChat}`);
     await run("document.querySelector('[aria-label=\"Back\"]').click()");
     await wait(`Boolean(document.querySelector('aside[aria-label="Chats"]'))&&window.__auditChatTitle()===${JSON.stringify(secondChat)}`);
     for (const [width, height] of [[1440, 920], [1180, 800], [1040, 680]]) for (const theme of ["light", "dark"]) {
@@ -102,7 +102,7 @@ app.whenReady().then(async () => {
     await wait("document.documentElement.dataset.theme==='light'&&document.querySelector('[role=radiogroup][aria-label=Theme] [aria-checked=true]')?.textContent==='Light'");
     key("Escape");
     await wait(`!document.querySelector('nav[aria-label="Settings sections"]')&&document.querySelector('main [aria-label=Message]')?.value==='Keep this draft'&&window.__auditChatTitle()===${JSON.stringify(secondChat)}`);
-    console.log('T3_LAYOUT_SMOKE',JSON.stringify({chatList:60,modeSwitch:true,collapsibleProjects:true,surfaceBack:true,appearance:true,draftPreserved:true,escapeCloses:true,settingsCaptures:6}));
+    console.log('T3_LAYOUT_SMOKE',JSON.stringify({chatList:60,modeSwitch:true,collapsibleSettled:true,surfaceBack:true,appearance:true,draftPreserved:true,escapeCloses:true,settingsCaptures:6}));
     // The tools panel resizes from its keyboard-focusable separator and by dragging, and remembers its width.
     owner.setSize(1440, 920);
     await run("window.__auditPaletteRun('Show files and changes')");

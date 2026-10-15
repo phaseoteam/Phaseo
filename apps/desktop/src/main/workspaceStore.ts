@@ -1,5 +1,6 @@
 import { updateNativeActionText } from "../shared/nativeActions";
 import { BrowserDownloadStore } from "./browserDownloadStore";
+import { settleBlocker, snoozeBlocker } from "../shared/threadLifecycle";
 import { mentionPlainText } from "../shared/mentions";
 import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
@@ -229,7 +230,12 @@ export class WorkspaceStore {
 		const tasks = this.db.prepare(`SELECT json_object(
 			'id', id, 'title', json_extract(data, '$.title'), 'harness', json_extract(data, '$.harness'),
 			'model', json_extract(data, '$.model'), 'mode', json_extract(data, '$.mode'), 'status', json_extract(data, '$.status'),
-			'pinned', coalesce(json_extract(data, '$.pinned'), 0), 'tags', json_extract(data, '$.tags'), 'archived', coalesce(json_extract(data, '$.archived'), 0),
+			'pinned', coalesce(json_extract(data, '$.pinned'), 0), 'tags', json_extract(data, '$.tags'),
+			'settledOverride', json_extract(data, '$.settledOverride'), 'settledAt', json_extract(data, '$.settledAt'), 'unsettledAt', json_extract(data, '$.unsettledAt'),
+			'snoozedUntil', json_extract(data, '$.snoozedUntil'), 'snoozedAt', json_extract(data, '$.snoozedAt'), 'lastSnoozeWakeAt', json_extract(data, '$.lastSnoozeWakeAt'),
+			'lastVisitedAt', json_extract(data, '$.lastVisitedAt'), 'autoSettle', json_extract(data, '$.autoSettle'), 'queueCount', coalesce(json_array_length(data, '$.queue'), 0),
+			'lastCompletedAt', (SELECT json_extract(item.value, '$.completedAt') FROM json_each(tasks.data, '$.messages') AS item WHERE json_extract(item.value, '$.role') = 'user' AND json_extract(item.value, '$.completedAt') IS NOT NULL ORDER BY CAST(item.key AS INTEGER) DESC LIMIT 1),
+			'lastUserMessageAt', (SELECT json_extract(item.value, '$.createdAt') FROM json_each(tasks.data, '$.messages') AS item WHERE json_extract(item.value, '$.role') = 'user' AND json_extract(item.value, '$.delivery') IS NULL ORDER BY CAST(item.key AS INTEGER) DESC LIMIT 1), 'archived', coalesce(json_extract(data, '$.archived'), 0),
 			'createdAt', json_extract(data, '$.createdAt'), 'updatedAt', json_extract(data, '$.updatedAt'), 'revision', json_extract(data, '$.revision'),
 			'projectId', json_extract(data, '$.projectId'), 'accountId', json_extract(data, '$.accountId'), 'agentId', json_extract(data, '$.agentId'),
 			'parentId', json_extract(data, '$.parentId'), 'delegation', json_extract(data, '$.delegation'), 'launch', json_extract(data, '$.launch'), 'missionId', json_extract(data, '$.missionId'), 'inboxReadAt', json_extract(data, '$.inboxReadAt'),
@@ -246,7 +252,7 @@ export class WorkspaceStore {
 		) AS metadata FROM tasks ORDER BY json_extract(data, '$.updatedAt') DESC, id DESC`).all().map(row => {
 			const parsed = JSON.parse(row.metadata as string);
 			const task = Object.fromEntries(Object.entries(parsed).filter(([, value]) => value !== null)) as TaskOverview;
-			task.pinned = Boolean(task.pinned); task.archived = Boolean(task.archived);
+			task.pinned = Boolean(task.pinned); task.archived = Boolean(task.archived); if (task.autoSettle !== undefined) task.autoSettle = Boolean(task.autoSettle);
 			task.attentionKey = JSON.stringify(parsed.attentionKey);
 			task.attentionReason = inboxReasonFromCounts(task);
 			return task;
@@ -365,6 +371,8 @@ export class WorkspaceStore {
 				}
 				if (command.title !== undefined) task.title = command.title;
 				if (command.pinned !== undefined) task.pinned = command.pinned;
+				// Pinning promotes: a settled chat comes back, and a snoozed one wakes.
+				if (command.pinned) { if (task.settledOverride === "settled") { task.settledOverride = "active"; task.settledAt = undefined; task.unsettledAt = new Date().toISOString(); } if (task.snoozedUntil) { task.snoozedUntil = task.snoozedAt = undefined; task.lastSnoozeWakeAt = new Date().toISOString(); } }
 				if (command.tags !== undefined) task.tags = command.tags.length ? command.tags : undefined;
 				if (command.archived !== undefined) {
 					if (task.status === "running" || task.status === "waiting") throw new Error("Stop this task before archiving it.");
@@ -377,6 +385,9 @@ export class WorkspaceStore {
 					task.queue.push({ id: randomUUID(), text: command.text, ...(command.threadReferences?.length ? { threadReferences: [...new Set(command.threadReferences)] } : {}), ...(command.nativeAction ? { nativeAction: command.nativeAction } : {}), ...(attachments?.length ? { attachments } : {}), createdAt: new Date().toISOString() });
 				}
 				if (task.title === "New task") task.title = mentionPlainText(command.text).trim().slice(0, 80);
+				// Anything new brings a parked chat back and wakes it.
+				if (task.settledOverride === "settled") task.unsettledAt = new Date().toISOString();
+				task.settledOverride = task.settledAt = task.snoozedUntil = task.snoozedAt = undefined;
 				break;
 			case "fork": {
 				if ((task.status === "running" || task.status === "waiting") && !command.messageId) throw new Error("Choose a message boundary or stop this task before forking it.");
@@ -389,6 +400,8 @@ export class WorkspaceStore {
 				this.saveTask(fork); return fork;
 			}
 			case "queue-remove": task.queue = task.queue.filter(message => message.id !== command.messageId); break;
+			case "settle": case "unsettle": case "wake": case "mark-unread": case "snooze": case "visit": case "auto-settle":
+				applyLifecycle(task, command); this.saveTask(task, true); return task;
 			case "inbox-read":
 				if (task.updatedAt === command.revision) { task.inboxReadAt = command.revision; this.saveTask(task, true); }
 				return task;
@@ -422,4 +435,32 @@ export class WorkspaceStore {
 	getPreferences(): WorkspacePreferences { const row = this.db.prepare("SELECT data FROM preferences WHERE id='workspace'").get(); return row ? validatePreferences({ ...defaultPreferences, ...JSON.parse(row.data as string) }) : { ...defaultPreferences }; }
 	savePreferences(value: WorkspacePreferences) { const preferences = validatePreferences(value); this.db.prepare("INSERT INTO preferences (id, data) VALUES ('workspace', ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(JSON.stringify(preferences)); return preferences; }
 	close() { this.db.close(); }
+}
+
+type LifecycleCommand = Extract<WorkspaceCommand, { type: "settle" | "unsettle" | "wake" | "mark-unread" | "snooze" | "visit" | "auto-settle" }>;
+
+/** Settle, snooze and read state, after T3 Code. None of it counts as activity, so the chat keeps its place and time. */
+function applyLifecycle(task: Task, command: LifecycleCommand) {
+	const now = new Date().toISOString();
+	const counts = { status: task.status, approvalsCount: task.approvals?.length ?? 0, answersCount: (task.questions?.length ?? 0) + (task.forms?.length ?? 0), queueCount: task.queue.length };
+	if (task.archived && command.type !== "visit" && command.type !== "mark-unread") throw new Error("Restore this chat first.");
+	switch (command.type) {
+		case "settle": {
+			const blocked = settleBlocker(counts); if (blocked) throw new Error(blocked);
+			task.settledAt = task.settledOverride === "settled" ? task.settledAt : now; task.settledOverride = "settled"; task.unsettledAt = undefined; task.pinned = false; break;
+		}
+		case "unsettle": task.settledOverride = "active"; task.settledAt = undefined; task.unsettledAt = now; break;
+		case "snooze": {
+			const blocked = snoozeBlocker(counts, command.until); if (blocked) throw new Error(blocked);
+			task.snoozedUntil = new Date(command.until).toISOString(); task.snoozedAt = now; break;
+		}
+		case "wake": task.snoozedUntil = task.snoozedAt = undefined; task.lastSnoozeWakeAt = now; break;
+		case "visit": if (!task.lastVisitedAt || Date.parse(command.at) > Date.parse(task.lastVisitedAt)) task.lastVisitedAt = new Date(command.at).toISOString(); break;
+		case "mark-unread": {
+			const completed = task.messages.findLast(message => message.role === "user" && message.completedAt)?.completedAt;
+			if (!completed) throw new Error("This chat has no finished turn to mark unread.");
+			task.lastVisitedAt = new Date(Date.parse(completed) - 1).toISOString(); break;
+		}
+		case "auto-settle": task.autoSettle = command.enabled ? undefined : false; break;
+	}
 }

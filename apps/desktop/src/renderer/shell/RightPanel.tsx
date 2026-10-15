@@ -62,6 +62,9 @@ export function RightPanel() {
 			</button>)}
 			<button type="button" aria-label="Close panel" onClick={() => setRightPanel(undefined)} className="mb-1.5 ml-auto grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-4" /></button>
 		</nav>
-		{tab === "changes" ? <div className="flex min-h-0 flex-1 flex-col">{content}</div> : <ScrollArea className="chat-tools-content legacy-panel min-h-0 flex-1">{content}</ScrollArea>}
+		{/* The browser and terminal fill the pane and scroll themselves; lists scroll in a ScrollArea. */}
+		{tab === "changes" ? <div className="flex min-h-0 flex-1 flex-col">{content}</div>
+			: tab === "browser" || tab === "terminal" ? <div className="chat-tools-content legacy-panel min-h-0 flex-1 overflow-hidden">{content}</div>
+			: <ScrollArea className="chat-tools-content legacy-panel min-h-0 flex-1">{content}</ScrollArea>}
 	</aside>;
 }

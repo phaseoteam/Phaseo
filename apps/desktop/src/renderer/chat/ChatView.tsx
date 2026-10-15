@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
-import { Archive, Box, CornerLeftUp, Download, Ellipsis, FolderOpen, Gauge, GitBranch, Layers, ListChecks, Paperclip, PenLine, Pin, PinOff, Plug, RotateCcw, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, FolderOpen, Gauge, GitBranch, Layers, ListChecks, Paperclip, PenLine, Pin, PinOff, Plug, RotateCcw, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { shortcutLabel } from "../lib/shortcuts";
+import { CustomSnoozeDialog, SnoozeItems, useThreadActions } from "../shell/threadActions";
+import { hasWoken, isSettled, isSnoozed, settleBlocker, shortDuration } from "../../shared/threadLifecycle";
+import type { TaskOverview } from "../../shared/workspaceOverview";
 import { TagEditor } from "../components/Tags";
 import type { AccountStatus, Attachment, Task } from "../../shared/workspace";
 import { errorText, useWorkspace } from "../app/workspace";
@@ -7,7 +11,7 @@ import { useSelectedTask } from "../lib/useSelectedTask";
 import { usePersistedState } from "../lib/persistedState";
 import { rememberModel, type ModelSelection } from "../lib/modelPreferences";
 import { cn } from "../lib/utils";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Button } from "../components/ui/button";
 import { AttachmentPreview } from "../components/AttachmentPreview";
 import { StatusDot } from "../shell/Sidebar";
@@ -30,6 +34,8 @@ function ChatHeader({ task }: { task: Task }) {
 	const project = overview.projects.find(value => value.id === task.projectId);
 	const snapshot = overview.tasks.find(value => value.id === task.id);
 	const [renaming, setRenaming] = useState(false);
+	const [customSnooze, setCustomSnooze] = useState(false);
+	const threadActions = useThreadActions();
 	useEffect(() => { setRenaming(false); }, [task.id]);
 	useEffect(() => { const rename = () => setRenaming(true); window.addEventListener(renameChatEvent, rename); return () => window.removeEventListener(renameChatEvent, rename); }, []);
 	const fork = async () => { const known = new Set(overview.tasks.map(value => value.id)); const state = await command({ type: "fork", id: task.id }); const id = state?.tasks.find(value => !known.has(value.id))?.id; if (id) select(id); };
@@ -52,6 +58,12 @@ function ChatHeader({ task }: { task: Task }) {
 				<DropdownMenuTrigger render={<button type="button" aria-label="Chat actions" className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" />}><Ellipsis className="size-4" /></DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-52">
 					<DropdownMenuItem onClick={() => void command({ type: "update-task", id: task.id, pinned: !task.pinned })}>{task.pinned ? <PinOff /> : <Pin />}{task.pinned ? "Unpin" : "Pin"}</DropdownMenuItem>
+					{snapshot?.projectId && (isSettled(snapshot)
+						? <DropdownMenuItem onClick={() => void threadActions.unsettle(snapshot)}><Undo2 />Un-settle chat</DropdownMenuItem>
+						: <DropdownMenuItem disabled={Boolean(settleBlocker(snapshot))} onClick={() => void threadActions.settle(snapshot)}><CircleCheck />Settle chat<DropdownMenuShortcut>{shortcutLabel("Shift+S")}</DropdownMenuShortcut></DropdownMenuItem>)}
+					{snapshot?.projectId && !isSettled(snapshot) && (isSnoozed(snapshot)
+						? <DropdownMenuItem onClick={() => void threadActions.wake(snapshot)}><AlarmClockOff />Wake chat</DropdownMenuItem>
+						: <DropdownMenuSub><DropdownMenuSubTrigger><Clock />Snooze</DropdownMenuSubTrigger><DropdownMenuSubContent className="w-56"><SnoozeItems onSnooze={until => void threadActions.snooze(snapshot, until)} onCustom={() => setCustomSnooze(true)} /></DropdownMenuSubContent></DropdownMenuSub>)}
 					<DropdownMenuItem disabled={["running", "waiting"].includes(task.status)} onClick={() => void fork()}><GitBranch />Branch chat</DropdownMenuItem>
 					{canCompact && <DropdownMenuItem onClick={() => void command({ type: "send", id: task.id, text: "/compact" })}><Layers />Compact context</DropdownMenuItem>}
 					<DropdownMenuSeparator />
@@ -62,6 +74,7 @@ function ChatHeader({ task }: { task: Task }) {
 				</DropdownMenuContent>
 			</DropdownMenu>
 		</div>
+		{snapshot && <CustomSnoozeDialog open={customSnooze} onOpenChange={setCustomSnooze} onSnooze={until => void threadActions.snooze(snapshot, until)} />}
 	</header>;
 }
 
@@ -192,9 +205,25 @@ function ChatComposer({ task }: { task: Task }) {
 	</div>;
 }
 
+/** T3's quiet line after the last message: settled, snoozed or woke, with the way back. */
+function ThreadStatusLine({ task }: { task: TaskOverview }) {
+	const actions = useThreadActions();
+	const now = Date.now();
+	const line = (text: string, action: string, run: () => void) => <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">{text}<span aria-hidden>·</span><button type="button" onClick={run} className="font-medium text-foreground hover:underline">{action}</button></p>;
+	if (!task.projectId) return null;
+	if (isSnoozed(task, now)) return line(`Snoozed, wakes in ${shortDuration(Date.parse(task.snoozedUntil!) - now)}`, "Wake now", () => void actions.wake(task));
+	if (isSettled(task)) return line(`Settled ${shortDuration(now - Date.parse(task.settledAt ?? task.updatedAt))} ago`.replace("Settled now ago", "Settled just now"), "Un-settle", () => void actions.unsettle(task));
+	if (hasWoken(task, now)) return line("Woke from snooze", "Dismiss", () => void actions.wake(task));
+	return null;
+}
+
 export function ChatView({ id }: { id: string }) {
-	const { api, overview, command, select } = useWorkspace();
+	const { api, overview, command, select, setOverview } = useWorkspace();
 	const snapshot = overview.tasks.find(task => task.id === id);
+	// Having the chat open marks its finished turns read, as T3's visit does. It bypasses command() so it never clears an error on screen.
+	useEffect(() => {
+		if (api && snapshot && (!snapshot.lastVisitedAt || (snapshot.lastCompletedAt && Date.parse(snapshot.lastCompletedAt) > Date.parse(snapshot.lastVisitedAt)))) void api.command({ type: "visit", id, at: new Date().toISOString() }).then(setOverview, () => undefined);
+	}, [id, snapshot?.lastCompletedAt, snapshot?.lastVisitedAt]);
 	const detail = useSelectedTask(api?.task, id, snapshot ? JSON.stringify([snapshot.revision, snapshot.updatedAt]) : undefined);
 	const loaded = detail.task?.id === id ? detail.task : undefined;
 	const [preview, setPreview] = useState<string>();
@@ -210,6 +239,7 @@ export function ChatView({ id }: { id: string }) {
 	return <div className="flex h-full min-w-0 flex-col">
 		<ChatHeader task={task} />
 		{!loaded ? <div role="status" className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">Loading chat…</div> : <Conversation key={task.id} task={task} onAttachment={setPreview} onBranch={messageId => void branch(messageId)}>
+			{snapshot && <ThreadStatusLine task={snapshot} />}
 			{task.error && <div role="alert" className={cn("flex items-center gap-2 text-[13px]", task.status === "interrupted" ? "text-muted-foreground" : "text-destructive")}>
 				<span className="min-w-0">{task.error}</span>
 				<Button size="sm" variant="ghost" className="text-foreground" onClick={() => void command({ type: "resume", id: task.id })}><RotateCcw />Resume</Button>

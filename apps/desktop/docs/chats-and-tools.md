@@ -104,6 +104,16 @@ Type `@` anywhere in a message to mention a chat or a file. You can also drag a 
 
 Messages and replies show the same chips: file paths and `@path` mentions open in your editor, links show the site or the GitHub pull request or issue, and chat mentions open the chat. Code blocks, version numbers, emails and paths inside sentences like `and/or` stay as text.
 
+## Code chats: settle and snooze
+
+Code lists chats from every project in one list, as T3 Code does; the menu above it narrows the list to one project. Each card shows its project, the title, and its branch, tags and model. The right of the card says what the chat needs: Approval, Input, Working with a live timer, Waiting, Failed, Limited, Woke, or Done for a finished turn you have not opened since; otherwise how long ago you last wrote.
+
+- **Settle** a chat when you are done with it: hover its card and choose Settle, press `Ctrl+Shift+S` (`⌘⇧S` on macOS) in the open chat, or use its menu. It moves to **Settled** at the bottom of the sidebar and the next chat opens. A chat that is running, waiting on an approval or question, or has a queued message cannot settle yet.
+- **Snooze** hides a chat until a time: in an hour, in three hours, this evening, tomorrow at 9:00, next Monday at 9:00, or a custom time. It returns early if it needs you, fails or finishes a turn, marked **Woke**.
+- Sending a message un-settles and wakes a chat; pinning does too. `Ctrl+Z` undoes the last settle, snooze, unpin or archive for five seconds after it.
+- Code chats with no activity for three days settle on their own; change or turn this off under **Settings → General → Auto-settle inactive chats**, or per chat under **Auto-settle behaviour** in its menu. Un-settling a chat holds off auto-settle until something new happens in it.
+- Right-click a card for its menu: pin, settle, snooze, tags, mark unread, filter by project, auto-settle behaviour, copy path, branch or chat ID, and archive. Under the last message, a settled or snoozed chat says so, with the way back.
+
 ## Tags and navigation
 
 Tag a chat from its header (Add tag, or + next to its tags) or from Tags in its sidebar menu: type to find a tag or create one with Enter. A chat has up to 8 tags of up to 24 characters; each tag keeps one colour everywhere. In Chat, the tags in use sit above the chat list: pick one to show only chats with it, and pick it again to show everything. Sidebar rows show up to three tag dots. Agents tag their own chat with `organize_thread` (action `tag`) once the topic is clear, reusing tags already in use and keeping yours.
