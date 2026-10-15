@@ -1,5 +1,6 @@
 import type { AccountStatus, UsageWindow } from "../../shared/workspace";
 import { cn } from "../lib/utils";
+import { RedactedText } from "../components/RedactedText";
 
 /** "5-hour", "Weekly" and so on, from a window's length. */
 export function windowName(minutes: number | null, fallback: string) {
@@ -44,7 +45,7 @@ export function UsageMeters({ status }: { status: AccountStatus }) {
 	return <div className="account-status flex flex-col gap-3">
 		<p className="text-xs text-muted-foreground">
 			{status.authenticated === true ? "Signed in" : status.authenticated === false ? "Sign-in required" : "Sign-in status unavailable"}
-			{status.plan ? ` · ${status.plan}` : ""}{status.identity ? ` · ${status.identity}` : ""}{status.method ? ` · ${status.method}` : ""}
+			{status.plan ? ` · ${status.plan}` : ""}{status.identity && <> · <RedactedText text={status.identity} /></>}{status.method ? ` · ${status.method}` : ""}
 		</p>
 		{status.ordinaryUsageAllowed === false && <p className="text-xs text-destructive">Included usage is used up; further use is billed separately.</p>}
 		{status.usage?.map(bucket => <div key={bucket.id} className="flex flex-col gap-2">

@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { ShieldQuestion } from "lucide-react";
+import { ScrollArea } from "../components/ui/scroll-area";
 import type { Task } from "../../shared/workspace";
 import { useWorkspace } from "../app/workspace";
 import { Button } from "../components/ui/button";
@@ -39,7 +40,7 @@ function ApprovalCard({ title, description, onDecision }: { title?: string; desc
 		{preface && <p data-selectable className="mt-1.5 text-[13px] whitespace-pre-wrap text-foreground/85">{preface}</p>}
 		{fields
 			? <dl data-selectable className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[13px]">{fields.map(([key, value]) => <div key={key} className="contents"><dt className="text-muted-foreground">{key}</dt><dd className="min-w-0 break-words">{value}</dd></div>)}</dl>
-			: <pre data-selectable className="mt-1.5 max-h-48 overflow-auto font-mono text-[11.5px] whitespace-pre-wrap text-foreground/85">{description}</pre>}
+			: <ScrollArea className="mt-1.5 max-h-48" viewportClassName="max-h-48"><pre data-selectable className="font-mono text-[11.5px] whitespace-pre-wrap text-foreground/85">{description}</pre></ScrollArea>}
 		{error && <p role="alert" className="mt-2 text-xs text-destructive">{error}</p>}
 		<div className="mt-2.5 flex gap-2">
 			<Button size="sm" disabled={!!pending} onClick={() => void decide("accept")}>{pending === "accept" ? "Allowing…" : "Allow"}</Button>

@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { EditorContent } from "@tiptap/react";
+import { ScrollArea } from "../components/ui/scroll-area";
 import { ArrowUp, Square } from "lucide-react";
 import { cn } from "../lib/utils";
 import { chatDragType } from "../lib/mentions";
@@ -45,7 +46,7 @@ export function Composer({ editor, onSubmit, onStop, disabled, canSend, running,
 			onDrop={event => { const chat = draggedChat(event.dataTransfer); if (chat && !disabled) { event.preventDefault(); editor.insert([chat]); } }}
 			className="rounded-2xl border border-input bg-card shadow-sm transition-colors focus-within:border-ring/60 focus-within:ring-3 focus-within:ring-ring/15 dark:shadow-black/20">
 			{chips && <div className="flex flex-wrap gap-1.5 px-3 pt-3">{chips}</div>}
-			<EditorContent editor={editor.editor} className={cn("composer-editor-host scrollbar-thin max-h-60 overflow-y-auto px-4 pt-3.5 pb-1 leading-relaxed", size === "large" ? "min-h-[72px] text-[15px]" : "min-h-11 text-[14px]", disabled && "opacity-60")} />
+			<ScrollArea className="max-h-60" viewportClassName="max-h-60"><EditorContent editor={editor.editor} className={cn("composer-editor-host px-4 pt-3.5 pb-1 leading-relaxed", size === "large" ? "min-h-[72px] text-[15px]" : "min-h-11 text-[14px]", disabled && "opacity-60")} /></ScrollArea>
 			<div className="flex items-center gap-1 px-2 pt-1 pb-2">
 				{tools}
 				<div className="ml-auto flex min-w-0 items-center gap-1">

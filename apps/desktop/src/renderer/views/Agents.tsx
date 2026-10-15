@@ -126,7 +126,7 @@ export function Agents() {
 		<SettingsSection title={editing ? "Edit agent" : "Connect an agent"} className="connection-editor">
 			<form ref={form} aria-label="Agent connection" className="flex flex-col gap-3 p-4" onSubmit={event => { event.preventDefault(); void add(); }}>
 				{editorError && <p className="text-xs text-destructive" role="alert">{editorError}</p>}
-				<fieldset className="account-form connection-fields flex flex-col gap-3" disabled={busy}>
+				<fieldset className="connection-fields flex flex-col gap-3" disabled={busy}>
 					<div className="grid grid-cols-2 gap-3">
 						<SettingsField label="Name"><input value={name} onChange={event => setName(event.target.value)} required maxLength={100} className={settingsInput} /></SettingsField>
 						<SettingsField label="Executable"><input value={executable} onChange={event => setExecutable(event.target.value)} placeholder="Path to an agent executable" required className={settingsInput} /></SettingsField>

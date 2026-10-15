@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { Files, GitBranch, GitPullRequest, Globe, SquareTerminal, X } from "lucide-react";
+import { ScrollArea } from "../components/ui/scroll-area";
 import { useWorkspace, type RightPanelTab } from "../app/workspace";
 import { usePersistedState } from "../lib/persistedState";
 import { cn } from "../lib/utils";
@@ -61,6 +62,6 @@ export function RightPanel() {
 			</button>)}
 			<button type="button" aria-label="Close panel" onClick={() => setRightPanel(undefined)} className="mb-1.5 ml-auto grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-4" /></button>
 		</nav>
-		<div className={cn("min-h-0 flex-1", tab === "changes" ? "flex flex-col" : "chat-tools-content legacy-panel overflow-auto")}>{content}</div>
+		{tab === "changes" ? <div className="flex min-h-0 flex-1 flex-col">{content}</div> : <ScrollArea className="chat-tools-content legacy-panel min-h-0 flex-1">{content}</ScrollArea>}
 	</aside>;
 }

@@ -1,5 +1,6 @@
 import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { ScrollArea } from "./ui/scroll-area";
 import { Children, createContext, isValidElement, useContext, useEffect, useState, useMemo, type CSSProperties, type ReactNode } from "react";
 import type { CodeToken } from "./codeHighlight";
 import { Check, Copy } from "lucide-react";
@@ -52,7 +53,7 @@ export function CodeBlock({ children, text: source, language: sourceLanguage }: 
 		return () => { active = false; clearTimeout(timer); };
 	}, [text, language]);
 	const tokens = highlight?.text === text && highlight.language === language ? highlight.tokens : undefined;
-	return <div className="message-code-block"><div className="message-code-actions"><span aria-live="polite">{status === "failed" ? "Copy failed" : language || "Code"}</span><button type="button" onClick={() => void copy()} disabled={copying} aria-label={status === "copied" ? "Copied" : "Copy code"}>{status === "copied" ? <Check size={14} /> : <Copy size={14} />}{status === "copied" ? "Copied" : "Copy code"}</button></div><pre>{tokens ? <code>{tokens.map((line, index) => <span key={index}>{index > 0 ? "\n" : ""}{line.map((token, tokenIndex) => <span className="code-token" key={tokenIndex} style={{ "--code-light": token.light, "--code-dark": token.dark } as CSSProperties}>{token.content}</span>)}</span>)}</code> : children ?? <code>{text}</code>}</pre></div>;
+	return <div className="message-code-block"><div className="message-code-actions"><span aria-live="polite">{status === "failed" ? "Copy failed" : language || "Code"}</span><button type="button" onClick={() => void copy()} disabled={copying} aria-label={status === "copied" ? "Copied" : "Copy code"}>{status === "copied" ? <Check size={14} /> : <Copy size={14} />}{status === "copied" ? "Copied" : "Copy code"}</button></div><ScrollArea scrollBarOrientation="horizontal"><pre>{tokens ? <code>{tokens.map((line, index) => <span key={index}>{index > 0 ? "\n" : ""}{line.map((token, tokenIndex) => <span className="code-token" key={tokenIndex} style={{ "--code-light": token.light, "--code-dark": token.dark } as CSSProperties}>{token.content}</span>)}</span>)}</code> : children ?? <code>{text}</code>}</pre></ScrollArea></div>;
 }
 
 const markdownComponents: Components = {
@@ -61,6 +62,8 @@ const markdownComponents: Components = {
 		// Spans only come from remarkMessageChips; raw HTML is not rendered.
 		span: props => { const chip = (props as Record<string, unknown>)["data-chip"]; return typeof chip === "string" ? <MarkdownChip value={chip} /> : <span className={props.className}>{props.children}</span>; },
 		pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
+		// Wide tables scroll sideways inside a ScrollArea rather than with a native scroll bar.
+		table: ({ children }) => <ScrollArea scrollBarOrientation="horizontal" className="message-table-scroll"><table>{children}</table></ScrollArea>,
 };
 
 const markdownPlugins = [remarkGfm, remarkMessageChips];

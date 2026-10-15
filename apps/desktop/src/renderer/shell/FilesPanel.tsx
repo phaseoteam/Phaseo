@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, Check, ChevronDown, Columns2, ExternalLink, File, Folder, FolderOpen, FolderPlus, GitBranch, Minus, Pencil, Plus, Rows2, Trash2 } from "lucide-react";
+import { ScrollArea } from "../components/ui/scroll-area";
 import type { GitCommand, GitFile, GitReview, ProjectFile } from "../../shared/workspace";
 import type { EditorId, EditorInstallation, ProjectOpenRequest } from "../../shared/editors";
 import { errorText, useWorkspace } from "../app/workspace";
@@ -181,7 +182,7 @@ export function FilesPanel({ initialProjectId }: { initialProjectId?: string }) 
 					className="h-7 min-w-0 flex-1 rounded-md border border-input bg-transparent px-2 font-mono text-xs outline-none focus:border-ring" />
 				<button type="submit" disabled={busy || !newBranch.trim()} className="h-7 rounded-md bg-primary px-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-50">Create</button>
 			</form>}
-			<div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto">
+			<ScrollArea className="min-h-0 flex-1">
 				{review && !review.files.length && <p className="px-4 py-8 text-center text-[13px] text-muted-foreground">No changes. The working tree is clean.</p>}
 				{stagedFiles.length > 0 && <><Heading action={<Ghost label="Unstage all" disabled={busy} onClick={() => void run(async () => { for (const file of stagedFiles) await api!.gitCommand(id, { type: "unstage", filename: file.path }); setRefresh(value => value + 1); })}><Minus /></Ghost>}>Staged</Heading>
 					{stagedFiles.map(file => <FileRow key={`staged:${file.path}`} file={{ ...file, worktreeStatus: " " }} selected={selectedFile === file.path} busy={busy} onSelect={() => setSelectedFile(value => value === file.path ? undefined : file.path)} onCommand={command => void git(command)} />)}</>}
@@ -195,7 +196,7 @@ export function FilesPanel({ initialProjectId }: { initialProjectId?: string }) 
 							{review.diff && <DiffView patch={review.diff} layout={layout} context={{ projectId: id, staged: false, hash: review.diffHash }} onRefresh={() => setRefresh(value => value + 1)} />}
 						</div>}
 				</div>}
-			</div>
+			</ScrollArea>
 			{review && review.files.length > 0 && <form className="shrink-0 border-t border-border p-2" onSubmit={event => { event.preventDefault(); if (message.trim()) void git({ type: "commit", message }); }}>
 				<textarea aria-label="Commit message" rows={2} placeholder={stagedFiles.length ? "Commit message" : "Stage changes to commit"} value={message} onChange={event => setMessage(event.target.value)}
 					onKeyDown={event => { if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }}
@@ -215,14 +216,14 @@ export function FilesPanel({ initialProjectId }: { initialProjectId?: string }) 
 						: <><button type="button" disabled={busy} onClick={() => setDraft(undefined)} className="h-6 rounded px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">Discard</button>
 							<button type="button" disabled={busy || !dirty} onClick={save} className="h-6 rounded bg-primary px-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">Save</button></>}
 				</div>
-				<div className="scrollbar-thin min-h-0 flex-1 overflow-auto border-t border-border">
+				<ScrollArea className="min-h-0 flex-1 border-t border-border" scrollBarOrientation="both">
 					{draft === undefined
 						? <CodeBlock text={preview.text} language={preview.filename.split(".").at(-1)?.toLowerCase()} />
 						: <textarea aria-label={`Edit ${preview.filename}`} spellCheck={false} disabled={busy} value={draft} onChange={event => setDraft(event.target.value)} onKeyDown={event => { if ((event.ctrlKey || event.metaKey) && event.key === "s") { event.preventDefault(); save(); } }}
 							className="block h-full min-h-80 w-full resize-none bg-transparent p-3 font-mono text-xs leading-relaxed outline-none" />}
-				</div>
+				</ScrollArea>
 			</div>
-			: <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto py-1">
+			: <ScrollArea className="min-h-0 flex-1" viewportClassName="py-1">
 				<nav aria-label="Folder" className="flex flex-wrap items-center gap-0.5 px-3 py-1.5 text-xs text-muted-foreground">
 					<button type="button" onClick={() => setDirectory("")} className="hover:text-foreground">{project?.name ?? "Project"}</button>
 					{directory.split("/").filter(Boolean).map((part, index, parts) => <span key={index} className="flex items-center gap-0.5">/<button type="button" onClick={() => setDirectory(parts.slice(0, index + 1).join("/"))} className="hover:text-foreground">{part}</button></span>)}
@@ -231,6 +232,6 @@ export function FilesPanel({ initialProjectId }: { initialProjectId?: string }) 
 				{files.map(file => <button key={file.path} type="button" onClick={() => openFile(file)} className="mx-1.5 flex h-7 w-[calc(100%-12px)] items-center gap-2 rounded-md px-1.5 text-left text-[12.5px] hover:bg-muted/60">
 					{file.directory ? <Folder className="size-3.5 shrink-0 text-muted-foreground" /> : <File className="size-3.5 shrink-0 text-muted-foreground" />}<span className="truncate">{file.name}</span>
 				</button>)}
-			</div>)}
+			</ScrollArea>)}
 	</div>;
 }

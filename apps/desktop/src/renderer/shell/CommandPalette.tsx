@@ -1,5 +1,6 @@
 import { Code2, Columns3, FolderOpen, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Plus, Settings, SquareTerminal, Sun, UserRound, Files } from "lucide-react";
 import { errorText, useWorkspace } from "../app/workspace";
+import { ScrollArea } from "../components/ui/scroll-area";
 import { shortcutLabel } from "../lib/shortcuts";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandShortcut } from "../components/ui/command";
 import { StatusDot } from "./Sidebar";
@@ -13,7 +14,7 @@ export function CommandPalette() {
 	const projectName = (id?: string) => overview.projects.find(project => project.id === id)?.name;
 	return <CommandDialog open={commandsOpen} onOpenChange={setCommandsOpen} title="Search" description="Search chats and run commands" className="max-w-xl rounded-2xl! sm:max-w-xl">
 		<CommandInput autoFocus placeholder="Search chats and commands…" wrapperClassName="p-2" />
-		<CommandList className="max-h-[420px] p-1">
+		<ScrollArea className="max-h-[420px]" viewportClassName="max-h-[420px]"><CommandList className="max-h-none overflow-visible p-1">
 			<CommandEmpty>Nothing matches.</CommandEmpty>
 			<CommandGroup heading="Actions">
 				<CommandItem onSelect={() => run(() => select(undefined))}><Plus />New chat<CommandShortcut>{shortcutLabel("N")}</CommandShortcut></CommandItem>
@@ -46,6 +47,6 @@ export function CommandPalette() {
 					<StatusDot task={task} />
 				</CommandItem>)}
 			</CommandGroup>}
-		</CommandList>
+		</CommandList></ScrollArea>
 	</CommandDialog>;
 }

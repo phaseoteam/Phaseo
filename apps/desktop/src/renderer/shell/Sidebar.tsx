@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Archive, ChevronRight, Columns3, Ellipsis, FolderOpen, FolderPlus, LogIn, Pencil, Pin, PinOff, Plus, Settings } from "lucide-react";
+import { ScrollArea } from "../components/ui/scroll-area";
 import { chatDragType } from "../../shared/mentions";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { errorText, usablePhaseoAccounts, useWorkspace, type CompareGroup } from "../app/workspace";
@@ -168,7 +169,7 @@ export function Sidebar() {
 				<Plus className="size-4" />New chat<span className={cn("ml-auto text-[10.5px] font-medium", fresh ? "text-muted-foreground" : "text-primary-foreground/70")}>{shortcutLabel("N")}</span>
 			</button>
 		</div>
-		<nav className="scrollbar-thin min-h-0 flex-1 overflow-y-auto pb-3">{mode === "chat" ? <ChatList /> : <ProjectList />}</nav>
+		<ScrollArea className="min-h-0 flex-1"><nav className="pb-3">{mode === "chat" ? <ChatList /> : <ProjectList />}</nav></ScrollArea>
 		<AccountFooter />
 	</aside>;
 }

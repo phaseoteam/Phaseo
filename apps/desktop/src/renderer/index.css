@@ -138,11 +138,6 @@
 	-webkit-app-region: no-drag;
 }
 
-@utility scrollbar-thin {
-	scrollbar-width: thin;
-	scrollbar-color: color-mix(in oklch, var(--muted-foreground) 35%, transparent) transparent;
-}
-
 /* Conversation markdown. Overrides the legacy layer's message styles. */
 @layer components {
 	.message-markdown {
@@ -188,10 +183,8 @@
 		color: var(--muted-foreground);
 	}
 	.message-markdown table {
-		display: block;
+		display: table;
 		width: max-content;
-		max-width: 100%;
-		overflow-x: auto;
 		border-collapse: separate;
 		border-spacing: 0;
 		border: 1px solid var(--border);
@@ -254,7 +247,10 @@
 	.message-code-block pre {
 		margin: 0;
 		padding: 14px 16px;
-		overflow: auto;
+		/* The surrounding ScrollArea scrolls wide code. */
+		overflow: visible;
+		width: max-content;
+		min-width: 100%;
 		border: 0;
 		border-radius: 0;
 		background: color-mix(in oklch, var(--muted) 35%, var(--card));
@@ -368,3 +364,14 @@
 .composer-editor p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; height: 0; pointer-events: none; color: color-mix(in oklab, var(--muted-foreground) 80%, transparent); }
 .composer-editor .composer-chip { display: inline; }
 .composer-editor .ProseMirror-selectednode { outline: none; }
+
+/*
+ * Scrolling areas use the shadcn ScrollArea. The few that still scroll natively (legacy panels, the terminal,
+ * menus taller than the window, text areas) draw the same thin rounded thumb, with no track or arrows.
+ */
+::-webkit-scrollbar { width: 10px; height: 10px; background: transparent; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-button { display: none; }
+::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 9999px; background: var(--border) padding-box; }
+::-webkit-scrollbar-thumb:hover { background: color-mix(in oklab, var(--muted-foreground) 55%, transparent) padding-box; }
+.message-markdown .message-table-scroll { margin-block: 0.75em; }

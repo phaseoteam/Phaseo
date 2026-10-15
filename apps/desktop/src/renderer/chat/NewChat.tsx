@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { BookOpen, Box, Check, ChevronDown, Code2, FolderOpen, FolderPlus, Gauge, Lightbulb, ListChecks, PenLine, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
+import { ScrollArea } from "../components/ui/scroll-area";
 import type { Task } from "../../shared/workspace";
 import { errorText, usablePhaseoAccounts, useWorkspace } from "../app/workspace";
 import { useModelPreferences, type ModelSelection } from "../lib/modelPreferences";
@@ -155,7 +156,7 @@ export function NewChat() {
 		</DropdownMenuContent>
 	</DropdownMenu>;
 
-	return <div className="scrollbar-thin flex h-full flex-col items-center overflow-y-auto px-8">
+	return <ScrollArea className="h-full" viewportClassName="[&>div]:min-h-full [&>div]:flex [&>div]:flex-col"><div className="flex min-h-full flex-col items-center px-8">
 		<div className="flex w-full max-w-[720px] flex-1 flex-col justify-center gap-6 py-12">
 			<div className="text-center">
 				<h1 className="text-[28px] font-bold tracking-tight">{code ? "What should we build?" : greeting()}</h1>
@@ -194,5 +195,5 @@ export function NewChat() {
 			{code && !projects.length && <p className="text-center text-sm text-muted-foreground"><button type="button" onClick={addProject} className="font-semibold text-primary hover:underline">Open a folder</button> to give the agent a project to work in.</p>}
 			{code && <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground"><Code2 className="size-3.5" />Code chats can read and edit files, run commands and use your MCP tools.</p>}
 		</div>
-	</div>;
+	</div></ScrollArea>;
 }

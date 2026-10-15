@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ArrowLeft, Bell, Bot, CalendarClock, Gauge, Palette, Plug, Search, SlidersHorizontal, UserRound } from "lucide-react";
+import { ScrollArea } from "../components/ui/scroll-area";
 import { useWorkspace, type SettingsPage as Page } from "../app/workspace";
 import { cn } from "../lib/utils";
 import { GeneralSettings, NotificationSettings } from "./GeneralSettings";
@@ -66,7 +67,7 @@ export function SettingsPage() {
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
 	}, [closeSettings]);
-	return <div className="chat-settings-content scrollbar-thin h-full overflow-y-auto">
+	return <ScrollArea className="chat-settings-content h-full">
 		{settings === "general" && <GeneralSettings />}
 		{settings === "notifications" && <NotificationSettings />}
 		{settings === "usage" && <UsageSettings />}
@@ -76,5 +77,5 @@ export function SettingsPage() {
 		{/* MCP servers and Missions keep their own forms inside the shared page layout. */}
 		{settings === "mcp" && <div className="legacy-panel"><SettingsPageLayout title="MCP servers" description="Tools your chats can use, from Model Context Protocol servers."><McpConnections /></SettingsPageLayout></div>}
 		{settings === "missions" && <div className="legacy-panel"><SettingsPageLayout title="Missions" description="Chats that run on a schedule." wide><Missions onOpenTask={id => { select(id); }} onNewTask={() => select(undefined)} /></SettingsPageLayout></div>}
-	</div>;
+	</ScrollArea>;
 }

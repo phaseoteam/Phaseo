@@ -132,13 +132,6 @@
 .task-setup label:has(> input[type="checkbox"]), .account-form label:has(> input[type="checkbox"]) { flex-direction: row; align-items: center; }
 .task-setup :is(input:not([type="checkbox"]), select, textarea), .account-form :is(input:not([type="checkbox"]), select, textarea) { width: 100%; }
 .account-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; padding: var(--panel-padding); border-top: 1px solid var(--border); }
-.argument-fields { display: grid; grid-column: 1 / -1; gap: 10px; min-width: 0; margin: 0; padding: 0; border: 0; }
-.argument-fields legend { margin-bottom: 8px; padding: 0; font-size: 13px; }
-.argument-fields > p { margin: 0; color: var(--text-muted); font-size: 13px; line-height: 1.6; }
-.argument-row { display: flex; gap: 8px; min-width: 0; }
-.argument-row input { flex: 1; }
-.argument-row button { flex-shrink: 0; width: 32px; padding: 0; }
-.argument-fields .add-argument { justify-self: start; }
 .connection-editor > .task-error { margin: var(--panel-padding) var(--panel-padding) 0; }
 .connection-fields { min-width: 0; margin: 0; border: 0; }
 .account-form > button { justify-self: start; align-self: end; }
@@ -397,7 +390,7 @@ button { color: inherit; }
 .desktop-root { display: flex; width: 100%; height: 100%; flex-direction: column; background: var(--background); }
 .app-shell { display: flex; width: 100%; min-height: 0; flex: 1; background: var(--background); }
 .app-main { display: flex; min-width: 0; flex: 1; flex-direction: column; }
-.content-scroll { min-height: 0; flex: 1; overflow: auto; scrollbar-color: var(--border-strong) transparent; }
+.content-scroll { min-height: 0; flex: 1; overflow: auto; }
 .page { width: min(1120px, calc(100% - 64px)); margin: 0 auto; padding: 32px 0 48px; }
 .page > h1 { margin: 0 0 24px; font-size: 24px; font-weight: 600; letter-spacing: -.025em; }
 .page > p { color: var(--text-muted); margin: 0 0 24px; line-height: 1.6; }
@@ -493,7 +486,7 @@ button { color: inherit; }
 .sidebar-search { margin: 7px 0 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-subtle); }
 .sidebar-search span, .sidebar-item span { flex: 1; }
 .sidebar-search kbd { color: var(--text-subtle); font-family: inherit; font-size: 11px; }
-.sidebar-navigation { display: flex; min-height: 0; flex: 1; flex-direction: column; gap: 2px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+.sidebar-navigation { display: flex; min-height: 0; flex: 1; flex-direction: column; gap: 2px; overflow-y: auto; }
 .sidebar-navigation .sidebar-item { flex-shrink: 0; }
 .sidebar-item:hover { background: var(--surface-hover); color: var(--text); }
 .sidebar-item.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.06); }

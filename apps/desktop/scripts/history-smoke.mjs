@@ -117,7 +117,7 @@ try {
   await run(`window.__auditNavigate('Tasks')`);
   await wait(`${rows}.length===155`, "sidebar lists every active chat");
   if (!await run(`${rows}[0].textContent==='History 000'&&Array.from(document.querySelectorAll('aside[aria-label="Chats"] nav div')).some(value=>value.textContent==='Pinned')`)) throw new Error("Pinned history is not first.");
-  if (!await run(`(()=>{const list=document.querySelector('aside[aria-label="Chats"] nav');list.scrollTop=list.scrollHeight;const scrolled=list.scrollTop>0;const footer=document.querySelector('aside[aria-label="Chats"] button[aria-label="Settings"]').getBoundingClientRect();list.scrollTop=0;return scrolled&&footer.bottom<=innerHeight})()`)) throw new Error("Chat list must scroll independently and keep its footer.");
+  if (!await run(`(()=>{const list=document.querySelector('aside[aria-label="Chats"] nav').closest('[data-slot=scroll-area-viewport]');list.scrollTop=list.scrollHeight;const scrolled=list.scrollTop>0;const footer=document.querySelector('aside[aria-label="Chats"] button[aria-label="Settings"]').getBoundingClientRect();list.scrollTop=0;return scrolled&&footer.bottom<=innerHeight})()`)) throw new Error("Chat list must scroll independently and keep its footer.");
   // Selecting another chat before a slow detail read finishes keeps the newer selection.
   await run(`${rows}.find(row=>row.textContent==='History 001').click()`);
   for (let attempt = 0; attempt < 50 && !activeDetails.get("001"); attempt++) await new Promise(resolve => setTimeout(resolve, 10));

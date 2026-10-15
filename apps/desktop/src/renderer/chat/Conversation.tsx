@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowDown, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, Layers, ListChecks, LoaderCircle, Paperclip, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
+import { ScrollArea } from "../components/ui/scroll-area";
 import type { AgentActivity, Message, Task } from "../../shared/workspace";
 import { useConversationPage } from "../lib/useConversationPage";
 import { conversationTurns, turnDuration, type TurnEntry } from "../lib/conversationTurns";
@@ -76,7 +77,7 @@ function ActivityRow({ activity, live }: { activity: AgentActivity; live: boolea
 			{activity.status === "failed" && <X className="size-3.5 shrink-0 text-destructive" />}
 			{expandable && <ChevronRight className={cn("size-3.5 shrink-0 opacity-0 transition group-hover/activity:opacity-100", open && "rotate-90 opacity-100")} />}
 		</button>
-		{open && <div data-selectable className={cn("mt-0.5 mb-2 ml-[15px] max-h-72 overflow-auto border-l border-border py-0.5 pl-4", reasoning ? "text-[13px] text-muted-foreground" : "font-mono text-[11.5px] whitespace-pre-wrap")}>{reasoning ? <MessageContent text={activity.text} /> : activity.text}</div>}
+		{open && <ScrollArea className="mt-0.5 mb-2 ml-[15px] max-h-72 border-l border-border" viewportClassName="max-h-72"><div data-selectable className={cn("py-0.5 pl-4", reasoning ? "text-[13px] text-muted-foreground" : "font-mono text-[11.5px] whitespace-pre-wrap")}>{reasoning ? <MessageContent text={activity.text} /> : activity.text}</div></ScrollArea>}
 	</div>;
 }
 
@@ -188,7 +189,7 @@ export function Conversation({ task, onAttachment, onBranch, children, compact, 
 	}, []);
 
 	return <div className={cn("relative min-h-0 flex-1", className)}>
-		<div ref={host} onScroll={update} className="scrollbar-thin h-full overflow-y-auto" aria-live="polite">
+		<ScrollArea className="h-full" viewportRef={host} viewportProps={{ onScroll: update, "aria-live": "polite" }}>
 			<div ref={content} className={cn("mx-auto flex w-full flex-col gap-7 py-6", compact ? "px-4" : "max-w-[760px] px-6")}>
 				{messages.page.earlier > 0 && <button type="button" disabled={messages.loading} onClick={messages.older} className="self-center rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-muted">Load {messages.page.earlier} earlier messages</button>}
 				{activities.page.earlier > 0 && <button type="button" disabled={activities.loading} onClick={activities.older} className="self-center rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-muted">Load earlier activity</button>}
@@ -200,7 +201,7 @@ export function Conversation({ task, onAttachment, onBranch, children, compact, 
 				{messages.page.later > 0 && <button type="button" disabled={messages.loading} onClick={messages.newer} className="self-center rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-muted">Load newer messages</button>}
 				{children}
 			</div>
-		</div>
+		</ScrollArea>
 		{/* A window that stops short of the newest entries always offers the way back, even if the reader never scrolled. */}
 		{(showLatest || messages.page.later > 0 || activities.page.later > 0) && <button type="button" onClick={() => { following.current = true; messages.latest(); activities.latest(); if (host.current) host.current.scrollTop = host.current.scrollHeight; setShowLatest(false); }}
 			className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-popover px-3 py-1.5 text-xs font-medium shadow-md hover:bg-muted"><ArrowDown className="size-3.5" />Jump to latest</button>}
