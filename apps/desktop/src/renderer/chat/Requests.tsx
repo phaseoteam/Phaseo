@@ -30,10 +30,13 @@ function ApprovalCard({ title, description, onDecision }: { title?: string; desc
 		finally { inFlight.current = false; setPending(undefined); }
 	}
 	const fields = approvalFields(description);
+	// Text before the arguments, such as a warning that an interrupted action may already have run, stays visible.
+	const preface = fields ? description.slice(0, description.indexOf("{")).trim() : "";
 	const tool = title?.replace(/^mcp__[^_]+(?:_[^_]+)*?__/, "");
 	const heading = !title ? "Allow this action?" : /\s/.test(title) ? title : threadToolLabels[tool!] ?? `Allow ${tool}?`;
 	return <section aria-label="Approval needed" aria-busy={!!pending} className="border-l-2 border-warning py-1 pl-3.5">
 		<div className="flex items-center gap-2 text-[13px] font-semibold"><ShieldQuestion className="size-4 shrink-0 text-warning" />{heading}</div>
+		{preface && <p data-selectable className="mt-1.5 text-[13px] whitespace-pre-wrap text-foreground/85">{preface}</p>}
 		{fields
 			? <dl data-selectable className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[13px]">{fields.map(([key, value]) => <div key={key} className="contents"><dt className="text-muted-foreground">{key}</dt><dd className="min-w-0 break-words">{value}</dd></div>)}</dl>
 			: <pre data-selectable className="mt-1.5 max-h-48 overflow-auto font-mono text-[11.5px] whitespace-pre-wrap text-foreground/85">{description}</pre>}
