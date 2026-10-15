@@ -1,4 +1,6 @@
 import { threadToolLabel, type ThreadTools } from "../shared/orchestration";
+import { generateTitle } from "./chatTitles";
+import { mentionPlainText } from "../shared/mentions";
 import { randomUUID } from "node:crypto";
 import { autoSettleAt } from "../shared/threadLifecycle";
 import { mkdirSync, realpathSync } from "node:fs";
@@ -96,6 +98,23 @@ export class WorkspaceRuntime {
 		for (const id of new Set([...this.store.collectDelegationResults(), ...this.store.pendingDeliveryParents()])) if (worthWaking(id)) this.wake(id);
 	}
 	private readonly threads: WorkspaceThreads;
+	/** Names a chat with the title model (Settings → General), as T3 does; without one, the first message stays its title. A rename in the meantime wins. */
+	private async nameChat(id: string, regenerate: boolean) {
+		const model = this.store.getPreferences().titleModel;
+		if (!model) { if (regenerate) throw new Error("Choose a model for chat titles in Settings → General first."); return; }
+		const account = this.store.getAccounts().find(value => value.harness === "phaseo" && value.configured && !value.archived && value.endpoint && (!value.oauthExpiresAt || Date.parse(value.oauthExpiresAt) > Date.now()));
+		if (!account?.endpoint || !this.vault) { if (regenerate) throw new Error("Sign in to Phaseo to name chats with a model."); return; }
+		const task = this.store.getTask(id), before = task.title;
+		const text = task.messages.find(message => message.role === "user" && !message.delivery)?.text ?? task.queue[0]?.text;
+		if (!text) { if (regenerate) throw new Error("This chat has no message to name it from."); return; }
+		const reply = regenerate ? task.messages.findLast(message => message.role === "assistant")?.text : undefined;
+		try {
+			const title = await generateTitle({ endpoint: account.endpoint, token: await this.vault.get(account.secretId ?? account.id), model, text: mentionPlainText(text), reply });
+			const current = this.store.getTask(id);
+			if (!title || this.closing || (!regenerate && current.title !== before)) return;
+			current.title = title; this.store.saveTask(current, true); this.broadcast();
+		} catch (error) { if (regenerate) throw error; }
+	}
 	/** Deletes a chat and the agents it delegated to. Nothing may be running, and no scheduled task may run like it. */
 	private async deleteTask(id: string) {
 		this.store.getTask(id);
@@ -264,6 +283,8 @@ export class WorkspaceRuntime {
 	private async applyCommand(command: WorkspaceCommand): Promise<WorkspaceOverview> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		if (command.type === "delete-task") return this.deleteTask(command.id);
+		if (command.type === "regenerate-title") { await this.nameChat(command.id, true); return this.store.getOverview(); }
+		const firstMessage = command.type === "send" && this.store.getTask(command.id).title === "New task";
 		if (command.type === "reorder") { this.store.reorder(command.ids); this.broadcast(); return this.store.getOverview(); }
 		if ((command.type === "create-task" || command.type === "handoff") && command.projectId) this.assertProjectAvailable(command.projectId);
 		if (command.type === "send") for (const id of command.threadReferences ?? []) this.store.getTaskView(id);
@@ -386,6 +407,7 @@ export class WorkspaceRuntime {
 		if (command.type === "update-task" && command.archived === true)
 			for (const child of this.store.getOverview().tasks.filter(value => value.delegation?.parentTaskId === command.id && ["idle", "running", "waiting"].includes(value.status))) await this.command({ type: "cancel", id: child.id });
 		if (command.type === "send" || command.type === "resume" || command.type === "steer-queue") this.start(task.id);
+		if (firstMessage) void this.nameChat(task.id, false);
 		return this.store.getOverview();
 	}
 	private async steer(command: Extract<WorkspaceCommand, { type: "steer" }>): Promise<WorkspaceOverview> {

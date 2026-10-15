@@ -77,10 +77,26 @@ function GlobalInstructions() {
 	</SettingsSection>;
 }
 
+/** T3 names chats with a model; here it is a choice, because each title is a small request on the Phaseo account. */
+function ChatTitles({ preferences, save, disabled }: { preferences: WorkspacePreferences; save: (value: WorkspacePreferences) => Promise<void>; disabled: boolean }) {
+	const [byModel, setByModel] = useState(preferences.titleModel !== null);
+	const [error, setError] = useState("");
+	useEffect(() => { setByModel(preferences.titleModel !== null); }, [preferences.titleModel]);
+	return <>
+		<SettingsRow title="Chat titles" description={byModel ? "A model names each new chat from its first message, through your Phaseo account. Regenerate title in a chat's menu writes a new one." : "New chats are named after their first message."}
+			control={<Select label="Chat titles" disabled={disabled} value={byModel ? "model" : "first"} onValueChange={value => { setError(""); setByModel(value === "model"); if (value === "first" && preferences.titleModel !== null) void save({ ...preferences, titleModel: null }); }}
+				options={[{ value: "first", label: "First message" }, { value: "model", label: "Written by a model" }]} />} />
+		{byModel && <SettingsRow title="Title model" description={preferences.titleModel ? "A small, fast model is plenty." : "Choose a Phaseo model to write titles."}
+			control={<ModelPicker disabled={disabled} selections={preferences.titleModel ? [{ harness: "phaseo", model: preferences.titleModel }] : []}
+				onChange={values => { const next = values[0]; if (!next) return; if (next.harness !== "phaseo") { setError("Choose a Phaseo model: titles are written through your Phaseo account."); return; } setError(""); void save({ ...preferences, titleModel: next.model }); }} />} />}
+		{error && <SettingsNote tone="error" role="alert">{error}</SettingsNote>}
+	</>;
+}
+
 export function GeneralSettings() {
 	const { preferences, loading, busy, error, save, ready } = usePreferences();
 	return <SettingsPageLayout title="General">
-		<SettingsSection title="New chats"><DefaultModel /></SettingsSection>
+		<SettingsSection title="New chats"><DefaultModel /><ChatTitles preferences={preferences} save={save} disabled={!ready || busy} /></SettingsSection>
 		<SettingsSection title="Agents" description="Agents are chats your chats start to work in parallel." label="Agents">
 			<SettingsRow title="Agents running at once" description="The most agents working at the same time across the workspace. Each one is a separate model call, billed to your account."
 				control={<input type="number" min={1} max={256} step={1} aria-label="Agents running at once" key={preferences.maxActiveAgents} defaultValue={preferences.maxActiveAgents} disabled={!ready || busy}

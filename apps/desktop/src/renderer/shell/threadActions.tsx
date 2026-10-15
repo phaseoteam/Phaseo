@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlarmClock, AlarmClockOff, Archive, CircleCheck, Clock, Copy, Filter, Mail, Pencil, Pin, PinOff, Sparkles, SquarePen, Trash2, Undo2 } from "lucide-react";
+import { AlarmClock, AlarmClockOff, Archive, CircleCheck, Clock, Copy, Filter, Mail, Pencil, Pin, PinOff, Sparkles, SquarePen, Trash2, Undo2, WandSparkles } from "lucide-react";
 import { hasWoken, isSettled, isSnoozed, settleBlocker, snoozeBlocker, snoozePresets } from "../../shared/threadLifecycle";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { useWorkspace } from "../app/workspace";
@@ -55,6 +55,7 @@ export function useThreadActions() {
 			if (await run({ type: "update-task", id: task.id, archived: true })) offerUndo("Archived", () => run({ type: "update-task", id: task.id, archived: false }));
 		},
 		markUnread: (task: TaskOverview) => run({ type: "mark-unread", id: task.id }),
+		regenerateTitle: (task: TaskOverview) => run({ type: "regenerate-title", id: task.id }),
 		autoSettle: (task: TaskOverview, enabled: boolean) => run({ type: "auto-settle", id: task.id, enabled }),
 	};
 }
@@ -111,6 +112,7 @@ export function ThreadMenuItems({ task, scope, onScope, onRename, onDelete, onCu
 			</DropdownMenuSub>}
 		<DropdownMenuSeparator />
 		{onRename && <DropdownMenuItem onClick={onRename}><Pencil />Rename chat</DropdownMenuItem>}
+		<DropdownMenuItem onClick={() => void actions.regenerateTitle(task)}><WandSparkles />Regenerate title</DropdownMenuItem>
 		<TagMenu task={task} />
 		<DropdownMenuItem disabled={!task.lastCompletedAt} onClick={() => void actions.markUnread(task)}><Mail />Mark unread</DropdownMenuItem>
 		{onScope && project && <DropdownMenuItem onClick={() => onScope(scope ? "" : project.id)}><Filter />{scope ? "Show all projects" : `Filter by ${project.name}`}</DropdownMenuItem>}

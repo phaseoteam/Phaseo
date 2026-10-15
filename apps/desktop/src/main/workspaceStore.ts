@@ -341,7 +341,7 @@ export class WorkspaceStore {
 			this.saveTask(task); this.db.exec("COMMIT"); return task;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
 	}
-	apply(command: Exclude<WorkspaceCommand, { type: "add-account" | "update-account" | "add-agent" | "update-agent" | "reorder" }>, initialModels?: Task["nativeModels"]): Task {
+	apply(command: Exclude<WorkspaceCommand, { type: "add-account" | "update-account" | "add-agent" | "update-agent" | "reorder" | "regenerate-title" }>, initialModels?: Task["nativeModels"]): Task {
 		if (command.type === "handoff") {
 			const source = this.getTask(command.id);
 			if (source.status === "running" || source.status === "waiting") throw new Error("Stop this task before handing it off.");

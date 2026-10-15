@@ -31,7 +31,7 @@ describe("desktop task notifications", () => {
 	it("handles unsupported systems and operating-system failures without affecting tasks", () => {
 		const { service, ports, workspace } = fixture(); ports.supported.mockReturnValue(false); workspace.tasks[0].status = "failed"; service.update(workspaceOverview(workspace)); expect(ports.show).not.toHaveBeenCalled(); ports.supported.mockReturnValue(true); ports.show.mockImplementation(() => { throw new Error("OS unavailable"); }); workspace.tasks[0].status = "interrupted"; expect(() => service.update(workspaceOverview(workspace))).not.toThrow(); expect(workspace.tasks[0].status).toBe("interrupted");
 	});
-	it("rejects unsupported preferences and defaults to private, disabled alerts", () => { expect(defaultPreferences).toEqual({ notifications: "off", notificationTitles: false, maxActiveAgents: 32, autoSettleAfterDays: 3 }); expect(() => validatePreferences({ notifications: "all", notificationTitles: "true" })).toThrow(); });
+	it("rejects unsupported preferences and defaults to private, disabled alerts", () => { expect(defaultPreferences).toEqual({ notifications: "off", notificationTitles: false, maxActiveAgents: 32, autoSettleAfterDays: 3, titleModel: null }); expect(() => validatePreferences({ notifications: "all", notificationTitles: "true" })).toThrow(); });
 	it("defaults a missing agent limit and accepts only whole numbers from 1 to 256", () => {
 		expect(validatePreferences({ notifications: "off", notificationTitles: false })).toEqual(defaultPreferences);
 		expect(validatePreferences({ ...defaultPreferences, maxActiveAgents: 1 }).maxActiveAgents).toBe(1); expect(validatePreferences({ ...defaultPreferences, maxActiveAgents: 256 }).maxActiveAgents).toBe(256);
