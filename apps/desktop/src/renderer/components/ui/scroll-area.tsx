@@ -44,8 +44,9 @@ function ScrollArea({
           viewportClassName
         )}
       >
-        {/* Content reports its own size changes, so the thumb follows content that grows or shrinks in place. */}
-        <ScrollAreaPrimitive.Content>{children}</ScrollAreaPrimitive.Content>
+        {/* Content reports its own size changes, so the thumb follows content that grows or shrinks in place.
+            Base UI sizes it to fit its content; vertical lists take the viewport's width instead, so text truncates and wraps. */}
+        <ScrollAreaPrimitive.Content style={scrollBarOrientation === "vertical" ? { minWidth: 0 } : undefined}>{children}</ScrollAreaPrimitive.Content>
       </ScrollAreaPrimitive.Viewport>
       {scrollBarOrientation === "both" ? (
         <>

@@ -229,7 +229,7 @@ export class WorkspaceStore {
 		const tasks = this.db.prepare(`SELECT json_object(
 			'id', id, 'title', json_extract(data, '$.title'), 'harness', json_extract(data, '$.harness'),
 			'model', json_extract(data, '$.model'), 'mode', json_extract(data, '$.mode'), 'status', json_extract(data, '$.status'),
-			'pinned', coalesce(json_extract(data, '$.pinned'), 0), 'archived', coalesce(json_extract(data, '$.archived'), 0),
+			'pinned', coalesce(json_extract(data, '$.pinned'), 0), 'tags', json_extract(data, '$.tags'), 'archived', coalesce(json_extract(data, '$.archived'), 0),
 			'createdAt', json_extract(data, '$.createdAt'), 'updatedAt', json_extract(data, '$.updatedAt'), 'revision', json_extract(data, '$.revision'),
 			'projectId', json_extract(data, '$.projectId'), 'accountId', json_extract(data, '$.accountId'), 'agentId', json_extract(data, '$.agentId'),
 			'parentId', json_extract(data, '$.parentId'), 'delegation', json_extract(data, '$.delegation'), 'launch', json_extract(data, '$.launch'), 'missionId', json_extract(data, '$.missionId'), 'inboxReadAt', json_extract(data, '$.inboxReadAt'),
@@ -365,6 +365,7 @@ export class WorkspaceStore {
 				}
 				if (command.title !== undefined) task.title = command.title;
 				if (command.pinned !== undefined) task.pinned = command.pinned;
+				if (command.tags !== undefined) task.tags = command.tags.length ? command.tags : undefined;
 				if (command.archived !== undefined) {
 					if (task.status === "running" || task.status === "waiting") throw new Error("Stop this task before archiving it.");
 					task.archived = command.archived;

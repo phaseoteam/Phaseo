@@ -11,6 +11,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { SettingsNav } from "../settings/SettingsPage";
 import { ModelStack } from "../chat/ModelPicker";
 import { useScheduledTasks } from "../views/ScheduledTasks";
+import { TagChip, TagDots, TagMenu } from "../components/Tags";
+import { tagsInUse } from "../../shared/tags";
 
 const dayMs = 86_400_000;
 function dateBucket(iso: string, now = new Date()) {
@@ -50,6 +52,7 @@ function RowMenu({ task, onRename }: { task: TaskOverview; onRename: () => void 
 		<DropdownMenuContent align="start" className="w-44">
 			<DropdownMenuItem onClick={onRename}><Pencil />Rename</DropdownMenuItem>
 			<DropdownMenuItem onClick={() => void command({ type: "update-task", id: task.id, pinned: !task.pinned })}>{task.pinned ? <PinOff /> : <Pin />}{task.pinned ? "Unpin" : "Pin"}</DropdownMenuItem>
+			<TagMenu task={task} />
 			<DropdownMenuSeparator />
 			<DropdownMenuItem onClick={() => void command({ type: "update-task", id: task.id, archived: !task.archived })}><Archive />{task.archived ? "Unarchive" : "Archive"}</DropdownMenuItem>
 		</DropdownMenuContent>
@@ -71,6 +74,7 @@ function ChatRow({ task, indent, showModel, showTime = true }: { task: TaskOverv
 				onBlur={event => { const title = event.target.value.trim(); setRenaming(false); if (title && title !== task.title) void command({ type: "update-task", id: task.id, title }); }}
 				onKeyDown={event => { event.stopPropagation(); if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") setRenaming(false); }} />
 			: <span className="min-w-0 flex-1 truncate">{task.title}</span>}
+		{!renaming && <TagDots tags={task.tags} />}
 		{showModel && busy && <StatusDot task={task} />}
 		{showTime && !renaming && <span className="text-[11px] text-muted-foreground group-hover/row:hidden">{relative(task.updatedAt)}</span>}
 		{!renaming && <RowMenu task={task} onRename={() => setRenaming(true)} />}
@@ -95,17 +99,26 @@ function CompareRow({ group }: { group: CompareGroup }) {
 function ChatList() {
 	const { overview, compareGroups } = useWorkspace();
 	const grouped = useMemo(() => new Set(compareGroups.flatMap(group => group.taskIds)), [compareGroups]);
-	const chats = overview.tasks.filter(task => !task.projectId && !task.delegation?.parentTaskId && !task.archived && !grouped.has(task.id));
+	const all = overview.tasks.filter(task => !task.projectId && !task.delegation?.parentTaskId && !task.archived && !grouped.has(task.id));
+	const tags = useMemo(() => tagsInUse(all), [all]);
+	const [filter, setFilter] = usePersistedState("phaseo.desktop.chatTagFilter", "");
+	const active = tags.find(tag => tag.toLowerCase() === filter.toLowerCase());
+	const chats = active ? all.filter(task => task.tags?.some(tag => tag.toLowerCase() === active.toLowerCase())) : all;
+	const groups = active ? [] : compareGroups;
 	const pinned = chats.filter(task => task.pinned);
 	type Item = { kind: "task"; task: TaskOverview; at: string } | { kind: "compare"; group: CompareGroup; at: string };
 	const items: Item[] = [
 		...chats.filter(task => !task.pinned).map(task => ({ kind: "task" as const, task, at: task.updatedAt })),
-		...compareGroups.map(group => ({ kind: "compare" as const, group, at: group.taskIds.map(id => overview.tasks.find(task => task.id === id)?.updatedAt ?? group.createdAt).sort().at(-1)! })),
+		...groups.map(group => ({ kind: "compare" as const, group, at: group.taskIds.map(id => overview.tasks.find(task => task.id === id)?.updatedAt ?? group.createdAt).sort().at(-1)! })),
 	].sort((a, b) => b.at.localeCompare(a.at));
 	const buckets = new Map<string, Item[]>();
 	for (const item of items) { const key = dateBucket(item.at); buckets.set(key, [...buckets.get(key) ?? [], item]); }
-	if (!chats.length && !compareGroups.length) return <p className="px-4 py-6 text-center text-xs text-muted-foreground">Your chats will appear here.</p>;
+	if (!all.length && !compareGroups.length) return <p className="px-4 py-6 text-center text-xs text-muted-foreground">Your chats will appear here.</p>;
 	return <>
+		{tags.length > 0 && <div role="group" aria-label="Filter chats by tag" className="flex flex-wrap gap-1 px-3 pt-2 pb-1">
+			{tags.slice(0, 12).map(tag => <TagChip key={tag} tag={tag} active={tag === active} onClick={() => setFilter(tag === active ? "" : tag)} className="h-5.5 px-1.5 text-[11px]" />)}
+		</div>}
+		{active && !chats.length && <p className="px-4 py-4 text-xs text-muted-foreground">No open chats tagged {active}.</p>}
 		{pinned.length > 0 && <><SectionLabel>Pinned</SectionLabel>{pinned.map(task => <ChatRow key={task.id} task={task} showModel showTime={false} />)}</>}
 		{[...buckets].map(([label, values]) => <div key={label}>
 			<SectionLabel>{label}</SectionLabel>
@@ -170,11 +183,37 @@ function ScheduledTasksLink() {
 	</button>;
 }
 
+const sidebarWidths = { min: 200, max: 480, default: 256 };
+
+/** The sidebar's frame: its width is dragged from the right edge and remembered. */
+function SidebarFrame({ label, children }: { label: string; children: ReactNode }) {
+	const [width, setWidth] = usePersistedState("phaseo.desktop.sidebarWidth", sidebarWidths.default);
+	const [dragging, setDragging] = useState(false);
+	const clamp = (value: number) => Math.round(Math.min(sidebarWidths.max, Math.max(sidebarWidths.min, value)));
+	return <aside aria-label={label} style={{ width: clamp(width) }} className="relative flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+		{children}
+		<div role="separator" aria-orientation="vertical" aria-label="Resize sidebar" aria-valuemin={sidebarWidths.min} aria-valuemax={sidebarWidths.max} aria-valuenow={clamp(width)} tabIndex={0} title="Drag to resize, double-click to reset"
+			onPointerDown={event => {
+				if (event.button !== 0) return;
+				event.preventDefault();
+				const start = event.clientX, from = clamp(width), target = event.currentTarget;
+				target.setPointerCapture(event.pointerId); setDragging(true);
+				const move = (next: PointerEvent) => setWidth(clamp(from + next.clientX - start));
+				const end = () => { setDragging(false); target.removeEventListener("pointermove", move); target.removeEventListener("pointerup", end); target.removeEventListener("pointercancel", end); };
+				target.addEventListener("pointermove", move); target.addEventListener("pointerup", end); target.addEventListener("pointercancel", end);
+			}}
+			onDoubleClick={() => setWidth(sidebarWidths.default)}
+			onKeyDown={event => { const step = event.shiftKey ? 32 : 8; if (event.key === "ArrowLeft") { event.preventDefault(); setWidth(clamp(width - step)); } if (event.key === "ArrowRight") { event.preventDefault(); setWidth(clamp(width + step)); } }}
+			className={cn("absolute inset-y-0 -right-1 z-20 w-2 cursor-col-resize outline-none after:absolute after:inset-y-0 after:left-1/2 after:w-px after:-translate-x-1/2 after:transition-colors hover:after:bg-ring/60 focus-visible:after:bg-ring", dragging && "after:bg-ring")} />
+		{dragging && <div className="fixed inset-0 z-50 cursor-col-resize" />}
+	</aside>;
+}
+
 export function Sidebar() {
 	const { mode, select, selectedId, compareId, setNewChatProjectId, settings, scheduled } = useWorkspace();
 	const fresh = !selectedId && !compareId && !scheduled;
-	if (settings) return <aside aria-label="Settings" className="flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground"><SettingsNav /></aside>;
-	return <aside aria-label={mode === "chat" ? "Chats" : "Projects"} className="flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+	if (settings) return <SidebarFrame label="Settings"><SettingsNav /></SidebarFrame>;
+	return <SidebarFrame label={mode === "chat" ? "Chats" : "Projects"}>
 		<div className="p-2.5">
 			<button type="button" onClick={() => { if (mode === "chat") setNewChatProjectId(""); select(undefined); }}
 				className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] font-semibold transition-colors", fresh ? "bg-sidebar-accent text-foreground" : "bg-primary text-primary-foreground hover:bg-primary/85")}>
@@ -184,5 +223,5 @@ export function Sidebar() {
 		</div>
 		<ScrollArea className="min-h-0 flex-1"><nav className="pb-3">{mode === "chat" ? <ChatList /> : <ProjectList />}</nav></ScrollArea>
 		<AccountFooter />
-	</aside>;
+	</SidebarFrame>;
 }

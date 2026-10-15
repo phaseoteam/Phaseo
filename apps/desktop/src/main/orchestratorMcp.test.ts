@@ -25,7 +25,7 @@ describe("orchestration MCP transport", () => {
 		} finally { await client.close(); await server.close(); }
 	});
 	it("publishes launch and schedule schemas and asks before archiving only", async () => {
-		const organize = vi.fn(async (id: string) => ({ id, title: "Chat", harness: "codex" as const, model: "owned", status: "completed" as const, pinned: true, archived: false }));
+		const organize = vi.fn(async (id: string) => ({ id, title: "Chat", harness: "codex" as const, model: "owned", status: "completed" as const, pinned: true, archived: false, tags: [] as string[] }));
 		const service: ThreadTools = { list: () => [], read: vi.fn(), delegate: vi.fn(), wait: vi.fn(), interrupt: vi.fn(), organize, launch: vi.fn() };
 		const server = new OrchestratorMcp(), approve = vi.fn(async () => false);
 		const session = await server.session(service, approve);

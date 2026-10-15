@@ -1,6 +1,7 @@
 import type { Account, Harness, ModelOption, Task, WorkspaceCommand } from "../shared/workspace";
 import { agentLimitMessage, type AgentCatalog, type AgentCatalogAccount, type AgentCatalogModel, type DelegateRequest, type LaunchRequest, type LaunchResult, type LaunchWorkspace, type ScheduledTask, type ThreadTools, waitDefaultMs, waitMaximumMs } from "../shared/orchestration";
 import { validateMissionCommand, type Mission, type MissionCommand } from "../shared/missions";
+import { tagsInUse } from "../shared/tags";
 import type { WorkspaceOverview } from "../shared/workspaceOverview";
 import type { WorkspaceStore } from "./workspaceStore";
 import { validateDelegate } from "./threadTools";
@@ -239,7 +240,7 @@ export class WorkspaceThreads {
 		return { caller, command };
 	}
 	forThread(parentId: string): ThreadTools {
-		const summary = (task: Pick<Task, "id" | "title" | "harness" | "model" | "status" | "parentId"> & { error?: string }) => ({ id: task.id, title: task.title, harness: task.harness, model: task.model, status: task.status, parentId: task.parentId, error: task.error });
+		const summary = (task: Pick<Task, "id" | "title" | "harness" | "model" | "status" | "parentId"> & { error?: string; tags?: string[] }) => ({ id: task.id, title: task.title, harness: task.harness, model: task.model, status: task.status, parentId: task.parentId, error: task.error, ...(task.tags?.length ? { tags: task.tags } : {}) });
 		/** Owned: a child this chat delegated, forked or handed off, plus, where `launched`, a top-level chat it launched. */
 		const scoped = (id: string, childOnly = false, launched = false) => {
 			const task = this.host.store.getTask(id);
@@ -329,11 +330,12 @@ export class WorkspaceThreads {
 				// Folder names only: full paths stay private to the desktop.
 				return this.host.store.getProjects().filter(project => !query || `${project.name} ${folder(project.directory)}`.toLowerCase().includes(query.toLowerCase())).slice(0, 200).map(project => ({ id: project.id, name: project.name, directory: folder(project.directory), ...(project.id === current ? { current: true } : {}), ...(project.worktree ? { worktree: { branch: project.worktree.branch, baseCommit: project.worktree.baseCommit, sourceProjectId: project.worktree.sourceProjectId } } : {}), ...(project.worktree?.removedAt ? { removed: true } : {}) }));
 			},
-			organize: async (id, action, title) => {
+			organize: async (id, action, title, tags) => {
 				const task = id === parentId ? this.host.store.getTask(id) : scoped(id, true, true);
 				if (this.host.isClosing()) throw new Error("The workspace is shutting down.");
 				if (action === "rename") { if (!title?.trim() || title.length > 100) throw new Error("Invalid chat title."); await this.host.command({ type: "update-task", id, title }); }
 				else if (action === "pin" || action === "unpin") await this.host.command({ type: "update-task", id, pinned: action === "pin" });
+				else if (action === "tag") await this.host.command({ type: "update-task", id, tags: tags ?? [] });
 				else if (action === "unarchive") await this.host.command({ type: "update-task", id, archived: false });
 				else {
 					if (id === parentId) throw new Error("A chat cannot archive itself; ask the user to archive it.");
@@ -341,7 +343,7 @@ export class WorkspaceThreads {
 					if (task.status === "running" || task.status === "waiting" || (task.status === "idle" && task.queue.length)) await this.host.command({ type: "cancel", id });
 					await this.host.command({ type: "update-task", id, archived: true });
 				}
-				const current = this.host.store.getTask(id); return { ...summary(current), pinned: current.pinned, archived: current.archived };
+				const current = this.host.store.getTask(id); return { ...summary(current), pinned: current.pinned, archived: current.archived, tags: current.tags ?? [], ...(action === "tag" ? { tagsInUse: tagsInUse(this.host.store.getOverview().tasks).slice(0, 50) } : {}) };
 			},
 			scheduled: () => this.host.store.missions.list().slice(0, 100).map(scheduledTask),
 			schedule: async request => {

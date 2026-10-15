@@ -104,6 +104,14 @@ Type `@` anywhere in a message to mention a chat or a file. You can also drag a 
 
 Messages and replies show the same chips: file paths and `@path` mentions open in your editor, links show the site or the GitHub pull request or issue, and chat mentions open the chat. Code blocks, version numbers, emails and paths inside sentences like `and/or` stay as text.
 
+## Tags and navigation
+
+Tag a chat from its header (Add tag, or + next to its tags) or from Tags in its sidebar menu: type to find a tag or create one with Enter. A chat has up to 8 tags of up to 24 characters; each tag keeps one colour everywhere. In Chat, the tags in use sit above the chat list: pick one to show only chats with it, and pick it again to show everything. Sidebar rows show up to three tag dots. Agents tag their own chat with `organize_thread` (action `tag`) once the topic is clear, reusing tags already in use and keeping yours.
+
+A conversation with three or more questions that does not fit on screen shows the same navigation rail as the web chat on its left edge: one mark per question, the current one bright. Hover to preview the question and the start of its answer, and click to jump there.
+
+Drag the sidebar's right edge to resize it (200–480 pixels; double-click to reset, or focus the edge and use the arrow keys).
+
 ## Scheduled tasks
 
 **Scheduled tasks**, under New chat at the top of the sidebar, lists chats that start themselves while Phaseo is open: at a time of day (every day, or on chosen days, in this computer's timezone) or every few minutes or hours. Each one runs like a chat you pick, with that chat's account, agent, model, project and permissions, and every run is a fresh chat listed under the task. New ones start paused; the switch turns them on, and Run now starts one immediately. Missed runs are skipped. Agents can schedule tasks from a chat with `schedule_task`, and those start turned on.

@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowDown, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, Layers, ListChecks, LoaderCircle, Paperclip, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
+import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
 import type { AgentActivity, Message, Task } from "../../shared/workspace";
 import { useConversationPage } from "../lib/useConversationPage";
 import { conversationTurns, turnDuration, type TurnEntry } from "../lib/conversationTurns";
@@ -125,7 +126,7 @@ function Turn({ user, entries, live, complete, task, onAttachment, onBranch, com
 	const usage = turnUsage(user ? task.activities?.filter(activity => activity.type === "usage" && activity.id.startsWith(`${user.id}:`)) ?? [] : []);
 	const canBranch = !["running", "waiting"].includes(task.status) && !task.archived;
 	const hasAssistant = work.length > 0 || !!final || live;
-	return <div className="flex flex-col gap-4">
+	return <div data-turn-id={user && user.delivery !== "subagent" ? user.id : undefined} className="flex flex-col gap-4">
 		{user && (user.delivery === "subagent" ? <AgentResult message={user} projectId={task.projectId} /> : <UserMessage message={user} projectId={task.projectId} onAttachment={onAttachment} onBranch={onBranch} canBranch={canBranch} />)}
 		{hasAssistant && <div data-conversation-id={`turn:${user?.id ?? entries[0]?.value.id}`} className="group/turn flex flex-col gap-3">
 			{!compact && <AssistantHeader task={task} />}
@@ -150,10 +151,14 @@ export function Conversation({ task, onAttachment, onBranch, children, compact, 
 	const [showLatest, setShowLatest] = useState(false);
 	const messages = useConversationPage(task, "messages", following, remember);
 	const activities = useConversationPage(task, "activities", following, remember);
-	const turns = conversationTurns(messages.page.entries as Message[], activities.page.entries as AgentActivity[]);
+	const turns = useMemo(() => conversationTurns(messages.page.entries as Message[], activities.page.entries as AgentActivity[]), [messages.page.entries, activities.page.entries]);
 	const activeTurn = task.messages.findLast(message => message.role === "user")?.id;
 	const running = ["running", "waiting"].includes(task.status);
 	const view = { ...task, messages: messages.page.entries as Message[], activities: activities.page.entries as AgentActivity[] };
+	const railTurns = useMemo<RailTurn[]>(() => turns.flatMap(turn => !turn.user || turn.user.delivery === "subagent" ? [] : [{
+		id: turn.user.id, user: turn.user.text, attachments: turn.user.attachments?.map(attachment => attachment.name) ?? [],
+		assistant: turn.entries.findLast(entry => entry.kind === "message" && entry.value.role === "assistant" && entry.value.delivery !== "subagent")?.value.text,
+	}]), [turns]);
 
 	function remember() {
 		const element = host.current;
@@ -202,6 +207,7 @@ export function Conversation({ task, onAttachment, onBranch, children, compact, 
 				{children}
 			</div>
 		</ScrollArea>
+		{!compact && <MessageNavigationRail turns={railTurns} viewport={host} onNavigate={() => { following.current = false; }} />}
 		{/* A window that stops short of the newest entries always offers the way back, even if the reader never scrolled. */}
 		{(showLatest || messages.page.later > 0 || activities.page.later > 0) && <button type="button" onClick={() => { following.current = true; messages.latest(); activities.latest(); if (host.current) host.current.scrollTop = host.current.scrollHeight; setShowLatest(false); }}
 			className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-popover px-3 py-1.5 text-xs font-medium shadow-md hover:bg-muted"><ArrowDown className="size-3.5" />Jump to latest</button>}

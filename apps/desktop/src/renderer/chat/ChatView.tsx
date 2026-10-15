@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Archive, Box, CornerLeftUp, Download, Ellipsis, FolderOpen, Gauge, GitBranch, Layers, ListChecks, Paperclip, PenLine, Pin, PinOff, Plug, RotateCcw, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { TagEditor } from "../components/Tags";
 import type { AccountStatus, Attachment, Task } from "../../shared/workspace";
 import { errorText, useWorkspace } from "../app/workspace";
 import { useSelectedTask } from "../lib/useSelectedTask";
@@ -43,6 +44,7 @@ function ChatHeader({ task }: { task: Task }) {
 				onBlur={event => { const title = event.target.value.trim(); setRenaming(false); if (title && title !== task.title) void command({ type: "update-task", id: task.id, title }); }}
 				onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") setRenaming(false); }} />
 			: <button type="button" title="Rename" onClick={() => setRenaming(true)} className="min-w-0 truncate rounded-md px-1.5 py-0.5 text-sm font-semibold hover:bg-muted">{task.title}</button>}
+		{!renaming && <TagEditor task={snapshot ?? task} />}
 		{project && <span className="flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 text-[11.5px] text-muted-foreground"><FolderOpen className="size-3.5" />{project.name}{project.worktree && <span className="font-mono">⎇ {project.worktree.branch}</span>}</span>}
 		<div className="ml-auto flex items-center gap-1.5">
 			{snapshot && (snapshot.status !== "completed" && snapshot.status !== "idle" || snapshot.approvalsCount > 0) && <span className="flex h-6 items-center gap-1.5 rounded-full border border-border px-2.5 text-[11.5px] text-muted-foreground"><StatusDot task={snapshot} />{snapshot.approvalsCount || snapshot.answersCount ? "Needs your input" : snapshot.status === "running" ? "Working" : snapshot.status === "waiting" ? "Waiting" : snapshot.status === "limited" ? "Usage limit reached" : snapshot.status === "interrupted" ? "Interrupted" : snapshot.status === "failed" ? "Failed" : ""}</span>}

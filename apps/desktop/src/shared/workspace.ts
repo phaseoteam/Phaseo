@@ -17,6 +17,7 @@ import type { ConversationPage, ConversationPageQuery } from "./conversationPage
 import type { WorkspaceOverview } from "./workspaceOverview";
 import type { EditorInstallation, ProjectOpenRequest } from "./editors";
 import type { PlanStep } from "./planSteps";
+import { normalizeTags } from "./tags";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -49,6 +50,8 @@ export type Task = {
 	authInputId?: string;
 	permissionMode?: "supervised" | "full-access";
 	model: string; mode: "chat" | "code" | "plan"; status: TaskStatus; pinned: boolean;
+	/** Labels for grouping and filtering chats, set by the person or the chat's agent. */
+	tags?: string[];
 	archived: boolean; messages: Message[]; queue: QueuedMessage[]; nativeSessionId?: string;
 	parentId?: string; nativeForkFrom?: string; createdAt: string; updatedAt: string; error?: string;
 	handoffFrom?: Harness;
@@ -89,7 +92,7 @@ export type WorkspaceCommand =
 	| { type: "update-agent"; id: string; name?: string; executable?: string; arguments?: string[]; archived?: boolean }
 	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues }
 	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues }
-	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; model?: string; mode?: Task["mode"]; permissionMode?: Task["permissionMode"]; serviceTier?: string; reasoningEffort?: string; nativeMode?: string; modelOptions?: ModelOptionValues }
+	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; tags?: string[]; model?: string; mode?: Task["mode"]; permissionMode?: Task["permissionMode"]; serviceTier?: string; reasoningEffort?: string; nativeMode?: string; modelOptions?: ModelOptionValues }
 	| { type: "send"; id: string; text: string; threadReferences?: string[]; attachments?: string[]; nativeAction?: NativeAction }
 	| { type: "steer"; id: string; text: string; attachments?: string[] }
 	| { type: "steer-queue" | "steer-discard"; id: string; messageId: string }
@@ -243,6 +246,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				if (command.mode !== undefined && !["chat", "code", "plan"].includes(command.mode as string)) throw new Error("Invalid task mode.");
 				validateModelOptions(command.modelOptions);
 				for (const key of ["pinned", "archived"]) if (command[key] !== undefined && typeof command[key] !== "boolean") throw new Error(`Invalid ${key}.`);
+				if (command.tags !== undefined) command.tags = normalizeTags(command.tags);
 				break;
 			case "send": case "steer":
 				if (command.threadReferences !== undefined && (command.type !== "send" || !Array.isArray(command.threadReferences) || command.threadReferences.length > 10 || command.threadReferences.some(id => typeof id !== "string" || !/^[a-f0-9-]{36}$/.test(id)))) throw new Error("Invalid chat references.");
