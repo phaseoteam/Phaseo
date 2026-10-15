@@ -1,15 +1,3951 @@
 [
   {
+    "api_model_id": "alibaba/wan2.6-i2v",
+    "provider_api_model_id": "meganova:Alibaba/wan2.6-i2v",
+    "provider_model_slug": "Alibaba/wan2.6-i2v",
+    "internal_model_id": "alibaba/wan2.6-i2v",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "video"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "videos_generations"
+      ],
+      "endpoint": "/v1/videos/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Alibaba/wan2.6-i2v"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "alibaba/wan2.6-i2v-flash",
+    "provider_api_model_id": "meganova:Alibaba/wan2.6-i2v-flash",
+    "provider_model_slug": "Alibaba/wan2.6-i2v-flash",
+    "internal_model_id": "alibaba/wan2.6-i2v-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "video"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "videos_generations"
+      ],
+      "endpoint": "/v1/videos/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Alibaba/wan2.6-i2v-flash"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "alibaba/wan2.6-r2v",
+    "provider_api_model_id": "meganova:Alibaba/wan2.6-r2v",
+    "provider_model_slug": "Alibaba/wan2.6-r2v",
+    "internal_model_id": "alibaba/wan2.6-r2v",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "video"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "videos_generations"
+      ],
+      "endpoint": "/v1/videos/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Alibaba/wan2.6-r2v"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "alibaba/wan2.6-r2v-flash",
+    "provider_api_model_id": "meganova:Alibaba/wan2.6-r2v-flash",
+    "provider_model_slug": "Alibaba/wan2.6-r2v-flash",
+    "internal_model_id": "alibaba/wan2.6-r2v-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "video"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "videos_generations"
+      ],
+      "endpoint": "/v1/videos/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Alibaba/wan2.6-r2v-flash"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "alibaba/wan2.6-t2v",
+    "provider_api_model_id": "meganova:Alibaba/wan2.6-t2v",
+    "provider_model_slug": "Alibaba/wan2.6-t2v",
+    "internal_model_id": "alibaba/wan2.6-t2v",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "video"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "videos_generations"
+      ],
+      "endpoint": "/v1/videos/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Alibaba/wan2.6-t2v"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "alibaba/z-image-turbo",
+    "provider_api_model_id": "meganova:Alibaba/z-image-turbo",
+    "provider_model_slug": "Alibaba/z-image-turbo",
+    "internal_model_id": "alibaba/z-image-turbo",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "images_generations"
+      ],
+      "endpoint": "/v1/images/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Alibaba/z-image-turbo"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "anthropic/claude-haiku-4.5",
+    "provider_api_model_id": "meganova:anthropic/claude-haiku-4-5-20251001",
+    "provider_model_slug": "anthropic/claude-haiku-4-5-20251001",
+    "internal_model_id": "anthropic/claude-haiku-4.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: anthropic/claude-haiku-4-5-20251001"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "anthropic/claude-opus-4",
+    "provider_api_model_id": "meganova:anthropic/claude-opus-4-20250514",
+    "provider_model_slug": "anthropic/claude-opus-4-20250514",
+    "internal_model_id": "anthropic/claude-opus-4",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: anthropic/claude-opus-4-20250514"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "anthropic/claude-opus-4.5",
+    "provider_api_model_id": "meganova:anthropic/claude-opus-4-5-20251101",
+    "provider_model_slug": "anthropic/claude-opus-4-5-20251101",
+    "internal_model_id": "anthropic/claude-opus-4.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: anthropic/claude-opus-4-5-20251101"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "anthropic/claude-opus-4.6",
+    "provider_api_model_id": "meganova:anthropic/claude-opus-4-6",
+    "provider_model_slug": "anthropic/claude-opus-4-6",
+    "internal_model_id": "anthropic/claude-opus-4.6",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: anthropic/claude-opus-4-6"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "anthropic/claude-opus-4.7",
+    "provider_api_model_id": "meganova:anthropic/claude-opus-4-7",
+    "provider_model_slug": "anthropic/claude-opus-4-7",
+    "internal_model_id": "anthropic/claude-opus-4.7",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: anthropic/claude-opus-4-7"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "anthropic/claude-sonnet-4.5",
+    "provider_api_model_id": "meganova:anthropic/claude-sonnet-4-5-20250929",
+    "provider_model_slug": "anthropic/claude-sonnet-4-5-20250929",
+    "internal_model_id": "anthropic/claude-sonnet-4.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: anthropic/claude-sonnet-4-5-20250929"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "anthropic/claude-sonnet-4.6",
+    "provider_api_model_id": "meganova:anthropic/claude-sonnet-4-6",
+    "provider_model_slug": "anthropic/claude-sonnet-4-6",
+    "internal_model_id": "anthropic/claude-sonnet-4.6",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: anthropic/claude-sonnet-4-6"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "baai/bge-reranker-v2-m3",
+    "provider_api_model_id": "meganova:BAAI/bge-reranker-v2-m3",
+    "provider_model_slug": "BAAI/bge-reranker-v2-m3",
+    "internal_model_id": "baai/bge-reranker-v2-m3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "score",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.rerank",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "score"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "embeddings"
+      ],
+      "endpoint": "/v1/embeddings",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: BAAI/bge-reranker-v2-m3"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "bruhzwater/sapphira-l3.3-70b-0.1",
+    "provider_api_model_id": "meganova:BruhzWater/Sapphira-L3.3-70b-0.1",
+    "provider_model_slug": "BruhzWater/Sapphira-L3.3-70b-0.1",
+    "internal_model_id": "bruhzwater/sapphira-l3.3-70b-0.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: BruhzWater/Sapphira-L3.3-70b-0.1"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "bytedance/seedream-3-0-t2i-250415",
+    "provider_api_model_id": "meganova:Bytedance/seedream-3-0-t2i-250415",
+    "provider_model_slug": "Bytedance/seedream-3-0-t2i-250415",
+    "internal_model_id": "bytedance/seedream-3-0-t2i-250415",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "images_generations"
+      ],
+      "endpoint": "/v1/images/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Bytedance/seedream-3-0-t2i-250415"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "bytedance/seedream-4-0-250828",
+    "provider_api_model_id": "meganova:Bytedance/seedream-4-0-250828",
+    "provider_model_slug": "Bytedance/seedream-4-0-250828",
+    "internal_model_id": "bytedance/seedream-4-0-250828",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "images_generations"
+      ],
+      "endpoint": "/v1/images/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Bytedance/seedream-4-0-250828"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "bytedance/seedream-4.5",
+    "provider_api_model_id": "meganova:Bytedance/seedream-4-5-251128",
+    "provider_model_slug": "Bytedance/seedream-4-5-251128",
+    "internal_model_id": "bytedance/seedream-4.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "images_generations"
+      ],
+      "endpoint": "/v1/images/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Bytedance/seedream-4-5-251128"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "bytedance/seedream-5-0-lite-260128",
+    "provider_api_model_id": "meganova:Bytedance/seedream-5-0-lite-260128",
+    "provider_model_slug": "Bytedance/seedream-5-0-lite-260128",
+    "internal_model_id": "bytedance/seedream-5-0-lite-260128",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "images_generations"
+      ],
+      "endpoint": "/v1/images/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Bytedance/seedream-5-0-lite-260128"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "bytedance/seedance-1-0-lite-i2v-250428",
+    "provider_api_model_id": "meganova:Byteplus/seedance-1-0-lite-i2v-250428",
+    "provider_model_slug": "Byteplus/seedance-1-0-lite-i2v-250428",
+    "internal_model_id": "bytedance/seedance-1-0-lite-i2v-250428",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "video"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "videos_generations"
+      ],
+      "endpoint": "/v1/videos/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Byteplus/seedance-1-0-lite-i2v-250428"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "bytedance/seedance-1-0-lite-t2v-250428",
+    "provider_api_model_id": "meganova:Byteplus/seedance-1-0-lite-t2v-250428",
+    "provider_model_slug": "Byteplus/seedance-1-0-lite-t2v-250428",
+    "internal_model_id": "bytedance/seedance-1-0-lite-t2v-250428",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "video"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "videos_generations"
+      ],
+      "endpoint": "/v1/videos/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Byteplus/seedance-1-0-lite-t2v-250428"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "bytedance/seedance-1-0-pro-250528",
+    "provider_api_model_id": "meganova:Byteplus/seedance-1-0-pro-250528",
+    "provider_model_slug": "Byteplus/seedance-1-0-pro-250528",
+    "internal_model_id": "bytedance/seedance-1-0-pro-250528",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "video"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "videos_generations"
+      ],
+      "endpoint": "/v1/videos/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Byteplus/seedance-1-0-pro-250528"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "deepseek/deepseek-r1-2025-05-28",
+    "provider_api_model_id": "meganova:deepseek-ai/DeepSeek-R1-0528",
+    "provider_model_slug": "deepseek-ai/DeepSeek-R1-0528",
+    "internal_model_id": "deepseek/deepseek-r1-2025-05-28",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: deepseek-ai/DeepSeek-R1-0528"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v3-2025-03-24",
+    "provider_api_model_id": "meganova:deepseek-ai/DeepSeek-V3-0324",
+    "provider_model_slug": "deepseek-ai/DeepSeek-V3-0324",
+    "internal_model_id": "deepseek/deepseek-v3-2025-03-24",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: deepseek-ai/DeepSeek-V3-0324"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v3-0324-free",
+    "provider_api_model_id": "meganova:deepseek-ai/DeepSeek-V3-0324-Free",
+    "provider_model_slug": "deepseek-ai/DeepSeek-V3-0324-Free",
+    "internal_model_id": "deepseek/deepseek-v3-0324-free",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: deepseek-ai/DeepSeek-V3-0324-Free"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v3.1",
+    "provider_api_model_id": "meganova:deepseek-ai/DeepSeek-V3.1",
+    "provider_model_slug": "deepseek-ai/DeepSeek-V3.1",
+    "internal_model_id": "deepseek/deepseek-v3.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: deepseek-ai/DeepSeek-V3.1"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v3.2",
+    "provider_api_model_id": "meganova:deepseek-ai/DeepSeek-V3.2",
+    "provider_model_slug": "deepseek-ai/DeepSeek-V3.2",
+    "internal_model_id": "deepseek/deepseek-v3.2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: deepseek-ai/DeepSeek-V3.2"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v3.2-exp",
+    "provider_api_model_id": "meganova:deepseek-ai/DeepSeek-V3.2-Exp",
+    "provider_model_slug": "deepseek-ai/DeepSeek-V3.2-Exp",
+    "internal_model_id": "deepseek/deepseek-v3.2-exp",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: deepseek-ai/DeepSeek-V3.2-Exp"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "fallenmerick/mn-violet-lotus-12b",
+    "provider_api_model_id": "meganova:FallenMerick/MN-Violet-Lotus-12B",
+    "provider_model_slug": "FallenMerick/MN-Violet-Lotus-12B",
+    "internal_model_id": "fallenmerick/mn-violet-lotus-12b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: FallenMerick/MN-Violet-Lotus-12B"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-2.5-flash",
+    "provider_api_model_id": "meganova:gemini/gemini-2.5-flash",
+    "provider_model_slug": "gemini/gemini-2.5-flash",
+    "internal_model_id": "google/gemini-2.5-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: gemini/gemini-2.5-flash"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-2.5-flash-image",
+    "provider_api_model_id": "meganova:gemini/gemini-2.5-flash-image",
+    "provider_model_slug": "gemini/gemini-2.5-flash-image",
+    "internal_model_id": "google/gemini-2.5-flash-image",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "images_generations"
+      ],
+      "endpoint": "/v1/images/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: gemini/gemini-2.5-flash-image"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-2.5-flash-image-edit",
+    "provider_api_model_id": "meganova:gemini/gemini-2.5-flash-image-edit",
+    "provider_model_slug": "gemini/gemini-2.5-flash-image-edit",
+    "internal_model_id": "google/gemini-2.5-flash-image-edit",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "images_generations"
+      ],
+      "endpoint": "/v1/images/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: gemini/gemini-2.5-flash-image-edit"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-2.5-flash-lite",
+    "provider_api_model_id": "meganova:gemini/gemini-2.5-flash-lite",
+    "provider_model_slug": "gemini/gemini-2.5-flash-lite",
+    "internal_model_id": "google/gemini-2.5-flash-lite",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: gemini/gemini-2.5-flash-lite"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-2.5-flash-tts",
+    "provider_api_model_id": "meganova:gemini/gemini-2.5-flash-tts",
+    "provider_model_slug": "gemini/gemini-2.5-flash-tts",
+    "internal_model_id": "google/gemini-2.5-flash-tts",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "audio"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "audio_speech"
+      ],
+      "endpoint": "/v1/audio/speech",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: gemini/gemini-2.5-flash-tts"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-2.5-pro",
+    "provider_api_model_id": "meganova:gemini/gemini-2.5-pro",
+    "provider_model_slug": "gemini/gemini-2.5-pro",
+    "internal_model_id": "google/gemini-2.5-pro",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: gemini/gemini-2.5-pro"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-2.5-pro-tts",
+    "provider_api_model_id": "meganova:gemini/gemini-2.5-pro-tts",
+    "provider_model_slug": "gemini/gemini-2.5-pro-tts",
+    "internal_model_id": "google/gemini-2.5-pro-tts",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "audio"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "audio_speech"
+      ],
+      "endpoint": "/v1/audio/speech",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: gemini/gemini-2.5-pro-tts"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-3-flash-preview",
+    "provider_api_model_id": "meganova:gemini/gemini-3-flash-preview",
+    "provider_model_slug": "gemini/gemini-3-flash-preview",
+    "internal_model_id": "google/gemini-3-flash-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: gemini/gemini-3-flash-preview"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-3-pro-image-edit",
+    "provider_api_model_id": "meganova:gemini/gemini-3-pro-image-edit",
+    "provider_model_slug": "gemini/gemini-3-pro-image-edit",
+    "internal_model_id": "google/gemini-3-pro-image-edit",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "images_generations"
+      ],
+      "endpoint": "/v1/images/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: gemini/gemini-3-pro-image-edit"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-3-pro-image-preview",
+    "provider_api_model_id": "meganova:gemini/gemini-3-pro-image-preview",
+    "provider_model_slug": "gemini/gemini-3-pro-image-preview",
+    "internal_model_id": "google/gemini-3-pro-image-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "images_generations"
+      ],
+      "endpoint": "/v1/images/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: gemini/gemini-3-pro-image-preview"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-3.1-flash-image-preview",
+    "provider_api_model_id": "meganova:gemini/gemini-3.1-flash-image-preview",
+    "provider_model_slug": "gemini/gemini-3.1-flash-image-preview",
+    "internal_model_id": "google/gemini-3.1-flash-image-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "images_generations"
+      ],
+      "endpoint": "/v1/images/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: gemini/gemini-3.1-flash-image-preview"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-3.1-flash-lite-preview",
+    "provider_api_model_id": "meganova:gemini/gemini-3.1-flash-lite-preview",
+    "provider_model_slug": "gemini/gemini-3.1-flash-lite-preview",
+    "internal_model_id": "google/gemini-3.1-flash-lite-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: gemini/gemini-3.1-flash-lite-preview"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-3.1-pro-preview",
+    "provider_api_model_id": "meganova:gemini/gemini-3.1-pro-preview",
+    "provider_model_slug": "gemini/gemini-3.1-pro-preview",
+    "internal_model_id": "google/gemini-3.1-pro-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: gemini/gemini-3.1-pro-preview"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemma-4-31b",
+    "provider_api_model_id": "meganova:google/gemma-4-31b-it",
+    "provider_model_slug": "google/gemma-4-31b-it",
+    "internal_model_id": "google/gemma-4-31b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: google/gemma-4-31b-it"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/veo-3.1-fast-preview",
+    "provider_api_model_id": "meganova:Google/veo-3.1-fast-generate-preview",
+    "provider_model_slug": "Google/veo-3.1-fast-generate-preview",
+    "internal_model_id": "google/veo-3.1-fast-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "video"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "videos_generations"
+      ],
+      "endpoint": "/v1/videos/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Google/veo-3.1-fast-generate-preview"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/veo-3.1-fast-generate-preview-i2v",
+    "provider_api_model_id": "meganova:Google/veo-3.1-fast-generate-preview-i2v",
+    "provider_model_slug": "Google/veo-3.1-fast-generate-preview-i2v",
+    "internal_model_id": "google/veo-3.1-fast-generate-preview-i2v",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "video"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "videos_generations"
+      ],
+      "endpoint": "/v1/videos/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Google/veo-3.1-fast-generate-preview-i2v"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/veo-3.1-preview",
+    "provider_api_model_id": "meganova:Google/veo-3.1-generate-preview",
+    "provider_model_slug": "Google/veo-3.1-generate-preview",
+    "internal_model_id": "google/veo-3.1-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "video"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "videos_generations"
+      ],
+      "endpoint": "/v1/videos/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Google/veo-3.1-generate-preview"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/veo-3.1-generate-preview-i2v",
+    "provider_api_model_id": "meganova:Google/veo-3.1-generate-preview-i2v",
+    "provider_model_slug": "Google/veo-3.1-generate-preview-i2v",
+    "internal_model_id": "google/veo-3.1-generate-preview-i2v",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "video"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "videos_generations"
+      ],
+      "endpoint": "/v1/videos/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Google/veo-3.1-generate-preview-i2v"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "lykon/dreamshaper-8",
+    "provider_api_model_id": "meganova:Lykon/dreamshaper-8",
+    "provider_model_slug": "Lykon/dreamshaper-8",
+    "internal_model_id": "lykon/dreamshaper-8",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "images_generations"
+      ],
+      "endpoint": "/v1/images/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Lykon/dreamshaper-8"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "meganova-ai/manta-flash-1.0",
+    "provider_api_model_id": "meganova:meganova-ai/manta-flash-1.0",
+    "provider_model_slug": "meganova-ai/manta-flash-1.0",
+    "internal_model_id": "meganova-ai/manta-flash-1.0",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: meganova-ai/manta-flash-1.0"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "meganova-ai/manta-mini-1.0",
+    "provider_api_model_id": "meganova:meganova-ai/manta-mini-1.0",
+    "provider_model_slug": "meganova-ai/manta-mini-1.0",
+    "internal_model_id": "meganova-ai/manta-mini-1.0",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: meganova-ai/manta-mini-1.0"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "meganova-ai/manta-pro-1.0",
+    "provider_api_model_id": "meganova:meganova-ai/manta-pro-1.0",
+    "provider_model_slug": "meganova-ai/manta-pro-1.0",
+    "internal_model_id": "meganova-ai/manta-pro-1.0",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: meganova-ai/manta-pro-1.0"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "meta/llama-3.3-70b",
+    "provider_api_model_id": "meganova:meta-llama/Llama-3.3-70B-Instruct",
+    "provider_model_slug": "meta-llama/Llama-3.3-70B-Instruct",
+    "internal_model_id": "meta/llama-3.3-70b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: meta-llama/Llama-3.3-70B-Instruct"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "minimax/minimax-m2.1",
+    "provider_api_model_id": "meganova:MiniMaxAI/MiniMax-M2.1",
+    "provider_model_slug": "MiniMaxAI/MiniMax-M2.1",
+    "internal_model_id": "minimax/minimax-m2.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: MiniMaxAI/MiniMax-M2.1"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "minimax/minimax-m2.5",
+    "provider_api_model_id": "meganova:MiniMaxAI/MiniMax-M2.5",
+    "provider_model_slug": "MiniMaxAI/MiniMax-M2.5",
+    "internal_model_id": "minimax/minimax-m2.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: MiniMaxAI/MiniMax-M2.5"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "minimax/minimax-m2.7",
+    "provider_api_model_id": "meganova:MiniMaxAI/MiniMax-M2.7",
+    "provider_model_slug": "MiniMaxAI/MiniMax-M2.7",
+    "internal_model_id": "minimax/minimax-m2.7",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: MiniMaxAI/MiniMax-M2.7"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "mistral/mistral-nemo-2407",
+    "provider_api_model_id": "meganova:mistralai/Mistral-Nemo-Instruct-2407",
+    "provider_model_slug": "mistralai/Mistral-Nemo-Instruct-2407",
+    "internal_model_id": "mistral/mistral-nemo-2407",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: mistralai/Mistral-Nemo-Instruct-2407"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "mistral/mistral-small-3.2",
+    "provider_api_model_id": "meganova:mistralai/Mistral-Small-3.2-24B-Instruct-2506",
+    "provider_model_slug": "mistralai/Mistral-Small-3.2-24B-Instruct-2506",
+    "internal_model_id": "mistral/mistral-small-3.2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: mistralai/Mistral-Small-3.2-24B-Instruct-2506"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "mistral/mistral-small-4-119b-2603",
+    "provider_api_model_id": "meganova:mistralai/Mistral-Small-4-119B-2603",
+    "provider_model_slug": "mistralai/Mistral-Small-4-119B-2603",
+    "internal_model_id": "mistral/mistral-small-4-119b-2603",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: mistralai/Mistral-Small-4-119B-2603"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "moonshotai/kimi-k2-thinking",
-    "provider_api_model_id": "meganova:moonshotai/kimi-k2-thinking",
-    "provider_model_slug": "moonshotai/kimi-k2-thinking",
+    "provider_api_model_id": "meganova:moonshotai/Kimi-K2-Thinking",
+    "provider_model_slug": "moonshotai/Kimi-K2-Thinking",
     "internal_model_id": "moonshotai/kimi-k2-thinking",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
     "capabilities": [
@@ -17,13 +3953,17 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": true,
-        "tool_call": true,
+        "reasoning": null,
+        "tool_call": null,
         "structured_output": null,
-        "temperature": null,
+        "temperature": true,
         "attachment": false,
-        "input_modalities": null,
-        "output_modalities": null,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
         "modes": []
       }
     ],
@@ -37,38 +3977,42 @@
         "global"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "tier_2_plus"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "models.dev",
-        "url": "https://models.dev/api.json",
-        "accessed_at": "2026-07-23T09:08:52.190Z",
-        "notes": "Provider model slug: moonshotai/kimi-k2-thinking"
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: moonshotai/Kimi-K2-Thinking"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-07-23T09:08:52.190Z",
-      "notes": "Provider support imported from models.dev; routing remains disabled."
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "moonshotai/kimi-k2.5",
-    "provider_api_model_id": "meganova:moonshotai/kimi-k2.5",
-    "provider_model_slug": "moonshotai/kimi-k2.5",
+    "provider_api_model_id": "meganova:moonshotai/Kimi-K2.5",
+    "provider_model_slug": "moonshotai/Kimi-K2.5",
     "internal_model_id": "moonshotai/kimi-k2.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
     "capabilities": [
@@ -76,13 +4020,18 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": true,
-        "tool_call": true,
+        "reasoning": null,
+        "tool_call": null,
         "structured_output": null,
-        "temperature": null,
-        "attachment": false,
-        "input_modalities": null,
-        "output_modalities": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
         "modes": []
       }
     ],
@@ -96,38 +4045,1060 @@
         "global"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "tier_2_plus"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "models.dev",
-        "url": "https://models.dev/api.json",
-        "accessed_at": "2026-07-23T09:08:52.190Z",
-        "notes": "Provider model slug: moonshotai/kimi-k2.5"
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: moonshotai/Kimi-K2.5"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-07-23T09:08:52.190Z",
-      "notes": "Provider support imported from models.dev; routing remains disabled."
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-4-turbo",
+    "provider_api_model_id": "meganova:openai/gpt-4-turbo",
+    "provider_model_slug": "openai/gpt-4-turbo",
+    "internal_model_id": "openai/gpt-4-turbo",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: openai/gpt-4-turbo"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-4o-mini",
+    "provider_api_model_id": "meganova:openai/gpt-4o-mini",
+    "provider_model_slug": "openai/gpt-4o-mini",
+    "internal_model_id": "openai/gpt-4o-mini",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: openai/gpt-4o-mini"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-5",
+    "provider_api_model_id": "meganova:openai/gpt-5",
+    "provider_model_slug": "openai/gpt-5",
+    "internal_model_id": "openai/gpt-5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: openai/gpt-5"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-5-mini",
+    "provider_api_model_id": "meganova:openai/gpt-5-mini",
+    "provider_model_slug": "openai/gpt-5-mini",
+    "internal_model_id": "openai/gpt-5-mini",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: openai/gpt-5-mini"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-5-nano",
+    "provider_api_model_id": "meganova:openai/gpt-5-nano",
+    "provider_model_slug": "openai/gpt-5-nano",
+    "internal_model_id": "openai/gpt-5-nano",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: openai/gpt-5-nano"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-5.1",
+    "provider_api_model_id": "meganova:openai/gpt-5.1",
+    "provider_model_slug": "openai/gpt-5.1",
+    "internal_model_id": "openai/gpt-5.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: openai/gpt-5.1"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-5.2",
+    "provider_api_model_id": "meganova:openai/gpt-5.2",
+    "provider_model_slug": "openai/gpt-5.2",
+    "internal_model_id": "openai/gpt-5.2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: openai/gpt-5.2"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-5.3-chat",
+    "provider_api_model_id": "meganova:openai/gpt-5.3-chat",
+    "provider_model_slug": "openai/gpt-5.3-chat",
+    "internal_model_id": "openai/gpt-5.3-chat",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: openai/gpt-5.3-chat"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-5.3-codex",
+    "provider_api_model_id": "meganova:openai/gpt-5.3-codex",
+    "provider_model_slug": "openai/gpt-5.3-codex",
+    "internal_model_id": "openai/gpt-5.3-codex",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: openai/gpt-5.3-codex"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-5.4",
+    "provider_api_model_id": "meganova:openai/gpt-5.4",
+    "provider_model_slug": "openai/gpt-5.4",
+    "internal_model_id": "openai/gpt-5.4",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: openai/gpt-5.4"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen2.5-vl-32b",
+    "provider_api_model_id": "meganova:Qwen/Qwen2.5-VL-32B-Instruct",
+    "provider_model_slug": "Qwen/Qwen2.5-VL-32B-Instruct",
+    "internal_model_id": "qwen/qwen2.5-vl-32b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Qwen/Qwen2.5-VL-32B-Instruct"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-235b-a22b-2507",
+    "provider_api_model_id": "meganova:Qwen/Qwen3-235B-A22B-Instruct-2507",
+    "provider_model_slug": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+    "internal_model_id": "qwen/qwen3-235b-a22b-2507",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Qwen/Qwen3-235B-A22B-Instruct-2507"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-embedding-8b",
+    "provider_api_model_id": "meganova:Qwen/Qwen3-Embedding-8B",
+    "provider_model_slug": "Qwen/Qwen3-Embedding-8B",
+    "internal_model_id": "qwen/qwen3-embedding-8b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embedding",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "embedding"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "embeddings"
+      ],
+      "endpoint": "/v1/embeddings",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Qwen/Qwen3-Embedding-8B"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-vl-flash",
+    "provider_api_model_id": "meganova:Qwen/Qwen3-VL-Flash",
+    "provider_model_slug": "Qwen/Qwen3-VL-Flash",
+    "internal_model_id": "qwen/qwen3-vl-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Qwen/Qwen3-VL-Flash"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-vl-plus",
+    "provider_api_model_id": "meganova:Qwen/Qwen3-VL-Plus",
+    "provider_model_slug": "Qwen/Qwen3-VL-Plus",
+    "internal_model_id": "qwen/qwen3-vl-plus",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Qwen/Qwen3-VL-Plus"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3.5-plus",
-    "provider_api_model_id": "meganova:qwen/qwen3.5-plus",
-    "provider_model_slug": "qwen/qwen3.5-plus",
+    "provider_api_model_id": "meganova:Qwen/Qwen3.5-Plus",
+    "provider_model_slug": "Qwen/Qwen3.5-Plus",
     "internal_model_id": "qwen/qwen3.5-plus",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": "text,image,video",
+    "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": 1000000,
-    "max_output_tokens": 65536,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
     "capabilities": [
@@ -135,13 +5106,18 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": true,
-        "tool_call": true,
+        "reasoning": null,
+        "tool_call": null,
         "structured_output": null,
-        "temperature": null,
-        "attachment": false,
-        "input_modalities": null,
-        "output_modalities": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
         "modes": []
       }
     ],
@@ -155,24 +5131,1170 @@
         "global"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "tier_2_plus"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "models.dev",
-        "url": "https://models.dev/api.json",
-        "accessed_at": "2026-07-23T09:08:52.190Z",
-        "notes": "Provider model slug: qwen/qwen3.5-plus"
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Qwen/Qwen3.5-Plus"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-07-23T09:08:52.190Z",
-      "notes": "Provider support imported from models.dev; routing remains disabled."
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.6-plus",
+    "provider_api_model_id": "meganova:Qwen/Qwen3.6-Plus",
+    "provider_model_slug": "Qwen/Qwen3.6-Plus",
+    "internal_model_id": "qwen/qwen3.6-plus",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Qwen/Qwen3.6-Plus"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "sao10k/l3-70b-euryale-v2.1",
+    "provider_api_model_id": "meganova:Sao10K/L3-70B-Euryale-v2.1",
+    "provider_model_slug": "Sao10K/L3-70B-Euryale-v2.1",
+    "internal_model_id": "sao10k/l3-70b-euryale-v2.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Sao10K/L3-70B-Euryale-v2.1"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "sao10k/l3-8b-stheno-v3.2",
+    "provider_api_model_id": "meganova:Sao10K/L3-8B-Stheno-v3.2",
+    "provider_model_slug": "Sao10K/L3-8B-Stheno-v3.2",
+    "internal_model_id": "sao10k/l3-8b-stheno-v3.2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Sao10K/L3-8B-Stheno-v3.2"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "sao10k/l3.1-70b-euryale-v2.2",
+    "provider_api_model_id": "meganova:Sao10K/L3.1-70B-Euryale-v2.2",
+    "provider_model_slug": "Sao10K/L3.1-70B-Euryale-v2.2",
+    "internal_model_id": "sao10k/l3.1-70b-euryale-v2.2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Sao10K/L3.1-70B-Euryale-v2.2"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "sao10k/l3.3-70b-euryale-v2.3",
+    "provider_api_model_id": "meganova:Sao10K/L3.3-70B-Euryale-v2.3",
+    "provider_model_slug": "Sao10K/L3.3-70B-Euryale-v2.3",
+    "internal_model_id": "sao10k/l3.3-70b-euryale-v2.3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Sao10K/L3.3-70B-Euryale-v2.3"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "steelskull/l3.3-ms-nevoria-70b",
+    "provider_api_model_id": "meganova:Steelskull/L3.3-MS-Nevoria-70b",
+    "provider_model_slug": "Steelskull/L3.3-MS-Nevoria-70b",
+    "internal_model_id": "steelskull/l3.3-ms-nevoria-70b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Steelskull/L3.3-MS-Nevoria-70b"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "systran/faster-whisper-large-v3",
+    "provider_api_model_id": "meganova:Systran/faster-whisper-large-v3",
+    "provider_model_slug": "Systran/faster-whisper-large-v3",
+    "internal_model_id": "systran/faster-whisper-large-v3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.transcription",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": [
+          "audio"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "audio_transcriptions"
+      ],
+      "endpoint": "/v1/audio/transcriptions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: Systran/faster-whisper-large-v3"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "thedrummer/cydonia-24b-v4.1",
+    "provider_api_model_id": "meganova:TheDrummer/Cydonia-24B-v4.1",
+    "provider_model_slug": "TheDrummer/Cydonia-24B-v4.1",
+    "internal_model_id": "thedrummer/cydonia-24b-v4.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: TheDrummer/Cydonia-24B-v4.1"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-4-fast",
+    "provider_api_model_id": "meganova:x-ai/grok-4-fast",
+    "provider_model_slug": "x-ai/grok-4-fast",
+    "internal_model_id": "spacex-ai/grok-4-fast",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: x-ai/grok-4-fast"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "xiaomi/mimo-v2-flash",
+    "provider_api_model_id": "meganova:XiaomiMiMo/MiMo-V2-Flash",
+    "provider_model_slug": "XiaomiMiMo/MiMo-V2-Flash",
+    "internal_model_id": "xiaomi/mimo-v2-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: XiaomiMiMo/MiMo-V2-Flash"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "xiaomi/mimo-v2-omni",
+    "provider_api_model_id": "meganova:XiaomiMiMo/MiMo-V2-Omni",
+    "provider_model_slug": "XiaomiMiMo/MiMo-V2-Omni",
+    "internal_model_id": "xiaomi/mimo-v2-omni",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: XiaomiMiMo/MiMo-V2-Omni"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "xiaomi/mimo-v2-pro",
+    "provider_api_model_id": "meganova:XiaomiMiMo/MiMo-V2-Pro",
+    "provider_model_slug": "XiaomiMiMo/MiMo-V2-Pro",
+    "internal_model_id": "xiaomi/mimo-v2-pro",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: XiaomiMiMo/MiMo-V2-Pro"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-4.6",
+    "provider_api_model_id": "meganova:zai-org/GLM-4.6",
+    "provider_model_slug": "zai-org/GLM-4.6",
+    "internal_model_id": "z-ai/glm-4.6",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: zai-org/GLM-4.6"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-4.7",
+    "provider_api_model_id": "meganova:zai-org/GLM-4.7",
+    "provider_model_slug": "zai-org/GLM-4.7",
+    "internal_model_id": "z-ai/glm-4.7",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: zai-org/GLM-4.7"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-4.7-flash",
+    "provider_api_model_id": "meganova:zai-org/GLM-4.7-Flash",
+    "provider_model_slug": "zai-org/GLM-4.7-Flash",
+    "internal_model_id": "z-ai/glm-4.7-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: zai-org/GLM-4.7-Flash"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5",
+    "provider_api_model_id": "meganova:zai-org/GLM-5",
+    "provider_model_slug": "zai-org/GLM-5",
+    "internal_model_id": "z-ai/glm-5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: zai-org/GLM-5"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.1",
+    "provider_api_model_id": "meganova:zai-org/GLM-5.1",
+    "provider_model_slug": "zai-org/GLM-5.1",
+    "internal_model_id": "z-ai/glm-5.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "tier_2_plus"
+    ],
+    "api": {
+      "formats": [
+        "chat_completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.meganova.ai/inference-models/model-list.md",
+        "accessed_at": "2026-08-24T03:00:00Z",
+        "notes": "Exact MegaNova model ID: zai-org/GLM-5.1"
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T03:00:00Z",
+      "notes": "Verified in MegaNova’s official model list; Phaseo routing remains disabled."
     },
     "rate_limits": []
   }

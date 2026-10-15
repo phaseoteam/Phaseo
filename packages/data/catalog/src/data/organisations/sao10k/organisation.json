@@ -1,0 +1,28 @@
+{
+  "organisation_id": "sao10k",
+  "name": "Sao10K",
+  "country_code": "SG",
+  "description": "Sao10K publishes open model fine-tunes focused on creative writing and roleplay.",
+  "colour": null,
+  "organisation_links": [
+    {
+      "platform": "hugging_face",
+      "url": "https://huggingface.co/Sao10K"
+    }
+  ],
+  "status": "active",
+  "routable": null,
+  "sources": [
+    {
+      "kind": "repository",
+      "url": "https://huggingface.co/Sao10K",
+      "accessed_at": "2026-08-20T00:00:00Z",
+      "notes": "Creator profile for the Novita-hosted Sao10K models."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-20T00:00:00Z",
+    "notes": "Organisation identity verified from its model repository profile."
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "key": "meganova:alibaba/wan2.6-i2v:video.generate",
+  "api_provider_id": "meganova",
+  "provider_slug": "meganova",
+  "api_model_id": "alibaba/wan2.6-i2v",
+  "capability_id": "video.generate",
+  "rules": [
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.1,
+      "currency": "USD",
+      "pricing_plan": "tier_2_plus",
+      "note": "Official base per-second rate; documented resolution, audio, and duration multipliers may apply.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://docs.meganova.ai/inference-models/model-list.md"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "tier_2_plus"
+  ],
+  "sources": [
+    {
+      "kind": "official_documentation",
+      "url": "https://docs.meganova.ai/inference-models/model-list.md",
+      "accessed_at": "2026-08-24T03:00:00Z",
+      "notes": "Published MegaNova pricing for exact upstream model ID Alibaba/wan2.6-i2v."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T03:00:00Z",
+    "notes": "Pricing verified against MegaNova’s official model list."
+  }
+}
