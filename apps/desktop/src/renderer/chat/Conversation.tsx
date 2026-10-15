@@ -157,7 +157,9 @@ export function Conversation({ task, onAttachment, onBranch, children, compact, 
 		if (!element) return;
 		following.current = false;
 		const top = element.getBoundingClientRect().top;
-		const entry = Array.from(element.querySelectorAll<HTMLElement>("[data-conversation-id]")).find(value => value.getBoundingClientRect().bottom >= top);
+		const visible = (selector: string) => Array.from(element.querySelectorAll<HTMLElement>(selector)).find(value => value.getBoundingClientRect().bottom >= top);
+		// Messages keep their ids across pages; turn containers are regrouped as older entries arrive, so they anchor only as a fallback.
+		const entry = visible('[data-conversation-id^="message:"]') ?? visible("[data-conversation-id]");
 		anchor.current = { id: entry?.dataset.conversationId, top: entry?.getBoundingClientRect().top ?? top, scroll: element.scrollTop };
 	}
 	function update() {
@@ -197,7 +199,8 @@ export function Conversation({ task, onAttachment, onBranch, children, compact, 
 				{children}
 			</div>
 		</div>
-		{showLatest && <button type="button" onClick={() => { following.current = true; messages.latest(); activities.latest(); if (host.current) host.current.scrollTop = host.current.scrollHeight; setShowLatest(false); }}
+		{/* A window that stops short of the newest entries always offers the way back, even if the reader never scrolled. */}
+		{(showLatest || messages.page.later > 0 || activities.page.later > 0) && <button type="button" onClick={() => { following.current = true; messages.latest(); activities.latest(); if (host.current) host.current.scrollTop = host.current.scrollHeight; setShowLatest(false); }}
 			className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-popover px-3 py-1.5 text-xs font-medium shadow-md hover:bg-muted"><ArrowDown className="size-3.5" />Jump to latest</button>}
 	</div>;
 }
