@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { DatabaseSync } from "node:sqlite";
+import { installControlActions } from "./fixtures/control-actions.mjs";
 const profile=mkdtempSync(path.join(tmpdir(),"phaseo-file-links-"));app.setPath("userData",profile);mkdirSync(path.join(profile,"workspace"));
 const project=path.join(profile,"project");mkdirSync(project);writeFileSync(path.join(project,"owned handler.ts"),"Owned content");
 const source='Inspect [the request handler](<owned handler.ts:7:2) next.\n\n`[literal](<src/literal.ts)`\n\n[Website](https://example.invalid/docs)';
@@ -16,17 +17,17 @@ ipcMain.handle=function(channel,listener){return original.call(this,channel,chan
 const entry=process.argv.find(value=>value.startsWith("--app-entry="))?.slice(12),deadline=setTimeout(()=>app.exit(1),60000);
 await import(entry?pathToFileURL(path.resolve(entry)).href:"../dist/main/index.mjs");ipcMain.handle=original;
 app.whenReady().then(async()=>{try{
- const owner=BrowserWindow.getAllWindows()[0];owner.webContents.setBackgroundThrottling(false);if(owner.webContents.isLoading())await new Promise(resolve=>owner.webContents.once("did-finish-load",resolve));
+ const owner=BrowserWindow.getAllWindows()[0];owner.webContents.setBackgroundThrottling(false);if(owner.webContents.isLoading())await new Promise(resolve=>owner.webContents.once("did-finish-load",resolve));await installControlActions(owner);
  const run=code=>owner.webContents.executeJavaScript(code),wait=async code=>{for(let i=0;i<200;i++){const value=await run(code);if(value)return value;await new Promise(resolve=>setTimeout(resolve,25));}throw Error("File link wait expired: "+code);};
- await wait(`document.querySelector('.task-row[title="project-chat"]')`);await run(`document.querySelector('.task-row[title="project-chat"]').click()`);await wait(`document.querySelector('.message-file-link')?.textContent==='the request handler'`);
- assert.equal(await run(`document.querySelectorAll('.message-file-link').length`),1);assert.equal(await run(`document.querySelector('.task-message-user').textContent.includes('[the request handler](<owned handler.ts:7:2)')`),true);
- assert.equal(await run(`document.querySelector('.task-message-assistant code')?.textContent`),'[literal](<src/literal.ts)');
- assert.equal(await run(`document.querySelector('.task-message-assistant a')?.textContent`),'Website');
+ await run(`window.__auditOpenChat('project-chat')`);await wait(`document.querySelector('.message-file-link')?.textContent==='the request handler'`);
+ assert.equal(await run(`document.querySelectorAll('.message-file-link').length`),1);assert.equal(await run(`document.querySelector('main [data-conversation-id="message:user"]').textContent.includes('[the request handler](<owned handler.ts:7:2)')`),true);
+ assert.equal(await run(`document.querySelector('main [data-conversation-id="message:assistant"] code')?.textContent`),'[literal](<src/literal.ts)');
+ assert.equal(await run(`document.querySelector('main [data-conversation-id="message:assistant"] a')?.textContent`),'Website');
  const output=path.resolve('../../output/playwright/file-links',entry?'packaged':'source');mkdirSync(output,{recursive:true});let captures=0;
- async function capture(state){for(const [width,height] of [[1440,920],[1180,800],[1040,680]])for(const theme of ['light','dark']){owner.setSize(width,height);await run(`document.querySelector('[aria-label="Use ${theme} theme"]')?.click()`);await new Promise(resolve=>setTimeout(resolve,100));assert.equal(await run(`document.querySelector('.task-message-assistant').scrollWidth<=document.querySelector('.task-message-assistant').clientWidth+1`),true);writeFileSync(path.join(output,`${state}-${theme}-${width}.png`),(await owner.webContents.capturePage()).toPNG());captures++;}}
+ async function capture(state){for(const [width,height] of [[1440,920],[1180,800],[1040,680]])for(const theme of ['light','dark']){owner.setSize(width,height);await run(`window.__auditTheme(${JSON.stringify(theme)})`);await new Promise(resolve=>setTimeout(resolve,100));assert.equal(await run(`document.querySelector('main [data-conversation-id="message:assistant"]').scrollWidth<=document.querySelector('main [data-conversation-id="message:assistant"]').clientWidth+1`),true);writeFileSync(path.join(output,`${state}-${theme}-${width}.png`),(await owner.webContents.capturePage()).toPNG());captures++;}}
  await capture('ready');await run(`document.querySelector('.message-file-link').focus()`);owner.focus();owner.webContents.focus();owner.webContents.sendInputEvent({type:'keyDown',keyCode:'Enter'});owner.webContents.sendInputEvent({type:'char',keyCode:'\r'});owner.webContents.sendInputEvent({type:'keyUp',keyCode:'Enter'});await wait(`document.querySelector('.message-file-link')?.disabled&&document.querySelector('.message-link-feedback[role="status"]')?.textContent==='Opening…'`);
  await run(`document.querySelector('.message-file-link').click()`);assert.equal(calls.length,1);await capture('pending');release();await wait(`document.querySelector('.message-link-feedback[role="alert"]')?.textContent==='Owned editor unavailable'`);await capture('failed');assert.deepEqual(calls,[{id:'project',request:{editor:'vscode',filename:'owned handler.ts',line:7,column:2}}]);
  for(const id of ['project-chat','personal-chat']){const task=await run(`window.phaseoDesktop.workspace.task(${JSON.stringify(id)})`);assert.deepEqual(task.messages.map(message=>message.text),[source,source]);assert.equal(task.queue.length,0);}
- await run(`document.querySelector('.task-row[title="personal-chat"]').click()`);await wait(`document.querySelector('.task-title')?.value==='personal-chat'`);assert.equal(await run(`document.querySelectorAll('.message-file-link').length`),0);
+ await run(`window.__auditOpenChat('personal-chat')`);assert.equal(await run(`document.querySelectorAll('.message-file-link').length`),0);
  console.log('FILE_LINK_SMOKE',JSON.stringify({descriptiveLabel:true,assistantOnly:true,literalCode:true,personalInert:true,originalTextPreserved:true,keyboard:true,pendingGuard:true,error:true,ownedEditorRequests:calls.length,commercialEditorLaunches:0,providerInferenceCalls:0,captures,packaged:Boolean(entry)}));clearTimeout(deadline);app.quit();
 }catch(error){console.error(error);clearTimeout(deadline);app.exit(1);}});
