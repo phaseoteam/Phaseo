@@ -143,19 +143,6 @@
 .panel > .account-row:last-child, .panel > article:last-child > .account-row { border-bottom: 0; }
 .task-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .settings-page { max-width: 960px; }
-.proposal-project { padding: var(--panel-padding); }
-.proposal-project label { display: flex; flex-direction: column; gap: 8px; max-width: 360px; }
-.proposal-project p { margin: 12px 0 0; color: var(--text-muted); font-size: 12px; }
-.proposal-feedback { margin: 0; padding: 0 var(--panel-padding) var(--panel-padding); font-size: 14px; color: var(--text-muted); }
-.proposal-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: var(--panel-padding); border-top: 1px solid var(--border); }
-.proposal-pagination span { flex: 1 1 180px; color: var(--text-muted); font-size: 12px; }
-.proposal-error { color: #c64949; overflow-wrap: anywhere; }
-.proposal-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: var(--panel-padding); border-top: 1px solid var(--border); }
-.proposal-row > div { min-width: 0; }
-.proposal-row strong, .proposal-row small { display: block; overflow-wrap: anywhere; }
-.proposal-row small { margin-top: 6px; color: var(--text-muted); font-size: 12px; }
-.proposal-row > button { flex-shrink: 0; }
-.proposal-statuses { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 10px; font-size: 12px; color: var(--text-muted); }
 .settings-fields { padding: 0 var(--panel-padding); }
 .settings-feedback { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 0 var(--panel-padding) var(--panel-padding); }
 .settings-feedback p { margin: 0; font-size: 14px; }
@@ -701,28 +688,8 @@ button { color: inherit; }
 :is(.browser-downloads, .browser-download-toolbar) button:hover { background:var(--surface-hover); }
 .browser-download-toolbar button[aria-pressed="true"] { color:var(--text); background:var(--primary-soft); }
 
-.proposal-row .proposal-open { padding:0; min-height:0; border:0; border-radius:0; background:transparent; font-weight:600; color:var(--text); text-align:left; white-space:normal; justify-content:flex-start; }
-.proposal-row .proposal-open:hover { color:var(--primary); }
-.proposal-detail { padding:20px; display:flex; flex-direction:column; gap:20px; min-width:0; }
-.proposal-detail-actions { display:flex; flex-wrap:wrap; gap:8px; }
-.proposal-detail h2 { margin:0 0 10px; font-size:18px; line-height:1.5; overflow-wrap:anywhere; }
-.proposal-detail header p { color:var(--text-muted); font-size:12px; }
-.proposal-detail-metadata { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin:0; padding:16px; border:1px solid var(--border); border-radius:var(--radius); }
-.proposal-detail-metadata dt { color:var(--text-muted); font-size:12px; margin-bottom:6px; }
-.proposal-detail-metadata dd { margin:0; font-size:13px; overflow-wrap:anywhere; }
-.proposal-description { min-width:0; overflow-wrap:anywhere; }
 
-.proposal-files { display:flex; flex-direction:column; gap:16px; min-width:0; }
-.proposal-files h3 { margin:0; font-size:14px; overflow-wrap:anywhere; flex:1; }
-.proposal-file-list { display:flex; flex-direction:column; gap:6px; max-height:180px; overflow:auto; scrollbar-gutter:stable; }
-.proposal-file-list button { display:flex; flex-direction:column; align-items:flex-start; text-align:left; gap:4px; padding:10px 12px; flex-shrink:0; }
-.proposal-file-list button[aria-pressed="true"], .proposal-detail-actions button[aria-pressed="true"] { background:var(--primary-soft); border-color:var(--primary); }
-.proposal-file-list strong { font-size:13px; overflow-wrap:anywhere; }
-.proposal-file-list span, .proposal-file-list small, .proposal-file-preview > p { font-size:12px; color:var(--text-muted); overflow-wrap:anywhere; }
-.proposal-file-preview { min-width:0; }
 
-.proposal-file-revision { margin:0; font-size:12px; color:var(--text-muted); }
-.proposal-files { scroll-margin-top:12px; }
 .prompt-command-dialog { width: min(640px, calc(100vw - 48px)); max-height: calc(100dvh - 64px); overflow: auto; color: var(--text); background: var(--surface); border: 1px solid var(--border-strong); border-radius: 12px; padding: 24px; font: inherit; }
 .prompt-command-dialog::backdrop { background: #0006; }
 .prompt-command-dialog.composer-command-menu { position: absolute; inset: auto 0 calc(100% + 8px); z-index: 30; width: 100%; margin: 0; max-height: min(440px, 55vh); padding: 12px; border-radius: 6px; box-shadow: 0 4px 16px #0002; }
@@ -798,12 +765,6 @@ button { color: inherit; }
 .global-instructions-field { display: grid; gap: 8px; width: 100%; }
 .global-instructions-field textarea { width: 100%; min-height: 180px; resize: vertical; }
 
-.proposal-reviews, .proposal-review-comments { display:flex; flex-direction:column; gap:16px; min-width:0; scroll-margin-top:12px; }
-.proposal-reviews h3 { margin:0; font-size:14px; overflow-wrap:anywhere; flex:1; }
-.proposal-thread-list { max-height:240px; }
-.proposal-review-comment { border-top:1px solid var(--border); padding-top:16px; min-width:0; overflow-wrap:anywhere; }
-.proposal-review-comment header { display:flex; flex-wrap:wrap; gap:8px; align-items:baseline; margin-bottom:12px; font-size:12px; }
-.proposal-review-comment time { color:var(--text-muted); font-size:11px; }
 
 .topbar { grid-template-columns: auto 1fr auto; gap: 8px; }
 .topbar-navigation { display: flex; gap: 2px; -webkit-app-region: no-drag; }
@@ -1091,3 +1052,8 @@ button { color: inherit; }
 /* Reasoning is transcript text, including after the turn disclosure opens. */
 :is(.turn-work-content, .turn-work-live) .task-activity[data-kind="reasoning"] .activity-result { background: transparent; border: 0; border-radius: 0; margin: 2px 0 10px 22px; padding: 0; color: var(--text-muted); font-size: 12px; line-height: 1.6; }
 :is(.turn-work-content, .turn-work-live) .task-activity[data-kind="reasoning"] .activity-result p { margin: 0 0 8px; }
+
+/* Pull request comments and descriptions read at the pane's small size. */
+.pr-comment-body .message-markdown { font-size: 12px; line-height: 1.6; }
+.pr-comment-body .message-markdown > :first-child { margin-top: 0; }
+.pr-comment-body .message-markdown > :last-child { margin-bottom: 0; }

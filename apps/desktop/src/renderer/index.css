@@ -43,6 +43,11 @@
 	--radius-2xl: calc(var(--radius) * 1.8);
 	--font-sans: Montserrat, ui-sans-serif, system-ui, sans-serif;
 	--font-mono: "Cascadia Code", "SF Mono", Consolas, ui-monospace, monospace;
+	/* T3 Code's two small sizes, for pull request rows and timelines. */
+	--text-2xs: 0.6875rem;
+	--text-2xs--line-height: calc(1 / 0.6875);
+	--text-3xs: 0.625rem;
+	--text-3xs--line-height: calc(0.875 / 0.625);
 }
 
 :root {

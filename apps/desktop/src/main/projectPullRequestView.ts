@@ -151,8 +151,8 @@ export async function projectPullRequestView(root: string, number: unknown): Pro
 	let output: string;
 	try { output = await runGh(root, ["api", "graphql", "--hostname", "github.com", "-f", `query=${viewQuery}`, "-F", `owner=${owner}`, "-F", `name=${name}`, "-F", `number=${number}`]); }
 	catch (reason) {
-		if ((reason as NodeJS.ErrnoException).code === "ENOENT" || (reason instanceof Error && reason.message.startsWith("Install"))) throw new Error("Install GitHub CLI and sign in with gh auth login.");
-		throw new Error(ghFailure((reason as { stderr?: string }).stderr, "Could not load this pull request. Check GitHub CLI sign-in and repository access, then retry."));
+		if ((reason as NodeJS.ErrnoException).code === "ENOENT" || (reason instanceof Error && reason.message.startsWith("Install"))) throw new Error("Install GitHub CLI and sign in with gh auth login.", { cause: reason });
+		throw new Error(ghFailure((reason as { stderr?: string }).stderr, "Could not load this pull request. Check GitHub CLI sign-in and repository access, then retry."), { cause: reason });
 	}
 	let parsed: unknown;
 	try { parsed = JSON.parse(output); } catch { throw new Error("GitHub returned unreadable pull request details."); }
@@ -199,6 +199,6 @@ export async function projectPullRequestAction(root: string, value: unknown): Pr
 			args = ["api", "--hostname", "github.com", "--method", "DELETE", `repos/${view.repository}/git/refs/heads/${view.head.split("/").map(encodeURIComponent).join("/")}`]; break;
 	}
 	try { await runGh(root, args, input); }
-	catch (reason) { throw new Error(ghFailure((reason as { stderr?: string }).stderr, failures[action.type])); }
+	catch (reason) { throw new Error(ghFailure((reason as { stderr?: string }).stderr, failures[action.type]), { cause: reason }); }
 	return await projectPullRequestView(root, request.number);
 }
