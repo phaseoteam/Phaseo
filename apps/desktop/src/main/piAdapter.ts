@@ -6,7 +6,7 @@ import { piEntries } from "./piLaunch";
 import { piNativeActionCatalog } from "./piNativeActions";
 import { nativeActionText, type NativeAction } from "../shared/nativeActions";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
-import type { Account, QueuedMessage, Task } from "../shared/workspace";
+import type { Account, AgentQuestion, QueuedMessage, Task } from "../shared/workspace";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { spawnNative } from "./nativeProcess";
@@ -16,6 +16,17 @@ import type { PiRecord } from "./piRpc";
 import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
 
+const recordText = (event: PiRecord, key: string) => typeof event[key] === "string" && (event[key] as string).trim() ? event[key] as string : undefined;
+/**
+ * A Pi extension dialog as a question, after T3 Code: select lists its choices; input takes text or an empty value;
+ * editor starts from the extension's prefill in a multi-line field and may be sent empty.
+ */
+export function piQuestion(id: string, method: "select" | "input" | "editor", title: string, event: PiRecord): AgentQuestion {
+	const question = recordText(event, "message") ?? recordText(event, "placeholder") ?? title;
+	if (method === "select") return { id, header: title, question, options: (Array.isArray(event.options) ? event.options : []).filter((option): option is string => typeof option === "string").map(option => ({ label: option || "Empty value", value: option })) };
+	if (method === "editor") return { id, header: title, question, options: [], isOther: true, required: false, initialAnswer: typeof event.prefill === "string" ? event.prefill : "", input: { kind: "multiline" } };
+	return { id, header: title, question, options: [{ label: "Submit empty value", description: "Send empty text to the extension.", value: "" }], isOther: true, required: false };
+}
 const record = (value: unknown): PiRecord => value && typeof value === "object" && !Array.isArray(value) ? value as PiRecord : {};
 export class PiAdapter implements AgentAdapter {
 	constructor(private readonly connections: McpConnection[] = []) {}
@@ -69,11 +80,11 @@ export class PiAdapter implements AgentAdapter {
 			if (event.method === "confirm") {
 				const decision = await callbacks.onApproval(title, typeof event.message === "string" ? event.message : title);
 				if (!this.cancelled) rpc.send({ type: "extension_ui_response", id: event.id, confirmed: decision === "accept" });
-			} else if (["select", "input", "editor"].includes(String(event.method))) {
-				const options = Array.isArray(event.options) ? event.options.filter((option): option is string => typeof option === "string").map(label => ({ label })) : undefined;
-				const answers = await callbacks.onQuestion?.([{ id: event.id, header: title, question: title, options, isOther: event.method !== "select" }]);
+			} else if (event.method === "select" || event.method === "input" || event.method === "editor") {
+				const answers = await callbacks.onQuestion?.([piQuestion(event.id, event.method, title, event)]);
+				// An empty string is a real value (the extension gets ""); only a dismissal cancels.
 				const value = answers?.[event.id]?.[0];
-				if (!this.cancelled) rpc.send({ type: "extension_ui_response", id: event.id, ...(value ? { value } : { cancelled: true }) });
+				if (!this.cancelled) rpc.send({ type: "extension_ui_response", id: event.id, ...(typeof value === "string" ? { value } : { cancelled: true }) });
 			} else callbacks.onActivity?.({ id: event.id, type: "tool", title, text: String(event.message ?? event.text ?? ""), status: "completed" });
 		};
 		rpc.onClose = rejectTurn;

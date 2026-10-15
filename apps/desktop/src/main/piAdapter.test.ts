@@ -6,7 +6,7 @@ import { PiRpc } from "./piRpc";
 import type { PiRecord } from "./piRpc";
 const native = vi.hoisted(() => ({ spawn: vi.fn() }));
 vi.mock("./nativeProcess", () => ({ spawnNative: native.spawn }));
-import { PiAdapter } from "./piAdapter";
+import { PiAdapter, piQuestion } from "./piAdapter";
 import { AgentInputRejectedError } from "./agentAdapter";
 
 function fixture(handle: (packet: PiRecord, send: (value: PiRecord) => void) => void) {
@@ -17,6 +17,23 @@ function fixture(handle: (packet: PiRecord, send: (value: PiRecord) => void) => 
 }
 const task: Task = { id: "task", title: "Task", harness: "pi", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("Pi native harness", () => {
+	it("maps extension dialogs like T3 Code: choices, empty text and editor prefill", () => {
+		expect(piQuestion("s", "select", "Pick", { options: ["A", "", 3] })).toEqual({ id: "s", header: "Pick", question: "Pick", options: [{ label: "A", value: "A" }, { label: "Empty value", value: "" }] });
+		expect(piQuestion("i", "input", "Name", { placeholder: "Your name" })).toEqual({ id: "i", header: "Name", question: "Your name", options: [{ label: "Submit empty value", description: "Send empty text to the extension.", value: "" }], isOther: true, required: false });
+		expect(piQuestion("e", "editor", "Edit", { message: "Edit the commit message", prefill: "feat: x\n" })).toEqual({ id: "e", header: "Edit", question: "Edit the commit message", options: [], isOther: true, required: false, initialAnswer: "feat: x\n", input: { kind: "multiline" } });
+	});
+	it.each([["typed", { dialog: ["Ada"] }, { value: "Ada" }], ["empty", { dialog: [""] }, { value: "" }], ["dismissed", {}, { cancelled: true }]] as const)("answers dialogs with the value, empty text included (%s)", async (_name, answers, expected) => {
+		const responses: PiRecord[] = [];
+		fixture((packet, output) => {
+			if (packet.type === "extension_ui_response") { responses.push(packet); output({ type: "agent_end" }); output({ type: "agent_settled" }); return; }
+			output({ type: "response", id: packet.id, success: true, data: packet.type === "get_state" ? { sessionFile: "/session", isStreaming: false, pendingMessageCount: 0 } : packet.type === "prompt" ? { disposition: "started" } : undefined });
+			if (packet.type === "prompt") output({ type: "extension_ui_request", id: "dialog", method: "editor", title: "Edit", prefill: "draft" });
+		});
+		const onQuestion = vi.fn(async () => answers as Record<string, string[]>);
+		await new PiAdapter().run(task, "/project", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onQuestion, onApproval: async () => "decline" });
+		expect(onQuestion).toHaveBeenCalledWith([expect.objectContaining({ id: "dialog", initialAnswer: "draft" })]);
+		expect(responses).toEqual([{ type: "extension_ui_response", id: "dialog", ...expected }]);
+	});
 	it.each([
 		["a chosen level the model offers", { thinking: "xhigh" }, ["set_model", "set_thinking_level", "get_state", "prompt"], "xhigh"],
 		["a level the model does not offer", { thinking: "max" }, ["set_model", "get_state", "prompt"], undefined],
