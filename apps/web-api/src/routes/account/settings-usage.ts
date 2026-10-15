@@ -604,36 +604,17 @@ accountSettingsUsageRouter.get("/usage/alerts", async (c) => {
 	const lifecycleModels = lifecycleResult.data ?? [];
 	const lifecycleIds = lifecycleModels.map((row) => row.model_id).filter(Boolean);
 	if (!lifecycleIds.length) return c.json({ signedIn: true, warnings: [], workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
-	const usageResult = await context.client.rpc("get_workspace_model_last_used", {
-		p_workspace_id: workspaceId,
+	// Keyed on the model the workspace requested, so a deprecated model still
+	// counts as used when another model served the request.
+	const usageResult = await context.client.rpc("get_requested_model_last_used_by_workspace", {
+		p_model_slugs: lifecycleIds,
 		p_since: new Date(now - 90 * 86_400_000).toISOString(),
+		p_workspace_id: workspaceId,
 	});
-	const usageRows = usageResult.error ? [] : usageResult.data ?? [];
-	const usedIds = Array.from(new Set(usageRows.map((row) => String(row.model_id ?? "")).filter(Boolean)));
-	const idMap = new Map<string, string>();
-	if (usedIds.length) {
-		const [apiResult, internalResult, providerResult] = await Promise.all([
-			context.client.from("v2_model_provider_routes").select("api_model_id:model_slug,internal_model_id:model_slug").in("model_slug", usedIds).limit(5000),
-			context.client.from("v2_model_provider_routes").select("api_model_id:model_slug,internal_model_id:model_slug").in("model_slug", usedIds).limit(5000),
-			context.client.from("v2_model_provider_routes").select("provider_api_model_id:provider_model_id,api_model_id:model_slug,internal_model_id:model_slug").in("provider_model_id", usedIds).limit(5000),
-		]);
-		for (const row of [...(apiResult.data ?? []), ...(internalResult.data ?? [])]) {
-			if (row.api_model_id && row.internal_model_id) idMap.set(row.api_model_id, row.internal_model_id);
-		}
-		for (const row of providerResult.data ?? []) {
-			if (!row.internal_model_id) continue;
-			if (row.provider_api_model_id) idMap.set(row.provider_api_model_id, row.internal_model_id);
-			if (row.api_model_id) idMap.set(row.api_model_id, row.internal_model_id);
-		}
-	}
+	if (usageResult.error) return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const lastUsed = new Map<string, string>();
-	for (const row of usageRows) {
-		const usedId = String(row.model_id ?? "");
-		const timestamp = typeof row.last_used_at === "string" ? row.last_used_at : null;
-		if (!usedId || !timestamp) continue;
-		const internalId = idMap.get(usedId) ?? usedId;
-		const previous = lastUsed.get(internalId);
-		if (!previous || Date.parse(timestamp) > Date.parse(previous)) lastUsed.set(internalId, timestamp);
+	for (const row of usageResult.data ?? []) {
+		if (row.model_slug && typeof row.last_used_at === "string") lastUsed.set(row.model_slug, row.last_used_at);
 	}
 	const replacementsResult = await context.client.from("v2_models")
 		.select("model_id:model_slug,previous_model_id:previous_model_slug").eq("hidden", false).in("previous_model_slug", lifecycleIds);

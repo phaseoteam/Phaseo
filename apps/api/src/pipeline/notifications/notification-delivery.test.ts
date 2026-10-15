@@ -29,12 +29,12 @@ describe("notification provider payloads", () => {
 		expect(ranges).toEqual([[0, 99], [100, 199], [200, 299]]);
 	});
 	it("formats model deprecation content", () => { expect(eventContent(event).message).toContain("Example Model has been deprecated"); });
-	it("notifies up to seven days before a scheduled deprecation", () => {
-		const now = new Date("2026-09-01T00:00:00.000Z");
-		expect(shouldNotifyModelDeprecation({ status: "available", deprecated_at: "2026-09-08T00:00:00.000Z" }, now)).toBe(true);
-		expect(shouldNotifyModelDeprecation({ status: "available", deprecated_at: "2026-09-09T00:00:00.000Z" }, now)).toBe(false);
-		expect(shouldNotifyModelDeprecation({ status: "deprecated", deprecated_at: null }, now)).toBe(true);
-		expect(shouldNotifyModelDeprecation({ status: "available", deprecated_at: "2026-08-31T00:00:00.000Z" }, now)).toBe(true);
+	it("notifies as soon as a model is marked deprecated or retiring", () => {
+		expect(shouldNotifyModelDeprecation({ status: "available", deprecated_at: "2026-12-01T00:00:00.000Z" })).toBe(true);
+		expect(shouldNotifyModelDeprecation({ status: "available", deprecated_at: null, retired_at: "2026-12-01T00:00:00.000Z" })).toBe(true);
+		expect(shouldNotifyModelDeprecation({ status: "deprecated", deprecated_at: null })).toBe(true);
+		expect(shouldNotifyModelDeprecation({ status: "retired", deprecated_at: null })).toBe(true);
+		expect(shouldNotifyModelDeprecation({ status: "available", deprecated_at: null, retired_at: null })).toBe(false);
 	});
 	it("sends an email notification test directly to the configured recipient", async () => {
 		await expect(deliverNotificationTest({ workspaceId: "workspace-1", type: "email", target: JSON.stringify(["user@example.com"]) })).resolves.toBe(202);

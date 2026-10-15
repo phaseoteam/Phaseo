@@ -2251,6 +2251,7 @@
 		"Instructions": "निर्देश",
 		"Categories (JSON)": "श्रेणियाँ (JSON)",
 		"Enable model deprecation alerts": "मॉडल अप्रचलन अलर्ट सक्षम करें",
+		"Also email admins": "एडमिन को भी ईमेल भेजें",
 		"Could not save alert": "अलर्ट सहेजा नहीं जा सका",
 		"Send test": "परीक्षण भेजें",
 		"Delete {name}": "{name} हटाएं",

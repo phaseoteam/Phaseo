@@ -58,6 +58,7 @@ CREATE TABLE "public"."workspace_settings" (
   "auto_routing_fallbacks_enabled"               boolean                  NOT NULL DEFAULT true,
   "auto_routing_revision"                        uuid                     NOT NULL DEFAULT gen_random_uuid(),
   "auto_routing_updated_at"                      timestamp with time zone NOT NULL DEFAULT now(),
+  "model_deprecation_alerts_include_admins"      boolean                  NOT NULL DEFAULT false,
   CONSTRAINT "workspace_settings_alpha_requires_beta_channel_check" CHECK (((alpha_channel_enabled = false) OR (beta_channel_enabled = true))),
   CONSTRAINT "workspace_settings_auto_routing_custom_prices_valid" CHECK (((auto_routing_spend_profile <> 'custom'::text) OR ((auto_routing_max_input_price_per_million IS
     NOT NULL) AND (auto_routing_max_input_price_per_million >= (0)::numeric) AND (auto_routing_max_output_price_per_million IS
@@ -138,6 +139,8 @@ COMMENT ON COLUMN "public"."workspace_settings"."data_contribution_sample_rate_b
 COMMENT ON COLUMN "public"."workspace_settings"."io_logging_billing_status" IS 'Extended-retention state consumed by the gateway I/O logging path.';
 
 COMMENT ON COLUMN "public"."workspace_settings"."io_logging_price_per_million_units_nanos" IS 'Reserved extended-retention price override; zero uses the default.';
+
+COMMENT ON COLUMN "public"."workspace_settings"."model_deprecation_alerts_include_admins" IS 'Also email workspace admins, not only the owner, when a model the workspace recently called is deprecated.';
 
 COMMENT ON COLUMN "public"."workspace_settings"."model_restriction_model_ids" IS 'Canonical API model slugs used by the workspace-wide model restriction mode.';
 

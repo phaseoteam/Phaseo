@@ -2251,6 +2251,7 @@
 		"Instructions": "Instructions",
 		"Categories (JSON)": "Categories (JSON)",
 		"Enable model deprecation alerts": "Enable model deprecation alerts",
+		"Also email admins": "Also email admins",
 		"Could not save alert": "Could not save alert",
 		"Send test": "Send test",
 		"Delete {name}": "Delete {name}",

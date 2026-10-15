@@ -2251,6 +2251,7 @@
 		"Instructions": "指示",
 		"Categories (JSON)": "类别 (JSON)",
 		"Enable model deprecation alerts": "启用模型弃用警报",
+		"Also email admins": "同时通过电子邮件通知管理员",
 		"Could not save alert": "无法保存警报",
 		"Send test": "发送测试",
 		"Delete {name}": "删除 {name}",

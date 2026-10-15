@@ -21,6 +21,7 @@ export default withSettingsResource("notifications", function NotificationsConte
 			<NotificationDestinationsClient
 				initialDestinations={data.notificationDestinations}
 				initialModelDeprecationEnabled={data.modelDeprecationAlertsEnabled}
+				initialModelDeprecationIncludeAdmins={data.modelDeprecationAlertsIncludeAdmins}
 				initialNotificationRoutes={data.notificationRoutes}
 			/>
 		</div>

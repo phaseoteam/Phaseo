@@ -2251,6 +2251,7 @@
 		"Instructions": "Anweisungen",
 		"Categories (JSON)": "Kategorien (JSON)",
 		"Enable model deprecation alerts": "Warnungen zu Modellstilllegungen aktivieren",
+		"Also email admins": "Auch Admins per E-Mail benachrichtigen",
 		"Could not save alert": "Warnung konnte nicht gespeichert werden",
 		"Send test": "Test senden",
 		"Delete {name}": "{name} löschen",
