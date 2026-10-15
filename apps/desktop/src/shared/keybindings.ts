@@ -5,7 +5,7 @@
  */
 export const keybindingCommands = [
 	{ command: "commandPalette.toggle", label: "Search chats and commands", group: "General", keys: ["mod+k"] },
-	{ command: "chat.new", label: "New chat", group: "General", keys: ["mod+n"] },
+	{ command: "chat.new", label: "New chat", group: "General", keys: ["mod+n"], when: "!terminalFocused" },
 	{ command: "settings.open", label: "Open settings", group: "General", keys: ["mod+,"] },
 	{ command: "mode.chat", label: "Switch to Chat", group: "General", keys: ["mod+1"] },
 	{ command: "mode.code", label: "Switch to Code", group: "General", keys: ["mod+2"] },
@@ -14,8 +14,12 @@ export const keybindingCommands = [
 	{ command: "thread.undo", label: "Undo settle, snooze, unpin or archive", group: "Chats", keys: ["mod+z"], when: "!textFocused" },
 	{ command: "modelSettings.toggle", label: "Model settings", group: "Chats", keys: ["mod+shift+e"] },
 	{ command: "rightPanel.toggle", label: "Toggle right pane", group: "Panes", keys: ["mod+alt+b"] },
-	{ command: "rightPanel.closeTab", label: "Close pane tab", group: "Panes", keys: ["mod+w"], when: "paneOpen" },
+	{ command: "rightPanel.closeTab", label: "Close pane tab", group: "Panes", keys: ["mod+w"], when: "paneOpen && !terminalFocused" },
 	{ command: "terminal.toggle", label: "Toggle terminal", group: "Panes", keys: ["mod+j"] },
+	{ command: "terminal.split", label: "Split terminal side by side", group: "Panes", keys: ["mod+d"], when: "terminalFocused" },
+	{ command: "terminal.splitVertical", label: "Split terminal stacked", group: "Panes", keys: ["mod+shift+d"], when: "terminalFocused" },
+	{ command: "terminal.new", label: "New terminal", group: "Panes", keys: ["mod+n"], when: "terminalFocused" },
+	{ command: "terminal.close", label: "Close terminal", group: "Panes", keys: ["mod+w"], when: "terminalFocused" },
 	{ command: "view.zoomIn", label: "Zoom in", group: "View", keys: ["mod+=", "mod++"] },
 	{ command: "view.zoomOut", label: "Zoom out", group: "View", keys: ["mod+-"] },
 	{ command: "view.zoomReset", label: "Actual size", group: "View", keys: ["mod+0"] },
