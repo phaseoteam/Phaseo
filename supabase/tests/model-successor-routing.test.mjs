@@ -31,7 +31,7 @@ try {
       effective_from timestamptz, effective_to timestamptz);
   `);
   await db.exec(await read('../schemas/public/tables/v2_catalogue_admin_changes.sql'));
-  await db.exec(await read('../migrations/20261012213500_model_successor_routing_approval.sql'));
+  await db.exec(await read('../migrations/20261015111100_model_successor_routing_approval.sql'));
   assert.equal(await value(`select command as value from cron.jobs where name='track-model-unserved-since'`),
     `set statement_timeout = '60s'; set lock_timeout = '5s'; select public.refresh_model_unserved_since();`);
 
