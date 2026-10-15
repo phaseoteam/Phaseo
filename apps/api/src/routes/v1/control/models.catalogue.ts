@@ -412,6 +412,7 @@ export type CatalogueModel = {
 };
 
 export type CatalogueFilters = {
+    batchOnly?: boolean;
     modelIds?: string[];
     endpoints?: string[];
     providerIds?: string[];
@@ -1772,6 +1773,8 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
             const providerDetails = row.provider_id ? providerMap.get(row.provider_id) : null;
             for (const cap of caps) {
                 if (!cap.capability_id) continue;
+                if (filter.batchOnly && cap.capability_id !== "batch" &&
+                    !skuTiersByRouteOperation.get(routeOperationKey(row.provider_api_model_id, cap.capability_id))?.has("batch")) continue;
                 const providerStatus = normalizeProviderStatus(providerDetails?.status);
                 const providerRoutingStatus = normalizeRoutingStatus(providerDetails?.routing_status);
                 const externalRoutingOverride =

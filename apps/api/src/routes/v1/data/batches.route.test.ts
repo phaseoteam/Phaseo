@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("../control/models.catalogue", () => ({ fetchCatalogue: vi.fn(async () => state.batchCatalogue) }));
+
 vi.mock("@core/batch-download-limits", () => ({
 	admitBatchDownload: vi.fn(async () => ({ allowed: true, retryAfterSeconds: 0 })),
 }));
@@ -32,6 +34,7 @@ const state = vi.hoisted(() => ({
 	guardContextFailure: null as Response | null,
 	resolvedModel: null as string | null,
 	catalogOffers: null as any[] | null,
+	batchCatalogue: [] as any[],
 	credentialModels: [] as string[],
 	policyAllowedProviders: null as string[] | null,
 	batchApiEnabled: true,
@@ -63,6 +66,7 @@ function resetState() {
 	state.guardContextFailure = null;
 	state.resolvedModel = null;
 	state.catalogOffers = null;
+	state.batchCatalogue = [];
 	state.credentialModels = [];
 	state.policyAllowedProviders = null;
 	state.batchApiEnabled = true;
@@ -542,6 +546,26 @@ describe("batchRoutes", () => {
 		resetState();
 		vi.resetModules();
 		vi.unstubAllGlobals();
+	});
+
+	it("discovers Batch-priced Gemini models while excluding unsupported offers", async () => {
+		state.previewProviders = "google-vertex,google-ai-studio,openai,google-vertex-eu";
+		state.batchCatalogue = [
+			{ model_id: "google/gemini-4-argon", providers: [
+				{ api_provider_id: "google-vertex", endpoints: ["text.generate"], service_tiers: ["standard"] },
+				{ api_provider_id: "google-ai-studio", endpoints: ["responses"], service_tiers: ["standard"] },
+				{ api_provider_id: "google-vertex-eu", endpoints: ["text.generate"], service_tiers: ["standard"] },
+			] },
+			{ model_id: "google/embeddings", providers: [{ api_provider_id: "google-vertex", endpoints: ["text.embed"], service_tiers: ["standard"] }] },
+			{ model_id: "legacy/batch", providers: [{ api_provider_id: "openai", endpoints: ["batch"] }] },
+		];
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/models?params=max_tokens");
+		expect(response.status).toBe(200);
+		const payload = await response.json();
+		expect(payload.data.map((row: any) => row.model)).toEqual(["google/gemini-4-argon", "legacy/batch"]);
+		expect(payload.data[0].providers.map((row: any) => row.id)).toEqual(["google-vertex", "google-ai-studio"]);
+		expect((await import("../control/models.catalogue")).fetchCatalogue).toHaveBeenCalledWith({ batchOnly: true, params: ["max_tokens"], statuses: ["active"] });
 	});
 
 	it("paginates batch jobs and reports another page", async () => {

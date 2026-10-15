@@ -1658,7 +1658,7 @@ async function handleModels(req: Request) {
 	if (accessDenied) return accessDenied;
 	const url = new URL(req.url);
 	const catalogue = await fetchCatalogue({
-		endpoints: ["batch"],
+		batchOnly: true,
 		params: parseModelQueryValues(url, "params"),
 		statuses: ["active"],
 	});
@@ -1666,7 +1666,19 @@ async function handleModels(req: Request) {
 	const previewCatalogue = catalogue
 		.map((model) => ({
 			...model,
-			providers: model.providers.filter((provider) => previewProviderIds.includes(provider.api_provider_id)),
+			providers: model.providers.filter((provider) => {
+				if (!previewProviderIds.includes(provider.api_provider_id)) return false;
+				// Preserve explicit Batch capabilities and discover Batch-priced modality offers.
+				if (provider.endpoints.some((endpoint) => ["batch", "batches", "/v1/batches"].includes(String(endpoint)))) return true;
+				const capability = getBatchProviderCapability(provider.api_provider_id);
+				const supported = new Set(capability?.endpoints.map(({ endpoint }) => {
+					const policyEndpoint = batchPolicyEndpoint(endpoint);
+					return policyEndpoint ? resolveCapabilityFromEndpoint(policyEndpoint) : null;
+				}));
+				return provider.endpoints.some((endpoint) => supported.has(
+					resolveCapabilityFromEndpoint(batchPolicyEndpoint(String(endpoint)) ?? String(endpoint)),
+				));
+			}),
 		}))
 		.filter((model) => model.providers.length > 0);
 	return jsonPayload({
