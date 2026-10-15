@@ -221,6 +221,13 @@ describe("ACP protocol integration", () => {
 		try { await expect(new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }, [{ id: "00000000-0000-4000-8000-000000000001", name: "HTTP fixture", transport: "http", url: "https://example.invalid/mcp", enabled: true }]).run(task, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" })).rejects.toThrow("does not support HTTP MCP"); expect(start).not.toHaveBeenCalled(); }
 		finally { connection.close(); }
 	});
+	it.each(["chat", "code"] as const)("runs without the orchestration server when the agent lacks HTTP MCP (%s)", async mode => {
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
+		const start = vi.fn((params: { mcpServers?: unknown[] }) => { expect(params.mcpServers).toEqual([]); return { sessionId: "native" }; });
+		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => ({ protocolVersion: params.protocolVersion, agentCapabilities: {} })).onRequest("session/new", ({ params }) => start(params)).onRequest("session/prompt", () => ({ stopReason: "end_turn" })).connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		try { await new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }, [{ id: "00000000-0000-4000-8000-000000000001", name: "Phaseo orchestration", orchestration: true, transport: "http", url: "http://127.0.0.1:1/mcp", enabled: true }]).run({ ...task, mode }, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" }); expect(start).toHaveBeenCalledOnce(); }
+		finally { connection.close(); }
+	});
 	it.each([true, false])("lets the user choose native authentication without collecting credentials (%s)", async accept => {
 		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
 		let authenticated = false; const authenticate = vi.fn(({ params }: { params: { methodId: string } }) => { expect(params.methodId).toBe("browser"); authenticated = true; return {}; });

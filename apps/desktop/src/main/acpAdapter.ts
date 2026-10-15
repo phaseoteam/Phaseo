@@ -112,8 +112,10 @@ export class AcpAdapter implements AgentAdapter {
 			clearTimeout(startup);
 			if (initialized.protocolVersion !== PROTOCOL_VERSION) throw new Error("This agent uses an unsupported ACP protocol version.");
 			// Chat admits only the orchestration server; file and terminal capabilities stay off.
-			const servers = task.mode === "chat" ? this.mcp.filter(server => server.orchestration) : this.mcp;
-			if (servers.some(server => server.transport === "http") && !initialized.agentCapabilities?.mcpCapabilities?.http) throw new Error("This ACP agent does not support HTTP MCP connections.");
+			// Orchestration is offered over HTTP only, so agents without HTTP MCP run without it rather than failing.
+			const http = Boolean(initialized.agentCapabilities?.mcpCapabilities?.http);
+			const servers = (task.mode === "chat" ? this.mcp.filter(server => server.orchestration) : this.mcp).filter(server => http || !server.orchestration);
+			if (servers.some(server => server.transport === "http") && !http) throw new Error("This ACP agent does not support HTTP MCP connections.");
 			const mcpServers = servers.map(server => server.transport === "stdio" ? { name: nativeMcpName(server), command: server.executable, args: server.arguments, env: [{ name: "ELECTRON_RUN_AS_NODE", value: "1" }] } : { type: "http" as const, name: nativeMcpName(server), url: server.url, headers: Object.entries(server.headers ?? {}).map(([name, value]) => ({ name, value })) });
 			if (attachments.some(attachment => attachment.kind === "image") && !initialized.agentCapabilities?.promptCapabilities?.image) throw new Error("This ACP agent does not support image attachments.");
 			const openSession = async (): Promise<NewSessionResponse> => {
