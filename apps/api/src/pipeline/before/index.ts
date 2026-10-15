@@ -46,6 +46,13 @@ import {
 	validateProviderQualifiedModelProvider,
 } from "../requestRouting";
 import { fetchWorkspacePolicy, applyWorkspacePolicy } from "./workspacePolicy";
+import {
+    findModelSuccessor,
+    loadSuccessorRedirectPolicy,
+    successorRedirectEnabled,
+    successorRedirectTarget,
+    type ModelSubstitution,
+} from "./modelSuccessor";
 import { getWebhookEndpointSigningConfig } from "@core/webhook-endpoints";
 import { parseRequestLabels } from "./request-labels";
 import { generatePublicId } from "./genId";
@@ -222,6 +229,18 @@ function classifyWorkspaceProviderFilterFailure(diagnostics: {
  * - Credit / key checks via RPC
  * - Build PipelineContext (single source of truth for downstream)
  */
+/**
+ * Returned with a before-stage failure when the requested model has no
+ * provider and the request lists its own fallback models: the caller tries
+ * those models in order instead of returning the failure straight away.
+ */
+export type UnservedModelFallback = {
+    model: string;
+    requestId: string;
+    retryRawBody: unknown;
+    models: string[];
+};
+
 export type BeforeRequestObservabilitySnapshot = {
     requestPayload: unknown;
     requestedModel: string | null;
@@ -237,6 +256,13 @@ export async function beforeRequest(
         dynamicRouteModelOverride?: string | null;
 		/** Replaces the request `model` for a request-level `models` fallback attempt. */
 		requestModelOverride?: string | null;
+		/**
+		 * Whether an unserved model may be redirected to its approved successor.
+		 * Defaults to true unless the request lists fallback models: the
+		 * customer's own list is tried first, and the successor only applies to
+		 * the last model in it.
+		 */
+		allowModelSuccessor?: boolean;
 		autoRouterModelOverride?: string | null;
 		autoRouterClassificationOverride?: AutoRouterClassification | null;
 		classifyAutoRouterRequest?: (args: {
@@ -245,7 +271,7 @@ export async function beforeRequest(
 		}) => Promise<AutoRouterClassification | null>;
         onObservabilitySnapshot?: (snapshot: BeforeRequestObservabilitySnapshot) => void;
     },
-): Promise<{ ok: true; ctx: PipelineContext } | { ok: false; response: Response }> {
+): Promise<{ ok: true; ctx: PipelineContext } | { ok: false; response: Response; unservedModelFallback?: UnservedModelFallback }> {
     const requestStartedAtMs = timer.startedAtMs();
 
     // 1) Auth
@@ -706,7 +732,40 @@ export async function beforeRequest(
 			? speculative.value
 			: await timer.span("guardContext", () => contextForModel(model, testingContextFlags));
 	}
-    if (!c.ok) return c as { ok: false; response: Response };
+    let modelSubstitution: ModelSubstitution | null = null;
+    if (!c.ok) {
+        const failure = c as { ok: false; response: Response; unservedModel?: string };
+        const unservedModel = failure.unservedModel;
+        const successorAllowed = Boolean(unservedModel) &&
+            !autoRouterEvaluation &&
+            !providerQualifiedModelRequest.selection &&
+            (options?.allowModelSuccessor ?? !requestModelFallbacks?.models.length);
+        const redirected = successorAllowed && successorRedirectEnabled()
+            ? await timer.span("modelSuccessorRedirect", async () => {
+                const policy = await loadSuccessorRedirectPolicy(workspaceId);
+                if (!policy.enabled) return null;
+                const substitution = successorRedirectTarget(await findModelSuccessor(unservedModel!), policy);
+                if (!substitution) return null;
+                const successorContext = await contextForModel(substitution.to, testingContextFlags);
+                return successorContext.ok ? { successorContext, substitution } : null;
+            })
+            : null;
+        if (!redirected) {
+            if (unservedModel && requestModelFallbacks?.models.length) {
+                return {
+                    ok: false,
+                    response: failure.response,
+                    unservedModelFallback: { model, requestId, retryRawBody, models: requestModelFallbacks.models },
+                };
+            }
+            return { ok: false, response: failure.response };
+        }
+        c = redirected.successorContext;
+        modelSubstitution = redirected.substitution;
+        // Downstream decoding reads the model from the body, not the context.
+        body = { ...body, model: modelSubstitution.to };
+        options?.onObservabilitySnapshot?.({ requestPayload: rawBody, requestedModel, model: modelSubstitution.to });
+    }
     let { context, providers, resolvedModel, candidateDiagnostics } = c.value;
     const contextTelemetry = context.contextTelemetry ?? null;
     const contextTimingSpans = {
@@ -1111,7 +1170,10 @@ export async function beforeRequest(
                 response: err("guardrail_blocked", {
                     model: resolvedModel || model,
 					reason: "model_restricted_by_policy",
-					description: `Model "${resolvedModel || model}" is blocked by a workspace policy or guardrail`,
+					description: modelSubstitution
+						? `Model "${modelSubstitution.from}" has no provider, and its replacement "${resolvedModel || model}" is blocked by a workspace policy or guardrail`
+						: `Model "${resolvedModel || model}" is blocked by a workspace policy or guardrail`,
+					...(modelSubstitution ? { requested_model: modelSubstitution.from, replacement_model: modelSubstitution.to } : {}),
 					error_operational_kind: "model_restricted_by_policy",
 					guardrail: {
 						type: "route_access",
@@ -1500,6 +1562,7 @@ export async function beforeRequest(
             dynamicRoute: dynamicRouteEvaluation,
 			autoRouter: autoRouterEvaluation,
 			...(requestModelFallbacks ? { requestModelFallbacks } : {}),
+			...(modelSubstitution ? { modelSubstitution } : {}),
         },
         guardrailEnforcement: sensitiveInfoResult.enforcement,
         // Billing eligibility is server-owned, never a request body flag.

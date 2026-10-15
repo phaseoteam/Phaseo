@@ -289,7 +289,8 @@ export function normalizeReturnFlag(value: unknown): boolean {
 }
 
 export type GuardOk<T> = { ok: true; value: T };
-export type GuardErr = { ok: false; response: Response };
+/** `unservedModel` is set when no provider serves the requested model at all. */
+export type GuardErr = { ok: false; response: Response; unservedModel?: string };
 export type GuardResult<T> = GuardOk<T> | GuardErr;
 
 type GuardAuthOptions = {
@@ -506,12 +507,14 @@ export async function guardContext(args: {
         const { candidates: providers, diagnostics: candidateDiagnostics } = buildProviderCandidatesWithDiagnostics(context);
         if (!providers.length) {
             const classification = classifyProviderCandidateFailure(candidateDiagnostics);
-            const retired = candidateDiagnostics.totalProviders <= 0
-                ? await findRetiredModelNotice(context.resolvedModel ?? args.model)
-                : null;
+            const unservedModel = candidateDiagnostics.totalProviders <= 0
+                ? context.resolvedModel ?? args.model
+                : undefined;
+            const retired = unservedModel ? await findRetiredModelNotice(unservedModel) : null;
             if (retired) {
                 return {
                     ok: false,
+                    unservedModel,
                     response: err("model_retired", {
                         reason: "model_retired_without_providers",
                         error_operational_kind: "retired_model",
@@ -527,6 +530,7 @@ export async function guardContext(args: {
             }
             return {
                 ok: false,
+                unservedModel,
                 response: err("unsupported_model_or_endpoint", {
                     reason: classification.reason,
                     error_type: classification.errorType,

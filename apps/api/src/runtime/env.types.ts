@@ -6,6 +6,8 @@ export type GatewayBindings = {
     GATEWAY_TIERED_CACHE_L2_ENABLED?: string;
     /** "true" writes the post-charge balance back to the credit cache instead of deleting it. */
     GATEWAY_CREDIT_WRITEBACK_ENABLED?: string;
+    /** Kill switch for routing unserved models to an approved successor ("false" disables it). */
+    GATEWAY_MODEL_SUCCESSOR_REDIRECT_ENABLED?: string;
     /**
      * Deadline (ms) for a provider request to return response headers before the
      * attempt fails as a provider transport failure and routing fails over.
