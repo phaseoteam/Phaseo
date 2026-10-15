@@ -33,7 +33,7 @@ try {
       primary key (workspace_id, event_kind, destination_id));
     insert into public.notification_destinations values ('30000000-0000-4000-8000-000000000001', '${workspace}', 'active');
   `);
-  await db.exec(await read('../migrations/20261012215000_model_substitution_notice.sql'));
+  await db.exec(await read('../migrations/20261015111400_model_substitution_notice.sql'));
 
   // Backend-only.
   for (const role of ['anon', 'authenticated']) {
