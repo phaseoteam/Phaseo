@@ -57,7 +57,8 @@ REVOKE ALL ON TABLE "public"."feedback_requests" FROM "anon", "authenticated";
 CREATE OR REPLACE FUNCTION public.enqueue_feedback_request_emails (
   p_campaign              text,
   p_min_account_age_days  integer,
-  p_limit                 integer
+  p_limit                 integer,
+  p_reward_cap            integer
 )
   RETURNS integer
   LANGUAGE plpgsql
@@ -66,13 +67,19 @@ CREATE OR REPLACE FUNCTION public.enqueue_feedback_request_emails (
   AS $function$
 -- Queues at most p_limit feedback emails, oldest accounts first, for users who signed
 -- up at least p_min_account_age_days ago and have not been asked in this campaign.
--- The segment picks the email's question and the recency its opening line.
+-- The segment picks the email's question and the recency its opening line, and
+-- reward_available drops the thank-you offer once the campaign's codes run out.
 declare
   v_queued integer;
+  v_reward_available boolean;
 begin
   if p_limit is null or p_limit <= 0 then
     return 0;
   end if;
+
+  select coalesce(p_reward_cap, 0) > count(*) into v_reward_available
+  from public.feedback_requests
+  where campaign = p_campaign and reward_grant_id is not null;
 
   with candidates as (
     select
@@ -149,7 +156,8 @@ begin
         'token', r.access_token,
         'segment', r.segment,
         'recency', r.recency,
-        'first_name', s.first_name
+        'first_name', s.first_name,
+        'reward_available', v_reward_available
       ),
       'feedback_request:' || p_campaign || ':' || r.user_id
     from requested r
@@ -163,13 +171,13 @@ begin
 end;
 $function$;
 
-GRANT EXECUTE ON FUNCTION "public"."enqueue_feedback_request_emails"(text, integer, integer) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."enqueue_feedback_request_emails"(text, integer, integer, integer) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."enqueue_feedback_request_emails"(text, integer, integer) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."enqueue_feedback_request_emails"(text, integer, integer, integer) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."enqueue_feedback_request_emails"(text, integer, integer) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."enqueue_feedback_request_emails"(text, integer, integer, integer) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."enqueue_feedback_request_emails"(text, integer, integer) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."enqueue_feedback_request_emails"(text, integer, integer, integer) FROM PUBLIC, "anon", "authenticated";
 CREATE OR REPLACE FUNCTION public.get_feedback_request (
   p_token uuid
 )
@@ -204,16 +212,19 @@ REVOKE ALL ON FUNCTION "public"."get_feedback_request"(uuid) FROM PUBLIC, "anon"
 CREATE OR REPLACE FUNCTION public.opt_out_of_product_emails (
   p_token uuid
 )
-  RETURNS boolean
+  RETURNS jsonb
   LANGUAGE plpgsql
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
 -- One-click unsubscribe from a feedback email: opts the user out of all non-essential
 -- email and cancels any of their feedback emails still waiting in the outbox.
--- Repeating it is harmless. Returns false for an unknown token.
+-- Repeating it is harmless. Returns null for an unknown token, otherwise the user's
+-- addresses (current sign-in and any feedback email was sent to) so the caller can also
+-- unsubscribe them in the email provider.
 declare
   v_user_id uuid;
+  v_emails jsonb;
 begin
   update public.feedback_requests
   set opted_out_at = coalesce(opted_out_at, now())
@@ -221,7 +232,7 @@ begin
   returning user_id into v_user_id;
 
   if v_user_id is null then
-    return false;
+    return null;
   end if;
 
   update public.users
@@ -232,7 +243,16 @@ begin
   set attempts = 5, last_error = 'unsubscribed'
   where user_id = v_user_id and kind = 'feedback_request' and sent_at is null;
 
-  return true;
+  select coalesce(jsonb_agg(distinct e.email order by e.email), '[]'::jsonb) into v_emails
+  from (
+    select lower(trim(a.email)) as email from auth.users a where a.id = v_user_id
+    union
+    select lower(trim(o.to_email)) from public.email_outbox o
+    where o.user_id = v_user_id and o.kind = 'feedback_request'
+  ) e
+  where nullif(e.email, '') is not null;
+
+  return jsonb_build_object('emails', v_emails);
 end;
 $function$;
 

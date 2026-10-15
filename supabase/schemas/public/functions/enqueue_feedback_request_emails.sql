@@ -1,7 +1,8 @@
 CREATE OR REPLACE FUNCTION public.enqueue_feedback_request_emails (
   p_campaign              text,
   p_min_account_age_days  integer,
-  p_limit                 integer
+  p_limit                 integer,
+  p_reward_cap            integer
 )
   RETURNS integer
   LANGUAGE plpgsql
@@ -10,13 +11,19 @@ CREATE OR REPLACE FUNCTION public.enqueue_feedback_request_emails (
   AS $function$
 -- Queues at most p_limit feedback emails, oldest accounts first, for users who signed
 -- up at least p_min_account_age_days ago and have not been asked in this campaign.
--- The segment picks the email's question and the recency its opening line.
+-- The segment picks the email's question and the recency its opening line, and
+-- reward_available drops the thank-you offer once the campaign's codes run out.
 declare
   v_queued integer;
+  v_reward_available boolean;
 begin
   if p_limit is null or p_limit <= 0 then
     return 0;
   end if;
+
+  select coalesce(p_reward_cap, 0) > count(*) into v_reward_available
+  from public.feedback_requests
+  where campaign = p_campaign and reward_grant_id is not null;
 
   with candidates as (
     select
@@ -93,7 +100,8 @@ begin
         'token', r.access_token,
         'segment', r.segment,
         'recency', r.recency,
-        'first_name', s.first_name
+        'first_name', s.first_name,
+        'reward_available', v_reward_available
       ),
       'feedback_request:' || p_campaign || ':' || r.user_id
     from requested r
@@ -107,10 +115,10 @@ begin
 end;
 $function$;
 
-GRANT EXECUTE ON FUNCTION "public"."enqueue_feedback_request_emails"(text, integer, integer) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."enqueue_feedback_request_emails"(text, integer, integer, integer) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."enqueue_feedback_request_emails"(text, integer, integer) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."enqueue_feedback_request_emails"(text, integer, integer, integer) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."enqueue_feedback_request_emails"(text, integer, integer) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."enqueue_feedback_request_emails"(text, integer, integer, integer) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."enqueue_feedback_request_emails"(text, integer, integer) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."enqueue_feedback_request_emails"(text, integer, integer, integer) FROM PUBLIC, "anon", "authenticated";
