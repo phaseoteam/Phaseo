@@ -27,7 +27,7 @@ try {
       ('lab/self', 'lab/self'),
       ('lab/a', null), ('lab/b', null), ('lab/c', null);
   `);
-  const migration = await readFile(new URL('../migrations/20261012150100_model_successor_integrity.sql', import.meta.url), 'utf8');
+  const migration = await readFile(new URL('../migrations/20261015110100_model_successor_integrity.sql', import.meta.url), 'utf8');
   await db.exec(migration);
 
   assert.equal(await successor('minimax/speech-2.6-hd'), 'minimax/speech-2.8-hd');
@@ -42,6 +42,32 @@ try {
   await assert.rejects(setSuccessor('lab/c', 'lab/a'), /would loop back to lab\/c/);
   await assert.rejects(setSuccessor('lab/c', 'lab/c'), /replacement_not_self_check|would loop back/);
   await assert.rejects(setSuccessor('lab/c', 'lab/missing'), /foreign key/);
+
+  // A long chain that ends is accepted however many models it has.
+  const chain = Array.from({ length: 40 }, (_, index) => `chain/m${String(index).padStart(2, '0')}`);
+  await db.exec(`insert into public.v2_models (model_slug) values ${chain.map((slug) => `('${slug}')`).join(', ')}`);
+  for (let index = chain.length - 2; index >= 0; index -= 1) await setSuccessor(chain[index], chain[index + 1]);
+  assert.equal(await successor('chain/m00'), 'chain/m01');
+  assert.equal(await successor('chain/m38'), 'chain/m39');
+  // Prepending to the long chain walks all 40 models and still passes.
+  await db.exec(`insert into public.v2_models (model_slug, replacement_model_slug) values ('chain/head', 'chain/m00')`);
+  assert.equal(await successor('chain/head'), 'chain/m00');
+  // Closing the 41-model chain into a loop is still caught at the far end.
+  await assert.rejects(setSuccessor('chain/m39', 'chain/head'), /would loop back to chain\/m39/);
+  await assert.rejects(setSuccessor('chain/m39', 'chain/m20'), /would loop back to chain\/m39/);
+  assert.equal(await successor('chain/m39'), null);
+
+  // A loop that already exists further along (written with the trigger off)
+  // does not involve the edited model, so the walk stops instead of spinning.
+  // Separate statements: the deferred foreign key leaves trigger events pending
+  // within one multi-statement batch, which blocks the ALTER TABLE.
+  await db.exec(`insert into public.v2_models (model_slug) values ('loop/x'), ('loop/y'), ('loop/entry')`);
+  await db.exec('alter table public.v2_models disable trigger guard_replacement_cycle');
+  await setSuccessor('loop/x', 'loop/y');
+  await setSuccessor('loop/y', 'loop/x');
+  await db.exec('alter table public.v2_models enable trigger guard_replacement_cycle');
+  await setSuccessor('loop/entry', 'loop/x');
+  assert.equal(await successor('loop/entry'), 'loop/x');
 
   // The foreign key is deferred, so a writer may point at a model it inserts later in the same transaction.
   await db.exec(`
