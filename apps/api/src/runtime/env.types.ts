@@ -205,6 +205,9 @@ export type GatewayBindings = {
     GOOGLE_VERTEX_ACCESS_TOKEN?: string;
     GOOGLE_VERTEX_PROJECT?: string;
     GOOGLE_VERTEX_LOCATION?: string;
+    GOOGLE_VERTEX_PROJECT_NUMBER?: string;
+    GOOGLE_VERTEX_BATCH_LOCATION?: string;
+    GOOGLE_VERTEX_BATCH_BUCKET?: string;
     HYPERBOLIC_API_KEY?: string;
     HYPERBOLIC_BASE_URL?: string;
     INCEPTION_API_KEY?: string;

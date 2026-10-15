@@ -22,6 +22,7 @@ function stripProviderPrefix(providerId: string, model: string): string {
 		openai: ["openai/"],
 		anthropic: ["anthropic/"],
 		"google-ai-studio": ["google/", "gemini/"],
+		"google-vertex": ["google/", "gemini/"],
 		mistral: ["mistral/"],
 		moonshotai: ["moonshotai/", "moonshot-ai/"],
 		"x-ai": ["x-ai/", "xai/", "spacex-ai/"],
@@ -97,7 +98,7 @@ export function resolveBatchPricingModelCandidates(providerId: string, model: un
 
 	add(trimmed);
 	if (!trimmed.includes("/")) add(`${providerId}/${trimmed}`);
-	if (providerId === "google-ai-studio") {
+	if (providerId === "google-ai-studio" || providerId === "google-vertex") {
 		add(`google/${stripProviderPrefix(providerId, trimmed)}`);
 	}
 	if (providerId === "x-ai") {

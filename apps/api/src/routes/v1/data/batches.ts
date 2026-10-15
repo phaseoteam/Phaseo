@@ -3,6 +3,7 @@
 // How: Maps requests to pipeline entrypoints and responses.
 
 import { Hono } from "hono";
+import { prepareVertexBatch, fetchVertexBatchApi, deleteVertexBatchInput, VertexBatchPreDispatchError, type VertexBatchStorage } from "@providers/google-vertex/batch";
 import { BatchResultsError, openBatchResultsStream, supportsBatchResults } from "@core/batch-results";
 import { admitBatchDownload } from "@core/batch-download-limits";
 import { selectBatchProviderOptions } from "@core/batch-provider-options";
@@ -81,6 +82,7 @@ import { fetchCatalogue } from "../control/models.catalogue";
 const OPENAI_PROVIDER_ID = "openai";
 const ANTHROPIC_PROVIDER_ID = "anthropic";
 const GOOGLE_AI_STUDIO_PROVIDER_ID = "google-ai-studio";
+const GOOGLE_VERTEX_PROVIDER_ID = "google-vertex";
 const MISTRAL_PROVIDER_ID = "mistral";
 const MOONSHOT_PROVIDER_ID = "moonshotai";
 const X_AI_PROVIDER_ID = "x-ai";
@@ -322,7 +324,7 @@ export function normalizeBatchEndpoint(value: unknown): string | null {
 
 function defaultBatchEndpointForProvider(providerId: string): string {
 	if (providerId === ANTHROPIC_PROVIDER_ID) return "/v1/messages";
-	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) return "/v1/generateContent";
+	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID || providerId === GOOGLE_VERTEX_PROVIDER_ID) return "/v1/generateContent";
 	if (providerId === OPENAI_PROVIDER_ID || providerId === X_AI_PROVIDER_ID) return "/v1/responses";
 	return "/v1/chat/completions";
 }
@@ -427,9 +429,10 @@ function buildBodyFromPromptItem(
 			...(temperature !== undefined ? { temperature } : {}),
 		};
 	}
-	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) {
+	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID || providerId === GOOGLE_VERTEX_PROVIDER_ID) {
 		return {
 			model: nativeModel,
+			...(providerId === GOOGLE_VERTEX_PROVIDER_ID && system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
 			generationConfig: {
 				...(maxOutputTokens !== undefined || maxTokens !== undefined
 					? { maxOutputTokens: maxOutputTokens ?? maxTokens }
@@ -511,7 +514,7 @@ function normalizeRequestBodyForProvider(
 			max_tokens: record.max_tokens ?? record.max_output_tokens ?? DEFAULT_BATCH_MAX_OUTPUT_TOKENS,
 		};
 	}
-	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) {
+	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID || providerId === GOOGLE_VERTEX_PROVIDER_ID) {
 		const generationConfig = record.generationConfig && typeof record.generationConfig === "object" && !Array.isArray(record.generationConfig)
 			? record.generationConfig as Record<string, unknown>
 			: record.generation_config && typeof record.generation_config === "object" && !Array.isArray(record.generation_config)
@@ -911,6 +914,7 @@ async function fetchProviderBatchApi(providerId: string, args: {
 	credential?: BatchProviderCredential;
 }): Promise<Response> {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
+	if (providerId === GOOGLE_VERTEX_PROVIDER_ID) return fetchVertexBatchApi(args);
 	if (providerId === ANTHROPIC_PROVIDER_ID) {
 		let keyInfo: { key: string };
 		try {
@@ -1243,6 +1247,7 @@ function buildProviderRecoveryName(batchIdRaw: unknown, userNameRaw: unknown): s
 }
 
 function buildProviderRetrievePath(providerId: string, nativeBatchId: string): string {
+	if (providerId === GOOGLE_VERTEX_PROVIDER_ID) return `/${nativeBatchId}`;
 	if (providerId === MISTRAL_PROVIDER_ID) return `/batch/jobs/${encodeURIComponent(nativeBatchId)}`;
 	if (providerId === ANTHROPIC_PROVIDER_ID) return `/messages/batches/${encodeURIComponent(nativeBatchId)}`;
 	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) {
@@ -1253,6 +1258,7 @@ function buildProviderRetrievePath(providerId: string, nativeBatchId: string): s
 }
 
 function buildProviderCancelPath(providerId: string, nativeBatchId: string): string {
+	if (providerId === GOOGLE_VERTEX_PROVIDER_ID) return `/${nativeBatchId}:cancel`;
 	if (providerId === MISTRAL_PROVIDER_ID) return `/batch/jobs/${encodeURIComponent(nativeBatchId)}/cancel`;
 	if (providerId === ANTHROPIC_PROVIDER_ID) return `/messages/batches/${encodeURIComponent(nativeBatchId)}/cancel`;
 	if (providerId === X_AI_PROVIDER_ID) return `/batches/${encodeURIComponent(nativeBatchId)}:cancel`;
@@ -1269,7 +1275,7 @@ function batchMetaFromPayload(payload: any, base: BatchJobMeta): BatchJobMeta {
 	return {
 		...base,
 		status: toText(payload?.status) ?? base.status ?? null,
-		model: toText(payload?.model) ?? base.model ?? null,
+		model: base.provider === GOOGLE_VERTEX_PROVIDER_ID ? base.model : toText(payload?.model) ?? base.model ?? null,
 		nativeBatchId: nativeId ?? base.nativeBatchId ?? null,
 		endpoint: toText(payload?.endpoint) ?? base.endpoint ?? null,
 		completionWindow: toText(payload?.completion_window) ?? base.completionWindow ?? null,
@@ -2146,14 +2152,18 @@ async function handleCreate(req: Request) {
 			resolveBatchSubmissionCredential({ workspaceId: auth.workspaceId, providerId, apiKeyId: auth.apiKeyId, model }),
 		));
 		batchCredential = resolved[0]!.credential;
+		if (providerId === GOOGLE_VERTEX_PROVIDER_ID && batchCredential.source !== "gateway") {
+			throw new Error("vertex_batch_requires_managed_credentials");
+		}
 		if (resolved.some(({ credential }) => credential.source !== batchCredential.source || credential.byokKeyId !== batchCredential.byokKeyId)) {
 			throw new Error("batch_models_require_incompatible_credentials");
 		}
 	} catch (error) {
 		const reason = error instanceof Error ? error.message : "batch_provider_credentials_unavailable";
-		return err(reason === "byok_credentials_required" ? "validation_error" : "gateway_error", {
+		const managedRequired = reason === "vertex_batch_requires_managed_credentials";
+		return err(reason === "byok_credentials_required" || managedRequired ? "validation_error" : "gateway_error", {
 			reason,
-			message: reason === "byok_credentials_required"
+			message: managedRequired ? "Vertex Batch requires Phaseo-managed credentials; BYOK is not supported." : reason === "byok_credentials_required"
 				? "This provider requires your own provider credential. Add an eligible BYOK key and retry."
 				: "Provider credentials are unavailable for this batch.",
 			request_id: requestId,
@@ -2284,8 +2294,18 @@ async function handleCreate(req: Request) {
 		upstreamPayload.endpoint = resolveBatchEndpoint(providerId, payload);
 	}
 	let providerCreate: ReturnType<typeof buildProviderBatchCreate>;
+	let vertexStorage: VertexBatchStorage | undefined;
 	try {
-		providerCreate = buildProviderBatchCreate(providerId, {
+		if (providerId === GOOGLE_VERTEX_PROVIDER_ID) {
+			const prepared = await prepareVertexBatch({
+				workspaceId: auth.workspaceId, batchId,
+				model: providerNativeModelId(providerId, toText(payload.model) ?? toText((requestRows?.[0]?.body as any)?.model) ?? ""),
+				rows: (requestRows ?? []).map((row) => ({ custom_id: row.customId, body: row.body })),
+				credential: batchCredential,
+			});
+			vertexStorage = prepared.storage;
+			providerCreate = prepared;
+		} else providerCreate = buildProviderBatchCreate(providerId, {
 			payload,
 			upstreamPayload,
 			inputMode: inputMode.mode,
@@ -2306,6 +2326,7 @@ async function handleCreate(req: Request) {
 		});
 	}
 	const submissionMeta = batchMetaFromPayload(null, {
+		vertexStorage,
 		provider: providerId,
 		requestId,
 		apiKeyId: auth.apiKeyId,
@@ -2336,6 +2357,7 @@ async function handleCreate(req: Request) {
 	try {
 		await saveBatchJobMeta(auth.workspaceId, batchId, submissionMeta);
 	} catch (lookupErr) {
+		if (vertexStorage) await deleteVertexBatchInput(vertexStorage, batchCredential).catch(() => undefined);
 		await releaseWalletReservation({
 			workspaceId: auth.workspaceId,
 			keyId: auth.apiKeyId,
@@ -2363,7 +2385,8 @@ async function handleCreate(req: Request) {
 			credential: batchCredential,
 		});
 	} catch (error) {
-		if (error instanceof ProviderBatchPreDispatchError) {
+		if (error instanceof ProviderBatchPreDispatchError || error instanceof VertexBatchPreDispatchError) {
+			if (vertexStorage) await deleteVertexBatchInput(vertexStorage, batchCredential).catch(() => undefined);
 			await finalizeRejectedBatchSubmission({
 				workspaceId: auth.workspaceId,
 				batchId,
@@ -2391,6 +2414,7 @@ async function handleCreate(req: Request) {
 	let upstreamJson = normalizeProviderBatchPayload(providerId, await parseUpstreamJson(upstream));
 	if (!upstream.ok) {
 		if (isDefinitiveProviderRejection(upstream.status)) {
+			if (vertexStorage) await deleteVertexBatchInput(vertexStorage, batchCredential).catch(() => undefined);
 			await finalizeRejectedBatchSubmission({
 				workspaceId: auth.workspaceId,
 				batchId,
@@ -2478,6 +2502,7 @@ async function handleCreate(req: Request) {
 		let persistedMeta: BatchJobMeta | null = null;
 		if (batchId) {
 			persistedMeta = batchMetaFromPayload(upstreamJson, {
+				vertexStorage,
 				provider: providerId,
 				requestId,
 				apiKeyId: auth.apiKeyId,

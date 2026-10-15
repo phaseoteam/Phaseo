@@ -121,8 +121,10 @@ describe("batch capabilities", () => {
 			"ovhcloud",
 			"anthropic",
 			"google-ai-studio",
+			"google-vertex",
 			"mistral",
 			"moonshotai",
+			"xiaomi",
 			"together",
 			"parasail",
 		]);
@@ -157,7 +159,11 @@ describe("batch capabilities", () => {
 			gatewayInputModes: [],
 			endpoints: [{ endpoint: "/v1/chat/completions", mode: "native" }],
 		});
-		for (const providerId of ["google-vertex", "google-vertex-eu"]) {
+		expect(getBatchProviderCapability("google-vertex")).toMatchObject({
+			status: "active", previewReadiness: "validated", nativeInputModes: ["file"], gatewayInputModes: ["requests"],
+			endpoints: [{ endpoint: "/v1/generateContent", mode: "native" }],
+		});
+		for (const providerId of ["google-vertex-eu"]) {
 			expect(getBatchProviderCapability(providerId)).toMatchObject({
 				status: "planned",
 				previewReadiness: "blocked",
