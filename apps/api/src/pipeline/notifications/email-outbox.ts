@@ -318,6 +318,8 @@ function renderEmailForRow(row: OutboxRow): {
 	throw new Error(`unsupported_email_template:${row.template || row.kind}`);
 }
 
+const FEEDBACK_REQUESTS_PER_DRAIN = 5;
+
 export async function drainEmailOutbox(limit = 25): Promise<{
 	processed: number;
 	sent: number;
@@ -325,15 +327,19 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 }> {
 	const supabase = getSupabaseAdmin();
 	const bindings = getBindings();
+	const columns =
+		"id,created_at,dedupe_key,kind,template,to_email,subject,workspace_id,user_id,payload,attempts,last_error,sent_at";
 
+	// Routed notifications have their own destination snapshot and delivery job.
+	// Keep them out of the legacy owner-email drain so a model deprecation cannot
+	// be sent twice (or bypass the per-alert route entirely). Feedback requests are
+	// drained separately below so a daily batch never delays transactional email.
 	const { data, error } = await supabase
 		.from("email_outbox")
-		.select(
-			"id,created_at,dedupe_key,kind,template,to_email,subject,workspace_id,user_id,payload,attempts,last_error,sent_at",
-		)
+		.select(columns)
 		.is("sent_at", null)
 		.lt("attempts", 5)
-		.not("kind", "in", '("notification_test","model_deprecation")')
+		.not("kind", "in", '("notification_test","model_deprecation","feedback_request")')
 		.neq("template", "model_deprecation")
 		.order("created_at", { ascending: true })
 		.limit(limit);
@@ -342,10 +348,25 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 		throw new Error(`email_outbox_fetch_error:${error.message ?? "unknown"}`);
 	}
 
-	// Routed notifications have their own destination snapshot and delivery job.
-	// Keep them out of the legacy owner-email drain so a model deprecation cannot
-	// be sent twice (or bypass the per-alert route entirely).
 	const rows = (data ?? []) as unknown as OutboxRow[];
+
+	// Feedback requests only use capacity transactional email left over, a few per
+	// run, which also spreads a day's batch out instead of sending it in one burst.
+	const feedbackLimit = Math.min(FEEDBACK_REQUESTS_PER_DRAIN, limit - rows.length);
+	if (feedbackLimit > 0) {
+		const { data: feedbackData, error: feedbackError } = await supabase
+			.from("email_outbox")
+			.select(columns)
+			.is("sent_at", null)
+			.lt("attempts", 5)
+			.eq("kind", "feedback_request")
+			.order("created_at", { ascending: true })
+			.limit(feedbackLimit);
+		if (feedbackError) {
+			throw new Error(`email_outbox_fetch_error:${feedbackError.message ?? "unknown"}`);
+		}
+		rows.push(...((feedbackData ?? []) as unknown as OutboxRow[]));
+	}
 	let sent = 0;
 	let failed = 0;
 

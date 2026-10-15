@@ -6,6 +6,7 @@ import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 
 export const FEEDBACK_REQUEST_MIN_ACCOUNT_AGE_DAYS = 90;
 const DEFAULT_DAILY_LIMIT = 50;
+const DEFAULT_REWARD_CAP = 100;
 const DEFAULT_CAMPAIGN = "v1";
 const DEFAULT_WEB_BASE_URL = "https://phaseo.app";
 
@@ -80,7 +81,8 @@ export function renderFeedbackRequestEmail(payload: Record<string, unknown>): Fe
 	const unsubscribeUrl = `${baseUrl}/feedback/${token}/unsubscribe`;
 	const oneClickUnsubscribeUrl = `${baseUrl}/api/_web/feedback/${token}/unsubscribe`;
 	const reward = rewardUsd(bindings.FEEDBACK_REWARD_USD);
-	const rewardLine = reward > 0
+	// The database sets reward_available to false once the campaign's codes are used up.
+	const rewardLine = reward > 0 && payload.reward_available !== false
 		? `As a small thank-you, you'll get ${formatUsd(reward)} of Phaseo credit for answering, whatever you say (while this round's thank-you budget lasts).`
 		: null;
 
@@ -138,10 +140,13 @@ export async function enqueueFeedbackRequestEmails(): Promise<number> {
 	const bindings = getBindings();
 	const limit = Number.parseInt(bindings.FEEDBACK_REQUEST_DAILY_LIMIT ?? "", 10);
 	const campaign = bindings.FEEDBACK_REQUEST_CAMPAIGN?.trim() || DEFAULT_CAMPAIGN;
+	// Must match web-api's FEEDBACK_REWARD_CAP, which enforces the cap when codes are issued.
+	const rewardCap = Number.parseInt(bindings.FEEDBACK_REWARD_CAP ?? "", 10);
 	const { data, error } = await getSupabaseAdmin().rpc("enqueue_feedback_request_emails", {
 		p_campaign: campaign,
 		p_min_account_age_days: FEEDBACK_REQUEST_MIN_ACCOUNT_AGE_DAYS,
 		p_limit: Number.isFinite(limit) && limit >= 0 ? limit : DEFAULT_DAILY_LIMIT,
+		p_reward_cap: Number.isFinite(rewardCap) && rewardCap >= 0 ? rewardCap : DEFAULT_REWARD_CAP,
 	});
 	if (error) throw new Error(`feedback_request_enqueue_error:${error.message ?? "unknown"}`);
 	return typeof data === "number" ? data : 0;

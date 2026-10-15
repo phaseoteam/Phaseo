@@ -65,6 +65,14 @@ describe("feedback request email", () => {
 		expect(email.text).toContain(`https://staging.phaseo.app/feedback/${token}`);
 	});
 
+	it("drops the thank-you offer once the campaign's codes are used up", () => {
+		const available = renderFeedbackRequestEmail({ token, segment: "paid", recency: "active", reward_available: true });
+		expect(available.text).toContain("$1 of Phaseo credit");
+		const spent = renderFeedbackRequestEmail({ token, segment: "paid", recency: "active", reward_available: false });
+		expect(spent.text).not.toContain("credit for answering");
+		expect(spent.html).not.toContain("credit for answering");
+	});
+
 	it("refuses to render without a real sender or a valid token", () => {
 		state.bindings = {};
 		expect(() => renderFeedbackRequestEmail({ token, segment: "paid", recency: "active" })).toThrow("missing_feedback_request_from_email");
@@ -79,15 +87,17 @@ describe("feedback request email", () => {
 			p_campaign: "v1",
 			p_min_account_age_days: 90,
 			p_limit: 50,
+			p_reward_cap: 100,
 		});
 
-		state.bindings = { ...state.bindings, FEEDBACK_REQUEST_DAILY_LIMIT: "5", FEEDBACK_REQUEST_CAMPAIGN: "v2" };
+		state.bindings = { ...state.bindings, FEEDBACK_REQUEST_DAILY_LIMIT: "5", FEEDBACK_REQUEST_CAMPAIGN: "v2", FEEDBACK_REWARD_CAP: "20" };
 		state.rpc.mockResolvedValueOnce({ data: 0, error: null });
 		await enqueueFeedbackRequestEmails();
 		expect(state.rpc).toHaveBeenLastCalledWith("enqueue_feedback_request_emails", {
 			p_campaign: "v2",
 			p_min_account_age_days: 90,
 			p_limit: 5,
+			p_reward_cap: 20,
 		});
 
 		state.rpc.mockResolvedValueOnce({ data: null, error: { message: "boom" } });
