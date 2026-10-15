@@ -18,14 +18,14 @@ try {
     create table public.v2_models(model_slug text primary key, status text not null default 'active', hidden boolean not null default false,
       input_modalities text[] not null default '{text}', output_modalities text[] not null default '{text}', variant_kind text not null default 'standard',
       replacement_model_slug text, retired_at timestamptz);
-    create table public.v2_providers(provider_slug text primary key, status text not null default 'active');
+    create table public.v2_providers(provider_slug text primary key, status text not null default 'active', routing_enabled boolean not null default true);
     create table public.v2_model_provider_routes(provider_model_id text primary key, model_slug text not null, provider_slug text not null,
       routing_enabled boolean not null default true, context_length integer, metadata jsonb not null default '{}',
       effective_from timestamptz, effective_to timestamptz);
     create table public.v2_route_capabilities(provider_model_id text, capability_id text, status text not null default 'active',
       effective_from timestamptz, effective_to timestamptz);
     create table public.v2_pricing_skus(sku_id text primary key, provider_model_id text, sku_code text, status text not null default 'active',
-      service_tier_slug text, effective_from timestamptz not null default now() - interval '1 day');
+      service_tier_slug text, effective_from timestamptz not null default now() - interval '1 day', effective_to timestamptz);
     create table public.v2_pricing_sku_meters(sku_id text, meter_key text, unit_quantity numeric not null default 1, price_nanos numeric not null,
       billable boolean not null default true);
   `);
@@ -103,9 +103,21 @@ try {
   result = await resolve('lab/old:free');
   assert.deepEqual([result.target, result.reason], [null, 'free_to_paid']);
 
+  // An expired successor price does not count, however cheap.
+  await db.exec(`update public.v2_model_successor_routing set auto_route_enabled=true, approved_successor_slug='lab/new', approved_at=now() where model_slug='lab/mid'`);
+  await db.exec(`insert into public.v2_pricing_skus(sku_id, provider_model_id, sku_code, effective_to) values ('new-legacy-sku', 'new-host', 'legacy', now() - interval '1 hour');
+    insert into public.v2_pricing_sku_meters(sku_id, meter_key, unit_quantity, price_nanos) values ('new-legacy-sku', 'input_tokens', 1000000, 1000000000)`);
+  assert.equal(Number((await resolve('lab/old')).price_ratio), 1.25);
+
+  // A charge only the successor bills makes the prices not comparable.
+  await db.exec(`insert into public.v2_pricing_sku_meters(sku_id, meter_key, unit_quantity, price_nanos) values ('new-sku', 'requests', 1, 1000000)`);
+  result = await resolve('lab/old');
+  assert.deepEqual([result.target, result.price_ratio, result.price_comparable], ['lab/new', null, false]);
+  await db.exec(`delete from public.v2_pricing_sku_meters where sku_id='new-sku' and meter_key='requests'`);
+  assert.equal((await resolve('lab/old')).price_comparable, true);
+
   // Without shared priced meters the ratio is unknown.
   await db.exec(`update public.v2_pricing_sku_meters set meter_key='image_units' where sku_id='new-sku'`);
-  await db.exec(`update public.v2_model_successor_routing set auto_route_enabled=true, approved_successor_slug='lab/new', approved_at=now() where model_slug='lab/mid'`);
   result = await resolve('lab/old');
   assert.deepEqual([result.target, result.price_ratio, result.price_comparable], ['lab/new', null, false]);
   console.log('gateway resolves model successors');

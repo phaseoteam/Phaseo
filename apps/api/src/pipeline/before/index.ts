@@ -762,6 +762,8 @@ export async function beforeRequest(
         }
         c = redirected.successorContext;
         modelSubstitution = redirected.substitution;
+        // Downstream decoding reads the model from the body, not the context.
+        body = { ...body, model: modelSubstitution.to };
         options?.onObservabilitySnapshot?.({ requestPayload: rawBody, requestedModel, model: modelSubstitution.to });
     }
     let { context, providers, resolvedModel, candidateDiagnostics } = c.value;

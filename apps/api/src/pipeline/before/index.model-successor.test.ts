@@ -303,6 +303,7 @@ describe("beforeRequest model successor redirect", () => {
 		if (result.ok) {
 			expect(result.ctx.model).toBe("openai/gpt-new");
 			expect(result.ctx.requestedModel).toBe("openai/gpt-old");
+			expect(result.ctx.body.model).toBe("openai/gpt-new");
 			expect(result.ctx.routingDiagnostics?.modelSubstitution).toEqual({
 				from: "openai/gpt-old",
 				to: "openai/gpt-new",
