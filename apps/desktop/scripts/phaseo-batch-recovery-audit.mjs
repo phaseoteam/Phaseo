@@ -103,10 +103,11 @@ if (stage) {
   try {
    if (process.platform === 'win32') execFileSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true, timeout: 15000, stdio: 'pipe' }); else assert.ok(child.kill('SIGKILL'));
   } catch (error) {
-   // Only the known Windows already-exited tree result is admissible. Missing
+   // Only the known Windows tree results are admissible: already-exited descendants, and ones
+   // Windows will not terminate (such as a console host). The parent's exit is still confirmed below. Missing
    // executables, timeouts and permission failures must still fail the audit.
    const reasons = String(error.stderr).split(/\r?\n/).map(line => line.trim()).filter(line => line.startsWith('Reason:'));
-   if (process.platform !== 'win32' || ![128, 255].includes(error.status) || !reasons.length || reasons.some(line => line !== 'Reason: There is no running instance of the task.')) throw error;
+   if (process.platform !== 'win32' || ![128, 255].includes(error.status) || !reasons.length || reasons.some(line => line !== 'Reason: There is no running instance of the task.' && line !== 'Reason: The operation attempted is not supported.')) throw error;
    killError = error;
   }
   // Windows tree traversal can report already-exited descendants after killing
