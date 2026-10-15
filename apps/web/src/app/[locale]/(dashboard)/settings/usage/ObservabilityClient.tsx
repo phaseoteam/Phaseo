@@ -30,7 +30,7 @@ import {
 	type UsageRangePreset,
 } from "@/lib/gateway/usage/timeRange";
 import { forecastMonthSpend } from "@/lib/gateway/usage/monthSpendForecast";
-import { forecastPeriod, periodKpiForecasts } from "@/lib/gateway/usage/periodUsageKpis";
+import { forecastPeriod, kpiFooters, type KpiCard } from "@/lib/gateway/usage/periodUsageKpis";
 import {
 	buildGuardrailEnforcementMetrics,
 	type GuardrailEnforcementMetricsResult,
@@ -945,14 +945,20 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 	});
 
 	const usageDays = initial.monthUsage;
-	const period = usageDays ? forecastPeriod({ preset, from, to, observedAt: usageDays.observedAt }) : null;
-	const kpiForecasts = usageDays && period ? periodKpiForecasts({ ...usageDays, period }) : null;
+	const footers = kpiFooters({
+		days: usageDays?.days ?? null,
+		observedAt: usageDays?.observedAt ?? Date.parse(to),
+		period: usageDays ? forecastPeriod({ preset, from, to, observedAt: usageDays.observedAt }) : null,
+		cards: Object.fromEntries(kpis.map((kpi) => [kpi.id, { value: kpi.value, previous: kpi.previous }])) as Record<ObservabilityKpi["id"], KpiCard>,
+		currentComplete: !currentRequestResult.isSampled,
+		previousComplete: !previousRequestResult.isSampled,
+	});
 	const data: ObservabilityData = {
 		range,
 		periodLabel: getUsageRangeLabel({ preset, customFrom, customTo }),
 		isSampled: currentRequestResult.isSampled,
 		sampleLimit: currentRequestResult.limit,
-		kpis: kpiForecasts ? kpis.map((kpi) => ({ ...kpi, forecast: kpiForecasts[kpi.id] })) : kpis,
+		kpis: footers ? kpis.map((kpi) => ({ ...kpi, footer: footers[kpi.id] })) : kpis,
 		monthSpend: initial.monthUsage ? forecastMonthSpend(initial.monthUsage) : null,
 		topApiKeys,
 		topApps,

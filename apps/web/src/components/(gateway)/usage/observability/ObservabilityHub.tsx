@@ -637,35 +637,57 @@ function kpiDeltaClass(kpi: ObservabilityKpi): string {
 }
 
 /**
- * A projection to two significant figures, so the range fits a narrow card;
- * one value when both ends round alike. Dollar amounts under $10 keep their
- * cents, so $0.20 doesn't read as $0.2.
+ * Two significant figures, so a footer fits a narrow card. Dollar amounts
+ * under $10 keep their cents, so $0.20 doesn't read as $0.2.
  */
-function formatProjectedRange(kpi: ObservabilityKpi, low: number, high: number): string {
+function compactKpiFormat(kpi: ObservabilityKpi, largest: number): (value: number) => string {
 	const currency = kpi.format === "currency";
-	const format = new Intl.NumberFormat("en", currency && high < 10
+	return new Intl.NumberFormat("en", currency && largest < 10
 		? { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }
 		: { notation: "compact", maximumSignificantDigits: 2, ...(currency ? { style: "currency", currency: "USD" } : {}) },
 	).format;
+}
+
+/** A projection range; one value when both ends round alike. */
+function formatProjectedRange(kpi: ObservabilityKpi, low: number, high: number): string {
+	const format = compactKpiFormat(kpi, high);
 	const [lowLabel, highLabel] = [format(low), format(high)];
 	return lowLabel === highLabel ? lowLabel : `${lowLabel}–${highLabel}`;
 }
 
-function KpiForecastFooter({ kpi }: { kpi: ObservabilityKpi }) {
+/** A signed change, such as +$412 or −1.2K. */
+function formatChange(kpi: ObservabilityKpi, change: number): string {
+	const label = compactKpiFormat(kpi, Math.abs(change))(Math.abs(change));
+	if (label === compactKpiFormat(kpi, 0)(0)) return label;
+	return `${change > 0 ? "+" : "−"}${label}`;
+}
+
+const RUNNING_PERIOD_LABELS = {
+	day: "kpiForecastDay",
+	week: "kpiForecastWeek",
+	month: "kpiForecastMonth",
+	quarter: "kpiForecastQuarter",
+	year: "kpiForecastYear",
+} as const;
+
+function KpiFooterRow({ kpi }: { kpi: ObservabilityKpi }) {
 	const t = useTranslations("SettingsUI.observability");
-	const forecast = kpi.forecast;
-	if (!forecast) return null;
+	const footer = kpi.footer;
+	if (!footer) return null;
 	let label: string;
 	let value: string;
-	if (forecast.kind === "projected") {
-		const { period } = forecast;
-		label = period.kind === "rolling"
-			? t("kpiForecastNextDays", { days: period.days })
-			: t(({ week: "kpiForecastWeek", month: "kpiForecastMonth", quarter: "kpiForecastQuarter", year: "kpiForecastYear" } as const)[period.unit]);
-		value = formatProjectedRange(kpi, forecast.low, forecast.high);
+	if (footer.kind === "projected") {
+		const { period } = footer;
+		label = period.kind === "running"
+			? t(RUNNING_PERIOD_LABELS[period.unit])
+			: period.days === 1 ? t("kpiForecastNextDay") : t("kpiForecastNextDays", { days: period.days });
+		value = formatProjectedRange(kpi, footer.low, footer.high);
+	} else if (footer.kind === "change") {
+		label = t("kpiChangeFromPrevious");
+		value = formatChange(kpi, footer.value);
 	} else {
-		label = forecast.days === 1 ? t("kpiRecentToday") : t("kpiRecentWeek");
-		value = forecast.value === null ? "–" : formatKpiValue(kpi, forecast.value);
+		label = footer.kind === "previous" ? t("kpiPreviousPeriod") : footer.days === 1 ? t("kpiRecentToday") : t("kpiRecentWeek");
+		value = footer.value === null ? "–" : formatKpiValue(kpi, footer.value);
 	}
 	// The label gives way on a narrow card; the figure never does.
 	return (
@@ -733,7 +755,7 @@ function KpiMetric({ kpi }: { kpi: ObservabilityKpi }) {
 						</div>
 					</div>
 				</div>
-				<KpiForecastFooter kpi={kpi} />
+				<KpiFooterRow kpi={kpi} />
 			</Card>
 		</Link>
 	);
