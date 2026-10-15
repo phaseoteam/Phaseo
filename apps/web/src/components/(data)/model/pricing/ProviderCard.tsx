@@ -6,7 +6,7 @@ import { localizedPricingDisplayLabel } from "@/i18n/pricing-display";
 import { ProviderRouteName } from "./ProviderRouteName";
 import { ProviderRoutingHelp } from "./ProviderRoutingHelp";
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { resolveEnforcedZdr } from "@/components/(data)/model/pricing/zdr";
+import { resolveEnforcedZdr, resolveScopedZdr } from "@/components/(data)/model/pricing/zdr";
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { getLocalizedDocsHref } from "@/lib/docs";
@@ -907,6 +907,7 @@ const DATA_POLICY_FIELDS = [
 	"tier",
 	"confidence",
 	"zdrEligibility",
+	"zeroDataRetention",
 	"retentionMode",
 	"retentionDays",
 ] as const;
@@ -2847,11 +2848,7 @@ export default function ProviderCard({
 				notes: policy.reason ?? provider.provider.prompt_training_notes ?? null,
 				sourceUrl: policy.evidenceUrl ?? provider.provider.prompt_training_source_url ?? null,
 				promptTrainingPolicy: provider.provider.prompt_training_policy ?? null,
-				zeroDataRetention: policy.zdrEligibility === "eligible" && provider.provider.zero_data_retention === true
-					? true
-					: policy.zdrEligibility === "ineligible"
-						? false
-						: provider.provider.zero_data_retention ?? null,
+				zeroDataRetention: resolveEnforcedZdr(provider.provider.zero_data_retention, policy.zdrEligibility, policy.zeroDataRetention),
 			}));
 		})(),
 		residency: [
@@ -2859,7 +2856,12 @@ export default function ProviderCard({
 				residencyMode: provider.provider.residency_mode ?? null,
 				executionRegions: provider.provider.default_execution_regions ?? null,
 				dataRegions: provider.provider.default_data_regions ?? null,
-				zeroDataRetention: provider.provider.zero_data_retention ?? null,
+				zeroDataRetention: resolveScopedZdr(
+					provider.provider.zero_data_retention,
+					provider.provider.service_tier_data_policies?.[selectedPlan]
+						? [provider.provider.service_tier_data_policies[selectedPlan]]
+						: infoScope.map((model) => model.data_policy),
+				),
 				notes: provider.provider.residency_notes ?? null,
 				sourceUrl: provider.provider.residency_source_url ?? null,
 			},
@@ -3243,11 +3245,7 @@ export default function ProviderCard({
 	};
 	const selectedZdr = hasMixedCapabilityPolicies
 		? null
-		: selectedDataPolicy?.zdrEligibility === "eligible" && provider.provider.zero_data_retention === true
-			? true
-			: selectedDataPolicy?.zdrEligibility === "ineligible"
-				? false
-				: provider.provider.zero_data_retention;
+		: resolveEnforcedZdr(provider.provider.zero_data_retention, selectedDataPolicy?.zdrEligibility, selectedDataPolicy?.zeroDataRetention);
 	const dataPolicySummary = [
 		{
 			label: tProvider("dataPolicy"),

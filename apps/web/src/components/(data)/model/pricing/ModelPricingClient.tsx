@@ -9,7 +9,7 @@ import React, {
     useRef,
     useState,
 } from "react";
-import { resolveEnforcedZdr } from "@/components/(data)/model/pricing/zdr";
+import { resolveEnforcedZdr, resolveScopedZdr } from "@/components/(data)/model/pricing/zdr";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { fetchPublicWebApi } from "@/lib/web-api/client";
 import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
@@ -530,36 +530,16 @@ function matchesPrivacyFilter(
 		.length === 0;
 }
 
-function getPlanZdrEligibility(
+export function getPlanZdrEligibility(
 	provider: ProviderPricing,
 	plan: string,
 ): boolean | null {
-	// Eligibility metadata describes a possible offer; it is not proof that
-	// this provider route enforces zero retention. A provider-level false must
-	// always win, and an eligible tier is usable only with a verified true flag.
 	const providerZdr = provider.provider.zero_data_retention;
-	if (providerZdr === false) return false;
-	const tierPolicy = provider.provider.service_tier_data_policies?.[plan] ?? null;
-	const tierEligibility = tierPolicy?.zdrEligibility;
-	if (tierEligibility === "eligible") return providerZdr === true ? true : null;
-	if (tierEligibility === "ineligible") return false;
-
-    const providerModels = getProviderModelScopeForPlan(provider, plan);
-    const capabilityPolicies = providerModels.map((providerModel) => providerModel.data_policy);
-    const policiesWithData = capabilityPolicies.filter(
-        (policy): policy is NonNullable<typeof policy> => Boolean(policy),
-    );
-    if (!policiesWithData.length) return provider.provider.zero_data_retention ?? null;
-    if (policiesWithData.length !== capabilityPolicies.length) return null;
-
-    const eligibilities = new Set(
-        policiesWithData.map((policy) => policy.zdrEligibility ?? null),
-    );
-    if (eligibilities.size !== 1) return null;
-    const eligibility = policiesWithData[0]?.zdrEligibility;
-	if (eligibility === "eligible") return providerZdr === true ? true : null;
-	if (eligibility === "ineligible") return false;
-	return providerZdr ?? null;
+	const tierPolicy = provider.provider.service_tier_data_policies?.[plan];
+	const policies = tierPolicy
+		? [tierPolicy]
+		: getProviderModelScopeForPlan(provider, plan).map((model) => model.data_policy);
+	return resolveScopedZdr(providerZdr, policies);
 }
 
 function formatServiceTierLabel(plan: string): string {
@@ -678,6 +658,7 @@ function ProviderServiceTierInfoIcons({
 		zeroDataRetention: resolveEnforcedZdr(
 			provider.provider.zero_data_retention,
 			policy?.zdrEligibility,
+			policy?.zeroDataRetention,
 		),
 	}));
 
@@ -727,7 +708,7 @@ function ProviderServiceTierInfoIcons({
 						residencyMode: provider.provider.residency_mode ?? null,
 						executionRegions: provider.provider.default_execution_regions ?? null,
 						dataRegions: provider.provider.default_data_regions ?? null,
-						zeroDataRetention: provider.provider.zero_data_retention ?? null,
+						zeroDataRetention: getPlanZdrEligibility(provider, plan),
 						notes: provider.provider.residency_notes ?? null,
 						sourceUrl: provider.provider.residency_source_url ?? null,
 					},

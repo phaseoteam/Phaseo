@@ -68,3 +68,26 @@ describe("resolveEffectiveDataPolicy", () => {
         });
     });
 });
+
+it("grants retention only to the explicitly verified native capability", () => {
+    const native = provider({ zeroDataRetention: false, capabilityParams: { data_policy: {
+        tier: "private", confidence: "confirmed", zeroDataRetention: true,
+        zdrEligibility: "eligible", retentionMode: "none", retentionDays: 0,
+    } } });
+    expect(resolveEffectiveDataPolicy({ endpoint: "text.generate", provider: native }))
+        .toMatchObject({ tier: "private", zdrEligibility: "eligible", retentionMode: "none", retentionDays: 0 });
+    expect(resolveEffectiveDataPolicy({ endpoint: "text.generate", provider: provider({ zeroDataRetention: false }) }))
+        .toMatchObject({ zdrEligibility: "ineligible" });
+});
+
+
+it("does not promote an explicitly unguaranteed or ineligible route", () => {
+    for (const policy of [
+        { zeroDataRetention: false, zdrEligibility: "eligible" },
+        { zeroDataRetention: true, zdrEligibility: "ineligible" },
+    ]) {
+        expect(resolveEffectiveDataPolicy({ endpoint: "text.generate", provider: provider({
+            capabilityParams: { data_policy: policy },
+        }) })).toMatchObject({ zdrEligibility: "ineligible" });
+    }
+});

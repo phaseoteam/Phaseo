@@ -137,6 +137,13 @@ backfill and consumer cutover are verified.
   benchmark, subscription, availability, and performance requests together;
   streamed sections retain separate API routes, cache policies, and failure
   boundaries.
+- Admin-verified capability privacy policy lives in
+  `v2_route_capabilities.metadata.data_policy`, with a matching
+  `params.data_policy` copy for gateway snapshots. Catalog promotion preserves
+  that policy while replacing catalog-owned parameters. `zeroDataRetention`
+  is an explicit active route guarantee; `zdrEligibility` alone describes
+  eligibility and must not enable the web ZDR display. An `ineligible` policy
+  always denies ZDR. Provider defaults remain conservative for new routes.
 - The admin editor and approved database automations write the v2 catalogue
   directly. Public JSON snapshots are exported from v2 for compatibility,
   documentation, and SDK generation; they are not an authoring or import feed.

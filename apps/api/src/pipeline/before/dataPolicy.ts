@@ -59,9 +59,12 @@ function parseCapabilityOverride(params: Record<string, any> | null | undefined)
     const confidence = ["unknown", "confirmed", "maybe"].includes(String(raw.confidence))
         ? raw.confidence as EffectiveDataPolicy["confidence"]
         : undefined;
-    const zdrEligibility = ["unknown", "eligible", "ineligible", "conditional"].includes(String(raw.zdrEligibility))
+    const declaredEligibility = ["unknown", "eligible", "ineligible", "conditional"].includes(String(raw.zdrEligibility))
         ? raw.zdrEligibility as EffectiveDataPolicy["zdrEligibility"]
         : undefined;
+    const zdrEligibility = declaredEligibility === "ineligible" || raw.zeroDataRetention === false
+        ? "ineligible"
+        : raw.zeroDataRetention === true ? "eligible" : declaredEligibility;
     const retentionMode = ["unknown", "none", "transient", "fixed", "until_deleted"].includes(String(raw.retentionMode))
         ? raw.retentionMode as EffectiveDataPolicy["retentionMode"]
         : undefined;
