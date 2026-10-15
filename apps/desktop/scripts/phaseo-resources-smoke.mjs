@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { startContentHttpFixture } from "./fixtures/mcp-content-http.mjs";
+import { installControlActions } from "./fixtures/control-actions.mjs";
 const httpMode = process.argv.includes("--http");
 const promptMode = process.argv.includes("--prompts");
 const expectedContent = promptMode ? "Owned prompt content" : "Owned document content";
@@ -46,8 +47,9 @@ await import(entry ? pathToFileURL(path.resolve(entry)).href : "../dist/main/ind
 app.whenReady().then(async () => {
  try {
   const owner = BrowserWindow.getAllWindows()[0]; if (owner.webContents.isLoading()) await new Promise(resolve => owner.webContents.once("did-finish-load", resolve));
+  await installControlActions(owner);
   await owner.webContents.executeJavaScript(`(async()=>{
-   const api=window.phaseoDesktop.workspace, wait=async predicate=>{for(let i=0;i<300;i++){const value=await predicate();if(value)return value;await new Promise(resolve=>setTimeout(resolve,25));}throw Error('Resource workflow wait expired');};
+   const api=window.phaseoDesktop.workspace, wait=async predicate=>{for(let i=0;i<300;i++){const value=await predicate();if(value)return value;await new Promise(resolve=>setTimeout(resolve,25));}throw Error('Resource workflow wait expired: '+predicate);};
    const overview=await api.command({type:'add-account',name:'Owned documents',harness:'phaseo',kind:'api',endpoint:${JSON.stringify(endpoint)},apiKey:'owned-unused'}), account=overview.accounts.find(value=>value.name==='Owned documents');
    await api.mcp({type:'save',connection:${JSON.stringify(connection)}});
    const ids=[];
@@ -67,7 +69,7 @@ app.whenReady().then(async () => {
       continue;
      }
      await new Promise(resolve=>setTimeout(resolve,${humanWait}));
-     const row=await wait(()=>Array.from(document.querySelectorAll('.task-row')).find(row=>row.title==='Documents '+decision));row.click();
+     await window.__auditOpenChat('Documents '+decision);
      const topic=await wait(()=>document.querySelector('input[aria-label="topic"]'));Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(topic,'work');topic.dispatchEvent(new Event('input',{bubbles:true}));await new Promise(resolve=>setTimeout(resolve,25));topic.closest('form').requestSubmit();
     }
     await wait(async()=>{const value=await api.task(task.id);if(value.status==='failed')throw Error(value.error);return value.status==='completed';});

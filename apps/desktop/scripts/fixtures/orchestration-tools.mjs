@@ -1,0 +1,5 @@
+/**
+ * Orchestration tools (src/main/threadTools.ts) every Phaseo chat receives in every mode.
+ * Gateway fixtures allow them beside each mode's own tools; file and command tools stay mode-restricted.
+ */
+export const orchestrationTools = ["handoff_thread", "rename_thread", "steer_thread", "read_thread_queue", "edit_thread_queue", "fork_thread", "send_thread", "merge_thread_context", "list_agents", "list_models", "list_threads", "read_thread", "delegate_task", "wait_thread", "interrupt_thread", "launch_thread", "launch_threads", "list_projects", "organize_thread", "list_scheduled_tasks", "schedule_task", "update_scheduled_task", "delete_scheduled_task", "run_scheduled_task_now"];
