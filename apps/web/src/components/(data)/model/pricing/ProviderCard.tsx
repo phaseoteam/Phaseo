@@ -228,6 +228,25 @@ function uptimeValueClass(value: number | null | undefined): string {
 	return "text-red-600 dark:text-red-400";
 }
 
+export function UptimeKey({ className }: { className?: string }) {
+	return (
+		<div className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground", className)}>
+			<div className="flex items-center gap-1.5">
+				<span className="h-2 w-2 rounded-full bg-emerald-500" />
+				<span>&gt;99%</span>
+			</div>
+			<div className="flex items-center gap-1.5">
+				<span className="h-2 w-2 rounded-full bg-amber-500" />
+				<span>95-99%</span>
+			</div>
+			<div className="flex items-center gap-1.5">
+				<span className="h-2 w-2 rounded-full bg-red-500" />
+				<span>&lt;95%</span>
+			</div>
+		</div>
+	);
+}
+
 function getDisplayedUptimePct(
 	runtimeStats: ProviderRuntimeStats | null | undefined,
 ): number | null {
@@ -673,6 +692,9 @@ function ProviderHourlyPerformance({
 							);
 						})}
 					</div>
+					{activeMetric === "uptime" ? (
+						<UptimeKey className="mt-2 justify-center text-[11px]" />
+					) : null}
 				</div>
 			) : null}
 			{categories.length > 0 || rateLimited > 0 ? (
@@ -3832,7 +3854,7 @@ export default function ProviderCard({
 												<span>{metric.label}</span>
 												{metric.key === "uptime" ? (
 													<HoverCard openDelay={120} closeDelay={80}>
-														<HoverCardTrigger asChild>
+														<HoverCardTrigger asChild openOnTap={false}>
 															<span
 																aria-label={tProvider("uptime")}
 																tabIndex={0}

@@ -47,11 +47,16 @@ function HoverCardTrigger({
   children,
   onPointerDown,
   onClick,
+  openOnTap = true,
   ...props
 }: PreviewCardPrimitive.Trigger.Props & {
   asChild?: boolean
+  // Set false when the trigger has its own tap action, such as a sort
+  // button; the card then shows only on hover and focus.
+  openOnTap?: boolean
 }) {
-  const toggle = React.useContext(HoverCardTapContext)
+  const tapContext = React.useContext(HoverCardTapContext)
+  const toggle = openOnTap ? tapContext : null
   const pointerType = React.useRef("")
   const tapProps = {
     onPointerDown: (event: React.PointerEvent<HTMLElement>) => {
