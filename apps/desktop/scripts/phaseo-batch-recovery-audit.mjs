@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
+import { installControlActions } from './fixtures/control-actions.mjs';
 const arg = name => process.argv.find(value => value.startsWith(`--${name}=`))?.slice(name.length + 3);
 const entry = arg('app-entry'), stage = arg('stage');
 if (stage) {
@@ -19,6 +20,7 @@ if (stage) {
   const owner = BrowserWindow.getAllWindows()[0];
   owner.webContents.setBackgroundThrottling(false);
   if (owner.webContents.isLoading()) await new Promise(resolve => owner.webContents.once('did-finish-load', resolve));
+  await installControlActions(owner);
   const run = code => owner.webContents.executeJavaScript(code);
   const wait = async code => { for (let i = 0; i < 600; i++) { const value = await run(code); if (value) return value; await new Promise(resolve => setTimeout(resolve, 25)); } throw Error('Batch recovery did not settle: ' + code); };
   let id;
@@ -44,12 +46,11 @@ if (stage) {
   }
   const task = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${JSON.stringify(id)});if(task.status==='failed')throw Error(task.error);return task.approvals?.length?task:false})()`);
   assert.equal(task.approvals.length, 1); assert.ok(task.approvals[0].description.includes('may already have completed'));
-  await wait(`Array.from(document.querySelectorAll('.task-row')).some(row=>row.title===${JSON.stringify(task.title)})`);
-  await run(`Array.from(document.querySelectorAll('.task-row')).find(row=>row.title===${JSON.stringify(task.title)}).click()`);
+  await run(`window.__auditOpenChatId(${JSON.stringify(id)})`);
   const output = path.resolve('../../output/playwright/phaseo-batch-recovery', entry ? 'packaged' : 'source', mode); mkdirSync(output, { recursive: true });
   await wait(`document.body.textContent.includes('may already have completed')`);
   for (const [width, height] of [[1440, 920], [1040, 680]]) for (const theme of ['light', 'dark']) {
-   owner.setSize(width, height); await run(`document.querySelector('[aria-label="Use ${theme} theme"]')?.click()`); await new Promise(resolve => setTimeout(resolve, 150));
+   owner.setSize(width, height); await run(`window.__auditTheme(${JSON.stringify(theme)})`); await new Promise(resolve => setTimeout(resolve, 150));
    writeFileSync(path.join(output, `interrupted-action-${theme}-${width}.png`), (await owner.webContents.capturePage()).toPNG());
   }
   await run(`window.phaseoDesktop.workspace.command({type:'approval',id:${JSON.stringify(id)},approvalId:${JSON.stringify(task.approvals[0].id)},decision:'decline'})`);

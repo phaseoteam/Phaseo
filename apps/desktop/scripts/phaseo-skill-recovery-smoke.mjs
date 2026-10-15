@@ -3,6 +3,7 @@ import { app, BrowserWindow, dialog } from "electron";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { installControlActions } from "./fixtures/control-actions.mjs";
 const argument = name => process.argv.find(value => value.startsWith(`--${name}=`))?.slice(name.length + 3);
 const profile = argument("profile"), stage = argument("stage"), endpoint = argument("endpoint"), entry = argument("app-entry"); assert.ok(profile && endpoint && ["write", "read"].includes(stage)); app.setPath("userData", profile);
 const mode = argument("mode") ?? "code"; assert.ok(["chat", "code"].includes(mode));
@@ -12,6 +13,7 @@ await import(entry ? pathToFileURL(path.resolve(entry)).href : "../dist/main/ind
 app.whenReady().then(async () => {
  try {
   const owner = BrowserWindow.getAllWindows()[0]; owner.webContents.setBackgroundThrottling(false); if (owner.webContents.isLoading()) await new Promise(resolve => owner.webContents.once("did-finish-load", resolve));
+  await installControlActions(owner);
   const run = code => owner.webContents.executeJavaScript(code), wait = async code => { for (let index = 0; index < 400; index++) { const value = await run(code); if (value) return value; await new Promise(resolve => setTimeout(resolve, 25)); } throw Error("Recovery UI did not settle: " + code); };
   let id;
   if (stage === "write") {
@@ -23,7 +25,7 @@ app.whenReady().then(async () => {
   }
   const pending = async () => wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${JSON.stringify(id)});if(task.status==='failed')throw Error(task.error);return task.approvals?.length?task:false})()`);
   const skill = await pending(); assert.equal(skill.approvals[0].method, "Use Phaseo skill review"); assert.ok(skill.approvals[0].description.includes(stage === "write" ? "Initial crash guidance" : "Changed after crash"));
-  await wait(`Array.from(document.querySelectorAll('.task-row')).some(row=>row.title===${JSON.stringify(skill.title)})`); await run(`Array.from(document.querySelectorAll('.task-row')).find(row=>row.title===${JSON.stringify(skill.title)}).click()`); await wait(`document.querySelector('[aria-label="Approval needed"] pre')?.textContent.includes(${JSON.stringify(stage === "write" ? "Initial crash guidance" : "Changed after crash")})`);
+  await run(`window.__auditOpenChatId(${JSON.stringify(id)})`); await wait(`document.querySelector('[aria-label="Approval needed"] pre')?.textContent.includes(${JSON.stringify(stage === "write" ? "Initial crash guidance" : "Changed after crash")})`);
   if (stage === "read") {
    const output = path.resolve("../../output/playwright/phaseo-skill-recovery", entry ? "packaged" : "source", mode); mkdirSync(output, { recursive: true }); owner.setSize(1040, 680);
    await run(`document.querySelector('[aria-label="Approval needed"]').scrollIntoView({block:'center'})`);
