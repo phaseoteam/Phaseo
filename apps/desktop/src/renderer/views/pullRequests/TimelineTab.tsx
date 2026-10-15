@@ -82,7 +82,7 @@ export function TimelineTab({ view, projectId, order, onOpen, onScrollerRef }: {
 	const events = buildTimeline(view), newest = newestCommitAt(view.commits);
 	const rows = groupTimeline(order === "newest" ? events : [...events].reverse());
 	return <ScrollArea className="h-full" viewportRef={onScrollerRef} viewportClassName="pr-scroller">
-		<div className="mx-auto max-w-3xl px-4 py-5"><div className="relative" aria-label="Pull request timeline">
+		<div className="mx-auto max-w-3xl px-4 pt-5 pb-16"><div className="relative" aria-label="Pull request timeline">
 			<span aria-hidden className="absolute top-1 bottom-5 left-[15px] w-px bg-border/45" />
 			{rows.map(row => {
 				if (row.kind === "comments") return <ConversationGroup key={`comments:${row.events[0].id}`} events={row.events} projectId={projectId} onOpen={onOpen} />;
