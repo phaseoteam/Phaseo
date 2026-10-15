@@ -5,7 +5,7 @@ import { SortableTableHead } from "../SortableTableHead";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
 	Bar,
 	BarChart,
@@ -86,7 +86,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import type { GuardrailEnforcementMetricsResult } from "@/lib/gateway/usage/guardrailEnforcementMetrics";
-import type { UsageRangePreset } from "@/lib/gateway/usage/timeRange";
+import { formatUsageComparisonRange, type UsageRangePreset } from "@/lib/gateway/usage/timeRange";
 import UsageLogsToolbar from "@/components/(gateway)/usage/UsageLogsToolbar";
 import RequestLabelFilter from "@/components/(gateway)/usage/RequestLabelFilter";
 import { Logo } from "@/components/Logo";
@@ -636,31 +636,69 @@ function kpiDeltaClass(kpi: ObservabilityKpi): string {
 	return improved ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400";
 }
 
-/** A projection to two significant figures, so the range fits a narrow card; one value when both ends round alike. */
+/**
+ * Two significant figures, so a footer fits a narrow card. Dollar amounts
+ * under $10 keep their cents, so $0.20 doesn't read as $0.2.
+ */
+function compactKpiFormat(kpi: ObservabilityKpi, largest: number): (value: number) => string {
+	const currency = kpi.format === "currency";
+	return new Intl.NumberFormat("en", currency && largest < 10
+		? { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }
+		: { notation: "compact", maximumSignificantDigits: 2, ...(currency ? { style: "currency", currency: "USD" } : {}) },
+	).format;
+}
+
+/** A projection range; one value when both ends round alike. */
 function formatProjectedRange(kpi: ObservabilityKpi, low: number, high: number): string {
-	const format = new Intl.NumberFormat("en", {
-		notation: "compact",
-		maximumSignificantDigits: 2,
-		...(kpi.format === "currency" ? { style: "currency", currency: "USD" } : {}),
-	}).format;
+	const format = compactKpiFormat(kpi, high);
 	const [lowLabel, highLabel] = [format(low), format(high)];
 	return lowLabel === highLabel ? lowLabel : `${lowLabel}–${highLabel}`;
 }
 
-function KpiMonthFooter({ kpi }: { kpi: ObservabilityKpi }) {
+/** A signed change, such as +$412 or −1.2K. */
+function formatChange(kpi: ObservabilityKpi, change: number): string {
+	const label = compactKpiFormat(kpi, Math.abs(change))(Math.abs(change));
+	if (label === compactKpiFormat(kpi, 0)(0)) return label;
+	return `${change > 0 ? "+" : "−"}${label}`;
+}
+
+const RUNNING_PERIOD_LABELS = {
+	day: "kpiForecastDay",
+	week: "kpiForecastWeek",
+	month: "kpiForecastMonth",
+	quarter: "kpiForecastQuarter",
+	year: "kpiForecastYear",
+} as const;
+
+function KpiFooterRow({ kpi, previousLabel }: { kpi: ObservabilityKpi; previousLabel: string | null }) {
 	const t = useTranslations("SettingsUI.observability");
-	const month = kpi.month;
-	if (!month) return null;
+	const footer = kpi.footer;
+	if (!footer || (footer.kind !== "projected" && !previousLabel)) return null;
+	let label: string;
+	let value: string;
+	if (footer.kind === "projected") {
+		const { period } = footer;
+		label = period.kind === "running"
+			? t(RUNNING_PERIOD_LABELS[period.unit])
+			: period.days === 1 ? t("kpiForecastNextDay") : t("kpiForecastNextDays", { days: period.days });
+		value = formatProjectedRange(kpi, footer.low, footer.high);
+	} else if (footer.kind === "change") {
+		label = t("kpiChangeVs", { period: previousLabel! });
+		value = formatChange(kpi, footer.value);
+	} else {
+		label = previousLabel!;
+		value = footer.value === null ? "–" : formatKpiValue(kpi, footer.value);
+	}
+	// The label gives way on a narrow card; the figure never does.
 	return (
-		<div className="truncate border-t border-dashed px-4 py-2 text-xs tabular-nums text-muted-foreground">
-			{month.kind === "projected"
-				? t("kpiMonthProjected", { value: formatProjectedRange(kpi, month.low, month.high) })
-				: t("kpiMonthToDate", { value: formatKpiValue(kpi, month.value) })}
+		<div className="flex min-w-0 items-baseline justify-between gap-2 border-t border-dashed px-4 py-2 text-xs text-muted-foreground">
+			<span className="truncate">{label}</span>
+			<span className="shrink-0 font-medium tabular-nums text-foreground">{value}</span>
 		</div>
 	);
 }
 
-function KpiMetric({ kpi }: { kpi: ObservabilityKpi }) {
+function KpiMetric({ kpi, previousLabel }: { kpi: ObservabilityKpi; previousLabel: string | null }) {
 	const t = useTranslations("SettingsUI.observability");
 	const [hoveredPoint, setHoveredPoint] =
 		React.useState<ObservabilitySeriesPoint | null>(null);
@@ -701,7 +739,7 @@ function KpiMetric({ kpi }: { kpi: ObservabilityKpi }) {
 											</span>
 										</UiTooltipTrigger>
 										<UiTooltipContent side="bottom" sideOffset={6}>
-											{t("comparedWithPreviousPeriod")}
+											{previousLabel ? t("comparedWithPeriod", { period: previousLabel }) : t("comparedWithPreviousPeriod")}
 										</UiTooltipContent>
 									</UiTooltip>
 								)}
@@ -717,7 +755,7 @@ function KpiMetric({ kpi }: { kpi: ObservabilityKpi }) {
 						</div>
 					</div>
 				</div>
-				<KpiMonthFooter kpi={kpi} />
+				<KpiFooterRow kpi={kpi} previousLabel={previousLabel} />
 			</Card>
 		</Link>
 	);
@@ -1731,6 +1769,8 @@ function TrendSection({
 
 function Overview({ data }: { data: ObservabilityData }) {
 	const t = useTranslations("SettingsUI.observability");
+	const locale = useLocale();
+	const previousLabel = data.previousPeriod ? formatUsageComparisonRange({ ...data.previousPeriod, locale }) : null;
 	const monthSpend = data.monthSpend ?? null;
 	const [spendView, setSpendView] = React.useState<"daily" | "month">("daily");
 	const showMonth = spendView === "month" && monthSpend !== null;
@@ -1738,7 +1778,7 @@ function Overview({ data }: { data: ObservabilityData }) {
 		<div className="space-y-4 sm:space-y-6">
 			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-6">
 				{data.kpis.map((kpi) => (
-					<KpiMetric key={kpi.id} kpi={kpi} />
+					<KpiMetric key={kpi.id} kpi={kpi} previousLabel={previousLabel} />
 				))}
 			</div>
 			<div className="grid gap-4 xl:grid-cols-2">

@@ -7,7 +7,7 @@ import { requireUser } from "@/auth/requireUser";
 import { requireAccountWorkspace } from "./context";
 import { usageKeyScope } from "./usageKeyScope";
 import { workspaceUserProfile } from "./workspaceUserProfile";
-import { monthUsageStartDate, parseMonthUsageDays } from "./monthUsage";
+import { parseMonthUsageDays, usageDaysStartDate } from "./monthUsage";
 
 type Warning = {
 	modelId: string; modelName: string | null; organisationId: string | null;
@@ -255,11 +255,11 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 		const labelSummaryFactsQuery = labelFilter
 			? scope.apply(context.client.from(scope.factsTable).select("cost_nanos", { count: "exact" }).eq("workspace_id", workspaceId).gte("occurred_at", from!).lte("occurred_at", to!)).contains("safe_metadata", { labels: [{ key: labelFilter.key, value: labelFilter.value }] }).limit(5000)
 			: null;
-		// The daily rollup is exact but workspace-wide, so the month figures only apply unfiltered.
+		// The daily rollup is exact but workspace-wide, so the forecasts only apply unfiltered.
 		const observedAt = Date.now();
-		// Summed per day in the database. An error only hides the month figures; the rest of the overview still loads.
+		// Summed per day in the database. An error only hides the forecasts; the rest of the overview still loads.
 		const loadMonthUsage = async () => {
-			const result = await context.client.rpc("get_private_usage_month_days", { p_workspace_id: workspaceId, p_from: monthUsageStartDate(observedAt) });
+			const result = await context.client.rpc("get_private_usage_month_days", { p_workspace_id: workspaceId, p_from: usageDaysStartDate(observedAt, Date.parse(from!)) });
 			return result.error ? null : parseMonthUsageDays(result.data, observedAt);
 		};
 		const monthUsageQuery = scope.creatorId || url.searchParams.get("key")?.trim() || labelFilter ? null : loadMonthUsage();

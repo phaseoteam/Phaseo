@@ -26,11 +26,12 @@ import {
 	getUsageRangeParamKeys,
 	parseUsageDateInput,
 	parseUsageRangePreset,
+	resolvePreviousUsageTimeRange,
 	resolveUsageTimeRange,
 	type UsageRangePreset,
 } from "@/lib/gateway/usage/timeRange";
 import { forecastMonthSpend } from "@/lib/gateway/usage/monthSpendForecast";
-import { monthKpiFigures } from "@/lib/gateway/usage/monthUsageKpis";
+import { forecastPeriod, kpiFooters, type KpiCard } from "@/lib/gateway/usage/periodUsageKpis";
 import {
 	buildGuardrailEnforcementMetrics,
 	type GuardrailEnforcementMetricsResult,
@@ -557,8 +558,8 @@ export default function ObservabilityClient({ scope: initialScope, initialTab }:
 	const labelValue = sp.get("label_value")?.trim() || "";
 	const query = usePrivateUsageQuery(scope, "observability", { preset, from: customFrom ?? "", to: customTo ?? "", labelKey, labelValue, creatorId, keyId }, preset === "live", async (signal) => {
 		const { from, to } = resolveUsageTimeRange({ preset, customFrom, customTo });
-		const previousFrom = new Date(2 * new Date(from).getTime() - new Date(to).getTime()).toISOString();
-		const params = new URLSearchParams({ workspaceId: scope.workspaceId!, from, to, previousFrom, previousTo: from });
+		const previous = resolvePreviousUsageTimeRange({ preset, from, to });
+		const params = new URLSearchParams({ workspaceId: scope.workspaceId!, from, to, previousFrom: previous.from, previousTo: previous.to });
 		if (creatorId) params.set("user", creatorId);
 		if (keyId) params.set("key", keyId);
 		if (labelKey) params.set("label_key", labelKey);
@@ -567,13 +568,13 @@ export default function ObservabilityClient({ scope: initialScope, initialTab }:
 		const initial = await fetchPrivateUsage<SettingsObservabilityData>(path, scope, signal);
 		if (!initial.signedIn) throw new WebApiError(path, 401);
 		if (initial.workspaceId !== scope.workspaceId) throw new WebApiError(path, 403);
-		return { initial, from, to };
+		return { initial, from, to, previous };
 	});
 	return <PrivateUsageQuery query={query} scope={scope} live={preset === "live"}>{(snapshot) => <ObservabilityView snapshot={snapshot} initialTab={initialTab} preset={preset} customFrom={customFrom} customTo={customTo} />}</PrivateUsageQuery>;
 }
 
-const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial, from, to }, initialTab, preset, customFrom, customTo }: {
-	snapshot: { initial: SettingsObservabilityData; from: string; to: string };
+const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial, from, to, previous }, initialTab, preset, customFrom, customTo }: {
+	snapshot: { initial: SettingsObservabilityData; from: string; to: string; previous: { from: string; to: string } };
 	initialTab: ObservabilityTab;
 	preset: UsageRangePreset;
 	customFrom: string | null;
@@ -944,13 +945,22 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 		},
 	});
 
-	const monthFigures = initial.monthUsage ? monthKpiFigures(initial.monthUsage) : null;
+	const usageDays = initial.monthUsage;
+	const footers = kpiFooters({
+		days: usageDays?.days ?? null,
+		observedAt: usageDays?.observedAt ?? Date.parse(to),
+		period: usageDays ? forecastPeriod({ preset, from, to, observedAt: usageDays.observedAt }) : null,
+		cards: Object.fromEntries(kpis.map((kpi) => [kpi.id, { value: kpi.value, previous: kpi.previous }])) as Record<ObservabilityKpi["id"], KpiCard>,
+		currentComplete: !currentRequestResult.isSampled,
+		previousComplete: !previousRequestResult.isSampled,
+	});
 	const data: ObservabilityData = {
 		range,
 		periodLabel: getUsageRangeLabel({ preset, customFrom, customTo }),
+		previousPeriod: previous,
 		isSampled: currentRequestResult.isSampled,
 		sampleLimit: currentRequestResult.limit,
-		kpis: monthFigures ? kpis.map((kpi) => ({ ...kpi, month: monthFigures[kpi.id] })) : kpis,
+		kpis: footers ? kpis.map((kpi) => ({ ...kpi, footer: footers[kpi.id] })) : kpis,
 		monthSpend: initial.monthUsage ? forecastMonthSpend(initial.monthUsage) : null,
 		topApiKeys,
 		topApps,
