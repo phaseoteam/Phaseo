@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
+const { rpcMock, dispatchMock } = vi.hoisted(() => ({ rpcMock: vi.fn(), dispatchMock: vi.fn() }));
 vi.mock("@/runtime/env", () => ({
+    dispatchBackground: dispatchMock,
     getBindingsIfConfigured: () => null,
     getSupabaseAdmin: () => ({ rpc: rpcMock }),
 }));
 
 import {
     modelSubstitutionHeader,
+    noteModelSubstitutionServed,
     recordModelSubstitution,
     resetRecordedModelSubstitutions,
     parseModelSuccessorResolution,
@@ -122,5 +124,25 @@ describe("model substitution notice", () => {
         await recordModelSubstitution("ws_1", substitution);
         expect(rpcMock).toHaveBeenCalledTimes(2);
         expect(recordModelSubstitution(null, substitution)).toBeNull();
+    });
+
+    it("notes served substitutions in the background, never in testing mode", async () => {
+        resetRecordedModelSubstitutions();
+        dispatchMock.mockClear();
+        rpcMock.mockResolvedValue({ error: null });
+        const modelSubstitution = { ...substitution, from: "lab/x" };
+        noteModelSubstitutionServed({ routingDiagnostics: { modelSubstitution }, workspaceId: "ws_9", testingMode: true });
+        noteModelSubstitutionServed({ routingDiagnostics: {}, workspaceId: "ws_9" });
+        expect(dispatchMock).not.toHaveBeenCalled();
+        noteModelSubstitutionServed({ routingDiagnostics: { modelSubstitution }, workspaceId: "ws_9" });
+        expect(dispatchMock).toHaveBeenCalledTimes(1);
+        await dispatchMock.mock.calls[0]?.[0];
+    });
+
+    it("keeps slugs containing ':' apart", async () => {
+        resetRecordedModelSubstitutions();
+        rpcMock.mockResolvedValue({ error: null });
+        await recordModelSubstitution("ws_1", { ...substitution, from: "lab/a:lab/b", to: "lab/c" });
+        expect(recordModelSubstitution("ws_1", { ...substitution, from: "lab/a", to: "lab/b:lab/c" })).not.toBeNull();
     });
 });

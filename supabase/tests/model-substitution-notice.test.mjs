@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 const db = new PGlite();
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
@@ -19,7 +20,8 @@ try {
       ('${workspace}', 'Acme', '10000000-0000-4000-8000-000000000001'),
       ('20000000-0000-4000-8000-000000000002', 'No email', '10000000-0000-4000-8000-000000000002');
     create table public.v2_models(model_slug text primary key, name text);
-    insert into public.v2_models values ('lab/old', 'Old Model'), ('lab/new', 'New Model'), ('lab/other', null);
+    insert into public.v2_models values ('lab/old', 'Old Model'), ('lab/new', 'New Model'), ('lab/other', null),
+      ('lab/a:lab/b', null), ('lab/c', null), ('lab/a', null), ('lab/b:lab/c', null);
     create table public.email_outbox(id uuid primary key default gen_random_uuid(), created_at timestamptz not null default now(),
       kind text not null, template text not null default 'generic', to_email text not null, subject text, workspace_id uuid, user_id uuid,
       payload jsonb not null default '{}', attempts integer not null default 0, last_error text, sent_at timestamptz, dedupe_key text);
@@ -51,7 +53,7 @@ try {
     to_email: 'owner@example.com',
     subject: 'Model replaced: Old Model',
     user_id: '10000000-0000-4000-8000-000000000001',
-    dedupe_key: `model_substitution:${workspace}:lab/old:lab/new`,
+    dedupe_key: `model_substitution:${workspace}:${createHash('md5').update('7:lab/oldlab/new').digest('hex')}`,
     payload: {
       title: 'Model replaced: Old Model',
       workspace_name: 'Acme',
@@ -66,6 +68,11 @@ try {
   // A different replacement for the same model is a new notice; names fall back to slugs.
   assert.equal(await record('lab/old', 'lab/other', 'workspace'), true);
   assert.equal((await db.query(`select payload->>'replacement_model_name' as name from public.email_outbox where payload->>'replacement_model_id' = 'lab/other'`)).rows[0].name, 'lab/other');
+
+  // Slugs containing ':' cannot collide with another pair.
+  assert.equal(await record('lab/a:lab/b', 'lab/c'), true);
+  assert.equal(await record('lab/a', 'lab/b:lab/c'), true);
+  await db.exec(`delete from public.email_outbox where payload->>'model_id' in ('lab/a:lab/b', 'lab/a')`);
 
   // Unknown models, or an owner without an email, queue nothing.
   assert.equal(await record('lab/missing', 'lab/new'), false);

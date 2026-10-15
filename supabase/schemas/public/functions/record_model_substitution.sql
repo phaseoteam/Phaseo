@@ -10,7 +10,9 @@ CREATE OR REPLACE FUNCTION public.record_model_substitution (
   SET search_path TO ''
   AS $function$
 declare
-  v_dedupe_key text := left('model_substitution:' || p_workspace_id::text || ':' || p_model_slug || ':' || p_successor_slug, 500);
+  -- Slugs may contain ':' and be long, so the pair is hashed rather than joined.
+  v_dedupe_key text := 'model_substitution:' || p_workspace_id::text || ':'
+    || md5(length(coalesce(p_model_slug, ''))::text || ':' || coalesce(p_model_slug, '') || coalesce(p_successor_slug, ''));
   v_owner uuid;
   v_email text;
   v_workspace_name text;

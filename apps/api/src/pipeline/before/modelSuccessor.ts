@@ -1,4 +1,4 @@
-import { getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
+import { dispatchBackground, getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
 import { tieredRead } from "@core/tiered-cache";
 
 /**
@@ -268,7 +268,8 @@ const recordedSubstitutions = new Set<string>();
  */
 export function recordModelSubstitution(workspaceId: string | null | undefined, substitution: ModelSubstitution): Promise<void> | null {
     if (!workspaceId) return null;
-    const key = `${workspaceId}:${substitution.from}:${substitution.to}`;
+    // Slugs may contain ":", so the parts are encoded rather than joined.
+    const key = JSON.stringify([workspaceId, substitution.from, substitution.to]);
     if (recordedSubstitutions.has(key)) return null;
     if (recordedSubstitutions.size >= MAX_RECORDED_SUBSTITUTIONS) recordedSubstitutions.clear();
     recordedSubstitutions.add(key);
@@ -284,6 +285,21 @@ export function recordModelSubstitution(workspaceId: string | null | undefined, 
             throw new Error(`model_substitution_record_failed:${error.message}`);
         }
     })();
+}
+
+/**
+ * Queues the notice once a request a successor served has completed
+ * successfully: for streams, only after the whole stream was delivered.
+ */
+export function noteModelSubstitutionServed(ctx: {
+    routingDiagnostics?: Record<string, any> | null;
+    workspaceId?: string | null;
+    testingMode?: boolean;
+}): void {
+    const substitution = ctx.routingDiagnostics?.modelSubstitution as ModelSubstitution | undefined;
+    if (!substitution || ctx.testingMode) return;
+    const recording = recordModelSubstitution(ctx.workspaceId, substitution);
+    if (recording) dispatchBackground(recording);
 }
 
 /** Test hook: forget which substitutions this isolate has recorded. */
