@@ -89,6 +89,11 @@ export type DecisionCreateRequest =
             };
         zdr?: boolean | null;
       };
+      provider_options?: {
+        typesafe?: {
+          long_context?: boolean;
+        };
+      };
       questions: (
         | {
             instructions: string;
@@ -112,6 +117,11 @@ export type DecisionCreateRequest =
             }[];
             name?: string;
             type: "score";
+          }
+        | {
+            instructions: string;
+            name?: string;
+            type: "box";
           }
       )[];
       routing?: {
@@ -212,6 +222,11 @@ export type DecisionCreateRequest =
             };
         zdr?: boolean | null;
       };
+      provider_options?: {
+        typesafe?: {
+          long_context?: boolean;
+        };
+      };
       questions: {
         [key: string]:
           | {
@@ -249,6 +264,15 @@ export type DecisionCreateRequest =
                   }
                 | unknown[];
               type: "score";
+            }
+          | {
+              instructions:
+                | string
+                | {
+                    [key: string]: unknown;
+                  }
+                | unknown[];
+              type: "box";
             };
       };
       routing?: {

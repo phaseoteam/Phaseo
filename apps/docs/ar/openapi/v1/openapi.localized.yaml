@@ -248,9 +248,18 @@ paths:
               - json
               - rss
               - atom
+        - name: If-None-Match
+          in: header
+          required: false
+          description: قيمة ETag من استجابة سابقة بتنسيق JSON أو OpenAI لعنوان URL نفسه. إذا كانت لا تزال مطابقة، تكون الاستجابة 304 Not Modified دون جسم. يقبل قائمة مفصولة بفواصل، والمدقِّقات الضعيفة (W/)، و*.
+          schema:
+            type: string
       responses:
         '200':
           description: قائمة النماذج
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
           content:
             application/json:
               schema:
@@ -265,6 +274,11 @@ paths:
               schema:
                 type: string
                 description: موجز Atom بصيغة XML
+        '304':
+          description: لم يتغيّر. لا تزال قيمة If-None-Match مطابقة لقائمة النماذج الحالية، لذا لا تحتوي الاستجابة على جسم. وتكرّر ترويسات ETag وCache-Control وVary الخاصة بالاستجابة 200.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
         '400':
           description: معلمات الطلب غير صالحة
           content:
@@ -8538,6 +8552,10 @@ components:
       description: بيانات وصفية لحصة المزوّد خاصة بـ BYOK فقط. تُحذف في الطلبات التي تستخدم مزوّداً مُداراً.
       schema:
         type: string
+    ModelListETag:
+      description: مدقِّق ضعيف (بالبادئة W/) لقائمة النماذج عند عنوان URL هذا، يشمل الصفحة وlimit وoffset وtotal والتنسيق. يتجاهل gateway_region، لذا يحمل الكتالوج نفسه المقدَّم من منطقة أخرى القيمة نفسها؛ والاستجابات التي تشترك فيها متكافئة، لكن قد تختلف بايتاتها. لا يُرسَل مع استجابات RSS أو Atom أو الأخطاء.
+      schema:
+        type: string
   parameters:
     DataContributionClassifierId:
       name: id
@@ -9098,6 +9116,16 @@ components:
           $ref: '#/components/schemas/GatewayModalities'
         capabilities:
           $ref: '#/components/schemas/GatewayCapabilities'
+        service_tiers:
+          type: array
+          description: مستويات الخدمة التي يقبلها هذا العرض، مرتّبة أبجديًا. يُدرَج المستوى عندما يكون لمسار المزوّد تسعير نشط وساري المفعول حاليًا له؛ وpriority هو مستوى Fast. وقد تتوفر مستويات أخرى أيضًا عبر مسارات مزوّد منفصلة خاصة بكل مستوى.
+          items:
+            type: string
+            enum:
+              - flex
+              - priority
+              - standard
+              - ultrafast
         routing:
           type: object
           required:
@@ -11015,6 +11043,9 @@ components:
               - $ref: '#/components/schemas/DecisionPredicateQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionChoiceQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionScoreQuestion'
+              - $ref: '#/components/schemas/DecisionBoxQuestion'
+        provider_options:
+          $ref: '#/components/schemas/DecisionProviderOptions'
         safety_identifier:
           type: string
           nullable: true
@@ -11034,6 +11065,34 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    DecisionProviderOptions:
+      type: object
+      properties:
+        typesafe:
+          type: object
+          additionalProperties: false
+          properties:
+            long_context:
+              type: boolean
+              description: 'تفعيل سياق Jev الطويل التجريبي: 262k رمز لكل طلب ولكل سؤال، بدلًا من 64k لكل طلب و32k لكل سؤال. معطّل افتراضيًا. يتطلب مسار TypeSafe داعمًا.'
+    DecisionBoxQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: امتداد Phaseo لمربع إحاطة واحد. يتطلب صورة ومسارًا داعمًا مثل Jev 1.14. لا يقبل criteria ولا يعيد نتيجة لغياب الهدف.
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        name:
+          type: string
+          maxLength: 1048576
+        instructions:
+          type: string
+          maxLength: 1048576
     DecisionInputMessage:
       type: object
       required:
@@ -11282,6 +11341,9 @@ components:
               - $ref: '#/components/schemas/DecisionNoulQuestion'
               - $ref: '#/components/schemas/DecisionChoiceQuestion'
               - $ref: '#/components/schemas/DecisionScoreQuestion'
+              - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
+        provider_options:
+          $ref: '#/components/schemas/DecisionProviderOptions'
         images:
           type: array
           maxItems: 4
@@ -11305,6 +11367,20 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    LegacyDecisionBoxQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: سؤال مربع إحاطة واحد لمسارات Box الداعمة للصور. دون criteria.
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
     DecisionImage:
       type: object
       required:
@@ -11405,6 +11481,7 @@ components:
               - $ref: '#/components/schemas/DecisionChoiceAnswer'
               - $ref: '#/components/schemas/DecisionScoreAnswer'
               - $ref: '#/components/schemas/DecisionRefusalAnswer'
+              - $ref: '#/components/schemas/DecisionBoxAnswer'
         usage:
           $ref: '#/components/schemas/DecisionsUsage'
         request_id:
@@ -11413,6 +11490,52 @@ components:
         meta:
           type: object
           additionalProperties: true
+    DecisionBoxAnswer:
+      type: object
+      required:
+        - type
+        - name
+        - box
+        - confidence
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        name:
+          type: string
+          nullable: true
+        box:
+          $ref: '#/components/schemas/DecisionBox'
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+    DecisionBox:
+      type: object
+      required:
+        - top
+        - bottom
+        - left
+        - right
+      description: الحواف كنسب من أبعاد الصورة بدءًا من الزاوية العلوية اليسرى. يجب أن تكون top أقل من bottom وleft أقل من right.
+      properties:
+        top:
+          type: number
+          minimum: 0
+          maximum: 1
+        bottom:
+          type: number
+          minimum: 0
+          maximum: 1
+        left:
+          type: number
+          minimum: 0
+          maximum: 1
+        right:
+          type: number
+          minimum: 0
+          maximum: 1
     DecisionPredicateAnswer:
       type: object
       required:

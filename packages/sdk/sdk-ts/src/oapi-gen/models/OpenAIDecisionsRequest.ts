@@ -85,6 +85,11 @@ export interface OpenAIDecisionsRequest {
         };
     zdr?: boolean | null;
   };
+  provider_options?: {
+    typesafe?: {
+      long_context?: boolean;
+    };
+  };
   questions: (
     | {
         instructions: string;
@@ -108,6 +113,11 @@ export interface OpenAIDecisionsRequest {
         }[];
         name?: string;
         type: "score";
+      }
+    | {
+        instructions: string;
+        name?: string;
+        type: "box";
       }
   )[];
   routing?: {

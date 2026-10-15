@@ -1,3 +1,6 @@
+import SubscriptionPlanAllowances from "./SubscriptionPlanAllowances";
+import SubscriptionPlanOffers from "./SubscriptionPlanOffers";
+import { getTranslations } from "next-intl/server";
 import type { SubscriptionPlanDetails } from "@/lib/fetchers/subscription-plans/types";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -10,10 +13,11 @@ interface SubscriptionPlanOverviewProps {
 	messages: SubscriptionPlansMessages["detail"];
 }
 
-export default function SubscriptionPlanOverview({
+export default async function SubscriptionPlanOverview({
 	plan,
 	messages,
 }: SubscriptionPlanOverviewProps) {
+	const access = await getTranslations("Common.ui.subscriptionCatalog");
 	// Get top 5 features
 	const topFeatures = plan.features?.slice(0, 5) ?? [];
 
@@ -22,6 +26,8 @@ export default function SubscriptionPlanOverview({
 
 	return (
 		<div className="space-y-10">
+			<SubscriptionPlanOffers plan={plan} />
+			<SubscriptionPlanAllowances allowances={plan.allowances ?? []} />
 			{/* Features */}
 			<section id="main-features" className="scroll-mt-36 space-y-4">
 				<h2 className="text-xl font-semibold">{messages.mainFeatures}</h2>
@@ -46,7 +52,7 @@ export default function SubscriptionPlanOverview({
 
 			{/* Models */}
 			<section id="included-models" className="scroll-mt-36 space-y-4">
-				<h2 className="text-xl font-semibold">{messages.includedModels}</h2>
+				<h2 className="text-xl font-semibold">{access("plan_model_access")}</h2>
 					{recentModels.length > 0 ? (
 						<div className="divide-y divide-border/70 border-y border-border/70">
 							{recentModels.map((modelInfo) => (
@@ -61,6 +67,7 @@ export default function SubscriptionPlanOverview({
 										>
 											{modelInfo.model.name}
 										</Link>
+										<p className="text-xs text-muted-foreground">{[modelInfo.mapping_status === "example" ? access("example") : modelInfo.mapping_status === "unverified" ? access("unverified") : null, modelInfo.access_channel, modelInfo.conditions].filter(Boolean).join(" · ")}</p>
 										{modelInfo.model.organisation_name && (
 											<p className="text-sm text-muted-foreground">
 												{messages.byOrganisation.replace("{name}", modelInfo.model.organisation_name)}

@@ -2,6 +2,18 @@ import { describe, expect, it } from "vitest";
 import { DecisionsSchema } from "../schemas";
 
 describe("DecisionsSchema", () => {
+	it("accepts Box with images and typed TypeSafe provider options in both formats", () => {
+		const provider_options = { typesafe: { long_context: true } };
+		const question = { type: "box", instructions: "The mug in the first image" };
+		const image = "data:image/png;base64,AQID";
+		expect(DecisionsSchema.safeParse({ model: "typesafe/jev-1.14.0", input: [{ role: "user", content: [
+			{ type: "input_image", image_url: image },
+		] }], questions: [question], provider_options }).success).toBe(true);
+		expect(DecisionsSchema.safeParse({ state: "Photo", images: [image], questions: { mug: question }, provider_options }).success).toBe(true);
+		expect(DecisionsSchema.safeParse({ state: "Photo", questions: { mug: question } }).success).toBe(false);
+		expect(DecisionsSchema.safeParse({ state: "Photo", images: [image], questions: { mug: { ...question, criteria: [] } } }).success).toBe(false);
+		expect(DecisionsSchema.safeParse({ state: "Text", questions: { yes: { type: "noul", instructions: "Yes?" } }, provider_options: { typesafe: { long_context: "true" } } }).success).toBe(false);
+	});
 	it("accepts OpenAI predicates, boolean choices, named score levels and safety identifiers", () => {
 		expect(DecisionsSchema.safeParse({
 			model: "openai/gpt-6-luna", input: [{ role: "user", type: "message", content: "Account" }], safety_identifier: "user-1",

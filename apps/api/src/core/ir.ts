@@ -475,13 +475,14 @@ export type IRRerankResponse = {
 // ============================================================================
 
 export type IRDecisionQuestion = {
-	type: "noul" | "choice" | "score";
+	type: "noul" | "choice" | "score" | "box";
 	instructions: string | Record<string, any> | any[];
 	criteria?: Record<string, string | null> | string[] | { true?: string; false?: string };
 	[key: string]: any;
 };
 
 export type IRDecisionsRequest = {
+	providerOptions?: import("./decisions").DecisionProviderOptions;
 	model: string;
 	state: string | Record<string, any> | any[];
 	questions: Record<string, IRDecisionQuestion>;
@@ -889,6 +890,8 @@ export type IRUsage = {
 	inputTokens: number;
 	outputTokens: number;
 	totalTokens: number;
+	// Tier actually reported by the provider, which can differ from the request.
+	serviceTier?: string;
 
 	// Optional detailed counts
 	cachedInputTokens?: number; // Prompt caching

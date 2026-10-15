@@ -14484,7 +14484,9 @@ export type ListModelsParams = {
     status?: string[];
     supported_parameters?: string[];
   };
-  headers?: Record<string, never>;
+  headers?: {
+    "If-None-Match"?: string;
+  };
   body?: never;
 };
 
@@ -14595,6 +14597,7 @@ export async function listModels(
               | "deranked_lvl3"
               | "disabled";
           };
+          service_tiers?: ("flex" | "priority" | "standard" | "ultrafast")[];
           status: "active" | "coming_soon" | "inactive";
           status_reason:
             | "active"
@@ -14761,6 +14764,7 @@ export async function listModels(
                 | "deranked_lvl3"
                 | "disabled";
             };
+            service_tiers?: ("flex" | "priority" | "standard" | "ultrafast")[];
             status: "active" | "coming_soon" | "inactive";
             status_reason:
               | "active"
@@ -16038,6 +16042,7 @@ export async function listTeamModels(
           | "deranked_lvl3"
           | "disabled";
       };
+      service_tiers?: ("flex" | "priority" | "standard" | "ultrafast")[];
       status: "active" | "coming_soon" | "inactive";
       status_reason:
         | "active"
@@ -16193,6 +16198,7 @@ export async function listTeamModels(
             | "deranked_lvl3"
             | "disabled";
         };
+        service_tiers?: ("flex" | "priority" | "standard" | "ultrafast")[];
         status: "active" | "coming_soon" | "inactive";
         status_reason:
           | "active"
@@ -17896,6 +17902,11 @@ export type MakeDecisionParams = {
               };
           zdr?: boolean | null;
         };
+        provider_options?: {
+          typesafe?: {
+            long_context?: boolean;
+          };
+        };
         questions: (
           | {
               instructions: string;
@@ -17919,6 +17930,11 @@ export type MakeDecisionParams = {
               }[];
               name?: string;
               type: "score";
+            }
+          | {
+              instructions: string;
+              name?: string;
+              type: "box";
             }
         )[];
         routing?: {
@@ -18019,6 +18035,11 @@ export type MakeDecisionParams = {
               };
           zdr?: boolean | null;
         };
+        provider_options?: {
+          typesafe?: {
+            long_context?: boolean;
+          };
+        };
         questions: {
           [key: string]:
             | {
@@ -18056,6 +18077,15 @@ export type MakeDecisionParams = {
                     }
                   | unknown[];
                 type: "score";
+              }
+            | {
+                instructions:
+                  | string
+                  | {
+                      [key: string]: unknown;
+                    }
+                  | unknown[];
+                type: "box";
               };
         };
         routing?: {
@@ -18143,6 +18173,17 @@ export async function makeDecision(
             name: string | null;
             type: "refusal";
           }
+        | {
+            box: {
+              bottom: number;
+              left: number;
+              right: number;
+              top: number;
+            };
+            confidence: number;
+            name: string | null;
+            type: "box";
+          }
       )[];
       meta?: {
         [key: string]: unknown;
@@ -18219,6 +18260,17 @@ export async function makeDecision(
           | {
               name: string | null;
               type: "refusal";
+            }
+          | {
+              box: {
+                bottom: number;
+                left: number;
+                right: number;
+                top: number;
+              };
+              confidence: number;
+              name: string | null;
+              type: "box";
             }
         )[];
         meta?: {

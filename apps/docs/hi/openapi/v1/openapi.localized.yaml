@@ -248,9 +248,18 @@ paths:
               - json
               - rss
               - atom
+        - name: If-None-Match
+          in: header
+          required: false
+          description: उसी URL के लिए पिछली JSON या OpenAI प्रारूप वाली प्रतिक्रिया का ETag। अगर यह अब भी मेल खाता है, तो प्रतिक्रिया बिना बॉडी के 304 Not Modified होती है। कॉमा से अलग की गई सूची, कमज़ोर (W/) वैलिडेटर और * स्वीकार करता है।
+          schema:
+            type: string
       responses:
         '200':
           description: मॉडल की सूची
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
           content:
             application/json:
               schema:
@@ -265,6 +274,11 @@ paths:
               schema:
                 type: string
                 description: Atom XML फ़ीड
+        '304':
+          description: कोई बदलाव नहीं। If-None-Match अब भी मौजूदा मॉडल सूची से मेल खाता है, इसलिए प्रतिक्रिया में कोई बॉडी नहीं होती। यह 200 प्रतिक्रिया के ETag, Cache-Control और Vary हेडर दोहराती है।
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
         '400':
           description: अमान्य अनुरोध पैरामीटर
           content:
@@ -8538,6 +8552,10 @@ components:
       description: केवल BYOK के लिए प्रदाता कोटा मेटाडेटा। प्रबंधित-प्रदाता अनुरोधों में शामिल नहीं होता।
       schema:
         type: string
+    ModelListETag:
+      description: इस URL पर मॉडल सूची का कमज़ोर वैलिडेटर (W/ प्रीफ़िक्स), जिसमें पेज, limit, offset, total और प्रारूप शामिल हैं। यह gateway_region को अनदेखा करता है, इसलिए किसी दूसरे क्षेत्र से दिए गए उसी कैटलॉग का मान भी वही रहता है; एक ही मान वाली प्रतिक्रियाएँ समान होती हैं, लेकिन उनके बाइट अलग हो सकते हैं। RSS, Atom या त्रुटि वाली प्रतिक्रियाओं के साथ नहीं भेजा जाता।
+      schema:
+        type: string
   parameters:
     DataContributionClassifierId:
       name: id
@@ -9098,6 +9116,16 @@ components:
           $ref: '#/components/schemas/GatewayModalities'
         capabilities:
           $ref: '#/components/schemas/GatewayCapabilities'
+        service_tiers:
+          type: array
+          description: वे सेवा स्तर जिन्हें यह ऑफ़र स्वीकार करता है, वर्णानुक्रम में। कोई स्तर तब सूचीबद्ध होता है जब प्रदाता रूट के पास उसके लिए सक्रिय और अभी प्रभावी मूल्य निर्धारण हो; priority, Fast स्तर है। दूसरे स्तर अलग, स्तर-विशिष्ट प्रदाता रूट के ज़रिए भी उपलब्ध हो सकते हैं।
+          items:
+            type: string
+            enum:
+              - flex
+              - priority
+              - standard
+              - ultrafast
         routing:
           type: object
           required:
@@ -11015,6 +11043,9 @@ components:
               - $ref: '#/components/schemas/DecisionPredicateQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionChoiceQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionScoreQuestion'
+              - $ref: '#/components/schemas/DecisionBoxQuestion'
+        provider_options:
+          $ref: '#/components/schemas/DecisionProviderOptions'
         safety_identifier:
           type: string
           nullable: true
@@ -11034,6 +11065,34 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    DecisionProviderOptions:
+      type: object
+      properties:
+        typesafe:
+          type: object
+          additionalProperties: false
+          properties:
+            long_context:
+              type: boolean
+              description: 'Jev के प्रयोगात्मक लंबे संदर्भ को चालू करें: प्रति अनुरोध 64k और प्रति प्रश्न 32k के बजाय दोनों के लिए 262k टोकन। डिफ़ॉल्ट रूप से बंद। समर्थित TypeSafe रूट आवश्यक है।'
+    DecisionBoxQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: एक bounding box के लिए Phaseo एक्सटेंशन। छवि और Jev 1.14 जैसे समर्थित रूट आवश्यक हैं। criteria या लक्ष्य न मिलने का परिणाम नहीं है।
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        name:
+          type: string
+          maxLength: 1048576
+        instructions:
+          type: string
+          maxLength: 1048576
     DecisionInputMessage:
       type: object
       required:
@@ -11282,6 +11341,9 @@ components:
               - $ref: '#/components/schemas/DecisionNoulQuestion'
               - $ref: '#/components/schemas/DecisionChoiceQuestion'
               - $ref: '#/components/schemas/DecisionScoreQuestion'
+              - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
+        provider_options:
+          $ref: '#/components/schemas/DecisionProviderOptions'
         images:
           type: array
           maxItems: 4
@@ -11305,6 +11367,20 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    LegacyDecisionBoxQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: छवियों वाले Box रूट के लिए एक bounding box का प्रश्न। criteria नहीं है।
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
     DecisionImage:
       type: object
       required:
@@ -11405,6 +11481,7 @@ components:
               - $ref: '#/components/schemas/DecisionChoiceAnswer'
               - $ref: '#/components/schemas/DecisionScoreAnswer'
               - $ref: '#/components/schemas/DecisionRefusalAnswer'
+              - $ref: '#/components/schemas/DecisionBoxAnswer'
         usage:
           $ref: '#/components/schemas/DecisionsUsage'
         request_id:
@@ -11413,6 +11490,52 @@ components:
         meta:
           type: object
           additionalProperties: true
+    DecisionBoxAnswer:
+      type: object
+      required:
+        - type
+        - name
+        - box
+        - confidence
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        name:
+          type: string
+          nullable: true
+        box:
+          $ref: '#/components/schemas/DecisionBox'
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+    DecisionBox:
+      type: object
+      required:
+        - top
+        - bottom
+        - left
+        - right
+      description: ऊपरी बाएँ कोने से छवि के आयामों के अनुपात के रूप में किनारे। top, bottom से कम होना चाहिए; left, right से कम होना चाहिए।
+      properties:
+        top:
+          type: number
+          minimum: 0
+          maximum: 1
+        bottom:
+          type: number
+          minimum: 0
+          maximum: 1
+        left:
+          type: number
+          minimum: 0
+          maximum: 1
+        right:
+          type: number
+          minimum: 0
+          maximum: 1
     DecisionPredicateAnswer:
       type: object
       required:

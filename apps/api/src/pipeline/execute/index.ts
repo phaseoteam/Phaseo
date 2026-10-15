@@ -40,7 +40,7 @@ function dispatchProviderHealthBackground(task: () => Promise<unknown>): void {
 
 import { guardCandidates, guardPricingFound, guardAllFailed } from "./guards";
 import { err, json } from "./http";
-import { getBaseModel, calculateMaxTries } from "./utils";
+import { getBaseModel, calculateMaxTries, googleFlexMinimumHeadersTimeoutMs } from "./utils";
 import { rankProviders } from "./providers";
 import { resolveProviderExecutor } from "../../executors";
 import {
@@ -516,6 +516,14 @@ export async function doRequestWithIR(
 	if (normalizedCapability === "decisions.make") {
 		candidates = filterDecisionCandidatesByModalities(candidates, ir as IRDecisionsRequest);
 		if (!candidates.length) {
+			const decisions = ir as IRDecisionsRequest;
+			if (Object.values(decisions.questions ?? {}).some(question => question.type === "box") ||
+				decisions.providerOptions?.typesafe?.long_context === true) {
+				return Response.json({ error: "unsupported_parameter", model: ctx.model, endpoint: ctx.endpoint,
+					request_id: ctx.requestId,
+					message: "No route supports the requested decision inputs and Box or TypeSafe long-context capabilities.",
+				}, { status: 400 });
+			}
 			return err("unsupported_modalities", { model: ctx.model, endpoint: ctx.endpoint,
 				request_id: ctx.requestId, reason: "unsupported_modalities" });
 		}
@@ -838,7 +846,12 @@ async function attemptProviderWithIR(
 	// Execute using provider-capability executor
 	let t0 = performance.now();
 	// The headers deadline is only safe when the provider streams (see the tracker).
-	const upstreamTracker = createUpstreamTimingTracker(ctx.gatewayTimingTrace, { applyHeadersDeadline: ctx.stream === true });
+	// Google Flex queues work before returning headers; give it the documented
+	// ten-minute wait while retaining caller cancellation and a bounded deadline.
+	const upstreamTracker = createUpstreamTimingTracker(ctx.gatewayTimingTrace, {
+		applyHeadersDeadline: ctx.stream === true,
+		minimumHeadersTimeoutMs: googleFlexMinimumHeadersTimeoutMs(candidate.providerId, candidate.capabilityParams, ctx.body),
+	});
 	let providerRateLimitReservation: ProviderQuotaCharge | null = null;
 	try {
 		timing.timer.mark("adapter_start");

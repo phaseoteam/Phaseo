@@ -2,6 +2,23 @@ import { describe, expect, it } from "vitest";
 import { googleUsageMetadataToIRUsage, normalizeGoogleUsage } from "./usage";
 
 describe("googleUsageMetadataToIRUsage", () => {
+	it.each([
+		[{ serviceTier: "standard" }, "standard"],
+		[{ serviceTier: "flex" }, "flex"],
+		[{ service_tier: "priority" }, "priority"],
+		[{ trafficType: "ON_DEMAND_PRIORITY" }, "priority"],
+		[{ trafficType: "ON_DEMAND_FLEX" }, "flex"],
+		[{ trafficType: "ON_DEMAND" }, "standard"],
+	])("preserves the provider's reported tier %j", (metadata, tier) => {
+		expect(googleUsageMetadataToIRUsage({ promptTokenCount: 5, candidatesTokenCount: 2, ...metadata })?.serviceTier).toBe(tier);
+	});
+
+	it("prefers a reported downgrade over the response header and ignores unknown tiers", () => {
+		expect(googleUsageMetadataToIRUsage({ serviceTier: "standard" }, "priority")?.serviceTier).toBe("standard");
+		expect(googleUsageMetadataToIRUsage({}, "flex")?.serviceTier).toBe("flex");
+		expect(googleUsageMetadataToIRUsage({ serviceTier: "unknown" })?.serviceTier).toBeUndefined();
+	});
+
 	it("maps multimodal candidates token details into IR _ext usage fields", () => {
 		const usage = googleUsageMetadataToIRUsage({
 			promptTokenCount: 66,

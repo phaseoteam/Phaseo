@@ -17,6 +17,7 @@ import { transformStream as transformGoogleGeminiStream } from "@executors/googl
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { resolveProviderKey } from "@providers/keys";
 import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
+import { normalizeGoogleServiceTier } from "@executors/google/shared/service-tier";
 import { applyGoogleOutputTokenFallback, applyOpenAIUsageFallback } from "@executors/google/shared/usage-fallback";
 import { getBindings } from "@/runtime/env";
 import { upstreamTestHeaders } from "@providers/shared/testing";
@@ -82,6 +83,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	}
 
 	const requestBody = JSON.stringify(payload);
+	const geminiTier = route.family === "gemini" ? normalizeGoogleServiceTier(irRequest.serviceTier) : undefined;
 	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
 	const accessToken = await resolveVertexAccessToken(keyInfo.key, args.upstreamTiming);
 
@@ -90,6 +92,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		headers: {
 			Authorization: `Bearer ${accessToken}`,
 			"Content-Type": "application/json",
+			...((geminiTier === "flex" || geminiTier === "priority") ? {
+				"X-Vertex-AI-LLM-Request-Type": "shared",
+				"X-Vertex-AI-LLM-Shared-Request-Type": geminiTier,
+			} : {}),
 			...upstreamTestHeaders(args.meta),
 		},
 		body: requestBody,
@@ -371,7 +377,7 @@ export function resolveVertexApiBase(bindings: Record<string, any>, providerId?:
 	const configuredLocation = String(bindings.GOOGLE_VERTEX_LOCATION || "").trim().toLowerCase();
 	const requiredLocation = providerId === "google-vertex-eu" && family === "anthropic" ? "eu"
 		: providerId === "google-vertex" && family === "anthropic" ? "global"
-		: providerId === "google-vertex" && family === "gemini" && /^(?:google\/)?gemini-4-argon$/.test(model ?? "") ? "global"
+		: providerId === "google-vertex" && family === "gemini" && /^(?:google\/)?(?:gemini-4-argon|gemini-3\.1-flash-lite)$/.test(model ?? "") ? "global"
 		: providerId === "google-vertex" && family === "openapi_chat" && model?.endsWith("-maas")
 			? model === "openai/gpt-oss-20b-maas" ? "us-central1" : "global" : undefined;
 	const location = requiredLocation || configuredLocation || "global";
@@ -463,7 +469,6 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 	}
 
 	const request: any = { contents };
-	if (ir.serviceTier) request.serviceTier = ir.serviceTier;
 
 	if (ir.googleCachedContent !== undefined) {
 		request.cachedContent = ir.googleCachedContent;

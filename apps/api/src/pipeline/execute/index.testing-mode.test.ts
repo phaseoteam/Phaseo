@@ -517,6 +517,20 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
 	});
 	it.each([
+		{ questions: { mug: { type: "box", instructions: "The mug" } } },
+		{ providerOptions: { typesafe: { long_context: true } } },
+	])("rejects unsupported decision features before provider execution: %j", async feature => {
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [{ providerId: "typesafe", inputModalities: ["text", "image"], capabilityParams: { images: true } }] });
+		const result = await doRequestWithIR(createCtx({ endpoint: "decisions", capability: "decisions.make" }), {
+			model: "typesafe/jev-1.13.0", state: "Photo", questions: {}, images: ["data:image/png;base64,AQID"], ...feature,
+		} as any, createTiming());
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(400);
+		expect(await (result as Response).json()).toMatchObject({ error: "unsupported_parameter" });
+		expect(rankProvidersMock).not.toHaveBeenCalled();
+		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
+	});
+	it.each([
 		{ audio: [{ type: "audio", source: "data", data: "AQID", format: "wav" }] },
 		{ videos: ["data:video/mp4;base64,AQID"] },
 	])("rejects unsupported decision media before provider selection: %j", async media => {

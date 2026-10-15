@@ -718,6 +718,26 @@ struct DecisionAudioSource {
 	std::string url;
 };
 
+struct DecisionBox {
+	double bottom;
+	double left;
+	double right;
+	double top;
+};
+
+struct DecisionBoxAnswer {
+	std::map<std::string, std::any> box;
+	double confidence;
+	std::optional<std::string> name;
+	std::any type;
+};
+
+struct DecisionBoxQuestion {
+	std::string instructions;
+	std::string name;
+	std::any type;
+};
+
 struct DecisionChoiceAnswer {
 	std::any choice;
 	double confidence;
@@ -788,6 +808,10 @@ struct DecisionPredicateQuestion {
 	std::any type;
 };
 
+struct DecisionProviderOptions {
+	std::map<std::string, std::any> typesafe;
+};
+
 struct DecisionRefusalAnswer {
 	std::optional<std::string> name;
 	std::any type;
@@ -816,6 +840,7 @@ struct DecisionsRequest {
 	std::string model;
 	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> questions;
 	std::map<std::string, std::any> routing;
 	std::any state;
@@ -1201,6 +1226,7 @@ struct GatewayModelOffer {
 	std::map<std::string, std::any> provider;
 	bool routable;
 	std::map<std::string, std::any> routing;
+	std::vector<std::any> service_tiers;
 	std::any status;
 	std::any status_reason;
 };
@@ -1630,6 +1656,11 @@ struct KeyInvalidateResponse {
 
 using KnownModelId = std::any;
 
+struct LegacyDecisionBoxQuestion {
+	std::any instructions;
+	std::any type;
+};
+
 struct LegacyDecisionsRequest {
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
@@ -1639,6 +1670,7 @@ struct LegacyDecisionsRequest {
 	std::string model;
 	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> questions;
 	std::map<std::string, std::any> routing;
 	std::any state;
@@ -2198,6 +2230,7 @@ struct OpenAIDecisionsRequest {
 	std::string model;
 	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> provider_options;
 	std::vector<std::any> questions;
 	std::map<std::string, std::any> routing;
 	std::optional<std::string> safety_identifier;

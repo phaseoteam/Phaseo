@@ -10,6 +10,7 @@ export type DecisionInputPart =
 export type DecisionInput = string | Array<{ role: "user"; type?: "message"; content: string | DecisionInputPart[] }>;
 export type NativeDecisionQuestion =
 	| { type: "predicate"; name?: string; instructions: string }
+	| { type: "box"; name?: string; instructions: string }
 	| { type: "choice"; name?: string; instructions: string; choices: Array<{ value: DecisionValue; description?: string }> }
 	| { type: "score"; name?: string; instructions: string; levels: Array<{ label: string; description?: string }> };
 export type NativeDecisionRequest = {
@@ -17,7 +18,13 @@ export type NativeDecisionRequest = {
 	input: DecisionInput;
 	questions: NativeDecisionQuestion[];
 	safety_identifier?: string | null;
+	provider_options?: DecisionProviderOptions;
 };
+
+export type DecisionProviderOptions = { typesafe?: { long_context?: boolean } };
+export const DecisionProviderOptionsSchema = lazySchema(() => z.object({
+	typesafe: z.object({ long_context: z.boolean().optional() }).strict().optional(),
+}).passthrough());
 
 const instructions = lazySchema(() => z.string().max(1048576));
 const commonQuestion = { name: instructions.optional(), instructions };
@@ -28,6 +35,7 @@ const mediaUrl = (kind: "audio" | "video") => z.string().max(24 * 1024 * 1024).r
 }, "Use an inline base64 data URL or a public HTTPS URL.");
 export const NativeDecisionQuestionSchema = lazySchema(() => z.discriminatedUnion("type", [
 	z.object({ ...commonQuestion, type: z.literal("predicate") }).strict(),
+	z.object({ ...commonQuestion, type: z.literal("box") }).strict(),
 	z.object({
 		...commonQuestion, type: z.literal("choice"),
 		choices: z.array(z.object({ value, description: instructions.optional() }).strict()).min(1),
@@ -77,6 +85,7 @@ export const NativeDecisionsBodySchema = lazySchema(() => z.object({
 		});
 	}),
 	safety_identifier: z.string().max(128).nullable().optional(),
+	provider_options: DecisionProviderOptionsSchema.optional(),
 }).superRefine((body, ctx) => {
 	const images = typeof body.input === "string" ? 0 : body.input.reduce((total, message) =>
 		total + (typeof message.content === "string" ? 0 : message.content.filter(part => part.type === "input_image").length), 0);
@@ -86,6 +95,11 @@ export const NativeDecisionsBodySchema = lazySchema(() => z.object({
 const probability = lazySchema(() => z.number().finite().min(0).max(1));
 const answerName = lazySchema(() => z.string().nullable());
 export const NativeDecisionAnswerSchema = lazySchema(() => z.discriminatedUnion("type", [
+	z.object({
+		type: z.literal("box"), name: answerName, confidence: probability,
+		box: z.object({ top: probability, bottom: probability, left: probability, right: probability })
+			.refine(box => box.top < box.bottom && box.left < box.right, "Box edges must be ordered."),
+	}).passthrough(),
 	z.object({ type: z.literal("predicate"), name: answerName, probability }).passthrough(),
 	z.object({
 		type: z.literal("choice"), name: answerName, choice: value, confidence: probability,
