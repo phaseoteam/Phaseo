@@ -21,7 +21,7 @@ app.whenReady().then(async()=>{
   await installControlActions(owner);
   await wait(`Boolean(document.querySelector('aside[aria-label]'))`);
   await run(`window.__auditPanel('Browser')`);
-  await wait(`Boolean(document.querySelector('.browser-panel [aria-label="Downloads"]'))`);
+  await wait(`Boolean(document.querySelector('.browser-panel [aria-label="Browser menu"]'))`);
   if(stage==='write'){
    const address='http://127.0.0.1:'+server.address().port;
    await run(`window.phaseoDesktop.browser({id:'draft',type:'navigate',url:${JSON.stringify(address)}})`);
@@ -30,7 +30,8 @@ app.whenReady().then(async()=>{
    browser.downloadURL(address+'/file');
    await wait(`window.phaseoDesktop.browserDownload({type:'list'}).then(values=>values.length===1&&values[0].status==='completed')`);
   }
-  await run(`document.querySelector('.browser-panel [aria-label="Downloads"]').click()`);
+  // Downloads open from the browser menu; the toolbar button only shows while the chat has downloads.
+  await run(`window.__auditMenu('.browser-panel [aria-label="Browser menu"]',item=>item.textContent.startsWith('Downloads'))`);
   if(stage==='removed'){await wait(`document.querySelector('.browser-downloads')?.textContent.includes('No downloads in this chat.')`);if(!await run(`window.phaseoDesktop.browserDownload({type:'list'}).then(values=>values.length===0)`))throw Error('Removed record returned after restart');}
   else{
    await wait(`document.querySelector('.browser-downloads')?.textContent.includes('history.txt')&&document.querySelector('.browser-downloads')?.textContent.includes('Completed')`);

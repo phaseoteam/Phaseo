@@ -1,6 +1,7 @@
 import { imageMime } from "./attachments";
 import { linkTitle } from "./linkTitle";
 import { KeybindingsFile } from "./keybindingsFile";
+import { browserShortcuts } from "../shared/keybindings";
 import { signInPhaseo, PHASEO_GATEWAY_ENDPOINT } from "./phaseoOAuth";
 import { PhaseoSkills } from "./phaseoSkills";
 import { GlobalInstructions } from "./globalInstructions";
@@ -20,6 +21,8 @@ import { projectPullRequestThreads } from "./projectPullRequestThreads";
 import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, Notification, safeStorage, shell } from "electron";
 import path from "node:path";
 import { BrowserHost } from "./browserHost";
+import { localServers } from "./browserLocalServers";
+import { browserId } from "../shared/browser";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "../shared/desktop";
@@ -577,6 +580,9 @@ function senderWindow(event: Electron.IpcMainInvokeEvent): BrowserWindow | null 
 
 const browserHost = new BrowserHost();
 ipcMain.handle("desktop:browser", (event, command: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted browser request."); return browserHost.command(owner, command); });
+ipcMain.handle("desktop:browser-capture", (event, id: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted browser request."); return browserHost.capture(owner, browserId(id)); });
+ipcMain.handle("desktop:browser-pick", (event, id: unknown, cancel: unknown) => { const owner = senderWindow(event); if (!owner || typeof cancel !== "boolean") throw new Error("Untrusted browser request."); return browserHost.pick(owner, browserId(id), cancel); });
+ipcMain.handle("desktop:browser-local-servers", event => { if (!senderWindow(event)) throw new Error("Untrusted browser request."); return localServers(); });
 ipcMain.handle("desktop:browser-download", (event, command: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted download request."); return browserHost.downloads.command(owner, command); });
 
 ipcMain.handle("desktop:get-runtime-info", (event) => senderWindow(event) ? ({
@@ -602,7 +608,8 @@ ipcMain.handle("desktop:window-action", (event, action: DesktopWindowAction) => 
 });
 
 const keybindings = new KeybindingsFile(path.join(app.getPath("userData"), "settings", "keybindings.json"));
-keybindings.onChange = state => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("desktop:keybindings-changed", state); };
+keybindings.onChange = state => { browserHost.shortcutKeys = browserShortcuts(state.entries); for (const window of BrowserWindow.getAllWindows()) window.webContents.send("desktop:keybindings-changed", state); };
+browserHost.shortcutKeys = browserShortcuts(keybindings.read().entries);
 keybindings.watch();
 ipcMain.handle("desktop:keybindings", event => { if (!senderWindow(event)) throw new Error("Invalid keybindings request."); return keybindings.read(); });
 ipcMain.handle("desktop:save-keybindings", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid keybindings request."); const state = keybindings.save(value); keybindings.onChange(state); return state; });

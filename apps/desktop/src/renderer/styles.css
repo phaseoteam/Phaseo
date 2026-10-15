@@ -97,13 +97,6 @@
 .model-select-popup { min-width: min(320px, calc(100vw - 32px)); }
 .model-select-popup [cmdk-list] { padding-block: 4px; }
 .model-selected-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.browser-suggestions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-block: 20px; }
-.browser-suggestions button, .browser-recents button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); background: var(--surface); text-align: left; }
-.browser-recents { text-align: left; }
-.browser-recents h3 { margin: 20px 0 12px; font-size: 12px; color: var(--text-muted); }
-.browser-recents button { margin-bottom: 6px; }
-.browser-recents button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.browser-preview-toolbar .desktop-select-trigger { width: 130px; height: 28px; font-size: 12px; }
 .task-history-list .task-row { padding: 10px 12px; gap: 6px; }
 .task-history-list .task-row > span:not(.harness-logo) { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; overflow-wrap: anywhere; }
 .task-history-list > .task-muted { padding: 12px 6px; margin: 0; line-height: 1.6; }
@@ -641,9 +634,9 @@ button { color: inherit; }
 .tools-resize-handle:hover, .tools-resize-handle:focus-visible { background: var(--primary-soft); outline: 1px solid var(--ring); }
 .chat-tools-header, .chat-settings-header { display: flex; flex-shrink: 0; height: 44px; align-items: center; justify-content: space-between; gap: 4px; padding: 0 8px; border-bottom: 1px solid var(--border); }
 .chat-tools-header nav { display: flex; min-width: 0; height: 100%; gap: 2px; }
-:is(.chat-tools-header, .chat-settings-header, .browser-toolbar, .browser-download-toolbar, .browser-downloads) button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; padding: 6px 8px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text-muted); font: inherit; font-size: 12px; cursor: pointer; }
+:is(.chat-tools-header, .chat-settings-header) button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; padding: 6px 8px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text-muted); font: inherit; font-size: 12px; cursor: pointer; }
 .chat-tools-header button[aria-pressed="true"] { color: var(--text); border-bottom-color: var(--text); }
-:is(.chat-tools-header, .chat-settings-header, .browser-toolbar) button:hover { background: var(--surface-hover); }
+:is(.chat-tools-header, .chat-settings-header) button:hover { background: var(--surface-hover); }
 .chat-tools-content, .chat-settings-content { flex: 1; min-height: 0; overflow: auto; }
 .chat-tools-content > .page { width: 100%; margin: 0; padding: 20px; }
 .chat-tools-content .project-page { display: block; height: auto; }
@@ -651,12 +644,7 @@ button { color: inherit; }
 .chat-tools-content .terminal-workspace { flex-direction: column; height: 100%; min-height: 0; }
 .chat-tools-content .terminal-list { width: 100%; max-height: 220px; border-right: 0; border-bottom: 1px solid var(--border); }
 .chat-settings-overlay { position: absolute; inset: 0; display: flex; background: var(--background); z-index: 2; }
-.browser-panel { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-.browser-toolbar { display: flex; align-items: center; gap: 4px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
-.browser-toolbar input { flex: 1; min-width: 0; height: 32px; border: 1px solid var(--border); border-radius: 8px; background: var(--input); color: var(--text); padding: 4px 10px; font: inherit; font-size: 12px; }
-.browser-toolbar button:disabled { opacity: .4; cursor: default; }
-.browser-surface { flex: 1; min-height: 0; background: var(--background); }
-.chat-shell button:focus-visible, .browser-toolbar input:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.chat-shell button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 @media (max-width: 885px) {
  .chat-shell { flex-direction: column; }
  .chat-shell-main { height: 55%; }
@@ -669,37 +657,12 @@ button { color: inherit; }
  .chat-tools { width: 100%; }
 }
 
-.browser-empty { padding: 32px 24px; color: var(--text-muted); }
-.browser-empty h2 { color: var(--text); font-size: 16px; margin: 0 0 12px; }
-.browser-empty p { font-size: 13px; line-height: 1.6; }
 .chat-tools-content .project-browser { flex-direction: column; }
 .chat-tools-content .project-browser > aside { flex: 0 0 auto; max-height: 160px; border-right: 0; border-bottom: 1px solid var(--border); }
 
-.browser-tabs { display: flex; gap: 4px; padding: 8px 12px; border-bottom: 1px solid var(--border); overflow-x: auto; flex-shrink: 0; }
-.browser-tab { display: flex; align-items: center; border-radius: 8px; background: var(--surface); flex-shrink: 0; }
-.browser-tab > button[aria-label] { display: inline-flex; align-items: center; justify-content: center; height: 28px; width: 28px; padding: 0; }
-.browser-tabs button { min-height: 28px; border: 0; border-radius: 8px; padding: 4px 8px; background: transparent; color: var(--text-muted); font: inherit; font-size: 12px; cursor: pointer; }
-.browser-tab [role="tab"] { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.browser-tab [aria-selected="true"] { color: var(--text); background: var(--primary-soft); }
-.browser-tab-surface { flex: 1; }
 
-.browser-preview-toolbar { display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 12px; }
-.browser-preview-toolbar select { min-height: 28px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); padding: 4px 8px; font: inherit; }
-.browser-preview-toolbar button { display: inline-flex; align-items: center; justify-content: center; min-height: 28px; border: 0; border-radius: 8px; background: transparent; color: var(--text-muted); padding: 4px 8px; cursor: pointer; }
 
-.browser-download-toolbar { display:flex; justify-content:flex-end; padding:6px 12px; border-bottom:1px solid var(--border); }
-.browser-downloads { flex:1; min-height:0; overflow:auto; padding:20px; display:flex; flex-direction:column; gap:16px; }
-.browser-downloads h2 { margin:0; font-size:16px; }
-.browser-downloads article { padding:16px; border:1px solid var(--border); border-radius:var(--radius); display:flex; flex-direction:column; gap:10px; }
-.browser-downloads strong { overflow-wrap:anywhere; }
-.browser-downloads span { color:var(--text-muted); font-size:12px; }
-.browser-downloads article > div { display:flex; flex-wrap:wrap; gap:8px; }
-.browser-downloads progress { width:100%; accent-color:var(--primary); }
-.browser-tab-surface[hidden] { display:none; }
 
-.browser-downloads button { border-color:var(--border); background:var(--surface); color:var(--text); }
-:is(.browser-downloads, .browser-download-toolbar) button:hover { background:var(--surface-hover); }
-.browser-download-toolbar button[aria-pressed="true"] { color:var(--text); background:var(--primary-soft); }
 
 .proposal-row .proposal-open { padding:0; min-height:0; border:0; border-radius:0; background:transparent; font-weight:600; color:var(--text); text-align:left; white-space:normal; justify-content:flex-start; }
 .proposal-row .proposal-open:hover { color:var(--primary); }
@@ -900,7 +863,7 @@ button { color: inherit; }
 .new-chat-more > small { display: block; font-size: 11px; line-height: 1.6; }
 
 /* Keep feedback visible when compact controls override the base button surface. */
-:is(.topbar .command-button, .chat-sidebar-controls > button, .chat-scope-picker .desktop-select-trigger, .chat-shell .task-archive-filter, .chat-group h2 > button, .chat-sidebar-footer button, .chat-shell .task-history-list .task-row, .conversation-message-footer button, .new-chat-more .task-controls button, .browser-tabs button, .browser-preview-toolbar button, .browser-download-toolbar button, .browser-downloads button, .surface-switcher button):hover:not(:disabled) {
+:is(.topbar .command-button, .chat-sidebar-controls > button, .chat-scope-picker .desktop-select-trigger, .chat-shell .task-archive-filter, .chat-group h2 > button, .chat-sidebar-footer button, .chat-shell .task-history-list .task-row, .conversation-message-footer button, .new-chat-more .task-controls button, .surface-switcher button):hover:not(:disabled) {
  background: var(--surface-hover);
  color: var(--text);
  cursor: pointer;

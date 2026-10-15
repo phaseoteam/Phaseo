@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { KeybindingsFile } from "../main/keybindingsFile";
-import { evaluateWhen, keybindingConflicts, keybindingRows, keyFromEvent, keyLabel, matchesKey, parseKey, replaceCommandBindings, validateKeybindings, whenError } from "./keybindings";
+import { browserShortcuts, evaluateWhen, keybindingConflicts, keybindingRows, keyFromEvent, keyLabel, matchesKey, parseKey, replaceCommandBindings, validateKeybindings, whenError } from "./keybindings";
 
 const press = (key: string, modifiers: Partial<Record<"ctrlKey" | "metaKey" | "altKey" | "shiftKey", boolean>> = {}) => ({ key, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...modifiers });
 
@@ -73,5 +73,21 @@ describe("keyboard shortcuts", () => {
 			expect(broken.error).toBeTruthy();
 			expect(file.ensure()).toBe(file.filename);
 		} finally { rmSync(directory, { recursive: true, force: true }); }
+	});
+});
+
+describe("browser shortcuts", () => {
+	it("hands app shortcuts from a focused page to the app, except undo", () => {
+		const shortcuts = browserShortcuts([]), keys = shortcuts.map(item => item.key);
+		expect(keys).toEqual(expect.arrayContaining(["mod+r", "mod+l", "mod+=", "mod+-", "mod+0", "mod+k", "mod+w"]));
+		expect(keys).not.toContain("mod+z");
+		expect(shortcuts.filter(item => item.keepPageFocus).map(item => item.key).sort()).toEqual(["mod++", "mod+-", "mod+0", "mod+=", "mod+r"].sort());
+		expect(browserShortcuts([{ command: "browser.reload", key: "f5" }])).toContainEqual({ key: "f5", keepPageFocus: true });
+	});
+	it("lets page zoom win over app zoom only while the browser has focus", () => {
+		const rows = keybindingRows([]).filter(row => row.key === "mod+=");
+		expect(rows.map(row => row.command)).toEqual(["browser.zoomIn", "view.zoomIn"]);
+		expect(evaluateWhen(rows[0].when, { browserFocused: true })).toBe(true);
+		expect(evaluateWhen(rows[0].when, {})).toBe(false);
 	});
 });

@@ -384,3 +384,12 @@ summary::before { content: ""; flex-shrink: 0; width: 0.875rem; height: 0.875rem
 details[open] > summary::before { transform: rotate(90deg); }
 /* Summaries that draw their own chevron icon keep it. */
 summary:has(> svg:first-child)::before { display: none; }
+
+/* Browser loading bar, after T3 Code: grows to 90% over a few seconds, then fills and fades once the page loads. */
+@keyframes browser-loading-progress { from { transform: scaleX(0.04); } to { transform: scaleX(0.9); } }
+.browser-loading-progress { opacity: 0; transform: scaleX(1); transition: transform 150ms ease-out, opacity 150ms ease-out 220ms; }
+.browser-loading-progress[data-loading="true"] { opacity: 1; animation: browser-loading-progress 5.3s cubic-bezier(0.1, 0.5, 0.2, 1) forwards; }
+@media (prefers-reduced-motion: reduce) {
+	.browser-loading-progress, .browser-loading-progress[data-loading="true"] { transition: none; animation: none; }
+	.browser-loading-progress[data-loading="true"] { transform: scaleX(0.9); }
+}

@@ -56,25 +56,35 @@ export function runCommand(command: KeybindingCommand) {
 	return false;
 }
 
+type KeyInput = Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey"> & { repeat?: boolean };
+let whenContext: () => WhenContext = () => ({});
+
+/** Runs the first binding whose keys and condition match and that something handles; true when one did. */
+export function dispatchKeybinding(event: KeyInput, overrides: WhenContext = {}) {
+	const candidates = state.rows.filter(row => row.key && matchesKey(row.key, event, isMac()));
+	if (!candidates.length) return false;
+	const active = document.activeElement as HTMLElement | null;
+	const textFocused = Boolean(active && (active.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(active.tagName)));
+	const when = { ...whenContext(), textFocused, terminalFocused: Boolean(active?.closest(".xterm")), browserFocused: Boolean(active?.closest("[data-browser-surface]")), ...overrides };
+	for (const row of candidates) {
+		if (!evaluateWhen(row.when, when)) continue;
+		// Held keys repeat only for zoom.
+		if (event.repeat && !row.command.includes("zoom")) return true;
+		if (runCommand(row.command)) return true;
+	}
+	return false;
+}
+
 /** The single key listener: the first binding whose keys and condition match, and that something handles, wins. */
 export function useKeybindingDispatcher(context: () => WhenContext) {
 	const latest = useRef(context);
 	latest.current = context;
 	useEffect(() => {
+		whenContext = () => latest.current();
 		const onKeyDown = (event: KeyboardEvent) => {
 			// A shortcut field records keys instead of running them.
 			if (event.isComposing || event.defaultPrevented || (document.activeElement as HTMLElement | null)?.dataset.keybindingCapture !== undefined) return;
-			const mac = isMac();
-			const candidates = state.rows.filter(row => row.key && matchesKey(row.key, event, mac));
-			if (!candidates.length) return;
-			const active = document.activeElement as HTMLElement | null;
-			const textFocused = Boolean(active && (active.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(active.tagName)));
-			const when = { ...latest.current(), textFocused, terminalFocused: Boolean(active?.closest(".xterm")) };
-			for (const row of candidates) {
-				if (!evaluateWhen(row.when, when)) continue;
-				if (event.repeat && !row.command.startsWith("view.zoom")) { event.preventDefault(); return; }
-				if (runCommand(row.command)) { event.preventDefault(); return; }
-			}
+			if (dispatchKeybinding(event)) event.preventDefault();
 		};
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);

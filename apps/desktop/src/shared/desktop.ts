@@ -1,6 +1,6 @@
 import type { BrowserDownload, BrowserDownloadCommand } from "./browserDownloads";
 import type { KeybindingEntry } from "./keybindings";
-import type { BrowserCommand, BrowserState, BrowserOpenTab } from "./browser";
+import type { BrowserCapture, BrowserCommand, BrowserKey, BrowserLocalServer, BrowserOpenTab, BrowserPick, BrowserState } from "./browser";
 import type { WorkspaceApi } from "./workspace";
 
 export type DesktopRuntimeInfo = {
@@ -42,6 +42,13 @@ export type PhaseoDesktopApi = {
 	browser: (command: BrowserCommand) => Promise<BrowserState | undefined>;
 	onBrowserOpenTab: (listener: (request: BrowserOpenTab) => void) => () => void;
 	onBrowserState: (listener: (state: BrowserState) => void) => () => void;
+	/** Screenshot of a tab's page, also copied to the clipboard. */
+	browserCapture: (id: string) => Promise<BrowserCapture>;
+	/** Lets the person click an element on the page; undefined when cancelled. Pass cancel to stop a pick in progress. */
+	browserPick: (id: string, cancel?: boolean) => Promise<BrowserPick | undefined>;
+	browserLocalServers: () => Promise<BrowserLocalServer[]>;
+	/** An app shortcut pressed while a page had focus. */
+	onBrowserKey: (listener: (key: BrowserKey) => void) => () => void;
 	getRuntimeInfo: () => Promise<DesktopRuntimeInfo>;
 	getWindowState: () => Promise<DesktopWindowState>;
 	performWindowAction: (action: DesktopWindowAction) => Promise<void>;
