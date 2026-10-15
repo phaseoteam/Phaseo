@@ -422,9 +422,12 @@ app.whenReady().then(async () => {
 			let state=await api.command({type:'add-agent',name:'Grok interaction fixture',executable:${JSON.stringify(process.execPath)},arguments:[${JSON.stringify(fileURLToPath(new URL("./fixtures/grok-interaction.cjs", import.meta.url)))}]}); const agent=state.agents.find(value=>value.name==='Grok interaction fixture');
 			state=await api.command({type:'create-task',harness:'acp',agentId:agent.id,model:'default',mode:'plan'}); const task=state.tasks.find(value=>value.agentId===agent.id); await api.command({type:'send',id:task.id,text:'Native Grok question fixture'});
 			await window.__auditOpenChat('Native Grok question fixture');
-			let form; for(let attempt=0;attempt<50;attempt++){form=document.querySelector('form.task-question');if(form?.querySelector('.question-preview'))break;await new Promise(resolve=>setTimeout(resolve,100));}
-			if(form?.querySelector('.question-preview')?.textContent!=='Owned proposal preview')throw new Error('Native question preview missing');
-			form.querySelector('input[type="radio"]').click(); await new Promise(resolve=>setTimeout(resolve,100)); if(form.querySelector('button[type="submit"]').disabled)throw new Error('Native answer remained disabled'); form.requestSubmit();
+			// The answer panel above the composer: options are radio rows, and a chosen option shows its preview.
+			let panel; for(let attempt=0;attempt<50;attempt++){panel=document.querySelector('[aria-label="Agent questions"]');if(panel?.querySelector('[role="radio"]'))break;await new Promise(resolve=>setTimeout(resolve,100));}
+			const option=Array.from(panel?.querySelectorAll('[role="radio"]')??[]).find(row=>row.textContent.includes('Review before implementation'));if(!option)throw new Error('Native question option missing');
+			option.click(); await new Promise(resolve=>setTimeout(resolve,100)); if(option.getAttribute('aria-checked')!=='true')throw new Error('Native option was not chosen');
+			if(!panel.textContent.includes('Owned proposal preview'))throw new Error('Native question preview missing');
+			const submit=Array.from(panel.querySelectorAll('button')).find(button=>/^Submit answer/.test(button.textContent)); if(!submit||submit.disabled)throw new Error('Native answer remained disabled'); submit.click();
 			let current;for(let attempt=0;attempt<50;attempt++){current=(await api.get()).tasks.find(value=>value.id===task.id);if(current.status==='completed'||current.status==='failed')break;await new Promise(resolve=>setTimeout(resolve,100));}
 			if(current.status!=='completed'||current.questions?.length||current.approvals?.length||!current.activities?.some(value=>value.type==='plan'&&value.text==='Review the proposal and wait for implementation approval.'))throw new Error('Native plan/question workflow failed: '+current.error);
 			if(!current.nativeModels?.find(value=>value.id==='grok-fixture-b')?.default)throw new Error('Session-specific Grok model catalog was lost');
