@@ -10,7 +10,7 @@ MCP document services can provide resources alongside tools or on their own. The
 
 Prompt services can list their templates and retrieve one with approved arguments. Returned messages remain tool results; they do not change system instructions. A dedicated prompt picker is not available yet.
 
-Files & Git, pull requests, terminal and Browser share a collapsible right panel. Selecting a different chat initializes project tools from its project. Personal chats start without a project. Terminal lists follow that context; file drafts from another project are not restored into the current project's editor. At narrower widths the tools overlay the conversation and can be dismissed without losing it.
+Files & Git, pull requests, terminal and Browser share a collapsible right panel. Selecting a different chat initializes project tools from its project. Personal chats start without a project. Terminals belong to their chat and project. At narrower widths the tools overlay the conversation and can be dismissed without losing it.
 
 ## Native browser
 
@@ -107,6 +107,30 @@ Messages and replies show the same chips: file paths and `@path` mentions open i
 ## Right pane
 
 The pane on the right holds surfaces as tabs, as in T3 Code: Browser, Terminal, Files, Pull requests and Agents. Each chat remembers its own tabs, which one is active and whether the pane is maximised. With nothing open the pane shows **Open a surface**: click a row or press its letter (B, T, F, P, A). The **+** after the tabs opens another surface. Hover a tab and its icon becomes a close button; middle-click also closes it, and right-click offers Close, Close others, Close to the right and Close all. `Ctrl+W` closes the active tab; closing the last one closes the pane. Maximise gives the pane the chat's space until you restore it. Drag the pane's left edge to resize it (360 pixels up to 70% of the window; double-click resets it to 540).
+
+### Changes (diff)
+
+The diff shows every changed file in one scrolling list, as in T3 Code. The menu at the top left picks what to compare:
+
+- **Changes**: the branch against the branch it started from, including uncommitted work and new files. Next to it, the comparison target reads **Automatic** (the remote's default branch, otherwise `main` or `master`) until you search for and pick another local or remote branch.
+- **Uncommitted**: everything not yet committed, new files included.
+- **Latest turn** and **Turn N**: what one agent turn changed. Phaseo snapshots the project before and after each turn in a Git project (the snapshot never touches your staged files, branches or stash), so a turn's diff stays exact even after later edits. Turns finished before this version, chats outside a Git project and snapshots Git has since cleaned up show no turn diff.
+
+On the right: lines added and removed, **Refresh**, **Collapse all files**, stacked or split layout, line wrapping, **Hide whitespace changes** and the file tree, which lists changed files beside the diff; choosing one scrolls to it. Each file has a sticky header: its chevron (green for new files, red for deleted, amber for changed) folds the file, clicking the name opens the file, and the copy button copies its path. Binary and mode-only changes are listed as a count rather than shown. Click the unchanged-lines bars to expand context; if the file changed meanwhile, **Refresh** brings the diff up to date. The diff refreshes when a turn finishes, when the window regains focus and when you save, stage or commit.
+
+Hover a line number and click **+** to comment on a line or a selected range. A comment is added to the chat as review context (with the quoted lines) and shows under the line with a coloured left rule; delete it from there. `Ctrl+Enter` adds a comment, `Escape` cancels it.
+
+Branch switching, new branches and worktrees, staging, unstaging, commits and **Push** (or **Publish branch** the first time) are in the Git actions, kept apart from the diff. Push never asks for credentials in the app; set up Git credentials first.
+
+### Files
+
+The file explorer lists the project as a tree, loading each folder as you open it. Files Git ignores stay hidden. **Search files** finds files and folders by name or path, and **Expand all folders** opens every folder (very large projects show the first 5,000 entries). Opening a file shows it in its own surface: the path at the top (click a folder to browse its neighbours), **Open in editor**, **Show source**/**Show preview** for Markdown, CSV and TSV (up to 100 rows and 30 columns) and HTML pages (shown without running scripts), word wrap, and the explorer on the right. Images show as pictures and PDFs as their text.
+
+Text files up to 1 MB are edited in place and saved automatically half a second after you stop typing; a dot after the file name marks edits not yet saved. If the file changed on disk since it was opened, the save stops and **Reload from disk** replaces your edits with the current file. Files over 1 MB show their first 1 MB read-only.
+
+### Terminal
+
+A terminal fills its tab, with split side by side, split stacked, new terminal and close in a small cluster at the top right (`Ctrl+D`, `Ctrl+Shift+D`, `Ctrl+N` and `Ctrl+W` while a terminal has focus). A tab holds up to four terminals per split group; with more than one terminal, a list on the right switches between them. A terminal closes when its process exits. A chat's terminals can also open in a drawer under the chat (280 pixels tall by default, 180 pixels up to three quarters of the window; drag its top edge to resize).
 
 ## Code chats: settle and snooze
 

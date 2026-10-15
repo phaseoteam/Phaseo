@@ -32,7 +32,8 @@ export function sectionOf(selection: DiffSelection, turns: readonly DiffTurn[]) 
 	return turn ? { id: `turn:${turn.messageId}`, title: `Turn ${turn.number}` } : selection.kind === "uncommitted" ? { id: "uncommitted", title: "Uncommitted" } : { id: "branch", title: "Changes" };
 }
 
-export const resolveFileDiffPath = (file: Pick<FileDiffMetadata, "name">) => file.name.replace(/^[ab]\//, "");
+/** The parser already drops Git's a/ and b/ prefixes, so a folder really named "a" is kept. */
+export const resolveFileDiffPath = (file: Pick<FileDiffMetadata, "name">) => file.name;
 export const fileDiffKey = (file: Pick<FileDiffMetadata, "name" | "prevName">) => `${file.prevName ?? ""}\0${file.name}`;
 
 export function diffLineStat(files: readonly Pick<FileDiffMetadata, "hunks">[]) {

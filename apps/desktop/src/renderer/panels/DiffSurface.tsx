@@ -99,6 +99,7 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 	const [refresh, setRefresh] = useState(0);
+	const [context, setContext] = useState({ loading: 0, error: "" });
 	const [collapsed, setCollapsed] = useState<{ section: string; keys: ReadonlySet<string> }>({ section: "", keys: new Set() });
 	const [selectedPath, setSelectedPath] = useState<string>();
 	const viewer = useRef<DiffViewHandle | null>(null);
@@ -125,7 +126,12 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 		if (!api || !request) return;
 		let active = true;
 		setLoading(true);
-		void api.gitDiff(projectId, request).then(result => { if (!active) return; setLoaded({ key: requestKey, result }); setError(""); }, reason => { if (active) setError(ipcError(reason)); }).finally(() => { if (active) setLoading(false); });
+		void api.gitDiff(projectId, request).then(result => {
+			if (!active) return;
+			// An unchanged patch keeps its parsed files, so expanded context and scroll position survive a refresh.
+			setLoaded(current => current?.key === requestKey && current.result.hash === result.hash && current.result.baseRef === result.baseRef && current.result.truncated === result.truncated ? current : { key: requestKey, result });
+			setError(""); setContext(value => ({ ...value, error: "" }));
+		}, reason => { if (active) setError(ipcError(reason)); }).finally(() => { if (active) setLoading(false); });
 		return () => { active = false; };
 		// requestKey stands for the request, which is rebuilt every render.
 	}, [api, projectId, requestKey, refresh]);
@@ -146,7 +152,10 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 	const loadDiffFiles = useCallback<FileDiffContentsLoader>(async fileDiff => {
 		const current = resultRef.current;
 		if (!api || !current.request || !current.hash) throw new Error("Refresh to expand unchanged lines.");
-		return api.gitDiffFile(projectId, { diff: current.request, filename: resolveFileDiffPath(fileDiff), ...(fileDiff.prevName ? { oldFilename: resolveFileDiffPath({ name: fileDiff.prevName }) } : {}), hash: current.hash });
+		setContext(value => ({ loading: value.loading + 1, error: "" }));
+		try { return await api.gitDiffFile(projectId, { diff: current.request, filename: resolveFileDiffPath(fileDiff), ...(fileDiff.prevName ? { oldFilename: resolveFileDiffPath({ name: fileDiff.prevName }) } : {}), hash: current.hash }); }
+		catch (reason) { setContext(value => ({ ...value, error: ipcError(reason) })); throw reason; }
+		finally { setContext(value => ({ ...value, loading: value.loading - 1 })); }
 	}, [api, projectId]);
 
 	const openFile = (path: string) => { if (onOpenFile) onOpenFile(path); else openProjectFile({ projectId, path }); };
@@ -251,6 +260,8 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 		{header}
 		{result?.truncated && <SurfaceNotice>This preview exceeds the size limit. Changes shown are incomplete.</SurfaceNotice>}
 		{parsed && parsed.skipped > 0 && <SurfaceNotice>{parsed.skipped === 1 ? "1 binary or mode-only change is" : `${parsed.skipped} binary or mode-only changes are`} not shown.</SurfaceNotice>}
+		{context.loading > 0 && <SurfaceNotice>Loading unchanged lines…</SurfaceNotice>}
+		{context.error && <div role="alert" data-diff-context-error className="flex shrink-0 items-center gap-2 border-b border-border/60 px-3 py-1.5 text-[11px] text-destructive/80"><span className="min-w-0 flex-1">{context.error}</span><button type="button" onClick={() => setRefresh(value => value + 1)} className="shrink-0 rounded px-1.5 py-0.5 font-medium text-foreground hover:bg-accent">Refresh</button></div>}
 		{error && result && <p role="alert" className="shrink-0 border-b border-border/60 px-3 py-1.5 text-[11px] text-destructive/80">{error}</p>}
 		{body}
 	</div>;

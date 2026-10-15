@@ -37,6 +37,16 @@ export const DIFF_VIEW_CSS = `
 @media (prefers-reduced-motion: reduce) { [data-diff], [data-file] { transition: none; } }
 `;
 
+/** Names the expand controls and makes them keyboard-operable, which the viewer leaves to the host. */
+function labelExpandButtons(node: HTMLElement) {
+	for (const button of node.shadowRoot?.querySelectorAll<HTMLElement>("[data-expand-button]") ?? []) {
+		button.tabIndex = 0;
+		button.setAttribute("role", "button");
+		button.setAttribute("aria-label", button.hasAttribute("data-expand-all-button") ? "Expand all unchanged lines" : `Expand unchanged lines ${button.hasAttribute("data-expand-up") ? "above" : button.hasAttribute("data-expand-down") ? "below" : "around this change"}`);
+		button.onkeydown = event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); button.click(); } };
+	}
+}
+
 type Entry = { id: string; kind: "draft" | "comment"; range: SelectedLineRange; rangeLabel: string; text: string };
 type Group = { entries: Entry[] };
 export type DiffViewFile = { fileDiff: FileDiffMetadata; filePath: string; fileKey: string; fileVersion: number; collapsed: boolean };
@@ -89,7 +99,7 @@ export function DiffCodeView({ files, viewerRef, className, commentTarget, secti
 	const options = useMemo(() => ({
 		diffStyle: layout, overflow: wrap ? "wrap" as const : "scroll" as const, theme: { light: "github-light", dark: "github-dark" }, themeType: theme,
 		preferredHighlighter: "shiki-js" as const, lineDiffType: "none" as const, hunkSeparators: "line-info" as const, tokenizeMaxLength: 50_000, tokenizeMaxLineLength: 4000,
-		stickyHeaders: true, unsafeCSS: DIFF_VIEW_CSS, enableGutterUtility: !draft, enableLineSelection: !draft, onGutterUtilityClick: begin,
+		stickyHeaders: true, unsafeCSS: DIFF_VIEW_CSS, onPostRender: labelExpandButtons, enableGutterUtility: !draft, enableLineSelection: !draft, onGutterUtilityClick: begin,
 		itemMetrics: { diffHeaderHeight: 32, hunkSeparatorHeight: 24, spacing: 0, paddingTop: 0, paddingBottom: 8 }, layout: { paddingTop: 0, paddingBottom: 0, gap: 0 },
 		...(loadDiffFiles ? { loadDiffFiles } : {}),
 	}), [layout, wrap, theme, draft, begin, loadDiffFiles]);

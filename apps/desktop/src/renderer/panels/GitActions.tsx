@@ -39,6 +39,7 @@ export function GitActions({ projectId, onProjectCreated }: { projectId: string;
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
 	const [refresh, setRefresh] = useState(0);
+	const [repository, setRepository] = useState(true);
 	// Agents finishing in this project change its files, so their completion refreshes the list.
 	const activity = overview.tasks.filter(task => task.projectId === projectId).map(task => `${task.id}:${task.status}:${task.lastCompletedAt ?? ""}`).join("|");
 
@@ -47,7 +48,7 @@ export function GitActions({ projectId, onProjectCreated }: { projectId: string;
 	useEffect(() => {
 		if (!api || !projectId) return;
 		let active = true;
-		void Promise.all([api.gitReview(projectId), api.gitBranches(projectId)]).then(([value, names]) => { if (active) { setReview(value); setBranches(names); setError(""); } }, reason => { if (active) setError(ipcError(reason)); });
+		void Promise.all([api.gitReview(projectId), api.gitBranches(projectId)]).then(([value, names]) => { if (active) { setReview(value); setBranches(names); setError(""); setRepository(true); } }, reason => { if (!active) return; const message = ipcError(reason); if (/not a git repository/i.test(message)) setRepository(false); else setError(message); });
 		return () => { active = false; };
 	}, [api, projectId, refresh, activity]);
 
@@ -85,6 +86,7 @@ export function GitActions({ projectId, onProjectCreated }: { projectId: string;
 		<ToolbarButton size="sm" label={action.label} disabled={busy} onClick={() => void stageAll(action.files, action.type)}>{action.icon}</ToolbarButton>
 	</div>;
 
+	if (!repository) return <section className="git-actions text-xs text-muted-foreground/70" aria-label="Git">This project is not a Git repository.</section>;
 	return <section className="git-actions flex min-w-0 flex-col gap-1 text-xs" aria-label="Git" aria-busy={busy}>
 		<div className="flex items-center gap-1">
 			<DropdownMenu>

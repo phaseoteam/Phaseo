@@ -131,12 +131,12 @@ app.whenReady().then(async () => {
 			window.__auditButton('Files', files).click();
 			const fileButton = await window.__auditUntil(() => Array.from(files.querySelectorAll('button')).find(button => button.textContent.trim() === 'hello.txt'), 'project file listing hello.txt');
 			fileButton.click();
-			(await window.__auditUntil(() => files.querySelector('button[aria-label="Edit"]'), 'file preview edit control')).click();
-			const editor = await window.__auditUntil(() => files.querySelector('textarea[aria-label="Edit hello.txt"]'), 'project editor');
-			if (editor.value !== 'First edit') throw new Error('Project editor did not load the current file');
-			window.__auditType(editor,'UI edit');
-			await new Promise(resolve => setTimeout(resolve,100));
-			window.__auditButton('Save', files).click();
+			// The file surface edits in place and saves 500 ms after typing stops; there is no Save button.
+			const editor = await window.__auditUntil(() => files.querySelector('.file-surface diffs-container')?.shadowRoot?.querySelector('[role="textbox"][contenteditable="true"]'), 'project editor');
+			if (!editor.textContent.includes('First edit')) throw new Error('Project editor did not load the current file');
+			editor.focus();
+			editor.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', code: 'KeyA', ctrlKey: true, bubbles: true, composed: true, cancelable: true }));
+			editor.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'UI edit', bubbles: true, composed: true, cancelable: true }));
 			for (let attempt = 0; attempt < 50 && (await api.readFile('fixture','hello.txt')) !== 'UI edit'; attempt++) await new Promise(resolve => setTimeout(resolve,100));
 			if ((await api.readFile('fixture','hello.txt')) !== 'UI edit') throw new Error('Editor save failed');
 			Array.from(files.querySelectorAll('button[aria-pressed]')).find(button => button.textContent.trim().startsWith('Changes')).click();
