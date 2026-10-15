@@ -99,7 +99,7 @@ export function Agents() {
 						description={value.version ? `${value.version}${value.maintenance && value.maintenance.method !== "manual" ? ` · ${value.maintenance.method === "npm" ? "npm" : "Native installer"}` : ""}` : value.installed ? "Version unknown" : "Not found on this computer"}
 						control={value.maintenance?.canUpdate ? <SettingsButton disabled={refreshing || Boolean(updating)} onClick={() => { if (value.harness === "codex" || value.harness === "claude" || value.harness === "pi") void updateHarness(value.harness); }}>{updating === value.harness ? "Updating…" : "Update"}</SettingsButton>
 							: value.maintenance ? <span className="text-xs text-muted-foreground">Update with your installer</span> : undefined}>
-						{!value.installed && value.error && <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">Installation details</summary><p className="mt-1.5 font-mono text-[11.5px] whitespace-pre-wrap">{value.error}</p></details>}
+						{!value.installed && value.error && <details className="-mt-1.5 ml-11 text-xs text-muted-foreground"><summary className="w-fit hover:text-foreground">Installation details</summary><p data-selectable className="mt-1.5 ml-5 font-normal leading-relaxed whitespace-pre-wrap text-foreground/80">{value.error}</p></details>}
 					</SettingsRow>
 				</li>)}</ul>}
 			</div>
