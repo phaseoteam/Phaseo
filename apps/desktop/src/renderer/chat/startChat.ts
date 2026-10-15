@@ -1,4 +1,5 @@
 import type { Harness, Task, WorkspaceApi, WorkspaceCommand } from "../../shared/workspace";
+import type { NativeAction } from "../../shared/nativeActions";
 import type { WorkspaceOverview } from "../../shared/workspaceOverview";
 import { rememberModel, type ModelSelection } from "../lib/modelPreferences";
 
@@ -9,6 +10,9 @@ export type StartChat = {
 	permissionMode?: Task["permissionMode"];
 	text: string;
 	images?: File[];
+	/** Chats mentioned with `@`, which the agent can read. */
+	threadReferences?: string[];
+	nativeAction?: NativeAction;
 };
 
 /** Harnesses whose per-model settings travel as `modelOptions` rather than effort and speed fields. */
@@ -39,6 +43,10 @@ export async function startChat(api: WorkspaceApi, command: (value: WorkspaceCom
 	const attachments: string[] = [];
 	for (const file of input.images ?? []) attachments.push((await api.pasteImage(id, file.name, new Uint8Array(await file.arrayBuffer()))).id);
 	rememberModel(selection);
-	await command({ type: "send", id, text: input.text.trim() || "Please review the attached images.", attachments });
+	// A first message that fails leaves no empty chat behind, and the caller keeps the draft.
+	const sent = await command({ type: "send", id, text: input.nativeAction ? input.text : input.text.trim() || "Please review the attached images.", attachments,
+		...(input.threadReferences?.length ? { threadReferences: input.threadReferences } : {}), ...(input.nativeAction ? { nativeAction: input.nativeAction } : {}) });
+	// Archived through the API directly so the send error stays on screen.
+	if (!sent) { await api.command({ type: "update-task", id, archived: true }).catch(() => undefined); return; }
 	return id;
 }

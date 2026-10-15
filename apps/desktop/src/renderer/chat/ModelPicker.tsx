@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
-import { ChevronDown, CircleCheck, LoaderCircle, RotateCw, Star } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { ChevronDown, CircleCheck, LoaderCircle, RotateCw, SearchIcon, Star } from "lucide-react";
 import type { Harness, ModelOption } from "../../shared/workspace";
 import { usablePhaseoAccounts, useWorkspace } from "../app/workspace";
 import type { ModelSelection } from "../lib/modelPreferences";
@@ -12,7 +13,6 @@ import { ModelLogo } from "../components/ModelLogo";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
 import { ScrollArea } from "../components/ui/scroll-area";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../components/ui/command";
 
 export const harnessNames: Record<Harness, string> = { phaseo: "Phaseo", codex: "Codex", claude: "Claude Code", opencode: "OpenCode", pi: "Pi", cursor: "Cursor", grok: "Grok", antigravity: "Antigravity", acp: "Agent" };
 export const MAX_COMPARE = 4;
@@ -100,6 +100,9 @@ function FilterButton({ active, onClick, children }: { active: boolean; onClick:
 }
 
 type Section = { heading: string; entries: Entry[]; harness?: Harness; older?: number };
+/** The list is flattened into rows and virtualised: the Phaseo catalog alone has hundreds of models. */
+type Row = { type: "heading"; key: string; heading: string } | { type: "entry"; key: string; entry: Entry } | { type: "older"; key: string; harness: Harness; older: number };
+const rowHeight = (row: Row) => row.type === "heading" ? 30 : 32;
 
 export function ModelPicker({ selections, onChange, multiple, agents, disabled, className }: {
 	selections: ModelSelection[];
@@ -166,6 +169,19 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		return result;
 	}, [normalized, rankedHere, visible, active, favouriteSet, harnesses, showOlder]);
 
+	const rows = useMemo(() => sections.flatMap((section): Row[] => [
+		{ type: "heading", key: `heading:${section.heading}`, heading: section.heading },
+		...section.entries.map(entry => ({ type: "entry" as const, key: `${section.heading}:${entry.key}`, entry })),
+		...section.harness && section.older ? [{ type: "older" as const, key: `older:${section.harness}`, harness: section.harness, older: section.older }] : [],
+	]), [sections]);
+	const [activeKey, setActiveKey] = useState<string>();
+	const activeIndex = useMemo(() => { const index = rows.findIndex(row => row.key === activeKey); return index >= 0 ? index : rows.findIndex(row => row.type !== "heading"); }, [rows, activeKey]);
+	const [viewport, setViewport] = useState<HTMLDivElement | null>(null);
+	const virtualizer = useVirtualizer({ count: rows.length, getScrollElement: () => viewport, estimateSize: index => rowHeight(rows[index]), overscan: 12 });
+	// A new search or tab starts from the top; the viewport mounting must not reset keyboard progress.
+	const scrollViewport = useRef(viewport); scrollViewport.current = viewport;
+	useEffect(() => { setActiveKey(undefined); scrollViewport.current?.scrollTo({ top: 0 }); }, [normalized, active]);
+
 	const toggleFavourite = (event: MouseEvent, entry: Entry) => {
 		event.preventDefault(); event.stopPropagation();
 		setFavourites(current => current.includes(entry.key) ? current.filter(value => value !== entry.key) : [...current, entry.key]);
@@ -176,6 +192,21 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		keepOpen.current = false;
 		if (isSelected(entry)) { if (selections.length > 1) onChange(selections.filter(value => !sameSelection(value, selection))); return; }
 		if (selections.length < MAX_COMPARE) onChange([...selections, selection]);
+	};
+	const activate = (row: Row | undefined, compare: boolean) => {
+		if (row?.type === "entry") { keepOpen.current = compare; choose(row.entry); }
+		else if (row?.type === "older") setShowOlder(current => ({ ...current, [row.harness]: !current[row.harness] }));
+	};
+	const onSearchKey = (event: KeyboardEvent<HTMLInputElement>) => {
+		if (event.nativeEvent.isComposing) return;
+		if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+			event.preventDefault();
+			const step = event.key === "ArrowDown" ? 1 : -1;
+			for (let index = activeIndex + step; index >= 0 && index < rows.length; index += step) {
+				if (rows[index].type === "heading") continue;
+				setActiveKey(rows[index].key); virtualizer.scrollToIndex(index, { align: "auto" }); break;
+			}
+		} else if (event.key === "Enter") { event.preventDefault(); activate(rows[activeIndex], event.ctrlKey || event.metaKey); }
 	};
 	const shown = harnesses.filter(harness => sourceOf(harness) === active);
 	const [refreshing, setRefreshing] = useState(false);
@@ -195,56 +226,61 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 			<ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
 		</PopoverTrigger>
 		<PopoverContent align="end" side="top" sideOffset={8} className="w-[min(92vw,520px)] gap-0 overflow-hidden rounded-xl p-0">
-			<Command shouldFilter={false} className="rounded-none bg-transparent">
-				<CommandInput autoFocus placeholder="Search models" value={query} onValueChange={setQuery} wrapperClassName="p-2 pb-1" />
-				<div className="flex h-10 items-center gap-1.5 border-b border-border px-3 pb-1">
-					{sources.length > 1 && <div role="tablist" aria-label="Model source" className="mr-1 flex items-center gap-0.5 rounded-md bg-muted p-0.5">
-						{sources.map(value => <button key={value} type="button" role="tab" aria-selected={active === value} onClick={() => setSource(value)}
-							className={cn("h-6 rounded-[5px] px-2.5 text-xs font-semibold transition-colors", active === value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>{sourceNames[value]}</button>)}
-					</div>}
-					{active === "phaseo" && <>
-						<FilterButton active={filters.free} onClick={() => setFilters(current => ({ ...current, free: !current.free }))}>Free</FilterButton>
-						<FilterButton active={filters.new} onClick={() => setFilters(current => ({ ...current, new: !current.new }))}>New</FilterButton>
-					</>}
-					{multiple && <span className="ml-auto text-[11px] text-muted-foreground">{isMac() ? "⌘" : "Ctrl"}-click to compare up to {MAX_COMPARE}</span>}
-					<button type="button" aria-label="Refresh models" title="Refresh models" disabled={refreshing} onClick={() => void refresh()} className={cn("grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-60", !multiple && "ml-auto")}><RotateCw className={cn("size-3.5", refreshing && "animate-spin")} /></button>
+				<div className="p-2 pb-1">
+				<div className="flex h-8 items-center gap-2 rounded-lg border border-input bg-input/50 px-2.5">
+					<SearchIcon className="size-4 shrink-0 opacity-50" />
+					<input autoFocus role="combobox" aria-expanded aria-controls="model-picker-list" aria-autocomplete="list" aria-activedescendant={rows[activeIndex] ? `model-row-${activeIndex}` : undefined}
+						aria-label="Search models" placeholder="Search models" value={query} onChange={event => setQuery(event.target.value)} onKeyDown={onSearchKey}
+						className="w-full bg-transparent text-sm outline-hidden placeholder:text-muted-foreground" />
 				</div>
-				<ScrollArea className="max-h-[min(60vh,440px)]" viewportClassName="max-h-[min(60vh,440px)]">
-					<CommandList className="max-h-none overflow-visible p-1.5">
-						{!loading.length && <CommandEmpty>{!harnesses.length ? "Sign in to Phaseo to choose from hundreds of models."
-							: elsewhere ? <button type="button" onClick={() => setSource(otherSource)} className="font-semibold text-primary hover:underline">{elsewhere} {elsewhere === 1 ? "match" : "matches"} in {sourceNames[otherSource]}</button>
-							: "No models found."}</CommandEmpty>}
-						{sections.map(section => <CommandGroup key={section.heading} heading={section.heading} className="**:[[cmdk-group-heading]]:font-bold **:[[cmdk-group-heading]]:text-foreground/70">
-							{section.entries.map(entry => {
-								const selected = isSelected(entry);
-								const starred = favouriteSet.has(entry.key);
-								const variant = entry.model.id.includes(":") ? entry.model.id.split(":").at(-1) : undefined;
-								return <CommandItem key={section.heading + entry.key} value={section.heading + entry.key} onSelect={() => choose(entry)}
-									onMouseDown={event => { keepOpen.current = event.ctrlKey || event.metaKey; }}
-									className={cn("group/model flex min-h-8 items-center gap-2 rounded-md px-2 py-1 [&>svg:last-child]:hidden", selected && "bg-foreground/5")}>
-									<span className="flex size-4 shrink-0 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={entry.model} harness={entry.harness} /></span>
-									<span className="min-w-0 truncate text-[13px] font-medium">{entry.harness === "phaseo" && entry.model.organisationName ? `${entry.model.organisationName}: ` : ""}{entry.model.name.split(":")[0]}</span>
-									{variant && <span className="shrink-0 rounded-sm bg-success/15 px-1.5 text-[10px] font-semibold text-success">{variant === "free" ? "Free" : variant}</span>}
-									{entry.harness !== "phaseo" && (normalized || section.heading === "Favourites") && <span className="shrink-0 text-[11px] text-muted-foreground">{harnessNames[entry.harness]}</span>}
-									{selected && <CircleCheck className="size-4 shrink-0 text-foreground/70" />}
-									<button type="button" aria-label={starred ? `Remove ${entry.model.name} from favourites` : `Add ${entry.model.name} to favourites`} title={starred ? "Remove from favourites" : "Add to favourites"}
-										onMouseDown={event => { event.preventDefault(); event.stopPropagation(); }} onClick={event => toggleFavourite(event, entry)}
-										className={cn("ml-auto grid size-6 shrink-0 place-items-center rounded-md transition-colors", starred ? "text-amber-500 hover:bg-amber-500/10" : "text-muted-foreground opacity-0 group-hover/model:opacity-100 group-data-[selected=true]/model:opacity-100 hover:bg-muted hover:text-foreground")}>
-										<Star className="size-4" fill={starred ? "currentColor" : "none"} />
-									</button>
-								</CommandItem>;
-							})}
-							{section.harness && !!section.older && <CommandItem value={`older:${section.harness}`} onSelect={() => setShowOlder(current => ({ ...current, [section.harness!]: !current[section.harness!] }))}
-								className="min-h-8 rounded-md px-2 py-1 text-xs text-muted-foreground [&>svg:last-child]:hidden">
-								<ChevronDown className={cn("size-3.5 transition-transform", showOlder[section.harness] && "rotate-180")} />
-								{showOlder[section.harness] ? "Hide older models" : `Show ${section.older} older ${section.older === 1 ? "model" : "models"}`}
-							</CommandItem>}
-						</CommandGroup>)}
-						{loading.map(harness => <div key={harness} className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin" />Loading {harnessNames[harness]} models…</div>)}
-						{errors.map(error => <p key={error} className="px-3 py-2 text-xs text-destructive">{error}</p>)}
-					</CommandList>
-				</ScrollArea>
-			</Command>
-		</PopoverContent>
+			</div>
+			<div className="flex h-10 items-center gap-1.5 border-b border-border px-3 pb-1">
+				{sources.length > 1 && <div role="tablist" aria-label="Model source" className="mr-1 flex items-center gap-0.5 rounded-md bg-muted p-0.5">
+					{sources.map(value => <button key={value} type="button" role="tab" aria-selected={active === value} onClick={() => setSource(value)}
+						className={cn("h-6 rounded-[5px] px-2.5 text-xs font-semibold transition-colors", active === value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>{sourceNames[value]}</button>)}
+				</div>}
+				{active === "phaseo" && <>
+					<FilterButton active={filters.free} onClick={() => setFilters(current => ({ ...current, free: !current.free }))}>Free</FilterButton>
+					<FilterButton active={filters.new} onClick={() => setFilters(current => ({ ...current, new: !current.new }))}>New</FilterButton>
+				</>}
+				{multiple && <span className="ml-auto text-[11px] text-muted-foreground">{isMac() ? "⌘" : "Ctrl"}-click to compare up to {MAX_COMPARE}</span>}
+				<button type="button" aria-label="Refresh models" title="Refresh models" disabled={refreshing} onClick={() => void refresh()} className={cn("grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-60", !multiple && "ml-auto")}><RotateCw className={cn("size-3.5", refreshing && "animate-spin")} /></button>
+			</div>
+			{rows.length > 0 && <ScrollArea style={{ height: `min(60vh, 440px, ${virtualizer.getTotalSize() + 12}px)` }} viewportRef={setViewport} viewportClassName="p-1.5">
+				<div id="model-picker-list" role="listbox" aria-label="Models" className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
+					{virtualizer.getVirtualItems().map(item => {
+						const row = rows[item.index], highlighted = item.index === activeIndex;
+						const place = { position: "absolute", top: 0, left: 0, width: "100%", height: item.size, transform: `translateY(${item.start}px)` } as const;
+						if (row.type === "heading") return <div key={row.key} role="presentation" style={place} className="flex items-end px-2 pb-1.5 text-xs font-bold text-foreground/70">{row.heading}</div>;
+						const common = { id: `model-row-${item.index}`, role: "option", "aria-selected": highlighted, style: place, onMouseMove: () => { if (!highlighted) setActiveKey(row.key); } } as const;
+						if (row.type === "older") return <div key={row.key} {...common} onClick={() => activate(row, false)}
+							className={cn("flex cursor-default items-center gap-2 rounded-md px-2 text-xs text-muted-foreground", highlighted && "bg-muted text-foreground")}>
+							<ChevronDown className={cn("size-3.5 transition-transform", showOlder[row.harness] && "rotate-180")} />
+							{showOlder[row.harness] ? "Hide older models" : `Show ${row.older} older ${row.older === 1 ? "model" : "models"}`}
+						</div>;
+						const { entry } = row, selected = isSelected(entry), starred = favouriteSet.has(entry.key);
+						const variant = entry.model.id.includes(":") ? entry.model.id.split(":").at(-1) : undefined;
+						return <div key={row.key} {...common} onMouseDown={event => { keepOpen.current = event.ctrlKey || event.metaKey; }} onClick={() => choose(entry)}
+							className={cn("group/model flex cursor-default items-center gap-2 rounded-md px-2", selected && "bg-foreground/5", highlighted && "bg-muted")}>
+							<span className="flex size-4 shrink-0 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={entry.model} harness={entry.harness} /></span>
+							<span className="min-w-0 truncate text-[13px] font-medium">{entry.harness === "phaseo" && entry.model.organisationName ? `${entry.model.organisationName}: ` : ""}{entry.model.name.split(":")[0]}</span>
+							{variant && <span className="shrink-0 rounded-sm bg-success/15 px-1.5 text-[10px] font-semibold text-success">{variant === "free" ? "Free" : variant}</span>}
+							{entry.harness !== "phaseo" && (normalized || starred) && <span className="shrink-0 text-[11px] text-muted-foreground">{harnessNames[entry.harness]}</span>}
+							{selected && <CircleCheck className="size-4 shrink-0 text-foreground/70" />}
+							<button type="button" aria-label={starred ? `Remove ${entry.model.name} from favourites` : `Add ${entry.model.name} to favourites`} title={starred ? "Remove from favourites" : "Add to favourites"}
+								onMouseDown={event => { event.preventDefault(); event.stopPropagation(); }} onClick={event => toggleFavourite(event, entry)}
+								className={cn("ml-auto grid size-6 shrink-0 place-items-center rounded-md transition-colors", starred ? "text-amber-500 hover:bg-amber-500/10" : "text-muted-foreground opacity-0 group-hover/model:opacity-100 hover:bg-muted hover:text-foreground", !starred && highlighted && "opacity-100")}>
+								<Star className="size-4" fill={starred ? "currentColor" : "none"} />
+							</button>
+						</div>;
+					})}
+				</div>
+			</ScrollArea>}
+			{!rows.length && !loading.length && <p className="py-6 text-center text-sm text-muted-foreground">{!harnesses.length ? "Sign in to Phaseo to choose from hundreds of models."
+				: elsewhere ? <button type="button" onClick={() => setSource(otherSource)} className="font-semibold text-primary hover:underline">{elsewhere} {elsewhere === 1 ? "match" : "matches"} in {sourceNames[otherSource]}</button>
+				: "No models found."}</p>}
+			{loading.map(harness => <div key={harness} className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin" />Loading {harnessNames[harness]} models…</div>)}
+			{errors.map(error => <p key={error} className="px-3 py-2 text-xs text-destructive">{error}</p>)}
+	</PopoverContent>
 	</Popover>;
 }

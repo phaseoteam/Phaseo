@@ -111,7 +111,7 @@ Schedules are Missions. `MissionService` registers its command handler as `Works
 Scheduling guards:
 - Create, update, delete and run need the full-access, non-Plan caller and approval. Listing needs neither.
 - A template must be an active chat whose mode and permissions are no broader than the caller's. Existing missions are checked against their template the same way; deletion tolerates a deleted template.
-- Mission runs copy the template's harness, model, mode and project, not its permission mode, so they run supervised.
+- Mission runs copy the template's harness, model, settings, mode, project and permission mode, read when each run starts. A run from a full-access chat runs with full access; change the template chat's permissions to change later runs.
 
 Validation: deterministic fixtures in `orchestrationParity.test.ts`, the store, thread-tool and adapter suites. Unverified against live providers: Claude `tools: []` keeping MCP tools, Codex `developer_instructions` and elicitation for orchestration calls, Cursor `tools: ["mcp"]`, Pi's `mcp__phaseo__*` pattern on older Pi releases, and client-side MCP call timeouts other than Codex and Pi.
 

@@ -11,6 +11,7 @@ import { Button } from "../components/ui/button";
 import { AttachmentPreview } from "../components/AttachmentPreview";
 import { StatusDot } from "../shell/Sidebar";
 import { Composer, ComposerChip, ToolButton } from "./Composer";
+import { ReferenceChips, useComposerMenu } from "./ComposerMenu";
 import { Conversation } from "./Conversation";
 import { ModelPicker } from "./ModelPicker";
 import { ModelSettings } from "./ModelSettings";
@@ -76,6 +77,10 @@ function ChatComposer({ task }: { task: Task }) {
 	const [busy, setBusy] = useState(false);
 	const [uploading, setUploading] = useState(false);
 	const input = useRef<HTMLTextAreaElement>(null);
+	const [references, setReferences] = useState<string[]>([]);
+	useEffect(() => { setReferences([]); }, [task.id]);
+	const menu = useComposerMenu({ value: draft.text, onChange: draft.setText, input, taskId: task.id, harness: task.harness, accountId: task.accountId, projectId: task.projectId,
+		references, onReference: id => setReferences(current => [...current, id].slice(0, 10)), onAttachments: draft.addAttachments });
 	const running = ["running", "waiting"].includes(task.status);
 	const code = task.mode !== "chat";
 	useEffect(() => { input.current?.focus(); }, [task.id]);
@@ -86,10 +91,12 @@ function ChatComposer({ task }: { task: Task }) {
 		if (!canSend) return;
 		setBusy(true);
 		try {
-			if (await command({ type: "send", id: task.id, text: draft.text.trim() || "Please review the attached files.", attachments: draft.attachments.map(value => value.id) })) {
-				rememberModel(selection); draft.clear();
+			const prepared = await menu.prepare(draft.text.trim());
+			if (await command({ type: "send", id: task.id, text: prepared.text || "Please review the attached files.", attachments: draft.attachments.map(value => value.id),
+				...(references.length ? { threadReferences: references } : {}), ...(prepared.nativeAction ? { nativeAction: prepared.nativeAction } : {}) })) {
+				rememberModel(selection); draft.clear(); setReferences([]);
 			}
-		} finally { setBusy(false); }
+		} catch (reason) { setError(errorText(reason)); } finally { setBusy(false); }
 	}
 	async function attach() {
 		if (!api || uploading) return;
@@ -129,7 +136,11 @@ function ChatComposer({ task }: { task: Task }) {
 		<Composer inputRef={input} value={draft.text} onChange={draft.setText} onSubmit={() => void send()} onPaste={paste} canSend={canSend} disabled={task.archived}
 			running={running} onStop={() => void command({ type: "cancel", id: task.id })}
 			placeholder={task.archived ? "This chat is archived" : running ? "Queue a follow-up…" : code ? "Ask for a change, or reply to the agent…" : "Reply…"}
-			chips={draft.attachments.length ? draft.attachments.map(attachment => <ComposerChip key={attachment.id} onRemove={() => draft.removeAttachment(attachment.id)}><Paperclip className="mr-1 inline size-3" />{attachment.name}</ComposerChip>) : undefined}
+			menu={task.archived ? undefined : menu}
+			chips={draft.attachments.length || references.length ? <>
+				<ReferenceChips ids={references} onRemove={id => setReferences(current => current.filter(value => value !== id))} />
+				{draft.attachments.map(attachment => <ComposerChip key={attachment.id} onRemove={() => draft.removeAttachment(attachment.id)}><Paperclip className="mr-1 inline size-3" />{attachment.name}</ComposerChip>)}
+			</> : undefined}
 			tools={<>
 				<ToolButton label="Attach files" disabled={uploading || task.archived} onClick={() => void attach()}><Paperclip /></ToolButton>
 				{code && <PlanToggle value={task.mode} onChange={mode => void command({ type: "update-task", id: task.id, mode })} />}

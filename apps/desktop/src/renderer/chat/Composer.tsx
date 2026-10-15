@@ -1,8 +1,9 @@
 import { useLayoutEffect, useRef, type ClipboardEvent, type ReactNode, type RefObject } from "react";
 import { ArrowUp, Square } from "lucide-react";
 import { cn } from "../lib/utils";
+import type { ComposerMenu } from "./ComposerMenu";
 
-export function Composer({ value, onChange, onSubmit, onStop, onPaste, placeholder, disabled, canSend, running, size = "default", chips, tools, model, inputRef, footer, className }: {
+export function Composer({ value, onChange, onSubmit, onStop, onPaste, placeholder, disabled, canSend, running, size = "default", chips, tools, model, inputRef, footer, menu, className }: {
 	value: string;
 	onChange: (value: string) => void;
 	onSubmit: () => void;
@@ -18,6 +19,8 @@ export function Composer({ value, onChange, onSubmit, onStop, onPaste, placehold
 	model?: ReactNode;
 	footer?: ReactNode;
 	inputRef?: RefObject<HTMLTextAreaElement | null>;
+	/** The `/` and `@` menu, which sees keys before the composer does. */
+	menu?: ComposerMenu;
 	className?: string;
 }) {
 	const local = useRef<HTMLTextAreaElement>(null);
@@ -29,14 +32,17 @@ export function Composer({ value, onChange, onSubmit, onStop, onPaste, placehold
 		element.style.height = "0px";
 		element.style.height = `${Math.min(240, Math.max(min, element.scrollHeight))}px`;
 	}, [value, input, min]);
-	return <div className={cn("w-full", className)}>
+	return <div className={cn("relative w-full", className)}>
+		{menu?.menu}
 		<form onSubmit={event => { event.preventDefault(); if (canSend) onSubmit(); }}
 			onClick={event => { if (event.target === event.currentTarget) input.current?.focus(); }}
 			className="rounded-2xl border border-input bg-card shadow-sm transition-colors focus-within:border-ring/60 focus-within:ring-3 focus-within:ring-ring/15 dark:shadow-black/20">
 			{chips && <div className="flex flex-wrap gap-1.5 px-3 pt-3">{chips}</div>}
 			<textarea ref={input} value={value} disabled={disabled} placeholder={placeholder} maxLength={100000} rows={1} aria-label="Message"
-				onPaste={onPaste} onChange={event => onChange(event.target.value)}
-				onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey && !event.altKey && !event.nativeEvent.isComposing && !event.repeat) { event.preventDefault(); if (canSend) onSubmit(); } }}
+				role={menu ? "combobox" : undefined} aria-expanded={menu ? menu.expanded : undefined} aria-controls={menu?.expanded ? menu.listId : undefined} aria-activedescendant={menu?.activeId} aria-autocomplete={menu ? "list" : undefined}
+				onPaste={onPaste} onChange={event => { onChange(event.target.value); menu?.onCaret(event.target.selectionStart); }}
+				onSelect={event => menu?.onCaret(event.currentTarget.selectionStart)}
+				onKeyDown={event => { menu?.onKeyDown(event); if (event.defaultPrevented) return; if (event.key === "Enter" && !event.shiftKey && !event.altKey && !event.nativeEvent.isComposing && !event.repeat) { event.preventDefault(); if (canSend) onSubmit(); } }}
 				className={cn("block w-full resize-none bg-transparent px-4 pt-3.5 pb-1 leading-relaxed outline-none placeholder:text-muted-foreground/80 disabled:opacity-60", size === "large" ? "text-[15px]" : "text-[14px]")} />
 			<div className="flex items-center gap-1 px-2 pt-1 pb-2">
 				{tools}

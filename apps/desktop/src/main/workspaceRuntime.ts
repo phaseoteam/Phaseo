@@ -220,7 +220,7 @@ export class WorkspaceRuntime {
 		if (this.store.getOverview().tasks.some(task => task.missionId === id && (task.status === "running" || task.status === "waiting" || this.executions.has(task.id)))) throw new Error("This mission already has an active task.");
 		const task = this.store.missions.admit(id, now, mission => {
 			const template = this.store.getTask(mission.templateTaskId); if (template.archived) throw new Error("Restore this mission's template task before running it."); if (template.projectId) this.assertProjectAvailable(template.projectId);
-			const created = this.store.apply({ type: "create-task", harness: template.harness, model: template.model, mode: template.mode, accountId: template.accountId, projectId: template.projectId, agentId: template.agentId }); created.title = mission.title; created.missionId = mission.id; created.reasoningEffort = template.reasoningEffort; created.modelOptions = template.modelOptions; created.nativeMode = template.nativeMode; this.store.saveTask(created);
+			const created = this.store.apply({ type: "create-task", harness: template.harness, model: template.model, mode: template.mode, permissionMode: template.permissionMode, serviceTier: template.serviceTier, accountId: template.accountId, projectId: template.projectId, agentId: template.agentId }); created.title = mission.title; created.missionId = mission.id; created.reasoningEffort = template.reasoningEffort; created.modelOptions = template.modelOptions; created.nativeMode = template.nativeMode; this.store.saveTask(created);
 			return this.store.apply({ type: "send", id: created.id, text: mission.prompt });
 		});
 		this.broadcast(); this.start(task.id); return task;

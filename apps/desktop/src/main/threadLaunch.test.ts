@@ -163,6 +163,8 @@ describe("scheduled-task tools", () => {
 			const ran = await tools.runSchedule!(created.id);
 			expect(ran).toMatchObject({ lastStatus: "running", runCount: 1, lastTaskId: expect.any(String) });
 			await vi.waitFor(() => expect(run).toHaveBeenCalledOnce()); expect(run.mock.calls[0][2]).toBe("Check builds");
+			// A run takes the scheduling chat's permissions, not the supervised default.
+			expect(runtime.store.getTask(ran.lastTaskId!)).toMatchObject({ permissionMode: "full-access", mode: "code", missionId: created.id });
 			await runtime.command({ type: "cancel", id: ran.lastTaskId! }); service.observe(runtime.store.getOverview());
 			expect(await tools.deleteSchedule!(paused.id)).toEqual({ id: paused.id, deleted: true });
 			expect(tools.scheduled!().map(mission => mission.id)).toEqual([created.id]);

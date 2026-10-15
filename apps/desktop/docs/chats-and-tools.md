@@ -98,11 +98,19 @@ The editor preserves drafts after save failures, detects external edits, offers 
 
 ![Global instructions](screenshots/global-instructions.png)
 
+## Mentions
+
+Type `@` anywhere in a message to mention a chat or a file. Chats appear first, most recent first. A chosen chat becomes a chip above the message, and the agent can read it with `read_thread`; up to 10 chats per message. In a project, files and folders follow, matched by name first and then by path, from the files Git tracks or would track (ignored files are skipped; outside Git, everything except `.git` and `node_modules`). A chosen file is written into the message as `@path` for the agent to open.
+
 ## Reusable chat commands
 
-Use **Commands** beside the composer to find, preview, create or edit a saved prompt. Commands can belong to **All chats** or **This project**. The picker shows both scopes explicitly, including commands that share a name. Insertion appends the expanded text to the current draft and returns focus to the composer; sending remains a separate action.
+Type `/` at the start of a message to open the command menu. It lists saved prompts, then the agent's own commands and skills (Claude Code, Codex, OpenCode, Pi and Phaseo skills), then the chat's MCP prompts. Arrow keys move, Enter or Tab chooses and Escape closes it. A new chat lists the chosen agent's commands before the chat exists; comparing several models offers saved prompts only.
 
-Global commands live in the desktop profile's `commands` directory. Project commands live in `.phaseo/commands`. Files use a lowercase name with letters, numbers and hyphens, and Markdown with optional YAML `description` frontmatter:
+- A saved prompt without arguments replaces the draft with its text. One that takes arguments leaves `/name ` in the draft, and the arguments typed after it are filled in when you send.
+- A native command or skill leaves `/name ` for its arguments. It only runs natively when chosen from the menu; typing the same text sends it as plain text.
+- An MCP prompt with arguments asks for them in the menu, then inserts the prompt's text and any images.
+
+Saved prompts can belong to **All chats** or **This project**, which the menu labels. Create or edit one as a Markdown file. Global commands live in the desktop profile's `commands` directory, and project commands in `.phaseo/commands`. Files use a lowercase name with letters, numbers and hyphens, and Markdown with optional YAML `description` frontmatter:
 
 ```md
 ---

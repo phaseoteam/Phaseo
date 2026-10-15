@@ -102,7 +102,8 @@ export type WorkspaceCommand =
 	| { type: "queue-edit"; id: string; messageId: string; text: string }
 	| { type: "queue-move"; id: string; messageId: string; direction: "up" | "down" };
 export type WorkspaceApi = {
-	nativeActions: (taskId: string) => Promise<NativeActionCatalog>;
+	/** A chat's native commands and skills, or a new chat's before it exists. */
+	nativeActions: (target: string | { harness: Harness; accountId?: string; projectId?: string }) => Promise<NativeActionCatalog>;
 	promptCommands: (projectId: string | undefined, request: PromptCommandRequest) => Promise<PromptCommandCatalog | PromptCommandPreview>;
 	mcpPrompts: (taskId: string, request: McpPromptRequest) => Promise<McpPromptCatalog | McpPromptPreview>;
 	mcpPromptAttachments: (taskId: string, messages: McpPromptPreview["messages"]) => Promise<{ text: string; attachments: Attachment[] }>;
@@ -151,6 +152,8 @@ export type WorkspaceApi = {
 	accountStatus: (harness: "codex" | "claude" | "cursor" | "grok", accountId?: string) => Promise<AccountStatus>;
 	cancelSignIn: (accountId: string) => Promise<void>;
 	listFiles: (projectId: string, directory: string) => Promise<ProjectFile[]>;
+	/** Files and folders matching a query, best first, for `@` mentions. */
+	searchFiles: (projectId: string, query: string) => Promise<ProjectFile[]>;
 	editors: () => Promise<EditorInstallation[]>;
 	openProject: (projectId: string, request: ProjectOpenRequest) => Promise<void>;
 	readFile: (projectId: string, filename: string) => Promise<string>;

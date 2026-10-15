@@ -10,6 +10,7 @@ import { cn } from "../lib/utils";
 import { ModelLogo } from "../components/ModelLogo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Composer, ComposerChip, ToolButton } from "./Composer";
+import { ReferenceChips, useComposerMenu } from "./ComposerMenu";
 import { MAX_COMPARE, ModelPicker, knownModel, modelLabel, sameSelection } from "./ModelPicker";
 import { ModelSettings } from "./ModelSettings";
 import { SignInCard } from "./SignInCard";
@@ -71,6 +72,10 @@ export function NewChat() {
 		setSelections([{ harness: "phaseo", accountId: phaseoAccount.id, model: model.id }]);
 	}, [selections.length, phaseoAccount, phaseoModels]);
 	const compare = !code && selections.length > 1;
+	const [references, setReferences] = useState<string[]>([]);
+	// Native commands depend on one agent, so comparing models offers saved prompts, chats and files only.
+	const menu = useComposerMenu({ value: draft, onChange: setDraft, input, harness: compare ? undefined : selections[0]?.harness, accountId: selections[0]?.accountId, projectId: code ? project?.id : undefined,
+		references, onReference: id => setReferences(current => [...current, id].slice(0, 10)) });
 	useEffect(() => { if (code) setSelections(current => current.length > 1 ? current.slice(0, 1) : current); }, [code]);
 
 	const recent = useMemo(() => {
@@ -87,16 +92,17 @@ export function NewChat() {
 		setBusy(true);
 		const known = new Set(overview.tasks.map(task => task.id));
 		try {
+			const prepared = await menu.prepare(draft.trim()), shared = { text: prepared.text, images, threadReferences: references, nativeAction: prepared.nativeAction };
 			if (compare) {
 				const ids: string[] = [];
-				for (const selection of selections) { const id = await startChat(api, command, known, { selection, mode: "chat", text: draft, images }); if (id) ids.push(id); }
+				for (const selection of selections) { const id = await startChat(api, command, known, { selection, mode: "chat", ...shared }); if (id) ids.push(id); }
 				if (ids.length) {
 					const group = { id: crypto.randomUUID(), title: draft.trim().split("\n")[0].slice(0, 80) || "Model comparison", taskIds: ids, createdAt: new Date().toISOString() };
-					saveCompareGroup(group); setDraft(""); setImages([]); openCompare(group.id);
+					saveCompareGroup(group); setDraft(""); setImages([]); setReferences([]); openCompare(group.id);
 				}
 			} else {
-				const id = await startChat(api, command, known, { selection: selections[0], mode: code ? planMode : "chat", projectId: code ? project?.id : undefined, permissionMode: code ? permissionMode : undefined, text: draft, images });
-				if (id) { setDraft(""); setImages([]); select(id); }
+				const id = await startChat(api, command, known, { selection: selections[0], mode: code ? planMode : "chat", projectId: code ? project?.id : undefined, permissionMode: code ? permissionMode : undefined, ...shared });
+				if (id) { setDraft(""); setImages([]); setReferences([]); select(id); }
 			}
 		} catch (reason) { setError(errorText(reason)); }
 		finally { setBusy(false); }
@@ -133,7 +139,9 @@ export function NewChat() {
 			</div>
 			<Composer size="large" inputRef={input} value={draft} onChange={setDraft} onSubmit={() => void submit()} onPaste={paste} disabled={busy} canSend={canSend}
 				placeholder={compare ? "Ask every model the same question…" : code ? (project ? `Describe a change to ${project.name}…` : "Choose a project, then describe what to build…") : "Message Phaseo…"}
-				chips={compare || images.length ? <>
+				menu={menu}
+				chips={compare || images.length || references.length ? <>
+					<ReferenceChips ids={references} onRemove={id => setReferences(current => current.filter(value => value !== id))} />
 					{compare && selections.map(value => <ComposerChip key={value.harness + value.model} onRemove={() => setSelections(current => current.filter(item => !sameSelection(item, value)))}>
 						<span className="mr-1 inline-flex size-3.5 align-[-2px] [&_img]:size-3.5 [&_.harness-logo]:size-3.5"><ModelLogo model={knownModel(value.model) ?? { id: value.model, name: value.model }} harness={value.harness} /></span>{knownModel(value.model)?.name ?? modelLabel(value.model)}
 					</ComposerChip>)}

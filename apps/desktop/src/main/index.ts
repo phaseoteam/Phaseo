@@ -38,6 +38,7 @@ import { SecretVault } from "./secretVault";
 import { windowsCredentialEncryption } from "./windowsCredentialEncryption";
 import { signInNative } from "./accountConnections";
 import { gitReview, listProjectFiles, readProjectFile } from "./projectFiles";
+import { searchProjectFiles } from "./projectFileSearch";
 import { editorInstallations, findEditor, launchEditor, openProjectTarget } from "./projectEditors";
 import { codexModels } from "./modelCatalog";
 import { apiModelCatalog, type CatalogPageValidator } from "./apiModelCatalog";
@@ -252,6 +253,12 @@ ipcMain.handle("workspace:check-agent", async (event, id: unknown) => {
 	finally { agentChecks.delete(id); }
 });
 
+function nativeActionDraft(value: unknown): { id?: string; harness: Harness; accountId?: string; projectId?: string } {
+	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid native action request.");
+	const { harness, accountId, projectId } = value as Record<string, unknown>;
+	if (typeof harness !== "string" || (accountId !== undefined && typeof accountId !== "string") || (projectId !== undefined && typeof projectId !== "string")) throw new Error("Invalid native action request.");
+	return { harness: harness as Harness, accountId, projectId };
+}
 function projectRoot(event: Electron.IpcMainInvokeEvent, id: unknown) {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid project request.");
 	const project = workspaceRuntime.store.getProjects().find(value => value.id === id);
@@ -260,9 +267,10 @@ function projectRoot(event: Electron.IpcMainInvokeEvent, id: unknown) {
 	return project.directory;
 }
 ipcMain.handle("workspace:native-actions", async (event, id: unknown) => {
- if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid native action request."); if (shutdownStarted) throw new Error("The workspace is shutting down.");
- const task = workspaceRuntime.store.getTask(id); if (!["opencode", "pi", "claude", "codex", "phaseo"].includes(task.harness)) throw new Error("Native action discovery is unavailable for this harness.");
- workspaceRuntime.assertHarnessAvailable(task.harness); const cwd = task.projectId ? projectRoot(event, task.projectId) : path.join(app.getPath("userData"), "tasks", task.id);
+ if (!senderWindow(event)) throw new Error("Invalid native action request."); if (shutdownStarted) throw new Error("The workspace is shutting down.");
+ // A new chat has no task yet: it asks with the harness, account and project it is about to use.
+ const task = typeof id === "string" ? workspaceRuntime.store.getTask(id) : nativeActionDraft(id); if (!["opencode", "pi", "claude", "codex", "phaseo"].includes(task.harness)) throw new Error("Native action discovery is unavailable for this harness.");
+ workspaceRuntime.assertHarnessAvailable(task.harness); const cwd = task.projectId ? projectRoot(event, task.projectId) : task.id ? path.join(app.getPath("userData"), "tasks", task.id) : path.join(app.getPath("userData"), "scratch");
  const account = (task.harness === "claude" || task.harness === "codex") && task.accountId ? workspaceRuntime.store.getAccounts().find(value => value.id === task.accountId && value.harness === task.harness && value.kind === "native" && value.configured && !value.archived) : undefined;
  if ((task.harness === "claude" || task.harness === "codex") && task.accountId && !account) throw new Error("Account is unavailable."); if (account && (signIns.has(account.id) || accountChecks.has(account.id))) throw new Error("Finish this account's sign-in or check before loading commands.");
  const controller = new AbortController(); nativeCatalogChecks.add(controller); if (account) accountChecks.set(account.id, controller); modelChecks.set(task.harness, (modelChecks.get(task.harness) ?? 0) + 1);
@@ -294,6 +302,7 @@ ipcMain.handle("workspace:mcp-prompts", async (event, id: unknown, request: unkn
   return await new McpPromptCatalogService(workspaceRuntime.store.getMcpConnections(), cwd, task.projectId).request(request, AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]));
  } finally { event.sender.removeListener("destroyed", abort); mcpPromptChecks.delete(requestId); nativeCatalogChecks.delete(controller); }
 });
+ipcMain.handle("workspace:search-files", (event, id: unknown, query: unknown) => searchProjectFiles(projectRoot(event, id), query as string));
 ipcMain.handle("workspace:list-files", (event, id: unknown, directory: unknown) => {
 	const root = projectRoot(event, id);
 	if (typeof directory !== "string") throw new Error("Invalid directory.");
