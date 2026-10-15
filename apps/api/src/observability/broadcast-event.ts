@@ -15,14 +15,43 @@ export type BroadcastQueueMessage = {
 	// workspace_broadcast_destinations ids still to deliver to.
 	destinationIds: string[];
 	attempt: number;
-	// Exactly one of these: the telemetry, or the R2 key holding it when the
-	// message would exceed the queue's 128 KB limit.
+	// Exactly one of these: the telemetry; the telemetry as gzipped JSON, sent
+	// with the v8 content type, when it would take more than one queue operation;
+	// or the R2 key holding it when even that would exceed the queue's 128 KB limit.
 	telemetry?: BroadcastTelemetry;
+	telemetryGzip?: Uint8Array;
 	spillKey?: string;
+	// Size of the telemetry as JSON, set with telemetryGzip.
+	telemetryBytes?: number;
 };
 
 export const BROADCAST_SPILL_PREFIX = "broadcast-spill/";
 const MAX_INLINE_MESSAGE_BYTES = 120_000;
+// Queues bills one operation for each 64 KB (64,000 bytes) written, read or
+// deleted, and adds about 100 bytes of metadata to each message. Larger events
+// are compressed, which usually brings them back to one operation each.
+const MAX_ONE_OPERATION_BYTES = 63_000;
+// The consumer decompresses a batch's events together, so an event larger than
+// this as JSON goes to R2 instead.
+export const MAX_COMPRESSED_TELEMETRY_BYTES = 1_000_000;
+
+const encoder = new TextEncoder();
+
+// The message's size as the queue counts it.
+export function broadcastMessageBytes(message: BroadcastQueueMessage): number {
+	const { telemetryGzip, ...rest } = message;
+	return encoder.encode(JSON.stringify(rest)).byteLength + (telemetryGzip?.byteLength ?? 0);
+}
+
+async function gzip(text: string): Promise<Uint8Array> {
+	const stream = new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"));
+	return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+export async function gunzipJson<T>(bytes: Uint8Array): Promise<T> {
+	const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+	return await new Response(stream).json() as T;
+}
 
 export function broadcastQueueEnabled(): boolean {
 	const bindings = getBindings();
@@ -54,18 +83,26 @@ export async function publishBroadcastEvent(args: {
 		telemetry: args.telemetry,
 	};
 	try {
-		const inline = JSON.stringify(message);
-		if (new TextEncoder().encode(inline).byteLength > MAX_INLINE_MESSAGE_BYTES) {
-			const bucket = bindings.GATEWAY_IO_LOGS_BUCKET;
-			if (!bucket) return false;
-			const spillKey = broadcastSpillKey(args.eventId);
-			await bucket.put(spillKey, JSON.stringify(args.telemetry), {
-				httpMetadata: { contentType: "application/json" },
-			});
-			delete message.telemetry;
-			message.spillKey = spillKey;
+		const queue = bindings.BROADCAST_QUEUE!;
+		if (broadcastMessageBytes(message) <= MAX_ONE_OPERATION_BYTES) {
+			await queue.send(message, { contentType: "json" });
+			return true;
 		}
-		await bindings.BROADCAST_QUEUE!.send(message, { contentType: "json" });
+		const { telemetry, ...envelope } = message;
+		const json = JSON.stringify(telemetry);
+		const telemetryBytes = encoder.encode(json).byteLength;
+		if (telemetryBytes <= MAX_COMPRESSED_TELEMETRY_BYTES) {
+			const compressed: BroadcastQueueMessage = { ...envelope, telemetryGzip: await gzip(json), telemetryBytes };
+			if (broadcastMessageBytes(compressed) <= MAX_INLINE_MESSAGE_BYTES) {
+				await queue.send(compressed, { contentType: "v8" });
+				return true;
+			}
+		}
+		const bucket = bindings.GATEWAY_IO_LOGS_BUCKET;
+		if (!bucket) return false;
+		const spillKey = broadcastSpillKey(args.eventId);
+		await bucket.put(spillKey, json, { httpMetadata: { contentType: "application/json" } });
+		await queue.send({ ...envelope, spillKey }, { contentType: "json" });
 		return true;
 	} catch (error) {
 		console.error("broadcast_queue_publish_failed", {

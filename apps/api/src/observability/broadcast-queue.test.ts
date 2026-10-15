@@ -70,6 +70,15 @@ function message(body: Partial<BroadcastQueueMessage> & { eventId: string; desti
 	};
 }
 
+async function compressed(eventId: string, destinationIds: string[]) {
+	const json = JSON.stringify(telemetry(eventId));
+	const stream = new Blob([json]).stream().pipeThrough(new CompressionStream("gzip"));
+	const telemetryGzip = new Uint8Array(await new Response(stream).arrayBuffer());
+	const queued = message({ eventId, destinationIds, telemetryGzip, telemetryBytes: json.length });
+	delete queued.body.telemetry;
+	return queued;
+}
+
 const batch = (...messages: Array<ReturnType<typeof message>>) =>
 	({ queue: "phaseo-broadcast", messages }) as unknown as MessageBatch<unknown>;
 
@@ -244,6 +253,48 @@ describe("processBroadcastQueueBatch", () => {
 		await processBroadcastQueueBatch(batch(large("req_1"), large("req_2"), large("req_3")));
 
 		expect(sendBatch.mock.calls.map(([messages]) => messages.length)).toEqual([2, 1]);
+	});
+
+	it("delivers compressed events and keeps them compressed on retry", async () => {
+		const fetchMock = vi.fn(async (url: URL) => url.hostname === "collector.example.com"
+			? new Response(null, { status: 200 })
+			: new Response(null, { status: 503 }));
+		vi.stubGlobal("fetch", fetchMock);
+		const event = await compressed("req_1", ["collector", "hook"]);
+
+		const summary = await processBroadcastQueueBatch(batch(event));
+
+		expect(summary).toMatchObject({ delivered: 1, retried: 1 });
+		const [url, init] = fetchMock.mock.calls[0] as unknown as [URL, RequestInit];
+		expect(url.hostname).toBe("collector.example.com");
+		expect(String(init.body)).toContain("hello");
+		const [[retry]] = sendBatch.mock.calls[0];
+		expect(retry.contentType).toBe("v8");
+		expect(retry.body).toMatchObject({ destinationIds: ["hook"], telemetryGzip: event.body.telemetryGzip });
+	});
+
+	it("drops compressed events that cannot be decompressed", async () => {
+		const event = await compressed("req_1", ["collector"]);
+		event.body.telemetryGzip = new Uint8Array([1, 2, 3]);
+
+		await processBroadcastQueueBatch(batch(event));
+
+		expect(event.ack).toHaveBeenCalled();
+		expect(event.retry).not.toHaveBeenCalled();
+	});
+
+	it("delivers large compressed events in several rounds", async () => {
+		const fetchMock = vi.fn(async () => new Response(null, { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+		const events = await Promise.all(["req_1", "req_2", "req_3"].map(async (id) => {
+			const event = await compressed(id, ["collector"]);
+			event.body.telemetryBytes = 7_000_000;
+			return event;
+		}));
+
+		const summary = await processBroadcastQueueBatch(batch(...events));
+
+		expect(summary).toMatchObject({ requests: 2, delivered: 3 });
 	});
 
 	it("acknowledges messages it cannot read", async () => {
