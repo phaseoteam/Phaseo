@@ -55,6 +55,10 @@ const shellActions = String.raw`
     if(!input())window.dispatchEvent(new KeyboardEvent('keydown',{key:'k',ctrlKey:true,bubbles:true}));
     return window.__auditUntil(input,'command palette');
   };
+  window.__auditPaletteClose = async function() {
+    document.querySelector('[data-slot="dialog-content"] [cmdk-input]')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
+    await window.__auditUntil(()=>!document.querySelector('[data-slot="dialog-content"]'),'command palette close');
+  };
   /** Search the command palette and select the item whose label matches exactly. */
   window.__auditPaletteRun = async function(query,label=query,group) {
     const input=await window.__auditPalette();window.__auditType(input,query);
