@@ -85,6 +85,7 @@ icon: "bug"
 | `authentication_error` | `401` | API कुंजी मौजूद नहीं है या अमान्य है। |
 | `authorization_error` | `403` | इस कुंजी को संसाधन तक पहुँच की अनुमति नहीं है। |
 | `not_found_error` | `404` | एंडपॉइंट या संसाधन नहीं मिला। |
+| `model_retired` | `410` | मॉडल सेवानिवृत्त हो चुका है और अब कोई प्रदाता उसे उपलब्ध नहीं कराता। `replacement_model` पर स्विच करें। |
 | `rate_limit_error` | `429` | अनुरोधों की संख्या बहुत अधिक है। बताई गई देरी के बाद फिर प्रयास करें। |
 | `phaseo_free_model_limit_exceeded` | `429` | Phaseo के मुफ़्त मॉडलों का साझा दैनिक कोटा समाप्त हो गया है (डिफ़ॉल्ट रूप से 1,500 अनुरोध)। `Retry-After` का पालन करें, 00:00 UTC पर रीसेट होने तक प्रतीक्षा करें या सशुल्क मॉडल चुनें। |
 | `rate_limit_exceeded` | `429` | वर्कस्पेस की एक [दर सीमा नीति](./limits.mdx) समाप्त हो गई है। `policy_id` और `limit_scope` से उसकी पहचान होती है। `Retry-After` का पालन करें, या किसी वर्कस्पेस एडमिन से नीति बदलने को कहें। |
@@ -190,6 +191,30 @@ icon: "bug"
   }
 }
 ```
+
+<span id="when-a-model-is-retired"></span>
+## जब कोई मॉडल सेवानिवृत्त हो
+
+सेवानिवृत्त मॉडल तब तक उपलब्ध रहता है जब तक कोई प्रदाता उसे उपलब्ध कराता है। जब कोई भी प्रदाता उसे उपलब्ध नहीं कराता, तो उसके अनुरोध `410` और `model_retired` त्रुटि के साथ विफल होते हैं:
+
+```json
+{
+  "generation_id": "G-retired123",
+  "status_code": 410,
+  "error": "model_retired",
+  "reason": "model_retired_without_providers",
+  "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+  "model": "lab/old-model",
+  "retired_at": "2026-09-30T00:00:00Z",
+  "replacement_model": "lab/new-model"
+}
+```
+
+- `model`: वह मॉडल जिसका आपने अनुरोध किया।
+- `retired_at`: मॉडल कब सेवानिवृत्त हुआ, या कोई तारीख दर्ज न होने पर `null`।
+- `replacement_model`: सुझाया गया प्रतिस्थापन, या कोई प्रतिस्थापन न होने पर `null`।
+
+दोबारा प्रयास करने से मदद नहीं मिलती। अपने अनुरोध में मॉडल ID अपडेट करें। माइग्रेशन के दौरान इन अनुरोधों को पूरा करते रहने के लिए, प्रतिस्थापन को अपने अनुरोध की `models` सूची में जोड़ें या वर्कस्पेस के लिए सेवानिवृत्त मॉडल रूटिंग चालू करें। [सेवानिवृत्त मॉडल](../guides/routing-and-fallbacks.mdx#retired-models) देखें।
 
 ## वैकल्पिक डीबग मोड
 

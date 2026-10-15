@@ -85,6 +85,7 @@ icon: "bug"
 | `authentication_error` | `401` | API 密钥缺失或无效。 |
 | `authorization_error` | `403` | 此密钥无权访问该资源。 |
 | `not_found_error` | `404` | 找不到端点或资源。 |
+| `model_retired` | `410` | 该模型已停用，且不再有任何提供商提供。请改用 `replacement_model`。 |
 | `rate_limit_error` | `429` | 请求过多。请在指定延迟后重试。 |
 | `phaseo_free_model_limit_exceeded` | `429` | Phaseo 免费模型的共享每日配额已用尽（默认 1,500 次请求）。请遵循 `Retry-After`，等待 00:00 UTC 重置，或选择付费模型。 |
 | `rate_limit_exceeded` | `429` | 工作区的某个[速率限制策略](./limits.mdx)已耗尽。可通过 `policy_id` 和 `limit_scope` 确定是哪一个。请遵循 `Retry-After`，或请工作区管理员修改该策略。 |
@@ -190,6 +191,30 @@ icon: "bug"
   }
 }
 ```
+
+<span id="when-a-model-is-retired"></span>
+## 模型停用时
+
+已停用的模型只要仍有任何提供商提供，就会继续提供服务。一旦没有任何提供商提供，对它的请求就会失败，并返回 `410` 和 `model_retired` 错误：
+
+```json
+{
+  "generation_id": "G-retired123",
+  "status_code": 410,
+  "error": "model_retired",
+  "reason": "model_retired_without_providers",
+  "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+  "model": "lab/old-model",
+  "retired_at": "2026-09-30T00:00:00Z",
+  "replacement_model": "lab/new-model"
+}
+```
+
+- `model`：你请求的模型。
+- `retired_at`：模型的停用时间；如果未记录日期，则为 `null`。
+- `replacement_model`：建议的替代模型；如果没有，则为 `null`。
+
+重试无济于事。请更新请求中的模型 ID。如需在迁移期间继续处理这些请求，请将替代模型添加到请求的 `models` 列表中，或为工作区开启已停用模型的路由。请参阅[已停用的模型](../guides/routing-and-fallbacks.mdx#retired-models)。
 
 ## 可选调试模式
 
