@@ -6,7 +6,8 @@ import { getModelDeprecationContent, getModelDeprecationTemplateVariables, rende
 
 const DELIVERABLE_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "notification_test"];
 const EVENT_PAGE_SIZE = 100;
-const WORKSPACE_ID_CHUNK_SIZE = 200;
+// Kept below PostgREST's 1,000-row response cap; the RPC also clamps it.
+const MODEL_DEPRECATION_TARGET_PAGE_SIZE = 500;
 const MODEL_DEPRECATION_USAGE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const DELIVERY_TIMEOUT_MS = 60_000;
 const SAMPLE_DEPRECATION_LEAD_TIME_MS = 7 * 24 * 60 * 60 * 1000;
@@ -232,11 +233,7 @@ export async function runNotificationDeliveryJob(limit = 25): Promise<{ queued: 
 
 type DeprecatedModelRow = { model_slug: string; name: string | null; status: string | null; deprecated_at: string | null; retired_at: string | null; replacement_model_slug: string | null };
 
-function chunk<T>(values: T[], size: number): T[][] {
-	const chunks: T[][] = [];
-	for (let index = 0; index < values.length; index += size) chunks.push(values.slice(index, index + size));
-	return chunks;
-}
+type ModelDeprecationAlertTarget = { workspace_id: string; model_slugs: string[] | null; include_admins: boolean | null };
 
 export async function enqueueModelDeprecationNotifications(now = new Date()): Promise<{ workspaces: number; enqueued: number }> {
 	const supabase = getSupabaseAdmin();
@@ -247,30 +244,6 @@ export async function enqueueModelDeprecationNotifications(now = new Date()): Pr
 		if (model.model_slug && shouldNotifyModelDeprecation(model)) models.set(model.model_slug, model);
 	}
 	if (!models.size) return { workspaces: 0, enqueued: 0 };
-
-	// Start from the deprecated models rather than each workspace's history: few
-	// deprecated models are still called, so this stays a narrow index scan.
-	const usage = await supabase.rpc("get_requested_model_last_used_by_workspace", {
-		p_model_slugs: [...models.keys()],
-		p_since: new Date(now.getTime() - MODEL_DEPRECATION_USAGE_WINDOW_MS).toISOString(),
-	});
-	if (usage.error) throw new Error(`model_deprecation_usage_fetch_failed:${usage.error.message}`);
-	const modelsByWorkspace = new Map<string, Set<string>>();
-	for (const row of (usage.data ?? []) as Array<{ workspace_id: string; model_slug: string }>) {
-		if (!row.workspace_id || !models.has(row.model_slug)) continue;
-		const slugs = modelsByWorkspace.get(row.workspace_id) ?? new Set<string>();
-		slugs.add(row.model_slug);
-		modelsByWorkspace.set(row.workspace_id, slugs);
-	}
-	if (!modelsByWorkspace.size) return { workspaces: 0, enqueued: 0 };
-
-	const includeAdminsByWorkspace = new Map<string, boolean>();
-	for (const workspaceIds of chunk([...modelsByWorkspace.keys()], WORKSPACE_ID_CHUNK_SIZE)) {
-		const settingsResult = await supabase.from("workspace_settings").select("workspace_id,model_deprecation_alerts_include_admins").eq("model_deprecation_alerts_enabled", true).in("workspace_id", workspaceIds);
-		if (settingsResult.error) throw new Error(`model_deprecation_settings_fetch_failed:${settingsResult.error.message}`);
-		for (const settings of settingsResult.data ?? []) includeAdminsByWorkspace.set(String(settings.workspace_id), settings.model_deprecation_alerts_include_admins === true);
-	}
-	if (!includeAdminsByWorkspace.size) return { workspaces: 0, enqueued: 0 };
 
 	const replacementIds = [...new Set([...models.values()].map((model) => String(model.replacement_model_slug ?? "").trim()).filter(Boolean))];
 	const replacementNames = new Map<string, string>();
@@ -291,12 +264,13 @@ export async function enqueueModelDeprecationNotifications(now = new Date()): Pr
 		return emailCache.get(userId) ?? "";
 	};
 
+	let workspaces = 0;
 	let enqueued = 0;
-	for (const [workspaceId, includeAdmins] of includeAdminsByWorkspace) {
+	const enqueueForWorkspace = async (workspaceId: string, includeAdmins: boolean, modelSlugs: string[]): Promise<void> => {
 		const workspace = await supabase.from("workspaces").select("name,owner_user_id").eq("id", workspaceId).maybeSingle();
 		if (workspace.error) throw new Error(`model_deprecation_workspace_fetch_failed:${workspace.error.message}`);
 		const ownerUserId = workspace.data?.owner_user_id ? String(workspace.data.owner_user_id) : "";
-		if (!ownerUserId) continue;
+		if (!ownerUserId) return;
 		const recipientUserIds = [ownerUserId];
 		if (includeAdmins) {
 			const admins = await supabase.from("workspace_members").select("user_id").eq("workspace_id", workspaceId).eq("role", "admin");
@@ -312,9 +286,9 @@ export async function enqueueModelDeprecationNotifications(now = new Date()): Pr
 			if (email) recipients.push({ userId, email });
 		}
 		const ownerEmail = recipients.find((recipient) => recipient.userId === ownerUserId)?.email;
-		if (!ownerEmail) continue;
+		if (!ownerEmail) return;
 
-		for (const modelSlug of modelsByWorkspace.get(workspaceId) ?? []) {
+		for (const modelSlug of modelSlugs) {
 			const model = models.get(modelSlug);
 			if (!model) continue;
 			const replacementModelId = String(model.replacement_model_slug ?? "").trim() || null;
@@ -340,6 +314,33 @@ export async function enqueueModelDeprecationNotifications(now = new Date()): Pr
 			if (inserted.error) throw new Error(`model_deprecation_enqueue_failed:${inserted.error.message}`);
 			if ((inserted.data ?? []).some((row) => row.dedupe_key === dedupeKey)) enqueued += 1;
 		}
+	};
+
+	// The database starts from the deprecated models (a narrow index scan), keeps
+	// only alert-enabled workspaces, and returns one row per workspace. Page by
+	// workspace_id so no enabled workspace is cut off by the response cap.
+	const since = new Date(now.getTime() - MODEL_DEPRECATION_USAGE_WINDOW_MS).toISOString();
+	let afterWorkspaceId: string | null = null;
+	for (;;) {
+		const page = await supabase.rpc("get_model_deprecation_alert_targets", {
+			p_model_slugs: [...models.keys()],
+			p_since: since,
+			p_after_workspace_id: afterWorkspaceId,
+			p_limit: MODEL_DEPRECATION_TARGET_PAGE_SIZE,
+		});
+		if (page.error) throw new Error(`model_deprecation_targets_fetch_failed:${page.error.message}`);
+		const targets = (page.data ?? []) as ModelDeprecationAlertTarget[];
+		for (const target of targets) {
+			if (!target.workspace_id) continue;
+			const modelSlugs = (target.model_slugs ?? []).filter((slug) => models.has(slug));
+			if (!modelSlugs.length) continue;
+			workspaces += 1;
+			await enqueueForWorkspace(String(target.workspace_id), target.include_admins === true, modelSlugs);
+		}
+		if (targets.length < MODEL_DEPRECATION_TARGET_PAGE_SIZE) break;
+		const lastWorkspaceId = String(targets[targets.length - 1]?.workspace_id ?? "");
+		if (!lastWorkspaceId || lastWorkspaceId === afterWorkspaceId) break;
+		afterWorkspaceId = lastWorkspaceId;
 	}
-	return { workspaces: includeAdminsByWorkspace.size, enqueued };
+	return { workspaces, enqueued };
 }
