@@ -45,6 +45,8 @@ const shellActions = String.raw`
   };
   window.__auditButton = (text,root=document) => Array.from(root.querySelectorAll('button')).find(button=>button.textContent.trim()===text);
   window.__auditType = (input,value) => {
+    // The composer is an editor, not a text field: its element exposes the draft as its value property.
+    if(input?.isContentEditable){input.value=value;return;}
     const prototype=input instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;
     Object.getOwnPropertyDescriptor(prototype,'value').set.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));
   };

@@ -1,42 +1,37 @@
 import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Children, createContext, isValidElement, useContext, useEffect, useRef, useState, useMemo, type CSSProperties, type ReactNode } from "react";
+import { Children, createContext, isValidElement, useContext, useEffect, useState, useMemo, type CSSProperties, type ReactNode } from "react";
 import type { CodeToken } from "./codeHighlight";
-import { Check, Copy, Globe } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import { useTextCopy } from "./useTextCopy";
 import { parseFileReference } from "../../shared/editors";
 
-import { GitHubMark } from "./GitHubMark";
-import { richLink } from "../lib/richLink";
+import type { Chip } from "../lib/messageChips";
+import { FilePathChip, LinkChip, MessageChip } from "./MessageChips";
+import { remarkMessageChips } from "./remarkMessageChips";
 import { repairFileLinks } from "./repairFileLinks";
 
 const ProjectContext = createContext<string | undefined>(undefined);
 
+const nodeText = (node: ReactNode): string => typeof node === "string" || typeof node === "number" ? String(node) : Array.isArray(node) ? node.map(nodeText).join("") : isValidElement<{ children?: ReactNode }>(node) ? nodeText(node.props.children) : "";
+const bareUrl = (value: string) => value.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+
+/** Markdown links as chips; link text that differs from the destination becomes the chip's label. */
 function MessageLink({ href, children }: { href?: string; children?: ReactNode }) {
 	const projectId = useContext(ProjectContext);
-	const pending = useRef(false);
-	const [busy, setBusy] = useState(false), [error, setError] = useState("");
 	const reference = href ? parseFileReference(href) : undefined;
-	async function openFile() {
-		const api = window.phaseoDesktop?.workspace;
-		if (!api || !projectId || !reference || pending.current) return;
-		pending.current = true; setBusy(true); setError("");
-		try {
-			const editors = await api.editors();
-			let preferred: unknown;
-			try { preferred = JSON.parse(localStorage.getItem("phaseo.desktop.editor") ?? "null"); } catch { /* Fall back to an available editor. */ }
-			const editor = editors.find(editor => editor.available && editor.id === preferred) ?? editors.find(editor => editor.available);
-			if (!editor) throw new Error("Install an editor and select it in Projects.");
-			await api.openProject(projectId, { editor: editor.id, ...reference });
-		} catch (reason) { setError(String(reason).replace(/^Error: (?:Error invoking remote method '[^']+': (?:Error: )?)?/, "")); }
-		finally { pending.current = false; setBusy(false); }
+	const label = nodeText(children);
+	if (href && reference) {
+		const file = { kind: /[\\/]$/.test(reference.filename) ? "folder" as const : "file" as const, path: reference.filename, ...(reference.line ? { line: reference.line } : {}), ...(reference.column ? { column: reference.column } : {}) };
+		return <FilePathChip file={file} projectId={projectId}>{label && label !== href && label !== reference.filename ? children : undefined}</FilePathChip>;
 	}
-	const link = href ? richLink(href) : undefined;
-	const [pageTitle, setPageTitle] = useState<string>();
-	useEffect(() => { if (!href) return; let active = true; if (/^https:\/\//i.test(href)) void window.phaseoDesktop?.workspace.linkTitle(href).then(title => { if (active && title) setPageTitle(title); }).catch(() => {}); const unsubscribe = window.phaseoDesktop?.onBrowserState(state => { if (state.url === href && state.title && !state.loading) setPageTitle(state.title); }); try { const pages = JSON.parse(localStorage.getItem("phaseo.desktop.browser.recents") ?? "[]") as { url: string; title: string }[]; setPageTitle(pages.find(page => page.url === href)?.title); } catch { /* Ignore invalid cached page titles. */ } return () => { active = false; unsubscribe?.(); }; }, [href]);
-	if (reference && projectId) return <span><button type="button" className="message-file-link" disabled={busy} aria-label={`Open ${reference.filename}${reference.line ? ` at line ${reference.line}` : ""} in editor`} onClick={() => void openFile()}>{children}</button>{busy && <span className="message-link-feedback" role="status">Opening…</span>}{error && <span className="message-link-feedback" role="alert">{error}</span>}</span>;
-	const safe = typeof href === "string" && /^https?:\/\//i.test(href);
-	return safe ? <a className={link ? "message-rich-link" : undefined} title={pageTitle ?? href} href={href} target="_blank" rel="noreferrer" onClick={event => { if (window.phaseoDesktop?.workspace) { event.preventDefault(); window.dispatchEvent(new CustomEvent("phaseo:open-context-link", { detail: href })); } }}>{link?.github ? <GitHubMark /> : <Globe size={13} />}{link?.label ?? (typeof children === "string" && children === href ? pageTitle ?? link?.fallback : children)}</a> : <span>{children}</span>;
+	if (href && /^https?:\/\//i.test(href)) return <LinkChip href={href}>{label && bareUrl(label) !== bareUrl(href) ? children : undefined}</LinkChip>;
+	return <span>{children}</span>;
+}
+
+function MarkdownChip({ value }: { value: string }) {
+	const projectId = useContext(ProjectContext);
+	try { return <MessageChip chip={JSON.parse(value) as Chip} projectId={projectId} />; } catch { return null; }
 }
 
 function messageUrl(href: string) { return parseFileReference(href) ? href : defaultUrlTransform(href); }
@@ -63,10 +58,14 @@ export function CodeBlock({ children, text: source, language: sourceLanguage }: 
 const markdownComponents: Components = {
 		a: ({ href, children }) => <MessageLink key={href} href={href}>{children}</MessageLink>,
 		img: ({ alt }) => <span>{alt || "Image"}</span>,
+		// Spans only come from remarkMessageChips; raw HTML is not rendered.
+		span: props => { const chip = (props as Record<string, unknown>)["data-chip"]; return typeof chip === "string" ? <MarkdownChip value={chip} /> : <span className={props.className}>{props.children}</span>; },
 		pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
 };
 
+const markdownPlugins = [remarkGfm, remarkMessageChips];
+
 export function MessageContent({ text, projectId, repairLocalLinks = false }: { text: string; projectId?: string; repairLocalLinks?: boolean }) {
 	const rendered = useMemo(() => repairLocalLinks ? repairFileLinks(text) : text, [text, repairLocalLinks]);
-	return <ProjectContext value={projectId}><div className="message-markdown"><ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents} urlTransform={messageUrl}>{rendered}</ReactMarkdown></div></ProjectContext>;
+	return <ProjectContext value={projectId}><div className="message-markdown"><ReactMarkdown remarkPlugins={markdownPlugins} components={markdownComponents} urlTransform={messageUrl}>{rendered}</ReactMarkdown></div></ProjectContext>;
 }

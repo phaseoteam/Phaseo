@@ -87,10 +87,10 @@ app.whenReady().then(async () => {
     }
     owner.setSize(1440, 920);
     // Settings is a page: the chat's draft survives a visit and Escape returns to the chat.
-    await run("window.__auditType(document.querySelector('main textarea[aria-label=Message]'),'Keep this draft')");
-    await wait("document.querySelector('main textarea[aria-label=Message]').value==='Keep this draft'");
+    await run("window.__auditType(document.querySelector('main [aria-label=Message]'),'Keep this draft')");
+    await wait("document.querySelector('main [aria-label=Message]').value==='Keep this draft'");
     await run("document.querySelector('aside button[aria-label=\"Settings\"]').click()");
-    await wait("Boolean(document.querySelector('nav[aria-label=\"Settings sections\"]'))&&!document.querySelector('main textarea[aria-label=Message]')");
+    await wait("Boolean(document.querySelector('nav[aria-label=\"Settings sections\"]'))&&!document.querySelector('main [aria-label=Message]')");
     for (const [width, height] of [[1440, 920], [1180, 800], [1040, 680]]) for (const theme of ["light", "dark"]) {
       owner.setSize(width, height); await run(`window.__auditTheme(${JSON.stringify(theme)})`);
       if (!await run("(()=>{const nav=document.querySelector('aside[aria-label=\"Settings\"]').getBoundingClientRect(),main=document.querySelector('main').getBoundingClientRect();return nav.right<=main.left+1&&main.right<=innerWidth&&main.width>=500;})()")) throw Error("Settings columns overlap");
@@ -101,7 +101,7 @@ app.whenReady().then(async () => {
     await run("Array.from(document.querySelectorAll('[role=radiogroup][aria-label=Theme] [role=radio]')).find(button=>button.textContent==='Light').click()");
     await wait("document.documentElement.dataset.theme==='light'&&document.querySelector('[role=radiogroup][aria-label=Theme] [aria-checked=true]')?.textContent==='Light'");
     key("Escape");
-    await wait(`!document.querySelector('nav[aria-label="Settings sections"]')&&document.querySelector('main textarea[aria-label=Message]')?.value==='Keep this draft'&&window.__auditChatTitle()===${JSON.stringify(secondChat)}`);
+    await wait(`!document.querySelector('nav[aria-label="Settings sections"]')&&document.querySelector('main [aria-label=Message]')?.value==='Keep this draft'&&window.__auditChatTitle()===${JSON.stringify(secondChat)}`);
     console.log('T3_LAYOUT_SMOKE',JSON.stringify({chatList:60,modeSwitch:true,collapsibleProjects:true,surfaceBack:true,appearance:true,draftPreserved:true,escapeCloses:true,settingsCaptures:6}));
     // The tools panel resizes from its keyboard-focusable separator and by dragging, and remembers its width.
     owner.setSize(1440, 920);
@@ -147,7 +147,7 @@ app.whenReady().then(async () => {
     owner.setSize(1440, 920);
     // Without a connected runtime a new chat asks to sign in; an API connection from Settings unlocks Phaseo's catalog.
     await run("window.dispatchEvent(new KeyboardEvent('keydown',{key:'n',ctrlKey:true,bubbles:true}))");
-    await wait("Boolean(window.__auditButton('Sign in with your browser'))&&!document.querySelector('main textarea[aria-label=Message]')");
+    await wait("Boolean(window.__auditButton('Sign in with your browser'))&&!document.querySelector('main [aria-label=Message]')");
     await run("window.__auditButton('Connect in Settings').click()");
     await wait("Boolean(document.querySelector('form[aria-label=\"Add account\"]'))&&document.querySelector('nav[aria-label=\"Settings sections\"] [aria-current=page]')?.textContent==='Accounts'");
     await run("window.__auditChoose('Account provider','phaseo')");
@@ -207,7 +207,7 @@ app.whenReady().then(async () => {
     await wait(`!${popup}`);
     console.log('MODEL_SWR_SMOKE', JSON.stringify({cachedMenuSwitch:true,backgroundRefresh:true,staleOnFailure:true,retry:true}));
     await run("window.dispatchEvent(new KeyboardEvent('keydown',{key:'n',ctrlKey:true,bubbles:true}))");
-    await wait("window.__auditChatTitle()===undefined&&Boolean(document.querySelector('main textarea[aria-label=Message]'))");
+    await wait("window.__auditChatTitle()===undefined&&Boolean(document.querySelector('main [aria-label=Message]'))");
     for (const [width, height] of [[1440, 920], [1180, 800], [1040, 680]]) for (const theme of ["light", "dark"]) {
       owner.setSize(width, height); await run(`window.__auditTheme(${JSON.stringify(theme)})`);
       if (!await run("(()=>{const composer=document.querySelector('main form').getBoundingClientRect();return composer.width>250&&composer.left>=0&&composer.right<=innerWidth&&composer.bottom<=innerHeight;})()")) throw Error('Landing composer overflow');
@@ -226,13 +226,13 @@ app.whenReady().then(async () => {
     await wait(`${items}[0]?.textContent.trim().startsWith('Anthropic: Owned model 0')`);
     await run(`${items}[0].click()`);
     await wait(`!${popup}&&document.querySelector('main form [aria-label="Choose model"]').textContent.trim()==='Owned model 0'`);
-    await run("window.__auditType(document.querySelector('main textarea[aria-label=Message]'),'Keep my first message')");
+    await run("window.__auditType(document.querySelector('main [aria-label=Message]'),'Keep my first message')");
     await wait("!document.querySelector('main form [aria-label=Send]').disabled");
     await run("document.querySelector('main form [aria-label=Send]').click()");
-    await wait("window.__auditChatTitle()!==undefined&&document.querySelector('main textarea[aria-label=Message]')?.value==='Keep my first message'&&document.querySelector('[role=alert]')?.textContent.includes('Owned first-message failure')");
+    await wait("window.__auditChatTitle()!==undefined&&document.querySelector('main [aria-label=Message]')?.value==='Keep my first message'&&document.querySelector('[role=alert]')?.textContent.includes('Owned first-message failure')");
     if (sends !== 1 || firstMessage !== 'Keep my first message') throw Error('First-message creation was duplicated or lost');
     await run("document.querySelector('main form [aria-label=Send]').click()");
-    await wait("document.querySelector('main textarea[aria-label=Message]')?.value===''&&window.__auditChatTitle()==='Owned first-message success'");
+    await wait("document.querySelector('main [aria-label=Message]')?.value===''&&window.__auditChatTitle()==='Owned first-message success'");
     if (sends !== 2) throw Error('First-message retry missing');
     ipcMain.removeHandler('workspace:command'); ipcMain.handle('workspace:command', originalCommand);
     console.log('NEW_CHAT_COMPOSER_SMOKE',JSON.stringify({composer:true,createAndSend:true,failureDraftPreserved:true,retry:true,captures:6,providerInferenceCalls:0}));

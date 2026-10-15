@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ClipboardEvent } from "react";
-import { BookOpen, Check, ChevronDown, Code2, FolderOpen, FolderPlus, ImageIcon, Lightbulb, ListChecks, PenLine, Search, ShieldCheck, ShieldAlert } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { BookOpen, Check, ChevronDown, Code2, FolderOpen, FolderPlus, Lightbulb, ListChecks, PenLine, Search, ShieldCheck, ShieldAlert } from "lucide-react";
 import type { Task } from "../../shared/workspace";
 import { errorText, usablePhaseoAccounts, useWorkspace } from "../app/workspace";
 import { useModelPreferences, type ModelSelection } from "../lib/modelPreferences";
@@ -10,7 +10,9 @@ import { cn } from "../lib/utils";
 import { ModelLogo } from "../components/ModelLogo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Composer, ComposerChip, ToolButton } from "./Composer";
-import { ReferenceChips, useComposerMenu } from "./ComposerMenu";
+import { useComposerMenu } from "./ComposerMenu";
+import { useComposerEditor } from "./composerEditor";
+import { composeMessage } from "../lib/mentions";
 import { MAX_COMPARE, ModelPicker, knownModel, modelLabel, sameSelection } from "./ModelPicker";
 import { ModelSettings } from "./ModelSettings";
 import { SignInCard } from "./SignInCard";
@@ -49,7 +51,8 @@ export function PlanToggle({ value, onChange }: { value: Task["mode"]; onChange:
 export function NewChat() {
 	const { api, overview, command, setOverview, setError, mode, select, openCompare, saveCompareGroup, newChatProjectId, setNewChatProjectId, openSettings } = useWorkspace();
 	const [draft, setDraft] = usePersistedState("phaseo.desktop.newChatDraft", "");
-	const [images, setImages] = useState<File[]>([]);
+	// Images wait here until the chat exists; the draft holds a chip for each, keyed by a local id.
+	const [images, setImages] = useState<Record<string, File>>({});
 	const [busy, setBusy] = useState(false);
 
 	const [planMode, setPlanMode] = usePersistedState<Task["mode"]>("phaseo.desktop.draftMode", "code");
@@ -60,22 +63,23 @@ export function NewChat() {
 	const { models: phaseoModels } = useModels("phaseo", phaseoAccount?.id, undefined, undefined, !!phaseoAccount);
 	const remembered = preferences.defaultSelection ?? preferences.recentSelection;
 	const [selections, setSelections] = useState<ModelSelection[]>(remembered ? [remembered] : []);
-	const input = useRef<HTMLTextAreaElement>(null);
 	const code = mode === "code";
 	const projects = overview.projects.filter(project => !project.worktree?.removedAt);
 	const project = projects.find(value => value.id === newChatProjectId);
 
-	useEffect(() => { input.current?.focus(); }, [mode]);
 	useEffect(() => {
 		if (selections.length || !phaseoAccount || !phaseoModels.length) return;
 		const model = phaseoModels.find(value => value.default) ?? phaseoModels.find(value => /claude-sonnet|gpt-6\b/i.test(value.id)) ?? phaseoModels[0];
 		setSelections([{ harness: "phaseo", accountId: phaseoAccount.id, model: model.id }]);
 	}, [selections.length, phaseoAccount, phaseoModels]);
 	const compare = !code && selections.length > 1;
-	const [references, setReferences] = useState<string[]>([]);
+	const editor = useComposerEditor({ value: draft, onChange: setDraft, disabled: busy, onFiles: files => addImages(files),
+		placeholder: compare ? "Ask every model the same question…" : code ? (project ? `Describe a change to ${project.name}…` : "Choose a project, then describe what to build…") : "Message Phaseo…" });
 	// Native commands depend on one agent, so comparing models offers saved prompts, chats and files only.
-	const menu = useComposerMenu({ value: draft, onChange: setDraft, input, harness: compare ? undefined : selections[0]?.harness, accountId: selections[0]?.accountId, projectId: code ? project?.id : undefined,
-		references, onReference: id => setReferences(current => [...current, id].slice(0, 10)) });
+	const menu = useComposerMenu({ editor, harness: compare ? undefined : selections[0]?.harness, accountId: selections[0]?.accountId, projectId: code ? project?.id : undefined });
+	const message = composeMessage(draft);
+	useEffect(() => { editor.focus(); }, [mode, editor.editor]); // Focus follows the mode switch and the editor's first mount.
+	const attached = message.images.flatMap(id => images[id] ? [images[id]] : []);
 	useEffect(() => { if (code) setSelections(current => current.length > 1 ? current.slice(0, 1) : current); }, [code]);
 
 	const recent = useMemo(() => {
@@ -85,35 +89,37 @@ export function NewChat() {
 	}, [preferences]);
 
 	const needsSignIn = !phaseoAccount && ![...connected].some(harness => harness !== "phaseo");
-	const canSend = !busy && (!!draft.trim() || images.length > 0) && selections.length > 0 && (!code || !!project);
+	const canSend = !busy && (!!message.text || attached.length > 0) && selections.length > 0 && (!code || !!project);
 
 	async function submit() {
 		if (!api || !canSend) return;
 		setBusy(true);
 		const known = new Set(overview.tasks.map(task => task.id));
 		try {
-			const prepared = await menu.prepare(draft.trim()), shared = { text: prepared.text, images, threadReferences: references, nativeAction: prepared.nativeAction };
+			const prepared = await menu.prepare(message.text), shared = { text: prepared.text, images: attached, threadReferences: message.threadReferences, nativeAction: prepared.nativeAction };
 			if (compare) {
 				const ids: string[] = [];
 				for (const selection of selections) { const id = await startChat(api, command, known, { selection, mode: "chat", ...shared }); if (id) ids.push(id); }
 				if (ids.length) {
 					const group = { id: crypto.randomUUID(), title: draft.trim().split("\n")[0].slice(0, 80) || "Model comparison", taskIds: ids, createdAt: new Date().toISOString() };
-					saveCompareGroup(group); setDraft(""); setImages([]); setReferences([]); openCompare(group.id);
+					saveCompareGroup(group); setDraft(""); setImages({}); openCompare(group.id);
 				}
 			} else {
 				const id = await startChat(api, command, known, { selection: selections[0], mode: code ? planMode : "chat", projectId: code ? project?.id : undefined, permissionMode: code ? permissionMode : undefined, ...shared });
-				if (id) { setDraft(""); setImages([]); setReferences([]); select(id); }
+				if (id) { setDraft(""); setImages({}); select(id); }
 			}
 		} catch (reason) { setError(errorText(reason)); }
 		finally { setBusy(false); }
 	}
 
-	function paste(event: ClipboardEvent<HTMLTextAreaElement>) {
-		const files = Array.from(event.clipboardData.items).filter(item => item.kind === "file" && item.type.startsWith("image/")).map(item => item.getAsFile()).filter((file): file is File => !!file);
-		if (!files.length) return;
-		event.preventDefault();
-		if (files.some(file => file.size > 10 * 1024 * 1024) || files.length + images.length > 10) { setError("Attach up to 10 images, each under 10 MB."); return; }
-		setImages(current => [...current, ...files]);
+	function addImages(files: File[]) {
+		const added = files.filter(file => file.type.startsWith("image/"));
+		if (added.length < files.length) setError("Add other files once the chat has started.");
+		if (!added.length) return;
+		if (added.some(file => file.size > 10 * 1024 * 1024) || added.length + attached.length > 10) { setError("Attach up to 10 images, each under 10 MB."); return; }
+		const entries = added.map(file => [crypto.randomUUID(), file] as const);
+		setImages(current => ({ ...current, ...Object.fromEntries(entries) }));
+		editor.insert(entries.map(([id, file]) => ({ kind: "image", ref: id, label: file.name })));
 	}
 
 	const addProject = () => { if (api) void api.chooseProject().then(state => { setOverview(state); const added = state.projects.find(value => !overview.projects.some(existing => existing.id === value.id)); if (added) setNewChatProjectId(added.id); }, reason => setError(errorText(reason))); };
@@ -137,21 +143,18 @@ export function NewChat() {
 				<h1 className="text-[28px] font-bold tracking-tight">{code ? "What should we build?" : greeting()}</h1>
 				{code && <div className="mt-4 flex justify-center">{projectMenu}</div>}
 			</div>
-			<Composer size="large" inputRef={input} value={draft} onChange={setDraft} onSubmit={() => void submit()} onPaste={paste} disabled={busy} canSend={canSend}
-				placeholder={compare ? "Ask every model the same question…" : code ? (project ? `Describe a change to ${project.name}…` : "Choose a project, then describe what to build…") : "Message Phaseo…"}
+			<Composer size="large" editor={editor} onSubmit={() => void submit()} disabled={busy} canSend={canSend}
 				menu={menu}
-				chips={compare || images.length || references.length ? <>
-					<ReferenceChips ids={references} onRemove={id => setReferences(current => current.filter(value => value !== id))} />
+				chips={compare ? <>
 					{compare && selections.map(value => <ComposerChip key={value.harness + value.model} onRemove={() => setSelections(current => current.filter(item => !sameSelection(item, value)))}>
 						<span className="mr-1 inline-flex size-3.5 align-[-2px] [&_img]:size-3.5 [&_.harness-logo]:size-3.5"><ModelLogo model={knownModel(value.model) ?? { id: value.model, name: value.model }} harness={value.harness} /></span>{knownModel(value.model)?.name ?? modelLabel(value.model)}
 					</ComposerChip>)}
-					{images.map((file, index) => <ComposerChip key={index} onRemove={() => setImages(current => current.filter((_, position) => position !== index))}><ImageIcon className="mr-1 inline size-3" />{file.name}</ComposerChip>)}
 				</> : undefined}
 				tools={code ? <><PlanToggle value={planMode} onChange={setPlanMode} /><PermissionMenu value={permissionMode} onChange={setPermissionMode} /></> : undefined}
 				model={<><ModelPicker selections={selections} onChange={setSelections} multiple={!code} agents={code} disabled={busy} />{selections.length === 1 && <ModelSettings selection={selections[0]} onChange={next => setSelections([next])} disabled={busy} />}</>}
 				footer={compare && <p className="mt-2 px-2 text-xs text-muted-foreground">Sends to {selections.length} models side by side. Each answer is billed separately.</p>} />
 			{!code && <div className="flex flex-wrap justify-center gap-2">
-				{suggestions.map(({ icon: Icon, label, prompt }) => <button key={label} type="button" onClick={() => { setDraft(prompt); requestAnimationFrame(() => { input.current?.focus(); input.current?.setSelectionRange(prompt.length, prompt.length); }); }}
+				{suggestions.map(({ icon: Icon, label, prompt }) => <button key={label} type="button" onClick={() => { setDraft(prompt); requestAnimationFrame(() => editor.focus("end")); }}
 					className="flex h-8 items-center gap-2 rounded-full border border-border px-3.5 text-[13px] text-foreground/85 transition-colors hover:bg-muted"><Icon className="size-3.5 text-muted-foreground" />{label}</button>)}
 			</div>}
 			{!code && recent.length > 0 && <div className="flex flex-wrap items-center justify-center gap-1">

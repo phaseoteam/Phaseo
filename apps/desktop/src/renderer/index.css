@@ -361,3 +361,10 @@
 		font-weight: 700;
 	}
 }
+
+/* Composer editor: plain paragraphs, chips inline, placeholder on the empty first line. */
+.composer-editor { outline: none; white-space: pre-wrap; overflow-wrap: anywhere; }
+.composer-editor p { margin: 0; }
+.composer-editor p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; height: 0; pointer-events: none; color: color-mix(in oklab, var(--muted-foreground) 80%, transparent); }
+.composer-editor .composer-chip { display: inline; }
+.composer-editor .ProseMirror-selectednode { outline: none; }

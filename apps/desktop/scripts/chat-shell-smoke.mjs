@@ -45,10 +45,10 @@ app.whenReady().then(async()=>{
  await select('Improve the website');
  await wait(`document.querySelector('main [aria-live=polite] ol')?.textContent.includes('Apply the design')`);
  await capture('chat-plan-checklist');
- await run(`(()=>{const input=document.querySelector('textarea[aria-label="Message"]');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(input,'Keep this draft');input.dispatchEvent(new Event('input',{bubbles:true}))})()`);
+ await run(`(()=>{const input=document.querySelector('[aria-label="Message"]');window.__auditType(input,'Keep this draft')})()`);
  await panel('Browser');await wait(`Boolean(document.querySelector('.browser-surface'))`);
  await panel('Files & changes');await wait(`Boolean(document.querySelector('.files-panel'))`);
- if(!await run(`document.querySelector('textarea[aria-label="Message"]').value==='Keep this draft'&&window.__auditChatTitle()==='Improve the website'`))throw Error('Opening tools reset the chat');
+ if(!await run(`document.querySelector('[aria-label="Message"]').value==='Keep this draft'&&window.__auditChatTitle()==='Improve the website'`))throw Error('Opening tools reset the chat');
  await panel('Pull requests');await wait(`document.querySelector('.proposals-page')?.textContent.includes('No open pull requests.')`);if(proposalProject!=='project')throw Error('PR panel did not follow chat project');
  const ownedRequest={number:12,title:'Owned pull request',url:'https://github.com/owned/fixture/pull/12',author:'fixture',draft:true,head:'feature/owned',base:'main',updatedAt:now,review:'required',checks:'pending'};
  ipcMain.removeHandler('workspace:pull-requests');ipcMain.handle('workspace:pull-requests',(_event,id)=>{proposalProject=id;return {repository:'owned/fixture',requests:[ownedRequest],fetchedAt:now,limitReached:false}});
@@ -62,7 +62,7 @@ app.whenReady().then(async()=>{
  if(process.argv.includes("--reviews-only")){console.log("AUTOMATIC_PR_REFRESH_SMOKE",JSON.stringify({details:true,files:true,retainedContent:true,automaticRecovery:true,lateResponseIsolation:true,inferenceCalls:0}));app.exit(0);return;}
  ipcMain.removeHandler('workspace:pull-requests');ipcMain.handle('workspace:pull-requests',(_event,id)=>{proposalProject=id;return {repository:'owned/fixture',requests:[],fetchedAt:now,limitReached:false}});
  await panel('Terminal');await wait(`document.querySelector('[aria-label="Terminal project"]')?.value==='project'`);await run(`document.querySelector('aside button[aria-label="Settings"]').click()`);await wait(`Boolean(document.querySelector('nav[aria-label="Settings sections"]'))`);await click('Accounts');await wait(`Boolean(document.querySelector('.accounts-page'))`);await run(`window.__auditCloseSettings()`);
- if(!await run(`document.querySelector('textarea[aria-label="Message"]').value==='Keep this draft'`))throw Error('Settings reset the draft');
+ if(!await run(`document.querySelector('[aria-label="Message"]').value==='Keep this draft'`))throw Error('Settings reset the draft');
  await panel('Browser');await wait(`Boolean(document.querySelector('.browser-surface'))`);await setViewport('phone');await wait(`document.querySelector('[aria-label="Browser viewport"]')?.value==='phone'`);
  await run(`(()=>{const input=document.querySelector('[aria-label="Browser address"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(address+'/first')});input.dispatchEvent(new Event('input',{bubbles:true}))})()`);await run("document.querySelector('.browser-toolbar').requestSubmit()");
  let browser;for(let index=0;index<100;index++){browser=webContents.getAllWebContents().find(contents=>contents!==owner.webContents&&contents.getURL()===address+'/first'&&!contents.isLoading());if(browser)break;await new Promise(resolve=>setTimeout(resolve,30));}if(!browser)throw Error('Native browser did not navigate');

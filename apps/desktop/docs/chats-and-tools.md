@@ -100,7 +100,9 @@ The editor preserves drafts after save failures, detects external edits, offers 
 
 ## Mentions
 
-Type `@` anywhere in a message to mention a chat or a file. Chats appear first, most recent first. A chosen chat becomes a chip above the message, and the agent can read it with `read_thread`; up to 10 chats per message. In a project, files and folders follow, matched by name first and then by path, from the files Git tracks or would track (ignored files are skipped; outside Git, everything except `.git` and `node_modules`). A chosen file is written into the message as `@path` for the agent to open.
+Type `@` anywhere in a message to mention a chat or a file. Chats appear first, most recent first; in a project, files and folders follow, matched by name first and then by path, from the files Git tracks or would track (ignored files are skipped; outside Git, everything except `.git` and `node_modules`). A choice becomes a chip in the text where you typed it, and Backspace removes it whole. Attached and pasted files land as chips at the caret too. When you send, a file chip reaches the agent as `@path`, a chat chip as a reference it can read with `read_thread` (up to 10 per message), and attachments as attachments.
+
+Messages and replies show the same chips: file paths and `@path` mentions open in your editor, links show the site or the GitHub pull request or issue, and chat mentions open the chat. Code blocks, version numbers, emails and paths inside sentences like `and/or` stay as text.
 
 ## Reusable chat commands
 

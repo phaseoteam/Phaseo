@@ -6,8 +6,10 @@ import { conversationTurns, turnDuration, type TurnEntry } from "../lib/conversa
 import { turnUsage } from "../lib/turnUsage";
 import { cn } from "../lib/utils";
 import { MessageContent } from "../components/MessageContent";
+import { MessageText } from "../components/MessageChips";
 import { ModelLogo } from "../components/ModelLogo";
 import { useTextCopy } from "../components/useTextCopy";
+import { mentionPlainText } from "../lib/mentions";
 import { harnessNames, knownModel, modelLabel } from "./ModelPicker";
 import { AgentResult } from "./AgentThreads";
 
@@ -31,14 +33,14 @@ function CopyButton({ text }: { text: string }) {
 	return <ActionButton label={status === "copied" ? "Copied" : "Copy"} disabled={copying || !text} onClick={() => void copy()}>{status === "copied" ? <Check /> : <Copy />}</ActionButton>;
 }
 
-function UserMessage({ message, onAttachment, onBranch, canBranch }: { message: Message; onAttachment: (id: string) => void; onBranch: (id: string) => void; canBranch: boolean }) {
+function UserMessage({ message, projectId, onAttachment, onBranch, canBranch }: { message: Message; projectId?: string; onAttachment: (id: string) => void; onBranch: (id: string) => void; canBranch: boolean }) {
 	return <div data-conversation-id={`message:${message.id}`} className="group/message flex flex-col items-end gap-1">
-		<div data-selectable className="max-w-[85%] rounded-2xl rounded-br-md bg-muted px-4 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap">{message.text}
+		<div data-selectable className="max-w-[85%] rounded-2xl rounded-br-md bg-muted px-4 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap"><MessageText text={message.text} projectId={projectId} />
 			{!!message.attachments?.length && <div className="mt-2 flex flex-wrap gap-1.5">{message.attachments.map(attachment => <button key={attachment.id} type="button" onClick={() => onAttachment(attachment.id)} className="inline-flex h-6 items-center gap-1 rounded-md bg-background/70 px-2 text-xs hover:bg-background"><Paperclip className="size-3" />{attachment.name}</button>)}</div>}
 		</div>
 		<div className="flex items-center opacity-0 transition-opacity group-hover/message:opacity-100">
 			<span className="mr-1 text-[11px] text-muted-foreground">{new Date(message.createdAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</span>
-			<CopyButton text={message.text} />
+			<CopyButton text={mentionPlainText(message.text)} />
 			<ActionButton label="Branch from here" disabled={!canBranch} onClick={() => onBranch(message.id)}><GitBranch /></ActionButton>
 		</div>
 	</div>;
@@ -123,7 +125,7 @@ function Turn({ user, entries, live, complete, task, onAttachment, onBranch, com
 	const canBranch = !["running", "waiting"].includes(task.status) && !task.archived;
 	const hasAssistant = work.length > 0 || !!final || live;
 	return <div className="flex flex-col gap-4">
-		{user && (user.delivery === "subagent" ? <AgentResult message={user} projectId={task.projectId} /> : <UserMessage message={user} onAttachment={onAttachment} onBranch={onBranch} canBranch={canBranch} />)}
+		{user && (user.delivery === "subagent" ? <AgentResult message={user} projectId={task.projectId} /> : <UserMessage message={user} projectId={task.projectId} onAttachment={onAttachment} onBranch={onBranch} canBranch={canBranch} />)}
 		{hasAssistant && <div data-conversation-id={`turn:${user?.id ?? entries[0]?.value.id}`} className="group/turn flex flex-col gap-3">
 			{!compact && <AssistantHeader task={task} />}
 			<WorkLog entries={work} user={user} live={live} complete={complete} task={task} />

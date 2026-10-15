@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ClipboardEvent } from "react";
+import { useEffect, useState } from "react";
 import { Archive, CornerLeftUp, Download, Ellipsis, FolderOpen, GitBranch, Layers, Paperclip, Pin, PinOff, RotateCcw, X } from "lucide-react";
 import type { Attachment, Task } from "../../shared/workspace";
 import { errorText, useWorkspace } from "../app/workspace";
@@ -10,8 +10,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Button } from "../components/ui/button";
 import { AttachmentPreview } from "../components/AttachmentPreview";
 import { StatusDot } from "../shell/Sidebar";
-import { Composer, ComposerChip, ToolButton } from "./Composer";
-import { ReferenceChips, useComposerMenu } from "./ComposerMenu";
+import { Composer, ToolButton } from "./Composer";
+import { useComposerMenu } from "./ComposerMenu";
+import { useComposerEditor } from "./composerEditor";
+import { composeMessage, mentionPlainText } from "../lib/mentions";
 import { Conversation } from "./Conversation";
 import { ModelPicker } from "./ModelPicker";
 import { ModelSettings } from "./ModelSettings";
@@ -57,17 +59,13 @@ function ChatHeader({ task }: { task: Task }) {
 	</header>;
 }
 
-/** Draft text and attachments for an existing chat, persisted across restarts. */
+/** Draft text for an existing chat, persisted across restarts. Attachments, files and chats sit in it as chips. */
 export function useTaskDraft(id: string) {
 	const [drafts, setDrafts] = usePersistedState<Record<string, string>>("phaseo.desktop.messageDrafts", {});
-	const [attachmentDrafts, setAttachmentDrafts] = usePersistedState<Record<string, Attachment[]>>("phaseo.desktop.attachmentDrafts", {});
 	return {
 		text: drafts[id] ?? "",
-		setText: (value: string) => setDrafts(current => { const next = { ...current }; if (value) next[id] = value; else delete next[id]; return next; }),
-		attachments: attachmentDrafts[id] ?? [],
-		addAttachments: (values: Attachment[]) => setAttachmentDrafts(current => ({ ...current, [id]: [...current[id] ?? [], ...values].slice(0, 10) })),
-		removeAttachment: (attachmentId: string) => setAttachmentDrafts(current => ({ ...current, [id]: (current[id] ?? []).filter(value => value.id !== attachmentId) })),
-		clear: () => { setDrafts(current => { const next = { ...current }; delete next[id]; return next; }); setAttachmentDrafts(current => { const next = { ...current }; delete next[id]; return next; }); },
+		setText: (value: string) => setDrafts(current => { if ((current[id] ?? "") === value) return current; const next = { ...current }; if (value) next[id] = value; else delete next[id]; return next; }),
+		clear: () => { setDrafts(current => { const next = { ...current }; delete next[id]; return next; }); },
 	};
 }
 
@@ -76,40 +74,43 @@ function ChatComposer({ task }: { task: Task }) {
 	const draft = useTaskDraft(task.id);
 	const [busy, setBusy] = useState(false);
 	const [uploading, setUploading] = useState(false);
-	const input = useRef<HTMLTextAreaElement>(null);
-	const [references, setReferences] = useState<string[]>([]);
-	useEffect(() => { setReferences([]); }, [task.id]);
-	const menu = useComposerMenu({ value: draft.text, onChange: draft.setText, input, taskId: task.id, harness: task.harness, accountId: task.accountId, projectId: task.projectId,
-		references, onReference: id => setReferences(current => [...current, id].slice(0, 10)), onAttachments: draft.addAttachments });
 	const running = ["running", "waiting"].includes(task.status);
 	const code = task.mode !== "chat";
-	useEffect(() => { input.current?.focus(); }, [task.id]);
+	const editor = useComposerEditor({ value: draft.text, onChange: draft.setText, disabled: task.archived, onFiles: files => void upload(files),
+		placeholder: task.archived ? "This chat is archived" : running ? "Queue a follow-up…" : code ? "Ask for a change, or reply to the agent…" : "Reply…" });
+	const menu = useComposerMenu({ editor, taskId: task.id, harness: task.harness, accountId: task.accountId, projectId: task.projectId });
+	useEffect(() => { editor.focus(); }, [task.id, editor.editor]);
 	const selection: ModelSelection = { harness: task.harness, model: task.model, accountId: task.accountId, reasoningEffort: task.reasoningEffort, serviceTier: task.serviceTier, options: task.modelOptions };
-	const canSend = !busy && !uploading && !task.archived && (!!draft.text.trim() || draft.attachments.length > 0);
+	const message = composeMessage(draft.text);
+	const canSend = !busy && !uploading && !task.archived && (!!message.text || message.attachments.length > 0);
 
 	async function send() {
 		if (!canSend) return;
 		setBusy(true);
 		try {
-			const prepared = await menu.prepare(draft.text.trim());
-			if (await command({ type: "send", id: task.id, text: prepared.text || "Please review the attached files.", attachments: draft.attachments.map(value => value.id),
-				...(references.length ? { threadReferences: references } : {}), ...(prepared.nativeAction ? { nativeAction: prepared.nativeAction } : {}) })) {
-				rememberModel(selection); draft.clear(); setReferences([]);
+			const prepared = await menu.prepare(message.text);
+			if (await command({ type: "send", id: task.id, text: prepared.text || "Please review the attached files.", attachments: message.attachments,
+				...(message.threadReferences.length ? { threadReferences: message.threadReferences } : {}), ...(prepared.nativeAction ? { nativeAction: prepared.nativeAction } : {}) })) {
+				rememberModel(selection); draft.clear();
 			}
 		} catch (reason) { setError(errorText(reason)); } finally { setBusy(false); }
 	}
+	const attachmentChips = (attachments: Attachment[]) => editor.insert(attachments.map(attachment => ({ kind: "attachment" as const, ref: attachment.id, label: attachment.name })));
 	async function attach() {
 		if (!api || uploading) return;
 		setUploading(true);
-		try { const result = await api.chooseAttachments(task.id); draft.addAttachments(result.attachments); if (result.errors.length) setError(result.errors.join("\n")); }
+		try { const result = await api.chooseAttachments(task.id); attachmentChips(result.attachments); if (result.errors.length) setError(result.errors.join("\n")); }
 		catch (reason) { setError(errorText(reason)); } finally { setUploading(false); }
 	}
-	function paste(event: ClipboardEvent<HTMLTextAreaElement>) {
-		const files = Array.from(event.clipboardData.items).filter(item => item.kind === "file" && item.type.startsWith("image/")).map(item => item.getAsFile()).filter((file): file is File => !!file);
-		if (!files.length || !api) return;
-		event.preventDefault();
+	/** Pasted or dropped images upload straight away and land at the caret; other files go through Attach files. */
+	async function upload(files: File[]) {
+		if (!api || task.archived) return;
+		const images = files.filter(file => file.type.startsWith("image/"));
+		if (images.length < files.length) setError("Use Attach files to add files other than images.");
+		if (!images.length) return;
 		setUploading(true);
-		void (async () => { for (const file of files) draft.addAttachments([await api.pasteImage(task.id, file.name, new Uint8Array(await file.arrayBuffer()))]); })().catch(reason => setError(errorText(reason))).finally(() => setUploading(false));
+		try { for (const file of images) attachmentChips([await api.pasteImage(task.id, file.name, new Uint8Array(await file.arrayBuffer()))]); }
+		catch (reason) { setError(errorText(reason)); } finally { setUploading(false); }
 	}
 	/** Settings changes send explicit values; an empty effort or speed returns to the model's default. */
 	async function changeSettings(next: ModelSelection) {
@@ -131,16 +132,11 @@ function ChatComposer({ task }: { task: Task }) {
 	return <div className="mx-auto w-full max-w-[760px] px-6 pb-4">
 		{task.queue.length > 0 && <div className="mb-2 rounded-xl border border-border bg-card/60 px-3 py-2">
 			<p className="mb-1 text-[11px] font-medium text-muted-foreground">Queued · sends when the current turn finishes</p>
-			{task.queue.map(message => <div key={message.id} className="flex items-center gap-2 py-0.5 text-[13px]"><span className="min-w-0 flex-1 truncate">{message.text}</span><button type="button" aria-label="Remove queued message" onClick={() => void command({ type: "queue-remove", id: task.id, messageId: message.id })} className="grid size-5 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button></div>)}
+			{task.queue.map(message => <div key={message.id} className="flex items-center gap-2 py-0.5 text-[13px]"><span className="min-w-0 flex-1 truncate">{mentionPlainText(message.text)}</span><button type="button" aria-label="Remove queued message" onClick={() => void command({ type: "queue-remove", id: task.id, messageId: message.id })} className="grid size-5 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button></div>)}
 		</div>}
-		<Composer inputRef={input} value={draft.text} onChange={draft.setText} onSubmit={() => void send()} onPaste={paste} canSend={canSend} disabled={task.archived}
+		<Composer editor={editor} onSubmit={() => void send()} canSend={canSend} disabled={task.archived}
 			running={running} onStop={() => void command({ type: "cancel", id: task.id })}
-			placeholder={task.archived ? "This chat is archived" : running ? "Queue a follow-up…" : code ? "Ask for a change, or reply to the agent…" : "Reply…"}
 			menu={task.archived ? undefined : menu}
-			chips={draft.attachments.length || references.length ? <>
-				<ReferenceChips ids={references} onRemove={id => setReferences(current => current.filter(value => value !== id))} />
-				{draft.attachments.map(attachment => <ComposerChip key={attachment.id} onRemove={() => draft.removeAttachment(attachment.id)}><Paperclip className="mr-1 inline size-3" />{attachment.name}</ComposerChip>)}
-			</> : undefined}
 			tools={<>
 				<ToolButton label="Attach files" disabled={uploading || task.archived} onClick={() => void attach()}><Paperclip /></ToolButton>
 				{code && <PlanToggle value={task.mode} onChange={mode => void command({ type: "update-task", id: task.id, mode })} />}

@@ -1,5 +1,6 @@
 import { updateNativeActionText } from "../shared/nativeActions";
 import { BrowserDownloadStore } from "./browserDownloadStore";
+import { mentionPlainText } from "../shared/mentions";
 import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import type { AgentRunResult } from "@phaseo/agent-sdk";
@@ -374,7 +375,7 @@ export class WorkspaceStore {
 					const attachments = command.attachments?.map(id => { const attachment = this.getAttachment(id); if (!attachment || attachment.taskId !== task.id) throw new Error("This attachment belongs to another task or is unavailable."); return attachment; });
 					task.queue.push({ id: randomUUID(), text: command.text, ...(command.threadReferences?.length ? { threadReferences: [...new Set(command.threadReferences)] } : {}), ...(command.nativeAction ? { nativeAction: command.nativeAction } : {}), ...(attachments?.length ? { attachments } : {}), createdAt: new Date().toISOString() });
 				}
-				if (task.title === "New task") task.title = command.text.slice(0, 80);
+				if (task.title === "New task") task.title = mentionPlainText(command.text).trim().slice(0, 80);
 				break;
 			case "fork": {
 				if ((task.status === "running" || task.status === "waiting") && !command.messageId) throw new Error("Choose a message boundary or stop this task before forking it.");

@@ -7,6 +7,9 @@ import { ModelLogo } from "../components/ModelLogo";
 import { AttachmentPreview } from "../components/AttachmentPreview";
 import { StatusDot } from "../shell/Sidebar";
 import { Composer } from "./Composer";
+import { useComposerEditor } from "./composerEditor";
+import { useComposerMenu } from "./ComposerMenu";
+import { composeMessage } from "../lib/mentions";
 import { Conversation } from "./Conversation";
 import { harnessNames, knownModel, modelLabel } from "./ModelPicker";
 import { Requests } from "./Requests";
@@ -37,11 +40,16 @@ export function CompareView({ group }: { group: CompareGroup }) {
 	const text = drafts[group.id] ?? "";
 	const setText = (value: string) => setDrafts(current => ({ ...current, [group.id]: value }));
 	const running = ids.some(id => ["running", "waiting"].includes(overview.tasks.find(task => task.id === id)?.status ?? ""));
+	const editor = useComposerEditor({ value: text, onChange: setText, placeholder: running ? "Queue a follow-up for every model…" : "Ask every model a follow-up…" });
+	// Each column is its own agent, so the menu offers saved prompts and chats rather than one agent's commands.
+	const menu = useComposerMenu({ editor });
+	const message = composeMessage(text);
 	async function send() {
-		if (!text.trim() || busy) return;
+		if (!message.text || busy) return;
 		setBusy(true);
 		try {
-			const results = await Promise.all(ids.map(id => command({ type: "send", id, text: text.trim() })));
+			const prepared = await menu.prepare(message.text);
+			const results = await Promise.all(ids.map(id => command({ type: "send", id, text: prepared.text, ...(message.threadReferences.length ? { threadReferences: message.threadReferences } : {}) })));
 			if (results.every(Boolean)) setText("");
 		} finally { setBusy(false); }
 	}
@@ -53,9 +61,8 @@ export function CompareView({ group }: { group: CompareGroup }) {
 		</header>
 		<div className="flex min-h-0 flex-1">{ids.map(id => <CompareColumn key={id} id={id} />)}</div>
 		<div className="mx-auto w-full max-w-[760px] px-6 pt-3 pb-4">
-			<Composer value={text} onChange={setText} onSubmit={() => void send()} canSend={!busy && !!text.trim()} running={running}
-				onStop={() => { for (const id of ids) void command({ type: "cancel", id }); }}
-				placeholder={running ? "Queue a follow-up for every model…" : "Ask every model a follow-up…"} />
+			<Composer editor={editor} menu={menu} onSubmit={() => void send()} canSend={!busy && !!message.text} running={running}
+				onStop={() => { for (const id of ids) void command({ type: "cancel", id }); }} />
 		</div>
 	</div>;
 }

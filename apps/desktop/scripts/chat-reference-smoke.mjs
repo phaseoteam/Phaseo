@@ -19,14 +19,14 @@ app.whenReady().then(async()=>{try{
  // A chat is reachable by its ID from the command palette; native session identifiers never leave the main process.
  await run(`window.__auditOpenChatId(${JSON.stringify(ids[1])})`);
  const overview=await run('window.phaseoDesktop.workspace.overview()');assert.ok(overview.tasks.every(task=>!('nativeSessionId' in task)));assert.ok(!JSON.stringify(overview).includes('private-native-session'));
- // "@" lists other chats; choosing one adds a reference chip and removes the typed mention, without sending.
- const input="document.querySelector('main textarea[aria-label=Message]')",until=async code=>{for(let i=0;i<300;i++){if(await run(code))return;await new Promise(resolve=>setTimeout(resolve,25));}throw Error('Mention UI did not settle: '+code);};
+ // "@" lists other chats; choosing one puts a chip for it in the message, in place of the typed mention, without sending.
+ const input="document.querySelector('main [aria-label=Message]')",until=async code=>{for(let i=0;i<300;i++){if(await run(code))return;await new Promise(resolve=>setTimeout(resolve,25));}throw Error('Mention UI did not settle: '+code);};
  await run(`window.__auditOpenChatId(${JSON.stringify(ids[0])})`);await until(input);
  await run(`window.__auditType(${input},'See @reference')`);
  await until("[...document.querySelectorAll('[role=dialog] [role=option]')].some(node=>node.textContent==='Owned reference 2')");
  if(await run("[...document.querySelectorAll('[role=dialog] [role=option]')].some(node=>node.textContent==='Owned reference 1')"))throw Error('The open chat offered itself');
  await run(`${input}.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}))`);
- await until(`${input}.value==='See '&&[...document.querySelectorAll('main form [title]')].some(node=>node.textContent.includes('Owned reference 2'))`);
+ await until(`${input}.value.startsWith('See @[Owned reference 2](chat:${ids[1]})')&&[...document.querySelectorAll('main form [data-mention-kind=chat]')].some(node=>node.textContent.includes('Owned reference 2'))`);
  await run(`window.__auditType(${input},'')`);
  // References are validated before anything is queued: malformed and unknown chat IDs are rejected.
  const send=references=>run(`window.phaseoDesktop.workspace.command({type:'send',id:${JSON.stringify(ids[0])},text:'Owned reference check',threadReferences:${JSON.stringify(references)}}).then(()=>'',error=>String(error))`);

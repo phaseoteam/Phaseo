@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
-import { Blocks, File, FileText, Folder, LoaderCircle, MessageSquare, Sparkles, Terminal } from "lucide-react";
-import type { Attachment, Harness } from "../../shared/workspace";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { Editor, JSONContent } from "@tiptap/core";
+import { Blocks, File, FileText, Folder, LoaderCircle, Sparkles, Terminal } from "lucide-react";
+import type { Harness } from "../../shared/workspace";
 import { nativeActionPrefix, nativeActionText, type NativeAction, type NativeActionEntry } from "../../shared/nativeActions";
 import { findTrigger, resolveSlash } from "../lib/composerTriggers";
 import type { PromptCommand } from "../../shared/promptCommands";
@@ -9,8 +10,9 @@ import type { ProjectFile } from "../../shared/workspace";
 import { errorText, useWorkspace } from "../app/workspace";
 import { cn } from "../lib/utils";
 import { ScrollArea } from "../components/ui/scroll-area";
+import { mentionToken, parseMentions } from "../lib/mentions";
 import { ModelStack } from "./ModelPicker";
-import { ComposerChip } from "./Composer";
+import { draftContent, draftText, mentionContent, type ComposerEditor } from "./composerEditor";
 
 const nativeHarnesses: Harness[] = ["opencode", "pi", "claude", "codex", "phaseo"];
 const takesArguments = (template: string) => /\$(ARGUMENTS|\d+)/.test(template);
@@ -24,21 +26,35 @@ function rank<T>(values: T[], query: string, name: (value: T) => string, descrip
 
 type Item = { key: string; group: string; label: string; detail?: string; hint?: string; icon: ReactNode; run: () => void | Promise<void> };
 
-export function useComposerMenu({ value, onChange, input, taskId, harness, accountId, projectId, references, onReference, onAttachments }: {
-	value: string;
-	onChange: (value: string) => void;
-	input: RefObject<HTMLTextAreaElement | null>;
+/** The `/` or `@` being typed at the caret, with its document range. Chips count as one character. */
+function editorTrigger(editor: Editor | null) {
+	if (!editor || editor.isDestroyed || !editor.state.selection.empty) return;
+	const { $from } = editor.state.selection;
+	const before = $from.parent.textBetween(0, $from.parentOffset, undefined, "\uFFFC");
+	const trigger = findTrigger(before, before.length);
+	// Commands only open at the very start of the message.
+	if (!trigger || (trigger.kind === "slash" && $from.before() !== 0)) return;
+	return { ...trigger, from: $from.start() + trigger.start, to: $from.start() + trigger.end };
+}
+
+export function useComposerMenu({ editor: composer, taskId, harness, accountId, projectId }: {
+	editor: ComposerEditor;
 	/** The chat being replied to; a new chat passes its harness, account and project instead. */
 	taskId?: string;
 	harness?: Harness;
 	accountId?: string;
 	projectId?: string;
-	references: string[];
-	onReference: (id: string) => void;
-	onAttachments?: (attachments: Attachment[]) => void;
 }) {
 	const { api, overview, setError } = useWorkspace();
-	const [caret, setCaret] = useState(0);
+	const editor = composer.editor;
+	// The menu follows the editor: every keystroke or caret move re-reads the trigger.
+	const [, setVersion] = useState(0);
+	useEffect(() => {
+		if (!editor) return;
+		const bump = () => setVersion(value => value + 1);
+		editor.on("transaction", bump); editor.on("focus", bump);
+		return () => { editor.off("transaction", bump); editor.off("focus", bump); };
+	}, [editor]);
 	const [dismissed, setDismissed] = useState<string>();
 	const [active, setActive] = useState(0);
 	const [commands, setCommands] = useState<PromptCommand[]>([]);
@@ -51,8 +67,8 @@ export function useComposerMenu({ value, onChange, input, taskId, harness, accou
 	const picked = useRef(new Set<string>());
 	const listId = useRef(`composer-menu-${Math.random().toString(36).slice(2)}`).current;
 
-	const trigger = useMemo(() => findTrigger(value, caret), [value, caret]);
-	const triggerKey = trigger ? `${trigger.kind}:${trigger.start}` : undefined;
+	const trigger = editorTrigger(editor);
+	const triggerKey = trigger ? `${trigger.kind}:${trigger.from}` : undefined;
 	const open = !!trigger && dismissed !== triggerKey;
 	// Escape hides the menu until its trigger text is gone; a later `/` or `@` opens it again.
 	useEffect(() => { if (!triggerKey) setDismissed(undefined); }, [triggerKey]);
@@ -81,13 +97,11 @@ export function useComposerMenu({ value, onChange, input, taskId, harness, accou
 		return () => { current = false; clearTimeout(timer); };
 	}, [mentionQuery, projectId, api]);
 
-	/** Replace the trigger text, keeping the rest of the message and putting the caret after the insertion. */
-	const replace = (text: string, whole = false) => {
-		if (!trigger) return;
-		const next = whole ? text : value.slice(0, trigger.start) + text + value.slice(trigger.end);
-		const position = whole ? next.length : trigger.start + text.length;
-		onChange(next); setCaret(position);
-		requestAnimationFrame(() => { input.current?.focus(); input.current?.setSelectionRange(position, position); });
+	/** Replace the typed trigger with text or chips, keeping the rest of the message; `whole` replaces the message. */
+	const replace = (content: string | JSONContent[], whole = false) => {
+		if (!editor || !trigger) return;
+		if (whole) { editor.chain().setContent(draftContent(content as string), { emitUpdate: true }).focus("end").run(); return; }
+		editor.chain().focus().insertContentAt({ from: trigger.from, to: trigger.to }, content).run();
 	};
 	const insertPrompt = async (prompt: McpPromptEntry, values: Record<string, string>) => {
 		if (!api || !taskId) return;
@@ -95,8 +109,8 @@ export function useComposerMenu({ value, onChange, input, taskId, harness, accou
 		if (!("messages" in preview)) return;
 		if (preview.insertionError) throw new Error(preview.insertionError);
 		const draft = await api.mcpPromptAttachments(taskId, preview.messages);
-		if (draft.attachments.length) onAttachments?.(draft.attachments);
-		replace(draft.text, true); setForm(undefined);
+		// The prompt's images come along as attachment chips after its text.
+		replace([draft.text, ...draft.attachments.map(attachment => mentionToken({ kind: "attachment", ref: attachment.id, label: attachment.name }))].filter(Boolean).join(" "), true); setForm(undefined);
 	};
 	const guard = (run: () => Promise<void> | void) => async () => { try { await run(); } catch (reason) { setError(errorText(reason)); } };
 
@@ -122,27 +136,29 @@ export function useComposerMenu({ value, onChange, input, taskId, harness, accou
 				run: guard(async () => { if (prompt.arguments.length) setForm({ prompt, values: {} }); else await insertPrompt(prompt, {}); }),
 			})),
 		].slice(0, 60);
+		const references = editor ? parseMentions(draftText(editor.state.doc)).flatMap(segment => typeof segment !== "string" && segment.kind === "chat" ? [segment.ref] : []) : [];
 		const chats = overview.tasks.filter(task => !task.archived && task.id !== taskId && !references.includes(task.id) && matches(query, task.title))
 			.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, query ? 8 : 5);
 		return [
 			...chats.map(task => ({ key: `chat:${task.id}`, group: "Chats", label: task.title, icon: <ModelStack models={[task]} size="sm" ringClassName="ring-transparent" />,
-				run: () => { onReference(task.id); replace(""); } })),
+				run: () => replace(mentionContent({ kind: "chat", ref: task.id, label: task.title })) })),
 			...files.map(file => ({ key: `file:${file.path}`, group: "Files", label: file.name, detail: file.path === file.name ? undefined : file.path, icon: file.directory ? <Folder /> : <File />,
-				run: () => replace(`@${file.path}${file.directory ? "/" : ""} `) })),
+				run: () => replace(mentionContent({ kind: file.directory ? "folder" : "file", ref: file.path, label: file.name })) })),
 		];
-	}, [open, trigger, commands, actions, prompts, files, overview.tasks, references, taskId]);
+	}, [open, triggerKey, trigger?.query, commands, actions, prompts, files, overview.tasks, taskId, editor]);
 
 	useEffect(() => { setActive(0); }, [triggerKey, trigger?.query]);
 	const selected = Math.min(active, Math.max(0, items.length - 1));
 	useEffect(() => { document.getElementById(`${listId}-${selected}`)?.scrollIntoView({ block: "nearest" }); }, [selected, listId]);
 
 	/** Runs before the composer's own keys: the menu takes arrows, Enter, Tab and Escape while open. */
-	const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-		if (!open || form || event.nativeEvent.isComposing) return;
-		if (event.key === "Escape") { event.preventDefault(); setDismissed(triggerKey); return; }
-		if (!items.length) return;
-		if (event.key === "ArrowDown" || event.key === "ArrowUp") { event.preventDefault(); setActive((selected + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length); }
-		else if ((event.key === "Enter" && !event.shiftKey) || event.key === "Tab") { event.preventDefault(); void items[selected].run(); }
+	const onKeyDown = (event: KeyboardEvent): boolean => {
+		if (!open || form || event.isComposing) return false;
+		if (event.key === "Escape") { event.preventDefault(); setDismissed(triggerKey); return true; }
+		if (!items.length) return false;
+		if (event.key === "ArrowDown" || event.key === "ArrowUp") { event.preventDefault(); setActive((selected + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length); return true; }
+		if ((event.key === "Enter" && !event.shiftKey) || event.key === "Tab") { event.preventDefault(); void items[selected].run(); return true; }
+		return false;
 	};
 
 	/** At send time, a typed `/name args` becomes the saved prompt's text or a native command. */
@@ -164,11 +180,11 @@ export function useComposerMenu({ value, onChange, input, taskId, harness, accou
 			{form.prompt.arguments.map((argument, index) => <label key={argument.name} className="flex flex-col gap-1 text-xs text-muted-foreground">
 				<span>{argument.name}{argument.required ? "" : " (optional)"}{argument.description ? ` · ${argument.description}` : ""}</span>
 				<input autoFocus={index === 0} required={argument.required} value={form.values[argument.name] ?? ""} onChange={event => setForm({ ...form, values: { ...form.values, [argument.name]: event.target.value } })}
-					onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); setForm(undefined); input.current?.focus(); } }}
+					onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); setForm(undefined); composer.focus(); } }}
 					className="h-8 rounded-md border border-input bg-input/40 px-2 text-[13px] text-foreground outline-none focus:border-ring" />
 			</label>)}
 			<div className="flex justify-end gap-1.5">
-				<button type="button" onClick={() => { setForm(undefined); input.current?.focus(); }} className="h-7 rounded-md px-2.5 text-xs font-medium hover:bg-muted">Back</button>
+				<button type="button" onClick={() => { setForm(undefined); composer.focus(); }} className="h-7 rounded-md px-2.5 text-xs font-medium hover:bg-muted">Back</button>
 				<button type="submit" className="h-7 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground hover:bg-primary/85">Insert</button>
 			</div>
 		</form> : <ScrollArea className="max-h-72" viewportClassName="max-h-72">
@@ -192,12 +208,7 @@ export function useComposerMenu({ value, onChange, input, taskId, harness, accou
 		</ScrollArea>}
 	</div> : null;
 
-	return { menu, onKeyDown, onCaret: setCaret, prepare, expanded: open && !form && items.length > 0, activeId: open && !form && items.length ? `${listId}-${selected}` : undefined, listId };
+	return { menu, onKeyDown, prepare, expanded: open && !form && items.length > 0, activeId: open && !form && items.length ? `${listId}-${selected}` : undefined, listId };
 }
 export type ComposerMenu = ReturnType<typeof useComposerMenu>;
 
-/** Referenced chats shown above the message; the agent can read them with read_thread. */
-export function ReferenceChips({ ids, onRemove }: { ids: string[]; onRemove: (id: string) => void }) {
-	const { overview } = useWorkspace();
-	return <>{ids.map(id => <ComposerChip key={id} title="The agent can read this chat" onRemove={() => onRemove(id)}><MessageSquare className="mr-1 inline size-3" />{overview.tasks.find(task => task.id === id)?.title ?? "Chat"}</ComposerChip>)}</>;
-}

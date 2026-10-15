@@ -155,6 +155,9 @@ export function useWorkspace() {
 	return value;
 }
 
+/** For components that also render outside the workspace, such as message previews and tests. */
+export function useOptionalWorkspace() { return useContext(WorkspaceContext); }
+
 /** Phaseo accounts that can currently call the gateway. */
 export function usablePhaseoAccounts(overview: WorkspaceOverview) {
 	return overview.accounts.filter(account => account.harness === "phaseo" && account.configured && !account.archived && (!account.oauthExpiresAt || Date.parse(account.oauthExpiresAt) > Date.now()));

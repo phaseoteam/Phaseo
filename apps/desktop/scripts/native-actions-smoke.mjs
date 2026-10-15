@@ -35,9 +35,9 @@ app.whenReady().then(async()=>{
   const crossHarness=await run(`window.phaseoDesktop.workspace.command({type:'send',id:${JSON.stringify(other)},text:'/review-native target',nativeAction:${JSON.stringify(action)}}).then(()=>'',error=>String(error))`);
   if(!crossHarness.includes('OpenCode'))throw Error('Another harness accepted an OpenCode native action: '+crossHarness);
   // Drafts stay with their chat.
-  await run("window.__auditOpenChat('Owned project')");await run("window.__auditType(document.querySelector('main textarea[aria-label=Message]'),'Existing draft')");
-  await run("window.__auditOpenChat('Owned personal')");await wait("document.querySelector('main textarea[aria-label=Message]')?.value===''");
-  await run("window.__auditOpenChat('Owned project')");await wait("document.querySelector('main textarea[aria-label=Message]')?.value==='Existing draft'");
+  await run("window.__auditOpenChat('Owned project')");await run("window.__auditType(document.querySelector('main [aria-label=Message]'),'Existing draft')");
+  await run("window.__auditOpenChat('Owned personal')");await wait("document.querySelector('main [aria-label=Message]')?.value===''");
+  await run("window.__auditOpenChat('Owned project')");await wait("document.querySelector('main [aria-label=Message]')?.value==='Existing draft'");
   const unchanged=await run("(async()=>{const api=window.phaseoDesktop.workspace;const tasks=await Promise.all(['personal','project-chat',"+JSON.stringify(other)+"].map(id=>api.task(id)));return tasks.every(task=>task.messages.length<=1&&task.queue.length===0);})()");if(!unchanged)throw Error('Native action checks submitted input');
   if(requests.some(route=>route.includes('/session')))throw Error('Catalogue reads submitted native input');
   console.log('NATIVE_ACTIONS_SMOKE',JSON.stringify({nativeCatalog:true,scope:true,intentValidation:true,crossHarnessRejected:true,chatSwitch:true,noSubmission:true,composerMenus:'deferred',providerInferenceCalls:0,packaged:Boolean(entry)}));clearTimeout(deadline);server.close();app.quit();

@@ -36,16 +36,16 @@ app.whenReady().then(async()=>{
   // Typing "/" lists saved prompts. One without arguments replaces the draft; one with arguments leaves "/name " to fill in.
   await commands(undefined,{type:'save',scope:'global',name:'hello',description:'Greet',template:'Say hello.',expectedHash:'new'});
   await run("window.__auditOpenChat('Owned personal')");
-  const input="document.querySelector('main textarea[aria-label=Message]')",key=name=>run(`${input}.dispatchEvent(new KeyboardEvent('keydown',{key:'${name}',bubbles:true,cancelable:true}))`);
+  const input="document.querySelector('main [aria-label=Message]')",key=name=>run(`${input}.dispatchEvent(new KeyboardEvent('keydown',{key:'${name}',bubbles:true,cancelable:true}))`);
   const option=label=>`[...document.querySelectorAll('[role=dialog][aria-label=Commands] [role=option]')].find(node=>node.textContent.startsWith(${JSON.stringify(label)}))`;
   await run(`window.__auditType(${input},'/hel')`);await wait(option('/hello'));await key('Enter');await wait(`${input}.value==='Say hello.'&&!document.querySelector('[role=dialog][aria-label=Commands]')`);
   await run(`window.__auditType(${input},'/rev')`);await wait(option('/review'));await key('Tab');await wait(`${input}.value==='/review '`);
   await run(`window.__auditType(${input},'/')`);await wait(option('/brief'));await key('Escape');await wait("!document.querySelector('[role=dialog][aria-label=Commands]')");
   await run(`window.__auditType(${input},'')`);
   // A composer draft belongs to its chat and survives switching chats.
-  await run("window.__auditOpenChat('Owned project')");await run("window.__auditType(document.querySelector('main textarea[aria-label=Message]'),'Existing draft')");
-  await run("window.__auditOpenChat('Owned personal')");await wait("document.querySelector('main textarea[aria-label=Message]')?.value===''");
-  await run("window.__auditOpenChat('Owned project')");await wait("document.querySelector('main textarea[aria-label=Message]')?.value==='Existing draft'");
+  await run("window.__auditOpenChat('Owned project')");await run("window.__auditType(document.querySelector('main [aria-label=Message]'),'Existing draft')");
+  await run("window.__auditOpenChat('Owned personal')");await wait("document.querySelector('main [aria-label=Message]')?.value===''");
+  await run("window.__auditOpenChat('Owned project')");await wait("document.querySelector('main [aria-label=Message]')?.value==='Existing draft'");
   const unchanged=await run("(async()=>{const api=window.phaseoDesktop.workspace;const tasks=await Promise.all(['personal','project-chat'].map(id=>api.task(id)));return tasks.every(task=>task.messages.length===1&&task.queue.length===0);})()");if(!unchanged)throw Error('Command workflow submitted input');
   console.log('PROMPT_COMMANDS_SMOKE',JSON.stringify({scope:true,argumentPreview:true,draftPreserved:true,staleEdit:true,noSubmission:true,chatSwitch:true,slashMenu:true,providerInferenceCalls:0,packaged:Boolean(entry)}));clearTimeout(deadline);app.quit();
  }catch(error){console.error(error);clearTimeout(deadline);app.exit(1);}

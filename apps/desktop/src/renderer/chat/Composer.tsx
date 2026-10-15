@@ -1,49 +1,47 @@
-import { useLayoutEffect, useRef, type ClipboardEvent, type ReactNode, type RefObject } from "react";
+import { useEffect, type ReactNode } from "react";
+import { EditorContent } from "@tiptap/react";
 import { ArrowUp, Square } from "lucide-react";
 import { cn } from "../lib/utils";
 import type { ComposerMenu } from "./ComposerMenu";
+import type { ComposerEditor } from "./composerEditor";
 
-export function Composer({ value, onChange, onSubmit, onStop, onPaste, placeholder, disabled, canSend, running, size = "default", chips, tools, model, inputRef, footer, menu, className }: {
-	value: string;
-	onChange: (value: string) => void;
+/** The message box: an editor whose files, chats and attachments sit inline as chips. */
+export function Composer({ editor, onSubmit, onStop, disabled, canSend, running, size = "default", chips, tools, model, footer, menu, className }: {
+	editor: ComposerEditor;
 	onSubmit: () => void;
 	onStop?: () => void;
-	onPaste?: (event: ClipboardEvent<HTMLTextAreaElement>) => void;
-	placeholder: string;
 	disabled?: boolean;
 	canSend: boolean;
 	running?: boolean;
 	size?: "default" | "large";
+	/** Controls above the text that are not part of the message, such as the models being compared. */
 	chips?: ReactNode;
 	tools?: ReactNode;
 	model?: ReactNode;
 	footer?: ReactNode;
-	inputRef?: RefObject<HTMLTextAreaElement | null>;
 	/** The `/` and `@` menu, which sees keys before the composer does. */
 	menu?: ComposerMenu;
 	className?: string;
 }) {
-	const local = useRef<HTMLTextAreaElement>(null);
-	const input = inputRef ?? local;
-	const min = size === "large" ? 72 : 44;
-	useLayoutEffect(() => {
-		const element = input.current;
-		if (!element) return;
-		element.style.height = "0px";
-		element.style.height = `${Math.min(240, Math.max(min, element.scrollHeight))}px`;
-	}, [value, input, min]);
+	editor.keys.current = event => {
+		if (menu?.onKeyDown(event)) return true;
+		if (event.key === "Enter" && !event.shiftKey && !event.altKey && !event.isComposing && !event.repeat) { if (canSend) onSubmit(); return true; }
+		return false;
+	};
+	// The editor is the combobox for the menu; its list is announced through these attributes.
+	const dom = editor.editor && !editor.editor.isDestroyed ? editor.editor.view.dom : undefined;
+	useEffect(() => {
+		if (!dom) return;
+		const attributes: Record<string, string | undefined> = { "aria-haspopup": menu ? "listbox" : undefined, "aria-expanded": menu ? String(menu.expanded) : undefined, "aria-controls": menu?.expanded ? menu.listId : undefined, "aria-activedescendant": menu?.activeId, "aria-disabled": disabled ? "true" : undefined };
+		for (const [name, value] of Object.entries(attributes)) if (value === undefined) dom.removeAttribute(name); else dom.setAttribute(name, value);
+	});
 	return <div className={cn("relative w-full", className)}>
 		{menu?.menu}
 		<form onSubmit={event => { event.preventDefault(); if (canSend) onSubmit(); }}
-			onClick={event => { if (event.target === event.currentTarget) input.current?.focus(); }}
+			onClick={event => { if (event.target === event.currentTarget) editor.focus(); }}
 			className="rounded-2xl border border-input bg-card shadow-sm transition-colors focus-within:border-ring/60 focus-within:ring-3 focus-within:ring-ring/15 dark:shadow-black/20">
 			{chips && <div className="flex flex-wrap gap-1.5 px-3 pt-3">{chips}</div>}
-			<textarea ref={input} value={value} disabled={disabled} placeholder={placeholder} maxLength={100000} rows={1} aria-label="Message"
-				role={menu ? "combobox" : undefined} aria-expanded={menu ? menu.expanded : undefined} aria-controls={menu?.expanded ? menu.listId : undefined} aria-activedescendant={menu?.activeId} aria-autocomplete={menu ? "list" : undefined}
-				onPaste={onPaste} onChange={event => { onChange(event.target.value); menu?.onCaret(event.target.selectionStart); }}
-				onSelect={event => menu?.onCaret(event.currentTarget.selectionStart)}
-				onKeyDown={event => { menu?.onKeyDown(event); if (event.defaultPrevented) return; if (event.key === "Enter" && !event.shiftKey && !event.altKey && !event.nativeEvent.isComposing && !event.repeat) { event.preventDefault(); if (canSend) onSubmit(); } }}
-				className={cn("block w-full resize-none bg-transparent px-4 pt-3.5 pb-1 leading-relaxed outline-none placeholder:text-muted-foreground/80 disabled:opacity-60", size === "large" ? "text-[15px]" : "text-[14px]")} />
+			<EditorContent editor={editor.editor} className={cn("composer-editor-host scrollbar-thin max-h-60 overflow-y-auto px-4 pt-3.5 pb-1 leading-relaxed", size === "large" ? "min-h-[72px] text-[15px]" : "min-h-11 text-[14px]", disabled && "opacity-60")} />
 			<div className="flex items-center gap-1 px-2 pt-1 pb-2">
 				{tools}
 				<div className="ml-auto flex min-w-0 items-center gap-1">

@@ -168,9 +168,10 @@ app.whenReady().then(async () => {
 			let uploaded = false;
 			for (let attempt = 0; attempt < 50; attempt++) { const chips = document.querySelector('main form')?.textContent ?? ''; if (chips.includes('hello.txt') && chips.includes('fixture.pdf')) { uploaded = true; break; } await new Promise(resolve => setTimeout(resolve,100)); }
 			if (!uploaded) throw new Error('Fixture upload did not reach the composer');
-			const drafts = JSON.parse(localStorage.getItem('phaseo.desktop.attachmentDrafts'))[task.id];
-			const pdf = drafts?.find(value => value.name === 'fixture.pdf');
-			if (!pdf || pdf.mimeType !== 'application/pdf') throw new Error('PDF attachment was not imported');
+			// Attachments are chips in the draft: '@[name](attachment:id)'.
+			const draft = JSON.parse(localStorage.getItem('phaseo.desktop.messageDrafts') ?? '{}')[task.id] ?? '';
+			const pdf = { id: draft.split('@[fixture.pdf](attachment:')[1]?.split(')')[0] };
+			if (!pdf.id || !document.querySelector('main form [data-mention-kind=attachment]')) throw new Error('PDF attachment was not imported');
 			if (!(await api.attachment(task.id, pdf.id)).text.includes('Page 1\\nFixture PDF text')) throw new Error('PDF text extraction failed');
 			return { tasks: restored.tasks.length, bridge: true, validation: true, renderer: true, pty: true, editor: true, editConflicts: true, git: true, commands: true, attachments: true, pdf: true, harnessVersions: installations.filter(value=>value.installed).map(value=>({harness:value.harness,version:value.version})), ...(checkNativeOpenCode ? {nativeOpenCode:true} : {}) };
 			} catch (error) { throw new Error(error.stack ?? String(error)); }
@@ -255,7 +256,7 @@ app.whenReady().then(async () => {
  for(const pinned of [true,false]){await choose(pinned?'Pin':'Unpin');for(let attempt=0;(await api.task(fork.id)).pinned!==pinned;attempt++){if(attempt>50)throw new Error('Task menu pin did not persist');await new Promise(resolve=>setTimeout(resolve,20));}}
  await choose('Archive');for(let attempt=0;!(await api.task(fork.id)).archived;attempt++){if(attempt>50)throw new Error('Task menu archive did not persist');await new Promise(resolve=>setTimeout(resolve,20));}
  // An archived chat stays open read-only and leaves the chat list.
- await window.__auditUntil(()=>document.querySelector('main form textarea[aria-label="Message"]')?.disabled,'archived composer');
+ await window.__auditUntil(()=>document.querySelector('main form [aria-label="Message"]')?.getAttribute('contenteditable')==='false','archived composer');
  if(document.querySelector('aside[aria-label="Chats"] nav [aria-current="page"]'))throw new Error('Archived chat stayed in the chat list');
  return priorSelection;
 })(${JSON.stringify(fixtureTask.id)})`);
@@ -505,7 +506,7 @@ app.whenReady().then(async () => {
 		const output = fileURLToPath(new URL("../../../output/playwright", import.meta.url));
 		mkdirSync(output, { recursive: true });
 		writeFileSync(path.join(output, "electron-workspace.png"), (await window.webContents.capturePage()).toPNG());
-		await window.webContents.executeJavaScript(`(async()=>{await window.__auditNavigate('Tasks');Array.from(document.querySelectorAll('aside[aria-label] button')).find(button=>button.textContent.trim().startsWith('New chat')).click();await window.__auditUntil(()=>window.__auditChatTitle()===undefined&&document.querySelector('main textarea[aria-label="Message"]'),'new chat');})()`);
+		await window.webContents.executeJavaScript(`(async()=>{await window.__auditNavigate('Tasks');Array.from(document.querySelectorAll('aside[aria-label] button')).find(button=>button.textContent.trim().startsWith('New chat')).click();await window.__auditUntil(()=>window.__auditChatTitle()===undefined&&document.querySelector('main [aria-label="Message"]'),'new chat');})()`);
 		for(const theme of ["light","dark"]){
 			await window.webContents.executeJavaScript(`(async()=>{const target=${JSON.stringify(theme)};if(document.documentElement.dataset.theme!==target){await window.__auditPalette();const other=Array.from(document.querySelectorAll('[data-slot="dialog-content"] [cmdk-item]')).find(item=>/^Use (light|dark) theme$/.test(item.textContent.trim()));if(other?.textContent.trim()!=='Use '+target+' theme')throw new Error('Theme action does not match the displayed theme');await window.__auditPaletteRun('Use '+target+' theme');}if(document.documentElement.dataset.theme!==target)throw new Error('Desktop theme control failed');})()`);
 			writeFileSync(path.join(output, `electron-workspace-${theme}.png`), (await window.webContents.capturePage()).toPNG());
