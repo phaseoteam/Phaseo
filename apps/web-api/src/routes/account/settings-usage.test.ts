@@ -4,7 +4,10 @@ import { sortUpstreamRequestsNewestFirst } from "./settings-usage";
 
 const env = { ENV: "development" as const, SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" };
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+	vi.unstubAllGlobals();
+	vi.useRealTimers();
+});
 
 describe("account usage settings routes", () => {
 	it("denies a member's attempt to inspect another creator's activity", async () => {
@@ -377,6 +380,8 @@ describe("account usage settings routes", () => {
 		expect(await response.json()).toMatchObject({ data: { upstreamRequests: [{ request_latency_ms: gatewayLatency, latency_ms: 60 }] } });
 	});
 	it("returns the private observability windows and lookup metadata", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-10-15T12:00:00Z"));
 		let monthUsageArgs: unknown = null;
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const url = input instanceof Request ? input.url : String(input);
@@ -423,8 +428,8 @@ describe("account usage settings routes", () => {
 				{ date: "2026-07-17", costNanos: 1500, requests: 2, successfulRequests: 1, tokens: 12, cachedTokens: 5 },
 			] },
 		});
-		// From the first of last month, whatever today is.
-		expect(monthUsageArgs).toEqual({ p_workspace_id: "workspace-1", p_from: expect.stringMatching(/^\d{4}-\d{2}-01$/) });
+		// A week before the selected period, which starts before last month.
+		expect(monthUsageArgs).toEqual({ p_workspace_id: "workspace-1", p_from: "2026-07-09" });
 	});
 	it("hides only the month figures when the month RPC fails", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {

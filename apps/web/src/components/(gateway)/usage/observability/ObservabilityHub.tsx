@@ -636,26 +636,42 @@ function kpiDeltaClass(kpi: ObservabilityKpi): string {
 	return improved ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400";
 }
 
-/** A projection to two significant figures, so the range fits a narrow card; one value when both ends round alike. */
+/**
+ * A projection to two significant figures, so the range fits a narrow card;
+ * one value when both ends round alike. Dollar amounts under $10 keep their
+ * cents, so $0.20 doesn't read as $0.2.
+ */
 function formatProjectedRange(kpi: ObservabilityKpi, low: number, high: number): string {
-	const format = new Intl.NumberFormat("en", {
-		notation: "compact",
-		maximumSignificantDigits: 2,
-		...(kpi.format === "currency" ? { style: "currency", currency: "USD" } : {}),
-	}).format;
+	const currency = kpi.format === "currency";
+	const format = new Intl.NumberFormat("en", currency && high < 10
+		? { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }
+		: { notation: "compact", maximumSignificantDigits: 2, ...(currency ? { style: "currency", currency: "USD" } : {}) },
+	).format;
 	const [lowLabel, highLabel] = [format(low), format(high)];
 	return lowLabel === highLabel ? lowLabel : `${lowLabel}–${highLabel}`;
 }
 
-function KpiMonthFooter({ kpi }: { kpi: ObservabilityKpi }) {
+function KpiForecastFooter({ kpi }: { kpi: ObservabilityKpi }) {
 	const t = useTranslations("SettingsUI.observability");
-	const month = kpi.month;
-	if (!month) return null;
+	const forecast = kpi.forecast;
+	if (!forecast) return null;
+	let label: string;
+	let value: string;
+	if (forecast.kind === "projected") {
+		const { period } = forecast;
+		label = period.kind === "rolling"
+			? t("kpiForecastNextDays", { days: period.days })
+			: t(({ week: "kpiForecastWeek", month: "kpiForecastMonth", quarter: "kpiForecastQuarter", year: "kpiForecastYear" } as const)[period.unit]);
+		value = formatProjectedRange(kpi, forecast.low, forecast.high);
+	} else {
+		label = forecast.days === 1 ? t("kpiRecentToday") : t("kpiRecentWeek");
+		value = forecast.value === null ? "–" : formatKpiValue(kpi, forecast.value);
+	}
+	// The label gives way on a narrow card; the figure never does.
 	return (
-		<div className="truncate border-t border-dashed px-4 py-2 text-xs tabular-nums text-muted-foreground">
-			{month.kind === "projected"
-				? t("kpiMonthProjected", { value: formatProjectedRange(kpi, month.low, month.high) })
-				: t("kpiMonthToDate", { value: formatKpiValue(kpi, month.value) })}
+		<div className="flex min-w-0 items-baseline justify-between gap-2 border-t border-dashed px-4 py-2 text-xs text-muted-foreground">
+			<span className="truncate">{label}</span>
+			<span className="shrink-0 font-medium tabular-nums text-foreground">{value}</span>
 		</div>
 	);
 }
@@ -717,7 +733,7 @@ function KpiMetric({ kpi }: { kpi: ObservabilityKpi }) {
 						</div>
 					</div>
 				</div>
-				<KpiMonthFooter kpi={kpi} />
+				<KpiForecastFooter kpi={kpi} />
 			</Card>
 		</Link>
 	);
