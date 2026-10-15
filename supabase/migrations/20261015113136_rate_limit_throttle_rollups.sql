@@ -1,5 +1,6 @@
 SET local check_function_bodies = off;
 
+-- phaseo:allow-destructive-migration reason: refresh_rate_limit_throttle_rollups deletes only rows of its own new rollup table (the window it rebuilds and rows past 30 days) inside its function body; this migration itself deletes no data.
 -- Per-minute counts of requests rejected by workspace rate limit policies, rebuilt from v2_request_facts.
 
 CREATE TABLE "public"."workspace_rate_limit_throttles_minute" (
