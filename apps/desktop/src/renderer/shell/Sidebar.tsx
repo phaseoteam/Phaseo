@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Archive, ChevronRight, Columns3, Ellipsis, FolderOpen, FolderPlus, LogIn, Pencil, Pin, PinOff, Plus, Settings } from "lucide-react";
+import { chatDragType } from "../../shared/mentions";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { errorText, usablePhaseoAccounts, useWorkspace, type CompareGroup } from "../app/workspace";
 import { cn } from "../lib/utils";
@@ -58,7 +59,9 @@ function ChatRow({ task, indent, showModel, showTime = true }: { task: TaskOverv
 	const [renaming, setRenaming] = useState(false);
 	const selected = task.id === selectedId;
 	const busy = task.status === "running" || task.status === "waiting" || !!task.approvalsCount || !!task.answersCount;
+	// Dragging a chat into a composer mentions it there.
 	return <div role="button" tabIndex={0} aria-current={selected ? "page" : undefined} onClick={() => select(task.id)} onKeyDown={event => { if (event.key === "Enter" && !renaming) select(task.id); }}
+		draggable={!renaming} onDragStart={event => { event.dataTransfer.setData(chatDragType, JSON.stringify({ id: task.id, title: task.title })); event.dataTransfer.setData("text/plain", task.title); event.dataTransfer.effectAllowed = "copy"; }}
 		className={cn("group/row mx-2 flex h-8 items-center gap-2 rounded-md px-2 text-[13px] text-sidebar-foreground/85 outline-none hover:bg-sidebar-accent/70 focus-visible:ring-2 focus-visible:ring-ring/40", selected && "bg-sidebar-accent text-sidebar-foreground", indent && "pl-7")}>
 		{showModel ? <span className="shrink-0"><ModelStack models={[task]} size="sm" ringClassName="ring-transparent" /></span> : <StatusDot task={task} />}
 		{renaming

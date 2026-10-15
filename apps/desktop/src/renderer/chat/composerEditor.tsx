@@ -8,7 +8,13 @@ import Text from "@tiptap/extension-text";
 import HardBreak from "@tiptap/extension-hard-break";
 import { Placeholder, UndoRedo } from "@tiptap/extensions";
 import { File as FileIcon, Folder, ImageIcon, MessageSquare, Paperclip } from "lucide-react";
-import { mentionToken, parseMentions, type Mention } from "../lib/mentions";
+import { chatDragType, mentionToken, parseMentions, type Mention } from "../lib/mentions";
+
+/** The chat a sidebar row carries when dragged, if this drag is one. */
+export function draggedChat(data: DataTransfer | null): Mention | undefined {
+	if (!data?.types.includes(chatDragType)) return;
+	try { const { id, title } = JSON.parse(data.getData(chatDragType)) as { id?: unknown; title?: unknown }; return typeof id === "string" ? { kind: "chat", ref: id, label: typeof title === "string" ? title : "Chat" } : undefined; } catch { return; }
+}
 import { useWorkspace } from "../app/workspace";
 import { InlineChip } from "../components/InlineChip";
 import { ModelStack } from "./ModelPicker";
@@ -92,6 +98,9 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 				void view; return true;
 			},
 			handleDrop: (_view, event) => {
+				// A chat dragged from the sidebar lands at the caret, not where it was dropped.
+				const chat = draggedChat(event.dataTransfer);
+				if (chat) { event.preventDefault(); event.stopPropagation(); insertRef.current([chat]); return true; }
 				const files = Array.from(event.dataTransfer?.files ?? []);
 				if (!files.length || !latest.current.onFiles) return false;
 				event.preventDefault(); latest.current.onFiles(files); return true;
@@ -101,6 +110,7 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 	});
 	const editorInstance = useRef<Editor | null>(null);
 	editorInstance.current = editor;
+	const insertRef = useRef<(mentions: Mention[]) => void>(() => {});
 
 	// Drafts also change from outside: suggestions, clearing after send, switching chats.
 	useEffect(() => {
@@ -120,16 +130,14 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 		Object.defineProperty(dom, "value", { configurable: true, get: () => draftText(editor.state.doc), set: (text: string) => { editor.commands.setContent(draftContent(text), { emitUpdate: true }); editor.commands.focus("end"); } });
 	}, [editor]);
 
-	return {
-		editor, keys,
-		focus: position => { editor?.commands.focus(position ?? "end"); },
-		insert: mentions => {
-			if (!editor || !mentions.length) return;
-			const chain = editor.chain();
-			if (!editor.isFocused) chain.focus("end"); else chain.focus();
-			// A chip never runs into the word before it, so a file reads as `@path` to the agent.
-			const { $from } = editor.state.selection, before = $from.parent.textBetween(Math.max(0, $from.parentOffset - 1), $from.parentOffset, undefined, "￼");
-			chain.insertContent([...before && !/\s/.test(before) ? [{ type: "text", text: " " }] : [], ...mentions.flatMap(mentionContent)]).run();
-		},
+	const insert = (mentions: Mention[]) => {
+		if (!editor || !mentions.length) return;
+		// Focusing restores the last caret, so chips land where the user was typing.
+		const chain = editor.chain().focus();
+		// A chip never runs into the word before it, so a file reads as `@path` to the agent.
+		const { $from } = editor.state.selection, before = $from.parent.textBetween(Math.max(0, $from.parentOffset - 1), $from.parentOffset, undefined, "￼");
+		chain.insertContent([...before && !/\s/.test(before) ? [{ type: "text", text: " " }] : [], ...mentions.flatMap(mentionContent)]).run();
 	};
+	insertRef.current = insert;
+	return { editor, keys, focus: position => { editor?.commands.focus(position ?? "end"); }, insert };
 }

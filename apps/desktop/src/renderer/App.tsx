@@ -40,7 +40,8 @@ function Main() {
 	if (settings) return <SettingsPage />;
 	const group = compareGroups.find(value => value.id === compareId);
 	if (group) return <CompareView key={group.id} group={group} />;
-	if (selectedId) return <ChatView key={selectedId} id={selectedId} />;
+	// One ChatView across chats: its task cache and composer editor survive switching, so nothing flickers.
+	if (selectedId) return <ChatView id={selectedId} />;
 	return <NewChat />;
 }
 

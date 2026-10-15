@@ -100,13 +100,15 @@ The editor preserves drafts after save failures, detects external edits, offers 
 
 ## Mentions
 
-Type `@` anywhere in a message to mention a chat or a file. Chats appear first, most recent first; in a project, files and folders follow, matched by name first and then by path, from the files Git tracks or would track (ignored files are skipped; outside Git, everything except `.git` and `node_modules`). A choice becomes a chip in the text where you typed it, and Backspace removes it whole. Attached and pasted files land as chips at the caret too. When you send, a file chip reaches the agent as `@path`, a chat chip as a reference it can read with `read_thread` (up to 10 per message), and attachments as attachments.
+Type `@` anywhere in a message to mention a chat or a file. You can also drag a chat from the sidebar onto the composer; its chip goes in at the caret. Chats appear first, most recent first; in a project, files and folders follow, matched by name first and then by path, from the files Git tracks or would track (ignored files are skipped; outside Git, everything except `.git` and `node_modules`). A choice becomes a chip in the text where you typed it, and Backspace removes it whole. Attached and pasted files land as chips at the caret too. When you send, a file chip reaches the agent as `@path`, a chat chip as a reference it can read with `read_thread` (up to 10 per message), and attachments as attachments.
 
 Messages and replies show the same chips: file paths and `@path` mentions open in your editor, links show the site or the GitHub pull request or issue, and chat mentions open the chat. Code blocks, version numbers, emails and paths inside sentences like `and/or` stay as text.
 
 ## Reusable chat commands
 
-Type `/` at the start of a message to open the command menu. It lists saved prompts, then the agent's own commands and skills (Claude Code, Codex, OpenCode, Pi and Phaseo skills), then the chat's MCP prompts. Arrow keys move, Enter or Tab chooses and Escape closes it. A new chat lists the chosen agent's commands before the chat exists; comparing several models offers saved prompts only.
+Type `/` at the start of a message to open the command menu. It starts with actions for the chat: archive, compact, fork, export, attach files, rename, pin, start a new chat, open MCP or account settings, switch the model, and change the model's own settings (Reasoning and the like, with Fast as a toggle). Code chats add plan mode and permissions. Actions with choices open them in the menu; Escape goes back. Plan mode has no button of its own: the composer shows a Plan indicator only while it is on, and clicking it turns it off. The model, reasoning and permissions controls sit on the left of the composer.
+
+After the actions, the menu lists saved prompts, then the agent's own commands and skills (Claude Code, Codex, OpenCode, Pi and Phaseo skills), then the chat's MCP prompts. Arrow keys move, Enter or Tab chooses and Escape closes it. A new chat lists the chosen agent's commands before the chat exists; comparing several models offers saved prompts only.
 
 - A saved prompt without arguments replaces the draft with its text. One that takes arguments leaves `/name ` in the draft, and the arguments typed after it are filled in when you send.
 - A native command or skill leaves `/name ` for its arguments. It only runs natively when chosen from the menu; typing the same text sends it as plain text.

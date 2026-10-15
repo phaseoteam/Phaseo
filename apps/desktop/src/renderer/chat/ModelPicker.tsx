@@ -104,7 +104,7 @@ type Section = { heading: string; entries: Entry[]; harness?: Harness; older?: n
 type Row = { type: "heading"; key: string; heading: string } | { type: "entry"; key: string; entry: Entry } | { type: "older"; key: string; harness: Harness; older: number };
 const rowHeight = (row: Row) => row.type === "heading" ? 30 : 32;
 
-export function ModelPicker({ selections, onChange, multiple, agents, disabled, className }: {
+export function ModelPicker({ selections, onChange, multiple, agents, disabled, className, openEvent }: {
 	selections: ModelSelection[];
 	onChange: (selections: ModelSelection[]) => void;
 	/** Ctrl/⌘-click adds models alongside the first, to compare their answers. */
@@ -113,6 +113,8 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	agents?: boolean;
 	disabled?: boolean;
 	className?: string;
+	/** A window event that opens this picker, sent by the composer's / menu. */
+	openEvent?: string;
 }) {
 	const { overview } = useWorkspace();
 	const [open, setOpen] = useState(false);
@@ -219,7 +221,15 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 
 	const label = (selection: ModelSelection) => knownModel(selection.model)?.name ?? (selection.model === "default" ? harnessNames[selection.harness] : modelLabel(selection.model));
 	const first = selections[0];
-	return <Popover open={open} onOpenChange={value => { setOpen(value); setQuery(""); if (value) setSource(first ? sourceOf(first.harness) : "phaseo"); }}>
+	const openChange = (value: boolean) => { setOpen(value); setQuery(""); if (value) setSource(first ? sourceOf(first.harness) : "phaseo"); };
+	const latestOpen = useRef(openChange); latestOpen.current = openChange;
+	useEffect(() => {
+		if (!openEvent || disabled) return;
+		const show = () => latestOpen.current(true);
+		window.addEventListener(openEvent, show);
+		return () => window.removeEventListener(openEvent, show);
+	}, [openEvent, disabled]);
+	return <Popover open={open} onOpenChange={openChange}>
 		{harnesses.filter(harness => open || harness === "phaseo").map(harness => <Catalog key={harness} harness={harness} accountId={harness === "phaseo" ? phaseoAccount?.id : undefined} onLoad={onLoad} />)}
 		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label="Choose model" className={cn("flex h-8 max-w-64 items-center gap-1.5 rounded-lg px-2 text-[13px] font-semibold transition-colors hover:bg-muted disabled:opacity-50 data-popup-open:bg-muted", className)} />}>
 			{selections.length > 1

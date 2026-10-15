@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Editor, JSONContent } from "@tiptap/core";
-import { Blocks, File, FileText, Folder, LoaderCircle, Sparkles, Terminal } from "lucide-react";
+import { Blocks, Check, ChevronLeft, ChevronRight, File, FileText, Folder, LoaderCircle, Sparkles, Terminal } from "lucide-react";
 import type { Harness } from "../../shared/workspace";
 import { nativeActionPrefix, nativeActionText, type NativeAction, type NativeActionEntry } from "../../shared/nativeActions";
 import { findTrigger, resolveSlash } from "../lib/composerTriggers";
@@ -13,6 +13,7 @@ import { ScrollArea } from "../components/ui/scroll-area";
 import { mentionToken, parseMentions } from "../lib/mentions";
 import { ModelStack } from "./ModelPicker";
 import { draftContent, draftText, mentionContent, type ComposerEditor } from "./composerEditor";
+import type { ComposerAction } from "./composerActions";
 
 const nativeHarnesses: Harness[] = ["opencode", "pi", "claude", "codex", "phaseo"];
 const takesArguments = (template: string) => /\$(ARGUMENTS|\d+)/.test(template);
@@ -24,7 +25,7 @@ function rank<T>(values: T[], query: string, name: (value: T) => string, descrip
 	return values.map(value => ({ value, score: score(value) })).filter(entry => entry.score > 0).sort((a, b) => b.score - a.score).map(entry => entry.value);
 }
 
-type Item = { key: string; group: string; label: string; detail?: string; hint?: string; icon: ReactNode; run: () => void | Promise<void> };
+type Item = { key: string; group: string; label: string; detail?: string; hint?: string; icon: ReactNode; checked?: boolean; more?: boolean; run: () => void | Promise<void> };
 
 /** The `/` or `@` being typed at the caret, with its document range. Chips count as one character. */
 function editorTrigger(editor: Editor | null) {
@@ -37,8 +38,10 @@ function editorTrigger(editor: Editor | null) {
 	return { ...trigger, from: $from.start() + trigger.start, to: $from.start() + trigger.end };
 }
 
-export function useComposerMenu({ editor: composer, taskId, harness, accountId, projectId }: {
+export function useComposerMenu({ editor: composer, taskId, harness, accountId, projectId, actions = [] }: {
 	editor: ComposerEditor;
+	/** Built-in things `/` can do here, such as archiving, plan mode or the model's reasoning. */
+	actions?: ComposerAction[];
 	/** The chat being replied to; a new chat passes its harness, account and project instead. */
 	taskId?: string;
 	harness?: Harness;
@@ -58,11 +61,13 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 	const [dismissed, setDismissed] = useState<string>();
 	const [active, setActive] = useState(0);
 	const [commands, setCommands] = useState<PromptCommand[]>([]);
-	const [actions, setActions] = useState<NativeActionEntry[]>([]);
+	const [nativeActions, setNativeActions] = useState<NativeActionEntry[]>([]);
 	const [prompts, setPrompts] = useState<McpPromptEntry[]>([]);
 	const [files, setFiles] = useState<ProjectFile[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [form, setForm] = useState<{ prompt: McpPromptEntry; values: Record<string, string> }>();
+	// An action with choices (Reasoning, Permissions…) opens them in place of the list.
+	const [submenu, setSubmenu] = useState<ComposerAction>();
 	// Native commands and skills only run when picked from the menu; typing their name sends plain text.
 	const picked = useRef(new Set<string>());
 	const listId = useRef(`composer-menu-${Math.random().toString(36).slice(2)}`).current;
@@ -83,7 +88,7 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 		const nativeTarget = taskId ?? (harness ? { harness, accountId, projectId } : undefined);
 		void Promise.allSettled([
 			api.promptCommands(projectId, { type: "list" }).then(result => { if (current && "commands" in result) setCommands(result.commands); }),
-			native && nativeTarget ? api.nativeActions(nativeTarget).then(result => { if (current) setActions(result.actions); }) : Promise.resolve(setActions([])),
+			native && nativeTarget ? api.nativeActions(nativeTarget).then(result => { if (current) setNativeActions(result.actions); }) : Promise.resolve(setNativeActions([])),
 			taskId ? api.mcpPrompts(taskId, { type: "list", requestId: crypto.randomUUID() }).then(result => { if (current && "prompts" in result) setPrompts(result.prompts); }) : Promise.resolve(setPrompts([])),
 		]).finally(() => { if (current) setLoading(false); });
 		return () => { current = false; };
@@ -113,11 +118,23 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 		replace([draft.text, ...draft.attachments.map(attachment => mentionToken({ kind: "attachment", ref: attachment.id, label: attachment.name }))].filter(Boolean).join(" "), true); setForm(undefined);
 	};
 	const guard = (run: () => Promise<void> | void) => async () => { try { await run(); } catch (reason) { setError(errorText(reason)); } };
+	/** Actions clear the typed `/name` before they run, so it never lingers in the draft. */
+	const runAction = (action: ComposerAction) => {
+		if (action.options) { setSubmenu(action); setActive(0); return; }
+		if (editor && trigger) editor.chain().focus().deleteRange({ from: trigger.from, to: trigger.to }).run();
+		setSubmenu(undefined);
+		if (action.run) void guard(action.run)();
+	};
+	const actionItem = (action: ComposerAction, group: string): Item => ({ key: `action:${action.id}`, group, label: action.label, detail: action.description, hint: action.hint, icon: action.icon, checked: action.checked, more: !!action.options, run: () => runAction(action) });
 
 	const items = useMemo((): Item[] => {
 		if (!open || !trigger) return [];
 		const query = trigger.query;
+		if (trigger.kind === "slash" && submenu) return (submenu.options ?? []).map(option => actionItem(option, submenu.label));
+		// Native commands that share a name with a built-in action (compact, model, rename…) are listed once, as the action.
+		const builtIn = new Set(actions.flatMap(action => [action.id, action.label.toLowerCase().split(" ")[0]]));
 		if (trigger.kind === "slash") return [
+			...rank([...actions].sort((a, b) => a.label.localeCompare(b.label)), query, action => action.label, action => action.description).map(action => actionItem(action, "Actions")),
 			...rank(commands, query, command => command.name, command => command.description).map(command => ({
 				key: `prompt:${command.scope}:${command.name}`, group: "Saved prompts", label: `/${command.name}`, detail: command.description, hint: command.scope === "project" ? "Project" : undefined, icon: <FileText />,
 				run: guard(async () => {
@@ -127,7 +144,7 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 					if (takesArguments(preview.template)) replace(`/${command.name} `); else replace(preview.text, true);
 				}),
 			})),
-			...rank(actions.filter(action => !action.name.startsWith("__")), query, action => nativeActionPrefix(action).slice(1), action => action.description).map(action => ({
+			...rank(nativeActions.filter(action => !action.name.startsWith("__") && !builtIn.has(action.name.toLowerCase())), query, action => nativeActionPrefix(action).slice(1), action => action.description).map(action => ({
 				key: `native:${action.kind}:${action.id}`, group: action.kind === "skill" ? "Skills" : "Commands", label: nativeActionPrefix(action), detail: action.description, hint: action.argumentHint, icon: action.kind === "skill" ? <Sparkles /> : <Terminal />,
 				run: () => { picked.current.add(nativeActionPrefix(action)); replace(`${nativeActionPrefix(action)} `); },
 			})),
@@ -145,16 +162,16 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 			...files.map(file => ({ key: `file:${file.path}`, group: "Files", label: file.name, detail: file.path === file.name ? undefined : file.path, icon: file.directory ? <Folder /> : <File />,
 				run: () => replace(mentionContent({ kind: file.directory ? "folder" : "file", ref: file.path, label: file.name })) })),
 		];
-	}, [open, triggerKey, trigger?.query, commands, actions, prompts, files, overview.tasks, taskId, editor]);
+	}, [open, triggerKey, trigger?.query, commands, nativeActions, actions, submenu, prompts, files, overview.tasks, taskId, editor]);
 
-	useEffect(() => { setActive(0); }, [triggerKey, trigger?.query]);
+	useEffect(() => { setActive(0); setSubmenu(undefined); }, [triggerKey, trigger?.query]);
 	const selected = Math.min(active, Math.max(0, items.length - 1));
 	useEffect(() => { document.getElementById(`${listId}-${selected}`)?.scrollIntoView({ block: "nearest" }); }, [selected, listId]);
 
 	/** Runs before the composer's own keys: the menu takes arrows, Enter, Tab and Escape while open. */
 	const onKeyDown = (event: KeyboardEvent): boolean => {
 		if (!open || form || event.isComposing) return false;
-		if (event.key === "Escape") { event.preventDefault(); setDismissed(triggerKey); return true; }
+		if (event.key === "Escape") { event.preventDefault(); if (submenu) { setSubmenu(undefined); setActive(0); } else setDismissed(triggerKey); return true; }
 		if (!items.length) return false;
 		if (event.key === "ArrowDown" || event.key === "ArrowUp") { event.preventDefault(); setActive((selected + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length); return true; }
 		if ((event.key === "Enter" && !event.shiftKey) || event.key === "Tab") { event.preventDefault(); void items[selected].run(); return true; }
@@ -163,7 +180,7 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 
 	/** At send time, a typed `/name args` becomes the saved prompt's text or a native command. */
 	const prepare = async (text: string): Promise<{ text: string; nativeAction?: NativeAction }> => {
-		const resolved = resolveSlash(text, commands, native ? actions.filter(action => picked.current.has(nativeActionPrefix(action))) : []);
+		const resolved = resolveSlash(text, commands, native ? nativeActions.filter(action => picked.current.has(nativeActionPrefix(action))) : []);
 		if (resolved?.action) return { text: nativeActionText(resolved.action), nativeAction: resolved.action };
 		if (resolved?.command && api) {
 			const preview = await api.promptCommands(projectId, { type: "preview", scope: resolved.command.scope, name: resolved.command.name, arguments: resolved.arguments });
@@ -192,7 +209,9 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 				{items.map((item, index) => {
 					const heading = item.group !== previous ? item.group : undefined; previous = item.group;
 					return <div key={item.key}>
-						{heading && <p className="px-2 pt-1.5 pb-1 text-xs font-bold text-foreground/70">{heading}</p>}
+						{heading && (submenu
+							? <button type="button" onMouseDown={event => event.preventDefault()} onClick={() => { setSubmenu(undefined); setActive(0); }} className="flex items-center gap-1 px-1 pt-1.5 pb-1 text-xs font-bold text-foreground/70 hover:text-foreground"><ChevronLeft className="size-3.5" />{heading}</button>
+							: <p className="px-2 pt-1.5 pb-1 text-xs font-bold text-foreground/70">{heading}</p>)}
 						<div id={`${listId}-${index}`} role="option" aria-selected={index === selected} onMouseMove={() => { if (index !== selected) setActive(index); }}
 							onMouseDown={event => event.preventDefault()} onClick={() => void item.run()}
 							className={cn("flex h-8 cursor-default items-center gap-2 rounded-md px-2 text-[13px] [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-muted-foreground", index === selected && "bg-muted")}>
@@ -200,6 +219,8 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 							<span className="shrink-0 truncate font-medium">{item.label}</span>
 							{item.detail && <span className="min-w-0 truncate text-xs text-muted-foreground">{item.detail}</span>}
 							{item.hint && <span className="ml-auto max-w-40 shrink-0 truncate pl-2 text-[11px] text-muted-foreground">{item.hint}</span>}
+							{item.checked && <Check className={cn("size-4 shrink-0 text-foreground/70", !item.hint && "ml-auto")} />}
+							{item.more && <ChevronRight className={cn("size-3.5 shrink-0 text-muted-foreground", !item.hint && !item.checked && "ml-auto")} />}
 						</div>
 					</div>;
 				})}

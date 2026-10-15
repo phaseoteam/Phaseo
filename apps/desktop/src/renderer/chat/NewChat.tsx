@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, Check, ChevronDown, Code2, FolderOpen, FolderPlus, Lightbulb, ListChecks, PenLine, Search, ShieldCheck, ShieldAlert } from "lucide-react";
+import { BookOpen, Box, Check, ChevronDown, Code2, FolderOpen, FolderPlus, Lightbulb, ListChecks, PenLine, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
 import type { Task } from "../../shared/workspace";
 import { errorText, usablePhaseoAccounts, useWorkspace } from "../app/workspace";
 import { useModelPreferences, type ModelSelection } from "../lib/modelPreferences";
@@ -11,6 +11,7 @@ import { ModelLogo } from "../components/ModelLogo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Composer, ComposerChip, ToolButton } from "./Composer";
 import { useComposerMenu } from "./ComposerMenu";
+import { openModelPickerEvent, useModelSettingActions, type ComposerAction } from "./composerActions";
 import { useComposerEditor } from "./composerEditor";
 import { composeMessage } from "../lib/mentions";
 import { MAX_COMPARE, ModelPicker, knownModel, modelLabel, sameSelection } from "./ModelPicker";
@@ -44,8 +45,9 @@ export function PermissionMenu({ value, onChange }: { value: Task["permissionMod
 	</DropdownMenu>;
 }
 
-export function PlanToggle({ value, onChange }: { value: Task["mode"]; onChange: (value: Task["mode"]) => void }) {
-	return <ToolButton label={value === "plan" ? "Plan mode: the agent proposes a plan before editing" : "Switch to plan mode"} active={value === "plan"} onClick={() => onChange(value === "plan" ? "code" : "plan")}><ListChecks />Plan</ToolButton>;
+/** Shown only while plan mode is on (it is turned on from /); clicking it turns plan mode off. */
+export function PlanIndicator({ onClear }: { onClear?: () => void }) {
+	return <ToolButton label="Plan mode is on: the agent proposes a plan before changing anything. Click to turn it off." active disabled={!onClear} onClick={onClear}><ListChecks />Plan</ToolButton>;
 }
 
 export function NewChat() {
@@ -76,7 +78,22 @@ export function NewChat() {
 	const editor = useComposerEditor({ value: draft, onChange: setDraft, disabled: busy, onFiles: files => addImages(files),
 		placeholder: compare ? "Ask every model the same question…" : code ? (project ? `Describe a change to ${project.name}…` : "Choose a project, then describe what to build…") : "Message Phaseo…" });
 	// Native commands depend on one agent, so comparing models offers saved prompts, chats and files only.
-	const menu = useComposerMenu({ editor, harness: compare ? undefined : selections[0]?.harness, accountId: selections[0]?.accountId, projectId: code ? project?.id : undefined });
+	const plan = planMode === "plan", full = permissionMode === "full-access";
+	const settingActions = useModelSettingActions(selections.length === 1 ? selections[0] : undefined, next => setSelections([next]));
+	const actions: ComposerAction[] = [
+		{ id: "mcp", label: "MCP", description: "Manage MCP servers", icon: <Plug />, run: () => openSettings("mcp") },
+		{ id: "model", label: "Model", description: compare ? "Choose the models to compare" : "Choose the model", icon: <Box />, run: () => window.dispatchEvent(new Event(openModelPickerEvent)) },
+		...code ? [
+			{ id: "plan", label: "Plan mode", description: plan ? "Turn plan mode off" : "Turn plan mode on: the agent proposes a plan before changing anything", icon: <ListChecks />, checked: plan, run: () => setPlanMode(plan ? "code" : "plan") },
+			{ id: "permissions", label: "Permissions", hint: full ? "Full access" : "Ask first", icon: <ShieldCheck />, options: [
+				{ id: "permissions:supervised", label: "Ask first", description: "Approve commands and file changes before they run", icon: null, checked: !full, run: () => setPermissionMode("supervised") },
+				{ id: "permissions:full-access", label: "Full access", description: "The agent runs commands and edits files without asking", icon: null, checked: full, run: () => setPermissionMode("full-access") },
+			] },
+		] : [],
+		{ id: "accounts", label: "Accounts", description: "Manage accounts and usage", icon: <UserRound />, run: () => openSettings("accounts") },
+		...settingActions,
+	];
+	const menu = useComposerMenu({ editor, harness: compare ? undefined : selections[0]?.harness, accountId: selections[0]?.accountId, projectId: code ? project?.id : undefined, actions });
 	const message = composeMessage(draft);
 	useEffect(() => { editor.focus(); }, [mode, editor.editor]); // Focus follows the mode switch and the editor's first mount.
 	const attached = message.images.flatMap(id => images[id] ? [images[id]] : []);
@@ -150,8 +167,12 @@ export function NewChat() {
 						<span className="mr-1 inline-flex size-3.5 align-[-2px] [&_img]:size-3.5 [&_.harness-logo]:size-3.5"><ModelLogo model={knownModel(value.model) ?? { id: value.model, name: value.model }} harness={value.harness} /></span>{knownModel(value.model)?.name ?? modelLabel(value.model)}
 					</ComposerChip>)}
 				</> : undefined}
-				tools={code ? <><PlanToggle value={planMode} onChange={setPlanMode} /><PermissionMenu value={permissionMode} onChange={setPermissionMode} /></> : undefined}
-				model={<><ModelPicker selections={selections} onChange={setSelections} multiple={!code} agents={code} disabled={busy} />{selections.length === 1 && <ModelSettings selection={selections[0]} onChange={next => setSelections([next])} disabled={busy} />}</>}
+				tools={<>
+					<ModelPicker selections={selections} onChange={setSelections} multiple={!code} agents={code} disabled={busy} openEvent={openModelPickerEvent} />
+					{selections.length === 1 && <ModelSettings selection={selections[0]} onChange={next => setSelections([next])} disabled={busy} />}
+					{code && <PermissionMenu value={permissionMode} onChange={setPermissionMode} />}
+					{code && plan && <PlanIndicator onClear={() => setPlanMode("code")} />}
+				</>}
 				footer={compare && <p className="mt-2 px-2 text-xs text-muted-foreground">Sends to {selections.length} models side by side. Each answer is billed separately.</p>} />
 			{!code && <div className="flex flex-wrap justify-center gap-2">
 				{suggestions.map(({ icon: Icon, label, prompt }) => <button key={label} type="button" onClick={() => { setDraft(prompt); requestAnimationFrame(() => editor.focus("end")); }}

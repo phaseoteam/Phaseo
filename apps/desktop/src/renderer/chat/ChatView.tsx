@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Archive, CornerLeftUp, Download, Ellipsis, FolderOpen, GitBranch, Layers, Paperclip, Pin, PinOff, RotateCcw, X } from "lucide-react";
+import { Archive, Box, CornerLeftUp, Download, Ellipsis, FolderOpen, GitBranch, Layers, ListChecks, Paperclip, PenLine, Pin, PinOff, Plug, RotateCcw, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
 import type { Attachment, Task } from "../../shared/workspace";
 import { errorText, useWorkspace } from "../app/workspace";
 import { useSelectedTask } from "../lib/useSelectedTask";
@@ -17,7 +17,8 @@ import { composeMessage, mentionPlainText } from "../lib/mentions";
 import { Conversation } from "./Conversation";
 import { ModelPicker } from "./ModelPicker";
 import { ModelSettings } from "./ModelSettings";
-import { PermissionMenu, PlanToggle } from "./NewChat";
+import { PermissionMenu, PlanIndicator } from "./NewChat";
+import { openModelPickerEvent, renameChatEvent, useModelSettingActions, type ComposerAction } from "./composerActions";
 import { Requests } from "./Requests";
 import { AgentThreads } from "./AgentThreads";
 import { optionHarnesses, selectionSettings } from "./startChat";
@@ -27,6 +28,8 @@ function ChatHeader({ task }: { task: Task }) {
 	const project = overview.projects.find(value => value.id === task.projectId);
 	const snapshot = overview.tasks.find(value => value.id === task.id);
 	const [renaming, setRenaming] = useState(false);
+	useEffect(() => { setRenaming(false); }, [task.id]);
+	useEffect(() => { const rename = () => setRenaming(true); window.addEventListener(renameChatEvent, rename); return () => window.removeEventListener(renameChatEvent, rename); }, []);
 	const fork = async () => { const known = new Set(overview.tasks.map(value => value.id)); const state = await command({ type: "fork", id: task.id }); const id = state?.tasks.find(value => !known.has(value.id))?.id; if (id) select(id); };
 	const canCompact = ["opencode", "codex", "claude", "pi"].includes(task.harness) && !!task.nativeSessionId && !task.archived && !["running", "waiting"].includes(task.status);
 	// Agents link to the chat that started them; launched chats to the chat that launched them.
@@ -70,7 +73,7 @@ export function useTaskDraft(id: string) {
 }
 
 function ChatComposer({ task }: { task: Task }) {
-	const { api, command, overview, select, setError } = useWorkspace();
+	const { api, command, overview, select, setError, openSettings } = useWorkspace();
 	const draft = useTaskDraft(task.id);
 	const [busy, setBusy] = useState(false);
 	const [uploading, setUploading] = useState(false);
@@ -78,9 +81,34 @@ function ChatComposer({ task }: { task: Task }) {
 	const code = task.mode !== "chat";
 	const editor = useComposerEditor({ value: draft.text, onChange: draft.setText, disabled: task.archived, onFiles: files => void upload(files),
 		placeholder: task.archived ? "This chat is archived" : running ? "Queue a follow-up…" : code ? "Ask for a change, or reply to the agent…" : "Reply…" });
-	const menu = useComposerMenu({ editor, taskId: task.id, harness: task.harness, accountId: task.accountId, projectId: task.projectId });
-	useEffect(() => { editor.focus(); }, [task.id, editor.editor]);
 	const selection: ModelSelection = { harness: task.harness, model: task.model, accountId: task.accountId, reasoningEffort: task.reasoningEffort, serviceTier: task.serviceTier, options: task.modelOptions };
+	const settingActions = useModelSettingActions(task.archived || running ? undefined : selection, next => void changeSettings(next));
+	const canCompact = ["opencode", "codex", "claude", "pi"].includes(task.harness) && !!task.nativeSessionId && !task.archived && !running;
+	const fork = async () => { const known = new Set(overview.tasks.map(value => value.id)); const state = await command({ type: "fork", id: task.id }); const id = state?.tasks.find(value => !known.has(value.id))?.id; if (id) select(id); };
+	const plan = task.mode === "plan", full = task.permissionMode === "full-access";
+	const actions: ComposerAction[] = [
+		{ id: "archive", label: "Archive", description: "Archive this chat", icon: <Archive />, run: () => void command({ type: "update-task", id: task.id, archived: true }) },
+		...canCompact ? [{ id: "compact", label: "Compact", description: "Summarise earlier messages to free up context", icon: <Layers />, run: () => void command({ type: "send", id: task.id, text: "/compact" }) }] : [],
+		...running ? [] : [{ id: "fork", label: "Fork chat", description: "Continue in a copy of this chat", icon: <GitBranch />, run: () => void fork() }],
+		{ id: "export", label: "Export", description: "Save this chat as a file", icon: <Download />, options: (["markdown", "json"] as const).map(format => ({ id: `export:${format}`, label: format === "markdown" ? "Markdown" : "JSON", icon: null, run: () => void api?.exportTask(task.id, format).catch(reason => setError(errorText(reason))) })) },
+		{ id: "attach", label: "Attach files", description: "Add files or images to this message", icon: <Paperclip />, run: () => void attach() },
+		{ id: "mcp", label: "MCP", description: "Manage MCP servers", icon: <Plug />, run: () => openSettings("mcp") },
+		{ id: "model", label: "Model", description: "Switch this chat's model", icon: <Box />, run: () => window.dispatchEvent(new Event(openModelPickerEvent)) },
+		{ id: "new", label: "New chat", description: "Start a new chat", icon: <SquarePen />, run: () => select(undefined) },
+		{ id: "pin", label: task.pinned ? "Unpin chat" : "Pin chat", description: task.pinned ? "Remove this chat from Pinned" : "Keep this chat at the top of the sidebar", icon: task.pinned ? <PinOff /> : <Pin />, run: () => void command({ type: "update-task", id: task.id, pinned: !task.pinned }) },
+		...code && !running ? [
+			{ id: "plan", label: "Plan mode", description: plan ? "Turn plan mode off" : "Turn plan mode on: the agent proposes a plan before changing anything", icon: <ListChecks />, checked: plan, run: () => void command({ type: "update-task", id: task.id, mode: plan ? "code" as const : "plan" as const }) },
+			{ id: "permissions", label: "Permissions", hint: full ? "Full access" : "Ask first", icon: <ShieldCheck />, options: [
+				{ id: "permissions:supervised", label: "Ask first", description: "Approve commands and file changes before they run", icon: null, checked: !full, run: () => void command({ type: "update-task", id: task.id, permissionMode: "supervised" }) },
+				{ id: "permissions:full-access", label: "Full access", description: "The agent runs commands and edits files without asking", icon: null, checked: full, run: () => void command({ type: "update-task", id: task.id, permissionMode: "full-access" }) },
+			] },
+		] : [],
+		{ id: "rename", label: "Rename", description: "Rename this chat", icon: <PenLine />, run: () => window.dispatchEvent(new Event(renameChatEvent)) },
+		{ id: "accounts", label: "Accounts", description: "Manage accounts and usage", icon: <UserRound />, run: () => openSettings("accounts") },
+		...settingActions,
+	];
+	const menu = useComposerMenu({ editor, taskId: task.id, harness: task.harness, accountId: task.accountId, projectId: task.projectId, actions });
+	useEffect(() => { editor.focus(); }, [task.id, editor.editor]);
 	const message = composeMessage(draft.text);
 	const canSend = !busy && !uploading && !task.archived && (!!message.text || message.attachments.length > 0);
 
@@ -139,10 +167,11 @@ function ChatComposer({ task }: { task: Task }) {
 			menu={task.archived ? undefined : menu}
 			tools={<>
 				<ToolButton label="Attach files" disabled={uploading || task.archived} onClick={() => void attach()}><Paperclip /></ToolButton>
-				{code && <PlanToggle value={task.mode} onChange={mode => void command({ type: "update-task", id: task.id, mode })} />}
+				<ModelPicker selections={[selection]} onChange={values => void changeModel(values[0])} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} />
+				<ModelSettings selection={selection} onChange={next => void changeSettings(next)} disabled={running || task.archived} />
 				{code && <PermissionMenu value={task.permissionMode} onChange={permissionMode => void command({ type: "update-task", id: task.id, permissionMode })} />}
-			</>}
-			model={<><ModelPicker selections={[selection]} onChange={values => void changeModel(values[0])} agents={code} disabled={running || task.archived} /><ModelSettings selection={selection} onChange={next => void changeSettings(next)} disabled={running || task.archived} /></>} />
+				{plan && <PlanIndicator onClear={running ? undefined : () => void command({ type: "update-task", id: task.id, mode: "code" })} />}
+			</>} />
 	</div>;
 }
 
@@ -150,9 +179,12 @@ export function ChatView({ id }: { id: string }) {
 	const { api, overview, command, select } = useWorkspace();
 	const snapshot = overview.tasks.find(task => task.id === id);
 	const detail = useSelectedTask(api?.task, id, snapshot ? JSON.stringify([snapshot.revision, snapshot.updatedAt]) : undefined);
-	const task = detail.task;
+	const loaded = detail.task?.id === id ? detail.task : undefined;
 	const [preview, setPreview] = useState<string>();
-	if (!task) return <div className="flex h-full flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+	useEffect(() => { setPreview(undefined); }, [id]);
+	// Until a chat's details load, its header and composer render from the sidebar's copy so they stay in place.
+	const task = loaded ?? (snapshot ? { ...snapshot, messages: [], queue: [] } as unknown as Task : undefined);
+	if (!task || (!loaded && detail.error)) return <div className="flex h-full flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
 		<p role="status">{detail.error ? `Could not load this chat: ${detail.error}` : "Loading chat…"}</p>
 		{detail.error && <div className="flex gap-2"><Button variant="outline" size="sm" onClick={detail.retry}>Retry</Button><Button variant="ghost" size="sm" onClick={() => select(undefined)}>New chat</Button></div>}
 	</div>;
@@ -160,7 +192,7 @@ export function ChatView({ id }: { id: string }) {
 	const removed = overview.projects.find(project => project.id === task.projectId)?.worktree?.removedAt;
 	return <div className="flex h-full min-w-0 flex-col">
 		<ChatHeader task={task} />
-		<Conversation key={task.id} task={task} onAttachment={setPreview} onBranch={messageId => void branch(messageId)}>
+		{!loaded ? <div role="status" className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">Loading chat…</div> : <Conversation key={task.id} task={task} onAttachment={setPreview} onBranch={messageId => void branch(messageId)}>
 			{task.error && <div role="alert" className={cn("flex items-center gap-2 text-[13px]", task.status === "interrupted" ? "text-muted-foreground" : "text-destructive")}>
 				<span className="min-w-0">{task.error}</span>
 				<Button size="sm" variant="ghost" className="text-foreground" onClick={() => void command({ type: "resume", id: task.id })}><RotateCcw />Resume</Button>
@@ -168,7 +200,7 @@ export function ChatView({ id }: { id: string }) {
 			<AgentThreads taskId={task.id} />
 			<Requests task={task} />
 			{removed && <p className="text-xs text-muted-foreground">This checkout has been removed. Switch model to continue in another project.</p>}
-		</Conversation>
+		</Conversation>}
 		<ChatComposer task={task} />
 		{preview && <AttachmentPreview taskId={task.id} id={preview} onClose={() => setPreview(undefined)} />}
 	</div>;

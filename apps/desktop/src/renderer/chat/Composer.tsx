@@ -2,8 +2,9 @@ import { useEffect, type ReactNode } from "react";
 import { EditorContent } from "@tiptap/react";
 import { ArrowUp, Square } from "lucide-react";
 import { cn } from "../lib/utils";
+import { chatDragType } from "../lib/mentions";
 import type { ComposerMenu } from "./ComposerMenu";
-import type { ComposerEditor } from "./composerEditor";
+import { draggedChat, type ComposerEditor } from "./composerEditor";
 
 /** The message box: an editor whose files, chats and attachments sit inline as chips. */
 export function Composer({ editor, onSubmit, onStop, disabled, canSend, running, size = "default", chips, tools, model, footer, menu, className }: {
@@ -39,6 +40,9 @@ export function Composer({ editor, onSubmit, onStop, disabled, canSend, running,
 		{menu?.menu}
 		<form onSubmit={event => { event.preventDefault(); if (canSend) onSubmit(); }}
 			onClick={event => { if (event.target === event.currentTarget) editor.focus(); }}
+			// Chats dragged from the sidebar can be dropped anywhere on the composer; drops on the text are handled by the editor.
+			onDragOver={event => { if (event.dataTransfer.types.includes(chatDragType) && !disabled) { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; } }}
+			onDrop={event => { const chat = draggedChat(event.dataTransfer); if (chat && !disabled) { event.preventDefault(); editor.insert([chat]); } }}
 			className="rounded-2xl border border-input bg-card shadow-sm transition-colors focus-within:border-ring/60 focus-within:ring-3 focus-within:ring-ring/15 dark:shadow-black/20">
 			{chips && <div className="flex flex-wrap gap-1.5 px-3 pt-3">{chips}</div>}
 			<EditorContent editor={editor.editor} className={cn("composer-editor-host scrollbar-thin max-h-60 overflow-y-auto px-4 pt-3.5 pb-1 leading-relaxed", size === "large" ? "min-h-[72px] text-[15px]" : "min-h-11 text-[14px]", disabled && "opacity-60")} />

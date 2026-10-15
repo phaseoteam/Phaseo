@@ -3,6 +3,9 @@
  * `@[label](kind:ref)`, with the ref URI-encoded. Files and chats keep a token in the sent message
  * so the message can show them as chips; attachments travel as attachment ids instead.
  */
+/** Drag data for a chat dragged from the sidebar: `{ id, title }` as JSON. */
+export const chatDragType = "application/x-phaseo-chat";
+
 export type MentionKind = "file" | "folder" | "chat" | "attachment" | "image";
 export type Mention = { kind: MentionKind; ref: string; label: string };
 export type Segment = string | Mention;
