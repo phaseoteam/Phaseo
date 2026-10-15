@@ -43,10 +43,18 @@ export async function startChat(api: WorkspaceApi, command: (value: WorkspaceCom
 	const attachments: string[] = [];
 	for (const file of input.images ?? []) attachments.push((await api.pasteImage(id, file.name, new Uint8Array(await file.arrayBuffer()))).id);
 	rememberModel(selection);
-	// A first message that fails leaves no empty chat behind, and the caller keeps the draft.
-	const sent = await command({ type: "send", id, text: input.nativeAction ? input.text : input.text.trim() || "Please review the attached images.", attachments,
+	const text = input.nativeAction ? input.text : input.text.trim() || "Please review the attached images.";
+	// A failed first send leaves the message in the new chat's composer so it can be retried.
+	const sent = await command({ type: "send", id, text, attachments,
 		...(input.threadReferences?.length ? { threadReferences: input.threadReferences } : {}), ...(input.nativeAction ? { nativeAction: input.nativeAction } : {}) });
-	// Archived through the API directly so the send error stays on screen.
-	if (!sent) { await api.command({ type: "update-task", id, archived: true }).catch(() => undefined); return; }
+	if (!sent && input.text.trim()) keepDraft(id, input.text);
 	return id;
+}
+
+/** Writes the draft the chat's composer reads when it opens (see useTaskDraft). */
+function keepDraft(id: string, text: string) {
+	try {
+		const drafts = JSON.parse(window.localStorage.getItem("phaseo.desktop.messageDrafts") ?? "{}") as Record<string, string>;
+		window.localStorage.setItem("phaseo.desktop.messageDrafts", JSON.stringify({ ...drafts, [id]: text }));
+	} catch { /* The error banner still reports the failure when storage is unavailable. */ }
 }
