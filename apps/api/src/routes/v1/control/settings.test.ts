@@ -76,4 +76,33 @@ describe("workspace settings management", () => {
 		expect(response.status).toBe(400);
 		expect(state.patch).toBeNull();
 	});
+
+	it("saves retired model routing settings without touching the gateway context cache", async () => {
+		const { settingsRoutes } = await import("./settings");
+		const response = await settingsRoutes.request("https://example.com/", {
+			method: "PATCH",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ modelSuccessorRedirectEnabled: true, model_successor_price_policy: "limit", model_successor_max_price_increase_percent: 25 }),
+		});
+		expect(response.status).toBe(200);
+		expect(state.patch).toMatchObject({ model_successor_redirect_enabled: true, model_successor_price_policy: "limit", model_successor_max_price_increase_percent: 25 });
+		expect(state.invalidations).toEqual([]);
+	});
+
+	it.each([
+		{ model_successor_price_policy: "cheapest" },
+		{ model_successor_max_price_increase_percent: 1001 },
+		{ model_successor_max_price_increase_percent: 2.5 },
+		{ model_successor_max_price_increase_percent: "25" },
+		{ model_successor_redirect_enabled: "yes" },
+	])("rejects invalid retired model routing settings: %o", async (body) => {
+		const { settingsRoutes } = await import("./settings");
+		const response = await settingsRoutes.request("https://example.com/", {
+			method: "PATCH",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify(body),
+		});
+		expect(response.status).toBe(400);
+		expect(state.patch).toBeNull();
+	});
 });

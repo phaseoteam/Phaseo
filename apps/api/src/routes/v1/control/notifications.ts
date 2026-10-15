@@ -10,7 +10,7 @@ import { isResponse, requireCapability, requireJsonBody, requireOAuthWorkspaceRo
 import { encryptNotificationTarget, notificationTargetPreview, NOTIFICATION_DESTINATION_TYPES, validateNotificationTarget, type NotificationDestinationType } from "./notification-target";
 
 const NO_STORE = { "Cache-Control": "no-store" };
-const EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation"] as const;
+const EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution"] as const;
 const NOTIFICATION_TEST_KINDS = ["notification_test", "model_deprecation"] as const;
 
 async function authorize(req: Request, write: boolean) {
