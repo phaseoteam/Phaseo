@@ -9,14 +9,20 @@ export type ThemeMode = "light" | "dark";
 export type ThemeHalf = { canvas: string; accent: string; tokens?: Partial<Record<ThemeToken, string>> };
 export type Theme = { version: 1; id: string; name: string; light?: ThemeHalf; dark?: ThemeHalf; builtIn?: boolean };
 
-const half = (canvas: string, accent: string): ThemeHalf => ({ canvas, accent });
-/** The built-ins. Phaseo is the stylesheet's own palette, so it sets nothing. */
+const half = (canvas: string, accent: string, tokens?: ThemeHalf["tokens"]): ThemeHalf => ({ canvas, accent, ...tokens ? { tokens } : {} });
+/**
+ * The built-ins: Phaseo (the stylesheet's own palette, so it sets nothing), themes inspired by the apps people
+ * use alongside Phaseo, and a neutral Graphite. Colours are our approximations, not official palettes.
+ */
 export const builtInThemes: Theme[] = [
 	{ version: 1, id: "phaseo", name: "Phaseo", builtIn: true },
-	{ version: 1, id: "grove", name: "Grove", builtIn: true, light: half("#f6f8f3", "#2f7d4a"), dark: half("#121813", "#5fbf7c") },
-	{ version: 1, id: "ocean", name: "Ocean", builtIn: true, light: half("#f4f8fb", "#0e7490"), dark: half("#0d1419", "#38bdf8") },
-	{ version: 1, id: "ember", name: "Ember", builtIn: true, light: half("#fbf7f3", "#c2410c"), dark: half("#17120f", "#f97316") },
-	{ version: 1, id: "iris", name: "Iris", builtIn: true, light: half("#f8f7fc", "#6d4fd8"), dark: half("#13111a", "#a78bfa") },
+	{ version: 1, id: "chatgpt", name: "ChatGPT", builtIn: true, light: half("#ffffff", "#0d0d0d", { sidebar: "#f9f9f9", border: "#e5e5e5" }), dark: half("#212121", "#ececec", { sidebar: "#181818", card: "#2a2a2a", popover: "#2f2f2f", border: "#383838" }) },
+	{ version: 1, id: "codex", name: "Codex", builtIn: true, light: half("#ffffff", "#0169cc", { sidebar: "#f7f7f8" }), dark: half("#181818", "#339cff", { sidebar: "#121212", card: "#212121" }) },
+	{ version: 1, id: "claude", name: "Claude", builtIn: true, light: half("#faf9f5", "#c96442", { sidebar: "#f5f4ed", foreground: "#141413" }), dark: half("#262624", "#d97757", { sidebar: "#1f1e1d", card: "#30302e", foreground: "#faf9f5" }) },
+	{ version: 1, id: "gemini", name: "Gemini", builtIn: true, light: half("#ffffff", "#0b57d0", { sidebar: "#f0f4f9", foreground: "#1f1f1f" }), dark: half("#131314", "#a8c7fa", { sidebar: "#1e1f20", card: "#1e1f20", foreground: "#e3e3e3" }) },
+	{ version: 1, id: "grok", name: "Grok", builtIn: true, light: half("#ffffff", "#000000", { sidebar: "#fafafa" }), dark: half("#000000", "#ffffff", { sidebar: "#0c0c0c", card: "#151515", border: "#262626" }) },
+	{ version: 1, id: "mistral", name: "Mistral", builtIn: true, light: half("#fffaf2", "#fa500f", { sidebar: "#fff3e3" }), dark: half("#161616", "#ff8205", { sidebar: "#111111" }) },
+	{ version: 1, id: "perplexity", name: "Perplexity", builtIn: true, light: half("#fcfcf9", "#20808d", { sidebar: "#f3f3ee" }), dark: half("#191a1a", "#20b8cd", { sidebar: "#202222" }) },
 	{ version: 1, id: "graphite", name: "Graphite", builtIn: true, light: half("#f7f7f6", "#3f3f46"), dark: half("#111111", "#e4e4e7") },
 ];
 

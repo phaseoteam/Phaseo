@@ -9,11 +9,11 @@ describe("themes", () => {
 		expect(contrastText("#1e3a8a")).toBe("#ffffff");
 	});
 	it("round-trips through JSON and share codes, keeping only valid colours", () => {
-		const theme = { ...builtInThemes.find(value => value.id === "grove")!, name: "My Grove ✓", builtIn: undefined };
-		expect(importTheme(serializeTheme(theme))).toMatchObject({ name: "My Grove ✓", light: theme.light, dark: theme.dark });
+		const theme = { ...builtInThemes.find(value => value.id === "claude")!, name: "My Claude ✓", builtIn: undefined };
+		expect(importTheme(serializeTheme(theme))).toMatchObject({ name: "My Claude ✓", light: theme.light, dark: theme.dark });
 		const code = shareCode(theme);
 		expect(code).toMatch(/^phaseo-theme:[A-Za-z0-9_-]+$/);
-		expect(importTheme(code)).toMatchObject({ name: "My Grove ✓", dark: theme.dark });
+		expect(importTheme(code)).toMatchObject({ name: "My Claude ✓", dark: theme.dark });
 		expect(parseTheme({ name: "X", dark: { canvas: "#000000", accent: "#ffffff", tokens: { border: "url(evil)", nonsense: "#fff", muted: "#222222" } } }).dark).toEqual({ canvas: "#000000", accent: "#ffffff", tokens: { muted: "#222222" } });
 	});
 	it("imports T3 Code and VS Code themes and rejects other files", () => {

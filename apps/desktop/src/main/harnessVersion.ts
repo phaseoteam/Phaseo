@@ -1,8 +1,10 @@
 import { execFile } from "node:child_process";
+import { directLaunch } from "./nativeProcess";
 
 /** Probe the resolved launch target without a shell, login or model request. */
-export async function harnessVersion(command: { executable: string; prefix: string[] }, cwd: string): Promise<string> {
-	const environment: NodeJS.ProcessEnv = { ...process.env, ELECTRON_RUN_AS_NODE: "1" };
+export async function harnessVersion(launch: { executable: string; prefix: string[] }, cwd: string): Promise<string> {
+	const command = directLaunch(launch);
+	const environment: NodeJS.ProcessEnv = { ...process.env, ELECTRON_RUN_AS_NODE: "1", ...command.environment };
 	delete environment.NODE_OPTIONS;
 	delete environment.NODE_PATH;
 	const output = await new Promise<string>((resolve, reject) => {
