@@ -251,14 +251,18 @@ begin
       tokens, input_tokens, output_tokens, reasoning_tokens, cached_tokens
     )
     select
-      grain.workspace_id, request.bucket_start, label.value ->> 'key', label.value ->> 'value',
+      grain.workspace_id, request.bucket_start, label.label_key, label.label_value,
       request.model_id, request.provider_model_id, request.key_id, request.app_id, request.byok,
       count(*), count(*) filter (where request.successful), count(*) filter (where request.guardrail_blocked),
       sum(request.cost_nanos), sum(request.tokens), sum(request.input_tokens), sum(request.output_tokens),
       sum(request.reasoning_tokens), sum(request.cached_tokens)
     from requests request
-    cross join lateral jsonb_array_elements(request.labels) label
-    where jsonb_typeof(label.value -> 'key') = 'string' and jsonb_typeof(label.value -> 'value') = 'string'
+    cross join lateral (
+      -- A request counts once per label, however often it repeats it.
+      select distinct element.value ->> 'key' as label_key, element.value ->> 'value' as label_value
+      from jsonb_array_elements(request.labels) element
+      where jsonb_typeof(element.value -> 'key') = 'string' and jsonb_typeof(element.value -> 'value') = 'string'
+    ) label
     group by 2, 3, 4, 5, 6, 7, 8, 9;
 
     v_workspace_hours := v_workspace_hours + 1;

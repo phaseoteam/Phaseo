@@ -373,14 +373,18 @@ begin
       tokens, input_tokens, output_tokens, reasoning_tokens, cached_tokens
     )
     select
-      grain.workspace_id, request.bucket_start, label.value ->> 'key', label.value ->> 'value',
+      grain.workspace_id, request.bucket_start, label.label_key, label.label_value,
       request.model_id, request.provider_model_id, request.key_id, request.app_id, request.byok,
       count(*), count(*) filter (where request.successful), count(*) filter (where request.guardrail_blocked),
       sum(request.cost_nanos), sum(request.tokens), sum(request.input_tokens), sum(request.output_tokens),
       sum(request.reasoning_tokens), sum(request.cached_tokens)
     from requests request
-    cross join lateral jsonb_array_elements(request.labels) label
-    where jsonb_typeof(label.value -> 'key') = 'string' and jsonb_typeof(label.value -> 'value') = 'string'
+    cross join lateral (
+      -- A request counts once per label, however often it repeats it.
+      select distinct element.value ->> 'key' as label_key, element.value ->> 'value' as label_value
+      from jsonb_array_elements(request.labels) element
+      where jsonb_typeof(element.value -> 'key') = 'string' and jsonb_typeof(element.value -> 'value') = 'string'
+    ) label
     group by 2, 3, 4, 5, 6, 7, 8, 9;
 
     v_workspace_hours := v_workspace_hours + 1;
@@ -669,11 +673,28 @@ CREATE OR REPLACE FUNCTION public.get_private_usage_overview (
 -- p_bucket is null), model, provider, key, app and BYOK. With a label, only requests
 -- carrying it.
 -- Whole quarter hours come from v2_private_usage_15m, or v2_private_usage_labels_15m
--- for a label. The minutes outside them, and the latest half hour, which the rollups
--- may not have caught up with yet, come from v2_usage_overview_requests, which the
--- rollups are built from. 5-minute buckets read requests only.
+-- for a label. The minutes outside them, the latest half hour, and any hour the outbox
+-- processor has yet to rebuild come from v2_usage_overview_requests, which the rollups
+-- are built from. 5-minute buckets read requests only.
 -- Service role only: the account routes check workspace membership before calling it.
-with bounds as (
+with stale_hours as (
+  -- UTC hours whose rollup rows may be missing or out of date: the processor rebuilds
+  -- whole workspace hours, for pending or failed events and for hours a corrected
+  -- request moved out of. 'processing' is only set inside its own transaction.
+  select date_trunc('hour', outbox.occurred_at, 'UTC') as hour_start
+  from public.v2_analytics_outbox outbox
+  where outbox.workspace_id = p_workspace_id
+    and outbox.status in ('pending', 'failed')
+    and outbox.occurred_at >= p_from - interval '1 hour'
+    and outbox.occurred_at <= p_to
+  union
+  select date_trunc('hour', previous.occurred_at, 'UTC')
+  from private.v2_analytics_previous_grains previous
+  where previous.workspace_id = p_workspace_id
+    and previous.occurred_at >= p_from - interval '1 hour'
+    and previous.occurred_at <= p_to
+),
+bounds as (
   select
     rolled.rolled_from,
     rolled.rolled_to,
@@ -692,6 +713,13 @@ raw_ranges as (
   select p_from, bounds.rolled_from from bounds where bounds.use_rollup and bounds.rolled_from > p_from
   union all
   select bounds.rolled_to, p_to + interval '1 microsecond' from bounds where bounds.use_rollup
+  union all
+  select greatest(stale.hour_start, bounds.rolled_from), least(stale.hour_start + interval '1 hour', bounds.rolled_to)
+  from bounds
+  join stale_hours stale
+    on stale.hour_start < bounds.rolled_to
+    and stale.hour_start + interval '1 hour' > bounds.rolled_from
+  where bounds.use_rollup
 ),
 usage_rows as (
   select
@@ -728,6 +756,7 @@ usage_rows as (
     and rollup.bucket_start >= bounds.rolled_from
     and rollup.bucket_start < bounds.rolled_to
   where bounds.use_rollup and p_label_key is null
+    and not exists (select 1 from stale_hours stale where stale.hour_start = date_trunc('hour', rollup.bucket_start, 'UTC'))
   union all
   select
     rollup.bucket_start, rollup.model_id, rollup.provider_model_id, rollup.key_id, rollup.app_id, rollup.byok,
@@ -741,6 +770,7 @@ usage_rows as (
     and rollup.bucket_start >= bounds.rolled_from
     and rollup.bucket_start < bounds.rolled_to
   where bounds.use_rollup and p_label_key is not null
+    and not exists (select 1 from stale_hours stale where stale.hour_start = date_trunc('hour', rollup.bucket_start, 'UTC'))
 ),
 filtered as (
   select usage_rows.*
@@ -825,10 +855,24 @@ CREATE OR REPLACE FUNCTION public.get_private_usage_label_facets (
 -- The request labels a workspace used from p_from to p_to inclusive, with how many
 -- requests carried each, for the usage overview's label filter: the most used first,
 -- at most p_limit. Whole quarter hours come from v2_private_usage_labels_15m and the
--- minutes outside them, and the latest half hour, from v2_usage_overview_requests, as
--- in get_private_usage_overview.
+-- minutes outside them, the latest half hour and hours the outbox processor has yet to
+-- rebuild from v2_usage_overview_requests, as in get_private_usage_overview.
 -- Service role only: the account routes check workspace membership before calling it.
-with bounds as (
+with stale_hours as (
+  select date_trunc('hour', outbox.occurred_at, 'UTC') as hour_start
+  from public.v2_analytics_outbox outbox
+  where outbox.workspace_id = p_workspace_id
+    and outbox.status in ('pending', 'failed')
+    and outbox.occurred_at >= p_from - interval '1 hour'
+    and outbox.occurred_at <= p_to
+  union
+  select date_trunc('hour', previous.occurred_at, 'UTC')
+  from private.v2_analytics_previous_grains previous
+  where previous.workspace_id = p_workspace_id
+    and previous.occurred_at >= p_from - interval '1 hour'
+    and previous.occurred_at <= p_to
+),
+bounds as (
   select
     rolled.rolled_from,
     rolled.rolled_to,
@@ -845,16 +889,27 @@ raw_ranges as (
   select p_from, bounds.rolled_from from bounds where bounds.use_rollup and bounds.rolled_from > p_from
   union all
   select bounds.rolled_to, p_to + interval '1 microsecond' from bounds where bounds.use_rollup
+  union all
+  select greatest(stale.hour_start, bounds.rolled_from), least(stale.hour_start + interval '1 hour', bounds.rolled_to)
+  from bounds
+  join stale_hours stale
+    on stale.hour_start < bounds.rolled_to
+    and stale.hour_start + interval '1 hour' > bounds.rolled_from
+  where bounds.use_rollup
 ),
 label_rows as (
-  select label.value ->> 'key' as label_key, label.value ->> 'value' as label_value, request.key_id, 1::bigint as requests
+  select label.label_key, label.label_value, request.key_id, 1::bigint as requests
   from raw_ranges
   join private.v2_usage_overview_requests request
     on request.workspace_id = p_workspace_id
     and request.occurred_at >= raw_ranges.range_from
     and request.occurred_at < raw_ranges.range_to
-  cross join lateral jsonb_array_elements(request.labels) label
-  where jsonb_typeof(label.value -> 'key') = 'string' and jsonb_typeof(label.value -> 'value') = 'string'
+  cross join lateral (
+    -- A request counts once per label, as in the rollup.
+    select distinct element.value ->> 'key' as label_key, element.value ->> 'value' as label_value
+    from jsonb_array_elements(request.labels) element
+    where jsonb_typeof(element.value -> 'key') = 'string' and jsonb_typeof(element.value -> 'value') = 'string'
+  ) label
   union all
   select rollup.label_key, rollup.label_value, rollup.key_id, rollup.requests
   from bounds
@@ -863,6 +918,7 @@ label_rows as (
     and rollup.bucket_start >= bounds.rolled_from
     and rollup.bucket_start < bounds.rolled_to
   where bounds.use_rollup
+    and not exists (select 1 from stale_hours stale where stale.hour_start = date_trunc('hour', rollup.bucket_start, 'UTC'))
 ),
 facets as (
   select label_rows.label_key, label_rows.label_value, sum(label_rows.requests) as requests
@@ -921,12 +977,15 @@ insert into public.v2_private_usage_labels_15m (
   tokens, input_tokens, output_tokens, reasoning_tokens, cached_tokens
 )
 select
-  request.workspace_id, request.bucket_start, label.value ->> 'key', label.value ->> 'value',
+  request.workspace_id, request.bucket_start, label.label_key, label.label_value,
   request.model_id, request.provider_model_id, request.key_id, request.app_id, request.byok,
   count(*), count(*) filter (where request.successful), count(*) filter (where request.guardrail_blocked),
   sum(request.cost_nanos), sum(request.tokens), sum(request.input_tokens), sum(request.output_tokens),
   sum(request.reasoning_tokens), sum(request.cached_tokens)
 from requests request
-cross join lateral jsonb_array_elements(request.labels) label
-where jsonb_typeof(label.value -> 'key') = 'string' and jsonb_typeof(label.value -> 'value') = 'string'
+cross join lateral (
+  select distinct element.value ->> 'key' as label_key, element.value ->> 'value' as label_value
+  from jsonb_array_elements(request.labels) element
+  where jsonb_typeof(element.value -> 'key') = 'string' and jsonb_typeof(element.value -> 'value') = 'string'
+) label
 group by 1, 2, 3, 4, 5, 6, 7, 8, 9;

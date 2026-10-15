@@ -20,16 +20,28 @@ export type UsageOverviewCell = {
 
 export type UsageOverviewBucket = "5 minutes" | "hour" | "day" | "month";
 
-const BUCKETS = new Set<string>(["5 minutes", "hour", "day", "month"]);
 const HOUR_MS = 3_600_000;
+/**
+ * The longest window, in hours, each bucket may be requested for. 5-minute buckets
+ * read every request rather than the rollup, and fine buckets over long windows
+ * return a cell for every one.
+ */
+const MAX_BUCKET_HOURS: Record<UsageOverviewBucket, number> = {
+	"5 minutes": 6,
+	hour: 24 * 31,
+	day: Number.POSITIVE_INFINITY,
+	month: Number.POSITIVE_INFINITY,
+};
 
 /**
- * The bucket a window's charts use: the requested one when valid, otherwise
- * the one the overview picks for a window that long.
+ * The bucket a window's charts use: the requested one when valid for a window
+ * that long, otherwise the one the overview picks.
  */
 export function usageOverviewBucket(from: string, to: string, requested: string | null): UsageOverviewBucket {
-	if (requested && BUCKETS.has(requested)) return requested as UsageOverviewBucket;
 	const hours = Math.max(1, (Date.parse(to) - Date.parse(from)) / HOUR_MS);
+	if (requested && Object.hasOwn(MAX_BUCKET_HOURS, requested) && hours <= MAX_BUCKET_HOURS[requested as UsageOverviewBucket]) {
+		return requested as UsageOverviewBucket;
+	}
 	if (hours <= 2) return "5 minutes";
 	if (hours <= 48) return "hour";
 	if (hours <= 24 * 400) return "day";

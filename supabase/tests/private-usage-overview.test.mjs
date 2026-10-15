@@ -22,6 +22,8 @@ await db.exec(`
   create table public.v2_request_usage (request_event_id uuid, meter_key text, quantity numeric(30,12), sequence integer default 0);
   create table public.v2_model_provider_routes (provider_model_id text primary key, provider_slug text);
   create table public.keys (id uuid primary key, workspace_id uuid, created_by uuid);
+  create table public.v2_analytics_outbox (request_event_id uuid primary key, workspace_id uuid, occurred_at timestamptz, status text);
+  create table private.v2_analytics_previous_grains (workspace_id uuid, occurred_at timestamptz);
   insert into public.v2_model_provider_routes values ('route-a', 'provider-a'), ('route-b', 'provider-b'), ('route-c', 'provider-a');
   insert into public.keys values ('${keyA}', '${workspace}', null), ('${keyB}', '${workspace}', '${owner}');
 `);
@@ -43,7 +45,8 @@ await db.exec(`
     (array['route-a', 'route-b', 'route-c', null])[i % 4 + 1],
     i % 6 <> 0, case when i % 37 = 0 then 'user:guardrail_blocked' when i % 6 = 0 then 'upstream:upstream_error' end,
     i % 5 = 0,
-    case when i % 4 = 0 then '{"labels":[{"key":"team","value":"search"},{"key":"env","value":"prod"}]}'
+    case when i % 8 = 0 then '{"labels":[{"key":"team","value":"search"},{"key":"env","value":"prod"},{"key":"team","value":"search"}]}'
+      when i % 4 = 0 then '{"labels":[{"key":"team","value":"search"},{"key":"env","value":"prod"}]}'
       when i % 4 = 1 then '{"labels":[{"key":"team","value":"billing"}]}'
       when i % 4 = 2 then '{"labels":"not a list"}' else '{"labels":[]}' end::jsonb,
     case when ws = '${workspace}' then i * 1000 else 1 end
@@ -71,7 +74,7 @@ assert.deepEqual(labelled, [
   { label_key: 'env', label_value: 'prod', n: 76 },
   { label_key: 'team', label_value: 'billing', n: 75 },
   { label_key: 'team', label_value: 'search', n: 76 },
-], 'a request counts once under each of its labels; async jobs and malformed lists are left out');
+], 'a request counts once under each of its labels, even repeated; async jobs and malformed lists are left out');
 // Two requests the outbox hasn't rolled up yet.
 await db.exec(`
   insert into public.v2_request_facts (request_event_id, workspace_id, occurred_at, key_id, routed_model_slug, provider_model_id, success, safe_metadata, cost_nanos)
@@ -151,7 +154,7 @@ const facets = async (args, workspaceId = workspace) => (await db.query(
   [workspaceId, args.from, args.to, args.keyId ?? null, args.excludeKey ?? false, args.creatorId ?? null],
 )).rows[0].facets;
 const expectedFacets = async ({ from, to, where = 'true' }) => (await db.query(`
-  select label ->> 'key' as key, label ->> 'value' as value, count(*)::int requests
+  select label ->> 'key' as key, label ->> 'value' as value, count(distinct f.request_event_id)::int requests
   from public.v2_request_facts f, jsonb_array_elements(case when jsonb_typeof(f.safe_metadata -> 'labels') = 'array' then f.safe_metadata -> 'labels' else '[]' end) label
   where f.workspace_id = '${workspace}' and f.occurred_at >= $1 and f.occurred_at <= $2 and coalesce(f.endpoint, '') <> 'batch' and (${where})
   group by 1, 2 order by 3 desc, 1, 2`, [from, to])).rows;
@@ -168,6 +171,31 @@ assert.deepEqual(byBucket(await overview({ ...hour, bucket: '5 minutes' })), awa
 assert.deepEqual(byBucket(await overview({ ...hour, bucket: '5 minutes', label: search })), await expected({ ...hour, bucket: '5 minutes', where: hasLabel('team', 'search') }), '5-minute buckets for a label');
 assert.deepEqual(byBucket(await overview(short)), await expected(short), 'a short window');
 assert.deepEqual(byBucket(await overview(day, other)), await expected(day, other), 'another workspace is summed apart');
+
+// Corrections the outbox processor hasn't reached: one request now costs more and has a
+// label, one moved four hours later and one was deleted. Their hours come from requests.
+await db.exec(`
+  update public.v2_request_facts set cost_nanos = cost_nanos + 1000000, safe_metadata = '{"labels":[{"key":"team","value":"search"}]}'
+    where workspace_id = '${workspace}' and occurred_at = '2026-10-14 15:06:00+00';
+  update public.v2_request_facts set occurred_at = occurred_at + interval '4 hours'
+    where workspace_id = '${workspace}' and occurred_at = '2026-10-14 16:09:00+00';
+  delete from public.v2_request_usage where request_event_id in (select request_event_id from public.v2_request_facts
+    where workspace_id = '${workspace}' and occurred_at = '2026-10-14 18:01:00+00');
+  delete from public.v2_request_facts where workspace_id = '${workspace}' and occurred_at = '2026-10-14 18:01:00+00';
+  insert into public.v2_analytics_outbox
+    select request_event_id, workspace_id, occurred_at, 'pending' from public.v2_request_facts
+    where workspace_id = '${workspace}' and occurred_at in ('2026-10-14 15:06:00+00', '2026-10-14 20:09:00+00');
+  insert into private.v2_analytics_previous_grains values ('${workspace}', '2026-10-14 16:00:00+00'), ('${workspace}', '2026-10-14 18:00:00+00');
+`);
+assert.notEqual(
+  Number((await db.query(`select sum(requests) n from public.v2_private_usage_15m where workspace_id = '${workspace}' and bucket_start >= '2026-10-14 18:00+00' and bucket_start < '2026-10-14 19:00+00'`)).rows[0].n),
+  Number((await db.query(`select count(*) n from public.v2_request_facts where workspace_id = '${workspace}' and occurred_at >= '2026-10-14 18:00+00' and occurred_at < '2026-10-14 19:00+00' and coalesce(endpoint, '') <> 'batch'`)).rows[0].n),
+  'the rollup is behind the requests',
+);
+assert.deepEqual(byBucket(await overview(day)), await expected(day), 'totals while the rollup is behind');
+assert.deepEqual(byBucket(await overview({ ...day, bucket: 'hour', timeZone: 'Asia/Kolkata' })), await expected({ ...day, bucket: 'hour', timeZone: 'Asia/Kolkata' }), 'hours while the rollup is behind');
+assert.deepEqual(byBucket(await overview({ ...day, bucket: 'hour', label: search })), await expected({ ...day, bucket: 'hour', where: hasLabel('team', 'search') }), 'a label while the rollup is behind');
+assert.deepEqual(await facets(day), await expectedFacets(day), 'labels while the rollup is behind');
 
 const overviewFunction = 'public.get_private_usage_overview(uuid,timestamptz,timestamptz,text,text,uuid,boolean,uuid,text,text)';
 const facetsFunction = 'public.get_private_usage_label_facets(uuid,timestamptz,timestamptz,uuid,boolean,uuid,integer)';

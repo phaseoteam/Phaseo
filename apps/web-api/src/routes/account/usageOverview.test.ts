@@ -12,6 +12,13 @@ describe("usageOverviewBucket", () => {
 		expect(usageOverviewBucket("2026-09-15T00:00:00Z", "2026-10-15T00:00:00Z", null)).toBe("day");
 		expect(usageOverviewBucket("2024-10-15T00:00:00Z", "2026-10-15T00:00:00Z", null)).toBe("month");
 	});
+
+	it("ignores buckets too fine for the window, which would read every request", () => {
+		expect(usageOverviewBucket("2026-10-15T06:00:00Z", "2026-10-15T12:00:00Z", "5 minutes")).toBe("5 minutes");
+		expect(usageOverviewBucket("2026-07-15T00:00:00Z", "2026-10-15T00:00:00Z", "5 minutes")).toBe("day");
+		expect(usageOverviewBucket("2025-10-15T00:00:00Z", "2026-10-15T00:00:00Z", "hour")).toBe("day");
+		expect(usageOverviewBucket("2024-10-15T00:00:00Z", "2026-10-15T00:00:00Z", "day")).toBe("day");
+	});
 });
 
 describe("usageOverviewTimeZone", () => {
