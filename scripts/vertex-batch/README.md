@@ -15,6 +15,12 @@ still blocks Vertex Batch. Provisioning a bucket alone does not enable the API.
 | Cleanup | Delete objects under `inputs/` and `outputs/` at age 30 days |
 | Recovery | Versioning off; soft delete off for this new temporary-data bucket |
 
+Provisioned from the local operator environment on October 15, 2026. Bucket and
+IAM readback confirmed these settings and all three scoped grants. The configured
+gateway identity successfully uploaded and read a tiny setup object, then deleted
+it (HTTP 200/200/204). No paid inference was run for this storage verification.
+The bucket now exists: use describe/readback for inspection, not `-Apply` again.
+
 The US bucket is for the standard `google-vertex` provider. It must never back
 `google-vertex-eu` or requests requiring EU residency. Confirm the target model's
 batch location before provisioning; `global` jobs do not promise US-only processing.
@@ -138,5 +144,6 @@ writes; do not edit archived catalogue JSON or publish a data-only migration.
 - [Soft-delete configuration](https://docs.cloud.google.com/sdk/gcloud/reference/storage/buckets/create#--soft-delete-duration)
 - [Storage pricing](https://cloud.google.com/storage/pricing?hl=en)
 
-Source and repository review: October 15, 2026. No bucket, IAM, gateway binding or
-catalogue enablement was applied as part of this preparation.
+Source and repository review: October 15, 2026. Bucket provisioning and object
+access verification are complete. Gateway bindings, the batch adapter and catalogue
+enablement remain pending; Vertex Batch is still blocked.
