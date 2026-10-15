@@ -27,6 +27,12 @@ describe("keyboard shortcuts", () => {
 		expect(keyFromEvent(press("k", { metaKey: true, altKey: true }), true)).toBe("mod+alt+k");
 		expect(keyFromEvent(press("Control", { ctrlKey: true }), false)).toBeUndefined();
 		expect(keyFromEvent(press("ArrowUp", { altKey: true }), false)).toBe("alt+arrowup");
+		// Shift+[ types "{", but the binding is shift+[.
+		expect(keyFromEvent(press("{", { ctrlKey: true, shiftKey: true }), false)).toBe("mod+shift+[");
+		expect(matchesKey("mod+shift+[", press("{", { ctrlKey: true, shiftKey: true }), false)).toBe(true);
+		expect(matchesKey("mod+shift+[", press("[", { ctrlKey: true }), false)).toBe(false);
+		expect(matchesKey("mod+1", press("1", { ctrlKey: true }), false)).toBe(true);
+		expect(matchesKey("mod+alt+1", press("1", { ctrlKey: true }), false)).toBe(false);
 	});
 
 	it("evaluates when clauses and explains bad ones", () => {

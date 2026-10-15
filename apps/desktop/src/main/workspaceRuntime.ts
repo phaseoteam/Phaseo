@@ -96,6 +96,17 @@ export class WorkspaceRuntime {
 		for (const id of new Set([...this.store.collectDelegationResults(), ...this.store.pendingDeliveryParents()])) if (worthWaking(id)) this.wake(id);
 	}
 	private readonly threads: WorkspaceThreads;
+	/** Deletes a chat and the agents it delegated to. Nothing may be running, and no scheduled task may run like it. */
+	private async deleteTask(id: string) {
+		this.store.getTask(id);
+		const tasks = this.store.getOverview().tasks, ids = [id];
+		for (let index = 0; index < ids.length; index++) for (const child of tasks) if (child.delegation?.parentTaskId === ids[index] && !ids.includes(child.id)) ids.push(child.id);
+		if (ids.some(value => this.executions.has(value) || ["running", "waiting"].includes(tasks.find(task => task.id === value)?.status ?? ""))) throw new Error("Stop this chat and its agents before deleting it.");
+		if (this.store.missions.list().some(mission => ids.includes(mission.templateTaskId))) throw new Error("A scheduled task runs like this chat. Change or delete that scheduled task first.");
+		for (const attachment of this.store.deleteTasks(ids)) await this.attachments.discard(attachment).catch(() => undefined);
+		this.broadcast();
+		return this.store.getOverview();
+	}
 	/** Auto-settle, after T3 Code: Code chats idle for the configured days settle, dated to their last activity. */
 	settleIdleThreads(now = Date.now()) {
 		if (this.closing) return;
@@ -252,6 +263,7 @@ export class WorkspaceRuntime {
 	}
 	private async applyCommand(command: WorkspaceCommand): Promise<WorkspaceOverview> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
+		if (command.type === "delete-task") return this.deleteTask(command.id);
 		if ((command.type === "create-task" || command.type === "handoff") && command.projectId) this.assertProjectAvailable(command.projectId);
 		if (command.type === "send") for (const id of command.threadReferences ?? []) this.store.getTaskView(id);
 		if (command.type === "send" && command.nativeAction && !["opencode", "pi", "claude", "codex", "phaseo"].includes(this.store.getTask(command.id).harness)) throw new Error("This action requires a supported harness.");

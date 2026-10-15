@@ -7,9 +7,12 @@ export const keybindingCommands = [
 	{ command: "commandPalette.toggle", label: "Search chats and commands", group: "General", keys: ["mod+k"] },
 	{ command: "chat.new", label: "New chat", group: "General", keys: ["mod+n"] },
 	{ command: "settings.open", label: "Open settings", group: "General", keys: ["mod+,"] },
-	{ command: "mode.chat", label: "Switch to Chat", group: "General", keys: ["mod+1"] },
-	{ command: "mode.code", label: "Switch to Code", group: "General", keys: ["mod+2"] },
+	{ command: "mode.chat", label: "Switch to Chat", group: "General", keys: ["mod+alt+1"] },
+	{ command: "mode.code", label: "Switch to Code", group: "General", keys: ["mod+alt+2"] },
 	{ command: "sidebar.toggle", label: "Toggle sidebar", group: "General", keys: ["mod+b"] },
+	...([1, 2, 3, 4, 5, 6, 7, 8, 9] as const).map(index => ({ command: `thread.jump.${index}` as const, label: `Open chat ${index} in the sidebar`, group: "Chats", keys: [`mod+${index}`] })),
+	{ command: "thread.previous", label: "Previous chat", group: "Chats", keys: ["mod+shift+["] },
+	{ command: "thread.next", label: "Next chat", group: "Chats", keys: ["mod+shift+]"] },
 	{ command: "thread.settle", label: "Settle or un-settle chat", group: "Chats", keys: ["mod+shift+s"], when: "codeMode && chatOpen" },
 	{ command: "thread.undo", label: "Undo settle, snooze, unpin or archive", group: "Chats", keys: ["mod+z"], when: "!textFocused" },
 	{ command: "modelSettings.toggle", label: "Model settings", group: "Chats", keys: ["mod+shift+e"] },
@@ -59,27 +62,32 @@ export function parseKey(value: string) {
 	return { mod: parts.includes("mod"), ctrl: parts.includes("ctrl"), meta: parts.includes("meta"), alt: parts.includes("alt"), shift: parts.includes("shift"), key };
 }
 
+/** What Shift produces on a US layout, mapped back to the key itself. */
+const unshifted: Record<string, string> = { "{": "[", "}": "]", "!": "1", "@": "2", "#": "3", "$": "4", "%": "5", "^": "6", "&": "7", "*": "8", "(": "9", ")": "0", "_": "-", "+": "=", ":": ";", "\"": "'", "<": ",", ">": ".", "?": "/", "|": "\\", "~": "`" };
+
 export function matchesKey(value: string, event: Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey">, mac: boolean) {
 	const parsed = parseKey(value);
 	if (!parsed) return false;
 	const wantCtrl = parsed.ctrl || (parsed.mod && !mac), wantMeta = parsed.meta || (parsed.mod && mac);
 	if (event.ctrlKey !== wantCtrl || event.metaKey !== wantMeta || event.altKey !== parsed.alt) return false;
 	const key = event.key.toLowerCase();
-	// Shift changes the character for symbols ("+" is Shift+"="), so symbol keys ignore Shift unless the binding asks for it.
-	if (parsed.key.length === 1 && !/[a-z0-9]/.test(parsed.key)) return key === parsed.key && (!parsed.shift || event.shiftKey);
+	// Shift changes the character for symbols ("+" is Shift+"=", "{" is Shift+"["), so symbol keys match either form.
+	if (parsed.key.length === 1 && !/[a-z0-9]/.test(parsed.key)) return key === parsed.key ? !parsed.shift || event.shiftKey : event.shiftKey && parsed.shift && unshifted[key] === parsed.key;
 	return event.shiftKey === parsed.shift && (key === parsed.key || (parsed.key === "space" && key === " "));
 }
 
 /** A pressed key as a binding string, or undefined while only modifiers are held. */
 export function keyFromEvent(event: Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey">, mac: boolean) {
-	const key = event.key === " " ? "space" : event.key.toLowerCase();
+	const typed = event.key === " " ? "space" : event.key.toLowerCase();
+	// Record Shift+"[" as shift+[ rather than "{"; "+" stays itself.
+	const key = event.shiftKey && typed !== "+" && unshifted[typed] ? unshifted[typed] : typed;
 	if (["control", "meta", "alt", "shift", "os", "dead", "unidentified"].includes(key)) return;
 	const parts: string[] = [];
 	if (mac ? event.metaKey : event.ctrlKey) parts.push("mod");
 	if (mac && event.ctrlKey) parts.push("ctrl");
 	if (!mac && event.metaKey) parts.push("meta");
 	if (event.altKey) parts.push("alt");
-	if (event.shiftKey && (key.length > 1 || /[a-z0-9]/.test(key))) parts.push("shift");
+	if (event.shiftKey && (key.length > 1 || /[a-z0-9]/.test(key) || key !== typed)) parts.push("shift");
 	const value = [...parts, key].join("+");
 	return parseKey(value) ? value : undefined;
 }

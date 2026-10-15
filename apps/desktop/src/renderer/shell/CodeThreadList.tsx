@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
 import { ContextMenu } from "@base-ui/react/context-menu";
 import { AlarmClock, AlarmClockOff, Check, ChevronDown, CircleAlert, CircleCheck, CircleDashed, CircleDotDashed, Clock, FolderOpen, FolderPlus, GitBranch, MessageCircleQuestion, Pin, PinOff, Plus, ShieldQuestion, Undo2 } from "lucide-react";
 import { hasWoken, isUnread, settleBlocker, shortDuration } from "../../shared/threadLifecycle";
@@ -10,7 +11,7 @@ import { ModelStack } from "../chat/ModelPicker";
 import { usePersistedState } from "../lib/persistedState";
 import { cn } from "../lib/utils";
 import { codeSections } from "./codeThreads";
-import { CustomSnoozeDialog, SnoozeItems, ThreadMenuItems, useThreadActions } from "./threadActions";
+import { CustomSnoozeDialog, DeleteChatDialog, RenameInput, SnoozeItems, ThreadMenuItems, useThreadActions } from "./threadActions";
 
 /** Re-renders on an interval, for live "Working 12s" counters and snoozes that expire. */
 function useNow(interval: number) {
@@ -43,10 +44,12 @@ function StatusLabel({ task, now, onDismissWake }: { task: TaskOverview; now: nu
 }
 
 /** A chat in the pinned or active list: project, title, then branch, tags and model. */
-function CardRow({ task, now, scope, onScope }: { task: TaskOverview; now: number; scope: string; onScope: (id: string) => void }) {
+function CardRow({ task, now, scope, onScope, hint }: { task: TaskOverview; now: number; scope: string; onScope: (id: string) => void; hint?: number }) {
 	const { overview, selectedId, select } = useWorkspace();
 	const actions = useThreadActions();
 	const [customSnooze, setCustomSnooze] = useState(false);
+	const [renaming, setRenaming] = useState(false);
+	const [deleting, setDeleting] = useState(false);
 	const project = overview.projects.find(value => value.id === task.projectId);
 	const selected = task.id === selectedId;
 	const quiet = (task.status === "running" || task.status === "waiting" || !isUnread(task)) && !task.approvalsCount && !task.answersCount && !hasWoken(task, now) && !["failed", "limited", "interrupted"].includes(task.status);
@@ -57,7 +60,7 @@ function CardRow({ task, now, scope, onScope }: { task: TaskOverview; now: numbe
 			<div className="flex h-5 items-center gap-1.5 text-xs text-muted-foreground">
 				<FolderOpen className="size-3.5 shrink-0" /><span className="min-w-0 truncate">{project?.name}</span>
 				{task.pinned && <button type="button" aria-label="Unpin chat" title="Unpin chat" onClick={event => { event.stopPropagation(); void actions.pin(task); }} className="group/pin grid size-4 shrink-0 place-items-center rounded hover:text-foreground"><Pin className="size-3 group-hover/pin:hidden" /><PinOff className="hidden size-3 group-hover/pin:block" /></button>}
-				<span className="ml-auto flex items-center group-hover/row:hidden group-focus-within/row:hidden"><StatusLabel task={task} now={now} onDismissWake={() => void actions.wake(task)} /></span>
+				<span className="ml-auto flex items-center group-hover/row:hidden group-focus-within/row:hidden">{hint !== undefined ? <JumpHint index={hint} /> : <StatusLabel task={task} now={now} onDismissWake={() => void actions.wake(task)} />}</span>
 				<span className="ml-auto hidden items-center gap-0.5 group-hover/row:flex group-focus-within/row:flex" onClick={event => event.stopPropagation()}>
 					<DropdownMenu>
 						<DropdownMenuTrigger render={<button type="button" aria-label="Snooze chat" title="Snooze chat" className="grid size-5 place-items-center rounded text-muted-foreground hover:bg-background/70 hover:text-foreground" />}><Clock className="size-3.5" /></DropdownMenuTrigger>
@@ -67,15 +70,16 @@ function CardRow({ task, now, scope, onScope }: { task: TaskOverview; now: numbe
 						className="flex h-5 items-center gap-1 rounded px-1.5 text-[11px] font-medium text-muted-foreground hover:bg-background/70 hover:text-foreground disabled:opacity-40"><Check className="size-3.5" />Settle</button>
 				</span>
 			</div>
-			<div className={cn("truncate text-[13px]", quiet ? "text-sidebar-foreground/80" : "font-medium text-sidebar-foreground")}>{task.title}</div>
+			{renaming ? <RenameInput task={task} onDone={() => setRenaming(false)} /> : <div className={cn("truncate text-[13px]", quiet ? "text-sidebar-foreground/80" : "font-medium text-sidebar-foreground")}>{task.title}</div>}
 			<div className="flex h-4 items-center gap-1.5 text-[11px] text-muted-foreground/70">
 				{project?.worktree && <span className="flex min-w-0 items-center gap-1 truncate font-mono"><GitBranch className="size-3 shrink-0" />{project.worktree.branch}</span>}
 				<TagDots tags={task.tags} />
 				<span className="ml-auto shrink-0"><ModelStack models={[task]} size="sm" ringClassName="ring-transparent" /></span>
 			</div>
 		</ContextMenu.Trigger>
-		<DropdownMenuContent className="w-64"><ThreadMenuItems task={task} scope={scope} onScope={onScope} onCustomSnooze={() => setCustomSnooze(true)} /></DropdownMenuContent>
+		<DropdownMenuContent className="w-64"><ThreadMenuItems task={task} scope={scope} onScope={onScope} onRename={() => setRenaming(true)} onDelete={() => setDeleting(true)} onCustomSnooze={() => setCustomSnooze(true)} /></DropdownMenuContent>
 		<CustomSnoozeDialog open={customSnooze} onOpenChange={setCustomSnooze} onSnooze={until => void actions.snooze(task, until, scope)} />
+		<DeleteChatDialog task={task} scope={scope} open={deleting} onOpenChange={setDeleting} />
 	</ContextMenu.Root>;
 }
 
@@ -84,19 +88,22 @@ function SlimRow({ task, now, kind, scope, onScope }: { task: TaskOverview; now:
 	const { selectedId, select } = useWorkspace();
 	const actions = useThreadActions();
 	const [customSnooze, setCustomSnooze] = useState(false);
+	const [renaming, setRenaming] = useState(false);
+	const [deleting, setDeleting] = useState(false);
 	const selected = task.id === selectedId;
 	const when = kind === "snoozed" ? shortDuration(Date.parse(task.snoozedUntil!) - now) : shortDuration(now - Date.parse(task.settledAt ?? task.updatedAt));
 	return <ContextMenu.Root>
 		<ContextMenu.Trigger render={<div role="button" tabIndex={0} aria-current={selected ? "page" : undefined} onClick={() => select(task.id)} onKeyDown={event => { if (event.key === "Enter") select(task.id); }} />}
 			className={cn("group/row mx-2 flex h-9 items-center gap-2 rounded-md px-2.5 text-[13px] outline-none hover:bg-sidebar-accent/70 focus-visible:ring-2 focus-visible:ring-ring/40", selected && "bg-sidebar-accent")}>
 			<FolderOpen className="size-3.5 shrink-0 text-muted-foreground opacity-40 grayscale group-hover/row:opacity-100" />
-			<span className="min-w-0 flex-1 truncate text-sidebar-foreground/70">{task.title}</span>
+			{renaming ? <RenameInput task={task} onDone={() => setRenaming(false)} /> : <span className="min-w-0 flex-1 truncate text-sidebar-foreground/70">{task.title}</span>}
 			<span className={cn("shrink-0 text-[11px] group-hover/row:hidden", kind === "snoozed" ? "text-sky-600 dark:text-sky-400" : "text-muted-foreground")}>{when}</span>
 			<button type="button" onClick={event => { event.stopPropagation(); void (kind === "snoozed" ? actions.wake(task) : actions.unsettle(task)); }} aria-label={kind === "snoozed" ? "Wake chat now" : "Un-settle chat"} title={kind === "snoozed" ? "Wake chat now" : "Un-settle chat"}
 				className="hidden size-5 shrink-0 place-items-center rounded text-muted-foreground group-hover/row:grid hover:bg-background/70 hover:text-foreground">{kind === "snoozed" ? <AlarmClockOff className="size-3.5" /> : <Undo2 className="size-3.5" />}</button>
 		</ContextMenu.Trigger>
-		<DropdownMenuContent className="w-64"><ThreadMenuItems task={task} scope={scope} onScope={onScope} onCustomSnooze={() => setCustomSnooze(true)} /></DropdownMenuContent>
+		<DropdownMenuContent className="w-64"><ThreadMenuItems task={task} scope={scope} onScope={onScope} onRename={() => setRenaming(true)} onDelete={() => setDeleting(true)} onCustomSnooze={() => setCustomSnooze(true)} /></DropdownMenuContent>
 		<CustomSnoozeDialog open={customSnooze} onOpenChange={setCustomSnooze} onSnooze={until => void actions.snooze(task, until, scope)} />
+		<DeleteChatDialog task={task} scope={scope} open={deleting} onOpenChange={setDeleting} />
 	</ContextMenu.Root>;
 }
 
@@ -121,7 +128,10 @@ export function CodeThreadList() {
 	const addProject = () => { if (api) void api.chooseProject().then(setOverview, reason => setError(errorText(reason))); };
 	// The open chat stays visible inside a collapsed section.
 	const visibleIn = (list: TaskOverview[], open: boolean, limit = Infinity) => open ? list.slice(0, limit) : list.filter(task => task.id === selectedId);
-	const card = (task: TaskOverview) => <CardRow key={task.id} task={task} now={now} scope={scoped ? scope : ""} onScope={setScope} />;
+	const ordered = [...sections.pinned, ...sections.active].map(task => task.id);
+	publishSidebarOrder(ordered);
+	const hints = useJumpHints();
+	const card = (task: TaskOverview) => { const index = ordered.indexOf(task.id); return <CardRow key={task.id} task={task} now={now} scope={scoped ? scope : ""} onScope={setScope} hint={hints && index >= 0 && index < 9 ? index + 1 : undefined} />; };
 	const slim = (task: TaskOverview, kind: "snoozed" | "settled") => <SlimRow key={task.id} task={task} now={now} kind={kind} scope={scoped ? scope : ""} onScope={setScope} />;
 	return <div className="flex flex-1 flex-col pb-3">
 		<div className="flex h-9 items-center gap-1 px-3 pt-1">

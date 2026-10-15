@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlarmClock, AlarmClockOff, Archive, CircleCheck, Clock, Copy, Filter, Mail, Pencil, Pin, PinOff, Sparkles, Undo2 } from "lucide-react";
+import { AlarmClock, AlarmClockOff, Archive, CircleCheck, Clock, Copy, Filter, Mail, Pencil, Pin, PinOff, Sparkles, SquarePen, Trash2, Undo2 } from "lucide-react";
 import { hasWoken, isSettled, isSnoozed, settleBlocker, snoozeBlocker, snoozePresets } from "../../shared/threadLifecycle";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { useWorkspace } from "../app/workspace";
@@ -46,6 +46,10 @@ export function useThreadActions() {
 			if (!await run({ type: "update-task", id: task.id, pinned: !task.pinned })) return;
 			if (task.pinned) offerUndo("Unpinned", () => run({ type: "update-task", id: task.id, pinned: true }));
 		},
+		remove: async (task: TaskOverview, scope = "") => {
+			moveOn(task, scope);
+			return run({ type: "delete-task", id: task.id });
+		},
 		archive: async (task: TaskOverview, scope = "") => {
 			moveOn(task, scope);
 			if (await run({ type: "update-task", id: task.id, archived: true })) offerUndo("Archived", () => run({ type: "update-task", id: task.id, archived: false }));
@@ -87,13 +91,14 @@ export function CustomSnoozeDialog({ open, onOpenChange, onSnooze }: { open: boo
 }
 
 /** T3's chat menu, in its order: pin, settle, snooze; rename, tags, unread, project filter, auto-settle; copy; archive. */
-export function ThreadMenuItems({ task, scope, onScope, onRename, onCustomSnooze }: { task: TaskOverview; scope?: string; onScope?: (id: string) => void; onRename?: () => void; onCustomSnooze: () => void }) {
+export function ThreadMenuItems({ task, scope, onScope, onRename, onDelete, onCustomSnooze }: { task: TaskOverview; scope?: string; onScope?: (id: string) => void; onRename?: () => void; onDelete?: () => void; onCustomSnooze: () => void }) {
 	const actions = useThreadActions();
-	const { overview } = useWorkspace();
+	const { overview, select, setNewChatProjectId } = useWorkspace();
 	const project = overview.projects.find(value => value.id === task.projectId);
 	const settled = isSettled(task), snoozed = isSnoozed(task), woke = hasWoken(task);
 	const copy = (text: string) => void navigator.clipboard.writeText(text);
 	return <>
+		{project && <DropdownMenuItem onClick={() => { setNewChatProjectId(project.id); select(undefined); }}><SquarePen />{project.worktree ? `New chat on ${project.worktree.branch}` : `New chat in ${project.name}`}</DropdownMenuItem>}
 		<DropdownMenuItem onClick={() => void actions.pin(task)}>{task.pinned ? <PinOff /> : <Pin />}{task.pinned ? "Unpin chat" : "Pin chat"}</DropdownMenuItem>
 		{settled
 			? <DropdownMenuItem onClick={() => void actions.unsettle(task)}><Undo2 />Un-settle chat</DropdownMenuItem>
@@ -127,5 +132,27 @@ export function ThreadMenuItems({ task, scope, onScope, onRename, onCustomSnooze
 		</DropdownMenuSub>
 		<DropdownMenuSeparator />
 		<DropdownMenuItem disabled={["running", "waiting"].includes(task.status)} onClick={() => void actions.archive(task, scope)}><Archive />Archive chat</DropdownMenuItem>
+		{onDelete && <DropdownMenuItem variant="destructive" disabled={["running", "waiting"].includes(task.status)} onClick={onDelete}><Trash2 />Delete chat</DropdownMenuItem>}
 	</>;
+}
+
+/** Deleting is permanent, so it asks first, naming the chat. */
+export function DeleteChatDialog({ task, scope, open, onOpenChange }: { task: TaskOverview; scope?: string; open: boolean; onOpenChange: (open: boolean) => void }) {
+	const actions = useThreadActions();
+	const [busy, setBusy] = useState(false);
+	return <Dialog open={open} onOpenChange={onOpenChange}>
+		<DialogContent className="sm:max-w-sm">
+			<DialogHeader><DialogTitle>Delete this chat?</DialogTitle><DialogDescription>“{task.title}” and any agents it started are deleted with their messages and attachments. This cannot be undone.</DialogDescription></DialogHeader>
+			<DialogFooter><SettingsButton variant="ghost" disabled={busy} onClick={() => onOpenChange(false)}>Cancel</SettingsButton><SettingsButton variant="danger" disabled={busy} onClick={() => { setBusy(true); void actions.remove(task, scope).finally(() => { setBusy(false); onOpenChange(false); }); }}>Delete</SettingsButton></DialogFooter>
+		</DialogContent>
+	</Dialog>;
+}
+
+/** Inline title editing for sidebar rows. */
+export function RenameInput({ task, onDone, className }: { task: TaskOverview; onDone: () => void; className?: string }) {
+	const { command } = useWorkspace();
+	return <input autoFocus defaultValue={task.title} maxLength={200} aria-label="Chat title" onClick={event => event.stopPropagation()}
+		onBlur={event => { const title = event.target.value.trim(); onDone(); if (title && title !== task.title) void command({ type: "update-task", id: task.id, title }); }}
+		onKeyDown={event => { event.stopPropagation(); if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") onDone(); }}
+		className={cn("h-6 min-w-0 flex-1 rounded border border-ring bg-background px-1.5 text-[13px] outline-none", className)} />;
 }

@@ -110,4 +110,18 @@ describe("lifecycle commands", () => {
 			expect(() => validateCommand({ type: "auto-settle", id: task.id, enabled: "yes" })).toThrow();
 		} finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
+
+	it("deletes chats with their attachments and leaves others alone", () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-delete-")); const store = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
+		try {
+			const doomed = store.apply({ type: "create-task", harness: "codex", model: "m", mode: "code" });
+			const kept = store.apply({ type: "create-task", harness: "codex", model: "m", mode: "code" });
+			const attachment = { id: "00000000-0000-4000-8000-000000000001", taskId: doomed.id, name: "a.txt", kind: "text" as const, mimeType: "text/plain", size: 1 };
+			store.saveAttachment(attachment);
+			expect(store.deleteTasks([doomed.id])).toEqual([attachment]);
+			expect(() => store.getTask(doomed.id)).toThrow();
+			expect(store.getAttachment(attachment.id)).toBeUndefined();
+			expect(store.getTask(kept.id).id).toBe(kept.id);
+		} finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
 });

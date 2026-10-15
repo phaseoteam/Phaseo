@@ -303,6 +303,22 @@ export class WorkspaceStore {
 	}
 	saveProject(project: Project) { this.db.prepare("INSERT INTO projects (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(project.id, JSON.stringify(project)); }
 	saveAgent(agent: AgentConnection) { this.db.prepare("INSERT INTO agents (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(agent.id, JSON.stringify(agent)); }
+	/** Deletes chats outright with their attachments and delegation records; returns the attachments whose files to remove. */
+	deleteTasks(ids: string[]): Attachment[] {
+		const attachments = (this.db.prepare("SELECT data FROM attachments").all().map(row => JSON.parse(row.data as string) as Attachment)).filter(attachment => ids.includes(attachment.taskId));
+		this.db.exec("BEGIN IMMEDIATE");
+		try {
+			for (const id of ids) {
+				this.db.prepare("DELETE FROM tasks WHERE id=?").run(id);
+				this.db.prepare("DELETE FROM thread_merges WHERE parent_id=? OR child_id=?").run(id, id);
+				this.db.prepare("DELETE FROM delegation_outbox WHERE parent_id=? OR child_id=?").run(id, id);
+				this.db.prepare("DELETE FROM delegation_wakes WHERE child_id=?").run(id);
+			}
+			for (const attachment of attachments) this.db.prepare("DELETE FROM attachments WHERE id=?").run(attachment.id);
+			this.db.exec("COMMIT");
+		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
+		return attachments;
+	}
 	getAttachment(id: string): Attachment | undefined { const row = this.db.prepare("SELECT data FROM attachments WHERE id=?").get(id); return row ? JSON.parse(row.data as string) as Attachment : undefined; }
 	saveAttachment(attachment: Attachment) { this.db.prepare("INSERT INTO attachments (id, data) VALUES (?, ?)").run(attachment.id, JSON.stringify(attachment)); }
 	saveAttachments(attachments: Attachment[]) {

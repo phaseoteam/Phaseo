@@ -94,6 +94,7 @@ export type TerminalEvent = { sessionId: string; data?: string; session?: Termin
 export type WorkspaceCommand =
 	| { type: "inbox-read"; id: string; revision: string }
 	| { type: "settle" | "unsettle" | "wake" | "mark-unread"; id: string }
+	| { type: "delete-task"; id: string }
 	| { type: "snooze"; id: string; until: string }
 	| { type: "visit"; id: string; at: string }
 	| { type: "auto-settle"; id: string; enabled: boolean }
@@ -287,7 +288,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				break;
 			}
 			case "inbox-read": string("revision", true, 100); break;
-			case "settle": case "unsettle": case "wake": case "mark-unread": break;
+			case "settle": case "unsettle": case "wake": case "mark-unread": case "delete-task": break;
 			case "snooze": string("until", true, 100); if (Number.isNaN(Date.parse(command.until as string))) throw new Error("Invalid snooze time."); break;
 			case "visit": string("at", true, 100); if (Number.isNaN(Date.parse(command.at as string))) throw new Error("Invalid visit time."); break;
 			case "auto-settle": if (typeof command.enabled !== "boolean") throw new Error("Invalid auto-settle setting."); break;

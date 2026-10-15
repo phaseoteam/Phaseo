@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
 import { Archive, CalendarClock, Columns3, Ellipsis, LogIn, Pencil, Pin, PinOff, Plus, Settings } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { chatDragType } from "../../shared/mentions";
@@ -61,7 +62,7 @@ function RowMenu({ task, onRename }: { task: TaskOverview; onRename: () => void 
 	</DropdownMenu>;
 }
 
-function ChatRow({ task, indent, showModel, showTime = true }: { task: TaskOverview; indent?: boolean; showModel?: boolean; showTime?: boolean }) {
+function ChatRow({ task, indent, showModel, showTime = true, hint }: { task: TaskOverview; indent?: boolean; showModel?: boolean; showTime?: boolean; hint?: number }) {
 	const { selectedId, select, command } = useWorkspace();
 	const [renaming, setRenaming] = useState(false);
 	const selected = task.id === selectedId;
@@ -79,7 +80,7 @@ function ChatRow({ task, indent, showModel, showTime = true }: { task: TaskOverv
 		{!renaming && <TagDots tags={task.tags} />}
 		{showModel && busy && <StatusDot task={task} />}
 		{showTime && !renaming && <span className="text-[11px] text-muted-foreground group-hover/row:hidden">{relative(task.updatedAt)}</span>}
-		{!renaming && <RowMenu task={task} onRename={() => setRenaming(true)} />}
+		{hint !== undefined ? <JumpHint index={hint} /> : !renaming && <RowMenu task={task} onRename={() => setRenaming(true)} />}
 	</div>;
 }
 
@@ -115,16 +116,20 @@ function ChatList() {
 	].sort((a, b) => b.at.localeCompare(a.at));
 	const buckets = new Map<string, Item[]>();
 	for (const item of items) { const key = dateBucket(item.at); buckets.set(key, [...buckets.get(key) ?? [], item]); }
+	const ordered = [...pinned.map(task => task.id), ...[...buckets.values()].flat().flatMap(item => item.kind === "task" ? [item.task.id] : [])];
+	publishSidebarOrder(ordered);
+	const hints = useJumpHints();
+	const hint = (id: string) => { const index = ordered.indexOf(id); return hints && index >= 0 && index < 9 ? index + 1 : undefined; };
 	if (!all.length && !compareGroups.length) return <p className="px-4 py-6 text-center text-xs text-muted-foreground">Your chats will appear here.</p>;
 	return <>
 		{tags.length > 0 && <div role="group" aria-label="Filter chats by tag" className="flex flex-wrap gap-1 px-3 pt-2 pb-1">
 			{tags.slice(0, 12).map(tag => <TagChip key={tag} tag={tag} active={tag === active} onClick={() => setFilter(tag === active ? "" : tag)} className="h-5.5 px-1.5 text-[11px]" />)}
 		</div>}
 		{active && !chats.length && <p className="px-4 py-4 text-xs text-muted-foreground">No open chats tagged {active}.</p>}
-		{pinned.length > 0 && <><SectionLabel>Pinned</SectionLabel>{pinned.map(task => <ChatRow key={task.id} task={task} showModel showTime={false} />)}</>}
+		{pinned.length > 0 && <><SectionLabel>Pinned</SectionLabel>{pinned.map(task => <ChatRow key={task.id} task={task} showModel showTime={false} hint={hint(task.id)} />)}</>}
 		{[...buckets].map(([label, values]) => <div key={label}>
 			<SectionLabel>{label}</SectionLabel>
-			{values.map(item => item.kind === "task" ? <ChatRow key={item.task.id} task={item.task} showModel showTime={false} /> : <CompareRow key={item.group.id} group={item.group} />)}
+			{values.map(item => item.kind === "task" ? <ChatRow key={item.task.id} task={item.task} showModel showTime={false} hint={hint(item.task.id)} /> : <CompareRow key={item.group.id} group={item.group} />)}
 		</div>)}
 	</>;
 }

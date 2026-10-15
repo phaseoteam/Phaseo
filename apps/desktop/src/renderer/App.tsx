@@ -1,4 +1,5 @@
 import { useCommand, useKeybindingDispatcher, useKeybindings } from "./lib/keybindings";
+import { sidebarOrder } from "./lib/sidebarOrder";
 import { X } from "lucide-react";
 import { useThreadActions } from "./shell/threadActions";
 import { runUndo } from "./shell/threadUndo";
@@ -37,6 +38,14 @@ function useShortcuts() {
 		let scope = ""; try { scope = JSON.parse(localStorage.getItem("phaseo.desktop.codeProjectScope") ?? "\"\"") as string; } catch { /* All projects. */ }
 		void (isSettled(task) ? threadActions.unsettle(task) : threadActions.settle(task, scope));
 	});
+	// T3: Ctrl+1–9 open the chats shown in the sidebar; Ctrl+Shift+[ and ] step through them.
+	const jump = (index: number) => { const id = sidebarOrder()[index]; if (!id) return false; select(id); };
+	const step = (direction: number) => { const order = sidebarOrder(); if (!order.length) return false; const index = selectedId ? order.indexOf(selectedId) : -1; select(order[index < 0 ? (direction > 0 ? 0 : order.length - 1) : (index + direction + order.length) % order.length]); };
+	useCommand("thread.jump.1", () => jump(0)); useCommand("thread.jump.2", () => jump(1)); useCommand("thread.jump.3", () => jump(2));
+	useCommand("thread.jump.4", () => jump(3)); useCommand("thread.jump.5", () => jump(4)); useCommand("thread.jump.6", () => jump(5));
+	useCommand("thread.jump.7", () => jump(6)); useCommand("thread.jump.8", () => jump(7)); useCommand("thread.jump.9", () => jump(8));
+	useCommand("thread.previous", () => step(-1));
+	useCommand("thread.next", () => step(1));
 	useCommand("view.zoomIn", () => void window.phaseoDesktop?.performAppAction("zoom-in"));
 	useCommand("view.zoomOut", () => void window.phaseoDesktop?.performAppAction("zoom-out"));
 	useCommand("view.zoomReset", () => void window.phaseoDesktop?.performAppAction("zoom-reset"));
