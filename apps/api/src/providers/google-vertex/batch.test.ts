@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setupRuntimeFromEnv, teardownTestRuntime } from "../../../tests/helpers/runtime";
-import { fetchVertexBatchApi, normalizeVertexBatchOutput, prepareVertexBatch, vertexBatchOutputs, type VertexBatchStorage } from "./batch";
+import { deleteVertexBatchInput, fetchVertexBatchApi, normalizeVertexBatchOutput, prepareVertexBatch, vertexBatchOutputs, type VertexBatchStorage } from "./batch";
 import { batchMetaFromProviderPayload, normalizeProviderBatchPayload } from "@core/batch-provider-adapters";
 
 const credential = { key: "test-token", source: "gateway" as const, byokKeyId: null };
@@ -22,12 +22,29 @@ async function collect(args: Partial<Parameters<typeof vertexBatchOutputs>[0]> =
 beforeEach(() => {
 	setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_PROJECT_NUMBER: "123456789",
 		GOOGLE_VERTEX_BATCH_LOCATION: "global", GOOGLE_VERTEX_BATCH_BUCKET: "test-batch-bucket" } as any);
-	vi.stubGlobal("fetch", fetchMock);
+	vi.stubGlobal("fetch", (input: RequestInfo | URL, init?: RequestInit) => {
+		// Match Workers: redirect:error throws before dispatch, unlike Node fetch.
+		if (init?.redirect && !["follow", "manual"].includes(init.redirect)) throw new TypeError("Unsupported Worker redirect mode");
+		return fetchMock(input, init);
+	});
 	fetchMock.mockReset();
 });
 afterEach(() => { vi.unstubAllGlobals(); teardownTestRuntime(); });
 
 describe("Vertex Batch bridge", () => {
+	it("does not follow redirects when staging, cleaning up or reading results", async () => {
+		fetchMock.mockResolvedValueOnce(new Response(null, { status: 302, headers: { Location: "https://untrusted.example" } }));
+		await expect(prepareVertexBatch({ workspaceId: "workspace-a", batchId: "batch-a", model: "gemini-3.1-flash-lite",
+			rows: [{ custom_id: "a", body: {} }], credential })).rejects.toThrow("input_upload_failed_302");
+		fetchMock.mockResolvedValueOnce(new Response(null, { status: 302 }));
+		await expect(deleteVertexBatchInput(storage, credential)).rejects.toThrow("input_cleanup_failed");
+		fetchMock.mockResolvedValueOnce(new Response(null, { status: 302 }));
+		await expect(collect()).rejects.toThrow("output_list_failed_302");
+		fetchMock.mockResolvedValueOnce(Response.json({ items: [{ name: storage.outputPrefix + "out.jsonl" }] }))
+			.mockResolvedValueOnce(new Response(null, { status: 302 }));
+		await expect(collect()).rejects.toThrow("output_download_failed_302");
+		expect(fetchMock.mock.calls.every(([, init]) => init.redirect === "manual")).toBe(true);
+	});
 	it("uploads owned JSONL with correlation keys and prepares a job without dispatching it", async () => {
 		fetchMock.mockResolvedValueOnce(new Response("{}"));
 		const prepared = await prepareVertexBatch({ workspaceId: "workspace-a", batchId: "batch-a", model: "gemini-3.1-flash-lite",
