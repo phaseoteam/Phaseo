@@ -18,6 +18,7 @@ import {
 	buildPipelineExecutionErrorResponse,
 	logPipelineExecutionError,
 } from "./error-response";
+import { rejectedByRateLimitPolicy, withRateLimitPolicyHeaders } from "@core/rate-limit-policies";
 
 const EARLY_OBSERVABILITY_BODY_LIMIT_BYTES = 256 * 1024;
 const MODEL_FALLBACK_STATUSES = new Set([429, 500, 502, 503, 504]);
@@ -225,8 +226,10 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 
         try {
 			const runner = resolvePipeline(endpoint);
-			let response = await runner({ pre, req, endpoint, timing });
+			let response = withRateLimitPolicyHeaders(await runner({ pre, req, endpoint, timing }), pre.ctx);
 			if (!shouldTryModelFallback(response)) return response;
+			// Other models share the exhausted policy allowance.
+			if (rejectedByRateLimitPolicy(pre.ctx)) return response;
 			const fallbackPlan = configuredModelFallbacks(pre.ctx);
 			if (!fallbackPlan) return response;
 
@@ -282,6 +285,8 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 				if (typeof fallbackBeforeMsRaw === "number") {
 					fallbackPre.ctx.meta.before_ms = Math.round(fallbackBeforeMsRaw * 1000) / 1000;
 				}
+				// One HTTP request is one admission against rate limit policies.
+				fallbackPre.ctx.rateLimitAdmissionId = pre.ctx.rateLimitAdmissionId ?? pre.ctx.billingRequestId;
 				fallbackPre.ctx.routingDiagnostics = {
 					...(fallbackPre.ctx.routingDiagnostics ?? {}),
 					modelFallback: {
@@ -309,15 +314,16 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 						req: fallbackReq,
 					});
 				}
+				response = withRateLimitPolicyHeaders(response, fallbackPre.ctx);
 				attempts.push({ model: fallbackPre.ctx.model, status: response.status, stage: "execute" });
-				if (!shouldTryModelFallback(response)) return response;
+				if (!shouldTryModelFallback(response) || rejectedByRateLimitPolicy(fallbackPre.ctx)) return response;
 			}
 			return response;
         } catch (err) {
             logPipelineExecutionError("entrypoint", err);
             const header = timing.timer.header();
             pre.ctx.timing = timing.timer.snapshot();
-            return await handleError({
+            return withRateLimitPolicyHeaders(await handleError({
                 stage: "execute",
                 res: buildPipelineExecutionErrorResponse(err, pre.ctx),
                 endpoint,
@@ -325,7 +331,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
                 timingHeader: header || undefined,
                 auditFailure,
                 req,
-            });
+            }), pre.ctx);
         }
     };
 }

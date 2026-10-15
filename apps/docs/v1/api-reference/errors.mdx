@@ -87,6 +87,7 @@ Some errors include more detail to help you fix the issue faster:
 | `not_found_error` | `404` | The endpoint or resource could not be found. |
 | `rate_limit_error` | `429` | Too many requests. Retry after the specified delay. |
 | `phaseo_free_model_limit_exceeded` | `429` | Phaseo's shared daily free-model allowance is exhausted (1,500 requests by default). Honor `Retry-After`, wait for the 00:00 UTC reset, or choose a paid model. |
+| `rate_limit_exceeded` | `429` | A workspace [rate limit policy](./limits.mdx#rate-limit-policies) is exhausted. `policy_id` and `limit_scope` identify it. Honor `Retry-After`, or ask a workspace admin to change the policy. |
 | `validation_error` | `400` | Invalid parameters or request body. |
 | `provider_error` | `502` | The upstream model provider failed to respond correctly. |
 | `server_error` | `500` | An unexpected issue happened inside Phaseo. |

@@ -10,6 +10,7 @@ vi.mock("@/runtime/env", async (importOriginal) => ({
 	dispatchBackground: (promise: Promise<unknown>) => { background.push(promise.catch(() => undefined)); },
 }));
 import {
+	classifyAttribution,
 	classifyErrorOrigin,
 	classifyErrorType,
 	extractUpstreamUnsupportedParamSignal,
@@ -153,6 +154,32 @@ describe("handleError", () => {
 		expect(emitGatewayRequestEventMock).toHaveBeenCalledWith(expect.objectContaining({ errorCode: "gateway:phaseo_free_model_limit_exceeded", provider: null }));
 	});
 
+	it("attributes a rate limit policy rejection to the caller and keeps the policy fields", async () => {
+		let capturedAuditArgs: any = null;
+		const response = await handleError({
+			stage: "execute",
+			endpoint: "chat.completions",
+			res: new Response(JSON.stringify({
+				error: "rate_limit_exceeded",
+				error_type: "user",
+				error_origin: "user",
+				reason: "policy_requests_per_minute",
+				policy_id: "policy-1",
+				limit_scope: "key",
+				description: "This API key reached the \"Strict\" rate limit policy's 2 requests per minute. Retry after 9 seconds.",
+			}), { status: 429, headers: { "Retry-After": "9" } }),
+			ctx: { requestId: "G-POLICY-LIMIT", workspaceId: "workspace", model: "openai/gpt-5", meta: {}, providers: [{ providerId: "openai" }] } as any,
+			auditFailure: async (args) => { capturedAuditArgs = args; },
+		});
+		expect(response.status).toBe(429);
+		expect(response.headers.get("Retry-After")).toBe("9");
+		expect(response.headers.get("X-Gateway-Error-Attribution")).toBe("user");
+		expect(await response.json()).toMatchObject({
+			error: "rate_limit_exceeded", error_origin: "user", reason: "policy_requests_per_minute", policy_id: "policy-1", limit_scope: "key",
+		});
+		expect(capturedAuditArgs).toMatchObject({ errorCode: "user:rate_limit_exceeded", provider: null });
+	});
+
 	it("preserves guardrail enforcement metadata on blocked before-stage requests", async () => {
 		let capturedAuditArgs: any = null;
 		const blocked = new Response(
@@ -207,6 +234,13 @@ describe("handleError", () => {
 				scope: "workspace",
 			},
 		});
+	});
+
+	it("attributes only policy rejections, not provider rate_limit_exceeded 429s, to the caller", () => {
+		const policy = { stage: "execute" as const, status: 429, errorCode: "rate_limit_exceeded", body: { error: "rate_limit_exceeded", reason: "policy_requests_per_minute" } };
+		const provider = { stage: "execute" as const, status: 429, errorCode: "rate_limit_exceeded", body: { error: { code: "rate_limit_exceeded", message: "Too many requests" } } };
+		expect(classifyAttribution(policy)).toBe("user");
+		expect(classifyAttribution(provider)).toBe(classifyAttribution({ ...provider, errorCode: "upstream_error" }));
 	});
 
 	it("classifies region and residency 403s as user errors", () => {

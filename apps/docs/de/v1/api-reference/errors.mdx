@@ -87,6 +87,7 @@ Einige Fehler enthalten zusätzliche Informationen, die bei der schnelleren Behe
 | `not_found_error` | `404` | Endpunkt oder Ressource wurde nicht gefunden. |
 | `rate_limit_error` | `429` | Zu viele Anfragen. Versuche es nach der angegebenen Wartezeit erneut. |
 | `phaseo_free_model_limit_exceeded` | `429` | Das gemeinsame Tageskontingent für kostenlose Phaseo-Modelle ist ausgeschöpft (standardmäßig 1.500 Anfragen). Beachte `Retry-After`, warte bis zur Zurücksetzung um 00:00 UTC oder wähle ein kostenpflichtiges Modell. |
+| `rate_limit_exceeded` | `429` | Eine [Ratenlimit-Richtlinie](./limits.mdx) des Workspace ist ausgeschöpft. `policy_id` und `limit_scope` geben an, welche. Beachte `Retry-After` oder bitte einen Workspace-Admin, die Richtlinie zu ändern. |
 | `validation_error` | `400` | Ungültige Parameter oder ungültiger Anfrage-Body. |
 | `provider_error` | `502` | Der Upstream-Modellanbieter hat nicht korrekt geantwortet. |
 | `server_error` | `500` | In Phaseo ist ein unerwartetes Problem aufgetreten. |

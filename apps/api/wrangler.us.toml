@@ -10,6 +10,7 @@ preview_urls = false
 [vars]
 GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED = "true"
 CUSTOMER_RATE_LIMITS_ENABLED = "true"
+RATE_LIMIT_POLICIES_ENABLED = "true"
 # Trust-ladder RPM per workspace from the tiers published to KV by phaseo-gateway.
 CUSTOMER_RATE_LIMIT_LADDER_ENABLED = "true"
 # When a charge would have invalidated the credit cache, store its exact

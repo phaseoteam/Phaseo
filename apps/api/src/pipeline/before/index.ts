@@ -1459,6 +1459,7 @@ export async function beforeRequest(
 
     const ctx: PipelineContext = {
 		quotaUserId: userId ?? null,
+		activeGuardrailIds: workspacePolicy.activeGuardrailIds ?? [],
         endpoint,
         capability,
         requestId,
