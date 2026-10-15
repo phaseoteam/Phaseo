@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { autoSettleAt } from "../shared/threadLifecycle";
 import { mkdirSync, realpathSync } from "node:fs";
 import path from "node:path";
-import type { AgentActivity, AgentConnection, ModelOption, WorkspaceCommand } from "../shared/workspace";
+import type { AgentActivity, AgentConnection, ModelOption, WorkspaceCommand, AgentQuestion } from "../shared/workspace";
 import { WorkspaceThreads } from "./workspaceThreads";
 import { OrchestratorMcp } from "./orchestratorMcp";
 import { CodexAdapter } from "./codexAdapter";
@@ -338,9 +338,9 @@ export class WorkspaceRuntime {
 			const task = this.store.getTask(command.id);
 			const request = task.questions?.find(value => value.id === command.requestId);
 			if (!pending || pending.taskId !== task.id || !request) throw new Error("This question is no longer pending.");
-			if (request.questions.some(question => !command.answers[question.id]?.length)) throw new Error("Answer every question.");
+			if (!command.dismissed && request.questions.some(question => !command.answers[question.id]?.length)) throw new Error("Answer every question.");
 			task.questions = task.questions?.filter(value => value.id !== command.requestId); task.status = hasRequests(task) ? "waiting" : "running";
-			this.store.saveTask(task); this.broadcast(); this.questions.delete(command.requestId); pending.resolve(command.answers); return this.store.getOverview();
+			this.store.saveTask(task); this.broadcast(); this.questions.delete(command.requestId); pending.resolve(command.dismissed ? {} : command.answers); return this.store.getOverview();
 		}
 		if (command.type === "form-answer") {
 			const pending = this.forms.get(command.requestId); const task = this.store.getTask(command.id);
@@ -542,7 +542,9 @@ export class WorkspaceRuntime {
 				onQuestion: questions => new Promise(resolve => {
 					flush();
 					if (this.closing || this.store.getTask(id).status === "interrupted") { resolve({}); return; }
-					const requestId = randomUUID(); this.questions.set(requestId, { taskId: id, resolve });
+					const requestId = randomUUID();
+					// The answered (or dismissed) question stays in the transcript, as in T3; secret answers are masked.
+					this.questions.set(requestId, { taskId: id, resolve: answers => { activities.push(questionRecord(requestId, questions, answers)); scheduleFlush(); resolve(answers); } });
 					const current = this.store.getTask(id); current.status = "waiting"; current.questions ??= []; current.questions.push({ id: requestId, questions });
 					this.store.saveTask(current); this.broadcast();
 				}),
@@ -588,4 +590,11 @@ export class WorkspaceRuntime {
 		await this.openCode.close();
 		this.store.close();
 	}
+}
+
+/** A finished question for the transcript: each question with its answer, or that it was dismissed. */
+function questionRecord(requestId: string, questions: AgentQuestion[], answers: Record<string, string[]>) {
+	const dismissed = !Object.keys(answers).length;
+	const text = questions.map(question => `${question.question}\n→ ${dismissed ? "Dismissed" : question.isSecret ? "••••" : (answers[question.id] ?? []).join(", ")}`).join("\n\n");
+	return { id: `question:${requestId}`, type: "tool" as const, title: dismissed ? "Question dismissed" : questions.length === 1 ? "Question answered" : "Questions answered", text, status: "completed" as const };
 }

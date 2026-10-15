@@ -7,7 +7,7 @@ import { answerPhaseoQuestion } from "./phaseoQuestionTools";
 import { PhaseoAdapter } from "./phaseoAdapter";
 import { PhaseoCodingAdapter } from "./phaseoCodingAdapter";
 import { WorkspaceStore } from "./workspaceStore";
-const input = { questions: [{ header: "Direction", question: "Which direction?", options: [{ label: "A" }, { label: "B" }] }] };
+const input = { questions: [{ header: "Direction", question: "Which direction?", multiSelect: false, options: [{ label: "A", description: "Go one way" }, { label: "B", description: "Go the other way" }] }] };
 const account: Account = { id: "owned", name: "Owned", harness: "phaseo", kind: "api", configured: true, endpoint: "http://127.0.0.1:1/v1" };
 const sse = (message: { content: string; toolCalls?: { id: string; name: string; input: unknown }[] }) => new Response('data: '+JSON.stringify({ choices: [{ delta: message.toolCalls ? { tool_calls: message.toolCalls.map((call, index) => ({ index, id: call.id, type: "function", function: { name: call.name, arguments: JSON.stringify(call.input) } })) } : { content: message.content }, finish_reason: message.toolCalls ? "tool_calls" : "stop" }] })+'\n\ndata: [DONE]\n\n');
 describe("durable Phaseo questions", () => {
@@ -31,9 +31,13 @@ describe("durable Phaseo questions", () => {
  });
 
  it("accepts bounded multiple choices and a free-text question together", async () => {
-  const raw = { questions: [{ header: "Choices", question: "Select options", multiSelect: true, options: [{ label: "A" }, { label: "B" }] }, { header: "Details", question: "Describe the work" }] };
-  const result = await answerPhaseoQuestion(raw, { onDelta: () => {}, onSession: () => {}, onApproval: async () => "accept", onQuestion: async () => ({ "question-0": ["A", "B"], "question-1": ["Owned details"] }) }, new AbortController().signal);
-  expect(result).toEqual({ answers: [{ question: "Select options", answers: ["A", "B"] }, { question: "Describe the work", answers: ["Owned details"] }] });
+  const raw = { questions: [{ header: "Choices", question: "Select options", multiSelect: true, options: [{ label: "A", description: "First" }, { label: "B", description: "Second", preview: "```ts\nb()\n```" }] }, { header: "Details", question: "How should it work?", multiSelect: false, options: [{ label: "Fast", description: "Ship today" }, { label: "Careful", description: "Ship next week" }] }] };
+  // Multi-select takes every option plus the user's own answer; single choice takes custom text as its answer.
+  const result = await answerPhaseoQuestion(raw, { onDelta: () => {}, onSession: () => {}, onApproval: async () => "accept", onQuestion: async () => ({ "question-0": ["A", "B", "Both, in order"], "question-1": ["Owned details"] }) }, new AbortController().signal);
+  expect(result).toEqual({ answers: { "Select options": ["A", "B", "Both, in order"], "How should it work?": "Owned details" } });
+ });
+ it("reports a dismissal so the model carries on without the answers", async () => {
+  expect(await answerPhaseoQuestion(input, { onDelta: () => {}, onSession: () => {}, onApproval: async () => "accept", onQuestion: async () => ({}) }, new AbortController().signal)).toMatchObject({ dismissed: true });
  });
  it.each([{ values: [] as string[] }, { values: ["A", "B"] }, { values: ["x".repeat(10001)] }])("rejects missing or oversized single-choice answers (%#)", async ({ values }) => {
   await expect(answerPhaseoQuestion(input, { onDelta: () => {}, onSession: () => {}, onApproval: async () => "accept", onQuestion: async () => ({ "question-0": values }) }, new AbortController().signal)).rejects.toThrow();
@@ -49,13 +53,13 @@ describe("durable Phaseo questions", () => {
    expect(callbacks.onApproval).not.toHaveBeenCalled(); expect(store.loadAgentRun(runId)?.run.pause?.pendingToolCalls?.[0].kind).toBe("manual");
    store.close(); store = new WorkspaceStore(path.join(root, "state.sqlite"));
    const answer = vi.fn(async questions => { expect(questions).toEqual([expect.objectContaining({ id: "question-0", question: "Which direction?", isOther: true })]); return { "question-0": ["Custom direction"] }; });
-   const check = (messages: { role: string; content: unknown }[]) => { const tool = messages.find(message => message.role === "tool"); expect(JSON.parse(tool!.content as string)).toEqual({ answers: [{ question: "Which direction?", answers: ["Custom direction"] }] }); expect(messages.filter(message => message.role === "user" && message.content === "Continue")).toHaveLength(1); return { role: "assistant" as const, content: "Finished" }; };
+   const check = (messages: { role: string; content: unknown }[]) => { const tool = messages.find(message => message.role === "tool"); expect(JSON.parse(tool!.content as string)).toEqual({ answers: { "Which direction?": "Custom direction" } }); expect(messages.filter(message => message.role === "user" && message.content === "Continue")).toHaveLength(1); return { role: "assistant" as const, content: "Finished" }; };
    const resumed = mode === "chat" ? new PhaseoAdapter(() => "owned", vi.fn(async (_url, options) => sse(check(JSON.parse(options.body as string).messages))), undefined, store) : new PhaseoCodingAdapter(() => "owned", store, () => ({ generate: async request => ({ message: check(request.messages) }) }));
    await resumed.run({ ...task, nativeSessionId: runId }, root, "Continue", { ...callbacks, onQuestion: answer }, account);
    expect(answer).toHaveBeenCalledOnce(); expect(store.loadAgentRun(runId)?.run.status).toBe("completed");
   } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
  });
- it.each([null, { questions: [] }, { questions: [{ header: "X", question: "Q", options: [{ label: "same" }, { label: "same" }] }] }, { questions: [{ header: "X", question: "x".repeat(4001) }] }])("rejects malformed questions before asking (%#)", async raw => {
+ it.each([null, { questions: [] }, { questions: [{ header: "X", question: "Q", options: [{ label: "same" }, { label: "same" }] }] }, { questions: [{ header: "X", question: "x".repeat(4001), multiSelect: false, options: [{ label: "A", description: "a" }, { label: "B", description: "b" }] }] }, { questions: [{ header: "Longer than twelve", question: "Q?", multiSelect: false, options: [{ label: "A", description: "a" }, { label: "B", description: "b" }] }] }, { questions: [{ header: "X", question: "Q?", multiSelect: false, options: [{ label: "A" }, { label: "B", description: "b" }] }] }])("rejects malformed questions before asking (%#)", async raw => {
   const question = vi.fn(); await expect(answerPhaseoQuestion(raw, { onDelta: () => {}, onSession: () => {}, onApproval: async () => "accept", onQuestion: question }, new AbortController().signal)).rejects.toThrow(); expect(question).not.toHaveBeenCalled();
  });
 });

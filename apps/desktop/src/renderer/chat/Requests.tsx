@@ -4,7 +4,7 @@ import { ScrollArea } from "../components/ui/scroll-area";
 import type { Task } from "../../shared/workspace";
 import { useWorkspace } from "../app/workspace";
 import { Button } from "../components/ui/button";
-import { QuestionForm } from "../components/QuestionForm";
+import { QuestionPanel } from "./QuestionPanel";
 import { AgentForm } from "../components/AgentForm";
 import { threadToolLabels } from "../../shared/orchestration";
 
@@ -50,12 +50,13 @@ function ApprovalCard({ title, description, onDecision }: { title?: string; desc
 }
 
 /** Pending approvals, questions and forms the agent is waiting on. */
-export function Requests({ task }: { task: Task }) {
+export function Requests({ task, inlineQuestions = false }: { task: Task; inlineQuestions?: boolean }) {
 	const { command } = useWorkspace();
-	if (!task.approvals?.length && !task.questions?.length && !task.forms?.length) return null;
+	if (!task.approvals?.length && !(inlineQuestions && task.questions?.length) && !task.forms?.length) return null;
 	return <div className="flex flex-col gap-3">
 		{task.approvals?.map(approval => <ApprovalCard key={approval.id} title={approval.method} description={approval.description} onDecision={async decision => !!await command({ type: "approval", id: task.id, approvalId: approval.id, decision })} />)}
-		{task.questions?.map(request => <div key={request.id} className="legacy-request rounded-xl border border-border bg-card p-3"><QuestionForm questions={request.questions} onAnswer={async answers => !!await command({ type: "answer", id: task.id, requestId: request.id, answers })} /></div>)}
+		{/* Questions sit above the composer (QuestionPanel); compare panes, which have no composer, show them here. */}
+		{inlineQuestions && <QuestionPanel task={task} />}
 		{task.forms?.map(request => <div key={request.id} className="legacy-request rounded-xl border border-border bg-card p-3"><AgentForm form={request.form} onAnswer={async answer => !!await command({ type: "form-answer", id: task.id, requestId: request.id, answer })} /></div>)}
 	</div>;
 }

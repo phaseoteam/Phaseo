@@ -70,7 +70,7 @@ describe("Claude SDK integration", () => {
 			if (typeof prompt !== "string") for await (const message of prompt) void message;
 			expect(Object.keys(options.mcpServers)).toEqual(mode === "chat" ? [nativeMcpName(orchestration)] : [nativeMcpName(user), nativeMcpName(orchestration)]);
 			expect(options.systemPrompt).toBe(orchestrationInstructions);
-			if (mode === "chat") expect(options).toMatchObject({ tools: [], strictMcpConfig: true });
+			if (mode === "chat") expect(options).toMatchObject({ tools: ["AskUserQuestion"], strictMcpConfig: true });
 			expect((await options.canUseTool(`mcp__${nativeMcpName(orchestration)}__delegate_task`, { prompt: "Inspect" })).behavior).toBe("allow");
 			expect((await options.canUseTool("Bash", { command: "ls" })).behavior).toBe("deny");
 			expect(onApproval).toHaveBeenCalledTimes(mode === "chat" ? 0 : 1);
@@ -111,7 +111,7 @@ describe("Claude SDK integration", () => {
 		const onDelta = vi.fn(); const onSession = vi.fn();
 		await new ClaudeAdapter().run(task, ".", "Hi", { onDelta, onSession, onApproval: async () => "decline" });
 		expect(onDelta).toHaveBeenCalledExactlyOnceWith("response", "Hello"); expect(onSession).toHaveBeenCalledWith("native"); expect(close).toHaveBeenCalled();
-		expect(sdk.query.mock.lastCall![0].options.tools).toEqual([]);
+		expect(sdk.query.mock.lastCall![0].options.tools).toEqual(["AskUserQuestion"]);
 	});
 	it("surfaces provider failures instead of claiming completion", async () => {
 		sdk.query.mockReturnValue(Object.assign((async function* () { yield { type: "result", subtype: "error_during_execution", errors: ["Failed"] }; })(), { close: vi.fn() }));

@@ -49,20 +49,21 @@ export class ClaudeAdapter implements AgentAdapter {
 			...(task.nativeSessionId ? { resume: task.nativeSessionId } : task.nativeForkFrom ? { resume: task.nativeForkFrom, forkSession: true } : {}),
 			permissionMode: task.permissionMode === "full-access" ? "bypassPermissions" : task.mode === "plan" ? "plan" : "default",
 			...(task.permissionMode === "full-access" ? { allowDangerouslySkipPermissions: true } : {}),
-			...(task.mode === "chat" ? { tools: [] } : {}),
+			...(task.mode === "chat" ? { tools: ["AskUserQuestion"] } : {}),
 			includePartialMessages: true,
 			onElicitation: (request, options) => task.mode === "chat" ? Promise.resolve({ action: "decline" as const }) : respondMcpElicitation(request, callbacks, options.signal),
 			settingSources: ["user", "project", "local"],
 			canUseTool: async (toolName, input) => {
 				// The orchestration server asks for approval itself where a thread action needs it.
 				if (orchestrationTool && toolName.startsWith(orchestrationTool)) return { behavior: "allow", updatedInput: input };
-				if (task.mode === "chat") return { behavior: "deny", message: "Tools are unavailable in Chat mode." };
 				if (toolName === "AskUserQuestion" && callbacks.onQuestion && Array.isArray(input.questions)) {
 					const questions = input.questions as { question: string; header: string; multiSelect?: boolean; options?: { label: string; description?: string }[] }[];
 					const answers = await callbacks.onQuestion(questions.map((question, index) => ({ ...question, id: String(index), isOther: true })));
 					if (this.controller.signal.aborted) return { behavior: "deny", message: "Task stopped." };
+					if (!Object.keys(answers).length) return { behavior: "deny", message: "The user dismissed these questions. Continue without the answers, or ask again only if you cannot proceed." };
 					return { behavior: "allow", updatedInput: { ...input, answers: Object.fromEntries(questions.map((question, index) => [question.question, (answers[String(index)] ?? []).join(", ")])) } };
 				}
+				if (task.mode === "chat") return { behavior: "deny", message: "Tools are unavailable in Chat mode." };
 				const decision = await callbacks.onApproval(toolName, JSON.stringify(input, null, 2));
 				return decision === "accept" ? { behavior: "allow", updatedInput: input } : { behavior: "deny", message: "The user declined this action." };
 			},

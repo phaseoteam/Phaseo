@@ -118,6 +118,10 @@ Code lists chats from every project in one list, as T3 Code does; the menu above
 - Code chats with no activity for three days settle on their own; change or turn this off under **Settings → General → Auto-settle inactive chats**, or per chat under **Auto-settle behaviour** in its menu. Un-settling a chat holds off auto-settle until something new happens in it.
 - Right-click a card for its menu: pin, settle, snooze, tags, mark unread, filter by project, auto-settle behaviour, copy path, branch or chat ID, and archive. Under the last message, a settled or snoozed chat says so, with the way back.
 
+## Questions from the agent
+
+When an agent needs a decision it asks above the composer, one question at a time, as in T3 Code: the header and question, then each option as a row with its number. Press a number (1–9) or click to choose; a single choice moves to the next question by itself, and multiple choice toggles. The last row takes your own answer instead. Arrow keys move, Space toggles, Enter goes on, `Ctrl+Enter` submits from anywhere and Esc folds the panel away. Previous goes back. Dismiss (×) tells the agent you would rather not answer; it carries on without the answers. Answered or dismissed questions stay in the conversation, with secret answers hidden. Claude can ask in Chat as well as Code, and Phaseo models ask with the same shape as Claude: up to four questions with two to four described options each.
+
 ## Tags and navigation
 
 Tag a chat from its header (Add tag, or + next to its tags) or from Tags in its sidebar menu: type to find a tag or create one with Enter. A chat has up to 8 tags of up to 24 characters; each tag keeps one colour everywhere. In Chat, the tags in use sit above the chat list: pick one to show only chats with it, and pick it again to show everything. Sidebar rows show up to three tag dots. Agents tag their own chat with `organize_thread` (action `tag`) once the topic is clear, reusing tags already in use and keeping yours.

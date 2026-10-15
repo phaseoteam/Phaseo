@@ -27,7 +27,7 @@ function CompareColumn({ id }: { id: string }) {
 			{snapshot && <StatusDot task={snapshot} />}
 			<button type="button" aria-label="Open as a single chat" title="Open as a single chat" onClick={() => select(id)} className="ml-auto grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"><Maximize2 className="size-3.5" /></button>
 		</header>
-		{task ? <Conversation task={task} compact onAttachment={setPreview} onBranch={() => select(id)}><Requests task={task} /></Conversation> : <p className="p-4 text-xs text-muted-foreground">Loading…</p>}
+		{task ? <Conversation task={task} compact onAttachment={setPreview} onBranch={() => select(id)}><Requests task={task} inlineQuestions /></Conversation> : <p className="p-4 text-xs text-muted-foreground">Loading…</p>}
 		{preview && task && <AttachmentPreview taskId={task.id} id={preview} onClose={() => setPreview(undefined)} />}
 	</section>;
 }

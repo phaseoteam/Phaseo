@@ -89,7 +89,7 @@ export class AcpAdapter implements AgentAdapter {
 			checkSession(params.sessionId);
 			if (!receiving || !callbacks.onQuestion) return { outcome: "cancelled" };
 			const answers = await callbacks.onQuestion(params.questions);
-			if (this.cancelled) return { outcome: "cancelled" };
+			if (this.cancelled || !Object.keys(answers).length) return { outcome: "cancelled" };
 			return grokQuestionResponse(params.questions, answers);
 		});
 		for (const method of grokPlanMethods) app.onRequest(method, grokPlanRequest, async ({ params }) => {

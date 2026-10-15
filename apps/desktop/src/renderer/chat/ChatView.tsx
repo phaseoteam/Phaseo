@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, FolderOpen, Gauge, GitBranch, Layers, ListChecks, Paperclip, PenLine, Pin, PinOff, Plug, RotateCcw, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { QuestionPanel } from "./QuestionPanel";
 import { shortcut } from "../lib/keybindings";
 import { CustomSnoozeDialog, SnoozeItems, useThreadActions } from "../shell/threadActions";
 import { hasWoken, isSettled, isSnoozed, settleBlocker, shortDuration } from "../../shared/threadLifecycle";
@@ -248,6 +249,7 @@ export function ChatView({ id }: { id: string }) {
 			<Requests task={task} />
 			{removed && <p className="text-xs text-muted-foreground">This checkout has been removed. Switch model to continue in another project.</p>}
 		</Conversation>}
+		<QuestionPanel task={task} />
 		<ChatComposer task={task} />
 		{preview && <AttachmentPreview taskId={task.id} id={preview} onClose={() => setPreview(undefined)} />}
 	</div>;

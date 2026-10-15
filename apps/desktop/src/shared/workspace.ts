@@ -112,7 +112,7 @@ export type WorkspaceCommand =
 	| { type: "resume"; id: string }
 	| { type: "fork"; id: string; messageId?: string }
 	| { type: "approval"; id: string; approvalId: string; decision: "accept" | "decline" }
-	| { type: "answer"; id: string; requestId: string; answers: Record<string, string[]> }
+	| { type: "answer"; id: string; requestId: string; answers: Record<string, string[]>; dismissed?: boolean }
 	| { type: "form-answer"; id: string; requestId: string; answer: FormAnswer | null }
 	| { type: "queue-remove"; id: string; messageId: string }
 	| { type: "queue-edit"; id: string; messageId: string; text: string }
@@ -281,6 +281,8 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				break;
 			}
 			case "answer": {
+				if (command.dismissed !== undefined && typeof command.dismissed !== "boolean") throw new Error("Invalid dismissal.");
+				if (command.dismissed === true) { if (!command.answers || typeof command.answers !== "object" || Array.isArray(command.answers) || Object.keys(command.answers).length) throw new Error("A dismissal has no answers."); break; }
 				string("requestId");
 				if (!command.answers || typeof command.answers !== "object" || Array.isArray(command.answers)) throw new Error("Invalid answers.");
 				const entries = Object.entries(command.answers);
