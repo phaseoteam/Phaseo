@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Archive, Box, CornerLeftUp, Download, Ellipsis, FolderOpen, GitBranch, Layers, ListChecks, Paperclip, PenLine, Pin, PinOff, Plug, RotateCcw, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
-import type { Attachment, Task } from "../../shared/workspace";
+import { Archive, Box, CornerLeftUp, Download, Ellipsis, FolderOpen, Gauge, GitBranch, Layers, ListChecks, Paperclip, PenLine, Pin, PinOff, Plug, RotateCcw, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import type { AccountStatus, Attachment, Task } from "../../shared/workspace";
 import { errorText, useWorkspace } from "../app/workspace";
 import { useSelectedTask } from "../lib/useSelectedTask";
 import { usePersistedState } from "../lib/persistedState";
@@ -14,6 +14,7 @@ import { Composer, ToolButton } from "./Composer";
 import { useComposerMenu } from "./ComposerMenu";
 import { useComposerEditor } from "./composerEditor";
 import { composeMessage, mentionPlainText } from "../lib/mentions";
+import { UsageMeters } from "../settings/UsageMeters";
 import { Conversation } from "./Conversation";
 import { ModelPicker } from "./ModelPicker";
 import { ModelSettings } from "./ModelSettings";
@@ -77,6 +78,15 @@ function ChatComposer({ task }: { task: Task }) {
 	const draft = useTaskDraft(task.id);
 	const [busy, setBusy] = useState(false);
 	const [uploading, setUploading] = useState(false);
+	// /usage shows this agent's plan limits above the composer until dismissed.
+	const [limits, setLimits] = useState<AccountStatus | { error: string } | "loading">();
+	useEffect(() => { setLimits(undefined); }, [task.id]);
+	const limitHarness = (["codex", "claude", "cursor", "grok"] as const).find(value => value === task.harness);
+	const showLimits = async () => {
+		if (!api || !limitHarness) { openSettings("usage"); return; }
+		setLimits("loading");
+		try { setLimits(await api.accountStatus(limitHarness, task.accountId)); } catch (reason) { setLimits({ error: errorText(reason) }); }
+	};
 	const running = ["running", "waiting"].includes(task.status);
 	const code = task.mode !== "chat";
 	const editor = useComposerEditor({ value: draft.text, onChange: draft.setText, disabled: task.archived, onFiles: files => void upload(files),
@@ -103,6 +113,7 @@ function ChatComposer({ task }: { task: Task }) {
 				{ id: "permissions:full-access", label: "Full access", description: "The agent runs commands and edits files without asking", icon: null, checked: full, run: () => void command({ type: "update-task", id: task.id, permissionMode: "full-access" }) },
 			] },
 		] : [],
+		{ id: "usage", label: "Usage", description: limitHarness ? "Show this agent's plan limits" : "Open usage and limits", icon: <Gauge />, run: () => void showLimits() },
 		{ id: "rename", label: "Rename", description: "Rename this chat", icon: <PenLine />, run: () => window.dispatchEvent(new Event(renameChatEvent)) },
 		{ id: "accounts", label: "Accounts", description: "Manage accounts and usage", icon: <UserRound />, run: () => openSettings("accounts") },
 		...settingActions,
@@ -161,6 +172,10 @@ function ChatComposer({ task }: { task: Task }) {
 		{task.queue.length > 0 && <div className="mb-2 rounded-xl border border-border bg-card/60 px-3 py-2">
 			<p className="mb-1 text-[11px] font-medium text-muted-foreground">Queued · sends when the current turn finishes</p>
 			{task.queue.map(message => <div key={message.id} className="flex items-center gap-2 py-0.5 text-[13px]"><span className="min-w-0 flex-1 truncate">{mentionPlainText(message.text)}</span><button type="button" aria-label="Remove queued message" onClick={() => void command({ type: "queue-remove", id: task.id, messageId: message.id })} className="grid size-5 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button></div>)}
+		</div>}
+		{limits && <div className="mb-2 flex flex-col gap-2 rounded-xl border border-border bg-card/60 px-4 py-3">
+			<div className="flex items-center gap-2 text-[13px] font-semibold"><Gauge className="size-4 text-muted-foreground" />Usage limits<button type="button" aria-label="Hide usage limits" onClick={() => setLimits(undefined)} className="ml-auto grid size-6 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button></div>
+			{limits === "loading" ? <p className="text-xs text-muted-foreground">Checking…</p> : "error" in limits ? <p className="text-xs text-destructive">{limits.error}</p> : <UsageMeters status={limits} />}
 		</div>}
 		<Composer editor={editor} onSubmit={() => void send()} canSend={canSend} disabled={task.archived}
 			running={running} onStop={() => void command({ type: "cancel", id: task.id })}

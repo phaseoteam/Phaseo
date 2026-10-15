@@ -240,13 +240,13 @@ app.whenReady().then(async () => {
     await run("window.__auditSettings('General')");
     await wait("Boolean(document.querySelector('[aria-label=\"New chat model selection\"]'))");
     await run("window.__auditChoose('New chat model selection','fixed')");
-    await run("document.querySelector('[aria-label=\"New chat model\"] [aria-label=\"Model and runtime\"]').click()");
-    await wait("Boolean(document.querySelector('.session-picker-popup'))");
-    await run("document.querySelector('.session-picker-popup [aria-label=\"Search models\"]').focus()");
+    // The default model uses the composer's picker and saves as soon as it is chosen.
+    await run("document.querySelector('[aria-label=\"New chats\"] [aria-label=\"Choose model\"]').click()");
+    await wait("Boolean(document.querySelector('[data-slot=popover-content] [role=combobox]'))");
+    await run("document.querySelector('[data-slot=popover-content] [role=combobox]').focus()");
     owner.webContents.insertText('Owned model 999');
-    await wait("Boolean(document.querySelector('.session-picker-popup [data-option-value=\"owned-model-999\"]'))");
-    await run("document.querySelector('.session-picker-popup [data-option-value=\"owned-model-999\"]').click()");
-    await run("window.__auditButton('Use as default',document.querySelector('[aria-label=\"New chat model\"]')).click()");
+    await wait("Array.from(document.querySelectorAll('#model-picker-list [role=option]')).some(option=>option.textContent.includes('Owned model 999'))");
+    await run("Array.from(document.querySelectorAll('#model-picker-list [role=option]')).find(option=>option.textContent.includes('Owned model 999')).click()");
     await wait("JSON.parse(localStorage.getItem('phaseo.desktop.modelPreferences')).defaultSelection?.model==='owned-model-999'");
     await run("window.__auditCloseSettings()");
     await run("window.dispatchEvent(new KeyboardEvent('keydown',{key:'n',ctrlKey:true,bubbles:true}))");

@@ -6,7 +6,7 @@ import type { ThemePreference } from "../types";
 
 export type WorkspaceMode = "chat" | "code";
 export type RightPanelTab = "changes" | "files" | "terminal" | "browser" | "agents";
-export type SettingsPage = "general" | "accounts" | "appearance" | "agents" | "mcp" | "missions";
+export type SettingsPage = "general" | "appearance" | "notifications" | "accounts" | "usage" | "agents" | "mcp" | "missions";
 export type CompareGroup = { id: string; title: string; taskIds: string[]; createdAt: string };
 
 type WorkspaceState = {

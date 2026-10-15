@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, Box, Check, ChevronDown, Code2, FolderOpen, FolderPlus, Lightbulb, ListChecks, PenLine, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
+import { BookOpen, Box, Check, ChevronDown, Code2, FolderOpen, FolderPlus, Gauge, Lightbulb, ListChecks, PenLine, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
 import type { Task } from "../../shared/workspace";
 import { errorText, usablePhaseoAccounts, useWorkspace } from "../app/workspace";
 import { useModelPreferences, type ModelSelection } from "../lib/modelPreferences";
@@ -91,6 +91,7 @@ export function NewChat() {
 			] },
 		] : [],
 		{ id: "accounts", label: "Accounts", description: "Manage accounts and usage", icon: <UserRound />, run: () => openSettings("accounts") },
+		{ id: "usage", label: "Usage", description: "Open usage and limits", icon: <Gauge />, run: () => openSettings("usage") },
 		...settingActions,
 	];
 	const menu = useComposerMenu({ editor, harness: compare ? undefined : selections[0]?.harness, accountId: selections[0]?.accountId, projectId: code ? project?.id : undefined, actions });

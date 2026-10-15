@@ -97,10 +97,15 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 				editorInstance.current?.chain().focus().insertContent(lines.flatMap((line, index): JSONContent[] => [...index ? [{ type: "hardBreak" }] : [], ...line ? [{ type: "text", text: line }] : []])).run();
 				void view; return true;
 			},
-			handleDrop: (_view, event) => {
-				// A chat dragged from the sidebar lands at the caret, not where it was dropped.
+			handleDrop: (view, event) => {
+				// A chat dragged from the sidebar goes in where it is dropped.
 				const chat = draggedChat(event.dataTransfer);
-				if (chat) { event.preventDefault(); event.stopPropagation(); insertRef.current([chat]); return true; }
+				if (chat) {
+					event.preventDefault(); event.stopPropagation();
+					const at = view.posAtCoords({ left: event.clientX, top: event.clientY })?.pos;
+					if (at !== undefined) editorInstance.current?.commands.setTextSelection(at);
+					insertRef.current([chat]); return true;
+				}
 				const files = Array.from(event.dataTransfer?.files ?? []);
 				if (!files.length || !latest.current.onFiles) return false;
 				event.preventDefault(); latest.current.onFiles(files); return true;

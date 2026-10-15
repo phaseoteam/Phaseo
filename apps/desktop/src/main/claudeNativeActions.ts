@@ -1,7 +1,7 @@
 import { query, type Query, type SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import { resolveNativeCommand } from "./nativeProcess";
 import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
-import type { Account } from "../shared/workspace";
+import type { Account, AccountStatus, UsageWindow } from "../shared/workspace";
 import type { ClaudeAlias } from "./claudeModels";
 import type { NativeAction, NativeActionCatalog, NativeActionEntry } from "../shared/nativeActions";
 function identity(value: unknown) { return typeof value === "string" && value.length > 0 && value.length <= 200 && !value.startsWith("/") && !/\s/.test(value) && !Array.from(value).some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127) ? value : undefined; }
@@ -39,6 +39,23 @@ async function claudeDiscovery<T>(cwd: string, signal: AbortSignal, account: Acc
   if (signal.aborted) abort(); return await commandRequest(() => read(execution!), signal, () => { controller.abort(); execution!.close(); });
  } finally { signal.removeEventListener("abort", abort); controller.abort(); execution?.close(); release(); }
 }
+type ClaudeWindow = { utilization: number | null; resets_at: string | null } | null | undefined;
+const claudeWindow = (value: ClaudeWindow, minutes: number): UsageWindow | null => value && typeof value.utilization === "number" && Number.isFinite(value.utilization)
+	? { usedPercent: Math.min(100, Math.max(0, value.utilization)), windowDurationMins: minutes, resetsAt: value.resets_at && Number.isFinite(Date.parse(value.resets_at)) ? Math.floor(Date.parse(value.resets_at) / 1000) : null } : null;
+
+/** Plan limits from Claude Code's own /usage data: the 5-hour and weekly windows, any per-model weekly windows, and extra usage. */
+export async function claudeUsage(cwd: string, signal: AbortSignal, account?: Account): Promise<Pick<AccountStatus, "usage" | "usageError" | "extraUsage" | "plan">> {
+	const result = await claudeDiscovery(cwd, signal, account, execution => execution.usage_EXPERIMENTAL_MAY_CHANGE_DO_NOT_RELY_ON_THIS_API_YET({ skipBehaviors: true }));
+	const limits = result.rate_limits;
+	if (!result.rate_limits_available || !limits) return { usageError: "Claude Code can't read plan limits for this login. API keys, cloud providers and long-lived tokens (claude setup-token) don't include them; a normal /login sign-in does.", ...(result.subscription_type ? { plan: result.subscription_type } : {}) };
+	const usage: NonNullable<AccountStatus["usage"]> = [{ id: "claude", name: "Claude", primary: claudeWindow(limits.five_hour, 300), secondary: claudeWindow(limits.seven_day, 10080), spendControlReached: null }];
+	const models = limits.model_scoped?.length ? limits.model_scoped.map(model => [model.display_name, model] as const)
+		: ([["Opus", limits.seven_day_opus], ["Sonnet", limits.seven_day_sonnet]] as const).filter(([, value]) => value);
+	for (const [name, value] of models) { const window = claudeWindow(value, 10080); if (window) usage.push({ id: `claude:${name}`, name: `${name} weekly`, primary: window, secondary: null, spendControlReached: null }); }
+	const extra = limits.extra_usage;
+	return { usage, ...(result.subscription_type ? { plan: result.subscription_type } : {}), ...(extra ? { extraUsage: { enabled: extra.is_enabled, used: extra.used_credits, limit: extra.monthly_limit, ...(extra.currency ? { currency: extra.currency } : {}) } } : {}) };
+}
+
 export async function claudeNativeActions(cwd: string, signal: AbortSignal, account?: Account): Promise<NativeActionCatalog> {
  return claudeNativeActionCatalog(await claudeDiscovery(cwd, signal, account, execution => execution.supportedCommands()));
 }

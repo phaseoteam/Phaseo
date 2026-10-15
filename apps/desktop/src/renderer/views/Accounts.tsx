@@ -4,7 +4,10 @@ import { Select } from "../components/Select";
 import { HarnessLogo } from "../components/HarnessLogo";
 import type { AccountStatus as NativeAccountStatus, WorkspaceCommand } from "../../shared/workspace";
 import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
-import { AccountStatus } from "../components/AccountStatus";
+import { UsageMeters } from "../settings/UsageMeters";
+import { SettingsButton, SettingsField, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "../settings/SettingsLayout";
+
+const harnessLabel: Record<string, string> = { codex: "Codex", claude: "Claude Code", phaseo: "Phaseo API", cursor: "Cursor", grok: "Grok", opencode: "OpenCode", pi: "Pi" };
 import { AccountEditor } from "../components/AccountEditor";
 
 export function Accounts() {
@@ -54,23 +57,57 @@ export function Accounts() {
 		try { setWorkspace(await api.command(command)); return true; }
 		catch (reason) { setError(String(reason)); return false; }
 	}
-	return <div className="page accounts-page">
-		<header className="page-heading"><div><h1>Accounts</h1><p>Connect subscriptions or an API provider.</p></div></header>
-		{error && <div className="task-error" role="alert">{error}</div>}
-		<section className="panel"><div className="panel-heading"><h2>Connected accounts</h2><button type="button" onClick={() => { setShowArchived(value => !value); setEditing(undefined); }}>{showArchived ? "Active accounts" : "Archived accounts"}</button></div>
-		{(["codex", "claude"] as const).map(harness => <article key={harness}><div className="account-row"><div><strong>{harness === "codex" ? "Codex" : "Claude Code"} local login</strong><small>Existing native profile</small></div><button type="button" disabled={!!checking} onClick={() => void check(harness)}>{checking === harness ? "Checking…" : "Check status"}</button></div>{statuses[harness] && <AccountStatus status={statuses[harness]} />}</article>)}
-		{workspace.accounts.filter(account => Boolean(account.archived) === showArchived).map(account => <article key={account.id}><div className="account-row"><div><strong>{account.name}</strong><small>{account.harness} · {account.oauthExpiresAt ? Date.parse(account.oauthExpiresAt) <= Date.now() ? "Sign-in expired" : "Signed in" : account.kind === "api" ? account.harness === "cursor" ? "Cursor API key" : account.endpoint : account.configured ? "Signed in" : "Sign-in required"}</small></div>{account.oauthExpiresAt && !account.archived && <PhaseoSignIn accountId={account.id} onConnected={state => setWorkspace(state)} />}{account.kind === "api" && account.harness === "cursor" && <button type="button" disabled={!!checking} onClick={() => void check("cursor", account.id)}>Check status</button>}{account.kind === "native" && <><button type="button" disabled={!!checking || signingIn === account.id} onClick={() => void check(account.harness as "codex" | "claude" | "cursor" | "grok", account.id)}>{checking === account.id ? "Checking…" : "Check status"}</button><button type="button" disabled={(!!signingIn && signingIn !== account.id) || checking === account.id} onClick={() => { if (signingIn === account.id) void api?.cancelSignIn(account.id); else void signIn(account.id); }}>{signingIn === account.id ? "Cancel sign-in" : "Sign in"}</button></>}<button type="button" disabled={signingIn === account.id || checking === account.id} onClick={() => setEditing(account.id)}>Edit</button><button type="button" disabled={signingIn === account.id || checking === account.id} onClick={() => { setEditing(undefined); void update({ type: "update-account", id: account.id, archived: !account.archived }); }}>{account.archived ? "Restore" : "Archive"}</button></div>{editing === account.id && <AccountEditor account={account} onSave={update} onCancel={() => setEditing(undefined)} />}{statuses[account.id] && <AccountStatus status={statuses[account.id]} />}</article>)}
-		</section>
-		<section className="panel"><div className="panel-heading"><h2>Add account</h2></div><PhaseoSignIn disabled={saving} onConnected={state => setWorkspace(state)} />
-		<form className="account-form" aria-label="Add account" onSubmit={event => { event.preventDefault(); void add(); }}>
-			<label>Name<input value={name} onChange={event => setName(event.target.value)} required placeholder="Personal account" /></label>
-			<label>Provider<Select label="Account provider" value={provider} onValueChange={value => setProvider(value as typeof provider)} options={([ ["codex", "OpenAI / Codex subscription"], ["claude", "Anthropic / Claude subscription"], ["cursor", "Cursor"], ["grok", "Grok subscription"], ["phaseo", "Phaseo / compatible API"] ] as const).map(([value, label]) => ({ value, label, icon: <HarnessLogo harness={value} /> }))} /></label>
-			{provider === "cursor" && <label>Connection<Select label="Account connection" value={cursorKind} onValueChange={value => setCursorKind(value as typeof cursorKind)} options={[{ value: "native", label: "Browser sign-in" }, { value: "api", label: "API key" }]} /></label>}
-			{provider === "cursor" && cursorKind === "api" && <label>API key<input type="password" value={apiKey} onChange={event => setApiKey(event.target.value)} autoComplete="off" required /></label>}
-			{provider === "phaseo" && <><label>API endpoint<input value={endpoint} onChange={event => setEndpoint(event.target.value)} required /></label><label>API key<input type="password" value={apiKey} onChange={event => setApiKey(event.target.value)} autoComplete="off" required /></label></>}
-			<div className="account-form-actions"><button className="task-primary" type="submit" disabled={saving || !name.trim()}>{saving ? "Connecting…" : "Add account"}</button></div>
-		</form>
-		<p className="task-muted">Native accounts use separate local profiles. API keys are encrypted using your device’s secure storage.</p>
-		</section>
-	</div>;
+	const visible = workspace.accounts.filter(account => Boolean(account.archived) === showArchived);
+	const state = (account: (typeof visible)[number]) => account.oauthExpiresAt ? Date.parse(account.oauthExpiresAt) <= Date.now() ? "Sign-in expired" : "Signed in" : account.kind === "api" ? account.harness === "cursor" ? "Cursor API key" : account.endpoint : account.configured ? "Signed in" : "Sign-in required";
+	return <SettingsPageLayout title="Accounts" description="Subscriptions and API keys your chats run on." className="accounts-page">
+		{error && <p className="text-[13px] text-destructive" role="alert">{error}</p>}
+		<SettingsSection title="Logins on this computer" description="Codex and Claude Code use the login you already have in their own apps.">
+			{(["codex", "claude"] as const).map(harness => <article key={harness}>
+				<SettingsRow icon={<HarnessLogo harness={harness} />} title={`${harness === "codex" ? "Codex" : "Claude Code"} login`} description="Your existing sign-in"
+					control={<SettingsButton disabled={!!checking} onClick={() => void check(harness)}>{checking === harness ? "Checking…" : "Check status"}</SettingsButton>}>
+					{statuses[harness] && <UsageMeters status={statuses[harness]} />}
+				</SettingsRow>
+			</article>)}
+		</SettingsSection>
+		<SettingsSection title="Connected accounts" action={<SettingsButton variant="ghost" onClick={() => { setShowArchived(value => !value); setEditing(undefined); }}>{showArchived ? "Active accounts" : "Archived accounts"}</SettingsButton>}>
+			{visible.map(account => <article key={account.id}>
+				<SettingsRow icon={<HarnessLogo harness={account.harness} />} title={account.name} description={<>{harnessLabel[account.harness] ?? account.harness} · {state(account)}</>}
+					control={<>
+						{account.oauthExpiresAt && !account.archived && <PhaseoSignIn accountId={account.id} onConnected={next => setWorkspace(next)} />}
+						{account.kind === "api" && account.harness === "cursor" && <SettingsButton disabled={!!checking} onClick={() => void check("cursor", account.id)}>Check status</SettingsButton>}
+						{account.kind === "native" && <>
+							<SettingsButton disabled={!!checking || signingIn === account.id} onClick={() => void check(account.harness as "codex" | "claude" | "cursor" | "grok", account.id)}>{checking === account.id ? "Checking…" : "Check status"}</SettingsButton>
+							<SettingsButton disabled={(!!signingIn && signingIn !== account.id) || checking === account.id} onClick={() => { if (signingIn === account.id) void api?.cancelSignIn(account.id); else void signIn(account.id); }}>{signingIn === account.id ? "Cancel sign-in" : "Sign in"}</SettingsButton>
+						</>}
+						<SettingsButton variant="ghost" disabled={signingIn === account.id || checking === account.id} onClick={() => setEditing(account.id)}>Edit</SettingsButton>
+						<SettingsButton variant="ghost" disabled={signingIn === account.id || checking === account.id} onClick={() => { setEditing(undefined); void update({ type: "update-account", id: account.id, archived: !account.archived }); }}>{account.archived ? "Restore" : "Archive"}</SettingsButton>
+					</>}>
+					{editing === account.id && <AccountEditor account={account} onSave={update} onCancel={() => setEditing(undefined)} />}
+					{statuses[account.id] && <UsageMeters status={statuses[account.id]} />}
+				</SettingsRow>
+			</article>)}
+			{!visible.length && <SettingsNote>{showArchived ? "No archived accounts." : "No accounts connected yet. Add one below."}</SettingsNote>}
+		</SettingsSection>
+		<SettingsSection title="Add an account">
+			<div className="flex flex-col gap-4 p-4">
+				<PhaseoSignIn disabled={saving} onConnected={next => setWorkspace(next)} />
+				<form className="flex flex-col gap-3" aria-label="Add account" onSubmit={event => { event.preventDefault(); void add(); }}>
+					<div className="grid grid-cols-2 gap-3">
+						<SettingsField label="Name"><input value={name} onChange={event => setName(event.target.value)} required placeholder="Personal account" className={settingsInput} /></SettingsField>
+						<SettingsField label="Provider"><Select label="Account provider" value={provider} onValueChange={value => setProvider(value as typeof provider)} options={([["codex", "OpenAI / Codex subscription"], ["claude", "Anthropic / Claude subscription"], ["cursor", "Cursor"], ["grok", "Grok subscription"], ["phaseo", "Phaseo / compatible API"]] as const).map(([value, label]) => ({ value, label, icon: <HarnessLogo harness={value} /> }))} /></SettingsField>
+						{provider === "cursor" && <SettingsField label="Connection"><Select label="Account connection" value={cursorKind} onValueChange={value => setCursorKind(value as typeof cursorKind)} options={[{ value: "native", label: "Browser sign-in" }, { value: "api", label: "API key" }]} /></SettingsField>}
+						{provider === "cursor" && cursorKind === "api" && <SettingsField label="API key"><input type="password" value={apiKey} onChange={event => setApiKey(event.target.value)} autoComplete="off" required className={settingsInput} /></SettingsField>}
+						{provider === "phaseo" && <>
+							<SettingsField label="API endpoint"><input value={endpoint} onChange={event => setEndpoint(event.target.value)} required className={settingsInput} /></SettingsField>
+							<SettingsField label="API key"><input type="password" value={apiKey} onChange={event => setApiKey(event.target.value)} autoComplete="off" required className={settingsInput} /></SettingsField>
+						</>}
+					</div>
+					<div className="flex items-center gap-3">
+						<SettingsButton variant="primary" type="submit" disabled={saving || !name.trim()}>{saving ? "Connecting…" : "Add account"}</SettingsButton>
+						<span className="text-xs text-muted-foreground">Native accounts use separate local profiles. API keys are encrypted with your device's secure storage.</span>
+					</div>
+				</form>
+			</div>
+		</SettingsSection>
+	</SettingsPageLayout>;
 }

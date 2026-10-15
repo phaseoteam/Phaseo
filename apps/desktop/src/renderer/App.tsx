@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
+import { useAppTheme } from "./lib/appTheme";
 import { useWorkspace, WorkspaceProvider } from "./app/workspace";
 import { Titlebar } from "./shell/Titlebar";
 import { Sidebar } from "./shell/Sidebar";
@@ -70,5 +71,6 @@ function Shell() {
 }
 
 export function App() {
+	useAppTheme();
 	return <WorkspaceProvider><Shell /></WorkspaceProvider>;
 }
