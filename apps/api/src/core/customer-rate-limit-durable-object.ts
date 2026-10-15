@@ -9,6 +9,7 @@ const MINUTE_MS = 60_000;
 const DAY_MS = 86_400_000;
 // A restart forgets at most this much of the minute window.
 const MINUTE_CHECKPOINT_INTERVAL_MS = 5_000;
+const MAX_RELEASED_MINUTE = 10_000;
 
 /**
  * Exact per-scope admission counter.
@@ -25,6 +26,8 @@ export class CustomerRateLimitDurableObject extends DurableObject<GatewayBinding
 	private scope: string | null = null;
 	/** Admission ID -> start time, in arrival order. */
 	private readonly minute = new Map<string, number>();
+	/** Minute admissions released before they were counted -> release time. */
+	private readonly releasedMinute = new Map<string, number>();
 	private lastMinuteCheckpoint = 0;
 	private freeDay = -1;
 	private freeUsed = 0;
@@ -97,10 +100,42 @@ export class CustomerRateLimitDurableObject extends DurableObject<GatewayBinding
 			: this.admitFreeDay(now, admissionId, limits.freeRequestsPerDay);
 	}
 
+	/**
+	 * Returns a minute admission's slot, for requests served from the response
+	 * cache. Counting and release are both dispatched in the background, so a
+	 * release can arrive first; it is then remembered and the admission is not
+	 * counted when it arrives.
+	 */
+	async release(scopeKey: string, kind: "minute", admissionId: string): Promise<void> {
+		if (this.scope !== null && this.scope !== scopeKey) throw new Error("customer_scope_mismatch");
+		this.scope = scopeKey;
+		if (kind !== "minute") return;
+		const now = Date.now();
+		if (this.minute.delete(admissionId)) {
+			this.checkpointMinute(now);
+			return;
+		}
+		this.pruneReleased(now);
+		this.releasedMinute.set(admissionId, now);
+		while (this.releasedMinute.size > MAX_RELEASED_MINUTE) this.releasedMinute.delete(this.releasedMinute.keys().next().value!);
+	}
+
+	private pruneReleased(now: number): void {
+		for (const [id, releasedAt] of this.releasedMinute) {
+			if (releasedAt > now - MINUTE_MS) break;
+			this.releasedMinute.delete(id);
+		}
+	}
+
 	private admitMinute(now: number, admissionId: string, limit: number): CustomerAdmission {
 		for (const [id, startedAt] of this.minute) {
 			if (startedAt > now - MINUTE_MS) break;
 			this.minute.delete(id);
+		}
+		this.pruneReleased(now);
+		if (this.releasedMinute.delete(admissionId)) {
+			const remaining = Math.max(0, limit - this.minute.size);
+			return { allowed: true, limit, remaining, retryAfterSeconds: remaining ? 0 : this.minuteRetryAfter(now) };
 		}
 		const used = this.minute.size;
 		if (this.minute.has(admissionId)) {

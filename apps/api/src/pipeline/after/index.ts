@@ -28,7 +28,7 @@ import {
     maybeWriteStickyRoutingFromUsage,
     resolveCacheAwareRoutingPreference,
 } from "../execute/sticky-routing";
-import { buildCachedResponseRecord } from "@/core/response-cache";
+import { applyResponseCacheHeaders, buildCachedResponseRecord } from "@/core/response-cache";
 import { applyResponsePlugins } from "@/plugins/registry";
 import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } from "./billing-policy";
 import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
@@ -173,8 +173,10 @@ function dispatchNonStreamSuccessSideEffects(args: {
             try {
                 const responseCache = getResponseCache();
                 const cacheState = ctx.responseCache;
+                // Only complete successes are cached; errors and partial results are not.
                 if (
                     responseCache &&
+                    responseStatus === 200 &&
                     cacheState?.enabled &&
                     cacheState.status === "miss" &&
                     cacheState.key &&
@@ -197,13 +199,20 @@ function dispatchNonStreamSuccessSideEffects(args: {
                         routingMode: ctx.routingMode ?? null,
                         presetId: ctx.preset?.id ?? null,
                         presetSlug: ctx.preset?.slug ?? null,
+                        sourceRequestId: ctx.requestId,
                         ttlSeconds: cacheState.ttlSeconds,
                     });
-                    await responseCache.set(
+                    const stored = await responseCache.set(
                         cacheState.key,
                         cacheRecord,
                         cacheState.ttlSeconds,
                     );
+                    if (!stored) {
+                        console.info("[gateway] response cache entry too large to store", {
+                            requestId: ctx.requestId,
+                            endpoint: ctx.endpoint,
+                        });
+                    }
                 }
             } catch (error) {
                 console.warn("[gateway] response cache write failed", {
@@ -644,7 +653,7 @@ async function handleNonStreamResponse(
 
     const headers = makeHeaders(timingHeader);
     if (ctx.responseCache?.status === "miss") {
-        headers.set("X-Phaseo-Response-Cache", "miss");
+        applyResponseCacheHeaders(headers, { status: "miss", ttlSeconds: ctx.responseCache.ttlSeconds });
     }
     const responseStatus = result.upstream.status;
     return ctx.timer.span("after_create_response", () => createResponse(responseBody, responseStatus, headers));

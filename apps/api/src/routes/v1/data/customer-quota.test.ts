@@ -2,17 +2,18 @@ import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Env } from "@/runtime/types";
 
-const mocks = vi.hoisted(() => ({ authenticate: vi.fn(), quota: vi.fn(), configure: vi.fn(), clear: vi.fn(), handler: vi.fn() }));
+const mocks = vi.hoisted(() => ({ authenticate: vi.fn(), quota: vi.fn(), release: vi.fn(), configure: vi.fn(), clear: vi.fn(), handler: vi.fn() }));
 vi.mock("@pipeline/before/auth", () => ({ prepareAuthentication: mocks.authenticate }));
-vi.mock("@core/customer-rate-limits", () => ({ guardCustomerQuota: mocks.quota }));
+vi.mock("@core/customer-rate-limits", () => ({ guardCustomerQuota: mocks.quota, releaseCustomerQuota: mocks.release }));
 vi.mock("@/runtime/env", () => ({ configureRuntime: mocks.configure, clearRuntime: mocks.clear,
 	getBindings: () => ({ CUSTOMER_RATE_LIMITS_ENABLED: "true" }) }));
 
-import { admitCustomerRequest, customerQuotaMiddleware } from "./customer-quota";
+import { admitCustomerRequest, customerQuotaMiddleware, releaseCustomerRequest } from "./customer-quota";
 
 beforeEach(() => {
 	mocks.authenticate.mockReset().mockResolvedValue({ ok: true, workspaceId: "workspace", userId: "owner" });
 	mocks.quota.mockReset().mockReturnValue(null);
+	mocks.release.mockReset();
 	mocks.configure.mockReset();
 	mocks.clear.mockReset();
 	mocks.handler.mockReset();
@@ -41,6 +42,25 @@ describe("inference quota admission", () => {
 		await admitCustomerRequest(new Request(req));
 		expect(mocks.quota).toHaveBeenCalledTimes(2);
 	});
+	it("releases an admitted request's slot once, and never a denied one", async () => {
+		const req = new Request("https://phaseo.local/v1/responses", { method: "POST" });
+		await admitCustomerRequest(req);
+		releaseCustomerRequest(req);
+		releaseCustomerRequest(req);
+		expect(mocks.release).toHaveBeenCalledTimes(1);
+		expect(mocks.release.mock.calls[0][0]).toMatchObject({
+			workspaceId: "workspace",
+			userId: "owner",
+			admissionId: mocks.quota.mock.calls[0][0].admissionId,
+		});
+
+		mocks.quota.mockReturnValue(new Response(null, { status: 429 }));
+		const denied = new Request("https://phaseo.local/v1/responses", { method: "POST" });
+		await admitCustomerRequest(denied);
+		releaseCustomerRequest(denied);
+		expect(mocks.release).toHaveBeenCalledTimes(1);
+	});
+
 	it("admits a collection request once and uses a server-owned admission ID", async () => {
 		const response = await app().request("http://localhost/files", { method: "POST", headers: { "x-request-id": "reused" } }, env);
 		expect(response.status).toBe(200);

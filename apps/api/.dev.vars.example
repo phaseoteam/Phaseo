@@ -19,3 +19,8 @@ AMAZON_BEDROCK_API_KEY=replace-with-a-bedrock-api-key
 # AWS_ACCESS_KEY_ID=replace-with-an-access-key-id
 # AWS_SECRET_ACCESS_KEY=replace-with-a-secret-access-key
 # AWS_SESSION_TOKEN=replace-with-a-session-token
+
+# Response cache (Upstash Redis REST). Caching stays off unless all three are set.
+# RESPONSE_CACHE_ENABLED=true
+# RESPONSE_CACHE_REDIS_REST_URL=https://replace-with-your-database.upstash.io
+# RESPONSE_CACHE_REDIS_REST_TOKEN=replace-with-a-rest-token

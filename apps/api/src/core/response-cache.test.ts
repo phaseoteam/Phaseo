@@ -1,10 +1,14 @@
 import {
+	applyResponseCacheHeaders,
+	buildCachedResponseBody,
 	buildCachedResponseRecord,
 	buildResponseCacheFingerprint,
 	buildResponseCacheFingerprintPayload,
 	buildResponseCacheKey,
 	clampResponseCacheTtlSeconds,
 	isResponseCacheEligible,
+	parseResponseCacheFlag,
+	parseResponseCacheTtl,
 	resolveResponseCachePolicy,
 	stableStringify,
 } from "./response-cache";
@@ -14,6 +18,8 @@ describe("response-cache fingerprinting", () => {
 	it("produces stable payloads independent of input key order", async () => {
 		const first = await buildResponseCacheFingerprint({
 			workspaceId: "ws_123",
+			apiKeyId: "key_123",
+			stream: false,
 			endpoint: "responses",
 			model: "openai/gpt-5.4-nano",
 			protocol: "responses",
@@ -28,6 +34,8 @@ describe("response-cache fingerprinting", () => {
 		});
 		const second = await buildResponseCacheFingerprint({
 			workspaceId: "ws_123",
+			apiKeyId: "key_123",
+			stream: false,
 			endpoint: "responses",
 			model: "openai/gpt-5.4-nano",
 			protocol: "responses",
@@ -48,6 +56,8 @@ describe("response-cache fingerprinting", () => {
 	it("strips debug fields from the fingerprint payload", () => {
 		const payload = buildResponseCacheFingerprintPayload({
 			workspaceId: "ws_123",
+			apiKeyId: "key_123",
+			stream: false,
 			endpoint: "responses",
 			model: "openai/gpt-5.4-nano",
 			body: {
@@ -69,88 +79,130 @@ describe("response-cache fingerprinting", () => {
 		expect(stableStringify(payload)).not.toContain("\"debug\"");
 	});
 
-	it("builds versioned Redis cache keys", () => {
-		expect(buildResponseCacheKey("ws_123", "abc123")).toBe(
-			"gateway:response-cache:v1:ws_123:abc123",
+	it("separates entries by API key and by stream mode", async () => {
+		const base = {
+			workspaceId: "ws_123",
+			apiKeyId: "key_a",
+			endpoint: "responses" as const,
+			model: "openai/gpt-5.4-nano",
+			stream: false,
+			body: { input: "hello" },
+		};
+		const first = await buildResponseCacheFingerprint(base);
+		const otherKey = await buildResponseCacheFingerprint({ ...base, apiKeyId: "key_b" });
+		const streamed = await buildResponseCacheFingerprint({ ...base, stream: true });
+
+		expect(otherKey.digest).not.toBe(first.digest);
+		expect(streamed.digest).not.toBe(first.digest);
+	});
+
+	it("builds versioned Redis cache keys scoped to the API key", () => {
+		expect(buildResponseCacheKey("key_123", "abc123")).toBe(
+			"gateway:response-cache:v2:key_123:abc123",
 		);
 	});
 
 	it("marks only non-stream tool-free text requests as eligible", () => {
-		expect(
-			isResponseCacheEligible({
-				endpoint: "responses",
-				stream: false,
-				hasTools: false,
-				serverToolsEnabled: false,
-			}),
-		).toEqual({
-			eligible: true,
-			reason: "eligible",
-		});
-		expect(
-			isResponseCacheEligible({
-				endpoint: "responses",
-				stream: false,
-				hasTools: true,
-				serverToolsEnabled: false,
-			}),
-		).toEqual({
+		const eligible = { endpoint: "responses" as const, stream: false, apiKeyId: "key_123" };
+		expect(isResponseCacheEligible(eligible)).toEqual({ eligible: true, reason: "eligible" });
+		expect(isResponseCacheEligible({ ...eligible, hasTools: true })).toEqual({
 			eligible: false,
 			reason: "tools_present",
+		});
+		expect(isResponseCacheEligible({ ...eligible, stream: true })).toEqual({
+			eligible: false,
+			reason: "streaming_request",
+		});
+	});
+
+	it("skips zero data retention workspaces and requests without an API key", () => {
+		expect(
+			isResponseCacheEligible({ endpoint: "responses", stream: false, apiKeyId: "key_123", zeroDataRetention: true }),
+		).toEqual({ eligible: false, reason: "zero_data_retention" });
+		expect(isResponseCacheEligible({ endpoint: "responses", stream: false, apiKeyId: null })).toEqual({
+			eligible: false,
+			reason: "no_api_key",
 		});
 	});
 });
 
 describe("response-cache policy", () => {
-	it("prefers explicit request TTL over all other sources", () => {
-		expect(
-			resolveResponseCachePolicy({
-				requestTtlSeconds: 60,
-				presetTtlSeconds: 300,
-				workspaceDefaultTtlSeconds: 600,
-			}),
-		).toEqual({
+	it("is off unless a request header or the preset turns it on", () => {
+		expect(resolveResponseCachePolicy({})).toEqual({
+			enabled: false,
+			ttlSeconds: null,
+			source: "disabled",
+			reason: "not_enabled",
+		});
+		expect(resolveResponseCachePolicy({ presetTtlSeconds: 120 })).toMatchObject({
+			enabled: false,
+			reason: "not_enabled",
+		});
+	});
+
+	it("enables from the request header with the default TTL", () => {
+		expect(resolveResponseCachePolicy({ requestEnabled: true })).toEqual({
 			enabled: true,
-			ttlSeconds: 60,
-			source: "request",
+			ttlSeconds: 300,
+			source: "default",
+		});
+	});
+
+	it("enables from the preset with the preset TTL", () => {
+		expect(resolveResponseCachePolicy({ presetEnabled: true, presetTtlSeconds: 120 })).toEqual({
+			enabled: true,
+			ttlSeconds: 120,
+			source: "preset",
+		});
+	});
+
+	it("lets the request TTL override the preset TTL", () => {
+		expect(
+			resolveResponseCachePolicy({ presetEnabled: true, presetTtlSeconds: 120, requestTtlSeconds: 60 }),
+		).toMatchObject({ enabled: true, ttlSeconds: 60, source: "request" });
+	});
+
+	it("never lets a request override a preset that disables caching", () => {
+		expect(resolveResponseCachePolicy({ presetEnabled: false, requestEnabled: true })).toMatchObject({
+			enabled: false,
+			reason: "preset_disabled",
+		});
+	});
+
+	it("lets a request disable caching that the preset enables", () => {
+		expect(resolveResponseCachePolicy({ presetEnabled: true, requestEnabled: false })).toMatchObject({
+			enabled: false,
+			reason: "request_disabled",
 		});
 	});
 
 	it("clamps TTLs into the supported range", () => {
-		expect(clampResponseCacheTtlSeconds(5)).toBe(30);
+		expect(clampResponseCacheTtlSeconds(0)).toBe(1);
 		expect(clampResponseCacheTtlSeconds(90_000)).toBe(86_400);
 	});
 
-	it("returns disabled when an upstream layer opts out", () => {
-		expect(
-			resolveResponseCachePolicy({
-				presetTtlSeconds: 120,
-				presetDisabled: true,
-			}),
-		).toEqual({
-			enabled: false,
-			ttlSeconds: null,
-			source: "disabled",
-		});
-	});
-
-	it("falls back to the platform default when no explicit TTL is provided", () => {
-		expect(resolveResponseCachePolicy({})).toEqual({
-			enabled: true,
-			ttlSeconds: 300,
-			source: "platform_default",
-		});
+	it("parses cache headers leniently", () => {
+		expect(parseResponseCacheFlag("true")).toBe(true);
+		expect(parseResponseCacheFlag(" FALSE ")).toBe(false);
+		expect(parseResponseCacheFlag("yes-please")).toBeNull();
+		expect(parseResponseCacheFlag(null)).toBeNull();
+		expect(parseResponseCacheTtl("60abc")).toBe(60);
+		expect(parseResponseCacheTtl("1.5")).toBe(1);
+		expect(parseResponseCacheTtl("0")).toBe(1);
+		expect(parseResponseCacheTtl("999999")).toBe(86_400);
+		expect(parseResponseCacheTtl("abc")).toBeNull();
 	});
 
 	it("builds cache records with expiry metadata", () => {
 		const record = buildCachedResponseRecord({
-			key: "gateway:response-cache:v1:ws_123:abc123",
+			key: "gateway:response-cache:v2:key_123:abc123",
 			fingerprint: "abc123",
 			endpoint: "responses",
 			model: "openai/gpt-5.4-nano",
 			statusCode: 200,
 			responseBody: { id: "resp_123" },
 			providerId: "openai",
+			sourceRequestId: "req_source",
 			ttlSeconds: 120,
 			now: new Date("2026-05-09T12:00:00.000Z"),
 		});
@@ -158,5 +210,66 @@ describe("response-cache policy", () => {
 		expect(record.createdAt).toBe("2026-05-09T12:00:00.000Z");
 		expect(record.expiresAt).toBe("2026-05-09T12:02:00.000Z");
 		expect(record.providerId).toBe("openai");
+		expect(record.sourceRequestId).toBe("req_source");
+	});
+});
+
+describe("response-cache replay", () => {
+	it("gives a hit its own ID and creation time and zeroes its usage", () => {
+		const stored = {
+			id: "req_source",
+			object: "chat.completion",
+			created: 1_700_000_000,
+			usage: {
+				prompt_tokens: 10,
+				completion_tokens: 4,
+				total_tokens: 14,
+				prompt_tokens_details: { cached_tokens: 2 },
+			},
+		};
+		const body = buildCachedResponseBody({
+			responseBody: stored,
+			sourceRequestId: "req_source",
+			requestId: "req_hit",
+			now: new Date("2026-10-12T00:00:00.000Z"),
+		});
+
+		expect(body).toEqual({
+			id: "req_hit",
+			object: "chat.completion",
+			created: 1_791_763_200,
+			usage: {
+				prompt_tokens: 0,
+				completion_tokens: 0,
+				total_tokens: 0,
+				prompt_tokens_details: { cached_tokens: 0 },
+			},
+		});
+		expect(stored.usage.total_tokens).toBe(14);
+	});
+
+	it("sets status, age, remaining TTL and source headers on a hit", () => {
+		const headers = new Headers();
+		applyResponseCacheHeaders(headers, {
+			status: "hit",
+			ttlSeconds: 300,
+			ageMs: 61_500,
+			sourceRequestId: "req_source",
+		});
+		expect(Object.fromEntries(headers)).toEqual({
+			"x-phaseo-cache-status": "HIT",
+			"x-phaseo-cache-age": "61",
+			"x-phaseo-cache-ttl": "239",
+			"x-phaseo-cache-source-id": "req_source",
+		});
+	});
+
+	it("sets status and the full TTL on a miss", () => {
+		const headers = new Headers();
+		applyResponseCacheHeaders(headers, { status: "miss", ttlSeconds: 300 });
+		expect(Object.fromEntries(headers)).toEqual({
+			"x-phaseo-cache-status": "MISS",
+			"x-phaseo-cache-ttl": "300",
+		});
 	});
 });
