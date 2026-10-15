@@ -32,7 +32,7 @@ try {
       as $$ select revision::text from private.routing_catalogue_revision where singleton $$;
   `);
   await db.exec(await readFile(new URL('../migrations/20261009000100_gateway_catalogue_snapshot_at.sql', import.meta.url), 'utf8'));
-  const migration = await readFile(new URL('../migrations/20261012213000_serve_retired_models_with_routes.sql', import.meta.url), 'utf8');
+  const migration = await readFile(new URL('../migrations/20261015111000_serve_retired_models_with_routes.sql', import.meta.url), 'utf8');
   await db.exec(migration);
   await db.exec(migration);
 
