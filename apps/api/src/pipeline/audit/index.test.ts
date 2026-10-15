@@ -101,13 +101,31 @@ describe("audit request detail persistence", () => {
 		// Raw routing remains durable in SQL until the subsequent RPC commits R2.
 		expect(insert.mock.calls[0][0].detail_metadata.routing_snapshot).toBeTruthy();
 		expect(insert.mock.calls[0][0].detail_metadata).not.toHaveProperty("routing_archive");
-		const event = rpc.mock.calls[0][1].p_event;
 		expect(event.routing_decisions).toEqual([]);
 		expect(event.routing_archive).toBeTruthy();
 		if (kind === "success") {
 			expect(event.cost_nanos).toBe(5000);
 			expect(event.usage_meters).toContainEqual(expect.objectContaining({ meter_key: "input_tokens", quantity: 10 }));
 		}
+	});
+
+	it.each([
+		["a policy rejection", "user:rate_limit_exceeded", { policy_id: "policy-1", limit_scope: "member" }],
+		["a provider rate limit", "rate_limit_exceeded", null],
+	])("records the rejecting rate limit policy on %s", async (_label, errorCode, expected) => {
+		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
+			data: { id: "row", created_at: "2026-10-15T00:00:00Z", workspace_id: "ws" }, error: null,
+		}) }) }));
+		const rpc = vi.fn().mockResolvedValue({ data: "fact", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		await auditFailure({
+			stage: "execute", requestId: "req", workspaceId: "ws", model: "model", endpoint: "responses",
+			stream: false, statusCode: 429, errorCode,
+			errorPayload: { reason: "policy_requests_per_minute", policy_id: "policy-1", limit_scope: "member" },
+		});
+		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
+		expect(event.safe_metadata.rate_limit).toEqual(expected);
 	});
 
 	it("does not upload when the authoritative request insert fails", async () => {
