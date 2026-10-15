@@ -11,7 +11,7 @@ const schemaFiles = [
     '../schemas/public/functions/opt_out_of_product_emails.sql',
 ];
 const one = async (sql, params) => (await db.query(sql, params)).rows[0];
-const enqueue = async limit => (await one("select public.enqueue_feedback_request_emails('v1', 90, $1) queued", [limit])).queued;
+const enqueue = async (limit, cap = 100) => (await one("select public.enqueue_feedback_request_emails('v1', 90, $1, $2) queued", [limit, cap])).queued;
 const tokenFor = async email => (await one(
     `select r.access_token from public.feedback_requests r join auth.users a on a.id = r.user_id where a.email = $1`, [email],
 )).access_token;
@@ -83,11 +83,11 @@ try {
     assert.equal(await enqueue(10), 0, 'nobody is asked twice in a campaign');
 
     const queued = (await db.query(`select to_email, kind, template, dedupe_key, payload from public.email_outbox order by to_email`)).rows;
-    assert.deepEqual(queued.map(row => [row.to_email, row.payload.segment, row.payload.recency, row.payload.first_name]), [
-        ['never@example.com', 'never_requested', 'dormant', null],
-        ['paid@example.com', 'paid', 'active', 'Ada'],
-        ['raw@example.com', 'used_not_paid', 'dormant', null],
-        ['used@example.com', 'used_not_paid', 'lapsed', 'Grace'],
+    assert.deepEqual(queued.map(row => [row.to_email, row.payload.segment, row.payload.recency, row.payload.first_name, row.payload.reward_available]), [
+        ['never@example.com', 'never_requested', 'dormant', null, true],
+        ['paid@example.com', 'paid', 'active', 'Ada', true],
+        ['raw@example.com', 'used_not_paid', 'dormant', null, true],
+        ['used@example.com', 'used_not_paid', 'lapsed', 'Grace', true],
     ]);
     assert.ok(queued.every(row => row.kind === 'feedback_request' && row.template === 'feedback_request'));
     assert.ok(queued.every(row => row.dedupe_key.startsWith('feedback_request:v1:')));
@@ -113,19 +113,35 @@ try {
     assert.deepEqual(await submit(await tokenFor('used@example.com'), { reason: 'x' }, 1), { status: 'submitted', rewardStatus: 'budget_exhausted' });
     assert.deepEqual(await submit('99999999-9999-9999-9999-999999999999', { reason: 'x' }), { status: 'not_found' });
 
-    // Unsubscribing opts the user out of all non-essential email and cancels unsent feedback email.
+    // Unsubscribing opts the user out of all non-essential email and cancels unsent feedback
+    // email. It returns every address to unsubscribe at the provider, including the one the
+    // feedback email went to after a sign-in email change.
     const neverToken = await tokenFor('never@example.com');
-    assert.equal((await one('select public.opt_out_of_product_emails($1) ok', [neverToken])).ok, true);
-    assert.equal((await one('select public.opt_out_of_product_emails($1) ok', [neverToken])).ok, true);
-    assert.equal((await one("select public.opt_out_of_product_emails('99999999-9999-9999-9999-999999999999') ok")).ok, false);
+    await db.exec('reset role');
+    await db.exec(`update auth.users set email = ' Never-New@Example.com ' where id = '00000000-0000-0000-0000-00000000000c'`);
+    await db.exec('set role service_role');
+    const unsubscribed = { emails: ['never-new@example.com', 'never@example.com'] };
+    assert.deepEqual((await one('select public.opt_out_of_product_emails($1) result', [neverToken])).result, unsubscribed);
+    assert.deepEqual((await one('select public.opt_out_of_product_emails($1) result', [neverToken])).result, unsubscribed);
+    assert.equal((await one("select public.opt_out_of_product_emails('99999999-9999-9999-9999-999999999999') result")).result, null);
     assert.deepEqual(await one(`select attempts, last_error from public.email_outbox where to_email = 'never@example.com'`), { attempts: 5, last_error: 'unsubscribed' });
     assert.equal((await one('select public.get_feedback_request($1) page', [neverToken])).page.optedOut, true);
     assert.ok((await one(`select product_emails_opted_out_at from public.users where user_id = '00000000-0000-0000-0000-00000000000c'`)).product_emails_opted_out_at);
     await db.exec('reset role');
 
+    // Once the campaign's codes are used up, new emails stop offering one.
+    await db.exec(`
+      insert into auth.users (id, email, created_at) values ('00000000-0000-0000-0000-000000000012', 'late@example.com', now() - interval '120 days');
+      insert into public.users (user_id) values ('00000000-0000-0000-0000-000000000012');
+    `);
+    await db.exec('set role service_role');
+    assert.equal(await enqueue(10, 1), 1);
+    assert.equal((await one(`select payload from public.email_outbox where to_email = 'late@example.com'`)).payload.reward_available, false);
+    await db.exec('reset role');
+
     // Deleting the account removes its feedback.
     await db.exec(`delete from auth.users where id = '00000000-0000-0000-0000-00000000000a'`);
-    assert.equal((await one('select count(*)::int n from public.feedback_requests')).n, 3);
+    assert.equal((await one('select count(*)::int n from public.feedback_requests')).n, 4);
 
     // Backend-only: browsers can neither read requests nor call the functions.
     for (const role of ['anon', 'authenticated']) {
