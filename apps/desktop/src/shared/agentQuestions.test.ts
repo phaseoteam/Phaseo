@@ -23,6 +23,9 @@ describe("agent question answers", () => {
 		expect(questionAnswerError(question, ["Blue", ""])).toBe("Choose one answer.");
 		expect(questionAnswerError({ ...question, multiSelect: true }, ["Blue", "Blue"])).toBe("Each answer must be different.");
 		expect(questionAnswerError({ ...question, isOther: true }, ["Green"])).toBeUndefined();
+		const optionalChoice: AgentQuestion = { ...base, options: [{ label: "Blue" }], required: false };
+		expect(questionAnswerError(optionalChoice, [""])).toBeUndefined();
+		expect(questionAnswerError({ ...optionalChoice, required: true }, [""])).toBe("Answer this question.");
 	});
 	it("checks typed answers", () => {
 		const typed = (input: AgentQuestion["input"]) => ({ ...base, input });

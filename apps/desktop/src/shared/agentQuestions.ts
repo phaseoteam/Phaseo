@@ -44,12 +44,12 @@ export function questionAnswerError(question: AgentQuestion, values: string[]): 
 	if (new Set(values).size !== values.length) return "Each answer must be different.";
 	for (const value of values) {
 		if (options.some(option => optionValue(option) === value)) continue;
-		if (!allowsOwnAnswer(question)) return "Choose one of the options.";
 		if (!value.trim()) {
 			// Optional questions and editable starting text may be sent empty; otherwise an empty answer is no answer.
 			if (required && question.initialAnswer === undefined) return "Answer this question.";
 			continue;
 		}
+		if (!allowsOwnAnswer(question)) return "Choose one of the options.";
 		const error = inputError(question.input, value);
 		if (error) return error;
 	}
