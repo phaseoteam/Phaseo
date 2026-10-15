@@ -16,6 +16,12 @@ export const keybindingCommands = [
 	{ command: "rightPanel.toggle", label: "Toggle right pane", group: "Panes", keys: ["mod+alt+b"] },
 	{ command: "rightPanel.closeTab", label: "Close pane tab", group: "Panes", keys: ["mod+w"], when: "paneOpen" },
 	{ command: "terminal.toggle", label: "Toggle terminal", group: "Panes", keys: ["mod+j"] },
+	// Browser commands come before the app's own: while a page or its address bar has focus, the same keys act on the page.
+	{ command: "browser.reload", label: "Reload page", group: "Browser", keys: ["mod+r"], when: "browserFocused" },
+	{ command: "browser.focusUrl", label: "Focus address bar", group: "Browser", keys: ["mod+l"], when: "browserFocused" },
+	{ command: "browser.zoomIn", label: "Zoom page in", group: "Browser", keys: ["mod+=", "mod++"], when: "browserFocused" },
+	{ command: "browser.zoomOut", label: "Zoom page out", group: "Browser", keys: ["mod+-"], when: "browserFocused" },
+	{ command: "browser.zoomReset", label: "Reset page zoom", group: "Browser", keys: ["mod+0"], when: "browserFocused" },
 	{ command: "view.zoomIn", label: "Zoom in", group: "View", keys: ["mod+=", "mod++"] },
 	{ command: "view.zoomOut", label: "Zoom out", group: "View", keys: ["mod+-"] },
 	{ command: "view.zoomReset", label: "Actual size", group: "View", keys: ["mod+0"] },
@@ -26,7 +32,7 @@ type CommandInfo = { command: KeybindingCommand; label: string; group: string; k
 const commandList: readonly CommandInfo[] = keybindingCommands;
 export type KeybindingEntry = { command: KeybindingCommand; key: string; when?: string };
 export type KeybindingRow = KeybindingEntry & { id: string; label: string; group: string; source: "Default" | "Custom"; defaultKeys: readonly string[]; defaultWhen?: string };
-export const keybindingGroups = ["General", "Chats", "Panes", "View"] as const;
+export const keybindingGroups = ["General", "Chats", "Panes", "Browser", "View"] as const;
 
 /** Conditions a "when" clause can test. */
 export const whenVariables = {
@@ -37,6 +43,7 @@ export const whenVariables = {
 	settingsOpen: "Settings are open",
 	textFocused: "A text field or the composer has focus",
 	terminalFocused: "A terminal has focus",
+	browserFocused: "A browser page or its address bar has focus",
 } as const;
 export type WhenContext = Partial<Record<keyof typeof whenVariables, boolean>>;
 
@@ -172,4 +179,13 @@ export function keybindingConflicts(rows: KeybindingRow[], row: Pick<KeybindingR
 /** The person's bindings after editing one command's rows. */
 export function replaceCommandBindings(custom: KeybindingEntry[], command: KeybindingCommand, entries: KeybindingEntry[]) {
 	return [...custom.filter(entry => entry.command !== command), ...entries];
+}
+
+/** Commands that act on the page itself, so the page keeps keyboard focus after them. */
+const pageCommands: readonly string[] = ["browser.reload", "browser.zoomIn", "browser.zoomOut", "browser.zoomReset"];
+/** Keys a focused web page hands to the app; the app takes keyboard focus for all but the page's own commands. Undo stays with the page, where it edits text. */
+export function browserShortcuts(custom: KeybindingEntry[]) {
+	const shortcuts = new Map<string, boolean>();
+	for (const row of keybindingRows(custom)) if (row.key && row.command !== "thread.undo") shortcuts.set(row.key, (shortcuts.get(row.key) ?? false) || pageCommands.includes(row.command));
+	return [...shortcuts].map(([key, keepPageFocus]) => ({ key, keepPageFocus }));
 }
