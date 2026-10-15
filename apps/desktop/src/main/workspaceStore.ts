@@ -15,6 +15,7 @@ import { validateTaskHistoryQuery, type TaskHistoryPage } from "../shared/taskHi
 import type { TaskOverview, WorkspaceOverview } from "../shared/workspaceOverview";
 import { inboxReasonFromCounts } from "../shared/inbox";
 import { conversationPageBytes, validateConversationPageQuery, type ConversationPage } from "../shared/conversationPage";
+import { maximumPullRequestLinks, pullRequestUrl, samePullRequest, validatePullRequestLinks, validRepository, type PullRequestLinkSnapshot } from "../shared/pullRequestView";
 
 export class WorkspaceStore {
 	private readonly db: DatabaseSync;
@@ -218,6 +219,19 @@ export class WorkspaceStore {
 		if ((query.beforeId || query.afterId || query.fromId) && row.anchor === null) throw new Error("Conversation position no longer exists. Reload the latest history.");
 		return { kind: query.kind, entries: JSON.parse(row.entries as string), earlier: Number(row.start_index), later: Number(row.total) - Number(row.end_index), revision: Number(row.revision) };
 	}
+	/** Records what GitHub last said about a pull request on every chat linking it. True when anything changed. */
+	syncPullRequestSnapshot(repository: string, number: number, snapshot: PullRequestLinkSnapshot): boolean {
+		const rows = this.db.prepare(`SELECT id FROM tasks WHERE EXISTS (SELECT 1 FROM json_each(tasks.data, '$.pullRequests') AS item WHERE lower(json_extract(item.value, '$.repository')) = lower(?) AND json_extract(item.value, '$.number') = ?)`).all(repository, number);
+		let changed = false;
+		for (const row of rows) {
+			const task = this.getTask(row.id as string), links = validatePullRequestLinks(task.pullRequests) ?? [];
+			const index = links.findIndex(link => samePullRequest(link, { repository, number }));
+			if (index < 0 || JSON.stringify(links[index].snapshot) === JSON.stringify(snapshot)) continue;
+			links[index] = { ...links[index], snapshot }; task.pullRequests = links;
+			this.saveTask(task, true); changed = true;
+		}
+		return changed;
+	}
 	getTaskView(id: string): Task {
 		const row = this.db.prepare(`SELECT json_set(json_remove(data, '$.messages', '$.activities'), '$.conversationCounts', json_object('messages', coalesce(json_array_length(data, '$.messages'), 0), 'activities', coalesce(json_array_length(data, '$.activities'), 0))) AS view FROM tasks WHERE id = ?`).get(id);
 		if (!row) throw new Error("Task no longer exists.");
@@ -238,7 +252,7 @@ export class WorkspaceStore {
 			'lastUserMessageAt', (SELECT json_extract(item.value, '$.createdAt') FROM json_each(tasks.data, '$.messages') AS item WHERE json_extract(item.value, '$.role') = 'user' AND json_extract(item.value, '$.delivery') IS NULL ORDER BY CAST(item.key AS INTEGER) DESC LIMIT 1), 'archived', coalesce(json_extract(data, '$.archived'), 0),
 			'createdAt', json_extract(data, '$.createdAt'), 'updatedAt', json_extract(data, '$.updatedAt'), 'revision', json_extract(data, '$.revision'),
 			'projectId', json_extract(data, '$.projectId'), 'accountId', json_extract(data, '$.accountId'), 'agentId', json_extract(data, '$.agentId'),
-			'parentId', json_extract(data, '$.parentId'), 'delegation', json_extract(data, '$.delegation'), 'launch', json_extract(data, '$.launch'), 'missionId', json_extract(data, '$.missionId'), 'inboxReadAt', json_extract(data, '$.inboxReadAt'),
+			'parentId', json_extract(data, '$.parentId'), 'delegation', json_extract(data, '$.delegation'), 'launch', json_extract(data, '$.launch'), 'missionId', json_extract(data, '$.missionId'), 'inboxReadAt', json_extract(data, '$.inboxReadAt'), 'pullRequests', json_extract(data, '$.pullRequests'),
 			'approvalsCount', coalesce(json_array_length(data, '$.approvals'), 0),
 			'answersCount', coalesce(json_array_length(data, '$.questions'), 0) + coalesce(json_array_length(data, '$.forms'), 0),
 			'steeringReviewCount', (SELECT count(*) FROM json_each(tasks.data, '$.steering') AS item WHERE json_extract(item.value, '$.status') IN ('unconfirmed', 'rejected')),
@@ -400,6 +414,8 @@ export class WorkspaceStore {
 				this.saveTask(fork); return fork;
 			}
 			case "queue-remove": task.queue = task.queue.filter(message => message.id !== command.messageId); break;
+			case "link-pull-request": case "unlink-pull-request": case "watch-pull-request":
+				applyPullRequestLink(task, command); this.saveTask(task, true); return task;
 			case "settle": case "unsettle": case "wake": case "mark-unread": case "snooze": case "visit": case "auto-settle":
 				applyLifecycle(task, command); this.saveTask(task, true); return task;
 			case "inbox-read":
@@ -435,6 +451,27 @@ export class WorkspaceStore {
 	getPreferences(): WorkspacePreferences { const row = this.db.prepare("SELECT data FROM preferences WHERE id='workspace'").get(); return row ? validatePreferences({ ...defaultPreferences, ...JSON.parse(row.data as string) }) : { ...defaultPreferences }; }
 	savePreferences(value: WorkspacePreferences) { const preferences = validatePreferences(value); this.db.prepare("INSERT INTO preferences (id, data) VALUES ('workspace', ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(JSON.stringify(preferences)); return preferences; }
 	close() { this.db.close(); }
+}
+
+type PullRequestLinkCommand = Extract<WorkspaceCommand, { type: "link-pull-request" | "unlink-pull-request" | "watch-pull-request" }>;
+
+/** Chat to pull request links. Linking is not activity, so the chat keeps its place. */
+function applyPullRequestLink(task: Task, command: PullRequestLinkCommand) {
+	const links = validatePullRequestLinks(task.pullRequests) ?? [];
+	if (command.type === "link-pull-request") {
+		if (!validRepository(command.repository) || !Number.isSafeInteger(command.number)) throw new Error("Choose a GitHub pull request to link.");
+		const target = { repository: command.repository, number: command.number! };
+		if (!links.some(link => samePullRequest(link, target))) {
+			if (links.length >= maximumPullRequestLinks) throw new Error(`A chat can link up to ${maximumPullRequestLinks} pull requests.`);
+			links.push({ ...target, url: pullRequestUrl(target.repository, target.number), linkedAt: new Date().toISOString(), source: "manual" });
+		}
+	} else {
+		const index = links.findIndex(link => samePullRequest(link, command));
+		if (index < 0) throw new Error("This pull request is not linked to this chat.");
+		if (command.type === "unlink-pull-request") links.splice(index, 1);
+		else links[index] = { ...links[index], watching: command.watching || undefined };
+	}
+	task.pullRequests = links.length ? links : undefined;
 }
 
 type LifecycleCommand = Extract<WorkspaceCommand, { type: "settle" | "unsettle" | "wake" | "mark-unread" | "snooze" | "visit" | "auto-settle" }>;
