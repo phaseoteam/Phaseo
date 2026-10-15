@@ -159,6 +159,7 @@ function buildSupabaseMock(
                             provider_slug: row.provider_id,
                             model_slug: row.api_model_id ?? row.model_id,
                             provider_model_slug: row.provider_model_slug,
+                            metadata: row.metadata ?? {},
                             is_stealth: row.is_stealth ?? false,
                             routing_enabled: row.is_active_gateway,
                             status: row.routing_status,
@@ -3110,9 +3111,11 @@ describe("fetchCatalogue service tiers", () => {
                     // Not executable: the loader prices USD SKUs only.
                     rule("together", "text.generate", "standard", "0.000001"),
                     rule("together", "text.generate", "ultrafast", "0.000002", { currency: "EUR" }),
+                    rule("together", "text.generate", "batch", "0.000001", { currency: "EUR" }),
                     // Not executable: the priority SKU has no billable meter.
                     rule("fireworks", "text.generate", "standard", "0.000001"),
                     rule("fireworks", "text.generate", "priority", "0.000002", { billable: false }),
+                    rule("fireworks", "text.generate", "batch", "0.000001", { billable: false }),
                     // Only a non-USD priority SKU: no executable pricing, so standard as for unpriced routes.
                     rule("nebius", "text.generate", "priority", "0.000002", { currency: "EUR" }),
                 ],
@@ -3120,6 +3123,7 @@ describe("fetchCatalogue service tiers", () => {
             }],
         };
 
+        const batchResponses = structuredClone(responses);
         getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
         const { fetchCatalogue } = await import("./models.catalogue");
         const [model] = await fetchCatalogue({});
@@ -3149,5 +3153,12 @@ describe("fetchCatalogue service tiers", () => {
         expect(model?.provider_pricing.openai?.meters.input_tokens?.price_per_unit).toBe("0.000002");
         expect(model?.provider_pricing.mistral?.meters.input_tokens?.price_per_unit).toBe("0.000003");
         expect(model?.provider_pricing["google-vertex"]?.meters.input_tokens ?? null).toBeNull();
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(batchResponses, { emptyCapabilityInCalled: false }));
+        const [batchModel] = await fetchCatalogue({ batchOnly: true });
+        expect(batchModel?.providers.map((entry) => entry.api_provider_id)).toEqual(["openai"]);
+        expect(batchModel?.providers[0]?.endpoints).toEqual(["text.generate"]);
+        // Batch discovery must not advertise batch as a synchronous service_tier.
+        expect(batchModel?.providers[0]?.service_tiers).toEqual(["priority", "standard"]);
     });
 });

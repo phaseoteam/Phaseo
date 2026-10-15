@@ -35,6 +35,7 @@ import {
 } from "@core/async-notifications";
 import {
 	buildUnsupportedBatchModePayload,
+	getBatchDiscoveryParams,
 	getBatchProviderCapability,
 	listBatchProviderCapabilities,
 	providerSupportsMultipleModelsPerBatch,
@@ -77,7 +78,7 @@ import { getBatchApiFeatureGateName, isBatchApiAccessEnabled } from "@core/featu
 import { getWebhookEndpointSigningConfig } from "@core/webhook-endpoints";
 import { BodyLimitExceededError, readStreamTextWithLimit } from "@core/bounded-stream";
 import { filesRoutes as batchFilesRoutes } from "./files";
-import { fetchCatalogue } from "../control/models.catalogue";
+import { fetchCatalogue, mergeParamDetails, providerEntrySupportsParam, withProviderOnParamDetails } from "../control/models.catalogue";
 
 const OPENAI_PROVIDER_ID = "openai";
 const ANTHROPIC_PROVIDER_ID = "anthropic";
@@ -1658,15 +1659,42 @@ async function handleModels(req: Request) {
 	if (accessDenied) return accessDenied;
 	const url = new URL(req.url);
 	const catalogue = await fetchCatalogue({
-		endpoints: ["batch"],
-		params: parseModelQueryValues(url, "params"),
+		batchOnly: true,
 		statuses: ["active"],
 	});
+	const paramsFilter = parseModelQueryValues(url, "params");
 	const previewProviderIds = resolveBatchPreviewProviderIds(getBindings().BATCH_API_PREVIEW_PROVIDERS);
 	const previewCatalogue = catalogue
 		.map((model) => ({
 			...model,
-			providers: model.providers.filter((provider) => previewProviderIds.includes(provider.api_provider_id)),
+			providers: model.providers.filter((provider) => {
+				if (!previewProviderIds.includes(provider.api_provider_id)) return false;
+				// Preserve explicit Batch capabilities and discover Batch-priced modality offers.
+				if (provider.endpoints.some((endpoint) => ["batch", "batches", "/v1/batches"].includes(String(endpoint)))) return true;
+				const capability = getBatchProviderCapability(provider.api_provider_id);
+				const supported = new Set(capability?.endpoints.map(({ endpoint }) => {
+					const policyEndpoint = batchPolicyEndpoint(endpoint);
+					return policyEndpoint ? resolveCapabilityFromEndpoint(policyEndpoint) : null;
+				}));
+				return provider.endpoints.some((endpoint) => supported.has(
+					resolveCapabilityFromEndpoint(batchPolicyEndpoint(String(endpoint)) ?? String(endpoint)),
+				));
+			}).map((provider) => {
+				if (provider.endpoints.some((endpoint) => ["batch", "batches", "/v1/batches"].includes(String(endpoint)))) return provider;
+				const capability = getBatchProviderCapability(provider.api_provider_id)!;
+				const endpoints = capability.endpoints.map(({ endpoint }) => endpoint).filter((endpoint) => {
+					const policyEndpoint = batchPolicyEndpoint(endpoint);
+					return policyEndpoint && provider.endpoints.some((offered) =>
+						resolveCapabilityFromEndpoint(batchPolicyEndpoint(String(offered)) ?? String(offered)) === resolveCapabilityFromEndpoint(policyEndpoint));
+				});
+				const paramsDetail = getBatchDiscoveryParams(capability, endpoints);
+				return { ...provider, params: Object.keys(paramsDetail).sort(), params_detail: paramsDetail };
+			}).filter((provider) => !paramsFilter?.length || paramsFilter.some((param) => providerEntrySupportsParam(provider, param))),
+		}))
+		.map((model) => ({
+			...model,
+			supported_params: [...new Set(model.providers.flatMap((provider) => provider.params))].sort(),
+			supported_params_detail: mergeParamDetails(...model.providers.map((provider) => withProviderOnParamDetails(provider.params_detail, provider.api_provider_id))),
 		}))
 		.filter((model) => model.providers.length > 0);
 	return jsonPayload({

@@ -513,6 +513,38 @@ export function getBatchProviderCapability(providerId: string): BatchProviderCap
 	return normalized ? CAPABILITIES_BY_PROVIDER.get(normalized) ?? null : null;
 }
 
+/** Batch envelope parameters, independent of the model's synchronous generation parameters. */
+export function getBatchDiscoveryParams(
+	capability: BatchProviderCapability,
+	endpoints: string[],
+): Record<string, Record<string, unknown>> {
+	const params: Record<string, Record<string, unknown>> = {
+		endpoint: { supported: true, type: "enum", values: endpoints },
+		model: { supported: true, type: "string" },
+		provider: { supported: true, type: "enum", values: [capability.providerId] },
+		webhook: { supported: true, type: "object" },
+	};
+	if (capability.gatewayInputModes.includes("requests")) {
+		params.requests = { supported: true, type: "array" };
+		params.prompts = { supported: true, type: "array" };
+	}
+	if (capability.gatewayInputModes.includes("file")) {
+		params.input_file_id = { supported: true, type: "string" };
+	}
+	// These windows are applied by the submission adapters. Google and Anthropic
+	// manage their own completion timing; storing a value is not configurable support.
+	const fixedWindows: Record<string, string[]> = {
+		openai: ["24h"], ovhcloud: ["24h", "48h", "72h"],
+		xiaomi: ["24h"], together: ["24h"], "alibaba-cloud": ["24h"],
+	};
+	const windows = fixedWindows[capability.providerId];
+	if (windows) params.completion_window = { supported: true, type: "enum", values: windows };
+	if (["mistral", "moonshotai"].includes(capability.providerId)) {
+		params.completion_window = { supported: true, type: "string" };
+	}
+	return params;
+}
+
 export function providerSupportsMultipleModelsPerBatch(providerId: string): boolean {
 	return getBatchProviderCapability(providerId)?.supportsMultipleModelsPerBatch === true;
 }

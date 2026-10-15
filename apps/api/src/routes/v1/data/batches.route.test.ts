@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("../control/models.catalogue", async (importOriginal) => ({
+	...await importOriginal<typeof import("../control/models.catalogue")>(),
+	fetchCatalogue: vi.fn(async () => state.batchCatalogue),
+}));
+
 vi.mock("@core/batch-download-limits", () => ({
 	admitBatchDownload: vi.fn(async () => ({ allowed: true, retryAfterSeconds: 0 })),
 }));
@@ -32,6 +37,7 @@ const state = vi.hoisted(() => ({
 	guardContextFailure: null as Response | null,
 	resolvedModel: null as string | null,
 	catalogOffers: null as any[] | null,
+	batchCatalogue: [] as any[],
 	credentialModels: [] as string[],
 	policyAllowedProviders: null as string[] | null,
 	batchApiEnabled: true,
@@ -63,6 +69,7 @@ function resetState() {
 	state.guardContextFailure = null;
 	state.resolvedModel = null;
 	state.catalogOffers = null;
+	state.batchCatalogue = [];
 	state.credentialModels = [];
 	state.policyAllowedProviders = null;
 	state.batchApiEnabled = true;
@@ -542,6 +549,35 @@ describe("batchRoutes", () => {
 		resetState();
 		vi.resetModules();
 		vi.unstubAllGlobals();
+	});
+
+	it("discovers Batch-priced Gemini models while excluding unsupported offers", async () => {
+		state.previewProviders = "google-vertex,google-ai-studio,openai,google-vertex-eu";
+		state.batchCatalogue = [
+			{ model_id: "google/gemini-4-argon", providers: [
+				{ api_provider_id: "google-vertex", endpoints: ["text.generate"], service_tiers: ["standard"], params: ["service_tier", "temperature"], params_detail: { service_tier: { supported: true }, temperature: { supported: true } } },
+				{ api_provider_id: "google-ai-studio", endpoints: ["responses"], service_tiers: ["standard"], params: ["service_tier"], params_detail: { service_tier: { supported: true } } },
+				{ api_provider_id: "google-vertex-eu", endpoints: ["text.generate"], service_tiers: ["standard"] },
+			] },
+			{ model_id: "google/embeddings", providers: [{ api_provider_id: "google-vertex", endpoints: ["text.embed"], service_tiers: ["standard"] }] },
+			{ model_id: "legacy/batch", providers: [{ api_provider_id: "openai", endpoints: ["batch"], params: ["completion_window"], params_detail: { completion_window: { supported: true, values: ["24h"] } } }] },
+		];
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/models");
+		expect(response.status).toBe(200);
+		const payload = await response.json();
+		expect(payload.data.map((row: any) => row.model)).toEqual(["google/gemini-4-argon", "legacy/batch"]);
+		expect(payload.data[0].providers.map((row: any) => row.id)).toEqual(["google-vertex", "google-ai-studio"]);
+		expect(payload.data[0].supported_params).toEqual(["endpoint", "model", "prompts", "provider", "requests", "webhook"]);
+		expect(payload.data[0].providers[0].supported_params_detail.endpoint.values).toEqual(["/v1/generateContent"]);
+		expect(payload.data[0].supported_params_detail.endpoint.providers).toEqual(["google-ai-studio", "google-vertex"]);
+		expect((await import("../control/models.catalogue")).fetchCatalogue).toHaveBeenCalledWith({ batchOnly: true, statuses: ["active"] });
+		const endpointFiltered = await (await batchRoutes.request("https://example.com/models?params=endpoint")).json();
+		expect(endpointFiltered.data.map((row: any) => row.model)).toEqual(["google/gemini-4-argon"]);
+		const windowFiltered = await (await batchRoutes.request("https://example.com/models?params=completion_window")).json();
+		expect(windowFiltered.data.map((row: any) => row.model)).toEqual(["legacy/batch"]);
+		const generationFiltered = await (await batchRoutes.request("https://example.com/models?params=service_tier")).json();
+		expect(generationFiltered.data).toEqual([]);
 	});
 
 	it("paginates batch jobs and reports another page", async () => {
