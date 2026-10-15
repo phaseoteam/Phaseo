@@ -50,7 +50,7 @@ function SectionLabel({ children, action }: { children: ReactNode; action?: Reac
 function RowMenu({ task, onRename }: { task: TaskOverview; onRename: () => void }) {
 	const { command } = useWorkspace();
 	return <DropdownMenu>
-		<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${task.title}`} onClick={event => event.stopPropagation()} className="grid size-5 shrink-0 place-items-center rounded text-muted-foreground opacity-0 group-hover/row:opacity-100 hover:bg-background/70 hover:text-foreground data-popup-open:opacity-100 [&_svg]:size-3.5" />}><Ellipsis /></DropdownMenuTrigger>
+		<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${task.title}`} onClick={event => event.stopPropagation()} className="hidden size-5 shrink-0 place-items-center rounded text-muted-foreground group-hover/row:grid group-focus-within/row:grid hover:bg-background/70 hover:text-foreground data-popup-open:grid [&_svg]:size-3.5" />}><Ellipsis /></DropdownMenuTrigger>
 		<DropdownMenuContent align="start" className="w-44">
 			<DropdownMenuItem onClick={onRename}><Pencil />Rename</DropdownMenuItem>
 			<DropdownMenuItem onClick={() => void command({ type: "update-task", id: task.id, pinned: !task.pinned })}>{task.pinned ? <PinOff /> : <Pin />}{task.pinned ? "Unpin" : "Pin"}</DropdownMenuItem>
@@ -92,7 +92,7 @@ function CompareRow({ group }: { group: CompareGroup }) {
 		<span className="min-w-0 flex-1 truncate">{group.title}</span>
 		<span><ModelStack models={tasks.slice(0, 3)} size="sm" ringClassName="bg-sidebar ring-sidebar" /></span>
 		<DropdownMenu>
-			<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${group.title}`} onClick={event => event.stopPropagation()} className="grid size-5 shrink-0 place-items-center rounded text-muted-foreground opacity-0 group-hover/row:opacity-100 hover:bg-background/70 [&_svg]:size-3.5" />}><Ellipsis /></DropdownMenuTrigger>
+			<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${group.title}`} onClick={event => event.stopPropagation()} className="hidden size-5 shrink-0 place-items-center rounded text-muted-foreground group-hover/row:grid group-focus-within/row:grid hover:bg-background/70 data-popup-open:grid [&_svg]:size-3.5" />}><Ellipsis /></DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-44"><DropdownMenuItem onClick={() => removeCompareGroup(group.id)}><Archive />Ungroup</DropdownMenuItem></DropdownMenuContent>
 		</DropdownMenu>
 	</div>;
@@ -186,7 +186,7 @@ function SidebarFrame({ label, children }: { label: string; children: ReactNode 
 			}}
 			onDoubleClick={() => setWidth(sidebarWidths.default)}
 			onKeyDown={event => { const step = event.shiftKey ? 32 : 8; if (event.key === "ArrowLeft") { event.preventDefault(); setWidth(clamp(width - step)); } if (event.key === "ArrowRight") { event.preventDefault(); setWidth(clamp(width + step)); } }}
-			className={cn("absolute inset-y-0 -right-1 z-20 w-2 cursor-col-resize outline-none after:absolute after:inset-y-0 after:left-1/2 after:w-px after:-translate-x-1/2 after:transition-colors hover:after:bg-ring/60 focus-visible:after:bg-ring", dragging && "after:bg-ring")} />
+			className={cn("absolute inset-y-0 -right-1.5 z-20 w-3 cursor-col-resize outline-none after:absolute after:inset-y-0 after:left-1/2 after:w-px after:-translate-x-1/2 after:transition-colors hover:after:bg-ring/60 focus-visible:after:bg-ring", dragging && "after:bg-ring")} />
 		{dragging && <div className="fixed inset-0 z-50 cursor-col-resize" />}
 	</aside>;
 }
