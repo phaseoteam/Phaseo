@@ -9,10 +9,10 @@ const chip = "mx-px inline-flex max-w-full items-center gap-1 rounded-md bg-fore
  * One chip style for files, folders, chats, attachments and links, in the composer and in messages.
  * With onClick it is a button; with href it opens a link.
  */
-export function InlineChip({ icon, children, title, onClick, href, className, selected }: { icon?: ReactNode; children: ReactNode; title?: string; onClick?: () => void; href?: string; className?: string; selected?: boolean }) {
+export function InlineChip({ icon, children, title, onClick, href, className, selected, disabled }: { icon?: ReactNode; children: ReactNode; title?: string; onClick?: () => void; href?: string; className?: string; selected?: boolean; disabled?: boolean }) {
 	const content = <>{icon}<span className="min-w-0 truncate">{children}</span></>;
 	const classes = cn(chip, (onClick || href) && "cursor-pointer hover:bg-foreground/14", selected && "ring-2 ring-ring/50", className);
 	if (href) return <a href={href} title={title} className={cn(classes, "no-underline")} onClick={onClick ? event => { event.preventDefault(); onClick(); } : undefined}>{content}</a>;
-	if (onClick) return <button type="button" title={title} onClick={onClick} className={classes}>{content}</button>;
+	if (onClick) return <button type="button" title={title} disabled={disabled} onClick={onClick} className={cn(classes, "disabled:cursor-progress disabled:opacity-70")}>{content}</button>;
 	return <span title={title} className={classes}>{content}</span>;
 }

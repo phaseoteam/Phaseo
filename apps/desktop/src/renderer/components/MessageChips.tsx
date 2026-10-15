@@ -37,7 +37,7 @@ function useLinkTitle(href: string) {
 export function LinkChip({ href, children }: { href: string; children?: ReactNode }) {
 	const link = richLink(href);
 	const pageTitle = useLinkTitle(href);
-	return <InlineChip href={href} title={pageTitle ?? href} icon={link?.github ? <GitHubMark /> : <Globe />} onClick={() => openContextLink(href)}>{children ?? link?.label ?? pageTitle ?? link?.fallback ?? href}</InlineChip>;
+	return <InlineChip className="message-rich-link" href={href} title={pageTitle ?? href} icon={link?.github ? <GitHubMark /> : <Globe />} onClick={() => openContextLink(href)}>{children ?? link?.label ?? pageTitle ?? link?.fallback ?? href}</InlineChip>;
 }
 
 /** A file or folder chip that opens in the editor when the message belongs to a project. */
@@ -52,7 +52,7 @@ export function FilePathChip({ file, projectId, children }: { file: FileChip; pr
 		catch (reason) { setError(String(reason).replace(/^Error: (?:Error invoking remote method '[^']+': (?:Error: )?)?/, "")); }
 		finally { pending.current = false; setBusy(false); }
 	}
-	return <><InlineChip icon={file.kind === "folder" ? <Folder /> : <File />} title={`${file.path}${position}`} onClick={projectId ? () => void open() : undefined}>{children ?? chipLabel(file)}</InlineChip>
+	return <><InlineChip className={projectId ? "message-file-link" : undefined} disabled={busy} icon={file.kind === "folder" ? <Folder /> : <File />} title={`${file.path}${position}`} onClick={projectId ? () => void open() : undefined}>{children ?? chipLabel(file)}</InlineChip>
 		{busy && <span className="message-link-feedback" role="status">Opening…</span>}{error && <span className="message-link-feedback" role="alert">{error}</span>}</>;
 }
 
