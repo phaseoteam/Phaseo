@@ -276,7 +276,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 		id: "wandb_weave",
 		label: "W&B Weave",
 		description: "Send traces to Weights & Biases Weave.",
-		logoId: "weights-and-biases",
+		logoId: "wandb-weave",
 		fields: [
 			{ key: "api_key", label: "API Key", placeholder: "wandb_...", type: "password" },
 			{ key: "entity", label: "Entity", placeholder: "your-team" },

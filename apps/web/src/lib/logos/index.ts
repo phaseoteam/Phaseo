@@ -83,6 +83,7 @@ const labelOverrides: Partial<Record<KnownLogoId, string>> = {
 	wandb: "CoreWeave Forge",
 	"weights-and-biases": "CoreWeave Forge",
 	"coreweave-forge": "CoreWeave Forge",
+	"wandb-weave": "W&B Weave",
 	"spacex-ai": "SpaceXAI",
 	"zai": "Z.ai",
 	zenmux: "ZenMux",

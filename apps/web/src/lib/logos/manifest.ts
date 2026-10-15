@@ -628,6 +628,9 @@ export const logoManifest = {
 		light: "/logos/coreweave_light.svg",
 		dark: "/logos/coreweave_dark.svg",
 	},
+	"wandb-weave": {
+		color: "/logos/weights-and-biases.svg",
+	},
 	zenmux: {
 		light: "/logos/zenmux_light.svg",
 		dark: "/logos/zenmux_dark.svg",
