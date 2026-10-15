@@ -57,7 +57,7 @@ export async function fetchVertexBatchApi(args: {
 	return fetch(`https://${host}/v1${args.endpointPath}`, {
 		method: args.method, body: args.body ?? undefined,
 		headers: { Authorization: auth, "Content-Type": "application/json" },
-		redirect: "error", signal: args.signal ?? AbortSignal.timeout(60_000),
+		redirect: "manual", signal: args.signal ?? AbortSignal.timeout(60_000),
 	});
 }
 
@@ -91,7 +91,7 @@ export async function prepareVertexBatch(args: {
 	const query = new URLSearchParams({ uploadType: "media", ifGenerationMatch: "0", name: storage.inputObject });
 	const uploaded = await fetch(`https://storage.googleapis.com/upload/storage/v1/b/${config.bucket}/o?${query}`, {
 		method: "POST", headers: { Authorization: auth, "Content-Type": "application/jsonl" },
-		body: text, redirect: "error", signal: AbortSignal.timeout(30_000),
+		body: text, redirect: "manual", signal: AbortSignal.timeout(30_000),
 	});
 	await uploaded.body?.cancel();
 	if (!uploaded.ok) throw new VertexBatchPreDispatchError(`vertex_batch_input_upload_failed_${uploaded.status}`);
@@ -111,7 +111,7 @@ export async function prepareVertexBatch(args: {
 export async function deleteVertexBatchInput(storage: VertexBatchStorage, credential: BatchProviderCredential): Promise<void> {
 	const auth = await authorization(credential);
 	const response = await fetch(`https://storage.googleapis.com/storage/v1/b/${encodeURIComponent(storage.bucket)}/o/${encodeURIComponent(storage.inputObject)}`, {
-		method: "DELETE", headers: { Authorization: auth }, redirect: "error", signal: AbortSignal.timeout(30_000),
+		method: "DELETE", headers: { Authorization: auth }, redirect: "manual", signal: AbortSignal.timeout(30_000),
 	});
 	await response.body?.cancel();
 	if (!response.ok && response.status !== 404) throw new Error("vertex_batch_input_cleanup_failed");
@@ -158,7 +158,7 @@ export async function* vertexBatchOutputs(args: {
 		do {
 			const query = new URLSearchParams({ prefix: storage.outputPrefix, maxResults: "100", fields: "items(name),nextPageToken" });
 			if (cursor) query.set("pageToken", cursor);
-			const response = await fetch(`${base}?${query}`, { headers: { Authorization: auth }, redirect: "error", signal });
+			const response = await fetch(`${base}?${query}`, { headers: { Authorization: auth }, redirect: "manual", signal });
 			if (!response.ok) { await response.body?.cancel(); throw new Error(`vertex_batch_output_list_failed_${response.status}`); }
 			const listing = JSON.parse(await readStreamTextWithLimit(response.body, 128 * 1024));
 			for (const item of listing.items ?? []) {
@@ -180,7 +180,7 @@ export async function* vertexBatchOutputs(args: {
 			return row;
 		};
 		for (const name of files) {
-			const response = await fetch(`${base}/${encodeURIComponent(name)}?alt=media`, { headers: { Authorization: auth }, redirect: "error", signal });
+			const response = await fetch(`${base}/${encodeURIComponent(name)}?alt=media`, { headers: { Authorization: auth }, redirect: "manual", signal });
 			if (!response.ok || !response.body) { await response.body?.cancel(); throw new Error(`vertex_batch_output_download_failed_${response.status}`); }
 			const reader = response.body.getReader();
 			const decoder = new TextDecoder();
