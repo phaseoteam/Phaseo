@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { unsubscribeResendContact } from "@/auth/resendContacts";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 
@@ -97,7 +98,9 @@ publicFeedbackRouter.post("/:token", async (c) => {
 });
 
 // Serves both the page's unsubscribe button and RFC 8058 one-click unsubscribe, which
-// mail clients send as a form POST without cookies.
+// mail clients send as a form POST without cookies. The database opt-out lands first and
+// stops feedback email; the addresses are then unsubscribed in Resend so its broadcasts
+// and automations stop too. If Resend fails the request errors and can safely be repeated.
 publicFeedbackRouter.post("/:token/unsubscribe", async (c) => {
 	const token = c.req.param("token");
 	if (!TOKEN_PATTERN.test(token)) return c.json({ error: "not_found" }, 404, NO_STORE);
@@ -105,6 +108,10 @@ publicFeedbackRouter.post("/:token/unsubscribe", async (c) => {
 		const { data, error } = await getDataClient(c.env).rpc("opt_out_of_product_emails", { p_token: token });
 		if (error) throw error;
 		if (!data) return c.json({ error: "not_found" }, 404, NO_STORE);
+		const emails = (data as { emails?: unknown }).emails;
+		for (const email of Array.isArray(emails) ? emails : []) {
+			if (typeof email === "string") await unsubscribeResendContact(c.env, email);
+		}
 		return c.json({ unsubscribed: true }, 200, NO_STORE);
 	} catch (error) {
 		console.error("[web-api/feedback] unsubscribe failed", { error });

@@ -2,8 +2,9 @@ import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Env } from "@/env";
 
-const mocks = vi.hoisted(() => ({ rpc: vi.fn() }));
+const mocks = vi.hoisted(() => ({ rpc: vi.fn(), unsubscribeResendContact: vi.fn() }));
 vi.mock("@/data/supabase", () => ({ getDataClient: () => ({ rpc: mocks.rpc }) }));
+vi.mock("@/auth/resendContacts", () => ({ unsubscribeResendContact: mocks.unsubscribeResendContact }));
 
 const { parseFeedbackAnswers, publicFeedbackRouter } = await import("./feedback");
 
@@ -18,7 +19,10 @@ const post = (path: string, body: unknown, bindings: Partial<Env> = {}) => app.r
 );
 
 describe("public feedback routes", () => {
-	beforeEach(() => mocks.rpc.mockReset());
+	beforeEach(() => {
+		mocks.rpc.mockReset();
+		mocks.unsubscribeResendContact.mockReset().mockResolvedValue(undefined);
+	});
 
 	it("rejects malformed tokens without touching the database", async () => {
 		const response = await app.request("https://phaseo.app/feedback/not-a-token", {}, env);
@@ -66,7 +70,7 @@ describe("public feedback routes", () => {
 	});
 
 	it("unsubscribes a known token, including one-click form posts from mail clients", async () => {
-		mocks.rpc.mockResolvedValueOnce({ data: true, error: null });
+		mocks.rpc.mockResolvedValueOnce({ data: { emails: ["ada@example.com", "ada.old@example.com"] }, error: null });
 		const response = await app.request(`https://phaseo.app/feedback/${token}/unsubscribe`, {
 			method: "POST",
 			headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -75,9 +79,16 @@ describe("public feedback routes", () => {
 		expect(response.status).toBe(200);
 		expect(await response.json()).toEqual({ unsubscribed: true });
 		expect(mocks.rpc).toHaveBeenCalledWith("opt_out_of_product_emails", { p_token: token });
+		expect(mocks.unsubscribeResendContact.mock.calls.map((call) => call[1])).toEqual(["ada@example.com", "ada.old@example.com"]);
 
-		mocks.rpc.mockResolvedValueOnce({ data: false, error: null });
+		mocks.rpc.mockResolvedValueOnce({ data: null, error: null });
 		expect((await post(`${token}/unsubscribe`, {})).status).toBe(404);
+	});
+
+	it("fails the unsubscribe when Resend cannot be updated, so it can be repeated", async () => {
+		mocks.rpc.mockResolvedValueOnce({ data: { emails: ["ada@example.com"] }, error: null });
+		mocks.unsubscribeResendContact.mockRejectedValueOnce(new Error("resend_contact_unsubscribe_failed:rate_limit"));
+		expect((await post(`${token}/unsubscribe`, {})).status).toBe(503);
 	});
 
 	it("reports database failures as unavailable", async () => {
