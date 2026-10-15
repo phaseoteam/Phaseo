@@ -3,6 +3,7 @@
 -- 5,000-request sample. The outbox processor keeps both rollups current;
 -- get_private_usage_overview and get_private_usage_label_facets read them, plus the
 -- requests at the edges of the window that they don't cover.
+-- phaseo:allow-destructive-migration reason: the replaced outbox processor deletes and rebuilds only derived rollup rows and truncates its temporary batch tables; this migration deletes nothing and only inserts the backfill, leaving source facts and financial records unchanged.
 SET local check_function_bodies = off;
 
 -- Hold the outbox processor until this commits, so no request is acknowledged by the

@@ -61,7 +61,7 @@ await db.exec(`
   where quantity is not null;
 `);
 // The migration's backfill fills the rollup the way the outbox processor would.
-const migration = await read('../migrations/20261015103000_private_usage_15m.sql');
+const migration = await read('../migrations/20261015134806_private_usage_15m.sql');
 await db.exec(migration.slice(migration.indexOf('-- Backfill every request')));
 const rolledRequests = Number((await db.query(`select sum(requests) n from public.v2_private_usage_15m where workspace_id = '${workspace}'`)).rows[0].n);
 assert.equal(rolledRequests, 309 - 8, 'the backfill counts every request but async jobs');
