@@ -258,7 +258,10 @@ export async function enqueueModelDeprecationNotifications(now = new Date()): Pr
 	const emailCache = new Map<string, string>();
 	const emailFor = async (userId: string): Promise<string> => {
 		if (!emailCache.has(userId)) {
-			const user = await (supabase as any).auth.admin.getUserById(userId).catch(() => null);
+			const user = await (supabase as any).auth.admin.getUserById(userId);
+			// A deleted user has no address; any other failure stops the run so the
+			// next one retries it (the outbox dedupe keys make that safe).
+			if (user?.error && user.error.status !== 404) throw new Error(`model_deprecation_user_fetch_failed:${user.error.message}`);
 			emailCache.set(userId, String(user?.data?.user?.email ?? "").trim());
 		}
 		return emailCache.get(userId) ?? "";

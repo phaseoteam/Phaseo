@@ -127,8 +127,8 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 						}} /></div>
 					</div>
 					{modelDeprecationEnabled ? <div className="mt-3 flex items-center justify-between gap-3 border-t pt-3"><Label htmlFor="model-deprecation-include-admins" className="text-sm font-normal text-muted-foreground">{s("Also email admins")}</Label><Switch id="model-deprecation-include-admins" checked={modelDeprecationIncludeAdmins} onCheckedChange={(checked) => {
-						const next = Boolean(checked); setModelDeprecationIncludeAdmins(next);
-						toast.promise(write(setBillingNotificationPreference({ preference: "modelDeprecationAlertsIncludeAdmins", enabled: next })), { loading: `${s("Saving")}…`, success: s("Saved"), error: s("Could not save alert") });
+						const next = Boolean(checked); const previous = modelDeprecationIncludeAdmins; setModelDeprecationIncludeAdmins(next);
+						toast.promise(write(setBillingNotificationPreference({ preference: "modelDeprecationAlertsIncludeAdmins", enabled: next })).catch((error) => { setModelDeprecationIncludeAdmins(previous); throw error; }), { loading: `${s("Saving")}…`, success: s("Saved"), error: s("Could not save alert") });
 					}} /></div> : null}
 				</div>
 			</section>

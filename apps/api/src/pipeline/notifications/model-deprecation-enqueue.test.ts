@@ -13,6 +13,7 @@ const state = vi.hoisted(() => ({
 	targets: [] as Array<{ workspace_id: string; model_slugs: string[]; include_admins: boolean }>,
 	admins: [] as Array<{ user_id: string }>,
 	outboxRows: [] as Array<Record<string, unknown>>,
+	userErrors: {} as Record<string, { status: number; message: string }>,
 	rpcCalls: [] as Array<{ name: string; args: Record<string, unknown> }>,
 }));
 
@@ -57,7 +58,9 @@ vi.mock("@/runtime/env", () => ({
 			};
 			return chain;
 		},
-		auth: { admin: { getUserById: async (userId: string) => ({ data: { user: { email: `${userId}@example.com` } } }) } },
+		auth: { admin: { getUserById: async (userId: string) => state.userErrors[userId]
+			? { data: { user: null }, error: state.userErrors[userId] }
+			: { data: { user: { email: `${userId}@example.com` } }, error: null } } },
 	}),
 }));
 
@@ -73,6 +76,7 @@ describe("model deprecation enqueue", () => {
 		state.targets = [{ workspace_id: "workspace-1", model_slugs: ["openai/old-model"], include_admins: false }];
 		state.admins = [{ user_id: "admin-1" }];
 		state.outboxRows.length = 0;
+		state.userErrors = {};
 		state.rpcCalls.length = 0;
 	});
 
@@ -126,6 +130,15 @@ describe("model deprecation enqueue", () => {
 		state.targets = [{ workspace_id: "workspace-1", model_slugs: ["openai/old-model"], include_admins: true }];
 		await enqueueModelDeprecationNotifications(now);
 		expect(state.outboxRows.filter((row) => row.kind === "model_deprecation_email").map((row) => row.to_email)).toEqual(["owner-1@example.com", "admin-1@example.com"]);
+	});
+
+	it("stops on a failed user lookup but skips a deleted owner", async () => {
+		state.userErrors = { "owner-1": { status: 500, message: "auth unavailable" } };
+		await expect(enqueueModelDeprecationNotifications(now)).rejects.toThrow("model_deprecation_user_fetch_failed:auth unavailable");
+		expect(state.outboxRows).toHaveLength(0);
+		state.userErrors = { "owner-1": { status: 404, message: "User not found" } };
+		await expect(enqueueModelDeprecationNotifications(now)).resolves.toBeDefined();
+		expect(state.outboxRows).toHaveLength(0);
 	});
 
 	it("skips workspaces that have not turned alerts on", async () => {
