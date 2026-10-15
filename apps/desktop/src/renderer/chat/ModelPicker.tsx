@@ -174,6 +174,9 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		...section.entries.map(entry => ({ type: "entry" as const, key: `${section.heading}:${entry.key}`, entry })),
 		...section.harness && section.older ? [{ type: "older" as const, key: `older:${section.harness}`, harness: section.harness, older: section.older }] : [],
 	]), [sections]);
+	// Only rendered rows exist in the DOM, so each option states its place in the whole list.
+	const positions = useMemo(() => { let position = 0; return rows.map(row => row.type === "heading" ? 0 : ++position); }, [rows]);
+	const optionCount = positions.reduce((highest, value) => Math.max(highest, value), 0);
 	const [activeKey, setActiveKey] = useState<string>();
 	const activeIndex = useMemo(() => { const index = rows.findIndex(row => row.key === activeKey); return index >= 0 ? index : rows.findIndex(row => row.type !== "heading"); }, [rows, activeKey]);
 	const [viewport, setViewport] = useState<HTMLDivElement | null>(null);
@@ -252,7 +255,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 						const row = rows[item.index], highlighted = item.index === activeIndex;
 						const place = { position: "absolute", top: 0, left: 0, width: "100%", height: item.size, transform: `translateY(${item.start}px)` } as const;
 						if (row.type === "heading") return <div key={row.key} role="presentation" style={place} className="flex items-end px-2 pb-1.5 text-xs font-bold text-foreground/70">{row.heading}</div>;
-						const common = { id: `model-row-${item.index}`, role: "option", "aria-selected": highlighted, style: place, onMouseMove: () => { if (!highlighted) setActiveKey(row.key); } } as const;
+						const common = { id: `model-row-${item.index}`, role: "option", "aria-selected": highlighted, "aria-setsize": optionCount, "aria-posinset": positions[item.index], style: place, onMouseMove: () => { if (!highlighted) setActiveKey(row.key); } } as const;
 						if (row.type === "older") return <div key={row.key} {...common} onClick={() => activate(row, false)}
 							className={cn("flex cursor-default items-center gap-2 rounded-md px-2 text-xs text-muted-foreground", highlighted && "bg-muted text-foreground")}>
 							<ChevronDown className={cn("size-3.5 transition-transform", showOlder[row.harness] && "rotate-180")} />

@@ -138,7 +138,7 @@ app.whenReady().then(async () => {
     for (const [width, height] of [[1440, 920], [1180, 800], [1040, 680]]) for (const theme of ["light", "dark"]) {
       owner.setSize(width, height); await run(`window.__auditTheme(${JSON.stringify(theme)})`);
       await run("document.querySelector('main form [aria-label=\"Choose model\"]').click()");
-      await wait("Boolean(document.querySelector('[data-slot=popover-content] [cmdk-input]'))");
+      await wait("Boolean(document.querySelector('[data-slot=popover-content] [role=combobox]'))");
       if (!await run("(()=>{const r=document.querySelector('[data-slot=popover-content]').getBoundingClientRect();return r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight;})()")) throw Error("Model picker exceeds window");
       await capture("shadcn-controls", `${width}-${theme}`);
       key("Escape");
@@ -159,29 +159,31 @@ app.whenReady().then(async () => {
     await wait("document.querySelector('main form [aria-label=\"Choose model\"]')?.textContent.includes('Owned model 0')&&!window.__auditButton('Sign in with your browser')");
     // Search, Free and New filters, favourites and lab logos.
     const popup = "document.querySelector('[data-slot=popover-content]')";
-    const items = `Array.from(${popup}?.querySelectorAll('[cmdk-item]')??[]).filter(item=>!item.textContent.startsWith('Show'))`;
+    // The list is virtualised: rendered rows are a window, and every option reports the full count.
+    const items = `Array.from(${popup}?.querySelectorAll('#model-picker-list [role=option]')??[]).filter(item=>!item.textContent.startsWith('Show'))`;
+    const count = `Number(${popup}?.querySelector('#model-picker-list [role=option]')?.getAttribute('aria-setsize')??0)`;
     await run("document.querySelector('main form [aria-label=\"Choose model\"]').click()");
-    await wait(`${items}.length===1000`);
-    await run(`window.__auditType(${popup}.querySelector('[cmdk-input]'),'owned model')`);
-    await wait(`${items}.length===25&&Array.from(${popup}.querySelectorAll('[cmdk-group-heading]')).some(heading=>heading.textContent==='Results (25 of 1000)')`);
-    await run(`window.__auditType(${popup}.querySelector('[cmdk-input]'),'')`);
+    await wait(`${count}===1000`);
+    await run(`window.__auditType(${popup}.querySelector('[role=combobox]'),'owned model')`);
+    await wait(`${count}===25&&Array.from(${popup}.querySelectorAll('#model-picker-list [role=presentation]')).some(heading=>heading.textContent==='Results (25 of 1000)')`);
+    await run(`window.__auditType(${popup}.querySelector('[role=combobox]'),'')`);
     await run(`window.__auditButton('New',${popup}).click()`);
-    await wait(`${items}.length===1&&${items}[0].textContent.includes('OpenAI: Owned model 999')`);
+    await wait(`${count}===1&&${items}[0].textContent.includes('OpenAI: Owned model 999')`);
     await run(`${popup}.querySelector('[aria-label="Add Owned model 999 to favourites"]').click()`);
-    await wait(`Array.from(${popup}.querySelectorAll('[cmdk-group-heading]')).some(heading=>heading.textContent==='Favourites')&&Boolean(${popup}.querySelector('[aria-label="Remove Owned model 999 from favourites"]'))`);
+    await wait(`Array.from(${popup}.querySelectorAll('#model-picker-list [role=presentation]')).some(heading=>heading.textContent==='Favourites')&&Boolean(${popup}.querySelector('[aria-label="Remove Owned model 999 from favourites"]'))`);
     if (!await run(`${items}.every(item=>Array.from(item.querySelectorAll('img')).every(image=>image.complete&&image.naturalWidth>0))&&Boolean(${items}[0].querySelector('[data-model-lab=openai]'))&&JSON.parse(localStorage.getItem('phaseo.desktop.favouriteModels')).includes('phaseo:owned-model-999')`)) throw Error('Model branding or favourite persistence failed');
     await run(`window.__auditButton('Free',${popup}).click()`);
-    await wait(`${items}.length===0&&${popup}.querySelector('[cmdk-empty]')?.textContent.includes('No models found')`);
+    await wait(`${count}===0&&${popup}.textContent.includes('No models found')`);
     await run(`window.__auditButton('Free',${popup}).click();window.__auditButton('New',${popup}).click()`);
-    await wait(`${items}.length===1000&&JSON.parse(localStorage.getItem('phaseo.desktop.modelFilters')).free===false`);
+    await wait(`${count}===1000&&JSON.parse(localStorage.getItem('phaseo.desktop.modelFilters')).free===false`);
     key("Escape");
     await wait(`!${popup}`);
     console.log('PHASEO_MODEL_FILTERS_SMOKE', JSON.stringify({search:true,free:true,new:true,favourites:true,persistence:true,clear:true,logos:true}));
     // Choosing a model and its settings; reopening the picker reuses the cached catalog.
     const cachedReads = modelReads;
     await run("document.querySelector('main form [aria-label=\"Choose model\"]').click()");
-    await wait(`Boolean(${popup}?.querySelector('[cmdk-input]'))`);
-    await run(`window.__auditType(${popup}.querySelector('[cmdk-input]'),'owned model 999')`);
+    await wait(`Boolean(${popup}?.querySelector('[role=combobox]'))`);
+    await run(`window.__auditType(${popup}.querySelector('[role=combobox]'),'owned model 999')`);
     await wait(`${items}[0]?.textContent.includes('Owned model 999')`);
     await run(`${items}[0].click()`);
     await wait(`!${popup}&&document.querySelector('main form [aria-label="Choose model"]').textContent.includes('Owned model 999')`);
@@ -192,15 +194,15 @@ app.whenReady().then(async () => {
     console.log('UNIFIED_PICKER_SMOKE',JSON.stringify({modelReasoningSpeed:true,cachedCatalog:true}));
     // Background refreshes keep the cached catalog on failure and report the error until a later refresh succeeds.
     await run("document.querySelector('main form [aria-label=\"Choose model\"]').click()");
-    await wait(`${items}.length===1000`);
+    await wait(`${count}===1000`);
     modelRefreshDelay = 500; modelRefreshFailure = true;
     await advanceBackgroundRefresh(owner);
-    if (!await run(`${items}.length===1000`)) throw Error('Background refresh hid cached models');
+    if (!await run(`${count}===1000`)) throw Error('Background refresh hid cached models');
     await wait(`${popup}.textContent.includes('Phaseo: Owned model refresh failure')`);
-    if (!await run(`${items}.length===1000`)) throw Error('Refresh failure cleared cached models');
+    if (!await run(`${count}===1000`)) throw Error('Refresh failure cleared cached models');
     modelRefreshFailure = false; modelRefreshDelay = 0;
     await advanceBackgroundRefresh(owner);
-    await wait(`!${popup}.textContent.includes('Owned model refresh failure')&&${items}.length===1000`);
+    await wait(`!${popup}.textContent.includes('Owned model refresh failure')&&${count}===1000`);
     key("Escape");
     await wait(`!${popup}`);
     console.log('MODEL_SWR_SMOKE', JSON.stringify({cachedMenuSwitch:true,backgroundRefresh:true,staleOnFailure:true,retry:true}));
@@ -220,7 +222,7 @@ app.whenReady().then(async () => {
       return originalCommand(event, value);
     });
     await run("document.querySelector('main form [aria-label=\"Choose model\"]').click()");
-    await run(`window.__auditType(${popup}.querySelector('[cmdk-input]'),'owned model 0')`);
+    await run(`window.__auditType(${popup}.querySelector('[role=combobox]'),'owned model 0')`);
     await wait(`${items}[0]?.textContent.trim().startsWith('Anthropic: Owned model 0')`);
     await run(`${items}[0].click()`);
     await wait(`!${popup}&&document.querySelector('main form [aria-label="Choose model"]').textContent.trim()==='Owned model 0'`);
