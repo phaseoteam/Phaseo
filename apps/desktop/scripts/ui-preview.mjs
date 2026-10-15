@@ -18,6 +18,8 @@ const only = argument("states", "")?.split(",").filter(Boolean);
 const demo = process.argv.includes("--demo");
 process.on("unhandledRejection", reason => { console.error("Unhandled preview rejection", reason); app.exit(1); });
 if (demo) app.commandLine.appendSwitch("remote-debugging-port", argument("port", "9333"));
+// The demo is driven over DevTools while other windows cover it; keep it rendering so layout observers still run.
+if (demo) app.commandLine.appendSwitch("disable-features", "CalculateNativeWinOcclusion");
 
 const profile = mkdtempSync(path.join(tmpdir(), "phaseo-ui-preview-"));
 app.setPath("userData", profile);
@@ -206,6 +208,7 @@ app.whenReady().then(async () => {
 	if (demo) {
 		await run(`localStorage.clear(); localStorage.setItem("phaseo.desktop.workspaceMode", '"chat"');`);
 		window.webContents.reload();
+		window.webContents.setBackgroundThrottling(false);
 		window.center(); window.show(); window.focus();
 		console.log(`Demo running. Gateway stand-in on port ${gatewayPort}; DevTools on ${argument("port", "9333")}. Close the window to finish.`);
 		return;

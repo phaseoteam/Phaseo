@@ -172,7 +172,7 @@ export function useComposerMenu({ value, onChange, input, taskId, harness, accou
 				<button type="submit" className="h-7 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground hover:bg-primary/85">Insert</button>
 			</div>
 		</form> : <ScrollArea className="max-h-72" viewportClassName="max-h-72">
-			<div id={listId} role="listbox" aria-label={trigger?.kind === "slash" ? "Commands" : "Chats and files"} className="p-1.5">
+			<div id={listId} role="listbox" aria-label={trigger?.kind === "slash" ? "Commands" : "Chats and files"} className="py-1.5 pr-3.5 pl-1.5">
 				{items.map((item, index) => {
 					const heading = item.group !== previous ? item.group : undefined; previous = item.group;
 					return <div key={item.key}>

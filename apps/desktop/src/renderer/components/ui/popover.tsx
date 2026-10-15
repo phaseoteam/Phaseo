@@ -44,12 +44,14 @@ function PopoverContent({
   anchor,
   side = "bottom",
   sideOffset = 4,
+  collisionAvoidance,
+  collisionPadding,
   onOpenAutoFocus,
   ...props
 }: PopoverPrimitive.Popup.Props &
   Pick<
     PopoverPrimitive.Positioner.Props,
-    "align" | "alignOffset" | "anchor" | "side" | "sideOffset"
+    "align" | "alignOffset" | "anchor" | "side" | "sideOffset" | "collisionAvoidance" | "collisionPadding"
   > & {
     onOpenAutoFocus?: (event: Event) => void
   }) {
@@ -62,6 +64,8 @@ function PopoverContent({
         anchor={anchor}
         side={side}
         sideOffset={sideOffset}
+        collisionAvoidance={collisionAvoidance}
+        collisionPadding={collisionPadding}
         className="isolate z-50"
       >
         <PopoverPrimitive.Popup

@@ -228,7 +228,8 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 				: <span className="text-muted-foreground">Choose a model</span>}
 			<ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
 		</PopoverTrigger>
-		<PopoverContent align="end" side="top" sideOffset={8} className="w-[min(92vw,520px)] gap-0 overflow-hidden rounded-xl p-0">
+		{/* Stays above or below the button and shrinks to fit below the title bar, rather than sliding sideways over the composer. */}
+			<PopoverContent align="end" side="top" sideOffset={8} collisionAvoidance={{ side: "flip", align: "shift", fallbackAxisSide: "none" }} collisionPadding={{ top: 52, right: 8, bottom: 8, left: 8 }} className="max-h-(--available-height) w-[min(92vw,520px)] gap-0 overflow-hidden rounded-xl p-0">
 				<div className="p-2 pb-1">
 				<div className="flex h-8 items-center gap-2 rounded-lg border border-input bg-input/50 px-2.5">
 					<SearchIcon className="size-4 shrink-0 opacity-50" />
@@ -249,7 +250,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 				{multiple && <span className="ml-auto text-[11px] text-muted-foreground">{isMac() ? "⌘" : "Ctrl"}-click to compare up to {MAX_COMPARE}</span>}
 				<button type="button" aria-label="Refresh models" title="Refresh models" disabled={refreshing} onClick={() => void refresh()} className={cn("grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-60", !multiple && "ml-auto")}><RotateCw className={cn("size-3.5", refreshing && "animate-spin")} /></button>
 			</div>
-			{rows.length > 0 && <ScrollArea style={{ height: `min(60vh, 440px, ${virtualizer.getTotalSize() + 12}px)` }} viewportRef={setViewport} viewportClassName="p-1.5">
+			{rows.length > 0 && <ScrollArea style={{ height: `min(60vh, 440px, ${virtualizer.getTotalSize() + 12}px)` }} viewportRef={setViewport} viewportClassName="py-1.5 pr-3.5 pl-1.5">
 				<div id="model-picker-list" role="listbox" aria-label="Models" className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
 					{virtualizer.getVirtualItems().map(item => {
 						const row = rows[item.index], highlighted = item.index === activeIndex;

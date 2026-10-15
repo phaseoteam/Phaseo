@@ -44,7 +44,8 @@ function ScrollArea({
           viewportClassName
         )}
       >
-        {children}
+        {/* Content reports its own size changes, so the thumb follows content that grows or shrinks in place. */}
+        <ScrollAreaPrimitive.Content>{children}</ScrollAreaPrimitive.Content>
       </ScrollAreaPrimitive.Viewport>
       {scrollBarOrientation === "both" ? (
         <>
