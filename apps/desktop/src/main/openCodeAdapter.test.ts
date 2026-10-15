@@ -123,6 +123,24 @@ describe("OpenCode 2 integration", () => {
 		if (submit) expect(reply).toHaveBeenCalledWith({ sessionID: "session", formID: "native-form", answer: { count: 3 } }, expect.anything());
 		else expect(cancel).toHaveBeenCalledWith(expect.objectContaining({ formID: "native-form" }), expect.anything());
 	});
+	it.each(["answer", "dismiss", "rejected"] as const)("asks text and multiple-choice forms in the answer panel (%s)", async outcome => {
+		sdk.discover.mockResolvedValue({ url: "http://localhost:4096" });
+		let promptResolve!: () => void; const prompt = new Promise<void>(resolve => { promptResolve = resolve; });
+		let settled!: () => void; const answered = new Promise<void>(resolve => { settled = resolve; });
+		const reply = vi.fn(outcome === "rejected" ? async () => { throw { _tag: "FormInvalidAnswerError", id: "pick", message: "Pick a known topping." }; } : async () => { settled(); }); const cancel = vi.fn(async () => { settled(); });
+		sdk.make.mockReturnValue({ session: { create: async () => ({ id: "session" }), wait: async () => {}, prompt: async () => { promptResolve(); }, form: { reply, cancel } }, event: { subscribe: async function* (options: { onActivity: () => void }) {
+			options.onActivity(); await prompt;
+			yield { type: "form.created", data: { form: { id: "pick", sessionID: "session", title: "Pizza", fields: [{ key: "size", type: "string", title: "Size", required: true, options: [{ value: "s", label: "Small" }, { value: "l", label: "Large" }] }, { key: "toppings", type: "multiselect", title: "Toppings", options: [{ value: "olive", label: "Olive" }], custom: true }] } } };
+			await answered; yield { type: "session.execution.succeeded", data: { sessionID: "session" } };
+		} } });
+		const onQuestion = vi.fn(async (): Promise<Record<string, string[]>> => outcome === "dismiss" ? {} : { size: ["l"], toppings: ["olive", "basil"] });
+		const onForm = vi.fn(async () => { settled(); return null; });
+		await new OpenCodeAdapter().run(task, ".", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline", onQuestion, onForm });
+		expect(onQuestion).toHaveBeenCalledWith([expect.objectContaining({ id: "size", header: "Size", question: "Pizza", isOther: false, options: [{ label: "Small", value: "s" }, { label: "Large", value: "l" }] }), expect.objectContaining({ id: "toppings", multiSelect: true, isOther: true, required: false })], expect.objectContaining({ signal: expect.any(AbortSignal) }));
+		if (outcome === "answer") { expect(reply).toHaveBeenCalledWith({ sessionID: "session", formID: "pick", answer: { size: "l", toppings: ["olive", "basil"] } }, expect.anything()); expect(onForm).not.toHaveBeenCalled(); }
+		if (outcome === "dismiss") { expect(cancel).toHaveBeenCalledWith(expect.objectContaining({ formID: "pick" }), expect.anything()); expect(reply).not.toHaveBeenCalled(); }
+		if (outcome === "rejected") expect(onForm).toHaveBeenCalledWith(expect.objectContaining({ id: "pick", error: "Pick a known topping." }), expect.anything());
+	});
 	it("lets users retry native validation errors and aborts forms settled elsewhere", async () => {
 		sdk.discover.mockResolvedValue({ url: "http://localhost:4096" });
 		let prompted!: () => void; const prompt = new Promise<void>(resolve => { prompted = resolve; });
