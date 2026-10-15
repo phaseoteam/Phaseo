@@ -1,7 +1,25 @@
 import {
+	buildGuardrailBlockMetrics,
 	buildGuardrailEnforcementMetrics,
 	type GuardrailEnforcementEventRow,
 } from "./guardrailEnforcementMetrics";
+
+describe("buildGuardrailBlockMetrics", () => {
+	test("places exact block counts in the chart's buckets", () => {
+		const metrics = buildGuardrailBlockMetrics({
+			blocks: [
+				{ bucket: new Date(2026, 9, 15, 9).toISOString(), blocked: 2 },
+				{ bucket: new Date(2026, 9, 15, 9).toISOString(), blocked: 1 },
+				{ bucket: new Date(2026, 9, 15, 10).toISOString(), blocked: 0 },
+			],
+			timeRange: { from: new Date(2026, 9, 15, 8).toISOString(), to: new Date(2026, 9, 15, 11).toISOString() },
+			range: "1d",
+		});
+		expect(metrics.totals).toEqual({ blocked: 3, redacted: 0, flagged: 0 });
+		expect(metrics.buckets.map((bucket) => bucket.blocked)).toEqual([0, 3, 0, 0]);
+		expect(metrics.signalsRecorded).toEqual({ blocked: true, redacted: false, flagged: false });
+	});
+});
 
 describe("buildGuardrailEnforcementMetrics", () => {
 	test("counts workspace-policy blocks and top guardrails", () => {

@@ -3297,7 +3297,6 @@
 		"noApp": "无应用",
 		"activity": "活动",
 		"yourUsage": "你在 Phaseo 上的使用情况。",
-		"sampledRequests": "此视图基于所选时间段内的第一个 {count} 请求。",
 		"noUsagePeriod": "在此期间没有使用。",
 		"toks": "这样的",
 		"chartOptions": "图表选项",

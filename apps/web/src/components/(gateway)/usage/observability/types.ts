@@ -97,8 +97,6 @@ export type ObservabilityData = {
 	periodLabel: string;
 	/** The period the KPI deltas and footers compare with. */
 	previousPeriod?: { from: string; to: string };
-	isSampled?: boolean;
-	sampleLimit?: number;
 	kpis: ObservabilityKpi[];
 	/** This UTC month's spend and projection from exact rollups; absent for filtered views. */
 	monthSpend?: MonthSpendForecast | null;

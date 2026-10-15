@@ -13,13 +13,14 @@ declare
   v_private_grains integer := 0;
   v_public_daily_grains integer := 0;
   v_public_hourly_grains integer := 0;
+  v_workspace_hours integer := 0;
   v_rollup_id uuid;
   grain record;
 begin
   -- Different event batches can rebuild the same summary concurrently.
   if not pg_catalog.pg_try_advisory_xact_lock(pg_catalog.hashtextextended('public.process_v2_analytics_outbox', 0)) then
     return jsonb_build_object('selected', 0, 'coalesced', 0, 'private_grains', 0,
-      'public_daily_grains', 0, 'public_hourly_grains', 0, 'skipped_locked', true);
+      'public_daily_grains', 0, 'public_hourly_grains', 0, 'workspace_hours', 0, 'skipped_locked', true);
   end if;
   create temporary table if not exists pg_temp.v2_rollup_batch (
     request_event_id uuid primary key,
@@ -74,7 +75,8 @@ begin
       'coalesced', 0,
       'private_grains', 0,
       'public_daily_grains', 0,
-      'public_hourly_grains', 0
+      'public_hourly_grains', 0,
+      'workspace_hours', 0
     );
   end if;
 
@@ -201,6 +203,69 @@ begin
     group by meter.meter_key, meter.modality, meter.unit;
 
     v_private_grains := v_private_grains + 1;
+  end loop;
+
+  -- The usage overview's 15-minute rollups are rebuilt a whole workspace hour at a
+  -- time, so a correction that moves a request to another key or model within the
+  -- hour is rebuilt too. v2_usage_overview_requests counts each request as the
+  -- overview does; get_private_usage_overview reads requests outside the rollups
+  -- from the same view.
+  for grain in
+    select distinct batch.workspace_id, date_trunc('hour', batch.occurred_at, 'UTC') as bucket_start
+    from pg_temp.v2_rollup_batch batch
+  loop
+    delete from public.v2_private_usage_15m rollup
+    where rollup.workspace_id = grain.workspace_id
+      and rollup.bucket_start >= grain.bucket_start
+      and rollup.bucket_start < grain.bucket_start + interval '1 hour';
+    delete from public.v2_private_usage_labels_15m rollup
+    where rollup.workspace_id = grain.workspace_id
+      and rollup.bucket_start >= grain.bucket_start
+      and rollup.bucket_start < grain.bucket_start + interval '1 hour';
+
+    -- Read each request's usage meters once for both rollups.
+    with requests as materialized (
+      select request.*, date_bin('15 minutes', request.occurred_at, grain.bucket_start) as bucket_start
+      from private.v2_usage_overview_requests request
+      where request.workspace_id = grain.workspace_id
+        and request.occurred_at >= grain.bucket_start
+        and request.occurred_at < grain.bucket_start + interval '1 hour'
+    ), totals as (
+      insert into public.v2_private_usage_15m (
+        workspace_id, bucket_start, model_id, provider_model_id, key_id, app_id, byok,
+        requests, successful_requests, guardrail_blocked, cost_nanos,
+        tokens, input_tokens, output_tokens, reasoning_tokens, cached_tokens
+      )
+      select
+        grain.workspace_id, request.bucket_start, request.model_id, request.provider_model_id,
+        request.key_id, request.app_id, request.byok,
+        count(*), count(*) filter (where request.successful), count(*) filter (where request.guardrail_blocked),
+        sum(request.cost_nanos), sum(request.tokens), sum(request.input_tokens), sum(request.output_tokens),
+        sum(request.reasoning_tokens), sum(request.cached_tokens)
+      from requests request
+      group by 2, 3, 4, 5, 6, 7
+    )
+    insert into public.v2_private_usage_labels_15m (
+      workspace_id, bucket_start, label_key, label_value, model_id, provider_model_id, key_id, app_id, byok,
+      requests, successful_requests, guardrail_blocked, cost_nanos,
+      tokens, input_tokens, output_tokens, reasoning_tokens, cached_tokens
+    )
+    select
+      grain.workspace_id, request.bucket_start, label.label_key, label.label_value,
+      request.model_id, request.provider_model_id, request.key_id, request.app_id, request.byok,
+      count(*), count(*) filter (where request.successful), count(*) filter (where request.guardrail_blocked),
+      sum(request.cost_nanos), sum(request.tokens), sum(request.input_tokens), sum(request.output_tokens),
+      sum(request.reasoning_tokens), sum(request.cached_tokens)
+    from requests request
+    cross join lateral (
+      -- A request counts once per label, however often it repeats it.
+      select distinct element.value ->> 'key' as label_key, element.value ->> 'value' as label_value
+      from jsonb_array_elements(request.labels) element
+      where jsonb_typeof(element.value -> 'key') = 'string' and jsonb_typeof(element.value -> 'value') = 'string'
+    ) label
+    group by 2, 3, 4, 5, 6, 7, 8, 9;
+
+    v_workspace_hours := v_workspace_hours + 1;
   end loop;
 
   for grain in
@@ -412,14 +477,15 @@ begin
     'coalesced', v_coalesced,
     'private_grains', v_private_grains,
     'public_daily_grains', v_public_daily_grains,
-    'public_hourly_grains', v_public_hourly_grains
+    'public_hourly_grains', v_public_hourly_grains,
+    'workspace_hours', v_workspace_hours
   );
 end;
 $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."process_v2_analytics_outbox"(integer) TO "service_role";
 
-COMMENT ON FUNCTION "public"."process_v2_analytics_outbox"(integer) IS 'Serializes summary rebuilds, claims a bounded seed batch, and coalesces covered workspace/hour events before idempotent private daily, public daily, and public hourly rebuilds. At most 2000 acknowledgments per run; corrections retain row locks and re-enqueue after commit.';
+COMMENT ON FUNCTION "public"."process_v2_analytics_outbox"(integer) IS 'Serializes summary rebuilds, claims a bounded seed batch, and coalesces covered workspace/hour events before idempotent private daily, public daily, public hourly, and usage overview 15-minute rebuilds; the 15-minute and label rollups are rebuilt per touched workspace hour. At most 2000 acknowledgments per run; corrections retain row locks and re-enqueue after commit.';
 
 REVOKE ALL ON FUNCTION "public"."process_v2_analytics_outbox"(integer) FROM "postgres";
 
