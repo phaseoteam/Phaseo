@@ -114,7 +114,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 		}
 	}, [api]);
 
-	useEffect(() => api?.onOpenTask(id => { if (id) { setSelectedId(id); setCompareId(undefined); } }), [api, setSelectedId, setCompareId]);
+	// Notifications and missions open a chat from anywhere, including the settings page.
+	useEffect(() => api?.onOpenTask(id => { if (id) { setSelectedId(id); setCompareId(undefined); setSettings(undefined); } }), [api, setSelectedId, setCompareId]);
 
 	const taskById = useCallback((id: string) => overview.tasks.find(task => task.id === id), [overview.tasks]);
 	const select = useCallback((id?: string) => {
