@@ -1355,7 +1355,7 @@ describe("batchRoutes", () => {
 			expect(state.releaseCalls).toHaveLength(0);
 			expect(state.statusUpdates).toEqual(expect.arrayContaining([expect.objectContaining({ status: "submission_unknown" })]));
 		}
-		expect(calls.filter((call) => call.includes("aiplatform.googleapis.com"))).toHaveLength(1);
+		expect(calls.filter((call) => call === "POST https://aiplatform.googleapis.com/v1/projects/test-project/locations/global/batchPredictionJobs")).toHaveLength(1);
 	});
 
 	it("uploads a normalized Kimi K2.6 JSONL batch and preserves its supported completion window", async () => {
