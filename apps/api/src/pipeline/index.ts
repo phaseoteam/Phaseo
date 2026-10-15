@@ -240,6 +240,8 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
                 retryRawBody: unknown;
                 routingDiagnostics?: Record<string, any> | null;
                 attemptKey: string;
+                // Absent when the primary failed before it was admitted.
+                rateLimitAdmissionId?: string;
                 stage: "before" | "execute";
             },
             initialResponse: Response,
@@ -247,6 +249,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
             let response = initialResponse;
 			const attempts: ModelFallbackAttempt[] = [{ model: primary.model, status: response.status, stage: primary.stage }];
 			const attemptedModels = new Set([primary.attemptKey]);
+			let rateLimitAdmissionId = primary.rateLimitAdmissionId;
 			for (const [fallbackIndex, fallbackModel] of fallbackPlan.models.entries()) {
 				const fallbackReq = requestForModelFallback(req, primary.retryRawBody) as unknown as typeof req;
 				const fallbackObservabilityReq = cloneRequestForEarlyObservability(fallbackReq);
@@ -303,7 +306,8 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 					fallbackPre.ctx.meta.before_ms = Math.round(fallbackBeforeMsRaw * 1000) / 1000;
 				}
 				// One HTTP request is one admission against rate limit policies.
-				fallbackPre.ctx.rateLimitAdmissionId = pre.ctx.rateLimitAdmissionId ?? pre.ctx.billingRequestId;
+				rateLimitAdmissionId ??= fallbackPre.ctx.billingRequestId;
+				fallbackPre.ctx.rateLimitAdmissionId = rateLimitAdmissionId;
 				fallbackPre.ctx.routingDiagnostics = {
 					...(fallbackPre.ctx.routingDiagnostics ?? {}),
 					modelFallback: {
@@ -388,6 +392,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 					retryRawBody: pre.ctx.retryRawBody ?? pre.ctx.rawBody,
 					routingDiagnostics: pre.ctx.routingDiagnostics,
 					attemptKey: modelFallbackAttemptKey(pre.ctx),
+					rateLimitAdmissionId: pre.ctx.rateLimitAdmissionId ?? pre.ctx.billingRequestId,
 					stage: "execute",
 				},
 				response,
