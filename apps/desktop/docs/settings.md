@@ -14,9 +14,9 @@ On Windows, Codex installed with npm is started from its bundled `codex.exe` rat
 
 ### Usage hubs
 
-A usage hub is a [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) server that holds many accounts. Add one with its address and management key; Phaseo lists its accounts once to check the key before saving it. The key is kept in the device's secure credential storage, never in settings files.
+A usage hub is a [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) server that holds many accounts. If T3 Code on this computer already has hubs, **Import from T3 Code** copies them, reading each management key from T3 Code's local secret store. Otherwise add one with its address and management key; Phaseo lists its accounts once to check the key before saving it. The key is kept in the device's secure credential storage, never in settings files.
 
-For every Codex and Claude account on the hub that isn't disabled, Phaseo asks the hub to call the provider's own usage endpoint with that account's token (`POST /v0/management/api-call`): ChatGPT's `wham/usage` and Anthropic's `oauth/usage`. Accounts for other providers are counted but not read. Errors are specific: a rejected key, management access refused (turn on `allow-remote` for a hub on another computer), no management API, or a hub that can't be reached. CLIProxyAPI blocks an address for 30 minutes after five wrong keys.
+For every Codex and Claude account on the hub that isn't disabled, Phaseo asks the hub to call the provider's own usage endpoint with that account's token (`POST /v0/management/api-call`): ChatGPT's `wham/usage` and Anthropic's `oauth/usage`. Accounts for other providers are counted but not read. Claude accounts that list their windows only in `limits[]` (a `session` window and per-model `weekly_scoped` windows, with `seven_day` empty) are read from there. Errors are specific: a rejected key, management access refused (turn on `allow-remote` for a hub on another computer), no management API, or a hub that can't be reached. CLIProxyAPI blocks an address for 30 minutes after five wrong keys.
 
 ## Appearance
 

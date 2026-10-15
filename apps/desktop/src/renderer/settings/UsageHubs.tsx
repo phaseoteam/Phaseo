@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Plus, Server } from "lucide-react";
-import type { UsageHub, UsageHubSnapshot } from "../../shared/usageHubs";
+import type { ImportableHub, UsageHub, UsageHubSnapshot } from "../../shared/usageHubs";
 import { errorText, useWorkspace } from "../app/workspace";
 import { HarnessLogo } from "../components/HarnessLogo";
 import { SettingsButton, SettingsField, SettingsNote, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
@@ -12,6 +12,7 @@ export function UsageHubsSection({ refresh }: { refresh: number }) {
 	const [hubs, setHubs] = useState<UsageHub[]>([]);
 	const [snapshots, setSnapshots] = useState<Record<string, UsageHubSnapshot | "checking">>({});
 	const [adding, setAdding] = useState(false), [saving, setSaving] = useState(false), [error, setError] = useState("");
+	const [t3Hubs, setT3Hubs] = useState<ImportableHub[]>([]), [importing, setImporting] = useState(false);
 	const [url, setUrl] = useState("http://127.0.0.1:8317"), [key, setKey] = useState(""), [label, setLabel] = useState("");
 	const check = useCallback(async (hub: UsageHub) => {
 		if (!api) return;
@@ -23,6 +24,7 @@ export function UsageHubsSection({ refresh }: { refresh: number }) {
 		if (!api) return;
 		let active = true;
 		void api.usageHubs({ type: "list" }).then(list => { if (!active) return; setHubs(list); for (const hub of list) void check(hub); }, reason => { if (active) setError(errorText(reason)); });
+		void api.usageHubs({ type: "t3-hubs" }).then(found => { if (active) setT3Hubs(found); }, () => {});
 		return () => { active = false; };
 	}, [api, check, refresh]);
 	async function add() {
@@ -33,6 +35,16 @@ export function UsageHubsSection({ refresh }: { refresh: number }) {
 			setHubs(list); setAdding(false); setKey(""); setLabel("");
 			const added = list.find(hub => !hubs.some(existing => existing.id === hub.id)); if (added) void check(added);
 		} catch (reason) { setError(errorText(reason)); } finally { setSaving(false); }
+	}
+	/** Copies T3 Code's hubs, keys and all; each key is checked once before it is saved. */
+	async function importT3() {
+		if (!api) return;
+		setImporting(true); setError("");
+		try {
+			const list = await api.usageHubs({ type: "import-t3" });
+			setHubs(list); setT3Hubs([]);
+			for (const hub of list.filter(value => !hubs.some(existing => existing.id === value.id))) void check(hub);
+		} catch (reason) { setError(errorText(reason)); setT3Hubs(await api.usageHubs({ type: "t3-hubs" }).catch(() => [])); } finally { setImporting(false); }
 	}
 	async function remove(hub: UsageHub) {
 		if (!api || !window.confirm(`Remove ${hub.label}? Its management key is deleted from this computer.`)) return;
@@ -55,7 +67,9 @@ export function UsageHubsSection({ refresh }: { refresh: number }) {
 				{snapshot && snapshot !== "checking" && snapshot.skipped > 0 && <SettingsNote className="pl-14">{snapshot.skipped === 1 ? "1 account" : `${snapshot.skipped} accounts`} for other providers on this hub can't be read yet.</SettingsNote>}
 			</div>;
 		})}
-		{!hubs.length && !adding && <SettingsNote>No hubs yet. Add one to see the limits of every account it manages.</SettingsNote>}
+		{t3Hubs.length > 0 && <SettingsRow icon={<Server />} title={t3Hubs.length === 1 ? `T3 Code has a hub: ${t3Hubs[0].label}` : `T3 Code has ${t3Hubs.length} hubs`} description={t3Hubs.map(hub => hub.url).join(", ")}
+			control={<SettingsButton variant="primary" disabled={importing} onClick={() => void importT3()}>{importing ? "Importing…" : "Import from T3 Code"}</SettingsButton>} />}
+		{!hubs.length && !adding && !t3Hubs.length && <SettingsNote>No hubs yet. Add one to see the limits of every account it manages.</SettingsNote>}
 		{adding && <form aria-label="Add usage hub" className="flex flex-col gap-3 p-4" onSubmit={event => { event.preventDefault(); void add(); }}>
 			<div className="grid grid-cols-2 gap-3">
 				<SettingsField label="Hub address"><input value={url} onChange={event => setUrl(event.target.value)} required placeholder="http://127.0.0.1:8317" className={settingsInput} /></SettingsField>

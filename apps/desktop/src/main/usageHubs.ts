@@ -1,8 +1,9 @@
 import { readFileSync, renameSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import type { AccountStatus, UsageWindow } from "../shared/workspace";
-import type { UsageHub, UsageHubAccount, UsageHubRequest, UsageHubSnapshot } from "../shared/usageHubs";
+import type { ImportableHub, UsageHub, UsageHubAccount, UsageHubRequest, UsageHubSnapshot } from "../shared/usageHubs";
 import { claudeLimits } from "./claudeLimits";
 import { planName } from "./accountStatus";
 
@@ -41,16 +42,41 @@ async function limited<T, R>(items: T[], size: number, run: (item: T) => Promise
 	return results;
 }
 
+/**
+ * Hubs T3 Code is set up with: its settings name each CLIProxyAPI source, and its secret store keeps the
+ * management key in a file named after the source id.
+ */
+export function t3CodeHubs(userData = path.join(homedir(), ".t3", "userdata")): (ImportableHub & { key: string })[] {
+	let settings: Record<string, unknown>;
+	try { settings = object(JSON.parse(readFileSync(path.join(userData, "settings.json"), "utf8"))); } catch { return []; }
+	return Object.entries(object(settings.usageLimitSources)).flatMap(([id, value]) => {
+		const source = object(value);
+		if (source.kind !== "cliproxy" || source.enabled === false || typeof source.url !== "string") return [];
+		let key: string;
+		try { key = readFileSync(path.join(userData, "secrets", `usage-limit-source-${Buffer.from(id).toString("base64url")}.bin`), "utf8").trim(); } catch { return []; }
+		if (!key || /[^\x20-\x7e]/.test(key)) return [];
+		let url: string;
+		try { url = new URL(source.url).origin; } catch { return []; }
+		return [{ label: text(source.label) ?? new URL(url).host, url, key }];
+	});
+}
+
 export class UsageHubs {
 	private hubs: UsageHub[];
-	constructor(private readonly file: string, private readonly secrets: HubSecrets, private readonly fetcher: Fetch = fetch) {
+	constructor(private readonly file: string, private readonly secrets: HubSecrets, private readonly fetcher: Fetch = fetch, private readonly t3Hubs: () => ReturnType<typeof t3CodeHubs> = () => t3CodeHubs()) {
 		try { const stored = JSON.parse(readFileSync(file, "utf8")) as unknown; this.hubs = Array.isArray(stored) ? stored.filter((hub): hub is UsageHub => typeof hub?.id === "string" && typeof hub?.url === "string" && typeof hub?.label === "string") : []; }
 		catch { this.hubs = []; }
 	}
 	private save() { writeFileSync(`${this.file}.tmp`, JSON.stringify(this.hubs, null, 2)); renameSync(`${this.file}.tmp`, this.file); }
 
-	async request(request: UsageHubRequest): Promise<UsageHub[] | UsageHubSnapshot> {
+	async request(request: UsageHubRequest): Promise<UsageHub[] | UsageHubSnapshot | ImportableHub[]> {
 		if (request.type === "list") return this.hubs;
+		const missing = () => this.t3Hubs().filter(hub => !this.hubs.some(existing => existing.url === hub.url));
+		if (request.type === "t3-hubs") return missing().map(({ label, url }) => ({ label, url }));
+		if (request.type === "import-t3") {
+			for (const hub of missing()) await this.request({ type: "add", url: hub.url, key: hub.key, label: hub.label });
+			return this.hubs;
+		}
 		if (request.type === "remove") { this.secrets.remove(request.id); this.hubs = this.hubs.filter(hub => hub.id !== request.id); this.save(); return this.hubs; }
 		if (request.type === "check") {
 			const hub = this.hubs.find(value => value.id === request.id);

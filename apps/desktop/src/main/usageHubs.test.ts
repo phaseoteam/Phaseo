@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { UsageHubs, claudeHubUsage, codexHubUsage, usageHubFile } from "./usageHubs";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { UsageHubs, claudeHubUsage, codexHubUsage, t3CodeHubs, usageHubFile } from "./usageHubs";
 import type { UsageHub, UsageHubSnapshot } from "../shared/usageHubs";
 
 /** A CLIProxyAPI stand-in: auth-files lists accounts, api-call answers with the provider's usage. */
@@ -39,6 +40,8 @@ describe("usage hub responses", () => {
 			{ id: "claude:Opus", name: "Opus weekly", spendControlReached: null, primary: { usedPercent: 30, windowDurationMins: 10080, resetsAt: null }, secondary: null },
 		]);
 		expect(result.extraUsage).toEqual({ enabled: true, used: 12.5, limit: 50 });
+		// Accounts that only list their windows in limits[]: the session window stands in for five_hour.
+		expect(claudeHubUsage({ five_hour: null, seven_day: null, limits: [{ kind: "session", group: "session", percent: 7, resets_at: "2026-10-15T18:00:00Z", scope: null }, { kind: "weekly_scoped", group: "weekly", percent: 0, scope: { model: { display_name: "Fable" } } }] }).usage?.map(bucket => [bucket.name, bucket.primary?.usedPercent, bucket.secondary])).toEqual([["Claude", 7, null], ["Fable weekly", 0, null]]);
 	});
 });
 
@@ -83,5 +86,27 @@ describe("UsageHubs", () => {
 		const [hub] = await new UsageHubs(usageHubFile(directory), vault, reachable.fetcher).request({ type: "add", url: "http://hub.local:8317", key: "secret" }) as UsageHub[];
 		const snapshot = await new UsageHubs(usageHubFile(directory), vault, hubFixture({ down: true }).fetcher).request({ type: "check", id: hub.id }) as UsageHubSnapshot;
 		expect(snapshot).toMatchObject({ accounts: [], error: "Couldn't reach the hub at http://hub.local:8317." });
+	}));
+});
+
+describe("T3 Code hubs", () => {
+	it("reads enabled CLIProxyAPI sources and their keys from T3 Code, skipping the rest", async () => withDirectory(async directory => {
+		mkdirSync(path.join(directory, "secrets"));
+		writeFileSync(path.join(directory, "settings.json"), JSON.stringify({ usageLimitSources: {
+			"claude-pool-hub": { kind: "cliproxy", label: "Claude", url: "http://127.0.0.1:8317/", enabled: true, managementKey: "••••••" },
+			"off-hub": { kind: "cliproxy", url: "http://10.0.0.2:8317", enabled: false },
+			"no-key": { kind: "cliproxy", url: "http://10.0.0.3:8317" },
+			"other": { kind: "something-else", url: "http://10.0.0.4" },
+		} }));
+		const secret = (id: string, value: string) => writeFileSync(path.join(directory, "secrets", `usage-limit-source-${Buffer.from(id).toString("base64url")}.bin`), value);
+		secret("claude-pool-hub", "secret\n"); secret("off-hub", "x");
+		expect(t3CodeHubs(directory)).toEqual([{ label: "Claude", url: "http://127.0.0.1:8317", key: "secret" }]);
+		expect(t3CodeHubs(path.join(directory, "missing"))).toEqual([]);
+		const { vault, secrets } = store(), { fetcher } = hubFixture();
+		const hubs = new UsageHubs(usageHubFile(directory), vault, fetcher, () => t3CodeHubs(directory));
+		expect(await hubs.request({ type: "t3-hubs" })).toEqual([{ label: "Claude", url: "http://127.0.0.1:8317" }]);
+		const [hub] = await hubs.request({ type: "import-t3" }) as UsageHub[];
+		expect(hub).toMatchObject({ label: "Claude", url: "http://127.0.0.1:8317" }); expect(secrets.get(hub.id)).toBe("secret");
+		expect(await hubs.request({ type: "t3-hubs" })).toEqual([]);
 	}));
 });

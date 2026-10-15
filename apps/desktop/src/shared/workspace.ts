@@ -1,6 +1,6 @@
 import type { Delegation, Launch } from "./orchestration";
 import type { PullRequestThreadsQuery, PullRequestThreadsPage } from "./pullRequestThreads";
-import type { UsageHub, UsageHubRequest, UsageHubSnapshot } from "./usageHubs";
+import type { ImportableHub, UsageHub, UsageHubRequest, UsageHubSnapshot } from "./usageHubs";
 import { nativeActionText, validateNativeAction, type NativeAction, type NativeActionCatalog } from "./nativeActions";
 import type { PromptCommandCatalog, PromptCommandPreview, PromptCommandRequest } from "./promptCommands";
 import type { McpPromptCatalog, McpPromptPreview, McpPromptRequest } from "./mcpPrompts";
@@ -152,7 +152,7 @@ export type WorkspaceApi = {
 	signIn: (accountId: string) => Promise<WorkspaceOverview>;
 	accountStatus: (harness: "codex" | "claude" | "cursor" | "grok", accountId?: string) => Promise<AccountStatus>;
 	/** CLIProxyAPI hubs: list, add (checks the key first), remove, or read every account's limits. */
-	usageHubs: <R extends UsageHubRequest>(request: R) => Promise<R extends { type: "check" } ? UsageHubSnapshot : UsageHub[]>;
+	usageHubs: <R extends UsageHubRequest>(request: R) => Promise<R extends { type: "check" } ? UsageHubSnapshot : R extends { type: "t3-hubs" } ? ImportableHub[] : UsageHub[]>;
 	cancelSignIn: (accountId: string) => Promise<void>;
 	listFiles: (projectId: string, directory: string) => Promise<ProjectFile[]>;
 	/** Files and folders matching a query, best first, for `@` mentions. */

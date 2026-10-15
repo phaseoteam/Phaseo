@@ -19,7 +19,10 @@ export function claudeWindow(value: ClaudeWindow, minutes: number): UsageWindow 
 
 /** Plan limits from the Agent SDK's usage call or the OAuth usage endpoint: 5-hour and weekly, per-model weekly, extra usage. */
 export function claudeLimits(input: ClaudeLimitsInput): Pick<AccountStatus, "usage" | "extraUsage"> {
-	const usage: NonNullable<AccountStatus["usage"]> = [{ id: "claude", name: "Claude", primary: claudeWindow(input.five_hour, 300), secondary: claudeWindow(input.seven_day, 10080), spendControlReached: null }];
+	// Newer accounts list their windows in limits[] (kind "session", unscoped weekly) and may leave five_hour or seven_day empty.
+	const listed = (kinds: string[]) => Array.isArray(input.limits) ? input.limits.map(entry => entry as { kind?: unknown; group?: unknown; percent?: unknown; resets_at?: unknown; scope?: unknown }).find(limit => (kinds.includes(String(limit.kind)) || (kinds.includes("weekly") && limit.group === "weekly" && limit.kind !== "weekly_scoped")) && !limit.scope && typeof limit.percent === "number") : undefined;
+	const fromList = (limit: ReturnType<typeof listed>): ClaudeWindow => limit ? { utilization: limit.percent as number, resets_at: typeof limit.resets_at === "string" ? limit.resets_at : null } : undefined;
+	const usage: NonNullable<AccountStatus["usage"]> = [{ id: "claude", name: "Claude", primary: claudeWindow(input.five_hour ?? fromList(listed(["session", "five_hour"])), 300), secondary: claudeWindow(input.seven_day ?? fromList(listed(["weekly", "seven_day"])), 10080), spendControlReached: null }];
 	const scoped = Array.isArray(input.limits) ? input.limits.flatMap(entry => {
 		const limit = entry as { kind?: unknown; percent?: unknown; resets_at?: unknown; scope?: { model?: { display_name?: unknown } } };
 		const name = limit.scope?.model?.display_name;
