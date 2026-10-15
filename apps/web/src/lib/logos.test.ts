@@ -159,7 +159,9 @@ describe("logos", () => {
 		["siliconflow-cn", "Siliconflow Cn", "/logos/siliconflow.svg"],
 		["submodel", "SubModel", "/logos/submodel.svg"],
 		["togetherai", "Together AI", "/logos/together.svg"],
-		["wandb", "Weights & Biases", "/logos/weights-and-biases.svg"],
+		["wandb", "CoreWeave Forge", "/logos/coreweave_light.svg"],
+		["weights-and-biases", "CoreWeave Forge", "/logos/coreweave_light.svg"],
+		["coreweave-forge", "CoreWeave Forge", "/logos/coreweave_light.svg"],
 		["zenmux", "ZenMux", "/logos/zenmux_light.svg"],
 	])("resolves the %s logo mapping", (id, label, src) => {
 		expect(resolveLogo(id, { variant: ["github-models", "kilo", "lmstudio", "nebius", "zenmux"].includes(id) ? "light" : "auto" })).toMatchObject({
