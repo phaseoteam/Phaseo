@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { getTranslations } from "next-intl/server";
 import { DisplayDate } from "@/components/display/DisplayValue";
 import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -309,13 +308,14 @@ function sortRecentRetired(rows: DeprecationWarning[]) {
 	});
 }
 
-export default async function DeprecationWarnings({
+// Rendered inside the client alerts page, so this must stay synchronous.
+export default function DeprecationWarnings({
 	warnings,
 	id = "lifecycle-alerts",
 	showHeader = true,
 }: DeprecationWarningsProps = {}) {
 	const rawWarnings = warnings ?? [];
-	const t = await getTranslations("SettingsUI");
+	const t = useTranslations("SettingsUI");
 	if (!rawWarnings.length) return null;
 
 	const deprecatedRows = sortByRetirementDateAsc(
