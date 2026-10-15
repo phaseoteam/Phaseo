@@ -14,6 +14,7 @@ import {
 import { err } from "./http";
 import { extractModel, formatZodErrors, buildProviderCandidatesWithDiagnostics } from "./utils";
 import { fetchGatewayContext } from "./context";
+import { describeRetiredModel, findRetiredModelNotice } from "./retiredModels";
 import { generatePublicId } from "./genId";
 import { requestIdFor } from "@/runtime/request-id";
 import { isDebugAllowed } from "../debug";
@@ -505,6 +506,25 @@ export async function guardContext(args: {
         const { candidates: providers, diagnostics: candidateDiagnostics } = buildProviderCandidatesWithDiagnostics(context);
         if (!providers.length) {
             const classification = classifyProviderCandidateFailure(candidateDiagnostics);
+            const retired = candidateDiagnostics.totalProviders <= 0
+                ? await findRetiredModelNotice(context.resolvedModel ?? args.model)
+                : null;
+            if (retired) {
+                return {
+                    ok: false,
+                    response: err("model_retired", {
+                        reason: "model_retired_without_providers",
+                        error_operational_kind: "retired_model",
+                        description: describeRetiredModel(retired),
+                        model: args.model,
+                        retired_at: retired.retiredAt,
+                        replacement_model: retired.replacementModel,
+                        endpoint: args.endpoint,
+                        request_id: args.requestId,
+                        workspace_id: args.workspaceId,
+                    }),
+                };
+            }
             return {
                 ok: false,
                 response: err("unsupported_model_or_endpoint", {
