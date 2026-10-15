@@ -224,7 +224,7 @@ function getPricingPlanTranslationKey(plan: string): string | null {
 function uptimeValueClass(value: number | null | undefined): string {
 	if (value == null || !Number.isFinite(value)) return "text-foreground";
 	if (value > 99) return "text-emerald-600 dark:text-emerald-400";
-	if (value > 95) return "text-amber-600 dark:text-amber-400";
+	if (value >= 95) return "text-amber-600 dark:text-amber-400";
 	return "text-red-600 dark:text-red-400";
 }
 
@@ -321,20 +321,7 @@ function UptimeHoverContent({
 					);
 				})}
 			</div>
-			<div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-2.5 text-xs text-muted-foreground dark:border-zinc-800">
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-emerald-500" />
-					<span>&gt;99%</span>
-				</div>
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-amber-500" />
-					<span>95-99%</span>
-				</div>
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-red-500" />
-					<span>&lt;95%</span>
-				</div>
-			</div>
+			<UptimeKey className="border-t border-zinc-200 pt-2.5 dark:border-zinc-800" />
 		</div>
 	);
 }
@@ -660,7 +647,7 @@ function ProviderHourlyPerformance({
 								? "bg-muted-foreground/30"
 								: activeMetric === "uptime" && numericMetricValue > 99
 								? "bg-emerald-500"
-								: activeMetric === "uptime" && numericMetricValue > 95
+								: activeMetric === "uptime" && numericMetricValue >= 95
 									? "bg-amber-500"
 										: activeMetric === "uptime" ? "bg-red-500" : "bg-primary";
 							const barHeight = activeMetric === "uptime"
