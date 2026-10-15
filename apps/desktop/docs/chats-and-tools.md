@@ -104,6 +104,10 @@ Type `@` anywhere in a message to mention a chat or a file. You can also drag a 
 
 Messages and replies show the same chips: file paths and `@path` mentions open in your editor, links show the site or the GitHub pull request or issue, and chat mentions open the chat. Code blocks, version numbers, emails and paths inside sentences like `and/or` stay as text.
 
+## Right pane
+
+The pane on the right holds surfaces as tabs, as in T3 Code: Browser, Terminal, Files, Pull requests and Agents. Each chat remembers its own tabs, which one is active and whether the pane is maximised. With nothing open the pane shows **Open a surface**: click a row or press its letter (B, T, F, P, A). The **+** after the tabs opens another surface. Hover a tab and its icon becomes a close button; middle-click also closes it, and right-click offers Close, Close others, Close to the right and Close all. `Ctrl+W` closes the active tab; closing the last one closes the pane. Maximise gives the pane the chat's space until you restore it. Drag the pane's left edge to resize it (360 pixels up to 70% of the window; double-click resets it to 540).
+
 ## Code chats: settle and snooze
 
 Code lists chats from every project in one list, as T3 Code does; the menu above it narrows the list to one project. Each card shows its project, the title, and its branch, tags and model. The right of the card says what the chat needs: Approval, Input, Working with a live timer, Waiting, Failed, Limited, Woke, or Done for a finished turn you have not opened since; otherwise how long ago you last wrote.

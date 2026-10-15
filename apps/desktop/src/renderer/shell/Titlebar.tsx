@@ -104,7 +104,7 @@ export function Titlebar() {
 			</button>
 		</div>
 		<div className="flex items-center">
-			{(mode === "code" || rightPanel) && <IconButton label={rightPanel ? "Hide panel" : "Show panel"} active={!!rightPanel} onClick={() => setRightPanel(rightPanel ? undefined : "changes")}><PanelRight /></IconButton>}
+			{(mode === "code" || rightPanel) && <IconButton label={rightPanel ? "Hide panel" : "Show panel"} active={!!rightPanel} onClick={() => setRightPanel(rightPanel ? undefined : "restore")}><PanelRight /></IconButton>}
 			<AppMenu />
 		</div>
 		{!mac && <WindowControls />}

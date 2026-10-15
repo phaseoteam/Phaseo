@@ -110,8 +110,8 @@ app.whenReady().then(async () => {
     const tools = "document.querySelector('aside[aria-label=\"Tools\"]')";
     await run(`${tools}.querySelector('[aria-label="Resize panel"]').focus()`);
     for (let index = 0; index < 30; index++) key("Right");
-    await wait(`${tools}.getBoundingClientRect().width===320`);
-    const initialWidth = 320;
+    await wait(`${tools}.getBoundingClientRect().width===360`);
+    const initialWidth = 360;
     await run(`${tools}.querySelector('[aria-label="Resize panel"]').focus()`); key("Left");
     await wait(`${tools}.getBoundingClientRect().width===${initialWidth + 24}`);
     const handle = await run(`(()=>{const r=${tools}.querySelector('[aria-label="Resize panel"]').getBoundingClientRect();return {x:Math.round(r.left+r.width/2),y:Math.round(r.top+100)};})()`);

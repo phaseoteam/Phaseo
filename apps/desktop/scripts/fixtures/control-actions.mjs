@@ -111,9 +111,17 @@ const shellActions = String.raw`
   };
   /** Show a tab of the right-hand tools panel. */
   window.__auditPanel = async function(label) {
+    if(label==='Files & changes')label='Files';
     if(!document.querySelector('aside[aria-label="Tools"]'))await window.__auditPaletteRun('Show files and changes');
-    const tab=await window.__auditUntil(()=>document.querySelector('aside[aria-label="Tools"] nav[aria-label="Tool tabs"] button[title="'+label+'"]'),'panel tab '+label);
-    tab.click();await window.__auditUntil(()=>tab.getAttribute('aria-pressed')==='true','panel tab '+label);
+    const find=()=>document.querySelector('aside[aria-label="Tools"] [role=tablist] [role=tab][title="'+label+'"]');
+    // A surface that is not open yet opens from the empty pane's launcher, or from the "+" menu.
+    if(!find()){
+      const launcher=Array.from(document.querySelectorAll('aside[aria-label="Tools"] button')).find(button=>button.querySelector('kbd')&&button.textContent.startsWith(label));
+      if(launcher)launcher.click();
+      else{document.querySelector('aside[aria-label="Tools"] [aria-label="Open a surface"]').click();const item=await window.__auditUntil(()=>Array.from(document.querySelectorAll('[role=menuitem]')).find(node=>node.textContent.startsWith(label)),'surface '+label);item.click();}
+    }
+    const tab=await window.__auditUntil(find,'panel tab '+label);
+    tab.click();await window.__auditUntil(()=>tab.getAttribute('aria-selected')==='true','panel tab '+label);
   };
   /** Switch the theme through the command palette's theme action. */
   window.__auditTheme = async function(theme) {

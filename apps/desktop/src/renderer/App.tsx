@@ -81,7 +81,8 @@ function Shell() {
 		<Titlebar />
 		<div className="relative flex min-h-0 flex-1">
 			{(sidebarOpen || settings) && <Sidebar />}
-			<main className="min-w-0 flex-1 bg-background"><Main /></main>
+			{/* A maximised pane takes the chat column's place. */}
+			<main className="min-w-0 flex-1 bg-background [&:has(~aside[data-maximized])]:hidden"><Main /></main>
 			<RightPanel />
 			<ErrorBanner />
 		</div>
