@@ -5,9 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { DatabaseSync } from "node:sqlite";
-// TODO(desktop composer menus): the redesigned composer has no Commands dialog or "/" menu yet. Re-add the removed UI checks
-// (Commands list and search, keyboard selection, argument preview and insertion, the command editor dialog, the "/" menu's focus,
-// Enter, Escape and outside-click handling, and the native browser hiding behind the dialog) once the new menus land.
+// The composer's "/" menu is checked below; saved prompts are edited as files, so there is no in-app editor to drive.
 const profile=mkdtempSync(path.join(tmpdir(),'phaseo-prompt-commands-'));app.setPath('userData',profile);mkdirSync(path.join(profile,'workspace'));
 const project=path.join(profile,'project');mkdirSync(project);const now=new Date().toISOString();const db=new DatabaseSync(path.join(profile,'workspace/workspace.sqlite'));
 db.exec('CREATE TABLE projects (id TEXT PRIMARY KEY,data TEXT NOT NULL);CREATE TABLE tasks (id TEXT PRIMARY KEY,data TEXT NOT NULL)');db.prepare('INSERT INTO projects VALUES (?,?)').run('project',JSON.stringify({id:'project',name:'Website',directory:project,createdAt:now}));
@@ -35,11 +33,20 @@ app.whenReady().then(async()=>{
   writeFileSync(path.join(profile,'commands/brief.md'),'External edit');
   const stale=await run(`window.phaseoDesktop.workspace.promptCommands(undefined,${JSON.stringify({type:'save',scope:'global',name:'brief',description:'Write an everyday brief',template:'Stale replacement',expectedHash:brief.hash})}).then(()=>'',error=>String(error))`);
   if(!stale.includes('changed since it was read'))throw Error('Stale edit was accepted');if(readFileSync(path.join(profile,'commands/brief.md'),'utf8')!=='External edit')throw Error('Stale edit overwrote file');
+  // Typing "/" lists saved prompts. One without arguments replaces the draft; one with arguments leaves "/name " to fill in.
+  await commands(undefined,{type:'save',scope:'global',name:'hello',description:'Greet',template:'Say hello.',expectedHash:'new'});
+  await run("window.__auditOpenChat('Owned personal')");
+  const input="document.querySelector('main textarea[aria-label=Message]')",key=name=>run(`${input}.dispatchEvent(new KeyboardEvent('keydown',{key:'${name}',bubbles:true,cancelable:true}))`);
+  const option=label=>`[...document.querySelectorAll('[role=dialog][aria-label=Commands] [role=option]')].find(node=>node.textContent.startsWith(${JSON.stringify(label)}))`;
+  await run(`window.__auditType(${input},'/hel')`);await wait(option('/hello'));await key('Enter');await wait(`${input}.value==='Say hello.'&&!document.querySelector('[role=dialog][aria-label=Commands]')`);
+  await run(`window.__auditType(${input},'/rev')`);await wait(option('/review'));await key('Tab');await wait(`${input}.value==='/review '`);
+  await run(`window.__auditType(${input},'/')`);await wait(option('/brief'));await key('Escape');await wait("!document.querySelector('[role=dialog][aria-label=Commands]')");
+  await run(`window.__auditType(${input},'')`);
   // A composer draft belongs to its chat and survives switching chats.
   await run("window.__auditOpenChat('Owned project')");await run("window.__auditType(document.querySelector('main textarea[aria-label=Message]'),'Existing draft')");
   await run("window.__auditOpenChat('Owned personal')");await wait("document.querySelector('main textarea[aria-label=Message]')?.value===''");
   await run("window.__auditOpenChat('Owned project')");await wait("document.querySelector('main textarea[aria-label=Message]')?.value==='Existing draft'");
   const unchanged=await run("(async()=>{const api=window.phaseoDesktop.workspace;const tasks=await Promise.all(['personal','project-chat'].map(id=>api.task(id)));return tasks.every(task=>task.messages.length===1&&task.queue.length===0);})()");if(!unchanged)throw Error('Command workflow submitted input');
-  console.log('PROMPT_COMMANDS_SMOKE',JSON.stringify({scope:true,argumentPreview:true,draftPreserved:true,staleEdit:true,noSubmission:true,chatSwitch:true,composerMenus:'deferred',providerInferenceCalls:0,packaged:Boolean(entry)}));clearTimeout(deadline);app.quit();
+  console.log('PROMPT_COMMANDS_SMOKE',JSON.stringify({scope:true,argumentPreview:true,draftPreserved:true,staleEdit:true,noSubmission:true,chatSwitch:true,slashMenu:true,providerInferenceCalls:0,packaged:Boolean(entry)}));clearTimeout(deadline);app.quit();
  }catch(error){console.error(error);clearTimeout(deadline);app.exit(1);}
 });
