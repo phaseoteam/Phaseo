@@ -58,7 +58,7 @@ export class WorkspaceRuntime {
 	private readonly running = new Map<string, AgentAdapter>();
 	private readonly approvals = new Map<string, { taskId: string; resolve: (decision: "accept" | "decline") => void }>();
 	private readonly questions = new Map<string, { taskId: string; resolve: (answers: Record<string, string[]>) => void }>();
-	private readonly forms = new Map<string, { taskId: string; resolve: (answer: FormAnswer | null) => void }>();
+	private readonly forms = new Map<string, { taskId: string; resolve: (answer: FormAnswer | null | "decline") => void }>();
 	private readonly executions = new Map<string, Promise<void>>();
 	private readonly signingInAccounts = new Set<string>();
 	private readonly credentialChanges = new Set<string>();
@@ -348,7 +348,7 @@ export class WorkspaceRuntime {
 			if (!pending || pending.taskId !== task.id || !request) throw new Error("This form is no longer pending.");
 			if (command.answer !== null) { const error = formAnswerError(request.form, command.answer); if (error) throw new Error(error); }
 			task.forms = task.forms?.filter(value => value.id !== command.requestId); task.status = hasRequests(task) ? "waiting" : "running";
-			this.store.saveTask(task); this.broadcast(); this.forms.delete(command.requestId); pending.resolve(command.answer); return this.store.getOverview();
+			this.store.saveTask(task); this.broadcast(); this.forms.delete(command.requestId); pending.resolve(command.declined ? "decline" : command.answer); return this.store.getOverview();
 		}
 		if (command.type === "cancel") {
 			if (this.executions.has(command.id) && !this.running.has(command.id)) this.stoppedDuringSetup.add(command.id);
@@ -528,7 +528,7 @@ export class WorkspaceRuntime {
 					if (this.closing || signal?.aborted || this.store.getTask(id).status === "interrupted") { resolve(null); return; }
 					if (!form.fields.length || form.fields.length > 100 || new Set(form.fields.map(field => field.key)).size !== form.fields.length) throw new Error("The agent returned an invalid form.");
 					const requestId = randomUUID();
-					const complete = (answer: FormAnswer | null) => { signal?.removeEventListener("abort", abort); resolve(answer); };
+					const complete = (answer: FormAnswer | null | "decline") => { signal?.removeEventListener("abort", abort); resolve(answer); };
 					const abort = () => {
 						this.forms.delete(requestId); const current = this.store.getTask(id);
 						current.forms = current.forms?.filter(value => value.id !== requestId);

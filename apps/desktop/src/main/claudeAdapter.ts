@@ -51,6 +51,8 @@ export class ClaudeAdapter implements AgentAdapter {
 			...(task.permissionMode === "full-access" ? { allowDangerouslySkipPermissions: true } : {}),
 			...(task.mode === "chat" ? { tools: ["AskUserQuestion"] } : {}),
 			includePartialMessages: true,
+			// Options may carry a Markdown preview, which the answer panel shows under the chosen option.
+			toolConfig: { askUserQuestion: { previewFormat: "markdown" } },
 			onElicitation: (request, options) => task.mode === "chat" ? Promise.resolve({ action: "decline" as const }) : respondMcpElicitation(request, callbacks, options.signal),
 			settingSources: ["user", "project", "local"],
 			canUseTool: async (toolName, input) => {

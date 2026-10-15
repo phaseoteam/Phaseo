@@ -13,7 +13,8 @@ export type AgentCallbacks = {
 	onTerminalAuth?: (args: string[], env: Record<string, string>, title: string, signal: AbortSignal) => Promise<void>;
 	onActivity?: (activity: AgentActivity & { append?: boolean }) => void;
 	onQuestion?: (questions: AgentQuestion[]) => Promise<Record<string, string[]>>;
-	onForm?: (form: AgentForm, signal?: AbortSignal) => Promise<FormAnswer | null>;
+	/** null cancels; "decline" refuses (MCP and ACP tell the two apart). */
+	onForm?: (form: AgentForm, signal?: AbortSignal) => Promise<FormAnswer | null | "decline">;
 	onApproval: (method: string, description: string) => Promise<"accept" | "decline">;
 };
 export interface AgentAdapter {

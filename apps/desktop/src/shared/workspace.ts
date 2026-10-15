@@ -113,7 +113,7 @@ export type WorkspaceCommand =
 	| { type: "fork"; id: string; messageId?: string }
 	| { type: "approval"; id: string; approvalId: string; decision: "accept" | "decline" }
 	| { type: "answer"; id: string; requestId: string; answers: Record<string, string[]>; dismissed?: boolean }
-	| { type: "form-answer"; id: string; requestId: string; answer: FormAnswer | null }
+	| { type: "form-answer"; id: string; requestId: string; answer: FormAnswer | null; declined?: boolean }
 	| { type: "queue-remove"; id: string; messageId: string }
 	| { type: "queue-edit"; id: string; messageId: string; text: string }
 	| { type: "queue-move"; id: string; messageId: string; direction: "up" | "down" };
@@ -274,6 +274,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				break;
 			case "form-answer": {
 				string("requestId");
+				if (command.declined !== undefined && (typeof command.declined !== "boolean" || (command.declined && command.answer !== null))) throw new Error("Invalid form decline.");
 				if (command.answer === null) break;
 				if (!command.answer || typeof command.answer !== "object" || Array.isArray(command.answer)) throw new Error("Invalid form answer.");
 				const entries = Object.entries(command.answer);

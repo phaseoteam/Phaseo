@@ -13,6 +13,11 @@ describe("MCP elicitation", () => {
 		expect(await respondMcpElicitation(request, callbacks, new AbortController().signal)).toEqual({ action: "accept", content: { count: 3 } });
 		expect(await respondMcpElicitation(request, callbacks, new AbortController().signal)).toEqual({ action: "decline" });
 	});
+	it("tells declining apart from cancelling", async () => {
+		const callbacks = { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" as const, onForm: vi.fn().mockResolvedValueOnce("decline").mockResolvedValueOnce(null) };
+		expect(await respondMcpElicitation(request, callbacks, new AbortController().signal)).toEqual({ action: "decline" });
+		expect(await respondMcpElicitation(request, callbacks, new AbortController().signal)).toEqual({ action: "cancel" });
+	});
 	it("declines unsupported schemas without displaying a misleading form", async () => {
 		const callbacks = { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" as const, onForm: vi.fn() };
 		expect(await respondMcpElicitation({ ...request, requestedSchema: { type: "object", properties: { name: { type: "string", pattern: "unsafe" } } } }, callbacks, new AbortController().signal)).toEqual({ action: "decline" }); expect(callbacks.onForm).not.toHaveBeenCalled();

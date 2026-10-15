@@ -60,7 +60,9 @@ export class OpenCodeAdapter implements AgentAdapter {
 			let validationError: string | undefined;
 			try {
 				while (!signal.aborted) {
-					const answer = await callbacks.onForm?.({ id: form.id, title: form.title, fields: form.fields, error: validationError }, signal) ?? null;
+					const reply = await callbacks.onForm?.({ id: form.id, title: form.title, fields: form.fields, error: validationError }, signal) ?? null;
+					// OpenCode has no decline; it is a cancel.
+					const answer = reply === "decline" ? null : reply;
 					if (signal.aborted) return;
 					try {
 						if (answer === null) await client.session.form.cancel({ sessionID: this.sessionId!, formID: form.id, message: "Cancelled in Phaseo." }, { signal });

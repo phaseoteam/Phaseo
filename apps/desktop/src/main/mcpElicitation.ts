@@ -60,6 +60,7 @@ export async function respondMcpElicitation(request: Request, callbacks: AgentCa
 	let form: AgentForm;
 	try { form = elicitationForm(request); } catch { return { action: "decline" as const }; }
 	const answer = await callbacks.onForm(form, signal);
+	if (answer === "decline") return { action: "decline" as const };
 	if (!answer || signal.aborted) return { action: "cancel" as const };
 	if (formAnswerError(form, answer)) return { action: "decline" as const };
 	return { action: "accept" as const, ...(request.mode === "url" ? {} : { content: answer }) };
