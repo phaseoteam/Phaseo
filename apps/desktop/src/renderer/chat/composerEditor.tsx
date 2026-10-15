@@ -135,6 +135,23 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 		Object.defineProperty(dom, "value", { configurable: true, get: () => draftText(editor.state.doc), set: (text: string) => { editor.commands.setContent(draftContent(text), { emitUpdate: true }); editor.commands.focus("end"); } });
 	}, [editor]);
 
+	// The browser's screenshot and annotate tools hand images and a note to whichever composer is open.
+	useEffect(() => {
+		if (!editor) return;
+		const attach = (event: Event) => {
+			const detail = (event as CustomEvent<{ files?: File[]; text?: string; handled?: boolean }>).detail;
+			if (!detail || detail.handled || editor.isDestroyed || !editor.isEditable) return;
+			if (detail.files?.length) { if (!latest.current.onFiles) return; latest.current.onFiles(detail.files); }
+			if (detail.text) {
+				const empty = editor.state.doc.textContent.trim() === "";
+				editor.chain().focus("end").insertContent([...empty ? [] : [{ type: "hardBreak" }], { type: "text", text: detail.text }]).run();
+			}
+			detail.handled = true;
+		};
+		window.addEventListener("phaseo:composer-attach", attach);
+		return () => window.removeEventListener("phaseo:composer-attach", attach);
+	}, [editor]);
+
 	const insert = (mentions: Mention[]) => {
 		if (!editor || !mentions.length) return;
 		// Focusing restores the last caret, so chips land where the user was typing.
