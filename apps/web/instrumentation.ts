@@ -3,6 +3,7 @@ import { PostHog } from "posthog-node";
 
 import { POSTHOG_API_HOST, POSTHOG_KEY } from "@/lib/analytics";
 import { readAnalyticsConsentFromCookieHeader } from "@/lib/cookieConsent";
+import { readPosthogCookieIdentity } from "@/lib/posthogCookie";
 
 export function register() {}
 
@@ -20,13 +21,19 @@ function getPosthogClient(): PostHog | null {
 }
 
 export const onRequestError: Instrumentation.onRequestError = async (error, request, context) => {
-	const cookieHeader = request.headers.cookie;
-	if (readAnalyticsConsentFromCookieHeader(Array.isArray(cookieHeader) ? cookieHeader.join("; ") : cookieHeader) !== "accepted") return;
+	const rawCookieHeader = request.headers.cookie;
+	const cookieHeader = Array.isArray(rawCookieHeader) ? rawCookieHeader.join("; ") : rawCookieHeader;
+	if (readAnalyticsConsentFromCookieHeader(cookieHeader) !== "accepted") return;
 	const client = getPosthogClient();
 	if (!client) return;
+	// Link the error to the visitor's person and replay when the browser SDK has a cookie.
+	const visitor = readPosthogCookieIdentity(cookieHeader, POSTHOG_KEY);
 
 	try {
-		await client.captureExceptionImmediate(error, "web-server", {
+		await client.captureExceptionImmediate(error, visitor?.distinctId ?? "web-server", {
+			...(visitor?.sessionId ? { $session_id: visitor.sessionId } : {}),
+			// Matches the browser's identified_only mode: no profiles for anonymous visitors.
+			...(visitor?.identified ? {} : { $process_person_profile: false }),
 			deploy_time: process.env.NEXT_PUBLIC_DEPLOY_TIME,
 			digest: (error as Error & { digest?: string }).digest,
 			environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV,
