@@ -32,6 +32,37 @@ curl 'https://api.phaseo.app/v1/models?format=openai' \
 
 OpenAI format uses the same authentication, regional availability, workspace private models, and filters as native JSON. It returns all matching models unless you supply `limit`; `offset` still applies. IDs stay in Phaseo's canonical form for inference. `created` uses the catalogue release date, or `0` when unknown; `owned_by` uses the catalogue organization, `private` for workspace models, or `phaseo` when unknown.
 
+## Caching the model list
+
+JSON and OpenAI-format responses include a weak `ETag` header (`W/"…"`). It changes when the models on the page, `limit`, `offset`, `total`, or the format change. It ignores `gateway_region`, so the same catalogue served from another region has the same `ETag`. That is why it is weak: responses that share it are equivalent, but their bytes can differ. RSS, Atom, and error responses do not include one.
+
+Send the saved value back unchanged in `If-None-Match`. If the catalogue has not changed, the response is `304 Not Modified` with no body and repeats the `ETag`, `Cache-Control`, and `Vary` headers. Otherwise you get a normal `200` with the new list and a new `ETag`. `If-None-Match` also accepts a comma-separated list and `*`, and the comparison is weak, so the value matches with or without its `W/` prefix.
+
+```ts
+let etag: string | null = null;
+let models: unknown[] = [];
+
+async function refreshModels() {
+  const response = await fetch("https://api.phaseo.app/v1/models?limit=250", {
+    headers: {
+      Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+      ...(etag ? { "If-None-Match": etag } : {}),
+    },
+  });
+  if (response.status === 304) return models; // Unchanged; a 304 has no body.
+  if (!response.ok) throw new Error(`Model list request failed: ${response.status}`);
+  etag = response.headers.get("ETag");
+  models = (await response.json()).models;
+  return models;
+}
+```
+
+A `304` saves transfer and parsing, because it has no body. The server still evaluates the request: it loads the catalogue and recomputes the `ETag`. Polling about every 15 minutes is therefore appropriate, downloading the list again only when the catalogue changes. Keep one `ETag` per request URL, because each page, filter set, and format has its own value.
+
+### Service tiers per offer
+
+Each entry in `offers` includes `service_tiers`, the [service tiers](../../guides/service-tiers.mdx) that provider offer accepts. It is an alphabetically sorted subset of `flex`, `priority`, `standard`, and `ultrafast`, where `priority` is the Fast tier. A tier is listed when the provider route has active, currently effective pricing for it, and a route that serves one tier only lists just that tier. Some tiers may also be available through separate tier-specific provider routes that are not listed. Prices under `pricing` remain standard-tier prices.
+
 ## Useful filters
 
 - `endpoints` uses public names like `chat.completions`, `responses`, and `messages`

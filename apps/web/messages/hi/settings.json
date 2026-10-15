@@ -3,9 +3,9 @@
 		"settings": "सेटिंग्स",
 		"scope": {
 			"account": "खाता",
-			"workspace": "कार्यस्थान",
+			"workspace": "वर्कस्पेस",
 			"showAccount": "खाता सेटिंग दिखाएं",
-			"showWorkspace": "कार्यस्थान सेटिंग दिखाएं"
+			"showWorkspace": "वर्कस्पेस सेटिंग दिखाएं"
 		},
 		"actions": {
 			"expand": "सेटिंग्स साइडबार का विस्तार करें",
@@ -15,7 +15,7 @@
 		},
 		"headings": {
 			"general": "सामान्य",
-			"workspace": "कार्यस्थान",
+			"workspace": "वर्कस्पेस",
 			"observe": "निरीक्षण",
 			"gateway": "Gateway",
 			"developer": "डेवलपर",
@@ -29,7 +29,7 @@
 			"providerOnboarding": "प्रदाता ऑनबोर्डिंग",
 			"connectedApps": "कनेक्टेड ऐप्स",
 			"dangerZone": "खतरा क्षेत्र",
-			"workspaces": "कार्यस्थान",
+			"workspaces": "वर्कस्पेस",
 			"billing": "बिलिंग",
 			"credits": "क्रेडिट",
 			"transactions": "लेनदेन",
@@ -85,7 +85,7 @@
 		"profile": "प्रोफ़ाइल",
 		"paymentMethods": "भुगतान के तरीके",
 		"featurePreview": "फ़ीचर पूर्वावलोकन",
-		"workspaces": "कार्यस्थानों",
+		"workspaces": "वर्कस्पेस",
 		"organisations": "एआई लैब्स",
 		"onboarding": "डेवलपर ऑनबोर्डिंग",
 		"redeem": "क्रेडिट भुनाएं",
@@ -111,8 +111,8 @@
 		"delete": "मिटाना",
 		"close": "बंद करना",
 		"loading": "लोड हो रहा है...",
-		"noWorkspaceSelected": "कोई कार्यक्षेत्र चयनित नहीं",
-		"selectWorkspace": "एक कार्यक्षेत्र चुनें",
+		"noWorkspaceSelected": "कोई वर्कस्पेस चयनित नहीं",
+		"selectWorkspace": "एक वर्कस्पेस चुनें",
 		"noResults": "कोई परिणाम नहीं मिला"
 	}
 }

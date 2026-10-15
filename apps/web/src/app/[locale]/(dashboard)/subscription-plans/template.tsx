@@ -1,2 +1,2 @@
 import { createScopedMessagesTemplate } from "@/components/i18n/ScopedMessages";
-export default createScopedMessagesTemplate(["Catalogue"]);
+export default createScopedMessagesTemplate(["Common.ui.subscriptionCatalog", "Catalogue"]);

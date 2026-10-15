@@ -3,6 +3,7 @@
 // How: Exposes provider-specific helpers for routing and execution.
 
 import type { IRUsage } from "@core/ir";
+import { normalizeGoogleServiceTier } from "@executors/google/shared/service-tier";
 
 type ModalityTokenCount = {
     modality?: string;
@@ -10,6 +11,9 @@ type ModalityTokenCount = {
 };
 
 type UsageMetadata = {
+	serviceTier?: string;
+	service_tier?: string;
+	trafficType?: string;
     promptTokenCount?: number;
     cachedContentTokenCount?: number;
     candidatesTokenCount?: number;
@@ -105,7 +109,7 @@ function sumDefined(values: Array<number | undefined>): number | undefined {
 /**
  * Convert Google usageMetadata into canonical IR usage, including multimodal token details.
  */
-export function googleUsageMetadataToIRUsage(meta: UsageMetadata | undefined): IRUsage | undefined {
+export function googleUsageMetadataToIRUsage(meta: UsageMetadata | undefined, headerServiceTier?: string): IRUsage | undefined {
     if (!meta) return undefined;
     const normalized = normalizeGoogleUsage(meta) ?? {};
 
@@ -151,6 +155,10 @@ export function googleUsageMetadataToIRUsage(meta: UsageMetadata | undefined): I
         outputTokens,
         totalTokens,
     };
+    const observedTier = normalizeGoogleServiceTier(meta.serviceTier ?? meta.service_tier)
+        ?? normalizeGoogleServiceTier(meta.trafficType)
+        ?? normalizeGoogleServiceTier(headerServiceTier);
+    if (observedTier) irUsage.serviceTier = observedTier;
 
     if (cachedInputTokens != null) {
         irUsage.cachedInputTokens = cachedInputTokens;

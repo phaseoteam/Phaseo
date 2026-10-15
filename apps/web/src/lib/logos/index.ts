@@ -38,6 +38,7 @@ const normalisedAliasMap = new Map<string, KnownLogoId>();
 const pathToKeyMap = new Map<string, KnownLogoId>();
 
 const labelOverrides: Partial<Record<KnownLogoId, string>> = {
+	"abliteration-ai": "Abliteration AI",
 	ai21: "AI21",
 	"alibaba-cn": "Alibaba Cloud",
 	"alibaba-cloud": "Alibaba Cloud",

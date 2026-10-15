@@ -248,9 +248,18 @@ paths:
               - json
               - rss
               - atom
+        - name: If-None-Match
+          in: header
+          required: false
+          description: ETag aus einer früheren Antwort im JSON- oder OpenAI-Format für dieselbe URL. Stimmt er noch überein, lautet die Antwort 304 Not Modified ohne Antworttext. Akzeptiert eine durch Kommas getrennte Liste, schwache Validatoren (W/) und *.
+          schema:
+            type: string
       responses:
         '200':
           description: Modellliste
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
           content:
             application/json:
               schema:
@@ -265,6 +274,11 @@ paths:
               schema:
                 type: string
                 description: Atom-XML-Feed
+        '304':
+          description: Nicht geändert. If-None-Match stimmt weiterhin mit der aktuellen Modellliste überein, daher hat die Antwort keinen Antworttext. Sie wiederholt die Header ETag, Cache-Control und Vary der 200-Antwort.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
         '400':
           description: Ungültige Anfrageparameter
           content:
@@ -8538,6 +8552,10 @@ components:
       description: Anbieter-Kontingentmetadaten nur für BYOK. Bei Anfragen über verwaltete Anbieter werden sie weggelassen.
       schema:
         type: string
+    ModelListETag:
+      description: Schwacher Validator (Präfix W/) für die Modellliste unter dieser URL, der Seite, limit, offset, total und Format abdeckt. gateway_region wird ignoriert, sodass derselbe Katalog aus einer anderen Region denselben Wert hat; Antworten mit demselben Wert sind gleichwertig, ihre Bytes können sich aber unterscheiden. Wird bei RSS-, Atom- und Fehlerantworten nicht gesendet.
+      schema:
+        type: string
   parameters:
     DataContributionClassifierId:
       name: id
@@ -9098,6 +9116,16 @@ components:
           $ref: '#/components/schemas/GatewayModalities'
         capabilities:
           $ref: '#/components/schemas/GatewayCapabilities'
+        service_tiers:
+          type: array
+          description: Service-Stufen, die dieses Angebot akzeptiert, alphabetisch sortiert. Eine Stufe wird aufgeführt, wenn die Anbieterroute dafür aktive, derzeit gültige Preise hat; priority ist die Fast-Stufe. Weitere Stufen können auch über separate, stufenspezifische Anbieterrouten verfügbar sein.
+          items:
+            type: string
+            enum:
+              - flex
+              - priority
+              - standard
+              - ultrafast
         routing:
           type: object
           required:
@@ -9461,7 +9489,7 @@ components:
                 - groq
                 - together
             - $ref: '#/components/schemas/ProviderRoutingOptions'
-          description: 'Anbieterauswahl. Verwenden Sie für einen einzelnen Anbieter eine Zeichenfolge oder Routing-Optionen wie `{ "only": ["groq"] }`.'
+          description: 'Anbieterauswahl. Verwende für einen einzelnen Anbieter eine Zeichenfolge oder Routing-Optionen wie `{ "only": ["groq"] }`.'
         provider_options:
           $ref: '#/components/schemas/ProviderOptions'
         user_id:
@@ -11015,6 +11043,9 @@ components:
               - $ref: '#/components/schemas/DecisionPredicateQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionChoiceQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionScoreQuestion'
+              - $ref: '#/components/schemas/DecisionBoxQuestion'
+        provider_options:
+          $ref: '#/components/schemas/DecisionProviderOptions'
         safety_identifier:
           type: string
           nullable: true
@@ -11034,6 +11065,34 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    DecisionProviderOptions:
+      type: object
+      properties:
+        typesafe:
+          type: object
+          additionalProperties: false
+          properties:
+            long_context:
+              type: boolean
+              description: 'Experimentellen langen Jev-Kontext aktivieren: 262k Tokens pro Anfrage und pro Frage statt 64k pro Anfrage und 32k pro Frage. Standardmäßig deaktiviert. Erfordert eine unterstützte TypeSafe-Route.'
+    DecisionBoxQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: Phaseo-Erweiterung für einen einzelnen Begrenzungsrahmen. Erfordert ein Bild und eine unterstützte Route wie Jev 1.14. Keine Kriterien und kein Ergebnis für nicht gefundene Ziele.
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        name:
+          type: string
+          maxLength: 1048576
+        instructions:
+          type: string
+          maxLength: 1048576
     DecisionInputMessage:
       type: object
       required:
@@ -11282,6 +11341,9 @@ components:
               - $ref: '#/components/schemas/DecisionNoulQuestion'
               - $ref: '#/components/schemas/DecisionChoiceQuestion'
               - $ref: '#/components/schemas/DecisionScoreQuestion'
+              - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
+        provider_options:
+          $ref: '#/components/schemas/DecisionProviderOptions'
         images:
           type: array
           maxItems: 4
@@ -11305,6 +11367,20 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    LegacyDecisionBoxQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: Frage nach einem einzelnen Begrenzungsrahmen für Box-Routen mit Bildunterstützung. Keine Kriterien.
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
     DecisionImage:
       type: object
       required:
@@ -11405,6 +11481,7 @@ components:
               - $ref: '#/components/schemas/DecisionChoiceAnswer'
               - $ref: '#/components/schemas/DecisionScoreAnswer'
               - $ref: '#/components/schemas/DecisionRefusalAnswer'
+              - $ref: '#/components/schemas/DecisionBoxAnswer'
         usage:
           $ref: '#/components/schemas/DecisionsUsage'
         request_id:
@@ -11413,6 +11490,52 @@ components:
         meta:
           type: object
           additionalProperties: true
+    DecisionBoxAnswer:
+      type: object
+      required:
+        - type
+        - name
+        - box
+        - confidence
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        name:
+          type: string
+          nullable: true
+        box:
+          $ref: '#/components/schemas/DecisionBox'
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+    DecisionBox:
+      type: object
+      required:
+        - top
+        - bottom
+        - left
+        - right
+      description: Kanten als Anteile der Bildabmessungen ab der oberen linken Ecke. top muss kleiner als bottom sein; left muss kleiner als right sein.
+      properties:
+        top:
+          type: number
+          minimum: 0
+          maximum: 1
+        bottom:
+          type: number
+          minimum: 0
+          maximum: 1
+        left:
+          type: number
+          minimum: 0
+          maximum: 1
+        right:
+          type: number
+          minimum: 0
+          maximum: 1
     DecisionPredicateAnswer:
       type: object
       required:
@@ -21377,7 +21500,7 @@ components:
       type: object
       required:
         - name
-      description: Geben Sie genau eines der Felder `template` oder `scopes` an.
+      description: Gib genau eines der Felder `template` oder `scopes` an.
       anyOf:
         - required:
             - template

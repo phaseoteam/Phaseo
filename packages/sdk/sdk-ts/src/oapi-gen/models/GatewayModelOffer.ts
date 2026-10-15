@@ -57,6 +57,7 @@ export interface GatewayModelOffer {
       | "deranked_lvl3"
       | "disabled";
   };
+  service_tiers?: ("flex" | "priority" | "standard" | "ultrafast")[];
   status: "active" | "coming_soon" | "inactive";
   status_reason:
     | "active"

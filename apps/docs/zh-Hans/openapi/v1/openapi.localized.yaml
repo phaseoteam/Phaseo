@@ -248,9 +248,18 @@ paths:
               - json
               - rss
               - atom
+        - name: If-None-Match
+          in: header
+          required: false
+          description: 同一 URL 先前 JSON 或 OpenAI 格式响应中的 ETag。如果仍然匹配，则返回不含正文的 304 Not Modified。支持逗号分隔的列表、弱校验器（W/）和 *。
+          schema:
+            type: string
       responses:
         '200':
           description: 模型列表
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
           content:
             application/json:
               schema:
@@ -265,6 +274,11 @@ paths:
               schema:
                 type: string
                 description: Atom XML 源
+        '304':
+          description: 未修改。If-None-Match 仍与当前模型列表匹配，因此响应不含正文。响应会重复 200 响应中的 ETag、Cache-Control 和 Vary 标头。
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
         '400':
           description: 请求参数无效
           content:
@@ -8538,6 +8552,10 @@ components:
       description: 仅适用于 BYOK 的提供商配额元数据。使用托管提供商的请求不会返回此字段。
       schema:
         type: string
+    ModelListETag:
+      description: 此 URL 上模型列表的弱校验器（带 W/ 前缀），涵盖页面、limit、offset、total 和格式。它会忽略 gateway_region，因此从其他区域提供的同一目录具有相同的值；共享该值的响应是等价的，但字节可能不同。RSS、Atom 和错误响应不会包含它。
+      schema:
+        type: string
   parameters:
     DataContributionClassifierId:
       name: id
@@ -9098,6 +9116,16 @@ components:
           $ref: '#/components/schemas/GatewayModalities'
         capabilities:
           $ref: '#/components/schemas/GatewayCapabilities'
+        service_tiers:
+          type: array
+          description: 此报价接受的服务等级，按字母顺序排列。当提供商路由具有该等级的有效且当前生效的定价时，会列出该等级；priority 即 Fast 等级。其他等级也可能通过单独的等级专用提供商路由提供。
+          items:
+            type: string
+            enum:
+              - flex
+              - priority
+              - standard
+              - ultrafast
         routing:
           type: object
           required:
@@ -11015,6 +11043,9 @@ components:
               - $ref: '#/components/schemas/DecisionPredicateQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionChoiceQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionScoreQuestion'
+              - $ref: '#/components/schemas/DecisionBoxQuestion'
+        provider_options:
+          $ref: '#/components/schemas/DecisionProviderOptions'
         safety_identifier:
           type: string
           nullable: true
@@ -11034,6 +11065,34 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    DecisionProviderOptions:
+      type: object
+      properties:
+        typesafe:
+          type: object
+          additionalProperties: false
+          properties:
+            long_context:
+              type: boolean
+              description: 启用 Jev 的实验性长上下文：每个请求和每个问题均为 262k token，取代默认的每个请求 64k 和每个问题 32k。默认关闭。需要支持的 TypeSafe 路由。
+    DecisionBoxQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: 用于单个边界框的 Phaseo 扩展。需要图像输入和 Jev 1.14 等支持路由。不接受 criteria，也没有未找到结果。
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        name:
+          type: string
+          maxLength: 1048576
+        instructions:
+          type: string
+          maxLength: 1048576
     DecisionInputMessage:
       type: object
       required:
@@ -11282,6 +11341,9 @@ components:
               - $ref: '#/components/schemas/DecisionNoulQuestion'
               - $ref: '#/components/schemas/DecisionChoiceQuestion'
               - $ref: '#/components/schemas/DecisionScoreQuestion'
+              - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
+        provider_options:
+          $ref: '#/components/schemas/DecisionProviderOptions'
         images:
           type: array
           maxItems: 4
@@ -11305,6 +11367,20 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    LegacyDecisionBoxQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: 用于支持图像的 Box 路由的单个边界框问题。不接受 criteria。
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
     DecisionImage:
       type: object
       required:
@@ -11405,6 +11481,7 @@ components:
               - $ref: '#/components/schemas/DecisionChoiceAnswer'
               - $ref: '#/components/schemas/DecisionScoreAnswer'
               - $ref: '#/components/schemas/DecisionRefusalAnswer'
+              - $ref: '#/components/schemas/DecisionBoxAnswer'
         usage:
           $ref: '#/components/schemas/DecisionsUsage'
         request_id:
@@ -11413,6 +11490,52 @@ components:
         meta:
           type: object
           additionalProperties: true
+    DecisionBoxAnswer:
+      type: object
+      required:
+        - type
+        - name
+        - box
+        - confidence
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        name:
+          type: string
+          nullable: true
+        box:
+          $ref: '#/components/schemas/DecisionBox'
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+    DecisionBox:
+      type: object
+      required:
+        - top
+        - bottom
+        - left
+        - right
+      description: 从左上角起，以图像尺寸比例表示的边缘。top 必须小于 bottom；left 必须小于 right。
+      properties:
+        top:
+          type: number
+          minimum: 0
+          maximum: 1
+        bottom:
+          type: number
+          minimum: 0
+          maximum: 1
+        left:
+          type: number
+          minimum: 0
+          maximum: 1
+        right:
+          type: number
+          minimum: 0
+          maximum: 1
     DecisionPredicateAnswer:
       type: object
       required:

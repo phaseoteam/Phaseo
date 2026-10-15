@@ -248,9 +248,18 @@ paths:
               - json
               - rss
               - atom
+        - name: If-None-Match
+          in: header
+          required: false
+          description: ETag de uma resposta anterior em formato JSON ou OpenAI para a mesma URL. Se ainda corresponder, a resposta será 304 Not Modified, sem corpo. Aceita uma lista separada por vírgulas, validadores fracos (W/) e *.
+          schema:
+            type: string
       responses:
         '200':
           description: Lista de modelos
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
           content:
             application/json:
               schema:
@@ -265,6 +274,11 @@ paths:
               schema:
                 type: string
                 description: Feed XML Atom
+        '304':
+          description: Não modificado. If-None-Match ainda corresponde à lista de modelos atual, então a resposta não tem corpo. Ela repete os cabeçalhos ETag, Cache-Control e Vary da resposta 200.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
         '400':
           description: Parâmetros de solicitação inválidos
           content:
@@ -8538,6 +8552,10 @@ components:
       description: Metadados de cota do provedor apenas para BYOK. Omitidos em solicitações feitas por provedores gerenciados.
       schema:
         type: string
+    ModelListETag:
+      description: Validador fraco (prefixo W/) da lista de modelos nesta URL, abrangendo a página, limit, offset, total e o formato. Ele ignora gateway_region, então o mesmo catálogo servido de outra região tem o mesmo valor; respostas que o compartilham são equivalentes, mas seus bytes podem ser diferentes. Não é enviado em respostas RSS, Atom ou de erro.
+      schema:
+        type: string
   parameters:
     DataContributionClassifierId:
       name: id
@@ -9098,6 +9116,16 @@ components:
           $ref: '#/components/schemas/GatewayModalities'
         capabilities:
           $ref: '#/components/schemas/GatewayCapabilities'
+        service_tiers:
+          type: array
+          description: Níveis de serviço que esta oferta aceita, em ordem alfabética. Um nível é listado quando a rota do provedor tem preços ativos e vigentes para ele; priority é o nível Fast. Outros níveis também podem estar disponíveis por meio de rotas de provedor separadas, específicas de cada nível.
+          items:
+            type: string
+            enum:
+              - flex
+              - priority
+              - standard
+              - ultrafast
         routing:
           type: object
           required:
@@ -11015,6 +11043,9 @@ components:
               - $ref: '#/components/schemas/DecisionPredicateQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionChoiceQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionScoreQuestion'
+              - $ref: '#/components/schemas/DecisionBoxQuestion'
+        provider_options:
+          $ref: '#/components/schemas/DecisionProviderOptions'
         safety_identifier:
           type: string
           nullable: true
@@ -11034,6 +11065,34 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    DecisionProviderOptions:
+      type: object
+      properties:
+        typesafe:
+          type: object
+          additionalProperties: false
+          properties:
+            long_context:
+              type: boolean
+              description: 'Ativa o contexto longo experimental do Jev: 262k tokens por solicitação e por pergunta, em vez de 64k por solicitação e 32k por pergunta. Desativado por padrão. Exige uma rota TypeSafe compatível.'
+    DecisionBoxQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: Extensão do Phaseo para uma única caixa delimitadora. Exige imagem e rota compatível, como Jev 1.14. Sem critérios ou resultado de alvo ausente.
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        name:
+          type: string
+          maxLength: 1048576
+        instructions:
+          type: string
+          maxLength: 1048576
     DecisionInputMessage:
       type: object
       required:
@@ -11282,6 +11341,9 @@ components:
               - $ref: '#/components/schemas/DecisionNoulQuestion'
               - $ref: '#/components/schemas/DecisionChoiceQuestion'
               - $ref: '#/components/schemas/DecisionScoreQuestion'
+              - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
+        provider_options:
+          $ref: '#/components/schemas/DecisionProviderOptions'
         images:
           type: array
           maxItems: 4
@@ -11305,6 +11367,20 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    LegacyDecisionBoxQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: Pergunta de caixa delimitadora única para rotas Box com imagens. Sem critérios.
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
     DecisionImage:
       type: object
       required:
@@ -11405,6 +11481,7 @@ components:
               - $ref: '#/components/schemas/DecisionChoiceAnswer'
               - $ref: '#/components/schemas/DecisionScoreAnswer'
               - $ref: '#/components/schemas/DecisionRefusalAnswer'
+              - $ref: '#/components/schemas/DecisionBoxAnswer'
         usage:
           $ref: '#/components/schemas/DecisionsUsage'
         request_id:
@@ -11413,6 +11490,52 @@ components:
         meta:
           type: object
           additionalProperties: true
+    DecisionBoxAnswer:
+      type: object
+      required:
+        - type
+        - name
+        - box
+        - confidence
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        name:
+          type: string
+          nullable: true
+        box:
+          $ref: '#/components/schemas/DecisionBox'
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+    DecisionBox:
+      type: object
+      required:
+        - top
+        - bottom
+        - left
+        - right
+      description: Bordas como frações das dimensões da imagem a partir do canto superior esquerdo. top deve ser menor que bottom; left deve ser menor que right.
+      properties:
+        top:
+          type: number
+          minimum: 0
+          maximum: 1
+        bottom:
+          type: number
+          minimum: 0
+          maximum: 1
+        left:
+          type: number
+          minimum: 0
+          maximum: 1
+        right:
+          type: number
+          minimum: 0
+          maximum: 1
     DecisionPredicateAnswer:
       type: object
       required:

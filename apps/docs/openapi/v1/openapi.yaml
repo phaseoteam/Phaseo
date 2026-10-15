@@ -263,9 +263,21 @@ paths:
               - json
               - rss
               - atom
+        - name: If-None-Match
+          in: header
+          required: false
+          description: >-
+            ETag from an earlier JSON or OpenAI-format response for the same
+            URL. If it still matches, the response is 304 Not Modified with no
+            body. Accepts a comma-separated list, weak (W/) validators, and *.
+          schema:
+            type: string
       responses:
         '200':
           description: List of models
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
           content:
             application/json:
               schema:
@@ -280,6 +292,14 @@ paths:
               schema:
                 type: string
                 description: Atom XML feed
+        '304':
+          description: >-
+            Not modified. If-None-Match still matches the current model list, so
+            the response has no body. It repeats the ETag, Cache-Control, and
+            Vary headers of the 200 response.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ModelListETag'
         '400':
           description: Invalid request parameters
           content:
@@ -8925,6 +8945,15 @@ components:
         requests.
       schema:
         type: string
+    ModelListETag:
+      description: >-
+        Weak validator (W/ prefix) for the model list at this URL, covering the
+        page, limit, offset, total, and format. It ignores gateway_region, so
+        the same catalogue served from another region has the same value;
+        responses that share it are equivalent, but their bytes can differ. Not
+        sent with RSS, Atom, or error responses.
+      schema:
+        type: string
   parameters:
     DataContributionClassifierId:
       name: id
@@ -9487,6 +9516,20 @@ components:
           $ref: '#/components/schemas/GatewayModalities'
         capabilities:
           $ref: '#/components/schemas/GatewayCapabilities'
+        service_tiers:
+          type: array
+          description: >-
+            Service tiers this offer accepts, sorted alphabetically. A tier is
+            listed when the provider route has active, currently effective
+            pricing for it; priority is the Fast tier. Other tiers may also be
+            available through separate tier-specific provider routes.
+          items:
+            type: string
+            enum:
+              - flex
+              - priority
+              - standard
+              - ultrafast
         routing:
           type: object
           required:
@@ -11465,6 +11508,9 @@ components:
               - $ref: '#/components/schemas/DecisionPredicateQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionChoiceQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionScoreQuestion'
+              - $ref: '#/components/schemas/DecisionBoxQuestion'
+        provider_options:
+          $ref: '#/components/schemas/DecisionProviderOptions'
         safety_identifier:
           type: string
           nullable: true
@@ -11484,6 +11530,39 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    DecisionProviderOptions:
+      type: object
+      properties:
+        typesafe:
+          type: object
+          additionalProperties: false
+          properties:
+            long_context:
+              type: boolean
+              description: >-
+                Opt in to experimental Jev long context: 262k tokens per request
+                and per question, instead of 64k per request and 32k per
+                question. Default false. Requires a supporting TypeSafe route.
+    DecisionBoxQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: >-
+        Phaseo extension for a single bounding box. Requires image input and a
+        supporting route, such as Jev 1.14. No criteria or not-found result.
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        name:
+          type: string
+          maxLength: 1048576
+        instructions:
+          type: string
+          maxLength: 1048576
     DecisionInputMessage:
       type: object
       required:
@@ -11747,6 +11826,9 @@ components:
               - $ref: '#/components/schemas/DecisionNoulQuestion'
               - $ref: '#/components/schemas/DecisionChoiceQuestion'
               - $ref: '#/components/schemas/DecisionScoreQuestion'
+              - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
+        provider_options:
+          $ref: '#/components/schemas/DecisionProviderOptions'
         images:
           type: array
           maxItems: 4
@@ -11775,6 +11857,20 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    LegacyDecisionBoxQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: Single bounding-box question for image-capable Box routes. No criteria.
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
     DecisionImage:
       type: object
       required:
@@ -11881,6 +11977,7 @@ components:
               - $ref: '#/components/schemas/DecisionChoiceAnswer'
               - $ref: '#/components/schemas/DecisionScoreAnswer'
               - $ref: '#/components/schemas/DecisionRefusalAnswer'
+              - $ref: '#/components/schemas/DecisionBoxAnswer'
         usage:
           $ref: '#/components/schemas/DecisionsUsage'
         request_id:
@@ -11889,6 +11986,54 @@ components:
         meta:
           type: object
           additionalProperties: true
+    DecisionBoxAnswer:
+      type: object
+      required:
+        - type
+        - name
+        - box
+        - confidence
+      properties:
+        type:
+          type: string
+          enum:
+            - box
+        name:
+          type: string
+          nullable: true
+        box:
+          $ref: '#/components/schemas/DecisionBox'
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+    DecisionBox:
+      type: object
+      required:
+        - top
+        - bottom
+        - left
+        - right
+      description: >-
+        Edges as fractions of image dimensions from the top-left corner. top
+        must be less than bottom; left must be less than right.
+      properties:
+        top:
+          type: number
+          minimum: 0
+          maximum: 1
+        bottom:
+          type: number
+          minimum: 0
+          maximum: 1
+        left:
+          type: number
+          minimum: 0
+          maximum: 1
+        right:
+          type: number
+          minimum: 0
+          maximum: 1
     DecisionPredicateAnswer:
       type: object
       required:

@@ -1,11 +1,11 @@
 {
   "usageSummary": "उपयोग सारांश",
   "topModels": "शीर्ष मॉडल",
-  "openWorkspaceUsage": "कार्यक्षेत्र उपयोग खोलें",
+  "openWorkspaceUsage": "वर्कस्पेस उपयोग खोलें",
   "by": "द्वारा",
   "noModelActivity": "अभी तक कोई मॉडल गतिविधि रिकॉर्ड नहीं की गई.",
   "activity": "गतिविधि",
-  "streak": "धारी",
+  "streak": "लगातार दिन",
   "days": "दिन",
   "best": "श्रेष्ठ",
   "avgDay": "औसत/दिन",

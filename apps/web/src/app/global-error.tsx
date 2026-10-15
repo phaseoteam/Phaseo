@@ -27,7 +27,7 @@ const errorCopy = {
 	},
 	"de-DE": {
 		title: "Phaseo konnte diese Seite nicht laden",
-		description: "Bitte versuchen Sie es erneut. Wenn das Problem weiterhin besteht, wenden Sie sich an den Phaseo-Support.",
+		description: "Bitte versuche es erneut. Wenn das Problem weiterhin besteht, wende dich an den Phaseo-Support.",
 		retry: "Erneut versuchen",
 	},
 	"pt-BR": {

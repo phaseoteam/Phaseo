@@ -59,7 +59,7 @@ export default function DeleteOAuthAppDialog({
 				return;
 			}
 
-			toast.success(`${t("credits.OAuth app" as never)} "${appName}" ${t("credits.deleted successfully" as never)}`);
+			toast.success(t("oauthCardCopy.deletedToast", { appName }));
 
 			// Navigate back to the list
 			router.push("/settings/oauth-apps");
@@ -88,7 +88,10 @@ export default function DeleteOAuthAppDialog({
 				<DialogHeader>
 					<DialogTitle>{t("credits.Delete OAuth App" as never)}</DialogTitle>
 					<DialogDescription>
-						{t("credits.This will permanently delete" as never)} <strong>{appName}</strong> {t("strings.phraseAndRevokeAllUserAuthorizations" as never)}
+						{t.rich("oauthCardCopy.deleteDescription", {
+							appName,
+							strong: (chunks) => <strong>{chunks}</strong>,
+						})}
 					</DialogDescription>
 				</DialogHeader>
 
@@ -101,7 +104,10 @@ export default function DeleteOAuthAppDialog({
 
 				<div className="space-y-2">
 					<Label htmlFor="confirmation">
-						{t("strings.Type" as never)} <strong>{appName}</strong> {t("credits.to confirm" as never)}
+						{t.rich("oauthCardCopy.deleteConfirmLabel", {
+							appName,
+							strong: (chunks) => <strong>{chunks}</strong>,
+						})}
 					</Label>
 					<Input
 						id="confirmation"

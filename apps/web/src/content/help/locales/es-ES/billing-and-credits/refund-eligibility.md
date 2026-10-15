@@ -12,4 +12,4 @@ Una compra deja de ser apta cuando:
 - Ha pasado el plazo de 24 horas.
 - Se ha utilizado cualquier crédito de esa compra.
 
-Puedes consultar el estado en `Settings -> Credits`.
+Puedes consultar el estado en `Ajustes -> Créditos`.

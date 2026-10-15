@@ -7,6 +7,7 @@ import { requireUser } from "@/auth/requireUser";
 import { requireAccountWorkspace } from "./context";
 import { usageKeyScope } from "./usageKeyScope";
 import { workspaceUserProfile } from "./workspaceUserProfile";
+import { monthUsageStartDate, parseMonthUsageDays } from "./monthUsage";
 
 type Warning = {
 	modelId: string; modelName: string | null; organisationId: string | null;
@@ -254,13 +255,22 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 		const labelSummaryFactsQuery = labelFilter
 			? scope.apply(context.client.from(scope.factsTable).select("cost_nanos", { count: "exact" }).eq("workspace_id", workspaceId).gte("occurred_at", from!).lte("occurred_at", to!)).contains("safe_metadata", { labels: [{ key: labelFilter.key, value: labelFilter.value }] }).limit(5000)
 			: null;
-		const [keysResult, current, previous, labelFacetFactsResult, labelSummaryFactsResult] = await Promise.all([
+		// The daily rollup is exact but workspace-wide, so the month figures only apply unfiltered.
+		const observedAt = Date.now();
+		// Summed per day in the database. An error only hides the month figures; the rest of the overview still loads.
+		const loadMonthUsage = async () => {
+			const result = await context.client.rpc("get_private_usage_month_days", { p_workspace_id: workspaceId, p_from: monthUsageStartDate(observedAt) });
+			return result.error ? null : parseMonthUsageDays(result.data, observedAt);
+		};
+		const monthUsageQuery = scope.creatorId || url.searchParams.get("key")?.trim() || labelFilter ? null : loadMonthUsage();
+		const [keysResult, current, previous, labelFacetFactsResult, labelSummaryFactsResult, monthUsage] = await Promise.all([
 			context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId)
 				.neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: true }),
 			loadWindow(from!, to!),
 			loadWindow(previousFrom!, previousTo!),
 			labelFacetFactsQuery,
 			labelSummaryFactsQuery,
+			monthUsageQuery,
 		]);
 		if (keysResult.error) throw keysResult.error;
 		const labelFacetFacts = labelFacetFactsResult.error ? [] : (labelFacetFactsResult.data ?? []);
@@ -293,6 +303,7 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 			labelFacets,
 			labelSummary,
 			modelMetadataEntries: metadata.modelMetadataEntries,
+			monthUsage,
 			previous,
 			signedIn: true,
 			workspaceId,

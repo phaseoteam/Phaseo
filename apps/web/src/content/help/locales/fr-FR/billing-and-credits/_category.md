@@ -4,4 +4,4 @@ description: Historique des achats, factures, remboursements et fonctionnement d
 order: 2
 ---
 
-Ces articles expliquent les achats de crédits, les conditions de remboursement et la récupération des factures.
+Ces articles expliquent les achats de crédits, les conditions de remboursement et la récupération des reçus ou des factures.
