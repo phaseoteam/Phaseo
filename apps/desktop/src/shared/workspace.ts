@@ -18,6 +18,9 @@ import type { WorkspaceOverview } from "./workspaceOverview";
 import type { EditorInstallation, ProjectOpenRequest } from "./editors";
 import type { PlanStep } from "./planSteps";
 import { normalizeTags } from "./tags";
+import type { GitDiffRequest, GitDiffResult, GitRefs, TurnCheckpoint } from "./gitDiff";
+import type { ProjectTreeRequest, ProjectTreeResult } from "./projectTree";
+import type { FilePreview } from "./filePreview";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -26,7 +29,7 @@ export type Account = { id: string; name: string; harness: Harness; kind: "nativ
 export type AgentConnection = { id: string; name: string; executable: string; arguments: string[]; archived?: boolean };
 export type AgentStatus = { checkedAt: string; name?: string; version?: string; protocolVersion: number; capabilities: string[]; authMethods: string[] };
 export type Attachment = { id: string; taskId: string; name: string; kind: "text" | "image"; mimeType: string; size: number; pages?: number };
-export type Message = { startedAt?: string; completedAt?: string; timelineOrder?: number; threadReferences?: string[]; nativeAction?: NativeAction; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer" | "subagent"; /** Delegated results: the first child, and every child batched into this message. */ sourceTaskId?: string; sourceTaskIds?: string[]; createdAt: string };
+export type Message = { startedAt?: string; completedAt?: string; /** Working-tree snapshots around the turn this message started (user messages in a project). */ checkpoint?: TurnCheckpoint; timelineOrder?: number; threadReferences?: string[]; nativeAction?: NativeAction; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer" | "subagent"; /** Delegated results: the first child, and every child batched into this message. */ sourceTaskId?: string; sourceTaskIds?: string[]; createdAt: string };
 export type QueuedMessage = { sourceTaskId?: string; sourceTaskIds?: string[]; threadReferences?: string[]; nativeAction?: NativeAction; id: string; text: string; attachments?: Attachment[]; createdAt: string };
 export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" | "unconfirmed"; error?: string };
 export type AgentActivity = { timelineOrder?: number; nativeAgent?: { id: string; model?: string; status: "pending" | "running" | "completed" | "failed" | "interrupted" }; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string; summary?: string; compaction?: { beforeTokens: number; afterTokens?: number; durationMs?: number } };
@@ -83,13 +86,13 @@ export type UsageWindow = { usedPercent: number; windowDurationMins: number | nu
 export type AccountStatus = { checkedAt: string; authenticated: boolean | null; method?: string; identity?: string; plan?: string; ordinaryUsageAllowed?: boolean | null; usage?: { id: string; name: string; primary: UsageWindow | null; secondary: UsageWindow | null; spendControlReached: boolean | null }[]; usageError?: string; /** Paid usage beyond the plan, where the plan offers it (Claude). */ extraUsage?: { enabled: boolean; used: number | null; limit: number | null; currency?: string } };
 export type ProjectFile = { name: string; path: string; directory: boolean };
 export type GitFile = { path: string; oldPath?: string; indexStatus: string; worktreeStatus: string };
-export type GitReview = { status: string; files: GitFile[]; diff: string; stagedDiff: string; diffHash: string; stagedDiffHash: string; branch: string };
+export type GitReview = { status: string; files: GitFile[]; diff: string; stagedDiff: string; diffHash: string; stagedDiffHash: string; branch: string; /** The tracked remote branch and how many local commits it lacks; absent when the branch has none. */ upstream?: { name: string; ahead: number; behind: number }; /** A remote exists to publish the branch to. */ hasRemote?: boolean };
 export type GitDiffContentsRequest = { filename: string; staged: boolean; hash: string };
 export type GitDiffContents = { oldFile: { name: string; contents: string }; newFile: { name: string; contents: string } };
 export type GitHunkReview = { filename: string; staged: boolean; hash: string; hunks: { index: number; heading: string; text: string; patch: string }[] };
-export type GitCommand = { type: "stage" | "unstage"; filename: string } | { type: "stage-hunk" | "unstage-hunk"; filename: string; index: number; hash: string } | { type: "create-branch" | "switch-branch"; name: string } | { type: "commit"; message: string };
+export type GitCommand = { type: "stage" | "unstage"; filename: string } | { type: "stage-hunk" | "unstage-hunk"; filename: string; index: number; hash: string } | { type: "create-branch" | "switch-branch"; name: string } | { type: "commit"; message: string } | { type: "push" };
 export type TerminalSession = { id: string; projectId?: string; title: string; cwd: string; output: string; ephemeral?: boolean; taskId?: string; status: "running" | "exited" | "interrupted"; exitCode?: number; createdAt: string; updatedAt: string };
-export type TerminalCommand = { type: "open"; projectId?: string } | { type: "write"; id: string; data: string } | { type: "resize"; id: string; columns: number; rows: number } | { type: "close" | "delete"; id: string };
+export type TerminalCommand = { type: "open"; projectId?: string; /** The chat the terminal belongs to, for its drawer and tab titles. */ taskId?: string } | { type: "write"; id: string; data: string } | { type: "resize"; id: string; columns: number; rows: number } | { type: "close" | "delete"; id: string };
 export type TerminalEvent = { sessionId: string; data?: string; session?: TerminalSession };
 export type WorkspaceCommand =
 	| { type: "inbox-read"; id: string; revision: string }
@@ -186,6 +189,14 @@ export type WorkspaceApi = {
 	gitDiffContents: (projectId: string, request: GitDiffContentsRequest) => Promise<GitDiffContents>;
 	gitCommand: (projectId: string, command: GitCommand) => Promise<GitReview>;
 	gitBranches: (projectId: string) => Promise<string[]>;
+	/** The branch against its base, uncommitted work, or one turn's snapshots. */
+	gitDiff: (projectId: string, request: GitDiffRequest) => Promise<GitDiffResult>;
+	/** Both sides of one file in a scoped diff, checked against the diff's hash. */
+	gitDiffFile: (projectId: string, request: { diff: GitDiffRequest; filename: string; oldFilename?: string; hash: string }) => Promise<GitDiffContents>;
+	gitRefs: (projectId: string) => Promise<GitRefs>;
+	/** Folder listings and search that skip Git-ignored files; `refresh` re-reads the project. */
+	projectTree: (projectId: string, request: ProjectTreeRequest, refresh?: boolean) => Promise<ProjectTreeResult>;
+	filePreview: (projectId: string, filename: string) => Promise<FilePreview>;
 };
 
 export function emptyWorkspace(): Workspace {

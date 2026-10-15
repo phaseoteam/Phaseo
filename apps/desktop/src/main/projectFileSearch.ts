@@ -3,6 +3,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import path from "node:path";
 import type { ProjectFile } from "../shared/workspace";
+import { PROJECT_TREE_SEARCH_LIMIT, projectTreeEntries, validateProjectTreeRequest, type ProjectTreeResult } from "../shared/projectTree";
 
 const execute = promisify(execFile);
 const MAX_FILES = 50_000, INDEX_TTL = 15_000;
@@ -68,3 +69,17 @@ export async function searchProjectFiles(root: string, query: string, limit = 30
 	if (typeof query !== "string" || query.length > 500) throw new Error("Invalid file search.");
 	return rankProjectPaths(await projectIndex(root), query, Math.max(1, Math.min(100, limit)));
 }
+
+/** Lazy folder listings and search for the file browser, from the same index, so Git-ignored files stay hidden. */
+export async function projectTree(root: string, value: unknown): Promise<ProjectTreeResult> {
+	const request = validateProjectTreeRequest(value);
+	const files = await projectIndex(root);
+	if (request.type === "search") {
+		const entries = rankProjectPaths(files, request.query, PROJECT_TREE_SEARCH_LIMIT + 1);
+		return { entries: entries.slice(0, PROJECT_TREE_SEARCH_LIMIT), truncated: entries.length > PROJECT_TREE_SEARCH_LIMIT };
+	}
+	return projectTreeEntries(files, request);
+}
+
+/** Forgets the cached index, so a refresh shows files created since. */
+export function refreshProjectIndex(root: string) { indexes.delete(root); }

@@ -41,10 +41,12 @@ export class TerminalService {
 		if (command.type === "open") {
 			if (this.running.size >= 10 || this.store.getTerminals().length >= 50) throw new Error("Close a terminal or delete an old transcript first.");
 			if (command.projectId !== undefined && typeof command.projectId !== "string") throw new Error("Invalid project.");
+			if (command.taskId !== undefined && (typeof command.taskId !== "string" || !command.taskId || command.taskId.length > 200)) throw new Error("Invalid chat.");
 			const project = command.projectId ? this.store.getProjects().find(project => project.id === command.projectId) : undefined;
 			if (command.projectId && !project) throw new Error("Project no longer exists.");
+			if (command.taskId) { const task = this.store.getTask(command.taskId); if ((task.projectId ?? undefined) !== project?.id) throw new Error("This chat belongs to another project."); }
 			const id = randomUUID(); const cwd = project?.directory ?? path.join(this.directory, id); mkdirSync(cwd, { recursive: true });
-			const session: TerminalSession = { id, projectId: project?.id, title: project?.name ?? "Personal terminal", cwd, output: "", status: "running", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+			const session: TerminalSession = { id, projectId: project?.id, ...(command.taskId ? { taskId: command.taskId } : {}), title: this.nextTitle(project?.id, command.taskId), cwd, output: "", status: "running", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
 			this.start(session, process.platform === "win32" ? "powershell.exe" : process.env.SHELL ?? "/bin/bash", process.platform === "win32" ? ["-NoLogo"] : [], process.env);
 		} else {
 			if (typeof command.id !== "string") throw new Error("Invalid terminal.");
@@ -57,6 +59,11 @@ export class TerminalService {
 			else throw new Error("Unknown terminal command.");
 		}
 		return command.type === "write" || command.type === "resize" ? [] : this.get();
+	}
+	/** T3's numbering: "Terminal N", one above the highest number in use for the same chat or project. */
+	private nextTitle(projectId?: string, taskId?: string) {
+		const used = this.get().filter(session => !session.ephemeral && session.projectId === projectId && session.taskId === taskId).map(session => /^Terminal (\d+)$/.exec(session.title)?.[1]).filter(Boolean).map(Number);
+		return `Terminal ${used.length ? Math.max(...used) + 1 : 1}`;
 	}
 	private flush(id: string) {
 		const entry = this.running.get(id); if (!entry) return;
