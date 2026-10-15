@@ -746,6 +746,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -792,6 +796,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -909,6 +917,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -8548,6 +8560,14 @@ components:
       schema:
         type: string
         pattern: ^G-[0-9A-HJKMNP-TV-Z]{26}$
+    RequestedModel:
+      description: वह मॉडल जिसका अनुरोध किया गया था। यह केवल तब भेजा जाता है जब सेवानिवृत्त मॉडल रूटिंग ने अनुरोध का उत्तर किसी प्रतिस्थापन मॉडल से दिया हो।
+      schema:
+        type: string
+    ModelSubstitution:
+      description: अनुरोधित मॉडल को क्यों और कैसे बदला गया, उदाहरण के लिए `reason=unserved; from=lab/old-model; to=lab/new-model`। यह केवल तब भेजा जाता है जब सेवानिवृत्त मॉडल रूटिंग ने अनुरोध का उत्तर किसी प्रतिस्थापन मॉडल से दिया हो।
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: केवल BYOK के लिए प्रदाता कोटा मेटाडेटा। प्रबंधित-प्रदाता अनुरोधों में शामिल नहीं होता।
       schema:

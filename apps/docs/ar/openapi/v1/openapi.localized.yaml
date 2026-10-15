@@ -746,6 +746,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -792,6 +796,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -909,6 +917,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -8548,6 +8560,14 @@ components:
       schema:
         type: string
         pattern: ^G-[0-9A-HJKMNP-TV-Z]{26}$
+    RequestedModel:
+      description: النموذج الذي طلبه الطلب. يُرسل فقط عندما يجيب توجيه النماذج المتوقفة عن الطلب بنموذج بديل.
+      schema:
+        type: string
+    ModelSubstitution:
+      description: سبب استبدال النموذج المطلوب وكيفيته، مثل `reason=unserved; from=lab/old-model; to=lab/new-model`. يُرسل فقط عندما يجيب توجيه النماذج المتوقفة عن الطلب بنموذج بديل.
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: بيانات وصفية لحصة المزوّد خاصة بـ BYOK فقط. تُحذف في الطلبات التي تستخدم مزوّداً مُداراً.
       schema:

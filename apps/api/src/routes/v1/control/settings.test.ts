@@ -91,6 +91,7 @@ describe("workspace settings management", () => {
 
 	it.each([
 		{ model_successor_price_policy: "cheapest" },
+		{ model_successor_price_policy: ["never"] },
 		{ model_successor_max_price_increase_percent: 1001 },
 		{ model_successor_max_price_increase_percent: 2.5 },
 		{ model_successor_max_price_increase_percent: "25" },

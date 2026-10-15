@@ -116,7 +116,8 @@ function normalizeSettingsPatch(body: Record<string, unknown>): { data: Record<s
 	if (patch.provider_restriction_mode !== undefined && !["none", "allowlist", "blocklist"].includes(String(patch.provider_restriction_mode))) {
 		return { error: "provider_restriction_mode must be none, allowlist, or blocklist" };
 	}
-	if (patch.model_successor_price_policy !== undefined && !["never", "limit", "any"].includes(String(patch.model_successor_price_policy))) {
+	const pricePolicy = patch.model_successor_price_policy;
+	if (pricePolicy !== undefined && (typeof pricePolicy !== "string" || !["never", "limit", "any"].includes(pricePolicy))) {
 		return { error: "model_successor_price_policy must be never, limit, or any" };
 	}
 	const percent = patch.model_successor_max_price_increase_percent;

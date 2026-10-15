@@ -746,6 +746,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -792,6 +796,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -909,6 +917,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -8548,6 +8560,14 @@ components:
       schema:
         type: string
         pattern: ^G-[0-9A-HJKMNP-TV-Z]{26}$
+    RequestedModel:
+      description: リクエストで指定されたモデル。提供終了モデルのルーティングが代替モデルでリクエストに応答した場合にのみ送信されます。
+      schema:
+        type: string
+    ModelSubstitution:
+      description: '要求されたモデルが置き換えられた理由と方法。例: `reason=unserved; from=lab/old-model; to=lab/new-model`。提供終了モデルのルーティングが代替モデルでリクエストに応答した場合にのみ送信されます。'
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: BYOK 専用のプロバイダー割り当てメタデータです。マネージドプロバイダーへのリクエストでは省略されます。
       schema:

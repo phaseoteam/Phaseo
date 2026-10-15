@@ -8223,6 +8223,26 @@
 			"ja": "このオファーが受け付けるサービス階層（アルファベット順）。プロバイダールートにその階層の有効かつ現在適用中の料金がある場合に記載されます。priority は Fast 階層です。ほかの階層が、階層専用の別のプロバイダールートを通じて利用できる場合もあります。",
 			"zh-Hans": "此报价接受的服务等级，按字母顺序排列。当提供商路由具有该等级的有效且当前生效的定价时，会列出该等级；priority 即 Fast 等级。其他等级也可能通过单独的等级专用提供商路由提供。",
 			"ar": "مستويات الخدمة التي يقبلها هذا العرض، مرتّبة أبجديًا. يُدرَج المستوى عندما يكون لمسار المزوّد تسعير نشط وساري المفعول حاليًا له؛ وpriority هو مستوى Fast. وقد تتوفر مستويات أخرى أيضًا عبر مسارات مزوّد منفصلة خاصة بكل مستوى."
+		},
+		"The model the request asked for. Sent only when retired model routing answered the request with a replacement model.": {
+			"es": "El modelo que pidió la solicitud. Solo se envía cuando el enrutamiento de modelos retirados respondió la solicitud con un modelo sustituto.",
+			"fr": "Le modèle demandé par la requête. Envoyé uniquement lorsque le routage des modèles retirés a répondu à la requête avec un modèle remplaçant.",
+			"de": "Das Modell, das die Anfrage angefordert hat. Wird nur gesendet, wenn das Routing für eingestellte Modelle die Anfrage mit einem Ersatzmodell beantwortet hat.",
+			"pt-BR": "O modelo que a solicitação pediu. Enviado apenas quando o roteamento de modelos aposentados respondeu à solicitação com um modelo substituto.",
+			"hi": "वह मॉडल जिसका अनुरोध किया गया था। यह केवल तब भेजा जाता है जब सेवानिवृत्त मॉडल रूटिंग ने अनुरोध का उत्तर किसी प्रतिस्थापन मॉडल से दिया हो।",
+			"ja": "リクエストで指定されたモデル。提供終了モデルのルーティングが代替モデルでリクエストに応答した場合にのみ送信されます。",
+			"zh-Hans": "请求所指定的模型。仅当已停用模型的路由使用替代模型响应请求时才会发送。",
+			"ar": "النموذج الذي طلبه الطلب. يُرسل فقط عندما يجيب توجيه النماذج المتوقفة عن الطلب بنموذج بديل."
+		},
+		"Why and how the requested model was replaced, for example `reason=unserved; from=lab/old-model; to=lab/new-model`. Sent only when retired model routing answered the request with a replacement model.": {
+			"es": "Por qué y cómo se sustituyó el modelo solicitado, por ejemplo `reason=unserved; from=lab/old-model; to=lab/new-model`. Solo se envía cuando el enrutamiento de modelos retirados respondió la solicitud con un modelo sustituto.",
+			"fr": "Pourquoi et comment le modèle demandé a été remplacé, par exemple `reason=unserved; from=lab/old-model; to=lab/new-model`. Envoyé uniquement lorsque le routage des modèles retirés a répondu à la requête avec un modèle remplaçant.",
+			"de": "Warum und wie das angeforderte Modell ersetzt wurde, zum Beispiel `reason=unserved; from=lab/old-model; to=lab/new-model`. Wird nur gesendet, wenn das Routing für eingestellte Modelle die Anfrage mit einem Ersatzmodell beantwortet hat.",
+			"pt-BR": "Por que e como o modelo solicitado foi substituído, por exemplo `reason=unserved; from=lab/old-model; to=lab/new-model`. Enviado apenas quando o roteamento de modelos aposentados respondeu à solicitação com um modelo substituto.",
+			"hi": "अनुरोधित मॉडल को क्यों और कैसे बदला गया, उदाहरण के लिए `reason=unserved; from=lab/old-model; to=lab/new-model`। यह केवल तब भेजा जाता है जब सेवानिवृत्त मॉडल रूटिंग ने अनुरोध का उत्तर किसी प्रतिस्थापन मॉडल से दिया हो।",
+			"ja": "要求されたモデルが置き換えられた理由と方法。例: `reason=unserved; from=lab/old-model; to=lab/new-model`。提供終了モデルのルーティングが代替モデルでリクエストに応答した場合にのみ送信されます。",
+			"zh-Hans": "请求的模型被替换的原因和方式，例如 `reason=unserved; from=lab/old-model; to=lab/new-model`。仅当已停用模型的路由使用替代模型响应请求时才会发送。",
+			"ar": "سبب استبدال النموذج المطلوب وكيفيته، مثل `reason=unserved; from=lab/old-model; to=lab/new-model`. يُرسل فقط عندما يجيب توجيه النماذج المتوقفة عن الطلب بنموذج بديل."
 		}
 	},
 	"GET /apps": {

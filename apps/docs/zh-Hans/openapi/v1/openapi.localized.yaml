@@ -746,6 +746,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -792,6 +796,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -909,6 +917,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -8548,6 +8560,14 @@ components:
       schema:
         type: string
         pattern: ^G-[0-9A-HJKMNP-TV-Z]{26}$
+    RequestedModel:
+      description: 请求所指定的模型。仅当已停用模型的路由使用替代模型响应请求时才会发送。
+      schema:
+        type: string
+    ModelSubstitution:
+      description: 请求的模型被替换的原因和方式，例如 `reason=unserved; from=lab/old-model; to=lab/new-model`。仅当已停用模型的路由使用替代模型响应请求时才会发送。
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: 仅适用于 BYOK 的提供商配额元数据。使用托管提供商的请求不会返回此字段。
       schema:

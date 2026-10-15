@@ -746,6 +746,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -792,6 +796,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -909,6 +917,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -8548,6 +8560,14 @@ components:
       schema:
         type: string
         pattern: ^G-[0-9A-HJKMNP-TV-Z]{26}$
+    RequestedModel:
+      description: Das Modell, das die Anfrage angefordert hat. Wird nur gesendet, wenn das Routing für eingestellte Modelle die Anfrage mit einem Ersatzmodell beantwortet hat.
+      schema:
+        type: string
+    ModelSubstitution:
+      description: Warum und wie das angeforderte Modell ersetzt wurde, zum Beispiel `reason=unserved; from=lab/old-model; to=lab/new-model`. Wird nur gesendet, wenn das Routing für eingestellte Modelle die Anfrage mit einem Ersatzmodell beantwortet hat.
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: Anbieter-Kontingentmetadaten nur für BYOK. Bei Anfragen über verwaltete Anbieter werden sie weggelassen.
       schema:
