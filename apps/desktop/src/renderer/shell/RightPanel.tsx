@@ -19,8 +19,10 @@ const tabs: { id: RightPanelTab | "pulls"; label: string; icon: ReactNode }[] = 
 ];
 
 export function RightPanel() {
-	const { rightPanel, setRightPanel, selectedId, overview, newChatProjectId, select, commandsOpen, settings } = useWorkspace();
+	const { rightPanel, setRightPanel, selectedId, overview, newChatProjectId, select, commandsOpen, settings, sidebarOpen } = useWorkspace();
 	const [width, setWidth] = usePersistedState("phaseo.desktop.rightPanelWidth", 440);
+	const [viewport, setViewport] = useState(window.innerWidth);
+	useEffect(() => { const resize = () => setViewport(window.innerWidth); window.addEventListener("resize", resize); return () => window.removeEventListener("resize", resize); }, []);
 	const [tab, setTab] = useState<RightPanelTab | "pulls">(rightPanel ?? "changes");
 	const [link, setLink] = useState<{ url: string; request: number }>();
 	const dragging = useRef<{ x: number; width: number } | undefined>(undefined);
@@ -37,7 +39,9 @@ export function RightPanel() {
 	if (!rightPanel || settings) return null;
 	const task = overview.tasks.find(value => value.id === selectedId);
 	const projectId = task?.projectId ?? (selectedId ? undefined : newChatProjectId || undefined) ?? "";
-	const safeWidth = Number.isFinite(width) ? Math.max(320, Math.min(960, width)) : 440;
+	// The panel never squeezes the conversation below 320px beside the sidebar (w-64).
+	const widest = Math.max(320, Math.min(960, viewport - (sidebarOpen ? 256 : 0) - 320));
+	const safeWidth = Number.isFinite(width) ? Math.max(320, Math.min(widest, width)) : Math.min(440, widest);
 	const content = tab === "changes" ? <FilesPanel key={projectId || "personal"} initialProjectId={projectId} />
 		: tab === "pulls" ? <Proposals key={projectId || "personal"} initialProjectId={projectId} />
 		: tab === "terminal" ? <Suspense fallback={<p className="p-4 text-xs text-muted-foreground">Opening terminal…</p>}><Terminals key={projectId || "personal"} initialProjectId={projectId} /></Suspense>
