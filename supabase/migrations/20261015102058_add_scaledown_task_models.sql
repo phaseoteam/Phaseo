@@ -364,6 +364,16 @@ on conflict (provider_model_id, capability_id) do update set
 
 -- ScaleDown bills input tokens only. $0.05 per million is the undiscounted rate
 -- that OpenRouter (before its 20% launch discount) and Vercel AI Gateway list.
+-- The replay baseline contains schema only, so seed these shared definitions
+-- just as the TypeSafe Jev migration does. Preserve existing production meters.
+insert into public.v2_meter_definitions (
+  meter_key, display_name, modality, direction, unit, default_unit_quantity
+)
+values
+  ('input_tokens', 'Input tokens', 'text', 'input', 'token', 1000000),
+  ('output_tokens', 'Output tokens', 'text', 'output', 'token', 1000000)
+on conflict (meter_key) do nothing;
+
 insert into public.v2_pricing_skus (
   provider_model_id, sku_code, version, operation, status, service_tier_slug,
   display_name, description, currency, effective_from, route_variant_id, metadata
