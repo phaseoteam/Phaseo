@@ -156,3 +156,31 @@ export function RenameInput({ task, onDone, className }: { task: TaskOverview; o
 		onKeyDown={event => { event.stopPropagation(); if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") onDone(); }}
 		className={cn("h-6 min-w-0 flex-1 rounded border border-ring bg-background px-1.5 text-[13px] outline-none", className)} />;
 }
+
+/** T3's menu for several picked chats: each action says how many chats it applies to. */
+export function BulkMenuItems({ tasks, scope, onDone }: { tasks: TaskOverview[]; scope?: string; onDone: () => void }) {
+	const actions = useThreadActions();
+	const [deleting, setDeleting] = useState(false);
+	const pinned = tasks.filter(task => task.pinned), settleable = tasks.filter(task => !settleBlocker(task) && !isSettled(task));
+	const snoozable = tasks.every(task => !snoozeBlocker(task, new Date(Date.now() + 60_000).toISOString()));
+	const finished = tasks.filter(task => task.lastCompletedAt), stopped = tasks.filter(task => !["running", "waiting"].includes(task.status));
+	const each = (list: TaskOverview[], run: (task: TaskOverview) => Promise<unknown>) => { onDone(); void (async () => { for (const task of list) await run(task); })(); };
+	return <>
+		{pinned.length > 0 && <DropdownMenuItem onClick={() => each(pinned, task => actions.pin(task))}><PinOff />Unpin ({pinned.length})</DropdownMenuItem>}
+		<DropdownMenuItem disabled={!settleable.length} onClick={() => each(settleable, task => actions.settle(task, scope))}><CircleCheck />Settle ({settleable.length})</DropdownMenuItem>
+		<DropdownMenuSub>
+			<DropdownMenuSubTrigger disabled={!snoozable}><Clock />Snooze ({tasks.length})</DropdownMenuSubTrigger>
+			<DropdownMenuSubContent className="w-56">{snoozePresets().map(preset => <DropdownMenuItem key={preset.label} onClick={() => each(tasks, task => actions.snooze(task, preset.until, scope))}>{preset.label}<span className="ml-auto pl-4 text-xs text-muted-foreground">{snoozeTime(preset.until)}</span></DropdownMenuItem>)}</DropdownMenuSubContent>
+		</DropdownMenuSub>
+		<DropdownMenuItem disabled={!finished.length} onClick={() => each(finished, task => actions.markUnread(task))}><Mail />Mark unread ({finished.length})</DropdownMenuItem>
+		<DropdownMenuSeparator />
+		<DropdownMenuItem disabled={!stopped.length} onClick={() => each(stopped, task => actions.archive(task, scope))}><Archive />Archive ({stopped.length})</DropdownMenuItem>
+		<DropdownMenuItem variant="destructive" disabled={!stopped.length} closeOnClick={false} onClick={() => setDeleting(true)}><Trash2 />Delete ({stopped.length})</DropdownMenuItem>
+		<Dialog open={deleting} onOpenChange={setDeleting}>
+			<DialogContent className="sm:max-w-sm">
+				<DialogHeader><DialogTitle>Delete {stopped.length === 1 ? "this chat" : `${stopped.length} chats`}?</DialogTitle><DialogDescription>They are deleted with their agents, messages and attachments. This cannot be undone.</DialogDescription></DialogHeader>
+				<DialogFooter><SettingsButton variant="ghost" onClick={() => setDeleting(false)}>Cancel</SettingsButton><SettingsButton variant="danger" onClick={() => { setDeleting(false); each(stopped, task => actions.remove(task, scope)); }}>Delete</SettingsButton></DialogFooter>
+			</DialogContent>
+		</Dialog>
+	</>;
+}

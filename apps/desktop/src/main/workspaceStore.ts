@@ -233,7 +233,7 @@ export class WorkspaceStore {
 			'pinned', coalesce(json_extract(data, '$.pinned'), 0), 'tags', json_extract(data, '$.tags'),
 			'settledOverride', json_extract(data, '$.settledOverride'), 'settledAt', json_extract(data, '$.settledAt'), 'unsettledAt', json_extract(data, '$.unsettledAt'),
 			'snoozedUntil', json_extract(data, '$.snoozedUntil'), 'snoozedAt', json_extract(data, '$.snoozedAt'), 'lastSnoozeWakeAt', json_extract(data, '$.lastSnoozeWakeAt'),
-			'lastVisitedAt', json_extract(data, '$.lastVisitedAt'), 'autoSettle', json_extract(data, '$.autoSettle'), 'queueCount', coalesce(json_array_length(data, '$.queue'), 0),
+			'lastVisitedAt', json_extract(data, '$.lastVisitedAt'), 'autoSettle', json_extract(data, '$.autoSettle'), 'orderKey', json_extract(data, '$.orderKey'), 'queueCount', coalesce(json_array_length(data, '$.queue'), 0),
 			'lastCompletedAt', (SELECT json_extract(item.value, '$.completedAt') FROM json_each(tasks.data, '$.messages') AS item WHERE json_extract(item.value, '$.role') = 'user' AND json_extract(item.value, '$.completedAt') IS NOT NULL ORDER BY CAST(item.key AS INTEGER) DESC LIMIT 1),
 			'lastUserMessageAt', (SELECT json_extract(item.value, '$.createdAt') FROM json_each(tasks.data, '$.messages') AS item WHERE json_extract(item.value, '$.role') = 'user' AND json_extract(item.value, '$.delivery') IS NULL ORDER BY CAST(item.key AS INTEGER) DESC LIMIT 1), 'archived', coalesce(json_extract(data, '$.archived'), 0),
 			'createdAt', json_extract(data, '$.createdAt'), 'updatedAt', json_extract(data, '$.updatedAt'), 'revision', json_extract(data, '$.revision'),
@@ -319,6 +319,10 @@ export class WorkspaceStore {
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
 		return attachments;
 	}
+	/** Numbers a section's chats in the given order. Ordering is not activity, so their times stay put. */
+	reorder(ids: string[]) {
+		for (const [index, id] of ids.entries()) { const task = this.getTask(id); task.orderKey = index + 1; this.saveTask(task, true); }
+	}
 	getAttachment(id: string): Attachment | undefined { const row = this.db.prepare("SELECT data FROM attachments WHERE id=?").get(id); return row ? JSON.parse(row.data as string) as Attachment : undefined; }
 	saveAttachment(attachment: Attachment) { this.db.prepare("INSERT INTO attachments (id, data) VALUES (?, ?)").run(attachment.id, JSON.stringify(attachment)); }
 	saveAttachments(attachments: Attachment[]) {
@@ -337,7 +341,7 @@ export class WorkspaceStore {
 			this.saveTask(task); this.db.exec("COMMIT"); return task;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
 	}
-	apply(command: Exclude<WorkspaceCommand, { type: "add-account" | "update-account" | "add-agent" | "update-agent" }>, initialModels?: Task["nativeModels"]): Task {
+	apply(command: Exclude<WorkspaceCommand, { type: "add-account" | "update-account" | "add-agent" | "update-agent" | "reorder" }>, initialModels?: Task["nativeModels"]): Task {
 		if (command.type === "handoff") {
 			const source = this.getTask(command.id);
 			if (source.status === "running" || source.status === "waiting") throw new Error("Stop this task before handing it off.");
@@ -387,6 +391,8 @@ export class WorkspaceStore {
 				}
 				if (command.title !== undefined) task.title = command.title;
 				if (command.pinned !== undefined) task.pinned = command.pinned;
+				// A chat that moves in or out of the pinned list loses its place in the old one.
+				if (command.pinned !== undefined) task.orderKey = undefined;
 				// Pinning promotes: a settled chat comes back, and a snoozed one wakes.
 				if (command.pinned) { if (task.settledOverride === "settled") { task.settledOverride = "active"; task.settledAt = undefined; task.unsettledAt = new Date().toISOString(); } if (task.snoozedUntil) { task.snoozedUntil = task.snoozedAt = undefined; task.lastSnoozeWakeAt = new Date().toISOString(); } }
 				if (command.tags !== undefined) task.tags = command.tags.length ? command.tags : undefined;
@@ -463,7 +469,7 @@ function applyLifecycle(task: Task, command: LifecycleCommand) {
 	switch (command.type) {
 		case "settle": {
 			const blocked = settleBlocker(counts); if (blocked) throw new Error(blocked);
-			task.settledAt = task.settledOverride === "settled" ? task.settledAt : now; task.settledOverride = "settled"; task.unsettledAt = undefined; task.pinned = false; break;
+			task.settledAt = task.settledOverride === "settled" ? task.settledAt : now; task.settledOverride = "settled"; task.unsettledAt = undefined; task.pinned = false; task.orderKey = undefined; break;
 		}
 		case "unsettle": task.settledOverride = "active"; task.settledAt = undefined; task.unsettledAt = now; break;
 		case "snooze": {

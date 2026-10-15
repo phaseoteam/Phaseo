@@ -7,7 +7,7 @@ export type ThreadLifecycle = {
 	pinned: boolean; archived: boolean; status: string;
 	settledOverride?: "settled" | "active"; settledAt?: string; unsettledAt?: string;
 	snoozedUntil?: string; snoozedAt?: string; lastSnoozeWakeAt?: string;
-	lastVisitedAt?: string; autoSettle?: boolean;
+	lastVisitedAt?: string; autoSettle?: boolean; orderKey?: number;
 	createdAt: string; updatedAt: string;
 	/** When the latest turn finished, and when the person last wrote. */
 	lastCompletedAt?: string; lastUserMessageAt?: string;

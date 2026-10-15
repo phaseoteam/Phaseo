@@ -264,6 +264,7 @@ export class WorkspaceRuntime {
 	private async applyCommand(command: WorkspaceCommand): Promise<WorkspaceOverview> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		if (command.type === "delete-task") return this.deleteTask(command.id);
+		if (command.type === "reorder") { this.store.reorder(command.ids); this.broadcast(); return this.store.getOverview(); }
 		if ((command.type === "create-task" || command.type === "handoff") && command.projectId) this.assertProjectAvailable(command.projectId);
 		if (command.type === "send") for (const id of command.threadReferences ?? []) this.store.getTaskView(id);
 		if (command.type === "send" && command.nativeAction && !["opencode", "pi", "claude", "codex", "phaseo"].includes(this.store.getTask(command.id).harness)) throw new Error("This action requires a supported harness.");
@@ -552,6 +553,8 @@ export class WorkspaceRuntime {
 			flush(); if (streamError) throw streamError;
 			const current = this.store.getTask(id);
 			if (current.status !== "interrupted") current.status = "completed";
+			// T3: an agent that settled its own chat mid-turn settles it now, but only when the turn completed.
+			if (current.settleWhenTurnEnds) { if (current.status === "completed" && !current.queue.length) { current.settledOverride = "settled"; current.settledAt = new Date().toISOString(); current.unsettledAt = undefined; current.pinned = false; } current.settleWhenTurnEnds = undefined; }
 			current.approvals = []; current.questions = []; current.forms = [];
 			this.store.saveTask(current);
 		} catch (error) {

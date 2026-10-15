@@ -330,12 +330,15 @@ export class WorkspaceThreads {
 				// Folder names only: full paths stay private to the desktop.
 				return this.host.store.getProjects().filter(project => !query || `${project.name} ${folder(project.directory)}`.toLowerCase().includes(query.toLowerCase())).slice(0, 200).map(project => ({ id: project.id, name: project.name, directory: folder(project.directory), ...(project.id === current ? { current: true } : {}), ...(project.worktree ? { worktree: { branch: project.worktree.branch, baseCommit: project.worktree.baseCommit, sourceProjectId: project.worktree.sourceProjectId } } : {}), ...(project.worktree?.removedAt ? { removed: true } : {}) }));
 			},
-			organize: async (id, action, title, tags) => {
+			organize: async (id, action, title, tags, until) => {
 				const task = id === parentId ? this.host.store.getTask(id) : scoped(id, true, true);
 				if (this.host.isClosing()) throw new Error("The workspace is shutting down.");
 				if (action === "rename") { if (!title?.trim() || title.length > 100) throw new Error("Invalid chat title."); await this.host.command({ type: "update-task", id, title }); }
 				else if (action === "pin" || action === "unpin") await this.host.command({ type: "update-task", id, pinned: action === "pin" });
 				else if (action === "tag") await this.host.command({ type: "update-task", id, tags: tags ?? [] });
+				else if (action === "settle" && id === parentId && ["running", "waiting"].includes(task.status)) { const current = this.host.store.getTask(id); current.settleWhenTurnEnds = true; this.host.store.saveTask(current, true); }
+				else if (action === "settle" || action === "unsettle" || action === "wake") await this.host.command({ type: action, id });
+				else if (action === "snooze") { if (!until || Number.isNaN(Date.parse(until))) throw new Error("snooze needs until, an ISO date-time."); await this.host.command({ type: "snooze", id, until }); }
 				else if (action === "unarchive") await this.host.command({ type: "update-task", id, archived: false });
 				else {
 					if (id === parentId) throw new Error("A chat cannot archive itself; ask the user to archive it.");
@@ -343,7 +346,7 @@ export class WorkspaceThreads {
 					if (task.status === "running" || task.status === "waiting" || (task.status === "idle" && task.queue.length)) await this.host.command({ type: "cancel", id });
 					await this.host.command({ type: "update-task", id, archived: true });
 				}
-				const current = this.host.store.getTask(id); return { ...summary(current), pinned: current.pinned, archived: current.archived, tags: current.tags ?? [], ...(action === "tag" ? { tagsInUse: tagsInUse(this.host.store.getOverview().tasks).slice(0, 50) } : {}) };
+				const current = this.host.store.getTask(id); return { ...summary(current), pinned: current.pinned, archived: current.archived, tags: current.tags ?? [], settled: current.settledOverride === "settled", ...(current.settleWhenTurnEnds ? { settlesWhenTurnEnds: true } : {}), ...(current.snoozedUntil ? { snoozedUntil: current.snoozedUntil } : {}), ...(action === "tag" ? { tagsInUse: tagsInUse(this.host.store.getOverview().tasks).slice(0, 50) } : {}) };
 			},
 			scheduled: () => this.host.store.missions.list().slice(0, 100).map(scheduledTask),
 			schedule: async request => {

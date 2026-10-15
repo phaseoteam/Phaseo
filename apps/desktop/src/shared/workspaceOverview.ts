@@ -1,7 +1,7 @@
 import type { Task, Workspace } from "./workspace";
 import { inboxReasonFromCounts, type TaskAttention } from "./inbox";
 
-export type TaskOverview = Pick<Task, "id" | "title" | "harness" | "model" | "mode" | "status" | "pinned" | "tags" | "settledOverride" | "settledAt" | "unsettledAt" | "snoozedUntil" | "snoozedAt" | "lastSnoozeWakeAt" | "lastVisitedAt" | "autoSettle" | "archived" | "createdAt" | "updatedAt" | "revision" | "projectId" | "accountId" | "agentId" | "parentId" | "delegation" | "launch" | "missionId" | "inboxReadAt"> & TaskAttention & { attentionReason?: string; attentionKey: string; queueCount?: number; lastCompletedAt?: string; lastUserMessageAt?: string };
+export type TaskOverview = Pick<Task, "id" | "title" | "harness" | "model" | "mode" | "status" | "pinned" | "tags" | "settledOverride" | "settledAt" | "unsettledAt" | "snoozedUntil" | "snoozedAt" | "lastSnoozeWakeAt" | "lastVisitedAt" | "autoSettle" | "orderKey" | "archived" | "createdAt" | "updatedAt" | "revision" | "projectId" | "accountId" | "agentId" | "parentId" | "delegation" | "launch" | "missionId" | "inboxReadAt"> & TaskAttention & { attentionReason?: string; attentionKey: string; queueCount?: number; lastCompletedAt?: string; lastUserMessageAt?: string };
 export type WorkspaceOverview = Omit<Workspace, "tasks"> & { tasks: TaskOverview[] };
 export function emptyOverview(): WorkspaceOverview { return { version: 1, projects: [], accounts: [], agents: [], mcpConnections: [], tasks: [] }; }
 
@@ -9,7 +9,7 @@ export function workspaceOverview(workspace: Workspace): WorkspaceOverview {
 	return { version: workspace.version, projects: workspace.projects, accounts: workspace.accounts, agents: workspace.agents, mcpConnections: workspace.mcpConnections, tasks: workspace.tasks.map(task => {
 		const metadata: TaskOverview = {
 			id: task.id, title: task.title, harness: task.harness, model: task.model, mode: task.mode, status: task.status,
-			pinned: task.pinned, tags: task.tags, settledOverride: task.settledOverride, settledAt: task.settledAt, unsettledAt: task.unsettledAt, snoozedUntil: task.snoozedUntil, snoozedAt: task.snoozedAt, lastSnoozeWakeAt: task.lastSnoozeWakeAt, lastVisitedAt: task.lastVisitedAt, autoSettle: task.autoSettle,
+			pinned: task.pinned, tags: task.tags, settledOverride: task.settledOverride, settledAt: task.settledAt, unsettledAt: task.unsettledAt, snoozedUntil: task.snoozedUntil, snoozedAt: task.snoozedAt, lastSnoozeWakeAt: task.lastSnoozeWakeAt, lastVisitedAt: task.lastVisitedAt, autoSettle: task.autoSettle, orderKey: task.orderKey,
 			queueCount: task.queue.length, lastCompletedAt: task.messages.findLast(value => value.role === "user" && value.completedAt)?.completedAt, lastUserMessageAt: task.messages.findLast(value => value.role === "user" && !value.delivery)?.createdAt,
 			archived: task.archived, createdAt: task.createdAt, updatedAt: task.updatedAt, revision: task.revision,
 			projectId: task.projectId, accountId: task.accountId, agentId: task.agentId, parentId: task.parentId, delegation: task.delegation, launch: task.launch, missionId: task.missionId, inboxReadAt: task.inboxReadAt,

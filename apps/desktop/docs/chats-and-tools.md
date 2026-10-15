@@ -116,6 +116,8 @@ Code lists chats from every project in one list, as T3 Code does; the menu above
 - **Snooze** hides a chat until a time: in an hour, in three hours, this evening, tomorrow at 9:00, next Monday at 9:00, or a custom time. It returns early if it needs you, fails or finishes a turn, marked **Woke**.
 - Sending a message un-settles and wakes a chat; pinning does too. `Ctrl+Z` undoes the last settle, snooze, unpin or archive for five seconds after it.
 - Code chats with no activity for three days settle on their own; change or turn this off under **Settings → General → Auto-settle inactive chats**, or per chat under **Auto-settle behaviour** in its menu. Un-settling a chat holds off auto-settle until something new happens in it.
+- Drag a card to reorder it; dropping it among the pinned chats pins it, among the others unpins it, and onto the Settled heading settles it. Ctrl-click (⌘-click on macOS) picks several chats and Shift-click a range; right-click a picked chat to unpin, settle, snooze, mark unread, archive or delete them together. Esc clears the selection. `Ctrl+1`…`9` open the first nine chats (hold Ctrl to see their numbers) and `Ctrl+Shift+[` / `]` step through them.
+- Agents can settle, un-settle, snooze and wake chats too (`organize_thread`); a chat that settles itself does so when its current turn completes.
 - Right-click a card for its menu: pin, settle, snooze, tags, mark unread, filter by project, auto-settle behaviour, copy path, branch or chat ID, and archive. Under the last message, a settled or snoozed chat says so, with the way back.
 
 ## Questions from the agent

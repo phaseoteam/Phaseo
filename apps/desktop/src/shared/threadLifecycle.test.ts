@@ -68,6 +68,10 @@ describe("Code chat lifecycle", () => {
 		expect(sections.snoozed.map(value => value.id)).toEqual(["soon", "later"]);
 		expect(sections.settled.map(value => value.id)).toEqual(["done"]);
 		expect(nextAfterParking(sections, "new")?.id).toBe("old");
+		// Dragged chats keep their order: pinned ones first among the pinned, never-dragged ones first among the active.
+		const dragged = codeSections([task("a", { orderKey: 2 }), task("b", { orderKey: 1 }), task("fresh", { createdAt: iso(-1) }), task("p2", { pinned: true }), task("p1", { pinned: true, orderKey: 1 })], projects, "", now);
+		expect(dragged.active.map(value => value.id)).toEqual(["fresh", "b", "a"]);
+		expect(dragged.pinned.map(value => value.id)).toEqual(["p1", "p2"]);
 		expect(nextAfterParking(sections, "old")?.id).toBe("new");
 	});
 });

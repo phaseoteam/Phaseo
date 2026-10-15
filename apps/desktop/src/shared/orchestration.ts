@@ -19,7 +19,7 @@ export type LaunchWorkspace = { strategy: "same" | "none" } | { strategy: "proje
 export type LaunchRequest = Omit<DelegateRequest, "background" | "role"> & { workspace?: LaunchWorkspace };
 export type LaunchResult = { id: string; title: string; projectId?: string; worktree?: { branch: string; directory: string } };
 export type ProjectSummary = { id: string; name: string; directory: string; current?: boolean; worktree?: { branch: string; baseCommit: string; sourceProjectId: string }; removed?: boolean };
-export const organizeActions = ["pin", "unpin", "archive", "unarchive", "rename", "tag"] as const;
+export const organizeActions = ["pin", "unpin", "archive", "unarchive", "rename", "tag", "settle", "unsettle", "snooze", "wake"] as const;
 export type OrganizeAction = typeof organizeActions[number];
 export type ScheduleRequest = { title: string; prompt: string; schedule: MissionSchedule; templateTaskId?: string; enabled?: boolean };
 export type ScheduleUpdate = { enabled?: boolean; title?: string; prompt?: string; schedule?: MissionSchedule };
@@ -49,7 +49,7 @@ export type ThreadTools = {
 	launch?: (request: LaunchRequest) => Promise<LaunchResult>;
 	launchBatch?: (requests: LaunchRequest[]) => Promise<{ results: (LaunchResult | { requestId: string; error: string })[] }>;
 	projects?: (query?: string) => ProjectSummary[];
-	organize?: (id: string, action: OrganizeAction, title?: string, tags?: string[]) => Promise<ThreadSummary & { pinned: boolean; archived: boolean; tags: string[]; tagsInUse?: string[] }>;
+	organize?: (id: string, action: OrganizeAction, title?: string, tags?: string[], until?: string) => Promise<ThreadSummary & { pinned: boolean; archived: boolean; tags: string[]; tagsInUse?: string[]; settled?: boolean; settlesWhenTurnEnds?: boolean; snoozedUntil?: string }>;
 	scheduled?: () => ScheduledTask[];
 	schedule?: (request: ScheduleRequest) => Promise<ScheduledTask>;
 	updateSchedule?: (id: string, update: ScheduleUpdate) => Promise<ScheduledTask>;
@@ -77,5 +77,5 @@ You can coordinate other agents with the Phaseo orchestration tools: list_agents
 - The workspace caps concurrently active delegated agents (default 32, "Agents running at once" in Settings → General). If delegate_task reports the cap, wait for children to finish or tell the user.
 - Delegate when you need the result back: a child belongs to this chat, stops with it and reports to it. Launch (launch_thread, or launch_threads for up to 20) only when the user asks for separate or new chats: a launched chat is an ordinary top-level chat in the user's sidebar, independent of this one. Its result is not delivered here; use wait_thread or read_thread, and send_thread, steer_thread or interrupt_thread to direct it. Stopping or archiving this chat does not stop it.
 - Launching and scheduling need this chat to have full access outside Plan mode. A launched chat takes this chat's mode and permissions unless you choose narrower ones. Its workspace is one of: same (default, this chat's project), none, project (projectId), worktree (a new Git worktree on a new branch from baseRef, default HEAD, of projectId or this chat's project) or existing_worktree (projectId). list_projects lists projects and worktrees.
-- organize_thread pins, unpins, renames, tags, archives or restores this chat, its children and chats it launched. Archiving stops that chat and its agents. Once this chat's topic is clear, tag it (action tag, one to three short tags), reusing tags already in use (list_threads shows them) and keeping any the user set; retag only when the topic changes.
+- organize_thread pins, unpins, renames, tags, settles, un-settles, snoozes, wakes, archives or restores this chat, its children and chats it launched. Settle a chat when its work is done (this chat settles when the current turn completes); snooze needs until (an ISO time). Archiving stops that chat and its agents. Once this chat's topic is clear, tag it (action tag, one to three short tags), reusing tags already in use (list_threads shows them) and keeping any the user set; retag only when the topic changes.
 - schedule_task creates a recurring task: each run starts a fresh chat with the template chat's harness, model, mode and project (default: this chat) and the given prompt. Manage schedules with list_scheduled_tasks, update_scheduled_task, delete_scheduled_task and run_scheduled_task_now.`;

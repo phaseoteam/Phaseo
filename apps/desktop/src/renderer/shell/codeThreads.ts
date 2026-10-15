@@ -14,8 +14,10 @@ export function codeSections(tasks: TaskOverview[], projects: Project[], scope: 
 		if (scope && task.projectId !== scope) continue;
 		sections[sidebarSection(task, now)].push(task);
 	}
-	sections.pinned.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-	sections.active.sort((a, b) => activeOrder(b) - activeOrder(a) || b.createdAt.localeCompare(a.createdAt));
+	// T3: dragged pinned chats first in their order, then the rest newest first; in the active list, chats never dragged come first.
+	const keyed = (a: TaskOverview, b: TaskOverview) => (a.orderKey ?? 0) - (b.orderKey ?? 0);
+	sections.pinned.sort((a, b) => Number(a.orderKey === undefined) - Number(b.orderKey === undefined) || keyed(a, b) || b.createdAt.localeCompare(a.createdAt));
+	sections.active.sort((a, b) => Number(b.orderKey === undefined) - Number(a.orderKey === undefined) || keyed(a, b) || activeOrder(b) - activeOrder(a) || b.createdAt.localeCompare(a.createdAt));
 	sections.snoozed.sort((a, b) => time(a.snoozedUntil) - time(b.snoozedUntil));
 	sections.settled.sort((a, b) => (time(b.settledAt) || time(b.updatedAt)) - (time(a.settledAt) || time(a.updatedAt)));
 	return sections;

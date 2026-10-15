@@ -59,6 +59,10 @@ export type Task = {
 	lastVisitedAt?: string;
 	/** false opts this chat out of auto-settle. */
 	autoSettle?: boolean;
+	/** Where the person dragged this chat within its sidebar section (pinned or active); lower comes first. */
+	orderKey?: number;
+	/** The chat's own agent asked to settle mid-turn; it settles if the turn completes. */
+	settleWhenTurnEnds?: boolean;
 	archived: boolean; messages: Message[]; queue: QueuedMessage[]; nativeSessionId?: string;
 	parentId?: string; nativeForkFrom?: string; createdAt: string; updatedAt: string; error?: string;
 	handoffFrom?: Harness;
@@ -95,6 +99,8 @@ export type WorkspaceCommand =
 	| { type: "inbox-read"; id: string; revision: string }
 	| { type: "settle" | "unsettle" | "wake" | "mark-unread"; id: string }
 	| { type: "delete-task"; id: string }
+	/** The chats of one sidebar section in the order the person dragged them into. */
+	| { type: "reorder"; ids: string[] }
 	| { type: "snooze"; id: string; until: string }
 	| { type: "visit"; id: string; at: string }
 	| { type: "auto-settle"; id: string; enabled: boolean }
@@ -226,6 +232,8 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 			validateApiEndpoint(command.endpoint as string);
 		} else if (command.kind === "api" && command.harness === "cursor") { string("apiKey", true, 10000); if (command.endpoint !== undefined) throw new Error("Cursor accounts use the official SDK service."); }
 		else if (command.kind !== "native" || command.harness === "phaseo") throw new Error("Invalid account type.");
+	} else if (command.type === "reorder") {
+		if (!Array.isArray(command.ids) || !command.ids.length || command.ids.length > 500 || command.ids.some(id => typeof id !== "string" || !id || id.length > 100) || new Set(command.ids).size !== command.ids.length) throw new Error("Invalid chat order.");
 	} else if (command.type === "create-task" || command.type === "handoff") {
 		if (command.type === "handoff") string("id");
 		if (!harnesses.includes(command.harness as Harness)) throw new Error("Unknown harness.");
