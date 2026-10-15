@@ -68,7 +68,9 @@ export async function findRetiredModelNotice(model: string): Promise<RetiredMode
             key: `${LIFECYCLE_KEY_PREFIX}${slug}`,
             loader: () => loadModelLifecycle(slug),
             l1FreshMs: 60_000,
-            l2: { freshS: 300, storeS: 3_600 },
+            // A model hidden later has no tombstone to overwrite this entry,
+            // so keep it no longer than it is fresh.
+            l2: { freshS: 300, storeS: 300 },
             l3: false,
             validate: isLifecycle,
             // Unknown names can be workspace-private model identifiers; keep
