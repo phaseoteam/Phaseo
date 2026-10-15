@@ -221,6 +221,7 @@ accountSettingsPolicyRouter.put("/routing", async (c) => {
 });
 
 const SUCCESSOR_PRICE_POLICIES = new Set(["never", "limit", "any"]);
+const SERVABLE_SUCCESSOR_STATUSES = new Set(["active", "deprecated", "retired"]);
 const MAX_SUCCESSOR_REPLACEMENTS = 500;
 
 function successorModelSlug(value: unknown): string | null {
@@ -298,11 +299,13 @@ accountSettingsPolicyRouter.put("/routing/successor/replacements", async (c) => 
 	if (body.successor !== null && !successor) return c.json({ error: "invalid_successor" }, 400, PRIVATE_NO_STORE_HEADERS);
 	if (successor === model) return c.json({ error: "successor_is_model" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const slugs = successor ? [model, successor] : [model];
-	const models = await context.client.from("v2_models").select("model_slug").in("model_slug", slugs).eq("hidden", false);
+	const models = await context.client.from("v2_models").select("model_slug,status").in("model_slug", slugs).eq("hidden", false);
 	if (models.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const known = new Set((models.data ?? []).map((row: any) => String(row.model_slug)));
-	if (!known.has(model)) return c.json({ error: "unknown_model" }, 400, PRIVATE_NO_STORE_HEADERS);
-	if (successor && !known.has(successor)) return c.json({ error: "unknown_successor" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const statuses = new Map((models.data ?? []).map((row: any) => [String(row.model_slug), String(row.status ?? "")]));
+	if (!statuses.has(model)) return c.json({ error: "unknown_model" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (successor && !statuses.has(successor)) return c.json({ error: "unknown_successor" }, 400, PRIVATE_NO_STORE_HEADERS);
+	// The gateway only redirects to models it can list; anything else would be saved and never used.
+	if (successor && !SERVABLE_SUCCESSOR_STATUSES.has(statuses.get(successor)!)) return c.json({ error: "inactive_successor" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const existing = await context.client.from("workspace_model_successor_overrides").select("model_slug", { count: "exact", head: true }).eq("workspace_id", workspaceId);
 	if (existing.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if ((existing.count ?? 0) >= MAX_SUCCESSOR_REPLACEMENTS) {

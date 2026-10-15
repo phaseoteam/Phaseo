@@ -129,6 +129,7 @@ try {
     (await db.query('select public.gateway_resolve_workspace_model_successor($1,$2) as value', [slug, successor])).rows[0].value;
   await db.exec(`update public.v2_model_successor_routing set auto_route_enabled=false, approved_successor_slug=null, approved_at=null`);
   await db.exec(`update public.v2_pricing_sku_meters set meter_key='input_tokens' where sku_id='new-sku' and price_nanos=2500000000`);
+  await db.exec(`update public.v2_pricing_sku_meters set meter_key='output_tokens' where sku_id='new-sku' and price_nanos=8000000000`);
   result = await resolveFor('lab/old', 'lab/new');
   assert.deepEqual([result.target, result.reason, result.workspace_override, Number(result.price_ratio)], ['lab/new', 'eligible', true, 1.25]);
   assert.deepEqual([(await resolveFor('lab/old', 'lab/mid')).target, (await resolveFor('lab/old', 'lab/mid')).reason], [null, 'no_served_successor']);

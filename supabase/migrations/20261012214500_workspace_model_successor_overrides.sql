@@ -47,16 +47,18 @@ CREATE OR REPLACE FUNCTION public.v2_model_successor_price_ratio (
   STABLE
   SET search_path TO 'public', 'pg_temp'
   AS $function$
-  -- Compares standard-tier unit prices on the meters both models bill and
-  -- returns the largest ratio. The old model uses its last known prices because
-  -- its routes no longer serve; the successor only counts routes that route.
-  -- The ratio is null when the models share no meter the old model charged for.
+  -- Compares standard-tier unit prices meter by meter and returns the largest
+  -- ratio. The old model uses its last known prices because its routes no
+  -- longer serve; the successor only counts routes that route and SKUs it can
+  -- bill now. The ratio is null when the successor bills a meter the old model
+  -- did not, or a meter the old model charged nothing for.
   with prices as (
     select r.model_slug, mt.meter_key, min(mt.price_nanos / nullif(mt.unit_quantity, 0)) as unit_price
     from public.v2_model_provider_routes r
     join lateral (
       select distinct on (s.sku_code) s.sku_id from public.v2_pricing_skus s
       where s.provider_model_id=r.provider_model_id and s.status='active' and s.effective_from<=now()
+        and (r.model_slug<>p_to_model_slug or s.effective_to is null or now()<s.effective_to)
         and coalesce(s.service_tier_slug,'standard')='standard'
       order by s.sku_code, s.effective_from desc
     ) sku on true
@@ -65,10 +67,10 @@ CREATE OR REPLACE FUNCTION public.v2_model_successor_price_ratio (
     group by r.model_slug, mt.meter_key
   ), pairs as (
     select o.unit_price as old_price, t.unit_price as new_price
-    from prices o join prices t on t.meter_key=o.meter_key and t.model_slug=p_to_model_slug
-    where o.model_slug=p_from_model_slug
+    from prices t left join prices o on o.meter_key=t.meter_key and o.model_slug=p_from_model_slug
+    where t.model_slug=p_to_model_slug
   ), summary as (
-    select count(*) > 0 and coalesce(bool_and(old_price > 0 or new_price = 0), false) as comparable,
+    select count(*) > 0 and coalesce(bool_and(old_price is not null and (old_price > 0 or new_price = 0)), false) as comparable,
       max(case when old_price > 0 then new_price / old_price when new_price = 0 then 0 end) as ratio
     from pairs
   )

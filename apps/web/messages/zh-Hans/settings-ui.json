@@ -5950,6 +5950,7 @@
 			"saveFailed": "无法保存，请重试。",
 			"unknown_model": "该模型不在目录中。",
 			"unknown_successor": "该替代模型不在目录中。",
+			"inactive_successor": "该替代模型无法用于路由。",
 			"successor_is_model": "模型不能替代自身。",
 			"invalid_model": "请输入模型 ID，例如 lab/model。",
 			"invalid_successor": "请输入替代模型 ID，或 \"never\"。",

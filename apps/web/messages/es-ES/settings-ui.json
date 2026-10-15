@@ -5950,6 +5950,7 @@
 			"saveFailed": "No se pudo guardar. Inténtalo de nuevo.",
 			"unknown_model": "Ese modelo no está en el catálogo.",
 			"unknown_successor": "Ese sustituto no está en el catálogo.",
+			"inactive_successor": "Ese sustituto no está disponible para el enrutamiento.",
 			"successor_is_model": "Un modelo no puede sustituirse a sí mismo.",
 			"invalid_model": "Escribe un ID de modelo como lab/model.",
 			"invalid_successor": "Escribe un ID de modelo sustituto o \"never\".",

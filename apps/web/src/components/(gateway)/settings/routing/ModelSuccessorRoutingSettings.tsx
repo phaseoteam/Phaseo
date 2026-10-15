@@ -28,7 +28,7 @@ export type SuccessorRoutingData = {
 type ActionResult = { ok: true } | { ok: false; status: number; code?: string | null };
 
 const NEVER = "never";
-const REPLACEMENT_ERRORS = new Set(["unknown_model", "unknown_successor", "successor_is_model", "invalid_model", "invalid_successor", "too_many_replacements"]);
+const REPLACEMENT_ERRORS = new Set(["unknown_model", "unknown_successor", "inactive_successor", "successor_is_model", "invalid_model", "invalid_successor", "too_many_replacements"]);
 
 function ModelSuccessorRoutingSettings({ initialData }: { initialData: SuccessorRoutingData }) {
 	const t = useTranslations("SettingsUI.modelSuccessorRouting");
@@ -36,7 +36,7 @@ function ModelSuccessorRoutingSettings({ initialData }: { initialData: Successor
 	const [isPending, startTransition] = useTransition();
 	const [enabled, setEnabled] = useState(initialData.enabled);
 	const [pricePolicy, setPricePolicy] = useState<SuccessorPricePolicy>(initialData.pricePolicy);
-	const [percent, setPercent] = useState(String(initialData.maxPriceIncreasePercent || 25));
+	const [percent, setPercent] = useState(String(initialData.pricePolicy === "limit" ? initialData.maxPriceIncreasePercent : 25));
 	const [replacements, setReplacements] = useState(initialData.replacements);
 	const [model, setModel] = useState("");
 	const [successor, setSuccessor] = useState("");

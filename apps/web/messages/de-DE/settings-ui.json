@@ -5950,6 +5950,7 @@
 			"saveFailed": "Speichern fehlgeschlagen. Versuche es erneut.",
 			"unknown_model": "Dieses Modell ist nicht im Katalog.",
 			"unknown_successor": "Dieses Ersatzmodell ist nicht im Katalog.",
+			"inactive_successor": "Dieses Ersatzmodell ist nicht für das Routing verfügbar.",
 			"successor_is_model": "Ein Modell kann sich nicht selbst ersetzen.",
 			"invalid_model": "Gib eine Modell-ID wie lab/model ein.",
 			"invalid_successor": "Gib eine Ersatzmodell-ID oder „never“ ein.",

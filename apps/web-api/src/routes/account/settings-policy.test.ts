@@ -415,7 +415,7 @@ describe("successor routing settings", () => {
 				writes.push({ url, method: request.method, body: text ? JSON.parse(text) : null });
 				return new Response(null, { status: 201 });
 			}
-			if (url.includes("v2_models")) return new Response(JSON.stringify(models.map((model_slug) => ({ model_slug }))), { status: 200 });
+			if (url.includes("v2_models")) return new Response(JSON.stringify(models.map((model_slug) => ({ model_slug, status: model_slug.endsWith("draft") ? "draft" : "active" }))), { status: 200 });
 			if (url.includes("workspace_model_successor_overrides")) {
 				return new Response(JSON.stringify([{ model_slug: "lab/old", successor_model_slug: null, updated_at: "2026-10-12T00:00:00Z" }]), { status: 200, headers: { "content-range": "0-0/1" } });
 			}
@@ -487,10 +487,11 @@ describe("successor routing settings", () => {
 
 	it("rejects unknown or self-referencing replacements", async () => {
 		const writes: Array<{ url: string; method: string; body: unknown }> = [];
-		stub("admin", writes, ["lab/old"]);
+		stub("admin", writes, ["lab/old", "lab/draft"]);
 		const cases: Array<[unknown, string]> = [
 			[{ model: "lab/old", successor: "lab/old" }, "successor_is_model"],
 			[{ model: "lab/old", successor: "lab/missing" }, "unknown_successor"],
+			[{ model: "lab/old", successor: "lab/draft" }, "inactive_successor"],
 			[{ model: "lab/missing", successor: null }, "unknown_model"],
 			[{ model: "not a slug", successor: null }, "invalid_model"],
 			[{ model: "lab/old" }, "invalid_successor"],

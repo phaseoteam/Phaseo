@@ -5950,6 +5950,7 @@
 			"saveFailed": "保存できませんでした。もう一度お試しください。",
 			"unknown_model": "そのモデルはカタログにありません。",
 			"unknown_successor": "その代替モデルはカタログにありません。",
+			"inactive_successor": "その代替モデルはルーティングに使用できません。",
 			"successor_is_model": "モデルを自分自身で置き換えることはできません。",
 			"invalid_model": "lab/model のようなモデル ID を入力してください。",
 			"invalid_successor": "代替モデルの ID、または \"never\" を入力してください。",

@@ -5950,6 +5950,7 @@
 			"saveFailed": "تعذّر الحفظ. حاول مرة أخرى.",
 			"unknown_model": "هذا النموذج غير موجود في الكتالوج.",
 			"unknown_successor": "هذا البديل غير موجود في الكتالوج.",
+			"inactive_successor": "هذا البديل غير متاح للتوجيه.",
 			"successor_is_model": "لا يمكن للنموذج أن يحل محل نفسه.",
 			"invalid_model": "أدخل معرّف نموذج مثل lab/model.",
 			"invalid_successor": "أدخل معرّف النموذج البديل، أو \"never\".",
