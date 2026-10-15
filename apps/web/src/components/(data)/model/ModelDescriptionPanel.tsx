@@ -37,7 +37,7 @@ export default function ModelDescriptionPanel({
 	}, [description, expanded]);
 
 	return (
-		<div className="max-w-4xl">
+		<div className="relative max-w-4xl">
 			<div className="relative">
 				<div
 					id={descriptionId}
@@ -49,7 +49,7 @@ export default function ModelDescriptionPanel({
 						"[&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_h4]:font-semibold [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground [&_h4]:text-foreground [&>:first-child]:mt-0",
 						"[&_ul]:mb-4 [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-5 [&_ol]:mb-4 [&_ol]:list-decimal [&_ol]:space-y-2 [&_ol]:pl-5 [&_li::marker]:text-muted-foreground/50 [&_li_p]:mb-1",
 						"[&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:pl-4 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:bg-muted/40 [&_pre]:p-4 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_table]:block [&_table]:overflow-x-auto",
-						!expanded ? "max-h-28 overflow-hidden" : null,
+						!expanded ? "max-h-28 overflow-hidden" : "[&>:last-child]:pr-32",
 					)}
 				>
 					<ReactMarkdown
@@ -68,7 +68,7 @@ export default function ModelDescriptionPanel({
 					type="button"
 					variant="ghost"
 					size="sm"
-					className="mt-3 h-8 gap-1.5 rounded-full border px-3 text-xs text-muted-foreground hover:text-foreground"
+					className="absolute right-0 bottom-0 h-7 gap-1.5 rounded-full border border-border/60 bg-background px-2.5 text-xs text-muted-foreground ring-4 ring-background hover:bg-muted hover:text-foreground"
 					aria-expanded={expanded}
 					aria-controls={descriptionId}
 					onClick={() => {
