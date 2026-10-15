@@ -3,4 +3,4 @@
 "@phaseo/web-api": patch
 ---
 
-Forecast the usage overview's KPI cards over the selected range rather than the calendar month, so the footer agrees with the figure above it. This week, month, quarter and year project to their end; rolling windows from 7 days to a year project the same length ahead; finished, custom and sub-week ranges show no footer. Rate cards show the last 7 days, or today for the last 7 days. Small dollar forecasts keep their cents.
+Base the usage overview's KPI card footers on the selected range rather than the calendar month, so each footer agrees with the figure above it. Today, this week, this month, this quarter and this year project to their end. Rolling windows from 24 hours to a year project the same length ahead. Finished, custom and sub-day ranges, and filtered views, show each total's change from the previous period, and the rate cards show the previous period's value. Forecast rate cards show the last 7 days, or today for windows of a week or less. Small dollar amounts keep their cents.
