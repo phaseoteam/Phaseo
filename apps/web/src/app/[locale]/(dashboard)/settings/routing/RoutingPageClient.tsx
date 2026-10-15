@@ -2,6 +2,7 @@
 import { Suspense } from "react";
 import { useTranslations } from "next-intl";
 import RoutingSettingsClient from "@/components/(gateway)/settings/routing/RoutingSettingsClient";
+import ModelSuccessorRoutingSettings from "@/components/(gateway)/settings/routing/ModelSuccessorRoutingSettings";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { withSettingsResource } from "@/components/(gateway)/settings/PrivateSettingsQuery";
@@ -35,14 +36,17 @@ const RoutingSettingsContent = withSettingsResource("routing", function RoutingS
 	}
 
 	return (
-		<RoutingSettingsClient
-			initialMode={initialData.routingMode}
-			initialBetaChannelEnabled={initialData.betaChannelEnabled}
-			initialAlphaChannelEnabled={initialData.alphaChannelEnabled}
-			initialResponseHealingEnabled={initialData.responseHealingEnabled}
-			initialResponseHealingLocked={initialData.responseHealingLocked}
-			initialResponseHealingMode={initialData.responseHealingMode}
-			teamName={initialData.teamName}
-		/>
+		<div className="space-y-8">
+			<RoutingSettingsClient
+				initialMode={initialData.routingMode}
+				initialBetaChannelEnabled={initialData.betaChannelEnabled}
+				initialAlphaChannelEnabled={initialData.alphaChannelEnabled}
+				initialResponseHealingEnabled={initialData.responseHealingEnabled}
+				initialResponseHealingLocked={initialData.responseHealingLocked}
+				initialResponseHealingMode={initialData.responseHealingMode}
+				teamName={initialData.teamName}
+			/>
+			<ModelSuccessorRoutingSettings />
+		</div>
 	);
 });

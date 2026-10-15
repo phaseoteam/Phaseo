@@ -48,9 +48,11 @@ import {
 import { fetchWorkspacePolicy, applyWorkspacePolicy } from "./workspacePolicy";
 import {
     findModelSuccessor,
+    findWorkspaceModelSuccessor,
     loadSuccessorRedirectPolicy,
     successorRedirectEnabled,
     successorRedirectTarget,
+    workspaceSuccessorOverride,
     type ModelSubstitution,
 } from "./modelSuccessor";
 import { getWebhookEndpointSigningConfig } from "@core/webhook-endpoints";
@@ -744,7 +746,12 @@ export async function beforeRequest(
             ? await timer.span("modelSuccessorRedirect", async () => {
                 const policy = await loadSuccessorRedirectPolicy(workspaceId);
                 if (!policy.enabled) return null;
-                const substitution = successorRedirectTarget(await findModelSuccessor(unservedModel!), policy);
+                const override = workspaceSuccessorOverride(policy, unservedModel!);
+                if (override === null) return null;
+                const resolution = override
+                    ? await findWorkspaceModelSuccessor(unservedModel!, override)
+                    : await findModelSuccessor(unservedModel!);
+                const substitution = successorRedirectTarget(resolution, policy);
                 if (!substitution) return null;
                 const successorContext = await contextForModel(substitution.to, testingContextFlags);
                 return successorContext.ok ? { successorContext, substitution } : null;

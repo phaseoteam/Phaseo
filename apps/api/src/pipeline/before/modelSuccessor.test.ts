@@ -6,6 +6,7 @@ import {
     successorPriceAllowed,
     successorRedirectTarget,
     type ModelSuccessorResolution,
+    workspaceSuccessorOverride,
     type SuccessorRedirectPolicy,
 } from "./modelSuccessor";
 
@@ -18,8 +19,9 @@ const eligible: ModelSuccessorResolution = {
     reason: "eligible",
     priceRatio: 1,
     priceComparable: true,
+    workspaceOverride: false,
 };
-const on: SuccessorRedirectPolicy = { enabled: true, pricePolicy: "never", maxPriceIncreasePercent: 0 };
+const on: SuccessorRedirectPolicy = { enabled: true, pricePolicy: "never", maxPriceIncreasePercent: 0, overrides: {} };
 
 describe("model successor redirect", () => {
     it("parses the database resolution", () => {
@@ -28,19 +30,20 @@ describe("model successor redirect", () => {
             chain: ["lab/mid", "lab/new", 3], reason: "eligible", price_ratio: "1.25", price_comparable: true,
         })).toEqual({
             model: "lab/old", replacementModel: "lab/mid", unservedSince: "2026-10-01T00:00:00+00:00", target: "lab/new",
-            chain: ["lab/mid", "lab/new"], reason: "eligible", priceRatio: 1.25, priceComparable: true,
+            chain: ["lab/mid", "lab/new"], reason: "eligible", priceRatio: 1.25, priceComparable: true, workspaceOverride: false,
         });
         expect(parseModelSuccessorResolution(null)).toBeNull();
         expect(parseModelSuccessorResolution({ target: "lab/new" })).toBeNull();
     });
 
     it("reads workspace settings and stays off by default", () => {
-        expect(parseSuccessorRedirectPolicy(null)).toEqual({ enabled: false, pricePolicy: "never", maxPriceIncreasePercent: 0 });
+        expect(parseSuccessorRedirectPolicy(null)).toEqual({ enabled: false, pricePolicy: "never", maxPriceIncreasePercent: 0, overrides: {} });
         expect(parseSuccessorRedirectPolicy({
             model_successor_redirect_enabled: true, model_successor_price_policy: "limit", model_successor_max_price_increase_percent: 25,
-        })).toEqual({ enabled: true, pricePolicy: "limit", maxPriceIncreasePercent: 25 });
+        }, [{ model_slug: "lab/old", successor_model_slug: "lab/custom" }, { model_slug: "lab/keep", successor_model_slug: null }, { successor_model_slug: "x" }]))
+            .toEqual({ enabled: true, pricePolicy: "limit", maxPriceIncreasePercent: 25, overrides: { "lab/old": "lab/custom", "lab/keep": null } });
         expect(parseSuccessorRedirectPolicy({ model_successor_redirect_enabled: "true", model_successor_price_policy: "other" }))
-            .toEqual({ enabled: false, pricePolicy: "never", maxPriceIncreasePercent: 0 });
+            .toEqual({ enabled: false, pricePolicy: "never", maxPriceIncreasePercent: 0, overrides: {} });
     });
 
     it.each([
@@ -51,7 +54,7 @@ describe("model successor redirect", () => {
         ["limit", 25, 1.26, false],
         ["any", 0, 9, true],
     ] as const)("applies the %s price policy (limit %s%%) to ratio %s", (pricePolicy, percent, ratio, allowed) => {
-        expect(successorPriceAllowed({ ...eligible, priceRatio: ratio }, { enabled: true, pricePolicy, maxPriceIncreasePercent: percent }))
+        expect(successorPriceAllowed({ ...eligible, priceRatio: ratio }, { enabled: true, pricePolicy, maxPriceIncreasePercent: percent, overrides: {} }))
             .toBe(allowed);
     });
 
@@ -63,12 +66,19 @@ describe("model successor redirect", () => {
 
     it("redirects only eligible models for workspaces that turned it on", () => {
         expect(successorRedirectTarget(eligible, on)).toEqual({
-            from: "lab/old", to: "lab/new", reason: "unserved", chain: ["lab/new"], unservedSince: "2026-10-01T00:00:00Z", priceRatio: 1,
+            from: "lab/old", to: "lab/new", reason: "unserved", chain: ["lab/new"], unservedSince: "2026-10-01T00:00:00Z", priceRatio: 1, source: "approved",
         });
         expect(successorRedirectTarget(eligible, { ...on, enabled: false })).toBeNull();
         expect(successorRedirectTarget({ ...eligible, reason: "free_to_paid", target: null }, on)).toBeNull();
         expect(successorRedirectTarget({ ...eligible, reason: "within_grace_period" }, on)).toBeNull();
         expect(successorRedirectTarget(null, on)).toBeNull();
+    });
+
+    it("uses the workspace's own replacement whatever it costs", () => {
+        const custom = { ...eligible, target: "lab/custom", chain: ["lab/custom"], priceRatio: null, priceComparable: false, workspaceOverride: true };
+        expect(successorRedirectTarget(custom, on)).toMatchObject({ to: "lab/custom", source: "workspace" });
+        expect(workspaceSuccessorOverride({ ...on, overrides: { "lab/old": null } }, "lab/old")).toBeNull();
+        expect(workspaceSuccessorOverride(on, "lab/old")).toBeUndefined();
     });
 
     it("describes the substitution in one header", () => {

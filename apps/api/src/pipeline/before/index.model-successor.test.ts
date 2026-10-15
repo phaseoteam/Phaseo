@@ -68,12 +68,14 @@ vi.mock("./promptInjection", () => ({
 }));
 
 const findModelSuccessorMock = vi.fn();
+const findWorkspaceModelSuccessorMock = vi.fn();
 const loadSuccessorRedirectPolicyMock = vi.fn();
 const successorRedirectEnabledMock = vi.fn();
 
 vi.mock("./modelSuccessor", async (importOriginal) => ({
 	...(await importOriginal<typeof import("./modelSuccessor")>()),
 	findModelSuccessor: (...args: any[]) => findModelSuccessorMock(...args),
+	findWorkspaceModelSuccessor: (...args: any[]) => findWorkspaceModelSuccessorMock(...args),
 	loadSuccessorRedirectPolicy: (...args: any[]) => loadSuccessorRedirectPolicyMock(...args),
 	successorRedirectEnabled: () => successorRedirectEnabledMock(),
 }));
@@ -147,10 +149,11 @@ describe("beforeRequest model successor redirect", () => {
 		applyPromptInjectionGuardrailsMock.mockReset();
 		applySensitiveInfoGuardrailsMock.mockReset();
 		findModelSuccessorMock.mockReset();
+		findWorkspaceModelSuccessorMock.mockReset();
 		loadSuccessorRedirectPolicyMock.mockReset();
 		successorRedirectEnabledMock.mockReset();
 		successorRedirectEnabledMock.mockReturnValue(true);
-		loadSuccessorRedirectPolicyMock.mockResolvedValue({ enabled: true, pricePolicy: "never", maxPriceIncreasePercent: 0 });
+		loadSuccessorRedirectPolicyMock.mockResolvedValue({ enabled: true, pricePolicy: "never", maxPriceIncreasePercent: 0, overrides: {} });
 		findModelSuccessorMock.mockResolvedValue({
 			model: "openai/gpt-old",
 			replacementModel: "openai/gpt-new",
@@ -160,6 +163,7 @@ describe("beforeRequest model successor redirect", () => {
 			reason: "eligible",
 			priceRatio: 1,
 			priceComparable: true,
+			workspaceOverride: false,
 		});
 
 		guardAuthMock.mockResolvedValue({
@@ -311,17 +315,19 @@ describe("beforeRequest model successor redirect", () => {
 				chain: ["openai/gpt-new"],
 				unservedSince: "2026-10-01T00:00:00Z",
 				priceRatio: 1,
+				source: "approved",
 			});
 		}
 	});
 
 	it.each([
-		["the workspace has not turned it on", () => loadSuccessorRedirectPolicyMock.mockResolvedValue({ enabled: false, pricePolicy: "any", maxPriceIncreasePercent: 0 })],
+		["the workspace has not turned it on", () => loadSuccessorRedirectPolicyMock.mockResolvedValue({ enabled: false, pricePolicy: "any", maxPriceIncreasePercent: 0, overrides: {} })],
 		["the kill switch is off", () => successorRedirectEnabledMock.mockReturnValue(false)],
 		["the successor costs more than the policy allows", () => findModelSuccessorMock.mockResolvedValue({
 			model: "openai/gpt-old", replacementModel: "openai/gpt-new", unservedSince: null, target: "openai/gpt-new",
-			chain: ["openai/gpt-new"], reason: "eligible", priceRatio: 1.25, priceComparable: true,
+			chain: ["openai/gpt-new"], reason: "eligible", priceRatio: 1.25, priceComparable: true, workspaceOverride: false,
 		})],
+		["the workspace never redirects this model", () => loadSuccessorRedirectPolicyMock.mockResolvedValue({ enabled: true, pricePolicy: "any", maxPriceIncreasePercent: 0, overrides: { "openai/gpt-old": null } })],
 		["no successor is eligible", () => findModelSuccessorMock.mockResolvedValue(null)],
 	])("returns the original failure when %s", async (_label, arrange) => {
 		const rawBody = primary();
@@ -336,6 +342,25 @@ describe("beforeRequest model successor redirect", () => {
 			expect(result).not.toHaveProperty("unservedModelFallback");
 		}
 		expect(guardContextMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("uses the workspace's own replacement instead of the approved successor", async () => {
+		const rawBody = primary();
+		loadSuccessorRedirectPolicyMock.mockResolvedValue({ enabled: true, pricePolicy: "never", maxPriceIncreasePercent: 0, overrides: { "openai/gpt-old": "openai/gpt-custom" } });
+		findWorkspaceModelSuccessorMock.mockResolvedValue({
+			model: "openai/gpt-old", replacementModel: "openai/gpt-custom", unservedSince: "2026-10-01T00:00:00Z", target: "openai/gpt-custom",
+			chain: ["openai/gpt-custom"], reason: "eligible", priceRatio: 3, priceComparable: true, workspaceOverride: true,
+		});
+		guardContextMock
+			.mockResolvedValueOnce(unserved("openai/gpt-old"))
+			.mockResolvedValueOnce(contextFor("openai/gpt-custom"));
+
+		const result = await beforeRequest(request(rawBody), "responses", new Timer(), null);
+
+		expect(result.ok).toBe(true);
+		expect(findWorkspaceModelSuccessorMock).toHaveBeenCalledWith("openai/gpt-old", "openai/gpt-custom");
+		expect(findModelSuccessorMock).not.toHaveBeenCalled();
+		if (result.ok) expect(result.ctx.routingDiagnostics?.modelSubstitution).toMatchObject({ to: "openai/gpt-custom", source: "workspace" });
 	});
 
 	it("returns the original failure when the successor cannot serve the endpoint either", async () => {

@@ -9,6 +9,9 @@ import { tieredRead } from "@core/tiered-cache";
  * - an admin approved each hop to the current replacement model;
  * - the target is not a paid model replacing a free one;
  * - the workspace turned redirects on and the price policy allows the target.
+ * A workspace may also name its own replacement for a model, or block the
+ * redirect for it. Its own replacement needs no admin approval and ignores the
+ * price policy, but keeps the grace period and the free-to-paid block.
  * Model and key restrictions are enforced on the target afterwards, as for any
  * other model; they are never widened.
  */
@@ -21,6 +24,7 @@ export type ModelSuccessorResolution = {
     reason: string | null;
     priceRatio: number | null;
     priceComparable: boolean;
+    workspaceOverride: boolean;
 };
 
 export type SuccessorPricePolicy = "never" | "limit" | "any";
@@ -29,6 +33,8 @@ export type SuccessorRedirectPolicy = {
     enabled: boolean;
     pricePolicy: SuccessorPricePolicy;
     maxPriceIncreasePercent: number;
+    /** Model slug to the workspace's own replacement, or `null` to never redirect it. */
+    overrides: Record<string, string | null>;
 };
 
 export type ModelSubstitution = {
@@ -38,12 +44,15 @@ export type ModelSubstitution = {
     chain: string[];
     unservedSince: string | null;
     priceRatio: number | null;
+    source: "approved" | "workspace";
 };
 
 const RESOLUTION_KEY_PREFIX = "gateway:model-successor:v1:";
-const POLICY_KEY_PREFIX = "gateway:model-successor-policy:v1:";
+const WORKSPACE_RESOLUTION_KEY_PREFIX = "gateway:model-successor-workspace:v1:";
+const POLICY_KEY_PREFIX = "gateway:model-successor-policy:v2:";
 const MAX_MODEL_LENGTH = 512;
-const DISABLED_POLICY: SuccessorRedirectPolicy = { enabled: false, pricePolicy: "never", maxPriceIncreasePercent: 0 };
+const MAX_WORKSPACE_OVERRIDES = 500;
+const DISABLED_POLICY: SuccessorRedirectPolicy = { enabled: false, pricePolicy: "never", maxPriceIncreasePercent: 0, overrides: {} };
 
 export function successorRedirectEnabled(): boolean {
     return getBindingsIfConfigured()?.GATEWAY_MODEL_SUCCESSOR_REDIRECT_ENABLED !== "false";
@@ -72,13 +81,15 @@ export function parseModelSuccessorResolution(value: unknown): ModelSuccessorRes
         reason: stringOrNull(row.reason),
         priceRatio: finiteOrNull(row.price_ratio ?? row.priceRatio),
         priceComparable: (row.price_comparable ?? row.priceComparable) === true,
+        workspaceOverride: (row.workspace_override ?? row.workspaceOverride) === true,
     };
 }
 
 function isResolution(value: unknown): value is ModelSuccessorResolution {
     if (!value || typeof value !== "object") return false;
     const row = value as Record<string, unknown>;
-    return typeof row.model === "string" && Array.isArray(row.chain) && typeof row.priceComparable === "boolean";
+    return typeof row.model === "string" && Array.isArray(row.chain) && typeof row.priceComparable === "boolean" &&
+        typeof row.workspaceOverride === "boolean";
 }
 
 async function loadResolution(model: string): Promise<ModelSuccessorResolution | null> {
@@ -107,7 +118,44 @@ export async function findModelSuccessor(model: string): Promise<ModelSuccessorR
     }
 }
 
-export function parseSuccessorRedirectPolicy(row: unknown): SuccessorRedirectPolicy {
+async function loadWorkspaceResolution(model: string, successor: string): Promise<ModelSuccessorResolution | null> {
+    const { data, error } = await getSupabaseAdmin().rpc("gateway_resolve_workspace_model_successor", {
+        p_model_slug: model,
+        p_successor_slug: successor,
+    });
+    if (error) throw new Error("gateway_workspace_model_successor_failed");
+    return parseModelSuccessorResolution(data);
+}
+
+/** Resolution for a workspace's own replacement of `model`. Shared: it holds only public catalogue state. */
+export async function findWorkspaceModelSuccessor(model: string, successor: string): Promise<ModelSuccessorResolution | null> {
+    const slug = model.trim();
+    const target = successor.trim();
+    if (!slug || !target || slug.length > MAX_MODEL_LENGTH || target.length > MAX_MODEL_LENGTH || slug.startsWith("@")) return null;
+    try {
+        return await tieredRead<ModelSuccessorResolution>({
+            key: `${WORKSPACE_RESOLUTION_KEY_PREFIX}${slug}|${target}`,
+            loader: () => loadWorkspaceResolution(slug, target),
+            l1FreshMs: 60_000,
+            l2: { freshS: 300, storeS: 3_600 },
+            l3: false,
+            validate: isResolution,
+            isShareable: (value) => value !== null,
+        });
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * The workspace's own choice for `model`: `undefined` when it has none, `null`
+ * when it never redirects the model, otherwise the replacement slug.
+ */
+export function workspaceSuccessorOverride(policy: SuccessorRedirectPolicy, model: string): string | null | undefined {
+    return Object.hasOwn(policy.overrides, model) ? policy.overrides[model] : undefined;
+}
+
+export function parseSuccessorRedirectPolicy(row: unknown, overrideRows: unknown = []): SuccessorRedirectPolicy {
     if (!row || typeof row !== "object") return DISABLED_POLICY;
     const record = row as Record<string, unknown>;
     const pricePolicy = record.model_successor_price_policy;
@@ -116,7 +164,19 @@ export function parseSuccessorRedirectPolicy(row: unknown): SuccessorRedirectPol
         enabled: record.model_successor_redirect_enabled === true,
         pricePolicy: pricePolicy === "limit" || pricePolicy === "any" ? pricePolicy : "never",
         maxPriceIncreasePercent: percent !== null && percent > 0 ? percent : 0,
+        overrides: parseOverrides(overrideRows),
     };
+}
+
+function parseOverrides(rows: unknown): Record<string, string | null> {
+    const overrides: Record<string, string | null> = {};
+    if (!Array.isArray(rows)) return overrides;
+    for (const row of rows) {
+        const model = stringOrNull((row as Record<string, unknown> | null)?.model_slug);
+        if (!model) continue;
+        overrides[model] = stringOrNull((row as Record<string, unknown>).successor_model_slug);
+    }
+    return overrides;
 }
 
 function isPolicy(value: unknown): value is SuccessorRedirectPolicy {
@@ -124,17 +184,26 @@ function isPolicy(value: unknown): value is SuccessorRedirectPolicy {
     const policy = value as Record<string, unknown>;
     return typeof policy.enabled === "boolean" &&
         ["never", "limit", "any"].includes(String(policy.pricePolicy)) &&
-        typeof policy.maxPriceIncreasePercent === "number";
+        typeof policy.maxPriceIncreasePercent === "number" &&
+        !!policy.overrides && typeof policy.overrides === "object" && !Array.isArray(policy.overrides);
 }
 
 async function loadPolicy(workspaceId: string): Promise<SuccessorRedirectPolicy> {
-    const { data, error } = await getSupabaseAdmin()
-        .from("workspace_settings")
-        .select("model_successor_redirect_enabled,model_successor_price_policy,model_successor_max_price_increase_percent")
-        .eq("workspace_id", workspaceId)
-        .maybeSingle();
-    if (error) throw new Error("gateway_model_successor_policy_failed");
-    return parseSuccessorRedirectPolicy(data);
+    const client = getSupabaseAdmin();
+    const [settings, overrides] = await Promise.all([
+        client
+            .from("workspace_settings")
+            .select("model_successor_redirect_enabled,model_successor_price_policy,model_successor_max_price_increase_percent")
+            .eq("workspace_id", workspaceId)
+            .maybeSingle(),
+        client
+            .from("workspace_model_successor_overrides")
+            .select("model_slug,successor_model_slug")
+            .eq("workspace_id", workspaceId)
+            .limit(MAX_WORKSPACE_OVERRIDES),
+    ]);
+    if (settings.error || overrides.error) throw new Error("gateway_model_successor_policy_failed");
+    return parseSuccessorRedirectPolicy(settings.data, overrides.data ?? []);
 }
 
 /** The workspace's successor redirect settings; off when unset or unreadable. */
@@ -153,9 +222,12 @@ export async function loadSuccessorRedirectPolicy(workspaceId: string): Promise<
     }
 }
 
-/** Whether the workspace's price policy allows the target. An unknown price ratio is only allowed by "any". */
+/**
+ * Whether the workspace's price policy allows the target. An unknown price
+ * ratio is only allowed by "any". The workspace's own replacement is always allowed.
+ */
 export function successorPriceAllowed(resolution: ModelSuccessorResolution, policy: SuccessorRedirectPolicy): boolean {
-    if (policy.pricePolicy === "any") return true;
+    if (policy.pricePolicy === "any" || resolution.workspaceOverride) return true;
     if (!resolution.priceComparable || resolution.priceRatio === null) return false;
     const limit = policy.pricePolicy === "limit" ? 1 + policy.maxPriceIncreasePercent / 100 : 1;
     // Ratios are rounded to 6 places in SQL; tolerate that rounding at the limit.
@@ -176,6 +248,7 @@ export function successorRedirectTarget(
         chain: resolution.chain.length ? resolution.chain : [resolution.target],
         unservedSince: resolution.unservedSince,
         priceRatio: resolution.priceRatio,
+        source: resolution.workspaceOverride ? "workspace" : "approved",
     };
 }
 
