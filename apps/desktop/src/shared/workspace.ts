@@ -29,8 +29,19 @@ export type Attachment = { id: string; taskId: string; name: string; kind: "text
 export type Message = { startedAt?: string; completedAt?: string; timelineOrder?: number; threadReferences?: string[]; nativeAction?: NativeAction; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer" | "subagent"; /** Delegated results: the first child, and every child batched into this message. */ sourceTaskId?: string; sourceTaskIds?: string[]; createdAt: string };
 export type QueuedMessage = { sourceTaskId?: string; sourceTaskIds?: string[]; threadReferences?: string[]; nativeAction?: NativeAction; id: string; text: string; attachments?: Attachment[]; createdAt: string };
 export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" | "unconfirmed"; error?: string };
-export type AgentActivity = { timelineOrder?: number; nativeAgent?: { id: string; model?: string; status: "pending" | "running" | "completed" | "failed" | "interrupted" }; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string; summary?: string; compaction?: { beforeTokens: number; afterTokens?: number; durationMs?: number } };
-export type AgentQuestion = { id: string; header: string; question: string; isOther?: boolean; isSecret?: boolean; multiSelect?: boolean; options?: { label: string; description?: string; preview?: string }[] | null };
+export type AgentActivity = { timelineOrder?: number; nativeAgent?: { id: string; model?: string; status: "pending" | "running" | "completed" | "failed" | "interrupted" }; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string; summary?: string; compaction?: { beforeTokens: number; afterTokens?: number; durationMs?: number }; /** A plan the agent proposed (its Markdown is the text), and what the person did with it. */ proposed?: { outcome?: "implemented" | "revised" | "declined"; feedback?: string } };
+/** How the person's own answer is typed: text by default, or a typed control with bounds. */
+export type AgentQuestionInput = { kind: "text" | "multiline" | "number" | "integer" | "boolean" | "email" | "uri" | "date" | "date-time"; min?: number; max?: number; minLength?: number; maxLength?: number };
+export type AgentQuestionOption = { label: string; description?: string; preview?: string; /** Sent instead of the label when set; it may be empty. */ value?: string };
+export type AgentQuestion = { id: string; header: string; question: string; isOther?: boolean; isSecret?: boolean; multiSelect?: boolean; options?: AgentQuestionOption[] | null;
+	/** Editable starting text for the person's own answer; its whitespace is kept and it may be sent empty. */ initialAnswer?: string;
+	/** false lets the person send an empty answer (Pi). Defaults to true. */ required?: boolean;
+	input?: AgentQuestionInput };
+/** One set of questions. "message" requests are answered with a user message, even after the turn ends (Codex async questions). */
+export type QuestionRequest = { id: string; questions: AgentQuestion[]; responseMode?: "live" | "message"; /** Who is asking, such as an MCP server or ACP agent. */ origin?: string };
+/** A pending approval. Plans show as a proposed-plan card; always and never carry the agent's labels for its lasting choices. */
+export type ApprovalRequest = { id: string; method: string; description: string; kind?: "plan"; always?: string; never?: string };
+export type ApprovalDecision = "accept" | "decline" | "always" | "never";
 export type Task = {
 	delegation?: Delegation;
 	/** Top-level chats started by an agent's launch_thread; not orchestration children. */
@@ -62,8 +73,8 @@ export type Task = {
 	archived: boolean; messages: Message[]; queue: QueuedMessage[]; nativeSessionId?: string;
 	parentId?: string; nativeForkFrom?: string; createdAt: string; updatedAt: string; error?: string;
 	handoffFrom?: Harness;
-	approvals?: { id: string; method: string; description: string }[];
-	questions?: { id: string; questions: AgentQuestion[] }[];
+	approvals?: ApprovalRequest[];
+	questions?: QuestionRequest[];
 	forms?: { id: string; form: AgentForm }[];
 	steering?: SteeringMessage[];
 	activities?: AgentActivity[];
@@ -111,7 +122,7 @@ export type WorkspaceCommand =
 	| { type: "cancel"; id: string }
 	| { type: "resume"; id: string }
 	| { type: "fork"; id: string; messageId?: string }
-	| { type: "approval"; id: string; approvalId: string; decision: "accept" | "decline" }
+	| { type: "approval"; id: string; approvalId: string; decision: ApprovalDecision; /** Plan revisions: what to change. */ feedback?: string }
 	| { type: "answer"; id: string; requestId: string; answers: Record<string, string[]>; dismissed?: boolean }
 	| { type: "form-answer"; id: string; requestId: string; answer: FormAnswer | null; declined?: boolean }
 	| { type: "queue-remove"; id: string; messageId: string }
@@ -270,7 +281,8 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 			case "fork": string("messageId", false); break;
 			case "approval":
 				string("approvalId");
-				if (command.decision !== "accept" && command.decision !== "decline") throw new Error("Invalid approval decision.");
+				if (!["accept", "decline", "always", "never"].includes(command.decision as string)) throw new Error("Invalid approval decision.");
+				if (command.feedback !== undefined && (command.decision !== "decline" || typeof command.feedback !== "string" || command.feedback.length > 20000)) throw new Error("Invalid approval feedback.");
 				break;
 			case "form-answer": {
 				string("requestId");
@@ -282,12 +294,13 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				break;
 			}
 			case "answer": {
+				string("requestId");
 				if (command.dismissed !== undefined && typeof command.dismissed !== "boolean") throw new Error("Invalid dismissal.");
 				if (command.dismissed === true) { if (!command.answers || typeof command.answers !== "object" || Array.isArray(command.answers) || Object.keys(command.answers).length) throw new Error("A dismissal has no answers."); break; }
-				string("requestId");
 				if (!command.answers || typeof command.answers !== "object" || Array.isArray(command.answers)) throw new Error("Invalid answers.");
 				const entries = Object.entries(command.answers);
-				if (!entries.length || entries.length > 100 || entries.some(([key, values]) => !key || !Array.isArray(values) || !values.length || values.length > 100 || values.some(value => typeof value !== "string" || !value.trim() || value.length > 10000))) throw new Error("Invalid answers.");
+				// Empty answers pass here; the runtime checks each against its question (optional questions and editable text may be empty).
+				if (!entries.length || entries.length > 100 || entries.some(([key, values]) => !key || !Array.isArray(values) || values.length > 100 || values.some(value => typeof value !== "string" || value.length > 10000))) throw new Error("Invalid answers.");
 				break;
 			}
 			case "inbox-read": string("revision", true, 100); break;

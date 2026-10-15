@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, FolderOpen, Gauge, GitBranch, Layers, ListChecks, Paperclip, PenLine, Pin, PinOff, Plug, RotateCcw, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
 import { QuestionPanel } from "./QuestionPanel";
+import { useQuestionAnswerer } from "./questionComposer";
 import { shortcut } from "../lib/keybindings";
 import { CustomSnoozeDialog, SnoozeItems, useThreadActions } from "../shell/threadActions";
 import { hasWoken, isSettled, isSnoozed, settleBlocker, shortDuration } from "../../shared/threadLifecycle";
@@ -105,8 +106,10 @@ function ChatComposer({ task }: { task: Task }) {
 	};
 	const running = ["running", "waiting"].includes(task.status);
 	const code = task.mode !== "chat";
+	// While the agent waits on a question, the composer is its own-answer field, as in T3 Code.
+	const answerer = useQuestionAnswerer(task.id);
 	const editor = useComposerEditor({ value: draft.text, onChange: draft.setText, disabled: task.archived, onFiles: files => void upload(files),
-		placeholder: task.archived ? "This chat is archived" : running ? "Queue a follow-up…" : code ? "Ask for a change, or reply to the agent…" : "Reply…" });
+		placeholder: task.archived ? "This chat is archived" : answerer ? "Type your own answer, or leave this blank to use the selected option" : running ? "Queue a follow-up…" : code ? "Ask for a change, or reply to the agent…" : "Reply…" });
 	const selection: ModelSelection = { harness: task.harness, model: task.model, accountId: task.accountId, reasoningEffort: task.reasoningEffort, serviceTier: task.serviceTier, options: task.modelOptions };
 	const settingActions = useModelSettingActions(task.archived || running ? undefined : selection, next => void changeSettings(next));
 	const canCompact = ["opencode", "codex", "claude", "pi"].includes(task.harness) && !!task.nativeSessionId && !task.archived && !running;
@@ -137,10 +140,15 @@ function ChatComposer({ task }: { task: Task }) {
 	const menu = useComposerMenu({ editor, taskId: task.id, harness: task.harness, accountId: task.accountId, projectId: task.projectId, actions });
 	useEffect(() => { editor.focus(); }, [task.id, editor.editor]);
 	const message = composeMessage(draft.text);
-	const canSend = !busy && !uploading && !task.archived && (!!message.text || message.attachments.length > 0);
+	const canSend = !busy && !uploading && !task.archived && (!!answerer || !!message.text || message.attachments.length > 0);
 
 	async function send() {
 		if (!canSend) return;
+		if (answerer) {
+			if (message.attachments.length) { setError("Answers cannot carry attachments. Remove them, or dismiss the question first."); return; }
+			if (answerer.answer(mentionPlainText(message.text))) draft.clear();
+			return;
+		}
 		setBusy(true);
 		try {
 			const prepared = await menu.prepare(message.text);

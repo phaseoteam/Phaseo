@@ -14,7 +14,10 @@ export function phaseoQuestionTools() {
  })];
 }
 
-export async function answerPhaseoQuestion(raw: unknown, callbacks: AgentCallbacks, signal: AbortSignal) {
+/** The question went unanswered within an MCP client's time limit; the answer will arrive as a message instead. */
+export class QuestionDeferredError extends Error {}
+
+export async function answerPhaseoQuestion(raw: unknown, callbacks: Pick<AgentCallbacks, "onQuestion"> & Partial<AgentCallbacks>, signal: AbortSignal) {
  signal.throwIfAborted();
  if (!raw || typeof raw !== "object" || !("questions" in raw) || !Array.isArray(raw.questions) || !raw.questions.length || raw.questions.length > 4 || Buffer.byteLength(JSON.stringify(raw)) > 48 * 1024) throw new Error("Provide one to four bounded questions.");
  const text = (value: unknown, maximum: number, what = "question text") => { if (typeof value !== "string" || !value.trim() || value.length > maximum || value.includes("\0")) throw new Error(`Invalid ${what}.`); return value; };

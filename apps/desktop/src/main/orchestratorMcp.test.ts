@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { OrchestratorMcp } from "./orchestratorMcp";
+import { QuestionDeferredError } from "./phaseoQuestionTools";
 import type { ThreadTools } from "../shared/orchestration";
 
 describe("orchestration MCP transport", () => {
@@ -23,6 +24,24 @@ describe("orchestration MCP transport", () => {
 			session.close();
 			expect((await fetch(url, { method: "POST", headers })).status).toBe(401);
 		} finally { await client.close(); await server.close(); }
+	});
+	it("offers ask_user only where the harness has no question tool, and defers answers past the client's limit", async () => {
+		const service: ThreadTools = { list: () => [], read: vi.fn(), delegate: vi.fn(), wait: vi.fn(), interrupt: vi.fn() };
+		const ask = vi.fn().mockResolvedValueOnce({ "question-0": ["Small"] }).mockRejectedValueOnce(new QuestionDeferredError());
+		const server = new OrchestratorMcp(); const plain = await server.session(service, async () => true); const asking = await server.session(service, async () => true, ask);
+		const client = new Client({ name: "owned-fixture", version: "1" }), second = new Client({ name: "owned-fixture", version: "1" });
+		try {
+			if (plain.connection.transport !== "http" || asking.connection.transport !== "http") throw new Error("Expected HTTP");
+			await client.connect(new StreamableHTTPClientTransport(new URL(plain.connection.url), { requestInit: { headers: plain.connection.headers } }));
+			expect((await client.listTools()).tools.map(tool => tool.name)).not.toContain("ask_user");
+			await second.connect(new StreamableHTTPClientTransport(new URL(asking.connection.url), { requestInit: { headers: asking.connection.headers } }));
+			expect((await second.listTools()).tools.map(tool => tool.name)).toContain("ask_user");
+			const input = { questions: [{ question: "Which scope?", header: "Scope", multiSelect: false, options: [{ label: "Small", description: "One file" }, { label: "Large", description: "Everything" }] }] };
+			expect(await second.callTool({ name: "ask_user", arguments: input })).toMatchObject({ content: [{ type: "text", text: JSON.stringify({ answers: { "Which scope?": "Small" } }) }] });
+			expect(ask).toHaveBeenCalledWith([expect.objectContaining({ id: "question-0", header: "Scope" })], expect.any(AbortSignal));
+			const deferred = await second.callTool({ name: "ask_user", arguments: input }) as { content: { text: string }[] };
+			expect(JSON.parse(deferred.content[0].text)).toMatchObject({ pending: true });
+		} finally { await client.close(); await second.close(); await server.close(); }
 	});
 	it("publishes launch and schedule schemas and asks before archiving only", async () => {
 		const organize = vi.fn(async (id: string) => ({ id, title: "Chat", harness: "codex" as const, model: "owned", status: "completed" as const, pinned: true, archived: false, tags: [] as string[] }));
