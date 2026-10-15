@@ -1,25 +1,75 @@
 ---
-title: "Start Here"
+title: "Start here"
 description: "Make your first request, connect an application, or find the reference you need."
 icon: "house"
+mode: "wide"
 ---
 
 Use Phaseo to call models from multiple providers through one API, control routing, and track usage and costs.
 
-<Columns cols={2}>
-  <Card title="Make your first request" icon="rocket" href="./quickstart.mdx">
-    Create a key, send a request, and read the result.
-  </Card>
-  <Card title="Migrate an application" icon="arrow-right-left" href="./migration-guides/index.mdx">
-    Update an existing provider or gateway integration.
-  </Card>
-  <Card title="Connect a coding assistant" icon="terminal" href="./guides/integrations/coding-assistants.mdx">
-    Configure Codex, Claude Code, Cursor, or another assistant.
-  </Card>
-  <Card title="Build with an SDK" icon="package" href="./sdk-reference/typescript/overview.mdx">
-    Choose your language from the Client SDKs menu.
-  </Card>
-</Columns>
+<CodeGroup>
+
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "openai/gpt-6-astra", "input": "Hello"}'
+```
+
+```typescript TypeScript
+import Phaseo, { outputText } from "@phaseo/sdk";
+
+const client = new Phaseo(); // reads PHASEO_API_KEY
+
+const response = await client.generateResponse({
+  model: "openai/gpt-6-astra",
+  input: "Hello",
+});
+
+console.log(outputText(response));
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo()  # reads PHASEO_API_KEY
+
+response = client.responses.create({"model": "openai/gpt-6-astra", "input": "Hello"})
+
+print(response.output_text)
+```
+
+</CodeGroup>
+
+No API key yet? [Create one in the dashboard](https://phaseo.app/settings/keys), then follow the [quickstart](./quickstart.mdx).
+
+## Start from where you are
+
+<div className="ph-paths not-prose">
+
+[**Make your first request** Create a key, send a request, and read the result.](./quickstart.mdx)
+
+[**Migrate an application** Update an existing provider or gateway integration.](./migration-guides/index.mdx)
+
+[**Connect a coding assistant** Configure Codex, Claude Code, Cursor, or another assistant.](./guides/integrations/coding-assistants.mdx)
+
+[**Build an agent** Give a model tools, stream its steps, and approve its actions with the Agent SDK.](./sdk-reference/agent-sdk/overview.mdx)
+
+</div>
+
+## Choose an SDK
+
+<div className="ph-sdks not-prose">
+
+[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> TypeScript](./sdk-reference/typescript/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> Python](./sdk-reference/python/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/go/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/csharp/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/php/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/ruby/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/rust/overview.mdx)
+
+</div>
 
 ## Build and operate
 
@@ -30,7 +80,6 @@ Use Phaseo to call models from multiple providers through one API, control routi
 | Implement a specific workflow | [Cookbook](./cookbook/index.mdx) |
 | Choose providers and fallbacks | [Routing](./guides/routing-and-fallbacks.mdx) |
 | Process video or batch jobs | [Async jobs and webhooks](./guides/async-video-and-batch.mdx) |
-| Build a tool-using agent | [Agent SDK](./sdk-reference/agent-sdk/overview.mdx) |
 | Diagnose a failed request | [Errors and debugging](./api-reference/errors.mdx) |
 
 ## Choose a model

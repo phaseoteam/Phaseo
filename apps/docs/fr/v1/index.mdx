@@ -2,24 +2,74 @@
 title: "Commencez ici"
 description: "Envoyez votre première requête, connectez une application ou trouvez la référence nécessaire."
 icon: "house"
+mode: "wide"
 ---
 
 Utilisez Phaseo pour appeler les modèles de plusieurs fournisseurs via une API, contrôler le routage et suivre l’utilisation et les coûts.
 
-<Columns cols={2}>
-  <Card title="Envoyer votre première requête" icon="rocket" href="./quickstart.mdx">
-    Créez une clé, envoyez une requête et lisez le résultat.
-  </Card>
-  <Card title="Migrer une application" icon="arrow-right-left" href="./migration-guides/index.mdx">
-    Mettez à jour une intégration fournisseur ou passerelle existante.
-  </Card>
-  <Card title="Connecter un assistant de programmation" icon="terminal" href="./guides/integrations/coding-assistants.mdx">
-    Configurez Codex, Claude Code, Cursor ou un autre assistant.
-  </Card>
-  <Card title="Développer avec un SDK" icon="package" href="./sdk-reference/typescript/overview.mdx">
-    Choisissez votre langage dans le menu des SDK clients.
-  </Card>
-</Columns>
+<CodeGroup>
+
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "openai/gpt-6-astra", "input": "Hello"}'
+```
+
+```typescript TypeScript
+import Phaseo, { outputText } from "@phaseo/sdk";
+
+const client = new Phaseo(); // reads PHASEO_API_KEY
+
+const response = await client.generateResponse({
+  model: "openai/gpt-6-astra",
+  input: "Hello",
+});
+
+console.log(outputText(response));
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo()  # reads PHASEO_API_KEY
+
+response = client.responses.create({"model": "openai/gpt-6-astra", "input": "Hello"})
+
+print(response.output_text)
+```
+
+</CodeGroup>
+
+Pas encore de clé API ? [Créez-en une dans le tableau de bord](https://phaseo.app/fr-FR/settings/keys), puis suivez le [démarrage rapide](./quickstart.mdx).
+
+## Par où commencer
+
+<div className="ph-paths not-prose">
+
+[**Envoyer votre première requête** Créez une clé, envoyez une requête et lisez le résultat.](./quickstart.mdx)
+
+[**Migrer une application** Mettez à jour une intégration fournisseur ou passerelle existante.](./migration-guides/index.mdx)
+
+[**Connecter un assistant de programmation** Configurez Codex, Claude Code, Cursor ou un autre assistant.](./guides/integrations/coding-assistants.mdx)
+
+[**Créer un agent** Donnez des outils à un modèle, diffusez ses étapes et approuvez ses actions avec le SDK d’agents.](./sdk-reference/agent-sdk/overview.mdx)
+
+</div>
+
+## Choisir un SDK
+
+<div className="ph-sdks not-prose">
+
+[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> TypeScript](./sdk-reference/typescript/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> Python](./sdk-reference/python/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/go/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/csharp/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/php/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/ruby/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/rust/overview.mdx)
+
+</div>
 
 ## Développer et exploiter
 
@@ -27,10 +77,9 @@ Utilisez Phaseo pour appeler les modèles de plusieurs fournisseurs via une API,
 | --- | --- |
 | Rechercher un champ de requête ou un point d’accès | [Référence API](./api-reference/introduction.mdx) |
 | Exécuter une application de démarrage | [Exemples](./guides/examples.mdx) |
-| Mettre en œuvre un processus précis | [Recueil de recettes](./cookbook/index.mdx) |
+| Mettre en œuvre un processus précis | [Recettes](./cookbook/index.mdx) |
 | Choisir les fournisseurs et les replis | [Routage](./guides/routing-and-fallbacks.mdx) |
 | Traiter des tâches vidéo ou par lots | [Tâches asynchrones et webhooks](./guides/async-video-and-batch.mdx) |
-| Créer un agent utilisant des outils | [Agent SDK](./sdk-reference/agent-sdk/overview.mdx) |
 | Diagnostiquer une requête échouée | [Erreurs et débogage](./api-reference/errors.mdx) |
 
 ## Choisir un modèle

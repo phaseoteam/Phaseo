@@ -2,24 +2,74 @@
 title: "从这里开始"
 description: "发送第一个请求、连接应用或查找所需参考。"
 icon: "house"
+mode: "wide"
 ---
 
 使用 Phaseo 通过一个 API 调用多个提供商的模型、控制路由并跟踪使用量和费用。
 
-<Columns cols={2}>
-  <Card title="发送第一个请求" icon="rocket" href="./quickstart.mdx">
-    创建密钥、发送请求并读取结果。
-  </Card>
-  <Card title="迁移应用" icon="arrow-right-left" href="./migration-guides/index.mdx">
-    更新现有提供商或网关集成。
-  </Card>
-  <Card title="连接编程助手" icon="terminal" href="./guides/integrations/coding-assistants.mdx">
-    配置 Codex、Claude Code、Cursor 或其他助手。
-  </Card>
-  <Card title="使用 SDK 构建" icon="package" href="./sdk-reference/typescript/overview.mdx">
-    从客户端 SDK 菜单选择语言。
-  </Card>
-</Columns>
+<CodeGroup>
+
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "openai/gpt-6-astra", "input": "Hello"}'
+```
+
+```typescript TypeScript
+import Phaseo, { outputText } from "@phaseo/sdk";
+
+const client = new Phaseo(); // reads PHASEO_API_KEY
+
+const response = await client.generateResponse({
+  model: "openai/gpt-6-astra",
+  input: "Hello",
+});
+
+console.log(outputText(response));
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo()  # reads PHASEO_API_KEY
+
+response = client.responses.create({"model": "openai/gpt-6-astra", "input": "Hello"})
+
+print(response.output_text)
+```
+
+</CodeGroup>
+
+还没有 API 密钥？先[在控制台创建一个](https://phaseo.app/zh-Hans/settings/keys)，然后按照[快速开始](./quickstart.mdx)操作。
+
+## 选择起点
+
+<div className="ph-paths not-prose">
+
+[**发送第一个请求** 创建密钥、发送请求并读取结果。](./quickstart.mdx)
+
+[**迁移应用** 更新现有提供商或网关集成。](./migration-guides/index.mdx)
+
+[**连接编程助手** 配置 Codex、Claude Code、Cursor 或其他助手。](./guides/integrations/coding-assistants.mdx)
+
+[**构建智能体** 使用智能体 SDK 为模型提供工具、流式输出每一步，并审批它的操作。](./sdk-reference/agent-sdk/overview.mdx)
+
+</div>
+
+## 选择 SDK
+
+<div className="ph-sdks not-prose">
+
+[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> TypeScript](./sdk-reference/typescript/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> Python](./sdk-reference/python/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/go/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/csharp/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/php/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/ruby/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/rust/overview.mdx)
+
+</div>
 
 ## 构建与运行
 
@@ -30,7 +80,6 @@ icon: "house"
 | 实现特定工作流 | [实用指南](./cookbook/index.mdx) |
 | 选择提供商和回退 | [路由](./guides/routing-and-fallbacks.mdx) |
 | 处理视频或批处理任务 | [异步任务与 Webhook](./guides/async-video-and-batch.mdx) |
-| 构建使用工具的智能体 | [Agent SDK](./sdk-reference/agent-sdk/overview.mdx) |
 | 诊断失败的请求 | [错误与调试](./api-reference/errors.mdx) |
 
 ## 选择模型

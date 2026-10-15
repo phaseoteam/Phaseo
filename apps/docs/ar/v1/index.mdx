@@ -2,24 +2,74 @@
 title: "ابدأ هنا"
 description: "أرسل طلبك الأول أو صِل تطبيقًا أو ابحث عن المرجع المطلوب."
 icon: "house"
+mode: "wide"
 ---
 
 استخدم Phaseo لاستدعاء نماذج من مزوّدين متعددين عبر API واحدة والتحكم في التوجيه وتتبع الاستخدام والتكاليف.
 
-<Columns cols={2}>
-  <Card title="إرسال طلبك الأول" icon="rocket" href="./quickstart.mdx">
-    أنشئ مفتاحًا وأرسل طلبًا واقرأ النتيجة.
-  </Card>
-  <Card title="ترحيل تطبيق" icon="arrow-right-left" href="./migration-guides/index.mdx">
-    حدّث تكاملًا موجودًا لمزوّد أو بوابة.
-  </Card>
-  <Card title="ربط مساعد برمجة" icon="terminal" href="./guides/integrations/coding-assistants.mdx">
-    اضبط Codex أوClaude Code أوCursor أو مساعدًا آخر.
-  </Card>
-  <Card title="التطوير باستخدام SDK" icon="package" href="./sdk-reference/typescript/overview.mdx">
-    اختر لغتك من قائمة SDKs العميل.
-  </Card>
-</Columns>
+<CodeGroup>
+
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "openai/gpt-6-astra", "input": "Hello"}'
+```
+
+```typescript TypeScript
+import Phaseo, { outputText } from "@phaseo/sdk";
+
+const client = new Phaseo(); // reads PHASEO_API_KEY
+
+const response = await client.generateResponse({
+  model: "openai/gpt-6-astra",
+  input: "Hello",
+});
+
+console.log(outputText(response));
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo()  # reads PHASEO_API_KEY
+
+response = client.responses.create({"model": "openai/gpt-6-astra", "input": "Hello"})
+
+print(response.output_text)
+```
+
+</CodeGroup>
+
+ليس لديك مفتاح API بعد؟ [أنشئ مفتاحًا من لوحة التحكم](https://phaseo.app/ar-SA/settings/keys)، ثم اتبع [دليل البدء السريع](./quickstart.mdx).
+
+## ابدأ من حيث أنت
+
+<div className="ph-paths not-prose">
+
+[**إرسال طلبك الأول** أنشئ مفتاحًا وأرسل طلبًا واقرأ النتيجة.](./quickstart.mdx)
+
+[**ترحيل تطبيق** حدّث تكاملًا موجودًا لمزوّد أو بوابة.](./migration-guides/index.mdx)
+
+[**ربط مساعد برمجة** اضبط Codex أو Claude Code أو Cursor أو مساعدًا آخر.](./guides/integrations/coding-assistants.mdx)
+
+[**إنشاء وكيل** امنح النموذج أدوات وابثّ خطواته ووافق على إجراءاته باستخدام حزمة SDK للوكلاء.](./sdk-reference/agent-sdk/overview.mdx)
+
+</div>
+
+## اختيار SDK
+
+<div className="ph-sdks not-prose">
+
+[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> TypeScript](./sdk-reference/typescript/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> Python](./sdk-reference/python/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/go/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/csharp/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/php/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/ruby/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/rust/overview.mdx)
+
+</div>
 
 ## التطوير والتشغيل
 
@@ -30,7 +80,6 @@ icon: "house"
 | تنفيذ سير عمل محدد | [دليل الوصفات](./cookbook/index.mdx) |
 | اختيار المزوّدين والبدائل | [التوجيه](./guides/routing-and-fallbacks.mdx) |
 | معالجة مهام فيديو أو دفعات | [مهام غير متزامنة وWebhooks](./guides/async-video-and-batch.mdx) |
-| إنشاء وكيل يستخدم الأدوات | [Agent SDK](./sdk-reference/agent-sdk/overview.mdx) |
 | تشخيص طلب فاشل | [الأخطاء وتصحيحها](./api-reference/errors.mdx) |
 
 ## اختيار نموذج

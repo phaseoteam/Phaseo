@@ -1,3 +1,116 @@
+/* Luma's 14rem sidebar wraps most page and endpoint names onto two lines. */
+:root {
+	--sidebar-width: 17.5rem;
+}
+
+/* Luma centres the tab row and lets the logo and language picker shrink underneath it when the
+   window is narrow or the tab labels are long. Keep them whole and let the tab row scroll instead. */
+#navbar div:has(> a > img.nav-logo) {
+	min-width: max-content;
+}
+
+#navbar nav[class*="navbar:flex"] {
+	justify-content: safe center;
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+#navbar nav[class*="navbar:flex"] li > :is(a, button) {
+	padding-inline: 0.75rem;
+}
+
+@media (max-width: 1279px) {
+	#navbar nav[class*="navbar:flex"] li > :is(a, button) {
+		padding-inline: 0.5rem;
+		font-size: 0.8125rem;
+	}
+}
+
+/* Luma capitalises every word of a group name, which is wrong outside English ("Modelle Und Routing"). */
+:is(.sidebar-group-header, .eyebrow) {
+	text-transform: none;
+}
+
+/* Every page sets a generic icon, which turns the sidebar into a column of icons. Brand logos are images and stay. */
+#sidebar-content a svg[style*="mask-image"] {
+	display: none;
+}
+
+/* Home page: start paths as plain rows (title, then description) and the SDKs as one line of links. */
+.ph-paths {
+	border-top: 1px solid rgb(0 0 0 / 0.08);
+}
+
+/* Mintlify renders Markdown paragraphs as <span data-as="p">. */
+.ph-paths > * {
+	display: block;
+	margin: 0;
+}
+
+.ph-paths a {
+	display: grid;
+	grid-template-columns: 16rem 1fr;
+	gap: 0.25rem 1.5rem;
+	padding: 0.875rem 0.125rem;
+	border-bottom: 1px solid rgb(0 0 0 / 0.08);
+	color: rgb(107 114 128);
+	font-size: 0.9375rem;
+	line-height: 1.5;
+	text-decoration: none;
+}
+
+.ph-paths a strong {
+	color: rgb(17 24 39);
+	font-weight: 600;
+}
+
+.ph-paths a:hover strong {
+	color: rgb(var(--primary));
+}
+
+.ph-sdks > * {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem 1.75rem;
+	margin: 0;
+}
+
+.ph-sdks a {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	color: rgb(17 24 39);
+	font-weight: 500;
+	text-decoration: none;
+}
+
+.ph-sdks a:hover {
+	color: rgb(var(--primary));
+}
+
+:is(html.dark, html[data-theme="dark"]) :is(.ph-paths, .ph-paths a) {
+	border-color: rgb(255 255 255 / 0.1);
+}
+
+:is(html.dark, html[data-theme="dark"]) .ph-paths a {
+	color: rgb(156 163 175);
+}
+
+:is(html.dark, html[data-theme="dark"]) :is(.ph-paths a strong, .ph-sdks a) {
+	color: rgb(255 255 255);
+}
+
+:is(html.dark, html[data-theme="dark"]) .ph-paths a:hover strong,
+:is(html.dark, html[data-theme="dark"]) .ph-sdks a:hover {
+	color: rgb(var(--primary-light));
+}
+
+@media (max-width: 640px) {
+	.ph-paths a {
+		grid-template-columns: 1fr;
+	}
+}
+
 /* Mintlify page icons accept one path, so swap monochrome brand marks by theme. */
 :is(html.dark, html[data-theme="dark"]) img[src$="/icons/brands/cline.svg"] {
 	content: url("/icons/brands/cline-dark.svg");
