@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
 	buildUnsupportedBatchModePayload,
+	getBatchDiscoveryParams,
 	getBatchProviderCapability,
 	providerSupportsMultipleModelsPerBatch,
 	resolveBatchPreviewProviderIds,
@@ -12,6 +13,17 @@ import {
 } from "./batch-capabilities";
 
 describe("batch capabilities", () => {
+	it("derives Batch envelope parameters from executable input modes and adapter windows", () => {
+		const vertex = getBatchDiscoveryParams(getBatchProviderCapability("google-vertex")!, ["/v1/generateContent"]);
+		expect(Object.keys(vertex).sort()).toEqual(["endpoint", "model", "prompts", "provider", "requests", "webhook"]);
+		expect(vertex.endpoint.values).toEqual(["/v1/generateContent"]);
+		const openai = getBatchDiscoveryParams(getBatchProviderCapability("openai")!, ["/v1/responses"]);
+		expect(openai.input_file_id.supported).toBe(true);
+		expect(openai.completion_window.values).toEqual(["24h"]);
+		const ovh = getBatchDiscoveryParams(getBatchProviderCapability("ovhcloud")!, ["/v1/responses"]);
+		expect(ovh.completion_window.values).toEqual(["24h", "48h", "72h"]);
+	});
+
 	it("tracks OVHcloud's documented Batch and Files contract", () => {
 		const capability = getBatchProviderCapability("ovhcloud");
 		expect(capability).toMatchObject({

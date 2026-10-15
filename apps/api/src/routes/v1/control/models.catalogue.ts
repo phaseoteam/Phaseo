@@ -640,7 +640,7 @@ function mergeParamDetail(a: SupportedParamDetail, b: SupportedParamDetail): Sup
     return merged;
 }
 
-function mergeParamDetails(...items: Array<SupportedParamDetails | undefined | null>): SupportedParamDetails {
+export function mergeParamDetails(...items: Array<SupportedParamDetails | undefined | null>): SupportedParamDetails {
     const out: SupportedParamDetails = {};
     for (const item of items) {
         if (!item) continue;
@@ -651,7 +651,7 @@ function mergeParamDetails(...items: Array<SupportedParamDetails | undefined | n
     return out;
 }
 
-function withProviderOnParamDetails(details: SupportedParamDetails, providerId: string): SupportedParamDetails {
+export function withProviderOnParamDetails(details: SupportedParamDetails, providerId: string): SupportedParamDetails {
     return Object.fromEntries(
         Object.entries(details).map(([name, detail]) => [
             name,
@@ -668,7 +668,7 @@ function paramDetailAliases(detail: SupportedParamDetail | undefined): string[] 
         .filter((alias) => alias.length > 0);
 }
 
-function providerEntrySupportsParam(entry: Pick<CatalogueProvider, "params" | "params_detail">, param: string): boolean {
+export function providerEntrySupportsParam(entry: Pick<CatalogueProvider, "params" | "params_detail">, param: string): boolean {
     if (entry.params.includes(param)) return true;
     return Object.entries(entry.params_detail).some(([name, detail]) =>
         name === param || paramDetailAliases(detail).includes(param)
