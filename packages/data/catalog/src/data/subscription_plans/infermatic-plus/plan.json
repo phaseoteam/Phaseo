@@ -1,0 +1,133 @@
+{
+  "plan_id": "infermatic-plus",
+  "name": "Infermatic Plus",
+  "organisation_id": "infermatic",
+  "description": "Flat-rate Infermatic plus subscription.",
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 20,
+      "link": "https://infermatic.ai/pricing/",
+      "other_info": "Flat rate; no usage cost"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "API Access",
+      "feature_value": "API access",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "API Parallel Requests",
+      "feature_value": "2",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "API Requests Per Minute",
+      "feature_value": "18",
+      "feature_description": "Published plan limit; per-model or account-specific constraints may also apply.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Data Logging",
+      "feature_value": "No prompt or response logging",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "thedrummer/rocinante-12b-v1.1",
+      "model_info": "Included in this plan according to Infermatic's current plan-grouped model catalog.",
+      "rate_limit": "18 API requests per minute at plan level",
+      "other_info": "Catalog access is cumulative across lower subscription tiers."
+    },
+    {
+      "model_id": "intfloat/multilingual-e5-base",
+      "model_info": "Included in this plan according to Infermatic's current plan-grouped model catalog.",
+      "rate_limit": "18 API requests per minute at plan level",
+      "other_info": "Catalog access is cumulative across lower subscription tiers."
+    },
+    {
+      "model_id": "doctor-shotgun/l3.3-70b-magnum-v4-se",
+      "model_info": "Included in this plan according to Infermatic's current plan-grouped model catalog.",
+      "rate_limit": "18 API requests per minute at plan level",
+      "other_info": "Catalog access is cumulative across lower subscription tiers."
+    },
+    {
+      "model_id": "thedrummer/cydonia-24b-v4.3",
+      "model_info": "Included in this plan according to Infermatic's current plan-grouped model catalog.",
+      "rate_limit": "18 API requests per minute at plan level",
+      "other_info": "Catalog access is cumulative across lower subscription tiers."
+    },
+    {
+      "model_id": "qwen/qwen3-embedding-8b",
+      "model_info": "Included in this plan according to Infermatic's current plan-grouped model catalog.",
+      "rate_limit": "18 API requests per minute at plan level",
+      "other_info": "Catalog access is cumulative across lower subscription tiers."
+    },
+    {
+      "model_id": "qwen/qwen3-vl-8b-instruct",
+      "model_info": "Included in this plan according to Infermatic's current plan-grouped model catalog.",
+      "rate_limit": "18 API requests per minute at plan level",
+      "other_info": "Catalog access is cumulative across lower subscription tiers."
+    },
+    {
+      "model_id": "sao10k/72b-qwen2.5-kunou-v1",
+      "model_info": "Included in this plan according to Infermatic's current plan-grouped model catalog.",
+      "rate_limit": "18 API requests per minute at plan level",
+      "other_info": "Catalog access is cumulative across lower subscription tiers."
+    },
+    {
+      "model_id": "sao10k/l3.3-70b-euryale-v2.3",
+      "model_info": "Included in this plan according to Infermatic's current plan-grouped model catalog.",
+      "rate_limit": "18 API requests per minute at plan level",
+      "other_info": "Catalog access is cumulative across lower subscription tiers."
+    },
+    {
+      "model_id": "sao10k/l3.1-70b-hanami-x1",
+      "model_info": "Included in this plan according to Infermatic's current plan-grouped model catalog.",
+      "rate_limit": "18 API requests per minute at plan level",
+      "other_info": "Catalog access is cumulative across lower subscription tiers."
+    },
+    {
+      "model_id": "thedrummer/anubis-70b-v1.1",
+      "model_info": "Included in this plan according to Infermatic's current plan-grouped model catalog.",
+      "rate_limit": "18 API requests per minute at plan level",
+      "other_info": "Catalog access is cumulative across lower subscription tiers."
+    },
+    {
+      "model_id": "infermatic/strawberrylemonade-l3-70b-v1.1",
+      "model_info": "Included in this plan according to Infermatic's current plan-grouped model catalog.",
+      "rate_limit": "18 API requests per minute at plan level",
+      "other_info": "Catalog access is cumulative across lower subscription tiers."
+    },
+    {
+      "model_id": "qwen/qwen3.6-35b-a3b",
+      "model_info": "Included in this plan according to Infermatic's current plan-grouped model catalog.",
+      "rate_limit": "18 API requests per minute at plan level",
+      "other_info": "Catalog access is cumulative across lower subscription tiers."
+    },
+    {
+      "model_id": "prometheus-eval/prometheus-7b-v2.0",
+      "model_info": "Included in this plan according to Infermatic's current plan-grouped model catalog.",
+      "rate_limit": "18 API requests per minute at plan level",
+      "other_info": "Catalog access is cumulative across lower subscription tiers."
+    },
+    {
+      "model_id": "anthracite-org/magnum-v4-72b",
+      "model_info": "Included in this plan according to Infermatic's current plan-grouped model catalog.",
+      "rate_limit": "18 API requests per minute at plan level",
+      "other_info": "Catalog access is cumulative across lower subscription tiers."
+    },
+    {
+      "model_id": "hexgrad/kokoro-82m",
+      "model_info": "Included in this plan according to Infermatic's current plan-grouped model catalog.",
+      "rate_limit": "18 API requests per minute at plan level",
+      "other_info": "Catalog access is cumulative across lower subscription tiers."
+    }
+  ]
+}
+

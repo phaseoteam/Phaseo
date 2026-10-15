@@ -1,0 +1,73 @@
+{
+  "model_id": "thedrummer/cydonia-24b-v4.3",
+  "organisation_id": "thedrummer",
+  "name": "Cydonia-24B-v4.3",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Cydonia-24B-v4.3 is a third-party model currently hosted by Infermatic.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "thedrummer/cydonia-24b-v4.3",
+  "links": [
+    {
+      "title": "Infermatic model catalog",
+      "kind": "provider_model",
+      "url": "https://infermatic.ai/models/"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 67584,
+    "input": 67584,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": true,
+    "streaming": true,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "provider_model",
+      "url": "https://infermatic.ai/models/",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Infermatic first-party catalog confirms hosted availability, creator attribution, context, and modality."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Provider availability verified; upstream release and license metadata are intentionally not asserted."
+  },
+  "last_updated": "2026-08-24T00:00:00",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}
+
