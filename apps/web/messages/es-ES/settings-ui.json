@@ -3297,7 +3297,6 @@
 		"noApp": "Sin aplicación",
 		"activity": "Actividad",
 		"yourUsage": "Su uso en Phaseo.",
-		"sampledRequests": "Esta vista se basa en las primeras solicitudes de {count} en el período seleccionado.",
 		"noUsagePeriod": "No se utiliza en este período.",
 		"toks": "tokens",
 		"chartOptions": "Opciones de gráfico",

@@ -3297,7 +3297,6 @@
 		"noApp": "アプリなし",
 		"activity": "アクティビティ",
 		"yourUsage": "Phaseo 全体での使用状況です。",
-		"sampledRequests": "この視図基於所選時間段内の第1つの {count} リクエスト。",
 		"noUsagePeriod": "でこの期間ありません使用。",
 		"toks": "この様の",
 		"chartOptions": "図表オプション",

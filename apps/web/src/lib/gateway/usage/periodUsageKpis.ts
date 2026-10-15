@@ -1,13 +1,10 @@
 import type { UsageRangePreset } from "./timeRange";
 
 const DAY_MS = 86_400_000;
-const NANOS_PER_USD = 1_000_000_000;
-/** The recent pace is the average of the last complete UTC days. */
-const PACE_DAYS = 7;
+/** The recent pace is the average over the last 7 days. */
+export const RECENT_PACE_DAYS = 7;
 /** Too early in a period its own pace swings wildly, so project from the recent pace alone until then. */
 const MIN_ELAPSED_DAYS = 3;
-/** Rolling windows this long are summed from the daily rollup; shorter ones from the card's own figure. */
-const MIN_ROLLUP_DAYS = 7;
 const MAX_ROLLING_DAYS = 366;
 
 /** One UTC day of exact workspace usage from the daily rollup. */
@@ -21,12 +18,12 @@ export type UsageDay = {
 };
 
 export type KpiId = "spend" | "requests" | "tokens" | "cache" | "success_rate" | "blended_price";
+type TotalId = "spend" | "requests" | "tokens";
 
 /**
- * What a KPI forecast covers. A running period is projected to its end: today
- * in local time, as the card counts it, and this week, month, quarter or year
- * in UTC, like billing. A rolling window that ends now is projected over the
- * same length ahead.
+ * What a KPI forecast covers. A running period (today, this week, month,
+ * quarter or year) is projected to its local end, as the card counts it. A
+ * rolling window that ends now is projected over the same length ahead.
  */
 export type ForecastPeriod =
 	| { kind: "running"; unit: "day" | "week" | "month" | "quarter" | "year"; start: number; end: number }
@@ -37,8 +34,7 @@ export type ForecastPeriod =
  * - `projected`: a total projected over the period.
  * - `change`: a total's change from the previous period, for ranges with nothing ahead to forecast.
  * - `previous`: a rate in the previous period, since rates can't be projected.
- * A `value` is null when the previous period had no requests to take a rate
- * from, or its figures come from a sample.
+ * A `value` is null when the previous period had no requests to take a rate from.
  */
 export type KpiFooter =
 	| { kind: "projected"; period: ForecastPeriod; low: number; mid: number; high: number }
@@ -48,42 +44,42 @@ export type KpiFooter =
 /** A card's figure for the selected range and the previous period. */
 export type KpiCard = { value: number; previous: number };
 
+/** Totals over the last {@link RECENT_PACE_DAYS} days, under the same filters as the cards. */
+export type RecentTotals = Record<TotalId, number>;
+
+const RUNNING_PERIODS = {
+	today: { unit: "day", next: (date: Date) => date.setDate(date.getDate() + 1) },
+	this_week: { unit: "week", next: (date: Date) => date.setDate(date.getDate() + 7) },
+	this_month: { unit: "month", next: (date: Date) => date.setMonth(date.getMonth() + 1) },
+	this_quarter: { unit: "quarter", next: (date: Date) => date.setMonth(date.getMonth() + 3) },
+	this_year: { unit: "year", next: (date: Date) => date.setFullYear(date.getFullYear() + 1) },
+} as const;
+
 /**
  * The period the selected range can be forecast over, or null when there is
  * nothing ahead to forecast: finished ranges, custom ranges, and windows
- * shorter than a day.
+ * shorter than a day. `from` and `to` are the resolved range, whose running
+ * periods start on local boundaries.
  */
 export function forecastPeriod({
 	preset,
 	from,
 	to,
-	observedAt,
 }: {
 	preset: UsageRangePreset;
 	from: string;
 	to: string;
-	observedAt: number;
 }): ForecastPeriod | null {
-	const now = new Date(observedAt);
-	const [year, month] = [now.getUTCFullYear(), now.getUTCMonth()];
+	const start = Date.parse(from);
+	if (!Number.isFinite(start)) return null;
+	if (Object.hasOwn(RUNNING_PERIODS, preset)) {
+		const { unit, next } = RUNNING_PERIODS[preset as keyof typeof RUNNING_PERIODS];
+		// Local calendar arithmetic, so a day with a clock change still ends at midnight.
+		const end = new Date(start);
+		next(end);
+		return { kind: "running", unit, start, end: end.getTime() };
+	}
 	switch (preset) {
-		case "today": {
-			const start = Date.parse(from);
-			return Number.isFinite(start) ? { kind: "running", unit: "day", start, end: start + DAY_MS } : null;
-		}
-		case "this_week": {
-			// Weeks start on Monday, as in the range picker.
-			const start = Date.UTC(year, month, now.getUTCDate() - ((now.getUTCDay() + 6) % 7));
-			return { kind: "running", unit: "week", start, end: start + 7 * DAY_MS };
-		}
-		case "this_month":
-			return { kind: "running", unit: "month", start: Date.UTC(year, month, 1), end: Date.UTC(year, month + 1, 1) };
-		case "this_quarter": {
-			const quarterMonth = Math.floor(month / 3) * 3;
-			return { kind: "running", unit: "quarter", start: Date.UTC(year, quarterMonth, 1), end: Date.UTC(year, quarterMonth + 3, 1) };
-		}
-		case "this_year":
-			return { kind: "running", unit: "year", start: Date.UTC(year, 0, 1), end: Date.UTC(year + 1, 0, 1) };
 		case "past_24h":
 		case "past_2d":
 		case "last_7d":
@@ -95,7 +91,7 @@ export function forecastPeriod({
 			// Relative windows of whole days or longer; minutes and hours are too short.
 			if (!/^rel:\d+(d|w|mo|y)$/.test(preset)) return null;
 	}
-	const days = Math.round((Date.parse(to) - Date.parse(from)) / DAY_MS);
+	const days = Math.round((Date.parse(to) - start) / DAY_MS);
 	return days >= 1 && days <= MAX_ROLLING_DAYS ? { kind: "rolling", days } : null;
 }
 
@@ -125,117 +121,75 @@ function project({ base, total, elapsedDays, remainingDays, minElapsedDays, rece
 	};
 }
 
-/** Whether the period's total so far comes from the card (today, short windows) rather than the UTC daily rollup. */
-function usesCardTotal(period: ForecastPeriod) {
-	return period.kind === "running" ? period.unit === "day" : period.days < MIN_ROLLUP_DAYS;
-}
-
-const TOTALS = [
-	{ id: "spend", pick: (day: UsageDay) => day.costNanos, scale: NANOS_PER_USD },
-	{ id: "requests", pick: (day: UsageDay) => day.requests, scale: 1 },
-	{ id: "tokens", pick: (day: UsageDay) => day.tokens, scale: 1 },
-] as const;
-
-type TotalId = (typeof TOTALS)[number]["id"];
-
 /**
- * A forecast for each overview total over the period, or null when there is
- * nothing to project. Totals for today and windows under a week come from
- * `cards`, which must then be complete; everything else comes from the
- * rollup.
+ * A forecast for each overview total over the period, from the cards' totals
+ * so far and the last week's pace, or null when there is nothing to project.
+ * `observedAt` is when the cards' totals end.
  */
 export function periodKpiForecasts({
-	days,
 	observedAt,
 	period,
 	cards,
+	recent,
 }: {
-	days: ReadonlyArray<UsageDay>;
 	observedAt: number;
 	period: ForecastPeriod;
-	cards?: Partial<Record<KpiId, KpiCard>>;
+	cards: Record<TotalId, KpiCard>;
+	recent: RecentTotals;
 }): Record<TotalId, KpiFooter> | null {
-	const byDay = new Map(days.map((day) => [day.date, day]));
-	const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
-	const now = new Date(observedAt);
-	const todayStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-	const valueOn = (pick: (day: UsageDay) => number, dayStart: number) => {
-		const day = byDay.get(isoDay(dayStart));
-		const value = day ? pick(day) : 0;
-		return Number.isFinite(value) && value > 0 ? value : 0;
-	};
-	/** The `count` complete UTC days before today. */
-	const sumDays = (pick: (day: UsageDay) => number, count: number) => {
-		let total = 0;
-		for (let i = 1; i <= count; i += 1) total += valueOn(pick, todayStart - i * DAY_MS);
-		return total;
-	};
-	const fromCard = usesCardTotal(period);
-
-	const projectTotal = ({ id, pick, scale }: (typeof TOTALS)[number]): Projection | null => {
-		const recentPace = sumDays(pick, PACE_DAYS) / PACE_DAYS;
-		const card = cards?.[id];
-		if (fromCard && !card) return null;
+	const projectTotal = (id: TotalId): Projection | null => {
+		const total = cards[id].value;
+		const recentPace = recent[id] / RECENT_PACE_DAYS;
 		if (period.kind === "rolling") {
-			// From the rollup, the window's complete days; today's partial total would drag its pace down.
-			const total = fromCard ? card!.value * scale : sumDays(pick, period.days);
 			return project({ base: 0, total, elapsedDays: period.days, remainingDays: period.days, minElapsedDays: 0, recentPace });
 		}
-		let total = 0;
-		if (fromCard) total = card!.value * scale;
-		else for (let dayStart = period.start; dayStart <= todayStart; dayStart += DAY_MS) total += valueOn(pick, dayStart);
-		const minElapsedDays = Math.min(MIN_ELAPSED_DAYS, (period.end - period.start) / DAY_MS / 4);
-		return project({ base: total, total, elapsedDays: (observedAt - period.start) / DAY_MS, remainingDays: (period.end - observedAt) / DAY_MS, minElapsedDays, recentPace });
+		return project({
+			base: total,
+			total,
+			elapsedDays: (observedAt - period.start) / DAY_MS,
+			remainingDays: Math.max(0, (period.end - observedAt) / DAY_MS),
+			minElapsedDays: Math.min(MIN_ELAPSED_DAYS, (period.end - period.start) / DAY_MS / 4),
+			recentPace,
+		});
 	};
-
-	const [spend, requests, tokens] = TOTALS.map(projectTotal);
+	const requests = projectTotal("requests");
 	if (!requests) return null;
-	const projected = (projection: Projection | null, scale = 1): KpiFooter => ({
+	// Free usage has requests to project but no spend.
+	const projected = (projection: Projection | null): KpiFooter => ({
 		kind: "projected",
 		period,
-		low: (projection?.low ?? 0) / scale,
-		mid: (projection?.mid ?? 0) / scale,
-		high: (projection?.high ?? 0) / scale,
+		low: projection?.low ?? 0,
+		mid: projection?.mid ?? 0,
+		high: projection?.high ?? 0,
 	});
-
 	return {
-		spend: projected(spend, NANOS_PER_USD),
+		spend: projected(projectTotal("spend")),
 		requests: projected(requests),
-		tokens: projected(tokens),
+		tokens: projected(projectTotal("tokens")),
 	};
 }
 
 /**
  * Every KPI card's footer. Totals show a forecast over the selected period
  * where there is one, otherwise their change from the previous period; rates
- * show their value in the previous period. Null when the totals would come
- * from a request sample, since a sampled total says nothing about the change.
- *
- * `days` is null for filtered views, where the workspace-wide rollup doesn't
- * apply; `period` is null for ranges with nothing ahead to forecast.
+ * show their value in the previous period. `period` is null for ranges with
+ * nothing ahead to forecast.
  */
 export function kpiFooters({
-	days,
 	observedAt,
 	period,
 	cards,
-	currentComplete,
-	previousComplete,
+	recent,
 }: {
-	days: ReadonlyArray<UsageDay> | null;
 	observedAt: number;
 	period: ForecastPeriod | null;
 	cards: Record<KpiId, KpiCard>;
-	currentComplete: boolean;
-	previousComplete: boolean;
-}): Record<KpiId, KpiFooter> | null {
-	const forecasts = days && period && (currentComplete || !usesCardTotal(period))
-		? periodKpiForecasts({ days, observedAt, period, cards })
-		: null;
-	if (!forecasts && (!currentComplete || !previousComplete)) return null;
+	recent: RecentTotals | null;
+}): Record<KpiId, KpiFooter> {
+	const forecasts = period && recent ? periodKpiForecasts({ observedAt, period, cards, recent }) : null;
 	const total = (id: TotalId): KpiFooter => forecasts?.[id] ?? { kind: "change", value: cards[id].value - cards[id].previous };
 	// A rate needs requests to come from.
-	const previous = (id: KpiId): KpiFooter => ({ kind: "previous", value: previousComplete && cards.requests.previous > 0 ? cards[id].previous : null });
+	const previous = (id: KpiId): KpiFooter => ({ kind: "previous", value: cards.requests.previous > 0 ? cards[id].previous : null });
 	return {
 		spend: total("spend"),
 		requests: total("requests"),

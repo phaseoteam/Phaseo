@@ -2543,11 +2543,6 @@ export default function ObservabilityHub({
 					/>
 				</div>
 			</div>
-			{data.isSampled ? (
-				<div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800/70 dark:bg-amber-950/30 dark:text-amber-100">
-					{t("sampledRequests", { count: formatNumber(data.sampleLimit ?? 0) })}
-				</div>
-			) : null}
 			{labelSummary ? (
 				<Card className="ring-1 ring-primary/15">
 					<CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">

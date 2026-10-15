@@ -7,7 +7,8 @@ import { requireUser } from "@/auth/requireUser";
 import { requireAccountWorkspace } from "./context";
 import { usageKeyScope } from "./usageKeyScope";
 import { workspaceUserProfile } from "./workspaceUserProfile";
-import { parseMonthUsageDays, usageDaysStartDate } from "./monthUsage";
+import { monthUsageStartDate, parseMonthUsageDays } from "./monthUsage";
+import { parseUsageOverviewCells, usageOverviewBucket, usageOverviewTimeZone } from "./usageOverview";
 
 type Warning = {
 	modelId: string; modelName: string | null; organisationId: string | null;
@@ -151,8 +152,6 @@ function extractRequestLabels(value: unknown): Array<{ key: string; value: strin
 	});
 }
 
-const OBSERVABILITY_SELECT = "created_at,model_id,provider,app_id,key_id,usage,cost_nanos,success,error_payload,error_message,pricing_lines";
-const OBSERVABILITY_EXCLUDED_ENDPOINTS = '("video.generation","batch","music.generate")';
 
 export function sortUpstreamRequestsNewestFirst<
 	T extends { attempt_number?: number | null; created_at?: string | null; request_id?: string | null },
@@ -229,68 +228,69 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 	const labelFilterResult = requestLabelFilter(url);
 	if (labelFilterResult && "error" in labelFilterResult) return c.json({ error: "invalid_label_filter", description: labelFilterResult.error }, 400, PRIVATE_NO_STORE_HEADERS);
 	const labelFilter = labelFilterResult && "key" in labelFilterResult ? labelFilterResult : null;
-	const limit = 5000;
 	let scope;
 	try { scope = await usageKeyScope(context, url); } catch { return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); }
 	const creator = scope.creatorId && scope.hasCreatorKeys ? await workspaceUserProfile(context, scope.creatorId) : null;
-	const loadWindow = async (start: string, end: string) => {
-		const pageSize = 1000;
-		const rows: any[] = [];
-		for (let offset = 0; rows.length <= limit; offset += pageSize) {
-			let query = context.client.from(scope.requestsTable).select(OBSERVABILITY_SELECT)
-				.eq("workspace_id", workspaceId).gte("created_at", start).lte("created_at", end)
-				.not("endpoint", "in", OBSERVABILITY_EXCLUDED_ENDPOINTS);
-			query = scope.apply(query);
-			if (labelFilter) query = query.contains("detail_metadata", { labels: [{ key: labelFilter.key, value: labelFilter.value }] });
-			const result = await query.order("created_at", { ascending: true }).range(offset, offset + pageSize - 1);
-			if (result.error) throw result.error;
-			const page = result.data ?? [];
-			rows.push(...page);
-			if (page.length < pageSize) break;
-		}
-		return { rows: rows.slice(0, limit), isSampled: rows.length > limit, limit };
+	const keyId = stringParam(url, "key");
+	const bucket = usageOverviewBucket(from!, to!, stringParam(url, "bucket"));
+	const timeZone = usageOverviewTimeZone(stringParam(url, "timeZone"));
+	// Exact totals per bucket, model, provider, key and app, summed in the database
+	// from the 15-minute rollup and the requests at the window's edges.
+	const loadWindow = async (start: string, end: string, windowBucket: string | null) => {
+		const result = await context.client.rpc("get_private_usage_overview", {
+			p_workspace_id: workspaceId,
+			p_from: start,
+			p_to: end,
+			p_bucket: windowBucket,
+			p_time_zone: timeZone,
+			p_key_id: keyId,
+			p_exclude_key: url.searchParams.get("key_op") === "is_not",
+			p_creator_id: scope.creatorId,
+			p_label: labelFilter ? { labels: [{ key: labelFilter.key, value: labelFilter.value }] } : null,
+		});
+		if (result.error) throw result.error;
+		return { from: start, to: end, cells: parseUsageOverviewCells(result.data) };
 	};
 	try {
-		const labelFacetFactsQuery = scope.apply(context.client.from(scope.factsTable).select("safe_metadata", { count: "exact" }).eq("workspace_id", workspaceId).gte("occurred_at", from!).lte("occurred_at", to!)).limit(5000);
-		const labelSummaryFactsQuery = labelFilter
-			? scope.apply(context.client.from(scope.factsTable).select("cost_nanos", { count: "exact" }).eq("workspace_id", workspaceId).gte("occurred_at", from!).lte("occurred_at", to!)).contains("safe_metadata", { labels: [{ key: labelFilter.key, value: labelFilter.value }] }).limit(5000)
-			: null;
-		// The daily rollup is exact but workspace-wide, so the forecasts only apply unfiltered.
+		const labelFacetFactsQuery = scope.apply(context.client.from(scope.factsTable).select("safe_metadata").eq("workspace_id", workspaceId).gte("occurred_at", from!).lte("occurred_at", to!)).limit(5000);
 		const observedAt = Date.now();
-		// Summed per day in the database. An error only hides the forecasts; the rest of the overview still loads.
+		// The last 7 days, under the same filters, set the pace the forecasts project at.
+		const recentFrom = new Date(observedAt - 7 * 86_400_000).toISOString();
+		// The month spend chart uses the workspace-wide daily rollup, so it only applies unfiltered.
+		// An error only hides that chart; the rest of the overview still loads.
 		const loadMonthUsage = async () => {
-			const result = await context.client.rpc("get_private_usage_month_days", { p_workspace_id: workspaceId, p_from: usageDaysStartDate(observedAt, Date.parse(from!)) });
+			const result = await context.client.rpc("get_private_usage_month_days", { p_workspace_id: workspaceId, p_from: monthUsageStartDate(observedAt) });
 			return result.error ? null : parseMonthUsageDays(result.data, observedAt);
 		};
-		const monthUsageQuery = scope.creatorId || url.searchParams.get("key")?.trim() || labelFilter ? null : loadMonthUsage();
-		const [keysResult, current, previous, labelFacetFactsResult, labelSummaryFactsResult, monthUsage] = await Promise.all([
+		const monthUsageQuery = scope.creatorId || keyId || labelFilter ? null : loadMonthUsage();
+		const [keysResult, current, previous, recent, labelFacetFactsResult, monthUsage] = await Promise.all([
 			context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId)
 				.neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: true }),
-			loadWindow(from!, to!),
-			loadWindow(previousFrom!, previousTo!),
+			loadWindow(from!, to!, bucket),
+			loadWindow(previousFrom!, previousTo!, null),
+			loadWindow(recentFrom, new Date(observedAt).toISOString(), null),
 			labelFacetFactsQuery,
-			labelSummaryFactsQuery,
 			monthUsageQuery,
 		]);
 		if (keysResult.error) throw keysResult.error;
 		const labelFacetFacts = labelFacetFactsResult.error ? [] : (labelFacetFactsResult.data ?? []);
-		const labelSummaryFacts = labelSummaryFactsResult?.error ? [] : (labelSummaryFactsResult?.data ?? []);
 		const labelFacetMap = new Map<string, { key: string; value: string }>();
 		for (const row of labelFacetFacts) for (const label of extractRequestLabels(row.safe_metadata)) {
 			const identity = `${label.key}\u0000${label.value}`;
 			if (!labelFacetMap.has(identity)) labelFacetMap.set(identity, label);
 		}
 		const labelFacets = Array.from(labelFacetMap.values()).sort((left, right) => left.key.localeCompare(right.key) || left.value.localeCompare(right.value)).slice(0, 500);
+		// The overview is already filtered to the label, so its totals are the label's.
 		const labelSummary = labelFilter ? {
 			key: labelFilter.key,
 			value: labelFilter.value,
-			requestCount: labelSummaryFactsResult?.count ?? labelSummaryFacts.length,
-			totalCostNanos: labelSummaryFacts.reduce((total, row) => total + Number(row.cost_nanos ?? 0), 0),
-			isSampled: (labelSummaryFactsResult?.count ?? labelSummaryFacts.length) > labelSummaryFacts.length,
+			requestCount: current.cells.reduce((total, cell) => total + cell.requests, 0),
+			totalCostNanos: current.cells.reduce((total, cell) => total + cell.costNanos, 0),
+			isSampled: false,
 		} : null;
-		const rows = [...current.rows, ...previous.rows];
-		const models = Array.from(new Set(rows.map((row) => String(row.model_id ?? "").trim()).filter(Boolean)));
-		const apps = Array.from(new Set(rows.map((row) => String(row.app_id ?? "").trim()).filter(Boolean)));
+		const cells = [...current.cells, ...previous.cells];
+		const models = Array.from(new Set(cells.map((cell) => cell.modelId ?? "").filter(Boolean)));
+		const apps = Array.from(new Set(cells.map((cell) => cell.appId ?? "").filter(Boolean)));
 		const metadata = await metadataForIds(context, { models, apps });
 		return c.json({
 			creatorFilter: scope.creatorId ? { id: scope.creatorId, name: creator?.name ?? null, avatarUrl: creator?.avatarUrl ?? null } : null,
@@ -304,7 +304,9 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 			labelSummary,
 			modelMetadataEntries: metadata.modelMetadataEntries,
 			monthUsage,
+			observedAt,
 			previous,
+			recent,
 			signedIn: true,
 			workspaceId,
 		}, 200, PRIVATE_NO_STORE_HEADERS);

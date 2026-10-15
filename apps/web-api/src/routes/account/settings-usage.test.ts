@@ -22,18 +22,18 @@ describe("account usage settings routes", () => {
 		const response = await app.request("https://phaseo.app/api/account/settings/usage/observability?workspaceId=workspace-1&user=other&from=2026-10-01&to=2026-10-02&previousFrom=2026-09-30&previousTo=2026-10-01", { headers: { authorization: "Bearer token" } }, env);
 		expect(response.status).toBe(403); expect(privateReads).toHaveLength(0);
 	});
-	it("filters creator activity by workspace-scoped keys before pagination", async () => {
-		const requestUrls: URL[] = [];
+	it("filters creator activity by workspace-scoped keys in the database", async () => {
+		const overviewArgs: Array<Record<string, unknown>> = [];
 		let creatorKeysUrl: URL | undefined;
-		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname.endsWith("/rpc/get_private_usage_overview")) { overviewArgs.push(JSON.parse(String(init?.body ?? "{}"))); return new Response("[]"); }
 			if (url.pathname === "/auth/v1/user") return new Response(JSON.stringify({ id: "viewer", created_at: "2025-01-01" }));
 			if (url.pathname.includes("/auth/v1/admin/users/")) return new Response(JSON.stringify({ id: "11111111-1111-4111-8111-111111111111", email: "private@example.com", user_metadata: { avatar_url: "https://example.com/avatar.jpg", secret: "hidden" } }));
 			if (url.pathname.endsWith("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]));
 			if (url.pathname.endsWith("workspaces")) return new Response(JSON.stringify([{ owner_user_id: "owner" }]));
 			if (url.pathname.endsWith("keys") && url.searchParams.has("created_by")) { creatorKeysUrl = url; return new Response(JSON.stringify([{ id: "creator-key" }])); }
 			if (url.pathname.endsWith("users")) return new Response(JSON.stringify([{ display_name: "Alice" }]));
-			if (url.pathname.endsWith("v2_web_gateway_requests_by_creator")) { requestUrls.push(url); return new Response("[]"); }
 			return new Response("[]");
 		}));
 		const response = await app.request("https://phaseo.app/api/account/settings/usage/observability?workspaceId=workspace-1&user=11111111-1111-4111-8111-111111111111&from=2026-10-01&to=2026-10-02&previousFrom=2026-09-30&previousTo=2026-10-01", { headers: { authorization: "Bearer token" } }, env);
@@ -41,27 +41,28 @@ describe("account usage settings routes", () => {
 		expect(creatorKeysUrl?.searchParams.get("workspace_id")).toBe("eq.workspace-1");
 		expect(creatorKeysUrl?.searchParams.get("created_by")).toBe("eq.11111111-1111-4111-8111-111111111111");
 		expect(creatorKeysUrl?.searchParams.get("limit")).toBe("1");
-		expect(requestUrls).toHaveLength(2);
-		for (const url of requestUrls) { expect(url.searchParams.get("key_created_by")).toBe("eq.11111111-1111-4111-8111-111111111111"); expect(url.searchParams.get("workspace_id")).toBe("eq.workspace-1"); }
+		// The selected period, the previous one, and the last 7 days.
+		expect(overviewArgs).toHaveLength(3);
+		for (const args of overviewArgs) expect(args).toMatchObject({ p_workspace_id: "workspace-1", p_creator_id: "11111111-1111-4111-8111-111111111111" });
 		const payload = await response.json() as any;
 		expect(payload.creatorFilter).toEqual({ id: "11111111-1111-4111-8111-111111111111", name: "Alice", avatarUrl: "https://example.com/avatar.jpg" });
 		expect(JSON.stringify(payload)).not.toContain("private@example.com");
 		expect(JSON.stringify(payload)).not.toContain("hidden");
 	});
 	it("does not broaden creator filters when the creator has no keys", async () => {
-		const requestUrls: URL[] = [];
-		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+		const overviewArgs: Array<Record<string, unknown>> = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const url = new URL(input instanceof Request ? input.url : String(input));
 			if (url.pathname === "/auth/v1/user") return new Response(JSON.stringify({ id: "viewer", created_at: "2025-01-01" }));
 			if (url.pathname.endsWith("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]));
 			if (url.pathname.endsWith("workspaces")) return new Response(JSON.stringify([{ owner_user_id: "owner" }]));
-			if (url.pathname.endsWith("v2_web_gateway_requests_by_creator")) requestUrls.push(url);
+			if (url.pathname.endsWith("/rpc/get_private_usage_overview")) overviewArgs.push(JSON.parse(String(init?.body ?? "{}")));
 			return new Response("[]");
 		}));
 		const response = await app.request("https://phaseo.app/api/account/settings/usage/observability?workspaceId=workspace-1&user=unrelated&from=2026-10-01&to=2026-10-02&previousFrom=2026-09-30&previousTo=2026-10-01", { headers: { authorization: "Bearer token" } }, env);
 		expect(response.status).toBe(200);
-		for (const url of requestUrls) expect(url.searchParams.get("key_created_by")).toBe("eq.unrelated");
-		expect(await response.json()).toMatchObject({ creatorFilter: { name: null }, current: { rows: [] } });
+		expect(overviewArgs.map((args) => args.p_creator_id)).toEqual(["unrelated", "unrelated", "unrelated"]);
+		expect(await response.json()).toMatchObject({ creatorFilter: { name: null }, current: { cells: [] } });
 	});
 
 	it("projects routing timing without full diagnostics on initial and paginated requests", async () => {
@@ -382,9 +383,14 @@ describe("account usage settings routes", () => {
 		vi.useFakeTimers({ toFake: ["Date"] });
 		vi.setSystemTime(new Date("2026-10-15T12:00:00Z"));
 		let monthUsageArgs: unknown = null;
+		const overviewArgs: Array<Record<string, unknown>> = [];
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
+			if (url.includes("/rpc/get_private_usage_overview")) {
+				overviewArgs.push(JSON.parse(String(init?.body ?? "{}")));
+				return new Response(JSON.stringify([{ bucket: "2026-07-17T00:00:00+00:00", modelId: "openai/gpt-test", provider: "openai", keyId: "key-1", appId: "app-1", byok: false, requests: 3, successfulRequests: 3, guardrailBlocked: 0, costNanos: 1000, tokens: 12, inputTokens: 10, outputTokens: 2, reasoningTokens: 0, cachedTokens: 0 }]), { status: 200 });
+			}
 			if (url.includes("/rpc/get_private_usage_month_days")) {
 				monthUsageArgs = JSON.parse(String(init?.body ?? "{}"));
 				return new Response(JSON.stringify([
@@ -395,7 +401,6 @@ describe("account usage settings routes", () => {
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
 			if (url.includes("v2_request_facts")) return new Response(JSON.stringify([{ safe_metadata: { labels: [{ key: "team", value: "support" }] }, cost_nanos: 1000 }]), { status: 200, headers: { "content-range": "0-0/1" } });
-			if (url.includes("gateway_requests")) return new Response(JSON.stringify([{ created_at: "2026-07-17T00:00:00Z", model_id: "openai/gpt-test", app_id: "app-1", key_id: "key-1", usage: { total_tokens: 12 }, cost_nanos: 1000, success: true }]), { status: 200 });
 			if (url.includes("/keys")) return new Response(JSON.stringify([{ id: "key-1", name: "Production", prefix: "ph_" }]), { status: 200 });
 			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([]), { status: 200 });
 			if (url.includes("v2_models")) return new Response(JSON.stringify([{ model_id: "openai/gpt-test", name: "GPT Test", organisation_id: "openai", organisation: { name: "OpenAI" } }]), { status: 200 });
@@ -408,6 +413,7 @@ describe("account usage settings routes", () => {
 			to: "2026-07-18T00:00:00Z",
 			previousFrom: "2026-07-16T00:00:00Z",
 			previousTo: "2026-07-17T00:00:00Z",
+			timeZone: "Europe/London",
 		});
 		const response = await app.request(`https://phaseo.app/api/account/settings/usage/observability?${params}`, { headers: { authorization: "Bearer token" } }, env);
 		expect(response.status).toBe(200);
@@ -415,8 +421,10 @@ describe("account usage settings routes", () => {
 		await expect(response.json()).resolves.toMatchObject({
 			workspaceId: "workspace-1",
 			keys: [{ id: "key-1", name: "Production" }],
-			current: { rows: [{ model_id: "openai/gpt-test" }], isSampled: false, limit: 5000 },
-			previous: { rows: [{ model_id: "openai/gpt-test" }] },
+			current: { from: "2026-07-17T00:00:00Z", cells: [{ bucket: "2026-07-17T00:00:00.000Z", modelId: "openai/gpt-test", requests: 3, costNanos: 1000 }] },
+			previous: { from: "2026-07-16T00:00:00Z", cells: [{ modelId: "openai/gpt-test" }] },
+			recent: { from: "2026-10-08T12:00:00.000Z", to: "2026-10-15T12:00:00.000Z" },
+			observedAt: Date.parse("2026-10-15T12:00:00Z"),
 			labelFacets: [{ key: "team", value: "support" }],
 			labelSummary: null,
 			modelMetadataEntries: [["openai/gpt-test", { modelName: "GPT Test" }]],
@@ -427,8 +435,14 @@ describe("account usage settings routes", () => {
 				{ date: "2026-07-17", costNanos: 1500, requests: 2, successfulRequests: 1, tokens: 12, cachedTokens: 5 },
 			] },
 		});
-		// A week before the selected period, which starts before last month.
-		expect(monthUsageArgs).toEqual({ p_workspace_id: "workspace-1", p_from: "2026-07-09" });
+		expect(monthUsageArgs).toEqual({ p_workspace_id: "workspace-1", p_from: "2026-09-01" });
+		// A day is cut into hours in the reader's time zone; the comparison windows are totals.
+		const filters = { p_time_zone: "Europe/London", p_key_id: null, p_exclude_key: false, p_creator_id: null, p_label: null };
+		expect(overviewArgs).toEqual([
+			{ p_workspace_id: "workspace-1", p_from: "2026-07-17T00:00:00Z", p_to: "2026-07-18T00:00:00Z", p_bucket: "hour", ...filters },
+			{ p_workspace_id: "workspace-1", p_from: "2026-07-16T00:00:00Z", p_to: "2026-07-17T00:00:00Z", p_bucket: null, ...filters },
+			{ p_workspace_id: "workspace-1", p_from: "2026-10-08T12:00:00.000Z", p_to: "2026-10-15T12:00:00.000Z", p_bucket: null, ...filters },
+		]);
 	});
 	it("hides only the month figures when the month RPC fails", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
