@@ -1,0 +1,8 @@
+{
+  "key": "nextbit:deepseek/deepseek-v4-flash-0731:text.generate", "api_provider_id": "nextbit", "provider_slug": "nextbit", "api_model_id": "deepseek/deepseek-v4-flash-0731", "capability_id": "text.generate",
+  "rules": [
+    { "meter": "input_text_tokens", "unit": "token", "unit_size": 1000000, "price_per_unit": 0.16, "currency": "USD", "pricing_plan": "standard", "note": null, "match": [], "priority": 100, "region": "ES", "cache_duration_seconds": null, "conditions": [], "source": "https://www.nextbit256.com/api/models" },
+    { "meter": "cached_read_text_tokens", "unit": "token", "unit_size": 1000000, "price_per_unit": 0.07, "currency": "USD", "pricing_plan": "standard", "note": "Input cache read", "match": [], "priority": 110, "region": "ES", "cache_duration_seconds": null, "conditions": [], "source": "https://www.nextbit256.com/api/models" },
+    { "meter": "output_text_tokens", "unit": "token", "unit_size": 1000000, "price_per_unit": 0.3, "currency": "USD", "pricing_plan": "standard", "note": null, "match": [], "priority": 100, "region": "ES", "cache_duration_seconds": null, "conditions": [], "source": "https://www.nextbit256.com/api/models" }
+  ], "regions": ["ES"], "service_tiers": ["standard"], "sources": [{ "kind": "pricing", "url": "https://www.nextbit256.com/api/models", "accessed_at": "2026-08-24T00:00:00Z", "notes": "First-party live prompt, cached-input, and completion prices." }], "verification": { "status": "verified", "checked_at": "2026-08-24T00:00:00Z", "notes": "Live serverless token prices verified." }
+}

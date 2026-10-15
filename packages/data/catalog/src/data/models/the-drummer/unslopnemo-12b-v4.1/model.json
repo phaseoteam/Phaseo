@@ -1,0 +1,13 @@
+{
+  "model_id": "the-drummer/unslopnemo-12b-v4.1", "organisation_id": "the-drummer", "name": "UnslopNemo 12B v4.1", "status": "Available", "previous_model_id": null,
+  "description": "UnslopNemo 12B v4.1 is a 12B Mistral Nemo fine-tune published by TheDrummer.",
+  "announced_date": null, "release_date": null, "deprecation_date": null, "retirement_date": null, "license": null,
+  "input_types": "text", "output_types": "text", "api_model_id": "the-drummer/unslopnemo-12b-v4.1",
+  "links": [{ "title": "Weights", "kind": "weights", "url": "https://huggingface.co/TheDrummer/UnslopNemo-12B-v4.1" }],
+  "details": [], "benchmarks": [], "family_id": null, "page_notice": null, "model_type": null, "knowledge_cutoff": null,
+  "limits": { "context": 32768, "input": 32768, "output": 32768 }, "modalities": { "input": ["text"], "output": ["text"] },
+  "reasoning": { "supported": true, "options": [] }, "capabilities": { "attachment": false, "tool_call": true, "structured_output": true, "temperature": true, "streaming": true, "web_search": false },
+  "open_weights": true, "sources": [{ "kind": "weights", "url": "https://huggingface.co/TheDrummer/UnslopNemo-12B-v4.1", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Repository linked by Nextbit's live catalog." }],
+  "verification": { "status": "partial", "checked_at": "2026-08-24T00:00:00Z", "notes": "Identity and hosted limits verified against Nextbit; upstream release metadata remains limited." },
+  "last_updated": "2026-08-24T00:00:00", "removal_date": null, "replacement_model_id": null, "license_url": null
+}

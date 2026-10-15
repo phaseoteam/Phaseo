@@ -1,0 +1,20 @@
+{
+  "model_id": "sao10k/l33-70b-euryale-v2.3",
+  "organisation_id": "sao10k",
+  "name": "L3.3 70B Euryale v2.3",
+  "status": "Available",
+  "previous_model_id": "sao10k/l31-70b-euryale-v2.2",
+  "description": "L3.3 70B Euryale v2.3 is a Llama 3.3 70B fine-tune from Sao10K focused on creative writing and roleplay.",
+  "announced_date": null, "release_date": null, "deprecation_date": null, "retirement_date": null, "license": null,
+  "input_types": "text", "output_types": "text", "api_model_id": "sao10k/l33-70b-euryale-v2.3",
+  "links": [{ "title": "Weights", "kind": "weights", "url": "https://huggingface.co/Sao10K/L3.3-70B-Euryale-v2.3" }],
+  "details": [], "benchmarks": [], "family_id": null, "page_notice": null, "model_type": null, "knowledge_cutoff": null,
+  "limits": { "context": 131072, "input": 131072, "output": 16384 },
+  "modalities": { "input": ["text"], "output": ["text"] },
+  "reasoning": { "supported": true, "options": [] },
+  "capabilities": { "attachment": false, "tool_call": true, "structured_output": true, "temperature": true, "streaming": true, "web_search": false },
+  "open_weights": true,
+  "sources": [{ "kind": "weights", "url": "https://huggingface.co/Sao10K/L3.3-70B-Euryale-v2.3", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Repository linked by Nextbit's live catalog." }],
+  "verification": { "status": "partial", "checked_at": "2026-08-24T00:00:00Z", "notes": "Identity and hosted limits verified against Nextbit; upstream release metadata remains limited." },
+  "last_updated": "2026-08-24T00:00:00", "removal_date": null, "replacement_model_id": null, "license_url": null
+}

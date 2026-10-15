@@ -1,0 +1,12 @@
+{
+  "organisation_id": "the-drummer",
+  "name": "TheDrummer",
+  "country_code": null,
+  "description": "Open model publisher and fine-tuner.",
+  "colour": null,
+  "organisation_links": [{ "platform": "hugging_face", "url": "https://huggingface.co/TheDrummer" }],
+  "status": "active",
+  "routable": null,
+  "sources": [{ "kind": "repository", "url": "https://huggingface.co/TheDrummer", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Official model publisher profile linked by Nextbit." }],
+  "verification": { "status": "verified", "checked_at": "2026-08-24T00:00:00Z", "notes": "Publisher identity verified from the repository linked by Nextbit's live catalog." }
+}
