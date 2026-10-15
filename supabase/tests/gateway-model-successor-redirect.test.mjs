@@ -30,8 +30,8 @@ try {
       billable boolean not null default true);
   `);
   await db.exec(await read('../schemas/public/tables/v2_catalogue_admin_changes.sql'));
-  await db.exec(await read('../migrations/20261012213500_model_successor_routing_approval.sql'));
-  await db.exec(await read('../migrations/20261012214000_gateway_model_successor_redirect.sql'));
+  await db.exec(await read('../migrations/20261015111100_model_successor_routing_approval.sql'));
+  await db.exec(await read('../migrations/20261015111200_gateway_model_successor_redirect.sql'));
   assert.deepEqual((await db.query(`select model_successor_redirect_enabled e, model_successor_price_policy p, model_successor_max_price_increase_percent m from public.workspace_settings`)).rows,
     [{ e: false, p: 'never', m: 0 }]);
   await rejects(db.query(`update public.workspace_settings set model_successor_price_policy='sometimes'`), /price_policy_check/);
