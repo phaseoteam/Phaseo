@@ -1358,7 +1358,9 @@
 		"sendingDeprecationTest": "Test zur Modellabkündigung wird gesendet…",
 		"sendingTest": "Test wird gesendet…",
 		"connectionTest": "Verbindungstest",
-		"deprecationSample": "Beispiel zur Modellabkündigung"
+		"deprecationSample": "Beispiel zur Modellabkündigung",
+		"replacementNoticesTitle": "Hinweise zu Ersatzmodellen",
+		"replacementNoticesDescription": "Wird einmal gesendet, wenn ein Modell deines Arbeitsbereichs von keinem Anbieter mehr bereitgestellt wird und seine Anfragen von einem Ersatzmodell beantwortet werden. Der Inhaber erhält immer eine E-Mail; weitere Ziele kannst du hier wählen."
 	},
 	"contributionCopy": {
 		"summary": "Jede berechtigte Anfrage ohne BYOK erhält einen Rabatt von {discount} %. Phaseo speichert bis zu 100 % der erfolgreichen Prompts und Antworten nach dem Entfernen von Geheimnissen und personenbezogenen Daten höchstens 30 Tage lang in einem eigenen privaten Speicherbereich. Aktuell werden {sampleRate} % für die vorgelagerte Klassifizierung ausgewählt. Hier werden nur aggregierte Aufgabenstatistiken angezeigt; Rohinhalte werden nie veröffentlicht.",

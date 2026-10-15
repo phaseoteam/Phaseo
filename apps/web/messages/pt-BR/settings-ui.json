@@ -1358,7 +1358,9 @@
 		"sendingDeprecationTest": "Enviando teste de descontinuação de modelo…",
 		"sendingTest": "Enviando teste…",
 		"connectionTest": "Teste de conexão",
-		"deprecationSample": "Exemplo de descontinuação de modelo"
+		"deprecationSample": "Exemplo de descontinuação de modelo",
+		"replacementNoticesTitle": "Avisos de modelo substituto",
+		"replacementNoticesDescription": "Enviado uma vez quando um modelo usado pelo seu espaço de trabalho fica sem provedor e as solicitações passam a ser respondidas por um substituto. O proprietário sempre recebe um e-mail; escolha destinos adicionais aqui."
 	},
 	"contributionCopy": {
 		"summary": "Cada solicitação elegível sem BYOK recebe um desconto de {discount}%. A Phaseo mantém até 100% dos prompts e das respostas concluídos com sucesso, após remover segredos e informações pessoais, em um espaço privado dedicado por no máximo 30 dias. Atualmente, {sampleRate}% é selecionado para classificação upstream. Aqui, apenas estatísticas agregadas das tarefas são exibidas; o conteúdo bruto nunca é publicado.",

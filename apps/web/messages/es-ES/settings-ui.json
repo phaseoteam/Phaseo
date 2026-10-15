@@ -1358,7 +1358,9 @@
 		"sendingDeprecationTest": "Enviando prueba de retirada de modelos…",
 		"sendingTest": "Enviando prueba…",
 		"connectionTest": "Prueba de conexión",
-		"deprecationSample": "Ejemplo de retirada de modelo"
+		"deprecationSample": "Ejemplo de retirada de modelo",
+		"replacementNoticesTitle": "Avisos de modelo sustituto",
+		"replacementNoticesDescription": "Se envía una vez cuando un modelo que usa su espacio de trabajo deja de tener proveedor y sus solicitudes las responde un modelo sustituto. El propietario siempre recibe un correo; elija aquí destinos adicionales."
 	},
 	"contributionCopy": {
 		"summary": "Cada solicitud apta que no use BYOK recibe un descuento del {discount}%. Phaseo conserva en un almacén privado específico hasta el 100% de los prompts y las respuestas completadas correctamente, después de eliminar secretos y datos personales, durante un máximo de 30 días. Actualmente, se selecciona el {sampleRate}% para la clasificación externa. Aquí solo se muestran estadísticas agregadas de las tareas; el contenido sin procesar nunca se publica.",

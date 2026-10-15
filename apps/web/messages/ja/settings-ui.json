@@ -1358,7 +1358,9 @@
 		"sendingDeprecationTest": "モデル廃止のテストを送信中…",
 		"sendingTest": "テストを送信中…",
 		"connectionTest": "接続テスト",
-		"deprecationSample": "モデル廃止のサンプル"
+		"deprecationSample": "モデル廃止のサンプル",
+		"replacementNoticesTitle": "代替モデルの通知",
+		"replacementNoticesDescription": "ワークスペースで使用中のモデルを提供するプロバイダーがなくなり、リクエストに代替モデルが応答し始めたときに一度だけ送信されます。オーナーには常にメールが届きます。追加の送信先はここで選択できます。"
 	},
 	"contributionCopy": {
 		"summary": "BYOK を使用しない対象リクエストには、{discount}% の割引が適用されます。Phaseo は、正常に完了したプロンプトと応答の最大 100% から秘密情報と個人情報を削除したうえで、専用のプライベート領域に最長 30 日間保持します。上流の分類に現在選択されている割合は {sampleRate}% です。ここに表示されるのはタスクの集計統計のみで、生のコンテンツが公開されることはありません。",

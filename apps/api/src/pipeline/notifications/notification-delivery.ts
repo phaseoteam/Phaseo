@@ -3,8 +3,9 @@ import { sendEmail } from "@/lib/email/resend";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { getEmailSuppressionReason } from "@/pipeline/notifications/email-suppressions";
 import { getModelDeprecationContent, getModelDeprecationTemplateVariables, renderModelDeprecationEmail, renderNotificationTestEmail } from "@/pipeline/notifications/model-deprecation";
+import { getModelSubstitutionContent, renderModelSubstitutionEmail } from "@/pipeline/notifications/model-substitution";
 
-const DELIVERABLE_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "notification_test"];
+const DELIVERABLE_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "notification_test"];
 const EVENT_PAGE_SIZE = 100;
 // Kept below PostgREST's 1,000-row response cap; the RPC also clamps it.
 const MODEL_DEPRECATION_TARGET_PAGE_SIZE = 500;
@@ -45,6 +46,10 @@ export async function forEachPage<T>(pageSize: number, fetchPage: (from: number,
 export function eventContent(event: EventRow) {
 	if (event.kind === "model_deprecation") {
 		const content = getModelDeprecationContent(event.payload ?? {});
+		return { title: content.title, message: content.message, settingsUrl: content.settingsUrl };
+	}
+	if (event.kind === "model_substitution") {
+		const content = getModelSubstitutionContent(event.payload ?? {});
 		return { title: content.title, message: content.message, settingsUrl: content.settingsUrl };
 	}
 	const payload = event.payload ?? {};
@@ -93,7 +98,7 @@ async function deliver(event: EventRow, destination: DestinationRow): Promise<nu
 	const content = eventContent(event);
 	if (destination.type === "email") {
 		const modelDeprecationEmail = event.kind === "model_deprecation" ? renderModelDeprecationEmail(event.payload ?? {}) : null;
-		const notificationTestEmail = event.kind === "notification_test" ? renderNotificationTestEmail() : null;
+		const notificationTestEmail = event.kind === "notification_test" ? renderNotificationTestEmail() : event.kind === "model_substitution" ? renderModelSubstitutionEmail(event.payload ?? {}) : null;
 		const modelDeprecationTemplateId = event.kind === "model_deprecation" ? configuredModelDeprecationTemplateId() : "";
 		if (event.kind === "model_deprecation") console.log("model_deprecation_template", { configured: Boolean(modelDeprecationTemplateId) });
 		let recipients: string[];

@@ -1358,7 +1358,9 @@
 		"sendingDeprecationTest": "Envoi du test de retrait de modèle…",
 		"sendingTest": "Envoi du test…",
 		"connectionTest": "Test de connexion",
-		"deprecationSample": "Exemple de retrait de modèle"
+		"deprecationSample": "Exemple de retrait de modèle",
+		"replacementNoticesTitle": "Avis de modèle remplaçant",
+		"replacementNoticesDescription": "Envoyé une seule fois lorsqu’un modèle utilisé par votre espace de travail n’a plus de fournisseur et que ses requêtes sont traitées par un remplaçant. Le propriétaire reçoit toujours un e-mail ; choisissez ici des destinations supplémentaires."
 	},
 	"contributionCopy": {
 		"summary": "Chaque requête éligible sans BYOK bénéficie d’une remise de {discount} %. Phaseo conserve jusqu’à 100 % des prompts et réponses menés à bien, après suppression des secrets et des informations personnelles, dans un espace privé dédié pendant 30 jours maximum. Le taux actuellement sélectionné pour la classification en amont est de {sampleRate} %. Seules des statistiques agrégées sur les tâches sont affichées ici ; le contenu brut n’est jamais publié.",

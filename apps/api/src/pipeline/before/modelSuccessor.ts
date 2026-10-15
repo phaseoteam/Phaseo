@@ -1,4 +1,4 @@
-import { getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
+import { dispatchBackground, getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
 import { tieredRead } from "@core/tiered-cache";
 
 /**
@@ -255,4 +255,54 @@ export function successorRedirectTarget(
 /** `X-Phaseo-Model-Substitution` value, for example `reason=unserved; from=a/old; to=a/new`. */
 export function modelSubstitutionHeader(substitution: ModelSubstitution): string {
     return `reason=${substitution.reason}; from=${substitution.from}; to=${substitution.to}`;
+}
+
+const MAX_RECORDED_SUBSTITUTIONS = 1_000;
+const recordedSubstitutions = new Set<string>();
+
+/**
+ * Queues the one-off "now served by" notice for the workspace. The database
+ * keeps one notice per workspace, model and replacement; this isolate also
+ * remembers what it already sent so a busy redirect is one call, not one per
+ * request.
+ */
+export function recordModelSubstitution(workspaceId: string | null | undefined, substitution: ModelSubstitution): Promise<void> | null {
+    if (!workspaceId) return null;
+    // Slugs may contain ":", so the parts are encoded rather than joined.
+    const key = JSON.stringify([workspaceId, substitution.from, substitution.to]);
+    if (recordedSubstitutions.has(key)) return null;
+    if (recordedSubstitutions.size >= MAX_RECORDED_SUBSTITUTIONS) recordedSubstitutions.clear();
+    recordedSubstitutions.add(key);
+    return (async () => {
+        const { error } = await getSupabaseAdmin().rpc("record_model_substitution", {
+            p_workspace_id: workspaceId,
+            p_model_slug: substitution.from,
+            p_successor_slug: substitution.to,
+            p_source: substitution.source,
+        });
+        if (error) {
+            recordedSubstitutions.delete(key);
+            throw new Error(`model_substitution_record_failed:${error.message}`);
+        }
+    })();
+}
+
+/**
+ * Queues the notice once a request a successor served has completed
+ * successfully: for streams, only after the whole stream was delivered.
+ */
+export function noteModelSubstitutionServed(ctx: {
+    routingDiagnostics?: Record<string, any> | null;
+    workspaceId?: string | null;
+    testingMode?: boolean;
+}): void {
+    const substitution = ctx.routingDiagnostics?.modelSubstitution as ModelSubstitution | undefined;
+    if (!substitution || ctx.testingMode) return;
+    const recording = recordModelSubstitution(ctx.workspaceId, substitution);
+    if (recording) dispatchBackground(recording);
+}
+
+/** Test hook: forget which substitutions this isolate has recorded. */
+export function resetRecordedModelSubstitutions(): void {
+    recordedSubstitutions.clear();
 }
