@@ -29,6 +29,22 @@ describe("workspace orchestration", () => {
 			expect(runtime.store.getTaskView(id).activities![0].timelineOrder).toBe(tool.timelineOrder);
 		} finally { await runtime.close(); rmSync(directory, {recursive:true,force:true}); }
 	});
+	it.each(["send", "resume"] as const)("runs again after a stopped chat receives %s", async next => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-stopped-rerun-"));
+		let release: (() => void) | undefined;
+		const run = vi.fn<AgentAdapter["run"]>(async (_task, _cwd, _text, callbacks) => { if (run.mock.calls.length === 1) { callbacks.onSession("native"); await new Promise<void>(resolve => { release = resolve; }); } });
+		const runtime = new WorkspaceRuntime(directory, () => ({ run, cancel: async () => { release?.(); } }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "owned", mode: "code" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "First" });
+			await vi.waitFor(() => expect(run).toHaveBeenCalledTimes(1));
+			await runtime.command({ type: "cancel", id });
+			await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("interrupted"));
+			await runtime.command(next === "send" ? { type: "send", id, text: "Second" } : { type: "resume", id });
+			await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("completed"));
+			expect(run).toHaveBeenCalledTimes(2); expect(runtime.store.getTask(id).queue).toEqual([]);
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
 	it("clears OAuth expiry when replacing the credential with a manual API key", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-oauth-renewal-"));
 		const vault = new SecretVault(path.join(directory, "secrets"), { available: () => true, encrypt: value => Buffer.from(value), decrypt: value => value.toString() });

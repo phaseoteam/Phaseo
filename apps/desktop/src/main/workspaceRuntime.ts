@@ -52,6 +52,8 @@ export class WorkspaceRuntime {
 	readonly openCode: OpenCodeService;
 	private readonly orchestratorMcp = new OrchestratorMcp();
 	private readonly orchestrationSessions = new Map<string, () => void>();
+	/** Chats stopped while their next run was still being set up; an earlier stop must not block a resume or a new message. */
+	private readonly stoppedDuringSetup = new Set<string>();
 	private readonly running = new Map<string, AgentAdapter>();
 	private readonly approvals = new Map<string, { taskId: string; resolve: (decision: "accept" | "decline") => void }>();
 	private readonly questions = new Map<string, { taskId: string; resolve: (answers: Record<string, string[]>) => void }>();
@@ -318,6 +320,7 @@ export class WorkspaceRuntime {
 			this.store.saveTask(task); this.broadcast(); this.forms.delete(command.requestId); pending.resolve(command.answer); return this.store.getOverview();
 		}
 		if (command.type === "cancel") {
+			if (this.executions.has(command.id) && !this.running.has(command.id)) this.stoppedDuringSetup.add(command.id);
 			this.store.apply(command); this.orchestrationSessions.get(command.id)?.(); this.broadcast();
 			for (const child of this.store.getOverview().tasks.filter(task => task.delegation?.parentTaskId === command.id && ["idle", "running", "waiting"].includes(task.status))) if (this.store.getTask(child.id).delegation?.parentTaskId === command.id) await this.command({ type: "cancel", id: child.id });
 			for (const [id, pending] of this.approvals) if (pending.taskId === command.id) { pending.resolve("decline"); this.approvals.delete(id); }
@@ -394,6 +397,7 @@ export class WorkspaceRuntime {
 		if (!task.queue.length) return;
 		let adapter: AgentAdapter;
 		let orchestration: Awaited<ReturnType<OrchestratorMcp["session"]>> | undefined;
+		this.stoppedDuringSetup.delete(id);
 		try {
 			const credential = (accountId: string) => { if (!this.vault) throw new Error("Credential storage is unavailable."); const account = this.store.getAccounts().find(value => value.id === accountId); if (!account) throw new Error("Account no longer exists."); if (account.oauthExpiresAt && Date.parse(account.oauthExpiresAt) <= Date.now()) throw new Error("Sign in to Phaseo again to renew this account."); return this.vault.get(account.secretId ?? account.id); };
 			this.assertHarnessAvailable(task.harness);
@@ -410,7 +414,7 @@ export class WorkspaceRuntime {
 				current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method: threadToolLabel(name, args), description: `Allow this thread action with this chat's project and permissions?\n\n${JSON.stringify(args, null, 2).slice(0, 8000)}` });
 				this.store.saveTask(current); this.broadcast();
 			}));
-			if (this.closing || this.store.getTask(id).status === "interrupted") { orchestration?.close(); return; }
+			if (this.closing || this.stoppedDuringSetup.delete(id)) { orchestration?.close(); return; }
 			if (orchestration) this.orchestrationSessions.set(id, orchestration.close);
 			const connections = [...this.store.getMcpConnections(), ...orchestration ? [orchestration.connection] : []];
 			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential, undefined, path.join(this.directory, "instructions"), this.store, this.store.getMcpConnections()) : new PhaseoCodingAdapter(credential, this.store, undefined, this.store.getMcpConnections(), path.join(this.directory, "instructions")) : task.harness === "cursor" ? new CursorAdapter(this.directory, credential, connections) : this.adapterFactory(task.harness, this.store.getAgents().find(agent => agent.id === task.agentId), this.openCode, connections, task.projectId);
