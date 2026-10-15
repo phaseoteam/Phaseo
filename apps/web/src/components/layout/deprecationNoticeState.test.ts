@@ -1,5 +1,13 @@
 import type { DeprecationWarning } from "@/lib/fetchers/usage/types";
-import { deprecationNoticeKey, fillNoticeTemplate, visibleDeprecationWarnings } from "./deprecationNoticeState";
+import {
+	DEPRECATION_NOTICE_REFRESH_MS,
+	deprecationNoticeKey,
+	deprecationNoticeRefreshDelay,
+	deprecationNoticeStaleIn,
+	fillNoticeTemplate,
+	isCachedDeprecationNoticeFresh,
+	visibleDeprecationWarnings,
+} from "./deprecationNoticeState";
 
 function warning(overrides: Partial<DeprecationWarning> = {}): DeprecationWarning {
 	return {
@@ -33,5 +41,27 @@ describe("model deprecation notice", () => {
 
 	it("fills named placeholders and leaves unknown ones alone", () => {
 		expect(fillNoticeTemplate("{model} retires {date}. {other}", { model: "Old Model", date: "1 Dec 2026" })).toBe("Old Model retires 1 Dec 2026. {other}");
+	});
+
+	it("measures freshness from when warnings were fetched, not when the page mounted", () => {
+		const now = Date.UTC(2026, 9, 15, 12);
+		const hour = 60 * 60 * 1000;
+		const fetchedFiveHoursAgo = { fetchedAt: now - 5 * hour, warnings: [warning()] };
+		expect(isCachedDeprecationNoticeFresh(fetchedFiveHoursAgo, now)).toBe(true);
+		expect(deprecationNoticeStaleIn(fetchedFiveHoursAgo, now)).toBe(hour);
+		expect(deprecationNoticeRefreshDelay(fetchedFiveHoursAgo, now)).toBe(hour);
+
+		const expired = { fetchedAt: now - DEPRECATION_NOTICE_REFRESH_MS, warnings: [] };
+		expect(isCachedDeprecationNoticeFresh(expired, now)).toBe(false);
+		expect(deprecationNoticeStaleIn(expired, now)).toBe(0);
+		// An expiry that lands early re-checks a minute later rather than spinning.
+		expect(deprecationNoticeRefreshDelay(expired, now)).toBe(60_000);
+	});
+
+	it("treats missing or future-dated cache entries as stale", () => {
+		const now = Date.UTC(2026, 9, 15, 12);
+		expect(isCachedDeprecationNoticeFresh(null, now)).toBe(false);
+		expect(isCachedDeprecationNoticeFresh({ fetchedAt: now + 1, warnings: [] }, now)).toBe(false);
+		expect(isCachedDeprecationNoticeFresh({ fetchedAt: Number.NaN, warnings: [] }, now)).toBe(false);
 	});
 });

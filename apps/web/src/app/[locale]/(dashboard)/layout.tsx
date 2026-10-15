@@ -10,10 +10,11 @@ import ModelDeprecationNoticeSlot from "@/components/layout/ModelDeprecationNoti
 function DashboardFrame({ children }: { children: React.ReactNode }) {
 	return (
 		<div id="dashboard-shell" className="flex min-h-dvh flex-col">
-			<Header />
+			{/* Joins the fixed notice stack above the header (see lib/noticeStack). */}
 			<Suspense fallback={null}>
 				<ModelDeprecationNoticeSlot />
 			</Suspense>
+			<Header />
 			<main className="flex-1 min-h-0 flex flex-col">{children}</main>
 			<PublicDataFeedbackGate />
 			<CatalogueScrollToTop />
