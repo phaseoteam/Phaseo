@@ -24,7 +24,11 @@ function scaledownTask(model: string): "summarize" | "extract" | null {
 }
 
 export function preprocess(ir: IRChatRequest): IRChatRequest {
-	return cherryPickIRParams(ir, { params: SUPPORTED_PARAMS });
+	const next = cherryPickIRParams(ir, { params: SUPPORTED_PARAMS });
+	if (next.responseFormat?.type === "json_schema") {
+		next.responseFormat = { ...next.responseFormat, strict: false };
+	}
+	return next;
 }
 
 // Runs on the caller's request, before preprocess drops unsupported params.
@@ -34,8 +38,17 @@ function rejection(args: ExecutorExecuteArgs): ExecutorResult | null {
 	if (!task) return invalid(args, "ScaleDown Chat Completions supports summarize and extract.");
 	if (ir.stream) return invalid(args, "ScaleDown models return one complete result and do not support streaming.");
 	if (ir.tools?.length) return invalid(args, "ScaleDown models do not support tools.");
+	const unsupported = ([
+		"temperature", "topP", "topK", "minP", "seed", "stop",
+		"frequencyPenalty", "presencePenalty", "repetitionPenalty", "logitBias",
+		"logprobs", "topLogprobs", "toolChoice", "parallelToolCalls", "maxToolCalls",
+	] as const).filter(key => ir[key] !== undefined);
+	if (unsupported.length) return invalid(args, `ScaleDown models do not support: ${unsupported.join(", ")}.`);
 	if (task === "extract" && ir.responseFormat?.type !== "json_schema") {
 		return invalid(args, "ScaleDown Extract requires response_format with type json_schema describing the fields to extract.");
+	}
+	if (ir.responseFormat?.type === "json_schema" && ir.responseFormat.strict === true) {
+		return invalid(args, "ScaleDown models do not support strict JSON schemas.");
 	}
 	return null;
 }

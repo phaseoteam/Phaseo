@@ -16,7 +16,7 @@ function argsFor(slug: string, overrides: Partial<IRChatRequest> = {}): Executor
 		providerId: "scaledown", providerModelSlug: slug, endpoint: "chat.completions",
 		requestId: "req_scaledown", workspaceId: "ws_test", byokMeta: [], pricingCard: {}, meta: {},
 		capability: "text.generate", protocol: "openai.chat.completions",
-		ir: { model: `scaledown/${slug}`, stream: false, temperature: 0.7,
+		ir: { model: `scaledown/${slug}`, stream: false,
 			messages: [{ role: "user", content: [{ type: "text", text: "Acme Corp invoiced $500." }] }], ...overrides },
 	} as ExecutorExecuteArgs;
 }
@@ -27,15 +27,15 @@ const completion = (content: Record<string, unknown>) => Response.json({
 });
 
 describe("ScaleDown Summarize and Extract", () => {
-	it("sends Extract a non-streaming chat request with the schema and x-api-key", async () => {
+	it.each([undefined, false])("sends Extract with strict=%s as a non-strict schema and x-api-key", async (strict) => {
 		const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(completion({ entities: [], structured_result: null }));
-		const result = await executor(argsFor("extract-1", { responseFormat: invoice }));
+		const result = await executor(argsFor("extract-1", { responseFormat: { ...invoice, strict } }));
 		expect(result.upstream.status).toBe(200);
 		expect(fetchMock.mock.calls[0][0]).toBe("https://api.scaledown.xyz/v1/chat/completions");
 		const headers = new Headers(fetchMock.mock.calls[0][1]?.headers);
 		expect(headers.get("x-api-key")).toBe("scaledown-test");
 		const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
-		expect(body).toMatchObject({ model: "extract-1", stream: false, response_format: { type: "json_schema" } });
+		expect(body).toMatchObject({ model: "extract-1", stream: false, response_format: { type: "json_schema", json_schema: { strict: false } } });
 		expect(body.temperature).toBeUndefined();
 	});
 	it("sends Summarize with max_tokens and no sampling params", async () => {
@@ -52,6 +52,22 @@ describe("ScaleDown Summarize and Extract", () => {
 		["summarize-1", { tools: [{ type: "function", function: { name: "f", parameters: {} } }] }],
 		["extract-1", {}],
 		["extract-1", { responseFormat: { type: "json_object" } }],
+		["extract-1", { responseFormat: { ...invoice, strict: true } }],
+		["summarize-1", { temperature: 0.7 }],
+		["summarize-1", { topP: 0.9 }],
+		["summarize-1", { topK: 5 }],
+		["summarize-1", { minP: 0.1 }],
+		["summarize-1", { seed: 0 }],
+		["summarize-1", { stop: ["stop"] }],
+		["summarize-1", { frequencyPenalty: 0 }],
+		["summarize-1", { presencePenalty: 0 }],
+		["summarize-1", { repetitionPenalty: 1 }],
+		["summarize-1", { logitBias: {} }],
+		["summarize-1", { logprobs: false }],
+		["summarize-1", { topLogprobs: 0 }],
+		["summarize-1", { toolChoice: "none" }],
+		["summarize-1", { parallelToolCalls: false }],
+		["summarize-1", { maxToolCalls: 1 }],
 		["compress", {}],
 	] as Array<[string, Partial<IRChatRequest>]>)("rejects %s %o before a request", async (slug, overrides) => {
 		const fetchMock = vi.spyOn(globalThis, "fetch");
