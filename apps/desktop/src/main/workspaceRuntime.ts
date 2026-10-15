@@ -7,6 +7,9 @@ import { mkdirSync, realpathSync } from "node:fs";
 import path from "node:path";
 import type { AgentActivity, AgentConnection, ModelOption, WorkspaceCommand, AgentQuestion } from "../shared/workspace";
 import { WorkspaceThreads } from "./workspaceThreads";
+import { git } from "./gitProcess";
+import { githubRepository } from "./projectPullRequests";
+import { parsePullRequestReference, type PullRequestLinkSnapshot } from "../shared/pullRequestView";
 import { OrchestratorMcp } from "./orchestratorMcp";
 import { CodexAdapter } from "./codexAdapter";
 import { WorkspaceStore } from "./workspaceStore";
@@ -143,6 +146,10 @@ export class WorkspaceRuntime {
 			this.store.saveTask(task, true); changed = true;
 		}
 		if (changed) this.broadcast();
+	}
+	/** Called after any pane reads a pull request, so linked chats show its latest state. */
+	syncPullRequestSnapshot(repository: string, number: number, snapshot: PullRequestLinkSnapshot) {
+		if (!this.closing && this.store.syncPullRequestSnapshot(repository, number, snapshot)) this.broadcast();
 	}
 	private broadcast() {
 		const parents = this.store.collectDelegationResults();
@@ -390,6 +397,19 @@ export class WorkspaceRuntime {
 			const latest = this.store.getTask(command.id);
 			if (this.executions.has(command.id) || latest.status === "running" || latest.status === "waiting" || latest.archived) throw new Error("Wait for this chat to stop before changing its settings.");
 			latest.nativeModels = catalog; this.store.saveTask(latest);
+		}
+		if (command.type === "link-pull-request") {
+			const reference = parsePullRequestReference(command.reference);
+			if (!reference) throw new Error("Paste a GitHub pull request URL or a number like #42.");
+			let repository = reference.repository;
+			if (!repository) {
+				const projectId = this.store.getTask(command.id).projectId, project = this.store.getProjects().find(value => value.id === projectId);
+				if (!project) throw new Error("This chat has no project. Paste the full pull request URL instead.");
+				let remote: string;
+				try { remote = await git(project.directory, ["remote", "get-url", "origin"]); } catch { throw new Error("This project has no origin remote. Paste the full pull request URL instead."); }
+				repository = githubRepository(remote);
+			}
+			command.repository = repository; command.number = reference.number;
 		}
 		// Grok checks a new effort against its model list; load it for chats created without one.
 		const grokTask = command.type === "update-task" && command.reasoningEffort ? this.store.getTask(command.id) : undefined;

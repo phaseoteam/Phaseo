@@ -1,6 +1,8 @@
-# GitHub proposals
+# GitHub pull requests
 
-Proposals lists open pull requests for a registered project with a `github.com`
+The pane surfaces (linked list, project list and one pull request with Summary, Timeline and Code) are described in [Chats and tools](chats-and-tools.md#pull-requests). This page covers the project list adapter.
+
+The project list shows open pull requests for a registered project with a `github.com`
 origin remote. HTTPS, Git SSH and SSH URL forms are supported. The trusted main
 process validates the project before reading its remote, resolves the installed
 GitHub CLI and makes a noninteractive GraphQL read with literal arguments. The
@@ -17,7 +19,7 @@ expired cursor, and Refresh starts again from the newest results. Failed page
 reads retain the confirmed rows and page number, with Retry for the requested
 page. Changing project resets pagination and ignores obsolete replies.
 
-PR details, review actions, merge checks/actions, background watchers, GitHub
+Background watchers (the Watch flag is stored but not polled), GitHub
 account selection, enterprise hosts and other Git providers remain unfinished.
 The T3 nightly check-refresh hook remains a reference for future live refresh;
 the selected page also refreshes while visible: every 45 seconds for empty, pending or unavailable check states, and 60 seconds for settled states. Focus/visibility return is limited to one refresh per ten seconds; six idle minutes pause polling until interaction resumes. Page errors pause automatic retry. Manual Refresh/Retry remains available. This is foreground refresh, with no background watcher or task wakeups.

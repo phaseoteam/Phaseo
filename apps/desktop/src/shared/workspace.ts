@@ -7,6 +7,7 @@ import type { McpPromptCatalog, McpPromptPreview, McpPromptRequest } from "./mcp
 import type { PullRequestContents, PullRequestContentsQuery } from "./pullRequestContents";
 import type { PullRequestFilesPage, PullRequestFilesQuery } from "./pullRequestFiles";
 import type { ProjectPullRequests, PullRequestDetails } from "./pullRequests";
+import { parsePullRequestReference, validRepository, type PullRequestActionRequest, type PullRequestView, type TaskPullRequestLink } from "./pullRequestView";
 import type { AgentForm, FormAnswer } from "./agentForms";
 import type { McpCommand, McpConnection } from "./mcp";
 import type { WorkspacePreferences } from "./preferences";
@@ -73,6 +74,8 @@ export type Task = {
 	activities?: AgentActivity[];
 	inboxReadAt?: string;
 	missionId?: string;
+	/** Pull requests linked to this chat, after T3 Code's thread pull requests. */
+	pullRequests?: TaskPullRequestLink[];
 };
 export type Workspace = { version: 1; projects: Project[]; accounts: Account[]; agents: AgentConnection[]; tasks: Task[]; mcpConnections: McpConnection[] };
 export type HarnessInstallation = { harness: Harness; installed: boolean; version?: string; error?: string; maintenance?: { method: "npm" | "native" | "manual"; canUpdate: boolean } };
@@ -105,6 +108,10 @@ export type WorkspaceCommand =
 	| { type: "snooze"; id: string; until: string }
 	| { type: "visit"; id: string; at: string }
 	| { type: "auto-settle"; id: string; enabled: boolean }
+	/** `reference` is a GitHub URL, `owner/repo#42`, `#42` or `42`; the main process resolves it against the chat's project. */
+	| { type: "link-pull-request"; id: string; reference: string; repository?: string; number?: number }
+	| { type: "unlink-pull-request"; id: string; repository: string; number: number }
+	| { type: "watch-pull-request"; id: string; repository: string; number: number; watching: boolean }
 	| { type: "add-account"; name: string; harness: "codex" | "claude" | "phaseo" | "cursor" | "grok"; kind: "native" | "api"; endpoint?: string; apiKey?: string }
 	| { type: "update-account"; id: string; name?: string; endpoint?: string; apiKey?: string; archived?: boolean }
 	| { type: "add-agent"; name: string; executable: string; arguments: string[] }
@@ -190,6 +197,10 @@ export type WorkspaceApi = {
 	pullRequestThreads: (projectId: string, query: PullRequestThreadsQuery) => Promise<PullRequestThreadsPage>;
 	pullRequest: (projectId: string, number: number) => Promise<PullRequestDetails>;
 	pullRequests: (projectId: string, cursor?: string) => Promise<ProjectPullRequests>;
+	/** One pull request with its checks, reviews, comments, commits and review threads. */
+	pullRequestView: (projectId: string, number: number) => Promise<PullRequestView>;
+	/** Merge, close, comment, review and the rest, through GitHub CLI; returns the pull request as it is afterwards. */
+	pullRequestAction: (projectId: string, request: PullRequestActionRequest) => Promise<PullRequestView>;
 	gitHunks: (projectId: string, filename: string, staged: boolean) => Promise<GitHunkReview>;
 	gitDiffContents: (projectId: string, request: GitDiffContentsRequest) => Promise<GitDiffContents>;
 	gitCommand: (projectId: string, command: GitCommand) => Promise<GitReview>;
@@ -304,6 +315,14 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 			case "snooze": string("until", true, 100); if (Number.isNaN(Date.parse(command.until as string))) throw new Error("Invalid snooze time."); break;
 			case "visit": string("at", true, 100); if (Number.isNaN(Date.parse(command.at as string))) throw new Error("Invalid visit time."); break;
 			case "auto-settle": if (typeof command.enabled !== "boolean") throw new Error("Invalid auto-settle setting."); break;
+			case "link-pull-request":
+				if (typeof command.reference !== "string" || command.reference.length > 500 || !parsePullRequestReference(command.reference)) throw new Error("Paste a GitHub pull request URL or a number like #42.");
+				// The main process fills these in from the reference.
+				delete command.repository; delete command.number; break;
+			case "unlink-pull-request": case "watch-pull-request":
+				if (!validRepository(command.repository) || !Number.isSafeInteger(command.number) || Number(command.number) < 1 || Number(command.number) > 2147483647) throw new Error("Invalid pull request.");
+				if (command.type === "watch-pull-request" && typeof command.watching !== "boolean") throw new Error("Invalid watch setting.");
+				break;
 			case "queue-remove": case "steer-queue": case "steer-discard": string("messageId"); break;
 			case "queue-edit": string("messageId"); string("text", true, 100000); break;
 			case "queue-move":
