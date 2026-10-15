@@ -37,6 +37,8 @@ begin
     and fact.error_code = 'user:rate_limit_exceeded'
     and fact.safe_metadata->'rate_limit'->>'policy_id' ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
     and fact.safe_metadata->'rate_limit'->>'limit_scope' in ('key', 'member', 'guardrail', 'end_user', 'department')
+    -- Facts outlive their workspace; its rollup rows were removed with it.
+    and exists (select 1 from public.workspaces workspace where workspace.id = fact.workspace_id)
   group by 1, 2, 3, 4, 5;
   get diagnostics v_rows = row_count;
 

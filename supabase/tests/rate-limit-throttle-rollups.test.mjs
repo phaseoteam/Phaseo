@@ -101,6 +101,10 @@ try {
   // Deleting a workspace removes its rows.
   await db.exec(`delete from public.workspaces where id = '${ws(2)}'`);
   assert.equal((await rows(`select count(*)::int as n from public.workspace_rate_limit_throttles_minute where workspace_id = '${ws(2)}'`))[0].n, 0);
+  // Its facts remain, but the next refresh skips them rather than failing on the foreign key.
+  const afterDelete = (await rows(`select public.refresh_rate_limit_throttle_rollups() as s`))[0].s;
+  assert.equal(afterDelete.rows, 3);
+  assert.equal((await rows(`select count(*)::int as n from public.workspace_rate_limit_throttles_minute where workspace_id = '${ws(2)}'`))[0].n, 0);
 
   for (const role of ['anon', 'authenticated']) {
     const [grant] = await rows(`select has_function_privilege($1, 'public.refresh_rate_limit_throttle_rollups(timestamptz)', 'execute') as ok`, [role]);
