@@ -180,6 +180,22 @@ function parseBatchMeta(value: unknown): BatchJobMeta | null {
 	if (source.inputMode === "inline") out.inputMode = "requests";
 	if (source.input_mode === "file" || source.input_mode === "requests") out.inputMode = source.input_mode;
 	if (source.input_mode === "inline") out.inputMode = "requests";
+	const storage = source.vertexStorage;
+	if (provider === "google-vertex" && storage && typeof storage === "object" && !Array.isArray(storage)) {
+		const fields = storage as Record<string, unknown>;
+		const input = typeof fields.inputObject === "string"
+			? /^inputs\/([a-zA-Z0-9_-]{1,128})\/([a-zA-Z0-9_-]{1,128})\.jsonl$/.exec(fields.inputObject)
+			: null;
+		if (typeof fields.project === "string" && /^[a-z][a-z0-9-]{4,61}[a-z0-9]$/.test(fields.project) &&
+			typeof fields.location === "string" && /^(global|[a-z]+-[a-z]+[0-9])$/.test(fields.location) &&
+			typeof fields.bucket === "string" && /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(fields.bucket) &&
+			input && fields.outputPrefix === `outputs/${input[1]}/${input[2]}/`) {
+			out.vertexStorage = {
+				project: fields.project, location: fields.location, bucket: fields.bucket,
+				inputObject: input[0], outputPrefix: fields.outputPrefix,
+			};
+		}
+	}
 	if (typeof source.outputFileId === "string") out.outputFileId = source.outputFileId;
 	if (typeof source.errorFileId === "string") out.errorFileId = source.errorFileId;
 	const requestCountsRaw =
