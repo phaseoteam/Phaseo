@@ -7,7 +7,8 @@ CREATE OR REPLACE FUNCTION public.get_private_usage_overview (
   p_key_id       uuid                     DEFAULT NULL::uuid,
   p_exclude_key  boolean                  DEFAULT false,
   p_creator_id   uuid                     DEFAULT NULL::uuid,
-  p_label        jsonb                    DEFAULT NULL::jsonb
+  p_label_key    text                     DEFAULT NULL::text,
+  p_label_value  text                     DEFAULT NULL::text
 )
   RETURNS jsonb
   LANGUAGE sql
@@ -16,12 +17,13 @@ CREATE OR REPLACE FUNCTION public.get_private_usage_overview (
   AS $function$
 -- Exact usage overview figures for a workspace from p_from to p_to inclusive: one entry
 -- per time bucket (5 minutes, or an hour, day or month in p_time_zone; none when
--- p_bucket is null), model, provider, key, app and BYOK.
--- Whole quarter hours come from v2_private_usage_15m. The minutes outside them, and the
--- latest half hour, which the rollup may not have caught up with yet, come from the
--- requests, counted as process_v2_analytics_outbox counts them. Label filters and
--- 5-minute buckets need every request, so they read requests only.
--- Service role only: the account route checks workspace membership before calling it.
+-- p_bucket is null), model, provider, key, app and BYOK. With a label, only requests
+-- carrying it.
+-- Whole quarter hours come from v2_private_usage_15m, or v2_private_usage_labels_15m
+-- for a label. The minutes outside them, and the latest half hour, which the rollups
+-- may not have caught up with yet, come from v2_usage_overview_requests, which the
+-- rollups are built from. 5-minute buckets read requests only.
+-- Service role only: the account routes check workspace membership before calling it.
 with bounds as (
   select
     rolled.rolled_from,
@@ -29,7 +31,7 @@ with bounds as (
     rolled.rolled_from is not null and rolled.rolled_to > rolled.rolled_from as use_rollup
   from (
     select
-      case when p_label is null and p_bucket is distinct from '5 minutes'
+      case when p_bucket is distinct from '5 minutes'
         then date_bin('15 minutes', p_from - interval '1 microsecond', timestamptz '2000-01-01 00:00:00+00') + interval '15 minutes'
       end as rolled_from,
       date_bin('15 minutes', p_to, timestamptz '2000-01-01 00:00:00+00') - interval '15 minutes' as rolled_to
@@ -44,66 +46,52 @@ raw_ranges as (
 ),
 usage_rows as (
   select
-    fact.occurred_at as at,
-    coalesce(fact.routed_model_slug, fact.requested_model_slug, fact.requested_model_input) as model_id,
-    fact.provider_model_id,
-    fact.key_id,
-    fact.app_id,
-    coalesce(fact.byok, false) as byok,
+    request.occurred_at as at,
+    request.model_id,
+    request.provider_model_id,
+    request.key_id,
+    request.app_id,
+    request.byok,
     1::bigint as requests,
-    (fact.success is true)::integer::bigint as successful_requests,
-    (fact.error_code like '%:guardrail_blocked')::integer::bigint as guardrail_blocked,
-    coalesce(fact.cost_nanos, 0)::numeric as cost_nanos,
-    coalesce(usage.total_tokens, usage.input_tokens + usage.output_tokens) as tokens,
-    usage.input_tokens,
-    usage.output_tokens,
-    usage.reasoning_tokens,
-    usage.cached_tokens
+    request.successful::integer::bigint as successful_requests,
+    request.guardrail_blocked::integer::bigint as guardrail_blocked,
+    request.cost_nanos::numeric as cost_nanos,
+    request.tokens,
+    request.input_tokens,
+    request.output_tokens,
+    request.reasoning_tokens,
+    request.cached_tokens
   from raw_ranges
-  join public.v2_request_facts fact
-    on fact.workspace_id = p_workspace_id
-    and fact.occurred_at >= raw_ranges.range_from
-    and fact.occurred_at < raw_ranges.range_to
-  left join lateral (
-    select
-      coalesce(sum(meter.quantity) filter (where meter.meter_key = 'input_tokens'),
-        sum(meter.quantity) filter (where meter.meter_key = 'prompt_tokens'),
-        sum(meter.quantity) filter (where meter.meter_key = 'input_text_tokens'), 0) as input_tokens,
-      coalesce(sum(meter.quantity) filter (where meter.meter_key = 'output_tokens'),
-        sum(meter.quantity) filter (where meter.meter_key = 'completion_tokens'),
-        sum(meter.quantity) filter (where meter.meter_key = 'output_text_tokens'), 0) as output_tokens,
-      sum(meter.quantity) filter (where meter.meter_key = 'total_tokens') as total_tokens,
-      coalesce(sum(meter.quantity) filter (where meter.meter_key in ('reasoning_tokens', 'output_reasoning_tokens')), 0) as reasoning_tokens,
-      coalesce(sum(meter.quantity) filter (where meter.meter_key in ('cached_read_tokens', 'cached_input_tokens', 'cache_read_tokens', 'cached_read_text_tokens')), 0)
-        + coalesce(sum(meter.quantity) filter (where meter.meter_key in ('cached_write_tokens', 'cache_write_tokens', 'cached_write_text_tokens')), 0) as cached_tokens
-    from public.v2_request_usage meter
-    where meter.request_event_id = fact.request_event_id
-  ) usage on true
-  where coalesce(fact.endpoint, '') not in ('video.generation', 'batch', 'music.generate')
-    and (p_label is null or fact.safe_metadata @> p_label)
+  join private.v2_usage_overview_requests request
+    on request.workspace_id = p_workspace_id
+    and request.occurred_at >= raw_ranges.range_from
+    and request.occurred_at < raw_ranges.range_to
+  where p_label_key is null
+    or request.labels @> jsonb_build_array(jsonb_build_object('key', p_label_key, 'value', p_label_value))
   union all
   select
-    rollup.bucket_start,
-    rollup.model_id,
-    rollup.provider_model_id,
-    rollup.key_id,
-    rollup.app_id,
-    rollup.byok,
-    rollup.requests,
-    rollup.successful_requests,
-    rollup.guardrail_blocked,
-    rollup.cost_nanos,
-    rollup.tokens,
-    rollup.input_tokens,
-    rollup.output_tokens,
-    rollup.reasoning_tokens,
-    rollup.cached_tokens
+    rollup.bucket_start, rollup.model_id, rollup.provider_model_id, rollup.key_id, rollup.app_id, rollup.byok,
+    rollup.requests, rollup.successful_requests, rollup.guardrail_blocked, rollup.cost_nanos,
+    rollup.tokens, rollup.input_tokens, rollup.output_tokens, rollup.reasoning_tokens, rollup.cached_tokens
   from bounds
   join public.v2_private_usage_15m rollup
     on rollup.workspace_id = p_workspace_id
     and rollup.bucket_start >= bounds.rolled_from
     and rollup.bucket_start < bounds.rolled_to
-  where bounds.use_rollup
+  where bounds.use_rollup and p_label_key is null
+  union all
+  select
+    rollup.bucket_start, rollup.model_id, rollup.provider_model_id, rollup.key_id, rollup.app_id, rollup.byok,
+    rollup.requests, rollup.successful_requests, rollup.guardrail_blocked, rollup.cost_nanos,
+    rollup.tokens, rollup.input_tokens, rollup.output_tokens, rollup.reasoning_tokens, rollup.cached_tokens
+  from bounds
+  join public.v2_private_usage_labels_15m rollup
+    on rollup.workspace_id = p_workspace_id
+    and rollup.label_key = p_label_key
+    and rollup.label_value = p_label_value
+    and rollup.bucket_start >= bounds.rolled_from
+    and rollup.bucket_start < bounds.rolled_to
+  where bounds.use_rollup and p_label_key is not null
 ),
 filtered as (
   select usage_rows.*
@@ -163,10 +151,10 @@ from (
 ) cell;
 $function$;
 
-GRANT EXECUTE ON FUNCTION "public"."get_private_usage_overview"(uuid, timestamp WITH time zone, timestamp WITH time zone, text, text, uuid, boolean, uuid, jsonb) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."get_private_usage_overview"(uuid, timestamp WITH time zone, timestamp WITH time zone, text, text, uuid, boolean, uuid, text, text) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."get_private_usage_overview"(uuid, timestamp WITH time zone, timestamp WITH time zone, text, text, uuid, boolean, uuid, jsonb) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."get_private_usage_overview"(uuid, timestamp WITH time zone, timestamp WITH time zone, text, text, uuid, boolean, uuid, text, text) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."get_private_usage_overview"(uuid, timestamp WITH time zone, timestamp WITH time zone, text, text, uuid, boolean, uuid, jsonb) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."get_private_usage_overview"(uuid, timestamp WITH time zone, timestamp WITH time zone, text, text, uuid, boolean, uuid, text, text) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."get_private_usage_overview"(uuid, timestamp WITH time zone, timestamp WITH time zone, text, text, uuid, boolean, uuid, jsonb) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."get_private_usage_overview"(uuid, timestamp WITH time zone, timestamp WITH time zone, text, text, uuid, boolean, uuid, text, text) FROM PUBLIC, "anon", "authenticated";

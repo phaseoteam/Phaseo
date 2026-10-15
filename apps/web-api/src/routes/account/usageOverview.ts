@@ -47,6 +47,21 @@ export function usageOverviewTimeZone(value: string | null): string {
 	}
 }
 
+export type UsageLabelFacet = { key: string; value: string };
+
+/**
+ * Reads `get_private_usage_label_facets` output: the most used labels, which the
+ * function caps, in key then value order for the label filter.
+ */
+export function parseUsageLabelFacets(value: unknown): UsageLabelFacet[] {
+	return (Array.isArray(value) ? value : [])
+		.flatMap((item): UsageLabelFacet[] => {
+			const facet = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+			return typeof facet.key === "string" && typeof facet.value === "string" ? [{ key: facet.key, value: facet.value }] : [];
+		})
+		.sort((left, right) => left.key.localeCompare(right.key) || left.value.localeCompare(right.value));
+}
+
 const count = (value: unknown) => {
 	const number = Number(value ?? 0);
 	return Number.isFinite(number) && number > 0 ? number : 0;

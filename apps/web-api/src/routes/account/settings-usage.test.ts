@@ -282,9 +282,18 @@ describe("account usage settings routes", () => {
 	it("returns private logs, upstream, jobs, and session views with metadata", async () => {
 		let requestedExactFacets = false;
 		let requestedLabelFilter = false;
-		let requestedUnfilteredLabelFacets = false;
-		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+		const labelFacetArgs: Array<Record<string, unknown>> = [];
+		const labelTotalsArgs: Array<Record<string, unknown>> = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/rpc/get_private_usage_label_facets")) {
+				labelFacetArgs.push(JSON.parse(String(init?.body ?? "{}")));
+				return Response.json([{ key: "team", value: "support", requests: 1 }]);
+			}
+			if (url.includes("/rpc/get_private_usage_overview")) {
+				labelTotalsArgs.push(JSON.parse(String(init?.body ?? "{}")));
+				return Response.json([{ bucket: null, modelId: "openai/gpt-test", requests: 1, successfulRequests: 1, costNanos: 1000 }]);
+			}
 			if (url.includes("/rpc/get_gateway_request_facets")) requestedExactFacets = true;
 			if (url.includes("detail_metadata=cs")) requestedLabelFilter = true;
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
@@ -292,10 +301,6 @@ describe("account usage settings routes", () => {
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
 			if (url.includes("gateway_async_operations")) return new Response(JSON.stringify([{ kind: "video", internal_id: "job-1", request_id: "request-1", app_id: "app-1", provider: "openai", model: "openai/gpt-test", status: "completed", created_at: "2026-07-17T00:00:00Z", updated_at: "2026-07-17T00:01:00Z", meta: { webhook: { status: "delivered" } } }]), { status: 200 });
 			if (url.includes("/rpc/get_private_usage_facets")) return new Response(JSON.stringify([{ canonical_model_id: "openai/gpt-test", provider: "openai" }]), { status: 200 });
-			if (url.includes("select=safe_metadata")) {
-				requestedUnfilteredLabelFacets = !url.includes("detail_metadata=cs");
-				return new Response(JSON.stringify([{ safe_metadata: { labels: [{ key: "team", value: "support" }] }, cost_nanos: 1000 }]), { status: 200, headers: { "content-range": "0-0/1" } });
-			}
 			if (url.includes("v2_request_facts")) return new Response(JSON.stringify([{ request_event_id: "gateway-1", occurred_at: "2026-07-17T00:00:00Z", request_id: "G-test", key_id: "key-1", endpoint: "chat/completions", requested_model_input: "openai/gpt-test", requested_model_slug: "openai/gpt-test", routed_model_slug: "openai/gpt-test", provider_model_id: "openai:gpt-test", status_code: 200, success: true, byok: false, stream: true, latency_ms: 60, gateway_ttft_ms: 360, generation_ms: 80, gateway_total_ms: 140, upstream_attempt_count: 2, throughput: 125, cost_nanos: 1000, currency: "USD", v2_request_attempts: [{ attempt_id: "upstream-1", attempt_number: 1, provider_model_id: "openai:gpt-test", started_at: "2026-07-17T00:00:01Z", status_code: 503, success: false, error_code: "unavailable", failure_class: "provider_error", latency_ms: 120, safe_metadata: { provider: "openai", key_source: "gateway" } }, { attempt_id: "upstream-2", attempt_number: 2, provider_model_id: "openai:gpt-test", started_at: "2026-07-17T00:00:02Z", status_code: 200, success: true, upstream_response_id: "resp-1", latency_ms: 120, safe_metadata: { provider: "openai", key_source: "gateway" } }] }]), { status: 200 });
 			if (url.includes("gateway_upstream_requests")) return new Response(JSON.stringify([{ id: "upstream-1", created_at: "2026-07-17T00:00:01Z", gateway_request_id: "gateway-1", request_id: "G-test", sequence: 1, round_number: 1, attempt_number: 1, stage: "upstream", endpoint: "chat/completions", model_id: "openai/gpt-test", provider: "openai", status_code: 200, success: true, outcome: "success", key_source: "gateway", latency_ms: 120, generation_ms: 80, usage: { output_tokens: 10 }, metadata: {} }]), { status: 200 });
 			if (url.includes("gateway_usage_rollup_15m")) return new Response(JSON.stringify([{ canonical_model_id: "openai/gpt-test", provider: "openai" }]), { status: 200 });
@@ -332,7 +337,10 @@ describe("account usage settings routes", () => {
 		await expect(logs.json()).resolves.toMatchObject({ view: "logs", data: { dedupedModels: ["openai/gpt-test"], labelFacets: [{ key: "team", value: "support" }], labelSummary: null, initialRequestsPage: { data: [{ request_id: "request-1" }], pageSize: 50, hasMore: false, nextCursor: null }, providerNameEntries: [["openai", "OpenAI"]] } });
 		expect(requestedExactFacets).toBe(true);
 		expect(requestedLabelFilter).toBe(true);
-		expect(requestedUnfilteredLabelFacets).toBe(true);
+		// The label list ignores the selected label; only the labelled view asks for its totals.
+		expect(labelFacetArgs).toHaveLength(2);
+		for (const args of labelFacetArgs) expect(args).toEqual({ p_workspace_id: "workspace-1", p_from: expect.any(String), p_to: expect.any(String) });
+		expect(labelTotalsArgs).toEqual([{ p_workspace_id: "workspace-1", p_from: expect.any(String), p_to: expect.any(String), p_label_key: "team", p_label_value: "support" }]);
 		await expect(labeledLogs.json()).resolves.toMatchObject({ view: "logs", data: { labelSummary: { key: "team", value: "support", requestCount: 1, totalCostNanos: 1000, isSampled: false } } });
 		await expect(upstream.json()).resolves.toMatchObject({ view: "upstream", data: { availableKeys: [{ id: "key-1", name: "Production" }], upstreamRequests: [{ id: "upstream-2", request_id: "G-test", attempt_number: 2, attempt_count: 2, request_latency_ms: 360 }, { id: "upstream-1", request_id: "G-test", attempt_number: 1 }], providerMetadataEntries: [["openai", { name: "OpenAI" }]], providerNameEntries: [["openai", "OpenAI"]] } });
 		await expect(jobs.json()).resolves.toMatchObject({ view: "jobs", data: { recentJobs: [{ internal_id: "job-1", request_cost_nanos: 0, request_created_at: "2026-07-17T00:00:00Z", webhook: { configured: true, attempt_count: 0 } }], jobProviders: ["openai"] } });
@@ -400,7 +408,7 @@ describe("account usage settings routes", () => {
 			}
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
-			if (url.includes("v2_request_facts")) return new Response(JSON.stringify([{ safe_metadata: { labels: [{ key: "team", value: "support" }] }, cost_nanos: 1000 }]), { status: 200, headers: { "content-range": "0-0/1" } });
+			if (url.includes("/rpc/get_private_usage_label_facets")) return Response.json([{ key: "team", value: "support", requests: 4 }]);
 			if (url.includes("/keys")) return new Response(JSON.stringify([{ id: "key-1", name: "Production", prefix: "ph_" }]), { status: 200 });
 			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([]), { status: 200 });
 			if (url.includes("v2_models")) return new Response(JSON.stringify([{ model_id: "openai/gpt-test", name: "GPT Test", organisation_id: "openai", organisation: { name: "OpenAI" } }]), { status: 200 });
@@ -437,7 +445,7 @@ describe("account usage settings routes", () => {
 		});
 		expect(monthUsageArgs).toEqual({ p_workspace_id: "workspace-1", p_from: "2026-09-01" });
 		// A day is cut into hours in the reader's time zone; the comparison windows are totals.
-		const filters = { p_time_zone: "Europe/London", p_key_id: null, p_exclude_key: false, p_creator_id: null, p_label: null };
+		const filters = { p_time_zone: "Europe/London", p_key_id: null, p_exclude_key: false, p_creator_id: null, p_label_key: null, p_label_value: null };
 		expect(overviewArgs).toEqual([
 			{ p_workspace_id: "workspace-1", p_from: "2026-07-17T00:00:00Z", p_to: "2026-07-18T00:00:00Z", p_bucket: "hour", ...filters },
 			{ p_workspace_id: "workspace-1", p_from: "2026-07-16T00:00:00Z", p_to: "2026-07-17T00:00:00Z", p_bucket: null, ...filters },

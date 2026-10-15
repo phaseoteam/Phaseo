@@ -1,7 +1,8 @@
--- Exact 15-minute workspace usage for the usage overview, so its figures, charts and
--- forecasts no longer come from a 5,000-request sample. The outbox processor keeps the
--- rollup current; get_private_usage_overview reads it, plus the requests at the edges
--- of the window that the rollup doesn't cover.
+-- Exact 15-minute workspace usage for the usage overview, overall and per request
+-- label, so its figures, charts, label filter and forecasts no longer come from a
+-- 5,000-request sample. The outbox processor keeps both rollups current;
+-- get_private_usage_overview and get_private_usage_label_facets read them, plus the
+-- requests at the edges of the window that they don't cover.
 SET local check_function_bodies = off;
 
 -- Hold the outbox processor until this commits, so no request is acknowledged by the
@@ -43,6 +44,80 @@ GRANT SELECT ON TABLE "public"."v2_private_usage_15m" TO "service_role";
 REVOKE ALL ON TABLE "public"."v2_private_usage_15m" FROM "anon", "authenticated";
 
 COMMENT ON TABLE "public"."v2_private_usage_15m" IS 'Exact workspace usage per 15 minutes for the usage overview, by model, route, key, app and BYOK. Rebuilt per workspace hour by process_v2_analytics_outbox. Excludes async job endpoints, as the overview does. Service role only: the account route checks workspace membership.';
+
+CREATE TABLE "public"."v2_private_usage_labels_15m" (
+  "workspace_id"        uuid                     NOT NULL,
+  "bucket_start"        timestamp with time zone NOT NULL,
+  "label_key"           text                     NOT NULL,
+  "label_value"         text                     NOT NULL,
+  "model_id"            text,
+  "provider_model_id"   text,
+  "key_id"              uuid,
+  "app_id"              uuid,
+  "byok"                boolean                  NOT NULL DEFAULT false,
+  "requests"            bigint                   NOT NULL DEFAULT 0,
+  "successful_requests" bigint                   NOT NULL DEFAULT 0,
+  "guardrail_blocked"   bigint                   NOT NULL DEFAULT 0,
+  "cost_nanos"          numeric(30,0)            NOT NULL DEFAULT 0,
+  "tokens"              numeric(30,12)           NOT NULL DEFAULT 0,
+  "input_tokens"        numeric(30,12)           NOT NULL DEFAULT 0,
+  "output_tokens"       numeric(30,12)           NOT NULL DEFAULT 0,
+  "reasoning_tokens"    numeric(30,12)           NOT NULL DEFAULT 0,
+  "cached_tokens"       numeric(30,12)           NOT NULL DEFAULT 0,
+  "updated_at"          timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "v2_private_usage_labels_15m_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT
+);
+
+ALTER TABLE "public"."v2_private_usage_labels_15m"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE UNIQUE INDEX v2_private_usage_labels_15m_key ON public.v2_private_usage_labels_15m
+  USING btree
+  (workspace_id, label_key, label_value, bucket_start, model_id, provider_model_id, key_id, app_id, byok) NULLS NOT DISTINCT;
+
+CREATE INDEX v2_private_usage_labels_15m_workspace_time_idx ON public.v2_private_usage_labels_15m USING btree (workspace_id, bucket_start);
+
+REVOKE ALL ON TABLE "public"."v2_private_usage_labels_15m" FROM "service_role";
+
+GRANT SELECT ON TABLE "public"."v2_private_usage_labels_15m" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."v2_private_usage_labels_15m" FROM "anon", "authenticated";
+
+COMMENT ON TABLE "public"."v2_private_usage_labels_15m" IS 'Exact workspace usage per 15 minutes and request label, by model, route, key, app and BYOK, for the usage overview''s label filter and label list. A request counts once under each of its labels. Rebuilt per workspace hour by process_v2_analytics_outbox alongside v2_private_usage_15m. Service role only: the account routes check workspace membership.';
+
+CREATE VIEW "private"."v2_usage_overview_requests" WITH (security_invoker=true) AS  SELECT fact.request_event_id,
+    fact.workspace_id,
+    fact.occurred_at,
+    COALESCE(fact.routed_model_slug, fact.requested_model_slug, fact.requested_model_input) AS model_id,
+    fact.provider_model_id,
+    fact.key_id,
+    fact.app_id,
+    COALESCE(fact.byok, false) AS byok,
+    (fact.success IS TRUE) AS successful,
+    COALESCE((fact.error_code ~~ '%:guardrail_blocked'::text), false) AS guardrail_blocked,
+    COALESCE(fact.cost_nanos, (0)::bigint) AS cost_nanos,
+    COALESCE(usage.total_tokens, (usage.input_tokens + usage.output_tokens)) AS tokens,
+    usage.input_tokens,
+    usage.output_tokens,
+    usage.reasoning_tokens,
+    usage.cached_tokens,
+        CASE
+            WHEN (jsonb_typeof((fact.safe_metadata -> 'labels'::text)) = 'array'::text) THEN (fact.safe_metadata -> 'labels'::text)
+            ELSE '[]'::jsonb
+        END AS labels
+   FROM (public.v2_request_facts fact
+     LEFT JOIN LATERAL ( SELECT COALESCE(sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'input_tokens'::text)), sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'prompt_tokens'::text)), sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'input_text_tokens'::text)), (0)::numeric) AS input_tokens,
+            COALESCE(sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'output_tokens'::text)), sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'completion_tokens'::text)), sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'output_text_tokens'::text)), (0)::numeric) AS output_tokens,
+            sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'total_tokens'::text)) AS total_tokens,
+            COALESCE(sum(meter.quantity) FILTER (WHERE (meter.meter_key = ANY (ARRAY['reasoning_tokens'::text, 'output_reasoning_tokens'::text]))), (0)::numeric) AS reasoning_tokens,
+            (COALESCE(sum(meter.quantity) FILTER (WHERE (meter.meter_key = ANY (ARRAY['cached_read_tokens'::text, 'cached_input_tokens'::text, 'cache_read_tokens'::text, 'cached_read_text_tokens'::text]))), (0)::numeric) + COALESCE(sum(meter.quantity) FILTER (WHERE (meter.meter_key = ANY (ARRAY['cached_write_tokens'::text, 'cache_write_tokens'::text, 'cached_write_text_tokens'::text]))), (0)::numeric)) AS cached_tokens
+           FROM public.v2_request_usage meter
+          WHERE (meter.request_event_id = fact.request_event_id)) usage ON (true))
+  WHERE (COALESCE(fact.endpoint, ''::text) <> ALL (ARRAY['video.generation'::text, 'batch'::text, 'music.generate'::text]));
+
+GRANT SELECT ON TABLE "private"."v2_usage_overview_requests" TO "service_role";
+
+COMMENT ON VIEW "private"."v2_usage_overview_requests" IS 'One row per request as the usage overview counts it: the resolved model, tokens as the reported total or input plus output, cached reads and writes, guardrail blocks and request labels. Async job endpoints are left out; their own pages count them. Feeds the 15-minute rollups and the requests at the edges of get_private_usage_overview.';
 
 CREATE OR REPLACE FUNCTION public.process_v2_analytics_outbox (
   p_limit integer DEFAULT 250
@@ -251,11 +326,11 @@ begin
     v_private_grains := v_private_grains + 1;
   end loop;
 
-  -- The usage overview's 15-minute rollup is rebuilt a whole workspace hour at a
+  -- The usage overview's 15-minute rollups are rebuilt a whole workspace hour at a
   -- time, so a correction that moves a request to another key or model within the
-  -- hour is rebuilt too. Tokens count like the overview counts a request: the
-  -- reported total, or input plus output. get_private_usage_overview counts
-  -- requests outside the rollup the same way.
+  -- hour is rebuilt too. v2_usage_overview_requests counts each request as the
+  -- overview does; get_private_usage_overview reads requests outside the rollups
+  -- from the same view.
   for grain in
     select distinct batch.workspace_id, date_trunc('hour', batch.occurred_at, 'UTC') as bucket_start
     from pg_temp.v2_rollup_batch batch
@@ -264,45 +339,48 @@ begin
     where rollup.workspace_id = grain.workspace_id
       and rollup.bucket_start >= grain.bucket_start
       and rollup.bucket_start < grain.bucket_start + interval '1 hour';
+    delete from public.v2_private_usage_labels_15m rollup
+    where rollup.workspace_id = grain.workspace_id
+      and rollup.bucket_start >= grain.bucket_start
+      and rollup.bucket_start < grain.bucket_start + interval '1 hour';
 
-    insert into public.v2_private_usage_15m (
-      workspace_id, bucket_start, model_id, provider_model_id, key_id, app_id, byok,
+    -- Read each request's usage meters once for both rollups.
+    with requests as materialized (
+      select request.*, date_bin('15 minutes', request.occurred_at, grain.bucket_start) as bucket_start
+      from private.v2_usage_overview_requests request
+      where request.workspace_id = grain.workspace_id
+        and request.occurred_at >= grain.bucket_start
+        and request.occurred_at < grain.bucket_start + interval '1 hour'
+    ), totals as (
+      insert into public.v2_private_usage_15m (
+        workspace_id, bucket_start, model_id, provider_model_id, key_id, app_id, byok,
+        requests, successful_requests, guardrail_blocked, cost_nanos,
+        tokens, input_tokens, output_tokens, reasoning_tokens, cached_tokens
+      )
+      select
+        grain.workspace_id, request.bucket_start, request.model_id, request.provider_model_id,
+        request.key_id, request.app_id, request.byok,
+        count(*), count(*) filter (where request.successful), count(*) filter (where request.guardrail_blocked),
+        sum(request.cost_nanos), sum(request.tokens), sum(request.input_tokens), sum(request.output_tokens),
+        sum(request.reasoning_tokens), sum(request.cached_tokens)
+      from requests request
+      group by 2, 3, 4, 5, 6, 7
+    )
+    insert into public.v2_private_usage_labels_15m (
+      workspace_id, bucket_start, label_key, label_value, model_id, provider_model_id, key_id, app_id, byok,
       requests, successful_requests, guardrail_blocked, cost_nanos,
       tokens, input_tokens, output_tokens, reasoning_tokens, cached_tokens
     )
     select
-      grain.workspace_id,
-      date_bin('15 minutes', fact.occurred_at, grain.bucket_start),
-      coalesce(fact.routed_model_slug, fact.requested_model_slug, fact.requested_model_input),
-      fact.provider_model_id, fact.key_id, fact.app_id, coalesce(fact.byok, false),
-      count(*), count(*) filter (where fact.success),
-      count(*) filter (where fact.error_code like '%:guardrail_blocked'),
-      coalesce(sum(fact.cost_nanos), 0),
-      coalesce(sum(coalesce(usage.total_tokens, usage.input_tokens + usage.output_tokens)), 0),
-      coalesce(sum(usage.input_tokens), 0), coalesce(sum(usage.output_tokens), 0),
-      coalesce(sum(usage.reasoning_tokens), 0), coalesce(sum(usage.cached_tokens), 0)
-    from public.v2_request_facts fact
-    left join lateral (
-      select
-        coalesce(sum(meter.quantity) filter (where meter.meter_key = 'input_tokens'),
-          sum(meter.quantity) filter (where meter.meter_key = 'prompt_tokens'),
-          sum(meter.quantity) filter (where meter.meter_key = 'input_text_tokens'), 0) as input_tokens,
-        coalesce(sum(meter.quantity) filter (where meter.meter_key = 'output_tokens'),
-          sum(meter.quantity) filter (where meter.meter_key = 'completion_tokens'),
-          sum(meter.quantity) filter (where meter.meter_key = 'output_text_tokens'), 0) as output_tokens,
-        sum(meter.quantity) filter (where meter.meter_key = 'total_tokens') as total_tokens,
-        coalesce(sum(meter.quantity) filter (where meter.meter_key in ('reasoning_tokens', 'output_reasoning_tokens')), 0) as reasoning_tokens,
-        coalesce(sum(meter.quantity) filter (where meter.meter_key in ('cached_read_tokens', 'cached_input_tokens', 'cache_read_tokens', 'cached_read_text_tokens')), 0)
-          + coalesce(sum(meter.quantity) filter (where meter.meter_key in ('cached_write_tokens', 'cache_write_tokens', 'cached_write_text_tokens')), 0) as cached_tokens
-      from public.v2_request_usage meter
-      where meter.request_event_id = fact.request_event_id
-    ) usage on true
-    where fact.workspace_id = grain.workspace_id
-      and fact.occurred_at >= grain.bucket_start
-      and fact.occurred_at < grain.bucket_start + interval '1 hour'
-      -- Async jobs are counted by their own pages, as on the overview.
-      and coalesce(fact.endpoint, '') not in ('video.generation', 'batch', 'music.generate')
-    group by 2, 3, 4, 5, 6, 7;
+      grain.workspace_id, request.bucket_start, label.value ->> 'key', label.value ->> 'value',
+      request.model_id, request.provider_model_id, request.key_id, request.app_id, request.byok,
+      count(*), count(*) filter (where request.successful), count(*) filter (where request.guardrail_blocked),
+      sum(request.cost_nanos), sum(request.tokens), sum(request.input_tokens), sum(request.output_tokens),
+      sum(request.reasoning_tokens), sum(request.cached_tokens)
+    from requests request
+    cross join lateral jsonb_array_elements(request.labels) label
+    where jsonb_typeof(label.value -> 'key') = 'string' and jsonb_typeof(label.value -> 'value') = 'string'
+    group by 2, 3, 4, 5, 6, 7, 8, 9;
 
     v_workspace_hours := v_workspace_hours + 1;
   end loop;
@@ -524,7 +602,7 @@ $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."process_v2_analytics_outbox"(integer) TO "service_role";
 
-COMMENT ON FUNCTION "public"."process_v2_analytics_outbox"(integer) IS 'Serializes summary rebuilds, claims a bounded seed batch, and coalesces covered workspace/hour events before idempotent private daily, public daily, public hourly, and usage overview 15-minute rebuilds; the 15-minute rollup is rebuilt per touched workspace hour. At most 2000 acknowledgments per run; corrections retain row locks and re-enqueue after commit.';
+COMMENT ON FUNCTION "public"."process_v2_analytics_outbox"(integer) IS 'Serializes summary rebuilds, claims a bounded seed batch, and coalesces covered workspace/hour events before idempotent private daily, public daily, public hourly, and usage overview 15-minute rebuilds; the 15-minute and label rollups are rebuilt per touched workspace hour. At most 2000 acknowledgments per run; corrections retain row locks and re-enqueue after commit.';
 
 REVOKE ALL ON FUNCTION "public"."process_v2_analytics_outbox"(integer) FROM "postgres";
 
@@ -541,7 +619,8 @@ CREATE OR REPLACE FUNCTION public.get_private_usage_overview (
   p_key_id       uuid                     DEFAULT NULL::uuid,
   p_exclude_key  boolean                  DEFAULT false,
   p_creator_id   uuid                     DEFAULT NULL::uuid,
-  p_label        jsonb                    DEFAULT NULL::jsonb
+  p_label_key    text                     DEFAULT NULL::text,
+  p_label_value  text                     DEFAULT NULL::text
 )
   RETURNS jsonb
   LANGUAGE sql
@@ -550,12 +629,13 @@ CREATE OR REPLACE FUNCTION public.get_private_usage_overview (
   AS $function$
 -- Exact usage overview figures for a workspace from p_from to p_to inclusive: one entry
 -- per time bucket (5 minutes, or an hour, day or month in p_time_zone; none when
--- p_bucket is null), model, provider, key, app and BYOK.
--- Whole quarter hours come from v2_private_usage_15m. The minutes outside them, and the
--- latest half hour, which the rollup may not have caught up with yet, come from the
--- requests, counted as process_v2_analytics_outbox counts them. Label filters and
--- 5-minute buckets need every request, so they read requests only.
--- Service role only: the account route checks workspace membership before calling it.
+-- p_bucket is null), model, provider, key, app and BYOK. With a label, only requests
+-- carrying it.
+-- Whole quarter hours come from v2_private_usage_15m, or v2_private_usage_labels_15m
+-- for a label. The minutes outside them, and the latest half hour, which the rollups
+-- may not have caught up with yet, come from v2_usage_overview_requests, which the
+-- rollups are built from. 5-minute buckets read requests only.
+-- Service role only: the account routes check workspace membership before calling it.
 with bounds as (
   select
     rolled.rolled_from,
@@ -563,7 +643,7 @@ with bounds as (
     rolled.rolled_from is not null and rolled.rolled_to > rolled.rolled_from as use_rollup
   from (
     select
-      case when p_label is null and p_bucket is distinct from '5 minutes'
+      case when p_bucket is distinct from '5 minutes'
         then date_bin('15 minutes', p_from - interval '1 microsecond', timestamptz '2000-01-01 00:00:00+00') + interval '15 minutes'
       end as rolled_from,
       date_bin('15 minutes', p_to, timestamptz '2000-01-01 00:00:00+00') - interval '15 minutes' as rolled_to
@@ -578,66 +658,52 @@ raw_ranges as (
 ),
 usage_rows as (
   select
-    fact.occurred_at as at,
-    coalesce(fact.routed_model_slug, fact.requested_model_slug, fact.requested_model_input) as model_id,
-    fact.provider_model_id,
-    fact.key_id,
-    fact.app_id,
-    coalesce(fact.byok, false) as byok,
+    request.occurred_at as at,
+    request.model_id,
+    request.provider_model_id,
+    request.key_id,
+    request.app_id,
+    request.byok,
     1::bigint as requests,
-    (fact.success is true)::integer::bigint as successful_requests,
-    (fact.error_code like '%:guardrail_blocked')::integer::bigint as guardrail_blocked,
-    coalesce(fact.cost_nanos, 0)::numeric as cost_nanos,
-    coalesce(usage.total_tokens, usage.input_tokens + usage.output_tokens) as tokens,
-    usage.input_tokens,
-    usage.output_tokens,
-    usage.reasoning_tokens,
-    usage.cached_tokens
+    request.successful::integer::bigint as successful_requests,
+    request.guardrail_blocked::integer::bigint as guardrail_blocked,
+    request.cost_nanos::numeric as cost_nanos,
+    request.tokens,
+    request.input_tokens,
+    request.output_tokens,
+    request.reasoning_tokens,
+    request.cached_tokens
   from raw_ranges
-  join public.v2_request_facts fact
-    on fact.workspace_id = p_workspace_id
-    and fact.occurred_at >= raw_ranges.range_from
-    and fact.occurred_at < raw_ranges.range_to
-  left join lateral (
-    select
-      coalesce(sum(meter.quantity) filter (where meter.meter_key = 'input_tokens'),
-        sum(meter.quantity) filter (where meter.meter_key = 'prompt_tokens'),
-        sum(meter.quantity) filter (where meter.meter_key = 'input_text_tokens'), 0) as input_tokens,
-      coalesce(sum(meter.quantity) filter (where meter.meter_key = 'output_tokens'),
-        sum(meter.quantity) filter (where meter.meter_key = 'completion_tokens'),
-        sum(meter.quantity) filter (where meter.meter_key = 'output_text_tokens'), 0) as output_tokens,
-      sum(meter.quantity) filter (where meter.meter_key = 'total_tokens') as total_tokens,
-      coalesce(sum(meter.quantity) filter (where meter.meter_key in ('reasoning_tokens', 'output_reasoning_tokens')), 0) as reasoning_tokens,
-      coalesce(sum(meter.quantity) filter (where meter.meter_key in ('cached_read_tokens', 'cached_input_tokens', 'cache_read_tokens', 'cached_read_text_tokens')), 0)
-        + coalesce(sum(meter.quantity) filter (where meter.meter_key in ('cached_write_tokens', 'cache_write_tokens', 'cached_write_text_tokens')), 0) as cached_tokens
-    from public.v2_request_usage meter
-    where meter.request_event_id = fact.request_event_id
-  ) usage on true
-  where coalesce(fact.endpoint, '') not in ('video.generation', 'batch', 'music.generate')
-    and (p_label is null or fact.safe_metadata @> p_label)
+  join private.v2_usage_overview_requests request
+    on request.workspace_id = p_workspace_id
+    and request.occurred_at >= raw_ranges.range_from
+    and request.occurred_at < raw_ranges.range_to
+  where p_label_key is null
+    or request.labels @> jsonb_build_array(jsonb_build_object('key', p_label_key, 'value', p_label_value))
   union all
   select
-    rollup.bucket_start,
-    rollup.model_id,
-    rollup.provider_model_id,
-    rollup.key_id,
-    rollup.app_id,
-    rollup.byok,
-    rollup.requests,
-    rollup.successful_requests,
-    rollup.guardrail_blocked,
-    rollup.cost_nanos,
-    rollup.tokens,
-    rollup.input_tokens,
-    rollup.output_tokens,
-    rollup.reasoning_tokens,
-    rollup.cached_tokens
+    rollup.bucket_start, rollup.model_id, rollup.provider_model_id, rollup.key_id, rollup.app_id, rollup.byok,
+    rollup.requests, rollup.successful_requests, rollup.guardrail_blocked, rollup.cost_nanos,
+    rollup.tokens, rollup.input_tokens, rollup.output_tokens, rollup.reasoning_tokens, rollup.cached_tokens
   from bounds
   join public.v2_private_usage_15m rollup
     on rollup.workspace_id = p_workspace_id
     and rollup.bucket_start >= bounds.rolled_from
     and rollup.bucket_start < bounds.rolled_to
-  where bounds.use_rollup
+  where bounds.use_rollup and p_label_key is null
+  union all
+  select
+    rollup.bucket_start, rollup.model_id, rollup.provider_model_id, rollup.key_id, rollup.app_id, rollup.byok,
+    rollup.requests, rollup.successful_requests, rollup.guardrail_blocked, rollup.cost_nanos,
+    rollup.tokens, rollup.input_tokens, rollup.output_tokens, rollup.reasoning_tokens, rollup.cached_tokens
+  from bounds
+  join public.v2_private_usage_labels_15m rollup
+    on rollup.workspace_id = p_workspace_id
+    and rollup.label_key = p_label_key
+    and rollup.label_value = p_label_value
+    and rollup.bucket_start >= bounds.rolled_from
+    and rollup.bucket_start < bounds.rolled_to
+  where bounds.use_rollup and p_label_key is not null
 ),
 filtered as (
   select usage_rows.*
@@ -697,47 +763,133 @@ from (
 ) cell;
 $function$;
 
-GRANT EXECUTE ON FUNCTION "public"."get_private_usage_overview"(uuid, timestamp WITH time zone, timestamp WITH time zone, text, text, uuid, boolean, uuid, jsonb) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."get_private_usage_overview"(uuid, timestamp WITH time zone, timestamp WITH time zone, text, text, uuid, boolean, uuid, text, text) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."get_private_usage_overview"(uuid, timestamp WITH time zone, timestamp WITH time zone, text, text, uuid, boolean, uuid, jsonb) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."get_private_usage_overview"(uuid, timestamp WITH time zone, timestamp WITH time zone, text, text, uuid, boolean, uuid, text, text) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."get_private_usage_overview"(uuid, timestamp WITH time zone, timestamp WITH time zone, text, text, uuid, boolean, uuid, jsonb) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."get_private_usage_overview"(uuid, timestamp WITH time zone, timestamp WITH time zone, text, text, uuid, boolean, uuid, text, text) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."get_private_usage_overview"(uuid, timestamp WITH time zone, timestamp WITH time zone, text, text, uuid, boolean, uuid, jsonb) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."get_private_usage_overview"(uuid, timestamp WITH time zone, timestamp WITH time zone, text, text, uuid, boolean, uuid, text, text) FROM PUBLIC, "anon", "authenticated";
 
--- Backfill every request so far, counted as process_v2_analytics_outbox counts them.
-insert into public.v2_private_usage_15m (
-  workspace_id, bucket_start, model_id, provider_model_id, key_id, app_id, byok,
+CREATE OR REPLACE FUNCTION public.get_private_usage_label_facets (
+  p_workspace_id uuid,
+  p_from         timestamp with time zone,
+  p_to           timestamp with time zone,
+  p_key_id       uuid                     DEFAULT NULL::uuid,
+  p_exclude_key  boolean                  DEFAULT false,
+  p_creator_id   uuid                     DEFAULT NULL::uuid,
+  p_limit        integer                  DEFAULT 500
+)
+  RETURNS jsonb
+  LANGUAGE sql
+  STABLE
+  SET search_path TO ''
+  AS $function$
+-- The request labels a workspace used from p_from to p_to inclusive, with how many
+-- requests carried each, for the usage overview's label filter: the most used first,
+-- at most p_limit. Whole quarter hours come from v2_private_usage_labels_15m and the
+-- minutes outside them, and the latest half hour, from v2_usage_overview_requests, as
+-- in get_private_usage_overview.
+-- Service role only: the account routes check workspace membership before calling it.
+with bounds as (
+  select
+    rolled.rolled_from,
+    rolled.rolled_to,
+    rolled.rolled_to > rolled.rolled_from as use_rollup
+  from (
+    select
+      date_bin('15 minutes', p_from - interval '1 microsecond', timestamptz '2000-01-01 00:00:00+00') + interval '15 minutes' as rolled_from,
+      date_bin('15 minutes', p_to, timestamptz '2000-01-01 00:00:00+00') - interval '15 minutes' as rolled_to
+  ) rolled
+),
+raw_ranges as (
+  select p_from as range_from, p_to + interval '1 microsecond' as range_to from bounds where not bounds.use_rollup
+  union all
+  select p_from, bounds.rolled_from from bounds where bounds.use_rollup and bounds.rolled_from > p_from
+  union all
+  select bounds.rolled_to, p_to + interval '1 microsecond' from bounds where bounds.use_rollup
+),
+label_rows as (
+  select label.value ->> 'key' as label_key, label.value ->> 'value' as label_value, request.key_id, 1::bigint as requests
+  from raw_ranges
+  join private.v2_usage_overview_requests request
+    on request.workspace_id = p_workspace_id
+    and request.occurred_at >= raw_ranges.range_from
+    and request.occurred_at < raw_ranges.range_to
+  cross join lateral jsonb_array_elements(request.labels) label
+  where jsonb_typeof(label.value -> 'key') = 'string' and jsonb_typeof(label.value -> 'value') = 'string'
+  union all
+  select rollup.label_key, rollup.label_value, rollup.key_id, rollup.requests
+  from bounds
+  join public.v2_private_usage_labels_15m rollup
+    on rollup.workspace_id = p_workspace_id
+    and rollup.bucket_start >= bounds.rolled_from
+    and rollup.bucket_start < bounds.rolled_to
+  where bounds.use_rollup
+),
+facets as (
+  select label_rows.label_key, label_rows.label_value, sum(label_rows.requests) as requests
+  from label_rows
+  where (p_key_id is null or case when p_exclude_key
+      then label_rows.key_id is distinct from p_key_id
+      else label_rows.key_id = p_key_id end)
+    and (p_creator_id is null or exists (
+      select 1 from public.keys key
+      where key.id = label_rows.key_id
+        and key.workspace_id = p_workspace_id
+        and key.created_by = p_creator_id
+    ))
+  group by 1, 2
+  order by 3 desc, 1, 2
+  limit greatest(0, least(coalesce(p_limit, 500), 500))
+)
+select coalesce(jsonb_agg(jsonb_build_object(
+  'key', facets.label_key,
+  'value', facets.label_value,
+  'requests', facets.requests
+) order by facets.requests desc, facets.label_key, facets.label_value), '[]'::jsonb)
+from facets;
+$function$;
+
+GRANT EXECUTE ON FUNCTION "public"."get_private_usage_label_facets"(uuid, timestamp WITH time zone, timestamp WITH time zone, uuid, boolean, uuid, integer) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."get_private_usage_label_facets"(uuid, timestamp WITH time zone, timestamp WITH time zone, uuid, boolean, uuid, integer) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."get_private_usage_label_facets"(uuid, timestamp WITH time zone, timestamp WITH time zone, uuid, boolean, uuid, integer) TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."get_private_usage_label_facets"(uuid, timestamp WITH time zone, timestamp WITH time zone, uuid, boolean, uuid, integer) FROM PUBLIC, "anon", "authenticated";
+
+-- Backfill every request so far, from the view the outbox processor builds the rollups from.
+with requests as materialized (
+  select request.*, date_bin('15 minutes', request.occurred_at, timestamptz '2000-01-01 00:00:00+00') as bucket_start
+  from private.v2_usage_overview_requests request
+), totals as (
+  insert into public.v2_private_usage_15m (
+    workspace_id, bucket_start, model_id, provider_model_id, key_id, app_id, byok,
+    requests, successful_requests, guardrail_blocked, cost_nanos,
+    tokens, input_tokens, output_tokens, reasoning_tokens, cached_tokens
+  )
+  select
+    request.workspace_id, request.bucket_start, request.model_id, request.provider_model_id,
+    request.key_id, request.app_id, request.byok,
+    count(*), count(*) filter (where request.successful), count(*) filter (where request.guardrail_blocked),
+    sum(request.cost_nanos), sum(request.tokens), sum(request.input_tokens), sum(request.output_tokens),
+    sum(request.reasoning_tokens), sum(request.cached_tokens)
+  from requests request
+  group by 1, 2, 3, 4, 5, 6, 7
+)
+insert into public.v2_private_usage_labels_15m (
+  workspace_id, bucket_start, label_key, label_value, model_id, provider_model_id, key_id, app_id, byok,
   requests, successful_requests, guardrail_blocked, cost_nanos,
   tokens, input_tokens, output_tokens, reasoning_tokens, cached_tokens
 )
 select
-  fact.workspace_id,
-  date_bin('15 minutes', fact.occurred_at, timestamptz '2000-01-01 00:00:00+00'),
-  coalesce(fact.routed_model_slug, fact.requested_model_slug, fact.requested_model_input),
-  fact.provider_model_id, fact.key_id, fact.app_id, coalesce(fact.byok, false),
-  count(*), count(*) filter (where fact.success),
-  count(*) filter (where fact.error_code like '%:guardrail_blocked'),
-  coalesce(sum(fact.cost_nanos), 0),
-  coalesce(sum(coalesce(usage.total_tokens, usage.input_tokens + usage.output_tokens)), 0),
-  coalesce(sum(usage.input_tokens), 0), coalesce(sum(usage.output_tokens), 0),
-  coalesce(sum(usage.reasoning_tokens), 0), coalesce(sum(usage.cached_tokens), 0)
-from public.v2_request_facts fact
-left join (
-  select
-    meter.request_event_id,
-    coalesce(sum(meter.quantity) filter (where meter.meter_key = 'input_tokens'),
-      sum(meter.quantity) filter (where meter.meter_key = 'prompt_tokens'),
-      sum(meter.quantity) filter (where meter.meter_key = 'input_text_tokens'), 0) as input_tokens,
-    coalesce(sum(meter.quantity) filter (where meter.meter_key = 'output_tokens'),
-      sum(meter.quantity) filter (where meter.meter_key = 'completion_tokens'),
-      sum(meter.quantity) filter (where meter.meter_key = 'output_text_tokens'), 0) as output_tokens,
-    sum(meter.quantity) filter (where meter.meter_key = 'total_tokens') as total_tokens,
-    coalesce(sum(meter.quantity) filter (where meter.meter_key in ('reasoning_tokens', 'output_reasoning_tokens')), 0) as reasoning_tokens,
-    coalesce(sum(meter.quantity) filter (where meter.meter_key in ('cached_read_tokens', 'cached_input_tokens', 'cache_read_tokens', 'cached_read_text_tokens')), 0)
-      + coalesce(sum(meter.quantity) filter (where meter.meter_key in ('cached_write_tokens', 'cache_write_tokens', 'cached_write_text_tokens')), 0) as cached_tokens
-  from public.v2_request_usage meter
-  group by meter.request_event_id
-) usage on usage.request_event_id = fact.request_event_id
-where coalesce(fact.endpoint, '') not in ('video.generation', 'batch', 'music.generate')
-group by 1, 2, 3, 4, 5, 6, 7;
+  request.workspace_id, request.bucket_start, label.value ->> 'key', label.value ->> 'value',
+  request.model_id, request.provider_model_id, request.key_id, request.app_id, request.byok,
+  count(*), count(*) filter (where request.successful), count(*) filter (where request.guardrail_blocked),
+  sum(request.cost_nanos), sum(request.tokens), sum(request.input_tokens), sum(request.output_tokens),
+  sum(request.reasoning_tokens), sum(request.cached_tokens)
+from requests request
+cross join lateral jsonb_array_elements(request.labels) label
+where jsonb_typeof(label.value -> 'key') = 'string' and jsonb_typeof(label.value -> 'value') = 'string'
+group by 1, 2, 3, 4, 5, 6, 7, 8, 9;

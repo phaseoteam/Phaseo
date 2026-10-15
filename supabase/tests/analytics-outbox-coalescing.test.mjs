@@ -13,8 +13,13 @@ async function fixture(current) {
   for (const name of ['enqueue_v2_analytics_correction', 'enqueue_v2_analytics_fact_correction', 'enqueue_v2_analytics_meter_correction']) {
     await db.exec(await read(`../schemas/private/functions/${name}.sql`));
   }
-  // The fixture predates the usage overview's 15-minute rollup; workspaces have no identity table here.
-  if (current) await db.exec((await read('../schemas/public/tables/v2_private_usage_15m.sql')).replace(/,\r?\n  CONSTRAINT "v2_private_usage_15m_workspace_id_fkey"[^\r\n]*/, ''));
+  // The fixture predates the usage overview's 15-minute rollups; workspaces have no identity table here.
+  if (current) {
+    for (const table of ['v2_private_usage_15m', 'v2_private_usage_labels_15m']) {
+      await db.exec((await read(`../schemas/public/tables/${table}.sql`)).replace(new RegExp(`,\\r?\\n  CONSTRAINT "${table}_workspace_id_fkey"[^\\r\\n]*`), ''));
+    }
+    await db.exec(await read('../schemas/private/views/v2_usage_overview_requests.sql'));
+  }
   await db.exec(await read(current ? '../schemas/public/functions/process_v2_analytics_outbox.sql' : './fixtures/analytics-outbox-before.sql'));
   if (current) await db.exec(await read('../schemas/public/functions/refresh_v2_analytics_range.sql'));
   for (const table of tables) {
@@ -44,6 +49,8 @@ async function fixture(current) {
     from generate_series(1,3000) i;
     update v2_request_facts set safe_metadata='{"testing_mode":true}'
       where substring(request_id from 9)::integer%13=0;
+    update v2_request_facts set safe_metadata=coalesce(safe_metadata,'{}')||'{"labels":[{"key":"team","value":"search"}]}'
+      where substring(request_id from 9)::integer%7=0;
     insert into v2_request_usage(request_event_id,meter_key,modality,unit,quantity)
       select request_event_id,'input_tokens','text','token',3 from v2_request_facts;
     insert into v2_analytics_outbox(request_event_id,workspace_id,occurred_at,status,available_at,updated_at)
@@ -97,6 +104,10 @@ async function assertOverviewRollupExact(db, message) {
     assert.equal(row.rolled, row.facts, message);
     assert.equal(row.rolled_input_tokens, row.input_tokens, message);
   }
+  const labels = (await db.query(`select
+      (select count(*)::int from v2_request_facts where safe_metadata @> '{"labels":[{"key":"team","value":"search"}]}') facts,
+      (select coalesce(sum(requests), 0)::int from v2_private_usage_labels_15m where label_key = 'team' and label_value = 'search') rolled`)).rows[0];
+  assert.equal(labels.rolled, labels.facts, message);
 }
 
 async function output(db) {

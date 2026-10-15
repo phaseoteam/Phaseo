@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseUsageOverviewCells, usageOverviewBucket, usageOverviewTimeZone } from "./usageOverview";
+import { parseUsageLabelFacets, parseUsageOverviewCells, usageOverviewBucket, usageOverviewTimeZone } from "./usageOverview";
 
 describe("usageOverviewBucket", () => {
 	it("keeps a valid requested bucket", () => {
@@ -35,5 +35,22 @@ describe("parseUsageOverviewCells", () => {
 			{ bucket: null, modelId: null, provider: null, keyId: null, appId: null, byok: false, requests: 0, successfulRequests: 0, guardrailBlocked: 0, costNanos: 0, tokens: 0, inputTokens: 0, outputTokens: 0, reasoningTokens: 0, cachedTokens: 0 },
 		]);
 		expect(parseUsageOverviewCells(null)).toEqual([]);
+	});
+});
+
+describe("parseUsageLabelFacets", () => {
+	it("keeps well-formed labels in key then value order", () => {
+		expect(parseUsageLabelFacets([
+			{ key: "team", value: "search", requests: 9 },
+			{ key: "env", value: "prod", requests: 4 },
+			{ key: "team", value: "billing", requests: 2 },
+			{ key: 1, value: "bad" },
+			null,
+		])).toEqual([
+			{ key: "env", value: "prod" },
+			{ key: "team", value: "billing" },
+			{ key: "team", value: "search" },
+		]);
+		expect(parseUsageLabelFacets("nope")).toEqual([]);
 	});
 });

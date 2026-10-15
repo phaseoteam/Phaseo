@@ -205,11 +205,11 @@ begin
     v_private_grains := v_private_grains + 1;
   end loop;
 
-  -- The usage overview's 15-minute rollup is rebuilt a whole workspace hour at a
+  -- The usage overview's 15-minute rollups are rebuilt a whole workspace hour at a
   -- time, so a correction that moves a request to another key or model within the
-  -- hour is rebuilt too. Tokens count like the overview counts a request: the
-  -- reported total, or input plus output. get_private_usage_overview counts
-  -- requests outside the rollup the same way.
+  -- hour is rebuilt too. v2_usage_overview_requests counts each request as the
+  -- overview does; get_private_usage_overview reads requests outside the rollups
+  -- from the same view.
   for grain in
     select distinct batch.workspace_id, date_trunc('hour', batch.occurred_at, 'UTC') as bucket_start
     from pg_temp.v2_rollup_batch batch
@@ -218,45 +218,48 @@ begin
     where rollup.workspace_id = grain.workspace_id
       and rollup.bucket_start >= grain.bucket_start
       and rollup.bucket_start < grain.bucket_start + interval '1 hour';
+    delete from public.v2_private_usage_labels_15m rollup
+    where rollup.workspace_id = grain.workspace_id
+      and rollup.bucket_start >= grain.bucket_start
+      and rollup.bucket_start < grain.bucket_start + interval '1 hour';
 
-    insert into public.v2_private_usage_15m (
-      workspace_id, bucket_start, model_id, provider_model_id, key_id, app_id, byok,
+    -- Read each request's usage meters once for both rollups.
+    with requests as materialized (
+      select request.*, date_bin('15 minutes', request.occurred_at, grain.bucket_start) as bucket_start
+      from private.v2_usage_overview_requests request
+      where request.workspace_id = grain.workspace_id
+        and request.occurred_at >= grain.bucket_start
+        and request.occurred_at < grain.bucket_start + interval '1 hour'
+    ), totals as (
+      insert into public.v2_private_usage_15m (
+        workspace_id, bucket_start, model_id, provider_model_id, key_id, app_id, byok,
+        requests, successful_requests, guardrail_blocked, cost_nanos,
+        tokens, input_tokens, output_tokens, reasoning_tokens, cached_tokens
+      )
+      select
+        grain.workspace_id, request.bucket_start, request.model_id, request.provider_model_id,
+        request.key_id, request.app_id, request.byok,
+        count(*), count(*) filter (where request.successful), count(*) filter (where request.guardrail_blocked),
+        sum(request.cost_nanos), sum(request.tokens), sum(request.input_tokens), sum(request.output_tokens),
+        sum(request.reasoning_tokens), sum(request.cached_tokens)
+      from requests request
+      group by 2, 3, 4, 5, 6, 7
+    )
+    insert into public.v2_private_usage_labels_15m (
+      workspace_id, bucket_start, label_key, label_value, model_id, provider_model_id, key_id, app_id, byok,
       requests, successful_requests, guardrail_blocked, cost_nanos,
       tokens, input_tokens, output_tokens, reasoning_tokens, cached_tokens
     )
     select
-      grain.workspace_id,
-      date_bin('15 minutes', fact.occurred_at, grain.bucket_start),
-      coalesce(fact.routed_model_slug, fact.requested_model_slug, fact.requested_model_input),
-      fact.provider_model_id, fact.key_id, fact.app_id, coalesce(fact.byok, false),
-      count(*), count(*) filter (where fact.success),
-      count(*) filter (where fact.error_code like '%:guardrail_blocked'),
-      coalesce(sum(fact.cost_nanos), 0),
-      coalesce(sum(coalesce(usage.total_tokens, usage.input_tokens + usage.output_tokens)), 0),
-      coalesce(sum(usage.input_tokens), 0), coalesce(sum(usage.output_tokens), 0),
-      coalesce(sum(usage.reasoning_tokens), 0), coalesce(sum(usage.cached_tokens), 0)
-    from public.v2_request_facts fact
-    left join lateral (
-      select
-        coalesce(sum(meter.quantity) filter (where meter.meter_key = 'input_tokens'),
-          sum(meter.quantity) filter (where meter.meter_key = 'prompt_tokens'),
-          sum(meter.quantity) filter (where meter.meter_key = 'input_text_tokens'), 0) as input_tokens,
-        coalesce(sum(meter.quantity) filter (where meter.meter_key = 'output_tokens'),
-          sum(meter.quantity) filter (where meter.meter_key = 'completion_tokens'),
-          sum(meter.quantity) filter (where meter.meter_key = 'output_text_tokens'), 0) as output_tokens,
-        sum(meter.quantity) filter (where meter.meter_key = 'total_tokens') as total_tokens,
-        coalesce(sum(meter.quantity) filter (where meter.meter_key in ('reasoning_tokens', 'output_reasoning_tokens')), 0) as reasoning_tokens,
-        coalesce(sum(meter.quantity) filter (where meter.meter_key in ('cached_read_tokens', 'cached_input_tokens', 'cache_read_tokens', 'cached_read_text_tokens')), 0)
-          + coalesce(sum(meter.quantity) filter (where meter.meter_key in ('cached_write_tokens', 'cache_write_tokens', 'cached_write_text_tokens')), 0) as cached_tokens
-      from public.v2_request_usage meter
-      where meter.request_event_id = fact.request_event_id
-    ) usage on true
-    where fact.workspace_id = grain.workspace_id
-      and fact.occurred_at >= grain.bucket_start
-      and fact.occurred_at < grain.bucket_start + interval '1 hour'
-      -- Async jobs are counted by their own pages, as on the overview.
-      and coalesce(fact.endpoint, '') not in ('video.generation', 'batch', 'music.generate')
-    group by 2, 3, 4, 5, 6, 7;
+      grain.workspace_id, request.bucket_start, label.value ->> 'key', label.value ->> 'value',
+      request.model_id, request.provider_model_id, request.key_id, request.app_id, request.byok,
+      count(*), count(*) filter (where request.successful), count(*) filter (where request.guardrail_blocked),
+      sum(request.cost_nanos), sum(request.tokens), sum(request.input_tokens), sum(request.output_tokens),
+      sum(request.reasoning_tokens), sum(request.cached_tokens)
+    from requests request
+    cross join lateral jsonb_array_elements(request.labels) label
+    where jsonb_typeof(label.value -> 'key') = 'string' and jsonb_typeof(label.value -> 'value') = 'string'
+    group by 2, 3, 4, 5, 6, 7, 8, 9;
 
     v_workspace_hours := v_workspace_hours + 1;
   end loop;
@@ -478,7 +481,7 @@ $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."process_v2_analytics_outbox"(integer) TO "service_role";
 
-COMMENT ON FUNCTION "public"."process_v2_analytics_outbox"(integer) IS 'Serializes summary rebuilds, claims a bounded seed batch, and coalesces covered workspace/hour events before idempotent private daily, public daily, public hourly, and usage overview 15-minute rebuilds; the 15-minute rollup is rebuilt per touched workspace hour. At most 2000 acknowledgments per run; corrections retain row locks and re-enqueue after commit.';
+COMMENT ON FUNCTION "public"."process_v2_analytics_outbox"(integer) IS 'Serializes summary rebuilds, claims a bounded seed batch, and coalesces covered workspace/hour events before idempotent private daily, public daily, public hourly, and usage overview 15-minute rebuilds; the 15-minute and label rollups are rebuilt per touched workspace hour. At most 2000 acknowledgments per run; corrections retain row locks and re-enqueue after commit.';
 
 REVOKE ALL ON FUNCTION "public"."process_v2_analytics_outbox"(integer) FROM "postgres";
 
