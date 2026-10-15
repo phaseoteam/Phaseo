@@ -6,7 +6,7 @@ import type { ThemePreference } from "../types";
 
 export type WorkspaceMode = "chat" | "code";
 export type RightPanelTab = "changes" | "files" | "terminal" | "browser" | "agents";
-export type SettingsPage = "general" | "appearance" | "notifications" | "accounts" | "usage" | "agents" | "mcp" | "missions";
+export type SettingsPage = "general" | "appearance" | "notifications" | "accounts" | "usage" | "agents" | "mcp";
 export type CompareGroup = { id: string; title: string; taskIds: string[]; createdAt: string };
 
 type WorkspaceState = {
@@ -35,6 +35,9 @@ type WorkspaceState = {
 	rightPanel?: RightPanelTab;
 	setRightPanel: (tab?: RightPanelTab) => void;
 	settings?: SettingsPage;
+	/** The scheduled tasks page, opened from the top of the sidebar. */
+	scheduled: boolean;
+	openScheduled: () => void;
 	openSettings: (page?: SettingsPage) => void;
 	closeSettings: () => void;
 	commandsOpen: boolean;
@@ -49,7 +52,7 @@ export function errorText(reason: unknown) {
 	return (reason instanceof Error ? reason.message : String(reason)).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "");
 }
 
-type Location = { mode: WorkspaceMode; selectedId?: string; compareId?: string; settings?: SettingsPage };
+type Location = { mode: WorkspaceMode; selectedId?: string; compareId?: string; settings?: SettingsPage; scheduled?: boolean };
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
 	const api = window.phaseoDesktop?.workspace;
@@ -64,7 +67,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 	const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
 	const [sidebarOpen, setSidebarOpen] = usePersistedState("phaseo.desktop.sidebarOpen", true);
 	const [rightPanel, setRightPanel] = usePersistedState<RightPanelTab | undefined>("phaseo.desktop.rightPanel", undefined);
-	const [settings, setSettings] = useState<SettingsPage>();
+	const [settings, setSettingsState] = useState<SettingsPage>();
+	const [scheduled, setScheduled] = useState(false);
+	const setSettings = useCallback((page?: SettingsPage) => { setSettingsState(page); if (page) setScheduled(false); }, []);
 	const [commandsOpen, setCommandsOpen] = useState(false);
 	const [navigation, setNavigation] = useState<{ entries: Location[]; index: number }>({ entries: [], index: -1 });
 
@@ -89,7 +94,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 		return () => media.removeEventListener("change", apply);
 	}, [theme]);
 
-	const location = useMemo(() => ({ mode, selectedId, compareId, settings }), [mode, selectedId, compareId, settings]);
+	const location = useMemo(() => ({ mode, selectedId, compareId, settings, ...(scheduled ? { scheduled } : {}) }), [mode, selectedId, compareId, settings, scheduled]);
 	useEffect(() => {
 		setNavigation(previous => {
 			if (JSON.stringify(previous.entries[previous.index]) === JSON.stringify(location)) return previous;
@@ -101,7 +106,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 		const target = navigation.entries[navigation.index + direction];
 		if (!target) return;
 		setNavigation(previous => ({ ...previous, index: previous.index + direction }));
-		setModeState(target.mode); setSelectedId(target.selectedId); setCompareId(target.compareId); setSettings(target.settings);
+		setModeState(target.mode); setSelectedId(target.selectedId); setCompareId(target.compareId); setSettings(target.settings); setScheduled(Boolean(target.scheduled));
 	};
 
 	const command = useCallback(async (value: WorkspaceCommand) => {
@@ -114,22 +119,23 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 		}
 	}, [api]);
 
-	// Notifications and missions open a chat from anywhere, including the settings page.
-	useEffect(() => api?.onOpenTask(id => { if (id) { setSelectedId(id); setCompareId(undefined); setSettings(undefined); } }), [api, setSelectedId, setCompareId]);
+	// Notifications and scheduled tasks open a chat from anywhere, including the settings page.
+	useEffect(() => api?.onOpenTask(id => { if (id) { setSelectedId(id); setCompareId(undefined); setSettings(undefined); setScheduled(false); } }), [api, setSelectedId, setCompareId, setSettings]);
 
 	const taskById = useCallback((id: string) => overview.tasks.find(task => task.id === id), [overview.tasks]);
 	const select = useCallback((id?: string) => {
-		setCompareId(undefined); setSelectedId(id); setSettings(undefined);
+		setCompareId(undefined); setSelectedId(id); setSettings(undefined); setScheduled(false);
 		const task = id ? overview.tasks.find(value => value.id === id) : undefined;
 		if (task) setModeState(task.projectId ? "code" : "chat");
-	}, [overview.tasks, setCompareId, setSelectedId, setModeState]);
-	const openCompare = useCallback((id?: string) => { setSelectedId(undefined); setCompareId(id); setSettings(undefined); if (id) setModeState("chat"); }, [setSelectedId, setCompareId, setModeState]);
+	}, [overview.tasks, setCompareId, setSelectedId, setModeState, setSettings]);
+	const openCompare = useCallback((id?: string) => { setSelectedId(undefined); setCompareId(id); setSettings(undefined); setScheduled(false); if (id) setModeState("chat"); }, [setSelectedId, setCompareId, setModeState, setSettings]);
+	const openScheduled = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setScheduled(true); }, [setSelectedId, setCompareId, setSettings]);
 	const setMode = useCallback((next: WorkspaceMode) => {
-		setModeState(next); setSettings(undefined);
+		setModeState(next); setSettings(undefined); setScheduled(false);
 		const task = selectedId ? overview.tasks.find(value => value.id === selectedId) : undefined;
 		if (task && (next === "code") !== Boolean(task.projectId)) setSelectedId(undefined);
 		if (next === "code") setCompareId(undefined);
-	}, [selectedId, overview.tasks, setModeState, setSelectedId, setCompareId]);
+	}, [selectedId, overview.tasks, setModeState, setSelectedId, setCompareId, setSettings]);
 
 	const value: WorkspaceState = {
 		api, overview, setOverview, command, error, setError,
@@ -141,6 +147,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 		theme, setTheme, resolvedTheme,
 		sidebarOpen, setSidebarOpen,
 		rightPanel, setRightPanel,
+		scheduled, openScheduled,
 		settings, openSettings: page => setSettings(page ?? "general"), closeSettings: () => setSettings(undefined),
 		commandsOpen, setCommandsOpen,
 		history: { back: () => move(-1), forward: () => move(1), canBack: navigation.index > 0, canForward: navigation.index < navigation.entries.length - 1 },

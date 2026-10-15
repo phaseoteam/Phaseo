@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Archive, ChevronRight, Columns3, Ellipsis, FolderOpen, FolderPlus, LogIn, Pencil, Pin, PinOff, Plus, Settings } from "lucide-react";
+import { Archive, CalendarClock, ChevronRight, Columns3, Ellipsis, FolderOpen, FolderPlus, LogIn, Pencil, Pin, PinOff, Plus, Settings } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { chatDragType } from "../../shared/mentions";
 import type { TaskOverview } from "../../shared/workspaceOverview";
@@ -10,6 +10,7 @@ import { usePersistedState } from "../lib/persistedState";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { SettingsNav } from "../settings/SettingsPage";
 import { ModelStack } from "../chat/ModelPicker";
+import { useScheduledTasks } from "../views/ScheduledTasks";
 
 const dayMs = 86_400_000;
 function dateBucket(iso: string, now = new Date()) {
@@ -158,9 +159,20 @@ function AccountFooter() {
 	</div>;
 }
 
+function ScheduledTasksLink() {
+	const { scheduled, openScheduled } = useWorkspace();
+	const { tasks } = useScheduledTasks();
+	const on = tasks.filter(task => task.enabled).length;
+	return <button type="button" aria-current={scheduled ? "page" : undefined} onClick={openScheduled}
+		className={cn("mt-1 flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] text-sidebar-foreground/85 hover:bg-sidebar-accent/70", scheduled && "bg-sidebar-accent text-sidebar-foreground")}>
+		<CalendarClock className="size-4 text-muted-foreground" />Scheduled tasks
+		{on > 0 && <span className="ml-auto text-[11px] text-muted-foreground" title={`${on} turned on`}>{on}</span>}
+	</button>;
+}
+
 export function Sidebar() {
-	const { mode, select, selectedId, compareId, setNewChatProjectId, settings } = useWorkspace();
-	const fresh = !selectedId && !compareId;
+	const { mode, select, selectedId, compareId, setNewChatProjectId, settings, scheduled } = useWorkspace();
+	const fresh = !selectedId && !compareId && !scheduled;
 	if (settings) return <aside aria-label="Settings" className="flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground"><SettingsNav /></aside>;
 	return <aside aria-label={mode === "chat" ? "Chats" : "Projects"} className="flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
 		<div className="p-2.5">
@@ -168,6 +180,7 @@ export function Sidebar() {
 				className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] font-semibold transition-colors", fresh ? "bg-sidebar-accent text-foreground" : "bg-primary text-primary-foreground hover:bg-primary/85")}>
 				<Plus className="size-4" />New chat<span className={cn("ml-auto text-[10.5px] font-medium", fresh ? "text-muted-foreground" : "text-primary-foreground/70")}>{shortcutLabel("N")}</span>
 			</button>
+			<ScheduledTasksLink />
 		</div>
 		<ScrollArea className="min-h-0 flex-1"><nav className="pb-3">{mode === "chat" ? <ChatList /> : <ProjectList />}</nav></ScrollArea>
 		<AccountFooter />

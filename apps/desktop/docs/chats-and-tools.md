@@ -104,6 +104,10 @@ Type `@` anywhere in a message to mention a chat or a file. You can also drag a 
 
 Messages and replies show the same chips: file paths and `@path` mentions open in your editor, links show the site or the GitHub pull request or issue, and chat mentions open the chat. Code blocks, version numbers, emails and paths inside sentences like `and/or` stay as text.
 
+## Scheduled tasks
+
+**Scheduled tasks**, under New chat at the top of the sidebar, lists chats that start themselves while Phaseo is open: at a time of day (every day, or on chosen days, in this computer's timezone) or every few minutes or hours. Each one runs like a chat you pick, with that chat's account, agent, model, project and permissions, and every run is a fresh chat listed under the task. New ones start paused; the switch turns them on, and Run now starts one immediately. Missed runs are skipped. Agents can schedule tasks from a chat with `schedule_task`, and those start turned on.
+
 ## Reusable chat commands
 
 Type `/` at the start of a message to open the command menu. It starts with actions for the chat: archive, compact, fork, export, attach files, rename, pin, start a new chat, open MCP or account settings, switch the model, and change the model's own settings (Reasoning and the like, with Fast as a toggle). Code chats add plan mode and permissions. Actions with choices open them in the menu; Escape goes back. Plan mode has no button of its own: the composer shows a Plan indicator only while it is on, and clicking it turns it off. The model, reasoning and permissions controls sit on the left of the composer.

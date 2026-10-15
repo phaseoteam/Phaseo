@@ -26,7 +26,7 @@ Keep these separate from the broader desktop feature ledger; an exposed tool alo
 - [ ] Native subagent observation
 - [x] Message-boundary forks, child messaging and idempotent conversation-result merge
 - [ ] Full provider handoff and Git worktree merge-back tools
-- [x] Top-level chat launch (single and batch) with workspace strategies including new Git worktrees, project listing, chat organisation and scheduled-task tools over Missions (fixture validation)
+- [x] Top-level chat launch (single and batch) with workspace strategies including new Git worktrees, project listing, chat organisation and scheduled-task tools (fixture validation)
 - [ ] Preview tools
 - [ ] Full latest-nightly parity audit
 
@@ -102,8 +102,8 @@ Launch guards:
 
 `organize_thread` takes `{ id, action: "pin" | "unpin" | "archive" | "unarchive" | "rename", title? }`. It applies to the caller itself, its orchestration children and chats it launched. A chat cannot archive itself. Archiving first cancels an active or queued chat, then uses the runtime's archive path, which stops that chat's agent tree. Its `requireApproval` is a predicate (`action === "archive"`). The Phaseo agent loop already supports predicates; the MCP server now evaluates them too.
 
-Schedules are Missions. `MissionService` registers its command handler as `WorkspaceRuntime.missionCommand`, so the tools share the Missions page's validation, timing and change notifications:
-- `schedule_task` takes `{ title, prompt, schedule, templateTaskId?, enabled? }`. `schedule` is `{ type: "interval", minutes: 1–10080 }` or `{ type: "daily", time: "HH:MM", weekdays: [0–6] }` (local time; Sunday is 0; `[]` means daily). The template defaults to the caller. Unlike the Missions page, it is enabled unless `enabled: false`, matching T3.
+Schedules are scheduled tasks (stored as missions). `MissionService` registers its command handler as `WorkspaceRuntime.missionCommand`, so the tools share the Scheduled tasks page's validation, timing and change notifications:
+- `schedule_task` takes `{ title, prompt, schedule, templateTaskId?, enabled? }`. `schedule` is `{ type: "interval", minutes: 1–10080 }` or `{ type: "daily", time: "HH:MM", weekdays: [0–6] }` (local time; Sunday is 0; `[]` means daily). The template defaults to the caller. Unlike the Scheduled tasks page, it is enabled unless `enabled: false`, matching T3.
 - `update_scheduled_task` takes `{ id, enabled?, title?, prompt?, schedule? }`.
 - `delete_scheduled_task` and `run_scheduled_task_now` take `{ id }`.
 - `list_scheduled_tasks` takes `{}`.
@@ -111,7 +111,7 @@ Schedules are Missions. `MissionService` registers its command handler as `Works
 Scheduling guards:
 - Create, update, delete and run need the full-access, non-Plan caller and approval. Listing needs neither.
 - A template must be an active chat whose mode and permissions are no broader than the caller's. Existing missions are checked against their template the same way; deletion tolerates a deleted template.
-- Mission runs copy the template's harness, model, settings, mode, project and permission mode, read when each run starts. A run from a full-access chat runs with full access; change the template chat's permissions to change later runs.
+- Scheduled runs copy the template's harness, model, settings, mode, project and permission mode, read when each run starts. A run from a full-access chat runs with full access; change the template chat's permissions to change later runs.
 
 Validation: deterministic fixtures in `orchestrationParity.test.ts`, the store, thread-tool and adapter suites. Unverified against live providers: Claude `tools: []` keeping MCP tools, Codex `developer_instructions` and elicitation for orchestration calls, Cursor `tools: ["mcp"]`, Pi's `mcp__phaseo__*` pattern on older Pi releases, and client-side MCP call timeouts other than Codex and Pi.
 

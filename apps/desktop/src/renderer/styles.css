@@ -142,16 +142,6 @@
 .panel .account-row { padding: var(--panel-padding); }
 .panel > .account-row:last-child, .panel > article:last-child > .account-row { border-bottom: 0; }
 .task-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-.mission-editor { margin-bottom: 24px; }
-.mission-form { padding: var(--panel-padding); margin: 0; gap: 20px; }
-.mission-form > p, .mission-form > label:has(textarea), .mission-form > fieldset { grid-column: 1 / -1; }
-.mission-form > p { margin: 0; line-height: 1.6; }
-.mission-form fieldset { display: flex; flex-wrap: wrap; gap: 16px; padding: 16px; border: 1px solid var(--border); border-radius: 8px; }
-.mission-form legend { padding: 0 6px; font-size: 13px; }
-.mission-form button { justify-self: start; }
-.mission-list .attention-item { display: block; padding-block: 24px; }
-.mission-list .attention-list > p { margin: 0; padding-block: 24px; }
-.mission-list details { margin-top: 20px; color: var(--text-muted); font-size: 12px; }
 .settings-page { max-width: 960px; }
 .proposal-project { padding: var(--panel-padding); }
 .proposal-project label { display: flex; flex-direction: column; gap: 8px; max-width: 360px; }

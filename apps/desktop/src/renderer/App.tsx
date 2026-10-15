@@ -7,6 +7,7 @@ import { Sidebar } from "./shell/Sidebar";
 import { RightPanel } from "./shell/RightPanel";
 import { CommandPalette } from "./shell/CommandPalette";
 import { SettingsPage } from "./settings/SettingsPage";
+import { ScheduledTasks } from "./views/ScheduledTasks";
 import { NewChat } from "./chat/NewChat";
 import { ChatView } from "./chat/ChatView";
 import { CompareView } from "./chat/CompareView";
@@ -37,8 +38,9 @@ function useShortcuts() {
 }
 
 function Main() {
-	const { selectedId, compareId, compareGroups, settings } = useWorkspace();
+	const { selectedId, compareId, compareGroups, settings, scheduled } = useWorkspace();
 	if (settings) return <SettingsPage />;
+	if (scheduled) return <ScheduledTasks />;
 	const group = compareGroups.find(value => value.id === compareId);
 	if (group) return <CompareView key={group.id} group={group} />;
 	// One ChatView across chats: its task cache and composer editor survive switching, so nothing flickers.

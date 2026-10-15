@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowLeft, Bell, Bot, CalendarClock, Gauge, Palette, Plug, Search, SlidersHorizontal, UserRound } from "lucide-react";
+import { ArrowLeft, Bell, Bot, Gauge, Palette, Plug, Search, SlidersHorizontal, UserRound } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { useWorkspace, type SettingsPage as Page } from "../app/workspace";
 import { cn } from "../lib/utils";
@@ -9,7 +9,6 @@ import { AppearanceSettings } from "./AppearanceSettings";
 import { Accounts } from "../views/Accounts";
 import { Agents } from "../views/Agents";
 import { McpConnections } from "../views/McpConnections";
-import { Missions } from "../views/Missions";
 import { SettingsPageLayout } from "./SettingsLayout";
 
 type Entry = { id: Page; label: string; icon: ReactNode; keywords: string };
@@ -26,9 +25,6 @@ const groups: { label: string; pages: Entry[] }[] = [
 	{ label: "Integrations", pages: [
 		{ id: "agents", label: "Agents", icon: <Bot />, keywords: "codex claude code opencode pi cursor grok acp install update version" },
 		{ id: "mcp", label: "MCP servers", icon: <Plug />, keywords: "tools model context protocol connections" },
-	] },
-	{ label: "Automation", pages: [
-		{ id: "missions", label: "Missions", icon: <CalendarClock />, keywords: "schedule recurring scheduled tasks" },
 	] },
 ];
 
@@ -57,7 +53,7 @@ export function SettingsNav() {
 }
 
 export function SettingsPage() {
-	const { settings, closeSettings, select } = useWorkspace();
+	const { settings, closeSettings } = useWorkspace();
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (event.key !== "Escape" || event.defaultPrevented) return;
@@ -74,8 +70,7 @@ export function SettingsPage() {
 		{settings === "accounts" && <Accounts />}
 		{settings === "appearance" && <AppearanceSettings />}
 		{settings === "agents" && <Agents />}
-		{/* MCP servers and Missions keep their own forms inside the shared page layout. */}
+		{/* MCP servers keep their own form inside the shared page layout. */}
 		{settings === "mcp" && <div className="legacy-panel"><SettingsPageLayout title="MCP servers" description="Tools your chats can use, from Model Context Protocol servers."><McpConnections /></SettingsPageLayout></div>}
-		{settings === "missions" && <div className="legacy-panel"><SettingsPageLayout title="Missions" description="Chats that run on a schedule." wide><Missions onOpenTask={id => { select(id); }} onNewTask={() => select(undefined)} /></SettingsPageLayout></div>}
 	</ScrollArea>;
 }
