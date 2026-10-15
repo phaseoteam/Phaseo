@@ -86,7 +86,7 @@ describe("feedback request email", () => {
 		expect(state.rpc).toHaveBeenCalledWith("enqueue_feedback_request_emails", {
 			p_campaign: "v1",
 			p_min_account_age_days: 90,
-			p_limit: 50,
+			p_limit: 10,
 			p_reward_cap: 100,
 		});
 

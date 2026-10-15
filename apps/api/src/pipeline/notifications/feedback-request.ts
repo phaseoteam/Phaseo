@@ -5,7 +5,8 @@ import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 // outbox rows (enqueue_feedback_request_emails); this module renders them.
 
 export const FEEDBACK_REQUEST_MIN_ACCOUNT_AGE_DAYS = 90;
-const DEFAULT_DAILY_LIMIT = 50;
+// Start small: the oldest addresses go first and are the likeliest to bounce.
+const DEFAULT_DAILY_LIMIT = 10;
 const DEFAULT_REWARD_CAP = 100;
 const DEFAULT_CAMPAIGN = "v1";
 const DEFAULT_WEB_BASE_URL = "https://phaseo.app";
