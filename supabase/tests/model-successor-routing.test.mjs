@@ -23,7 +23,7 @@ try {
     create table public.v2_models(model_slug text primary key, status text not null default 'active', hidden boolean not null default false,
       input_modalities text[] not null default '{}', output_modalities text[] not null default '{}', variant_kind text not null default 'standard',
       replacement_model_slug text);
-    create table public.v2_providers(provider_slug text primary key, status text not null default 'active');
+    create table public.v2_providers(provider_slug text primary key, status text not null default 'active', routing_enabled boolean not null default true);
     create table public.v2_model_provider_routes(provider_model_id text primary key, model_slug text not null, provider_slug text not null,
       routing_enabled boolean not null default true, context_length integer, metadata jsonb not null default '{}',
       effective_from timestamptz, effective_to timestamptz);
@@ -82,6 +82,12 @@ try {
   await db.exec(`update public.v2_route_capabilities set effective_to=now() - interval '1 minute' where provider_model_id='old-feed'`);
   assert.equal((await refresh()).marked, 1);
 
+  // A provider switched off as a whole serves nothing, whatever its routes say.
+  assert.equal(await value(`select public.v2_model_has_routable_route('lab/new') as value`), true);
+  await db.exec(`update public.v2_providers set routing_enabled=false where provider_slug='host'`);
+  assert.equal(await value(`select public.v2_model_has_routable_route('lab/new') as value`), false);
+  await db.exec(`update public.v2_providers set routing_enabled=true where provider_slug='host'`);
+
   // Hidden models stop being tracked.
   await db.exec(`update public.v2_models set hidden=true where model_slug='lab/old'`);
   assert.deepEqual([(await refresh()).cleared, await unservedSince('lab/old')], [1, null]);
@@ -94,8 +100,12 @@ try {
   assert.deepEqual([current.compatibility.blocking, current.compatibility.warnings, current.approval_current], [[], [], false]);
   await rejects(approve('lab/old:free'), /cannot be approved: free_to_paid/);
 
+  // A successor's disabled routes do not count towards its context.
+  await db.exec(`insert into public.v2_model_provider_routes(provider_model_id, model_slug, provider_slug, context_length, routing_enabled)
+    values ('text-old-host', 'lab/text-only', 'host', 1000000, false)`);
   await db.exec(`update public.v2_models set replacement_model_slug='lab/text-only' where model_slug='lab/old'`);
   current = await state('lab/old');
+  assert.equal(current.compatibility.successor_context_length, 64000);
   assert.deepEqual(current.compatibility.warnings, ['missing_input_modalities', 'smaller_context']);
   assert.deepEqual(current.compatibility.missing_input_modalities, ['image']);
   await rejects(approve('lab/old'), /compatibility warnings: missing_input_modalities, smaller_context/);

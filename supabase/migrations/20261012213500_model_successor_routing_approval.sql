@@ -71,6 +71,7 @@ CREATE OR REPLACE FUNCTION public.v2_model_has_routable_route (
     join public.v2_route_capabilities c on c.provider_model_id=r.provider_model_id
     where r.model_slug=p_model_slug
       and r.routing_enabled
+      and p.routing_enabled
       and (p.status <> 'external' or coalesce(r.metadata->>'external_routing_override', 'false') = 'true')
       and (r.effective_from is null or r.effective_from<=p_at)
       and (r.effective_to is null or p_at<r.effective_to)
@@ -152,7 +153,23 @@ begin
     select coalesce(array_agg(x),'{}') into v_missing_in from unnest(v_model.input_modalities) x where not x = any(v_successor.input_modalities);
     select coalesce(array_agg(x),'{}') into v_missing_out from unnest(v_model.output_modalities) x where not x = any(v_successor.output_modalities);
     select max(context_length) into v_context from public.v2_model_provider_routes where model_slug=v_model.model_slug;
-    select max(context_length) into v_successor_context from public.v2_model_provider_routes where model_slug=v_successor.model_slug;
+    -- The successor only offers the context of routes that can serve it now;
+    -- the old model keeps its historical maximum, since none may serve it.
+    select max(r.context_length) into v_successor_context
+    from public.v2_model_provider_routes r
+    join public.v2_providers p on p.provider_slug=r.provider_slug
+    where r.model_slug=v_successor.model_slug
+      and r.routing_enabled
+      and p.routing_enabled
+      and (p.status <> 'external' or coalesce(r.metadata->>'external_routing_override', 'false') = 'true')
+      and (r.effective_from is null or r.effective_from<=now())
+      and (r.effective_to is null or now()<r.effective_to)
+      and exists (
+        select 1 from public.v2_route_capabilities c
+        where c.provider_model_id=r.provider_model_id
+          and c.status in ('active','deranked','deranked_lvl1','deranked_lvl2','deranked_lvl3')
+          and (c.effective_from is null or c.effective_from<=now())
+          and (c.effective_to is null or now()<c.effective_to));
     v_served := public.v2_model_has_routable_route(v_successor.model_slug);
 
     -- Blocking issues can never be approved; warnings need an explicit override.

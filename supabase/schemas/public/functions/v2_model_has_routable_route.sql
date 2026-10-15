@@ -17,6 +17,7 @@ CREATE OR REPLACE FUNCTION public.v2_model_has_routable_route (
     join public.v2_route_capabilities c on c.provider_model_id=r.provider_model_id
     where r.model_slug=p_model_slug
       and r.routing_enabled
+      and p.routing_enabled
       and (p.status <> 'external' or coalesce(r.metadata->>'external_routing_override', 'false') = 'true')
       and (r.effective_from is null or r.effective_from<=p_at)
       and (r.effective_to is null or p_at<r.effective_to)

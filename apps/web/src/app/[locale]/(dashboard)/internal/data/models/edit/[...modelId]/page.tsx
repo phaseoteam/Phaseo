@@ -44,7 +44,7 @@ export default async function EditModelPage({
 				initialTab={initialTab}
 				focusProviderId={focusProviderId}
 			/>
-			<ModelSuccessorRoutingPanel modelId={modelId} />
+			<ModelSuccessorRoutingPanel key={modelId} modelId={modelId} />
 			<ModelRevalidationControls modelId={modelId} />
 			<div className="flex">
 				<Link href="/internal/data/models" className="rounded-md border px-3 py-2 text-sm">
