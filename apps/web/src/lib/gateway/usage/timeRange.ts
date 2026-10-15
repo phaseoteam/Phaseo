@@ -534,6 +534,88 @@ export function resolveUsageTimeRange(args: {
 	}
 }
 
+/** The same local date and time `months` earlier, on the month's last day when the date doesn't exist. */
+function shiftMonths(date: Date, months: number): Date {
+	const target = new Date(date.getFullYear(), date.getMonth() - months, 1, date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds());
+	const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+	target.setDate(Math.min(date.getDate(), lastDay));
+	return target;
+}
+
+function shiftDays(date: Date, days: number): Date {
+	const next = new Date(date);
+	next.setDate(next.getDate() - days);
+	return next;
+}
+
+/**
+ * The period a range is compared with. A period so far is compared with the
+ * same point in the one before (today until 9am with yesterday until 9am), a
+ * finished calendar period with the whole one before (September with all of
+ * August), and any other window with the same length immediately before it.
+ */
+export function resolvePreviousUsageTimeRange(args: {
+	preset: UsageRangePreset;
+	from: string;
+	to: string;
+}): { from: string; to: string } {
+	const from = new Date(args.from);
+	const to = new Date(args.to);
+	const shifted = (shift: (date: Date) => Date) => ({ from: shift(from).toISOString(), to: shift(to).toISOString() });
+	switch (args.preset) {
+		case "today":
+		case "yesterday":
+			return shifted((date) => shiftDays(date, 1));
+		case "this_week":
+		case "last_week":
+			return shifted((date) => shiftDays(date, 7));
+		case "this_month":
+			return shifted((date) => shiftMonths(date, 1));
+		case "this_quarter":
+			return shifted((date) => shiftMonths(date, 3));
+		case "this_year":
+			return shifted((date) => shiftMonths(date, 12));
+		case "last_month": {
+			const start = shiftMonths(startOfMonth(from), 1);
+			return { from: start.toISOString(), to: endOfMonth(start).toISOString() };
+		}
+		case "last_quarter": {
+			const start = shiftMonths(startOfQuarter(from), 3);
+			return { from: start.toISOString(), to: endOfQuarter(start).toISOString() };
+		}
+		case "last_year": {
+			const start = shiftMonths(startOfYear(from), 12);
+			return { from: start.toISOString(), to: endOfYear(start).toISOString() };
+		}
+		default:
+			return { from: new Date(2 * from.getTime() - to.getTime()).toISOString(), to: from.toISOString() };
+	}
+}
+
+/**
+ * A comparison period in the reader's locale: "1–31 Aug" for whole days,
+ * "14 Oct, 00:00–09:12" otherwise. The year shows when it isn't this year.
+ */
+export function formatUsageComparisonRange(args: {
+	from: string;
+	to: string;
+	locale: string;
+	now?: Date;
+}): string {
+	const from = new Date(args.from);
+	// Ranges end on the last millisecond of a day or at the current moment.
+	const to = new Date(args.to);
+	const now = args.now ?? new Date();
+	const wholeDays = from.getTime() === startOfDay(from).getTime() && to.getTime() === endOfDay(to).getTime();
+	const showYear = from.getFullYear() !== now.getFullYear() || to.getFullYear() !== now.getFullYear();
+	return new Intl.DateTimeFormat(args.locale, {
+		day: "numeric",
+		month: "short",
+		...(showYear ? { year: "numeric" } : {}),
+		...(wholeDays ? {} : { hour: "2-digit", minute: "2-digit" }),
+	}).formatRange(from, to);
+}
+
 export function getUsageRangeLabel(args: {
 	preset: UsageRangePreset;
 	customFrom?: string | null;

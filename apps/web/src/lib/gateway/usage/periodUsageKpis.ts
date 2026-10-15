@@ -35,18 +35,17 @@ export type ForecastPeriod =
 /**
  * A KPI card's footer, in the KPI's own units.
  * - `projected`: a total projected over the period.
- * - `recent`: a rate over the last 7 days (or today), since rates can't be projected.
  * - `change`: a total's change from the previous period, for ranges with nothing ahead to forecast.
- * - `previous`: a rate in the previous period, alongside `change`.
- * A `value` is null when there were no requests to take a rate from.
+ * - `previous`: a rate in the previous period, since rates can't be projected.
+ * A `value` is null when the previous period had no requests to take a rate
+ * from, or its figures come from a sample.
  */
 export type KpiFooter =
 	| { kind: "projected"; period: ForecastPeriod; low: number; mid: number; high: number }
-	| { kind: "recent"; days: 1 | 7; value: number | null }
 	| { kind: "change"; value: number }
 	| { kind: "previous"; value: number | null };
 
-/** A card's figure for the selected range and the same length before it. */
+/** A card's figure for the selected range and the previous period. */
 export type KpiCard = { value: number; previous: number };
 
 /**
@@ -137,12 +136,13 @@ const TOTALS = [
 	{ id: "tokens", pick: (day: UsageDay) => day.tokens, scale: 1 },
 ] as const;
 
+type TotalId = (typeof TOTALS)[number]["id"];
+
 /**
- * A forecast for every overview KPI over the period, or null when there is
+ * A forecast for each overview total over the period, or null when there is
  * nothing to project. Totals for today and windows under a week come from
  * `cards`, which must then be complete; everything else comes from the
- * rollup. Rates show the last 7 days, or today when the selected window is a
- * week or less.
+ * rollup.
  */
 export function periodKpiForecasts({
 	days,
@@ -154,7 +154,7 @@ export function periodKpiForecasts({
 	observedAt: number;
 	period: ForecastPeriod;
 	cards?: Partial<Record<KpiId, KpiCard>>;
-}): Record<KpiId, KpiFooter> | null {
+}): Record<TotalId, KpiFooter> | null {
 	const byDay = new Map(days.map((day) => [day.date, day]));
 	const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 	const now = new Date(observedAt);
@@ -164,10 +164,10 @@ export function periodKpiForecasts({
 		const value = day ? pick(day) : 0;
 		return Number.isFinite(value) && value > 0 ? value : 0;
 	};
-	/** The `count` UTC days before today, or ending today when `includeToday`. */
-	const sumDays = (pick: (day: UsageDay) => number, count: number, includeToday = false) => {
+	/** The `count` complete UTC days before today. */
+	const sumDays = (pick: (day: UsageDay) => number, count: number) => {
 		let total = 0;
-		for (let i = includeToday ? 0 : 1; i < count + (includeToday ? 0 : 1); i += 1) total += valueOn(pick, todayStart - i * DAY_MS);
+		for (let i = 1; i <= count; i += 1) total += valueOn(pick, todayStart - i * DAY_MS);
 		return total;
 	};
 	const fromCard = usesCardTotal(period);
@@ -198,27 +198,18 @@ export function periodKpiForecasts({
 		high: (projection?.high ?? 0) / scale,
 	});
 
-	const recentDays = period.kind === "rolling" && period.days <= PACE_DAYS ? 1 : 7;
-	const sumRecent = (pick: (day: UsageDay) => number) => sumDays(pick, recentDays, true);
-	const recentRequests = sumRecent((day) => day.requests);
-	const recentTokens = sumRecent((day) => day.tokens);
-	const recent = (value: number | null): KpiFooter => ({ kind: "recent", days: recentDays, value });
-
 	return {
 		spend: projected(spend, NANOS_PER_USD),
 		requests: projected(requests),
 		tokens: projected(tokens),
-		cache: recent(recentTokens > 0 ? sumRecent((day) => day.cachedTokens) / recentTokens : null),
-		success_rate: recent(recentRequests > 0 ? sumRecent((day) => day.successfulRequests) / recentRequests : null),
-		blended_price: recent(recentTokens > 0 ? (sumRecent((day) => day.costNanos) / NANOS_PER_USD / recentTokens) * 1_000_000 : null),
 	};
 }
 
 /**
- * Every KPI card's footer: a forecast over the selected period where there is
- * one, otherwise each total's change from the previous period and each rate's
- * previous value. Null when the cards are built from a request sample, since a
- * sampled total says nothing about the change.
+ * Every KPI card's footer. Totals show a forecast over the selected period
+ * where there is one, otherwise their change from the previous period; rates
+ * show their value in the previous period. Null when the totals would come
+ * from a request sample, since a sampled total says nothing about the change.
  *
  * `days` is null for filtered views, where the workspace-wide rollup doesn't
  * apply; `period` is null for ranges with nothing ahead to forecast.
@@ -238,18 +229,17 @@ export function kpiFooters({
 	currentComplete: boolean;
 	previousComplete: boolean;
 }): Record<KpiId, KpiFooter> | null {
-	if (days && period && (currentComplete || !usesCardTotal(period))) {
-		const forecasts = periodKpiForecasts({ days, observedAt, period, cards });
-		if (forecasts) return forecasts;
-	}
-	if (!currentComplete || !previousComplete) return null;
-	const change = (id: KpiId): KpiFooter => ({ kind: "change", value: cards[id].value - cards[id].previous });
+	const forecasts = days && period && (currentComplete || !usesCardTotal(period))
+		? periodKpiForecasts({ days, observedAt, period, cards })
+		: null;
+	if (!forecasts && (!currentComplete || !previousComplete)) return null;
+	const total = (id: TotalId): KpiFooter => forecasts?.[id] ?? { kind: "change", value: cards[id].value - cards[id].previous };
 	// A rate needs requests to come from.
-	const previous = (id: KpiId): KpiFooter => ({ kind: "previous", value: cards.requests.previous > 0 ? cards[id].previous : null });
+	const previous = (id: KpiId): KpiFooter => ({ kind: "previous", value: previousComplete && cards.requests.previous > 0 ? cards[id].previous : null });
 	return {
-		spend: change("spend"),
-		requests: change("requests"),
-		tokens: change("tokens"),
+		spend: total("spend"),
+		requests: total("requests"),
+		tokens: total("tokens"),
 		cache: previous("cache"),
 		success_rate: previous("success_rate"),
 		blended_price: previous("blended_price"),

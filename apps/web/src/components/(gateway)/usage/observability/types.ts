@@ -95,6 +95,8 @@ export type ObservabilityExploreRow = {
 export type ObservabilityData = {
 	range: ObservabilityRange;
 	periodLabel: string;
+	/** The period the KPI deltas and footers compare with. */
+	previousPeriod?: { from: string; to: string };
 	isSampled?: boolean;
 	sampleLimit?: number;
 	kpis: ObservabilityKpi[];

@@ -5,7 +5,7 @@ import { SortableTableHead } from "../SortableTableHead";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
 	Bar,
 	BarChart,
@@ -86,7 +86,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import type { GuardrailEnforcementMetricsResult } from "@/lib/gateway/usage/guardrailEnforcementMetrics";
-import type { UsageRangePreset } from "@/lib/gateway/usage/timeRange";
+import { formatUsageComparisonRange, type UsageRangePreset } from "@/lib/gateway/usage/timeRange";
 import UsageLogsToolbar from "@/components/(gateway)/usage/UsageLogsToolbar";
 import RequestLabelFilter from "@/components/(gateway)/usage/RequestLabelFilter";
 import { Logo } from "@/components/Logo";
@@ -670,10 +670,10 @@ const RUNNING_PERIOD_LABELS = {
 	year: "kpiForecastYear",
 } as const;
 
-function KpiFooterRow({ kpi }: { kpi: ObservabilityKpi }) {
+function KpiFooterRow({ kpi, previousLabel }: { kpi: ObservabilityKpi; previousLabel: string | null }) {
 	const t = useTranslations("SettingsUI.observability");
 	const footer = kpi.footer;
-	if (!footer) return null;
+	if (!footer || (footer.kind !== "projected" && !previousLabel)) return null;
 	let label: string;
 	let value: string;
 	if (footer.kind === "projected") {
@@ -683,10 +683,10 @@ function KpiFooterRow({ kpi }: { kpi: ObservabilityKpi }) {
 			: period.days === 1 ? t("kpiForecastNextDay") : t("kpiForecastNextDays", { days: period.days });
 		value = formatProjectedRange(kpi, footer.low, footer.high);
 	} else if (footer.kind === "change") {
-		label = t("kpiChangeFromPrevious");
+		label = t("kpiChangeVs", { period: previousLabel! });
 		value = formatChange(kpi, footer.value);
 	} else {
-		label = footer.kind === "previous" ? t("kpiPreviousPeriod") : footer.days === 1 ? t("kpiRecentToday") : t("kpiRecentWeek");
+		label = previousLabel!;
 		value = footer.value === null ? "–" : formatKpiValue(kpi, footer.value);
 	}
 	// The label gives way on a narrow card; the figure never does.
@@ -698,7 +698,7 @@ function KpiFooterRow({ kpi }: { kpi: ObservabilityKpi }) {
 	);
 }
 
-function KpiMetric({ kpi }: { kpi: ObservabilityKpi }) {
+function KpiMetric({ kpi, previousLabel }: { kpi: ObservabilityKpi; previousLabel: string | null }) {
 	const t = useTranslations("SettingsUI.observability");
 	const [hoveredPoint, setHoveredPoint] =
 		React.useState<ObservabilitySeriesPoint | null>(null);
@@ -739,7 +739,7 @@ function KpiMetric({ kpi }: { kpi: ObservabilityKpi }) {
 											</span>
 										</UiTooltipTrigger>
 										<UiTooltipContent side="bottom" sideOffset={6}>
-											{t("comparedWithPreviousPeriod")}
+											{previousLabel ? t("comparedWithPeriod", { period: previousLabel }) : t("comparedWithPreviousPeriod")}
 										</UiTooltipContent>
 									</UiTooltip>
 								)}
@@ -755,7 +755,7 @@ function KpiMetric({ kpi }: { kpi: ObservabilityKpi }) {
 						</div>
 					</div>
 				</div>
-				<KpiFooterRow kpi={kpi} />
+				<KpiFooterRow kpi={kpi} previousLabel={previousLabel} />
 			</Card>
 		</Link>
 	);
@@ -1769,6 +1769,8 @@ function TrendSection({
 
 function Overview({ data }: { data: ObservabilityData }) {
 	const t = useTranslations("SettingsUI.observability");
+	const locale = useLocale();
+	const previousLabel = data.previousPeriod ? formatUsageComparisonRange({ ...data.previousPeriod, locale }) : null;
 	const monthSpend = data.monthSpend ?? null;
 	const [spendView, setSpendView] = React.useState<"daily" | "month">("daily");
 	const showMonth = spendView === "month" && monthSpend !== null;
@@ -1776,7 +1778,7 @@ function Overview({ data }: { data: ObservabilityData }) {
 		<div className="space-y-4 sm:space-y-6">
 			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-6">
 				{data.kpis.map((kpi) => (
-					<KpiMetric key={kpi.id} kpi={kpi} />
+					<KpiMetric key={kpi.id} kpi={kpi} previousLabel={previousLabel} />
 				))}
 			</div>
 			<div className="grid gap-4 xl:grid-cols-2">

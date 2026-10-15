@@ -60,10 +60,10 @@ describe("forecastPeriod", () => {
 });
 
 describe("periodKpiForecasts", () => {
-	test("projects totals to the end of a running month and gives rates for the last 7 days", () => {
+	test("projects totals to the end of a running month", () => {
 		const period: ForecastPeriod = { kind: "running", unit: "month", start: Date.parse("2026-10-01"), end: Date.parse("2026-11-01") };
-		// September's failures sit outside the last 7 days.
-		const days = [day("2026-09-30", { requests: 999, successfulRequests: 0 }), ...daysEnding("2026-10-15", 15)];
+		// September sits outside both the month and the last 7 days.
+		const days = [day("2026-09-30", { requests: 999 }), ...daysEnding("2026-10-15", 15)];
 		const forecasts = periodKpiForecasts({ days, observedAt, period });
 		expect(forecasts).not.toBeNull();
 		const f = forecasts!;
@@ -72,9 +72,6 @@ describe("periodKpiForecasts", () => {
 		const periodPace = 1500 + (1500 / 14.5) * remaining;
 		expect(f.requests).toEqual({ kind: "projected", period, low: 1500 + 100 * remaining, mid: periodPace, high: periodPace });
 		expect(f.spend.kind === "projected" && f.spend.low).toBeCloseTo(30 + 2 * remaining);
-		expect(f.success_rate).toEqual({ kind: "recent", days: 7, value: 0.98 });
-		expect(f.cache).toEqual({ kind: "recent", days: 7, value: 0.2 });
-		expect(f.blended_price).toEqual({ kind: "recent", days: 7, value: 40 });
 	});
 
 	test("projects the next 30 days from the last 30 and the last week", () => {
@@ -94,29 +91,21 @@ describe("periodKpiForecasts", () => {
 		// Today's pace is 160/day and the last week's 100/day, over the half day left.
 		expect(f.requests).toEqual({ kind: "projected", period, low: 130, mid: 160, high: 160 });
 		expect(f.spend).toMatchObject({ low: 2.5, mid: 3, high: 3 });
-		expect(f.success_rate).toMatchObject({ kind: "recent", days: 7 });
 	});
 
 	test("projects the next 24 hours from the card's last 24 and the last week", () => {
 		const period: ForecastPeriod = { kind: "rolling", days: 1 };
 		const f = periodKpiForecasts({ days: daysEnding("2026-10-15", 8), observedAt, period, cards: cards({ requests: { value: 40, previous: 0 } }) })!;
 		expect(f.requests).toEqual({ kind: "projected", period, low: 40, mid: 40, high: 100 });
-		expect(f.success_rate).toEqual({ kind: "recent", days: 1, value: 0.98 });
 	});
 
 	test("needs the card's figures for today and windows under a week", () => {
 		expect(periodKpiForecasts({ days: daysEnding("2026-10-14", 7), observedAt, period: { kind: "rolling", days: 1 } })).toBeNull();
 	});
 
-	test("gives rates for today when the window is the last 7 days", () => {
+	test("projects the next 7 days from the complete days before today", () => {
 		const f = periodKpiForecasts({ days: daysEnding("2026-10-15", 8), observedAt, period: { kind: "rolling", days: 7 } })!;
 		expect(f.requests).toMatchObject({ low: 700, mid: 700, high: 700 });
-		expect(f.success_rate).toEqual({ kind: "recent", days: 1, value: 0.98 });
-	});
-
-	test("leaves a rate empty when there were no requests to take it from", () => {
-		const f = periodKpiForecasts({ days: daysEnding("2026-10-14", 7), observedAt, period: { kind: "rolling", days: 7 } })!;
-		expect(f.success_rate).toEqual({ kind: "recent", days: 1, value: null });
 	});
 
 	test("projects free usage as no spend", () => {
@@ -158,9 +147,16 @@ describe("kpiFooters", () => {
 		expect(footers?.requests).toEqual({ kind: "change", value: 100 });
 	});
 
-	test("forecasts from the rollup even when the cards are sampled", () => {
+	test("forecasts totals and shows previous rates over a period still running", () => {
+		const footers = kpiFooters({ days: daysEnding("2026-10-15", 31), observedAt, period: { kind: "rolling", days: 30 }, cards: cards(), currentComplete: true, previousComplete: true });
+		expect(footers?.requests.kind).toBe("projected");
+		expect(footers?.success_rate).toEqual({ kind: "previous", value: 0.97 });
+	});
+
+	test("forecasts from the rollup even when the cards are sampled, without sampled rates", () => {
 		const footers = kpiFooters({ days: daysEnding("2026-10-15", 31), observedAt, period: { kind: "rolling", days: 30 }, cards: cards(), currentComplete: false, previousComplete: false });
 		expect(footers?.requests.kind).toBe("projected");
+		expect(footers?.cache).toEqual({ kind: "previous", value: null });
 	});
 
 	test("shows nothing when the figures it needs come from a sample", () => {
