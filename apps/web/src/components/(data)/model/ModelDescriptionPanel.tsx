@@ -68,7 +68,7 @@ export default function ModelDescriptionPanel({
 					type="button"
 					variant="ghost"
 					size="sm"
-					className="absolute right-0 bottom-0 h-7 gap-1.5 rounded-md bg-background px-2.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+					className="absolute right-0 bottom-2 h-7 gap-1.5 rounded-md bg-background px-2.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
 					aria-expanded={expanded}
 					aria-controls={descriptionId}
 					onClick={() => {
