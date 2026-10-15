@@ -390,7 +390,7 @@ describe("handleScheduledEvent", () => {
 	it("queues feedback request emails once a day only when explicitly enabled with a sender", async () => {
 		const enabled = {
 			FEEDBACK_REQUEST_EMAILS_ENABLED: "true",
-			FEEDBACK_REQUEST_FROM_EMAIL: "Daniel <daniel@phaseo.app>",
+			FEEDBACK_REQUEST_FROM_EMAIL: "Daniel <daniel@example.com>",
 			RESEND_API_KEY: "re_test",
 		} as any;
 

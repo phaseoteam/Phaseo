@@ -1,5 +1,5 @@
 import { getSupabaseAdmin } from "@/runtime/env";
-import { sendEmail } from "@/lib/email/resend";
+import { isResendContactUnsubscribed, sendEmail } from "@/lib/email/resend";
 import { getBindings } from "@/runtime/env";
 import { getEmailSuppressionReason } from "@/pipeline/notifications/email-suppressions";
 import { getModelDeprecationTemplateVariables, renderModelDeprecationEmail } from "@/pipeline/notifications/model-deprecation";
@@ -362,6 +362,24 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 					.eq("id", row.id);
 				if (suppressionUpdateError) {
 					throw new Error(`email_outbox_update_error:${suppressionUpdateError.message ?? "unknown"}`);
+				}
+				failed += 1;
+				continue;
+			}
+
+			// Feedback requests are non-essential, so they also honour Resend's own
+			// unsubscribe state. Transactional mail (billing, alerts) does not.
+			const isFeedbackRequest = row.template === "feedback_request" || row.kind === "feedback_request";
+			if (isFeedbackRequest && (await isResendContactUnsubscribed(row.to_email))) {
+				const { error: unsubscribedUpdateError } = await supabase
+					.from("email_outbox")
+					.update({
+						attempts: 5,
+						last_error: "unsubscribed:resend",
+					})
+					.eq("id", row.id);
+				if (unsubscribedUpdateError) {
+					throw new Error(`email_outbox_update_error:${unsubscribedUpdateError.message ?? "unknown"}`);
 				}
 				failed += 1;
 				continue;

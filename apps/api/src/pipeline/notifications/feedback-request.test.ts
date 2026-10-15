@@ -16,14 +16,14 @@ const token = "0f8fad5b-d9cb-469f-a165-70867728950e";
 
 describe("feedback request email", () => {
 	beforeEach(() => {
-		state.bindings = { FEEDBACK_REQUEST_FROM_EMAIL: "Daniel Butler <daniel@phaseo.app>" };
+		state.bindings = { FEEDBACK_REQUEST_FROM_EMAIL: "Daniel <daniel@example.com>" };
 		state.rpc.mockReset();
 	});
 
 	it("is sent from Daniel with one-click unsubscribe headers", () => {
 		const email = renderFeedbackRequestEmail({ token, segment: "used_not_paid", recency: "lapsed", first_name: "Ada" });
-		expect(email.from).toBe("Daniel Butler <daniel@phaseo.app>");
-		expect(email.replyTo).toBe("Daniel Butler <daniel@phaseo.app>");
+		expect(email.from).toBe("Daniel <daniel@example.com>");
+		expect(email.replyTo).toBe("Daniel <daniel@example.com>");
 		expect(email.headers).toEqual({
 			"List-Unsubscribe": `<https://phaseo.app/api/_web/feedback/${token}/unsubscribe>`,
 			"List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
@@ -53,7 +53,7 @@ describe("feedback request email", () => {
 	it("escapes names, honours the reward setting and base URL", () => {
 		state.bindings = {
 			...state.bindings,
-			FEEDBACK_REQUEST_REPLY_TO_EMAIL: "daniel@phaseo.app",
+			FEEDBACK_REQUEST_REPLY_TO_EMAIL: "daniel@example.com",
 			FEEDBACK_REWARD_USD: "0",
 			PHASEO_WEB_BASE_URL: "https://staging.phaseo.app/",
 		};
@@ -61,14 +61,14 @@ describe("feedback request email", () => {
 		expect(email.html).toContain("Hi &lt;b&gt;Eve&lt;/b&gt;,");
 		expect(email.html).not.toContain("<b>Eve</b>");
 		expect(email.text).not.toContain("credit for answering");
-		expect(email.replyTo).toBe("daniel@phaseo.app");
+		expect(email.replyTo).toBe("daniel@example.com");
 		expect(email.text).toContain(`https://staging.phaseo.app/feedback/${token}`);
 	});
 
 	it("refuses to render without a real sender or a valid token", () => {
 		state.bindings = {};
 		expect(() => renderFeedbackRequestEmail({ token, segment: "paid", recency: "active" })).toThrow("missing_feedback_request_from_email");
-		state.bindings = { FEEDBACK_REQUEST_FROM_EMAIL: "daniel@phaseo.app" };
+		state.bindings = { FEEDBACK_REQUEST_FROM_EMAIL: "daniel@example.com" };
 		expect(() => renderFeedbackRequestEmail({ token: "nope", segment: "paid", recency: "active" })).toThrow("invalid_feedback_request_token");
 	});
 

@@ -5,6 +5,7 @@ const state = vi.hoisted(() => ({
 	updateCalls: [] as Array<{ payload: Record<string, unknown>; id: string }>,
 	suppressionReason: null as string | null,
 	sendEmail: vi.fn(async (_args: Record<string, unknown>) => undefined),
+	isResendContactUnsubscribed: vi.fn(async (_email: string): Promise<boolean> => false),
 }));
 
 function buildSupabaseMock() {
@@ -72,6 +73,7 @@ vi.mock("@/runtime/env", () => ({
 
 vi.mock("@/lib/email/resend", () => ({
 	sendEmail: state.sendEmail,
+	isResendContactUnsubscribed: state.isResendContactUnsubscribed,
 }));
 
 describe("email outbox", () => {
@@ -80,6 +82,7 @@ describe("email outbox", () => {
 		state.updateCalls.length = 0;
 		state.suppressionReason = null;
 		state.sendEmail.mockClear();
+		state.isResendContactUnsubscribed.mockReset().mockResolvedValue(false);
 		vi.resetModules();
 	});
 
@@ -244,6 +247,85 @@ describe("email outbox", () => {
 			headers: expect.objectContaining({ "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" }),
 			idempotencyKey: "feedback_request:v1:user_1",
 		}));
+		expect(state.isResendContactUnsubscribed).toHaveBeenCalledWith("ada@example.com");
+	});
+
+	it("skips feedback requests to people unsubscribed in Resend", async () => {
+		state.isResendContactUnsubscribed.mockResolvedValue(true);
+		state.rows.push({
+			id: "email_feedback_unsubscribed",
+			created_at: "2026-10-13T10:05:00Z",
+			kind: "feedback_request",
+			template: "feedback_request",
+			to_email: "ada@example.com",
+			subject: null,
+			workspace_id: null,
+			user_id: "user_1",
+			dedupe_key: "feedback_request:v1:user_1",
+			payload: { token: "0f8fad5b-d9cb-469f-a165-70867728950e", segment: "paid", recency: "active" },
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await expect(drainEmailOutbox(10)).resolves.toEqual({ processed: 1, sent: 0, failed: 1 });
+
+		expect(state.sendEmail).not.toHaveBeenCalled();
+		expect(state.updateCalls).toContainEqual({
+			id: "email_feedback_unsubscribed",
+			payload: { attempts: 5, last_error: "unsubscribed:resend" },
+		});
+	});
+
+	it("retries a feedback request later when the Resend contact lookup fails", async () => {
+		state.isResendContactUnsubscribed.mockRejectedValue(new Error("resend_contact_lookup_error:429"));
+		state.rows.push({
+			id: "email_feedback_lookup_failed",
+			created_at: "2026-10-13T10:05:00Z",
+			kind: "feedback_request",
+			template: "feedback_request",
+			to_email: "ada@example.com",
+			subject: null,
+			workspace_id: null,
+			user_id: "user_1",
+			dedupe_key: "feedback_request:v1:user_1",
+			payload: { token: "0f8fad5b-d9cb-469f-a165-70867728950e", segment: "paid", recency: "active" },
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await expect(drainEmailOutbox(10)).resolves.toEqual({ processed: 1, sent: 0, failed: 1 });
+
+		expect(state.sendEmail).not.toHaveBeenCalled();
+		expect(state.updateCalls).toContainEqual({
+			id: "email_feedback_lookup_failed",
+			payload: { attempts: 1, last_error: "resend_contact_lookup_error:429" },
+		});
+	});
+
+	it("does not check Resend contact state for transactional mail", async () => {
+		state.isResendContactUnsubscribed.mockResolvedValue(true);
+		state.rows.push({
+			id: "email_transactional",
+			created_at: "2026-08-07T12:01:00Z",
+			kind: "auto_top_up_failed",
+			template: "auto_top_up_failed",
+			to_email: "owner@example.com",
+			subject: "Auto Top-Up failed",
+			workspace_id: "ws_1",
+			user_id: "user_1",
+			payload: { workspace_name: "Research", failure_reason: "Card declined" },
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await expect(drainEmailOutbox(10)).resolves.toEqual({ processed: 1, sent: 1, failed: 0 });
+		expect(state.isResendContactUnsubscribed).not.toHaveBeenCalled();
 	});
 
 	it("renders expiring payment method details", async () => {
