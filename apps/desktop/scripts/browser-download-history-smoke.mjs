@@ -3,6 +3,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createServer } from 'node:http';
+import { installControlActions } from './fixtures/control-actions.mjs';
 const profile=process.argv.find(value=>value.startsWith('--profile='))?.slice(10);
 const stage=process.argv.find(value=>value.startsWith('--stage='))?.slice(8);
 if(!profile||!['write','read','removed'].includes(stage))throw Error('Expected owned profile and stage');
@@ -17,9 +18,10 @@ app.whenReady().then(async()=>{
  const wait=async code=>{for(let attempt=0;!await run(code);attempt++){if(attempt>150)throw Error('Did not settle '+code);await new Promise(resolve=>setTimeout(resolve,30));}};
  try{
   if(owner.webContents.isLoading())await new Promise(resolve=>owner.webContents.once('did-finish-load',resolve));
-  await wait(`Boolean(document.querySelector('.task-list'))`);
-  await run(`Array.from(document.querySelectorAll('button')).find(button=>button.textContent.trim()==='Tools').click()`);
-  await wait(`Boolean(document.querySelector('.browser-download-toolbar'))`);
+  await installControlActions(owner);
+  await wait(`Boolean(document.querySelector('aside[aria-label]'))`);
+  await run(`window.__auditPanel('Browser')`);
+  await wait(`Boolean(document.querySelector('.browser-panel [aria-label="Downloads"]'))`);
   if(stage==='write'){
    const address='http://127.0.0.1:'+server.address().port;
    await run(`window.phaseoDesktop.browser({id:'draft',type:'navigate',url:${JSON.stringify(address)}})`);
@@ -28,7 +30,7 @@ app.whenReady().then(async()=>{
    browser.downloadURL(address+'/file');
    await wait(`window.phaseoDesktop.browserDownload({type:'list'}).then(values=>values.length===1&&values[0].status==='completed')`);
   }
-  await run(`document.querySelector('.browser-download-toolbar button').click()`);
+  await run(`document.querySelector('.browser-panel [aria-label="Downloads"]').click()`);
   if(stage==='removed'){await wait(`document.querySelector('.browser-downloads')?.textContent.includes('No downloads in this chat.')`);if(!await run(`window.phaseoDesktop.browserDownload({type:'list'}).then(values=>values.length===0)`))throw Error('Removed record returned after restart');}
   else{
    await wait(`document.querySelector('.browser-downloads')?.textContent.includes('history.txt')&&document.querySelector('.browser-downloads')?.textContent.includes('Completed')`);
