@@ -54,7 +54,14 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
       and provider.status <> 'disabled'
       and route.status in ('active', 'degraded')
       and variant.status in ('active', 'degraded')
-      and provider.routing_enabled = true
+      and (
+        provider.routing_enabled = true
+        or (
+          route.provider_availability_status = 'coming_soon'
+          and route.routing_enabled = false
+          and variant.routing_enabled = false
+        )
+      )
       and (p_service_tier is null or variant.service_tier_slug = lower(p_service_tier))
       and (
         p_region is null

@@ -22,6 +22,8 @@ try {
   // Standard is seeded by an earlier post-baseline migration in full replay.
   await db.exec("insert into public.v2_service_tiers (service_tier_slug, display_name) values ('standard', 'Standard');");
   const migration = await read('../migrations/20261015102058_add_scaledown_task_models.sql');
+  const projection = await read('../schemas/public/functions/get_v2_public_models_page_rows_without_lifecycle.sql');
+  assert.ok(migration.replace(/\r\n/g, '\n').includes(projection.replace(/\r\n/g, '\n')));
   for (let run = 0; run < 2; run++) {
     await db.exec(migration);
     const { rows: providers } = await db.query('select provider_slug, status, routing_enabled, routable from public.v2_providers');
@@ -50,7 +52,20 @@ try {
     for (const table of ['v2_pricing_skus', 'v2_model_links', 'v2_model_page_notices']) {
       assert.equal((await db.query(`select count(*)::int as count from public.${table}`)).rows[0].count, 3);
     }
+    const { rows: pages } = await db.query('select payload from public.get_v2_public_models_page_rows_without_lifecycle(null, null) payload');
+    assert.equal(pages.length, 3);
+    for (const { payload } of pages) {
+      assert.equal(payload.gateway_status, 'coming_soon');
+      assert.equal(payload.gateway_active_provider_count, 0);
+      assert.deepEqual(payload.gateway_endpoints, []);
+      assert.equal(payload.gateway_provider_details[0].status, 'coming_soon');
+      assert.equal(payload.gateway_provider_details[0].is_active, false);
+    }
   }
+  await db.exec("update public.v2_providers set status = 'disabled';");
+  assert.equal((await db.query('select * from public.get_v2_public_models_page_rows_without_lifecycle(null, null)')).rows.length, 0);
+  await db.exec("update public.v2_providers set status = 'not_ready'; update public.v2_model_provider_routes set routing_enabled = true, phaseo_status = 'enabled', provider_availability_status = 'available'; update public.v2_route_variants set routing_enabled = true;");
+  assert.equal((await db.query('select * from public.get_v2_public_models_page_rows_without_lifecycle(null, null)')).rows.length, 0);
   console.log('ScaleDown catalogue migration passed: fresh meters, idempotency, pricing and routing disabled');
 } finally {
   await db.close();
