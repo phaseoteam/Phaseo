@@ -14,6 +14,9 @@ import { useTextCopy } from "../components/useTextCopy";
 import { mentionPlainText } from "../lib/mentions";
 import { harnessNames, knownModel, modelLabel } from "./ModelPicker";
 import { AgentResult } from "./AgentThreads";
+import { ProposedPlan } from "./ProposedPlan";
+
+const planOutcomes = { implemented: "Implemented", revised: "Revision requested", declined: "Not implemented" } as const;
 
 const toolLabels: Record<string, string> = { run_project_command: "Ran", read_project_file: "Read", write_project_file: "Edited", list_project_files: "Listed", load_skill: "Loaded skill", ask_user: "Asked" };
 function toolIcon(title: string) {
@@ -120,17 +123,22 @@ function Turn({ user, entries, live, complete, task, onAttachment, onBranch, com
 	const latest = entries.findLast(entry => !(entry.kind === "activity" && entry.value.type === "usage"));
 	const isAnswer = (entry?: TurnEntry) => entry?.kind === "message" && entry.value.role === "assistant" && entry.value.delivery !== "subagent";
 	const final = isAnswer(latest) ? latest : complete && !live ? entries.findLast(entry => entry.kind === "message" && entry.value.role === "assistant") : undefined;
-	const work = entries.filter(entry => entry !== final && !(entry.kind === "message" && entry.value.delivery === "subagent"));
+	// Proposed plans stand on their own in the turn, as T3 Code's plan card does, rather than inside the work log.
+	const plans = entries.flatMap(entry => entry.kind === "activity" && entry.value.proposed ? [entry.value] : []);
+	const work = entries.filter(entry => entry !== final && !(entry.kind === "message" && entry.value.delivery === "subagent") && !(entry.kind === "activity" && entry.value.proposed));
 	const delegated = entries.filter(entry => entry.kind === "message" && entry.value.delivery === "subagent");
 	// The timeline omits usage reports, so read them from the turn's activities.
 	const usage = turnUsage(user ? task.activities?.filter(activity => activity.type === "usage" && activity.id.startsWith(`${user.id}:`)) ?? [] : []);
 	const canBranch = !["running", "waiting"].includes(task.status) && !task.archived;
-	const hasAssistant = work.length > 0 || !!final || live;
+	const hasAssistant = work.length > 0 || plans.length > 0 || !!final || live;
 	return <div data-turn-id={user && user.delivery !== "subagent" ? user.id : undefined} className="flex flex-col gap-4">
 		{user && (user.delivery === "subagent" ? <AgentResult message={user} projectId={task.projectId} /> : <UserMessage message={user} projectId={task.projectId} onAttachment={onAttachment} onBranch={onBranch} canBranch={canBranch} />)}
 		{hasAssistant && <div data-conversation-id={`turn:${user?.id ?? entries[0]?.value.id}`} className="group/turn flex flex-col gap-3">
 			{!compact && <AssistantHeader task={task} />}
 			<WorkLog entries={work} user={user} live={live} complete={complete} task={task} />
+			{plans.map(plan => <ProposedPlan key={plan.id} markdown={plan.text} projectId={task.projectId} status={plan.proposed?.outcome ? planOutcomes[plan.proposed.outcome] : undefined}>
+				{plan.proposed?.feedback && <p data-selectable className="mt-2 border-l-2 border-border pl-3 text-[13px] whitespace-pre-wrap text-muted-foreground">{plan.proposed.feedback}</p>}
+			</ProposedPlan>)}
 			{live && !final && !work.some(entry => entry.kind === "message" || entry.value.type !== "usage") && <div className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin text-primary" /><span className="animate-pulse font-medium">Working</span></div>}
 			{delegated.map(entry => <details key={entry.value.id} className="rounded-xl border border-border px-3 py-2 text-[13px]"><summary className="cursor-pointer font-medium text-muted-foreground">Agent result</summary><MessageContent text={entry.value.text} projectId={task.projectId} /></details>)}
 			{final?.kind === "message" && <div data-selectable data-conversation-id={`message:${final.value.id}`} className="text-[14px] leading-relaxed"><MessageContent text={final.value.text} projectId={task.projectId} repairLocalLinks /></div>}

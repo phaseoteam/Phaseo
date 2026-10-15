@@ -1,7 +1,9 @@
 import { useRef, useState } from "react";
 import { ShieldQuestion } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
-import type { Task } from "../../shared/workspace";
+import type { ApprovalDecision, ApprovalRequest, Task } from "../../shared/workspace";
+import { Textarea } from "../components/ui/textarea";
+import { ProposedPlan } from "./ProposedPlan";
 import { useWorkspace } from "../app/workspace";
 import { Button } from "../components/ui/button";
 import { QuestionPanel } from "./QuestionPanel";
@@ -19,17 +21,44 @@ function approvalFields(description: string): [string, string][] | undefined {
 	} catch { return; }
 }
 
-function ApprovalCard({ title, description, onDecision }: { title?: string; description: string; onDecision: (decision: "accept" | "decline") => Promise<boolean> }) {
+type Decide = (decision: ApprovalDecision, feedback?: string) => Promise<boolean>;
+function useDecision(onDecision: Decide) {
 	const inFlight = useRef(false);
-	const [pending, setPending] = useState<"accept" | "decline">();
+	const [pending, setPending] = useState<ApprovalDecision>();
 	const [error, setError] = useState("");
-	async function decide(decision: "accept" | "decline") {
+	async function decide(decision: ApprovalDecision, feedback?: string) {
 		if (inFlight.current) return;
 		inFlight.current = true; setPending(decision); setError("");
-		try { if (!await onDecision(decision)) setError("The decision could not be sent. Try again."); }
+		try { if (!await onDecision(decision, feedback)) setError("The decision could not be sent. Try again."); }
 		catch (reason) { setError(reason instanceof Error ? reason.message : "The decision could not be sent."); }
 		finally { inFlight.current = false; setPending(undefined); }
 	}
+	return { pending, error, decide };
+}
+
+/** A proposed plan waiting for the person: Implement lets the agent go ahead; Revise sends what should change. */
+function PlanCard({ approval, projectId, onDecision }: { approval: ApprovalRequest; projectId?: string; onDecision: Decide }) {
+	const { pending, error, decide } = useDecision(onDecision);
+	const [revising, setRevising] = useState(false);
+	const [feedback, setFeedback] = useState("");
+	return <ProposedPlan markdown={approval.description} projectId={projectId}>
+		{error && <p role="alert" className="mt-2 text-xs text-destructive">{error}</p>}
+		{revising ? <div className="mt-2.5 flex flex-col gap-2">
+			<Textarea aria-label="What should change in the plan" autoFocus placeholder="What should change?" value={feedback} disabled={!!pending} maxLength={20000} onChange={event => setFeedback(event.target.value)}
+				onKeyDown={event => { if (event.key === "Enter" && (event.ctrlKey || event.metaKey) && feedback.trim()) { event.preventDefault(); void decide("decline", feedback.trim()); } }} className="max-h-60 text-[13px]" />
+			<div className="flex gap-2">
+				<Button size="sm" disabled={!!pending || !feedback.trim()} onClick={() => void decide("decline", feedback.trim())}>{pending ? "Sending…" : "Send revision"}</Button>
+				<Button variant="ghost" size="sm" disabled={!!pending} onClick={() => setRevising(false)}>Back</Button>
+			</div>
+		</div> : <div className="mt-2.5 flex gap-2">
+			<Button size="sm" disabled={!!pending} onClick={() => void decide("accept")}>{pending === "accept" ? "Implementing…" : "Implement"}</Button>
+			<Button variant="ghost" size="sm" disabled={!!pending} onClick={() => setRevising(true)}>Revise</Button>
+		</div>}
+	</ProposedPlan>;
+}
+
+function ApprovalCard({ title, description, always, never, onDecision }: { title?: string; description: string; always?: string; never?: string; onDecision: Decide }) {
+	const { pending, error, decide } = useDecision(onDecision);
 	const fields = approvalFields(description);
 	// Text before the arguments, such as a warning that an interrupted action may already have run, stays visible.
 	const preface = fields ? description.slice(0, description.indexOf("{")).trim() : "";
@@ -44,7 +73,10 @@ function ApprovalCard({ title, description, onDecision }: { title?: string; desc
 		{error && <p role="alert" className="mt-2 text-xs text-destructive">{error}</p>}
 		<div className="mt-2.5 flex gap-2">
 			<Button size="sm" disabled={!!pending} onClick={() => void decide("accept")}>{pending === "accept" ? "Allowing…" : "Allow"}</Button>
+			{/* Lasting choices only where the agent offers them; its own wording is the tooltip. */}
+			{always && <Button variant="outline" size="sm" title={always} disabled={!!pending} onClick={() => void decide("always")}>{pending === "always" ? "Allowing…" : "Always allow"}</Button>}
 			<Button variant="ghost" size="sm" disabled={!!pending} onClick={() => void decide("decline")}>{pending === "decline" ? "Denying…" : "Deny"}</Button>
+			{never && <Button variant="ghost" size="sm" title={never} disabled={!!pending} onClick={() => void decide("never")}>{pending === "never" ? "Denying…" : "Always deny"}</Button>}
 		</div>
 	</section>;
 }
@@ -54,7 +86,11 @@ export function Requests({ task, inlineQuestions = false }: { task: Task; inline
 	const { command } = useWorkspace();
 	if (!task.approvals?.length && !(inlineQuestions && task.questions?.length) && !task.forms?.length) return null;
 	return <div className="flex flex-col gap-3">
-		{task.approvals?.map(approval => <ApprovalCard key={approval.id} title={approval.method} description={approval.description} onDecision={async decision => !!await command({ type: "approval", id: task.id, approvalId: approval.id, decision })} />)}
+		{task.approvals?.map(approval => {
+			const onDecision: Decide = async (decision, feedback) => !!await command({ type: "approval", id: task.id, approvalId: approval.id, decision, ...(feedback ? { feedback } : {}) });
+			return approval.kind === "plan" ? <PlanCard key={approval.id} approval={approval} projectId={task.projectId} onDecision={onDecision} />
+				: <ApprovalCard key={approval.id} title={approval.method} description={approval.description} always={approval.always} never={approval.never} onDecision={onDecision} />;
+		})}
 		{/* Questions sit above the composer (QuestionPanel); compare panes, which have no composer, show them here. */}
 		{inlineQuestions && <QuestionPanel task={task} />}
 		{task.forms?.map(request => <div key={request.id} className="legacy-request rounded-xl border border-border bg-card p-3"><AgentForm form={request.form} onAnswer={async (answer, declined) => !!await command({ type: "form-answer", id: task.id, requestId: request.id, answer, ...(declined ? { declined: true } : {}) })} /></div>)}
