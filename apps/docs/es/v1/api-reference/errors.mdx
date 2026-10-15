@@ -85,6 +85,7 @@ Algunos errores incluyen más detalles para ayudarte a corregir el problema más
 | `authentication_error` | `401` | Falta la clave de API o no es válida. |
 | `authorization_error` | `403` | La clave no tiene acceso a este recurso. |
 | `not_found_error` | `404` | No se encontró el endpoint o el recurso. |
+| `model_retired` | `410` | El modelo está retirado y ya no lo sirve ningún proveedor. Cambia a `replacement_model`. |
 | `rate_limit_error` | `429` | Hay demasiadas solicitudes. Reintenta después del intervalo indicado. |
 | `phaseo_free_model_limit_exceeded` | `429` | Se agotó la cuota diaria compartida de modelos gratuitos de Phaseo (1.500 solicitudes por defecto). Respeta `Retry-After`, espera al reinicio a las 00:00 UTC o elige un modelo de pago. |
 | `rate_limit_exceeded` | `429` | Se agotó una [política de límite de frecuencia](./limits.mdx) del espacio de trabajo. `policy_id` y `limit_scope` la identifican. Respeta `Retry-After` o pide a un administrador del espacio de trabajo que cambie la política. |
@@ -190,6 +191,31 @@ Campos habituales:
   }
 }
 ```
+
+<span id="when-a-model-is-retired"></span>
+
+## Cuando se retira un modelo
+
+Un modelo retirado se sigue sirviendo mientras algún proveedor lo sirva. Cuando ya no lo sirve ninguno, las solicitudes para ese modelo fallan con `410` y el error `model_retired`:
+
+```json
+{
+  "generation_id": "G-retired123",
+  "status_code": 410,
+  "error": "model_retired",
+  "reason": "model_retired_without_providers",
+  "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+  "model": "lab/old-model",
+  "retired_at": "2026-09-30T00:00:00Z",
+  "replacement_model": "lab/new-model"
+}
+```
+
+- `model`: el modelo que solicitaste.
+- `retired_at`: cuándo se retiró el modelo, o `null` si no hay ninguna fecha registrada.
+- `replacement_model`: el sustituto sugerido, o `null` si no hay ninguno.
+
+Reintentar no sirve de nada. Actualiza el ID del modelo en tu solicitud. Para que estas solicitudes se sigan atendiendo mientras migras, añade el sustituto a la lista `models` de tu solicitud o activa el enrutamiento de modelos retirados para el espacio de trabajo. Consulta [Modelos retirados](../guides/routing-and-fallbacks.mdx#retired-models).
 
 ## Modo de depuración opcional
 

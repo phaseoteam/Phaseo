@@ -435,6 +435,7 @@ export type { WorkspaceMemberRemoveRequest } from "./WorkspaceMemberRemoveReques
 export type { WorkspaceMemberRemoveResponse } from "./WorkspaceMemberRemoveResponse.js";
 export type { WorkspaceMemberResponse } from "./WorkspaceMemberResponse.js";
 export type { WorkspaceMemberRoleUpdateRequest } from "./WorkspaceMemberRoleUpdateRequest.js";
+export type { WorkspaceModelSuccessorPricePolicy } from "./WorkspaceModelSuccessorPricePolicy.js";
 export type { WorkspaceNotificationDestination } from "./WorkspaceNotificationDestination.js";
 export type { WorkspaceNotificationDestinationCreateRequest } from "./WorkspaceNotificationDestinationCreateRequest.js";
 export type { WorkspaceNotificationDestinationListResponse } from "./WorkspaceNotificationDestinationListResponse.js";

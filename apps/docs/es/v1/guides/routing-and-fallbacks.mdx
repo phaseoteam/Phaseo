@@ -240,7 +240,7 @@ Cada alternativa se vuelve a comprobar de forma independiente según las restric
 
 Una solicitud que envía `models` sin `model` se rechaza con `400`. Las alternativas a nivel de solicitud usan el mismo mecanismo que las alternativas de las rutas dinámicas:
 
-- **Activadores.** El siguiente modelo solo se prueba cuando el intento anterior, tras sus propios reintentos con proveedores, termina con `429`, `500`, `502`, `503` o `504`. Los errores del cliente, como `400`, `401`, `402`, `403`, `404`, `408`, `413` y `422`, se devuelven sin cambiar de modelo. Un `429` causado por un presupuesto de Phaseo o por la cuota de un modelo gratuito alcanzados durante la ejecución de la solicitud también pasa al siguiente modelo, porque otro modelo puede ajustarse al límite restante. La autenticación, los límites de tasa de las claves de API y otras comprobaciones que fallan antes de ejecutar el modelo principal se devuelven de inmediato.
+- **Activadores.** El siguiente modelo solo se prueba cuando el intento anterior, tras sus propios reintentos con proveedores, termina con `429`, `500`, `502`, `503` o `504`. Los errores del cliente, como `400`, `401`, `402`, `403`, `404`, `408`, `413` y `422`, se devuelven sin cambiar de modelo. Un `429` causado por un presupuesto de Phaseo o por la cuota de un modelo gratuito alcanzados durante la ejecución de la solicitud también pasa al siguiente modelo, porque otro modelo puede ajustarse al límite restante. Cuando ningún proveedor sirve el modelo principal, por ejemplo porque está [retirado](#retired-models), Phaseo también pasa al siguiente modelo. La autenticación, los límites de tasa de las claves de API y otras comprobaciones que fallan antes de ejecutar el modelo principal se devuelven de inmediato.
 - **Límites.** `models` admite de 1 a 25 entradas. Las entradas duplicadas y las iguales a `model` se ignoran. Las rutas dinámicas mantienen su propio límite de ocho alternativas.
 - **Validación.** Cada entrada puede ser un ID de modelo, un ID de modelo con proveedor o un preajuste como `@support`. Cada intento se valida como una solicitud independiente: compatibilidad con el endpoint y la modalidad, parámetros solicitados, restricciones de modelo del espacio de trabajo, guardrails, preajustes, precios y credenciales BYOK. Una alternativa que no puede atender la solicitud se omite y queda anotada en los registros de solicitudes; nunca sustituye al error que recibirías de otro modo. También se omite una alternativa que equivale a un intento ya realizado, con el mismo modelo y los mismos proveedores aptos.
 - **Registro y facturación.** Cada intento es una solicitud independiente en tus registros, con su propio uso y su propio registro de facturación, por lo que cada intento se factura exactamente igual que si no hubiera alternativas.
@@ -272,6 +272,49 @@ Más información:
 
 - [Límites de tasa](../api-reference/limits.mdx)
 - [Gestión de errores](../api-reference/errors.mdx)
+
+<span id="retired-models"></span>
+
+## Modelos retirados
+
+Un modelo marcado como retirado se sigue sirviendo mientras algún proveedor lo sirva. Cuando ya no lo sirve ningún proveedor, las solicitudes para ese modelo fallan con `410 model_retired`, y el error indica el sustituto sugerido en `replacement_model`. Consulta [Errores y depuración](../api-reference/errors.mdx#when-a-model-is-retired).
+
+### Enruta las solicitudes a un sustituto
+
+Un espacio de trabajo puede optar por enviar estas solicitudes a un modelo sustituto. Esta opción está desactivada de forma predeterminada. Los propietarios y administradores la activan en **Panel -> Ajustes -> Enrutamiento -> Enrutamiento de modelos retirados** o con `model_successor_redirect_enabled` en la [API de configuración del espacio de trabajo](../api-reference/endpoint/workspace-settings-update.mdx).
+
+Cuando está activada, una solicitud se envía a un sustituto solo si se cumplen todas estas condiciones:
+
+- Ningún proveedor ha servido el modelo solicitado durante 72 horas. Hasta entonces, la solicitud falla como de costumbre.
+- Phaseo aprobó el sustituto, o tu espacio de trabajo lo eligió. Phaseo sigue hasta tres sustitutos aprobados consecutivos.
+- El modelo solicitado no es gratuito mientras el sustituto es de pago. Un modelo gratuito nunca se sustituye por uno de pago.
+- El sustituto supera las mismas comprobaciones que cualquier solicitud: restricciones de modelo del espacio de trabajo, restricciones de claves, guardrails y compatibilidad con el endpoint. Un sustituto nunca se añade por ti a una lista de permitidos.
+- La solicitud indica un modelo directamente. Las solicitudes a `phaseo/auto` o a un ID de modelo con proveedor no se redirigen.
+
+La política de precios del espacio de trabajo decide si un sustituto más caro puede atender la solicitud. Se comparan los precios que cobran ambos modelos.
+
+| `model_successor_price_policy` | Comportamiento |
+| --- | --- |
+| `never` (predeterminado) | Usa el sustituto solo si no cuesta más. |
+| `limit` | Permite hasta `model_successor_max_price_increase_percent` más (de 0 a 1000). |
+| `any` | Permite cualquier precio, incluidos los sustitutos cuyo precio no se puede comparar. |
+
+Los propietarios y administradores también pueden definir en el panel el sustituto propio del espacio de trabajo para un modelo, o elegir **No redirigir nunca** para que las solicitudes de ese modelo sigan fallando. El sustituto propio de un espacio de trabajo se usa sea cual sea su precio, pero un modelo gratuito sigue sin sustituirse nunca por uno de pago. Los cambios se aplican en aproximadamente un minuto.
+
+### Cómo saber si una solicitud se redirigió
+
+El campo `model` de la respuesta y tus registros de solicitudes muestran el modelo que atendió la solicitud, y la solicitud se factura al precio de ese modelo. Las respuestas redirigidas también incluyen dos encabezados:
+
+| Encabezado | Ejemplo |
+| --- | --- |
+| `X-Phaseo-Requested-Model` | `lab/old-model` |
+| `X-Phaseo-Model-Substitution` | `reason=unserved; from=lab/old-model; to=lab/new-model` |
+
+La primera vez que un sustituto responde correctamente a las solicitudes del espacio de trabajo para un modelo, se envía un único correo electrónico al propietario del espacio de trabajo. También puedes enviar este aviso a otros destinos; consulta [Notificaciones del espacio de trabajo](./workspace-notifications.mdx).
+
+### Sustitutos y modelos alternativos a nivel de solicitud
+
+Tu propia lista `models` tiene prioridad. Cuando ningún proveedor sirve el modelo principal, Phaseo prueba la siguiente entrada de `models` en lugar de un sustituto. Solo se considera un sustituto para el último modelo de la lista. En los modelos alternativos de una ruta dinámica, también solo se puede sustituir el último.
 
 ## Afinidad de caché y de sesión
 

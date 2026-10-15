@@ -3625,6 +3625,8 @@ struct WorkspaceMemberRoleUpdateRequest {
 	std::any role;
 };
 
+using WorkspaceModelSuccessorPricePolicy = std::any;
+
 struct WorkspaceNotificationDestination {
 	std::optional<std::string> created_at;
 	std::string id;
@@ -3679,6 +3681,7 @@ struct WorkspaceNotificationRouteMap {
 	std::vector<std::string> auto_top_up_failed;
 	std::vector<std::string> low_balance;
 	std::vector<std::string> model_deprecation;
+	std::vector<std::string> model_substitution;
 	std::vector<std::string> payment_method_expiring;
 };
 
@@ -3786,6 +3789,9 @@ struct WorkspaceSettings {
 	std::optional<bool> byok_fallback_enabled;
 	std::optional<bool> io_logging_enabled;
 	std::optional<bool> io_logging_include_provider_payloads;
+	std::optional<int> model_successor_max_price_increase_percent;
+	std::optional<std::any> model_successor_price_policy;
+	std::optional<bool> model_successor_redirect_enabled;
 	std::optional<bool> privacy_enable_free_may_publish_prompts;
 	std::optional<bool> privacy_enable_free_may_train;
 	std::optional<bool> privacy_enable_input_output_logging;
@@ -3812,6 +3818,9 @@ struct WorkspaceSettingsUpdateRequest {
 	std::optional<bool> byok_fallback_enabled;
 	std::optional<bool> io_logging_enabled;
 	std::optional<bool> io_logging_include_provider_payloads;
+	std::optional<int> model_successor_max_price_increase_percent;
+	std::any model_successor_price_policy;
+	std::optional<bool> model_successor_redirect_enabled;
 	std::optional<bool> privacy_enable_free_may_publish_prompts;
 	std::optional<bool> privacy_enable_free_may_train;
 	std::optional<bool> privacy_enable_input_output_logging;

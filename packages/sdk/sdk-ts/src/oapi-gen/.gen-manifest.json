@@ -441,6 +441,7 @@
     "models/WorkspaceMemberRemoveResponse.ts",
     "models/WorkspaceMemberResponse.ts",
     "models/WorkspaceMemberRoleUpdateRequest.ts",
+    "models/WorkspaceModelSuccessorPricePolicy.ts",
     "models/WorkspaceNotificationDestination.ts",
     "models/WorkspaceNotificationDestinationCreateRequest.ts",
     "models/WorkspaceNotificationDestinationListResponse.ts",

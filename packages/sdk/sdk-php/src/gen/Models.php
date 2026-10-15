@@ -6367,6 +6367,8 @@ class WorkspaceMemberRoleUpdateRequest
 	public $role;
 }
 
+class WorkspaceModelSuccessorPricePolicy { }
+
 class WorkspaceNotificationDestination
 {
 	/** @var string|null */
@@ -6455,6 +6457,8 @@ class WorkspaceNotificationRouteMap
 	public $low_balance;
 	/** @var array */
 	public $model_deprecation;
+	/** @var array */
+	public $model_substitution;
 	/** @var array */
 	public $payment_method_expiring;
 }
@@ -6627,6 +6631,12 @@ class WorkspaceSettings
 	public $io_logging_enabled;
 	/** @var bool|null */
 	public $io_logging_include_provider_payloads;
+	/** @var int|null */
+	public $model_successor_max_price_increase_percent;
+	/** @var mixed|null */
+	public $model_successor_price_policy;
+	/** @var bool|null */
+	public $model_successor_redirect_enabled;
 	/** @var bool|null */
 	public $privacy_enable_free_may_publish_prompts;
 	/** @var bool|null */
@@ -6675,6 +6685,12 @@ class WorkspaceSettingsUpdateRequest
 	public $io_logging_enabled;
 	/** @var bool|null */
 	public $io_logging_include_provider_payloads;
+	/** @var int|null */
+	public $model_successor_max_price_increase_percent;
+	/** @var string|null */
+	public $model_successor_price_policy;
+	/** @var bool|null */
+	public $model_successor_redirect_enabled;
 	/** @var bool|null */
 	public $privacy_enable_free_may_publish_prompts;
 	/** @var bool|null */
