@@ -554,6 +554,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_models_page_rows_without_lifecyc
         provider.routing_enabled = true
         or (
           route.provider_availability_status = 'coming_soon'
+          and route.access_scope = 'public'
           and route.routing_enabled = false
           and variant.routing_enabled = false
         )

@@ -62,6 +62,9 @@ try {
       assert.equal(payload.gateway_provider_details[0].is_active, false);
     }
   }
+  await db.exec("update public.v2_model_provider_routes set access_scope = 'internal';");
+  assert.equal((await db.query('select * from public.get_v2_public_models_page_rows_without_lifecycle(null, null)')).rows.length, 0);
+  await db.exec("update public.v2_model_provider_routes set access_scope = 'public';");
   await db.exec("update public.v2_providers set status = 'disabled';");
   assert.equal((await db.query('select * from public.get_v2_public_models_page_rows_without_lifecycle(null, null)')).rows.length, 0);
   await db.exec("update public.v2_providers set status = 'not_ready'; update public.v2_model_provider_routes set routing_enabled = true, phaseo_status = 'enabled', provider_availability_status = 'available'; update public.v2_route_variants set routing_enabled = true;");
