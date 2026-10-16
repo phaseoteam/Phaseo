@@ -2,6 +2,14 @@
 
 Settings is a full page. The sidebar becomes its navigation, with a search box that filters pages by name and by what they contain.
 
+## Code chats
+
+**Settings → General → Code chats** sets when Code chats settle on their own (merged pull requests, keeping chats that have one, and days without activity) and **Show a Working section**, which folds working chats into a Working section above Snoozed (off by default, kept per window). Each project can change the auto-settle settings in its own **Project settings**.
+
+## Project settings
+
+Each project has a page under **Projects** in the settings sidebar, also opened from a Code chat's menu, the chat header and the project menu. It holds the project's name, its auto-settle settings (each follows General until changed) and its actions, with when each runs on its own. Worktrees use their project's page. Settings are stored with the project in the workspace database and checked by the app before they are saved.
+
 ## Usage and limits
 
 **Usage & limits** reads each subscription's plan and limit windows when the page opens, and again on **Check again**. Each check starts the agent briefly; nothing is sent to a model.

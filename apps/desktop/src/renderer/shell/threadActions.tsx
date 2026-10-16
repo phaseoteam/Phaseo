@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlarmClock, AlarmClockOff, Archive, CircleCheck, Clock, Copy, Filter, Mail, Pencil, Pin, PinOff, Sparkles, SquarePen, Trash2, Undo2, WandSparkles } from "lucide-react";
+import { AlarmClock, AlarmClockOff, Archive, CircleCheck, Clock, Copy, Filter, Mail, Pencil, Pin, PinOff, Settings, Sparkles, SquarePen, Trash2, Undo2, WandSparkles } from "lucide-react";
 import { hasWoken, isSettled, isSnoozed, settleBlocker, snoozeBlocker, snoozePresets } from "../../shared/threadLifecycle";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { useWorkspace } from "../app/workspace";
@@ -94,7 +94,7 @@ export function CustomSnoozeDialog({ open, onOpenChange, onSnooze }: { open: boo
 /** T3's chat menu, in its order: pin, settle, snooze; rename, tags, unread, project filter, auto-settle; copy; archive. */
 export function ThreadMenuItems({ task, scope, onScope, onRename, onDelete, onCustomSnooze }: { task: TaskOverview; scope?: string; onScope?: (id: string) => void; onRename?: () => void; onDelete?: () => void; onCustomSnooze: () => void }) {
 	const actions = useThreadActions();
-	const { overview, select, setNewChatProjectId } = useWorkspace();
+	const { overview, select, setNewChatProjectId, openProjectSettings } = useWorkspace();
 	const project = overview.projects.find(value => value.id === task.projectId);
 	const settled = isSettled(task), snoozed = isSnoozed(task), woke = hasWoken(task);
 	const copy = (text: string) => void navigator.clipboard.writeText(text);
@@ -116,6 +116,7 @@ export function ThreadMenuItems({ task, scope, onScope, onRename, onDelete, onCu
 		<TagMenu task={task} />
 		<DropdownMenuItem disabled={!task.lastCompletedAt} onClick={() => void actions.markUnread(task)}><Mail />Mark unread</DropdownMenuItem>
 		{onScope && project && <DropdownMenuItem onClick={() => onScope(scope ? "" : project.id)}><Filter />{scope ? "Show all projects" : `Filter by ${project.name}`}</DropdownMenuItem>}
+		{project && <DropdownMenuItem onClick={() => openProjectSettings(project.id)}><Settings />Project settings</DropdownMenuItem>}
 		<DropdownMenuSub>
 			<DropdownMenuSubTrigger><Sparkles />Auto-settle behaviour</DropdownMenuSubTrigger>
 			<DropdownMenuSubContent className="w-40">

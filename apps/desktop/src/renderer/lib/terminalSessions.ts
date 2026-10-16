@@ -60,13 +60,13 @@ export function terminalsFor(values: readonly TerminalSession[], scope: { projec
 }
 export const terminalTitle = (session?: Pick<TerminalSession, "title">) => session?.title || "Terminal";
 
-/** Opens a terminal in a project (and chat) and returns its session. */
-export async function createTerminal(scope: { projectId?: string; taskId?: string }): Promise<TerminalSession> {
+/** Opens a terminal in a project (and chat), running a project script when one is given, and returns its session. */
+export async function createTerminal(scope: { projectId?: string; taskId?: string; scriptId?: string }): Promise<TerminalSession> {
 	const api = window.phaseoDesktop?.workspace;
 	if (!api) throw new Error("Open the desktop app to use terminals.");
 	start(api);
 	const before = new Set(sessions.map(session => session.id));
-	const result = await api.terminal({ type: "open", ...(scope.projectId ? { projectId: scope.projectId } : {}), ...(scope.taskId ? { taskId: scope.taskId } : {}) });
+	const result = await api.terminal({ type: "open", ...(scope.projectId ? { projectId: scope.projectId } : {}), ...(scope.taskId ? { taskId: scope.taskId } : {}), ...(scope.scriptId ? { scriptId: scope.scriptId } : {}) });
 	replace(result);
 	const created = result.find(session => !before.has(session.id) && session.status === "running" && (session.taskId ?? "") === (scope.taskId ?? ""));
 	if (!created) throw new Error("The terminal did not start.");

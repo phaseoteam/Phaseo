@@ -10,6 +10,7 @@ import { Select } from "../components/Select";
 import { Switch } from "../components/ui/switch";
 import { ModelPicker } from "../chat/ModelPicker";
 import { ModelSettings } from "../chat/ModelSettings";
+import { workingSectionKey } from "../shell/codeThreads";
 import { SettingsButton, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
 
 /** Workspace preferences, loaded once and saved one change at a time. */
@@ -96,6 +97,7 @@ function ChatTitles({ preferences, save, disabled }: { preferences: WorkspacePre
 
 export function GeneralSettings() {
 	const [autoOpenPanes, setAutoOpenPanes] = usePersistedState("phaseo.desktop.panes.autoOpen", true);
+	const [workingSection, setWorkingSection] = usePersistedState(workingSectionKey, false);
 	const { preferences, loading, busy, error, save, ready } = usePreferences();
 	return <SettingsPageLayout title="General">
 		<SettingsSection title="New chats"><DefaultModel /><ChatTitles preferences={preferences} save={save} disabled={!ready || busy} /></SettingsSection>
@@ -111,7 +113,9 @@ export function GeneralSettings() {
 			<SettingsRow title="Open panes automatically" description="Show the diff when a turn changes files, and a pull request when one is linked to the chat. Using the pane during a turn holds this back."
 				control={<Switch aria-label="Open panes automatically" checked={autoOpenPanes} onCheckedChange={setAutoOpenPanes} />} />
 		</SettingsSection>
-		<SettingsSection title="Code chats" description="Settle a chat when you are done with it; it moves to Settled at the bottom of the sidebar." label="Code chats">
+		<SettingsSection title="Code chats" description="Settle a chat when you are done with it; it moves to Settled at the bottom of the sidebar. Each project can change these in its Project settings." label="Code chats">
+			<SettingsRow title="Show a Working section" description="Fold chats that are working and need nothing from you into a Working section above Snoozed. They return to the top of the list when they need you. Your list is then ordered by time."
+				control={<Switch aria-label="Show a Working section" checked={workingSection} onCheckedChange={setWorkingSection} />} />
 			<SettingsRow title="Auto-settle merged chats" description="Settle a chat when its pull request merges. Closed pull requests still settle it."
 				control={<Switch aria-label="Auto-settle merged chats" disabled={!ready || busy} checked={preferences.autoSettleOnMerge} onCheckedChange={value => void save({ ...preferences, autoSettleOnMerge: value })} />} />
 			<SettingsRow title="Keep chats with a pull request" description="Inactivity does not settle chats with a pull request. Merging and closing still do."

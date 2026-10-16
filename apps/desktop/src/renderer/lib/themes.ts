@@ -3,7 +3,7 @@
  * colour is derived from those two, and any token can be overridden. Themes travel as JSON files or
  * as a short share code, and T3 Code or VS Code theme files can be imported.
  */
-export const themeTokens = ["background", "foreground", "card", "card-foreground", "popover", "popover-foreground", "primary", "primary-foreground", "secondary", "secondary-foreground", "muted", "muted-foreground", "accent", "accent-foreground", "border", "input", "ring", "sidebar", "sidebar-foreground", "sidebar-accent", "sidebar-accent-foreground", "sidebar-border", "destructive", "success", "warning"] as const;
+export const themeTokens = ["background", "foreground", "card", "card-foreground", "popover", "popover-foreground", "primary", "primary-foreground", "secondary", "secondary-foreground", "muted", "muted-foreground", "accent", "accent-foreground", "border", "input", "ring", "sidebar", "sidebar-foreground", "sidebar-accent", "sidebar-accent-foreground", "sidebar-border", "destructive", "success", "warning", "info"] as const;
 export type ThemeToken = (typeof themeTokens)[number];
 export type ThemeMode = "light" | "dark";
 export type ThemeHalf = { canvas: string; accent: string; tokens?: Partial<Record<ThemeToken, string>> };
@@ -49,7 +49,7 @@ export function themeColours(theme: ThemeHalf, mode: ThemeMode): Record<ThemeTok
 		accent: mix(accent, canvas, 14), "accent-foreground": ink,
 		border: mix(canvas, ink, mode === "dark" ? 86 : 89), input: mix(canvas, ink, mode === "dark" ? 82 : 87), ring: accent,
 		sidebar: mix(canvas, ink, mode === "dark" ? 97 : 97), "sidebar-foreground": ink, "sidebar-accent": mix(canvas, ink, mode === "dark" ? 88 : 93), "sidebar-accent-foreground": ink, "sidebar-border": mix(canvas, ink, mode === "dark" ? 88 : 91),
-		destructive: mode === "dark" ? "#f87171" : "#dc2626", success: mode === "dark" ? "#4ade80" : "#16a34a", warning: mode === "dark" ? "#fbbf24" : "#d97706",
+		destructive: mode === "dark" ? "#f87171" : "#dc2626", success: mode === "dark" ? "#4ade80" : "#16a34a", warning: mode === "dark" ? "#fbbf24" : "#d97706", info: mode === "dark" ? "#60a5fa" : "#2563eb",
 	};
 	return { ...derived, ...theme.tokens };
 }

@@ -3,6 +3,8 @@ import { generateTitle } from "./chatTitles";
 import { mentionPlainText } from "../shared/mentions";
 import { randomUUID } from "node:crypto";
 import { autoSettleAt } from "../shared/threadLifecycle";
+import { autoSettleRules, settingsProject, settleScriptTarget, worktreeCreateScripts, type ProjectScript, type ProjectUpdate } from "../shared/projectSettings";
+import { runProjectCommand } from "./runProjectCommand";
 import { mkdirSync, realpathSync } from "node:fs";
 import path from "node:path";
 import type { AgentActivity, AgentConnection, ApprovalDecision, ModelOption, WorkspaceCommand, AgentQuestion, QuestionRequest } from "../shared/workspace";
@@ -93,6 +95,16 @@ export class WorkspaceRuntime {
 	onChange: (workspace: WorkspaceOverview) => void = () => {};
 	onTerminalAuth?: (request: TerminalAuthRequest, signal: AbortSignal) => TerminalAuthentication;
 	getTerminals?: () => { cwd: string; status: string }[];
+	/** Closes a settled chat's terminals that sit at an idle prompt (TerminalService.closeIdle). */
+	closeIdleTerminals?: (taskId: string) => Promise<unknown>;
+	/** Starts a project script in a terminal of its own (TerminalService.runScript). */
+	runProjectScript?: (projectId: string, script: ProjectScript) => void;
+	/** Settle cleanups in progress, and the settle each chat's scripts last ran for, so a repeat settle does not run them twice. */
+	private readonly settleCleanups = new Set<Promise<unknown>>();
+	private readonly settleScriptRuns = new Map<string, string>();
+	private readonly settleAbort = new AbortController();
+	/** Chats their own agent settled mid-turn; cleanup waits until the turn's execution has ended. */
+	private readonly settledByTurn = new Set<string>();
 	constructor(private readonly directory: string, private readonly adapterFactory = createAdapter, private readonly vault?: SecretVault) {
 		mkdirSync(path.join(directory, "instructions"), { recursive: true });
 		mkdirSync(directory, { recursive: true });
@@ -140,19 +152,74 @@ export class WorkspaceRuntime {
 	settleIdleThreads(now = Date.now()) {
 		if (this.closing) return;
 		const preferences = this.store.getPreferences();
-		const rules = { days: preferences.autoSettleAfterDays, onMerge: preferences.autoSettleOnMerge, keepPullRequests: preferences.keepPullRequests };
-		let changed = false;
-		for (const thread of this.store.getOverview().tasks) {
+		const overview = this.store.getOverview(), settled: string[] = [];
+		for (const thread of overview.tasks) {
 			if (!thread.projectId || thread.delegation?.parentTaskId || this.executions.has(thread.id)) continue;
-			const at = autoSettleAt(thread, rules, now);
+			// A project's own auto-settle settings win over the workspace's (Project settings).
+			const at = autoSettleAt(thread, autoSettleRules(preferences, settingsProject(overview.projects, thread.projectId)?.settings), now);
 			if (!at) continue;
 			// Skip a chat that changed since the overview was read.
 			const task = this.store.getTask(thread.id);
 			if (task.updatedAt !== thread.updatedAt || task.settledOverride) continue;
 			task.settledOverride = "settled"; task.settledAt = at; task.unsettledAt = undefined;
-			this.store.saveTask(task, true); changed = true;
+			this.store.saveTask(task, true); settled.push(task.id);
 		}
-		if (changed) this.broadcast();
+		if (settled.length) this.broadcast();
+		for (const id of settled) this.settled(id);
+	}
+	/** Renames a project or replaces its settings. Worktrees follow their source project's settings, so only their name changes. */
+	updateProject(update: ProjectUpdate): WorkspaceOverview {
+		if (this.closing) throw new Error("The workspace is shutting down.");
+		const project = this.store.getProjects().find(value => value.id === update.id);
+		if (!project) throw new Error("Project no longer exists.");
+		if (update.settings !== undefined && project.worktree) throw new Error("Worktrees use their project's settings. Change them in the project instead.");
+		if (update.name !== undefined) project.name = update.name;
+		if (update.settings !== undefined) project.settings = Object.keys(update.settings).length ? update.settings : undefined;
+		this.store.saveProject(project); this.broadcast();
+		if (update.settings !== undefined) this.settleIdleThreads();
+		return this.store.getOverview();
+	}
+	/** After a chat settles, by the person, its agent or auto-settle: T3's cleanUpSettledThread, in the background. */
+	private settled(id: string) {
+		if (this.closing) return;
+		const work = this.cleanUpSettled(id).catch(() => undefined);
+		this.settleCleanups.add(work); void work.finally(() => this.settleCleanups.delete(work));
+	}
+	/**
+	 * Closes the chat's idle terminals so they stop holding its checkout, then runs the project's settle script in the
+	 * chat's own worktree (never a shared checkout), recording each as an activity in the chat. A chat taken up again
+	 * meanwhile is left alone.
+	 */
+	private async cleanUpSettled(id: string) {
+		const stillSettled = () => { try { const task = this.store.getTask(id); return task.settledOverride === "settled" && !this.executions.has(id) && !this.closing ? task : undefined; } catch { return undefined; } };
+		if (!stillSettled()) return;
+		await this.closeIdleTerminals?.(id).catch(() => undefined);
+		const task = stillSettled(); if (!task) return;
+		const key = task.settledAt ?? "";
+		if (this.settleScriptRuns.get(id) === key) return;
+		const overview = this.store.getOverview();
+		const target = settleScriptTarget(task, overview.projects, overview.tasks);
+		if (!target) return;
+		this.settleScriptRuns.set(id, key);
+		const { script, directory } = target;
+		const activityId = `settle:${randomUUID()}`, heading = `$ ${script.command}`, title = `Settle script: ${script.name}`;
+		this.recordActivity(id, { id: activityId, type: "tool", title, text: heading, status: "running" });
+		let result: { output: string; exitCode: number | null; stopped?: string };
+		try { result = await runProjectCommand(directory, script.command, ".", this.settleAbort.signal); }
+		catch (error) { result = { output: error instanceof Error ? error.message : "The script could not start.", exitCode: null }; }
+		const output = result.output.trim().slice(-64 * 1024) || "(no output)";
+		const outcome = result.stopped ?? (result.exitCode === null ? "The script did not finish." : `Exited with code ${result.exitCode}.`);
+		this.recordActivity(id, { id: activityId, type: "tool", title, text: `${heading}\n\n${output}\n\n${outcome}`, status: result.exitCode === 0 && !result.stopped ? "completed" : "failed" });
+	}
+	/** Adds or updates an activity outside a turn. It is not activity in the lifecycle sense, so the chat keeps its place. */
+	private recordActivity(id: string, activity: AgentActivity) {
+		let task; try { task = this.store.getTask(id); } catch { return; }
+		task.activities ??= [];
+		const existing = task.activities.find(value => value.id === activity.id);
+		if (existing) Object.assign(existing, activity, { timelineOrder: existing.timelineOrder });
+		else task.activities.push({ ...activity, timelineOrder: [...task.messages, ...task.activities].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), task.messages.length + task.activities.length) + 1 });
+		// A script stopped by shutdown still records how it ended; close() waits for this before closing the store.
+		this.store.saveTask(task, true); if (!this.closing) this.broadcast();
 	}
 	/** Called after any pane reads a pull request, so linked chats show its latest state. */
 	syncPullRequestSnapshot(repository: string, number: number, snapshot: PullRequestLinkSnapshot) {
@@ -229,8 +296,12 @@ export class WorkspaceRuntime {
 		const source = this.store.getProjects().find(value => value.id === projectId); if (!source) throw new Error("Project no longer exists.");
 		const root = path.join(this.directory, "worktrees"); mkdirSync(root, { recursive: true }); const directory = path.join(realpathSync(root), randomUUID());
 		const baseCommit = await createGitWorktree(source.directory, directory, branch, base);
-		try { const project = this.store.addProject(directory); project.name = `${source.name} · ${branch}`; project.worktree = { sourceProjectId: source.id, branch, baseCommit }; this.store.saveProject(project); this.broadcast(); return { workspace: this.store.getOverview(), projectId: project.id }; }
+		try { const project = this.store.addProject(directory); project.name = `${source.name} · ${branch}`; project.worktree = { sourceProjectId: source.id, branch, baseCommit }; this.store.saveProject(project); this.broadcast(); this.startWorktreeScripts(project.id); return { workspace: this.store.getOverview(), projectId: project.id }; }
 		catch (error) { throw new Error(`The worktree was created at ${directory}, but project registration failed. Open that folder to recover it.`, { cause: error }); }
+	}
+	/** T3's "run on worktree creation": each such script starts in a terminal of its own in the new worktree. */
+	private startWorktreeScripts(projectId: string) {
+		for (const script of worktreeCreateScripts(this.store.getProjects(), projectId)) try { this.runProjectScript?.(projectId, script); } catch { /* Terminal limits reached; the person can run it from the chat header. */ }
 	}
 	assertAccountIdle(accountId: string) {
 		if (this.store.getOverview().tasks.some(task => task.accountId === accountId && this.executions.has(task.id))) throw new Error("Stop this account's tasks before signing in again.");
@@ -455,6 +526,7 @@ export class WorkspaceRuntime {
 		}
 		const task = this.store.apply(command, initialModels);
 		this.broadcast();
+		if (command.type === "settle") this.settled(task.id);
 		// Archiving a chat stops the agents it started, as Stop does; they would otherwise keep spending in the background.
 		if (command.type === "update-task" && command.archived === true)
 			for (const child of this.store.getOverview().tasks.filter(value => value.delegation?.parentTaskId === command.id && ["idle", "running", "waiting"].includes(value.status))) await this.command({ type: "cancel", id: child.id });
@@ -500,6 +572,7 @@ export class WorkspaceRuntime {
 		if (this.closing || this.executions.has(id)) return;
 		const execution = this.drain(id).finally(() => {
 			this.executions.delete(id);
+			if (this.settledByTurn.delete(id)) this.settled(id);
 			if (!this.closing && this.store.getTask(id).status === "completed" && this.store.getTask(id).queue.length) this.start(id);
 		});
 		this.executions.set(id, execution);
@@ -682,7 +755,7 @@ export class WorkspaceRuntime {
 			const current = this.store.getTask(id);
 			if (current.status !== "interrupted") current.status = "completed";
 			// T3: an agent that settled its own chat mid-turn settles it now, but only when the turn completed.
-			if (current.settleWhenTurnEnds) { if (current.status === "completed" && !current.queue.length) { current.settledOverride = "settled"; current.settledAt = new Date().toISOString(); current.unsettledAt = undefined; current.pinned = false; } current.settleWhenTurnEnds = undefined; }
+			if (current.settleWhenTurnEnds) { if (current.status === "completed" && !current.queue.length) { current.settledOverride = "settled"; current.settledAt = new Date().toISOString(); current.unsettledAt = undefined; current.pinned = false; this.settledByTurn.add(id); } current.settleWhenTurnEnds = undefined; }
 			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = [];
 			this.store.saveTask(current);
 		} catch (error) {
@@ -705,7 +778,7 @@ export class WorkspaceRuntime {
 		}
 	}
 	async close() {
-		this.closing = true; for (const timer of this.wakeTimers.values()) clearTimeout(timer); this.wakeTimers.clear(); for (const close of this.orchestrationSessions.values()) close(); this.broadcast();
+		this.closing = true; this.settleAbort.abort(); for (const timer of this.wakeTimers.values()) clearTimeout(timer); this.wakeTimers.clear(); for (const close of this.orchestrationSessions.values()) close(); this.broadcast();
 		for (const id of this.running.keys()) this.store.apply({ type: "cancel", id });
 		for (const pending of this.approvals.values()) pending.resolve("decline");
 		for (const pending of this.questions.values()) pending.resolve({});
@@ -719,6 +792,7 @@ export class WorkspaceRuntime {
 		await Promise.allSettled([...this.worktreeOperations]);
 		await Promise.allSettled([...this.projectMutations.keys()]);
 		await Promise.allSettled([...this.commands]);
+		await Promise.allSettled([...this.settleCleanups]);
 		await this.orchestratorMcp.close();
 		await this.openCode.close();
 		this.store.close();

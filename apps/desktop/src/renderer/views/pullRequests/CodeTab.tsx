@@ -17,8 +17,9 @@ import { cn } from "../../lib/utils";
 import { ActorLabel, DiffStat, errorMessage, MetaLine, Tip } from "./presentation";
 import { fileTree, ignoreWhitespacePatch, readViewed, relativeTime, setViewed, viewedState, viewedStorageKey, type FileTreeNode, type ViewedFiles } from "./pullRequestLogic";
 import { Reactions } from "./SummaryTab";
+import { DiffFileHeadersLoading } from "../../panels/surfaceChrome";
 
-const statusLetter: Record<string, { letter: string; tone: string }> = { added: { letter: "A", tone: "text-emerald-600 dark:text-emerald-400" }, removed: { letter: "D", tone: "text-red-600 dark:text-red-400" }, renamed: { letter: "R", tone: "text-sky-600 dark:text-sky-400" }, copied: { letter: "C", tone: "text-sky-600 dark:text-sky-400" } };
+const statusLetter: Record<string, { letter: string; tone: string }> = { added: { letter: "A", tone: "text-emerald-600 dark:text-emerald-400" }, removed: { letter: "D", tone: "text-red-600 dark:text-red-400" }, renamed: { letter: "R", tone: "text-info" }, copied: { letter: "C", tone: "text-info" } };
 const fileAnchor = (path: string) => `pr-file-${encodeURIComponent(path)}`;
 
 function ToolbarToggle({ label, pressed, onPressedChange, children }: { label: string; pressed: boolean; onPressedChange: (pressed: boolean) => void; children: React.ReactNode }) {
@@ -123,7 +124,7 @@ export function CodeTab({ view, projectId, pending, onAction, onOpen }: { view: 
 			{treeOpen && files.length > 0 && <ScrollArea className="w-56 shrink-0 border-r border-border/60" aria-label="Changed files"><div className="p-1.5"><TreeRows nodes={tree} depth={0} onSelect={select} viewed={path => viewedState(viewed, path, files.find(file => file.filename === path)?.blobOid ?? "") === "viewed"} /></div></ScrollArea>}
 			<ScrollArea className="min-w-0 flex-1" viewportRef={scroller} viewportClassName="pr-scroller">
 				{error && <div className="flex items-center gap-2 px-4 py-3 text-xs"><span role="alert" className="text-destructive">{error}</span><Button size="xs" variant="ghost" onClick={() => void load(page || 1, page <= 1)}>Retry</Button></div>}
-				{!files.length && loading && <p role="status" className="px-4 py-3 text-xs text-muted-foreground">Loading changed files…</p>}
+				{!files.length && loading && <DiffFileHeadersLoading label="Loading changed files…" />}
 				{!files.length && !loading && !error && <p className="px-4 py-3 text-xs text-muted-foreground">No changed files.</p>}
 				{files.map(file => {
 					const state = viewedState(viewed, file.filename, file.blobOid), closed = isCollapsed(file), status = statusLetter[file.status];

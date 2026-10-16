@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, FileDiff, FileText, Files, GitBranch, GitPul
 import { ScrollArea } from "../components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Kbd } from "../components/ui/kbd";
+import { Tip } from "../components/ui/tooltip";
 import { errorText, useWorkspace, type RightPanelTab } from "../app/workspace";
 import { usePersistedState } from "../lib/persistedState";
 import { useCommand } from "../lib/keybindings";
@@ -74,7 +75,7 @@ function SurfaceTab({ paneKey, context, active, dirty, onSelect, onClose, onClos
 	const browser = useBrowserTab(context, kind === "browser" ? value : "");
 	const [over, setOver] = useState(false);
 	return <ContextMenu.Root>
-		<ContextMenu.Trigger render={<div role="tab" tabIndex={0} aria-selected={active} title={title} draggable data-pane-tab={paneKey} {...(kind === "browser" ? { "data-browser-tab-id": value } : {})}
+		<ContextMenu.Trigger render={<div role="tab" tabIndex={0} aria-selected={active} aria-label={title} draggable data-pane-tab={paneKey} {...(kind === "browser" ? { "data-browser-tab-id": value } : {})}
 			onClick={onSelect} onKeyDown={event => { if (event.key === "Enter") onSelect(); }} onAuxClick={event => { if (event.button === 1) { event.preventDefault(); onClose(); } }}
 			onDragStart={event => { event.dataTransfer.setData(paneTabType, paneKey); event.dataTransfer.effectAllowed = "move"; }}
 			onDragOver={(event: DragEvent) => { if (!event.dataTransfer.types.includes(paneTabType)) return; event.preventDefault(); setOver(true); }}
@@ -87,7 +88,7 @@ function SurfaceTab({ paneKey, context, active, dirty, onSelect, onClose, onClos
 				<X className="hidden size-3 group-hover/tab:block group-focus-visible/close:block" />
 			</button>
 			{browser && (browser.audible || browser.muted) && <button type="button" aria-label={browser.muted ? "Unmute tab" : "Mute tab"} onClick={event => { event.stopPropagation(); void setBrowserTabMuted(browser.id, !browser.muted); }} className="grid size-4 shrink-0 place-items-center rounded-sm hover:bg-muted">{browser.muted ? <VolumeOff className="size-3" /> : <Volume2 className="size-3" />}</button>}
-			<span className="truncate">{title}</span>
+			<Tip label={title} side="bottom" delay={600}><span className="truncate">{title}</span></Tip>
 		</ContextMenu.Trigger>
 		<DropdownMenuContent className="w-48">
 			{browser && <DropdownMenuItem onClick={() => void setBrowserTabMuted(browser.id, !browser.muted)}>{browser.muted ? "Unmute tab" : "Mute tab"}</DropdownMenuItem>}
@@ -120,10 +121,12 @@ function Launcher({ onOpen, hasProject }: { onOpen: (kind: typeof launchers[numb
 			<h3 className="mb-3 text-center text-sm font-medium text-foreground">Open a surface</h3>
 			<div className="flex flex-col gap-0.5">{launchers.map(item => {
 				const unavailable = item.needsProject && !hasProject;
-				return <button key={item.kind} type="button" disabled={unavailable} onClick={() => onOpen(item.kind)} title={unavailable ? "Only for chats in a project." : undefined}
+				const button = <button key={item.kind} type="button" disabled={unavailable} onClick={() => onOpen(item.kind)}
 					className="flex h-8 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-sm transition-colors hover:bg-accent/60 disabled:opacity-50 [&>svg]:size-4">
 					{item.icon}<span className="min-w-0 flex-1 truncate">{item.label}</span><Kbd>{item.letter}</Kbd>
 				</button>;
+				// A disabled button gets no pointer events, so its reason sits on a wrapper.
+				return unavailable ? <Tip key={item.kind} label="Only for chats in a project."><div>{button}</div></Tip> : button;
 			})}</div>
 		</div>
 	</div>;
@@ -278,15 +281,15 @@ export function RightPanel() {
 							onCloseOthers={() => close(tabs.filter(value => value !== key))} onCloseRight={() => close(tabs.slice(index + 1))} onCloseAll={() => close(tabs)}
 							onDropBefore={moved => { touched.current = Date.now(); update(movePaneTab({ ...state, tabs }, moved, key)); }} />)}
 						<DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-							<DropdownMenuTrigger render={<button type="button" aria-label="Open a surface" title="Open a surface" className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground" />}><Plus className="size-3.5" /></DropdownMenuTrigger>
+							<Tip label="Open a surface" side="bottom"><DropdownMenuTrigger render={<button type="button" aria-label="Open a surface" className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground" />}><Plus className="size-3.5" /></DropdownMenuTrigger></Tip>
 							<DropdownMenuContent align="start" className="w-52">{launchers.map(item => <DropdownMenuItem key={item.kind} disabled={item.needsProject && !projectId} onClick={() => void openKind(item.kind)}>{item.icon}{item.label}<DropdownMenuShortcut>{item.letter}</DropdownMenuShortcut></DropdownMenuItem>)}</DropdownMenuContent>
 						</DropdownMenu>
 					</div>
 				</ScrollArea>
 				{overflow.right && <button type="button" aria-label="Scroll tabs right" onClick={() => strip.current?.scrollBy({ left: 160, behavior: "smooth" })} className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"><ChevronRight className="size-3.5" /></button>}
-				{tabs.length > 0 && !sheet && <button type="button" aria-label={state.maximized ? "Restore panel" : "Maximize panel"} title={state.maximized ? "Restore panel" : "Maximize panel"} aria-pressed={!!state.maximized} onClick={() => update({ ...state, maximized: !state.maximized })}
-					className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground">{state.maximized ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}</button>}
-				<button type="button" aria-label="Close panel" title="Close panel" onClick={() => { requested.current = undefined; setRightPanel(undefined); }} className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"><X className="size-4" /></button>
+				{tabs.length > 0 && !sheet && <Tip label={state.maximized ? "Restore panel" : "Maximize panel"} side="bottom"><button type="button" aria-label={state.maximized ? "Restore panel" : "Maximize panel"} aria-pressed={!!state.maximized} onClick={() => update({ ...state, maximized: !state.maximized })}
+					className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground">{state.maximized ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}</button></Tip>}
+				<Tip label="Close panel" side="bottom"><button type="button" aria-label="Close panel" onClick={() => { requested.current = undefined; setRightPanel(undefined); }} className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"><X className="size-4" /></button></Tip>
 			</div>
 			{!active ? <Launcher onOpen={kindToOpen => void openKind(kindToOpen)} hasProject={Boolean(projectId)} />
 				: kind === "browser" || kind === "terminal" || kind === "diff" || kind === "file" || kind === "files" || kind === "pull" || kind === "pulls" ? <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{content}</div>

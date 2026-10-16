@@ -54,7 +54,7 @@ app.whenReady().then(async()=>{
  await capture('chat-plan-checklist');
  await run(`(()=>{const input=document.querySelector('[aria-label="Message"]');window.__auditType(input,'Keep this draft')})()`);
  await panel('Browser');await wait(`Boolean(document.querySelector('.browser-surface'))`);
- await panel('Files');await wait(`Boolean(document.querySelector('aside[aria-label="Tools"] [role=tab][title="Files"][aria-selected=true]'))`);
+ await panel('Files');await wait(`Boolean(document.querySelector('aside[aria-label="Tools"] [role=tab][aria-label="Files"][aria-selected=true]'))`);
  if(!await run(`document.querySelector('[aria-label="Message"]').value==='Keep this draft'&&window.__auditChatTitle()==='Improve the website'`))throw Error('Opening tools reset the chat');
  await panel('Pull requests');await wait(`document.querySelector('section[aria-label="Pull requests"]')?.textContent.includes('No linked pull requests')`);await run(`document.querySelectorAll('[aria-label="Pull request list"] button')[1].click()`);await wait(`document.querySelector('section[aria-label="Pull requests"]')?.textContent.includes('No open pull requests.')`);if(proposalProject!=='project')throw Error('PR panel did not follow chat project');
  const ownedRequest={number:12,title:'Owned pull request',url:'https://github.com/owned/fixture/pull/12',author:'fixture',draft:false,head:'feature/owned',base:'main',updatedAt:now,review:'required',checks:'failed'};

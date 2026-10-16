@@ -5,7 +5,7 @@ import { useWorkspace } from "../app/workspace";
 import { cn } from "../lib/utils";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { onProjectChange } from "./events";
-import { ipcError, RefreshIcon, SURFACE_HEADER_CLASS, ToolbarButton } from "./surfaceChrome";
+import { FileTreeLoading, ipcError, RefreshIcon, SURFACE_HEADER_CLASS, ToolbarButton } from "./surfaceChrome";
 
 const parentOf = (path: string) => path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
 
@@ -109,8 +109,9 @@ export function FileBrowserSurface({ projectId, onOpenFile, selectedPath, classN
 		{error && <button type="button" onClick={() => void reload(true)} className="p-4 text-left text-xs leading-relaxed text-destructive">{error} Click to retry.</button>}
 		{results?.truncated && <div className="px-3 py-1 text-xs text-muted-foreground">More matches available. Refine your search.</div>}
 		{truncated && expandedAll && !results && <div className="px-3 py-1 text-xs text-muted-foreground">Some folders are too large to expand at once.</div>}
-		{(!loaded || (query.trim() && !results)) && !error && <div role="status" className="px-3 py-1 text-xs text-muted-foreground">Loading files…</div>}
+		{loaded && query.trim() && !results && !error && <div role="status" className="px-3 py-1 text-xs text-muted-foreground">Searching files…</div>}
 		<ScrollArea className="min-h-0 flex-1" viewportClassName="py-1">
+			{!loaded && !error && <FileTreeLoading />}
 			<div role="tree" aria-label={`${projectName} files`} className="px-1">
 				{results ? results.entries.length ? results.entries.map(entry => row(entry, 0, true)) : <p className="px-2 py-3 text-xs text-muted-foreground/70">No files match “{results.query}”.</p>
 					: loaded && !(children.get("") ?? []).length ? <p className="px-2 py-3 text-xs text-muted-foreground/70">This folder is empty.</p> : branch("", 0)}

@@ -12,7 +12,7 @@ import { ToggleGroup, ToggleGroupItem } from "../../components/ui/toggle-group";
 import { TooltipProvider } from "../../components/ui/tooltip";
 import { useBackgroundRefresh } from "../../lib/useBackgroundRefresh";
 import { cn } from "../../lib/utils";
-import { ChecksGlyph, DiffStat, errorMessage, MiddleTruncate, PullRequestGlyph, PullRequestRowGlyph, ReviewDecisionGlyph, Tip } from "./presentation";
+import { ChecksGlyph, DiffStat, errorMessage, MiddleTruncate, PullRequestGlyph, PullRequestListGhost, PullRequestRowGlyph, ReviewDecisionGlyph, Tip } from "./presentation";
 import { relativeTime, summaryChecksRollup } from "./pullRequestLogic";
 import { PullRequestSurface } from "./PullRequestSurface";
 import { segmentedGroup, segmentedItem } from "./segmented";
@@ -173,7 +173,7 @@ export function PullRequestListSurface({ projectId, taskId, onOpen }: { projectI
 				<footer className="flex items-center justify-between border-t border-border/60 px-2 py-1.5 text-2xs text-muted-foreground"><span>{openCount} open · {links.length} linked</span><Button size="xs" variant="ghost" onClick={() => setLinkOpen(true)}><Plus className="size-3.5" />Link</Button></footer>
 			</>)
 			: <ScrollArea className="min-h-0 flex-1"><div className="flex flex-col p-1.5" aria-label="Open pull requests">
-				{!project && loading && <p role="status" className="px-2 py-2 text-xs text-muted-foreground">Loading pull requests…</p>}
+				{!project && loading && <PullRequestListGhost />}
 				{project?.projectId === projectId && project.requests.map(request => <ProjectRow key={request.number} request={request} linked={linkedNumbers.has(request.number)}
 					onOpen={() => openRequest({ number: request.number, title: request.title, state: "OPEN", draft: request.draft })} onExternal={() => external(request.url)} onCopy={() => copy(request.url)}
 					onLink={taskId ? () => void run({ type: "link-pull-request", id: taskId, reference: request.url }).then(failure => failure ? setError(failure) : flash(`Linked #${request.number}`)) : undefined} />)}

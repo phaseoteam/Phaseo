@@ -116,7 +116,7 @@ const shellActions = String.raw`
     if(label==='Files & changes')label='Files';
     if(!document.querySelector('aside[aria-label="Tools"]'))await window.__auditPaletteRun('Show files and changes');
     // Browser and terminal tabs are titled by their page or session, so they are found by kind.
-    const selector=label==='Browser'?'[role=tab][data-browser-tab-id]':label==='Terminal'?'[role=tab][data-pane-tab^="terminal:"]':'[role=tab][title="'+label+'"]';
+    const selector=label==='Browser'?'[role=tab][data-browser-tab-id]':label==='Terminal'?'[role=tab][data-pane-tab^="terminal:"]':'[role=tab][aria-label="'+label+'"]';
     const find=()=>document.querySelector('aside[aria-label="Tools"] [role=tablist] '+selector);
     // A surface that is not open yet opens from the empty pane's launcher, or from the "+" menu.
     if(!find()){

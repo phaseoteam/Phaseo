@@ -5,6 +5,7 @@ import { errorText } from "../app/workspace";
 import { Select } from "../components/Select";
 import { Kbd, KbdGroup } from "../components/ui/kbd";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
+import { Tip } from "../components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { saveKeybindings, useKeybindings } from "../lib/keybindings";
 import { isMac } from "../lib/shortcuts";
@@ -93,7 +94,7 @@ function WhenControl({ label, value, onChange }: { label: string; value: string;
 function Conflict({ labels }: { labels: string[] }) {
 	if (!labels.length) return null;
 	const text = `Also bound to ${labels.join(", ")}`;
-	return <span role="img" aria-label={text} title={text} className="grid size-6 place-items-center text-warning"><TriangleAlert className="size-3.5" /></span>;
+	return <Tip label={text}><span role="img" aria-label={text} className="grid size-6 place-items-center text-warning"><TriangleAlert className="size-3.5" /></span></Tip>;
 }
 
 type Actions = { rows: KeybindingRow[]; entries: KeybindingEntry[]; save: (entries: KeybindingEntry[]) => void; busy: boolean };
@@ -114,13 +115,13 @@ function ShortcutRow({ row, actions }: { row: KeybindingRow; actions: Actions })
 	};
 	const conflicts = keybindingConflicts(actions.rows, { ...row, key });
 	return <SettingsRow className="group/row"
-		title={<span className="flex items-center gap-2" title={row.command}>{row.label}{row.source === "Custom" && <span className="rounded-full border border-border px-1.5 text-[10.5px] font-medium text-muted-foreground">Custom</span>}</span>}
+		title={<span className="flex items-center gap-2"><Tip label={<span className="font-mono">{row.command}</span>}><span>{row.label}</span></Tip>{row.source === "Custom" && <span className="rounded-full border border-border px-1.5 text-[10.5px] font-medium text-muted-foreground">Custom</span>}</span>}
 		description={<span className="flex h-6 items-center gap-1"><span className="text-xs text-muted-foreground/70">When</span><WhenControl label={row.label} value={row.when ?? ""} onChange={when => replaceWith({ when })} /></span>}
 		control={<div className="flex items-center justify-end gap-1.5">
 			<Conflict labels={conflicts} />
 			{(row.source === "Custom" || row.key) && <span className="flex items-center opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100 has-data-popup-open:opacity-100">
 				<DropdownMenu>
-					<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${row.label}`} disabled={actions.busy} className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" />}><Ellipsis className="size-3.5" /></DropdownMenuTrigger>
+					<Tip label="More actions"><DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${row.label}`} disabled={actions.busy} className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" />}><Ellipsis className="size-3.5" /></DropdownMenuTrigger></Tip>
 					<DropdownMenuContent align="end" className="w-44">
 						{row.source === "Custom" && <DropdownMenuItem onClick={() => actions.save(replaceCommandBindings(actions.entries, row.command, []))}>Reset to default</DropdownMenuItem>}
 						{row.key && <DropdownMenuItem variant="destructive" onClick={remove}>Remove</DropdownMenuItem>}
@@ -130,8 +131,8 @@ function ShortcutRow({ row, actions }: { row: KeybindingRow; actions: Actions })
 			{dirty && <SettingsButton variant="primary" disabled={actions.busy} onClick={() => { replaceWith({ key }); setEditing(false); }}>Save</SettingsButton>}
 			{editing || dirty || !row.key
 				? <KeyCapture label={row.label} value={key} autoFocus={editing} onCapture={setKey} onCancel={() => { setKey(row.key); setEditing(false); }} />
-				: <button type="button" onClick={() => setEditing(true)} aria-label={`Edit shortcut for ${row.label}: ${keyLabel(row.key, isMac())}`}
-					className="-mr-1.5 inline-flex h-7 items-center rounded-md border border-transparent px-1.5 outline-none transition-colors hover:border-border/70 hover:bg-accent focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"><KeyPill value={row.key} /></button>}
+				: <Tip label="Change shortcut"><button type="button" onClick={() => setEditing(true)} aria-label={`Edit shortcut for ${row.label}: ${keyLabel(row.key, isMac())}`}
+					className="-mr-1.5 inline-flex h-7 items-center rounded-md border border-transparent px-1.5 outline-none transition-colors hover:border-border/70 hover:bg-accent focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"><KeyPill value={row.key} /></button></Tip>}
 		</div>} />;
 }
 
@@ -147,7 +148,7 @@ function NewShortcut({ actions, onDone }: { actions: Actions; onDone: () => void
 			<Conflict labels={conflicts} />
 			<KeyCapture label={commandLabel(command)} value={key} onCapture={setKey} />
 			<SettingsButton variant="primary" disabled={!key || actions.busy} onClick={() => { actions.save(replaceCommandBindings(actions.entries, command, [...commandEntries(actions.rows, command), { command, key, ...(when ? { when } : {}) }])); onDone(); }}>Save</SettingsButton>
-			<button type="button" aria-label="Cancel new keybinding" onClick={onDone} className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button>
+			<Tip label="Cancel"><button type="button" aria-label="Cancel new keybinding" onClick={onDone} className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button></Tip>
 		</div>} />;
 }
 
@@ -168,8 +169,8 @@ export function KeyboardShortcuts() {
 					<input aria-label="Search keybindings" placeholder="Search keybindings" value={query} onChange={event => setQuery(event.target.value)} className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/70" />
 				</label>
 				<SettingsButton disabled={adding} onClick={() => setAdding(true)}><Plus className="size-3.5" />Add keybinding</SettingsButton>
-				<button type="button" aria-label="Open keybindings.json" title="Open keybindings.json" onClick={() => void window.phaseoDesktop?.keybindings.open().catch(reason => setError(errorText(reason)))}
-					className="grid size-8 place-items-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground"><FileJson className="size-4" /></button>
+				<Tip label="Open keybindings.json"><button type="button" aria-label="Open keybindings.json" onClick={() => void window.phaseoDesktop?.keybindings.open().catch(reason => setError(errorText(reason)))}
+					className="grid size-8 place-items-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground"><FileJson className="size-4" /></button></Tip>
 		</div>
 		{state.error && <SettingsNote tone="error" role="alert">keybindings.json has a problem, so the defaults are in use: {state.error}</SettingsNote>}
 		{error && <SettingsNote tone="error" role="alert">{error}</SettingsNote>}

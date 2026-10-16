@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { TerminalDrawer } from "../views/Terminals";
-import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, FolderOpen, Gauge, GitBranch, Layers, ListChecks, Paperclip, PenLine, Pin, PinOff, Plug, RotateCcw, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, FolderOpen, Gauge, GitBranch, Layers, ListChecks, Paperclip, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
 import { QuestionPanel } from "./QuestionPanel";
 import { useQuestionAnswerer } from "./questionComposer";
 import { shortcut, useCommand } from "../lib/keybindings";
@@ -31,9 +31,10 @@ import { openModelPickerEvent, renameChatEvent, useModelSettingActions, type Com
 import { Requests } from "./Requests";
 import { AgentThreads } from "./AgentThreads";
 import { optionHarnesses, selectionSettings } from "./startChat";
+import { ProjectScriptsControl } from "../components/ProjectScripts";
 
-function ChatHeader({ task }: { task: Task }) {
-	const { overview, command, select, api, setError } = useWorkspace();
+function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () => void }) {
+	const { overview, command, select, api, setError, openProjectSettings } = useWorkspace();
 	const project = overview.projects.find(value => value.id === task.projectId);
 	const snapshot = overview.tasks.find(value => value.id === task.id);
 	const [renaming, setRenaming] = useState(false);
@@ -56,6 +57,7 @@ function ChatHeader({ task }: { task: Task }) {
 		{!renaming && <TagEditor task={snapshot ?? task} />}
 		{project && <span className="flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 text-[11.5px] text-muted-foreground"><FolderOpen className="size-3.5" />{project.name}{project.worktree && <span className="font-mono">⎇ {project.worktree.branch}</span>}</span>}
 		<div className="ml-auto flex items-center gap-1.5">
+			{project && !project.worktree?.removedAt && <ProjectScriptsControl project={project} taskId={task.id} onRun={onOpenTerminal} />}
 			{snapshot && (snapshot.status !== "completed" && snapshot.status !== "idle" || snapshot.approvalsCount > 0) && <span className="flex h-6 items-center gap-1.5 rounded-full border border-border px-2.5 text-[11.5px] text-muted-foreground"><StatusDot task={snapshot} />{snapshot.approvalsCount || snapshot.answersCount ? "Needs your input" : snapshot.status === "running" ? "Working" : snapshot.status === "waiting" ? "Waiting" : snapshot.status === "limited" ? "Usage limit reached" : snapshot.status === "interrupted" ? "Interrupted" : snapshot.status === "failed" ? "Failed" : ""}</span>}
 			<DropdownMenu>
 				<DropdownMenuTrigger render={<button type="button" aria-label="Chat actions" className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" />}><Ellipsis className="size-4" /></DropdownMenuTrigger>
@@ -70,6 +72,7 @@ function ChatHeader({ task }: { task: Task }) {
 					<DropdownMenuItem disabled={["running", "waiting"].includes(task.status)} onClick={() => void fork()}><GitBranch />Branch chat</DropdownMenuItem>
 					{canCompact && <DropdownMenuItem onClick={() => void command({ type: "send", id: task.id, text: "/compact" })}><Layers />Compact context</DropdownMenuItem>}
 					<DropdownMenuSeparator />
+					{project && <DropdownMenuItem onClick={() => openProjectSettings(project.id)}><Settings />Project settings</DropdownMenuItem>}
 					<DropdownMenuItem onClick={() => void api?.exportTask(task.id, "markdown").catch(reason => setError(errorText(reason)))}><Download />Export as Markdown</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => void api?.exportTask(task.id, "json").catch(reason => setError(errorText(reason)))}><Download />Export as JSON</DropdownMenuItem>
 					<DropdownMenuSeparator />
@@ -250,7 +253,7 @@ export function ChatView({ id }: { id: string }) {
 	const branch = async (messageId: string) => { const known = new Set(overview.tasks.map(value => value.id)); const state = await command({ type: "fork", id: task.id, messageId }); const next = state?.tasks.find(value => !known.has(value.id))?.id; if (next) select(next); };
 	const removed = overview.projects.find(project => project.id === task.projectId)?.worktree?.removedAt;
 	return <div className="flex h-full min-w-0 flex-col">
-		<ChatHeader task={task} />
+		<ChatHeader task={task} onOpenTerminal={() => setDrawers(current => ({ ...current, [task.id]: true }))} />
 		{!loaded ? <div role="status" className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">Loading chat…</div> : <Conversation key={task.id} task={task} onAttachment={setPreview} onBranch={messageId => void branch(messageId)}>
 			{snapshot && <ThreadStatusLine task={snapshot} />}
 			{task.error && <div role="alert" className={cn("flex items-center gap-2 text-[13px]", task.status === "interrupted" ? "text-muted-foreground" : "text-destructive")}>
