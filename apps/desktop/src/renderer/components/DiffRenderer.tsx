@@ -2,14 +2,19 @@ import { FileDiff } from "@pierre/diffs/react";
 import { Check, Copy } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { parseDiffFromFile } from "@pierre/diffs";
-import type { FileDiffMetadata } from "@pierre/diffs";
+import type { FileDiffMetadata, SelectedLineRange } from "@pierre/diffs";
 import { CodeBlock } from "./MessageContent";
 import { parseReviewPatch } from "./diffRendering";
 import { useTextCopy } from "./useTextCopy";
 import type { DiffViewProps } from "./DiffView";
 import { useBackgroundRefresh } from "../lib/useBackgroundRefresh";
 
-export function DiffRenderer({ contents, patch, layout, copyText = patch, hideHeader = false, hideActions = false, wrap = true, annotations, renderAnnotation, context, onRefresh }: DiffViewProps) {
+export function DiffRenderer({ contents, patch, layout, copyText = patch, hideHeader = false, hideActions = false, wrap = true, annotations, renderAnnotation, context, onRefresh, lineSelection }: DiffViewProps) {
+	const selectable = Boolean(lineSelection);
+	// Read through a ref: a new callback each render would otherwise rebuild every diff's options.
+	const onSelect = useRef(lineSelection?.onSelect);
+	onSelect.current = lineSelection?.onSelect;
+	const select = useCallback((range: SelectedLineRange | null) => { if (range) onSelect.current?.(range); }, []);
 	const files = useMemo(() => contents ? [parseDiffFromFile(contents.oldFile, contents.newFile)] : parseReviewPatch(patch), [patch, contents]);
 	const [theme, setTheme] = useState<"light" | "dark">(() => document.documentElement.dataset.theme === "dark" ? "dark" : "light");
 	const { status, copying, copy } = useTextCopy(copyText);
@@ -38,13 +43,13 @@ export function DiffRenderer({ contents, patch, layout, copyText = patch, hideHe
 		observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 		return () => observer.disconnect();
 	}, []);
-	const options = useMemo(() => ({ diffStyle: layout, theme: { light: "github-light", dark: "github-dark" }, themeType: theme, preferredHighlighter: "shiki-js" as const, overflow: wrap ? "wrap" as const : "scroll" as const, disableFileHeader: hideHeader, hunkSeparators: "line-info" as const, tokenizeMaxLength: 50_000, tokenizeMaxLineLength: 4000, lineDiffType: "word" as const, ...(context ? { loadDiffFiles } : {}), onPostRender, unsafeCSS: "[data-diffs-header]{font-family:Montserrat,ui-sans-serif,system-ui,sans-serif;padding:12px 16px;background:var(--surface-muted);color:var(--text)}[data-expand-button]:focus-visible{outline:2px solid var(--ring);outline-offset:2px}" }), [layout, theme, hideHeader, wrap, context, loadDiffFiles, onPostRender]);
+	const options = useMemo(() => ({ diffStyle: layout, theme: { light: "github-light", dark: "github-dark" }, themeType: theme, preferredHighlighter: "shiki-js" as const, overflow: wrap ? "wrap" as const : "scroll" as const, disableFileHeader: hideHeader, hunkSeparators: "line-info" as const, tokenizeMaxLength: 50_000, tokenizeMaxLineLength: 4000, lineDiffType: "word" as const, ...(context ? { loadDiffFiles } : {}), ...(selectable ? { enableLineSelection: true, enableGutterUtility: true, onLineSelectionEnd: select, onGutterUtilityClick: select } : {}), onPostRender, unsafeCSS: "[data-diffs-header]{font-family:Montserrat,ui-sans-serif,system-ui,sans-serif;padding:12px 16px;background:var(--surface-muted);color:var(--text)}[data-expand-button]:focus-visible{outline:2px solid var(--ring);outline-offset:2px}" }), [layout, theme, hideHeader, wrap, context, loadDiffFiles, onPostRender, selectable, select]);
 	const fallback = <CodeBlock text={copyText} language="diff" />;
 	if (!files) return fallback;
 	return <div className="review-diff" data-layout={layout}>
 		{!hideActions && <div className="message-code-actions"><span aria-live="polite">{status === "failed" ? "Copy failed" : layout === "split" ? "Before / After" : "Unified diff"}</span><button type="button" onClick={() => void copy()} disabled={copying} aria-label={status === "copied" ? "Copied" : "Copy code"}>{status === "copied" ? <Check size={14} /> : <Copy size={14} />}{status === "copied" ? "Copied" : "Copy code"}</button></div>}
 		{contextLoading > 0 && <p className="review-diff-feedback" role="status">Loading context…</p>}
 		{contextError && <div className="review-diff-feedback"><span role="alert">{contextError}</span></div>}
-		<div className="review-diff-content" tabIndex={0} aria-label={layout === "split" ? "Side-by-side changes" : "Unified changes"}>{files.map((file, index) => <FileDiff key={`${index}:${file.name}`} fileDiff={file} options={options} {...(annotations && renderAnnotation ? { lineAnnotations: annotations, renderAnnotation } : {})} />)}</div>
+		<div className="review-diff-content" tabIndex={0} aria-label={layout === "split" ? "Side-by-side changes" : "Unified changes"}>{files.map((file, index) => <FileDiff key={`${index}:${file.name}`} fileDiff={file} options={options} {...(annotations && renderAnnotation ? { lineAnnotations: annotations, renderAnnotation } : {})} {...(lineSelection ? { selectedLines: lineSelection.selected } : {})} />)}</div>
 	</div>;
 }

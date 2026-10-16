@@ -11,7 +11,7 @@ import { matchesCandidate, moveHighlight } from "./pullRequestLogic";
 
 const words = {
 	labels: { label: "Change labels", search: "Search labels", empty: "This repository has no labels.", noMatch: "No label matches that.", error: "The labels could not be read.", truncated: "This repository has more labels than are listed here. Apply the rest on GitHub.", disabled: "Changing labels needs triage access on this repository" },
-	reviewers: { label: "Request reviewers", search: "Search people", empty: "Nobody else can review this pull request.", noMatch: "Nobody matches that.", error: "The people who can review could not be read.", truncated: "This repository has more people than are listed here. Ask the rest on GitHub.", disabled: "Asking for a review needs write access on this repository" },
+	reviewers: { label: "Request reviewers", search: "Search people with access", empty: "Nobody else has access to this repository.", noMatch: "Nobody with access matches that.", error: "The people with access could not be read.", truncated: "This repository has more people with access than are listed here. Ask for the rest on GitHub.", disabled: "Asking someone to review needs write access on this repository" },
 } as const;
 
 /**
@@ -69,7 +69,7 @@ export function CandidatePicker({ projectId, number, kind, allowed, icon, onTogg
 						className={cn("flex w-full min-w-0 cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs outline-none select-none data-[highlighted]:bg-accent", pending !== undefined && "opacity-60")}>
 						{kind === "labels" ? <span aria-hidden className="size-2 shrink-0 rounded-full bg-muted-foreground" style={candidate.color ? { backgroundColor: `#${candidate.color}` } : undefined} /> : <ActorAvatar actor={{ login: candidate.key, ...(candidate.avatarUrl ? { avatarUrl: candidate.avatarUrl } : {}) }} />}
 						<span className="min-w-0 flex-1 truncate">{candidate.label}{candidate.detail && <span className="text-muted-foreground"> · {candidate.detail}</span>}</span>
-						{pending === candidate.key ? <LoaderCircle aria-hidden className="size-3.5 shrink-0 animate-spin" /> : candidate.applied ? <Check aria-label={kind === "labels" ? "Applied" : "Requested"} className="size-3.5 shrink-0" /> : null}
+						{pending === candidate.key ? <LoaderCircle aria-hidden className="size-3.5 shrink-0 animate-spin" /> : candidate.applied ? <Check aria-label={kind === "labels" ? "Applied" : "Already asked"} className="size-3.5 shrink-0" /> : null}
 					</div>)}
 				{list?.truncated && <p className="px-2 py-1.5 text-xs text-muted-foreground">{text.truncated}</p>}
 			</div></ScrollArea>

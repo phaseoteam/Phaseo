@@ -29,8 +29,8 @@ export function ChecksList({ checks, onOpen }: { checks: readonly PullRequestChe
 	</>;
 }
 
-/** The rollup icon in the header and the checks it opens. */
-export function ChecksPopover({ rollup, checks, onOpen, className }: { rollup: ChecksRollup; checks: readonly PullRequestCheck[]; onOpen: (url: string) => void; className?: string }) {
+/** The rollup icon in the header and the checks it opens; running checks read a while ago say they may have moved on. */
+export function ChecksPopover({ rollup, checks, onOpen, className, stale = false }: { rollup: ChecksRollup; checks: readonly PullRequestCheck[]; onOpen: (url: string) => void; className?: string; stale?: boolean }) {
 	const presentation = CHECKS_ROLLUP_PRESENTATION[rollup];
 	return <Popover>
 		<PopoverTrigger aria-label={`Checks: ${presentation.label}`} className={cn("inline-flex shrink-0 cursor-pointer items-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/40", className)}>
@@ -39,7 +39,7 @@ export function ChecksPopover({ rollup, checks, onOpen, className }: { rollup: C
 		<PopoverContent align="start" side="bottom" className="w-80 gap-2 p-3">
 			<p className="text-sm font-medium">{presentation.label}</p>
 			<p className="text-xs text-muted-foreground">{summarizeChecks(checks)}</p>
-			<ChecksList checks={checks} onOpen={onOpen} />
+			{stale ? <p className="text-xs text-muted-foreground">Check details are out of date. Refresh the pull request to update them.</p> : <ChecksList checks={checks} onOpen={onOpen} />}
 		</PopoverContent>
 	</Popover>;
 }
