@@ -1,6 +1,26 @@
-## Summary
+## What changed
 
-<!-- What does this PR change? High-level description. -->
+<!-- A short list of the behaviour, data, or files that changed. -->
+
+## Why
+
+<!-- The evidence that led to this change: error output, logs, a failing test, a source link for data changes, a measurement, or the request or issue. Say if the problem was inferred from reading code rather than observed. -->
+
+## How
+
+<!-- The approach taken, the key files or components, and any trade-off or alternative you rejected. -->
+
+## Before and after
+
+<!-- The benefit, side by side, measured the same way both times. Say how you measured. For UI, put before and after screenshots in two columns. If there is no measurable benefit, say so. -->
+
+| Metric | Before | After | Change |
+| --- | --- | --- | --- |
+|  |  |  |  |
+
+## Verification
+
+<!-- Commands run with their results, plus a request and response for API changes or a readback for data changes. Say what you did not verify and why. -->
 
 ## Type of change
 
@@ -38,10 +58,6 @@
 - [ ] Requires DB migration
 - [ ] Changes CI/CD
 - [ ] User-facing behaviour change
-
-## Proof
-
-<!-- Show that the change works: commands run with their results, screenshots or a recording for UI, a request and response for API changes, a readback for data changes. Say what you did not verify and why. -->
 
 ## Notes
 
