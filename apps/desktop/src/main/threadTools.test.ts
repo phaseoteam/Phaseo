@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
-import { validateDelegate } from "./threadTools";
+import { validateDelegate, validatePullRequestTarget } from "./threadTools";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
@@ -143,7 +143,8 @@ describe("scoped desktop orchestration", () => {
 			const state = await runtime.command({ type: "create-task", harness: "codex", model: "owned", mode: "code" });
 			const parentId = state.tasks[0].id;
 			const child = await runtime.threadTools(parentId).delegate({ requestId: "background", title: "Research", prompt: "Inspect", background: true });
-			await vi.waitFor(() => expect(runtime.store.getTask(parentId).status).toBe("completed"));
+			// The child runs, then wakes the parent for a second run; Windows CI can take over a second for both.
+			await vi.waitFor(() => expect(runtime.store.getTask(parentId).status).toBe("completed"), { timeout: 5000 });
 			expect(run).toHaveBeenCalledTimes(2);
 			expect(runtime.store.getTask(parentId).messages).toEqual(expect.arrayContaining([expect.objectContaining({ delivery: "subagent", text: expect.stringContaining("Background findings") })]));
 			expect(runtime.store.collectDelegationResults()).toEqual([]);
@@ -225,5 +226,14 @@ describe("scoped desktop orchestration", () => {
 	it("validates arguments independently of model JSON schema compliance", () => {
 		expect(() => validateDelegate({ requestId: "r", prompt: "p", title: "t", harness: "unknown" })).toThrow("Unknown harness");
 		expect(() => validateDelegate({ requestId: "r", prompt: "", title: "t" })).toThrow("prompt");
+	});
+});
+
+describe("pull request tool targets", () => {
+	it("takes a URL or a number with an optional repository", () => {
+		expect(validatePullRequestTarget({ url: "https://github.com/o/r/pull/1" })).toEqual({ url: "https://github.com/o/r/pull/1" });
+		expect(validatePullRequestTarget({ repository: "o/r", number: 2 })).toEqual({ repository: "o/r", number: 2 });
+		expect(() => validatePullRequestTarget({ repository: "o/r" })).toThrow("Pass either url");
+		expect(() => validatePullRequestTarget({ number: 1.5 })).toThrow("Invalid number");
 	});
 });

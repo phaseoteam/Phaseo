@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { DatabaseSync } from "node:sqlite";
+import { openFixtureStore, storeFixtureTasks } from "./fixtures/workspaceFixture.mjs";
 
 const data = mkdtempSync(path.join(tmpdir(), "phaseo-history-smoke-"));
 app.setPath("userData", data);
@@ -29,6 +30,7 @@ byteHistory.messages=Array.from({length:8},(_,index)=>({id:'bytes-'+index,role:'
 byteHistory.activities=Array.from({length:8},(_,index)=>({id:'byte-activity-'+index,type:'tool',title:'Owned large output '+index,text:'😀\t'.repeat(100000),status:'completed'}));
 db.prepare("UPDATE tasks SET data=? WHERE id='044'").run(JSON.stringify(byteHistory));
 db.close();
+await storeFixtureTasks(path.join(data, "workspace", "workspace.sqlite"));
 const entry = process.argv.find(value => value.startsWith("--app-entry="))?.slice("--app-entry=".length);
 const originalHandle = ipcMain.handle;
 let failNextHistory = false;
@@ -59,7 +61,7 @@ ipcMain.handle = function (channel, listener) {
     try {
       if (failNextDetail) { failNextDetail = false; throw new Error("Owned detail failure"); }
       const task = listener(event, id);
-      if(task.messages.length>50||(task.activities?.length??0)>50)detailBodiesBounded=false;if(Buffer.byteLength(JSON.stringify(task.messages))>2*1024*1024||Buffer.byteLength(JSON.stringify(task.activities??[]))>2*1024*1024)byteBodiesBounded=false;
+      if(task.messages.length>50||(task.activities?.length??0)>2000)detailBodiesBounded=false;if(Buffer.byteLength(JSON.stringify(task.messages))>2*1024*1024||Buffer.byteLength(JSON.stringify(task.activities??[]))>2*1024*1024)byteBodiesBounded=false;
       if (id === delayedTaskId) await new Promise(resolve => setTimeout(resolve, 300));
       return task;
     } finally { activeDetails.set(id, activeDetails.get(id) - 1); }
@@ -93,166 +95,154 @@ async function wait(expression, label) {
 async function search(query) {
   await run(`(()=>{const input=document.querySelector('input[aria-label="Search chats"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${javascriptLiteral(query)});input.dispatchEvent(new Event('input',{bubbles:true}));})()`);
 }
+// Changes made while the app runs go through a second connection to the app's own store, as another writer would.
 async function publishReply(text, title) {
-  const liveHistory = new DatabaseSync(path.join(data, "workspace/workspace.sqlite"));
+  const liveHistory = await openFixtureStore(path.join(data, "workspace/workspace.sqlite"));
   try {
-    const task = JSON.parse(liveHistory.prepare("SELECT data FROM tasks WHERE id='042'").get().data);
+    const task = liveHistory.getTask("042");
     task.messages.push({ id: `live-${task.messages.length}`, role: "assistant", text, createdAt: timestamp });
     task.activities.push({ id: `live-activity-${task.activities.length}`, type: "tool", title, text: "Owned live activity", status: "completed" });
-    liveHistory.prepare("UPDATE tasks SET data=? WHERE id='042'").run(JSON.stringify(task));
+    liveHistory.saveTask(task, true);
   } finally { liveHistory.close(); }
   await run(`window.phaseoDesktop.workspace.command({type:'update-task',id:'042',title:'History 042'})`);
 }
-const atLatest = `(()=>{const host=document.querySelector('.task-messages');return Boolean(host)&&host.scrollHeight-host.clientHeight-host.scrollTop<2})()`;
+const atLatest = `(()=>{const host=document.querySelector('main [aria-live=polite]');return Boolean(host)&&host.scrollHeight-host.clientHeight-host.scrollTop<2})()`;
 try {
-  const conversationPages = await run(`(async()=>{const read=window.phaseoDesktop.workspace.conversationPage;const latest=await read({taskId:'042',kind:'messages',limit:50});const older=await read({taskId:'042',kind:'messages',limit:50,beforeId:latest.entries[0].id});const newer=await read({taskId:'042',kind:'messages',limit:50,afterId:older.entries.at(-1).id});const activities=await read({taskId:'042',kind:'activities',limit:50});let invalid=false;try{await read({taskId:'042',kind:'messages',limit:10000})}catch{invalid=true}return {latest:latest.entries.length===50&&latest.earlier===75&&latest.later===0&&latest.entries[0].id==='long-75',older:older.entries.length===50&&older.earlier===25&&older.later===50,newer:JSON.stringify(newer.entries)===JSON.stringify(latest.entries),activities:activities.entries.length===50&&activities.earlier===70&&activities.entries[0].id==='activity-70',isolated:!JSON.stringify(latest).includes('Tool result'),invalid}})()`);
+  const conversationPages = await run(`(async()=>{const read=window.phaseoDesktop.workspace.conversationPage;const latest=await read({taskId:'042',kind:'messages',limit:50});const older=await read({taskId:'042',kind:'messages',limit:50,beforeId:latest.entries[0].id});const newer=await read({taskId:'042',kind:'messages',limit:50,afterId:older.entries.at(-1).id});const activities=await read({taskId:'042',kind:'activities',limit:50});let invalid=false;try{await read({taskId:'042',kind:'messages',limit:10000})}catch{invalid=true}return {latest:latest.entries.length===50&&latest.earlier===75&&latest.later===0&&latest.entries[0].id==='long-75',older:older.entries.length===50&&older.earlier===25&&older.later===50,newer:JSON.stringify(newer.entries)===JSON.stringify(latest.entries),activities:activities.entries.length===50&&activities.earlier===70&&activities.entries[0].id==='activity-70',isolated:!JSON.stringify(older).includes('Tool result')&&(latest.activities?.length??0)<=50,invalid}})()`);
   if(Object.values(conversationPages).some(value=>!value))throw new Error("Bounded conversation IPC pages failed: "+JSON.stringify(conversationPages));
-  await run(`window.__auditNavigate('Tasks')`);
-  await wait(`document.querySelectorAll('.task-row').length===50`, "first page");
-  const historyLayout=await run(`(()=>{const list=document.querySelector('.task-history-list');list.scrollTop=list.scrollHeight;const search=document.querySelector('.task-search').getBoundingClientRect(),archive=document.querySelector('.task-archive-filter').getBoundingClientRect();return {scrolled:list.scrollTop>0,searchVisible:search.top>=0&&search.bottom<=innerHeight,archiveVisible:archive.top>=0&&archive.bottom<=innerHeight,clamp:getComputedStyle(list.querySelector('.task-row span')).webkitLineClamp}})()`);
-  if(!historyLayout.scrolled||!historyLayout.searchVisible||!historyLayout.archiveVisible||historyLayout.clamp!=="2")throw new Error("Task history must scroll independently and retain its controls.");
-  await run(`document.querySelector('.task-history-list').scrollTop=0`);
-  if (!await run(`document.querySelector('.task-row').textContent.includes('History 000')`)) throw new Error("Pinned history is not first.");
+  // The redesigned sidebar lists every active chat from metadata; paged, body-searchable history remains a bridge API.
   failNextHistory = true;
-  const appendReadsStart = historyReads.length;
-  await run(`Array.from(document.querySelectorAll('.task-list button')).find(button=>button.textContent==='Load more chats').click()`);
-  await wait(`Boolean(document.querySelector('.task-list [role="alert"]'))`, "failed page");
-  if (!await run(`document.querySelectorAll('.task-row').length===50`)) throw new Error("A failed page discarded visible history.");
-  await run(`Array.from(document.querySelectorAll('.task-list button')).find(button=>button.textContent==='Retry').click()`);
-  await wait(`document.querySelectorAll('.task-row').length===100`, "retry page");
-  for (const count of [150, 155]) {
-    await run(`Array.from(document.querySelectorAll('.task-list button')).find(button=>button.textContent==='Load more chats').click()`);
-    await wait(`document.querySelectorAll('.task-row').length===${count}`, `page ${count}`);
-  }
-  if (await run(`Array.from(document.querySelectorAll('.task-list button')).some(button=>button.textContent==='Load more chats')`)) throw new Error("History still offers an exhausted page.");
-  const appendOffsets = historyReads.slice(appendReadsStart).map(read => read.offset);
-  if (JSON.stringify(appendOffsets) !== JSON.stringify([50, 50, 100, 150])) throw new Error("Appending history reread confirmed pages: " + JSON.stringify(appendOffsets));
-  await run(`Array.from(document.querySelectorAll('.task-row')).find(button=>button.textContent.includes('History 001')).click()`);
+  const historyFailure = await run(`window.phaseoDesktop.workspace.taskHistory({query:'',archived:false,offset:0,limit:50}).then(()=>'',error=>String(error))`);
+  if (!historyFailure.includes("Owned history failure")) throw new Error("History failure was not reported.");
+  const history = await run(`(async()=>{const api=window.phaseoDesktop.workspace,page=(query,archived,offset)=>api.taskHistory({query,archived,offset,limit:50});const pages=[await page('',false,0)];while(pages.at(-1).hasMore)pages.push(await page('',false,pages.length*50));const ids=pages.flatMap(value=>value.tasks.map(task=>task.id));return {count:ids.length,unique:new Set(ids).size,pages:pages.length,pinnedFirst:pages[0].tasks[0].id==='000',metadataOnly:!pages.some(value=>value.tasks.some(task=>'messages' in task||'queue' in task)),body:(await page(${javascriptLiteral("RÉSUMÉ")},false,0)).tasks.map(task=>task.id),rapid:(await Promise.all([page('absent',false,0),page('History 154',false,0)]))[1].tasks.map(task=>task.id),archived:(await page('',true,0)).tasks.length,empty:(await page('absent',true,0)).tasks.length};})()`);
+  if (JSON.stringify(history) !== JSON.stringify({ count: 155, unique: 155, pages: 4, pinnedFirst: true, metadataOnly: true, body: ["042"], rapid: ["154"], archived: 2, empty: 0 })) throw new Error("Task history pages failed: " + JSON.stringify(history));
+  const rows = `Array.from(document.querySelectorAll('aside[aria-label="Chats"] nav [role=button]'))`;
+  // Scrolls the virtualised list until the row is mounted, then clicks it.
+  const clickRow = title => `(async()=>{const list=document.querySelector('aside[aria-label="Chats"] nav').closest('[data-slot=scroll-area-viewport]');for(let top=0;top<=list.scrollHeight;top+=200){list.scrollTop=top;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const row=${rows}.find(row=>row.textContent===${JSON.stringify(title)});if(row){row.click();return true;}}return false})()`;
+  await run(`window.__auditNavigate('Tasks')`);
+  // Rows outside the view are not mounted, so the list publishes how many chats it holds.
+  await wait(`document.querySelector('aside[aria-label="Chats"] [data-chat-count]')?.dataset.chatCount==='155'&&${rows}.length>0`, "sidebar lists every active chat");
+  if (!await run(`${rows}[0].textContent==='History 000'&&Array.from(document.querySelectorAll('aside[aria-label="Chats"] nav div')).some(value=>value.textContent==='Pinned')`)) throw new Error("Pinned history is not first.");
+  if (!await run(`(()=>{const list=document.querySelector('aside[aria-label="Chats"] nav').closest('[data-slot=scroll-area-viewport]');list.scrollTop=list.scrollHeight;const scrolled=list.scrollTop>0;const footer=document.querySelector('aside[aria-label="Chats"] button[aria-label="Settings"]').getBoundingClientRect();list.scrollTop=0;return scrolled&&footer.bottom<=innerHeight})()`)) throw new Error("Chat list must scroll independently and keep its footer.");
+  // Selecting another chat before a slow detail read finishes keeps the newer selection.
+  if (!await run(clickRow('History 001'))) throw new Error('History 001 row missing');
   for (let attempt = 0; attempt < 50 && !activeDetails.get("001"); attempt++) await new Promise(resolve => setTimeout(resolve, 10));
   if (!activeDetails.get("001")) throw new Error("Delayed task detail read did not start.");
-  await run(`Array.from(document.querySelectorAll('.task-row')).find(button=>button.textContent.includes('History 002')).click()`);
-  await wait(`document.querySelector('.task-title')?.value==='History 002'`, "later-page selection");
+  if (!await run(clickRow('History 002'))) throw new Error('History 002 row missing');
+  await wait(`window.__auditChatTitle()==='History 002'`, "later selection");
   await new Promise(resolve => setTimeout(resolve, 350));
-  if (!await run(`document.querySelector('.task-title')?.value==='History 002' && document.querySelector('.task-messages').textContent.includes('Sample message 002')`)) throw new Error("An obsolete detail response replaced the selected conversation.");
+  if (!await run(`window.__auditChatTitle()==='History 002' && document.querySelector('main [aria-live=polite]').textContent.includes('Sample message 002')`)) throw new Error("An obsolete detail response replaced the selected conversation.");
   delayedTaskId = "002";
   for (const title of ["Revision A", "Revision B", "Final revision"]) {
     await run(`window.phaseoDesktop.workspace.command({type:'update-task',id:'002',title:${JSON.stringify(title)}})`);
     await new Promise(resolve => setTimeout(resolve, 20));
   }
-  await wait(`document.querySelector('.task-title')?.value==='Final revision'`, "coalesced detail refresh");
+  await wait(`window.__auditChatTitle()==='Final revision'`, "coalesced detail refresh");
   if (peakDetails.get("002") !== 1) throw new Error("Detail refreshes overlapped for one task.");
+  // A failed detail refresh keeps the loaded chat; the next revision recovers it.
   delayedTaskId = undefined; failNextDetail = true;
+  await run(`window.phaseoDesktop.workspace.command({type:'update-task',id:'002',title:'Missed detail'})`);
+  await new Promise(resolve => setTimeout(resolve, 200));
+  if (!await run(`window.__auditChatTitle()==='Final revision'&&document.querySelector('main [aria-live=polite]').textContent.includes('Sample message 002')`)) throw new Error("A failed detail read discarded the loaded chat.");
   await run(`window.phaseoDesktop.workspace.command({type:'update-task',id:'002',title:'Recovered detail'})`);
-  await wait(`Boolean(document.querySelector('.task-detail [role="alert"]'))`, "failed detail read");
-  await run(`Array.from(document.querySelectorAll('.task-detail button')).find(button=>button.textContent==='Retry').click()`);
-  await wait(`document.querySelector('.task-title')?.value==='Recovered detail'`, "detail retry");
-  await search("RÉSUMÉ");
-  await wait(`document.querySelectorAll('.task-row').length===1&&document.querySelector('.task-row').textContent.includes('History 042')`, "body search");
-  await run(`document.querySelector('.task-row').click()`);
-  await wait(`document.querySelector('.task-title')?.value==='History 042'&&document.querySelectorAll('.task-message').length===50&&document.querySelectorAll('.task-activity').length===50`, "recent conversation history");
+  await wait(`window.__auditChatTitle()==='Recovered detail'`, "detail recovery");
+  // Conversations open at their latest page and keep the reader's place while older pages load.
+  const host = "document.querySelector('main [aria-live=polite]')";
+  const messages = `Array.from(document.querySelectorAll('main [data-conversation-id^="message:"]'))`;
+  const control = pattern => `Array.from(document.querySelectorAll('main button')).find(button=>${pattern}.test(button.textContent.trim()))`;
+  const earlierMessages = control("/^Load \\d+ earlier messages$/"), newerMessages = control("/^Load newer messages$/"), jump = control("/^Jump to latest$/");
+  // Pages load by themselves near either end; these steps drive them one at a time. Automatic paging is checked last.
+  await run(`window.__phaseoManualPaging=true`);
+  await run(`window.__auditOpenChat('History 042')`);
+  await wait(`${messages}.length===50`, "recent conversation history");
+  // Activities with no turn or position stay with the latest window, newest 50.
+  if (!await run(`window.phaseoDesktop.workspace.task('042').then(task=>task.activities.length===50&&task.activities[0].id==='activity-70'&&task.activities.at(-1).id==='activity-119')`)) throw new Error("Unplaced activities did not open with the latest window.");
   await wait(atLatest, "conversation opens at latest");
-  if (!await run(`document.querySelector('.task-message').textContent.includes('Conversation item 075')`)) throw new Error("Conversation did not open at recent history.");
+  if (!await run(`${messages}[0].textContent.includes('Conversation item 075')&&${earlierMessages}?.textContent==='Load 75 earlier messages'`)) throw new Error("Conversation did not open at recent history.");
   const captures = path.resolve("../../output/playwright/history-smoke"); mkdirSync(captures, { recursive: true });
   writeFileSync(path.join(captures, entry ? "packaged-conversation.png" : "conversation.png"), (await window.webContents.capturePage()).toPNG());
-  const anchorTop = await run(`(()=>{document.querySelector('.task-messages').scrollTop=150;return Array.from(document.querySelectorAll('.task-message')).find(row=>row.textContent.includes('Conversation item 075')).getBoundingClientRect().top})()`);
-  await wait(`Boolean(document.querySelector('.conversation-latest'))`, "jump control while reading older history");
+  const anchorTop = await run(`(()=>{${host}.scrollTop=150;${host}.dispatchEvent(new Event('scroll'));return ${messages}.find(row=>row.textContent.includes('Conversation item 075')).getBoundingClientRect().top})()`);
+  await wait(`Boolean(${jump})`, "jump control while reading older history");
   writeFileSync(path.join(captures, entry ? "packaged-reading-history.png" : "reading-history.png"), (await window.webContents.capturePage()).toPNG());
-  failNextConversation=true;
-  await run(`Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Load older messages').click()`);
-  await wait(`document.querySelector('.task-messages [role="alert"]')?.textContent.includes('Owned conversation page failure')`, "older conversation failure");
-  if(!await run(`document.querySelectorAll('.task-message').length===50`))throw new Error("Failed paging replaced readable history.");
-  await run(`Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Retry messages').click()`);
-  await wait(`document.querySelectorAll('.task-message').length===100`, "older conversation page");
-  const restoredTop = await run(`Array.from(document.querySelectorAll('.task-message')).find(row=>row.textContent.includes('Conversation item 075')).getBoundingClientRect().top`);
-  if (Math.abs(anchorTop - restoredTop) > 1) throw new Error("Loading older messages moved the reading position.");
-  await run(`Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Load older messages').click()`);
-  await wait(`document.querySelectorAll('.task-message').length===100&&document.querySelector('.task-message').textContent.includes('Résumé needle')`, "oldest conversation page");
-  if (!await run(`document.querySelector('.task-message').textContent.includes('Résumé needle')&&!Array.from(document.querySelectorAll('.task-messages button')).some(button=>button.textContent==='Load older messages')`)) throw new Error("Oldest conversation history is inaccessible.");
-  for (const count of [100, 100]) {
-    await run(`Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Load older activities').click()`);
-    await wait(`document.querySelectorAll('.task-activity').length===${count}&&!Array.from(document.querySelectorAll('.task-messages button')).some(button=>button.disabled&&button.textContent==='Load older activities')`, `activity page ${count}`);
-  }
-  await wait(`document.querySelector('.task-activity')?.dataset.conversationId==='activity:activity-0'&&Boolean(Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Load newer activities'))`, "oldest activity window");
-  await run(`Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Load newer activities').click()`);
-  await wait(`document.querySelectorAll('.task-activity').length===100&&document.querySelector('.task-activity')?.dataset.conversationId==='activity:activity-20'&&!Array.from(document.querySelectorAll('.task-messages button')).some(button=>button.textContent==='Load newer activities')`, "newer activity window remains bounded");
-  await search('History 043');
-  await wait(`Boolean(document.querySelector('.task-list .task-row[title="History 043"]'))`, 'find other chat');
-  await run(`document.querySelector('.task-list .task-row[title="History 043"]').click()`);
-  await wait(`document.querySelector('.task-title')?.value==='History 043'`, 'switch chat');
-  await search('History 042');
-  await wait(`Boolean(document.querySelector('.task-list .task-row[title="History 042"]'))`, 'find original chat');
-  await run(`document.querySelector('.task-list .task-row[title="History 042"]').click()`);
-  await wait(`document.querySelector('.task-title')?.value==='History 042'&&document.querySelectorAll('.task-message').length===50`, "conversation history resets on reopen");
+  failNextConversation = true;
+  await run(`${earlierMessages}.click()`);
+  await wait(`document.querySelector('main [role="alert"]')?.textContent.includes('Owned conversation page failure')`, "older conversation failure");
+  if (!await run(`${messages}.length===50`)) throw new Error("Failed paging replaced readable history.");
+  await run(`Array.from(document.querySelectorAll('main [role="alert"] button')).find(button=>button.textContent==='Retry').click()`);
+  await wait(`${messages}.length===100`, "older conversation page");
+  const restoredTop = await run(`${messages}.find(row=>row.textContent.includes('Conversation item 075')).getBoundingClientRect().top`);
+  if (Math.abs(anchorTop - restoredTop) > 1) throw new Error("Loading older messages moved the reading position: " + anchorTop + " -> " + restoredTop);
+  await run(`${earlierMessages}.click()`);
+  await wait(`${messages}.length===100&&${messages}[0].textContent.includes('Résumé needle')`, "oldest conversation page");
+  if (await run(`Boolean(${earlierMessages})`)) throw new Error("Oldest conversation history offers more pages.");
+  // Switching chats and returning starts again at the latest page.
+  await run(`window.__auditOpenChat('History 043')`);
+  await run(`window.__auditOpenChat('History 042')`);
+  await wait(`${messages}.length===50&&${messages}[0].textContent.includes('Conversation item 075')`, "conversation history resets on reopen");
   await wait(atLatest, "reopened conversation follows latest");
-  await run(`document.querySelector('.task-messages').scrollTop=100`);
-  await wait(`Boolean(document.querySelector('.conversation-latest'))`, "reading history pauses automatic following");
+  await run(`(()=>{${host}.scrollTop=100;${host}.dispatchEvent(new Event('scroll'))})()`);
+  await wait(`Boolean(${jump})`, "reading history pauses automatic following");
   await publishReply("New reply while reading history", "New activity while reading history");
-  await wait(`document.querySelectorAll('.task-message').length===51&&document.querySelector('.task-message').textContent.includes('Conversation item 075')&&document.querySelector('.task-messages').textContent.includes('New reply while reading history')`, "new reply retains the visible history boundary");
-  if (!await run(`Math.abs(document.querySelector('.task-messages').scrollTop-100)<1&&Boolean(document.querySelector('.conversation-latest'))`)) throw new Error("A live update pulled the reader away from older history.");
-  await run(`document.querySelector('.conversation-latest').click()`);
-  await wait(`${atLatest}&&!document.querySelector('.conversation-latest')`, "jump resumes latest following");
+  await wait(`${messages}.length===51&&${messages}[0].textContent.includes('Conversation item 075')&&${host}.textContent.includes('New reply while reading history')`, "new reply retains the visible history boundary");
+  if (!await run(`Math.abs(${host}.scrollTop-100)<1&&Boolean(${jump})`)) throw new Error("A live update pulled the reader away from older history.");
+  await run(`${jump}.click()`);
+  await wait(`${atLatest}&&!${jump}`, "jump resumes latest following");
   await publishReply("Reply while following latest", "Activity while following latest");
-  await wait(`document.querySelectorAll('.task-message').length===52&&document.querySelector('.task-messages').textContent.includes('Activity while following latest')&&${atLatest}`, "new content follows the latest position");
-  await run(`(()=>{const activity=Array.from(document.querySelectorAll('.task-activity')).at(-1);activity.open=true;activity.querySelector('pre').textContent='Owned delayed result\\n'.repeat(30)})()`);
+  // Both replies share the last turn: the newest is its answer and the earlier one folds into the turn's work log.
+  await wait(`${messages}.length===51&&${messages}.at(-1).textContent.includes('Reply while following latest')&&${atLatest}`, "new content follows the latest position");
+  await run(`(()=>{const filler=document.createElement('div');filler.id='owned-delayed-content';filler.style.height='600px';${messages}.at(-1).append(filler)})()`);
   await wait(atLatest, "delayed content resizing follows latest");
-  await run(`document.querySelector('.task-messages').scrollTop=100`);
-  await wait(`Boolean(document.querySelector('.conversation-latest'))`, "pause after delayed content");
-  await run(`Array.from(document.querySelectorAll('.task-activity')).at(-1).querySelector('pre').textContent='Short owned result'`);
+  await run(`(()=>{${host}.scrollTop=100;${host}.dispatchEvent(new Event('scroll'))})()`);
+  await wait(`Boolean(${jump})`, "pause after delayed content");
+  await run(`document.getElementById('owned-delayed-content').style.height='20px'`);
   await new Promise(resolve => setTimeout(resolve, 100));
-  if (!await run(`Math.abs(document.querySelector('.task-messages').scrollTop-100)<1`)) throw new Error("Delayed resizing moved a reader away from older history.");
-  await search("History 043");
-  await wait(`document.querySelectorAll('.task-row').length===1&&document.querySelector('.task-row').textContent.includes('History 043')`, "large conversation search");
-  await run(`document.querySelector('.task-row').click()`);
-  await wait(`document.querySelector('.task-title')?.value==='History 043'&&document.querySelector('.task-message')?.dataset.conversationId==='message:large-950'`, "bounded large conversation initial page");
-  const contiguous = `(()=>{const ids=Array.from(document.querySelectorAll('.task-message')).map(row=>Number(row.dataset.conversationId.split('large-')[1]));return ids.length<=100&&ids.every((id,index)=>index===0||id===ids[index-1]+1)})()`;
-  for(let index=0;index<19;index++){
-    if(index===0)delayedConversation=true;
-    await run(`(()=>{const button=Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Load older messages');button.click();button.click()})()`);
-    if(index===0){
-      const updateDb=new DatabaseSync(path.join(data,"workspace/workspace.sqlite"));
-      try{const task=JSON.parse(updateDb.prepare("SELECT data FROM tasks WHERE id='043'").get().data);task.messages[950].text="Updated while paging";updateDb.prepare("UPDATE tasks SET data=? WHERE id='043'").run(JSON.stringify(task));}finally{updateDb.close();}
+  if (!await run(`Math.abs(${host}.scrollTop-100)<1`)) throw new Error("Delayed resizing moved a reader away from older history.");
+  await run(`document.getElementById('owned-delayed-content').remove()`);
+  // Large conversations keep a bounded, contiguous window while paging both ways.
+  await run(`window.__auditOpenChat('History 043')`);
+  await wait(`${messages}[0]?.dataset.conversationId==='message:large-950'`, "bounded large conversation initial page");
+  const contiguous = `(()=>{const ids=${messages}.map(row=>Number(row.dataset.conversationId.split('large-')[1]));return ids.length<=100&&ids.every((id,index)=>index===0||id===ids[index-1]+1)})()`;
+  for (let index = 0; index < 19; index++) {
+    if (index === 0) delayedConversation = true;
+    await run(`(()=>{const button=${earlierMessages};button.click();button.click()})()`);
+    if (index === 0) {
+      const updateDb = await openFixtureStore(path.join(data, "workspace/workspace.sqlite"));
+      try { const task = updateDb.getTask("043"); task.messages[950].text = "Updated while paging"; updateDb.saveTask(task, true); } finally { updateDb.close(); }
       await run(`window.phaseoDesktop.workspace.command({type:'update-task',id:'043',title:'History 043'})`);
-      await wait(`Array.from(document.querySelectorAll('.task-message')).some(row=>row.dataset.conversationId==='message:large-950'&&row.textContent.includes('Updated while paging'))`, "pending page refresh retains newer task data");
+      await wait(`${messages}.some(row=>row.dataset.conversationId==='message:large-950'&&row.textContent.includes('Updated while paging'))`, "pending page refresh retains newer task data");
     }
-    await wait(`document.querySelector('.task-message')?.dataset.conversationId==='message:large-${900-index*50}'`, "large conversation older page "+index);
-    if(!await run(contiguous))throw new Error("Older history lost order or exceeded its DOM bound.");
+    await wait(`${messages}[0]?.dataset.conversationId==='message:large-${900 - index * 50}'`, "large conversation older page " + index);
+    if (!await run(contiguous)) throw new Error("Older history lost order or exceeded its DOM bound.");
   }
-  if(!await run(`!Array.from(document.querySelectorAll('.task-messages button')).some(button=>button.textContent==='Load older messages')&&Boolean(document.querySelector('.conversation-latest'))`))throw new Error("Oldest large history is unreachable.");
-  for(let index=0;index<18;index++){
-    await run(`Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Load newer messages').click()`);
-    await wait(`document.querySelector('.task-message')?.dataset.conversationId==='message:large-${50+index*50}'`, "large conversation newer page "+index);
-    if(!await run(contiguous))throw new Error("Newer history lost order or exceeded its DOM bound.");
+  await wait(`!${earlierMessages}&&Boolean(${jump})`, "oldest large history reached with a way back to latest");
+  for (let index = 0; index < 18; index++) {
+    await run(`${newerMessages}.click()`);
+    await wait(`${messages}[0]?.dataset.conversationId==='message:large-${50 + index * 50}'`, "large conversation newer page " + index);
+    if (!await run(contiguous)) throw new Error("Newer history lost order or exceeded its DOM bound.");
   }
-  await run(`Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Load older messages').click()`);
-  await wait(`document.querySelector('.task-message')?.dataset.conversationId==='message:large-850'`, "large history before jumping");
-  await run(`document.querySelector('.conversation-latest').click()`);
-  await wait(`document.querySelectorAll('.task-message').length===50&&document.querySelector('.task-message')?.dataset.conversationId==='message:large-950'&&${atLatest}`, "large conversation jumps to latest");
-
-  await search("History 044");await wait(`Boolean(document.querySelector('.task-row[title="History 044"]'))`,"large body chat search");await run(`document.querySelector('.task-row[title="History 044"]').click()`);
-  const byteWindow=`(()=>{const rows=Array.from(document.querySelectorAll('.task-message'));return rows.length<=3&&rows.every((row,index)=>index===0||Number(row.dataset.conversationId.split('bytes-')[1])===Number(rows[index-1].dataset.conversationId.split('bytes-')[1])+1)})()`;
-  await wait(`document.querySelector('.task-title')?.value==='History 044'&&document.querySelector('.task-message')?.dataset.conversationId==='message:bytes-5'&&document.querySelectorAll('.task-activity').length===3`,"large body initial byte window");
-  for(const start of [2,0]){await run(`Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Load older messages').click()`);await wait(`document.querySelector('.task-message')?.dataset.conversationId==='message:bytes-${start}'`,"large body older window "+start);if(!await run(byteWindow))throw Error("Large body renderer retained excess/non-contiguous messages");}
-  for(const start of [3,5]){await run(`Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Load newer messages').click()`);await wait(`document.querySelector('.task-message')?.dataset.conversationId==='message:bytes-${start}'`,"large body newer window "+start);if(!await run(byteWindow))throw Error("Large body newer window exceeded retained byte limit");}
-  await run(`Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Load older activities').click()`);await wait(`document.querySelector('.task-activity')?.textContent.includes('Owned large output 2')`,"large activity byte window");
-  if(!byteBodiesBounded||peakPageBytes<1024*1024)throw Error("Large body byte instrumentation failed");
-  await search("absent"); await search("History 154");
-  await wait(`document.querySelectorAll('.task-row').length===1&&document.querySelector('.task-row').textContent.includes('History 154')`, "rapid search");
-  await search("");
-  await wait(`document.querySelectorAll('.task-row').length===50`, "search resets pagination");
-  await run(`document.querySelector('.task-archive-filter').click()`);
-  await wait(`document.querySelectorAll('.task-row').length===2`, "archived history");
-  await search("absent");
-  await wait(`Array.from(document.querySelectorAll('.task-list p')).some(p=>p.textContent==='No matching chats.')`, "empty search");
-  await search(""); await run(`document.querySelector('.task-archive-filter').click()`);
-  await wait(`document.querySelectorAll('.task-row').length===50`, "active history");
-  for (const page of ["Inbox"]) {
-    await run(`window.__auditNavigate(${JSON.stringify(page)})`);
-    await wait(`Array.from(document.querySelectorAll('.attention-item')).some(row=>row.textContent.includes('History 154')&&row.textContent.includes('Task failed'))`, `${page} attention metadata`);
-    await run(`Array.from(document.querySelectorAll('.attention-item')).find(row=>row.textContent.includes('History 154')).querySelector('button').click()`);
-    await wait(`document.querySelector('.task-title')?.value==='History 154'`, `${page} detail navigation`);
-  }
-  if (fullWorkspaceReads !== 0 || overviewBroadcasts < 4 || !detailBodiesBounded || peakConversation>1) throw new Error("History navigation must use metadata broadcasts, bounded bodies and coalesced page requests.");
-  console.log("HISTORY_SMOKE", JSON.stringify({ pages: true, retry: true, pinned: true, selection: true, staleDetails: true, coalescedDetails: true, detailRetry: true, bodySearch: true, rapidSearch: true, archived: true, empty: true, chatAttention: true, inboxAttention: true, metadataOnly: true, recentMessages: true, recentActivities: true, readingAnchor: true, liveHistory: true, followLatest: true, pauseFollowing: true, jumpToLatest: true, delayedLayout: true, boundedDetails: true, byteBoundedPages: byteBodiesBounded, peakPageBytes, byteBoundedRenderer: true, boundedMessages: true, boundedActivities: true, pageRetry: true, pageRefresh: true, coalescedPages: true }), "ISOLATED_DATA", data);
+  await run(`${earlierMessages}.click()`);
+  await wait(`${messages}[0]?.dataset.conversationId==='message:large-850'`, "large history before jumping");
+  await run(`${jump}.click()`);
+  await wait(`${messages}.length===50&&${messages}[0]?.dataset.conversationId==='message:large-950'&&${atLatest}`, "large conversation jumps to latest");
+  // Very large message bodies are windowed by bytes as well as count.
+  await run(`window.__auditOpenChat('History 044')`);
+  const byteWindow = `(()=>{const rows=${messages};return rows.length<=3&&rows.every((row,index)=>index===0||Number(row.dataset.conversationId.split('bytes-')[1])===Number(rows[index-1].dataset.conversationId.split('bytes-')[1])+1)})()`;
+  await wait(`${messages}[0]?.dataset.conversationId==='message:bytes-5'`, "large body initial byte window");
+  for (const start of [2, 0]) { await run(`${earlierMessages}.click()`); await wait(`${messages}[0]?.dataset.conversationId==='message:bytes-${start}'`, "large body older window " + start); if (!await run(byteWindow)) throw Error("Large body renderer retained excess/non-contiguous messages"); }
+  for (const start of [3, 5]) { await run(`${newerMessages}.click()`); await wait(`${messages}[0]?.dataset.conversationId==='message:bytes-${start}'`, "large body newer window " + start); if (!await run(byteWindow)) throw Error("Large body newer window exceeded retained byte limit"); }
+  if (!byteBodiesBounded || peakPageBytes < 1024 * 1024) throw Error("Large body byte instrumentation failed");
+  // Scrolling up loads the next 50 by itself, keeping the reader in place.
+  await run(`window.__phaseoManualPaging=false`);
+  await run(`window.__auditOpenChat('History 043')`);
+  await wait(`${messages}[0]?.dataset.conversationId==='message:large-950'&&${atLatest}`, "automatic paging opens at latest");
+  await run(`(()=>{${host}.scrollTop=0;${host}.dispatchEvent(new Event('scroll'))})()`);
+  await wait(`${messages}[0]?.dataset.conversationId==='message:large-900'`, "scrolling up loads older messages");
+  // Failed chats are marked in the command palette, which opens them.
+  await run(`window.__auditPalette()`); await run(`window.__auditType(document.querySelector('[data-slot="dialog-content"] [cmdk-input]'),'History 154')`);
+  await wait(`Array.from(document.querySelectorAll('[data-slot="dialog-content"] [cmdk-item]')).some(item=>item.textContent.includes('History 154')&&item.querySelector('[aria-label="Failed"]'))`, "palette attention metadata");
+  await run(`window.__auditPaletteClose()`); await run(`window.__auditOpenChat('History 154')`);
+  if (fullWorkspaceReads !== 0 || overviewBroadcasts < 4 || !detailBodiesBounded || peakConversation > 1) throw new Error("History navigation must use metadata broadcasts, bounded bodies and coalesced page requests.");
+  console.log("HISTORY_SMOKE", JSON.stringify({ pages: true, retry: true, pinned: true, selection: true, staleDetails: true, coalescedDetails: true, detailRecovery: true, bodySearch: true, rapidSearch: true, archived: true, empty: true, chatAttention: true, metadataOnly: true, recentMessages: true, recentActivities: true, readingAnchor: true, liveHistory: true, followLatest: true, pauseFollowing: true, jumpToLatest: true, delayedLayout: true, boundedDetails: true, byteBoundedPages: byteBodiesBounded, peakPageBytes, byteBoundedRenderer: true, boundedMessages: true, pageRetry: true, pageRefresh: true, coalescedPages: true }), "ISOLATED_DATA", data);
   app.exit(0);
 } catch (error) { console.error(error); app.exit(1); }
 }).catch(error => { console.error(error); app.exit(1); });

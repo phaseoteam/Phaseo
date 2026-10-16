@@ -32,7 +32,7 @@ describe("desktop missions", () => {
 	it("keeps native approvals interactive and refuses overlapping manual runs", async () => {
 		const value = fixture(async (_task, _cwd, _text, callbacks) => { await callbacks.onApproval("file/write", "Owned fixture approval"); }); try {
 			value.service.command({ type: "run", id: value.mission.id }); await vi.waitFor(() => expect(value.runtime.store.get().tasks.find(task => task.missionId)?.status).toBe("waiting"));
-			expect(() => value.service.command({ type: "run", id: value.mission.id })).toThrow("active task"); expect(value.runtime.store.get().tasks.filter(task => task.missionId)).toHaveLength(1);
+			expect(() => value.service.command({ type: "run", id: value.mission.id })).toThrow("already running"); expect(value.runtime.store.get().tasks.filter(task => task.missionId)).toHaveLength(1);
 			const task = value.runtime.store.get().tasks.find(task => task.missionId)!; await value.runtime.command({ type: "approval", id: task.id, approvalId: task.approvals![0].id, decision: "accept" }); await vi.waitFor(() => expect(value.runtime.store.missions.get(value.mission.id).lastStatus).toBe("completed"));
 		} finally { await value.close(); }
 	});
@@ -63,7 +63,7 @@ describe("desktop missions", () => {
 	it("blocks new runs while an older mission task has been resumed", async () => {
 		const value = fixture(); try {
 			const old = value.runtime.store.apply({ type: "create-task", harness: "codex", model: "default", mode: "chat" }); old.missionId = value.mission.id; old.status = "running"; value.runtime.store.saveTask(old);
-			expect(() => value.service.command({ type: "run", id: value.mission.id })).toThrow("active task"); value.service.command({ type: "enable", id: value.mission.id, enabled: true }); value.advance(60000); value.service.tick(); expect(value.execute).not.toHaveBeenCalled(); expect(value.runtime.store.missions.get(value.mission.id).enabled).toBe(true); expect(value.runtime.store.get().tasks).toHaveLength(2);
+			expect(() => value.service.command({ type: "run", id: value.mission.id })).toThrow("already running"); value.service.command({ type: "enable", id: value.mission.id, enabled: true }); value.advance(60000); value.service.tick(); expect(value.execute).not.toHaveBeenCalled(); expect(value.runtime.store.missions.get(value.mission.id).enabled).toBe(true); expect(value.runtime.store.get().tasks).toHaveLength(2);
 			old.status = "completed"; value.runtime.store.saveTask(old); const fork = value.runtime.store.apply({ type: "fork", id: old.id }); expect(fork.parentId).toBe(old.id); expect(fork.missionId).toBeUndefined();
 		} finally { await value.close(); }
 	});

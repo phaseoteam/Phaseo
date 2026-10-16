@@ -1,9 +1,12 @@
+import type * as React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import useSWR from "swr";
 import { useModels } from "./useModels";
 import { BACKGROUND_REFRESH_MS } from "./useBackgroundRefresh";
 
-vi.mock("swr", () => ({ default: vi.fn() }));
+vi.mock("swr", () => ({ default: vi.fn(), mutate: vi.fn() }));
+// The hook is called directly here, outside a React render; its change subscription is covered by the app.
+vi.mock("react", async original => ({ ...await original<typeof React>(), useEffect: vi.fn() }));
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.clearAllMocks(); });
 describe("model cache policy", () => {
 	it("preserves stale models, scopes accounts and retries automatically after ten minutes", () => {
@@ -15,7 +18,8 @@ describe("model cache policy", () => {
 		expect(vi.mocked(useSWR).mock.calls[0][0]).toEqual(["workspace-models", "phaseo", "first", ""]);
 		expect(vi.mocked(useSWR).mock.calls[1][0]).toEqual(["workspace-models", "phaseo", "second", ""]);
 		const config = vi.mocked(useSWR).mock.calls[0][2]!;
-		expect(config.refreshInterval).toBe(BACKGROUND_REFRESH_MS); expect(config.revalidateOnFocus).toBe(false);
+		expect(config.refreshInterval).toBe(5 * 60 * 1000); expect(config.revalidateOnFocus).toBe(false);
+		useModels("codex"); expect(vi.mocked(useSWR).mock.calls[2][2]!.refreshInterval).toBe(BACKGROUND_REFRESH_MS);
 		const revalidate = vi.fn(); config.onErrorRetry!(Error("Offline"), "key", config as Parameters<NonNullable<typeof config.onErrorRetry>>[2], revalidate, { retryCount: 1, dedupe: true });
 		vi.advanceTimersByTime(BACKGROUND_REFRESH_MS - 1); expect(revalidate).not.toHaveBeenCalled();
 		vi.advanceTimersByTime(1); expect(revalidate).toHaveBeenCalledTimes(1);

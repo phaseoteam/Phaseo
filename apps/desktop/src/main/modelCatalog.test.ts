@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { apiModels, readCodexModels } from "./modelCatalog";
+import { apiModelCatalog } from "./apiModelCatalog";
 import type { Account } from "../shared/workspace";
 
 const account: Account = { id: "account", name: "API", harness: "phaseo", kind: "api", configured: true, endpoint: "https://api.example.test/v1/" };
@@ -10,12 +11,44 @@ describe("API model catalog", () => {
 		const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [nativeModel("openai/example", { organization: { id: "openai", name: "OpenAI" }, lifecycle: { status: "active", released_at: "2026-10-04" } })] })));
 		expect(await apiModels(gatewayAccount, "owned-key", fetcher)).toEqual([{ id: "openai/example", name: "openai/example", organisationId: "openai", organisationName: "OpenAI", releaseDate: "2026-10-04" }]);
 	});
+	it("keeps context, input types, the cheapest routable offer's prices and provider names for the model card", async () => {
+		const meter = (price: string | null) => ({ unit: "token", unit_size: 1_000_000, price_per_unit: price, currency: "USD" });
+		const offer = (name: string, input: string, output: string, routable = true) => ({ routable, provider: { id: name.toLowerCase(), name }, pricing: { meters: { input_tokens: null, input_text_tokens: meter(input), output_text_tokens: meter(output) } } });
+		const model = nativeModel("owned/carded", { limits: { input_tokens: 400_000, output_tokens: null }, modalities: { input: ["text", "image"], output: ["text"] }, offers: [offer("Azure", "4.4", "22"), offer("Owned", "4", "20"), offer("Owned", "4", "20"), offer("Closed", "1", "2", false)] });
+		const [result] = await apiModels(gatewayAccount, "owned-key", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [model] }))));
+		expect(result.facts).toEqual({ contextTokens: 400_000, input: ["text", "image"], inputPrice: 4, outputPrice: 20, providers: ["Azure", "Owned"] });
+		const free = nativeModel("owned/free", { pricing: { meters: { input_text_tokens: meter("0"), output_text_tokens: meter("0") } } });
+		const [summary] = await apiModels(gatewayAccount, "owned-key", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [free] }))));
+		expect(summary.facts).toEqual({ inputPrice: 0, outputPrice: 0 });
+	});
+	it("attaches effort and speed settings from routable offer parameter details", async () => {
+		const model = nativeModel("openai/reasoner", { offers: [{ routable: true, capabilities: { parameter_details: { reasoning: { supported: true, supported_values: ["low", "medium", "high"] }, service_tier: { supported: true, supported_values: ["standard", "priority"] } } } }] });
+		const [result] = await apiModels(gatewayAccount, "owned-key", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [model] }))));
+		expect(result.options).toEqual([{ id: "effort", label: "Reasoning", type: "select", options: [{ id: "low", label: "Low" }, { id: "medium", label: "Medium", isDefault: true }, { id: "high", label: "High" }] }, { id: "speed", label: "Speed", type: "select", options: [{ id: "standard", label: "Standard", isDefault: true }, { id: "priority", label: "Fast" }] }]);
+	});
 	it("reads the Phaseo catalog across pages with real gateway IDs and readable names", async () => {
 		const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 0, limit: 250, total: 3, models: [nativeModel("owned/first", { name: "First Model", description: "Owned model" }), nativeModel("owned/second")] }))).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 2, limit: 250, total: 3, models: [nativeModel("owned/last")] })));
 		expect(await apiModels(gatewayAccount, "owned-key", fetcher)).toEqual([{ id: "owned/first", name: "First Model", description: "Owned model" }, { id: "owned/second", name: "owned/second" }, { id: "owned/last", name: "owned/last" }]);
 		const first = new URL(fetcher.mock.calls[0][0]); const last = new URL(fetcher.mock.calls[1][0]);
 		expect(first.searchParams.get("limit")).toBe("250"); expect(first.searchParams.get("endpoints")).toBe("text.generate"); expect(first.searchParams.get("gateway_available_only")).toBe("true"); expect(last.searchParams.get("offset")).toBe("2");
 		expect(fetcher.mock.calls.every(([, options]) => options.headers.Authorization === "Bearer owned-key" && options.redirect === "error")).toBe(true);
+	});
+	it("records page ETags and re-checks them with If-None-Match, downloading again only when a page changed", async () => {
+		const page = (offset: number, ids: string[], etag: string) => new Response(JSON.stringify({ ok: true, offset, total: 3, models: ids.map(id => nativeModel(id)) }), { headers: { etag } });
+		const fetcher = vi.fn().mockResolvedValueOnce(page(0, ["owned/a", "owned/b"], "\"p0\"")).mockResolvedValueOnce(page(2, ["owned/c"], "\"p1\""));
+		const first = await apiModelCatalog(gatewayAccount, "owned-key", undefined, fetcher);
+		expect(first).toMatchObject({ validators: [{ offset: 0, etag: "\"p0\"" }, { offset: 2, etag: "\"p1\"" }] });
+		const validators = first.notModified ? [] : first.validators;
+		const unchanged = vi.fn().mockResolvedValue(new Response(null, { status: 304 }));
+		expect(await apiModelCatalog(gatewayAccount, "owned-key", validators, unchanged)).toEqual({ notModified: true });
+		expect(unchanged.mock.calls.map(([url, options]) => [new URL(url).searchParams.get("offset"), options.headers["If-None-Match"]])).toEqual([[null, "\"p0\""], ["2", "\"p1\""]]);
+		const changed = vi.fn().mockResolvedValueOnce(new Response(null, { status: 304 })).mockResolvedValueOnce(new Response("{}", { status: 200 })).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [nativeModel("owned/new")] }), { headers: { etag: "\"p2\"" } }));
+		expect(await apiModelCatalog(gatewayAccount, "owned-key", validators, changed)).toEqual({ models: [{ id: "owned/new", name: "owned/new" }], validators: [{ offset: 0, etag: "\"p2\"" }] });
+		expect(changed.mock.calls[2][1].headers["If-None-Match"]).toBeUndefined();
+	});
+	it("skips conditional re-checks when a page arrived without an ETag", async () => {
+		const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 0, total: 2, models: [nativeModel("owned/a")] }), { headers: { etag: "\"p0\"" } })).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 1, total: 2, models: [nativeModel("owned/b")] })));
+		expect(await apiModelCatalog(gatewayAccount, "owned-key", undefined, fetcher)).toMatchObject({ validators: [] });
 	});
 	it("skips unavailable and non-chat models without dropping later valid pages", async () => {
 		const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 0, total: 4, models: [nativeModel("owned/image", { capabilities: { endpoints: ["images/generations"] } }), nativeModel("owned/offline", { offers: [{ routable: false }] })] }))).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 2, total: 4, models: [nativeModel("owned/retired", { lifecycle: { status: "retired" } }), nativeModel("owned/chat")] })));

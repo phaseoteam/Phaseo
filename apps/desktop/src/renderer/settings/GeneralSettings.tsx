@@ -1,0 +1,158 @@
+import { useEffect, useRef, useState } from "react";
+import { usePersistedState } from "../lib/persistedState";
+import { defaultPreferences, type WorkspacePreferences } from "../../shared/preferences";
+import { cn } from "../lib/utils";
+import type { InstructionDocument } from "../../shared/instructions";
+import { errorText } from "../app/workspace";
+import { setDefaultModel, useModelPreferences, type ModelSelection } from "../lib/modelPreferences";
+import { useBackgroundRefresh } from "../lib/useBackgroundRefresh";
+import { Select } from "../components/Select";
+import { Switch } from "../components/ui/switch";
+import { ModelPicker } from "../chat/ModelPicker";
+import { ModelSettings } from "../chat/ModelSettings";
+import { workingSectionKey } from "../shell/codeThreads";
+import { publishWorkspacePreferences } from "../lib/workspacePreferences";
+import { mergeMethodLabels } from "../views/pullRequests/pullRequestLogic";
+import { isMac } from "../lib/shortcuts";
+import { SettingsButton, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
+
+/** Workspace preferences, loaded once and saved one change at a time. */
+function usePreferences() {
+	const api = window.phaseoDesktop?.workspace;
+	const [preferences, setPreferences] = useState(defaultPreferences);
+	const [supported, setSupported] = useState<boolean>();
+	const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false), [error, setError] = useState("");
+	const pending = useRef(false);
+	useEffect(() => {
+		if (!api) { setLoading(false); setError("Open the desktop application to load settings."); return; }
+		let active = true;
+		void api.preferences().then(value => { if (active) { setPreferences(value.preferences); setSupported(value.notificationsSupported); publishWorkspacePreferences(value.preferences); } }, reason => { if (active) setError(errorText(reason)); }).finally(() => { if (active) setLoading(false); });
+		return () => { active = false; };
+	}, [api]);
+	async function save(value: WorkspacePreferences) {
+		if (!api || pending.current || loading || supported === undefined) return;
+		pending.current = true; setBusy(true); setError("");
+		try { const saved = await api.savePreferences(value); setPreferences(saved); publishWorkspacePreferences(saved); }
+		catch (reason) { setError(errorText(reason)); }
+		finally { pending.current = false; setBusy(false); }
+	}
+	return { preferences, supported, loading, busy, error, save, ready: !loading && supported !== undefined };
+}
+
+function DefaultModel() {
+	const preferences = useModelPreferences();
+	const [fixed, setFixed] = useState(!!preferences.defaultSelection);
+	const selection: ModelSelection | undefined = preferences.defaultSelection ?? preferences.recentSelection;
+	const choose = (next: ModelSelection) => setDefaultModel(next);
+	return <>
+		<SettingsRow title="Model for new chats" description={fixed ? "New chats start with this model and its settings." : "New chats start with the model you used last."}
+			control={<Select label="New chat model selection" value={fixed ? "fixed" : "recent"} onValueChange={value => { const next = value === "fixed"; setFixed(next); if (next && selection) choose(selection); if (!next) setDefaultModel(undefined); }}
+				options={[{ value: "recent", label: "Last used" }, { value: "fixed", label: "Always the same" }]} />} />
+		{fixed && <SettingsRow title="Default model" description="Used for every new chat until you change it here."
+			control={<>{selection ? <ModelSettings selection={selection} onChange={choose} /> : null}<ModelPicker selections={selection ? [selection] : []} onChange={values => { if (values[0]) choose(values[0]); }} className="border border-border" /></>} />}
+	</>;
+}
+
+function GlobalInstructions() {
+	const api = window.phaseoDesktop?.workspace;
+	const [document, setDocument] = useState<InstructionDocument>(); const [content, setContent] = useState("");
+	const [busy, setBusy] = useState(true), [error, setError] = useState(""), [saved, setSaved] = useState(false), [attempt, setAttempt] = useState(0);
+	const pending = useRef(false);
+	useEffect(() => {
+		let active = true; setBusy(true); setError(""); pending.current = true;
+		if (!api) { setBusy(false); setError("Open the desktop app to edit instructions."); pending.current = false; return; }
+		void api.globalInstructions().then(value => { if (active) { setDocument(value); setContent(value.content); } }, reason => { if (active) setError(errorText(reason)); }).finally(() => { if (active) { setBusy(false); pending.current = false; } });
+		return () => { active = false; };
+	}, [api, attempt]);
+	useBackgroundRefresh(() => { if (api && !pending.current && (!document || content === document.content)) setAttempt(value => value + 1); });
+	async function save() {
+		if (!api || !document || pending.current) return;
+		pending.current = true; setBusy(true); setError(""); setSaved(false);
+		try { const value = await api.saveGlobalInstructions({ content, expectedHash: document.hash }); setDocument(value); setContent(value.content); setSaved(true); }
+		catch (reason) { setError(errorText(reason)); }
+		finally { pending.current = false; setBusy(false); }
+	}
+	return <SettingsSection title="Instructions" description="Apply to every Phaseo chat. A project's own instructions take precedence." label="Global instructions">
+		<SettingsRow title="Global instructions" description="Written to AGENTS.md in your Phaseo profile." control={<SettingsButton variant="primary" disabled={busy || !document || content === document.content} onClick={() => void save()}>Save instructions</SettingsButton>}>
+			<textarea aria-label="Global instructions text" value={content} disabled={busy || !document} rows={8} placeholder="For example: answer in British English, and keep explanations short."
+				onChange={event => { setContent(event.target.value); setSaved(false); }} className={cn(settingsInput, "h-auto min-h-32 resize-y py-2 leading-relaxed")} />
+		</SettingsRow>
+		{saved && <SettingsNote role="status">Instructions saved.</SettingsNote>}
+		{error && <SettingsNote tone="error" role="alert">{error}</SettingsNote>}
+	</SettingsSection>;
+}
+
+/** T3 names chats with a model; here it is a choice, because each title is a small request on the Phaseo account. */
+function ChatTitles({ preferences, save, disabled }: { preferences: WorkspacePreferences; save: (value: WorkspacePreferences) => Promise<void>; disabled: boolean }) {
+	const [byModel, setByModel] = useState(preferences.titleModel !== null);
+	const [error, setError] = useState("");
+	useEffect(() => { setByModel(preferences.titleModel !== null); }, [preferences.titleModel]);
+	return <>
+		<SettingsRow title="Chat titles" description={byModel ? "A model names each new chat from its first message, through your Phaseo account. Regenerate title in a chat's menu writes a new one." : "New chats are named after their first message."}
+			control={<Select label="Chat titles" disabled={disabled} value={byModel ? "model" : "first"} onValueChange={value => { setError(""); setByModel(value === "model"); if (value === "first" && preferences.titleModel !== null) void save({ ...preferences, titleModel: null }); }}
+				options={[{ value: "first", label: "First message" }, { value: "model", label: "Written by a model" }]} />} />
+		{byModel && <SettingsRow title="Title model" description={preferences.titleModel ? "A small, fast model is plenty." : "Choose a Phaseo model to write titles."}
+			control={<ModelPicker disabled={disabled} selections={preferences.titleModel ? [{ harness: "phaseo", model: preferences.titleModel }] : []}
+				onChange={values => { const next = values[0]; if (!next) return; if (next.harness !== "phaseo") { setError("Choose a Phaseo model: titles are written through your Phaseo account."); return; } setError(""); void save({ ...preferences, titleModel: next.model }); }} />} />}
+		{error && <SettingsNote tone="error" role="alert">{error}</SettingsNote>}
+	</>;
+}
+
+export function GeneralSettings() {
+	const [autoOpenPanes, setAutoOpenPanes] = usePersistedState("phaseo.desktop.panes.autoOpen", true);
+	const [workingSection, setWorkingSection] = usePersistedState(workingSectionKey, false);
+	const { preferences, loading, busy, error, save, ready } = usePreferences();
+	return <SettingsPageLayout title="General">
+		<SettingsSection title="New chats"><DefaultModel /><ChatTitles preferences={preferences} save={save} disabled={!ready || busy} /></SettingsSection>
+		<SettingsSection title="Agents" description="Agents are chats your chats start to work in parallel." label="Agents">
+			<SettingsRow title="Agents running at once" description="The most agents working at the same time across the workspace. Each one is a separate model call, billed to your account."
+				control={<input type="number" min={1} max={256} step={1} aria-label="Agents running at once" key={preferences.maxActiveAgents} defaultValue={preferences.maxActiveAgents} disabled={!ready || busy}
+					onBlur={event => { const value = Math.round(Number(event.target.value)); if (Number.isFinite(value) && value >= 1 && value <= 256 && value !== preferences.maxActiveAgents) void save({ ...preferences, maxActiveAgents: value }); else event.target.value = String(preferences.maxActiveAgents); }}
+					onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }}
+					className={cn(settingsInput, "w-20 text-right")} />} />
+			{(loading || error) && <SettingsNote tone={error ? "error" : "muted"} role={error ? "alert" : "status"}>{error || "Loading settings…"}</SettingsNote>}
+		</SettingsSection>
+		<SettingsSection title="Panes" label="Panes">
+			<SettingsRow title="Open panes automatically" description="Show the diff when a turn changes files, and a pull request when one is linked to the chat. Using the pane during a turn holds this back."
+				control={<Switch aria-label="Open panes automatically" checked={autoOpenPanes} onCheckedChange={setAutoOpenPanes} />} />
+			<SettingsRow title="Default diff file state" description="Start with files expanded or collapsed when opening diffs or a pull request's Code tab."
+				control={<Select label="Default diff file state" disabled={!ready || busy} value={preferences.diffFilesCollapsed ? "collapsed" : "expanded"} onValueChange={value => void save({ ...preferences, diffFilesCollapsed: value === "collapsed" })}
+					options={[{ value: "expanded", label: "Expanded" }, { value: "collapsed", label: "Collapsed" }]} />} />
+		</SettingsSection>
+		<SettingsSection title="Pull requests" label="Pull requests">
+			<SettingsRow title="Open pull requests in Phaseo" description={`Clicking a pull request link opens it in Phaseo. ${isMac() ? "⌘-click" : "Ctrl-click"} or middle-click still opens it on GitHub. Turn off to open pull request links like any other link, on GitHub.`}
+				control={<Switch aria-label="Open pull requests in Phaseo" disabled={!ready || busy} checked={preferences.openPullRequestsInApp} onCheckedChange={value => void save({ ...preferences, openPullRequestsInApp: value })} />} />
+			<SettingsRow title="Default merge method" description="Pull requests start with this method. Last selected reuses whatever you chose most recently on this device. Each project can change this in its Project settings."
+				control={<Select label="Default pull request merge method" disabled={!ready || busy} value={preferences.pullRequestMergeMethod ?? "last"} onValueChange={value => void save({ ...preferences, pullRequestMergeMethod: value === "merge" || value === "squash" || value === "rebase" ? value : null })}
+					options={[{ value: "last", label: "Last selected" }, { value: "merge", label: mergeMethodLabels.merge }, { value: "squash", label: mergeMethodLabels.squash }, { value: "rebase", label: mergeMethodLabels.rebase }]} />} />
+		</SettingsSection>
+		<SettingsSection title="Code chats" description="Settle a chat when you are done with it; it moves to Settled at the bottom of the sidebar. Each project can change these in its Project settings." label="Code chats">
+			<SettingsRow title="Show a Working section" description="Fold chats that are working and need nothing from you into a Working section above Snoozed. They return to the top of the list when they need you. Your list is then ordered by time."
+				control={<Switch aria-label="Show a Working section" checked={workingSection} onCheckedChange={setWorkingSection} />} />
+			<SettingsRow title="Auto-settle merged chats" description="Settle a chat when its pull request merges. Closed pull requests still settle it."
+				control={<Switch aria-label="Auto-settle merged chats" disabled={!ready || busy} checked={preferences.autoSettleOnMerge} onCheckedChange={value => void save({ ...preferences, autoSettleOnMerge: value })} />} />
+			<SettingsRow title="Keep chats with a pull request" description="Inactivity does not settle chats with a pull request. Merging and closing still do."
+				control={<Switch aria-label="Keep chats with a pull request" disabled={!ready || busy} checked={preferences.keepPullRequests} onCheckedChange={value => void save({ ...preferences, keepPullRequests: value })} />} />
+			<SettingsRow title="Auto-settle inactive chats" description="Code chats with no activity for this long settle automatically. Any new activity un-settles a chat."
+				control={<Select label="Auto-settle inactive chats" disabled={!ready || busy} value={String(preferences.autoSettleAfterDays ?? "never")}
+					onValueChange={value => void save({ ...preferences, autoSettleAfterDays: value === "never" ? null : Number(value) })}
+					options={[{ value: "never", label: "Never" }, ...[...new Set([1, 2, 3, 5, 7, 14, 30, ...(preferences.autoSettleAfterDays ? [preferences.autoSettleAfterDays] : [])])].sort((a, b) => a - b).map(days => ({ value: String(days), label: days === 1 ? "After 1 day" : `After ${days} days` }))]} />} />
+		</SettingsSection>
+		<GlobalInstructions />
+	</SettingsPageLayout>;
+}
+
+export function NotificationSettings() {
+	const { preferences, supported, loading, busy, error, save, ready } = usePreferences();
+	return <SettingsPageLayout title="Notifications">
+		<SettingsSection title="Desktop alerts" label="Notifications">
+			<SettingsRow title="Desktop alerts" description="Hear about chats while Phaseo is in the background."
+				control={<Select label="Desktop alerts" disabled={!ready || busy} value={preferences.notifications} onValueChange={value => void save({ ...preferences, notifications: value as WorkspacePreferences["notifications"] })}
+					options={[{ value: "off", label: "Off" }, { value: "attention", label: "Needs attention" }, { value: "all", label: "Every update" }]} />} />
+			<SettingsRow title="Show chat titles" description="Alerts name the chat. What was said always stays private."
+				control={<Switch aria-label="Show task titles" checked={preferences.notificationTitles} disabled={!ready || busy} onCheckedChange={checked => void save({ ...preferences, notificationTitles: checked })} />} />
+			{supported === false && <SettingsNote role="status">Desktop notifications are unavailable on this system.</SettingsNote>}
+			{(loading || busy || error) && <SettingsNote tone={error ? "error" : "muted"} role={error ? "alert" : "status"}>{error || (loading ? "Loading settings…" : "Saving…")}</SettingsNote>}
+		</SettingsSection>
+	</SettingsPageLayout>;
+}

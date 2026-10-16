@@ -1,5 +1,7 @@
 import { imageMime } from "./attachments";
 import { linkTitle } from "./linkTitle";
+import { KeybindingsFile } from "./keybindingsFile";
+import { browserShortcuts } from "../shared/keybindings";
 import { signInPhaseo, PHASEO_GATEWAY_ENDPOINT } from "./phaseoOAuth";
 import { PhaseoSkills } from "./phaseoSkills";
 import { GlobalInstructions } from "./globalInstructions";
@@ -14,11 +16,16 @@ import { PromptCommands } from "./promptCommands";
 import { McpPromptCatalogService } from "./mcpPromptCatalog";
 import { importMcpPromptAttachments } from "./mcpPromptAttachments";
 import { projectPullRequestContents } from "./projectPullRequestContents";
-import { projectPullRequestFiles } from "./projectPullRequestFiles";
+import { projectPullRequestFiles, projectPullRequestFilesViewed, projectSetPullRequestFilesViewed } from "./projectPullRequestFiles";
 import { projectPullRequestThreads } from "./projectPullRequestThreads";
 import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, Notification, safeStorage, shell } from "electron";
 import path from "node:path";
 import { BrowserHost } from "./browserHost";
+import { BrowserAgent } from "./browserAgent";
+import { BrowserRecordings } from "./browserRecordings";
+import { localServers, probeAddress } from "./browserLocalServers";
+import { readT3ProjectFile } from "./t3ProjectFile";
+import { browserId, probeUrl } from "../shared/browser";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "../shared/desktop";
@@ -28,6 +35,7 @@ import type { Harness } from "../shared/workspace";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { resolveNativeCommand } from "./nativeProcess";
 import { harnessVersion } from "./harnessVersion";
+import { claudeModelsFor } from "./claudeModels";
 import { resolveHarnessMaintenance } from "./harnessMaintenance";
 import { runHarnessUpdate } from "./runHarnessUpdate";
 import { resolveGrokCommand } from "./grokLaunch";
@@ -36,15 +44,33 @@ import { grokModelCatalog } from "./grokModelCatalog";
 import { SecretVault } from "./secretVault";
 import { windowsCredentialEncryption } from "./windowsCredentialEncryption";
 import { signInNative } from "./accountConnections";
-import { gitReview, listProjectFiles, readProjectFile } from "./projectFiles";
+import { gitReview, listProjectFiles, readFilePreview, readProjectFile } from "./projectFiles";
+import { gitRefs, gitScopedDiff, readScopedDiffContents } from "./gitDiffScopes";
+import { extractPdfText } from "./pdfText";
+import { projectTree, refreshProjectIndex, searchProjectFiles } from "./projectFileSearch";
+import { UsageHubs, usageHubFile } from "./usageHubs";
+import { validateUsageHubRequest } from "../shared/usageHubs";
 import { editorInstallations, findEditor, launchEditor, openProjectTarget } from "./projectEditors";
-import { apiModels, codexModels } from "./modelCatalog";
+import { codexModels } from "./modelCatalog";
+import { apiModelCatalog, type CatalogPageValidator } from "./apiModelCatalog";
+import { ModelCatalogCache } from "./modelCatalogCache";
 import { openCodeModels, piModels } from "./nativeModels";
 import { resolveOpenCodeCommand } from "./openCodeService";
 import { TerminalService } from "./terminalService";
 import { contentHash, writeProjectFile } from "./projectEdits";
 import { gitBranches, gitCommand } from "./gitOperations";
 import { projectPullRequests, projectPullRequest } from "./projectPullRequests";
+import { listPullRequestDirectory } from "./pullRequestDirectory";
+import { ghFailure, projectPullRequestAction, projectPullRequestBehind, projectPullRequestCandidates, projectPullRequestView, readPullRequestView, runGh } from "./projectPullRequestView";
+import { PullRequestGuides } from "./pullRequestGuides";
+import { PullRequestWatcher } from "./pullRequestWatcher";
+import { checkoutPullRequestHere, checkoutPullRequestWorktree } from "./pullRequestCheckout";
+import { readPullRequestStack, runPullRequestStackAction } from "./pullRequestStacks";
+import { git } from "./gitProcess";
+import { branchPullRequest, forgetBranchPullRequest } from "./branchPullRequest";
+import { createPullRequest } from "./createPullRequest";
+import { githubRepository } from "./projectPullRequests";
+import { pullRequestLinkSnapshot } from "../shared/pullRequestView";
 import { readGitHunks } from "./gitHunks";
 import { readGitDiffContents } from "./gitDiffContents";
 import { piEntries } from "./piLaunch";
@@ -54,10 +80,14 @@ import { nativeAccountStatus } from "./accountStatus";
 import { checkAcpAgent } from "./acpAgentStatus";
 import { validateMcpCommand } from "../shared/mcp";
 import { validatePreferences } from "../shared/preferences";
+import { validateProjectUpdate } from "../shared/projectSettings";
 import { TaskNotifications } from "./taskNotifications";
 import { MissionService } from "./missionService";
 import { validateMissionCommand } from "../shared/missions";
 import { cursorAccountStatus, cursorModels, cursorSignIn } from "./cursorAccounts";
+import { registerDiagnosticsIpc, stopTracing, traceIpcHandlers } from "./diagnostics/diagnosticsIpc";
+import type { ProcessOwner } from "./diagnostics/processTable";
+import { span } from "./diagnostics/tracer";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const preloadPath = path.join(currentDirectory, "../preload/index.cjs");
@@ -66,6 +96,7 @@ const developmentUrl = app.isPackaged ? undefined : process.env.PHASEO_DESKTOP_D
 const applicationIcon = path.join(app.getAppPath(), "assets", `icon-${developmentUrl ? "development" : "production"}.png`);
 const updateFeedUrl = process.env.PHASEO_DESKTOP_UPDATE_URL;
 let workspaceRuntime: WorkspaceRuntime;
+let pullRequestGuides: PullRequestGuides;
 let globalInstructions: GlobalInstructions;
 let shutdownComplete = false;
 let shutdownStarted = false;
@@ -81,12 +112,26 @@ let credentialVault: SecretVault;
 let terminalService: TerminalService;
 let taskNotifications: TaskNotifications;
 let missionService: MissionService;
-ipcMain.handle("workspace:missions", event => { if (!senderWindow(event)) throw new Error("Invalid mission request."); return workspaceRuntime.store.missions.list(); });
-ipcMain.handle("workspace:mission", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid mission request."); return missionService.command(validateMissionCommand(value)); });
+let settleTimer: ReturnType<typeof setInterval> | undefined;
+let pullRequestWatcher: PullRequestWatcher | undefined;
+let modelCatalogCache: ModelCatalogCache;
+// Before any handler is registered, so each one is traced (slow or failed calls only).
+traceIpcHandlers(ipcMain);
+const diagnostics = registerDiagnosticsIpc(ipcMain, { senderWindow, owners: terminalOwners });
+/** Terminal shells by PID, named as the terminal list names them, with their chat. */
+function terminalOwners() {
+	const owners = new Map<number, ProcessOwner>();
+	if (!terminalService || !workspaceRuntime) return owners;
+	const tasks = new Map(workspaceRuntime.store.getOverview().tasks.map(task => [task.id, task.title]));
+	for (const owner of terminalService.processOwners()) { const chat = owner.taskId ? tasks.get(owner.taskId) : undefined; owners.set(owner.pid, { label: chat ? `${owner.title} · ${chat}` : owner.title, kind: "terminal" }); }
+	return owners;
+}
+ipcMain.handle("workspace:missions", event => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return workspaceRuntime.store.missions.list(); });
+ipcMain.handle("workspace:mission", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return missionService.command(validateMissionCommand(value)); });
 ipcMain.handle("workspace:global-instructions", event => { if (!senderWindow(event)) throw new Error("Untrusted instruction request."); return globalInstructions.read(); });
 ipcMain.handle("workspace:save-global-instructions", (event, edit: unknown) => { if (!senderWindow(event) || shutdownStarted) throw new Error("Instruction editing is unavailable."); return globalInstructions.save(edit); });
 ipcMain.handle("workspace:preferences", event => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); return { preferences: workspaceRuntime.store.getPreferences(), notificationsSupported: Notification.isSupported() }; });
-ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences(value)); taskNotifications.configure(preferences); return preferences; });
+ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); if (!value || typeof value !== "object") throw new Error("Invalid workspace preferences."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences({ ...workspaceRuntime.store.getPreferences(), ...value })); taskNotifications.configure(preferences); return preferences; });
 ipcMain.handle("workspace:mcp", (event, value: unknown) => {
 	if (!senderWindow(event)) throw new Error("Invalid MCP request.");
 	return workspaceRuntime.mcp(validateMcpCommand(value));
@@ -134,7 +179,10 @@ ipcMain.handle("workspace:phaseo-sign-in", async (event, accountId: unknown) => 
 	finally { owner.webContents.removeListener("destroyed", destroyed); phaseoSignIns.delete(event.sender.id); releaseAccount(); }
 });
 ipcMain.handle("workspace:phaseo-cancel-sign-in", event => { if (!senderWindow(event)) throw new Error("Invalid sign-in request."); phaseoSignIns.get(event.sender.id)?.abort(); });
-async function discoverDesktopModels(harness: Harness, accountId?: string, projectId?: string) {
+function discoverDesktopModels(harness: Harness, accountId?: string, projectId?: string, force = false) {
+	return span("models.discover", { harness, force }, () => discoverModels(harness, accountId, projectId, force));
+}
+async function discoverModels(harness: Harness, accountId: string | undefined, projectId: string | undefined, force: boolean) {
 		const project = projectId ? workspaceRuntime.store.getProjects().find(value => value.id === projectId) : undefined;
 		if (projectId && !project) throw new Error("Project is unavailable.");
 		const cwd = project?.directory ?? app.getPath("userData");
@@ -143,31 +191,41 @@ async function discoverDesktopModels(harness: Harness, accountId?: string, proje
 		if (harness === "phaseo") {
 			if (account?.oauthExpiresAt && Date.parse(account.oauthExpiresAt) <= Date.now()) throw new Error("Sign in to Phaseo again to renew this account.");
 			if (!account) throw new Error("Choose an API account.");
-			return await apiModels(account, await credentialVault.get(account.secretId ?? account.id));
+			const key = { endpoint: account.endpoint ?? "", accountId: account.id }, fetchModels = async (validators?: CatalogPageValidator[]) => apiModelCatalog(account, await credentialVault.get(account.secretId ?? account.id), validators);
+			return await (force ? modelCatalogCache.refresh(key, fetchModels) : modelCatalogCache.get(key, fetchModels));
 		}
 		if (harness === "cursor") { if (!account || account.archived) throw new Error("Choose a connected Cursor account."); return await cursorModels(await credentialVault.get(account.secretId ?? account.id)); }
 		if (harness === "opencode") return await openCodeModels(cwd, await workspaceRuntime.openCode.connect());
 		if (harness === "pi") return await piModels(cwd);
-		if (harness === "claude") return await claudeNativeModels(cwd, AbortSignal.timeout(15000), account);
+		if (harness === "claude") {
+			const [aliases, version] = await Promise.all([claudeNativeModels(cwd, AbortSignal.timeout(15000), account), resolveNativeCommand("claude").then(command => harnessVersion(command, app.getPath("userData"))).catch(() => undefined)]);
+			return claudeModelsFor(aliases, version);
+		}
 		if (harness === "grok") return await grokModelCatalog(cwd, account);
 		return await codexModels(cwd, account);
 }
-ipcMain.handle("workspace:models", async (event, harness: unknown, accountId: unknown, projectId: unknown) => {
+async function modelRequest(event: Electron.IpcMainInvokeEvent, harness: unknown, accountId: unknown, projectId: unknown, force: boolean) {
 	if (!senderWindow(event) || !["codex", "claude", "phaseo", "opencode", "pi", "cursor", "grok"].includes(String(harness)) || (accountId !== undefined && typeof accountId !== "string") || (projectId !== undefined && typeof projectId !== "string")) throw new Error("Model discovery is unavailable for this harness.");
 	workspaceRuntime.assertHarnessAvailable(harness as Harness);
 	const checkedHarness = harness as Harness;
 	modelChecks.set(checkedHarness, (modelChecks.get(checkedHarness) ?? 0) + 1);
 	try {
-		return await discoverDesktopModels(checkedHarness, accountId as string | undefined, projectId as string | undefined);
+		return await discoverDesktopModels(checkedHarness, accountId as string | undefined, projectId as string | undefined, force);
 	} finally { const remaining = modelChecks.get(checkedHarness)! - 1; if (remaining) modelChecks.set(checkedHarness, remaining); else modelChecks.delete(checkedHarness); }
-});
+}
+ipcMain.handle("workspace:models", (event, harness: unknown, accountId: unknown, projectId: unknown) => modelRequest(event, harness, accountId, projectId, false));
+// Only the Phaseo catalog is cached; other harnesses discover live on every request either way.
+ipcMain.handle("workspace:refresh-models", (event, harness: unknown, accountId: unknown) => modelRequest(event, harness, accountId, undefined, true));
 app.on("before-quit", event => {
 	if (!workspaceRuntime || shutdownComplete) return;
 	event.preventDefault();
 	if (shutdownStarted) return;
 	shutdownStarted = true;
 	browserHost.downloads.close();
+	diagnostics.close();
 	missionService?.close();
+	if (settleTimer) clearInterval(settleTimer);
+	void pullRequestWatcher?.close();
 	taskNotifications?.dismiss();
 	terminalService?.close();
 	for (const controller of signIns.values()) controller.abort();
@@ -178,7 +236,7 @@ app.on("before-quit", event => {
 	for (const controller of nativeCatalogChecks) controller.abort();
 	// Stop renderer IPC before the runtime closes its database.
 	for (const window of BrowserWindow.getAllWindows()) window.destroy();
-	void Promise.allSettled([workspaceRuntime.close().catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed]).finally(() => { shutdownComplete = true; app.quit(); });
+	void Promise.allSettled([workspaceRuntime.close().catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed]).finally(() => { stopTracing(); shutdownComplete = true; app.quit(); });
 });
 
 ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
@@ -216,6 +274,13 @@ ipcMain.handle("workspace:cancel-sign-in", (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid sign-in request.");
 	signIns.get(id)?.abort();
 });
+// CLIProxyAPI hubs: their accounts' limits, read through the hub with keys kept in the credential vault.
+let usageHubs: UsageHubs | undefined;
+ipcMain.handle("workspace:usage-hubs", async (event, request: unknown) => {
+	if (!senderWindow(event)) throw new Error("Untrusted usage hub request.");
+	if (!usageHubs) throw new Error("Usage hubs are not ready yet.");
+	return usageHubs.request(validateUsageHubRequest(request));
+});
 ipcMain.handle("workspace:account-status", async (event, harness: unknown, id: unknown) => {
 	if (!senderWindow(event) || (harness !== "codex" && harness !== "claude" && harness !== "cursor" && harness !== "grok") || (id !== undefined && typeof id !== "string")) throw new Error("Invalid account status request.");
 	const account = id ? workspaceRuntime.store.getAccounts().find(value => value.id === id && value.harness === harness && (value.kind === "native" || harness === "cursor")) : undefined;
@@ -241,6 +306,12 @@ ipcMain.handle("workspace:check-agent", async (event, id: unknown) => {
 	finally { agentChecks.delete(id); }
 });
 
+function nativeActionDraft(value: unknown): { id?: string; harness: Harness; accountId?: string; projectId?: string } {
+	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid native action request.");
+	const { harness, accountId, projectId } = value as Record<string, unknown>;
+	if (typeof harness !== "string" || (accountId !== undefined && typeof accountId !== "string") || (projectId !== undefined && typeof projectId !== "string")) throw new Error("Invalid native action request.");
+	return { harness: harness as Harness, accountId, projectId };
+}
 function projectRoot(event: Electron.IpcMainInvokeEvent, id: unknown) {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid project request.");
 	const project = workspaceRuntime.store.getProjects().find(value => value.id === id);
@@ -249,9 +320,10 @@ function projectRoot(event: Electron.IpcMainInvokeEvent, id: unknown) {
 	return project.directory;
 }
 ipcMain.handle("workspace:native-actions", async (event, id: unknown) => {
- if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid native action request."); if (shutdownStarted) throw new Error("The workspace is shutting down.");
- const task = workspaceRuntime.store.getTask(id); if (!["opencode", "pi", "claude", "codex", "phaseo"].includes(task.harness)) throw new Error("Native action discovery is unavailable for this harness.");
- workspaceRuntime.assertHarnessAvailable(task.harness); const cwd = task.projectId ? projectRoot(event, task.projectId) : path.join(app.getPath("userData"), "tasks", task.id);
+ if (!senderWindow(event)) throw new Error("Invalid native action request."); if (shutdownStarted) throw new Error("The workspace is shutting down.");
+ // A new chat has no task yet: it asks with the harness, account and project it is about to use.
+ const task = typeof id === "string" ? workspaceRuntime.store.getTask(id) : nativeActionDraft(id); if (!["opencode", "pi", "claude", "codex", "phaseo"].includes(task.harness)) throw new Error("Native action discovery is unavailable for this harness.");
+ workspaceRuntime.assertHarnessAvailable(task.harness); const cwd = task.projectId ? projectRoot(event, task.projectId) : task.id ? path.join(app.getPath("userData"), "tasks", task.id) : path.join(app.getPath("userData"), "scratch");
  const account = (task.harness === "claude" || task.harness === "codex") && task.accountId ? workspaceRuntime.store.getAccounts().find(value => value.id === task.accountId && value.harness === task.harness && value.kind === "native" && value.configured && !value.archived) : undefined;
  if ((task.harness === "claude" || task.harness === "codex") && task.accountId && !account) throw new Error("Account is unavailable."); if (account && (signIns.has(account.id) || accountChecks.has(account.id))) throw new Error("Finish this account's sign-in or check before loading commands.");
  const controller = new AbortController(); nativeCatalogChecks.add(controller); if (account) accountChecks.set(account.id, controller); modelChecks.set(task.harness, (modelChecks.get(task.harness) ?? 0) + 1);
@@ -283,6 +355,7 @@ ipcMain.handle("workspace:mcp-prompts", async (event, id: unknown, request: unkn
   return await new McpPromptCatalogService(workspaceRuntime.store.getMcpConnections(), cwd, task.projectId).request(request, AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]));
  } finally { event.sender.removeListener("destroyed", abort); mcpPromptChecks.delete(requestId); nativeCatalogChecks.delete(controller); }
 });
+ipcMain.handle("workspace:search-files", (event, id: unknown, query: unknown) => { const root = projectRoot(event, id); return span("files.search", undefined, () => searchProjectFiles(root, query as string)); });
 ipcMain.handle("workspace:list-files", (event, id: unknown, directory: unknown) => {
 	const root = projectRoot(event, id);
 	if (typeof directory !== "string") throw new Error("Invalid directory.");
@@ -300,20 +373,85 @@ ipcMain.handle("workspace:read-file", (event, id: unknown, filename: unknown) =>
 	if (typeof filename !== "string") throw new Error("Invalid filename.");
 	return readProjectFile(root, filename);
 });
-ipcMain.handle("workspace:git-review", (event, id: unknown) => gitReview(projectRoot(event, id)));
-ipcMain.handle("workspace:pull-requests", (event, id: unknown, cursor: unknown) => projectPullRequests(projectRoot(event, id), cursor));
-ipcMain.handle("workspace:pull-request", (event, id: unknown, number: unknown) => projectPullRequest(projectRoot(event, id), number));
+ipcMain.handle("workspace:git-review", (event, id: unknown) => { const root = projectRoot(event, id); return span("git.review", undefined, () => gitReview(root)); });
+ipcMain.handle("workspace:pull-requests", (event, id: unknown, cursor: unknown) => { const root = projectRoot(event, id); return span("gh.pull-requests", { page: cursor !== undefined }, () => projectPullRequests(root, cursor)); });
+// Projects being removed or not yet available are left out rather than failing the whole page.
+ipcMain.handle("workspace:pull-request-directory", (event, query: unknown) => { if (!senderWindow(event)) throw new Error("Invalid pull request list request."); return listPullRequestDirectory(workspaceRuntime.store.getProjects().filter(project => { try { workspaceRuntime.assertProjectAvailable(project.id); return true; } catch { return false; } }), query); });
+ipcMain.handle("workspace:pull-request", async (event, id: unknown, number: unknown) => { const details = await projectPullRequest(projectRoot(event, id), number); workspaceRuntime.syncPullRequestSnapshot(details.repository, details.number, pullRequestLinkSnapshot(details)); return details; });
+ipcMain.handle("workspace:pull-request-candidates", (event, id: unknown, query: unknown) => projectPullRequestCandidates(projectRoot(event, id), query));
+ipcMain.handle("workspace:pull-request-view", async (event, id: unknown, number: unknown) => { const view = await projectPullRequestView(projectRoot(event, id), number); workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)); return view; });
+ipcMain.handle("workspace:pull-request-action", async (event, id: unknown, request: unknown) => { const root = projectRoot(event, id); if (shutdownStarted) throw new Error("The workspace is shutting down."); const view = await projectPullRequestAction(root, request); workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)); return view; });
+ipcMain.handle("workspace:branch-pull-request", (event, id: unknown, fresh: unknown) => branchPullRequest(projectRoot(event, id), fresh === true));
+ipcMain.handle("workspace:create-pull-request", async (event, id: unknown, taskId: unknown) => {
+	const root = projectRoot(event, id);
+	if (typeof id !== "string" || (taskId !== undefined && typeof taskId !== "string") || shutdownStarted) throw new Error("Invalid pull request request.");
+	const result = await workspaceRuntime.mutateProject(id, () => createPullRequest(root));
+	forgetBranchPullRequest(root);
+	// T3 links the pull request a Git action creates to the chat it ran beside, as "Created from this chat".
+	const task = typeof taskId === "string" ? workspaceRuntime.store.getOverview().tasks.find(value => value.id === taskId) : undefined;
+	if (task) await workspaceRuntime.command({ type: "link-pull-request", id: task.id, reference: result.url, source: "created" }).catch(() => undefined);
+	return { ...result, workspace: workspaceRuntime.store.getOverview() };
+});
+ipcMain.handle("workspace:project-repository", async (event, id: unknown) => {
+	const root = projectRoot(event, id);
+	try { return githubRepository(await git(root, ["remote", "get-url", "origin"])); } catch { return null; }
+});
+ipcMain.handle("workspace:pull-request-stack", async (event, id: unknown, number: unknown, fresh: unknown) => {
+	const root = projectRoot(event, id);
+	if (!Number.isSafeInteger(number) || Number(number) < 1 || typeof fresh !== "boolean") throw new Error("Invalid stack request.");
+	const repository = githubRepository(await git(root, ["remote", "get-url", "origin"]).catch(() => { throw new Error("Choose a Git repository with an origin remote."); }));
+	const read = await readPullRequestStack(root, repository, Number(number), fresh);
+	workspaceRuntime.syncPullRequestStack(repository, Number(number), read.stack);
+	return read;
+});
+ipcMain.handle("workspace:pull-request-stack-action", async (event, id: unknown, request: unknown) => {
+	const root = projectRoot(event, id);
+	if (shutdownStarted) throw new Error("The workspace is shutting down.");
+	const repository = githubRepository(await git(root, ["remote", "get-url", "origin"]).catch(() => { throw new Error("Choose a Git repository with an origin remote."); }));
+	const result = await runPullRequestStackAction(root, repository, request);
+	const number = (request as { number: number }).number, read = await readPullRequestStack(root, repository, number, true).catch(() => undefined);
+	if (read) workspaceRuntime.syncPullRequestStack(repository, number, read.stack);
+	return result;
+});
 ipcMain.handle("workspace:pull-request-contents", (event, id: unknown, query: unknown) => projectPullRequestContents(projectRoot(event, id), query));
 ipcMain.handle("workspace:pull-request-files", (event, id: unknown, query: unknown) => projectPullRequestFiles(projectRoot(event, id), query));
+ipcMain.handle("workspace:pull-request-behind", (event, id: unknown, query: unknown) => projectPullRequestBehind(projectRoot(event, id), query));
+ipcMain.handle("workspace:pull-request-files-viewed", (event, id: unknown, number: unknown) => projectPullRequestFilesViewed(projectRoot(event, id), number));
+ipcMain.handle("workspace:pull-request-set-files-viewed", (event, id: unknown, request: unknown) => { const root = projectRoot(event, id); if (shutdownStarted) throw new Error("The workspace is shutting down."); return projectSetPullRequestFilesViewed(root, request); });
 ipcMain.handle("workspace:pull-request-threads", (event, id: unknown, query: unknown) => projectPullRequestThreads(projectRoot(event, id), query));
 ipcMain.handle("workspace:git-hunks", (event, id: unknown, filename: unknown, staged: unknown) => readGitHunks(projectRoot(event, id), filename, staged));
 ipcMain.handle("workspace:git-diff-contents", (event, id: unknown, request: unknown) => readGitDiffContents(projectRoot(event, id), request));
 ipcMain.handle("workspace:git-command", (event, id: unknown, command: unknown) => { const root = projectRoot(event, id); return workspaceRuntime.mutateProject(id as string, () => gitCommand(root, command)); });
 ipcMain.handle("workspace:git-branches", (event, id: unknown) => gitBranches(projectRoot(event, id)));
+ipcMain.handle("workspace:git-diff", async (event, id: unknown, request: unknown) => { const root = projectRoot(event, id), { patch, hash, truncated, headRef, baseRef, repository } = await span("git.diff", undefined, () => gitScopedDiff(root, request)); return { patch, hash, truncated, headRef, baseRef, repository }; });
+ipcMain.handle("workspace:git-diff-file", (event, id: unknown, request: unknown) => { const root = projectRoot(event, id); return span("git.diff-file", undefined, () => readScopedDiffContents(root, request)); });
+ipcMain.handle("workspace:git-refs", (event, id: unknown) => { const root = projectRoot(event, id); return span("git.refs", undefined, () => gitRefs(root)); });
+ipcMain.handle("workspace:project-tree", (event, id: unknown, request: unknown, refresh: unknown) => { const root = projectRoot(event, id); if (refresh === true) refreshProjectIndex(root); return projectTree(root, request); });
+ipcMain.handle("workspace:file-preview", (event, id: unknown, filename: unknown) => { const root = projectRoot(event, id); if (typeof filename !== "string") throw new Error("Invalid file request."); return readFilePreview(root, filename, extractPdfText); });
 ipcMain.handle("workspace:create-worktree", (event, id: unknown, branch: unknown, base: unknown) => {
 	projectRoot(event, id);
 	if (typeof id !== "string" || typeof branch !== "string" || typeof base !== "string") throw new Error("Invalid worktree request.");
 	return workspaceRuntime.createWorktree(id, branch, base);
+});
+ipcMain.handle("workspace:pull-request-worktree", async (event, id: unknown, number: unknown) => {
+	const root = projectRoot(event, id);
+	if (typeof id !== "string" || shutdownStarted) throw new Error("Invalid worktree request.");
+	const view = await projectPullRequestView(root, number);
+	const result = await checkoutPullRequestWorktree(root, view, async (branch, base) => { const created = await workspaceRuntime.createWorktree(id, branch, base); return { projectId: created.projectId, directory: workspaceRuntime.store.getProjects().find(project => project.id === created.projectId)?.directory }; });
+	return { workspace: workspaceRuntime.store.getOverview(), projectId: result.projectId, branch: result.branch };
+});
+ipcMain.handle("workspace:pull-request-guide", async (event, id: unknown, number: unknown, write: unknown) => {
+	const root = projectRoot(event, id);
+	if (typeof write !== "boolean" || shutdownStarted) throw new Error("Invalid guide request.");
+	const view = await projectPullRequestView(root, number);
+	return write ? pullRequestGuides.generate(root, view) : pullRequestGuides.get(view);
+});
+ipcMain.handle("workspace:pull-request-checkout-here", async (event, id: unknown, number: unknown) => {
+	const root = projectRoot(event, id);
+	if (typeof id !== "string" || shutdownStarted) throw new Error("Invalid checkout request.");
+	const view = await projectPullRequestView(root, number);
+	const result = await workspaceRuntime.mutateProject(id, () => checkoutPullRequestHere(root, view));
+	return { workspace: workspaceRuntime.store.getOverview(), projectId: id, branch: result.branch };
 });
 ipcMain.handle("workspace:remove-worktree", (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid worktree request.");
@@ -374,9 +512,14 @@ ipcMain.handle("workspace:import-task", async (event, value: unknown) => {
 	if (result.canceled || !result.filePaths[0]) return undefined;
 	return workspaceRuntime.importTask(command, await readConversation(result.filePaths[0]));
 });
-ipcMain.handle("workspace:command", (event, value: unknown) => {
+ipcMain.handle("workspace:command", async (event, value: unknown) => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
-	return workspaceRuntime.command(validateCommand(value));
+	const command = validateCommand(value);
+	// Archiving a Phaseo account or changing its connection discards its cached catalog.
+	const cached = command.type === "update-account" && (command.archived === true || command.apiKey !== undefined || command.endpoint !== undefined) ? workspaceRuntime.store.getAccounts().find(account => account.id === command.id && account.harness === "phaseo" && account.endpoint) : undefined;
+	const result = await workspaceRuntime.command(command);
+	if (cached) void modelCatalogCache.remove({ endpoint: cached.endpoint!, accountId: cached.id }).catch(() => {});
+	return result;
 });
 ipcMain.handle("workspace:choose-project", async event => {
 	const window = senderWindow(event);
@@ -384,6 +527,15 @@ ipcMain.handle("workspace:choose-project", async event => {
 	const result = await dialog.showOpenDialog(window, { properties: ["openDirectory"], title: "Open project" });
 	if (!result.canceled && result.filePaths[0]) workspaceRuntime.store.addProject(result.filePaths[0]);
 	const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state); return state;
+});
+ipcMain.handle("workspace:project-file", (event, id: unknown) => {
+	if (!senderWindow(event) || typeof id !== "string" || !id || id.length > 200) throw new Error("Invalid project request.");
+	const project = workspaceRuntime.store.getProjects().find(value => value.id === id);
+	return project && !project.worktree?.removedAt ? readT3ProjectFile(project.directory) : { status: "missing", scripts: [] };
+});
+ipcMain.handle("workspace:update-project", (event, value: unknown) => {
+	if (!senderWindow(event) || shutdownStarted) throw new Error("Invalid project request.");
+	return workspaceRuntime.updateProject(validateProjectUpdate(value));
 });
 ipcMain.handle("workspace:paste-image", async (event, id: unknown, name: unknown, data: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string" || typeof name !== "string" || name.length > 200 || !(data instanceof Uint8Array) || data.byteLength > 10 * 1024 * 1024 || shutdownStarted) throw new Error("Invalid pasted image.");
@@ -418,8 +570,7 @@ ipcMain.handle("workspace:attachment", async (event, taskId: unknown, id: unknow
 	const content = await workspaceRuntime.attachments.read(id);
 	return { attachment, text: content.text, dataUrl: content.dataUrl };
 });
-ipcMain.handle("workspace:installations", async event => {
-	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
+function harnessInstallations() {
 	return Promise.all((["codex", "claude", "opencode", "pi", "cursor", "grok"] as const).map(async harness => {
 		try {
 			if (harness === "cursor") return { harness, installed: true, version: "SDK 1.0.31" };
@@ -431,6 +582,10 @@ ipcMain.handle("workspace:installations", async event => {
 			return { harness, installed: true, version, maintenance: { method: maintenance.method, canUpdate: Boolean(maintenance.action) } };
 		} catch (error) { return { harness, installed: false, error: error instanceof Error ? error.message : "Installation is unavailable." }; }
 	}));
+}
+ipcMain.handle("workspace:installations", async event => {
+	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
+	return harnessInstallations();
 });
 
 ipcMain.handle("workspace:update-harness", async (event, harness: unknown) => {
@@ -478,6 +633,8 @@ function broadcastUpdateState(state: DesktopUpdateState) {
 	for (const window of BrowserWindow.getAllWindows()) window.webContents.send("desktop:update-state", state);
 }
 
+/** The app's own windows, not the separate windows browser tabs pop out into. */
+const appWindows = new Set<BrowserWindow>();
 function createWindow(): BrowserWindow {
 	const window = new BrowserWindow({
 		width: 1440,
@@ -504,6 +661,7 @@ function createWindow(): BrowserWindow {
 		window.setBackgroundMaterial("mica");
 	}
 
+	appWindows.add(window); window.once("closed", () => appWindows.delete(window));
 	window.once("ready-to-show", () => window.show());
 	window.on("blur", () => broadcastWindowState(window));
 	window.on("focus", () => broadcastWindowState(window));
@@ -536,7 +694,16 @@ function senderWindow(event: Electron.IpcMainInvokeEvent): BrowserWindow | null 
 }
 
 const browserHost = new BrowserHost();
+const browserAgent = new BrowserAgent(browserHost, () => [...appWindows].find(window => !window.isDestroyed()));
+let browserRecordings: BrowserRecordings;
 ipcMain.handle("desktop:browser", (event, command: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted browser request."); return browserHost.command(owner, command); });
+ipcMain.handle("desktop:browser-capture", (event, id: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted browser request."); return browserHost.capture(owner, browserId(id)); });
+ipcMain.handle("desktop:browser-pick", (event, id: unknown, cancel: unknown) => { const owner = senderWindow(event); if (!owner || typeof cancel !== "boolean") throw new Error("Untrusted browser request."); return browserHost.pick(owner, browserId(id), cancel); });
+ipcMain.handle("desktop:browser-recording-source", (event, id: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted browser request."); return browserHost.mediaSource(owner, browserId(id)); });
+ipcMain.handle("desktop:browser-recording-save", (event, mimeType: unknown, data: unknown) => { if (!senderWindow(event)) throw new Error("Untrusted browser request."); return browserRecordings.save(mimeType, data); });
+ipcMain.handle("desktop:browser-recording-reveal", async (event, file: unknown) => { if (!senderWindow(event)) throw new Error("Untrusted browser request."); shell.showItemInFolder(await browserRecordings.resolve(file)); });
+ipcMain.handle("desktop:browser-local-servers", event => { if (!senderWindow(event)) throw new Error("Untrusted browser request."); return localServers(); });
+ipcMain.handle("desktop:browser-probe", (event, url: unknown) => { if (!senderWindow(event)) throw new Error("Untrusted browser request."); return probeAddress(probeUrl(url)); });
 ipcMain.handle("desktop:browser-download", (event, command: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted download request."); return browserHost.downloads.command(owner, command); });
 
 ipcMain.handle("desktop:get-runtime-info", (event) => senderWindow(event) ? ({
@@ -560,6 +727,14 @@ ipcMain.handle("desktop:window-action", (event, action: DesktopWindowAction) => 
 		else window.maximize();
 	}
 });
+
+const keybindings = new KeybindingsFile(path.join(app.getPath("userData"), "settings", "keybindings.json"));
+keybindings.onChange = state => { browserHost.shortcutKeys = browserShortcuts(state.entries); for (const window of BrowserWindow.getAllWindows()) window.webContents.send("desktop:keybindings-changed", state); };
+browserHost.shortcutKeys = browserShortcuts(keybindings.read().entries);
+keybindings.watch();
+ipcMain.handle("desktop:keybindings", event => { if (!senderWindow(event)) throw new Error("Invalid keybindings request."); return keybindings.read(); });
+ipcMain.handle("desktop:save-keybindings", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid keybindings request."); const state = keybindings.save(value); keybindings.onChange(state); return state; });
+ipcMain.handle("desktop:open-keybindings", async event => { if (!senderWindow(event)) throw new Error("Invalid keybindings request."); const problem = await shell.openPath(keybindings.ensure()); if (problem) throw new Error(problem); });
 
 ipcMain.handle("desktop:app-action", (event, action: DesktopAppAction) => {
 	const window = senderWindow(event);
@@ -626,8 +801,31 @@ app.whenReady().then(() => {
 		encrypt: value => safeStorage.encryptStringAsync(value), decrypt: async value => (await safeStorage.decryptStringAsync(value)).result,
 	}));
 	credentialVault = vault;
+	usageHubs = new UsageHubs(usageHubFile(workspaceDirectory), { set: (id, value) => vault.set(id, value), get: id => vault.get(id), remove: id => vault.remove(id) });
+	modelCatalogCache = new ModelCatalogCache(path.join(app.getPath("userData"), "cache"), ({ accountId }) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness: "phaseo", accountId }); });
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
+	pullRequestGuides = new PullRequestGuides(path.join(workspaceDirectory, "pull-request-guides"), input => workspaceRuntime.completeWithTitleModel(input), async (root, view) => {
+		try { return await runGh(root, ["pr", "diff", String(view.number), "--repo", `github.com/${view.repository}`, "--color", "never"]); }
+		catch (reason) { throw new Error(ghFailure((reason as { stderr?: unknown }).stderr, "Could not read the pull request's diff."), { cause: reason }); }
+	});
+	pullRequestGuides.onFinished = ({ root, view, error }) => {
+		if (shutdownStarted) return;
+		const projectId = workspaceRuntime.store.getProjects().find(project => path.resolve(project.directory).toLowerCase() === path.resolve(root).toLowerCase())?.id;
+		const event = { ...(projectId ? { projectId } : {}), repository: view.repository, number: view.number, title: view.title, ...(error ? { error } : {}) };
+		for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:pull-request-guide-finished", event);
+		taskNotifications.guide(Boolean(error), view.number, view.repository, view.title, () => {
+			const window = BrowserWindow.getAllWindows().find(value => !value.isDestroyed());
+			if (!window) return;
+			if (window.isMinimized()) window.restore();
+			window.show(); window.focus(); window.webContents.send("workspace:open-pull-request-guide", event);
+		});
+	};
+	workspaceRuntime.pullRequestGuideTools = {
+		write: async (root, repository, number) => { const view = await readPullRequestView(root, repository, number), before = await pullRequestGuides.get(view); void pullRequestGuides.generate(root, view); return before.running ? "running" : "started"; },
+		read: async (root, repository, number) => pullRequestGuides.get(await readPullRequestView(root, repository, number)),
+	};
 	workspaceRuntime.discoverThreadModels = discoverDesktopModels;
+	workspaceRuntime.discoverInstallations = harnessInstallations;
 	globalInstructions = new GlobalInstructions(path.join(workspaceDirectory, "instructions"));
 	browserHost.downloads.configure(workspaceRuntime.store.browserDownloads);
 	taskNotifications = new TaskNotifications({
@@ -642,6 +840,10 @@ app.whenReady().then(() => {
 	terminalService = new TerminalService(workspaceRuntime.store, path.join(workspaceDirectory, "terminals"));
 	workspaceRuntime.onTerminalAuth = (request, signal) => terminalService.authenticate(request, signal);
 	workspaceRuntime.getTerminals = () => terminalService.get();
+	workspaceRuntime.closeIdleTerminals = taskId => terminalService.closeIdle(taskId);
+	workspaceRuntime.runProjectScript = (projectId, script) => { terminalService.runScript(projectId, script); };
+	workspaceRuntime.browserTools = chatId => browserAgent.forChat(chatId);
+	browserRecordings = new BrowserRecordings(path.join(app.getPath("userData"), "browser-recordings"));
 	terminalService.onEvent = event => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:terminal-event", event); };
 	workspaceRuntime.onChange = state => {
 		missionService.observe(state);
@@ -652,6 +854,11 @@ app.whenReady().then(() => {
 	if (process.platform !== "darwin") Menu.setApplicationMenu(null);
 	createWindow();
 	missionService.start();
+	workspaceRuntime.settleIdleThreads();
+	settleTimer = setInterval(() => workspaceRuntime.settleIdleThreads(), 60_000); settleTimer.unref();
+	workspaceRuntime.onPullRequestNotice = (taskId, summary, outcome) => { const title = workspaceRuntime.store.getOverview().tasks.find(task => task.id === taskId)?.title ?? "Chat"; taskNotifications.notice(taskId, title, summary, outcome !== "completed"); };
+	pullRequestWatcher = new PullRequestWatcher({ targets: () => workspaceRuntime.pullRequestWatchTargets(), read: readPullRequestView, record: (taskId, link, startedAt, next, update) => workspaceRuntime.recordPullRequestWatch(taskId, link, startedAt, next, update), snapshot: view => workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)) });
+	pullRequestWatcher.start();
 	app.on("activate", () => {
 		if (BrowserWindow.getAllWindows().length === 0) createWindow();
 	});

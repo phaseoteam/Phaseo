@@ -11,10 +11,36 @@ import { AgentInputRejectedError } from "./agentAdapter";
 import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
 import { readCodexModels } from "./modelCatalog";
 import type { McpConnection } from "../shared/mcp";
-import { codexMcpConfig, waitCodexMcp } from "./codexMcp";
-import { respondMcpElicitation } from "./mcpElicitation";
+import { codexMcpConfig, codexMcpEnabled, waitCodexMcp } from "./codexMcp";
+import { nativeMcpName } from "../shared/mcp";
+import { orchestrationInstructions } from "../shared/orchestration";
+import { mcpApprovalRequest, respondMcpElicitation } from "./mcpElicitation";
 import { confirmCodexNativeAction } from "./codexNativeActions";
 import type { NativeAction } from "../shared/nativeActions";
+
+const text = (value: unknown) => typeof value === "string" ? value.trim() : "";
+/** request_user_input questions, field by field: Codex's isOther (an own answer) and isSecret (a masked one) included. */
+export function codexQuestions(raw: unknown): AgentQuestion[] {
+	if (!Array.isArray(raw)) throw new Error("Codex sent no questions.");
+	return raw.map((value, index) => {
+		const entry = value && typeof value === "object" ? value as Record<string, unknown> : {};
+		const id = text(entry.id); if (!id) throw new Error("Codex sent a question without an id.");
+		const options = Array.isArray(entry.options) ? entry.options.flatMap(option => { const item = option && typeof option === "object" ? option as Record<string, unknown> : {}; const label = text(item.label); return label ? [{ label, ...(text(item.description) ? { description: text(item.description) } : {}) }] : []; }) : [];
+		return { id, header: text(entry.header) || `Question ${index + 1}`, question: text(entry.question) || "Choose an answer.", options, isOther: entry.isOther === true || !options.length, isSecret: entry.isSecret === true };
+	});
+}
+/** Questions Codex asks on an agent message and expects back as a later user message (delivery "async"). */
+export function codexAsyncQuestions(item: unknown): AgentQuestion[] | undefined {
+	const message = item && typeof item === "object" ? item as Record<string, unknown> : {};
+	if (message.type !== "agentMessage" || message.delivery !== "async" || !Array.isArray(message.questions) || !message.questions.length) return undefined;
+	const questions = message.questions.flatMap((value, index) => {
+		const entry = value && typeof value === "object" ? value as Record<string, unknown> : {};
+		const question = text(entry.title); if (!question) return [];
+		const options = Array.isArray(entry.options) ? entry.options.flatMap(option => text(option) ? [{ label: text(option) }] : []) : [];
+		return [{ id: String(index), header: "Question", question, options, isOther: true }];
+	});
+	return questions.length ? questions : undefined;
+}
 
 type CodexEvent = { threadId?: string; turnId?: string; itemId?: string; delta?: string; item?: { id: string; type: string; text?: string; command?: string; aggregatedOutput?: string; summary?: string[]; content?: string[]; status?: string; [key: string]: unknown }; explanation?: string; plan?: unknown[]; tokenUsage?: unknown; turn?: { id: string; status: string; error?: { message: string } } };
 export class CodexAdapter implements AgentAdapter {
@@ -32,25 +58,35 @@ export class CodexAdapter implements AgentAdapter {
 		if (this.canceled) { this.child.kill(); throw new Error("Task stopped."); }
 		const rpc = this.rpc = new JsonRpc(this.child.stdout, this.child.stdin);
 		this.compacting = !nativeAction && !attachments.length && text.trim() === "/compact";
-		const compactionItems = new Map<string, "running" | "completed">();
+		const compactionItems = new Map<string, "running" | "completed">(); const askedItems = new Set<string>();
 		let compactionFailure: string | undefined;
 		rpc.onClose = error => this.rejectTurn?.(error);
 		this.child.on("error", error => { rpc.close(error); this.rejectTurn?.(error); });
 		this.child.on("exit", () => { rpc.close(); this.rejectTurn?.(new Error("Codex stopped before completing the turn.")); });
 		// Consume diagnostics without sending credentials or arbitrary stderr to the renderer.
 		this.child.stderr.resume();
+		const orchestration = this.mcp.find(connection => connection.orchestration && codexMcpEnabled(connection, task));
 		rpc.onRequest = async (method, params) => {
 			if (method === "mcpServer/elicitation/request") {
-				const request = params as { threadId: string; serverName: string; message: string; mode: string; requestedSchema?: unknown; url?: string };
+				const request = params as { threadId: string; serverName: string; message: string; mode: string; requestedSchema?: unknown; url?: string; _meta?: unknown };
 				if (request.threadId !== this.threadId) throw new Error("MCP request belongs to another task.");
-				const result = task.mode === "chat" ? { action: "decline" as const } : await respondMcpElicitation(request, callbacks, this.controller.signal);
+				const declined = task.mode === "chat" && request.serverName !== (orchestration && nativeMcpName(orchestration));
+				// Tool-call approvals sent as elicitations go on the approval card, as in T3 Code.
+				const approval = declined ? undefined : mcpApprovalRequest(request);
+				if (approval) {
+					const decision = await callbacks.onApproval(approval.title, approval.description, approval.always ? { always: approval.always } : undefined);
+					const reply = this.controller.signal.aborted ? { action: "cancel" as const } : approval.response(decision);
+					return { action: reply.action, content: "content" in reply ? reply.content ?? null : null, _meta: "_meta" in reply ? reply._meta ?? null : null };
+				}
+				// Chat declines MCP prompts except Codex's own confirmation of an orchestration call.
+				const result = declined ? { action: "decline" as const } : await respondMcpElicitation(request, callbacks, this.controller.signal);
 				return { ...result, content: "content" in result ? result.content : null, _meta: null };
 			}
 			if (method === "item/tool/requestUserInput") {
 				if (!callbacks.onQuestion) throw new Error("User questions are unavailable.");
-				const input = params as { threadId: string; questions: AgentQuestion[] };
+				const input = params as { threadId: string; questions: unknown };
 				if (input.threadId !== this.threadId) throw new Error("Question belongs to another task.");
-				const answers = await callbacks.onQuestion(input.questions);
+				const answers = await callbacks.onQuestion(codexQuestions(input.questions));
 				return { answers: Object.fromEntries(Object.entries(answers).map(([id, values]) => [id, { answers: values }])) };
 			}
 			if (method === "item/commandExecution/requestApproval" || method === "item/fileChange/requestApproval") {
@@ -73,7 +109,7 @@ export class CodexAdapter implements AgentAdapter {
 				effort ||= model?.defaultReasoningEffort;
 				if (!effort || !model?.reasoningEfforts?.some(value => value.id === effort)) throw new AgentInputRejectedError("The selected model does not support this reasoning effort. Update the task settings.");
 			}
-			const settings = { cwd, model: task.model === "default" ? null : task.model, approvalPolicy: task.permissionMode === "full-access" ? "never" : "untrusted", sandbox: task.permissionMode === "full-access" ? "danger-full-access" : task.mode === "code" ? "workspace-write" : "read-only", ...(this.mcp.length ? { config: codexMcpConfig(this.mcp, task) } : {}) };
+			const settings = { cwd, model: task.model === "default" ? null : task.model, approvalPolicy: task.permissionMode === "full-access" ? "never" : "untrusted", sandbox: task.permissionMode === "full-access" ? "danger-full-access" : task.mode === "code" ? "workspace-write" : "read-only", ...(this.mcp.length ? { config: { ...codexMcpConfig(this.mcp, task), ...(orchestration ? { developer_instructions: orchestrationInstructions } : {}) } } : {}) };
 			const sourceId = task.nativeSessionId ?? task.nativeForkFrom;
 			const result = await rpc.request<{ thread: { id: string } }>(task.nativeSessionId ? "thread/resume" : task.nativeForkFrom ? "thread/fork" : "thread/start", { ...settings, ...(sourceId ? { threadId: sourceId } : {}) });
 			this.threadId = result.thread.id; callbacks.onSession(result.thread.id);
@@ -86,7 +122,7 @@ export class CodexAdapter implements AgentAdapter {
 					this.controller.signal.throwIfAborted();
 				} catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "OpenAI skill admission failed.", { cause: error }); }
 			}
-			try { await waitCodexMcp(rpc, result.thread.id, this.mcp.filter(connection => task.mode !== "chat" && connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === task.projectId)), this.controller.signal); }
+			try { await waitCodexMcp(rpc, result.thread.id, this.mcp.filter(connection => codexMcpEnabled(connection, task)), this.controller.signal); }
 			catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "MCP setup failed.", { cause: error }); }
 			await new Promise<void>((resolve, reject) => {
 				this.rejectTurn = reject;
@@ -107,6 +143,9 @@ export class CodexAdapter implements AgentAdapter {
 					}
 					if (event.turnId && this.turnId && event.turnId !== this.turnId) return;
 					if (method === "item/started" || method === "item/completed") for (const activity of codexSubagents(event.item)) callbacks.onActivity?.(activity);
+					// Async questions wait for the person past the turn; their answer goes back as a user message.
+					const asked = method === "item/completed" && event.item && !askedItems.has(event.item.id) ? codexAsyncQuestions(event.item) : undefined;
+					if (asked && event.item) { askedItems.add(event.item.id); void callbacks.onQuestion?.(asked, { responseMode: "message" }); }
 					if ((method === "item/started" || method === "item/completed") && event.item?.type === "contextCompaction") {
 						if (!this.turnId || event.turnId !== this.turnId) return;
 						const id = event.item.id;

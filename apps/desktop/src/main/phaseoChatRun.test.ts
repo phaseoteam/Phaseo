@@ -17,8 +17,18 @@ describe("durable Phaseo Chat skills", () => {
    const fetcher = vi.fn().mockImplementationOnce(async (_url, options) => { const body = JSON.parse(options.body); expect(body.tools.some((tool: {function:{name:string}}) => tool.function.name === "delegate_task")).toBe(true); return call("delegate", "delegate_task", { requestId: "stable", title: "Inspect", prompt: "Inspect" }); }).mockResolvedValueOnce(call("wait", "wait_thread", {id:"child",timeoutMs:0})).mockImplementationOnce(async (_url, options) => { expect(options.body).toContain("Child findings"); return new Response('data: {"choices":[{"delta":{"content":"Reviewed findings"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'); });
    const onDelta = vi.fn();
    await new PhaseoAdapter(() => "fixture", fetcher, undefined, store).run(task, root, "Delegate", { onSession: () => {}, onDelta, onApproval: async () => "accept", threads: { list: () => [], read: vi.fn(), delegate, wait, interrupt: vi.fn() } }, account);
-   expect(delegate).toHaveBeenCalledOnce(); expect(wait).toHaveBeenCalledWith("child", 0); expect(onDelta).toHaveBeenCalledWith(expect.any(String), "Reviewed findings");
+   expect(delegate).toHaveBeenCalledOnce(); expect(wait).toHaveBeenCalledWith("child", 0, expect.any(AbortSignal)); expect(onDelta).toHaveBeenCalledWith(expect.any(String), "Reviewed findings");
   } finally { store.close(); rmSync(root, {recursive:true,force:true}); }
+ });
+ it.each([[{ effort: "high", speed: "priority" }, { reasoning: { effort: "high" }, service_tier: "priority" }], [{ effort: "low", speed: "standard" }, { reasoning: { effort: "low" } }], [undefined, {}]])("sends model settings %j as gateway fields", async (modelOptions, expected) => {
+  const root = mkdtempSync(path.join(tmpdir(), "phaseo-chat-settings-")); const store = new WorkspaceStore(path.join(root, "state.sqlite"));
+  try {
+   const bodies: Record<string, unknown>[] = []; const fetcher = vi.fn(async (_url, options) => { bodies.push(JSON.parse(options.body)); return new Response('data: {"choices":[{"delta":{"content":"Done"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'); });
+   await new PhaseoAdapter(() => "owned", fetcher, undefined, store).run({ ...task, modelOptions }, root, "Answer", { onSession: () => {}, onDelta: () => {}, onApproval: async () => "accept" }, account);
+   await new PhaseoAdapter(() => "owned", fetcher).run({ ...task, modelOptions }, root, "Answer", { onSession: () => {}, onDelta: () => {}, onApproval: async () => "accept" }, account);
+   for (const body of bodies) { expect({ reasoning: body.reasoning, service_tier: body.service_tier }).toEqual({ reasoning: undefined, service_tier: undefined, ...expected }); expect(body.model).toBe("owned"); }
+   expect(bodies).toHaveLength(2);
+  } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
  });
  it.each(["decline", "changed"])("keeps a %s activation out of Chat guidance", async outcome => {
   const root = mkdtempSync(path.join(tmpdir(), "phaseo-chat-reject-")), global = path.join(root, "instructions"), skill = path.join(root, "skills", "explain", "SKILL.md"); mkdirSync(global); mkdirSync(path.dirname(skill), { recursive: true }); writeFileSync(skill, "---\nname: explain\ndescription: Explain\n---\nPrivate active body"); const store = new WorkspaceStore(path.join(root, "state.sqlite")); let runId = "";

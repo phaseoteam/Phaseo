@@ -1,7 +1,9 @@
 import { query, type Query, type SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import { resolveNativeCommand } from "./nativeProcess";
 import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
-import type { Account, ModelOption } from "../shared/workspace";
+import type { Account, AccountStatus } from "../shared/workspace";
+import { claudeLimits } from "./claudeLimits";
+import type { ClaudeAlias } from "./claudeModels";
 import type { NativeAction, NativeActionCatalog, NativeActionEntry } from "../shared/nativeActions";
 function identity(value: unknown) { return typeof value === "string" && value.length > 0 && value.length <= 200 && !value.startsWith("/") && !/\s/.test(value) && !Array.from(value).some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127) ? value : undefined; }
 export function claudeNativeActionCatalog(value: unknown): NativeActionCatalog {
@@ -38,18 +40,28 @@ async function claudeDiscovery<T>(cwd: string, signal: AbortSignal, account: Acc
   if (signal.aborted) abort(); return await commandRequest(() => read(execution!), signal, () => { controller.abort(); execution!.close(); });
  } finally { signal.removeEventListener("abort", abort); controller.abort(); execution?.close(); release(); }
 }
+/** Plan limits from Claude Code's own /usage data. */
+export async function claudeUsage(cwd: string, signal: AbortSignal, account?: Account): Promise<Pick<AccountStatus, "usage" | "usageError" | "extraUsage" | "plan">> {
+	const result = await claudeDiscovery(cwd, signal, account, execution => execution.usage_EXPERIMENTAL_MAY_CHANGE_DO_NOT_RELY_ON_THIS_API_YET({ skipBehaviors: true }));
+	const plan = result.subscription_type ? { plan: result.subscription_type } : {};
+	if (!result.rate_limits_available || !result.rate_limits) return { usageError: "Claude Code can't read plan limits for this login. API keys, cloud providers and long-lived tokens (claude setup-token) don't include them; a normal /login sign-in does.", ...plan };
+	return { ...claudeLimits(result.rate_limits), ...plan };
+}
+
 export async function claudeNativeActions(cwd: string, signal: AbortSignal, account?: Account): Promise<NativeActionCatalog> {
  return claudeNativeActionCatalog(await claudeDiscovery(cwd, signal, account, execution => execution.supportedCommands()));
 }
-export function claudeModelCatalog(value: unknown): ModelOption[] {
+export function claudeModelCatalog(value: unknown): ClaudeAlias[] {
  if (!Array.isArray(value) || value.length > 1000) throw Error("Claude returned an invalid model catalog.");
  const seen = new Set<string>();
  return value.map(item => {
   if (!item || typeof item !== "object" || typeof item.value !== "string" || !item.value || item.value.length > 1000 || Array.from(item.value as string).some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127) || seen.has(item.value) || typeof item.displayName !== "string" || !item.displayName || item.displayName.length > 1000 || typeof item.description !== "string" || item.description.length > 4000) throw Error("Claude returned an invalid model.");
   seen.add(item.value);
-  return { id: item.value, name: item.displayName, description: item.description };
+  const resolved = typeof item.resolvedModel === "string" && /^[\w.[\]-]{1,200}$/.test(item.resolvedModel) ? item.resolvedModel : undefined;
+  const levels = Array.isArray(item.supportedEffortLevels) ? item.supportedEffortLevels.filter((level: unknown): level is string => typeof level === "string" && level.length < 20).slice(0, 10) : undefined;
+  return { id: item.value, name: item.displayName, description: item.description, ...(resolved ? { resolvedModel: resolved } : {}), ...(item.supportsEffort === true ? { supportsEffort: true } : {}), ...(levels?.length ? { supportedEffortLevels: levels } : {}), ...(item.supportsFastMode === true ? { supportsFastMode: true } : {}) };
  });
 }
-export async function claudeNativeModels(cwd: string, signal: AbortSignal, account?: Account): Promise<ModelOption[]> {
+export async function claudeNativeModels(cwd: string, signal: AbortSignal, account?: Account): Promise<ClaudeAlias[]> {
  return claudeModelCatalog(await claudeDiscovery(cwd, signal, account, execution => execution.supportedModels()));
 }

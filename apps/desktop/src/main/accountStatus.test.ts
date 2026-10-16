@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 import type { Account } from "../shared/workspace";
 const native = vi.hoisted(() => ({ spawn: vi.fn() }));
 vi.mock("./nativeProcess", () => ({ spawnNative: native.spawn }));
+const claude = vi.hoisted(() => ({ usage: vi.fn() }));
+vi.mock("./claudeNativeActions", () => ({ claudeUsage: claude.usage }));
 import { codexUsage, nativeAccountStatus } from "./accountStatus";
 import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
 
@@ -26,7 +28,7 @@ describe("native account status", () => {
 			if (packet.method === "account/read") { expect(packet.params).toEqual({ refreshToken: false }); send({ id: packet.id, result: { account: { type: "chatgpt", email: "person@example.invalid", planType: "pro", accessToken: "never-expose" }, requiresOpenaiAuth: true } }); }
 			if (packet.method === "account/rateLimits/read") { expect(packet.params).toEqual({ excludeResetCreditDetails: true, supportsLunaReserve: false }); send({ id: packet.id, result: { ordinaryUsageAllowed: false, rateLimitsByLimitId: { codex: { limitName: "Codex", primary: { usedPercent: 25, windowDurationMins: 300, resetsAt: 1800000000 }, secondary: null } }, accountId: "private-account-id" } }); }
 		});
-		const status = await nativeAccountStatus("codex", "/cwd", account); expect(status).toMatchObject({ authenticated: true, identity: "person@example.invalid", plan: "pro", ordinaryUsageAllowed: false, usage: [{ name: "Codex", primary: { usedPercent: 25 }, secondary: null }] });
+		const status = await nativeAccountStatus("codex", "/cwd", account); expect(status).toMatchObject({ authenticated: true, identity: "person@example.invalid", plan: "ChatGPT Pro", ordinaryUsageAllowed: false, usage: [{ name: "Codex", primary: { usedPercent: 25 }, secondary: null }] });
 		expect(methods).toEqual(["initialize", "initialized", "account/read", "account/rateLimits/read"]); expect(JSON.stringify(status)).not.toMatch(/never-expose|private-account-id/); expect(child.kill).toHaveBeenCalled(); expect(native.spawn.mock.lastCall?.[4]).toMatchObject({ CODEX_HOME: "/owned/profile", OPENAI_API_KEY: undefined });
 	});
 	it("keeps authentication valid if quota data is unavailable", async () => {
@@ -38,10 +40,11 @@ describe("native account status", () => {
 		expect((await nativeAccountStatus("codex", "/cwd")).authenticated).toBeNull();
 	});
 	it("reads Claude's documented status command and strips inherited profile credentials", async () => {
+		claude.usage.mockResolvedValueOnce({ usage: [{ id: "claude", name: "Claude", primary: { usedPercent: 40, windowDurationMins: 300, resetsAt: 1 }, secondary: null, spendControlReached: null }] });
 		const child = fixture(() => {}); const checking = nativeAccountStatus("claude", "/cwd", { ...account, harness: "claude" });
 		await vi.waitFor(() => expect(child.stdout.listenerCount("data")).toBe(1));
 		child.stdout.write(JSON.stringify({ loggedIn: true, authMethod: "claude.ai", email: "person@example.invalid", subscriptionType: "max", accessToken: "never-expose", configDirectory: "/private/path" })); child.emit("exit", 0);
-		const status = await checking; expect(status).toMatchObject({ authenticated: true, plan: "max", method: "claude.ai" }); expect(JSON.stringify(status)).not.toMatch(/never-expose|private\/path/);
+		const status = await checking; expect(status).toMatchObject({ authenticated: true, plan: "Claude Max", method: "claude.ai", usage: [{ id: "claude", primary: { usedPercent: 40 } }] }); expect(JSON.stringify(status)).not.toMatch(/never-expose|private\/path/);
 		expect(native.spawn.mock.lastCall?.[1]).toEqual(["auth", "status"]); expect(native.spawn.mock.lastCall?.[4]).toMatchObject({ CLAUDE_CONFIG_DIR: "/owned/profile", CLAUDE_CODE_OAUTH_TOKEN: undefined, CLAUDE_CODE_USE_BEDROCK: undefined }); expect(child.kill).toHaveBeenCalled();
 	});
 	it("accepts Claude's signed-out exit status and rejects malformed output", async () => {

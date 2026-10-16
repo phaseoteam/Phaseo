@@ -3,10 +3,14 @@ import type { Task } from "../shared/workspace";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
 import type { JsonRpc } from "./jsonRpc";
 
+/** Servers Codex should start for this task: everything enabled in scope, or only the orchestration server in Chat. */
+export const codexMcpEnabled = (connection: McpConnection, task: Pick<Task, "projectId" | "mode">) => connection.enabled && !connection.archived && (connection.orchestration || (task.mode !== "chat" && (!connection.projectId || connection.projectId === task.projectId)));
 export function codexMcpConfig(connections: McpConnection[], task: Pick<Task, "projectId" | "mode">) {
 	return Object.fromEntries(connections.map(connection => [`mcp_servers.${nativeMcpName(connection)}`, {
 		...(connection.transport === "stdio" ? { command: connection.executable, args: connection.arguments, env: { ELECTRON_RUN_AS_NODE: "1" } } : { url: connection.url, ...(connection.headers ? { http_headers: connection.headers } : {}) }),
-		enabled: task.mode !== "chat" && connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === task.projectId),
+		// Codex's default 60 s tool timeout would cut wait_thread short; it waits up to an hour.
+		...(connection.orchestration ? { tool_timeout_sec: 3660 } : {}),
+		enabled: codexMcpEnabled(connection, task),
 	}]));
 }
 

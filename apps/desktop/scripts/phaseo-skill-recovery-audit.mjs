@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { orchestrationTools } from "./fixtures/orchestration-tools.mjs";
 import electron from "electron";
 import { spawn, execFileSync } from "node:child_process";
 import { createServer } from "node:http";
@@ -23,7 +24,7 @@ const server = createServer(async (request, response) => {
   if (mode === "chat") {
    assert.equal(request.url, "/v1/chat/completions");
    const guidance = body.messages.find(message => message.role === "system")?.content;
-   assert.ok(body.tools.every(tool => ["update_plan", "read_plan", "ask_user", "list_skills", "load_skill"].includes(tool.function.name)));
+   assert.ok(body.tools.every(tool => ["update_plan", "read_plan", "ask_user", "list_skills", "load_skill", ...orchestrationTools].includes(tool.function.name)));
    assert.ok(body.messages.some(message => message.role === "user" && Array.isArray(message.content) && message.content.some(part => part.image_url?.url === "data:image/png;base64," + image)));
    assert.equal(body.messages.filter(message => message.role === "user" && JSON.stringify(message.content).includes("Owned crash recovery")).length, 1);
    if (calls === 1) { assert.ok(!guidance.includes("Initial crash guidance")); name = "load_skill"; input = { id: "global:review" }; }
@@ -54,7 +55,8 @@ const launch = stage => {
  return { child, output: () => output, exited: new Promise(resolve => child.once("exit", (code, signal) => resolve({ code, signal }))) };
 };
 let active;
-const stop = child => { if (child.exitCode !== null || child.signalCode !== null) return; if (process.platform === "win32") execFileSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { stdio: "ignore" }); else child.kill("SIGKILL"); };
+const stop = child => { if (child.exitCode !== null || child.signalCode !== null) return; // taskkill /T reports failure when a helper process in the tree exits first; terminate the main process directly then.
+ if (process.platform === "win32") { try { execFileSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { stdio: "ignore" }); } catch { child.kill("SIGKILL"); } } else child.kill("SIGKILL"); };
 try {
  active = launch("write"); const deadline = Date.now() + 30000; while (!active.output().includes("SKILL_RECOVERY_PENDING")) { assert.ok(active.child.exitCode === null, "First app exited before its checkpoint"); assert.ok(Date.now() < deadline, "Checkpoint deadline expired"); await new Promise(resolve => setTimeout(resolve, 25)); }
  stop(active.child); await active.exited; const pending = JSON.parse(readFileSync(path.join(profile, "pending.json"), "utf8")), before = new DatabaseSync(path.join(workspace, "workspace.sqlite")); const run = JSON.parse(before.prepare("SELECT data FROM agent_runs WHERE id=?").get(pending.runId).data); before.close(); assert.equal(run.run.status, "waiting_for_human"); assert.equal(run.run.context.phaseoModelSkills[0].id, "global:review"); assert.ok(!existsSync(path.join(project, "effect.txt"))); assert.equal(calls, 2);

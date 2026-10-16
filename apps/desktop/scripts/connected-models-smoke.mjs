@@ -46,13 +46,13 @@ try {
   await wait("document.querySelector('[aria-label=\"New chat message\"]')?.value.includes('\\n')");
   if (sends) throw Error('Shift Enter sent a message');
   owner.webContents.sendInputEvent({type:'keyDown',keyCode:'Enter'}); owner.webContents.sendInputEvent({type:'keyUp',keyCode:'Enter'});
-  await wait("Boolean(document.querySelector('textarea[aria-label=Message]'))");
-  await wait("document.querySelector('textarea[aria-label=Message]')?.value===''&&!document.querySelector('[aria-label=\"Add to chat\"]')?.disabled");
+  await wait("Boolean(document.querySelector('[aria-label=Message]'))");
+  await wait("document.querySelector('[aria-label=Message]')?.value===''&&!document.querySelector('[aria-label=\"Add to chat\"]')?.disabled");
   if (sends !== 1) throw Error('Enter did not send first message once');
-  await run("document.querySelector('textarea[aria-label=Message]').focus()"); await owner.webContents.insertText('Owned follow-up');
-  await wait("document.querySelector('textarea[aria-label=Message]')?.value==='Owned follow-up'&&!document.querySelector('[aria-label=Send]')?.disabled");
+  await run("document.querySelector('[aria-label=Message]').focus()"); await owner.webContents.insertText('Owned follow-up');
+  await wait("document.querySelector('[aria-label=Message]')?.value==='Owned follow-up'&&!document.querySelector('[aria-label=Send]')?.disabled");
   owner.webContents.sendInputEvent({type:'keyDown',keyCode:'Enter'}); owner.webContents.sendInputEvent({type:'keyUp',keyCode:'Enter'});
-  await wait("document.querySelector('textarea[aria-label=Message]')?.value===''");
+  await wait("document.querySelector('[aria-label=Message]')?.value===''");
   if (sends !== 2) throw Error('Enter did not send follow-up once');
   await run("document.querySelector('[aria-label=\"Add to chat\"]').click()");
   await wait("Array.from(document.querySelectorAll('[aria-label=\"Chat commands\"] [role=option]')).some(row=>row.textContent.includes('Add files'))");
@@ -60,10 +60,10 @@ try {
   await wait("!document.querySelector('[aria-label=\"Chat commands\"]')");
   await run("window.phaseoDesktop.workspace.promptCommands(undefined,{type:'save',scope:'global',name:'owned-review',description:'Review the changes',template:'Review the owned changes.',expectedHash:'new'})");
   if (await run("Boolean(document.querySelector('[aria-label=Commands]'))")) throw Error('Commands button remains');
-  await run("document.querySelector('textarea[aria-label=Message]').focus()"); await owner.webContents.insertText('/owned');
+  await run("document.querySelector('[aria-label=Message]').focus()"); await owner.webContents.insertText('/owned');
   await wait("document.querySelector('[aria-label=\"Chat commands\"] [role=option]')?.textContent.includes('/owned-review')");
   owner.webContents.sendInputEvent({type:'keyDown',keyCode:'Enter'}); owner.webContents.sendInputEvent({type:'keyUp',keyCode:'Enter'});
-  await wait("document.querySelector('textarea[aria-label=Message]')?.value==='Review the owned changes.'&&!document.querySelector('[aria-label=\"Chat commands\"]')");
+  await wait("document.querySelector('[aria-label=Message]')?.value==='Review the owned changes.'&&!document.querySelector('[aria-label=\"Chat commands\"]')");
   if (sends !== 2) throw Error('Slash selection submitted the prompt');
 
   const ownedId = await run("JSON.parse(localStorage.getItem('phaseo.desktop.selectedTask'))");
@@ -72,7 +72,7 @@ try {
   if (await run("document.querySelector('.task-history-list')?.textContent.includes('Loading chats')")) throw Error('Pinning flashes loading chats');
   await run("document.querySelector('.task-archive-filter').click()");
   await wait("document.querySelector('.task-archive-filter')?.textContent==='Active chats'");
-  if (!await run("Boolean(document.querySelector('textarea[aria-label=Message]'))")) throw Error('Archive filter discarded selected chat');
+  if (!await run("Boolean(document.querySelector('[aria-label=Message]'))")) throw Error('Archive filter discarded selected chat');
   await run("document.querySelector('.task-archive-filter').click()");
   await run("Array.from(document.querySelectorAll('.desktop-menu-bar button')).find(button=>button.textContent==='File').click()");
   await run("Array.from(document.querySelectorAll('.desktop-menu-bar button')).find(button=>button.textContent==='Edit').dispatchEvent(new PointerEvent('pointerover',{bubbles:true,pointerType:'mouse'}))");
@@ -114,7 +114,7 @@ try {
   await wait("Boolean(document.querySelector('.chat-tools-header nav'))");
   await run("Array.from(document.querySelectorAll('.chat-tools-header nav button')).find(button=>button.textContent==='Terminal').click()");
   if (!await run("Boolean(document.querySelector('.task-detail .task-title'))")) throw Error('First terminal open replaced main chat');
-  await wait("Boolean(document.querySelector('.terminal-workspace'))");
+  await wait("Boolean(document.querySelector('.terminal-surface'))");
   await run("document.querySelector('[aria-label=\"Close tools\"]').click()");
   const secondId=await run("(async()=>{const api=window.phaseoDesktop.workspace;const before=await api.overview();const after=await api.command({type:'create-task',harness:'codex',model:'gpt-fixture',mode:'code'});const id=after.tasks.find(task=>!before.tasks.some(previous=>previous.id===task.id)).id;await api.command({type:'update-task',id,title:'Owned cache check'});return id})()");
   await wait("Array.from(document.querySelectorAll('.task-row')).some(row=>row.textContent.includes('Owned cache check'))");

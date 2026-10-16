@@ -4,17 +4,17 @@ import { Select } from "./Select";
 import type { AgentForm as Form, FormAnswer, FormDraft } from "../../shared/agentForms";
 import { collectFormAnswer, fieldActive, formAnswerError } from "../../shared/agentForms";
 
-export function AgentForm({ form, onAnswer }: { form: Form; onAnswer: (answer: FormAnswer | null) => Promise<boolean> }) {
+export function AgentForm({ form, onAnswer }: { form: Form; onAnswer: (answer: FormAnswer | null, declined?: boolean) => Promise<boolean> }) {
 	const [draft, setDraft] = useState<FormDraft>(() => collectFormAnswer(form, {}));
 	const [busy, setBusy] = useState(false); const [error, setError] = useState(form.error ?? "");
 	const [showHidden, setShowHidden] = useState(false);
 	const answer = collectFormAnswer(form, draft);
 	const set = (key: string, value: FormAnswer[string] | undefined) => setDraft(current => ({ ...current, [key]: value }));
-	const submit = async (value: FormAnswer | null) => {
+	const submit = async (value: FormAnswer | null, declined = false) => {
 		const invalid = value === null ? undefined : formAnswerError(form, value);
 		if (invalid) { setError(invalid); return; }
 		setBusy(true); setError("");
-		try { await onAnswer(value); } catch (reason) { setError(reason instanceof Error ? reason.message : "The answer could not be sent."); }
+		try { await onAnswer(value, declined); } catch (reason) { setError(reason instanceof Error ? reason.message : "The answer could not be sent."); }
 		finally { setBusy(false); }
 	};
 	return <form className="task-question" onSubmit={event => { event.preventDefault(); void submit(answer); }}>
@@ -32,6 +32,6 @@ export function AgentForm({ form, onAnswer }: { form: Form; onAnswer: (answer: F
 			</fieldset>;
 		})}
 		{error && <p className="task-error" role="alert">{error}</p>}
-		<div className="request-actions"><button type="submit" className="task-primary" disabled={busy}>{busy ? "Sending…" : "Send answers"}</button><button type="button" disabled={busy} onClick={() => void submit(null)}>Cancel form</button></div>
+		<div className="request-actions"><button type="submit" className="task-primary" disabled={busy}>{busy ? "Sending…" : "Send answers"}</button><button type="button" disabled={busy} onClick={() => void submit(null, true)} title="Refuse: the agent is told you declined">Decline</button><button type="button" disabled={busy} onClick={() => void submit(null)} title="Close without answering">Cancel</button></div>
 	</form>;
 }

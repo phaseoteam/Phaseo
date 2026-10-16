@@ -9,6 +9,26 @@ import { AgentInputRejectedError } from "./agentAdapter";
 
 const task: Task = { id: "task", title: "Task", harness: "opencode", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("OpenCode 2 integration", () => {
+	it.each([
+		["an offered variant", "openai/gpt", { variant: "high" }, true, { providerID: "openai", id: "gpt", variant: "high" }],
+		["a variant the model no longer offers", "openai/gpt", { variant: "max" }, true, { providerID: "openai", id: "gpt" }],
+		["a variant for a model missing from the catalog", "openai/other", { variant: "high" }, true, { providerID: "openai", id: "other" }],
+		["no chosen variant", "openai/gpt", undefined, false, { providerID: "openai", id: "gpt" }],
+		["the default model", "default", { variant: "high" }, false, undefined],
+	] as const)("passes the reasoning variant in the model ref only for %s", async (_name, modelId, modelOptions, listed, expected) => {
+		sdk.discover.mockResolvedValue({ url: "http://localhost:4096" }); let prompted!: () => void; const prompt = new Promise<void>(resolve => { prompted = resolve; });
+		const list = vi.fn(async () => ({ data: [{ providerID: "openai", id: "gpt", variants: [{ id: "low" }, { id: "high" }] }] })); const create = vi.fn<(input: { model?: unknown }) => Promise<{ id: string }>>(async () => ({ id: "session" }));
+		sdk.make.mockReturnValue({ model: { list }, session: { create, prompt: async () => { prompted(); }, wait: async () => {} }, event: { subscribe: async function* (options: { onActivity: () => void }) { options.onActivity(); await prompt; yield { type: "session.execution.succeeded", data: { sessionID: "session" } }; } } });
+		await new OpenCodeAdapter().run({ ...task, mode: "chat", model: modelId, modelOptions }, ".", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+		expect(list).toHaveBeenCalledTimes(listed ? 1 : 0); expect(create.mock.lastCall?.[0].model).toEqual(expected);
+	});
+	it("switches a resumed session to the model with its offered variant", async () => {
+		sdk.discover.mockResolvedValue({ url: "http://localhost:4096" }); let prompted!: () => void; const prompt = new Promise<void>(resolve => { prompted = resolve; });
+		const switchModel = vi.fn(async () => {});
+		sdk.make.mockReturnValue({ model: { list: async () => ({ data: [{ providerID: "anthropic", id: "claude", variants: [{ id: "high" }] }] }) }, session: { get: async () => ({ id: "session" }), switchAgent: async () => {}, update: async () => {}, switchModel, form: { list: async () => [] }, prompt: async () => { prompted(); }, wait: async () => {} }, event: { subscribe: async function* (options: { onActivity: () => void }) { options.onActivity(); await prompt; yield { type: "session.execution.succeeded", data: { sessionID: "session" } }; } } });
+		await new OpenCodeAdapter().run({ ...task, mode: "chat", model: "anthropic/claude", modelOptions: { variant: "high" }, nativeSessionId: "session" }, ".", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+		expect(switchModel).toHaveBeenCalledWith({ sessionID: "session", model: { providerID: "anthropic", id: "claude", variant: "high" } }, expect.anything());
+	});
  it.each(["accept", "decline"] as const)("requires explicit command approval and settles state-only commands (%s)", async decision => {
   sdk.discover.mockResolvedValue({ url: "http://localhost:4096" }); const submit = vi.fn(async () => {}); const create = vi.fn(async () => ({ id: "session" }));
   const commandList = vi.fn(async () => ({ data: [{ name: "review" }] })); const skillList = vi.fn(async () => ({ data: [] }));
@@ -102,6 +122,24 @@ describe("OpenCode 2 integration", () => {
 		expect(onForm).toHaveBeenCalledOnce(); expect(onDelta).toHaveBeenCalledWith("message", "Still streaming");
 		if (submit) expect(reply).toHaveBeenCalledWith({ sessionID: "session", formID: "native-form", answer: { count: 3 } }, expect.anything());
 		else expect(cancel).toHaveBeenCalledWith(expect.objectContaining({ formID: "native-form" }), expect.anything());
+	});
+	it.each(["answer", "dismiss", "rejected"] as const)("asks text and multiple-choice forms in the answer panel (%s)", async outcome => {
+		sdk.discover.mockResolvedValue({ url: "http://localhost:4096" });
+		let promptResolve!: () => void; const prompt = new Promise<void>(resolve => { promptResolve = resolve; });
+		let settled!: () => void; const answered = new Promise<void>(resolve => { settled = resolve; });
+		const reply = vi.fn(outcome === "rejected" ? async () => { throw { _tag: "FormInvalidAnswerError", id: "pick", message: "Pick a known topping." }; } : async () => { settled(); }); const cancel = vi.fn(async () => { settled(); });
+		sdk.make.mockReturnValue({ session: { create: async () => ({ id: "session" }), wait: async () => {}, prompt: async () => { promptResolve(); }, form: { reply, cancel } }, event: { subscribe: async function* (options: { onActivity: () => void }) {
+			options.onActivity(); await prompt;
+			yield { type: "form.created", data: { form: { id: "pick", sessionID: "session", title: "Pizza", fields: [{ key: "size", type: "string", title: "Size", required: true, options: [{ value: "s", label: "Small" }, { value: "l", label: "Large" }] }, { key: "toppings", type: "multiselect", title: "Toppings", options: [{ value: "olive", label: "Olive" }], custom: true }] } } };
+			await answered; yield { type: "session.execution.succeeded", data: { sessionID: "session" } };
+		} } });
+		const onQuestion = vi.fn(async (): Promise<Record<string, string[]>> => outcome === "dismiss" ? {} : { size: ["l"], toppings: ["olive", "basil"] });
+		const onForm = vi.fn(async () => { settled(); return null; });
+		await new OpenCodeAdapter().run(task, ".", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline", onQuestion, onForm });
+		expect(onQuestion).toHaveBeenCalledWith([expect.objectContaining({ id: "size", header: "Size", question: "Pizza", isOther: false, options: [{ label: "Small", value: "s" }, { label: "Large", value: "l" }] }), expect.objectContaining({ id: "toppings", multiSelect: true, isOther: true, required: false })], expect.objectContaining({ signal: expect.any(AbortSignal) }));
+		if (outcome === "answer") { expect(reply).toHaveBeenCalledWith({ sessionID: "session", formID: "pick", answer: { size: "l", toppings: ["olive", "basil"] } }, expect.anything()); expect(onForm).not.toHaveBeenCalled(); }
+		if (outcome === "dismiss") { expect(cancel).toHaveBeenCalledWith(expect.objectContaining({ formID: "pick" }), expect.anything()); expect(reply).not.toHaveBeenCalled(); }
+		if (outcome === "rejected") expect(onForm).toHaveBeenCalledWith(expect.objectContaining({ id: "pick", error: "Pick a known topping." }), expect.anything());
 	});
 	it("lets users retry native validation errors and aborts forms settled elsewhere", async () => {
 		sdk.discover.mockResolvedValue({ url: "http://localhost:4096" });

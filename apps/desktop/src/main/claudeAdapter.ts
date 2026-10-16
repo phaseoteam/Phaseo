@@ -4,16 +4,34 @@ import { nativeActionText, type NativeAction } from "../shared/nativeActions";
 import { parsePlanSteps, type PlanStep } from "../shared/planSteps";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import type { SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
-import type { Account, Task } from "../shared/workspace";
+import type { Account, AgentQuestion, Task } from "../shared/workspace";
 import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { resolveNativeCommand } from "./nativeProcess";
 import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
+import { claudeRunOptions } from "./claudeModels";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
 import { waitClaudeMcp } from "./claudeMcp";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { respondMcpElicitation } from "./mcpElicitation";
+import { orchestrationInstructions } from "../shared/orchestration";
+
+/** AskUserQuestion's questions for the answer panel: header, options with descriptions and Markdown previews, and an own answer. */
+export function claudeQuestions(raw: unknown[]): AgentQuestion[] {
+	return raw.flatMap((value, index) => {
+		if (!value || typeof value !== "object") return [];
+		const entry = value as Record<string, unknown>;
+		const question = typeof entry.question === "string" ? entry.question.trim() : "";
+		if (!question) return [];
+		const options = Array.isArray(entry.options) ? entry.options.flatMap(option => {
+			const item = option && typeof option === "object" ? option as Record<string, unknown> : {};
+			const label = typeof item.label === "string" ? item.label.trim() : "";
+			return label ? [{ label, ...(typeof item.description === "string" && item.description.trim() ? { description: item.description.trim() } : {}), ...(typeof item.preview === "string" && item.preview.trim() ? { preview: item.preview } : {}) }] : [];
+		}) : [];
+		return [{ id: String(index), header: typeof entry.header === "string" && entry.header.trim() ? entry.header.trim() : `Question ${index + 1}`, question, options, isOther: true, multiSelect: entry.multiSelect === true }];
+	});
+}
 
 export class ClaudeAdapter implements AgentAdapter {
 	private controller = new AbortController();
@@ -23,34 +41,57 @@ export class ClaudeAdapter implements AgentAdapter {
 		if (nativeAction) text = nativeActionText(nativeAction);
 		const manualCompact = !attachments.length && text.trim() === "/compact";
 		if (manualCompact) text = "/compact";
+		const tuning = claudeRunOptions(task.model, task.modelOptions);
+		if (tuning.promptPrefix && !nativeAction && !text.trimStart().startsWith("/")) text = tuning.promptPrefix + text;
 		const images = attachments.filter(attachment => attachment.kind === "image");
 		const content: SDKUserMessage["message"]["content"] = [{ type: "text", text: attachmentPrompt(text, attachments) }, ...images.map(attachment => ({ type: "image" as const, source: { type: "base64" as const, media_type: attachment.mimeType as "image/png" | "image/jpeg" | "image/gif" | "image/webp", data: attachment.dataUrl!.split(",")[1] } }))];
-		const managedMcp = task.mode === "chat" ? [] : this.mcp; const gated = !!nativeAction || !!managedMcp.length; let promptAllowed = !gated; let releasePrompt!: () => void;
+		// Chat admits only the orchestration server: no built-in tools (tools: []), no other MCP (strictMcpConfig) and canUseTool denies the rest.
+		const managedMcp = task.mode === "chat" ? this.mcp.filter(server => server.orchestration) : this.mcp; const gated = !!nativeAction || !!managedMcp.length; let promptAllowed = !gated; let releasePrompt!: () => void;
 		const gate = gated ? new Promise<void>(resolve => { releasePrompt = resolve; }) : Promise.resolve(); const signal = this.controller.signal;
+		const orchestration = managedMcp.find(server => server.orchestration), orchestrationTool = orchestration ? `mcp__${nativeMcpName(orchestration)}__` : undefined;
 		async function* prompt(): AsyncGenerator<SDKUserMessage> { await gate; if (promptAllowed && !signal.aborted) yield { type: "user", message: { role: "user", content }, parent_tool_use_id: null, session_id: "" }; }
 		const execution = query({ prompt: images.length || gated ? prompt() : attachmentPrompt(text, attachments), options: {
 			cwd,
 			mcpServers: Object.fromEntries(managedMcp.map(server => [nativeMcpName(server), server.transport === "stdio" ? { command: server.executable, args: server.arguments, env: { ELECTRON_RUN_AS_NODE: "1" } } : { type: "http" as const, url: server.url, ...(server.headers ? { headers: server.headers } : {}) }])),
 			...(task.mode === "chat" ? { strictMcpConfig: true } : {}),
+			// The SDK otherwise sends an empty system prompt, so this adds only the shared orchestration guidance.
+			...(orchestration ? { systemPrompt: orchestrationInstructions } : {}),
 			...(account?.configDirectory ? { env: { ...process.env, ...nativeAccountEnvironment(account) } } : {}),
 			pathToClaudeCodeExecutable: command.executable,
 			abortController: this.controller,
-			...(task.model === "default" ? {} : { model: task.model }),
+			...(task.model === "default" ? {} : { model: tuning.model }),
+			...(tuning.effort ? { effort: tuning.effort } : {}),
+			...(tuning.settings ? { settings: tuning.settings } : {}),
 			...(task.nativeSessionId ? { resume: task.nativeSessionId } : task.nativeForkFrom ? { resume: task.nativeForkFrom, forkSession: true } : {}),
-			permissionMode: task.permissionMode === "full-access" ? "bypassPermissions" : task.mode === "plan" ? "plan" : "default",
+			// Plan mode wins over full access, as in T3 Code, so ExitPlanMode still reaches the person; implementing then switches to full access.
+			permissionMode: task.mode === "plan" ? "plan" : task.permissionMode === "full-access" ? "bypassPermissions" : "default",
 			...(task.permissionMode === "full-access" ? { allowDangerouslySkipPermissions: true } : {}),
-			...(task.mode === "chat" ? { tools: [] } : {}),
+			...(task.mode === "chat" ? { tools: ["AskUserQuestion"] } : {}),
 			includePartialMessages: true,
+			// Options may carry a Markdown preview, which the answer panel shows under the chosen option.
+			toolConfig: { askUserQuestion: { previewFormat: "markdown" } },
 			onElicitation: (request, options) => task.mode === "chat" ? Promise.resolve({ action: "decline" as const }) : respondMcpElicitation(request, callbacks, options.signal),
 			settingSources: ["user", "project", "local"],
 			canUseTool: async (toolName, input) => {
-				if (task.mode === "chat") return { behavior: "deny", message: "Tools are unavailable in Chat mode." };
+				// The orchestration server asks for approval itself where a thread action needs it.
+				if (orchestrationTool && toolName.startsWith(orchestrationTool)) return { behavior: "allow", updatedInput: input };
+				// Claude Code asks for AskUserQuestion and ExitPlanMode even under bypassPermissions (they require user interaction), so full access still reaches here.
 				if (toolName === "AskUserQuestion" && callbacks.onQuestion && Array.isArray(input.questions)) {
-					const questions = input.questions as { question: string; header: string; multiSelect?: boolean; options?: { label: string; description?: string }[] }[];
-					const answers = await callbacks.onQuestion(questions.map((question, index) => ({ ...question, id: String(index), isOther: true })));
+					const questions = claudeQuestions(input.questions);
+					const answers = await callbacks.onQuestion(questions);
 					if (this.controller.signal.aborted) return { behavior: "deny", message: "Task stopped." };
-					return { behavior: "allow", updatedInput: { ...input, answers: Object.fromEntries(questions.map((question, index) => [question.question, (answers[String(index)] ?? []).join(", ")])) } };
+					if (!Object.keys(answers).length) return { behavior: "deny", message: "The user dismissed these questions. Continue without the answers, or ask again only if you cannot proceed." };
+					return { behavior: "allow", updatedInput: { ...input, answers: Object.fromEntries(questions.map(question => [question.question, (answers[question.id] ?? []).join(", ")])) } };
 				}
+				// ExitPlanMode is the proposed plan: Implement allows it (and leaves plan mode), Revise denies it with the person's feedback.
+				const plan = toolName === "ExitPlanMode" && typeof input.plan === "string" && input.plan.trim() ? input.plan.trim() : undefined;
+				if (plan && callbacks.onPlan) {
+					const review = await callbacks.onPlan(plan);
+					if (this.controller.signal.aborted) return { behavior: "deny", message: "Task stopped." };
+					if (review.decision === "accept") return { behavior: "allow", updatedInput: input, ...(task.permissionMode === "full-access" ? { updatedPermissions: [{ type: "setMode", mode: "bypassPermissions", destination: "session" }] } : {}) };
+					return { behavior: "deny", message: review.feedback ? `The user wants changes before you implement this plan:\n\n${review.feedback}\n\nRevise the plan, then present it again with ExitPlanMode.` : "The user did not approve this plan. Stay in plan mode and wait for their instructions." };
+				}
+				if (task.mode === "chat") return { behavior: "deny", message: "Tools are unavailable in Chat mode." };
 				const decision = await callbacks.onApproval(toolName, JSON.stringify(input, null, 2));
 				return decision === "accept" ? { behavior: "allow", updatedInput: input } : { behavior: "deny", message: "The user declined this action." };
 			},

@@ -1,9 +1,10 @@
-import { readdir, readFile, realpath, stat } from "node:fs/promises";
+import { open, readdir, readFile, realpath, stat } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import type { GitFile, GitReview, ProjectFile } from "../shared/workspace";
+import { extensionOf, FILE_EDIT_LIMIT, FILE_IMAGE_LIMIT, FILE_PDF_LIMIT, imageTypes, type FilePreview } from "../shared/filePreview";
 
 const execute = promisify(execFile);
 export async function resolveProjectPath(root: string, relative: string): Promise<string> {
@@ -37,7 +38,13 @@ export async function gitReview(root: string): Promise<GitReview> {
 		git(["diff", "--cached", "--no-ext-diff", "--no-textconv", "--full-index"]), git(["branch", "--show-current"]),
 	]);
 	const files = parseGitStatus(status);
-	return { status: files.map(file => `${file.indexStatus}${file.worktreeStatus} ${file.path}${file.oldPath ? ` ← ${file.oldPath}` : ""}`).join("\n"), files, diff, stagedDiff, diffHash: createHash("sha256").update(diff).digest("hex"), stagedDiffHash: createHash("sha256").update(stagedDiff).digest("hex"), branch: branch.trim() };
+	const [upstream, counts, remotes] = await Promise.all([
+		git(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"]).then(value => value.trim(), () => ""),
+		git(["rev-list", "--left-right", "--count", "@{upstream}...HEAD"]).then(value => value.trim().split(/\s+/).map(Number), () => [] as number[]),
+		git(["remote"]).then(value => value.trim(), () => ""),
+	]);
+	return { status: files.map(file => `${file.indexStatus}${file.worktreeStatus} ${file.path}${file.oldPath ? ` ← ${file.oldPath}` : ""}`).join("\n"), files, diff, stagedDiff, diffHash: createHash("sha256").update(diff).digest("hex"), stagedDiffHash: createHash("sha256").update(stagedDiff).digest("hex"), branch: branch.trim(),
+		...(upstream && counts.length === 2 ? { upstream: { name: upstream, behind: counts[0] || 0, ahead: counts[1] || 0 } } : {}), hasRemote: Boolean(remotes) };
 }
 
 export function parseGitStatus(output: string): GitFile[] {
@@ -50,4 +57,37 @@ export function parseGitStatus(output: string): GitFile[] {
 		files.push(file);
 	}
 	return files;
+}
+
+/** What the file surface shows: editable text up to 1 MB, the first 1 MB of larger text, images, PDF text, or a binary notice. */
+export async function readFilePreview(root: string, filename: string, extractPdf: (bytes: Uint8Array) => Promise<{ text: string; pages: number }>): Promise<FilePreview> {
+	if (typeof filename !== "string" || !filename || filename.length > 4096) throw new Error("Invalid file request.");
+	const absolute = await resolveProjectPath(root, filename);
+	const metadata = await stat(absolute);
+	if (!metadata.isFile()) throw new Error("This path is a folder or special file, not a regular file.");
+	const size = metadata.size, extension = extensionOf(filename);
+	if (imageTypes[extension]) {
+		if (size > FILE_IMAGE_LIMIT) return { kind: "too-large", size };
+		return { kind: "image", mimeType: imageTypes[extension], dataUrl: `data:${imageTypes[extension]};base64,${(await readFile(absolute)).toString("base64")}`, size };
+	}
+	if (extension === "pdf") {
+		if (size > FILE_PDF_LIMIT) return { kind: "too-large", size };
+		const pdf = await extractPdf(new Uint8Array(await readFile(absolute)));
+		return { kind: "pdf", text: pdf.text, pages: pdf.pages, size };
+	}
+	const handle = await open(absolute, "r");
+	try {
+		const bytes = Buffer.alloc(Math.min(size, FILE_EDIT_LIMIT));
+		let offset = 0;
+		while (offset < bytes.length) { const { bytesRead } = await handle.read(bytes, offset, bytes.length - offset, offset); if (!bytesRead) break; offset += bytesRead; }
+		const content = bytes.subarray(0, offset);
+		if (content.includes(0)) return { kind: "binary", size };
+		if (size > FILE_EDIT_LIMIT) {
+			// Drop a multi-byte character cut in half at the limit.
+			const text = content.toString("utf8").replace(/\uFFFD$/, "");
+			return { kind: "text", text, size, truncated: true };
+		}
+		const text = content.toString("utf8");
+		return { kind: "text", text, size, truncated: false, hash: createHash("sha256").update(text).digest("hex") };
+	} finally { await handle.close(); }
 }

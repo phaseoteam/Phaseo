@@ -12,10 +12,14 @@ import { nativeMcpName, type McpConnection } from "../shared/mcp";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { phaseoMcpResourceTools } from "./phaseoMcpResources";
 import { phaseoMcpPromptTools } from "./phaseoMcpPrompts";
+import { span } from "./diagnostics/tracer";
 
 type PromptServer = { id: string; name: string; projectId?: string; list: ReturnType<typeof phaseoMcpPromptTools>["list"]; get: ReturnType<typeof phaseoMcpPromptTools>["get"] };
 export type PhaseoMcpSession = { tools: AgentTool[]; labels: Record<string,string>; promptServers: PromptServer[]; close: () => Promise<void> };
-export async function connectPhaseoMcp(connections: McpConnection[], cwd: string, signal: AbortSignal, callbacks?: AgentCallbacks): Promise<PhaseoMcpSession> {
+export function connectPhaseoMcp(connections: McpConnection[], cwd: string, signal: AbortSignal, callbacks?: AgentCallbacks): Promise<PhaseoMcpSession> {
+ return connections.length ? span("mcp.connect", { servers: connections.length }, () => connectServers(connections, cwd, signal, callbacks)) : connectServers(connections, cwd, signal, callbacks);
+}
+async function connectServers(connections: McpConnection[], cwd: string, signal: AbortSignal, callbacks?: AgentCallbacks): Promise<PhaseoMcpSession> {
  const clients: Client[] = [], tools: AgentTool[] = [];
  const labels: Record<string,string> = {};
  const promptServers: PromptServer[] = [];
@@ -31,11 +35,16 @@ export async function connectPhaseoMcp(connections: McpConnection[], cwd: string
    const client = new Client({ name: "phaseo-desktop", version: "0.1.0" }, { capabilities: callbacks?.onForm ? { elicitation: { form: {}, url: {} } } : {} }); clients.push(client);
    const budgets = new Set<McpCallBudget>(); let waitingForms = 0;
    if (callbacks?.onForm) {
-    const formCallbacks = { ...callbacks, onForm: async (...args: Parameters<NonNullable<AgentCallbacks["onForm"]>>) => {
+    // A tool's deadline stops while a person answers its form or question, however long they take.
+    const waitingFor = async <T,>(answer: () => Promise<T>) => {
      waitingForms++; for (const budget of budgets) budget.pause();
-     try { return await callbacks.onForm!(...args); }
+     try { return await answer(); }
      finally { if (--waitingForms === 0) for (const budget of budgets) budget.resume(); }
-    } };
+    };
+    const formCallbacks = { ...callbacks,
+     onForm: (...args: Parameters<NonNullable<AgentCallbacks["onForm"]>>) => waitingFor(() => callbacks.onForm!(...args)),
+     ...(callbacks.onQuestion ? { onQuestion: (...args: Parameters<NonNullable<AgentCallbacks["onQuestion"]>>) => waitingFor(() => callbacks.onQuestion!(...args)) } : {}),
+    };
     client.setRequestHandler(ElicitRequestSchema, (request, extra) => respondMcpElicitation({ ...request.params, serverName: connection.name }, formCallbacks, AbortSignal.any([signal, extra.signal])));
    }
    const transport = connection.transport === "stdio"

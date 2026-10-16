@@ -3,9 +3,10 @@ import type { Task } from "../shared/workspace";
 const sdk = vi.hoisted(() => ({ query: vi.fn() }));
 vi.mock("@anthropic-ai/claude-agent-sdk", () => ({ query: sdk.query }));
 vi.mock("./nativeProcess", () => ({ resolveNativeCommand: async () => ({ executable: "claude", prefix: [] }) }));
-import { ClaudeAdapter } from "./claudeAdapter";
+import { ClaudeAdapter, claudeQuestions } from "./claudeAdapter";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
+import { orchestrationInstructions } from "../shared/orchestration";
 
 const task: Task = { id: "task", title: "Task", harness: "claude", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("Claude SDK integration", () => {
@@ -61,6 +62,22 @@ describe("Claude SDK integration", () => {
 		sdk.query.mockImplementation(({ prompt, options }) => Object.assign((async function* () { if (typeof prompt !== "string") for await (const message of prompt) expect(message.message.content).toEqual([{type:"text",text:"Use tools"}]); expect(options.mcpServers).toEqual(mode === "chat" ? {} : { [nativeMcpName(server)]: { command: process.execPath, args: ["fixture.mjs"], env: { ELECTRON_RUN_AS_NODE: "1" } } }); const decision = await options.canUseTool(`mcp__${nativeMcpName(server)}__fixture`, {}); expect(decision.behavior).toBe("deny"); if (mode === "chat") { expect(options.strictMcpConfig).toBe(true); expect(onApproval).not.toHaveBeenCalled(); } else expect(onApproval).toHaveBeenCalledOnce(); yield {type:"result",subtype:"success",is_error:false,result:"Done"}; })(), { close: vi.fn(), mcpServerStatus: async () => [{ name: nativeMcpName(server), status: "connected" }] }));
 		await new ClaudeAdapter([server]).run({ ...task, mode }, ".", "Use tools", { onDelta: vi.fn(), onSession: vi.fn(), onApproval });
 	});
+	it.each(["chat", "code"] as const)("admits the orchestration server with shared guidance and its own approvals (%s)", async mode => {
+		const user: McpConnection = { id: "00000000-0000-4000-8000-000000000001", name: "Fixture", enabled: true, transport: "http", url: "https://example.invalid/mcp" };
+		const orchestration: McpConnection = { id: "00000000-0000-4000-8000-000000000002", name: "Phaseo orchestration", enabled: true, orchestration: true, transport: "http", url: "http://127.0.0.1:1/mcp", headers: { Authorization: "Bearer owned" } };
+		const onApproval = vi.fn(async () => "decline" as const);
+		sdk.query.mockImplementation(({ prompt, options }) => Object.assign((async function* () {
+			if (typeof prompt !== "string") for await (const message of prompt) void message;
+			expect(Object.keys(options.mcpServers)).toEqual(mode === "chat" ? [nativeMcpName(orchestration)] : [nativeMcpName(user), nativeMcpName(orchestration)]);
+			expect(options.systemPrompt).toBe(orchestrationInstructions);
+			if (mode === "chat") expect(options).toMatchObject({ tools: ["AskUserQuestion"], strictMcpConfig: true });
+			expect((await options.canUseTool(`mcp__${nativeMcpName(orchestration)}__delegate_task`, { prompt: "Inspect" })).behavior).toBe("allow");
+			expect((await options.canUseTool("Bash", { command: "ls" })).behavior).toBe("deny");
+			expect(onApproval).toHaveBeenCalledTimes(mode === "chat" ? 0 : 1);
+			yield { type: "result", subtype: "success", is_error: false, result: "Done" };
+		})(), { close: vi.fn(), mcpServerStatus: async () => [user, orchestration].map(server => ({ name: nativeMcpName(server), status: "connected" })) }));
+		await new ClaudeAdapter([user, orchestration]).run({ ...task, mode }, ".", "Delegate", { onDelta: vi.fn(), onSession: vi.fn(), onApproval });
+	});
 	it("does not submit a prompt when managed MCP setup fails", async () => {
 		const server: McpConnection = { id: "00000000-0000-4000-8000-000000000001", name: "Fixture", enabled: true, transport: "http", url: "https://example.invalid/mcp" }; let input: AsyncIterable<unknown> | undefined; const close=vi.fn();
 		sdk.query.mockImplementation(({prompt})=>{input=prompt;return Object.assign((async function*(){yield {type:"result",subtype:"success",is_error:false,result:"Unexpected"};})(),{close,mcpServerStatus:async()=>[{name:nativeMcpName(server),status:"failed",error:"token=secret"}]});});
@@ -82,6 +99,24 @@ describe("Claude SDK integration", () => {
 		await new ClaudeAdapter().run({ ...task, mode: "plan" }, ".", "Plan", { onDelta: () => {}, onSession: () => {}, onApproval: async () => "decline", onQuestion });
 		expect(onQuestion).toHaveBeenCalledWith([expect.objectContaining({ id: "0", question: "Which scope?", isOther: true })]);
 	});
+	it("maps AskUserQuestion explicitly, keeping previews and skipping malformed entries", () => {
+		expect(claudeQuestions([{ header: "", question: "Which?", options: [{ label: "A", description: "First", preview: "# A" }, { label: " " }], multiSelect: true }, { question: " " }, null])).toEqual([
+			{ id: "0", header: "Question 1", question: "Which?", options: [{ label: "A", description: "First", preview: "# A" }], isOther: true, multiSelect: true },
+		]);
+	});
+	it.each(["accept", "revise", "decline"] as const)("turns ExitPlanMode into a proposed plan (%s)", async outcome => {
+		const onApproval = vi.fn(async () => "accept" as const);
+		const onPlan = vi.fn(async () => outcome === "accept" ? { decision: "accept" as const } : { decision: "decline" as const, ...(outcome === "revise" ? { feedback: "Add tests first." } : {}) });
+		sdk.query.mockImplementation(({ options }) => Object.assign((async function* () {
+			expect(options.permissionMode).toBe("plan");
+			const decision = await options.canUseTool("ExitPlanMode", { plan: "# Plan\n\n1. Build it" });
+			if (outcome === "accept") expect(decision).toEqual({ behavior: "allow", updatedInput: { plan: "# Plan\n\n1. Build it" }, updatedPermissions: [{ type: "setMode", mode: "bypassPermissions", destination: "session" }] });
+			else expect(decision).toEqual({ behavior: "deny", message: outcome === "revise" ? expect.stringContaining("Add tests first.") : expect.stringContaining("did not approve") });
+			yield { type: "result", subtype: "success", is_error: false, result: "Done" };
+		})(), { close: vi.fn() }));
+		await new ClaudeAdapter().run({ ...task, mode: "plan", permissionMode: "full-access" }, ".", "Plan", { onDelta: vi.fn(), onSession: vi.fn(), onApproval, onPlan });
+		expect(onPlan).toHaveBeenCalledExactlyOnceWith("# Plan\n\n1. Build it"); expect(onApproval).not.toHaveBeenCalled();
+	});
 	it("streams text once and preserves native session identity", async () => {
 		const close = vi.fn();
 		const execution = Object.assign((async function* () {
@@ -94,10 +129,21 @@ describe("Claude SDK integration", () => {
 		const onDelta = vi.fn(); const onSession = vi.fn();
 		await new ClaudeAdapter().run(task, ".", "Hi", { onDelta, onSession, onApproval: async () => "decline" });
 		expect(onDelta).toHaveBeenCalledExactlyOnceWith("response", "Hello"); expect(onSession).toHaveBeenCalledWith("native"); expect(close).toHaveBeenCalled();
-		expect(sdk.query.mock.lastCall![0].options.tools).toEqual([]);
+		expect(sdk.query.mock.lastCall![0].options.tools).toEqual(["AskUserQuestion"]);
 	});
 	it("surfaces provider failures instead of claiming completion", async () => {
 		sdk.query.mockReturnValue(Object.assign((async function* () { yield { type: "result", subtype: "error_during_execution", errors: ["Failed"] }; })(), { close: vi.fn() }));
 		await expect(new ClaudeAdapter().run(task, ".", "Hi", { onDelta: () => {}, onSession: () => {}, onApproval: async () => "decline" })).rejects.toThrow("Failed");
+	});
+	it("passes per-model settings: effort, fast mode, the 1M context suffix and Ultrathink", async () => {
+		const calls: { prompt: unknown; options: Record<string, unknown> }[] = [];
+		sdk.query.mockImplementation(({ prompt, options }) => { calls.push({ prompt, options }); return Object.assign((async function* () { yield { type: "result", subtype: "success", is_error: false, result: "Done" }; })(), { close: vi.fn() }); });
+		const callbacks = { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" as const };
+		await new ClaudeAdapter().run({ ...task, model: "claude-opus-5-5", modelOptions: { effort: "high", fastMode: true } }, ".", "Plan it", callbacks);
+		expect(calls[0].options).toMatchObject({ model: "claude-opus-5-5[1m]", effort: "high", settings: { fastMode: true } });
+		await new ClaudeAdapter().run({ ...task, model: "claude-fable-5-1", modelOptions: { effort: "ultrathink", contextWindow: "200k" } }, ".", "Plan it", callbacks);
+		expect(calls[1].options).toMatchObject({ model: "claude-fable-5-1" });
+		expect(calls[1].options.effort).toBeUndefined();
+		expect(calls[1].prompt).toBe("Ultrathink:\nPlan it");
 	});
 });

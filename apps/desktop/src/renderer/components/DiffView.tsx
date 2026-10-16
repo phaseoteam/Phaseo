@@ -2,8 +2,13 @@ import { Component, lazy, Suspense, type ReactNode } from "react";
 import type { PullRequestContents } from "../../shared/pullRequestContents";
 import { CodeBlock } from "./MessageContent";
 import type { DiffLayout } from "./diffRendering";
+import type { DiffLineAnnotation, SelectedLineRange } from "@pierre/diffs";
 
-export type DiffViewProps = { contents?: PullRequestContents; patch: string; layout: DiffLayout; copyText?: string; hideHeader?: boolean; context?: { projectId: string; staged: boolean; hash: string }; onRefresh?: () => void };
+/**
+ * `annotations` pin rows (review threads) under diff lines; `wrap` false scrolls long lines instead. `lineSelection` lets
+ * the reader drag the line numbers, or press the gutter's button, to pick lines to comment on.
+ */
+export type DiffViewProps = { contents?: PullRequestContents; patch: string; layout: DiffLayout; copyText?: string; hideHeader?: boolean; hideActions?: boolean; wrap?: boolean; annotations?: DiffLineAnnotation<string>[]; renderAnnotation?: (annotation: DiffLineAnnotation<string>) => ReactNode; context?: { projectId: string; staged: boolean; hash: string }; onRefresh?: () => void; lineSelection?: { selected: SelectedLineRange | null; onSelect: (range: SelectedLineRange) => void } };
 const Renderer = lazy(() => import("./DiffRenderer").then(module => ({ default: module.DiffRenderer })));
 
 class DiffBoundary extends Component<{ children: ReactNode; source: string; fallback: ReactNode }, { failed: boolean }> {

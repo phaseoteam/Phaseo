@@ -9,7 +9,8 @@ import type { Account, QueuedMessage, Task } from "../shared/workspace";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
-import type { AgentForm } from "../shared/agentForms";
+import { formAnswerError, type AgentForm, type FormAnswer } from "../shared/agentForms";
+import { formQuestionAnswer, formQuestions } from "../shared/agentQuestions";
 import type { Endpoint } from "@opencode/client/service";
 import { openCodeForm } from "./openCodeForms";
 import { AgentInputRejectedError } from "./agentAdapter";
@@ -29,11 +30,15 @@ export class OpenCodeAdapter implements AgentAdapter {
 		if (!endpoint) throw new Error("Start an OpenCode 2 service before using this harness. OpenCode 1 is not supported by this adapter.");
 		if (this.controller.signal.aborted) throw new Error("Task stopped.");
 		const client = this.client = OpenCode.make({ baseUrl: endpoint.url, headers: Service.headers(endpoint) });
-		const model = task.model === "default" ? undefined : (() => {
+		const selected = task.model === "default" ? undefined : (() => {
 			const separator = task.model.indexOf("/");
 			if (separator < 1) throw new Error("Use provider/model for an OpenCode model.");
 			return { providerID: task.model.slice(0, separator), id: task.model.slice(separator + 1) };
 		})();
+		// Send a chosen reasoning variant only while the model still offers it.
+		const variant = typeof task.modelOptions?.variant === "string" ? task.modelOptions.variant : undefined;
+		const offered = selected && variant ? await client.model.list({ location: { directory: cwd } }, { signal: AbortSignal.any([this.controller.signal, AbortSignal.timeout(15000)]) }).then(catalog => catalog.data.some(item => item.providerID === selected.providerID && item.id === selected.id && item.variants?.some(option => option.id === variant)), () => false) : false;
+		const model = selected && offered ? { ...selected, variant } : selected;
 		const requestOptions = { signal: this.controller.signal };
 		const confirmAction = async () => {
 			if (!nativeAction) return;
@@ -54,20 +59,37 @@ export class OpenCodeAdapter implements AgentAdapter {
 			const controller = new AbortController(); forms.set(form.id, controller);
 			const signal = AbortSignal.any([this.controller.signal, controller.signal]);
 			let validationError: string | undefined;
+			/** Sends the answer (null cancels); false when OpenCode rejects it, so the form is shown again with the reason. */
+			const settle = async (answer: FormAnswer | null) => {
+				try {
+					if (answer === null) await client.session.form.cancel({ sessionID: this.sessionId!, formID: form.id, message: "Cancelled in Phaseo." }, { signal });
+					else await client.session.form.reply({ sessionID: this.sessionId!, formID: form.id, answer }, { signal });
+					return true;
+				} catch (error) {
+					if (isFormAlreadySettledError(error) || isFormNotFoundError(error) || signal.aborted) return true;
+					if (!isFormInvalidAnswerError(error)) throw error;
+					validationError = error.message;
+					callbacks.onActivity?.({ id: `form:${form.id}:validation`, type: "tool", title: form.title, text: error.message, status: "failed" });
+					return false;
+				}
+			};
 			try {
-				while (!signal.aborted) {
-					const answer = await callbacks.onForm?.({ id: form.id, title: form.title, fields: form.fields, error: validationError }, signal) ?? null;
+				// Text and multiple-choice forms are what OpenCode's question tool asks; they go to the answer panel, as in T3 Code.
+				const questions = callbacks.onQuestion ? formQuestions(form, ["string", "multiselect"]) : undefined;
+				if (questions) {
+					const answers = await callbacks.onQuestion!(questions, { signal });
 					if (signal.aborted) return;
-					try {
-						if (answer === null) await client.session.form.cancel({ sessionID: this.sessionId!, formID: form.id, message: "Cancelled in Phaseo." }, { signal });
-						else await client.session.form.reply({ sessionID: this.sessionId!, formID: form.id, answer }, { signal });
-						return;
-					} catch (error) {
-						if (isFormAlreadySettledError(error) || isFormNotFoundError(error) || signal.aborted) return;
-						if (!isFormInvalidAnswerError(error)) throw error;
-						validationError = error.message;
-						callbacks.onActivity?.({ id: `form:${form.id}:validation`, type: "tool", title: form.title, text: error.message, status: "failed" });
-					}
+					if (!Object.keys(answers).length) { await settle(null); return; }
+					const answer = formQuestionAnswer(form, answers);
+					validationError = formAnswerError(form, answer);
+					if (!validationError && await settle(answer)) return;
+				}
+				while (!signal.aborted) {
+					const reply = await callbacks.onForm?.({ id: form.id, title: form.title, fields: form.fields, error: validationError }, signal) ?? null;
+					// OpenCode has no decline; it is a cancel.
+					const answer = reply === "decline" ? null : reply;
+					if (signal.aborted) return;
+					if (await settle(answer)) return;
 				}
 			} finally { forms.delete(form.id); }
 		};

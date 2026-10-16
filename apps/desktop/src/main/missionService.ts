@@ -12,14 +12,17 @@ export class MissionService {
 		for (const mission of runtime.store.missions.list()) {
 			if (mission.lastStatus === "running" && mission.lastTaskId) {
 				const task = runtime.store.getTask(mission.lastTaskId);
-				if (task.status === "idle") { task.status = "interrupted"; task.error = "The application stopped before this mission began. Review before retrying."; runtime.store.saveTask(task); }
+				if (task.status === "idle") { task.status = "interrupted"; task.error = "Phaseo closed before this scheduled task began. Review before retrying."; runtime.store.saveTask(task); }
 			}
 			if (mission.enabled && mission.nextRunAt && Date.parse(mission.nextRunAt) <= now) { mission.nextRunAt = nextMissionRun(mission.schedule, now); runtime.store.missions.put(mission); }
 		}
 		this.observe(runtime.store.getOverview());
+		// The scheduled-task orchestration tools go through the same commands as the Missions page.
+		runtime.missionCommand = this.bound;
 	}
+	private readonly bound = (command: MissionCommand) => this.command(command);
 	start() { if (!this.closed && !this.timer) { this.timer = setInterval(() => this.tick(), 1000); this.timer.unref(); } }
-	close() { this.closed = true; if (this.timer) clearInterval(this.timer); this.timer = undefined; }
+	close() { this.closed = true; if (this.timer) clearInterval(this.timer); this.timer = undefined; if (this.runtime.missionCommand === this.bound) this.runtime.missionCommand = undefined; }
 	command(command: MissionCommand) {
 		if (this.closed) throw new Error("The workspace is shutting down."); const store = this.runtime.store.missions; const now = this.clock();
 		if (command.type === "save") { const template = this.runtime.store.getTask(command.templateTaskId); if (template.archived) throw new Error("Choose an active template task."); store.save(command, now); }
@@ -50,7 +53,7 @@ export class MissionService {
 				if (!mission.enabled || !mission.nextRunAt || Date.parse(mission.nextRunAt) > now) continue;
 				if (mission.lastStatus === "running" || workspace.tasks.some(task => task.missionId === mission.id && (task.status === "running" || task.status === "waiting")) || now - Date.parse(mission.nextRunAt) > 60000) { mission.nextRunAt = nextMissionRun(mission.schedule, now); this.runtime.store.missions.put(mission); this.onChange(); continue; }
 				try { this.runtime.startMission(mission.id, now); }
-				catch (error) { const current = this.runtime.store.missions.get(mission.id); current.enabled = false; current.nextRunAt = undefined; current.lastStatus = "failed"; current.error = error instanceof Error ? error.message : "Mission could not start."; this.runtime.store.missions.put(current); }
+				catch (error) { const current = this.runtime.store.missions.get(mission.id); current.enabled = false; current.nextRunAt = undefined; current.lastStatus = "failed"; current.error = error instanceof Error ? error.message : "The scheduled task could not start."; this.runtime.store.missions.put(current); }
 				this.onChange();
 			}
 		} catch { /* A scheduler failure must never cause untracked replay or interrupt other tasks. */ }
