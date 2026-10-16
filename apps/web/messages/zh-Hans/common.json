@@ -2535,6 +2535,7 @@
 		"oneModel": "你的工作区正在使用的 {model} 即将停用。请开始规划迁移。",
 		"manyModels": "你的工作区正在使用的 {count} 个模型即将停用。请开始规划迁移。",
 		"retiresOn": "将于 {date} 停用。",
+		"firstRetiresOn": "{model} 最先停用，时间为 {date}。",
 		"replacement": "建议替代模型：{replacement}。",
 		"review": "查看",
 		"dismiss": "关闭"

@@ -24,6 +24,7 @@ export type ModelDeprecationNoticeCopy = {
 	oneModel: string;
 	manyModels: string;
 	retiresOn: string;
+	firstRetiresOn: string;
 	replacement: string;
 	review: string;
 	dismiss: string;
@@ -87,6 +88,9 @@ export default function ModelDeprecationNotice({ userId, workspaceId, locale, co
 	if (!visible.length) return null;
 
 	const first = visible[0]!;
+	const soonest = visible
+		.filter((warning) => warning.retirementDate)
+		.reduce<typeof first | null>((best, warning) => !best || warning.retirementDate! < best.retirementDate! ? warning : best, null);
 	const formatDate = (value: string) => {
 		const date = new Date(value);
 		return Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(date) : value;
@@ -97,7 +101,12 @@ export default function ModelDeprecationNotice({ userId, workspaceId, locale, co
 			first.retirementDate ? fill(copy.retiresOn, { date: formatDate(first.retirementDate) }) : null,
 			first.replacementModelId ? fill(copy.replacement, { replacement: first.replacementModelId }) : null,
 		]
-		: [fill(copy.manyModels, { count: String(visible.length) })];
+		: [
+			fill(copy.manyModels, { count: String(visible.length) }),
+			soonest?.retirementDate ? fill(copy.firstRetiresOn, { model: soonest.modelName ?? soonest.modelId, date: formatDate(soonest.retirementDate) }) : null,
+		];
+	// Red needs a reason on screen, so the earliest retirement is always named.
+	const critical = visible.some((warning) => warning.severity === "critical");
 
 	function dismiss() {
 		const next = new Set(dismissed);
@@ -111,10 +120,11 @@ export default function ModelDeprecationNotice({ userId, workspaceId, locale, co
 	return (
 		<>
 			<div ref={barRef} className="fixed inset-x-0 top-[var(--deprecation-notice-top,0px)] z-[60] bg-background">
-				{/* Always amber: the alerts page carries per-model urgency, so the bar stays a calm heads-up. */}
 				<div
 					role="status"
-					className="border-b border-amber-300 bg-amber-100/95 text-amber-950 dark:border-amber-800 dark:bg-amber-950/45 dark:text-amber-100"
+					className={critical
+						? "border-b border-red-300 bg-red-100/95 text-red-950 dark:border-red-900 dark:bg-red-950/45 dark:text-red-100"
+						: "border-b border-amber-300 bg-amber-100/95 text-amber-950 dark:border-amber-800 dark:bg-amber-950/45 dark:text-amber-100"}
 				>
 					{/* Centred like the site notice; side padding keeps the text clear of the dismiss button. */}
 					<div className="relative px-11 py-2 text-xs lg:text-sm">
