@@ -11,6 +11,16 @@ describe("API model catalog", () => {
 		const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [nativeModel("openai/example", { organization: { id: "openai", name: "OpenAI" }, lifecycle: { status: "active", released_at: "2026-10-04" } })] })));
 		expect(await apiModels(gatewayAccount, "owned-key", fetcher)).toEqual([{ id: "openai/example", name: "openai/example", organisationId: "openai", organisationName: "OpenAI", releaseDate: "2026-10-04" }]);
 	});
+	it("keeps context, input types, the cheapest routable offer's prices and provider names for the model card", async () => {
+		const meter = (price: string | null) => ({ unit: "token", unit_size: 1_000_000, price_per_unit: price, currency: "USD" });
+		const offer = (name: string, input: string, output: string, routable = true) => ({ routable, provider: { id: name.toLowerCase(), name }, pricing: { meters: { input_tokens: null, input_text_tokens: meter(input), output_text_tokens: meter(output) } } });
+		const model = nativeModel("owned/carded", { limits: { input_tokens: 400_000, output_tokens: null }, modalities: { input: ["text", "image"], output: ["text"] }, offers: [offer("Azure", "4.4", "22"), offer("Owned", "4", "20"), offer("Owned", "4", "20"), offer("Closed", "1", "2", false)] });
+		const [result] = await apiModels(gatewayAccount, "owned-key", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [model] }))));
+		expect(result.facts).toEqual({ contextTokens: 400_000, input: ["text", "image"], inputPrice: 4, outputPrice: 20, providers: ["Azure", "Owned"] });
+		const free = nativeModel("owned/free", { pricing: { meters: { input_text_tokens: meter("0"), output_text_tokens: meter("0") } } });
+		const [summary] = await apiModels(gatewayAccount, "owned-key", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [free] }))));
+		expect(summary.facts).toEqual({ inputPrice: 0, outputPrice: 0 });
+	});
 	it("attaches effort and speed settings from routable offer parameter details", async () => {
 		const model = nativeModel("openai/reasoner", { offers: [{ routable: true, capabilities: { parameter_details: { reasoning: { supported: true, supported_values: ["low", "medium", "high"] }, service_tier: { supported: true, supported_values: ["standard", "priority"] } } } }] });
 		const [result] = await apiModels(gatewayAccount, "owned-key", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [model] }))));

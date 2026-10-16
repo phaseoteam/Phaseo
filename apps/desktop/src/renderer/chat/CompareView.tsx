@@ -12,6 +12,7 @@ import { useComposerMenu } from "./ComposerMenu";
 import { composeMessage } from "../lib/mentions";
 import { Conversation } from "./Conversation";
 import { harnessNames, knownModel, modelLabel } from "./ModelPicker";
+import { ModelInfoCard } from "./ModelInfoCard";
 import { Requests } from "./Requests";
 
 function CompareColumn({ id }: { id: string }) {
@@ -23,7 +24,7 @@ function CompareColumn({ id }: { id: string }) {
 	return <section className="flex min-w-0 flex-1 flex-col border-r border-border last:border-r-0">
 		<header className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-3">
 			{snapshot && <span className="flex size-5 items-center justify-center [&_img]:size-4.5 [&_.harness-logo]:size-4.5"><ModelLogo model={model ?? { id: snapshot.model, name: snapshot.model }} harness={snapshot.harness} /></span>}
-			<span className="min-w-0 truncate text-[13px] font-semibold">{snapshot ? model?.name ?? (snapshot.model === "default" ? harnessNames[snapshot.harness] : modelLabel(snapshot.model)) : "Unavailable chat"}</span>
+			{snapshot ? <ModelInfoCard harness={snapshot.harness} model={snapshot.model} className="min-w-0 truncate text-[13px] font-semibold">{model?.name ?? (snapshot.model === "default" ? harnessNames[snapshot.harness] : modelLabel(snapshot.model))}</ModelInfoCard> : <span className="min-w-0 truncate text-[13px] font-semibold">Unavailable chat</span>}
 			{snapshot && <StatusDot task={snapshot} />}
 			<button type="button" aria-label="Open as a single chat" title="Open as a single chat" onClick={() => select(id)} className="ml-auto grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"><Maximize2 className="size-3.5" /></button>
 		</header>

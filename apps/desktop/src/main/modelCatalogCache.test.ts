@@ -69,7 +69,14 @@ describe("model catalog disk cache", () => {
 		const fetchModels = vi.fn().mockResolvedValue({ notModified: true });
 		expect(await cache.get(key, fetchModels)).toEqual(first); await settle();
 		expect(fetchModels).toHaveBeenCalledWith([{ offset: 0, etag: "\"v1\"" }]); expect(onChange).not.toHaveBeenCalled();
-		expect(await cache.read(key)).toMatchObject({ version: 2, models: first, validators: [{ offset: 0, etag: "\"v1\"" }], fetchedAt: new Date(now).toISOString() });
+		expect(await cache.read(key)).toMatchObject({ version: 3, models: first, validators: [{ offset: 0, etag: "\"v1\"" }], fetchedAt: new Date(now).toISOString() });
 		expect(MODEL_CATALOG_FRESH_MS).toBe(15 * 60 * 1000);
+	});
+	it("serves a version 2 cache at once but downloads it again in full, since its ETags predate model facts", async () => {
+		const cache = new ModelCatalogCache(root);
+		writeFileSync(cache.filename(key), JSON.stringify({ version: 2, ...key, fetchedAt: new Date().toISOString(), models: first, validators: [{ offset: 0, etag: "\"v1\"" }] }));
+		const fetchModels = vi.fn().mockResolvedValue({ models: second, validators: [] });
+		expect(await cache.get(key, fetchModels)).toEqual(first); await vi.waitFor(async () => expect((await cache.read(key))?.models).toEqual(second), { timeout: 5000 });
+		expect(fetchModels).toHaveBeenCalledExactlyOnceWith(undefined); expect((await cache.read(key))?.version).toBe(3);
 	});
 });

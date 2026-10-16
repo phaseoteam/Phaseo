@@ -13,6 +13,7 @@ import { ModelLogo } from "../components/ModelLogo";
 import { useTextCopy } from "../components/useTextCopy";
 import { mentionPlainText } from "../lib/mentions";
 import { harnessNames, knownModel, modelLabel } from "./ModelPicker";
+import { ModelInfoCard } from "./ModelInfoCard";
 import { AgentResult } from "./AgentThreads";
 import { ProposedPlan } from "./ProposedPlan";
 
@@ -128,7 +129,7 @@ function AssistantHeader({ task }: { task: Task }) {
 	const model = knownModel(task.model);
 	return <div className="flex items-center gap-2 text-[13px] font-semibold">
 		<span className="flex size-5 items-center justify-center [&_img]:size-4.5 [&_.harness-logo]:size-4.5"><ModelLogo model={model ?? { id: task.model, name: task.model }} harness={task.harness} /></span>
-		{task.model === "default" ? harnessNames[task.harness] : model?.name ?? modelLabel(task.model)}
+		<ModelInfoCard harness={task.harness} model={task.model}>{task.model === "default" ? harnessNames[task.harness] : model?.name ?? modelLabel(task.model)}</ModelInfoCard>
 		<span className="font-medium text-muted-foreground">{task.harness === "phaseo" ? "via Phaseo" : `in ${harnessNames[task.harness]}`}</span>
 	</div>;
 }

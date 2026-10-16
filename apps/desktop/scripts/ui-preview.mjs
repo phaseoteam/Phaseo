@@ -52,7 +52,7 @@ const nativeCatalog = payload => {
 			return { provider: { id: row.providerId, name: row.providerName ?? null }, routable: true, endpoints: ["text.generate"], capabilities: { parameters: Object.keys(parameter_details), parameter_details }, pricing: { pricing_plan: "standard", meters: { input_tokens: meter(row.inputPricePerMillion), output_tokens: meter(row.outputPricePerMillion) } } };
 		});
 		const [first] = providers, parameter_details = Object.assign({}, ...offers.map(offer => offer.capabilities.parameter_details));
-		return { id, name: first.modelName || id, organization: first.organisationId ? { id: first.organisationId, name: first.organisationName ?? null } : null, lifecycle: { status: first.modelStatus === "deprecated" ? "deprecated" : "active", released_at: first.releaseDate?.slice(0, 10) ?? null }, capabilities: { endpoints: ["text.generate"], parameters: Object.keys(parameter_details), parameter_details }, offers };
+		return { id, name: first.modelName || id, organization: first.organisationId ? { id: first.organisationId, name: first.organisationName ?? null } : null, lifecycle: { status: first.modelStatus === "deprecated" ? "deprecated" : "active", released_at: first.releaseDate?.slice(0, 10) ?? null }, ...(Array.isArray(first.inputModalities) ? { modalities: { input: first.inputModalities, output: first.outputModalities ?? ["text"] } } : {}), capabilities: { endpoints: ["text.generate"], parameters: Object.keys(parameter_details), parameter_details }, offers };
 	}).sort((left, right) => (right.lifecycle.released_at ?? "").localeCompare(left.lifecycle.released_at ?? ""));
 };
 let liveCatalog;
