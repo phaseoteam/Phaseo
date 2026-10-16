@@ -12,6 +12,16 @@ import { answerPhaseoQuestion, phaseoQuestionTools, QuestionDeferredError } from
 /** Asks the person; throws QuestionDeferredError when the answer will come later as a message. */
 export type OrchestratorAsk = (questions: AgentQuestion[], signal: AbortSignal) => Promise<Record<string, string[]>>;
 
+/** A tool result as MCP content: a result carrying an image (browser_screenshot) becomes an image block and its details as text. */
+export function toolContent(result: unknown): ({ type: "text"; text: string } | { type: "image"; data: string; mimeType: string })[] {
+	const image = result && typeof result === "object" && "image" in result ? (result as { image?: unknown }).image as { data?: unknown; mimeType?: unknown } | undefined : undefined;
+	if (image && typeof image.data === "string" && (image.mimeType === "image/png" || image.mimeType === "image/jpeg")) {
+		const rest = { ...result as Record<string, unknown> }; delete rest.image;
+		return [{ type: "image", data: image.data, mimeType: image.mimeType }, { type: "text", text: JSON.stringify(rest) }];
+	}
+	return [{ type: "text", text: JSON.stringify(result) }];
+}
+
 /** Credentials are invocation-scoped and never stored with workspace connections. */
 export class OrchestratorMcp {
 	private server?: HttpServer;
@@ -55,7 +65,7 @@ export class OrchestratorMcp {
 						if (gated && !await session.approve(tool.id, params.arguments ?? {})) throw new Error("Delegation was declined.");
 						if (!this.activeSession(token)) throw new Error("This agent session has ended.");
 						const result = await tool.execute(params.arguments ?? {}, AbortSignal.any([disconnected.signal, extra.signal]));
-						return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
+						return { content: toolContent(result) };
 					} catch (error) { return { isError: true, content: [{ type: "text" as const, text: error instanceof Error ? error.message : "Thread operation failed." }] }; }
 				});
 				this.transports.add(transport);

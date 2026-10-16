@@ -1,6 +1,6 @@
 import type { BrowserDownload, BrowserDownloadCommand } from "./browserDownloads";
 import type { KeybindingEntry } from "./keybindings";
-import type { BrowserCapture, BrowserCommand, BrowserKey, BrowserLocalServer, BrowserOpenTab, BrowserPick, BrowserState } from "./browser";
+import type { BrowserAgentTabOpened, BrowserCapture, BrowserCommand, BrowserKey, BrowserLocalServer, BrowserOpenTab, BrowserPick, BrowserRecording, BrowserState } from "./browser";
 import type { WorkspaceApi } from "./workspace";
 
 export type DesktopRuntimeInfo = {
@@ -47,6 +47,14 @@ export type PhaseoDesktopApi = {
 	/** Lets the person click an element on the page; undefined when cancelled. Pass cancel to stop a pick in progress. */
 	browserPick: (id: string, cancel?: boolean) => Promise<BrowserPick | undefined>;
 	browserLocalServers: () => Promise<BrowserLocalServer[]>;
+	/** A stream id for recording a tab's page with getUserMedia (chromeMediaSource "tab"); valid for ten seconds. */
+	browserRecordingSource: (id: string) => Promise<string>;
+	/** Saves a recording (MP4 or WebM) in the app's recordings folder. */
+	browserRecordingSave: (mimeType: string, data: Uint8Array) => Promise<BrowserRecording>;
+	/** Shows a saved recording in the file manager. */
+	browserRecordingReveal: (path: string) => Promise<void>;
+	/** A page an agent opened in one of a chat's browser tabs. */
+	onBrowserAgentTab: (listener: (tab: BrowserAgentTabOpened) => void) => () => void;
 	/** An app shortcut pressed while a page had focus. */
 	onBrowserKey: (listener: (key: BrowserKey) => void) => () => void;
 	getRuntimeInfo: () => Promise<DesktopRuntimeInfo>;

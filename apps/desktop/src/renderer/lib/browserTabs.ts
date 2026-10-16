@@ -1,13 +1,14 @@
 import { useSyncExternalStore } from "react";
-import { browserColorScheme, browserUrl, browserViewport, browserZoom, type BrowserColorScheme, type BrowserOpenTab, type BrowserState, type BrowserViewport } from "../../shared/browser";
+import { agentBrowserCloseConfirmation, browserColorScheme, browserTabLimit, browserUrl, browserViewport, browserZoom, type BrowserAgentTabOpened, type BrowserColorScheme, type BrowserOpenTab, type BrowserState, type BrowserViewport } from "../../shared/browser";
+import { miniPlayerFor } from "./browserMiniPlayer";
 import { dispatchKeybinding } from "./keybindings";
 
 /** A saved browser tab. name is the person's own title; title is the page's. */
 export type BrowserTab = { id: string; title: string; url: string; viewport: BrowserViewport; zoom?: number; colorScheme?: BrowserColorScheme; name?: string };
 export type BrowserTabs = { active: string; tabs: BrowserTab[] };
 /** What a pane tab shows for a browser tab. */
-export type BrowserTabInfo = BrowserTab & { context: string; label: string; favicon?: string; loading: boolean; audible: boolean; muted: boolean; active: boolean };
-export const browserTabLimit = 20;
+export type BrowserTabInfo = BrowserTab & { context: string; label: string; favicon?: string; loading: boolean; audible: boolean; muted: boolean; active: boolean; controller?: BrowserState["controller"]; poppedOut: boolean };
+export { browserTabLimit };
 const storageKey = "phaseo.desktop.browserTabs";
 
 /** Saved tabs for one chat, validated. Older saves with Desktop/Phone/Tablet previews are converted. */
@@ -46,6 +47,14 @@ export function openBrowserTab(group: BrowserTabs, request: BrowserOpenTab, id: 
 	return { active: request.background ? group.active : id, tabs: [...group.tabs, { id, title: "", url, viewport: { mode: "fill" } }] };
 }
 
+/** A tab an agent opened a page in: selected, and added when the chat does not list it yet. Only the chat's own tab ids are taken. */
+export function adoptBrowserTab(group: BrowserTabs, opened: BrowserAgentTabOpened): BrowserTabs {
+	if (opened.id !== opened.context && !opened.id.startsWith(opened.context + ":")) throw new Error("That browser tab belongs to another chat.");
+	if (group.tabs.some(tab => tab.id === opened.id)) return { ...group, active: opened.id };
+	if (group.tabs.length >= browserTabLimit) throw new Error("Close a browser tab before opening another.");
+	return { active: opened.id, tabs: [...group.tabs, { id: opened.id, title: "", url: browserUrl(opened.url), viewport: { mode: "fill" } }] };
+}
+
 /** A live native surface keeps its own viewport; a fresh one takes the saved one. */
 export function browserViewportToRestore(state: Pick<BrowserState, "viewport" | "configured">, saved: BrowserViewport): BrowserViewport { return state.configured ? state.viewport : saved; }
 
@@ -57,7 +66,7 @@ export function browserTabLabel(tab: Pick<BrowserTab, "title" | "url" | "name">)
 }
 
 // One store per window: every chat's tabs, and the live status of each native page.
-type Live = { favicon?: string; loading: boolean; audible: boolean; muted: boolean };
+type Live = { favicon?: string; loading: boolean; audible: boolean; muted: boolean; controller?: BrowserState["controller"]; poppedOut?: boolean };
 let saved: Record<string, BrowserTabs> = {};
 try { saved = JSON.parse(localStorage.getItem(storageKey) ?? "{}") ?? {}; } catch { /* Start empty when storage is unavailable or invalid. */ }
 const live = new Map<string, Live>();
@@ -92,6 +101,11 @@ function start() {
 		try { const next = openBrowserTab(current, request, id); errors.delete(context); commit(context, next); for (const listener of openedListeners) listener({ context, id, background: request.background }); }
 		catch (reason) { errors.set(context, reason instanceof Error ? reason.message : String(reason)); changed(); }
 	});
+	// A page an agent opened joins its chat's tabs, and shows in the pane when that chat is open, unless it already floats over the chat.
+	api.onBrowserAgentTab(opened => {
+		try { const next = adoptBrowserTab(group(opened.context), opened); errors.delete(opened.context); commit(opened.context, next); if (miniPlayerFor(opened.context)?.tabId !== opened.id) for (const listener of openedListeners) listener({ context: opened.context, id: opened.id, background: false }); }
+		catch (reason) { errors.set(opened.context, reason instanceof Error ? reason.message : String(reason)); changed(); }
+	});
 	// A shortcut pressed in a page runs as if the page's surface had focus.
 	api.onBrowserKey(input => { focused = input.id; dispatchKeybinding({ key: input.key, ctrlKey: input.ctrl, metaKey: input.meta, altKey: input.alt, shiftKey: input.shift }, { browserFocused: true, textFocused: false, terminalFocused: false }); });
 }
@@ -100,7 +114,7 @@ function start() {
 export function recordBrowserState(state: BrowserState) {
 	const context = contextOf(state.id);
 	if (!context) return;
-	const next: Live = { loading: state.loading, audible: state.audible, muted: state.muted, ...(state.favicon ? { favicon: state.favicon } : {}) };
+	const next: Live = { loading: state.loading, audible: state.audible, muted: state.muted, ...(state.favicon ? { favicon: state.favicon } : {}), ...(state.controller ? { controller: state.controller } : {}), ...(state.poppedOut ? { poppedOut: true } : {}) };
 	const statusChanged = JSON.stringify(live.get(state.id)) !== JSON.stringify(next);
 	live.set(state.id, next);
 	const current = group(context), updated = updateBrowserTab(current, state);
@@ -113,7 +127,7 @@ export function listBrowserTabs(context: string): BrowserTabInfo[] {
 	const cached = snapshots.get(context);
 	if (cached) return cached;
 	const current = group(context);
-	const tabs = current.tabs.map(tab => { const status = live.get(tab.id); return { ...tab, context, label: browserTabLabel(tab), loading: status?.loading ?? false, audible: status?.audible ?? false, muted: status?.muted ?? false, active: tab.id === current.active, ...(status?.favicon ? { favicon: status.favicon } : {}) }; });
+	const tabs = current.tabs.map(tab => { const status = live.get(tab.id); return { ...tab, context, label: browserTabLabel(tab), loading: status?.loading ?? false, audible: status?.audible ?? false, muted: status?.muted ?? false, active: tab.id === current.active, poppedOut: status?.poppedOut ?? false, ...(status?.favicon ? { favicon: status.favicon } : {}), ...(status?.controller ? { controller: status.controller } : {}) }; });
 	snapshots.set(context, tabs);
 	return tabs;
 }
@@ -152,6 +166,16 @@ export async function closeBrowserTab(context: string, id: string) {
 export function renameBrowserTab(context: string, id: string, name: string) {
 	const current = group(context), trimmed = name.trim().slice(0, 120);
 	commit(context, { ...current, tabs: current.tabs.map(tab => { if (tab.id !== id) return tab; const rest: BrowserTab = { ...tab }; delete rest.name; return trimmed ? { ...rest, name: trimmed } : rest; }) });
+}
+/** Selects a tab and asks the pane to show it, as when a page opens one. */
+export function revealBrowserTab(context: string, id: string) {
+	selectBrowserTab(context, id);
+	for (const listener of openedListeners) listener({ context, id, background: false });
+}
+/** Asks before closing tabs an agent is driving, with T3 Code's question; true to go ahead. */
+export function confirmCloseBrowserTabs(context: string, ids: string[]): boolean {
+	const message = agentBrowserCloseConfirmation(listBrowserTabs(context).filter(tab => ids.includes(tab.id) && tab.controller === "agent").length);
+	return !message || window.confirm(message);
 }
 export async function setBrowserTabMuted(id: string, muted: boolean) { await window.phaseoDesktop?.browser({ type: "mute", id, muted }); }
 

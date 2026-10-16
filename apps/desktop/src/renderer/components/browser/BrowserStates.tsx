@@ -1,5 +1,5 @@
-import { ChevronRight, Globe, Globe2, History, RadioTower, X } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ChevronRight, Globe, Globe2, History, PictureInPicture2, RadioTower, X } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 import { describeBrowserError, type BrowserFailure, type BrowserLocalServer } from "../../../shared/browser";
 import type { BrowserRecent } from "../../lib/browserHistory";
 import { cn } from "../../lib/utils";
@@ -96,15 +96,26 @@ export function BrowserUnreachable({ failure, onReload }: { failure: BrowserFail
 	</ScrollArea>;
 }
 
-/** The zoom level for a moment after it changes; quiet on first render. */
-export function BrowserZoomIndicator({ zoom }: { zoom: number }) {
-	const [visible, setVisible] = useState(false);
-	const last = useRef(zoom);
-	useEffect(() => {
-		if (Math.abs(last.current - zoom) < 0.001) return;
-		last.current = zoom; setVisible(true);
-		const timer = window.setTimeout(() => setVisible(false), 1500);
-		return () => window.clearTimeout(timer);
-	}, [zoom]);
-	return <div aria-hidden={!visible} role="status" className={cn("pointer-events-none absolute top-1/2 right-1.5 z-20 -translate-y-1/2 rounded-full border border-border/70 bg-popover/95 px-2.5 py-0.5 text-xs font-medium tabular-nums text-foreground shadow-md backdrop-blur transition-all duration-200 ease-out select-none", visible ? "opacity-100" : "opacity-0")}>{Math.round(zoom * 100)}%</div>;
+/** The page is in its own window (T3 Code's separate preview window); the slot offers to bring it back. */
+export function BrowserPoppedOut({ onBringBack, compact = false }: { onBringBack: () => void; compact?: boolean }) {
+	return <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+		<PictureInPicture2 aria-hidden className="size-4.5 text-muted-foreground" />
+		<p className="text-xs text-muted-foreground">Showing in a separate window</p>
+		<Button type="button" variant="outline" size={compact ? "xs" : "sm"} onClick={onBringBack}>Bring back</Button>
+	</div>;
+}
+
+/** T3 Code's "Recording saved" notice as a flat row: reveal the file, copy its path, or add it to the message. */
+export function BrowserRecordingNotice({ path, revealLabel, onReveal, onAttach, onDismiss }: { path: string; revealLabel: string; onReveal: () => void; onAttach: () => void; onDismiss: () => void }) {
+	const [copied, setCopied] = useState(false);
+	useEffect(() => { if (!copied) return; const timer = window.setTimeout(() => setCopied(false), 2000); return () => window.clearTimeout(timer); }, [copied]);
+	return <div role="status" className="flex shrink-0 items-center gap-2 border-y border-border/60 px-3 py-1.5 text-xs">
+		<span aria-hidden className="size-1.5 shrink-0 rounded-full bg-success" />
+		<span className="font-medium text-foreground">Recording saved</span>
+		<span className="min-w-0 flex-1 truncate text-muted-foreground" title={path}>{path.split(/[\\/]/).at(-1)}</span>
+		<Button type="button" variant="ghost" size="xs" onClick={onReveal}>{revealLabel}</Button>
+		<Button type="button" variant="ghost" size="xs" disabled={copied} onClick={() => void navigator.clipboard.writeText(path).then(() => setCopied(true), () => undefined)}>{copied ? "Copied!" : "Copy path"}</Button>
+		<Button type="button" variant="ghost" size="xs" onClick={onAttach}>Add to message</Button>
+		<Button type="button" variant="ghost" size="icon-xs" aria-label="Dismiss" onClick={onDismiss}><X /></Button>
+	</div>;
 }

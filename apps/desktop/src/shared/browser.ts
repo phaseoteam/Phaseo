@@ -55,21 +55,31 @@ export type BrowserColorScheme = "system" | "light" | "dark";
 export function browserColorScheme(value: unknown): BrowserColorScheme { if (value !== "system" && value !== "light" && value !== "dark") throw new Error("Invalid colour scheme."); return value; }
 
 export type BrowserOpenTab = { sourceId: string; url: string; background: boolean };
+/** A page an agent opened in one of a chat's tabs, for the window to list among them. */
+export type BrowserAgentTabOpened = { context: string; id: string; url: string };
+/** Browser tabs per chat. */
+export const browserTabLimit = 20;
 /** A main-frame load that failed, for the "This site can't be reached" page. */
 export type BrowserFailure = { url: string; code: number; description: string };
-export type BrowserState = { id: string; url: string; title: string; favicon?: string; loading: boolean; canGoBack: boolean; canGoForward: boolean; devToolsOpen: boolean; viewport: BrowserViewport; zoom: number; colorScheme: BrowserColorScheme; audible: boolean; muted: boolean; configured: boolean; failure?: BrowserFailure; crashed?: boolean; error?: string };
+/** Who is driving a page right now, as in T3 Code: an agent through its browser tools, or the person. */
+export type BrowserController = "agent" | "human" | "none";
+export type BrowserState = { id: string; url: string; title: string; favicon?: string; loading: boolean; canGoBack: boolean; canGoForward: boolean; devToolsOpen: boolean; viewport: BrowserViewport; zoom: number; colorScheme: BrowserColorScheme; audible: boolean; muted: boolean; configured: boolean; failure?: BrowserFailure; crashed?: boolean; error?: string; controller?: Exclude<BrowserController, "none">; poppedOut?: boolean };
 export type BrowserBounds = { x: number; y: number; width: number; height: number };
+/** Where a page shows in the window: its pane tab, or the floating player over the chat. Each slot holds one page. */
+export type BrowserSlot = "pane" | "float";
 export type BrowserCommand = { id: string } & (
-	| { type: "show"; bounds: BrowserBounds }
+	| { type: "show"; bounds: BrowserBounds; slot?: BrowserSlot; radius?: number }
+	| { type: "hide"; slot?: BrowserSlot }
 	| { type: "navigate"; url: string }
 	| { type: "viewport"; viewport: BrowserViewport }
 	| { type: "zoom"; zoom: number }
 	| { type: "colorScheme"; colorScheme: BrowserColorScheme }
 	| { type: "mute"; muted: boolean }
 	| { type: "clearData"; data: "cookies" | "cache" }
-	| { type: "hide" | "back" | "forward" | "reload" | "hardReload" | "stop" | "close" | "devtools" | "focus" }
+	| { type: "back" | "forward" | "reload" | "hardReload" | "stop" | "close" | "devtools" | "focus" | "popOut" | "popIn" }
 );
-const simpleCommands = ["hide", "back", "forward", "reload", "hardReload", "stop", "close", "devtools", "focus"];
+const simpleCommands = ["back", "forward", "reload", "hardReload", "stop", "close", "devtools", "focus", "popOut", "popIn"];
+const browserSlot = (value: unknown): BrowserSlot | undefined => { if (value === undefined) return; if (value !== "pane" && value !== "float") throw new Error("Invalid browser slot."); return value; };
 /** Checks a renderer request before the browser host acts on it. */
 export function browserCommand(value: unknown): BrowserCommand {
 	if (!value || typeof value !== "object") throw new Error("Invalid browser request.");
@@ -80,15 +90,18 @@ export function browserCommand(value: unknown): BrowserCommand {
 		case "show": {
 			const bounds = input.bounds as Record<string, unknown> | undefined;
 			if (!bounds || ![bounds.x, bounds.y, bounds.width, bounds.height].every(Number.isFinite) || (bounds.width as number) < 0 || (bounds.height as number) < 0) throw new Error("Invalid browser bounds.");
-			return { id, type: "show", bounds: { x: bounds.x as number, y: bounds.y as number, width: bounds.width as number, height: bounds.height as number } };
+			if (input.radius !== undefined && (typeof input.radius !== "number" || !Number.isFinite(input.radius) || input.radius < 0 || input.radius > 64)) throw new Error("Invalid browser bounds.");
+			const slot = browserSlot(input.slot);
+			return { id, type: "show", bounds: { x: bounds.x as number, y: bounds.y as number, width: bounds.width as number, height: bounds.height as number }, ...(slot ? { slot } : {}), ...(input.radius ? { radius: input.radius as number } : {}) };
 		}
+		case "hide": { const slot = browserSlot(input.slot); return { id, type: "hide", ...(slot ? { slot } : {}) }; }
 		case "navigate": if (typeof input.url !== "string") throw new Error("Invalid browser address."); return { id, type: "navigate", url: browserUrl(input.url) };
 		case "viewport": return { id, type: "viewport", viewport: browserViewport(input.viewport) };
 		case "zoom": return { id, type: "zoom", zoom: browserZoom(input.zoom) };
 		case "colorScheme": return { id, type: "colorScheme", colorScheme: browserColorScheme(input.colorScheme) };
 		case "mute": if (typeof input.muted !== "boolean") throw new Error("Invalid browser action."); return { id, type: "mute", muted: input.muted };
 		case "clearData": if (input.data !== "cookies" && input.data !== "cache") throw new Error("Invalid browser action."); return { id, type: "clearData", data: input.data };
-		default: if (typeof input.type !== "string" || !simpleCommands.includes(input.type)) throw new Error("Invalid browser action."); return { id, type: input.type as "hide" };
+		default: if (typeof input.type !== "string" || !simpleCommands.includes(input.type)) throw new Error("Invalid browser action."); return { id, type: input.type as "back" };
 	}
 }
 export function browserId(value: unknown): string { if (typeof value !== "string" || !value || value.length > 200) throw new Error("Invalid browser context."); return value; }
@@ -100,6 +113,31 @@ export type BrowserCapture = { png: string; width: number; height: number; url: 
 export type BrowserPick = BrowserCapture & { selector: string; text: string; tag: string };
 /** A local web server listening on this computer. */
 export type BrowserLocalServer = { url: string; host: string; port: number; process?: string };
+
+/** A screen recording of a page, saved on this computer. */
+export type BrowserRecording = { path: string; mimeType: string; size: number };
+/** MediaRecorder formats in T3 Code's order of preference: MP4 first, WebM when MP4 cannot be recorded. */
+export const browserRecordingMimeTypes = ["video/mp4;codecs=avc1", "video/mp4;codecs=avc1.640028", "video/mp4;codecs=avc1.42e01e", "video/mp4", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"] as const;
+export const browserRecordingLimit = 1024 * 1024 * 1024;
+export function chooseBrowserRecordingMimeType(isSupported: (type: string) => boolean): string | undefined { return browserRecordingMimeTypes.find(type => isSupported(type)); }
+/** The container of a recorded MIME type, which names the file; anything else is refused. */
+export function browserRecordingExtension(mimeType: unknown): "mp4" | "webm" {
+	if (typeof mimeType !== "string" || mimeType.length > 100) throw new Error("Invalid recording format.");
+	const base = mimeType.split(";")[0].trim().toLowerCase();
+	if (base === "video/mp4") return "mp4";
+	if (base === "video/webm") return "webm";
+	throw new Error("Invalid recording format.");
+}
+
+/** The agent cursor's opacity, as in T3 Code: full just after an action, then faint, fainter while the person drives. */
+export const agentCursorActiveMs = 700;
+export function agentCursorOpacity(active: boolean, controller: BrowserController): number { if (active) return 1; return controller === "human" ? 0.18 : 0.35; }
+/** T3 Code's question before closing browser tabs an agent is driving; undefined when none is. */
+export function agentBrowserCloseConfirmation(count: number): string | undefined {
+	if (count <= 0) return;
+	if (count === 1) return "Close browser while the agent is using it?\nThe agent is actively controlling this browser. Closing it may interrupt the current browser action.";
+	return `Close ${count} browsers while the agent is using them?\nThe agent is actively controlling these browsers. Closing them may interrupt the current browser actions.`;
+}
 
 export function browserUrl(value: string): string {
 	if (value.length > 8192) throw new Error("Address is too long.");
