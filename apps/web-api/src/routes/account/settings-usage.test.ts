@@ -279,6 +279,28 @@ describe("account usage settings routes", () => {
 		});
 	});
 
+	it("caps deprecation-only lifecycle warnings below critical", async () => {
+		const deprecationDate = new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10);
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
+			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
+			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
+			if (url.includes("/rpc/get_requested_model_last_used_by_workspace")) return new Response(JSON.stringify([{ workspace_id: "workspace-1", model_slug: "openai/gpt-old", last_used_at: new Date().toISOString() }]), { status: 200 });
+			if (url.includes("v2_models") && url.includes("previous_model_slug=in")) return new Response(JSON.stringify([]), { status: 200 });
+			if (url.includes("v2_models")) return new Response(JSON.stringify([{ model_id: "openai/gpt-old", name: "GPT Old", organisation_id: "openai", deprecation_date: deprecationDate, retirement_date: null, previous_model_id: null, replacement_model_id: null, metadata: null }]), { status: 200 });
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+		const response = await app.request(
+			"https://phaseo.app/api/account/settings/usage/alerts?workspaceId=workspace-1",
+			{ headers: { authorization: "Bearer session-token" } },
+			env,
+		);
+		await expect(response.json()).resolves.toMatchObject({
+			warnings: [{ modelId: "openai/gpt-old", deprecationDaysUntil: 5, retirementDaysUntil: null, countAsAlert: true, severity: "warning" }],
+		});
+	});
+
 	it("returns private logs, upstream, jobs, and session views with metadata", async () => {
 		let requestedExactFacets = false;
 		let requestedLabelFilter = false;

@@ -206,7 +206,7 @@ function CardsBlock({
 	rows,
 	mode,
 	title,
-	collapsible = true,
+	collapsible = false,
 }: {
 	rows: DeprecationWarning[];
 	mode: AlertCardMode;
@@ -360,7 +360,7 @@ export default function DeprecationWarnings({
 					title={t("strings.Models You Don't Use" as never)}
 					rows={deprecatedFyiRows}
 					mode="deprecated"
-					collapsible={false}
+					collapsible
 				/>
 				<SectionBlock
 					title={t("strings.Recent Retirements" as never)}

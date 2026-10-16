@@ -2532,8 +2532,8 @@
 		}
 	},
 	"deprecationNotice": {
-		"oneModel": "{model}, which your workspace uses, is being deprecated. Start planning your move off it.",
-		"manyModels": "{count} models your workspace uses are being deprecated. Start planning your move off them.",
+		"oneModel": "{model}, which your workspace uses, is being retired. Start planning your move off it.",
+		"manyModels": "{count} models your workspace uses are being retired. Start planning your move off them.",
 		"retiresOn": "Retires {date}.",
 		"replacement": "Suggested replacement: {replacement}.",
 		"review": "Review",
