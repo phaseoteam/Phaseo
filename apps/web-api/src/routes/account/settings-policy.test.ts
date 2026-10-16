@@ -311,7 +311,7 @@ describe("account policy settings routes", () => {
 			if (url.includes("gateway_dynamic_routes")) return new Response(JSON.stringify([{ id: "route-1", workspace_id: "workspace-1", name: "Production", status: "active", version: 2, config: { cacheAwareRouting: true } }]), { status: 200 });
 			if (url.includes("gateway_dynamic_route_keys")) return new Response(JSON.stringify([{ route_id: "route-1", key_id: "key-1" }]), { status: 200 });
 			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([
-				{ provider_id: "openai" },
+				{ provider_id: "openai", provider_model_id: "pm-native", api_model_id: "openai/native" },
 				{ provider_id: "anthropic" },
 				{ provider_id: "anthropic-aws" },
 				{ provider_id: "anthropic-us" },
@@ -330,6 +330,12 @@ describe("account policy settings routes", () => {
 				return new Response(JSON.stringify(providers), { status: 200 });
 			}
 			if (url.includes("data_api_provider_models")) return new Response(JSON.stringify([{ provider_id: "openai", api_model_id: "gpt-test", internal_model_id: "openai/gpt-test", is_active_gateway: true }]), { status: 200 });
+			if (url.includes("v2_route_capabilities")) {
+                expect(new URL(url).searchParams.get("or")).toContain("metadata->data_policy.not.is.null");
+                expect(new URL(url).searchParams.get("provider_model_id")).toBe("in.(pm-native)");
+                expect(new URL(url).searchParams.get("limit")).toBe("500");
+                return new Response(JSON.stringify([{ provider_model_id: "pm-native", capability_id: "text.generate", metadata: { data_policy: { tier: "private", confidence: "confirmed", zeroDataRetention: true, zdrEligibility: "eligible" } } }]), { status: 200 });
+            }
 			if (url.includes("workspace_guardrails")) return new Response(JSON.stringify([{ id: "guardrail-1", workspace_id: "workspace-1", name: "Default", enabled: true }]), { status: 200 });
 			if (url.includes("key_guardrails")) return new Response(JSON.stringify([{ guardrail_id: "guardrail-1", key_id: "key-1" }]), { status: 200 });
 			return new Response(JSON.stringify([]), { status: 200 });
@@ -351,6 +357,9 @@ describe("account policy settings routes", () => {
 		await expect(presets.json()).resolves.toMatchObject({ currentUserId: "user-1", teamsWithPresets: [{ id: "workspace-1", presets: [{ id: "preset-1", hasDraftChanges: true }] }] });
 		await expect(guardrails.json()).resolves.toMatchObject({ guardrails: [{ id: "guardrail-1" }], guardrailKeyIdsByGuardrailId: { "guardrail-1": ["key-1"] }, keys: [{ id: "key-1" }] });
 		const editorBody = await editor.json();
+        expect(editorBody.activeProviderModels).toEqual(expect.arrayContaining([
+            expect.objectContaining({ providerId: "openai", capabilities: [{ id: "text.generate", dataPolicy: { tier: "private", confidence: "confirmed", zeroDataRetention: true, zdrEligibility: "eligible" } }] }),
+        ]));
 		expect(editorBody).toMatchObject({
 			mode: "edit",
 			guardrail: { id: "guardrail-1" },

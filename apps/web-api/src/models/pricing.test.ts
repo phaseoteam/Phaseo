@@ -120,6 +120,7 @@ describe("publicPricingRouteIdentity", () => {
 describe("composeModelPricing", () => {
 	it("carries capability and service-tier policy metadata into composed pricing", () => {
 		const capabilityPolicy = {
+			zeroDataRetention: true,
 			tier: "private",
 			confidence: "confirmed",
 			zdrEligibility: "eligible",
