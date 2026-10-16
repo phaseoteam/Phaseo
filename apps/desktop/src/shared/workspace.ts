@@ -233,6 +233,8 @@ export type WorkspaceApi = {
 	pullRequestCandidates: (projectId: string, query: { number: number; kind: "labels" | "reviewers" }) => Promise<PullRequestCandidates>;
 	/** Merge, close, comment, review and the rest, through GitHub CLI; returns the pull request as it is afterwards. */
 	pullRequestAction: (projectId: string, request: PullRequestActionRequest) => Promise<PullRequestView>;
+	/** The project's GitHub repository (owner/repo) from its origin remote, or null when it has none. */
+	projectRepository: (projectId: string) => Promise<string | null>;
 	/** The native GitHub stack a pull request is in, cached for a minute unless `fresh`; linked chats pick up its layers. */
 	pullRequestStack: (projectId: string, number: number, fresh?: boolean) => Promise<PullRequestStackRead>;
 	/** Merge stack (through this layer) or Rebase stack (from the top), refused if any expected head moved. */

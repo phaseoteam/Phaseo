@@ -94,6 +94,7 @@ const desktopApi: PhaseoDesktopApi = {
 		pullRequestView: (id, number) => ipcRenderer.invoke("workspace:pull-request-view", id, number),
 		pullRequestCandidates: (id, query) => ipcRenderer.invoke("workspace:pull-request-candidates", id, query),
 		pullRequestAction: (id, request) => ipcRenderer.invoke("workspace:pull-request-action", id, request),
+		projectRepository: id => ipcRenderer.invoke("workspace:project-repository", id),
 		pullRequestStack: (id, number, fresh) => ipcRenderer.invoke("workspace:pull-request-stack", id, number, fresh ?? false),
 		pullRequestStackAction: (id, request) => ipcRenderer.invoke("workspace:pull-request-stack-action", id, request),
 		gitHunks: (id, filename, staged) => ipcRenderer.invoke("workspace:git-hunks", id, filename, staged),

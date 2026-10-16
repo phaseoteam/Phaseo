@@ -358,6 +358,10 @@ ipcMain.handle("workspace:pull-request", async (event, id: unknown, number: unkn
 ipcMain.handle("workspace:pull-request-candidates", (event, id: unknown, query: unknown) => projectPullRequestCandidates(projectRoot(event, id), query));
 ipcMain.handle("workspace:pull-request-view", async (event, id: unknown, number: unknown) => { const view = await projectPullRequestView(projectRoot(event, id), number); workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)); return view; });
 ipcMain.handle("workspace:pull-request-action", async (event, id: unknown, request: unknown) => { const root = projectRoot(event, id); if (shutdownStarted) throw new Error("The workspace is shutting down."); const view = await projectPullRequestAction(root, request); workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)); return view; });
+ipcMain.handle("workspace:project-repository", async (event, id: unknown) => {
+	const root = projectRoot(event, id);
+	try { return githubRepository(await git(root, ["remote", "get-url", "origin"])); } catch { return null; }
+});
 ipcMain.handle("workspace:pull-request-stack", async (event, id: unknown, number: unknown, fresh: unknown) => {
 	const root = projectRoot(event, id);
 	if (!Number.isSafeInteger(number) || Number(number) < 1 || typeof fresh !== "boolean") throw new Error("Invalid stack request.");
