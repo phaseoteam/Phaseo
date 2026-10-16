@@ -771,6 +771,10 @@ app.whenReady().then(() => {
 		try { return await runGh(root, ["pr", "diff", String(view.number), "--repo", view.repository, "--color", "never"]); }
 		catch (reason) { throw new Error(ghFailure((reason as { stderr?: unknown }).stderr, "Could not read the pull request's diff."), { cause: reason }); }
 	});
+	workspaceRuntime.pullRequestGuideTools = {
+		write: async (root, repository, number) => { const view = await readPullRequestView(root, repository, number), before = await pullRequestGuides.get(view); void pullRequestGuides.generate(root, view); return before.running ? "running" : "started"; },
+		read: async (root, repository, number) => pullRequestGuides.get(await readPullRequestView(root, repository, number)),
+	};
 	workspaceRuntime.discoverThreadModels = discoverDesktopModels;
 	workspaceRuntime.discoverInstallations = harnessInstallations;
 	globalInstructions = new GlobalInstructions(path.join(workspaceDirectory, "instructions"));

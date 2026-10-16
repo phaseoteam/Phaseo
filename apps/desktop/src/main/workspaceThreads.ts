@@ -6,6 +6,11 @@ import type { WorkspaceOverview } from "../shared/workspaceOverview";
 import type { WorkspaceStore } from "./workspaceStore";
 import { validateDelegate } from "./threadTools";
 import { parsePullRequestReference, pullRequestUrl, samePullRequest, validatePullRequestLinks, type TaskPullRequestLink } from "../shared/pullRequestView";
+import { pullRequestChains, visiblePullRequestLinks } from "../shared/pullRequestStacks";
+import type { PullRequestGuideResult } from "../shared/pullRequestGuide";
+import type { PullRequestGuideOutcome, PullRequestToolTarget, ThreadPullRequestEntry } from "../shared/orchestration";
+import { git } from "./gitProcess";
+import { githubRepository } from "./projectPullRequests";
 
 type Host = {
 	store: WorkspaceStore;
@@ -22,7 +27,10 @@ type Host = {
 	/** Same installation check as the composer; harnesses missing from the list are treated as installed. */
 	discoverInstallations?: () => Promise<{ harness: Harness; installed: boolean; error?: string }[]>;
 	modelDiscoveries: Set<Promise<unknown>>;
+	/** Review guides, once the app has its guide store: write starts a run without waiting for it. */
+	pullRequestGuides?: { write: (root: string, repository: string, number: number) => Promise<"started" | "running">; read: (root: string, repository: string, number: number) => Promise<PullRequestGuideResult> };
 };
+const failure = (error: unknown) => error instanceof Error ? error.message.slice(0, 500) : "Could not write the guide.";
 
 const active = (status: Task["status"]) => status === "idle" || status === "running" || status === "waiting";
 const modeRank: Record<Task["mode"], number> = { chat: 0, plan: 1, code: 2 };
@@ -249,6 +257,18 @@ export class WorkspaceThreads {
 			if ((childOnly || id !== parentId) && !owned && (childOnly || !this.host.store.getTask(parentId).messages.some(message => message.role === "user" && message.threadReferences?.includes(id)))) throw new Error("This chat is outside this agent's scope.");
 			return task;
 		};
+		/** The project checkout a pull request is read through: the chat's own for a bare number, else one whose origin is its repository. */
+		const guideTarget = async (target: PullRequestToolTarget) => {
+			const parsed = parsePullRequestReference(target.url ?? (target.repository ? `${target.repository}#${target.number}` : `#${target.number}`));
+			if (!parsed || (target.url && (target.repository || target.number))) throw new Error("Pass either url, or repository and number.");
+			const projects = this.host.store.getProjects().filter(project => !project.worktree?.removedAt), own = this.host.store.getTask(parentId).projectId;
+			const origin = async (directory: string) => { try { return githubRepository(await git(directory, ["remote", "get-url", "origin"])); } catch { return undefined; } };
+			const ordered = [...projects.filter(project => project.id === own), ...projects.filter(project => project.id !== own)];
+			const repository = parsed.repository ?? (ordered[0]?.id === own ? await origin(ordered[0].directory) : undefined);
+			if (!repository) throw new Error("This chat's project has no GitHub origin. Pass the pull request's URL instead.");
+			for (const project of ordered) if ((await origin(project.directory))?.toLowerCase() === repository.toLowerCase()) return { root: project.directory, identity: { repository, number: parsed.number, url: pullRequestUrl(repository, parsed.number) } };
+			throw new Error(`No project in this workspace is a checkout of ${repository}, so its pull requests cannot be read here. Add one first.`);
+		};
 		const retry = (requestId: string) => this.host.store.getOverview().tasks.find(task => task.delegation?.parentTaskId === parentId && task.delegation.requestId === requestId);
 		return {
 			handoff: async (id, request) => {
@@ -356,7 +376,7 @@ export class WorkspaceThreads {
 				const reference = target.url ?? (target.repository ? `${target.repository}#${target.number}` : `#${target.number}`), parsed = parsePullRequestReference(reference);
 				if (target.url && (target.repository || target.number)) throw new Error("Pass either url, or repository and number, not both.");
 				if (!parsed) throw new Error("This is not a GitHub pull request. Pass its URL, or repository and number.");
-				const links = () => validatePullRequestLinks(this.host.store.getTask(id).pullRequests) ?? [];
+				const links = () => visiblePullRequestLinks(validatePullRequestLinks(this.host.store.getTask(id).pullRequests));
 				const find = (repository?: string) => links().filter(link => link.number === parsed.number && (!repository || samePullRequest(link, { repository, number: parsed.number })));
 				const before = find(parsed.repository);
 				const result = (link: TaskPullRequestLink) => ({ repository: link.repository, number: link.number, url: link.url });
@@ -376,6 +396,34 @@ export class WorkspaceThreads {
 				if (action === "link") return { ...result(link), alreadyLinked: before.length > 0 };
 				await this.host.command({ type: "watch-pull-request", id, repository: link.repository, number: link.number, watching: true });
 				return { ...result(link), watching: true, wasWatching: Boolean(link.watching) };
+			},
+			pullRequestList: async requested => {
+				const id = requested ?? parentId, task = id === parentId ? this.host.store.getTask(id) : scoped(id, true, true);
+				const links = visiblePullRequestLinks(validatePullRequestLinks(task.pullRequests)), chains = pullRequestChains(links);
+				const placement = new Map(chains.flatMap(chain => chain.layers.map((link, index) => [`${link.repository.toLowerCase()}#${link.number}`, { kind: chain.kind, position: index + 1, size: chain.layers.length }] as const)));
+				const pullRequests = links.map((link): ThreadPullRequestEntry => {
+					const stack = placement.get(`${link.repository.toLowerCase()}#${link.number}`);
+					return { repository: link.repository, number: link.number, url: link.url, source: link.source, watching: Boolean(link.watching), state: link.snapshot?.state ?? null, title: link.snapshot?.title ?? null, headBranch: link.snapshot?.head ?? null, baseBranch: link.snapshot?.base ?? null, isDraft: link.snapshot?.draft ?? null, stack: stack && stack.size > 1 ? stack : null };
+				});
+				return { pullRequests, chains: chains.filter(chain => chain.layers.length > 1).map(chain => ({ kind: chain.kind, numbers: chain.layers.map(link => link.number) })) };
+			},
+			writePullRequestGuides: async targets => {
+				const guides: PullRequestGuideOutcome[] = [];
+				for (const target of targets) {
+					let resolved: Awaited<ReturnType<typeof guideTarget>> | undefined;
+					try {
+						resolved = await guideTarget(target);
+						if (!this.host.pullRequestGuides) throw new Error("Review guides are unavailable.");
+						guides.push({ ...resolved.identity, outcome: await this.host.pullRequestGuides.write(resolved.root, resolved.identity.repository, resolved.identity.number), detail: null });
+					} catch (error) { guides.push({ ...(resolved?.identity ?? { repository: target.repository ?? "", number: target.number ?? 0, url: target.url ?? (target.repository && target.number ? pullRequestUrl(target.repository, target.number) : "") }), outcome: "failed", detail: failure(error) }); }
+				}
+				return { guides };
+			},
+			readPullRequestGuide: async target => {
+				const { root, identity } = await guideTarget(target);
+				if (!this.host.pullRequestGuides) throw new Error("Review guides are unavailable.");
+				const result = await this.host.pullRequestGuides.read(root, identity.repository, identity.number);
+				return { ...identity, guide: result.guide, run: result.running ? { status: "running" } : result.error ? { status: "failed", error: result.error } : null, currentHeadSha: result.currentHeadSha || null, stale: Boolean(result.guide && result.currentHeadSha && result.guide.headSha !== result.currentHeadSha) };
 			},
 			scheduled: () => this.host.store.missions.list().slice(0, 100).map(scheduledTask),
 			schedule: async request => {
