@@ -24,4 +24,36 @@ describe("chat pull request links", () => {
 			expect(() => store.apply({ type: "link-pull-request", id: task.id, reference: "#42" })).toThrow("Choose");
 		} finally { store.close(); }
 	});
+	it("watches only chats that take wakes, and records passes only for the same watch", () => {
+		const store = new WorkspaceStore(":memory:");
+		try {
+			const task = store.apply({ type: "create-task", harness: "opencode", model: "default", mode: "code" }), target = { repository: "owned/repo", number: 42 };
+			store.apply({ type: "link-pull-request", id: task.id, reference: "#42", ...target, source: "agent" });
+			expect(store.getTask(task.id).pullRequests?.[0].source).toBe("agent");
+			store.apply({ type: "watch-pull-request", id: task.id, ...target, watching: true });
+			const watch = store.getTask(task.id).pullRequests![0].watch!;
+			expect(watch).toMatchObject({ headSha: null, wakes: 0 });
+			// Watching again keeps the running watch.
+			store.apply({ type: "watch-pull-request", id: task.id, ...target, watching: true });
+			expect(store.getTask(task.id).pullRequests![0].watch).toEqual(watch);
+			const update = { text: "Update on pull request #42", summary: "#42: checks failed", outcome: "failed" as const };
+			expect(store.recordPullRequestWatch(task.id, target, "2000-01-01T00:00:00.000Z", { ...watch, wakes: 3 }, update)).toBe(false);
+			expect(store.getTask(task.id).queue).toEqual([]);
+			expect(store.recordPullRequestWatch(task.id, target, watch.startedAt, { ...watch, wakes: 1 }, update)).toBe(true);
+			expect(store.getTask(task.id).queue).toEqual([expect.objectContaining({ text: update.text, notice: { kind: "pull-request", summary: update.summary, outcome: "failed", url: "https://github.com/owned/repo/pull/42" } })]);
+			expect(store.getTask(task.id).pullRequests![0].watch?.wakes).toBe(1);
+			expect(store.recordPullRequestWatch(task.id, target, watch.startedAt, null)).toBe(false);
+			expect(store.getTask(task.id).pullRequests![0]).not.toHaveProperty("watching");
+
+			store.apply({ type: "watch-pull-request", id: task.id, ...target, watching: true });
+			expect(store.endPullRequestWatches(task.id)).toBe(true);
+			expect(store.getTask(task.id).pullRequests![0]).not.toHaveProperty("watch");
+			const parked = store.getTask(task.id); parked.queue = []; store.saveTask(parked);
+			store.apply({ type: "settle", id: task.id });
+			expect(() => store.apply({ type: "watch-pull-request", id: task.id, ...target, watching: true })).toThrow("Restore");
+			store.apply({ type: "unsettle", id: task.id });
+			expect(store.syncPullRequestSnapshot("owned/repo", 42, { ...snapshot, state: "merged" })).toBe(true);
+			expect(() => store.apply({ type: "watch-pull-request", id: task.id, ...target, watching: true })).toThrow("merged");
+		} finally { store.close(); }
+	});
 });

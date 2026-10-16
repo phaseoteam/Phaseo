@@ -23,5 +23,13 @@ export class TaskNotifications {
 			else for (const change of changes) this.displayed.push(this.ports.show("Phaseo", this.preferences.notificationTitles ? `${change.title.slice(0, 120)} — ${change.reason}` : change.reason, () => this.ports.open(change.id)));
 		} catch { /* Notification availability must never interrupt task execution. */ }
 	}
+	/** A watched pull request changed: one notification through the same rules (off, focus, support). Passing checks are news only with "all". */
+	notice(taskId: string, chatTitle: string, summary: string, attention: boolean) {
+		if (this.preferences.notifications === "off" || (this.preferences.notifications === "attention" && !attention)) return;
+		try {
+			if (this.ports.focused() || !this.ports.supported()) return;
+			this.displayed.push(this.ports.show("Phaseo", this.preferences.notificationTitles ? `${chatTitle.slice(0, 120)} — Pull request ${summary}` : `Pull request ${summary}`, () => this.ports.open(taskId)));
+		} catch { /* Notification availability must never interrupt task execution. */ }
+	}
 	dismiss() { for (const close of this.displayed) { try { close(); } catch { /* Already dismissed by the operating system. */ } } this.displayed = []; }
 }

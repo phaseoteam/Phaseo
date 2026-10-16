@@ -10,7 +10,9 @@ import { optionValue, questionAnswerError, questionOptions } from "../shared/age
 import { WorkspaceThreads } from "./workspaceThreads";
 import { git } from "./gitProcess";
 import { githubRepository } from "./projectPullRequests";
-import { parsePullRequestReference, type PullRequestLinkSnapshot } from "../shared/pullRequestView";
+import { parsePullRequestReference, validatePullRequestLinks, type PullRequestLinkSnapshot } from "../shared/pullRequestView";
+import type { PullRequestWatchMessage, PullRequestWatchState } from "../shared/pullRequestWatch";
+import type { PullRequestWatchTarget } from "./pullRequestWatcher";
 import { OrchestratorMcp } from "./orchestratorMcp";
 import { QuestionDeferredError } from "./phaseoQuestionTools";
 import { CodexAdapter } from "./codexAdapter";
@@ -158,6 +160,22 @@ export class WorkspaceRuntime {
 	syncPullRequestSnapshot(repository: string, number: number, snapshot: PullRequestLinkSnapshot) {
 		if (!this.closing && this.store.syncPullRequestSnapshot(repository, number, snapshot)) this.broadcast();
 	}
+	/** Every chat's pull request links for the watcher, with the folder gh reads them from. */
+	pullRequestWatchTargets(): PullRequestWatchTarget[] {
+		const workspace = this.store.getOverview();
+		return workspace.tasks.flatMap(task => (validatePullRequestLinks(task.pullRequests) ?? []).filter(link => link.watching).map(link => ({ taskId: task.id, cwd: workspace.projects.find(project => project.id === task.projectId && !project.worktree?.removedAt)?.directory ?? this.directory, inactive: task.archived || task.settledOverride === "settled" || Boolean(task.delegation?.parentTaskId), link })));
+	}
+	/** A watch pass: records it, and when there is news queues it for the chat's agent (after any running turn), starts an idle chat and notifies. */
+	recordPullRequestWatch(taskId: string, link: { repository: string; number: number }, startedAt: string, next: PullRequestWatchState | null, update?: PullRequestWatchMessage) {
+		if (this.closing) return;
+		const queued = this.store.recordPullRequestWatch(taskId, link, startedAt, next, update);
+		this.broadcast();
+		if (!queued || !update) return;
+		this.start(taskId);
+		this.onPullRequestNotice?.(taskId, update.summary, update.outcome);
+	}
+	/** Raised for each watched pull request update, for the desktop notification. */
+	onPullRequestNotice?: (taskId: string, summary: string, outcome: PullRequestWatchMessage["outcome"]) => void;
 	private broadcast() {
 		const parents = this.store.collectDelegationResults();
 		this.onChange(this.store.getOverview()); this.threads.changed();
@@ -413,7 +431,8 @@ export class WorkspaceRuntime {
 		}
 		if (command.type === "cancel") {
 			if (this.executions.has(command.id) && !this.running.has(command.id)) this.stoppedDuringSetup.add(command.id);
-			this.store.apply(command); this.orchestrationSessions.get(command.id)?.(); this.broadcast();
+			// Stop ends the chat's pull request watches too, as in T3: they would only wake it again.
+			this.store.apply(command); this.store.endPullRequestWatches(command.id); this.orchestrationSessions.get(command.id)?.(); this.broadcast();
 			for (const child of this.store.getOverview().tasks.filter(task => task.delegation?.parentTaskId === command.id && ["idle", "running", "waiting"].includes(task.status))) if (this.store.getTask(child.id).delegation?.parentTaskId === command.id) await this.command({ type: "cancel", id: child.id });
 			for (const [id, pending] of this.approvals) if (pending.taskId === command.id) { pending.resolve("decline"); this.approvals.delete(id); }
 			for (const [id, pending] of this.questions) if (pending.taskId === command.id) { pending.resolve({}); this.questions.delete(id); }

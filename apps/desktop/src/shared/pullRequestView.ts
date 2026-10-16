@@ -1,12 +1,14 @@
 import type { PullRequest, PullRequestDetails } from "./pullRequests";
 import { reviewNodeId } from "./pullRequestThreads";
+import { newPullRequestWatch, validatePullRequestWatch, type PullRequestWatchState } from "./pullRequestWatch";
 
 /** Everything one pull request pane shows, read in one GitHub request (after T3 Code's detail view). */
 export type PullRequestActor = { login: string; avatarUrl?: string; bot?: boolean };
 export type PullRequestCheckStatus = "pending" | "action-required" | "success" | "failure" | "cancelled" | "skipped" | "neutral";
-export type PullRequestCheck = { name: string; status: PullRequestCheckStatus; url?: string; description?: string };
+/** `required` is the base branch's protection asking for this check. */
+export type PullRequestCheck = { name: string; status: PullRequestCheckStatus; url?: string; description?: string; required?: boolean };
 export type PullRequestReaction = { content: string; count: number };
-export type PullRequestComment = { id: string; kind: "comment" | "review" | "review-comment"; author: PullRequestActor | null; body: string; createdAt: string; url?: string; reviewState?: string; path?: string; threadId?: string; reactions: PullRequestReaction[] };
+export type PullRequestComment = { id: string; kind: "comment" | "review" | "review-comment"; author: PullRequestActor | null; body: string; createdAt: string; editedAt?: string; url?: string; reviewState?: string; path?: string; threadId?: string; reactions: PullRequestReaction[] };
 export type PullRequestCommit = { oid: string; headline: string; committedAt: string; additions?: number; deletions?: number; authors: PullRequestActor[] };
 export type PullRequestReviewThreadView = { id: string; path: string; line?: number; originalLine?: number; side: "LEFT" | "RIGHT"; resolved: boolean; outdated: boolean; canReply: boolean; canResolve: boolean; canUnresolve: boolean; comments: PullRequestComment[]; totalComments: number };
 export type PullRequestReviewState = "APPROVED" | "CHANGES_REQUESTED" | "DISMISSED" | "COMMENTED";
@@ -81,7 +83,7 @@ export function validatePullRequestActionRequest(value: unknown): PullRequestAct
 
 /** A linked pull request as the chat remembers it: the last state any pane read, so lists draw without asking GitHub. */
 export type PullRequestLinkSnapshot = { title: string; state: "open" | "closed" | "merged"; draft: boolean; mergeable: PullRequestDetails["mergeable"]; checks: PullRequest["checks"]; review: PullRequest["review"]; additions: number; deletions: number; author: string; head: string; base: string; updatedAt: string };
-export type TaskPullRequestLink = { repository: string; number: number; url: string; linkedAt: string; source: "manual" | "agent"; watching?: boolean; snapshot?: PullRequestLinkSnapshot };
+export type TaskPullRequestLink = { repository: string; number: number; url: string; linkedAt: string; source: "manual" | "agent"; watching?: boolean; /** Present while watching: what the chat's agent was last told. */ watch?: PullRequestWatchState; snapshot?: PullRequestLinkSnapshot };
 export const maximumPullRequestLinks = 50;
 const repositoryPattern = /^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/;
 export function validRepository(value: unknown): value is string { return typeof value === "string" && repositoryPattern.test(value) && !value.split("/").some(part => part === "." || part === ".."); }
@@ -103,6 +105,8 @@ export function parsePullRequestReference(input: string): { repository?: string;
 export function pullRequestLinkSnapshot(details: PullRequestDetails): PullRequestLinkSnapshot {
 	return { title: details.title, state: details.state === "MERGED" ? "merged" : details.state === "CLOSED" ? "closed" : "open", draft: details.draft, mergeable: details.mergeable, checks: details.checks, review: details.review, additions: details.additions, deletions: details.deletions, author: details.author, head: details.head, base: details.base, updatedAt: details.updatedAt };
 }
+/** The link without its watch. */
+export function unwatched(link: TaskPullRequestLink): TaskPullRequestLink { const copy = { ...link }; delete copy.watch; delete copy.watching; return copy; }
 export function samePullRequest(left: { repository: string; number: number }, right: { repository: string; number: number }) { return left.number === right.number && left.repository.toLowerCase() === right.repository.toLowerCase(); }
 
 /** Stored links come back through the store; anything malformed is dropped rather than trusted. */
@@ -113,7 +117,7 @@ export function validatePullRequestLinks(value: unknown): TaskPullRequestLink[] 
 		const link = entry as Partial<TaskPullRequestLink> | null;
 		if (!link || !validRepository(link.repository) || !Number.isSafeInteger(link.number) || Number(link.number) < 1 || typeof link.linkedAt !== "string") continue;
 		if (links.some(other => samePullRequest(other, link as TaskPullRequestLink))) continue;
-		links.push({ repository: link.repository, number: Number(link.number), url: pullRequestUrl(link.repository, Number(link.number)), linkedAt: link.linkedAt, source: link.source === "agent" ? "agent" : "manual", ...(link.watching ? { watching: true } : {}), ...(link.snapshot && typeof link.snapshot === "object" ? { snapshot: link.snapshot } : {}) });
+		links.push({ repository: link.repository, number: Number(link.number), url: pullRequestUrl(link.repository, Number(link.number)), linkedAt: link.linkedAt, source: link.source === "agent" ? "agent" : "manual", ...(link.watching ? { watching: true, watch: validatePullRequestWatch(link.watch) ?? newPullRequestWatch(new Date().toISOString()) } : {}), ...(link.snapshot && typeof link.snapshot === "object" ? { snapshot: link.snapshot } : {}) });
 	}
 	return links;
 }

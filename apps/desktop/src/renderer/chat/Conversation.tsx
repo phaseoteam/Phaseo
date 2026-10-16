@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowDown, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, Layers, ListChecks, LoaderCircle, Paperclip, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
+import { ArrowDown, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, Paperclip, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
 import type { AgentActivity, Message, Task } from "../../shared/workspace";
@@ -48,6 +48,21 @@ function UserMessage({ message, projectId, onAttachment, onBranch, canBranch }: 
 			<CopyButton text={mentionPlainText(message.text)} />
 			<ActionButton label="Branch from here" disabled={!canBranch} onClick={() => onBranch(message.id)}><GitBranch /></ActionButton>
 		</div>
+	</div>;
+}
+
+const noticeTones = { failed: "text-destructive", completed: "text-emerald-600 dark:text-emerald-300/90", updated: "text-muted-foreground" } as const;
+/** A wake the app sent the agent (T3 shows these as a notification row): the one-line summary, with the full update on demand. */
+function WatchNotice({ message }: { message: Message }) {
+	const [open, setOpen] = useState(false), notice = message.notice!;
+	return <div data-conversation-id={`message:${message.id}`} data-notice={notice.kind} className="text-[12.5px]">
+		<button type="button" onClick={() => setOpen(value => !value)} aria-expanded={open} className="group/notice flex w-full min-w-0 items-center gap-2 rounded-md py-1 text-left text-muted-foreground hover:text-foreground">
+			<GitPullRequestArrow aria-hidden className={cn("size-3.5 shrink-0", noticeTones[notice.outcome])} />
+			<span className="min-w-0 truncate font-medium text-foreground/85">Pull request {notice.summary}</span>
+			<span className="shrink-0 text-[11px]">{new Date(message.createdAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</span>
+			<ChevronRight aria-hidden className={cn("size-3.5 shrink-0 opacity-0 transition group-hover/notice:opacity-100", open && "rotate-90 opacity-100")} />
+		</button>
+		{open && <div data-selectable className="mt-0.5 mb-2 ml-[7px] border-l border-border py-0.5 pl-4 text-[13px] whitespace-pre-wrap text-muted-foreground">{message.text}</div>}
 	</div>;
 }
 
@@ -131,8 +146,8 @@ function Turn({ user, entries, live, complete, task, onAttachment, onBranch, com
 	const usage = turnUsage(user ? task.activities?.filter(activity => activity.type === "usage" && activity.id.startsWith(`${user.id}:`)) ?? [] : []);
 	const canBranch = !["running", "waiting"].includes(task.status) && !task.archived;
 	const hasAssistant = work.length > 0 || plans.length > 0 || !!final || live;
-	return <div data-turn-id={user && user.delivery !== "subagent" ? user.id : undefined} className="flex flex-col gap-4">
-		{user && (user.delivery === "subagent" ? <AgentResult message={user} projectId={task.projectId} /> : <UserMessage message={user} projectId={task.projectId} onAttachment={onAttachment} onBranch={onBranch} canBranch={canBranch} />)}
+	return <div data-turn-id={user && user.delivery !== "subagent" && !user.notice ? user.id : undefined} className="flex flex-col gap-4">
+		{user && (user.notice ? <WatchNotice message={user} /> : user.delivery === "subagent" ? <AgentResult message={user} projectId={task.projectId} /> : <UserMessage message={user} projectId={task.projectId} onAttachment={onAttachment} onBranch={onBranch} canBranch={canBranch} />)}
 		{hasAssistant && <div data-conversation-id={`turn:${user?.id ?? entries[0]?.value.id}`} className="group/turn flex flex-col gap-3">
 			{!compact && <AssistantHeader task={task} />}
 			<WorkLog entries={work} user={user} live={live} complete={complete} task={task} />
@@ -163,7 +178,7 @@ export function Conversation({ task, onAttachment, onBranch, children, compact, 
 	const activeTurn = task.messages.findLast(message => message.role === "user")?.id;
 	const running = ["running", "waiting"].includes(task.status);
 	const view = { ...task, messages: messages.page.entries as Message[], activities: activities.page.entries as AgentActivity[] };
-	const railTurns = useMemo<RailTurn[]>(() => turns.flatMap(turn => !turn.user || turn.user.delivery === "subagent" ? [] : [{
+	const railTurns = useMemo<RailTurn[]>(() => turns.flatMap(turn => !turn.user || turn.user.delivery === "subagent" || turn.user.notice ? [] : [{
 		id: turn.user.id, user: turn.user.text, attachments: turn.user.attachments?.map(attachment => attachment.name) ?? [],
 		assistant: turn.entries.findLast(entry => entry.kind === "message" && entry.value.role === "assistant" && entry.value.delivery !== "subagent")?.value.text,
 	}]), [turns]);

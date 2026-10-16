@@ -15,7 +15,8 @@ import { validateTaskHistoryQuery, type TaskHistoryPage } from "../shared/taskHi
 import type { TaskOverview, WorkspaceOverview } from "../shared/workspaceOverview";
 import { inboxReasonFromCounts } from "../shared/inbox";
 import { conversationPageBytes, validateConversationPageQuery, type ConversationPage } from "../shared/conversationPage";
-import { maximumPullRequestLinks, pullRequestUrl, samePullRequest, validatePullRequestLinks, validRepository, type PullRequestLinkSnapshot } from "../shared/pullRequestView";
+import { maximumPullRequestLinks, pullRequestUrl, samePullRequest, unwatched, validatePullRequestLinks, validRepository, type PullRequestLinkSnapshot } from "../shared/pullRequestView";
+import { newPullRequestWatch, type PullRequestWatchMessage, type PullRequestWatchState } from "../shared/pullRequestWatch";
 
 export class WorkspaceStore {
 	private readonly db: DatabaseSync;
@@ -232,6 +233,30 @@ export class WorkspaceStore {
 			this.saveTask(task, true); changed = true;
 		}
 		return changed;
+	}
+	/**
+	 * Records what a watch pass saw (null ends the watch) and queues its update for the agent, after T3's watch sync.
+	 * Applies only while the same watch is on, so a stop or restart that lands during the GitHub read wins. A chat that
+	 * takes no wakes (archived, settled or delegated) only has its watch ended. True when an update was queued.
+	 */
+	recordPullRequestWatch(taskId: string, target: { repository: string; number: number }, startedAt: string, next: PullRequestWatchState | null, update?: PullRequestWatchMessage): boolean {
+		let task: Task; try { task = this.getTask(taskId); } catch { return false; }
+		const links = validatePullRequestLinks(task.pullRequests) ?? [], index = links.findIndex(link => samePullRequest(link, target));
+		if (index < 0 || links[index].watch?.startedAt !== startedAt) return false;
+		const inactive = task.archived || task.settledOverride === "settled" || Boolean(task.delegation?.parentTaskId);
+		if (next && !(update && inactive)) links[index] = { ...links[index], watching: true, watch: next };
+		else links[index] = unwatched(links[index]);
+		task.pullRequests = links;
+		if (!update || inactive) { this.saveTask(task, true); return false; }
+		task.queue.push({ id: randomUUID(), text: update.text, notice: { kind: "pull-request", summary: update.summary, outcome: update.outcome, url: links[index].url }, createdAt: new Date().toISOString() });
+		this.saveTask(task); return true;
+	}
+	/** Ends every watch on a chat, as T3 does when the person stops it. */
+	endPullRequestWatches(taskId: string): boolean {
+		const task = this.getTask(taskId), links = validatePullRequestLinks(task.pullRequests) ?? [];
+		if (!links.some(link => link.watching)) return false;
+		task.pullRequests = links.map(unwatched);
+		this.saveTask(task, true); return true;
 	}
 	getTaskView(id: string): Task {
 		const row = this.db.prepare(`SELECT json_set(json_remove(data, '$.messages', '$.activities'), '$.conversationCounts', json_object('messages', coalesce(json_array_length(data, '$.messages'), 0), 'activities', coalesce(json_array_length(data, '$.activities'), 0))) AS view FROM tasks WHERE id = ?`).get(id);
@@ -486,13 +511,21 @@ function applyPullRequestLink(task: Task, command: PullRequestLinkCommand) {
 		const target = { repository: command.repository, number: command.number! };
 		if (!links.some(link => samePullRequest(link, target))) {
 			if (links.length >= maximumPullRequestLinks) throw new Error(`A chat can link up to ${maximumPullRequestLinks} pull requests.`);
-			links.push({ ...target, url: pullRequestUrl(target.repository, target.number), linkedAt: new Date().toISOString(), source: "manual" });
+			links.push({ ...target, url: pullRequestUrl(target.repository, target.number), linkedAt: new Date().toISOString(), source: command.source === "agent" ? "agent" : "manual" });
 		}
 	} else {
 		const index = links.findIndex(link => samePullRequest(link, command));
 		if (index < 0) throw new Error("This pull request is not linked to this chat.");
 		if (command.type === "unlink-pull-request") links.splice(index, 1);
-		else links[index] = { ...links[index], watching: command.watching || undefined };
+		else if (!command.watching) links[index] = unwatched(links[index]);
+		else if (!links[index].watching) {
+			// As in T3: a watch wakes the chat's agent, so a chat that takes no wakes cannot start one.
+			if (task.delegation?.parentTaskId) throw new Error("This chat is a delegated agent; its parent chat watches pull requests.");
+			if (task.archived || task.settledOverride === "settled") throw new Error("Restore this chat before watching a pull request.");
+			const state = links[index].snapshot?.state;
+			if (state && state !== "open") throw new Error(`This pull request is ${state}, so there is nothing to watch.`);
+			links[index] = { ...links[index], watching: true, watch: newPullRequestWatch(new Date().toISOString()) };
+		}
 	}
 	task.pullRequests = links.length ? links : undefined;
 }

@@ -3,7 +3,7 @@ import { git } from "./gitProcess";
 import { resolveNativeCommand } from "./nativeProcess";
 import { githubRepository, parsePullRequestDetails } from "./projectPullRequests";
 import { reviewNodeId } from "../shared/pullRequestThreads";
-import { validatePullRequestActionRequest, type PullRequestActor, type PullRequestCheck, type PullRequestCheckStatus, type PullRequestComment, type PullRequestCommit, type PullRequestMergeMethod, type PullRequestReaction, type PullRequestReviewState, type PullRequestReviewThreadView, type PullRequestView } from "../shared/pullRequestView";
+import { validRepository, validatePullRequestActionRequest, type PullRequestActor, type PullRequestCheck, type PullRequestCheckStatus, type PullRequestComment, type PullRequestCommit, type PullRequestMergeMethod, type PullRequestReaction, type PullRequestReviewState, type PullRequestReviewThreadView, type PullRequestView } from "../shared/pullRequestView";
 
 const actor = "login avatarUrl __typename";
 const reactions = "reactionGroups{content reactors{totalCount}}";
@@ -11,11 +11,11 @@ const viewQuery = `query PhaseoPullRequestView($owner:String!,$name:String!,$num
 labels(first:20){nodes{name color}}
 reviewRequests(first:20){nodes{requestedReviewer{__typename ... on User{login avatarUrl} ... on Bot{login avatarUrl} ... on Team{slug}}}}
 latestOpinionatedReviews(first:20){nodes{author{${actor}} state submittedAt}}
-commits(last:1){nodes{commit{statusCheckRollup{state contexts(first:100){nodes{__typename ... on CheckRun{name status conclusion detailsUrl title} ... on StatusContext{context state targetUrl description}}}}}}}
+commits(last:1){nodes{commit{statusCheckRollup{state contexts(first:100){nodes{__typename ... on CheckRun{name status conclusion detailsUrl title isRequired(pullRequestNumber:$number)} ... on StatusContext{context state targetUrl description isRequired(pullRequestNumber:$number)}}}}}}}
 history:commits(last:100){totalCount nodes{commit{oid messageHeadline committedDate additions deletions authors(first:3){nodes{name user{login avatarUrl}}}}}}
-comments(last:50){totalCount nodes{id author{${actor}} body createdAt url ${reactions}}}
-reviews(last:50){totalCount nodes{id author{${actor}} body state submittedAt createdAt url ${reactions}}}
-reviewThreads(first:50){totalCount nodes{id path line originalLine diffSide isResolved isOutdated viewerCanReply viewerCanResolve viewerCanUnresolve comments(first:20){totalCount nodes{id author{${actor}} body createdAt url ${reactions}}}}}}}}`;
+comments(last:50){totalCount nodes{id author{${actor}} body createdAt lastEditedAt url ${reactions}}}
+reviews(last:50){totalCount nodes{id author{${actor}} body state submittedAt createdAt lastEditedAt url ${reactions}}}
+reviewThreads(first:50){totalCount nodes{id path line originalLine diffSide isResolved isOutdated viewerCanReply viewerCanResolve viewerCanUnresolve comments(first:20){totalCount nodes{id author{${actor}} body createdAt lastEditedAt url ${reactions}}}}}}}}`;
 
 type Item = Record<string, unknown>;
 const item = (value: unknown): Item => value && typeof value === "object" && !Array.isArray(value) ? value as Item : {};
@@ -42,8 +42,8 @@ function parseReactions(value: unknown): PullRequestReaction[] {
 function parseComment(value: unknown, kind: PullRequestComment["kind"], extra: Partial<PullRequestComment> = {}): PullRequestComment | undefined {
 	const entry = item(value), id = entry.id, body = text(entry.body, 512 * 1024), createdAt = date(entry.submittedAt) ?? date(entry.createdAt);
 	if (!reviewNodeId(id) || body === undefined || !createdAt) return;
-	const url = link(entry.url), state = text(entry.state, 40);
-	return { id, kind, author: parseActor(entry.author), body, createdAt, ...(url ? { url } : {}), ...(kind === "review" && state ? { reviewState: state } : {}), reactions: parseReactions(entry.reactionGroups), ...extra };
+	const url = link(entry.url), state = text(entry.state, 40), editedAt = date(entry.lastEditedAt);
+	return { id, kind, author: parseActor(entry.author), body, createdAt, ...(editedAt && editedAt > createdAt ? { editedAt } : {}), ...(url ? { url } : {}), ...(kind === "review" && state ? { reviewState: state } : {}), reactions: parseReactions(entry.reactionGroups), ...extra };
 }
 export function checkStatus(entry: Item): PullRequestCheckStatus {
 	if (entry.__typename === "StatusContext") {
@@ -65,7 +65,7 @@ function parseChecks(value: unknown): PullRequestCheck[] {
 		const check = item(entry), name = text(check.__typename === "StatusContext" ? check.context : check.name, 500);
 		if (!name) return [];
 		const url = link(check.__typename === "StatusContext" ? check.targetUrl : check.detailsUrl), description = text(check.__typename === "StatusContext" ? check.description : check.title, 1000);
-		return [{ name, status: checkStatus(check), ...(url ? { url } : {}), ...(description ? { description } : {}) }];
+		return [{ name, status: checkStatus(check), ...(url ? { url } : {}), ...(description ? { description } : {}), ...(check.isRequired === true ? { required: true } : {}) }];
 	});
 }
 function parseCommit(value: unknown): PullRequestCommit | undefined {
@@ -147,16 +147,21 @@ async function repositoryOf(root: string) {
 
 export async function projectPullRequestView(root: string, number: unknown): Promise<PullRequestView> {
 	if (!Number.isSafeInteger(number) || Number(number) < 1 || Number(number) > 2147483647) throw new Error("Invalid pull-request number.");
-	const repository = await repositoryOf(root), [owner, name] = repository.split("/");
+	return readPullRequestView(root, await repositoryOf(root), Number(number));
+}
+/** One pull request by repository, read with gh from any folder (the watcher reads chats without a project this way). */
+export async function readPullRequestView(cwd: string, repository: string, number: number): Promise<PullRequestView> {
+	if (!validRepository(repository) || !Number.isSafeInteger(number) || number < 1 || number > 2147483647) throw new Error("Invalid pull request.");
+	const [owner, name] = repository.split("/");
 	let output: string;
-	try { output = await runGh(root, ["api", "graphql", "--hostname", "github.com", "-f", `query=${viewQuery}`, "-F", `owner=${owner}`, "-F", `name=${name}`, "-F", `number=${number}`]); }
+	try { output = await runGh(cwd, ["api", "graphql", "--hostname", "github.com", "-f", `query=${viewQuery}`, "-F", `owner=${owner}`, "-F", `name=${name}`, "-F", `number=${number}`]); }
 	catch (reason) {
 		if ((reason as NodeJS.ErrnoException).code === "ENOENT" || (reason instanceof Error && reason.message.startsWith("Install"))) throw new Error("Install GitHub CLI and sign in with gh auth login.", { cause: reason });
 		throw new Error(ghFailure((reason as { stderr?: string }).stderr, "Could not load this pull request. Check GitHub CLI sign-in and repository access, then retry."), { cause: reason });
 	}
 	let parsed: unknown;
 	try { parsed = JSON.parse(output); } catch { throw new Error("GitHub returned unreadable pull request details."); }
-	return parsePullRequestView(repository, Number(number), parsed);
+	return parsePullRequestView(repository, number, parsed);
 }
 
 const failures: Record<string, string> = { merge: "Could not merge.", close: "Could not close the pull request.", reopen: "Could not reopen the pull request.", ready: "Could not mark it ready for review.", draft: "Could not convert it to a draft.", title: "Could not save the title.", comment: "Could not post the comment.", reply: "Could not post the reply.", resolve: "Could not change the thread.", review: "Could not submit the review.", "update-branch": "Could not update the branch.", "delete-branch": "Could not delete the branch." };

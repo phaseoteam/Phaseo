@@ -194,9 +194,10 @@ function ChatComposer({ task }: { task: Task }) {
 	}
 
 	return <div className="mx-auto w-full max-w-[760px] px-6 pb-4">
-		{task.queue.length > 0 && <div className="mb-2 rounded-xl border border-border bg-card/60 px-3 py-2">
+		{/* Pull request updates the app queued for the agent are not the person's to edit, as in T3. */}
+		{task.queue.some(message => !message.notice) && <div className="mb-2 rounded-xl border border-border bg-card/60 px-3 py-2">
 			<p className="mb-1 text-[11px] font-medium text-muted-foreground">Queued · sends when the current turn finishes</p>
-			{task.queue.map(message => <div key={message.id} className="flex items-center gap-2 py-0.5 text-[13px]"><span className="min-w-0 flex-1 truncate">{mentionPlainText(message.text)}</span><button type="button" aria-label="Remove queued message" onClick={() => void command({ type: "queue-remove", id: task.id, messageId: message.id })} className="grid size-5 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button></div>)}
+			{task.queue.filter(message => !message.notice).map(message => <div key={message.id} className="flex items-center gap-2 py-0.5 text-[13px]"><span className="min-w-0 flex-1 truncate">{mentionPlainText(message.text)}</span><button type="button" aria-label="Remove queued message" onClick={() => void command({ type: "queue-remove", id: task.id, messageId: message.id })} className="grid size-5 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button></div>)}
 		</div>}
 		{limits && <div className="mb-2 flex flex-col gap-2 rounded-xl border border-border bg-card/60 px-4 py-3">
 			<div className="flex items-center gap-2 text-[13px] font-semibold"><Gauge className="size-4 text-muted-foreground" />Usage limits<button type="button" aria-label="Hide usage limits" onClick={() => setLimits(undefined)} className="ml-auto grid size-6 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button></div>
