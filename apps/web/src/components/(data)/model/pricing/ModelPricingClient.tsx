@@ -85,6 +85,7 @@ import type { ProviderRoutingStatusMap } from "@/lib/fetchers/models/getModelPro
 import ProviderCard, {
 	getProviderTableDiscountBadge,
 	PROVIDER_STATUS_META,
+	UptimeKey,
 } from "@/components/(data)/model/pricing/ProviderCard";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
 import { ProviderRouteName } from "./ProviderRouteName";
@@ -450,20 +451,7 @@ function UptimeHeaderHoverContent() {
 	return (
 		<div className="space-y-2">
 			<p className="text-sm font-medium text-foreground">{t("threeDayUptime")}</p>
-			<div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-2.5 text-xs text-muted-foreground dark:border-zinc-800">
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-emerald-500" />
-					<span>&gt;99%</span>
-				</div>
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-amber-500" />
-					<span>95-99%</span>
-				</div>
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-red-500" />
-					<span>&lt;95%</span>
-				</div>
-			</div>
+			<UptimeKey className="border-t border-zinc-200 pt-2.5 dark:border-zinc-800" />
 		</div>
 	);
 }
@@ -1693,7 +1681,7 @@ export default function ModelPricingClient({
 			if (option !== "uptime") return button;
 			return (
 				<HoverCard openDelay={120} closeDelay={80}>
-					<HoverCardTrigger asChild>{button}</HoverCardTrigger>
+					<HoverCardTrigger asChild openOnTap={false}>{button}</HoverCardTrigger>
 					<HoverCardContent align="end" className="w-72 text-left">
 						<UptimeHeaderHoverContent />
 					</HoverCardContent>
