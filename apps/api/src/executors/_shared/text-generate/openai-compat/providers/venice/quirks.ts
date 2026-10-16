@@ -20,7 +20,7 @@ export const veniceQuirks: ProviderQuirks = {
 		}
 	},
 	extractReasoning: ({ choice, rawContent }) => {
-		const reasoning = choice.message?.reasoning_content;
+		const reasoning = choice.message?.reasoning_content || choice.message?.reasoning;
 		return {
 			main: rawContent,
 			reasoning: typeof reasoning === "string" && reasoning.length > 0 ? [reasoning] : [],
@@ -29,8 +29,9 @@ export const veniceQuirks: ProviderQuirks = {
 	transformStreamChunk: ({ chunk }) => {
 		if (!Array.isArray(chunk?.choices)) return;
 		for (const choice of chunk.choices) {
-			const reasoning = choice?.delta?.reasoning_content;
+			const reasoning = choice?.delta?.reasoning_content || choice?.delta?.reasoning;
 			if (typeof reasoning !== "string" || reasoning.length === 0) continue;
+			choice.delta.reasoning_content ||= reasoning;
 			choice.delta.reasoning_details ??= [{ type: "text", text: reasoning }];
 		}
 	},

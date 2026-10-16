@@ -1,5 +1,8 @@
 "use client";
 
+import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, type SubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
+import { useTranslations } from "next-intl";
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import type { SubscriptionPlansMessages } from "@/i18n/subscription-plans";
@@ -8,15 +11,13 @@ import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesP
 interface RotatingPricingProps {
 	locale: string;
 	messages: Pick<SubscriptionPlansMessages["detail"], "usageBased" | "customPricing" | "monthlySuffix" | "quarterlySuffix" | "yearlySuffix" | "weeklySuffix" | "dailySuffix">;
-	prices?: {
-		price: number;
-		currency: string;
-		frequency: string;
-	}[];
+	prices?: SubscriptionPrice[];
 }
 
 export default function RotatingPricing({ prices, locale, messages }: RotatingPricingProps) {
 	const format = useDisplayFormatters();
+	const terms = useTranslations("Common.ui.subscriptionCatalog");
+	const status = useTranslations("Common.status");
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const priceCount = prices?.length ?? 0;
 
@@ -36,58 +37,8 @@ export default function RotatingPricing({ prices, locale, messages }: RotatingPr
 
 	const currentPrice = prices[currentIndex] ?? prices[0];
 
-	const formatPrice = (
-		price: number,
-		currency: string,
-		frequency: string
-	) => {
-		const frequencyAliases: Record<string, string> = {
-			mo: "monthly",
-			month: "monthly",
-			monthly: "monthly",
-			qtr: "quarterly",
-			quarter: "quarterly",
-			quarterly: "quarterly",
-			yr: "yearly",
-			year: "yearly",
-			annual: "yearly",
-			yearly: "yearly",
-			week: "weekly",
-			weekly: "weekly",
-			day: "daily",
-			daily: "daily",
-		};
-		const normalizedFrequency = frequencyAliases[frequency.trim().toLowerCase()] ?? frequency.trim().toLowerCase();
-		if (normalizedFrequency === "usage") {
-			return messages.usageBased;
-		}
-		if (normalizedFrequency === "custom") {
-			return messages.customPricing;
-		}
-
-		const formattedPrice = format.number(price, {
-			style: "currency",
-			currency: currency,
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 2,
-			notation: "standard",
-		});
-
-		const period =
-			normalizedFrequency === "monthly"
-				? messages.monthlySuffix
-				: normalizedFrequency === "quarterly"
-				? messages.quarterlySuffix
-				: normalizedFrequency === "yearly"
-				? messages.yearlySuffix
-				: normalizedFrequency === "weekly"
-				? messages.weeklySuffix
-				: normalizedFrequency === "daily"
-				? messages.dailySuffix
-				: "";
-
-		return `${formattedPrice}${period ? ` ${period}` : ""}`;
-	};
+	const labels = localizedSubscriptionPriceLabels(locale, { custom: messages.customPricing, usage: messages.usageBased, unknown: status("unknown"), from: terms("starting_at"), seat: terms("seat"), introductory: terms("introductory"), firstCycle: terms("first_billing_cycle"), cycleCount: terms("number_of_cycles") });
+	const formattedPrice = formatSubscriptionPrice(currentPrice, (amount, currency) => format.number(amount, { style: "currency", currency, notation: "standard", maximumFractionDigits: 8 }), labels);
 
 	return (
 		<div className="text-2xl font-bold text-primary">
@@ -99,11 +50,7 @@ export default function RotatingPricing({ prices, locale, messages }: RotatingPr
 					exit={{ opacity: 0, y: -10 }}
 					transition={{ duration: 0.3 }}
 				>
-					{formatPrice(
-						currentPrice.price,
-						currentPrice.currency,
-						currentPrice.frequency
-					)}
+					{formattedPrice}
 				</motion.div>
 			</AnimatePresence>
 		</div>

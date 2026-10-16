@@ -718,6 +718,26 @@ public final class Models {
 		public String url;
 	}
 
+	public static class DecisionBox {
+		public Double bottom;
+		public Double left;
+		public Double right;
+		public Double top;
+	}
+
+	public static class DecisionBoxAnswer {
+		public Object box;
+		public Double confidence;
+		public String name;
+		public Object type;
+	}
+
+	public static class DecisionBoxQuestion {
+		public String instructions;
+		public String name;
+		public Object type;
+	}
+
 	public static class DecisionChoiceAnswer {
 		public Object choice;
 		public Double confidence;
@@ -791,6 +811,10 @@ public final class Models {
 		public Object type;
 	}
 
+	public static class DecisionProviderOptions {
+		public Object typesafe;
+	}
+
 	public static class DecisionRefusalAnswer {
 		public String name;
 		public Object type;
@@ -819,6 +843,7 @@ public final class Models {
 		public String model;
 		public java.util.List<String> models;
 		public Object provider;
+		public Object provider_options;
 		public Object questions;
 		public Object routing;
 		public Object state;
@@ -1205,6 +1230,7 @@ public final class Models {
 		public Object provider;
 		public Boolean routable;
 		public Object routing;
+		public java.util.List<Object> service_tiers;
 		public Object status;
 		public Object status_reason;
 	}
@@ -1639,6 +1665,11 @@ public final class Models {
 	public static class KnownModelId {
 	}
 
+	public static class LegacyDecisionBoxQuestion {
+		public Object instructions;
+		public Object type;
+	}
+
 	public static class LegacyDecisionsRequest {
 		public Object debug;
 		public Boolean echo_upstream_request;
@@ -1648,6 +1679,7 @@ public final class Models {
 		public String model;
 		public java.util.List<String> models;
 		public Object provider;
+		public Object provider_options;
 		public Object questions;
 		public Object routing;
 		public Object state;
@@ -2211,6 +2243,7 @@ public final class Models {
 		public String model;
 		public java.util.List<String> models;
 		public Object provider;
+		public Object provider_options;
 		public java.util.List<Object> questions;
 		public Object routing;
 		public String safety_identifier;
@@ -3623,6 +3656,9 @@ public final class Models {
 		public Object role;
 	}
 
+	public static class WorkspaceModelSuccessorPricePolicy {
+	}
+
 	public static class WorkspaceNotificationDestination {
 		public String created_at;
 		public String id;
@@ -3679,6 +3715,7 @@ public final class Models {
 		public java.util.List<String> auto_top_up_failed;
 		public java.util.List<String> low_balance;
 		public java.util.List<String> model_deprecation;
+		public java.util.List<String> model_substitution;
 		public java.util.List<String> payment_method_expiring;
 	}
 
@@ -3789,6 +3826,9 @@ public final class Models {
 		public Boolean byok_fallback_enabled;
 		public Boolean io_logging_enabled;
 		public Boolean io_logging_include_provider_payloads;
+		public Integer model_successor_max_price_increase_percent;
+		public Object model_successor_price_policy;
+		public Boolean model_successor_redirect_enabled;
 		public Boolean privacy_enable_free_may_publish_prompts;
 		public Boolean privacy_enable_free_may_train;
 		public Boolean privacy_enable_input_output_logging;
@@ -3815,6 +3855,9 @@ public final class Models {
 		public Boolean byok_fallback_enabled;
 		public Boolean io_logging_enabled;
 		public Boolean io_logging_include_provider_payloads;
+		public Integer model_successor_max_price_increase_percent;
+		public Object model_successor_price_policy;
+		public Boolean model_successor_redirect_enabled;
 		public Boolean privacy_enable_free_may_publish_prompts;
 		public Boolean privacy_enable_free_may_train;
 		public Boolean privacy_enable_input_output_logging;

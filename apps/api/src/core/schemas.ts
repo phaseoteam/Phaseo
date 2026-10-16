@@ -5,7 +5,7 @@
 import { z } from "zod";
 import { lazySchema } from "./lazy-schema";
 import type { Endpoint } from "./types";
-import { NativeDecisionsBodySchema } from "./decisions";
+import { NativeDecisionsBodySchema, DecisionProviderOptionsSchema } from "./decisions";
 import { parseAsyncWebhookConfig } from "./async-notifications";
 import {
 	ANTHROPIC_NATIVE_ADVISOR_TOOL_TYPES,
@@ -1537,6 +1537,7 @@ const DecisionInstructionsSchema = lazySchema(() => z.union([
 ]));
 
 const DecisionQuestionSchema = lazySchema(() => z.discriminatedUnion("type", [
+    z.object({ type: z.literal("box"), instructions: DecisionInstructionsSchema }).strict(),
     z.object({
         type: z.literal("noul"),
         instructions: DecisionInstructionsSchema,
@@ -1561,6 +1562,7 @@ const DecisionQuestionSchema = lazySchema(() => z.discriminatedUnion("type", [
 ]));
 
 export const LegacyDecisionsSchema = lazySchema(() => z.object({
+    provider_options: DecisionProviderOptionsSchema.optional(),
     model: z.string().min(1).default("typesafe/jev-1.13.0"),
     state: DecisionsStateSchema,
     images: z.array(z.union([
@@ -1597,6 +1599,13 @@ export const OpenAIDecisionsSchema = lazySchema(() => NativeDecisionsBodySchema.
 export const DecisionsSchema = lazySchema(() => z.union([OpenAIDecisionsSchema, LegacyDecisionsSchema]).superRefine((body, ctx) => {
     if ("input" in body && ("state" in body || "images" in body)) {
         ctx.addIssue({ code: "custom", path: ["input"], message: "Use either input with array questions or state with map questions; do not mix formats." });
+    }
+    const questions = Array.isArray(body.questions) ? body.questions : Object.values(body.questions);
+    const hasImages = Array.isArray(body.questions) ? typeof body.input !== "string" && Array.isArray(body.input) && body.input.some(message =>
+        typeof message.content !== "string" && message.content.some(part => part.type === "input_image"))
+        : Array.isArray(body.images) && body.images.length > 0;
+    if (questions.some(question => question.type === "box") && !hasImages) {
+        ctx.addIssue({ code: "custom", path: ["questions"], message: "Box questions require image input." });
     }
 }));
 export type DecisionsRequest = z.infer<typeof DecisionsSchema>;

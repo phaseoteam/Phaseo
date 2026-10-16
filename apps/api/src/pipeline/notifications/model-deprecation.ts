@@ -13,7 +13,7 @@ export type ModelDeprecationContent = {
 	comparisonUrl: string | null;
 };
 
-function stringValue(value: unknown): string | null {
+export function stringValue(value: unknown): string | null {
 	if (typeof value !== "string") return null;
 	const trimmed = value.trim();
 	return trimmed ? trimmed : null;
@@ -32,7 +32,7 @@ function formatDate(value: unknown): string | null {
 	}).format(new Date(timestamp));
 }
 
-function modelUrl(modelId: string | null): string | null {
+export function modelUrl(modelId: string | null): string | null {
 	if (!modelId) return null;
 	const [organisationId, ...modelSegments] = modelId.split("/");
 	if (!organisationId || modelSegments.length === 0) return `https://phaseo.app/models/${encodeURIComponent(modelId)}`;
@@ -80,7 +80,7 @@ export function getModelDeprecationContent(
 	};
 }
 
-function escapeHtml(value: string): string {
+export function escapeHtml(value: string): string {
 	return value
 		.replaceAll("&", "&amp;")
 		.replaceAll("<", "&lt;")

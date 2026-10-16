@@ -1778,6 +1778,51 @@ public sealed class DecisionAudioSource
 
 }
 
+public sealed class DecisionBox
+{
+	[JsonPropertyName("bottom")]
+	public double Bottom { get; set; }
+
+	[JsonPropertyName("left")]
+	public double Left { get; set; }
+
+	[JsonPropertyName("right")]
+	public double Right { get; set; }
+
+	[JsonPropertyName("top")]
+	public double Top { get; set; }
+
+}
+
+public sealed class DecisionBoxAnswer
+{
+	[JsonPropertyName("box")]
+	public Dictionary<string, object> Box { get; set; }
+
+	[JsonPropertyName("confidence")]
+	public double Confidence { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class DecisionBoxQuestion
+{
+	[JsonPropertyName("instructions")]
+	public string Instructions { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class DecisionChoiceAnswer
 {
 	[JsonPropertyName("choice")]
@@ -1921,6 +1966,13 @@ public sealed class DecisionPredicateQuestion
 
 }
 
+public sealed class DecisionProviderOptions
+{
+	[JsonPropertyName("typesafe")]
+	public Dictionary<string, object>? Typesafe { get; set; }
+
+}
+
 public sealed class DecisionRefusalAnswer
 {
 	[JsonPropertyName("name")]
@@ -1988,6 +2040,9 @@ public sealed class DecisionsRequest
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
+
+	[JsonPropertyName("provider_options")]
+	public Dictionary<string, object>? ProviderOptions { get; set; }
 
 	[JsonPropertyName("questions")]
 	public Dictionary<string, object> Questions { get; set; }
@@ -2899,6 +2954,9 @@ public sealed class GatewayModelOffer
 
 	[JsonPropertyName("routing")]
 	public Dictionary<string, object> Routing { get; set; }
+
+	[JsonPropertyName("service_tiers")]
+	public List<string>? ServiceTiers { get; set; }
 
 	[JsonPropertyName("status")]
 	public string Status { get; set; }
@@ -3953,6 +4011,16 @@ public sealed class KeyInvalidateResponse
 
 public sealed class KnownModelId { }
 
+public sealed class LegacyDecisionBoxQuestion
+{
+	[JsonPropertyName("instructions")]
+	public object Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class LegacyDecisionsRequest
 {
 	[JsonPropertyName("debug")]
@@ -3978,6 +4046,9 @@ public sealed class LegacyDecisionsRequest
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
+
+	[JsonPropertyName("provider_options")]
+	public Dictionary<string, object>? ProviderOptions { get; set; }
 
 	[JsonPropertyName("questions")]
 	public Dictionary<string, object> Questions { get; set; }
@@ -5359,6 +5430,9 @@ public sealed class OpenAIDecisionsRequest
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
+
+	[JsonPropertyName("provider_options")]
+	public Dictionary<string, object>? ProviderOptions { get; set; }
 
 	[JsonPropertyName("questions")]
 	public List<object> Questions { get; set; }
@@ -8636,6 +8710,8 @@ public sealed class WorkspaceMemberRoleUpdateRequest
 
 }
 
+public sealed class WorkspaceModelSuccessorPricePolicy { }
+
 public sealed class WorkspaceNotificationDestination
 {
 	[JsonPropertyName("created_at")]
@@ -8748,6 +8824,9 @@ public sealed class WorkspaceNotificationRouteMap
 
 	[JsonPropertyName("model_deprecation")]
 	public List<string> ModelDeprecation { get; set; }
+
+	[JsonPropertyName("model_substitution")]
+	public List<string> ModelSubstitution { get; set; }
 
 	[JsonPropertyName("payment_method_expiring")]
 	public List<string> PaymentMethodExpiring { get; set; }
@@ -8968,6 +9047,15 @@ public sealed class WorkspaceSettings
 	[JsonPropertyName("io_logging_include_provider_payloads")]
 	public bool? IoLoggingIncludeProviderPayloads { get; set; }
 
+	[JsonPropertyName("model_successor_max_price_increase_percent")]
+	public long? ModelSuccessorMaxPriceIncreasePercent { get; set; }
+
+	[JsonPropertyName("model_successor_price_policy")]
+	public object? ModelSuccessorPricePolicy { get; set; }
+
+	[JsonPropertyName("model_successor_redirect_enabled")]
+	public bool? ModelSuccessorRedirectEnabled { get; set; }
+
 	[JsonPropertyName("privacy_enable_free_may_publish_prompts")]
 	public bool? PrivacyEnableFreeMayPublishPrompts { get; set; }
 
@@ -9035,6 +9123,15 @@ public sealed class WorkspaceSettingsUpdateRequest
 
 	[JsonPropertyName("io_logging_include_provider_payloads")]
 	public bool? IoLoggingIncludeProviderPayloads { get; set; }
+
+	[JsonPropertyName("model_successor_max_price_increase_percent")]
+	public long? ModelSuccessorMaxPriceIncreasePercent { get; set; }
+
+	[JsonPropertyName("model_successor_price_policy")]
+	public string? ModelSuccessorPricePolicy { get; set; }
+
+	[JsonPropertyName("model_successor_redirect_enabled")]
+	public bool? ModelSuccessorRedirectEnabled { get; set; }
 
 	[JsonPropertyName("privacy_enable_free_may_publish_prompts")]
 	public bool? PrivacyEnableFreeMayPublishPrompts { get; set; }

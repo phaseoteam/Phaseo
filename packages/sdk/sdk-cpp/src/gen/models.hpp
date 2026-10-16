@@ -718,6 +718,26 @@ struct DecisionAudioSource {
 	std::string url;
 };
 
+struct DecisionBox {
+	double bottom;
+	double left;
+	double right;
+	double top;
+};
+
+struct DecisionBoxAnswer {
+	std::map<std::string, std::any> box;
+	double confidence;
+	std::optional<std::string> name;
+	std::any type;
+};
+
+struct DecisionBoxQuestion {
+	std::string instructions;
+	std::string name;
+	std::any type;
+};
+
 struct DecisionChoiceAnswer {
 	std::any choice;
 	double confidence;
@@ -788,6 +808,10 @@ struct DecisionPredicateQuestion {
 	std::any type;
 };
 
+struct DecisionProviderOptions {
+	std::map<std::string, std::any> typesafe;
+};
+
 struct DecisionRefusalAnswer {
 	std::optional<std::string> name;
 	std::any type;
@@ -816,6 +840,7 @@ struct DecisionsRequest {
 	std::string model;
 	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> questions;
 	std::map<std::string, std::any> routing;
 	std::any state;
@@ -1201,6 +1226,7 @@ struct GatewayModelOffer {
 	std::map<std::string, std::any> provider;
 	bool routable;
 	std::map<std::string, std::any> routing;
+	std::vector<std::any> service_tiers;
 	std::any status;
 	std::any status_reason;
 };
@@ -1630,6 +1656,11 @@ struct KeyInvalidateResponse {
 
 using KnownModelId = std::any;
 
+struct LegacyDecisionBoxQuestion {
+	std::any instructions;
+	std::any type;
+};
+
 struct LegacyDecisionsRequest {
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
@@ -1639,6 +1670,7 @@ struct LegacyDecisionsRequest {
 	std::string model;
 	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> questions;
 	std::map<std::string, std::any> routing;
 	std::any state;
@@ -2198,6 +2230,7 @@ struct OpenAIDecisionsRequest {
 	std::string model;
 	std::vector<std::string> models;
 	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> provider_options;
 	std::vector<std::any> questions;
 	std::map<std::string, std::any> routing;
 	std::optional<std::string> safety_identifier;
@@ -3592,6 +3625,8 @@ struct WorkspaceMemberRoleUpdateRequest {
 	std::any role;
 };
 
+using WorkspaceModelSuccessorPricePolicy = std::any;
+
 struct WorkspaceNotificationDestination {
 	std::optional<std::string> created_at;
 	std::string id;
@@ -3646,6 +3681,7 @@ struct WorkspaceNotificationRouteMap {
 	std::vector<std::string> auto_top_up_failed;
 	std::vector<std::string> low_balance;
 	std::vector<std::string> model_deprecation;
+	std::vector<std::string> model_substitution;
 	std::vector<std::string> payment_method_expiring;
 };
 
@@ -3753,6 +3789,9 @@ struct WorkspaceSettings {
 	std::optional<bool> byok_fallback_enabled;
 	std::optional<bool> io_logging_enabled;
 	std::optional<bool> io_logging_include_provider_payloads;
+	std::optional<int> model_successor_max_price_increase_percent;
+	std::optional<std::any> model_successor_price_policy;
+	std::optional<bool> model_successor_redirect_enabled;
 	std::optional<bool> privacy_enable_free_may_publish_prompts;
 	std::optional<bool> privacy_enable_free_may_train;
 	std::optional<bool> privacy_enable_input_output_logging;
@@ -3779,6 +3818,9 @@ struct WorkspaceSettingsUpdateRequest {
 	std::optional<bool> byok_fallback_enabled;
 	std::optional<bool> io_logging_enabled;
 	std::optional<bool> io_logging_include_provider_payloads;
+	std::optional<int> model_successor_max_price_increase_percent;
+	std::any model_successor_price_policy;
+	std::optional<bool> model_successor_redirect_enabled;
 	std::optional<bool> privacy_enable_free_may_publish_prompts;
 	std::optional<bool> privacy_enable_free_may_train;
 	std::optional<bool> privacy_enable_input_output_logging;

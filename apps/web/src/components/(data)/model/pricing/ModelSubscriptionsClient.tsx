@@ -13,14 +13,11 @@ import {
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import type { SubscriptionPlan } from "@/lib/fetchers/models/getModelSubscriptionPlans";
+import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, type SubscriptionPrice, type SubscriptionPriceLabels } from "@/lib/fetchers/subscription-plans/pricing";
 import { getLogoLabel } from "@/lib/logos";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
-export type SubscriptionPrice = {
-	price: number;
-	currency: string;
-	frequency: string;
-};
+export type { SubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
 
 type SubscriptionPlanGroup = {
 	organisationId: string;
@@ -38,7 +35,7 @@ type SubscriptionLabelKey =
 	| "daily"
 	| "usageBased"
 	| "customPricing";
-type SubscriptionLabels = Record<SubscriptionLabelKey, string>;
+type SubscriptionLabels = Record<SubscriptionLabelKey, string> & { structured?: SubscriptionPriceLabels };
 
 const PLAN_FREQUENCY_ALIASES: Record<string, string> = {
 	mo: "monthly",
@@ -80,7 +77,7 @@ function normalizePlanFrequency(value: string | null | undefined): string {
 	return PLAN_FREQUENCY_ALIASES[normalized] ?? normalized;
 }
 
-function getFrequencyLabel(value: string, labels: SubscriptionLabels): string {
+function getFrequencyLabel(value: string | null, labels: SubscriptionLabels): string {
 	const normalized = normalizePlanFrequency(value);
 	if (normalized === "monthly" || normalized === "quarterly" || normalized === "yearly" || normalized === "weekly" || normalized === "daily") {
 		return labels[normalized];
@@ -88,12 +85,13 @@ function getFrequencyLabel(value: string, labels: SubscriptionLabels): string {
 	return labels.other;
 }
 
-function isNonFixedPlanFrequency(value: string): boolean {
+function isNonFixedPlanFrequency(value: string | null): boolean {
 	const normalized = normalizePlanFrequency(value);
 	return normalized === "usage" || normalized === "custom";
 }
 
 function toMonthlyEquivalent(price: SubscriptionPrice): number | null {
+	if (price.price == null) return null;
 	const raw = Number(price.price);
 	if (!Number.isFinite(raw) || raw < 0) return null;
 	const normalized = normalizePlanFrequency(price.frequency);
@@ -112,12 +110,14 @@ function getCurrencySortRank(currency: string | null | undefined): number {
 type NumberFormatter = ReturnType<typeof useDisplayFormatters>["number"];
 
 function formatPlanPriceValue(price: SubscriptionPrice, formatNumber: NumberFormatter, labels: SubscriptionLabels): string {
+	if (price.components?.length) return formatSubscriptionPrice(price, (amount, currency) => formatNumber(amount, { style: "currency", currency, notation: "standard", maximumFractionDigits: 8 }), labels.structured ?? { custom: labels.customPricing, usage: labels.usageBased, unknown: labels.other });
+	if (price.price == null && price.frequency !== "usage" && price.frequency !== "custom") return labels.structured?.unknown ?? labels.other;
 	const normalized = normalizePlanFrequency(price.frequency);
 	if (normalized === "usage") return labels.usageBased;
 	if (normalized === "custom") return labels.customPricing;
 
 	const currency = String(price.currency || "USD").toUpperCase();
-	return formatNumber(price.price, {
+	return formatNumber(price.price ?? 0, {
 		style: "currency",
 		currency,
 		minimumFractionDigits: 0,
@@ -130,7 +130,7 @@ function formatPlanPriceDisplay(price: SubscriptionPrice, formatNumber: NumberFo
 	value: string;
 	frequency: string | null;
 } {
-	if (isNonFixedPlanFrequency(price.frequency)) {
+	if (price.components?.length || isNonFixedPlanFrequency(price.frequency)) {
 		return {
 			value: formatPlanPriceValue(price, formatNumber, labels),
 			frequency: null,
@@ -150,9 +150,10 @@ export function dedupeSubscriptionPlanPrices(
 		new Map(
 			prices.map((price) => [
 				[
+					price.offer_uuid ?? "",
 					normalizePlanFrequency(price.frequency),
 					String(price.currency || "USD").trim().toUpperCase(),
-					Number(price.price),
+					price.price == null ? "unknown" : Number(price.price),
 				].join(":"),
 				price,
 			]),
@@ -177,7 +178,7 @@ function sortSubscriptionPlanPrices(prices: SubscriptionPrice[]): SubscriptionPr
 		if (aMonthly == null && bMonthly != null) return 1;
 		if (aMonthly != null && bMonthly == null) return -1;
 
-		if (a.price !== b.price) return a.price - b.price;
+		if (a.price !== b.price) return Number(a.price ?? Infinity) - Number(b.price ?? Infinity);
 
 		const aFrequencyOrder =
 			PLAN_FREQUENCY_SORT_ORDER[normalizePlanFrequency(a.frequency)] ?? 99;
@@ -209,7 +210,7 @@ export function sortSubscriptionPlanPricesForDisplay(
 			return aFrequencyOrder - bFrequencyOrder;
 		}
 
-		return Number(a.price) - Number(b.price);
+		return Number(a.price ?? Infinity) - Number(b.price ?? Infinity);
 	});
 }
 
@@ -221,7 +222,7 @@ function getPlanSortKey(prices: SubscriptionPrice[]): {
 	const sorted = sortSubscriptionPlanPrices(
 		prices.filter(
 			(price) =>
-				Number.isFinite(Number(price.price)) &&
+				price.price != null && Number.isFinite(Number(price.price)) &&
 				Number(price.price) >= 0 &&
 				Boolean(String(price.currency ?? "").trim()) &&
 				!isNonFixedPlanFrequency(price.frequency),
@@ -258,18 +259,18 @@ function isOwnerGroup(
 	);
 }
 
-function getStartingPriceText(plans: SubscriptionPlan[], formatNumber: NumberFormatter, labels: SubscriptionLabels): string | null {
+export function getStartingPriceText(plans: SubscriptionPlan[], formatNumber: NumberFormatter, labels: SubscriptionLabels): string | null {
 	const prices = sortSubscriptionPlanPricesForDisplay(
 		plans.flatMap((plan) =>
 			(plan.prices ?? []).filter(
 				(price) =>
-					Number.isFinite(Number(price.price)) && Number(price.price) >= 0,
+					price.price != null && Number.isFinite(Number(price.price)) && Number(price.price) >= 0,
 			),
 		),
 	);
 	const first = prices[0];
 	if (!first) return null;
-	if (isNonFixedPlanFrequency(first.frequency)) {
+	if (first.components?.length || isNonFixedPlanFrequency(first.frequency)) {
 		return formatPlanPriceValue(first, formatNumber, labels);
 	}
 	return `${formatPlanPriceValue(first, formatNumber, labels)} ${getFrequencyLabel(first.frequency, labels)}`;
@@ -284,7 +285,7 @@ function getVisibleStartingPriceSortKey(plans: SubscriptionPlan[]): {
 		plans.flatMap((plan) =>
 			(plan.prices ?? []).filter(
 				(price) =>
-					Number.isFinite(Number(price.price)) && Number(price.price) >= 0,
+					price.price != null && Number.isFinite(Number(price.price)) && Number(price.price) >= 0,
 			),
 		),
 	)[0];
@@ -310,6 +311,8 @@ export default function ModelSubscriptionsClient({
 }) {
 	const tEmpty = useTranslations("Catalogue.modelDetail.emptyStates");
 	const tLabels = useTranslations("Catalogue.modelDetail.sections");
+	const terms = useTranslations("Common.ui.subscriptionCatalog");
+	const status = useTranslations("Common.status");
 	const locale = useLocale();
 	const planLabels: SubscriptionLabels = {
 		other: tLabels("other"),
@@ -320,6 +323,7 @@ export default function ModelSubscriptionsClient({
 		daily: tLabels("daily"),
 		usageBased: tLabels("usageBased"),
 		customPricing: tLabels("customPricing"),
+		structured: localizedSubscriptionPriceLabels(locale, { custom: tLabels("customPricing"), usage: tLabels("usageBased"), unknown: status("unknown"), from: terms("starting_at"), seat: terms("seat"), introductory: terms("introductory"), firstCycle: terms("first_billing_cycle"), cycleCount: terms("number_of_cycles") }),
 	};
 	const format = useDisplayFormatters();
 	const groupedPlans = subscriptionPlans.reduce<SubscriptionPlanGroup[]>((groups, plan) => {
@@ -459,13 +463,7 @@ export default function ModelSubscriptionsClient({
 							</div>
 							<div>
 								{group.plans.map((plan, index) => {
-									const sortedPrices = sortSubscriptionPlanPricesForDisplay(
-										(plan.prices ?? []).filter(
-											(price) =>
-												Number.isFinite(Number(price.price)) &&
-												Number(price.price) >= 0,
-										),
-									);
+									const sortedPrices = sortSubscriptionPlanPricesForDisplay(plan.prices ?? []);
 
 									return (
 										<div

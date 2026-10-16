@@ -10,6 +10,13 @@ import {
 } from "./modelDescription";
 
 describe("modelDescription", () => {
+	it("preserves Markdown block structure for both description sources", () => {
+		const markdown = "Summary.\n\n### Images\n\n- PNG\n- JPEG\n\n```json\n{\"enabled\": true}\n```";
+		expect(getExplicitModelDescription({ description: `  ${markdown}  ` })).toBe(markdown);
+		expect(getExplicitModelDescription({ model_details: [{ detail_name: "description", detail_value: markdown }] })).toBe(markdown);
+		expect(markdownToPlainText("Summary.\n\n### Images\n\n- PNG\n- JPEG")).toBe("Summary. Images PNG JPEG");
+	});
+
 	it("counts distinct providers rather than model routes and capabilities", () => {
 		const providers = Array.from({ length: 77 }, (_, index) => ({
 			api_provider_id: `provider-${index % 22}`,

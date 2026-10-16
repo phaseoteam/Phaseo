@@ -33,6 +33,9 @@ const WRITABLE_FIELDS = new Set([
 	"provider_restriction_mode",
 	"provider_restriction_provider_ids",
 	"provider_restriction_enforce_allowed",
+	"model_successor_redirect_enabled",
+	"model_successor_price_policy",
+	"model_successor_max_price_increase_percent",
 ]);
 
 const SETTINGS_COLUMNS = ["workspace_id", ...WRITABLE_FIELDS, "updated_at"].join(",");
@@ -64,6 +67,9 @@ const CAMEL_TO_SNAKE: Record<string, string> = {
 	providerRestrictionMode: "provider_restriction_mode",
 	providerRestrictionProviderIds: "provider_restriction_provider_ids",
 	providerRestrictionEnforceAllowed: "provider_restriction_enforce_allowed",
+	modelSuccessorRedirectEnabled: "model_successor_redirect_enabled",
+	modelSuccessorPricePolicy: "model_successor_price_policy",
+	modelSuccessorMaxPriceIncreasePercent: "model_successor_max_price_increase_percent",
 };
 
 const WORKSPACE_POLICY_FIELDS = new Set([
@@ -110,8 +116,17 @@ function normalizeSettingsPatch(body: Record<string, unknown>): { data: Record<s
 	if (patch.provider_restriction_mode !== undefined && !["none", "allowlist", "blocklist"].includes(String(patch.provider_restriction_mode))) {
 		return { error: "provider_restriction_mode must be none, allowlist, or blocklist" };
 	}
+	const pricePolicy = patch.model_successor_price_policy;
+	if (pricePolicy !== undefined && (typeof pricePolicy !== "string" || !["never", "limit", "any"].includes(pricePolicy))) {
+		return { error: "model_successor_price_policy must be never, limit, or any" };
+	}
+	const percent = patch.model_successor_max_price_increase_percent;
+	if (percent !== undefined && (typeof percent !== "number" || !Number.isInteger(percent) || percent < 0 || percent > 1000)) {
+		return { error: "model_successor_max_price_increase_percent must be an integer from 0 to 1000" };
+	}
 	for (const [field, value] of Object.entries(patch)) {
 		if (field === "routing_mode" || field === "response_healing_mode" || field === "provider_restriction_mode" || field === "provider_restriction_provider_ids") continue;
+		if (field === "model_successor_price_policy" || field === "model_successor_max_price_increase_percent") continue;
 		if (typeof value !== "boolean") return { error: `${field} must be a boolean` };
 	}
 	if (patch.provider_restriction_provider_ids !== undefined) {

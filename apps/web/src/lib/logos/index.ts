@@ -38,6 +38,7 @@ const normalisedAliasMap = new Map<string, KnownLogoId>();
 const pathToKeyMap = new Map<string, KnownLogoId>();
 
 const labelOverrides: Partial<Record<KnownLogoId, string>> = {
+	"abliteration-ai": "Abliteration AI",
 	ai21: "AI21",
 	"alibaba-cn": "Alibaba Cloud",
 	"alibaba-cloud": "Alibaba Cloud",
@@ -79,7 +80,10 @@ const labelOverrides: Partial<Record<KnownLogoId, string>> = {
 	tinyfish: "TinyFish",
 	typesafe: "TypeSafe",
 	"tencent-cloud": "Tencent Cloud",
-	wandb: "Weights & Biases",
+	wandb: "CoreWeave Forge",
+	"weights-and-biases": "CoreWeave Forge",
+	"coreweave-forge": "CoreWeave Forge",
+	"wandb-weave": "W&B Weave",
 	"spacex-ai": "SpaceXAI",
 	"zai": "Z.ai",
 	zenmux: "ZenMux",

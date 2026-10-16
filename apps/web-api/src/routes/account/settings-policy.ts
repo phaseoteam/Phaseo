@@ -46,16 +46,28 @@ async function loadGuardrailReference(context: AccountWorkspaceContext) {
 		? await context.client.from("v2_models").select("model_slug,name,lab_slug,organisation:v2_labs(lab_slug,name)").in("model_slug", modelSlugs)
 		: { data: [], error: null };
 	if (modelMetadataResult.error) throw new Error("settings_unavailable");
-	const capabilitiesResult = modelsResult.data?.length
-		? await context.client.from("v2_route_capabilities")
-			.select("provider_model_id,capability_id,status,metadata")
-			.in("capability_id", ["batch", "files.upload", "files.list", "files.retrieve"])
-			.in("status", ["active", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"])
-		: { data: [], error: null };
-	if (capabilitiesResult.error) throw new Error("settings_unavailable");
+	const providerModelIds = Array.from(new Set((modelsResult.data ?? [])
+		.map((row) => String(row.provider_model_id ?? "").trim()).filter(Boolean)));
+	const capabilityRows: Array<{ provider_model_id: string; capability_id: string; metadata: Record<string, unknown> | null }> = [];
+	// Bound URL size and page below PostgREST's row cap so scoped policies are not truncated.
+	for (let index = 0; index < providerModelIds.length; index += 100) {
+		const batch = providerModelIds.slice(index, index + 100);
+		for (let offset = 0; ; offset += 500) {
+			const result = await context.client.from("v2_route_capabilities")
+				.select("provider_model_id,capability_id,status,metadata")
+				.in("provider_model_id", batch)
+				.or("metadata->data_policy.not.is.null,capability_id.in.(batch,files.upload,files.list,files.retrieve)")
+				.in("status", ["active", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"])
+				.order("provider_model_id").order("capability_id")
+				.range(offset, offset + 499);
+			if (result.error) throw new Error("settings_unavailable");
+			capabilityRows.push(...(result.data ?? []));
+			if ((result.data?.length ?? 0) < 500) break;
+		}
+	}
 	const modelMetadata = new Map((modelMetadataResult.data ?? []).map((row: any) => [String(row.model_slug), row]));
 	const capabilitiesByProviderModel = new Map<string, Array<{ id: string; dataPolicy: Record<string, unknown> | null }>>();
-	for (const row of capabilitiesResult.data ?? []) {
+	for (const row of capabilityRows) {
 		const providerModelId = String(row.provider_model_id ?? "").trim();
 		const capabilityId = String(row.capability_id ?? "").trim();
 		if (!providerModelId || !capabilityId) continue;
@@ -218,6 +230,123 @@ accountSettingsPolicyRouter.put("/routing", async (c) => {
 		gatewayCacheInvalidated = false;
 	}
 	return c.json({ ok: true, gatewayCacheInvalidated }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+const SUCCESSOR_PRICE_POLICIES = new Set(["never", "limit", "any"]);
+const SERVABLE_SUCCESSOR_STATUSES = new Set(["active", "deprecated", "retired"]);
+const MAX_SUCCESSOR_REPLACEMENTS = 500;
+
+function successorModelSlug(value: unknown): string | null {
+	const slug = String(value ?? "").trim().toLowerCase();
+	return slug && slug.length <= 512 && /^[a-z0-9][a-z0-9._:/+@-]*$/.test(slug) ? slug : null;
+}
+
+// Successor routing: send requests for a model no provider serves any more to
+// a replacement. The gateway reads these settings with a short cache, so a
+// change takes effect within about a minute.
+accountSettingsPolicyRouter.get("/routing/successor", async (c) => {
+	const workspaceId = c.req.query("workspaceId")?.trim();
+	if (!workspaceId) return c.json({ error: "workspace_required" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
+	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const [settingsResult, replacementsResult] = await Promise.all([
+		context.client.from("workspace_settings")
+			.select("model_successor_redirect_enabled,model_successor_price_policy,model_successor_max_price_increase_percent")
+			.eq("workspace_id", workspaceId)
+			.maybeSingle(),
+		context.client.from("workspace_model_successor_overrides")
+			.select("model_slug,successor_model_slug,updated_at")
+			.eq("workspace_id", workspaceId)
+			.order("model_slug")
+			.limit(MAX_SUCCESSOR_REPLACEMENTS),
+	]);
+	if (settingsResult.error || replacementsResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const pricePolicy = String(settingsResult.data?.model_successor_price_policy ?? "never");
+	return c.json({
+		canManage: ["owner", "admin"].includes(context.role.toLowerCase()),
+		enabled: settingsResult.data?.model_successor_redirect_enabled === true,
+		pricePolicy: SUCCESSOR_PRICE_POLICIES.has(pricePolicy) ? pricePolicy : "never",
+		maxPriceIncreasePercent: Number(settingsResult.data?.model_successor_max_price_increase_percent ?? 0) || 0,
+		replacements: (replacementsResult.data ?? []).map((row: any) => ({
+			model: String(row.model_slug),
+			successor: typeof row.successor_model_slug === "string" ? row.successor_model_slug : null,
+			updatedAt: row.updated_at ?? null,
+		})),
+		workspaceId,
+	}, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountSettingsPolicyRouter.put("/routing/successor", async (c) => {
+	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({}));
+	const workspaceId = String(body.workspaceId ?? "").trim();
+	if (!workspaceId) return c.json({ error: "workspace_required" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
+	if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const pricePolicy = String(body.pricePolicy ?? "never");
+	const percent = Number(body.maxPriceIncreasePercent ?? 0);
+	if (typeof body.enabled !== "boolean") return c.json({ error: "invalid_enabled" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (!SUCCESSOR_PRICE_POLICIES.has(pricePolicy)) return c.json({ error: "invalid_price_policy" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (!Number.isInteger(percent) || percent < 0 || percent > 1000) return c.json({ error: "invalid_max_price_increase_percent", maximum: 1000 }, 400, PRIVATE_NO_STORE_HEADERS);
+	const result = await context.client.from("workspace_settings").upsert({
+		workspace_id: workspaceId,
+		model_successor_redirect_enabled: body.enabled,
+		model_successor_price_policy: pricePolicy,
+		model_successor_max_price_increase_percent: pricePolicy === "limit" ? percent : 0,
+		updated_at: new Date().toISOString(),
+	}, { onConflict: "workspace_id" });
+	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountSettingsPolicyRouter.put("/routing/successor/replacements", async (c) => {
+	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({}));
+	const workspaceId = String(body.workspaceId ?? "").trim();
+	if (!workspaceId) return c.json({ error: "workspace_required" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
+	if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const model = successorModelSlug(body.model);
+	// null means "never redirect this model".
+	const successor = body.successor === null ? null : successorModelSlug(body.successor);
+	if (!model) return c.json({ error: "invalid_model" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (body.successor !== null && !successor) return c.json({ error: "invalid_successor" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (successor === model) return c.json({ error: "successor_is_model" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const slugs = successor ? [model, successor] : [model];
+	const models = await context.client.from("v2_models").select("model_slug,status").in("model_slug", slugs).eq("hidden", false);
+	if (models.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const statuses = new Map((models.data ?? []).map((row: any) => [String(row.model_slug), String(row.status ?? "")]));
+	if (!statuses.has(model)) return c.json({ error: "unknown_model" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (successor && !statuses.has(successor)) return c.json({ error: "unknown_successor" }, 400, PRIVATE_NO_STORE_HEADERS);
+	// The gateway only redirects to models it can list; anything else would be saved and never used.
+	if (successor && !SERVABLE_SUCCESSOR_STATUSES.has(statuses.get(successor)!)) return c.json({ error: "inactive_successor" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const existing = await context.client.from("workspace_model_successor_overrides").select("model_slug", { count: "exact", head: true }).eq("workspace_id", workspaceId);
+	if (existing.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if ((existing.count ?? 0) >= MAX_SUCCESSOR_REPLACEMENTS) {
+		const current = await context.client.from("workspace_model_successor_overrides").select("model_slug").eq("workspace_id", workspaceId).eq("model_slug", model).maybeSingle();
+		if (current.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		if (!current.data) return c.json({ error: "too_many_replacements", maximum: MAX_SUCCESSOR_REPLACEMENTS }, 400, PRIVATE_NO_STORE_HEADERS);
+	}
+	const result = await context.client.from("workspace_model_successor_overrides").upsert({
+		workspace_id: workspaceId,
+		model_slug: model,
+		successor_model_slug: successor,
+		created_by: context.user.id,
+		updated_at: new Date().toISOString(),
+	}, { onConflict: "workspace_id,model_slug" });
+	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ ok: true, replacement: { model, successor } }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountSettingsPolicyRouter.delete("/routing/successor/replacements", async (c) => {
+	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({}));
+	const workspaceId = String(body.workspaceId ?? "").trim();
+	if (!workspaceId) return c.json({ error: "workspace_required" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
+	if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const model = successorModelSlug(body.model);
+	if (!model) return c.json({ error: "invalid_model" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const result = await context.client.from("workspace_model_successor_overrides").delete().eq("workspace_id", workspaceId).eq("model_slug", model);
+	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsPolicyRouter.get("/routing/auto", async (c) => {

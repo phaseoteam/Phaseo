@@ -3,6 +3,11 @@ import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { getSupabaseAdmin } from "@/runtime/env";
+// Every successful write republishes the workspace's enforcement plan; it
+// reaches every isolate within about a minute. A failed publish is logged
+// (rate_limit_plan_publish_failed) and does not fail the request, because the
+// database change has already been made.
+import { publishRateLimitPlan } from "@core/rate-limit-policies";
 import type { Env } from "@/runtime/types";
 import { json, withRuntime } from "@/routes/utils";
 import {
@@ -267,6 +272,7 @@ async function handleCreatePolicy(req: Request) {
 			throw error;
 		}
 		const row = data as PolicyRow;
+		await publishRateLimitPlan(authorization.auth.workspaceId);
 		await auditPolicy(authorization.auth, "created", row);
 		return json({ data: formatPolicy(row) }, 201, NO_STORE);
 	} catch (error) {
@@ -318,6 +324,7 @@ async function handleUpdatePolicy(req: Request) {
 		}
 		if (!data) return notFound("Rate limit policy not found");
 		const row = data as PolicyRow;
+		await publishRateLimitPlan(authorization.auth.workspaceId);
 		await auditPolicy(authorization.auth, "updated", row);
 		return json({ data: formatPolicy(row) }, 200, NO_STORE);
 	} catch (error) {
@@ -336,6 +343,7 @@ async function handleDeletePolicy(req: Request) {
 		if (error) throw error;
 		if (!data) return notFound("Rate limit policy not found");
 		const row = data as PolicyRow;
+		await publishRateLimitPlan(authorization.auth.workspaceId);
 		await auditPolicy(authorization.auth, "deleted", row);
 		return json({ data: { id: row.id, deleted: true } }, 200, NO_STORE);
 	} catch (error) {
@@ -423,6 +431,7 @@ async function handleCreateAssignment(req: Request) {
 			throw error;
 		}
 		const row = data as AssignmentRow;
+		await publishRateLimitPlan(authorization.auth.workspaceId);
 		await auditAssignment(authorization.auth, "created", row);
 		return json({ data: formatAssignment(row) }, 201, NO_STORE);
 	} catch (error) {
@@ -464,6 +473,7 @@ async function handleUpdateAssignment(req: Request) {
 		}
 		if (!data) return notFound("Rate limit assignment not found");
 		const row = data as AssignmentRow;
+		await publishRateLimitPlan(authorization.auth.workspaceId);
 		await auditAssignment(authorization.auth, "updated", row);
 		return json({ data: formatAssignment(row) }, 200, NO_STORE);
 	} catch (error) {
@@ -482,6 +492,7 @@ async function handleDeleteAssignment(req: Request) {
 		if (error) throw error;
 		if (!data) return notFound("Rate limit assignment not found");
 		const row = data as AssignmentRow;
+		await publishRateLimitPlan(authorization.auth.workspaceId);
 		await auditAssignment(authorization.auth, "deleted", row);
 		return json({ data: { id: row.id, deleted: true } }, 200, NO_STORE);
 	} catch (error) {

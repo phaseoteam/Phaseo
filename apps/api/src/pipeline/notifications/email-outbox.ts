@@ -3,6 +3,7 @@ import { sendEmail } from "@/lib/email/resend";
 import { getBindings } from "@/runtime/env";
 import { getEmailSuppressionReason } from "@/pipeline/notifications/email-suppressions";
 import { getModelDeprecationTemplateVariables, renderModelDeprecationEmail } from "@/pipeline/notifications/model-deprecation";
+import { renderModelSubstitutionEmail } from "@/pipeline/notifications/model-substitution";
 
 type OutboxRow = {
 	id: string;
@@ -292,6 +293,10 @@ function renderEmailForRow(row: OutboxRow): {
 		}
 		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
 	}
+	if (row.template === "model_substitution" || row.kind === "model_substitution") {
+		const rendered = renderModelSubstitutionEmail(row.payload ?? {});
+		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
+	}
 	if (row.template === "io_retention_grace" || row.kind === "io_retention_grace") {
 		const rendered = renderIoRetentionEmail(row.payload ?? {}, "grace");
 		return {
@@ -327,7 +332,6 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 		.is("sent_at", null)
 		.lt("attempts", 5)
 		.not("kind", "in", '("notification_test","model_deprecation")')
-		.neq("template", "model_deprecation")
 		.order("created_at", { ascending: true })
 		.limit(limit);
 
@@ -336,8 +340,9 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 	}
 
 	// Routed notifications have their own destination snapshot and delivery job.
-	// Keep them out of the legacy owner-email drain so a model deprecation cannot
-	// be sent twice (or bypass the per-alert route entirely).
+	// Keep them out of the legacy owner-email drain so a routed model_deprecation
+	// event is not also emailed here. The owner and admin copies of a deprecation
+	// notice are separate model_deprecation_email rows, which this drain sends.
 	const rows = (data ?? []) as unknown as OutboxRow[];
 	let sent = 0;
 	let failed = 0;

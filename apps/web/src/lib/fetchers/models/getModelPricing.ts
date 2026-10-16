@@ -127,6 +127,7 @@ export interface ProviderModel {
 }
 
 export interface ProviderModelDataPolicy {
+    zeroDataRetention?: boolean | null;
     tier?: string | null;
     confidence?: string | null;
     zdrEligibility?: string | null;

@@ -1,4 +1,5 @@
 import {
+	getPlanZdrEligibility,
 	getPriceColumnForSort,
 	getProviderServiceTierDisplayName,
 	isTerminalRuntimeStatsRetry,
@@ -89,5 +90,29 @@ describe("provider service tier display names", () => {
 		} as unknown as ReturnType<typeof buildProviderSections>;
 
 		expect(getProviderTableDiscountBadge(sections, discountLabels)).toBe("73% Off");
+	});
+});
+
+describe("route retention in pricing table scopes", () => {
+	const offer = (policies: ProviderPricing["provider_models"][number]["data_policy"][]): ProviderPricing => ({
+		provider: { api_provider_id: "empiriolabs", api_provider_name: "EmpirioLabs AI", zero_data_retention: false },
+		provider_models: policies.map((data_policy, index) => ({ id: String(index), api_provider_id: "empiriolabs", model_id: "qwen/qwen3.8-27b", endpoint: "text.generate", is_active_gateway: true, input_modalities: "text", output_modalities: "text", data_policy })),
+		pricing_rules: [],
+	});
+	const native = { tier: "private", confidence: "confirmed", zdrEligibility: "eligible", zeroDataRetention: true };
+	it("uses verified route guarantees for table filters and retention hover", () => {
+		expect(getPlanZdrEligibility(offer([native]), "standard")).toBe(true);
+		expect(getPlanZdrEligibility(offer([{}]), "standard")).toBe(false);
+		expect(getPlanZdrEligibility(offer([{ zdrEligibility: "eligible" }]), "standard")).toBe(false);
+	});
+	it("retains route guarantees under an eligibility-only tier policy", () => {
+        const provider = offer([native]);
+        provider.provider.service_tier_data_policies = { standard: { zdrEligibility: "eligible" } };
+        expect(getPlanZdrEligibility(provider, "standard")).toBe(true);
+        provider.provider.service_tier_data_policies.standard = { zdrEligibility: "ineligible" };
+        expect(getPlanZdrEligibility(provider, "standard")).toBe(false);
+    });
+	it("does not turn a mixed scope into a blanket guarantee", () => {
+		expect(getPlanZdrEligibility(offer([native, {}]), "standard")).toBeNull();
 	});
 });

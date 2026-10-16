@@ -6,6 +6,8 @@ export type GatewayBindings = {
     GATEWAY_TIERED_CACHE_L2_ENABLED?: string;
     /** "true" writes the post-charge balance back to the credit cache instead of deleting it. */
     GATEWAY_CREDIT_WRITEBACK_ENABLED?: string;
+    /** Kill switch for routing unserved models to an approved successor ("false" disables it). */
+    GATEWAY_MODEL_SUCCESSOR_REDIRECT_ENABLED?: string;
     /**
      * Deadline (ms) for a provider request to return response headers before the
      * attempt fails as a provider transport failure and routing fails over.
@@ -59,6 +61,8 @@ export type GatewayBindings = {
 	CUSTOMER_RATE_LIMIT_LADDER?: string;
 	CUSTOMER_RATE_LIMIT_LADDER_ENABLED?: string;
 	CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED?: string;
+	/** Enforces workspace rate limit policies (requests per minute) through CUSTOMER_RATE_LIMITS. */
+	RATE_LIMIT_POLICIES_ENABLED?: string;
 	SPEND_LIMITS?: DurableObjectNamespace;
 	/** off | shadow | enforce for the SpendLimit Durable Object (default off). */
 	GATEWAY_SPEND_LIMIT_DO_MODE?: string;
@@ -134,6 +138,8 @@ export type GatewayBindings = {
     AMBIENT_BASE_URL?: string;
     EMPIRIOLABS_API_KEY?: string;
     EMPIRIOLABS_BASE_URL?: string;
+    SCALEDOWN_API_KEY?: string;
+    SCALEDOWN_BASE_URL?: string;
     AVIAN_API_KEY?: string;
     AVIAN_BASE_URL?: string;
     BAIDU_QIANFAN_API_KEY?: string;
@@ -199,6 +205,9 @@ export type GatewayBindings = {
     GOOGLE_VERTEX_ACCESS_TOKEN?: string;
     GOOGLE_VERTEX_PROJECT?: string;
     GOOGLE_VERTEX_LOCATION?: string;
+    GOOGLE_VERTEX_PROJECT_NUMBER?: string;
+    GOOGLE_VERTEX_BATCH_LOCATION?: string;
+    GOOGLE_VERTEX_BATCH_BUCKET?: string;
     HYPERBOLIC_API_KEY?: string;
     HYPERBOLIC_BASE_URL?: string;
     INCEPTION_API_KEY?: string;

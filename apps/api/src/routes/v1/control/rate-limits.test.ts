@@ -11,6 +11,7 @@ const state = vi.hoisted(() => ({
 	auth: { ok: true, value: { workspaceId: "00000000-0000-4000-8000-000000000001", authMethod: "api_key", scopes: [] as string[] } } as any,
 	tables: {} as Record<string, any[]>,
 	audit: vi.fn(),
+	publish: vi.fn(async (_workspaceId: string) => true),
 	nextId: 100,
 }));
 
@@ -79,6 +80,7 @@ vi.mock("@/runtime/env", () => ({
 }));
 vi.mock("@/pipeline/before/guards", () => ({ guardManagementAuth: vi.fn(async () => state.auth) }));
 vi.mock("@/lib/audit/workspaceAudit", () => ({ recordWorkspaceAuditEvent: state.audit }));
+vi.mock("@core/rate-limit-policies", () => ({ publishRateLimitPlan: state.publish }));
 vi.mock("@/routes/utils", () => ({
 	json: (body: unknown, status = 200, headers: Record<string, string> = {}) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...headers } }),
 	withRuntime: (handler: (req: Request) => Promise<Response>) => async (c: any) => handler(c.req.raw),
@@ -113,6 +115,7 @@ describe("rate limit policy management", () => {
 			workspace_guardrails: [],
 		};
 		state.audit.mockReset();
+		state.publish.mockClear();
 	});
 
 	it("lists only the caller's workspace policies", async () => {
@@ -221,6 +224,32 @@ describe("rate limit policy management", () => {
 		expect(second.has_more).toBe(false);
 		expect((await call("/assignments?limit=251")).status).toBe(400);
 		expect((await call("/policies?offset=-1")).status).toBe(400);
+	});
+
+	it("republishes the enforcement plan after every successful write, and only then", async () => {
+		const policyId = "00000000-0000-4000-8000-000000000002";
+		const created = await call("/policies", "POST", { name: "Interactive", requests_per_minute: 30 });
+		const newPolicy = (await created.json() as any).data.id;
+		await call(`/policies/${newPolicy}`, "PATCH", { requests_per_minute: 20 });
+		const assigned = await call("/assignments", "POST", { policy_id: policyId, target_type: "key", target_id: KEY });
+		const assignmentId = (await assigned.json() as any).data.id;
+		await call(`/assignments/${assignmentId}`, "PATCH", { policy_id: newPolicy });
+		await call(`/assignments/${assignmentId}`, "DELETE");
+		await call(`/policies/${newPolicy}`, "DELETE");
+		expect(state.publish).toHaveBeenCalledTimes(6);
+		expect(state.publish.mock.calls.every(([workspaceId]) => workspaceId === WORKSPACE)).toBe(true);
+
+		state.publish.mockClear();
+		await call("/policies", "POST", { name: "Invalid" });
+		await call("/assignments", "POST", { policy_id: policyId, target_type: "key", target_id: OTHER_KEY });
+		await call("/policies");
+		expect(state.publish).not.toHaveBeenCalled();
+	});
+
+	it("still succeeds when the plan cannot be published", async () => {
+		state.publish.mockResolvedValueOnce(false);
+		const response = await call("/policies", "POST", { name: "Unpublished", requests_per_minute: 5 });
+		expect(response.status).toBe(201);
 	});
 
 	it("requires the matching rate_limits scope", async () => {
