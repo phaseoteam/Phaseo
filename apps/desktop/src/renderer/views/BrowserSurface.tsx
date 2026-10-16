@@ -5,9 +5,11 @@ import { useWorkspace } from "../app/workspace";
 import { BrowserChromeRow } from "../components/browser/BrowserChromeRow";
 import { BrowserDeviceToolbar } from "../components/browser/BrowserDeviceToolbar";
 import { BrowserMoreMenu } from "../components/browser/BrowserMoreMenu";
-import { BrowserEmptyState, BrowserUnreachable, BrowserZoomIndicator } from "../components/browser/BrowserStates";
+import { BrowserEmptyState, BrowserPoppedOut, BrowserRecordingNotice, BrowserUnreachable } from "../components/browser/BrowserStates";
 import { browserNavigationAddress, browserRecents, projectRecents, recordBrowserVisit, type BrowserRecent } from "../lib/browserHistory";
 import { browserTabError, browserViewportToRestore, focusedBrowserTab, recordBrowserState, setFocusedBrowserTab, useBrowserTab } from "../lib/browserTabs";
+import { closeMiniPlayer, markBrowserSurfaceShown, openMiniPlayer, useMiniPlayer } from "../lib/browserMiniPlayer";
+import { revealLabel, startBrowserRecording, stopBrowserRecording, useBrowserRecording, type SavedBrowserRecording } from "../lib/browserRecording";
 import { shortcut, useCommand } from "../lib/keybindings";
 import { usePersistedState } from "../lib/persistedState";
 import { cn } from "../lib/utils";
@@ -17,14 +19,14 @@ type Device = Extract<BrowserViewport, { mode: "device" }>;
 const errorText = (reason: unknown) => (reason instanceof Error ? reason.message : String(reason)).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "");
 const pngFile = (base64: string, name: string) => new File([Uint8Array.from(atob(base64), character => character.charCodeAt(0))], name, { type: "image/png" });
 /** Hands files and text to the open message composer; false when none is open. */
-function attachToComposer(detail: { files?: File[]; text?: string }) { const payload = { ...detail, handled: false }; window.dispatchEvent(new CustomEvent("phaseo:composer-attach", { detail: payload })); return payload.handled; }
-const overlayOpen = () => Array.from(document.querySelectorAll('dialog[open], [role="dialog"], [aria-modal="true"], [role="menu"], [role="listbox"]')).some(element => element.getClientRects().length > 0);
+export function attachToComposer(detail: { files?: File[]; text?: string }) { const payload = { ...detail, handled: false }; window.dispatchEvent(new CustomEvent("phaseo:composer-attach", { detail: payload })); return payload.handled; }
+export const overlayOpen = () => Array.from(document.querySelectorAll('dialog[open], [role="dialog"], [aria-modal="true"], [role="menu"], [role="listbox"]')).some(element => element.getClientRects().length > 0);
 
 /** One browser tab, as one pane tab: T3 Code's chrome row over a native page. */
 export function BrowserSurface({ context, tabId, covered, requestedLink }: { context: string; tabId: string; covered: boolean; requestedLink?: { url: string; request: number } }) {
 	const api = window.phaseoDesktop;
 	const tab = useBrowserTab(context, tabId);
-	const { overview, newChatProjectId } = useWorkspace();
+	const { overview, newChatProjectId, setRightPanel } = useWorkspace();
 	const project = overview.tasks.find(task => task.id === context)?.projectId ?? (context === "draft" ? newChatProjectId : "") ?? "";
 	const slot = useRef<HTMLDivElement>(null);
 	const [slotSize, setSlotSize] = useState({ width: 0, height: 0 });
@@ -34,6 +36,9 @@ export function BrowserSurface({ context, tabId, covered, requestedLink }: { con
 	const [focusNonce, setFocusNonce] = useState(0);
 	const [picking, setPicking] = useState(false);
 	const [capturing, setCapturing] = useState(false);
+	const recording = useBrowserRecording(tabId);
+	const [saved, setSaved] = useState<SavedBrowserRecording>();
+	const floating = useMiniPlayer(context)?.tabId === tabId;
 	const [downloadsOpen, setDownloadsOpen] = useState(false);
 	const [downloads, setDownloads] = useState<BrowserDownload[]>([]);
 	const [aspectLocked, setAspectLocked] = useState(false);
@@ -74,8 +79,10 @@ export function BrowserSurface({ context, tabId, covered, requestedLink }: { con
 			if (value.error) setError(value.error);
 		};
 		const unsubscribe = api.onBrowserState(apply);
-		return () => { unsubscribe(); void api.browser({ type: "hide", id: tabId }).catch(() => undefined); };
+		return () => { unsubscribe(); void api.browser({ type: "hide", id: tabId, slot: "pane" }).catch(() => undefined); };
 	}, [api, tabId, send]);
+	// While this tab shows here, its floating player steps aside (T3 Code).
+	useEffect(() => markBrowserSurfaceShown(tabId), [tabId]);
 
 	// The native page sits over the slot, and hides while anything covers it.
 	useEffect(() => {
@@ -86,17 +93,18 @@ export function BrowserSurface({ context, tabId, covered, requestedLink }: { con
 		const place = () => {
 			const rect = element.getBoundingClientRect();
 			setSlotSize(current => current.width === rect.width && current.height === rect.height ? current : { width: rect.width, height: rect.height });
-			if (hidden || overlayOpen()) { if (last !== "hidden") void api.browser({ type: "hide", id: tabId }).catch(() => undefined); last = "hidden"; return; }
+			if (hidden || overlayOpen()) { if (last !== "hidden") void api.browser({ type: "hide", id: tabId, slot: "pane" }).catch(() => undefined); last = "hidden"; return; }
 			const signature = [rect.x, rect.y, rect.width, rect.height].join();
 			if (signature === last) return;
 			last = signature;
-			void api.browser({ type: "show", id: tabId, bounds: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } }).then(value => applyState.current(value), reason => setError(errorText(reason)));
+			void api.browser({ type: "show", id: tabId, slot: "pane", bounds: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } }).then(value => applyState.current(value), reason => setError(errorText(reason)));
 		};
 		const overlays = new MutationObserver(() => { place(); cancelAnimationFrame(frame); frame = requestAnimationFrame(place); });
 		overlays.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "style", "data-open", "data-closed"] });
 		const observer = new ResizeObserver(place); observer.observe(element); window.addEventListener("resize", place); place();
 		return () => { observer.disconnect(); overlays.disconnect(); cancelAnimationFrame(frame); window.removeEventListener("resize", place); };
-	}, [api, tabId, covered, downloadsOpen]);
+	// Coming back from a separate window, the page needs placing again.
+	}, [api, tabId, covered, downloadsOpen, state?.poppedOut]);
 
 	// This chat's downloads.
 	useEffect(() => {
@@ -138,8 +146,14 @@ export function BrowserSurface({ context, tabId, covered, requestedLink }: { con
 	useCommand("browser.zoomOut", () => { if (!focused() || !state?.url) return false; setZoom(stepBrowserZoom(zoom, -1)); });
 	useCommand("browser.zoomReset", () => { if (!focused() || !state?.url) return false; setZoom(1); });
 
-	const capture = async () => {
+	const capture = async (record: boolean) => {
 		if (!api) return;
+		setError("");
+		if (recording) {
+			try { const result = await stopBrowserRecording(tabId); if (result) setSaved(result); } catch (reason) { setError(errorText(reason)); }
+			return;
+		}
+		if (record) { try { await startBrowserRecording(tabId, url); setSaved(undefined); } catch (reason) { setError(errorText(reason)); } return; }
 		setCapturing(true);
 		try {
 			const shot = await api.browserCapture(tabId);
@@ -159,6 +173,14 @@ export function BrowserSurface({ context, tabId, covered, requestedLink }: { con
 		} catch (reason) { setError(errorText(reason)); } finally { setPicking(false); }
 	};
 
+	const float = () => {
+		if (floating) { closeMiniPlayer(context); return; }
+		// T3 Code floats the page and closes the panel; the page moves into the player over the chat.
+		openMiniPlayer(context, tabId, slotSize);
+		setRightPanel(undefined);
+	};
+	// Video is not a chat attachment, so the message gets the file's path.
+	const attachRecording = (value: SavedBrowserRecording) => flash(attachToComposer({ text: "Screen recording of " + value.url + ": `" + value.path + "`" }) ? "Recording added to your message." : "Open a chat to add the recording to a message.");
 	const url = state?.url ?? "";
 	const viewport = dragViewport ?? state?.viewport ?? tab?.viewport ?? { mode: "fill" };
 	const failure = state?.failure;
@@ -200,10 +222,9 @@ export function BrowserSurface({ context, tabId, covered, requestedLink }: { con
 		<BrowserChromeRow url={url || tab?.url || ""} loading={state?.loading ?? false} canGoBack={state?.canGoBack ?? false} canGoForward={state?.canGoForward ?? false} hasPage={Boolean(url)} focusNonce={focusNonce}
 			onBack={() => act("back")} onForward={() => act("forward")} onReload={() => act(state?.loading ? "stop" : "reload")} onSubmit={submit}
 			onOpenInBrowser={() => void api?.workspace.openLink(url).catch(reason => setError(errorText(reason)))}
-			onPick={() => void pick()} picking={picking} onCapture={() => void capture()} capturing={capturing}
+			onPick={() => void pick()} picking={picking} onCapture={record => void capture(record)} capturing={capturing} recording={recording} onFloat={float} floating={floating}
 			downloads={downloads.length} downloadsOpen={downloadsOpen} onDownloads={() => setDownloadsOpen(value => !value)}
-			zoomIndicator={<BrowserZoomIndicator zoom={zoom} />}
-			menu={<BrowserMoreMenu enabled={Boolean(url)} zoom={zoom} colorScheme={state?.colorScheme ?? "system"} devToolsOpen={state?.devToolsOpen ?? false} deviceToolbar={viewport.mode === "device"} muted={state?.muted ?? false} downloads={downloads.length}
+			menu={<BrowserMoreMenu enabled={Boolean(url)} zoom={zoom} colorScheme={state?.colorScheme ?? "system"} devToolsOpen={state?.devToolsOpen ?? false} deviceToolbar={viewport.mode === "device"} muted={state?.muted ?? false} downloads={downloads.length} poppedOut={Boolean(state?.poppedOut)}
 				zoomShortcuts={{ in: shortcut("browser.zoomIn"), out: shortcut("browser.zoomOut"), reset: shortcut("browser.zoomReset") }}
 				actions={{
 					hardReload: () => act("hardReload"), toggleDevTools: () => act("devtools"), toggleDeviceToolbar,
@@ -212,8 +233,10 @@ export function BrowserSurface({ context, tabId, covered, requestedLink }: { con
 					toggleMute: () => void send({ id: tabId, type: "mute", muted: !state?.muted }), openDownloads: () => setDownloadsOpen(true),
 					clearCookies: () => void send({ id: tabId, type: "clearData", data: "cookies" }).then(() => flash("Cookies cleared for every browser tab.")),
 					clearCache: () => void send({ id: tabId, type: "clearData", data: "cache" }).then(() => flash("Cache cleared for every browser tab.")),
+					togglePopOut: () => void send({ id: tabId, type: state?.poppedOut ? "popIn" : "popOut" }),
 				}} />} />
 		{(error || browserTabError(context)) && <p role="alert" className="flex shrink-0 items-center gap-2 border-y border-destructive/20 bg-destructive/5 px-3 py-1.5 text-xs text-destructive">{error || browserTabError(context)}</p>}
+		{saved && <BrowserRecordingNotice path={saved.path} revealLabel={revealLabel(api?.platform ?? navigator.platform)} onReveal={() => void api?.browserRecordingReveal(saved.path).catch(reason => setError(errorText(reason)))} onAttach={() => attachRecording(saved)} onDismiss={() => setSaved(undefined)} />}
 		{notice && !error && <p role="status" className="shrink-0 px-3 py-1 text-xs text-muted-foreground">{notice}</p>}
 		<div className="relative min-h-0 flex-1 overflow-hidden">
 			{device && <div className="absolute inset-x-0 top-0 z-10"><BrowserDeviceToolbar key={`${device.width}x${device.height}`} viewport={device} width={slotSize.width + browserResizeRail * 2} aspectLocked={aspectLocked} onAspectLock={setAspectLocked} onChange={setViewport} /></div>}
@@ -231,6 +254,7 @@ export function BrowserSurface({ context, tabId, covered, requestedLink }: { con
 			</div>
 			{empty && <div className="absolute inset-0 z-20 bg-background"><BrowserEmptyState recents={recents} onOpen={navigate} onRemove={target => setRecents(values => browserRecents(values).filter(item => !((item.project ?? "") === project && item.url === target)))} /></div>}
 			{failure && <div className="absolute inset-0 z-20 bg-background"><BrowserUnreachable failure={failure} onReload={() => act("reload")} /></div>}
+			{state?.poppedOut && !failure && <div className="absolute inset-0 z-20 bg-background"><BrowserPoppedOut onBringBack={() => void send({ id: tabId, type: "popIn" })} /></div>}
 			{downloadsOpen && <div className="absolute inset-0 z-30 bg-background"><BrowserDownloads downloads={downloads} action={command => void downloadAction(command)} onClose={() => setDownloadsOpen(false)} /></div>}
 		</div>
 	</section>;

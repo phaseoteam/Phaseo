@@ -10,7 +10,7 @@ import { useCommand } from "../lib/keybindings";
 import { cn } from "../lib/utils";
 import { AgentThreadsPanel } from "../components/AgentThreadsPanel";
 import { BrowserSurface } from "../views/BrowserSurface";
-import { createBrowserTab, ensureBrowserTab, closeBrowserTab, onBrowserTabOpened, setBrowserTabMuted, useBrowserTab, useBrowserTabs } from "../lib/browserTabs";
+import { createBrowserTab, ensureBrowserTab, closeBrowserTab, confirmCloseBrowserTabs, onBrowserTabOpened, setBrowserTabMuted, useBrowserTab, useBrowserTabs } from "../lib/browserTabs";
 import { PullRequestListSurface, PullRequestSurface, pullRequestStatePresentation } from "../views/pullRequests";
 import { closeTerminal, createTerminal, terminalTitle, terminalsFor, useTerminalSessions } from "../lib/terminalSessions";
 import { OPEN_PROJECT_FILE_EVENT, type OpenProjectFileDetail } from "../panels/events";
@@ -170,6 +170,8 @@ export function RightPanel() {
 	};
 	const show = (key: PaneKey, background = false) => { touched.current = Date.now(); const next = openPaneTab({ ...state, tabs }, key, background); update(next); announce(next.active); };
 	const close = (keys: PaneKey[]) => {
+		// T3 asks before closing a browser an agent is driving.
+		if (!confirmCloseBrowserTabs(context, keys.filter(key => paneKind(key) === "browser").map(paneValue))) return;
 		touched.current = Date.now();
 		for (const key of keys) {
 			if (paneKind(key) === "browser") void closeBrowserTab(context, paneValue(key));

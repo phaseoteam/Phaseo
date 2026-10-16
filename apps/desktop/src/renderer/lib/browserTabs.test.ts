@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BrowserState } from "../../shared/browser";
-import { browserTabLabel, browserTabs, browserViewportToRestore, openBrowserTab, updateBrowserTab } from "./browserTabs";
+import { adoptBrowserTab, browserTabLabel, browserTabLimit, browserTabs, browserViewportToRestore, openBrowserTab, updateBrowserTab } from "./browserTabs";
 
 const fill = { mode: "fill" } as const;
 const phone = { mode: "device", width: 390, height: 844, preset: "iphone-12-pro" } as const;
@@ -58,4 +58,19 @@ describe("chat browser tabs", () => {
 
 it.each([[true, { mode: "device", width: 1024, height: 768 }, phone, { mode: "device", width: 1024, height: 768 }], [true, fill, phone, fill], [false, fill, phone, phone]] as const)("restores viewport from authoritative native or fresh saved state", (configured, viewport, saved, expected) => {
 	expect(browserViewportToRestore({ configured, viewport }, saved)).toEqual(expected);
+});
+
+describe("tabs an agent opens", () => {
+	it("adds the agent's tab to its own chat and selects it, or selects the tab it reused", () => {
+		const group = { active: "chat", tabs: [{ id: "chat", title: "", url: "", viewport: fill }] };
+		expect(adoptBrowserTab(group, { context: "chat", id: "chat:agent", url: "https://a.test/" })).toEqual({ active: "chat:agent", tabs: [...group.tabs, { id: "chat:agent", title: "", url: "https://a.test/", viewport: fill }] });
+		expect(adoptBrowserTab(group, { context: "chat", id: "chat", url: "https://a.test/" })).toEqual({ ...group, active: "chat" });
+	});
+	it("refuses tabs of other chats, unsafe addresses and tabs past the limit", () => {
+		const empty = { active: "", tabs: [] };
+		expect(() => adoptBrowserTab(empty, { context: "chat", id: "other:1", url: "https://a.test/" })).toThrow("another chat");
+		expect(() => adoptBrowserTab(empty, { context: "chat", id: "chat:1", url: "file:///C:/x" })).toThrow();
+		const full = { active: "chat", tabs: Array.from({ length: browserTabLimit }, (_, index) => ({ id: index ? `chat:${index}` : "chat", title: "", url: "", viewport: fill })) };
+		expect(() => adoptBrowserTab(full, { context: "chat", id: "chat:new", url: "https://a.test/" })).toThrow("Close a browser tab");
+	});
 });

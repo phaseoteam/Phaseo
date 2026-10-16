@@ -9,6 +9,7 @@ import { useWorkspace, WorkspaceProvider } from "./app/workspace";
 import { Titlebar } from "./shell/Titlebar";
 import { Sidebar } from "./shell/Sidebar";
 import { RightPanel } from "./shell/RightPanel";
+import { BrowserMiniPlayerHost } from "./components/browser/BrowserMiniPlayer";
 import { CommandPalette } from "./shell/CommandPalette";
 import { SettingsPage } from "./settings/SettingsPage";
 import { ScheduledTasks } from "./views/ScheduledTasks";
@@ -79,7 +80,7 @@ function Shell() {
 		<div className="relative flex min-h-0 flex-1">
 			{(sidebarOpen || settings) && <Sidebar />}
 			{/* A maximised pane takes the chat column's place. */}
-			<main className="min-w-0 flex-1 bg-background [&:has(~aside[data-maximized])]:hidden"><Main /></main>
+			<main className="relative min-w-0 flex-1 bg-background [&:has(~aside[data-maximized])]:hidden"><Main /><BrowserMiniPlayerHost /></main>
 			<RightPanel />
 			<ErrorBanner />
 		</div>

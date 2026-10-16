@@ -1,5 +1,5 @@
-import { ArrowLeft, ArrowRight, Camera, Download, ExternalLink, MousePointerClick, RefreshCw } from "lucide-react";
-import { useEffect, useRef, useState, type ReactElement, type ReactNode } from "react";
+import { ArrowLeft, ArrowRight, Camera, Download, ExternalLink, MousePointerClick, PictureInPicture2, RefreshCw } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "../ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
@@ -18,15 +18,17 @@ type Props = {
 	/** Bumping this focuses the address bar and selects it. */
 	focusNonce: number;
 	onBack: () => void; onForward: () => void; onReload: () => void; onSubmit: (value: string) => void; onOpenInBrowser: () => void;
-	onPick: () => void; picking: boolean; onCapture: () => void; capturing: boolean;
+	onPick: () => void; picking: boolean;
+	/** Shift-click records the page instead (T3 Code); while recording, a click stops it. */
+	onCapture: (record: boolean) => void; capturing: boolean; recording: boolean;
+	/** Floats the page over the chat, or closes the floating player. */
+	onFloat: () => void; floating: boolean;
 	downloads: number; downloadsOpen: boolean; onDownloads: () => void;
-	/** The zoom pill shown inside the address bar for a moment after zoom changes. */
-	zoomIndicator?: ReactElement;
 	menu: ReactNode;
 };
 
 /** One ghost row: navigation, the address bar, page tools and the menu. */
-export function BrowserChromeRow({ url, loading, canGoBack, canGoForward, hasPage, focusNonce, onBack, onForward, onReload, onSubmit, onOpenInBrowser, onPick, picking, onCapture, capturing, downloads, downloadsOpen, onDownloads, zoomIndicator, menu }: Props) {
+export function BrowserChromeRow({ url, loading, canGoBack, canGoForward, hasPage, focusNonce, onBack, onForward, onReload, onSubmit, onOpenInBrowser, onPick, picking, onCapture, capturing, recording, onFloat, floating, downloads, downloadsOpen, onDownloads, menu }: Props) {
 	const input = useRef<HTMLInputElement>(null);
 	const [draft, setDraft] = useState(url);
 	const [focused, setFocused] = useState(false);
@@ -45,7 +47,6 @@ export function BrowserChromeRow({ url, loading, canGoBack, canGoForward, hasPag
 					onFocus={() => { setDraft(url); setFocused(true); queueMicrotask(() => input.current?.select()); }}
 					onBlur={() => setFocused(false)}
 					onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); setDraft(url); input.current?.blur(); } }} />
-				{zoomIndicator}
 				{hasPage && !focused && <InputGroupAddon align="inline-end">
 					{/* Revealed on hover so a resting address bar reads as plain text. */}
 					<span className="pointer-events-none flex opacity-0 transition-opacity focus-within:pointer-events-auto focus-within:opacity-100 group-hover/address:pointer-events-auto group-hover/address:opacity-100">
@@ -54,7 +55,15 @@ export function BrowserChromeRow({ url, loading, canGoBack, canGoForward, hasPag
 				</InputGroupAddon>}
 			</InputGroup>
 			<BrowserIconButton label={picking ? "Cancel annotation" : "Annotate page"} tooltip={picking ? "Cancel annotation (Esc)" : hasPage ? "Pick an element to add to your message" : "Open a page to annotate it"} icon={<MousePointerClick className={cn("size-3.5", picking && "text-primary")} />} aria-pressed={picking} variant={picking ? "secondary" : "ghost"} disabled={!hasPage} onClick={onPick} />
-			<BrowserIconButton label="Capture screenshot" tooltip="Screenshot to your message and the clipboard" icon={<Camera />} disabled={!hasPage || capturing} onClick={onCapture} />
+			<Tooltip>
+				<TooltipTrigger render={<Button type="button" variant={recording ? "secondary" : "ghost"} size="icon-xs" aria-label={recording ? "Stop recording" : "Capture screenshot"} disabled={!recording && (!hasPage || capturing)} onClick={event => onCapture(event.shiftKey)}
+					className="relative text-muted-foreground hover:text-foreground [&_svg:not([class*='size-'])]:size-3.5" />}>
+					<Camera className={cn(recording && "text-destructive")} />
+					{recording && <span aria-hidden className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-destructive motion-safe:animate-pulse" />}
+				</TooltipTrigger>
+				<TooltipContent>{recording ? "Stop recording" : "Screenshot · Shift-click to record"}</TooltipContent>
+			</Tooltip>
+			<BrowserIconButton label={floating ? "Close floating preview" : "Float preview over chat"} icon={<PictureInPicture2 className={cn("size-3.5", floating && "text-primary")} />} aria-pressed={floating} variant={floating ? "secondary" : "ghost"} disabled={!hasPage && !floating} onClick={onFloat} />
 			{downloads > 0 && <Tooltip>
 				<TooltipTrigger render={<Button type="button" variant={downloadsOpen ? "secondary" : "ghost"} size="xs" aria-label="Downloads" aria-pressed={downloadsOpen} onClick={onDownloads} className="h-6 gap-1 px-1.5 text-muted-foreground tabular-nums hover:text-foreground [&_svg]:size-3.5" />}><Download /><span>{downloads}</span></TooltipTrigger>
 				<TooltipContent>Downloads</TooltipContent>

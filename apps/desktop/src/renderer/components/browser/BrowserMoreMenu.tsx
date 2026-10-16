@@ -6,12 +6,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export type BrowserMenuActions = {
 	hardReload: () => void; toggleDevTools: () => void; toggleDeviceToolbar: () => void; setColorScheme: (value: BrowserColorScheme) => void;
-	zoomIn: () => void; zoomOut: () => void; resetZoom: () => void; toggleMute: () => void; openDownloads: () => void; clearCookies: () => void; clearCache: () => void;
+	zoomIn: () => void; zoomOut: () => void; resetZoom: () => void; toggleMute: () => void; openDownloads: () => void; clearCookies: () => void; clearCache: () => void; togglePopOut: () => void;
 };
 const schemes: { value: BrowserColorScheme; label: string }[] = [{ value: "system", label: "System" }, { value: "light", label: "Light" }, { value: "dark", label: "Dark" }];
 
 /** The three-dot menu at the end of the browser chrome, as in T3 Code. */
-export function BrowserMoreMenu({ enabled, actions, zoom, colorScheme, devToolsOpen, deviceToolbar, muted, downloads, zoomShortcuts }: { enabled: boolean; actions: BrowserMenuActions; zoom: number; colorScheme: BrowserColorScheme; devToolsOpen: boolean; deviceToolbar: boolean; muted: boolean; downloads: number; zoomShortcuts: { in: string; out: string; reset: string } }) {
+export function BrowserMoreMenu({ enabled, actions, zoom, colorScheme, devToolsOpen, deviceToolbar, muted, downloads, poppedOut, zoomShortcuts }: { enabled: boolean; actions: BrowserMenuActions; zoom: number; colorScheme: BrowserColorScheme; devToolsOpen: boolean; deviceToolbar: boolean; muted: boolean; downloads: number; poppedOut: boolean; zoomShortcuts: { in: string; out: string; reset: string } }) {
 	const disabled = !enabled;
 	return <DropdownMenu>
 		<Tooltip>
@@ -21,6 +21,7 @@ export function BrowserMoreMenu({ enabled, actions, zoom, colorScheme, devToolsO
 		<DropdownMenuContent align="end" sideOffset={6} className="w-56 text-xs">
 			<DropdownMenuItem disabled={disabled} onClick={actions.hardReload}>Hard reload</DropdownMenuItem>
 			<DropdownMenuItem disabled={disabled} onClick={actions.toggleDevTools}>{devToolsOpen ? "Close DevTools" : "Open DevTools"}</DropdownMenuItem>
+			<DropdownMenuItem disabled={disabled && !poppedOut} onClick={actions.togglePopOut}>{poppedOut ? "Close separate preview window" : "Open separate preview window"}</DropdownMenuItem>
 			<DropdownMenuItem onClick={actions.toggleDeviceToolbar}>{deviceToolbar ? "Hide device toolbar" : "Show device toolbar"}</DropdownMenuItem>
 			<DropdownMenuSub>
 				<DropdownMenuSubTrigger disabled={disabled}>Appearance</DropdownMenuSubTrigger>
