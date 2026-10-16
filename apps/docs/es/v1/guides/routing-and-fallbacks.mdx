@@ -188,7 +188,7 @@ La misma página también ofrece controles de canales beta y alfa para introduci
 
 ### La alternativa de BYOK es explícita
 
-En **Panel -> Ajustes -> BYOK**, los equipos pueden elegir si una solicitud BYOK fallida puede recurrir a los créditos de Phaseo. Este es el control público actual para decidir si una solicitud debe completarse cuando falla una clave propia.
+En **Panel -> Ajustes -> BYOK**, los equipos pueden elegir si una solicitud <Tooltip tip="Usa tu propia clave: Phaseo enruta la solicitud con tu clave de API del proveedor, y el proveedor te factura el uso del modelo directamente.">BYOK</Tooltip> fallida puede recurrir a los créditos de Phaseo. Este es el control público actual para decidir si una solicitud debe completarse cuando falla una clave propia.
 
 ### Las rutas dinámicas asignan políticas a las claves de API
 
@@ -220,6 +220,19 @@ Los metadatos personalizados están disponibles en las superficies de inferencia
 ## Comportamiento de las alternativas
 
 Si un proveedor devuelve errores o límites de tasa, Gateway puede volver a intentarlo o dirigir la solicitud a otro proveedor compatible con el mismo modelo. Aun así, deberías gestionar los errores `429` y `5xx` con retroceso exponencial.
+
+```mermaid
+flowchart TD
+  req["Solicitud"] --> pol["Aplicar ajustes preestablecidos, reglas de protección y política de proveedores"]
+  pol --> rnk["Ordenar los proveedores aptos según el modo de enrutamiento"]
+  rnk --> prov["Llamar al proveedor mejor clasificado"]
+  prov -->|"Éxito"| resp["Devolver la respuesta"]
+  prov -->|"Error o límite de tasa del proveedor"| nextProv{{"¿Hay otro proveedor apto?"}}
+  nextProv -->|"Sí"| prov
+  nextProv -->|"No"| fallbackCheck{{"¿Estado reintentable y queda un modelo de respaldo?"}}
+  fallbackCheck -->|"Sí: repetir con el siguiente modelo"| pol
+  fallbackCheck -->|"No"| err["Devolver el error"]
+```
 
 Los nodos de modelo de una ruta dinámica también pueden definir una lista ordenada de modelos alternativos. Phaseo primero agota los intentos con proveedores aptos para el modelo seleccionado. Si la respuesta resultante permite reintentar (`429`, `500`, `502`, `503` o `504`), Gateway vuelve a ejecutar todo el proceso de selección de políticas y proveedores para cada modelo alternativo, en orden. Los errores del cliente se devuelven inmediatamente y no cambian de modelo.
 

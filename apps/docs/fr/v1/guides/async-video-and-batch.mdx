@@ -36,6 +36,17 @@ Après avoir enregistré un endpoint, utilisez **Envoyer un événement de test*
 
 Considérez les états de cycle de vie `completed`, `failed`, `cancelled` et `expired` comme terminaux. Gardez un mécanisme de récupération par interrogation périodique même avec des webhooks.
 
+```mermaid
+flowchart TD
+  newJob["Créer une tâche vidéo ou par lots"] --> store["Enregistrer id et polling_url"]
+  store --> waiting["Attendre une mise à jour"]
+  waiting -->|"Événement webhook"| terminal{{"État terminal ?"}}
+  waiting -->|"Interroger polling_url"| terminal
+  terminal -->|"Non"| waiting
+  terminal -->|"completed"| fetchOut["Récupérer les sorties ou les résultats"]
+  terminal -->|"failed / cancelled / expired"| outcome["Traiter le résultat"]
+```
+
 Pour chaque événement, Phaseo effectue une première tentative de livraison. Une réponse 2xx réussie termine la livraison sans nouvelle tentative. Les livraisons échouées bénéficient de trois nouvelles tentatives au maximum, prévues après 1, 5 et 15 minutes. Les traitements périodiques en arrière-plan exécutent les tentatives admissibles ; la livraison réelle peut donc être plus tardive. Chaque tentative consigne son numéro, son heure, son statut HTTP, l’erreur et l’heure de la prochaine tentative. Après le quatrième échec, la livraison est marquée comme définitivement échouée. Les destinataires doivent toujours dédupliquer les événements : un accusé de réception perdu ou une interruption du worker peut rendre la livraison incertaine.
 
 ## Consulter les journaux des tâches et des requêtes

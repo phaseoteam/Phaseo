@@ -290,9 +290,13 @@ Lege eine maximale Anzahl von Versuchen und eine Gesamtfrist fest und ergänze d
 </Columns>
 
 <Visibility for="agents">
-Wenn du als Agent die Fehlerbehandlung implementierst:
+Regeln zur Fehlerbehandlung für Agenten, als Zusammenfassung dieser Seite:
 
-- Verwende Repository-Skills für Wiederholungslogik, strukturierte Protokollierung und schema-sicheres Parsen von Fehlern.
-- Behandle Debug-Payloads als potenziell vertraulich und schwärze sie vor der dauerhaften Protokollierung.
-- Bevorzuge deterministische Wiederholungen (begrenzte Versuche mit Jitter) gegenüber Endlosschleifen.
+- Entscheide anhand des JSON-Codes `error` und `status_code`, nicht anhand des Texts in `description`. Protokolliere bei jedem Fehler `generation_id`.
+- `400`, `401`, `403` und `404`: Korrigiere zuerst Anfrage, Schlüssel oder Zugriff. Wiederhole dieselbe Anfrage nicht unverändert.
+- `410` mit `model_retired`: Wechsle zu `replacement_model`, wenn der Wert nicht `null` ist; andernfalls wähle mit `GET /v1/models` ein neues Modell.
+- `429`: Wenn `Retry-After` vorhanden ist (Sekunden oder HTTP-Datum), warte diese Zeit vor einem neuen Versuch ab; andernfalls nutze exponentielles Backoff mit Jitter. Ein `key_limit_exceeded`-Fehler ohne `Retry-After` setzt sich nicht von selbst zurück, also wiederhole ihn nicht.
+- `500` bis `599`: Wiederhole nur, wenn ein erneuter Aufruf sicher ist, mit Versuchslimit, Gesamtfrist und exponentiellem Backoff mit Jitter. Rufe bei asynchronen Aufträgen den angenommenen Auftrag ab, statt ihn erneut einzureichen.
+- Behandle Debug-Payloads als sensibel und schwärze sie, bevor du sie dauerhaft protokollierst.
+- Für erprobte Muster zu Wiederholungen und Fehleranalyse installiere den Skill `phaseo-gateway`: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`.
 </Visibility>

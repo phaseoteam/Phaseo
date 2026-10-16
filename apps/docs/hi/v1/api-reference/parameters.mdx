@@ -642,9 +642,10 @@ Debug payloads में संवेदनशील request context हो स�
 - [त्रुटियाँ और डिबगिंग](./errors.mdx)
 
 <Visibility for="agents">
-यदि आप agent के रूप में parameter handling लागू कर रहे हैं:
+एजेंट के लिए पैरामीटर-प्रबंधन नियम:
 
-- schema validation और request-shape जाँच के लिए repository skills उपयोग करें
-- अनुमति होने पर passthrough flows में अज्ञात provider-specific keys सुरक्षित रखें
-- tools, streaming या debug जैसे उन्नत fields को साथ सेट करने से पहले endpoint compatibility जाँचें
+- फ़ील्ड के नाम का अनुमान लगाने के बजाय https://phaseo.app/docs/openapi/v1/openapi.yaml पर दिए API अनुबंध से अनुरोध बॉडी की जाँच करें।
+- टूल, स्ट्रीमिंग और डीबग विकल्प जैसे उन्नत फ़ील्ड साथ में इस्तेमाल करने से पहले एंडपॉइंट का API संदर्भ पेज देखें।
+- जब एंडपॉइंट अनुमति दे, तो पास-थ्रू फ़्लो में प्रदाता-विशिष्ट अज्ञात कुंजियाँ बनाए रखें।
+- परखे हुए अनुरोध-संरचना पैटर्न के लिए `phaseo-gateway` स्किल इंस्टॉल करें: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`।
 </Visibility>

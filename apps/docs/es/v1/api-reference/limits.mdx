@@ -65,3 +65,12 @@ No reintentes automáticamente el envío de un trabajo con resultado incierto ni
 Supervisa la frecuencia de `429` por endpoint y modelo, y revisa la frecuencia de las alternativas en los registros de solicitudes. Compara los registros de tu aplicación con los [ajustes de enrutamiento](../guides/routing-and-fallbacks.mdx) y las cuotas de la cuenta del proveedor para el tráfico BYOK.
 
 Consulta los [presupuestos](./endpoint/budgets-list.mdx) y las [salvaguardas](./endpoint/guardrails.mdx) para controlar el gasto y el acceso del espacio de trabajo.
+
+<Visibility for="agents">
+Reglas de límites de tasa para agentes, resumen de esta página:
+
+- Las cuotas del Gateway devuelven `429` con el motivo `customer_requests_per_minute` o `free_requests_per_day`; espera los segundos de `Retry-After`. Si la aplicación de cuotas no está disponible, el Gateway devuelve `503` con indicaciones para reintentar.
+- Los límites de clave y los presupuestos devuelven `429` con `key_limit_exceeded` y un `reset_at`. Sin `Retry-After`, el límite no se restablece solo: aumenta el límite o usa otra clave en lugar de reintentar.
+- Las políticas de límite de tasa del espacio de trabajo devuelven `429` con `rate_limit_exceeded`, `policy_id` y `limit_scope`. `x-ratelimit-remaining-requests` es aproximado.
+- `Retry-After` puede ser un número de segundos o una fecha HTTP; valídalo antes de programar un reintento. Nunca reenvíes un trabajo de vídeo o por lotes ambiguo; consulta su estado.
+</Visibility>

@@ -9,10 +9,10 @@ description: "SDK と SKILL.md ファイルを組み合わせて、ローカル�
 
 <Visibility for="humans">
 <Note>
-スキルを一から作成せず、再利用可能なものを使う場合は、[`phaseoteam/skills`](https://github.com/phaseoteam/skills) から Phaseo の公開スキルをインストールします。
+スキルを一から作成せず、再利用可能なものを使う場合は、[`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) から Phaseo の公開スキルをインストールします。
 
 ```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
 ```
 
 その後、プロジェクト固有の指示はローカルの `SKILL.md` に記述します。
@@ -21,10 +21,10 @@ npx skills add phaseoteam/skills --agent codex --skill '*'
 
 <Visibility for="agents">
 <Note>
-再利用可能な Phaseo スキルは [`phaseoteam/skills`](https://github.com/phaseoteam/skills) にあります。次のコマンドで先にインストールします。
+再利用可能な Phaseo スキルは [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) にあります。次のコマンドで先にインストールします。
 
 ```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
 ```
 
 次に、リポジトリの `SKILL.md` にプロジェクト固有の指示を追加します。

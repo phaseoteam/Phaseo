@@ -85,4 +85,17 @@ Ainda não tem uma chave de API? [Crie uma no painel](https://phaseo.app/pt-BR/s
 
 [Explore modelos](https://phaseo.app/models) ou [compare-os](https://phaseo.app/compare). O catálogo pode incluir modelos sem rotas disponíveis; confira a disponibilidade no Gateway antes de integrar. Veja [Como o Phaseo funciona](./developers/introduction.mdx) para modelos, provedores e cobrança.
 
-Para acessar documentação dentro de um assistente, conecte [Docs MCP](./guides/integrations/docs-mcp.mdx) ou leia o [resumo de recursos para agentes](https://phaseo.app/docs/skill.md).
+## Crie com um agente de IA
+
+<Prompt description="Dê ao seu agente de programação (Cursor, Claude Code, Codex e outros) tudo o que ele precisa para adicionar a Phaseo ao seu projeto." icon="bot" actions={["copy", "cursor"]}>
+{`Add Phaseo Gateway to this project.
+
+1. Install the Phaseo skills: npx skills add https://phaseo.app/docs
+2. If your tools support MCP, connect the Phaseo docs server at https://phaseo.app/docs/mcp and look up endpoints and SDK usage there instead of guessing.
+3. Inspect the current AI provider setup and propose the smallest change that sends requests to https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY.
+4. Use the official SDK for this language if there is one (@phaseo/sdk for TypeScript, phaseo for Python). Otherwise call the REST API.
+5. Check model IDs with GET /v1/models instead of inventing them. Use phaseo/free for a first test if no paid model has been chosen.
+6. Explain which files you will change and how you will verify the change before you edit. Never print or commit API keys.`}
+</Prompt>
+
+Os agentes também podem pesquisar nesta documentação com o [Docs MCP](./guides/integrations/docs-mcp.mdx), ler o [resumo de recursos](https://phaseo.app/docs/skill.md) ou começar pelo [llms.txt](https://phaseo.app/docs/llms.txt).
