@@ -29,6 +29,14 @@ These instructions apply to `apps/docs` and extend the repository-level `AGENTS.
 - Preserve redirects when moving published pages and update inbound links in the same change.
 - Translated pages (`<locale>/v1`) must translate all English prose and keep its structure: the same headings, components, tables, and lists, with code blocks, inline code, URLs, identifiers, product names, and third-party UI labels unchanged. Do not summarize a page or link readers to the English version instead. See `TRANSLATION_WORKFLOW.md` for recording reviewed translations.
 
+## Agent-Facing Content
+
+- Site-wide guidance for agents lives in `docs.json` `markdown.instructions`. Mintlify adds it to every page's Markdown, `llms.txt`, and `llms-full.txt`. Keep it short and factual, and update it when the base URL, auth header, model ID format, or SDK names change.
+- Public skills are published from `.agents/skills` to `.mintlify/skills` by `pnpm --filter @phaseo/docs skills:sync`; `docs:build` fails if the copies drift (`skills:check`). Edit skills in `.agents/skills`, never in `.mintlify/skills`, and add a new public skill to `PUBLIC_SKILLS` in `scripts/sync-skills.mjs`.
+- Use `<Prompt>` (with `actions={["copy", "cursor"]}`) for prompts readers paste into coding agents. Prompt bodies stay in English in every language; translate the `description`.
+- Use `<Visibility for="agents">` for short, factual rules that only agents need, taken from the page itself. Translate them like any other prose.
+- Mermaid node IDs must not be Mermaid keywords (`call`, `click`, `end`, `style`, `class`); give question nodes the compact `{{"..."}}` shape.
+
 ## Writing and Safety
 
 - Separate conceptual explanation, procedures, reference material, and troubleshooting rather than mixing all four into one page.

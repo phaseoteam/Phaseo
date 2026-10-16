@@ -65,3 +65,12 @@ BYOK リクエストには、ご自身のプロバイダーアカウントの制
 エンドポイントとモデル別に `429` の発生率を追跡し、リクエストログでフォールバックの頻度を確認してください。アプリケーションのログを[ルーティング設定](../guides/routing-and-fallbacks.mdx)、および BYOK トラフィックに対するプロバイダーアカウントのクォータと照合してください。
 
 ワークスペースの支出とアクセスの制御については、[予算](./endpoint/budgets-list.mdx)と[ガードレール](./endpoint/guardrails.mdx)を参照してください。
+
+<Visibility for="agents">
+エージェント向けのレート制限ルール（このページの要約）:
+
+- Gateway のクォータは理由 `customer_requests_per_minute` または `free_requests_per_day` とともに `429` を返します。`Retry-After` の秒数だけ待ちます。クォータの適用が利用できない場合、Gateway は再試行の案内とともに `503` を返します。
+- キーの制限と予算は `key_limit_exceeded` と `reset_at` を含む `429` を返します。`Retry-After` がない場合、制限は自動ではリセットされません。再試行せず、制限を引き上げるか別のキーを使います。
+- ワークスペースのレート制限ポリシーは `rate_limit_exceeded`、`policy_id`、`limit_scope` を含む `429` を返します。`x-ratelimit-remaining-requests` は概算値です。
+- `Retry-After` は秒数または HTTP 日付です。再試行を予定する前に値を検証します。結果が不明な動画ジョブやバッチジョブは再送信せず、ステータスを確認します。
+</Visibility>

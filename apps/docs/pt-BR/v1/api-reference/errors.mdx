@@ -214,7 +214,7 @@ Um modelo aposentado continua sendo atendido enquanto algum provedor o atender. 
 - `retired_at`: quando o modelo foi aposentado, ou `null` se nenhuma data estiver registrada.
 - `replacement_model`: o substituto sugerido, ou `null` se não houver nenhum.
 
-Tentar novamente não resolve. Atualize o ID do modelo na sua solicitação. Para continuar atendendo a essas solicitações durante a migração, adicione o substituto à lista `models` da solicitação ou ative o roteamento de modelos aposentados no espaço de trabalho. Consulte [Modelos aposentados](../guides/routing-and-fallbacks.mdx#retired-models).
+Tentar novamente não resolve. Atualize o ID do modelo na sua solicitação. Para continuar atendendo a essas solicitações durante a migração, adicione o substituto à lista `models` da solicitação ou ative o roteamento de modelos aposentados no espaço de trabalho. Consulte [Descontinuação e aposentadoria de modelos](../guides/model-retirement.mdx).
 
 ## Modo de depuração opcional
 
@@ -289,9 +289,13 @@ Defina um limite de tentativas e um prazo total e adicione variação aleatória
 </Columns>
 
 <Visibility for="agents">
-Se estiver implementando tratamento de erros como agente:
+Regras de tratamento de erros para agentes, resumindo esta página:
 
-- Use skills do repositório para lógica de novas tentativas, logs estruturados e análise de erros compatível com o esquema.
-- Trate payloads de depuração como potencialmente confidenciais e redija-os antes de armazená-los em logs persistentes.
-- Prefira novas tentativas determinísticas (limite de tentativas e jitter) a loops sem limite.
+- Decida com base no código `error` do JSON e em `status_code`, não no texto de `description`. Registre `generation_id` em toda falha.
+- `400`, `401`, `403` e `404`: corrija primeiro a solicitação, a chave ou o acesso. Não repita a mesma solicitação sem alterações.
+- `410` com `model_retired`: mude para `replacement_model` quando ele não for `null`; caso contrário, escolha um novo modelo com `GET /v1/models`.
+- `429`: quando houver `Retry-After` (segundos ou uma data HTTP), aguarde esse tempo antes de tentar de novo; caso contrário, use backoff exponencial com jitter. Um erro `key_limit_exceeded` sem `Retry-After` não é redefinido sozinho, então não tente de novo.
+- `500` a `599`: tente de novo somente quando repetir a chamada for seguro, com limite de tentativas, prazo total e backoff exponencial com jitter. Em tarefas assíncronas, consulte a tarefa aceita em vez de enviá-la novamente.
+- Trate payloads de depuração como sensíveis e oculte-os antes de gravar logs persistentes.
+- Para padrões testados de nova tentativa e análise de erros, instale a skill `phaseo-gateway`: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`.
 </Visibility>

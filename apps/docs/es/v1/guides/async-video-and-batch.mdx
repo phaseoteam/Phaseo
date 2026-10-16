@@ -36,6 +36,17 @@ Después de guardar un endpoint, usa **Enviar evento de prueba** en Configuraci�
 
 Considera los estados del ciclo de vida `completed`, `failed`, `cancelled` y `expired` como terminales. Mantén una vía de recuperación mediante consultas periódicas incluso si utilizas webhooks.
 
+```mermaid
+flowchart TD
+  newJob["Crear un trabajo de vídeo o por lotes"] --> store["Guardar id y polling_url"]
+  store --> waiting["Esperar una actualización"]
+  waiting -->|"Evento de webhook"| terminal{{"¿Estado terminal?"}}
+  waiting -->|"Consultar polling_url"| terminal
+  terminal -->|"No"| waiting
+  terminal -->|"completed"| fetchOut["Obtener las salidas o los resultados"]
+  terminal -->|"failed / cancelled / expired"| outcome["Gestionar el resultado"]
+```
+
 Para cada evento, Phaseo hace un intento inicial de entrega. Una respuesta 2xx correcta finaliza la entrega sin reintentos. Las entregas fallidas reciben hasta tres reintentos, programados a los 1, 5 y 15 minutos. Los procesos periódicos en segundo plano ejecutan los reintentos pendientes, por lo que la entrega real puede ser posterior a la hora programada. Cada intento registra su número, hora, estado HTTP, error y hora del siguiente reintento. Tras el cuarto intento fallido, la entrega se marca como fallida definitivamente. Los receptores deben seguir eliminando eventos duplicados: una confirmación perdida o una interrupción del worker puede dejar la entrega en un estado incierto.
 
 ## Ver registros de trabajos y solicitudes

@@ -620,7 +620,8 @@ accountSettingsUsageRouter.get("/usage/alerts", async (c) => {
 		const lastUsedAt = lastUsed.get(model.model_id) ?? null;
 		const usedRecently = Boolean(lastUsedAt && Date.parse(lastUsedAt) >= now - 90 * 86_400_000);
 		let severity: Warning["severity"] = "fyi";
-		if (primary != null && primary >= 0 && primary <= 90 && usedRecently) severity = primary <= 7 ? "critical" : primary <= 28 ? "warning" : "notice";
+		// Critical only for a real shutdown; a deprecation date alone tops out at warning.
+		if (primary != null && primary >= 0 && primary <= 90 && usedRecently) severity = retirementDaysUntil != null && retirementDaysUntil <= 7 ? "critical" : primary <= 28 ? "warning" : "notice";
 		const legacyReplacement = typeof model.metadata === "object" && model.metadata !== null && !Array.isArray(model.metadata) && typeof model.metadata.replacement_model_id === "string" ? model.metadata.replacement_model_id : null;
 		return { modelId: model.model_id, modelName: model.name ?? null, organisationId: model.organisation_id ?? null, lastUsedAt, deprecationDate, retirementDate, deprecationDaysUntil, retirementDaysUntil, replacementModelId: model.replacement_model_id ?? legacyReplacement ?? replacementByPrevious.get(model.model_id) ?? null, previousModelId: model.previous_model_id ?? null, countAsAlert: usedRecently && primary != null && primary >= 0 && primary <= 90, severity };
 	}).filter((warning) => [warning.deprecationDaysUntil, warning.retirementDaysUntil].some((days) => days != null && days >= -7 && days <= 90))

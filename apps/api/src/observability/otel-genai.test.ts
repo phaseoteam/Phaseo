@@ -104,6 +104,25 @@ describe("buildGatewayGenAiOtlpPayload", () => {
 		expect(keys).not.toContain("gen_ai.input.messages");
 		expect(keys).not.toContain("gen_ai.output.messages");
 	});
+
+	it("names the rate limit policy that rejected a request", () => {
+		const payload = buildGatewayGenAiOtlpPayload({
+			requestId: "req_limited",
+			workspaceId: "ws_1",
+			endpoint: "responses",
+			requestedModel: "openai/gpt-5",
+			statusCode: 429,
+			success: false,
+			errorType: "user",
+			rateLimitPolicyId: "policy_1",
+			rateLimitScope: "key",
+			startedAtMs: 1,
+			completedAtMs: 2,
+		}, { ...options, includeSensitiveContent: false });
+		const server = attributes(spans(payload)[0]);
+		expect(server["phaseo.rate_limit.policy_id"]).toEqual({ stringValue: "policy_1" });
+		expect(server["phaseo.rate_limit.scope"]).toEqual({ stringValue: "key" });
+	});
 });
 
 describe("async GenAI lifecycle spans", () => {

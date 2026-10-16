@@ -36,6 +36,17 @@ After saving an endpoint, use **Send test event** in Settings to deliver a signe
 
 Treat `completed`, `failed`, `cancelled`, and `expired` lifecycle states as terminal. Keep a polling recovery path even when using webhooks.
 
+```mermaid
+flowchart TD
+  newJob["Create a video or batch job"] --> store["Store id and polling_url"]
+  store --> waiting["Wait for an update"]
+  waiting -->|"Webhook event"| terminal{{"Terminal state?"}}
+  waiting -->|"Poll polling_url"| terminal
+  terminal -->|"No"| waiting
+  terminal -->|"completed"| fetchOut["Fetch the outputs or results"]
+  terminal -->|"failed / cancelled / expired"| outcome["Handle the outcome"]
+```
+
 For each event, Phaseo makes one initial delivery attempt. A successful 2xx response ends delivery; no retries are needed. Failed deliveries receive up to three retries, scheduled after 1, 5, and 15 minutes. Background sweeps process eligible retries, so actual delivery can be later than the scheduled time. Each attempt records its number, time, HTTP status, error and next retry time. After the fourth unsuccessful attempt, delivery is marked permanently failed. Receivers must still deduplicate events: a lost acknowledgement or worker interruption can make delivery uncertain.
 
 ## View job and request logs

@@ -1,37 +1,67 @@
 ---
 icon: "square-terminal"
-title: "Java SDK का उपयोग"
-description: "Java SDK wrapper को initialize और उपयोग करने का तरीका।"
+title: "Java SDK — उपयोग"
+description: "Java से Phaseo Gateway को कॉल करें।"
 ---
 
-## सेटअप
+[इंस्टॉलेशन](./installation)
 
 ```java
 import app.phaseo.sdk.Phaseo;
+import java.util.Map;
 
-String apiKey = System.getenv("PHASEO_API_KEY");
-Phaseo client = new Phaseo(apiKey);
+public class Main {
+    public static void main(String[] args) throws Exception {
+        var client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+        var response = client.createResponse(Map.of(
+            "model", "openai/gpt-6-astra",
+            "input", "Reply with: Java SDK works"
+        ));
+        System.out.println(response);
+    }
+}
 ```
 
-## पैटर्न
+JSON अनुरोधों के लिए `createResponse`, `createChatCompletion`, `createEmbedding` और `listModels` इस्तेमाल करें। `Map` या `JsonNode` दें; JSON स्ट्रिंग को क्लाइंट मेथड में देने से पहले पार्स करें।
 
-आम wrapper calls इस तरह दिखते हैं:
+## रीट्राई और त्रुटियाँ
+
+डिफ़ॉल्ट रूप से रीट्राई बंद हैं। `setMaxRetries` सुरक्षित GET/HEAD अनुरोध दोहराता है; लिखने वाले और स्ट्रीमिंग अनुरोध दोबारा नहीं भेजे जाते। HTTP त्रुटियों में `Client.ApiException` से स्टेटस, बॉडी, हेडर और अनुरोध ID मिलते हैं।
 
 ```java
-Object response = client.createChatCompletion("""
-{
-  "model": "openai/gpt-5-nano",
-  "messages": [
-    { "role": "user", "content": "Say hello from Java" }
-  ]
+import app.phaseo.gen.Client;
+import app.phaseo.sdk.Phaseo;
+import java.time.Duration;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"))
+    .setTimeout(Duration.ofSeconds(30))
+    .setMaxRetries(2);
+
+try {
+    var result = client.requestWithResponse("GET", "/models",
+        Map.of("limit", "5"), null, null, null);
+    System.out.println(result.requestId());
+    System.out.println(result.data);
+} catch (Client.ApiException error) {
+    System.err.println(error.getStatusCode());
+    System.err.println(error.getRequestId());
+    System.err.println(error.getResponseBody());
 }
-""");
 ```
 
-अधिकांश JSON एंडपॉइंट पर रैपर मेथड पार्स किए गए JSON नोड लौटाते हैं; फ़ाइल और वीडियो सामग्री के हेल्पर बाइट ऐरे लौटाते हैं।
+## स्ट्रीमिंग
 
-## सुझाव
+`streamResponse` और `rawClient().requestLines` SSE लाइनें आते ही लौटाते हैं। try-with-resources से स्ट्रीम बंद करें और अपने ऐप में इवेंट नाम, डेटा लाइनें और पूर्ण होने के संकेत संभालें।
 
-- Gateway के आम कामों के लिए पहले `app.phaseo.sdk.Phaseo` उपयोग करें।
-- जब wrapper में अभी शामिल न किया गया low-level operation चाहिए, तभी `app.phaseo.gen.Client` और `app.phaseo.gen.Operations` का उपयोग करें।
-- Wrapper method names के लिए इस section में endpoint-specific examples से शुरुआत करें।
+```java
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+try (var lines = client.streamResponse(Map.of(
+    "model", "openai/gpt-6-astra", "input", "Hello"
+))) {
+    lines.forEach(System.out::println);
+}
+```

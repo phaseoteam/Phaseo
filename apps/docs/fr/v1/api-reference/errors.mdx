@@ -215,7 +215,7 @@ Un modèle retiré reste servi tant qu’un fournisseur le sert. Dès qu’aucun
 - `retired_at` : la date de retrait du modèle, ou `null` si aucune date n’est enregistrée.
 - `replacement_model` : le remplaçant suggéré, ou `null` s’il n’y en a pas.
 
-Réessayer ne sert à rien. Mettez à jour l’identifiant du modèle dans votre requête. Pour que ces requêtes continuent d’être traitées pendant votre migration, ajoutez le remplaçant à la liste `models` de votre requête ou activez le routage des modèles retirés pour l’espace de travail. Consultez [Modèles retirés](../guides/routing-and-fallbacks.mdx#retired-models).
+Réessayer ne sert à rien. Mettez à jour l’identifiant du modèle dans votre requête. Pour que ces requêtes continuent d’être traitées pendant votre migration, ajoutez le remplaçant à la liste `models` de votre requête ou activez le routage des modèles retirés pour l’espace de travail. Consultez [Dépréciation et retrait des modèles](../guides/model-retirement.mdx).
 
 ## Mode de débogage facultatif
 
@@ -290,9 +290,13 @@ Définissez une limite de tentatives et une échéance globale, et ajoutez une v
 </Columns>
 
 <Visibility for="agents">
-Si vous implémentez la gestion des erreurs en tant qu’agent :
+Règles de gestion des erreurs pour les agents, en résumé de cette page :
 
-- Utilisez les compétences du dépôt pour les tentatives, les journaux structurés et l’analyse des erreurs conforme au schéma.
-- Traitez les charges utiles de débogage comme potentiellement sensibles et masquez-les avant de les conserver dans les journaux.
-- Préférez des tentatives déterministes (nombre limité et délai aléatoire) aux boucles sans limite.
+- Décidez selon le code `error` du JSON et `status_code`, pas selon le texte de `description`. Journalisez `generation_id` à chaque échec.
+- `400`, `401`, `403` et `404` : corrigez d’abord la requête, la clé ou l’accès. Ne renvoyez pas la même requête sans modification.
+- `410` avec `model_retired` : passez à `replacement_model` s’il n’est pas `null` ; sinon, choisissez un nouveau modèle avec `GET /v1/models`.
+- `429` : si `Retry-After` est présent (en secondes ou date HTTP), attendez ce délai avant de réessayer ; sinon, utilisez un backoff exponentiel avec gigue. Une erreur `key_limit_exceeded` sans `Retry-After` ne se réinitialise pas d’elle-même : ne la réessayez pas.
+- `500` à `599` : réessayez seulement si répéter l’appel est sans risque, avec un nombre maximal de tentatives, un délai global et un backoff exponentiel avec gigue. Pour les tâches asynchrones, consultez la tâche acceptée au lieu de la soumettre à nouveau.
+- Traitez les charges de débogage comme sensibles et masquez-les avant d’écrire des journaux persistants.
+- Pour des modèles éprouvés de nouvelle tentative et d’analyse des erreurs, installez la compétence `phaseo-gateway` : `npx skills add https://phaseo.app/docs --skill phaseo-gateway`.
 </Visibility>

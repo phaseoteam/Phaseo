@@ -642,9 +642,10 @@ Phaseo 会在内部将网关规范化的级别值映射为提供商原生控制�
 - [错误与调试](./errors.mdx)
 
 <Visibility for="agents">
-如果你以 agent 身份实现参数处理：
+面向智能体的参数处理规则：
 
-- 使用仓库技能检查 schema 和请求结构
-- 在允许时，在直通流程中保留未知的提供商专用键
-- 同时设置 tools、流式传输或 debug 等高级字段前，请先验证端点兼容性
+- 使用 https://phaseo.app/docs/openapi/v1/openapi.yaml 中的 API 契约校验请求体，不要猜测字段名。
+- 在组合工具、流式输出和调试选项等高级字段之前，先查看该端点的 API 参考页面。
+- 当端点允许时，在透传流程中保留未知的提供商特定键。
+- 如需经过验证的请求结构模式，请安装 `phaseo-gateway` 技能：`npx skills add https://phaseo.app/docs --skill phaseo-gateway`。
 </Visibility>

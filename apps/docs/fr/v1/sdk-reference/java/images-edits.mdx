@@ -1,29 +1,46 @@
 ---
 icon: "pencil"
 title: "Modification d’images"
-description: "Appelez /images/edits avec le SDK Java."
+description: "Modifiez un fichier image depuis Java."
 ---
 
-**Méthode**: `client.createImageEdit(...)`
+Modifiez un fichier image depuis Java.
+
+<Note>Les méthodes JSON du SDK Java n'encodent pas les envois multipart. Utilisez le client HTTP standard de Java pour envoyer les octets du fichier comme indiqué ci-dessous.</Note>
+
+Placez `input.png` dans le répertoire de travail.
 
 ```java
-import app.phaseo.sdk.Phaseo;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
 
-Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
-
-String body = """
-{
-  "model": "openai/gpt-image-1",
-  "prompt": "Make this image warmer",
-  "image": "data:image/png;base64,..."
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\nopenai/gpt-image-1\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"prompt\"\r\n\r\nMake this image warmer\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"image\"; filename=\"input.png\"\r\nContent-Type: image/png\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("input.png")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/images/edits"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
 }
-""";
-
-Object response = client.createImageEdit(body);
-System.out.println(String.valueOf(response));
+System.out.println(response.body());
 ```
-
-<Note>
-Le client Java en cours de développement envoie directement des corps de requête JSON. Pour les opérations multipart avancées,
-utilisez des appels REST directs jusqu’à l’ajout d’assistants de plus haut niveau.
-</Note>

@@ -6,19 +6,35 @@ icon: "rocket"
 
 Use este tutorial para fazer uma solicitação bem-sucedida ao Phaseo, com texto gerado ou uma decisão estruturada, e confirmar onde a resposta aparece.
 
-<Note>
-**Usando um agente de programação?** Copie e cole este prompt antes de começar:
+<Prompt description="**Usando um agente de programação?** Copie e cole este prompt antes de começar" icon="bot" actions={["copy", "cursor"]}>
+{`You are integrating this project with Phaseo Gateway.
 
-```text
-You are integrating this project with Phaseo Gateway. Read the Phaseo agent guidance at https://phaseo.app/docs/skill.md and the relevant API reference before editing anything. Inspect the existing provider configuration and identify the smallest safe change needed. Use https://api.phaseo.app with a server-side PHASEO_API_KEY, preserve the current provider/model behavior unless I explicitly ask for a migration, and never print or commit credentials. Explain the files you would change and the verification commands first. Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.
-```
-</Note>
+Before editing anything:
+- Install the Phaseo skills: npx skills add https://phaseo.app/docs
+- Read https://phaseo.app/docs/skill.md and the API reference for the endpoint you will use. If your tools support MCP, search the docs at https://phaseo.app/docs/mcp.
+- Inspect the existing provider configuration and identify the smallest safe change.
+
+Rules:
+- Call https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY. Never print or commit credentials.
+- Keep the current provider and model behaviour unless I ask for a migration. Check model IDs with GET /v1/models instead of guessing them.
+- Explain the files you would change and the verification commands first.
+- Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.`}
+</Prompt>
 
 Você vai:
 - criar uma chave de API
 - enviar uma solicitação de texto ou decisão estruturada
 - ler o texto gerado ou respostas tipadas
 - saber o que verificar primeiro se a solicitação falhar
+
+<Visibility for="agents">
+Checklist do início rápido para agentes:
+
+- As chaves são criadas no painel, em https://phaseo.app/settings/keys. Nunca gere nem adivinhe uma chave. Envie-a como `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` somente a partir de código do servidor.
+- Faça a primeira solicitação com `POST https://api.phaseo.app/v1/responses`, enviando `model` e `input`. `phaseo/free` funciona sem saldo na carteira.
+- Leia a resposta em `output[].content[]`, onde `type` é `output_text`.
+- Se a solicitação falhar, decida com base no código `error` do JSON, conforme descrito em https://phaseo.app/docs/v1/api-reference/errors.md.
+</Visibility>
 
 ---
 
@@ -199,6 +215,29 @@ response = client.generate_response(
 )
 
 puts response
+```
+
+```java Java SDK
+// Build from source: https://phaseo.app/docs/pt-BR/v1/sdk-reference/java/installation
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        var client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+        var response = client.createResponse(Map.of(
+            "model", "openai/gpt-6-astra",
+            "input", "Reply with: quickstart works"
+        ));
+        for (var item : response.path("output")) {
+            for (var part : item.path("content")) {
+                if ("output_text".equals(part.path("type").asText())) {
+                    System.out.println(part.path("text").asText());
+                }
+            }
+        }
+    }
+}
 ```
 
 ```rust Rust SDK

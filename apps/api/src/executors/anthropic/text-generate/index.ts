@@ -23,7 +23,6 @@ import { resolveStreamForProtocol } from "@executors/_shared/text-generate/opena
 import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
 import { isIRNativeToolDefinition } from "@core/nativeTools";
 import {
-	normalizeClaudeModelId,
 	supportsAnthropicThinkingDisabled,
 	usesClaudeAdaptiveThinkingControls,
 } from "@core/claudeModelCapabilities";
@@ -548,17 +547,6 @@ export async function bufferAnthropicStreamToMessage(res: Response, upstreamStar
 /**
  * Transform IR request to Anthropic Messages format
  */
-function supportsAnthropicFastMode(model: string | null | undefined): boolean {
-	const normalized = normalizeClaudeModelId(model);
-	if (!normalized) return false;
-	return (
-		normalized.includes("claude-opus-4-6") ||
-		normalized.includes("claude-opus-4.6") ||
-		normalized.includes("claude-opus-4-7") ||
-		normalized.includes("claude-opus-4.7")
-	);
-}
-
 function parseAnthropicToolInput(argumentsRaw: unknown): Record<string, any> {
 	if (argumentsRaw && typeof argumentsRaw === "object" && !Array.isArray(argumentsRaw)) {
 		return argumentsRaw as Record<string, any>;
@@ -764,7 +752,6 @@ export function irToAnthropicMessages(
 	applyAnthropicCacheControlDefaults(request, ir.anthropicCacheControl);
 	applyAnthropicServiceControls(request, {
 		serviceTier: ir.serviceTier,
-		model: resolvedModel,
 	});
 
 	return request;
@@ -904,17 +891,14 @@ function applyAnthropicCacheControlDefaults(
 }
 function applyAnthropicServiceControls(
 	request: any,
-	controls: { serviceTier?: string; model?: string | null },
+	controls: { serviceTier?: string },
 ) {
 	if (typeof controls.serviceTier !== "string") return;
 	const tier = controls.serviceTier.toLowerCase();
 
 	if (tier === "fast" || tier === "priority") {
-		if (supportsAnthropicFastMode(controls.model)) {
-			request.speed = "fast";
-			return;
-		}
-		request.service_tier = "auto";
+		// Routing validates tier availability against the catalogue pricing card.
+		request.speed = "fast";
 		return;
 	}
 

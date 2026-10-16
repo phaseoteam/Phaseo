@@ -65,3 +65,12 @@ Ne réessayez pas automatiquement une soumission de tâche dont le résultat est
 Suivez la fréquence des `429` par endpoint et modèle, et examinez la fréquence des replis dans les journaux de requêtes. Comparez les journaux de votre application avec les [paramètres de routage](../guides/routing-and-fallbacks.mdx) et les quotas du compte fournisseur pour le trafic BYOK.
 
 Consultez les [budgets](./endpoint/budgets-list.mdx) et les [garde-fous](./endpoint/guardrails.mdx) pour les contrôles des dépenses et des accès de l’espace de travail.
+
+<Visibility for="agents">
+Règles de limites de débit pour les agents, en résumé de cette page :
+
+- Les quotas du Gateway renvoient `429` avec le motif `customer_requests_per_minute` ou `free_requests_per_day` ; attendez les secondes de `Retry-After`. Si l’application des quotas est indisponible, le Gateway renvoie `503` avec des indications de nouvelle tentative.
+- Les limites de clé et les budgets renvoient `429` avec `key_limit_exceeded` et un `reset_at`. Sans `Retry-After`, la limite ne se réinitialise pas d’elle-même : augmentez-la ou utilisez une autre clé au lieu de réessayer.
+- Les politiques de limite de débit de l’espace de travail renvoient `429` avec `rate_limit_exceeded`, `policy_id` et `limit_scope`. `x-ratelimit-remaining-requests` est approximatif.
+- `Retry-After` peut être un nombre de secondes ou une date HTTP ; validez-le avant de planifier une nouvelle tentative. Ne soumettez jamais à nouveau une tâche vidéo ou par lots ambiguë ; consultez plutôt son état.
+</Visibility>

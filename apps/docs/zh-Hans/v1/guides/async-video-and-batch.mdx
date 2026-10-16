@@ -36,6 +36,17 @@ Phaseo 会核对提供商状态并向客户发送通知。需要轮询的提供�
 
 将 `completed`、`failed`、`cancelled` 和 `expired` 生命周期状态视为终态。即使使用 Webhook，也要保留通过轮询恢复的途径。
 
+```mermaid
+flowchart TD
+  newJob["创建视频或批处理任务"] --> store["保存 id 和 polling_url"]
+  store --> waiting["等待更新"]
+  waiting -->|"Webhook 事件"| terminal{{"是否为终止状态？"}}
+  waiting -->|"轮询 polling_url"| terminal
+  terminal -->|"否"| waiting
+  terminal -->|"completed"| fetchOut["获取输出或结果"]
+  terminal -->|"failed / cancelled / expired"| outcome["处理结果"]
+```
+
 对每个事件，Phaseo 先进行一次投递尝试。成功的 2xx 响应会结束投递，无需重试。失败投递最多重试三次，分别安排在 1、5 和 15 分钟后。后台定期扫描会处理符合条件的重试，因此实际投递可能晚于计划时间。每次尝试都会记录次数、时间、HTTP 状态、错误和下次重试时间。第四次尝试仍失败后，投递会被标记为永久失败。接收方仍须对事件去重：确认响应丢失或 Worker 中断可能使投递结果不确定。
 
 ## 查看任务和请求日志

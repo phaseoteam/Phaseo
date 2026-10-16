@@ -642,9 +642,10 @@ Se quiser orientações mais aprofundadas sobre como ajustar os parâmetros, em 
 - [Erros e depuração](./errors.mdx)
 
 <Visibility for="agents">
-Se você implementa o tratamento de parâmetros como agente:
+Regras de tratamento de parâmetros para agentes:
 
-- use as skills do repositório para validar esquemas e verificar o formato das solicitações
-- preserve chaves desconhecidas específicas do provedor em fluxos de passthrough quando permitido
-- valide a compatibilidade do endpoint antes de combinar campos avançados como tools, streaming ou debug
+- Valide os corpos das solicitações com o contrato da API em https://phaseo.app/docs/openapi/v1/openapi.yaml em vez de adivinhar nomes de campos.
+- Consulte a página de referência do endpoint antes de combinar campos avançados como ferramentas, streaming e opções de depuração.
+- Preserve chaves desconhecidas específicas do provedor em fluxos de repasse quando o endpoint as permitir.
+- Para padrões testados de formato de solicitação, instale a skill `phaseo-gateway`: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`.
 </Visibility>

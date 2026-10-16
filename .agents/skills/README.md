@@ -15,6 +15,8 @@ npx skills add owner/repo --skill phaseo-gateway --agent codex
 
 For a clean public `skills.sh` source, publish only the Phaseo skills you want discoverable by default. This local repository also contains some generic helper skills for development use, so the recommended ecosystem shape is a dedicated public skills repo or an isolated publishable subtree that contains only the intended public Phaseo skills.
 
+The public Phaseo skills are also published on the docs site, so `npx skills add https://phaseo.app/docs` installs them and the Docs MCP lists them. `apps/docs/scripts/sync-skills.mjs` chooses which skills are public and copies them to `apps/docs/.mintlify/skills`; run `pnpm --filter @phaseo/docs skills:sync` after editing one, or the docs build fails.
+
 ## Available skills
 
 - `phaseo-gateway`: general gateway integration and migration workflow

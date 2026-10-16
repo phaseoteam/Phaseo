@@ -224,7 +224,7 @@ The same page also exposes beta and alpha channel toggles so preview traffic can
 
 ### BYOK fallback is explicit
 
-In **Dashboard -> Settings -> BYOK**, teams can choose whether a failed BYOK request is allowed to fall back to Phaseo credits. This is the current public control for the common "my own key failed, should the request still complete?" decision.
+In **Dashboard -> Settings -> BYOK**, teams can choose whether a failed <Tooltip tip="Bring your own key: Phaseo routes the request with your own provider API key, and your provider bills the model usage directly.">BYOK</Tooltip> request is allowed to fall back to Phaseo credits. This is the current public control for the common "my own key failed, should the request still complete?" decision.
 
 ### Dynamic routes attach policy to API keys
 
@@ -266,6 +266,19 @@ Custom metadata is available on the OpenAI-compatible text inference surfaces:
 ## Fallback behavior
 
 If a provider returns errors or rate limits, the Gateway can retry or route to another provider that supports the same model. You should still handle 429 and 5xx responses with exponential backoff.
+
+```mermaid
+flowchart TD
+  req["Request"] --> pol["Apply presets, guardrails and provider policy"]
+  pol --> rnk["Rank eligible providers by routing mode"]
+  rnk --> prov["Call the top-ranked provider"]
+  prov -->|"Success"| resp["Return the response"]
+  prov -->|"Provider error or rate limit"| nextProv{{"Another eligible provider?"}}
+  nextProv -->|"Yes"| prov
+  nextProv -->|"No"| fallbackCheck{{"Retryable status and a fallback model left?"}}
+  fallbackCheck -->|"Yes: rerun with the next model"| pol
+  fallbackCheck -->|"No"| err["Return the error"]
+```
 
 Model nodes in a dynamic route can also define an ordered list of fallback
 models. Phaseo first exhausts the eligible provider attempts for the selected
@@ -360,71 +373,11 @@ Read more in:
 
 ## Retired models
 
-A model marked as retired is still served while any provider serves it. Once
-no provider serves it, requests for it fail with `410 model_retired`, and the
-error names the suggested replacement in `replacement_model`. See
-[Errors and Debugging](../api-reference/errors.mdx#when-a-model-is-retired).
-
-### Route requests to a replacement
-
-A workspace can choose to send these requests to a replacement model instead.
-This is off by default. Owners and admins turn it on in
-**Dashboard -> Settings -> Routing -> Retired model routing**, or with
-`model_successor_redirect_enabled` in the
-[workspace settings API](../api-reference/endpoint/workspace-settings-update.mdx).
-
-When it is on, a request is sent to a replacement only if all of these are
-true:
-
-- No provider has served the requested model for 72 hours. Until then, the
-  request fails as usual.
-- The replacement was approved by Phaseo, or your workspace chose it.
-  Phaseo follows up to three approved replacements in a row.
-- The requested model is not free while the replacement is paid. A free model
-  is never replaced by a paid one.
-- The replacement passes the same checks as any request: workspace model
-  restrictions, key restrictions, guardrails, and endpoint support.
-  A replacement is never added to an allowlist for you.
-- The request names a model directly. Requests for `phaseo/auto` or a
-  provider-qualified model ID are not redirected.
-
-The workspace price policy decides whether a more expensive replacement may
-serve the request. Prices are compared on what both models charge.
-
-| `model_successor_price_policy` | Behaviour |
-| --- | --- |
-| `never` (default) | Use the replacement only if it does not cost more. |
-| `limit` | Allow up to `model_successor_max_price_increase_percent` more (0 to 1000). |
-| `any` | Allow any price, including replacements whose price cannot be compared. |
-
-Owners and admins can also set the workspace's own replacement for a model in
-the dashboard, or choose **Never redirect** to keep that model's requests
-failing. A workspace's own replacement is used whatever it costs, but a free
-model is still never replaced by a paid one. Changes take effect within about a
-minute.
-
-### How to tell a request was redirected
-
-The response `model` field and your request logs show the model that served the
-request, and the request is billed at that model's price. Redirected responses
-also include two headers:
-
-| Header | Example |
-| --- | --- |
-| `X-Phaseo-Requested-Model` | `lab/old-model` |
-| `X-Phaseo-Model-Substitution` | `reason=unserved; from=lab/old-model; to=lab/new-model` |
-
-The first time a replacement successfully answers the workspace's requests
-for a model, the workspace owner is emailed once. You can also send this
-notice to other destinations; see
-[Workspace notifications](./workspace-notifications.mdx).
-
-### Replacements and request-level fallbacks
-
-Your own `models` list comes first. When no provider serves the primary model,
-Phaseo tries the next entry in `models` instead of a replacement. A
-replacement is considered only for the last model in the list. In a dynamic
-route's fallback models, too, only the last one can be replaced.
+A retired model is still served while any provider serves it. Once none does,
+requests fail with `410 model_retired`, unless the workspace has turned on
+retired model routing to send them to a replacement. Your own `models` list is
+always tried before a replacement. See
+[Model Deprecation and Retirement](./model-retirement.mdx).
 
 ## Cache-aware and session-aware affinity
 
@@ -481,4 +434,5 @@ For production workloads, log request ids, response status codes, and model ids 
 ## Related guides
 
 - [Presets](./presets)
+- [Model Deprecation and Retirement](./model-retirement)
 - [Feature Parity Matrix](../migration-guides/feature-parity-matrix)
