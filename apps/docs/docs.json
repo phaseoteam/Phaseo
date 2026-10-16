@@ -1207,6 +1207,63 @@
                 ]
               },
               {
+                "item": "Java SDK",
+                "icon": "/icons/languages/java.svg",
+                "groups": [
+                  {
+                    "group": "Introduction",
+                    "icon": "book-open",
+                    "pages": [
+                      "v1/sdk-reference/java/overview",
+                      "v1/sdk-reference/java/installation",
+                      "v1/sdk-reference/java/usage"
+                    ]
+                  },
+                  {
+                    "group": "Text",
+                    "icon": "message-square-text",
+                    "pages": [
+                      "v1/sdk-reference/java/responses",
+                      "v1/sdk-reference/java/chat-completions"
+                    ]
+                  },
+                  {
+                    "group": "Image",
+                    "icon": "image",
+                    "pages": [
+                      "v1/sdk-reference/java/images-generations",
+                      "v1/sdk-reference/java/images-edits"
+                    ]
+                  },
+                  {
+                    "group": "Audio",
+                    "icon": "audio-lines",
+                    "pages": [
+                      "v1/sdk-reference/java/audio-speech",
+                      "v1/sdk-reference/java/audio-transcriptions",
+                      "v1/sdk-reference/java/audio-translations"
+                    ]
+                  },
+                  {
+                    "group": "Specialised",
+                    "icon": "blocks",
+                    "pages": [
+                      "v1/sdk-reference/java/embeddings",
+                      "v1/sdk-reference/java/moderations",
+                      "v1/sdk-reference/java/files"
+                    ]
+                  },
+                  {
+                    "group": "Admin",
+                    "icon": "settings-2",
+                    "pages": [
+                      "v1/sdk-reference/java/models",
+                      "v1/sdk-reference/java/generation"
+                    ]
+                  }
+                ]
+              },
+              {
                 "item": "Rust SDK",
                 "icon": "/icons/languages/rust.svg",
                 "groups": [
@@ -2842,6 +2899,63 @@
                     "pages": [
                       "es/v1/sdk-reference/ruby/models",
                       "es/v1/sdk-reference/ruby/generation"
+                    ]
+                  }
+                ]
+              },
+              {
+                "item": "Java SDK",
+                "icon": "/icons/languages/java.svg",
+                "groups": [
+                  {
+                    "group": "Introducción",
+                    "icon": "book-open",
+                    "pages": [
+                      "es/v1/sdk-reference/java/overview",
+                      "es/v1/sdk-reference/java/installation",
+                      "es/v1/sdk-reference/java/usage"
+                    ]
+                  },
+                  {
+                    "group": "Texto",
+                    "icon": "message-square-text",
+                    "pages": [
+                      "es/v1/sdk-reference/java/responses",
+                      "es/v1/sdk-reference/java/chat-completions"
+                    ]
+                  },
+                  {
+                    "group": "Imagen",
+                    "icon": "image",
+                    "pages": [
+                      "es/v1/sdk-reference/java/images-generations",
+                      "es/v1/sdk-reference/java/images-edits"
+                    ]
+                  },
+                  {
+                    "group": "Audio",
+                    "icon": "audio-lines",
+                    "pages": [
+                      "es/v1/sdk-reference/java/audio-speech",
+                      "es/v1/sdk-reference/java/audio-transcriptions",
+                      "es/v1/sdk-reference/java/audio-translations"
+                    ]
+                  },
+                  {
+                    "group": "Especializados",
+                    "icon": "blocks",
+                    "pages": [
+                      "es/v1/sdk-reference/java/embeddings",
+                      "es/v1/sdk-reference/java/moderations",
+                      "es/v1/sdk-reference/java/files"
+                    ]
+                  },
+                  {
+                    "group": "Administración",
+                    "icon": "settings-2",
+                    "pages": [
+                      "es/v1/sdk-reference/java/models",
+                      "es/v1/sdk-reference/java/generation"
                     ]
                   }
                 ]
@@ -4508,6 +4622,63 @@
                 ]
               },
               {
+                "item": "Java SDK",
+                "icon": "/icons/languages/java.svg",
+                "groups": [
+                  {
+                    "group": "Introduction",
+                    "icon": "book-open",
+                    "pages": [
+                      "fr/v1/sdk-reference/java/overview",
+                      "fr/v1/sdk-reference/java/installation",
+                      "fr/v1/sdk-reference/java/usage"
+                    ]
+                  },
+                  {
+                    "group": "Texte",
+                    "icon": "message-square-text",
+                    "pages": [
+                      "fr/v1/sdk-reference/java/responses",
+                      "fr/v1/sdk-reference/java/chat-completions"
+                    ]
+                  },
+                  {
+                    "group": "Image",
+                    "icon": "image",
+                    "pages": [
+                      "fr/v1/sdk-reference/java/images-generations",
+                      "fr/v1/sdk-reference/java/images-edits"
+                    ]
+                  },
+                  {
+                    "group": "Audio",
+                    "icon": "audio-lines",
+                    "pages": [
+                      "fr/v1/sdk-reference/java/audio-speech",
+                      "fr/v1/sdk-reference/java/audio-transcriptions",
+                      "fr/v1/sdk-reference/java/audio-translations"
+                    ]
+                  },
+                  {
+                    "group": "Spécialisés",
+                    "icon": "blocks",
+                    "pages": [
+                      "fr/v1/sdk-reference/java/embeddings",
+                      "fr/v1/sdk-reference/java/moderations",
+                      "fr/v1/sdk-reference/java/files"
+                    ]
+                  },
+                  {
+                    "group": "Administration",
+                    "icon": "settings-2",
+                    "pages": [
+                      "fr/v1/sdk-reference/java/models",
+                      "fr/v1/sdk-reference/java/generation"
+                    ]
+                  }
+                ]
+              },
+              {
                 "item": "SDK Rust",
                 "icon": "/icons/languages/rust.svg",
                 "groups": [
@@ -6164,6 +6335,63 @@
                     "pages": [
                       "de/v1/sdk-reference/ruby/models",
                       "de/v1/sdk-reference/ruby/generation"
+                    ]
+                  }
+                ]
+              },
+              {
+                "item": "Java SDK",
+                "icon": "/icons/languages/java.svg",
+                "groups": [
+                  {
+                    "group": "Einführung",
+                    "icon": "book-open",
+                    "pages": [
+                      "de/v1/sdk-reference/java/overview",
+                      "de/v1/sdk-reference/java/installation",
+                      "de/v1/sdk-reference/java/usage"
+                    ]
+                  },
+                  {
+                    "group": "Text",
+                    "icon": "message-square-text",
+                    "pages": [
+                      "de/v1/sdk-reference/java/responses",
+                      "de/v1/sdk-reference/java/chat-completions"
+                    ]
+                  },
+                  {
+                    "group": "Bild",
+                    "icon": "image",
+                    "pages": [
+                      "de/v1/sdk-reference/java/images-generations",
+                      "de/v1/sdk-reference/java/images-edits"
+                    ]
+                  },
+                  {
+                    "group": "Audio",
+                    "icon": "audio-lines",
+                    "pages": [
+                      "de/v1/sdk-reference/java/audio-speech",
+                      "de/v1/sdk-reference/java/audio-transcriptions",
+                      "de/v1/sdk-reference/java/audio-translations"
+                    ]
+                  },
+                  {
+                    "group": "Spezialisiert",
+                    "icon": "blocks",
+                    "pages": [
+                      "de/v1/sdk-reference/java/embeddings",
+                      "de/v1/sdk-reference/java/moderations",
+                      "de/v1/sdk-reference/java/files"
+                    ]
+                  },
+                  {
+                    "group": "Administration",
+                    "icon": "settings-2",
+                    "pages": [
+                      "de/v1/sdk-reference/java/models",
+                      "de/v1/sdk-reference/java/generation"
                     ]
                   }
                 ]
@@ -7830,6 +8058,63 @@
                 ]
               },
               {
+                "item": "Java SDK",
+                "icon": "/icons/languages/java.svg",
+                "groups": [
+                  {
+                    "group": "Introdução",
+                    "icon": "book-open",
+                    "pages": [
+                      "pt-BR/v1/sdk-reference/java/overview",
+                      "pt-BR/v1/sdk-reference/java/installation",
+                      "pt-BR/v1/sdk-reference/java/usage"
+                    ]
+                  },
+                  {
+                    "group": "Texto",
+                    "icon": "message-square-text",
+                    "pages": [
+                      "pt-BR/v1/sdk-reference/java/responses",
+                      "pt-BR/v1/sdk-reference/java/chat-completions"
+                    ]
+                  },
+                  {
+                    "group": "Imagem",
+                    "icon": "image",
+                    "pages": [
+                      "pt-BR/v1/sdk-reference/java/images-generations",
+                      "pt-BR/v1/sdk-reference/java/images-edits"
+                    ]
+                  },
+                  {
+                    "group": "Áudio",
+                    "icon": "audio-lines",
+                    "pages": [
+                      "pt-BR/v1/sdk-reference/java/audio-speech",
+                      "pt-BR/v1/sdk-reference/java/audio-transcriptions",
+                      "pt-BR/v1/sdk-reference/java/audio-translations"
+                    ]
+                  },
+                  {
+                    "group": "Especializados",
+                    "icon": "blocks",
+                    "pages": [
+                      "pt-BR/v1/sdk-reference/java/embeddings",
+                      "pt-BR/v1/sdk-reference/java/moderations",
+                      "pt-BR/v1/sdk-reference/java/files"
+                    ]
+                  },
+                  {
+                    "group": "Administração",
+                    "icon": "settings-2",
+                    "pages": [
+                      "pt-BR/v1/sdk-reference/java/models",
+                      "pt-BR/v1/sdk-reference/java/generation"
+                    ]
+                  }
+                ]
+              },
+              {
                 "item": "SDK Rust",
                 "icon": "/icons/languages/rust.svg",
                 "groups": [
@@ -9486,6 +9771,63 @@
                     "pages": [
                       "ja/v1/sdk-reference/ruby/models",
                       "ja/v1/sdk-reference/ruby/generation"
+                    ]
+                  }
+                ]
+              },
+              {
+                "item": "Java SDK",
+                "icon": "/icons/languages/java.svg",
+                "groups": [
+                  {
+                    "group": "はじめに",
+                    "icon": "book-open",
+                    "pages": [
+                      "ja/v1/sdk-reference/java/overview",
+                      "ja/v1/sdk-reference/java/installation",
+                      "ja/v1/sdk-reference/java/usage"
+                    ]
+                  },
+                  {
+                    "group": "テキスト",
+                    "icon": "message-square-text",
+                    "pages": [
+                      "ja/v1/sdk-reference/java/responses",
+                      "ja/v1/sdk-reference/java/chat-completions"
+                    ]
+                  },
+                  {
+                    "group": "画像",
+                    "icon": "image",
+                    "pages": [
+                      "ja/v1/sdk-reference/java/images-generations",
+                      "ja/v1/sdk-reference/java/images-edits"
+                    ]
+                  },
+                  {
+                    "group": "音声",
+                    "icon": "audio-lines",
+                    "pages": [
+                      "ja/v1/sdk-reference/java/audio-speech",
+                      "ja/v1/sdk-reference/java/audio-transcriptions",
+                      "ja/v1/sdk-reference/java/audio-translations"
+                    ]
+                  },
+                  {
+                    "group": "専門機能",
+                    "icon": "blocks",
+                    "pages": [
+                      "ja/v1/sdk-reference/java/embeddings",
+                      "ja/v1/sdk-reference/java/moderations",
+                      "ja/v1/sdk-reference/java/files"
+                    ]
+                  },
+                  {
+                    "group": "管理",
+                    "icon": "settings-2",
+                    "pages": [
+                      "ja/v1/sdk-reference/java/models",
+                      "ja/v1/sdk-reference/java/generation"
                     ]
                   }
                 ]
@@ -11152,6 +11494,63 @@
                 ]
               },
               {
+                "item": "Java SDK",
+                "icon": "/icons/languages/java.svg",
+                "groups": [
+                  {
+                    "group": "简介",
+                    "icon": "book-open",
+                    "pages": [
+                      "zh-Hans/v1/sdk-reference/java/overview",
+                      "zh-Hans/v1/sdk-reference/java/installation",
+                      "zh-Hans/v1/sdk-reference/java/usage"
+                    ]
+                  },
+                  {
+                    "group": "文本",
+                    "icon": "message-square-text",
+                    "pages": [
+                      "zh-Hans/v1/sdk-reference/java/responses",
+                      "zh-Hans/v1/sdk-reference/java/chat-completions"
+                    ]
+                  },
+                  {
+                    "group": "图像",
+                    "icon": "image",
+                    "pages": [
+                      "zh-Hans/v1/sdk-reference/java/images-generations",
+                      "zh-Hans/v1/sdk-reference/java/images-edits"
+                    ]
+                  },
+                  {
+                    "group": "音频",
+                    "icon": "audio-lines",
+                    "pages": [
+                      "zh-Hans/v1/sdk-reference/java/audio-speech",
+                      "zh-Hans/v1/sdk-reference/java/audio-transcriptions",
+                      "zh-Hans/v1/sdk-reference/java/audio-translations"
+                    ]
+                  },
+                  {
+                    "group": "专用功能",
+                    "icon": "blocks",
+                    "pages": [
+                      "zh-Hans/v1/sdk-reference/java/embeddings",
+                      "zh-Hans/v1/sdk-reference/java/moderations",
+                      "zh-Hans/v1/sdk-reference/java/files"
+                    ]
+                  },
+                  {
+                    "group": "管理",
+                    "icon": "settings-2",
+                    "pages": [
+                      "zh-Hans/v1/sdk-reference/java/models",
+                      "zh-Hans/v1/sdk-reference/java/generation"
+                    ]
+                  }
+                ]
+              },
+              {
                 "item": "Rust SDK",
                 "icon": "/icons/languages/rust.svg",
                 "groups": [
@@ -12813,6 +13212,63 @@
                 ]
               },
               {
+                "item": "Java SDK",
+                "icon": "/icons/languages/java.svg",
+                "groups": [
+                  {
+                    "group": "परिचय",
+                    "icon": "book-open",
+                    "pages": [
+                      "hi/v1/sdk-reference/java/overview",
+                      "hi/v1/sdk-reference/java/installation",
+                      "hi/v1/sdk-reference/java/usage"
+                    ]
+                  },
+                  {
+                    "group": "टेक्स्ट",
+                    "icon": "message-square-text",
+                    "pages": [
+                      "hi/v1/sdk-reference/java/responses",
+                      "hi/v1/sdk-reference/java/chat-completions"
+                    ]
+                  },
+                  {
+                    "group": "छवि",
+                    "icon": "image",
+                    "pages": [
+                      "hi/v1/sdk-reference/java/images-generations",
+                      "hi/v1/sdk-reference/java/images-edits"
+                    ]
+                  },
+                  {
+                    "group": "ऑडियो",
+                    "icon": "audio-lines",
+                    "pages": [
+                      "hi/v1/sdk-reference/java/audio-speech",
+                      "hi/v1/sdk-reference/java/audio-transcriptions",
+                      "hi/v1/sdk-reference/java/audio-translations"
+                    ]
+                  },
+                  {
+                    "group": "विशेषीकृत",
+                    "icon": "blocks",
+                    "pages": [
+                      "hi/v1/sdk-reference/java/embeddings",
+                      "hi/v1/sdk-reference/java/moderations",
+                      "hi/v1/sdk-reference/java/files"
+                    ]
+                  },
+                  {
+                    "group": "व्यवस्थापन",
+                    "icon": "settings-2",
+                    "pages": [
+                      "hi/v1/sdk-reference/java/models",
+                      "hi/v1/sdk-reference/java/generation"
+                    ]
+                  }
+                ]
+              },
+              {
                 "item": "Rust SDK",
                 "icon": "/icons/languages/rust.svg",
                 "groups": [
@@ -14469,6 +14925,63 @@
                     "pages": [
                       "ar/v1/sdk-reference/ruby/models",
                       "ar/v1/sdk-reference/ruby/generation"
+                    ]
+                  }
+                ]
+              },
+              {
+                "item": "Java SDK",
+                "icon": "/icons/languages/java.svg",
+                "groups": [
+                  {
+                    "group": "مقدمة",
+                    "icon": "book-open",
+                    "pages": [
+                      "ar/v1/sdk-reference/java/overview",
+                      "ar/v1/sdk-reference/java/installation",
+                      "ar/v1/sdk-reference/java/usage"
+                    ]
+                  },
+                  {
+                    "group": "نص",
+                    "icon": "message-square-text",
+                    "pages": [
+                      "ar/v1/sdk-reference/java/responses",
+                      "ar/v1/sdk-reference/java/chat-completions"
+                    ]
+                  },
+                  {
+                    "group": "صورة",
+                    "icon": "image",
+                    "pages": [
+                      "ar/v1/sdk-reference/java/images-generations",
+                      "ar/v1/sdk-reference/java/images-edits"
+                    ]
+                  },
+                  {
+                    "group": "صوت",
+                    "icon": "audio-lines",
+                    "pages": [
+                      "ar/v1/sdk-reference/java/audio-speech",
+                      "ar/v1/sdk-reference/java/audio-transcriptions",
+                      "ar/v1/sdk-reference/java/audio-translations"
+                    ]
+                  },
+                  {
+                    "group": "متخصص",
+                    "icon": "blocks",
+                    "pages": [
+                      "ar/v1/sdk-reference/java/embeddings",
+                      "ar/v1/sdk-reference/java/moderations",
+                      "ar/v1/sdk-reference/java/files"
+                    ]
+                  },
+                  {
+                    "group": "الإدارة",
+                    "icon": "settings-2",
+                    "pages": [
+                      "ar/v1/sdk-reference/java/models",
+                      "ar/v1/sdk-reference/java/generation"
                     ]
                   }
                 ]

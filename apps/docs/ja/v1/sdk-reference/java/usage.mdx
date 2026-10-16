@@ -1,37 +1,67 @@
 ---
 icon: "square-terminal"
-title: "Java SDKの使い方"
-description: "Java SDKのラッパーを初期化して使用する方法。"
+title: "Java SDK — 使用方法"
+description: "Java から Phaseo Gateway を呼び出します。"
 ---
 
-## セットアップ
+[インストール](./installation)
 
 ```java
 import app.phaseo.sdk.Phaseo;
+import java.util.Map;
 
-String apiKey = System.getenv("PHASEO_API_KEY");
-Phaseo client = new Phaseo(apiKey);
+public class Main {
+    public static void main(String[] args) throws Exception {
+        var client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+        var response = client.createResponse(Map.of(
+            "model", "openai/gpt-6-astra",
+            "input", "Reply with: Java SDK works"
+        ));
+        System.out.println(response);
+    }
+}
 ```
 
-## 使用パターン
+JSON リクエストには `createResponse`、`createChatCompletion`、`createEmbedding`、`listModels` を使います。`Map` または `JsonNode` を渡してください。JSON 文字列はクライアントのメソッドに渡す前に解析します。
 
-ラッパーの一般的な呼び出しは次のようになります。
+## 再試行とエラー
+
+デフォルトでは再試行は無効です。`setMaxRetries` は安全な GET/HEAD リクエストを再試行します。書き込みやストリーミングリクエストは再送しません。HTTP エラーのステータス、本文、ヘッダー、リクエスト ID は `Client.ApiException` から取得できます。
 
 ```java
-Object response = client.createChatCompletion("""
-{
-  "model": "openai/gpt-5-nano",
-  "messages": [
-    { "role": "user", "content": "Say hello from Java" }
-  ]
+import app.phaseo.gen.Client;
+import app.phaseo.sdk.Phaseo;
+import java.time.Duration;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"))
+    .setTimeout(Duration.ofSeconds(30))
+    .setMaxRetries(2);
+
+try {
+    var result = client.requestWithResponse("GET", "/models",
+        Map.of("limit", "5"), null, null, null);
+    System.out.println(result.requestId());
+    System.out.println(result.data);
+} catch (Client.ApiException error) {
+    System.err.println(error.getStatusCode());
+    System.err.println(error.getRequestId());
+    System.err.println(error.getResponseBody());
 }
-""");
 ```
 
-ほとんどのJSONエンドポイントでは解析済みJSONノードを返し、ファイルや動画の内容を取得するヘルパーではバイト配列を返します。
+## ストリーミング
 
-## 推奨事項
+`streamResponse` と `rawClient().requestLines` は、到着した SSE 行を逐次返します。try-with-resources でストリームを閉じ、イベント名、データ行、完了マーカーをアプリケーションで処理してください。
 
-- まず一般的なゲートウェイ機能には`app.phaseo.sdk.Phaseo`を使います。
-- ラッパーにまだ追加されていない低レベル操作が必要な場合に限り、`app.phaseo.gen.Client`と`app.phaseo.gen.Operations`を使います。
-- 現在のラッパーメソッド名は、このセクションにある各エンドポイントの例を参照してください。
+```java
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+try (var lines = client.streamResponse(Map.of(
+    "model", "openai/gpt-6-astra", "input", "Hello"
+))) {
+    lines.forEach(System.out::println);
+}
+```

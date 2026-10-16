@@ -49,6 +49,7 @@ export const LANGUAGE_OPTIONS: LanguageOption[] = [
 	{ value: "python-sdk", label: "Python SDK", group: "phaseo-client", disabled: false },
 	{ value: "go-sdk", label: "Go SDK", group: "phaseo-client", disabled: false },
 	{ value: "csharp-sdk", label: "C# SDK", group: "phaseo-client", disabled: false },
+	{ value: "java-sdk", label: "Java SDK", group: "phaseo-client", disabled: false },
 	{ value: "php-sdk", label: "PHP SDK", group: "phaseo-client", disabled: false },
 	{ value: "ruby-sdk", label: "Ruby SDK", group: "phaseo-client", disabled: false },
 	{ value: "agent-sdk-ts", label: "TypeScript Agent SDK", group: "phaseo-agent", disabled: false },
@@ -92,6 +93,7 @@ export const INSTALLABLE_LANGUAGES = new Set([
 	"python-sdk",
 	"go-sdk",
 	"csharp-sdk",
+	"java-sdk",
 	"php-sdk",
 	"ruby-sdk",
 	"openai-python",
@@ -145,6 +147,8 @@ export function getInstallationCode(language: string): string {
 			return "go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2@latest";
 		case "csharp-sdk":
 			return "dotnet add package Phaseo.Sdk";
+		case "java-sdk":
+			return "git clone https://github.com/phaseoteam/Phaseo.git\ncd Phaseo\ngit checkout 1ff1119f41ceb3ac2c85ed605f6e1c4beca6e011\nmvn -f packages/sdk/sdk-java/pom.xml -DskipTests install\n\n<!-- Add to your application's pom.xml -->\n<dependency>\n  <groupId>app.phaseo</groupId>\n  <artifactId>phaseo-sdk</artifactId>\n  <version>3.0.0</version>\n</dependency>";
 		case "php-sdk":
 			return "composer require phaseo/sdk";
 		case "ruby-sdk":

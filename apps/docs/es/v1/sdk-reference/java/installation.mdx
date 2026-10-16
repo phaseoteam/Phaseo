@@ -1,43 +1,38 @@
 ---
-title: "Instalación del SDK de Java (en desarrollo)"
-description: "Compila desde el código fuente el SDK de Java, que aún está en desarrollo."
+icon: "package"
+title: "Java SDK — Instalación"
+description: "El código fuente actual incluye controles de reintentos y metadatos de respuesta que no están en el antiguo artefacto 3.0.0 de Maven Central. Compila la revisión indicada para usar el SDK actual."
 ---
 
-<Note type="warning">El SDK de Java está en desarrollo y aún no se ha publicado en Maven Central.</Note>
+El código fuente actual incluye controles de reintentos y metadatos de respuesta que no están en el antiguo artefacto 3.0.0 de Maven Central. Compila la revisión indicada para usar el SDK actual.
 
 ## Requisitos
 
 - Java 17+
 - Maven 3.8+
+- Git
 
-## Compilar localmente
-
-```bash
-cd packages/sdk/sdk-java
-mvn -DskipTests package
-```
-
-Esto genera `target/sdk-java-0.0.0-local.jar`.
-
-## Usarlo en tu proyecto
-
-Instala el JAR generado en la caché local de Maven:
+## Compilar desde el código fuente
 
 ```bash
-mvn install:install-file \
-  -Dfile=target/sdk-java-0.0.0-local.jar \
-  -DgroupId=app.phaseo \
-  -DartifactId=sdk-java \
-  -Dversion=0.0.0-local \
-  -Dpackaging=jar
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+git checkout 1ff1119f41ceb3ac2c85ed605f6e1c4beca6e011
+mvn -f packages/sdk/sdk-java/pom.xml -DskipTests install
 ```
 
-Después, añádelo como dependencia en el archivo `pom.xml` de tu aplicación:
+Maven instala `app.phaseo:phaseo-sdk:3.0.0` en tu repositorio local, incluida su dependencia de Jackson.
+
+## Añadir la dependencia
 
 ```xml
 <dependency>
   <groupId>app.phaseo</groupId>
-  <artifactId>sdk-java</artifactId>
-  <version>0.0.0-local</version>
+  <artifactId>phaseo-sdk</artifactId>
+  <version>3.0.0</version>
 </dependency>
 ```
+
+<Note>El [artefacto de Maven Central](https://repo.maven.apache.org/maven2/app/phaseo/phaseo-sdk/3.0.0/) ofrece la API anterior. No incluye las API actuales de reintentos, metadatos ni validación de parámetros.</Note>
+
+[Uso](./usage)
