@@ -31,6 +31,19 @@ Quando uma cota do gateway se esgota, a resposta é `429` com `Retry-After` em s
 
 Ao atingir os limites diários, semanais ou mensais de requisições e gastos de uma chave de API, ou os [orçamentos](./endpoint/budgets-list.mdx) do espaço de trabalho, a resposta é `429` com o código de erro `key_limit_exceeded`. Os campos `reason`, `limit_window` e `reset_at` do corpo identificam o limite e quando seu período é redefinido. `Retry-After` informa os segundos até essa redefinição. Ele é omitido quando o limite não é redefinido sozinho, como um orçamento vitalício ou uma chave bloqueada temporariamente; nesse caso, em vez de tentar novamente, aumente o orçamento do espaço de trabalho ou, se for um limite de chave, aumente o limite da chave ou use outra chave.
 
+## Políticas de limite de taxa
+
+Os administradores do espaço de trabalho podem criar políticas de limite de taxa nomeadas pela API de gerenciamento `/v1/rate-limits` e atribuí-las a chaves de API, membros do espaço de trabalho, proteções ou como padrão para cada usuário final. O gateway aplica o `requests_per_minute` de uma política, medido em um minuto móvel:
+
+- **Chave:** a cota própria da chave.
+- **Membro:** uma cota compartilhada pelas chaves e pelas solicitações OAuth do membro.
+- **Proteção:** uma cota separada para cada chave (ou usuário OAuth) coberta pela proteção.
+- **Padrão por usuário final:** uma cota separada para cada usuário final, identificado pelo campo `user` da solicitação ou pelo cabeçalho `X-Phaseo-User-Id`. Solicitações sem ID de usuário final não são limitadas por ela.
+
+Quando várias políticas se aplicam, cada uma é contada e a primeira esgotada rejeita a solicitação. Os limites das políticas se somam aos limites do gateway acima. `tokens_per_minute`, `concurrent_requests` e atribuições a departamentos ainda não são aplicados. As alterações nas políticas entram em vigor em cerca de um minuto.
+
+Uma solicitação rejeitada retorna `429` com o código de erro `rate_limit_exceeded`, o motivo `policy_requests_per_minute`, o `policy_id` e o `limit_scope` (`key`, `member`, `guardrail` ou `end_user`), além de `Retry-After` em segundos. As respostas a solicitações às quais uma política se aplica incluem `x-ratelimit-limit-requests`, `x-ratelimit-remaining-requests` e `x-ratelimit-reset-requests` (por exemplo, `60s`) da política mais restritiva. A contagem é feita em segundo plano, então `remaining` é aproximado. Fallbacks de provedor dentro de uma solicitação contam uma vez, e acertos do cache de respostas não são contados.
+
 ## Limites do provedor
 
 Requisições BYOK usam os limites da sua conta no provedor. Requisições gerenciadas usam capacidade compartilhada do provedor; essa capacidade não é uma cota individual do espaço de trabalho.

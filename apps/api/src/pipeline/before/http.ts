@@ -17,9 +17,11 @@ export type ErrorCode =
     | "not_ready"
     | "key_limit_exceeded"
     | "phaseo_free_model_limit_exceeded"
+    | "rate_limit_exceeded"
     | "insufficient_funds"
     | "guardrail_blocked"
-    | "unsupported_model_or_endpoint";
+    | "unsupported_model_or_endpoint"
+    | "model_retired";
 
 export function json(data: unknown, status = 200) {
     return new Response(JSON.stringify(data), {
@@ -109,9 +111,11 @@ const STATUS: Record<ErrorCode, number> = {
     not_ready: 409,
     key_limit_exceeded: 429,
     phaseo_free_model_limit_exceeded: 429,
+    rate_limit_exceeded: 429,
     insufficient_funds: 402,
     guardrail_blocked: 403,
     unsupported_model_or_endpoint: 400,
+    model_retired: 410,
 };
 
 const FRIENDLY_DESCRIPTIONS: Partial<Record<ErrorCode, string>> = {

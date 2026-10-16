@@ -33,6 +33,9 @@ const state = vi.hoisted(() => ({
 		return new Date(String(key.expires_at)).getTime() > Date.now();
 	}),
 	setKeyVersion: vi.fn(async () => undefined),
+	copyRateLimit: vi.fn(async (_args: Record<string, unknown>) => false),
+	publishRateLimitPlan: vi.fn(async (_workspaceId: string) => true),
+	deletedKeyIds: [] as unknown[],
     cacheDelete: vi.fn(async (_key: string) => undefined),
 	bindings: { PHASEO_CONTROL_SECRET: "secret", KEY_PEPPER_ACTIVE: "pepper" } as Record<string, unknown>,
 }));
@@ -107,6 +110,7 @@ function buildKeysSupabaseMock() {
 
 			let updatePayload: Record<string, unknown> | null = null;
 			const query: any = {
+				delete: () => ({ eq: async (_column: string, value: unknown) => { state.deletedKeyIds.push(value); return { error: null }; } }),
 				select: () => query,
 				eq: () => query,
 				neq: () => query,
@@ -186,6 +190,11 @@ vi.mock("@/lib/audit/workspaceAudit", () => ({
 	recordWorkspaceAuditEvent: vi.fn(async () => true),
 }));
 
+vi.mock("@core/rate-limit-policies", () => ({
+	copyKeyRateLimitAssignment: state.copyRateLimit,
+	publishRateLimitPlan: state.publishRateLimitPlan,
+}));
+
 vi.mock("./management-helpers", () => ({
 	CHAT_MANAGED_KEY_NAME: "__chat_route_managed_key__",
 	enforceWorkspaceKeyLimit: state.enforceWorkspaceKeyLimit,
@@ -213,6 +222,9 @@ describe("management key routes", () => {
 		state.updateFilters.length = 0;
 		state.deleteFilters.length = 0;
 		state.setKeyVersion.mockClear();
+		state.copyRateLimit.mockReset().mockResolvedValue(false);
+		state.publishRateLimitPlan.mockClear();
+		state.deletedKeyIds.length = 0;
 		state.bindings = { PHASEO_CONTROL_SECRET: "secret", KEY_PEPPER_ACTIVE: "pepper" };
 		state.insertPayloads.length = 0;
 		state.enforceWorkspaceKeyLimit.mockReset();
@@ -657,6 +669,45 @@ describe("management key routes", () => {
 			data: { id: "key_new", key: "phaseo_v1_sk_kid_123_secret_123", limit: 5 },
 			previous_key_expires_at: "2026-09-01T00:00:00.000Z",
 		});
+	});
+
+	function pushRotationRows() {
+		state.workspaceRows.push({ owner_user_id: "user_1" });
+		state.keyRows.push(
+			{ id: "key_old", workspace_id: "ws_1", kid: "kid_old", name: "Primary Key", prefix: "old_prefix", status: "active", scopes: "[]", soft_blocked: false },
+			{ id: "key_new", hash: "hash_new", workspace_id: "ws_1", name: "Replacement", prefix: "phaseo_v1_sk_kid_123", status: "active", scopes: "[]", soft_blocked: false },
+		);
+	}
+
+	it("copies the rotated key's rate limit policy to the replacement and republishes", async () => {
+		pushRotationRows();
+		state.copyRateLimit.mockResolvedValue(true);
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/key_old/rotate", { method: "POST" });
+		expect(response.status).toBe(200);
+		expect(state.copyRateLimit).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: "ws_1", fromKeyId: "key_old", toKeyId: "key_new" }));
+		expect(state.publishRateLimitPlan).toHaveBeenCalledWith("ws_1");
+		expect(state.deletedKeyIds).toEqual([]);
+	});
+
+	it("does not republish when the rotated key had no rate limit policy", async () => {
+		pushRotationRows();
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/key_old/rotate", { method: "POST" });
+		expect(response.status).toBe(200);
+		expect(state.publishRateLimitPlan).not.toHaveBeenCalled();
+	});
+
+	it("undoes the rotation when the rate limit policy cannot be copied", async () => {
+		pushRotationRows();
+		vi.spyOn(console, "error").mockImplementation(() => {});
+		state.copyRateLimit.mockRejectedValue(new Error("copy failed"));
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/key_old/rotate", { method: "POST" });
+		expect(response.status).toBe(500);
+		expect(state.deletedKeyIds).toEqual(["key_new"]);
+		expect(state.updatePayloads).toEqual([]);
+		expect(state.publishRateLimitPlan).not.toHaveBeenCalled();
 	});
 
 	it("accepts legacy control bindings while invalidating a cached key", async () => {

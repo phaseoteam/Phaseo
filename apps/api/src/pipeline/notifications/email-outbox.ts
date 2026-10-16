@@ -3,6 +3,7 @@ import { isResendContactUnsubscribed, sendEmail } from "@/lib/email/resend";
 import { getBindings } from "@/runtime/env";
 import { getEmailSuppressionReason } from "@/pipeline/notifications/email-suppressions";
 import { getModelDeprecationTemplateVariables, renderModelDeprecationEmail } from "@/pipeline/notifications/model-deprecation";
+import { renderModelSubstitutionEmail } from "@/pipeline/notifications/model-substitution";
 import { renderFeedbackRequestEmail } from "@/pipeline/notifications/feedback-request";
 
 type OutboxRow = {
@@ -299,6 +300,10 @@ function renderEmailForRow(row: OutboxRow): {
 		}
 		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
 	}
+	if (row.template === "model_substitution" || row.kind === "model_substitution") {
+		const rendered = renderModelSubstitutionEmail(row.payload ?? {});
+		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
+	}
 	if (row.template === "io_retention_grace" || row.kind === "io_retention_grace") {
 		const rendered = renderIoRetentionEmail(row.payload ?? {}, "grace");
 		return {
@@ -331,16 +336,17 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 		"id,created_at,dedupe_key,kind,template,to_email,subject,workspace_id,user_id,payload,attempts,last_error,sent_at";
 
 	// Routed notifications have their own destination snapshot and delivery job.
-	// Keep them out of the legacy owner-email drain so a model deprecation cannot
-	// be sent twice (or bypass the per-alert route entirely). Feedback requests are
-	// drained separately below so a daily batch never delays transactional email.
+	// Keep them out of the legacy owner-email drain so a routed model_deprecation
+	// event is not also emailed here. The owner and admin copies of a deprecation
+	// notice are separate model_deprecation_email rows, which this drain sends.
+	// Feedback requests are drained separately below so a daily batch never delays
+	// transactional email.
 	const { data, error } = await supabase
 		.from("email_outbox")
 		.select(columns)
 		.is("sent_at", null)
 		.lt("attempts", 5)
 		.not("kind", "in", '("notification_test","model_deprecation","feedback_request")')
-		.neq("template", "model_deprecation")
 		.order("created_at", { ascending: true })
 		.limit(limit);
 

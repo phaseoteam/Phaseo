@@ -170,6 +170,7 @@ function resolvePricingCapabilityCandidates(endpoint: unknown): string[] {
 		normalizedPath === "/responses" ||
 		normalizedPath === "/chat/completions" ||
 		normalizedPath === "/messages" ||
+		normalizedPath === "/generateContent" ||
 		normalizedPath === "/completions"
 	) {
 		candidates.push("batch");
@@ -431,7 +432,7 @@ function shouldInspectTerminalOutput(meta: BatchJobMeta | null | undefined): boo
 	if ((meta?.requestCounts?.completed ?? 0) > 0) return true;
 	if (normalizeText(meta?.outputFileId)) return true;
 	const providerId = normalizeText(meta?.provider);
-	return providerId === "anthropic" || providerId === "google-ai-studio" || providerId === "x-ai";
+	return providerId === "anthropic" || providerId === "google-ai-studio" || providerId === "google-vertex" || providerId === "x-ai";
 }
 
 async function resolveBatchPriceCard(args: {
@@ -704,6 +705,7 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string, worksp
 	const supportsNativeResults =
 		providerId === "anthropic" ||
 		providerId === "google-ai-studio" ||
+		providerId === "google-vertex" ||
 		providerId === "mistral" ||
 		providerId === "x-ai";
 	if (!outputFileId && !supportsNativeResults) {
@@ -736,13 +738,18 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string, worksp
 	}
 	const inputEntriesByCustomId = new Map<string, any>();
 	const canonicalModelsByCustomId = new Map<string, string>();
+	const submittedCustomIds = new Set<string>();
 	for (let offset = 0; ; offset += 1000) {
 		const rows = await listBatchRequestRows({ workspaceId, batchId, limit: 1000, offset });
 		for (const row of rows) {
+			submittedCustomIds.add(row.customId);
 			const canonicalModel = normalizeText(row.meta?.canonical_model);
 			if (canonicalModel) canonicalModelsByCustomId.set(row.customId, canonicalModel);
 		}
 		if (rows.length < 1000) break;
+	}
+	if (providerId === "google-vertex" && entries.some((entry) => !submittedCustomIds.has(extractCustomId(entry) ?? ""))) {
+		return { ok: false, reason: "unknown_output_custom_id" };
 	}
 	if (
 		providerId === OPENAI_BATCH_PROVIDER_ID &&

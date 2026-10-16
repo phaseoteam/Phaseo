@@ -13,6 +13,7 @@ import {
     fetchCatalogue,
     scopePricingSummary,
     type CatalogueModel,
+    type OfferServiceTier,
     type PricingMeterSummary,
     type PricingSummary,
     type SupportedParamDetail,
@@ -47,6 +48,77 @@ const FREE_ROUTER_ENDPOINTS = ["chat/completions", "responses", "messages"] as c
 // five minutes fresh, followed by five minutes of stale-while-revalidate.
 const MODEL_CATALOGUE_CACHE_TTL_SECONDS = 5 * 60;
 const MODEL_CATALOGUE_CACHE_STALE_SECONDS = 5 * 60;
+
+// Bump when the ETag input changes shape so old validators stop matching.
+const MODEL_LIST_ETAG_VERSION = 1;
+
+/** JSON with object keys sorted, so equal content hashes equally whatever its key order. */
+function canonicalJson(value: unknown): string {
+    if (value === null || typeof value !== "object") {
+        return JSON.stringify(value) ?? "null";
+    }
+    if (Array.isArray(value)) {
+        return `[${value.map((item) => (item === undefined || typeof item === "function" ? "null" : canonicalJson(item))).join(",")}]`;
+    }
+    const record = value as Record<string, unknown>;
+    const entries = Object.keys(record)
+        .sort()
+        .flatMap((key) => {
+            const entry = record[key];
+            if (entry === undefined || typeof entry === "function") return [];
+            return [`${JSON.stringify(key)}:${canonicalJson(entry)}`];
+        });
+    return `{${entries.join(",")}}`;
+}
+
+function toBase64Url(bytes: Uint8Array): string {
+    let binary = "";
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+/**
+ * Weak ETag (RFC 9110 §8.8.1) over the catalogue-describing parts of a model
+ * list response. Callers leave out volatile fields such as `gateway_region`,
+ * so the same catalogue served from another region keeps the same ETag. The
+ * bytes can therefore differ between responses that share a validator, which
+ * is exactly what a weak validator promises: semantic, not byte, equivalence.
+ */
+export async function computeModelListEtag(parts: Record<string, unknown>): Promise<string> {
+    const input = canonicalJson({ etag_version: MODEL_LIST_ETAG_VERSION, ...parts });
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+    return `W/"${toBase64Url(new Uint8Array(digest))}"`;
+}
+
+/**
+ * `If-None-Match` evaluation (RFC 9110 §13.1.2): weak comparison, so `W/`
+ * prefixes are ignored; accepts a comma-separated list and `*`.
+ */
+export function ifNoneMatchMatches(header: string | null | undefined, etag: string): boolean {
+    if (!header) return false;
+    const opaque = (tag: string) => tag.trim().replace(/^W\//i, "").replace(/^"(.*)"$/, "$1");
+    const target = opaque(etag);
+    return header
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+        .some((tag) => tag === "*" || opaque(tag) === target);
+}
+
+/** 200 JSON with an ETag, or a body-less 304 when the client already holds it. */
+async function jsonWithEtag(
+    req: Request,
+    body: unknown,
+    etagParts: Record<string, unknown>,
+    headers: Record<string, string>,
+): Promise<Response> {
+    const etag = await computeModelListEtag(etagParts);
+    const responseHeaders = { ...headers, ETag: etag };
+    if (ifNoneMatchMatches(req.headers.get("If-None-Match"), etag)) {
+        return new Response(null, { status: 304, headers: responseHeaders });
+    }
+    return json(body, 200, responseHeaders);
+}
 
 function parsePaginationParam(raw: string | null, fallback: number, max: number): number {
     if (!raw) return fallback;
@@ -289,6 +361,11 @@ function toModelOffer(model: CatalogueModel, provider: CatalogueModel["providers
             parameters: [...(provider.params ?? [])],
             parameter_details: cloneJsonObject(provider.params_detail ?? {}),
         },
+        // Catalogue objects cached before this field existed lack it; those
+        // routes were listed on standard pricing only.
+        service_tiers: Array.isArray(provider.service_tiers)
+            ? [...provider.service_tiers]
+            : ["standard" as OfferServiceTier],
         routing: {
             provider: provider.provider_routing_status,
             model: provider.model_routing_status,
@@ -708,6 +785,7 @@ async function fetchWorkspacePrivateCatalogue(args: {
                 },
                 residency: { execution_regions: [], data_regions: [] },
                 capabilities: { parameters: [], parameter_details: {} },
+                service_tiers: ["standard"],
                 routing: { provider: "active", model: "active", capability: "active" },
                 effective: { from: null, to: null },
                 pricing: { pricing_plan: "byok", meters: {} },
@@ -975,15 +1053,21 @@ export async function handleModels(req: Request) {
             ? undefined : offset + limit);
         const headers = cacheHeaders({ ...cacheOptions, varyHeaders: ["Authorization"] });
         if (requestedFormat.format === "openai") {
-            return json({
-                object: "list",
-                data: paged.map(model => ({
-                    id: model.id,
-                    object: "model",
-                    created: Math.max(0, toUnixSeconds(model.lifecycle.released_at) ?? 0),
-                    owned_by: model.organization?.id ?? "phaseo",
-                })),
-            }, 200, headers);
+            const data = paged.map(model => ({
+                id: model.id,
+                object: "model",
+                created: Math.max(0, toUnixSeconds(model.lifecycle.released_at) ?? 0),
+                owned_by: model.organization?.id ?? "phaseo",
+            }));
+            // The ETag covers what this format serves, so catalogue changes that
+            // the OpenAI shape does not expose (prices, offers) keep it stable.
+            return await jsonWithEtag(req, { object: "list", data }, {
+                format: "openai",
+                limit: url.searchParams.has("limit") ? limit : null,
+                offset,
+                total: models.length,
+                models: data,
+            }, headers);
         }
         if (requestedFormat.format !== "json") {
             const items: FeedItem[] = paged.map((model) => ({
@@ -1001,7 +1085,8 @@ export async function handleModels(req: Request) {
                 headers,
             });
         }
-        return json(
+        return await jsonWithEtag(
+            req,
             {
                 ok: true,
                 availability_mode: availabilityMode,
@@ -1011,8 +1096,18 @@ export async function handleModels(req: Request) {
                 total: models.length,
                 models: paged,
             },
-            200,
-            headers
+            // gateway_region is deliberately left out: the same catalogue served
+            // from another region keeps the same ETag. That is why the ETag is
+            // weak: responses sharing it are equivalent, not byte-identical.
+            {
+                format: "json",
+                availability_mode: availabilityMode,
+                limit,
+                offset,
+                total: models.length,
+                models: paged,
+            },
+            headers,
         );
     } catch (error: any) {
         return json(

@@ -4767,7 +4767,7 @@ export type CreateRateLimitAssignmentParams = {
 };
 
 /**
- * Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
  */
 export async function createRateLimitAssignment(
   client: Client,
@@ -4823,7 +4823,7 @@ export type CreateRateLimitPolicyParams = {
 };
 
 /**
- * Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
  */
 export async function createRateLimitPolicy(
   client: Client,
@@ -7375,7 +7375,7 @@ export type DeleteRateLimitAssignmentParams = {
 };
 
 /**
- * Removes a policy from its target. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Removes a policy from its target. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
  */
 export async function deleteRateLimitAssignment(
   client: Client,
@@ -7414,7 +7414,7 @@ export type DeleteRateLimitPolicyParams = {
 };
 
 /**
- * Deletes a policy and every assignment that uses it. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
  */
 export async function deleteRateLimitPolicy(
   client: Client,
@@ -10242,7 +10242,7 @@ export type GetRateLimitAssignmentParams = {
 };
 
 /**
- * Returns one rate limit assignment. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Returns one rate limit assignment. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
  */
 export async function getRateLimitAssignment(
   client: Client,
@@ -10295,7 +10295,7 @@ export type GetRateLimitPolicyParams = {
 };
 
 /**
- * Returns one rate limit policy. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Returns one rate limit policy. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
  */
 export async function getRateLimitPolicy(
   client: Client,
@@ -11394,6 +11394,9 @@ export async function getWorkspaceSettings(
     byok_fallback_enabled?: boolean | null;
     io_logging_enabled?: boolean | null;
     io_logging_include_provider_payloads?: boolean | null;
+    model_successor_max_price_increase_percent?: number | null;
+    model_successor_price_policy?: "never" | "limit" | "any" | null;
+    model_successor_redirect_enabled?: boolean | null;
     privacy_enable_free_may_publish_prompts?: boolean | null;
     privacy_enable_free_may_train?: boolean | null;
     privacy_enable_input_output_logging?: boolean | null;
@@ -11419,6 +11422,9 @@ export async function getWorkspaceSettings(
       byok_fallback_enabled?: boolean | null;
       io_logging_enabled?: boolean | null;
       io_logging_include_provider_payloads?: boolean | null;
+      model_successor_max_price_increase_percent?: number | null;
+      model_successor_price_policy?: "never" | "limit" | "any" | null;
+      model_successor_redirect_enabled?: boolean | null;
       privacy_enable_free_may_publish_prompts?: boolean | null;
       privacy_enable_free_may_train?: boolean | null;
       privacy_enable_input_output_logging?: boolean | null;
@@ -14484,7 +14490,9 @@ export type ListModelsParams = {
     status?: string[];
     supported_parameters?: string[];
   };
-  headers?: Record<string, never>;
+  headers?: {
+    "If-None-Match"?: string;
+  };
   body?: never;
 };
 
@@ -14595,6 +14603,7 @@ export async function listModels(
               | "deranked_lvl3"
               | "disabled";
           };
+          service_tiers?: ("flex" | "priority" | "standard" | "ultrafast")[];
           status: "active" | "coming_soon" | "inactive";
           status_reason:
             | "active"
@@ -14761,6 +14770,7 @@ export async function listModels(
                 | "deranked_lvl3"
                 | "disabled";
             };
+            service_tiers?: ("flex" | "priority" | "standard" | "ultrafast")[];
             status: "active" | "coming_soon" | "inactive";
             status_reason:
               | "active"
@@ -15563,7 +15573,7 @@ export type ListRateLimitAssignmentsParams = {
 };
 
 /**
- * Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
  */
 export async function listRateLimitAssignments(
   client: Client,
@@ -15617,7 +15627,7 @@ export type ListRateLimitPoliciesParams = {
 };
 
 /**
- * Lists the workspace's named rate limit policies. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
  */
 export async function listRateLimitPolicies(
   client: Client,
@@ -16038,6 +16048,7 @@ export async function listTeamModels(
           | "deranked_lvl3"
           | "disabled";
       };
+      service_tiers?: ("flex" | "priority" | "standard" | "ultrafast")[];
       status: "active" | "coming_soon" | "inactive";
       status_reason:
         | "active"
@@ -16193,6 +16204,7 @@ export async function listTeamModels(
             | "deranked_lvl3"
             | "disabled";
         };
+        service_tiers?: ("flex" | "priority" | "standard" | "ultrafast")[];
         status: "active" | "coming_soon" | "inactive";
         status_reason:
           | "active"
@@ -17675,6 +17687,7 @@ export async function listWorkspaceNotificationRoutes(
     auto_top_up_failed: string[];
     low_balance: string[];
     model_deprecation: string[];
+    model_substitution: string[];
     payment_method_expiring: string[];
   };
 }> {
@@ -17685,6 +17698,7 @@ export async function listWorkspaceNotificationRoutes(
       auto_top_up_failed: string[];
       low_balance: string[];
       model_deprecation: string[];
+      model_substitution: string[];
       payment_method_expiring: string[];
     };
   }>({
@@ -17896,6 +17910,11 @@ export type MakeDecisionParams = {
               };
           zdr?: boolean | null;
         };
+        provider_options?: {
+          typesafe?: {
+            long_context?: boolean;
+          };
+        };
         questions: (
           | {
               instructions: string;
@@ -17919,6 +17938,11 @@ export type MakeDecisionParams = {
               }[];
               name?: string;
               type: "score";
+            }
+          | {
+              instructions: string;
+              name?: string;
+              type: "box";
             }
         )[];
         routing?: {
@@ -18019,6 +18043,11 @@ export type MakeDecisionParams = {
               };
           zdr?: boolean | null;
         };
+        provider_options?: {
+          typesafe?: {
+            long_context?: boolean;
+          };
+        };
         questions: {
           [key: string]:
             | {
@@ -18056,6 +18085,15 @@ export type MakeDecisionParams = {
                     }
                   | unknown[];
                 type: "score";
+              }
+            | {
+                instructions:
+                  | string
+                  | {
+                      [key: string]: unknown;
+                    }
+                  | unknown[];
+                type: "box";
               };
         };
         routing?: {
@@ -18143,6 +18181,17 @@ export async function makeDecision(
             name: string | null;
             type: "refusal";
           }
+        | {
+            box: {
+              bottom: number;
+              left: number;
+              right: number;
+              top: number;
+            };
+            confidence: number;
+            name: string | null;
+            type: "box";
+          }
       )[];
       meta?: {
         [key: string]: unknown;
@@ -18219,6 +18268,17 @@ export async function makeDecision(
           | {
               name: string | null;
               type: "refusal";
+            }
+          | {
+              box: {
+                bottom: number;
+                left: number;
+                right: number;
+                top: number;
+              };
+              confidence: number;
+              name: string | null;
+              type: "box";
             }
         )[];
         meta?: {
@@ -21422,7 +21482,7 @@ export type UpdateRateLimitAssignmentParams = {
 };
 
 /**
- * Switches the policy applied to an assignment's target. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
  */
 export async function updateRateLimitAssignment(
   client: Client,
@@ -21482,7 +21542,7 @@ export type UpdateRateLimitPolicyParams = {
 };
 
 /**
- * Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway does not enforce rate limit policies yet; they are saved for the upcoming enforcement release.
+ * Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute for key, member, guardrail and end-user-default assignments; tokens_per_minute, concurrent_requests and department assignments are not enforced yet.
  */
 export async function updateRateLimitPolicy(
   client: Client,
@@ -22086,7 +22146,8 @@ export type UpdateWorkspaceNotificationRouteParams = {
       | "low_balance"
       | "auto_top_up_failed"
       | "payment_method_expiring"
-      | "model_deprecation";
+      | "model_deprecation"
+      | "model_substitution";
   };
   query?: Record<string, never>;
   headers?: Record<string, never>;
@@ -22108,7 +22169,8 @@ export async function updateWorkspaceNotificationRoute(
       | "low_balance"
       | "auto_top_up_failed"
       | "payment_method_expiring"
-      | "model_deprecation";
+      | "model_deprecation"
+      | "model_substitution";
   };
 }> {
   const { path, query, headers, body } = args;
@@ -22122,7 +22184,8 @@ export async function updateWorkspaceNotificationRoute(
         | "low_balance"
         | "auto_top_up_failed"
         | "payment_method_expiring"
-        | "model_deprecation";
+        | "model_deprecation"
+        | "model_substitution";
     };
   }>({
     method: "PUT",
@@ -22263,6 +22326,9 @@ export type UpdateWorkspaceSettingsParams = {
     byok_fallback_enabled?: boolean;
     io_logging_enabled?: boolean;
     io_logging_include_provider_payloads?: boolean;
+    model_successor_max_price_increase_percent?: number;
+    model_successor_price_policy?: "never" | "limit" | "any";
+    model_successor_redirect_enabled?: boolean;
     privacy_enable_free_may_publish_prompts?: boolean;
     privacy_enable_free_may_train?: boolean;
     privacy_enable_input_output_logging?: boolean;
@@ -22291,6 +22357,9 @@ export async function updateWorkspaceSettings(
     byok_fallback_enabled?: boolean | null;
     io_logging_enabled?: boolean | null;
     io_logging_include_provider_payloads?: boolean | null;
+    model_successor_max_price_increase_percent?: number | null;
+    model_successor_price_policy?: "never" | "limit" | "any" | null;
+    model_successor_redirect_enabled?: boolean | null;
     privacy_enable_free_may_publish_prompts?: boolean | null;
     privacy_enable_free_may_train?: boolean | null;
     privacy_enable_input_output_logging?: boolean | null;
@@ -22316,6 +22385,9 @@ export async function updateWorkspaceSettings(
       byok_fallback_enabled?: boolean | null;
       io_logging_enabled?: boolean | null;
       io_logging_include_provider_payloads?: boolean | null;
+      model_successor_max_price_increase_percent?: number | null;
+      model_successor_price_policy?: "never" | "limit" | "any" | null;
+      model_successor_redirect_enabled?: boolean | null;
       privacy_enable_free_may_publish_prompts?: boolean | null;
       privacy_enable_free_may_train?: boolean | null;
       privacy_enable_input_output_logging?: boolean | null;

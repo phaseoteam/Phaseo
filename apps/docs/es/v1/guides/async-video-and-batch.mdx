@@ -113,6 +113,10 @@ Las solicitudes por lotes también aceptan `provider_options`: OpenAI admite `ou
 
 Mistral ya tiene un adaptador nativo de lotes. Los lotes de mensajes de Anthropic se consultan periódicamente; otros proveedores pueden combinar consultas periódicas con notificaciones nativas de finalización. La disponibilidad depende de los endpoints admitidos por el proveedor y de la lista de proveedores permitidos para lotes del despliegue. Comprueba la respuesta de capacidades de lotes antes de enviar un archivo o solicitudes en línea.
 
+Los lotes de Gemini en Vertex aceptan `requests` en línea con `/v1/generateContent`, o `model` y `prompts`. Selecciona `provider: "google-vertex"` para usar Vertex. Las filas exitosas se cobran a tarifas Batch. Este adaptador requiere credenciales administradas; BYOK, los archivos subidos, los embeddings y los lotes `google-vertex-eu` no están disponibles. La entrada está limitada a 20 MB y 10 000 solicitudes. Las entradas y salidas almacenadas caducan a los 30 días.
+
+Los resultados de Vertex identifican cada fila enviada mediante `custom_id`, con la generación exitosa en `response.body` o un `error` por solicitud. El orden de salida puede diferir del de entrada. Un envío cuyo resultado en el proveedor sea incierto permanece en revisión manual y conserva la reserva de créditos; evita crear un reemplazo hasta confirmar su resultado.
+
 Un lote completado puede contener filas fallidas. Inspecciona cada resultado con su ID personalizado en lugar de asumir que todas las filas funcionaron. Conserva la entrada original y el ID del trabajo hasta reconciliar los resultados y la facturación. Investiga un envío incierto antes de repetirlo, porque el proveedor puede haber aceptado la solicitud original.
 
 ### Descargar resultados de lotes

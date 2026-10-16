@@ -28,6 +28,7 @@ import { accountSettingsDynamicRoutesRouter } from "./settings-dynamic-routes";
 import { accountSettingsScimRouter } from "./settings-scim";
 import { accountSettingsProviderOnboardingRouter } from "./settings-provider-onboarding";
 import { accountSettingsProviderCatalogRouter } from "./settings-provider-catalog";
+import { creditSpendWindowStart, recentCreditSpend } from "./creditSpend";
 import { purgeWorkerCacheTags } from "@/http/invalidation";
 import { keyDisplayData } from "./settings-key-display";
 import {
@@ -1096,15 +1097,16 @@ accountSettingsRouter.get("/keys", async (c) => {
 		? requestedWorkspaceId
 		: workspaces[0]?.id ?? null;
 	let keys: Array<Record<string, unknown>> = [];
+	const observedAt = Date.now();
 	if (initialWorkspaceId) {
-		const dayStart = new Date();
-		dayStart.setUTCHours(0, 0, 0, 0);
 		const [keysResult, usageResult] = await Promise.all([
 			client.from("keys").select("*").eq("workspace_id", initialWorkspaceId)
 				.neq("status", "deleted").neq("name", "__chat_route_managed_key__"),
-			userClient.rpc("get_workspace_key_usage", {
+			// get_workspace_key_usage only returns daily totals in production, which left
+			// weekly and monthly limits at zero. This service-only RPC uses the gateway's
+			// UTC day/week/month windows; membership in this workspace was checked above.
+			client.rpc("gateway_workspace_key_usage", {
 				p_workspace_id: initialWorkspaceId,
-				p_day_start: dayStart.toISOString(),
 			}),
 		]);
 		if (keysResult.error) {
@@ -1149,6 +1151,7 @@ accountSettingsRouter.get("/keys", async (c) => {
 	return c.json({
 		currentUserId: user.id,
 		initialWorkspaceId,
+		observedAt,
 		teamsWithKeys: activeWorkspace ? [{ ...activeWorkspace, keys }] : [],
 		workspaces,
 	}, 200, PRIVATE_NO_STORE_HEADERS);
@@ -1289,9 +1292,11 @@ accountSettingsRouter.get("/credits", async (c) => {
 		lowBalanceEmailThresholdUsd: null,
 		paymentMethodExpiringEmailEnabled: true,
 		modelDeprecationAlertsEnabled: false,
+		modelDeprecationAlertsIncludeAdmins: false,
 		notificationDestinations: [],
 		notificationRoutes: {},
 		obfuscateInfo: false,
+		recentCreditSpend: null,
 		stripeInfo: {
 			customer: { id: null, email: null },
 			defaultPaymentMethodId: null,
@@ -1302,12 +1307,13 @@ accountSettingsRouter.get("/credits", async (c) => {
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	const [walletResult, initialSettingsResult, latestPaymentResult, userResult, destinationsResult, routesResult] = await Promise.all([
+	const observedAt = Date.now();
+	const [walletResult, initialSettingsResult, latestPaymentResult, userResult, destinationsResult, routesResult, creditSpendResult] = await Promise.all([
 		context.client.from("wallets")
 			.select("workspace_id,stripe_customer_id,balance_nanos,reserved_nanos,auto_top_up_enabled,low_balance_threshold,auto_top_up_amount,auto_top_up_account_id")
 			.eq("workspace_id", workspaceId).maybeSingle(),
 		context.client.from("workspace_settings")
-			.select("low_balance_email_enabled,low_balance_email_threshold_nanos,auto_top_up_failure_email_enabled,payment_method_expiring_email_enabled,model_deprecation_alerts_enabled")
+			.select("low_balance_email_enabled,low_balance_email_threshold_nanos,auto_top_up_failure_email_enabled,payment_method_expiring_email_enabled,model_deprecation_alerts_enabled,model_deprecation_alerts_include_admins")
 			.eq("workspace_id", workspaceId).maybeSingle(),
 		context.client.from("credit_ledger").select("event_time,status,amount_nanos")
 			.eq("workspace_id", workspaceId).eq("ref_type", "Stripe_Payment_Intent")
@@ -1316,6 +1322,9 @@ accountSettingsRouter.get("/credits", async (c) => {
 		context.client.from("users").select("obfuscate_info,declared_country_code").eq("user_id", context.user.id).maybeSingle(),
 		context.client.from("notification_destinations").select("id,name,type,status,target_preview,created_at").eq("workspace_id", workspaceId).eq("is_ephemeral", false).neq("status", "deleted").order("created_at", { ascending: false }),
 		context.client.from("notification_event_destinations").select("event_kind,destination_id").eq("workspace_id", workspaceId),
+		// Sums every wallet charge in the database (request charges plus async and realtime ledger
+		// charges), so this is what actually drains credits. BYOK requests only count when charged.
+		context.client.rpc("get_workspace_recent_credit_spend", { p_workspace_id: workspaceId, p_since: creditSpendWindowStart(observedAt) }),
 	]);
 	let settingsResult = initialSettingsResult;
 	if (settingsResult.error?.code === "42703") {
@@ -1338,11 +1347,14 @@ accountSettingsRouter.get("/credits", async (c) => {
 		lowBalanceEmailThresholdUsd: thresholdNanos > 0 ? Number((thresholdNanos / 1_000_000_000).toFixed(2)) : null,
 		paymentMethodExpiringEmailEnabled: settingsResult.data?.payment_method_expiring_email_enabled !== false,
 		modelDeprecationAlertsEnabled: Boolean(settingsResult.data?.model_deprecation_alerts_enabled),
+		modelDeprecationAlertsIncludeAdmins: Boolean(settingsResult.data?.model_deprecation_alerts_include_admins),
 		notificationDestinations: (destinationsResult.data ?? []).map((row) => ({ id: String(row.id), name: String(row.name), type: String(row.type), status: String(row.status), targetPreview: String(row.target_preview), createdAt: row.created_at ?? null })),
 		notificationRoutes: (routesResult.data ?? []).reduce<Record<string, string[]>>((routes, row) => {
 			const kind = String(row.event_kind); (routes[kind] ??= []).push(String(row.destination_id)); return routes;
 		}, {}),
 		obfuscateInfo: cookieOverride === "1" ? true : cookieOverride === "0" ? false : Boolean(userResult.data?.obfuscate_info),
+		// A spend outage only hides the runway estimate; the rest of billing still loads.
+		recentCreditSpend: creditSpendResult.error ? null : recentCreditSpend(creditSpendResult.data, observedAt),
 		stripeInfo: {
 			customer: { id: null, email: null },
 			defaultPaymentMethodId: null,

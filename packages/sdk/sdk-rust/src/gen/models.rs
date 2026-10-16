@@ -719,6 +719,26 @@ pub struct DecisionAudioSource {
 	pub url: Option<String>,
 }
 
+pub struct DecisionBox {
+	pub bottom: f64,
+	pub left: f64,
+	pub right: f64,
+	pub top: f64,
+}
+
+pub struct DecisionBoxAnswer {
+	pub r#box: HashMap<String, String>,
+	pub confidence: f64,
+	pub name: Option<String>,
+	pub r#type: String,
+}
+
+pub struct DecisionBoxQuestion {
+	pub instructions: String,
+	pub name: Option<String>,
+	pub r#type: String,
+}
+
 pub struct DecisionChoiceAnswer {
 	pub choice: String,
 	pub confidence: f64,
@@ -789,6 +809,10 @@ pub struct DecisionPredicateQuestion {
 	pub r#type: String,
 }
 
+pub struct DecisionProviderOptions {
+	pub typesafe: Option<HashMap<String, String>>,
+}
+
 pub struct DecisionRefusalAnswer {
 	pub name: Option<String>,
 	pub r#type: String,
@@ -817,6 +841,7 @@ pub struct DecisionsRequest {
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
+	pub provider_options: Option<HashMap<String, String>>,
 	pub questions: HashMap<String, String>,
 	pub routing: Option<HashMap<String, String>>,
 	pub state: String,
@@ -1202,6 +1227,7 @@ pub struct GatewayModelOffer {
 	pub provider: HashMap<String, String>,
 	pub routable: bool,
 	pub routing: HashMap<String, String>,
+	pub service_tiers: Option<Vec<String>>,
 	pub status: String,
 	pub status_reason: String,
 }
@@ -1631,6 +1657,11 @@ pub struct KeyInvalidateResponse {
 
 pub type KnownModelId = JsonValue;
 
+pub struct LegacyDecisionBoxQuestion {
+	pub instructions: String,
+	pub r#type: String,
+}
+
 pub struct LegacyDecisionsRequest {
 	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
@@ -1640,6 +1671,7 @@ pub struct LegacyDecisionsRequest {
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
+	pub provider_options: Option<HashMap<String, String>>,
 	pub questions: HashMap<String, String>,
 	pub routing: Option<HashMap<String, String>>,
 	pub state: String,
@@ -2199,6 +2231,7 @@ pub struct OpenAIDecisionsRequest {
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
+	pub provider_options: Option<HashMap<String, String>>,
 	pub questions: Vec<String>,
 	pub routing: Option<HashMap<String, String>>,
 	pub safety_identifier: Option<Option<String>>,
@@ -3593,6 +3626,8 @@ pub struct WorkspaceMemberRoleUpdateRequest {
 	pub role: String,
 }
 
+pub type WorkspaceModelSuccessorPricePolicy = JsonValue;
+
 pub struct WorkspaceNotificationDestination {
 	pub created_at: Option<Option<String>>,
 	pub id: String,
@@ -3647,6 +3682,7 @@ pub struct WorkspaceNotificationRouteMap {
 	pub auto_top_up_failed: Vec<String>,
 	pub low_balance: Vec<String>,
 	pub model_deprecation: Vec<String>,
+	pub model_substitution: Vec<String>,
 	pub payment_method_expiring: Vec<String>,
 }
 
@@ -3754,6 +3790,9 @@ pub struct WorkspaceSettings {
 	pub byok_fallback_enabled: Option<Option<bool>>,
 	pub io_logging_enabled: Option<Option<bool>>,
 	pub io_logging_include_provider_payloads: Option<Option<bool>>,
+	pub model_successor_max_price_increase_percent: Option<Option<i64>>,
+	pub model_successor_price_policy: Option<Option<String>>,
+	pub model_successor_redirect_enabled: Option<Option<bool>>,
 	pub privacy_enable_free_may_publish_prompts: Option<Option<bool>>,
 	pub privacy_enable_free_may_train: Option<Option<bool>>,
 	pub privacy_enable_input_output_logging: Option<Option<bool>>,
@@ -3780,6 +3819,9 @@ pub struct WorkspaceSettingsUpdateRequest {
 	pub byok_fallback_enabled: Option<bool>,
 	pub io_logging_enabled: Option<bool>,
 	pub io_logging_include_provider_payloads: Option<bool>,
+	pub model_successor_max_price_increase_percent: Option<i64>,
+	pub model_successor_price_policy: Option<String>,
+	pub model_successor_redirect_enabled: Option<bool>,
 	pub privacy_enable_free_may_publish_prompts: Option<bool>,
 	pub privacy_enable_free_may_train: Option<bool>,
 	pub privacy_enable_input_output_logging: Option<bool>,

@@ -1065,6 +1065,31 @@ module Phaseo
     # @!attribute [rw] url
     #   @return [String, nil]
     DecisionAudioSource = Struct.new(:data, :format, :url, keyword_init: true)
+    # @!attribute [rw] bottom
+    #   @return [Float]
+    # @!attribute [rw] left
+    #   @return [Float]
+    # @!attribute [rw] right
+    #   @return [Float]
+    # @!attribute [rw] top
+    #   @return [Float]
+    DecisionBox = Struct.new(:bottom, :left, :right, :top, keyword_init: true)
+    # @!attribute [rw] box
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] confidence
+    #   @return [Float]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    DecisionBoxAnswer = Struct.new(:box, :confidence, :name, :type, keyword_init: true)
+    # @!attribute [rw] instructions
+    #   @return [String]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    DecisionBoxQuestion = Struct.new(:instructions, :name, :type, keyword_init: true)
     # @!attribute [rw] choice
     #   @return [String, Boolean]
     # @!attribute [rw] confidence
@@ -1141,6 +1166,9 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     DecisionPredicateQuestion = Struct.new(:instructions, :name, :type, keyword_init: true)
+    # @!attribute [rw] typesafe
+    #   @return [Hash{String => Object}, nil]
+    DecisionProviderOptions = Struct.new(:typesafe, keyword_init: true)
     # @!attribute [rw] name
     #   @return [String, nil]
     # @!attribute [rw] type
@@ -1180,13 +1208,15 @@ module Phaseo
     #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] provider_options
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] questions
     #   @return [Hash{String => Object}]
     # @!attribute [rw] routing
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] state
     #   @return [String, Hash{String => Object}, Array<Object>]
-    DecisionsRequest = Struct.new(:debug, :echo_upstream_request, :images, :meta, :metadata, :model, :models, :provider, :questions, :routing, :state, keyword_init: true)
+    DecisionsRequest = Struct.new(:debug, :echo_upstream_request, :images, :meta, :metadata, :model, :models, :provider, :provider_options, :questions, :routing, :state, keyword_init: true)
     # @!attribute [rw] answers
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] meta
@@ -1707,11 +1737,13 @@ module Phaseo
     #   @return [Boolean]
     # @!attribute [rw] routing
     #   @return [Hash{String => Object}]
+    # @!attribute [rw] service_tiers
+    #   @return [Array<String>, nil]
     # @!attribute [rw] status
     #   @return [String]
     # @!attribute [rw] status_reason
     #   @return [String]
-    GatewayModelOffer = Struct.new(:capabilities, :effective, :endpoints, :modalities, :model, :pricing, :provider, :routable, :routing, :status, :status_reason, keyword_init: true)
+    GatewayModelOffer = Struct.new(:capabilities, :effective, :endpoints, :modalities, :model, :pricing, :provider, :routable, :routing, :service_tiers, :status, :status_reason, keyword_init: true)
     GatewayModelOrganization = Object
     # @!attribute [rw] availability_mode
     #   @return [String]
@@ -2337,6 +2369,11 @@ module Phaseo
     #   @return [String]
     KeyInvalidateResponse = Struct.new(:key, :message, :ok, keyword_init: true)
     KnownModelId = Object
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] type
+    #   @return [String]
+    LegacyDecisionBoxQuestion = Struct.new(:instructions, :type, keyword_init: true)
     # @!attribute [rw] debug
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] echo_upstream_request
@@ -2353,13 +2390,15 @@ module Phaseo
     #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] provider_options
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] questions
     #   @return [Hash{String => Object}]
     # @!attribute [rw] routing
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] state
     #   @return [String, Hash{String => Object}, Array<Object>]
-    LegacyDecisionsRequest = Struct.new(:debug, :echo_upstream_request, :images, :meta, :metadata, :model, :models, :provider, :questions, :routing, :state, keyword_init: true)
+    LegacyDecisionsRequest = Struct.new(:debug, :echo_upstream_request, :images, :meta, :metadata, :model, :models, :provider, :provider_options, :questions, :routing, :state, keyword_init: true)
     # @!attribute [rw] answers
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] meta
@@ -3179,13 +3218,15 @@ module Phaseo
     #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] provider_options
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] questions
     #   @return [Array<Hash{String => Object}>]
     # @!attribute [rw] routing
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] safety_identifier
     #   @return [String, nil]
-    OpenAIDecisionsRequest = Struct.new(:debug, :echo_upstream_request, :input, :meta, :metadata, :model, :models, :provider, :questions, :routing, :safety_identifier, keyword_init: true)
+    OpenAIDecisionsRequest = Struct.new(:debug, :echo_upstream_request, :input, :meta, :metadata, :model, :models, :provider, :provider_options, :questions, :routing, :safety_identifier, keyword_init: true)
     # @!attribute [rw] answers
     #   @return [Array<Hash{String => Object}>]
     # @!attribute [rw] meta
@@ -5080,6 +5121,7 @@ module Phaseo
     # @!attribute [rw] role
     #   @return [String]
     WorkspaceMemberRoleUpdateRequest = Struct.new(:role, keyword_init: true)
+    WorkspaceModelSuccessorPricePolicy = Object
     # @!attribute [rw] created_at
     #   @return [String, nil]
     # @!attribute [rw] id
@@ -5140,9 +5182,11 @@ module Phaseo
     #   @return [Array<String>]
     # @!attribute [rw] model_deprecation
     #   @return [Array<String>]
+    # @!attribute [rw] model_substitution
+    #   @return [Array<String>]
     # @!attribute [rw] payment_method_expiring
     #   @return [Array<String>]
-    WorkspaceNotificationRouteMap = Struct.new(:auto_top_up_failed, :low_balance, :model_deprecation, :payment_method_expiring, keyword_init: true)
+    WorkspaceNotificationRouteMap = Struct.new(:auto_top_up_failed, :low_balance, :model_deprecation, :model_substitution, :payment_method_expiring, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     WorkspaceNotificationRouteResponse = Struct.new(:data, keyword_init: true)
@@ -5255,6 +5299,12 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] io_logging_include_provider_payloads
     #   @return [Boolean, nil]
+    # @!attribute [rw] model_successor_max_price_increase_percent
+    #   @return [Integer, nil]
+    # @!attribute [rw] model_successor_price_policy
+    #   @return [Object, nil]
+    # @!attribute [rw] model_successor_redirect_enabled
+    #   @return [Boolean, nil]
     # @!attribute [rw] privacy_enable_free_may_publish_prompts
     #   @return [Boolean, nil]
     # @!attribute [rw] privacy_enable_free_may_train
@@ -5283,7 +5333,7 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] workspace_id
     #   @return [String]
-    WorkspaceSettings = Struct.new(:alpha_channel_enabled, :beta_channel_enabled, :byok_fallback_enabled, :io_logging_enabled, :io_logging_include_provider_payloads, :privacy_enable_free_may_publish_prompts, :privacy_enable_free_may_train, :privacy_enable_input_output_logging, :privacy_enable_paid_may_train, :privacy_zdr_only, :provider_restriction_enforce_allowed, :provider_restriction_mode, :provider_restriction_provider_ids, :response_healing_enabled, :response_healing_locked, :response_healing_mode, :routing_mode, :updated_at, :workspace_id, keyword_init: true)
+    WorkspaceSettings = Struct.new(:alpha_channel_enabled, :beta_channel_enabled, :byok_fallback_enabled, :io_logging_enabled, :io_logging_include_provider_payloads, :model_successor_max_price_increase_percent, :model_successor_price_policy, :model_successor_redirect_enabled, :privacy_enable_free_may_publish_prompts, :privacy_enable_free_may_train, :privacy_enable_input_output_logging, :privacy_enable_paid_may_train, :privacy_zdr_only, :provider_restriction_enforce_allowed, :provider_restriction_mode, :provider_restriction_provider_ids, :response_healing_enabled, :response_healing_locked, :response_healing_mode, :routing_mode, :updated_at, :workspace_id, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     WorkspaceSettingsResponse = Struct.new(:data, keyword_init: true)
@@ -5296,6 +5346,12 @@ module Phaseo
     # @!attribute [rw] io_logging_enabled
     #   @return [Boolean, nil]
     # @!attribute [rw] io_logging_include_provider_payloads
+    #   @return [Boolean, nil]
+    # @!attribute [rw] model_successor_max_price_increase_percent
+    #   @return [Integer, nil]
+    # @!attribute [rw] model_successor_price_policy
+    #   @return [String, nil]
+    # @!attribute [rw] model_successor_redirect_enabled
     #   @return [Boolean, nil]
     # @!attribute [rw] privacy_enable_free_may_publish_prompts
     #   @return [Boolean, nil]
@@ -5321,7 +5377,7 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] routing_mode
     #   @return [String, nil]
-    WorkspaceSettingsUpdateRequest = Struct.new(:alpha_channel_enabled, :beta_channel_enabled, :byok_fallback_enabled, :io_logging_enabled, :io_logging_include_provider_payloads, :privacy_enable_free_may_publish_prompts, :privacy_enable_free_may_train, :privacy_enable_input_output_logging, :privacy_enable_paid_may_train, :privacy_zdr_only, :provider_restriction_enforce_allowed, :provider_restriction_mode, :provider_restriction_provider_ids, :response_healing_enabled, :response_healing_locked, :response_healing_mode, :routing_mode, keyword_init: true)
+    WorkspaceSettingsUpdateRequest = Struct.new(:alpha_channel_enabled, :beta_channel_enabled, :byok_fallback_enabled, :io_logging_enabled, :io_logging_include_provider_payloads, :model_successor_max_price_increase_percent, :model_successor_price_policy, :model_successor_redirect_enabled, :privacy_enable_free_may_publish_prompts, :privacy_enable_free_may_train, :privacy_enable_input_output_logging, :privacy_enable_paid_may_train, :privacy_zdr_only, :provider_restriction_enforce_allowed, :provider_restriction_mode, :provider_restriction_provider_ids, :response_healing_enabled, :response_healing_locked, :response_healing_mode, :routing_mode, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     WorkspaceSsoResponse = Struct.new(:data, keyword_init: true)

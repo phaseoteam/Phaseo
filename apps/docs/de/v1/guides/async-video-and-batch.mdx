@@ -113,6 +113,10 @@ Stapelanfragen akzeptieren ebenfalls `provider_options`: OpenAI unterstützt `ou
 
 Mistral besitzt bereits einen nativen Stapeladapter. Anthropic-Nachrichtenstapel werden abgefragt; andere Anbieter können Polling mit nativen Abschlussbenachrichtigungen kombinieren. Die Verfügbarkeit hängt von unterstützten Anbieterendpunkten und der Stapel-Freigabeliste der Bereitstellung ab. Prüfe die Antwort zu Stapelfähigkeiten, bevor du eine Datei oder Inline-Anfragen einreichst.
 
+Gemini-Stapel auf Vertex akzeptieren Inline-`requests` mit `/v1/generateContent` oder `model` und `prompts`. Wähle `provider: "google-vertex"`, um Vertex zu verwenden. Erfolgreiche Zeilen werden zu Batch-Tarifen berechnet. Dieser Adapter erfordert verwaltete Zugangsdaten; BYOK, hochgeladene Dateien, Embeddings und `google-vertex-eu`-Stapel sind nicht verfügbar. Die Eingabe ist auf 20 MB und 10.000 Anfragen begrenzt. Gespeicherte Ein- und Ausgaben verfallen nach 30 Tagen.
+
+Vertex-Ergebnisse identifizieren jede eingereichte Zeile mit `custom_id`; erfolgreiche Generierungen stehen in `response.body`, Fehler einzelner Anfragen in `error`. Die Ausgabereihenfolge kann von der Eingabereihenfolge abweichen. Ein Auftrag mit ungewissem Anbieterergebnis bleibt bei aufrechterhaltener Kreditreservierung in manueller Prüfung. Erstelle keinen Ersatzauftrag, bis das Ergebnis bestätigt wurde.
+
 Ein abgeschlossener Stapel kann fehlgeschlagene Zeilen enthalten. Prüfe jedes Ergebnis anhand seiner benutzerdefinierten ID, statt anzunehmen, dass alle Zeilen erfolgreich waren. Behalte die ursprüngliche Eingabe und Auftrags-ID, bis Ergebnisse und Abrechnung abgeglichen sind. Eine ungewisse Einreichung muss vor erneutem Einreichen untersucht werden, da der Anbieter die ursprüngliche Anfrage möglicherweise angenommen hat.
 
 ### Stapelergebnisse herunterladen

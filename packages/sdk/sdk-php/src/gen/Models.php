@@ -1281,6 +1281,40 @@ class DecisionAudioSource
 	public $url;
 }
 
+class DecisionBox
+{
+	/** @var float */
+	public $bottom;
+	/** @var float */
+	public $left;
+	/** @var float */
+	public $right;
+	/** @var float */
+	public $top;
+}
+
+class DecisionBoxAnswer
+{
+	/** @var array<string, mixed> */
+	public $box;
+	/** @var float */
+	public $confidence;
+	/** @var string|null */
+	public $name;
+	/** @var string */
+	public $type;
+}
+
+class DecisionBoxQuestion
+{
+	/** @var string */
+	public $instructions;
+	/** @var string|null */
+	public $name;
+	/** @var string */
+	public $type;
+}
+
 class DecisionChoiceAnswer
 {
 	/** @var string|bool */
@@ -1393,6 +1427,12 @@ class DecisionPredicateQuestion
 	public $type;
 }
 
+class DecisionProviderOptions
+{
+	/** @var array<string, mixed>|null */
+	public $typesafe;
+}
+
 class DecisionRefusalAnswer
 {
 	/** @var string|null */
@@ -1443,6 +1483,8 @@ class DecisionsRequest
 	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
+	/** @var array<string, mixed>|null */
+	public $provider_options;
 	/** @var array<string, mixed> */
 	public $questions;
 	/** @var array<string, mixed>|null */
@@ -2115,6 +2157,8 @@ class GatewayModelOffer
 	public $routable;
 	/** @var array<string, mixed> */
 	public $routing;
+	/** @var array|null */
+	public $service_tiers;
 	/** @var string */
 	public $status;
 	/** @var string */
@@ -2877,6 +2921,14 @@ class KeyInvalidateResponse
 
 class KnownModelId { }
 
+class LegacyDecisionBoxQuestion
+{
+	/** @var string|array<string, mixed>|array */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
 class LegacyDecisionsRequest
 {
 	/** @var array<string, mixed>|null */
@@ -2895,6 +2947,8 @@ class LegacyDecisionsRequest
 	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
+	/** @var array<string, mixed>|null */
+	public $provider_options;
 	/** @var array<string, mixed> */
 	public $questions;
 	/** @var array<string, mixed>|null */
@@ -3893,6 +3947,8 @@ class OpenAIDecisionsRequest
 	public $models;
 	/** @var array<string, mixed>|null */
 	public $provider;
+	/** @var array<string, mixed>|null */
+	public $provider_options;
 	/** @var array */
 	public $questions;
 	/** @var array<string, mixed>|null */
@@ -6311,6 +6367,8 @@ class WorkspaceMemberRoleUpdateRequest
 	public $role;
 }
 
+class WorkspaceModelSuccessorPricePolicy { }
+
 class WorkspaceNotificationDestination
 {
 	/** @var string|null */
@@ -6399,6 +6457,8 @@ class WorkspaceNotificationRouteMap
 	public $low_balance;
 	/** @var array */
 	public $model_deprecation;
+	/** @var array */
+	public $model_substitution;
 	/** @var array */
 	public $payment_method_expiring;
 }
@@ -6571,6 +6631,12 @@ class WorkspaceSettings
 	public $io_logging_enabled;
 	/** @var bool|null */
 	public $io_logging_include_provider_payloads;
+	/** @var int|null */
+	public $model_successor_max_price_increase_percent;
+	/** @var mixed|null */
+	public $model_successor_price_policy;
+	/** @var bool|null */
+	public $model_successor_redirect_enabled;
 	/** @var bool|null */
 	public $privacy_enable_free_may_publish_prompts;
 	/** @var bool|null */
@@ -6619,6 +6685,12 @@ class WorkspaceSettingsUpdateRequest
 	public $io_logging_enabled;
 	/** @var bool|null */
 	public $io_logging_include_provider_payloads;
+	/** @var int|null */
+	public $model_successor_max_price_increase_percent;
+	/** @var string|null */
+	public $model_successor_price_policy;
+	/** @var bool|null */
+	public $model_successor_redirect_enabled;
 	/** @var bool|null */
 	public $privacy_enable_free_may_publish_prompts;
 	/** @var bool|null */

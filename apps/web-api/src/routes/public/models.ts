@@ -1,3 +1,4 @@
+import { fetchSubscriptionCatalogue } from "@/models/subscriptions";
 import { Hono } from "hono";
 import { normalizeCatalogueTier, normalizeCatalogueTiers } from "@/models/catalogue-tiers";
 import { PUBLIC_MODEL_CATALOGUE_CACHE } from "@/cache/catalogue";
@@ -1506,20 +1507,24 @@ publicModelsRouter.get("/:modelId/timeline", async (c) => {
 		const client = getDataClient(c.env);
 		const { data: model, error } = await client
 			.from("v2_models")
-			.select("model_slug,name,previous_model_slug,announced_at,released_at,deprecated_at,retired_at")
+			.select("model_slug,name,previous_model_slug,replacement_model_slug,announced_at,released_at,deprecated_at,retired_at")
 			.eq("model_slug", modelId)
 			.eq("hidden", false)
 			.maybeSingle();
 		if (error) throw error;
 		if (!model) return notFound(c);
-		const [previousResult, futureResult] = await Promise.all([
+		const [previousResult, futureResult, replacementResult] = await Promise.all([
 			model.previous_model_slug
 				? client.from("v2_models").select("model_slug,name,announced_at,released_at").eq("model_slug", model.previous_model_slug).eq("hidden", false).maybeSingle()
 				: Promise.resolve({ data: null, error: null }),
 			client.from("v2_models").select("model_slug,name,announced_at,released_at").eq("previous_model_slug", modelId).eq("hidden", false),
+			model.replacement_model_slug
+				? client.from("v2_models").select("model_slug,name,announced_at,released_at").eq("model_slug", model.replacement_model_slug).eq("hidden", false).maybeSingle()
+				: Promise.resolve({ data: null, error: null }),
 		]);
 		if (previousResult.error) throw previousResult.error;
 		if (futureResult.error) throw futureResult.error;
+		if (replacementResult.error) throw replacementResult.error;
 		const events: Array<Record<string, string>> = [];
 		for (const [date, eventName] of [[model.announced_at, "Announced"], [model.released_at, "Released"], [model.deprecated_at, "Deprecated"], [model.retired_at, "Retired"]] as const) {
 			if (date) events.push({ date, eventType: "ModelEvent", eventName });
@@ -1531,7 +1536,11 @@ publicModelsRouter.get("/:modelId/timeline", async (c) => {
 			.map((candidate) => ({ candidate, date: candidate.released_at ?? candidate.announced_at }))
 			.filter((entry): entry is { candidate: NonNullable<typeof entry.candidate>; date: string } => Boolean(entry.date))
 			.sort((left, right) => left.date.localeCompare(right.date))[0];
-		if (future) events.push({ date: future.date, eventType: "FutureModel", modelId: future.candidate.model_slug, modelName: future.candidate.name ?? future.candidate.model_slug });
+		// The recommended successor wins over the earliest model listing this one as its predecessor.
+		const replacement = replacementResult.data;
+		const replacementDate = replacement ? replacement.released_at ?? replacement.announced_at ?? model.deprecated_at ?? model.retired_at : null;
+		if (replacement && replacementDate) events.push({ date: replacementDate, eventType: "FutureModel", modelId: replacement.model_slug, modelName: replacement.name ?? replacement.model_slug });
+		else if (future) events.push({ date: future.date, eventType: "FutureModel", modelId: future.candidate.model_slug, modelName: future.candidate.name ?? future.candidate.model_slug });
 		events.sort((left, right) => right.date.localeCompare(left.date));
 		return withPublicCache(c.json({ events }), sectionPolicy("timeline", modelId));
 	} catch (error) {
@@ -1543,37 +1552,8 @@ publicModelsRouter.get("/:modelId/timeline", async (c) => {
 publicModelsRouter.get("/:modelId/subscription-plans", async (c) => {
 	const modelId = c.req.param("modelId");
 	try {
-		const client = getDataClient(c.env);
-		const v2 = await client.rpc("get_v2_model_subscription_plans", { p_model_slug: modelId });
-		if (!v2.error && (v2.data == null || Array.isArray(v2.data))) {
-			const subscriptionRows = (v2.data ?? []) as Array<Record<string, unknown>>;
-			const labSlugs = Array.from(new Set(
-				subscriptionRows.map((row) => String(row.lab_slug ?? "").trim()).filter(Boolean),
-			));
-			const labResult = labSlugs.length
-				? await client.from("v2_labs").select("lab_slug,name,metadata").in("lab_slug", labSlugs)
-				: { data: [], error: null };
-			if (labResult.error) throw labResult.error;
-			const labsBySlug = new Map(
-				((labResult.data ?? []) as Array<Record<string, unknown>>).map((lab) => [
-					String(lab.lab_slug ?? ""),
-					lab,
-				]),
-			);
-			const grouped = new Map<string, Record<string, unknown>>();
-			for (const row of subscriptionRows) {
-				const planId = String(row.plan_id ?? "").trim(); if (!planId) continue;
-				const labSlug = String(row.lab_slug ?? "").trim();
-				const lab = labsBySlug.get(labSlug);
-				const labMetadata = lab?.metadata && typeof lab.metadata === "object"
-					? lab.metadata as Record<string, unknown>
-					: null;
-				const plan = grouped.get(planId) ?? { plan_id: planId, plan_uuid: row.plan_uuid, name: row.name, organisation_id: labSlug || null, description: row.description, link: row.link, other_info: row.other_info, created_at: row.created_at, updated_at: row.updated_at, organisation: labSlug ? { organisation_id: labSlug, name: String(lab?.name ?? labSlug), colour: labMetadata?.colour ?? null } : null, prices: [], model_info: { model_info: row.model_info, rate_limit: row.rate_limit, other_info: row.model_other_info } };
-				(plan.prices as Array<Record<string, unknown>>).push({ price: row.price, currency: row.currency, frequency: row.frequency }); grouped.set(planId, plan);
-			}
-			return withPublicCache(c.json({ subscription_plans: Array.from(grouped.values()), source: "v2" }), sectionPolicy("subscriptions", modelId));
-		}
-		throw v2.error ?? new Error("V2 subscription query returned an invalid payload");
+		const plans = await fetchSubscriptionCatalogue(getDataClient(c.env), undefined, modelId);
+		return withPublicCache(c.json({ subscription_plans: plans, source: "v2" }), sectionPolicy("subscriptions", modelId));
 	} catch (error) {
 		console.error("[web-api/models] subscription plans failed", { modelId, error });
 		return c.json({ error: "model_subscription_plans_unavailable" }, 503);

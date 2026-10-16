@@ -35,17 +35,12 @@ function buildSupabaseMock() {
 							not: (column: string, operator: string, value: string) => {
 								expect([column, operator, value]).toEqual(["kind", "in", '("notification_test","model_deprecation","feedback_request")']);
 								return {
-									neq: (templateColumn: string, templateValue: string) => {
-										expect([templateColumn, templateValue]).toEqual(["template", "model_deprecation"]);
-										return {
-											order: () => ({
-												limit: async (limit: number) => ({
-													data: state.rows.filter((row) => !["notification_test", "model_deprecation", "feedback_request"].includes(String(row.kind)) && row.template !== "model_deprecation").slice(0, limit),
-													error: null,
-												}),
-											}),
-										};
-									},
+									order: () => ({
+										limit: async (limit: number) => ({
+											data: state.rows.filter((row) => !["notification_test", "model_deprecation", "feedback_request"].includes(String(row.kind))).slice(0, limit),
+											error: null,
+										}),
+									}),
 								};
 							},
 							eq: (column: string, value: string) => {
@@ -201,6 +196,28 @@ describe("email outbox", () => {
 		const { drainEmailOutbox } = await import("./email-outbox");
 		await expect(drainEmailOutbox(10)).resolves.toEqual({ processed: 0, sent: 0, failed: 0 });
 		expect(state.sendEmail).not.toHaveBeenCalled();
+	});
+
+	it("emails the owner copy of a model deprecation notice", async () => {
+		state.rows.push({
+			id: "email_model_deprecation_owner",
+			created_at: "2026-08-07T12:00:00Z",
+			kind: "model_deprecation_email",
+			template: "model_deprecation",
+			to_email: "owner@example.com",
+			subject: "Model deprecation: Example Model",
+			workspace_id: "ws_1",
+			user_id: "user_1",
+			dedupe_key: "model_deprecation:ws_1:example/model:email:user_1",
+			payload: { model_name: "Example Model", deprecation_date: "2026-08-01T00:00:00.000Z" },
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await expect(drainEmailOutbox(10)).resolves.toMatchObject({ processed: 1, sent: 1, failed: 0 });
+		expect(state.sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: "owner@example.com" }));
 	});
 
 	it("renders billing alerts and passes their deduplication key to Resend", async () => {
