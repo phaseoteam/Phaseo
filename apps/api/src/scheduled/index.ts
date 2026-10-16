@@ -474,6 +474,19 @@ async function handleV2AnalyticsOutboxScheduledEvent(env: GatewayBindings): Prom
 	}
 }
 
+// Rebuilds the trailing hour of per-minute rate limit policy throttle counts.
+async function handleRateLimitThrottleRollupScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (env.RATE_LIMIT_POLICIES_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		const { data, error } = await getSupabaseAdmin().rpc("refresh_rate_limit_throttle_rollups");
+		if (error) throw new Error(error.message || "Failed to refresh rate limit throttle rollups");
+		if (Number((data as any)?.rows ?? 0) > 0) console.log("rate_limit_throttle_rollups_refreshed", data);
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handleRoutingArchiveScheduledEvent(env: GatewayBindings): Promise<void> {
 	if (!env.GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF) return;
 	configureRuntime(env);
@@ -695,6 +708,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleV2AnalyticsOutboxScheduledEvent(env);
 		} catch (error) {
 			console.error("v2_analytics_outbox_scheduled_failed", serializeError(error));
+		}
+		try {
+			await handleRateLimitThrottleRollupScheduledEvent(env);
+		} catch (error) {
+			console.error("rate_limit_throttle_rollups_scheduled_failed", serializeError(error));
 		}
 		try {
 			await handleOAuthCleanupScheduledEvent(env);

@@ -274,13 +274,13 @@ describe("irToAnthropicMessages service controls", () => {
 		expect(ir.choices[0]?.finishReason).toBe(expected);
 	});
 
-	it("maps priority tier to auto service tier without fast mode", () => {
+	it("translates a routed priority tier without a second model allowlist", () => {
 		const request = createBaseRequest();
 		request.serviceTier = "priority";
 
 		const payload = irToAnthropicMessages(request);
-		expect(payload.speed).toBeUndefined();
-		expect(payload.service_tier).toBe("auto");
+		expect(payload.speed).toBe("fast");
+		expect(payload.service_tier).toBeUndefined();
 	});
 
 	it("maps priority tier to fast mode for Opus 4.6", () => {
@@ -303,6 +303,23 @@ describe("irToAnthropicMessages service controls", () => {
 		expect(payload.service_tier).toBeUndefined();
 	});
 
+	it.each([
+		["anthropic/claude-opus-5.5", "priority"],
+		["anthropic/claude-opus-5.5", "fast"],
+		["claude-opus-5-5", "priority"],
+		["claude-opus-5-5", "fast"],
+	])("maps Opus 5.5 %s tier %s to fast mode", (model, serviceTier) => {
+		const request = decodeOpenAIChatRequest({
+			model,
+			messages: [{ role: "user", content: "Hello" }],
+			service_tier: serviceTier,
+		} as any);
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.speed).toBe("fast");
+		expect(payload.service_tier).toBeUndefined();
+	});
+
 	it("maps standard tier to standard_only service tier", () => {
 		const request = createBaseRequest();
 		request.serviceTier = "standard";
@@ -312,7 +329,7 @@ describe("irToAnthropicMessages service controls", () => {
 		expect(payload.service_tier).toBe("standard_only");
 	});
 
-	it("maps OpenAI surface service_tier=priority to Anthropic service_tier=auto", () => {
+	it("maps a routed OpenAI service_tier=priority to Anthropic fast mode", () => {
 		const request = decodeOpenAIChatRequest({
 			model: "anthropic/claude-3-7-sonnet",
 			messages: [{ role: "user", content: "Hello" }],
@@ -320,8 +337,8 @@ describe("irToAnthropicMessages service controls", () => {
 		} as any);
 
 		const payload = irToAnthropicMessages(request);
-		expect(payload.speed).toBeUndefined();
-		expect(payload.service_tier).toBe("auto");
+		expect(payload.speed).toBe("fast");
+		expect(payload.service_tier).toBeUndefined();
 	});
 
 	it("maps OpenAI surface service_tier=priority to Anthropic fast mode for Opus 4.7", () => {

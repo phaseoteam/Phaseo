@@ -215,7 +215,7 @@ Un modelo retirado se sigue sirviendo mientras algún proveedor lo sirva. Cuando
 - `retired_at`: cuándo se retiró el modelo, o `null` si no hay ninguna fecha registrada.
 - `replacement_model`: el sustituto sugerido, o `null` si no hay ninguno.
 
-Reintentar no sirve de nada. Actualiza el ID del modelo en tu solicitud. Para que estas solicitudes se sigan atendiendo mientras migras, añade el sustituto a la lista `models` de tu solicitud o activa el enrutamiento de modelos retirados para el espacio de trabajo. Consulta [Modelos retirados](../guides/routing-and-fallbacks.mdx#retired-models).
+Reintentar no sirve de nada. Actualiza el ID del modelo en tu solicitud. Para que estas solicitudes se sigan atendiendo mientras migras, añade el sustituto a la lista `models` de tu solicitud o activa el enrutamiento de modelos retirados para el espacio de trabajo. Consulta [Obsolescencia y retirada de modelos](../guides/model-retirement.mdx).
 
 ## Modo de depuración opcional
 
@@ -290,9 +290,13 @@ Establece un límite de intentos y un plazo total, y añade variación aleatoria
 </Columns>
 
 <Visibility for="agents">
-Si implementas la gestión de errores como agente:
+Reglas de gestión de errores para agentes, resumen de esta página:
 
-- Usa las habilidades del repositorio para la lógica de reintentos, los registros estructurados y el análisis de errores seguro para esquemas.
-- Trata las cargas de depuración como información potencialmente sensible y redacta su contenido antes de guardarlo en registros persistentes.
-- Prefiere reintentos deterministas (intentos limitados y variación aleatoria) en lugar de bucles sin límite.
+- Decide según el código `error` del JSON y `status_code`, no según el texto de `description`. Registra `generation_id` en cada fallo.
+- `400`, `401`, `403` y `404`: corrige primero la solicitud, la clave o el acceso. No repitas la misma solicitud sin cambios.
+- `410` con `model_retired`: cambia a `replacement_model` cuando no sea `null`; si lo es, elige un modelo nuevo con `GET /v1/models`.
+- `429`: si hay `Retry-After` (segundos o una fecha HTTP), espera ese tiempo antes de reintentar; si no, usa retroceso exponencial con variación aleatoria. Un error `key_limit_exceeded` sin `Retry-After` no se restablece solo, así que no lo reintentes.
+- `500` a `599`: reintenta solo cuando repetir la llamada sea seguro, con un límite de intentos, un plazo total y retroceso exponencial con variación aleatoria. En trabajos asíncronos, consulta el trabajo aceptado en lugar de enviarlo de nuevo.
+- Trata las cargas de depuración como información sensible y redáctalas antes de escribir registros persistentes.
+- Para patrones probados de reintento y análisis de errores, instala la habilidad `phaseo-gateway`: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`.
 </Visibility>

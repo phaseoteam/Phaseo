@@ -1,5 +1,6 @@
 ---
 title: "Roteie apenas para provedores da UE ou compatíveis com ZDR"
+sidebarTitle: "Rotear para UE ou ZDR"
 icon: "globe"
 description: "Defina requisitos de residência de dados e retenção zero na requisição para encaminhá-la somente a ofertas de provedores em conformidade."
 ---
@@ -87,7 +88,7 @@ Exemplos:
   - `required_execution_region: "eu"`
 - somente local dos dados:
   - `required_data_region: "eu"`
-- somente provedores compatíveis com ZDR:
+- somente provedores compatíveis com <Tooltip tip="Retenção zero de dados: somente provedores que cumprem as restrições de retenção zero de dados.">ZDR</Tooltip>:
   - `require_zero_data_retention: true`
 
 ## 3. Considere que o grupo de provedores candidatos ficará menor

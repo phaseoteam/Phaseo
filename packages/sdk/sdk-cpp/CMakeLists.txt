@@ -1,0 +1,33 @@
+cmake_minimum_required(VERSION 3.16)
+project(phaseo_cpp_sdk LANGUAGES CXX)
+
+add_library(phaseo_sdk INTERFACE)
+add_library(phaseo::sdk ALIAS phaseo_sdk)
+target_include_directories(phaseo_sdk INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_compile_features(phaseo_sdk INTERFACE cxx_std_17)
+
+include(CTest)
+if(BUILD_TESTING)
+  foreach(test_name IN ITEMS workflows core_contract parameter_support)
+    add_executable(${test_name} "tests/${test_name}.cpp")
+    target_link_libraries(${test_name} PRIVATE phaseo::sdk)
+    # These tests use assert(), including in Release builds.
+    if(MSVC)
+      target_compile_options(${test_name} PRIVATE /UNDEBUG)
+    else()
+      target_compile_options(${test_name} PRIVATE -UNDEBUG)
+    endif()
+    add_test(NAME ${test_name} COMMAND ${test_name})
+  endforeach()
+  foreach(smoke_name IN ITEMS smoke_chat smoke_responses)
+    add_executable(${smoke_name} "tests/${smoke_name}.cpp")
+    target_link_libraries(${smoke_name} PRIVATE phaseo::sdk)
+  endforeach()
+  find_program(NODE_EXECUTABLE node)
+  if(NODE_EXECUTABLE)
+    add_test(NAME local_http_smoke COMMAND "${NODE_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/tests/local_smoke.mjs"
+      "$<TARGET_FILE:smoke_chat>" "$<TARGET_FILE:smoke_responses>")
+    set_tests_properties(local_http_smoke PROPERTIES TIMEOUT 15)
+  endif()
+endif()

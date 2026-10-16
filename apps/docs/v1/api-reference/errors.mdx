@@ -217,7 +217,7 @@ requests for it fail with `410` and the `model_retired` error:
 Retrying does not help. Update the model ID in your request. To keep serving
 these requests while you migrate, add the replacement to your request's
 `models` list or turn on retired model routing for the workspace. See
-[Retired models](../guides/routing-and-fallbacks.mdx#retired-models).
+[Model Deprecation and Retirement](../guides/model-retirement.mdx).
 
 ## Optional debug mode
 
@@ -292,9 +292,13 @@ Set an attempt limit and an overall deadline, and add jitter to backoff delays. 
 </Columns>
 
 <Visibility for="agents">
-If you are implementing error handling as an agent:
+Error-handling rules for agents, summarising this page:
 
-- Use repository skills for retry logic, structured logging, and schema-safe error parsing.
-- Treat debug payloads as potentially sensitive and redact before persistent logs.
-- Prefer deterministic retries (bounded attempts + jitter) over unbounded loops.
+- Branch on the JSON `error` code and `status_code`, not on the `description` text. Log `generation_id` with every failure.
+- `400`, `401`, `403` and `404`: fix the request, key or access first. Do not retry the same request unchanged.
+- `410` with `model_retired`: switch to `replacement_model` when it is not `null`; otherwise choose a new model from `GET /v1/models`.
+- `429`: when `Retry-After` is present (seconds or an HTTP date), wait that long before retrying; otherwise use jittered exponential backoff. A `key_limit_exceeded` error without `Retry-After` does not reset by itself, so do not retry it.
+- `500` to `599`: retry only when repeating the call is safe, with an attempt limit, an overall deadline and jittered exponential backoff. For async jobs, look up the accepted job instead of submitting it again.
+- Treat debug payloads as sensitive and redact them before writing persistent logs.
+- For tested retry and error-parsing patterns, install the `phaseo-gateway` skill: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`.
 </Visibility>

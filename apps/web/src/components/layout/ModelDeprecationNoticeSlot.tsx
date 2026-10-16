@@ -22,6 +22,7 @@ export default async function ModelDeprecationNoticeSlot() {
 				oneModel: t.raw("oneModel") as string,
 				manyModels: t.raw("manyModels") as string,
 				retiresOn: t.raw("retiresOn") as string,
+				firstRetiresOn: t.raw("firstRetiresOn") as string,
 				replacement: t.raw("replacement") as string,
 				review: t("review"),
 				dismiss: t("dismiss"),

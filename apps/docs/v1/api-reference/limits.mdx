@@ -65,3 +65,12 @@ Do not automatically retry an ambiguous job submission or replay completed tool 
 Track `429` rates by endpoint and model, and inspect fallback frequency in request logs. Compare your application logs with [routing settings](../guides/routing-and-fallbacks.mdx) and provider account quotas for BYOK traffic.
 
 See [budgets](./endpoint/budgets-list.mdx) and [guardrails](./endpoint/guardrails.mdx) for workspace spending and access controls.
+
+<Visibility for="agents">
+Rate-limit rules for agents, summarising this page:
+
+- Gateway quotas return `429` with reason `customer_requests_per_minute` or `free_requests_per_day`; wait `Retry-After` seconds. If quota enforcement is unavailable, the gateway returns `503` with retry guidance.
+- Key limits and budgets return `429` with `key_limit_exceeded` and a `reset_at`. Without `Retry-After` the limit does not reset by itself: raise the limit or use another key instead of retrying.
+- Workspace rate limit policies return `429` with `rate_limit_exceeded`, `policy_id` and `limit_scope`. `x-ratelimit-remaining-requests` is approximate.
+- `Retry-After` can be seconds or an HTTP date; validate it before scheduling a retry. Never resubmit an ambiguous video or batch job; check its status instead.
+</Visibility>

@@ -1,5 +1,6 @@
 ---
 title: "Route only to EU or ZDR-capable providers"
+sidebarTitle: "Route to EU or ZDR providers"
 icon: "globe"
 description: "Apply request-level residency and zero-data-retention requirements so a model only routes to compliant provider offers."
 ---
@@ -87,7 +88,7 @@ Examples:
   - `required_execution_region: "eu"`
 - data locality only:
   - `required_data_region: "eu"`
-- ZDR-capable providers only:
+- <Tooltip tip="Zero data retention: only providers that meet zero-data-retention constraints.">ZDR</Tooltip>-capable providers only:
   - `require_zero_data_retention: true`
 
 ## 3. Expect the candidate pool to shrink

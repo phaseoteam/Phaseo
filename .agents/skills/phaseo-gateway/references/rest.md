@@ -25,8 +25,8 @@ curl https://api.phaseo.app/v1/responses \
   -H "x-title: Example App" \
   -H "http-referer: https://example.com" \
   -d '{
-    "model": "gpt-5-nano-2025-08-07",
-    "messages": [{"role": "user", "content": "Return exactly: ok"}]
+    "model": "phaseo/free",
+    "input": "Return exactly: ok"
   }'
 ```
 
@@ -39,7 +39,7 @@ const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    model: "gpt-5-nano-2025-08-07",
+    model: "phaseo/free",
     messages: [{ role: "user", content: "Summarize this in one sentence." }],
   }),
 });

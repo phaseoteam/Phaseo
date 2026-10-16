@@ -6,19 +6,35 @@ icon: "rocket"
 
 Use this tutorial to make a successful Phaseo request—either generated text or a structured decision—and confirm where the response appears.
 
-<Note>
-**Using a coding agent?** Copy and paste this prompt before you start:
+<Prompt description="**Using a coding agent?** Paste this prompt before you start." icon="bot" actions={["copy", "cursor"]}>
+{`You are integrating this project with Phaseo Gateway.
 
-```text
-You are integrating this project with Phaseo Gateway. Read the Phaseo agent guidance at https://phaseo.app/docs/skill.md and the relevant API reference before editing anything. Inspect the existing provider configuration and identify the smallest safe change needed. Use https://api.phaseo.app with a server-side PHASEO_API_KEY, preserve the current provider/model behavior unless I explicitly ask for a migration, and never print or commit credentials. Explain the files you would change and the verification commands first. Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.
-```
-</Note>
+Before editing anything:
+- Install the Phaseo skills: npx skills add https://phaseo.app/docs
+- Read https://phaseo.app/docs/skill.md and the API reference for the endpoint you will use. If your tools support MCP, search the docs at https://phaseo.app/docs/mcp.
+- Inspect the existing provider configuration and identify the smallest safe change.
+
+Rules:
+- Call https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY. Never print or commit credentials.
+- Keep the current provider and model behaviour unless I ask for a migration. Check model IDs with GET /v1/models instead of guessing them.
+- Explain the files you would change and the verification commands first.
+- Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.`}
+</Prompt>
 
 You will:
 - create an API key
 - send one text request or structured decision
 - read the generated text or typed answers
 - know what to check first if the request fails
+
+<Visibility for="agents">
+Quickstart checklist for agents:
+
+- Keys are created in the dashboard at https://phaseo.app/settings/keys. Never generate or guess one. Send it as `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` from server-side code only.
+- Make the first request with `POST https://api.phaseo.app/v1/responses`, sending `model` and `input`. `phaseo/free` works without a wallet balance.
+- Read the reply from `output[].content[]` where `type` is `output_text`.
+- If the request fails, branch on the JSON `error` code as described in https://phaseo.app/docs/v1/api-reference/errors.md.
+</Visibility>
 
 ---
 
@@ -199,6 +215,29 @@ response = client.generate_response(
 )
 
 puts response
+```
+
+```java Java SDK
+// Build from source: https://phaseo.app/docs/v1/sdk-reference/java/installation
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        var client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+        var response = client.createResponse(Map.of(
+            "model", "openai/gpt-6-astra",
+            "input", "Reply with: quickstart works"
+        ));
+        for (var item : response.path("output")) {
+            for (var part : item.path("content")) {
+                if ("output_text".equals(part.path("type").asText())) {
+                    System.out.println(part.path("text").asText());
+                }
+            }
+        }
+    }
+}
 ```
 
 ```rust Rust SDK

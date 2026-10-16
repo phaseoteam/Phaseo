@@ -214,7 +214,7 @@ icon: "bug"
 - `retired_at`：模型的停用时间；如果未记录日期，则为 `null`。
 - `replacement_model`：建议的替代模型；如果没有，则为 `null`。
 
-重试无济于事。请更新请求中的模型 ID。如需在迁移期间继续处理这些请求，请将替代模型添加到请求的 `models` 列表中，或为工作区开启已停用模型的路由。请参阅[已停用的模型](../guides/routing-and-fallbacks.mdx#retired-models)。
+重试无济于事。请更新请求中的模型 ID。如需在迁移期间继续处理这些请求，请将替代模型添加到请求的 `models` 列表中，或为工作区开启已停用模型的路由。请参阅[模型弃用与停用](../guides/model-retirement.mdx)。
 
 ## 可选调试模式
 
@@ -289,9 +289,13 @@ icon: "bug"
 </Columns>
 
 <Visibility for="agents">
-如果你以代理身份实现错误处理：
+面向智能体的错误处理规则（本页摘要）：
 
-- 使用仓库技能处理重试逻辑、结构化日志记录和符合架构的错误解析。
-- 将调试负载视为潜在敏感数据，并在写入持久日志前进行脱敏。
-- 优先使用确定性重试（限制次数并加入抖动），避免无限循环。
+- 根据 JSON 中的 `error` 代码和 `status_code` 分支处理，不要依据 `description` 文本。每次失败都记录 `generation_id`。
+- `400`、`401`、`403` 和 `404`：先修正请求、密钥或访问权限。不要原样重试同一请求。
+- 带有 `model_retired` 的 `410`：`replacement_model` 不为 `null` 时改用它；否则通过 `GET /v1/models` 选择新模型。
+- `429`：如果有 `Retry-After`（秒数或 HTTP 日期），先等待该时长再重试；否则使用带抖动的指数退避。没有 `Retry-After` 的 `key_limit_exceeded` 错误不会自动重置，因此不要重试。
+- `500` 到 `599`：仅在重复调用安全时重试，并设置尝试次数上限、总截止时间和带抖动的指数退避。对于异步任务，应查询已接受的任务，而不是重新提交。
+- 将调试载荷视为敏感信息，写入持久日志前先脱敏。
+- 如需经过验证的重试和错误解析模式，请安装 `phaseo-gateway` 技能：`npx skills add https://phaseo.app/docs --skill phaseo-gateway`。
 </Visibility>

@@ -642,9 +642,10 @@ Si buscas una guía más detallada sobre cómo ajustar estos valores, en lugar d
 - [Errores y depuración](./errors.mdx)
 
 <Visibility for="agents">
-Si implementas el manejo de parámetros como agente:
+Reglas de manejo de parámetros para agentes:
 
-- usa las skills del repositorio para validar esquemas y comprobar la forma de las solicitudes
-- conserva las claves desconocidas específicas del proveedor en los flujos de transferencia cuando esté permitido
-- comprueba la compatibilidad del endpoint antes de combinar campos avanzados como tools, streaming o debug
+- Valida los cuerpos de solicitud con el contrato de la API en https://phaseo.app/docs/openapi/v1/openapi.yaml en lugar de adivinar nombres de campos.
+- Consulta la página de referencia del endpoint antes de combinar campos avanzados como herramientas, streaming y opciones de depuración.
+- Conserva las claves desconocidas específicas del proveedor en flujos de paso directo cuando el endpoint las permita.
+- Para patrones probados de forma de solicitud, instala la habilidad `phaseo-gateway`: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`.
 </Visibility>

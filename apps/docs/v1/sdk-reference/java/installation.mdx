@@ -1,43 +1,38 @@
 ---
-title: "Java SDK Installation (work in progress)"
-description: "Build the work-in-progress Java SDK from source."
+icon: "package"
+title: "Java SDK — Installation"
+description: "The current source includes retry controls and response metadata that are absent from the older 3.0.0 artifact on Maven Central. Build the pinned source below to use the current SDK."
 ---
 
-<Note type="warning">The Java SDK is a work in progress and is not yet published to Maven Central.</Note>
+The current source includes retry controls and response metadata that are absent from the older 3.0.0 artifact on Maven Central. Build the pinned source below to use the current SDK.
 
 ## Requirements
 
 - Java 17+
 - Maven 3.8+
+- Git
 
-## Build locally
-
-```bash
-cd packages/sdk/sdk-java
-mvn -DskipTests package
-```
-
-This produces `target/sdk-java-0.0.0-local.jar`.
-
-## Use in your project
-
-Install the generated jar into your local Maven cache:
+## Build from source
 
 ```bash
-mvn install:install-file \
-  -Dfile=target/sdk-java-0.0.0-local.jar \
-  -DgroupId=app.phaseo \
-  -DartifactId=sdk-java \
-  -Dversion=0.0.0-local \
-  -Dpackaging=jar
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+git checkout 1ff1119f41ceb3ac2c85ed605f6e1c4beca6e011
+mvn -f packages/sdk/sdk-java/pom.xml -DskipTests install
 ```
 
-Then add it as a dependency in your app `pom.xml`:
+Maven installs `app.phaseo:phaseo-sdk:3.0.0` in your local repository, including its Jackson dependency.
+
+## Add the dependency
 
 ```xml
 <dependency>
   <groupId>app.phaseo</groupId>
-  <artifactId>sdk-java</artifactId>
-  <version>0.0.0-local</version>
+  <artifactId>phaseo-sdk</artifactId>
+  <version>3.0.0</version>
 </dependency>
 ```
+
+<Note>The [Maven Central artifact](https://repo.maven.apache.org/maven2/app/phaseo/phaseo-sdk/3.0.0/) is available for the older API. It does not include the current retry, metadata, or parameter-checking APIs.</Note>
+
+[Usage](./usage)

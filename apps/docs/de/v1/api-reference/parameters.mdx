@@ -642,9 +642,10 @@ Wenn du ausführlichere Hinweise zur Abstimmung statt einer reinen Feldreferenz 
 - [Fehler und Debugging](./errors.mdx)
 
 <Visibility for="agents">
-Wenn du die Parameterverarbeitung als Agent implementierst:
+Regeln zum Umgang mit Parametern für Agenten:
 
-- nutze Repository-Skills zur Schema-Validierung und Prüfung der Anfrageform
-- erhalte unbekannte anbieterspezifische Schlüssel in Passthrough-Abläufen, sofern zulässig
-- prüfe die Endpunktkompatibilität, bevor du erweiterte Felder wie Tools, Streaming oder Debug-Optionen kombinierst
+- Prüfe Anfragetexte gegen den API-Vertrag unter https://phaseo.app/docs/openapi/v1/openapi.yaml, statt Feldnamen zu raten.
+- Lies die API-Referenzseite des Endpunkts, bevor du erweiterte Felder wie Tools, Streaming und Debug-Optionen kombinierst.
+- Behalte unbekannte anbieterspezifische Schlüssel in Durchreich-Abläufen bei, wenn der Endpunkt sie erlaubt.
+- Für erprobte Muster zur Anfragestruktur installiere den Skill `phaseo-gateway`: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`.
 </Visibility>

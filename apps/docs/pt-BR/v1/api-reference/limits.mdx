@@ -65,3 +65,12 @@ Não repita automaticamente o envio de um trabalho com resultado incerto nem aç
 Acompanhe a frequência de `429` por endpoint e modelo e inspecione a frequência das alternativas nos logs de requisições. Compare os logs da sua aplicação com as [configurações de roteamento](../guides/routing-and-fallbacks.mdx) e as cotas da conta no provedor para tráfego BYOK.
 
 Consulte os [orçamentos](./endpoint/budgets-list.mdx) e as [proteções](./endpoint/guardrails.mdx) para os controles de gastos e acesso do espaço de trabalho.
+
+<Visibility for="agents">
+Regras de limites de taxa para agentes, resumindo esta página:
+
+- As cotas do Gateway retornam `429` com o motivo `customer_requests_per_minute` ou `free_requests_per_day`; aguarde os segundos de `Retry-After`. Se a aplicação de cotas estiver indisponível, o Gateway retorna `503` com orientações para tentar de novo.
+- Limites de chave e orçamentos retornam `429` com `key_limit_exceeded` e um `reset_at`. Sem `Retry-After`, o limite não é redefinido sozinho: aumente o limite ou use outra chave em vez de tentar de novo.
+- As políticas de limite de taxa do espaço de trabalho retornam `429` com `rate_limit_exceeded`, `policy_id` e `limit_scope`. `x-ratelimit-remaining-requests` é aproximado.
+- `Retry-After` pode ser um número de segundos ou uma data HTTP; valide o valor antes de agendar uma nova tentativa. Nunca reenvie uma tarefa de vídeo ou em lote ambígua; consulte o status dela.
+</Visibility>

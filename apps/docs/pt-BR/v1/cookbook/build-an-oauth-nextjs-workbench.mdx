@@ -1,5 +1,6 @@
 ---
 title: "Crie uma bancada de trabalho OAuth com Next.js"
+sidebarTitle: "Bancada OAuth com Next.js"
 icon: "key-round"
 description: "Use o exemplo completo de OAuth com Next.js como guia para um aplicativo de gateway autenticado com um proxy unificado."
 ---
@@ -68,12 +69,22 @@ Não comece por aqui se:
 
 ## Arquivos principais
 
-- `app/page.tsx`
-- `app/dashboard/page.tsx`
-- `app/dashboard/GatewayWorkbench.tsx`
-- `app/api/gateway/[...surface]/route.ts`
-- `lib/oauth.ts`
-- `lib/session.ts`
+<Tree>
+
+- app/
+  - page.tsx
+  - dashboard/
+    - page.tsx
+    - GatewayWorkbench.tsx
+  - api/
+    - gateway/
+      - [...surface]/
+        - route.ts
+- lib/
+  - oauth.ts
+  - session.ts
+
+</Tree>
 
 ## Por que o exemplo foi estruturado assim
 

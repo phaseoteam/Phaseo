@@ -45,6 +45,9 @@ export type GatewayGenAiTelemetry = {
 	serverPort?: number | null;
 	sessionId?: string | null;
 	edgeColo?: string | null;
+	/** Set when a workspace rate limit policy rejected the request. */
+	rateLimitPolicyId?: string | null;
+	rateLimitScope?: string | null;
 };
 
 export type AsyncGenAiTelemetry = {
@@ -385,6 +388,8 @@ function commonPhaseoAttributes(args: GatewayGenAiTelemetry): Array<OtlpAttribut
 		attr("phaseo.cost.currency", args.currency),
 		attr("phaseo.generation.duration_ms", args.generationMs),
 		attr("phaseo.edge.colo", args.edgeColo),
+		attr("phaseo.rate_limit.policy_id", args.rateLimitPolicyId),
+		attr("phaseo.rate_limit.scope", args.rateLimitScope),
 	];
 }
 
