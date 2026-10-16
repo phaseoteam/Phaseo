@@ -189,6 +189,9 @@ function AlertCard({
 	);
 }
 
+// Fills whole rows in both the two- and three-column grids.
+const VISIBLE_BEFORE_MORE = 6;
+
 // Native disclosure with its marker hidden, so the chevron is the only indicator.
 function ShowMore({ label, children }: { label: string; children: ReactNode }) {
 	return (
@@ -197,7 +200,7 @@ function ShowMore({ label, children }: { label: string; children: ReactNode }) {
 				<ChevronDown aria-hidden className="size-3.5 shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" />
 				{label}
 			</summary>
-			<div className="grid gap-2 border-t p-2 md:grid-cols-2">{children}</div>
+			<div className="grid gap-2 border-t p-2 md:grid-cols-2 xl:grid-cols-3">{children}</div>
 		</details>
 	);
 }
@@ -220,13 +223,13 @@ function CardsBlock({
 	) => string;
 	if (!rows.length) return null;
 
-	const visibleRows = collapsible ? rows.slice(0, 4) : rows;
-	const hiddenRows = collapsible ? rows.slice(4) : [];
+	const visibleRows = collapsible ? rows.slice(0, VISIBLE_BEFORE_MORE) : rows;
+	const hiddenRows = collapsible ? rows.slice(VISIBLE_BEFORE_MORE) : [];
 
 	return (
 		<div className="space-y-2">
-			<h4 className="px-1 text-sm font-medium text-foreground">{title}</h4>
-			<div className="grid gap-2 md:grid-cols-2">
+			<h4 className="px-1 text-sm font-semibold text-foreground">{title}</h4>
+			<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
 				{visibleRows.map((row) => (
 					<AlertCard key={`${mode}-${row.modelId}`} row={row} mode={mode} />
 				))}
@@ -263,19 +266,19 @@ function SectionBlock({
 	) => string;
 	if (!rows.length) return null;
 
-	const visibleRows = rows.slice(0, 4);
-	const hiddenRows = rows.slice(4);
+	const visibleRows = rows.slice(0, VISIBLE_BEFORE_MORE);
+	const hiddenRows = rows.slice(VISIBLE_BEFORE_MORE);
 
 	return (
 		<div className="space-y-2">
 			<div className="flex items-center gap-2 px-1">
-				<h4 className="text-sm font-medium">{title}</h4>
+				<h4 className="text-sm font-semibold">{title}</h4>
 				<Badge variant="secondary" className="h-5 px-1.5 text-[11px]">
 					{rows.length}
 				</Badge>
 			</div>
 
-			<div className="grid gap-2 md:grid-cols-2">
+			<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
 				{visibleRows.map((row) => (
 					<AlertCard key={`${mode}-${row.modelId}`} row={row} mode={mode} />
 				))}
