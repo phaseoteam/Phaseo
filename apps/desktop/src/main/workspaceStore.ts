@@ -5,7 +5,7 @@ import { mentionPlainText } from "../shared/mentions";
 import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import type { AgentRunResult } from "@phaseo/agent-sdk";
-import type { Account, AgentConnection, Attachment, Project, Task, TerminalSession, Workspace, WorkspaceCommand } from "../shared/workspace";
+import type { Account, AgentConnection, Attachment, Message, Project, Task, TerminalSession, Workspace, WorkspaceCommand } from "../shared/workspace";
 import type { McpConnection } from "../shared/mcp";
 import { defaultPreferences, validatePreferences } from "../shared/preferences";
 import type { WorkspacePreferences } from "../shared/preferences";
@@ -13,10 +13,16 @@ import { agentLimitMessage } from "../shared/orchestration";
 import { MissionStore } from "./missionStore";
 import { validateTaskHistoryQuery, type TaskHistoryPage } from "../shared/taskHistory";
 import { overviewOrder, taskOverview, type TaskOverview, type WorkspaceOverview } from "../shared/workspaceOverview";
-import { conversationPageOf, validateConversationPageQuery, type ConversationPage } from "../shared/conversationPage";
+import { activitiesForWindow, conversationPageOf, validateConversationPageQuery, type ConversationPage } from "../shared/conversationPage";
 import { maximumPullRequestLinks, pullRequestUrl, samePullRequest, sameSnapshot, unwatched, validatePullRequestLinks, validRepository, type PullRequestLinkSnapshot, type SavedPullRequestStack } from "../shared/pullRequestView";
 import type { PullRequestStack } from "../shared/pullRequestStacks";
 import { newPullRequestWatch, type PullRequestWatchMessage, type PullRequestWatchState } from "../shared/pullRequestWatch";
+
+/** A page of messages with the activities of its turns. */
+function withTurnActivities(task: Task, page: ConversationPage): ConversationPage {
+	const messages = task.messages ?? [], known = new Set(messages.filter(message => message.role === "user").map(message => message.id));
+	return { ...page, activities: activitiesForWindow(page.entries as Message[], task.activities ?? [], known, { next: messages[page.earlier + page.entries.length]?.timelineOrder, latest: page.later === 0 }) };
+}
 
 export class WorkspaceStore {
 	private readonly db: DatabaseSync;
@@ -210,7 +216,8 @@ export class WorkspaceStore {
 	/** Parsing the chat once and slicing in JavaScript is far faster than walking a long chat's JSON in SQLite. */
 	conversationPage(value: unknown): ConversationPage {
 		const query = validateConversationPageQuery(value), task = this.getTask(query.taskId);
-		return conversationPageOf((query.kind === "messages" ? task.messages : task.activities) ?? [], query, task.revision ?? 0);
+		if (query.kind === "activities") return conversationPageOf(task.activities ?? [], query, task.revision ?? 0);
+		return withTurnActivities(task, conversationPageOf(task.messages ?? [], query, task.revision ?? 0));
 	}
 	/** Records what GitHub last said about a pull request on every chat linking it. True when anything changed. */
 	syncPullRequestSnapshot(repository: string, number: number, snapshot: PullRequestLinkSnapshot): boolean {
@@ -281,8 +288,8 @@ export class WorkspaceStore {
 	getTaskView(id: string): Task {
 		const task = this.getTask(id), revision = task.revision ?? 0, messages = task.messages ?? [], activities = task.activities ?? [];
 		task.conversationCounts = { messages: messages.length, activities: activities.length };
-		task.messages = conversationPageOf(messages, { taskId: id, kind: "messages", limit: 50 }, revision).entries as Task["messages"];
-		task.activities = conversationPageOf(activities, { taskId: id, kind: "activities", limit: 50 }, revision).entries as NonNullable<Task["activities"]>;
+		const page = withTurnActivities(task, conversationPageOf(messages, { taskId: id, kind: "messages", limit: 50 }, revision));
+		task.messages = page.entries as Task["messages"]; task.activities = page.activities;
 		return task;
 	}
 	private saveOverview(overview: TaskOverview) { this.db.prepare("INSERT INTO task_overviews (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(overview.id, JSON.stringify(overview)); }

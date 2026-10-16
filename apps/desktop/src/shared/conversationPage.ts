@@ -13,7 +13,8 @@ export function conversationWindow<T extends Message | AgentActivity>(entries: T
 }
 
 export type ConversationPageQuery = { taskId: string; kind: "messages" | "activities"; limit: number; beforeId?: string; afterId?: string; fromId?: string };
-export type ConversationPage = { kind: "messages" | "activities"; entries: (Message | AgentActivity)[]; earlier: number; later: number; revision: number };
+/** Message pages also carry their turns' activities, so steps arrive with the messages they belong to. */
+export type ConversationPage = { kind: "messages" | "activities"; entries: (Message | AgentActivity)[]; earlier: number; later: number; revision: number; activities?: AgentActivity[] };
 
 export function validateConversationPageQuery(value: unknown): ConversationPageQuery {
 	if (!value || typeof value !== "object") throw new Error("Invalid conversation page request.");
@@ -44,4 +45,33 @@ export function conversationPageOf(entries: readonly (Message | AgentActivity)[]
 	}
 	const from = forward ? start : end - kept, to = forward ? start + kept : end;
 	return { kind: query.kind, entries: entries.slice(from, to), earlier: kept ? from : start, later: total - (kept ? to : end), revision };
+}
+
+/** How many activities a window keeps: a Code turn can run hundreds of steps. Bytes are capped as for pages. */
+export const turnActivityLimit = 2000;
+
+/**
+ * The activities belonging to a window of messages. An activity whose id starts with a known user message id
+ * (`<message>:<step>`) belongs to that turn; one with only a timeline position belongs where that position falls,
+ * before `next` (the first message after the window); older entries with neither stay with the latest window.
+ */
+export function activitiesForWindow(window: readonly Message[], activities: readonly AgentActivity[], known: ReadonlySet<string>, edges: { next?: number; latest: boolean }): AgentActivity[] {
+	const users = new Set(window.filter(message => message.role === "user").map(message => message.id)), first = window[0]?.timelineOrder;
+	const unplaced: AgentActivity[] = [];
+	const kept = activities.filter(activity => {
+		const owner = activity.id.slice(0, Math.max(0, activity.id.indexOf(":")));
+		if (owner && known.has(owner)) return users.has(owner);
+		const order = activity.timelineOrder;
+		if (order !== undefined && first !== undefined) return order >= first && (edges.next === undefined || order < edges.next);
+		if (edges.latest) unplaced.push(activity);
+		return false;
+	});
+	const placed = [...kept, ...unplaced.slice(-50)], encoder = new TextEncoder();
+	let bytes = 0, count = 0;
+	for (let index = placed.length - 1; index >= 0 && count < turnActivityLimit; index--) {
+		bytes += encoder.encode(JSON.stringify(placed[index])).byteLength + 1;
+		if (count && bytes > conversationPageBytes) break;
+		count++;
+	}
+	return placed.slice(placed.length - count);
 }

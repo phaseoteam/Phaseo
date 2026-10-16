@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { TerminalDrawer } from "../views/Terminals";
 import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, Paperclip, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
@@ -234,6 +234,13 @@ function ThreadStatusLine({ task }: { task: TaskOverview }) {
 	return null;
 }
 
+/** Most chats load in a few milliseconds; a notice that flashes for those is noise, so it waits a moment. */
+function DelayedStatus({ children }: { children: ReactNode }) {
+	const [shown, setShown] = useState(false);
+	useEffect(() => { const timer = setTimeout(() => setShown(true), 400); return () => clearTimeout(timer); }, []);
+	return <div role="status" aria-busy className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">{shown && children}</div>;
+}
+
 export function ChatView({ id }: { id: string }) {
 	const { api, overview, command, select, setOverview } = useWorkspace();
 	const snapshot = overview.tasks.find(task => task.id === id);
@@ -258,7 +265,7 @@ export function ChatView({ id }: { id: string }) {
 	const removed = overview.projects.find(project => project.id === task.projectId)?.worktree?.removedAt;
 	return <div className="flex h-full min-w-0 flex-col">
 		<ChatHeader task={task} onOpenTerminal={() => setDrawers(current => ({ ...current, [task.id]: true }))} />
-		{!loaded ? <div role="status" className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">Loading chat…</div> : <Conversation key={task.id} task={task} onAttachment={setPreview} onBranch={messageId => void branch(messageId)}>
+		{!loaded ? <DelayedStatus>Loading chat…</DelayedStatus> : <Conversation key={task.id} task={task} onAttachment={setPreview} onBranch={messageId => void branch(messageId)}>
 			{snapshot && <ThreadStatusLine task={snapshot} />}
 			{task.error && <div role="alert" className={cn("flex items-center gap-2 text-[13px]", task.status === "interrupted" ? "text-muted-foreground" : "text-destructive")}>
 				<span className="min-w-0">{task.error}</span>

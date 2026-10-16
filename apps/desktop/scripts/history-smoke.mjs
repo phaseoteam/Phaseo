@@ -59,7 +59,7 @@ ipcMain.handle = function (channel, listener) {
     try {
       if (failNextDetail) { failNextDetail = false; throw new Error("Owned detail failure"); }
       const task = listener(event, id);
-      if(task.messages.length>50||(task.activities?.length??0)>50)detailBodiesBounded=false;if(Buffer.byteLength(JSON.stringify(task.messages))>2*1024*1024||Buffer.byteLength(JSON.stringify(task.activities??[]))>2*1024*1024)byteBodiesBounded=false;
+      if(task.messages.length>50||(task.activities?.length??0)>2000)detailBodiesBounded=false;if(Buffer.byteLength(JSON.stringify(task.messages))>2*1024*1024||Buffer.byteLength(JSON.stringify(task.activities??[]))>2*1024*1024)byteBodiesBounded=false;
       if (id === delayedTaskId) await new Promise(resolve => setTimeout(resolve, 300));
       return task;
     } finally { activeDetails.set(id, activeDetails.get(id) - 1); }
@@ -105,7 +105,7 @@ async function publishReply(text, title) {
 }
 const atLatest = `(()=>{const host=document.querySelector('main [aria-live=polite]');return Boolean(host)&&host.scrollHeight-host.clientHeight-host.scrollTop<2})()`;
 try {
-  const conversationPages = await run(`(async()=>{const read=window.phaseoDesktop.workspace.conversationPage;const latest=await read({taskId:'042',kind:'messages',limit:50});const older=await read({taskId:'042',kind:'messages',limit:50,beforeId:latest.entries[0].id});const newer=await read({taskId:'042',kind:'messages',limit:50,afterId:older.entries.at(-1).id});const activities=await read({taskId:'042',kind:'activities',limit:50});let invalid=false;try{await read({taskId:'042',kind:'messages',limit:10000})}catch{invalid=true}return {latest:latest.entries.length===50&&latest.earlier===75&&latest.later===0&&latest.entries[0].id==='long-75',older:older.entries.length===50&&older.earlier===25&&older.later===50,newer:JSON.stringify(newer.entries)===JSON.stringify(latest.entries),activities:activities.entries.length===50&&activities.earlier===70&&activities.entries[0].id==='activity-70',isolated:!JSON.stringify(latest).includes('Tool result'),invalid}})()`);
+  const conversationPages = await run(`(async()=>{const read=window.phaseoDesktop.workspace.conversationPage;const latest=await read({taskId:'042',kind:'messages',limit:50});const older=await read({taskId:'042',kind:'messages',limit:50,beforeId:latest.entries[0].id});const newer=await read({taskId:'042',kind:'messages',limit:50,afterId:older.entries.at(-1).id});const activities=await read({taskId:'042',kind:'activities',limit:50});let invalid=false;try{await read({taskId:'042',kind:'messages',limit:10000})}catch{invalid=true}return {latest:latest.entries.length===50&&latest.earlier===75&&latest.later===0&&latest.entries[0].id==='long-75',older:older.entries.length===50&&older.earlier===25&&older.later===50,newer:JSON.stringify(newer.entries)===JSON.stringify(latest.entries),activities:activities.entries.length===50&&activities.earlier===70&&activities.entries[0].id==='activity-70',isolated:!JSON.stringify(older).includes('Tool result')&&(latest.activities?.length??0)<=50,invalid}})()`);
   if(Object.values(conversationPages).some(value=>!value))throw new Error("Bounded conversation IPC pages failed: "+JSON.stringify(conversationPages));
   // The redesigned sidebar lists every active chat from metadata; paged, body-searchable history remains a bridge API.
   failNextHistory = true;
@@ -147,9 +147,13 @@ try {
   const host = "document.querySelector('main [aria-live=polite]')";
   const messages = `Array.from(document.querySelectorAll('main [data-conversation-id^="message:"]'))`;
   const control = pattern => `Array.from(document.querySelectorAll('main button')).find(button=>${pattern}.test(button.textContent.trim()))`;
-  const earlierMessages = control("/^Load \\d+ earlier messages$/"), earlierActivity = control("/^Load earlier activity$/"), newerMessages = control("/^Load newer messages$/"), jump = control("/^Jump to latest$/");
+  const earlierMessages = control("/^Load \\d+ earlier messages$/"), newerMessages = control("/^Load newer messages$/"), jump = control("/^Jump to latest$/");
+  // Pages load by themselves near either end; these steps drive them one at a time. Automatic paging is checked last.
+  await run(`window.__phaseoManualPaging=true`);
   await run(`window.__auditOpenChat('History 042')`);
   await wait(`${messages}.length===50`, "recent conversation history");
+  // Activities with no turn or position stay with the latest window, newest 50.
+  if (!await run(`window.phaseoDesktop.workspace.task('042').then(task=>task.activities.length===50&&task.activities[0].id==='activity-70'&&task.activities.at(-1).id==='activity-119')`)) throw new Error("Unplaced activities did not open with the latest window.");
   await wait(atLatest, "conversation opens at latest");
   if (!await run(`${messages}[0].textContent.includes('Conversation item 075')&&${earlierMessages}?.textContent==='Load 75 earlier messages'`)) throw new Error("Conversation did not open at recent history.");
   const captures = path.resolve("../../output/playwright/history-smoke"); mkdirSync(captures, { recursive: true });
@@ -168,10 +172,6 @@ try {
   await run(`${earlierMessages}.click()`);
   await wait(`${messages}.length===100&&${messages}[0].textContent.includes('Résumé needle')`, "oldest conversation page");
   if (await run(`Boolean(${earlierMessages})`)) throw new Error("Oldest conversation history offers more pages.");
-  for (const remaining of [true, false]) {
-    await run(`${earlierActivity}.click()`);
-    await wait(`${remaining ? "" : "!"}Boolean(${earlierActivity})&&!${earlierActivity}?.disabled`, `activity page (more: ${remaining})`);
-  }
   // Switching chats and returning starts again at the latest page.
   await run(`window.__auditOpenChat('History 043')`);
   await run(`window.__auditOpenChat('History 042')`);
@@ -227,8 +227,13 @@ try {
   await wait(`${messages}[0]?.dataset.conversationId==='message:bytes-5'`, "large body initial byte window");
   for (const start of [2, 0]) { await run(`${earlierMessages}.click()`); await wait(`${messages}[0]?.dataset.conversationId==='message:bytes-${start}'`, "large body older window " + start); if (!await run(byteWindow)) throw Error("Large body renderer retained excess/non-contiguous messages"); }
   for (const start of [3, 5]) { await run(`${newerMessages}.click()`); await wait(`${messages}[0]?.dataset.conversationId==='message:bytes-${start}'`, "large body newer window " + start); if (!await run(byteWindow)) throw Error("Large body newer window exceeded retained byte limit"); }
-  await run(`${earlierActivity}.click()`); await wait(`!${earlierActivity}?.disabled`, "large activity byte window");
   if (!byteBodiesBounded || peakPageBytes < 1024 * 1024) throw Error("Large body byte instrumentation failed");
+  // Scrolling up loads the next 50 by itself, keeping the reader in place.
+  await run(`window.__phaseoManualPaging=false`);
+  await run(`window.__auditOpenChat('History 043')`);
+  await wait(`${messages}[0]?.dataset.conversationId==='message:large-950'&&${atLatest}`, "automatic paging opens at latest");
+  await run(`(()=>{${host}.scrollTop=0;${host}.dispatchEvent(new Event('scroll'))})()`);
+  await wait(`${messages}[0]?.dataset.conversationId==='message:large-900'`, "scrolling up loads older messages");
   // Failed chats are marked in the command palette, which opens them.
   await run(`window.__auditPalette()`); await run(`window.__auditType(document.querySelector('[data-slot="dialog-content"] [cmdk-input]'),'History 154')`);
   await wait(`Array.from(document.querySelectorAll('[data-slot="dialog-content"] [cmdk-item]')).some(item=>item.textContent.includes('History 154')&&item.querySelector('[aria-label="Failed"]'))`, "palette attention metadata");

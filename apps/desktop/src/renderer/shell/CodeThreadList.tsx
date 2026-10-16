@@ -1,3 +1,4 @@
+import { prefetchTask } from "../lib/useSelectedTask";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent, type ReactNode } from "react";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
 import { ContextMenu } from "@base-ui/react/context-menu";
@@ -67,7 +68,7 @@ function CardRow({ task, now, scope, onScope, hint, controls }: { task: TaskOver
 	const quiet = (task.status === "running" || task.status === "waiting" || !isUnread(task)) && !task.approvalsCount && !task.answersCount && !hasWoken(task, now) && !["failed", "limited", "interrupted"].includes(task.status);
 	const blocked = settleBlocker(task);
 	return <ContextMenu.Root>
-		<ContextMenu.Trigger render={<div role="button" tabIndex={0} data-row-id={task.id} aria-current={selected ? "page" : undefined} aria-selected={controls.picked || undefined} draggable={!renaming && Boolean(controls.drag)} onClick={event => { if (!controls.onPick(event)) select(task.id); }} onKeyDown={event => { if (event.key === "Enter") select(task.id); }} {...controls.drag} />}
+		<ContextMenu.Trigger render={<div role="button" tabIndex={0} data-row-id={task.id} aria-current={selected ? "page" : undefined} onPointerEnter={() => prefetchTask(task.id)} aria-selected={controls.picked || undefined} draggable={!renaming && Boolean(controls.drag)} onClick={event => { if (!controls.onPick(event)) select(task.id); }} onKeyDown={event => { if (event.key === "Enter") select(task.id); }} {...controls.drag} />}
 			className={cn("group/row relative mx-2 flex h-[4.5rem] flex-col justify-center gap-0.5 rounded-md px-2.5 outline-none hover:bg-sidebar-accent/70 focus-visible:ring-2 focus-visible:ring-ring/40", selected && "bg-sidebar-accent", controls.picked && "bg-primary/10 ring-1 ring-primary/30 ring-inset")}>
 			{controls.dropLine && <span aria-hidden className={cn("pointer-events-none absolute inset-x-2 h-0.5 rounded-full bg-primary", controls.dropLine === "above" ? "-top-px" : "-bottom-px")} />}
 			<div className="flex h-5 items-center gap-1.5 text-xs text-muted-foreground">
@@ -110,7 +111,7 @@ function SlimRow({ task, now, kind, scope, onScope }: { task: TaskOverview; now:
 	const when = kind === "snoozed" ? shortDuration(Date.parse(task.snoozedUntil!) - now) : shortDuration(now - Date.parse(task.settledAt ?? task.updatedAt));
 	const action = kind === "snoozed" ? "Wake chat now" : "Un-settle chat";
 	return <ContextMenu.Root>
-		<ContextMenu.Trigger render={<div role="button" tabIndex={0} aria-current={selected ? "page" : undefined} onClick={() => select(task.id)} onKeyDown={event => { if (event.key === "Enter") select(task.id); }} />}
+		<ContextMenu.Trigger render={<div role="button" tabIndex={0} aria-current={selected ? "page" : undefined} onPointerEnter={() => prefetchTask(task.id)} onClick={() => select(task.id)} onKeyDown={event => { if (event.key === "Enter") select(task.id); }} />}
 			className={cn("group/row mx-2 flex h-9 items-center gap-2 rounded-md px-2.5 text-[13px] outline-none hover:bg-sidebar-accent/70 focus-visible:ring-2 focus-visible:ring-ring/40", selected && "bg-sidebar-accent")}>
 			<span className="flex shrink-0 opacity-40 grayscale group-hover/row:opacity-100 group-hover/row:grayscale-0"><ProjectIcon project={project} className="size-3.5" /></span>
 			{renaming ? <RenameInput task={task} onDone={() => setRenaming(false)} /> : <span className="min-w-0 flex-1 truncate text-sidebar-foreground/70">{task.title}</span>}

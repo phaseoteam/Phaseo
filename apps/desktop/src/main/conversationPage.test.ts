@@ -45,9 +45,11 @@ describe("database conversation pages", () => {
 			const latest = store.conversationPage({ taskId: task.id, kind: "messages", limit: 50 });
 			expect(latest).toMatchObject({ earlier: 950, later: 0, revision: task.revision });
 			expect(latest.entries.map(value => value.id)).toEqual(task.messages.slice(950).map(value => value.id));
-			expect(JSON.stringify(latest)).not.toContain("Sensitive output");
+			// Message pages carry their turns' activities; these belong to no turn, so only the latest page has them (newest 50).
+			expect(latest.activities?.map(value => value.id)).toEqual(task.activities.slice(70).map(value => value.id));
 			const earlier = store.conversationPage({ taskId: task.id, kind: "messages", beforeId: "message-950", limit: 50 });
-			expect(earlier).toMatchObject({ earlier: 900, later: 50 });
+			expect(earlier).toMatchObject({ earlier: 900, later: 50, activities: [] });
+			expect(JSON.stringify(earlier)).not.toContain("Sensitive output");
 			expect(earlier.entries.map(value => value.id)).toEqual(task.messages.slice(900, 950).map(value => value.id));
 			task.messages.push({ id: "newest", role: "assistant", text: "Appended", createdAt: task.createdAt }); store.saveTask(task);
 			expect(store.conversationPage({ taskId: task.id, kind: "messages", beforeId: "message-950", limit: 50 }).entries).toEqual(earlier.entries);

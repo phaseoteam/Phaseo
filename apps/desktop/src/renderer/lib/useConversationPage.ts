@@ -1,10 +1,22 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { conversationWindow, type ConversationPage, type ConversationPageQuery } from "../../shared/conversationPage";
-import type { Task } from "../../shared/workspace";
+import { activitiesForWindow, conversationWindow, type ConversationPage, type ConversationPageQuery } from "../../shared/conversationPage";
+import type { AgentActivity, Message, Task } from "../../shared/workspace";
 
 function recentPage(task: Task, kind: ConversationPage["kind"]): ConversationPage {
 	const entries = task[kind] ?? [];
-	return { kind, entries, earlier: Math.max(0, (task.conversationCounts?.[kind] ?? entries.length) - entries.length), later: 0, revision: task.revision ?? 0 };
+	return { kind, entries, earlier: Math.max(0, (task.conversationCounts?.[kind] ?? entries.length) - entries.length), later: 0, revision: task.revision ?? 0, ...(kind === "messages" ? { activities: task.activities ?? [] } : {}) };
+}
+
+/**
+ * Message pages carry their turns' activities. Joining or trimming windows keeps the activities of the turns still
+ * in view: `combined` is every message the two windows held, in order, so the message after the window is known.
+ */
+function windowActivities(combined: readonly Message[], window: readonly Message[], sources: (AgentActivity[] | undefined)[], later: number) {
+	const byId = new Map<string, AgentActivity>();
+	for (const source of sources) for (const activity of source ?? []) { byId.delete(activity.id); byId.set(activity.id, activity); }
+	const known = new Set(combined.filter(message => message.role === "user").map(message => message.id));
+	const last = window.at(-1), next = last ? combined[combined.findIndex(message => message.id === last.id) + 1]?.timelineOrder : undefined;
+	return activitiesForWindow(window, [...byId.values()].sort((a, b) => (a.timelineOrder ?? -1) - (b.timelineOrder ?? -1)), known, { next, latest: later === 0 });
 }
 
 export function useConversationPage(task: Task, kind: ConversationPage["kind"], following: RefObject<boolean>, beforeUpdate: () => void) {
@@ -33,9 +45,11 @@ export function useConversationPage(task: Task, kind: ConversationPage["kind"], 
 			if (!mounted.current) return;
 			const previous = current.current;
 			const total = result.earlier + result.entries.length + result.later;
-			const entries = mode === "older" ? conversationWindow([...result.entries, ...previous.entries], "start") : mode === "newer" ? conversationWindow([...previous.entries, ...result.entries], "end") : result.entries;
-			const earlier = mode === "newer" ? total - result.later - entries.length : result.earlier;
-			apply({ ...result, entries, earlier, later: total - earlier - entries.length });
+			const combined = mode === "older" ? [...result.entries, ...previous.entries] : mode === "newer" ? [...previous.entries, ...result.entries] : result.entries;
+			const entries = mode === "older" ? conversationWindow(combined, "start") : mode === "newer" ? conversationWindow(combined, "end") : result.entries;
+			const earlier = mode === "newer" ? total - result.later - entries.length : result.earlier, later = total - earlier - entries.length;
+			const activities = kind === "messages" ? { activities: mode === "replace" ? result.activities ?? [] : windowActivities(combined as Message[], entries as Message[], mode === "older" ? [result.activities, previous.activities] : [previous.activities, result.activities], later) } : {};
+			apply({ ...result, entries, earlier, later, ...activities });
 			if ((mode !== "replace" && previous.revision !== result.revision) || result.revision < (source.current.revision ?? 0)) refreshPending.current = true;
 		} catch (reason) { if (mounted.current) setError((reason instanceof Error ? reason.message : String(reason)).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "")); }
 		finally {
@@ -60,8 +74,8 @@ export function useConversationPage(task: Task, kind: ConversationPage["kind"], 
 			else apply(latest);
 			return;
 		}
-		const entries = conversationWindow([...previous.entries.slice(0, start), ...latest.entries], "end");
-		apply({ ...latest, entries, earlier: latest.earlier + latest.entries.length - entries.length });
+		const combined = [...previous.entries.slice(0, start), ...latest.entries], entries = conversationWindow(combined, "end");
+		apply({ ...latest, entries, earlier: latest.earlier + latest.entries.length - entries.length, ...(kind === "messages" ? { activities: windowActivities(combined as Message[], entries as Message[], [previous.activities, latest.activities], 0) } : {}) });
 	}
 	useEffect(() => { refresh(); }, [task]); // Refresh the visible window as task revisions arrive.
 	return {

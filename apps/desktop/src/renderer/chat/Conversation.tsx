@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowDown, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, Paperclip, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
@@ -134,7 +134,14 @@ function AssistantHeader({ task }: { task: Task }) {
 	</div>;
 }
 
-function Turn({ user, entries, live, complete, task, onAttachment, onBranch, compact }: { user?: Message; entries: TurnEntry[]; live: boolean; complete: boolean; task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; compact?: boolean }) {
+const noActivities: AgentActivity[] = [];
+type TurnProps = { user?: Message; entries: TurnEntry[]; usageActivities: AgentActivity[]; live: boolean; complete: boolean; task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; compact?: boolean };
+const sameItems = <T,>(a: readonly T[], b: readonly T[], value: (item: T) => unknown = item => item) => a.length === b.length && a.every((item, index) => value(item) === value(b[index]));
+/**
+ * A turn re-renders only when its own entries or the chat fields it shows change, so loading a page of older turns
+ * renders those turns alone. The callbacks are stable (see Conversation).
+ */
+const Turn = memo(function Turn({ user, entries, usageActivities, live, complete, task, onAttachment, onBranch, compact }: TurnProps) {
 	// Text after the last step is the answer, even while it is still streaming.
 	const latest = entries.findLast(entry => !(entry.kind === "activity" && entry.value.type === "usage"));
 	const isAnswer = (entry?: TurnEntry) => entry?.kind === "message" && entry.value.role === "assistant" && entry.value.delivery !== "subagent";
@@ -144,7 +151,7 @@ function Turn({ user, entries, live, complete, task, onAttachment, onBranch, com
 	const work = entries.filter(entry => entry !== final && !(entry.kind === "message" && entry.value.delivery === "subagent") && !(entry.kind === "activity" && entry.value.proposed));
 	const delegated = entries.filter(entry => entry.kind === "message" && entry.value.delivery === "subagent");
 	// The timeline omits usage reports, so read them from the turn's activities.
-	const usage = turnUsage(user ? task.activities?.filter(activity => activity.type === "usage" && activity.id.startsWith(`${user.id}:`)) ?? [] : []);
+	const usage = turnUsage(usageActivities);
 	const canBranch = !["running", "waiting"].includes(task.status) && !task.archived;
 	const hasAssistant = work.length > 0 || plans.length > 0 || !!final || live;
 	return <div data-turn-id={user && user.delivery !== "subagent" && !user.notice ? user.id : undefined} className="flex flex-col gap-4">
@@ -165,7 +172,9 @@ function Turn({ user, entries, live, complete, task, onAttachment, onBranch, com
 			</div>}
 		</div>}
 	</div>;
-}
+}, (a, b) => a.user === b.user && a.live === b.live && a.complete === b.complete && a.compact === b.compact
+	&& sameItems(a.entries, b.entries, entry => entry.value) && sameItems(a.usageActivities, b.usageActivities)
+	&& a.task.id === b.task.id && a.task.status === b.task.status && a.task.archived === b.task.archived && a.task.projectId === b.task.projectId && a.task.model === b.task.model && a.task.harness === b.task.harness);
 
 export function Conversation({ task, onAttachment, onBranch, children, compact, className }: { task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; children?: ReactNode; compact?: boolean; className?: string }) {
 	const host = useRef<HTMLDivElement>(null);
@@ -173,12 +182,22 @@ export function Conversation({ task, onAttachment, onBranch, children, compact, 
 	const following = useRef(true);
 	const anchor = useRef<{ id?: string; top: number; scroll: number } | undefined>(undefined);
 	const [showLatest, setShowLatest] = useState(false);
+	// Message pages carry their turns' activities, so steps arrive with the messages they belong to.
 	const messages = useConversationPage(task, "messages", following, remember);
-	const activities = useConversationPage(task, "activities", following, remember);
-	const turns = useMemo(() => conversationTurns(messages.page.entries as Message[], activities.page.entries as AgentActivity[]), [messages.page.entries, activities.page.entries]);
+	const activityEntries = useMemo(() => messages.page.activities ?? [], [messages.page.activities]);
+	const turns = useMemo(() => conversationTurns(messages.page.entries as Message[], activityEntries), [messages.page.entries, activityEntries]);
+	const earlierRow = useRef<HTMLButtonElement>(null), newerRow = useRef<HTMLButtonElement>(null), lastScroll = useRef(0);
+	// Turns are memoised, so they get stable callbacks that always call the latest ones.
+	const handlers = useRef({ onAttachment, onBranch }); handlers.current = { onAttachment, onBranch };
+	const attach = useCallback((id: string) => handlers.current.onAttachment(id), []), branchFrom = useCallback((id: string) => handlers.current.onBranch(id), []);
+	const usageByTurn = useMemo(() => {
+		const byTurn = new Map<string, AgentActivity[]>();
+		for (const activity of activityEntries) if (activity.type === "usage") { const owner = activity.id.slice(0, Math.max(0, activity.id.indexOf(":"))); byTurn.set(owner, [...byTurn.get(owner) ?? [], activity]); }
+		return byTurn;
+	}, [activityEntries]);
 	const activeTurn = task.messages.findLast(message => message.role === "user")?.id;
 	const running = ["running", "waiting"].includes(task.status);
-	const view = { ...task, messages: messages.page.entries as Message[], activities: activities.page.entries as AgentActivity[] };
+	const view = { ...task, messages: messages.page.entries as Message[], activities: activityEntries as AgentActivity[] };
 	const railTurns = useMemo<RailTurn[]>(() => turns.flatMap(turn => !turn.user || turn.user.delivery === "subagent" || turn.user.notice ? [] : [{
 		id: turn.user.id, user: turn.user.text, attachments: turn.user.attachments?.map(attachment => attachment.name) ?? [],
 		assistant: turn.entries.findLast(entry => entry.kind === "message" && entry.value.role === "assistant" && entry.value.delivery !== "subagent")?.value.text,
@@ -197,7 +216,7 @@ export function Conversation({ task, onAttachment, onBranch, children, compact, 
 	function update() {
 		const element = host.current;
 		if (!element) return;
-		const latest = !messages.page.later && !activities.page.later && element.scrollHeight - element.clientHeight - element.scrollTop <= 64;
+		const latest = !messages.page.later && element.scrollHeight - element.clientHeight - element.scrollTop <= 64;
 		following.current = latest; setShowLatest(!latest);
 	}
 	useLayoutEffect(() => {
@@ -209,7 +228,25 @@ export function Conversation({ task, onAttachment, onBranch, children, compact, 
 			element.scrollTop = entry ? element.scrollTop + entry.getBoundingClientRect().top - saved.top : saved.scroll;
 			anchor.current = undefined;
 		} else if (following.current) element.scrollTop = element.scrollHeight;
-	}, [task, messages.page, activities.page]);
+		// Programmatic scrolling is not the reader's: it must not page further.
+		lastScroll.current = element.scrollTop;
+	}, [task, messages.page]);
+	// Pages load 50 at a time as the reader nears either end of the window (a screen ahead), in the direction they are
+	// moving. The rows stay as buttons for keyboards, and for a window too short to scroll.
+	useEffect(() => {
+		const element = host.current;
+		if (!element || (window as { __phaseoManualPaging?: boolean }).__phaseoManualPaging) return;
+		const near = (row: HTMLElement | null) => { if (!row) return false; const view = element.getBoundingClientRect(), bounds = row.getBoundingClientRect(); return bounds.bottom >= view.top - view.height && bounds.top <= view.bottom + view.height; };
+		const page = (direction: number) => {
+			if (messages.loading) return;
+			if (direction < 0 && messages.page.earlier > 0 && near(earlierRow.current)) messages.older();
+			else if (direction > 0 && messages.page.later > 0 && near(newerRow.current)) messages.newer();
+		};
+		const scrolled = () => { const delta = element.scrollTop - lastScroll.current; lastScroll.current = element.scrollTop; if (delta) page(delta); };
+		const wheel = (event: WheelEvent) => { if (event.deltaY) page(event.deltaY); };
+		element.addEventListener("scroll", scrolled, { passive: true }); element.addEventListener("wheel", wheel, { passive: true });
+		return () => { element.removeEventListener("scroll", scrolled); element.removeEventListener("wheel", wheel); };
+	}, [messages.page, messages.loading]);
 	useEffect(() => {
 		if (!content.current) return;
 		const observer = new ResizeObserver(() => { if (following.current && !anchor.current && host.current) host.current.scrollTop = host.current.scrollHeight; });
@@ -220,20 +257,19 @@ export function Conversation({ task, onAttachment, onBranch, children, compact, 
 	return <div className={cn("relative min-h-0 flex-1", className)}>
 		<ScrollArea className="h-full" viewportRef={host} viewportProps={{ onScroll: update, "aria-live": "polite" }}>
 			<div ref={content} className={cn("mx-auto flex w-full flex-col gap-7 py-6", compact ? "px-4" : "max-w-[760px] px-6")}>
-				{messages.page.earlier > 0 && <button type="button" disabled={messages.loading} onClick={messages.older} className="self-center rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-muted">Load {messages.page.earlier} earlier messages</button>}
-				{activities.page.earlier > 0 && <button type="button" disabled={activities.loading} onClick={activities.older} className="self-center rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-muted">Load earlier activity</button>}
-				{(messages.error || activities.error) && <div role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{messages.error || activities.error}<button type="button" className="ml-auto font-semibold underline" onClick={() => { messages.retry(); activities.retry(); }}>Retry</button></div>}
+				{messages.page.earlier > 0 && <button ref={earlierRow} type="button" disabled={messages.loading} onClick={messages.older} className="flex items-center gap-1.5 self-center px-3 py-1 text-xs text-muted-foreground hover:text-foreground">{messages.loading ? <><LoaderCircle className="size-3.5 animate-spin" />Loading earlier messages…</> : `Load ${messages.page.earlier} earlier messages`}</button>}
+				{messages.error && <div role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{messages.error}<button type="button" className="ml-auto font-semibold underline" onClick={() => messages.retry()}>Retry</button></div>}
 				{messages.loading && !messages.page.entries.length && <p className="text-center text-xs text-muted-foreground">Loading messages…</p>}
-				{turns.map((turn, index) => <Turn key={turn.id} user={turn.user} entries={turn.entries} task={view} onAttachment={onAttachment} onBranch={onBranch} compact={compact}
+				{turns.map((turn, index) => <Turn key={turn.id} user={turn.user} entries={turn.entries} usageActivities={(turn.user && usageByTurn.get(turn.user.id)) || noActivities} task={view} onAttachment={attach} onBranch={branchFrom} compact={compact}
 					live={running && (turn.user?.id === activeTurn || (!turn.user && index === turns.length - 1 && !messages.page.later))}
-					complete={Boolean(turn.user?.completedAt) || index < turns.length - 1 || (!messages.page.later && !activities.page.later && !running)} />)}
-				{messages.page.later > 0 && <button type="button" disabled={messages.loading} onClick={messages.newer} className="self-center rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-muted">Load newer messages</button>}
+					complete={Boolean(turn.user?.completedAt) || index < turns.length - 1 || (!messages.page.later && !running)} />)}
+				{messages.page.later > 0 && <button ref={newerRow} type="button" disabled={messages.loading} onClick={messages.newer} className="flex items-center gap-1.5 self-center px-3 py-1 text-xs text-muted-foreground hover:text-foreground">{messages.loading ? <><LoaderCircle className="size-3.5 animate-spin" />Loading newer messages…</> : "Load newer messages"}</button>}
 				{children}
 			</div>
 		</ScrollArea>
 		{!compact && <MessageNavigationRail turns={railTurns} viewport={host} onNavigate={() => { following.current = false; }} />}
 		{/* A window that stops short of the newest entries always offers the way back, even if the reader never scrolled. */}
-		{(showLatest || messages.page.later > 0 || activities.page.later > 0) && <button type="button" onClick={() => { following.current = true; messages.latest(); activities.latest(); if (host.current) host.current.scrollTop = host.current.scrollHeight; setShowLatest(false); }}
+		{(showLatest || messages.page.later > 0) && <button type="button" onClick={() => { following.current = true; messages.latest(); if (host.current) host.current.scrollTop = host.current.scrollHeight; setShowLatest(false); }}
 			className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-popover px-3 py-1.5 text-xs font-medium shadow-md hover:bg-muted"><ArrowDown className="size-3.5" />Jump to latest</button>}
 	</div>;
 }
