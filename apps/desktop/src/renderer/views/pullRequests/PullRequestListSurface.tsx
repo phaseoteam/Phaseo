@@ -16,6 +16,8 @@ import { ChecksGlyph, DiffStat, errorMessage, MiddleTruncate, PullRequestGlyph, 
 import { relativeTime, summaryChecksRollup } from "./pullRequestLogic";
 import { PullRequestSurface } from "./PullRequestSurface";
 import { segmentedGroup, segmentedItem } from "./segmented";
+import { pullRequestChains, pullRequestListLines, visiblePullRequestLinks, type PullRequestListLine } from "../../../shared/pullRequestStacks";
+import { StackGlyph, StackPopover } from "./StackMenu";
 
 /** T3's shared row shape (PullRequestListRow): a status column, then number and title over author and branches. */
 export const PULL_REQUEST_ROW_CLASS = "group/pr-row flex w-full items-center gap-2 rounded-md py-1 pr-1 text-left";
@@ -41,9 +43,12 @@ function RowMenu({ label, children }: { label: string; children: ReactNode }) {
 	</span>;
 }
 
-function LinkRow({ link, openable, onOpen, onExternal, onCopy, onUnlink, onWatch }: { link: TaskPullRequestLink; openable: boolean; onOpen: () => void; onExternal: () => void; onCopy: () => void; onUnlink: () => void; onWatch: (watching: boolean) => void }) {
+function LinkRow({ line, openable, onOpen, onExternal, onCopy, onUnlink, onWatch }: { line: PullRequestListLine; openable: boolean; onOpen: () => void; onExternal: () => void; onCopy: () => void; onUnlink: () => void; onWatch: (watching: boolean) => void }) {
+	const { link, depth, stack } = line;
 	const snapshot = link.snapshot, open = !snapshot || snapshot.state === "open", rollup = snapshot ? summaryChecksRollup(snapshot.checks) : null;
-	return <div className={cn(PULL_REQUEST_ROW_CLASS, "relative pl-2 hover:bg-accent/60")} data-pull-request-row={`${link.repository}#${link.number}`}>
+	// Each layer steps in under the one it targets, capped so a tall stack does not stair-step off the edge (T3).
+	return <div className={cn(PULL_REQUEST_ROW_CLASS, "relative hover:bg-accent/60")} style={{ paddingLeft: `${0.5 + Math.min(depth, 3) * 1.25}rem` }} data-pull-request-row={`${link.repository}#${link.number}`} data-stack-depth={depth || undefined}>
+		{depth > 0 && <span aria-hidden className="-ml-2 h-6 w-px shrink-0 bg-border/70" />}
 		{snapshot ? <PullRequestRowGlyph state={snapshot.state} draft={snapshot.draft} mergeable={snapshot.mergeable} base={snapshot.base} /> : <PullRequestGlyph.pullRequest aria-label="Waiting for GitHub" className="size-4 shrink-0 text-muted-foreground" />}
 		<button type="button" onClick={openable ? onOpen : onExternal} className="flex min-w-0 flex-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/40 rounded-sm">
 			<RowLines
@@ -51,7 +56,7 @@ function LinkRow({ link, openable, onOpen, onExternal, onCopy, onUnlink, onWatch
 				title={snapshot?.title ?? link.repository}
 				signals={open ? <>{link.watching && <Tip label="Watching for changes"><span className="inline-flex shrink-0"><Eye role="img" aria-label="Watching" className="size-3.5" /></span></Tip>}{rollup && <ChecksGlyph rollup={rollup} />}{snapshot && <ReviewDecisionGlyph decision={snapshot.review} />}</> : null}
 				status={snapshot && <DiffStat additions={snapshot.additions} deletions={snapshot.deletions} className="font-mono" />}
-				meta={snapshot ? <><span className="max-w-28 shrink-0 truncate">{snapshot.author}</span><span aria-hidden className="text-muted-foreground/50">·</span><Tip label={link.repository}><span className="flex max-w-32 min-w-0 font-mono"><MiddleTruncate value={link.repository} limit={24} /></span></Tip><span aria-hidden className="text-muted-foreground/50">·</span><Branches head={snapshot.head} base={snapshot.base} /></> : <span className="truncate font-mono">github.com/{link.repository}</span>}
+				meta={snapshot ? <>{stack && <Tip label={stack.kind === "native" ? `GitHub stack of ${stack.size}: merging a layer lands the ones below it.` : `${stack.size} pull requests chained by base branch.`}><span className="inline-flex shrink-0 items-center gap-0.5 text-foreground/70"><StackGlyph aria-hidden className="size-3" />{stack.size}</span></Tip>}<span className="max-w-28 shrink-0 truncate">{snapshot.author}</span><span aria-hidden className="text-muted-foreground/50">·</span><Tip label={link.repository}><span className="flex max-w-32 min-w-0 font-mono"><MiddleTruncate value={link.repository} limit={24} /></span></Tip><span aria-hidden className="text-muted-foreground/50">·</span><Branches head={snapshot.head} base={snapshot.base} /></> : <span className="truncate font-mono">github.com/{link.repository}</span>}
 				updatedAt={snapshot?.updatedAt}
 			/>
 		</button>
@@ -64,14 +69,14 @@ function LinkRow({ link, openable, onOpen, onExternal, onCopy, onUnlink, onWatch
 	</div>;
 }
 
-function ProjectRow({ request, linked, onOpen, onExternal, onCopy, onLink }: { request: PullRequest; linked: boolean; onOpen: () => void; onExternal: () => void; onCopy: () => void; onLink?: () => void }) {
+function ProjectRow({ projectId, request, linked, onOpen, onExternal, onCopy, onLink }: { projectId: string; request: PullRequest; linked: boolean; onOpen: () => void; onExternal: () => void; onCopy: () => void; onLink?: () => void }) {
 	const rollup = summaryChecksRollup(request.checks);
 	return <div className={cn(PULL_REQUEST_ROW_CLASS, "relative pl-2 hover:bg-accent/60")} data-pull-request-row={request.number}>
 		<PullRequestRowGlyph state="OPEN" draft={request.draft} />
 		<button type="button" onClick={onOpen} className="flex min-w-0 flex-1 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/40">
 			<RowLines number={<span className={NUMBER_CLASS}>#{request.number}</span>} title={request.title}
 				signals={<>{linked && <Tip label="Linked to this chat"><span className="inline-flex shrink-0"><LinkIcon role="img" aria-label="Linked" className="size-3.5 text-muted-foreground" /></span></Tip>}{rollup && <ChecksGlyph rollup={rollup} />}<ReviewDecisionGlyph decision={request.review} /></>}
-				meta={<><span className="max-w-28 shrink-0 truncate">{request.author}</span><span aria-hidden className="text-muted-foreground/50">·</span><Branches head={request.head} base={request.base} /></>}
+				meta={<>{request.stack && <StackPopover projectId={projectId} number={request.number} membership={request.stack} />}<span className="max-w-28 shrink-0 truncate">{request.author}</span><span aria-hidden className="text-muted-foreground/50">·</span><Branches head={request.head} base={request.base} /></>}
 				updatedAt={request.updatedAt} />
 		</button>
 		<RowMenu label={`Actions for #${request.number}`}>
@@ -107,7 +112,8 @@ export function LinkPullRequestDialog({ open, onOpenChange, onLink }: { open: bo
 export function PullRequestListSurface({ projectId, taskId, onOpen }: { projectId: string; taskId?: string; onOpen?: (pullRequest: OpenPullRequest) => void }) {
 	const { api, overview, setOverview } = useWorkspace();
 	const task = taskId ? overview.tasks.find(value => value.id === taskId) : undefined;
-	const links = useMemo(() => task?.pullRequests ?? [], [task?.pullRequests]);
+	const links = useMemo(() => visiblePullRequestLinks(task?.pullRequests), [task?.pullRequests]);
+	const lines = useMemo(() => pullRequestListLines(pullRequestChains(links)), [links]);
 	const [view, setView] = useState<"linked" | "open">(taskId ? "linked" : "open");
 	const [selected, setSelected] = useState<number>();
 	const [project, setProject] = useState<{ projectId: string; value: ProjectPullRequests; requests: PullRequest[] }>();
@@ -164,7 +170,7 @@ export function PullRequestListSurface({ projectId, taskId, onOpen }: { projectI
 			</div>
 			: <>
 				<ScrollArea className="min-h-0 flex-1"><div className="flex flex-col p-1.5" aria-label="Linked pull requests">
-					{links.map(link => <LinkRow key={`${link.repository}#${link.number}`} link={link} openable={sameRepository(link)}
+					{lines.map(line => line.link).map((link, index) => <LinkRow key={`${link.repository}#${link.number}`} line={lines[index]} openable={sameRepository(link)}
 						onOpen={() => openRequest({ number: link.number, title: link.snapshot?.title ?? `#${link.number}`, state: link.snapshot?.state === "merged" ? "MERGED" : link.snapshot?.state === "closed" ? "CLOSED" : "OPEN", draft: link.snapshot?.draft ?? false })}
 						onExternal={() => external(link.url)} onCopy={() => copy(link.url)}
 						onUnlink={() => void run({ type: "unlink-pull-request", id: taskId, repository: link.repository, number: link.number }).then(failure => failure && setError(failure))}
@@ -174,7 +180,7 @@ export function PullRequestListSurface({ projectId, taskId, onOpen }: { projectI
 			</>)
 			: <ScrollArea className="min-h-0 flex-1"><div className="flex flex-col p-1.5" aria-label="Open pull requests">
 				{!project && loading && <PullRequestListGhost />}
-				{project?.projectId === projectId && project.requests.map(request => <ProjectRow key={request.number} request={request} linked={linkedNumbers.has(request.number)}
+				{project?.projectId === projectId && project.requests.map(request => <ProjectRow key={request.number} projectId={projectId} request={request} linked={linkedNumbers.has(request.number)}
 					onOpen={() => openRequest({ number: request.number, title: request.title, state: "OPEN", draft: request.draft })} onExternal={() => external(request.url)} onCopy={() => copy(request.url)}
 					onLink={taskId ? () => void run({ type: "link-pull-request", id: taskId, reference: request.url }).then(failure => failure ? setError(failure) : flash(`Linked #${request.number}`)) : undefined} />)}
 				{project?.projectId === projectId && !project.requests.length && !loading && !error && <p className="px-2 py-2 text-xs text-muted-foreground">No open pull requests.</p>}

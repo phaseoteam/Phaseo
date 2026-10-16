@@ -24,6 +24,7 @@ import type { ProjectTreeRequest, ProjectTreeResult } from "./projectTree";
 import type { FilePreview } from "./filePreview";
 import type { ProjectSettings, ProjectUpdate, T3ProjectFileState } from "./projectSettings";
 import type { PullRequestGuideResult } from "./pullRequestGuide";
+import type { PullRequestStackActionRequest, PullRequestStackRead } from "./pullRequestStacks";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -128,7 +129,7 @@ export type WorkspaceCommand =
 	| { type: "visit"; id: string; at: string }
 	| { type: "auto-settle"; id: string; enabled: boolean }
 	/** `reference` is a GitHub URL, `owner/repo#42`, `#42` or `42`; the main process resolves it against the chat's project. */
-	| { type: "link-pull-request"; id: string; reference: string; repository?: string; number?: number; /** Set only by the agent tools; the renderer's links are manual. */ source?: "agent" }
+	| { type: "link-pull-request"; id: string; reference: string; repository?: string; number?: number; /** Set only in the main process (agent tools, pull requests this chat created); the renderer's links are manual. */ source?: "agent" | "created" }
 	| { type: "unlink-pull-request"; id: string; repository: string; number: number }
 	| { type: "watch-pull-request"; id: string; repository: string; number: number; watching: boolean }
 	| { type: "add-account"; name: string; harness: "codex" | "claude" | "phaseo" | "cursor" | "grok"; kind: "native" | "api"; endpoint?: string; apiKey?: string }
@@ -232,6 +233,10 @@ export type WorkspaceApi = {
 	pullRequestCandidates: (projectId: string, query: { number: number; kind: "labels" | "reviewers" }) => Promise<PullRequestCandidates>;
 	/** Merge, close, comment, review and the rest, through GitHub CLI; returns the pull request as it is afterwards. */
 	pullRequestAction: (projectId: string, request: PullRequestActionRequest) => Promise<PullRequestView>;
+	/** The native GitHub stack a pull request is in, cached for a minute unless `fresh`; linked chats pick up its layers. */
+	pullRequestStack: (projectId: string, number: number, fresh?: boolean) => Promise<PullRequestStackRead>;
+	/** Merge stack (through this layer) or Rebase stack (from the top), refused if any expected head moved. */
+	pullRequestStackAction: (projectId: string, request: PullRequestStackActionRequest) => Promise<{ message: string }>;
 	gitHunks: (projectId: string, filename: string, staged: boolean) => Promise<GitHunkReview>;
 	gitDiffContents: (projectId: string, request: GitDiffContentsRequest) => Promise<GitDiffContents>;
 	gitCommand: (projectId: string, command: GitCommand) => Promise<GitReview>;

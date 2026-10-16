@@ -15,6 +15,7 @@ import { createBrowserTab, ensureBrowserTab, closeBrowserTab, confirmCloseBrowse
 import { PullRequestListSurface, PullRequestSurface, pullRequestStatePresentation } from "../views/pullRequests";
 import { closeTerminal, createTerminal, terminalTitle, terminalsFor, useTerminalSessions } from "../lib/terminalSessions";
 import { OPEN_PROJECT_FILE_EVENT, type OpenProjectFileDetail } from "../panels/events";
+import { OPEN_PULL_REQUEST_EVENT, type OpenPullRequestDetail } from "../views/pullRequests/events";
 import { closePaneTabs, migratePaneState, movePaneTab, openPaneTab, paneKind, paneValue, paneWidths, reopenPaneTab, type PaneKey, type PaneState } from "./paneTabs";
 
 // The diff viewer and editor are large, so they load when first opened.
@@ -209,18 +210,22 @@ export function RightPanel() {
 	useEffect(() => {
 		const openLink = (event: Event) => { const url = (event as CustomEvent<unknown>).detail; if (typeof url === "string" && /^https?:\/\//i.test(url)) show(`browser:${createBrowserTab(context, { url })}`); };
 		const openFile = (event: Event) => { const detail = (event as CustomEvent<OpenProjectFileDetail>).detail; if (detail?.path && (!projectId || detail.projectId === projectId)) show(`file:${detail.path}`); };
+		const openPull = (event: Event) => { const detail = (event as CustomEvent<OpenPullRequestDetail>).detail; if (!projectId || !detail) return; if ("list" in detail) show("pulls"); else if (Number.isSafeInteger(detail.number) && detail.number > 0) show(`pull:${detail.number}`); };
 		window.addEventListener("phaseo:open-context-link", openLink);
 		window.addEventListener(OPEN_PROJECT_FILE_EVENT, openFile);
-		return () => { window.removeEventListener("phaseo:open-context-link", openLink); window.removeEventListener(OPEN_PROJECT_FILE_EVENT, openFile); };
+		window.addEventListener(OPEN_PULL_REQUEST_EVENT, openPull);
+		return () => { window.removeEventListener("phaseo:open-context-link", openLink); window.removeEventListener(OPEN_PROJECT_FILE_EVENT, openFile); window.removeEventListener(OPEN_PULL_REQUEST_EVENT, openPull); };
 	});
 	// T3 opens panes by itself: the Diff when a turn finishes with changes, a pull request when one is linked. It holds back if you used the pane during the turn.
-	const status = task?.status, linked = task?.pullRequests?.length ?? 0;
+	// Layers a stack read finds are not new work, so they do not open the pane.
+	const opened = task?.pullRequests?.filter(link => link.source !== "stack" && link.source !== "stack-dismissed") ?? [];
+	const status = task?.status, linked = opened.length;
 	const previous = useRef({ id: selectedId, status, linked, started: 0 });
 	useEffect(() => {
 		const before = previous.current;
 		previous.current = { id: selectedId, status, linked, started: status === "running" && before.status !== "running" ? Date.now() : before.started };
 		if (!autoOpen || !task || before.id !== selectedId) return;
-		if (linked > before.linked && touched.current < Date.now() - 1000) { const newest = task.pullRequests!.at(-1)!; show(linked > 1 ? "pulls" : `pull:${newest.number}`); return; }
+		if (linked > before.linked && touched.current < Date.now() - 1000) { const newest = opened.at(-1)!; show(linked > 1 ? "pulls" : `pull:${newest.number}`); return; }
 		if (before.status === "running" && status === "completed" && task.projectId && mode === "code" && touched.current < before.started && api) {
 			void api.task(task.id).then(full => { const checkpoint = full.messages.findLast(message => message.role === "user")?.checkpoint; if (checkpoint?.after && checkpoint.after !== checkpoint.before) show("diff"); }, () => undefined);
 		}

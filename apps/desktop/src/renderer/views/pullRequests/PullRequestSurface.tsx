@@ -17,6 +17,7 @@ import { Composer } from "./Composer";
 import { ActorLabel, DiffStat, errorMessage, MetaLine, MiddleTruncate, PullRequestGlyph, pullRequestStatePresentation, ReviewOutcomeIcon, REVIEW_OUTCOME_PRESENTATION, Tip } from "./presentation";
 import { approvalCount, checksRollup, mergeMethodLabels, primaryAction, relativeTime, summarizeChecks } from "./pullRequestLogic";
 import { segmentedGroup, segmentedItem } from "./segmented";
+import { StackedBaseGlyph, StackMenu } from "./StackMenu";
 import { ReactContext, SummaryTab } from "./SummaryTab";
 import { TimelineTab } from "./TimelineTab";
 import { useInlineActionConfirm } from "./useInlineActionConfirm";
@@ -88,6 +89,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 	const saveTitle = async () => { if (titleDraft === null || !titleDraft.trim()) return; if (titleDraft.trim() === view.title || await pull.perform({ type: "title", title: titleDraft })) setTitleDraft(null); };
 	const number$ = (tabIndex?: number) => <Tip label="Open on GitHub"><button type="button" tabIndex={tabIndex} onClick={() => open(view.url)} onAuxClick={event => { if (event.button === 1) open(view.url); }} aria-label={`Open pull request #${view.number} on GitHub`} className={cn("inline-flex shrink-0 cursor-pointer items-center gap-0.5 font-medium underline-offset-2 hover:underline", presentation.toneClassName)}>#{view.number}<ExternalLink aria-hidden className="size-2.5" /></button></Tip>;
 	const branchLine = (small: boolean) => <span className={cn("flex min-w-0 flex-1 items-center gap-1.5 font-mono", small ? "text-2xs text-muted-foreground/65" : "text-xs text-muted-foreground/70")}>
+		<StackedBaseGlyph projectId={projectId} view={view} />
 		{view.behind && view.state === "OPEN" ? <Popover>
 			<PopoverTrigger openOnHover delay={0} aria-label={`This branch is out of date with ${view.base}.`} className="inline-flex max-w-[40%] min-w-0 shrink-0 cursor-help items-center gap-1 rounded-sm text-amber-600 outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-amber-400"><code className="flex min-w-0"><MiddleTruncate value={view.base} /></code><TriangleAlert aria-hidden className={small ? "size-3 shrink-0" : "size-3.5 shrink-0"} /></PopoverTrigger>
 			<PopoverContent align="start" side="bottom" className="w-auto max-w-80 gap-0 p-3">
@@ -159,7 +161,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 					<Tip label={view.title}><span className="min-w-0 truncate font-medium text-foreground">{view.title}</span></Tip>
 				</div>
 			</div>
-			<div className="mr-4 flex h-10 shrink-0 items-center justify-end gap-1">{autoMergeArmed && primary !== "auto-merge-armed" && armedBadge}{primaryControl}{menu}</div>
+			<div className="mr-4 flex h-10 shrink-0 items-center justify-end gap-1"><StackMenu projectId={projectId} view={view} onActed={() => void pull.refresh()} />{autoMergeArmed && primary !== "auto-merge-armed" && armedBadge}{primaryControl}{menu}</div>
 			<div className={cn("col-span-2 grid", condensed ? "grid-rows-[1fr]" : "grid-rows-[0fr] transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none")}>
 				<div className={cn("min-h-0 overflow-hidden transition-[opacity,transform] duration-150 ease-out motion-reduce:transition-none", condensed ? "translate-y-0 opacity-100 delay-50" : "translate-y-1 opacity-0 duration-100")} inert={!condensed}>
 					<div className="flex min-w-0 items-center gap-2 px-4 pt-1 pb-2 text-xs text-muted-foreground">

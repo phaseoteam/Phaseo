@@ -14,6 +14,7 @@ import { WorkspaceThreads } from "./workspaceThreads";
 import { git } from "./gitProcess";
 import { githubRepository } from "./projectPullRequests";
 import { parsePullRequestReference, validatePullRequestLinks, type PullRequestLinkSnapshot } from "../shared/pullRequestView";
+import type { PullRequestStack } from "../shared/pullRequestStacks";
 import type { PullRequestWatchMessage, PullRequestWatchState } from "../shared/pullRequestWatch";
 import type { PullRequestWatchTarget } from "./pullRequestWatcher";
 import { OrchestratorMcp } from "./orchestratorMcp";
@@ -265,6 +266,10 @@ export class WorkspaceRuntime {
 	/** Called after any pane reads a pull request, so linked chats show its latest state. */
 	syncPullRequestSnapshot(repository: string, number: number, snapshot: PullRequestLinkSnapshot) {
 		if (!this.closing && this.store.syncPullRequestSnapshot(repository, number, snapshot)) this.broadcast();
+	}
+	/** Called after a native stack read, so every chat linking a layer groups the stack and gains its other layers. */
+	syncPullRequestStack(repository: string, number: number, stack: PullRequestStack | null) {
+		if (!this.closing && this.store.syncPullRequestStack(repository, number, stack)) this.broadcast();
 	}
 	/** Every chat's pull request links for the watcher, with the folder gh reads them from. */
 	pullRequestWatchTargets(): PullRequestWatchTarget[] {

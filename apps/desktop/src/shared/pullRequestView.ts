@@ -1,6 +1,7 @@
 import type { PullRequest, PullRequestDetails } from "./pullRequests";
 import { reviewNodeId } from "./pullRequestThreads";
 import { newPullRequestWatch, validatePullRequestWatch, type PullRequestWatchState } from "./pullRequestWatch";
+import { validateSavedStack, type PullRequestStackState } from "./pullRequestStacks";
 
 /** Everything one pull request pane shows, read in one GitHub request (after T3 Code's detail view). */
 export type PullRequestActor = { login: string; avatarUrl?: string; bot?: boolean };
@@ -113,8 +114,16 @@ export function validatePullRequestActionRequest(value: unknown): PullRequestAct
 }
 
 /** A linked pull request as the chat remembers it: the last state any pane read, so lists draw without asking GitHub. */
-export type PullRequestLinkSnapshot = { title: string; state: "open" | "closed" | "merged"; draft: boolean; mergeable: PullRequestDetails["mergeable"]; checks: PullRequest["checks"]; review: PullRequest["review"]; additions: number; deletions: number; author: string; head: string; base: string; updatedAt: string };
-export type TaskPullRequestLink = { repository: string; number: number; url: string; linkedAt: string; source: "manual" | "agent"; watching?: boolean; /** Present while watching: what the chat's agent was last told. */ watch?: PullRequestWatchState; snapshot?: PullRequestLinkSnapshot };
+export type PullRequestLinkSnapshot = { title: string; state: "open" | "closed" | "merged"; draft: boolean; mergeable: PullRequestDetails["mergeable"]; checks: PullRequest["checks"]; review: PullRequest["review"]; additions: number; deletions: number; author: string; head: string; base: string; updatedAt: string; authorAvatarUrl?: string; changedFiles?: number; /** When this state was last read from GitHub. */ syncedAt?: string };
+/**
+ * Who made the link, after T3: the person, the agent, a pull request this chat created, or a layer found in a native
+ * stack. "stack-dismissed" is a layer the person removed, kept so the next stack read does not add it back.
+ */
+export type PullRequestLinkSource = "manual" | "created" | "agent" | "stack" | "stack-dismissed";
+export const pullRequestLinkSources: PullRequestLinkSource[] = ["manual", "created", "agent", "stack", "stack-dismissed"];
+/** The native stack a linked pull request was last seen in, so lists group it without asking GitHub. */
+export type SavedPullRequestStack = { id: string; number: number; url: string; base: string; layers: { number: number; headBranch: string; state: PullRequestStackState }[] };
+export type TaskPullRequestLink = { repository: string; number: number; url: string; linkedAt: string; source: PullRequestLinkSource; watching?: boolean; /** Present while watching: what the chat's agent was last told. */ watch?: PullRequestWatchState; snapshot?: PullRequestLinkSnapshot; stack?: SavedPullRequestStack };
 export const maximumPullRequestLinks = 50;
 const repositoryPattern = /^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/;
 export function validRepository(value: unknown): value is string { return typeof value === "string" && repositoryPattern.test(value) && !value.split("/").some(part => part === "." || part === ".."); }
@@ -134,7 +143,13 @@ export function parsePullRequestReference(input: string): { repository?: string;
 }
 
 export function pullRequestLinkSnapshot(details: PullRequestDetails): PullRequestLinkSnapshot {
-	return { title: details.title, state: details.state === "MERGED" ? "merged" : details.state === "CLOSED" ? "closed" : "open", draft: details.draft, mergeable: details.mergeable, checks: details.checks, review: details.review, additions: details.additions, deletions: details.deletions, author: details.author, head: details.head, base: details.base, updatedAt: details.updatedAt };
+	return { title: details.title, state: details.state === "MERGED" ? "merged" : details.state === "CLOSED" ? "closed" : "open", draft: details.draft, mergeable: details.mergeable, checks: details.checks, review: details.review, additions: details.additions, deletions: details.deletions, author: details.author, head: details.head, base: details.base, updatedAt: details.updatedAt, changedFiles: details.changedFiles, ...(details.authorAvatarUrl ? { authorAvatarUrl: details.authorAvatarUrl } : {}), syncedAt: details.fetchedAt };
+}
+/** Whether two snapshots say the same thing, ignoring when each was read. */
+export function sameSnapshot(left: PullRequestLinkSnapshot | undefined, right: PullRequestLinkSnapshot) {
+	if (!left) return false;
+	const strip = (snapshot: PullRequestLinkSnapshot) => { const copy = { ...snapshot }; delete copy.syncedAt; return copy; };
+	return JSON.stringify(strip(left)) === JSON.stringify(strip(right));
 }
 /** The link without its watch. */
 export function unwatched(link: TaskPullRequestLink): TaskPullRequestLink { const copy = { ...link }; delete copy.watch; delete copy.watching; return copy; }
@@ -148,7 +163,7 @@ export function validatePullRequestLinks(value: unknown): TaskPullRequestLink[] 
 		const link = entry as Partial<TaskPullRequestLink> | null;
 		if (!link || !validRepository(link.repository) || !Number.isSafeInteger(link.number) || Number(link.number) < 1 || typeof link.linkedAt !== "string") continue;
 		if (links.some(other => samePullRequest(other, link as TaskPullRequestLink))) continue;
-		links.push({ repository: link.repository, number: Number(link.number), url: pullRequestUrl(link.repository, Number(link.number)), linkedAt: link.linkedAt, source: link.source === "agent" ? "agent" : "manual", ...(link.watching ? { watching: true, watch: validatePullRequestWatch(link.watch) ?? newPullRequestWatch(new Date().toISOString()) } : {}), ...(link.snapshot && typeof link.snapshot === "object" ? { snapshot: link.snapshot } : {}) });
+		links.push({ repository: link.repository, number: Number(link.number), url: pullRequestUrl(link.repository, Number(link.number)), linkedAt: link.linkedAt, source: pullRequestLinkSources.includes(link.source as PullRequestLinkSource) ? link.source as PullRequestLinkSource : "manual", ...(link.watching ? { watching: true, watch: validatePullRequestWatch(link.watch) ?? newPullRequestWatch(new Date().toISOString()) } : {}), ...(link.snapshot && typeof link.snapshot === "object" ? { snapshot: link.snapshot } : {}), ...(validateSavedStack(link.stack) ? { stack: validateSavedStack(link.stack) } : {}) });
 	}
 	return links;
 }
