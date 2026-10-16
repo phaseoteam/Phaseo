@@ -101,8 +101,8 @@ describe("local addresses from terminals", () => {
 		expect(localUrlsIn("Listening on http://0.0.0.0:8000,")).toEqual(["http://localhost:8000/"]);
 	});
 	it("treats a printed address on the preview's port as ready, but not the echoed command", () => {
-		expect(previewPrinted("PS C:\app> pnpm dev\r\n\r\n  Local:   http://localhost:5173/\r\n", "http://localhost:5173", "pnpm dev")).toBe(true);
-		expect(previewPrinted("PS C:\app> npx wait-on http://localhost:5173 && pnpm e2e\r\n", "http://localhost:5173", "npx wait-on http://localhost:5173 && pnpm e2e")).toBe(false);
+		expect(previewPrinted("PS C:\\app> pnpm dev\r\n\r\n  Local:   http://localhost:5173/\r\n", "http://localhost:5173", "pnpm dev")).toBe(true);
+		expect(previewPrinted("PS C:\\app> npx wait-on http://localhost:5173 && pnpm e2e\r\n", "http://localhost:5173", "npx wait-on http://localhost:5173 && pnpm e2e")).toBe(false);
 		expect(previewPrinted("Local: http://localhost:5174/", "http://localhost:5173/", "pnpm dev")).toBe(false);
 		expect(previewPrinted("Local: http://localhost:3000/", "https://example.com/", "pnpm dev")).toBe(false);
 	});

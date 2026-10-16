@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { ChevronDown, FolderOpen } from "lucide-react";
+import { ProjectIcon } from "../components/ProjectIcon";
 import { errorText, useWorkspace } from "../app/workspace";
 import { usePersistedState } from "../lib/persistedState";
 import { cn } from "../lib/utils";
@@ -55,7 +56,7 @@ export function FilesPanel({ initialProjectId, taskId }: { initialProjectId?: st
 		<div className="flex h-10 shrink-0 items-center gap-1 border-b border-border/60 px-2">
 			<DropdownMenu>
 				<DropdownMenuTrigger render={<button type="button" className="flex h-7 min-w-0 items-center gap-1.5 rounded-md px-2 text-xs font-semibold hover:bg-accent/60 [&_svg]:size-3.5" />}>
-					<FolderOpen className="text-muted-foreground" /><span className="truncate">{project?.name ?? "Choose a project"}</span><ChevronDown className="text-muted-foreground" />
+					{project ? <ProjectIcon project={project} /> : <FolderOpen className="text-muted-foreground" />}<span className="truncate">{project?.name ?? "Choose a project"}</span><ChevronDown className="text-muted-foreground" />
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="start" className="w-56">
 					<DropdownMenuRadioGroup value={id} onValueChange={value => switchProject(String(value))}>

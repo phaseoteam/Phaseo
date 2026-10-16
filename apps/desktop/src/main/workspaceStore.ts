@@ -341,6 +341,7 @@ export class WorkspaceStore {
 	saveAccount(account: Account) {
 		this.db.prepare("INSERT INTO accounts (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(account.id, JSON.stringify(account));
 	}
+	deleteProject(id: string) { this.db.prepare("DELETE FROM projects WHERE id=?").run(id); }
 	saveProject(project: Project) { this.db.prepare("INSERT INTO projects (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(project.id, JSON.stringify(project)); }
 	saveAgent(agent: AgentConnection) { this.db.prepare("INSERT INTO agents (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(agent.id, JSON.stringify(agent)); }
 	/** Deletes chats outright with their attachments and delegation records; returns the attachments whose files to remove. */

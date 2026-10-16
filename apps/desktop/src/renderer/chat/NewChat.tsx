@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { BookOpen, Box, Check, ChevronDown, Code2, FolderOpen, FolderPlus, Gauge, Lightbulb, ListChecks, PenLine, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
+import { ProjectIcon } from "../components/ProjectIcon";
 import { ScrollArea } from "../components/ui/scroll-area";
 import type { Task } from "../../shared/workspace";
 import { errorText, usablePhaseoAccounts, useWorkspace } from "../app/workspace";
@@ -153,10 +154,10 @@ export function NewChat() {
 
 	const projectMenu = <DropdownMenu>
 		<DropdownMenuTrigger render={<button type="button" className={cn("flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-[13px] font-semibold shadow-xs hover:bg-muted", !project && "text-muted-foreground")} />}>
-			<FolderOpen className="size-4" />{project?.name ?? "Choose a project"}<ChevronDown className="size-3.5 text-muted-foreground" />
+			{project ? <ProjectIcon project={project} className="size-4" /> : <FolderOpen className="size-4" />}{project?.name ?? "Choose a project"}<ChevronDown className="size-3.5 text-muted-foreground" />
 		</DropdownMenuTrigger>
 		<DropdownMenuContent align="center" className="w-60">
-			{projects.map(value => <DropdownMenuItem key={value.id} onClick={() => setNewChatProjectId(value.id)}><FolderOpen />{value.name}{value.id === project?.id && <Check className="ml-auto" />}</DropdownMenuItem>)}
+			{projects.map(value => <DropdownMenuItem key={value.id} onClick={() => setNewChatProjectId(value.id)}><ProjectIcon project={value} />{value.name}{value.id === project?.id && <Check className="ml-auto" />}</DropdownMenuItem>)}
 			{projects.length > 0 && <DropdownMenuSeparator />}
 			<DropdownMenuItem onClick={addProject}><FolderPlus />Open folder…</DropdownMenuItem>
 		</DropdownMenuContent>

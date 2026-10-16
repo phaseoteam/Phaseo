@@ -15,7 +15,12 @@ export type ProjectScript = {
  * One project's own settings, after T3's project overrides. An absent auto-settle key follows Settings → General;
  * autoSettleAfterDays null means never. Worktrees use their source project's settings.
  */
-export type ProjectSettings = { autoSettleAfterDays?: number | null; autoSettleOnMerge?: boolean; keepPullRequests?: boolean; scripts?: ProjectScript[] };
+export type ProjectSettings = { autoSettleAfterDays?: number | null; autoSettleOnMerge?: boolean; keepPullRequests?: boolean; scripts?: ProjectScript[]; icon?: ProjectIcon };
+/** T3's project icon colours. */
+export const projectIconColors = ["gray", "red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"] as const;
+export type ProjectIconColor = typeof projectIconColors[number];
+/** T3's project icon choices: a Lucide icon with a colour, an emoji, or a coloured monogram of one or two letters. */
+export type ProjectIcon = { kind: "lucide"; name: string; color: ProjectIconColor } | { kind: "emoji"; emoji: string } | { kind: "monogram"; text: string; color: ProjectIconColor };
 export type ProjectUpdate = { id: string; name?: string; settings?: ProjectSettings };
 export const maximumProjectScripts = 30;
 
@@ -46,6 +51,69 @@ export function normalisePreviewUrl(value: unknown, name = "the action"): string
 	return url.href;
 }
 
+const graphemes = (value: string) => [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(value)].length;
+
+/** Checks a project icon as T3's contracts do; a monogram is one or two letters or numbers. */
+export function validateProjectIcon(value: unknown): ProjectIcon {
+	if (!plain(value)) throw new Error("Invalid project icon.");
+	const color = value.color;
+	const validColor = typeof color === "string" && (projectIconColors as readonly string[]).includes(color);
+	if (value.kind === "lucide" && typeof value.name === "string" && value.name.length <= 64 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.name) && validColor) return { kind: "lucide", name: value.name, color: color as ProjectIconColor };
+	if (value.kind === "emoji" && typeof value.emoji === "string" && value.emoji.trim() && value.emoji.trim().length <= 32 && !hasControl(value.emoji) && graphemes(value.emoji.trim()) === 1) return { kind: "emoji", emoji: value.emoji.trim() };
+	if (value.kind === "monogram" && typeof value.text === "string" && validColor) {
+		const text = value.text.normalize("NFKC").trim().toUpperCase();
+		if (text.length <= 32 && /^[\p{L}\p{N}][\p{L}\p{N}\p{M}‌‍]*$/u.test(text) && graphemes(text) <= 2) return { kind: "monogram", text, color: color as ProjectIconColor };
+		throw new Error("A monogram is one or two letters or numbers.");
+	}
+	throw new Error("Invalid project icon.");
+}
+
+/** T3's automatic project badge: two letters from the name and a colour that always comes out the same for it. */
+export function projectIdentity(name: string): { monogram: string; color: ProjectIconColor } {
+	const normalised = name.normalize("NFKC").trim();
+	const words = normalised.match(/[\p{L}\p{N}]+/gu) ?? [];
+	let monogram = "PR";
+	if (words[0]) {
+		const glyphs = Array.from(words[0]), first = glyphs[0];
+		const second = glyphs.slice(1).find(glyph => /\p{N}/u.test(glyph)) ?? (words.length > 1 ? Array.from(words.at(-1) ?? "")[0] : glyphs.at(-1)) ?? first;
+		monogram = Array.from(`${first}${second}`.toUpperCase()).slice(0, 2).join("");
+	}
+	let index = 0;
+	for (const glyph of normalised.toLocaleLowerCase("en-US") || "project") index = (index * 31 + (glyph.codePointAt(0) ?? 0)) % projectIconColors.length;
+	return { monogram, color: projectIconColors[index] ?? "blue" };
+}
+
+/** A script declared in a checkout's t3.json, T3's checked-in project file, offered for import. */
+export type T3ProjectScript = { name: string; command: string; icon?: ProjectScriptIcon; runOnWorktreeCreate?: boolean; runOnSettle?: boolean; previewUrl?: string; autoOpenPreview?: boolean };
+export type T3ProjectFileState = { status: "missing" | "invalid" | "ok"; scripts: T3ProjectScript[] };
+export const t3ProjectFileName = "t3.json";
+
+/** Reads t3.json as T3's schema does: one bad entry makes the whole file invalid, so nothing in it is offered. */
+export function parseT3ProjectFile(text: string): T3ProjectScript[] {
+	const value: unknown = JSON.parse(text);
+	if (!plain(value)) throw new Error("t3.json must be an object.");
+	if (value.scripts === undefined) return [];
+	if (!Array.isArray(value.scripts) || value.scripts.length > 50) throw new Error("scripts must be a list of up to 50 scripts.");
+	return value.scripts.map((raw, index): T3ProjectScript => {
+		if (!plain(raw)) throw new Error(`Script ${index + 1} must be an object.`);
+		const text = (key: string, maximum: number) => { const field = raw[key]; if (typeof field !== "string" || !field.trim() || field.length > maximum) throw new Error(`Script ${index + 1} needs a ${key}.`); return field.trim(); };
+		const flag = (key: string) => { const field = raw[key]; if (field !== undefined && typeof field !== "boolean") throw new Error(`Script ${index + 1} has an invalid ${key}.`); return field === true; };
+		if (raw.icon !== undefined && !(projectScriptIcons as readonly string[]).includes(raw.icon as string)) throw new Error(`Script ${index + 1} has an unknown icon.`);
+		const previewUrl = raw.previewUrl === undefined ? undefined : text("previewUrl", 2000);
+		return { name: text("name", 200), command: text("command", 10_000), ...(raw.icon ? { icon: raw.icon as ProjectScriptIcon } : {}), ...(flag("runOnWorktreeCreate") ? { runOnWorktreeCreate: true } : {}), ...(flag("runOnSettle") ? { runOnSettle: true } : {}), ...(previewUrl ? { previewUrl, ...(flag("autoOpenPreview") ? { autoOpenPreview: true } : {}) } : {}) };
+	});
+}
+
+/** T3's import list: t3.json scripts not already saved under the same command or name. */
+export const importableScripts = (fileScripts: readonly T3ProjectScript[], scripts: readonly ProjectScript[]) =>
+	fileScripts.filter(file => !scripts.some(script => script.command === file.command || script.name.toLowerCase() === file.name.toLowerCase()));
+
+/** A t3.json script as a new action, with T3's defaults. */
+export const scriptFromProjectFile = (file: T3ProjectScript): Omit<ProjectScript, "id"> => ({
+	name: file.name, command: file.command, icon: file.icon ?? "play", runOnWorktreeCreate: file.runOnWorktreeCreate ?? false,
+	...(file.runOnSettle ? { runOnSettle: true } : {}), ...(file.previewUrl ? { previewUrl: file.previewUrl, ...(file.autoOpenPreview ? { autoOpenPreview: true } : {}) } : {}),
+});
+
 export function validateProjectSettings(value: unknown): ProjectSettings {
 	if (!plain(value)) throw new Error("Invalid project settings.");
 	const settings: ProjectSettings = {};
@@ -66,6 +134,7 @@ export function validateProjectSettings(value: unknown): ProjectSettings {
 		if (scripts.filter(script => script.runOnSettle).length > 1) throw new Error("Only one script can run when a chat settles.");
 		if (scripts.length) settings.scripts = scripts;
 	}
+	if (value.icon !== undefined) settings.icon = validateProjectIcon(value.icon);
 	return settings;
 }
 

@@ -153,6 +153,28 @@ export class WorkspaceRuntime {
 		this.broadcast();
 		return this.store.getOverview();
 	}
+	/**
+	 * T3's Remove project: deletes the project entry, its worktree entries and all their chats and terminal
+	 * transcripts. Files on disk, worktree checkouts included, are never touched. Nothing in it may be running.
+	 */
+	private async removeProject(id: string) {
+		const workspace = this.store.getOverview(), project = workspace.projects.find(value => value.id === id);
+		if (!project) throw new Error("Project no longer exists.");
+		if (project.worktree) throw new Error("Remove the worktree from its chat, or remove its project instead.");
+		const ids = new Set([id]);
+		for (let grown = true; grown;) { grown = false; for (const value of workspace.projects) if (value.worktree && ids.has(value.worktree.sourceProjectId) && !ids.has(value.id)) { ids.add(value.id); grown = true; } }
+		const chats = workspace.tasks.filter(task => task.projectId && ids.has(task.projectId)).map(task => task.id);
+		for (let index = 0; index < chats.length; index++) for (const child of workspace.tasks) if (child.delegation?.parentTaskId === chats[index] && !chats.includes(child.id)) chats.push(child.id);
+		if (chats.some(value => this.executions.has(value) || ["running", "waiting"].includes(workspace.tasks.find(task => task.id === value)?.status ?? ""))) throw new Error("Stop the chats running in this project before removing it.");
+		if (this.store.getTerminals().some(session => session.status === "running" && session.projectId && ids.has(session.projectId))) throw new Error("Close this project's terminals before removing it.");
+		if ([...this.projectMutations.values()].some(value => ids.has(value)) || [...this.worktreeSources.keys()].some(value => ids.has(value)) || [...this.removingWorktrees].some(value => ids.has(value))) throw new Error("Wait for project edits, Git actions and worktree changes to finish before removing this project.");
+		if (this.store.missions.list().some(mission => chats.includes(mission.templateTaskId))) throw new Error("A scheduled task runs like a chat in this project. Change or delete that scheduled task first.");
+		for (const attachment of this.store.deleteTasks(chats)) await this.attachments.discard(attachment).catch(() => undefined);
+		for (const session of this.store.getTerminals()) if (session.projectId && ids.has(session.projectId)) this.store.deleteTerminal(session.id);
+		for (const value of ids) this.store.deleteProject(value);
+		this.broadcast();
+		return this.store.getOverview();
+	}
 	/** Auto-settle, after T3 Code: Code chats idle for the configured days settle, dated to their last activity. */
 	settleIdleThreads(now = Date.now()) {
 		if (this.closing) return;
@@ -408,6 +430,7 @@ export class WorkspaceRuntime {
 	private async applyCommand(command: WorkspaceCommand): Promise<WorkspaceOverview> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		if (command.type === "delete-task") return this.deleteTask(command.id);
+		if (command.type === "remove-project") return this.removeProject(command.id);
 		if (command.type === "regenerate-title") { await this.nameChat(command.id, true); return this.store.getOverview(); }
 		const firstMessage = command.type === "send" && this.store.getTask(command.id).title === "New task";
 		if (command.type === "reorder") { this.store.reorder(command.ids); this.broadcast(); return this.store.getOverview(); }

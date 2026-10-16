@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Bug, ChevronDown, FlaskConical, Hammer, ListChecks, Play, Plus, Settings, Wrench } from "lucide-react";
-import { newScriptId, normalisePreviewUrl, primaryScript, projectScriptIcons, scriptMenuLabel, settingsProject, type ProjectScript, type ProjectScriptIcon } from "../../shared/projectSettings";
+import { Bug, ChevronDown, Download, FlaskConical, Hammer, ListChecks, Play, Plus, Settings, Wrench } from "lucide-react";
+import { importableScripts, newScriptId, normalisePreviewUrl, primaryScript, projectScriptIcons, scriptFromProjectFile, scriptMenuLabel, settingsProject, type ProjectScript, type ProjectScriptIcon, type T3ProjectFileState, type T3ProjectScript } from "../../shared/projectSettings";
 import type { Project } from "../../shared/workspace";
 import { keybindingConflicts, keyLabel, replaceCommandBindings, scriptCommand, type KeybindingEntry } from "../../shared/keybindings";
 import { saveKeybindings, useCommands, useKeybindings } from "../lib/keybindings";
@@ -11,7 +11,7 @@ import { createTerminal } from "../lib/terminalSessions";
 import { openPreviewWhenReady } from "../lib/actionPreview";
 import { cn } from "../lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "./ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Switch } from "./ui/switch";
 import { Tip } from "./ui/tooltip";
@@ -57,7 +57,29 @@ export function useProjectScripts(projectId?: string) {
 	};
 }
 
-export type ScriptEditorRequest = { script?: ProjectScript } | undefined;
+/** Which action to edit; `initial` and `error` reopen an import that failed, filled in, as T3 does. */
+export type ScriptEditorRequest = { script?: ProjectScript; initial?: Omit<ProjectScript, "id">; error?: string } | undefined;
+
+/** The scripts in a checkout's t3.json, read when the project changes and whenever `refresh` changes. */
+export function useT3ProjectFile(projectId: string | undefined, refresh: unknown = 0) {
+	const [state, setState] = useState<T3ProjectFileState>({ status: "missing", scripts: [] });
+	useEffect(() => {
+		let active = true;
+		const api = window.phaseoDesktop?.workspace;
+		if (!projectId || !api?.projectFile) { setState({ status: "missing", scripts: [] }); return; }
+		void api.projectFile(projectId).then(value => { if (active) setState(value); }, () => { if (active) setState({ status: "missing", scripts: [] }); });
+		return () => { active = false; };
+	}, [projectId, refresh]);
+	return state;
+}
+
+/** T3's import: adds a t3.json script as it is, or opens it in the editor with the reason when it cannot be saved. */
+export function useImportScript(upsert: (input: Omit<ProjectScript, "id">) => Promise<string>, setEditor: (request: ScriptEditorRequest) => void) {
+	return async (file: T3ProjectScript) => {
+		const input = scriptFromProjectFile(file);
+		try { await upsert(input); } catch (reason) { setEditor({ initial: input, error: errorText(reason) }); }
+	};
+}
 
 /**
  * T3's Add action / Edit action dialog: an icon and name, a shortcut, the command, and when it runs on its own.
@@ -65,6 +87,7 @@ export type ScriptEditorRequest = { script?: ProjectScript } | undefined;
  */
 export function ProjectScriptDialog({ request, projectId, onClose, onSave, onDelete }: { request: ScriptEditorRequest; projectId?: string; onClose: () => void; onSave: (script: Omit<ProjectScript, "id">, id?: string) => Promise<string>; onDelete?: (id: string, entries?: KeybindingEntry[]) => Promise<void> }) {
 	const editing = request?.script;
+	const initial = editing ?? request?.initial;
 	const keybindings = useKeybindings();
 	const shortcutCommand = projectId ? scriptCommand(projectId, editing?.id ?? "new-action") : undefined;
 	const savedKey = shortcutCommand && editing ? keybindings.entries.find(entry => entry.command === shortcutCommand && entry.key)?.key ?? "" : "";
@@ -75,11 +98,11 @@ export function ProjectScriptDialog({ request, projectId, onClose, onSave, onDel
 	const [picking, setPicking] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState("");
 	useEffect(() => {
 		if (!request) return;
-		setIcon(editing?.icon ?? "play"); setName(editing?.name ?? ""); setCommand(editing?.command ?? "");
-		setOnWorktree(editing?.runOnWorktreeCreate ?? false); setOnSettle(editing?.runOnSettle ?? false); setError(""); setBusy(false);
-		setKey(savedKey); setPreviewUrl(editing?.previewUrl ?? ""); setAutoOpenPreview(editing?.autoOpenPreview ?? false);
+		setIcon(initial?.icon ?? "play"); setName(initial?.name ?? ""); setCommand(initial?.command ?? "");
+		setOnWorktree(initial?.runOnWorktreeCreate ?? false); setOnSettle(initial?.runOnSettle ?? false); setError(request.error ?? ""); setBusy(false);
+		setKey(savedKey); setPreviewUrl(initial?.previewUrl ?? ""); setAutoOpenPreview(initial?.autoOpenPreview ?? false);
 		// Only a new request resets the form; a keybindings.json change while editing keeps what was typed.
-	}, [request, editing]);
+	}, [request, initial]);
 	const conflicts = shortcutCommand && key ? keybindingConflicts(keybindings.rows, { id: "action-editor", command: shortcutCommand, key }) : [];
 	/** Writes the shortcut once the action is saved and its id is known. */
 	const saveShortcut = async (id: string) => {
@@ -158,6 +181,11 @@ export function ProjectScriptsControl({ project, taskId, onRun }: { project: Pro
 	const { project: owner, scripts, upsert, remove } = useProjectScripts(project.id);
 	const keybindings = useKeybindings();
 	const [editor, setEditor] = useState<ScriptEditorRequest>();
+	const [menuOpens, setMenuOpens] = useState(0);
+	// t3.json is read from this chat's checkout, and again each time the menu opens.
+	const file = useT3ProjectFile(project.id, menuOpens);
+	const imports = importableScripts(file.scripts, scripts);
+	const importScript = useImportScript(upsert, setEditor);
 	const primary = primaryScript(scripts);
 	const run = (script: ProjectScript) => void createTerminal({ projectId: project.id, ...(taskId ? { taskId } : {}), scriptId: script.id }).then(session => {
 		onRun?.(session.id);
@@ -169,13 +197,13 @@ export function ProjectScriptsControl({ project, taskId, onRun }: { project: Pro
 	const shortcutOf = (script: ProjectScript) => { const command = commandOf(script), row = command && keybindings.rows.find(value => value.command === command && value.key); return row ? keyLabel(row.key, isMac()) : ""; };
 	const control = "flex h-7 items-center gap-1 border border-border/80 px-2 text-xs font-medium text-foreground hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none [&_svg]:size-3.5 [&_svg]:shrink-0";
 	return <>
-		{scripts.length === 0
+		{scripts.length === 0 && imports.length === 0
 			? <Tip label="Add action" side="bottom"><button type="button" aria-label="Add action" onClick={() => setEditor({})} className={cn(control, "rounded-md")}><Plus /><span className="hidden xl:inline">Add action</span></button></Tip>
 			: <div role="group" aria-label="Project actions" className="flex items-center">
 				{primary
 					? <Tip label={shortcutOf(primary) ? `Run ${primary.name} (${shortcutOf(primary)})` : `Run ${primary.name}`} side="bottom"><button type="button" aria-label={`Run ${primary.name}`} onClick={() => run(primary)} className={cn(control, "rounded-l-md")}><ScriptIcon icon={primary.icon} /><span className="hidden max-w-32 truncate xl:inline">{primary.name}</span></button></Tip>
 					: <Tip label="Project actions" side="bottom"><span className={cn(control, "rounded-l-md text-muted-foreground")}><Wrench /><span className="hidden xl:inline">Actions</span></span></Tip>}
-				<DropdownMenu>
+				<DropdownMenu onOpenChange={open => { if (open) setMenuOpens(value => value + 1); }}>
 					<DropdownMenuTrigger render={<button type="button" aria-label="Script actions" className={cn(control, "-ml-px rounded-r-md px-1")} />}><ChevronDown /></DropdownMenuTrigger>
 					<DropdownMenuContent align="end" className="w-64">
 						{scripts.map(script => <DropdownMenuItem key={script.id} onClick={() => run(script)} className="group/script">
@@ -187,6 +215,15 @@ export function ProjectScriptsControl({ project, taskId, onRun }: { project: Pro
 									className="absolute top-1/2 right-0 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground opacity-0 group-hover/script:opacity-100 group-focus-visible/script:opacity-100 hover:bg-accent hover:text-foreground"><Settings className="size-3.5" /></button>
 							</span>
 						</DropdownMenuItem>)}
+						{imports.length > 0 && <>
+							{scripts.length > 0 && <DropdownMenuSeparator />}
+							<DropdownMenuGroup>
+								<DropdownMenuLabel>From t3.json</DropdownMenuLabel>
+								{imports.map(item => <DropdownMenuItem key={`${item.name} ${item.command}`} onClick={() => void importScript(item)}>
+									<ScriptIcon icon={item.icon ?? "play"} className="size-4" /><span className="min-w-0 flex-1 truncate">{item.name}</span><Download aria-label="Import" className="ms-auto size-3.5 text-muted-foreground" />
+								</DropdownMenuItem>)}
+							</DropdownMenuGroup>
+						</>}
 						<DropdownMenuSeparator />
 						<DropdownMenuItem onClick={() => setEditor({})}><Plus />Add action</DropdownMenuItem>
 					</DropdownMenuContent>

@@ -22,7 +22,7 @@ import { normalizeTags } from "./tags";
 import type { GitDiffRequest, GitDiffResult, GitRefs, TurnCheckpoint } from "./gitDiff";
 import type { ProjectTreeRequest, ProjectTreeResult } from "./projectTree";
 import type { FilePreview } from "./filePreview";
-import type { ProjectSettings, ProjectUpdate } from "./projectSettings";
+import type { ProjectSettings, ProjectUpdate, T3ProjectFileState } from "./projectSettings";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -118,6 +118,8 @@ export type WorkspaceCommand =
 	| { type: "inbox-read"; id: string; revision: string }
 	| { type: "settle" | "unsettle" | "wake" | "mark-unread"; id: string }
 	| { type: "delete-task"; id: string }
+	/** Removes a project entry, its worktree entries and their chats. Files on disk are not touched. */
+	| { type: "remove-project"; id: string }
 	| { type: "regenerate-title"; id: string }
 	/** The chats of one sidebar section in the order the person dragged them into. */
 	| { type: "reorder"; ids: string[] }
@@ -171,6 +173,8 @@ export type WorkspaceApi = {
 	chooseProject: () => Promise<WorkspaceOverview>;
 	/** Renames a project or replaces its settings (Project settings). */
 	updateProject: (update: ProjectUpdate) => Promise<WorkspaceOverview>;
+	/** The scripts in a project checkout's t3.json, T3 Code's checked-in project file. */
+	projectFile: (projectId: string) => Promise<T3ProjectFileState>;
 	createWorktree: (projectId: string, branch: string, base: string) => Promise<{ workspace: WorkspaceOverview; projectId: string }>;
 	removeWorktree: (projectId: string) => Promise<WorkspaceOverview>;
 	/** Fetches a pull request's head and makes a managed worktree on a new branch at it (T3's "Check out in a separate worktree"). */
@@ -343,7 +347,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				break;
 			}
 			case "inbox-read": string("revision", true, 100); break;
-			case "settle": case "unsettle": case "wake": case "mark-unread": case "delete-task": case "regenerate-title": break;
+			case "settle": case "unsettle": case "wake": case "mark-unread": case "delete-task": case "remove-project": case "regenerate-title": break;
 			case "snooze": string("until", true, 100); if (Number.isNaN(Date.parse(command.until as string))) throw new Error("Invalid snooze time."); break;
 			case "visit": string("at", true, 100); if (Number.isNaN(Date.parse(command.at as string))) throw new Error("Invalid visit time."); break;
 			case "auto-settle": if (typeof command.enabled !== "boolean") throw new Error("Invalid auto-settle setting."); break;

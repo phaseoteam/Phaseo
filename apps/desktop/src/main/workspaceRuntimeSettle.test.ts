@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { WorkspaceRuntime } from "./workspaceRuntime";
@@ -59,3 +59,27 @@ describe("settling Code chats", () => {
 		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
 });
+
+describe("removing a project", () => {
+	it("removes the project, its worktree entries, their chats and transcripts, but never files on disk", async () => {
+		const { directory, runtime, root, tree, chat } = setup({});
+		const other = runtime.store.addProject(path.join(directory, "other")); mkdirSync(other.directory, { recursive: true });
+		try {
+			const mine = chat(root.id), inTree = chat(tree.id), kept = chat(other.id), running = chat(root.id, { status: "running" });
+			runtime.store.saveTerminal({ id: "t1", projectId: tree.id, title: "Dev", cwd: tree.directory, output: "", status: "running", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+			await expect(runtime.command({ type: "remove-project", id: root.id })).rejects.toThrow("Stop the chats running");
+			runtime.store.saveTask({ ...runtime.store.getTask(running), status: "completed" }, true);
+			await expect(runtime.command({ type: "remove-project", id: root.id })).rejects.toThrow("Close this project's terminals");
+			runtime.store.saveTerminal({ ...runtime.store.getTerminals()[0], status: "exited" });
+			await expect(runtime.command({ type: "remove-project", id: tree.id })).rejects.toThrow("Remove the worktree");
+			const overview = await runtime.command({ type: "remove-project", id: root.id });
+			expect(overview.projects.map(project => project.id)).toEqual([other.id]);
+			expect(overview.tasks.map(task => task.id)).toEqual([kept]);
+			expect([mine, inTree, running].some(id => overview.tasks.some(task => task.id === id))).toBe(false);
+			expect(runtime.store.getTerminals()).toEqual([]);
+			expect(existsSync(root.directory) && existsSync(tree.directory)).toBe(true);
+			await expect(runtime.command({ type: "remove-project", id: root.id })).rejects.toThrow("no longer exists");
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+});
+

@@ -43,6 +43,7 @@ const desktopApi: PhaseoDesktopApi = {
 		command: command => ipcRenderer.invoke("workspace:command", command),
 		chooseProject: () => ipcRenderer.invoke("workspace:choose-project"),
 		updateProject: update => ipcRenderer.invoke("workspace:update-project", update),
+		projectFile: projectId => ipcRenderer.invoke("workspace:project-file", projectId),
 		createWorktree: (id, branch, base) => ipcRenderer.invoke("workspace:create-worktree", id, branch, base),
 		pullRequestWorktree: (id, number) => ipcRenderer.invoke("workspace:pull-request-worktree", id, number),
 		removeWorktree: id => ipcRenderer.invoke("workspace:remove-worktree", id),

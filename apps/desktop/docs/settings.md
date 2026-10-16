@@ -8,7 +8,7 @@ Settings is a full page. The sidebar becomes its navigation, with a search box t
 
 ## Project settings
 
-Each project has a page under **Projects** in the settings sidebar, also opened from a Code chat's menu, the chat header and the project menu. It holds the project's name, its auto-settle settings (each follows General until changed) and its actions, with when each runs on its own. Worktrees use their project's page. Settings are stored with the project in the workspace database and checked by the app before they are saved.
+Each project has a page under **Projects** in the settings sidebar, also opened from a Code chat's menu, the chat header and the project menu. It holds the project's name and icon (a Lucide icon with a colour, an emoji or a monogram, as in T3 Code; an automatic monogram until you choose), its auto-settle settings (each follows General until changed), its actions (with when each runs on its own, a shortcut and a preview URL, and scripts to import from the checkout's `t3.json`) and **Remove project**, which deletes the project entry and its chats but never files on disk. Worktrees use their project's page. Settings are stored with the project in the workspace database and checked by the app before they are saved.
 
 ## Usage and limits
 

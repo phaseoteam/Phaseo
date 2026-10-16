@@ -1,7 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent, type ReactNode } from "react";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
 import { ContextMenu } from "@base-ui/react/context-menu";
-import { AlarmClock, AlarmClockOff, Check, ChevronDown, CircleAlert, CircleCheck, CircleDashed, CircleDotDashed, Clock, FolderOpen, FolderPlus, GitBranch, MessageCircleQuestion, Pin, PinOff, Plus, Settings, ShieldQuestion, Undo2 } from "lucide-react";
+import { AlarmClock, AlarmClockOff, Check, ChevronDown, CircleAlert, CircleCheck, CircleDashed, CircleDotDashed, Clock, FolderPlus, GitBranch, MessageCircleQuestion, Pin, PinOff, Plus, Settings, ShieldQuestion, Trash2, Undo2 } from "lucide-react";
+import { ProjectIcon } from "../components/ProjectIcon";
+import { useRemoveProject } from "../settings/removeProject";
 import { hasWoken, isUnread, settleBlocker, shortDuration } from "../../shared/threadLifecycle";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { errorText, useWorkspace } from "../app/workspace";
@@ -68,7 +70,7 @@ function CardRow({ task, now, scope, onScope, hint, controls }: { task: TaskOver
 			className={cn("group/row relative mx-2 flex h-[4.5rem] flex-col justify-center gap-0.5 rounded-md px-2.5 outline-none hover:bg-sidebar-accent/70 focus-visible:ring-2 focus-visible:ring-ring/40", selected && "bg-sidebar-accent", controls.picked && "bg-primary/10 ring-1 ring-primary/30 ring-inset")}>
 			{controls.dropLine && <span aria-hidden className={cn("pointer-events-none absolute inset-x-2 h-0.5 rounded-full bg-primary", controls.dropLine === "above" ? "-top-px" : "-bottom-px")} />}
 			<div className="flex h-5 items-center gap-1.5 text-xs text-muted-foreground">
-				<FolderOpen className="size-3.5 shrink-0" /><span className="min-w-0 truncate">{project?.name}</span>
+				<ProjectIcon project={project} className="size-3.5" /><span className="min-w-0 truncate">{project?.name}</span>
 				{task.pinned && <Tip label="Unpin chat"><button type="button" aria-label="Unpin chat" onClick={event => { event.stopPropagation(); void actions.pin(task); }} className="group/pin grid size-4 shrink-0 place-items-center rounded hover:text-foreground"><Pin className="size-3 group-hover/pin:hidden" /><PinOff className="hidden size-3 group-hover/pin:block" /></button></Tip>}
 				<span className="ml-auto flex items-center group-hover/row:hidden group-focus-within/row:hidden">{hint !== undefined ? <JumpHint index={hint} /> : <StatusLabel task={task} now={now} onDismissWake={() => void actions.wake(task)} />}</span>
 				<span className="ml-auto hidden items-center gap-0.5 group-hover/row:flex group-focus-within/row:flex" onClick={event => event.stopPropagation()}>
@@ -96,18 +98,19 @@ function CardRow({ task, now, scope, onScope, hint, controls }: { task: TaskOver
 
 /** A snoozed or settled chat: just the title, and when it wakes or how long ago it settled. */
 function SlimRow({ task, now, kind, scope, onScope }: { task: TaskOverview; now: number; kind: "snoozed" | "settled"; scope: string; onScope: (id: string) => void }) {
-	const { selectedId, select } = useWorkspace();
+	const { overview, selectedId, select } = useWorkspace();
 	const actions = useThreadActions();
 	const [customSnooze, setCustomSnooze] = useState(false);
 	const [renaming, setRenaming] = useState(false);
 	const [deleting, setDeleting] = useState(false);
 	const selected = task.id === selectedId;
+	const project = overview.projects.find(value => value.id === task.projectId);
 	const when = kind === "snoozed" ? shortDuration(Date.parse(task.snoozedUntil!) - now) : shortDuration(now - Date.parse(task.settledAt ?? task.updatedAt));
 	const action = kind === "snoozed" ? "Wake chat now" : "Un-settle chat";
 	return <ContextMenu.Root>
 		<ContextMenu.Trigger render={<div role="button" tabIndex={0} aria-current={selected ? "page" : undefined} onClick={() => select(task.id)} onKeyDown={event => { if (event.key === "Enter") select(task.id); }} />}
 			className={cn("group/row mx-2 flex h-9 items-center gap-2 rounded-md px-2.5 text-[13px] outline-none hover:bg-sidebar-accent/70 focus-visible:ring-2 focus-visible:ring-ring/40", selected && "bg-sidebar-accent")}>
-			<FolderOpen className="size-3.5 shrink-0 text-muted-foreground opacity-40 grayscale group-hover/row:opacity-100" />
+			<span className="flex shrink-0 opacity-40 grayscale group-hover/row:opacity-100 group-hover/row:grayscale-0"><ProjectIcon project={project} className="size-3.5" /></span>
 			{renaming ? <RenameInput task={task} onDone={() => setRenaming(false)} /> : <span className="min-w-0 flex-1 truncate text-sidebar-foreground/70">{task.title}</span>}
 			<span className={cn("shrink-0 text-[11px] group-hover/row:hidden", kind === "snoozed" ? "text-info" : "text-muted-foreground")}>{when}</span>
 			<Tip label={action}><button type="button" onClick={event => { event.stopPropagation(); void (kind === "snoozed" ? actions.wake(task) : actions.unsettle(task)); }} aria-label={action}
@@ -136,6 +139,7 @@ export function CodeThreadList() {
 	const [settledShown, setSettledShown] = useState(10);
 	const { command } = useWorkspace();
 	const actions = useThreadActions();
+	const removeProject = useRemoveProject();
 	// Ctrl/⌘-click picks chats, Shift-click picks a range; right-click a picked chat for the bulk menu (T3).
 	const [picked, setPicked] = useState<string[]>([]);
 	const anchor = useRef<string | undefined>(undefined);
@@ -232,12 +236,13 @@ export function CodeThreadList() {
 					<DropdownMenuSeparator />
 					{/* T3's project picker: each project has a settings button at the end of its row. */}
 					{projects.map(project => <DropdownMenuItem key={project.id} onClick={() => setScope(project.id)} className="group/project pr-1">
-						<FolderOpen /><span className="min-w-0 flex-1 truncate">{project.name}</span>{project.id === scope && <Check />}
+						<ProjectIcon project={project} /><span className="min-w-0 flex-1 truncate">{project.name}</span>{project.id === scope && <Check />}
 						<Tip label={`Project settings for ${project.name}`} side="right"><button type="button" aria-label={`Project settings for ${project.name}`} onPointerDown={event => event.stopPropagation()} onClick={event => { event.preventDefault(); event.stopPropagation(); openProjectSettings(project.id); }}
 							className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground opacity-0 group-hover/project:opacity-100 group-focus-visible/project:opacity-100 hover:bg-accent hover:text-foreground"><Settings className="size-3.5" /></button></Tip>
 					</DropdownMenuItem>)}
 					<DropdownMenuSeparator />
 					{scoped && <DropdownMenuItem onClick={() => openProjectSettings(scoped.id)}><Settings />Project settings</DropdownMenuItem>}
+					{scoped && !scoped.worktree && <DropdownMenuItem variant="destructive" onClick={() => void removeProject(scoped).then(removed => { if (removed) setScope(""); })}><Trash2 />Remove project</DropdownMenuItem>}
 					<DropdownMenuItem onClick={addProject}><FolderPlus />Add project…</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>

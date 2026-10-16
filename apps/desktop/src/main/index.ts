@@ -24,6 +24,7 @@ import { BrowserHost } from "./browserHost";
 import { BrowserAgent } from "./browserAgent";
 import { BrowserRecordings } from "./browserRecordings";
 import { localServers, probeAddress } from "./browserLocalServers";
+import { readT3ProjectFile } from "./t3ProjectFile";
 import { browserId, probeUrl } from "../shared/browser";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
@@ -450,6 +451,11 @@ ipcMain.handle("workspace:choose-project", async event => {
 	const result = await dialog.showOpenDialog(window, { properties: ["openDirectory"], title: "Open project" });
 	if (!result.canceled && result.filePaths[0]) workspaceRuntime.store.addProject(result.filePaths[0]);
 	const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state); return state;
+});
+ipcMain.handle("workspace:project-file", (event, id: unknown) => {
+	if (!senderWindow(event) || typeof id !== "string" || !id || id.length > 200) throw new Error("Invalid project request.");
+	const project = workspaceRuntime.store.getProjects().find(value => value.id === id);
+	return project && !project.worktree?.removedAt ? readT3ProjectFile(project.directory) : { status: "missing", scripts: [] };
 });
 ipcMain.handle("workspace:update-project", (event, value: unknown) => {
 	if (!senderWindow(event) || shutdownStarted) throw new Error("Invalid project request.");
