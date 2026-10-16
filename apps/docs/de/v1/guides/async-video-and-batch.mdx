@@ -36,6 +36,17 @@ Verwende nach dem Speichern eines Endpunkts **Testereignis senden** in den Einst
 
 Behandle die Lebenszykluszustände `completed`, `failed`, `cancelled` und `expired` als endgültig. Behalte auch bei Webhooks einen Wiederherstellungspfad über Polling bei.
 
+```mermaid
+flowchart TD
+  newJob["Video- oder Stapelauftrag erstellen"] --> store["id und polling_url speichern"]
+  store --> waiting["Auf ein Update warten"]
+  waiting -->|"Webhook-Ereignis"| terminal{{"Endzustand?"}}
+  waiting -->|"polling_url abfragen"| terminal
+  terminal -->|"Nein"| waiting
+  terminal -->|"completed"| fetchOut["Ausgaben oder Ergebnisse abrufen"]
+  terminal -->|"failed / cancelled / expired"| outcome["Ergebnis behandeln"]
+```
+
 Phaseo unternimmt für jedes Ereignis einen ersten Zustellversuch. Eine erfolgreiche 2xx-Antwort beendet die Zustellung ohne Wiederholung. Fehlgeschlagene Zustellungen erhalten höchstens drei Wiederholungen, geplant nach 1, 5 und 15 Minuten. Hintergrunddurchläufe verarbeiten fällige Wiederholungen; die tatsächliche Zustellung kann daher später erfolgen. Jeder Versuch protokolliert Nummer, Zeitpunkt, HTTP-Status, Fehler und nächsten Wiederholungszeitpunkt. Nach dem vierten erfolglosen Versuch gilt die Zustellung als endgültig fehlgeschlagen. Empfänger müssen Ereignisse weiterhin deduplizieren: Eine verlorene Bestätigung oder Worker-Unterbrechung kann die Zustellung ungewiss machen.
 
 ## Auftrags- und Anfrageprotokolle anzeigen

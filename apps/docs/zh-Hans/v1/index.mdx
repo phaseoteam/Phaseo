@@ -85,4 +85,17 @@ print(response.output_text)
 
 [浏览模型](https://phaseo.app/models)或[比较模型](https://phaseo.app/compare)。目录可能包含无法路由的模型；集成前请检查 Gateway 可用性。模型、提供商和计费请参阅 [Phaseo 工作原理](./developers/introduction.mdx)。
 
-在助手内部访问文档，请连接 [Docs MCP](./guides/integrations/docs-mcp.mdx)，或阅读[智能体能力概要](https://phaseo.app/docs/skill.md)。
+## 使用 AI 智能体构建
+
+<Prompt description="把将 Phaseo 加入项目所需的一切交给你的编程智能体（Cursor、Claude Code、Codex 等）。" icon="bot" actions={["copy", "cursor"]}>
+{`Add Phaseo Gateway to this project.
+
+1. Install the Phaseo skills: npx skills add https://phaseo.app/docs
+2. If your tools support MCP, connect the Phaseo docs server at https://phaseo.app/docs/mcp and look up endpoints and SDK usage there instead of guessing.
+3. Inspect the current AI provider setup and propose the smallest change that sends requests to https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY.
+4. Use the official SDK for this language if there is one (@phaseo/sdk for TypeScript, phaseo for Python). Otherwise call the REST API.
+5. Check model IDs with GET /v1/models instead of inventing them. Use phaseo/free for a first test if no paid model has been chosen.
+6. Explain which files you will change and how you will verify the change before you edit. Never print or commit API keys.`}
+</Prompt>
+
+智能体也可以通过 [Docs MCP](./guides/integrations/docs-mcp.mdx) 搜索本文档、阅读[能力摘要](https://phaseo.app/docs/skill.md)，或从 [llms.txt](https://phaseo.app/docs/llms.txt) 开始。

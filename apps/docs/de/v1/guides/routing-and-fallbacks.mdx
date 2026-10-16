@@ -188,7 +188,7 @@ Auf derselben Seite gibt es außerdem Umschalter für Beta- und Alpha-Kanäle. S
 
 ### BYOK-Fallback ist explizit
 
-Unter **Dashboard -> Einstellungen -> BYOK** können Teams festlegen, ob bei einer fehlgeschlagenen BYOK-Anfrage ein Fallback auf Phaseo-Guthaben zulässig ist. Diese öffentliche Einstellung beantwortet den häufigen Fall: „Meine eigene Schlüsselanfrage ist fehlgeschlagen. Soll die Anfrage trotzdem abgeschlossen werden?“
+Unter **Dashboard -> Einstellungen -> BYOK** können Teams festlegen, ob bei einer fehlgeschlagenen <Tooltip tip="Eigener Schlüssel: Phaseo leitet die Anfrage mit deinem eigenen Anbieter-API-Schlüssel weiter, und dein Anbieter rechnet die Modellnutzung direkt ab.">BYOK</Tooltip>-Anfrage ein Fallback auf Phaseo-Guthaben zulässig ist. Diese öffentliche Einstellung beantwortet den häufigen Fall: „Meine eigene Schlüsselanfrage ist fehlgeschlagen. Soll die Anfrage trotzdem abgeschlossen werden?“
 
 ### Dynamische Routen ordnen API-Schlüsseln Richtlinien zu
 
@@ -220,6 +220,19 @@ Benutzerdefinierte Metadaten sind auf den OpenAI-kompatiblen Text-Inferenzoberfl
 ## Fallback-Verhalten
 
 Wenn ein Anbieter Fehler oder Ratenbegrenzungen zurückgibt, kann das Gateway es erneut versuchen oder die Anfrage an einen anderen Anbieter weiterleiten, der dasselbe Modell unterstützt. Behandle Antworten mit `429` und `5xx` weiterhin mit exponentiellem Backoff.
+
+```mermaid
+flowchart TD
+  req["Anfrage"] --> pol["Voreinstellungen, Schutzregeln und Anbieterrichtlinien anwenden"]
+  pol --> rnk["Geeignete Anbieter nach Routing-Modus ordnen"]
+  rnk --> prov["Bestplatzierten Anbieter aufrufen"]
+  prov -->|"Erfolg"| resp["Antwort zurückgeben"]
+  prov -->|"Anbieterfehler oder Ratenlimit"| nextProv{{"Weiterer geeigneter Anbieter?"}}
+  nextProv -->|"Ja"| prov
+  nextProv -->|"Nein"| fallbackCheck{{"Wiederholbarer Status und noch ein Fallback-Modell?"}}
+  fallbackCheck -->|"Ja: mit dem nächsten Modell wiederholen"| pol
+  fallbackCheck -->|"Nein"| err["Fehler zurückgeben"]
+```
 
 Modellknoten einer dynamischen Route können außerdem eine geordnete Liste von Fallback-Modellen definieren. Phaseo schöpft zunächst alle geeigneten Anbieter für das ausgewählte Modell aus. Ist die resultierende Antwort wiederholbar (`429`, `500`, `502`, `503` oder `504`), führt das Gateway die vollständige Richtlinien- und Anbieterauswahl für jedes Fallback-Modell in der angegebenen Reihenfolge erneut aus. Clientfehler werden sofort zurückgegeben und führen nicht zu einem Modellwechsel.
 

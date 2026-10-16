@@ -65,3 +65,12 @@ BYOK 请求使用你的提供商账户限制。托管请求使用提供商的共
 按端点和模型跟踪 `429` 的发生率，并在请求日志中检查回退频率。将应用日志与[路由设置](../guides/routing-and-fallbacks.mdx)以及 BYOK 流量的提供商账户配额进行对比。
 
 有关工作区的支出和访问控制，请参阅[预算](./endpoint/budgets-list.mdx)和[防护规则](./endpoint/guardrails.mdx)。
+
+<Visibility for="agents">
+面向智能体的速率限制规则（本页摘要）：
+
+- Gateway 配额会返回 `429`，原因为 `customer_requests_per_minute` 或 `free_requests_per_day`；请等待 `Retry-After` 指定的秒数。如果配额检查不可用，Gateway 会返回带有重试指引的 `503`。
+- 密钥限制和预算会返回带有 `key_limit_exceeded` 和 `reset_at` 的 `429`。没有 `Retry-After` 时，限制不会自动重置：请提高限制或改用其他密钥，而不是重试。
+- 工作区速率限制策略会返回带有 `rate_limit_exceeded`、`policy_id` 和 `limit_scope` 的 `429`。`x-ratelimit-remaining-requests` 是近似值。
+- `Retry-After` 可以是秒数或 HTTP 日期；安排重试前先校验该值。不要重新提交结果不明确的视频或批处理任务，而应查询其状态。
+</Visibility>

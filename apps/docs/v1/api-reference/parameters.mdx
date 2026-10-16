@@ -642,9 +642,10 @@ If you want the deeper "how should I tune this?" guidance rather than the raw fi
 - [Errors and Debugging](/v1/api-reference/errors)
 
 <Visibility for="agents">
-If you are implementing parameter handling as an agent:
+Parameter-handling rules for agents:
 
-- use repository skills for schema validation and request-shape checks
-- preserve unknown provider-specific keys in pass-through flows when allowed
-- validate endpoint compatibility before setting advanced fields like tools, streaming, or debug options together
+- Validate request bodies against the API contract at https://phaseo.app/docs/openapi/v1/openapi.yaml instead of guessing field names.
+- Check the endpoint's API reference page before combining advanced fields such as tools, streaming and debug options.
+- Preserve unknown provider-specific keys in pass-through flows when the endpoint allows them.
+- For tested request-shape patterns, install the `phaseo-gateway` skill: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`.
 </Visibility>

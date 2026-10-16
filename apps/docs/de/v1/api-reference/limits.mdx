@@ -65,3 +65,12 @@ Wiederhole eine Jobübermittlung mit unklarem Ergebnis nicht automatisch und fü
 Erfasse die Häufigkeit von `429` nach Endpunkt und Modell und prüfe die Fallback-Häufigkeit in den Anfrageprotokollen. Vergleiche deine Anwendungsprotokolle mit den [Routing-Einstellungen](../guides/routing-and-fallbacks.mdx) und den Anbieterkontingenten für BYOK-Traffic.
 
 Informationen zu Ausgaben- und Zugriffskontrollen im Arbeitsbereich findest du unter [Budgets](./endpoint/budgets-list.mdx) und [Schutzregeln](./endpoint/guardrails.mdx).
+
+<Visibility for="agents">
+Regeln zu Ratenlimits für Agenten, als Zusammenfassung dieser Seite:
+
+- Gateway-Kontingente liefern `429` mit dem Grund `customer_requests_per_minute` oder `free_requests_per_day`; warte die Sekunden aus `Retry-After` ab. Ist die Kontingentprüfung nicht verfügbar, liefert das Gateway `503` mit Hinweisen zur Wiederholung.
+- Schlüssellimits und Budgets liefern `429` mit `key_limit_exceeded` und einem `reset_at`. Ohne `Retry-After` setzt sich das Limit nicht von selbst zurück: Erhöhe das Limit oder nutze einen anderen Schlüssel, statt es erneut zu versuchen.
+- Ratenlimit-Richtlinien des Workspace liefern `429` mit `rate_limit_exceeded`, `policy_id` und `limit_scope`. `x-ratelimit-remaining-requests` ist ein Näherungswert.
+- `Retry-After` kann eine Sekundenzahl oder ein HTTP-Datum sein; prüfe den Wert, bevor du eine Wiederholung planst. Reiche einen unklaren Video- oder Stapelauftrag nie erneut ein, sondern prüfe seinen Status.
+</Visibility>

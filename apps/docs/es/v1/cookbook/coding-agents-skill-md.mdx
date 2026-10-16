@@ -9,10 +9,10 @@ Esta guía es para equipos que crean herramientas internas, CLI o flujos de trab
 
 <Visibility for="humans">
 <Note>
-Si quieres una base reutilizable en lugar de escribir cada habilidad desde cero, instala las habilidades públicas de Phaseo desde [`phaseoteam/skills`](https://github.com/phaseoteam/skills):
+Si quieres una base reutilizable en lugar de escribir cada habilidad desde cero, instala las habilidades públicas de Phaseo desde [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json):
 
 ```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
 ```
 
 Después, guarda las instrucciones específicas del proyecto en tu archivo local `SKILL.md`.
@@ -21,10 +21,10 @@ Después, guarda las instrucciones específicas del proyecto en tu archivo local
 
 <Visibility for="agents">
 <Note>
-Las habilidades reutilizables de Phaseo están en [`phaseoteam/skills`](https://github.com/phaseoteam/skills). Instálalas primero con:
+Las habilidades reutilizables de Phaseo están en [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json). Instálalas primero con:
 
 ```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
 ```
 
 Después, añade las instrucciones específicas del proyecto al archivo `SKILL.md` del repositorio.

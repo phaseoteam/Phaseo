@@ -6,19 +6,35 @@ icon: "rocket"
 
 استخدم هذا الدليل لإرسال طلب Phaseo ناجح، بنص مولّد أو قرار منظّم، وتأكد من موضع ظهور الاستجابة.
 
-<Note>
-**تستخدم وكيل برمجة؟** انسخ هذا الموجّه والصقه قبل البدء:
+<Prompt description="**تستخدم وكيل برمجة؟** انسخ هذا الموجّه والصقه قبل البدء" icon="bot" actions={["copy", "cursor"]}>
+{`You are integrating this project with Phaseo Gateway.
 
-```text
-You are integrating this project with Phaseo Gateway. Read the Phaseo agent guidance at https://phaseo.app/docs/skill.md and the relevant API reference before editing anything. Inspect the existing provider configuration and identify the smallest safe change needed. Use https://api.phaseo.app with a server-side PHASEO_API_KEY, preserve the current provider/model behavior unless I explicitly ask for a migration, and never print or commit credentials. Explain the files you would change and the verification commands first. Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.
-```
-</Note>
+Before editing anything:
+- Install the Phaseo skills: npx skills add https://phaseo.app/docs
+- Read https://phaseo.app/docs/skill.md and the API reference for the endpoint you will use. If your tools support MCP, search the docs at https://phaseo.app/docs/mcp.
+- Inspect the existing provider configuration and identify the smallest safe change.
+
+Rules:
+- Call https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY. Never print or commit credentials.
+- Keep the current provider and model behaviour unless I ask for a migration. Check model IDs with GET /v1/models instead of guessing them.
+- Explain the files you would change and the verification commands first.
+- Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.`}
+</Prompt>
 
 ستتعلّم في هذا الدليل كيفية:
 - إنشاء مفتاح API
 - إرسال طلب نص أو قرار منظّم
 - قراءة النص المولّد أو الإجابات ذات الأنواع المحددة
 - معرفة أول ما يجب التحقق منه إذا فشل الطلب
+
+<Visibility for="agents">
+قائمة التحقق للبدء السريع للوكلاء:
+
+- تُنشأ المفاتيح من لوحة التحكم على https://phaseo.app/settings/keys. لا تولّد مفتاحًا ولا تخمّنه أبدًا. أرسله بصيغة `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` من شيفرة الخادم فقط.
+- أرسل الطلب الأول إلى `POST https://api.phaseo.app/v1/responses` مع `model` و`input`. يعمل `phaseo/free` دون رصيد في المحفظة.
+- اقرأ الرد من `output[].content[]` حيث تكون قيمة `type` هي `output_text`.
+- إذا فشل الطلب، فاعتمد على رمز `error` في JSON كما هو موضح في https://phaseo.app/docs/v1/api-reference/errors.md.
+</Visibility>
 
 ---
 

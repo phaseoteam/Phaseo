@@ -16320,7 +16320,19 @@
       "claude",
       "cursor",
       "vscode",
-      "mcp"
+      "devin",
+      "mcp",
+      "add-mcp",
+      "download-spec"
+    ]
+  },
+  "markdown": {
+    "instructions": [
+      "Phaseo Gateway base URL: https://api.phaseo.app/v1. Send `Authorization: Bearer $PHASEO_API_KEY` with every request.",
+      "Model IDs look like `provider/model`, for example `openai/gpt-6-astra`. Do not guess IDs: list them with `GET /v1/models` or check https://phaseo.app/models. `phaseo/free` routes to an available free model and needs no wallet balance.",
+      "For new text integrations prefer `POST /v1/responses`. `POST /v1/chat/completions` (OpenAI format) and `POST /v1/messages` (Anthropic format) suit existing code.",
+      "The full API contract is https://phaseo.app/docs/openapi/v1/openapi.yaml. Official SDKs: `@phaseo/sdk` (TypeScript) and `phaseo` (Python), plus Go, C#, PHP, Ruby and Rust.",
+      "Search these docs over MCP at https://phaseo.app/docs/mcp, and install Phaseo skills with `npx skills add https://phaseo.app/docs`. If a page is wrong or out of date, report it with the MCP `submit_feedback` tool."
     ]
   },
   "footer": {

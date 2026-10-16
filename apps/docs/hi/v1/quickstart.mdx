@@ -6,19 +6,35 @@ icon: "rocket"
 
 इस ट्यूटोरियल से सफल Phaseo अनुरोध करें—जनरेट किया गया टेक्स्ट या संरचित निर्णय—और देखें कि प्रतिक्रिया कहाँ आती है।
 
-<Note>
-**कोडिंग एजेंट इस्तेमाल कर रहे हैं?** शुरू करने से पहले यह प्रॉम्प्ट कॉपी और पेस्ट करें:
+<Prompt description="**कोडिंग एजेंट इस्तेमाल कर रहे हैं?** शुरू करने से पहले यह प्रॉम्प्ट कॉपी और पेस्ट करें" icon="bot" actions={["copy", "cursor"]}>
+{`You are integrating this project with Phaseo Gateway.
 
-```text
-You are integrating this project with Phaseo Gateway. Read the Phaseo agent guidance at https://phaseo.app/docs/skill.md and the relevant API reference before editing anything. Inspect the existing provider configuration and identify the smallest safe change needed. Use https://api.phaseo.app with a server-side PHASEO_API_KEY, preserve the current provider/model behavior unless I explicitly ask for a migration, and never print or commit credentials. Explain the files you would change and the verification commands first. Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.
-```
-</Note>
+Before editing anything:
+- Install the Phaseo skills: npx skills add https://phaseo.app/docs
+- Read https://phaseo.app/docs/skill.md and the API reference for the endpoint you will use. If your tools support MCP, search the docs at https://phaseo.app/docs/mcp.
+- Inspect the existing provider configuration and identify the smallest safe change.
+
+Rules:
+- Call https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY. Never print or commit credentials.
+- Keep the current provider and model behaviour unless I ask for a migration. Check model IDs with GET /v1/models instead of guessing them.
+- Explain the files you would change and the verification commands first.
+- Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.`}
+</Prompt>
 
 इसमें आप:
 - API कुंजी बनाएँगे
 - टेक्स्ट अनुरोध या संरचित निर्णय भेजना
 - जनरेट टेक्स्ट या प्रकारयुक्त उत्तर पढ़ना
 - अनुरोध विफल होने पर पहले क्या जाँचना है, यह जानेंगे
+
+<Visibility for="agents">
+एजेंट के लिए क्विकस्टार्ट चेकलिस्ट:
+
+- कुंजियाँ डैशबोर्ड में https://phaseo.app/settings/keys पर बनाई जाती हैं। कभी भी कुंजी स्वयं न बनाएँ और न ही उसका अनुमान लगाएँ। इसे केवल सर्वर-साइड कोड से `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` के रूप में भेजें।
+- पहला अनुरोध `POST https://api.phaseo.app/v1/responses` पर `model` और `input` के साथ भेजें। `phaseo/free` वॉलेट बैलेंस के बिना भी काम करता है।
+- जवाब `output[].content[]` में उस आइटम से पढ़ें जिसका `type` `output_text` है।
+- अनुरोध विफल होने पर https://phaseo.app/docs/v1/api-reference/errors.md में बताए अनुसार JSON के `error` कोड के आधार पर निर्णय लें।
+</Visibility>
 
 ---
 
