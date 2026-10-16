@@ -6,7 +6,11 @@ import { autoSettleDays, type AutoSettleRules } from "./threadLifecycle";
 export const projectScriptIcons = ["play", "test", "lint", "configure", "build", "debug"] as const;
 export type ProjectScriptIcon = typeof projectScriptIcons[number];
 /** A named command for a project, after T3 Code's project scripts: run from the chat header, when a worktree is made, or when a chat settles. */
-export type ProjectScript = { id: string; name: string; command: string; icon: ProjectScriptIcon; runOnWorktreeCreate: boolean; runOnSettle?: boolean };
+export type ProjectScript = {
+	id: string; name: string; command: string; icon: ProjectScriptIcon; runOnWorktreeCreate: boolean; runOnSettle?: boolean;
+	/** T3's preview URL: the page the action serves, opened in the chat's browser when autoOpenPreview is on. */
+	previewUrl?: string; autoOpenPreview?: boolean;
+};
 /**
  * One project's own settings, after T3's project overrides. An absent auto-settle key follows Settings → General;
  * autoSettleAfterDays null means never. Worktrees use their source project's settings.
@@ -22,13 +26,24 @@ const hasControl = (value: string, allowNewlines = false) => [...value].some(cha
 
 export function validateProjectScript(value: unknown): ProjectScript {
 	if (!plain(value)) throw new Error("Invalid project script.");
-	const { id, name, command, icon, runOnWorktreeCreate, runOnSettle } = value;
+	const { id, name, command, icon, runOnWorktreeCreate, runOnSettle, previewUrl, autoOpenPreview } = value;
 	if (typeof id !== "string" || !/^[A-Za-z0-9_-]{1,100}$/.test(id)) throw new Error("Invalid project script.");
 	if (typeof name !== "string" || !name.trim() || name.trim().length > 80 || hasControl(name)) throw new Error("Give each script a name of up to 80 characters.");
 	if (typeof command !== "string" || !command.trim() || command.length > 10_000 || hasControl(command, true)) throw new Error(`Give “${name.trim()}” a command of up to 10,000 characters.`);
 	if (typeof icon !== "string" || !(projectScriptIcons as readonly string[]).includes(icon)) throw new Error("Choose an icon for each script.");
-	if (typeof runOnWorktreeCreate !== "boolean" || (runOnSettle !== undefined && typeof runOnSettle !== "boolean")) throw new Error("Invalid project script.");
-	return { id, name: name.trim(), command: command.trim(), icon: icon as ProjectScriptIcon, runOnWorktreeCreate, ...(runOnSettle ? { runOnSettle: true } : {}) };
+	if (typeof runOnWorktreeCreate !== "boolean" || (runOnSettle !== undefined && typeof runOnSettle !== "boolean") || (autoOpenPreview !== undefined && typeof autoOpenPreview !== "boolean")) throw new Error("Invalid project script.");
+	const preview = previewUrl === undefined || previewUrl === null || (typeof previewUrl === "string" && !previewUrl.trim()) ? undefined : normalisePreviewUrl(previewUrl, name.trim());
+	return { id, name: name.trim(), command: command.trim(), icon: icon as ProjectScriptIcon, runOnWorktreeCreate, ...(runOnSettle ? { runOnSettle: true } : {}), ...(preview ? { previewUrl: preview, ...(autoOpenPreview ? { autoOpenPreview: true } : {}) } : {}) };
+}
+
+/** A preview URL as typed: "localhost:5173" gets http://, as T3's preview does; anything but a web address is refused. */
+export function normalisePreviewUrl(value: unknown, name = "the action"): string {
+	if (typeof value !== "string" || value.trim().length > 2000 || hasControl(value)) throw new Error(`Give “${name}” a preview URL of up to 2,000 characters.`);
+	const text = value.trim();
+	let url: URL;
+	try { url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `http://${text}`); } catch { throw new Error(`The preview URL for “${name}” is not a web address.`); }
+	if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || !url.hostname) throw new Error(`Use an http or https preview URL for “${name}”, without a user name or password.`);
+	return url.href;
 }
 
 export function validateProjectSettings(value: unknown): ProjectSettings {

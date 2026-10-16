@@ -74,7 +74,7 @@ export function ProjectSettingsPage() {
 			action={<SettingsButton disabled={busy} onClick={() => setEditor({})}><Plus />Add action</SettingsButton>}>
 			{scripts.length === 0 && <p className="px-4 py-5 text-center text-xs text-muted-foreground">No actions yet. Add one for a dev server, tests or a clean-up when chats settle.</p>}
 			{scripts.map((script, index) => <SettingsRow key={script.id} icon={<ScriptIcon icon={script.icon} />}
-				title={<span className="flex items-center gap-2">{script.name}{script.runOnWorktreeCreate && <span className="text-[11px] font-medium text-muted-foreground">Runs on new worktrees</span>}{script.runOnSettle && <span className="text-[11px] font-medium text-info">Runs on settle</span>}</span>}
+				title={<span className="flex items-center gap-2">{script.name}{script.runOnWorktreeCreate && <span className="text-[11px] font-medium text-muted-foreground">Runs on new worktrees</span>}{script.runOnSettle && <span className="text-[11px] font-medium text-info">Runs on settle</span>}{script.previewUrl && <span className="truncate text-[11px] font-medium text-muted-foreground">{script.autoOpenPreview ? "Opens" : "Serves"} {script.previewUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>}</span>}
 				description={<span className="block truncate font-mono">{script.command}</span>}
 				control={<>
 					{(() => { const row = keybindings.rows.find(value => value.command === scriptCommand(project.id, script.id) && value.key); return row ? <span className="mr-1 text-xs text-muted-foreground">{keyLabel(row.key, isMac())}</span> : null; })()}

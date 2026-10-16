@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { autoSettleRules, newScriptId, projectActionCommands, primaryScript, scriptMenuLabel, settingsProject, settleScriptTarget, validateProjectSettings, validateProjectUpdate, worktreeCreateScripts, type ProjectScript } from "./projectSettings";
+import { autoSettleRules, newScriptId, normalisePreviewUrl, projectActionCommands, primaryScript, scriptMenuLabel, settingsProject, settleScriptTarget, validateProjectSettings, validateProjectUpdate, worktreeCreateScripts, type ProjectScript } from "./projectSettings";
 
 const script = (patch: Partial<ProjectScript> = {}): ProjectScript => ({ id: "dev", name: "Dev server", command: "pnpm dev", icon: "play", runOnWorktreeCreate: false, ...patch });
 const preferences = { autoSettleAfterDays: 3, autoSettleOnMerge: true, keepPullRequests: false };
@@ -71,5 +71,18 @@ describe("project action commands", () => {
 			{ command: "script.p1.dev.run", label: "Run Dev server in Web", group: "Project actions", keys: [] },
 			{ command: "script.p1.test.run", label: "Run Test in Web", group: "Project actions", keys: [] },
 		]);
+	});
+});
+
+describe("action preview URLs", () => {
+	it("keeps a web preview URL, adds http:// as T3 does, and drops auto-open without one", () => {
+		const [kept] = validateProjectSettings({ scripts: [script({ previewUrl: " localhost:5173 ", autoOpenPreview: true })] }).scripts!;
+		expect(kept).toMatchObject({ previewUrl: "http://localhost:5173/", autoOpenPreview: true });
+		expect(validateProjectSettings({ scripts: [script({ previewUrl: "https://app.test/path", autoOpenPreview: false })] }).scripts![0]).toEqual({ ...script(), previewUrl: "https://app.test/path" });
+		expect(validateProjectSettings({ scripts: [script({ previewUrl: " ", autoOpenPreview: true })] }).scripts![0]).toEqual(script());
+		expect(normalisePreviewUrl("127.0.0.1:3000/app")).toBe("http://127.0.0.1:3000/app");
+		expect(() => normalisePreviewUrl("file:///C:/x")).toThrow("http or https");
+		expect(() => normalisePreviewUrl("https://user:pw@example.com")).toThrow("user name");
+		expect(() => validateProjectSettings({ scripts: [script({ autoOpenPreview: "yes" as never })] })).toThrow("Invalid project script");
 	});
 });

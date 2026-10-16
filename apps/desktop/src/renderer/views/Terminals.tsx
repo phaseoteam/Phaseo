@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
-import { Plus, Square, SquareSplitHorizontal, SquareSplitVertical, SquareTerminal, Trash2, X } from "lucide-react";
+import { Globe, Plus, Square, SquareSplitHorizontal, SquareSplitVertical, SquareTerminal, Trash2, X } from "lucide-react";
+import { localUrlsIn } from "../../shared/browser";
+import { openInChatBrowser } from "../lib/actionPreview";
+import { Tip } from "../components/ui/tooltip";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
@@ -30,6 +33,24 @@ function TerminalView({ session, api, focus, onFocus, onError }: { session: Term
 	const terminalRef = useRef<Terminal | undefined>(undefined);
 	const current = useRef(session); current.current = session;
 	const report = useRef(onError); report.current = onError;
+	const openLink = (url: string, external: boolean) => {
+		const taskId = current.current.taskId;
+		if (!taskId || external) { void window.phaseoDesktop?.openExternal(url).catch(reason => report.current(String(reason))); return; }
+		try { openInChatBrowser(taskId, url); } catch (reason) { report.current(reason instanceof Error ? reason.message : String(reason)); }
+	};
+	// An action's terminal offers the local address its server prints, as T3's dev-script previews do.
+	const offers = Boolean(session.scriptId && session.taskId);
+	const [localUrl, setLocalUrl] = useState(() => offers ? localUrlsIn(terminalOutput(session.id)).at(-1) : undefined);
+	const [dismissed, setDismissed] = useState<string>();
+	const carry = useRef("");
+	const scan = useRef((data: string) => { void data; });
+	scan.current = data => {
+		if (!offers) return;
+		const text = carry.current + data;
+		carry.current = text.slice(-300);
+		const found = localUrlsIn(text).at(-1);
+		if (found && found !== localUrl) setLocalUrl(found);
+	};
 	useEffect(() => {
 		if (!host.current) return;
 		const terminal = new Terminal({ fontSize: 12, lineHeight: 1.2, fontFamily: getComputedStyle(document.documentElement).getPropertyValue("--font-mono").trim() || "Cascadia Code, Consolas, monospace", cursorBlink: true, scrollback: 10000, theme: readColours(), allowProposedApi: false });
@@ -38,7 +59,16 @@ function TerminalView({ session, api, focus, onFocus, onError }: { session: Term
 		// The app's terminal shortcuts reach the app, not the shell.
 		terminal.attachCustomKeyEventHandler(event => !(event.type === "keydown" && isCommandKey(event, terminalKeys)));
 		const input = terminal.onData(data => { if (current.current.status === "running") void api.terminal({ type: "write", id: current.current.id, data }).catch(reason => report.current(String(reason))); });
-		const unsubscribe = api.onTerminalEvent(event => { if (event.sessionId === current.current.id && event.data) terminal.write(event.data); });
+		// T3's terminal links: a web address opens in the chat's browser; Ctrl or Cmd-click opens the system browser.
+		const links = terminal.registerLinkProvider({ provideLinks(line, callback) {
+			const text = terminal.buffer.active.getLine(line - 1)?.translateToString(true) ?? "";
+			const found = [...text.matchAll(/https?:\/\/[^\s"'<>`|]+/g)].map(match => {
+				const url = match[0].replace(/[.,;:!?)\]}]+$/, ""), start = match.index ?? 0;
+				return { text: url, range: { start: { x: start + 1, y: line }, end: { x: start + url.length, y: line } }, activate: (event: MouseEvent, target: string) => openLink(target, event.ctrlKey || event.metaKey) };
+			});
+			callback(found.length ? found : undefined);
+		} });
+		const unsubscribe = api.onTerminalEvent(event => { if (event.sessionId === current.current.id && event.data) { terminal.write(event.data); scan.current(event.data); } });
 		let frame = 0;
 		const resize = new ResizeObserver(() => {
 			cancelAnimationFrame(frame);
@@ -50,11 +80,20 @@ function TerminalView({ session, api, focus, onFocus, onError }: { session: Term
 		});
 		resize.observe(host.current);
 		const theme = new MutationObserver(() => { terminal.options.theme = readColours(); }); theme.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-		return () => { cancelAnimationFrame(frame); input.dispose(); unsubscribe(); resize.disconnect(); theme.disconnect(); terminal.dispose(); terminalRef.current = undefined; };
+		return () => { cancelAnimationFrame(frame); input.dispose(); links.dispose(); unsubscribe(); resize.disconnect(); theme.disconnect(); terminal.dispose(); terminalRef.current = undefined; };
 		// One xterm for the life of the session.
 	}, [api, session.id]);
 	useEffect(() => { if (focus) terminalRef.current?.focus(); }, [focus]);
-	return <div className="terminal-view relative h-full w-full overflow-hidden bg-background p-1" onPointerDown={onFocus} onFocusCapture={onFocus}><div ref={host} className="h-full w-full" /></div>;
+	const offer = localUrl && localUrl !== dismissed && session.status === "running" ? localUrl : undefined;
+	return <div className="terminal-view relative h-full w-full overflow-hidden bg-background p-1" onPointerDown={onFocus} onFocusCapture={onFocus}>
+		<div ref={host} className="h-full w-full" />
+		{offer && <div role="status" aria-label="Local server" className="absolute right-2 bottom-2 z-10 flex max-w-[calc(100%-1rem)] items-center gap-1.5 rounded-md border border-border/60 bg-background py-0.5 pr-0.5 pl-2 text-xs">
+			<Globe className="size-3.5 shrink-0 text-muted-foreground" />
+			<span className="min-w-0 truncate font-mono text-muted-foreground">{offer.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
+			<button type="button" onClick={() => { openLink(offer, false); setDismissed(offer); }} className="h-6 shrink-0 rounded-md px-2 font-medium text-foreground hover:bg-accent/60">Open in browser</button>
+			<Tip label="Dismiss"><button type="button" aria-label="Dismiss" onClick={() => setDismissed(offer)} className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent/60 hover:text-foreground"><X className="size-3.5" /></button></Tip>
+		</div>}
+	</div>;
 }
 
 /** T3's terminal action: an icon with its label shown on hover. */

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { candidatePorts, parseLsof, parseNetstat, parseTasklist } from "./browserLocalServers";
+import http from "node:http";
+import type { AddressInfo } from "node:net";
+import { candidatePorts, parseLsof, parseNetstat, parseTasklist, probeAddress } from "./browserLocalServers";
 
 describe("local server discovery", () => {
 	it("reads loopback listeners from netstat and ignores remote and closed sockets", () => {
@@ -22,5 +24,17 @@ describe("local server discovery", () => {
 	});
 	it("keeps one entry per web port, without system services or ephemeral ports", () => {
 		expect(candidatePorts([{ host: "::1", port: 3000 }, { host: "127.0.0.1", port: 3000 }, { host: "0.0.0.0", port: 135 }, { host: "0.0.0.0", port: 49664 }, { host: "127.0.0.1", port: 1420 }]).map(item => item.port)).toEqual([1420, 3000]);
+	});
+});
+
+describe("action preview readiness", () => {
+	it("answers true once a local address responds at all, and false when nothing listens", async () => {
+		const server = http.createServer((_request, response) => { response.statusCode = 404; response.end("not here"); });
+		await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+		const port = (server.address() as AddressInfo).port;
+		try {
+			expect(await probeAddress(`http://127.0.0.1:${port}/`)).toBe(true);
+		} finally { await new Promise(resolve => server.close(resolve)); }
+		expect(await probeAddress(`http://127.0.0.1:${port}/`)).toBe(false);
 	});
 });

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Bug, ChevronDown, FlaskConical, Hammer, ListChecks, Play, Plus, Settings, Wrench } from "lucide-react";
-import { newScriptId, primaryScript, projectScriptIcons, scriptMenuLabel, settingsProject, type ProjectScript, type ProjectScriptIcon } from "../../shared/projectSettings";
+import { newScriptId, normalisePreviewUrl, primaryScript, projectScriptIcons, scriptMenuLabel, settingsProject, type ProjectScript, type ProjectScriptIcon } from "../../shared/projectSettings";
 import type { Project } from "../../shared/workspace";
 import { keybindingConflicts, keyLabel, replaceCommandBindings, scriptCommand, type KeybindingEntry } from "../../shared/keybindings";
 import { saveKeybindings, useCommands, useKeybindings } from "../lib/keybindings";
@@ -8,6 +8,7 @@ import { isMac } from "../lib/shortcuts";
 import { Conflict, KeyCapture } from "../settings/KeyboardShortcuts";
 import { errorText, useWorkspace } from "../app/workspace";
 import { createTerminal } from "../lib/terminalSessions";
+import { openPreviewWhenReady } from "../lib/actionPreview";
 import { cn } from "../lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "./ui/dropdown-menu";
@@ -70,12 +71,13 @@ export function ProjectScriptDialog({ request, projectId, onClose, onSave, onDel
 	const [key, setKey] = useState("");
 	const [icon, setIcon] = useState<ProjectScriptIcon>("play"), [name, setName] = useState(""), [command, setCommand] = useState("");
 	const [onWorktree, setOnWorktree] = useState(false), [onSettle, setOnSettle] = useState(false);
+	const [previewUrl, setPreviewUrl] = useState(""), [autoOpenPreview, setAutoOpenPreview] = useState(false);
 	const [picking, setPicking] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState("");
 	useEffect(() => {
 		if (!request) return;
 		setIcon(editing?.icon ?? "play"); setName(editing?.name ?? ""); setCommand(editing?.command ?? "");
 		setOnWorktree(editing?.runOnWorktreeCreate ?? false); setOnSettle(editing?.runOnSettle ?? false); setError(""); setBusy(false);
-		setKey(savedKey);
+		setKey(savedKey); setPreviewUrl(editing?.previewUrl ?? ""); setAutoOpenPreview(editing?.autoOpenPreview ?? false);
 		// Only a new request resets the form; a keybindings.json change while editing keeps what was typed.
 	}, [request, editing]);
 	const conflicts = shortcutCommand && key ? keybindingConflicts(keybindings.rows, { id: "action-editor", command: shortcutCommand, key }) : [];
@@ -89,11 +91,13 @@ export function ProjectScriptDialog({ request, projectId, onClose, onSave, onDel
 	const submit = () => {
 		if (!name.trim()) { setError("Give the action a name."); return; }
 		if (!command.trim()) { setError("Enter the command to run."); return; }
-		void run(async () => { const id = await onSave({ name: name.trim(), command: command.trim(), icon, runOnWorktreeCreate: onWorktree, ...(onSettle ? { runOnSettle: true } : {}) }, editing?.id); await saveShortcut(id); });
+		let preview: string | undefined;
+		if (previewUrl.trim()) { try { preview = normalisePreviewUrl(previewUrl, name.trim()); } catch (reason) { setError(errorText(reason)); return; } }
+		void run(async () => { const id = await onSave({ name: name.trim(), command: command.trim(), icon, runOnWorktreeCreate: onWorktree, ...(onSettle ? { runOnSettle: true } : {}), ...(preview ? { previewUrl: preview, ...(autoOpenPreview ? { autoOpenPreview: true } : {}) } : {}) }, editing?.id); await saveShortcut(id); });
 	};
-	const toggle = (label: string, description: string, checked: boolean, onChange: (value: boolean) => void) => <label className="flex items-center justify-between gap-3 border-t border-border/60 py-2.5 text-[13px]">
+	const toggle = (label: string, description: string, checked: boolean, onChange: (value: boolean) => void, disabled = false) => <label className={cn("flex items-center justify-between gap-3 border-t border-border/60 py-2.5 text-[13px]", disabled && "opacity-60")}>
 		<span className="min-w-0"><span className="block font-medium">{label}</span><span className="block text-xs text-muted-foreground">{description}</span></span>
-		<Switch aria-label={label} checked={checked} disabled={busy} onCheckedChange={onChange} />
+		<Switch aria-label={label} checked={checked} disabled={busy || disabled} onCheckedChange={onChange} />
 	</label>;
 	return <Dialog open={Boolean(request)} onOpenChange={open => { if (!open) onClose(); }}>
 		<DialogContent className="sm:max-w-md">
@@ -124,7 +128,13 @@ export function ProjectScriptDialog({ request, projectId, onClose, onSave, onDel
 					<label htmlFor="project-script-command" className="text-xs font-semibold">Command</label>
 					<textarea id="project-script-command" rows={3} maxLength={10_000} placeholder="pnpm test" value={command} disabled={busy} onChange={event => setCommand(event.target.value)} className={cn(settingsInput, "h-auto resize-y py-2 font-mono text-xs leading-relaxed")} />
 				</div>
+				<div className="flex flex-col gap-1.5">
+					<label htmlFor="project-script-preview" className="text-xs font-semibold">Preview URL (optional)</label>
+					<input id="project-script-preview" maxLength={2000} placeholder="http://localhost:5173" value={previewUrl} disabled={busy} onChange={event => setPreviewUrl(event.target.value)} className={settingsInput} />
+					<p className="text-xs text-muted-foreground">The page this action serves, such as a dev server. It can open in the chat's browser when the action runs.</p>
+				</div>
 				<div className="flex flex-col">
+					{toggle("Open in the browser when this action runs", "Opens the preview URL in the chat's browser once the server answers.", autoOpenPreview && Boolean(previewUrl.trim()), setAutoOpenPreview, !previewUrl.trim())}
 					{toggle("Run when a worktree is created", "Starts in its own terminal in each new worktree of this project.", onWorktree, setOnWorktree)}
 					{toggle("Run when a chat settles", "Runs in the chat's own worktree, never in a shared checkout. Only one action can do this.", onSettle, setOnSettle)}
 				</div>
@@ -149,7 +159,10 @@ export function ProjectScriptsControl({ project, taskId, onRun }: { project: Pro
 	const keybindings = useKeybindings();
 	const [editor, setEditor] = useState<ScriptEditorRequest>();
 	const primary = primaryScript(scripts);
-	const run = (script: ProjectScript) => void createTerminal({ projectId: project.id, ...(taskId ? { taskId } : {}), scriptId: script.id }).then(session => onRun?.(session.id), reason => setError(errorText(reason)));
+	const run = (script: ProjectScript) => void createTerminal({ projectId: project.id, ...(taskId ? { taskId } : {}), scriptId: script.id }).then(session => {
+		onRun?.(session.id);
+		if (taskId && script.previewUrl && script.autoOpenPreview) openPreviewWhenReady({ taskId, sessionId: session.id, url: script.previewUrl, command: script.command }, setError);
+	}, reason => setError(errorText(reason)));
 	// Action shortcuts work while this chat is open: the header is mounted only for the open chat.
 	const commandOf = (script: ProjectScript) => owner ? scriptCommand(owner.id, script.id) : undefined;
 	useCommands(scripts.flatMap(script => commandOf(script) ?? []), command => { const script = scripts.find(value => commandOf(value) === command); if (!script) return false; run(script); });

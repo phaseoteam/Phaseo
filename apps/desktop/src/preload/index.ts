@@ -15,6 +15,7 @@ const desktopApi: PhaseoDesktopApi = {
 	browserCapture: id => ipcRenderer.invoke("desktop:browser-capture", id),
 	browserPick: (id, cancel) => ipcRenderer.invoke("desktop:browser-pick", id, cancel === true),
 	browserLocalServers: () => ipcRenderer.invoke("desktop:browser-local-servers"),
+	browserProbe: url => ipcRenderer.invoke("desktop:browser-probe", url),
 	browserRecordingSource: id => ipcRenderer.invoke("desktop:browser-recording-source", id),
 	browserRecordingSave: (mimeType, data) => ipcRenderer.invoke("desktop:browser-recording-save", mimeType, data),
 	browserRecordingReveal: path => ipcRenderer.invoke("desktop:browser-recording-reveal", path),
