@@ -39,8 +39,8 @@ app.whenReady().then(async () => {
 		// The Diff is its own pane tab (T3).
 		const surface = `document.querySelector('aside[aria-label="Tools"] .diff-surface')`;
 		const viewer = `${surface}?.querySelector('diffs-container')`;
-		// In Code, the new chat's project (Fixture) gives the pane its Diff tab.
-		const openChanges = async () => { await run(`window.__auditNavigate('Tasks')`); await run(`Array.from(document.querySelectorAll('[role=radiogroup][aria-label=Workspace] [role=radio]')).find(button=>button.textContent==='Code').click()`); await run(`Array.from(document.querySelectorAll('aside button')).find(button=>button.textContent.startsWith('New chat')).click()`); await wait(`Boolean(Array.from(document.querySelectorAll('main button')).find(button=>/Choose a project|Fixture/.test(button.textContent)))`); if (!await run(`Array.from(document.querySelectorAll('main button')).some(button=>button.textContent.trim()==='Fixture')`)) { await run(`Array.from(document.querySelectorAll('main button')).find(button=>button.textContent.includes('Choose a project')).click()`); await wait(`Boolean(Array.from(document.querySelectorAll('[role=menuitem]')).find(item=>item.textContent.trim()==='Fixture'))`); await run(`Array.from(document.querySelectorAll('[role=menuitem]')).find(item=>item.textContent.trim()==='Fixture').click()`); } await run(`window.__auditPanel('Diff')`); await wait(`Boolean(${viewer}?.shadowRoot?.textContent.includes('First edit'))`); };
+		// A chat in the Fixture project gives the pane its Diff tab.
+		const openChanges = async () => { await run(`window.__auditUseProject('Fixture')`); await run(`window.__auditPanel('Diff')`); await wait(`Boolean(${viewer}?.shadowRoot?.textContent.includes('First edit'))`); };
 		await openChanges();
 		// Uncommitted work, then side by side for the context expansion.
 		await run(`${surface}.querySelector('[aria-label^="Diff scope"]').click()`);

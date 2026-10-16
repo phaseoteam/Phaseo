@@ -1,6 +1,6 @@
 import { useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { Ellipsis, FileJson, Plus, Search, TriangleAlert, X } from "lucide-react";
-import { commandLabel, keybindingCommands, keybindingConflicts, keybindingGroups, keyFromEvent, keyLabel, keyParts, replaceCommandBindings, whenError, whenVariables, type KeybindingCommand, type KeybindingEntry, type KeybindingRow } from "../../shared/keybindings";
+import { CircleX, Ellipsis, FileJson, Minus, Plus, Search, TriangleAlert, X } from "lucide-react";
+import { commandLabel, formatWhen, whenGroup, type WhenCondition, type WhenGroup, keybindingCommands, keybindingConflicts, keybindingGroups, keyFromEvent, keyLabel, keyParts, replaceCommandBindings, whenError, whenVariables, type KeybindingCommand, type KeybindingEntry, type KeybindingRow } from "../../shared/keybindings";
 import { errorText } from "../app/workspace";
 import { Select } from "../components/Select";
 import { Kbd, KbdGroup } from "../components/ui/kbd";
@@ -32,19 +32,60 @@ function KeyCapture({ label, value, onCapture, onCancel, className, autoFocus }:
 }
 
 /** The when clause, shown quietly; opens an editor that checks the expression as you type. */
+type Item = WhenCondition | WhenGroup;
+const firstVariable = Object.keys(whenVariables)[0];
+
+/** One condition: Not, which condition, remove. */
+function ConditionRow({ item, onChange, onRemove }: { item: WhenCondition; onChange: (item: WhenCondition) => void; onRemove: () => void }) {
+	return <div className="flex items-center gap-2 rounded-md border border-border/70 bg-background/60 px-2 py-1.5">
+		<button type="button" aria-pressed={item.negated} aria-label={`Negate ${item.name}`} onClick={() => onChange({ ...item, negated: !item.negated })}
+			className={cn("h-6 min-w-10 rounded-md px-1.5 text-[11px] font-medium", item.negated ? "bg-destructive/10 text-destructive" : "text-muted-foreground hover:bg-muted")}>{item.negated ? "Not" : "Is"}</button>
+		<div className="min-w-0 flex-1"><Select label="Condition" value={item.name} onValueChange={name => onChange({ ...item, name })} options={Object.entries(whenVariables).map(([name, description]) => ({ value: name, label: `${name} — ${description}` }))} /></div>
+		<button type="button" aria-label="Remove condition" onClick={onRemove} className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"><Minus className="size-3.5" /></button>
+	</div>;
+}
+
+/** A group: all of / any of its items, which can be conditions or nested groups (T3's builder). */
+function GroupEditor({ group, onChange, onRemove, depth = 0 }: { group: WhenGroup; onChange: (group: WhenGroup) => void; onRemove?: () => void; depth?: number }) {
+	const setItem = (index: number, item: Item | undefined) => onChange({ ...group, items: item ? group.items.map((value, position) => position === index ? item : value) : group.items.filter((_, position) => position !== index) });
+	return <div className={cn("flex flex-col gap-2", depth > 0 && "rounded-md border border-dashed border-border/80 bg-muted/15 p-2")}>
+		<div className="flex flex-wrap items-center gap-2">
+			{depth > 0 && <button type="button" aria-pressed={group.negated} aria-label="Negate group" onClick={() => onChange({ ...group, negated: !group.negated })}
+				className={cn("h-6 min-w-10 rounded-md px-1.5 text-[11px] font-medium", group.negated ? "bg-destructive/10 text-destructive" : "text-muted-foreground hover:bg-muted")}>{group.negated ? "Not" : "Is"}</button>}
+			<div className="w-32"><Select label="Combine with" value={group.operator} onValueChange={operator => onChange({ ...group, operator: operator as WhenGroup["operator"] })} options={[{ value: "and", label: "All of these" }, { value: "or", label: "Any of these" }]} /></div>
+			<button type="button" onClick={() => onChange({ ...group, items: [...group.items, { kind: "condition", name: firstVariable, negated: false }] })} className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"><Plus className="size-3.5" />Condition</button>
+			{depth < 2 && <button type="button" onClick={() => onChange({ ...group, items: [...group.items, { kind: "group", operator: group.operator === "and" ? "or" : "and", negated: false, items: [{ kind: "condition", name: firstVariable, negated: false }] }] })} className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"><Plus className="size-3.5" />Group</button>}
+			{onRemove && <button type="button" aria-label="Remove group" onClick={onRemove} className="ml-auto grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"><Minus className="size-3.5" /></button>}
+		</div>
+		{group.items.length > 0 && <div className="relative flex flex-col gap-2 pl-4">
+			<span aria-hidden className="absolute top-0 bottom-0 left-1.5 w-px bg-border/70" />
+			{group.items.map((item, index) => item.kind === "condition"
+				? <ConditionRow key={index} item={item} onChange={value => setItem(index, value)} onRemove={() => setItem(index, undefined)} />
+				: <GroupEditor key={index} group={item} depth={depth + 1} onChange={value => setItem(index, value)} onRemove={() => setItem(index, undefined)} />)}
+		</div>}
+	</div>;
+}
+
+/** The when clause, shown quietly; opens T3's builder, which stays in step with the expression text. */
 function WhenControl({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
 	const [draft, setDraft] = useState(value);
 	const problem = whenError(draft);
+	const group = problem ? undefined : whenGroup(draft);
 	return <Popover onOpenChange={open => { if (open) setDraft(value); else if (!whenError(draft) && draft.trim() !== value) onChange(draft.trim()); }}>
 		<PopoverTrigger render={<button type="button" aria-label={`Edit when clause for ${label}`} className="flex h-6 min-w-0 items-center gap-1 rounded-md px-1.5 font-mono text-[11.5px] text-muted-foreground hover:bg-muted hover:text-foreground" />}>
 			<span className="truncate">{value || "Always"}</span>
 		</PopoverTrigger>
-		<PopoverContent align="start" className="w-[min(30rem,calc(100vw-2rem))] gap-3 p-3">
-			<div className="text-sm font-medium">When</div>
+		<PopoverContent align="start" className="w-[min(34rem,calc(100vw-2rem))] gap-3 p-3">
+			<div className="flex items-center justify-between"><span className="text-sm font-medium">When</span>{draft.trim() && <button type="button" onClick={() => setDraft("")} className="text-xs text-muted-foreground hover:text-foreground">Clear (always)</button>}</div>
 			<input aria-label="When expression" value={draft} placeholder="Always" onChange={event => setDraft(event.target.value)} onKeyDown={event => event.stopPropagation()} className={cn(settingsInput, "font-mono text-xs", problem && "border-destructive")} />
-			{problem ? <p className="text-xs text-destructive">{problem}</p> : <p className="text-xs text-muted-foreground">Combine conditions with <code>&amp;&amp;</code>, <code>||</code>, <code>!</code> and brackets. Leave empty for always.</p>}
-			<div className="flex flex-col gap-0.5">{Object.entries(whenVariables).map(([name, description]) => <button key={name} type="button" onClick={() => setDraft(current => current.trim() ? `${current.trim()} && ${name}` : name)}
-				className="flex items-baseline gap-2 rounded-md px-2 py-1 text-left text-xs hover:bg-muted"><code className="shrink-0 font-mono text-foreground">{name}</code><span className="truncate text-muted-foreground">{description}</span></button>)}</div>
+			{problem && <p className="flex items-center gap-1.5 text-xs text-destructive"><CircleX className="size-3.5" />{problem}</p>}
+			<div className="relative">
+				{group && (group.items.length
+					? <GroupEditor group={group} onChange={next => setDraft(formatWhen(next))} />
+					: <div className="rounded-md border border-dashed border-border/80 bg-muted/15 p-3"><p className="mb-2 text-xs text-muted-foreground">Runs everywhere. Add conditions to limit where.</p>
+						<div className="flex flex-wrap gap-2"><button type="button" onClick={() => setDraft(firstVariable)} className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"><Plus className="size-3.5" />Condition</button></div></div>)}
+				{problem && <div className="rounded-lg border border-destructive/30 bg-background/75 p-4 text-center text-xs text-destructive">Fix the expression above to edit it here.</div>}
+			</div>
 		</PopoverContent>
 	</Popover>;
 }

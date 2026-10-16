@@ -124,7 +124,34 @@ export function keyParts(value: string, mac: boolean) {
 
 export const keyLabel = (value: string, mac: boolean) => keyParts(value, mac).join(mac ? "" : "+");
 
-type WhenNode = { type: "var"; name: string } | { type: "not"; node: WhenNode } | { type: "and" | "or"; left: WhenNode; right: WhenNode };
+export type WhenNode = { type: "var"; name: string } | { type: "not"; node: WhenNode } | { type: "and" | "or"; left: WhenNode; right: WhenNode };
+
+/** The visual builder's shape (T3): groups of conditions joined by all-of or any-of, each of which can be negated. */
+export type WhenCondition = { kind: "condition"; name: string; negated: boolean };
+export type WhenGroup = { kind: "group"; operator: "and" | "or"; negated: boolean; items: (WhenCondition | WhenGroup)[] };
+
+export function whenGroup(value?: string): WhenGroup {
+	const node = parseWhen(value ?? "");
+	const toItem = (current: WhenNode, negated = false): WhenCondition | WhenGroup => {
+		if (current.type === "var") return { kind: "condition", name: current.name, negated };
+		if (current.type === "not") return toItem(current.node, !negated);
+		const group = toGroup(current); return { ...group, negated: group.negated !== negated };
+	};
+	const flatten = (current: WhenNode, operator: "and" | "or"): WhenNode[] => current.type === operator ? [...flatten(current.left, operator), ...flatten(current.right, operator)] : [current];
+	const toGroup = (current: WhenNode): WhenGroup => current.type === "and" || current.type === "or"
+		? { kind: "group", operator: current.type, negated: false, items: flatten(current, current.type).map(child => toItem(child)) }
+		: { kind: "group", operator: "and", negated: false, items: [toItem(current)] };
+	return node ? toGroup(node) : { kind: "group", operator: "and", negated: false, items: [] };
+}
+
+/** Back to an expression: "codeMode && !textFocused", with brackets only where a group needs them. */
+export function formatWhen(group: WhenGroup, nested = false): string {
+	const parts = group.items.map(item => item.kind === "condition" ? `${item.negated ? "!" : ""}${item.name}` : item.items.length ? formatWhen(item, true) : "").filter(Boolean);
+	if (!parts.length) return "";
+	const joined = parts.join(group.operator === "and" ? " && " : " || ");
+	if (group.negated) return `!(${joined})`;
+	return nested && parts.length > 1 ? `(${joined})` : joined;
+}
 
 /** Parses "codeMode && !textFocused || paneOpen" (with parentheses). Throws a readable error. */
 export function parseWhen(value: string): WhenNode | undefined {

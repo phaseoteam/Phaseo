@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { KeybindingsFile } from "../main/keybindingsFile";
-import { browserShortcuts, evaluateWhen, keybindingConflicts, keybindingRows, keyFromEvent, keyLabel, matchesKey, parseKey, replaceCommandBindings, validateKeybindings, whenError } from "./keybindings";
+import { browserShortcuts, evaluateWhen, formatWhen, whenGroup, keybindingConflicts, keybindingRows, keyFromEvent, keyLabel, matchesKey, parseKey, replaceCommandBindings, validateKeybindings, whenError } from "./keybindings";
 
 const press = (key: string, modifiers: Partial<Record<"ctrlKey" | "metaKey" | "altKey" | "shiftKey", boolean>> = {}) => ({ key, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...modifiers });
 
@@ -44,6 +44,16 @@ describe("keyboard shortcuts", () => {
 		expect(whenError("unknownThing")).toMatch("Unknown condition");
 		expect(whenError("(codeMode")).toMatch("bracket");
 		expect(evaluateWhen("unknownThing", {})).toBe(false);
+	});
+
+	it("turns when clauses into T3's builder groups and back", () => {
+		for (const value of ["codeMode && chatOpen", "!textFocused", "(chatMode || codeMode) && paneOpen", "codeMode && !(textFocused || terminalFocused)", "settingsOpen || chatOpen && !paneOpen"]) {
+			const round = formatWhen(whenGroup(value));
+			for (const context of [{}, { codeMode: true, chatOpen: true }, { chatMode: true, paneOpen: true }, { codeMode: true, terminalFocused: true }, { settingsOpen: true }, { chatOpen: true, paneOpen: true }]) expect(evaluateWhen(round, context)).toBe(evaluateWhen(value, context));
+		}
+		expect(whenGroup("")).toEqual({ kind: "group", operator: "and", negated: false, items: [] });
+		expect(whenGroup("codeMode && !textFocused").items).toEqual([{ kind: "condition", name: "codeMode", negated: false }, { kind: "condition", name: "textFocused", negated: true }]);
+		expect(formatWhen({ kind: "group", operator: "or", negated: false, items: [{ kind: "condition", name: "chatMode", negated: false }, { kind: "group", operator: "and", negated: true, items: [{ kind: "condition", name: "paneOpen", negated: false }, { kind: "condition", name: "textFocused", negated: false }] }] })).toBe("chatMode || !(paneOpen && textFocused)");
 	});
 
 	it("replaces a command's defaults with the person's bindings and finds conflicts", () => {

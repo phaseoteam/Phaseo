@@ -127,15 +127,14 @@ const shellActions = String.raw`
     const tab=await window.__auditUntil(find,'panel tab '+label);
     tab.click();await window.__auditUntil(()=>tab.getAttribute('aria-selected')==='true','panel tab '+label);
   };
-  /** Start a new Code chat in a project, choosing it from the new chat's project menu. */
+  /** Open a Code chat in a project, so the pane and the details card work on it. Without accounts the new-chat page offers no project, so a chat is created when the project has none. */
   window.__auditUseProject = async function(name) {
-    if(document.querySelector('nav[aria-label="Settings sections"]'))await window.__auditCloseSettings();
-    const code=Array.from(document.querySelectorAll('[role=radiogroup][aria-label=Workspace] [role=radio]')).find(button=>button.textContent==='Code');
-    if(code&&code.getAttribute('aria-checked')!=='true')code.click();
-    (await window.__auditUntil(()=>Array.from(document.querySelectorAll('aside button')).find(button=>button.textContent.startsWith('New chat')),'new chat button')).click();
-    const picker=await window.__auditUntil(()=>Array.from(document.querySelectorAll('main button')).find(button=>button.textContent.trim()===name||button.textContent.includes('Choose a project')),'project menu');
-    if(picker.textContent.trim()!==name)await window.__auditMenu(picker,name);
-    await window.__auditUntil(()=>Array.from(document.querySelectorAll('main button')).some(button=>button.textContent.trim()===name),'project '+name);
+    const api=window.phaseoDesktop.workspace;const overview=await api.overview();
+    const project=overview.projects.find(value=>value.name===name);if(!project)throw Error('Unknown project '+name);
+    let task=overview.tasks.find(value=>value.projectId===project.id&&!value.archived&&!value.delegation);
+    if(!task){const state=await api.command({type:'create-task',projectId:project.id,harness:'codex',model:'default',mode:'code'});task=state.tasks.find(value=>value.projectId===project.id&&!value.archived&&!value.delegation);}
+    await window.__auditOpenChatId(task.id);
+    return task.id;
   };
   /** The details card in the title bar (Git actions), opened if needed. */
   window.__auditDetails = async function() {
