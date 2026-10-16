@@ -13,7 +13,7 @@ export type ThreadLifecycle = {
 	lastCompletedAt?: string; lastUserMessageAt?: string;
 	approvalsCount: number; answersCount: number; queueCount?: number;
 	/** Linked pull requests as last seen: open, closed or merged, and when that was. */
-	pullRequests?: { snapshot?: { state: "open" | "closed" | "merged"; updatedAt: string } }[];
+	pullRequests?: { source?: string; snapshot?: { state: "open" | "closed" | "merged"; updatedAt: string } }[];
 };
 export type AutoSettleRules = { days: number | null; onMerge: boolean; keepPullRequests: boolean };
 
@@ -80,7 +80,7 @@ export function autoSettleAt(thread: ThreadLifecycle, rules: AutoSettleRules | n
 	if (isSnoozed(thread, now)) return;
 	// T3's pull request rule: any open (or never read) linked pull request holds the chat; one closed, or merged
 	// with onMerge, settles it, but only if that happened after the person last wrote.
-	const linked = thread.pullRequests ?? [];
+	const linked = (thread.pullRequests ?? []).filter(link => link.source !== "stack-dismissed");
 	if (linked.length) {
 		if (linked.some(link => !link.snapshot || link.snapshot.state === "open")) return;
 		const finished = linked.filter(link => link.snapshot!.state === "closed" || (onMerge && link.snapshot!.state === "merged")).map(link => time(link.snapshot!.updatedAt));

@@ -14,6 +14,13 @@ describe("findTrigger", () => {
 		expect(findTrigger("mail me@example.com", 19)).toBeUndefined();
 		expect(findTrigger("@done next", 10)).toBeUndefined();
 	});
+	it("opens pull requests for # after a space or at the start", () => {
+		expect(findTrigger("#", 1)).toEqual({ kind: "pull-request", query: "", start: 0, end: 1 });
+		expect(findTrigger("see #12", 7)).toEqual({ kind: "pull-request", query: "12", start: 4, end: 7 });
+		expect(findTrigger("see #fix-ci", 11)).toEqual({ kind: "pull-request", query: "fix-ci", start: 4, end: 11 });
+		expect(findTrigger("issue#12", 8)).toBeUndefined();
+		expect(findTrigger("# Heading", 9)).toBeUndefined();
+	});
 });
 
 describe("resolveSlash", () => {

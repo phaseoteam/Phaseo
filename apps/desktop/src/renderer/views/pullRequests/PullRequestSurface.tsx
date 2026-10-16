@@ -21,6 +21,8 @@ import { ActorLabel, DiffStat, errorMessage, MetaLine, MiddleTruncate, PullReque
 import { approvalCount, baseFreshness, behindSummary, checksRollup, checksStale, isWorkflowApproval, mergeMethodLabels, primaryAction, relativeTime, summarizeChecks } from "./pullRequestLogic";
 import { PullRequestDetailGhost, UnavailableState } from "./PullRequestGhosts";
 import { segmentedGroup, segmentedItem } from "./segmented";
+import { StackedBaseGlyph, StackMenu } from "./StackMenu";
+import { useRequestedPullRequestTab } from "./tabRequest";
 import { ReactContext, SummaryTab } from "./SummaryTab";
 import { TimelineTab } from "./TimelineTab";
 import { useInlineActionConfirm } from "./useInlineActionConfirm";
@@ -96,6 +98,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 		try { setOverview(await api.command(linked ? { type: "unlink-pull-request", id: chat.id, repository: target.repository, number: target.number } : { type: "link-pull-request", id: chat.id, reference: target.url })); showToast("success", linked ? `Unlinked #${target.number} from this chat` : `Linked #${target.number} to this chat`); }
 		catch (reason) { showToast("error", linked ? "Could not unlink this pull request" : "Could not link this pull request", errorMessage(reason)); }
 	};
+	useRequestedPullRequestTab(projectId, number, selectTab);
 
 	if (!view) return <div ref={root} data-pull-request-surface="" className="flex h-full min-h-0 flex-col bg-background" aria-label={`Pull request #${number}`} aria-busy={pull.refreshing}>
 		{pull.error ? <>
@@ -123,6 +126,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 	const saveTitle = async () => { if (titleDraft === null || !titleDraft.trim()) return; if (titleDraft.trim() === view.title || await pull.perform({ type: "title", title: titleDraft })) setTitleDraft(null); };
 	const number$ = (tabIndex?: number) => <PullRequestNumberMenu url={view.url} onCopy={url => copyWithToast(url, "Link")} onNotice={(message, failed) => { if (failed) showToast("error", message); }} className="shrink-0"><Tip label="Open on GitHub"><button type="button" tabIndex={tabIndex} onClick={() => open(view.url)} onAuxClick={event => { if (event.button === 1) open(view.url); }} aria-label={`Open pull request #${view.number} on GitHub`} className={cn("inline-flex shrink-0 cursor-pointer items-center gap-0.5 font-medium underline-offset-2 hover:underline", presentation.toneClassName)}>#{view.number}<ExternalLink aria-hidden className="size-2.5" /></button></Tip></PullRequestNumberMenu>;
 	const branchLine = (small: boolean) => <span className={cn("flex min-w-0 flex-1 items-center gap-1.5 font-mono", small ? "text-2xs text-muted-foreground/65" : "text-xs text-muted-foreground/70")}>
+		<StackedBaseGlyph projectId={projectId} view={view} />
 		{freshness ? <BaseFreshnessWarning view={view} projectId={projectId} small={small} freshness={freshness} pending={busy} updating={pending === "update-branch"} onUpdate={method => void pull.perform({ type: "update-branch", ...(method === "rebase" ? { method } : {}) })} /> : <Tip label={view.base}><span className="inline-flex max-w-[40%] min-w-0 shrink-0 items-center gap-1"><code className="flex min-w-0"><MiddleTruncate value={view.base} /></code></span></Tip>}
 		<ArrowLeft aria-label="receives changes from" className={cn("shrink-0 opacity-60", small ? "size-3" : "size-3.5")} />
 		{small ? <Tip label={view.head}><code className="flex min-w-0 flex-1"><MiddleTruncate value={view.head} /></code></Tip> : <CopyableCode value={view.head} label="Copy pull request branch" className="min-w-0" />}
@@ -195,6 +199,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 			</div>
 			{/* Header actions, left to right: the auto-merge badge, other per-pull-request controls, the primary control, More. */}
 			<div className="mr-4 flex h-7 shrink-0 items-center justify-end gap-1" data-pull-request-header-actions="">
+				<StackMenu projectId={projectId} view={view} onActed={() => void pull.refresh()} />
 				{autoMergeArmed && primary !== "auto-merge-armed" && armedBadge}
 				{primaryControl}
 				{menu}

@@ -5,7 +5,16 @@ import { resolveNativeCommand } from "./nativeProcess";
 import type { ProjectPullRequests, PullRequest, PullRequestDetails } from "../shared/pullRequests";
 
 const execute = promisify(execFile);
-const query = `query PhaseoPullRequests($owner:String!,$name:String!,$after:String){repository(owner:$owner,name:$name){pullRequests(first:100,after:$after,states:OPEN,orderBy:{field:UPDATED_AT,direction:DESC}){nodes{number title author{login} isDraft headRefName baseRefName updatedAt reviewDecision commits(last:1){nodes{commit{statusCheckRollup{state}}}}}pageInfo{hasNextPage endCursor}}}}`;
+// GitHub reports native stack membership on github.com; a host without the fields fails the query, so it is asked once and then left out.
+const stackSelection = "stack{number size baseRefName} stackEntry{position}";
+let stacksUnsupported = false;
+const graphQlErrors = (output: string) => { try { return JSON.stringify((JSON.parse(output) as { errors?: unknown }).errors ?? ""); } catch { return ""; } };
+const listQuery = (stacks: boolean) => `query PhaseoPullRequests($owner:String!,$name:String!,$after:String){repository(owner:$owner,name:$name){pullRequests(first:100,after:$after,states:OPEN,orderBy:{field:UPDATED_AT,direction:DESC}){nodes{number title author{login avatarUrl} ${stacks ? stackSelection : ""} isDraft headRefName baseRefName updatedAt reviewDecision commits(last:1){nodes{commit{statusCheckRollup{state}}}}}pageInfo{hasNextPage endCursor}}}}`;
+function membership(item: Record<string, unknown>): PullRequest["stack"] {
+	const stack = item.stack as Record<string, unknown> | null | undefined, entry = item.stackEntry as Record<string, unknown> | null | undefined;
+	if (!stack || !entry || !Number.isSafeInteger(stack.number) || !Number.isSafeInteger(stack.size) || !Number.isSafeInteger(entry.position) || typeof stack.baseRefName !== "string" || Number(stack.size) < 1 || Number(entry.position) < 1 || Number(entry.position) > Number(stack.size)) return;
+	return { number: Number(stack.number), size: Number(stack.size), position: Number(entry.position), base: stack.baseRefName.slice(0, 255) };
+}
 export function githubRepository(remote: string): string {
 	const match = /^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+?)(?:\.git)?\/?$/.exec(remote.trim());
 	if (!match || [match[1], match[2]].some(value => value === "." || value === "..")) throw new Error("Choose a project with a github.com origin remote.");
@@ -29,11 +38,12 @@ export function parsePullRequests(repository: string, value: unknown): PullReque
 	const numbers = new Set<number>();
 	return value.map(entry => {
 		const item = entry && typeof entry === "object" ? entry as Record<string, unknown> : {};
-		const author = item.author && typeof item.author === "object" ? (item.author as Record<string, unknown>).login : "Unknown author";
+		const author = item.author && typeof item.author === "object" ? (item.author as Record<string, unknown>).login : "Unknown author", avatar = item.author && typeof item.author === "object" ? (item.author as Record<string, unknown>).avatarUrl : undefined;
+		const stack = membership(item);
 		if (!Number.isSafeInteger(item.number) || Number(item.number) < 1 || numbers.has(Number(item.number)) || typeof item.isDraft !== "boolean" || typeof item.updatedAt !== "string" || !Number.isFinite(Date.parse(item.updatedAt)) || [item.title, item.headRefName, item.baseRefName, author].some(text => typeof text !== "string" || text.length > 2000)) throw new Error("GitHub returned an invalid pull request.");
 		numbers.add(Number(item.number));
 		return { number: Number(item.number), title: item.title as string, url: `https://github.com/${repository}/pull/${item.number}`, author: author as string, draft: item.isDraft, head: item.headRefName as string, base: item.baseRefName as string, updatedAt: item.updatedAt,
-			review: item.reviewDecision === "APPROVED" ? "approved" : item.reviewDecision === "CHANGES_REQUESTED" ? "changes-requested" : item.reviewDecision === "REVIEW_REQUIRED" ? "required" : "none", checks: checks(item.statusCheckRollup) };
+			review: item.reviewDecision === "APPROVED" ? "approved" : item.reviewDecision === "CHANGES_REQUESTED" ? "changes-requested" : item.reviewDecision === "REVIEW_REQUIRED" ? "required" : "none", checks: checks(item.statusCheckRollup), ...(typeof avatar === "string" && avatar.startsWith("https://") && avatar.length < 2000 ? { authorAvatarUrl: avatar } : {}), ...(stack ? { stack } : {}) };
 	});
 }
 export async function projectPullRequests(root: string, cursor?: unknown): Promise<ProjectPullRequests> {
@@ -45,7 +55,16 @@ export async function projectPullRequests(root: string, cursor?: unknown): Promi
 	try { command = await resolveNativeCommand("gh"); } catch { throw new Error("Install GitHub CLI and sign in with gh auth login."); }
 	let output: string;
 	const [owner, name] = repository.split("/");
-	try { output = (await execute(command.executable, [...command.prefix, "api", "graphql", "--hostname", "github.com", "-f", `query=${query}`, "-F", `owner=${owner}`, "-F", `name=${name}`, ...(cursor === undefined ? [] : ["-f", `after=${cursor}`])], { cwd: root, windowsHide: true, timeout: 20000, maxBuffer: 2 * 1024 * 1024, env: { ...process.env, GH_PROMPT_DISABLED: "1", GH_DEBUG: "" } })).stdout; }
+	const read = (stacks: boolean) => execute(command.executable, [...command.prefix, "api", "graphql", "--hostname", "github.com", "-f", `query=${listQuery(stacks)}`, "-F", `owner=${owner}`, "-F", `name=${name}`, ...(cursor === undefined ? [] : ["-f", `after=${cursor}`])], { cwd: root, windowsHide: true, timeout: 20000, maxBuffer: 2 * 1024 * 1024, env: { ...process.env, GH_PROMPT_DISABLED: "1", GH_DEBUG: "" } });
+	try {
+		// A schema without the stack fields answers with a GraphQL error, through either the exit code or the body.
+		const stackError = (text: string) => /stack/i.test(text) && /field|doesn't exist|undefined/i.test(text);
+		try { output = (await read(!stacksUnsupported)).stdout; if (!stacksUnsupported && stackError(graphQlErrors(output))) { stacksUnsupported = true; output = (await read(false)).stdout; } }
+		catch (reason) {
+			if (stacksUnsupported || (reason as NodeJS.ErrnoException)?.code === "ENOENT" || !stackError(`${(reason as { stderr?: unknown }).stderr ?? ""}${(reason as { stdout?: unknown }).stdout ?? ""}`)) throw reason;
+			stacksUnsupported = true; output = (await read(false)).stdout;
+		}
+	}
 	catch (reason) { if ((reason as NodeJS.ErrnoException)?.code === "ENOENT") throw new Error("Install GitHub CLI and sign in with gh auth login.", { cause: reason }); throw new Error("Could not load pull requests. Check GitHub CLI sign-in and repository access, then retry.", { cause: reason }); }
 	let parsed: unknown;
 	try { parsed = JSON.parse(output); } catch { throw new Error("GitHub returned an unreadable pull-request list."); }
@@ -63,7 +82,7 @@ export async function projectPullRequests(root: string, cursor?: unknown): Promi
 	return { repository, requests, fetchedAt: new Date().toISOString(), limitReached: page.pageInfo.hasNextPage, nextCursor: nextCursor as string | undefined };
 }
 
-const detailQuery = `query PhaseoPullRequest($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){number title body state author{login} isDraft headRefName baseRefName headRefOid baseRefOid updatedAt reviewDecision additions deletions changedFiles mergeable mergeStateStatus commits(last:1){nodes{commit{statusCheckRollup{state}}}}}}}`;
+const detailQuery = `query PhaseoPullRequest($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){number title body state author{login avatarUrl} isDraft headRefName baseRefName headRefOid baseRefOid updatedAt reviewDecision additions deletions changedFiles mergeable mergeStateStatus commits(last:1){nodes{commit{statusCheckRollup{state}}}}}}}`;
 export function parsePullRequestDetails(repository: string, number: number, value: unknown): PullRequestDetails {
  const item = value && typeof value === "object" ? value as Record<string, unknown> : {};
  const commits = item.commits as { nodes?: { commit?: { statusCheckRollup?: { state?: string } | null } }[] } | undefined;

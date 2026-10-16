@@ -11,6 +11,13 @@ function fixture() {
 	service.update(workspaceOverview(workspace)); return { service, ports, workspace, close };
 }
 describe("desktop task notifications", () => {
+	it("says a review guide is ready only with all, and a failure with attention too, keeping titles private", () => {
+		const { service, ports } = fixture(); const click = vi.fn();
+		service.guide(false, 7, "owned/repo", "Private title", click); expect(ports.show).toHaveBeenLastCalledWith("Review guide ready", "owned/repo #7", click);
+		service.configure({ ...defaultPreferences, notifications: "attention" }); service.guide(false, 7, "owned/repo", "t", click); expect(ports.show).toHaveBeenCalledOnce();
+		service.configure({ ...defaultPreferences, notifications: "attention", notificationTitles: true }); service.guide(true, 7, "owned/repo", "Load with a limit", click); expect(ports.show).toHaveBeenLastCalledWith("Review guide failed", "Load with a limit", click);
+		ports.focused.mockReturnValue(true); service.guide(true, 7, "owned/repo", "t", click); expect(ports.show).toHaveBeenCalledTimes(2);
+	});
 	it("seeds history without alerts and reports new terminal states without private content", () => {
 		const { service, ports, workspace } = fixture(); expect(ports.show).not.toHaveBeenCalled();
 		workspace.tasks[0].status = "completed"; service.update(workspaceOverview(workspace)); expect(ports.show).toHaveBeenCalledWith("Phaseo", "Task completed", expect.any(Function));

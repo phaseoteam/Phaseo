@@ -6,11 +6,12 @@
 /** Drag data for a chat dragged from the sidebar: `{ id, title }` as JSON. */
 export const chatDragType = "application/x-phaseo-chat";
 
-export type MentionKind = "file" | "folder" | "chat" | "attachment" | "image";
+/** A pull request chip's ref is its GitHub URL and its label "#N title" (T3's `#` composer context). */
+export type MentionKind = "file" | "folder" | "chat" | "attachment" | "image" | "pull-request";
 export type Mention = { kind: MentionKind; ref: string; label: string };
 export type Segment = string | Mention;
 
-const kinds = "file|folder|chat|attachment|image";
+const kinds = "file|folder|chat|attachment|image|pull-request";
 const tokenPattern = () => new RegExp(`@\\[([^\\]\\n]*)\\]\\((${kinds}):([^)\\s]+)\\)`, "g");
 
 export function mentionToken(mention: Mention) {
@@ -34,7 +35,8 @@ export function parseMentions(text: string): Segment[] {
 
 /**
  * What a draft sends: files become `@path` for the agent to open, chats keep their token (the agent
- * gets the id; the message shows a chip) and are listed as references, attachments become ids.
+ * gets the id; the message shows a chip) and are listed as references, attachments become ids. A pull request becomes a
+ * Markdown link to it, which the agent can read and the message shows as a pull request chip.
  */
 export function composeMessage(draft: string) {
 	const threadReferences: string[] = [], attachments: string[] = [], images: string[] = [];
@@ -43,6 +45,7 @@ export function composeMessage(draft: string) {
 		if (segment.kind === "file") return `@${segment.ref}`;
 		if (segment.kind === "folder") return `@${segment.ref}/`;
 		if (segment.kind === "chat") { if (!threadReferences.includes(segment.ref)) threadReferences.push(segment.ref); return mentionToken(segment); }
+		if (segment.kind === "pull-request") return /^https:\/\/github\.com\//.test(segment.ref) ? `[${segment.label.replace(/[[\]]/g, "")}](${segment.ref})` : segment.label;
 		(segment.kind === "attachment" ? attachments : images).push(segment.ref);
 		return "";
 	}).join("").replace(/[ \t]+\n/g, "\n").trim();

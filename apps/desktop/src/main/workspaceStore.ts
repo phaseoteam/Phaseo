@@ -15,7 +15,8 @@ import { validateTaskHistoryQuery, type TaskHistoryPage } from "../shared/taskHi
 import type { TaskOverview, WorkspaceOverview } from "../shared/workspaceOverview";
 import { inboxReasonFromCounts } from "../shared/inbox";
 import { conversationPageBytes, validateConversationPageQuery, type ConversationPage } from "../shared/conversationPage";
-import { maximumPullRequestLinks, pullRequestUrl, samePullRequest, unwatched, validatePullRequestLinks, validRepository, type PullRequestLinkSnapshot } from "../shared/pullRequestView";
+import { maximumPullRequestLinks, pullRequestUrl, samePullRequest, sameSnapshot, unwatched, validatePullRequestLinks, validRepository, type PullRequestLinkSnapshot, type SavedPullRequestStack } from "../shared/pullRequestView";
+import type { PullRequestStack } from "../shared/pullRequestStacks";
 import { newPullRequestWatch, type PullRequestWatchMessage, type PullRequestWatchState } from "../shared/pullRequestWatch";
 
 export class WorkspaceStore {
@@ -228,9 +229,38 @@ export class WorkspaceStore {
 		for (const row of rows) {
 			const task = this.getTask(row.id as string), links = validatePullRequestLinks(task.pullRequests) ?? [];
 			const index = links.findIndex(link => samePullRequest(link, { repository, number }));
-			if (index < 0 || JSON.stringify(links[index].snapshot) === JSON.stringify(snapshot)) continue;
+			if (index < 0 || sameSnapshot(links[index].snapshot, snapshot)) continue;
 			links[index] = { ...links[index], snapshot }; task.pullRequests = links;
 			this.saveTask(task, true); changed = true;
+		}
+		return changed;
+	}
+	/**
+	 * Records the native stack a pull request was read in on every chat linking one of its layers, and links the layers
+	 * a chat lacks with source "stack", as T3's sync does. A layer the person dismissed stays dismissed; a settled or
+	 * archived chat takes the stack but gains no links. `stack` null clears the stack from that one pull request.
+	 */
+	syncPullRequestStack(repository: string, number: number, stack: PullRequestStack | null): boolean {
+		const numbers = stack ? stack.layers.map(layer => layer.number) : [number];
+		const saved: SavedPullRequestStack | undefined = stack ? { id: stack.id, number: stack.number, url: stack.url, base: stack.base, layers: stack.layers.map(layer => ({ number: layer.number, headBranch: layer.headBranch, state: layer.state })) } : undefined;
+		const rows = this.db.prepare(`SELECT id FROM tasks WHERE EXISTS (SELECT 1 FROM json_each(tasks.data, '$.pullRequests') AS item WHERE lower(json_extract(item.value, '$.repository')) = lower(?) AND json_extract(item.value, '$.number') IN (${numbers.map(() => "?").join(",")}))`).all(repository, ...numbers);
+		let changed = false;
+		for (const row of rows) {
+			const task = this.getTask(row.id as string), links = validatePullRequestLinks(task.pullRequests) ?? [];
+			let touched = false;
+			for (const [index, link] of links.entries()) {
+				if (link.repository.toLowerCase() !== repository.toLowerCase() || !numbers.includes(link.number)) continue;
+				if (JSON.stringify(link.stack) === JSON.stringify(saved)) continue;
+				const next = { ...link }; if (saved) next.stack = saved; else delete next.stack;
+				links[index] = next; touched = true;
+			}
+			if (stack && !task.archived && task.settledOverride !== "settled") for (const layer of stack.layers) {
+				if (links.length >= maximumPullRequestLinks || links.some(link => samePullRequest(link, { repository, number: layer.number }))) continue;
+				links.push({ repository, number: layer.number, url: pullRequestUrl(repository, layer.number), linkedAt: new Date().toISOString(), source: "stack", stack: saved });
+				touched = true;
+			}
+			if (!touched) continue;
+			task.pullRequests = links; this.saveTask(task, true); changed = true;
 		}
 		return changed;
 	}
@@ -509,15 +539,19 @@ function applyPullRequestLink(task: Task, command: PullRequestLinkCommand) {
 	const links = validatePullRequestLinks(task.pullRequests) ?? [];
 	if (command.type === "link-pull-request") {
 		if (!validRepository(command.repository) || !Number.isSafeInteger(command.number)) throw new Error("Choose a GitHub pull request to link.");
-		const target = { repository: command.repository, number: command.number! };
-		if (!links.some(link => samePullRequest(link, target))) {
+		const target = { repository: command.repository, number: command.number! }, source = command.source ?? "manual";
+		const existing = links.findIndex(link => samePullRequest(link, target));
+		// Linking a dismissed stack layer again brings it back as the new source's link.
+		if (existing >= 0 && links[existing].source === "stack-dismissed") links[existing] = { ...links[existing], source, linkedAt: new Date().toISOString() };
+		else if (existing < 0) {
 			if (links.length >= maximumPullRequestLinks) throw new Error(`A chat can link up to ${maximumPullRequestLinks} pull requests.`);
-			links.push({ ...target, url: pullRequestUrl(target.repository, target.number), linkedAt: new Date().toISOString(), source: command.source === "agent" ? "agent" : "manual" });
+			links.push({ ...target, url: pullRequestUrl(target.repository, target.number), linkedAt: new Date().toISOString(), source });
 		}
 	} else {
-		const index = links.findIndex(link => samePullRequest(link, command));
+		const index = links.findIndex(link => samePullRequest(link, command) && link.source !== "stack-dismissed");
 		if (index < 0) throw new Error("This pull request is not linked to this chat.");
-		if (command.type === "unlink-pull-request") links.splice(index, 1);
+		// A layer found in the stack is dismissed rather than removed, so the next stack read does not find it again.
+		if (command.type === "unlink-pull-request") { if (links[index].source === "stack") links[index] = { ...unwatched(links[index]), source: "stack-dismissed" }; else links.splice(index, 1); }
 		else if (!command.watching) links[index] = unwatched(links[index]);
 		else if (!links[index].watching) {
 			// As in T3: a watch wakes the chat's agent, so a chat that takes no wakes cannot start one.

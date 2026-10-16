@@ -14,6 +14,8 @@ import { WorkspaceThreads } from "./workspaceThreads";
 import { git } from "./gitProcess";
 import { githubRepository } from "./projectPullRequests";
 import { parsePullRequestReference, validatePullRequestLinks, type PullRequestLinkSnapshot } from "../shared/pullRequestView";
+import type { PullRequestStack } from "../shared/pullRequestStacks";
+import type { PullRequestGuideResult } from "../shared/pullRequestGuide";
 import type { PullRequestWatchMessage, PullRequestWatchState } from "../shared/pullRequestWatch";
 import type { PullRequestWatchTarget } from "./pullRequestWatcher";
 import { OrchestratorMcp } from "./orchestratorMcp";
@@ -110,14 +112,16 @@ export class WorkspaceRuntime {
 	private readonly settledByTurn = new Set<string>();
 	/** T3's browser tools for one chat, on its own browser tabs; set by the app once it has a window. */
 	browserTools?: (chatId: string) => BrowserAgentTools;
+	/** Review guides for the agent tools; set by the app once its guide store exists. */
+	pullRequestGuideTools?: { write: (root: string, repository: string, number: number) => Promise<"started" | "running">; read: (root: string, repository: string, number: number) => Promise<PullRequestGuideResult> };
 	constructor(private readonly directory: string, private readonly adapterFactory = createAdapter, private readonly vault?: SecretVault) {
 		mkdirSync(path.join(directory, "instructions"), { recursive: true });
 		mkdirSync(directory, { recursive: true });
 		this.store = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
 		this.attachments = new AttachmentService(path.join(directory, "attachments"), this.store);
 		this.openCode = new OpenCodeService(directory);
-		const modelDiscovery = () => this.discoverThreadModels, installationDiscovery = () => this.discoverInstallations, missions = () => this.missionCommand;
-		this.threads = new WorkspaceThreads({ store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), start: id => this.start(id), command: command => this.command(command), createWorktree: (projectId, branch, base) => this.createWorktree(projectId, branch, base), assertHarnessAvailable: harness => this.assertHarnessAvailable(harness), assertProjectAvailable: id => this.assertProjectAvailable(id), get discoverModels() { return modelDiscovery(); }, get discoverInstallations() { return installationDiscovery(); }, get missions() { return missions(); }, modelDiscoveries: this.modelDiscoveries }, () => this.store.getPreferences().maxActiveAgents);
+		const modelDiscovery = () => this.discoverThreadModels, installationDiscovery = () => this.discoverInstallations, missions = () => this.missionCommand, guides = () => this.pullRequestGuideTools;
+		this.threads = new WorkspaceThreads({ store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), start: id => this.start(id), command: command => this.command(command), createWorktree: (projectId, branch, base) => this.createWorktree(projectId, branch, base), assertHarnessAvailable: harness => this.assertHarnessAvailable(harness), assertProjectAvailable: id => this.assertProjectAvailable(id), get discoverModels() { return modelDiscovery(); }, get discoverInstallations() { return installationDiscovery(); }, get missions() { return missions(); }, get pullRequestGuides() { return guides(); }, modelDiscoveries: this.modelDiscoveries }, () => this.store.getPreferences().maxActiveAgents);
 		// Deliveries recorded while the app was closed wake idle parents as they would at runtime, after the host has wired its hooks.
 		// Children cut off by the app quitting are only reported: waking the parent for them would spend tokens nobody asked for.
 		const finished = (id: string) => { try { return this.store.getTask(id).status !== "interrupted"; } catch { return false; } };
@@ -265,6 +269,10 @@ export class WorkspaceRuntime {
 	/** Called after any pane reads a pull request, so linked chats show its latest state. */
 	syncPullRequestSnapshot(repository: string, number: number, snapshot: PullRequestLinkSnapshot) {
 		if (!this.closing && this.store.syncPullRequestSnapshot(repository, number, snapshot)) this.broadcast();
+	}
+	/** Called after a native stack read, so every chat linking a layer groups the stack and gains its other layers. */
+	syncPullRequestStack(repository: string, number: number, stack: PullRequestStack | null) {
+		if (!this.closing && this.store.syncPullRequestStack(repository, number, stack)) this.broadcast();
 	}
 	/** Every chat's pull request links for the watcher, with the folder gh reads them from. */
 	pullRequestWatchTargets(): PullRequestWatchTarget[] {

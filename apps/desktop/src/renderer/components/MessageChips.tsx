@@ -7,6 +7,10 @@ import { richLink } from "../lib/richLink";
 import { GitHubMark } from "./GitHubMark";
 import { InlineChip } from "./InlineChip";
 import { ModelLogo } from "./ModelLogo";
+import { parsePullRequestReference } from "../../shared/pullRequestView";
+import { openPullRequestLink } from "../views/pullRequests/openPullRequestLink";
+import { PullRequestLinkPreview, useLinkProject } from "../views/pullRequests/PullRequestLinkPreview";
+import { useProjectRepository } from "../views/pullRequests/useProjectRepository";
 
 /** Opens a project file in the editor chosen in Projects, or the first one installed. */
 export async function openProjectFile(projectId: string, file: { filename: string; line?: number; column?: number }) {
@@ -33,8 +37,22 @@ function useLinkTitle(href: string) {
 	return pageTitle;
 }
 
+/**
+ * A GitHub pull request link (T3's ChatMarkdown with PullRequestLinkPreview): hovering shows the pull request, and a
+ * click opens it in the pane when it is in the chat's repository and "Open pull requests in Phaseo" is on.
+ */
+function PullRequestLinkChip({ href, children }: { href: string; children?: ReactNode }) {
+	const repository = useProjectRepository(useLinkProject());
+	const reference = parsePullRequestReference(href);
+	return <PullRequestLinkPreview url={href}><InlineChip className="message-rich-link" href={href} icon={<GitHubMark />} onClick={event => openPullRequestLink(event, href, repository)}>{children ?? `PR #${reference?.number}`}</InlineChip></PullRequestLinkPreview>;
+}
+
 /** A link chip: GitHub PRs and issues read as `PR #12`, other pages by title or host. `children` replaces the label. */
 export function LinkChip({ href, children }: { href: string; children?: ReactNode }) {
+	if (/^https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/\d+/i.test(href) && typeof window !== "undefined" && window.phaseoDesktop?.workspace) return <PullRequestLinkChip href={href}>{children}</PullRequestLinkChip>;
+	return <PageLinkChip href={href}>{children}</PageLinkChip>;
+}
+function PageLinkChip({ href, children }: { href: string; children?: ReactNode }) {
 	const link = richLink(href);
 	const pageTitle = useLinkTitle(href);
 	return <InlineChip className="message-rich-link" href={href} title={pageTitle ?? href} icon={link?.github ? <GitHubMark /> : <Globe />} onClick={() => openContextLink(href)}>{children ?? link?.label ?? pageTitle ?? link?.fallback ?? href}</InlineChip>;

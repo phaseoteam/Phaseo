@@ -16,7 +16,7 @@ async function auditProposals(window,output,width,theme){
  const until=async(code,message)=>{for(let attempt=0;!await js(code);attempt++){if(attempt>50)throw Error(message);await new Promise(resolve=>setTimeout(resolve,20));}};
  const list='section[aria-label="Pull requests"]';
  const waitPending=async()=>{for(let attempt=0;!pendingProposals;attempt++){if(attempt>50)throw Error('Pull-request read did not start');await new Promise(resolve=>setTimeout(resolve,20));}};
- holdProposals=true;await js(`window.__auditPanel?.('Pull requests')`);await waitPending();
+ holdProposals=true;await js(`window.__auditPanel?.('Linked pull requests')`);await waitPending();
  if(!await js(`document.querySelector('${list} [role="status"]')?.textContent==='Loading pull requests…'&&document.querySelector('${list} [aria-label="Refresh pull requests"]').disabled`))throw Error('Pull-request loading feedback is missing');
  writeFileSync(path.join(output,`${width}-${theme}-proposals-loading.png`),(await window.webContents.capturePage()).toPNG());
  pendingProposals.reject(Error('Owned pull-request read failure'));pendingProposals=undefined;

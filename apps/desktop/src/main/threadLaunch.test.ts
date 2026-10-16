@@ -166,6 +166,25 @@ describe("pull request tools", () => {
 		const unrelated = await caller(runtime);
 		await expect(tools.pullRequest!(unrelated, "link", { number: 3 })).rejects.toThrow("outside");
 	}));
+	it("lists links with their stacks, and writes and reads guides through the checkout of each repository", async () => withRuntime(async (runtime, directory) => {
+		const { root, git } = repository(directory); git(["remote", "add", "origin", "https://github.com/owned/repo.git"]);
+		const projectId = runtime.store.addProject(root).id, parentId = await caller(runtime, "code", "full-access", projectId), tools = runtime.threadTools(parentId);
+		await tools.pullRequest!(undefined, "link", { number: 1 }); await tools.pullRequest!(undefined, "link", { number: 2 });
+		const snapshot = { title: "One", state: "open" as const, draft: false, mergeable: "MERGEABLE" as const, checks: "passing" as const, review: "none" as const, additions: 1, deletions: 1, author: "a", head: "one", base: "main", updatedAt: "2026-10-16T00:00:00Z" };
+		runtime.store.syncPullRequestSnapshot("owned/repo", 1, snapshot); runtime.store.syncPullRequestSnapshot("owned/repo", 2, { ...snapshot, title: "Two", head: "two", base: "one" });
+		const listed = await tools.pullRequestList!(undefined);
+		expect(listed.chains).toEqual([{ kind: "derived", numbers: [1, 2] }]);
+		expect(listed.pullRequests.find(entry => entry.number === 2)).toMatchObject({ source: "agent", state: "open", title: "Two", headBranch: "two", baseBranch: "one", stack: { kind: "derived", position: 2, size: 2 } });
+		const calls: string[] = [];
+		runtime.pullRequestGuideTools = { write: async (cwd, repo, number) => { calls.push(`${cwd}|${repo}#${number}`); return number === 2 ? "running" : "started"; }, read: async () => ({ guide: { headSha: "a".repeat(40), generatedAt: "2026-10-16T00:00:00Z", model: "m", stops: [] }, running: false, currentHeadSha: "b".repeat(40) }) };
+		expect(await tools.writePullRequestGuides!([{ number: 1 }, { url: "https://github.com/owned/repo/pull/2" }, { repository: "other/repo", number: 3 }])).toEqual({ guides: [
+			{ repository: "owned/repo", number: 1, url: "https://github.com/owned/repo/pull/1", outcome: "started", detail: null },
+			{ repository: "owned/repo", number: 2, url: "https://github.com/owned/repo/pull/2", outcome: "running", detail: null },
+			{ repository: "other/repo", number: 3, url: "https://github.com/other/repo/pull/3", outcome: "failed", detail: expect.stringContaining("No project in this workspace is a checkout of other/repo") },
+		] });
+		expect(calls).toEqual([`${root}|owned/repo#1`, `${root}|owned/repo#2`]);
+		expect(await tools.readPullRequestGuide!({ number: 1 })).toMatchObject({ repository: "owned/repo", number: 1, run: null, stale: true, currentHeadSha: "b".repeat(40) });
+	}));
 });
 
 describe("scheduled-task tools", () => {

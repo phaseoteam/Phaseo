@@ -15,6 +15,11 @@ import { createBrowserTab, ensureBrowserTab, closeBrowserTab, confirmCloseBrowse
 import { PullRequestListSurface, PullRequestSurface, pullRequestStatePresentation } from "../views/pullRequests";
 import { closeTerminal, createTerminal, terminalTitle, terminalsFor, useTerminalSessions } from "../lib/terminalSessions";
 import { OPEN_PROJECT_FILE_EVENT, type OpenProjectFileDetail } from "../panels/events";
+import { OPEN_PULL_REQUEST_EVENT, type OpenPullRequestDetail } from "../views/pullRequests/events";
+import { seedPullRequestTabStatus, usePullRequestTabStatus } from "../views/pullRequests/tabStatus";
+import { useBranchPullRequest } from "../views/pullRequests/useBranchPullRequest";
+import { useProjectRepository } from "../views/pullRequests/useProjectRepository";
+import { currentPullRequest } from "../../shared/pullRequestStacks";
 import { closePaneTabs, migratePaneState, movePaneTab, openPaneTab, paneKind, paneValue, paneWidths, reopenPaneTab, type PaneKey, type PaneState } from "./paneTabs";
 
 // The diff viewer and editor are large, so they load when first opened.
@@ -23,24 +28,25 @@ const FileSurface = lazy(() => import("../panels/FileSurface").then(module => ({
 const FileBrowserSurface = lazy(() => import("../panels/FileBrowserSurface").then(module => ({ default: module.FileBrowserSurface })));
 const TerminalSurface = lazy(() => import("../views/Terminals").then(module => ({ default: module.TerminalSurface })));
 
-/** T3's "+" menu and empty-pane launcher, in its order, with the letter that opens each. */
-const launchers: { kind: "browser" | "terminal" | "files" | "diff" | "pulls" | "agents"; label: string; icon: ReactNode; letter: string; needsProject?: boolean }[] = [
+/** T3's "+" menu and empty-pane launcher, in its order, with the letter that opens each and why it may be unavailable. */
+const launchers: { kind: "browser" | "terminal" | "files" | "diff" | "pull" | "pulls" | "agents"; label: string; icon: ReactNode; letter: string; needsProject?: boolean; reason?: string }[] = [
 	{ kind: "browser", label: "Browser", icon: <Globe />, letter: "B" },
 	{ kind: "terminal", label: "Terminal", icon: <SquareTerminal />, letter: "T" },
-	{ kind: "files", label: "Files", icon: <Files />, letter: "F", needsProject: true },
-	{ kind: "diff", label: "Diff", icon: <FileDiff />, letter: "D", needsProject: true },
-	{ kind: "pulls", label: "Pull requests", icon: <Link2 />, letter: "P", needsProject: true },
+	{ kind: "files", label: "Files", icon: <Files />, letter: "F", needsProject: true, reason: "Files are only available when a project is open." },
+	{ kind: "diff", label: "Diff", icon: <FileDiff />, letter: "D", needsProject: true, reason: "Diff is only available for chats in a project." },
+	{ kind: "pull", label: "Pull request", icon: <GitPullRequestArrow />, letter: "P", needsProject: true, reason: "This chat's branch has no pull request yet." },
+	{ kind: "pulls", label: "Linked pull requests", icon: <Link2 />, letter: "L", needsProject: true, reason: "Pull requests are only available for chats in a project." },
 	{ kind: "agents", label: "Agents", icon: <GitBranch />, letter: "A" },
 ];
 const paneTabType = "application/x-phaseo-pane-tab";
 const basename = (path: string) => path.split(/[\\/]/).filter(Boolean).at(-1) ?? path;
 
 /** A tab's icon and title: page title and favicon for the browser, #number in the state colour for a pull request. */
-function TabFace({ paneKey, context, dirty }: { paneKey: PaneKey; context: string; dirty: boolean }) {
+function TabFace({ paneKey, context, projectId, dirty }: { paneKey: PaneKey; context: string; projectId: string; dirty: boolean }) {
 	const kind = paneKind(paneKey), value = paneValue(paneKey);
 	if (kind === "browser") return <BrowserFace context={context} id={value} />;
 	if (kind === "terminal") return <SquareTerminal />;
-	if (kind === "pull") return <PullFace number={Number(value)} />;
+	if (kind === "pull") return <PullFace projectId={projectId} number={Number(value)} />;
 	if (kind === "file") return <><FileText />{dirty && <span aria-hidden className="absolute -right-0.5 -bottom-0.5 size-1.5 rounded-full bg-current" />}<span className="hidden">{basename(value)}</span></>;
 	const launcher = launchers.find(item => item.kind === kind);
 	return <>{launcher?.icon ?? <Files />}</>;
@@ -49,11 +55,13 @@ function BrowserFace({ context, id }: { context: string; id: string }) {
 	const tab = useBrowserTab(context, id);
 	return tab?.favicon ? <img src={tab.favicon} alt="" className="size-3 rounded-[2px]" /> : <Globe />;
 }
-function PullFace({ number }: { number: number }) {
+function PullFace({ projectId, number }: { projectId: string; number: number }) {
 	const { overview, selectedId } = useWorkspace();
 	const snapshot = overview.tasks.find(task => task.id === selectedId)?.pullRequests?.find(link => link.number === number)?.snapshot;
-	if (!snapshot) return <GitPullRequestArrow className="text-muted-foreground" />;
-	const { Icon, toneClassName } = pullRequestStatePresentation(snapshot.state, snapshot.draft);
+	// A pull request the chat does not link wears what the row that opened it, or its last read, said.
+	const seeded = usePullRequestTabStatus(projectId, number), status = snapshot ?? seeded;
+	if (!status) return <GitPullRequestArrow className="text-muted-foreground" />;
+	const { Icon, toneClassName } = pullRequestStatePresentation(status.state, status.draft);
 	return <Icon className={toneClassName} />;
 }
 
@@ -69,7 +77,7 @@ function useTabTitle(paneKey: PaneKey, context: string) {
 	return launchers.find(item => item.kind === kind)?.label ?? kind;
 }
 
-function SurfaceTab({ paneKey, context, active, dirty, onSelect, onClose, onCloseOthers, onCloseRight, onCloseAll, onDropBefore }: { paneKey: PaneKey; context: string; active: boolean; dirty: boolean; onSelect: () => void; onClose: () => void; onCloseOthers: () => void; onCloseRight: () => void; onCloseAll: () => void; onDropBefore: (key: PaneKey) => void }) {
+function SurfaceTab({ paneKey, context, projectId, active, dirty, onSelect, onClose, onCloseOthers, onCloseRight, onCloseAll, onDropBefore }: { paneKey: PaneKey; context: string; projectId: string; active: boolean; dirty: boolean; onSelect: () => void; onClose: () => void; onCloseOthers: () => void; onCloseRight: () => void; onCloseAll: () => void; onDropBefore: (key: PaneKey) => void }) {
 	const title = useTabTitle(paneKey, context);
 	const kind = paneKind(paneKey), value = paneValue(paneKey);
 	const browser = useBrowserTab(context, kind === "browser" ? value : "");
@@ -84,7 +92,7 @@ function SurfaceTab({ paneKey, context, active, dirty, onSelect, onClose, onClos
 			className={cn("group/tab relative flex h-6 max-w-36 shrink-0 cursor-pointer items-center gap-0.5 rounded-md pr-2 pl-1.5 text-xs outline-none [-webkit-app-region:no-drag] focus-visible:ring-2 focus-visible:ring-ring/40", active ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground", over && "ring-1 ring-primary/50")}>
 			{/* The icon is the close button: it turns into an X on hover (T3). */}
 			<button type="button" aria-label={`Close ${title}`} onClick={event => { event.stopPropagation(); onClose(); }} className="group/close relative flex size-4 shrink-0 items-center justify-center rounded-sm hover:bg-muted">
-				<span className="relative flex size-3 items-center justify-center group-hover/tab:hidden group-focus-visible/close:hidden [&_svg]:size-3"><TabFace paneKey={paneKey} context={context} dirty={dirty} /></span>
+				<span className="relative flex size-3 items-center justify-center group-hover/tab:hidden group-focus-visible/close:hidden [&_svg]:size-3"><TabFace paneKey={paneKey} context={context} projectId={projectId} dirty={dirty} /></span>
 				<X className="hidden size-3 group-hover/tab:block group-focus-visible/close:block" />
 			</button>
 			{browser && (browser.audible || browser.muted) && <button type="button" aria-label={browser.muted ? "Unmute tab" : "Mute tab"} onClick={event => { event.stopPropagation(); void setBrowserTabMuted(browser.id, !browser.muted); }} className="grid size-4 shrink-0 place-items-center rounded-sm hover:bg-muted">{browser.muted ? <VolumeOff className="size-3" /> : <Volume2 className="size-3" />}</button>}
@@ -103,30 +111,30 @@ function SurfaceTab({ paneKey, context, active, dirty, onSelect, onClose, onClos
 	</ContextMenu.Root>;
 }
 
-/** T3's empty pane: the surfaces as rows, each opened by its letter. */
-function Launcher({ onOpen, hasProject }: { onOpen: (kind: typeof launchers[number]["kind"]) => void; hasProject: boolean }) {
+/** T3's empty pane: the surfaces as rows, each opened by its letter; an unavailable one says why. */
+function Launcher({ onOpen, unavailable: reason }: { onOpen: (kind: typeof launchers[number]["kind"]) => void; unavailable: (kind: typeof launchers[number]["kind"]) => string | undefined }) {
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (event.metaKey || event.ctrlKey || event.altKey || event.defaultPrevented) return;
 			const target = event.target as HTMLElement | null;
 			if (target?.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target?.tagName ?? "") || document.querySelector("[role=menu],[role=dialog]")) return;
-			const launcher = launchers.find(item => item.letter.toLowerCase() === event.key.toLowerCase() && (hasProject || !item.needsProject));
+			const launcher = launchers.find(item => item.letter.toLowerCase() === event.key.toLowerCase() && !reason(item.kind));
 			if (launcher) { event.preventDefault(); onOpen(launcher.kind); }
 		};
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
-	}, [onOpen, hasProject]);
+	}, [onOpen, reason]);
 	return <div className="flex min-h-0 flex-1 items-center justify-center px-6 pb-10">
 		<div className="w-full max-w-xs py-6">
 			<h3 className="mb-3 text-center text-sm font-medium text-foreground">Open a surface</h3>
 			<div className="flex flex-col gap-0.5">{launchers.map(item => {
-				const unavailable = item.needsProject && !hasProject;
-				const button = <button key={item.kind} type="button" disabled={unavailable} onClick={() => onOpen(item.kind)}
+				const unavailable = reason(item.kind);
+				const button = <button key={item.kind} type="button" disabled={Boolean(unavailable)} onClick={() => onOpen(item.kind)}
 					className="flex h-8 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-sm transition-colors hover:bg-accent/60 disabled:opacity-50 [&>svg]:size-4">
 					{item.icon}<span className="min-w-0 flex-1 truncate">{item.label}</span><Kbd>{item.letter}</Kbd>
 				</button>;
 				// A disabled button gets no pointer events, so its reason sits on a wrapper.
-				return unavailable ? <Tip key={item.kind} label="Only for chats in a project."><div>{button}</div></Tip> : button;
+				return unavailable ? <Tip key={item.kind} label={unavailable}><div>{button}</div></Tip> : button;
 			})}</div>
 		</div>
 	</div>;
@@ -152,6 +160,13 @@ export function RightPanel() {
 	const projectId = task?.projectId ?? (selectedId ? undefined : newChatProjectId || undefined) ?? "";
 	const sessions = useTerminalSessions();
 	const browserTabs = useBrowserTabs(context);
+	// T3's "Pull request" surface: the chat's current linked pull request in its own repository, or else the pull
+	// request for the branch its checkout is on, linked or not. Asked again each time the "+" menu opens.
+	const [launchRead, setLaunchRead] = useState(0);
+	const branchPull = useBranchPullRequest(projectId || undefined, launchRead), ownRepository = useProjectRepository(projectId || undefined);
+	const currentLink = currentPullRequest(task?.pullRequests?.filter(link => ownRepository && link.repository.toLowerCase() === ownRepository.toLowerCase()));
+	const currentPull = currentLink?.number ?? branchPull?.pullRequest?.number;
+	const unavailable = (kind: typeof launchers[number]["kind"]) => { const item = launchers.find(value => value.kind === kind); return (item?.needsProject && !projectId) || (kind === "pull" && !currentPull) ? item?.reason ?? "Only for chats in a project." : undefined; };
 	const saved = states[context];
 	const state: PaneState = saved ? migratePaneState(saved) : { tabs: [] };
 	const exists = (key: PaneKey) => {
@@ -187,6 +202,7 @@ export function RightPanel() {
 		try {
 			if (kind === "browser") show(`browser:${createBrowserTab(context)}`);
 			else if (kind === "terminal") show(`terminal:${(await createTerminal({ projectId: projectId || undefined, taskId: selectedId })).id}`);
+			else if (kind === "pull") { if (currentPull) show(`pull:${currentPull}`); }
 			else show(kind);
 		} catch (reason) { setError(errorText(reason)); }
 	};
@@ -209,18 +225,22 @@ export function RightPanel() {
 	useEffect(() => {
 		const openLink = (event: Event) => { const url = (event as CustomEvent<unknown>).detail; if (typeof url === "string" && /^https?:\/\//i.test(url)) show(`browser:${createBrowserTab(context, { url })}`); };
 		const openFile = (event: Event) => { const detail = (event as CustomEvent<OpenProjectFileDetail>).detail; if (detail?.path && (!projectId || detail.projectId === projectId)) show(`file:${detail.path}`); };
+		const openPull = (event: Event) => { const detail = (event as CustomEvent<OpenPullRequestDetail>).detail; if (!projectId || !detail) return; if ("list" in detail) show("pulls"); else if (Number.isSafeInteger(detail.number) && detail.number > 0) show(`pull:${detail.number}`); };
 		window.addEventListener("phaseo:open-context-link", openLink);
 		window.addEventListener(OPEN_PROJECT_FILE_EVENT, openFile);
-		return () => { window.removeEventListener("phaseo:open-context-link", openLink); window.removeEventListener(OPEN_PROJECT_FILE_EVENT, openFile); };
+		window.addEventListener(OPEN_PULL_REQUEST_EVENT, openPull);
+		return () => { window.removeEventListener("phaseo:open-context-link", openLink); window.removeEventListener(OPEN_PROJECT_FILE_EVENT, openFile); window.removeEventListener(OPEN_PULL_REQUEST_EVENT, openPull); };
 	});
 	// T3 opens panes by itself: the Diff when a turn finishes with changes, a pull request when one is linked. It holds back if you used the pane during the turn.
-	const status = task?.status, linked = task?.pullRequests?.length ?? 0;
+	// Layers a stack read finds are not new work, so they do not open the pane.
+	const opened = task?.pullRequests?.filter(link => link.source !== "stack" && link.source !== "stack-dismissed") ?? [];
+	const status = task?.status, linked = opened.length;
 	const previous = useRef({ id: selectedId, status, linked, started: 0 });
 	useEffect(() => {
 		const before = previous.current;
 		previous.current = { id: selectedId, status, linked, started: status === "running" && before.status !== "running" ? Date.now() : before.started };
 		if (!autoOpen || !task || before.id !== selectedId) return;
-		if (linked > before.linked && touched.current < Date.now() - 1000) { const newest = task.pullRequests!.at(-1)!; show(linked > 1 ? "pulls" : `pull:${newest.number}`); return; }
+		if (linked > before.linked && touched.current < Date.now() - 1000) { const newest = opened.at(-1)!; show(linked > 1 ? "pulls" : `pull:${newest.number}`); return; }
 		if (before.status === "running" && status === "completed" && task.projectId && mode === "code" && touched.current < before.started && api) {
 			void api.task(task.id).then(full => { const checkpoint = full.messages.findLast(message => message.role === "user")?.checkpoint; if (checkpoint?.after && checkpoint.after !== checkpoint.before) show("diff"); }, () => undefined);
 		}
@@ -256,7 +276,7 @@ export function RightPanel() {
 		: kind === "files" ? <Suspense fallback={fallback}><FileBrowserSurface projectId={projectId} onOpenFile={path => show(`file:${path}`)} /></Suspense>
 		: kind === "file" ? <Suspense fallback={fallback}><FileSurface key={value} projectId={projectId} path={value} onDirtyChange={isDirty => setDirty(current => current[active] === isDirty ? current : { ...current, [active]: isDirty })} onOpenFile={path => show(`file:${path}`)} /></Suspense>
 		: kind === "diff" ? <Suspense fallback={fallback}><DiffSurface projectId={projectId} taskId={selectedId} onOpenFile={path => show(`file:${path}`)} /></Suspense>
-		: kind === "pulls" ? <PullRequestListSurface projectId={projectId} taskId={selectedId} onOpen={pull => show(`pull:${pull.number}`)} />
+		: kind === "pulls" ? <PullRequestListSurface projectId={projectId} taskId={selectedId} onOpen={pull => { seedPullRequestTabStatus(projectId, pull.number, pull); show(`pull:${pull.number}`); }} />
 		: kind === "pull" ? <PullRequestSurface key={value} projectId={projectId} number={Number(value)} onBack={() => show("pulls")} />
 		: <AgentThreadsPanel id={selectedId} onOpen={select} />;
 	const finishDrag = () => { drag.current = undefined; setDragging(false); };
@@ -279,12 +299,12 @@ export function RightPanel() {
 				{overflow.left && <button type="button" aria-label="Scroll tabs left" onClick={() => strip.current?.scrollBy({ left: -160, behavior: "smooth" })} className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"><ChevronLeft className="size-3.5" /></button>}
 				<ScrollArea className="min-w-0 flex-1" scrollBarOrientation="horizontal" scrollBarClassName="hidden" viewportRef={strip} viewportProps={{ onWheel: event => { if (strip.current && Math.abs(event.deltaY) > Math.abs(event.deltaX)) strip.current.scrollLeft += event.deltaY; } }}>
 					<div role="tablist" aria-label="Tool tabs" className="flex h-10 w-max min-w-full items-center gap-1 pl-1">
-						{tabs.map((key, index) => <SurfaceTab key={key} paneKey={key} context={context} active={key === active} dirty={Boolean(dirty[key])} onSelect={() => show(key)} onClose={() => close([key])}
+						{tabs.map((key, index) => <SurfaceTab key={key} paneKey={key} context={context} projectId={projectId} active={key === active} dirty={Boolean(dirty[key])} onSelect={() => show(key)} onClose={() => close([key])}
 							onCloseOthers={() => close(tabs.filter(value => value !== key))} onCloseRight={() => close(tabs.slice(index + 1))} onCloseAll={() => close(tabs)}
 							onDropBefore={moved => { touched.current = Date.now(); update(movePaneTab({ ...state, tabs }, moved, key)); }} />)}
-						<DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+						<DropdownMenu open={menuOpen} onOpenChange={open => { setMenuOpen(open); if (open) setLaunchRead(value => value + 1); }}>
 							<Tip label="Open a surface" side="bottom"><DropdownMenuTrigger render={<button type="button" aria-label="Open a surface" className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground" />}><Plus className="size-3.5" /></DropdownMenuTrigger></Tip>
-							<DropdownMenuContent align="start" className="w-52">{launchers.map(item => <DropdownMenuItem key={item.kind} disabled={item.needsProject && !projectId} onClick={() => void openKind(item.kind)}>{item.icon}{item.label}<DropdownMenuShortcut>{item.letter}</DropdownMenuShortcut></DropdownMenuItem>)}</DropdownMenuContent>
+							<DropdownMenuContent align="start" className="w-56">{launchers.map(item => { const reason = unavailable(item.kind); const row = <DropdownMenuItem key={item.kind} disabled={Boolean(reason)} onClick={() => void openKind(item.kind)}>{item.icon}{item.label}<DropdownMenuShortcut>{item.letter}</DropdownMenuShortcut></DropdownMenuItem>; return reason ? <Tip key={item.kind} label={reason} side="left"><div>{row}</div></Tip> : row; })}</DropdownMenuContent>
 						</DropdownMenu>
 					</div>
 				</ScrollArea>
@@ -293,7 +313,7 @@ export function RightPanel() {
 					className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground">{state.maximized ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}</button></Tip>}
 				<Tip label="Close panel" side="bottom"><button type="button" aria-label="Close panel" onClick={() => { requested.current = undefined; setRightPanel(undefined); }} className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"><X className="size-4" /></button></Tip>
 			</div>
-			{!active ? <Launcher onOpen={kindToOpen => void openKind(kindToOpen)} hasProject={Boolean(projectId)} />
+			{!active ? <Launcher onOpen={kindToOpen => void openKind(kindToOpen)} unavailable={unavailable} />
 				: kind === "browser" || kind === "terminal" || kind === "diff" || kind === "file" || kind === "files" || kind === "pull" || kind === "pulls" ? <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{content}</div>
 				: <ScrollArea className="chat-tools-content legacy-panel min-h-0 flex-1">{content}</ScrollArea>}
 		</div>

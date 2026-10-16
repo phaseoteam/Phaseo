@@ -6,7 +6,7 @@ import type { PromptCommandCatalog, PromptCommandPreview, PromptCommandRequest }
 import type { McpPromptCatalog, McpPromptPreview, McpPromptRequest } from "./mcpPrompts";
 import type { PullRequestContents, PullRequestContentsQuery } from "./pullRequestContents";
 import type { PullRequestFilesPage, PullRequestFilesQuery, PullRequestFilesViewed, PullRequestSetFilesViewed } from "./pullRequestFiles";
-import type { ProjectPullRequests, PullRequestDetails } from "./pullRequests";
+import type { BranchPullRequest, CreatedPullRequestResult, ProjectPullRequests, PullRequestDetails } from "./pullRequests";
 import type { PullRequestDirectoryQuery, PullRequestDirectoryResult } from "./pullRequestDirectory";
 import { parsePullRequestReference, validRepository, type PullRequestActionRequest, type PullRequestActionResult, type PullRequestCandidates, type PullRequestView, type TaskPullRequestLink } from "./pullRequestView";
 import type { AgentForm, FormAnswer } from "./agentForms";
@@ -25,6 +25,7 @@ import type { ProjectTreeRequest, ProjectTreeResult } from "./projectTree";
 import type { FilePreview } from "./filePreview";
 import type { ProjectSettings, ProjectUpdate, T3ProjectFileState } from "./projectSettings";
 import type { PullRequestGuideResult } from "./pullRequestGuide";
+import type { PullRequestStackActionRequest, PullRequestStackRead } from "./pullRequestStacks";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -129,7 +130,7 @@ export type WorkspaceCommand =
 	| { type: "visit"; id: string; at: string }
 	| { type: "auto-settle"; id: string; enabled: boolean }
 	/** `reference` is a GitHub URL, `owner/repo#42`, `#42` or `42`; the main process resolves it against the chat's project. */
-	| { type: "link-pull-request"; id: string; reference: string; repository?: string; number?: number; /** Set only by the agent tools; the renderer's links are manual. */ source?: "agent" }
+	| { type: "link-pull-request"; id: string; reference: string; repository?: string; number?: number; /** Set only in the main process (agent tools, pull requests this chat created); the renderer's links are manual. */ source?: "agent" | "created" }
 	| { type: "unlink-pull-request"; id: string; repository: string; number: number }
 	| { type: "watch-pull-request"; id: string; repository: string; number: number; watching: boolean }
 	| { type: "add-account"; name: string; harness: "codex" | "claude" | "phaseo" | "cursor" | "grok"; kind: "native" | "api"; endpoint?: string; apiKey?: string }
@@ -151,6 +152,7 @@ export type WorkspaceCommand =
 	| { type: "queue-remove"; id: string; messageId: string }
 	| { type: "queue-edit"; id: string; messageId: string; text: string }
 	| { type: "queue-move"; id: string; messageId: string; direction: "up" | "down" };
+export type PullRequestGuideFinished = { projectId?: string; repository: string; number: number; title: string; error?: string };
 export type WorkspaceApi = {
 	/** A chat's native commands and skills, or a new chat's before it exists. */
 	nativeActions: (target: string | { harness: Harness; accountId?: string; projectId?: string }) => Promise<NativeActionCatalog>;
@@ -240,6 +242,18 @@ export type WorkspaceApi = {
 	/** Which files GitHub has recorded this reader as having viewed. */
 	pullRequestFilesViewed: (projectId: string, number: number) => Promise<PullRequestFilesViewed>;
 	setPullRequestFilesViewed: (projectId: string, request: PullRequestSetFilesViewed) => Promise<void>;
+	/** A review guide run ended (`opened` false), or its desktop notification was clicked (`opened` true). */
+	onPullRequestGuideFinished: (listener: (event: PullRequestGuideFinished, opened: boolean) => void) => () => void;
+	/** The pull request for the project checkout's current branch, linked or not; cached briefly unless `fresh`. */
+	branchPullRequest: (projectId: string, fresh?: boolean) => Promise<BranchPullRequest>;
+	/** Pushes the branch if needed and opens a pull request for it (or finds its open one), linked to `taskId` as created. */
+	createPullRequest: (projectId: string, taskId?: string) => Promise<CreatedPullRequestResult & { workspace: WorkspaceOverview }>;
+	/** The project's GitHub repository (owner/repo) from its origin remote, or null when it has none. */
+	projectRepository: (projectId: string) => Promise<string | null>;
+	/** The native GitHub stack a pull request is in, cached for a minute unless `fresh`; linked chats pick up its layers. */
+	pullRequestStack: (projectId: string, number: number, fresh?: boolean) => Promise<PullRequestStackRead>;
+	/** Merge stack (through this layer) or Rebase stack (from the top), refused if any expected head moved. */
+	pullRequestStackAction: (projectId: string, request: PullRequestStackActionRequest) => Promise<{ message: string }>;
 	gitHunks: (projectId: string, filename: string, staged: boolean) => Promise<GitHunkReview>;
 	gitDiffContents: (projectId: string, request: GitDiffContentsRequest) => Promise<GitDiffContents>;
 	gitCommand: (projectId: string, command: GitCommand) => Promise<GitReview>;

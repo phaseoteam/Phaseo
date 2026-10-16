@@ -14,12 +14,14 @@ describe("stored review guides", () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-guides-"));
 		try {
 			const complete = vi.fn(async () => ({ reply, model: "phaseo/fast" }));
-			const guides = new PullRequestGuides(directory, complete, async () => sampleDiff);
+			const guides = new PullRequestGuides(directory, complete, async () => sampleDiff), finished = vi.fn();
+			guides.onFinished = finished;
 			expect(await guides.get(view("a".repeat(40)))).toEqual({ guide: null, running: false, currentHeadSha: "a".repeat(40) });
 			const written = await guides.generate("/repo", view("a".repeat(40)));
 			expect(written.guide?.stops.map(stop => stop.title)).toEqual(["Loading takes a limit", "Other files"]);
 			expect(written.guide).toMatchObject({ headSha: "a".repeat(40), model: "phaseo/fast" });
 			expect(complete).toHaveBeenCalledTimes(1);
+			await vi.waitFor(() => expect(finished).toHaveBeenCalledWith({ root: "/repo", view: expect.objectContaining({ number: 7 }) }));
 			// Opening the tab again reads the stored guide without a model call, from a fresh service too.
 			const again = new PullRequestGuides(directory, complete, async () => sampleDiff);
 			const pushed = await again.get(view("b".repeat(40)));

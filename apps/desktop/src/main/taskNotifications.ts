@@ -31,5 +31,13 @@ export class TaskNotifications {
 			this.displayed.push(this.ports.show("Phaseo", this.preferences.notificationTitles ? `${chatTitle.slice(0, 120)} — Pull request ${summary}` : `Pull request ${summary}`, () => this.ports.open(taskId)));
 		} catch { /* Notification availability must never interrupt task execution. */ }
 	}
+	/** A review guide finished: "Review guide ready" only with "all", a failure with "attention" too. Titles follow the privacy setting. */
+	guide(failed: boolean, number: number, repository: string, title: string, click: () => void) {
+		if (this.preferences.notifications === "off" || (this.preferences.notifications === "attention" && !failed)) return;
+		try {
+			if (this.ports.focused() || !this.ports.supported()) return;
+			this.displayed.push(this.ports.show(failed ? "Review guide failed" : "Review guide ready", this.preferences.notificationTitles ? title.slice(0, 160) : `${repository} #${number}`, click));
+		} catch { /* Notification availability must never interrupt the run. */ }
+	}
 	dismiss() { for (const close of this.displayed) { try { close(); } catch { /* Already dismissed by the operating system. */ } } this.displayed = []; }
 }

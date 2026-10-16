@@ -65,6 +65,11 @@ import { ghFailure, projectPullRequestAction, projectPullRequestBehind, projectP
 import { PullRequestGuides } from "./pullRequestGuides";
 import { PullRequestWatcher } from "./pullRequestWatcher";
 import { checkoutPullRequestHere, checkoutPullRequestWorktree } from "./pullRequestCheckout";
+import { readPullRequestStack, runPullRequestStackAction } from "./pullRequestStacks";
+import { git } from "./gitProcess";
+import { branchPullRequest, forgetBranchPullRequest } from "./branchPullRequest";
+import { createPullRequest } from "./createPullRequest";
+import { githubRepository } from "./projectPullRequests";
 import { pullRequestLinkSnapshot } from "../shared/pullRequestView";
 import { readGitHunks } from "./gitHunks";
 import { readGitDiffContents } from "./gitDiffContents";
@@ -358,6 +363,38 @@ ipcMain.handle("workspace:pull-request", async (event, id: unknown, number: unkn
 ipcMain.handle("workspace:pull-request-candidates", (event, id: unknown, query: unknown) => projectPullRequestCandidates(projectRoot(event, id), query));
 ipcMain.handle("workspace:pull-request-view", async (event, id: unknown, number: unknown) => { const view = await projectPullRequestView(projectRoot(event, id), number); workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)); return view; });
 ipcMain.handle("workspace:pull-request-action", async (event, id: unknown, request: unknown) => { const root = projectRoot(event, id); if (shutdownStarted) throw new Error("The workspace is shutting down."); const view = await projectPullRequestAction(root, request); workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)); return view; });
+ipcMain.handle("workspace:branch-pull-request", (event, id: unknown, fresh: unknown) => branchPullRequest(projectRoot(event, id), fresh === true));
+ipcMain.handle("workspace:create-pull-request", async (event, id: unknown, taskId: unknown) => {
+	const root = projectRoot(event, id);
+	if (typeof id !== "string" || (taskId !== undefined && typeof taskId !== "string") || shutdownStarted) throw new Error("Invalid pull request request.");
+	const result = await workspaceRuntime.mutateProject(id, () => createPullRequest(root));
+	forgetBranchPullRequest(root);
+	// T3 links the pull request a Git action creates to the chat it ran beside, as "Created from this chat".
+	const task = typeof taskId === "string" ? workspaceRuntime.store.getOverview().tasks.find(value => value.id === taskId) : undefined;
+	if (task) await workspaceRuntime.command({ type: "link-pull-request", id: task.id, reference: result.url, source: "created" }).catch(() => undefined);
+	return { ...result, workspace: workspaceRuntime.store.getOverview() };
+});
+ipcMain.handle("workspace:project-repository", async (event, id: unknown) => {
+	const root = projectRoot(event, id);
+	try { return githubRepository(await git(root, ["remote", "get-url", "origin"])); } catch { return null; }
+});
+ipcMain.handle("workspace:pull-request-stack", async (event, id: unknown, number: unknown, fresh: unknown) => {
+	const root = projectRoot(event, id);
+	if (!Number.isSafeInteger(number) || Number(number) < 1 || typeof fresh !== "boolean") throw new Error("Invalid stack request.");
+	const repository = githubRepository(await git(root, ["remote", "get-url", "origin"]).catch(() => { throw new Error("Choose a Git repository with an origin remote."); }));
+	const read = await readPullRequestStack(root, repository, Number(number), fresh);
+	workspaceRuntime.syncPullRequestStack(repository, Number(number), read.stack);
+	return read;
+});
+ipcMain.handle("workspace:pull-request-stack-action", async (event, id: unknown, request: unknown) => {
+	const root = projectRoot(event, id);
+	if (shutdownStarted) throw new Error("The workspace is shutting down.");
+	const repository = githubRepository(await git(root, ["remote", "get-url", "origin"]).catch(() => { throw new Error("Choose a Git repository with an origin remote."); }));
+	const result = await runPullRequestStackAction(root, repository, request);
+	const number = (request as { number: number }).number, read = await readPullRequestStack(root, repository, number, true).catch(() => undefined);
+	if (read) workspaceRuntime.syncPullRequestStack(repository, number, read.stack);
+	return result;
+});
 ipcMain.handle("workspace:pull-request-contents", (event, id: unknown, query: unknown) => projectPullRequestContents(projectRoot(event, id), query));
 ipcMain.handle("workspace:pull-request-files", (event, id: unknown, query: unknown) => projectPullRequestFiles(projectRoot(event, id), query));
 ipcMain.handle("workspace:pull-request-behind", (event, id: unknown, query: unknown) => projectPullRequestBehind(projectRoot(event, id), query));
@@ -753,6 +790,22 @@ app.whenReady().then(() => {
 		try { return await runGh(root, ["pr", "diff", String(view.number), "--repo", view.repository, "--color", "never"]); }
 		catch (reason) { throw new Error(ghFailure((reason as { stderr?: unknown }).stderr, "Could not read the pull request's diff."), { cause: reason }); }
 	});
+	pullRequestGuides.onFinished = ({ root, view, error }) => {
+		if (shutdownStarted) return;
+		const projectId = workspaceRuntime.store.getProjects().find(project => path.resolve(project.directory).toLowerCase() === path.resolve(root).toLowerCase())?.id;
+		const event = { ...(projectId ? { projectId } : {}), repository: view.repository, number: view.number, title: view.title, ...(error ? { error } : {}) };
+		for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:pull-request-guide-finished", event);
+		taskNotifications.guide(Boolean(error), view.number, view.repository, view.title, () => {
+			const window = BrowserWindow.getAllWindows().find(value => !value.isDestroyed());
+			if (!window) return;
+			if (window.isMinimized()) window.restore();
+			window.show(); window.focus(); window.webContents.send("workspace:open-pull-request-guide", event);
+		});
+	};
+	workspaceRuntime.pullRequestGuideTools = {
+		write: async (root, repository, number) => { const view = await readPullRequestView(root, repository, number), before = await pullRequestGuides.get(view); void pullRequestGuides.generate(root, view); return before.running ? "running" : "started"; },
+		read: async (root, repository, number) => pullRequestGuides.get(await readPullRequestView(root, repository, number)),
+	};
 	workspaceRuntime.discoverThreadModels = discoverDesktopModels;
 	workspaceRuntime.discoverInstallations = harnessInstallations;
 	globalInstructions = new GlobalInstructions(path.join(workspaceDirectory, "instructions"));

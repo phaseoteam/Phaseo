@@ -20,6 +20,7 @@ import { PullRequestsPage } from "./views/pullRequests/PullRequestsPage";
 import { NewChat } from "./chat/NewChat";
 import { ChatView } from "./chat/ChatView";
 import { CompareView } from "./chat/CompareView";
+import { GuideRunNotices } from "./views/pullRequests/GuideRunNotices";
 
 /** The app-wide commands behind the keyboard shortcuts (Settings → Keyboard shortcuts). */
 function useShortcuts() {
@@ -93,6 +94,7 @@ function Shell() {
 		</div>
 		<CommandPalette />
 		<Toaster />
+		<GuideRunNotices />
 	</div>;
 }
 
