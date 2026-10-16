@@ -43,7 +43,7 @@
 - When creating/editing PR descriptions via CLI/API, use real multiline Markdown (or a body file). Do not submit escaped newline text like `\n` in the final PR body.
 
 ## Pull Request Descriptions
-Every PR opened by an agent must have these five sections, in this order, with no exceptions. Human-authored PRs should follow them too; `.github/PULL_REQUEST_TEMPLATE.md` has a heading for each. A reviewer should be able to see what changed, why, and what it achieved without re-investigating.
+Every PR opened by an agent must have these five sections, in this order, and end with a model line, with no exceptions. Human-authored PRs should follow them too; `.github/PULL_REQUEST_TEMPLATE.md` has a heading for each. A reviewer should be able to see what changed, why, and what it achieved without re-investigating.
 
 ### What changed
 A short list of the behaviour, data, or files that changed.
@@ -77,6 +77,17 @@ The benefit of the change, shown side by side in a table so it can be read at a 
 - Evidence that fits the area: a real request and response for API/gateway changes (local server, preview, or AIMock test); `pnpm db:schema:check` output and a readback query for database changes; the rendered page (local preview or Vercel preview link) and `pnpm docs:links` for docs.
 - What you did not verify and why (missing credentials, needs production traffic, known Windows-only failure, only checkable after deploy). Never claim a check you did not run. Report skipped or failing tests as skipped or failing, with output.
 - Green CI supports the verification but does not replace it; it rarely exercises the changed behaviour directly.
+
+### Model line
+End the description with one line naming the model, its reasoning effort, and the harness that did the work, in exactly this format:
+
+```
+Model: Claude Opus 5.5 (medium effort) · Harness: Claude Code in T3 Code
+```
+
+- Use the model's display name and the effort the session actually ran at. If you cannot tell the effort, write `(effort unknown)` rather than guessing.
+- If more than one model did substantial work, such as a delegated implementation or a follow-up fix, give each one its own line in the same format and add what it did, for example `… · Harness: Codex in T3 Code (review fixes)`.
+- Put it after the five sections and before any footer the harness adds automatically.
 
 Across all sections, redact keys, tokens, emails, and customer data from output and screenshots. Do not write to production, create API keys, or spend credits to produce evidence unless the user asked for it.
 

@@ -62,3 +62,6 @@
 ## Notes
 
 <!-- Anything else reviewers should know (edge cases, follow-ups, rollout notes, etc.) -->
+
+<!-- If an agent did the work, end with one line per model in this format:
+Model: Claude Opus 5.5 (medium effort) · Harness: Claude Code in T3 Code -->
