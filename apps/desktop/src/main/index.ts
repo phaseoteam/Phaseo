@@ -59,7 +59,9 @@ import { TerminalService } from "./terminalService";
 import { contentHash, writeProjectFile } from "./projectEdits";
 import { gitBranches, gitCommand } from "./gitOperations";
 import { projectPullRequests, projectPullRequest } from "./projectPullRequests";
-import { projectPullRequestAction, projectPullRequestView } from "./projectPullRequestView";
+import { projectPullRequestAction, projectPullRequestCandidates, projectPullRequestView, readPullRequestView } from "./projectPullRequestView";
+import { PullRequestWatcher } from "./pullRequestWatcher";
+import { checkoutPullRequestWorktree } from "./pullRequestCheckout";
 import { pullRequestLinkSnapshot } from "../shared/pullRequestView";
 import { readGitHunks } from "./gitHunks";
 import { readGitDiffContents } from "./gitDiffContents";
@@ -99,6 +101,7 @@ let terminalService: TerminalService;
 let taskNotifications: TaskNotifications;
 let missionService: MissionService;
 let settleTimer: ReturnType<typeof setInterval> | undefined;
+let pullRequestWatcher: PullRequestWatcher | undefined;
 let modelCatalogCache: ModelCatalogCache;
 ipcMain.handle("workspace:missions", event => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return workspaceRuntime.store.missions.list(); });
 ipcMain.handle("workspace:mission", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return missionService.command(validateMissionCommand(value)); });
@@ -195,6 +198,7 @@ app.on("before-quit", event => {
 	browserHost.downloads.close();
 	missionService?.close();
 	if (settleTimer) clearInterval(settleTimer);
+	void pullRequestWatcher?.close();
 	taskNotifications?.dismiss();
 	terminalService?.close();
 	for (const controller of signIns.values()) controller.abort();
@@ -345,6 +349,7 @@ ipcMain.handle("workspace:read-file", (event, id: unknown, filename: unknown) =>
 ipcMain.handle("workspace:git-review", (event, id: unknown) => gitReview(projectRoot(event, id)));
 ipcMain.handle("workspace:pull-requests", (event, id: unknown, cursor: unknown) => projectPullRequests(projectRoot(event, id), cursor));
 ipcMain.handle("workspace:pull-request", async (event, id: unknown, number: unknown) => { const details = await projectPullRequest(projectRoot(event, id), number); workspaceRuntime.syncPullRequestSnapshot(details.repository, details.number, pullRequestLinkSnapshot(details)); return details; });
+ipcMain.handle("workspace:pull-request-candidates", (event, id: unknown, query: unknown) => projectPullRequestCandidates(projectRoot(event, id), query));
 ipcMain.handle("workspace:pull-request-view", async (event, id: unknown, number: unknown) => { const view = await projectPullRequestView(projectRoot(event, id), number); workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)); return view; });
 ipcMain.handle("workspace:pull-request-action", async (event, id: unknown, request: unknown) => { const root = projectRoot(event, id); if (shutdownStarted) throw new Error("The workspace is shutting down."); const view = await projectPullRequestAction(root, request); workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)); return view; });
 ipcMain.handle("workspace:pull-request-contents", (event, id: unknown, query: unknown) => projectPullRequestContents(projectRoot(event, id), query));
@@ -363,6 +368,13 @@ ipcMain.handle("workspace:create-worktree", (event, id: unknown, branch: unknown
 	projectRoot(event, id);
 	if (typeof id !== "string" || typeof branch !== "string" || typeof base !== "string") throw new Error("Invalid worktree request.");
 	return workspaceRuntime.createWorktree(id, branch, base);
+});
+ipcMain.handle("workspace:pull-request-worktree", async (event, id: unknown, number: unknown) => {
+	const root = projectRoot(event, id);
+	if (typeof id !== "string" || shutdownStarted) throw new Error("Invalid worktree request.");
+	const view = await projectPullRequestView(root, number);
+	const result = await checkoutPullRequestWorktree(root, view, async (branch, base) => { const created = await workspaceRuntime.createWorktree(id, branch, base); return { projectId: created.projectId, directory: workspaceRuntime.store.getProjects().find(project => project.id === created.projectId)?.directory }; });
+	return { workspace: workspaceRuntime.store.getOverview(), projectId: result.projectId, branch: result.branch };
 });
 ipcMain.handle("workspace:remove-worktree", (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid worktree request.");
@@ -741,6 +753,9 @@ app.whenReady().then(() => {
 	missionService.start();
 	workspaceRuntime.settleIdleThreads();
 	settleTimer = setInterval(() => workspaceRuntime.settleIdleThreads(), 60_000); settleTimer.unref();
+	workspaceRuntime.onPullRequestNotice = (taskId, summary, outcome) => { const title = workspaceRuntime.store.getOverview().tasks.find(task => task.id === taskId)?.title ?? "Chat"; taskNotifications.notice(taskId, title, summary, outcome !== "completed"); };
+	pullRequestWatcher = new PullRequestWatcher({ targets: () => workspaceRuntime.pullRequestWatchTargets(), read: readPullRequestView, record: (taskId, link, startedAt, next, update) => workspaceRuntime.recordPullRequestWatch(taskId, link, startedAt, next, update), snapshot: view => workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)) });
+	pullRequestWatcher.start();
 	app.on("activate", () => {
 		if (BrowserWindow.getAllWindows().length === 0) createWindow();
 	});

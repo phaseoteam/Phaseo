@@ -147,6 +147,27 @@ describe("organize_thread", () => {
 	}));
 });
 
+describe("pull request tools", () => {
+	it("link, watch, unwatch and unlink on this chat and chats it started, with the UI's rules", async () => withRuntime(async (runtime, directory) => {
+		const { root, git } = repository(directory); git(["remote", "add", "origin", "https://github.com/owned/repo.git"]);
+		const projectId = runtime.store.addProject(root).id, parentId = await caller(runtime, "code", "full-access", projectId), tools = runtime.threadTools(parentId);
+		expect(await tools.pullRequest!(undefined, "link", { url: "https://github.com/owned/repo/pull/42" })).toEqual({ repository: "owned/repo", number: 42, url: "https://github.com/owned/repo/pull/42", alreadyLinked: false });
+		expect(await tools.pullRequest!(parentId, "link", { number: 42 })).toMatchObject({ repository: "owned/repo", alreadyLinked: true });
+		expect(runtime.store.getTask(parentId).pullRequests).toEqual([expect.objectContaining({ source: "agent" })]);
+		expect(await tools.pullRequest!(undefined, "watch", { repository: "other/repo", number: 7 })).toMatchObject({ repository: "other/repo", number: 7, watching: true, wasWatching: false });
+		expect(runtime.pullRequestWatchTargets().map(target => target.link.number)).toEqual([7]);
+		expect(await tools.pullRequest!(undefined, "unwatch", { number: 7 })).toMatchObject({ watching: false, wasWatching: true });
+		expect(await tools.pullRequest!(undefined, "unlink", { url: "https://github.com/owned/repo/pull/42" })).toMatchObject({ wasLinked: true });
+		expect(await tools.pullRequest!(undefined, "unlink", { number: 42 })).toMatchObject({ wasLinked: false });
+		await expect(tools.pullRequest!(undefined, "link", { url: "https://example.com/pull/1" })).rejects.toThrow("not a GitHub pull request");
+		const child = await tools.delegate({ requestId: "c", title: "Child", prompt: "Work", background: true });
+		await expect(runtime.threadTools(child.id).pullRequest!(undefined, "watch", { number: 3 })).rejects.toThrow("delegated agent");
+		expect(await tools.pullRequest!(child.id, "link", { number: 3 })).toMatchObject({ repository: "owned/repo", number: 3 });
+		const unrelated = await caller(runtime);
+		await expect(tools.pullRequest!(unrelated, "link", { number: 3 })).rejects.toThrow("outside");
+	}));
+});
+
 describe("scheduled-task tools", () => {
 	it("creates, lists, updates, runs and deletes missions through the mission service", async () => withRuntime(async (runtime, _directory, run) => {
 		let now = Date.now(); const service = new MissionService(runtime, () => now);

@@ -41,7 +41,7 @@ export function ReviewThread({ thread, projectId, pending, onAction }: { thread:
 		</div>
 		{open && <div className="mt-2 space-y-3">
 			{thread.comments.map(comment => <div key={comment.id} className="border-l-2 border-border/60 pl-3">
-				<div className="flex items-center gap-2"><MetaLine className="min-w-0 flex-1 text-muted-foreground"><ActorLabel actor={comment.author} /><span>{relativeTime(comment.createdAt)}</span></MetaLine><Reactions reactions={comment.reactions} /></div>
+				<div className="flex items-center gap-2"><MetaLine className="min-w-0 flex-1 text-muted-foreground"><ActorLabel actor={comment.author} /><span>{relativeTime(comment.createdAt)}</span></MetaLine><Reactions reactions={comment.reactions} subjectId={comment.id} canReact={comment.canReact} /></div>
 				<div className="pr-comment-body mt-1 min-w-0"><MessageContent text={comment.body} projectId={projectId} /></div>
 			</div>)}
 			{thread.totalComments > thread.comments.length && <p className="text-muted-foreground">{thread.totalComments - thread.comments.length} more on GitHub.</p>}

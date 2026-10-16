@@ -3,19 +3,19 @@ import { git } from "./gitProcess";
 import { resolveNativeCommand } from "./nativeProcess";
 import { githubRepository, parsePullRequestDetails } from "./projectPullRequests";
 import { reviewNodeId } from "../shared/pullRequestThreads";
-import { validatePullRequestActionRequest, type PullRequestActor, type PullRequestCheck, type PullRequestCheckStatus, type PullRequestComment, type PullRequestCommit, type PullRequestMergeMethod, type PullRequestReaction, type PullRequestReviewState, type PullRequestReviewThreadView, type PullRequestView } from "../shared/pullRequestView";
+import { validRepository, validatePullRequestActionRequest, validatePullRequestCandidatesQuery, type PullRequestCandidates, type PullRequestActor, type PullRequestCheck, type PullRequestCheckStatus, type PullRequestComment, type PullRequestCommit, type PullRequestMergeMethod, type PullRequestReaction, type PullRequestReviewState, type PullRequestReviewThreadView, type PullRequestView } from "../shared/pullRequestView";
 
 const actor = "login avatarUrl __typename";
-const reactions = "reactionGroups{content reactors{totalCount}}";
-const viewQuery = `query PhaseoPullRequestView($owner:String!,$name:String!,$number:Int!){viewer{login}repository(owner:$owner,name:$name){mergeCommitAllowed squashMergeAllowed rebaseMergeAllowed viewerPermission pullRequest(number:$number){id number title body state createdAt updatedAt mergedAt closedAt isDraft author{${actor}} headRefName baseRefName headRefOid baseRefOid headRef{id} headRepository{nameWithOwner} reviewDecision additions deletions changedFiles mergeable mergeStateStatus viewerCanUpdate viewerCanDeleteHeadRef
+const reactions = "viewerCanReact reactionGroups{content viewerHasReacted reactors(first:4){totalCount nodes{... on Actor{login}}}}";
+const viewQuery = `query PhaseoPullRequestView($owner:String!,$name:String!,$number:Int!){viewer{login}repository(owner:$owner,name:$name){mergeCommitAllowed squashMergeAllowed rebaseMergeAllowed autoMergeAllowed viewerPermission pullRequest(number:$number){id number title body state createdAt updatedAt mergedAt closedAt isDraft author{${actor}} headRefName baseRefName headRefOid baseRefOid headRef{id} headRepository{nameWithOwner} reviewDecision additions deletions changedFiles mergeable mergeStateStatus viewerCanUpdate viewerCanDeleteHeadRef viewerCanEnableAutoMerge viewerCanDisableAutoMerge autoMergeRequest{mergeMethod enabledBy{login}}
 labels(first:20){nodes{name color}}
 reviewRequests(first:20){nodes{requestedReviewer{__typename ... on User{login avatarUrl} ... on Bot{login avatarUrl} ... on Team{slug}}}}
 latestOpinionatedReviews(first:20){nodes{author{${actor}} state submittedAt}}
-commits(last:1){nodes{commit{statusCheckRollup{state contexts(first:100){nodes{__typename ... on CheckRun{name status conclusion detailsUrl title} ... on StatusContext{context state targetUrl description}}}}}}}
+commits(last:1){nodes{commit{statusCheckRollup{state contexts(first:100){nodes{__typename ... on CheckRun{name status conclusion detailsUrl title isRequired(pullRequestNumber:$number)} ... on StatusContext{context state targetUrl description isRequired(pullRequestNumber:$number)}}}}}}}
 history:commits(last:100){totalCount nodes{commit{oid messageHeadline committedDate additions deletions authors(first:3){nodes{name user{login avatarUrl}}}}}}
-comments(last:50){totalCount nodes{id author{${actor}} body createdAt url ${reactions}}}
-reviews(last:50){totalCount nodes{id author{${actor}} body state submittedAt createdAt url ${reactions}}}
-reviewThreads(first:50){totalCount nodes{id path line originalLine diffSide isResolved isOutdated viewerCanReply viewerCanResolve viewerCanUnresolve comments(first:20){totalCount nodes{id author{${actor}} body createdAt url ${reactions}}}}}}}}`;
+comments(last:50){totalCount nodes{id author{${actor}} body createdAt lastEditedAt url ${reactions}}}
+reviews(last:50){totalCount nodes{id author{${actor}} body state submittedAt createdAt lastEditedAt url ${reactions}}}
+reviewThreads(first:50){totalCount nodes{id path line originalLine diffSide isResolved isOutdated viewerCanReply viewerCanResolve viewerCanUnresolve comments(first:20){totalCount nodes{id author{${actor}} body createdAt lastEditedAt url ${reactions}}}}}}}}`;
 
 type Item = Record<string, unknown>;
 const item = (value: unknown): Item => value && typeof value === "object" && !Array.isArray(value) ? value as Item : {};
@@ -36,14 +36,15 @@ export function parseActor(value: unknown): PullRequestActor | null {
 function parseReactions(value: unknown): PullRequestReaction[] {
 	return (Array.isArray(value) ? value : []).slice(0, 20).flatMap(entry => {
 		const group = item(entry), content = text(group.content, 40), count = total(group.reactors, 0);
-		return content && /^[A-Z_]+$/.test(content) && count > 0 ? [{ content, count }] : [];
+		const actors = nodes(group.reactors).flatMap(value => { const login = text(item(value).login, 256); return login ? [login] : []; }).slice(0, 4);
+		return content && /^[A-Z_]+$/.test(content) && count > 0 ? [{ content, count, ...(group.viewerHasReacted === true ? { viewerHasReacted: true } : {}), ...(actors.length ? { actors } : {}) }] : [];
 	});
 }
 function parseComment(value: unknown, kind: PullRequestComment["kind"], extra: Partial<PullRequestComment> = {}): PullRequestComment | undefined {
 	const entry = item(value), id = entry.id, body = text(entry.body, 512 * 1024), createdAt = date(entry.submittedAt) ?? date(entry.createdAt);
 	if (!reviewNodeId(id) || body === undefined || !createdAt) return;
-	const url = link(entry.url), state = text(entry.state, 40);
-	return { id, kind, author: parseActor(entry.author), body, createdAt, ...(url ? { url } : {}), ...(kind === "review" && state ? { reviewState: state } : {}), reactions: parseReactions(entry.reactionGroups), ...extra };
+	const url = link(entry.url), state = text(entry.state, 40), editedAt = date(entry.lastEditedAt);
+	return { id, kind, author: parseActor(entry.author), body, createdAt, ...(editedAt && editedAt > createdAt ? { editedAt } : {}), ...(url ? { url } : {}), ...(kind === "review" && state ? { reviewState: state } : {}), reactions: parseReactions(entry.reactionGroups), ...(entry.viewerCanReact === true ? { canReact: true } : {}), ...extra };
 }
 export function checkStatus(entry: Item): PullRequestCheckStatus {
 	if (entry.__typename === "StatusContext") {
@@ -65,7 +66,7 @@ function parseChecks(value: unknown): PullRequestCheck[] {
 		const check = item(entry), name = text(check.__typename === "StatusContext" ? check.context : check.name, 500);
 		if (!name) return [];
 		const url = link(check.__typename === "StatusContext" ? check.targetUrl : check.detailsUrl), description = text(check.__typename === "StatusContext" ? check.description : check.title, 1000);
-		return [{ name, status: checkStatus(check), ...(url ? { url } : {}), ...(description ? { description } : {}) }];
+		return [{ name, status: checkStatus(check), ...(url ? { url } : {}), ...(description ? { description } : {}), ...(check.isRequired === true ? { required: true } : {}) }];
 	});
 }
 function parseCommit(value: unknown): PullRequestCommit | undefined {
@@ -105,6 +106,7 @@ export function parsePullRequestView(repository: string, number: number, value: 
 	const reviewers = nodes(entry.reviewRequests).flatMap(value => { const reviewer = item(item(value).requestedReviewer); const parsed = reviewer.__typename === "Team" ? (text(reviewer.slug, 200) ? { login: reviewer.slug as string } : null) : parseActor(reviewer); return parsed ? [parsed] : []; });
 	const reviews = nodes(entry.latestOpinionatedReviews).flatMap(value => { const review = item(value), state = review.state as PullRequestReviewState, submittedAt = date(review.submittedAt); return ["APPROVED", "CHANGES_REQUESTED", "DISMISSED", "COMMENTED"].includes(state) && submittedAt ? [{ actor: parseActor(review.author), state, submittedAt }] : []; });
 	const headRepository = text(item(entry.headRepository).nameWithOwner, 201);
+	const autoMergeRequest = item(entry.autoMergeRequest), autoMethod = ({ MERGE: "merge", SQUASH: "squash", REBASE: "rebase" } as const)[String(autoMergeRequest.mergeMethod) as "MERGE"], enabledBy = text(item(autoMergeRequest.enabledBy).login, 256);
 	return {
 		...details, id: entry.id, createdAt, ...(date(entry.mergedAt) ? { mergedAt: entry.mergedAt as string } : {}), ...(date(entry.closedAt) ? { closedAt: entry.closedAt as string } : {}),
 		authorActor: parseActor(entry.author), labels, reviewers, reviews,
@@ -112,7 +114,8 @@ export function parsePullRequestView(repository: string, number: number, value: 
 		comments, commentCount: total(entry.comments, issueComments.length) + reviewComments.length + threads.reduce((sum, thread) => sum + thread.totalComments, 0),
 		commentsTruncated: total(entry.comments, 0) > issueComments.length || total(entry.reviews, 0) > nodes(entry.reviews).length || total(entry.reviewThreads, 0) > threads.length,
 		commits, commitCount: total(entry.history, commits.length), threads, mergeMethods,
-		viewer: { ...(text(item(data.viewer).login, 256) ? { login: item(data.viewer).login as string } : {}), canUpdate: entry.viewerCanUpdate === true, canMerge, canDeleteBranch: entry.viewerCanDeleteHeadRef === true },
+		viewer: { ...(text(item(data.viewer).login, 256) ? { login: item(data.viewer).login as string } : {}), canUpdate: entry.viewerCanUpdate === true, canMerge, canDeleteBranch: entry.viewerCanDeleteHeadRef === true, canEnableAutoMerge: entry.viewerCanEnableAutoMerge === true, canDisableAutoMerge: entry.viewerCanDisableAutoMerge === true },
+		autoMergeAllowed: repo.autoMergeAllowed === true, ...(entry.autoMergeRequest && autoMethod ? { autoMerge: { method: autoMethod, ...(enabledBy ? { enabledBy } : {}) } } : {}),
 		...(headRepository ? { headRepository } : {}), headRefExists: Boolean(entry.headRef), behind: details.mergeState === "BEHIND",
 	};
 }
@@ -147,26 +150,32 @@ async function repositoryOf(root: string) {
 
 export async function projectPullRequestView(root: string, number: unknown): Promise<PullRequestView> {
 	if (!Number.isSafeInteger(number) || Number(number) < 1 || Number(number) > 2147483647) throw new Error("Invalid pull-request number.");
-	const repository = await repositoryOf(root), [owner, name] = repository.split("/");
+	return readPullRequestView(root, await repositoryOf(root), Number(number));
+}
+/** One pull request by repository, read with gh from any folder (the watcher reads chats without a project this way). */
+export async function readPullRequestView(cwd: string, repository: string, number: number): Promise<PullRequestView> {
+	if (!validRepository(repository) || !Number.isSafeInteger(number) || number < 1 || number > 2147483647) throw new Error("Invalid pull request.");
+	const [owner, name] = repository.split("/");
 	let output: string;
-	try { output = await runGh(root, ["api", "graphql", "--hostname", "github.com", "-f", `query=${viewQuery}`, "-F", `owner=${owner}`, "-F", `name=${name}`, "-F", `number=${number}`]); }
+	try { output = await runGh(cwd, ["api", "graphql", "--hostname", "github.com", "-f", `query=${viewQuery}`, "-F", `owner=${owner}`, "-F", `name=${name}`, "-F", `number=${number}`]); }
 	catch (reason) {
 		if ((reason as NodeJS.ErrnoException).code === "ENOENT" || (reason instanceof Error && reason.message.startsWith("Install"))) throw new Error("Install GitHub CLI and sign in with gh auth login.", { cause: reason });
 		throw new Error(ghFailure((reason as { stderr?: string }).stderr, "Could not load this pull request. Check GitHub CLI sign-in and repository access, then retry."), { cause: reason });
 	}
 	let parsed: unknown;
 	try { parsed = JSON.parse(output); } catch { throw new Error("GitHub returned unreadable pull request details."); }
-	return parsePullRequestView(repository, Number(number), parsed);
+	return parsePullRequestView(repository, number, parsed);
 }
 
-const failures: Record<string, string> = { merge: "Could not merge.", close: "Could not close the pull request.", reopen: "Could not reopen the pull request.", ready: "Could not mark it ready for review.", draft: "Could not convert it to a draft.", title: "Could not save the title.", comment: "Could not post the comment.", reply: "Could not post the reply.", resolve: "Could not change the thread.", review: "Could not submit the review.", "update-branch": "Could not update the branch.", "delete-branch": "Could not delete the branch." };
+const failures: Record<string, string> = { merge: "Could not merge.", "enable-auto-merge": "Could not turn on auto-merge. Check that this repository allows auto-merge, that you have write access, and that there is something left for it to wait on.", "disable-auto-merge": "Could not turn off auto-merge.", close: "Could not close the pull request.", reopen: "Could not reopen the pull request.", ready: "Could not mark it ready for review.", draft: "Could not convert it to a draft.", title: "Could not save the title.", comment: "Could not post the comment.", reply: "Could not post the reply.", resolve: "Could not change the thread.", review: "Could not submit the review.", react: "The reaction could not be saved.", label: "Could not change the labels. Changing labels needs triage access on this repository.", reviewer: "Could not change the reviewers. Asking for a review needs write access on this repository.", "update-branch": "Could not update the branch.", "delete-branch": "Could not delete the branch." };
 const graphql = (query: string) => ["api", "graphql", "--hostname", "github.com", "-f", `query=${query}`];
 
 /** Every write a pane can make. Each checks it still acts on the head the person saw, then reads the pull request again. */
 export async function projectPullRequestAction(root: string, value: unknown): Promise<PullRequestView> {
 	const request = validatePullRequestActionRequest(value), { action } = request;
 	const view = await projectPullRequestView(root, request.number);
-	if (view.headOid !== request.headOid) throw new Error("This pull request changed. It has been refreshed; check it and try again.");
+	// Reactions, labels and reviewers do not depend on the code, so a push since the person looked does not stop them.
+	if (view.headOid !== request.headOid && !["react", "label", "reviewer"].includes(action.type)) throw new Error("This pull request changed. It has been refreshed; check it and try again.");
 	const base = `repos/${view.repository}/pulls/${view.number}`;
 	let args: string[], input: string | undefined;
 	switch (action.type) {
@@ -174,6 +183,13 @@ export async function projectPullRequestAction(root: string, value: unknown): Pr
 			if (view.state !== "OPEN" || view.draft) throw new Error("Only an open pull request that is ready for review can be merged.");
 			if (!view.mergeMethods.includes(action.method)) throw new Error("This repository does not allow that merge method.");
 			args = ["api", "--hostname", "github.com", "--method", "PUT", `${base}/merge`, "-f", `merge_method=${action.method}`, "-f", `sha=${view.headOid}`]; break;
+		case "enable-auto-merge":
+			if (view.state !== "OPEN" || view.draft) throw new Error("Only an open pull request that is ready for review can merge itself.");
+			if (!view.mergeMethods.includes(action.method)) throw new Error("This repository does not allow that merge method.");
+			args = ["pr", "merge", String(view.number), "--repo", view.repository, "--auto", `--${action.method}`, "--match-head-commit", view.headOid]; break;
+		case "disable-auto-merge":
+			if (!view.autoMerge) throw new Error("Auto-merge is already off.");
+			args = ["pr", "merge", String(view.number), "--repo", view.repository, "--disable-auto"]; break;
 		case "close": case "reopen":
 			args = ["api", "--hostname", "github.com", "--method", "PATCH", base, "-f", `state=${action.type === "close" ? "closed" : "open"}`]; break;
 		case "title": args = ["api", "--hostname", "github.com", "--method", "PATCH", base, "-f", `title=${action.title}`]; break;
@@ -189,6 +205,16 @@ export async function projectPullRequestAction(root: string, value: unknown): Pr
 		}
 		case "review":
 			args = ["api", "--hostname", "github.com", "--method", "POST", `${base}/reviews`, "-f", `event=${action.event === "approve" ? "APPROVE" : action.event === "request-changes" ? "REQUEST_CHANGES" : "COMMENT"}`, "-f", `commit_id=${view.headOid}`, ...(action.body.trim() ? ["-F", "body=@-"] : [])]; input = action.body.trim() ? action.body : undefined; break;
+		case "react":
+			if (!view.comments.some(comment => comment.id === action.subjectId)) throw new Error("This comment is no longer on the pull request.");
+			args = [...graphql(action.reacted ? "mutation($id:ID!,$content:ReactionContent!){addReaction(input:{subjectId:$id,content:$content}){reaction{content}}}" : "mutation($id:ID!,$content:ReactionContent!){removeReaction(input:{subjectId:$id,content:$content}){reaction{content}}}"), "-f", `id=${action.subjectId}`, "-f", `content=${action.content}`]; break;
+		case "label":
+			if (action.applied) { args = ["api", "--hostname", "github.com", "--method", "POST", `repos/${view.repository}/issues/${view.number}/labels`, "-f", `labels[]=${action.name}`]; break; }
+			if (!view.labels.some(label => label.name === action.name)) throw new Error(`${action.name} is no longer on this pull request.`);
+			args = ["api", "--hostname", "github.com", "--method", "DELETE", `repos/${view.repository}/issues/${view.number}/labels/${encodeURIComponent(action.name)}`]; break;
+		case "reviewer":
+			if (action.requested && view.authorActor?.login.toLowerCase() === action.login.toLowerCase()) throw new Error("The author cannot review their own pull request.");
+			args = ["api", "--hostname", "github.com", "--method", action.requested ? "POST" : "DELETE", `repos/${view.repository}/pulls/${view.number}/requested_reviewers`, "-f", `reviewers[]=${action.login}`]; break;
 		case "update-branch":
 			if (view.state !== "OPEN") throw new Error("Only an open pull request's branch can be updated.");
 			args = ["api", "--hostname", "github.com", "--method", "PUT", `${base}/update-branch`, "-f", `expected_head_sha=${view.headOid}`]; break;
@@ -201,4 +227,29 @@ export async function projectPullRequestAction(root: string, value: unknown): Pr
 	try { await runGh(root, args, input); }
 	catch (reason) { throw new Error(ghFailure((reason as { stderr?: string }).stderr, failures[action.type]), { cause: reason }); }
 	return await projectPullRequestView(root, request.number);
+}
+
+const candidateQuery = `query PhaseoPullRequestCandidates($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){labels(first:100,orderBy:{field:NAME,direction:ASC}){totalCount nodes{name color description}} assignableUsers(first:100){totalCount nodes{login name avatarUrl}} pullRequest(number:$number){author{login} labels(first:100){nodes{name}} reviewRequests(first:100){nodes{requestedReviewer{... on User{login}}}}}}}`;
+/** The labels a repository offers or the people who may be asked to review, marked where the pull request already has them. */
+export function parsePullRequestCandidates(kind: "labels" | "reviewers", value: unknown): PullRequestCandidates {
+	const response = item(value), repo = item(item(response.data).repository), pull = item(repo.pullRequest);
+	if ((Array.isArray(response.errors) && response.errors.length) || !repo.pullRequest) throw new Error("GitHub returned an incomplete list.");
+	if (kind === "labels") {
+		const applied = new Set(nodes(pull.labels).map(value => text(item(value).name, 200)));
+		const candidates = nodes(repo.labels).flatMap(value => { const label = item(value), name = text(label.name, 200), color = text(label.color, 6), detail = text(label.description, 400); return name ? [{ key: name, label: name, ...(detail ? { detail } : {}), ...(color && /^[0-9a-f]{6}$/i.test(color) ? { color } : {}), applied: applied.has(name) }] : []; });
+		return { kind, candidates, truncated: total(repo.labels, candidates.length) > candidates.length };
+	}
+	const author = text(item(pull.author).login, 256)?.toLowerCase(), requested = new Set(nodes(pull.reviewRequests).map(value => text(item(item(value).requestedReviewer).login, 256)?.toLowerCase()));
+	// GitHub refuses a review request to the author, so they are not offered.
+	const candidates = nodes(repo.assignableUsers).flatMap(value => { const user = item(value), login = text(user.login, 256), name = text(user.name, 256), avatarUrl = link(user.avatarUrl); return login && login.toLowerCase() !== author ? [{ key: login, label: login, ...(name ? { detail: name } : {}), ...(avatarUrl ? { avatarUrl } : {}), applied: requested.has(login.toLowerCase()) }] : []; });
+	return { kind, candidates, truncated: total(repo.assignableUsers, candidates.length) > nodes(repo.assignableUsers).length };
+}
+export async function projectPullRequestCandidates(root: string, value: unknown): Promise<PullRequestCandidates> {
+	const query = validatePullRequestCandidatesQuery(value), repository = await repositoryOf(root), [owner, name] = repository.split("/");
+	let output: string;
+	try { output = await runGh(root, ["api", "graphql", "--hostname", "github.com", "-f", `query=${candidateQuery}`, "-F", `owner=${owner}`, "-F", `name=${name}`, "-F", `number=${query.number}`]); }
+	catch (reason) { throw new Error(ghFailure((reason as { stderr?: string }).stderr, query.kind === "labels" ? "The labels could not be read." : "The people who can review could not be read."), { cause: reason }); }
+	let parsed: unknown;
+	try { parsed = JSON.parse(output); } catch { throw new Error("GitHub returned an unreadable list."); }
+	return parsePullRequestCandidates(query.kind, parsed);
 }

@@ -7,7 +7,7 @@ import type { McpPromptCatalog, McpPromptPreview, McpPromptRequest } from "./mcp
 import type { PullRequestContents, PullRequestContentsQuery } from "./pullRequestContents";
 import type { PullRequestFilesPage, PullRequestFilesQuery } from "./pullRequestFiles";
 import type { ProjectPullRequests, PullRequestDetails } from "./pullRequests";
-import { parsePullRequestReference, validRepository, type PullRequestActionRequest, type PullRequestView, type TaskPullRequestLink } from "./pullRequestView";
+import { parsePullRequestReference, validRepository, type PullRequestActionRequest, type PullRequestCandidates, type PullRequestView, type TaskPullRequestLink } from "./pullRequestView";
 import type { AgentForm, FormAnswer } from "./agentForms";
 import type { McpCommand, McpConnection } from "./mcp";
 import type { WorkspacePreferences } from "./preferences";
@@ -31,8 +31,9 @@ export type Account = { id: string; name: string; harness: Harness; kind: "nativ
 export type AgentConnection = { id: string; name: string; executable: string; arguments: string[]; archived?: boolean };
 export type AgentStatus = { checkedAt: string; name?: string; version?: string; protocolVersion: number; capabilities: string[]; authMethods: string[] };
 export type Attachment = { id: string; taskId: string; name: string; kind: "text" | "image"; mimeType: string; size: number; pages?: number };
-export type Message = { startedAt?: string; completedAt?: string; /** Working-tree snapshots around the turn this message started (user messages in a project). */ checkpoint?: TurnCheckpoint; timelineOrder?: number; threadReferences?: string[]; nativeAction?: NativeAction; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer" | "subagent"; /** Delegated results: the first child, and every child batched into this message. */ sourceTaskId?: string; sourceTaskIds?: string[]; createdAt: string };
-export type QueuedMessage = { sourceTaskId?: string; sourceTaskIds?: string[]; threadReferences?: string[]; nativeAction?: NativeAction; id: string; text: string; attachments?: Attachment[]; createdAt: string };
+export type Message = { startedAt?: string; completedAt?: string; /** Working-tree snapshots around the turn this message started (user messages in a project). */ checkpoint?: TurnCheckpoint; timelineOrder?: number; threadReferences?: string[]; nativeAction?: NativeAction; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer" | "subagent"; /** A wake the app sent (a watched pull request changed): shown as a compact notice, not as the person's message. */ notice?: MessageNotice; /** Delegated results: the first child, and every child batched into this message. */ sourceTaskId?: string; sourceTaskIds?: string[]; createdAt: string };
+export type MessageNotice = { kind: "pull-request"; summary: string; outcome: "failed" | "completed" | "updated"; url?: string };
+export type QueuedMessage = { notice?: MessageNotice; sourceTaskId?: string; sourceTaskIds?: string[]; threadReferences?: string[]; nativeAction?: NativeAction; id: string; text: string; attachments?: Attachment[]; createdAt: string };
 export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" | "unconfirmed"; error?: string };
 export type AgentActivity = { timelineOrder?: number; nativeAgent?: { id: string; model?: string; status: "pending" | "running" | "completed" | "failed" | "interrupted" }; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string; summary?: string; compaction?: { beforeTokens: number; afterTokens?: number; durationMs?: number }; /** A plan the agent proposed (its Markdown is the text), and what the person did with it. */ proposed?: { outcome?: "implemented" | "revised" | "declined"; feedback?: string } };
 /** How the person's own answer is typed: text by default, or a typed control with bounds. */
@@ -124,7 +125,7 @@ export type WorkspaceCommand =
 	| { type: "visit"; id: string; at: string }
 	| { type: "auto-settle"; id: string; enabled: boolean }
 	/** `reference` is a GitHub URL, `owner/repo#42`, `#42` or `42`; the main process resolves it against the chat's project. */
-	| { type: "link-pull-request"; id: string; reference: string; repository?: string; number?: number }
+	| { type: "link-pull-request"; id: string; reference: string; repository?: string; number?: number; /** Set only by the agent tools; the renderer's links are manual. */ source?: "agent" }
 	| { type: "unlink-pull-request"; id: string; repository: string; number: number }
 	| { type: "watch-pull-request"; id: string; repository: string; number: number; watching: boolean }
 	| { type: "add-account"; name: string; harness: "codex" | "claude" | "phaseo" | "cursor" | "grok"; kind: "native" | "api"; endpoint?: string; apiKey?: string }
@@ -172,6 +173,8 @@ export type WorkspaceApi = {
 	updateProject: (update: ProjectUpdate) => Promise<WorkspaceOverview>;
 	createWorktree: (projectId: string, branch: string, base: string) => Promise<{ workspace: WorkspaceOverview; projectId: string }>;
 	removeWorktree: (projectId: string) => Promise<WorkspaceOverview>;
+	/** Fetches a pull request's head and makes a managed worktree on a new branch at it (T3's "Check out in a separate worktree"). */
+	pullRequestWorktree: (projectId: string, number: number) => Promise<{ workspace: WorkspaceOverview; projectId: string; branch: string }>;
 	pasteImage: (taskId: string, name: string, bytes: Uint8Array) => Promise<Attachment>;
 	chooseAttachments: (taskId: string) => Promise<{ attachments: Attachment[]; errors: string[] }>;
 	exportTask: (taskId: string, format: "markdown" | "json") => Promise<boolean>;
@@ -216,6 +219,8 @@ export type WorkspaceApi = {
 	pullRequests: (projectId: string, cursor?: string) => Promise<ProjectPullRequests>;
 	/** One pull request with its checks, reviews, comments, commits and review threads. */
 	pullRequestView: (projectId: string, number: number) => Promise<PullRequestView>;
+	/** The labels or reviewers a Summary picker offers, read when it opens. */
+	pullRequestCandidates: (projectId: string, query: { number: number; kind: "labels" | "reviewers" }) => Promise<PullRequestCandidates>;
 	/** Merge, close, comment, review and the rest, through GitHub CLI; returns the pull request as it is afterwards. */
 	pullRequestAction: (projectId: string, request: PullRequestActionRequest) => Promise<PullRequestView>;
 	gitHunks: (projectId: string, filename: string, staged: boolean) => Promise<GitHunkReview>;
@@ -345,7 +350,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 			case "link-pull-request":
 				if (typeof command.reference !== "string" || command.reference.length > 500 || !parsePullRequestReference(command.reference)) throw new Error("Paste a GitHub pull request URL or a number like #42.");
 				// The main process fills these in from the reference.
-				delete command.repository; delete command.number; break;
+				delete command.repository; delete command.number; delete command.source; break;
 			case "unlink-pull-request": case "watch-pull-request":
 				if (!validRepository(command.repository) || !Number.isSafeInteger(command.number) || Number(command.number) < 1 || Number(command.number) > 2147483647) throw new Error("Invalid pull request.");
 				if (command.type === "watch-pull-request" && typeof command.watching !== "boolean") throw new Error("Invalid watch setting.");

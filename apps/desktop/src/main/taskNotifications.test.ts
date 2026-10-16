@@ -37,4 +37,13 @@ describe("desktop task notifications", () => {
 		expect(validatePreferences({ ...defaultPreferences, maxActiveAgents: 1 }).maxActiveAgents).toBe(1); expect(validatePreferences({ ...defaultPreferences, maxActiveAgents: 256 }).maxActiveAgents).toBe(256);
 		for (const maxActiveAgents of [0, 257, 2.5, "8", null]) expect(() => validatePreferences({ ...defaultPreferences, maxActiveAgents })).toThrow("Agents running at once");
 	});
+	it("raises pull request watch notices through the same rules", () => {
+		const { service, ports } = fixture();
+		service.notice("task", "Private title", "#42: checks failed", true);
+		expect(ports.show).toHaveBeenLastCalledWith("Phaseo", "Pull request #42: checks failed", expect.any(Function));
+		ports.show.mock.lastCall![2](); expect(ports.open).toHaveBeenCalledWith("task");
+		service.configure({ ...defaultPreferences, notifications: "attention" }); service.notice("task", "Private title", "#42: checks passed", false);
+		ports.focused.mockReturnValue(true); service.notice("task", "Private title", "#42: checks failed", true);
+		expect(ports.show).toHaveBeenCalledOnce();
+	});
 });

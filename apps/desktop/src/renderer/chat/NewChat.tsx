@@ -19,6 +19,7 @@ import { MAX_COMPARE, ModelPicker, knownModel, modelLabel, sameSelection } from 
 import { ModelSettings } from "./ModelSettings";
 import { SignInCard } from "./SignInCard";
 import { startChat } from "./startChat";
+import { newChatDraftEvent, newChatDraftKey } from "../lib/newChatDraft";
 
 const suggestions = [
 	{ icon: PenLine, label: "Write", prompt: "Help me write " },
@@ -53,7 +54,7 @@ export function PlanIndicator({ onClear }: { onClear?: () => void }) {
 
 export function NewChat() {
 	const { api, overview, command, setOverview, setError, mode, select, openCompare, saveCompareGroup, newChatProjectId, setNewChatProjectId, openSettings } = useWorkspace();
-	const [draft, setDraft] = usePersistedState("phaseo.desktop.newChatDraft", "");
+	const [draft, setDraft] = usePersistedState(newChatDraftKey, "");
 	// Images wait here until the chat exists; the draft holds a chip for each, keyed by a local id.
 	const [images, setImages] = useState<Record<string, File>>({});
 	const [busy, setBusy] = useState(false);
@@ -98,6 +99,11 @@ export function NewChat() {
 	const menu = useComposerMenu({ editor, harness: compare ? undefined : selections[0]?.harness, accountId: selections[0]?.accountId, projectId: code ? project?.id : undefined, actions });
 	const message = composeMessage(draft);
 	useEffect(() => { editor.focus(); }, [mode, editor.editor]); // Focus follows the mode switch and the editor's first mount.
+	// A pull request hand-off (Ask, Explain, Fix findings) puts its task here for the person to read over and send.
+	useEffect(() => {
+		const receive = (event: Event) => { const text = (event as CustomEvent<{ text?: unknown }>).detail?.text; if (typeof text !== "string") return; setDraft(text); setPlanMode("code"); requestAnimationFrame(() => editor.focus("end")); };
+		window.addEventListener(newChatDraftEvent, receive); return () => window.removeEventListener(newChatDraftEvent, receive);
+	}, [editor, setDraft, setPlanMode]);
 	const attached = message.images.flatMap(id => images[id] ? [images[id]] : []);
 	useEffect(() => { if (code) setSelections(current => current.length > 1 ? current.slice(0, 1) : current); }, [code]);
 

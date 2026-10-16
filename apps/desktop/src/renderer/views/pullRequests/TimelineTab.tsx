@@ -33,7 +33,7 @@ function ConversationRow({ event, projectId, onOpen }: { event: TimelineEvent; p
 			<div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs"><ActorName actor={event.actor} /><span className="text-muted-foreground">{event.title}</span></div>
 			<MetaLine className="mt-1 flex-wrap text-2xs text-muted-foreground"><span>{relativeTime(event.at)}</span>{event.path && <span className="inline-flex min-w-0 items-center gap-1"><FileCode2 aria-hidden className="size-3 shrink-0" /><span className="truncate">{event.path}</span></span>}</MetaLine>
 		</div>
-		<Reactions reactions={event.reactions} /><OpenButton url={event.url} onOpen={onOpen} />
+		<Reactions reactions={event.reactions} subjectId={event.canReact ? event.id : undefined} canReact={event.canReact} /><OpenButton url={event.url} onOpen={onOpen} />
 	</div><div className="px-2"><Body body={event.body} projectId={projectId} /></div></article>;
 }
 function ConversationGroup({ events, projectId, onOpen }: { events: TimelineEvent[]; projectId: string; onOpen: (url: string) => void }) {
@@ -72,7 +72,7 @@ function VerdictRow({ event, outcome, stale, projectId, onOpen }: { event: Timel
 				{stale ? <Tip label={reviewOutcomeStaleLabel(outcome)}><span className="font-medium text-muted-foreground lowercase opacity-70">{label}<span className="sr-only">, before the latest commits</span></span></Tip> : <span className={cn("font-medium lowercase", REVIEW_OUTCOME_PRESENTATION[outcome].toneClassName)}>{label}</span>}
 			</div>
 			<MetaLine className="mt-0.5 flex-wrap text-2xs text-muted-foreground"><span>{relativeTime(event.at)}</span>{event.path && <span className="inline-flex min-w-0 items-center gap-1"><FileCode2 aria-hidden className="size-3 shrink-0" /><span className="truncate">{event.path}</span></span>}</MetaLine>
-		</div><Reactions reactions={event.reactions} /><OpenButton url={event.url} onOpen={onOpen} /></div>
+		</div><Reactions reactions={event.reactions} subjectId={event.canReact ? event.id : undefined} canReact={event.canReact} /><OpenButton url={event.url} onOpen={onOpen} /></div>
 		<Body body={event.body} projectId={projectId} />
 	</div>;
 }
