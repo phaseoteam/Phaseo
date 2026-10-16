@@ -11,6 +11,9 @@ import { Switch } from "../components/ui/switch";
 import { ModelPicker } from "../chat/ModelPicker";
 import { ModelSettings } from "../chat/ModelSettings";
 import { workingSectionKey } from "../shell/codeThreads";
+import { publishWorkspacePreferences } from "../lib/workspacePreferences";
+import { mergeMethodLabels } from "../views/pullRequests/pullRequestLogic";
+import { isMac } from "../lib/shortcuts";
 import { SettingsButton, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
 
 /** Workspace preferences, loaded once and saved one change at a time. */
@@ -23,13 +26,13 @@ function usePreferences() {
 	useEffect(() => {
 		if (!api) { setLoading(false); setError("Open the desktop application to load settings."); return; }
 		let active = true;
-		void api.preferences().then(value => { if (active) { setPreferences(value.preferences); setSupported(value.notificationsSupported); } }, reason => { if (active) setError(errorText(reason)); }).finally(() => { if (active) setLoading(false); });
+		void api.preferences().then(value => { if (active) { setPreferences(value.preferences); setSupported(value.notificationsSupported); publishWorkspacePreferences(value.preferences); } }, reason => { if (active) setError(errorText(reason)); }).finally(() => { if (active) setLoading(false); });
 		return () => { active = false; };
 	}, [api]);
 	async function save(value: WorkspacePreferences) {
 		if (!api || pending.current || loading || supported === undefined) return;
 		pending.current = true; setBusy(true); setError("");
-		try { setPreferences(await api.savePreferences(value)); }
+		try { const saved = await api.savePreferences(value); setPreferences(saved); publishWorkspacePreferences(saved); }
 		catch (reason) { setError(errorText(reason)); }
 		finally { pending.current = false; setBusy(false); }
 	}
@@ -112,6 +115,16 @@ export function GeneralSettings() {
 		<SettingsSection title="Panes" label="Panes">
 			<SettingsRow title="Open panes automatically" description="Show the diff when a turn changes files, and a pull request when one is linked to the chat. Using the pane during a turn holds this back."
 				control={<Switch aria-label="Open panes automatically" checked={autoOpenPanes} onCheckedChange={setAutoOpenPanes} />} />
+			<SettingsRow title="Default diff file state" description="Start with files expanded or collapsed when opening diffs or a pull request's Code tab."
+				control={<Select label="Default diff file state" disabled={!ready || busy} value={preferences.diffFilesCollapsed ? "collapsed" : "expanded"} onValueChange={value => void save({ ...preferences, diffFilesCollapsed: value === "collapsed" })}
+					options={[{ value: "expanded", label: "Expanded" }, { value: "collapsed", label: "Collapsed" }]} />} />
+		</SettingsSection>
+		<SettingsSection title="Pull requests" label="Pull requests">
+			<SettingsRow title="Open pull requests in Phaseo" description={`Clicking a pull request link opens it in Phaseo. ${isMac() ? "⌘-click" : "Ctrl-click"} or middle-click still opens it on GitHub. Turn off to open pull request links like any other link, on GitHub.`}
+				control={<Switch aria-label="Open pull requests in Phaseo" disabled={!ready || busy} checked={preferences.openPullRequestsInApp} onCheckedChange={value => void save({ ...preferences, openPullRequestsInApp: value })} />} />
+			<SettingsRow title="Default merge method" description="Pull requests start with this method. Last selected reuses whatever you chose most recently on this device. Each project can change this in its Project settings."
+				control={<Select label="Default pull request merge method" disabled={!ready || busy} value={preferences.pullRequestMergeMethod ?? "last"} onValueChange={value => void save({ ...preferences, pullRequestMergeMethod: value === "merge" || value === "squash" || value === "rebase" ? value : null })}
+					options={[{ value: "last", label: "Last selected" }, { value: "merge", label: mergeMethodLabels.merge }, { value: "squash", label: mergeMethodLabels.squash }, { value: "rebase", label: mergeMethodLabels.rebase }]} />} />
 		</SettingsSection>
 		<SettingsSection title="Code chats" description="Settle a chat when you are done with it; it moves to Settled at the bottom of the sidebar. Each project can change these in its Project settings." label="Code chats">
 			<SettingsRow title="Show a Working section" description="Fold chats that are working and need nothing from you into a Working section above Snoozed. They return to the top of the list when they need you. Your list is then ordered by time."

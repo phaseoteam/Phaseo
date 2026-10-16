@@ -1,5 +1,6 @@
 import { scriptCommand, type CommandInfo } from "./keybindings";
-import type { WorkspacePreferences } from "./preferences";
+import { isMergeMethod, type WorkspacePreferences } from "./preferences";
+import type { PullRequestMergeMethod } from "./pullRequestView";
 import { autoSettleDays, type AutoSettleRules } from "./threadLifecycle";
 
 /** T3 Code's script icons. */
@@ -15,7 +16,7 @@ export type ProjectScript = {
  * One project's own settings, after T3's project overrides. An absent auto-settle key follows Settings → General;
  * autoSettleAfterDays null means never. Worktrees use their source project's settings.
  */
-export type ProjectSettings = { autoSettleAfterDays?: number | null; autoSettleOnMerge?: boolean; keepPullRequests?: boolean; scripts?: ProjectScript[]; icon?: ProjectIcon };
+export type ProjectSettings = { autoSettleAfterDays?: number | null; autoSettleOnMerge?: boolean; keepPullRequests?: boolean; scripts?: ProjectScript[]; icon?: ProjectIcon; /** T3's per-project default merge method; absent follows Settings → General. */ pullRequestMergeMethod?: PullRequestMergeMethod };
 /** T3's project icon colours. */
 export const projectIconColors = ["gray", "red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"] as const;
 export type ProjectIconColor = typeof projectIconColors[number];
@@ -135,6 +136,7 @@ export function validateProjectSettings(value: unknown): ProjectSettings {
 		if (scripts.length) settings.scripts = scripts;
 	}
 	if (value.icon !== undefined) settings.icon = validateProjectIcon(value.icon);
+	if (value.pullRequestMergeMethod !== undefined) { if (!isMergeMethod(value.pullRequestMergeMethod)) throw new Error("Choose a merge method."); settings.pullRequestMergeMethod = value.pullRequestMergeMethod; }
 	return settings;
 }
 

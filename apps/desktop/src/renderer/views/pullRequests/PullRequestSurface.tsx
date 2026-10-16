@@ -24,6 +24,7 @@ import { useInlineActionConfirm } from "./useInlineActionConfirm";
 import { usePullRequest } from "./usePullRequest";
 import { usePullRequestHandoff } from "./usePullRequestHandoff";
 import { PullRequestNumberMenu } from "./PullRequestNumberMenu";
+import { lastMergeMethodKey, resolvePullRequestMergeMethod, useDefaultMergeMethod } from "./mergeMethod";
 
 type Tab = "summary" | "guide" | "timeline" | "code";
 const tabs: { value: Tab; label: string }[] = [{ value: "summary", label: "Summary" }, { value: "guide", label: "Guide" }, { value: "timeline", label: "Timeline" }, { value: "code", label: "Code" }];
@@ -52,12 +53,15 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 	const [condensed, setCondensed] = useState(false);
 	const [order, setOrder] = useState<"newest" | "oldest">("newest");
 	const [titleDraft, setTitleDraft] = useState<string | null>(null);
-	const [storedMethod, setStoredMethod] = usePersistedState<PullRequestMergeMethod>("phaseo.desktop.pullRequestMergeMethod", "squash");
+	const [storedMethod, setStoredMethod] = usePersistedState<PullRequestMergeMethod>(lastMergeMethodKey, "squash");
+	// The method picked in this pull request's menu wins; until then, the project's or workspace default, then the last one picked.
+	const [chosenMethod, setChosenMethod] = useState<PullRequestMergeMethod | null>(null);
+	const defaultMergeMethod = useDefaultMergeMethod();
 	const confirm = useInlineActionConfirm(`${projectId}#${number}`);
 	const { copied, copy } = useCopied();
 	const [openError, setOpenError] = useState("");
 	const handoff = usePullRequestHandoff(projectId);
-	useEffect(() => { setTab("summary"); setMounted(new Set(["summary"])); setCondensed(false); setTitleDraft(null); }, [projectId, number]);
+	useEffect(() => { setTab("summary"); setMounted(new Set(["summary"])); setCondensed(false); setTitleDraft(null); setChosenMethod(null); }, [projectId, number]);
 	const root = useRef<HTMLDivElement>(null);
 	// Shortcuts act on the pull request on screen: a hidden pane tab, or a second surface while focus is in another, lets the key through.
 	const onScreen = () => { const element = root.current; if (!element?.isConnected || !element.checkVisibility({ checkVisibilityCSS: true })) return false; const focused = document.activeElement?.closest("[data-pull-request-surface]"); return !focused || focused === element; };
@@ -83,7 +87,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 
 	const presentation = pullRequestStatePresentation(view.state, view.draft);
 	const primary = primaryAction(view), conflicting = view.state === "OPEN" && view.mergeable === "CONFLICTING";
-	const method = view.autoMerge?.method ?? (view.mergeMethods.includes(storedMethod) ? storedMethod : view.mergeMethods[0] ?? "merge");
+	const method = view.autoMerge?.method ?? resolvePullRequestMergeMethod(view.mergeMethods, chosenMethod, defaultMergeMethod(projectId), storedMethod);
 	const autoMergeArmed = view.state === "OPEN" && Boolean(view.autoMerge);
 	const armedLabel = view.autoMerge ? `Auto-merge (${mergeMethodLabels[view.autoMerge.method].toLowerCase()})` : "Auto-merge", pendingAutoMergeLabel = `Auto-merge (${mergeMethodLabels[method].toLowerCase()})`;
 	const armedBadge = <Tip label={`${armedLabel}: GitHub will merge this on its own once its requirements are met${view.autoMerge?.enabledBy ? ` (turned on by ${view.autoMerge.enabledBy})` : ""}`}><Badge variant="outline" role="img" aria-label={armedLabel} data-auto-merge="" className="h-6 px-2 text-sky-700 dark:text-sky-300"><PullRequestGlyph.merged aria-hidden className="size-3.5" /><span className="@max-[30rem]/pr-header:hidden">{armedLabel}</span></Badge></Tip>;
@@ -139,7 +143,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 			{canDisableAutoMerge && <DropdownMenuItem disabled={busy} onClick={() => void pull.perform({ type: "disable-auto-merge" })}><X className="size-3.5" />Disable auto-merge</DropdownMenuItem>}
 			{canEnableAutoMerge && <DropdownMenuItem closeOnClick={confirm.isArmed("enable-auto-merge-menu")} disabled={busy} aria-label={confirm.isArmed("enable-auto-merge-menu") ? "Confirm auto-merge?" : "Enable auto-merge"} {...confirm.props("enable-auto-merge-menu", () => void pull.perform({ type: "enable-auto-merge", method }))}><PullRequestGlyph.merged className="size-3.5" />{confirm.isArmed("enable-auto-merge-menu") ? "Confirm auto-merge?" : "Enable auto-merge"}</DropdownMenuItem>}
 			{canMergeNow && <DropdownMenuItem closeOnClick={confirm.isArmed("merge-now")} disabled={busy} aria-label={confirm.isArmed("merge-now") ? "Confirm merge?" : "Merge now"} {...confirm.props("merge-now", () => void pull.perform({ type: "merge", method }))}><PullRequestGlyph.merged className="size-3.5" />{confirm.isArmed("merge-now") ? "Confirm merge?" : "Merge now"}</DropdownMenuItem>}
-			{view.state === "OPEN" && !conflicting && !autoMergeArmed && view.viewer.canMerge && view.mergeMethods.length > 0 && <><DropdownMenuSeparator /><DropdownMenuRadioGroup value={method} onValueChange={value => setStoredMethod(value as PullRequestMergeMethod)}>
+			{view.state === "OPEN" && !conflicting && !autoMergeArmed && view.viewer.canMerge && view.mergeMethods.length > 0 && <><DropdownMenuSeparator /><DropdownMenuRadioGroup value={method} onValueChange={value => { setChosenMethod(value as PullRequestMergeMethod); setStoredMethod(value as PullRequestMergeMethod); }}>
 				{view.mergeMethods.map(value => <DropdownMenuRadioItem key={value} value={value} disabled={busy} closeOnClick><PullRequestGlyph.merged className="size-3.5" />{mergeMethodLabels[value]}</DropdownMenuRadioItem>)}
 			</DropdownMenuRadioGroup></>}
 			<DropdownMenuSeparator />

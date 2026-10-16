@@ -5,6 +5,7 @@ import type { GitDiffRequest, GitDiffResult, GitRefs } from "../../shared/gitDif
 import type { Task } from "../../shared/workspace";
 import { useWorkspace } from "../app/workspace";
 import { usePersistedState } from "../lib/persistedState";
+import { useWorkspacePreferences } from "../lib/workspacePreferences";
 import { cn } from "../lib/utils";
 import { allCollapsed, diffFileTree, diffLineStat, diffTurns, fileDiffKey, resolveFileDiffPath, scopeLabel, sectionOf, selectedTurn, changeTone, toggleAll, toggleOne, type DiffSelection } from "../lib/diffSurface";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
@@ -139,7 +140,9 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 	const result = loaded?.key === requestKey ? loaded.result : undefined;
 	const parsed = useMemo(() => result?.patch ? parseFiles(result.patch, `diff:${result.hash.slice(0, 16)}`) : undefined, [result]);
 	const section = sectionOf(selection, turns);
-	const collapsedKeys = useMemo(() => collapsed.section === section.id ? collapsed.keys : noKeys, [collapsed, section.id]);
+	// Settings → General → Default diff file state: a section nobody has folded or unfolded yet starts that way.
+	const { diffFilesCollapsed } = useWorkspacePreferences();
+	const collapsedKeys = useMemo(() => collapsed.section === section.id ? collapsed.keys : diffFilesCollapsed ? new Set((parsed?.files ?? []).map(fileDiffKey)) : noKeys, [collapsed, section.id, diffFilesCollapsed, parsed]);
 	const files = useMemo<DiffViewFile[]>(() => (parsed?.files ?? []).map((fileDiff, index) => ({ fileDiff, filePath: resolveFileDiffPath(fileDiff), fileKey: fileDiffKey(fileDiff), fileVersion: index + parseInt(result?.hash.slice(0, 8) || "0", 16), collapsed: collapsedKeys.has(fileDiffKey(fileDiff)) })), [parsed, result, collapsedKeys]);
 	const keys = files.map(file => file.fileKey);
 	const stat = useMemo(() => diffLineStat(parsed?.files ?? []), [parsed]);

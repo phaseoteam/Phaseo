@@ -14,6 +14,7 @@ import { cn } from "../lib/utils";
 import { keyLabel, scriptCommand } from "../../shared/keybindings";
 import { useKeybindings } from "../lib/keybindings";
 import { isMac } from "../lib/shortcuts";
+import { mergeMethodLabels } from "../views/pullRequests/pullRequestLogic";
 
 const dayChoices = [1, 2, 3, 5, 7, 14, 30];
 const days = (value: number) => value === 1 ? "After 1 day" : `After ${value} days`;
@@ -84,6 +85,11 @@ export function ProjectSettingsPage() {
 				control={<Select label="Auto-settle inactive chats" disabled={busy} value={settings.autoSettleAfterDays === undefined ? "inherit" : String(settings.autoSettleAfterDays ?? "never")}
 					onValueChange={value => override("autoSettleAfterDays", value === "inherit" ? "inherit" : value === "never" ? null : Number(value))}
 					options={[{ value: "inherit", label: `Same as General (${inheritedDays === null ? "never" : days(inheritedDays).toLowerCase()})` }, { value: "never", label: "Never" }, ...shownDays.map(value => ({ value: String(value), label: days(value) }))]} />} />
+		</SettingsSection>
+		<SettingsSection title="Pull requests" label="Project pull requests">
+			<SettingsRow title="Default merge method" description="Pull requests in this project start with this method."
+				control={<Select label="Project default merge method" disabled={busy} value={settings.pullRequestMergeMethod ?? "inherit"} onValueChange={value => override("pullRequestMergeMethod", value === "merge" || value === "squash" || value === "rebase" ? value : "inherit")}
+					options={[{ value: "inherit", label: `Same as General (${preferences.pullRequestMergeMethod ? mergeMethodLabels[preferences.pullRequestMergeMethod].toLowerCase() : "last selected"})` }, { value: "merge", label: mergeMethodLabels.merge }, { value: "squash", label: mergeMethodLabels.squash }, { value: "rebase", label: mergeMethodLabels.rebase }]} />} />
 		</SettingsSection>
 		<SettingsSection title="Actions" description="Commands for this project, run from the chat header in a terminal in the chat's checkout." label="Project actions"
 			action={<span className="flex items-center gap-1.5">

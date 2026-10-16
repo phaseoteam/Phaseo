@@ -125,3 +125,11 @@ describe("t3.json", () => {
 		expect(scriptFromProjectFile(scripts[0])).toMatchObject({ previewUrl: "http://localhost:3000", autoOpenPreview: true });
 	});
 });
+
+describe("project merge method", () => {
+	it("keeps a project's default merge method and refuses unknown ones", () => {
+		expect(validateProjectSettings({ pullRequestMergeMethod: "squash" })).toEqual({ pullRequestMergeMethod: "squash" });
+		expect(validateProjectSettings({})).toEqual({});
+		expect(() => validateProjectSettings({ pullRequestMergeMethod: "octopus" })).toThrow("merge method");
+	});
+});

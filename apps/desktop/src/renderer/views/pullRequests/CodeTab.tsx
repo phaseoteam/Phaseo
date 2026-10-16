@@ -13,6 +13,7 @@ import { Toggle } from "../../components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "../../components/ui/toggle-group";
 import { pullRequestPatch } from "../../lib/pullRequestPatch";
 import { usePersistedState } from "../../lib/persistedState";
+import { useWorkspacePreferences } from "../../lib/workspacePreferences";
 import { cn } from "../../lib/utils";
 import { ActorLabel, DiffStat, errorMessage, MetaLine, Tip } from "./presentation";
 import { fileTree, ignoreWhitespacePatch, readViewed, relativeTime, setViewed, viewedState, viewedStorageKey, type FileTreeNode, type ViewedFiles } from "./pullRequestLogic";
@@ -75,6 +76,7 @@ export function CodeTab({ view, projectId, pending, onAction, onOpen }: { view: 
 	const storageKey = viewedStorageKey(view.repository, view.number);
 	const [viewed, setViewedFiles] = useState<ViewedFiles>(() => readViewed(localStorage, storageKey));
 	const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+	const { diffFilesCollapsed } = useWorkspacePreferences();
 	const scroller = useRef<HTMLDivElement>(null);
 	const revision = `${view.headOid}:${view.baseOid}`;
 	const load = useCallback(async (next: number, replace: boolean) => {
@@ -97,7 +99,7 @@ export function CodeTab({ view, projectId, pending, onAction, onOpen }: { view: 
 		// Ticking a file folds it away, as T3 Code does; unticking opens it again.
 		setCollapsed(current => ({ ...current, [file.filename]: next }));
 	};
-	const isCollapsed = (file: PullRequestFile) => collapsed[file.filename] ?? viewedState(viewed, file.filename, file.blobOid) === "viewed";
+	const isCollapsed = (file: PullRequestFile) => collapsed[file.filename] ?? (diffFilesCollapsed || viewedState(viewed, file.filename, file.blobOid) === "viewed");
 	const viewedCount = files.filter(file => viewedState(viewed, file.filename, file.blobOid) === "viewed").length;
 	const allCollapsed = files.length > 0 && files.every(isCollapsed);
 	const tree = useMemo(() => fileTree(files.map(file => file.filename)), [files]);
