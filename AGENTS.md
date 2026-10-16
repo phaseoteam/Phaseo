@@ -39,8 +39,21 @@
 - When preparing PRs, always use a branch name that has not already been merged. Do not reuse previously merged branch names.
 - Never enable PR auto-merge (for example `gh pr merge --auto`) unless the user has explicitly approved auto-merge for that PR.
 - Before merging a PR, make sure all actionable review comments and unresolved review threads are either fixed and resolved or explicitly confirmed as outdated/non-blocking. Do not treat green CI alone as sufficient if unresolved review-thread state is still blocking merge.
-- PRs: describe intent and scope, list commands run (lint/typecheck/build/tests/validations), link issues, and include screenshots or notes for UI changes.
+- PRs: describe intent and scope, link issues, and fill in the `## Proof` section (see Proof in Pull Requests below).
 - When creating/editing PR descriptions via CLI/API, use real multiline Markdown (or a body file). Do not submit escaped newline text like `\n` in the final PR body.
+
+## Proof in Pull Requests
+Every PR description needs a `## Proof` section showing that the change works, not just that it was written. A reviewer should be able to trust the claim without re-running everything.
+- List each command you ran with its result, for example `pnpm --filter @phaseo/gateway-api test -- batch` → 48 passed. Paste the relevant output for failures or anything surprising. A command without a result is not proof.
+- Show the behaviour the PR changes, with evidence that fits the change:
+  - UI: screenshots or a short recording of the changed screen, before and after. Include a phone width when layout changes.
+  - API/gateway: a real request and response against a local server, preview, or AIMock test, highlighting the status or fields that changed.
+  - Database: `pnpm db:schema:check` output and a readback query showing the new state.
+  - Docs: the rendered page (local preview or Vercel preview link) and `pnpm docs:links`.
+  - Bug fixes: a test or reproduction that fails before the fix and passes after it.
+- State what you did not verify and why (missing credentials, needs production traffic, known Windows-only failure, only checkable after deploy). Never claim a check you did not run. Report skipped or failing tests as skipped or failing, with output.
+- Green CI supports the proof but does not replace it; it rarely exercises the changed behaviour directly.
+- Redact keys, tokens, emails, and customer data from output and screenshots. Do not write to production, create API keys, or spend credits to produce proof unless the user asked for it.
 
 ## Security & Configuration Tips
 - Never commit secrets; use `.env.local` per app. Required runtime keys are called out in `turbo.json` `globalEnv` and app READMEs.

@@ -39,6 +39,10 @@
 - [ ] Changes CI/CD
 - [ ] User-facing behaviour change
 
+## Proof
+
+<!-- Show that the change works: commands run with their results, screenshots or a recording for UI, a request and response for API changes, a readback for data changes. Say what you did not verify and why. -->
+
 ## Notes
 
 <!-- Anything else reviewers should know (edge cases, follow-ups, rollout notes, etc.) -->
