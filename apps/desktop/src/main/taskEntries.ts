@@ -125,9 +125,10 @@ export class TaskEntries {
 			for (let index = 0; index < entries.length; index++) {
 				const entry = entries[index], data = encode(entry);
 				after.ids.push(entry.id); after.data.push(data);
-				if (before.ids[index] === entry.id && before.data[index] === data) continue;
+				const same = index < before.ids.length && before.ids[index] === entry.id;
+				if (same && before.data[index] === data) continue;
 				const bytes = encoder.encode(data).byteLength, stored = kind === 1 && bytes > compressFrom ? deflateRawSync(data) : data;
-				if (before.ids[index] === entry.id) update.run(entry.timelineOrder ?? null, bytes, stored, start + index);
+				if (same) update.run(entry.timelineOrder ?? null, bytes, stored, start + index);
 				else replace.run(start + index, key, kind, entry.id, kind === 1 ? owner(entry.id) : null, entry.timelineOrder ?? null, kind === 0 ? (entry as Message).role : null, bytes, stored);
 			}
 			if (before.ids.length > entries.length) this.statement("DELETE FROM task_entries WHERE rowid >= ? AND rowid < ?").run(start + entries.length, base(key, kind) + kindSpan);

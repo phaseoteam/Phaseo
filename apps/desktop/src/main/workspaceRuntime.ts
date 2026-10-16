@@ -292,6 +292,28 @@ export class WorkspaceRuntime {
 	}
 	/** Raised for each watched pull request update, for the desktop notification. */
 	onPullRequestNotice?: (taskId: string, summary: string, outcome: PullRequestWatchMessage["outcome"]) => void;
+	/**
+	 * Streaming flushes from every running chat share one clock: those due run together in one transaction, so fifty
+	 * chats streaming commit a few dozen times a second rather than a thousand. Due times fall on a 20 ms grid to group.
+	 */
+	private readonly streamFlushes = new Map<string, { due: number; run: () => void }>();
+	private flushClock: ReturnType<typeof setTimeout> | undefined;
+	private queueStreamFlush(id: string, delay: number, run: () => void) {
+		if (this.closing || this.streamFlushes.has(id)) return;
+		this.streamFlushes.set(id, { due: Math.ceil((Date.now() + delay) / 20) * 20, run });
+		this.armFlushClock();
+	}
+	private armFlushClock() {
+		if (this.flushClock || !this.streamFlushes.size || this.closing) return;
+		const next = Math.min(...[...this.streamFlushes.values()].map(flush => flush.due));
+		this.flushClock = setTimeout(() => {
+			this.flushClock = undefined;
+			const now = Date.now(), due = [...this.streamFlushes.values()].filter(flush => flush.due <= now);
+			// Each flush catches its own failure; its savepoint undoes only its writes.
+			if (due.length) this.store.batch(() => { for (const flush of due) flush.run(); });
+			this.armFlushClock();
+		}, Math.max(0, next - Date.now()));
+	}
 	private broadcastTimer: ReturnType<typeof setTimeout> | undefined;
 	/** Streaming flushes from every running chat share one chat-list update per 100 ms instead of one each. */
 	private broadcastSoon() {
@@ -707,7 +729,8 @@ export class WorkspaceRuntime {
 		const message = task.queue.shift()!;
 		let timelineOrder = [...task.messages, ...(task.activities ?? [])].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), task.messages.length + (task.activities?.length ?? 0)) + 1;
 		task.messages.push({ ...message, startedAt: new Date().toISOString(), timelineOrder: timelineOrder++, role: "user", ...(message.sourceTaskId ? { delivery: "subagent" as const } : {}) }); task.status = "running"; task.error = undefined;
-		this.store.saveTask(task); this.broadcast();
+		// Chats starting together (a burst of sends, a scheduled batch) share one chat-list update.
+		this.store.saveTask(task); this.broadcastSoon();
 		const project = this.store.getProjects().find(value => value.id === task.projectId);
 		const cwd = project?.directory ?? path.join(this.directory, "tasks", id);
 		// Snapshot the project before the agent edits it, so the turn's changes can be reviewed on their own.
@@ -716,12 +739,11 @@ export class WorkspaceRuntime {
 		const eventOrder = new Map<string, number>();
 		const order = (key: string) => { if (!eventOrder.has(key)) eventOrder.set(key, timelineOrder++); return eventOrder.get(key)!; };
 		let activities: (AgentActivity & { append?: boolean })[] = [];
-		let flushTimer: ReturnType<typeof setTimeout> | undefined;
 		// A flush that costs more (a slow disk, many chats streaming, a long answer) waits longer, so streaming leaves the main process free.
 		let flushDelay = 40;
 		let streamError: unknown;
 		const flush = () => {
-			if (flushTimer) clearTimeout(flushTimer); flushTimer = undefined;
+			this.streamFlushes.delete(id);
 			if (!deltas.size && !activities.length) return;
 			const started = performance.now(); let rewritten = 0;
 			// Only this turn changes while it streams, so only this turn is read and written back.
@@ -743,9 +765,7 @@ export class WorkspaceRuntime {
 			// Each flush rewrites the answer so far, so a long answer flushes less often: about a millisecond per 100 characters.
 			flushDelay = Math.min(1000, Math.max(40, Math.round((performance.now() - started) * 4), Math.round(rewritten / 100)));
 		};
-		const scheduleFlush = () => {
-			flushTimer ??= setTimeout(() => { try { flush(); } catch (error) { streamError = error; void adapter.cancel().catch(() => {}); } }, flushDelay);
-		};
+		const scheduleFlush = () => this.queueStreamFlush(id, flushDelay, () => { try { flush(); } catch (error) { streamError = error; void adapter.cancel().catch(() => {}); } });
 		const onQuestion: NonNullable<AgentCallbacks["onQuestion"]> = (questions, request) => new Promise(resolve => {
 			flush();
 			const signal = request?.signal;
@@ -849,7 +869,7 @@ export class WorkspaceRuntime {
 		} finally {
 			const finished = this.store.getTask(id); const input = finished.messages.find(item => item.id === message.id); if (input) { input.completedAt = new Date().toISOString(); this.store.saveTask(finished); }
 			if (checkpoint && project) void this.trackCheckpoint(this.recordCheckpoint(id, message.id, checkpoint, project.directory));
-			if (flushTimer) clearTimeout(flushTimer);
+			this.streamFlushes.delete(id);
 			orchestration?.close(); this.orchestrationSessions.delete(id); this.running.delete(id);
 			if (!this.closing && finished.status !== "interrupted") this.threads.releaseForeground(id);
 			for (const [approvalId, pending] of this.approvals) if (pending.taskId === id) { pending.resolve("decline"); this.approvals.delete(approvalId); }
@@ -859,7 +879,7 @@ export class WorkspaceRuntime {
 		}
 	}
 	async close() {
-		this.closing = true; this.settleAbort.abort(); clearTimeout(this.broadcastTimer); for (const timer of this.wakeTimers.values()) clearTimeout(timer); this.wakeTimers.clear(); for (const close of this.orchestrationSessions.values()) close(); this.broadcast();
+		this.closing = true; this.settleAbort.abort(); clearTimeout(this.broadcastTimer); clearTimeout(this.flushClock); for (const timer of this.wakeTimers.values()) clearTimeout(timer); this.wakeTimers.clear(); for (const close of this.orchestrationSessions.values()) close(); this.broadcast();
 		for (const id of this.running.keys()) this.store.apply({ type: "cancel", id });
 		for (const pending of this.approvals.values()) pending.resolve("decline");
 		for (const pending of this.questions.values()) pending.resolve({});

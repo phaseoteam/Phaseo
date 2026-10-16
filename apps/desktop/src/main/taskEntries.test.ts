@@ -123,6 +123,18 @@ describe("chat entries", () => {
 		expect(() => store.conversationPage({ taskId: "paged", kind: "messages", limit: 10, beforeId: "missing" })).toThrow("Conversation position no longer exists");
 	}));
 
+	it("commits a batch of saves together, undoing only a save that fails partway", () => withStore(store => {
+		for (const id of ["a", "b", "c"]) store.saveTask(chat(id, 3));
+		const [a, b, c] = ["a", "b", "c"].map(id => store.getTask(id));
+		a.messages[0].text = "A saved"; c.messages[0].text = "C saved";
+		// B changes a message, then hits a message with no id (NOT NULL) after that first write.
+		b.messages[0].text = "B half saved"; b.messages.push({ role: "assistant", text: "No id", createdAt: created } as Message);
+		store.batch(() => { store.saveTask(a); expect(() => store.saveTask(b)).toThrow(); store.saveTask(c); });
+		expect(store.getTask("a").messages[0].text).toBe("A saved");
+		expect(store.getTask("c").messages[0].text).toBe("C saved");
+		expect(store.getTask("b").messages.map(message => message.text)).toEqual(chat("b", 3).messages.map(message => message.text));
+	}));
+
 	it("waits for another connection's write lock instead of failing", () => withStore(async (store, filename) => {
 		store.saveTask(chat("busy", 3));
 		const worker = new Worker(`

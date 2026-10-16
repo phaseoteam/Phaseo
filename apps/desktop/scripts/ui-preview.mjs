@@ -128,10 +128,11 @@ for (const [id, name, branch] of [["phaseo", "phaseo", "main"], ["blog", "blog",
 	writeFileSync(path.join(directory, "src", "usage.test.ts"), "import { byGrant } from \"./usage\";\n");
 	db.prepare("INSERT INTO projects VALUES (?, ?)").run(id, JSON.stringify({ id, name, directory, createdAt: at(10_000) }));
 }
+// --gateway=<url> points the Phaseo account at another gateway (scripts/fixtures/load-gateway.mjs for load tests).
 // --repo <path> adds a real checkout, so the pull request pane reads real pull requests through the local GitHub CLI.
 const repo = argument("repo", "");
 if (demo && repo) db.prepare("INSERT INTO projects VALUES (?, ?)").run("repository", JSON.stringify({ id: "repository", name: path.basename(path.resolve(repo)), directory: path.resolve(repo), createdAt: at(10_000) }));
-db.prepare("INSERT INTO accounts VALUES (?, ?)").run("phaseo-account", JSON.stringify({ id: "phaseo-account", name: "Phaseo", harness: "phaseo", kind: "api", endpoint: demo ? `http://127.0.0.1:${gatewayPort}/v1` : "https://api.phaseo.app/v1", configured: true }));
+db.prepare("INSERT INTO accounts VALUES (?, ?)").run("phaseo-account", JSON.stringify({ id: "phaseo-account", name: "Phaseo", harness: "phaseo", kind: "api", endpoint: argument("gateway", "") || (demo ? `http://127.0.0.1:${gatewayPort}/v1` : "https://api.phaseo.app/v1"), configured: true }));
 
 // Chat ids are UUIDs, as the app creates them, so the seeded chats can be @-mentioned like real ones.
 const demoId = name => createHash("sha256").update(`phaseo-demo:${name}`).digest("hex").replace(/^(.{8})(.{4}).(.{3}).(.{3})(.{12}).*$/, "$1-$2-4$3-8$4-$5");

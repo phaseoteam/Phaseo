@@ -9,7 +9,16 @@ import { isRepository, runGit } from "./gitDiffScopes";
  * branches or stash: files are added to a copy of the index and only the tree object is kept.
  * Never rejects: outside a repository or when Git fails it returns undefined, so a turn never waits on it.
  */
-export async function captureCheckpoint(root: string): Promise<string | undefined> {
+/** Snapshots being taken, by folder. Chats starting together in one project share one: they share its working tree too. */
+const capturing = new Map<string, Promise<string | undefined>>();
+export function captureCheckpoint(root: string): Promise<string | undefined> {
+	const key = path.resolve(root);
+	let capture = capturing.get(key);
+	if (!capture) { capture = snapshot(root).finally(() => capturing.delete(key)); capturing.set(key, capture); }
+	return capture;
+}
+
+async function snapshot(root: string): Promise<string | undefined> {
 	let directory: string | undefined;
 	try {
 		if (!await isRepository(root)) return;

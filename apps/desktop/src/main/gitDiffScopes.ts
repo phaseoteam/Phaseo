@@ -13,13 +13,20 @@ const UNTRACKED_LIMIT = 200, UNTRACKED_FILE_LIMIT = 1024 * 1024;
 const DIFF_FLAGS = ["--no-ext-diff", "--no-textconv", "--no-color", "--full-index"];
 
 /** Runs git; `allowDifference` treats exit code 1 as success, which is how `diff --no-index` reports changes. */
+/** Git processes this module runs at once: a burst of chats starting together queues rather than spawning hundreds. */
+const gitSlots = { free: 8, waiting: [] as (() => void)[] };
+async function inGitSlot<T>(run: () => Promise<T>) {
+	if (gitSlots.free > 0) gitSlots.free--; else await new Promise<void>(resolve => gitSlots.waiting.push(resolve));
+	try { return await run(); } finally { const next = gitSlots.waiting.shift(); if (next) next(); else gitSlots.free++; }
+}
+
 export function runGit(root: string, args: string[], options: { allowDifference?: boolean; input?: string; env?: NodeJS.ProcessEnv } = {}) {
-	return new Promise<string>((resolve, reject) => {
+	return inGitSlot(() => new Promise<string>((resolve, reject) => {
 		const child = execFile("git", ["--no-pager", ...args], { cwd: root, windowsHide: true, timeout: 30_000, maxBuffer: PATCH_LIMIT * 2, env: { ...process.env, GIT_OPTIONAL_LOCKS: "0", ...options.env } }, (error, stdout) => {
 			if (error && !(options.allowDifference && (error as { code?: unknown }).code === 1)) reject(error); else resolve(stdout);
 		});
 		child.stdin?.end(options.input ?? "");
-	});
+	}));
 }
 
 async function revision(root: string, ref: string) {
