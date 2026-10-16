@@ -14,6 +14,7 @@
 
 ## Safety Notes
 - Avoid bulk repo-wide search/replace or scripted mass edits; use targeted, file-scoped changes only.
+- Stop every long-running process you start before you finish: dev servers (`pnpm dev`, `wrangler dev`, `next dev`), watch-mode test runners, and their child `workerd`/`esbuild` processes. Leftover servers from earlier sessions pile up and exhaust memory on the shared development machine. Prefer one-shot commands such as `vitest run`.
 
 ## Database Schema Changes
 - Desired database definitions live in `supabase/schemas/`. Read `supabase/AGENTS.md` and `supabase/DECLARATIVE-SCHEMAS.md` before schema work.
