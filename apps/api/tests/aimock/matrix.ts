@@ -47,7 +47,8 @@ export const AIMOCK_CHAT_PROVIDERS = unique([
     "google-ai-studio",
 ]).filter((providerId) => hasExecutor(providerId, "text.generate"));
 
-export const AIMOCK_TOOL_PROVIDERS = [...AIMOCK_CHAT_PROVIDERS];
+// ScaleDown's task models support text only, with no tool calling.
+export const AIMOCK_TOOL_PROVIDERS = AIMOCK_CHAT_PROVIDERS.filter((providerId) => providerId !== "scaledown");
 
 export const AIMOCK_RESPONSE_PROVIDERS = unique([
     ...AIMOCK_OPENAI_V1_PROVIDERS.filter((providerId) =>

@@ -110,7 +110,7 @@ export function isStreamingProviderRequest(input: RequestInfo | URL, init?: Requ
  * to build a synthetic stream, so a deadline would cut off long reasoning or
  * media generations and fail them over (paying for the same work twice).
  */
-export function createUpstreamTimingTracker(trace?: GatewayTimingTrace, options: { applyHeadersDeadline?: boolean } = {}): {
+export function createUpstreamTimingTracker(trace?: GatewayTimingTrace, options: { applyHeadersDeadline?: boolean; minimumHeadersTimeoutMs?: number } = {}): {
 	timing: ExecutorUpstreamTiming;
 	snapshot: () => UpstreamTimingSnapshot;
 	isProviderTransportFailure: (error: unknown) => boolean;
@@ -150,8 +150,12 @@ export function createUpstreamTimingTracker(trace?: GatewayTimingTrace, options:
 		}
 		let response: Response;
 		try {
+			const configuredTimeout = resolveUpstreamHeadersTimeoutMs();
+			const headersTimeout = configuredTimeout > 0
+				? Math.max(configuredTimeout, options.minimumHeadersTimeoutMs ?? 0)
+				: 0;
 			response = phase === "provider" && options.applyHeadersDeadline && isStreamingProviderRequest(input, init)
-				? await fetchWithHeadersDeadline(input, init, resolveUpstreamHeadersTimeoutMs())
+				? await fetchWithHeadersDeadline(input, init, headersTimeout)
 				: await globalThis.fetch(input, init);
 		} catch (error) {
 			// Preserve the original error identity and adapter retry semantics.

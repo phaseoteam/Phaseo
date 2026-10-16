@@ -318,9 +318,18 @@ export function extractErrorDescription(body: any): string | null {
     return null;
 }
 
+/**
+ * A workspace rate limit policy rejection. Providers also return
+ * `rate_limit_exceeded`, so the code alone does not identify one.
+ */
+export function isRateLimitPolicyRejection(errorCode: string | null | undefined, body: any): boolean {
+    if (errorCode !== "rate_limit_exceeded") return false;
+    return (body?.reason ?? body?.error?.reason) === "policy_requests_per_minute";
+}
+
 // Classify error attribution for error header
 export function classifyAttribution({ stage, status, errorCode, body }: { stage: "before" | "execute"; status?: number | null; errorCode?: string | null; body?: any }): "user" | "upstream" {
-    if (errorCode === "phaseo_free_model_limit_exceeded") return "user";
+    if (errorCode === "phaseo_free_model_limit_exceeded" || isRateLimitPolicyRejection(errorCode, body)) return "user";
     if (stage === "before") {
         const s = Number(status ?? 0);
         const code = (errorCode || "").toLowerCase();
@@ -828,6 +837,13 @@ export async function handleError({
     if (operationalKind) {
         errorPayload.error_operational_kind = operationalKind;
     }
+    const isPolicyRejection = isRateLimitPolicyRejection(errCode, body);
+    if (isPolicyRejection) {
+        // Tells the caller which workspace rate limit policy rejected the request.
+        for (const field of ["reason", "policy_id", "limit_scope"] as const) {
+            if (typeof body?.[field] === "string") errorPayload[field] = body[field];
+        }
+    }
     if (
         stage === "execute" &&
         (errCode === "upstream_error" || errCode === "provider_payment_required")
@@ -884,6 +900,11 @@ export async function handleError({
                 .filter((provider: unknown): provider is string => typeof provider === "string")
                 .slice(0, 16);
         }
+    }
+    if (errCode === "model_retired") {
+        if (typeof body?.model === "string") errorPayload.model = body.model;
+        errorPayload.retired_at = typeof body?.retired_at === "string" ? body.retired_at : null;
+        errorPayload.replacement_model = typeof body?.replacement_model === "string" ? body.replacement_model : null;
     }
     if (body?.routing_diagnostics && typeof body.routing_diagnostics === "object") {
         errorPayload.routing_diagnostics = body.routing_diagnostics;
@@ -964,7 +985,8 @@ export async function handleError({
         return null;
     })();
     const isFreeModelLimit = errCode === "phaseo_free_model_limit_exceeded" && errorOrigin === "gateway";
-    const providerForAudit = isFreeModelLimit ? null : providerFromAttempts ?? ctx?.providers?.[0]?.providerId ?? null;
+    // Admission rejections happen before any provider is called.
+    const providerForAudit = isFreeModelLimit || isPolicyRejection ? null : providerFromAttempts ?? ctx?.providers?.[0]?.providerId ?? null;
     const loggedErrorCode = `${isFreeModelLimit ? "gateway" : attribution}:${errCode}`;
     const auditArgs: any = {
         stage,

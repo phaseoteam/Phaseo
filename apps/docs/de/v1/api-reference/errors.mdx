@@ -85,8 +85,10 @@ Einige Fehler enthalten zusätzliche Informationen, die bei der schnelleren Behe
 | `authentication_error` | `401` | API-Schlüssel fehlt oder ist ungültig. |
 | `authorization_error` | `403` | Der Schlüssel hat keinen Zugriff auf diese Ressource. |
 | `not_found_error` | `404` | Endpunkt oder Ressource wurde nicht gefunden. |
+| `model_retired` | `410` | Das Modell ist eingestellt, und kein Anbieter stellt es mehr bereit. Wechsle zu `replacement_model`. |
 | `rate_limit_error` | `429` | Zu viele Anfragen. Versuche es nach der angegebenen Wartezeit erneut. |
 | `phaseo_free_model_limit_exceeded` | `429` | Das gemeinsame Tageskontingent für kostenlose Phaseo-Modelle ist ausgeschöpft (standardmäßig 1.500 Anfragen). Beachte `Retry-After`, warte bis zur Zurücksetzung um 00:00 UTC oder wähle ein kostenpflichtiges Modell. |
+| `rate_limit_exceeded` | `429` | Eine [Ratenlimit-Richtlinie](./limits.mdx) des Workspace ist ausgeschöpft. `policy_id` und `limit_scope` geben an, welche. Beachte `Retry-After` oder bitte einen Workspace-Admin, die Richtlinie zu ändern. |
 | `validation_error` | `400` | Ungültige Parameter oder ungültiger Anfrage-Body. |
 | `provider_error` | `502` | Der Upstream-Modellanbieter hat nicht korrekt geantwortet. |
 | `server_error` | `500` | In Phaseo ist ein unerwartetes Problem aufgetreten. |
@@ -189,6 +191,31 @@ Häufige Felder:
   }
 }
 ```
+
+<span id="when-a-model-is-retired"></span>
+
+## Wenn ein Modell eingestellt wird
+
+Ein eingestelltes Modell wird weiterhin bereitgestellt, solange ein Anbieter es bereitstellt. Sobald keiner es mehr bereitstellt, schlagen Anfragen dafür mit `410` und dem Fehler `model_retired` fehl:
+
+```json
+{
+  "generation_id": "G-retired123",
+  "status_code": 410,
+  "error": "model_retired",
+  "reason": "model_retired_without_providers",
+  "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+  "model": "lab/old-model",
+  "retired_at": "2026-09-30T00:00:00Z",
+  "replacement_model": "lab/new-model"
+}
+```
+
+- `model`: das Modell, das du angefordert hast.
+- `retired_at`: wann das Modell eingestellt wurde, oder `null`, wenn kein Datum erfasst ist.
+- `replacement_model`: das vorgeschlagene Ersatzmodell, oder `null`, wenn es keines gibt.
+
+Erneute Versuche helfen nicht. Aktualisiere die Modell-ID in deiner Anfrage. Damit diese Anfragen während der Umstellung weiterhin bedient werden, füge das Ersatzmodell der `models`-Liste deiner Anfrage hinzu oder aktiviere das Routing für eingestellte Modelle für den Workspace. Siehe [Eingestellte Modelle](../guides/routing-and-fallbacks.mdx#retired-models).
 
 ## Optionaler Debug-Modus
 

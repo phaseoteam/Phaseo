@@ -16,6 +16,7 @@ import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { loadOAuthClient } from "@/lib/oauth/service";
 import { internalServerError, requireCapability, type ManagementRouteAuth } from "./route-helpers";
 import { CHAT_MANAGED_KEY_NAME, enforceWorkspaceKeyLimit, isUsableWorkspaceKey } from "./management-helpers";
+import { copyKeyRateLimitAssignment, publishRateLimitPlan } from "@core/rate-limit-policies";
 
 type KeyRow = {
 	id: string;
@@ -980,6 +981,18 @@ async function handleRotateKey(req: Request) {
 			department_id: existing.department_id ?? null,
 		}).select(KEY_COLUMNS).maybeSingle();
 		if (insertError || !replacement) throw new Error(insertError?.message || "Failed to rotate API key");
+		// The replacement keeps the old key's rate limit policy. Without it, rotating
+		// would lift the limit, so a failed copy undoes the rotation (deleting the
+		// replacement also removes any copied assignment).
+		let rateLimitCopied = false;
+		try {
+			rateLimitCopied = await copyKeyRateLimitAssignment({
+				workspaceId: auth.value.workspaceId, fromKeyId: existing.id, toKeyId: replacement.id, createdBy: auth.value.userId ?? null,
+			});
+		} catch (copyError) {
+			await supabase.from("keys").delete().eq("id", replacement.id);
+			throw copyError;
+		}
 		if (previousExpiry.value !== undefined) {
 			const { error: expiryError } = await supabase.from("keys").update({ expires_at: previousExpiry.value }).eq("id", existing.id).eq("workspace_id", auth.value.workspaceId);
 			if (expiryError) { await supabase.from("keys").delete().eq("id", replacement.id); throw new Error(expiryError.message || "Failed to expire previous API key"); }
@@ -994,6 +1007,7 @@ async function handleRotateKey(req: Request) {
 				throw invalidationError;
 			}
 		}
+		if (rateLimitCopied) await publishRateLimitPlan(auth.value.workspaceId);
 		await auditApiKey(auth.value, "api_key.rotated", existing as KeyRow, { replacement_key_id: replacement.id, replacement_key_name: name, previous_key_expires_at: previousExpiry.value ?? null });
 		return json({ data: { ...formatApiKey(replacement as KeyRow), key: generated.plaintext }, previous_key_expires_at: previousExpiry.value ?? null }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) { return internalServerError("keys.rotate", error); }

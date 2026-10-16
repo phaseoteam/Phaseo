@@ -112,6 +112,30 @@ Jev एक अनुरोध में तीनों प्रश्न प�
 
 प्रदाता के प्रश्नों के अर्थ के लिए TypeSafe का [API संदर्भ](https://docs.typesafe.ai/api) देखें।
 
+### Jev के साथ छवियाँ, Box और लंबा संदर्भ
+
+समर्थित TypeSafe रूट पर Jev 1.13 और 1.14, `input_image` या पुराने `images` फ़ील्ड के माध्यम से इनलाइन PNG या JPEG छवियाँ स्वीकार करते हैं। Phaseo, TypeSafe के छवि संसाधन बनाता है और छवि समर्थन अपने आप चालू करता है। छवियों को TypeSafe की [छवि सीमाओं](https://docs.typesafe.ai/images) का पालन करना चाहिए: प्रत्येक अधिकतम 16 MiB, आयाम 256 से 1568 पिक्सेल और कुल कम से कम 78,400 पिक्सेल। TypeSafe आयाम और एन्कोडिंग जाँचता है; अस्वीकृत छवियों का आकार नहीं बदलता। प्रदाता को भेजा जाने वाला JSON बॉडी अधिकतम 32 MiB है। छवि टोकन पर सामान्य इनपुट मूल्य लागू होता है।
+
+`box`, Jev 1.14 जैसे समर्थित रूट के लिए एक अलग प्रश्न प्रकार है। इसके लिए छवि आवश्यक है, यह criteria स्वीकार नहीं करता और confidence के साथ एक bounding box लौटाता है। इसके `top`, `bottom`, `left` और `right` किनारे 0 से 1 तक होते हैं, जिन्हें ऊपरी बाएँ कोने से मापा जाता है। Box हमेशा आयत लौटाता है; लक्ष्य अनुपस्थित हो सकता हो तो साथ में उपस्थिति का `predicate` प्रश्न दें। पुरानी छवियों के लिए `images[0]` का उल्लेख करें; क्रमबद्ध इनपुट में पहली छवि या `[Image 0]` का उल्लेख करें। [Box अनुबंध](https://docs.typesafe.ai/primitives/box) देखें।
+
+प्रति अनुरोध और प्रति प्रश्न, दोनों संदर्भ सीमाएँ 262k टोकन तक बढ़ाने के लिए `provider_options.typesafe.long_context` को `true` पर सेट करें। डिफ़ॉल्ट सीमाएँ प्रति अनुरोध 64k और प्रति प्रश्न 32k हैं। लंबे संदर्भ को स्पष्ट रूप से चालू करना होता है और प्रति टोकन मूल्य समान रहता है। छवियाँ, Box और लंबा संदर्भ प्रदाता की प्रयोगात्मक क्षमताएँ हैं; उपयोग से पहले मॉडल की उपलब्धता जाँचें।
+
+```json
+{
+  "model": "typesafe/jev-1.14.0",
+  "input": [{
+    "role": "user",
+    "content": [{ "type": "input_image", "image_url": "data:image/png;base64,<base64 image bytes>" }]
+  }],
+  "questions": [
+    { "type": "predicate", "name": "visible", "instructions": "Is there a mug in the first image?" },
+    { "type": "box", "name": "mug", "instructions": "The mug in the first image" }
+  ],
+  "provider_options": { "typesafe": { "long_context": true } }
+}
+```
+
+
 ### Clef के साथ इमेज निर्णय
 
 `cloudflare/clef` और `cloudflare/clef-flash` Cloudflare Workers AI के माध्यम से तीनों प्रश्न प्रकारों और एम्बेड की गई इमेज का समर्थन करते हैं। Clef का संदर्भ 65,536 टोकन और Clef Flash का 24,576 टोकन है। प्रति दस लाख इनपुट टोकन Clef की कीमत $0.24 और Clef Flash की $0.038 है।

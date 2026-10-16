@@ -25,6 +25,7 @@ import {
 	maybeOpenOnRecentErrors,
 } from "../execute/health";
 import { getBaseModel } from "../execute/utils";
+import { noteModelSubstitutionServed } from "../before/modelSuccessor";
 import { logDebugEvent, previewValue } from "../debug";
 import { ensureRuntimeForBackground } from "@/runtime/env";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
@@ -578,6 +579,7 @@ export async function handleStreamResponse(
                 result.upstream.status >= 200 &&
                 result.upstream.status < 400 &&
                 !info?.aborted;
+            if (ok) noteModelSubstitutionServed(ctx);
             await onCallEnd(ctx.endpoint, {
                 observationId: healthContext?.observationId,
                 startedAt: healthContext?.startedAt,

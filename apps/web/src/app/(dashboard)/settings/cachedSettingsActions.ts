@@ -60,6 +60,7 @@ async function readNotifications() {
 		notificationDestinations: data.notificationDestinations,
 		notificationRoutes: data.notificationRoutes,
 		modelDeprecationAlertsEnabled: data.modelDeprecationAlertsEnabled,
+		modelDeprecationAlertsIncludeAdmins: data.modelDeprecationAlertsIncludeAdmins,
 	};
 }
 

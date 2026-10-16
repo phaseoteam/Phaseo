@@ -224,7 +224,10 @@ begin
     )
     on conflict (provider_model_id, capability_id) do update set
       status = excluded.status, max_output_tokens = excluded.max_output_tokens,
-      params = excluded.params, effective_from = excluded.effective_from,
+      params = excluded.params || case
+        when jsonb_typeof(public.v2_route_capabilities.metadata->'data_policy') = 'object'
+          then jsonb_build_object('data_policy', public.v2_route_capabilities.metadata->'data_policy')
+        else '{}'::jsonb end, effective_from = excluded.effective_from,
       effective_to = excluded.effective_to,
       metadata = public.v2_route_capabilities.metadata || excluded.metadata, updated_at = now();
   end loop;

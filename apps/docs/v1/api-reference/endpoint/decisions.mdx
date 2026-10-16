@@ -113,6 +113,29 @@ Jev supports mixing all three question types in one request; Span-01 supports `n
 For the upstream question semantics, see TypeSafe's [API reference](https://docs.typesafe.ai/api).
 
 
+### Images, Box, and long context with Jev
+
+On supporting TypeSafe routes, Jev 1.13 and 1.14 accept inline PNG or JPEG images through `input_image` or legacy `images`. Phaseo builds TypeSafe's image assets and enables image support automatically. Images must meet TypeSafe's [image limits](https://docs.typesafe.ai/images): at most 16 MiB each, dimensions from 256 to 1568 pixels, and at least 78,400 total pixels. TypeSafe validates dimensions and encoding; it does not resize rejected images. The mapped upstream JSON body is limited to 32 MiB. Image tokens use the normal input price.
+
+`box` is a separate question type for supporting routes such as Jev 1.14. It requires an image, takes no criteria, and returns one bounding box plus confidence. Its `top`, `bottom`, `left`, and `right` edges range from 0 to 1, measured from the top-left corner. Box always returns a rectangle; pair it with a `predicate` presence question when the target may be absent. With legacy images, refer to `images[0]`; with ordered input, refer to the first image or `[Image 0]`. See the [Box contract](https://docs.typesafe.ai/primitives/box).
+
+Set `provider_options.typesafe.long_context` to `true` to raise both the per-request and per-question context limits to 262k tokens. The defaults are 64k per request and 32k per question. Long context is opt-in and has the same token price. Images, Box, and long context are experimental upstream capabilities; check model availability before use.
+
+```json
+{
+  "model": "typesafe/jev-1.14.0",
+  "input": [{
+    "role": "user",
+    "content": [{ "type": "input_image", "image_url": "data:image/png;base64,<base64 image bytes>" }]
+  }],
+  "questions": [
+    { "type": "predicate", "name": "visible", "instructions": "Is there a mug in the first image?" },
+    { "type": "box", "name": "mug", "instructions": "The mug in the first image" }
+  ],
+  "provider_options": { "typesafe": { "long_context": true } }
+}
+```
+
 ### Image decisions with Clef
 
 `cloudflare/clef` and `cloudflare/clef-flash` support all three question types and embedded images through Cloudflare Workers AI. Clef has a 65,536-token context window; Clef Flash has 24,576 tokens. Input costs $0.24 per million tokens for Clef and $0.038 for Clef Flash.

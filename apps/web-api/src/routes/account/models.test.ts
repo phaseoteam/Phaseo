@@ -52,6 +52,7 @@ describe("account model source routes", () => {
 		"/api/account/models/hidden",
 		"/api/account/models/provider-audit/source",
 		"/api/account/models/catalog/overview",
+		"/api/account/models/catalog/successor-routing?model=openai%2Fgpt-test",
 		"/api/account/models/openai%2Fgpt-test/source",
 		"/api/account/models/openai%2Fgpt-test/pricing-editor",
 	])("rejects unauthenticated access to %s with private cache headers", async (path) => {
@@ -296,6 +297,45 @@ describe("account model source routes", () => {
         expect((await app.request(url + "/end-date", { method: "POST", headers, body: JSON.stringify({ effective_to: "bad-date" }) }, env)).status).toBe(400);
         expect(requests.filter((request) => request.url.includes("/rpc/"))).toHaveLength(rpcCount);
     });
+
+	it("approves successor routing through the admin RPC and reports rejections", async () => {
+		const requests: Array<{ url: string; body: string | null }> = [];
+		let role = "admin";
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = String(input);
+			requests.push({ url, body: typeof init?.body === "string" ? init.body : null });
+			if (url.includes("/auth/v1/user")) return Response.json({ id: "00000000-0000-4000-8000-000000000001" });
+			if (url.includes("/rest/v1/users")) return Response.json({ role });
+			if (url.includes("/rpc/set_model_successor_routing") && requests.filter((request) => request.url.includes("/rpc/set_model_successor_routing")).length > 1) {
+				return Response.json({ message: "Successor openai/gpt-free cannot be approved: free_to_paid" }, { status: 400 });
+			}
+			return Response.json({ model_slug: "openai/gpt-old", auto_route_enabled: true, approval_current: true });
+		}));
+		const env = { ENV: "development" as const, SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" };
+		const headers = { authorization: "Bearer session-token", "content-type": "application/json" };
+		const url = "https://phaseo.app/api/account/models/catalog/successor-routing";
+		const post = (body: unknown) => app.request(url, { method: "POST", headers, body: JSON.stringify(body) }, env);
+
+		const approved = await post({ model: "openai/gpt-old", enabled: true, allowWarnings: true, notes: "reviewed" });
+		expect(approved.status).toBe(200);
+		expect(approved.headers.get("cache-control")).toBe("private, no-store");
+		expect(await approved.json()).toEqual({ routing: { model_slug: "openai/gpt-old", auto_route_enabled: true, approval_current: true } });
+		expect(JSON.parse(requests.find((request) => request.url.includes("/rpc/set_model_successor_routing"))!.body!)).toEqual({
+			p_actor_user_id: "00000000-0000-4000-8000-000000000001", p_model_slug: "openai/gpt-old", p_enabled: true, p_allow_incompatible: true, p_notes: "reviewed",
+		});
+
+		const rejected = await post({ model: "openai/gpt-free", enabled: true });
+		expect(rejected.status).toBe(409);
+		expect(await rejected.json()).toMatchObject({ error: "successor_routing_rejected", message: expect.stringContaining("free_to_paid") });
+
+		const rpcCount = requests.filter((request) => request.url.includes("/rpc/")).length;
+		expect((await post({ model: "", enabled: true })).status).toBe(400);
+		expect((await app.request(`${url}?model=`, { headers }, env)).status).toBe(400);
+		role = "user";
+		expect((await post({ model: "openai/gpt-old", enabled: false })).status).toBe(403);
+		expect((await app.request(`${url}?model=openai%2Fgpt-old`, { headers }, env)).status).toBe(403);
+		expect(requests.filter((request) => request.url.includes("/rpc/"))).toHaveLength(rpcCount);
+	});
 
 });
 

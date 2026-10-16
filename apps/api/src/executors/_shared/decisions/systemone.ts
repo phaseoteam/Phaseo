@@ -18,6 +18,12 @@ function validAnswer(answer: unknown, question: IRDecisionQuestion): boolean {
 	if (!isRecord(answer) || answer.type !== question.type ||
 		(answer.confidence !== undefined && !isProbability(answer.confidence))) return false;
 	if (question.type === "noul") return isProbability(answer.noul);
+	if (question.type === "box") {
+		const box = answer.box;
+		return isProbability(answer.confidence) && isRecord(box) &&
+			isProbability(box.top) && isProbability(box.bottom) && isProbability(box.left) && isProbability(box.right) &&
+			box.top < box.bottom && box.left < box.right;
+	}
 	const criteria = question.criteria;
 	if (!criteria) return false;
 	const keys = Object.keys(criteria);

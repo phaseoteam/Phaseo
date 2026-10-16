@@ -246,6 +246,8 @@ export type SettingsByokInitialData = {
 export type SettingsKeysInitialData = {
 	currentUserId: string | undefined;
 	initialWorkspaceId: string | null;
+	/** When the key usage was read, so limit projections stay anchored to it. */
+	observedAt?: number;
 	teamsWithKeys: Array<{ id: string; name: string; keys: Array<Record<string, unknown>> }>;
 	workspaces: Array<{ id: string; name: string }>;
 };
@@ -310,9 +312,12 @@ export type SettingsCreditsInitialData = {
 	lowBalanceEmailThresholdUsd: number | null;
 	paymentMethodExpiringEmailEnabled: boolean;
 	modelDeprecationAlertsEnabled: boolean;
+	modelDeprecationAlertsIncludeAdmins: boolean;
 	notificationDestinations: NotificationDestination[];
 	notificationRoutes: Partial<Record<NotificationEventKind, string[]>>;
 	obfuscateInfo: boolean;
+	/** Average daily credits charged recently; null when it could not be measured. */
+	recentCreditSpend?: { dailyNanos: number; windowDays: number; observedAt: number } | null;
 	stripeInfo: {
 		customer: { email: string | null; id: string | null };
 		defaultPaymentMethodId: string | null;
@@ -437,7 +442,7 @@ export type NotificationDestination = {
 	createdAt: string | null;
 };
 
-export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation";
+export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation" | "model_substitution";
 
 export type SettingsPaymentMethodsInitialData = {
 	customerId: string | null;

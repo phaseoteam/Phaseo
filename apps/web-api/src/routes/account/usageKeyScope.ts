@@ -12,7 +12,6 @@ export async function usageKeyScope(context: AccountWorkspaceContext, url: URL) 
  }
  const keyId = url.searchParams.get("key")?.trim() || null;
  return { creatorId, hasCreatorKeys,
-  requestsTable: creatorId ? "v2_web_gateway_requests_by_creator" : "v2_web_gateway_requests",
   factsTable: creatorId ? "v2_request_facts_by_creator" : "v2_request_facts",
   apply: <T>(query: T): T => {
    let scoped = query as any;

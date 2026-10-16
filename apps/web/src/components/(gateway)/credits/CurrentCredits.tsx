@@ -9,12 +9,15 @@ import { RefreshCredits } from "@/app/(dashboard)/settings/credits/actions";
 import { toast } from "sonner";
 import { CreditAmount } from "./CreditAmount";
 import { useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import type { CreditRunway } from "@/lib/gateway/usage/creditRunway";
 
 interface Props {
 	balance: number;
 	title?: string;
 	subtitle?: string | null;
 	refreshAriaLabel?: string;
+	runway?: CreditRunway | null;
 }
 
 export default function CurrentCredits({
@@ -22,8 +25,25 @@ export default function CurrentCredits({
 	title,
 	subtitle = null,
 	refreshAriaLabel,
+	runway = null,
 }: Props) {
 	const t = useTranslations("SettingsUI.credits");
+	const format = useDisplayFormatters();
+	const runwayText = (() => {
+		if (!runway) return null;
+		const amount = format.number(runway.dailyUsd, {
+			style: "currency",
+			currency: "USD",
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+			notation: "standard",
+		});
+		if (runway.kind === "beyond") return t("runwayBeyond", { days: runway.days, amount });
+		const date = format.dateParts(runway.at, { month: "short", day: "numeric" });
+		return runway.kind === "auto_top_up"
+			? t("runwayAutoTopUp", { date, amount })
+			: t("runwayRunsOut", { date, amount });
+	})();
 	title ??= t("currentBalance");
 	refreshAriaLabel ??= t("refreshBalance");
 	const router = useRouter();
@@ -92,6 +112,9 @@ export default function CurrentCredits({
 							}`}
 						/>
 					</div>
+					{runwayText ? (
+						<p className="mt-1.5 text-sm tabular-nums text-muted-foreground">{runwayText}</p>
+					) : null}
 				</CardContent>
 			</Card>
 		</div>

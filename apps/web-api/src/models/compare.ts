@@ -132,7 +132,8 @@ function plansForModel(modelId: string, modelPlans: Row[], planRows: Row[]) {
 				name: text(organisation?.name) || text(row.organisation_id),
 				colour: organisation?.colour ?? null,
 			},
-			prices: [{ price: number(row.price), currency: row.currency ?? null, frequency: row.frequency ?? null }],
+			prices: Array.isArray(row.prices) ? row.prices : [{ price: number(row.price), currency: row.currency ?? null, frequency: row.frequency ?? null }],
+			offers: row.offers ?? [],
 			model_info: {
 				model_info: mapping.model_info ?? null,
 				rate_limit: mapping.rate_limit ?? null,

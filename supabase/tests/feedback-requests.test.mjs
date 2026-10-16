@@ -21,7 +21,7 @@ const submit = async (token, answers, cap = 1) => (await one(
 
 try {
     // The migration must carry every schema file it was built from.
-    const migration = await read('../migrations/20261013150000_feedback_requests.sql');
+    const migration = await read('../migrations/20261016082204_feedback_requests.sql');
     for (const file of schemaFiles) assert.ok(migration.includes((await read(file)).trim()), `${file} is in the migration`);
 
     await db.exec(`

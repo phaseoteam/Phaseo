@@ -681,6 +681,13 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		text: { normalize: { preserveReasoningEffort: true } },
 	},
 	{
+		// Summarize and Extract fix their own sampling; only length and the
+		// Extract schema are caller-controlled.
+		id: "scaledown",
+		textOnly: true,
+		text: { paramPolicy: { supportedParams: ["max_tokens", "response_format"] } },
+	},
+	{
 		id: "mancer",
 		textOnly: true,
 		text: {

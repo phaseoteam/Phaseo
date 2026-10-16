@@ -14,6 +14,7 @@ import {
 import { err } from "./http";
 import { extractModel, formatZodErrors, buildProviderCandidatesWithDiagnostics } from "./utils";
 import { fetchGatewayContext } from "./context";
+import { describeRetiredModel, findRetiredModelNotice } from "./retiredModels";
 import { generatePublicId } from "./genId";
 import { requestIdFor } from "@/runtime/request-id";
 import { isDebugAllowed } from "../debug";
@@ -288,7 +289,8 @@ export function normalizeReturnFlag(value: unknown): boolean {
 }
 
 export type GuardOk<T> = { ok: true; value: T };
-export type GuardErr = { ok: false; response: Response };
+/** `unservedModel` is set when no provider serves the requested model at all. */
+export type GuardErr = { ok: false; response: Response; unservedModel?: string };
 export type GuardResult<T> = GuardOk<T> | GuardErr;
 
 type GuardAuthOptions = {
@@ -505,8 +507,30 @@ export async function guardContext(args: {
         const { candidates: providers, diagnostics: candidateDiagnostics } = buildProviderCandidatesWithDiagnostics(context);
         if (!providers.length) {
             const classification = classifyProviderCandidateFailure(candidateDiagnostics);
+            const unservedModel = candidateDiagnostics.totalProviders <= 0
+                ? context.resolvedModel ?? args.model
+                : undefined;
+            const retired = unservedModel ? await findRetiredModelNotice(unservedModel) : null;
+            if (retired) {
+                return {
+                    ok: false,
+                    unservedModel,
+                    response: err("model_retired", {
+                        reason: "model_retired_without_providers",
+                        error_operational_kind: "retired_model",
+                        description: describeRetiredModel(retired),
+                        model: args.model,
+                        retired_at: retired.retiredAt,
+                        replacement_model: retired.replacementModel,
+                        endpoint: args.endpoint,
+                        request_id: args.requestId,
+                        workspace_id: args.workspaceId,
+                    }),
+                };
+            }
             return {
                 ok: false,
+                unservedModel,
                 response: err("unsupported_model_or_endpoint", {
                     reason: classification.reason,
                     error_type: classification.errorType,

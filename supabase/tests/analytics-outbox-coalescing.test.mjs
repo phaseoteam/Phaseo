@@ -13,6 +13,13 @@ async function fixture(current) {
   for (const name of ['enqueue_v2_analytics_correction', 'enqueue_v2_analytics_fact_correction', 'enqueue_v2_analytics_meter_correction']) {
     await db.exec(await read(`../schemas/private/functions/${name}.sql`));
   }
+  // The fixture predates the usage overview's 15-minute rollups; workspaces have no identity table here.
+  if (current) {
+    for (const table of ['v2_private_usage_15m', 'v2_private_usage_labels_15m']) {
+      await db.exec((await read(`../schemas/public/tables/${table}.sql`)).replace(new RegExp(`,\\r?\\n  CONSTRAINT "${table}_workspace_id_fkey"[^\\r\\n]*`), ''));
+    }
+    await db.exec(await read('../schemas/private/views/v2_usage_overview_requests.sql'));
+  }
   await db.exec(await read(current ? '../schemas/public/functions/process_v2_analytics_outbox.sql' : './fixtures/analytics-outbox-before.sql'));
   if (current) await db.exec(await read('../schemas/public/functions/refresh_v2_analytics_range.sql'));
   for (const table of tables) {
@@ -42,6 +49,8 @@ async function fixture(current) {
     from generate_series(1,3000) i;
     update v2_request_facts set safe_metadata='{"testing_mode":true}'
       where substring(request_id from 9)::integer%13=0;
+    update v2_request_facts set safe_metadata=coalesce(safe_metadata,'{}')||'{"labels":[{"key":"team","value":"search"}]}'
+      where substring(request_id from 9)::integer%7=0;
     insert into v2_request_usage(request_event_id,meter_key,modality,unit,quantity)
       select request_event_id,'input_tokens','text','token',3 from v2_request_facts;
     insert into v2_analytics_outbox(request_event_id,workspace_id,occurred_at,status,available_at,updated_at)
@@ -83,6 +92,24 @@ async function drain(db, current, checkInitial = false) {
   assert.fail('Worker failed to drain ready events');
 }
 
+/** The 15-minute rollup's totals against the requests themselves, per workspace. */
+async function assertOverviewRollupExact(db, message) {
+  const rows = (await db.query(`select f.workspace_id, count(*)::int facts,
+      (select coalesce(sum(r.requests), 0)::int from v2_private_usage_15m r where r.workspace_id = f.workspace_id) rolled,
+      (select coalesce(sum(u.quantity), 0)::int from v2_request_usage u join v2_request_facts g using(request_event_id)
+        where g.workspace_id = f.workspace_id and u.meter_key = 'input_tokens') input_tokens,
+      (select coalesce(sum(r.input_tokens), 0)::int from v2_private_usage_15m r where r.workspace_id = f.workspace_id) rolled_input_tokens
+    from v2_request_facts f group by f.workspace_id order by 1`)).rows;
+  for (const row of rows) {
+    assert.equal(row.rolled, row.facts, message);
+    assert.equal(row.rolled_input_tokens, row.input_tokens, message);
+  }
+  const labels = (await db.query(`select
+      (select count(*)::int from v2_request_facts where safe_metadata @> '{"labels":[{"key":"team","value":"search"}]}') facts,
+      (select coalesce(sum(requests), 0)::int from v2_private_usage_labels_15m where label_key = 'team' and label_value = 'search') rolled`)).rows[0];
+  assert.equal(labels.rolled, labels.facts, message);
+}
+
 async function output(db) {
   const data = {};
   for (const table of tables) {
@@ -102,6 +129,9 @@ try {
   const oldWork = await drain(before, false);
   const newWork = await drain(after, true, true);
   assert.deepEqual(await output(after), await output(before), 'Every rollup and meter is equivalent after draining');
+  // Includes the event that isn't ready yet: the rollup rebuilds from every request in the hour.
+  await assertOverviewRollupExact(after, 'The 15-minute rollup counts every request once');
+  assert.equal(Number((await after.query("select count(distinct bucket_start) n from v2_private_usage_15m where workspace_id=md5('workspace')::uuid")).rows[0].n), 2);
   assert(newWork.grains < oldWork.grains / 2, 'Already covered events remove repeated summary rebuilds');
   const publicCount = Number((await after.query('select sum(requests) n from v2_public_usage_daily')).rows[0].n);
   assert.equal(publicCount,3002-Math.floor(3000/13));
@@ -126,6 +156,8 @@ try {
   await drain(after, true);
   assert.equal(Number((await after.query('select count(*) n from private.v2_analytics_previous_grains')).rows[0].n),0);
   assert.equal(Number((await after.query("select sum(requests) n from v2_private_usage_daily where model_slug='model-b'")).rows[0].n),1);
+  await assertOverviewRollupExact(after, 'A moved request leaves its former hour and joins its new one');
+  assert.equal(Number((await after.query("select sum(requests) n from v2_private_usage_15m where model_id='model-b'")).rows[0].n),1);
   const corrected = await output(after);
   assert.equal((await after.query('select process_v2_analytics_outbox(250) result')).rows[0].result.selected,0);
   assert.deepEqual(await output(after),corrected,'Empty runs do not change rollups');
@@ -141,7 +173,17 @@ try {
   const beforeRefresh = await output(after);
   await after.query("select refresh_v2_analytics_range(current_date-interval '1 day',current_date,md5('workspace')::uuid)");
   assert.deepEqual(await output(after),beforeRefresh,'Synchronous range refresh retains exact totals');
+  await assertOverviewRollupExact(after, 'A range refresh keeps the 15-minute rollup exact');
   assert.equal(Number((await after.query("select count(*) n from v2_analytics_outbox where status in ('pending','processing','failed')")).rows[0].n),0);
+  // A request that only names its input model still leaves its former hour when moved or deleted.
+  await after.exec("update v2_request_facts set routed_model_slug=null,requested_model_input='custom/input-only' where request_event_id=md5('2')::uuid");
+  await drain(after, true);
+  await after.exec("update v2_request_facts set occurred_at=occurred_at+interval '2 hours' where request_event_id=md5('2')::uuid");
+  await drain(after, true);
+  await assertOverviewRollupExact(after, 'A request without a model slug leaves its former hour when moved');
+  await after.exec("delete from v2_request_usage where request_event_id=md5('2')::uuid; delete from v2_request_facts where request_event_id=md5('2')::uuid");
+  await drain(after, true);
+  await assertOverviewRollupExact(after, 'A deleted request without a model slug leaves the rollup');
   console.log(JSON.stringify({ oldWork,newWork,checks:'All aggregate fields/meters, coalescing cap, workspace boundaries, readiness, public visibility, correction re-enqueue, moved grains, idempotency and grants passed' },null,2));
 } catch (error) {
   console.error(error.message, error.detail ?? '', error.where?.split('\n')[0] ?? '');

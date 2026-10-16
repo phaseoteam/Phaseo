@@ -156,3 +156,32 @@ export async function deleteDynamicRouteAction(routeId: string, confirmName: str
 	});
 	revalidatePath("/settings/routing");
 }
+
+export type SuccessorPricePolicy = "never" | "limit" | "any";
+
+async function successorRoutingRequest(path: "/routing/successor" | "/routing/successor/replacements", method: "PUT" | "DELETE", body: Record<string, unknown>) {
+	try {
+		const context = await getServerAccountContext();
+		if (!context.accessToken || !context.workspaceId) return { ok: false as const, status: 400 };
+		await fetchAccountWebApi(`/api/account/settings${path}`, context.accessToken, {
+			method,
+			body: JSON.stringify({ workspaceId: context.workspaceId, ...body }),
+		});
+		return { ok: true as const };
+	} catch (error) {
+		return { ok: false as const, status: error instanceof WebApiError ? error.status : 500, code: error instanceof WebApiError ? error.detail ?? null : null };
+	}
+}
+
+export async function updateSuccessorRouting(input: { enabled: boolean; pricePolicy: SuccessorPricePolicy; maxPriceIncreasePercent: number }) {
+	return successorRoutingRequest("/routing/successor", "PUT", input);
+}
+
+/** `successor: null` never redirects `model` for this workspace. */
+export async function saveSuccessorReplacement(input: { model: string; successor: string | null }) {
+	return successorRoutingRequest("/routing/successor/replacements", "PUT", input);
+}
+
+export async function removeSuccessorReplacement(model: string) {
+	return successorRoutingRequest("/routing/successor/replacements", "DELETE", { model });
+}

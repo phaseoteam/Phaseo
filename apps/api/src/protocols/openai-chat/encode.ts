@@ -33,6 +33,7 @@ export function encodeOpenAIChatResponse(
 		provider: ir.provider,
 		choices: ir.choices.map((choice) => encodeChoice(choice, resolvedRequestId)),
 		usage: encodeUsage(ir.usage),
+		...(ir.usage?.serviceTier || ir.serviceTier ? { service_tier: ir.usage?.serviceTier ?? ir.serviceTier } : {}),
 		...(ir.citations ? { citations: ir.citations } : {}),
 		...(ir.searchResults ? { search_results: ir.searchResults } : {}),
 		...(ir.images ? { images: ir.images } : {}),
@@ -169,6 +170,7 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 		input_tokens: inputTokens,
 		output_tokens: outputTokens,
 		total_tokens: totalTokens,
+		...(usage.serviceTier ? { service_tier: usage.serviceTier } : {}),
 	};
 	(result as any).prompt_tokens = inputTokens;
 	(result as any).completion_tokens = outputTokens;

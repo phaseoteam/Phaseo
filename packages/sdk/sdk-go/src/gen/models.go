@@ -1390,6 +1390,26 @@ type DecisionAudioSource struct {
 	Url *string `json:"url,omitempty"`
 }
 
+type DecisionBox struct {
+	Bottom float64 `json:"bottom"`
+	Left float64 `json:"left"`
+	Right float64 `json:"right"`
+	Top float64 `json:"top"`
+}
+
+type DecisionBoxAnswer struct {
+	Box map[string]interface{} `json:"box"`
+	Confidence float64 `json:"confidence"`
+	Name *string `json:"name"`
+	Type string `json:"type"`
+}
+
+type DecisionBoxQuestion struct {
+	Instructions string `json:"instructions"`
+	Name *string `json:"name,omitempty"`
+	Type string `json:"type"`
+}
+
 type DecisionChoiceAnswer struct {
 	Choice interface{} `json:"choice"`
 	Confidence float64 `json:"confidence"`
@@ -1460,6 +1480,10 @@ type DecisionPredicateQuestion struct {
 	Type string `json:"type"`
 }
 
+type DecisionProviderOptions struct {
+	Typesafe *map[string]interface{} `json:"typesafe,omitempty"`
+}
+
 type DecisionRefusalAnswer struct {
 	Name *string `json:"name"`
 	Type string `json:"type"`
@@ -1488,6 +1512,7 @@ type DecisionsRequest struct {
 	Model string `json:"model"`
 	Models *[]string `json:"models,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Questions map[string]interface{} `json:"questions"`
 	Routing *map[string]interface{} `json:"routing,omitempty"`
 	State interface{} `json:"state"`
@@ -1884,6 +1909,7 @@ type GatewayModelOffer struct {
 	Provider map[string]interface{} `json:"provider"`
 	Routable bool `json:"routable"`
 	Routing map[string]interface{} `json:"routing"`
+	ServiceTiers *[]string `json:"service_tiers,omitempty"`
 	Status string `json:"status"`
 	StatusReason string `json:"status_reason"`
 }
@@ -3031,6 +3057,11 @@ const (
 )
 
 
+type LegacyDecisionBoxQuestion struct {
+	Instructions interface{} `json:"instructions"`
+	Type string `json:"type"`
+}
+
 type LegacyDecisionsRequest struct {
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
@@ -3040,6 +3071,7 @@ type LegacyDecisionsRequest struct {
 	Model string `json:"model"`
 	Models *[]string `json:"models,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Questions map[string]interface{} `json:"questions"`
 	Routing *map[string]interface{} `json:"routing,omitempty"`
 	State interface{} `json:"state"`
@@ -3605,6 +3637,7 @@ type OpenAIDecisionsRequest struct {
 	Model string `json:"model"`
 	Models *[]string `json:"models,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Questions []interface{} `json:"questions"`
 	Routing *map[string]interface{} `json:"routing,omitempty"`
 	SafetyIdentifier *string `json:"safety_identifier,omitempty"`
@@ -5198,6 +5231,15 @@ type WorkspaceMemberRoleUpdateRequest struct {
 	Role string `json:"role"`
 }
 
+type WorkspaceModelSuccessorPricePolicy string
+
+const (
+	WorkspaceModelSuccessorPricePolicyNever WorkspaceModelSuccessorPricePolicy = "never"
+	WorkspaceModelSuccessorPricePolicyLimit WorkspaceModelSuccessorPricePolicy = "limit"
+	WorkspaceModelSuccessorPricePolicyAny WorkspaceModelSuccessorPricePolicy = "any"
+)
+
+
 type WorkspaceNotificationDestination struct {
 	CreatedAt *string `json:"created_at,omitempty"`
 	Id string `json:"id"`
@@ -5258,6 +5300,7 @@ const (
 	WorkspaceNotificationEventKindAutoTopUpFailed WorkspaceNotificationEventKind = "auto_top_up_failed"
 	WorkspaceNotificationEventKindPaymentMethodExpiring WorkspaceNotificationEventKind = "payment_method_expiring"
 	WorkspaceNotificationEventKindModelDeprecation WorkspaceNotificationEventKind = "model_deprecation"
+	WorkspaceNotificationEventKindModelSubstitution WorkspaceNotificationEventKind = "model_substitution"
 )
 
 
@@ -5270,6 +5313,7 @@ type WorkspaceNotificationRouteMap struct {
 	AutoTopUpFailed []string `json:"auto_top_up_failed"`
 	LowBalance []string `json:"low_balance"`
 	ModelDeprecation []string `json:"model_deprecation"`
+	ModelSubstitution []string `json:"model_substitution"`
 	PaymentMethodExpiring []string `json:"payment_method_expiring"`
 }
 
@@ -5399,6 +5443,9 @@ type WorkspaceSettings struct {
 	ByokFallbackEnabled *bool `json:"byok_fallback_enabled,omitempty"`
 	IoLoggingEnabled *bool `json:"io_logging_enabled,omitempty"`
 	IoLoggingIncludeProviderPayloads *bool `json:"io_logging_include_provider_payloads,omitempty"`
+	ModelSuccessorMaxPriceIncreasePercent *int `json:"model_successor_max_price_increase_percent,omitempty"`
+	ModelSuccessorPricePolicy *interface{} `json:"model_successor_price_policy,omitempty"`
+	ModelSuccessorRedirectEnabled *bool `json:"model_successor_redirect_enabled,omitempty"`
 	PrivacyEnableFreeMayPublishPrompts *bool `json:"privacy_enable_free_may_publish_prompts,omitempty"`
 	PrivacyEnableFreeMayTrain *bool `json:"privacy_enable_free_may_train,omitempty"`
 	PrivacyEnableInputOutputLogging *bool `json:"privacy_enable_input_output_logging,omitempty"`
@@ -5425,6 +5472,9 @@ type WorkspaceSettingsUpdateRequest struct {
 	ByokFallbackEnabled *bool `json:"byok_fallback_enabled,omitempty"`
 	IoLoggingEnabled *bool `json:"io_logging_enabled,omitempty"`
 	IoLoggingIncludeProviderPayloads *bool `json:"io_logging_include_provider_payloads,omitempty"`
+	ModelSuccessorMaxPriceIncreasePercent *int `json:"model_successor_max_price_increase_percent,omitempty"`
+	ModelSuccessorPricePolicy *string `json:"model_successor_price_policy,omitempty"`
+	ModelSuccessorRedirectEnabled *bool `json:"model_successor_redirect_enabled,omitempty"`
 	PrivacyEnableFreeMayPublishPrompts *bool `json:"privacy_enable_free_may_publish_prompts,omitempty"`
 	PrivacyEnableFreeMayTrain *bool `json:"privacy_enable_free_may_train,omitempty"`
 	PrivacyEnableInputOutputLogging *bool `json:"privacy_enable_input_output_logging,omitempty"`

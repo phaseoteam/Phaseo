@@ -85,8 +85,10 @@ Alguns erros trazem mais detalhes para ajudar a corrigir o problema rapidamente:
 | `authentication_error` | `401` | A chave de API está ausente ou é inválida. |
 | `authorization_error` | `403` | A chave não tem acesso a este recurso. |
 | `not_found_error` | `404` | O endpoint ou recurso não foi encontrado. |
+| `model_retired` | `410` | O modelo foi aposentado e nenhum provedor o atende mais. Mude para `replacement_model`. |
 | `rate_limit_error` | `429` | Muitas solicitações. Tente novamente após o intervalo indicado. |
 | `phaseo_free_model_limit_exceeded` | `429` | A cota diária compartilhada dos modelos gratuitos do Phaseo foi esgotada (1.500 solicitações por padrão). Respeite `Retry-After`, aguarde a redefinição às 00:00 UTC ou escolha um modelo pago. |
+| `rate_limit_exceeded` | `429` | Uma [política de limite de taxa](./limits.mdx) do espaço de trabalho se esgotou. `policy_id` e `limit_scope` a identificam. Respeite `Retry-After` ou peça a um administrador do espaço de trabalho para alterar a política. |
 | `validation_error` | `400` | Parâmetros ou corpo da solicitação inválidos. |
 | `provider_error` | `502` | O provedor upstream do modelo não respondeu corretamente. |
 | `server_error` | `500` | Ocorreu um problema inesperado na Phaseo. |
@@ -189,6 +191,30 @@ Campos comuns:
   }
 }
 ```
+
+<span id="when-a-model-is-retired"></span>
+## Quando um modelo é aposentado
+
+Um modelo aposentado continua sendo atendido enquanto algum provedor o atender. Quando nenhum provedor o atende mais, as solicitações para ele falham com `410` e o erro `model_retired`:
+
+```json
+{
+  "generation_id": "G-retired123",
+  "status_code": 410,
+  "error": "model_retired",
+  "reason": "model_retired_without_providers",
+  "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+  "model": "lab/old-model",
+  "retired_at": "2026-09-30T00:00:00Z",
+  "replacement_model": "lab/new-model"
+}
+```
+
+- `model`: o modelo que você solicitou.
+- `retired_at`: quando o modelo foi aposentado, ou `null` se nenhuma data estiver registrada.
+- `replacement_model`: o substituto sugerido, ou `null` se não houver nenhum.
+
+Tentar novamente não resolve. Atualize o ID do modelo na sua solicitação. Para continuar atendendo a essas solicitações durante a migração, adicione o substituto à lista `models` da solicitação ou ative o roteamento de modelos aposentados no espaço de trabalho. Consulte [Modelos aposentados](../guides/routing-and-fallbacks.mdx#retired-models).
 
 ## Modo de depuração opcional
 

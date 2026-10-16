@@ -100,3 +100,22 @@ def test_decisions_resource_calls_structured_endpoint(monkeypatch):
             },
         }
     ]
+
+
+def test_jev_box_and_long_context_preserve_native_contract():
+    body = {"model": "typesafe/jev-1.14.0", "input": [{"role": "user", "content": [
+        {"type": "input_image", "image_url": "data:image/png;base64,AQID"},
+    ]}], "questions": [{"type": "box", "name": "mug", "instructions": "The mug"}],
+        "provider_options": {"typesafe": {"long_context": True}}}
+    box = {"top": 0.1, "bottom": 0.8, "left": 0.2, "right": 0.9}
+
+    def handler(request):
+        assert str(request.url) == "https://example.test/v1/decisions"
+        assert json.loads(request.content) == body
+        return httpx.Response(200, json={"model": body["model"], "answers": [
+            {"type": "box", "name": "mug", "box": box, "confidence": 0.9}]})
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as transport:
+        client = Phaseo(api_key="sk_test_123", base_url="https://example.test/v1", http_client=transport,
+                        enable_deprecation_warnings=False)
+        assert client.decisions.create(body)["answers"][0]["box"] == box
