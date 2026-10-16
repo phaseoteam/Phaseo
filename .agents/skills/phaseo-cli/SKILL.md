@@ -1,6 +1,6 @@
 ---
 name: phaseo-cli
-description: Operate and troubleshoot Phaseo through the official `phaseo` CLI. Use when installing or updating the CLI, authenticating with browser or device OAuth, managing API keys/workspaces/presets/guardrails, inspecting credits and analytics, investigating gateway requests by request ID, or automating Phaseo control-plane work with structured JSON output.
+description: "Operates Phaseo from the terminal with the official `phaseo` CLI: install and update, browser or device OAuth login, API keys, workspaces, presets, guardrails, credits, analytics and request lookup by ID, with `--json` output for automation. Use when the user runs or wants `phaseo` commands, scripts Phaseo admin work or debugs a request from a shell. Not for application code that calls the API (use phaseo-gateway or an SDK skill)."
 ---
 
 # Phaseo CLI

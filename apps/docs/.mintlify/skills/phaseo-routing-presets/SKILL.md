@@ -1,6 +1,6 @@
 ---
 name: phaseo-routing-presets
-description: Roll out and debug Phaseo presets, routing policy, and response caching. Use when repositories need preset-driven request defaults, stable cache behavior, provider narrowing, or request-log investigation for routing outcomes and cache misses.
+description: "Rolls out and debugs Phaseo presets, routing policy and response caching: choosing between a fixed model ID, a preset (`@slug`) or a router such as `phaseo/free`, provider narrowing and fallbacks, stable cache fingerprints and request-log investigation. Use when requests should share defaults, routing picks an unexpected provider, fallbacks misbehave or cache hits are missing. Not for choosing which model to use (use phaseo-model-selection) or key restrictions and budgets (phaseo-guardrails)."
 ---
 
 # Phaseo Routing, Presets, and Caching

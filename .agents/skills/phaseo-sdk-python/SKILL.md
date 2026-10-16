@@ -1,6 +1,6 @@
 ---
 name: phaseo-sdk-python
-description: Implement Phaseo integrations with the official Python SDK (`phaseo`). Use when repositories already depend on `phaseo`, need a new client setup, Responses API calls, async video jobs, preset usage, or request logging patterns for the Python SDK surface.
+description: "Builds Phaseo integrations with the official Python SDK, `phaseo`: one shared client, `generate_response` and streaming, images, audio, async video, presets, model discovery and request IDs for debugging. Use when a Python project depends on or should adopt `phaseo`, in scripts, notebooks or services. Not for TypeScript (use phaseo-sdk-typescript) or code that keeps the OpenAI Python SDK with a swapped base URL (phaseo-gateway)."
 ---
 
 # Phaseo SDK Python

@@ -1,6 +1,6 @@
 ---
 name: openrouter-to-phaseo-migration
-description: End-to-end migration guide for moving an existing OpenRouter integration to Phaseo Gateway. Use when repositories contain openrouter.ai endpoints, sk-or-v1 keys, OPENROUTER_API_KEY env vars, provider-prefixed model IDs, or OpenRouter-specific headers and the user wants a full migration with implementation, validation, and safe rollout.
+description: "Migrates an existing OpenRouter integration to the Phaseo Gateway end to end: usage inventory, endpoint and key swap, model ID mapping, OpenRouter-only headers and provider routing, validation and a migration report. Use when code contains openrouter.ai URLs, sk-or-v1 keys, OPENROUTER_API_KEY or OpenRouter provider objects and the user wants a full migration. Not for other source platforms (use phaseo-migration) or new Phaseo integrations (phaseo-gateway)."
 ---
 
 # OpenRouter to Phaseo Migration

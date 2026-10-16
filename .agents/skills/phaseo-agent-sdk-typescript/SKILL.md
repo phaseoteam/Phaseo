@@ -1,6 +1,6 @@
 ---
 name: phaseo-agent-sdk-typescript
-description: Build agentic applications with the TypeScript Agent SDK (`@phaseo/agent-sdk`) on top of Phaseo Gateway. Use when repositories need local tool loops, resumable runs from app-owned state, or a gateway-backed agent client through `@phaseo/sdk`.
+description: "Builds agent loops on the Phaseo Gateway with the TypeScript Agent SDK, `@phaseo/agent-sdk`: `createAgent`, `defineTool`, `createGatewayAgentClient`, bounded model retries, resumable runs from app-owned state, presets, managed search and concurrent tool calls. Use when a project imports `@phaseo/agent-sdk` or needs a tool-calling agent, a resumable workflow or a human review step on Phaseo. Not for single requests (use phaseo-sdk-typescript) or agent SDKs in other languages."
 ---
 
 # Phaseo Agent SDK TypeScript

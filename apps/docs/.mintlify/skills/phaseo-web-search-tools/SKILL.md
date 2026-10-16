@@ -1,6 +1,6 @@
 ---
 name: phaseo-web-search-tools
-description: Configure and debug Phaseo web search and grounding workflows. Use when a repository needs `gateway:web_search`, `gateway:web_fetch`, native provider web search, citation verification, or request-log debugging for search-heavy flows.
+description: "Configures and debugs web grounding on Phaseo: the `gateway:web_search` and `gateway:web_fetch` tools, native provider web search, citations and request-log checks for search-heavy flows. Use when responses need current web information or citations, or search tool calls fail or return nothing. Not for calling your own function tools (use an SDK skill) or building agent loops (phaseo-agent-sdk-typescript)."
 ---
 
 # Phaseo Web Search Tools

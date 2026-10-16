@@ -1,26 +1,35 @@
 {
-  "skills": "./skills",
-  "keywords": [],
-  "version": "0.3.0",
-  "description": "Compare AI models and pricing, estimate costs, and investigate Phaseo usage and request health.",
-  "mcpServers": "./.mcp.json",
   "name": "phaseo",
+  "version": "0.4.0",
+  "description": "Build on the Phaseo AI gateway: integration, migration, model selection, SDK and CLI skills, plus the Phaseo MCP for live models, pricing and usage and the Phaseo Docs MCP.",
+  "author": {
+    "name": "Phaseo",
+    "url": "https://phaseo.app"
+  },
+  "homepage": "https://phaseo.app/docs",
+  "repository": "https://github.com/phaseoteam/Phaseo",
+  "keywords": ["phaseo", "ai-gateway", "llm", "models", "pricing", "openai-compatible", "migration", "mcp"],
+  "skills": "./skills",
+  "mcpServers": "./.mcp.json",
   "interface": {
     "developerName": "Phaseo",
     "category": "Developer Tools",
     "displayName": "Phaseo",
-    "shortDescription": "Models, pricing and usage",
-    "longDescription": "Explore Phaseo models, save shortlists, copy integration examples, and inspect usage and request health. Review estimated costs before explicitly running a prompt across up to three text models with inference permission.",
-    "defaultPrompt": "Help me compare Phaseo models and estimate costs for my workload.",
+    "shortDescription": "Build on Phaseo; compare models and costs",
+    "longDescription": "Skills for integrating with the Phaseo AI gateway, migrating from OpenAI, Anthropic, OpenRouter and other gateways, choosing models, monitoring usage, and using the SDKs and CLI. The Phaseo MCP explores live models and pricing, saves shortlists, and inspects usage and request health; with inference permission you can review estimated costs before running a prompt across up to three text models. The Phaseo Docs MCP searches the documentation.",
+    "defaultPrompt": [
+      "Add Phaseo to this project and run a smoke test.",
+      "Migrate this project to Phaseo.",
+      "Help me compare Phaseo models and estimate costs for my workload."
+    ],
+    "brandColor": "#0069A8",
+    "websiteURL": "https://phaseo.app",
+    "privacyPolicyURL": "https://phaseo.app/privacy",
+    "termsOfServiceURL": "https://phaseo.app/terms",
     "logo": "./assets/logo_light.svg",
     "logoDark": "./assets/logo_dark.svg",
     "composerIcon": "./assets/logo_light.svg",
     "composerIconDark": "./assets/logo_dark.svg",
-    "capabilities": [
-      "Interactive"
-    ]
-  },
-  "author": {
-    "name": "Phaseo"
+    "capabilities": ["Interactive"]
   }
 }

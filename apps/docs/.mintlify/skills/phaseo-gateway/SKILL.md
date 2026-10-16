@@ -1,6 +1,6 @@
 ---
 name: phaseo-gateway
-description: Implement and migrate AI integrations to Phaseo Gateway via OpenAI-compatible REST, the official TypeScript SDK (@phaseo/sdk), Python SDK (phaseo), and Vercel AI SDK provider (@phaseo/ai-sdk-provider). Use when wiring new API calls, replacing OpenAI/Anthropic/OpenRouter/Vercel Gateway base URLs, adding app attribution headers, selecting model IDs, or troubleshooting auth/routing/response-shape issues.
+description: "Integrates applications with the Phaseo Gateway over OpenAI-compatible REST, the TypeScript SDK (`@phaseo/sdk`), the Python SDK (`phaseo`) or the Vercel AI SDK provider (`@phaseo/ai-sdk-provider`): base URL, API key auth, attribution headers, model IDs and smoke tests. Use when adding Phaseo to a codebase, wiring a new endpoint, seeing api.phaseo.app or PHASEO_API_KEY, or debugging auth, routing or response-shape errors. Not for moving off another provider or gateway (use phaseo-migration) or choosing models (phaseo-model-selection)."
 ---
 
 # Phaseo Gateway
