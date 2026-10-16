@@ -1,4 +1,5 @@
 import { threadToolLabel, type ThreadTools } from "../shared/orchestration";
+import type { BrowserAgentTools } from "../shared/browserAgent";
 import { generateTitle } from "./chatTitles";
 import { mentionPlainText } from "../shared/mentions";
 import { randomUUID } from "node:crypto";
@@ -93,6 +94,8 @@ export class WorkspaceRuntime {
 	onChange: (workspace: WorkspaceOverview) => void = () => {};
 	onTerminalAuth?: (request: TerminalAuthRequest, signal: AbortSignal) => TerminalAuthentication;
 	getTerminals?: () => { cwd: string; status: string }[];
+	/** T3's browser tools for one chat, on its own browser tabs; set by the app once it has a window. */
+	browserTools?: (chatId: string) => BrowserAgentTools;
 	constructor(private readonly directory: string, private readonly adapterFactory = createAdapter, private readonly vault?: SecretVault) {
 		mkdirSync(path.join(directory, "instructions"), { recursive: true });
 		mkdirSync(directory, { recursive: true });
@@ -174,7 +177,7 @@ export class WorkspaceRuntime {
 			if (!task.archived && ["idle", "completed"].includes(task.status)) this.start(id);
 		}, 250));
 	}
-	threadTools(parentId: string): ThreadTools { return this.threads.forThread(parentId); }
+	threadTools(parentId: string): ThreadTools { const tools = this.threads.forThread(parentId); return this.browserTools ? { ...tools, browser: this.browserTools(parentId) } : tools; }
 	async createWorktree(projectId: string, branch: string, base: string) {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		this.assertProjectAvailable(projectId); this.worktreeSources.set(projectId, (this.worktreeSources.get(projectId) ?? 0) + 1);
@@ -533,7 +536,7 @@ export class WorkspaceRuntime {
 				if (current.permissionMode === "full-access") { resolve(true); return; }
 				const approvalId = randomUUID();
 				this.approvals.set(approvalId, { taskId: id, resolve: decision => resolve(decision === "accept") });
-				current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method: threadToolLabel(name, args), description: `Allow this thread action with this chat's project and permissions?\n\n${JSON.stringify(args, null, 2).slice(0, 8000)}` });
+				current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method: threadToolLabel(name, args), description: `${name.startsWith("browser_") ? "Allow the agent to use this chat's browser?" : "Allow this thread action with this chat's project and permissions?"}\n\n${JSON.stringify(args, null, 2).slice(0, 8000)}` });
 				this.store.saveTask(current); this.broadcast();
 			}), task.harness === "cursor" ? async (questions, signal) => {
 				const askUser = asker.ask; if (!askUser) throw new Error("Questions are not available yet.");

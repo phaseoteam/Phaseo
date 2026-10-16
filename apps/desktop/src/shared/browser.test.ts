@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { browserCommand, browserDeviceFrame, browserUrl, browserViewport, browserViewportPresets, browserZoomLevels, describeBrowserError, planBrowserCrashRecovery, resizeBrowserViewport, stepBrowserZoom } from "./browser";
+import { agentBrowserCloseConfirmation, agentCursorOpacity, browserCommand, browserDeviceFrame, browserRecordingExtension, browserUrl, browserViewport, browserViewportPresets, browserZoomLevels, chooseBrowserRecordingMimeType, describeBrowserError, planBrowserCrashRecovery, resizeBrowserViewport, stepBrowserZoom } from "./browser";
 
 describe("browser navigation boundary", () => {
 	it.each(["https://example.com/path?q=test", "http://127.0.0.1:3000/", "http://localhost:5173/"])("accepts web and development address %s", value => expect(browserUrl(value)).toBe(value));
@@ -49,5 +49,36 @@ describe("browser failures and crashes", () => {
 		expect(delays).toEqual([250, 500, 1000]);
 		expect(planBrowserCrashRecovery(state, 2000)).toBeUndefined();
 		expect(planBrowserCrashRecovery(state, 31_000)?.delay).toBe(250);
+	});
+});
+
+describe("browser slots, separate windows and recordings", () => {
+	it("places a page in the pane or the floating player, with rounded corners only where asked", () => {
+		expect(browserCommand({ id: "chat", type: "show", bounds: { x: 1, y: 2, width: 3, height: 4 }, slot: "float", radius: 12 })).toEqual({ id: "chat", type: "show", bounds: { x: 1, y: 2, width: 3, height: 4 }, slot: "float", radius: 12 });
+		expect(browserCommand({ id: "chat", type: "show", bounds: { x: 0, y: 0, width: 1, height: 1 } })).toEqual({ id: "chat", type: "show", bounds: { x: 0, y: 0, width: 1, height: 1 } });
+		expect(browserCommand({ id: "chat", type: "hide", slot: "pane" })).toEqual({ id: "chat", type: "hide", slot: "pane" });
+		expect(browserCommand({ id: "chat", type: "hide" })).toEqual({ id: "chat", type: "hide" });
+		for (const bad of [{ slot: "window" }, { radius: -1 }, { radius: 100 }, { radius: "12" }]) expect(() => browserCommand({ id: "chat", type: "show", bounds: { x: 0, y: 0, width: 1, height: 1 }, ...bad })).toThrow();
+		expect(() => browserCommand({ id: "chat", type: "hide", slot: "elsewhere" })).toThrow();
+	});
+	it("pops a page into its own window and back", () => { expect(browserCommand({ id: "chat", type: "popOut" })).toEqual({ id: "chat", type: "popOut" }); expect(browserCommand({ id: "chat", type: "popIn" })).toEqual({ id: "chat", type: "popIn" }); });
+	it("records MP4 where it can and WebM otherwise", () => {
+		expect(chooseBrowserRecordingMimeType(() => true)).toBe("video/mp4;codecs=avc1");
+		expect(chooseBrowserRecordingMimeType(type => type.startsWith("video/webm"))).toBe("video/webm;codecs=vp9");
+		expect(chooseBrowserRecordingMimeType(() => false)).toBeUndefined();
+		expect(browserRecordingExtension("video/mp4;codecs=avc1")).toBe("mp4");
+		expect(browserRecordingExtension("VIDEO/WEBM")).toBe("webm");
+		for (const bad of ["image/png", "video/x-matroska", "", 4, "video/mp4".padEnd(200, " ")]) expect(() => browserRecordingExtension(bad)).toThrow();
+	});
+	it("fades the agent cursor after an action, fainter while the person drives", () => {
+		expect(agentCursorOpacity(true, "human")).toBe(1);
+		expect(agentCursorOpacity(false, "agent")).toBe(0.35);
+		expect(agentCursorOpacity(false, "none")).toBe(0.35);
+		expect(agentCursorOpacity(false, "human")).toBe(0.18);
+	});
+	it("asks before closing browsers an agent is driving, in T3 Code's words", () => {
+		expect(agentBrowserCloseConfirmation(0)).toBeUndefined();
+		expect(agentBrowserCloseConfirmation(1)?.split("\n")[0]).toBe("Close browser while the agent is using it?");
+		expect(agentBrowserCloseConfirmation(3)?.split("\n")[0]).toBe("Close 3 browsers while the agent is using them?");
 	});
 });

@@ -21,6 +21,8 @@ import { projectPullRequestThreads } from "./projectPullRequestThreads";
 import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, Notification, safeStorage, shell } from "electron";
 import path from "node:path";
 import { BrowserHost } from "./browserHost";
+import { BrowserAgent } from "./browserAgent";
+import { BrowserRecordings } from "./browserRecordings";
 import { localServers } from "./browserLocalServers";
 import { browserId } from "../shared/browser";
 import { randomUUID } from "node:crypto";
@@ -532,6 +534,8 @@ function broadcastUpdateState(state: DesktopUpdateState) {
 	for (const window of BrowserWindow.getAllWindows()) window.webContents.send("desktop:update-state", state);
 }
 
+/** The app's own windows, not the separate windows browser tabs pop out into. */
+const appWindows = new Set<BrowserWindow>();
 function createWindow(): BrowserWindow {
 	const window = new BrowserWindow({
 		width: 1440,
@@ -558,6 +562,7 @@ function createWindow(): BrowserWindow {
 		window.setBackgroundMaterial("mica");
 	}
 
+	appWindows.add(window); window.once("closed", () => appWindows.delete(window));
 	window.once("ready-to-show", () => window.show());
 	window.on("blur", () => broadcastWindowState(window));
 	window.on("focus", () => broadcastWindowState(window));
@@ -590,9 +595,14 @@ function senderWindow(event: Electron.IpcMainInvokeEvent): BrowserWindow | null 
 }
 
 const browserHost = new BrowserHost();
+const browserAgent = new BrowserAgent(browserHost, () => [...appWindows].find(window => !window.isDestroyed()));
+let browserRecordings: BrowserRecordings;
 ipcMain.handle("desktop:browser", (event, command: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted browser request."); return browserHost.command(owner, command); });
 ipcMain.handle("desktop:browser-capture", (event, id: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted browser request."); return browserHost.capture(owner, browserId(id)); });
 ipcMain.handle("desktop:browser-pick", (event, id: unknown, cancel: unknown) => { const owner = senderWindow(event); if (!owner || typeof cancel !== "boolean") throw new Error("Untrusted browser request."); return browserHost.pick(owner, browserId(id), cancel); });
+ipcMain.handle("desktop:browser-recording-source", (event, id: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted browser request."); return browserHost.mediaSource(owner, browserId(id)); });
+ipcMain.handle("desktop:browser-recording-save", (event, mimeType: unknown, data: unknown) => { if (!senderWindow(event)) throw new Error("Untrusted browser request."); return browserRecordings.save(mimeType, data); });
+ipcMain.handle("desktop:browser-recording-reveal", async (event, file: unknown) => { if (!senderWindow(event)) throw new Error("Untrusted browser request."); shell.showItemInFolder(await browserRecordings.resolve(file)); });
 ipcMain.handle("desktop:browser-local-servers", event => { if (!senderWindow(event)) throw new Error("Untrusted browser request."); return localServers(); });
 ipcMain.handle("desktop:browser-download", (event, command: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted download request."); return browserHost.downloads.command(owner, command); });
 
@@ -710,6 +720,8 @@ app.whenReady().then(() => {
 	terminalService = new TerminalService(workspaceRuntime.store, path.join(workspaceDirectory, "terminals"));
 	workspaceRuntime.onTerminalAuth = (request, signal) => terminalService.authenticate(request, signal);
 	workspaceRuntime.getTerminals = () => terminalService.get();
+	workspaceRuntime.browserTools = chatId => browserAgent.forChat(chatId);
+	browserRecordings = new BrowserRecordings(path.join(app.getPath("userData"), "browser-recordings"));
 	terminalService.onEvent = event => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:terminal-event", event); };
 	workspaceRuntime.onChange = state => {
 		missionService.observe(state);

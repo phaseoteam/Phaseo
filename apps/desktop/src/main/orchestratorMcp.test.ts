@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { OrchestratorMcp } from "./orchestratorMcp";
+import { OrchestratorMcp, toolContent } from "./orchestratorMcp";
+import { browserTools, threadTools } from "./threadTools";
+import type { BrowserAgentTools } from "../shared/browserAgent";
 import { QuestionDeferredError } from "./phaseoQuestionTools";
 import type { ThreadTools } from "../shared/orchestration";
 
@@ -62,6 +64,41 @@ describe("orchestration MCP transport", () => {
 			expect(await client.callTool({ name: "launch_thread", arguments: { requestId: "a", title: "A", prompt: "Work" } })).toMatchObject({ isError: true });
 			expect(service.launch).not.toHaveBeenCalled();
 		} finally { await client.close(); await server.close(); }
+	});
+	it("offers browser tools only with a browser, asks before acting on a page, and returns screenshots as images", async () => {
+		const page = { tabId: "chat:1", url: "https://a.test/", title: "A", loading: false };
+		const browser: BrowserAgentTools = { tabs: vi.fn(async () => [{ ...page, visible: true }]), open: vi.fn(async () => page), snapshot: vi.fn(), click: vi.fn(async () => page), type: vi.fn(), screenshot: vi.fn(async () => ({ ...page, width: 2, height: 1, image: { mimeType: "image/png" as const, data: "iVBORw0K" } })) };
+		const service: ThreadTools = { list: () => [], read: vi.fn(), delegate: vi.fn(), wait: vi.fn(), interrupt: vi.fn(), browser };
+		const server = new OrchestratorMcp(), approve = vi.fn(async (name: string) => name === "browser_open");
+		const session = await server.session(service, approve);
+		if (session.connection.transport !== "http") throw new Error("Expected HTTP");
+		const client = new Client({ name: "browser-fixture", version: "1" });
+		try {
+			await client.connect(new StreamableHTTPClientTransport(new URL(session.connection.url), { requestInit: { headers: session.connection.headers } }));
+			expect((await client.listTools()).tools.map(tool => tool.name).filter(name => name.startsWith("browser_"))).toEqual(["browser_tabs", "browser_open", "browser_snapshot", "browser_click", "browser_type", "browser_screenshot"]);
+			expect(await client.callTool({ name: "browser_tabs", arguments: {} })).toMatchObject({ content: [{ type: "text" }] });
+			expect(approve).not.toHaveBeenCalled();
+			expect(await client.callTool({ name: "browser_open", arguments: { url: "file:///etc/passwd" } })).toMatchObject({ isError: true });
+			expect(browser.open).not.toHaveBeenCalled();
+			expect(await client.callTool({ name: "browser_open", arguments: { url: "https://a.test/" } })).toMatchObject({ content: [{ type: "text", text: JSON.stringify(page) }] });
+			expect(browser.open).toHaveBeenCalledWith({ url: "https://a.test/", timeoutMs: 15_000 });
+			expect(await client.callTool({ name: "browser_click", arguments: { selector: "#go" } })).toMatchObject({ isError: true });
+			expect(approve).toHaveBeenCalledWith("browser_click", { selector: "#go" }); expect(browser.click).not.toHaveBeenCalled();
+			expect(await client.callTool({ name: "browser_screenshot", arguments: {} })).toMatchObject({ content: [{ type: "image", data: "iVBORw0K", mimeType: "image/png" }, { type: "text", text: JSON.stringify({ ...page, width: 2, height: 1 }) }] });
+		} finally { await client.close(); await server.close(); }
+	});
+});
+
+describe("tool results as MCP content", () => {
+	it("keeps plain results as text and only well-formed images as images", () => {
+		expect(toolContent({ a: 1 })).toEqual([{ type: "text", text: "{\"a\":1}" }]);
+		expect(toolContent({ image: { mimeType: "image/svg+xml", data: "x" } })).toEqual([{ type: "text", text: JSON.stringify({ image: { mimeType: "image/svg+xml", data: "x" } }) }]);
+		expect(toolContent({ url: "u", image: { mimeType: "image/jpeg", data: "abc" } })).toEqual([{ type: "image", data: "abc", mimeType: "image/jpeg" }, { type: "text", text: "{\"url\":\"u\"}" }]);
+	});
+	it("leaves the screenshot out for hosts whose tool results are text only, and gates only page actions", () => {
+		const browser = {} as BrowserAgentTools;
+		expect(threadTools({ list: () => [], read: vi.fn(), delegate: vi.fn(), wait: vi.fn(), interrupt: vi.fn(), browser }, { images: false }).map(tool => tool.id).filter(id => id.startsWith("browser_"))).toEqual(["browser_tabs", "browser_open", "browser_snapshot", "browser_click", "browser_type"]);
+		expect(browserTools(browser, { images: true }).filter(tool => "requireApproval" in tool && tool.requireApproval).map(tool => tool.id)).toEqual(["browser_open", "browser_click", "browser_type"]);
 	});
 });
 
