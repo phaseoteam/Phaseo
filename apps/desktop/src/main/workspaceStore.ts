@@ -1,11 +1,12 @@
 import { updateNativeActionText } from "../shared/nativeActions";
+import { TaskEntries, type EntryOffsets } from "./taskEntries";
 import { BrowserDownloadStore } from "./browserDownloadStore";
 import { settleBlocker, snoozeBlocker } from "../shared/threadLifecycle";
 import { mentionPlainText } from "../shared/mentions";
 import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import type { AgentRunResult } from "@phaseo/agent-sdk";
-import type { Account, AgentConnection, Attachment, Message, Project, Task, TerminalSession, Workspace, WorkspaceCommand } from "../shared/workspace";
+import type { Account, AgentConnection, Attachment, Project, Task, TerminalSession, Workspace, WorkspaceCommand } from "../shared/workspace";
 import type { McpConnection } from "../shared/mcp";
 import { defaultPreferences, validatePreferences } from "../shared/preferences";
 import type { WorkspacePreferences } from "../shared/preferences";
@@ -13,25 +14,30 @@ import { agentLimitMessage } from "../shared/orchestration";
 import { MissionStore } from "./missionStore";
 import { validateTaskHistoryQuery, type TaskHistoryPage } from "../shared/taskHistory";
 import { overviewOrder, taskOverview, type TaskOverview, type WorkspaceOverview } from "../shared/workspaceOverview";
-import { activitiesForWindow, conversationPageOf, validateConversationPageQuery, type ConversationPage } from "../shared/conversationPage";
+import { validateConversationPageQuery, type ConversationPage } from "../shared/conversationPage";
 import { maximumPullRequestLinks, pullRequestUrl, samePullRequest, sameSnapshot, unwatched, validatePullRequestLinks, validRepository, type PullRequestLinkSnapshot, type SavedPullRequestStack } from "../shared/pullRequestView";
 import type { PullRequestStack } from "../shared/pullRequestStacks";
 import { newPullRequestWatch, type PullRequestWatchMessage, type PullRequestWatchState } from "../shared/pullRequestWatch";
 
-/** A page of messages with the activities of its turns. */
-function withTurnActivities(task: Task, page: ConversationPage): ConversationPage {
-	const messages = task.messages ?? [], known = new Set(messages.filter(message => message.role === "user").map(message => message.id));
-	return { ...page, activities: activitiesForWindow(page.entries as Message[], task.activities ?? [], known, { next: messages[page.earlier + page.entries.length]?.timelineOrder, latest: page.later === 0 }) };
-}
+/**
+ * Marks a chat read by getTaskTail with where its entries start. A symbol property survives spreading the chat, so a
+ * copy still saves as a tail, and JSON never writes it.
+ */
+const partialEntries = Symbol("partial entries");
+type PartialTask = Task & { [partialEntries]?: EntryOffsets };
 
 export class WorkspaceStore {
 	private readonly db: DatabaseSync;
+	/** Messages and activities, one row each (see TaskEntries); `tasks.data` holds the rest of each chat. */
+	private readonly entries: TaskEntries;
 	readonly missions: MissionStore;
 	readonly browserDownloads: BrowserDownloadStore;
 	constructor(filename: string) {
 		this.db = new DatabaseSync(filename);
 		this.db.function("history_lower", { deterministic: true }, value => typeof value === "string" ? value.toLowerCase() : "");
-		this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
+		// A second connection waits for a lock rather than failing; with WAL, NORMAL syncs at checkpoints, not every commit,
+		// and a power cut can lose only the last commits, never corrupt the file.
+		this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; PRAGMA synchronous=NORMAL;
 			CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			CREATE TABLE IF NOT EXISTS tasks (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			CREATE TABLE IF NOT EXISTS accounts (id TEXT PRIMARY KEY, data TEXT NOT NULL);
@@ -50,8 +56,8 @@ export class WorkspaceStore {
 			BEGIN
 				INSERT INTO delegation_outbox(result_key, child_id, parent_id, data)
 				SELECT result.key, new.id, json_extract(new.data, '$.delegation.parentTaskId'),
-				json_object('title', json_extract(new.data, '$.title'), 'status', json_extract(new.data, '$.status'), 'result', substr(coalesce((SELECT json_extract(value, '$.text') FROM json_each(new.data, '$.messages') WHERE json_extract(value, '$.role') = 'assistant' ORDER BY CAST(key AS INTEGER) DESC LIMIT 1), json_extract(new.data, '$.error'), 'No final response was returned.'), 1, 32000))
-				FROM (SELECT new.id || ':' || coalesce((SELECT json_extract(value, '$.id') FROM json_each(new.data, '$.messages') WHERE json_extract(value, '$.role') = 'user' ORDER BY CAST(key AS INTEGER) DESC LIMIT 1), '') || ':' || json_extract(new.data, '$.status') AS key) AS result
+				json_object('title', json_extract(new.data, '$.title'), 'status', json_extract(new.data, '$.status'), 'result', substr(coalesce((SELECT json_extract(data, '$.text') FROM task_entries WHERE task_id = new.id AND kind = 0 AND role = 'assistant' ORDER BY position DESC LIMIT 1), json_extract(new.data, '$.error'), 'No final response was returned.'), 1, 32000))
+				FROM (SELECT new.id || ':' || coalesce((SELECT id FROM task_entries WHERE task_id = new.id AND kind = 0 AND role = 'user' ORDER BY position DESC LIMIT 1), '') || ':' || json_extract(new.data, '$.status') AS key) AS result
 				WHERE NOT EXISTS (SELECT 1 FROM delegation_outbox WHERE result_key = result.key);
 				-- A wake requested by an abandoned wait covers one result; later runs follow the child's own background setting.
 				DELETE FROM delegation_wakes WHERE child_id = new.id;
@@ -69,13 +75,17 @@ export class WorkspaceStore {
 		this.db.exec(`CREATE TABLE IF NOT EXISTS task_overviews (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			CREATE TRIGGER IF NOT EXISTS task_overview_changed AFTER UPDATE OF data ON tasks BEGIN DELETE FROM task_overviews WHERE id = new.id; END;
 			CREATE TRIGGER IF NOT EXISTS task_overview_removed AFTER DELETE ON tasks BEGIN DELETE FROM task_overviews WHERE id = old.id; END;`);
+		// Each overview carries a stamp that changes when it is written, so listing chats re-reads only those that changed.
+		if (!this.db.prepare("SELECT 1 FROM pragma_table_info('task_overviews') WHERE name = 'stamp'").get()) this.db.exec("ALTER TABLE task_overviews ADD COLUMN stamp INTEGER NOT NULL DEFAULT 0");
+		this.overviewStamp = Number((this.db.prepare("SELECT coalesce(max(stamp), 0) AS stamp FROM task_overviews").get() as { stamp: number }).stamp);
 		this.missions = new MissionStore(this.db);
 		this.browserDownloads = new BrowserDownloadStore(this.db);
-		const recoveryTasks = this.db.prepare(`SELECT data FROM tasks WHERE json_extract(data, '$.authTerminalId') IS NOT NULL
+		this.entries = new TaskEntries(this.db); this.entries.adopt();
+		const recoveryTasks = this.db.prepare(`SELECT id FROM tasks WHERE json_extract(data, '$.authTerminalId') IS NOT NULL
 			OR json_extract(data, '$.status') IN ('running', 'waiting')
 			OR EXISTS (SELECT 1 FROM json_each(tasks.data, '$.steering') AS item WHERE json_extract(item.value, '$.status') = 'sending')`).all();
 		for (const row of recoveryTasks) {
-			const task = JSON.parse(row.data as string) as Task;
+			const task = this.getTask(row.id as string);
 			let recovered = false;
 			if (task.authTerminalId) {
 				const input = task.messages.find(value => value.id === task.authInputId && value.role === "user");
@@ -102,8 +112,10 @@ export class WorkspaceStore {
 	getAgents(): AgentConnection[] { return this.db.prepare("SELECT data FROM agents").all().map(row => JSON.parse(row.data as string) as AgentConnection); }
 	getMcpConnections(): McpConnection[] { return this.db.prepare("SELECT data FROM mcp_connections").all().map(row => JSON.parse(row.data as string) as McpConnection); }
 	get(): Workspace {
-		const rows = (table: "projects" | "tasks" | "accounts" | "agents" | "mcp_connections") => this.db.prepare(`SELECT data FROM ${table}`).all().map(row => JSON.parse(row.data as string));
-		return { version: 1, projects: rows("projects"), accounts: rows("accounts"), agents: rows("agents"), mcpConnections: rows("mcp_connections"), tasks: rows("tasks").sort((a: Task, b: Task) => b.updatedAt.localeCompare(a.updatedAt)) };
+		const rows = (table: "projects" | "accounts" | "agents" | "mcp_connections") => this.db.prepare(`SELECT data FROM ${table}`).all().map(row => JSON.parse(row.data as string));
+		this.entries.adopt();
+		const tasks = this.db.prepare("SELECT id FROM tasks").all().map(row => this.getTask(row.id as string));
+		return { version: 1, projects: rows("projects"), accounts: rows("accounts"), agents: rows("agents"), mcpConnections: rows("mcp_connections"), tasks: tasks.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)) };
 	}
 	saveMcp(connection: McpConnection) { this.db.prepare("INSERT INTO mcp_connections (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(connection.id, JSON.stringify(connection)); }
 	/**
@@ -117,7 +129,7 @@ export class WorkspaceStore {
 			try {
 				const rows = this.db.prepare("SELECT child_id, data FROM delegation_outbox WHERE parent_id = ? AND delivered = 0 ORDER BY rowid").all(parentId).map(row => ({ childId: row.child_id as string, ...JSON.parse(row.data as string) as { title: string; status: string; result: string } }));
 				this.db.prepare("UPDATE delegation_outbox SET delivered = 1 WHERE parent_id = ? AND delivered = 0").run(parentId);
-				const row = this.db.prepare("SELECT data FROM tasks WHERE id = ?").get(parentId), parent = row ? JSON.parse(row.data as string) as Task : undefined;
+				const parent = this.db.prepare("SELECT 1 FROM tasks WHERE id = ?").get(parentId) ? this.getTask(parentId) : undefined;
 				// A stopped parent does not need to hear that the children it stopped were interrupted.
 				const results = parent ? rows.filter(result => !(parent.status === "interrupted" && result.status === "interrupted")) : [];
 				if (parent && results.length) {
@@ -155,8 +167,8 @@ export class WorkspaceStore {
 	handoffDelegatedTask(parentId: string, sourceId: string, requestId: string, target: Pick<Task, "harness" | "model" | "accountId">, maxActive?: number): Task {
 		this.db.exec("BEGIN IMMEDIATE");
 		try {
-			const existing = this.db.prepare("SELECT data FROM tasks WHERE json_extract(data, '$.delegation.parentTaskId') = ? AND json_extract(data, '$.delegation.requestId') = ? LIMIT 1").get(parentId, requestId);
-			if (existing) { this.db.exec("COMMIT"); return JSON.parse(existing.data as string) as Task; }
+			const existing = this.db.prepare("SELECT id FROM tasks WHERE json_extract(data, '$.delegation.parentTaskId') = ? AND json_extract(data, '$.delegation.requestId') = ? LIMIT 1").get(parentId, requestId);
+			if (existing) { this.db.exec("COMMIT"); return this.getTask(existing.id as string); }
 			const parent = this.getTask(parentId), source = this.getTask(sourceId);
 			if (source.projectId !== parent.projectId || parent.archived || source.archived || parent.status === "interrupted") throw new Error("Handoff requires an available source in the parent's project.");
 			this.assertAgentCapacity(maxActive);
@@ -168,8 +180,8 @@ export class WorkspaceStore {
 	forkDelegatedTask(parentId: string, sourceId: string, requestId: string, messageId?: string, maxActive?: number): Task {
 		this.db.exec("BEGIN IMMEDIATE");
 		try {
-			const existing = this.db.prepare("SELECT data FROM tasks WHERE json_extract(data, '$.delegation.parentTaskId') = ? AND json_extract(data, '$.delegation.requestId') = ? LIMIT 1").get(parentId, requestId);
-			if (existing) { this.db.exec("COMMIT"); return JSON.parse(existing.data as string) as Task; }
+			const existing = this.db.prepare("SELECT id FROM tasks WHERE json_extract(data, '$.delegation.parentTaskId') = ? AND json_extract(data, '$.delegation.requestId') = ? LIMIT 1").get(parentId, requestId);
+			if (existing) { this.db.exec("COMMIT"); return this.getTask(existing.id as string); }
 			const parent = this.getTask(parentId), source = this.getTask(sourceId);
 			if (parent.projectId !== source.projectId || source.archived || parent.archived || parent.status === "interrupted") throw new Error("Forks require an available source in the parent's project.");
 			this.assertAgentCapacity(maxActive);
@@ -183,8 +195,8 @@ export class WorkspaceStore {
 	createDelegatedTask(command: Extract<WorkspaceCommand, { type: "create-task" }>, delegation: NonNullable<Task["delegation"]>, prompt: string, title: string, maxActive?: number): Task {
 		this.db.exec("BEGIN IMMEDIATE");
 		try {
-			const existing = this.db.prepare("SELECT data FROM tasks WHERE json_extract(data, '$.delegation.parentTaskId') = ? AND json_extract(data, '$.delegation.requestId') = ? LIMIT 1").get(delegation.parentTaskId, delegation.requestId);
-			if (existing) { this.db.exec("COMMIT"); return JSON.parse(existing.data as string) as Task; }
+			const existing = this.db.prepare("SELECT id FROM tasks WHERE json_extract(data, '$.delegation.parentTaskId') = ? AND json_extract(data, '$.delegation.requestId') = ? LIMIT 1").get(delegation.parentTaskId, delegation.requestId);
+			if (existing) { this.db.exec("COMMIT"); return this.getTask(existing.id as string); }
 			this.assertAgentCapacity(maxActive);
 			const child = this.apply(command);
 			child.parentId = delegation.parentTaskId; child.delegation = delegation; child.title = title;
@@ -193,8 +205,8 @@ export class WorkspaceStore {
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
 	}
 	findLaunchedTask(byTaskId: string, requestId: string): Task | undefined {
-		const row = this.db.prepare("SELECT data FROM tasks WHERE json_extract(data, '$.launch.byTaskId') = ? AND json_extract(data, '$.launch.requestId') = ? LIMIT 1").get(byTaskId, requestId);
-		return row ? JSON.parse(row.data as string) as Task : undefined;
+		const row = this.db.prepare("SELECT id FROM tasks WHERE json_extract(data, '$.launch.byTaskId') = ? AND json_extract(data, '$.launch.requestId') = ? LIMIT 1").get(byTaskId, requestId);
+		return row ? this.getTask(row.id as string) : undefined;
 	}
 	/** An ordinary top-level chat started by an agent: no `delegation` or `parentId`, so it is listed, stopped and archived like any user chat. */
 	createLaunchedTask(command: Extract<WorkspaceCommand, { type: "create-task" }>, launch: NonNullable<Task["launch"]>, prompt: string, title: string, maxActive?: number): Task {
@@ -208,16 +220,33 @@ export class WorkspaceStore {
 			this.saveTask(task); this.db.exec("COMMIT"); return task;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
 	}
-	getTask(id: string): Task {
+	/** A chat's header: everything but its messages and activities. */
+	private getHead(id: string): Task {
+		this.entries.adopt();
 		const row = this.db.prepare("SELECT data FROM tasks WHERE id = ?").get(id);
 		if (!row) throw new Error("Task no longer exists.");
 		return JSON.parse(row.data as string) as Task;
 	}
-	/** Parsing the chat once and slicing in JavaScript is far faster than walking a long chat's JSON in SQLite. */
+	getTask(id: string): Task {
+		const task = this.getHead(id), { messages, activities } = this.entries.load(id);
+		task.messages = messages; task.activities = activities;
+		return task;
+	}
+	/**
+	 * A chat with only its latest turn's messages (from `fromMessageId`) and activities, for streaming. saveTask writes
+	 * such a chat back over that range alone. The whole chat when the message is not found.
+	 */
+	getTaskTail(id: string, fromMessageId: string): Task {
+		const task = this.getHead(id), tail = this.entries.tail(id, fromMessageId);
+		if (!tail) return this.getTask(id);
+		task.messages = tail.messages; task.activities = tail.activities;
+		(task as PartialTask)[partialEntries] = tail.offsets;
+		return task;
+	}
+	/** Pages read only the rows they return, so their cost does not grow with the chat. */
 	conversationPage(value: unknown): ConversationPage {
-		const query = validateConversationPageQuery(value), task = this.getTask(query.taskId);
-		if (query.kind === "activities") return conversationPageOf(task.activities ?? [], query, task.revision ?? 0);
-		return withTurnActivities(task, conversationPageOf(task.messages ?? [], query, task.revision ?? 0));
+		const query = validateConversationPageQuery(value), revision = this.getHead(query.taskId).revision ?? 0, page = this.entries.page(query, revision);
+		return query.kind === "activities" ? page : { ...page, activities: this.entries.turnActivities(query.taskId, page) };
 	}
 	/** Records what GitHub last said about a pull request on every chat linking it. True when anything changed. */
 	syncPullRequestSnapshot(repository: string, number: number, snapshot: PullRequestLinkSnapshot): boolean {
@@ -286,20 +315,41 @@ export class WorkspaceStore {
 		this.saveTask(task, true); return true;
 	}
 	getTaskView(id: string): Task {
-		const task = this.getTask(id), revision = task.revision ?? 0, messages = task.messages ?? [], activities = task.activities ?? [];
-		task.conversationCounts = { messages: messages.length, activities: activities.length };
-		const page = withTurnActivities(task, conversationPageOf(messages, { taskId: id, kind: "messages", limit: 50 }, revision));
-		task.messages = page.entries as Task["messages"]; task.activities = page.activities;
+		const task = this.getHead(id), page = this.entries.page({ taskId: id, kind: "messages", limit: 50 }, task.revision ?? 0);
+		task.conversationCounts = { messages: this.entries.count(id, 0), activities: this.entries.count(id, 1) };
+		task.messages = page.entries as Task["messages"]; task.activities = this.entries.turnActivities(id, page);
 		return task;
 	}
-	private saveOverview(overview: TaskOverview) { this.db.prepare("INSERT INTO task_overviews (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(overview.id, JSON.stringify(overview)); }
+	/** A tail's overview: what it lacks (an earlier completed turn) comes from the chat's stored overview. */
+	private tailOverview(task: Task): TaskOverview {
+		const overview = taskOverview(task), row = this.db.prepare("SELECT data FROM task_overviews WHERE id = ?").get(task.id);
+		if (!row) return overview;
+		const stored = JSON.parse(row.data as string) as TaskOverview;
+		return { ...overview, ...(overview.lastCompletedAt === undefined && stored.lastCompletedAt ? { lastCompletedAt: stored.lastCompletedAt } : {}), ...(overview.lastUserMessageAt === undefined && stored.lastUserMessageAt ? { lastUserMessageAt: stored.lastUserMessageAt } : {}) };
+	}
+	private overviewStamp = 0;
+	/** Parsed overviews by chat, with the stamp they were read at; the table stays the truth, so a rollback only costs a re-read. */
+	private readonly overviews = new Map<string, { stamp: number; overview: TaskOverview }>();
+	private saveOverview(overview: TaskOverview) { this.db.prepare("INSERT INTO task_overviews (id, data, stamp) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data, stamp=excluded.stamp").run(overview.id, JSON.stringify(overview), ++this.overviewStamp); }
 	getOverview(): WorkspaceOverview {
-		const rows = this.db.prepare("SELECT tasks.id, task_overviews.data AS overview FROM tasks LEFT JOIN task_overviews USING (id)").all();
-		const missing = rows.filter(row => typeof row.overview !== "string");
+		this.entries.adopt();
+		const rows = this.db.prepare("SELECT tasks.id AS id, task_overviews.stamp AS stamp FROM tasks LEFT JOIN task_overviews USING (id)").all() as { id: string; stamp: number | null }[];
+		const missing = rows.filter(row => row.stamp === null);
 		// Rebuilt in one transaction: the first open after an upgrade reads every chat once.
-		if (missing.length) { const inTransaction = this.db.isTransaction; if (!inTransaction) this.db.exec("BEGIN"); try { for (const row of missing) { const overview = taskOverview(this.getTask(row.id as string)); this.saveOverview(overview); row.overview = JSON.stringify(overview); } if (!inTransaction) this.db.exec("COMMIT"); } catch (error) { if (!inTransaction) this.db.exec("ROLLBACK"); throw error; } }
-		const tasks = rows.map(row => JSON.parse(row.overview as string) as TaskOverview).sort(overviewOrder);
-		return { version: 1, projects: this.getProjects(), accounts: this.getAccounts(), agents: this.getAgents(), mcpConnections: this.getMcpConnections(), tasks };
+		if (missing.length) { const inTransaction = this.db.isTransaction; if (!inTransaction) this.db.exec("BEGIN"); try { for (const row of missing) { this.saveOverview(taskOverview(this.getTask(row.id))); row.stamp = this.overviewStamp; } if (!inTransaction) this.db.exec("COMMIT"); } catch (error) { if (!inTransaction) this.db.exec("ROLLBACK"); throw error; } }
+		const read = this.db.prepare("SELECT data, stamp FROM task_overviews WHERE id = ?"), present = new Set<string>(), tasks: TaskOverview[] = [];
+		for (const row of rows) {
+			present.add(row.id);
+			let cached = this.overviews.get(row.id);
+			if (cached?.stamp !== row.stamp) {
+				const stored = read.get(row.id) as { data: string; stamp: number };
+				this.overviews.set(row.id, cached = { stamp: stored.stamp, overview: JSON.parse(stored.data) as TaskOverview });
+			}
+			// Copies, so a caller changing one cannot change the cache.
+			tasks.push({ ...cached.overview });
+		}
+		for (const id of this.overviews.keys()) if (!present.has(id)) this.overviews.delete(id);
+		return { version: 1, projects: this.getProjects(), accounts: this.getAccounts(), agents: this.getAgents(), mcpConnections: this.getMcpConnections(), tasks: tasks.sort(overviewOrder) };
 	}
 	taskHistory(value: unknown): TaskHistoryPage {
 		const { query, archived, offset, limit, projectId } = validateTaskHistoryQuery(value);
@@ -312,8 +362,8 @@ export class WorkspaceStore {
 		AND json_extract(data, '$.delegation') IS NULL
 		AND (? = 0 OR (? IS NULL AND json_extract(data, '$.projectId') IS NULL) OR json_extract(data, '$.projectId') = ?)
 		AND (? = '' OR instr(history_lower(json_extract(data, '$.title')), history_lower(?)) > 0
-			OR EXISTS (SELECT 1 FROM json_each(tasks.data, '$.messages') AS message
-				WHERE instr(history_lower(json_extract(message.value, '$.text')), history_lower(?)) > 0))
+			OR EXISTS (SELECT 1 FROM task_entries AS message WHERE message.task_id = tasks.id AND message.kind = 0
+				AND instr(history_lower(json_extract(message.data, '$.text')), history_lower(?)) > 0))
 		ORDER BY coalesce(json_extract(data, '$.pinned'), 0) DESC,
 			json_extract(data, '$.updatedAt') DESC, id DESC LIMIT ? OFFSET ?
 		`).all(Number(archived), Number(projectId !== undefined), projectId ?? null, projectId ?? null, query, query, query, limit + 1, offset);
@@ -326,13 +376,28 @@ export class WorkspaceStore {
 	saveAgentRun(result: AgentRunResult) {
 		this.db.prepare("INSERT INTO agent_runs (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(result.run.id, JSON.stringify(result));
 	}
+	/**
+	 * Writes the chat's header and only the messages and activities that changed, in one transaction. Entries go first
+	 * so the header's triggers (delegation results) read the new conversation.
+	 */
 	saveTask(task: Task, preserveUpdatedAt = false) {
 		if (!preserveUpdatedAt) task.updatedAt = new Date().toISOString();
-		const row = this.db.prepare(`INSERT INTO tasks (id, data) VALUES (?, json_set(?, '$.revision', 1))
-			ON CONFLICT(id) DO UPDATE SET data=json_set(excluded.data, '$.revision', coalesce(json_extract(tasks.data, '$.revision'), 0) + 1)
-			RETURNING json_extract(data, '$.revision') AS revision`).get(task.id, JSON.stringify(task));
-		task.revision = Number(row!.revision);
-		this.saveOverview(taskOverview(task));
+		const own = !this.db.isTransaction;
+		if (own) this.db.exec("BEGIN IMMEDIATE");
+		try {
+			const exists = Boolean(this.db.prepare("SELECT 1 FROM tasks WHERE id = ?").get(task.id));
+			// JSON drops the undefined fields: the header leaves the conversation to TaskEntries.
+			const head = { ...task, messages: undefined, activities: undefined };
+			const offsets = (task as PartialTask)[partialEntries];
+			if (exists) this.entries.save(task, offsets);
+			const row = this.db.prepare(`INSERT INTO tasks (id, data) VALUES (?, json_set(?, '$.revision', 1))
+				ON CONFLICT(id) DO UPDATE SET data=json_set(excluded.data, '$.revision', coalesce(json_extract(tasks.data, '$.revision'), 0) + 1)
+				RETURNING json_extract(data, '$.revision') AS revision`).get(task.id, JSON.stringify(head));
+			if (!exists) this.entries.save(task);
+			task.revision = Number(row!.revision);
+			this.saveOverview(offsets ? this.tailOverview(task) : taskOverview(task));
+			if (own) this.db.exec("COMMIT");
+		} catch (error) { if (own) this.db.exec("ROLLBACK"); this.entries.forget(task.id); throw error; }
 	}
 	addProject(directory: string): Project {
 		const existing = this.getProjects().find(project => project.directory === directory);
@@ -353,7 +418,7 @@ export class WorkspaceStore {
 		this.db.exec("BEGIN IMMEDIATE");
 		try {
 			for (const id of ids) {
-				this.db.prepare("DELETE FROM tasks WHERE id=?").run(id);
+				this.db.prepare("DELETE FROM tasks WHERE id=?").run(id); this.entries.forget(id);
 				this.db.prepare("DELETE FROM thread_merges WHERE parent_id=? OR child_id=?").run(id, id);
 				this.db.prepare("DELETE FROM delegation_outbox WHERE parent_id=? OR child_id=?").run(id, id);
 				this.db.prepare("DELETE FROM delegation_wakes WHERE child_id=?").run(id);

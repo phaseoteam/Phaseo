@@ -93,10 +93,13 @@ async function wait(expression, label) {
 async function search(query) {
   await run(`(()=>{const input=document.querySelector('input[aria-label="Search chats"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${javascriptLiteral(query)});input.dispatchEvent(new Event('input',{bubbles:true}));})()`);
 }
+// The app keeps messages and activities as rows of their own. An outside writer rebuilds the chat from them and writes
+// it back whole, as older builds did, which the app adopts.
+const readChat = (database, id) => { const task = JSON.parse(database.prepare("SELECT data FROM tasks WHERE id=?").get(id).data); for (const [kind, name] of [[0, "messages"], [1, "activities"]]) task[name] ??= database.prepare("SELECT data FROM task_entries WHERE task_id=? AND kind=? ORDER BY position").all(id, kind).map(row => JSON.parse(row.data)); return task; };
 async function publishReply(text, title) {
   const liveHistory = new DatabaseSync(path.join(data, "workspace/workspace.sqlite"));
   try {
-    const task = JSON.parse(liveHistory.prepare("SELECT data FROM tasks WHERE id='042'").get().data);
+    const task = readChat(liveHistory, "042");
     task.messages.push({ id: `live-${task.messages.length}`, role: "assistant", text, createdAt: timestamp });
     task.activities.push({ id: `live-activity-${task.activities.length}`, type: "tool", title, text: "Owned live activity", status: "completed" });
     liveHistory.prepare("UPDATE tasks SET data=? WHERE id='042'").run(JSON.stringify(task));
@@ -204,7 +207,7 @@ try {
     await run(`(()=>{const button=${earlierMessages};button.click();button.click()})()`);
     if (index === 0) {
       const updateDb = new DatabaseSync(path.join(data, "workspace/workspace.sqlite"));
-      try { const task = JSON.parse(updateDb.prepare("SELECT data FROM tasks WHERE id='043'").get().data); task.messages[950].text = "Updated while paging"; updateDb.prepare("UPDATE tasks SET data=? WHERE id='043'").run(JSON.stringify(task)); } finally { updateDb.close(); }
+      try { const task = readChat(updateDb, "043"); task.messages[950].text = "Updated while paging"; updateDb.prepare("UPDATE tasks SET data=? WHERE id='043'").run(JSON.stringify(task)); } finally { updateDb.close(); }
       await run(`window.phaseoDesktop.workspace.command({type:'update-task',id:'043',title:'History 043'})`);
       await wait(`${messages}.some(row=>row.dataset.conversationId==='message:large-950'&&row.textContent.includes('Updated while paging'))`, "pending page refresh retains newer task data");
     }

@@ -87,7 +87,8 @@ describe("workspace orchestration", () => {
 			changed.mockClear();
 			callbacks!.onDelta("reply", "Secret streamed response");
 			await vi.waitFor(() => expect(runtime.store.getTask(id).messages.some(message => message.text === "Secret streamed response")).toBe(true));
-			expect(changed).toHaveBeenCalled(); expect(JSON.stringify(changed.mock.calls)).not.toContain("Secret streamed response");
+			// Streaming updates to the chat list are coalesced, so this one follows within 100 ms.
+			await vi.waitFor(() => expect(changed).toHaveBeenCalled()); expect(JSON.stringify(changed.mock.calls)).not.toContain("Secret streamed response");
 			for (const [state] of changed.mock.calls) for (const task of state.tasks) expect(task).not.toHaveProperty("messages");
 			finish?.(); await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("completed"));
 			expect(fullReads).not.toHaveBeenCalled();

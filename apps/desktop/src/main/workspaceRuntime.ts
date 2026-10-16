@@ -292,6 +292,12 @@ export class WorkspaceRuntime {
 	}
 	/** Raised for each watched pull request update, for the desktop notification. */
 	onPullRequestNotice?: (taskId: string, summary: string, outcome: PullRequestWatchMessage["outcome"]) => void;
+	private broadcastTimer: ReturnType<typeof setTimeout> | undefined;
+	/** Streaming flushes from every running chat share one chat-list update per 100 ms instead of one each. */
+	private broadcastSoon() {
+		if (this.closing || this.broadcastTimer) return;
+		this.broadcastTimer = setTimeout(() => { this.broadcastTimer = undefined; if (!this.closing) this.broadcast(); }, 100);
+	}
 	private broadcast() {
 		const parents = this.store.collectDelegationResults();
 		this.onChange(this.store.getOverview()); this.threads.changed();
@@ -711,14 +717,15 @@ export class WorkspaceRuntime {
 		const order = (key: string) => { if (!eventOrder.has(key)) eventOrder.set(key, timelineOrder++); return eventOrder.get(key)!; };
 		let activities: (AgentActivity & { append?: boolean })[] = [];
 		let flushTimer: ReturnType<typeof setTimeout> | undefined;
-		// A flush rewrites the whole chat, so a very long chat flushes less often and streaming leaves the main process free.
+		// A flush that costs more (a slow disk, many chats streaming) waits longer, so streaming leaves the main process free.
 		let flushDelay = 40;
 		let streamError: unknown;
 		const flush = () => {
 			if (flushTimer) clearTimeout(flushTimer); flushTimer = undefined;
 			if (!deltas.size && !activities.length) return;
 			const started = performance.now();
-			const current = this.store.getTask(id);
+			// Only this turn changes while it streams, so only this turn is read and written back.
+			const current = this.store.getTaskTail(id, message.id);
 			for (const [itemId, text] of deltas) {
 				const messageId = `${message.id}:${itemId}`;
 				const existing = current.messages.find(value => value.id === messageId);
@@ -732,7 +739,7 @@ export class WorkspaceRuntime {
 				if (existing) { existing.text = activity.append ? existing.text + activity.text : activity.text; existing.status = activity.status; existing.title = activity.title; existing.steps = activity.steps; existing.explanation = activity.explanation; existing.summary = activity.summary; existing.compaction = activity.compaction; existing.nativeAgent = activity.nativeAgent; existing.proposed = activity.proposed; }
 				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent, ...(activity.proposed ? { proposed: activity.proposed } : {}) });
 			}
-			this.store.saveTask(current); deltas.clear(); activities = []; this.broadcast();
+			this.store.saveTask(current); deltas.clear(); activities = []; this.broadcastSoon();
 			flushDelay = Math.min(1000, Math.max(40, Math.round((performance.now() - started) * 4)));
 		};
 		const scheduleFlush = () => {
@@ -851,7 +858,7 @@ export class WorkspaceRuntime {
 		}
 	}
 	async close() {
-		this.closing = true; this.settleAbort.abort(); for (const timer of this.wakeTimers.values()) clearTimeout(timer); this.wakeTimers.clear(); for (const close of this.orchestrationSessions.values()) close(); this.broadcast();
+		this.closing = true; this.settleAbort.abort(); clearTimeout(this.broadcastTimer); for (const timer of this.wakeTimers.values()) clearTimeout(timer); this.wakeTimers.clear(); for (const close of this.orchestrationSessions.values()) close(); this.broadcast();
 		for (const id of this.running.keys()) this.store.apply({ type: "cancel", id });
 		for (const pending of this.approvals.values()) pending.resolve("decline");
 		for (const pending of this.questions.values()) pending.resolve({});
