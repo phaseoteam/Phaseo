@@ -6,6 +6,7 @@ import { toastManager } from "../components/ui/toast";
 import { Tip } from "../components/ui/tooltip";
 import { openPullRequest } from "../views/pullRequests/events";
 import { pullRequestStatePresentation } from "../views/pullRequests/presentation";
+import { CheckoutPullRequestDialog } from "../views/pullRequests/CheckoutPullRequestDialog";
 import { useWorkspace } from "../app/workspace";
 import { cn } from "../lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
@@ -47,6 +48,7 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 	const [refresh, setRefresh] = useState(0);
 	const [repository, setRepository] = useState(true);
 	const [branchPull, setBranchPull] = useState<BranchPullRequest>();
+	const [checkoutOpen, setCheckoutOpen] = useState(false);
 	// Agents finishing in this project change its files, so their completion refreshes the list.
 	const activity = overview.tasks.filter(task => task.projectId === projectId).map(task => `${task.id}:${task.status}:${task.lastCompletedAt ?? ""}`).join("|");
 
@@ -116,6 +118,7 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 				<DropdownMenuContent align="start" className="max-h-80 w-64">
 					<DropdownMenuItem onClick={() => { setBranchKind("branch"); setNewBranch(""); }}><Plus />New branch…</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => { setBranchKind("worktree"); setNewBranch(""); }}><FolderPlus />New worktree…</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => setCheckoutOpen(true)}><GitPullRequestArrow />Check out a pull request…</DropdownMenuItem>
 					{project?.worktree && <DropdownMenuItem variant="destructive" onClick={removeWorktree}><Trash2 />Remove this worktree</DropdownMenuItem>}
 					<DropdownMenuSeparator />
 					{[...new Set([review?.branch ?? "", ...branches])].filter(Boolean).map(name => <DropdownMenuItem key={name} onClick={() => { if (name !== review?.branch) void git({ type: "switch-branch", name }); }} className="font-mono text-xs">
@@ -136,6 +139,7 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 			<button type="submit" disabled={busy || !newBranch.trim()} className="h-7 rounded-md bg-primary px-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-50">Create</button>
 		</form>}
 		{error && <p role="alert" className="px-1.5 text-xs text-destructive">{error}</p>}
+		<CheckoutPullRequestDialog projectId={projectId} open={checkoutOpen} onOpenChange={setCheckoutOpen} />
 		{review && !review.files.length && <p className="px-1.5 py-1 text-xs text-muted-foreground/70">No changes. The working tree is clean.</p>}
 		{staged.length > 0 && <div>
 			{heading("Staged", staged.length, { label: "Unstage all", icon: <Minus />, files: staged, type: "unstage" })}

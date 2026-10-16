@@ -18,3 +18,18 @@ export function linkValidation(reference: string, resolved: ReturnType<typeof re
 	if (!resolved) return "Use a pull request URL, 123, or #123.";
 	return "error" in resolved ? resolved.error : null;
 }
+
+/**
+ * What the checkout dialog accepts (T3's parsePullRequestReference): a pull request URL, a `gh pr checkout` command
+ * (its flags ignored), or 123 / #123. Pull requests in another repository than the project's are refused, since the
+ * checkout happens in the project.
+ */
+export function parseCheckoutReference(input: string, repository: string | null | undefined): { number: number } | { error: string } | null {
+	const command = /^\s*gh\s+pr\s+checkout\s+(.+)$/i.exec(input);
+	const argument = command ? command[1].split(/\s+/).find(word => word && !word.startsWith("-")) ?? "" : input;
+	const parsed = parsePullRequestReference(argument);
+	if (!parsed) return null;
+	if (parsed.repository && repository && parsed.repository.toLowerCase() !== repository.toLowerCase()) return { error: `That pull request is in ${parsed.repository}, not this project's repository.` };
+	if (parsed.repository && !repository) return { error: "This project has no GitHub repository to check the pull request out in." };
+	return { number: parsed.number };
+}

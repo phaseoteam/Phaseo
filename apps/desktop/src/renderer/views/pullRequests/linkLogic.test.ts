@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { linkValidation, resolveLinkInput } from "./linkLogic";
+import { linkValidation, parseCheckoutReference, resolveLinkInput } from "./linkLogic";
 
 describe("the link dialog's input", () => {
 	it("names the pull request a URL, owner/repo#N or bare number means", () => {
@@ -12,5 +12,16 @@ describe("the link dialog's input", () => {
 		expect(linkValidation("", null)).toBe("Paste a pull request URL or enter 123 / #123.");
 		expect(linkValidation("abc", null)).toBe("Use a pull request URL, 123, or #123.");
 		expect(linkValidation("#4", resolveLinkInput("#4", "owned/repo"))).toBeNull();
+	});
+});
+
+describe("the checkout dialog's input", () => {
+	it("reads a URL, a gh pr checkout command or a number, in this project's repository only", () => {
+		expect(parseCheckoutReference("https://github.com/owned/repo/pull/7", "owned/repo")).toEqual({ number: 7 });
+		expect(parseCheckoutReference("gh pr checkout 42", "owned/repo")).toEqual({ number: 42 });
+		expect(parseCheckoutReference("gh pr checkout --force #9", "owned/repo")).toEqual({ number: 9 });
+		expect(parseCheckoutReference("#3", undefined)).toEqual({ number: 3 });
+		expect(parseCheckoutReference("https://github.com/other/repo/pull/7", "owned/repo")).toEqual({ error: "That pull request is in other/repo, not this project's repository." });
+		expect(parseCheckoutReference("checkout please", "owned/repo")).toBeNull();
 	});
 });
