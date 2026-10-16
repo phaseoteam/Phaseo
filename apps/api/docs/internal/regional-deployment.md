@@ -80,15 +80,15 @@ regional allowlist into the Worker. The temporary JSON file used by Wrangler is
 deleted in a `finally` block and its contents are never printed:
 
 ```powershell
-infisical run --env=prod -- ./scripts/deploy-regional.ps1 -Region eu -SecretsFromEnvironment -Deploy
-infisical run --env=prod -- ./scripts/deploy-regional.ps1 -Region us -SecretsFromEnvironment -Deploy
+infisical run --env=prod --recursive -- ./scripts/deploy-regional.ps1 -Region eu -SecretsFromEnvironment -Deploy
+infisical run --env=prod --recursive -- ./scripts/deploy-regional.ps1 -Region us -SecretsFromEnvironment -Deploy
 ```
 
 The global deployment uses the same Infisical root through the GitHub OIDC
 action and forwards the global allowlist:
 
 ```powershell
-infisical run --env=prod -- ./scripts/deploy-global.ps1 -SecretsFromEnvironment -Deploy
+infisical run --env=prod --recursive -- ./scripts/deploy-global.ps1 -SecretsFromEnvironment -Deploy
 ```
 
 The GitHub deployment uses Infisical's OIDC action and the same script. Configure
