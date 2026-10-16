@@ -22,6 +22,7 @@ import { TimelineTab } from "./TimelineTab";
 import { useInlineActionConfirm } from "./useInlineActionConfirm";
 import { usePullRequest } from "./usePullRequest";
 import { usePullRequestHandoff } from "./usePullRequestHandoff";
+import { PullRequestNumberMenu } from "./PullRequestNumberMenu";
 
 type Tab = "summary" | "guide" | "timeline" | "code";
 const tabs: { value: Tab; label: string }[] = [{ value: "summary", label: "Summary" }, { value: "guide", label: "Guide" }, { value: "timeline", label: "Timeline" }, { value: "code", label: "Code" }];
@@ -86,7 +87,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 	const canEnableAutoMerge = view.state === "OPEN" && !autoMergeArmed && primary !== "enable-auto-merge" && !view.draft && !conflicting && view.autoMergeAllowed && view.viewer.canEnableAutoMerge && view.mergeMethods.length > 0;
 	const canDeleteBranch = view.state !== "OPEN" && view.headRefExists && view.viewer.canDeleteBranch && view.headRepository?.toLowerCase() === view.repository.toLowerCase();
 	const saveTitle = async () => { if (titleDraft === null || !titleDraft.trim()) return; if (titleDraft.trim() === view.title || await pull.perform({ type: "title", title: titleDraft })) setTitleDraft(null); };
-	const number$ = (tabIndex?: number) => <Tip label="Open on GitHub"><button type="button" tabIndex={tabIndex} onClick={() => open(view.url)} onAuxClick={event => { if (event.button === 1) open(view.url); }} aria-label={`Open pull request #${view.number} on GitHub`} className={cn("inline-flex shrink-0 cursor-pointer items-center gap-0.5 font-medium underline-offset-2 hover:underline", presentation.toneClassName)}>#{view.number}<ExternalLink aria-hidden className="size-2.5" /></button></Tip>;
+	const number$ = (tabIndex?: number) => <PullRequestNumberMenu url={view.url} onCopy={url => copy(url, "Link")} onNotice={(message, failed) => { if (failed) setOpenError(message); }} className="shrink-0"><Tip label="Open on GitHub"><button type="button" tabIndex={tabIndex} onClick={() => open(view.url)} onAuxClick={event => { if (event.button === 1) open(view.url); }} aria-label={`Open pull request #${view.number} on GitHub`} className={cn("inline-flex shrink-0 cursor-pointer items-center gap-0.5 font-medium underline-offset-2 hover:underline", presentation.toneClassName)}>#{view.number}<ExternalLink aria-hidden className="size-2.5" /></button></Tip></PullRequestNumberMenu>;
 	const branchLine = (small: boolean) => <span className={cn("flex min-w-0 flex-1 items-center gap-1.5 font-mono", small ? "text-2xs text-muted-foreground/65" : "text-xs text-muted-foreground/70")}>
 		{view.behind && view.state === "OPEN" ? <Popover>
 			<PopoverTrigger openOnHover delay={0} aria-label={`This branch is out of date with ${view.base}.`} className="inline-flex max-w-[40%] min-w-0 shrink-0 cursor-help items-center gap-1 rounded-sm text-amber-600 outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-amber-400"><code className="flex min-w-0"><MiddleTruncate value={view.base} /></code><TriangleAlert aria-hidden className={small ? "size-3 shrink-0" : "size-3.5 shrink-0"} /></PopoverTrigger>

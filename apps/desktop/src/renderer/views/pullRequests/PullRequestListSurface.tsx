@@ -15,6 +15,7 @@ import { cn } from "../../lib/utils";
 import { ChecksGlyph, DiffStat, errorMessage, MiddleTruncate, PullRequestGlyph, PullRequestListGhost, PullRequestRowGlyph, ReviewDecisionGlyph, Tip } from "./presentation";
 import { relativeTime, summaryChecksRollup } from "./pullRequestLogic";
 import { PullRequestSurface } from "./PullRequestSurface";
+import { PullRequestNumberMenu } from "./PullRequestNumberMenu";
 import { segmentedGroup, segmentedItem } from "./segmented";
 
 /** T3's shared row shape (PullRequestListRow): a status column, then number and title over author and branches. */
@@ -41,13 +42,13 @@ function RowMenu({ label, children }: { label: string; children: ReactNode }) {
 	</span>;
 }
 
-function LinkRow({ link, openable, onOpen, onExternal, onCopy, onUnlink, onWatch }: { link: TaskPullRequestLink; openable: boolean; onOpen: () => void; onExternal: () => void; onCopy: () => void; onUnlink: () => void; onWatch: (watching: boolean) => void }) {
+function LinkRow({ link, openable, onOpen, onExternal, onCopy, onUnlink, onWatch, onNotice }: { link: TaskPullRequestLink; openable: boolean; onOpen: () => void; onExternal: () => void; onCopy: () => void; onUnlink: () => void; onWatch: (watching: boolean) => void; onNotice: (message: string, failed?: boolean) => void }) {
 	const snapshot = link.snapshot, open = !snapshot || snapshot.state === "open", rollup = snapshot ? summaryChecksRollup(snapshot.checks) : null;
 	return <div className={cn(PULL_REQUEST_ROW_CLASS, "relative pl-2 hover:bg-accent/60")} data-pull-request-row={`${link.repository}#${link.number}`}>
 		{snapshot ? <PullRequestRowGlyph state={snapshot.state} draft={snapshot.draft} mergeable={snapshot.mergeable} base={snapshot.base} /> : <PullRequestGlyph.pullRequest aria-label="Waiting for GitHub" className="size-4 shrink-0 text-muted-foreground" />}
 		<button type="button" onClick={openable ? onOpen : onExternal} className="flex min-w-0 flex-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/40 rounded-sm">
 			<RowLines
-				number={<Tip label={`${link.source === "agent" ? "Linked by the agent" : "Linked by you"} · ${relativeTime(link.linkedAt)}`}><span className={NUMBER_CLASS}>#{link.number}</span></Tip>}
+				number={<PullRequestNumberMenu url={link.url} onCopy={onCopy} onNotice={onNotice} className="shrink-0"><Tip label={`${link.source === "agent" ? "Linked by the agent" : "Linked by you"} · ${relativeTime(link.linkedAt)}`}><span className={NUMBER_CLASS}>#{link.number}</span></Tip></PullRequestNumberMenu>}
 				title={snapshot?.title ?? link.repository}
 				signals={open ? <>{link.watching && <Tip label="Watching for changes"><span className="inline-flex shrink-0"><Eye role="img" aria-label="Watching" className="size-3.5" /></span></Tip>}{rollup && <ChecksGlyph rollup={rollup} />}{snapshot && <ReviewDecisionGlyph decision={snapshot.review} />}</> : null}
 				status={snapshot && <DiffStat additions={snapshot.additions} deletions={snapshot.deletions} className="font-mono" />}
@@ -64,12 +65,12 @@ function LinkRow({ link, openable, onOpen, onExternal, onCopy, onUnlink, onWatch
 	</div>;
 }
 
-function ProjectRow({ request, linked, onOpen, onExternal, onCopy, onLink }: { request: PullRequest; linked: boolean; onOpen: () => void; onExternal: () => void; onCopy: () => void; onLink?: () => void }) {
+function ProjectRow({ request, linked, onOpen, onExternal, onCopy, onLink, onNotice }: { request: PullRequest; linked: boolean; onOpen: () => void; onExternal: () => void; onCopy: () => void; onLink?: () => void; onNotice: (message: string, failed?: boolean) => void }) {
 	const rollup = summaryChecksRollup(request.checks);
 	return <div className={cn(PULL_REQUEST_ROW_CLASS, "relative pl-2 hover:bg-accent/60")} data-pull-request-row={request.number}>
 		<PullRequestRowGlyph state="OPEN" draft={request.draft} />
 		<button type="button" onClick={onOpen} className="flex min-w-0 flex-1 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/40">
-			<RowLines number={<span className={NUMBER_CLASS}>#{request.number}</span>} title={request.title}
+			<RowLines number={<PullRequestNumberMenu url={request.url} onCopy={onCopy} onNotice={onNotice} className="shrink-0"><span className={NUMBER_CLASS}>#{request.number}</span></PullRequestNumberMenu>} title={request.title}
 				signals={<>{linked && <Tip label="Linked to this chat"><span className="inline-flex shrink-0"><LinkIcon role="img" aria-label="Linked" className="size-3.5 text-muted-foreground" /></span></Tip>}{rollup && <ChecksGlyph rollup={rollup} />}<ReviewDecisionGlyph decision={request.review} /></>}
 				meta={<><span className="max-w-28 shrink-0 truncate">{request.author}</span><span aria-hidden className="text-muted-foreground/50">·</span><Branches head={request.head} base={request.base} /></>}
 				updatedAt={request.updatedAt} />
@@ -166,7 +167,7 @@ export function PullRequestListSurface({ projectId, taskId, onOpen }: { projectI
 				<ScrollArea className="min-h-0 flex-1"><div className="flex flex-col p-1.5" aria-label="Linked pull requests">
 					{links.map(link => <LinkRow key={`${link.repository}#${link.number}`} link={link} openable={sameRepository(link)}
 						onOpen={() => openRequest({ number: link.number, title: link.snapshot?.title ?? `#${link.number}`, state: link.snapshot?.state === "merged" ? "MERGED" : link.snapshot?.state === "closed" ? "CLOSED" : "OPEN", draft: link.snapshot?.draft ?? false })}
-						onExternal={() => external(link.url)} onCopy={() => copy(link.url)}
+						onExternal={() => external(link.url)} onCopy={() => copy(link.url)} onNotice={(message, failed) => failed ? setError(message) : flash(message)}
 						onUnlink={() => void run({ type: "unlink-pull-request", id: taskId, repository: link.repository, number: link.number }).then(failure => failure && setError(failure))}
 						onWatch={watching => void run({ type: "watch-pull-request", id: taskId, repository: link.repository, number: link.number, watching }).then(failure => failure && setError(failure))} />)}
 				</div></ScrollArea>
@@ -175,7 +176,7 @@ export function PullRequestListSurface({ projectId, taskId, onOpen }: { projectI
 			: <ScrollArea className="min-h-0 flex-1"><div className="flex flex-col p-1.5" aria-label="Open pull requests">
 				{!project && loading && <PullRequestListGhost />}
 				{project?.projectId === projectId && project.requests.map(request => <ProjectRow key={request.number} request={request} linked={linkedNumbers.has(request.number)}
-					onOpen={() => openRequest({ number: request.number, title: request.title, state: "OPEN", draft: request.draft })} onExternal={() => external(request.url)} onCopy={() => copy(request.url)}
+					onOpen={() => openRequest({ number: request.number, title: request.title, state: "OPEN", draft: request.draft })} onExternal={() => external(request.url)} onCopy={() => copy(request.url)} onNotice={(message, failed) => failed ? setError(message) : flash(message)}
 					onLink={taskId ? () => void run({ type: "link-pull-request", id: taskId, reference: request.url }).then(failure => failure ? setError(failure) : flash(`Linked #${request.number}`)) : undefined} />)}
 				{project?.projectId === projectId && !project.requests.length && !loading && !error && <p className="px-2 py-2 text-xs text-muted-foreground">No open pull requests.</p>}
 				{project?.projectId === projectId && project.value.nextCursor && <Button size="sm" variant="ghost" className="mt-1 w-full text-xs" disabled={loading} onClick={() => void load(project.value.nextCursor)}>{loading ? "Loading…" : "Load more"}</Button>}

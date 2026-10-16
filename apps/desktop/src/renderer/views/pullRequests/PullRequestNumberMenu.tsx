@@ -17,14 +17,14 @@ export async function copyPullRequestText(text: string, what: string, onNotice?:
  * T3's right-click on a pull request number (pullRequestLinkContextMenu): Copy link, then Open on GitHub. Everywhere
  * else the number reads as a link, so without this the platform's edit menu would open over text with nothing to edit.
  */
-export function PullRequestNumberMenu({ url, children, className, onNotice }: { url: string; children: ReactNode; className?: string; onNotice?: (message: string, failed?: boolean) => void }) {
+export function PullRequestNumberMenu({ url, children, className, onNotice, onCopy }: { url: string; children: ReactNode; className?: string; onNotice?: (message: string, failed?: boolean) => void; /** The caller's own copy, with its own feedback. */ onCopy?: (url: string) => void }) {
 	const open = () => { void window.phaseoDesktop?.workspace?.openLink(url).catch(reason => onNotice?.(`Could not open the link: ${errorMessage(reason)}`, true)); };
 	return <ContextMenu.Root>
 		<ContextMenu.Trigger render={<span className={cn("inline-flex", className)} data-pull-request-number={url} />} onContextMenu={event => event.stopPropagation()}>{children}</ContextMenu.Trigger>
 		<ContextMenu.Portal>
 			<ContextMenu.Positioner className="isolate z-50 outline-none">
 				<ContextMenu.Popup className={popupClass} aria-label="Pull request link">
-					<ContextMenu.Item className={itemClass} onClick={() => void copyPullRequestText(url, "Link", onNotice)}><LinkIcon />Copy link</ContextMenu.Item>
+					<ContextMenu.Item className={itemClass} onClick={() => { if (onCopy) onCopy(url); else void copyPullRequestText(url, "Link", onNotice); }}><LinkIcon />Copy link</ContextMenu.Item>
 					<ContextMenu.Item className={itemClass} onClick={open}><ArrowUpRight />Open on GitHub</ContextMenu.Item>
 				</ContextMenu.Popup>
 			</ContextMenu.Positioner>
