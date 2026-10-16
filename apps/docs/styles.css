@@ -85,6 +85,33 @@
 	}
 }
 
+/* Montserrat runs wide, so Luma's 36px title, 18px intro and 16px body read large next to phaseo.app
+   (14-16px text, 20px section headings). Step each one down. */
+#page-title {
+	font-size: 1.875rem;
+	line-height: 2.25rem;
+}
+
+#header .prose {
+	font-size: 1rem;
+	line-height: 1.625rem;
+}
+
+#content.mdx-content {
+	font-size: 0.9375rem;
+	line-height: 1.625rem;
+}
+
+#content.mdx-content h2 {
+	font-size: 1.25rem;
+	line-height: 1.75rem;
+}
+
+#content.mdx-content h3 {
+	font-size: 1.0625rem;
+	line-height: 1.5rem;
+}
+
 /* Luma puts 2rem between sidebar sections, which spreads the API Reference's many short sections out. */
 #sidebar-content div[class~="lg:mt-8"] {
 	margin-top: 1.25rem;
