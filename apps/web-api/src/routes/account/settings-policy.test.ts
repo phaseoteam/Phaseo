@@ -332,6 +332,8 @@ describe("account policy settings routes", () => {
 			if (url.includes("data_api_provider_models")) return new Response(JSON.stringify([{ provider_id: "openai", api_model_id: "gpt-test", internal_model_id: "openai/gpt-test", is_active_gateway: true }]), { status: 200 });
 			if (url.includes("v2_route_capabilities")) {
                 expect(new URL(url).searchParams.get("or")).toContain("metadata->data_policy.not.is.null");
+                expect(new URL(url).searchParams.get("provider_model_id")).toBe("in.(pm-native)");
+                expect(new URL(url).searchParams.get("limit")).toBe("500");
                 return new Response(JSON.stringify([{ provider_model_id: "pm-native", capability_id: "text.generate", metadata: { data_policy: { tier: "private", confidence: "confirmed", zeroDataRetention: true, zdrEligibility: "eligible" } } }]), { status: 200 });
             }
 			if (url.includes("workspace_guardrails")) return new Response(JSON.stringify([{ id: "guardrail-1", workspace_id: "workspace-1", name: "Default", enabled: true }]), { status: 200 });

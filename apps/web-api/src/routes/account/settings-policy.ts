@@ -46,16 +46,28 @@ async function loadGuardrailReference(context: AccountWorkspaceContext) {
 		? await context.client.from("v2_models").select("model_slug,name,lab_slug,organisation:v2_labs(lab_slug,name)").in("model_slug", modelSlugs)
 		: { data: [], error: null };
 	if (modelMetadataResult.error) throw new Error("settings_unavailable");
-	const capabilitiesResult = modelsResult.data?.length
-		? await context.client.from("v2_route_capabilities")
-			.select("provider_model_id,capability_id,status,metadata")
-			.or("metadata->data_policy.not.is.null,capability_id.in.(batch,files.upload,files.list,files.retrieve)")
-			.in("status", ["active", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"])
-		: { data: [], error: null };
-	if (capabilitiesResult.error) throw new Error("settings_unavailable");
+	const providerModelIds = Array.from(new Set((modelsResult.data ?? [])
+		.map((row) => String(row.provider_model_id ?? "").trim()).filter(Boolean)));
+	const capabilityRows: Array<{ provider_model_id: string; capability_id: string; metadata: Record<string, unknown> | null }> = [];
+	// Bound URL size and page below PostgREST's row cap so scoped policies are not truncated.
+	for (let index = 0; index < providerModelIds.length; index += 100) {
+		const batch = providerModelIds.slice(index, index + 100);
+		for (let offset = 0; ; offset += 500) {
+			const result = await context.client.from("v2_route_capabilities")
+				.select("provider_model_id,capability_id,status,metadata")
+				.in("provider_model_id", batch)
+				.or("metadata->data_policy.not.is.null,capability_id.in.(batch,files.upload,files.list,files.retrieve)")
+				.in("status", ["active", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"])
+				.order("provider_model_id").order("capability_id")
+				.range(offset, offset + 499);
+			if (result.error) throw new Error("settings_unavailable");
+			capabilityRows.push(...(result.data ?? []));
+			if ((result.data?.length ?? 0) < 500) break;
+		}
+	}
 	const modelMetadata = new Map((modelMetadataResult.data ?? []).map((row: any) => [String(row.model_slug), row]));
 	const capabilitiesByProviderModel = new Map<string, Array<{ id: string; dataPolicy: Record<string, unknown> | null }>>();
-	for (const row of capabilitiesResult.data ?? []) {
+	for (const row of capabilityRows) {
 		const providerModelId = String(row.provider_model_id ?? "").trim();
 		const capabilityId = String(row.capability_id ?? "").trim();
 		if (!providerModelId || !capabilityId) continue;
