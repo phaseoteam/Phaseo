@@ -31,11 +31,16 @@ export async function connectPhaseoMcp(connections: McpConnection[], cwd: string
    const client = new Client({ name: "phaseo-desktop", version: "0.1.0" }, { capabilities: callbacks?.onForm ? { elicitation: { form: {}, url: {} } } : {} }); clients.push(client);
    const budgets = new Set<McpCallBudget>(); let waitingForms = 0;
    if (callbacks?.onForm) {
-    const formCallbacks = { ...callbacks, onForm: async (...args: Parameters<NonNullable<AgentCallbacks["onForm"]>>) => {
+    // A tool's deadline stops while a person answers its form or question, however long they take.
+    const waitingFor = async <T,>(answer: () => Promise<T>) => {
      waitingForms++; for (const budget of budgets) budget.pause();
-     try { return await callbacks.onForm!(...args); }
+     try { return await answer(); }
      finally { if (--waitingForms === 0) for (const budget of budgets) budget.resume(); }
-    } };
+    };
+    const formCallbacks = { ...callbacks,
+     onForm: (...args: Parameters<NonNullable<AgentCallbacks["onForm"]>>) => waitingFor(() => callbacks.onForm!(...args)),
+     ...(callbacks.onQuestion ? { onQuestion: (...args: Parameters<NonNullable<AgentCallbacks["onQuestion"]>>) => waitingFor(() => callbacks.onQuestion!(...args)) } : {}),
+    };
     client.setRequestHandler(ElicitRequestSchema, (request, extra) => respondMcpElicitation({ ...request.params, serverName: connection.name }, formCallbacks, AbortSignal.any([signal, extra.signal])));
    }
    const transport = connection.transport === "stdio"
