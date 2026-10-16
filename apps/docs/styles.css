@@ -52,8 +52,12 @@
 		--content-width: clamp(40.5rem, min(100vw - 41rem, 100vw - 2 * var(--sidebar-width) - 5rem), 56rem);
 	}
 
+	/* Luma centres endpoint pages on the window, so the gap to the sidebar is several times the gap to the example
+	   panel. Centre them between the two instead, as Luma already does below 1650px, leaving at least 3rem each
+	   side of the text (the panel and its margins take about 26.5rem). */
 	#content-container:has(> [data-api-example]) #content-area {
-		--content-width: clamp(40.5rem, min(100vw - 64rem, 100vw - 2 * var(--sidebar-width) - 5rem), 56rem);
+		--content-width: clamp(40.5rem, 100vw - var(--sidebar-width) - 35.5rem, 56rem);
+		margin-inline: auto !important;
 	}
 }
 
