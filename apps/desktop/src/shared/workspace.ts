@@ -23,6 +23,7 @@ import type { GitDiffRequest, GitDiffResult, GitRefs, TurnCheckpoint } from "./g
 import type { ProjectTreeRequest, ProjectTreeResult } from "./projectTree";
 import type { FilePreview } from "./filePreview";
 import type { ProjectSettings, ProjectUpdate, T3ProjectFileState } from "./projectSettings";
+import type { PullRequestGuideResult } from "./pullRequestGuide";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -181,6 +182,8 @@ export type WorkspaceApi = {
 	pullRequestWorktree: (projectId: string, number: number) => Promise<{ workspace: WorkspaceOverview; projectId: string; branch: string }>;
 	/** Switches the project's own checkout to the pull request's branch; refuses while it has uncommitted changes. */
 	pullRequestCheckoutHere: (projectId: string, number: number) => Promise<{ workspace: WorkspaceOverview; projectId: string; branch: string }>;
+	/** A pull request's stored review guide; with write, writes one for the current head first (T3's Guide tab). */
+	pullRequestGuide: (projectId: string, number: number, write?: boolean) => Promise<PullRequestGuideResult>;
 	pasteImage: (taskId: string, name: string, bytes: Uint8Array) => Promise<Attachment>;
 	chooseAttachments: (taskId: string) => Promise<{ attachments: Attachment[]; errors: string[] }>;
 	exportTask: (taskId: string, format: "markdown" | "json") => Promise<boolean>;

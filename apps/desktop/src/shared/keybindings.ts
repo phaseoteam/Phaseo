@@ -33,6 +33,9 @@ export const keybindingCommands = [
 	{ command: "browser.zoomIn", label: "Zoom page in", group: "Browser", keys: ["mod+=", "mod++"], when: "browserFocused" },
 	{ command: "browser.zoomOut", label: "Zoom page out", group: "Browser", keys: ["mod+-"], when: "browserFocused" },
 	{ command: "browser.zoomReset", label: "Reset page zoom", group: "Browser", keys: ["mod+0"], when: "browserFocused" },
+	// T3's J and K step through a review guide while its tab is on screen, unless you are typing.
+	{ command: "guide.next", label: "Next stop in a review guide", group: "Pull requests", keys: ["j"], when: "paneOpen && !textFocused && !terminalFocused && !browserFocused" },
+	{ command: "guide.previous", label: "Previous stop in a review guide", group: "Pull requests", keys: ["k"], when: "paneOpen && !textFocused && !terminalFocused && !browserFocused" },
 	{ command: "view.zoomIn", label: "Zoom in", group: "View", keys: ["mod+=", "mod++"] },
 	{ command: "view.zoomOut", label: "Zoom out", group: "View", keys: ["mod+-"] },
 	{ command: "view.zoomReset", label: "Actual size", group: "View", keys: ["mod+0"] },
@@ -45,7 +48,7 @@ export type CommandInfo = { command: KeybindingCommand; label: string; group: st
 const commandList: readonly CommandInfo[] = keybindingCommands;
 export type KeybindingEntry = { command: KeybindingCommand; key: string; when?: string };
 export type KeybindingRow = KeybindingEntry & { id: string; label: string; group: string; source: "Default" | "Custom"; defaultKeys: readonly string[]; defaultWhen?: string };
-export const keybindingGroups = ["General", "Chats", "Panes", "Browser", "View", "Project actions"] as const;
+export const keybindingGroups = ["General", "Chats", "Panes", "Browser", "Pull requests", "View", "Project actions"] as const;
 
 const scriptCommandPattern = /^script\.([A-Za-z0-9_-]{1,200})\.([A-Za-z0-9_-]{1,100})\.run$/;
 export const scriptCommand = (projectId: string, actionId: string): ScriptCommand => `script.${projectId}.${actionId}.run`;
@@ -242,7 +245,9 @@ const pageCommands: readonly string[] = ["browser.reload", "browser.zoomIn", "br
 /** Keys a focused web page hands to the app; the app takes keyboard focus for all but the page's own commands. Undo stays with the page, where it edits text. */
 export function browserShortcuts(custom: KeybindingEntry[]) {
 	const shortcuts = new Map<string, boolean>();
-	for (const row of keybindingRows(custom)) if (row.key && row.command !== "thread.undo") shortcuts.set(row.key, (shortcuts.get(row.key) ?? false) || pageCommands.includes(row.command));
-	for (const entry of custom) if (entry.key && isScriptCommand(entry.command)) shortcuts.set(entry.key, shortcuts.get(entry.key) ?? false);
+	// A bare letter (the guide's J and K) is typing on a page, never the app's.
+	const typed = (key: string) => { const parsed = parseKey(key); return Boolean(parsed && !parsed.mod && !parsed.ctrl && !parsed.meta && !parsed.alt && parsed.key.length === 1); };
+	for (const row of keybindingRows(custom)) if (row.key && row.command !== "thread.undo" && !typed(row.key)) shortcuts.set(row.key, (shortcuts.get(row.key) ?? false) || pageCommands.includes(row.command));
+	for (const entry of custom) if (entry.key && isScriptCommand(entry.command) && !typed(entry.key)) shortcuts.set(entry.key, shortcuts.get(entry.key) ?? false);
 	return [...shortcuts].map(([key, keepPageFocus]) => ({ key, keepPageFocus }));
 }

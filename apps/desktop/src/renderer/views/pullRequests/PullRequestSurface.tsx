@@ -12,6 +12,7 @@ import { usePersistedState } from "../../lib/persistedState";
 import { cn } from "../../lib/utils";
 import { ChecksPopover } from "./ChecksPopover";
 import { CodeTab } from "./CodeTab";
+import { GuideTab } from "./GuideTab";
 import { Composer } from "./Composer";
 import { ActorLabel, DiffStat, errorMessage, MetaLine, MiddleTruncate, PullRequestGlyph, pullRequestStatePresentation, ReviewOutcomeIcon, REVIEW_OUTCOME_PRESENTATION, Tip } from "./presentation";
 import { approvalCount, checksRollup, mergeMethodLabels, primaryAction, relativeTime, summarizeChecks } from "./pullRequestLogic";
@@ -22,8 +23,8 @@ import { useInlineActionConfirm } from "./useInlineActionConfirm";
 import { usePullRequest } from "./usePullRequest";
 import { usePullRequestHandoff } from "./usePullRequestHandoff";
 
-type Tab = "summary" | "timeline" | "code";
-const tabs: { value: Tab; label: string }[] = [{ value: "summary", label: "Summary" }, { value: "timeline", label: "Timeline" }, { value: "code", label: "Code" }];
+type Tab = "summary" | "guide" | "timeline" | "code";
+const tabs: { value: Tab; label: string }[] = [{ value: "summary", label: "Summary" }, { value: "guide", label: "Guide" }, { value: "timeline", label: "Timeline" }, { value: "code", label: "Code" }];
 
 function useCopied() {
 	const [copied, setCopied] = useState<string>();
@@ -227,6 +228,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 			setCondensed(previous => previous ? top >= 4 : top > 64);
 		}}>
 			{mounted.has("summary") && <div className={cn("absolute inset-0", tab !== "summary" && "invisible")}><SummaryTab view={view} projectId={projectId} onOpen={open} onAction={perform} /></div>}
+			{mounted.has("guide") && <div className={cn("absolute inset-0", tab !== "guide" && "invisible")}><GuideTab view={view} projectId={projectId} active={tab === "guide"} onOpenCode={() => selectTab("code")} /></div>}
 			{mounted.has("timeline") && <div className={cn("absolute inset-0", tab !== "timeline" && "invisible")}><TimelineTab view={view} projectId={projectId} order={order} onOpen={open} /></div>}
 			{mounted.has("code") && <div className={cn("absolute inset-0", tab !== "code" && "invisible")}><CodeTab view={view} projectId={projectId} pending={busy} onAction={pull.perform} onOpen={open} /></div>}
 		</div>

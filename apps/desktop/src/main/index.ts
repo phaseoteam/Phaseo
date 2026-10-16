@@ -60,7 +60,8 @@ import { TerminalService } from "./terminalService";
 import { contentHash, writeProjectFile } from "./projectEdits";
 import { gitBranches, gitCommand } from "./gitOperations";
 import { projectPullRequests, projectPullRequest } from "./projectPullRequests";
-import { projectPullRequestAction, projectPullRequestCandidates, projectPullRequestView, readPullRequestView } from "./projectPullRequestView";
+import { ghFailure, projectPullRequestAction, projectPullRequestCandidates, projectPullRequestView, readPullRequestView, runGh } from "./projectPullRequestView";
+import { PullRequestGuides } from "./pullRequestGuides";
 import { PullRequestWatcher } from "./pullRequestWatcher";
 import { checkoutPullRequestHere, checkoutPullRequestWorktree } from "./pullRequestCheckout";
 import { pullRequestLinkSnapshot } from "../shared/pullRequestView";
@@ -86,6 +87,7 @@ const developmentUrl = app.isPackaged ? undefined : process.env.PHASEO_DESKTOP_D
 const applicationIcon = path.join(app.getAppPath(), "assets", `icon-${developmentUrl ? "development" : "production"}.png`);
 const updateFeedUrl = process.env.PHASEO_DESKTOP_UPDATE_URL;
 let workspaceRuntime: WorkspaceRuntime;
+let pullRequestGuides: PullRequestGuides;
 let globalInstructions: GlobalInstructions;
 let shutdownComplete = false;
 let shutdownStarted = false;
@@ -376,6 +378,12 @@ ipcMain.handle("workspace:pull-request-worktree", async (event, id: unknown, num
 	const view = await projectPullRequestView(root, number);
 	const result = await checkoutPullRequestWorktree(root, view, async (branch, base) => { const created = await workspaceRuntime.createWorktree(id, branch, base); return { projectId: created.projectId, directory: workspaceRuntime.store.getProjects().find(project => project.id === created.projectId)?.directory }; });
 	return { workspace: workspaceRuntime.store.getOverview(), projectId: result.projectId, branch: result.branch };
+});
+ipcMain.handle("workspace:pull-request-guide", async (event, id: unknown, number: unknown, write: unknown) => {
+	const root = projectRoot(event, id);
+	if (typeof write !== "boolean" || shutdownStarted) throw new Error("Invalid guide request.");
+	const view = await projectPullRequestView(root, number);
+	return write ? pullRequestGuides.generate(root, view) : pullRequestGuides.get(view);
 });
 ipcMain.handle("workspace:pull-request-checkout-here", async (event, id: unknown, number: unknown) => {
 	const root = projectRoot(event, id);
@@ -735,6 +743,10 @@ app.whenReady().then(() => {
 	usageHubs = new UsageHubs(usageHubFile(workspaceDirectory), { set: (id, value) => vault.set(id, value), get: id => vault.get(id), remove: id => vault.remove(id) });
 	modelCatalogCache = new ModelCatalogCache(path.join(app.getPath("userData"), "cache"), ({ accountId }) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness: "phaseo", accountId }); });
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
+	pullRequestGuides = new PullRequestGuides(path.join(workspaceDirectory, "pull-request-guides"), input => workspaceRuntime.completeWithTitleModel(input), async (root, view) => {
+		try { return await runGh(root, ["pr", "diff", String(view.number), "--repo", view.repository, "--color", "never"]); }
+		catch (reason) { throw new Error(ghFailure((reason as { stderr?: unknown }).stderr, "Could not read the pull request's diff."), { cause: reason }); }
+	});
 	workspaceRuntime.discoverThreadModels = discoverDesktopModels;
 	workspaceRuntime.discoverInstallations = harnessInstallations;
 	globalInstructions = new GlobalInstructions(path.join(workspaceDirectory, "instructions"));

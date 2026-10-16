@@ -1,6 +1,6 @@
 import { threadToolLabel, type ThreadTools } from "../shared/orchestration";
 import type { BrowserAgentTools } from "../shared/browserAgent";
-import { generateTitle } from "./chatTitles";
+import { completeChat, generateTitle } from "./chatTitles";
 import { mentionPlainText } from "../shared/mentions";
 import { randomUUID } from "node:crypto";
 import { autoSettleAt } from "../shared/threadLifecycle";
@@ -126,17 +126,31 @@ export class WorkspaceRuntime {
 	}
 	private readonly threads: WorkspaceThreads;
 	/** Names a chat with the title model (Settings → General), as T3 does; without one, the first message stays its title. A rename in the meantime wins. */
-	private async nameChat(id: string, regenerate: boolean) {
+	/** The title model (Settings → General) and the Phaseo account it runs through, or which of the two is missing. */
+	titleModelAccount(): { model: string; endpoint: string; secretId: string } | { missing: "model" | "account" } {
 		const model = this.store.getPreferences().titleModel;
-		if (!model) { if (regenerate) throw new Error("Choose a model for chat titles in Settings → General first."); return; }
+		if (!model) return { missing: "model" };
 		const account = this.store.getAccounts().find(value => value.harness === "phaseo" && value.configured && !value.archived && value.endpoint && (!value.oauthExpiresAt || Date.parse(value.oauthExpiresAt) > Date.now()));
-		if (!account?.endpoint || !this.vault) { if (regenerate) throw new Error("Sign in to Phaseo to name chats with a model."); return; }
+		if (!account?.endpoint || !this.vault) return { missing: "account" };
+		return { model, endpoint: account.endpoint, secretId: account.secretId ?? account.id };
+	}
+	/** Runs a prompt on the title model through the person's Phaseo account (pull request guides use it). */
+	async completeWithTitleModel(input: { system: string; user: string; maxTokens: number; timeoutMs: number; signal?: AbortSignal; label: string }) {
+		const access = this.titleModelAccount();
+		if ("missing" in access) throw new Error(access.missing === "model" ? "Choose a model for chat titles in Settings → General first." : "Sign in to Phaseo to use a model here.");
+		const reply = await completeChat({ endpoint: access.endpoint, token: await this.vault!.get(access.secretId), model: access.model, ...input });
+		return { reply, model: access.model };
+	}
+	private async nameChat(id: string, regenerate: boolean) {
+		const access = this.titleModelAccount();
+		if ("missing" in access) { if (regenerate) throw new Error(access.missing === "model" ? "Choose a model for chat titles in Settings → General first." : "Sign in to Phaseo to name chats with a model."); return; }
+		const { model } = access;
 		const task = this.store.getTask(id), before = task.title;
 		const text = task.messages.find(message => message.role === "user" && !message.delivery)?.text ?? task.queue[0]?.text;
 		if (!text) { if (regenerate) throw new Error("This chat has no message to name it from."); return; }
 		const reply = regenerate ? task.messages.findLast(message => message.role === "assistant")?.text : undefined;
 		try {
-			const title = await generateTitle({ endpoint: account.endpoint, token: await this.vault.get(account.secretId ?? account.id), model, text: mentionPlainText(text), reply });
+			const title = await generateTitle({ endpoint: access.endpoint, token: await this.vault!.get(access.secretId), model, text: mentionPlainText(text), reply });
 			const current = this.store.getTask(id);
 			if (!title || this.closing || (!regenerate && current.title !== before)) return;
 			current.title = title; this.store.saveTask(current, true); this.broadcast();
