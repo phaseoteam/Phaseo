@@ -143,7 +143,8 @@ describe("scoped desktop orchestration", () => {
 			const state = await runtime.command({ type: "create-task", harness: "codex", model: "owned", mode: "code" });
 			const parentId = state.tasks[0].id;
 			const child = await runtime.threadTools(parentId).delegate({ requestId: "background", title: "Research", prompt: "Inspect", background: true });
-			await vi.waitFor(() => expect(runtime.store.getTask(parentId).status).toBe("completed"));
+			// The child runs, then wakes the parent for a second run; Windows CI can take over a second for both.
+			await vi.waitFor(() => expect(runtime.store.getTask(parentId).status).toBe("completed"), { timeout: 5000 });
 			expect(run).toHaveBeenCalledTimes(2);
 			expect(runtime.store.getTask(parentId).messages).toEqual(expect.arrayContaining([expect.objectContaining({ delivery: "subagent", text: expect.stringContaining("Background findings") })]));
 			expect(runtime.store.collectDelegationResults()).toEqual([]);
