@@ -64,7 +64,7 @@ function parseCapabilityOverride(params: Record<string, any> | null | undefined)
         : undefined;
     const zdrEligibility = declaredEligibility === "ineligible" || raw.zeroDataRetention === false
         ? "ineligible"
-        : raw.zeroDataRetention === true ? "eligible" : declaredEligibility;
+        : raw.zeroDataRetention === true ? "eligible" : undefined;
     const retentionMode = ["unknown", "none", "transient", "fixed", "until_deleted"].includes(String(raw.retentionMode))
         ? raw.retentionMode as EffectiveDataPolicy["retentionMode"]
         : undefined;
@@ -121,6 +121,7 @@ export function resolveEffectiveDataPolicy(args: {
     return {
         ...inherited,
         ...override,
+        zdrEligibility: override.zdrEligibility ?? fallback?.zdrEligibility ?? inherited.zdrEligibility,
         retentionDays:
             override.retentionDays === undefined ? inherited.retentionDays : override.retentionDays,
         source: explicit ? "capability" : "capability_default",

@@ -6,7 +6,7 @@ import { localizedPricingDisplayLabel } from "@/i18n/pricing-display";
 import { ProviderRouteName } from "./ProviderRouteName";
 import { ProviderRoutingHelp } from "./ProviderRoutingHelp";
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { resolveEnforcedZdr, resolveScopedZdr } from "@/components/(data)/model/pricing/zdr";
+import { resolveScopedZdr } from "@/components/(data)/model/pricing/zdr";
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { getLocalizedDocsHref } from "@/lib/docs";
@@ -2848,7 +2848,8 @@ export default function ProviderCard({
 				notes: policy.reason ?? provider.provider.prompt_training_notes ?? null,
 				sourceUrl: policy.evidenceUrl ?? provider.provider.prompt_training_source_url ?? null,
 				promptTrainingPolicy: provider.provider.prompt_training_policy ?? null,
-				zeroDataRetention: resolveEnforcedZdr(provider.provider.zero_data_retention, policy.zdrEligibility, policy.zeroDataRetention),
+				zeroDataRetention: resolveScopedZdr(provider.provider.zero_data_retention,
+					infoScope.map((model) => model.data_policy), tierPolicy),
 			}));
 		})(),
 		residency: [
@@ -2858,9 +2859,8 @@ export default function ProviderCard({
 				dataRegions: provider.provider.default_data_regions ?? null,
 				zeroDataRetention: resolveScopedZdr(
 					provider.provider.zero_data_retention,
-					provider.provider.service_tier_data_policies?.[selectedPlan]
-						? [provider.provider.service_tier_data_policies[selectedPlan]]
-						: infoScope.map((model) => model.data_policy),
+					infoScope.map((model) => model.data_policy),
+					provider.provider.service_tier_data_policies?.[selectedPlan],
 				),
 				notes: provider.provider.residency_notes ?? null,
 				sourceUrl: provider.provider.residency_source_url ?? null,
@@ -3243,9 +3243,9 @@ export default function ProviderCard({
 		no: tSections("no"),
 		unknown: tSections("unknown"),
 	};
-	const selectedZdr = hasMixedCapabilityPolicies
-		? null
-		: resolveEnforcedZdr(provider.provider.zero_data_retention, selectedDataPolicy?.zdrEligibility, selectedDataPolicy?.zeroDataRetention);
+	const selectedZdr = resolveScopedZdr(
+		provider.provider.zero_data_retention, scopedCapabilityPolicies, selectedTierPolicy,
+	);
 	const dataPolicySummary = [
 		{
 			label: tProvider("dataPolicy"),

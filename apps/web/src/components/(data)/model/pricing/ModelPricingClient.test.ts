@@ -105,6 +105,13 @@ describe("route retention in pricing table scopes", () => {
 		expect(getPlanZdrEligibility(offer([{}]), "standard")).toBe(false);
 		expect(getPlanZdrEligibility(offer([{ zdrEligibility: "eligible" }]), "standard")).toBe(false);
 	});
+	it("retains route guarantees under an eligibility-only tier policy", () => {
+        const provider = offer([native]);
+        provider.provider.service_tier_data_policies = { standard: { zdrEligibility: "eligible" } };
+        expect(getPlanZdrEligibility(provider, "standard")).toBe(true);
+        provider.provider.service_tier_data_policies.standard = { zdrEligibility: "ineligible" };
+        expect(getPlanZdrEligibility(provider, "standard")).toBe(false);
+    });
 	it("does not turn a mixed scope into a blanket guarantee", () => {
 		expect(getPlanZdrEligibility(offer([native, {}]), "standard")).toBeNull();
 	});

@@ -49,7 +49,7 @@ async function loadGuardrailReference(context: AccountWorkspaceContext) {
 	const capabilitiesResult = modelsResult.data?.length
 		? await context.client.from("v2_route_capabilities")
 			.select("provider_model_id,capability_id,status,metadata")
-			.in("capability_id", ["batch", "files.upload", "files.list", "files.retrieve"])
+			.or("metadata->data_policy.not.is.null,capability_id.in.(batch,files.upload,files.list,files.retrieve)")
 			.in("status", ["active", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"])
 		: { data: [], error: null };
 	if (capabilitiesResult.error) throw new Error("settings_unavailable");

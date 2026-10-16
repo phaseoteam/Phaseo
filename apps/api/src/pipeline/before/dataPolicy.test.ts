@@ -56,6 +56,7 @@ describe("resolveEffectiveDataPolicy", () => {
                         confidence: "confirmed",
                         zdrEligibility: "eligible",
                         retentionMode: "none",
+                        zeroDataRetention: true,
                         reason: "Covered by a custom upstream agreement.",
                     },
                 },
@@ -90,4 +91,16 @@ it("does not promote an explicitly unguaranteed or ineligible route", () => {
             capabilityParams: { data_policy: policy },
         }) })).toMatchObject({ zdrEligibility: "ineligible" });
     }
+});
+
+
+it("requires an active guarantee and otherwise preserves conservative defaults", () => {
+    for (const zeroDataRetention of [false, true]) {
+        expect(resolveEffectiveDataPolicy({ endpoint: "text.generate", provider: provider({
+            zeroDataRetention, capabilityParams: { data_policy: { zdrEligibility: "eligible" } },
+        }) }).zdrEligibility).toBe(zeroDataRetention ? "eligible" : "ineligible");
+    }
+    expect(resolveEffectiveDataPolicy({ endpoint: "batch", provider: provider({
+        capabilityParams: { data_policy: { zdrEligibility: "eligible" } },
+    }) }).zdrEligibility).toBe("ineligible");
 });

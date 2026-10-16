@@ -30,3 +30,13 @@ describe("verified route retention", () => {
 		expect(resolveScopedZdr(false, [])).toBe(false);
 	});
 });
+
+
+it("does not let eligibility-only tiers mask scoped route guarantees", () => {
+    const eligibleTier = { zdrEligibility: "eligible" };
+    expect(resolveScopedZdr(false, [{ zeroDataRetention: true }], eligibleTier)).toBe(true);
+    expect(resolveScopedZdr(true, [{ zeroDataRetention: false }], eligibleTier)).toBe(false);
+    expect(resolveScopedZdr(false, [{ zeroDataRetention: true }], { zdrEligibility: "ineligible" })).toBe(false);
+    expect(resolveScopedZdr(false, [{ zeroDataRetention: false }], { zeroDataRetention: true })).toBe(true);
+    expect(resolveEnforcedZdr(false, "eligible")).toBe(false);
+});

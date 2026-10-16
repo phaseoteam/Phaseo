@@ -1,4 +1,5 @@
 "use client";
+import { capabilityPrivacyDecision } from "./capabilityPrivacyDecision";
 
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
@@ -778,44 +779,6 @@ type PreviewModelProviderState = {
 	reasonCode: "available" | "provider_restriction" | "model_restriction" | "zdr_required" | "data_policy_unknown" | "data_policy_unverified" | "logging_disabled" | "training_disabled";
 };
 
-function capabilityPrivacyDecision(args: {
-	row: ActiveProviderModel;
-	capability: { id: string; dataPolicy: Record<string, unknown> | null };
-	privacyZdrOnly: boolean;
-	privacyEnableInputOutputLogging: boolean;
-	privacyEnablePaidMayTrain: boolean;
-	privacyEnableFreeMayTrain: boolean;
-}): { accessible: boolean; reasonCode: PreviewModelProviderState["reasonCode"] } {
-	const policy = args.capability.dataPolicy;
-	const stateful = ["batch", "files.upload", "files.list", "files.retrieve"].includes(args.capability.id);
-	const tier = String(policy?.tier ?? (stateful ? "logs" : args.row.providerPolicy?.dataPolicyTier ?? "unknown"));
-	const confidence = String(policy?.confidence ?? (stateful ? "confirmed" : args.row.providerPolicy?.dataPolicyConfidence ?? "unknown"));
-	const zdrEligibility = String(policy?.zdrEligibility ?? (
-		stateful
-			? "ineligible"
-			: args.row.providerPolicy?.zeroDataRetention === true
-				? "eligible"
-				: "ineligible"
-	));
-
-	if (args.privacyZdrOnly && zdrEligibility !== "eligible") {
-		return { accessible: false, reasonCode: "zdr_required" };
-	}
-	const privacyRestricted = args.privacyZdrOnly || !args.privacyEnableInputOutputLogging || !args.privacyEnablePaidMayTrain || !args.privacyEnableFreeMayTrain;
-	if (privacyRestricted && tier === "unknown") {
-		return { accessible: false, reasonCode: "data_policy_unknown" };
-	}
-	if (privacyRestricted && confidence !== "confirmed") {
-		return { accessible: false, reasonCode: "data_policy_unverified" };
-	}
-	if (!args.privacyEnableInputOutputLogging && tier === "logs") {
-		return { accessible: false, reasonCode: "logging_disabled" };
-	}
-	if ((!args.privacyEnablePaidMayTrain && !args.privacyEnableFreeMayTrain) && tier === "trains") {
-		return { accessible: false, reasonCode: "training_disabled" };
-	}
-	return { accessible: true, reasonCode: "available" };
-}
 
 function buildProviderReason(args: {
 	row: ActiveProviderModel;

@@ -142,7 +142,7 @@ backfill and consumer cutover are verified.
   `params.data_policy` copy for gateway snapshots. Catalog promotion preserves
   that policy while replacing catalog-owned parameters. `zeroDataRetention`
   is an explicit active route guarantee; `zdrEligibility` alone describes
-  eligibility and must not enable the web ZDR display. An `ineligible` policy
+  eligibility and must not grant ZDR routing or enable the web ZDR display. An `ineligible` policy
   always denies ZDR. Provider defaults remain conservative for new routes.
 - The admin editor and approved database automations write the v2 catalogue
   directly. Public JSON snapshots are exported from v2 for compatibility,

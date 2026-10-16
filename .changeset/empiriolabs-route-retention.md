@@ -1,6 +1,7 @@
 ---
 "@phaseo/web": patch
 "@phaseo/gateway-api": patch
+"@phaseo/web-api": patch
 ---
 
-Display verified route-specific zero data retention consistently in model pricing and provider hovers.
+Apply verified route retention consistently in gateway routing, guardrail previews, model pricing, and provider hovers.

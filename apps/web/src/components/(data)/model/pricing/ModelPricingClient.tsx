@@ -9,7 +9,7 @@ import React, {
     useRef,
     useState,
 } from "react";
-import { resolveEnforcedZdr, resolveScopedZdr } from "@/components/(data)/model/pricing/zdr";
+import { resolveScopedZdr } from "@/components/(data)/model/pricing/zdr";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { fetchPublicWebApi } from "@/lib/web-api/client";
 import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
@@ -536,10 +536,8 @@ export function getPlanZdrEligibility(
 ): boolean | null {
 	const providerZdr = provider.provider.zero_data_retention;
 	const tierPolicy = provider.provider.service_tier_data_policies?.[plan];
-	const policies = tierPolicy
-		? [tierPolicy]
-		: getProviderModelScopeForPlan(provider, plan).map((model) => model.data_policy);
-	return resolveScopedZdr(providerZdr, policies);
+	const policies = getProviderModelScopeForPlan(provider, plan).map((model) => model.data_policy);
+	return resolveScopedZdr(providerZdr, policies, tierPolicy);
 }
 
 function formatServiceTierLabel(plan: string): string {
@@ -655,11 +653,7 @@ function ProviderServiceTierInfoIcons({
 		notes: policy?.reason ?? provider.provider.prompt_training_notes ?? null,
 		sourceUrl: policy?.evidenceUrl ?? provider.provider.prompt_training_source_url ?? null,
 		promptTrainingPolicy: provider.provider.prompt_training_policy ?? null,
-		zeroDataRetention: resolveEnforcedZdr(
-			provider.provider.zero_data_retention,
-			policy?.zdrEligibility,
-			policy?.zeroDataRetention,
-		),
+		zeroDataRetention: getPlanZdrEligibility(provider, plan),
 	}));
 
 	return (
