@@ -26,8 +26,10 @@ export async function startContentHttpFixture(calls, promptMode) {
     response.end(JSON.stringify({ jsonrpc: "2.0", id: rpc.id, result: { protocolVersion: rpc.params.protocolVersion, capabilities: promptMode ? { prompts: {} } : { resources: {} }, serverInfo: { name: "owned-http-content", version: "1" } } })); return;
    }
    if (!session) {
-    if (ended.has(sessionId) && rpc.method === "notifications/cancelled" && rpc.id === undefined) { response.writeHead(404); response.end(); return; }
-    throw Error("Content request outside a live session.");
+    // After cleanup a cancellation, or the answer to a form the stop cancelled, may still be in flight: 404 tells the client the session is gone.
+    const lateCancel = (rpc.method === "notifications/cancelled" && rpc.id === undefined) || (rpc.method === undefined && rpc.id !== undefined && (rpc.result?.action === "cancel" || rpc.result?.action === "decline" || rpc.error !== undefined));
+    if (ended.has(sessionId) && lateCancel) { response.writeHead(404); response.end(); return; }
+    throw Error("Content request outside a live session: " + JSON.stringify({ method: rpc.method, id: rpc.id !== undefined, ended: ended.has(sessionId), action: rpc.result?.action }));
    }
    if (rpc.method === undefined && rpc.id !== undefined) {
     const form = session.forms.get(rpc.id);
