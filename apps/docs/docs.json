@@ -3097,89 +3097,18 @@
           },
           "links": [
             {
-              "header": "Explorar",
               "items": [
                 {
                   "label": "Modelos",
                   "href": "https://phaseo.app/es-ES/models"
                 },
                 {
-                  "label": "Chat",
-                  "href": "https://phaseo.app/es-ES/chat"
-                },
-                {
-                  "label": "Proveedores",
-                  "href": "https://phaseo.app/es-ES/api-providers"
-                },
-                {
-                  "label": "Aplicaciones",
-                  "href": "https://phaseo.app/es-ES/apps"
-                },
-                {
-                  "label": "Clasificaciones",
-                  "href": "https://phaseo.app/es-ES/rankings"
-                },
-                {
-                  "label": "Herramientas",
-                  "href": "https://phaseo.app/es-ES/tools"
-                }
-              ]
-            },
-            {
-              "header": "Recursos",
-              "items": [
-                {
-                  "label": "Comparar",
-                  "href": "https://phaseo.app/es-ES/compare"
-                },
-                {
-                  "label": "Guías de migración",
-                  "href": "https://phaseo.app/es-ES/migrate"
-                },
-                {
-                  "label": "Metodología",
-                  "href": "https://phaseo.app/es-ES/methodology"
-                },
-                {
-                  "label": "Blog",
-                  "href": "https://phaseo.app/es-ES/blog"
-                },
-                {
                   "label": "Estado",
                   "href": "https://status.phaseo.app"
-                }
-              ]
-            },
-            {
-              "header": "Empresa",
-              "items": [
-                {
-                  "label": "Acerca de",
-                  "href": "https://phaseo.app/es-ES/about"
-                },
-                {
-                  "label": "Misión",
-                  "href": "https://phaseo.app/es-ES/mission"
-                },
-                {
-                  "label": "Precios",
-                  "href": "https://phaseo.app/es-ES/pricing"
-                },
-                {
-                  "label": "Centro de confianza",
-                  "href": "https://phaseo.app/es-ES/trust"
                 },
                 {
                   "label": "Soporte",
-                  "href": "https://phaseo.app/es-ES/contact"
-                },
-                {
-                  "label": "Privacidad",
-                  "href": "https://phaseo.app/es-ES/privacy"
-                },
-                {
-                  "label": "Términos",
-                  "href": "https://phaseo.app/es-ES/terms"
+                  "href": "https://phaseo.app/es-ES/help"
                 }
               ]
             }
@@ -4719,89 +4648,18 @@
           },
           "links": [
             {
-              "header": "Explorer",
               "items": [
                 {
                   "label": "Modèles",
                   "href": "https://phaseo.app/fr-FR/models"
                 },
                 {
-                  "label": "Chat",
-                  "href": "https://phaseo.app/fr-FR/chat"
-                },
-                {
-                  "label": "Fournisseurs",
-                  "href": "https://phaseo.app/fr-FR/api-providers"
-                },
-                {
-                  "label": "Applications",
-                  "href": "https://phaseo.app/fr-FR/apps"
-                },
-                {
-                  "label": "Classements",
-                  "href": "https://phaseo.app/fr-FR/rankings"
-                },
-                {
-                  "label": "Outils",
-                  "href": "https://phaseo.app/fr-FR/tools"
-                }
-              ]
-            },
-            {
-              "header": "Ressources",
-              "items": [
-                {
-                  "label": "Comparer",
-                  "href": "https://phaseo.app/fr-FR/compare"
-                },
-                {
-                  "label": "Guides de migration",
-                  "href": "https://phaseo.app/fr-FR/migrate"
-                },
-                {
-                  "label": "Méthodologie",
-                  "href": "https://phaseo.app/fr-FR/methodology"
-                },
-                {
-                  "label": "Blog",
-                  "href": "https://phaseo.app/fr-FR/blog"
-                },
-                {
                   "label": "État",
                   "href": "https://status.phaseo.app"
-                }
-              ]
-            },
-            {
-              "header": "Entreprise",
-              "items": [
-                {
-                  "label": "À propos",
-                  "href": "https://phaseo.app/fr-FR/about"
-                },
-                {
-                  "label": "Mission",
-                  "href": "https://phaseo.app/fr-FR/mission"
-                },
-                {
-                  "label": "Tarifs",
-                  "href": "https://phaseo.app/fr-FR/pricing"
-                },
-                {
-                  "label": "Centre de confiance",
-                  "href": "https://phaseo.app/fr-FR/trust"
                 },
                 {
                   "label": "Assistance",
-                  "href": "https://phaseo.app/fr-FR/contact"
-                },
-                {
-                  "label": "Confidentialité",
-                  "href": "https://phaseo.app/fr-FR/privacy"
-                },
-                {
-                  "label": "Conditions",
-                  "href": "https://phaseo.app/fr-FR/terms"
+                  "href": "https://phaseo.app/fr-FR/help"
                 }
               ]
             }
@@ -6341,89 +6199,18 @@
           },
           "links": [
             {
-              "header": "Entdecken",
               "items": [
                 {
                   "label": "Modelle",
                   "href": "https://phaseo.app/de-DE/models"
                 },
                 {
-                  "label": "Chat",
-                  "href": "https://phaseo.app/de-DE/chat"
-                },
-                {
-                  "label": "Anbieter",
-                  "href": "https://phaseo.app/de-DE/api-providers"
-                },
-                {
-                  "label": "Anwendungen",
-                  "href": "https://phaseo.app/de-DE/apps"
-                },
-                {
-                  "label": "Ranglisten",
-                  "href": "https://phaseo.app/de-DE/rankings"
-                },
-                {
-                  "label": "Werkzeuge",
-                  "href": "https://phaseo.app/de-DE/tools"
-                }
-              ]
-            },
-            {
-              "header": "Ressourcen",
-              "items": [
-                {
-                  "label": "Vergleichen",
-                  "href": "https://phaseo.app/de-DE/compare"
-                },
-                {
-                  "label": "Migrationsleitfäden",
-                  "href": "https://phaseo.app/de-DE/migrate"
-                },
-                {
-                  "label": "Methodik",
-                  "href": "https://phaseo.app/de-DE/methodology"
-                },
-                {
-                  "label": "Blog",
-                  "href": "https://phaseo.app/de-DE/blog"
-                },
-                {
                   "label": "Status",
                   "href": "https://status.phaseo.app"
-                }
-              ]
-            },
-            {
-              "header": "Unternehmen",
-              "items": [
-                {
-                  "label": "Über uns",
-                  "href": "https://phaseo.app/de-DE/about"
                 },
                 {
-                  "label": "Mission",
-                  "href": "https://phaseo.app/de-DE/mission"
-                },
-                {
-                  "label": "Preise",
-                  "href": "https://phaseo.app/de-DE/pricing"
-                },
-                {
-                  "label": "Vertrauenszentrum",
-                  "href": "https://phaseo.app/de-DE/trust"
-                },
-                {
-                  "label": "Hilfe",
-                  "href": "https://phaseo.app/de-DE/contact"
-                },
-                {
-                  "label": "Datenschutz",
-                  "href": "https://phaseo.app/de-DE/privacy"
-                },
-                {
-                  "label": "Bedingungen",
-                  "href": "https://phaseo.app/de-DE/terms"
+                  "label": "Support",
+                  "href": "https://phaseo.app/de-DE/help"
                 }
               ]
             }
@@ -7963,89 +7750,18 @@
           },
           "links": [
             {
-              "header": "Explorar",
               "items": [
                 {
                   "label": "Modelos",
                   "href": "https://phaseo.app/pt-BR/models"
                 },
                 {
-                  "label": "Chat",
-                  "href": "https://phaseo.app/pt-BR/chat"
-                },
-                {
-                  "label": "Provedores",
-                  "href": "https://phaseo.app/pt-BR/api-providers"
-                },
-                {
-                  "label": "Aplicativos",
-                  "href": "https://phaseo.app/pt-BR/apps"
-                },
-                {
-                  "label": "Classificações",
-                  "href": "https://phaseo.app/pt-BR/rankings"
-                },
-                {
-                  "label": "Ferramentas",
-                  "href": "https://phaseo.app/pt-BR/tools"
-                }
-              ]
-            },
-            {
-              "header": "Recursos",
-              "items": [
-                {
-                  "label": "Comparar",
-                  "href": "https://phaseo.app/pt-BR/compare"
-                },
-                {
-                  "label": "Guias de migração",
-                  "href": "https://phaseo.app/pt-BR/migrate"
-                },
-                {
-                  "label": "Metodologia",
-                  "href": "https://phaseo.app/pt-BR/methodology"
-                },
-                {
-                  "label": "Blog",
-                  "href": "https://phaseo.app/pt-BR/blog"
-                },
-                {
                   "label": "Status",
                   "href": "https://status.phaseo.app"
-                }
-              ]
-            },
-            {
-              "header": "Empresa",
-              "items": [
-                {
-                  "label": "Sobre",
-                  "href": "https://phaseo.app/pt-BR/about"
-                },
-                {
-                  "label": "Missão",
-                  "href": "https://phaseo.app/pt-BR/mission"
-                },
-                {
-                  "label": "Preços",
-                  "href": "https://phaseo.app/pt-BR/pricing"
-                },
-                {
-                  "label": "Central de confiança",
-                  "href": "https://phaseo.app/pt-BR/trust"
                 },
                 {
                   "label": "Suporte",
-                  "href": "https://phaseo.app/pt-BR/contact"
-                },
-                {
-                  "label": "Privacidade",
-                  "href": "https://phaseo.app/pt-BR/privacy"
-                },
-                {
-                  "label": "Termos",
-                  "href": "https://phaseo.app/pt-BR/terms"
+                  "href": "https://phaseo.app/pt-BR/help"
                 }
               ]
             }
@@ -9585,89 +9301,18 @@
           },
           "links": [
             {
-              "header": "探索",
               "items": [
                 {
                   "label": "モデル",
                   "href": "https://phaseo.app/ja/models"
                 },
                 {
-                  "label": "チャット",
-                  "href": "https://phaseo.app/ja/chat"
-                },
-                {
-                  "label": "プロバイダー",
-                  "href": "https://phaseo.app/ja/api-providers"
-                },
-                {
-                  "label": "アプリ",
-                  "href": "https://phaseo.app/ja/apps"
-                },
-                {
-                  "label": "ランキング",
-                  "href": "https://phaseo.app/ja/rankings"
-                },
-                {
-                  "label": "ツール",
-                  "href": "https://phaseo.app/ja/tools"
-                }
-              ]
-            },
-            {
-              "header": "リソース",
-              "items": [
-                {
-                  "label": "比較",
-                  "href": "https://phaseo.app/ja/compare"
-                },
-                {
-                  "label": "移行ガイド",
-                  "href": "https://phaseo.app/ja/migrate"
-                },
-                {
-                  "label": "方法論",
-                  "href": "https://phaseo.app/ja/methodology"
-                },
-                {
-                  "label": "ブログ",
-                  "href": "https://phaseo.app/ja/blog"
-                },
-                {
                   "label": "ステータス",
                   "href": "https://status.phaseo.app"
-                }
-              ]
-            },
-            {
-              "header": "会社情報",
-              "items": [
-                {
-                  "label": "Phaseoについて",
-                  "href": "https://phaseo.app/ja/about"
-                },
-                {
-                  "label": "ミッション",
-                  "href": "https://phaseo.app/ja/mission"
-                },
-                {
-                  "label": "料金",
-                  "href": "https://phaseo.app/ja/pricing"
-                },
-                {
-                  "label": "信頼センター",
-                  "href": "https://phaseo.app/ja/trust"
                 },
                 {
                   "label": "サポート",
-                  "href": "https://phaseo.app/ja/contact"
-                },
-                {
-                  "label": "プライバシー",
-                  "href": "https://phaseo.app/ja/privacy"
-                },
-                {
-                  "label": "利用規約",
-                  "href": "https://phaseo.app/ja/terms"
+                  "href": "https://phaseo.app/ja/help"
                 }
               ]
             }
@@ -11207,89 +10852,18 @@
           },
           "links": [
             {
-              "header": "探索",
               "items": [
                 {
                   "label": "模型",
                   "href": "https://phaseo.app/zh-Hans/models"
                 },
                 {
-                  "label": "聊天",
-                  "href": "https://phaseo.app/zh-Hans/chat"
-                },
-                {
-                  "label": "提供商",
-                  "href": "https://phaseo.app/zh-Hans/api-providers"
-                },
-                {
-                  "label": "应用",
-                  "href": "https://phaseo.app/zh-Hans/apps"
-                },
-                {
-                  "label": "排名",
-                  "href": "https://phaseo.app/zh-Hans/rankings"
-                },
-                {
-                  "label": "工具",
-                  "href": "https://phaseo.app/zh-Hans/tools"
-                }
-              ]
-            },
-            {
-              "header": "资源",
-              "items": [
-                {
-                  "label": "比较",
-                  "href": "https://phaseo.app/zh-Hans/compare"
-                },
-                {
-                  "label": "迁移指南",
-                  "href": "https://phaseo.app/zh-Hans/migrate"
-                },
-                {
-                  "label": "方法论",
-                  "href": "https://phaseo.app/zh-Hans/methodology"
-                },
-                {
-                  "label": "博客",
-                  "href": "https://phaseo.app/zh-Hans/blog"
-                },
-                {
                   "label": "状态",
                   "href": "https://status.phaseo.app"
-                }
-              ]
-            },
-            {
-              "header": "公司",
-              "items": [
-                {
-                  "label": "关于",
-                  "href": "https://phaseo.app/zh-Hans/about"
-                },
-                {
-                  "label": "使命",
-                  "href": "https://phaseo.app/zh-Hans/mission"
-                },
-                {
-                  "label": "定价",
-                  "href": "https://phaseo.app/zh-Hans/pricing"
-                },
-                {
-                  "label": "信任中心",
-                  "href": "https://phaseo.app/zh-Hans/trust"
                 },
                 {
                   "label": "支持",
-                  "href": "https://phaseo.app/zh-Hans/contact"
-                },
-                {
-                  "label": "隐私",
-                  "href": "https://phaseo.app/zh-Hans/privacy"
-                },
-                {
-                  "label": "条款",
-                  "href": "https://phaseo.app/zh-Hans/terms"
+                  "href": "https://phaseo.app/zh-Hans/help"
                 }
               ]
             }
@@ -12829,89 +12403,18 @@
           },
           "links": [
             {
-              "header": "खोजें",
               "items": [
                 {
                   "label": "मॉडल",
                   "href": "https://phaseo.app/hi/models"
                 },
                 {
-                  "label": "चैट",
-                  "href": "https://phaseo.app/hi/chat"
-                },
-                {
-                  "label": "प्रदाता",
-                  "href": "https://phaseo.app/hi/api-providers"
-                },
-                {
-                  "label": "ऐप्स",
-                  "href": "https://phaseo.app/hi/apps"
-                },
-                {
-                  "label": "रैंकिंग",
-                  "href": "https://phaseo.app/hi/rankings"
-                },
-                {
-                  "label": "टूल",
-                  "href": "https://phaseo.app/hi/tools"
-                }
-              ]
-            },
-            {
-              "header": "संसाधन",
-              "items": [
-                {
-                  "label": "तुलना करें",
-                  "href": "https://phaseo.app/hi/compare"
-                },
-                {
-                  "label": "माइग्रेशन गाइड",
-                  "href": "https://phaseo.app/hi/migrate"
-                },
-                {
-                  "label": "कार्यप्रणाली",
-                  "href": "https://phaseo.app/hi/methodology"
-                },
-                {
-                  "label": "ब्लॉग",
-                  "href": "https://phaseo.app/hi/blog"
-                },
-                {
                   "label": "स्थिति",
                   "href": "https://status.phaseo.app"
-                }
-              ]
-            },
-            {
-              "header": "कंपनी",
-              "items": [
-                {
-                  "label": "हमारे बारे में",
-                  "href": "https://phaseo.app/hi/about"
-                },
-                {
-                  "label": "मिशन",
-                  "href": "https://phaseo.app/hi/mission"
-                },
-                {
-                  "label": "मूल्य निर्धारण",
-                  "href": "https://phaseo.app/hi/pricing"
-                },
-                {
-                  "label": "विश्वास केंद्र",
-                  "href": "https://phaseo.app/hi/trust"
                 },
                 {
                   "label": "सहायता",
-                  "href": "https://phaseo.app/hi/contact"
-                },
-                {
-                  "label": "गोपनीयता",
-                  "href": "https://phaseo.app/hi/privacy"
-                },
-                {
-                  "label": "शर्तें",
-                  "href": "https://phaseo.app/hi/terms"
+                  "href": "https://phaseo.app/hi/help"
                 }
               ]
             }
@@ -14451,89 +13954,18 @@
           },
           "links": [
             {
-              "header": "استكشاف",
               "items": [
                 {
                   "label": "النماذج",
                   "href": "https://phaseo.app/ar-SA/models"
                 },
                 {
-                  "label": "المحادثة",
-                  "href": "https://phaseo.app/ar-SA/chat"
-                },
-                {
-                  "label": "المزوّدون",
-                  "href": "https://phaseo.app/ar-SA/api-providers"
-                },
-                {
-                  "label": "التطبيقات",
-                  "href": "https://phaseo.app/ar-SA/apps"
-                },
-                {
-                  "label": "التصنيفات",
-                  "href": "https://phaseo.app/ar-SA/rankings"
-                },
-                {
-                  "label": "الأدوات",
-                  "href": "https://phaseo.app/ar-SA/tools"
-                }
-              ]
-            },
-            {
-              "header": "الموارد",
-              "items": [
-                {
-                  "label": "مقارنة",
-                  "href": "https://phaseo.app/ar-SA/compare"
-                },
-                {
-                  "label": "أدلة الترحيل",
-                  "href": "https://phaseo.app/ar-SA/migrate"
-                },
-                {
-                  "label": "المنهجية",
-                  "href": "https://phaseo.app/ar-SA/methodology"
-                },
-                {
-                  "label": "المدونة",
-                  "href": "https://phaseo.app/ar-SA/blog"
-                },
-                {
                   "label": "الحالة",
                   "href": "https://status.phaseo.app"
-                }
-              ]
-            },
-            {
-              "header": "الشركة",
-              "items": [
-                {
-                  "label": "من نحن",
-                  "href": "https://phaseo.app/ar-SA/about"
-                },
-                {
-                  "label": "رسالتنا",
-                  "href": "https://phaseo.app/ar-SA/mission"
-                },
-                {
-                  "label": "الأسعار",
-                  "href": "https://phaseo.app/ar-SA/pricing"
-                },
-                {
-                  "label": "مركز الثقة",
-                  "href": "https://phaseo.app/ar-SA/trust"
                 },
                 {
                   "label": "الدعم",
-                  "href": "https://phaseo.app/ar-SA/contact"
-                },
-                {
-                  "label": "الخصوصية",
-                  "href": "https://phaseo.app/ar-SA/privacy"
-                },
-                {
-                  "label": "الشروط",
-                  "href": "https://phaseo.app/ar-SA/terms"
+                  "href": "https://phaseo.app/ar-SA/help"
                 }
               ]
             }
@@ -15668,89 +15100,18 @@
     },
     "links": [
       {
-        "header": "Explore",
         "items": [
           {
             "label": "Models",
             "href": "https://phaseo.app/models"
           },
           {
-            "label": "Chat",
-            "href": "https://phaseo.app/chat"
-          },
-          {
-            "label": "Providers",
-            "href": "https://phaseo.app/api-providers"
-          },
-          {
-            "label": "Apps",
-            "href": "https://phaseo.app/apps"
-          },
-          {
-            "label": "Rankings",
-            "href": "https://phaseo.app/rankings"
-          },
-          {
-            "label": "Tools",
-            "href": "https://phaseo.app/tools"
-          }
-        ]
-      },
-      {
-        "header": "Resources",
-        "items": [
-          {
-            "label": "Compare",
-            "href": "https://phaseo.app/compare"
-          },
-          {
-            "label": "Migration Guides",
-            "href": "https://phaseo.app/migrate"
-          },
-          {
-            "label": "Methodology",
-            "href": "https://phaseo.app/methodology"
-          },
-          {
-            "label": "Blog",
-            "href": "https://phaseo.app/blog"
-          },
-          {
             "label": "Status",
             "href": "https://status.phaseo.app"
-          }
-        ]
-      },
-      {
-        "header": "Company",
-        "items": [
-          {
-            "label": "About",
-            "href": "https://phaseo.app/about"
-          },
-          {
-            "label": "Mission",
-            "href": "https://phaseo.app/mission"
-          },
-          {
-            "label": "Pricing",
-            "href": "https://phaseo.app/pricing"
-          },
-          {
-            "label": "Trust Centre",
-            "href": "https://phaseo.app/trust"
           },
           {
             "label": "Support",
-            "href": "https://phaseo.app/contact"
-          },
-          {
-            "label": "Privacy",
-            "href": "https://phaseo.app/privacy"
-          },
-          {
-            "label": "Terms",
-            "href": "https://phaseo.app/terms"
+            "href": "https://phaseo.app/help"
           }
         ]
       }

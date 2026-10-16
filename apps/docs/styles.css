@@ -26,6 +26,11 @@
 	}
 }
 
+/* Square off Luma's pill-shaped header buttons to phaseo.app's rounded-md. */
+#navbar :is([class*="rounded-full"], #localization-select-trigger) {
+	border-radius: 0.375rem;
+}
+
 /* Tab icons add about 130px to the tab row. Below 1400px only English has room for them, and only from 1280px. */
 @media (max-width: 1399px) {
 	html:not([lang="en"]) #navbar nav[class*="navbar:flex"] li > :is(a, button) > svg[style*="mask-image"] {
