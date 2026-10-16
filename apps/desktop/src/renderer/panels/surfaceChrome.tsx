@@ -59,6 +59,28 @@ export function DiffLoadingState({ label }: { label: string }) {
 	</div>;
 }
 
+/** Widths cycle rather than vary at random, so a skeleton looks the same on every pass (T3's ghosts). */
+const ghostWidths = ["w-3/5", "w-2/5", "w-1/2", "w-2/3", "w-2/5", "w-3/5", "w-1/2", "w-1/3"];
+
+/** Diff file headers standing in for files still loading, as T3's DiffFileLoadingBoundary shows them. */
+export function DiffFileHeadersLoading({ label, count = 3 }: { label: string; count?: number }) {
+	const widths = ["medium", "short", "long"] as const;
+	return <div role="status" aria-label={label}>
+		{Array.from({ length: count }, (_, index) => <div key={index} aria-hidden className="border-b border-border/40"><DiffFileHeaderSkeleton width={widths[index % widths.length]} /></div>)}
+		<span className="sr-only">{label}</span>
+	</div>;
+}
+
+/** Rows of a file tree that is still loading: an icon and a name, some indented as if inside a folder. */
+export function FileTreeLoading({ label = "Loading files…", rows = 9 }: { label?: string; rows?: number }) {
+	return <div role="status" aria-label={label} className="flex flex-col gap-0.5 px-1 py-1">
+		{Array.from({ length: rows }, (_, index) => <div key={index} aria-hidden className={cn("flex h-6 items-center gap-1.5 px-2", index % 4 > 1 && "pl-6")}>
+			<Skeleton className="size-3.5 shrink-0 rounded-sm bg-muted-foreground/15" /><Skeleton className={cn("h-3 rounded bg-muted-foreground/15", ghostWidths[index % ghostWidths.length])} />
+		</div>)}
+		<span className="sr-only">{label}</span>
+	</div>;
+}
+
 /** The app's light or dark appearance, followed live. */
 export function useThemeType(): "light" | "dark" {
 	const read = () => document.documentElement.dataset.theme === "dark" ? "dark" : "light";

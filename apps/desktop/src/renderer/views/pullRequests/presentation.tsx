@@ -24,6 +24,20 @@ export function pullRequestStatePresentation(state: "OPEN" | "CLOSED" | "MERGED"
 /** A tooltip around any element, the shape every glyph here uses. */
 export { Tip };
 
+const ghostTitleWidths = ["w-3/5", "w-2/5", "w-1/2", "w-2/3", "w-2/5", "w-3/5", "w-1/2"], ghostMetaWidths = ["w-2/5", "w-1/3", "w-2/5", "w-1/4", "w-1/3", "w-2/5", "w-1/3"];
+/** T3's PullRequestListGhost: rows in the list's own shape (glyph, title over meta, time over size), pulsing together. */
+export function PullRequestListGhost({ rows = 7 }: { rows?: number }) {
+	const bar = (className: string) => <span aria-hidden className={cn("block h-3 rounded bg-muted-foreground/15", className)} />;
+	return <div role="status" aria-label="Loading pull requests" className="flex flex-col gap-0.5 motion-safe:animate-pulse">
+		{Array.from({ length: rows }, (_, index) => <div key={index} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-2">
+			{bar("size-4 rounded-full")}
+			<div className="min-w-0 space-y-1.5">{bar(cn("h-3.5", ghostTitleWidths[index % ghostTitleWidths.length]))}{bar(cn("h-3", ghostMetaWidths[index % ghostMetaWidths.length]))}</div>
+			<div className="flex flex-col items-end gap-1.5">{bar("w-12")}{bar("w-16")}</div>
+		</div>)}
+		<span className="sr-only">Loading pull requests…</span>
+	</div>;
+}
+
 export function PullRequestStateGlyph({ state, draft, className }: { state: "OPEN" | "CLOSED" | "MERGED" | "open" | "closed" | "merged"; draft: boolean; className?: string }) {
 	const presentation = pullRequestStatePresentation(state, draft);
 	// The trigger stays a span: a row is itself a button and must not nest a control.

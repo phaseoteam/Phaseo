@@ -9,7 +9,7 @@ const task = (id: string, patch: Partial<TaskOverview> = {}) => ({ id, title: id
 
 describe("the Working section", () => {
 	it("counts running chats and chats waiting on their agents, but never ones that need the person", () => {
-		const child = (status: TaskOverview["status"], patch: Partial<TaskOverview> = {}) => task(`child-${status}`, { status, delegation: { parentTaskId: "parent", requestId: "r", kind: "delegate" } as TaskOverview["delegation"], ...patch });
+		const child = (status: TaskOverview["status"], patch: Partial<TaskOverview> = {}) => task(`child-${status}`, { status, delegation: { parentTaskId: "parent", requestId: "r" } as TaskOverview["delegation"], ...patch });
 		expect(isWorking(task("a", { status: "running" }), new Set())).toBe(true);
 		expect(isWorking(task("a", { status: "idle", queueCount: 1 }), new Set())).toBe(true);
 		expect(isWorking(task("a", { status: "running", approvalsCount: 1 }), new Set())).toBe(false);
