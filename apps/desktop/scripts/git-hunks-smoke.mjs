@@ -92,8 +92,10 @@ app.whenReady().then(async () => {
 		// The loop above ended on the split layout, so that is what comes back.
 		await wait(`Boolean(${viewer}?.shadowRoot?.querySelector('pre[data-diff-type="split"]'))&&${surface}.querySelector('[aria-label="Split diff view"]').getAttribute('aria-checked')==='true'`);
 		// Staging and committing moved out of the diff into Git actions.
-		const stage = `document.querySelector('.git-actions button[aria-label=${JSON.stringify('Stage ' + filename)}]')`;
-		const unstage = `document.querySelector('.git-actions button[aria-label=${JSON.stringify('Unstage ' + filename)}]')`;
+		// The card can close while Git refreshes; like a person, reopen it before looking.
+		const details = `(document.querySelector('.git-actions')||document.querySelector('[aria-label="Chat details"]')?.click(),true)`;
+		const stage = `(${details}&&document.querySelector('.git-actions button[aria-label=${JSON.stringify('Stage ' + filename)}]'))`;
+		const unstage = `(${details}&&document.querySelector('.git-actions button[aria-label=${JSON.stringify('Unstage ' + filename)}]'))`;
 		// Git actions live in the details card in the title bar (T3).
 		await run(`document.querySelector('.git-actions')||document.querySelector('[aria-label="Chat details"]').click()`);
 		await wait(`Boolean(${stage})`);
@@ -105,7 +107,9 @@ app.whenReady().then(async () => {
 		if (git(["diff", "--cached"]) || readFileSync(target, "utf8") !== edited) throw new Error("Unstaging changed the working file.");
 		// Binary changes are left out of the viewer with a note; the text changes still show.
 		const binary = path.join(repository, 'binary.dat'); writeFileSync(binary, Buffer.from([0, 1, 2])); git(['add', '--', 'binary.dat']); git(['commit', '-m', 'binary fixture']); writeFileSync(binary, Buffer.from([0, 3, 4]));
-		await run(`${surface}.querySelector('[aria-label^="Refresh diff"]').click()`);
+		// The button reads "Refreshing diff" while a refresh is under way; wait for it to settle.
+		await wait(`Boolean(${surface}?.querySelector('[aria-label="Refresh diff"]'))`);
+		await run(`${surface}.querySelector('[aria-label="Refresh diff"]').click()`);
 		await wait(`${surface}.textContent.includes('1 binary or mode-only change is not shown')&&Boolean(${viewer}?.shadowRoot?.textContent.includes('Second edit'))`);
 		console.log("GIT_HUNKS_SMOKE", JSON.stringify({ ...result, workingFilePreserved: true, renderer: true, splitAndUnified: true, literalMarkup: true, layoutPreference: true, binaryNotice: true, fullContext: true, staleContextRecovery: true, duplicateContextSuppression: true, keyboardExpansion: true, stickyHeaders: true, fileTree: true, gitActions: true }), "ISOLATED_DATA", data); app.exit(0);
 	} catch (error) { console.error(error); app.exit(1); }

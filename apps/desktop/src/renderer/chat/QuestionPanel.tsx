@@ -42,7 +42,8 @@ function QuestionRequestPanel({ task, request }: { task: Task; request: Question
 	const otherInput = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 	const advance = useRef<ReturnType<typeof setTimeout>>(undefined);
 	const question = request.questions[Math.min(step, request.questions.length - 1)];
-	const draftOf = (value: AgentQuestion, from = drafts) => from[value.id] ?? draftFor(value);
+	// Own properties only: agents choose question ids, and "__proto__" must not reach the object prototype.
+	const draftOf = (value: AgentQuestion, from = drafts) => Object.hasOwn(from, value.id) ? from[value.id] : draftFor(value);
 	const draft = draftOf(question);
 	const options = questionOptions(question);
 	const allowOther = allowsOwnAnswer(question);

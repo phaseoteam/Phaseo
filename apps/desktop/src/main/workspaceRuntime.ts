@@ -471,7 +471,7 @@ export class WorkspaceRuntime {
 		const timelineOrder = [...task.messages, ...task.activities].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), 0) + 1;
 		task.activities.push({ ...questionRecord(request.id, request.questions, answers), timelineOrder });
 		this.store.saveTask(task); this.broadcast();
-		const text = request.questions.flatMap(question => { const values = (answers[question.id] ?? []).filter(value => value.trim()); return values.length ? [`${question.question}\n${values.map(value => questionOptions(question).find(option => optionValue(option) === value)?.label ?? value).join(", ")}`] : []; }).join("\n\n");
+		const text = request.questions.flatMap(question => { const values = (Object.hasOwn(answers, question.id) ? answers[question.id] : []).filter(value => value.trim()); return values.length ? [`${question.question}\n${values.map(value => questionOptions(question).find(option => optionValue(option) === value)?.label ?? value).join(", ")}`] : []; }).join("\n\n");
 		if (!text) return this.store.getOverview();
 		if (this.running.get(id)?.steer && ["running", "waiting"].includes(this.store.getTask(id).status)) return this.command({ type: "steer", id, text });
 		return this.command({ type: "send", id, text });
@@ -729,7 +729,7 @@ export class WorkspaceRuntime {
 function questionRecord(requestId: string, questions: AgentQuestion[], answers: Record<string, string[]>) {
 	const dismissed = !Object.keys(answers).length;
 	// Options show by label (an answer may be an option's value); an empty answer says so.
-	const shown = (question: AgentQuestion) => (answers[question.id] ?? []).map(value => questionOptions(question).find(option => optionValue(option) === value)?.label ?? value).filter(value => value.trim()).join(", ") || "(empty)";
+	const shown = (question: AgentQuestion) => (Object.hasOwn(answers, question.id) ? answers[question.id] : []).map(value => questionOptions(question).find(option => optionValue(option) === value)?.label ?? value).filter(value => value.trim()).join(", ") || "(empty)";
 	const text = questions.map(question => `${question.question}\n→ ${dismissed ? "Dismissed" : question.isSecret ? "••••" : shown(question)}`).join("\n\n");
 	return { id: `question:${requestId}`, type: "tool" as const, title: dismissed ? "Question dismissed" : questions.length === 1 ? "Question answered" : "Questions answered", text, status: "completed" as const };
 }
