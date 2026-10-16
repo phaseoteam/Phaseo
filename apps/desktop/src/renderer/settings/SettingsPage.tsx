@@ -11,7 +11,6 @@ import { AppearanceSettings } from "./AppearanceSettings";
 import { Accounts } from "../views/Accounts";
 import { Agents } from "../views/Agents";
 import { McpConnections } from "../views/McpConnections";
-import { SettingsPageLayout } from "./SettingsLayout";
 import { ProjectSettingsPage } from "./ProjectSettings";
 import { settingsProject } from "../../shared/projectSettings";
 
@@ -85,7 +84,6 @@ export function SettingsPage() {
 		{settings === "appearance" && <AppearanceSettings />}
 		{settings === "agents" && <Agents />}
 		{settings === "project" && <ProjectSettingsPage />}
-		{/* MCP servers keep their own form inside the shared page layout. */}
-		{settings === "mcp" && <div className="legacy-panel"><SettingsPageLayout title="MCP servers" description="Tools your chats can use, from Model Context Protocol servers."><McpConnections /></SettingsPageLayout></div>}
+		{settings === "mcp" && <McpConnections />}
 	</ScrollArea>;
 }

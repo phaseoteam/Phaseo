@@ -119,7 +119,7 @@ function ShortcutRow({ row, actions }: { row: KeybindingRow; actions: Actions })
 		description={<span className="flex h-6 items-center gap-1"><span className="text-xs text-muted-foreground/70">When</span><WhenControl label={row.label} value={row.when ?? ""} onChange={when => replaceWith({ when })} /></span>}
 		control={<div className="flex items-center justify-end gap-1.5">
 			<Conflict labels={conflicts} />
-			{(row.source === "Custom" || row.key) && <span className="flex items-center opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100 has-data-popup-open:opacity-100">
+			{(row.source === "Custom" || row.key) && <span className="flex items-center opacity-0 transition-opacity group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100 has-data-popup-open:opacity-100">
 				<DropdownMenu>
 					<Tip label="More actions"><DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${row.label}`} disabled={actions.busy} className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" />}><Ellipsis className="size-3.5" /></DropdownMenuTrigger></Tip>
 					<DropdownMenuContent align="end" className="w-44">

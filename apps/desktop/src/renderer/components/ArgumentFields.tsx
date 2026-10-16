@@ -16,7 +16,7 @@ export function ArgumentFields({ value, onChange, disabled = false }: { value: s
 			<button type="button" aria-label={`Remove argument ${index + 1}`} title="Remove argument" onClick={() => onChange(value.filter((_, position) => position !== index))}
 				className="grid size-8 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"><X className="size-3.5" /></button>
 		</div>)}
-		<button className={cn("add-argument inline-flex h-8 w-fit items-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 text-[13px] font-medium text-muted-foreground hover:border-foreground/30 hover:text-foreground disabled:opacity-50")} type="button" disabled={value.length >= 100}
+		<button className={cn("add-argument -ml-2 inline-flex h-8 w-fit items-center gap-1.5 rounded-lg px-2 text-[13px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50")} type="button" disabled={value.length >= 100}
 			onClick={() => { focusAdded.current = true; onChange([...value, ""]); }}><Plus className="size-3.5" />Add argument</button>
 	</fieldset>;
 }

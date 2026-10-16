@@ -73,8 +73,8 @@ function CardRow({ task, now, scope, onScope, hint, controls }: { task: TaskOver
 			<div className="flex h-5 items-center gap-1.5 text-xs text-muted-foreground">
 				<ProjectIcon project={project} className="size-3.5" /><span className="min-w-0 truncate">{project?.name}</span>
 				{task.pinned && <Tip label="Unpin chat"><button type="button" aria-label="Unpin chat" onClick={event => { event.stopPropagation(); void actions.pin(task); }} className="group/pin grid size-4 shrink-0 place-items-center rounded hover:text-foreground"><Pin className="size-3 group-hover/pin:hidden" /><PinOff className="hidden size-3 group-hover/pin:block" /></button></Tip>}
-				<span className="ml-auto flex items-center group-hover/row:hidden group-focus-within/row:hidden">{hint !== undefined ? <JumpHint index={hint} /> : <StatusLabel task={task} now={now} onDismissWake={() => void actions.wake(task)} />}</span>
-				<span className="ml-auto hidden items-center gap-0.5 group-hover/row:flex group-focus-within/row:flex" onClick={event => event.stopPropagation()}>
+				<span className="ml-auto flex items-center group-hover/row:hidden group-has-[:focus-visible]/row:hidden">{hint !== undefined ? <JumpHint index={hint} /> : <StatusLabel task={task} now={now} onDismissWake={() => void actions.wake(task)} />}</span>
+				<span className="ml-auto hidden items-center gap-0.5 group-hover/row:flex group-has-[:focus-visible]/row:flex" onClick={event => event.stopPropagation()}>
 					<DropdownMenu>
 						<Tip label="Snooze chat"><DropdownMenuTrigger render={<button type="button" aria-label="Snooze chat" className="grid size-5 place-items-center rounded text-muted-foreground hover:bg-background/70 hover:text-foreground" />}><Clock className="size-3.5" /></DropdownMenuTrigger></Tip>
 						<DropdownMenuContent align="end" className="w-56"><SnoozeItems onSnooze={until => void actions.snooze(task, until, scope)} onCustom={() => setCustomSnooze(true)} /></DropdownMenuContent>

@@ -51,7 +51,7 @@ function SectionLabel({ children, action }: { children: ReactNode; action?: Reac
 function RowMenu({ task, onRename }: { task: TaskOverview; onRename: () => void }) {
 	const { command } = useWorkspace();
 	return <DropdownMenu>
-		<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${task.title}`} onClick={event => event.stopPropagation()} className="hidden size-5 shrink-0 place-items-center rounded text-muted-foreground group-hover/row:grid group-focus-within/row:grid hover:bg-background/70 hover:text-foreground data-popup-open:grid [&_svg]:size-3.5" />}><Ellipsis /></DropdownMenuTrigger>
+		<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${task.title}`} onClick={event => event.stopPropagation()} className="hidden size-5 shrink-0 place-items-center rounded text-muted-foreground group-hover/row:grid group-has-[:focus-visible]/row:grid hover:bg-background/70 hover:text-foreground data-popup-open:grid [&_svg]:size-3.5" />}><Ellipsis /></DropdownMenuTrigger>
 		<DropdownMenuContent align="start" className="w-44">
 			<DropdownMenuItem onClick={onRename}><Pencil />Rename</DropdownMenuItem>
 			<DropdownMenuItem onClick={() => void command({ type: "regenerate-title", id: task.id })}><WandSparkles />Regenerate title</DropdownMenuItem>
@@ -94,7 +94,7 @@ function CompareRow({ group }: { group: CompareGroup }) {
 		<span className="min-w-0 flex-1 truncate">{group.title}</span>
 		<span><ModelStack models={tasks.slice(0, 3)} size="sm" ringClassName="bg-sidebar ring-sidebar" /></span>
 		<DropdownMenu>
-			<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${group.title}`} onClick={event => event.stopPropagation()} className="hidden size-5 shrink-0 place-items-center rounded text-muted-foreground group-hover/row:grid group-focus-within/row:grid hover:bg-background/70 data-popup-open:grid [&_svg]:size-3.5" />}><Ellipsis /></DropdownMenuTrigger>
+			<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${group.title}`} onClick={event => event.stopPropagation()} className="hidden size-5 shrink-0 place-items-center rounded text-muted-foreground group-hover/row:grid group-has-[:focus-visible]/row:grid hover:bg-background/70 data-popup-open:grid [&_svg]:size-3.5" />}><Ellipsis /></DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-44"><DropdownMenuItem onClick={() => removeCompareGroup(group.id)}><Archive />Ungroup</DropdownMenuItem></DropdownMenuContent>
 		</DropdownMenu>
 	</div>;

@@ -22,7 +22,7 @@ function FileRow({ file, busy, onOpen, onCommand }: { file: GitFile; busy: boole
 	const slash = file.path.lastIndexOf("/"), status = statusLabel(file);
 	return <div className="group/file flex h-7 items-center gap-2 rounded-md px-1.5 text-xs hover:bg-accent/60">
 		<button type="button" onClick={onOpen} title={file.path} className="min-w-0 flex-1 truncate text-left">{file.path.slice(slash + 1)}<span className="ml-1.5 text-muted-foreground">{slash > 0 ? file.path.slice(0, slash) : ""}</span></button>
-		<span className="hidden items-center group-focus-within/file:flex group-hover/file:flex">
+		<span className="hidden items-center group-has-[:focus-visible]/file:flex group-hover/file:flex">
 			{isUnstaged(file) && <ToolbarButton size="sm" label={`Stage ${file.path}`} disabled={busy} onClick={() => onCommand({ type: "stage", filename: file.path })}><Plus /></ToolbarButton>}
 			{isStaged(file) && <ToolbarButton size="sm" label={`Unstage ${file.path}`} disabled={busy} onClick={() => onCommand({ type: "unstage", filename: file.path })}><Minus /></ToolbarButton>}
 		</span>
