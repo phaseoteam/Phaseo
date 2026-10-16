@@ -5,6 +5,7 @@ import { tagsInUse } from "../shared/tags";
 import type { WorkspaceOverview } from "../shared/workspaceOverview";
 import type { WorkspaceStore } from "./workspaceStore";
 import { validateDelegate } from "./threadTools";
+import { parsePullRequestReference, pullRequestUrl, samePullRequest, validatePullRequestLinks, type TaskPullRequestLink } from "../shared/pullRequestView";
 
 type Host = {
 	store: WorkspaceStore;
@@ -347,6 +348,34 @@ export class WorkspaceThreads {
 					await this.host.command({ type: "update-task", id, archived: true });
 				}
 				const current = this.host.store.getTask(id); return { ...summary(current), pinned: current.pinned, archived: current.archived, tags: current.tags ?? [], settled: current.settledOverride === "settled", ...(current.settleWhenTurnEnds ? { settlesWhenTurnEnds: true } : {}), ...(current.snoozedUntil ? { snoozedUntil: current.snoozedUntil } : {}), ...(action === "tag" ? { tagsInUse: tagsInUse(this.host.store.getOverview().tasks).slice(0, 50) } : {}) };
+			},
+			pullRequest: async (requested, action, target) => {
+				const id = requested ?? parentId, task = id === parentId ? this.host.store.getTask(id) : scoped(id, true, true);
+				if (this.host.isClosing()) throw new Error("The workspace is shutting down.");
+				if (action === "watch" && task.delegation?.parentTaskId) throw new Error("This chat is a delegated agent, so it cannot watch pull requests. Its parent chat owns the pull request: finish your task and report back instead.");
+				const reference = target.url ?? (target.repository ? `${target.repository}#${target.number}` : `#${target.number}`), parsed = parsePullRequestReference(reference);
+				if (target.url && (target.repository || target.number)) throw new Error("Pass either url, or repository and number, not both.");
+				if (!parsed) throw new Error("This is not a GitHub pull request. Pass its URL, or repository and number.");
+				const links = () => validatePullRequestLinks(this.host.store.getTask(id).pullRequests) ?? [];
+				const find = (repository?: string) => links().filter(link => link.number === parsed.number && (!repository || samePullRequest(link, { repository, number: parsed.number })));
+				const before = find(parsed.repository);
+				const result = (link: TaskPullRequestLink) => ({ repository: link.repository, number: link.number, url: link.url });
+				if (action === "unlink" || action === "unwatch") {
+					// Idempotent, as in T3: a pull request that is not linked (or not watched) is already in the asked-for state.
+					if (before.length > 1) throw new Error("Several linked pull requests have this number. Pass repository or url.");
+					const link = before[0];
+					if (!link) return { repository: parsed.repository ?? "", number: parsed.number, url: parsed.repository ? pullRequestUrl(parsed.repository, parsed.number) : "", ...(action === "unlink" ? { wasLinked: false } : { watching: false, wasWatching: false }) };
+					await this.host.command(action === "unlink" ? { type: "unlink-pull-request", id, repository: link.repository, number: link.number } : { type: "watch-pull-request", id, repository: link.repository, number: link.number, watching: false });
+					return { ...result(link), ...(action === "unlink" ? { wasLinked: true } : { watching: false, wasWatching: Boolean(link.watching) }) };
+				}
+				// The runtime resolves a bare number against the chat's project and fills in the repository.
+				const command: Extract<WorkspaceCommand, { type: "link-pull-request" }> = { type: "link-pull-request", id, reference: parsed.repository ? `${parsed.repository}#${parsed.number}` : `#${parsed.number}`, source: "agent" };
+				await this.host.command(command);
+				const link = find(command.repository)[0];
+				if (!link) throw new Error("Could not link the pull request.");
+				if (action === "link") return { ...result(link), alreadyLinked: before.length > 0 };
+				await this.host.command({ type: "watch-pull-request", id, repository: link.repository, number: link.number, watching: true });
+				return { ...result(link), watching: true, wasWatching: Boolean(link.watching) };
 			},
 			scheduled: () => this.host.store.missions.list().slice(0, 100).map(scheduledTask),
 			schedule: async request => {

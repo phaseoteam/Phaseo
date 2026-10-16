@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
-import { validateDelegate } from "./threadTools";
+import { validateDelegate, validatePullRequestTarget } from "./threadTools";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
@@ -225,5 +225,14 @@ describe("scoped desktop orchestration", () => {
 	it("validates arguments independently of model JSON schema compliance", () => {
 		expect(() => validateDelegate({ requestId: "r", prompt: "p", title: "t", harness: "unknown" })).toThrow("Unknown harness");
 		expect(() => validateDelegate({ requestId: "r", prompt: "", title: "t" })).toThrow("prompt");
+	});
+});
+
+describe("pull request tool targets", () => {
+	it("takes a URL or a number with an optional repository", () => {
+		expect(validatePullRequestTarget({ url: "https://github.com/o/r/pull/1" })).toEqual({ url: "https://github.com/o/r/pull/1" });
+		expect(validatePullRequestTarget({ repository: "o/r", number: 2 })).toEqual({ repository: "o/r", number: 2 });
+		expect(() => validatePullRequestTarget({ repository: "o/r" })).toThrow("Pass either url");
+		expect(() => validatePullRequestTarget({ number: 1.5 })).toThrow("Invalid number");
 	});
 });
