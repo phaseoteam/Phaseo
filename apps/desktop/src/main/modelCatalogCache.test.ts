@@ -26,7 +26,8 @@ describe("model catalog disk cache", () => {
 		let resolve!: (models: typeof second) => void; const fetchModels = vi.fn(() => new Promise<typeof second>(done => { resolve = done; }));
 		expect(await cache.get(key, fetchModels)).toEqual(first); expect(await cache.get(key, fetchModels)).toEqual(first);
 		expect(fetchModels).toHaveBeenCalledOnce(); expect(onChange).not.toHaveBeenCalled();
-		resolve(second); await settle();
+		// The refresh writes to disk before reporting, which can outlast a fixed pause on Windows runners.
+		resolve(second); await vi.waitFor(() => expect(onChange).toHaveBeenCalled(), { timeout: 5000 });
 		expect(onChange).toHaveBeenCalledExactlyOnceWith(key); now += 1;
 		expect(await cache.get(key, fetchModels)).toEqual(second);
 		now += MODEL_CATALOG_FRESH_MS; await cache.get(key, async () => second); await settle();
