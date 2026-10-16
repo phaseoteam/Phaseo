@@ -354,6 +354,7 @@ export function PullRequestsPage() {
 
 	const hasProjects = projects.length > 0;
 	const refreshing = directory.loading && !directory.carried;
+	const failures = (data?.errors ?? []).filter(error => !/origin remote/.test(error.message));
 	const filtered = Object.keys(menu).length > 0 || preferences.state !== "open" || preferences.involvement !== "all" || projectId !== undefined;
 	const searching = typedQuery.length > 0 && !settled;
 	const canLoadMore = Boolean(data?.truncated) && limit < maximumPullRequestPageSize;
@@ -367,6 +368,8 @@ export function PullRequestsPage() {
 	else if (!data && directory.loading) body = <PullRequestListGhost rows={7} />;
 	else if (directory.error && !entries.length) body = <Empty title="Pull requests unavailable" description={directory.error}><Button size="sm" variant="outline" disabled={directory.loading} onClick={() => void directory.refresh()}>{directory.loading ? "Retrying…" : "Retry"}</Button></Empty>;
 	else if (directory.carried && !entries.length && !typedQuery) body = <PullRequestListGhost rows={7} />;
+	// A project without a GitHub origin simply has no pull requests; any other failure is why the list is empty, so say so.
+	else if (!entries.length && failures.length) body = <Empty title="Could not read pull requests" description={failures.length > 1 ? `${failures[0].message} (and ${failures.length - 1} more)` : failures[0].message}><CheckAgain refreshing={refreshing} onRefresh={() => void directory.refresh()} /></Empty>;
 	else if (!entries.length) {
 		if (searching) body = <div className="space-y-1"><p className="px-3 pb-1 text-xs font-medium text-muted-foreground/70">Searching GitHub for “{truncate(typedQuery)}”</p><PullRequestListGhost rows={5} /></div>;
 		else if (typedQuery) body = <Empty title={`Nothing matches “${truncate(typedQuery)}”`} description="GitHub was searched for it. Try fewer words, or search by number, author or branch.">

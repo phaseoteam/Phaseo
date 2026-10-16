@@ -54,6 +54,7 @@ type DirectoryProject = { id: string; directory: string; worktree?: { removedAt?
  * filed under the first of them; a project that cannot be read is named in `errors` and the rest still load.
  */
 export async function listPullRequestDirectory(projects: readonly DirectoryProject[], value: unknown, read = runGh): Promise<PullRequestDirectoryResult> {
+	const readOnce = (root: string, args: string[]) => read(root, args).catch(reason => { if (/HTTP 50[234]/.test(String((reason as { stderr?: unknown }).stderr ?? ""))) return read(root, args); throw reason; });
 	const query: PullRequestDirectoryQuery = validatePullRequestDirectoryQuery(value);
 	const candidates = projects.filter(project => !project.worktree && (query.projectId === undefined || project.id === query.projectId));
 	const errors: PullRequestDirectoryResult["errors"] = [];
@@ -75,8 +76,9 @@ export async function listPullRequestDirectory(projects: readonly DirectoryProje
 		let after: string | undefined, loaded = 0;
 		try {
 			do {
-				const first = Math.min(100, query.limit - loaded);
-				const output = await read(chunk[0].directory, ["api", "graphql", "--hostname", "github.com", "-f", `query=${searchQuery}`, "-f", `q=${search}`, "-F", `first=${first}`, ...(after ? ["-f", `after=${after}`] : [])]);
+				// GitHub search times out (HTTP 502–504) on 100 rich results at a time; 50 a page, with one retry, holds up.
+				const first = Math.min(50, query.limit - loaded);
+				const output = await readOnce(chunk[0].directory, ["api", "graphql", "--hostname", "github.com", "-f", `query=${searchQuery}`, "-f", `q=${search}`, "-F", `first=${first}`, ...(after ? ["-f", `after=${after}`] : [])]);
 				let parsed: unknown;
 				try { parsed = JSON.parse(output); } catch { throw new Error("GitHub returned an unreadable pull request list."); }
 				const page = parseDirectoryPage(parsed, projectFor);

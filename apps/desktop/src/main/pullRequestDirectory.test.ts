@@ -35,10 +35,16 @@ describe("pull request directory", () => {
 	});
 	it("pages up to the limit and reports that more remain", async () => {
 		const read = vi.fn().mockResolvedValueOnce(page([node({ number: 1 })], "c1")).mockResolvedValueOnce(page([node({ number: 2 })], "c2"));
-		const result = await listPullRequestDirectory([{ id: "app", directory: "/app" }], { state: "all", text: "", filters: {}, limit: 200 }, read);
+		const result = await listPullRequestDirectory([{ id: "app", directory: "/app" }], { state: "all", text: "", filters: {}, limit: 100 }, read);
 		expect(read).toHaveBeenCalledTimes(2);
-		expect(read.mock.calls[1][1]).toEqual(expect.arrayContaining(["after=c1", "first=100"]));
+		expect(read.mock.calls[1][1]).toEqual(expect.arrayContaining(["after=c1", "first=50"]));
 		expect(result).toMatchObject({ truncated: true, entries: [{ number: 1 }, { number: 2 }] });
+	});
+	it("retries a page once when GitHub search times out", async () => {
+		const read = vi.fn().mockRejectedValueOnce(Object.assign(new Error("gh failed"), { stderr: "gh: HTTP 504" })).mockResolvedValueOnce(page([node({ number: 1 })]));
+		const result = await listPullRequestDirectory([{ id: "app", directory: "/app" }], { state: "open", text: "", filters: {}, limit: 50 }, read);
+		expect(read).toHaveBeenCalledTimes(2);
+		expect(result).toMatchObject({ errors: [], entries: [{ number: 1 }] });
 	});
 	it("keeps sign-in failures to a readable message per project", async () => {
 		const read = vi.fn().mockRejectedValue(Object.assign(new Error("gh failed"), { stderr: "gh: HTTP 401: Bad credentials ghp_secretsecretsecret (HTTP 401)" }));
