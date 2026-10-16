@@ -116,17 +116,16 @@ export const BATCH_PROVIDER_CAPABILITIES: BatchProviderCapability[] = [
 		providerId: "google-vertex",
 		displayName: "Google Vertex AI",
 		nativeInputModes: ["file"],
-		gatewayInputModes: [],
+		gatewayInputModes: ["requests"],
 		documentationUrl: "https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/batch-prediction-gemini",
-		status: "planned",
-		previewReadiness: "blocked",
+		status: "active",
+		previewReadiness: "validated",
 		reconciliationMode: "polling",
 		submissionRecovery: "manual_review",
 		endpoints: [
 			{ endpoint: "/v1/generateContent", mode: "native" },
-			{ endpoint: "/v1/embeddings", mode: "native" },
 		],
-		notes: "Vertex AI batch inference uses regional BatchPredictionJob/Gen AI batch resources with Google Cloud Storage or BigQuery input and output owned by the same Google Cloud project. The gateway cannot expose this safely until it has an ADC-authenticated GCS/BigQuery file bridge and regional job lifecycle adapter.",
+		notes: "Managed Gemini generateContent batches use workspace-scoped JSONL in an owned Cloud Storage bucket and native BatchPredictionJob polling. Inline input is limited to 20 MB and 10,000 rows. BYOK, uploaded Files, embeddings and EU batch routing remain unavailable. Ambiguous submissions require manual review; inputs and outputs expire after 30 days.",
 	},
 	{
 		providerId: "google-vertex-eu",
@@ -512,6 +511,38 @@ export function resolveBatchInputMode(payload: Record<string, unknown>): BatchIn
 export function getBatchProviderCapability(providerId: string): BatchProviderCapability | null {
 	const normalized = normalizeProviderId(providerId);
 	return normalized ? CAPABILITIES_BY_PROVIDER.get(normalized) ?? null : null;
+}
+
+/** Batch envelope parameters, independent of the model's synchronous generation parameters. */
+export function getBatchDiscoveryParams(
+	capability: BatchProviderCapability,
+	endpoints: string[],
+): Record<string, Record<string, unknown>> {
+	const params: Record<string, Record<string, unknown>> = {
+		endpoint: { supported: true, type: "enum", values: endpoints },
+		model: { supported: true, type: "string" },
+		provider: { supported: true, type: "enum", values: [capability.providerId] },
+		webhook: { supported: true, type: "object" },
+	};
+	if (capability.gatewayInputModes.includes("requests")) {
+		params.requests = { supported: true, type: "array" };
+		params.prompts = { supported: true, type: "array" };
+	}
+	if (capability.gatewayInputModes.includes("file")) {
+		params.input_file_id = { supported: true, type: "string" };
+	}
+	// These windows are applied by the submission adapters. Google and Anthropic
+	// manage their own completion timing; storing a value is not configurable support.
+	const fixedWindows: Record<string, string[]> = {
+		openai: ["24h"], ovhcloud: ["24h", "48h", "72h"],
+		xiaomi: ["24h"], together: ["24h"], "alibaba-cloud": ["24h"],
+	};
+	const windows = fixedWindows[capability.providerId];
+	if (windows) params.completion_window = { supported: true, type: "enum", values: windows };
+	if (["mistral", "moonshotai"].includes(capability.providerId)) {
+		params.completion_window = { supported: true, type: "string" };
+	}
+	return params;
 }
 
 export function providerSupportsMultipleModelsPerBatch(providerId: string): boolean {

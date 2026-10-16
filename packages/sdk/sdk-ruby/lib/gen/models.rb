@@ -5121,6 +5121,7 @@ module Phaseo
     # @!attribute [rw] role
     #   @return [String]
     WorkspaceMemberRoleUpdateRequest = Struct.new(:role, keyword_init: true)
+    WorkspaceModelSuccessorPricePolicy = Object
     # @!attribute [rw] created_at
     #   @return [String, nil]
     # @!attribute [rw] id
@@ -5181,11 +5182,13 @@ module Phaseo
     #   @return [Array<String>]
     # @!attribute [rw] model_deprecation
     #   @return [Array<String>]
+    # @!attribute [rw] model_substitution
+    #   @return [Array<String>]
     # @!attribute [rw] payment_method_expiring
     #   @return [Array<String>]
     # @!attribute [rw] rate_limit_throttled
     #   @return [Array<String>]
-    WorkspaceNotificationRouteMap = Struct.new(:auto_top_up_failed, :low_balance, :model_deprecation, :payment_method_expiring, :rate_limit_throttled, keyword_init: true)
+    WorkspaceNotificationRouteMap = Struct.new(:auto_top_up_failed, :low_balance, :model_deprecation, :model_substitution, :payment_method_expiring, :rate_limit_throttled, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     WorkspaceNotificationRouteResponse = Struct.new(:data, keyword_init: true)
@@ -5298,6 +5301,12 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] io_logging_include_provider_payloads
     #   @return [Boolean, nil]
+    # @!attribute [rw] model_successor_max_price_increase_percent
+    #   @return [Integer, nil]
+    # @!attribute [rw] model_successor_price_policy
+    #   @return [Object, nil]
+    # @!attribute [rw] model_successor_redirect_enabled
+    #   @return [Boolean, nil]
     # @!attribute [rw] privacy_enable_free_may_publish_prompts
     #   @return [Boolean, nil]
     # @!attribute [rw] privacy_enable_free_may_train
@@ -5326,7 +5335,7 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] workspace_id
     #   @return [String]
-    WorkspaceSettings = Struct.new(:alpha_channel_enabled, :beta_channel_enabled, :byok_fallback_enabled, :io_logging_enabled, :io_logging_include_provider_payloads, :privacy_enable_free_may_publish_prompts, :privacy_enable_free_may_train, :privacy_enable_input_output_logging, :privacy_enable_paid_may_train, :privacy_zdr_only, :provider_restriction_enforce_allowed, :provider_restriction_mode, :provider_restriction_provider_ids, :response_healing_enabled, :response_healing_locked, :response_healing_mode, :routing_mode, :updated_at, :workspace_id, keyword_init: true)
+    WorkspaceSettings = Struct.new(:alpha_channel_enabled, :beta_channel_enabled, :byok_fallback_enabled, :io_logging_enabled, :io_logging_include_provider_payloads, :model_successor_max_price_increase_percent, :model_successor_price_policy, :model_successor_redirect_enabled, :privacy_enable_free_may_publish_prompts, :privacy_enable_free_may_train, :privacy_enable_input_output_logging, :privacy_enable_paid_may_train, :privacy_zdr_only, :provider_restriction_enforce_allowed, :provider_restriction_mode, :provider_restriction_provider_ids, :response_healing_enabled, :response_healing_locked, :response_healing_mode, :routing_mode, :updated_at, :workspace_id, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     WorkspaceSettingsResponse = Struct.new(:data, keyword_init: true)
@@ -5339,6 +5348,12 @@ module Phaseo
     # @!attribute [rw] io_logging_enabled
     #   @return [Boolean, nil]
     # @!attribute [rw] io_logging_include_provider_payloads
+    #   @return [Boolean, nil]
+    # @!attribute [rw] model_successor_max_price_increase_percent
+    #   @return [Integer, nil]
+    # @!attribute [rw] model_successor_price_policy
+    #   @return [String, nil]
+    # @!attribute [rw] model_successor_redirect_enabled
     #   @return [Boolean, nil]
     # @!attribute [rw] privacy_enable_free_may_publish_prompts
     #   @return [Boolean, nil]
@@ -5364,7 +5379,7 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] routing_mode
     #   @return [String, nil]
-    WorkspaceSettingsUpdateRequest = Struct.new(:alpha_channel_enabled, :beta_channel_enabled, :byok_fallback_enabled, :io_logging_enabled, :io_logging_include_provider_payloads, :privacy_enable_free_may_publish_prompts, :privacy_enable_free_may_train, :privacy_enable_input_output_logging, :privacy_enable_paid_may_train, :privacy_zdr_only, :provider_restriction_enforce_allowed, :provider_restriction_mode, :provider_restriction_provider_ids, :response_healing_enabled, :response_healing_locked, :response_healing_mode, :routing_mode, keyword_init: true)
+    WorkspaceSettingsUpdateRequest = Struct.new(:alpha_channel_enabled, :beta_channel_enabled, :byok_fallback_enabled, :io_logging_enabled, :io_logging_include_provider_payloads, :model_successor_max_price_increase_percent, :model_successor_price_policy, :model_successor_redirect_enabled, :privacy_enable_free_may_publish_prompts, :privacy_enable_free_may_train, :privacy_enable_input_output_logging, :privacy_enable_paid_may_train, :privacy_zdr_only, :provider_restriction_enforce_allowed, :provider_restriction_mode, :provider_restriction_provider_ids, :response_healing_enabled, :response_healing_locked, :response_healing_mode, :routing_mode, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     WorkspaceSsoResponse = Struct.new(:data, keyword_init: true)

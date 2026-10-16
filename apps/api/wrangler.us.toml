@@ -8,6 +8,10 @@ workers_dev = false
 preview_urls = false
 
 [vars]
+GOOGLE_VERTEX_PROJECT_NUMBER = "916177560808"
+GOOGLE_VERTEX_BATCH_LOCATION = "global"
+GOOGLE_VERTEX_BATCH_BUCKET = "ai-stats-469110-phaseo-vertex-batch-us-central1"
+BATCH_API_PREVIEW_PROVIDERS = "openai,anthropic,google-ai-studio,google-vertex,mistral,together"
 GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED = "true"
 CUSTOMER_RATE_LIMITS_ENABLED = "true"
 RATE_LIMIT_POLICIES_ENABLED = "true"

@@ -30,6 +30,8 @@ Credentials and webhook URLs are encrypted before storage. Keep channel credenti
 
 The notifications page lists the alert types available to your workspace. Enable **Model Deprecation Alerts** to receive notice before a model used by the workspace is retired.
 
+**Model replacement notices** are sent when [retired model routing](./model-retirement.mdx#route-requests-to-a-replacement-automatically) is on and a replacement model answers the workspace's requests for a model no provider serves any more. One notice is sent per model and replacement, the first time a replacement answers successfully. The workspace owner is always emailed; choose destinations to send the notice to your team as well.
+
 Alerts are delivered to the configured destinations in addition to any built-in recipient behavior shown in the dashboard.
 
 ## Mentions

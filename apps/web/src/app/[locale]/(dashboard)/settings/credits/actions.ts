@@ -135,7 +135,7 @@ export async function setLowBalanceEmailAlert(args: SetLowBalanceEmailAlertArgs)
 }
 
 export async function setBillingNotificationPreference(args: {
-	preference: "autoTopUpFailure" | "paymentMethodExpiring" | "modelDeprecationAlerts";
+	preference: "autoTopUpFailure" | "paymentMethodExpiring" | "modelDeprecationAlerts" | "modelDeprecationAlertsIncludeAdmins";
 	enabled: boolean;
 }) {
 	const context = await getServerAccountContext();

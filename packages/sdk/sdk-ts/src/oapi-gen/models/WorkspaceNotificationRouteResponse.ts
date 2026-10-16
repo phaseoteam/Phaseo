@@ -6,6 +6,7 @@ export interface WorkspaceNotificationRouteResponse {
       | "auto_top_up_failed"
       | "payment_method_expiring"
       | "model_deprecation"
+      | "model_substitution"
       | "rate_limit_throttled";
   };
 }

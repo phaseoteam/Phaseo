@@ -1292,6 +1292,7 @@ accountSettingsRouter.get("/credits", async (c) => {
 		lowBalanceEmailThresholdUsd: null,
 		paymentMethodExpiringEmailEnabled: true,
 		modelDeprecationAlertsEnabled: false,
+		modelDeprecationAlertsIncludeAdmins: false,
 		notificationDestinations: [],
 		notificationRoutes: {},
 		obfuscateInfo: false,
@@ -1312,7 +1313,7 @@ accountSettingsRouter.get("/credits", async (c) => {
 			.select("workspace_id,stripe_customer_id,balance_nanos,reserved_nanos,auto_top_up_enabled,low_balance_threshold,auto_top_up_amount,auto_top_up_account_id")
 			.eq("workspace_id", workspaceId).maybeSingle(),
 		context.client.from("workspace_settings")
-			.select("low_balance_email_enabled,low_balance_email_threshold_nanos,auto_top_up_failure_email_enabled,payment_method_expiring_email_enabled,model_deprecation_alerts_enabled")
+			.select("low_balance_email_enabled,low_balance_email_threshold_nanos,auto_top_up_failure_email_enabled,payment_method_expiring_email_enabled,model_deprecation_alerts_enabled,model_deprecation_alerts_include_admins")
 			.eq("workspace_id", workspaceId).maybeSingle(),
 		context.client.from("credit_ledger").select("event_time,status,amount_nanos")
 			.eq("workspace_id", workspaceId).eq("ref_type", "Stripe_Payment_Intent")
@@ -1346,6 +1347,7 @@ accountSettingsRouter.get("/credits", async (c) => {
 		lowBalanceEmailThresholdUsd: thresholdNanos > 0 ? Number((thresholdNanos / 1_000_000_000).toFixed(2)) : null,
 		paymentMethodExpiringEmailEnabled: settingsResult.data?.payment_method_expiring_email_enabled !== false,
 		modelDeprecationAlertsEnabled: Boolean(settingsResult.data?.model_deprecation_alerts_enabled),
+		modelDeprecationAlertsIncludeAdmins: Boolean(settingsResult.data?.model_deprecation_alerts_include_admins),
 		notificationDestinations: (destinationsResult.data ?? []).map((row) => ({ id: String(row.id), name: String(row.name), type: String(row.type), status: String(row.status), targetPreview: String(row.target_preview), createdAt: row.created_at ?? null })),
 		notificationRoutes: (routesResult.data ?? []).reduce<Record<string, string[]>>((routes, row) => {
 			const kind = String(row.event_kind); (routes[kind] ??= []).push(String(row.destination_id)); return routes;

@@ -18,6 +18,6 @@ String body = """
 }
 """;
 
-Object response = client.createEmbedding(body);
+Object response = client.createEmbedding(new com.fasterxml.jackson.databind.ObjectMapper().readTree(body));
 System.out.println(String.valueOf(response));
 ```

@@ -3656,6 +3656,9 @@ public final class Models {
 		public Object role;
 	}
 
+	public static class WorkspaceModelSuccessorPricePolicy {
+	}
+
 	public static class WorkspaceNotificationDestination {
 		public String created_at;
 		public String id;
@@ -3712,6 +3715,7 @@ public final class Models {
 		public java.util.List<String> auto_top_up_failed;
 		public java.util.List<String> low_balance;
 		public java.util.List<String> model_deprecation;
+		public java.util.List<String> model_substitution;
 		public java.util.List<String> payment_method_expiring;
 		public java.util.List<String> rate_limit_throttled;
 	}
@@ -3823,6 +3827,9 @@ public final class Models {
 		public Boolean byok_fallback_enabled;
 		public Boolean io_logging_enabled;
 		public Boolean io_logging_include_provider_payloads;
+		public Integer model_successor_max_price_increase_percent;
+		public Object model_successor_price_policy;
+		public Boolean model_successor_redirect_enabled;
 		public Boolean privacy_enable_free_may_publish_prompts;
 		public Boolean privacy_enable_free_may_train;
 		public Boolean privacy_enable_input_output_logging;
@@ -3849,6 +3856,9 @@ public final class Models {
 		public Boolean byok_fallback_enabled;
 		public Boolean io_logging_enabled;
 		public Boolean io_logging_include_provider_payloads;
+		public Integer model_successor_max_price_increase_percent;
+		public Object model_successor_price_policy;
+		public Boolean model_successor_redirect_enabled;
 		public Boolean privacy_enable_free_may_publish_prompts;
 		public Boolean privacy_enable_free_may_train;
 		public Boolean privacy_enable_input_output_logging;

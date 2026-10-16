@@ -5231,6 +5231,15 @@ type WorkspaceMemberRoleUpdateRequest struct {
 	Role string `json:"role"`
 }
 
+type WorkspaceModelSuccessorPricePolicy string
+
+const (
+	WorkspaceModelSuccessorPricePolicyNever WorkspaceModelSuccessorPricePolicy = "never"
+	WorkspaceModelSuccessorPricePolicyLimit WorkspaceModelSuccessorPricePolicy = "limit"
+	WorkspaceModelSuccessorPricePolicyAny WorkspaceModelSuccessorPricePolicy = "any"
+)
+
+
 type WorkspaceNotificationDestination struct {
 	CreatedAt *string `json:"created_at,omitempty"`
 	Id string `json:"id"`
@@ -5291,6 +5300,7 @@ const (
 	WorkspaceNotificationEventKindAutoTopUpFailed WorkspaceNotificationEventKind = "auto_top_up_failed"
 	WorkspaceNotificationEventKindPaymentMethodExpiring WorkspaceNotificationEventKind = "payment_method_expiring"
 	WorkspaceNotificationEventKindModelDeprecation WorkspaceNotificationEventKind = "model_deprecation"
+	WorkspaceNotificationEventKindModelSubstitution WorkspaceNotificationEventKind = "model_substitution"
 	WorkspaceNotificationEventKindRateLimitThrottled WorkspaceNotificationEventKind = "rate_limit_throttled"
 )
 
@@ -5304,6 +5314,7 @@ type WorkspaceNotificationRouteMap struct {
 	AutoTopUpFailed []string `json:"auto_top_up_failed"`
 	LowBalance []string `json:"low_balance"`
 	ModelDeprecation []string `json:"model_deprecation"`
+	ModelSubstitution []string `json:"model_substitution"`
 	PaymentMethodExpiring []string `json:"payment_method_expiring"`
 	RateLimitThrottled []string `json:"rate_limit_throttled"`
 }
@@ -5434,6 +5445,9 @@ type WorkspaceSettings struct {
 	ByokFallbackEnabled *bool `json:"byok_fallback_enabled,omitempty"`
 	IoLoggingEnabled *bool `json:"io_logging_enabled,omitempty"`
 	IoLoggingIncludeProviderPayloads *bool `json:"io_logging_include_provider_payloads,omitempty"`
+	ModelSuccessorMaxPriceIncreasePercent *int `json:"model_successor_max_price_increase_percent,omitempty"`
+	ModelSuccessorPricePolicy *interface{} `json:"model_successor_price_policy,omitempty"`
+	ModelSuccessorRedirectEnabled *bool `json:"model_successor_redirect_enabled,omitempty"`
 	PrivacyEnableFreeMayPublishPrompts *bool `json:"privacy_enable_free_may_publish_prompts,omitempty"`
 	PrivacyEnableFreeMayTrain *bool `json:"privacy_enable_free_may_train,omitempty"`
 	PrivacyEnableInputOutputLogging *bool `json:"privacy_enable_input_output_logging,omitempty"`
@@ -5460,6 +5474,9 @@ type WorkspaceSettingsUpdateRequest struct {
 	ByokFallbackEnabled *bool `json:"byok_fallback_enabled,omitempty"`
 	IoLoggingEnabled *bool `json:"io_logging_enabled,omitempty"`
 	IoLoggingIncludeProviderPayloads *bool `json:"io_logging_include_provider_payloads,omitempty"`
+	ModelSuccessorMaxPriceIncreasePercent *int `json:"model_successor_max_price_increase_percent,omitempty"`
+	ModelSuccessorPricePolicy *string `json:"model_successor_price_policy,omitempty"`
+	ModelSuccessorRedirectEnabled *bool `json:"model_successor_redirect_enabled,omitempty"`
 	PrivacyEnableFreeMayPublishPrompts *bool `json:"privacy_enable_free_may_publish_prompts,omitempty"`
 	PrivacyEnableFreeMayTrain *bool `json:"privacy_enable_free_may_train,omitempty"`
 	PrivacyEnableInputOutputLogging *bool `json:"privacy_enable_input_output_logging,omitempty"`

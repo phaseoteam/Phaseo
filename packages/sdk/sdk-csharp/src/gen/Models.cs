@@ -8710,6 +8710,8 @@ public sealed class WorkspaceMemberRoleUpdateRequest
 
 }
 
+public sealed class WorkspaceModelSuccessorPricePolicy { }
+
 public sealed class WorkspaceNotificationDestination
 {
 	[JsonPropertyName("created_at")]
@@ -8822,6 +8824,9 @@ public sealed class WorkspaceNotificationRouteMap
 
 	[JsonPropertyName("model_deprecation")]
 	public List<string> ModelDeprecation { get; set; }
+
+	[JsonPropertyName("model_substitution")]
+	public List<string> ModelSubstitution { get; set; }
 
 	[JsonPropertyName("payment_method_expiring")]
 	public List<string> PaymentMethodExpiring { get; set; }
@@ -9045,6 +9050,15 @@ public sealed class WorkspaceSettings
 	[JsonPropertyName("io_logging_include_provider_payloads")]
 	public bool? IoLoggingIncludeProviderPayloads { get; set; }
 
+	[JsonPropertyName("model_successor_max_price_increase_percent")]
+	public long? ModelSuccessorMaxPriceIncreasePercent { get; set; }
+
+	[JsonPropertyName("model_successor_price_policy")]
+	public object? ModelSuccessorPricePolicy { get; set; }
+
+	[JsonPropertyName("model_successor_redirect_enabled")]
+	public bool? ModelSuccessorRedirectEnabled { get; set; }
+
 	[JsonPropertyName("privacy_enable_free_may_publish_prompts")]
 	public bool? PrivacyEnableFreeMayPublishPrompts { get; set; }
 
@@ -9112,6 +9126,15 @@ public sealed class WorkspaceSettingsUpdateRequest
 
 	[JsonPropertyName("io_logging_include_provider_payloads")]
 	public bool? IoLoggingIncludeProviderPayloads { get; set; }
+
+	[JsonPropertyName("model_successor_max_price_increase_percent")]
+	public long? ModelSuccessorMaxPriceIncreasePercent { get; set; }
+
+	[JsonPropertyName("model_successor_price_policy")]
+	public string? ModelSuccessorPricePolicy { get; set; }
+
+	[JsonPropertyName("model_successor_redirect_enabled")]
+	public bool? ModelSuccessorRedirectEnabled { get; set; }
 
 	[JsonPropertyName("privacy_enable_free_may_publish_prompts")]
 	public bool? PrivacyEnableFreeMayPublishPrompts { get; set; }

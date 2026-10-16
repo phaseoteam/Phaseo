@@ -6,7 +6,7 @@ import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { encryptNotificationTarget, NOTIFICATION_DESTINATION_TYPES, targetPreview, validateNotificationTarget, type NotificationDestinationType } from "@/lib/notification-destinations";
 
 const EMPTY_TIER_SUMMARY = { lastMonthCents: 0, mtdCents: 0, teamTier: "basic" as const };
-const NOTIFICATION_EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "rate_limit_throttled"] as const;
+const NOTIFICATION_EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled"] as const;
 
 export function parseLowBalanceThresholdNanos(value: unknown): number | null {
 	const thresholdUsd = Number(value);
@@ -262,7 +262,8 @@ creditsRouter.put("/notification-preferences", async (c) => {
 	if (typeof body.autoTopUpFailure === "boolean") update.auto_top_up_failure_email_enabled = body.autoTopUpFailure;
 	if (typeof body.paymentMethodExpiring === "boolean") update.payment_method_expiring_email_enabled = body.paymentMethodExpiring;
 	if (typeof body.modelDeprecationAlerts === "boolean") update.model_deprecation_alerts_enabled = body.modelDeprecationAlerts;
-	if (!("auto_top_up_failure_email_enabled" in update) && !("payment_method_expiring_email_enabled" in update) && !("model_deprecation_alerts_enabled" in update)) return c.json({ error: "invalid_preferences" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (typeof body.modelDeprecationAlertsIncludeAdmins === "boolean") update.model_deprecation_alerts_include_admins = body.modelDeprecationAlertsIncludeAdmins;
+	if (!("auto_top_up_failure_email_enabled" in update) && !("payment_method_expiring_email_enabled" in update) && !("model_deprecation_alerts_enabled" in update) && !("model_deprecation_alerts_include_admins" in update)) return c.json({ error: "invalid_preferences" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const result = await context.client.from("workspace_settings").upsert(update, { onConflict: "workspace_id" });
 	if (result.error) return c.json({ error: "credits_update_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);

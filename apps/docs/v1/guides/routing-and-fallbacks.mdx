@@ -301,6 +301,8 @@ Request-level fallbacks use the same machinery as dynamic-route fallbacks:
   `422` are returned without switching models. A `429` from a Phaseo budget or
   free-model quota reached while executing the request also moves to the next
   model, because a different model may fit within the remaining limit.
+  When no provider serves the primary model at all, for example because it is
+  [retired](#retired-models), Phaseo also moves to the next model.
   Authentication, API key rate limits, and other checks that fail before the
   primary model runs return immediately.
 - **Limits.** `models` accepts 1 to 25 entries. Duplicates and entries equal to
@@ -355,6 +357,14 @@ Read more in:
 
 - [Rate limits](../api-reference/limits.mdx)
 - [Error handling](../api-reference/errors.mdx)
+
+## Retired models
+
+A retired model is still served while any provider serves it. Once none does,
+requests fail with `410 model_retired`, unless the workspace has turned on
+retired model routing to send them to a replacement. Your own `models` list is
+always tried before a replacement. See
+[Model Deprecation and Retirement](./model-retirement.mdx).
 
 ## Cache-aware and session-aware affinity
 
@@ -411,4 +421,5 @@ For production workloads, log request ids, response status codes, and model ids 
 ## Related guides
 
 - [Presets](./presets)
+- [Model Deprecation and Retirement](./model-retirement)
 - [Feature Parity Matrix](../migration-guides/feature-parity-matrix)

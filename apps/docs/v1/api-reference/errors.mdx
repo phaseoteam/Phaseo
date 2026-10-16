@@ -85,6 +85,7 @@ Some errors include more detail to help you fix the issue faster:
 | `authentication_error` | `401` | Missing or invalid API key. |
 | `authorization_error` | `403` | The key does not have access to this resource. |
 | `not_found_error` | `404` | The endpoint or resource could not be found. |
+| `model_retired` | `410` | The model is retired and no provider serves it any more. Switch to `replacement_model`. |
 | `rate_limit_error` | `429` | Too many requests. Retry after the specified delay. |
 | `phaseo_free_model_limit_exceeded` | `429` | Phaseo's shared daily free-model allowance is exhausted (1,500 requests by default). Honor `Retry-After`, wait for the 00:00 UTC reset, or choose a paid model. |
 | `rate_limit_exceeded` | `429` | A workspace [rate limit policy](./limits.mdx#rate-limit-policies) is exhausted. `policy_id` and `limit_scope` identify it. Honor `Retry-After`, or ask a workspace admin to change the policy. |
@@ -190,6 +191,33 @@ Common fields:
   }
 }
 ```
+
+## When a model is retired
+
+A retired model is still served while any provider serves it. Once none does,
+requests for it fail with `410` and the `model_retired` error:
+
+```json
+{
+  "generation_id": "G-retired123",
+  "status_code": 410,
+  "error": "model_retired",
+  "reason": "model_retired_without_providers",
+  "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+  "model": "lab/old-model",
+  "retired_at": "2026-09-30T00:00:00Z",
+  "replacement_model": "lab/new-model"
+}
+```
+
+- `model`: the model you requested.
+- `retired_at`: when the model was retired, or `null` if no date is recorded.
+- `replacement_model`: the suggested replacement, or `null` if there is none.
+
+Retrying does not help. Update the model ID in your request. To keep serving
+these requests while you migrate, add the replacement to your request's
+`models` list or turn on retired model routing for the workspace. See
+[Model Deprecation and Retirement](../guides/model-retirement.mdx).
 
 ## Optional debug mode
 

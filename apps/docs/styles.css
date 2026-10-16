@@ -1,3 +1,205 @@
+/* Luma's 14rem sidebar wraps most page and endpoint names onto two lines. */
+:root {
+	--sidebar-width: 17.5rem;
+}
+
+/* Luma centres the tab row and lets the logo and language picker shrink underneath it when the
+   window is narrow or the tab labels are long. Keep them whole and let the tab row scroll instead. */
+#navbar div:has(> a > img.nav-logo) {
+	min-width: max-content;
+}
+
+#navbar nav[class*="navbar:flex"] {
+	justify-content: safe center;
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+#navbar nav[class*="navbar:flex"] li > :is(a, button) {
+	padding-inline: 0.6875rem;
+}
+
+@media (max-width: 1279px) {
+	#navbar nav[class*="navbar:flex"] li > :is(a, button) {
+		padding-inline: 0.5rem;
+		font-size: 0.8125rem;
+	}
+}
+
+/* Square off Luma's pill-shaped header buttons to phaseo.app's rounded-md. */
+#navbar :is([class*="rounded-full"], #localization-select-trigger) {
+	border-radius: 0.375rem;
+}
+
+/* Tab icons add about 130px to the tab row. Below 1400px only English has room for them, and only from 1280px. */
+@media (max-width: 1399px) {
+	html:not([lang="en"]) #navbar nav[class*="navbar:flex"] li > :is(a, button) > svg[style*="mask-image"] {
+		display: none;
+	}
+}
+
+@media (max-width: 1279px) {
+	#navbar nav[class*="navbar:flex"] li > :is(a, button) > svg[style*="mask-image"] {
+		display: none;
+	}
+}
+
+/* Luma keeps page content at 40.5rem on every screen. From 1280px, widen it up to 56rem (the same text width on
+   guides and endpoint pages at 1920px) while it stays clear of the sidebar and of the table of contents (18rem)
+   or, on endpoint pages, the request example panel (28rem). */
+@media (min-width: 1280px) {
+	#content-area {
+		--content-width: clamp(40.5rem, min(100vw - 41rem, 100vw - 2 * var(--sidebar-width) - 5rem), 56rem);
+	}
+
+	/* Luma centres endpoint pages on the window, so the gap to the sidebar is several times the gap to the example
+	   panel. Centre them between the two instead, as Luma already does below 1650px, leaving at least 3rem each
+	   side of the text (the panel and its margins take about 26.5rem). */
+	#content-container:has(> [data-api-example]) #content-area {
+		--content-width: clamp(40.5rem, 100vw - var(--sidebar-width) - 35.5rem, 56rem);
+		margin-inline: auto !important;
+	}
+}
+
+/* On 1080p desktops, keep every sidebar title on one line. Long titles have a short `sidebarTitle` so that all of
+   them fit in 24rem; the ellipsis only catches titles added later without one. */
+@media (min-width: 1800px) {
+	:root {
+		--sidebar-width: 24rem;
+	}
+
+	#sidebar-content :is(a, button) .flex-wrap {
+		flex-wrap: nowrap;
+	}
+
+	#sidebar-content button > div:first-child {
+		min-width: 0;
+	}
+
+	#sidebar-content :is(a, button) div > span:first-child:not(.method-nav-pill, .nav-tag-pill),
+	#sidebar-content .sidebar-group-header {
+		min-width: 0;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+}
+
+/* Montserrat runs wide, so Luma's 36px title, 18px intro and 16px body read large next to phaseo.app
+   (14-16px text, 20px section headings). Step each one down. */
+#page-title {
+	font-size: 1.875rem;
+	line-height: 2.25rem;
+}
+
+#header .prose {
+	font-size: 1rem;
+	line-height: 1.625rem;
+}
+
+#content.mdx-content {
+	font-size: 0.9375rem;
+	line-height: 1.625rem;
+}
+
+#content.mdx-content h2 {
+	font-size: 1.25rem;
+	line-height: 1.75rem;
+}
+
+#content.mdx-content h3 {
+	font-size: 1.0625rem;
+	line-height: 1.5rem;
+}
+
+/* Luma puts 2rem between sidebar sections, which spreads the API Reference's many short sections out. */
+#sidebar-content div[class~="lg:mt-8"] {
+	margin-top: 1.25rem;
+}
+
+/* Luma capitalises every word of a group name, which is wrong outside English ("Modelle Und Routing"). */
+:is(.sidebar-group-header, .eyebrow) {
+	text-transform: none;
+}
+
+/* Home page: start paths as plain rows (title, then description) and the SDKs as one line of links. */
+.ph-paths {
+	border-top: 1px solid rgb(0 0 0 / 0.08);
+}
+
+/* Mintlify renders Markdown paragraphs as <span data-as="p">. */
+.ph-paths > * {
+	display: block;
+	margin: 0;
+}
+
+.ph-paths a {
+	display: grid;
+	grid-template-columns: 16rem 1fr;
+	gap: 0.25rem 1.5rem;
+	padding: 0.875rem 0.125rem;
+	border-bottom: 1px solid rgb(0 0 0 / 0.08);
+	color: rgb(107 114 128);
+	font-size: 0.9375rem;
+	line-height: 1.5;
+	text-decoration: none;
+}
+
+.ph-paths a strong {
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
+	color: rgb(17 24 39);
+	font-weight: 600;
+}
+
+.ph-paths a:hover strong {
+	color: rgb(var(--primary));
+}
+
+.ph-sdks > * {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem 1.75rem;
+	margin: 0;
+}
+
+.ph-sdks a {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	color: rgb(17 24 39);
+	font-weight: 500;
+	text-decoration: none;
+}
+
+.ph-sdks a:hover {
+	color: rgb(var(--primary));
+}
+
+:is(html.dark, html[data-theme="dark"]) :is(.ph-paths, .ph-paths a) {
+	border-color: rgb(255 255 255 / 0.1);
+}
+
+:is(html.dark, html[data-theme="dark"]) .ph-paths a {
+	color: rgb(156 163 175);
+}
+
+:is(html.dark, html[data-theme="dark"]) :is(.ph-paths a strong, .ph-sdks a) {
+	color: rgb(255 255 255);
+}
+
+:is(html.dark, html[data-theme="dark"]) .ph-paths a:hover strong,
+:is(html.dark, html[data-theme="dark"]) .ph-sdks a:hover {
+	color: rgb(var(--primary-light));
+}
+
+@media (max-width: 640px) {
+	.ph-paths a {
+		grid-template-columns: 1fr;
+	}
+}
+
 /* Mintlify page icons accept one path, so swap monochrome brand marks by theme. */
 :is(html.dark, html[data-theme="dark"]) img[src$="/icons/brands/cline.svg"] {
 	content: url("/icons/brands/cline-dark.svg");

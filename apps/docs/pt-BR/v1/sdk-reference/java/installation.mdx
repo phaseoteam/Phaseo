@@ -1,43 +1,38 @@
 ---
-title: "Instalação do SDK Java (em desenvolvimento)"
-description: "Compile o SDK Java, ainda em desenvolvimento, a partir do código-fonte."
+icon: "package"
+title: "Java SDK — Instalação"
+description: "O código-fonte atual inclui controles de novas tentativas e metadados de resposta ausentes no antigo artefato 3.0.0 do Maven Central. Compile a revisão indicada para usar o SDK atual."
 ---
 
-<Note type="warning">O SDK Java está em desenvolvimento e ainda não foi publicado no Maven Central.</Note>
+O código-fonte atual inclui controles de novas tentativas e metadados de resposta ausentes no antigo artefato 3.0.0 do Maven Central. Compile a revisão indicada para usar o SDK atual.
 
 ## Requisitos
 
 - Java 17+
 - Maven 3.8+
+- Git
 
-## Compilar localmente
-
-```bash
-cd packages/sdk/sdk-java
-mvn -DskipTests package
-```
-
-Isso gera `target/sdk-java-0.0.0-local.jar`.
-
-## Usar no seu projeto
-
-Instale o JAR gerado no cache local do Maven:
+## Compilar a partir do código-fonte
 
 ```bash
-mvn install:install-file \
-  -Dfile=target/sdk-java-0.0.0-local.jar \
-  -DgroupId=app.phaseo \
-  -DartifactId=sdk-java \
-  -Dversion=0.0.0-local \
-  -Dpackaging=jar
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+git checkout 1ff1119f41ceb3ac2c85ed605f6e1c4beca6e011
+mvn -f packages/sdk/sdk-java/pom.xml -DskipTests install
 ```
 
-Depois, adicione-o como dependência no arquivo `pom.xml` da aplicação:
+O Maven instala `app.phaseo:phaseo-sdk:3.0.0` no repositório local, incluindo a dependência do Jackson.
+
+## Adicionar a dependência
 
 ```xml
 <dependency>
   <groupId>app.phaseo</groupId>
-  <artifactId>sdk-java</artifactId>
-  <version>0.0.0-local</version>
+  <artifactId>phaseo-sdk</artifactId>
+  <version>3.0.0</version>
 </dependency>
 ```
+
+<Note>O [artefato do Maven Central](https://repo.maven.apache.org/maven2/app/phaseo/phaseo-sdk/3.0.0/) fornece a API anterior. Ele não inclui as APIs atuais de novas tentativas, metadados ou validação de parâmetros.</Note>
+
+[Uso](./usage)

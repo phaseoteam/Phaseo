@@ -26,9 +26,13 @@ Phaseo prend en charge :
 
 Les identifiants et les URL de webhook sont chiffrés avant leur enregistrement. Limitez les identifiants de canal à l’envoi de notifications et renouvelez-les en cas d’exposition.
 
+<span id="enable-product-alerts"></span>
+
 ## Activer les alertes produit
 
-La page Notifications répertorie les types d’alertes disponibles pour votre espace de travail. Activez **Alertes de retrait de modèles** pour être averti avant le retrait d’un modèle utilisé dans l’espace de travail.
+La page Notifications répertorie les types d’alertes disponibles pour votre espace de travail. Activez **Alertes de dépréciation de modèle** pour être averti avant le retrait d’un modèle utilisé dans l’espace de travail.
+
+Les **Avis de modèle remplaçant** sont envoyés lorsque le [routage des modèles retirés](./model-retirement.mdx#route-requests-to-a-replacement-automatically) est activé et qu’un modèle remplaçant répond aux requêtes de l’espace de travail pour un modèle que plus aucun fournisseur ne sert. Un avis est envoyé par modèle et par remplaçant, la première fois qu’un remplaçant répond avec succès. Le propriétaire de l’espace de travail reçoit toujours un e-mail ; choisissez des destinations pour envoyer aussi l’avis à votre équipe.
 
 Les alertes sont envoyées aux destinations configurées, en plus des destinataires intégrés éventuellement affichés dans le tableau de bord.
 

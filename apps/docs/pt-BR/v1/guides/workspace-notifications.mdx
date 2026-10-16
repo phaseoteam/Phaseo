@@ -26,9 +26,13 @@ O Phaseo oferece suporte a:
 
 As credenciais e URLs de webhook são criptografadas antes do armazenamento. Restrinja as credenciais do canal ao envio de notificações e faça a rotação se forem expostas.
 
+<span id="enable-product-alerts"></span>
+
 ## Ativar alertas do produto
 
 A página de notificações lista os tipos de alerta disponíveis para o espaço de trabalho. Ative **Alertas de descontinuação de modelos** para receber um aviso antes que um modelo usado pelo espaço de trabalho seja desativado.
+
+**Avisos de modelo substituto** são enviados quando o [roteamento de modelos aposentados](./model-retirement.mdx#route-requests-to-a-replacement-automatically) está ativado e um modelo substituto responde às solicitações do espaço de trabalho para um modelo que nenhum provedor atende mais. É enviado um aviso por modelo e substituto, na primeira vez que um substituto responde com sucesso. O proprietário do espaço de trabalho sempre recebe um e-mail; escolha destinos para enviar o aviso também à sua equipe.
 
 Além dos destinatários integrados exibidos no painel, os alertas também são enviados aos destinos configurados.
 

@@ -1,43 +1,38 @@
 ---
-title: "Java SDK इंस्टॉलेशन (विकासाधीन)"
-description: "अभी विकासाधीन Java SDK को सोर्स से बिल्ड करें।"
+icon: "package"
+title: "Java SDK — इंस्टॉलेशन"
+description: "वर्तमान सोर्स में रीट्राई नियंत्रण और रिस्पॉन्स मेटाडेटा हैं, जो Maven Central के पुराने 3.0.0 आर्टिफ़ैक्ट में नहीं हैं। वर्तमान SDK के लिए नीचे दिए गए रिविज़न को बिल्ड करें।"
 ---
 
-<Note type="warning">Java SDK अभी विकासाधीन है और Maven Central पर प्रकाशित नहीं हुआ है।</Note>
+वर्तमान सोर्स में रीट्राई नियंत्रण और रिस्पॉन्स मेटाडेटा हैं, जो Maven Central के पुराने 3.0.0 आर्टिफ़ैक्ट में नहीं हैं। वर्तमान SDK के लिए नीचे दिए गए रिविज़न को बिल्ड करें।
 
 ## आवश्यकताएँ
 
 - Java 17+
 - Maven 3.8+
+- Git
 
-## स्थानीय रूप से बिल्ड करें
-
-```bash
-cd packages/sdk/sdk-java
-mvn -DskipTests package
-```
-
-इससे `target/sdk-java-0.0.0-local.jar` बनता है।
-
-## अपने प्रोजेक्ट में उपयोग करें
-
-जनरेट की गई JAR फ़ाइल को अपने स्थानीय Maven कैश में इंस्टॉल करें:
+## सोर्स से बिल्ड करें
 
 ```bash
-mvn install:install-file \
-  -Dfile=target/sdk-java-0.0.0-local.jar \
-  -DgroupId=app.phaseo \
-  -DartifactId=sdk-java \
-  -Dversion=0.0.0-local \
-  -Dpackaging=jar
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+git checkout 1ff1119f41ceb3ac2c85ed605f6e1c4beca6e011
+mvn -f packages/sdk/sdk-java/pom.xml -DskipTests install
 ```
 
-इसके बाद इसे अपने ऐप की `pom.xml` में डिपेंडेंसी के रूप में जोड़ें:
+Maven स्थानीय रिपॉज़िटरी में Jackson डिपेंडेंसी सहित `app.phaseo:phaseo-sdk:3.0.0` इंस्टॉल करता है।
+
+## डिपेंडेंसी जोड़ें
 
 ```xml
 <dependency>
   <groupId>app.phaseo</groupId>
-  <artifactId>sdk-java</artifactId>
-  <version>0.0.0-local</version>
+  <artifactId>phaseo-sdk</artifactId>
+  <version>3.0.0</version>
 </dependency>
 ```
+
+<Note>[Maven Central आर्टिफ़ैक्ट](https://repo.maven.apache.org/maven2/app/phaseo/phaseo-sdk/3.0.0/) पुरानी API देता है। इसमें वर्तमान रीट्राई, मेटाडेटा या पैरामीटर जाँच API नहीं हैं।</Note>
+
+[उपयोग](./usage)

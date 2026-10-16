@@ -43,6 +43,7 @@ const TEXT_BATCH_ENDPOINTS: Record<string, ReadonlySet<string>> = {
 	"x-ai": new Set(["/v1/responses"]),
 	anthropic: new Set(["/v1/messages"]),
 	"google-ai-studio": new Set(["/v1/generatecontent"]),
+	"google-vertex": new Set(["/v1/generatecontent"]),
 	mistral: new Set(["/v1/chat/completions"]),
 	together: new Set(["/v1/chat/completions"]),
 	"alibaba-cloud": new Set(["/v1/chat/completions", "/v1/embeddings"]),

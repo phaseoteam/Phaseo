@@ -8,7 +8,7 @@ const ws = (n) => id('1', n);
 const key = (n) => id('3', n);
 const policy = (n) => id('6', n);
 const rows = async (sql, params = []) => (await db.query(sql, params)).rows;
-const migration = await readFile(new URL('../migrations/20261015113136_rate_limit_throttle_rollups.sql', import.meta.url), 'utf8');
+const migration = await readFile(new URL('../migrations/20261016165752_rate_limit_throttle_rollups.sql', import.meta.url), 'utf8');
 const schema = (path) => readFile(new URL(`../schemas/${path}`, import.meta.url), 'utf8');
 const rateLimit = (policyId, scope) => JSON.stringify({ rate_limit: { policy_id: policyId, limit_scope: scope } });
 

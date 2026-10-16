@@ -11,7 +11,7 @@ const policy = (n) => id('6', n);
 const rows = async (sql, params = []) => (await db.query(sql, params)).rows;
 const migration = (name) => readFile(new URL(`../migrations/${name}`, import.meta.url), 'utf8');
 const schema = (path) => readFile(new URL(`../schemas/${path}`, import.meta.url), 'utf8');
-const alertsMigration = await migration('20261016153943_rate_limit_throttle_alerts.sql');
+const alertsMigration = await migration('20261016165941_rate_limit_throttle_alerts.sql');
 
 try {
   // Minimal pre-existing objects the migrations depend on (production shapes, trimmed).
@@ -54,7 +54,7 @@ try {
     );
     create unique index email_outbox_dedupe_key_unique on public.email_outbox (dedupe_key);
   `);
-  await db.exec(await migration('20261015113136_rate_limit_throttle_rollups.sql'));
+  await db.exec(await migration('20261016165752_rate_limit_throttle_rollups.sql'));
   await db.exec(alertsMigration);
 
   assert.ok(alertsMigration.includes(await schema('public/functions/enqueue_rate_limit_throttle_alerts.sql')), 'enqueue function matches the declarative definition');

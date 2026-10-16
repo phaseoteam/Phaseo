@@ -1,23 +1,45 @@
 ---
 icon: "mic"
 title: "STT (Speech to Text)"
-description: "Call /audio/transcriptions with the Java SDK."
+description: "Transcribe an audio file from Java."
 ---
 
-**Method**: `client.createTranscription(...)`
+Transcribe an audio file from Java.
+
+<Note>The Java SDK's JSON helpers do not encode multipart uploads. Use Java's standard HTTP client to send the file bytes as shown below.</Note>
+
+Place `audio.mp3` in the working directory.
 
 ```java
-import app.phaseo.sdk.Phaseo;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
 
-Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
-
-String body = """
-{
-  "model": "openai/whisper-1",
-  "file": "data:audio/mpeg;base64,..."
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\nopenai/whisper-1\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"audio.mp3\"\r\nContent-Type: audio/mpeg\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("audio.mp3")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/audio/transcriptions"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
 }
-""";
-
-Object response = client.createTranscription(body);
-System.out.println(String.valueOf(response));
+System.out.println(response.body());
 ```

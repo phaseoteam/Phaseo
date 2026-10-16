@@ -85,6 +85,7 @@ Certaines erreurs fournissent des détails supplémentaires pour accélérer le 
 | `authentication_error` | `401` | Clé d’API absente ou invalide. |
 | `authorization_error` | `403` | La clé n’a pas accès à cette ressource. |
 | `not_found_error` | `404` | Le point de terminaison ou la ressource est introuvable. |
+| `model_retired` | `410` | Le modèle est retiré et plus aucun fournisseur ne le sert. Passez à `replacement_model`. |
 | `rate_limit_error` | `429` | Trop de requêtes. Réessayez après le délai indiqué. |
 | `phaseo_free_model_limit_exceeded` | `429` | Le quota quotidien partagé des modèles gratuits de Phaseo est épuisé (1 500 requêtes par défaut). Respectez `Retry-After`, attendez la réinitialisation à 00:00 UTC ou choisissez un modèle payant. |
 | `rate_limit_exceeded` | `429` | Une [politique de limite de débit](./limits.mdx) de l’espace de travail est épuisée. `policy_id` et `limit_scope` l’identifient. Respectez `Retry-After`, ou demandez à un administrateur de l’espace de travail de modifier la politique. |
@@ -190,6 +191,31 @@ Champs courants :
   }
 }
 ```
+
+<span id="when-a-model-is-retired"></span>
+
+## Quand un modèle est retiré
+
+Un modèle retiré reste servi tant qu’un fournisseur le sert. Dès qu’aucun ne le sert, les requêtes qui le ciblent échouent avec `410` et l’erreur `model_retired` :
+
+```json
+{
+  "generation_id": "G-retired123",
+  "status_code": 410,
+  "error": "model_retired",
+  "reason": "model_retired_without_providers",
+  "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+  "model": "lab/old-model",
+  "retired_at": "2026-09-30T00:00:00Z",
+  "replacement_model": "lab/new-model"
+}
+```
+
+- `model` : le modèle que vous avez demandé.
+- `retired_at` : la date de retrait du modèle, ou `null` si aucune date n’est enregistrée.
+- `replacement_model` : le remplaçant suggéré, ou `null` s’il n’y en a pas.
+
+Réessayer ne sert à rien. Mettez à jour l’identifiant du modèle dans votre requête. Pour que ces requêtes continuent d’être traitées pendant votre migration, ajoutez le remplaçant à la liste `models` de votre requête ou activez le routage des modèles retirés pour l’espace de travail. Consultez [Dépréciation et retrait des modèles](../guides/model-retirement.mdx).
 
 ## Mode de débogage facultatif
 

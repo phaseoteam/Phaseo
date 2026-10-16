@@ -758,6 +758,10 @@ jobs:
                   GOWORK: "off"
               run: pnpm run test:sdk-${{ matrix.sdk }}
 
+            - name: Verify Java multipart documentation requests
+              if: matrix.sdk == 'java'
+              run: node scripts/sdk/check-java-doc-multipart.mjs
+
     deploy:
         runs-on: ubuntu-latest
         needs:
@@ -961,6 +965,17 @@ jobs:
                   env-slug: prod
                   secret-path: /provider-keys
                   secret-name: LIQUID_AI_API_KEY
+
+            - name: Load Reflection provider key from Infisical
+              if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us'
+              uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d # v1.0.18
+              with:
+                  method: oidc
+                  identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
+                  project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+                  env-slug: prod
+                  secret-path: /provider-keys
+                  secret-name: REFLECTION_API_KEY
 
             - name: Load SiliconFlow provider key from Infisical
               if: matrix.target == 'api'

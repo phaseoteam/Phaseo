@@ -746,6 +746,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -792,6 +796,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -909,6 +917,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -8548,6 +8560,14 @@ components:
       schema:
         type: string
         pattern: ^G-[0-9A-HJKMNP-TV-Z]{26}$
+    RequestedModel:
+      description: वह मॉडल जिसका अनुरोध किया गया था। यह केवल तब भेजा जाता है जब सेवानिवृत्त मॉडल रूटिंग ने अनुरोध का उत्तर किसी प्रतिस्थापन मॉडल से दिया हो।
+      schema:
+        type: string
+    ModelSubstitution:
+      description: अनुरोधित मॉडल को क्यों और कैसे बदला गया, उदाहरण के लिए `reason=unserved; from=lab/old-model; to=lab/new-model`। यह केवल तब भेजा जाता है जब सेवानिवृत्त मॉडल रूटिंग ने अनुरोध का उत्तर किसी प्रतिस्थापन मॉडल से दिया हो।
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: केवल BYOK के लिए प्रदाता कोटा मेटाडेटा। प्रबंधित-प्रदाता अनुरोधों में शामिल नहीं होता।
       schema:
@@ -15965,11 +15985,29 @@ components:
         provider_restriction_enforce_allowed:
           type: boolean
           nullable: true
+        model_successor_redirect_enabled:
+          type: boolean
+          nullable: true
+        model_successor_price_policy:
+          allOf:
+            - $ref: '#/components/schemas/WorkspaceModelSuccessorPricePolicy'
+          nullable: true
+        model_successor_max_price_increase_percent:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          nullable: true
         updated_at:
           type: string
           format: date-time
           nullable: true
       additionalProperties: false
+    WorkspaceModelSuccessorPricePolicy:
+      type: string
+      enum:
+        - never
+        - limit
+        - any
     WorkspaceSettingsUpdateRequest:
       type: object
       minProperties: 1
@@ -16015,6 +16053,14 @@ components:
             maxLength: 128
         provider_restriction_enforce_allowed:
           type: boolean
+        model_successor_redirect_enabled:
+          type: boolean
+        model_successor_price_policy:
+          $ref: '#/components/schemas/WorkspaceModelSuccessorPricePolicy'
+        model_successor_max_price_increase_percent:
+          type: integer
+          minimum: 0
+          maximum: 1000
       additionalProperties: false
     WorkspaceSettingsResponse:
       type: object
@@ -20082,6 +20128,7 @@ components:
         - auto_top_up_failed
         - payment_method_expiring
         - model_deprecation
+        - model_substitution
         - rate_limit_throttled
     WorkspaceNotificationRouteMap:
       type: object
@@ -20090,6 +20137,7 @@ components:
         - auto_top_up_failed
         - payment_method_expiring
         - model_deprecation
+        - model_substitution
         - rate_limit_throttled
       properties:
         low_balance:
@@ -20108,6 +20156,11 @@ components:
             type: string
             format: uuid
         model_deprecation:
+          type: array
+          items:
+            type: string
+            format: uuid
+        model_substitution:
           type: array
           items:
             type: string

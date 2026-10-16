@@ -113,6 +113,10 @@ Les requêtes par lots acceptent aussi `provider_options` : OpenAI prend en char
 
 Mistral possède déjà un adaptateur natif de traitement par lots. Les lots de messages Anthropic sont interrogés périodiquement ; d’autres fournisseurs peuvent combiner cette interrogation avec des notifications natives de fin. La disponibilité dépend des endpoints pris en charge par le fournisseur et de la liste d’autorisation des lots du déploiement. Vérifiez la réponse des capacités de traitement par lots avant de soumettre un fichier ou des requêtes en ligne.
 
+Les lots Gemini sur Vertex acceptent des `requests` en ligne avec `/v1/generateContent`, ou `model` et `prompts`. Sélectionnez `provider: "google-vertex"` pour utiliser Vertex. Les lignes réussies sont facturées aux tarifs Batch. Cet adaptateur exige des identifiants gérés ; BYOK, les fichiers téléversés, les embeddings et les lots `google-vertex-eu` ne sont pas disponibles. L’entrée est limitée à 20 MB et 10 000 requêtes. Les entrées et sorties stockées expirent après 30 jours.
+
+Les résultats Vertex identifient chaque ligne soumise avec `custom_id` et contiennent une génération réussie dans `response.body` ou une `error` par requête. L’ordre des sorties peut différer de celui des entrées. Une soumission dont le résultat côté fournisseur est incertain reste en cours d’examen manuel avec sa réservation de crédits maintenue ; évitez de créer un remplacement avant confirmation de son résultat.
+
 Un lot terminé peut contenir des lignes échouées. Inspectez chaque résultat avec son identifiant personnalisé au lieu de supposer que toutes les lignes ont réussi. Conservez l’entrée d’origine et l’identifiant de tâche jusqu’au rapprochement des résultats et de la facturation. Examinez une soumission incertaine avant de la répéter, car le fournisseur peut avoir accepté la requête d’origine.
 
 ### Télécharger les résultats d’un lot

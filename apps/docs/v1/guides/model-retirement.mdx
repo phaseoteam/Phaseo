@@ -1,0 +1,196 @@
+---
+title: "Model Deprecation and Retirement"
+description: "Get notice before a model you use is retired, move to a replacement, and optionally route its requests automatically."
+icon: "calendar-clock"
+---
+
+Models are deprecated and retired as labs release newer versions and providers
+stop serving older ones. Phaseo tells you when a model your workspace uses is
+on its way out, keeps serving it for as long as a provider does, and can route
+its requests to a replacement once nobody serves it any more.
+
+## How a model is retired
+
+| Stage | What it means | What happens to your requests |
+| --- | --- | --- |
+| Deprecated | The lab or provider has announced that the model will be retired. A retirement date is shown when one is known. | Served as usual. |
+| Retired | The retirement date has passed. | Still served while any provider serves the model. |
+| No longer served | No provider serves the model. | Rejected with `410 model_retired`, unless [automatic replacement](#route-requests-to-a-replacement-automatically) is on. |
+
+A model's page shows its status, its deprecation and retirement dates, and the
+suggested replacement when there is one.
+
+## Get notice before a model is retired
+
+Phaseo looks at the model IDs your workspace sends in requests, so a model
+counts as used even when a fallback model ended up serving the request.
+
+- **Dashboard notice.** Signed-in members see a notice at the top of the
+  dashboard when a model the workspace requested in the last 90 days retires
+  within the next 90 days. For a model without a retirement date, its
+  deprecation date counts instead. The notice turns red when a retirement is 7
+  days or less away. It links to
+  **Settings -> Usage -> Alerts**, which lists every affected model with its
+  dates, last use, and suggested replacement. Dismissing the notice hides it
+  until the model's dates change.
+- **Email and destinations.** In **Settings -> Notifications**, turn on
+  **Model Deprecation Alerts**. When a model the workspace requested in the
+  last 30 days is deprecated, the workspace owner is emailed once for that
+  model. Turn on **Also email admins** to email admins too, and choose
+  [notification destinations](./workspace-notifications.mdx) to send the
+  alert to Slack, Discord, Teams, or a webhook.
+
+Alerts are sent once per model, not on a countdown, so plan the move when the
+first one arrives.
+
+## What happens when no provider serves a model
+
+A retired model keeps working while at least one provider serves it. Once none
+does, requests fail with `410`:
+
+```json
+{
+  "error": "model_retired",
+  "reason": "model_retired_without_providers",
+  "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+  "retired_at": "2026-09-30T00:00:00Z",
+  "replacement_model": "lab/new-model"
+}
+```
+
+`replacement_model` is the suggested replacement, or `null` when there is none.
+Retrying the same model will not succeed. See
+[Errors and Debugging](../api-reference/errors.mdx#when-a-model-is-retired)
+for the full error format.
+
+## Move to a replacement
+
+1. Open **Settings -> Usage -> Alerts** to see which models are affected and
+   when they were last used.
+2. Check the suggested replacement on the model's page. Compare its price,
+   context window, and supported endpoints and parameters with the model you
+   use now.
+3. Test the replacement with representative requests. Newer models can
+   respond differently to the same prompt.
+4. Change the model ID in your code, presets, and dynamic routes.
+
+While you migrate, you can keep the old model first and list the replacement
+as a [request-level fallback](./routing-and-fallbacks.mdx#request-level-model-fallbacks).
+When no provider serves the old model, Phaseo moves straight to the next model
+in `models`:
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "lab/old-model",
+    "models": ["lab/new-model"],
+    "messages": [{ "role": "user", "content": "Hello" }]
+  }'
+```
+
+The response `model` field shows which model served the request.
+
+## Route requests to a replacement automatically
+
+A workspace can choose to send requests for a model that is no longer served
+to a replacement instead of failing them. This is off by default. Owners and
+admins turn it on in **Settings -> Routing -> Retired model routing**, or with
+`model_successor_redirect_enabled` in the
+[workspace settings API](../api-reference/endpoint/workspace-settings-update.mdx).
+
+When it is on, a request is sent to a replacement only if all of these are
+true:
+
+- No provider has served the requested model for 72 hours. Until then, the
+  request fails as usual.
+- The replacement was approved by Phaseo, or your workspace chose it.
+  Phaseo follows up to three approved replacements in a row.
+- The requested model is not free while the replacement is paid. A free model
+  is never replaced by a paid one.
+- The replacement passes the same checks as any request: workspace model
+  restrictions, key restrictions, guardrails, and endpoint support.
+  A replacement is never added to an allowlist for you.
+- The request names a model directly. Requests for `phaseo/auto` or a
+  provider-qualified model ID are not redirected.
+
+### Choose a price policy
+
+The workspace price policy decides whether a more expensive replacement may
+serve the request. Prices are compared on what both models charge.
+
+| `model_successor_price_policy` | Behaviour |
+| --- | --- |
+| `never` (default) | Use the replacement only if it does not cost more. |
+| `limit` | Allow up to `model_successor_max_price_increase_percent` more (0 to 1000). |
+| `any` | Allow any price, including replacements whose price cannot be compared. |
+
+This request needs a
+[management API key](../developers/management-api-keys.mdx) with
+`settings:write`. Standard Gateway API keys are for inference requests and
+cannot change workspace settings.
+
+For example, to allow replacements that cost up to 20% more:
+
+```bash
+curl https://api.phaseo.app/v1/settings \
+  -X PATCH \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model_successor_redirect_enabled": true,
+    "model_successor_price_policy": "limit",
+    "model_successor_max_price_increase_percent": 20
+  }'
+```
+
+### Set your own replacements
+
+Under **Your own replacements** in the same settings section, owners and admins
+can choose the replacement for a specific model, or choose **Never redirect**
+to keep that model's requests failing. Your own replacement is used whatever it
+costs, but a free model is still never replaced by a paid one. Your own
+replacements are set in the dashboard only.
+
+Changes to these settings take effect within about a minute.
+
+### Replacements and request-level fallbacks
+
+Your own `models` list comes first. When no provider serves the primary model,
+Phaseo tries the next entry in `models` instead of a replacement. A replacement
+is considered only for the last model in the list. In a dynamic route's
+fallback models, too, only the last one can be replaced.
+
+## Tell when a request was redirected
+
+The response `model` field and your request logs show the model that served the
+request, and the request is billed at that model's price. Redirected responses
+also include two headers:
+
+| Header | Example |
+| --- | --- |
+| `X-Phaseo-Requested-Model` | `lab/old-model` |
+| `X-Phaseo-Model-Substitution` | `reason=unserved; from=lab/old-model; to=lab/new-model` |
+
+The first time a replacement successfully answers the workspace's requests for
+a model, the workspace owner is emailed once. To send this notice to your team
+as well, choose destinations for **Model replacement notices** in
+[Workspace notifications](./workspace-notifications.mdx#enable-product-alerts).
+
+## Troubleshooting
+
+**Requests still fail with `410` after turning on automatic replacement.**
+Check that:
+
+- the model has been unserved for at least 72 hours;
+- the model has an approved replacement, or you set your own;
+- the replacement does not cost more than your price policy allows;
+- the model is not free with a paid replacement;
+- the replacement is allowed by your workspace and key model restrictions;
+- the request does not use a provider-qualified model ID or `phaseo/auto`.
+
+**A different model answered than the one I asked for.** Look for the
+`X-Phaseo-Model-Substitution` header. To stop a model from being replaced, add
+it with **Never redirect** under **Your own replacements**, or turn automatic
+replacement off.

@@ -9,7 +9,8 @@ ALTER TABLE "public"."notification_event_destinations"
 
 ALTER TABLE "public"."notification_event_destinations"
   ADD CONSTRAINT "notification_event_destinations_event_kind_check"
-    CHECK ((event_kind = ANY (ARRAY['low_balance'::text, 'auto_top_up_failed'::text, 'payment_method_expiring'::text, 'model_deprecation'::text, 'rate_limit_throttled'::text])));
+    CHECK ((event_kind = ANY (ARRAY['low_balance'::text, 'auto_top_up_failed'::text, 'payment_method_expiring'::text, 'model_deprecation'::text, 'model_substitution'::text, 'rate_limit_throttled'::text])));
+
 
 CREATE OR REPLACE FUNCTION public.set_notification_event_destinations (
   p_workspace_id    uuid,
@@ -24,7 +25,7 @@ CREATE OR REPLACE FUNCTION public.set_notification_event_destinations (
 begin
   perform pg_advisory_xact_lock(hashtextextended(p_workspace_id::text || ':' || p_event_kind, 0));
 
-  if p_event_kind not in ('low_balance', 'auto_top_up_failed', 'payment_method_expiring', 'model_deprecation', 'rate_limit_throttled') then
+  if p_event_kind not in ('low_balance', 'auto_top_up_failed', 'payment_method_expiring', 'model_deprecation', 'model_substitution', 'rate_limit_throttled') then
     raise exception 'invalid_notification_event_kind';
   end if;
 

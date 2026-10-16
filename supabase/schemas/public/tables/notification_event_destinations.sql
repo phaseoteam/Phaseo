@@ -5,7 +5,7 @@ CREATE TABLE "public"."notification_event_destinations" (
   "created_at"     timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT "notification_event_destinations_destination_id_fkey" FOREIGN KEY (destination_id) REFERENCES public.notification_destinations(id) ON DELETE CASCADE,
   CONSTRAINT "notification_event_destinations_event_kind_check"
-    CHECK ((event_kind = ANY (ARRAY['low_balance'::text, 'auto_top_up_failed'::text, 'payment_method_expiring'::text, 'model_deprecation'::text, 'rate_limit_throttled'::text]))),
+    CHECK ((event_kind = ANY (ARRAY['low_balance'::text, 'auto_top_up_failed'::text, 'payment_method_expiring'::text, 'model_deprecation'::text, 'model_substitution'::text, 'rate_limit_throttled'::text]))),
   CONSTRAINT "notification_event_destinations_pkey" PRIMARY KEY (workspace_id, event_kind, destination_id),
   CONSTRAINT "notification_event_destinations_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
 );

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { useNoticeStackHeight } from "@/components/layout/useNoticeStackHeight";
 import type { SiteNotice } from "@/lib/siteNotice";
 
 function toneClasses(tone: SiteNotice["tone"]) {
@@ -52,36 +53,12 @@ function getTimingLabel(endsAt: string) {
 }
 
 export default function SiteNoticeBar({ notice }: { notice: SiteNotice }) {
-	const barRef = useRef<HTMLDivElement | null>(null);
+	// The site notice is the top of the shared notice stack.
+	const barRef = useNoticeStackHeight("site");
 	const shouldShowTiming = Boolean(notice.showTiming && notice.endsAt);
 	const [timingLabel, setTimingLabel] = useState<string | null>(() =>
 		shouldShowTiming && notice.endsAt ? getTimingLabel(notice.endsAt) : null
 	);
-
-	useEffect(() => {
-		const updateNoticeHeight = () => {
-			const height = barRef.current?.offsetHeight ?? 0;
-			document.documentElement.style.setProperty(
-				"--site-notice-height",
-				`${height}px`
-			);
-		};
-
-		updateNoticeHeight();
-		window.addEventListener("resize", updateNoticeHeight);
-
-		let observer: ResizeObserver | null = null;
-		if (barRef.current && typeof ResizeObserver !== "undefined") {
-			observer = new ResizeObserver(updateNoticeHeight);
-			observer.observe(barRef.current);
-		}
-
-		return () => {
-			window.removeEventListener("resize", updateNoticeHeight);
-			observer?.disconnect();
-			document.documentElement.style.setProperty("--site-notice-height", "0px");
-		};
-	}, []);
 
 	useEffect(() => {
 		if (!shouldShowTiming || !notice.endsAt) return;
@@ -124,7 +101,7 @@ export default function SiteNoticeBar({ notice }: { notice: SiteNotice }) {
 					) : null}
 				</div>
 			</div>
-			<div aria-hidden style={{ height: "var(--site-notice-height, 0px)" }} />
+			<div aria-hidden style={{ height: "var(--site-notice-bar-height, 0px)" }} />
 		</>
 	);
 }

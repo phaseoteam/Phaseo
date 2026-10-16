@@ -1,5 +1,5 @@
 import type { MonthSpendForecast } from "@/lib/gateway/usage/monthSpendForecast";
-import type { MonthKpiFigure } from "@/lib/gateway/usage/monthUsageKpis";
+import type { KpiFooter } from "@/lib/gateway/usage/periodUsageKpis";
 
 export type ObservabilityRange = "1h" | "1d" | "1w" | "1m" | "1y";
 
@@ -23,8 +23,8 @@ export type ObservabilityKpi = {
 	deltaPercent: number | null;
 	sparkline: ObservabilitySeriesPoint[];
 	format: "currency" | "currency_per_million" | "number" | "percent";
-	/** This UTC month from exact rollups; absent for filtered views. */
-	month?: MonthKpiFigure | null;
+	/** A forecast over the selected period, or the change from the previous one; absent when the cards come from a sample. */
+	footer?: KpiFooter | null;
 };
 
 export type ObservabilityRankedItem = {
@@ -95,8 +95,8 @@ export type ObservabilityExploreRow = {
 export type ObservabilityData = {
 	range: ObservabilityRange;
 	periodLabel: string;
-	isSampled?: boolean;
-	sampleLimit?: number;
+	/** The period the KPI deltas and footers compare with. */
+	previousPeriod?: { from: string; to: string };
 	kpis: ObservabilityKpi[];
 	/** This UTC month's spend and projection from exact rollups; absent for filtered views. */
 	monthSpend?: MonthSpendForecast | null;
