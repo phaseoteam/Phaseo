@@ -5,10 +5,10 @@ import { nativeActionText, validateNativeAction, type NativeAction, type NativeA
 import type { PromptCommandCatalog, PromptCommandPreview, PromptCommandRequest } from "./promptCommands";
 import type { McpPromptCatalog, McpPromptPreview, McpPromptRequest } from "./mcpPrompts";
 import type { PullRequestContents, PullRequestContentsQuery } from "./pullRequestContents";
-import type { PullRequestFilesPage, PullRequestFilesQuery } from "./pullRequestFiles";
+import type { PullRequestFilesPage, PullRequestFilesQuery, PullRequestFilesViewed, PullRequestSetFilesViewed } from "./pullRequestFiles";
 import type { ProjectPullRequests, PullRequestDetails } from "./pullRequests";
 import type { PullRequestDirectoryQuery, PullRequestDirectoryResult } from "./pullRequestDirectory";
-import { parsePullRequestReference, validRepository, type PullRequestActionRequest, type PullRequestCandidates, type PullRequestView, type TaskPullRequestLink } from "./pullRequestView";
+import { parsePullRequestReference, validRepository, type PullRequestActionRequest, type PullRequestActionResult, type PullRequestCandidates, type PullRequestView, type TaskPullRequestLink } from "./pullRequestView";
 import type { AgentForm, FormAnswer } from "./agentForms";
 import type { McpCommand, McpConnection } from "./mcp";
 import type { WorkspacePreferences } from "./preferences";
@@ -234,7 +234,12 @@ export type WorkspaceApi = {
 	/** The labels or reviewers a Summary picker offers, read when it opens. */
 	pullRequestCandidates: (projectId: string, query: { number: number; kind: "labels" | "reviewers" }) => Promise<PullRequestCandidates>;
 	/** Merge, close, comment, review and the rest, through GitHub CLI; returns the pull request as it is afterwards. */
-	pullRequestAction: (projectId: string, request: PullRequestActionRequest) => Promise<PullRequestView>;
+	pullRequestAction: (projectId: string, request: PullRequestActionRequest) => Promise<PullRequestActionResult>;
+	/** How many commits the base has that the branch does not, for the out-of-date warning. */
+	pullRequestBehind: (projectId: string, query: { base: string; headOid: string }) => Promise<{ behindBy: number }>;
+	/** Which files GitHub has recorded this reader as having viewed. */
+	pullRequestFilesViewed: (projectId: string, number: number) => Promise<PullRequestFilesViewed>;
+	setPullRequestFilesViewed: (projectId: string, request: PullRequestSetFilesViewed) => Promise<void>;
 	gitHunks: (projectId: string, filename: string, staged: boolean) => Promise<GitHunkReview>;
 	gitDiffContents: (projectId: string, request: GitDiffContentsRequest) => Promise<GitDiffContents>;
 	gitCommand: (projectId: string, command: GitCommand) => Promise<GitReview>;

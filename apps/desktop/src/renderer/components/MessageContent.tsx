@@ -10,6 +10,7 @@ import { parseFileReference } from "../../shared/editors";
 import type { Chip } from "../lib/messageChips";
 import { FilePathChip, LinkChip, MessageChip } from "./MessageChips";
 import { remarkMessageChips } from "./remarkMessageChips";
+import { remarkPullRequestLinks } from "./remarkPullRequestLinks";
 import { repairFileLinks } from "./repairFileLinks";
 
 const ProjectContext = createContext<string | undefined>(undefined);
@@ -68,7 +69,9 @@ const markdownComponents: Components = {
 
 const markdownPlugins = [remarkGfm, remarkMessageChips];
 
-export function MessageContent({ text, projectId, repairLocalLinks = false }: { text: string; projectId?: string; repairLocalLinks?: boolean }) {
+/** `repository` links `#123` and commit SHAs into that GitHub repository and plays GitHub video uploads, as pull request comments do. */
+export function MessageContent({ text, projectId, repairLocalLinks = false, repository }: { text: string; projectId?: string; repairLocalLinks?: boolean; repository?: string }) {
 	const rendered = useMemo(() => repairLocalLinks ? repairFileLinks(text) : text, [text, repairLocalLinks]);
-	return <ProjectContext value={projectId}><div className="message-markdown"><ReactMarkdown remarkPlugins={markdownPlugins} components={markdownComponents} urlTransform={messageUrl}>{rendered}</ReactMarkdown></div></ProjectContext>;
+	const plugins = useMemo(() => repository ? [remarkGfm, remarkPullRequestLinks({ repository }), remarkMessageChips] : markdownPlugins, [repository]);
+	return <ProjectContext value={projectId}><div className="message-markdown"><ReactMarkdown remarkPlugins={plugins} components={markdownComponents} urlTransform={messageUrl}>{rendered}</ReactMarkdown></div></ProjectContext>;
 }

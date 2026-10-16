@@ -124,6 +124,44 @@ describe("pull request view", () => {
 		expect((await projectPullRequestCandidates("/owned", { number: 12, kind: "labels" })).candidates).toHaveLength(2);
 		await expect(projectPullRequestCandidates("/owned", { number: 12, kind: "teams" })).rejects.toThrow("Invalid");
 	});
+	it("posts a review with its line comments as one JSON body on stdin", async () => {
+		await projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "review", event: "comment", body: "", comments: [{ path: "src/x.ts", line: 6, side: "RIGHT", startLine: 4, startSide: "RIGHT", body: "Why?" }] } });
+		expect(ports.calls[1].args).toEqual(["api", "--hostname", "github.com", "--method", "POST", "repos/owned/repo/pulls/12/reviews", "--input", "-"]);
+		expect(JSON.parse(ports.calls[1].input)).toEqual({ event: "COMMENT", commit_id: head, comments: [{ path: "src/x.ts", line: 6, side: "RIGHT", start_line: 4, start_side: "RIGHT", body: "Why?" }] });
+	});
+	it("closes after a comment, and says the comment landed when the close is refused", async () => {
+		await projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "comment", body: "Bye", then: "close" } });
+		expect(ports.calls[2].args).toEqual(["api", "--hostname", "github.com", "--method", "PATCH", "repos/owned/repo/pulls/12", "-f", "state=closed"]);
+		ports.respond.mockReturnValueOnce(JSON.stringify(response())).mockReturnValueOnce("{}").mockImplementationOnce(() => { throw Object.assign(new Error("x"), { stderr: "gh: Forbidden (HTTP 403)" }); });
+		await expect(projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "comment", body: "Bye", then: "close" } })).rejects.toThrow("The comment was posted, but the pull request could not be closed. GitHub said: Forbidden (HTTP 403)");
+		await expect(projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "comment", body: "Hi", then: "reopen" } })).rejects.toThrow("Only a closed");
+	});
+	it("edits the description and only comments GitHub lets the viewer edit, by kind", async () => {
+		await projectPullRequestAction("/owned", { number: 12, headOid: "c".repeat(40), action: { type: "body", body: "New body" } });
+		expect(ports.calls[1]).toMatchObject({ args: ["api", "--hostname", "github.com", "--method", "PATCH", "repos/owned/repo/pulls/12", "-F", "body=@-"], input: "New body" });
+		await expect(projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "update-comment", commentId: "IC_1", kind: "comment", body: "Edit" } })).rejects.toThrow("Only its author");
+		ports.respond.mockReturnValue(JSON.stringify(response({ comments: { totalCount: 1, nodes: [{ id: "IC_1", author: { login: "fixture" }, body: "Hi", createdAt: "2026-10-02T01:00:00Z", viewerCanUpdate: true }] } })));
+		await projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "update-comment", commentId: "IC_1", kind: "comment", body: "Edit" } });
+		expect(ports.calls.at(-2)).toMatchObject({ args: expect.arrayContaining(["-f", "id=IC_1", "-F", "body=@-"]), input: "Edit" });
+		expect(ports.calls.at(-2)!.args.join(" ")).toContain("updateIssueComment");
+		await expect(projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "update-comment", commentId: "IC_1", kind: "review-comment", body: "Edit" } })).rejects.toThrow("no longer");
+	});
+	it("rebases, reverts a merged pull request and approves waiting workflow runs", async () => {
+		await projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "update-branch", method: "rebase" } });
+		expect(ports.calls[1].args.join(" ")).toContain("updateMethod:REBASE");
+		await expect(projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "revert" } })).rejects.toThrow("Only a merged");
+		ports.respond.mockImplementation((args: string[]) => args.join(" ").includes("revertPullRequest") ? JSON.stringify({ data: { revertPullRequest: { revertPullRequest: { url: "https://github.com/owned/repo/pull/13" } } } }) : JSON.stringify(response({ state: "MERGED" })));
+		expect((await projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "revert" } })).revertUrl).toBe("https://github.com/owned/repo/pull/13");
+		ports.respond.mockReset();
+		ports.respond.mockReturnValue(JSON.stringify(response({ commits: { nodes: [{ commit: { statusCheckRollup: { contexts: { nodes: [1, 2, 3].map(index => ({ __typename: "CheckRun", name: `ci ${index}`, status: "COMPLETED", conclusion: "ACTION_REQUIRED", detailsUrl: `https://github.com/owned/repo/actions/runs/${index === 3 ? 1 : index}/job/9` })) } } } }] } })));
+		ports.calls.length = 0;
+		await projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "approve-workflows" } });
+		expect(ports.calls.slice(1, 3).map(call => call.args.at(-1))).toEqual(["repos/owned/repo/actions/runs/1/approve", "repos/owned/repo/actions/runs/2/approve"]);
+	});
+	it("reads startLine, edit rights and a cursor for a thread's further comments", () => {
+		const view = parsePullRequestView("owned/repo", 12, response({ reviewThreads: { totalCount: 1, nodes: [{ id: "T_1", path: "src/x.ts", line: 6, startLine: 4, originalLine: 6, diffSide: "RIGHT", isResolved: false, comments: { totalCount: 30, pageInfo: { hasNextPage: true, endCursor: "Y3Vyc29y" }, nodes: [{ id: "C_1", author: { login: "approver" }, body: "Nit", createdAt: "2026-10-03T01:00:00Z", viewerCanUpdate: true }] } }] } }));
+		expect(view.threads[0]).toMatchObject({ startLine: 4, line: 6, commentsCursor: "Y3Vyc29y", totalComments: 30, comments: [{ canEdit: true }] });
+	});
 	it("surfaces GitHub's reason inline", async () => {
 		ports.respond.mockReturnValueOnce(JSON.stringify(response())).mockImplementationOnce(() => { throw Object.assign(new Error("x"), { stderr: "gh: Pull Request is not mergeable (HTTP 405)" }); });
 		await expect(projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "merge", method: "rebase" } })).rejects.toThrow("Could not merge. GitHub said: Pull Request is not mergeable (HTTP 405)");

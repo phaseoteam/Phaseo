@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PullRequestCheck, PullRequestComment, PullRequestView } from "../../../shared/pullRequestView";
-import { applyPendingReactions, askPullRequestPrompt, explainPullRequestPrompt, fixFindingsPrompt, matchesCandidate, moveHighlight, reactionTooltip, buildTimeline, checksRollup, fileTree, groupTimeline, ignoreWhitespacePatch, primaryAction, pullRequestStateKey, readViewed, relativeTime, reviewerEntries, setViewed, summarizeChecks, summaryChecksRollup, viewedState } from "./pullRequestLogic";
+import { applyPendingReactions, askPullRequestPrompt, explainPullRequestPrompt, fixFindingsPrompt, matchesCandidate, moveHighlight, reactionTooltip, buildTimeline, checksRollup, fileTree, groupTimeline, ignoreWhitespacePatch, primaryAction, pullRequestStateKey, relativeTime, reviewerEntries, summarizeChecks, summaryChecksRollup, canEditDescription, canEditComment, fixFindingPrompt, findingKey, handoffLabels, resolveConflictsPrompt, checksStale, baseFreshness, behindSummary, sectionCollapseAnchorScrollTop } from "./pullRequestLogic";
 
 const check = (status: PullRequestCheck["status"], url?: string): PullRequestCheck => ({ name: status, status, ...(url ? { url } : {}) });
 const comment = (id: string, at: string, patch: Partial<PullRequestComment> = {}): PullRequestComment => ({ id, kind: "comment", author: { login: "a" }, body: "Hi", createdAt: at, reactions: [], ...patch });
@@ -77,14 +77,38 @@ describe("code tab helpers", () => {
 	it("builds a folders-first tree with single-child chains joined", () => {
 		expect(fileTree(["src/app/main.ts", "src/app/view.ts", "README.md", "docs/a/b/c.md"]).map(node => [node.name, node.file, node.children.map(child => child.name)])).toEqual([["docs/a/b", false, ["c.md"]], ["src/app", false, ["main.ts", "view.ts"]], ["README.md", true, []]]);
 	});
-	it("keeps viewed ticks against the blob that was read", () => {
-		let files = setViewed({}, "a.ts", "blob1", true);
-		expect(viewedState(files, "a.ts", "blob1")).toBe("viewed");
-		expect(viewedState(files, "a.ts", "blob2")).toBe("changed");
-		files = setViewed(files, "a.ts", "blob1", false);
-		expect(viewedState(files, "a.ts", "blob1")).toBe("unviewed");
-		expect(readViewed({ getItem: () => "{not json" }, "k")).toEqual({});
-		expect(readViewed({ getItem: () => JSON.stringify({ "a.ts": "b", bad: 3 }) }, "k")).toEqual({ "a.ts": "b" });
+	it("lets the author and writers edit the description, and only comments GitHub marks editable", () => {
+		expect(canEditDescription({ viewer: { login: "Me", canUpdate: false } as PullRequestView["viewer"], author: "me" })).toBe(true);
+		expect(canEditDescription({ viewer: { login: "you", canUpdate: false } as PullRequestView["viewer"], author: "me" })).toBe(false);
+		expect(canEditComment({ kind: "comment", canEdit: true })).toBe(true);
+		expect(canEditComment({ kind: "review", canEdit: true })).toBe(false);
+		expect(canEditComment({ kind: "review-comment" })).toBe(false);
+	});
+	it("words a single finding, and says where it will go", () => {
+		const view = { number: 4, title: "T", url: "https://github.com/o/r/pull/4", head: "feature", base: "main" };
+		expect(fixFindingPrompt(view, { kind: "check", check: { name: "ci", status: "failure", description: "lint" } })).toContain("> ci — lint");
+		expect(fixFindingPrompt(view, { kind: "comment", comment: comment("R_1", "2026-10-01T00:00:00Z", { kind: "review", body: "Rename it", author: { login: "rev" } }) })).toContain("> rev: Rename it");
+		expect(fixFindingPrompt(view, { kind: "thread", thread: { id: "T", path: "a.ts", line: 3, side: "RIGHT", resolved: false, outdated: true, canReply: true, canResolve: true, canUnresolve: false, comments: [comment("C", "2026-10-01T00:00:00Z", { body: "Nit" })], totalComments: 1 } })).toContain("> a.ts:3 (outdated)");
+		expect(findingKey({ kind: "check", check: { name: "ci", status: "failure" } })).toBe("check:ci:");
+		expect(handoffLabels(true).fixFinding).toBe("Fix in this chat");
+		expect(handoffLabels(false)).toMatchObject({ fixFinding: "Fix in a chat", fixCheck: "Fix" });
+		expect(resolveConflictsPrompt(view)).toContain("conflicts with its base branch `main`");
+	});
+	it("calls running checks stale after two minutes, and offers updates only for a clean, behind branch", () => {
+		const now = Date.parse("2026-10-16T12:00:00Z");
+		expect(checksStale({ checkRuns: [check("pending")], readAt: "2026-10-16T11:57:00Z" }, now)).toBe(true);
+		expect(checksStale({ checkRuns: [check("success")], readAt: "2026-10-16T11:00:00Z" }, now)).toBe(false);
+		expect(checksStale({ checkRuns: [check("pending")], readAt: "2026-10-16T11:59:00Z" }, now)).toBe(false);
+		const viewer = { canUpdate: true } as PullRequestView["viewer"];
+		expect(baseFreshness({ state: "OPEN", behind: true, mergeable: "MERGEABLE", viewer })).toEqual({ clean: true, methods: ["merge", "rebase"] });
+		expect(baseFreshness({ state: "OPEN", behind: true, mergeable: "CONFLICTING", viewer })).toBeNull();
+		expect(baseFreshness({ state: "OPEN", behind: true, mergeable: "UNKNOWN", viewer: { canUpdate: false } as PullRequestView["viewer"] })).toEqual({ clean: false, methods: [] });
+		expect(behindSummary("main", 1)).toBe("This branch is out of date with main by 1 commit.");
+		expect(behindSummary("main", undefined)).toBe("This branch is out of date with main.");
+	});
+	it("keeps a pinned section heading in place when it folds", () => {
+		expect(sectionCollapseAnchorScrollTop({ scrollTop: 900, viewportTop: 100, sectionTop: -300, headingTop: 100 })).toBe(500);
+		expect(sectionCollapseAnchorScrollTop({ scrollTop: 900, viewportTop: 100, sectionTop: 200, headingTop: 200 })).toBeNull();
 	});
 	it("writes short relative times", () => {
 		const now = Date.parse("2026-10-16T12:00:00Z");

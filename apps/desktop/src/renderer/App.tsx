@@ -13,6 +13,7 @@ import { Sidebar } from "./shell/Sidebar";
 import { RightPanel } from "./shell/RightPanel";
 import { BrowserMiniPlayerHost } from "./components/browser/BrowserMiniPlayer";
 import { CommandPalette } from "./shell/CommandPalette";
+import { Toaster } from "./components/ui/toast";
 import { SettingsPage } from "./settings/SettingsPage";
 import { ScheduledTasks } from "./views/ScheduledTasks";
 import { PullRequestsPage } from "./views/pullRequests/PullRequestsPage";
@@ -91,6 +92,7 @@ function Shell() {
 			<ErrorBanner />
 		</div>
 		<CommandPalette />
+		<Toaster />
 	</div>;
 }
 
