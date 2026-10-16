@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowLeft, Bell, Bot, Keyboard, Gauge, Palette, Plug, Search, SlidersHorizontal, UserRound } from "lucide-react";
+import { Activity, ArrowLeft, Bell, Bot, Keyboard, Gauge, Palette, Plug, Search, SlidersHorizontal, UserRound } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -7,6 +7,7 @@ import { useWorkspace, type SettingsPage as Page } from "../app/workspace";
 import { cn } from "../lib/utils";
 import { GeneralSettings, NotificationSettings } from "./GeneralSettings";
 import { UsageSettings } from "./UsageSettings";
+import { DiagnosticsSettings } from "./DiagnosticsSettings";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { Accounts } from "../views/Accounts";
 import { Agents } from "../views/Agents";
@@ -30,7 +31,12 @@ const groups: { label: string; pages: Entry[] }[] = [
 		{ id: "agents", label: "Agents", icon: <Bot />, keywords: "codex claude code opencode pi cursor grok acp install update version" },
 		{ id: "mcp", label: "MCP servers", icon: <Plug />, keywords: "tools model context protocol connections" },
 	] },
+	// Listed after the projects, at the bottom, like T3's.
+	{ label: "Advanced", pages: [
+		{ id: "diagnostics", label: "Diagnostics", icon: <Activity />, keywords: "processes cpu memory performance slow traces spans logs failures errors debug kill stop" },
+	] },
 ];
+const bottomGroups = new Set(["Advanced"]);
 
 /** Replaces the chat list while settings are open: a search box and the pages, grouped. */
 export function SettingsNav() {
@@ -41,6 +47,11 @@ export function SettingsNav() {
 	// T3 lists each project's settings with the other pages; worktrees share their project's.
 	const current = settings === "project" ? settingsProject(overview.projects, settingsProjectId)?.id : undefined;
 	const projects = overview.projects.filter(project => !project.worktree && (!needle || `${project.name} project settings actions scripts auto-settle`.toLowerCase().includes(needle)));
+	const renderGroup = (group: (typeof groups)[number]) => <div key={group.label} className="flex flex-col gap-0.5 pb-2">
+		<p className="px-2.5 pt-1.5 pb-1 text-xs font-semibold text-muted-foreground">{group.label}</p>
+		{group.pages.map(page => <button key={page.id} type="button" aria-current={settings === page.id ? "page" : undefined} onClick={() => openSettings(page.id)}
+			className={cn("flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent/70 [&_svg]:size-4 [&_svg]:text-muted-foreground", settings === page.id && "bg-sidebar-accent text-sidebar-foreground")}>{page.icon}{page.label}</button>)}
+	</div>;
 	return <nav aria-label="Settings sections" className="flex flex-col gap-0.5 p-2.5">
 		<button type="button" onClick={closeSettings} className="mb-1 flex h-8 items-center gap-2 rounded-md px-2 text-[13px] font-medium text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground [&_svg]:size-4"><ArrowLeft />Back to app</button>
 		<p className="px-2 pt-1 pb-2 text-[15px] font-bold">Settings</p>
@@ -50,16 +61,13 @@ export function SettingsNav() {
 				onKeyDown={event => { if (event.key === "Enter" && shown[0]) openSettings(shown[0].pages[0].id); else if (event.key === "Enter" && projects[0]) openProjectSettings(projects[0].id); if (event.key === "Escape" && query) { event.stopPropagation(); setQuery(""); } }}
 				className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground" />
 		</label>
-		{shown.map(group => <div key={group.label} className="flex flex-col gap-0.5 pb-2">
-			<p className="px-2.5 pt-1.5 pb-1 text-xs font-semibold text-muted-foreground">{group.label}</p>
-			{group.pages.map(page => <button key={page.id} type="button" aria-current={settings === page.id ? "page" : undefined} onClick={() => openSettings(page.id)}
-				className={cn("flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent/70 [&_svg]:size-4 [&_svg]:text-muted-foreground", settings === page.id && "bg-sidebar-accent text-sidebar-foreground")}>{page.icon}{page.label}</button>)}
-		</div>)}
+		{shown.filter(group => !bottomGroups.has(group.label)).map(renderGroup)}
 		{projects.length > 0 && <div className="flex flex-col gap-0.5 pb-2">
 			<p className="px-2.5 pt-1.5 pb-1 text-xs font-semibold text-muted-foreground">Projects</p>
 			{projects.map(project => <button key={project.id} type="button" aria-current={current === project.id ? "page" : undefined} onClick={() => openProjectSettings(project.id)}
 				className={cn("flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent/70 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground", current === project.id && "bg-sidebar-accent text-sidebar-foreground")}><ProjectIcon project={project} /><span className="truncate">{project.name}</span></button>)}
 		</div>}
+		{shown.filter(group => bottomGroups.has(group.label)).map(renderGroup)}
 		{!shown.length && !projects.length && <p className="px-2.5 py-2 text-xs text-muted-foreground">No settings match.</p>}
 	</nav>;
 }
@@ -85,5 +93,6 @@ export function SettingsPage() {
 		{settings === "agents" && <Agents />}
 		{settings === "project" && <ProjectSettingsPage />}
 		{settings === "mcp" && <McpConnections />}
+		{settings === "diagnostics" && <DiagnosticsSettings />}
 	</ScrollArea>;
 }

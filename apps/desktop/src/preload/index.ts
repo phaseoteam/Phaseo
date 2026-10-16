@@ -136,6 +136,7 @@ const desktopApi: PhaseoDesktopApi = {
 		openLogs: () => ipcRenderer.invoke("diagnostics:open-logs"),
 		subscribe: () => ipcRenderer.invoke("diagnostics:subscribe"),
 		unsubscribe: () => ipcRenderer.invoke("diagnostics:unsubscribe"),
+		onSample: listener => { const subscription = (_event: Electron.IpcRendererEvent, value: Parameters<typeof listener>[0]) => listener(value); ipcRenderer.on("diagnostics:sample", subscription); return () => ipcRenderer.removeListener("diagnostics:sample", subscription); },
 	},
 	checkForUpdates: () => ipcRenderer.invoke("desktop:check-for-updates"),
 	installUpdate: () => ipcRenderer.invoke("desktop:install-update"),

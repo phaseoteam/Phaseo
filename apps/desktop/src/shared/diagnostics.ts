@@ -135,4 +135,6 @@ export type DiagnosticsApi = {
 	/** Samples processes on a timer while at least one window has the page open; returns its interval. */
 	subscribe: () => Promise<number>;
 	unsubscribe: () => Promise<void>;
+	/** Each timed sample, sent to the windows that subscribed. */
+	onSample: (listener: (processes: DiagnosticsProcesses) => void) => () => void;
 };

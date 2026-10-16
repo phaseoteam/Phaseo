@@ -2,7 +2,7 @@
 
 Chats are the desktop workspace's primary navigation. Each chat can be personal or associated with a project; the bounded history projection carries the optional project ID without returning conversation bodies. Search, pinning, archives and pagination remain available in the single left sidebar.
 
-The centre keeps the selected conversation mounted while opening tools and settings. Message drafts and history position survive those interactions. Accounts, agents, MCP connections and schedules live under Settings; Inbox and the existing Platform surface remain available from the sidebar footer.
+The centre keeps the selected conversation mounted while opening tools and settings. Message drafts and history position survive those interactions. Accounts, agents, MCP connections and schedules live under Settings; Inbox and the existing Platform surface remain available from the sidebar footer. **Settings → Diagnostics** shows the processes Phaseo is running and what its trace log (`logs/traces.ndjson` in the app's data folder) says about slow or failed work; see [Settings](settings.md#diagnostics).
 
 General Chat in the Phaseo harness can use enabled global MCP services and services associated with its project. Each tool call needs approval and identifies the service and tool. Chat has no built-in project file or command tools. Failed connection setup preserves queued input; interrupted approvals can resume from saved chat state. Stop affected chats before editing their connections.
 

@@ -14,6 +14,8 @@ export type ProcessDiagnosticsOptions = {
 	/** How often to sample while the page is open. The CIM query is costlier than `ps`, so Windows samples less often. */
 	intervalMs?: number;
 	history?: ResourceHistoryStore;
+	/** Each sample taken on the timer, for the windows watching. */
+	onSample?: (result: DiagnosticsProcesses) => void;
 };
 
 /** A reading this recent answers a refresh without walking the process table again. */
@@ -90,8 +92,9 @@ export class ProcessDiagnostics {
 		if (this.closed) return this.intervalMs;
 		this.subscribers.add(id);
 		if (!this.timer) {
-			this.timer = setInterval(() => { void this.sample(); }, this.intervalMs); this.timer.unref?.();
-			void this.sample();
+			const tick = () => { void this.sample().then(result => { if (this.timer) this.options.onSample?.(result); }); };
+			this.timer = setInterval(tick, this.intervalMs); this.timer.unref?.();
+			tick();
 		}
 		return this.intervalMs;
 	}

@@ -1,4 +1,4 @@
-import { CalendarClock, Code2, GitPullRequestArrow, Link2, Keyboard, Columns3, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Plus, Settings, SquareTerminal, Sun, UserRound, Files } from "lucide-react";
+import { Activity, CalendarClock, Code2, GitPullRequestArrow, Link2, Keyboard, Columns3, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Plus, Settings, SquareTerminal, Sun, UserRound, Files } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { errorText, useWorkspace } from "../app/workspace";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -35,6 +35,7 @@ export function CommandPalette() {
 				<CommandItem onSelect={() => run(() => openSettings())}><Settings />Settings<CommandShortcut>{shortcut("settings.open")}</CommandShortcut></CommandItem>
 				<CommandItem onSelect={() => run(() => openSettings("accounts"))}><UserRound />Accounts and sign-in</CommandItem>
 				<CommandItem onSelect={() => run(() => openSettings("keyboard"))}><Keyboard />Keyboard shortcuts</CommandItem>
+				<CommandItem value="Diagnostics processes cpu memory traces logs slow failures" onSelect={() => run(() => openSettings("diagnostics"))}><Activity />Diagnostics</CommandItem>
 			</CommandGroup>
 			{compareGroups.length > 0 && <CommandGroup heading="Comparisons">
 				{compareGroups.map(group => {

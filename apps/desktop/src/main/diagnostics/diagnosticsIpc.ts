@@ -58,9 +58,10 @@ export function registerDiagnosticsIpc(ipcMain: IpcMain, options: {
 }) {
 	const logsDirectory = options.logsDirectory ?? path.join(app.getPath("userData"), "logs");
 	const traces = startTracing(logsDirectory);
-	const diagnostics = new ProcessDiagnostics({ electron: electronProcesses, owners: options.owners });
+	/** Windows with the page open, each with how it stops watching. */
+	const watching = new Map<number, () => void>();
+	const diagnostics = new ProcessDiagnostics({ electron: electronProcesses, owners: options.owners, onSample: result => { for (const id of watching.keys()) { const target = webContents.fromId(id); if (target && !target.isDestroyed()) target.send("diagnostics:sample", result); } } });
 	const trusted = (event: IpcMainInvokeEvent) => { if (!options.senderWindow(event)) throw new Error("Untrusted diagnostics request."); };
-	const watching = new Set<number>();
 	ipcMain.handle("diagnostics:processes", event => { trusted(event); return diagnostics.processes(); });
 	ipcMain.handle("diagnostics:resources", (event, request: unknown) => { trusted(event); return diagnostics.resources(validateResourceHistoryRequest(request)); });
 	ipcMain.handle("diagnostics:traces", async event => {
@@ -80,12 +81,12 @@ export function registerDiagnosticsIpc(ipcMain: IpcMain, options: {
 		const id = event.sender.id;
 		// A window closed or reloaded with the page open stops its share of the sampling.
 		if (!watching.has(id)) {
-			watching.add(id);
 			const sender = event.sender, stop = () => { watching.delete(id); diagnostics.unsubscribe(id); sender.removeListener("destroyed", stop); sender.removeListener("did-navigate", stop); };
+			watching.set(id, stop);
 			sender.once("destroyed", stop); sender.once("did-navigate", stop);
 		}
 		return diagnostics.subscribe(id);
 	});
-	ipcMain.handle("diagnostics:unsubscribe", event => { trusted(event); diagnostics.unsubscribe(event.sender.id); });
-	return { close: () => diagnostics.close() };
+	ipcMain.handle("diagnostics:unsubscribe", event => { trusted(event); watching.get(event.sender.id)?.(); });
+	return { close: () => { for (const stop of [...watching.values()]) stop(); diagnostics.close(); } };
 }
