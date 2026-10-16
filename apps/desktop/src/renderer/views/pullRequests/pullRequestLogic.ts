@@ -91,7 +91,7 @@ export function primaryAction(view: Pick<PullRequestView, "state" | "draft" | "m
 }
 export const mergeMethodLabels = { merge: "Merge", squash: "Squash and merge", rebase: "Rebase and merge" } as const;
 
-export type TimelineEvent = { id: string; at: string; kind: "opened" | "commit" | "comment" | "review" | "merged" | "closed"; title: string; body: string | null; url?: string; actor: PullRequestActor | null; commitAuthors: PullRequestActor[]; additions?: number; deletions?: number; path?: string; reviewState?: string; reactions: PullRequestReaction[] };
+export type TimelineEvent = { id: string; at: string; kind: "opened" | "commit" | "comment" | "review" | "merged" | "closed"; title: string; body: string | null; url?: string; actor: PullRequestActor | null; commitAuthors: PullRequestActor[]; additions?: number; deletions?: number; path?: string; reviewState?: string; reactions: PullRequestReaction[]; canReact?: boolean };
 export type TimelineRow = { kind: "event"; event: TimelineEvent } | { kind: "comments"; events: TimelineEvent[] };
 /** Bots keep bookkeeping in HTML comments; a body that is only those reads as no body. */
 export function visibleBody(body: string): string | null { return body.replace(/<!--[\s\S]*?-->/g, "").trim() ? body.trim() : null; }
@@ -100,7 +100,7 @@ export function buildTimeline(view: Pick<PullRequestView, "createdAt" | "authorA
 	const events: TimelineEvent[] = [
 		{ id: "created", at: view.createdAt, kind: "opened", title: "opened this pull request", body: null, actor: view.authorActor, commitAuthors: [], reactions: [] },
 		...view.commits.map(commit => ({ id: commit.oid, at: commit.committedAt, kind: "commit" as const, title: `Commit ${commit.oid.slice(0, 7)}`, body: commit.headline || null, actor: commit.authors[0] ?? null, commitAuthors: commit.authors, additions: commit.additions, deletions: commit.deletions, reactions: [] })),
-		...view.comments.map((comment: PullRequestComment) => ({ id: comment.id, at: comment.createdAt, kind: comment.kind === "review" ? "review" as const : "comment" as const, title: comment.kind === "review" ? "reviewed" : "commented", body: visibleBody(comment.body), url: comment.url, actor: comment.author, commitAuthors: [], path: comment.path, reviewState: comment.reviewState, reactions: comment.reactions })),
+		...view.comments.map((comment: PullRequestComment) => ({ id: comment.id, at: comment.createdAt, kind: comment.kind === "review" ? "review" as const : "comment" as const, title: comment.kind === "review" ? "reviewed" : "commented", body: visibleBody(comment.body), url: comment.url, actor: comment.author, commitAuthors: [], path: comment.path, reviewState: comment.reviewState, reactions: comment.reactions, canReact: comment.canReact })),
 		...(view.mergedAt ? [{ id: "merged", at: view.mergedAt, kind: "merged" as const, title: "merged this pull request", body: null, actor: null, commitAuthors: [], reactions: [] }] : view.closedAt ? [{ id: "closed", at: view.closedAt, kind: "closed" as const, title: "closed this pull request", body: null, actor: null, commitAuthors: [], reactions: [] }] : []),
 	];
 	return events.sort((left, right) => Date.parse(right.at) - Date.parse(left.at) || (left.id < right.id ? -1 : 1));
@@ -123,6 +123,28 @@ export function isFinished(comment: PullRequestComment, threads: PullRequestView
 }
 
 export const reactionEmoji: Record<string, string> = { THUMBS_UP: "👍", THUMBS_DOWN: "👎", LAUGH: "😄", HOORAY: "🎉", CONFUSED: "😕", HEART: "❤️", ROCKET: "🚀", EYES: "👀" };
+/** GitHub's spoken names, which its own hover text uses. */
+export const reactionName = (content: string) => content.toLowerCase().replaceAll("_", " ");
+/** Presses still in flight, shown at once: a toggle moves the count by one and the pill appears or goes. Kept in GitHub's order. */
+export function applyPendingReactions(reactions: readonly PullRequestReaction[], pending: ReadonlyMap<string, boolean>): PullRequestReaction[] {
+	const shown = new Map(reactions.map(reaction => [reaction.content, reaction]));
+	for (const [content, reacted] of pending) {
+		const current = shown.get(content), had = current?.viewerHasReacted === true;
+		if (had === reacted) continue;
+		const count = (current?.count ?? 0) + (reacted ? 1 : -1);
+		if (count <= 0) shown.delete(content); else shown.set(content, { ...current, content, count, viewerHasReacted: reacted });
+	}
+	const order = Object.keys(reactionEmoji);
+	return [...shown.values()].sort((left, right) => order.indexOf(left.content) - order.indexOf(right.content));
+}
+/** GitHub's sentence: "You, octo and 2 others reacted with heart emoji". At most three names; the rest are counted. */
+export function reactionTooltip(reaction: PullRequestReaction): string {
+	const actors = reaction.actors ?? [], names = reaction.viewerHasReacted && actors.length < reaction.count ? ["You", ...actors] : [...actors];
+	const shown = names.slice(0, Math.min(3, reaction.count)), others = Math.max(0, reaction.count - shown.length);
+	const parts = [...shown, ...(others ? [shown.length ? `${others} ${others === 1 ? "other" : "others"}` : `${others} ${others === 1 ? "person" : "people"}`] : [])];
+	const joined = parts.length <= 1 ? parts[0] ?? "" : parts.length === 2 ? `${parts[0]} and ${parts[1]}` : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
+	return `${joined} reacted with ${reactionName(reaction.content)} emoji`;
+}
 
 /**
  * Hides whitespace-only edits in a unified patch: a run of removals followed by the same number of

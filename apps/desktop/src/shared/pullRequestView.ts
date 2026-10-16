@@ -7,8 +7,11 @@ export type PullRequestActor = { login: string; avatarUrl?: string; bot?: boolea
 export type PullRequestCheckStatus = "pending" | "action-required" | "success" | "failure" | "cancelled" | "skipped" | "neutral";
 /** `required` is the base branch's protection asking for this check. */
 export type PullRequestCheck = { name: string; status: PullRequestCheckStatus; url?: string; description?: string; required?: boolean };
-export type PullRequestReaction = { content: string; count: number };
-export type PullRequestComment = { id: string; kind: "comment" | "review" | "review-comment"; author: PullRequestActor | null; body: string; createdAt: string; editedAt?: string; url?: string; reviewState?: string; path?: string; threadId?: string; reactions: PullRequestReaction[] };
+export const pullRequestReactionContents = ["THUMBS_UP", "THUMBS_DOWN", "LAUGH", "HOORAY", "CONFUSED", "HEART", "ROCKET", "EYES"] as const;
+export type PullRequestReactionContent = typeof pullRequestReactionContents[number];
+/** `actors` names up to three people besides the viewer, for the hover text. */
+export type PullRequestReaction = { content: string; count: number; viewerHasReacted?: boolean; actors?: string[] };
+export type PullRequestComment = { id: string; kind: "comment" | "review" | "review-comment"; author: PullRequestActor | null; body: string; createdAt: string; editedAt?: string; url?: string; reviewState?: string; path?: string; threadId?: string; reactions: PullRequestReaction[]; canReact?: boolean };
 export type PullRequestCommit = { oid: string; headline: string; committedAt: string; additions?: number; deletions?: number; authors: PullRequestActor[] };
 export type PullRequestReviewThreadView = { id: string; path: string; line?: number; originalLine?: number; side: "LEFT" | "RIGHT"; resolved: boolean; outdated: boolean; canReply: boolean; canResolve: boolean; canUnresolve: boolean; comments: PullRequestComment[]; totalComments: number };
 export type PullRequestReviewState = "APPROVED" | "CHANGES_REQUESTED" | "DISMISSED" | "COMMENTED";
@@ -46,7 +49,8 @@ export type PullRequestAction =
 	| { type: "comment"; body: string }
 	| { type: "reply"; threadId: string; body: string }
 	| { type: "resolve"; threadId: string; resolved: boolean }
-	| { type: "review"; event: "approve" | "request-changes" | "comment"; body: string };
+	| { type: "review"; event: "approve" | "request-changes" | "comment"; body: string }
+	| { type: "react"; subjectId: string; content: PullRequestReactionContent; reacted: boolean };
 export type PullRequestActionRequest = { number: number; headOid: string; action: PullRequestAction };
 
 const control = (value: string) => [...value].some(character => { const code = character.charCodeAt(0); return code === 0 || code === 127; });
@@ -82,6 +86,9 @@ export function validatePullRequestActionRequest(value: unknown): PullRequestAct
 			const event = action.event as "approve" | "request-changes" | "comment";
 			return { ...common, action: { type: "review", event, body: body(action.body ?? "", event !== "approve") } };
 		}
+		case "react":
+			if (!reviewNodeId(action.subjectId) || !pullRequestReactionContents.includes(action.content as PullRequestReactionContent) || typeof action.reacted !== "boolean") throw new Error("Invalid reaction.");
+			return { ...common, action: { type: "react", subjectId: action.subjectId, content: action.content as PullRequestReactionContent, reacted: action.reacted } };
 		default: throw new Error("Unknown pull request action.");
 	}
 }

@@ -94,6 +94,17 @@ describe("pull request view", () => {
 		await projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "disable-auto-merge" } });
 		expect(ports.calls.at(-2)!.args).toEqual(["pr", "merge", "12", "--repo", "owned/repo", "--disable-auto"]);
 	});
+	it("toggles the viewer's own reaction on a comment, even after a push", async () => {
+		await projectPullRequestAction("/owned", { number: 12, headOid: "c".repeat(40), action: { type: "react", subjectId: "IC_1", content: "HEART", reacted: true } });
+		expect(ports.calls[1].args).toEqual(expect.arrayContaining(["-f", "id=IC_1", "-f", "content=HEART"]));
+		expect(ports.calls[1].args.join(" ")).toContain("addReaction");
+		await projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "react", subjectId: "IC_1", content: "HEART", reacted: false } });
+		expect(ports.calls.at(-2)!.args.join(" ")).toContain("removeReaction");
+		await expect(projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "react", subjectId: "IC_9", content: "HEART", reacted: true } })).rejects.toThrow("no longer");
+		await expect(projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "react", subjectId: "IC_1", content: "PARTY", reacted: true } })).rejects.toThrow("Invalid reaction");
+		const view = parsePullRequestView("owned/repo", 12, response({ comments: { totalCount: 1, nodes: [{ id: "IC_1", author: { login: "x" }, body: "Hi", createdAt: "2026-10-02T01:00:00Z", viewerCanReact: true, reactionGroups: [{ content: "HEART", viewerHasReacted: true, reactors: { totalCount: 3, nodes: [{ login: "octo" }, {}] } }] }] } }));
+		expect(view.comments[0]).toMatchObject({ canReact: true, reactions: [{ content: "HEART", count: 3, viewerHasReacted: true, actors: ["octo"] }] });
+	});
 	it("surfaces GitHub's reason inline", async () => {
 		ports.respond.mockReturnValueOnce(JSON.stringify(response())).mockImplementationOnce(() => { throw Object.assign(new Error("x"), { stderr: "gh: Pull Request is not mergeable (HTTP 405)" }); });
 		await expect(projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "merge", method: "rebase" } })).rejects.toThrow("Could not merge. GitHub said: Pull Request is not mergeable (HTTP 405)");

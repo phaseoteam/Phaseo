@@ -6,7 +6,7 @@ import { reviewNodeId } from "../shared/pullRequestThreads";
 import { validRepository, validatePullRequestActionRequest, type PullRequestActor, type PullRequestCheck, type PullRequestCheckStatus, type PullRequestComment, type PullRequestCommit, type PullRequestMergeMethod, type PullRequestReaction, type PullRequestReviewState, type PullRequestReviewThreadView, type PullRequestView } from "../shared/pullRequestView";
 
 const actor = "login avatarUrl __typename";
-const reactions = "reactionGroups{content reactors{totalCount}}";
+const reactions = "viewerCanReact reactionGroups{content viewerHasReacted reactors(first:4){totalCount nodes{... on Actor{login}}}}";
 const viewQuery = `query PhaseoPullRequestView($owner:String!,$name:String!,$number:Int!){viewer{login}repository(owner:$owner,name:$name){mergeCommitAllowed squashMergeAllowed rebaseMergeAllowed autoMergeAllowed viewerPermission pullRequest(number:$number){id number title body state createdAt updatedAt mergedAt closedAt isDraft author{${actor}} headRefName baseRefName headRefOid baseRefOid headRef{id} headRepository{nameWithOwner} reviewDecision additions deletions changedFiles mergeable mergeStateStatus viewerCanUpdate viewerCanDeleteHeadRef viewerCanEnableAutoMerge viewerCanDisableAutoMerge autoMergeRequest{mergeMethod enabledBy{login}}
 labels(first:20){nodes{name color}}
 reviewRequests(first:20){nodes{requestedReviewer{__typename ... on User{login avatarUrl} ... on Bot{login avatarUrl} ... on Team{slug}}}}
@@ -36,14 +36,15 @@ export function parseActor(value: unknown): PullRequestActor | null {
 function parseReactions(value: unknown): PullRequestReaction[] {
 	return (Array.isArray(value) ? value : []).slice(0, 20).flatMap(entry => {
 		const group = item(entry), content = text(group.content, 40), count = total(group.reactors, 0);
-		return content && /^[A-Z_]+$/.test(content) && count > 0 ? [{ content, count }] : [];
+		const actors = nodes(group.reactors).flatMap(value => { const login = text(item(value).login, 256); return login ? [login] : []; }).slice(0, 4);
+		return content && /^[A-Z_]+$/.test(content) && count > 0 ? [{ content, count, ...(group.viewerHasReacted === true ? { viewerHasReacted: true } : {}), ...(actors.length ? { actors } : {}) }] : [];
 	});
 }
 function parseComment(value: unknown, kind: PullRequestComment["kind"], extra: Partial<PullRequestComment> = {}): PullRequestComment | undefined {
 	const entry = item(value), id = entry.id, body = text(entry.body, 512 * 1024), createdAt = date(entry.submittedAt) ?? date(entry.createdAt);
 	if (!reviewNodeId(id) || body === undefined || !createdAt) return;
 	const url = link(entry.url), state = text(entry.state, 40), editedAt = date(entry.lastEditedAt);
-	return { id, kind, author: parseActor(entry.author), body, createdAt, ...(editedAt && editedAt > createdAt ? { editedAt } : {}), ...(url ? { url } : {}), ...(kind === "review" && state ? { reviewState: state } : {}), reactions: parseReactions(entry.reactionGroups), ...extra };
+	return { id, kind, author: parseActor(entry.author), body, createdAt, ...(editedAt && editedAt > createdAt ? { editedAt } : {}), ...(url ? { url } : {}), ...(kind === "review" && state ? { reviewState: state } : {}), reactions: parseReactions(entry.reactionGroups), ...(entry.viewerCanReact === true ? { canReact: true } : {}), ...extra };
 }
 export function checkStatus(entry: Item): PullRequestCheckStatus {
 	if (entry.__typename === "StatusContext") {
@@ -166,14 +167,15 @@ export async function readPullRequestView(cwd: string, repository: string, numbe
 	return parsePullRequestView(repository, number, parsed);
 }
 
-const failures: Record<string, string> = { merge: "Could not merge.", "enable-auto-merge": "Could not turn on auto-merge. Check that this repository allows auto-merge, that you have write access, and that there is something left for it to wait on.", "disable-auto-merge": "Could not turn off auto-merge.", close: "Could not close the pull request.", reopen: "Could not reopen the pull request.", ready: "Could not mark it ready for review.", draft: "Could not convert it to a draft.", title: "Could not save the title.", comment: "Could not post the comment.", reply: "Could not post the reply.", resolve: "Could not change the thread.", review: "Could not submit the review.", "update-branch": "Could not update the branch.", "delete-branch": "Could not delete the branch." };
+const failures: Record<string, string> = { merge: "Could not merge.", "enable-auto-merge": "Could not turn on auto-merge. Check that this repository allows auto-merge, that you have write access, and that there is something left for it to wait on.", "disable-auto-merge": "Could not turn off auto-merge.", close: "Could not close the pull request.", reopen: "Could not reopen the pull request.", ready: "Could not mark it ready for review.", draft: "Could not convert it to a draft.", title: "Could not save the title.", comment: "Could not post the comment.", reply: "Could not post the reply.", resolve: "Could not change the thread.", review: "Could not submit the review.", react: "The reaction could not be saved.", "update-branch": "Could not update the branch.", "delete-branch": "Could not delete the branch." };
 const graphql = (query: string) => ["api", "graphql", "--hostname", "github.com", "-f", `query=${query}`];
 
 /** Every write a pane can make. Each checks it still acts on the head the person saw, then reads the pull request again. */
 export async function projectPullRequestAction(root: string, value: unknown): Promise<PullRequestView> {
 	const request = validatePullRequestActionRequest(value), { action } = request;
 	const view = await projectPullRequestView(root, request.number);
-	if (view.headOid !== request.headOid) throw new Error("This pull request changed. It has been refreshed; check it and try again.");
+	// Reactions, labels and reviewers do not depend on the code, so a push since the person looked does not stop them.
+	if (view.headOid !== request.headOid && !["react"].includes(action.type)) throw new Error("This pull request changed. It has been refreshed; check it and try again.");
 	const base = `repos/${view.repository}/pulls/${view.number}`;
 	let args: string[], input: string | undefined;
 	switch (action.type) {
@@ -203,6 +205,9 @@ export async function projectPullRequestAction(root: string, value: unknown): Pr
 		}
 		case "review":
 			args = ["api", "--hostname", "github.com", "--method", "POST", `${base}/reviews`, "-f", `event=${action.event === "approve" ? "APPROVE" : action.event === "request-changes" ? "REQUEST_CHANGES" : "COMMENT"}`, "-f", `commit_id=${view.headOid}`, ...(action.body.trim() ? ["-F", "body=@-"] : [])]; input = action.body.trim() ? action.body : undefined; break;
+		case "react":
+			if (!view.comments.some(comment => comment.id === action.subjectId)) throw new Error("This comment is no longer on the pull request.");
+			args = [...graphql(action.reacted ? "mutation($id:ID!,$content:ReactionContent!){addReaction(input:{subjectId:$id,content:$content}){reaction{content}}}" : "mutation($id:ID!,$content:ReactionContent!){removeReaction(input:{subjectId:$id,content:$content}){reaction{content}}}"), "-f", `id=${action.subjectId}`, "-f", `content=${action.content}`]; break;
 		case "update-branch":
 			if (view.state !== "OPEN") throw new Error("Only an open pull request's branch can be updated.");
 			args = ["api", "--hostname", "github.com", "--method", "PUT", `${base}/update-branch`, "-f", `expected_head_sha=${view.headOid}`]; break;

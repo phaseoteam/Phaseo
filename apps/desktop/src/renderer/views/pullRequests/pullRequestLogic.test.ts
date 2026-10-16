@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PullRequestCheck, PullRequestComment, PullRequestView } from "../../../shared/pullRequestView";
-import { buildTimeline, checksRollup, fileTree, groupTimeline, ignoreWhitespacePatch, primaryAction, pullRequestStateKey, readViewed, relativeTime, reviewerEntries, setViewed, summarizeChecks, summaryChecksRollup, viewedState } from "./pullRequestLogic";
+import { applyPendingReactions, reactionTooltip, buildTimeline, checksRollup, fileTree, groupTimeline, ignoreWhitespacePatch, primaryAction, pullRequestStateKey, readViewed, relativeTime, reviewerEntries, setViewed, summarizeChecks, summaryChecksRollup, viewedState } from "./pullRequestLogic";
 
 const check = (status: PullRequestCheck["status"], url?: string): PullRequestCheck => ({ name: status, status, ...(url ? { url } : {}) });
 const comment = (id: string, at: string, patch: Partial<PullRequestComment> = {}): PullRequestComment => ({ id, kind: "comment", author: { login: "a" }, body: "Hi", createdAt: at, reactions: [], ...patch });
@@ -91,5 +91,13 @@ describe("code tab helpers", () => {
 		expect(relativeTime("2026-10-16T11:59:50Z", now)).toBe("just now");
 		expect(relativeTime("2026-10-16T11:00:00Z", now)).toBe("1h ago");
 		expect(relativeTime("2026-10-13T12:00:00Z", now)).toBe("3d ago");
+	});
+	it("shows reaction presses at once and says who reacted as GitHub does", () => {
+		const reactions = [{ content: "HEART", count: 1, viewerHasReacted: true }, { content: "THUMBS_UP", count: 2, actors: ["octo", "mona"] }];
+		expect(applyPendingReactions(reactions, new Map([["HEART", false], ["THUMBS_UP", true], ["EYES", true]]))).toEqual([{ content: "THUMBS_UP", count: 3, actors: ["octo", "mona"], viewerHasReacted: true }, { content: "EYES", count: 1, viewerHasReacted: true }]);
+		expect(applyPendingReactions(reactions, new Map([["HEART", true]]))).toEqual([reactions[1], reactions[0]]);
+		expect(reactionTooltip({ content: "THUMBS_UP", count: 5, viewerHasReacted: true, actors: ["octo", "mona"] })).toBe("You, octo, mona and 2 others reacted with thumbs up emoji");
+		expect(reactionTooltip({ content: "HEART", count: 2 })).toBe("2 people reacted with heart emoji");
+		expect(reactionTooltip({ content: "EYES", count: 1, actors: ["octo"] })).toBe("octo reacted with eyes emoji");
 	});
 });

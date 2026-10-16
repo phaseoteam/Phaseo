@@ -1,15 +1,16 @@
-import { useState, type ReactNode } from "react";
-import { ArrowDownUp, ChevronDown, ChevronRight, ListFilter, Tag, Users } from "lucide-react";
-import type { PullRequestComment, PullRequestView } from "../../../shared/pullRequestView";
+import { createContext, useContext, useState, type ReactNode } from "react";
+import { ArrowDownUp, ChevronDown, ChevronRight, ListFilter, SmilePlus, Tag, Users } from "lucide-react";
+import { pullRequestReactionContents, type PullRequestComment, type PullRequestReaction, type PullRequestReactionContent, type PullRequestView } from "../../../shared/pullRequestView";
 import { MessageContent } from "../../components/MessageContent";
 import { Button } from "../../components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../components/ui/collapsible";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuTrigger } from "../../components/ui/dropdown-menu";
 import { ScrollArea } from "../../components/ui/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover";
 import { usePersistedState } from "../../lib/persistedState";
 import { cn } from "../../lib/utils";
 import { ActorAvatar, ActorLabel, CheckStatusIcon, checkStatusLabel, REVIEW_OUTCOME_PRESENTATION, ReviewOutcomeLabel, reviewOutcomeStaleLabel, Tip } from "./presentation";
-import { isBot, isFinished, reactionEmoji, relativeTime, reviewerEntries, reviewOutcome, visibleBody } from "./pullRequestLogic";
+import { applyPendingReactions, isBot, isFinished, reactionEmoji, reactionName, reactionTooltip, relativeTime, reviewerEntries, reviewOutcome, visibleBody } from "./pullRequestLogic";
 
 function MetaRow({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
 	return <div className="grid min-h-6 min-w-0 grid-cols-[6rem_minmax(0,1fr)] items-center gap-2 text-xs"><span className="flex items-center gap-1.5 text-muted-foreground">{icon}{label}</span><span className="min-w-0 text-foreground">{children}</span></div>;
@@ -29,9 +30,34 @@ export function Section({ title, defaultOpen = true, actions, children }: { titl
 	</Collapsible>;
 }
 
-export function Reactions({ reactions }: { reactions: PullRequestComment["reactions"] }) {
-	if (!reactions.length) return null;
-	return <span className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-1">{reactions.map(reaction => <span key={reaction.content} className="inline-flex h-5 items-center gap-1 rounded-full bg-muted/60 px-1.5 text-2xs tabular-nums text-muted-foreground" aria-label={`${reaction.count} ${reaction.content.toLowerCase().replaceAll("_", " ")}`}><span aria-hidden>{reactionEmoji[reaction.content] ?? "•"}</span>{reaction.count}</span>)}</span>;
+/** How a reaction pill reaches GitHub; the pane provides it so every tab's comments can react. */
+export const ReactContext = createContext<((subjectId: string, content: PullRequestReactionContent, reacted: boolean) => Promise<boolean>) | undefined>(undefined);
+const pill = "inline-flex h-5 shrink-0 items-center gap-1 rounded-full border px-1.5 text-2xs tabular-nums outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring";
+const reactionSignature = (reactions: readonly PullRequestReaction[]) => reactions.map(reaction => `${reaction.content}:${reaction.count}:${reaction.viewerHasReacted ? 1 : 0}`).join(" ");
+
+/** T3's reaction bar: pills you can press to add or take back your own reaction, and a picker for the rest. */
+export function Reactions({ reactions, subjectId, canReact = false }: { reactions: PullRequestComment["reactions"]; subjectId?: string; canReact?: boolean }) {
+	const react = useContext(ReactContext), active = Boolean(react && subjectId && canReact);
+	const [pending, setPending] = useState<{ signature: string; values: Map<string, boolean> }>({ signature: "", values: new Map() });
+	const [pickerOpen, setPickerOpen] = useState(false);
+	const signature = reactionSignature(reactions), values = pending.signature === signature ? pending.values : new Map<string, boolean>();
+	const shown = applyPendingReactions(reactions, values);
+	if (!shown.length && !active) return null;
+	// A press is forgotten as soon as GitHub's real counts arrive; a failure takes it back.
+	const toggle = async (content: PullRequestReactionContent, reacted: boolean) => {
+		setPending({ signature, values: new Map([...values, [content, reacted]]) });
+		if (!await react!(subjectId!, content, reacted)) setPending(current => { const next = new Map(current.values); next.delete(content); return { signature: current.signature, values: next }; });
+	};
+	return <span className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-1" data-reactions={subjectId}>
+		{shown.map(reaction => <Tip key={reaction.content} label={reactionTooltip(reaction)}><button type="button" disabled={!active} aria-pressed={reaction.viewerHasReacted === true} aria-label={`${reactionName(reaction.content)}, ${reaction.count}`} onClick={() => void toggle(reaction.content as PullRequestReactionContent, !reaction.viewerHasReacted)}
+			className={cn(pill, reaction.viewerHasReacted ? "border-primary/60 bg-primary/10 text-foreground" : "border-transparent bg-muted/60 text-muted-foreground", active ? "hover:border-primary/60" : "cursor-default")}><span aria-hidden>{reactionEmoji[reaction.content] ?? "•"}</span>{reaction.count}</button></Tip>)}
+		{active && <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+			<Tip label="Add a reaction"><PopoverTrigger render={<button type="button" aria-label="Add a reaction" className={cn(pill, "border-transparent px-1 text-muted-foreground hover:bg-accent/60 hover:text-foreground")} />}><SmilePlus aria-hidden className="size-3.5" /></PopoverTrigger></Tip>
+			<PopoverContent align="end" side="top" className="w-auto gap-0 p-1"><div className="flex items-center gap-0.5">
+				{pullRequestReactionContents.map(content => { const reacted = shown.find(reaction => reaction.content === content)?.viewerHasReacted === true; return <button key={content} type="button" aria-pressed={reacted} aria-label={reactionName(content)} onClick={() => { setPickerOpen(false); void toggle(content, !reacted); }} className={cn("flex size-7 items-center justify-center rounded-md text-base outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring", reacted && "bg-primary/10")}><span aria-hidden>{reactionEmoji[content]}</span></button>; })}
+			</div></PopoverContent>
+		</Popover>}
+	</span>;
 }
 
 function CommentIdentity({ comment, onOpen }: { comment: PullRequestComment; onOpen: (url: string) => void }) {
@@ -57,7 +83,7 @@ function CommentRow({ comment, view, projectId, onOpen }: { comment: PullRequest
 		return <Collapsible open={open} onOpenChange={setOpen} render={<article className="border-l-2 border-border/60 py-1 pl-3" data-comment-id={comment.id} />}>
 			<div className="flex flex-wrap items-start gap-2"><CommentIdentity comment={comment} onOpen={onOpen} />
 				<CollapsibleTrigger className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent/60 hover:text-foreground">{resolved ? "Resolved" : "Review dismissed"}<ChevronDown aria-hidden className={cn("size-3.5 transition-transform", open && "rotate-180")} /></CollapsibleTrigger>
-				<Reactions reactions={comment.reactions} />
+				<Reactions reactions={comment.reactions} subjectId={comment.id} canReact={comment.canReact} />
 			</div>
 			<CommentLocation comment={comment} view={view} />
 			{!open && body && <p className="mt-1 truncate text-xs text-muted-foreground">{body.replace(/<!--[\s\S]*?-->/g, "").replace(/[*`#>]/g, "").replace(/\s+/g, " ").trim()}</p>}
@@ -67,7 +93,7 @@ function CommentRow({ comment, view, projectId, onOpen }: { comment: PullRequest
 	return <article className="border-l-2 border-border/60 py-1 pl-3" data-comment-id={comment.id}>
 		<div className="flex flex-wrap items-start gap-2">
 			<div className="flex min-w-0 flex-1 flex-wrap items-center gap-2"><CommentIdentity comment={comment} onOpen={onOpen} />{outcome ? <ReviewOutcomeLabel outcome={outcome} /> : comment.reviewState && comment.reviewState !== "COMMENTED" ? <span className="text-xs text-muted-foreground">{comment.reviewState.charAt(0) + comment.reviewState.slice(1).toLowerCase().replaceAll("_", " ")}</span> : null}</div>
-			<Reactions reactions={comment.reactions} />
+			<Reactions reactions={comment.reactions} subjectId={comment.id} canReact={comment.canReact} />
 		</div>
 		<CommentLocation comment={comment} view={view} />
 		{body && <div className="pr-comment-body mt-2 min-w-0 text-xs"><MessageContent text={body} projectId={projectId} /></div>}

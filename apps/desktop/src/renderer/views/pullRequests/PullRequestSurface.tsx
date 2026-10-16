@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowDownUp, ArrowLeft, ArrowUpRight, Check, CircleDot, Copy, ExternalLink, FileDiff, GitCommitHorizontal, Link as LinkIcon, MessageSquare, MoreHorizontal, Pencil, RefreshCw, Trash2, TriangleAlert, X } from "lucide-react";
-import type { PullRequestMergeMethod } from "../../../shared/pullRequestView";
+import type { PullRequestMergeMethod, PullRequestReactionContent } from "../../../shared/pullRequestView";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../../components/ui/dropdown-menu";
@@ -16,7 +16,7 @@ import { Composer } from "./Composer";
 import { ActorLabel, DiffStat, errorMessage, MetaLine, MiddleTruncate, PullRequestGlyph, pullRequestStatePresentation, ReviewOutcomeIcon, REVIEW_OUTCOME_PRESENTATION, Tip } from "./presentation";
 import { approvalCount, checksRollup, mergeMethodLabels, primaryAction, relativeTime, summarizeChecks } from "./pullRequestLogic";
 import { segmentedGroup, segmentedItem } from "./segmented";
-import { SummaryTab } from "./SummaryTab";
+import { ReactContext, SummaryTab } from "./SummaryTab";
 import { TimelineTab } from "./TimelineTab";
 import { useInlineActionConfirm } from "./useInlineActionConfirm";
 import { usePullRequest } from "./usePullRequest";
@@ -42,7 +42,7 @@ function CopyableCode({ value, label, className }: { value: string; label: strin
  */
 export function PullRequestSurface({ projectId, number, onBack }: { projectId: string; number: number; onBack?: () => void }) {
 	const api = window.phaseoDesktop?.workspace;
-	const pull = usePullRequest(projectId, number), { view } = pull;
+	const pull = usePullRequest(projectId, number), { view, perform } = pull;
 	const [tab, setTab] = useState<Tab>("summary");
 	const [mounted, setMounted] = useState<Set<Tab>>(() => new Set(["summary"]));
 	const [condensed, setCondensed] = useState(false);
@@ -54,6 +54,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 	const [openError, setOpenError] = useState("");
 	useEffect(() => { setTab("summary"); setMounted(new Set(["summary"])); setCondensed(false); setTitleDraft(null); }, [projectId, number]);
 	const open = (url: string) => { setOpenError(""); void api?.openLink(url).catch(reason => setOpenError(errorMessage(reason))); };
+	const react = useCallback((subjectId: string, content: PullRequestReactionContent, reacted: boolean) => perform({ type: "react", subjectId, content, reacted }), [perform]);
 	const selectTab = (next: Tab) => { setTab(next); setMounted(current => new Set([...current, next])); setCondensed(false); };
 
 	if (!view) return <div className="flex h-full min-h-0 flex-col bg-background" aria-label={`Pull request #${number}`} aria-busy={pull.refreshing}>
@@ -139,7 +140,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 	</DropdownMenu>;
 
 	const notice = pull.actionError?.message ?? (openError || (copied ? (copied.endsWith("failed") ? `Copy failed` : `${copied} copied`) : ""));
-	return <TooltipProvider delay={150}><div className="relative flex h-full min-h-0 w-full flex-col bg-background" aria-label={`Pull request #${view.number}`} data-pull-request={view.number}>
+	return <TooltipProvider delay={150}><ReactContext.Provider value={react}><div className="relative flex h-full min-h-0 w-full flex-col bg-background" aria-label={`Pull request #${view.number}`} data-pull-request={view.number}>
 		<div className="@container/pr-header grid min-w-0 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 border-b border-border/60">
 			<div className="grid h-10 min-w-0 items-center overflow-hidden pl-4">
 				<div aria-hidden={condensed} inert={condensed} className={cn("col-start-1 row-start-1 flex min-w-0 items-center gap-1 text-xs text-muted-foreground transition-[opacity,transform] ease-out motion-reduce:transition-none", condensed ? "pointer-events-none -translate-y-1 opacity-0 duration-100" : "translate-y-0 opacity-100 delay-50 duration-150")}>
@@ -216,7 +217,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 			{mounted.has("code") && <div className={cn("absolute inset-0", tab !== "code" && "invisible")}><CodeTab view={view} projectId={projectId} pending={busy} onAction={pull.perform} onOpen={open} /></div>}
 		</div>
 		{tab !== "code" && <div className="absolute right-4 bottom-3 z-20"><Composer key={`${projectId}#${view.number}`} view={view} pending={pending} error={pull.actionError && ["comment", "review"].includes(pull.actionError.action) ? pull.actionError.message : undefined} onAction={pull.perform} /></div>}
-	</div></TooltipProvider>;
+	</div></ReactContext.Provider></TooltipProvider>;
 }
 
 function BackButton({ onBack }: { onBack: () => void }) {
