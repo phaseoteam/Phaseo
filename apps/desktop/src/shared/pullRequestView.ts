@@ -50,13 +50,24 @@ export type PullRequestAction =
 	| { type: "reply"; threadId: string; body: string }
 	| { type: "resolve"; threadId: string; resolved: boolean }
 	| { type: "review"; event: "approve" | "request-changes" | "comment"; body: string }
-	| { type: "react"; subjectId: string; content: PullRequestReactionContent; reacted: boolean };
+	| { type: "react"; subjectId: string; content: PullRequestReactionContent; reacted: boolean }
+	| { type: "label"; name: string; applied: boolean }
+	| { type: "reviewer"; login: string; requested: boolean };
 export type PullRequestActionRequest = { number: number; headOid: string; action: PullRequestAction };
 
 const control = (value: string) => [...value].some(character => { const code = character.charCodeAt(0); return code === 0 || code === 127; });
 function body(value: unknown, required: boolean) {
 	if (typeof value !== "string" || value.length > 65536 || control(value) || (required && !value.trim())) throw new Error(required ? "Write something first." : "Invalid pull request text.");
 	return value;
+}
+const githubLogin = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
+/** Who or what the Summary pickers offer, read when a picker opens. `applied` is a label it wears or a reviewer already asked. */
+export type PullRequestCandidate = { key: string; label: string; detail?: string; color?: string; avatarUrl?: string; applied: boolean };
+export type PullRequestCandidates = { kind: "labels" | "reviewers"; candidates: PullRequestCandidate[]; truncated: boolean };
+export function validatePullRequestCandidatesQuery(value: unknown): { number: number; kind: "labels" | "reviewers" } {
+	const query = value && typeof value === "object" ? value as Record<string, unknown> : {};
+	if (!Number.isSafeInteger(query.number) || Number(query.number) < 1 || Number(query.number) > 2147483647 || (query.kind !== "labels" && query.kind !== "reviewers")) throw new Error("Invalid pull request picker request.");
+	return { number: Number(query.number), kind: query.kind };
 }
 export function validatePullRequestActionRequest(value: unknown): PullRequestActionRequest {
 	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid pull request action.");
@@ -89,6 +100,14 @@ export function validatePullRequestActionRequest(value: unknown): PullRequestAct
 		case "react":
 			if (!reviewNodeId(action.subjectId) || !pullRequestReactionContents.includes(action.content as PullRequestReactionContent) || typeof action.reacted !== "boolean") throw new Error("Invalid reaction.");
 			return { ...common, action: { type: "react", subjectId: action.subjectId, content: action.content as PullRequestReactionContent, reacted: action.reacted } };
+		case "label": {
+			const name = typeof action.name === "string" ? action.name : "";
+			if (!name.trim() || name.length > 200 || control(name) || typeof action.applied !== "boolean") throw new Error("Invalid label.");
+			return { ...common, action: { type: "label", name, applied: action.applied } };
+		}
+		case "reviewer":
+			if (typeof action.login !== "string" || !githubLogin.test(action.login) || typeof action.requested !== "boolean") throw new Error("Invalid reviewer.");
+			return { ...common, action: { type: "reviewer", login: action.login, requested: action.requested } };
 		default: throw new Error("Unknown pull request action.");
 	}
 }

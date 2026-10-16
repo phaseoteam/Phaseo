@@ -8,7 +8,7 @@ vi.mock("node:child_process", () => ({
 		return { stdin: { on: () => {}, end: (input: string) => { call.input = input; queueMicrotask(() => { try { callback(null, ports.respond(args), ""); } catch (error) { callback(error as Error, "", (error as { stderr?: string }).stderr ?? ""); } }); } } };
 	},
 }));
-import { checkStatus, ghFailure, parsePullRequestView, projectPullRequestAction, projectPullRequestView } from "./projectPullRequestView";
+import { checkStatus, ghFailure, parsePullRequestCandidates, parsePullRequestView, projectPullRequestAction, projectPullRequestCandidates, projectPullRequestView } from "./projectPullRequestView";
 
 const head = "a".repeat(40);
 const pull = (patch: Record<string, unknown> = {}) => ({
@@ -104,6 +104,25 @@ describe("pull request view", () => {
 		await expect(projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "react", subjectId: "IC_1", content: "PARTY", reacted: true } })).rejects.toThrow("Invalid reaction");
 		const view = parsePullRequestView("owned/repo", 12, response({ comments: { totalCount: 1, nodes: [{ id: "IC_1", author: { login: "x" }, body: "Hi", createdAt: "2026-10-02T01:00:00Z", viewerCanReact: true, reactionGroups: [{ content: "HEART", viewerHasReacted: true, reactors: { totalCount: 3, nodes: [{ login: "octo" }, {}] } }] }] } }));
 		expect(view.comments[0]).toMatchObject({ canReact: true, reactions: [{ content: "HEART", count: 3, viewerHasReacted: true, actors: ["octo"] }] });
+	});
+	it("adds and removes labels and review requests", async () => {
+		await projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "label", name: "needs review", applied: true } });
+		expect(ports.calls[1].args).toEqual(["api", "--hostname", "github.com", "--method", "POST", "repos/owned/repo/issues/12/labels", "-f", "labels[]=needs review"]);
+		await projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "label", name: "bug", applied: false } });
+		expect(ports.calls.at(-2)!.args).toEqual(["api", "--hostname", "github.com", "--method", "DELETE", "repos/owned/repo/issues/12/labels/bug"]);
+		await expect(projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "label", name: "gone", applied: false } })).rejects.toThrow("no longer");
+		await projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "reviewer", login: "octo", requested: true } });
+		expect(ports.calls.at(-2)!.args).toEqual(["api", "--hostname", "github.com", "--method", "POST", "repos/owned/repo/pulls/12/requested_reviewers", "-f", "reviewers[]=octo"]);
+		await expect(projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "reviewer", login: "fixture", requested: true } })).rejects.toThrow("author");
+		await expect(projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "reviewer", login: "-bad name", requested: true } })).rejects.toThrow("Invalid reviewer");
+	});
+	it("lists label and reviewer candidates, marking what the pull request has", async () => {
+		const data = { data: { repository: { labels: { totalCount: 101, nodes: [{ name: "bug", color: "d73a4a", description: "Broken" }, { name: "docs" }] }, assignableUsers: { totalCount: 3, nodes: [{ login: "fixture" }, { login: "octo", name: "Octo Cat", avatarUrl: "https://a/b" }, { login: "mona" }] }, pullRequest: { author: { login: "fixture" }, labels: { nodes: [{ name: "bug" }] }, reviewRequests: { nodes: [{ requestedReviewer: { login: "Mona" } }] } } } } };
+		expect(parsePullRequestCandidates("labels", data)).toEqual({ kind: "labels", truncated: true, candidates: [{ key: "bug", label: "bug", detail: "Broken", color: "d73a4a", applied: true }, { key: "docs", label: "docs", applied: false }] });
+		expect(parsePullRequestCandidates("reviewers", data)).toEqual({ kind: "reviewers", truncated: false, candidates: [{ key: "octo", label: "octo", detail: "Octo Cat", avatarUrl: "https://a/b", applied: false }, { key: "mona", label: "mona", applied: true }] });
+		ports.respond.mockReturnValue(JSON.stringify(data));
+		expect((await projectPullRequestCandidates("/owned", { number: 12, kind: "labels" })).candidates).toHaveLength(2);
+		await expect(projectPullRequestCandidates("/owned", { number: 12, kind: "teams" })).rejects.toThrow("Invalid");
 	});
 	it("surfaces GitHub's reason inline", async () => {
 		ports.respond.mockReturnValueOnce(JSON.stringify(response())).mockImplementationOnce(() => { throw Object.assign(new Error("x"), { stderr: "gh: Pull Request is not mergeable (HTTP 405)" }); });

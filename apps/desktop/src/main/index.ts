@@ -57,7 +57,7 @@ import { TerminalService } from "./terminalService";
 import { contentHash, writeProjectFile } from "./projectEdits";
 import { gitBranches, gitCommand } from "./gitOperations";
 import { projectPullRequests, projectPullRequest } from "./projectPullRequests";
-import { projectPullRequestAction, projectPullRequestView, readPullRequestView } from "./projectPullRequestView";
+import { projectPullRequestAction, projectPullRequestCandidates, projectPullRequestView, readPullRequestView } from "./projectPullRequestView";
 import { PullRequestWatcher } from "./pullRequestWatcher";
 import { pullRequestLinkSnapshot } from "../shared/pullRequestView";
 import { readGitHunks } from "./gitHunks";
@@ -345,6 +345,7 @@ ipcMain.handle("workspace:read-file", (event, id: unknown, filename: unknown) =>
 ipcMain.handle("workspace:git-review", (event, id: unknown) => gitReview(projectRoot(event, id)));
 ipcMain.handle("workspace:pull-requests", (event, id: unknown, cursor: unknown) => projectPullRequests(projectRoot(event, id), cursor));
 ipcMain.handle("workspace:pull-request", async (event, id: unknown, number: unknown) => { const details = await projectPullRequest(projectRoot(event, id), number); workspaceRuntime.syncPullRequestSnapshot(details.repository, details.number, pullRequestLinkSnapshot(details)); return details; });
+ipcMain.handle("workspace:pull-request-candidates", (event, id: unknown, query: unknown) => projectPullRequestCandidates(projectRoot(event, id), query));
 ipcMain.handle("workspace:pull-request-view", async (event, id: unknown, number: unknown) => { const view = await projectPullRequestView(projectRoot(event, id), number); workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)); return view; });
 ipcMain.handle("workspace:pull-request-action", async (event, id: unknown, request: unknown) => { const root = projectRoot(event, id); if (shutdownStarted) throw new Error("The workspace is shutting down."); const view = await projectPullRequestAction(root, request); workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)); return view; });
 ipcMain.handle("workspace:pull-request-contents", (event, id: unknown, query: unknown) => projectPullRequestContents(projectRoot(event, id), query));

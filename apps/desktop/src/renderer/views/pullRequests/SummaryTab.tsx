@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
-import { ArrowDownUp, ChevronDown, ChevronRight, ListFilter, SmilePlus, Tag, Users } from "lucide-react";
-import { pullRequestReactionContents, type PullRequestComment, type PullRequestReaction, type PullRequestReactionContent, type PullRequestView } from "../../../shared/pullRequestView";
+import { ArrowDownUp, ChevronDown, ChevronRight, ListFilter, SmilePlus, Tag, UserPlus, Users } from "lucide-react";
+import { pullRequestReactionContents, type PullRequestAction, type PullRequestComment, type PullRequestReaction, type PullRequestReactionContent, type PullRequestView } from "../../../shared/pullRequestView";
 import { MessageContent } from "../../components/MessageContent";
 import { Button } from "../../components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../components/ui/collapsible";
@@ -10,10 +10,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/pop
 import { usePersistedState } from "../../lib/persistedState";
 import { cn } from "../../lib/utils";
 import { ActorAvatar, ActorLabel, CheckStatusIcon, checkStatusLabel, REVIEW_OUTCOME_PRESENTATION, ReviewOutcomeLabel, reviewOutcomeStaleLabel, Tip } from "./presentation";
+import { CandidatePicker } from "./CandidatePicker";
 import { applyPendingReactions, isBot, isFinished, reactionEmoji, reactionName, reactionTooltip, relativeTime, reviewerEntries, reviewOutcome, visibleBody } from "./pullRequestLogic";
 
 function MetaRow({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
-	return <div className="grid min-h-6 min-w-0 grid-cols-[6rem_minmax(0,1fr)] items-center gap-2 text-xs"><span className="flex items-center gap-1.5 text-muted-foreground">{icon}{label}</span><span className="min-w-0 text-foreground">{children}</span></div>;
+	return <div className="grid min-h-6 min-w-0 grid-cols-[6rem_minmax(0,1fr)] items-center gap-2 text-xs"><span className="flex items-center gap-1.5 text-muted-foreground">{icon}{label}</span><span className="flex min-w-0 items-center gap-1.5 text-foreground">{children}</span></div>;
 }
 
 /** A collapsible section whose heading rides the top of the scroll box, so it folds from wherever it was read to. */
@@ -101,7 +102,7 @@ function CommentRow({ comment, view, projectId, onOpen }: { comment: PullRequest
 }
 
 const PAGE = 10;
-export function SummaryTab({ view, projectId, onOpen, onScrollerRef }: { view: PullRequestView; projectId: string; onOpen: (url: string) => void; onScrollerRef?: (node: HTMLDivElement | null) => void }) {
+export function SummaryTab({ view, projectId, onOpen, onAction, onScrollerRef }: { view: PullRequestView; projectId: string; onOpen: (url: string) => void; onAction?: (action: PullRequestAction) => Promise<boolean>; onScrollerRef?: (node: HTMLDivElement | null) => void }) {
 	const [filter, setFilter] = usePersistedState("phaseo.desktop.pullRequestCommentFilter", { bots: false, resolved: false });
 	const [order, setOrder] = useState<"newest" | "oldest">("newest");
 	const [shown, setShown] = useState(PAGE);
@@ -120,8 +121,9 @@ export function SummaryTab({ view, projectId, onOpen, onScrollerRef }: { view: P
 						<span className={cn("relative rounded-full hover:z-10", entry.outcome ? (entry.stale ? REVIEW_OUTCOME_PRESENTATION[entry.outcome].staleRingClassName : REVIEW_OUTCOME_PRESENTATION[entry.outcome].ringClassName) : "ring-2 ring-background")} data-reviewer={login}><ActorAvatar actor={entry.actor} /><span className="sr-only">{login}{verdict ? `, ${verdict}` : ""}</span></span>
 					</Tip>;
 				})}</span> : <span className="text-muted-foreground">None</span>}
+				{onAction && view.state === "OPEN" && <CandidatePicker projectId={projectId} number={view.number} kind="reviewers" allowed={view.viewer.canUpdate} icon={<UserPlus className="size-3.5" />} onToggle={candidate => onAction({ type: "reviewer", login: candidate.key, requested: !candidate.applied })} />}
 			</MetaRow>
-			{view.labels.length > 0 && <MetaRow icon={<Tag className="size-3.5" />} label="Labels"><span className="flex min-w-0 flex-wrap items-center gap-1">{view.labels.map(label => <span key={label.name} className="inline-flex h-5 max-w-48 min-w-0 items-center rounded-md px-1.5 text-xs font-medium" style={label.color ? { background: `color-mix(in srgb, #${label.color} 18%, transparent)`, color: `color-mix(in srgb, #${label.color} 40%, var(--foreground))` } : undefined}><span className="truncate">{label.name}</span></span>)}</span></MetaRow>}
+			{(view.labels.length > 0 || onAction) && <MetaRow icon={<Tag className="size-3.5" />} label="Labels"><span className="flex min-w-0 flex-wrap items-center gap-1">{!view.labels.length && <span className="text-muted-foreground">None</span>}{view.labels.map(label => <span key={label.name} className="inline-flex h-5 max-w-48 min-w-0 items-center rounded-md px-1.5 text-xs font-medium" style={label.color ? { background: `color-mix(in srgb, #${label.color} 18%, transparent)`, color: `color-mix(in srgb, #${label.color} 40%, var(--foreground))` } : undefined}><span className="truncate">{label.name}</span></span>)}{onAction && <CandidatePicker projectId={projectId} number={view.number} kind="labels" allowed={view.viewer.canUpdate} icon={<Tag className="size-3.5" />} onToggle={candidate => onAction({ type: "label", name: candidate.key, applied: !candidate.applied })} />}</span></MetaRow>}
 		</section>
 		<Section title="Description">
 			<div className="pr-comment-body min-w-0 text-xs">{view.body.trim() ? <MessageContent text={view.body} projectId={projectId} /> : <p className="text-muted-foreground italic">No description provided.</p>}</div>

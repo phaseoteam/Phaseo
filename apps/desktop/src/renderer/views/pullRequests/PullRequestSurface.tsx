@@ -212,7 +212,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 			const top = target.scrollTop;
 			setCondensed(previous => previous ? top >= 4 : top > 64);
 		}}>
-			{mounted.has("summary") && <div className={cn("absolute inset-0", tab !== "summary" && "invisible")}><SummaryTab view={view} projectId={projectId} onOpen={open} /></div>}
+			{mounted.has("summary") && <div className={cn("absolute inset-0", tab !== "summary" && "invisible")}><SummaryTab view={view} projectId={projectId} onOpen={open} onAction={perform} /></div>}
 			{mounted.has("timeline") && <div className={cn("absolute inset-0", tab !== "timeline" && "invisible")}><TimelineTab view={view} projectId={projectId} order={order} onOpen={open} /></div>}
 			{mounted.has("code") && <div className={cn("absolute inset-0", tab !== "code" && "invisible")}><CodeTab view={view} projectId={projectId} pending={busy} onAction={pull.perform} onOpen={open} /></div>}
 		</div>

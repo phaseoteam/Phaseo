@@ -123,6 +123,11 @@ export function isFinished(comment: PullRequestComment, threads: PullRequestView
 }
 
 export const reactionEmoji: Record<string, string> = { THUMBS_UP: "👍", THUMBS_DOWN: "👎", LAUGH: "😄", HOORAY: "🎉", CONFUSED: "😕", HEART: "❤️", ROCKET: "🚀", EYES: "👀" };
+/** The pickers narrow only what arrived: by name, login or description. */
+export function matchesCandidate(candidate: { label: string; detail?: string }, query: string) {
+	const needle = query.trim().toLowerCase();
+	return !needle || candidate.label.toLowerCase().includes(needle) || (candidate.detail ?? "").toLowerCase().includes(needle);
+}
 /** GitHub's spoken names, which its own hover text uses. */
 export const reactionName = (content: string) => content.toLowerCase().replaceAll("_", " ");
 /** Presses still in flight, shown at once: a toggle moves the count by one and the pill appears or goes. Kept in GitHub's order. */

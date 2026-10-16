@@ -7,7 +7,7 @@ import type { McpPromptCatalog, McpPromptPreview, McpPromptRequest } from "./mcp
 import type { PullRequestContents, PullRequestContentsQuery } from "./pullRequestContents";
 import type { PullRequestFilesPage, PullRequestFilesQuery } from "./pullRequestFiles";
 import type { ProjectPullRequests, PullRequestDetails } from "./pullRequests";
-import { parsePullRequestReference, validRepository, type PullRequestActionRequest, type PullRequestView, type TaskPullRequestLink } from "./pullRequestView";
+import { parsePullRequestReference, validRepository, type PullRequestActionRequest, type PullRequestCandidates, type PullRequestView, type TaskPullRequestLink } from "./pullRequestView";
 import type { AgentForm, FormAnswer } from "./agentForms";
 import type { McpCommand, McpConnection } from "./mcp";
 import type { WorkspacePreferences } from "./preferences";
@@ -214,6 +214,8 @@ export type WorkspaceApi = {
 	pullRequests: (projectId: string, cursor?: string) => Promise<ProjectPullRequests>;
 	/** One pull request with its checks, reviews, comments, commits and review threads. */
 	pullRequestView: (projectId: string, number: number) => Promise<PullRequestView>;
+	/** The labels or reviewers a Summary picker offers, read when it opens. */
+	pullRequestCandidates: (projectId: string, query: { number: number; kind: "labels" | "reviewers" }) => Promise<PullRequestCandidates>;
 	/** Merge, close, comment, review and the rest, through GitHub CLI; returns the pull request as it is afterwards. */
 	pullRequestAction: (projectId: string, request: PullRequestActionRequest) => Promise<PullRequestView>;
 	gitHunks: (projectId: string, filename: string, staged: boolean) => Promise<GitHunkReview>;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PullRequestCheck, PullRequestComment, PullRequestView } from "../../../shared/pullRequestView";
-import { applyPendingReactions, reactionTooltip, buildTimeline, checksRollup, fileTree, groupTimeline, ignoreWhitespacePatch, primaryAction, pullRequestStateKey, readViewed, relativeTime, reviewerEntries, setViewed, summarizeChecks, summaryChecksRollup, viewedState } from "./pullRequestLogic";
+import { applyPendingReactions, matchesCandidate, reactionTooltip, buildTimeline, checksRollup, fileTree, groupTimeline, ignoreWhitespacePatch, primaryAction, pullRequestStateKey, readViewed, relativeTime, reviewerEntries, setViewed, summarizeChecks, summaryChecksRollup, viewedState } from "./pullRequestLogic";
 
 const check = (status: PullRequestCheck["status"], url?: string): PullRequestCheck => ({ name: status, status, ...(url ? { url } : {}) });
 const comment = (id: string, at: string, patch: Partial<PullRequestComment> = {}): PullRequestComment => ({ id, kind: "comment", author: { login: "a" }, body: "Hi", createdAt: at, reactions: [], ...patch });
@@ -99,5 +99,10 @@ describe("code tab helpers", () => {
 		expect(reactionTooltip({ content: "THUMBS_UP", count: 5, viewerHasReacted: true, actors: ["octo", "mona"] })).toBe("You, octo, mona and 2 others reacted with thumbs up emoji");
 		expect(reactionTooltip({ content: "HEART", count: 2 })).toBe("2 people reacted with heart emoji");
 		expect(reactionTooltip({ content: "EYES", count: 1, actors: ["octo"] })).toBe("octo reacted with eyes emoji");
+	});
+	it("narrows picker candidates by name or description", () => {
+		expect(matchesCandidate({ label: "octo", detail: "Octo Cat" }, " cat ")).toBe(true);
+		expect(matchesCandidate({ label: "bug" }, "doc")).toBe(false);
+		expect(matchesCandidate({ label: "bug" }, "")).toBe(true);
 	});
 });

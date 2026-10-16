@@ -3,7 +3,7 @@ import { git } from "./gitProcess";
 import { resolveNativeCommand } from "./nativeProcess";
 import { githubRepository, parsePullRequestDetails } from "./projectPullRequests";
 import { reviewNodeId } from "../shared/pullRequestThreads";
-import { validRepository, validatePullRequestActionRequest, type PullRequestActor, type PullRequestCheck, type PullRequestCheckStatus, type PullRequestComment, type PullRequestCommit, type PullRequestMergeMethod, type PullRequestReaction, type PullRequestReviewState, type PullRequestReviewThreadView, type PullRequestView } from "../shared/pullRequestView";
+import { validRepository, validatePullRequestActionRequest, validatePullRequestCandidatesQuery, type PullRequestCandidates, type PullRequestActor, type PullRequestCheck, type PullRequestCheckStatus, type PullRequestComment, type PullRequestCommit, type PullRequestMergeMethod, type PullRequestReaction, type PullRequestReviewState, type PullRequestReviewThreadView, type PullRequestView } from "../shared/pullRequestView";
 
 const actor = "login avatarUrl __typename";
 const reactions = "viewerCanReact reactionGroups{content viewerHasReacted reactors(first:4){totalCount nodes{... on Actor{login}}}}";
@@ -167,7 +167,7 @@ export async function readPullRequestView(cwd: string, repository: string, numbe
 	return parsePullRequestView(repository, number, parsed);
 }
 
-const failures: Record<string, string> = { merge: "Could not merge.", "enable-auto-merge": "Could not turn on auto-merge. Check that this repository allows auto-merge, that you have write access, and that there is something left for it to wait on.", "disable-auto-merge": "Could not turn off auto-merge.", close: "Could not close the pull request.", reopen: "Could not reopen the pull request.", ready: "Could not mark it ready for review.", draft: "Could not convert it to a draft.", title: "Could not save the title.", comment: "Could not post the comment.", reply: "Could not post the reply.", resolve: "Could not change the thread.", review: "Could not submit the review.", react: "The reaction could not be saved.", "update-branch": "Could not update the branch.", "delete-branch": "Could not delete the branch." };
+const failures: Record<string, string> = { merge: "Could not merge.", "enable-auto-merge": "Could not turn on auto-merge. Check that this repository allows auto-merge, that you have write access, and that there is something left for it to wait on.", "disable-auto-merge": "Could not turn off auto-merge.", close: "Could not close the pull request.", reopen: "Could not reopen the pull request.", ready: "Could not mark it ready for review.", draft: "Could not convert it to a draft.", title: "Could not save the title.", comment: "Could not post the comment.", reply: "Could not post the reply.", resolve: "Could not change the thread.", review: "Could not submit the review.", react: "The reaction could not be saved.", label: "Could not change the labels. Changing labels needs triage access on this repository.", reviewer: "Could not change the reviewers. Asking for a review needs write access on this repository.", "update-branch": "Could not update the branch.", "delete-branch": "Could not delete the branch." };
 const graphql = (query: string) => ["api", "graphql", "--hostname", "github.com", "-f", `query=${query}`];
 
 /** Every write a pane can make. Each checks it still acts on the head the person saw, then reads the pull request again. */
@@ -175,7 +175,7 @@ export async function projectPullRequestAction(root: string, value: unknown): Pr
 	const request = validatePullRequestActionRequest(value), { action } = request;
 	const view = await projectPullRequestView(root, request.number);
 	// Reactions, labels and reviewers do not depend on the code, so a push since the person looked does not stop them.
-	if (view.headOid !== request.headOid && !["react"].includes(action.type)) throw new Error("This pull request changed. It has been refreshed; check it and try again.");
+	if (view.headOid !== request.headOid && !["react", "label", "reviewer"].includes(action.type)) throw new Error("This pull request changed. It has been refreshed; check it and try again.");
 	const base = `repos/${view.repository}/pulls/${view.number}`;
 	let args: string[], input: string | undefined;
 	switch (action.type) {
@@ -208,6 +208,13 @@ export async function projectPullRequestAction(root: string, value: unknown): Pr
 		case "react":
 			if (!view.comments.some(comment => comment.id === action.subjectId)) throw new Error("This comment is no longer on the pull request.");
 			args = [...graphql(action.reacted ? "mutation($id:ID!,$content:ReactionContent!){addReaction(input:{subjectId:$id,content:$content}){reaction{content}}}" : "mutation($id:ID!,$content:ReactionContent!){removeReaction(input:{subjectId:$id,content:$content}){reaction{content}}}"), "-f", `id=${action.subjectId}`, "-f", `content=${action.content}`]; break;
+		case "label":
+			if (action.applied) { args = ["api", "--hostname", "github.com", "--method", "POST", `repos/${view.repository}/issues/${view.number}/labels`, "-f", `labels[]=${action.name}`]; break; }
+			if (!view.labels.some(label => label.name === action.name)) throw new Error(`${action.name} is no longer on this pull request.`);
+			args = ["api", "--hostname", "github.com", "--method", "DELETE", `repos/${view.repository}/issues/${view.number}/labels/${encodeURIComponent(action.name)}`]; break;
+		case "reviewer":
+			if (action.requested && view.authorActor?.login.toLowerCase() === action.login.toLowerCase()) throw new Error("The author cannot review their own pull request.");
+			args = ["api", "--hostname", "github.com", "--method", action.requested ? "POST" : "DELETE", `repos/${view.repository}/pulls/${view.number}/requested_reviewers`, "-f", `reviewers[]=${action.login}`]; break;
 		case "update-branch":
 			if (view.state !== "OPEN") throw new Error("Only an open pull request's branch can be updated.");
 			args = ["api", "--hostname", "github.com", "--method", "PUT", `${base}/update-branch`, "-f", `expected_head_sha=${view.headOid}`]; break;
@@ -220,4 +227,29 @@ export async function projectPullRequestAction(root: string, value: unknown): Pr
 	try { await runGh(root, args, input); }
 	catch (reason) { throw new Error(ghFailure((reason as { stderr?: string }).stderr, failures[action.type]), { cause: reason }); }
 	return await projectPullRequestView(root, request.number);
+}
+
+const candidateQuery = `query PhaseoPullRequestCandidates($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){labels(first:100,orderBy:{field:NAME,direction:ASC}){totalCount nodes{name color description}} assignableUsers(first:100){totalCount nodes{login name avatarUrl}} pullRequest(number:$number){author{login} labels(first:100){nodes{name}} reviewRequests(first:100){nodes{requestedReviewer{... on User{login}}}}}}}`;
+/** The labels a repository offers or the people who may be asked to review, marked where the pull request already has them. */
+export function parsePullRequestCandidates(kind: "labels" | "reviewers", value: unknown): PullRequestCandidates {
+	const response = item(value), repo = item(item(response.data).repository), pull = item(repo.pullRequest);
+	if ((Array.isArray(response.errors) && response.errors.length) || !repo.pullRequest) throw new Error("GitHub returned an incomplete list.");
+	if (kind === "labels") {
+		const applied = new Set(nodes(pull.labels).map(value => text(item(value).name, 200)));
+		const candidates = nodes(repo.labels).flatMap(value => { const label = item(value), name = text(label.name, 200), color = text(label.color, 6), detail = text(label.description, 400); return name ? [{ key: name, label: name, ...(detail ? { detail } : {}), ...(color && /^[0-9a-f]{6}$/i.test(color) ? { color } : {}), applied: applied.has(name) }] : []; });
+		return { kind, candidates, truncated: total(repo.labels, candidates.length) > candidates.length };
+	}
+	const author = text(item(pull.author).login, 256)?.toLowerCase(), requested = new Set(nodes(pull.reviewRequests).map(value => text(item(item(value).requestedReviewer).login, 256)?.toLowerCase()));
+	// GitHub refuses a review request to the author, so they are not offered.
+	const candidates = nodes(repo.assignableUsers).flatMap(value => { const user = item(value), login = text(user.login, 256), name = text(user.name, 256), avatarUrl = link(user.avatarUrl); return login && login.toLowerCase() !== author ? [{ key: login, label: login, ...(name ? { detail: name } : {}), ...(avatarUrl ? { avatarUrl } : {}), applied: requested.has(login.toLowerCase()) }] : []; });
+	return { kind, candidates, truncated: total(repo.assignableUsers, candidates.length) > nodes(repo.assignableUsers).length };
+}
+export async function projectPullRequestCandidates(root: string, value: unknown): Promise<PullRequestCandidates> {
+	const query = validatePullRequestCandidatesQuery(value), repository = await repositoryOf(root), [owner, name] = repository.split("/");
+	let output: string;
+	try { output = await runGh(root, ["api", "graphql", "--hostname", "github.com", "-f", `query=${candidateQuery}`, "-F", `owner=${owner}`, "-F", `name=${name}`, "-F", `number=${query.number}`]); }
+	catch (reason) { throw new Error(ghFailure((reason as { stderr?: string }).stderr, query.kind === "labels" ? "The labels could not be read." : "The people who can review could not be read."), { cause: reason }); }
+	let parsed: unknown;
+	try { parsed = JSON.parse(output); } catch { throw new Error("GitHub returned an unreadable list."); }
+	return parsePullRequestCandidates(query.kind, parsed);
 }
