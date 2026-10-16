@@ -12,7 +12,7 @@ Usa Phaseo para llamar a modelos de varios proveedores mediante una API, control
 curl https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"model": "openai/gpt-6-astra", "input": "Hello"}'
+  -d '{"model": "phaseo/free", "input": "Hello"}'
 ```
 
 ```typescript TypeScript
@@ -21,7 +21,7 @@ import Phaseo, { outputText } from "@phaseo/sdk";
 const client = new Phaseo(); // reads PHASEO_API_KEY
 
 const response = await client.generateResponse({
-  model: "openai/gpt-6-astra",
+  model: "phaseo/free",
   input: "Hello",
 });
 
@@ -33,7 +33,7 @@ from phaseo import Phaseo
 
 client = Phaseo()  # reads PHASEO_API_KEY
 
-response = client.responses.create({"model": "openai/gpt-6-astra", "input": "Hello"})
+response = client.responses.create({"model": "phaseo/free", "input": "Hello"})
 
 print(response.output_text)
 ```
