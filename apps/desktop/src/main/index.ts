@@ -68,6 +68,7 @@ import { nativeAccountStatus } from "./accountStatus";
 import { checkAcpAgent } from "./acpAgentStatus";
 import { validateMcpCommand } from "../shared/mcp";
 import { validatePreferences } from "../shared/preferences";
+import { validateProjectUpdate } from "../shared/projectSettings";
 import { TaskNotifications } from "./taskNotifications";
 import { MissionService } from "./missionService";
 import { validateMissionCommand } from "../shared/missions";
@@ -436,6 +437,10 @@ ipcMain.handle("workspace:choose-project", async event => {
 	if (!result.canceled && result.filePaths[0]) workspaceRuntime.store.addProject(result.filePaths[0]);
 	const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state); return state;
 });
+ipcMain.handle("workspace:update-project", (event, value: unknown) => {
+	if (!senderWindow(event) || shutdownStarted) throw new Error("Invalid project request.");
+	return workspaceRuntime.updateProject(validateProjectUpdate(value));
+});
 ipcMain.handle("workspace:paste-image", async (event, id: unknown, name: unknown, data: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string" || typeof name !== "string" || name.length > 200 || !(data instanceof Uint8Array) || data.byteLength > 10 * 1024 * 1024 || shutdownStarted) throw new Error("Invalid pasted image.");
 	if (workspaceRuntime.store.getTask(id).archived) throw new Error("Restore this chat before attaching images.");
@@ -710,6 +715,8 @@ app.whenReady().then(() => {
 	terminalService = new TerminalService(workspaceRuntime.store, path.join(workspaceDirectory, "terminals"));
 	workspaceRuntime.onTerminalAuth = (request, signal) => terminalService.authenticate(request, signal);
 	workspaceRuntime.getTerminals = () => terminalService.get();
+	workspaceRuntime.closeIdleTerminals = taskId => terminalService.closeIdle(taskId);
+	workspaceRuntime.runProjectScript = (projectId, script) => { terminalService.runScript(projectId, script); };
 	terminalService.onEvent = event => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:terminal-event", event); };
 	workspaceRuntime.onChange = state => {
 		missionService.observe(state);
