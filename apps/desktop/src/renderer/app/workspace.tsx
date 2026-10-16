@@ -40,7 +40,7 @@ type WorkspaceState = {
 	/** The scheduled tasks page, opened from the top of the sidebar. */
 	scheduled: boolean;
 	openScheduled: () => void;
-	/** The Pull requests page: every project's pull requests, opened from the sidebar under Scheduled tasks. */
+	/** The Pull requests page: every project's pull requests, opened from the Code sidebar under Scheduled tasks. Pull requests belong to projects, so it opens in Code mode. */
 	pullRequestsPage: boolean;
 	openPullRequests: () => void;
 	openSettings: (page?: SettingsPage) => void;
@@ -140,7 +140,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 	}, [overview.tasks, setCompareId, setSelectedId, setModeState, setSettings]);
 	const openCompare = useCallback((id?: string) => { setSelectedId(undefined); setCompareId(id); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); if (id) setModeState("chat"); }, [setSelectedId, setCompareId, setModeState, setSettings]);
 	const openScheduled = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setPullRequestsPage(false); setScheduled(true); }, [setSelectedId, setCompareId, setSettings]);
-	const openPullRequests = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setScheduled(false); setPullRequestsPage(true); }, [setSelectedId, setCompareId, setSettings]);
+	const openPullRequests = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setScheduled(false); setPullRequestsPage(true); setModeState("code"); }, [setSelectedId, setCompareId, setModeState, setSettings]);
 	const setMode = useCallback((next: WorkspaceMode) => {
 		setModeState(next); setSettings(undefined); setScheduled(false); setPullRequestsPage(false);
 		const task = selectedId ? overview.tasks.find(value => value.id === selectedId) : undefined;

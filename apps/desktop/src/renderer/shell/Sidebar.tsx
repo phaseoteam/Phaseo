@@ -171,7 +171,7 @@ function ScheduledTasksLink() {
 	</button>;
 }
 
-/** T3 puts Pull requests among the sidebar's page links, beside Scheduled tasks. */
+/** T3 puts Pull requests among the sidebar's page links, beside Scheduled tasks. Chat mode has no projects, so only Code shows it. */
 function PullRequestsLink() {
 	const { pullRequestsPage, openPullRequests } = useWorkspace();
 	return <button type="button" aria-current={pullRequestsPage ? "page" : undefined} onClick={openPullRequests}
@@ -217,7 +217,7 @@ export function Sidebar() {
 				<Plus className="size-4" />New chat<span className={cn("ml-auto text-[10.5px] font-medium", fresh ? "text-muted-foreground" : "text-primary-foreground/70")}>{shortcut("chat.new")}</span>
 			</button>
 			<ScheduledTasksLink />
-			<PullRequestsLink />
+			{mode === "code" && <PullRequestsLink />}
 		</div>
 		{mode === "chat"
 			? <ScrollArea className="min-h-0 flex-1"><nav className="pb-3"><ChatList /></nav></ScrollArea>

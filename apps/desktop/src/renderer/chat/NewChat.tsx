@@ -163,7 +163,7 @@ export function NewChat() {
 		</DropdownMenuContent>
 	</DropdownMenu>;
 
-	return <ScrollArea className="h-full" viewportClassName="[&>div]:min-h-full [&>div]:flex [&>div]:flex-col"><div className="flex min-h-full flex-col items-center px-8">
+	return <ScrollArea className="h-full" viewportClassName="[&>div]:min-h-full [&>div]:flex [&>div]:flex-col"><div className="flex flex-1 flex-col items-center px-8">
 		<div className="flex w-full max-w-[720px] flex-1 flex-col justify-center gap-6 py-12">
 			<div className="text-center">
 				<h1 className="text-[28px] font-bold tracking-tight">{code ? "What should we build?" : greeting()}</h1>
