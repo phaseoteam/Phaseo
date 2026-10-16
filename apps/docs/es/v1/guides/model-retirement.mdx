@@ -1,0 +1,155 @@
+---
+title: "Obsolescencia y retirada de modelos"
+description: "Recibe un aviso antes de que se retire un modelo que usas, cambia a un sustituto y, si quieres, enruta sus solicitudes automáticamente."
+icon: "calendar-clock"
+---
+
+Los modelos quedan obsoletos y se retiran a medida que los laboratorios publican versiones más nuevas y los proveedores dejan de servir las anteriores. Phaseo te avisa cuando un modelo que usa tu espacio de trabajo está a punto de desaparecer, lo sigue sirviendo mientras algún proveedor lo sirva y puede enrutar sus solicitudes a un sustituto cuando ya nadie lo sirva.
+
+<span id="how-a-model-is-retired"></span>
+
+## Cómo se retira un modelo
+
+| Fase | Qué significa | Qué pasa con tus solicitudes |
+| --- | --- | --- |
+| Obsoleto | El laboratorio o el proveedor ha anunciado que el modelo se retirará. Se muestra una fecha de retirada cuando se conoce. | Se atienden como de costumbre. |
+| Retirado | La fecha de retirada ya ha pasado. | Se siguen atendiendo mientras algún proveedor sirva el modelo. |
+| Ya no se sirve | Ningún proveedor sirve el modelo. | Se rechazan con `410 model_retired`, salvo que la [sustitución automática](#route-requests-to-a-replacement-automatically) esté activada. |
+
+La página de un modelo muestra su estado, sus fechas de obsolescencia y retirada y el sustituto sugerido, si lo hay.
+
+<span id="get-notice-before-a-model-is-retired"></span>
+
+## Recibe un aviso antes de que se retire un modelo
+
+Phaseo tiene en cuenta los ID de modelo que tu espacio de trabajo envía en las solicitudes, por lo que un modelo cuenta como usado aunque al final un modelo alternativo haya atendido la solicitud.
+
+- **Aviso en el panel.** Los miembros con sesión iniciada ven un aviso en la parte superior del panel cuando un modelo que el espacio de trabajo solicitó en los últimos 90 días está obsoleto o se retirará en un plazo de 90 días. El aviso enlaza a **Ajustes -> Uso -> Alertas**, donde aparecen todos los modelos afectados con sus fechas, su último uso y el sustituto sugerido. Si cierras el aviso, se oculta hasta que cambien las fechas del modelo.
+- **Correo electrónico y destinos.** En **Ajustes -> Notificaciones**, activa **Alertas de obsolescencia del modelo**. Cuando un modelo que el espacio de trabajo solicitó en los últimos 30 días queda obsoleto, se envía un único correo electrónico al propietario del espacio de trabajo para ese modelo. Activa **Enviar también un correo a los administradores** para avisar también a los administradores y elige [destinos de notificación](./workspace-notifications.mdx) para enviar la alerta a Slack, Discord, Teams o un webhook.
+
+Las alertas se envían una vez por modelo, no como cuenta atrás, así que planifica el cambio cuando llegue la primera.
+
+<span id="what-happens-when-no-provider-serves-a-model"></span>
+
+## Qué ocurre cuando ningún proveedor sirve un modelo
+
+Un modelo retirado sigue funcionando mientras al menos un proveedor lo sirva. Cuando ya no lo sirve ninguno, las solicitudes fallan con `410`:
+
+```json
+{
+  "error": "model_retired",
+  "reason": "model_retired_without_providers",
+  "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+  "retired_at": "2026-09-30T00:00:00Z",
+  "replacement_model": "lab/new-model"
+}
+```
+
+`replacement_model` es el sustituto sugerido, o `null` si no hay ninguno. Reintentar con el mismo modelo no funcionará. Consulta [Errores y depuración](../api-reference/errors.mdx#when-a-model-is-retired) para ver el formato completo del error.
+
+<span id="move-to-a-replacement"></span>
+
+## Cambia a un sustituto
+
+1. Abre **Ajustes -> Uso -> Alertas** para ver qué modelos están afectados y cuándo se usaron por última vez.
+2. Revisa el sustituto sugerido en la página del modelo. Compara su precio, su ventana de contexto y los endpoints y parámetros compatibles con los del modelo que usas ahora.
+3. Prueba el sustituto con solicitudes representativas. Los modelos más nuevos pueden responder de forma distinta al mismo prompt.
+4. Cambia el ID del modelo en tu código, tus preajustes y tus rutas dinámicas.
+
+Mientras migras, puedes mantener el modelo antiguo en primer lugar e indicar el sustituto como [modelo alternativo a nivel de solicitud](./routing-and-fallbacks.mdx#request-level-model-fallbacks). Cuando ningún proveedor sirve el modelo antiguo, Phaseo pasa directamente al siguiente modelo de `models`:
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "lab/old-model",
+    "models": ["lab/new-model"],
+    "messages": [{ "role": "user", "content": "Hello" }]
+  }'
+```
+
+El campo `model` de la respuesta indica qué modelo atendió la solicitud.
+
+<span id="route-requests-to-a-replacement-automatically"></span>
+
+## Enruta las solicitudes a un sustituto automáticamente
+
+Un espacio de trabajo puede optar por enviar a un sustituto las solicitudes de un modelo que ya no se sirve, en lugar de hacerlas fallar. Esta opción está desactivada de forma predeterminada. Los propietarios y administradores la activan en **Ajustes -> Enrutamiento -> Enrutamiento de modelos retirados** o con `model_successor_redirect_enabled` en la [API de configuración del espacio de trabajo](../api-reference/endpoint/workspace-settings-update.mdx).
+
+Cuando está activada, una solicitud se envía a un sustituto solo si se cumplen todas estas condiciones:
+
+- Ningún proveedor ha servido el modelo solicitado durante 72 horas. Hasta entonces, la solicitud falla como de costumbre.
+- Phaseo aprobó el sustituto, o tu espacio de trabajo lo eligió. Phaseo sigue hasta tres sustitutos aprobados consecutivos.
+- El modelo solicitado no es gratuito mientras el sustituto es de pago. Un modelo gratuito nunca se sustituye por uno de pago.
+- El sustituto supera las mismas comprobaciones que cualquier solicitud: restricciones de modelo del espacio de trabajo, restricciones de claves, guardrails y compatibilidad con el endpoint. Un sustituto nunca se añade por ti a una lista de permitidos.
+- La solicitud indica un modelo directamente. Las solicitudes a `phaseo/auto` o a un ID de modelo con proveedor no se redirigen.
+
+<span id="choose-a-price-policy"></span>
+
+### Elige una política de precios
+
+La política de precios del espacio de trabajo decide si un sustituto más caro puede atender la solicitud. Se comparan los precios que cobran ambos modelos.
+
+| `model_successor_price_policy` | Comportamiento |
+| --- | --- |
+| `never` (predeterminado) | Usa el sustituto solo si no cuesta más. |
+| `limit` | Permite hasta `model_successor_max_price_increase_percent` más (de 0 a 1000). |
+| `any` | Permite cualquier precio, incluidos los sustitutos cuyo precio no se puede comparar. |
+
+Por ejemplo, para permitir sustitutos que cuesten hasta un 20 % más:
+
+```bash
+curl https://api.phaseo.app/v1/settings \
+  -X PATCH \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model_successor_redirect_enabled": true,
+    "model_successor_price_policy": "limit",
+    "model_successor_max_price_increase_percent": 20
+  }'
+```
+
+<span id="set-your-own-replacements"></span>
+
+### Define tus propios sustitutos
+
+En **Tus propios sustitutos**, dentro de la misma sección de ajustes, los propietarios y administradores pueden elegir el sustituto de un modelo concreto, o elegir **No redirigir nunca** para que las solicitudes de ese modelo sigan fallando. Tu propio sustituto se usa sea cual sea su precio, pero un modelo gratuito sigue sin sustituirse nunca por uno de pago. Tus propios sustitutos solo se definen en el panel.
+
+Los cambios en estos ajustes se aplican en aproximadamente un minuto.
+
+<span id="replacements-and-request-level-fallbacks"></span>
+
+### Sustitutos y modelos alternativos a nivel de solicitud
+
+Tu propia lista `models` tiene prioridad. Cuando ningún proveedor sirve el modelo principal, Phaseo prueba la siguiente entrada de `models` en lugar de un sustituto. Solo se considera un sustituto para el último modelo de la lista. En los modelos alternativos de una ruta dinámica, también solo se puede sustituir el último.
+
+<span id="tell-when-a-request-was-redirected"></span>
+
+## Cómo saber si una solicitud se redirigió
+
+El campo `model` de la respuesta y tus registros de solicitudes muestran el modelo que atendió la solicitud, y la solicitud se factura al precio de ese modelo. Las respuestas redirigidas también incluyen dos encabezados:
+
+| Encabezado | Ejemplo |
+| --- | --- |
+| `X-Phaseo-Requested-Model` | `lab/old-model` |
+| `X-Phaseo-Model-Substitution` | `reason=unserved; from=lab/old-model; to=lab/new-model` |
+
+La primera vez que un sustituto responde correctamente a las solicitudes del espacio de trabajo para un modelo, se envía un único correo electrónico al propietario del espacio de trabajo. Para enviar este aviso también a tu equipo, elige destinos para los **Avisos de modelo sustituto** en [Notificaciones del espacio de trabajo](./workspace-notifications.mdx#enable-product-alerts).
+
+<span id="troubleshooting"></span>
+
+## Solución de problemas
+
+**Las solicitudes siguen fallando con `410` después de activar la sustitución automática.**
+Comprueba que:
+
+- el modelo lleva al menos 72 horas sin servirse;
+- el modelo tiene un sustituto aprobado, o has definido uno propio;
+- el sustituto no cuesta más de lo que permite tu política de precios;
+- el modelo no es gratuito con un sustituto de pago;
+- el sustituto está permitido por las restricciones de modelo de tu espacio de trabajo y de tu clave;
+- la solicitud no usa un ID de modelo con proveedor ni `phaseo/auto`.
+
+**Ha respondido un modelo distinto del que pedí.** Busca el encabezado `X-Phaseo-Model-Substitution`. Para evitar que se sustituya un modelo, añádelo con **No redirigir nunca** en **Tus propios sustitutos**, o desactiva la sustitución automática.

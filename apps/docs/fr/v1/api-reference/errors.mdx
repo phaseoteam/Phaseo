@@ -215,7 +215,7 @@ Un modèle retiré reste servi tant qu’un fournisseur le sert. Dès qu’aucun
 - `retired_at` : la date de retrait du modèle, ou `null` si aucune date n’est enregistrée.
 - `replacement_model` : le remplaçant suggéré, ou `null` s’il n’y en a pas.
 
-Réessayer ne sert à rien. Mettez à jour l’identifiant du modèle dans votre requête. Pour que ces requêtes continuent d’être traitées pendant votre migration, ajoutez le remplaçant à la liste `models` de votre requête ou activez le routage des modèles retirés pour l’espace de travail. Consultez [Modèles retirés](../guides/routing-and-fallbacks.mdx#retired-models).
+Réessayer ne sert à rien. Mettez à jour l’identifiant du modèle dans votre requête. Pour que ces requêtes continuent d’être traitées pendant votre migration, ajoutez le remplaçant à la liste `models` de votre requête ou activez le routage des modèles retirés pour l’espace de travail. Consultez [Dépréciation et retrait des modèles](../guides/model-retirement.mdx).
 
 ## Mode de débogage facultatif
 

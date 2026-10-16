@@ -274,46 +274,10 @@ Saiba mais:
 - [Tratamento de erros](../api-reference/errors.mdx)
 
 <span id="retired-models"></span>
+
 ## Modelos aposentados
 
-Um modelo marcado como aposentado continua sendo atendido enquanto algum provedor o atender. Quando nenhum provedor o atende mais, as solicitações para ele falham com `410 model_retired`, e o erro indica o substituto sugerido em `replacement_model`. Consulte [Erros e depuração](../api-reference/errors.mdx#when-a-model-is-retired).
-
-### Encaminhe solicitações para um substituto
-
-Um espaço de trabalho pode optar por enviar essas solicitações a um modelo substituto. Isso fica desativado por padrão. Proprietários e administradores ativam a opção em **Painel -> Configurações -> Roteamento -> Roteamento de modelos aposentados** ou com `model_successor_redirect_enabled` na [API de configurações do espaço de trabalho](../api-reference/endpoint/workspace-settings-update.mdx).
-
-Quando a opção está ativada, uma solicitação só é enviada a um substituto se todas estas condições forem verdadeiras:
-
-- Nenhum provedor atende ao modelo solicitado há 72 horas. Até lá, a solicitação falha normalmente.
-- O substituto foi aprovado pela Phaseo ou escolhido pelo seu espaço de trabalho. A Phaseo segue até três substitutos aprovados em sequência.
-- Não se trata de um modelo solicitado gratuito com um substituto pago. Um modelo gratuito nunca é substituído por um pago.
-- O substituto passa pelas mesmas verificações de qualquer solicitação: restrições de modelos do espaço de trabalho, restrições de chaves, guardrails e suporte ao endpoint. A Phaseo nunca adiciona um substituto a uma lista de permissões por você.
-- A solicitação indica um modelo diretamente. Solicitações para `phaseo/auto` ou para um ID de modelo qualificado por provedor não são redirecionadas.
-
-A política de preços do espaço de trabalho decide se um substituto mais caro pode atender à solicitação. A comparação usa os preços cobrados pelos dois modelos.
-
-| `model_successor_price_policy` | Comportamento |
-| --- | --- |
-| `never` (padrão) | Usa o substituto somente se ele não custar mais. |
-| `limit` | Permite até `model_successor_max_price_increase_percent` a mais (de 0 a 1000). |
-| `any` | Permite qualquer preço, incluindo substitutos cujo preço não pode ser comparado. |
-
-Proprietários e administradores também podem definir no painel o substituto próprio do espaço de trabalho para um modelo ou escolher **Nunca redirecionar** para que as solicitações desse modelo continuem falhando. O substituto próprio do espaço de trabalho é usado qualquer que seja o preço, mas um modelo gratuito continua nunca sendo substituído por um pago. As alterações entram em vigor em cerca de um minuto.
-
-### Como saber se uma solicitação foi redirecionada
-
-O campo `model` da resposta e os seus logs de solicitações mostram o modelo que atendeu à solicitação, e a solicitação é cobrada pelo preço desse modelo. Respostas redirecionadas também incluem dois cabeçalhos:
-
-| Cabeçalho | Exemplo |
-| --- | --- |
-| `X-Phaseo-Requested-Model` | `lab/old-model` |
-| `X-Phaseo-Model-Substitution` | `reason=unserved; from=lab/old-model; to=lab/new-model` |
-
-Na primeira vez que um substituto responde com sucesso às solicitações do espaço de trabalho para um modelo, o proprietário do espaço de trabalho recebe um único e-mail. Você também pode enviar esse aviso a outros destinos; consulte [Notificações do espaço de trabalho](./workspace-notifications.mdx).
-
-### Substitutos e alternativas no nível da solicitação
-
-Sua própria lista `models` vem primeiro. Quando nenhum provedor atende ao modelo principal, a Phaseo tenta a próxima entrada de `models` em vez de um substituto. Um substituto só é considerado para o último modelo da lista. Nos modelos alternativos de uma rota dinâmica, também só o último pode ser substituído.
+Um modelo aposentado continua sendo atendido enquanto algum provedor o atender. Quando nenhum o atende mais, as solicitações falham com `410 model_retired`, a menos que o espaço de trabalho tenha ativado o roteamento de modelos aposentados para enviá-las a um substituto. Sua própria lista `models` é sempre tentada antes de um substituto. Consulte [Descontinuação e aposentadoria de modelos](./model-retirement.mdx).
 
 ## Afinidade baseada em cache e sessão
 
@@ -363,5 +327,6 @@ Em cargas de produção, registre IDs de solicitação, códigos de status da re
 ## Guias relacionados
 
 - [Predefinições](./presets.mdx)
+- [Descontinuação e aposentadoria de modelos](./model-retirement.mdx)
 - [Matriz de paridade de recursos](../migration-guides/feature-parity-matrix.mdx)
 

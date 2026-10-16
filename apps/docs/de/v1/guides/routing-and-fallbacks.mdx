@@ -277,44 +277,7 @@ Weitere Informationen:
 
 ## Eingestellte Modelle
 
-Ein als eingestellt markiertes Modell wird weiterhin bereitgestellt, solange ein Anbieter es bereitstellt. Sobald kein Anbieter es mehr bereitstellt, schlagen Anfragen dafür mit `410 model_retired` fehl, und der Fehler nennt das vorgeschlagene Ersatzmodell in `replacement_model`. Siehe [Fehler und Debugging](../api-reference/errors.mdx#when-a-model-is-retired).
-
-### Anfragen an ein Ersatzmodell weiterleiten
-
-Ein Workspace kann festlegen, dass diese Anfragen stattdessen an ein Ersatzmodell gesendet werden. Das ist standardmäßig deaktiviert. Inhaber und Admins aktivieren es unter **Dashboard -> Einstellungen -> Routing -> Routing für eingestellte Modelle** oder mit `model_successor_redirect_enabled` in der [Workspace-Einstellungs-API](../api-reference/endpoint/workspace-settings-update.mdx).
-
-Wenn es aktiviert ist, wird eine Anfrage nur dann an ein Ersatzmodell gesendet, wenn alle folgenden Bedingungen erfüllt sind:
-
-- Seit 72 Stunden hat kein Anbieter das angeforderte Modell bereitgestellt. Bis dahin schlägt die Anfrage wie gewohnt fehl.
-- Das Ersatzmodell wurde von Phaseo freigegeben, oder dein Workspace hat es ausgewählt. Phaseo folgt bis zu drei freigegebenen Ersatzmodellen hintereinander.
-- Das angeforderte Modell ist nicht kostenlos, während das Ersatzmodell kostenpflichtig ist. Ein kostenloses Modell wird nie durch ein kostenpflichtiges ersetzt.
-- Das Ersatzmodell besteht dieselben Prüfungen wie jede Anfrage: Workspace-Modellbeschränkungen, Schlüsselbeschränkungen, Guardrails und Endpunktunterstützung. Ein Ersatzmodell wird nie automatisch für dich zu einer Allowlist hinzugefügt.
-- Die Anfrage nennt ein Modell direkt. Anfragen für `phaseo/auto` oder eine anbieterqualifizierte Modell-ID werden nicht umgeleitet.
-
-Die Preisrichtlinie des Workspace entscheidet, ob ein teureres Ersatzmodell die Anfrage bedienen darf. Verglichen werden die Preise, die beide Modelle berechnen.
-
-| `model_successor_price_policy` | Verhalten |
-| --- | --- |
-| `never` (Standard) | Das Ersatzmodell nur verwenden, wenn es nicht mehr kostet. |
-| `limit` | Bis zu `model_successor_max_price_increase_percent` mehr erlauben (0 bis 1000). |
-| `any` | Jeden Preis erlauben, auch für Ersatzmodelle, deren Preis nicht verglichen werden kann. |
-
-Inhaber und Admins können im Dashboard außerdem ein eigenes Ersatzmodell des Workspace für ein Modell festlegen oder **Nie weiterleiten** wählen, damit Anfragen für dieses Modell weiterhin fehlschlagen. Ein eigenes Ersatzmodell des Workspace wird unabhängig vom Preis verwendet, ein kostenloses Modell wird aber trotzdem nie durch ein kostenpflichtiges ersetzt. Änderungen werden in etwa einer Minute wirksam.
-
-### So erkennst du, dass eine Anfrage umgeleitet wurde
-
-Das Feld `model` der Antwort und deine Anfrageprotokolle zeigen das Modell, das die Anfrage bedient hat, und die Anfrage wird zum Preis dieses Modells abgerechnet. Umgeleitete Antworten enthalten außerdem zwei Header:
-
-| Header | Beispiel |
-| --- | --- |
-| `X-Phaseo-Requested-Model` | `lab/old-model` |
-| `X-Phaseo-Model-Substitution` | `reason=unserved; from=lab/old-model; to=lab/new-model` |
-
-Wenn ein Ersatzmodell zum ersten Mal erfolgreich die Anfragen des Workspace für ein Modell beantwortet, erhält der Workspace-Inhaber einmalig eine E-Mail. Du kannst diesen Hinweis auch an weitere Ziele senden; siehe [Workspace-Benachrichtigungen](./workspace-notifications.mdx).
-
-### Ersatzmodelle und Fallback-Modelle auf Anfrageebene
-
-Deine eigene `models`-Liste hat Vorrang. Wenn kein Anbieter das primäre Modell bereitstellt, versucht Phaseo statt eines Ersatzmodells den nächsten Eintrag in `models`. Ein Ersatzmodell wird nur für das letzte Modell der Liste berücksichtigt. Auch bei den Fallback-Modellen einer dynamischen Route kann nur das letzte ersetzt werden.
+Ein eingestelltes Modell wird weiterhin bereitgestellt, solange ein Anbieter es bereitstellt. Sobald keiner es mehr bereitstellt, schlagen Anfragen mit `410 model_retired` fehl, es sei denn, der Workspace hat das Routing für eingestellte Modelle aktiviert, um sie an ein Ersatzmodell zu senden. Deine eigene `models`-Liste wird immer vor einem Ersatzmodell versucht. Siehe [Modellabkündigung und -einstellung](./model-retirement.mdx).
 
 ## Cache- und sitzungsbewusste Affinität
 
@@ -364,5 +327,6 @@ Protokolliere in Produktionslasten Anfrage-IDs, Antwortstatuscodes und Modell-ID
 ## Zugehörige Anleitungen
 
 - [Voreinstellungen](./presets.mdx)
+- [Modellabkündigung und -einstellung](./model-retirement.mdx)
 - [Funktionsvergleichsmatrix](../migration-guides/feature-parity-matrix.mdx)
 

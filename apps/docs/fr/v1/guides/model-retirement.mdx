@@ -1,0 +1,155 @@
+---
+title: "Dépréciation et retrait des modèles"
+description: "Soyez averti avant le retrait d’un modèle que vous utilisez, passez à un remplaçant et, si vous le souhaitez, routez ses requêtes automatiquement."
+icon: "calendar-clock"
+---
+
+Les modèles sont dépréciés puis retirés à mesure que les laboratoires publient des versions plus récentes et que les fournisseurs cessent de servir les anciennes. Phaseo vous avertit lorsqu’un modèle utilisé par votre espace de travail est en voie de disparition, continue de le servir tant qu’un fournisseur le sert et peut router ses requêtes vers un remplaçant lorsque plus personne ne le sert.
+
+<span id="how-a-model-is-retired"></span>
+
+## Comment un modèle est retiré
+
+| Étape | Signification | Ce qu’il advient de vos requêtes |
+| --- | --- | --- |
+| Déprécié | Le laboratoire ou le fournisseur a annoncé que le modèle sera retiré. Une date de retrait est affichée lorsqu’elle est connue. | Servies normalement. |
+| Retiré | La date de retrait est passée. | Toujours servies tant qu’un fournisseur sert le modèle. |
+| Plus servi | Aucun fournisseur ne sert le modèle. | Rejetées avec `410 model_retired`, sauf si le [remplacement automatique](#route-requests-to-a-replacement-automatically) est activé. |
+
+La page d’un modèle indique son statut, ses dates de dépréciation et de retrait, ainsi que le remplaçant suggéré lorsqu’il en existe un.
+
+<span id="get-notice-before-a-model-is-retired"></span>
+
+## Être averti avant le retrait d’un modèle
+
+Phaseo examine les identifiants de modèle que votre espace de travail envoie dans ses requêtes : un modèle compte donc comme utilisé même si c’est finalement un modèle de repli qui a traité la requête.
+
+- **Avis dans le tableau de bord.** Les membres connectés voient un avis en haut du tableau de bord lorsqu’un modèle demandé par l’espace de travail au cours des 90 derniers jours est déprécié ou sera retiré dans les 90 jours. Il renvoie vers **Paramètres -> Utilisation -> Alertes**, qui liste chaque modèle concerné avec ses dates, sa dernière utilisation et son remplaçant suggéré. Fermer l’avis le masque jusqu’à ce que les dates du modèle changent.
+- **E-mail et destinations.** Dans **Paramètres -> Notifications**, activez **Alertes de dépréciation de modèle**. Lorsqu’un modèle demandé par l’espace de travail au cours des 30 derniers jours est déprécié, le propriétaire de l’espace de travail reçoit un e-mail, une seule fois pour ce modèle. Activez **Envoyer aussi un e-mail aux administrateurs** pour prévenir également les administrateurs, et choisissez des [destinations de notification](./workspace-notifications.mdx) pour envoyer l’alerte vers Slack, Discord, Teams ou un webhook.
+
+Les alertes sont envoyées une fois par modèle, et non sous forme de compte à rebours : planifiez donc la migration dès réception de la première.
+
+<span id="what-happens-when-no-provider-serves-a-model"></span>
+
+## Ce qui se passe lorsqu’aucun fournisseur ne sert un modèle
+
+Un modèle retiré continue de fonctionner tant qu’au moins un fournisseur le sert. Dès qu’aucun ne le sert, les requêtes échouent avec `410` :
+
+```json
+{
+  "error": "model_retired",
+  "reason": "model_retired_without_providers",
+  "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+  "retired_at": "2026-09-30T00:00:00Z",
+  "replacement_model": "lab/new-model"
+}
+```
+
+`replacement_model` est le remplaçant suggéré, ou `null` s’il n’y en a pas. Réessayer avec le même modèle ne réussira pas. Consultez [Erreurs et débogage](../api-reference/errors.mdx#when-a-model-is-retired) pour le format complet de l’erreur.
+
+<span id="move-to-a-replacement"></span>
+
+## Passer à un remplaçant
+
+1. Ouvrez **Paramètres -> Utilisation -> Alertes** pour voir quels modèles sont concernés et quand ils ont été utilisés pour la dernière fois.
+2. Vérifiez le remplaçant suggéré sur la page du modèle. Comparez son prix, sa fenêtre de contexte, ainsi que les points de terminaison et paramètres pris en charge, avec ceux du modèle que vous utilisez actuellement.
+3. Testez le remplaçant avec des requêtes représentatives. Les modèles plus récents peuvent répondre différemment au même prompt.
+4. Modifiez l’identifiant du modèle dans votre code, vos préréglages et vos routes dynamiques.
+
+Pendant la migration, vous pouvez garder l’ancien modèle en premier et indiquer le remplaçant comme [modèle de repli au niveau de la requête](./routing-and-fallbacks.mdx#request-level-model-fallbacks). Lorsqu’aucun fournisseur ne sert l’ancien modèle, Phaseo passe directement au modèle suivant de `models` :
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "lab/old-model",
+    "models": ["lab/new-model"],
+    "messages": [{ "role": "user", "content": "Hello" }]
+  }'
+```
+
+Le champ `model` de la réponse indique quel modèle a traité la requête.
+
+<span id="route-requests-to-a-replacement-automatically"></span>
+
+## Router automatiquement les requêtes vers un remplaçant
+
+Un espace de travail peut choisir d’envoyer à un remplaçant les requêtes destinées à un modèle qui n’est plus servi, plutôt que de les faire échouer. Cette option est désactivée par défaut. Les propriétaires et les administrateurs l’activent dans **Paramètres -> Routage -> Routage des modèles retirés**, ou avec `model_successor_redirect_enabled` dans l’[API des paramètres de l’espace de travail](../api-reference/endpoint/workspace-settings-update.mdx).
+
+Lorsqu’elle est activée, une requête n’est envoyée à un remplaçant que si toutes ces conditions sont réunies :
+
+- Aucun fournisseur n’a servi le modèle demandé depuis 72 heures. D’ici là, la requête échoue comme d’habitude.
+- Le remplaçant a été approuvé par Phaseo, ou votre espace de travail l’a choisi. Phaseo suit jusqu’à trois remplaçants approuvés à la suite.
+- Le modèle demandé n’est pas gratuit alors que le remplaçant est payant. Un modèle gratuit n’est jamais remplacé par un modèle payant.
+- Le remplaçant passe les mêmes vérifications que toute requête : restrictions de modèles de l’espace de travail, restrictions de clés, garde-fous et prise en charge du point de terminaison. Un remplaçant n’est jamais ajouté à une liste d’autorisation à votre place.
+- La requête désigne directement un modèle. Les requêtes vers `phaseo/auto` ou vers un identifiant de modèle qualifié par fournisseur ne sont pas redirigées.
+
+<span id="choose-a-price-policy"></span>
+
+### Choisir une politique de prix
+
+La politique de prix de l’espace de travail détermine si un remplaçant plus cher peut traiter la requête. La comparaison porte sur les prix facturés par les deux modèles.
+
+| `model_successor_price_policy` | Comportement |
+| --- | --- |
+| `never` (par défaut) | Utiliser le remplaçant uniquement s’il ne coûte pas plus cher. |
+| `limit` | Autoriser jusqu’à `model_successor_max_price_increase_percent` de plus (de 0 à 1000). |
+| `any` | Autoriser n’importe quel prix, y compris pour les remplaçants dont le prix ne peut pas être comparé. |
+
+Par exemple, pour autoriser les remplaçants qui coûtent jusqu’à 20 % de plus :
+
+```bash
+curl https://api.phaseo.app/v1/settings \
+  -X PATCH \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model_successor_redirect_enabled": true,
+    "model_successor_price_policy": "limit",
+    "model_successor_max_price_increase_percent": 20
+  }'
+```
+
+<span id="set-your-own-replacements"></span>
+
+### Définir vos propres remplaçants
+
+Sous **Vos propres remplaçants**, dans la même section des paramètres, les propriétaires et les administrateurs peuvent choisir le remplaçant d’un modèle précis, ou choisir **Ne jamais rediriger** pour que les requêtes de ce modèle continuent d’échouer. Votre propre remplaçant est utilisé quel que soit son prix, mais un modèle gratuit n’est toujours jamais remplacé par un modèle payant. Vos propres remplaçants se définissent uniquement dans le tableau de bord.
+
+Les modifications de ces paramètres prennent effet en une minute environ.
+
+<span id="replacements-and-request-level-fallbacks"></span>
+
+### Remplaçants et modèles de repli au niveau de la requête
+
+Votre propre liste `models` passe en premier. Lorsqu’aucun fournisseur ne sert le modèle principal, Phaseo essaie l’entrée suivante de `models` plutôt qu’un remplaçant. Un remplaçant n’est envisagé que pour le dernier modèle de la liste. De même, parmi les modèles de repli d’une route dynamique, seul le dernier peut être remplacé.
+
+<span id="tell-when-a-request-was-redirected"></span>
+
+## Savoir si une requête a été redirigée
+
+Le champ `model` de la réponse et vos journaux de requêtes indiquent le modèle qui a traité la requête, et celle-ci est facturée au prix de ce modèle. Les réponses redirigées incluent également deux en-têtes :
+
+| En-tête | Exemple |
+| --- | --- |
+| `X-Phaseo-Requested-Model` | `lab/old-model` |
+| `X-Phaseo-Model-Substitution` | `reason=unserved; from=lab/old-model; to=lab/new-model` |
+
+La première fois qu’un remplaçant répond avec succès aux requêtes de l’espace de travail pour un modèle, le propriétaire de l’espace de travail reçoit un e-mail, une seule fois. Pour envoyer aussi cet avis à votre équipe, choisissez des destinations pour les **Avis de modèle remplaçant** dans [Notifications de l’espace de travail](./workspace-notifications.mdx#enable-product-alerts).
+
+<span id="troubleshooting"></span>
+
+## Dépannage
+
+**Les requêtes échouent toujours avec `410` après l’activation du remplacement automatique.**
+Vérifiez que :
+
+- le modèle n’est plus servi depuis au moins 72 heures ;
+- le modèle a un remplaçant approuvé, ou vous en avez défini un vous-même ;
+- le remplaçant ne coûte pas plus que ce que permet votre politique de prix ;
+- le modèle n’est pas gratuit avec un remplaçant payant ;
+- le remplaçant est autorisé par les restrictions de modèles de votre espace de travail et de votre clé ;
+- la requête n’utilise pas un identifiant de modèle qualifié par fournisseur ni `phaseo/auto`.
+
+**Un autre modèle que celui demandé a répondu.** Recherchez l’en-tête `X-Phaseo-Model-Substitution`. Pour empêcher le remplacement d’un modèle, ajoutez-le avec **Ne jamais rediriger** sous **Vos propres remplaçants**, ou désactivez le remplacement automatique.
