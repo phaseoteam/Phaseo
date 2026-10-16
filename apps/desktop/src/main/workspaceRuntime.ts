@@ -717,19 +717,19 @@ export class WorkspaceRuntime {
 		const order = (key: string) => { if (!eventOrder.has(key)) eventOrder.set(key, timelineOrder++); return eventOrder.get(key)!; };
 		let activities: (AgentActivity & { append?: boolean })[] = [];
 		let flushTimer: ReturnType<typeof setTimeout> | undefined;
-		// A flush that costs more (a slow disk, many chats streaming) waits longer, so streaming leaves the main process free.
+		// A flush that costs more (a slow disk, many chats streaming, a long answer) waits longer, so streaming leaves the main process free.
 		let flushDelay = 40;
 		let streamError: unknown;
 		const flush = () => {
 			if (flushTimer) clearTimeout(flushTimer); flushTimer = undefined;
 			if (!deltas.size && !activities.length) return;
-			const started = performance.now();
+			const started = performance.now(); let rewritten = 0;
 			// Only this turn changes while it streams, so only this turn is read and written back.
 			const current = this.store.getTaskTail(id, message.id);
 			for (const [itemId, text] of deltas) {
 				const messageId = `${message.id}:${itemId}`;
 				const existing = current.messages.find(value => value.id === messageId);
-				if (existing) existing.text += text;
+				if (existing) { existing.text += text; rewritten += existing.text.length; }
 				else current.messages.push({ id: messageId, timelineOrder: order(`message:${itemId}`), text, role: "assistant", createdAt: new Date().toISOString() });
 			}
 			for (const activity of activities) {
@@ -740,7 +740,8 @@ export class WorkspaceRuntime {
 				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent, ...(activity.proposed ? { proposed: activity.proposed } : {}) });
 			}
 			this.store.saveTask(current); deltas.clear(); activities = []; this.broadcastSoon();
-			flushDelay = Math.min(1000, Math.max(40, Math.round((performance.now() - started) * 4)));
+			// Each flush rewrites the answer so far, so a long answer flushes less often: about a millisecond per 100 characters.
+			flushDelay = Math.min(1000, Math.max(40, Math.round((performance.now() - started) * 4), Math.round(rewritten / 100)));
 		};
 		const scheduleFlush = () => {
 			flushTimer ??= setTimeout(() => { try { flush(); } catch (error) { streamError = error; void adapter.cancel().catch(() => {}); } }, flushDelay);

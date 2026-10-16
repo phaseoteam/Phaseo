@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { appendFileSync, mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import type { DatabaseSync } from "node:sqlite";
 import { Worker } from "node:worker_threads";
 import { WorkspaceStore } from "./workspaceStore";
 import type { Task } from "../shared/workspace";
@@ -36,19 +36,15 @@ describe.skipIf(!enabled)("store under concurrent load", () => {
 		let opened: WorkspaceStore | undefined;
 		const report: string[] = [], time = new Map<string, number[]>(), record = (name: string, run: () => unknown) => { const started = performance.now(); const value = run(); (time.get(name) ?? time.set(name, []).get(name)!).push(performance.now() - started); return value; };
 		try {
-			// History written the way any earlier build left it: one row per chat with its whole conversation inside.
-			const seed = new DatabaseSync(filename);
-			seed.exec("PRAGMA journal_mode=WAL; CREATE TABLE tasks (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
-			const insert = seed.prepare("INSERT INTO tasks VALUES (?, ?)");
-			seed.exec("BEGIN");
-			for (let index = 0; index < smallChats; index++) insert.run(`small-${index}`, JSON.stringify(chat(`small-${index}`, 3 + index % 12, index % 3 === 0, 600 + index * 30)));
-			const long = Array.from({ length: streams }, (_, index) => `long-${index}`);
-			for (const [index, id] of long.entries()) insert.run(id, JSON.stringify(chat(id, longTurns, index % 2 === 0, index)));
-			seed.exec("COMMIT"); seed.close();
-			report.push(`history: ${smallChats + streams} chats, ${(statSync(filename).size / 1024 / 1024).toFixed(1)} MB; ${streams} long chats of ${longTurns} turns`);
-
+			// The history, saved through the store as the app saves it. The JSON size is what one-row-per-chat used to hold.
 			let store!: WorkspaceStore;
-			record("first open (upgrade)", () => { opened = store = new WorkspaceStore(filename); store.getOverview(); });
+			const long = Array.from({ length: streams }, (_, index) => `long-${index}`);
+			const seeded = [...Array.from({ length: smallChats }, (_, index) => chat(`small-${index}`, 3 + index % 12, index % 3 === 0, 600 + index * 30)), ...long.map((id, index) => chat(id, longTurns, index % 2 === 0, index))];
+			const json = seeded.reduce((sum, task) => sum + Buffer.byteLength(JSON.stringify(task)), 0);
+			record("seed", () => { opened = store = new WorkspaceStore(filename); const db = (store as unknown as { db: DatabaseSync }).db; db.exec("BEGIN"); for (const task of seeded) store.saveTask(task, true); db.exec("COMMIT"); db.exec("PRAGMA wal_checkpoint(TRUNCATE)"); });
+			const pages = (store as unknown as { db: DatabaseSync }).db.prepare("SELECT page_count * page_size AS bytes FROM pragma_page_count(), pragma_page_size()").get() as { bytes: number };
+			report.push(`history: ${seeded.length} chats (${(json / 1024 / 1024).toFixed(1)} MB as JSON), ${(pages.bytes / 1024 / 1024).toFixed(1)} MB on disk; ${streams} long chats of ${longTurns} turns`);
+			store.getOverview();
 			const raw = (store as unknown as { db: DatabaseSync }).db;
 			raw.exec("PRAGMA wal_checkpoint(TRUNCATE); PRAGMA wal_autocheckpoint=0");
 			const walBefore = statSync(`${filename}-wal`).size;
@@ -62,10 +58,10 @@ describe.skipIf(!enabled)("store under concurrent load", () => {
 				db.exec("CREATE TABLE IF NOT EXISTS bench_side (id INTEGER PRIMARY KEY, data TEXT)");
 				let writes = 0, busy = 0, stop = false;
 				parentPort.on("message", () => { stop = true; });
-				const loop = () => { if (stop) { db.close(); parentPort.postMessage({ writes, busy }); return; }
+				const loop = () => { if (workerData.idle && !stop) { setTimeout(loop, 50); return; } if (stop) { db.close(); parentPort.postMessage({ writes, busy }); return; }
 					try { db.prepare("INSERT INTO bench_side (data) VALUES (?)").run("x".repeat(2000)); writes++; } catch (error) { if (/locked|busy/i.test(String(error))) busy++; else throw error; }
 					setTimeout(loop, 3); };
-				loop();`, { eval: true, workerData: { filename } });
+				loop();`, { eval: true, workerData: { filename, idle: process.env.STORE_BENCH_SIDE === "0" } });
 			const sideDone = new Promise<{ writes: number; busy: number }>(resolve => worker.once("message", resolve));
 
 			// What each long chat must hold afterwards: its message count, current turn and the text streamed into its last answer.

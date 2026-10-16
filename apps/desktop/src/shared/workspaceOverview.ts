@@ -5,17 +5,21 @@ export type TaskOverview = Pick<Task, "id" | "title" | "harness" | "model" | "mo
 export type WorkspaceOverview = Omit<Workspace, "tasks"> & { tasks: TaskOverview[] };
 export function emptyOverview(): WorkspaceOverview { return { version: 1, projects: [], accounts: [], agents: [], mcpConnections: [], tasks: [] }; }
 
+/** What the overview reads from a chat's messages; the store passes it from columns instead of loading the conversation. */
+export type ConversationSummary = { lastUserId?: string; lastUserAt?: string; lastCompletedAt?: string };
+
 /** A chat's sidebar and inbox summary: everything the overview needs without its messages and activities. */
-export function taskOverview(task: Task): TaskOverview {
+export function taskOverview(task: Task, conversation?: ConversationSummary): TaskOverview {
+	const summary = conversation ?? { lastUserId: task.messages?.findLast(value => value.role === "user")?.id, lastUserAt: task.messages?.findLast(value => value.role === "user" && !value.delivery)?.createdAt, lastCompletedAt: task.messages?.findLast(value => value.role === "user" && value.completedAt)?.completedAt };
 	const metadata: TaskOverview = {
 		id: task.id, title: task.title, harness: task.harness, model: task.model, mode: task.mode, status: task.status,
 		pinned: Boolean(task.pinned), tags: task.tags, settledOverride: task.settledOverride, settledAt: task.settledAt, unsettledAt: task.unsettledAt, snoozedUntil: task.snoozedUntil, snoozedAt: task.snoozedAt, lastSnoozeWakeAt: task.lastSnoozeWakeAt, lastVisitedAt: task.lastVisitedAt, ...(task.autoSettle !== undefined && task.autoSettle !== null ? { autoSettle: Boolean(task.autoSettle) } : {}), orderKey: task.orderKey,
-		queueCount: task.queue?.length ?? 0, lastCompletedAt: task.messages?.findLast(value => value.role === "user" && value.completedAt)?.completedAt, lastUserMessageAt: task.messages?.findLast(value => value.role === "user" && !value.delivery)?.createdAt,
+		queueCount: task.queue?.length ?? 0, lastCompletedAt: summary.lastCompletedAt, lastUserMessageAt: summary.lastUserAt,
 		archived: Boolean(task.archived), createdAt: task.createdAt, updatedAt: task.updatedAt, revision: task.revision,
 		projectId: task.projectId, accountId: task.accountId, agentId: task.agentId, parentId: task.parentId, delegation: task.delegation, launch: task.launch, missionId: task.missionId, inboxReadAt: task.inboxReadAt, pullRequests: task.pullRequests,
 		approvalsCount: task.approvals?.length ?? 0, answersCount: (task.questions?.length ?? 0) + (task.forms?.length ?? 0),
 		steeringReviewCount: task.steering?.filter(value => value.status === "unconfirmed" || value.status === "rejected").length ?? 0,
-		attentionKey: JSON.stringify([task.messages?.findLast(value => value.role === "user")?.id ?? null, task.approvals?.map(value => value.id) ?? [], task.questions?.map(value => value.id) ?? [], task.forms?.map(value => value.id) ?? [], task.steering?.map(value => [value.id, value.status]) ?? []]),
+		attentionKey: JSON.stringify([summary.lastUserId ?? null, task.approvals?.map(value => value.id) ?? [], task.questions?.map(value => value.id) ?? [], task.forms?.map(value => value.id) ?? [], task.steering?.map(value => [value.id, value.status]) ?? []]),
 	};
 	metadata.attentionReason = inboxReasonFromCounts(metadata);
 	// Stored chats can hold explicit nulls; the overview leaves those fields out.
@@ -26,5 +30,5 @@ export function taskOverview(task: Task): TaskOverview {
 export const overviewOrder = (a: TaskOverview, b: TaskOverview) => b.updatedAt.localeCompare(a.updatedAt) || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0);
 
 export function workspaceOverview(workspace: Workspace): WorkspaceOverview {
-	return { version: workspace.version, projects: workspace.projects, accounts: workspace.accounts, agents: workspace.agents, mcpConnections: workspace.mcpConnections, tasks: workspace.tasks.map(taskOverview).sort(overviewOrder) };
+	return { version: workspace.version, projects: workspace.projects, accounts: workspace.accounts, agents: workspace.agents, mcpConnections: workspace.mcpConnections, tasks: workspace.tasks.map(task => taskOverview(task)).sort(overviewOrder) };
 }

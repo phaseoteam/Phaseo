@@ -8,6 +8,7 @@ import { DatabaseSync } from "node:sqlite";
 import { execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";
 import { createRequire } from "node:module";
+import { openFixtureStore } from "./fixtures/workspaceFixture.mjs";
 
 const data = mkdtempSync(path.join(tmpdir(), "phaseo-electron-smoke-"));
 app.setPath("userData", data);
@@ -180,9 +181,11 @@ app.whenReady().then(async () => {
 		// Seed a protocol-shaped form solely for renderer interaction checks;
 		// request validation and native replies are exercised by runtime tests.
 		const fixtureDb = new DatabaseSync(path.join(data, "workspace", "workspace.sqlite"));
-		const taskRow = fixtureDb.prepare("SELECT data FROM tasks LIMIT 1").get();
-		const fixtureTask = JSON.parse(taskRow.data);
 		const fixtureAttachments = fixtureDb.prepare("SELECT data FROM attachments").all().map(row => JSON.parse(row.data));
+		const fixtureTaskId = fixtureDb.prepare("SELECT id FROM tasks ORDER BY key LIMIT 1").get().id; fixtureDb.close();
+		// Written through a second connection to the app's store, as another writer would.
+		const fixtureStore = await openFixtureStore(path.join(data, "workspace", "workspace.sqlite"));
+		const fixtureTask = fixtureStore.getTask(fixtureTaskId);
 		fixtureTask.messages = [{ id: "export-fixture", role: "user", text: "Export conversation fixture", createdAt: new Date().toISOString(), attachments: fixtureAttachments }];
 		fixtureTask.steering = [{ id: "fixture-steering", text: "Unacknowledged instruction", createdAt: new Date().toISOString(), status: "unconfirmed", error: "Fixture connection closed" }];
 		fixtureTask.forms = [{ id: "fixture-request", form: { id: "fixture-form", title: "Form interaction check", fields: [
@@ -191,7 +194,7 @@ app.whenReady().then(async () => {
 			{ key: "choices", type: "multiselect", title: "Sections", options: [{ value: "summary", label: "Summary" }, { value: "details", label: "Details" }] },
 			{ key: "profile", type: "string", title: "Profile", hidden: true, default: "local" },
 		] } }];
-		fixtureDb.prepare("UPDATE tasks SET data=? WHERE id=?").run(JSON.stringify(fixtureTask), fixtureTask.id); fixtureDb.close();
+		fixtureStore.saveTask(fixtureTask, true); fixtureStore.close();
 		await window.webContents.executeJavaScript(`(async () => {
 			await window.phaseoDesktop.workspace.command({type:'update-task',id:${JSON.stringify(fixtureTask.id)},title:'Electron bridge check'});
 			// The redesigned chat has no steering-recovery card; discard the unconfirmed instruction through the same command it sent.

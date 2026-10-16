@@ -6,11 +6,13 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { installControlActions } from './fixtures/control-actions.mjs';
+import { storeFixtureTasks } from "./fixtures/workspaceFixture.mjs";
 // Chats are referenced by typing "@" in the composer, which replaced the old "Copy chat ID" menu item.
 const profile=mkdtempSync(path.join(tmpdir(),'phaseo-chat-reference-'));app.setPath('userData',profile);mkdirSync(path.join(profile,'workspace'));
 const ids=['00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000002'],db=new DatabaseSync(path.join(profile,'workspace/workspace.sqlite'));
 db.exec('CREATE TABLE tasks (id TEXT PRIMARY KEY, data TEXT NOT NULL)');
 for(const [index,id] of ids.entries())db.prepare('INSERT INTO tasks VALUES (?,?)').run(id,JSON.stringify({id,title:'Owned reference '+(index+1),harness:'phaseo',model:'owned',mode:'chat',status:'completed',pinned:false,archived:false,queue:[],messages:[{id:'message-'+index,role:'user',text:'Owned content',createdAt:'2026-10-04T00:00:00Z'}],nativeSessionId:'private-native-session-'+index,createdAt:'2026-10-04T00:00:00Z',updatedAt:'2026-10-04T00:00:00Z'}));db.close();
+await storeFixtureTasks(path.join(profile, "workspace", "workspace.sqlite"));
 const entry=process.argv.find(value=>value.startsWith('--app-entry='))?.slice('--app-entry='.length),deadline=setTimeout(()=>app.exit(1),45000);
 await import(entry?pathToFileURL(path.resolve(entry)).href:'../dist/main/index.mjs');
 app.whenReady().then(async()=>{try{

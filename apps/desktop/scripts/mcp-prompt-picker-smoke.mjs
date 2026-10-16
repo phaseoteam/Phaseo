@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { DatabaseSync } from "node:sqlite";
+import { storeFixtureTasks } from "./fixtures/workspaceFixture.mjs";
 // TODO(desktop composer menus): the redesigned composer has no MCP prompt picker yet. Re-add the removed UI checks (the MCP
 // prompts tab and search focus, End/Home/Up/Down navigation, the empty-search status, IME Enter preservation, argument
 // focus, double-click guards on Load and Insert, stale arguments disabling Insert until Reload, inserting the labelled
@@ -24,6 +25,7 @@ db.exec("CREATE TABLE projects (id TEXT PRIMARY KEY,data TEXT NOT NULL);CREATE T
 db.prepare("INSERT INTO projects VALUES (?,?)").run("project", JSON.stringify({ id: "project", name: "Website", directory: project, createdAt: now }));
 db.prepare("INSERT INTO projects VALUES (?,?)").run("other", JSON.stringify({ id: "other", name: "Other", directory: project, createdAt: now }));
 for (const [id, projectId] of [["personal", undefined], ["project-chat", "project"]]) db.prepare("INSERT INTO tasks VALUES (?,?)").run(id, JSON.stringify({ id, title: id, projectId, harness: "phaseo", mode: "chat", model: "default", status: "completed", pinned: false, archived: false, queue: [], messages: [], createdAt: now, updatedAt: now })); db.close();
+await storeFixtureTasks(path.join(profile, "workspace", "workspace.sqlite"));
 const entry = process.argv.find(value => value.startsWith("--app-entry="))?.slice(12), deadline = setTimeout(() => { console.error("MCP picker deadline"); app.exit(1); }, 150000);
 await import(entry ? pathToFileURL(path.resolve(entry)).href : "../dist/main/index.mjs");
 const records = () => existsSync(calls) ? readFileSync(calls, "utf8").trim().split("\n").filter(Boolean).map(line => JSON.parse(line)) : [];

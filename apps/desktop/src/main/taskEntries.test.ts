@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -35,6 +35,10 @@ describe("chat entries", () => {
 		expect(changes(raw) - before).toBeLessThan(8);
 		expect(store.getTask("long").messages[600].text).toBe("Edited");
 		task.messages.splice(998); task.activities!.splice(400); store.saveTask(task);
+		// A command that changes only the header (a rename, a visit) writes only the header row.
+		const renamed = changes(raw); store.apply({ type: "update-task", id: "long", title: "Renamed" }); store.apply({ type: "visit", id: "long", at: new Date().toISOString() });
+		expect(changes(raw) - renamed).toBe(2);
+		expect(store.getTask("long")).toMatchObject({ title: "Renamed", messages: { length: 998 } });
 		expect(store.getTask("long")).toMatchObject({ messages: { length: 998 }, activities: { length: 400 } });
 	}));
 
@@ -56,18 +60,56 @@ describe("chat entries", () => {
 		expect(store.getTaskView("long").activities!.map(activity => activity.id)).toContain("long-u299:next");
 	}));
 
-	it("adopts conversations written inside the chat row, at open and while open", () => withStore((store, filename) => {
-		const outside = new DatabaseSync(filename);
-		outside.prepare("INSERT INTO tasks (id, data) VALUES (?, ?)").run("legacy", JSON.stringify(chat("legacy", 20)));
-		expect(store.getTask("legacy").messages).toHaveLength(40);
-		expect(JSON.parse((outside.prepare("SELECT data FROM tasks WHERE id = 'legacy'").get() as { data: string }).data)).not.toHaveProperty("messages");
-		const rewritten = chat("legacy", 21); rewritten.title = "Rewritten outside";
-		outside.prepare("UPDATE tasks SET data = ? WHERE id = 'legacy'").run(JSON.stringify(rewritten));
-		expect(store.getTask("legacy")).toMatchObject({ title: "Rewritten outside", messages: { length: 42 } });
-		expect(store.getOverview().tasks.find(task => task.id === "legacy")?.title).toBe("Rewritten outside");
-		outside.prepare("DELETE FROM tasks WHERE id = 'legacy'").run();
-		expect(Number((outside.prepare("SELECT count(*) AS count FROM task_entries WHERE task_id = 'legacy'").get() as { count: number }).count)).toBe(0);
-		outside.close();
+	it("sets a database from another layout aside and starts fresh", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-entries-old-")), filename = path.join(directory, "workspace.sqlite");
+		const old = new DatabaseSync(filename);
+		old.exec("CREATE TABLE tasks (id TEXT PRIMARY KEY, data TEXT NOT NULL); PRAGMA user_version=3;");
+		old.prepare("INSERT INTO tasks VALUES (?, ?)").run("old", JSON.stringify(chat("old", 2))); old.close();
+		const store = new WorkspaceStore(filename);
+		try {
+			expect(store.getOverview().tasks).toEqual([]);
+			expect(existsSync(`${filename}.v3.bak`)).toBe(true);
+			store.saveTask(chat("new", 2));
+			expect(store.getTask("new").messages).toHaveLength(4);
+		} finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+
+	it("sees another connection's writes, and keeps nothing twice", () => withStore((store, filename, raw) => {
+		const task = chat("shared", 4);
+		task.activities![0].text = "Long tool output\n".repeat(400);
+		store.saveTask(task);
+		const other = new WorkspaceStore(filename);
+		try {
+			const copy = other.getTask("shared"); copy.title = "Renamed elsewhere"; copy.messages[1].text = "Edited elsewhere"; other.saveTask(copy);
+			// Cached entries and overviews are dropped once the other connection commits.
+			expect(store.getOverview().tasks.find(value => value.id === "shared")?.title).toBe("Renamed elsewhere");
+			const mine = store.getTask("shared");
+			expect(mine.messages[1].text).toBe("Edited elsewhere");
+			mine.messages[2].text = "Edited here"; store.saveTask(mine);
+			expect(other.getTask("shared").messages.map(message => message.text).slice(1, 3)).toEqual(["Edited elsewhere", "Edited here"]);
+		} finally { other.close(); }
+		const rows = raw.prepare("SELECT kind, id, role, timeline_order, bytes, data FROM task_entries ORDER BY rowid").all() as { kind: number; id: string; role: string | null; timeline_order: number; bytes: number; data: string | Uint8Array }[];
+		// The id, role and timeline position are columns, not repeated in the data.
+		for (const row of rows) if (typeof row.data === "string") expect(row.data).not.toMatch(/"(id|role|timelineOrder)":/);
+		// Long tool output is stored compressed; messages stay searchable text.
+		const output = rows.find(row => row.kind === 1 && row.bytes > 1024)!;
+		expect(output.data).toBeInstanceOf(Uint8Array);
+		expect((output.data as Uint8Array).byteLength).toBeLessThan(output.bytes / 10);
+		expect(rows.filter(row => row.kind === 0).every(row => typeof row.data === "string")).toBe(true);
+		expect(store.taskHistory({ query: "edited here", archived: false, offset: 0, limit: 10 }).tasks.map(value => value.id)).toEqual(["shared"]);
+		// Each chat's header holds neither its conversation nor its revision.
+		const head = JSON.parse((raw.prepare("SELECT data FROM tasks WHERE id = 'shared'").get() as { data: string }).data);
+		expect(head).not.toHaveProperty("messages"); expect(head).not.toHaveProperty("activities"); expect(head).not.toHaveProperty("revision");
+	}));
+
+	it("gives deleted chats' pages back and does not reuse their cache", () => withStore((store, _filename, raw) => {
+		for (let index = 0; index < 20; index++) store.saveTask(chat(`gone-${index}`, 6));
+		store.deleteTasks(Array.from({ length: 20 }, (_, index) => `gone-${index}`));
+		expect(Number((raw.prepare("PRAGMA freelist_count").get() as { freelist_count: number }).freelist_count)).toBe(0);
+		expect(Number((raw.prepare("SELECT count(*) AS count FROM task_entries").get() as { count: number }).count)).toBe(0);
+		// A new chat may take a deleted chat's key; it must not be compared with that chat's entries.
+		store.saveTask(chat("fresh", 40));
+		expect(store.getTask("fresh").messages).toEqual(chat("fresh", 40).messages.map(message => expect.objectContaining(message)));
 	}));
 
 	it("pages exactly as the conversation page rules do, at every cursor", () => withStore(store => {

@@ -10,6 +10,7 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { storeFixtureTasks } from "./fixtures/workspaceFixture.mjs";
 
 const argument = (name, fallback) => process.argv.find(value => value.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
 const out = path.resolve(argument("out", "output/ui-preview"));
@@ -218,6 +219,7 @@ if (stress > 0) {
 	console.log(`Stress history: ${size.chats} chats, ${(size.bytes / 1024 / 1024).toFixed(1)} MB, seeded in ${Math.round(performance.now() - started)} ms.`);
 }
 db.close();
+await storeFixtureTasks(path.join(profile, "workspace", "workspace.sqlite"));
 
 const models = [
 	["anthropic/claude-opus-5.5", "Claude Opus 5.5", "anthropic", "Anthropic", 6],

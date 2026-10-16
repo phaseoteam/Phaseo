@@ -2,35 +2,31 @@ import { describe, expect, it } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { DatabaseSync } from "node:sqlite";
 import { WorkspaceStore } from "./workspaceStore";
 import { taskOverview } from "../shared/workspaceOverview";
 import { conversationPageOf } from "../shared/conversationPage";
 import type { Message } from "../shared/workspace";
 
 describe("stored chat overviews", () => {
-	it("follows saves, outside writes, deletes and chats written before the table existed", () => {
+	it("lists chats from their rows, as the full conversation would, through saves, tails and deletes", () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-task-overviews-")), filename = path.join(directory, "workspace.sqlite");
-		const legacy = new DatabaseSync(filename);
-		legacy.exec("CREATE TABLE tasks (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
-		legacy.prepare("INSERT INTO tasks VALUES (?, ?)").run("old", JSON.stringify({ id: "old", title: "Older build", harness: "phaseo", model: "default", mode: "chat", status: "completed", pinned: null, archived: false, queue: [], messages: [{ id: "u", role: "user", text: "Hi", createdAt: "2026-10-01T00:00:00.000Z", completedAt: "2026-10-01T00:00:05.000Z" }], createdAt: "2026-10-01T00:00:00.000Z", updatedAt: "2026-10-01T00:00:00.000Z" }));
-		legacy.close();
 		const store = new WorkspaceStore(filename);
 		try {
-			expect(store.getOverview().tasks).toEqual([expect.objectContaining({ id: "old", title: "Older build", pinned: false, lastCompletedAt: "2026-10-01T00:00:05.000Z" })]);
-			expect(store.getOverview().tasks[0]).not.toHaveProperty("messages");
 			const task = store.apply({ type: "create-task", harness: "codex", model: "default", mode: "chat" });
 			store.apply({ type: "update-task", id: task.id, title: "Renamed in the app" });
-			const listed = store.getOverview().tasks.find(value => value.id === task.id)!;
-			expect(listed).toEqual(taskOverview(store.getTask(task.id)));
-			// A fixture (or an older build) rewriting data directly must not leave the list stale.
-			const outside = new DatabaseSync(filename);
-			outside.prepare("UPDATE tasks SET data = json_set(data, '$.title', 'Renamed outside') WHERE id = ?").run(task.id);
-			expect(store.getOverview().tasks.find(value => value.id === task.id)?.title).toBe("Renamed outside");
-			outside.prepare("DELETE FROM tasks WHERE id = 'old'").run();
-			expect(outside.prepare("SELECT count(*) AS count FROM task_overviews WHERE id = 'old'").get()?.count).toBe(0);
-			outside.close();
-			expect(store.getOverview().tasks.map(value => value.id)).toEqual([task.id]);
+			const full = store.getTask(task.id);
+			full.messages.push({ id: "u1", role: "user", text: "First", createdAt: "2026-10-16T00:00:00.000Z", completedAt: "2026-10-16T00:00:05.000Z" }, { id: "a1", role: "assistant", text: "Answer", createdAt: "2026-10-16T00:00:05.000Z" });
+			full.messages.push({ id: "u2", role: "user", text: "Second", createdAt: "2026-10-16T00:01:00.000Z" }, { id: "a2", role: "assistant", text: "", createdAt: "2026-10-16T00:01:00.000Z" });
+			store.saveTask(full);
+			const listed = () => store.getOverview().tasks.find(value => value.id === task.id)!;
+			expect(listed()).toEqual(taskOverview(store.getTask(task.id)));
+			expect(listed()).not.toHaveProperty("messages");
+			// A streaming tail holds only the second turn; the first turn's completion still lists.
+			const tail = store.getTaskTail(task.id, "u2"); tail.messages[1].text = "Streaming"; store.saveTask(tail);
+			expect(listed()).toEqual(taskOverview(store.getTask(task.id)));
+			expect(listed()).toMatchObject({ lastCompletedAt: "2026-10-16T00:00:05.000Z", lastUserMessageAt: "2026-10-16T00:01:00.000Z" });
+			store.deleteTasks([task.id]);
+			expect(store.getOverview().tasks).toEqual([]);
 		} finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
 

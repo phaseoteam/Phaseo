@@ -6,6 +6,7 @@ import { pathToFileURL } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 import { installControlActions } from "./fixtures/control-actions.mjs";
 import { advanceBackgroundRefresh } from "./fixtures/background-clock.mjs";
+import { storeFixtureTasks } from "./fixtures/workspaceFixture.mjs";
 const profile = mkdtempSync(path.join(tmpdir(), "phaseo-controls-"));
 app.setPath("userData", profile); mkdirSync(path.join(profile, "workspace"));
 const project = path.join(profile, "project"); mkdirSync(project);
@@ -20,6 +21,7 @@ for (let index = 0; index < 60; index++) {
 }
 db.prepare("INSERT INTO tasks VALUES (?, ?)").run("project-chat", JSON.stringify({ id: "project-chat", title: "Owned project chat", projectId: "owned-project", harness: "codex", model: "default", mode: "code", status: "completed", pinned: false, archived: false, queue: [], createdAt: now, updatedAt: now, messages: messages("project-chat") }));
 db.close();
+await storeFixtureTasks(path.join(profile, "workspace", "workspace.sqlite"));
 const entry = process.argv.find(value => value.startsWith("--app-entry="))?.slice(12);
 await import(entry ? pathToFileURL(path.resolve(entry)).href : "../dist/main/index.mjs");
 const deadline = setTimeout(() => { console.error("Controls audit timed out"); app.exit(1); }, 90000);

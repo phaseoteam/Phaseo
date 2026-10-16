@@ -8,6 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { createServer } from 'node:http';
 import { DatabaseSync } from 'node:sqlite';
 import { execFileSync } from 'node:child_process';
+import { storeFixtureTasks } from "./fixtures/workspaceFixture.mjs";
 process.on('unhandledRejection',reason=>{console.error('Unhandled smoke rejection',reason);app.exit(1)});
 const profile=mkdtempSync(path.join(tmpdir(),'phaseo-chat-shell-'));app.setPath('userData',profile);
 mkdirSync(path.join(profile,'workspace'));
@@ -17,6 +18,7 @@ const now=new Date().toISOString();const db=new DatabaseSync(path.join(profile,'
 db.exec('CREATE TABLE projects (id TEXT PRIMARY KEY, data TEXT NOT NULL); CREATE TABLE tasks (id TEXT PRIMARY KEY, data TEXT NOT NULL)');
 db.prepare('INSERT INTO projects VALUES (?, ?)').run('project',JSON.stringify({id:'project',name:'Website',directory:project,createdAt:now}));
 for(const [id,title,projectId] of [['personal','Plan a holiday',undefined],['project-chat','Improve the website','project']])db.prepare('INSERT INTO tasks VALUES (?, ?)').run(id,JSON.stringify({id,title,projectId,harness:'phaseo',model:'default',mode:'chat',status:'completed',pinned:false,archived:false,queue:[],createdAt:now,updatedAt:now,activities:[{id:id+'-phaseo-plan',type:'plan',title:'Plan',text:'Owned saved checklist',explanation:'Review the website, then make the change.',steps:[{text:'Inspect the website',status:'completed'},{text:'Apply the design',status:'in_progress'},{text:'Check the result',status:'pending'}]}],messages:[{id:id+'-message',role:'assistant',text:'Owned conversation content',createdAt:now}]}));db.close();
+await storeFixtureTasks(path.join(profile, "workspace", "workspace.sqlite"));
 const server=createServer((request,response)=>{
  if(request.url==='/download'){response.writeHead(200,{'Content-Type':'application/octet-stream','Content-Disposition':'attachment; filename="owned.txt"'});response.end('Owned download content');return;}
  if(request.url==='/slow-download'){response.writeHead(200,{'Content-Type':'application/octet-stream','Content-Disposition':'attachment; filename="slow.txt"','Content-Length':1048576});let sent=0;const timer=setInterval(()=>{response.write(Buffer.alloc(8192,65));sent+=8192;if(sent>=1048576){clearInterval(timer);response.end();}},30);response.on('close',()=>clearInterval(timer));return;}

@@ -5,11 +5,13 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { DatabaseSync } from "node:sqlite";
+import { storeFixtureTasks } from "./fixtures/workspaceFixture.mjs";
 // The composer's "/" menu is checked below; saved prompts are edited as files, so there is no in-app editor to drive.
 const profile=mkdtempSync(path.join(tmpdir(),'phaseo-prompt-commands-'));app.setPath('userData',profile);mkdirSync(path.join(profile,'workspace'));
 const project=path.join(profile,'project');mkdirSync(project);const now=new Date().toISOString();const db=new DatabaseSync(path.join(profile,'workspace/workspace.sqlite'));
 db.exec('CREATE TABLE projects (id TEXT PRIMARY KEY,data TEXT NOT NULL);CREATE TABLE tasks (id TEXT PRIMARY KEY,data TEXT NOT NULL)');db.prepare('INSERT INTO projects VALUES (?,?)').run('project',JSON.stringify({id:'project',name:'Website',directory:project,createdAt:now}));
 for(const [id,title,projectId] of [['personal','Owned personal',undefined],['project-chat','Owned project','project']])db.prepare('INSERT INTO tasks VALUES (?,?)').run(id,JSON.stringify({id,title,projectId,harness:'phaseo',model:'default',mode:'chat',status:'completed',pinned:false,archived:false,queue:[],messages:[{id:id+'-message',role:'assistant',text:'Owned history',createdAt:now}],createdAt:now,updatedAt:now}));db.close();
+await storeFixtureTasks(path.join(profile, "workspace", "workspace.sqlite"));
 const entry=process.argv.find(value=>value.startsWith('--app-entry='))?.slice(12);const deadline=setTimeout(()=>{console.error('Prompt command audit expired');app.exit(1);},90000);
 await import(entry?pathToFileURL(path.resolve(entry)).href:'../dist/main/index.mjs');
 app.whenReady().then(async()=>{

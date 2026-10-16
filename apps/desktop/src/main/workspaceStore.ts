@@ -1,5 +1,6 @@
 import { updateNativeActionText } from "../shared/nativeActions";
-import { TaskEntries, type EntryOffsets } from "./taskEntries";
+import { messageRange, TaskEntries, taskEntriesSchema, type EntryOffsets } from "./taskEntries";
+import { existsSync, renameSync } from "node:fs";
 import { BrowserDownloadStore } from "./browserDownloadStore";
 import { settleBlocker, snoozeBlocker } from "../shared/threadLifecycle";
 import { mentionPlainText } from "../shared/mentions";
@@ -24,7 +25,30 @@ import { newPullRequestWatch, type PullRequestWatchMessage, type PullRequestWatc
  * copy still saves as a tail, and JSON never writes it.
  */
 const partialEntries = Symbol("partial entries");
-type PartialTask = Task & { [partialEntries]?: EntryOffsets };
+/** On a chat from getTask: whether its conversation is still unread, so saving it writes only the header. */
+const unreadEntries = Symbol("unread entries");
+type PartialTask = Task & { [partialEntries]?: EntryOffsets; [unreadEntries]?: () => boolean };
+
+/** The layout this build writes. A database from another layout is set aside, not converted: there is nothing to keep. */
+const schemaVersion = 4;
+function openWorkspaceDatabase(filename: string) {
+	let db = new DatabaseSync(filename);
+	const version = Number((db.prepare("PRAGMA user_version").get() as { user_version: number }).user_version);
+	const oldTasks = Boolean(db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'tasks'").get()) && !db.prepare("SELECT 1 FROM pragma_table_info('tasks') WHERE name = 'key'").get();
+	if (filename !== ":memory:" && version !== schemaVersion && (version !== 0 || oldTasks)) {
+		db.close();
+		for (const suffix of ["", "-wal", "-shm"]) if (existsSync(filename + suffix)) renameSync(filename + suffix, `${filename}.v${version}.bak${suffix}`);
+		db = new DatabaseSync(filename);
+	}
+	// Reclaiming the pages of deleted chats needs this before the first table exists.
+	if (!db.prepare("SELECT 1 FROM sqlite_master").get()) db.exec("PRAGMA auto_vacuum=INCREMENTAL");
+	return db;
+}
+
+/** What the chat list needs from the conversation, kept in columns so it is read without the entries. */
+function conversationSummary(messages: Task["messages"]) {
+	return { lastUserId: messages.findLast(value => value.role === "user")?.id, lastUserAt: messages.findLast(value => value.role === "user" && !value.delivery)?.createdAt, lastCompletedAt: messages.findLast(value => value.role === "user" && value.completedAt)?.completedAt };
+}
 
 export class WorkspaceStore {
 	private readonly db: DatabaseSync;
@@ -33,20 +57,23 @@ export class WorkspaceStore {
 	readonly missions: MissionStore;
 	readonly browserDownloads: BrowserDownloadStore;
 	constructor(filename: string) {
-		this.db = new DatabaseSync(filename);
+		this.db = openWorkspaceDatabase(filename);
 		this.db.function("history_lower", { deterministic: true }, value => typeof value === "string" ? value.toLowerCase() : "");
 		// A second connection waits for a lock rather than failing; with WAL, NORMAL syncs at checkpoints, not every commit,
-		// and a power cut can lose only the last commits, never corrupt the file.
-		this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; PRAGMA synchronous=NORMAL;
+		// and a power cut can lose only the last commits, never corrupt the file. The WAL file shrinks back after checkpoints.
+		this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; PRAGMA synchronous=NORMAL; PRAGMA journal_size_limit=4194304;
 			CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, data TEXT NOT NULL);
-			CREATE TABLE IF NOT EXISTS tasks (id TEXT PRIMARY KEY, data TEXT NOT NULL);
+			-- key is what entry rows refer to. data is the chat without its messages and activities (see TaskEntries) or
+			-- its revision; the last_* columns summarise the conversation for the chat list.
+			CREATE TABLE IF NOT EXISTS tasks (key INTEGER PRIMARY KEY, id TEXT NOT NULL UNIQUE, revision INTEGER NOT NULL, last_user_id TEXT, last_user_at TEXT, last_completed_at TEXT, data TEXT NOT NULL);
 			CREATE TABLE IF NOT EXISTS accounts (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			CREATE TABLE IF NOT EXISTS thread_merges (parent_id TEXT NOT NULL, request_id TEXT NOT NULL, child_id TEXT NOT NULL, PRIMARY KEY(parent_id, request_id));
 			CREATE TABLE IF NOT EXISTS delegation_outbox (result_key TEXT PRIMARY KEY, child_id TEXT NOT NULL, parent_id TEXT NOT NULL, data TEXT NOT NULL, delivered INTEGER NOT NULL DEFAULT 0);
 			CREATE INDEX IF NOT EXISTS delegation_outbox_pending ON delegation_outbox(delivered);
-			CREATE INDEX IF NOT EXISTS task_delegation_owner ON tasks(json_extract(data, '$.delegation.parentTaskId'), json_extract(data, '$.delegation.requestId'));
+			-- Partial, so chats without a delegation or launch have no entry to rewrite on every save.
+			CREATE INDEX IF NOT EXISTS task_delegation_owner ON tasks(json_extract(data, '$.delegation.parentTaskId'), json_extract(data, '$.delegation.requestId')) WHERE json_extract(data, '$.delegation.parentTaskId') IS NOT NULL;
 			CREATE TABLE IF NOT EXISTS delegation_wakes (child_id TEXT PRIMARY KEY);
-			CREATE INDEX IF NOT EXISTS task_launch_owner ON tasks(json_extract(data, '$.launch.byTaskId'), json_extract(data, '$.launch.requestId'));
+			CREATE INDEX IF NOT EXISTS task_launch_owner ON tasks(json_extract(data, '$.launch.byTaskId'), json_extract(data, '$.launch.requestId')) WHERE json_extract(data, '$.launch.byTaskId') IS NOT NULL;
 			-- Version 1 used INSERT OR IGNORE here. Inside a trigger fired by saveTask's upsert the outer statement's conflict policy
 			-- applies, so re-saving a finished background child raised UNIQUE. Replace it on every open; NOT EXISTS cannot conflict.
 			DROP TRIGGER IF EXISTS delegation_result_updated;
@@ -56,8 +83,8 @@ export class WorkspaceStore {
 			BEGIN
 				INSERT INTO delegation_outbox(result_key, child_id, parent_id, data)
 				SELECT result.key, new.id, json_extract(new.data, '$.delegation.parentTaskId'),
-				json_object('title', json_extract(new.data, '$.title'), 'status', json_extract(new.data, '$.status'), 'result', substr(coalesce((SELECT json_extract(data, '$.text') FROM task_entries WHERE task_id = new.id AND kind = 0 AND role = 'assistant' ORDER BY position DESC LIMIT 1), json_extract(new.data, '$.error'), 'No final response was returned.'), 1, 32000))
-				FROM (SELECT new.id || ':' || coalesce((SELECT id FROM task_entries WHERE task_id = new.id AND kind = 0 AND role = 'user' ORDER BY position DESC LIMIT 1), '') || ':' || json_extract(new.data, '$.status') AS key) AS result
+				json_object('title', json_extract(new.data, '$.title'), 'status', json_extract(new.data, '$.status'), 'result', substr(coalesce((SELECT json_extract(data, '$.text') FROM task_entries WHERE ${messageRange("new.key")} AND role = 'assistant' ORDER BY rowid DESC LIMIT 1), json_extract(new.data, '$.error'), 'No final response was returned.'), 1, 32000))
+				FROM (SELECT new.id || ':' || coalesce((SELECT id FROM task_entries WHERE ${messageRange("new.key")} AND role = 'user' ORDER BY rowid DESC LIMIT 1), '') || ':' || json_extract(new.data, '$.status') AS key) AS result
 				WHERE NOT EXISTS (SELECT 1 FROM delegation_outbox WHERE result_key = result.key);
 				-- A wake requested by an abandoned wait covers one result; later runs follow the child's own background setting.
 				DELETE FROM delegation_wakes WHERE child_id = new.id;
@@ -68,19 +95,11 @@ export class WorkspaceStore {
 			CREATE TABLE IF NOT EXISTS attachments (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			CREATE TABLE IF NOT EXISTS mcp_connections (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			CREATE TABLE IF NOT EXISTS preferences (id TEXT PRIMARY KEY, data TEXT NOT NULL);
-			PRAGMA user_version=2;`);
-		// Each chat's overview is kept in its own small table, so listing chats never reads past a chat's messages on disk.
-		// Any change to a chat's data drops it; saveTask writes it again, and getOverview rebuilds any that are missing
-		// (chats from older builds, or written directly by fixtures).
-		this.db.exec(`CREATE TABLE IF NOT EXISTS task_overviews (id TEXT PRIMARY KEY, data TEXT NOT NULL);
-			CREATE TRIGGER IF NOT EXISTS task_overview_changed AFTER UPDATE OF data ON tasks BEGIN DELETE FROM task_overviews WHERE id = new.id; END;
-			CREATE TRIGGER IF NOT EXISTS task_overview_removed AFTER DELETE ON tasks BEGIN DELETE FROM task_overviews WHERE id = old.id; END;`);
-		// Each overview carries a stamp that changes when it is written, so listing chats re-reads only those that changed.
-		if (!this.db.prepare("SELECT 1 FROM pragma_table_info('task_overviews') WHERE name = 'stamp'").get()) this.db.exec("ALTER TABLE task_overviews ADD COLUMN stamp INTEGER NOT NULL DEFAULT 0");
-		this.overviewStamp = Number((this.db.prepare("SELECT coalesce(max(stamp), 0) AS stamp FROM task_overviews").get() as { stamp: number }).stamp);
+			${taskEntriesSchema}
+			PRAGMA user_version=${schemaVersion};`);
 		this.missions = new MissionStore(this.db);
 		this.browserDownloads = new BrowserDownloadStore(this.db);
-		this.entries = new TaskEntries(this.db); this.entries.adopt();
+		this.entries = new TaskEntries(this.db);
 		const recoveryTasks = this.db.prepare(`SELECT id FROM tasks WHERE json_extract(data, '$.authTerminalId') IS NOT NULL
 			OR json_extract(data, '$.status') IN ('running', 'waiting')
 			OR EXISTS (SELECT 1 FROM json_each(tasks.data, '$.steering') AS item WHERE json_extract(item.value, '$.status') = 'sending')`).all();
@@ -113,7 +132,6 @@ export class WorkspaceStore {
 	getMcpConnections(): McpConnection[] { return this.db.prepare("SELECT data FROM mcp_connections").all().map(row => JSON.parse(row.data as string) as McpConnection); }
 	get(): Workspace {
 		const rows = (table: "projects" | "accounts" | "agents" | "mcp_connections") => this.db.prepare(`SELECT data FROM ${table}`).all().map(row => JSON.parse(row.data as string));
-		this.entries.adopt();
 		const tasks = this.db.prepare("SELECT id FROM tasks").all().map(row => this.getTask(row.id as string));
 		return { version: 1, projects: rows("projects"), accounts: rows("accounts"), agents: rows("agents"), mcpConnections: rows("mcp_connections"), tasks: tasks.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)) };
 	}
@@ -220,16 +238,23 @@ export class WorkspaceStore {
 			this.saveTask(task); this.db.exec("COMMIT"); return task;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
 	}
-	/** A chat's header: everything but its messages and activities. */
-	private getHead(id: string): Task {
-		this.entries.adopt();
-		const row = this.db.prepare("SELECT data FROM tasks WHERE id = ?").get(id);
+	/** A chat's header (everything but its messages and activities) and the key its entries use. */
+	private getHead(id: string): { task: Task; key: number } {
+		const row = this.db.prepare("SELECT key, revision, data FROM tasks WHERE id = ?").get(id) as { key: number; revision: number; data: string } | undefined;
 		if (!row) throw new Error("Task no longer exists.");
-		return JSON.parse(row.data as string) as Task;
+		const task = JSON.parse(row.data) as Task; task.revision = row.revision;
+		return { task, key: row.key };
 	}
+	/**
+	 * A chat whose messages and activities load when first read. Most commands change only the header (a title, a
+	 * visit, the queue), so they neither read the conversation nor write it back.
+	 */
 	getTask(id: string): Task {
-		const task = this.getHead(id), { messages, activities } = this.entries.load(id);
-		task.messages = messages; task.activities = activities;
+		const { task, key } = this.getHead(id);
+		let loaded: { messages: Task["messages"]; activities: NonNullable<Task["activities"]> } | undefined;
+		const load = () => loaded ??= this.entries.load(key, task.revision ?? 0);
+		for (const name of ["messages", "activities"] as const) Object.defineProperty(task, name, { enumerable: true, configurable: true, get: () => load()[name], set: (value: never) => { load()[name] = value; } });
+		Object.defineProperty(task, unreadEntries, { value: () => loaded === undefined });
 		return task;
 	}
 	/**
@@ -237,7 +262,7 @@ export class WorkspaceStore {
 	 * such a chat back over that range alone. The whole chat when the message is not found.
 	 */
 	getTaskTail(id: string, fromMessageId: string): Task {
-		const task = this.getHead(id), tail = this.entries.tail(id, fromMessageId);
+		const { task, key } = this.getHead(id), tail = this.entries.tail(key, fromMessageId);
 		if (!tail) return this.getTask(id);
 		task.messages = tail.messages; task.activities = tail.activities;
 		(task as PartialTask)[partialEntries] = tail.offsets;
@@ -245,8 +270,8 @@ export class WorkspaceStore {
 	}
 	/** Pages read only the rows they return, so their cost does not grow with the chat. */
 	conversationPage(value: unknown): ConversationPage {
-		const query = validateConversationPageQuery(value), revision = this.getHead(query.taskId).revision ?? 0, page = this.entries.page(query, revision);
-		return query.kind === "activities" ? page : { ...page, activities: this.entries.turnActivities(query.taskId, page) };
+		const query = validateConversationPageQuery(value), { task, key } = this.getHead(query.taskId), page = this.entries.page(key, query, task.revision ?? 0);
+		return query.kind === "activities" ? page : { ...page, activities: this.entries.turnActivities(key, page) };
 	}
 	/** Records what GitHub last said about a pull request on every chat linking it. True when anything changed. */
 	syncPullRequestSnapshot(repository: string, number: number, snapshot: PullRequestLinkSnapshot): boolean {
@@ -315,35 +340,23 @@ export class WorkspaceStore {
 		this.saveTask(task, true); return true;
 	}
 	getTaskView(id: string): Task {
-		const task = this.getHead(id), page = this.entries.page({ taskId: id, kind: "messages", limit: 50 }, task.revision ?? 0);
-		task.conversationCounts = { messages: this.entries.count(id, 0), activities: this.entries.count(id, 1) };
-		task.messages = page.entries as Task["messages"]; task.activities = this.entries.turnActivities(id, page);
+		const { task, key } = this.getHead(id), page = this.entries.page(key, { taskId: id, kind: "messages", limit: 50 }, task.revision ?? 0);
+		task.conversationCounts = { messages: this.entries.count(key, 0), activities: this.entries.count(key, 1) };
+		task.messages = page.entries as Task["messages"]; task.activities = this.entries.turnActivities(key, page);
 		return task;
 	}
-	/** A tail's overview: what it lacks (an earlier completed turn) comes from the chat's stored overview. */
-	private tailOverview(task: Task): TaskOverview {
-		const overview = taskOverview(task), row = this.db.prepare("SELECT data FROM task_overviews WHERE id = ?").get(task.id);
-		if (!row) return overview;
-		const stored = JSON.parse(row.data as string) as TaskOverview;
-		return { ...overview, ...(overview.lastCompletedAt === undefined && stored.lastCompletedAt ? { lastCompletedAt: stored.lastCompletedAt } : {}), ...(overview.lastUserMessageAt === undefined && stored.lastUserMessageAt ? { lastUserMessageAt: stored.lastUserMessageAt } : {}) };
-	}
-	private overviewStamp = 0;
-	/** Parsed overviews by chat, with the stamp they were read at; the table stays the truth, so a rollback only costs a re-read. */
-	private readonly overviews = new Map<string, { stamp: number; overview: TaskOverview }>();
-	private saveOverview(overview: TaskOverview) { this.db.prepare("INSERT INTO task_overviews (id, data, stamp) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data, stamp=excluded.stamp").run(overview.id, JSON.stringify(overview), ++this.overviewStamp); }
+	/** Parsed overviews by chat with the revision they were built at; the chat rows stay the truth. */
+	private readonly overviews = new Map<string, { revision: number; overview: TaskOverview }>();
 	getOverview(): WorkspaceOverview {
-		this.entries.adopt();
-		const rows = this.db.prepare("SELECT tasks.id AS id, task_overviews.stamp AS stamp FROM tasks LEFT JOIN task_overviews USING (id)").all() as { id: string; stamp: number | null }[];
-		const missing = rows.filter(row => row.stamp === null);
-		// Rebuilt in one transaction: the first open after an upgrade reads every chat once.
-		if (missing.length) { const inTransaction = this.db.isTransaction; if (!inTransaction) this.db.exec("BEGIN"); try { for (const row of missing) { this.saveOverview(taskOverview(this.getTask(row.id))); row.stamp = this.overviewStamp; } if (!inTransaction) this.db.exec("COMMIT"); } catch (error) { if (!inTransaction) this.db.exec("ROLLBACK"); throw error; } }
-		const read = this.db.prepare("SELECT data, stamp FROM task_overviews WHERE id = ?"), present = new Set<string>(), tasks: TaskOverview[] = [];
+		const rows = this.db.prepare("SELECT id, revision FROM tasks").all() as { id: string; revision: number }[];
+		const read = this.db.prepare("SELECT data, revision, last_user_id, last_user_at, last_completed_at FROM tasks WHERE id = ?"), present = new Set<string>(), tasks: TaskOverview[] = [];
 		for (const row of rows) {
 			present.add(row.id);
 			let cached = this.overviews.get(row.id);
-			if (cached?.stamp !== row.stamp) {
-				const stored = read.get(row.id) as { data: string; stamp: number };
-				this.overviews.set(row.id, cached = { stamp: stored.stamp, overview: JSON.parse(stored.data) as TaskOverview });
+			if (cached?.revision !== row.revision) {
+				const stored = read.get(row.id) as { data: string; revision: number; last_user_id: string | null; last_user_at: string | null; last_completed_at: string | null };
+				const head = JSON.parse(stored.data) as Task; head.revision = stored.revision;
+				this.overviews.set(row.id, cached = { revision: stored.revision, overview: taskOverview(head, { lastUserId: stored.last_user_id ?? undefined, lastUserAt: stored.last_user_at ?? undefined, lastCompletedAt: stored.last_completed_at ?? undefined }) });
 			}
 			// Copies, so a caller changing one cannot change the cache.
 			tasks.push({ ...cached.overview });
@@ -362,7 +375,7 @@ export class WorkspaceStore {
 		AND json_extract(data, '$.delegation') IS NULL
 		AND (? = 0 OR (? IS NULL AND json_extract(data, '$.projectId') IS NULL) OR json_extract(data, '$.projectId') = ?)
 		AND (? = '' OR instr(history_lower(json_extract(data, '$.title')), history_lower(?)) > 0
-			OR EXISTS (SELECT 1 FROM task_entries AS message WHERE message.task_id = tasks.id AND message.kind = 0
+			OR EXISTS (SELECT 1 FROM task_entries AS message WHERE message.${messageRange("tasks.key")}
 				AND instr(history_lower(json_extract(message.data, '$.text')), history_lower(?)) > 0))
 		ORDER BY coalesce(json_extract(data, '$.pinned'), 0) DESC,
 			json_extract(data, '$.updatedAt') DESC, id DESC LIMIT ? OFFSET ?
@@ -385,19 +398,29 @@ export class WorkspaceStore {
 		const own = !this.db.isTransaction;
 		if (own) this.db.exec("BEGIN IMMEDIATE");
 		try {
-			const exists = Boolean(this.db.prepare("SELECT 1 FROM tasks WHERE id = ?").get(task.id));
-			// JSON drops the undefined fields: the header leaves the conversation to TaskEntries.
-			const head = { ...task, messages: undefined, activities: undefined };
-			const offsets = (task as PartialTask)[partialEntries];
-			if (exists) this.entries.save(task, offsets);
-			const row = this.db.prepare(`INSERT INTO tasks (id, data) VALUES (?, json_set(?, '$.revision', 1))
-				ON CONFLICT(id) DO UPDATE SET data=json_set(excluded.data, '$.revision', coalesce(json_extract(tasks.data, '$.revision'), 0) + 1)
-				RETURNING json_extract(data, '$.revision') AS revision`).get(task.id, JSON.stringify(head));
-			if (!exists) this.entries.save(task);
-			task.revision = Number(row!.revision);
-			this.saveOverview(offsets ? this.tailOverview(task) : taskOverview(task));
+				// JSON drops the undefined fields: the header leaves the conversation to TaskEntries and the revision to its column.
+			// The header leaves the conversation to TaskEntries and the revision to its column. Copying its fields one by one
+			// does not read a conversation getTask has not loaded.
+			const fields: Record<string, unknown> = {};
+			for (const name of Object.keys(task)) if (name !== "messages" && name !== "activities" && name !== "revision" && name !== "conversationCounts") fields[name] = (task as unknown as Record<string, unknown>)[name];
+			const head = JSON.stringify(fields), untouched = (task as PartialTask)[unreadEntries]?.() === true;
+			const offsets = (task as PartialTask)[partialEntries], summary: Partial<ReturnType<typeof conversationSummary>> = untouched ? {} : conversationSummary(task.messages ?? []);
+			// Entries go first for a chat that exists, so the header's delegation trigger reads its new conversation; a new
+			// chat needs its key first.
+			const existing = this.db.prepare("SELECT key, revision FROM tasks WHERE id = ?").get(task.id) as { key: number; revision: number } | undefined;
+			if (existing && !untouched) this.entries.save(existing.key, task, existing.revision, offsets);
+			// A tail may not reach back to the last completed turn, and an unread conversation has not changed: their columns keep what they had.
+			const row = this.db.prepare(`INSERT INTO tasks (id, revision, last_user_id, last_user_at, last_completed_at, data) VALUES (?, 1, ?, ?, ?, ?)
+				ON CONFLICT(id) DO UPDATE SET revision = revision + 1, data = excluded.data,
+					last_user_id = ${offsets || untouched ? "coalesce(excluded.last_user_id, last_user_id)" : "excluded.last_user_id"},
+					last_user_at = ${offsets || untouched ? "coalesce(excluded.last_user_at, last_user_at)" : "excluded.last_user_at"},
+					last_completed_at = ${offsets || untouched ? "coalesce(excluded.last_completed_at, last_completed_at)" : "excluded.last_completed_at"}
+				RETURNING key, revision`).get(task.id, summary.lastUserId ?? null, summary.lastUserAt ?? null, summary.lastCompletedAt ?? null, head) as { key: number; revision: number };
+			if (!existing) this.entries.save(row.key, task, undefined);
+			this.entries.markRevision(row.key, row.revision);
+			task.revision = row.revision;
 			if (own) this.db.exec("COMMIT");
-		} catch (error) { if (own) this.db.exec("ROLLBACK"); this.entries.forget(task.id); throw error; }
+		} catch (error) { if (own) this.db.exec("ROLLBACK"); const key = this.db.prepare("SELECT key FROM tasks WHERE id = ?").get(task.id) as { key: number } | undefined; if (key) this.entries.forget(key.key); throw error; }
 	}
 	addProject(directory: string): Project {
 		const existing = this.getProjects().find(project => project.directory === directory);
@@ -418,7 +441,10 @@ export class WorkspaceStore {
 		this.db.exec("BEGIN IMMEDIATE");
 		try {
 			for (const id of ids) {
-				this.db.prepare("DELETE FROM tasks WHERE id=?").run(id); this.entries.forget(id);
+				// A deleted chat's key can be reused, so what is cached under it goes too.
+				const key = this.db.prepare("SELECT key FROM tasks WHERE id=?").get(id) as { key: number } | undefined;
+				if (key) this.entries.forget(key.key);
+				this.db.prepare("DELETE FROM tasks WHERE id=?").run(id);
 				this.db.prepare("DELETE FROM thread_merges WHERE parent_id=? OR child_id=?").run(id, id);
 				this.db.prepare("DELETE FROM delegation_outbox WHERE parent_id=? OR child_id=?").run(id, id);
 				this.db.prepare("DELETE FROM delegation_wakes WHERE child_id=?").run(id);
@@ -426,6 +452,8 @@ export class WorkspaceStore {
 			for (const attachment of attachments) this.db.prepare("DELETE FROM attachments WHERE id=?").run(attachment.id);
 			this.db.exec("COMMIT");
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
+		// Hands the deleted chats' pages back to the disk.
+		this.db.exec("PRAGMA incremental_vacuum");
 		return attachments;
 	}
 	/** Numbers a section's chats in the given order. Ordering is not activity, so their times stay put. */

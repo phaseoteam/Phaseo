@@ -6,6 +6,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { createServer } from "node:http";
 import { DatabaseSync } from "node:sqlite";
+import { storeFixtureTasks } from "./fixtures/workspaceFixture.mjs";
 // TODO(desktop composer menus): the redesigned composer has no native command and skill picker or "/" menu yet. Re-add the
 // removed UI checks (Pi tab in the Commands dialog, native search, insertion as a native intent with "Use as plain text",
 // the intent surviving a chat switch, prefix edits clearing it, and sending from the composer) once the new menus land.
@@ -13,6 +14,7 @@ const profile=mkdtempSync(path.join(tmpdir(),'phaseo-pi-native-actions-'));app.s
 const project=path.join(profile,'project');mkdirSync(project);const now=new Date().toISOString();const db=new DatabaseSync(path.join(profile,'workspace/workspace.sqlite'));
 db.exec('CREATE TABLE projects (id TEXT PRIMARY KEY,data TEXT NOT NULL);CREATE TABLE tasks (id TEXT PRIMARY KEY,data TEXT NOT NULL)');db.prepare('INSERT INTO projects VALUES (?,?)').run('project',JSON.stringify({id:'project',name:'Website',directory:project,createdAt:now}));
 for(const [id,title,projectId] of [['personal','Owned personal',undefined],['project-chat','Owned project','project']])db.prepare('INSERT INTO tasks VALUES (?,?)').run(id,JSON.stringify({id,title,projectId,harness:'pi',model:'default',mode:'chat',status:'completed',pinned:false,archived:false,queue:[],messages:[{id:id+'-message',role:'assistant',text:'Owned history',createdAt:now}],createdAt:now,updatedAt:now}));db.close();
+await storeFixtureTasks(path.join(profile, "workspace", "workspace.sqlite"));
 const server=createServer((_request,response)=>{response.setHeader('content-type','text/html');response.end('<html><title>Owned browser</title><body>Owned Pi audit</body></html>');});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const address=`http://127.0.0.1:${server.address().port}`;
 if(process.platform!=='win32'){console.log('PI_NATIVE_ACTIONS_SMOKE skipped: owned Windows launch fixture');app.exit(0);}
 const prefix=path.join(profile,'owned-cli');const bin=path.join(prefix,'node_modules/@earendil-works/pi-coding-agent/dist');mkdirSync(bin,{recursive:true});const calls=path.join(profile,'rpc.jsonl'),modeFile=path.join(profile,'catalog-mode');writeFileSync(calls,'');writeFileSync(modeFile,'available');writeFileSync(path.join(prefix,'pi.cmd'),'@echo off\r\n');

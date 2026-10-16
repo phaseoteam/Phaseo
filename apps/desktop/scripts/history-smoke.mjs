@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { DatabaseSync } from "node:sqlite";
+import { openFixtureStore, storeFixtureTasks } from "./fixtures/workspaceFixture.mjs";
 
 const data = mkdtempSync(path.join(tmpdir(), "phaseo-history-smoke-"));
 app.setPath("userData", data);
@@ -29,6 +30,7 @@ byteHistory.messages=Array.from({length:8},(_,index)=>({id:'bytes-'+index,role:'
 byteHistory.activities=Array.from({length:8},(_,index)=>({id:'byte-activity-'+index,type:'tool',title:'Owned large output '+index,text:'😀\t'.repeat(100000),status:'completed'}));
 db.prepare("UPDATE tasks SET data=? WHERE id='044'").run(JSON.stringify(byteHistory));
 db.close();
+await storeFixtureTasks(path.join(data, "workspace", "workspace.sqlite"));
 const entry = process.argv.find(value => value.startsWith("--app-entry="))?.slice("--app-entry=".length);
 const originalHandle = ipcMain.handle;
 let failNextHistory = false;
@@ -93,16 +95,14 @@ async function wait(expression, label) {
 async function search(query) {
   await run(`(()=>{const input=document.querySelector('input[aria-label="Search chats"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${javascriptLiteral(query)});input.dispatchEvent(new Event('input',{bubbles:true}));})()`);
 }
-// The app keeps messages and activities as rows of their own. An outside writer rebuilds the chat from them and writes
-// it back whole, as older builds did, which the app adopts.
-const readChat = (database, id) => { const task = JSON.parse(database.prepare("SELECT data FROM tasks WHERE id=?").get(id).data); for (const [kind, name] of [[0, "messages"], [1, "activities"]]) task[name] ??= database.prepare("SELECT data FROM task_entries WHERE task_id=? AND kind=? ORDER BY position").all(id, kind).map(row => JSON.parse(row.data)); return task; };
+// Changes made while the app runs go through a second connection to the app's own store, as another writer would.
 async function publishReply(text, title) {
-  const liveHistory = new DatabaseSync(path.join(data, "workspace/workspace.sqlite"));
+  const liveHistory = await openFixtureStore(path.join(data, "workspace/workspace.sqlite"));
   try {
-    const task = readChat(liveHistory, "042");
+    const task = liveHistory.getTask("042");
     task.messages.push({ id: `live-${task.messages.length}`, role: "assistant", text, createdAt: timestamp });
     task.activities.push({ id: `live-activity-${task.activities.length}`, type: "tool", title, text: "Owned live activity", status: "completed" });
-    liveHistory.prepare("UPDATE tasks SET data=? WHERE id='042'").run(JSON.stringify(task));
+    liveHistory.saveTask(task, true);
   } finally { liveHistory.close(); }
   await run(`window.phaseoDesktop.workspace.command({type:'update-task',id:'042',title:'History 042'})`);
 }
@@ -206,8 +206,8 @@ try {
     if (index === 0) delayedConversation = true;
     await run(`(()=>{const button=${earlierMessages};button.click();button.click()})()`);
     if (index === 0) {
-      const updateDb = new DatabaseSync(path.join(data, "workspace/workspace.sqlite"));
-      try { const task = readChat(updateDb, "043"); task.messages[950].text = "Updated while paging"; updateDb.prepare("UPDATE tasks SET data=? WHERE id='043'").run(JSON.stringify(task)); } finally { updateDb.close(); }
+      const updateDb = await openFixtureStore(path.join(data, "workspace/workspace.sqlite"));
+      try { const task = updateDb.getTask("043"); task.messages[950].text = "Updated while paging"; updateDb.saveTask(task, true); } finally { updateDb.close(); }
       await run(`window.phaseoDesktop.workspace.command({type:'update-task',id:'043',title:'History 043'})`);
       await wait(`${messages}.some(row=>row.dataset.conversationId==='message:large-950'&&row.textContent.includes('Updated while paging'))`, "pending page refresh retains newer task data");
     }

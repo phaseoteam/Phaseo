@@ -6,7 +6,8 @@ export default defineConfig({
 		outDir: "dist/main",
 		emptyOutDir: true,
 		lib: {
-			entry: { index: "src/main/index.ts", pdfWorker: "src/main/pdfWorker.mjs" },
+			// The store is also its own entry, so smoke fixtures seed chats through it (scripts/fixtures/workspaceFixture.mjs).
+			entry: { index: "src/main/index.ts", pdfWorker: "src/main/pdfWorker.mjs", workspaceStore: "src/main/workspaceStore.ts" },
 			formats: ["es"],
 			fileName: (_format, name) => `${name}.mjs`,
 		},

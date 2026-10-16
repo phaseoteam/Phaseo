@@ -9,12 +9,14 @@ import { promisify } from 'node:util';
 import { syncBuiltinESMExports } from 'node:module';
 import { DatabaseSync } from 'node:sqlite';
 import { installControlActions } from './fixtures/control-actions.mjs';
+import { storeFixtureTasks } from "./fixtures/workspaceFixture.mjs";
 // Inline review threads in the pull request Code tab, driven through the production gh adapter with an owned fake gh.
 const profile=mkdtempSync(path.join(tmpdir(),'phaseo-review-threads-'));app.setPath('userData',profile);mkdirSync(path.join(profile,'workspace'));
 const project=path.join(profile,'project');mkdirSync(project);for(const args of [['init','-b','fixture'],['remote','add','origin','https://github.com/owned/repo.git']])childProcess.execFileSync('git',args,{cwd:project,stdio:'ignore'});
 const now='2026-10-04T00:00:00Z',head='a'.repeat(40),base='b'.repeat(40);
 const db=new DatabaseSync(path.join(profile,'workspace/workspace.sqlite'));db.exec('CREATE TABLE projects (id TEXT PRIMARY KEY,data TEXT NOT NULL); CREATE TABLE tasks (id TEXT PRIMARY KEY,data TEXT NOT NULL)');db.prepare('INSERT INTO projects VALUES (?,?)').run('project',JSON.stringify({id:'project',name:'Owned reviews',directory:project,createdAt:now}));
 for(const [id,projectId] of [['project-chat','project'],['personal-chat',undefined]])db.prepare('INSERT INTO tasks VALUES (?,?)').run(id,JSON.stringify({id,title:id,projectId,harness:'phaseo',model:'owned',mode:'chat',status:'completed',queue:[],pinned:false,archived:false,messages:[],createdAt:now,updatedAt:now}));db.close();
+await storeFixtureTasks(path.join(profile, "workspace", "workspace.sqlite"));
 const ownedGh=path.join(profile,'owned-gh.exe'),originalExec=childProcess.execFile,realExec=promisify(originalExec);let reads=0,viewReads=0,failView=true,fixtureFailure;const writes=[];
 const path0='src/review 世界.ts';
 const detail={number:12,title:'Owned review',body:'Owned pull request',state:'OPEN',author:{login:'owner'},isDraft:false,headRefName:'owned',baseRefName:'main',headRefOid:head,baseRefOid:base,updatedAt:now,reviewDecision:'REVIEW_REQUIRED',additions:1,deletions:1,changedFiles:1,mergeable:'MERGEABLE',mergeStateStatus:'CLEAN',commits:{nodes:[{commit:{statusCheckRollup:{state:'SUCCESS'}}}]}};
