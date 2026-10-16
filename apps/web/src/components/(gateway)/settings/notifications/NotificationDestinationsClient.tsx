@@ -125,6 +125,10 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 							toast.promise(write(setBillingNotificationPreference({ preference: "modelDeprecationAlerts", enabled: next })), { loading: `${s("Saving")}…`, success: s("Saved"), error: s("Could not save alert") });
 						}} /></div>
 					</div>
+					<div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+						<div><h3 className="text-sm font-medium">{s("Rate Limit Alerts")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{s("Get an alert when rate limit policies reject requests, at most once an hour.")}</p></div>
+						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto"><NotificationRouteSelector destinations={destinations} eventKind="rate_limit_throttled" initialDestinationIds={initialNotificationRoutes.rate_limit_throttled ?? []} /></div>
+					</div>
 				</div>
 			</section>
 

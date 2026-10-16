@@ -31,14 +31,14 @@ function buildSupabaseMock() {
 					is: () => ({
 						lt: () => ({
 							not: (column: string, operator: string, value: string) => {
-								expect([column, operator, value]).toEqual(["kind", "in", '("notification_test","model_deprecation")']);
+								expect([column, operator, value]).toEqual(["kind", "in", '("notification_test","model_deprecation","rate_limit_throttled")']);
 								return {
 									neq: (templateColumn: string, templateValue: string) => {
 										expect([templateColumn, templateValue]).toEqual(["template", "model_deprecation"]);
 										return {
 											order: () => ({
 												limit: async (limit: number) => ({
-													data: state.rows.filter((row) => row.kind !== "notification_test" && row.kind !== "model_deprecation" && row.template !== "model_deprecation").slice(0, limit),
+													data: state.rows.filter((row) => row.kind !== "notification_test" && row.kind !== "model_deprecation" && row.kind !== "rate_limit_throttled" && row.template !== "model_deprecation").slice(0, limit),
 													error: null,
 												}),
 											}),

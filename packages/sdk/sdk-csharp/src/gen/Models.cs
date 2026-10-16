@@ -8826,6 +8826,9 @@ public sealed class WorkspaceNotificationRouteMap
 	[JsonPropertyName("payment_method_expiring")]
 	public List<string> PaymentMethodExpiring { get; set; }
 
+	[JsonPropertyName("rate_limit_throttled")]
+	public List<string> RateLimitThrottled { get; set; }
+
 }
 
 public sealed class WorkspaceNotificationRouteResponse

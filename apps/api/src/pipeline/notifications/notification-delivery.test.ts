@@ -29,6 +29,12 @@ describe("notification provider payloads", () => {
 		expect(ranges).toEqual([[0, 99], [100, 199], [200, 299]]);
 	});
 	it("formats model deprecation content", () => { expect(eventContent(event).message).toContain("Example Model has been deprecated"); });
+	it("formats rate limit throttle content", () => {
+		const content = eventContent({ ...event, kind: "rate_limit_throttled", payload: { throttled_requests: 47, window_minutes: 15, policies: [{ policy_name: "Batch keys", limit_scope: "key", throttled_requests: 42 }, { policy_name: null, limit_scope: "end_user", throttled_requests: 5 }] } });
+		expect(content.title).toBe("Rate limit alert");
+		expect(content.message).toBe("Rate limit policies rejected 47 requests in the last 15 minutes. Most rejected: Batch keys (key limit, 42), Deleted policy (end user limit, 5).");
+		expect(eventContent({ ...event, kind: "rate_limit_throttled", payload: { throttled_requests: 1, window_minutes: 15, policies: [] } }).message).toBe("Rate limit policies rejected 1 request in the last 15 minutes.");
+	});
 	it("notifies up to seven days before a scheduled deprecation", () => {
 		const now = new Date("2026-09-01T00:00:00.000Z");
 		expect(shouldNotifyModelDeprecation({ status: "available", deprecated_at: "2026-09-08T00:00:00.000Z" }, now)).toBe(true);

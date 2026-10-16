@@ -1987,6 +1987,8 @@
 		"Product alerts": "Alertas de productos",
 		"Model Deprecation Alerts": "Alertas de obsolescencia del modelo",
 		"phraseGetNoticeBeforeAModelYourWorkspaceUsesIsRetired": "Recibe un aviso antes de que se retire un modelo que utiliza tu espacio de trabajo.",
+		"Rate Limit Alerts": "Alertas de límites de uso",
+		"phraseGetAnAlertWhenRateLimitPoliciesRejectRequestsAtMostOnceAnHour": "Recibe un aviso cuando las políticas de límites de uso rechacen solicitudes, como máximo una vez por hora.",
 		"Destinations": "Destinos",
 		"phraseCreateReusableChannelsThenChooseThemOnEachAlertAbove": "Crea canales reutilizables y luego selecciónalos en cada alerta anterior.",
 		"Add destination": "Agregar destino",

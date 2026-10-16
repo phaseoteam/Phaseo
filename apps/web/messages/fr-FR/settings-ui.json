@@ -1987,6 +1987,8 @@
 		"Product alerts": "Alertes produit",
 		"Model Deprecation Alerts": "Alertes de dépréciation de modèle",
 		"phraseGetNoticeBeforeAModelYourWorkspaceUsesIsRetired": "Recevez une notification avant qu'un modèle utilisé par votre espace de travail ne soit retiré.",
+		"Rate Limit Alerts": "Alertes de limites de débit",
+		"phraseGetAnAlertWhenRateLimitPoliciesRejectRequestsAtMostOnceAnHour": "Recevez une alerte lorsque des politiques de limite de débit rejettent des requêtes, au plus une fois par heure.",
 		"Destinations": "Destinations",
 		"phraseCreateReusableChannelsThenChooseThemOnEachAlertAbove": "Créez des canaux réutilisables, puis choisissez-les pour chaque alerte ci-dessus.",
 		"Add destination": "Ajouter une destination",

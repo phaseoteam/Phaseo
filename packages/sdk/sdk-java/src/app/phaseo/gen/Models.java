@@ -3713,6 +3713,7 @@ public final class Models {
 		public java.util.List<String> low_balance;
 		public java.util.List<String> model_deprecation;
 		public java.util.List<String> payment_method_expiring;
+		public java.util.List<String> rate_limit_throttled;
 	}
 
 	public static class WorkspaceNotificationRouteResponse {

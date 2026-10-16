@@ -441,7 +441,7 @@ export type NotificationDestination = {
 	createdAt: string | null;
 };
 
-export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation";
+export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation" | "rate_limit_throttled";
 
 export type SettingsPaymentMethodsInitialData = {
 	customerId: string | null;

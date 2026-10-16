@@ -5183,7 +5183,9 @@ module Phaseo
     #   @return [Array<String>]
     # @!attribute [rw] payment_method_expiring
     #   @return [Array<String>]
-    WorkspaceNotificationRouteMap = Struct.new(:auto_top_up_failed, :low_balance, :model_deprecation, :payment_method_expiring, keyword_init: true)
+    # @!attribute [rw] rate_limit_throttled
+    #   @return [Array<String>]
+    WorkspaceNotificationRouteMap = Struct.new(:auto_top_up_failed, :low_balance, :model_deprecation, :payment_method_expiring, :rate_limit_throttled, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     WorkspaceNotificationRouteResponse = Struct.new(:data, keyword_init: true)

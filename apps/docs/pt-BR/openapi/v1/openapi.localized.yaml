@@ -20082,6 +20082,7 @@ components:
         - auto_top_up_failed
         - payment_method_expiring
         - model_deprecation
+        - rate_limit_throttled
     WorkspaceNotificationRouteMap:
       type: object
       required:
@@ -20089,6 +20090,7 @@ components:
         - auto_top_up_failed
         - payment_method_expiring
         - model_deprecation
+        - rate_limit_throttled
       properties:
         low_balance:
           type: array
@@ -20106,6 +20108,11 @@ components:
             type: string
             format: uuid
         model_deprecation:
+          type: array
+          items:
+            type: string
+            format: uuid
+        rate_limit_throttled:
           type: array
           items:
             type: string

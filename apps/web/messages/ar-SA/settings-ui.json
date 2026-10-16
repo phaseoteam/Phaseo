@@ -1987,6 +1987,8 @@
 		"Product alerts": "تنبيهات المنتجات",
 		"Model Deprecation Alerts": "تنبيهات إيقاف النماذج",
 		"phraseGetNoticeBeforeAModelYourWorkspaceUsesIsRetired": "احصل على إشعار قبل انتهاء خدمة أي نموذج تستخدمه مساحة عملك.",
+		"Rate Limit Alerts": "تنبيهات حدود المعدل",
+		"phraseGetAnAlertWhenRateLimitPoliciesRejectRequestsAtMostOnceAnHour": "احصل على تنبيه عندما ترفض سياسات حدود المعدل الطلبات، بحد أقصى مرة واحدة كل ساعة.",
 		"Destinations": "الوجهات",
 		"phraseCreateReusableChannelsThenChooseThemOnEachAlertAbove": "إنشاء قنوات قابلة لإعادة الاستخدام، ثم اختيارها في كل تنبيه أعلاه.",
 		"Add destination": "إضافة وجهة",

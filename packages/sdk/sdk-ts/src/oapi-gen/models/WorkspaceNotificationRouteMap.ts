@@ -3,4 +3,5 @@ export interface WorkspaceNotificationRouteMap {
   low_balance: string[];
   model_deprecation: string[];
   payment_method_expiring: string[];
+  rate_limit_throttled: string[];
 }

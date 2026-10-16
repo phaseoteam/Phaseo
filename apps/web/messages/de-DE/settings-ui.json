@@ -1987,6 +1987,8 @@
 		"Product alerts": "Produktwarnungen",
 		"Model Deprecation Alerts": "Warnungen zur Modellablösung",
 		"phraseGetNoticeBeforeAModelYourWorkspaceUsesIsRetired": "Benachrichtigung erhalten, bevor ein verwendetes Modell eingestellt wird.",
+		"Rate Limit Alerts": "Warnungen zu Ratenlimits",
+		"phraseGetAnAlertWhenRateLimitPoliciesRejectRequestsAtMostOnceAnHour": "Benachrichtigung erhalten, wenn Ratenlimit-Richtlinien Anfragen ablehnen, höchstens einmal pro Stunde.",
 		"Destinations": "Ziele",
 		"phraseCreateReusableChannelsThenChooseThemOnEachAlertAbove": "Wiederverwendbare Kanäle erstellen und sie anschließend oben für Warnungen auswählen.",
 		"Add destination": "Ziel hinzufügen",

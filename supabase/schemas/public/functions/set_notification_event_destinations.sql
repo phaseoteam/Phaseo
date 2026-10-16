@@ -11,7 +11,7 @@ CREATE OR REPLACE FUNCTION public.set_notification_event_destinations (
 begin
   perform pg_advisory_xact_lock(hashtextextended(p_workspace_id::text || ':' || p_event_kind, 0));
 
-  if p_event_kind not in ('low_balance', 'auto_top_up_failed', 'payment_method_expiring', 'model_deprecation') then
+  if p_event_kind not in ('low_balance', 'auto_top_up_failed', 'payment_method_expiring', 'model_deprecation', 'rate_limit_throttled') then
     raise exception 'invalid_notification_event_kind';
   end if;
 

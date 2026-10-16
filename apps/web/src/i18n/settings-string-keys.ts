@@ -103,6 +103,7 @@ const settingsPhraseKeys: Readonly<Record<string, string>> = {
   "Private classification rollups retained after raw I/O expires.": "phrasePrivateClassificationRollupsRetainedAfterRawIOExpires",
   "Classifications will appear after sampled requests are processed.": "phraseClassificationsWillAppearAfterSampledRequestsAreProcessed",
   "Get notice before a model your workspace uses is retired.": "phraseGetNoticeBeforeAModelYourWorkspaceUsesIsRetired",
+  "Get an alert when rate limit policies reject requests, at most once an hour.": "phraseGetAnAlertWhenRateLimitPoliciesRejectRequestsAtMostOnceAnHour",
   "Create reusable channels, then choose them on each alert above.": "phraseCreateReusableChannelsThenChooseThemOnEachAlertAbove",
   "Add a destination to route alerts to the tools your team already watches.": "phraseAddADestinationToRouteAlertsToTheToolsYourTeamAlreadyWatches",
   "Use Microsoft 365 email addresses or Entra object IDs. Teams webhooks cannot mention roles or everyone.": "phraseUseMicrosoft365EmailAddressesOrEntraObjectIDsTeamsWebhooksCannotMentionRolesOrEveryone",

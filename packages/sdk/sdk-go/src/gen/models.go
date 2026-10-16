@@ -5291,6 +5291,7 @@ const (
 	WorkspaceNotificationEventKindAutoTopUpFailed WorkspaceNotificationEventKind = "auto_top_up_failed"
 	WorkspaceNotificationEventKindPaymentMethodExpiring WorkspaceNotificationEventKind = "payment_method_expiring"
 	WorkspaceNotificationEventKindModelDeprecation WorkspaceNotificationEventKind = "model_deprecation"
+	WorkspaceNotificationEventKindRateLimitThrottled WorkspaceNotificationEventKind = "rate_limit_throttled"
 )
 
 
@@ -5304,6 +5305,7 @@ type WorkspaceNotificationRouteMap struct {
 	LowBalance []string `json:"low_balance"`
 	ModelDeprecation []string `json:"model_deprecation"`
 	PaymentMethodExpiring []string `json:"payment_method_expiring"`
+	RateLimitThrottled []string `json:"rate_limit_throttled"`
 }
 
 type WorkspaceNotificationRouteResponse struct {
