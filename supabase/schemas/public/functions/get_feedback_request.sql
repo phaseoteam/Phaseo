@@ -8,14 +8,20 @@ CREATE OR REPLACE FUNCTION public.get_feedback_request (
   SET search_path TO ''
   AS $function$
 -- What the emailed feedback page needs for one token, or null for an unknown token.
--- Never returns the email address or user id.
+-- Never returns the email address or user id. rewardsIssued lets the caller stop
+-- offering a code once the campaign's budget is spent.
 select jsonb_build_object(
   'campaign', r.campaign,
   'segment', r.segment,
   'recency', r.recency,
   'responded', r.responded_at is not null,
   'rewardCode', r.reward_code,
-  'optedOut', r.opted_out_at is not null or u.product_emails_opted_out_at is not null
+  'optedOut', r.opted_out_at is not null or u.product_emails_opted_out_at is not null,
+  'rewardsIssued', (
+    select count(*)::integer
+    from public.credit_grants g
+    where g.note = 'Feedback thank-you (' || r.campaign || ')'
+  )
 )
 from public.feedback_requests r
 left join public.users u on u.user_id = r.user_id

@@ -7,6 +7,7 @@ export type FeedbackRequestView = {
 	responded: boolean;
 	rewardCode: string | null;
 	optedOut: boolean;
+	rewardAvailable: boolean;
 };
 
 export type FeedbackSubmitResult = {
@@ -41,7 +42,11 @@ export const FEEDBACK_REASONS: Record<Exclude<FeedbackSegment, "paid">, Feedback
 	],
 };
 
-const TOKEN_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Two answers this long stay under the database's 20,000-byte limit even in
+// three-byte scripts such as Chinese. The API enforces the same length.
+export const FEEDBACK_ANSWER_MAX_LENGTH = 3_000;
+
+const TOKEN_PATTERN =/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function isFeedbackToken(value: string): boolean {
 	return TOKEN_PATTERN.test(value);
@@ -56,7 +61,7 @@ export function buildFeedbackAnswers(
 	segment: FeedbackSegment,
 	input: { reason: FeedbackReason | null; details: string; nps: number | null; likes: string; improve: string },
 ): Record<string, string | number> | null {
-	const text = (value: string) => value.trim().slice(0, 4_000);
+	const text = (value: string) => value.trim().slice(0, FEEDBACK_ANSWER_MAX_LENGTH);
 	if (segment === "paid") {
 		if (input.nps === null) return null;
 		return {

@@ -11,7 +11,9 @@ export const publicFeedbackRouter = new Hono<{ Bindings: Env }>();
 const NO_STORE = { "Cache-Control": "private, no-store" } as const;
 const TOKEN_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_ANSWERS = 10;
-const MAX_ANSWER_LENGTH = 4_000;
+const MAX_ANSWER_LENGTH = 3_000;
+// feedback_requests_answers_size_check: the stored jsonb text is at most 20,000 bytes.
+const MAX_ANSWERS_BYTES = 20_000;
 const ANSWER_KEY_PATTERN = /^[a-z][a-z0-9_]{0,39}$/;
 const REWARD_VALID_DAYS = 90;
 
@@ -35,7 +37,11 @@ export function parseFeedbackAnswers(value: unknown): FeedbackAnswers | null {
 			return null;
 		}
 	}
-	return Object.keys(answers).length > 0 ? answers : null;
+	const count = Object.keys(answers).length;
+	if (count === 0) return null;
+	// Postgres prints jsonb with a space after every colon and comma.
+	const bytes = new TextEncoder().encode(JSON.stringify(answers)).length + count * 2;
+	return bytes <= MAX_ANSWERS_BYTES ? answers : null;
 }
 
 function rewardSettings(env: Env): { nanos: number; cap: number } {
@@ -54,7 +60,10 @@ publicFeedbackRouter.get("/:token", async (c) => {
 		const { data, error } = await getDataClient(c.env).rpc("get_feedback_request", { p_token: token });
 		if (error) throw error;
 		if (!data) return c.json({ error: "not_found" }, 404, NO_STORE);
-		return c.json(data, 200, NO_STORE);
+		const { rewardsIssued, ...request } = data as Record<string, unknown> & { rewardsIssued?: unknown };
+		const reward = rewardSettings(c.env);
+		const rewardAvailable = reward.nanos > 0 && Number(rewardsIssued ?? 0) < reward.cap;
+		return c.json({ ...request, rewardAvailable }, 200, NO_STORE);
 	} catch (error) {
 		console.error("[web-api/feedback] lookup failed", { error });
 		return c.json({ error: "feedback_unavailable" }, 503, NO_STORE);

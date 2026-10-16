@@ -9,6 +9,7 @@ import { Link } from "@/i18n/navigation";
 import type { FeedbackMessages } from "@/i18n/feedback";
 import {
 	buildFeedbackAnswers,
+	FEEDBACK_ANSWER_MAX_LENGTH,
 	FEEDBACK_REASONS,
 	feedbackApiPath,
 	type FeedbackReason,
@@ -27,20 +28,29 @@ type Props = {
 
 const NPS_SCORES = Array.from({ length: 11 }, (_, score) => score);
 
-function ChoiceButton({ selected, onSelect, children }: { selected: boolean; onSelect: () => void; children: React.ReactNode }) {
+// A native radio styled as a button, so arrow keys move between options and each
+// group is a single Tab stop.
+function ChoiceOption({
+	name,
+	selected,
+	onSelect,
+	children,
+}: {
+	name: string;
+	selected: boolean;
+	onSelect: () => void;
+	children: React.ReactNode;
+}) {
 	return (
-		<button
-			type="button"
-			role="radio"
-			aria-checked={selected}
-			onClick={onSelect}
+		<label
 			className={cn(
-				"rounded-lg border px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+				"cursor-pointer rounded-lg border px-3 py-2 text-left text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
 				selected ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-foreground/40",
 			)}
 		>
+			<input type="radio" name={name} checked={selected} onChange={onSelect} className="sr-only" />
 			{children}
-		</button>
+		</label>
 	);
 }
 
@@ -125,11 +135,11 @@ export function FeedbackRequestForm({ token, segment, responded, rewardCode, mes
 				<>
 					<fieldset className="space-y-3">
 						<legend className="text-sm font-medium">{messages.npsLabel}</legend>
-						<div role="radiogroup" aria-label={messages.npsLabel} className="grid grid-cols-6 gap-2 sm:grid-cols-11">
+						<div className="grid grid-cols-6 gap-2 sm:grid-cols-11">
 							{NPS_SCORES.map((score) => (
-								<ChoiceButton key={score} selected={nps === score} onSelect={() => setNps(score)}>
+								<ChoiceOption key={score} name="feedback-nps" selected={nps === score} onSelect={() => setNps(score)}>
 									<span className="block text-center tabular-nums">{score}</span>
-								</ChoiceButton>
+								</ChoiceOption>
 							))}
 						</div>
 						<div className="flex justify-between text-xs text-muted-foreground">
@@ -139,28 +149,28 @@ export function FeedbackRequestForm({ token, segment, responded, rewardCode, mes
 					</fieldset>
 					<div className="space-y-2">
 						<Label htmlFor="feedback-likes">{messages.likesLabel}</Label>
-						<Textarea id="feedback-likes" value={likes} onChange={(event) => setLikes(event.target.value)} maxLength={4000} rows={3} />
+						<Textarea id="feedback-likes" value={likes} onChange={(event) => setLikes(event.target.value)} maxLength={FEEDBACK_ANSWER_MAX_LENGTH} rows={3} />
 					</div>
 					<div className="space-y-2">
 						<Label htmlFor="feedback-improve">{messages.improveLabel}</Label>
-						<Textarea id="feedback-improve" value={improve} onChange={(event) => setImprove(event.target.value)} maxLength={4000} rows={3} />
+						<Textarea id="feedback-improve" value={improve} onChange={(event) => setImprove(event.target.value)} maxLength={FEEDBACK_ANSWER_MAX_LENGTH} rows={3} />
 					</div>
 				</>
 			) : (
 				<>
 					<fieldset className="space-y-3">
 						<legend className="text-sm font-medium">{messages.reasonLabel}</legend>
-						<div role="radiogroup" aria-label={messages.reasonLabel} className="grid gap-2 sm:grid-cols-2">
+						<div className="grid gap-2 sm:grid-cols-2">
 							{FEEDBACK_REASONS[segment].map((key) => (
-								<ChoiceButton key={key} selected={reason === key} onSelect={() => setReason(key)}>
+								<ChoiceOption key={key} name="feedback-reason" selected={reason === key} onSelect={() => setReason(key)}>
 									{messages.reasons[key]}
-								</ChoiceButton>
+								</ChoiceOption>
 							))}
 						</div>
 					</fieldset>
 					<div className="space-y-2">
 						<Label htmlFor="feedback-details">{messages.detailsLabel}</Label>
-						<Textarea id="feedback-details" value={details} onChange={(event) => setDetails(event.target.value)} maxLength={4000} rows={4} />
+						<Textarea id="feedback-details" value={details} onChange={(event) => setDetails(event.target.value)} maxLength={FEEDBACK_ANSWER_MAX_LENGTH} rows={4} />
 					</div>
 				</>
 			)}

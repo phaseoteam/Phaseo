@@ -95,7 +95,7 @@ try {
     // The feedback page sees the segment but never the address.
     const paidToken = await tokenFor('paid@example.com');
     const page = (await one('select public.get_feedback_request($1) page', [paidToken])).page;
-    assert.deepEqual(page, { campaign: 'v1', segment: 'paid', recency: 'active', responded: false, rewardCode: null, optedOut: false });
+    assert.deepEqual(page, { campaign: 'v1', segment: 'paid', recency: 'active', responded: false, rewardCode: null, optedOut: false, rewardsIssued: 0 });
     assert.equal((await one("select public.get_feedback_request('99999999-9999-9999-9999-999999999999') page")).page, null);
 
     // First answer is kept and earns one single-use code; repeats return the same code.
@@ -139,9 +139,15 @@ try {
     assert.equal((await one(`select payload from public.email_outbox where to_email = 'late@example.com'`)).payload.reward_available, false);
     await db.exec('reset role');
 
-    // Deleting the account removes its feedback.
+    // Deleting the account removes its feedback, but its code was issued and still
+    // counts against the cap.
     await db.exec(`delete from auth.users where id = '00000000-0000-0000-0000-00000000000a'`);
     assert.equal((await one('select count(*)::int n from public.feedback_requests')).n, 4);
+    await db.exec('set role service_role');
+    const rawToken = await tokenFor('raw@example.com');
+    assert.equal((await one('select public.get_feedback_request($1) page', [rawToken])).page.rewardsIssued, 1);
+    assert.deepEqual(await submit(rawToken, { reason: 'x' }, 1), { status: 'submitted', rewardStatus: 'budget_exhausted' });
+    await db.exec('reset role');
 
     // Backend-only: browsers can neither read requests nor call the functions.
     for (const role of ['anon', 'authenticated']) {
