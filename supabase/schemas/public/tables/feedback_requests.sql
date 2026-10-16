@@ -25,9 +25,6 @@ ALTER TABLE "public"."feedback_requests"
 
 CREATE UNIQUE INDEX feedback_requests_access_token_key ON public.feedback_requests USING btree (access_token);
 
-CREATE INDEX feedback_requests_campaign_rewarded_idx ON public.feedback_requests USING btree (campaign)
-  WHERE (reward_grant_id IS NOT NULL);
-
 CREATE UNIQUE INDEX feedback_requests_user_campaign_key ON public.feedback_requests USING btree (user_id, campaign);
 
 CREATE POLICY "deny_direct_client_access" ON "public"."feedback_requests"

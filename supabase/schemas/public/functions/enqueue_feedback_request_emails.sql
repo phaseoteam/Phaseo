@@ -22,8 +22,8 @@ begin
   end if;
 
   select coalesce(p_reward_cap, 0) > count(*) into v_reward_available
-  from public.feedback_requests
-  where campaign = p_campaign and reward_grant_id is not null;
+  from public.credit_grants
+  where note = 'Feedback thank-you (' || p_campaign || ')';
 
   with candidates as (
     select
