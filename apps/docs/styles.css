@@ -16,7 +16,7 @@
 }
 
 #navbar nav[class*="navbar:flex"] li > :is(a, button) {
-	padding-inline: 0.75rem;
+	padding-inline: 0.6875rem;
 }
 
 @media (max-width: 1279px) {
@@ -26,14 +26,22 @@
 	}
 }
 
+/* Tab icons add about 130px to the tab row. Below 1400px only English has room for them, and only from 1280px. */
+@media (max-width: 1399px) {
+	html:not([lang="en"]) #navbar nav[class*="navbar:flex"] li > :is(a, button) > svg[style*="mask-image"] {
+		display: none;
+	}
+}
+
+@media (max-width: 1279px) {
+	#navbar nav[class*="navbar:flex"] li > :is(a, button) > svg[style*="mask-image"] {
+		display: none;
+	}
+}
+
 /* Luma capitalises every word of a group name, which is wrong outside English ("Modelle Und Routing"). */
 :is(.sidebar-group-header, .eyebrow) {
 	text-transform: none;
-}
-
-/* Every page sets a generic icon, which turns the sidebar into a column of icons. Brand logos are images and stay. */
-#sidebar-content a svg[style*="mask-image"] {
-	display: none;
 }
 
 /* Home page: start paths as plain rows (title, then description) and the SDKs as one line of links. */
@@ -60,6 +68,9 @@
 }
 
 .ph-paths a strong {
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
 	color: rgb(17 24 39);
 	font-weight: 600;
 }
