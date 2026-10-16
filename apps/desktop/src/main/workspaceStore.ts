@@ -12,9 +12,8 @@ import type { WorkspacePreferences } from "../shared/preferences";
 import { agentLimitMessage } from "../shared/orchestration";
 import { MissionStore } from "./missionStore";
 import { validateTaskHistoryQuery, type TaskHistoryPage } from "../shared/taskHistory";
-import type { TaskOverview, WorkspaceOverview } from "../shared/workspaceOverview";
-import { inboxReasonFromCounts } from "../shared/inbox";
-import { conversationPageBytes, validateConversationPageQuery, type ConversationPage } from "../shared/conversationPage";
+import { overviewOrder, taskOverview, type TaskOverview, type WorkspaceOverview } from "../shared/workspaceOverview";
+import { conversationPageOf, validateConversationPageQuery, type ConversationPage } from "../shared/conversationPage";
 import { maximumPullRequestLinks, pullRequestUrl, samePullRequest, sameSnapshot, unwatched, validatePullRequestLinks, validRepository, type PullRequestLinkSnapshot, type SavedPullRequestStack } from "../shared/pullRequestView";
 import type { PullRequestStack } from "../shared/pullRequestStacks";
 import { newPullRequestWatch, type PullRequestWatchMessage, type PullRequestWatchState } from "../shared/pullRequestWatch";
@@ -58,6 +57,12 @@ export class WorkspaceStore {
 			CREATE TABLE IF NOT EXISTS mcp_connections (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			CREATE TABLE IF NOT EXISTS preferences (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			PRAGMA user_version=2;`);
+		// Each chat's overview is kept in its own small table, so listing chats never reads past a chat's messages on disk.
+		// Any change to a chat's data drops it; saveTask writes it again, and getOverview rebuilds any that are missing
+		// (chats from older builds, or written directly by fixtures).
+		this.db.exec(`CREATE TABLE IF NOT EXISTS task_overviews (id TEXT PRIMARY KEY, data TEXT NOT NULL);
+			CREATE TRIGGER IF NOT EXISTS task_overview_changed AFTER UPDATE OF data ON tasks BEGIN DELETE FROM task_overviews WHERE id = new.id; END;
+			CREATE TRIGGER IF NOT EXISTS task_overview_removed AFTER DELETE ON tasks BEGIN DELETE FROM task_overviews WHERE id = old.id; END;`);
 		this.missions = new MissionStore(this.db);
 		this.browserDownloads = new BrowserDownloadStore(this.db);
 		const recoveryTasks = this.db.prepare(`SELECT data FROM tasks WHERE json_extract(data, '$.authTerminalId') IS NOT NULL
@@ -202,25 +207,10 @@ export class WorkspaceStore {
 		if (!row) throw new Error("Task no longer exists.");
 		return JSON.parse(row.data as string) as Task;
 	}
+	/** Parsing the chat once and slicing in JavaScript is far faster than walking a long chat's JSON in SQLite. */
 	conversationPage(value: unknown): ConversationPage {
-		const query = validateConversationPageQuery(value);
-		const jsonPath = query.kind === "messages" ? "$.messages" : "$.activities";
-		// Keep the cursor-adjacent contiguous window, including one oversized entry.
-		const direction = query.afterId || query.fromId ? "ASC" : "DESC";
-		const row = this.db.prepare(`WITH selected AS (SELECT data FROM tasks WHERE id = ?),
-			items AS (SELECT CAST(item.key AS INTEGER) AS position, item.value FROM selected, json_each(selected.data, ?) AS item),
-			metadata AS (SELECT coalesce(json_extract(data, '$.revision'), 0) AS revision, coalesce(json_array_length(data, ?), 0) AS total,
-				(SELECT position FROM items WHERE json_extract(value, '$.id') = ? LIMIT 1) AS anchor FROM selected),
-			bounds AS (SELECT *, CASE WHEN ? IS NOT NULL THEN anchor WHEN ? IS NOT NULL THEN min(total, anchor + 1 + ?) WHEN ? IS NOT NULL THEN min(total, anchor + ?) ELSE total END AS end_index FROM metadata),
-			window AS (SELECT *, CASE WHEN ? IS NOT NULL THEN anchor + 1 WHEN ? IS NOT NULL THEN anchor ELSE max(0, end_index - ?) END AS start_index FROM bounds),
-			sized AS (SELECT position, value, sum(length(CAST(value AS BLOB)) + 1) OVER (ORDER BY position ${direction}) AS bytes, row_number() OVER (ORDER BY position ${direction}) AS ordinal FROM items, window WHERE position >= start_index AND position < end_index),
-			retained AS (SELECT position, value FROM sized WHERE bytes <= ${conversationPageBytes - 1} OR ordinal = 1)
-			SELECT revision, total, anchor, coalesce((SELECT min(position) FROM retained), start_index) AS start_index, coalesce((SELECT max(position) + 1 FROM retained), end_index) AS end_index,
-				(SELECT json_group_array(json(value)) FROM (SELECT value FROM retained ORDER BY position)) AS entries FROM window`)
-			.get(query.taskId, jsonPath, jsonPath, query.beforeId ?? query.afterId ?? query.fromId ?? null, query.beforeId ?? null, query.afterId ?? null, query.limit, query.fromId ?? null, query.limit, query.afterId ?? null, query.fromId ?? null, query.limit);
-		if (!row) throw new Error("Task no longer exists.");
-		if ((query.beforeId || query.afterId || query.fromId) && row.anchor === null) throw new Error("Conversation position no longer exists. Reload the latest history.");
-		return { kind: query.kind, entries: JSON.parse(row.entries as string), earlier: Number(row.start_index), later: Number(row.total) - Number(row.end_index), revision: Number(row.revision) };
+		const query = validateConversationPageQuery(value), task = this.getTask(query.taskId);
+		return conversationPageOf((query.kind === "messages" ? task.messages : task.activities) ?? [], query, task.revision ?? 0);
 	}
 	/** Records what GitHub last said about a pull request on every chat linking it. True when anything changed. */
 	syncPullRequestSnapshot(repository: string, number: number, snapshot: PullRequestLinkSnapshot): boolean {
@@ -289,44 +279,19 @@ export class WorkspaceStore {
 		this.saveTask(task, true); return true;
 	}
 	getTaskView(id: string): Task {
-		const row = this.db.prepare(`SELECT json_set(json_remove(data, '$.messages', '$.activities'), '$.conversationCounts', json_object('messages', coalesce(json_array_length(data, '$.messages'), 0), 'activities', coalesce(json_array_length(data, '$.activities'), 0))) AS view FROM tasks WHERE id = ?`).get(id);
-		if (!row) throw new Error("Task no longer exists.");
-		const task = JSON.parse(row.view as string) as Task;
-		task.messages = this.conversationPage({ taskId: id, kind: "messages", limit: 50 }).entries as Task["messages"];
-		task.activities = this.conversationPage({ taskId: id, kind: "activities", limit: 50 }).entries as NonNullable<Task["activities"]>;
+		const task = this.getTask(id), revision = task.revision ?? 0, messages = task.messages ?? [], activities = task.activities ?? [];
+		task.conversationCounts = { messages: messages.length, activities: activities.length };
+		task.messages = conversationPageOf(messages, { taskId: id, kind: "messages", limit: 50 }, revision).entries as Task["messages"];
+		task.activities = conversationPageOf(activities, { taskId: id, kind: "activities", limit: 50 }, revision).entries as NonNullable<Task["activities"]>;
 		return task;
 	}
+	private saveOverview(overview: TaskOverview) { this.db.prepare("INSERT INTO task_overviews (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(overview.id, JSON.stringify(overview)); }
 	getOverview(): WorkspaceOverview {
-		const tasks = this.db.prepare(`SELECT json_object(
-			'id', id, 'title', json_extract(data, '$.title'), 'harness', json_extract(data, '$.harness'),
-			'model', json_extract(data, '$.model'), 'mode', json_extract(data, '$.mode'), 'status', json_extract(data, '$.status'),
-			'pinned', coalesce(json_extract(data, '$.pinned'), 0), 'tags', json_extract(data, '$.tags'),
-			'settledOverride', json_extract(data, '$.settledOverride'), 'settledAt', json_extract(data, '$.settledAt'), 'unsettledAt', json_extract(data, '$.unsettledAt'),
-			'snoozedUntil', json_extract(data, '$.snoozedUntil'), 'snoozedAt', json_extract(data, '$.snoozedAt'), 'lastSnoozeWakeAt', json_extract(data, '$.lastSnoozeWakeAt'),
-			'lastVisitedAt', json_extract(data, '$.lastVisitedAt'), 'autoSettle', json_extract(data, '$.autoSettle'), 'orderKey', json_extract(data, '$.orderKey'), 'queueCount', coalesce(json_array_length(data, '$.queue'), 0),
-			'lastCompletedAt', (SELECT json_extract(item.value, '$.completedAt') FROM json_each(tasks.data, '$.messages') AS item WHERE json_extract(item.value, '$.role') = 'user' AND json_extract(item.value, '$.completedAt') IS NOT NULL ORDER BY CAST(item.key AS INTEGER) DESC LIMIT 1),
-			'lastUserMessageAt', (SELECT json_extract(item.value, '$.createdAt') FROM json_each(tasks.data, '$.messages') AS item WHERE json_extract(item.value, '$.role') = 'user' AND json_extract(item.value, '$.delivery') IS NULL ORDER BY CAST(item.key AS INTEGER) DESC LIMIT 1), 'archived', coalesce(json_extract(data, '$.archived'), 0),
-			'createdAt', json_extract(data, '$.createdAt'), 'updatedAt', json_extract(data, '$.updatedAt'), 'revision', json_extract(data, '$.revision'),
-			'projectId', json_extract(data, '$.projectId'), 'accountId', json_extract(data, '$.accountId'), 'agentId', json_extract(data, '$.agentId'),
-			'parentId', json_extract(data, '$.parentId'), 'delegation', json_extract(data, '$.delegation'), 'launch', json_extract(data, '$.launch'), 'missionId', json_extract(data, '$.missionId'), 'inboxReadAt', json_extract(data, '$.inboxReadAt'), 'pullRequests', json_extract(data, '$.pullRequests'),
-			'approvalsCount', coalesce(json_array_length(data, '$.approvals'), 0),
-			'answersCount', coalesce(json_array_length(data, '$.questions'), 0) + coalesce(json_array_length(data, '$.forms'), 0),
-			'steeringReviewCount', (SELECT count(*) FROM json_each(tasks.data, '$.steering') AS item WHERE json_extract(item.value, '$.status') IN ('unconfirmed', 'rejected')),
-			'attentionKey', json_array(
-				(SELECT json_extract(item.value, '$.id') FROM json_each(tasks.data, '$.messages') AS item WHERE json_extract(item.value, '$.role') = 'user' ORDER BY CAST(item.key AS INTEGER) DESC LIMIT 1),
-				(SELECT json_group_array(json_extract(item.value, '$.id')) FROM json_each(tasks.data, '$.approvals') AS item),
-				(SELECT json_group_array(json_extract(item.value, '$.id')) FROM json_each(tasks.data, '$.questions') AS item),
-				(SELECT json_group_array(json_extract(item.value, '$.id')) FROM json_each(tasks.data, '$.forms') AS item),
-				(SELECT json_group_array(json_array(json_extract(item.value, '$.id'), json_extract(item.value, '$.status'))) FROM json_each(tasks.data, '$.steering') AS item)
-			)
-		) AS metadata FROM tasks ORDER BY json_extract(data, '$.updatedAt') DESC, id DESC`).all().map(row => {
-			const parsed = JSON.parse(row.metadata as string);
-			const task = Object.fromEntries(Object.entries(parsed).filter(([, value]) => value !== null)) as TaskOverview;
-			task.pinned = Boolean(task.pinned); task.archived = Boolean(task.archived); if (task.autoSettle !== undefined) task.autoSettle = Boolean(task.autoSettle);
-			task.attentionKey = JSON.stringify(parsed.attentionKey);
-			task.attentionReason = inboxReasonFromCounts(task);
-			return task;
-		});
+		const rows = this.db.prepare("SELECT tasks.id, task_overviews.data AS overview FROM tasks LEFT JOIN task_overviews USING (id)").all();
+		const missing = rows.filter(row => typeof row.overview !== "string");
+		// Rebuilt in one transaction: the first open after an upgrade reads every chat once.
+		if (missing.length) { const inTransaction = this.db.isTransaction; if (!inTransaction) this.db.exec("BEGIN"); try { for (const row of missing) { const overview = taskOverview(this.getTask(row.id as string)); this.saveOverview(overview); row.overview = JSON.stringify(overview); } if (!inTransaction) this.db.exec("COMMIT"); } catch (error) { if (!inTransaction) this.db.exec("ROLLBACK"); throw error; } }
+		const tasks = rows.map(row => JSON.parse(row.overview as string) as TaskOverview).sort(overviewOrder);
 		return { version: 1, projects: this.getProjects(), accounts: this.getAccounts(), agents: this.getAgents(), mcpConnections: this.getMcpConnections(), tasks };
 	}
 	taskHistory(value: unknown): TaskHistoryPage {
@@ -360,6 +325,7 @@ export class WorkspaceStore {
 			ON CONFLICT(id) DO UPDATE SET data=json_set(excluded.data, '$.revision', coalesce(json_extract(tasks.data, '$.revision'), 0) + 1)
 			RETURNING json_extract(data, '$.revision') AS revision`).get(task.id, JSON.stringify(task));
 		task.revision = Number(row!.revision);
+		this.saveOverview(taskOverview(task));
 	}
 	addProject(directory: string): Project {
 		const existing = this.getProjects().find(project => project.directory === directory);

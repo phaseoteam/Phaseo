@@ -242,8 +242,10 @@ export class WorkspaceRuntime {
 		const task = stillSettled(); if (!task) return;
 		const key = task.settledAt ?? "";
 		if (this.settleScriptRuns.get(id) === key) return;
-		const overview = this.store.getOverview();
-		const target = settleScriptTarget(task, overview.projects, overview.tasks);
+		// Settle scripts run only in a chat's own worktree; most chats settle elsewhere, and auto-settle can settle hundreds at once.
+		const projects = this.store.getProjects();
+		if (!projects.find(project => project.id === task.projectId)?.worktree) return;
+		const target = settleScriptTarget(task, projects, this.store.getOverview().tasks);
 		if (!target) return;
 		this.settleScriptRuns.set(id, key);
 		const { script, directory } = target;
@@ -709,10 +711,13 @@ export class WorkspaceRuntime {
 		const order = (key: string) => { if (!eventOrder.has(key)) eventOrder.set(key, timelineOrder++); return eventOrder.get(key)!; };
 		let activities: (AgentActivity & { append?: boolean })[] = [];
 		let flushTimer: ReturnType<typeof setTimeout> | undefined;
+		// A flush rewrites the whole chat, so a very long chat flushes less often and streaming leaves the main process free.
+		let flushDelay = 40;
 		let streamError: unknown;
 		const flush = () => {
 			if (flushTimer) clearTimeout(flushTimer); flushTimer = undefined;
 			if (!deltas.size && !activities.length) return;
+			const started = performance.now();
 			const current = this.store.getTask(id);
 			for (const [itemId, text] of deltas) {
 				const messageId = `${message.id}:${itemId}`;
@@ -728,9 +733,10 @@ export class WorkspaceRuntime {
 				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent, ...(activity.proposed ? { proposed: activity.proposed } : {}) });
 			}
 			this.store.saveTask(current); deltas.clear(); activities = []; this.broadcast();
+			flushDelay = Math.min(1000, Math.max(40, Math.round((performance.now() - started) * 4)));
 		};
 		const scheduleFlush = () => {
-			flushTimer ??= setTimeout(() => { try { flush(); } catch (error) { streamError = error; void adapter.cancel().catch(() => {}); } }, 40);
+			flushTimer ??= setTimeout(() => { try { flush(); } catch (error) { streamError = error; void adapter.cancel().catch(() => {}); } }, flushDelay);
 		};
 		const onQuestion: NonNullable<AgentCallbacks["onQuestion"]> = (questions, request) => new Promise(resolve => {
 			flush();

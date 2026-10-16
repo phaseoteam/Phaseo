@@ -67,7 +67,8 @@ describe("model catalog disk cache", () => {
 		await cache.refresh(key, async () => ({ models: first, validators: [{ offset: 0, etag: "\"v1\"" }] }));
 		now = MODEL_CATALOG_FRESH_MS + 1;
 		const fetchModels = vi.fn().mockResolvedValue({ notModified: true });
-		expect(await cache.get(key, fetchModels)).toEqual(first); await settle();
+		expect(await cache.get(key, fetchModels)).toEqual(first);
+		await vi.waitFor(async () => expect((await cache.read(key))?.fetchedAt).toBe(new Date(now).toISOString()), { timeout: 5000 });
 		expect(fetchModels).toHaveBeenCalledWith([{ offset: 0, etag: "\"v1\"" }]); expect(onChange).not.toHaveBeenCalled();
 		expect(await cache.read(key)).toMatchObject({ version: 3, models: first, validators: [{ offset: 0, etag: "\"v1\"" }], fetchedAt: new Date(now).toISOString() });
 		expect(MODEL_CATALOG_FRESH_MS).toBe(15 * 60 * 1000);

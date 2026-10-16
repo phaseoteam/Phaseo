@@ -1,7 +1,7 @@
 import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ScrollArea } from "./ui/scroll-area";
-import { Children, createContext, isValidElement, useContext, useEffect, useState, useMemo, type CSSProperties, type ReactNode } from "react";
+import { Children, createContext, isValidElement, memo, useContext, useEffect, useState, useMemo, type CSSProperties, type ReactNode } from "react";
 import type { CodeToken } from "./codeHighlight";
 import { Check, Copy } from "lucide-react";
 import { useTextCopy } from "./useTextCopy";
@@ -69,9 +69,12 @@ const markdownComponents: Components = {
 
 const markdownPlugins = [remarkGfm, remarkMessageChips];
 
-/** `repository` links `#123` and commit SHAs into that GitHub repository and plays GitHub video uploads, as pull request comments do. */
-export function MessageContent({ text, projectId, repairLocalLinks = false, repository }: { text: string; projectId?: string; repairLocalLinks?: boolean; repository?: string }) {
+/**
+ * `repository` links `#123` and commit SHAs into that GitHub repository and plays GitHub video uploads, as pull request comments do.
+ * Memoised: a long chat re-renders on every streamed update, and parsing Markdown is most of the cost of each message.
+ */
+export const MessageContent = memo(function MessageContent({ text, projectId, repairLocalLinks = false, repository }: { text: string; projectId?: string; repairLocalLinks?: boolean; repository?: string }) {
 	const rendered = useMemo(() => repairLocalLinks ? repairFileLinks(text) : text, [text, repairLocalLinks]);
 	const plugins = useMemo(() => repository ? [remarkGfm, remarkPullRequestLinks({ repository }), remarkMessageChips] : markdownPlugins, [repository]);
 	return <ProjectContext value={projectId}><div className="message-markdown"><ReactMarkdown remarkPlugins={plugins} components={markdownComponents} urlTransform={messageUrl}>{rendered}</ReactMarkdown></div></ProjectContext>;
-}
+});

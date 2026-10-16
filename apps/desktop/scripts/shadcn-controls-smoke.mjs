@@ -45,7 +45,7 @@ app.whenReady().then(async () => {
     if (owner.webContents.isLoading()) await new Promise(resolve => owner.webContents.once("did-finish-load", resolve));
     await installControlActions(owner);
     // Chat mode lists every personal chat; project chats live under Code.
-    await wait(`${rows}.length===60`);
+    await wait(`document.querySelector('aside[aria-label="Chats"] [data-chat-count]')?.dataset.chatCount==='60'&&${rows}.length>0`);
     owner.setSize(1440, 920);
     await run(`${rows}[0].click()`);
     await wait(`window.__auditChatTitle()==='Owned chat 059'||window.__auditChatTitle()===${rows}[0].textContent`);
@@ -133,7 +133,7 @@ app.whenReady().then(async () => {
     }
     owner.setSize(1440, 920);
     await run(`${tools}.querySelector('[aria-label="Close panel"]').click()`);
-    await wait(`!${tools}&&${rows}.length===60`);
+    await wait(`!${tools}&&document.querySelector('aside[aria-label="Chats"] [data-chat-count]')?.dataset.chatCount==='60'&&${rows}.length>0`);
     // The composer's model picker stays inside the window and returns focus when dismissed.
     for (const [width, height] of [[1440, 920], [1180, 800], [1040, 680]]) for (const theme of ["light", "dark"]) {
       owner.setSize(width, height); await run(`window.__auditTheme(${JSON.stringify(theme)})`);

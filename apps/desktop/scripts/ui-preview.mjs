@@ -175,6 +175,48 @@ task("notes", { title: "Draft release notes for SDK 3.1", model: "openai/gpt-6",
 task("french", { title: "Translate onboarding email to French", model: "google/gemini-3.5-flash", age: 60 * 50 });
 task("pgvector", { title: "Explain pgvector index options", age: 60 * 24 * 4 });
 task("offsite", { title: "Plan a Lisbon offsite agenda", model: "openai/gpt-6", age: 60 * 24 * 12 });
+
+// --stress[=chats] adds a year of history (default 2,000 chats, a tenth archived) and four very long chats, to check loading times.
+const stress = process.argv.includes("--stress") ? 2000 : Number(argument("stress", "0"));
+if (stress > 0) {
+	const started = performance.now();
+	const models = ["anthropic/claude-opus-5.5", "openai/gpt-6", "google/gemini-3.5-pro", "openai/gpt-6.1-sol", "google/gemini-3.5-flash"];
+	const topics = ["rate limits", "the billing export", "pgvector indexes", "OAuth refresh", "the onboarding email", "SDK 3.1 release notes", "cache invalidation", "the docs search", "provider failover", "a Lisbon offsite", "Postgres vacuum", "the usage dashboard"];
+	const verbs = ["Explain", "Draft", "Review", "Summarise", "Compare", "Plan", "Debug", "Rewrite"];
+	const answer = (n, topic) => `Here is how ${topic} fits together (part ${n}).\n\n1. **Inputs** – what arrives and when.\n2. **Processing** – the work done on each request, with \`retry\` and \`backoff\` handled per provider.\n3. **Outputs** – what the caller sees.\n\n| Step | Cost | Notes |\n| --- | --- | --- |\n| Read | $0.002 | cached for 15 minutes |\n| Write | $0.010 | batched |\n\n\`\`\`ts\nexport async function handle(request: Request) {\n  const started = performance.now();\n  const result = await route(request, { attempt: ${n} });\n  return { result, elapsed: performance.now() - started };\n}\n\`\`\`\n\nThe main risk is that ${topic} drifts when the upstream schema changes, so keep a test that pins the shape.`;
+	// One turn: a question and answer; Code turns also get reasoning, tool calls and usage between them.
+	const turn = (prefix, n, age, topic, code) => {
+		const order = n * 20, id = `${prefix}-u${n}`;
+		const messages = [{ ...user(id, `${verbs[n % verbs.length]} ${topic}, step ${n}. Keep it short but include an example.`, age, 20 + n % 40), timelineOrder: order }, { ...reply(`${prefix}-a${n}`, answer(n, topic), age), timelineOrder: order + 19 }];
+		const activities = code ? [{ id: `${id}:r`, type: "reasoning", title: "Reasoning", text: `Looking at how ${topic} is wired before changing anything.`, timelineOrder: order + 1 },
+			...Array.from({ length: 8 }, (_, tool) => ({ id: `${id}:t${tool}`, type: "tool", title: ["read_project_file", "Search", "write_project_file", "run_project_command"][tool % 4], text: tool % 4 === 3 ? "pnpm vitest run src/usage.test.ts · 42 passed" : `src/module-${n}-${tool}.ts`, status: "completed", timelineOrder: order + 2 + tool })),
+			{ id: `${id}:usage`, type: "usage", title: "Usage", text: JSON.stringify({ input_tokens: 4000 + n, output_tokens: 900 }) }] : [{ id: `${id}:usage`, type: "usage", title: "Usage", text: JSON.stringify({ input_tokens: 400 + n, output_tokens: 600 }) }];
+		return { messages, activities };
+	};
+	const conversation = (prefix, turns, ageOf, topic, code) => {
+		const messages = [], activities = [];
+		for (let n = 1; n <= turns; n++) { const value = turn(prefix, n, ageOf(n), topic, code); messages.push(...value.messages); activities.push(...value.activities); }
+		return { messages, activities };
+	};
+	db.exec("BEGIN");
+	for (let index = 0; index < stress; index++) {
+		const age = 60 + Math.floor(index * (60 * 24 * 365) / stress), topic = topics[index % topics.length], code = index % 3 === 0, turns = 3 + index % 25;
+		task(`stress-${index}`, { title: `${verbs[index % verbs.length]} ${topic} #${index + 1}`, model: models[index % models.length], age, archived: index % 10 === 9, pinned: index < 3,
+			...(code ? { mode: "code", projectId: index % 2 ? "phaseo" : "blog" } : {}), ...(index % 7 === 0 ? { tags: [topic.split(" ").at(-1)] } : {}),
+			...conversation(`s${index}`, turns, n => age + (turns - n) * 2, topic, code) });
+	}
+	// The long ones: 2,000 turns of Chat; 600 Code turns with ten steps each; one answer of about 400 KB; 300 turns with a pasted file each.
+	task("stress-long-chat", { title: "Stress: 2,000-turn chat", age: 2, ...conversation("long", 2000, n => 2 + (2000 - n) * 3, "rate limits", false) });
+	task("stress-long-code", { title: "Stress: 600-turn Code session", mode: "code", projectId: "phaseo", age: 3, ...conversation("code", 600, n => 3 + (600 - n) * 4, "provider failover", true) });
+	const huge = Array.from({ length: 900 }, (_, line) => `| ${line} | provider-${line % 17} | ${(line * 0.37).toFixed(2)} ms | ${line % 5 ? "ok" : "retry"} |`).join("\n");
+	task("stress-huge-answer", { title: "Stress: one 400 KB answer", age: 4, messages: [user("huge-u", "Dump every routing decision from the last hour as a table, then the full handler source.", 5), reply("huge-a", `| # | Provider | Latency | Result |\n| --- | --- | --- | --- |\n${huge}\n\n\`\`\`ts\n${Array.from({ length: 4000 }, (_, line) => `export const route${line} = (request: Request) => handle(request, { attempt: ${line}, provider: "provider-${line % 17}" });`).join("\n")}\n\`\`\``, 4)] });
+	const pasted = conversation("paste", 300, n => 6 + (300 - n) * 5, "the billing export", false);
+	for (const message of pasted.messages) if (message.role === "user") message.text += `\n\n\`\`\`csv\n${Array.from({ length: 120 }, (_, row) => `${row},workspace-${row % 9},${(row * 1.7).toFixed(2)},USD`).join("\n")}\n\`\`\``;
+	task("stress-pasted", { title: "Stress: 300 turns with pasted files", age: 6, ...pasted });
+	db.exec("COMMIT");
+	const size = db.prepare("SELECT count(*) AS chats, sum(length(data)) AS bytes FROM tasks").get();
+	console.log(`Stress history: ${size.chats} chats, ${(size.bytes / 1024 / 1024).toFixed(1)} MB, seeded in ${Math.round(performance.now() - started)} ms.`);
+}
 db.close();
 
 const models = [

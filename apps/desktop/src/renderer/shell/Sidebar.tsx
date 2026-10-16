@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
 import { Archive, CalendarClock, Columns3, GitPullRequestArrow, Ellipsis, LogIn, WandSparkles, Pencil, Pin, PinOff, Plus, Settings } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -18,6 +19,8 @@ import { TagChip, TagDots, TagMenu } from "../components/Tags";
 import { tagsInUse } from "../../shared/tags";
 
 const dayMs = 86_400_000;
+// Formatters are costly to build, and the sidebar labels every chat it lists.
+const monthLabel = new Intl.DateTimeFormat(undefined, { month: "long" }), monthYearLabel = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" });
 function dateBucket(iso: string, now = new Date()) {
 	const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 	const time = Date.parse(iso);
@@ -25,7 +28,7 @@ function dateBucket(iso: string, now = new Date()) {
 	if (time >= start - dayMs) return "Yesterday";
 	if (time >= start - 7 * dayMs) return "Previous 7 days";
 	if (time >= start - 30 * dayMs) return "Previous 30 days";
-	return new Date(time).toLocaleDateString(undefined, { month: "long", year: now.getFullYear() === new Date(time).getFullYear() ? undefined : "numeric" });
+	return (now.getFullYear() === new Date(time).getFullYear() ? monthLabel : monthYearLabel).format(time);
 }
 
 function relative(iso: string) {
@@ -100,7 +103,8 @@ function CompareRow({ group }: { group: CompareGroup }) {
 	</div>;
 }
 
-function ChatList() {
+/** Only the rows in view are mounted: a year of chats is thousands of rows, each with its own menu and tooltips. */
+function ChatList({ viewport }: { viewport: HTMLDivElement | null }) {
 	const { overview, compareGroups } = useWorkspace();
 	const grouped = useMemo(() => new Set(compareGroups.flatMap(group => group.taskIds)), [compareGroups]);
 	const all = overview.tasks.filter(task => !task.projectId && !task.delegation?.parentTaskId && !task.archived && !grouped.has(task.id));
@@ -116,23 +120,29 @@ function ChatList() {
 		...groups.map(group => ({ kind: "compare" as const, group, at: group.taskIds.map(id => overview.tasks.find(task => task.id === id)?.updatedAt ?? group.createdAt).sort().at(-1)! })),
 	].sort((a, b) => b.at.localeCompare(a.at));
 	const buckets = new Map<string, Item[]>();
-	for (const item of items) { const key = dateBucket(item.at); buckets.set(key, [...buckets.get(key) ?? [], item]); }
+	const now = new Date();
+	for (const item of items) { const key = dateBucket(item.at, now), bucket = buckets.get(key); if (bucket) bucket.push(item); else buckets.set(key, [item]); }
 	const ordered = [...pinned.map(task => task.id), ...[...buckets.values()].flat().flatMap(item => item.kind === "task" ? [item.task.id] : [])];
 	publishSidebarOrder(ordered);
 	const hints = useJumpHints();
-	const hint = (id: string) => { const index = ordered.indexOf(id); return hints && index >= 0 && index < 9 ? index + 1 : undefined; };
+	const hint = (id: string) => { if (!hints) return undefined; const index = ordered.indexOf(id); return index >= 0 && index < 9 ? index + 1 : undefined; };
+	type Entry = { key: string; size: number; node: ReactNode };
+	const entries: Entry[] = [];
+	if (tags.length > 0) entries.push({ key: "tags", size: 34, node: <div role="group" aria-label="Filter chats by tag" className="flex flex-wrap gap-1 px-3 pt-2 pb-1">
+		{tags.slice(0, 12).map(tag => <TagChip key={tag} tag={tag} active={tag === active} onClick={() => setFilter(tag === active ? "" : tag)} className="h-5.5 px-1.5 text-[11px]" />)}
+	</div> });
+	if (active && !chats.length) entries.push({ key: "no-tagged", size: 48, node: <p className="px-4 py-4 text-xs text-muted-foreground">No open chats tagged {active}.</p> });
+	if (pinned.length > 0) { entries.push({ key: "label:Pinned", size: 32, node: <SectionLabel>Pinned</SectionLabel> }); for (const task of pinned) entries.push({ key: task.id, size: 32, node: <ChatRow task={task} showModel showTime={false} hint={hint(task.id)} /> }); }
+	for (const [label, values] of buckets) {
+		entries.push({ key: `label:${label}`, size: 32, node: <SectionLabel>{label}</SectionLabel> });
+		for (const item of values) entries.push(item.kind === "task" ? { key: item.task.id, size: 32, node: <ChatRow task={item.task} showModel showTime={false} hint={hint(item.task.id)} /> } : { key: item.group.id, size: 32, node: <CompareRow group={item.group} /> });
+	}
+	const virtualizer = useVirtualizer({ count: entries.length, getScrollElement: () => viewport, estimateSize: index => entries[index].size, getItemKey: index => entries[index].key, overscan: 16 });
 	if (!all.length && !compareGroups.length) return <p className="px-4 py-6 text-center text-xs text-muted-foreground">Your chats will appear here.</p>;
-	return <>
-		{tags.length > 0 && <div role="group" aria-label="Filter chats by tag" className="flex flex-wrap gap-1 px-3 pt-2 pb-1">
-			{tags.slice(0, 12).map(tag => <TagChip key={tag} tag={tag} active={tag === active} onClick={() => setFilter(tag === active ? "" : tag)} className="h-5.5 px-1.5 text-[11px]" />)}
-		</div>}
-		{active && !chats.length && <p className="px-4 py-4 text-xs text-muted-foreground">No open chats tagged {active}.</p>}
-		{pinned.length > 0 && <><SectionLabel>Pinned</SectionLabel>{pinned.map(task => <ChatRow key={task.id} task={task} showModel showTime={false} hint={hint(task.id)} />)}</>}
-		{[...buckets].map(([label, values]) => <div key={label}>
-			<SectionLabel>{label}</SectionLabel>
-			{values.map(item => item.kind === "task" ? <ChatRow key={item.task.id} task={item.task} showModel showTime={false} hint={hint(item.task.id)} /> : <CompareRow key={item.group.id} group={item.group} />)}
-		</div>)}
-	</>;
+	// The row count is published because only the rows in view exist in the page.
+	return <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }} data-chat-count={pinned.length + items.length}>
+		{virtualizer.getVirtualItems().map(item => <div key={item.key} data-index={item.index} ref={virtualizer.measureElement} className="absolute top-0 left-0 w-full" style={{ transform: `translateY(${item.start}px)` }}>{entries[item.index].node}</div>)}
+	</div>;
 }
 
 function AccountFooter() {
@@ -208,6 +218,7 @@ function SidebarFrame({ label, children }: { label: string; children: ReactNode 
 
 export function Sidebar() {
 	const { mode, select, selectedId, compareId, setNewChatProjectId, settings, scheduled, pullRequestsPage } = useWorkspace();
+	const [chatViewport, setChatViewport] = useState<HTMLDivElement | null>(null);
 	const fresh = !selectedId && !compareId && !scheduled && !pullRequestsPage;
 	if (settings) return <SidebarFrame label="Settings"><SettingsNav /></SidebarFrame>;
 	return <SidebarFrame label={mode === "chat" ? "Chats" : "Projects"}>
@@ -220,7 +231,7 @@ export function Sidebar() {
 			{mode === "code" && <PullRequestsLink />}
 		</div>
 		{mode === "chat"
-			? <ScrollArea className="min-h-0 flex-1"><nav className="pb-3"><ChatList /></nav></ScrollArea>
+			? <ScrollArea className="min-h-0 flex-1" viewportRef={setChatViewport}><nav className="pb-3"><ChatList viewport={chatViewport} /></nav></ScrollArea>
 			: <ScrollArea className="min-h-0 flex-1" viewportClassName="[&>div]:min-h-full [&>div]:flex [&>div]:flex-col"><nav aria-label="Code chats" className="flex flex-1 flex-col"><CodeThreadList /></nav></ScrollArea>}
 		<UndoNotice />
 		<AccountFooter />

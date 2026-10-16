@@ -114,15 +114,18 @@ try {
   const history = await run(`(async()=>{const api=window.phaseoDesktop.workspace,page=(query,archived,offset)=>api.taskHistory({query,archived,offset,limit:50});const pages=[await page('',false,0)];while(pages.at(-1).hasMore)pages.push(await page('',false,pages.length*50));const ids=pages.flatMap(value=>value.tasks.map(task=>task.id));return {count:ids.length,unique:new Set(ids).size,pages:pages.length,pinnedFirst:pages[0].tasks[0].id==='000',metadataOnly:!pages.some(value=>value.tasks.some(task=>'messages' in task||'queue' in task)),body:(await page(${javascriptLiteral("RÉSUMÉ")},false,0)).tasks.map(task=>task.id),rapid:(await Promise.all([page('absent',false,0),page('History 154',false,0)]))[1].tasks.map(task=>task.id),archived:(await page('',true,0)).tasks.length,empty:(await page('absent',true,0)).tasks.length};})()`);
   if (JSON.stringify(history) !== JSON.stringify({ count: 155, unique: 155, pages: 4, pinnedFirst: true, metadataOnly: true, body: ["042"], rapid: ["154"], archived: 2, empty: 0 })) throw new Error("Task history pages failed: " + JSON.stringify(history));
   const rows = `Array.from(document.querySelectorAll('aside[aria-label="Chats"] nav [role=button]'))`;
+  // Scrolls the virtualised list until the row is mounted, then clicks it.
+  const clickRow = title => `(async()=>{const list=document.querySelector('aside[aria-label="Chats"] nav').closest('[data-slot=scroll-area-viewport]');for(let top=0;top<=list.scrollHeight;top+=200){list.scrollTop=top;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const row=${rows}.find(row=>row.textContent===${JSON.stringify(title)});if(row){row.click();return true;}}return false})()`;
   await run(`window.__auditNavigate('Tasks')`);
-  await wait(`${rows}.length===155`, "sidebar lists every active chat");
+  // Rows outside the view are not mounted, so the list publishes how many chats it holds.
+  await wait(`document.querySelector('aside[aria-label="Chats"] [data-chat-count]')?.dataset.chatCount==='155'&&${rows}.length>0`, "sidebar lists every active chat");
   if (!await run(`${rows}[0].textContent==='History 000'&&Array.from(document.querySelectorAll('aside[aria-label="Chats"] nav div')).some(value=>value.textContent==='Pinned')`)) throw new Error("Pinned history is not first.");
   if (!await run(`(()=>{const list=document.querySelector('aside[aria-label="Chats"] nav').closest('[data-slot=scroll-area-viewport]');list.scrollTop=list.scrollHeight;const scrolled=list.scrollTop>0;const footer=document.querySelector('aside[aria-label="Chats"] button[aria-label="Settings"]').getBoundingClientRect();list.scrollTop=0;return scrolled&&footer.bottom<=innerHeight})()`)) throw new Error("Chat list must scroll independently and keep its footer.");
   // Selecting another chat before a slow detail read finishes keeps the newer selection.
-  await run(`${rows}.find(row=>row.textContent==='History 001').click()`);
+  if (!await run(clickRow('History 001'))) throw new Error('History 001 row missing');
   for (let attempt = 0; attempt < 50 && !activeDetails.get("001"); attempt++) await new Promise(resolve => setTimeout(resolve, 10));
   if (!activeDetails.get("001")) throw new Error("Delayed task detail read did not start.");
-  await run(`${rows}.find(row=>row.textContent==='History 002').click()`);
+  if (!await run(clickRow('History 002'))) throw new Error('History 002 row missing');
   await wait(`window.__auditChatTitle()==='History 002'`, "later selection");
   await new Promise(resolve => setTimeout(resolve, 350));
   if (!await run(`window.__auditChatTitle()==='History 002' && document.querySelector('main [aria-live=polite]').textContent.includes('Sample message 002')`)) throw new Error("An obsolete detail response replaced the selected conversation.");
