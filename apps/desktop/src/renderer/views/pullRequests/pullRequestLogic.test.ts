@@ -28,7 +28,7 @@ describe("pull request presentation rules", () => {
 		expect(summarizeChecks([check("success"), check("skipped")])).toBe("1 of 2 passing");
 	});
 	it("chooses one primary control by state", () => {
-		const base = { state: "OPEN" as const, draft: false, mergeable: "MERGEABLE" as const, viewer: { canUpdate: true, canMerge: true, canDeleteBranch: false }, mergeMethods: ["squash" as const] };
+		const base = { state: "OPEN" as const, draft: false, mergeable: "MERGEABLE" as const, viewer: { canUpdate: true, canMerge: true, canDeleteBranch: false, canEnableAutoMerge: true, canDisableAutoMerge: true }, mergeMethods: ["squash" as const], checkRuns: [], autoMergeAllowed: true };
 		expect(primaryAction({ ...base, state: "MERGED" })).toBe("merged");
 		expect(primaryAction({ ...base, state: "CLOSED" })).toBe("closed");
 		expect(primaryAction({ ...base, mergeable: "CONFLICTING" })).toBe("resolve");
@@ -36,6 +36,13 @@ describe("pull request presentation rules", () => {
 		expect(primaryAction(base)).toBe("merge");
 		expect(primaryAction({ ...base, viewer: { ...base.viewer, canMerge: false } })).toBeNull();
 		expect(primaryAction({ ...base, mergeMethods: [] })).toBeNull();
+		// Failing or pending checks offer auto-merge where the repository allows it; an armed one holds the slot.
+		expect(primaryAction({ ...base, checkRuns: [check("pending")] })).toBe("enable-auto-merge");
+		expect(primaryAction({ ...base, checkRuns: [check("failure")] })).toBe("enable-auto-merge");
+		expect(primaryAction({ ...base, checkRuns: [check("success")] })).toBe("merge");
+		expect(primaryAction({ ...base, checkRuns: [check("pending")], autoMergeAllowed: false })).toBe("merge");
+		expect(primaryAction({ ...base, autoMerge: { method: "squash" } })).toBe("auto-merge-armed");
+		expect(primaryAction({ ...base, autoMerge: { method: "squash" }, mergeable: "CONFLICTING" })).toBe("resolve");
 	});
 	it("puts requested reviewers first and marks verdicts older than the newest commit", () => {
 		const entries = reviewerEntries({

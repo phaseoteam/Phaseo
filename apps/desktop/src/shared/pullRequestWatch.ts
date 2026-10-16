@@ -60,7 +60,7 @@ const activeAt = (remark: PullRequestComment) => remark.editedAt ?? remark.creat
  * when someone other than the viewer wrote them, so the agent's own replies never wake it. `remarks` is null when the
  * conversation could not be read; remarks then wait for a later pass.
  */
-export function evaluatePullRequestWatch(watch: PullRequestWatchState, view: Pick<PullRequestView, "headOid" | "checkRuns" | "mergeable" | "viewer" | "authorActor">, remarks: PullRequestComment[] | null): PullRequestWatchReport {
+export function evaluatePullRequestWatch(watch: PullRequestWatchState, view: Pick<PullRequestView, "headOid" | "checkRuns" | "mergeable" | "authorActor"> & { viewer: { login?: string } }, remarks: PullRequestComment[] | null): PullRequestWatchReport {
 	const changes: PullRequestWatchChange[] = [];
 	const headSha = view.headOid || null, headMoved = headSha !== watch.headSha;
 	// An empty list keeps the last state: GitHub can answer with one when its check read fails.

@@ -7,7 +7,7 @@ import { validRepository, validatePullRequestActionRequest, type PullRequestActo
 
 const actor = "login avatarUrl __typename";
 const reactions = "reactionGroups{content reactors{totalCount}}";
-const viewQuery = `query PhaseoPullRequestView($owner:String!,$name:String!,$number:Int!){viewer{login}repository(owner:$owner,name:$name){mergeCommitAllowed squashMergeAllowed rebaseMergeAllowed viewerPermission pullRequest(number:$number){id number title body state createdAt updatedAt mergedAt closedAt isDraft author{${actor}} headRefName baseRefName headRefOid baseRefOid headRef{id} headRepository{nameWithOwner} reviewDecision additions deletions changedFiles mergeable mergeStateStatus viewerCanUpdate viewerCanDeleteHeadRef
+const viewQuery = `query PhaseoPullRequestView($owner:String!,$name:String!,$number:Int!){viewer{login}repository(owner:$owner,name:$name){mergeCommitAllowed squashMergeAllowed rebaseMergeAllowed autoMergeAllowed viewerPermission pullRequest(number:$number){id number title body state createdAt updatedAt mergedAt closedAt isDraft author{${actor}} headRefName baseRefName headRefOid baseRefOid headRef{id} headRepository{nameWithOwner} reviewDecision additions deletions changedFiles mergeable mergeStateStatus viewerCanUpdate viewerCanDeleteHeadRef viewerCanEnableAutoMerge viewerCanDisableAutoMerge autoMergeRequest{mergeMethod enabledBy{login}}
 labels(first:20){nodes{name color}}
 reviewRequests(first:20){nodes{requestedReviewer{__typename ... on User{login avatarUrl} ... on Bot{login avatarUrl} ... on Team{slug}}}}
 latestOpinionatedReviews(first:20){nodes{author{${actor}} state submittedAt}}
@@ -105,6 +105,7 @@ export function parsePullRequestView(repository: string, number: number, value: 
 	const reviewers = nodes(entry.reviewRequests).flatMap(value => { const reviewer = item(item(value).requestedReviewer); const parsed = reviewer.__typename === "Team" ? (text(reviewer.slug, 200) ? { login: reviewer.slug as string } : null) : parseActor(reviewer); return parsed ? [parsed] : []; });
 	const reviews = nodes(entry.latestOpinionatedReviews).flatMap(value => { const review = item(value), state = review.state as PullRequestReviewState, submittedAt = date(review.submittedAt); return ["APPROVED", "CHANGES_REQUESTED", "DISMISSED", "COMMENTED"].includes(state) && submittedAt ? [{ actor: parseActor(review.author), state, submittedAt }] : []; });
 	const headRepository = text(item(entry.headRepository).nameWithOwner, 201);
+	const autoMergeRequest = item(entry.autoMergeRequest), autoMethod = ({ MERGE: "merge", SQUASH: "squash", REBASE: "rebase" } as const)[String(autoMergeRequest.mergeMethod) as "MERGE"], enabledBy = text(item(autoMergeRequest.enabledBy).login, 256);
 	return {
 		...details, id: entry.id, createdAt, ...(date(entry.mergedAt) ? { mergedAt: entry.mergedAt as string } : {}), ...(date(entry.closedAt) ? { closedAt: entry.closedAt as string } : {}),
 		authorActor: parseActor(entry.author), labels, reviewers, reviews,
@@ -112,7 +113,8 @@ export function parsePullRequestView(repository: string, number: number, value: 
 		comments, commentCount: total(entry.comments, issueComments.length) + reviewComments.length + threads.reduce((sum, thread) => sum + thread.totalComments, 0),
 		commentsTruncated: total(entry.comments, 0) > issueComments.length || total(entry.reviews, 0) > nodes(entry.reviews).length || total(entry.reviewThreads, 0) > threads.length,
 		commits, commitCount: total(entry.history, commits.length), threads, mergeMethods,
-		viewer: { ...(text(item(data.viewer).login, 256) ? { login: item(data.viewer).login as string } : {}), canUpdate: entry.viewerCanUpdate === true, canMerge, canDeleteBranch: entry.viewerCanDeleteHeadRef === true },
+		viewer: { ...(text(item(data.viewer).login, 256) ? { login: item(data.viewer).login as string } : {}), canUpdate: entry.viewerCanUpdate === true, canMerge, canDeleteBranch: entry.viewerCanDeleteHeadRef === true, canEnableAutoMerge: entry.viewerCanEnableAutoMerge === true, canDisableAutoMerge: entry.viewerCanDisableAutoMerge === true },
+		autoMergeAllowed: repo.autoMergeAllowed === true, ...(entry.autoMergeRequest && autoMethod ? { autoMerge: { method: autoMethod, ...(enabledBy ? { enabledBy } : {}) } } : {}),
 		...(headRepository ? { headRepository } : {}), headRefExists: Boolean(entry.headRef), behind: details.mergeState === "BEHIND",
 	};
 }
@@ -164,7 +166,7 @@ export async function readPullRequestView(cwd: string, repository: string, numbe
 	return parsePullRequestView(repository, number, parsed);
 }
 
-const failures: Record<string, string> = { merge: "Could not merge.", close: "Could not close the pull request.", reopen: "Could not reopen the pull request.", ready: "Could not mark it ready for review.", draft: "Could not convert it to a draft.", title: "Could not save the title.", comment: "Could not post the comment.", reply: "Could not post the reply.", resolve: "Could not change the thread.", review: "Could not submit the review.", "update-branch": "Could not update the branch.", "delete-branch": "Could not delete the branch." };
+const failures: Record<string, string> = { merge: "Could not merge.", "enable-auto-merge": "Could not turn on auto-merge. Check that this repository allows auto-merge, that you have write access, and that there is something left for it to wait on.", "disable-auto-merge": "Could not turn off auto-merge.", close: "Could not close the pull request.", reopen: "Could not reopen the pull request.", ready: "Could not mark it ready for review.", draft: "Could not convert it to a draft.", title: "Could not save the title.", comment: "Could not post the comment.", reply: "Could not post the reply.", resolve: "Could not change the thread.", review: "Could not submit the review.", "update-branch": "Could not update the branch.", "delete-branch": "Could not delete the branch." };
 const graphql = (query: string) => ["api", "graphql", "--hostname", "github.com", "-f", `query=${query}`];
 
 /** Every write a pane can make. Each checks it still acts on the head the person saw, then reads the pull request again. */
@@ -179,6 +181,13 @@ export async function projectPullRequestAction(root: string, value: unknown): Pr
 			if (view.state !== "OPEN" || view.draft) throw new Error("Only an open pull request that is ready for review can be merged.");
 			if (!view.mergeMethods.includes(action.method)) throw new Error("This repository does not allow that merge method.");
 			args = ["api", "--hostname", "github.com", "--method", "PUT", `${base}/merge`, "-f", `merge_method=${action.method}`, "-f", `sha=${view.headOid}`]; break;
+		case "enable-auto-merge":
+			if (view.state !== "OPEN" || view.draft) throw new Error("Only an open pull request that is ready for review can merge itself.");
+			if (!view.mergeMethods.includes(action.method)) throw new Error("This repository does not allow that merge method.");
+			args = ["pr", "merge", String(view.number), "--repo", view.repository, "--auto", `--${action.method}`, "--match-head-commit", view.headOid]; break;
+		case "disable-auto-merge":
+			if (!view.autoMerge) throw new Error("Auto-merge is already off.");
+			args = ["pr", "merge", String(view.number), "--repo", view.repository, "--disable-auto"]; break;
 		case "close": case "reopen":
 			args = ["api", "--hostname", "github.com", "--method", "PATCH", base, "-f", `state=${action.type === "close" ? "closed" : "open"}`]; break;
 		case "title": args = ["api", "--hostname", "github.com", "--method", "PATCH", base, "-f", `title=${action.title}`]; break;

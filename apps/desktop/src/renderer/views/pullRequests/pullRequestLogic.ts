@@ -75,14 +75,19 @@ export function reviewerEntries(view: Pick<PullRequestView, "reviewers" | "revie
 }
 export function approvalCount(view: Pick<PullRequestView, "reviews">) { return view.reviews.filter(review => review.state === "APPROVED").length; }
 
-export type PrimaryAction = "merged" | "closed" | "resolve" | "ready" | "merge" | null;
+export type PrimaryAction = "merged" | "closed" | "resolve" | "ready" | "auto-merge-armed" | "enable-auto-merge" | "merge" | null;
 /** The one control the header leads with, chosen by state the way T3 Code does. */
-export function primaryAction(view: Pick<PullRequestView, "state" | "draft" | "mergeable" | "viewer" | "mergeMethods">): PrimaryAction {
+/** T3's one control by state: a merge the checks have not cleared yet is offered as auto-merge, where the repository allows it. */
+export function primaryAction(view: Pick<PullRequestView, "state" | "draft" | "mergeable" | "viewer" | "mergeMethods" | "checkRuns" | "autoMerge" | "autoMergeAllowed">): PrimaryAction {
 	if (view.state === "MERGED") return "merged";
 	if (view.state === "CLOSED") return "closed";
 	if (view.mergeable === "CONFLICTING" && !view.draft) return "resolve";
 	if (view.draft) return view.viewer.canUpdate ? "ready" : null;
-	return view.viewer.canMerge && view.mergeMethods.length ? "merge" : null;
+	if (view.autoMerge) return "auto-merge-armed";
+	if (!view.mergeMethods.length) return null;
+	const checks = checksRollup(view.checkRuns);
+	if (checks && checks !== "passing" && view.autoMergeAllowed && view.viewer.canEnableAutoMerge) return "enable-auto-merge";
+	return view.viewer.canMerge ? "merge" : null;
 }
 export const mergeMethodLabels = { merge: "Merge", squash: "Squash and merge", rebase: "Rebase and merge" } as const;
 

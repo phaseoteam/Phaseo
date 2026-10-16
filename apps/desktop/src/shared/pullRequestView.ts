@@ -28,14 +28,19 @@ export type PullRequestView = PullRequestDetails & {
 	commits: PullRequestCommit[]; commitCount: number;
 	threads: PullRequestReviewThreadView[];
 	mergeMethods: PullRequestMergeMethod[];
-	viewer: { login?: string; canUpdate: boolean; canMerge: boolean; canDeleteBranch: boolean };
+	viewer: { login?: string; canUpdate: boolean; canMerge: boolean; canDeleteBranch: boolean; canEnableAutoMerge: boolean; canDisableAutoMerge: boolean };
+	/** The repository lets pull requests merge themselves once their requirements are met. */
+	autoMergeAllowed: boolean;
+	/** Armed auto-merge: GitHub merges with this method once the requirements are met. */
+	autoMerge?: { method: PullRequestMergeMethod; enabledBy?: string };
 	headRepository?: string; headRefExists: boolean;
 	/** GitHub's merge state says the branch is behind its base. */
 	behind: boolean;
 };
 
 export type PullRequestAction =
-	| { type: "merge"; method: PullRequestMergeMethod }
+	| { type: "merge" | "enable-auto-merge"; method: PullRequestMergeMethod }
+	| { type: "disable-auto-merge" }
 	| { type: "close" | "reopen" | "ready" | "draft" | "update-branch" | "delete-branch" }
 	| { type: "title"; title: string }
 	| { type: "comment"; body: string }
@@ -55,10 +60,10 @@ export function validatePullRequestActionRequest(value: unknown): PullRequestAct
 	if (!Number.isSafeInteger(request.number) || Number(request.number) < 1 || Number(request.number) > 2147483647 || typeof request.headOid !== "string" || !/^[a-f0-9]{40}$/i.test(request.headOid) || !action || typeof action !== "object" || Array.isArray(action)) throw new Error("Invalid pull request action.");
 	const common = { number: Number(request.number), headOid: request.headOid.toLowerCase() };
 	switch (action.type) {
-		case "merge":
+		case "merge": case "enable-auto-merge":
 			if (!pullRequestMergeMethods.includes(action.method as PullRequestMergeMethod)) throw new Error("Choose a merge method.");
-			return { ...common, action: { type: "merge", method: action.method as PullRequestMergeMethod } };
-		case "close": case "reopen": case "ready": case "draft": case "update-branch": case "delete-branch":
+			return { ...common, action: { type: action.type, method: action.method as PullRequestMergeMethod } };
+		case "close": case "disable-auto-merge": case "reopen": case "ready": case "draft": case "update-branch": case "delete-branch":
 			return { ...common, action: { type: action.type } };
 		case "title": {
 			const title = typeof action.title === "string" ? action.title.trim() : "";

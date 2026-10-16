@@ -78,6 +78,22 @@ describe("pull request view", () => {
 		await projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "delete-branch" } });
 		expect(ports.calls.at(-2)!.args).toEqual(["api", "--hostname", "github.com", "--method", "DELETE", "repos/owned/repo/git/refs/heads/feature/x"]);
 	});
+	it("reads required checks, edits and auto-merge", () => {
+		const view = parsePullRequestView("owned/repo", 12, { data: { ...response().data, repository: { ...response().data.repository, autoMergeAllowed: true, pullRequest: pull({ viewerCanEnableAutoMerge: true, viewerCanDisableAutoMerge: true, autoMergeRequest: { mergeMethod: "SQUASH", enabledBy: { login: "fixture" } },
+			commits: { nodes: [{ commit: { statusCheckRollup: { contexts: { nodes: [{ __typename: "CheckRun", name: "build", status: "COMPLETED", conclusion: "SUCCESS", isRequired: true }] } } } }] },
+			comments: { totalCount: 1, nodes: [{ id: "IC_1", author: { login: "bot" }, body: "Hi", createdAt: "2026-10-02T01:00:00Z", lastEditedAt: "2026-10-02T02:00:00Z" }] } }) } } });
+		expect(view.checkRuns).toEqual([{ name: "build", status: "success", required: true }]);
+		expect(view.comments[0].editedAt).toBe("2026-10-02T02:00:00Z");
+		expect(view).toMatchObject({ autoMergeAllowed: true, autoMerge: { method: "squash", enabledBy: "fixture" }, viewer: { canEnableAutoMerge: true, canDisableAutoMerge: true } });
+	});
+	it("turns auto-merge on with the chosen method and the seen head, and off", async () => {
+		await projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "enable-auto-merge", method: "rebase" } });
+		expect(ports.calls[1].args).toEqual(["pr", "merge", "12", "--repo", "owned/repo", "--auto", "--rebase", "--match-head-commit", head]);
+		await expect(projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "disable-auto-merge" } })).rejects.toThrow("already off");
+		ports.respond.mockReturnValue(JSON.stringify({ data: { ...response().data, repository: { ...response().data.repository, pullRequest: pull({ autoMergeRequest: { mergeMethod: "SQUASH" } }) } } }));
+		await projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "disable-auto-merge" } });
+		expect(ports.calls.at(-2)!.args).toEqual(["pr", "merge", "12", "--repo", "owned/repo", "--disable-auto"]);
+	});
 	it("surfaces GitHub's reason inline", async () => {
 		ports.respond.mockReturnValueOnce(JSON.stringify(response())).mockImplementationOnce(() => { throw Object.assign(new Error("x"), { stderr: "gh: Pull Request is not mergeable (HTTP 405)" }); });
 		await expect(projectPullRequestAction("/owned", { number: 12, headOid: head, action: { type: "merge", method: "rebase" } })).rejects.toThrow("Could not merge. GitHub said: Pull Request is not mergeable (HTTP 405)");
