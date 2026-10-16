@@ -19,6 +19,7 @@ import { NewChat } from "./chat/NewChat";
 import { ChatView } from "./chat/ChatView";
 import { CompareView } from "./chat/CompareView";
 import { ToastProvider } from "./components/ui/toast";
+import { GuideRunNotices } from "./views/pullRequests/GuideRunNotices";
 
 /** The app-wide commands behind the keyboard shortcuts (Settings → Keyboard shortcuts). */
 function useShortcuts() {
@@ -90,6 +91,7 @@ function Shell() {
 			<ErrorBanner />
 		</div>
 		<CommandPalette />
+		<GuideRunNotices />
 	</div>;
 }
 

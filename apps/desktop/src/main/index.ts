@@ -784,6 +784,18 @@ app.whenReady().then(() => {
 		try { return await runGh(root, ["pr", "diff", String(view.number), "--repo", view.repository, "--color", "never"]); }
 		catch (reason) { throw new Error(ghFailure((reason as { stderr?: unknown }).stderr, "Could not read the pull request's diff."), { cause: reason }); }
 	});
+	pullRequestGuides.onFinished = ({ root, view, error }) => {
+		if (shutdownStarted) return;
+		const projectId = workspaceRuntime.store.getProjects().find(project => path.resolve(project.directory).toLowerCase() === path.resolve(root).toLowerCase())?.id;
+		const event = { ...(projectId ? { projectId } : {}), repository: view.repository, number: view.number, title: view.title, ...(error ? { error } : {}) };
+		for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:pull-request-guide-finished", event);
+		taskNotifications.guide(Boolean(error), view.number, view.repository, view.title, () => {
+			const window = BrowserWindow.getAllWindows().find(value => !value.isDestroyed());
+			if (!window) return;
+			if (window.isMinimized()) window.restore();
+			window.show(); window.focus(); window.webContents.send("workspace:open-pull-request-guide", event);
+		});
+	};
 	workspaceRuntime.pullRequestGuideTools = {
 		write: async (root, repository, number) => { const view = await readPullRequestView(root, repository, number), before = await pullRequestGuides.get(view); void pullRequestGuides.generate(root, view); return before.running ? "running" : "started"; },
 		read: async (root, repository, number) => pullRequestGuides.get(await readPullRequestView(root, repository, number)),

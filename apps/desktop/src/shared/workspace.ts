@@ -151,6 +151,7 @@ export type WorkspaceCommand =
 	| { type: "queue-remove"; id: string; messageId: string }
 	| { type: "queue-edit"; id: string; messageId: string; text: string }
 	| { type: "queue-move"; id: string; messageId: string; direction: "up" | "down" };
+export type PullRequestGuideFinished = { projectId?: string; repository: string; number: number; title: string; error?: string };
 export type WorkspaceApi = {
 	/** A chat's native commands and skills, or a new chat's before it exists. */
 	nativeActions: (target: string | { harness: Harness; accountId?: string; projectId?: string }) => Promise<NativeActionCatalog>;
@@ -233,6 +234,8 @@ export type WorkspaceApi = {
 	pullRequestCandidates: (projectId: string, query: { number: number; kind: "labels" | "reviewers" }) => Promise<PullRequestCandidates>;
 	/** Merge, close, comment, review and the rest, through GitHub CLI; returns the pull request as it is afterwards. */
 	pullRequestAction: (projectId: string, request: PullRequestActionRequest) => Promise<PullRequestView>;
+	/** A review guide run ended (`opened` false), or its desktop notification was clicked (`opened` true). */
+	onPullRequestGuideFinished: (listener: (event: PullRequestGuideFinished, opened: boolean) => void) => () => void;
 	/** The pull request for the project checkout's current branch, linked or not; cached briefly unless `fresh`. */
 	branchPullRequest: (projectId: string, fresh?: boolean) => Promise<BranchPullRequest>;
 	/** Pushes the branch if needed and opens a pull request for it (or finds its open one), linked to `taskId` as created. */

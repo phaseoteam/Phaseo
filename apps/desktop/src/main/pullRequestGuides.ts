@@ -16,6 +16,8 @@ type Run = { headSha: string; promise: Promise<PullRequestGuide> };
 export class PullRequestGuides {
 	private readonly runs = new Map<string, Run>();
 	private readonly failures = new Map<string, { headSha: string; error: string }>();
+	/** Called when a run ends, written or failed, so the app can say so wherever the person is (T3's guide run coordinator). */
+	onFinished?: (event: { root: string; view: PullRequestView; error?: string }) => void;
 	constructor(private readonly directory: string, private readonly complete: Complete, private readonly diff: (root: string, view: PullRequestView) => Promise<string>) {}
 
 	private key(view: Pick<PullRequestView, "repository" | "number">) { return `${view.repository.toLowerCase()}#${view.number}`; }
@@ -39,11 +41,13 @@ export class PullRequestGuides {
 			run = { headSha: view.headOid, promise };
 			this.runs.set(key, run); this.failures.delete(key);
 			const current = run;
-			void promise.then(() => undefined, reason => { this.failures.set(key, { headSha: view.headOid, error: reason instanceof Error ? reason.message : String(reason) }); }).finally(() => { if (this.runs.get(key) === current) this.runs.delete(key); });
+			void promise.then(() => { this.finished(root, view); }, reason => { const error = reason instanceof Error ? reason.message : String(reason); this.failures.set(key, { headSha: view.headOid, error }); this.finished(root, view, error); }).finally(() => { if (this.runs.get(key) === current) this.runs.delete(key); });
 		}
 		try { await run.promise; } catch { /* Reported by get. */ }
 		return this.get(view);
 	}
+
+	private finished(root: string, view: PullRequestView, error?: string) { try { this.onFinished?.({ root, view, ...(error ? { error } : {}) }); } catch { /* Telling the person must never fail the run. */ } }
 
 	private async write(root: string, view: PullRequestView): Promise<PullRequestGuide> {
 		const files = parseUnifiedDiff(await this.diff(root, view));

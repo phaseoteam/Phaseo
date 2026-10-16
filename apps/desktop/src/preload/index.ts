@@ -97,6 +97,7 @@ const desktopApi: PhaseoDesktopApi = {
 		branchPullRequest: (id, fresh) => ipcRenderer.invoke("workspace:branch-pull-request", id, fresh ?? false),
 		createPullRequest: (id, taskId) => ipcRenderer.invoke("workspace:create-pull-request", id, taskId),
 		projectRepository: id => ipcRenderer.invoke("workspace:project-repository", id),
+		onPullRequestGuideFinished: listener => { const finished = (_event: Electron.IpcRendererEvent, value: Parameters<typeof listener>[0]) => listener(value, false), open = (_event: Electron.IpcRendererEvent, value: Parameters<typeof listener>[0]) => listener(value, true); ipcRenderer.on("workspace:pull-request-guide-finished", finished); ipcRenderer.on("workspace:open-pull-request-guide", open); return () => { ipcRenderer.removeListener("workspace:pull-request-guide-finished", finished); ipcRenderer.removeListener("workspace:open-pull-request-guide", open); }; },
 		pullRequestStack: (id, number, fresh) => ipcRenderer.invoke("workspace:pull-request-stack", id, number, fresh ?? false),
 		pullRequestStackAction: (id, request) => ipcRenderer.invoke("workspace:pull-request-stack-action", id, request),
 		gitHunks: (id, filename, staged) => ipcRenderer.invoke("workspace:git-hunks", id, filename, staged),

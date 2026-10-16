@@ -18,6 +18,7 @@ import { ActorLabel, DiffStat, errorMessage, MetaLine, MiddleTruncate, PullReque
 import { approvalCount, checksRollup, mergeMethodLabels, primaryAction, relativeTime, summarizeChecks } from "./pullRequestLogic";
 import { segmentedGroup, segmentedItem } from "./segmented";
 import { StackedBaseGlyph, StackMenu } from "./StackMenu";
+import { useRequestedPullRequestTab } from "./tabRequest";
 import { ReactContext, SummaryTab } from "./SummaryTab";
 import { TimelineTab } from "./TimelineTab";
 import { useInlineActionConfirm } from "./useInlineActionConfirm";
@@ -60,6 +61,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 	const open = (url: string) => { setOpenError(""); void api?.openLink(url).catch(reason => setOpenError(errorMessage(reason))); };
 	const react = useCallback((subjectId: string, content: PullRequestReactionContent, reacted: boolean) => perform({ type: "react", subjectId, content, reacted }), [perform]);
 	const selectTab = (next: Tab) => { setTab(next); setMounted(current => new Set([...current, next])); setCondensed(false); };
+	useRequestedPullRequestTab(projectId, number, selectTab);
 
 	if (!view) return <div className="flex h-full min-h-0 flex-col bg-background" aria-label={`Pull request #${number}`} aria-busy={pull.refreshing}>
 		<div className="flex h-10 min-h-10 shrink-0 items-center gap-1 border-b border-border/60 px-4 text-xs text-muted-foreground">
