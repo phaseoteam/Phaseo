@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { PullRequestView } from "../../../shared/pullRequestView";
 import { useWorkspace } from "../../app/workspace";
 import { handNewChatDraft } from "../../lib/newChatDraft";
+import { showToast } from "../../components/ui/toast";
 import { errorMessage } from "./presentation";
 import { askPullRequestPrompt, explainPullRequestPrompt, fixFindingsPrompt } from "./pullRequestLogic";
 
@@ -36,7 +37,7 @@ export function usePullRequestHandoff(projectId: string) {
 				setOverview(result.workspace);
 				openDraft(result.projectId, kind === "fix" ? fixFindingsPrompt(view) : "");
 			}
-		} catch (reason) { setError(errorMessage(reason)); }
+		} catch (reason) { setError(errorMessage(reason)); showToast("error", kind.startsWith("checkout") ? "Could not check out this pull request" : "Could not open a chat for this pull request", errorMessage(reason)); }
 		finally { setPending(undefined); }
 	};
 	return { run, pending, error, clearError: () => setError("") };

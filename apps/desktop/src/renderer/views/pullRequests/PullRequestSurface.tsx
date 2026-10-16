@@ -8,6 +8,7 @@ import { Input } from "../../components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover";
 import { ToggleGroup, ToggleGroupItem } from "../../components/ui/toggle-group";
 import { TooltipProvider } from "../../components/ui/tooltip";
+import { showToast } from "../../components/ui/toast";
 import { usePersistedState } from "../../lib/persistedState";
 import { cn } from "../../lib/utils";
 import { ChecksPopover } from "./ChecksPopover";
@@ -26,15 +27,20 @@ import { usePullRequestHandoff } from "./usePullRequestHandoff";
 type Tab = "summary" | "guide" | "timeline" | "code";
 const tabs: { value: Tab; label: string }[] = [{ value: "summary", label: "Summary" }, { value: "guide", label: "Guide" }, { value: "timeline", label: "Timeline" }, { value: "code", label: "Code" }];
 
-function useCopied() {
-	const [copied, setCopied] = useState<string>();
+/** Copies, then says so in a toast; a refused clipboard says that instead (T3's copy feedback). */
+export function copyWithToast(text: string, what: string) {
+	void navigator.clipboard.writeText(text).then(() => showToast("success", `${what} copied`), () => showToast("error", `Could not copy the ${what.toLowerCase()}`));
+}
+/** T3's PullRequestCopyableCode: no icon, the text fades to "Copied" in place on a hover pill. */
+export function CopyableCode({ value, label, className }: { value: string; label: string; className?: string }) {
+	const [copied, setCopied] = useState(false);
 	const timer = useRef<number>(undefined);
 	useEffect(() => () => window.clearTimeout(timer.current), []);
-	return { copied, copy: (text: string, what: string) => { void navigator.clipboard.writeText(text).then(() => { setCopied(what); window.clearTimeout(timer.current); timer.current = window.setTimeout(() => setCopied(undefined), 1500); }, () => setCopied(`${what} failed`)); } };
-}
-function CopyableCode({ value, label, className }: { value: string; label: string; className?: string }) {
-	const { copied, copy } = useCopied();
-	return <Tip label={copied ? "Copied" : label}><button type="button" onClick={() => copy(value, label)} aria-label={copied ? "Copied" : label} className={cn("inline-flex min-w-0 items-center gap-1 rounded-sm font-mono text-xs text-muted-foreground hover:text-foreground", className)}><span className="truncate">{value}</span>{copied ? <Check aria-hidden className="size-3 shrink-0" /> : <Copy aria-hidden className="size-3 shrink-0 opacity-60" />}</button></Tip>;
+	const copy = () => void navigator.clipboard.writeText(value).then(() => { setCopied(true); window.clearTimeout(timer.current); timer.current = window.setTimeout(() => setCopied(false), 1600); }, () => showToast("error", `Could not copy the ${label.replace(/^Copy /, "")}`));
+	return <Tip label={`${copied ? "Copied" : label}: ${value}`}><button type="button" onClick={copy} aria-label={copied ? "Copied" : label} className={cn("relative grid w-fit max-w-full min-w-0 shrink cursor-pointer rounded px-1 py-0.5 text-left font-mono text-xs text-muted-foreground outline-none transition-colors hover:bg-accent/45 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset", className)}>
+		<code className={cn("col-start-1 row-start-1 min-w-0 truncate transition-opacity duration-150 motion-reduce:transition-none", copied ? "opacity-0" : "opacity-100")}>{value}</code>
+		<span aria-hidden className={cn("col-start-1 row-start-1 truncate text-center font-sans transition-opacity duration-150 motion-reduce:transition-none", copied ? "opacity-100" : "opacity-0")}>Copied</span>
+	</button></Tip>;
 }
 
 /**
@@ -52,11 +58,10 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 	const [titleDraft, setTitleDraft] = useState<string | null>(null);
 	const [storedMethod, setStoredMethod] = usePersistedState<PullRequestMergeMethod>("phaseo.desktop.pullRequestMergeMethod", "squash");
 	const confirm = useInlineActionConfirm(`${projectId}#${number}`);
-	const { copied, copy } = useCopied();
-	const [openError, setOpenError] = useState("");
 	const handoff = usePullRequestHandoff(projectId);
+	const [reviewRequest, setReviewRequest] = useState(0);
 	useEffect(() => { setTab("summary"); setMounted(new Set(["summary"])); setCondensed(false); setTitleDraft(null); }, [projectId, number]);
-	const open = (url: string) => { setOpenError(""); void api?.openLink(url).catch(reason => setOpenError(errorMessage(reason))); };
+	const open = (url: string) => { void api?.openLink(url).catch(reason => showToast("error", "Could not open the link", errorMessage(reason))); };
 	const react = useCallback((subjectId: string, content: PullRequestReactionContent, reacted: boolean) => perform({ type: "react", subjectId, content, reacted }), [perform]);
 	const selectTab = (next: Tab) => { setTab(next); setMounted(current => new Set([...current, next])); setCondensed(false); };
 
@@ -135,8 +140,8 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 			</DropdownMenuRadioGroup></>}
 			<DropdownMenuSeparator />
 			<DropdownMenuItem onClick={() => open(view.url)}><ArrowUpRight className="size-3.5" />Open on GitHub</DropdownMenuItem>
-			<DropdownMenuItem onClick={() => copy(view.url, "Link")}><LinkIcon className="size-3.5" />Copy link</DropdownMenuItem>
-			<DropdownMenuItem onClick={() => copy(`#${view.number}`, "Number")}><Copy className="size-3.5" />Copy PR number</DropdownMenuItem>
+			<DropdownMenuItem onClick={() => copyWithToast(view.url, "Link")}><LinkIcon className="size-3.5" />Copy link</DropdownMenuItem>
+			<DropdownMenuItem onClick={() => copyWithToast(`#${view.number}`, "Pull request number")}><Copy className="size-3.5" />Copy PR number</DropdownMenuItem>
 			{view.state === "OPEN" && view.viewer.canUpdate && <><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" closeOnClick={confirm.isArmed("close")} disabled={busy} aria-label={confirm.isArmed("close") ? "Confirm close?" : "Close pull request"} {...confirm.props("close", () => void pull.perform({ type: "close" }))}><PullRequestGlyph.closed className="size-3.5" />{confirm.isArmed("close") ? "Confirm close?" : "Close pull request"}</DropdownMenuItem></>}
 			{view.state === "CLOSED" && view.viewer.canUpdate && <><DropdownMenuSeparator /><DropdownMenuItem disabled={busy} onClick={() => void pull.perform({ type: "reopen" })}><PullRequestGlyph.reopen className="size-3.5" />Reopen pull request</DropdownMenuItem></>}
 			{canDeleteBranch && <><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" closeOnClick={confirm.isArmed("delete-branch")} disabled={busy} aria-label={confirm.isArmed("delete-branch") ? "Confirm delete?" : "Delete branch"} {...confirm.props("delete-branch", () => void pull.perform({ type: "delete-branch" }))}>
@@ -145,7 +150,6 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 		</DropdownMenuContent>
 	</DropdownMenu>;
 
-	const notice = pull.actionError?.message ?? (handoff.error || openError || (copied ? (copied.endsWith("failed") ? `Copy failed` : `${copied} copied`) : ""));
 	return <TooltipProvider delay={150}><ReactContext.Provider value={react}><div className="relative flex h-full min-h-0 w-full flex-col bg-background" aria-label={`Pull request #${view.number}`} data-pull-request={view.number}>
 		<div className="@container/pr-header grid min-w-0 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 border-b border-border/60">
 			<div className="grid h-10 min-w-0 items-center overflow-hidden pl-4">
@@ -217,10 +221,6 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 				</div>}
 			</nav>
 		</div>
-		{notice && <div className={cn("flex shrink-0 items-center gap-2 border-b border-border/60 px-4 py-1.5 text-xs", pull.actionError || openError || handoff.error ? "text-destructive" : "text-muted-foreground")} role={pull.actionError || openError || handoff.error ? "alert" : "status"}>
-			<span className="min-w-0 flex-1 [overflow-wrap:anywhere]">{notice}</span>
-			{(pull.actionError || openError || handoff.error) && <Button size="icon-xs" variant="ghost" aria-label="Dismiss" onClick={() => { pull.clearActionError(); setOpenError(""); handoff.clearError(); }}><X className="size-3" /></Button>}
-		</div>}
 		<div className="relative flex min-h-0 flex-1 flex-col overflow-hidden" onScrollCapture={event => {
 			const target = event.target as HTMLElement;
 			if (!target.classList?.contains("pr-scroller")) return;
@@ -228,11 +228,12 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 			setCondensed(previous => previous ? top >= 4 : top > 64);
 		}}>
 			{mounted.has("summary") && <div className={cn("absolute inset-0", tab !== "summary" && "invisible")}><SummaryTab view={view} projectId={projectId} onOpen={open} onAction={perform} /></div>}
-			{mounted.has("guide") && <div className={cn("absolute inset-0", tab !== "guide" && "invisible")}><GuideTab view={view} projectId={projectId} active={tab === "guide"} onOpenCode={() => selectTab("code")} /></div>}
+			{mounted.has("guide") && <div className={cn("absolute inset-0", tab !== "guide" && "invisible")}><GuideTab view={view} projectId={projectId} active={tab === "guide"} onOpenCode={() => selectTab("code")} onFinishReview={() => setReviewRequest(value => value + 1)} /></div>}
 			{mounted.has("timeline") && <div className={cn("absolute inset-0", tab !== "timeline" && "invisible")}><TimelineTab view={view} projectId={projectId} order={order} onOpen={open} /></div>}
 			{mounted.has("code") && <div className={cn("absolute inset-0", tab !== "code" && "invisible")}><CodeTab view={view} projectId={projectId} pending={busy} onAction={pull.perform} onOpen={open} /></div>}
 		</div>
-		{tab !== "code" && <div className="absolute right-4 bottom-3 z-20"><Composer key={`${projectId}#${view.number}`} view={view} pending={pending} error={pull.actionError && ["comment", "review"].includes(pull.actionError.action) ? pull.actionError.message : undefined} onAction={pull.perform} /></div>}
+		{/* Mounted on every tab: the Code tab's line comments feed it, and an open draft must not vanish with a tab switch. */}
+		<div className="absolute right-4 bottom-3 z-20"><Composer key={`${projectId}#${view.number}`} view={view} projectId={projectId} pending={pending} onAction={pull.perform} openReviewRequest={reviewRequest} /></div>
 	</div></ReactContext.Provider></TooltipProvider>;
 }
 

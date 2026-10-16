@@ -11,9 +11,13 @@ export const pullRequestReactionContents = ["THUMBS_UP", "THUMBS_DOWN", "LAUGH",
 export type PullRequestReactionContent = typeof pullRequestReactionContents[number];
 /** `actors` names up to three people besides the viewer, for the hover text. */
 export type PullRequestReaction = { content: string; count: number; viewerHasReacted?: boolean; actors?: string[] };
-export type PullRequestComment = { id: string; kind: "comment" | "review" | "review-comment"; author: PullRequestActor | null; body: string; createdAt: string; editedAt?: string; url?: string; reviewState?: string; path?: string; threadId?: string; reactions: PullRequestReaction[]; canReact?: boolean };
+/** `canEdit` is GitHub's own viewerCanUpdate for that comment. */
+export type PullRequestComment = { id: string; kind: "comment" | "review" | "review-comment"; author: PullRequestActor | null; body: string; createdAt: string; editedAt?: string; url?: string; reviewState?: string; path?: string; threadId?: string; reactions: PullRequestReaction[]; canReact?: boolean; canEdit?: boolean };
 export type PullRequestCommit = { oid: string; headline: string; committedAt: string; additions?: number; deletions?: number; authors: PullRequestActor[] };
-export type PullRequestReviewThreadView = { id: string; path: string; line?: number; originalLine?: number; side: "LEFT" | "RIGHT"; resolved: boolean; outdated: boolean; canReply: boolean; canResolve: boolean; canUnresolve: boolean; comments: PullRequestComment[]; totalComments: number };
+/** `commentsCursor` continues the thread's comments past the ones read with it. */
+export type PullRequestReviewThreadView = { id: string; path: string; line?: number; originalLine?: number; startLine?: number; side: "LEFT" | "RIGHT"; resolved: boolean; outdated: boolean; canReply: boolean; canResolve: boolean; canUnresolve: boolean; comments: PullRequestComment[]; totalComments: number; commentsCursor?: string };
+/** One line comment carried by a review. `startLine` makes it a range on GitHub. */
+export type PullRequestReviewCommentDraft = { path: string; line: number; side: "LEFT" | "RIGHT"; startLine?: number; startSide?: "LEFT" | "RIGHT"; body: string };
 export type PullRequestReviewState = "APPROVED" | "CHANGES_REQUESTED" | "DISMISSED" | "COMMENTED";
 export type PullRequestMergeMethod = "merge" | "squash" | "rebase";
 export const pullRequestMergeMethods: PullRequestMergeMethod[] = ["merge", "squash", "rebase"];
@@ -39,20 +43,32 @@ export type PullRequestView = PullRequestDetails & {
 	headRepository?: string; headRefExists: boolean;
 	/** GitHub's merge state says the branch is behind its base. */
 	behind: boolean;
+	/** How many commits the base has that the branch does not, read only when it is behind. */
+	behindBy?: number;
+	/** When this view was read, so a pane can tell running checks it has not looked at for a while. */
+	readAt?: string;
 };
 
+export type PullRequestUpdateMethod = "merge" | "rebase";
+export type PullRequestCommentKind = PullRequestComment["kind"];
 export type PullRequestAction =
 	| { type: "merge" | "enable-auto-merge"; method: PullRequestMergeMethod }
 	| { type: "disable-auto-merge" }
-	| { type: "close" | "reopen" | "ready" | "draft" | "update-branch" | "delete-branch" }
+	| { type: "close" | "reopen" | "ready" | "draft" | "delete-branch" | "revert" | "approve-workflows" }
+	| { type: "update-branch"; method?: PullRequestUpdateMethod }
 	| { type: "title"; title: string }
-	| { type: "comment"; body: string }
+	| { type: "body"; body: string }
+	/** `then` closes or reopens the pull request once the comment is posted. */
+	| { type: "comment"; body: string; then?: "close" | "reopen" }
+	| { type: "update-comment"; commentId: string; kind: PullRequestCommentKind; body: string }
 	| { type: "reply"; threadId: string; body: string }
 	| { type: "resolve"; threadId: string; resolved: boolean }
-	| { type: "review"; event: "approve" | "request-changes" | "comment"; body: string }
+	| { type: "review"; event: "approve" | "request-changes" | "comment"; body: string; comments?: PullRequestReviewCommentDraft[] }
 	| { type: "react"; subjectId: string; content: PullRequestReactionContent; reacted: boolean }
 	| { type: "label"; name: string; applied: boolean }
 	| { type: "reviewer"; login: string; requested: boolean };
+/** What some writes hand back besides the fresh view: the revert's new pull request. */
+export type PullRequestActionResult = PullRequestView & { revertUrl?: string };
 export type PullRequestActionRequest = { number: number; headOid: string; action: PullRequestAction };
 
 const control = (value: string) => [...value].some(character => { const code = character.charCodeAt(0); return code === 0 || code === 127; });
@@ -61,6 +77,22 @@ function body(value: unknown, required: boolean) {
 	return value;
 }
 const githubLogin = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
+const side = (value: unknown) => value === "LEFT" || value === "RIGHT";
+const lineNumber = (value: unknown) => Number.isSafeInteger(value) && Number(value) >= 1 && Number(value) <= 10_000_000;
+function reviewComments(value: unknown): PullRequestReviewCommentDraft[] {
+	if (value === undefined) return [];
+	if (!Array.isArray(value) || value.length > 200) throw new Error("Invalid review comments.");
+	return value.map(entry => {
+		const draft = entry && typeof entry === "object" ? entry as Record<string, unknown> : {};
+		const path = draft.path;
+		if (typeof path !== "string" || !path || path.length > 4096 || control(path) || !lineNumber(draft.line) || !side(draft.side)) throw new Error("Invalid review comment.");
+		const range = draft.startLine !== undefined;
+		if (range && (!lineNumber(draft.startLine) || !side(draft.startSide) || (draft.startSide === draft.side && Number(draft.startLine) > Number(draft.line)))) throw new Error("Invalid review comment range.");
+		// A one-line range is sent as a plain line, which GitHub prefers.
+		const ranged = range && (Number(draft.startLine) !== Number(draft.line) || draft.startSide !== draft.side);
+		return { path, line: Number(draft.line), side: draft.side as "LEFT" | "RIGHT", ...(ranged ? { startLine: Number(draft.startLine), startSide: draft.startSide as "LEFT" | "RIGHT" } : {}), body: body(draft.body, true) };
+	});
+}
 /** Who or what the Summary pickers offer, read when a picker opens. `applied` is a label it wears or a reviewer already asked. */
 export type PullRequestCandidate = { key: string; label: string; detail?: string; color?: string; avatarUrl?: string; applied: boolean };
 export type PullRequestCandidates = { kind: "labels" | "reviewers"; candidates: PullRequestCandidate[]; truncated: boolean };
@@ -78,14 +110,23 @@ export function validatePullRequestActionRequest(value: unknown): PullRequestAct
 		case "merge": case "enable-auto-merge":
 			if (!pullRequestMergeMethods.includes(action.method as PullRequestMergeMethod)) throw new Error("Choose a merge method.");
 			return { ...common, action: { type: action.type, method: action.method as PullRequestMergeMethod } };
-		case "close": case "disable-auto-merge": case "reopen": case "ready": case "draft": case "update-branch": case "delete-branch":
+		case "close": case "disable-auto-merge": case "reopen": case "ready": case "draft": case "delete-branch": case "revert": case "approve-workflows":
 			return { ...common, action: { type: action.type } };
+		case "update-branch":
+			if (action.method !== undefined && action.method !== "merge" && action.method !== "rebase") throw new Error("Choose how to update the branch.");
+			return { ...common, action: { type: "update-branch", ...(action.method === "rebase" ? { method: "rebase" as const } : {}) } };
+		case "body": return { ...common, action: { type: "body", body: body(action.body, false) } };
+		case "update-comment":
+			if (!reviewNodeId(action.commentId) || !["comment", "review", "review-comment"].includes(action.kind as string)) throw new Error("Invalid comment.");
+			return { ...common, action: { type: "update-comment", commentId: action.commentId, kind: action.kind as PullRequestCommentKind, body: body(action.body, action.kind !== "review") } };
 		case "title": {
 			const title = typeof action.title === "string" ? action.title.trim() : "";
 			if (!title || title.length > 256 || [...title].some(character => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)) throw new Error("Write a title of up to 256 characters on one line.");
 			return { ...common, action: { type: "title", title } };
 		}
-		case "comment": return { ...common, action: { type: "comment", body: body(action.body, true) } };
+		case "comment":
+			if (action.then !== undefined && action.then !== "close" && action.then !== "reopen") throw new Error("Invalid pull request action.");
+			return { ...common, action: { type: "comment", body: body(action.body, true), ...(action.then ? { then: action.then } : {}) } };
 		case "reply":
 			if (!reviewNodeId(action.threadId)) throw new Error("Invalid review thread.");
 			return { ...common, action: { type: "reply", threadId: action.threadId, body: body(action.body, true) } };
@@ -95,7 +136,9 @@ export function validatePullRequestActionRequest(value: unknown): PullRequestAct
 		case "review": {
 			if (!["approve", "request-changes", "comment"].includes(action.event as string)) throw new Error("Choose a review verdict.");
 			const event = action.event as "approve" | "request-changes" | "comment";
-			return { ...common, action: { type: "review", event, body: body(action.body ?? "", event !== "approve") } };
+			const comments = reviewComments(action.comments);
+			// Line comments are a review's words too: a comment review may carry only those.
+			return { ...common, action: { type: "review", event, body: body(action.body ?? "", event === "request-changes" || (event === "comment" && !comments.length)), ...(comments.length ? { comments } : {}) } };
 		}
 		case "react":
 			if (!reviewNodeId(action.subjectId) || !pullRequestReactionContents.includes(action.content as PullRequestReactionContent) || typeof action.reacted !== "boolean") throw new Error("Invalid reaction.");

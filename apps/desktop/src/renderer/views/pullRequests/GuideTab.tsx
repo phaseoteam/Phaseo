@@ -56,7 +56,7 @@ function Excerpt({ excerpt, notes }: { excerpt: GuideExcerpt; notes: GuideStop["
 	</figure>;
 }
 
-function StopView({ stop, index, count, nextTitle, onStep, onOpenCode }: { stop: GuideStop; index: number; count: number; nextTitle?: string; onStep: (delta: 1 | -1) => void; onOpenCode: () => void }) {
+function StopView({ stop, index, count, nextTitle, onStep, onOpenCode, onFinishReview }: { stop: GuideStop; index: number; count: number; nextTitle?: string; onStep: (delta: 1 | -1) => void; onOpenCode: () => void; onFinishReview?: () => void }) {
 	return <article className="flex min-w-0 flex-col gap-4" aria-label={`Stop ${index + 1}: ${stop.title}`}>
 		<header className="flex flex-col gap-1">
 			<p className="text-xs text-muted-foreground tabular-nums">Stop {index + 1} of {count}</p>
@@ -82,13 +82,13 @@ function StopView({ stop, index, count, nextTitle, onStep, onOpenCode }: { stop:
 		<footer className="flex items-center gap-2 border-t border-border/60 pt-3">
 			<Button size="xs" variant="ghost" disabled={index === 0} onClick={() => onStep(-1)}><ChevronLeft aria-hidden className="size-3.5" />Previous</Button>
 			<span className="ml-auto min-w-0 truncate text-xs text-muted-foreground">{nextTitle ? `Next: ${nextTitle}` : "Last stop"}</span>
-			<Button size="xs" variant="outline" disabled={index === count - 1} onClick={() => onStep(1)}>Next<ChevronRight aria-hidden className="size-3.5" /></Button>
+			{index === count - 1 && onFinishReview ? <Button size="xs" onClick={onFinishReview}>Finish review</Button> : <Button size="xs" variant="outline" disabled={index === count - 1} onClick={() => onStep(1)}>Next<ChevronRight aria-hidden className="size-3.5" /></Button>}
 		</footer>
 	</article>;
 }
 
 /** The tour: the rail beside the stop on a wide pane, above it on a narrow one. J and K step while the tab is on screen. */
-function GuideTour({ guide, guideKey, active, banner, onOpenCode }: { guide: PullRequestGuide; guideKey: string; active: boolean; banner: React.ReactNode; onOpenCode: () => void }) {
+function GuideTour({ guide, guideKey, active, banner, onOpenCode, onFinishReview }: { guide: PullRequestGuide; guideKey: string; active: boolean; banner: React.ReactNode; onOpenCode: () => void; onFinishReview?: () => void }) {
 	const key = `${guideKey}@${guide.headSha}`;
 	const [state, setState] = useState(() => progress.get(key) ?? { position: 0, seen: new Set<number>() });
 	useEffect(() => { setState(progress.get(key) ?? { position: 0, seen: new Set<number>() }); }, [key]);
@@ -107,7 +107,7 @@ function GuideTour({ guide, guideKey, active, banner, onOpenCode }: { guide: Pul
 			<aside className="self-start @min-[44rem]/guide:sticky @min-[44rem]/guide:top-4"><GuideRail stops={guide.stops} position={position} seen={state.seen} onSelect={goTo} /></aside>
 			<main className="flex min-w-0 flex-col gap-4">
 				{banner}
-				{stop ? <StopView stop={stop} index={position} count={count} nextTitle={guide.stops[position + 1]?.title} onStep={step} onOpenCode={onOpenCode} /> : <p className="text-xs text-muted-foreground">This change has no files to tour.</p>}
+				{stop ? <StopView stop={stop} index={position} count={count} nextTitle={guide.stops[position + 1]?.title} onStep={step} onOpenCode={onOpenCode} onFinishReview={onFinishReview} /> : <p className="text-xs text-muted-foreground">This change has no files to tour.</p>}
 				<p className="text-[11px] text-muted-foreground/80">Written by {guide.model} {new Date(guide.generatedAt).toLocaleString()}.{guide.truncated ? " The change was too large to show the model in full, so some files are listed without excerpts." : ""}{shortcut("guide.next") ? ` ${shortcut("guide.next")} and ${shortcut("guide.previous")} step through the stops.` : ""}</p>
 			</main>
 		</div>
@@ -119,7 +119,7 @@ function GuideTour({ guide, guideKey, active, banner, onOpenCode }: { guide: Pul
  * account and stored per pull request head, so opening the tab is free. A guide written before the latest push says
  * so and offers Rewrite.
  */
-export function GuideTab({ view, projectId, active, onOpenCode }: { view: PullRequestView; projectId: string; active: boolean; onOpenCode: () => void }) {
+export function GuideTab({ view, projectId, active, onOpenCode, onFinishReview }: { view: PullRequestView; projectId: string; active: boolean; onOpenCode: () => void; onFinishReview?: () => void }) {
 	const [result, setResult] = useState<PullRequestGuideResult>(), [loadError, setLoadError] = useState(""), [writing, setWriting] = useState(false);
 	const api = window.phaseoDesktop?.workspace;
 	const read = useCallback(async () => {
@@ -152,5 +152,5 @@ export function GuideTab({ view, projectId, active, onOpenCode }: { view: PullRe
 		<span className="min-w-0 flex-1 text-muted-foreground">{running ? "Rewriting this guide." : failure ?? "Written before the latest push."}</span>
 		{!running && writeButton("Rewrite")}
 	</div> : null;
-	return <GuideTour guide={guide} guideKey={`${view.repository}#${view.number}`} active={active} banner={banner} onOpenCode={onOpenCode} />;
+	return <GuideTour guide={guide} guideKey={`${view.repository}#${view.number}`} active={active} banner={banner} onOpenCode={onOpenCode} onFinishReview={onFinishReview} />;
 }
