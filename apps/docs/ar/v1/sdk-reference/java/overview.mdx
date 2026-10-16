@@ -28,6 +28,8 @@ public class Main {
 
 استخدم `createResponse` و`createChatCompletion` و`createEmbedding` و`listModels` لطلبات JSON. مرّر `Map` أو `JsonNode`؛ حلّل سلاسل JSON قبل تمريرها إلى طرق العميل.
 
+<Note>لرفع الملفات ونسخ الصوت وترجمته وتعديل الصور، استخدم أمثلة HTTP بصيغة multipart في هذا الدليل. طرق JSON في SDK لا ترمّز أجسام الطلبات التي تتضمن ملفات multipart.</Note>
+
 ## البث
 
 تعيد `streamResponse` و`rawClient().requestLines` أسطر SSE فور وصولها. أغلق البث باستخدام try-with-resources، وعالج أسماء الأحداث وأسطر البيانات وعلامات الاكتمال في تطبيقك.

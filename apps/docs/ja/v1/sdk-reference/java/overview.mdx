@@ -28,6 +28,8 @@ public class Main {
 
 JSON リクエストには `createResponse`、`createChatCompletion`、`createEmbedding`、`listModels` を使います。`Map` または `JsonNode` を渡してください。JSON 文字列はクライアントのメソッドに渡す前に解析します。
 
+<Note>ファイルのアップロード、音声の文字起こしと翻訳、画像編集には、このガイドの multipart HTTP の例を使ってください。SDK の JSON メソッドは multipart のファイル本文をエンコードしません。</Note>
+
 ## ストリーミング
 
 `streamResponse` と `rawClient().requestLines` は、到着した SSE 行を逐次返します。try-with-resources でストリームを閉じ、イベント名、データ行、完了マーカーをアプリケーションで処理してください。

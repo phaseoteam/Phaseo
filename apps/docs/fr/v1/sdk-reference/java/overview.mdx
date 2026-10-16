@@ -28,6 +28,8 @@ public class Main {
 
 Utilisez `createResponse`, `createChatCompletion`, `createEmbedding` et `listModels` pour les requêtes JSON. Passez un `Map` ou un `JsonNode` ; analysez les chaînes JSON avant de les transmettre aux méthodes du client.
 
+<Note>Pour envoyer des fichiers, transcrire ou traduire de l'audio et modifier des images, utilisez les exemples HTTP multipart de ce guide. Les méthodes JSON du SDK n'encodent pas les fichiers dans des corps multipart.</Note>
+
 ## Streaming
 
 `streamResponse` et `rawClient().requestLines` renvoient les lignes SSE dès leur arrivée. Fermez le flux avec try-with-resources et gérez les noms d'événements, les données et les marqueurs de fin dans votre application.

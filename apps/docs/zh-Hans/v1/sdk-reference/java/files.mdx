@@ -1,30 +1,63 @@
 ---
 icon: "files"
 title: "文件"
-description: "使用 Java SDK 上传文件并获取文件元数据和内容。"
+description: "从 Java 上传批处理 JSONL 文件。"
 ---
 
-**方法**：`Phaseo#uploadFile(...)`、`Phaseo#listFiles(...)`、`Phaseo#retrieveFile(...)`、`Phaseo#retrieveFileContent(...)`
+从 Java 上传批处理 JSONL 文件。
+
+<Note>Java SDK 的 JSON 方法不会编码 multipart 上传。请使用 Java 标准 HTTP 客户端，按下方示例发送文件字节。</Note>
+
+将批处理请求保存到工作目录中的 `requests.jsonl`。
+
+```java
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
+
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"purpose\"\r\n\r\nbatch\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"requests.jsonl\"\r\nContent-Type: application/jsonl\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("requests.jsonl")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/files"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
+}
+System.out.println(response.body());
+```
+
+## 使用 SDK 获取文件
+
+将 `file_123` 替换为上传时返回的 ID。
 
 ```java
 import app.phaseo.sdk.Phaseo;
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
 
-Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
-
-Object uploaded = client.uploadFile(new com.fasterxml.jackson.databind.ObjectMapper().readTree("""
-  {"purpose":"batch","file":"data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="}
-  """));
-
-Object file = client.retrieveFile("file_123");
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"),
+    System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1"));
+var file = client.retrieveFile("file_123");
 byte[] content = client.retrieveFileContent("file_123");
-
-System.out.println(String.valueOf(file));
-System.out.println(new String(content));
+System.out.println(file);
+System.out.println(new String(content, StandardCharsets.UTF_8));
 ```
 
-<Note>
-SDK 已提供 `listFiles(...)`，但使用共享网关密钥时，`GET /files` 目前会返回 `file_list_not_supported_with_shared_gateway_key`。
-请保存已上传文件的 ID，并直接获取文件。
-</Note>
+<Note>文件端点处于预览阶段，需要启用相应提供商。共享网关密钥不支持文件列表；请保存返回的文件 ID 并直接获取文件。</Note>

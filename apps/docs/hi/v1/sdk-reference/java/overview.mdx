@@ -28,6 +28,8 @@ public class Main {
 
 JSON अनुरोधों के लिए `createResponse`, `createChatCompletion`, `createEmbedding` और `listModels` इस्तेमाल करें। `Map` या `JsonNode` दें; JSON स्ट्रिंग को क्लाइंट मेथड में देने से पहले पार्स करें।
 
+<Note>फ़ाइल अपलोड, ऑडियो ट्रांसक्रिप्शन और अनुवाद तथा इमेज एडिट के लिए इस गाइड के multipart HTTP उदाहरण इस्तेमाल करें। SDK के JSON मेथड multipart फ़ाइल बॉडी एन्कोड नहीं करते।</Note>
+
 ## स्ट्रीमिंग
 
 `streamResponse` और `rawClient().requestLines` SSE लाइनें आते ही लौटाते हैं। try-with-resources से स्ट्रीम बंद करें और अपने ऐप में इवेंट नाम, डेटा लाइनें और पूर्ण होने के संकेत संभालें।

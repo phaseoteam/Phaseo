@@ -1,24 +1,46 @@
 ---
 icon: "arrow-right-left"
 title: "Traducciones"
-description: "Usa el SDK de Java para llamar a `/audio/translations`."
+description: "Traduce un archivo de audio al inglés desde Java."
 ---
 
-**Método**: `client.createTranslation(...)`
+Traduce un archivo de audio al inglés desde Java.
+
+<Note>Los métodos JSON del SDK de Java no generan cargas multipart. Usa el cliente HTTP estándar de Java para enviar los bytes del archivo como se muestra a continuación.</Note>
+
+Coloca `audio.mp3` en el directorio de trabajo.
 
 ```java
-import app.phaseo.sdk.Phaseo;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
 
-Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
-
-String body = """
-{
-  "model": "openai/whisper-1",
-  "file": "data:audio/mpeg;base64,..."
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\nopenai/whisper-1\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"audio.mp3\"\r\nContent-Type: audio/mpeg\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("audio.mp3")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/audio/translations"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
 }
-""";
-
-Object response = client.createTranslation(new com.fasterxml.jackson.databind.ObjectMapper().readTree(body));
-System.out.println(String.valueOf(response));
+System.out.println(response.body());
 ```
 

@@ -1,29 +1,46 @@
 ---
 icon: "pencil"
 title: "图像编辑"
-description: "使用 Java SDK 调用 /images/edits。"
+description: "从 Java 编辑图像文件。"
 ---
 
-**方法**: `client.createImageEdit(...)`
+从 Java 编辑图像文件。
+
+<Note>Java SDK 的 JSON 方法不会编码 multipart 上传。请使用 Java 标准 HTTP 客户端，按下方示例发送文件字节。</Note>
+
+将 `input.png` 放在工作目录中。
 
 ```java
-import app.phaseo.sdk.Phaseo;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
 
-Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
-
-String body = """
-{
-  "model": "openai/gpt-image-1",
-  "prompt": "Make this image warmer",
-  "image": "data:image/png;base64,..."
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\nopenai/gpt-image-1\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"prompt\"\r\n\r\nMake this image warmer\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"image\"; filename=\"input.png\"\r\nContent-Type: image/png\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("input.png")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/images/edits"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
 }
-""";
-
-Object response = client.createImageEdit(new com.fasterxml.jackson.databind.ObjectMapper().readTree(body));
-System.out.println(String.valueOf(response));
+System.out.println(response.body());
 ```
-
-<Note>
-仍在开发中的 Java 客户端会直接发送 JSON 请求体。对于高级 multipart 工作流，
-在添加更高级别的辅助方法之前，请直接调用 REST。
-</Note>

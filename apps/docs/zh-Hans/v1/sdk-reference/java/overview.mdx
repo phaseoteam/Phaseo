@@ -28,6 +28,8 @@ public class Main {
 
 使用 `createResponse`、`createChatCompletion`、`createEmbedding` 和 `listModels` 发送 JSON 请求。传入 `Map` 或 `JsonNode`；将 JSON 字符串解析后再传给客户端方法。
 
+<Note>上传文件、转录或翻译音频以及编辑图像时，请使用本指南中的 multipart HTTP 示例。SDK 的 JSON 方法不会编码包含文件的 multipart 请求体。</Note>
+
 ## 流式响应
 
 `streamResponse` 和 `rawClient().requestLines` 会逐行返回收到的 SSE 数据。使用 try-with-resources 关闭流，并在应用中处理事件名称、数据行和完成标记。

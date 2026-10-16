@@ -1,30 +1,63 @@
 ---
 icon: "files"
 title: "Arquivos"
-description: "Use o SDK Java para enviar arquivos e consultar metadados e conteúdo."
+description: "Envie um arquivo JSONL de processamento em lote com Java."
 ---
 
-**Métodos**: `Phaseo#uploadFile(...)`, `Phaseo#listFiles(...)`, `Phaseo#retrieveFile(...)`, `Phaseo#retrieveFileContent(...)`
+Envie um arquivo JSONL de processamento em lote com Java.
+
+<Note>Os métodos JSON do SDK Java não codificam uploads multipart. Use o cliente HTTP padrão do Java para enviar os bytes do arquivo como mostrado abaixo.</Note>
+
+Salve suas solicitações em lote como `requests.jsonl` no diretório de trabalho.
+
+```java
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
+
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"purpose\"\r\n\r\nbatch\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"requests.jsonl\"\r\nContent-Type: application/jsonl\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("requests.jsonl")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/files"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
+}
+System.out.println(response.body());
+```
+
+## Recuperar um arquivo com o SDK
+
+Substitua `file_123` pelo ID retornado no upload.
 
 ```java
 import app.phaseo.sdk.Phaseo;
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
 
-Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
-
-Object uploaded = client.uploadFile(new com.fasterxml.jackson.databind.ObjectMapper().readTree("""
-  {"purpose":"batch","file":"data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="}
-  """));
-
-Object file = client.retrieveFile("file_123");
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"),
+    System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1"));
+var file = client.retrieveFile("file_123");
 byte[] content = client.retrieveFileContent("file_123");
-
-System.out.println(String.valueOf(file));
-System.out.println(new String(content));
+System.out.println(file);
+System.out.println(new String(content, StandardCharsets.UTF_8));
 ```
 
-<Note>
-`listFiles(...)` está disponível no SDK, mas `GET /files` retorna atualmente `file_list_not_supported_with_shared_gateway_key` com a chave compartilhada do gateway.
-Armazene os IDs dos arquivos enviados e recupere-os diretamente.
-</Note>
+<Note>Os endpoints de arquivos estão em prévia e exigem um provedor habilitado. A listagem de arquivos não está disponível com chaves compartilhadas do gateway; guarde os IDs retornados e recupere os arquivos diretamente.</Note>

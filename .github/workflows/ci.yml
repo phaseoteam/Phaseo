@@ -756,6 +756,10 @@ jobs:
                   GOWORK: "off"
               run: pnpm run test:sdk-${{ matrix.sdk }}
 
+            - name: Verify Java multipart documentation requests
+              if: matrix.sdk == 'java'
+              run: node scripts/sdk/check-java-doc-multipart.mjs
+
     deploy:
         runs-on: ubuntu-latest
         needs:

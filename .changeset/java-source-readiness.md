@@ -6,3 +6,5 @@
 ---
 
 Add verified Java source-install guides, corrected JSON examples, streaming instructions, and language selection across the documentation and model quickstarts. Cover Java streaming and local HTTP behavior with deterministic tests, and add CMake build and test support for the C++ preview. Keep C++ out of the published SDK menu until its HTTP transport and streaming support are ready.
+
+Use tested Java HTTP multipart examples for file uploads, audio transcription and translation, and image edits until the SDK supports multipart encoding. Verify the documented requests against a local multipart parser in CI.
