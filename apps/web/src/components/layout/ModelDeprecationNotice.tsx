@@ -24,6 +24,7 @@ export type ModelDeprecationNoticeCopy = {
 	oneModel: string;
 	manyModels: string;
 	retiresOn: string;
+	firstRetiresOn: string;
 	replacement: string;
 	review: string;
 	dismiss: string;
@@ -87,6 +88,9 @@ export default function ModelDeprecationNotice({ userId, workspaceId, locale, co
 	if (!visible.length) return null;
 
 	const first = visible[0]!;
+	const soonest = visible
+		.filter((warning) => warning.retirementDate)
+		.reduce<typeof first | null>((best, warning) => !best || warning.retirementDate! < best.retirementDate! ? warning : best, null);
 	const formatDate = (value: string) => {
 		const date = new Date(value);
 		return Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(date) : value;
@@ -97,8 +101,14 @@ export default function ModelDeprecationNotice({ userId, workspaceId, locale, co
 			first.retirementDate ? fill(copy.retiresOn, { date: formatDate(first.retirementDate) }) : null,
 			first.replacementModelId ? fill(copy.replacement, { replacement: first.replacementModelId }) : null,
 		]
-		: [fill(copy.manyModels, { count: String(visible.length) })];
-	const critical = visible.some((warning) => warning.severity === "critical");
+		: [
+			fill(copy.manyModels, { count: String(visible.length) }),
+			soonest?.retirementDate ? fill(copy.firstRetiresOn, { model: soonest.modelName ?? soonest.modelId, date: formatDate(soonest.retirementDate) }) : null,
+		];
+	// Red needs a reason on screen, so the earliest retirement is always named.
+	// Older APIs mark deprecation-only warnings critical; without a retirement
+	// date there is nothing to name, so those stay amber.
+	const critical = visible.some((warning) => warning.severity === "critical" && warning.retirementDate);
 
 	function dismiss() {
 		const next = new Set(dismissed);
@@ -118,19 +128,23 @@ export default function ModelDeprecationNotice({ userId, workspaceId, locale, co
 						? "border-b border-red-300 bg-red-100/95 text-red-950 dark:border-red-900 dark:bg-red-950/45 dark:text-red-100"
 						: "border-b border-amber-300 bg-amber-100/95 text-amber-950 dark:border-amber-800 dark:bg-amber-950/45 dark:text-amber-100"}
 				>
-					<div className="mx-auto flex w-full max-w-[1280px] items-center gap-3 px-4 py-2 text-xs sm:px-6 lg:px-8 lg:text-sm">
-						<TriangleAlert aria-hidden className="size-4 shrink-0" />
-						<p className="min-w-0 flex-1">
-							{parts.filter(Boolean).join(" ")}{" "}
-							<Link href="/settings/usage/alerts" className="whitespace-nowrap font-semibold underline underline-offset-4">
-								{copy.review}
-							</Link>
+					{/* Centred like the site notice; side padding keeps the text clear of the dismiss button. */}
+					<div className="relative px-11 py-2 text-xs lg:text-sm">
+						<p className="mx-auto flex max-w-[1280px] items-center justify-center gap-2 text-center">
+							<TriangleAlert aria-hidden className="size-4 shrink-0" />
+							{/* Balanced so a wrap splits the sentences rather than orphaning "Review". */}
+							<span className="text-balance">
+								{parts.filter(Boolean).join(" ")}{" "}
+								<Link href="/settings/usage/alerts" className="whitespace-nowrap font-semibold underline underline-offset-4">
+									{copy.review}
+								</Link>
+							</span>
 						</p>
 						<button
 							type="button"
 							onClick={dismiss}
 							aria-label={copy.dismiss}
-							className="grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current dark:hover:bg-white/10"
+							className="absolute right-2 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-md transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current sm:right-4 dark:hover:bg-white/10"
 						>
 							<X aria-hidden className="size-4" />
 						</button>

@@ -2532,9 +2532,10 @@
 		}
 	},
 	"deprecationNotice": {
-		"oneModel": "{model}, usado pelo seu espaço de trabalho, está sendo descontinuado. Comece a planejar a migração.",
-		"manyModels": "{count} modelos usados pelo seu espaço de trabalho estão sendo descontinuados. Comece a planejar a migração.",
+		"oneModel": "{model}, usado pelo seu espaço de trabalho, será desativado. Comece a planejar a migração.",
+		"manyModels": "{count} modelos usados pelo seu espaço de trabalho serão desativados. Comece a planejar a migração.",
 		"retiresOn": "Será desativado em {date}.",
+		"firstRetiresOn": "{model} será desativado primeiro, em {date}.",
 		"replacement": "Substituto sugerido: {replacement}.",
 		"review": "Revisar",
 		"dismiss": "Fechar"

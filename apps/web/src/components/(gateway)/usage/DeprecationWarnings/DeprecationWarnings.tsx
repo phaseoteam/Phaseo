@@ -1,8 +1,8 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { getTranslations } from "next-intl/server";
 import { DisplayDate } from "@/components/display/DisplayValue";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Logo } from "@/components/Logo";
@@ -189,11 +189,24 @@ function AlertCard({
 	);
 }
 
+// Native disclosure with its marker hidden, so the chevron is the only indicator.
+function ShowMore({ label, children }: { label: string; children: ReactNode }) {
+	return (
+		<details className="group rounded-md border">
+			<summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-xs text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+				<ChevronDown aria-hidden className="size-3.5 shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" />
+				{label}
+			</summary>
+			<div className="grid gap-2 border-t p-2 md:grid-cols-2">{children}</div>
+		</details>
+	);
+}
+
 function CardsBlock({
 	rows,
 	mode,
 	title,
-	collapsible = true,
+	collapsible = false,
 }: {
 	rows: DeprecationWarning[];
 	mode: AlertCardMode;
@@ -220,20 +233,15 @@ function CardsBlock({
 			</div>
 
 			{collapsible && hiddenRows.length > 0 ? (
-				<details className="rounded-md border">
-					<summary className="cursor-pointer px-3 py-2 text-xs text-muted-foreground hover:text-foreground">
-						{tWithCount("strings.Show {count} more", { count: hiddenRows.length })}
-					</summary>
-					<div className="grid gap-2 border-t p-2 md:grid-cols-2">
-						{hiddenRows.map((row) => (
-							<AlertCard
-								key={`${mode}-${row.modelId}-more`}
-								row={row}
-								mode={mode}
-							/>
-						))}
-					</div>
-				</details>
+				<ShowMore label={tWithCount("strings.Show {count} more", { count: hiddenRows.length })}>
+					{hiddenRows.map((row) => (
+						<AlertCard
+							key={`${mode}-${row.modelId}-more`}
+							row={row}
+							mode={mode}
+						/>
+					))}
+				</ShowMore>
 			) : null}
 		</div>
 	);
@@ -274,20 +282,15 @@ function SectionBlock({
 			</div>
 
 			{hiddenRows.length > 0 ? (
-				<details className="rounded-md border">
-					<summary className="cursor-pointer px-3 py-2 text-xs text-muted-foreground hover:text-foreground">
-						{tWithCount("strings.Show {count} more", { count: hiddenRows.length })}
-					</summary>
-					<div className="grid gap-2 border-t p-2 md:grid-cols-2">
-						{hiddenRows.map((row) => (
-							<AlertCard
-								key={`${mode}-${row.modelId}-more`}
-								row={row}
-								mode={mode}
-							/>
-						))}
-					</div>
-				</details>
+				<ShowMore label={tWithCount("strings.Show {count} more", { count: hiddenRows.length })}>
+					{hiddenRows.map((row) => (
+						<AlertCard
+							key={`${mode}-${row.modelId}-more`}
+							row={row}
+							mode={mode}
+						/>
+					))}
+				</ShowMore>
 			) : null}
 		</div>
 	);
@@ -309,13 +312,14 @@ function sortRecentRetired(rows: DeprecationWarning[]) {
 	});
 }
 
-export default async function DeprecationWarnings({
+// Rendered inside the client alerts page, so this must stay synchronous.
+export default function DeprecationWarnings({
 	warnings,
 	id = "lifecycle-alerts",
 	showHeader = true,
 }: DeprecationWarningsProps = {}) {
 	const rawWarnings = warnings ?? [];
-	const t = await getTranslations("SettingsUI");
+	const t = useTranslations("SettingsUI");
 	if (!rawWarnings.length) return null;
 
 	const deprecatedRows = sortByRetirementDateAsc(
@@ -356,7 +360,7 @@ export default async function DeprecationWarnings({
 					title={t("strings.Models You Don't Use" as never)}
 					rows={deprecatedFyiRows}
 					mode="deprecated"
-					collapsible={false}
+					collapsible
 				/>
 				<SectionBlock
 					title={t("strings.Recent Retirements" as never)}

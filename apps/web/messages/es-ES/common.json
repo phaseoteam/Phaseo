@@ -2532,9 +2532,10 @@
 		}
 	},
 	"deprecationNotice": {
-		"oneModel": "{model}, que usa tu espacio de trabajo, está quedando obsoleto. Empieza a planificar el cambio.",
-		"manyModels": "{count} modelos que usa tu espacio de trabajo están quedando obsoletos. Empieza a planificar el cambio.",
+		"oneModel": "{model}, que usa tu espacio de trabajo, se va a retirar. Empieza a planificar el cambio.",
+		"manyModels": "{count} modelos que usa tu espacio de trabajo se van a retirar. Empieza a planificar el cambio.",
 		"retiresOn": "Se retira el {date}.",
+		"firstRetiresOn": "{model} se retira primero, el {date}.",
 		"replacement": "Sustituto recomendado: {replacement}.",
 		"review": "Revisar",
 		"dismiss": "Cerrar"
