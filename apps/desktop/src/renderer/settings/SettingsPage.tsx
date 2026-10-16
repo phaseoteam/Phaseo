@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowLeft, Bell, Bot, FolderOpen, Keyboard, Gauge, Palette, Plug, Search, SlidersHorizontal, UserRound } from "lucide-react";
+import { ArrowLeft, Bell, Bot, Keyboard, Gauge, Palette, Plug, Search, SlidersHorizontal, UserRound } from "lucide-react";
+import { ProjectIcon } from "../components/ProjectIcon";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { useWorkspace, type SettingsPage as Page } from "../app/workspace";
@@ -58,7 +59,7 @@ export function SettingsNav() {
 		{projects.length > 0 && <div className="flex flex-col gap-0.5 pb-2">
 			<p className="px-2.5 pt-1.5 pb-1 text-xs font-semibold text-muted-foreground">Projects</p>
 			{projects.map(project => <button key={project.id} type="button" aria-current={current === project.id ? "page" : undefined} onClick={() => openProjectSettings(project.id)}
-				className={cn("flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent/70 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground", current === project.id && "bg-sidebar-accent text-sidebar-foreground")}><FolderOpen /><span className="truncate">{project.name}</span></button>)}
+				className={cn("flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent/70 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground", current === project.id && "bg-sidebar-accent text-sidebar-foreground")}><ProjectIcon project={project} /><span className="truncate">{project.name}</span></button>)}
 		</div>}
 		{!shown.length && !projects.length && <p className="px-2.5 py-2 text-xs text-muted-foreground">No settings match.</p>}
 	</nav>;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PullRequestCheck, PullRequestComment, PullRequestView } from "../../../shared/pullRequestView";
-import { applyPendingReactions, askPullRequestPrompt, explainPullRequestPrompt, fixFindingsPrompt, matchesCandidate, reactionTooltip, buildTimeline, checksRollup, fileTree, groupTimeline, ignoreWhitespacePatch, primaryAction, pullRequestStateKey, readViewed, relativeTime, reviewerEntries, setViewed, summarizeChecks, summaryChecksRollup, viewedState } from "./pullRequestLogic";
+import { applyPendingReactions, askPullRequestPrompt, explainPullRequestPrompt, fixFindingsPrompt, matchesCandidate, moveHighlight, reactionTooltip, buildTimeline, checksRollup, fileTree, groupTimeline, ignoreWhitespacePatch, primaryAction, pullRequestStateKey, readViewed, relativeTime, reviewerEntries, setViewed, summarizeChecks, summaryChecksRollup, viewedState } from "./pullRequestLogic";
 
 const check = (status: PullRequestCheck["status"], url?: string): PullRequestCheck => ({ name: status, status, ...(url ? { url } : {}) });
 const comment = (id: string, at: string, patch: Partial<PullRequestComment> = {}): PullRequestComment => ({ id, kind: "comment", author: { login: "a" }, body: "Hi", createdAt: at, reactions: [], ...patch });
@@ -121,5 +121,19 @@ describe("code tab helpers", () => {
 		expect(prompt).toContain("Failing checks:\n> lint — 2 errors");
 		expect(prompt).toContain("truncated");
 		expect(fixFindingsPrompt({ ...base, commentsTruncated: false, checkRuns: [], threads: [], comments: [] })).toContain("No unresolved review findings");
+	});
+});
+
+describe("candidate picker keys", () => {
+	it("moves the highlight with arrows that wrap, Home and End, and ignores other keys", () => {
+		expect(moveHighlight(0, 3, "ArrowDown")).toBe(1);
+		expect(moveHighlight(2, 3, "ArrowDown")).toBe(0);
+		expect(moveHighlight(0, 3, "ArrowUp")).toBe(2);
+		expect(moveHighlight(-1, 3, "ArrowDown")).toBe(0);
+		expect(moveHighlight(-1, 3, "ArrowUp")).toBe(2);
+		expect(moveHighlight(1, 3, "Home")).toBe(0);
+		expect(moveHighlight(1, 3, "End")).toBe(2);
+		expect(moveHighlight(1, 3, "a")).toBeUndefined();
+		expect(moveHighlight(-1, 0, "ArrowDown")).toBeUndefined();
 	});
 });

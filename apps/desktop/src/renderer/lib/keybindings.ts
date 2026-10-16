@@ -1,13 +1,19 @@
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { KeybindingsState } from "../../shared/desktop";
-import { evaluateWhen, keybindingRows, keyLabel, matchesKey, type KeybindingCommand, type KeybindingRow, type WhenContext } from "../../shared/keybindings";
+import { evaluateWhen, keybindingRows, keyLabel, matchesKey, type CommandInfo, type KeybindingCommand, type KeybindingRow, type WhenContext } from "../../shared/keybindings";
 import { isMac } from "./shortcuts";
 
 /** The person's keybindings, shared by the whole window and kept in step with keybindings.json. */
-let state: KeybindingsState & { rows: KeybindingRow[] } = { entries: [], path: "", rows: keybindingRows([]) };
+let state: KeybindingsState & { rows: KeybindingRow[]; extra: readonly CommandInfo[] } = { entries: [], path: "", rows: keybindingRows([]), extra: [] };
 const listeners = new Set<() => void>();
 let started = false;
-const set = (next: KeybindingsState) => { state = { ...next, rows: keybindingRows(next.entries) }; for (const listener of listeners) listener(); };
+const set = (next: KeybindingsState, extra = state.extra) => { state = { ...next, extra, rows: keybindingRows(next.entries, extra) }; for (const listener of listeners) listener(); };
+
+/** Commands that come and go, such as project actions, so they get rows, shortcuts and conflict checks. */
+export function setDynamicCommands(extra: readonly CommandInfo[]) {
+	if (JSON.stringify(extra) === JSON.stringify(state.extra)) return;
+	set(state, extra);
+}
 
 function start() {
 	if (started) return;
@@ -48,6 +54,24 @@ export function useCommand(command: KeybindingCommand, handler: () => boolean | 
 		registered.add(run); handlers.set(command, registered);
 		return () => { registered.delete(run); };
 	}, [command, enabled]);
+}
+
+/** useCommand for a changing list of commands, with one handler that is told which ran. */
+export function useCommands(commands: readonly KeybindingCommand[], handler: (command: KeybindingCommand) => boolean | void, enabled = true) {
+	const latest = useRef(handler);
+	latest.current = handler;
+	const key = commands.join(" ");
+	useEffect(() => {
+		if (!enabled || !key) return;
+		const removers = key.split(" ").map(value => {
+			const command = value as KeybindingCommand;
+			const run = () => latest.current(command);
+			const registered = handlers.get(command) ?? new Set();
+			registered.add(run); handlers.set(command, registered);
+			return () => { registered.delete(run); };
+		});
+		return () => { for (const remove of removers) remove(); };
+	}, [key, enabled]);
 }
 
 /** Runs a command as if its shortcut was pressed; false when nothing handles it now. The newest handler goes first. */

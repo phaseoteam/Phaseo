@@ -67,7 +67,7 @@ describe("terminal lifecycle", () => {
 		const service = new TerminalService(store, directory);
 		try {
 			const project = store.addProject(directory); project.settings = { scripts: [{ id: "dev", name: "Dev server", command: "pnpm dev", icon: "play", runOnWorktreeCreate: false }] }; store.saveProject(project);
-			expect(service.command({ type: "open", projectId: project.id, scriptId: "dev" }).find(session => session.title === "Dev server")).toBeDefined();
+			expect(service.command({ type: "open", projectId: project.id, scriptId: "dev" }).find(session => session.title === "Dev server")?.scriptId).toBe("dev");
 			expect(pty.write).toHaveBeenCalledWith("pnpm dev\r");
 			expect(() => service.command({ type: "open", projectId: project.id, scriptId: "missing" })).toThrow("no longer exists");
 			expect(() => service.command({ type: "open", scriptId: "dev" })).toThrow("Invalid project script");

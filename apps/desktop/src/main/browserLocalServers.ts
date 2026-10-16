@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import http from "node:http";
+import https from "node:https";
 import type { BrowserLocalServer } from "../shared/browser";
 
 type Listener = { host: string; port: number; pid?: number; process?: string };
@@ -86,4 +87,16 @@ export function localServers(): Promise<BrowserLocalServer[]> {
 	})();
 	cache = { at: Date.now(), servers };
 	return servers;
+}
+
+/** True once a local address answers HTTP at all, so an action's preview opens when its server is up. */
+export function probeAddress(address: string): Promise<boolean> {
+	return new Promise(resolve => {
+		const url = new URL(address);
+		const options = { host: url.hostname.replace(/^\[|\]$/g, "") === "localhost" ? "localhost" : url.hostname.replace(/^\[|\]$/g, ""), port: url.port || (url.protocol === "https:" ? 443 : 80), path: url.pathname + url.search, timeout: 1500, headers: { accept: "text/html,*/*" } };
+		// A local dev server's certificate is usually self-signed; only whether it answers matters here.
+		const request = url.protocol === "https:" ? https.get({ ...options, rejectUnauthorized: false }, response => { response.resume(); resolve(true); }) : http.get(options, response => { response.resume(); resolve(true); });
+		request.on("timeout", () => { request.destroy(); resolve(false); });
+		request.on("error", () => resolve(false));
+	});
 }

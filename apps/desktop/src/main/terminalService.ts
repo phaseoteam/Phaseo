@@ -54,7 +54,7 @@ export class TerminalService {
 		if (projectId && !project) throw new Error("Project no longer exists.");
 		if (taskId) { const task = this.store.getTask(taskId); if ((task.projectId ?? undefined) !== project?.id) throw new Error("This chat belongs to another project."); }
 		const id = randomUUID(); const cwd = project?.directory ?? path.join(this.directory, id); mkdirSync(cwd, { recursive: true });
-		const session: TerminalSession = { id, projectId: project?.id, ...(taskId ? { taskId } : {}), title: script?.name.slice(0, 200) ?? this.nextTitle(project?.id, taskId), cwd, output: "", status: "running", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+		const session: TerminalSession = { id, projectId: project?.id, ...(taskId ? { taskId } : {}), ...(script ? { scriptId: script.id } : {}), title: script?.name.slice(0, 200) ?? this.nextTitle(project?.id, taskId), cwd, output: "", status: "running", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
 		const entry = this.start(session, process.platform === "win32" ? "powershell.exe" : process.env.SHELL ?? "/bin/bash", process.platform === "win32" ? ["-NoLogo"] : [], process.env);
 		if (script) entry.pty.write(`${script.command}\r`);
 		return session;

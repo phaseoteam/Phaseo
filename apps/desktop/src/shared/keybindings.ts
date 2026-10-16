@@ -33,17 +33,27 @@ export const keybindingCommands = [
 	{ command: "browser.zoomIn", label: "Zoom page in", group: "Browser", keys: ["mod+=", "mod++"], when: "browserFocused" },
 	{ command: "browser.zoomOut", label: "Zoom page out", group: "Browser", keys: ["mod+-"], when: "browserFocused" },
 	{ command: "browser.zoomReset", label: "Reset page zoom", group: "Browser", keys: ["mod+0"], when: "browserFocused" },
+	// T3's J and K step through a review guide while its tab is on screen, unless you are typing.
+	{ command: "guide.next", label: "Next stop in a review guide", group: "Pull requests", keys: ["j"], when: "paneOpen && !textFocused && !terminalFocused && !browserFocused" },
+	{ command: "guide.previous", label: "Previous stop in a review guide", group: "Pull requests", keys: ["k"], when: "paneOpen && !textFocused && !terminalFocused && !browserFocused" },
 	{ command: "view.zoomIn", label: "Zoom in", group: "View", keys: ["mod+=", "mod++"] },
 	{ command: "view.zoomOut", label: "Zoom out", group: "View", keys: ["mod+-"] },
 	{ command: "view.zoomReset", label: "Actual size", group: "View", keys: ["mod+0"] },
 ] as const satisfies readonly { command: string; label: string; group: string; keys: readonly string[]; when?: string }[];
 
-export type KeybindingCommand = typeof keybindingCommands[number]["command"];
-type CommandInfo = { command: KeybindingCommand; label: string; group: string; keys: readonly string[]; when?: string };
+/** A project action's own command, after T3's `script.<id>.run`, scoped to its project: `script.<projectId>.<actionId>.run`. */
+export type ScriptCommand = `script.${string}.${string}.run`;
+export type KeybindingCommand = typeof keybindingCommands[number]["command"] | ScriptCommand;
+export type CommandInfo = { command: KeybindingCommand; label: string; group: string; keys: readonly string[]; when?: string };
 const commandList: readonly CommandInfo[] = keybindingCommands;
 export type KeybindingEntry = { command: KeybindingCommand; key: string; when?: string };
 export type KeybindingRow = KeybindingEntry & { id: string; label: string; group: string; source: "Default" | "Custom"; defaultKeys: readonly string[]; defaultWhen?: string };
-export const keybindingGroups = ["General", "Chats", "Panes", "Browser", "View"] as const;
+export const keybindingGroups = ["General", "Chats", "Panes", "Browser", "Pull requests", "View", "Project actions"] as const;
+
+const scriptCommandPattern = /^script\.([A-Za-z0-9_-]{1,200})\.([A-Za-z0-9_-]{1,100})\.run$/;
+export const scriptCommand = (projectId: string, actionId: string): ScriptCommand => `script.${projectId}.${actionId}.run`;
+export function parseScriptCommand(command: string) { const match = scriptCommandPattern.exec(command); return match ? { projectId: match[1], actionId: match[2] } : undefined; }
+export const isScriptCommand = (value: unknown): value is ScriptCommand => typeof value === "string" && scriptCommandPattern.test(value);
 
 /** Conditions a "when" clause can test. */
 export const whenVariables = {
@@ -58,9 +68,9 @@ export const whenVariables = {
 } as const;
 export type WhenContext = Partial<Record<keyof typeof whenVariables, boolean>>;
 
-const commandInfo = (command: string) => commandList.find(value => value.command === command);
-export const commandLabel = (command: string) => commandInfo(command)?.label ?? command;
-export const isKeybindingCommand = (value: unknown): value is KeybindingCommand => typeof value === "string" && Boolean(commandInfo(value));
+const commandInfo = (command: string, extra: readonly CommandInfo[] = []) => commandList.find(value => value.command === command) ?? extra.find(value => value.command === command);
+export const commandLabel = (command: string, extra?: readonly CommandInfo[]) => commandInfo(command, extra)?.label ?? command;
+export const isKeybindingCommand = (value: unknown): value is KeybindingCommand => typeof value === "string" && (Boolean(commandInfo(value)) || isScriptCommand(value));
 
 const modifiers = ["mod", "ctrl", "meta", "alt", "shift"] as const;
 const named = new Set(["enter", "escape", "tab", "space", "backspace", "delete", "arrowup", "arrowdown", "arrowleft", "arrowright", "home", "end", "pageup", "pagedown", ...Array.from({ length: 12 }, (_, index) => `f${index + 1}`)]);
@@ -201,12 +211,15 @@ export function validateKeybindings(value: unknown): KeybindingEntry[] {
 	});
 }
 
-/** Every binding in effect, defaults first replaced by the person's own; unassigned commands keep one empty row. */
-export function keybindingRows(custom: KeybindingEntry[]): KeybindingRow[] {
-	return commandList.flatMap((info): KeybindingRow[] => {
+/**
+ * Every binding in effect, defaults first replaced by the person's own; unassigned commands keep one empty row.
+ * `extra` adds commands that exist only now, such as project actions; bindings for actions that are gone are left out.
+ */
+export function keybindingRows(custom: KeybindingEntry[], extra: readonly CommandInfo[] = []): KeybindingRow[] {
+	return [...commandList, ...extra].flatMap((info): KeybindingRow[] => {
 		const mine = custom.filter(entry => entry.command === info.command);
 		const base = { label: info.label, group: info.group, defaultKeys: info.keys, defaultWhen: info.when };
-		if (!mine.length) return info.keys.map((key, index) => ({ ...base, id: `${info.command}:default:${index}`, command: info.command, key, ...(info.when ? { when: info.when } : {}), source: "Default" as const }));
+		if (!mine.length) return (info.keys.length ? info.keys : [""]).map((key, index) => ({ ...base, id: `${info.command}:default:${index}`, command: info.command, key, ...(info.when ? { when: info.when } : {}), source: "Default" as const }));
 		return mine.map((entry, index) => ({ ...base, ...entry, id: `${info.command}:custom:${index}`, source: "Custom" as const }));
 	});
 }
@@ -216,7 +229,10 @@ export function keybindingConflicts(rows: KeybindingRow[], row: Pick<KeybindingR
 	const key = parseKey(row.key);
 	if (!key) return [];
 	const same = (value: string) => { const other = parseKey(value); return Boolean(other) && JSON.stringify(other) === JSON.stringify(key); };
-	return [...new Set(rows.filter(other => other.id !== row.id && other.command !== row.command && same(other.key)).map(other => other.label))];
+	// Actions of different projects never run together: only the open chat's project's actions are active.
+	const project = parseScriptCommand(row.command)?.projectId;
+	const together = (command: string) => { const other = parseScriptCommand(command)?.projectId; return !project || !other || project === other; };
+	return [...new Set(rows.filter(other => other.id !== row.id && other.command !== row.command && together(other.command) && same(other.key)).map(other => other.label))];
 }
 
 /** The person's bindings after editing one command's rows. */
@@ -229,6 +245,9 @@ const pageCommands: readonly string[] = ["browser.reload", "browser.zoomIn", "br
 /** Keys a focused web page hands to the app; the app takes keyboard focus for all but the page's own commands. Undo stays with the page, where it edits text. */
 export function browserShortcuts(custom: KeybindingEntry[]) {
 	const shortcuts = new Map<string, boolean>();
-	for (const row of keybindingRows(custom)) if (row.key && row.command !== "thread.undo") shortcuts.set(row.key, (shortcuts.get(row.key) ?? false) || pageCommands.includes(row.command));
+	// A bare letter (the guide's J and K) is typing on a page, never the app's.
+	const typed = (key: string) => { const parsed = parseKey(key); return Boolean(parsed && !parsed.mod && !parsed.ctrl && !parsed.meta && !parsed.alt && parsed.key.length === 1); };
+	for (const row of keybindingRows(custom)) if (row.key && row.command !== "thread.undo" && !typed(row.key)) shortcuts.set(row.key, (shortcuts.get(row.key) ?? false) || pageCommands.includes(row.command));
+	for (const entry of custom) if (entry.key && isScriptCommand(entry.command) && !typed(entry.key)) shortcuts.set(entry.key, shortcuts.get(entry.key) ?? false);
 	return [...shortcuts].map(([key, keepPageFocus]) => ({ key, keepPageFocus }));
 }

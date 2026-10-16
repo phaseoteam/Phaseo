@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowDownUp, ArrowLeft, ArrowUpRight, BookOpen, Check, CircleDot, Copy, ExternalLink, FileDiff, GitBranch, GitCommitHorizontal, Hammer, Link as LinkIcon, MessageCircleQuestion, MessageSquare, MoreHorizontal, Pencil, RefreshCw, Trash2, TriangleAlert, X } from "lucide-react";
+import { ArrowDownUp, ArrowLeft, ArrowUpRight, BookOpen, Check, ChevronDown, CircleDot, Copy, ExternalLink, FileDiff, FolderGit2, GitBranch, GitCommitHorizontal, Hammer, Link as LinkIcon, MessageCircleQuestion, MessageSquare, MoreHorizontal, Pencil, RefreshCw, Trash2, TriangleAlert, X } from "lucide-react";
 import type { PullRequestMergeMethod, PullRequestReactionContent } from "../../../shared/pullRequestView";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -12,6 +12,7 @@ import { usePersistedState } from "../../lib/persistedState";
 import { cn } from "../../lib/utils";
 import { ChecksPopover } from "./ChecksPopover";
 import { CodeTab } from "./CodeTab";
+import { GuideTab } from "./GuideTab";
 import { Composer } from "./Composer";
 import { ActorLabel, DiffStat, errorMessage, MetaLine, MiddleTruncate, PullRequestGlyph, pullRequestStatePresentation, ReviewOutcomeIcon, REVIEW_OUTCOME_PRESENTATION, Tip } from "./presentation";
 import { approvalCount, checksRollup, mergeMethodLabels, primaryAction, relativeTime, summarizeChecks } from "./pullRequestLogic";
@@ -22,8 +23,8 @@ import { useInlineActionConfirm } from "./useInlineActionConfirm";
 import { usePullRequest } from "./usePullRequest";
 import { usePullRequestHandoff } from "./usePullRequestHandoff";
 
-type Tab = "summary" | "timeline" | "code";
-const tabs: { value: Tab; label: string }[] = [{ value: "summary", label: "Summary" }, { value: "timeline", label: "Timeline" }, { value: "code", label: "Code" }];
+type Tab = "summary" | "guide" | "timeline" | "code";
+const tabs: { value: Tab; label: string }[] = [{ value: "summary", label: "Summary" }, { value: "guide", label: "Guide" }, { value: "timeline", label: "Timeline" }, { value: "code", label: "Code" }];
 
 function useCopied() {
 	const [copied, setCopied] = useState<string>();
@@ -182,7 +183,15 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 						<div className="mt-2 flex min-h-5 min-w-0 items-center gap-2 text-xs text-muted-foreground">
 							<MetaLine className="min-w-0 whitespace-nowrap"><ActorLabel key="author" actor={view.authorActor} /><span key="updated">updated {relativeTime(view.updatedAt)}</span></MetaLine>
 							{view.state === "OPEN" && <span className="ml-auto flex min-w-0 items-center gap-2"><CopyableCode value={`gh pr checkout ${view.number}`} label="Copy checkout command" />
-									<Tip label="Check out in a separate worktree: its own folder and chat. Nothing you have open moves."><Button size="xs" variant="outline" disabled={handoff.pending !== undefined} onClick={() => void handoff.run("checkout", view)} aria-label={handoff.pending === "checkout" ? "Checking out…" : "Check out in a worktree"} data-pull-request-checkout=""><GitBranch aria-hidden className="size-3.5" /><span className="@max-[35rem]/pr-header:hidden">{handoff.pending === "checkout" ? "Checking out…" : "Check out"}</span></Button></Tip></span>}
+									<DropdownMenu>
+										<Tip label="Check out this pull request"><DropdownMenuTrigger disabled={handoff.pending !== undefined} render={<Button size="xs" variant="outline" aria-label={handoff.pending?.startsWith("checkout") ? "Checking out…" : "Check out"} data-pull-request-checkout="" />}>
+											<GitBranch aria-hidden className="size-3.5" /><span className="@max-[35rem]/pr-header:hidden">{handoff.pending?.startsWith("checkout") ? "Checking out…" : "Check out"}</span><ChevronDown aria-hidden className="size-3.5 text-muted-foreground" />
+										</DropdownMenuTrigger></Tip>
+										<DropdownMenuContent align="end" className="w-72">
+											<DropdownMenuItem onClick={() => void handoff.run("checkout", view)} className="items-start"><GitBranch className="mt-0.5 size-3.5 shrink-0" /><span className="flex min-w-0 flex-col"><span>In a separate worktree</span><span className="text-xs text-muted-foreground">Its own folder and chat. Nothing you have open moves.</span></span></DropdownMenuItem>
+											<DropdownMenuItem onClick={() => void handoff.run("checkout-here", view)} className="items-start"><FolderGit2 className="mt-0.5 size-3.5 shrink-0" /><span className="flex min-w-0 flex-col"><span>In this repository</span><span className="text-xs text-muted-foreground">Switches the branch you are working in, like <code className="font-mono">gh pr checkout</code>.</span></span></DropdownMenuItem>
+										</DropdownMenuContent>
+									</DropdownMenu></span>}
 						</div>
 						<div className="mt-4 flex min-h-5 min-w-0 items-center gap-2 text-xs text-muted-foreground">
 							{branchLine(false)}
@@ -219,6 +228,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 			setCondensed(previous => previous ? top >= 4 : top > 64);
 		}}>
 			{mounted.has("summary") && <div className={cn("absolute inset-0", tab !== "summary" && "invisible")}><SummaryTab view={view} projectId={projectId} onOpen={open} onAction={perform} /></div>}
+			{mounted.has("guide") && <div className={cn("absolute inset-0", tab !== "guide" && "invisible")}><GuideTab view={view} projectId={projectId} active={tab === "guide"} onOpenCode={() => selectTab("code")} /></div>}
 			{mounted.has("timeline") && <div className={cn("absolute inset-0", tab !== "timeline" && "invisible")}><TimelineTab view={view} projectId={projectId} order={order} onOpen={open} /></div>}
 			{mounted.has("code") && <div className={cn("absolute inset-0", tab !== "code" && "invisible")}><CodeTab view={view} projectId={projectId} pending={busy} onAction={pull.perform} onOpen={open} /></div>}
 		</div>

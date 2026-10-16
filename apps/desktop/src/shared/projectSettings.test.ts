@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { autoSettleRules, newScriptId, primaryScript, scriptMenuLabel, settingsProject, settleScriptTarget, validateProjectSettings, validateProjectUpdate, worktreeCreateScripts, type ProjectScript } from "./projectSettings";
+import { autoSettleRules, importableScripts, newScriptId, normalisePreviewUrl, parseT3ProjectFile, projectIdentity, scriptFromProjectFile, validateProjectIcon, projectActionCommands, primaryScript, scriptMenuLabel, settingsProject, settleScriptTarget, validateProjectSettings, validateProjectUpdate, worktreeCreateScripts, type ProjectScript } from "./projectSettings";
 
 const script = (patch: Partial<ProjectScript> = {}): ProjectScript => ({ id: "dev", name: "Dev server", command: "pnpm dev", icon: "play", runOnWorktreeCreate: false, ...patch });
 const preferences = { autoSettleAfterDays: 3, autoSettleOnMerge: true, keepPullRequests: false };
@@ -57,5 +57,71 @@ describe("project settings", () => {
 		expect(newScriptId("Dev server", [])).toBe("dev-server");
 		expect(newScriptId("Dev server", [script({ id: "dev-server" })])).toBe("dev-server-2");
 		expect(newScriptId("!!!", [])).toBe("script");
+	});
+});
+
+describe("project action commands", () => {
+	it("gives each project action a shortcut command; worktrees use their project's", () => {
+		const projects = [
+			{ id: "p1", name: "Web", directory: "/web", settings: { scripts: [script(), script({ id: "test", name: "Test" })] } },
+			{ id: "w1", name: "Web · fix", directory: "/w", worktree: { sourceProjectId: "p1" }, settings: { scripts: [script({ id: "own" })] } },
+			{ id: "p2", name: "Api", directory: "/api" },
+		];
+		expect(projectActionCommands(projects)).toEqual([
+			{ command: "script.p1.dev.run", label: "Run Dev server in Web", group: "Project actions", keys: [] },
+			{ command: "script.p1.test.run", label: "Run Test in Web", group: "Project actions", keys: [] },
+		]);
+	});
+});
+
+describe("action preview URLs", () => {
+	it("keeps a web preview URL, adds http:// as T3 does, and drops auto-open without one", () => {
+		const [kept] = validateProjectSettings({ scripts: [script({ previewUrl: " localhost:5173 ", autoOpenPreview: true })] }).scripts!;
+		expect(kept).toMatchObject({ previewUrl: "http://localhost:5173/", autoOpenPreview: true });
+		expect(validateProjectSettings({ scripts: [script({ previewUrl: "https://app.test/path", autoOpenPreview: false })] }).scripts![0]).toEqual({ ...script(), previewUrl: "https://app.test/path" });
+		expect(validateProjectSettings({ scripts: [script({ previewUrl: " ", autoOpenPreview: true })] }).scripts![0]).toEqual(script());
+		expect(normalisePreviewUrl("127.0.0.1:3000/app")).toBe("http://127.0.0.1:3000/app");
+		expect(() => normalisePreviewUrl("file:///C:/x")).toThrow("http or https");
+		expect(() => normalisePreviewUrl("https://user:pw@example.com")).toThrow("user name");
+		expect(() => validateProjectSettings({ scripts: [script({ autoOpenPreview: "yes" as never })] })).toThrow("Invalid project script");
+	});
+});
+
+describe("project icons", () => {
+	it("accepts T3's icon kinds and refuses anything else", () => {
+		expect(validateProjectIcon({ kind: "lucide", name: "folder-code", color: "blue" })).toEqual({ kind: "lucide", name: "folder-code", color: "blue" });
+		expect(validateProjectIcon({ kind: "emoji", emoji: " 🚀 " })).toEqual({ kind: "emoji", emoji: "🚀" });
+		expect(validateProjectIcon({ kind: "monogram", text: " ph ", color: "rose" })).toEqual({ kind: "monogram", text: "PH", color: "rose" });
+		expect(() => validateProjectIcon({ kind: "monogram", text: "abc", color: "rose" })).toThrow("one or two");
+		expect(() => validateProjectIcon({ kind: "lucide", name: "../x", color: "blue" })).toThrow("Invalid project icon");
+		expect(() => validateProjectIcon({ kind: "lucide", name: "folder", color: "beige" })).toThrow("Invalid project icon");
+		expect(() => validateProjectIcon({ kind: "emoji", emoji: "🚀🚀" })).toThrow("Invalid project icon");
+		expect(validateProjectSettings({ icon: { kind: "emoji", emoji: "🧪" } })).toEqual({ icon: { kind: "emoji", emoji: "🧪" } });
+	});
+	it("derives T3's automatic monogram and a stable colour from the name", () => {
+		expect(projectIdentity("phaseo").monogram).toBe("PO");
+		expect(projectIdentity("my app").monogram).toBe("MA");
+		expect(projectIdentity("web3 site").monogram).toBe("W3");
+		expect(projectIdentity("").monogram).toBe("PR");
+		expect(projectIdentity("phaseo").color).toBe(projectIdentity(" phaseo ").color);
+	});
+});
+
+describe("t3.json", () => {
+	const file = { scripts: [{ name: " Dev ", command: "pnpm dev", icon: "play", previewUrl: "http://localhost:3000", autoOpenPreview: true }, { name: "Test", command: "pnpm test", runOnWorktreeCreate: false }] };
+	it("reads its scripts, and treats one bad entry as an invalid file", () => {
+		expect(parseT3ProjectFile(JSON.stringify(file))).toEqual([{ name: "Dev", command: "pnpm dev", icon: "play", previewUrl: "http://localhost:3000", autoOpenPreview: true }, { name: "Test", command: "pnpm test" }]);
+		expect(parseT3ProjectFile("{\"$schema\": \"https://t3.codes/schema/t3.json\"}")).toEqual([]);
+		expect(() => parseT3ProjectFile("{ nope")).toThrow();
+		expect(() => parseT3ProjectFile(JSON.stringify({ scripts: [{ name: "x", command: "y", icon: "rocket" }] }))).toThrow("unknown icon");
+		expect(() => parseT3ProjectFile(JSON.stringify({ scripts: [{ name: "x" }] }))).toThrow("command");
+		expect(() => parseT3ProjectFile(JSON.stringify({ scripts: "dev" }))).toThrow("list");
+	});
+	it("offers only scripts not already saved by command or name, with T3's defaults", () => {
+		const scripts = parseT3ProjectFile(JSON.stringify(file));
+		expect(importableScripts(scripts, [script({ name: "dev", command: "other" })]).map(item => item.name)).toEqual(["Test"]);
+		expect(importableScripts(scripts, [script({ name: "Other", command: "pnpm test" })]).map(item => item.name)).toEqual(["Dev"]);
+		expect(scriptFromProjectFile(scripts[1])).toEqual({ name: "Test", command: "pnpm test", icon: "play", runOnWorktreeCreate: false });
+		expect(scriptFromProjectFile(scripts[0])).toMatchObject({ previewUrl: "http://localhost:3000", autoOpenPreview: true });
 	});
 });

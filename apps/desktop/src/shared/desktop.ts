@@ -47,6 +47,8 @@ export type PhaseoDesktopApi = {
 	/** Lets the person click an element on the page; undefined when cancelled. Pass cancel to stop a pick in progress. */
 	browserPick: (id: string, cancel?: boolean) => Promise<BrowserPick | undefined>;
 	browserLocalServers: () => Promise<BrowserLocalServer[]>;
+	/** Whether a local address answers HTTP yet (only addresses on this computer). */
+	browserProbe: (url: string) => Promise<boolean>;
 	/** A stream id for recording a tab's page with getUserMedia (chromeMediaSource "tab"); valid for ten seconds. */
 	browserRecordingSource: (id: string) => Promise<string>;
 	/** Saves a recording (MP4 or WebM) in the app's recordings folder. */

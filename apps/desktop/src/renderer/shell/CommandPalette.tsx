@@ -1,4 +1,5 @@
-import { CalendarClock, Code2, Keyboard, Columns3, FolderOpen, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Plus, Settings, SquareTerminal, Sun, UserRound, Files } from "lucide-react";
+import { CalendarClock, Code2, Keyboard, Columns3, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Plus, Settings, SquareTerminal, Sun, UserRound, Files } from "lucide-react";
+import { ProjectIcon } from "../components/ProjectIcon";
 import { errorText, useWorkspace } from "../app/workspace";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { shortcut } from "../lib/keybindings";
@@ -43,7 +44,7 @@ export function CommandPalette() {
 			</CommandGroup>}
 			{tasks.length > 0 && <CommandGroup heading="Chats">
 				{tasks.map(task => <CommandItem key={task.id} value={`${task.title} ${projectName(task.projectId) ?? modelName(task)} ${task.id}`} onSelect={() => run(() => select(task.id))}>
-					{task.projectId ? <FolderOpen /> : <ModelStack models={[task]} size="sm" ringClassName="ring-transparent" />}
+					{task.projectId ? <ProjectIcon project={overview.projects.find(project => project.id === task.projectId)} /> : <ModelStack models={[task]} size="sm" ringClassName="ring-transparent" />}
 					<span className="min-w-0 flex-1 truncate">{task.title}</span>
 					<span className="text-xs text-muted-foreground">{task.projectId ? projectName(task.projectId) : modelName(task)}</span>
 					<StatusDot task={task} />

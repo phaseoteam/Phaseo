@@ -8,7 +8,7 @@ Settings is a full page. The sidebar becomes its navigation, with a search box t
 
 ## Project settings
 
-Each project has a page under **Projects** in the settings sidebar, also opened from a Code chat's menu, the chat header and the project menu. It holds the project's name, its auto-settle settings (each follows General until changed) and its actions, with when each runs on its own. Worktrees use their project's page. Settings are stored with the project in the workspace database and checked by the app before they are saved.
+Each project has a page under **Projects** in the settings sidebar, also opened from a Code chat's menu, the chat header and the project menu. It holds the project's name and icon (a Lucide icon with a colour, an emoji or a monogram, as in T3 Code; an automatic monogram until you choose), its auto-settle settings (each follows General until changed), its actions (with when each runs on its own, a shortcut and a preview URL, and scripts to import from the checkout's `t3.json`) and **Remove project**, which deletes the project entry and its chats but never files on disk. Worktrees use their project's page. Settings are stored with the project in the workspace database and checked by the app before they are saved.
 
 ## Usage and limits
 
@@ -34,7 +34,7 @@ Choose System, Light or Dark, and a colour theme. Every theme has a light and a 
 
 ## Keyboard shortcuts
 
-**Settings → Keyboard shortcuts** lists every shortcut by area (General, Chats, Panes, View), as T3 Code does. Click a shortcut and press new keys to change it, then Save; Escape cancels and Backspace leaves it unassigned. Each shortcut can have a **When** condition built from `chatMode`, `codeMode`, `chatOpen`, `paneOpen`, `settingsOpen`, `textFocused` and `terminalFocused` with `&&`, `||`, `!` and brackets; it runs only while the condition holds. A warning marks keys used by another command. The row menu resets a changed shortcut to its default or removes it, and **Add keybinding** gives a command an extra shortcut.
+**Settings → Keyboard shortcuts** lists every shortcut by area (General, Chats, Panes, Browser, Pull requests, View, and Project actions), as T3 Code does. Click a shortcut and press new keys to change it, then Save; Escape cancels and Backspace leaves it unassigned. Each shortcut can have a **When** condition built from `chatMode`, `codeMode`, `chatOpen`, `paneOpen`, `settingsOpen`, `textFocused` and `terminalFocused` with `&&`, `||`, `!` and brackets; it runs only while the condition holds. A warning marks keys used by another command. The row menu resets a changed shortcut to its default or removes it, and **Add keybinding** gives a command an extra shortcut. **Project actions** lists every project action (see Project settings) with its shortcut, if it has one; an action's shortcut is saved as `script.<project id>.<action id>.run` and works only while a chat in that project is open, so different projects' actions may share keys without a warning.
 
 Changes are saved in `keybindings.json` in the app's settings folder (the file button opens it). It is a list of `{ "command", "key", "when" }` entries: a command listed there uses those keys instead of its defaults, and an empty key unassigns it. Edits made by hand apply straight away; if the file cannot be read, the defaults stay in use and the page says why. Menus and tooltips show the keys currently bound.
 

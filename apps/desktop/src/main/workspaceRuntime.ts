@@ -1,6 +1,6 @@
 import { threadToolLabel, type ThreadTools } from "../shared/orchestration";
 import type { BrowserAgentTools } from "../shared/browserAgent";
-import { generateTitle } from "./chatTitles";
+import { completeChat, generateTitle } from "./chatTitles";
 import { mentionPlainText } from "../shared/mentions";
 import { randomUUID } from "node:crypto";
 import { autoSettleAt } from "../shared/threadLifecycle";
@@ -126,17 +126,31 @@ export class WorkspaceRuntime {
 	}
 	private readonly threads: WorkspaceThreads;
 	/** Names a chat with the title model (Settings → General), as T3 does; without one, the first message stays its title. A rename in the meantime wins. */
-	private async nameChat(id: string, regenerate: boolean) {
+	/** The title model (Settings → General) and the Phaseo account it runs through, or which of the two is missing. */
+	titleModelAccount(): { model: string; endpoint: string; secretId: string } | { missing: "model" | "account" } {
 		const model = this.store.getPreferences().titleModel;
-		if (!model) { if (regenerate) throw new Error("Choose a model for chat titles in Settings → General first."); return; }
+		if (!model) return { missing: "model" };
 		const account = this.store.getAccounts().find(value => value.harness === "phaseo" && value.configured && !value.archived && value.endpoint && (!value.oauthExpiresAt || Date.parse(value.oauthExpiresAt) > Date.now()));
-		if (!account?.endpoint || !this.vault) { if (regenerate) throw new Error("Sign in to Phaseo to name chats with a model."); return; }
+		if (!account?.endpoint || !this.vault) return { missing: "account" };
+		return { model, endpoint: account.endpoint, secretId: account.secretId ?? account.id };
+	}
+	/** Runs a prompt on the title model through the person's Phaseo account (pull request guides use it). */
+	async completeWithTitleModel(input: { system: string; user: string; maxTokens: number; timeoutMs: number; signal?: AbortSignal; label: string }) {
+		const access = this.titleModelAccount();
+		if ("missing" in access) throw new Error(access.missing === "model" ? "Choose a model for chat titles in Settings → General first." : "Sign in to Phaseo to use a model here.");
+		const reply = await completeChat({ endpoint: access.endpoint, token: await this.vault!.get(access.secretId), model: access.model, ...input });
+		return { reply, model: access.model };
+	}
+	private async nameChat(id: string, regenerate: boolean) {
+		const access = this.titleModelAccount();
+		if ("missing" in access) { if (regenerate) throw new Error(access.missing === "model" ? "Choose a model for chat titles in Settings → General first." : "Sign in to Phaseo to name chats with a model."); return; }
+		const { model } = access;
 		const task = this.store.getTask(id), before = task.title;
 		const text = task.messages.find(message => message.role === "user" && !message.delivery)?.text ?? task.queue[0]?.text;
 		if (!text) { if (regenerate) throw new Error("This chat has no message to name it from."); return; }
 		const reply = regenerate ? task.messages.findLast(message => message.role === "assistant")?.text : undefined;
 		try {
-			const title = await generateTitle({ endpoint: account.endpoint, token: await this.vault.get(account.secretId ?? account.id), model, text: mentionPlainText(text), reply });
+			const title = await generateTitle({ endpoint: access.endpoint, token: await this.vault!.get(access.secretId), model, text: mentionPlainText(text), reply });
 			const current = this.store.getTask(id);
 			if (!title || this.closing || (!regenerate && current.title !== before)) return;
 			current.title = title; this.store.saveTask(current, true); this.broadcast();
@@ -150,6 +164,28 @@ export class WorkspaceRuntime {
 		if (ids.some(value => this.executions.has(value) || ["running", "waiting"].includes(tasks.find(task => task.id === value)?.status ?? ""))) throw new Error("Stop this chat and its agents before deleting it.");
 		if (this.store.missions.list().some(mission => ids.includes(mission.templateTaskId))) throw new Error("A scheduled task runs like this chat. Change or delete that scheduled task first.");
 		for (const attachment of this.store.deleteTasks(ids)) await this.attachments.discard(attachment).catch(() => undefined);
+		this.broadcast();
+		return this.store.getOverview();
+	}
+	/**
+	 * T3's Remove project: deletes the project entry, its worktree entries and all their chats and terminal
+	 * transcripts. Files on disk, worktree checkouts included, are never touched. Nothing in it may be running.
+	 */
+	private async removeProject(id: string) {
+		const workspace = this.store.getOverview(), project = workspace.projects.find(value => value.id === id);
+		if (!project) throw new Error("Project no longer exists.");
+		if (project.worktree) throw new Error("Remove the worktree from its chat, or remove its project instead.");
+		const ids = new Set([id]);
+		for (let grown = true; grown;) { grown = false; for (const value of workspace.projects) if (value.worktree && ids.has(value.worktree.sourceProjectId) && !ids.has(value.id)) { ids.add(value.id); grown = true; } }
+		const chats = workspace.tasks.filter(task => task.projectId && ids.has(task.projectId)).map(task => task.id);
+		for (let index = 0; index < chats.length; index++) for (const child of workspace.tasks) if (child.delegation?.parentTaskId === chats[index] && !chats.includes(child.id)) chats.push(child.id);
+		if (chats.some(value => this.executions.has(value) || ["running", "waiting"].includes(workspace.tasks.find(task => task.id === value)?.status ?? ""))) throw new Error("Stop the chats running in this project before removing it.");
+		if (this.store.getTerminals().some(session => session.status === "running" && session.projectId && ids.has(session.projectId))) throw new Error("Close this project's terminals before removing it.");
+		if ([...this.projectMutations.values()].some(value => ids.has(value)) || [...this.worktreeSources.keys()].some(value => ids.has(value)) || [...this.removingWorktrees].some(value => ids.has(value))) throw new Error("Wait for project edits, Git actions and worktree changes to finish before removing this project.");
+		if (this.store.missions.list().some(mission => chats.includes(mission.templateTaskId))) throw new Error("A scheduled task runs like a chat in this project. Change or delete that scheduled task first.");
+		for (const attachment of this.store.deleteTasks(chats)) await this.attachments.discard(attachment).catch(() => undefined);
+		for (const session of this.store.getTerminals()) if (session.projectId && ids.has(session.projectId)) this.store.deleteTerminal(session.id);
+		for (const value of ids) this.store.deleteProject(value);
 		this.broadcast();
 		return this.store.getOverview();
 	}
@@ -408,6 +444,7 @@ export class WorkspaceRuntime {
 	private async applyCommand(command: WorkspaceCommand): Promise<WorkspaceOverview> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		if (command.type === "delete-task") return this.deleteTask(command.id);
+		if (command.type === "remove-project") return this.removeProject(command.id);
 		if (command.type === "regenerate-title") { await this.nameChat(command.id, true); return this.store.getOverview(); }
 		const firstMessage = command.type === "send" && this.store.getTask(command.id).title === "New task";
 		if (command.type === "reorder") { this.store.reorder(command.ids); this.broadcast(); return this.store.getOverview(); }

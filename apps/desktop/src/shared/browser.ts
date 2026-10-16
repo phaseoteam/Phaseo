@@ -114,6 +114,50 @@ export type BrowserPick = BrowserCapture & { selector: string; text: string; tag
 /** A local web server listening on this computer. */
 export type BrowserLocalServer = { url: string; host: string; port: number; process?: string };
 
+/** Whether an address is a web page on this computer (localhost, 127.x, ::1, 0.0.0.0, *.localhost). */
+export function isLoopbackUrl(value: string) {
+	try {
+		const url = new URL(value), host = url.hostname.replace(/^\[|\]$/g, "");
+		return ["http:", "https:"].includes(url.protocol) && (host === "localhost" || host.endsWith(".localhost") || /^127(\.\d{1,3}){3}$/.test(host) || host === "::1" || host === "0.0.0.0" || host === "::");
+	} catch { return false; }
+}
+/** A local address a browser can open: servers that print 0.0.0.0 or :: listen on every address, including localhost. */
+export function openableLocalUrl(value: string) {
+	const url = new URL(value);
+	if (["0.0.0.0", "[::]"].includes(url.hostname)) url.hostname = "localhost";
+	return url.href;
+}
+/** The port an address uses, filling in the scheme's default. */
+export const urlPort = (value: string) => { const url = new URL(value); return Number(url.port || (url.protocol === "https:" ? 443 : 80)); };
+/** Checks an address the app may probe for readiness: only pages on this computer. */
+export function probeUrl(value: unknown): string {
+	if (typeof value !== "string" || value.length > 2000 || !isLoopbackUrl(value)) throw new Error("Only local addresses can be checked.");
+	return openableLocalUrl(browserUrl(value));
+}
+
+const terminalEscapes = new RegExp(String.raw`\u001b\[[0-9;?]*[ -/]*[@-~]|\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)|\u001b[()][0-9A-Za-z]`, "g");
+/** Local web addresses a terminal printed, oldest first, without repeats, after T3's terminal links. */
+export function localUrlsIn(text: string): string[] {
+	const urls: string[] = [];
+	for (const raw of text.replace(terminalEscapes, "").match(/https?:\/\/[^\s"'<>`|]+/g) ?? []) {
+		const value = raw.replace(/[.,;:!?)\]}]+$/, "");
+		if (!isLoopbackUrl(value)) continue;
+		const url = openableLocalUrl(value);
+		if (!urls.includes(url)) urls.push(url);
+	}
+	return urls;
+}
+/**
+ * Whether an action's preview is ready, from what its terminal printed: a local address on the preview URL's port
+ * that is not on the line where the shell echoed the command back.
+ */
+export function previewPrinted(output: string, previewUrl: string, command = "") {
+	if (!isLoopbackUrl(previewUrl)) return false;
+	const port = urlPort(previewUrl), echo = command.split(/\r?\n/)[0].trim();
+	const lines = output.replace(terminalEscapes, "").split(/\r?\n/).filter(line => !echo || !line.includes(echo));
+	return localUrlsIn(lines.join("\n")).some(url => urlPort(url) === port);
+}
+
 /** A screen recording of a page, saved on this computer. */
 export type BrowserRecording = { path: string; mimeType: string; size: number };
 /** MediaRecorder formats in T3 Code's order of preference: MP4 first, WebM when MP4 cannot be recorded. */

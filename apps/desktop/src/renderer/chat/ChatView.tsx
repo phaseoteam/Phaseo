@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { TerminalDrawer } from "../views/Terminals";
-import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, FolderOpen, Gauge, GitBranch, Layers, ListChecks, Paperclip, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, Paperclip, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { ProjectIcon } from "../components/ProjectIcon";
 import { QuestionPanel } from "./QuestionPanel";
 import { useQuestionAnswerer } from "./questionComposer";
 import { shortcut, useCommand } from "../lib/keybindings";
@@ -55,7 +56,7 @@ function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () =
 				onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") setRenaming(false); }} />
 			: <button type="button" title="Rename" onClick={() => setRenaming(true)} className="min-w-0 truncate rounded-md px-1.5 py-0.5 text-sm font-semibold hover:bg-muted">{task.title}</button>}
 		{!renaming && <TagEditor task={snapshot ?? task} />}
-		{project && <span className="flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 text-[11.5px] text-muted-foreground"><FolderOpen className="size-3.5" />{project.name}{project.worktree && <span className="font-mono">⎇ {project.worktree.branch}</span>}</span>}
+		{project && <span className="flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 text-[11.5px] text-muted-foreground"><ProjectIcon project={project} className="size-3.5" />{project.name}{project.worktree && <span className="font-mono">⎇ {project.worktree.branch}</span>}</span>}
 		<div className="ml-auto flex items-center gap-1.5">
 			{project && !project.worktree?.removedAt && <ProjectScriptsControl project={project} taskId={task.id} onRun={onOpenTerminal} />}
 			{snapshot && (snapshot.status !== "completed" && snapshot.status !== "idle" || snapshot.approvalsCount > 0) && <span className="flex h-6 items-center gap-1.5 rounded-full border border-border px-2.5 text-[11.5px] text-muted-foreground"><StatusDot task={snapshot} />{snapshot.approvalsCount || snapshot.answersCount ? "Needs your input" : snapshot.status === "running" ? "Working" : snapshot.status === "waiting" ? "Waiting" : snapshot.status === "limited" ? "Usage limit reached" : snapshot.status === "interrupted" ? "Interrupted" : snapshot.status === "failed" ? "Failed" : ""}</span>}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { agentBrowserCloseConfirmation, agentCursorOpacity, browserCommand, browserDeviceFrame, browserRecordingExtension, browserUrl, browserViewport, browserViewportPresets, browserZoomLevels, chooseBrowserRecordingMimeType, describeBrowserError, planBrowserCrashRecovery, resizeBrowserViewport, stepBrowserZoom } from "./browser";
+import { isLoopbackUrl, localUrlsIn, openableLocalUrl, previewPrinted, probeUrl, urlPort, agentBrowserCloseConfirmation, agentCursorOpacity, browserCommand, browserDeviceFrame, browserRecordingExtension, browserUrl, browserViewport, browserViewportPresets, browserZoomLevels, chooseBrowserRecordingMimeType, describeBrowserError, planBrowserCrashRecovery, resizeBrowserViewport, stepBrowserZoom } from "./browser";
 
 describe("browser navigation boundary", () => {
 	it.each(["https://example.com/path?q=test", "http://127.0.0.1:3000/", "http://localhost:5173/"])("accepts web and development address %s", value => expect(browserUrl(value)).toBe(value));
@@ -80,5 +80,30 @@ describe("browser slots, separate windows and recordings", () => {
 		expect(agentBrowserCloseConfirmation(0)).toBeUndefined();
 		expect(agentBrowserCloseConfirmation(1)?.split("\n")[0]).toBe("Close browser while the agent is using it?");
 		expect(agentBrowserCloseConfirmation(3)?.split("\n")[0]).toBe("Close 3 browsers while the agent is using them?");
+	});
+});
+
+describe("local addresses from terminals", () => {
+	it("knows which addresses are on this computer and checks what may be probed", () => {
+		for (const value of ["http://localhost:5173/", "http://127.0.0.1:3000", "https://app.localhost/", "http://[::1]:8080/", "http://0.0.0.0:4321"]) expect(isLoopbackUrl(value)).toBe(true);
+		for (const value of ["https://example.com", "http://192.168.1.5:3000", "file:///C:/x", "localhost:3000", "not a url"]) expect(isLoopbackUrl(value)).toBe(false);
+		expect(openableLocalUrl("http://0.0.0.0:4321/app")).toBe("http://localhost:4321/app");
+		expect(probeUrl("http://0.0.0.0:3000")).toBe("http://localhost:3000/");
+		expect(() => probeUrl("https://example.com")).toThrow("Only local addresses");
+		expect(() => probeUrl(5)).toThrow();
+		expect(urlPort("https://localhost/")).toBe(443);
+		expect(urlPort("http://localhost:5173/")).toBe(5173);
+	});
+	it("finds the local addresses a dev server prints, through colour codes and punctuation", () => {
+		const vite = "\u001b[32m  ➜  \u001b[39m\u001b[1mLocal\u001b[22m:   \u001b[36mhttp://localhost:\u001b[1m5173\u001b[22m/\u001b[39m\r\n  ➜  Network: http://192.168.1.5:5173/\r\n";
+		expect(localUrlsIn(vite)).toEqual(["http://localhost:5173/"]);
+		expect(localUrlsIn("Local: http://localhost:5173/\nReady on http://127.0.0.1:3000. Also (http://localhost:5173/)")).toEqual(["http://localhost:5173/", "http://127.0.0.1:3000/"]);
+		expect(localUrlsIn("Listening on http://0.0.0.0:8000,")).toEqual(["http://localhost:8000/"]);
+	});
+	it("treats a printed address on the preview's port as ready, but not the echoed command", () => {
+		expect(previewPrinted("PS C:\\app> pnpm dev\r\n\r\n  Local:   http://localhost:5173/\r\n", "http://localhost:5173", "pnpm dev")).toBe(true);
+		expect(previewPrinted("PS C:\\app> npx wait-on http://localhost:5173 && pnpm e2e\r\n", "http://localhost:5173", "npx wait-on http://localhost:5173 && pnpm e2e")).toBe(false);
+		expect(previewPrinted("Local: http://localhost:5174/", "http://localhost:5173/", "pnpm dev")).toBe(false);
+		expect(previewPrinted("Local: http://localhost:3000/", "https://example.com/", "pnpm dev")).toBe(false);
 	});
 });

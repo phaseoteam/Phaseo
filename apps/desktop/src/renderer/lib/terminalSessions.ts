@@ -50,6 +50,7 @@ export function useTerminalSessions(): TerminalSession[] {
 	return useSyncExternalStore(listener => { listeners.add(listener); return () => { listeners.delete(listener); }; }, () => sessions);
 }
 export const terminalOutput = (id: string) => outputs.get(id) ?? "";
+export const terminalSession = (id: string) => sessions.find(session => session.id === id);
 /** Called when a running terminal's process exits. */
 export function onTerminalExit(listener: (session: TerminalSession) => void) { exitListeners.add(listener); return () => { exitListeners.delete(listener); }; }
 
