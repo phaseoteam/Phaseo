@@ -4,6 +4,8 @@ Settings is a full page. The sidebar becomes its navigation, with a search box t
 
 ## Code chats
 
+**Settings → General → Pull requests** has T3 Code's **Open pull requests in Phaseo** (on by default: pull request links in chats open in the pull request pane, and Ctrl-click, ⌘-click or middle-click opens them on GitHub; off, they open like any other link) and **Default merge method** (Last selected, Merge, Squash and merge, or Rebase and merge; a project can choose its own in Project settings). **Settings → General → Panes → Default diff file state** starts the Diff and a pull request's Code tab with files expanded or collapsed.
+
 **Settings → General → Code chats** sets when Code chats settle on their own (merged pull requests, keeping chats that have one, and days without activity) and **Show a Working section**, which folds working chats into a Working section above Snoozed (off by default, kept per window). Each project can change the auto-settle settings in its own **Project settings**.
 
 ## Project settings
