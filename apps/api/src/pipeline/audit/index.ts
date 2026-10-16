@@ -281,6 +281,19 @@ async function insertGatewayRequest(row: any) {
     throw lastError;
 }
 
+type RateLimitPolicyRejection = { policy_id: string; limit_scope: string };
+
+/** The workspace rate limit policy that rejected a request, from its stored error payload. */
+export function rateLimitPolicyRejection(
+    errorCode: string | null | undefined,
+    errorPayload: Record<string, unknown> | null | undefined,
+): RateLimitPolicyRejection | null {
+    if (errorCode !== "user:rate_limit_exceeded" || errorPayload?.reason !== "policy_requests_per_minute") return null;
+    const { policy_id: policyId, limit_scope: limitScope } = errorPayload;
+    if (typeof policyId !== "string" || typeof limitScope !== "string") return null;
+    return { policy_id: policyId, limit_scope: limitScope };
+}
+
 async function upsertV2RequestFact(args: {
     testingMode?: boolean;
     requestId: string;
@@ -342,6 +355,7 @@ async function upsertV2RequestFact(args: {
     routingSnapshot?: Array<Record<string, unknown>> | null;
     routingDiagnostics?: Record<string, unknown> | null;
     labels?: RequestLabel[] | null;
+    rateLimitPolicy?: RateLimitPolicyRejection | null;
 }) {
 	const serviceTier = resolveAuditServiceTiers(args);
 	const publicRoutedModel = (() => {
@@ -460,6 +474,8 @@ async function upsertV2RequestFact(args: {
                     : null,
                 tool_call_validation: args.toolCallValidation ?? null,
                 downstream_disconnected: args.downstreamDisconnected === true,
+                // Read by refresh_rate_limit_throttle_rollups.
+                rate_limit: args.rateLimitPolicy ?? null,
                 stream_cancellation_support: args.streamCancellationSupport ?? "unknown",
                 stream_provider_billing_on_cancel: args.streamProviderBillingOnCancel ?? "unknown",
                 stream_disconnect_action: args.streamDisconnectAction ?? null,
@@ -1422,6 +1438,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                             : null,
                         routingDiagnostics:
                             (args.detailMetadata as any)?.routing_diagnostics ?? null,
+                        rateLimitPolicy: rateLimitPolicyRejection(args.errorCode, args.errorPayload),
                     }), "supabase_v2_audit_failure_execute_rpc");
                 } catch (v2Error) {
                     v2PersistenceError = v2Error instanceof Error ? v2Error : new Error(String(v2Error));
