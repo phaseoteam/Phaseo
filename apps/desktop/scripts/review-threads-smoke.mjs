@@ -24,15 +24,20 @@ const fieldsOf=args=>Object.fromEntries(args.flatMap((arg,index)=>['-f','-F'].in
 async function ownedExecute(executable,args,options,input=''){
  if(executable==='where.exe'&&args[0]==='gh')return {stdout:ownedGh+'\r\n',stderr:''};
  if(executable!==ownedGh&&!(process.platform!=='win32'&&executable==='gh'))return realExec(executable,args,options);
- try{reads++;assert.equal(options.cwd,project);assert.equal(options.windowsHide,true);assert.ok(options.timeout<=30000);assert.equal(options.env.GH_PROMPT_DISABLED,'1');assert.equal(options.env.GH_DEBUG,'');assert.ok(args.includes('--hostname'));assert.equal(args[args.indexOf('--hostname')+1],'github.com');const fields=fieldsOf(args);let result;
+ try{reads++;assert.equal(options.cwd,project);assert.equal(options.windowsHide,true);assert.ok(options.timeout<=30000);assert.equal(options.env.GH_PROMPT_DISABLED,'1');assert.equal(options.env.GH_DEBUG,'');// Every call is pinned to github.com: gh api by --hostname, gh pr by a github.com/ --repo.
+ assert.ok(args.includes('--hostname')?args[args.indexOf('--hostname')+1]==='github.com':args[0]==='pr'&&args[args.indexOf('--repo')+1]?.startsWith('github.com/'),args.join(' '));const fields=fieldsOf(args);let result;
  if(args.includes('repos/owned/repo/pulls/12/files'))result=[{filename:path0,status:'modified',additions:1,deletions:1,sha:'c'.repeat(40),patch:'@@ -1 +1 @@\n-before\n+after',preview_limited:false}];
  else if(fields.query?.startsWith('mutation')){const body=fields.body==='@-'?input:fields.body;writes.push({query:fields.query,id:fields.id,body});if(fields.query.includes('resolveReviewThread'))threads[0].isResolved=true;if(fields.query.includes('unresolveReviewThread'))threads[0].isResolved=false;if(fields.query.includes('addPullRequestReviewThreadReply')){threads[0].comments.nodes.push({id:'PRRC_'+threads[0].comments.nodes.length,author:{login:'viewer'},body,createdAt:now});threads[0].comments.totalCount++;}result={data:{}};}
  else if(fields.query?.includes('query PhaseoPullRequestView(')){viewReads++;assert.equal(fields.number,'12');assert.equal(fields.owner,'owned');assert.equal(fields.name,'repo');if(failView){failView=false;throw Object.assign(Error('Owned initial view read failure'),{stderr:'gh: Owned initial view read failure (HTTP 502)'});}result=view();}
  else if(fields.query?.includes('query PhaseoFilesViewed(')){assert.equal(fields.number,'12');result={data:{repository:{pullRequest:{id:'PR_owned',files:{totalCount:1,pageInfo:{hasNextPage:false,endCursor:null},nodes:[{path:path0,viewerViewedState:'UNVIEWED'}]}}}}};}
  else if(fields.query?.includes('query PhaseoPullRequests(')){assert.equal(fields.owner,'owned');assert.equal(fields.name,'repo');result={data:{repository:{pullRequests:{nodes:[detail],pageInfo:{hasNextPage:false,endCursor:null}}}}};}
  else if(fields.query?.includes('query PhaseoPullRequest(')){assert.equal(fields.number,'12');result={data:{repository:{pullRequest:detail}}};}
+ // The fixture branch has no pull request of its own.
+ else if(args[0]==='pr'&&args[1]==='view')throw Object.assign(Error('Owned no stack'),{stderr:'no pull requests found for branch'});
+ // GitHub answers 404 when a pull request is in no stack.
+ else if(args.some(arg=>arg.includes('/stacks')))throw Object.assign(Error('Owned no stack'),{stderr:'gh: Not Found (HTTP 404)'});
  else throw Error('Unexpected owned gh call');return {stdout:JSON.stringify(result),stderr:''};
- }catch(error){if(!String(error).includes('Owned initial'))fixtureFailure=error;throw error;}
+ }catch(error){if(!/Owned (initial|no stack)/.test(String(error)))fixtureFailure=error;throw error;}
 }
 // Promisified reads and the callback form the write path uses (bodies arrive on stdin).
 const wrapped=function(file,args,options,callback){if(typeof callback!=='function'||(file!==ownedGh&&!(process.platform!=='win32'&&file==='gh')))return originalExec(...arguments);let input='';const child={stdin:{on(){},end(value){input=value??'';ownedExecute(file,args,options,input).then(result=>callback(null,result.stdout,result.stderr),error=>callback(error,'',error.stderr??String(error)));}}};return child;};

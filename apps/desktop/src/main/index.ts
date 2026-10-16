@@ -787,7 +787,7 @@ app.whenReady().then(() => {
 	modelCatalogCache = new ModelCatalogCache(path.join(app.getPath("userData"), "cache"), ({ accountId }) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness: "phaseo", accountId }); });
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
 	pullRequestGuides = new PullRequestGuides(path.join(workspaceDirectory, "pull-request-guides"), input => workspaceRuntime.completeWithTitleModel(input), async (root, view) => {
-		try { return await runGh(root, ["pr", "diff", String(view.number), "--repo", view.repository, "--color", "never"]); }
+		try { return await runGh(root, ["pr", "diff", String(view.number), "--repo", `github.com/${view.repository}`, "--color", "never"]); }
 		catch (reason) { throw new Error(ghFailure((reason as { stderr?: unknown }).stderr, "Could not read the pull request's diff."), { cause: reason }); }
 	});
 	pullRequestGuides.onFinished = ({ root, view, error }) => {

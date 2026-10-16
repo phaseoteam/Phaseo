@@ -1,4 +1,5 @@
 import { git } from "./gitProcess";
+import { githubRepository } from "./projectPullRequests";
 import { runGh } from "./projectPullRequestView";
 import { parsePullRequestReference, pullRequestUrl } from "../shared/pullRequestView";
 import type { BranchPullRequest } from "../shared/pullRequests";
@@ -29,7 +30,8 @@ export async function branchPullRequest(root: string, fresh = false, gh: Gh = ru
 	if (!branch) return { branch: "", ...(defaultBranch ? { defaultBranch } : {}), pullRequest: null };
 	const key = `${root.toLowerCase()}\n${branch}`, cached = cache.get(key);
 	if (!fresh && cached && Date.now() - cached.at < cacheMs) return cached.read;
-	const read = gh(root, ["pr", "view", branch, "--json", "number,url,state,title,isDraft,headRefName"]).then(output => parseBranchPullRequest(branch, output), () => null)
+	// Pinned to github.com like every other pull request read; a checkout without a github.com origin has no pull request here.
+	const read = git(root, ["remote", "get-url", "origin"]).then(remote => gh(root, ["pr", "view", branch, "--repo", `github.com/${githubRepository(remote)}`, "--json", "number,url,state,title,isDraft,headRefName"])).then(output => parseBranchPullRequest(branch, output), () => null)
 		.then(pullRequest => ({ branch, ...(defaultBranch ? { defaultBranch } : {}), pullRequest }));
 	cache.set(key, { at: Date.now(), read });
 	return read;

@@ -1,5 +1,6 @@
 import { git } from "./gitProcess";
 import { gitCommand } from "./gitOperations";
+import { githubRepository } from "./projectPullRequests";
 import { ghFailure, runGh } from "./projectPullRequestView";
 import { parsePullRequestReference, pullRequestUrl } from "../shared/pullRequestView";
 
@@ -20,10 +21,11 @@ const parseUrl = (text: string) => {
 export async function createPullRequest(root: string, gh: Gh = runGh): Promise<CreatedPullRequest> {
 	const branch = (await git(root, ["branch", "--show-current"])).trim();
 	if (!branch) throw new Error("Switch to a branch before creating a pull request.");
+	const repo = `github.com/${githubRepository(await git(root, ["remote", "get-url", "origin"]).catch(() => { throw new Error("Choose a Git repository with an origin remote."); }))}`;
 	const base = await defaultBranch(root);
 	if (base && branch === base) throw new Error(`This is ${base}, the repository's default branch. Create a feature branch first.`);
 	try {
-		const existing = JSON.parse(await gh(root, ["pr", "view", branch, "--json", "number,url,state"])) as { number?: unknown; url?: unknown; state?: unknown };
+		const existing = JSON.parse(await gh(root, ["pr", "view", branch, "--repo", repo, "--json", "number,url,state"])) as { number?: unknown; url?: unknown; state?: unknown };
 		const parsed = typeof existing.url === "string" ? parseUrl(existing.url) : undefined;
 		if (existing.state === "OPEN" && parsed && parsed.number === existing.number) return { ...parsed, status: "opened_existing" };
 	} catch { /* No pull request for this branch yet. */ }
@@ -36,7 +38,7 @@ export async function createPullRequest(root: string, gh: Gh = runGh): Promise<C
 	}
 	if (!upstream || ahead > 0) await gitCommand(root, { type: "push" });
 	let output: string;
-	try { output = await gh(root, ["pr", "create", "--fill", "--head", branch, ...(base ? ["--base", base] : [])]); }
+	try { output = await gh(root, ["pr", "create", "--repo", repo, "--fill", "--head", branch, ...(base ? ["--base", base] : [])]); }
 	catch (reason) { throw new Error(ghFailure((reason as { stderr?: unknown }).stderr, "Could not create the pull request."), { cause: reason }); }
 	const created = parseUrl(output);
 	if (!created) throw new Error("GitHub CLI did not report the new pull request's address.");

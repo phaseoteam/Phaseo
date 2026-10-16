@@ -13,6 +13,8 @@ function fixture() {
 	mkdirSync(root); git(root, ["init", "-b", "main"]); git(root, ["config", "user.name", "Fixture"]); git(root, ["config", "user.email", "fixture@example.invalid"]); git(root, ["config", "commit.gpgsign", "false"]);
 	writeFileSync(path.join(root, "a.txt"), "a\n"); git(root, ["add", "."]); git(root, ["commit", "-m", "Base"]); git(root, ["remote", "add", "origin", origin]); git(root, ["push", "-u", "origin", "main"]);
 	git(root, ["remote", "set-head", "origin", "main"]);
+	// Reads are pinned to github.com; pushes still go to the local bare repository.
+	git(root, ["remote", "set-url", "origin", "https://github.com/owned/repo.git"]); git(root, ["remote", "set-url", "--push", "origin", origin]);
 	return { directory, origin, root, git };
 }
 const fakeGh = (answers: { view?: string; create?: string }) => {
@@ -28,7 +30,7 @@ describe("creating a pull request from Git actions", () => {
 			const { gh, calls } = fakeGh({ create: "Creating pull request for feature/x into main\n\nhttps://github.com/owned/repo/pull/12\n" });
 			expect(await createPullRequest(root, gh)).toEqual({ repository: "owned/repo", number: 12, url: "https://github.com/owned/repo/pull/12", status: "created" });
 			expect(git(origin, ["rev-parse", "feature/x"])).toBe(git(root, ["rev-parse", "HEAD"]));
-			expect(calls.at(-1)).toEqual(["pr", "create", "--fill", "--head", "feature/x", "--base", "main"]);
+			expect(calls.at(-1)).toEqual(["pr", "create", "--repo", "github.com/owned/repo", "--fill", "--head", "feature/x", "--base", "main"]);
 		} finally { rmSync(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
 	}, 30000);
 	it("returns the open pull request a branch already has, and refuses the default branch or a branch with nothing new", async () => {
