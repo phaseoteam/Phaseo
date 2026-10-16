@@ -26,8 +26,10 @@ Phaseo looks at the model IDs your workspace sends in requests, so a model
 counts as used even when a fallback model ended up serving the request.
 
 - **Dashboard notice.** Signed-in members see a notice at the top of the
-  dashboard when a model the workspace requested in the last 90 days is
-  deprecated or will retire within 90 days. It links to
+  dashboard when a model the workspace requested in the last 90 days retires
+  within the next 90 days. For a model without a retirement date, its
+  deprecation date counts instead. The notice turns red when a retirement is 7
+  days or less away. It links to
   **Settings -> Usage -> Alerts**, which lists every affected model with its
   dates, last use, and suggested replacement. Dismissing the notice hides it
   until the model's dates change.
