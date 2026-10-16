@@ -19,6 +19,10 @@ import { validateConversationPageQuery, type ConversationPage } from "../shared/
 import { maximumPullRequestLinks, pullRequestUrl, samePullRequest, sameSnapshot, unwatched, validatePullRequestLinks, validRepository, type PullRequestLinkSnapshot, type SavedPullRequestStack } from "../shared/pullRequestView";
 import type { PullRequestStack } from "../shared/pullRequestStacks";
 import { newPullRequestWatch, type PullRequestWatchMessage, type PullRequestWatchState } from "../shared/pullRequestWatch";
+import { recordIfSlow } from "./diagnostics/tracer";
+
+/** Store transactions this slow are traced; faster ones are not, so streaming writes cost nothing on disk. */
+const SLOW_STORE_MS = 50;
 
 /**
  * Marks a chat read by getTaskTail with where its entries start. A symbol property survives spreading the chat, so a
@@ -400,7 +404,7 @@ export class WorkspaceStore {
 		if (!preserveUpdatedAt) task.updatedAt = new Date().toISOString();
 		// Inside a caller's transaction (a batch of streaming flushes, a delegation) the save is a savepoint, so a failed
 		// save undoes only its own writes.
-		const own = !this.db.isTransaction;
+		const own = !this.db.isTransaction, started = performance.now();
 		this.db.exec(own ? "BEGIN IMMEDIATE" : "SAVEPOINT save_task");
 		try {
 			// The header leaves the conversation to TaskEntries and the revision to its column. Copying its fields one by one
@@ -424,13 +428,16 @@ export class WorkspaceStore {
 			this.entries.markRevision(row.key, row.revision);
 			task.revision = row.revision;
 			this.db.exec(own ? "COMMIT" : "RELEASE save_task");
-		} catch (error) { this.db.exec(own ? "ROLLBACK" : "ROLLBACK TO save_task; RELEASE save_task"); const key = this.statement("SELECT key FROM tasks WHERE id = ?").get(task.id) as { key: number } | undefined; if (key) this.entries.forget(key.key); throw error; }
+		} catch (error) { this.db.exec(own ? "ROLLBACK" : "ROLLBACK TO save_task; RELEASE save_task"); const key = this.statement("SELECT key FROM tasks WHERE id = ?").get(task.id) as { key: number } | undefined; if (key) this.entries.forget(key.key); if (own) recordIfSlow("store.save-task", started, SLOW_STORE_MS, undefined, error); throw error; }
+		if (own) recordIfSlow("store.save-task", started, SLOW_STORE_MS);
 	}
 	/** Runs several saves in one transaction: with many chats streaming, one commit per clock tick instead of one per chat. */
 	batch(run: () => void) {
 		if (this.db.isTransaction) { run(); return; }
+		const started = performance.now();
 		this.db.exec("BEGIN IMMEDIATE");
-		try { run(); this.db.exec("COMMIT"); } catch (error) { this.db.exec("ROLLBACK"); throw error; }
+		try { run(); this.db.exec("COMMIT"); } catch (error) { this.db.exec("ROLLBACK"); recordIfSlow("store.batch", started, SLOW_STORE_MS, undefined, error); throw error; }
+		recordIfSlow("store.batch", started, SLOW_STORE_MS);
 	}
 	addProject(directory: string): Project {
 		const existing = this.getProjects().find(project => project.directory === directory);

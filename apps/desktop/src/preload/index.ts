@@ -128,6 +128,15 @@ const desktopApi: PhaseoDesktopApi = {
 			return () => ipcRenderer.removeListener("desktop:keybindings-changed", subscription);
 		},
 	},
+	diagnostics: {
+		processes: () => ipcRenderer.invoke("diagnostics:processes"),
+		resources: request => ipcRenderer.invoke("diagnostics:resources", request),
+		traces: () => ipcRenderer.invoke("diagnostics:traces"),
+		stopProcess: request => ipcRenderer.invoke("diagnostics:stop-process", request),
+		openLogs: () => ipcRenderer.invoke("diagnostics:open-logs"),
+		subscribe: () => ipcRenderer.invoke("diagnostics:subscribe"),
+		unsubscribe: () => ipcRenderer.invoke("diagnostics:unsubscribe"),
+	},
 	checkForUpdates: () => ipcRenderer.invoke("desktop:check-for-updates"),
 	installUpdate: () => ipcRenderer.invoke("desktop:install-update"),
 	onWindowStateChange: (listener) => {

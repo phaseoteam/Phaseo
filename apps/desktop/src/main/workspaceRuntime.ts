@@ -48,6 +48,7 @@ import { grokModelCatalog } from "./grokModelCatalog";
 import { GrokAdapter } from "./grokAdapter";
 import { codexModels } from "./modelCatalog";
 import type { Mission, MissionCommand } from "../shared/missions";
+import { span, startSpan, type ActiveSpan } from "./diagnostics/tracer";
 
 // Questions answered by message do not hold up the turn.
 const hasRequests = (task: { approvals?: unknown[]; questions?: { responseMode?: string }[]; forms?: unknown[] }) => Boolean(task.approvals?.length || task.questions?.some(request => request.responseMode !== "message") || task.forms?.length);
@@ -154,7 +155,7 @@ export class WorkspaceRuntime {
 		if (!text) { if (regenerate) throw new Error("This chat has no message to name it from."); return; }
 		const reply = regenerate ? task.messages.findLast(message => message.role === "assistant")?.text : undefined;
 		try {
-			const title = await generateTitle({ endpoint: access.endpoint, token: await this.vault!.get(access.secretId), model, text: mentionPlainText(text), reply });
+			const title = await span("chat.title", { model, regenerate }, async () => generateTitle({ endpoint: access.endpoint, token: await this.vault!.get(access.secretId), model, text: mentionPlainText(text), reply }));
 			const current = this.store.getTask(id);
 			if (!title || this.closing || (!regenerate && current.title !== before)) return;
 			current.title = title; this.store.saveTask(current, true); this.broadcast();
@@ -465,7 +466,8 @@ export class WorkspaceRuntime {
 			this.broadcast(); return { workspace: this.store.getOverview(), taskId: task.id };
 		} catch (error) { if (!committed) await Promise.allSettled([...prepared.values()].map(file => this.attachments.discard(file))); throw error; }
 	}
-	startMission(id: string, now: number) {
+	startMission(id: string, now: number) { return span("mission.start", { missionId: id }, () => this.admitMission(id, now)); }
+	private admitMission(id: string, now: number) {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		if (this.store.getOverview().tasks.some(task => task.missionId === id && (task.status === "running" || task.status === "waiting" || this.executions.has(task.id)))) throw new Error("This scheduled task is already running.");
 		const task = this.store.missions.admit(id, now, mission => {
@@ -476,7 +478,7 @@ export class WorkspaceRuntime {
 		this.broadcast(); this.start(task.id); return task;
 	}
 	async command(command: WorkspaceCommand): Promise<WorkspaceOverview> {
-		const operation = this.applyCommand(command); this.commands.add(operation);
+		const operation = span("workspace.command", { type: command.type }, () => this.applyCommand(command)); this.commands.add(operation);
 		try { return await operation; } finally { this.commands.delete(operation); }
 	}
 	private async applyCommand(command: WorkspaceCommand): Promise<WorkspaceOverview> {
@@ -667,7 +669,9 @@ export class WorkspaceRuntime {
 	}
 	private start(id: string) {
 		if (this.closing || this.executions.has(id)) return;
-		const execution = this.drain(id).finally(() => {
+		// The turn's span is the parent of everything it starts; a drain with nothing to run leaves no record.
+		const turn = startSpan("turn.run");
+		const execution = turn.within(() => this.drain(id, turn)).then(() => turn.discard(), error => { turn.end(error); throw error; }).finally(() => {
 			this.executions.delete(id);
 			if (this.settledByTurn.delete(id)) this.settled(id);
 			if (!this.closing && this.store.getTask(id).status === "completed" && this.store.getTask(id).queue.length) this.start(id);
@@ -681,7 +685,7 @@ export class WorkspaceRuntime {
 			this.store.saveTask(task); this.broadcast();
 		});
 	}
-	private async drain(id: string) {
+	private async drain(id: string, turn: ActiveSpan) {
 		if (this.running.has(id)) return;
 		let task = this.store.getTask(id);
 		if (!task.queue.length) return;
@@ -690,6 +694,8 @@ export class WorkspaceRuntime {
 		// Set once the run's question handler exists; the orchestration server (created first) asks through it.
 		const asker: { ask?: AgentCallbacks["onQuestion"] } = {};
 		this.stoppedDuringSetup.delete(id);
+		turn.setAttributes({ harness: task.harness, mode: task.mode, model: task.model, scheduled: Boolean(task.missionId), delegated: Boolean(task.delegation) });
+		const setup = startSpan("turn.setup", { harness: task.harness });
 		try {
 			const credential = (accountId: string) => { if (!this.vault) throw new Error("Credential storage is unavailable."); const account = this.store.getAccounts().find(value => value.id === accountId); if (!account) throw new Error("Account no longer exists."); if (account.oauthExpiresAt && Date.parse(account.oauthExpiresAt) <= Date.now()) throw new Error("Sign in to Phaseo again to renew this account."); return this.vault.get(account.secretId ?? account.id); };
 			this.assertHarnessAvailable(task.harness);
@@ -719,9 +725,11 @@ export class WorkspaceRuntime {
 			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential, undefined, path.join(this.directory, "instructions"), this.store, this.store.getMcpConnections()) : new PhaseoCodingAdapter(credential, this.store, undefined, this.store.getMcpConnections(), path.join(this.directory, "instructions")) : task.harness === "cursor" ? new CursorAdapter(this.directory, credential, connections) : this.adapterFactory(task.harness, this.store.getAgents().find(agent => agent.id === task.agentId), this.openCode, connections, task.projectId);
 		}
 		catch (error) {
+			setup.end(error); turn.setAttributes({ outcome: "failed" }); turn.end(error);
 			orchestration?.close(); this.orchestrationSessions.delete(id); const failed = this.store.getTask(id); failed.status = "failed"; failed.error = error instanceof Error ? error.message : "Harness unavailable.";
 			this.store.saveTask(failed); this.broadcast(); return;
 		}
+		finally { setup.end(); }
 		// Setup awaited the orchestration server; reload so prompts queued or edited meanwhile are not overwritten.
 		task = this.store.getTask(id);
 		if (!task.queue.length) { orchestration?.close(); this.orchestrationSessions.delete(id); return; }
@@ -868,6 +876,7 @@ export class WorkspaceRuntime {
 			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = []; this.store.saveTask(current);
 		} finally {
 			const finished = this.store.getTask(id); const input = finished.messages.find(item => item.id === message.id); if (input) { input.completedAt = new Date().toISOString(); this.store.saveTask(finished); }
+			turn.setAttributes({ outcome: finished.status }); turn.end(finished.status === "failed" ? finished.error ?? "The turn failed." : undefined);
 			if (checkpoint && project) void this.trackCheckpoint(this.recordCheckpoint(id, message.id, checkpoint, project.directory));
 			this.streamFlushes.delete(id);
 			orchestration?.close(); this.orchestrationSessions.delete(id); this.running.delete(id);

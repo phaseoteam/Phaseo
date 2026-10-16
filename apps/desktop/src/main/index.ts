@@ -85,6 +85,9 @@ import { TaskNotifications } from "./taskNotifications";
 import { MissionService } from "./missionService";
 import { validateMissionCommand } from "../shared/missions";
 import { cursorAccountStatus, cursorModels, cursorSignIn } from "./cursorAccounts";
+import { registerDiagnosticsIpc, stopTracing, traceIpcHandlers } from "./diagnostics/diagnosticsIpc";
+import type { ProcessOwner } from "./diagnostics/processTable";
+import { span } from "./diagnostics/tracer";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const preloadPath = path.join(currentDirectory, "../preload/index.cjs");
@@ -112,6 +115,17 @@ let missionService: MissionService;
 let settleTimer: ReturnType<typeof setInterval> | undefined;
 let pullRequestWatcher: PullRequestWatcher | undefined;
 let modelCatalogCache: ModelCatalogCache;
+// Before any handler is registered, so each one is traced (slow or failed calls only).
+traceIpcHandlers(ipcMain);
+const diagnostics = registerDiagnosticsIpc(ipcMain, { senderWindow, owners: terminalOwners });
+/** Terminal shells by PID, named as the terminal list names them, with their chat. */
+function terminalOwners() {
+	const owners = new Map<number, ProcessOwner>();
+	if (!terminalService || !workspaceRuntime) return owners;
+	const tasks = new Map(workspaceRuntime.store.getOverview().tasks.map(task => [task.id, task.title]));
+	for (const owner of terminalService.processOwners()) { const chat = owner.taskId ? tasks.get(owner.taskId) : undefined; owners.set(owner.pid, { label: chat ? `${owner.title} · ${chat}` : owner.title, kind: "terminal" }); }
+	return owners;
+}
 ipcMain.handle("workspace:missions", event => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return workspaceRuntime.store.missions.list(); });
 ipcMain.handle("workspace:mission", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return missionService.command(validateMissionCommand(value)); });
 ipcMain.handle("workspace:global-instructions", event => { if (!senderWindow(event)) throw new Error("Untrusted instruction request."); return globalInstructions.read(); });
@@ -165,7 +179,10 @@ ipcMain.handle("workspace:phaseo-sign-in", async (event, accountId: unknown) => 
 	finally { owner.webContents.removeListener("destroyed", destroyed); phaseoSignIns.delete(event.sender.id); releaseAccount(); }
 });
 ipcMain.handle("workspace:phaseo-cancel-sign-in", event => { if (!senderWindow(event)) throw new Error("Invalid sign-in request."); phaseoSignIns.get(event.sender.id)?.abort(); });
-async function discoverDesktopModels(harness: Harness, accountId?: string, projectId?: string, force = false) {
+function discoverDesktopModels(harness: Harness, accountId?: string, projectId?: string, force = false) {
+	return span("models.discover", { harness, force }, () => discoverModels(harness, accountId, projectId, force));
+}
+async function discoverModels(harness: Harness, accountId: string | undefined, projectId: string | undefined, force: boolean) {
 		const project = projectId ? workspaceRuntime.store.getProjects().find(value => value.id === projectId) : undefined;
 		if (projectId && !project) throw new Error("Project is unavailable.");
 		const cwd = project?.directory ?? app.getPath("userData");
@@ -205,6 +222,7 @@ app.on("before-quit", event => {
 	if (shutdownStarted) return;
 	shutdownStarted = true;
 	browserHost.downloads.close();
+	diagnostics.close();
 	missionService?.close();
 	if (settleTimer) clearInterval(settleTimer);
 	void pullRequestWatcher?.close();
@@ -218,7 +236,7 @@ app.on("before-quit", event => {
 	for (const controller of nativeCatalogChecks) controller.abort();
 	// Stop renderer IPC before the runtime closes its database.
 	for (const window of BrowserWindow.getAllWindows()) window.destroy();
-	void Promise.allSettled([workspaceRuntime.close().catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed]).finally(() => { shutdownComplete = true; app.quit(); });
+	void Promise.allSettled([workspaceRuntime.close().catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed]).finally(() => { stopTracing(); shutdownComplete = true; app.quit(); });
 });
 
 ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
@@ -337,7 +355,7 @@ ipcMain.handle("workspace:mcp-prompts", async (event, id: unknown, request: unkn
   return await new McpPromptCatalogService(workspaceRuntime.store.getMcpConnections(), cwd, task.projectId).request(request, AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]));
  } finally { event.sender.removeListener("destroyed", abort); mcpPromptChecks.delete(requestId); nativeCatalogChecks.delete(controller); }
 });
-ipcMain.handle("workspace:search-files", (event, id: unknown, query: unknown) => searchProjectFiles(projectRoot(event, id), query as string));
+ipcMain.handle("workspace:search-files", (event, id: unknown, query: unknown) => { const root = projectRoot(event, id); return span("files.search", undefined, () => searchProjectFiles(root, query as string)); });
 ipcMain.handle("workspace:list-files", (event, id: unknown, directory: unknown) => {
 	const root = projectRoot(event, id);
 	if (typeof directory !== "string") throw new Error("Invalid directory.");
@@ -355,8 +373,8 @@ ipcMain.handle("workspace:read-file", (event, id: unknown, filename: unknown) =>
 	if (typeof filename !== "string") throw new Error("Invalid filename.");
 	return readProjectFile(root, filename);
 });
-ipcMain.handle("workspace:git-review", (event, id: unknown) => gitReview(projectRoot(event, id)));
-ipcMain.handle("workspace:pull-requests", (event, id: unknown, cursor: unknown) => projectPullRequests(projectRoot(event, id), cursor));
+ipcMain.handle("workspace:git-review", (event, id: unknown) => { const root = projectRoot(event, id); return span("git.review", undefined, () => gitReview(root)); });
+ipcMain.handle("workspace:pull-requests", (event, id: unknown, cursor: unknown) => { const root = projectRoot(event, id); return span("gh.pull-requests", { page: cursor !== undefined }, () => projectPullRequests(root, cursor)); });
 // Projects being removed or not yet available are left out rather than failing the whole page.
 ipcMain.handle("workspace:pull-request-directory", (event, query: unknown) => { if (!senderWindow(event)) throw new Error("Invalid pull request list request."); return listPullRequestDirectory(workspaceRuntime.store.getProjects().filter(project => { try { workspaceRuntime.assertProjectAvailable(project.id); return true; } catch { return false; } }), query); });
 ipcMain.handle("workspace:pull-request", async (event, id: unknown, number: unknown) => { const details = await projectPullRequest(projectRoot(event, id), number); workspaceRuntime.syncPullRequestSnapshot(details.repository, details.number, pullRequestLinkSnapshot(details)); return details; });
@@ -405,9 +423,9 @@ ipcMain.handle("workspace:git-hunks", (event, id: unknown, filename: unknown, st
 ipcMain.handle("workspace:git-diff-contents", (event, id: unknown, request: unknown) => readGitDiffContents(projectRoot(event, id), request));
 ipcMain.handle("workspace:git-command", (event, id: unknown, command: unknown) => { const root = projectRoot(event, id); return workspaceRuntime.mutateProject(id as string, () => gitCommand(root, command)); });
 ipcMain.handle("workspace:git-branches", (event, id: unknown) => gitBranches(projectRoot(event, id)));
-ipcMain.handle("workspace:git-diff", async (event, id: unknown, request: unknown) => { const { patch, hash, truncated, headRef, baseRef, repository } = await gitScopedDiff(projectRoot(event, id), request); return { patch, hash, truncated, headRef, baseRef, repository }; });
-ipcMain.handle("workspace:git-diff-file", (event, id: unknown, request: unknown) => readScopedDiffContents(projectRoot(event, id), request));
-ipcMain.handle("workspace:git-refs", (event, id: unknown) => gitRefs(projectRoot(event, id)));
+ipcMain.handle("workspace:git-diff", async (event, id: unknown, request: unknown) => { const root = projectRoot(event, id), { patch, hash, truncated, headRef, baseRef, repository } = await span("git.diff", undefined, () => gitScopedDiff(root, request)); return { patch, hash, truncated, headRef, baseRef, repository }; });
+ipcMain.handle("workspace:git-diff-file", (event, id: unknown, request: unknown) => { const root = projectRoot(event, id); return span("git.diff-file", undefined, () => readScopedDiffContents(root, request)); });
+ipcMain.handle("workspace:git-refs", (event, id: unknown) => { const root = projectRoot(event, id); return span("git.refs", undefined, () => gitRefs(root)); });
 ipcMain.handle("workspace:project-tree", (event, id: unknown, request: unknown, refresh: unknown) => { const root = projectRoot(event, id); if (refresh === true) refreshProjectIndex(root); return projectTree(root, request); });
 ipcMain.handle("workspace:file-preview", (event, id: unknown, filename: unknown) => { const root = projectRoot(event, id); if (typeof filename !== "string") throw new Error("Invalid file request."); return readFilePreview(root, filename, extractPdfText); });
 ipcMain.handle("workspace:create-worktree", (event, id: unknown, branch: unknown, base: unknown) => {

@@ -1,5 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync, renameSync, rmSync } from "node:fs";
 import path from "node:path";
+import { span, type ActiveSpan } from "./diagnostics/tracer";
 
 export type CredentialEncryption = { available: () => boolean; encrypt: (value: string) => Buffer | Promise<Buffer>; decrypt: (value: Buffer) => string | Promise<string> };
 export class SecretVault {
@@ -22,10 +23,12 @@ export class SecretVault {
 		renameSync(`${filename}.tmp`, filename);
 		this.decrypted.delete(id);
 	}
-	async get(id: string) {
+	get(id: string): Promise<string> { return span("credentials.read", undefined, active => this.read(id, active)); }
+	private async read(id: string, active: ActiveSpan) {
 		if (!this.encryption.available()) throw new Error("Secure credential storage is unavailable on this device.");
 		// The file is read every time, so a credential changed elsewhere is decrypted again.
 		const encrypted = readFileSync(this.filename(id)), cached = this.decrypted.get(id);
+		active.setAttributes({ cached: Boolean(cached?.encrypted.equals(encrypted)) });
 		if (cached?.encrypted.equals(encrypted)) return cached.value;
 		const value = Promise.resolve().then(() => this.encryption.decrypt(encrypted));
 		this.decrypted.set(id, { encrypted, value });

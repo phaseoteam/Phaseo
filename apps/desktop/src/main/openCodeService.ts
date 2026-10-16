@@ -8,6 +8,7 @@ import { Service } from "@opencode/client/service";
 import type { Endpoint } from "@opencode/client/service";
 import { resolveNativeCommand } from "./nativeProcess";
 import { OpenCodeMcp } from "./openCodeMcp";
+import { span } from "./diagnostics/tracer";
 import { OpenCode } from "@opencode/client";
 import type { McpConnection } from "../shared/mcp";
 
@@ -40,7 +41,7 @@ export class OpenCodeService {
 	}
 	async connect(signal?: AbortSignal): Promise<Endpoint> {
 		if (this.controller.signal.aborted || signal?.aborted) throw new Error("OpenCode startup cancelled.");
-		const starting = this.starting ??= this.start().finally(() => { this.starting = undefined; });
+		const starting = this.starting ??= span("opencode.start", undefined, () => this.start()).finally(() => { this.starting = undefined; });
 		if (!signal) return starting;
 		let abort!: () => void;
 		try { return await Promise.race([starting, new Promise<never>((_resolve, reject) => { abort = () => reject(new Error("OpenCode startup cancelled.")); signal.addEventListener("abort", abort, { once: true }); if (signal.aborted) abort(); })]); }

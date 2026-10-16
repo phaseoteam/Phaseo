@@ -2,6 +2,7 @@ import type { BrowserDownload, BrowserDownloadCommand } from "./browserDownloads
 import type { KeybindingEntry } from "./keybindings";
 import type { BrowserAgentTabOpened, BrowserCapture, BrowserCommand, BrowserKey, BrowserLocalServer, BrowserOpenTab, BrowserPick, BrowserRecording, BrowserState } from "./browser";
 import type { WorkspaceApi } from "./workspace";
+import type { DiagnosticsApi } from "./diagnostics";
 
 export type DesktopRuntimeInfo = {
 	platform: NodeJS.Platform;
@@ -70,6 +71,8 @@ export type PhaseoDesktopApi = {
 		open: () => Promise<void>;
 		onChange: (listener: (state: KeybindingsState) => void) => () => void;
 	};
+	/** Settings → Diagnostics: the app's processes, their recent resource use and its local trace file. */
+	diagnostics: DiagnosticsApi;
 	checkForUpdates: () => Promise<DesktopUpdateState>;
 	installUpdate: () => Promise<void>;
 	onWindowStateChange: (listener: (state: DesktopWindowState) => void) => () => void;

@@ -3,6 +3,7 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ModelOption } from "../shared/workspace";
 import type { ApiModelCatalog, CatalogPageValidator } from "./apiModelCatalog";
+import { span } from "./diagnostics/tracer";
 
 /** A cached catalog younger than this is served without a background re-check. Re-checks send the saved ETags, so an unchanged catalog costs a bodiless 304 per page. */
 export const MODEL_CATALOG_FRESH_MS = 15 * 60 * 1000;
@@ -37,8 +38,9 @@ export class ModelCatalogCache {
 		const file = this.filename(key), pending = this.refreshes.get(file);
 		if (pending) return pending;
 		const generation = this.generations.get(file) ?? 0;
-		const refresh = (async () => {
+		const refresh = span("models.catalog-fetch", undefined, async active => {
 			const previous = await this.read(key);
+			active.setAttributes({ conditional: previous?.version === CATALOG_VERSION && Boolean(previous.validators?.length) });
 			let result = await fetchModels(previous?.version === CATALOG_VERSION ? previous.validators : undefined);
 			if (!Array.isArray(result) && result.notModified && !previous) result = await fetchModels();
 			const models = Array.isArray(result) ? result : result.notModified ? previous!.models : result.models;
@@ -49,7 +51,7 @@ export class ModelCatalogCache {
 			catch (error) { this.warn(`Model catalog cache write failed: ${error instanceof Error ? error.message : "unknown error"}`); }
 			if (previous && JSON.stringify(previous.models) !== JSON.stringify(models)) this.onChange(key);
 			return models;
-		})().finally(() => { if (this.refreshes.get(file) === refresh) this.refreshes.delete(file); });
+		}).finally(() => { if (this.refreshes.get(file) === refresh) this.refreshes.delete(file); });
 		this.refreshes.set(file, refresh);
 		return refresh;
 	}

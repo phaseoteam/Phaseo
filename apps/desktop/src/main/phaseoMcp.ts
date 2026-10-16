@@ -12,10 +12,14 @@ import { nativeMcpName, type McpConnection } from "../shared/mcp";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { phaseoMcpResourceTools } from "./phaseoMcpResources";
 import { phaseoMcpPromptTools } from "./phaseoMcpPrompts";
+import { span } from "./diagnostics/tracer";
 
 type PromptServer = { id: string; name: string; projectId?: string; list: ReturnType<typeof phaseoMcpPromptTools>["list"]; get: ReturnType<typeof phaseoMcpPromptTools>["get"] };
 export type PhaseoMcpSession = { tools: AgentTool[]; labels: Record<string,string>; promptServers: PromptServer[]; close: () => Promise<void> };
-export async function connectPhaseoMcp(connections: McpConnection[], cwd: string, signal: AbortSignal, callbacks?: AgentCallbacks): Promise<PhaseoMcpSession> {
+export function connectPhaseoMcp(connections: McpConnection[], cwd: string, signal: AbortSignal, callbacks?: AgentCallbacks): Promise<PhaseoMcpSession> {
+ return connections.length ? span("mcp.connect", { servers: connections.length }, () => connectServers(connections, cwd, signal, callbacks)) : connectServers(connections, cwd, signal, callbacks);
+}
+async function connectServers(connections: McpConnection[], cwd: string, signal: AbortSignal, callbacks?: AgentCallbacks): Promise<PhaseoMcpSession> {
  const clients: Client[] = [], tools: AgentTool[] = [];
  const labels: Record<string,string> = {};
  const promptServers: PromptServer[] = [];

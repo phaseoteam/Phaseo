@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { git } from "./gitProcess";
+import { span } from "./diagnostics/tracer";
 import { resolveNativeCommand } from "./nativeProcess";
 import { githubRepository, parsePullRequestDetails } from "./projectPullRequests";
 import { reviewCursor, reviewNodeId } from "../shared/pullRequestThreads";
@@ -130,7 +131,11 @@ export function ghFailure(stderr: unknown, fallback: string) {
 }
 
 /** Runs gh without a shell. Bodies travel on stdin so long comments never meet the command-line limit. */
-export async function runGh(root: string, args: string[], input?: string): Promise<string> {
+export function runGh(root: string, args: string[], input?: string): Promise<string> {
+	// The subcommand names the span ("gh pr diff", "gh api graphql"); arguments may carry queries and bodies, so they stay out.
+	return span(`gh ${args.slice(0, args[0] === "api" && args[1] === "graphql" ? 2 : args[0] === "api" ? 1 : 2).join(" ")}`, undefined, () => ghProcess(root, args, input));
+}
+async function ghProcess(root: string, args: string[], input?: string): Promise<string> {
 	let command: Awaited<ReturnType<typeof resolveNativeCommand>>;
 	try { command = await resolveNativeCommand("gh"); } catch { throw new Error("Install GitHub CLI and sign in with gh auth login."); }
 	return await new Promise<string>((resolve, reject) => {

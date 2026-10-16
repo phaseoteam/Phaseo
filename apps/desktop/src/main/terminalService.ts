@@ -20,6 +20,10 @@ export class TerminalService {
 	onEvent: (event: TerminalEvent) => void = () => {};
 	constructor(private readonly store: WorkspaceStore, private readonly directory: string, private readonly spawnPty = spawn, private readonly processTable: () => Promise<ProcessRow[]> = readProcessTable) {}
 	get(): TerminalSession[] { return [...this.running.values()].filter(value => value.session.ephemeral).map(value => ({ ...value.session })).concat(this.store.getTerminals()); }
+	/** Each running terminal's shell PID with its title and chat, for Settings → Diagnostics. */
+	processOwners(): { pid: number; title: string; taskId?: string; projectId?: string }[] {
+		return [...this.running.values()].flatMap(entry => Number.isInteger(entry.pty.pid) && entry.pty.pid > 0 ? [{ pid: entry.pty.pid, title: entry.session.title, ...(entry.session.taskId ? { taskId: entry.session.taskId } : {}), ...(entry.session.projectId ? { projectId: entry.session.projectId } : {}) }] : []);
+	}
 	authenticate(request: TerminalAuthRequest, signal: AbortSignal): TerminalAuthentication {
 		if (this.closed || signal.aborted) throw new Error("Native sign-in cancelled.");
 		if (this.running.size >= 10) throw new Error("Close a terminal before signing in.");

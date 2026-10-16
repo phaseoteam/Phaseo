@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { isTreeId } from "../shared/gitDiff";
 import { isRepository, runGit } from "./gitDiffScopes";
+import { span } from "./diagnostics/tracer";
 
 /**
  * Records the working tree, untracked files included, as a Git tree without touching the index,
@@ -14,7 +15,7 @@ const capturing = new Map<string, Promise<string | undefined>>();
 export function captureCheckpoint(root: string): Promise<string | undefined> {
 	const key = path.resolve(root);
 	let capture = capturing.get(key);
-	if (!capture) { capture = snapshot(root).finally(() => capturing.delete(key)); capturing.set(key, capture); }
+	if (!capture) { capture = span("git.checkpoint", undefined, () => snapshot(root)).finally(() => capturing.delete(key)); capturing.set(key, capture); }
 	return capture;
 }
 

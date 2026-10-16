@@ -5,6 +5,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { McpConnection } from "../shared/mcp";
 import type { ThreadTools } from "../shared/orchestration";
+import { span } from "./diagnostics/tracer";
 import { threadTools } from "./threadTools";
 import type { AgentQuestion } from "../shared/workspace";
 import { answerPhaseoQuestion, phaseoQuestionTools, QuestionDeferredError } from "./phaseoQuestionTools";
@@ -78,7 +79,7 @@ export class OrchestratorMcp {
 		});
 	}
 	async session(tools: ThreadTools, approve: (name: string, args: unknown) => Promise<boolean>, ask?: OrchestratorAsk): Promise<{ connection: McpConnection; close: () => void }> {
-		const port = await this.listen();
+		const port = await span("mcp.orchestration-start", undefined, () => this.listen());
 		const token = randomBytes(32).toString("hex"); this.sessions.set(token, { tools, approve, ...(ask ? { ask } : {}), createdAt: this.now(), lastUsedAt: this.now() });
 		return { connection: { id: randomUUID(), name: "Phaseo orchestration", enabled: true, orchestration: true, transport: "http", url: `http://127.0.0.1:${port}/mcp`, headers: { Authorization: `Bearer ${token}` } }, close: () => { this.sessions.delete(token); } };
 	}
