@@ -1,4 +1,6 @@
-import { useCommand, useKeybindingDispatcher, useKeybindings } from "./lib/keybindings";
+import { useEffect } from "react";
+import { setDynamicCommands, useCommand, useKeybindingDispatcher, useKeybindings } from "./lib/keybindings";
+import { projectActionCommands } from "../shared/projectSettings";
 import { sidebarOrder } from "./lib/sidebarOrder";
 import { X } from "lucide-react";
 import { useThreadActions } from "./shell/threadActions";
@@ -22,6 +24,8 @@ function useShortcuts() {
 	const { setCommandsOpen, select, openSettings, setMode, setSidebarOpen, setRightPanel, rightPanel, overview, selectedId, mode, settings } = useWorkspace();
 	const threadActions = useThreadActions();
 	useKeybindings();
+	// Project actions with shortcuts become commands of their own (Settings → Keyboard shortcuts → Project actions).
+	useEffect(() => setDynamicCommands(projectActionCommands(overview.projects)), [overview.projects]);
 	useKeybindingDispatcher(() => ({ chatMode: mode === "chat", codeMode: mode === "code", chatOpen: Boolean(selectedId) && !settings, paneOpen: Boolean(rightPanel) && !settings, settingsOpen: Boolean(settings) }));
 	useCommand("commandPalette.toggle", () => setCommandsOpen(open => !open));
 	useCommand("chat.new", () => select(undefined));

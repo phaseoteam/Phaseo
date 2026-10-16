@@ -1,6 +1,6 @@
 import { useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { CircleX, Ellipsis, FileJson, Minus, Plus, Search, TriangleAlert, X } from "lucide-react";
-import { commandLabel, formatWhen, whenGroup, type WhenCondition, type WhenGroup, keybindingCommands, keybindingConflicts, keybindingGroups, keyFromEvent, keyLabel, keyParts, replaceCommandBindings, whenError, whenVariables, type KeybindingCommand, type KeybindingEntry, type KeybindingRow } from "../../shared/keybindings";
+import { type CommandInfo, commandLabel, formatWhen, whenGroup, type WhenCondition, type WhenGroup, keybindingCommands, keybindingConflicts, keybindingGroups, keyFromEvent, keyLabel, keyParts, replaceCommandBindings, whenError, whenVariables, type KeybindingCommand, type KeybindingEntry, type KeybindingRow } from "../../shared/keybindings";
 import { errorText } from "../app/workspace";
 import { Select } from "../components/Select";
 import { Kbd, KbdGroup } from "../components/ui/kbd";
@@ -17,7 +17,7 @@ function KeyPill({ value }: { value: string }) {
 }
 
 /** Records the next key combination. Escape cancels; Backspace on its own clears the binding. */
-function KeyCapture({ label, value, onCapture, onCancel, className, autoFocus }: { label: string; value: string; onCapture: (key: string) => void; onCancel?: () => void; className?: string; autoFocus?: boolean }) {
+export function KeyCapture({ label, value, onCapture, onCancel, className, autoFocus, id, disabled }: { label: string; value: string; onCapture: (key: string) => void; onCancel?: () => void; className?: string; autoFocus?: boolean; id?: string; disabled?: boolean }) {
 	const [recording, setRecording] = useState(false);
 	const onKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
 		if (event.key === "Tab") return;
@@ -27,7 +27,7 @@ function KeyCapture({ label, value, onCapture, onCancel, className, autoFocus }:
 		const key = keyFromEvent(event.nativeEvent, isMac());
 		if (key) onCapture(key);
 	};
-	return <input data-keybinding-capture="" autoFocus={autoFocus} aria-label={`Keybinding for ${label}`} readOnly value={recording && !value ? "" : value ? keyLabel(value, isMac()) : ""} placeholder={recording ? "Press shortcut" : "Unassigned"}
+	return <input data-keybinding-capture="" id={id} disabled={disabled} autoFocus={autoFocus} aria-label={`Keybinding for ${label}`} readOnly value={recording && !value ? "" : value ? keyLabel(value, isMac()) : ""} placeholder={recording ? "Press shortcut" : "Unassigned"}
 		onFocus={() => setRecording(true)} onBlur={() => setRecording(false)} onKeyDown={onKeyDown}
 		className={cn(settingsInput, "h-7 w-44 font-mono text-xs caret-transparent", className)} />;
 }
@@ -91,13 +91,13 @@ function WhenControl({ label, value, onChange }: { label: string; value: string;
 	</Popover>;
 }
 
-function Conflict({ labels }: { labels: string[] }) {
+export function Conflict({ labels }: { labels: string[] }) {
 	if (!labels.length) return null;
 	const text = `Also bound to ${labels.join(", ")}`;
 	return <Tip label={text}><span role="img" aria-label={text} className="grid size-6 place-items-center text-warning"><TriangleAlert className="size-3.5" /></span></Tip>;
 }
 
-type Actions = { rows: KeybindingRow[]; entries: KeybindingEntry[]; save: (entries: KeybindingEntry[]) => void; busy: boolean };
+type Actions = { rows: KeybindingRow[]; entries: KeybindingEntry[]; extra: readonly CommandInfo[]; save: (entries: KeybindingEntry[]) => void; busy: boolean };
 const commandEntries = (rows: KeybindingRow[], command: KeybindingCommand) => rows.filter(row => row.command === command && row.key).map(({ command: name, key, when }) => ({ command: name, key, ...(when ? { when } : {}) }));
 
 function ShortcutRow({ row, actions }: { row: KeybindingRow; actions: Actions }) {
@@ -144,9 +144,9 @@ function NewShortcut({ actions, onDone }: { actions: Actions; onDone: () => void
 	return <SettingsRow className="bg-muted/15" title="New keybinding"
 		description={<span className="flex h-6 items-center gap-1"><span className="text-xs text-muted-foreground/70">When</span><WhenControl label="the new keybinding" value={when} onChange={setWhen} /></span>}
 		control={<div className="flex flex-wrap items-center justify-end gap-1.5">
-			<div className="w-52"><Select label="Command" value={command} onValueChange={value => setCommand(value as KeybindingCommand)} options={keybindingCommands.map(value => ({ value: value.command, label: value.label }))} /></div>
+			<div className="w-52"><Select label="Command" value={command} onValueChange={value => setCommand(value as KeybindingCommand)} options={[...keybindingCommands, ...actions.extra].map(value => ({ value: value.command, label: value.label }))} /></div>
 			<Conflict labels={conflicts} />
-			<KeyCapture label={commandLabel(command)} value={key} onCapture={setKey} />
+			<KeyCapture label={commandLabel(command, actions.extra)} value={key} onCapture={setKey} />
 			<SettingsButton variant="primary" disabled={!key || actions.busy} onClick={() => { actions.save(replaceCommandBindings(actions.entries, command, [...commandEntries(actions.rows, command), { command, key, ...(when ? { when } : {}) }])); onDone(); }}>Save</SettingsButton>
 			<Tip label="Cancel"><button type="button" aria-label="Cancel new keybinding" onClick={onDone} className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button></Tip>
 		</div>} />;
@@ -159,7 +159,7 @@ export function KeyboardShortcuts() {
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
 	const save = (entries: KeybindingEntry[]) => { setBusy(true); setError(""); void saveKeybindings(entries).catch(reason => setError(errorText(reason))).finally(() => setBusy(false)); };
-	const actions: Actions = { rows: state.rows, entries: state.entries, save, busy };
+	const actions: Actions = { rows: state.rows, entries: state.entries, extra: state.extra, save, busy };
 	const needle = query.trim().toLowerCase();
 	const rows = useMemo(() => state.rows.filter(row => !needle || `${row.label} ${row.command} ${row.key ? keyLabel(row.key, isMac()) : "unassigned"} ${row.when ?? ""}`.toLowerCase().includes(needle)), [state.rows, needle]);
 	return <SettingsPageLayout title="Keyboard shortcuts" description="Click a shortcut and press new keys to change it. Your changes are saved in keybindings.json, which you can also edit by hand.">

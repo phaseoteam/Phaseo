@@ -8,6 +8,9 @@ import { ProjectScriptDialog, ScriptIcon, useProjectScripts, type ScriptEditorRe
 import { Tip } from "../components/ui/tooltip";
 import { SettingsButton, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
 import { cn } from "../lib/utils";
+import { keyLabel, scriptCommand } from "../../shared/keybindings";
+import { useKeybindings } from "../lib/keybindings";
+import { isMac } from "../lib/shortcuts";
 
 const dayChoices = [1, 2, 3, 5, 7, 14, 30];
 const days = (value: number) => value === 1 ? "After 1 day" : `After ${value} days`;
@@ -35,6 +38,7 @@ export function ProjectSettingsPage() {
 	const project = settingsProject(overview.projects, settingsProjectId);
 	const { scripts, upsert, remove, move } = useProjectScripts(project?.id);
 	const [editor, setEditor] = useState<ScriptEditorRequest>();
+	const keybindings = useKeybindings();
 	const [busy, setBusy] = useState(false), [error, setError] = useState("");
 	if (!project) return <SettingsPageLayout title="Project settings"><p className="text-sm text-muted-foreground">This project is no longer in your workspace.</p></SettingsPageLayout>;
 	const settings: Settings = project.settings ?? {};
@@ -73,12 +77,13 @@ export function ProjectSettingsPage() {
 				title={<span className="flex items-center gap-2">{script.name}{script.runOnWorktreeCreate && <span className="text-[11px] font-medium text-muted-foreground">Runs on new worktrees</span>}{script.runOnSettle && <span className="text-[11px] font-medium text-info">Runs on settle</span>}</span>}
 				description={<span className="block truncate font-mono">{script.command}</span>}
 				control={<>
+					{(() => { const row = keybindings.rows.find(value => value.command === scriptCommand(project.id, script.id) && value.key); return row ? <span className="mr-1 text-xs text-muted-foreground">{keyLabel(row.key, isMac())}</span> : null; })()}
 					<IconButton label="Move up" disabled={busy || index === 0} onClick={() => void move(script.id, -1).catch(reason => setError(errorText(reason)))}><ArrowUp /></IconButton>
 					<IconButton label="Move down" disabled={busy || index === scripts.length - 1} onClick={() => void move(script.id, 1).catch(reason => setError(errorText(reason)))}><ArrowDown /></IconButton>
 					<IconButton label={`Edit ${script.name}`} disabled={busy} onClick={() => setEditor({ script })}><Pencil /></IconButton>
 				</>} />)}
 		</SettingsSection>
 		{error && <SettingsNote tone="error" role="alert" className="-mt-5 px-0.5">{error}</SettingsNote>}
-		<ProjectScriptDialog request={editor} onClose={() => setEditor(undefined)} onSave={upsert} onDelete={remove} />
+		<ProjectScriptDialog request={editor} projectId={project.id} onClose={() => setEditor(undefined)} onSave={upsert} onDelete={remove} />
 	</SettingsPageLayout>;
 }

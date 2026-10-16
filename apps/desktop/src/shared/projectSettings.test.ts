@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { autoSettleRules, newScriptId, primaryScript, scriptMenuLabel, settingsProject, settleScriptTarget, validateProjectSettings, validateProjectUpdate, worktreeCreateScripts, type ProjectScript } from "./projectSettings";
+import { autoSettleRules, newScriptId, projectActionCommands, primaryScript, scriptMenuLabel, settingsProject, settleScriptTarget, validateProjectSettings, validateProjectUpdate, worktreeCreateScripts, type ProjectScript } from "./projectSettings";
 
 const script = (patch: Partial<ProjectScript> = {}): ProjectScript => ({ id: "dev", name: "Dev server", command: "pnpm dev", icon: "play", runOnWorktreeCreate: false, ...patch });
 const preferences = { autoSettleAfterDays: 3, autoSettleOnMerge: true, keepPullRequests: false };
@@ -57,5 +57,19 @@ describe("project settings", () => {
 		expect(newScriptId("Dev server", [])).toBe("dev-server");
 		expect(newScriptId("Dev server", [script({ id: "dev-server" })])).toBe("dev-server-2");
 		expect(newScriptId("!!!", [])).toBe("script");
+	});
+});
+
+describe("project action commands", () => {
+	it("gives each project action a shortcut command; worktrees use their project's", () => {
+		const projects = [
+			{ id: "p1", name: "Web", directory: "/web", settings: { scripts: [script(), script({ id: "test", name: "Test" })] } },
+			{ id: "w1", name: "Web · fix", directory: "/w", worktree: { sourceProjectId: "p1" }, settings: { scripts: [script({ id: "own" })] } },
+			{ id: "p2", name: "Api", directory: "/api" },
+		];
+		expect(projectActionCommands(projects)).toEqual([
+			{ command: "script.p1.dev.run", label: "Run Dev server in Web", group: "Project actions", keys: [] },
+			{ command: "script.p1.test.run", label: "Run Test in Web", group: "Project actions", keys: [] },
+		]);
 	});
 });

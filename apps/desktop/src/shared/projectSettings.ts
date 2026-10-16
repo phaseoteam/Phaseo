@@ -1,3 +1,4 @@
+import { scriptCommand, type CommandInfo } from "./keybindings";
 import type { WorkspacePreferences } from "./preferences";
 import { autoSettleDays, type AutoSettleRules } from "./threadLifecycle";
 
@@ -117,4 +118,12 @@ export function newScriptId(name: string, scripts: readonly ProjectScript[]) {
 	let id = base;
 	for (let index = 2; scripts.some(script => script.id === id); index++) id = `${base}-${index}`;
 	return id;
+}
+
+/**
+ * Each project action as a keyboard shortcut command (T3 binds `script.<id>.run`). Worktrees share their project's
+ * actions, so only projects have commands; a chat in a worktree runs its project's.
+ */
+export function projectActionCommands(projects: readonly ProjectLike[]): CommandInfo[] {
+	return projects.filter(project => !project.worktree).flatMap(project => (project.settings?.scripts ?? []).map(script => ({ command: scriptCommand(project.id, script.id), label: `Run ${script.name} in ${project.name}`, group: "Project actions", keys: [] })));
 }

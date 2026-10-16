@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { KeybindingsFile } from "../main/keybindingsFile";
-import { browserShortcuts, evaluateWhen, formatWhen, whenGroup, keybindingConflicts, keybindingRows, keyFromEvent, keyLabel, matchesKey, parseKey, replaceCommandBindings, validateKeybindings, whenError } from "./keybindings";
+import { browserShortcuts, isScriptCommand, parseScriptCommand, scriptCommand, evaluateWhen, formatWhen, whenGroup, keybindingConflicts, keybindingRows, keyFromEvent, keyLabel, matchesKey, parseKey, replaceCommandBindings, validateKeybindings, whenError } from "./keybindings";
 
 const press = (key: string, modifiers: Partial<Record<"ctrlKey" | "metaKey" | "altKey" | "shiftKey", boolean>> = {}) => ({ key, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...modifiers });
 
@@ -83,6 +83,33 @@ describe("keyboard shortcuts", () => {
 			expect(broken.error).toBeTruthy();
 			expect(file.ensure()).toBe(file.filename);
 		} finally { rmSync(directory, { recursive: true, force: true }); }
+	});
+});
+
+describe("project action shortcuts", () => {
+	const actions = [
+		{ command: scriptCommand("project-a", "dev"), label: "Run Dev in A", group: "Project actions", keys: [] },
+		{ command: scriptCommand("project-a", "test"), label: "Run Test in A", group: "Project actions", keys: [] },
+		{ command: scriptCommand("project-b", "dev"), label: "Run Dev in B", group: "Project actions", keys: [] },
+	];
+	it("names each action as a command of its project and keeps its binding in keybindings.json", () => {
+		expect(scriptCommand("p1", "dev-server")).toBe("script.p1.dev-server.run");
+		expect(parseScriptCommand("script.p1.dev-server.run")).toEqual({ projectId: "p1", actionId: "dev-server" });
+		expect(parseScriptCommand("script.p1.run")).toBeUndefined();
+		expect(isScriptCommand("script.a b.c.run")).toBe(false);
+		expect(validateKeybindings([{ command: "script.p1.dev.run", key: "Mod+Shift+R" }])).toEqual([{ command: "script.p1.dev.run", key: "mod+shift+r" }]);
+		expect(() => validateKeybindings([{ command: "script.p1.run", key: "mod+r" }])).toThrow("unknown command");
+	});
+	it("lists actions with or without a shortcut, leaves out deleted ones and flags real conflicts", () => {
+		const custom = validateKeybindings([{ command: scriptCommand("project-a", "dev"), key: "mod+shift+r" }, { command: scriptCommand("project-b", "dev"), key: "mod+shift+r" }, { command: scriptCommand("gone", "dev"), key: "mod+shift+g" }]);
+		const rows = keybindingRows(custom, actions);
+		expect(rows.filter(row => row.group === "Project actions").map(row => [row.label, row.key, row.source])).toEqual([["Run Dev in A", "mod+shift+r", "Custom"], ["Run Test in A", "", "Default"], ["Run Dev in B", "mod+shift+r", "Custom"]]);
+		expect(rows.some(row => row.command === scriptCommand("gone", "dev"))).toBe(false);
+		// Another project's action never runs at the same time, so the same keys there are not a conflict.
+		expect(keybindingConflicts(rows, { id: "x", command: scriptCommand("project-a", "dev"), key: "mod+shift+r" })).toEqual([]);
+		expect(keybindingConflicts(rows, { id: "x", command: scriptCommand("project-a", "test"), key: "mod+shift+r" })).toEqual(["Run Dev in A"]);
+		expect(keybindingConflicts(rows, { id: "x", command: scriptCommand("project-a", "test"), key: "mod+k" })).toEqual(["Search chats and commands"]);
+		expect(browserShortcuts(custom)).toContainEqual({ key: "mod+shift+r", keepPageFocus: false });
 	});
 });
 
