@@ -131,15 +131,25 @@ A terminal fills its tab, with split side by side, split stacked, new terminal a
 
 ## Code chats: settle and snooze
 
-Code lists chats from every project in one list, as T3 Code does; the menu above it narrows the list to one project. Each card shows its project, the title, and its branch, tags and model. The right of the card says what the chat needs: Approval, Input, Working with a live timer, Waiting, Failed, Limited, Woke, or Done for a finished turn you have not opened since; otherwise how long ago you last wrote.
+Code lists chats from every project in one list, as T3 Code does; the menu above it narrows the list to one project, and the gear at the end of each project in it opens that project's settings. Each card shows its project, the title, and its branch, tags and model. The right of the card says what the chat needs: Approval, Input, Working with a live timer, Waiting, Failed, Limited, Woke, or Done for a finished turn you have not opened since; otherwise how long ago you last wrote.
 
 - **Settle** a chat when you are done with it: hover its card and choose Settle, press `Ctrl+Shift+S` (`⌘⇧S` on macOS) in the open chat, or use its menu. It moves to **Settled** at the bottom of the sidebar and the next chat opens. A chat that is running, waiting on an approval or question, or has a queued message cannot settle yet.
 - **Snooze** hides a chat until a time: in an hour, in three hours, this evening, tomorrow at 9:00, next Monday at 9:00, or a custom time. It returns early if it needs you, fails or finishes a turn, marked **Woke**.
 - Sending a message un-settles and wakes a chat; pinning does too. `Ctrl+Z` undoes the last settle, snooze, unpin or archive for five seconds after it.
-- Code chats with no activity for three days settle on their own; change or turn this off under **Settings → General → Auto-settle inactive chats**, or per chat under **Auto-settle behaviour** in its menu. Un-settling a chat holds off auto-settle until something new happens in it.
+- Code chats with no activity for three days settle on their own; change or turn this off under **Settings → General → Auto-settle inactive chats**, for one project in its **Project settings**, or per chat under **Auto-settle behaviour** in its menu. Un-settling a chat holds off auto-settle until something new happens in it.
+- When a chat settles (by you, its agent or auto-settle), its terminals that sit at an idle prompt close, so they stop holding its checkout. A terminal running something (a dev server, an editor) stays open, and so does every terminal if Phaseo cannot tell (it reads the system process list: `ps` on macOS and Linux, Windows' process table on Windows). Then, if the chat has a worktree of its own, the project's settle action runs there, and its output appears in the chat as **Settle script: name**. It never runs in a project's main checkout or in a worktree another open chat still uses, and runs once per settle.
+- **Working section** (off by default, as T3's beta is): turn on **Settings → General → Show a Working section** to fold chats that are working and need nothing from you (running, or waiting for agents they started) into **Working (n)** above Snoozed, newest message sent first. A chat leaves it when it needs you, fails or finishes. While it is on, the list above sorts by when each chat last came back to you, so dragging there only pins or unpins.
 - Drag a card to reorder it; dropping it among the pinned chats pins it, among the others unpins it, and onto the Settled heading settles it. Ctrl-click (⌘-click on macOS) picks several chats and Shift-click a range; right-click a picked chat to unpin, settle, snooze, mark unread, archive or delete them together. Esc clears the selection. `Ctrl+1`…`9` open the first nine chats (hold Ctrl to see their numbers) and `Ctrl+Shift+[` / `]` step through them.
 - Agents can settle, un-settle, snooze and wake chats too (`organize_thread`); a chat that settles itself does so when its current turn completes.
-- Right-click a card for its menu: pin, settle, snooze, tags, mark unread, filter by project, auto-settle behaviour, copy path, branch or chat ID, and archive. Under the last message, a settled or snoozed chat says so, with the way back.
+- Right-click a card for its menu: pin, settle, snooze, tags, mark unread, filter by project, project settings, auto-settle behaviour, copy path, branch or chat ID, and archive. Under the last message, a settled or snoozed chat says so, with the way back.
+
+## Project settings and actions
+
+**Project settings** (in a Code chat's menu, the chat header's menu, the project menu above the sidebar, or under **Projects** in Settings) holds one project's own settings, as T3 Code's do. A worktree uses its project's settings.
+
+- **Name**: how the project appears in the sidebar and chat lists.
+- **Code chats**: the three auto-settle settings (merged chats, keep chats with a pull request, inactive days). Each says **Same as General** until you change it, and shows what General is set to.
+- **Actions**: named commands with an icon (play, test, lint, configure, build or debug), such as a dev server or the tests. The chat header shows the first action as a one-click button and the rest in the menu beside it, where each can be edited or a new one added. Running an action opens a terminal named after it in the chat's checkout, in the chat's terminal drawer. An action can also **run when a worktree is created** (in its own terminal in the new worktree) or **run when a chat settles** (only one action can; see above). Move actions up or down in Project settings to choose which one the header shows.
 
 ## Questions from the agent
 
