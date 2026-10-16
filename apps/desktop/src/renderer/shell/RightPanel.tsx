@@ -16,6 +16,7 @@ import { PullRequestListSurface, PullRequestSurface, pullRequestStatePresentatio
 import { closeTerminal, createTerminal, terminalTitle, terminalsFor, useTerminalSessions } from "../lib/terminalSessions";
 import { OPEN_PROJECT_FILE_EVENT, type OpenProjectFileDetail } from "../panels/events";
 import { OPEN_PULL_REQUEST_EVENT, type OpenPullRequestDetail } from "../views/pullRequests/events";
+import { seedPullRequestTabStatus, usePullRequestTabStatus } from "../views/pullRequests/tabStatus";
 import { closePaneTabs, migratePaneState, movePaneTab, openPaneTab, paneKind, paneValue, paneWidths, reopenPaneTab, type PaneKey, type PaneState } from "./paneTabs";
 
 // The diff viewer and editor are large, so they load when first opened.
@@ -37,11 +38,11 @@ const paneTabType = "application/x-phaseo-pane-tab";
 const basename = (path: string) => path.split(/[\\/]/).filter(Boolean).at(-1) ?? path;
 
 /** A tab's icon and title: page title and favicon for the browser, #number in the state colour for a pull request. */
-function TabFace({ paneKey, context, dirty }: { paneKey: PaneKey; context: string; dirty: boolean }) {
+function TabFace({ paneKey, context, projectId, dirty }: { paneKey: PaneKey; context: string; projectId: string; dirty: boolean }) {
 	const kind = paneKind(paneKey), value = paneValue(paneKey);
 	if (kind === "browser") return <BrowserFace context={context} id={value} />;
 	if (kind === "terminal") return <SquareTerminal />;
-	if (kind === "pull") return <PullFace number={Number(value)} />;
+	if (kind === "pull") return <PullFace projectId={projectId} number={Number(value)} />;
 	if (kind === "file") return <><FileText />{dirty && <span aria-hidden className="absolute -right-0.5 -bottom-0.5 size-1.5 rounded-full bg-current" />}<span className="hidden">{basename(value)}</span></>;
 	const launcher = launchers.find(item => item.kind === kind);
 	return <>{launcher?.icon ?? <Files />}</>;
@@ -50,11 +51,13 @@ function BrowserFace({ context, id }: { context: string; id: string }) {
 	const tab = useBrowserTab(context, id);
 	return tab?.favicon ? <img src={tab.favicon} alt="" className="size-3 rounded-[2px]" /> : <Globe />;
 }
-function PullFace({ number }: { number: number }) {
+function PullFace({ projectId, number }: { projectId: string; number: number }) {
 	const { overview, selectedId } = useWorkspace();
 	const snapshot = overview.tasks.find(task => task.id === selectedId)?.pullRequests?.find(link => link.number === number)?.snapshot;
-	if (!snapshot) return <GitPullRequestArrow className="text-muted-foreground" />;
-	const { Icon, toneClassName } = pullRequestStatePresentation(snapshot.state, snapshot.draft);
+	// A pull request the chat does not link wears what the row that opened it, or its last read, said.
+	const seeded = usePullRequestTabStatus(projectId, number), status = snapshot ?? seeded;
+	if (!status) return <GitPullRequestArrow className="text-muted-foreground" />;
+	const { Icon, toneClassName } = pullRequestStatePresentation(status.state, status.draft);
 	return <Icon className={toneClassName} />;
 }
 
@@ -70,7 +73,7 @@ function useTabTitle(paneKey: PaneKey, context: string) {
 	return launchers.find(item => item.kind === kind)?.label ?? kind;
 }
 
-function SurfaceTab({ paneKey, context, active, dirty, onSelect, onClose, onCloseOthers, onCloseRight, onCloseAll, onDropBefore }: { paneKey: PaneKey; context: string; active: boolean; dirty: boolean; onSelect: () => void; onClose: () => void; onCloseOthers: () => void; onCloseRight: () => void; onCloseAll: () => void; onDropBefore: (key: PaneKey) => void }) {
+function SurfaceTab({ paneKey, context, projectId, active, dirty, onSelect, onClose, onCloseOthers, onCloseRight, onCloseAll, onDropBefore }: { paneKey: PaneKey; context: string; projectId: string; active: boolean; dirty: boolean; onSelect: () => void; onClose: () => void; onCloseOthers: () => void; onCloseRight: () => void; onCloseAll: () => void; onDropBefore: (key: PaneKey) => void }) {
 	const title = useTabTitle(paneKey, context);
 	const kind = paneKind(paneKey), value = paneValue(paneKey);
 	const browser = useBrowserTab(context, kind === "browser" ? value : "");
@@ -85,7 +88,7 @@ function SurfaceTab({ paneKey, context, active, dirty, onSelect, onClose, onClos
 			className={cn("group/tab relative flex h-6 max-w-36 shrink-0 cursor-pointer items-center gap-0.5 rounded-md pr-2 pl-1.5 text-xs outline-none [-webkit-app-region:no-drag] focus-visible:ring-2 focus-visible:ring-ring/40", active ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground", over && "ring-1 ring-primary/50")}>
 			{/* The icon is the close button: it turns into an X on hover (T3). */}
 			<button type="button" aria-label={`Close ${title}`} onClick={event => { event.stopPropagation(); onClose(); }} className="group/close relative flex size-4 shrink-0 items-center justify-center rounded-sm hover:bg-muted">
-				<span className="relative flex size-3 items-center justify-center group-hover/tab:hidden group-focus-visible/close:hidden [&_svg]:size-3"><TabFace paneKey={paneKey} context={context} dirty={dirty} /></span>
+				<span className="relative flex size-3 items-center justify-center group-hover/tab:hidden group-focus-visible/close:hidden [&_svg]:size-3"><TabFace paneKey={paneKey} context={context} projectId={projectId} dirty={dirty} /></span>
 				<X className="hidden size-3 group-hover/tab:block group-focus-visible/close:block" />
 			</button>
 			{browser && (browser.audible || browser.muted) && <button type="button" aria-label={browser.muted ? "Unmute tab" : "Mute tab"} onClick={event => { event.stopPropagation(); void setBrowserTabMuted(browser.id, !browser.muted); }} className="grid size-4 shrink-0 place-items-center rounded-sm hover:bg-muted">{browser.muted ? <VolumeOff className="size-3" /> : <Volume2 className="size-3" />}</button>}
@@ -261,7 +264,7 @@ export function RightPanel() {
 		: kind === "files" ? <Suspense fallback={fallback}><FileBrowserSurface projectId={projectId} onOpenFile={path => show(`file:${path}`)} /></Suspense>
 		: kind === "file" ? <Suspense fallback={fallback}><FileSurface key={value} projectId={projectId} path={value} onDirtyChange={isDirty => setDirty(current => current[active] === isDirty ? current : { ...current, [active]: isDirty })} onOpenFile={path => show(`file:${path}`)} /></Suspense>
 		: kind === "diff" ? <Suspense fallback={fallback}><DiffSurface projectId={projectId} taskId={selectedId} onOpenFile={path => show(`file:${path}`)} /></Suspense>
-		: kind === "pulls" ? <PullRequestListSurface projectId={projectId} taskId={selectedId} onOpen={pull => show(`pull:${pull.number}`)} />
+		: kind === "pulls" ? <PullRequestListSurface projectId={projectId} taskId={selectedId} onOpen={pull => { seedPullRequestTabStatus(projectId, pull.number, pull); show(`pull:${pull.number}`); }} />
 		: kind === "pull" ? <PullRequestSurface key={value} projectId={projectId} number={Number(value)} onBack={() => show("pulls")} />
 		: <AgentThreadsPanel id={selectedId} onOpen={select} />;
 	const finishDrag = () => { drag.current = undefined; setDragging(false); };
@@ -284,7 +287,7 @@ export function RightPanel() {
 				{overflow.left && <button type="button" aria-label="Scroll tabs left" onClick={() => strip.current?.scrollBy({ left: -160, behavior: "smooth" })} className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"><ChevronLeft className="size-3.5" /></button>}
 				<ScrollArea className="min-w-0 flex-1" scrollBarOrientation="horizontal" scrollBarClassName="hidden" viewportRef={strip} viewportProps={{ onWheel: event => { if (strip.current && Math.abs(event.deltaY) > Math.abs(event.deltaX)) strip.current.scrollLeft += event.deltaY; } }}>
 					<div role="tablist" aria-label="Tool tabs" className="flex h-10 w-max min-w-full items-center gap-1 pl-1">
-						{tabs.map((key, index) => <SurfaceTab key={key} paneKey={key} context={context} active={key === active} dirty={Boolean(dirty[key])} onSelect={() => show(key)} onClose={() => close([key])}
+						{tabs.map((key, index) => <SurfaceTab key={key} paneKey={key} context={context} projectId={projectId} active={key === active} dirty={Boolean(dirty[key])} onSelect={() => show(key)} onClose={() => close([key])}
 							onCloseOthers={() => close(tabs.filter(value => value !== key))} onCloseRight={() => close(tabs.slice(index + 1))} onCloseAll={() => close(tabs)}
 							onDropBefore={moved => { touched.current = Date.now(); update(movePaneTab({ ...state, tabs }, moved, key)); }} />)}
 						<DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>

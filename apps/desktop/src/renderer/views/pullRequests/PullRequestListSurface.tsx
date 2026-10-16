@@ -17,6 +17,7 @@ import { linkValidation, resolveLinkInput } from "./linkLogic";
 import { ActorAvatar, ChecksGlyph, DiffStat, errorMessage, MiddleTruncate, PullRequestGlyph, PullRequestListGhost, PullRequestRowGlyph, ReviewDecisionGlyph, Tip } from "./presentation";
 import { relativeTime, summaryChecksRollup } from "./pullRequestLogic";
 import { PullRequestSurface } from "./PullRequestSurface";
+import { RowChecksPopover } from "./RowChecksPopover";
 import { StackGlyph, StackPopover } from "./StackMenu";
 import { useProjectRepository } from "./useProjectRepository";
 
@@ -58,7 +59,7 @@ function ContextRow({ className, style, data, menu, children }: { className: str
 	</ContextMenu.Root>;
 }
 
-function LinkRow({ line, openable, onOpen, onExternal, onCopy, onUnlink, onWatch }: { line: PullRequestListLine; openable: boolean; onOpen: () => void; onExternal: () => void; onCopy: () => void; onUnlink: () => void; onWatch: (watching: boolean) => void }) {
+function LinkRow({ projectId, line, openable, onOpen, onExternal, onCopy, onUnlink, onWatch }: { projectId: string; line: PullRequestListLine; openable: boolean; onOpen: () => void; onExternal: () => void; onCopy: () => void; onUnlink: () => void; onWatch: (watching: boolean) => void }) {
 	const { link, depth, stack } = line;
 	const snapshot = link.snapshot, open = !snapshot || snapshot.state === "open", rollup = snapshot ? summaryChecksRollup(snapshot.checks) : null;
 	const items = <>
@@ -75,7 +76,7 @@ function LinkRow({ line, openable, onOpen, onExternal, onCopy, onUnlink, onWatch
 			<RowLines
 				number={<Tip label={`${PULL_REQUEST_SOURCE_LABELS[link.source]} · ${relativeTime(link.linkedAt)}`}><span className={NUMBER_CLASS}>#{link.number}</span></Tip>}
 				title={snapshot?.title ?? link.repository}
-				signals={open ? <>{link.watching && <Tip label={WATCHING_LABEL}><span className="inline-flex shrink-0"><Eye role="img" aria-label="Watching" className="size-3.5" /></span></Tip>}{rollup && <ChecksGlyph rollup={rollup} />}{snapshot && <ReviewDecisionGlyph decision={snapshot.review} />}</> : null}
+				signals={open ? <>{link.watching && <Tip label={WATCHING_LABEL}><span className="inline-flex shrink-0"><Eye role="img" aria-label="Watching" className="size-3.5" /></span></Tip>}{rollup && (openable ? <RowChecksPopover rollup={rollup} projectId={projectId} number={link.number} /> : <ChecksGlyph rollup={rollup} />)}{snapshot && <ReviewDecisionGlyph decision={snapshot.review} />}</> : null}
 				status={snapshot && <DiffStat additions={snapshot.additions} deletions={snapshot.deletions} className="font-mono" />}
 				meta={snapshot ? <>
 					{stack && <Tip label={stack.kind === "native" ? `GitHub stack of ${stack.size}: merging a layer lands the ones below it.` : `${stack.size} pull requests chained by base branch.`}><span className="inline-flex shrink-0 items-center gap-0.5 text-foreground/70"><StackGlyph aria-hidden className="size-3" />{stack.size}</span></Tip>}
@@ -101,7 +102,7 @@ function ProjectRow({ projectId, request, linked, onOpen, onExternal, onCopy, on
 		<PullRequestRowGlyph state="OPEN" draft={request.draft} />
 		<button type="button" onClick={onOpen} className="flex min-w-0 flex-1 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/40">
 			<RowLines number={<span className={NUMBER_CLASS}>#{request.number}</span>} title={request.title}
-				signals={<>{linked && <Tip label="Linked to this chat"><span className="inline-flex shrink-0"><LinkIcon role="img" aria-label="Linked" className="size-3.5 text-muted-foreground" /></span></Tip>}{rollup && <ChecksGlyph rollup={rollup} />}<ReviewDecisionGlyph decision={request.review} /></>}
+				signals={<>{linked && <Tip label="Linked to this chat"><span className="inline-flex shrink-0"><LinkIcon role="img" aria-label="Linked" className="size-3.5 text-muted-foreground" /></span></Tip>}{rollup && <RowChecksPopover rollup={rollup} projectId={projectId} number={request.number} />}<ReviewDecisionGlyph decision={request.review} /></>}
 				meta={<>{request.stack && <StackPopover projectId={projectId} number={request.number} membership={request.stack} />}<RowAuthor login={request.author} avatarUrl={request.authorAvatarUrl} /><Branches head={request.head} base={request.base} /></>}
 				updatedAt={request.updatedAt} />
 		</button>
@@ -213,7 +214,7 @@ export function PullRequestListSurface({ projectId, taskId, onOpen }: { projectI
 			</div>
 			: <>
 				<ScrollArea className="min-h-0 flex-1"><div className="flex flex-col p-1.5" aria-label="Linked pull requests">
-					{lines.map(line => { const link = line.link; return <LinkRow key={`${link.repository}#${link.number}`} line={line} openable={sameRepository(link)}
+					{lines.map(line => { const link = line.link; return <LinkRow key={`${link.repository}#${link.number}`} projectId={projectId} line={line} openable={sameRepository(link)}
 						onOpen={() => openRequest({ number: link.number, title: link.snapshot?.title ?? `#${link.number}`, state: link.snapshot?.state === "merged" ? "MERGED" : link.snapshot?.state === "closed" ? "CLOSED" : "OPEN", draft: link.snapshot?.draft ?? false })}
 						onExternal={() => external(link.url)} onCopy={() => copy(link.url)}
 						onUnlink={() => void run({ type: "unlink-pull-request", id: taskId, repository: link.repository, number: link.number }).then(failure => failure && setError(failure))}
