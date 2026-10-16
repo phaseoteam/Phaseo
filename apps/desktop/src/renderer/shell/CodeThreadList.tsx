@@ -16,6 +16,7 @@ import { cn } from "../lib/utils";
 import { codeSections, createReturnTracker, workingSectionKey } from "./codeThreads";
 import { BulkMenuItems, CustomSnoozeDialog, DeleteChatDialog, RenameInput, SnoozeItems, ThreadMenuItems, useThreadActions } from "./threadActions";
 import { chatDragType } from "../../shared/mentions";
+import { PullRequestBadge } from "../views/pullRequests/PullRequestBadge";
 
 /** A Code chat being dragged within the sidebar. */
 const codeRowType = "application/x-phaseo-code-chat";
@@ -86,6 +87,7 @@ function CardRow({ task, now, scope, onScope, hint, controls }: { task: TaskOver
 			{renaming ? <RenameInput task={task} onDone={() => setRenaming(false)} /> : <div className={cn("truncate text-[13px]", quiet ? "text-sidebar-foreground/80" : "font-medium text-sidebar-foreground")}>{task.title}</div>}
 			<div className="flex h-4 items-center gap-1.5 text-[11px] text-muted-foreground/70">
 				{project?.worktree && <span className="flex min-w-0 items-center gap-1 truncate font-mono"><GitBranch className="size-3 shrink-0" />{project.worktree.branch}</span>}
+				<PullRequestBadge taskId={task.id} projectId={task.projectId} links={task.pullRequests} />
 				<TagDots tags={task.tags} />
 				<span className="ml-auto shrink-0"><ModelStack models={[task]} size="sm" ringClassName="ring-transparent" /></span>
 			</div>
