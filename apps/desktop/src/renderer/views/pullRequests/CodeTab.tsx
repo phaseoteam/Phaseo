@@ -208,7 +208,7 @@ export function CodeTab({ view, projectId, pending, onAction, onOpen, handoff, c
 			<MetaLine className="min-w-0 flex-1">
 				<span className="shrink-0 tabular-nums">{total} {total === 1 ? "file" : "files"}{scoped && hasNext ? "+" : ""}</span>
 				{!scoped && files.length > 0 && <span className="flex min-w-0 items-center gap-1 tabular-nums" data-viewed-count="">
-					<span className="shrink-0">{viewedCount} / {total}</span><span className="truncate">{viewed.local ? "viewed here" : "viewed"}</span>
+					<span className="shrink-0">{viewedCount} / {total}</span>{" "}<span className="truncate">{viewed.local ? "viewed here" : "viewed"}</span>
 					{viewed.local && <WarningIcon icon="info" label="These ticks are kept here, not on GitHub">GitHub's record of the files you have viewed could not be read, so these ticks are kept on this computer. github.com will not show them.</WarningIcon>}
 					{viewed.error !== null && !viewed.local && <WarningIcon label="Your ticks could not be read">The boxes below are whatever was last read. {viewed.error}</WarningIcon>}
 					{viewed.truncated && <WarningIcon label="This count covers only part of the change">This change has more files than GitHub reports ticks for in one read, so the count is short and some boxes start empty.</WarningIcon>}
