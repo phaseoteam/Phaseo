@@ -343,50 +343,110 @@
                 ]
               },
               {
-                "group": "Inference",
-                "icon": "cpu",
+                "group": "Text",
+                "icon": "message-square-text",
                 "pages": [
                   "v1/api-reference/endpoint/responses",
                   "v1/api-reference/endpoint/chat-completions",
-                  "v1/api-reference/endpoint/anthropic-messages",
-                  "v1/api-reference/endpoint/embeddings",
-                  "v1/api-reference/endpoint/rerank",
+                  "v1/api-reference/endpoint/anthropic-messages"
+                ]
+              },
+              {
+                "group": "Image",
+                "icon": "image",
+                "pages": [
                   "v1/api-reference/endpoint/images-generations",
-                  "v1/api-reference/endpoint/images-edits",
-                  "v1/api-reference/endpoint/audio-speech",
-                  "v1/api-reference/endpoint/audio-transcriptions",
-                  "v1/api-reference/endpoint/audio-translations",
-                  "v1/api-reference/endpoint/music-generate",
-                  "v1/api-reference/endpoint/music-status",
-                  "v1/api-reference/endpoint/moderations",
-                  "v1/api-reference/endpoint/decisions",
+                  "v1/api-reference/endpoint/images-edits"
+                ]
+              },
+              {
+                "group": "Video",
+                "icon": "video",
+                "tag": "Beta",
+                "pages": [
+                  "v1/api-reference/endpoint/video-list",
+                  "v1/api-reference/endpoint/video-create",
+                  "v1/api-reference/endpoint/video-models",
+                  "v1/api-reference/endpoint/video-status",
+                  "v1/api-reference/endpoint/video-delete",
+                  "v1/api-reference/endpoint/video-cancel",
+                  "v1/api-reference/endpoint/video-content",
+                  "v1/api-reference/endpoint/video-download-url"
+                ]
+              },
+              {
+                "group": "Embeddings",
+                "icon": "braces",
+                "pages": [
+                  "v1/api-reference/endpoint/embeddings"
+                ]
+              },
+              {
+                "group": "Decisions",
+                "icon": "signpost",
+                "pages": [
+                  "v1/api-reference/endpoint/decisions"
+                ]
+              },
+              {
+                "group": "Moderations",
+                "icon": "shield-check",
+                "pages": [
+                  "v1/api-reference/endpoint/moderations"
+                ]
+              },
+              {
+                "group": "Rerank",
+                "icon": "arrow-down-wide-narrow",
+                "pages": [
+                  "v1/api-reference/endpoint/rerank"
+                ]
+              },
+              {
+                "group": "Documents",
+                "icon": "file-text",
+                "pages": [
                   "v1/api-reference/endpoint/ocr",
                   "v1/api-reference/endpoint/parse"
                 ]
               },
               {
-                "group": "Async Jobs & Files",
+                "group": "Speech",
+                "icon": "audio-lines",
+                "pages": [
+                  "v1/api-reference/endpoint/audio-speech"
+                ]
+              },
+              {
+                "group": "Transcription",
+                "icon": "captions",
+                "pages": [
+                  "v1/api-reference/endpoint/audio-transcriptions"
+                ]
+              },
+              {
+                "group": "Translation",
+                "icon": "languages",
+                "pages": [
+                  "v1/api-reference/endpoint/audio-translations"
+                ]
+              },
+              {
+                "group": "Music",
+                "icon": "music",
+                "pages": [
+                  "v1/api-reference/endpoint/music-generate",
+                  "v1/api-reference/endpoint/music-status"
+                ]
+              },
+              {
+                "group": "Jobs, Files & Webhooks",
                 "icon": "layers",
                 "pages": [
                   {
-                    "group": "Video",
-                    "tag": "Beta",
-                    "expanded": false,
-                    "pages": [
-                      "v1/api-reference/endpoint/video-list",
-                      "v1/api-reference/endpoint/video-create",
-                      "v1/api-reference/endpoint/video-models",
-                      "v1/api-reference/endpoint/video-status",
-                      "v1/api-reference/endpoint/video-delete",
-                      "v1/api-reference/endpoint/video-cancel",
-                      "v1/api-reference/endpoint/video-content",
-                      "v1/api-reference/endpoint/video-download-url"
-                    ]
-                  },
-                  {
                     "group": "Batch",
                     "tag": "Beta",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "v1/api-reference/endpoint/batches-list",
                       "v1/api-reference/endpoint/batches-create",
@@ -404,7 +464,7 @@
                   },
                   {
                     "group": "Files",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "v1/api-reference/endpoint/files",
                       "v1/api-reference/endpoint/files-list",
@@ -415,7 +475,7 @@
                   {
                     "group": "Webhook Endpoints",
                     "tag": "Beta",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "v1/api-reference/endpoint/webhook-endpoints-list",
                       "v1/api-reference/endpoint/webhook-endpoints-create",
@@ -524,17 +584,29 @@
                 "group": "Usage & Monitoring",
                 "icon": "chart-no-axes-combined",
                 "pages": [
-                  "v1/api-reference/endpoint/generation",
-                  "v1/api-reference/endpoint/activity",
-                  "v1/api-reference/endpoint/audit-events",
-                  "v1/api-reference/endpoint/analytics-get",
-                  "v1/api-reference/endpoint/analytics-export",
-                  "v1/api-reference/endpoint/logs-list",
-                  "v1/api-reference/endpoint/logs-get",
-                  "v1/api-reference/endpoint/health",
+                  {
+                    "group": "Usage & Analytics",
+                    "expanded": true,
+                    "pages": [
+                      "v1/api-reference/endpoint/generation",
+                      "v1/api-reference/endpoint/activity",
+                      "v1/api-reference/endpoint/audit-events",
+                      "v1/api-reference/endpoint/analytics-get",
+                      "v1/api-reference/endpoint/analytics-export",
+                      "v1/api-reference/endpoint/health"
+                    ]
+                  },
+                  {
+                    "group": "Logs",
+                    "expanded": true,
+                    "pages": [
+                      "v1/api-reference/endpoint/logs-list",
+                      "v1/api-reference/endpoint/logs-get"
+                    ]
+                  },
                   {
                     "group": "Observability",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "v1/api-reference/endpoint/observability-logging-policy-get",
                       "v1/api-reference/endpoint/observability-logging-policy-update",
@@ -567,7 +639,6 @@
                 "group": "Workspace Management",
                 "icon": "users",
                 "pages": [
-                  "v1/api-reference/endpoint/credits",
                   {
                     "group": "Workspaces",
                     "expanded": false,
@@ -615,9 +686,10 @@
                     ]
                   },
                   {
-                    "group": "Budgets",
+                    "group": "Credits & Budgets",
                     "expanded": false,
                     "pages": [
+                      "v1/api-reference/endpoint/credits",
                       "v1/api-reference/endpoint/budgets-list",
                       "v1/api-reference/endpoint/budgets-create",
                       "v1/api-reference/endpoint/budgets-get",
@@ -639,7 +711,7 @@
                     ]
                   },
                   {
-                    "group": "Identity & Provisioning",
+                    "group": "SSO & SCIM",
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
@@ -649,7 +721,14 @@
                       "v1/api-reference/endpoint/identity-scim-update",
                       "v1/api-reference/endpoint/identity-scim-token-create",
                       "v1/api-reference/endpoint/identity-scim-token-revoke",
-                      "v1/api-reference/endpoint/identity-scim-audit-list",
+                      "v1/api-reference/endpoint/identity-scim-audit-list"
+                    ]
+                  },
+                  {
+                    "group": "Directory & Departments",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
                       "v1/api-reference/endpoint/identity-directory-get",
                       "v1/api-reference/endpoint/identity-directory-member-update",
                       "v1/api-reference/endpoint/identity-departments-list",
@@ -1860,50 +1939,110 @@
                 ]
               },
               {
-                "group": "Inferencia",
-                "icon": "cpu",
+                "group": "Texto",
+                "icon": "message-square-text",
                 "pages": [
                   "es/v1/api-reference/endpoint/responses",
                   "es/v1/api-reference/endpoint/chat-completions",
-                  "es/v1/api-reference/endpoint/anthropic-messages",
-                  "es/v1/api-reference/endpoint/embeddings",
-                  "es/v1/api-reference/endpoint/rerank",
+                  "es/v1/api-reference/endpoint/anthropic-messages"
+                ]
+              },
+              {
+                "group": "Imagen",
+                "icon": "image",
+                "pages": [
                   "es/v1/api-reference/endpoint/images-generations",
-                  "es/v1/api-reference/endpoint/images-edits",
-                  "es/v1/api-reference/endpoint/audio-speech",
-                  "es/v1/api-reference/endpoint/audio-transcriptions",
-                  "es/v1/api-reference/endpoint/audio-translations",
-                  "es/v1/api-reference/endpoint/music-generate",
-                  "es/v1/api-reference/endpoint/music-status",
-                  "es/v1/api-reference/endpoint/moderations",
-                  "es/v1/api-reference/endpoint/decisions",
+                  "es/v1/api-reference/endpoint/images-edits"
+                ]
+              },
+              {
+                "group": "Vídeo",
+                "icon": "video",
+                "tag": "Beta",
+                "pages": [
+                  "es/v1/api-reference/endpoint/video-list",
+                  "es/v1/api-reference/endpoint/video-create",
+                  "es/v1/api-reference/endpoint/video-models",
+                  "es/v1/api-reference/endpoint/video-status",
+                  "es/v1/api-reference/endpoint/video-delete",
+                  "es/v1/api-reference/endpoint/video-cancel",
+                  "es/v1/api-reference/endpoint/video-content",
+                  "es/v1/api-reference/endpoint/video-download-url"
+                ]
+              },
+              {
+                "group": "Embeddings",
+                "icon": "braces",
+                "pages": [
+                  "es/v1/api-reference/endpoint/embeddings"
+                ]
+              },
+              {
+                "group": "Decisiones",
+                "icon": "signpost",
+                "pages": [
+                  "es/v1/api-reference/endpoint/decisions"
+                ]
+              },
+              {
+                "group": "Moderación",
+                "icon": "shield-check",
+                "pages": [
+                  "es/v1/api-reference/endpoint/moderations"
+                ]
+              },
+              {
+                "group": "Reordenamiento",
+                "icon": "arrow-down-wide-narrow",
+                "pages": [
+                  "es/v1/api-reference/endpoint/rerank"
+                ]
+              },
+              {
+                "group": "Documentos",
+                "icon": "file-text",
+                "pages": [
                   "es/v1/api-reference/endpoint/ocr",
                   "es/v1/api-reference/endpoint/parse"
                 ]
               },
               {
-                "group": "Trabajos asíncronos y archivos",
+                "group": "Voz",
+                "icon": "audio-lines",
+                "pages": [
+                  "es/v1/api-reference/endpoint/audio-speech"
+                ]
+              },
+              {
+                "group": "Transcripción",
+                "icon": "captions",
+                "pages": [
+                  "es/v1/api-reference/endpoint/audio-transcriptions"
+                ]
+              },
+              {
+                "group": "Traducción",
+                "icon": "languages",
+                "pages": [
+                  "es/v1/api-reference/endpoint/audio-translations"
+                ]
+              },
+              {
+                "group": "Música",
+                "icon": "music",
+                "pages": [
+                  "es/v1/api-reference/endpoint/music-generate",
+                  "es/v1/api-reference/endpoint/music-status"
+                ]
+              },
+              {
+                "group": "Trabajos, archivos y webhooks",
                 "icon": "layers",
                 "pages": [
                   {
-                    "group": "Vídeo",
-                    "tag": "Beta",
-                    "expanded": false,
-                    "pages": [
-                      "es/v1/api-reference/endpoint/video-list",
-                      "es/v1/api-reference/endpoint/video-create",
-                      "es/v1/api-reference/endpoint/video-models",
-                      "es/v1/api-reference/endpoint/video-status",
-                      "es/v1/api-reference/endpoint/video-delete",
-                      "es/v1/api-reference/endpoint/video-cancel",
-                      "es/v1/api-reference/endpoint/video-content",
-                      "es/v1/api-reference/endpoint/video-download-url"
-                    ]
-                  },
-                  {
                     "group": "Por lotes",
                     "tag": "Beta",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "es/v1/api-reference/endpoint/batches-list",
                       "es/v1/api-reference/endpoint/batches-create",
@@ -1921,7 +2060,7 @@
                   },
                   {
                     "group": "Archivos",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "es/v1/api-reference/endpoint/files",
                       "es/v1/api-reference/endpoint/files-list",
@@ -1932,7 +2071,7 @@
                   {
                     "group": "Endpoints de webhook",
                     "tag": "Beta",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "es/v1/api-reference/endpoint/webhook-endpoints-list",
                       "es/v1/api-reference/endpoint/webhook-endpoints-create",
@@ -2041,17 +2180,29 @@
                 "group": "Uso y supervisión",
                 "icon": "chart-no-axes-combined",
                 "pages": [
-                  "es/v1/api-reference/endpoint/generation",
-                  "es/v1/api-reference/endpoint/activity",
-                  "es/v1/api-reference/endpoint/audit-events",
-                  "es/v1/api-reference/endpoint/analytics-get",
-                  "es/v1/api-reference/endpoint/analytics-export",
-                  "es/v1/api-reference/endpoint/logs-list",
-                  "es/v1/api-reference/endpoint/logs-get",
-                  "es/v1/api-reference/endpoint/health",
+                  {
+                    "group": "Uso y analítica",
+                    "expanded": true,
+                    "pages": [
+                      "es/v1/api-reference/endpoint/generation",
+                      "es/v1/api-reference/endpoint/activity",
+                      "es/v1/api-reference/endpoint/audit-events",
+                      "es/v1/api-reference/endpoint/analytics-get",
+                      "es/v1/api-reference/endpoint/analytics-export",
+                      "es/v1/api-reference/endpoint/health"
+                    ]
+                  },
+                  {
+                    "group": "Registros",
+                    "expanded": true,
+                    "pages": [
+                      "es/v1/api-reference/endpoint/logs-list",
+                      "es/v1/api-reference/endpoint/logs-get"
+                    ]
+                  },
                   {
                     "group": "Observabilidad",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "es/v1/api-reference/endpoint/observability-logging-policy-get",
                       "es/v1/api-reference/endpoint/observability-logging-policy-update",
@@ -2084,7 +2235,6 @@
                 "group": "Gestión de espacios de trabajo",
                 "icon": "users",
                 "pages": [
-                  "es/v1/api-reference/endpoint/credits",
                   {
                     "group": "Espacios de trabajo",
                     "expanded": false,
@@ -2132,9 +2282,10 @@
                     ]
                   },
                   {
-                    "group": "Presupuestos",
+                    "group": "Créditos y presupuestos",
                     "expanded": false,
                     "pages": [
+                      "es/v1/api-reference/endpoint/credits",
                       "es/v1/api-reference/endpoint/budgets-list",
                       "es/v1/api-reference/endpoint/budgets-create",
                       "es/v1/api-reference/endpoint/budgets-get",
@@ -2156,7 +2307,7 @@
                     ]
                   },
                   {
-                    "group": "Identidad y aprovisionamiento",
+                    "group": "SSO y SCIM",
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
@@ -2166,7 +2317,14 @@
                       "es/v1/api-reference/endpoint/identity-scim-update",
                       "es/v1/api-reference/endpoint/identity-scim-token-create",
                       "es/v1/api-reference/endpoint/identity-scim-token-revoke",
-                      "es/v1/api-reference/endpoint/identity-scim-audit-list",
+                      "es/v1/api-reference/endpoint/identity-scim-audit-list"
+                    ]
+                  },
+                  {
+                    "group": "Directorio y departamentos",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
                       "es/v1/api-reference/endpoint/identity-directory-get",
                       "es/v1/api-reference/endpoint/identity-directory-member-update",
                       "es/v1/api-reference/endpoint/identity-departments-list",
@@ -3411,50 +3569,110 @@
                 ]
               },
               {
-                "group": "Inférence",
-                "icon": "cpu",
+                "group": "Texte",
+                "icon": "message-square-text",
                 "pages": [
                   "fr/v1/api-reference/endpoint/responses",
                   "fr/v1/api-reference/endpoint/chat-completions",
-                  "fr/v1/api-reference/endpoint/anthropic-messages",
-                  "fr/v1/api-reference/endpoint/embeddings",
-                  "fr/v1/api-reference/endpoint/rerank",
+                  "fr/v1/api-reference/endpoint/anthropic-messages"
+                ]
+              },
+              {
+                "group": "Image",
+                "icon": "image",
+                "pages": [
                   "fr/v1/api-reference/endpoint/images-generations",
-                  "fr/v1/api-reference/endpoint/images-edits",
-                  "fr/v1/api-reference/endpoint/audio-speech",
-                  "fr/v1/api-reference/endpoint/audio-transcriptions",
-                  "fr/v1/api-reference/endpoint/audio-translations",
-                  "fr/v1/api-reference/endpoint/music-generate",
-                  "fr/v1/api-reference/endpoint/music-status",
-                  "fr/v1/api-reference/endpoint/moderations",
-                  "fr/v1/api-reference/endpoint/decisions",
+                  "fr/v1/api-reference/endpoint/images-edits"
+                ]
+              },
+              {
+                "group": "Vidéo",
+                "icon": "video",
+                "tag": "Beta",
+                "pages": [
+                  "fr/v1/api-reference/endpoint/video-list",
+                  "fr/v1/api-reference/endpoint/video-create",
+                  "fr/v1/api-reference/endpoint/video-models",
+                  "fr/v1/api-reference/endpoint/video-status",
+                  "fr/v1/api-reference/endpoint/video-delete",
+                  "fr/v1/api-reference/endpoint/video-cancel",
+                  "fr/v1/api-reference/endpoint/video-content",
+                  "fr/v1/api-reference/endpoint/video-download-url"
+                ]
+              },
+              {
+                "group": "Embeddings",
+                "icon": "braces",
+                "pages": [
+                  "fr/v1/api-reference/endpoint/embeddings"
+                ]
+              },
+              {
+                "group": "Décisions",
+                "icon": "signpost",
+                "pages": [
+                  "fr/v1/api-reference/endpoint/decisions"
+                ]
+              },
+              {
+                "group": "Modération",
+                "icon": "shield-check",
+                "pages": [
+                  "fr/v1/api-reference/endpoint/moderations"
+                ]
+              },
+              {
+                "group": "Réordonnancement",
+                "icon": "arrow-down-wide-narrow",
+                "pages": [
+                  "fr/v1/api-reference/endpoint/rerank"
+                ]
+              },
+              {
+                "group": "Documents",
+                "icon": "file-text",
+                "pages": [
                   "fr/v1/api-reference/endpoint/ocr",
                   "fr/v1/api-reference/endpoint/parse"
                 ]
               },
               {
-                "group": "Tâches asynchrones et fichiers",
+                "group": "Parole",
+                "icon": "audio-lines",
+                "pages": [
+                  "fr/v1/api-reference/endpoint/audio-speech"
+                ]
+              },
+              {
+                "group": "Transcription",
+                "icon": "captions",
+                "pages": [
+                  "fr/v1/api-reference/endpoint/audio-transcriptions"
+                ]
+              },
+              {
+                "group": "Traduction",
+                "icon": "languages",
+                "pages": [
+                  "fr/v1/api-reference/endpoint/audio-translations"
+                ]
+              },
+              {
+                "group": "Musique",
+                "icon": "music",
+                "pages": [
+                  "fr/v1/api-reference/endpoint/music-generate",
+                  "fr/v1/api-reference/endpoint/music-status"
+                ]
+              },
+              {
+                "group": "Tâches, fichiers et webhooks",
                 "icon": "layers",
                 "pages": [
                   {
-                    "group": "Vidéo",
-                    "tag": "Beta",
-                    "expanded": false,
-                    "pages": [
-                      "fr/v1/api-reference/endpoint/video-list",
-                      "fr/v1/api-reference/endpoint/video-create",
-                      "fr/v1/api-reference/endpoint/video-models",
-                      "fr/v1/api-reference/endpoint/video-status",
-                      "fr/v1/api-reference/endpoint/video-delete",
-                      "fr/v1/api-reference/endpoint/video-cancel",
-                      "fr/v1/api-reference/endpoint/video-content",
-                      "fr/v1/api-reference/endpoint/video-download-url"
-                    ]
-                  },
-                  {
                     "group": "Traitement par lots",
                     "tag": "Beta",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "fr/v1/api-reference/endpoint/batches-list",
                       "fr/v1/api-reference/endpoint/batches-create",
@@ -3472,7 +3690,7 @@
                   },
                   {
                     "group": "Fichiers",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "fr/v1/api-reference/endpoint/files",
                       "fr/v1/api-reference/endpoint/files-list",
@@ -3483,7 +3701,7 @@
                   {
                     "group": "Endpoints de webhook",
                     "tag": "Beta",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "fr/v1/api-reference/endpoint/webhook-endpoints-list",
                       "fr/v1/api-reference/endpoint/webhook-endpoints-create",
@@ -3592,17 +3810,29 @@
                 "group": "Utilisation et surveillance",
                 "icon": "chart-no-axes-combined",
                 "pages": [
-                  "fr/v1/api-reference/endpoint/generation",
-                  "fr/v1/api-reference/endpoint/activity",
-                  "fr/v1/api-reference/endpoint/audit-events",
-                  "fr/v1/api-reference/endpoint/analytics-get",
-                  "fr/v1/api-reference/endpoint/analytics-export",
-                  "fr/v1/api-reference/endpoint/logs-list",
-                  "fr/v1/api-reference/endpoint/logs-get",
-                  "fr/v1/api-reference/endpoint/health",
+                  {
+                    "group": "Utilisation et analytique",
+                    "expanded": true,
+                    "pages": [
+                      "fr/v1/api-reference/endpoint/generation",
+                      "fr/v1/api-reference/endpoint/activity",
+                      "fr/v1/api-reference/endpoint/audit-events",
+                      "fr/v1/api-reference/endpoint/analytics-get",
+                      "fr/v1/api-reference/endpoint/analytics-export",
+                      "fr/v1/api-reference/endpoint/health"
+                    ]
+                  },
+                  {
+                    "group": "Journaux",
+                    "expanded": true,
+                    "pages": [
+                      "fr/v1/api-reference/endpoint/logs-list",
+                      "fr/v1/api-reference/endpoint/logs-get"
+                    ]
+                  },
                   {
                     "group": "Observabilité",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "fr/v1/api-reference/endpoint/observability-logging-policy-get",
                       "fr/v1/api-reference/endpoint/observability-logging-policy-update",
@@ -3635,7 +3865,6 @@
                 "group": "Gestion des espaces de travail",
                 "icon": "users",
                 "pages": [
-                  "fr/v1/api-reference/endpoint/credits",
                   {
                     "group": "Espaces de travail",
                     "expanded": false,
@@ -3683,9 +3912,10 @@
                     ]
                   },
                   {
-                    "group": "Budgets",
+                    "group": "Crédits et budgets",
                     "expanded": false,
                     "pages": [
+                      "fr/v1/api-reference/endpoint/credits",
                       "fr/v1/api-reference/endpoint/budgets-list",
                       "fr/v1/api-reference/endpoint/budgets-create",
                       "fr/v1/api-reference/endpoint/budgets-get",
@@ -3707,7 +3937,7 @@
                     ]
                   },
                   {
-                    "group": "Identité et provisionnement",
+                    "group": "SSO et SCIM",
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
@@ -3717,7 +3947,14 @@
                       "fr/v1/api-reference/endpoint/identity-scim-update",
                       "fr/v1/api-reference/endpoint/identity-scim-token-create",
                       "fr/v1/api-reference/endpoint/identity-scim-token-revoke",
-                      "fr/v1/api-reference/endpoint/identity-scim-audit-list",
+                      "fr/v1/api-reference/endpoint/identity-scim-audit-list"
+                    ]
+                  },
+                  {
+                    "group": "Annuaire et départements",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
                       "fr/v1/api-reference/endpoint/identity-directory-get",
                       "fr/v1/api-reference/endpoint/identity-directory-member-update",
                       "fr/v1/api-reference/endpoint/identity-departments-list",
@@ -4962,50 +5199,110 @@
                 ]
               },
               {
-                "group": "Inferenz",
-                "icon": "cpu",
+                "group": "Text",
+                "icon": "message-square-text",
                 "pages": [
                   "de/v1/api-reference/endpoint/responses",
                   "de/v1/api-reference/endpoint/chat-completions",
-                  "de/v1/api-reference/endpoint/anthropic-messages",
-                  "de/v1/api-reference/endpoint/embeddings",
-                  "de/v1/api-reference/endpoint/rerank",
+                  "de/v1/api-reference/endpoint/anthropic-messages"
+                ]
+              },
+              {
+                "group": "Bild",
+                "icon": "image",
+                "pages": [
                   "de/v1/api-reference/endpoint/images-generations",
-                  "de/v1/api-reference/endpoint/images-edits",
-                  "de/v1/api-reference/endpoint/audio-speech",
-                  "de/v1/api-reference/endpoint/audio-transcriptions",
-                  "de/v1/api-reference/endpoint/audio-translations",
-                  "de/v1/api-reference/endpoint/music-generate",
-                  "de/v1/api-reference/endpoint/music-status",
-                  "de/v1/api-reference/endpoint/moderations",
-                  "de/v1/api-reference/endpoint/decisions",
+                  "de/v1/api-reference/endpoint/images-edits"
+                ]
+              },
+              {
+                "group": "Video",
+                "icon": "video",
+                "tag": "Beta",
+                "pages": [
+                  "de/v1/api-reference/endpoint/video-list",
+                  "de/v1/api-reference/endpoint/video-create",
+                  "de/v1/api-reference/endpoint/video-models",
+                  "de/v1/api-reference/endpoint/video-status",
+                  "de/v1/api-reference/endpoint/video-delete",
+                  "de/v1/api-reference/endpoint/video-cancel",
+                  "de/v1/api-reference/endpoint/video-content",
+                  "de/v1/api-reference/endpoint/video-download-url"
+                ]
+              },
+              {
+                "group": "Embeddings",
+                "icon": "braces",
+                "pages": [
+                  "de/v1/api-reference/endpoint/embeddings"
+                ]
+              },
+              {
+                "group": "Entscheidungen",
+                "icon": "signpost",
+                "pages": [
+                  "de/v1/api-reference/endpoint/decisions"
+                ]
+              },
+              {
+                "group": "Moderation",
+                "icon": "shield-check",
+                "pages": [
+                  "de/v1/api-reference/endpoint/moderations"
+                ]
+              },
+              {
+                "group": "Neusortierung",
+                "icon": "arrow-down-wide-narrow",
+                "pages": [
+                  "de/v1/api-reference/endpoint/rerank"
+                ]
+              },
+              {
+                "group": "Dokumente",
+                "icon": "file-text",
+                "pages": [
                   "de/v1/api-reference/endpoint/ocr",
                   "de/v1/api-reference/endpoint/parse"
                 ]
               },
               {
-                "group": "Asynchrone Aufträge und Dateien",
+                "group": "Sprache",
+                "icon": "audio-lines",
+                "pages": [
+                  "de/v1/api-reference/endpoint/audio-speech"
+                ]
+              },
+              {
+                "group": "Transkription",
+                "icon": "captions",
+                "pages": [
+                  "de/v1/api-reference/endpoint/audio-transcriptions"
+                ]
+              },
+              {
+                "group": "Übersetzung",
+                "icon": "languages",
+                "pages": [
+                  "de/v1/api-reference/endpoint/audio-translations"
+                ]
+              },
+              {
+                "group": "Musik",
+                "icon": "music",
+                "pages": [
+                  "de/v1/api-reference/endpoint/music-generate",
+                  "de/v1/api-reference/endpoint/music-status"
+                ]
+              },
+              {
+                "group": "Aufträge, Dateien und Webhooks",
                 "icon": "layers",
                 "pages": [
                   {
-                    "group": "Video",
-                    "tag": "Beta",
-                    "expanded": false,
-                    "pages": [
-                      "de/v1/api-reference/endpoint/video-list",
-                      "de/v1/api-reference/endpoint/video-create",
-                      "de/v1/api-reference/endpoint/video-models",
-                      "de/v1/api-reference/endpoint/video-status",
-                      "de/v1/api-reference/endpoint/video-delete",
-                      "de/v1/api-reference/endpoint/video-cancel",
-                      "de/v1/api-reference/endpoint/video-content",
-                      "de/v1/api-reference/endpoint/video-download-url"
-                    ]
-                  },
-                  {
                     "group": "Stapelverarbeitung",
                     "tag": "Beta",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "de/v1/api-reference/endpoint/batches-list",
                       "de/v1/api-reference/endpoint/batches-create",
@@ -5023,7 +5320,7 @@
                   },
                   {
                     "group": "Dateien",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "de/v1/api-reference/endpoint/files",
                       "de/v1/api-reference/endpoint/files-list",
@@ -5034,7 +5331,7 @@
                   {
                     "group": "Webhook-Endpunkte",
                     "tag": "Beta",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "de/v1/api-reference/endpoint/webhook-endpoints-list",
                       "de/v1/api-reference/endpoint/webhook-endpoints-create",
@@ -5143,17 +5440,29 @@
                 "group": "Nutzung und Überwachung",
                 "icon": "chart-no-axes-combined",
                 "pages": [
-                  "de/v1/api-reference/endpoint/generation",
-                  "de/v1/api-reference/endpoint/activity",
-                  "de/v1/api-reference/endpoint/audit-events",
-                  "de/v1/api-reference/endpoint/analytics-get",
-                  "de/v1/api-reference/endpoint/analytics-export",
-                  "de/v1/api-reference/endpoint/logs-list",
-                  "de/v1/api-reference/endpoint/logs-get",
-                  "de/v1/api-reference/endpoint/health",
+                  {
+                    "group": "Nutzung und Analysen",
+                    "expanded": true,
+                    "pages": [
+                      "de/v1/api-reference/endpoint/generation",
+                      "de/v1/api-reference/endpoint/activity",
+                      "de/v1/api-reference/endpoint/audit-events",
+                      "de/v1/api-reference/endpoint/analytics-get",
+                      "de/v1/api-reference/endpoint/analytics-export",
+                      "de/v1/api-reference/endpoint/health"
+                    ]
+                  },
+                  {
+                    "group": "Protokolle",
+                    "expanded": true,
+                    "pages": [
+                      "de/v1/api-reference/endpoint/logs-list",
+                      "de/v1/api-reference/endpoint/logs-get"
+                    ]
+                  },
                   {
                     "group": "Beobachtbarkeit",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "de/v1/api-reference/endpoint/observability-logging-policy-get",
                       "de/v1/api-reference/endpoint/observability-logging-policy-update",
@@ -5186,7 +5495,6 @@
                 "group": "Arbeitsbereichsverwaltung",
                 "icon": "users",
                 "pages": [
-                  "de/v1/api-reference/endpoint/credits",
                   {
                     "group": "Arbeitsbereiche",
                     "expanded": false,
@@ -5234,9 +5542,10 @@
                     ]
                   },
                   {
-                    "group": "Budgets",
+                    "group": "Guthaben und Budgets",
                     "expanded": false,
                     "pages": [
+                      "de/v1/api-reference/endpoint/credits",
                       "de/v1/api-reference/endpoint/budgets-list",
                       "de/v1/api-reference/endpoint/budgets-create",
                       "de/v1/api-reference/endpoint/budgets-get",
@@ -5258,7 +5567,7 @@
                     ]
                   },
                   {
-                    "group": "Identität und Bereitstellung",
+                    "group": "SSO und SCIM",
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
@@ -5268,7 +5577,14 @@
                       "de/v1/api-reference/endpoint/identity-scim-update",
                       "de/v1/api-reference/endpoint/identity-scim-token-create",
                       "de/v1/api-reference/endpoint/identity-scim-token-revoke",
-                      "de/v1/api-reference/endpoint/identity-scim-audit-list",
+                      "de/v1/api-reference/endpoint/identity-scim-audit-list"
+                    ]
+                  },
+                  {
+                    "group": "Verzeichnis und Abteilungen",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
                       "de/v1/api-reference/endpoint/identity-directory-get",
                       "de/v1/api-reference/endpoint/identity-directory-member-update",
                       "de/v1/api-reference/endpoint/identity-departments-list",
@@ -6513,50 +6829,110 @@
                 ]
               },
               {
-                "group": "Inferência",
-                "icon": "cpu",
+                "group": "Texto",
+                "icon": "message-square-text",
                 "pages": [
                   "pt-BR/v1/api-reference/endpoint/responses",
                   "pt-BR/v1/api-reference/endpoint/chat-completions",
-                  "pt-BR/v1/api-reference/endpoint/anthropic-messages",
-                  "pt-BR/v1/api-reference/endpoint/embeddings",
-                  "pt-BR/v1/api-reference/endpoint/rerank",
+                  "pt-BR/v1/api-reference/endpoint/anthropic-messages"
+                ]
+              },
+              {
+                "group": "Imagem",
+                "icon": "image",
+                "pages": [
                   "pt-BR/v1/api-reference/endpoint/images-generations",
-                  "pt-BR/v1/api-reference/endpoint/images-edits",
-                  "pt-BR/v1/api-reference/endpoint/audio-speech",
-                  "pt-BR/v1/api-reference/endpoint/audio-transcriptions",
-                  "pt-BR/v1/api-reference/endpoint/audio-translations",
-                  "pt-BR/v1/api-reference/endpoint/music-generate",
-                  "pt-BR/v1/api-reference/endpoint/music-status",
-                  "pt-BR/v1/api-reference/endpoint/moderations",
-                  "pt-BR/v1/api-reference/endpoint/decisions",
+                  "pt-BR/v1/api-reference/endpoint/images-edits"
+                ]
+              },
+              {
+                "group": "Vídeo",
+                "icon": "video",
+                "tag": "Beta",
+                "pages": [
+                  "pt-BR/v1/api-reference/endpoint/video-list",
+                  "pt-BR/v1/api-reference/endpoint/video-create",
+                  "pt-BR/v1/api-reference/endpoint/video-models",
+                  "pt-BR/v1/api-reference/endpoint/video-status",
+                  "pt-BR/v1/api-reference/endpoint/video-delete",
+                  "pt-BR/v1/api-reference/endpoint/video-cancel",
+                  "pt-BR/v1/api-reference/endpoint/video-content",
+                  "pt-BR/v1/api-reference/endpoint/video-download-url"
+                ]
+              },
+              {
+                "group": "Embeddings",
+                "icon": "braces",
+                "pages": [
+                  "pt-BR/v1/api-reference/endpoint/embeddings"
+                ]
+              },
+              {
+                "group": "Decisões",
+                "icon": "signpost",
+                "pages": [
+                  "pt-BR/v1/api-reference/endpoint/decisions"
+                ]
+              },
+              {
+                "group": "Moderação",
+                "icon": "shield-check",
+                "pages": [
+                  "pt-BR/v1/api-reference/endpoint/moderations"
+                ]
+              },
+              {
+                "group": "Reclassificação",
+                "icon": "arrow-down-wide-narrow",
+                "pages": [
+                  "pt-BR/v1/api-reference/endpoint/rerank"
+                ]
+              },
+              {
+                "group": "Documentos",
+                "icon": "file-text",
+                "pages": [
                   "pt-BR/v1/api-reference/endpoint/ocr",
                   "pt-BR/v1/api-reference/endpoint/parse"
                 ]
               },
               {
-                "group": "Tarefas assíncronas e arquivos",
+                "group": "Fala",
+                "icon": "audio-lines",
+                "pages": [
+                  "pt-BR/v1/api-reference/endpoint/audio-speech"
+                ]
+              },
+              {
+                "group": "Transcrição",
+                "icon": "captions",
+                "pages": [
+                  "pt-BR/v1/api-reference/endpoint/audio-transcriptions"
+                ]
+              },
+              {
+                "group": "Tradução",
+                "icon": "languages",
+                "pages": [
+                  "pt-BR/v1/api-reference/endpoint/audio-translations"
+                ]
+              },
+              {
+                "group": "Música",
+                "icon": "music",
+                "pages": [
+                  "pt-BR/v1/api-reference/endpoint/music-generate",
+                  "pt-BR/v1/api-reference/endpoint/music-status"
+                ]
+              },
+              {
+                "group": "Tarefas, arquivos e webhooks",
                 "icon": "layers",
                 "pages": [
                   {
-                    "group": "Vídeo",
-                    "tag": "Beta",
-                    "expanded": false,
-                    "pages": [
-                      "pt-BR/v1/api-reference/endpoint/video-list",
-                      "pt-BR/v1/api-reference/endpoint/video-create",
-                      "pt-BR/v1/api-reference/endpoint/video-models",
-                      "pt-BR/v1/api-reference/endpoint/video-status",
-                      "pt-BR/v1/api-reference/endpoint/video-delete",
-                      "pt-BR/v1/api-reference/endpoint/video-cancel",
-                      "pt-BR/v1/api-reference/endpoint/video-content",
-                      "pt-BR/v1/api-reference/endpoint/video-download-url"
-                    ]
-                  },
-                  {
                     "group": "Em lote",
                     "tag": "Beta",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "pt-BR/v1/api-reference/endpoint/batches-list",
                       "pt-BR/v1/api-reference/endpoint/batches-create",
@@ -6574,7 +6950,7 @@
                   },
                   {
                     "group": "Arquivos",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "pt-BR/v1/api-reference/endpoint/files",
                       "pt-BR/v1/api-reference/endpoint/files-list",
@@ -6585,7 +6961,7 @@
                   {
                     "group": "Endpoints de webhook",
                     "tag": "Beta",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "pt-BR/v1/api-reference/endpoint/webhook-endpoints-list",
                       "pt-BR/v1/api-reference/endpoint/webhook-endpoints-create",
@@ -6694,17 +7070,29 @@
                 "group": "Uso e monitoramento",
                 "icon": "chart-no-axes-combined",
                 "pages": [
-                  "pt-BR/v1/api-reference/endpoint/generation",
-                  "pt-BR/v1/api-reference/endpoint/activity",
-                  "pt-BR/v1/api-reference/endpoint/audit-events",
-                  "pt-BR/v1/api-reference/endpoint/analytics-get",
-                  "pt-BR/v1/api-reference/endpoint/analytics-export",
-                  "pt-BR/v1/api-reference/endpoint/logs-list",
-                  "pt-BR/v1/api-reference/endpoint/logs-get",
-                  "pt-BR/v1/api-reference/endpoint/health",
+                  {
+                    "group": "Uso e análises",
+                    "expanded": true,
+                    "pages": [
+                      "pt-BR/v1/api-reference/endpoint/generation",
+                      "pt-BR/v1/api-reference/endpoint/activity",
+                      "pt-BR/v1/api-reference/endpoint/audit-events",
+                      "pt-BR/v1/api-reference/endpoint/analytics-get",
+                      "pt-BR/v1/api-reference/endpoint/analytics-export",
+                      "pt-BR/v1/api-reference/endpoint/health"
+                    ]
+                  },
+                  {
+                    "group": "Registros",
+                    "expanded": true,
+                    "pages": [
+                      "pt-BR/v1/api-reference/endpoint/logs-list",
+                      "pt-BR/v1/api-reference/endpoint/logs-get"
+                    ]
+                  },
                   {
                     "group": "Observabilidade",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "pt-BR/v1/api-reference/endpoint/observability-logging-policy-get",
                       "pt-BR/v1/api-reference/endpoint/observability-logging-policy-update",
@@ -6737,7 +7125,6 @@
                 "group": "Gerenciamento de espaços de trabalho",
                 "icon": "users",
                 "pages": [
-                  "pt-BR/v1/api-reference/endpoint/credits",
                   {
                     "group": "Espaços de trabalho",
                     "expanded": false,
@@ -6785,9 +7172,10 @@
                     ]
                   },
                   {
-                    "group": "Limites",
+                    "group": "Créditos e limites",
                     "expanded": false,
                     "pages": [
+                      "pt-BR/v1/api-reference/endpoint/credits",
                       "pt-BR/v1/api-reference/endpoint/budgets-list",
                       "pt-BR/v1/api-reference/endpoint/budgets-create",
                       "pt-BR/v1/api-reference/endpoint/budgets-get",
@@ -6809,7 +7197,7 @@
                     ]
                   },
                   {
-                    "group": "Identidade e provisionamento",
+                    "group": "SSO e SCIM",
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
@@ -6819,7 +7207,14 @@
                       "pt-BR/v1/api-reference/endpoint/identity-scim-update",
                       "pt-BR/v1/api-reference/endpoint/identity-scim-token-create",
                       "pt-BR/v1/api-reference/endpoint/identity-scim-token-revoke",
-                      "pt-BR/v1/api-reference/endpoint/identity-scim-audit-list",
+                      "pt-BR/v1/api-reference/endpoint/identity-scim-audit-list"
+                    ]
+                  },
+                  {
+                    "group": "Diretório e departamentos",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
                       "pt-BR/v1/api-reference/endpoint/identity-directory-get",
                       "pt-BR/v1/api-reference/endpoint/identity-directory-member-update",
                       "pt-BR/v1/api-reference/endpoint/identity-departments-list",
@@ -8064,50 +8459,110 @@
                 ]
               },
               {
-                "group": "推論",
-                "icon": "cpu",
+                "group": "テキスト",
+                "icon": "message-square-text",
                 "pages": [
                   "ja/v1/api-reference/endpoint/responses",
                   "ja/v1/api-reference/endpoint/chat-completions",
-                  "ja/v1/api-reference/endpoint/anthropic-messages",
-                  "ja/v1/api-reference/endpoint/embeddings",
-                  "ja/v1/api-reference/endpoint/rerank",
+                  "ja/v1/api-reference/endpoint/anthropic-messages"
+                ]
+              },
+              {
+                "group": "画像",
+                "icon": "image",
+                "pages": [
                   "ja/v1/api-reference/endpoint/images-generations",
-                  "ja/v1/api-reference/endpoint/images-edits",
-                  "ja/v1/api-reference/endpoint/audio-speech",
-                  "ja/v1/api-reference/endpoint/audio-transcriptions",
-                  "ja/v1/api-reference/endpoint/audio-translations",
-                  "ja/v1/api-reference/endpoint/music-generate",
-                  "ja/v1/api-reference/endpoint/music-status",
-                  "ja/v1/api-reference/endpoint/moderations",
-                  "ja/v1/api-reference/endpoint/decisions",
+                  "ja/v1/api-reference/endpoint/images-edits"
+                ]
+              },
+              {
+                "group": "動画",
+                "icon": "video",
+                "tag": "Beta",
+                "pages": [
+                  "ja/v1/api-reference/endpoint/video-list",
+                  "ja/v1/api-reference/endpoint/video-create",
+                  "ja/v1/api-reference/endpoint/video-models",
+                  "ja/v1/api-reference/endpoint/video-status",
+                  "ja/v1/api-reference/endpoint/video-delete",
+                  "ja/v1/api-reference/endpoint/video-cancel",
+                  "ja/v1/api-reference/endpoint/video-content",
+                  "ja/v1/api-reference/endpoint/video-download-url"
+                ]
+              },
+              {
+                "group": "埋め込み",
+                "icon": "braces",
+                "pages": [
+                  "ja/v1/api-reference/endpoint/embeddings"
+                ]
+              },
+              {
+                "group": "判断",
+                "icon": "signpost",
+                "pages": [
+                  "ja/v1/api-reference/endpoint/decisions"
+                ]
+              },
+              {
+                "group": "モデレーション",
+                "icon": "shield-check",
+                "pages": [
+                  "ja/v1/api-reference/endpoint/moderations"
+                ]
+              },
+              {
+                "group": "再ランキング",
+                "icon": "arrow-down-wide-narrow",
+                "pages": [
+                  "ja/v1/api-reference/endpoint/rerank"
+                ]
+              },
+              {
+                "group": "ドキュメント",
+                "icon": "file-text",
+                "pages": [
                   "ja/v1/api-reference/endpoint/ocr",
                   "ja/v1/api-reference/endpoint/parse"
                 ]
               },
               {
-                "group": "非同期ジョブとファイル",
+                "group": "音声",
+                "icon": "audio-lines",
+                "pages": [
+                  "ja/v1/api-reference/endpoint/audio-speech"
+                ]
+              },
+              {
+                "group": "文字起こし",
+                "icon": "captions",
+                "pages": [
+                  "ja/v1/api-reference/endpoint/audio-transcriptions"
+                ]
+              },
+              {
+                "group": "翻訳",
+                "icon": "languages",
+                "pages": [
+                  "ja/v1/api-reference/endpoint/audio-translations"
+                ]
+              },
+              {
+                "group": "音楽",
+                "icon": "music",
+                "pages": [
+                  "ja/v1/api-reference/endpoint/music-generate",
+                  "ja/v1/api-reference/endpoint/music-status"
+                ]
+              },
+              {
+                "group": "ジョブ、ファイル、Webhook",
                 "icon": "layers",
                 "pages": [
                   {
-                    "group": "動画",
-                    "tag": "Beta",
-                    "expanded": false,
-                    "pages": [
-                      "ja/v1/api-reference/endpoint/video-list",
-                      "ja/v1/api-reference/endpoint/video-create",
-                      "ja/v1/api-reference/endpoint/video-models",
-                      "ja/v1/api-reference/endpoint/video-status",
-                      "ja/v1/api-reference/endpoint/video-delete",
-                      "ja/v1/api-reference/endpoint/video-cancel",
-                      "ja/v1/api-reference/endpoint/video-content",
-                      "ja/v1/api-reference/endpoint/video-download-url"
-                    ]
-                  },
-                  {
                     "group": "バッチ",
                     "tag": "Beta",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "ja/v1/api-reference/endpoint/batches-list",
                       "ja/v1/api-reference/endpoint/batches-create",
@@ -8125,7 +8580,7 @@
                   },
                   {
                     "group": "ファイル",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "ja/v1/api-reference/endpoint/files",
                       "ja/v1/api-reference/endpoint/files-list",
@@ -8136,7 +8591,7 @@
                   {
                     "group": "Webhook エンドポイント",
                     "tag": "Beta",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "ja/v1/api-reference/endpoint/webhook-endpoints-list",
                       "ja/v1/api-reference/endpoint/webhook-endpoints-create",
@@ -8245,17 +8700,29 @@
                 "group": "使用状況と監視",
                 "icon": "chart-no-axes-combined",
                 "pages": [
-                  "ja/v1/api-reference/endpoint/generation",
-                  "ja/v1/api-reference/endpoint/activity",
-                  "ja/v1/api-reference/endpoint/audit-events",
-                  "ja/v1/api-reference/endpoint/analytics-get",
-                  "ja/v1/api-reference/endpoint/analytics-export",
-                  "ja/v1/api-reference/endpoint/logs-list",
-                  "ja/v1/api-reference/endpoint/logs-get",
-                  "ja/v1/api-reference/endpoint/health",
+                  {
+                    "group": "使用状況と分析",
+                    "expanded": true,
+                    "pages": [
+                      "ja/v1/api-reference/endpoint/generation",
+                      "ja/v1/api-reference/endpoint/activity",
+                      "ja/v1/api-reference/endpoint/audit-events",
+                      "ja/v1/api-reference/endpoint/analytics-get",
+                      "ja/v1/api-reference/endpoint/analytics-export",
+                      "ja/v1/api-reference/endpoint/health"
+                    ]
+                  },
+                  {
+                    "group": "ログ",
+                    "expanded": true,
+                    "pages": [
+                      "ja/v1/api-reference/endpoint/logs-list",
+                      "ja/v1/api-reference/endpoint/logs-get"
+                    ]
+                  },
                   {
                     "group": "オブザーバビリティ",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "ja/v1/api-reference/endpoint/observability-logging-policy-get",
                       "ja/v1/api-reference/endpoint/observability-logging-policy-update",
@@ -8288,7 +8755,6 @@
                 "group": "ワークスペース管理",
                 "icon": "users",
                 "pages": [
-                  "ja/v1/api-reference/endpoint/credits",
                   {
                     "group": "ワークスペース",
                     "expanded": false,
@@ -8336,9 +8802,10 @@
                     ]
                   },
                   {
-                    "group": "予算",
+                    "group": "クレジットと予算",
                     "expanded": false,
                     "pages": [
+                      "ja/v1/api-reference/endpoint/credits",
                       "ja/v1/api-reference/endpoint/budgets-list",
                       "ja/v1/api-reference/endpoint/budgets-create",
                       "ja/v1/api-reference/endpoint/budgets-get",
@@ -8360,7 +8827,7 @@
                     ]
                   },
                   {
-                    "group": "ID とプロビジョニング",
+                    "group": "SSO と SCIM",
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
@@ -8370,7 +8837,14 @@
                       "ja/v1/api-reference/endpoint/identity-scim-update",
                       "ja/v1/api-reference/endpoint/identity-scim-token-create",
                       "ja/v1/api-reference/endpoint/identity-scim-token-revoke",
-                      "ja/v1/api-reference/endpoint/identity-scim-audit-list",
+                      "ja/v1/api-reference/endpoint/identity-scim-audit-list"
+                    ]
+                  },
+                  {
+                    "group": "ディレクトリと部門",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
                       "ja/v1/api-reference/endpoint/identity-directory-get",
                       "ja/v1/api-reference/endpoint/identity-directory-member-update",
                       "ja/v1/api-reference/endpoint/identity-departments-list",
@@ -9615,50 +10089,110 @@
                 ]
               },
               {
-                "group": "推理",
-                "icon": "cpu",
+                "group": "文本",
+                "icon": "message-square-text",
                 "pages": [
                   "zh-Hans/v1/api-reference/endpoint/responses",
                   "zh-Hans/v1/api-reference/endpoint/chat-completions",
-                  "zh-Hans/v1/api-reference/endpoint/anthropic-messages",
-                  "zh-Hans/v1/api-reference/endpoint/embeddings",
-                  "zh-Hans/v1/api-reference/endpoint/rerank",
+                  "zh-Hans/v1/api-reference/endpoint/anthropic-messages"
+                ]
+              },
+              {
+                "group": "图像",
+                "icon": "image",
+                "pages": [
                   "zh-Hans/v1/api-reference/endpoint/images-generations",
-                  "zh-Hans/v1/api-reference/endpoint/images-edits",
-                  "zh-Hans/v1/api-reference/endpoint/audio-speech",
-                  "zh-Hans/v1/api-reference/endpoint/audio-transcriptions",
-                  "zh-Hans/v1/api-reference/endpoint/audio-translations",
-                  "zh-Hans/v1/api-reference/endpoint/music-generate",
-                  "zh-Hans/v1/api-reference/endpoint/music-status",
-                  "zh-Hans/v1/api-reference/endpoint/moderations",
-                  "zh-Hans/v1/api-reference/endpoint/decisions",
+                  "zh-Hans/v1/api-reference/endpoint/images-edits"
+                ]
+              },
+              {
+                "group": "视频",
+                "icon": "video",
+                "tag": "Beta",
+                "pages": [
+                  "zh-Hans/v1/api-reference/endpoint/video-list",
+                  "zh-Hans/v1/api-reference/endpoint/video-create",
+                  "zh-Hans/v1/api-reference/endpoint/video-models",
+                  "zh-Hans/v1/api-reference/endpoint/video-status",
+                  "zh-Hans/v1/api-reference/endpoint/video-delete",
+                  "zh-Hans/v1/api-reference/endpoint/video-cancel",
+                  "zh-Hans/v1/api-reference/endpoint/video-content",
+                  "zh-Hans/v1/api-reference/endpoint/video-download-url"
+                ]
+              },
+              {
+                "group": "嵌入",
+                "icon": "braces",
+                "pages": [
+                  "zh-Hans/v1/api-reference/endpoint/embeddings"
+                ]
+              },
+              {
+                "group": "决策",
+                "icon": "signpost",
+                "pages": [
+                  "zh-Hans/v1/api-reference/endpoint/decisions"
+                ]
+              },
+              {
+                "group": "审核",
+                "icon": "shield-check",
+                "pages": [
+                  "zh-Hans/v1/api-reference/endpoint/moderations"
+                ]
+              },
+              {
+                "group": "重排序",
+                "icon": "arrow-down-wide-narrow",
+                "pages": [
+                  "zh-Hans/v1/api-reference/endpoint/rerank"
+                ]
+              },
+              {
+                "group": "文档",
+                "icon": "file-text",
+                "pages": [
                   "zh-Hans/v1/api-reference/endpoint/ocr",
                   "zh-Hans/v1/api-reference/endpoint/parse"
                 ]
               },
               {
-                "group": "异步任务与文件",
+                "group": "语音",
+                "icon": "audio-lines",
+                "pages": [
+                  "zh-Hans/v1/api-reference/endpoint/audio-speech"
+                ]
+              },
+              {
+                "group": "转录",
+                "icon": "captions",
+                "pages": [
+                  "zh-Hans/v1/api-reference/endpoint/audio-transcriptions"
+                ]
+              },
+              {
+                "group": "翻译",
+                "icon": "languages",
+                "pages": [
+                  "zh-Hans/v1/api-reference/endpoint/audio-translations"
+                ]
+              },
+              {
+                "group": "音乐",
+                "icon": "music",
+                "pages": [
+                  "zh-Hans/v1/api-reference/endpoint/music-generate",
+                  "zh-Hans/v1/api-reference/endpoint/music-status"
+                ]
+              },
+              {
+                "group": "任务、文件与 Webhook",
                 "icon": "layers",
                 "pages": [
                   {
-                    "group": "视频",
-                    "tag": "Beta",
-                    "expanded": false,
-                    "pages": [
-                      "zh-Hans/v1/api-reference/endpoint/video-list",
-                      "zh-Hans/v1/api-reference/endpoint/video-create",
-                      "zh-Hans/v1/api-reference/endpoint/video-models",
-                      "zh-Hans/v1/api-reference/endpoint/video-status",
-                      "zh-Hans/v1/api-reference/endpoint/video-delete",
-                      "zh-Hans/v1/api-reference/endpoint/video-cancel",
-                      "zh-Hans/v1/api-reference/endpoint/video-content",
-                      "zh-Hans/v1/api-reference/endpoint/video-download-url"
-                    ]
-                  },
-                  {
                     "group": "批处理",
                     "tag": "Beta",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "zh-Hans/v1/api-reference/endpoint/batches-list",
                       "zh-Hans/v1/api-reference/endpoint/batches-create",
@@ -9676,7 +10210,7 @@
                   },
                   {
                     "group": "文件",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "zh-Hans/v1/api-reference/endpoint/files",
                       "zh-Hans/v1/api-reference/endpoint/files-list",
@@ -9687,7 +10221,7 @@
                   {
                     "group": "Webhook 端点",
                     "tag": "Beta",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "zh-Hans/v1/api-reference/endpoint/webhook-endpoints-list",
                       "zh-Hans/v1/api-reference/endpoint/webhook-endpoints-create",
@@ -9796,17 +10330,29 @@
                 "group": "用量与监控",
                 "icon": "chart-no-axes-combined",
                 "pages": [
-                  "zh-Hans/v1/api-reference/endpoint/generation",
-                  "zh-Hans/v1/api-reference/endpoint/activity",
-                  "zh-Hans/v1/api-reference/endpoint/audit-events",
-                  "zh-Hans/v1/api-reference/endpoint/analytics-get",
-                  "zh-Hans/v1/api-reference/endpoint/analytics-export",
-                  "zh-Hans/v1/api-reference/endpoint/logs-list",
-                  "zh-Hans/v1/api-reference/endpoint/logs-get",
-                  "zh-Hans/v1/api-reference/endpoint/health",
+                  {
+                    "group": "用量与分析",
+                    "expanded": true,
+                    "pages": [
+                      "zh-Hans/v1/api-reference/endpoint/generation",
+                      "zh-Hans/v1/api-reference/endpoint/activity",
+                      "zh-Hans/v1/api-reference/endpoint/audit-events",
+                      "zh-Hans/v1/api-reference/endpoint/analytics-get",
+                      "zh-Hans/v1/api-reference/endpoint/analytics-export",
+                      "zh-Hans/v1/api-reference/endpoint/health"
+                    ]
+                  },
+                  {
+                    "group": "日志",
+                    "expanded": true,
+                    "pages": [
+                      "zh-Hans/v1/api-reference/endpoint/logs-list",
+                      "zh-Hans/v1/api-reference/endpoint/logs-get"
+                    ]
+                  },
                   {
                     "group": "可观测性",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "zh-Hans/v1/api-reference/endpoint/observability-logging-policy-get",
                       "zh-Hans/v1/api-reference/endpoint/observability-logging-policy-update",
@@ -9839,7 +10385,6 @@
                 "group": "工作区管理",
                 "icon": "users",
                 "pages": [
-                  "zh-Hans/v1/api-reference/endpoint/credits",
                   {
                     "group": "工作区",
                     "expanded": false,
@@ -9887,9 +10432,10 @@
                     ]
                   },
                   {
-                    "group": "预算",
+                    "group": "额度与预算",
                     "expanded": false,
                     "pages": [
+                      "zh-Hans/v1/api-reference/endpoint/credits",
                       "zh-Hans/v1/api-reference/endpoint/budgets-list",
                       "zh-Hans/v1/api-reference/endpoint/budgets-create",
                       "zh-Hans/v1/api-reference/endpoint/budgets-get",
@@ -9911,7 +10457,7 @@
                     ]
                   },
                   {
-                    "group": "身份与配置",
+                    "group": "SSO 与 SCIM",
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
@@ -9921,7 +10467,14 @@
                       "zh-Hans/v1/api-reference/endpoint/identity-scim-update",
                       "zh-Hans/v1/api-reference/endpoint/identity-scim-token-create",
                       "zh-Hans/v1/api-reference/endpoint/identity-scim-token-revoke",
-                      "zh-Hans/v1/api-reference/endpoint/identity-scim-audit-list",
+                      "zh-Hans/v1/api-reference/endpoint/identity-scim-audit-list"
+                    ]
+                  },
+                  {
+                    "group": "目录与部门",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
                       "zh-Hans/v1/api-reference/endpoint/identity-directory-get",
                       "zh-Hans/v1/api-reference/endpoint/identity-directory-member-update",
                       "zh-Hans/v1/api-reference/endpoint/identity-departments-list",
@@ -11166,50 +11719,110 @@
                 ]
               },
               {
-                "group": "अनुमान",
-                "icon": "cpu",
+                "group": "टेक्स्ट",
+                "icon": "message-square-text",
                 "pages": [
                   "hi/v1/api-reference/endpoint/responses",
                   "hi/v1/api-reference/endpoint/chat-completions",
-                  "hi/v1/api-reference/endpoint/anthropic-messages",
-                  "hi/v1/api-reference/endpoint/embeddings",
-                  "hi/v1/api-reference/endpoint/rerank",
+                  "hi/v1/api-reference/endpoint/anthropic-messages"
+                ]
+              },
+              {
+                "group": "छवि",
+                "icon": "image",
+                "pages": [
                   "hi/v1/api-reference/endpoint/images-generations",
-                  "hi/v1/api-reference/endpoint/images-edits",
-                  "hi/v1/api-reference/endpoint/audio-speech",
-                  "hi/v1/api-reference/endpoint/audio-transcriptions",
-                  "hi/v1/api-reference/endpoint/audio-translations",
-                  "hi/v1/api-reference/endpoint/music-generate",
-                  "hi/v1/api-reference/endpoint/music-status",
-                  "hi/v1/api-reference/endpoint/moderations",
-                  "hi/v1/api-reference/endpoint/decisions",
+                  "hi/v1/api-reference/endpoint/images-edits"
+                ]
+              },
+              {
+                "group": "वीडियो",
+                "icon": "video",
+                "tag": "Beta",
+                "pages": [
+                  "hi/v1/api-reference/endpoint/video-list",
+                  "hi/v1/api-reference/endpoint/video-create",
+                  "hi/v1/api-reference/endpoint/video-models",
+                  "hi/v1/api-reference/endpoint/video-status",
+                  "hi/v1/api-reference/endpoint/video-delete",
+                  "hi/v1/api-reference/endpoint/video-cancel",
+                  "hi/v1/api-reference/endpoint/video-content",
+                  "hi/v1/api-reference/endpoint/video-download-url"
+                ]
+              },
+              {
+                "group": "एम्बेडिंग",
+                "icon": "braces",
+                "pages": [
+                  "hi/v1/api-reference/endpoint/embeddings"
+                ]
+              },
+              {
+                "group": "निर्णय",
+                "icon": "signpost",
+                "pages": [
+                  "hi/v1/api-reference/endpoint/decisions"
+                ]
+              },
+              {
+                "group": "मॉडरेशन",
+                "icon": "shield-check",
+                "pages": [
+                  "hi/v1/api-reference/endpoint/moderations"
+                ]
+              },
+              {
+                "group": "पुनः क्रमित करना",
+                "icon": "arrow-down-wide-narrow",
+                "pages": [
+                  "hi/v1/api-reference/endpoint/rerank"
+                ]
+              },
+              {
+                "group": "दस्तावेज़",
+                "icon": "file-text",
+                "pages": [
                   "hi/v1/api-reference/endpoint/ocr",
                   "hi/v1/api-reference/endpoint/parse"
                 ]
               },
               {
-                "group": "असिंक्रोनस जॉब और फ़ाइलें",
+                "group": "वाक्",
+                "icon": "audio-lines",
+                "pages": [
+                  "hi/v1/api-reference/endpoint/audio-speech"
+                ]
+              },
+              {
+                "group": "लिप्यंतरण",
+                "icon": "captions",
+                "pages": [
+                  "hi/v1/api-reference/endpoint/audio-transcriptions"
+                ]
+              },
+              {
+                "group": "अनुवाद",
+                "icon": "languages",
+                "pages": [
+                  "hi/v1/api-reference/endpoint/audio-translations"
+                ]
+              },
+              {
+                "group": "संगीत",
+                "icon": "music",
+                "pages": [
+                  "hi/v1/api-reference/endpoint/music-generate",
+                  "hi/v1/api-reference/endpoint/music-status"
+                ]
+              },
+              {
+                "group": "जॉब, फ़ाइलें और वेबहुक",
                 "icon": "layers",
                 "pages": [
                   {
-                    "group": "वीडियो",
-                    "tag": "Beta",
-                    "expanded": false,
-                    "pages": [
-                      "hi/v1/api-reference/endpoint/video-list",
-                      "hi/v1/api-reference/endpoint/video-create",
-                      "hi/v1/api-reference/endpoint/video-models",
-                      "hi/v1/api-reference/endpoint/video-status",
-                      "hi/v1/api-reference/endpoint/video-delete",
-                      "hi/v1/api-reference/endpoint/video-cancel",
-                      "hi/v1/api-reference/endpoint/video-content",
-                      "hi/v1/api-reference/endpoint/video-download-url"
-                    ]
-                  },
-                  {
                     "group": "बैच",
                     "tag": "Beta",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "hi/v1/api-reference/endpoint/batches-list",
                       "hi/v1/api-reference/endpoint/batches-create",
@@ -11227,7 +11840,7 @@
                   },
                   {
                     "group": "फ़ाइलें",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "hi/v1/api-reference/endpoint/files",
                       "hi/v1/api-reference/endpoint/files-list",
@@ -11238,7 +11851,7 @@
                   {
                     "group": "वेबहुक एंडपॉइंट",
                     "tag": "Beta",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "hi/v1/api-reference/endpoint/webhook-endpoints-list",
                       "hi/v1/api-reference/endpoint/webhook-endpoints-create",
@@ -11347,17 +11960,29 @@
                 "group": "उपयोग और निगरानी",
                 "icon": "chart-no-axes-combined",
                 "pages": [
-                  "hi/v1/api-reference/endpoint/generation",
-                  "hi/v1/api-reference/endpoint/activity",
-                  "hi/v1/api-reference/endpoint/audit-events",
-                  "hi/v1/api-reference/endpoint/analytics-get",
-                  "hi/v1/api-reference/endpoint/analytics-export",
-                  "hi/v1/api-reference/endpoint/logs-list",
-                  "hi/v1/api-reference/endpoint/logs-get",
-                  "hi/v1/api-reference/endpoint/health",
+                  {
+                    "group": "उपयोग और एनालिटिक्स",
+                    "expanded": true,
+                    "pages": [
+                      "hi/v1/api-reference/endpoint/generation",
+                      "hi/v1/api-reference/endpoint/activity",
+                      "hi/v1/api-reference/endpoint/audit-events",
+                      "hi/v1/api-reference/endpoint/analytics-get",
+                      "hi/v1/api-reference/endpoint/analytics-export",
+                      "hi/v1/api-reference/endpoint/health"
+                    ]
+                  },
+                  {
+                    "group": "लॉग",
+                    "expanded": true,
+                    "pages": [
+                      "hi/v1/api-reference/endpoint/logs-list",
+                      "hi/v1/api-reference/endpoint/logs-get"
+                    ]
+                  },
                   {
                     "group": "अवलोकनीयता",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "hi/v1/api-reference/endpoint/observability-logging-policy-get",
                       "hi/v1/api-reference/endpoint/observability-logging-policy-update",
@@ -11390,7 +12015,6 @@
                 "group": "वर्कस्पेस प्रबंधन",
                 "icon": "users",
                 "pages": [
-                  "hi/v1/api-reference/endpoint/credits",
                   {
                     "group": "कार्यस्थान",
                     "expanded": false,
@@ -11438,9 +12062,10 @@
                     ]
                   },
                   {
-                    "group": "बजट",
+                    "group": "क्रेडिट और बजट",
                     "expanded": false,
                     "pages": [
+                      "hi/v1/api-reference/endpoint/credits",
                       "hi/v1/api-reference/endpoint/budgets-list",
                       "hi/v1/api-reference/endpoint/budgets-create",
                       "hi/v1/api-reference/endpoint/budgets-get",
@@ -11462,7 +12087,7 @@
                     ]
                   },
                   {
-                    "group": "पहचान और प्रोविज़निंग",
+                    "group": "SSO और SCIM",
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
@@ -11472,7 +12097,14 @@
                       "hi/v1/api-reference/endpoint/identity-scim-update",
                       "hi/v1/api-reference/endpoint/identity-scim-token-create",
                       "hi/v1/api-reference/endpoint/identity-scim-token-revoke",
-                      "hi/v1/api-reference/endpoint/identity-scim-audit-list",
+                      "hi/v1/api-reference/endpoint/identity-scim-audit-list"
+                    ]
+                  },
+                  {
+                    "group": "डायरेक्टरी और विभाग",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
                       "hi/v1/api-reference/endpoint/identity-directory-get",
                       "hi/v1/api-reference/endpoint/identity-directory-member-update",
                       "hi/v1/api-reference/endpoint/identity-departments-list",
@@ -12717,50 +13349,110 @@
                 ]
               },
               {
-                "group": "الاستدلال",
-                "icon": "cpu",
+                "group": "النص",
+                "icon": "message-square-text",
                 "pages": [
                   "ar/v1/api-reference/endpoint/responses",
                   "ar/v1/api-reference/endpoint/chat-completions",
-                  "ar/v1/api-reference/endpoint/anthropic-messages",
-                  "ar/v1/api-reference/endpoint/embeddings",
-                  "ar/v1/api-reference/endpoint/rerank",
+                  "ar/v1/api-reference/endpoint/anthropic-messages"
+                ]
+              },
+              {
+                "group": "صورة",
+                "icon": "image",
+                "pages": [
                   "ar/v1/api-reference/endpoint/images-generations",
-                  "ar/v1/api-reference/endpoint/images-edits",
-                  "ar/v1/api-reference/endpoint/audio-speech",
-                  "ar/v1/api-reference/endpoint/audio-transcriptions",
-                  "ar/v1/api-reference/endpoint/audio-translations",
-                  "ar/v1/api-reference/endpoint/music-generate",
-                  "ar/v1/api-reference/endpoint/music-status",
-                  "ar/v1/api-reference/endpoint/moderations",
-                  "ar/v1/api-reference/endpoint/decisions",
+                  "ar/v1/api-reference/endpoint/images-edits"
+                ]
+              },
+              {
+                "group": "فيديو",
+                "icon": "video",
+                "tag": "Beta",
+                "pages": [
+                  "ar/v1/api-reference/endpoint/video-list",
+                  "ar/v1/api-reference/endpoint/video-create",
+                  "ar/v1/api-reference/endpoint/video-models",
+                  "ar/v1/api-reference/endpoint/video-status",
+                  "ar/v1/api-reference/endpoint/video-delete",
+                  "ar/v1/api-reference/endpoint/video-cancel",
+                  "ar/v1/api-reference/endpoint/video-content",
+                  "ar/v1/api-reference/endpoint/video-download-url"
+                ]
+              },
+              {
+                "group": "التضمينات",
+                "icon": "braces",
+                "pages": [
+                  "ar/v1/api-reference/endpoint/embeddings"
+                ]
+              },
+              {
+                "group": "القرارات",
+                "icon": "signpost",
+                "pages": [
+                  "ar/v1/api-reference/endpoint/decisions"
+                ]
+              },
+              {
+                "group": "الإشراف",
+                "icon": "shield-check",
+                "pages": [
+                  "ar/v1/api-reference/endpoint/moderations"
+                ]
+              },
+              {
+                "group": "إعادة الترتيب",
+                "icon": "arrow-down-wide-narrow",
+                "pages": [
+                  "ar/v1/api-reference/endpoint/rerank"
+                ]
+              },
+              {
+                "group": "المستندات",
+                "icon": "file-text",
+                "pages": [
                   "ar/v1/api-reference/endpoint/ocr",
                   "ar/v1/api-reference/endpoint/parse"
                 ]
               },
               {
-                "group": "المهام غير المتزامنة والملفات",
+                "group": "الكلام",
+                "icon": "audio-lines",
+                "pages": [
+                  "ar/v1/api-reference/endpoint/audio-speech"
+                ]
+              },
+              {
+                "group": "التفريغ النصي",
+                "icon": "captions",
+                "pages": [
+                  "ar/v1/api-reference/endpoint/audio-transcriptions"
+                ]
+              },
+              {
+                "group": "الترجمة",
+                "icon": "languages",
+                "pages": [
+                  "ar/v1/api-reference/endpoint/audio-translations"
+                ]
+              },
+              {
+                "group": "الموسيقى",
+                "icon": "music",
+                "pages": [
+                  "ar/v1/api-reference/endpoint/music-generate",
+                  "ar/v1/api-reference/endpoint/music-status"
+                ]
+              },
+              {
+                "group": "المهام والملفات وWebhook",
                 "icon": "layers",
                 "pages": [
                   {
-                    "group": "فيديو",
-                    "tag": "Beta",
-                    "expanded": false,
-                    "pages": [
-                      "ar/v1/api-reference/endpoint/video-list",
-                      "ar/v1/api-reference/endpoint/video-create",
-                      "ar/v1/api-reference/endpoint/video-models",
-                      "ar/v1/api-reference/endpoint/video-status",
-                      "ar/v1/api-reference/endpoint/video-delete",
-                      "ar/v1/api-reference/endpoint/video-cancel",
-                      "ar/v1/api-reference/endpoint/video-content",
-                      "ar/v1/api-reference/endpoint/video-download-url"
-                    ]
-                  },
-                  {
                     "group": "معالجة دفعية",
                     "tag": "Beta",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "ar/v1/api-reference/endpoint/batches-list",
                       "ar/v1/api-reference/endpoint/batches-create",
@@ -12778,7 +13470,7 @@
                   },
                   {
                     "group": "الملفات",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "ar/v1/api-reference/endpoint/files",
                       "ar/v1/api-reference/endpoint/files-list",
@@ -12789,7 +13481,7 @@
                   {
                     "group": "نقاط نهاية Webhook",
                     "tag": "Beta",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "ar/v1/api-reference/endpoint/webhook-endpoints-list",
                       "ar/v1/api-reference/endpoint/webhook-endpoints-create",
@@ -12898,17 +13590,29 @@
                 "group": "الاستخدام والمراقبة",
                 "icon": "chart-no-axes-combined",
                 "pages": [
-                  "ar/v1/api-reference/endpoint/generation",
-                  "ar/v1/api-reference/endpoint/activity",
-                  "ar/v1/api-reference/endpoint/audit-events",
-                  "ar/v1/api-reference/endpoint/analytics-get",
-                  "ar/v1/api-reference/endpoint/analytics-export",
-                  "ar/v1/api-reference/endpoint/logs-list",
-                  "ar/v1/api-reference/endpoint/logs-get",
-                  "ar/v1/api-reference/endpoint/health",
+                  {
+                    "group": "الاستخدام والتحليلات",
+                    "expanded": true,
+                    "pages": [
+                      "ar/v1/api-reference/endpoint/generation",
+                      "ar/v1/api-reference/endpoint/activity",
+                      "ar/v1/api-reference/endpoint/audit-events",
+                      "ar/v1/api-reference/endpoint/analytics-get",
+                      "ar/v1/api-reference/endpoint/analytics-export",
+                      "ar/v1/api-reference/endpoint/health"
+                    ]
+                  },
+                  {
+                    "group": "السجلات",
+                    "expanded": true,
+                    "pages": [
+                      "ar/v1/api-reference/endpoint/logs-list",
+                      "ar/v1/api-reference/endpoint/logs-get"
+                    ]
+                  },
                   {
                     "group": "قابلية الملاحظة",
-                    "expanded": false,
+                    "expanded": true,
                     "pages": [
                       "ar/v1/api-reference/endpoint/observability-logging-policy-get",
                       "ar/v1/api-reference/endpoint/observability-logging-policy-update",
@@ -12941,7 +13645,6 @@
                 "group": "إدارة مساحات العمل",
                 "icon": "users",
                 "pages": [
-                  "ar/v1/api-reference/endpoint/credits",
                   {
                     "group": "مساحات العمل",
                     "expanded": false,
@@ -12989,9 +13692,10 @@
                     ]
                   },
                   {
-                    "group": "الميزانيات",
+                    "group": "الأرصدة والميزانيات",
                     "expanded": false,
                     "pages": [
+                      "ar/v1/api-reference/endpoint/credits",
                       "ar/v1/api-reference/endpoint/budgets-list",
                       "ar/v1/api-reference/endpoint/budgets-create",
                       "ar/v1/api-reference/endpoint/budgets-get",
@@ -13013,7 +13717,7 @@
                     ]
                   },
                   {
-                    "group": "الهوية والتزويد",
+                    "group": "SSO وSCIM",
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
@@ -13023,7 +13727,14 @@
                       "ar/v1/api-reference/endpoint/identity-scim-update",
                       "ar/v1/api-reference/endpoint/identity-scim-token-create",
                       "ar/v1/api-reference/endpoint/identity-scim-token-revoke",
-                      "ar/v1/api-reference/endpoint/identity-scim-audit-list",
+                      "ar/v1/api-reference/endpoint/identity-scim-audit-list"
+                    ]
+                  },
+                  {
+                    "group": "الدليل والأقسام",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
                       "ar/v1/api-reference/endpoint/identity-directory-get",
                       "ar/v1/api-reference/endpoint/identity-directory-member-update",
                       "ar/v1/api-reference/endpoint/identity-departments-list",

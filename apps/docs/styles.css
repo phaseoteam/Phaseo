@@ -81,6 +81,11 @@
 	}
 }
 
+/* Luma puts 2rem between sidebar sections, which spreads the API Reference's many short sections out. */
+#sidebar-content div[class~="lg:mt-8"] {
+	margin-top: 1.25rem;
+}
+
 /* Luma capitalises every word of a group name, which is wrong outside English ("Modelle Und Routing"). */
 :is(.sidebar-group-header, .eyebrow) {
 	text-transform: none;
