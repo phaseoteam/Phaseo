@@ -35,6 +35,7 @@
 
 ## Commit & Pull Request Guidelines
 - Commit subjects in history are short, descriptive, and scoped. Add a `.changeset` entry when shipping SDK/API/web changes that should version.
+- PR titles use a conventional commit prefix and say, in plain language, what is different now: `fix(web): model pages no longer time out on cold starts`, not `fix(web): update model page query and caching`. Squash merges use the title as the commit subject on `main`.
 - Never commit directly to `main`. Always work on a branch, open a PR, and merge via the PR flow.
 - When preparing PRs, always use a branch name that has not already been merged. Do not reuse previously merged branch names.
 - Never enable PR auto-merge (for example `gh pr merge --auto`) unless the user has explicitly approved auto-merge for that PR.
