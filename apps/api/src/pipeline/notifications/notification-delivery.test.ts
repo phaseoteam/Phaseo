@@ -34,6 +34,8 @@ describe("notification provider payloads", () => {
 		expect(content.title).toBe("Rate limit alert");
 		expect(content.message).toBe("Rate limit policies rejected 47 requests in the last 15 minutes. Most rejected: Batch keys (key limit, 42), Deleted policy (end user limit, 5).");
 		expect(eventContent({ ...event, kind: "rate_limit_throttled", payload: { throttled_requests: 1, window_minutes: 15, policies: [] } }).message).toBe("Rate limit policies rejected 1 request in the last 15 minutes.");
+		const five = Array.from({ length: 5 }, (_, index) => ({ policy_name: `Policy ${index + 1}`, limit_scope: "key", throttled_requests: 5 - index }));
+		expect(eventContent({ ...event, kind: "rate_limit_throttled", payload: { throttled_requests: 15, window_minutes: 15, policies: five } }).message).toContain("Policy 4 (key limit, 2), Policy 5 (key limit, 1).");
 	});
 	it("notifies up to seven days before a scheduled deprecation", () => {
 		const now = new Date("2026-09-01T00:00:00.000Z");

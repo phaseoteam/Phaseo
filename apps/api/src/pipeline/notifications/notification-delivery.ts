@@ -47,7 +47,7 @@ function rateLimitThrottledMessage(payload: Record<string, unknown>): string {
 	const total = Number(payload.throttled_requests ?? 0);
 	const minutes = Number(payload.window_minutes ?? 15);
 	const policies = (Array.isArray(payload.policies) ? payload.policies : []) as Array<Record<string, unknown>>;
-	const top = policies.slice(0, 3).map((policy) => `${String(policy.policy_name ?? "Deleted policy")} (${String(policy.limit_scope ?? "unknown").replaceAll("_", " ")} limit, ${Number(policy.throttled_requests ?? 0)})`);
+	const top = policies.slice(0, 5).map((policy) => `${String(policy.policy_name ?? "Deleted policy")} (${String(policy.limit_scope ?? "unknown").replaceAll("_", " ")} limit, ${Number(policy.throttled_requests ?? 0)})`);
 	return `Rate limit policies rejected ${total} ${total === 1 ? "request" : "requests"} in the last ${minutes} minutes.${top.length ? ` Most rejected: ${top.join(", ")}.` : ""}`;
 }
 
