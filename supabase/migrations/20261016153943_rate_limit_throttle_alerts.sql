@@ -1,4 +1,5 @@
 SET local check_function_bodies = off;
+-- phaseo:allow-destructive-migration reason: the only DELETE is the existing route replacement inside set_notification_event_destinations, recreated unchanged apart from the new event kind. The migration deletes no data.
 
 -- Rate limit throttle alerts: a routable rate_limit_throttled notification kind,
 -- and the function that queues one event per routed workspace from the per-minute throttle rollups.
