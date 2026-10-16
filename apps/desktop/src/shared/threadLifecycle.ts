@@ -12,7 +12,10 @@ export type ThreadLifecycle = {
 	/** When the latest turn finished, and when the person last wrote. */
 	lastCompletedAt?: string; lastUserMessageAt?: string;
 	approvalsCount: number; answersCount: number; queueCount?: number;
+	/** Linked pull requests as last seen: open, closed or merged, and when that was. */
+	pullRequests?: { snapshot?: { state: "open" | "closed" | "merged"; updatedAt: string } }[];
 };
+export type AutoSettleRules = { days: number | null; onMerge: boolean; keepPullRequests: boolean };
 
 export type SidebarSection = "pinned" | "active" | "snoozed" | "settled";
 export const autoSettleDays = { default: 3, minimum: 1, maximum: 90 };
@@ -70,10 +73,22 @@ export function lastActivity(thread: ThreadLifecycle, now = Date.now()) {
 }
 
 /** When an idle chat should count as settled (its last activity), or nothing if it should stay. */
-export function autoSettleAt(thread: ThreadLifecycle, days: number | null, now = Date.now()) {
-	if (days === null || thread.archived || thread.settledOverride || thread.pinned || thread.autoSettle === false) return;
+export function autoSettleAt(thread: ThreadLifecycle, rules: AutoSettleRules | number | null, now = Date.now()) {
+	const { days, onMerge, keepPullRequests } = typeof rules === "object" && rules !== null ? rules : { days: rules, onMerge: true, keepPullRequests: false };
+	if (thread.archived || thread.settledOverride || thread.pinned || thread.autoSettle === false) return;
 	if (thread.approvalsCount || thread.answersCount || thread.queueCount || ["running", "waiting"].includes(thread.status)) return;
 	if (isSnoozed(thread, now)) return;
+	// T3's pull request rule: any open (or never read) linked pull request holds the chat; one closed, or merged
+	// with onMerge, settles it, but only if that happened after the person last wrote.
+	const linked = thread.pullRequests ?? [];
+	if (linked.length) {
+		if (linked.some(link => !link.snapshot || link.snapshot.state === "open")) return;
+		const finished = linked.filter(link => link.snapshot!.state === "closed" || (onMerge && link.snapshot!.state === "merged")).map(link => time(link.snapshot!.updatedAt));
+		const latest = Math.max(0, ...finished);
+		if (finished.length && latest >= time(thread.lastUserMessageAt)) return new Date(latest).toISOString();
+		if (keepPullRequests) return;
+	}
+	if (days === null) return;
 	const last = lastActivity(thread, now);
 	if (now - last >= days * 86_400_000) return new Date(last).toISOString();
 }

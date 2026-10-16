@@ -46,6 +46,22 @@ describe("Code chat lifecycle", () => {
 		expect(autoSettleAt(thread({ lastSnoozeWakeAt: iso(-day) }), 3, now)).toBeUndefined();
 	});
 
+	it("follows T3's pull request rules", () => {
+		const pr = (state: "open" | "closed" | "merged", at: number) => ({ snapshot: { state, updatedAt: iso(at) } });
+		const rules = { days: 3, onMerge: true, keepPullRequests: false };
+		// An open or unread pull request holds even an idle chat.
+		expect(autoSettleAt(thread({ pullRequests: [pr("open", -9 * day)] }), rules, now)).toBeUndefined();
+		expect(autoSettleAt(thread({ pullRequests: [{}] }), rules, now)).toBeUndefined();
+		// Merged or closed after the last message settles it at that moment, even with recent activity.
+		expect(autoSettleAt(thread({ lastUserMessageAt: iso(-2 * 3_600_000), pullRequests: [pr("merged", -3_600_000)] }), rules, now)).toBe(iso(-3_600_000));
+		expect(autoSettleAt(thread({ lastUserMessageAt: iso(-2 * 3_600_000), pullRequests: [pr("merged", -3_600_000)] }), { ...rules, onMerge: false }, now)).toBeUndefined();
+		expect(autoSettleAt(thread({ lastUserMessageAt: iso(-2 * 3_600_000), pullRequests: [pr("closed", -3_600_000)] }), { ...rules, onMerge: false }, now)).toBe(iso(-3_600_000));
+		// Merged before the person wrote again: inactivity decides, unless chats with a pull request are kept.
+		const reopened = thread({ lastUserMessageAt: iso(-5 * day), pullRequests: [pr("merged", -6 * day)] });
+		expect(autoSettleAt(reopened, rules, now)).toBe(iso(-5 * day));
+		expect(autoSettleAt(reopened, { ...rules, keepPullRequests: true }, now)).toBeUndefined();
+	});
+
 	it("offers T3's snooze presets and short durations", () => {
 		const morning = new Date(2026, 9, 15, 9, 0, 0);
 		expect(snoozePresets(morning).map(preset => preset.label)).toEqual(["In 1 hour", "In 3 hours", "This evening", "Tomorrow", "Next week"]);

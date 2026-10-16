@@ -112,6 +112,10 @@ export function GeneralSettings() {
 				control={<Switch aria-label="Open panes automatically" checked={autoOpenPanes} onCheckedChange={setAutoOpenPanes} />} />
 		</SettingsSection>
 		<SettingsSection title="Code chats" description="Settle a chat when you are done with it; it moves to Settled at the bottom of the sidebar." label="Code chats">
+			<SettingsRow title="Auto-settle merged chats" description="Settle a chat when its pull request merges. Closed pull requests still settle it."
+				control={<Switch aria-label="Auto-settle merged chats" disabled={!ready || busy} checked={preferences.autoSettleOnMerge} onCheckedChange={value => void save({ ...preferences, autoSettleOnMerge: value })} />} />
+			<SettingsRow title="Keep chats with a pull request" description="Inactivity does not settle chats with a pull request. Merging and closing still do."
+				control={<Switch aria-label="Keep chats with a pull request" disabled={!ready || busy} checked={preferences.keepPullRequests} onCheckedChange={value => void save({ ...preferences, keepPullRequests: value })} />} />
 			<SettingsRow title="Auto-settle inactive chats" description="Code chats with no activity for this long settle automatically. Any new activity un-settles a chat."
 				control={<Select label="Auto-settle inactive chats" disabled={!ready || busy} value={String(preferences.autoSettleAfterDays ?? "never")}
 					onValueChange={value => void save({ ...preferences, autoSettleAfterDays: value === "never" ? null : Number(value) })}

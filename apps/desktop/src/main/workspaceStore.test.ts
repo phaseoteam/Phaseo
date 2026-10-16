@@ -61,10 +61,10 @@ describe("workspace durability", () => {
 	it("retains notification settings after restart and rejects invalid updates", () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-preferences-")); const filename = path.join(directory, "workspace.sqlite"); let store = new WorkspaceStore(filename);
 		try {
-			expect(store.getPreferences()).toEqual({ notifications: "off", notificationTitles: false, maxActiveAgents: 32, autoSettleAfterDays: 3, titleModel: null });
-			store.savePreferences({ notifications: "attention", notificationTitles: true, maxActiveAgents: 8, autoSettleAfterDays: null, titleModel: null }); store.close(); store = new WorkspaceStore(filename);
-			expect(store.getPreferences()).toEqual({ notifications: "attention", notificationTitles: true, maxActiveAgents: 8, autoSettleAfterDays: null, titleModel: null });
-			expect(() => store.savePreferences({ notifications: "off", notificationTitles: false, maxActiveAgents: 8, autoSettleAfterDays: 0, titleModel: null })).toThrow("Auto-settle");
+			expect(store.getPreferences()).toEqual({ notifications: "off", notificationTitles: false, maxActiveAgents: 32, autoSettleAfterDays: 3, autoSettleOnMerge: true, keepPullRequests: false, titleModel: null });
+			store.savePreferences({ notifications: "attention", notificationTitles: true, maxActiveAgents: 8, autoSettleAfterDays: null, autoSettleOnMerge: true, keepPullRequests: false, titleModel: null }); store.close(); store = new WorkspaceStore(filename);
+			expect(store.getPreferences()).toEqual({ notifications: "attention", notificationTitles: true, maxActiveAgents: 8, autoSettleAfterDays: null, autoSettleOnMerge: true, keepPullRequests: false, titleModel: null });
+			expect(() => store.savePreferences({ notifications: "off", notificationTitles: false, maxActiveAgents: 8, autoSettleAfterDays: 0, autoSettleOnMerge: true, keepPullRequests: false, titleModel: null })).toThrow("Auto-settle");
 			expect(() => store.savePreferences({ notifications: ["all"] } as never)).toThrow(); expect(store.getPreferences().notifications).toBe("attention");
 		} finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
@@ -197,7 +197,7 @@ describe("IPC validation", () => {
 		try {
 			store.close(); const legacy = new DatabaseSync(filename); legacy.prepare("INSERT INTO preferences (id, data) VALUES ('workspace', ?)").run(JSON.stringify({ notifications: "all", notificationTitles: true })); legacy.close();
 			store = new WorkspaceStore(filename);
-			expect(store.getPreferences()).toEqual({ notifications: "all", notificationTitles: true, maxActiveAgents: 32, autoSettleAfterDays: 3, titleModel: null });
+			expect(store.getPreferences()).toEqual({ notifications: "all", notificationTitles: true, maxActiveAgents: 32, autoSettleAfterDays: 3, autoSettleOnMerge: true, keepPullRequests: false, titleModel: null });
 		} finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
 });
