@@ -8,6 +8,7 @@ import {
 	ANALYTICS_CONSENT_EVENT,
 	ANALYTICS_CONSENT_STORAGE_KEY,
 	type AnalyticsConsent,
+	isAnalyticsBlockedForPageLoad,
 	parseAnalyticsConsent,
 	readAnalyticsConsent,
 } from "@/lib/cookieConsent";
@@ -314,7 +315,7 @@ function disablePosthog() {
 }
 
 function applyPosthogConsent(consent: AnalyticsConsent | null) {
-	if (consent === "accepted") {
+	if (consent === "accepted" && !isAnalyticsBlockedForPageLoad()) {
 		enablePosthog();
 		return;
 	}

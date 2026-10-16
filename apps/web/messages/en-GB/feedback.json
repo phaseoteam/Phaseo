@@ -1,0 +1,53 @@
+{
+	"metaTitle": "Share your feedback",
+	"invalidTitle": "This feedback link doesn't work",
+	"invalidBody": "Check that the whole link was copied, or just reply to the email. Replies reach Daniel too.",
+	"unavailable": "Feedback isn't available right now. Please try again later or reply to the email.",
+	"intro": "Thanks for taking a minute. Your answers go straight to Daniel, who builds Phaseo.",
+	"rewardNote": "As a small thank-you, you'll get a single-use credit code once you send your answers.",
+	"titles": {
+		"never_requested": "What stopped you getting started?",
+		"used_not_paid": "What stopped you adding credits?",
+		"paid": "What do you think of Phaseo?"
+	},
+	"reasonLabel": "Pick the closest reason",
+	"reasons": {
+		"setup_unclear": "Setup was unclear",
+		"pricing_unclear": "Pricing was unclear",
+		"model_missing": "The model I wanted wasn't available",
+		"model_choice_unclear": "I wasn't sure which model to use",
+		"payment_issue": "I had a problem paying",
+		"chose_alternative": "I chose another tool",
+		"just_exploring": "I was just exploring",
+		"not_ready_yet": "I'm not ready yet",
+		"other": "Something else"
+	},
+	"detailsLabel": "Tell us more (optional)",
+	"npsLabel": "How likely are you to recommend Phaseo to a friend or colleague?",
+	"npsLow": "Not likely",
+	"npsHigh": "Very likely",
+	"likesLabel": "What do you like most? (optional)",
+	"improveLabel": "What should we improve or add? (optional)",
+	"required": "Please answer the first question.",
+	"submit": "Send feedback",
+	"submitting": "Sending…",
+	"submitError": "Your feedback couldn't be sent. Please try again.",
+	"thanksTitle": "Thank you!",
+	"thanksBody": "Daniel reads every answer.",
+	"rewardIssued": "Here's your thank-you credit code. It works once and expires in 90 days.",
+	"redeem": "Redeem code",
+	"copy": "Copy code",
+	"copied": "Copied",
+	"rewardExhausted": "This round's thank-you credits have all been claimed, but your answers still help a lot.",
+	"alreadyAnswered": "You've already answered. Thank you!",
+	"unsubscribeLink": "Don't want emails like this? Unsubscribe",
+	"unsubscribe": {
+		"metaTitle": "Unsubscribe",
+		"title": "Unsubscribe from feedback emails",
+		"body": "You'll stop getting non-essential emails such as feedback requests. Account and billing emails will still arrive.",
+		"button": "Unsubscribe",
+		"working": "Unsubscribing…",
+		"done": "You're unsubscribed.",
+		"error": "That didn't work. Please try again."
+	}
+}

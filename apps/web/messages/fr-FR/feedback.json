@@ -1,0 +1,53 @@
+{
+	"metaTitle": "Donnez votre avis",
+	"invalidTitle": "Ce lien d’avis ne fonctionne pas",
+	"invalidBody": "Vérifiez que le lien a été copié en entier, ou répondez simplement à l’e-mail. Les réponses parviennent aussi à Daniel.",
+	"unavailable": "Les avis ne sont pas disponibles pour le moment. Réessayez plus tard ou répondez à l’e-mail.",
+	"intro": "Merci de prendre une minute. Vos réponses arrivent directement à Daniel, qui développe Phaseo.",
+	"rewardNote": "Pour vous remercier, vous recevrez un code de crédit à usage unique après l’envoi de vos réponses.",
+	"titles": {
+		"never_requested": "Qu’est-ce qui vous a empêché de commencer ?",
+		"used_not_paid": "Qu’est-ce qui vous a empêché d’ajouter des crédits ?",
+		"paid": "Que pensez-vous de Phaseo ?"
+	},
+	"reasonLabel": "Choisissez la raison la plus proche",
+	"reasons": {
+		"setup_unclear": "La configuration n’était pas claire",
+		"pricing_unclear": "Les tarifs n’étaient pas clairs",
+		"model_missing": "Le modèle que je voulais n’était pas disponible",
+		"model_choice_unclear": "Je ne savais pas quel modèle utiliser",
+		"payment_issue": "J’ai eu un problème de paiement",
+		"chose_alternative": "J’ai choisi un autre outil",
+		"just_exploring": "Je faisais seulement un tour",
+		"not_ready_yet": "Je ne suis pas encore prêt",
+		"other": "Autre chose"
+	},
+	"detailsLabel": "Dites-nous-en plus (facultatif)",
+	"npsLabel": "Quelle est la probabilité que vous recommandiez Phaseo à un ami ou à un collègue ?",
+	"npsLow": "Peu probable",
+	"npsHigh": "Très probable",
+	"likesLabel": "Qu’appréciez-vous le plus ? (facultatif)",
+	"improveLabel": "Que devrions-nous améliorer ou ajouter ? (facultatif)",
+	"required": "Veuillez répondre à la première question.",
+	"submit": "Envoyer mon avis",
+	"submitting": "Envoi…",
+	"submitError": "Votre avis n’a pas pu être envoyé. Veuillez réessayer.",
+	"thanksTitle": "Merci !",
+	"thanksBody": "Daniel lit chaque réponse.",
+	"rewardIssued": "Voici votre code de crédit de remerciement. Il n’est utilisable qu’une fois et expire dans 90 jours.",
+	"redeem": "Utiliser le code",
+	"copy": "Copier le code",
+	"copied": "Copié",
+	"rewardExhausted": "Tous les crédits de remerciement de cette série ont déjà été attribués, mais vos réponses nous aident beaucoup.",
+	"alreadyAnswered": "Vous avez déjà répondu. Merci !",
+	"unsubscribeLink": "Vous ne voulez plus recevoir ce type d’e-mail ? Se désabonner",
+	"unsubscribe": {
+		"metaTitle": "Se désabonner",
+		"title": "Se désabonner des e-mails de demande d’avis",
+		"body": "Vous ne recevrez plus d’e-mails non essentiels, comme les demandes d’avis. Les e-mails concernant votre compte et la facturation continueront d’arriver.",
+		"button": "Se désabonner",
+		"working": "Désabonnement…",
+		"done": "Vous êtes désabonné.",
+		"error": "Cela n’a pas fonctionné. Veuillez réessayer."
+	}
+}
