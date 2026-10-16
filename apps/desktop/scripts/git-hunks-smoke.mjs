@@ -92,10 +92,10 @@ app.whenReady().then(async () => {
 		// The loop above ended on the split layout, so that is what comes back.
 		await wait(`Boolean(${viewer}?.shadowRoot?.querySelector('pre[data-diff-type="split"]'))&&${surface}.querySelector('[aria-label="Split diff view"]').getAttribute('aria-checked')==='true'`);
 		// Staging and committing moved out of the diff into Git actions.
-		// The card can close while Git refreshes; like a person, reopen it before looking.
+		// The card can close while Git refreshes, and its buttons are disabled mid-refresh; like a person, reopen it and wait for them.
 		const details = `(document.querySelector('.git-actions')||document.querySelector('[aria-label="Chat details"]')?.click(),true)`;
-		const stage = `(${details}&&document.querySelector('.git-actions button[aria-label=${JSON.stringify('Stage ' + filename)}]'))`;
-		const unstage = `(${details}&&document.querySelector('.git-actions button[aria-label=${JSON.stringify('Unstage ' + filename)}]'))`;
+		const stage = `(${details}&&document.querySelector('.git-actions button[aria-label=${JSON.stringify('Stage ' + filename)}]:not(:disabled)'))`;
+		const unstage = `(${details}&&document.querySelector('.git-actions button[aria-label=${JSON.stringify('Unstage ' + filename)}]:not(:disabled)'))`;
 		// Git actions live in the details card in the title bar (T3).
 		await run(`document.querySelector('.git-actions')||document.querySelector('[aria-label="Chat details"]').click()`);
 		await wait(`Boolean(${stage})`);
