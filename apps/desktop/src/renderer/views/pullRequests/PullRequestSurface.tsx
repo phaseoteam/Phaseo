@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowDownUp, ArrowLeft, ArrowUpRight, Check, CircleDot, Copy, ExternalLink, FileDiff, GitCommitHorizontal, Link as LinkIcon, MessageSquare, MoreHorizontal, Pencil, RefreshCw, Trash2, TriangleAlert, X } from "lucide-react";
+import { ArrowDownUp, ArrowLeft, ArrowUpRight, BookOpen, Check, CircleDot, Copy, ExternalLink, FileDiff, GitBranch, GitCommitHorizontal, Hammer, Link as LinkIcon, MessageCircleQuestion, MessageSquare, MoreHorizontal, Pencil, RefreshCw, Trash2, TriangleAlert, X } from "lucide-react";
 import type { PullRequestMergeMethod, PullRequestReactionContent } from "../../../shared/pullRequestView";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -20,6 +20,7 @@ import { ReactContext, SummaryTab } from "./SummaryTab";
 import { TimelineTab } from "./TimelineTab";
 import { useInlineActionConfirm } from "./useInlineActionConfirm";
 import { usePullRequest } from "./usePullRequest";
+import { usePullRequestHandoff } from "./usePullRequestHandoff";
 
 type Tab = "summary" | "timeline" | "code";
 const tabs: { value: Tab; label: string }[] = [{ value: "summary", label: "Summary" }, { value: "timeline", label: "Timeline" }, { value: "code", label: "Code" }];
@@ -52,6 +53,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 	const confirm = useInlineActionConfirm(`${projectId}#${number}`);
 	const { copied, copy } = useCopied();
 	const [openError, setOpenError] = useState("");
+	const handoff = usePullRequestHandoff(projectId);
 	useEffect(() => { setTab("summary"); setMounted(new Set(["summary"])); setCondensed(false); setTitleDraft(null); }, [projectId, number]);
 	const open = (url: string) => { setOpenError(""); void api?.openLink(url).catch(reason => setOpenError(errorMessage(reason))); };
 	const react = useCallback((subjectId: string, content: PullRequestReactionContent, reacted: boolean) => perform({ type: "react", subjectId, content, reacted }), [perform]);
@@ -120,6 +122,9 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 		<Tip label={pull.refreshing ? "Refreshing pull request" : "More pull request actions"}><DropdownMenuTrigger render={<Button size="icon-xs" variant="ghost" className="text-muted-foreground" aria-label={pull.refreshing ? "Refreshing pull request" : "More pull request actions"} />}>{pull.refreshing ? <RefreshCw className="size-3.5 animate-spin" /> : <MoreHorizontal className="size-4" />}</DropdownMenuTrigger></Tip>
 		<DropdownMenuContent align="end" className="w-56">
 			<DropdownMenuItem disabled={pull.refreshing} onClick={() => void pull.refresh()}><RefreshCw className={cn("size-3.5", pull.refreshing && "animate-spin")} />Refresh</DropdownMenuItem>
+			<DropdownMenuItem disabled={handoff.pending !== undefined} onClick={() => void handoff.run("ask", view)}><MessageCircleQuestion className="mt-1 size-3.5 shrink-0 self-start" /><span className="flex min-w-0 flex-col"><span>Ask a question</span><span className="text-xs text-muted-foreground">Opens a chat that knows which pull request you mean.</span></span></DropdownMenuItem>
+			<DropdownMenuItem disabled={handoff.pending !== undefined} onClick={() => void handoff.run("explain", view)}><BookOpen className="mt-1 size-3.5 shrink-0 self-start" /><span className="flex min-w-0 flex-col"><span>Explain this PR</span><span className="text-xs text-muted-foreground">A walk through the diff and what to read closely.</span></span></DropdownMenuItem>
+			<DropdownMenuItem disabled={handoff.pending !== undefined || view.state !== "OPEN"} onClick={() => void handoff.run("fix", view)}><Hammer className="size-3.5" />{handoff.pending === "fix" ? "Preparing…" : "Fix findings in a chat"}</DropdownMenuItem>
 			{view.state === "OPEN" && view.viewer.canUpdate && primary !== "ready" && <DropdownMenuItem disabled={busy} onClick={() => void pull.perform({ type: view.draft ? "ready" : "draft" })}>{view.draft ? <PullRequestGlyph.pullRequest className="size-3.5" /> : <PullRequestGlyph.draft className="size-3.5" />}{view.draft ? "Ready for review" : "Convert to draft"}</DropdownMenuItem>}
 			{canDisableAutoMerge && <DropdownMenuItem disabled={busy} onClick={() => void pull.perform({ type: "disable-auto-merge" })}><X className="size-3.5" />Disable auto-merge</DropdownMenuItem>}
 			{canEnableAutoMerge && <DropdownMenuItem closeOnClick={confirm.isArmed("enable-auto-merge-menu")} disabled={busy} aria-label={confirm.isArmed("enable-auto-merge-menu") ? "Confirm auto-merge?" : "Enable auto-merge"} {...confirm.props("enable-auto-merge-menu", () => void pull.perform({ type: "enable-auto-merge", method }))}><PullRequestGlyph.merged className="size-3.5" />{confirm.isArmed("enable-auto-merge-menu") ? "Confirm auto-merge?" : "Enable auto-merge"}</DropdownMenuItem>}
@@ -139,7 +144,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 		</DropdownMenuContent>
 	</DropdownMenu>;
 
-	const notice = pull.actionError?.message ?? (openError || (copied ? (copied.endsWith("failed") ? `Copy failed` : `${copied} copied`) : ""));
+	const notice = pull.actionError?.message ?? (handoff.error || openError || (copied ? (copied.endsWith("failed") ? `Copy failed` : `${copied} copied`) : ""));
 	return <TooltipProvider delay={150}><ReactContext.Provider value={react}><div className="relative flex h-full min-h-0 w-full flex-col bg-background" aria-label={`Pull request #${view.number}`} data-pull-request={view.number}>
 		<div className="@container/pr-header grid min-w-0 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 border-b border-border/60">
 			<div className="grid h-10 min-w-0 items-center overflow-hidden pl-4">
@@ -176,7 +181,8 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 						</div>}
 						<div className="mt-2 flex min-h-5 min-w-0 items-center gap-2 text-xs text-muted-foreground">
 							<MetaLine className="min-w-0 whitespace-nowrap"><ActorLabel key="author" actor={view.authorActor} /><span key="updated">updated {relativeTime(view.updatedAt)}</span></MetaLine>
-							{view.state === "OPEN" && <CopyableCode value={`gh pr checkout ${view.number}`} label="Copy checkout command" className="ml-auto" />}
+							{view.state === "OPEN" && <span className="ml-auto flex min-w-0 items-center gap-2"><CopyableCode value={`gh pr checkout ${view.number}`} label="Copy checkout command" />
+									<Tip label="Check out in a separate worktree: its own folder and chat. Nothing you have open moves."><Button size="xs" variant="outline" disabled={handoff.pending !== undefined} onClick={() => void handoff.run("checkout", view)} aria-label={handoff.pending === "checkout" ? "Checking out…" : "Check out in a worktree"} data-pull-request-checkout=""><GitBranch aria-hidden className="size-3.5" /><span className="@max-[35rem]/pr-header:hidden">{handoff.pending === "checkout" ? "Checking out…" : "Check out"}</span></Button></Tip></span>}
 						</div>
 						<div className="mt-4 flex min-h-5 min-w-0 items-center gap-2 text-xs text-muted-foreground">
 							{branchLine(false)}
@@ -202,9 +208,9 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 				</div>}
 			</nav>
 		</div>
-		{notice && <div className={cn("flex shrink-0 items-center gap-2 border-b border-border/60 px-4 py-1.5 text-xs", pull.actionError || openError ? "text-destructive" : "text-muted-foreground")} role={pull.actionError || openError ? "alert" : "status"}>
+		{notice && <div className={cn("flex shrink-0 items-center gap-2 border-b border-border/60 px-4 py-1.5 text-xs", pull.actionError || openError || handoff.error ? "text-destructive" : "text-muted-foreground")} role={pull.actionError || openError || handoff.error ? "alert" : "status"}>
 			<span className="min-w-0 flex-1 [overflow-wrap:anywhere]">{notice}</span>
-			{(pull.actionError || openError) && <Button size="icon-xs" variant="ghost" aria-label="Dismiss" onClick={() => { pull.clearActionError(); setOpenError(""); }}><X className="size-3" /></Button>}
+			{(pull.actionError || openError || handoff.error) && <Button size="icon-xs" variant="ghost" aria-label="Dismiss" onClick={() => { pull.clearActionError(); setOpenError(""); handoff.clearError(); }}><X className="size-3" /></Button>}
 		</div>}
 		<div className="relative flex min-h-0 flex-1 flex-col overflow-hidden" onScrollCapture={event => {
 			const target = event.target as HTMLElement;
