@@ -8,6 +8,8 @@ export type ResourceHistoryLimits = { maxAgeMs: number; maxSamples: number; maxB
 /** An hour at the fastest interval, and never more than a few megabytes however long the command lines. */
 export const DEFAULT_HISTORY_LIMITS: ResourceHistoryLimits = { maxAgeMs: 60 * 60_000, maxSamples: 1_800, maxBytes: 8 * 1024 * 1024 };
 const MAX_COMMAND = 300;
+/** The longest gap one sample's CPU rate is taken to cover (twice the slowest interval), and the first sample's when sampling on request. */
+const MAX_SAMPLE_GAP_MS = 10_000, DEFAULT_GAP_MS = 3_000;
 
 /**
  * Process samples kept in memory only, bounded by age, count and approximate size, so a large process tree
@@ -42,9 +44,9 @@ export class ResourceHistoryStore {
 			const bucket = totals[bucketOf(sample.at)];
 			const cpu = sample.rows.reduce((total, row) => total + row.cpuPercent, 0), rss = sample.rows.reduce((total, row) => total + row.rssBytes, 0);
 			bucket.sum += cpu; bucket.max = Math.max(bucket.max, cpu); bucket.samples++; bucket.rss = Math.max(bucket.rss, rss); bucket.processes = Math.max(bucket.processes, sample.rows.length);
-			// CPU time approximated as each sample's rate held since the previous sample (or one interval for the first).
-			const previousAt = index > 0 ? inWindow[index - 1].at : sample.at - (input.sampleIntervalMs || 0);
-			const span = Math.max(0, Math.min(sample.at - previousAt, input.bucketMs));
+			// CPU time approximated as each sample's rate held since the previous sample, at most `MAX_SAMPLE_GAP_MS`: time the page was closed was not sampled.
+			const gap = index > 0 ? sample.at - inWindow[index - 1].at : input.sampleIntervalMs || DEFAULT_GAP_MS;
+			const span = Math.max(0, Math.min(gap, MAX_SAMPLE_GAP_MS));
 			for (const row of sample.rows) {
 				let entry = perProcess.get(row.key);
 				if (!entry) { entry = { row, latest: row, samples: 0, sum: 0, max: 0, maxRss: 0, cpuMs: 0, buckets: Array.from({ length: count }, () => ({ sum: 0, max: 0, samples: 0 })), lastAt: 0 }; perProcess.set(row.key, entry); }

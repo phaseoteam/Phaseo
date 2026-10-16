@@ -57,10 +57,16 @@ function run(command: string, args: string[], timeout: number, env?: NodeJS.Proc
 
 /** The whole system process table, once: one PowerShell CIM query on Windows, one `ps` elsewhere. */
 export async function queryProcesses(platform = process.platform): Promise<ProcessSample[]> {
-	if (platform === "win32") return parseWindowsProcesses(await run("powershell.exe", ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", WINDOWS_QUERY], 15_000));
+	// The query's own process (and, on Windows, its console host below it) is left out of the tree.
+	if (platform === "win32") return withoutQuery(parseWindowsProcesses(await run("powershell.exe", ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", WINDOWS_QUERY], 15_000)), "p=$_.ProcessId");
 	const ps = ["/bin/ps", "/usr/bin/ps"].find(candidate => existsSync(candidate)) ?? "ps";
-	return parsePosixProcesses(await run(ps, ["-A", "-o", "pid=,ppid=,pcpu=,rss=,etime=,time=,lstart=,args="], 10_000, { ...process.env, LC_ALL: "C" }));
+	return withoutQuery(parsePosixProcesses(await run(ps, ["-A", "-o", POSIX_FIELDS], 10_000, { ...process.env, LC_ALL: "C" })), POSIX_FIELDS);
 }
+const POSIX_FIELDS = "pid=,ppid=,pcpu=,rss=,etime=,time=,lstart=,args=";
+export const withoutQuery = (rows: ProcessSample[], marker: string) => rows.filter(row => !row.command.includes(marker));
+
+/** A previous reading older than this (the page was closed meanwhile) is not used for CPU %. */
+const MAX_DELTA_MS = 60_000;
 
 export const processKey = (pid: number, startTimeMs: number) => `${pid}:${startTimeMs}`;
 
@@ -93,7 +99,7 @@ export function buildProcessTree(rows: ProcessSample[], rootPid: number, options
 	const visit = (row: ProcessSample, depth: number, inherited?: string) => {
 		if (seen.has(row.pid) || depth > 64) return; seen.add(row.pid);
 		const previous = options.previous?.get(processKey(row.pid, row.startTimeMs));
-		const cpuPercent = row.cpuTimeMs !== undefined && previous && options.now > previous.at ? Math.max(0, (row.cpuTimeMs - previous.cpuTimeMs) / (options.now - previous.at) * 100)
+		const cpuPercent = row.cpuTimeMs !== undefined && previous && options.now > previous.at && options.now - previous.at <= MAX_DELTA_MS ? Math.max(0, (row.cpuTimeMs - previous.cpuTimeMs) / (options.now - previous.at) * 100)
 			: row.cpuPercent ?? (row.cpuTimeMs !== undefined && row.elapsedMs > 0 ? row.cpuTimeMs / row.elapsedMs * 100 : 0);
 		const electron = options.electron?.get(row.pid), owner = options.owners?.get(row.pid);
 		// A child that started before its parent belongs to an earlier process that had the same PID.

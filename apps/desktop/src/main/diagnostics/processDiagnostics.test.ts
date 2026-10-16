@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { validateResourceHistoryRequest, validateStopProcessRequest } from "../../shared/diagnostics";
 import { ProcessDiagnostics } from "./processDiagnostics";
-import { buildProcessTree, parseClock, parsePosixProcesses, parseWindowsProcesses, processKind, type ProcessSample } from "./processTable";
+import { buildProcessTree, parseClock, parsePosixProcesses, parseWindowsProcesses, processKind, withoutQuery, type ProcessSample } from "./processTable";
 import { ResourceHistoryStore } from "./resourceHistory";
 
 const row = (pid: number, ppid: number, name: string, extra: Partial<ProcessSample> = {}): ProcessSample => ({ pid, ppid, name, command: name, startTimeMs: 1_000 + pid, rssBytes: 1024 * pid, elapsedMs: 10_000, cpuTimeMs: 0, ...extra });
@@ -19,6 +19,7 @@ describe("process tables", () => {
 		]);
 		expect(parseWindowsProcesses(JSON.stringify({ p: 7, pp: 1, n: "a", s: 5 }), 10)).toHaveLength(1);
 		expect(parseWindowsProcesses("  ")).toEqual([]);
+		expect(withoutQuery([row(1, 0, "Phaseo.exe"), row(2, 1, "powershell.exe", { command: "powershell.exe -Command ... p=$_.ProcessId ..." })], "p=$_.ProcessId").map(value => value.pid)).toEqual([1]);
 	});
 
 	it("reads ps output with lstart and arguments containing spaces", () => {
@@ -74,8 +75,8 @@ describe("resource history", () => {
 		expect(root).toMatchObject({ pid: 100, isRoot: true, currentCpuPercent: 20, maxCpuPercent: 30, avgCpuPercent: 20, sampleCount: 3 });
 		expect(root.buckets).toEqual([{ avgCpuPercent: 20, maxCpuPercent: 30 }, { avgCpuPercent: 20, maxCpuPercent: 20 }]);
 		expect(child).toMatchObject({ pid: 200, currentCpuPercent: 0, sampleCount: 2 });
-		// 10% for one 3 s interval, 30% for 3 s, 20% for the 30 s bucket cap.
-		expect(root.cpuSeconds).toBeCloseTo(0.3 + 0.9 + 6, 5);
+		// 10% for one 3 s interval, 30% for 3 s, then 20% for at most 10 s of a 36 s gap that was not sampled.
+		expect(root.cpuSeconds).toBeCloseTo(0.3 + 0.9 + 2, 5);
 		expect(result.retainedSampleCount).toBe(3);
 	});
 
