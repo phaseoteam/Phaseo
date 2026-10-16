@@ -8,7 +8,7 @@ export type WorkspaceMode = "chat" | "code";
 export type RightPanelSurface = "changes" | "files" | "diff" | "terminal" | "browser" | "agents" | "pulls";
 /** A surface to show in the right pane, "files" for Files, or "restore" to reopen the chat's own tabs. */
 export type RightPanelTab = RightPanelSurface | "files" | "restore";
-export type SettingsPage = "general" | "appearance" | "notifications" | "accounts" | "usage" | "agents" | "mcp" | "keyboard";
+export type SettingsPage = "general" | "appearance" | "notifications" | "accounts" | "usage" | "agents" | "mcp" | "keyboard" | "project";
 export type CompareGroup = { id: string; title: string; taskIds: string[]; createdAt: string };
 
 type WorkspaceState = {
@@ -41,6 +41,9 @@ type WorkspaceState = {
 	scheduled: boolean;
 	openScheduled: () => void;
 	openSettings: (page?: SettingsPage) => void;
+	/** The project the Project settings page shows. */
+	settingsProjectId?: string;
+	openProjectSettings: (projectId: string) => void;
 	closeSettings: () => void;
 	commandsOpen: boolean;
 	setCommandsOpen: (open: boolean | ((open: boolean) => boolean)) => void;
@@ -54,7 +57,7 @@ export function errorText(reason: unknown) {
 	return (reason instanceof Error ? reason.message : String(reason)).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "");
 }
 
-type Location = { mode: WorkspaceMode; selectedId?: string; compareId?: string; settings?: SettingsPage; scheduled?: boolean };
+type Location = { mode: WorkspaceMode; selectedId?: string; compareId?: string; settings?: SettingsPage; settingsProjectId?: string; scheduled?: boolean };
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
 	const api = window.phaseoDesktop?.workspace;
@@ -71,6 +74,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 	const [rightPanel, setRightPanel] = usePersistedState<RightPanelTab | undefined>("phaseo.desktop.rightPanel", undefined);
 	const [settings, setSettingsState] = useState<SettingsPage>();
 	const [scheduled, setScheduled] = useState(false);
+	const [settingsProjectId, setSettingsProjectId] = useState<string>();
 	const setSettings = useCallback((page?: SettingsPage) => { setSettingsState(page); if (page) setScheduled(false); }, []);
 	const [commandsOpen, setCommandsOpen] = useState(false);
 	const [navigation, setNavigation] = useState<{ entries: Location[]; index: number }>({ entries: [], index: -1 });
@@ -96,7 +100,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 		return () => media.removeEventListener("change", apply);
 	}, [theme]);
 
-	const location = useMemo(() => ({ mode, selectedId, compareId, settings, ...(scheduled ? { scheduled } : {}) }), [mode, selectedId, compareId, settings, scheduled]);
+	const location = useMemo(() => ({ mode, selectedId, compareId, settings, ...(settings === "project" && settingsProjectId ? { settingsProjectId } : {}), ...(scheduled ? { scheduled } : {}) }), [mode, selectedId, compareId, settings, settingsProjectId, scheduled]);
 	useEffect(() => {
 		setNavigation(previous => {
 			if (JSON.stringify(previous.entries[previous.index]) === JSON.stringify(location)) return previous;
@@ -108,7 +112,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 		const target = navigation.entries[navigation.index + direction];
 		if (!target) return;
 		setNavigation(previous => ({ ...previous, index: previous.index + direction }));
-		setModeState(target.mode); setSelectedId(target.selectedId); setCompareId(target.compareId); setSettings(target.settings); setScheduled(Boolean(target.scheduled));
+		setModeState(target.mode); setSelectedId(target.selectedId); setCompareId(target.compareId); setSettings(target.settings); setSettingsProjectId(target.settingsProjectId); setScheduled(Boolean(target.scheduled));
 	};
 
 	const command = useCallback(async (value: WorkspaceCommand) => {
@@ -151,6 +155,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 		rightPanel, setRightPanel,
 		scheduled, openScheduled,
 		settings, openSettings: page => setSettings(page ?? "general"), closeSettings: () => setSettings(undefined),
+		settingsProjectId, openProjectSettings: id => { setSettingsProjectId(id); setSettings("project"); },
 		commandsOpen, setCommandsOpen,
 		history: { back: () => move(-1), forward: () => move(1), canBack: navigation.index > 0, canForward: navigation.index < navigation.entries.length - 1 },
 		taskById,

@@ -1,6 +1,6 @@
-import { Children, isValidElement, useState, type ReactElement, type ReactNode } from "react";
+import { Children, isValidElement, useState, type ReactNode } from "react";
 import { CircleCheck, CircleDashed, CircleDot, CircleX, GitMerge, GitPullRequestArrow, GitPullRequestClosed, GitPullRequestDraft, LoaderCircle, Link2, TriangleAlert, Unlink2, UserCheck, UserRound, UserRoundX, type LucideIcon } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../../components/ui/tooltip";
+import { Tip } from "../../components/ui/tooltip";
 import { cn } from "../../lib/utils";
 import type { PullRequest } from "../../../shared/pullRequests";
 import type { PullRequestActor, PullRequestCheck, PullRequestCheckStatus } from "../../../shared/pullRequestView";
@@ -22,9 +22,7 @@ export const PULL_REQUEST_STATE_PRESENTATION: Record<PullRequestStateKey, PullRe
 export function pullRequestStatePresentation(state: "OPEN" | "CLOSED" | "MERGED" | "open" | "closed" | "merged", draft: boolean): PullRequestStatePresentation { return PULL_REQUEST_STATE_PRESENTATION[pullRequestStateKey(state, draft)]; }
 
 /** A tooltip around any element, the shape every glyph here uses. */
-export function Tip({ label, children, side = "top" }: { label: ReactNode; children: ReactElement; side?: "top" | "bottom" | "left" | "right" }) {
-	return <Tooltip><TooltipTrigger render={children} /><TooltipContent side={side}>{label}</TooltipContent></Tooltip>;
-}
+export { Tip };
 
 export function PullRequestStateGlyph({ state, draft, className }: { state: "OPEN" | "CLOSED" | "MERGED" | "open" | "closed" | "merged"; draft: boolean; className?: string }) {
 	const presentation = pullRequestStatePresentation(state, draft);

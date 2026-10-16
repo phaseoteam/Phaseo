@@ -31,6 +31,8 @@
 	--color-ring: var(--ring);
 	--color-success: var(--success);
 	--color-warning: var(--warning);
+	/* T3's info: snoozed chats, work in progress, renamed files. */
+	--color-info: var(--info);
 	--color-sidebar: var(--sidebar);
 	--color-sidebar-foreground: var(--sidebar-foreground);
 	--color-sidebar-accent: var(--sidebar-accent);
@@ -69,6 +71,7 @@
 	--destructive: oklch(0.577 0.245 27.325);
 	--success: oklch(0.6 0.15 150);
 	--warning: oklch(0.7 0.15 70);
+	--info: oklch(0.546 0.245 262.881);
 	--border: oklch(0.922 0 0);
 	--input: oklch(0.922 0 0);
 	--ring: #0069a8;
@@ -97,6 +100,7 @@
 	--destructive: oklch(0.704 0.191 22.216);
 	--success: oklch(0.72 0.17 150);
 	--warning: oklch(0.8 0.15 80);
+	--info: oklch(0.707 0.165 254.624);
 	--border: oklch(1 0 0 / 10%);
 	--input: oklch(1 0 0 / 15%);
 	--ring: #0078b8;

@@ -186,7 +186,7 @@ export class WorkspaceRuntime {
 		this.settleCleanups.add(work); void work.finally(() => this.settleCleanups.delete(work));
 	}
 	/**
-	 * Closes the chat's idle terminals so they stop holding its checkout, then runs the project's settle scripts in the
+	 * Closes the chat's idle terminals so they stop holding its checkout, then runs the project's settle script in the
 	 * chat's own worktree (never a shared checkout), recording each as an activity in the chat. A chat taken up again
 	 * meanwhile is left alone.
 	 */
@@ -201,27 +201,25 @@ export class WorkspaceRuntime {
 		const target = settleScriptTarget(task, overview.projects, overview.tasks);
 		if (!target) return;
 		this.settleScriptRuns.set(id, key);
-		for (const script of target.scripts) {
-			if (!stillSettled()) return;
-			const activityId = `settle:${randomUUID()}`, heading = `$ ${script.command}`, title = `Settle script: ${script.name}`;
-			this.recordActivity(id, { id: activityId, type: "tool", title, text: heading, status: "running" });
-			let result: { output: string; exitCode: number | null; stopped?: string };
-			try { result = await runProjectCommand(target.directory, script.command, ".", this.settleAbort.signal); }
-			catch (error) { result = { output: error instanceof Error ? error.message : "The script could not start.", exitCode: null }; }
-			const output = result.output.trim().slice(-64 * 1024) || "(no output)";
-			const outcome = result.stopped ?? (result.exitCode === null ? "The script did not finish." : `Exited with code ${result.exitCode}.`);
-			this.recordActivity(id, { id: activityId, type: "tool", title, text: `${heading}\n\n${output}\n\n${outcome}`, status: result.exitCode === 0 && !result.stopped ? "completed" : "failed" });
-		}
+		const { script, directory } = target;
+		const activityId = `settle:${randomUUID()}`, heading = `$ ${script.command}`, title = `Settle script: ${script.name}`;
+		this.recordActivity(id, { id: activityId, type: "tool", title, text: heading, status: "running" });
+		let result: { output: string; exitCode: number | null; stopped?: string };
+		try { result = await runProjectCommand(directory, script.command, ".", this.settleAbort.signal); }
+		catch (error) { result = { output: error instanceof Error ? error.message : "The script could not start.", exitCode: null }; }
+		const output = result.output.trim().slice(-64 * 1024) || "(no output)";
+		const outcome = result.stopped ?? (result.exitCode === null ? "The script did not finish." : `Exited with code ${result.exitCode}.`);
+		this.recordActivity(id, { id: activityId, type: "tool", title, text: `${heading}\n\n${output}\n\n${outcome}`, status: result.exitCode === 0 && !result.stopped ? "completed" : "failed" });
 	}
 	/** Adds or updates an activity outside a turn. It is not activity in the lifecycle sense, so the chat keeps its place. */
 	private recordActivity(id: string, activity: AgentActivity) {
-		if (this.closing) return;
 		let task; try { task = this.store.getTask(id); } catch { return; }
 		task.activities ??= [];
 		const existing = task.activities.find(value => value.id === activity.id);
 		if (existing) Object.assign(existing, activity, { timelineOrder: existing.timelineOrder });
 		else task.activities.push({ ...activity, timelineOrder: [...task.messages, ...task.activities].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), task.messages.length + task.activities.length) + 1 });
-		this.store.saveTask(task, true); this.broadcast();
+		// A script stopped by shutdown still records how it ended; close() waits for this before closing the store.
+		this.store.saveTask(task, true); if (!this.closing) this.broadcast();
 	}
 	/** Called after any pane reads a pull request, so linked chats show its latest state. */
 	syncPullRequestSnapshot(repository: string, number: number, snapshot: PullRequestLinkSnapshot) {

@@ -47,6 +47,7 @@ export function validateProjectSettings(value: unknown): ProjectSettings {
 		if (!Array.isArray(value.scripts) || value.scripts.length > maximumProjectScripts) throw new Error(`A project can have up to ${maximumProjectScripts} scripts.`);
 		const scripts = value.scripts.map(validateProjectScript);
 		if (new Set(scripts.map(script => script.id)).size !== scripts.length) throw new Error("Invalid project script.");
+		if (scripts.filter(script => script.runOnSettle).length > 1) throw new Error("Only one script can run when a chat settles.");
 		if (scripts.length) settings.scripts = scripts;
 	}
 	return settings;
@@ -89,12 +90,22 @@ type ChatLike = { id: string; projectId?: string; archived: boolean; settledOver
  * Where a settled chat's settle scripts run, after T3's cleanUpSettledThread: only in the chat's own worktree.
  * A project's main checkout, or a worktree another open chat still uses, is shared, so nothing runs there.
  */
-export function settleScriptTarget(chat: ChatLike, projects: readonly ProjectLike[], chats: readonly ChatLike[]): { directory: string; scripts: ProjectScript[] } | undefined {
+export function settleScriptTarget(chat: ChatLike, projects: readonly ProjectLike[], chats: readonly ChatLike[]): { directory: string; script: ProjectScript } | undefined {
 	const project = projects.find(value => value.id === chat.projectId);
 	if (!project?.worktree || project.worktree.removedAt) return;
 	if (chats.some(other => other.id !== chat.id && other.projectId === project.id && !other.archived && !other.delegation?.parentTaskId && other.settledOverride !== "settled")) return;
-	const scripts = settingsProject(projects, project.id)?.settings?.scripts?.filter(script => script.runOnSettle) ?? [];
-	return scripts.length ? { directory: project.directory, scripts } : undefined;
+	const script = settleScript(settingsProject(projects, project.id)?.settings?.scripts ?? []);
+	return script ? { directory: project.directory, script } : undefined;
+}
+
+/** T3's settle script: the one that runs in a chat's worktree when the chat settles. */
+export const settleScript = (scripts: readonly ProjectScript[]) => scripts.find(script => script.runOnSettle);
+/** T3's one-click script in the chat header: the first that is neither setup nor settle, else the first that is not settle. */
+export const primaryScript = (scripts: readonly ProjectScript[]) => scripts.find(script => !script.runOnWorktreeCreate && !script.runOnSettle) ?? scripts.find(script => !script.runOnSettle);
+/** A script's name with its roles, as T3's script menu shows it. */
+export function scriptMenuLabel(script: ProjectScript) {
+	const roles = [...script.runOnWorktreeCreate ? ["setup"] : [], ...script.runOnSettle ? ["on settle"] : []];
+	return roles.length ? `${script.name} (${roles.join(", ")})` : script.name;
 }
 
 /** Scripts to start in a newly created worktree of a project. */

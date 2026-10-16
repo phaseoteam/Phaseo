@@ -18,7 +18,7 @@ import { ActorLabel, DiffStat, errorMessage, MetaLine, Tip } from "./presentatio
 import { fileTree, ignoreWhitespacePatch, readViewed, relativeTime, setViewed, viewedState, viewedStorageKey, type FileTreeNode, type ViewedFiles } from "./pullRequestLogic";
 import { Reactions } from "./SummaryTab";
 
-const statusLetter: Record<string, { letter: string; tone: string }> = { added: { letter: "A", tone: "text-emerald-600 dark:text-emerald-400" }, removed: { letter: "D", tone: "text-red-600 dark:text-red-400" }, renamed: { letter: "R", tone: "text-sky-600 dark:text-sky-400" }, copied: { letter: "C", tone: "text-sky-600 dark:text-sky-400" } };
+const statusLetter: Record<string, { letter: string; tone: string }> = { added: { letter: "A", tone: "text-emerald-600 dark:text-emerald-400" }, removed: { letter: "D", tone: "text-red-600 dark:text-red-400" }, renamed: { letter: "R", tone: "text-info" }, copied: { letter: "C", tone: "text-info" } };
 const fileAnchor = (path: string) => `pr-file-${encodeURIComponent(path)}`;
 
 function ToolbarToggle({ label, pressed, onPressedChange, children }: { label: string; pressed: boolean; onPressedChange: (pressed: boolean) => void; children: React.ReactNode }) {

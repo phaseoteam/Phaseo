@@ -108,4 +108,14 @@ function TooltipContent({
   )
 }
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+/** A tooltip around any element, which becomes its trigger. The app's replacement for native `title` tooltips. */
+function Tip({ label, children, side = "top", delay = 300 }: { label: React.ReactNode; children: React.ReactElement; side?: "top" | "bottom" | "left" | "right"; delay?: number }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger delay={delay} render={children} />
+      <TooltipContent side={side}>{label}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider, Tip }
