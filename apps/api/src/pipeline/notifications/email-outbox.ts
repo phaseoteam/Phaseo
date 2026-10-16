@@ -394,19 +394,28 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 				continue;
 			}
 
-			// Feedback requests are non-essential, so they also honour Resend's own
-			// unsubscribe state. Transactional mail (billing, alerts) does not.
+			// Feedback requests are non-essential. They are dropped once the account is
+			// deleted (deletion clears the row's user_id and removes the feedback request
+			// its link points to), and they honour Resend's own unsubscribe state.
+			// Transactional mail (billing, alerts) does neither.
 			const isFeedbackRequest = row.template === "feedback_request" || row.kind === "feedback_request";
-			if (isFeedbackRequest && (await isResendContactUnsubscribed(row.to_email))) {
-				const { error: unsubscribedUpdateError } = await supabase
+			const feedbackSkipReason = !isFeedbackRequest
+				? null
+				: !row.user_id
+					? "user_deleted"
+					: (await isResendContactUnsubscribed(row.to_email))
+						? "unsubscribed:resend"
+						: null;
+			if (feedbackSkipReason) {
+				const { error: skippedUpdateError } = await supabase
 					.from("email_outbox")
 					.update({
 						attempts: 5,
-						last_error: "unsubscribed:resend",
+						last_error: feedbackSkipReason,
 					})
 					.eq("id", row.id);
-				if (unsubscribedUpdateError) {
-					throw new Error(`email_outbox_update_error:${unsubscribedUpdateError.message ?? "unknown"}`);
+				if (skippedUpdateError) {
+					throw new Error(`email_outbox_update_error:${skippedUpdateError.message ?? "unknown"}`);
 				}
 				failed += 1;
 				continue;

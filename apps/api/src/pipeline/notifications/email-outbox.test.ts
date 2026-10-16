@@ -336,6 +336,34 @@ describe("email outbox", () => {
 		});
 	});
 
+	it("drops feedback requests queued for an account that has since been deleted", async () => {
+		state.rows.push({
+			id: "email_feedback_deleted_user",
+			created_at: "2026-10-13T10:05:00Z",
+			kind: "feedback_request",
+			template: "feedback_request",
+			to_email: "ada@example.com",
+			subject: null,
+			workspace_id: null,
+			user_id: null,
+			dedupe_key: "feedback_request:v1:user_1",
+			payload: { token: "0f8fad5b-d9cb-469f-a165-70867728950e", segment: "paid", recency: "active" },
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await expect(drainEmailOutbox(10)).resolves.toEqual({ processed: 1, sent: 0, failed: 1 });
+
+		expect(state.sendEmail).not.toHaveBeenCalled();
+		expect(state.isResendContactUnsubscribed).not.toHaveBeenCalled();
+		expect(state.updateCalls).toContainEqual({
+			id: "email_feedback_deleted_user",
+			payload: { attempts: 5, last_error: "user_deleted" },
+		});
+	});
+
 	it("retries a feedback request later when the Resend contact lookup fails", async () => {
 		state.isResendContactUnsubscribed.mockRejectedValue(new Error("resend_contact_lookup_error:429"));
 		state.rows.push({
