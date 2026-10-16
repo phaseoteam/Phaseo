@@ -19,7 +19,8 @@
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
-      "source": null
+      "source": null,
+      "effective_to": "2026-08-24T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -35,24 +36,170 @@
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
+      "source": null,
+      "effective_to": "2026-08-24T00:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.223552,
+      "currency": "USD",
+      "pricing_plan": "basic-pack",
+      "note": "Derived from 0.056 Mancer credits per token and the published basic pack price.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-24T00:00:00Z",
+      "effective_to": null,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.71856,
+      "currency": "USD",
+      "pricing_plan": "basic-pack",
+      "note": "Derived from 0.18 Mancer credits per token and the published basic pack price.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-24T00:00:00Z",
+      "effective_to": null,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.203535,
+      "currency": "USD",
+      "pricing_plan": "better-pack",
+      "note": "Derived from 0.056 Mancer credits per token and the published better pack price.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-24T00:00:00Z",
+      "effective_to": null,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.654218,
+      "currency": "USD",
+      "pricing_plan": "better-pack",
+      "note": "Derived from 0.18 Mancer credits per token and the published better pack price.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-24T00:00:00Z",
+      "effective_to": null,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.186629,
+      "currency": "USD",
+      "pricing_plan": "best-pack",
+      "note": "Derived from 0.056 Mancer credits per token and the published best pack price.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-24T00:00:00Z",
+      "effective_to": null,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.59988,
+      "currency": "USD",
+      "pricing_plan": "best-pack",
+      "note": "Derived from 0.18 Mancer credits per token and the published best pack price.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-24T00:00:00Z",
+      "effective_to": null,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.139994,
+      "currency": "USD",
+      "pricing_plan": "founders-pack",
+      "note": "Derived from 0.056 Mancer credits per token and the published founders pack price.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-24T00:00:00Z",
+      "effective_to": null,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.449982,
+      "currency": "USD",
+      "pricing_plan": "founders-pack",
+      "note": "Derived from 0.18 Mancer credits per token and the published founders pack price.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-24T00:00:00Z",
+      "effective_to": null,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
       "source": null
     }
   ],
   "regions": [],
   "service_tiers": [
-    "standard"
+    "basic-pack",
+    "better-pack",
+    "best-pack",
+    "founders-pack"
   ],
   "sources": [
     {
+      "kind": "provider_models",
+      "url": "https://neuro.mancer.tech/oai/v1/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official model endpoint supplies per-token credit rates."
+    },
+    {
       "kind": "pricing",
-      "url": "https://mancer.tech/models",
-      "accessed_at": "2026-08-03T00:00:00Z",
-      "notes": "Provider deployment pricing recorded for this model route."
+      "url": "https://mancer.tech/pricing",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official page supplies exact USD prices and credit quantities for all four public packs."
     }
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-08-03T00:00:00Z",
-    "notes": "Pricing checked against the provider model or pricing page."
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "All published prepaid-pack USD equivalents are represented; effective request cost depends on the purchased pack."
   }
 }

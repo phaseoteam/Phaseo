@@ -1,0 +1,28 @@
+{
+  "organisation_id": "anthracite",
+  "name": "Anthracite",
+  "country_code": null,
+  "description": "Anthracite publishes language models hosted by Mancer.",
+  "colour": null,
+  "organisation_links": [
+    {
+      "platform": "hugging_face",
+      "url": "https://huggingface.co/anthracite-org"
+    }
+  ],
+  "status": "active",
+  "routable": null,
+  "sources": [
+    {
+      "kind": "model_card",
+      "url": "https://huggingface.co/anthracite-org/magnum-v4-72b",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Primary model source linked by Mancer's official catalogue."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Identity verified from the primary model source; country was not asserted."
+  }
+}

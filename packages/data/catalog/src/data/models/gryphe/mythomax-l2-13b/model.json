@@ -13,6 +13,13 @@
   "input_types": "text",
   "output_types": "text",
   "api_model_id": "gryphe/mythomax-l2-13b",
+  "variants": [
+    {
+      "model_id": "gryphe/mythomax-l2-13b:free",
+      "name": "Mythomax L2 13b (Free)",
+      "variant_kind": "free"
+    }
+  ],
   "links": [
     {
       "title": "Requesty model catalogue",

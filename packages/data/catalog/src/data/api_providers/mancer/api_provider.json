@@ -28,13 +28,25 @@
     {
       "kind": "documentation",
       "url": "https://mancer.tech/docs-api/",
-      "accessed_at": "2026-08-12T00:00:00Z",
+      "accessed_at": "2026-08-24T00:00:00Z",
       "notes": "Official API documentation."
+    },
+    {
+      "kind": "provider_models",
+      "url": "https://neuro.mancer.tech/oai/v1/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official unauthenticated live model catalogue, including exact IDs, modalities, limits and credit pricing."
+    },
+    {
+      "kind": "pricing",
+      "url": "https://mancer.tech/pricing",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official USD credit-pack prices and quantities."
     }
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-08-12T00:00:00Z",
-    "notes": "Provider identity, API compatibility, model catalogue, billing and content policy verified against first-party pages."
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Provider identity, API compatibility, all 11 live public models, billing and content policy verified against first-party pages and the live model endpoint. No public rate, region, or data-residency commitments were published."
   }
 }
