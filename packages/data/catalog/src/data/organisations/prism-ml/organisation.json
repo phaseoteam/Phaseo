@@ -1,0 +1,9 @@
+{
+  "organisation_id": "prism-ml",
+  "name": "Prism ML",
+  "country_code": "US",
+  "description": "Prism ML develops efficient machine-learning models.",
+  "links": [{"title":"Prism ML","kind":"website","url":"https://prismml.com/"}],
+  "sources": [{"kind":"announcement","url":"https://prismml.com/news/prismml-releases-bonsai-27b","accessed_at":"2026-08-20T00:00:00Z","notes":"Official announcement identifies Prism ML as a U.S.-based company."},{"kind":"models","url":"https://docs.together.ai/docs/serverless/models","accessed_at":"2026-08-20T00:00:00Z","notes":"Together lists Prism ML as the organization behind Ternary Bonsai 27B."}],
+  "verification": {"status":"partial","checked_at":"2026-08-20T00:00:00Z","notes":"Provider association verified from Together's current serverless catalogue."}
+}

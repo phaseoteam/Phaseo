@@ -1,0 +1,26 @@
+{
+  "organisation_id": "swiss-ai",
+  "name": "Swiss AI",
+  "country_code": "CH",
+  "description": "Swiss AI publishes machine-learning models on the Hugging Face Hub.",
+  "links": [
+    {
+      "title": "Swiss AI on Hugging Face",
+      "kind": "hugging_face",
+      "url": "https://huggingface.co/swiss-ai"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "official_profile",
+      "url": "https://huggingface.co/swiss-ai",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official Hugging Face publisher profile for models exposed by the Hugging Face router."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Publisher identity verified from the official Hub namespace; country metadata follows the publisher's public organizational identity."
+  }
+}
