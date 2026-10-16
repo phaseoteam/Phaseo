@@ -294,8 +294,8 @@ Reglas de gestión de errores para agentes, resumen de esta página:
 
 - Decide según el código `error` del JSON y `status_code`, no según el texto de `description`. Registra `generation_id` en cada fallo.
 - `400`, `401`, `403` y `404`: corrige primero la solicitud, la clave o el acceso. No repitas la misma solicitud sin cambios.
-- `410` con `model_retired`: cambia al `replacement_model` indicado en el cuerpo.
-- `429`: espera lo que indique `Retry-After` (segundos o una fecha HTTP) antes de reintentar. Un error `key_limit_exceeded` sin `Retry-After` no se restablece solo, así que no lo reintentes.
+- `410` con `model_retired`: cambia a `replacement_model` cuando no sea `null`; si lo es, elige un modelo nuevo con `GET /v1/models`.
+- `429`: si hay `Retry-After` (segundos o una fecha HTTP), espera ese tiempo antes de reintentar; si no, usa retroceso exponencial con variación aleatoria. Un error `key_limit_exceeded` sin `Retry-After` no se restablece solo, así que no lo reintentes.
 - `500` a `599`: reintenta solo cuando repetir la llamada sea seguro, con un límite de intentos, un plazo total y retroceso exponencial con variación aleatoria. En trabajos asíncronos, consulta el trabajo aceptado en lugar de enviarlo de nuevo.
 - Trata las cargas de depuración como información sensible y redáctalas antes de escribir registros persistentes.
 - Para patrones probados de reintento y análisis de errores, instala la habilidad `phaseo-gateway`: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`.

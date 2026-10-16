@@ -294,8 +294,8 @@ Règles de gestion des erreurs pour les agents, en résumé de cette page :
 
 - Décidez selon le code `error` du JSON et `status_code`, pas selon le texte de `description`. Journalisez `generation_id` à chaque échec.
 - `400`, `401`, `403` et `404` : corrigez d’abord la requête, la clé ou l’accès. Ne renvoyez pas la même requête sans modification.
-- `410` avec `model_retired` : passez au `replacement_model` indiqué dans le corps.
-- `429` : attendez le délai de `Retry-After` (en secondes ou date HTTP) avant de réessayer. Une erreur `key_limit_exceeded` sans `Retry-After` ne se réinitialise pas d’elle-même : ne la réessayez pas.
+- `410` avec `model_retired` : passez à `replacement_model` s’il n’est pas `null` ; sinon, choisissez un nouveau modèle avec `GET /v1/models`.
+- `429` : si `Retry-After` est présent (en secondes ou date HTTP), attendez ce délai avant de réessayer ; sinon, utilisez un backoff exponentiel avec gigue. Une erreur `key_limit_exceeded` sans `Retry-After` ne se réinitialise pas d’elle-même : ne la réessayez pas.
 - `500` à `599` : réessayez seulement si répéter l’appel est sans risque, avec un nombre maximal de tentatives, un délai global et un backoff exponentiel avec gigue. Pour les tâches asynchrones, consultez la tâche acceptée au lieu de la soumettre à nouveau.
 - Traitez les charges de débogage comme sensibles et masquez-les avant d’écrire des journaux persistants.
 - Pour des modèles éprouvés de nouvelle tentative et d’analyse des erreurs, installez la compétence `phaseo-gateway` : `npx skills add https://phaseo.app/docs --skill phaseo-gateway`.
