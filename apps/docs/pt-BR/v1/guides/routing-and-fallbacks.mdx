@@ -240,7 +240,7 @@ Cada alternativa é verificada de forma independente em relação às restriçõ
 
 Uma solicitação que envia `models` sem `model` é rejeitada com `400`. As alternativas no nível da solicitação usam o mesmo mecanismo das alternativas de rotas dinâmicas:
 
-- **Gatilhos.** O próximo modelo só é tentado quando a tentativa anterior, depois das próprias novas tentativas com provedores, termina com `429`, `500`, `502`, `503` ou `504`. Erros do cliente, como `400`, `401`, `402`, `403`, `404`, `408`, `413` e `422`, são retornados sem trocar de modelo. Um `429` causado por um orçamento da Phaseo ou pela cota de um modelo gratuito atingidos durante a execução da solicitação também passa para o próximo modelo, porque outro modelo pode caber no limite restante. Autenticação, limites de taxa de chaves de API e outras verificações que falham antes da execução do modelo principal retornam imediatamente.
+- **Gatilhos.** O próximo modelo só é tentado quando a tentativa anterior, depois das próprias novas tentativas com provedores, termina com `429`, `500`, `502`, `503` ou `504`. Erros do cliente, como `400`, `401`, `402`, `403`, `404`, `408`, `413` e `422`, são retornados sem trocar de modelo. Um `429` causado por um orçamento da Phaseo ou pela cota de um modelo gratuito atingidos durante a execução da solicitação também passa para o próximo modelo, porque outro modelo pode caber no limite restante. Quando nenhum provedor atende ao modelo principal, por exemplo porque ele foi [aposentado](#retired-models), a Phaseo também passa para o próximo modelo. Autenticação, limites de taxa de chaves de API e outras verificações que falham antes da execução do modelo principal retornam imediatamente.
 - **Limites.** `models` aceita de 1 a 25 entradas. Entradas duplicadas e entradas iguais a `model` são ignoradas. Rotas dinâmicas mantêm o próprio limite de oito alternativas.
 - **Validação.** Cada entrada pode ser um ID de modelo, um ID de modelo qualificado por provedor ou uma predefinição como `@support`. Cada tentativa é validada como uma solicitação própria: suporte ao endpoint e à modalidade, parâmetros solicitados, restrições de modelos do espaço de trabalho, guardrails, predefinições, preços e credenciais BYOK. Uma alternativa que não consegue atender à solicitação é ignorada e registrada nos logs de solicitações; ela nunca substitui o erro que você receberia de outra forma. Uma alternativa que resulta em uma tentativa já feita, com o mesmo modelo e os mesmos provedores elegíveis, é ignorada.
 - **Logs e cobrança.** Cada tentativa é uma solicitação separada nos seus logs, com uso e registro de cobrança próprios, então cada tentativa é cobrada exatamente como seria sem alternativas.
@@ -272,6 +272,12 @@ Saiba mais:
 
 - [Limites de taxa](../api-reference/limits.mdx)
 - [Tratamento de erros](../api-reference/errors.mdx)
+
+<span id="retired-models"></span>
+
+## Modelos aposentados
+
+Um modelo aposentado continua sendo atendido enquanto algum provedor o atender. Quando nenhum o atende mais, as solicitações falham com `410 model_retired`, a menos que o espaço de trabalho tenha ativado o roteamento de modelos aposentados para enviá-las a um substituto. Sua própria lista `models` é sempre tentada antes de um substituto. Consulte [Descontinuação e aposentadoria de modelos](./model-retirement.mdx).
 
 ## Afinidade baseada em cache e sessão
 
@@ -321,5 +327,6 @@ Em cargas de produção, registre IDs de solicitação, códigos de status da re
 ## Guias relacionados
 
 - [Predefinições](./presets.mdx)
+- [Descontinuação e aposentadoria de modelos](./model-retirement.mdx)
 - [Matriz de paridade de recursos](../migration-guides/feature-parity-matrix.mdx)
 

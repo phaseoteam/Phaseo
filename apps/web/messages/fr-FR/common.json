@@ -2530,5 +2530,14 @@
 			"requestErrorMessage": "Message d’erreur de la requête",
 			"openDetails": "Ouvrir les détails"
 		}
+	},
+	"deprecationNotice": {
+		"oneModel": "{model}, utilisé par votre espace de travail, va être retiré. Commencez à préparer votre migration.",
+		"manyModels": "{count} modèles utilisés par votre espace de travail vont être retirés. Commencez à préparer votre migration.",
+		"retiresOn": "Retrait le {date}.",
+		"firstRetiresOn": "{model} sera retiré en premier, le {date}.",
+		"replacement": "Remplacement suggéré : {replacement}.",
+		"review": "Consulter",
+		"dismiss": "Fermer"
 	}
 }

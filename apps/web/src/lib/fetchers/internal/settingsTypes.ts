@@ -312,6 +312,7 @@ export type SettingsCreditsInitialData = {
 	lowBalanceEmailThresholdUsd: number | null;
 	paymentMethodExpiringEmailEnabled: boolean;
 	modelDeprecationAlertsEnabled: boolean;
+	modelDeprecationAlertsIncludeAdmins: boolean;
 	notificationDestinations: NotificationDestination[];
 	notificationRoutes: Partial<Record<NotificationEventKind, string[]>>;
 	obfuscateInfo: boolean;
@@ -441,7 +442,7 @@ export type NotificationDestination = {
 	createdAt: string | null;
 };
 
-export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation";
+export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation" | "model_substitution";
 
 export type SettingsPaymentMethodsInitialData = {
 	customerId: string | null;

@@ -2530,5 +2530,14 @@
 			"requestErrorMessage": "رسالة خطأ الطلب",
 			"openDetails": "فتح التفاصيل"
 		}
+	},
+	"deprecationNotice": {
+		"oneModel": "يجري إيقاف {model} الذي تستخدمه مساحة العمل لديك. ابدأ التخطيط للانتقال عنه.",
+		"manyModels": "يجري إيقاف {count} من النماذج التي تستخدمها مساحة العمل لديك. ابدأ التخطيط للانتقال عنها.",
+		"retiresOn": "يتوقف في {date}.",
+		"firstRetiresOn": "سيتوقف {model} أولًا في {date}.",
+		"replacement": "البديل المقترح: {replacement}.",
+		"review": "مراجعة",
+		"dismiss": "إغلاق"
 	}
 }

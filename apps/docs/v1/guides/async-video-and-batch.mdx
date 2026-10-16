@@ -113,6 +113,10 @@ Batch requests also accept `provider_options`: OpenAI supports `output_expires_a
 
 Mistral already has a native batch adapter. Anthropic message batches are polled; other providers may combine polling with native completion notifications. Availability depends on the provider's supported endpoints and the deployment's batch allowlist. Check the batch capability response before submitting a file or inline requests.
 
+Vertex Gemini batches accept inline `requests` with `/v1/generateContent`, or `model` and `prompts`. Select `provider: "google-vertex"` to use Vertex. Successful rows are charged at Batch rates. This adapter requires managed credentials; BYOK, uploaded Files, embeddings and `google-vertex-eu` batches are unavailable. Input is limited to 20 MB and 10,000 requests. Stored input and output expire after 30 days.
+
+Vertex results use `custom_id` to identify each submitted row, with a successful generation in `response.body` or a per-request `error`. Output order can differ from input order. A submission with an uncertain provider outcome remains under manual review with its credit hold retained; avoid creating a replacement until its outcome is confirmed.
+
 Batch completion can include failed rows. Inspect each result using its custom ID instead of assuming that every row succeeded. Keep the original input and job ID until results and billing are reconciled. An uncertain submission must be investigated before resubmitting, because a provider may have accepted the original request.
 
 ### Download batch results

@@ -11394,6 +11394,9 @@ export async function getWorkspaceSettings(
     byok_fallback_enabled?: boolean | null;
     io_logging_enabled?: boolean | null;
     io_logging_include_provider_payloads?: boolean | null;
+    model_successor_max_price_increase_percent?: number | null;
+    model_successor_price_policy?: "never" | "limit" | "any" | null;
+    model_successor_redirect_enabled?: boolean | null;
     privacy_enable_free_may_publish_prompts?: boolean | null;
     privacy_enable_free_may_train?: boolean | null;
     privacy_enable_input_output_logging?: boolean | null;
@@ -11419,6 +11422,9 @@ export async function getWorkspaceSettings(
       byok_fallback_enabled?: boolean | null;
       io_logging_enabled?: boolean | null;
       io_logging_include_provider_payloads?: boolean | null;
+      model_successor_max_price_increase_percent?: number | null;
+      model_successor_price_policy?: "never" | "limit" | "any" | null;
+      model_successor_redirect_enabled?: boolean | null;
       privacy_enable_free_may_publish_prompts?: boolean | null;
       privacy_enable_free_may_train?: boolean | null;
       privacy_enable_input_output_logging?: boolean | null;
@@ -17681,6 +17687,7 @@ export async function listWorkspaceNotificationRoutes(
     auto_top_up_failed: string[];
     low_balance: string[];
     model_deprecation: string[];
+    model_substitution: string[];
     payment_method_expiring: string[];
   };
 }> {
@@ -17691,6 +17698,7 @@ export async function listWorkspaceNotificationRoutes(
       auto_top_up_failed: string[];
       low_balance: string[];
       model_deprecation: string[];
+      model_substitution: string[];
       payment_method_expiring: string[];
     };
   }>({
@@ -22138,7 +22146,8 @@ export type UpdateWorkspaceNotificationRouteParams = {
       | "low_balance"
       | "auto_top_up_failed"
       | "payment_method_expiring"
-      | "model_deprecation";
+      | "model_deprecation"
+      | "model_substitution";
   };
   query?: Record<string, never>;
   headers?: Record<string, never>;
@@ -22160,7 +22169,8 @@ export async function updateWorkspaceNotificationRoute(
       | "low_balance"
       | "auto_top_up_failed"
       | "payment_method_expiring"
-      | "model_deprecation";
+      | "model_deprecation"
+      | "model_substitution";
   };
 }> {
   const { path, query, headers, body } = args;
@@ -22174,7 +22184,8 @@ export async function updateWorkspaceNotificationRoute(
         | "low_balance"
         | "auto_top_up_failed"
         | "payment_method_expiring"
-        | "model_deprecation";
+        | "model_deprecation"
+        | "model_substitution";
     };
   }>({
     method: "PUT",
@@ -22315,6 +22326,9 @@ export type UpdateWorkspaceSettingsParams = {
     byok_fallback_enabled?: boolean;
     io_logging_enabled?: boolean;
     io_logging_include_provider_payloads?: boolean;
+    model_successor_max_price_increase_percent?: number;
+    model_successor_price_policy?: "never" | "limit" | "any";
+    model_successor_redirect_enabled?: boolean;
     privacy_enable_free_may_publish_prompts?: boolean;
     privacy_enable_free_may_train?: boolean;
     privacy_enable_input_output_logging?: boolean;
@@ -22343,6 +22357,9 @@ export async function updateWorkspaceSettings(
     byok_fallback_enabled?: boolean | null;
     io_logging_enabled?: boolean | null;
     io_logging_include_provider_payloads?: boolean | null;
+    model_successor_max_price_increase_percent?: number | null;
+    model_successor_price_policy?: "never" | "limit" | "any" | null;
+    model_successor_redirect_enabled?: boolean | null;
     privacy_enable_free_may_publish_prompts?: boolean | null;
     privacy_enable_free_may_train?: boolean | null;
     privacy_enable_input_output_logging?: boolean | null;
@@ -22368,6 +22385,9 @@ export async function updateWorkspaceSettings(
       byok_fallback_enabled?: boolean | null;
       io_logging_enabled?: boolean | null;
       io_logging_include_provider_payloads?: boolean | null;
+      model_successor_max_price_increase_percent?: number | null;
+      model_successor_price_policy?: "never" | "limit" | "any" | null;
+      model_successor_redirect_enabled?: boolean | null;
       privacy_enable_free_may_publish_prompts?: boolean | null;
       privacy_enable_free_may_train?: boolean | null;
       privacy_enable_input_output_logging?: boolean | null;

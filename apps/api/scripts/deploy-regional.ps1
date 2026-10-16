@@ -36,6 +36,7 @@ $regionalSecretNames = @(
     "LIQUID_API_KEY",
     "LIQUID_AI_API_KEY",
     "PERPLEXITY_API_KEY",
+    "REFLECTION_API_KEY",
     "MISTRAL_API_KEY",
     "MISTRAL_AI_API_KEY",
     "ANTHROPIC_API_KEY",

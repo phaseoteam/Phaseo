@@ -773,6 +773,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -813,6 +817,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -931,6 +939,10 @@ paths:
           headers:
             x-request-id:
               $ref: '#/components/headers/PublicRequestId'
+            X-Phaseo-Requested-Model:
+              $ref: '#/components/headers/RequestedModel'
+            X-Phaseo-Model-Substitution:
+              $ref: '#/components/headers/ModelSubstitution'
           content:
             application/json:
               schema:
@@ -8939,6 +8951,19 @@ components:
       schema:
         type: string
         pattern: ^G-[0-9A-HJKMNP-TV-Z]{26}$
+    RequestedModel:
+      description: >-
+        The model the request asked for. Sent only when retired model routing
+        answered the request with a replacement model.
+      schema:
+        type: string
+    ModelSubstitution:
+      description: >-
+        Why and how the requested model was replaced, for example
+        `reason=unserved; from=lab/old-model; to=lab/new-model`. Sent only when
+        retired model routing answered the request with a replacement model.
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: >-
         BYOK-only provider quota metadata. Omitted for managed-provider
@@ -16594,11 +16619,29 @@ components:
         provider_restriction_enforce_allowed:
           type: boolean
           nullable: true
+        model_successor_redirect_enabled:
+          type: boolean
+          nullable: true
+        model_successor_price_policy:
+          allOf:
+            - $ref: '#/components/schemas/WorkspaceModelSuccessorPricePolicy'
+          nullable: true
+        model_successor_max_price_increase_percent:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          nullable: true
         updated_at:
           type: string
           format: date-time
           nullable: true
       additionalProperties: false
+    WorkspaceModelSuccessorPricePolicy:
+      type: string
+      enum:
+        - never
+        - limit
+        - any
     WorkspaceSettingsUpdateRequest:
       type: object
       minProperties: 1
@@ -16644,6 +16687,14 @@ components:
             maxLength: 128
         provider_restriction_enforce_allowed:
           type: boolean
+        model_successor_redirect_enabled:
+          type: boolean
+        model_successor_price_policy:
+          $ref: '#/components/schemas/WorkspaceModelSuccessorPricePolicy'
+        model_successor_max_price_increase_percent:
+          type: integer
+          minimum: 0
+          maximum: 1000
       additionalProperties: false
     WorkspaceSettingsResponse:
       type: object
@@ -20753,6 +20804,7 @@ components:
         - auto_top_up_failed
         - payment_method_expiring
         - model_deprecation
+        - model_substitution
     WorkspaceNotificationRouteMap:
       type: object
       required:
@@ -20760,6 +20812,7 @@ components:
         - auto_top_up_failed
         - payment_method_expiring
         - model_deprecation
+        - model_substitution
       properties:
         low_balance:
           type: array
@@ -20777,6 +20830,11 @@ components:
             type: string
             format: uuid
         model_deprecation:
+          type: array
+          items:
+            type: string
+            format: uuid
+        model_substitution:
           type: array
           items:
             type: string

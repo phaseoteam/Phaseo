@@ -240,7 +240,7 @@ Cada alternativa se vuelve a comprobar de forma independiente según las restric
 
 Una solicitud que envía `models` sin `model` se rechaza con `400`. Las alternativas a nivel de solicitud usan el mismo mecanismo que las alternativas de las rutas dinámicas:
 
-- **Activadores.** El siguiente modelo solo se prueba cuando el intento anterior, tras sus propios reintentos con proveedores, termina con `429`, `500`, `502`, `503` o `504`. Los errores del cliente, como `400`, `401`, `402`, `403`, `404`, `408`, `413` y `422`, se devuelven sin cambiar de modelo. Un `429` causado por un presupuesto de Phaseo o por la cuota de un modelo gratuito alcanzados durante la ejecución de la solicitud también pasa al siguiente modelo, porque otro modelo puede ajustarse al límite restante. La autenticación, los límites de tasa de las claves de API y otras comprobaciones que fallan antes de ejecutar el modelo principal se devuelven de inmediato.
+- **Activadores.** El siguiente modelo solo se prueba cuando el intento anterior, tras sus propios reintentos con proveedores, termina con `429`, `500`, `502`, `503` o `504`. Los errores del cliente, como `400`, `401`, `402`, `403`, `404`, `408`, `413` y `422`, se devuelven sin cambiar de modelo. Un `429` causado por un presupuesto de Phaseo o por la cuota de un modelo gratuito alcanzados durante la ejecución de la solicitud también pasa al siguiente modelo, porque otro modelo puede ajustarse al límite restante. Cuando ningún proveedor sirve el modelo principal, por ejemplo porque está [retirado](#retired-models), Phaseo también pasa al siguiente modelo. La autenticación, los límites de tasa de las claves de API y otras comprobaciones que fallan antes de ejecutar el modelo principal se devuelven de inmediato.
 - **Límites.** `models` admite de 1 a 25 entradas. Las entradas duplicadas y las iguales a `model` se ignoran. Las rutas dinámicas mantienen su propio límite de ocho alternativas.
 - **Validación.** Cada entrada puede ser un ID de modelo, un ID de modelo con proveedor o un preajuste como `@support`. Cada intento se valida como una solicitud independiente: compatibilidad con el endpoint y la modalidad, parámetros solicitados, restricciones de modelo del espacio de trabajo, guardrails, preajustes, precios y credenciales BYOK. Una alternativa que no puede atender la solicitud se omite y queda anotada en los registros de solicitudes; nunca sustituye al error que recibirías de otro modo. También se omite una alternativa que equivale a un intento ya realizado, con el mismo modelo y los mismos proveedores aptos.
 - **Registro y facturación.** Cada intento es una solicitud independiente en tus registros, con su propio uso y su propio registro de facturación, por lo que cada intento se factura exactamente igual que si no hubiera alternativas.
@@ -272,6 +272,12 @@ Más información:
 
 - [Límites de tasa](../api-reference/limits.mdx)
 - [Gestión de errores](../api-reference/errors.mdx)
+
+<span id="retired-models"></span>
+
+## Modelos retirados
+
+Un modelo retirado se sigue sirviendo mientras algún proveedor lo sirva. Cuando ya no lo sirve ninguno, las solicitudes fallan con `410 model_retired`, salvo que el espacio de trabajo haya activado el enrutamiento de modelos retirados para enviarlas a un sustituto. Tu propia lista `models` siempre se prueba antes que un sustituto. Consulta [Obsolescencia y retirada de modelos](./model-retirement.mdx).
 
 ## Afinidad de caché y de sesión
 
@@ -321,5 +327,6 @@ En cargas de trabajo de producción, registra los IDs de solicitud, los códigos
 ## Guías relacionadas
 
 - [Preajustes](./presets.mdx)
+- [Obsolescencia y retirada de modelos](./model-retirement.mdx)
 - [Matriz de paridad de funciones](../migration-guides/feature-parity-matrix.mdx)
 

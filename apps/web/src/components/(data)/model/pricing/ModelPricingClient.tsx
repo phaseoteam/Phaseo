@@ -9,7 +9,7 @@ import React, {
     useRef,
     useState,
 } from "react";
-import { resolveEnforcedZdr } from "@/components/(data)/model/pricing/zdr";
+import { resolveScopedZdr } from "@/components/(data)/model/pricing/zdr";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { fetchPublicWebApi } from "@/lib/web-api/client";
 import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
@@ -85,6 +85,7 @@ import type { ProviderRoutingStatusMap } from "@/lib/fetchers/models/getModelPro
 import ProviderCard, {
 	getProviderTableDiscountBadge,
 	PROVIDER_STATUS_META,
+	UptimeKey,
 } from "@/components/(data)/model/pricing/ProviderCard";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
 import { ProviderRouteName } from "./ProviderRouteName";
@@ -450,20 +451,7 @@ function UptimeHeaderHoverContent() {
 	return (
 		<div className="space-y-2">
 			<p className="text-sm font-medium text-foreground">{t("threeDayUptime")}</p>
-			<div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-2.5 text-xs text-muted-foreground dark:border-zinc-800">
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-emerald-500" />
-					<span>&gt;99%</span>
-				</div>
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-amber-500" />
-					<span>95-99%</span>
-				</div>
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-red-500" />
-					<span>&lt;95%</span>
-				</div>
-			</div>
+			<UptimeKey className="border-t border-zinc-200 pt-2.5 dark:border-zinc-800" />
 		</div>
 	);
 }
@@ -530,36 +518,14 @@ function matchesPrivacyFilter(
 		.length === 0;
 }
 
-function getPlanZdrEligibility(
+export function getPlanZdrEligibility(
 	provider: ProviderPricing,
 	plan: string,
 ): boolean | null {
-	// Eligibility metadata describes a possible offer; it is not proof that
-	// this provider route enforces zero retention. A provider-level false must
-	// always win, and an eligible tier is usable only with a verified true flag.
 	const providerZdr = provider.provider.zero_data_retention;
-	if (providerZdr === false) return false;
-	const tierPolicy = provider.provider.service_tier_data_policies?.[plan] ?? null;
-	const tierEligibility = tierPolicy?.zdrEligibility;
-	if (tierEligibility === "eligible") return providerZdr === true ? true : null;
-	if (tierEligibility === "ineligible") return false;
-
-    const providerModels = getProviderModelScopeForPlan(provider, plan);
-    const capabilityPolicies = providerModels.map((providerModel) => providerModel.data_policy);
-    const policiesWithData = capabilityPolicies.filter(
-        (policy): policy is NonNullable<typeof policy> => Boolean(policy),
-    );
-    if (!policiesWithData.length) return provider.provider.zero_data_retention ?? null;
-    if (policiesWithData.length !== capabilityPolicies.length) return null;
-
-    const eligibilities = new Set(
-        policiesWithData.map((policy) => policy.zdrEligibility ?? null),
-    );
-    if (eligibilities.size !== 1) return null;
-    const eligibility = policiesWithData[0]?.zdrEligibility;
-	if (eligibility === "eligible") return providerZdr === true ? true : null;
-	if (eligibility === "ineligible") return false;
-	return providerZdr ?? null;
+	const tierPolicy = provider.provider.service_tier_data_policies?.[plan];
+	const policies = getProviderModelScopeForPlan(provider, plan).map((model) => model.data_policy);
+	return resolveScopedZdr(providerZdr, policies, tierPolicy);
 }
 
 function formatServiceTierLabel(plan: string): string {
@@ -675,10 +641,7 @@ function ProviderServiceTierInfoIcons({
 		notes: policy?.reason ?? provider.provider.prompt_training_notes ?? null,
 		sourceUrl: policy?.evidenceUrl ?? provider.provider.prompt_training_source_url ?? null,
 		promptTrainingPolicy: provider.provider.prompt_training_policy ?? null,
-		zeroDataRetention: resolveEnforcedZdr(
-			provider.provider.zero_data_retention,
-			policy?.zdrEligibility,
-		),
+		zeroDataRetention: getPlanZdrEligibility(provider, plan),
 	}));
 
 	return (
@@ -727,7 +690,7 @@ function ProviderServiceTierInfoIcons({
 						residencyMode: provider.provider.residency_mode ?? null,
 						executionRegions: provider.provider.default_execution_regions ?? null,
 						dataRegions: provider.provider.default_data_regions ?? null,
-						zeroDataRetention: provider.provider.zero_data_retention ?? null,
+						zeroDataRetention: getPlanZdrEligibility(provider, plan),
 						notes: provider.provider.residency_notes ?? null,
 						sourceUrl: provider.provider.residency_source_url ?? null,
 					},
@@ -1718,7 +1681,7 @@ export default function ModelPricingClient({
 			if (option !== "uptime") return button;
 			return (
 				<HoverCard openDelay={120} closeDelay={80}>
-					<HoverCardTrigger asChild>{button}</HoverCardTrigger>
+					<HoverCardTrigger asChild openOnTap={false}>{button}</HoverCardTrigger>
 					<HoverCardContent align="end" className="w-72 text-left">
 						<UptimeHeaderHoverContent />
 					</HoverCardContent>

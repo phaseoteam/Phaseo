@@ -8,6 +8,7 @@ import { requireAccountWorkspace } from "./context";
 import { usageKeyScope } from "./usageKeyScope";
 import { workspaceUserProfile } from "./workspaceUserProfile";
 import { monthUsageStartDate, parseMonthUsageDays } from "./monthUsage";
+import { parseUsageLabelFacets, parseUsageOverviewCells, usageOverviewBucket, usageOverviewTimeZone } from "./usageOverview";
 
 type Warning = {
 	modelId: string; modelName: string | null; organisationId: string | null;
@@ -139,21 +140,6 @@ function requestLabelFilter(url: URL): { key: string; value: string } | { error:
 	return { key, value };
 }
 
-function extractRequestLabels(value: unknown): Array<{ key: string; value: string }> {
-	if (!value || typeof value !== "object" || Array.isArray(value)) return [];
-	const labels = (value as Record<string, unknown>).labels;
-	if (!Array.isArray(labels)) return [];
-	return labels.flatMap((label) => {
-		if (!label || typeof label !== "object" || Array.isArray(label)) return [];
-		const key = (label as Record<string, unknown>).key;
-		const labelValue = (label as Record<string, unknown>).value;
-		return typeof key === "string" && typeof labelValue === "string" ? [{ key, value: labelValue }] : [];
-	});
-}
-
-const OBSERVABILITY_SELECT = "created_at,model_id,provider,app_id,key_id,usage,cost_nanos,success,error_payload,error_message,pricing_lines";
-const OBSERVABILITY_EXCLUDED_ENDPOINTS = '("video.generation","batch","music.generate")';
-
 export function sortUpstreamRequestsNewestFirst<
 	T extends { attempt_number?: number | null; created_at?: string | null; request_id?: string | null },
 >(rows: T[]): T[] {
@@ -229,68 +215,73 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 	const labelFilterResult = requestLabelFilter(url);
 	if (labelFilterResult && "error" in labelFilterResult) return c.json({ error: "invalid_label_filter", description: labelFilterResult.error }, 400, PRIVATE_NO_STORE_HEADERS);
 	const labelFilter = labelFilterResult && "key" in labelFilterResult ? labelFilterResult : null;
-	const limit = 5000;
 	let scope;
 	try { scope = await usageKeyScope(context, url); } catch { return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); }
 	const creator = scope.creatorId && scope.hasCreatorKeys ? await workspaceUserProfile(context, scope.creatorId) : null;
-	const loadWindow = async (start: string, end: string) => {
-		const pageSize = 1000;
-		const rows: any[] = [];
-		for (let offset = 0; rows.length <= limit; offset += pageSize) {
-			let query = context.client.from(scope.requestsTable).select(OBSERVABILITY_SELECT)
-				.eq("workspace_id", workspaceId).gte("created_at", start).lte("created_at", end)
-				.not("endpoint", "in", OBSERVABILITY_EXCLUDED_ENDPOINTS);
-			query = scope.apply(query);
-			if (labelFilter) query = query.contains("detail_metadata", { labels: [{ key: labelFilter.key, value: labelFilter.value }] });
-			const result = await query.order("created_at", { ascending: true }).range(offset, offset + pageSize - 1);
-			if (result.error) throw result.error;
-			const page = result.data ?? [];
-			rows.push(...page);
-			if (page.length < pageSize) break;
-		}
-		return { rows: rows.slice(0, limit), isSampled: rows.length > limit, limit };
+	const keyId = stringParam(url, "key");
+	const bucket = usageOverviewBucket(from!, to!, stringParam(url, "bucket"));
+	const timeZone = usageOverviewTimeZone(stringParam(url, "timeZone"));
+	// Exact totals per bucket, model, provider, key and app, summed in the database
+	// from the 15-minute rollup and the requests at the window's edges.
+	const loadWindow = async (start: string, end: string, windowBucket: string | null) => {
+		const result = await context.client.rpc("get_private_usage_overview", {
+			p_workspace_id: workspaceId,
+			p_from: start,
+			p_to: end,
+			p_bucket: windowBucket,
+			p_time_zone: timeZone,
+			p_key_id: keyId,
+			p_exclude_key: url.searchParams.get("key_op") === "is_not",
+			p_creator_id: scope.creatorId,
+			p_label_key: labelFilter?.key ?? null,
+			p_label_value: labelFilter?.value ?? null,
+		});
+		if (result.error) throw result.error;
+		return { from: start, to: end, cells: parseUsageOverviewCells(result.data) };
 	};
 	try {
-		const labelFacetFactsQuery = scope.apply(context.client.from(scope.factsTable).select("safe_metadata", { count: "exact" }).eq("workspace_id", workspaceId).gte("occurred_at", from!).lte("occurred_at", to!)).limit(5000);
-		const labelSummaryFactsQuery = labelFilter
-			? scope.apply(context.client.from(scope.factsTable).select("cost_nanos", { count: "exact" }).eq("workspace_id", workspaceId).gte("occurred_at", from!).lte("occurred_at", to!)).contains("safe_metadata", { labels: [{ key: labelFilter.key, value: labelFilter.value }] }).limit(5000)
-			: null;
-		// The daily rollup is exact but workspace-wide, so the month figures only apply unfiltered.
+		// Every label used in the window under the same key and creator filters, summed in the database.
+		const labelFacetsQuery = context.client.rpc("get_private_usage_label_facets", {
+			p_workspace_id: workspaceId,
+			p_from: from!,
+			p_to: to!,
+			p_key_id: keyId,
+			p_exclude_key: url.searchParams.get("key_op") === "is_not",
+			p_creator_id: scope.creatorId,
+		});
 		const observedAt = Date.now();
-		// Summed per day in the database. An error only hides the month figures; the rest of the overview still loads.
+		// The last 7 days, under the same filters, set the pace the forecasts project at.
+		const recentFrom = new Date(observedAt - 7 * 86_400_000).toISOString();
+		// The month spend chart uses the workspace-wide daily rollup, so it only applies unfiltered.
+		// An error only hides that chart; the rest of the overview still loads.
 		const loadMonthUsage = async () => {
 			const result = await context.client.rpc("get_private_usage_month_days", { p_workspace_id: workspaceId, p_from: monthUsageStartDate(observedAt) });
 			return result.error ? null : parseMonthUsageDays(result.data, observedAt);
 		};
-		const monthUsageQuery = scope.creatorId || url.searchParams.get("key")?.trim() || labelFilter ? null : loadMonthUsage();
-		const [keysResult, current, previous, labelFacetFactsResult, labelSummaryFactsResult, monthUsage] = await Promise.all([
+		const monthUsageQuery = scope.creatorId || keyId || labelFilter ? null : loadMonthUsage();
+		const [keysResult, current, previous, recent, labelFacetsResult, monthUsage] = await Promise.all([
 			context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId)
 				.neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: true }),
-			loadWindow(from!, to!),
-			loadWindow(previousFrom!, previousTo!),
-			labelFacetFactsQuery,
-			labelSummaryFactsQuery,
+			loadWindow(from!, to!, bucket),
+			loadWindow(previousFrom!, previousTo!, null),
+			loadWindow(recentFrom, new Date(observedAt).toISOString(), null),
+			labelFacetsQuery,
 			monthUsageQuery,
 		]);
 		if (keysResult.error) throw keysResult.error;
-		const labelFacetFacts = labelFacetFactsResult.error ? [] : (labelFacetFactsResult.data ?? []);
-		const labelSummaryFacts = labelSummaryFactsResult?.error ? [] : (labelSummaryFactsResult?.data ?? []);
-		const labelFacetMap = new Map<string, { key: string; value: string }>();
-		for (const row of labelFacetFacts) for (const label of extractRequestLabels(row.safe_metadata)) {
-			const identity = `${label.key}\u0000${label.value}`;
-			if (!labelFacetMap.has(identity)) labelFacetMap.set(identity, label);
-		}
-		const labelFacets = Array.from(labelFacetMap.values()).sort((left, right) => left.key.localeCompare(right.key) || left.value.localeCompare(right.value)).slice(0, 500);
+		// An error only empties the label filter's list; the rest of the overview still loads.
+		const labelFacets = labelFacetsResult.error ? [] : parseUsageLabelFacets(labelFacetsResult.data);
+		// The overview is already filtered to the label, so its totals are the label's.
 		const labelSummary = labelFilter ? {
 			key: labelFilter.key,
 			value: labelFilter.value,
-			requestCount: labelSummaryFactsResult?.count ?? labelSummaryFacts.length,
-			totalCostNanos: labelSummaryFacts.reduce((total, row) => total + Number(row.cost_nanos ?? 0), 0),
-			isSampled: (labelSummaryFactsResult?.count ?? labelSummaryFacts.length) > labelSummaryFacts.length,
+			requestCount: current.cells.reduce((total, cell) => total + cell.requests, 0),
+			totalCostNanos: current.cells.reduce((total, cell) => total + cell.costNanos, 0),
+			isSampled: false,
 		} : null;
-		const rows = [...current.rows, ...previous.rows];
-		const models = Array.from(new Set(rows.map((row) => String(row.model_id ?? "").trim()).filter(Boolean)));
-		const apps = Array.from(new Set(rows.map((row) => String(row.app_id ?? "").trim()).filter(Boolean)));
+		const cells = [...current.cells, ...previous.cells];
+		const models = Array.from(new Set(cells.map((cell) => cell.modelId ?? "").filter(Boolean)));
+		const apps = Array.from(new Set(cells.map((cell) => cell.appId ?? "").filter(Boolean)));
 		const metadata = await metadataForIds(context, { models, apps });
 		return c.json({
 			creatorFilter: scope.creatorId ? { id: scope.creatorId, name: creator?.name ?? null, avatarUrl: creator?.avatarUrl ?? null } : null,
@@ -304,7 +295,9 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 			labelSummary,
 			modelMetadataEntries: metadata.modelMetadataEntries,
 			monthUsage,
+			observedAt,
 			previous,
+			recent,
 			signedIn: true,
 			workspaceId,
 		}, 200, PRIVATE_NO_STORE_HEADERS);
@@ -531,11 +524,12 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 	}
 	const requestsResult = await requestQuery.order("created_at", { ascending: false }).order("id", { ascending: false }).limit(pageSize + 1);
 	if (requestsResult.error) return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const labelFacetFactsQuery = context.client.from("v2_request_facts").select("safe_metadata", { count: "exact" }).eq("workspace_id", workspaceId).gte("occurred_at", timeRange.from).lte("occurred_at", timeRange.to).limit(5000);
-	const labelSummaryFactsQuery = labelFilter
-		? context.client.from("v2_request_facts").select("cost_nanos", { count: "exact" }).eq("workspace_id", workspaceId).gte("occurred_at", timeRange.from).lte("occurred_at", timeRange.to).contains("safe_metadata", { labels: [{ key: labelFilter.key, value: labelFilter.value }] }).limit(5000)
+	// The label list and the selected label's totals cover the whole range, summed in the database.
+	const labelFacetsQuery = context.client.rpc("get_private_usage_label_facets", { p_workspace_id: workspaceId, p_from: timeRange.from, p_to: timeRange.to });
+	const labelTotalsQuery = labelFilter
+		? context.client.rpc("get_private_usage_overview", { p_workspace_id: workspaceId, p_from: timeRange.from, p_to: timeRange.to, p_label_key: labelFilter.key, p_label_value: labelFilter.value })
 		: null;
-	const [rollupResult, keysResult, facetsResult, labelFacetFactsResult, labelSummaryFactsResult] = await Promise.all([
+	const [rollupResult, keysResult, facetsResult, labelFacetsResult, labelTotalsResult] = await Promise.all([
 		context.client.rpc("get_private_usage_facets", { p_workspace_id: workspaceId, p_from: timeRange.from, p_to: timeRange.to }),
 		context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: true }),
 		context.client.rpc("get_gateway_request_facets", {
@@ -544,8 +538,8 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 			p_to: timeRange.to,
 			p_filters: {},
 		}),
-		labelFacetFactsQuery,
-		labelSummaryFactsQuery,
+		labelFacetsQuery,
+		labelTotalsQuery,
 	]);
 	if (rollupResult.error || !Array.isArray(rollupResult.data)) return c.json({ error: "usage_facets_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const requestRows = requestsResult.data ?? [];
@@ -568,20 +562,15 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 	const logFinishReasons = values((row) => row.finish_reason);
 	const logErrorCodes = values((row) => row.error_code);
 	const logStatusCodes = values((row) => row.status_code).map(Number).filter(Number.isFinite).sort((a, b) => a - b);
-	const labelFacetFacts = labelFacetFactsResult.error ? [] : (labelFacetFactsResult.data ?? []);
-	const labelSummaryFacts = labelSummaryFactsResult?.error ? [] : (labelSummaryFactsResult?.data ?? []);
-	const labelFacetMap = new Map<string, { key: string; value: string }>();
-	for (const row of labelFacetFacts) for (const label of extractRequestLabels(row.safe_metadata)) {
-		const identity = `${label.key}\u0000${label.value}`;
-		if (!labelFacetMap.has(identity)) labelFacetMap.set(identity, label);
-	}
-	const labelFacets = Array.from(labelFacetMap.values()).sort((left, right) => left.key.localeCompare(right.key) || left.value.localeCompare(right.value)).slice(0, 500);
-	const labelSummary = labelFilter ? {
+	const labelFacets = labelFacetsResult.error ? [] : parseUsageLabelFacets(labelFacetsResult.data);
+	const labelCells = labelTotalsResult && !labelTotalsResult.error ? parseUsageOverviewCells(labelTotalsResult.data) : null;
+	// Without its totals, the summary card is left out rather than shown as zero.
+	const labelSummary = labelFilter && labelCells ? {
 		key: labelFilter.key,
 		value: labelFilter.value,
-		requestCount: labelSummaryFactsResult?.count ?? labelSummaryFacts.length,
-		totalCostNanos: labelSummaryFacts.reduce((total, row) => total + Number(row.cost_nanos ?? 0), 0),
-		isSampled: (labelSummaryFactsResult?.count ?? labelSummaryFacts.length) > labelSummaryFacts.length,
+		requestCount: labelCells.reduce((total, cell) => total + cell.requests, 0),
+		totalCostNanos: labelCells.reduce((total, cell) => total + cell.costNanos, 0),
+		isSampled: false,
 	} : null;
 	return c.json({ data: { appNameEntries: metadata.appNameEntries, availableKeys: keysResult.data ?? [], clientSources, dedupedModels: models, dedupedProviders: providers, labelFacets, labelSummary, logAppIds: apps, logEndpoints, logFinishReasons, logErrorCodes, logStatusCodes, initialRequestsPage: { data: visibleRequestRows, page, pageSize, hasMore: hasMoreRequests, nextCursor: nextRequestCursor }, modelMetadataEntries: metadata.modelMetadataEntries, modelProviderEntries: Array.from(providerSets.entries()).map(([id, values]) => [id, Array.from(values)]), providerMetadataEntries: metadata.providerMetadataEntries, providerNameEntries: metadata.providerNameEntries }, signedIn: true, view, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
 });
@@ -604,36 +593,17 @@ accountSettingsUsageRouter.get("/usage/alerts", async (c) => {
 	const lifecycleModels = lifecycleResult.data ?? [];
 	const lifecycleIds = lifecycleModels.map((row) => row.model_id).filter(Boolean);
 	if (!lifecycleIds.length) return c.json({ signedIn: true, warnings: [], workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
-	const usageResult = await context.client.rpc("get_workspace_model_last_used", {
-		p_workspace_id: workspaceId,
+	// Keyed on the model the workspace requested, so a deprecated model still
+	// counts as used when another model served the request.
+	const usageResult = await context.client.rpc("get_requested_model_last_used_by_workspace", {
+		p_model_slugs: lifecycleIds,
 		p_since: new Date(now - 90 * 86_400_000).toISOString(),
+		p_workspace_id: workspaceId,
 	});
-	const usageRows = usageResult.error ? [] : usageResult.data ?? [];
-	const usedIds = Array.from(new Set(usageRows.map((row) => String(row.model_id ?? "")).filter(Boolean)));
-	const idMap = new Map<string, string>();
-	if (usedIds.length) {
-		const [apiResult, internalResult, providerResult] = await Promise.all([
-			context.client.from("v2_model_provider_routes").select("api_model_id:model_slug,internal_model_id:model_slug").in("model_slug", usedIds).limit(5000),
-			context.client.from("v2_model_provider_routes").select("api_model_id:model_slug,internal_model_id:model_slug").in("model_slug", usedIds).limit(5000),
-			context.client.from("v2_model_provider_routes").select("provider_api_model_id:provider_model_id,api_model_id:model_slug,internal_model_id:model_slug").in("provider_model_id", usedIds).limit(5000),
-		]);
-		for (const row of [...(apiResult.data ?? []), ...(internalResult.data ?? [])]) {
-			if (row.api_model_id && row.internal_model_id) idMap.set(row.api_model_id, row.internal_model_id);
-		}
-		for (const row of providerResult.data ?? []) {
-			if (!row.internal_model_id) continue;
-			if (row.provider_api_model_id) idMap.set(row.provider_api_model_id, row.internal_model_id);
-			if (row.api_model_id) idMap.set(row.api_model_id, row.internal_model_id);
-		}
-	}
+	if (usageResult.error) return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const lastUsed = new Map<string, string>();
-	for (const row of usageRows) {
-		const usedId = String(row.model_id ?? "");
-		const timestamp = typeof row.last_used_at === "string" ? row.last_used_at : null;
-		if (!usedId || !timestamp) continue;
-		const internalId = idMap.get(usedId) ?? usedId;
-		const previous = lastUsed.get(internalId);
-		if (!previous || Date.parse(timestamp) > Date.parse(previous)) lastUsed.set(internalId, timestamp);
+	for (const row of usageResult.data ?? []) {
+		if (row.model_slug && typeof row.last_used_at === "string") lastUsed.set(row.model_slug, row.last_used_at);
 	}
 	const replacementsResult = await context.client.from("v2_models")
 		.select("model_id:model_slug,previous_model_id:previous_model_slug").eq("hidden", false).in("previous_model_slug", lifecycleIds);
@@ -650,7 +620,8 @@ accountSettingsUsageRouter.get("/usage/alerts", async (c) => {
 		const lastUsedAt = lastUsed.get(model.model_id) ?? null;
 		const usedRecently = Boolean(lastUsedAt && Date.parse(lastUsedAt) >= now - 90 * 86_400_000);
 		let severity: Warning["severity"] = "fyi";
-		if (primary != null && primary >= 0 && primary <= 90 && usedRecently) severity = primary <= 7 ? "critical" : primary <= 28 ? "warning" : "notice";
+		// Critical only for a real shutdown; a deprecation date alone tops out at warning.
+		if (primary != null && primary >= 0 && primary <= 90 && usedRecently) severity = retirementDaysUntil != null && retirementDaysUntil <= 7 ? "critical" : primary <= 28 ? "warning" : "notice";
 		const legacyReplacement = typeof model.metadata === "object" && model.metadata !== null && !Array.isArray(model.metadata) && typeof model.metadata.replacement_model_id === "string" ? model.metadata.replacement_model_id : null;
 		return { modelId: model.model_id, modelName: model.name ?? null, organisationId: model.organisation_id ?? null, lastUsedAt, deprecationDate, retirementDate, deprecationDaysUntil, retirementDaysUntil, replacementModelId: model.replacement_model_id ?? legacyReplacement ?? replacementByPrevious.get(model.model_id) ?? null, previousModelId: model.previous_model_id ?? null, countAsAlert: usedRecently && primary != null && primary >= 0 && primary <= 90, severity };
 	}).filter((warning) => [warning.deprecationDaysUntil, warning.retirementDaysUntil].some((days) => days != null && days >= -7 && days <= 90))

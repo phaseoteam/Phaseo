@@ -2530,5 +2530,14 @@
 			"requestErrorMessage": "Fehlermeldung der Anfrage",
 			"openDetails": "Details öffnen"
 		}
+	},
+	"deprecationNotice": {
+		"oneModel": "{model}, das dein Workspace nutzt, wird eingestellt. Plane jetzt den Umstieg.",
+		"manyModels": "{count} Modelle, die dein Workspace nutzt, werden eingestellt. Plane jetzt den Umstieg.",
+		"retiresOn": "Wird am {date} abgeschaltet.",
+		"firstRetiresOn": "{model} wird als Erstes abgeschaltet, am {date}.",
+		"replacement": "Empfohlener Ersatz: {replacement}.",
+		"review": "Ansehen",
+		"dismiss": "Schließen"
 	}
 }

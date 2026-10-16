@@ -6,7 +6,7 @@ import { localizedPricingDisplayLabel } from "@/i18n/pricing-display";
 import { ProviderRouteName } from "./ProviderRouteName";
 import { ProviderRoutingHelp } from "./ProviderRoutingHelp";
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { resolveEnforcedZdr } from "@/components/(data)/model/pricing/zdr";
+import { resolveScopedZdr } from "@/components/(data)/model/pricing/zdr";
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { getLocalizedDocsHref } from "@/lib/docs";
@@ -224,8 +224,27 @@ function getPricingPlanTranslationKey(plan: string): string | null {
 function uptimeValueClass(value: number | null | undefined): string {
 	if (value == null || !Number.isFinite(value)) return "text-foreground";
 	if (value > 99) return "text-emerald-600 dark:text-emerald-400";
-	if (value > 95) return "text-amber-600 dark:text-amber-400";
+	if (value >= 95) return "text-amber-600 dark:text-amber-400";
 	return "text-red-600 dark:text-red-400";
+}
+
+export function UptimeKey({ className }: { className?: string }) {
+	return (
+		<div className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground", className)}>
+			<div className="flex items-center gap-1.5">
+				<span className="h-2 w-2 rounded-full bg-emerald-500" />
+				<span>&gt;99%</span>
+			</div>
+			<div className="flex items-center gap-1.5">
+				<span className="h-2 w-2 rounded-full bg-amber-500" />
+				<span>95-99%</span>
+			</div>
+			<div className="flex items-center gap-1.5">
+				<span className="h-2 w-2 rounded-full bg-red-500" />
+				<span>&lt;95%</span>
+			</div>
+		</div>
+	);
 }
 
 function getDisplayedUptimePct(
@@ -302,20 +321,7 @@ function UptimeHoverContent({
 					);
 				})}
 			</div>
-			<div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-2.5 text-xs text-muted-foreground dark:border-zinc-800">
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-emerald-500" />
-					<span>&gt;99%</span>
-				</div>
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-amber-500" />
-					<span>95-99%</span>
-				</div>
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-red-500" />
-					<span>&lt;95%</span>
-				</div>
-			</div>
+			<UptimeKey className="border-t border-zinc-200 pt-2.5 dark:border-zinc-800" />
 		</div>
 	);
 }
@@ -641,7 +647,7 @@ function ProviderHourlyPerformance({
 								? "bg-muted-foreground/30"
 								: activeMetric === "uptime" && numericMetricValue > 99
 								? "bg-emerald-500"
-								: activeMetric === "uptime" && numericMetricValue > 95
+								: activeMetric === "uptime" && numericMetricValue >= 95
 									? "bg-amber-500"
 										: activeMetric === "uptime" ? "bg-red-500" : "bg-primary";
 							const barHeight = activeMetric === "uptime"
@@ -673,6 +679,9 @@ function ProviderHourlyPerformance({
 							);
 						})}
 					</div>
+					{activeMetric === "uptime" ? (
+						<UptimeKey className="mt-2 justify-center text-[11px]" />
+					) : null}
 				</div>
 			) : null}
 			{categories.length > 0 || rateLimited > 0 ? (
@@ -907,6 +916,7 @@ const DATA_POLICY_FIELDS = [
 	"tier",
 	"confidence",
 	"zdrEligibility",
+	"zeroDataRetention",
 	"retentionMode",
 	"retentionDays",
 ] as const;
@@ -2847,11 +2857,8 @@ export default function ProviderCard({
 				notes: policy.reason ?? provider.provider.prompt_training_notes ?? null,
 				sourceUrl: policy.evidenceUrl ?? provider.provider.prompt_training_source_url ?? null,
 				promptTrainingPolicy: provider.provider.prompt_training_policy ?? null,
-				zeroDataRetention: policy.zdrEligibility === "eligible" && provider.provider.zero_data_retention === true
-					? true
-					: policy.zdrEligibility === "ineligible"
-						? false
-						: provider.provider.zero_data_retention ?? null,
+				zeroDataRetention: resolveScopedZdr(provider.provider.zero_data_retention,
+					infoScope.map((model) => model.data_policy), tierPolicy),
 			}));
 		})(),
 		residency: [
@@ -2859,7 +2866,11 @@ export default function ProviderCard({
 				residencyMode: provider.provider.residency_mode ?? null,
 				executionRegions: provider.provider.default_execution_regions ?? null,
 				dataRegions: provider.provider.default_data_regions ?? null,
-				zeroDataRetention: provider.provider.zero_data_retention ?? null,
+				zeroDataRetention: resolveScopedZdr(
+					provider.provider.zero_data_retention,
+					infoScope.map((model) => model.data_policy),
+					provider.provider.service_tier_data_policies?.[selectedPlan],
+				),
 				notes: provider.provider.residency_notes ?? null,
 				sourceUrl: provider.provider.residency_source_url ?? null,
 			},
@@ -3241,13 +3252,9 @@ export default function ProviderCard({
 		no: tSections("no"),
 		unknown: tSections("unknown"),
 	};
-	const selectedZdr = hasMixedCapabilityPolicies
-		? null
-		: selectedDataPolicy?.zdrEligibility === "eligible" && provider.provider.zero_data_retention === true
-			? true
-			: selectedDataPolicy?.zdrEligibility === "ineligible"
-				? false
-				: provider.provider.zero_data_retention;
+	const selectedZdr = resolveScopedZdr(
+		provider.provider.zero_data_retention, scopedCapabilityPolicies, selectedTierPolicy,
+	);
 	const dataPolicySummary = [
 		{
 			label: tProvider("dataPolicy"),
@@ -3832,7 +3839,7 @@ export default function ProviderCard({
 												<span>{metric.label}</span>
 												{metric.key === "uptime" ? (
 													<HoverCard openDelay={120} closeDelay={80}>
-														<HoverCardTrigger asChild>
+														<HoverCardTrigger asChild openOnTap={false}>
 															<span
 																aria-label={tProvider("uptime")}
 																tabIndex={0}

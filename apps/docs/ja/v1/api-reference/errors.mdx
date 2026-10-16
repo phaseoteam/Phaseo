@@ -85,6 +85,7 @@ icon: "bug"
 | `authentication_error` | `401` | API キーがないか、無効です。 |
 | `authorization_error` | `403` | このキーには対象のリソースへのアクセス権がありません。 |
 | `not_found_error` | `404` | エンドポイントまたはリソースが見つかりません。 |
+| `model_retired` | `410` | モデルは提供終了しており、どのプロバイダーも提供していません。`replacement_model` に切り替えてください。 |
 | `rate_limit_error` | `429` | リクエストが多すぎます。指定された時間が経過してから再試行してください。 |
 | `phaseo_free_model_limit_exceeded` | `429` | Phaseoの無料モデル共通の日次上限に達しました（既定で1,500リクエスト）。`Retry-After`に従い、00:00 UTCのリセットを待つか、有料モデルを選択してください。 |
 | `rate_limit_exceeded` | `429` | ワークスペースの[レート制限ポリシー](./limits.mdx)の上限に達しました。`policy_id`と`limit_scope`で対象を特定できます。`Retry-After`に従うか、ワークスペース管理者にポリシーの変更を依頼してください。 |
@@ -190,6 +191,30 @@ Phaseo がプロバイダーに到達したものの、リクエストが失敗�
   }
 }
 ```
+
+<span id="when-a-model-is-retired"></span>
+## モデルが提供終了になった場合
+
+提供終了したモデルも、いずれかのプロバイダーが提供している間は引き続き利用できます。どのプロバイダーも提供しなくなると、そのモデルへのリクエストは `410` と `model_retired` エラーで失敗します。
+
+```json
+{
+  "generation_id": "G-retired123",
+  "status_code": 410,
+  "error": "model_retired",
+  "reason": "model_retired_without_providers",
+  "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+  "model": "lab/old-model",
+  "retired_at": "2026-09-30T00:00:00Z",
+  "replacement_model": "lab/new-model"
+}
+```
+
+- `model`: リクエストしたモデル。
+- `retired_at`: モデルが提供終了になった日時。日付が記録されていない場合は `null`。
+- `replacement_model`: 推奨される代替モデル。ない場合は `null`。
+
+再試行しても解決しません。リクエストのモデル ID を更新してください。移行中もこれらのリクエストを処理し続けるには、リクエストの `models` リストに代替モデルを追加するか、ワークスペースで提供終了モデルのルーティングを有効にしてください。[モデルの非推奨化と提供終了](../guides/model-retirement.mdx)を参照してください。
 
 ## 任意のデバッグモード
 

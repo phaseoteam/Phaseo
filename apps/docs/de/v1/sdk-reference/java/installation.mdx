@@ -1,43 +1,38 @@
 ---
-title: "Java-SDK installieren (in Entwicklung)"
-description: "Baue das Java-SDK, das sich noch in Entwicklung befindet, aus dem Quellcode."
+icon: "package"
+title: "Java SDK — Installation"
+description: "Der aktuelle Quellcode enthält Wiederholungssteuerung und Antwortmetadaten, die im älteren Maven-Central-Artefakt 3.0.0 fehlen. Baue die angegebene Revision, um das aktuelle SDK zu nutzen."
 ---
 
-<Note type="warning">Das Java-SDK befindet sich noch in Entwicklung und wurde noch nicht auf Maven Central veröffentlicht.</Note>
+Der aktuelle Quellcode enthält Wiederholungssteuerung und Antwortmetadaten, die im älteren Maven-Central-Artefakt 3.0.0 fehlen. Baue die angegebene Revision, um das aktuelle SDK zu nutzen.
 
 ## Voraussetzungen
 
 - Java 17+
 - Maven 3.8+
+- Git
 
-## Lokal erstellen
-
-```bash
-cd packages/sdk/sdk-java
-mvn -DskipTests package
-```
-
-Dadurch wird `target/sdk-java-0.0.0-local.jar` erstellt.
-
-## Im Projekt verwenden
-
-Installiere das erstellte JAR im lokalen Maven-Cache:
+## Aus dem Quellcode bauen
 
 ```bash
-mvn install:install-file \
-  -Dfile=target/sdk-java-0.0.0-local.jar \
-  -DgroupId=app.phaseo \
-  -DartifactId=sdk-java \
-  -Dversion=0.0.0-local \
-  -Dpackaging=jar
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+git checkout 1ff1119f41ceb3ac2c85ed605f6e1c4beca6e011
+mvn -f packages/sdk/sdk-java/pom.xml -DskipTests install
 ```
 
-Füge es anschließend als Abhängigkeit in der `pom.xml` deiner Anwendung hinzu:
+Maven installiert `app.phaseo:phaseo-sdk:3.0.0` einschließlich Jackson-Abhängigkeit im lokalen Repository.
+
+## Abhängigkeit hinzufügen
 
 ```xml
 <dependency>
   <groupId>app.phaseo</groupId>
-  <artifactId>sdk-java</artifactId>
-  <version>0.0.0-local</version>
+  <artifactId>phaseo-sdk</artifactId>
+  <version>3.0.0</version>
 </dependency>
 ```
+
+<Note>Das [Maven-Central-Artefakt](https://repo.maven.apache.org/maven2/app/phaseo/phaseo-sdk/3.0.0/) stellt die ältere API bereit. Die aktuellen APIs für Wiederholungen, Metadaten und Parameterprüfung fehlen darin.</Note>
+
+[Verwendung](./usage)

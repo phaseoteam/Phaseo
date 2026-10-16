@@ -1515,6 +1515,36 @@ describe("public model routes", () => {
 		});
 	});
 
+	it("links the recommended successor ahead of later models in the timeline", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = decodeURIComponent(String(input));
+			if (url.includes("previous_model_slug=eq.openai/gpt-test")) {
+				return new Response(JSON.stringify([{ model_slug: "openai/gpt-next", name: "GPT Next", released_at: "2026-08-01" }]), { status: 200 });
+			}
+			if (url.includes("model_slug=eq.openai/gpt-successor")) {
+				return new Response(JSON.stringify([{ model_slug: "openai/gpt-successor", name: "GPT Successor", announced_at: null, released_at: null }]), { status: 200 });
+			}
+			if (url.includes("model_slug=eq.openai/gpt-test")) {
+				return new Response(JSON.stringify([{
+					model_slug: "openai/gpt-test",
+					name: "GPT Test",
+					previous_model_slug: null,
+					replacement_model_slug: "openai/gpt-successor",
+					released_at: "2026-07-01",
+					deprecated_at: "2026-09-01",
+				}]), { status: 200 });
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const timeline = await app.request("https://phaseo.app/api/_web/models/openai%2Fgpt-test/timeline", {}, env);
+		expect(timeline.status).toBe(200);
+		const { events } = await timeline.json() as { events: Array<Record<string, string>> };
+		expect(events.filter((event) => event.eventType === "FutureModel")).toEqual([
+			{ date: "2026-09-01", eventType: "FutureModel", modelId: "openai/gpt-successor", modelName: "GPT Successor" },
+		]);
+	});
+
 	it("resolves aliases to a validated public model notice", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);

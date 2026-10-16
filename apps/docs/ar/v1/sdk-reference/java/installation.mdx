@@ -1,43 +1,38 @@
 ---
-title: "تثبيت SDK Java (قيد التطوير)"
-description: "ابنِ SDK Java الذي ما زال قيد التطوير من المصدر."
+icon: "package"
+title: "Java SDK — التثبيت"
+description: "يتضمن المصدر الحالي عناصر للتحكم في إعادة المحاولة وبيانات وصفية للاستجابة غير موجودة في حزمة 3.0.0 القديمة على Maven Central. ابنِ المراجعة المحددة أدناه لاستخدام SDK الحالي."
 ---
 
-<Note type="warning">ما يزال SDK Java قيد التطوير ولم يُنشر بعد على Maven Central.</Note>
+يتضمن المصدر الحالي عناصر للتحكم في إعادة المحاولة وبيانات وصفية للاستجابة غير موجودة في حزمة 3.0.0 القديمة على Maven Central. ابنِ المراجعة المحددة أدناه لاستخدام SDK الحالي.
 
 ## المتطلبات
 
 - Java 17+
 - Maven 3.8+
+- Git
 
-## البناء محليًا
-
-```bash
-cd packages/sdk/sdk-java
-mvn -DskipTests package
-```
-
-ينشئ ذلك الملف `target/sdk-java-0.0.0-local.jar`.
-
-## استخدامه في مشروعك
-
-ثبّت ملف JAR المُنشأ في ذاكرة Maven المحلية:
+## البناء من المصدر
 
 ```bash
-mvn install:install-file \
-  -Dfile=target/sdk-java-0.0.0-local.jar \
-  -DgroupId=app.phaseo \
-  -DartifactId=sdk-java \
-  -Dversion=0.0.0-local \
-  -Dpackaging=jar
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+git checkout 1ff1119f41ceb3ac2c85ed605f6e1c4beca6e011
+mvn -f packages/sdk/sdk-java/pom.xml -DskipTests install
 ```
 
-ثم أضفه كاعتمادية في ملف `pom.xml` الخاص بتطبيقك:
+يثبّت Maven الحزمة `app.phaseo:phaseo-sdk:3.0.0` في المستودع المحلي مع اعتماد Jackson.
+
+## إضافة الاعتماد
 
 ```xml
 <dependency>
   <groupId>app.phaseo</groupId>
-  <artifactId>sdk-java</artifactId>
-  <version>0.0.0-local</version>
+  <artifactId>phaseo-sdk</artifactId>
+  <version>3.0.0</version>
 </dependency>
 ```
+
+<Note>توفّر [حزمة Maven Central](https://repo.maven.apache.org/maven2/app/phaseo/phaseo-sdk/3.0.0/) واجهة API القديمة، ولا تشمل واجهات إعادة المحاولة أو البيانات الوصفية أو فحص المعلمات الحالية.</Note>
+
+[الاستخدام](./usage)

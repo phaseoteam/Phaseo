@@ -1507,20 +1507,24 @@ publicModelsRouter.get("/:modelId/timeline", async (c) => {
 		const client = getDataClient(c.env);
 		const { data: model, error } = await client
 			.from("v2_models")
-			.select("model_slug,name,previous_model_slug,announced_at,released_at,deprecated_at,retired_at")
+			.select("model_slug,name,previous_model_slug,replacement_model_slug,announced_at,released_at,deprecated_at,retired_at")
 			.eq("model_slug", modelId)
 			.eq("hidden", false)
 			.maybeSingle();
 		if (error) throw error;
 		if (!model) return notFound(c);
-		const [previousResult, futureResult] = await Promise.all([
+		const [previousResult, futureResult, replacementResult] = await Promise.all([
 			model.previous_model_slug
 				? client.from("v2_models").select("model_slug,name,announced_at,released_at").eq("model_slug", model.previous_model_slug).eq("hidden", false).maybeSingle()
 				: Promise.resolve({ data: null, error: null }),
 			client.from("v2_models").select("model_slug,name,announced_at,released_at").eq("previous_model_slug", modelId).eq("hidden", false),
+			model.replacement_model_slug
+				? client.from("v2_models").select("model_slug,name,announced_at,released_at").eq("model_slug", model.replacement_model_slug).eq("hidden", false).maybeSingle()
+				: Promise.resolve({ data: null, error: null }),
 		]);
 		if (previousResult.error) throw previousResult.error;
 		if (futureResult.error) throw futureResult.error;
+		if (replacementResult.error) throw replacementResult.error;
 		const events: Array<Record<string, string>> = [];
 		for (const [date, eventName] of [[model.announced_at, "Announced"], [model.released_at, "Released"], [model.deprecated_at, "Deprecated"], [model.retired_at, "Retired"]] as const) {
 			if (date) events.push({ date, eventType: "ModelEvent", eventName });
@@ -1532,7 +1536,11 @@ publicModelsRouter.get("/:modelId/timeline", async (c) => {
 			.map((candidate) => ({ candidate, date: candidate.released_at ?? candidate.announced_at }))
 			.filter((entry): entry is { candidate: NonNullable<typeof entry.candidate>; date: string } => Boolean(entry.date))
 			.sort((left, right) => left.date.localeCompare(right.date))[0];
-		if (future) events.push({ date: future.date, eventType: "FutureModel", modelId: future.candidate.model_slug, modelName: future.candidate.name ?? future.candidate.model_slug });
+		// The recommended successor wins over the earliest model listing this one as its predecessor.
+		const replacement = replacementResult.data;
+		const replacementDate = replacement ? replacement.released_at ?? replacement.announced_at ?? model.deprecated_at ?? model.retired_at : null;
+		if (replacement && replacementDate) events.push({ date: replacementDate, eventType: "FutureModel", modelId: replacement.model_slug, modelName: replacement.name ?? replacement.model_slug });
+		else if (future) events.push({ date: future.date, eventType: "FutureModel", modelId: future.candidate.model_slug, modelName: future.candidate.name ?? future.candidate.model_slug });
 		events.sort((left, right) => right.date.localeCompare(left.date));
 		return withPublicCache(c.json({ events }), sectionPolicy("timeline", modelId));
 	} catch (error) {

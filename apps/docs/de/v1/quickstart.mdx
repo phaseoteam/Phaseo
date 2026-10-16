@@ -201,6 +201,29 @@ response = client.generate_response(
 puts response
 ```
 
+```java Java SDK
+// Build from source: https://phaseo.app/docs/de/v1/sdk-reference/java/installation
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        var client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+        var response = client.createResponse(Map.of(
+            "model", "openai/gpt-6-astra",
+            "input", "Reply with: quickstart works"
+        ));
+        for (var item : response.path("output")) {
+            for (var part : item.path("content")) {
+                if ("output_text".equals(part.path("type").asText())) {
+                    System.out.println(part.path("text").asText());
+                }
+            }
+        }
+    }
+}
+```
+
 ```rust Rust SDK
 use phaseo::Phaseo;
 use serde_json::{json, Value};

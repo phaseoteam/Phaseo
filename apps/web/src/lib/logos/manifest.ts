@@ -617,9 +617,18 @@ export const logoManifest = {
 		dark: "/logos/runinfra_dark.svg",
 	},
 	wandb: {
-		color: "/logos/weights-and-biases.svg",
+		light: "/logos/coreweave_light.svg",
+		dark: "/logos/coreweave_dark.svg",
 	},
 	"weights-and-biases": {
+		light: "/logos/coreweave_light.svg",
+		dark: "/logos/coreweave_dark.svg",
+	},
+	"coreweave-forge": {
+		light: "/logos/coreweave_light.svg",
+		dark: "/logos/coreweave_dark.svg",
+	},
+	"wandb-weave": {
 		color: "/logos/weights-and-biases.svg",
 	},
 	zenmux: {
