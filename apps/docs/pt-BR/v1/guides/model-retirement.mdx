@@ -97,12 +97,14 @@ A política de preços do espaço de trabalho decide se um substituto mais caro 
 | `limit` | Permite até `model_successor_max_price_increase_percent` a mais (de 0 a 1000). |
 | `any` | Permite qualquer preço, incluindo substitutos cujo preço não pode ser comparado. |
 
+Esta solicitação precisa de uma [chave de API de gerenciamento](../developers/management-api-keys.mdx) com `settings:write`. As chaves padrão do Gateway servem para solicitações de inferência e não podem alterar as configurações do espaço de trabalho.
+
 Por exemplo, para permitir substitutos que custem até 20% a mais:
 
 ```bash
 curl https://api.phaseo.app/v1/settings \
   -X PATCH \
-  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model_successor_redirect_enabled": true,

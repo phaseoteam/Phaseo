@@ -97,12 +97,14 @@ La politique de prix de l’espace de travail détermine si un remplaçant plus 
 | `limit` | Autoriser jusqu’à `model_successor_max_price_increase_percent` de plus (de 0 à 1000). |
 | `any` | Autoriser n’importe quel prix, y compris pour les remplaçants dont le prix ne peut pas être comparé. |
 
+Cette requête nécessite une [clé API de gestion](../developers/management-api-keys.mdx) avec `settings:write`. Les clés Gateway standard servent aux requêtes d’inférence et ne peuvent pas modifier les paramètres de l’espace de travail.
+
 Par exemple, pour autoriser les remplaçants qui coûtent jusqu’à 20 % de plus :
 
 ```bash
 curl https://api.phaseo.app/v1/settings \
   -X PATCH \
-  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model_successor_redirect_enabled": true,

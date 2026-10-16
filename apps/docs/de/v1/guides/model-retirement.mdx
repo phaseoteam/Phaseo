@@ -97,12 +97,14 @@ Die Preisrichtlinie des Workspace entscheidet, ob ein teureres Ersatzmodell die 
 | `limit` | Bis zu `model_successor_max_price_increase_percent` mehr erlauben (0 bis 1000). |
 | `any` | Jeden Preis erlauben, auch für Ersatzmodelle, deren Preis nicht verglichen werden kann. |
 
+Für diese Anfrage brauchst du einen [Management-API-Schlüssel](../developers/management-api-keys.mdx) mit `settings:write`. Standard-Gateway-API-Schlüssel sind für Inferenzanfragen vorgesehen und können keine Workspace-Einstellungen ändern.
+
 So erlaubst du zum Beispiel Ersatzmodelle, die bis zu 20 % mehr kosten:
 
 ```bash
 curl https://api.phaseo.app/v1/settings \
   -X PATCH \
-  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model_successor_redirect_enabled": true,

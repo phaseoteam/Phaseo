@@ -97,12 +97,14 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `limit` | 允许价格最多高出 `model_successor_max_price_increase_percent`（0 到 1000）所设的百分比。 |
 | `any` | 允许任何价格，包括价格无法比较的替代模型。 |
 
+此请求需要具有 `settings:write` 的[管理 API 密钥](../developers/management-api-keys.mdx)。标准 Gateway API 密钥用于推理请求，不能更改工作区设置。
+
 例如，要允许价格最多高出 20% 的替代模型：
 
 ```bash
 curl https://api.phaseo.app/v1/settings \
   -X PATCH \
-  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model_successor_redirect_enabled": true,

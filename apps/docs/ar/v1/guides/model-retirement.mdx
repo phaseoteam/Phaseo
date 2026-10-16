@@ -97,12 +97,14 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `limit` | السماح بزيادة تصل إلى `model_successor_max_price_increase_percent` (من 0 إلى 1000). |
 | `any` | السماح بأي سعر، بما في ذلك البدائل التي لا يمكن مقارنة أسعارها. |
 
+يتطلب هذا الطلب [مفتاح API للإدارة](../developers/management-api-keys.mdx) بصلاحية `settings:write`. مفاتيح Gateway القياسية مخصصة لطلبات الاستدلال ولا يمكنها تغيير إعدادات مساحة العمل.
+
 على سبيل المثال، للسماح بالبدائل التي تكلّف حتى 20% أكثر:
 
 ```bash
 curl https://api.phaseo.app/v1/settings \
   -X PATCH \
-  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model_successor_redirect_enabled": true,

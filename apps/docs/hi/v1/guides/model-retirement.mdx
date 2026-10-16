@@ -97,12 +97,14 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `limit` | `model_successor_max_price_increase_percent` (0 से 1000) प्रतिशत तक अधिक कीमत की अनुमति दें। |
 | `any` | कोई भी कीमत स्वीकार करें, जिनमें वे प्रतिस्थापन भी शामिल हैं जिनकी कीमत की तुलना नहीं की जा सकती। |
 
+इस अनुरोध के लिए `settings:write` वाली [प्रबंधन API कुंजी](../developers/management-api-keys.mdx) चाहिए। मानक Gateway API कुंजियाँ केवल इन्फ़रेंस अनुरोधों के लिए होती हैं; उनसे वर्कस्पेस सेटिंग्स नहीं बदली जा सकतीं।
+
 उदाहरण के लिए, 20% तक अधिक महंगे प्रतिस्थापनों की अनुमति देने के लिए:
 
 ```bash
 curl https://api.phaseo.app/v1/settings \
   -X PATCH \
-  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model_successor_redirect_enabled": true,

@@ -126,12 +126,17 @@ serve the request. Prices are compared on what both models charge.
 | `limit` | Allow up to `model_successor_max_price_increase_percent` more (0 to 1000). |
 | `any` | Allow any price, including replacements whose price cannot be compared. |
 
+This request needs a
+[management API key](../developers/management-api-keys.mdx) with
+`settings:write`. Standard Gateway API keys are for inference requests and
+cannot change workspace settings.
+
 For example, to allow replacements that cost up to 20% more:
 
 ```bash
 curl https://api.phaseo.app/v1/settings \
   -X PATCH \
-  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model_successor_redirect_enabled": true,

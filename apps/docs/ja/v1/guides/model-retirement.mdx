@@ -97,12 +97,14 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `limit` | `model_successor_max_price_increase_percent`（0〜1000）の割合まで高くなることを許可します。 |
 | `any` | 価格を比較できない代替モデルを含め、どの価格でも許可します。 |
 
+このリクエストには `settings:write` を持つ[管理APIキー](../developers/management-api-keys.mdx)が必要です。標準のGateway APIキーは推論リクエスト用であり、ワークスペースの設定は変更できません。
+
 たとえば、最大 20% 高い代替モデルを許可するには、次のようにします。
 
 ```bash
 curl https://api.phaseo.app/v1/settings \
   -X PATCH \
-  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model_successor_redirect_enabled": true,
