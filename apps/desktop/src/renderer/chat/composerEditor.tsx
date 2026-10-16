@@ -7,7 +7,8 @@ import Paragraph from "@tiptap/extension-paragraph";
 import Text from "@tiptap/extension-text";
 import HardBreak from "@tiptap/extension-hard-break";
 import { Placeholder, UndoRedo } from "@tiptap/extensions";
-import { File as FileIcon, Folder, ImageIcon, MessageSquare, Paperclip } from "lucide-react";
+import { File as FileIcon, Folder, GitPullRequestArrow, ImageIcon, MessageSquare, Paperclip } from "lucide-react";
+import { PullRequestLinkPreview } from "../views/pullRequests/PullRequestLinkPreview";
 import { chatDragType, mentionToken, parseMentions, type Mention } from "../lib/mentions";
 
 /** The chat a sidebar row carries when dragged, if this drag is one. */
@@ -25,6 +26,8 @@ function MentionChip({ node, selected }: NodeViewProps) {
 	const task = kind === "chat" ? overview.tasks.find(value => value.id === ref) : undefined;
 	const icon = kind === "chat" ? (task ? <ModelStack models={[task]} size="sm" ringClassName="ring-transparent" /> : <MessageSquare />) : kind === "folder" ? <Folder /> : kind === "file" ? <FileIcon /> : kind === "image" ? <ImageIcon /> : <Paperclip />;
 	const title = kind === "chat" ? "The agent can read this chat" : kind === "file" || kind === "folder" ? ref : label;
+	// A pull request chip shows the same hover card as a pull request link in a message.
+	if (kind === "pull-request") return <NodeViewWrapper as="span" className="composer-chip" data-mention-kind={kind}><PullRequestLinkPreview url={ref}><InlineChip icon={<GitPullRequestArrow />} selected={selected}>{label}</InlineChip></PullRequestLinkPreview></NodeViewWrapper>;
 	return <NodeViewWrapper as="span" className="composer-chip" data-mention-kind={kind}><InlineChip icon={icon} title={title} selected={selected}>{task?.title ?? label}</InlineChip></NodeViewWrapper>;
 }
 
@@ -139,9 +142,10 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 	useEffect(() => {
 		if (!editor) return;
 		const attach = (event: Event) => {
-			const detail = (event as CustomEvent<{ files?: File[]; text?: string; handled?: boolean }>).detail;
+			const detail = (event as CustomEvent<{ files?: File[]; text?: string; mentions?: Mention[]; handled?: boolean }>).detail;
 			if (!detail || detail.handled || editor.isDestroyed || !editor.isEditable) return;
 			if (detail.files?.length) { if (!latest.current.onFiles) return; latest.current.onFiles(detail.files); }
+			if (detail.mentions?.length) insertRef.current(detail.mentions);
 			if (detail.text) {
 				const empty = editor.state.doc.textContent.trim() === "";
 				editor.chain().focus("end").insertContent([...empty ? [] : [{ type: "hardBreak" }], { type: "text", text: detail.text }]).run();
