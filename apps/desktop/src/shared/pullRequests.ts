@@ -12,3 +12,7 @@ export type PullRequest = {
 export type ProjectPullRequests = { repository: string; requests: PullRequest[]; fetchedAt: string; limitReached: boolean; nextCursor?: string };
 
 export type PullRequestDetails = PullRequest & { repository: string; body: string; state: "OPEN" | "CLOSED" | "MERGED"; additions: number; deletions: number; changedFiles: number; headOid: string; baseOid: string; mergeable: "MERGEABLE" | "CONFLICTING" | "UNKNOWN"; mergeState: string; fetchedAt: string };
+
+/** The pull request for a checkout's current branch, linked to a chat or not; `defaultBranch` is origin's. */
+export type BranchPullRequest = { branch: string; defaultBranch?: string; pullRequest: { repository: string; number: number; url: string; title: string; state: "OPEN" | "CLOSED" | "MERGED"; draft: boolean } | null };
+export type CreatedPullRequestResult = { repository: string; number: number; url: string; status: "created" | "opened_existing" };

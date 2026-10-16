@@ -72,6 +72,8 @@ describe("stacks on chat links", () => {
 			expect(() => store.apply({ type: "unlink-pull-request", id: task.id, repository: "owned/repo", number: 1 })).toThrow("not linked");
 			store.apply({ type: "link-pull-request", id: task.id, reference: "#1", repository: "owned/repo", number: 1 });
 			expect(store.getTask(task.id).pullRequests!.find(link => link.number === 1)?.source).toBe("manual");
+			store.apply({ type: "link-pull-request", id: task.id, reference: "#9", repository: "owned/repo", number: 9, source: "created" });
+			expect(store.getTask(task.id).pullRequests!.find(link => link.number === 9)?.source).toBe("created");
 			expect(store.syncPullRequestStack("owned/repo", 2, null)).toBe(true);
 			expect(store.getTask(task.id).pullRequests!.find(link => link.number === 2)?.stack).toBeUndefined();
 		} finally { store.close(); }

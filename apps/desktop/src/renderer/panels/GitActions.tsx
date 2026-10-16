@@ -1,6 +1,11 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowUp, Check, ChevronDown, FolderPlus, GitBranch, Minus, Plus, Trash2 } from "lucide-react";
+import { ArrowUp, Check, ChevronDown, FolderPlus, GitBranch, GitPullRequestArrow, Minus, Plus, Trash2 } from "lucide-react";
 import type { GitCommand, GitFile, GitReview } from "../../shared/workspace";
+import type { BranchPullRequest } from "../../shared/pullRequests";
+import { toastManager } from "../components/ui/toast";
+import { Tip } from "../components/ui/tooltip";
+import { openPullRequest } from "../views/pullRequests/events";
+import { pullRequestStatePresentation } from "../views/pullRequests/presentation";
 import { useWorkspace } from "../app/workspace";
 import { cn } from "../lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
@@ -26,9 +31,10 @@ function FileRow({ file, busy, onOpen, onCommand }: { file: GitFile; busy: boole
 
 /**
  * Branch, staging, commit and push for a project, kept out of the diff as T3 does.
- * Flat rows meant for a chat's details; `onProjectCreated` follows a new worktree.
+ * Flat rows meant for a chat's details; `onProjectCreated` follows a new worktree. With `taskId`, a pull request
+ * created here is linked to that chat (T3's create_pr).
  */
-export function GitActions({ projectId, onProjectCreated }: { projectId: string; onProjectCreated?: (projectId: string) => void }) {
+export function GitActions({ projectId, taskId, onProjectCreated }: { projectId: string; taskId?: string; onProjectCreated?: (projectId: string) => void }) {
 	const { api, overview, setOverview } = useWorkspace();
 	const project = overview.projects.find(value => value.id === projectId);
 	const [review, setReview] = useState<GitReview>();
@@ -40,6 +46,7 @@ export function GitActions({ projectId, onProjectCreated }: { projectId: string;
 	const [error, setError] = useState("");
 	const [refresh, setRefresh] = useState(0);
 	const [repository, setRepository] = useState(true);
+	const [branchPull, setBranchPull] = useState<BranchPullRequest>();
 	// Agents finishing in this project change its files, so their completion refreshes the list.
 	const activity = overview.tasks.filter(task => task.projectId === projectId).map(task => `${task.id}:${task.status}:${task.lastCompletedAt ?? ""}`).join("|");
 
@@ -48,6 +55,7 @@ export function GitActions({ projectId, onProjectCreated }: { projectId: string;
 	useEffect(() => {
 		if (!api || !projectId) return;
 		let active = true;
+		void api.branchPullRequest(projectId).then(value => { if (active) setBranchPull(value); }, () => { if (active) setBranchPull(undefined); });
 		void Promise.all([api.gitReview(projectId), api.gitBranches(projectId)]).then(([value, names]) => { if (active) { setReview(value); setBranches(names); setError(""); setRepository(true); } }, reason => { if (!active) return; const message = ipcError(reason); if (/not a git repository/i.test(message)) setRepository(false); else setError(message); });
 		return () => { active = false; };
 	}, [api, projectId, refresh, activity]);
@@ -71,6 +79,14 @@ export function GitActions({ projectId, onProjectCreated }: { projectId: string;
 		if (!window.confirm("Remove this checkout and its ignored files? The branch and chats are kept.")) return;
 		void run(async () => { setOverview(await api!.removeWorktree(projectId)); });
 	};
+	const createPullRequest = (push: boolean) => run(async () => {
+		const id = toastManager.add({ type: "loading", title: push ? "Pushing and creating pull request…" : "Creating pull request…", timeout: 0 });
+		try {
+			const result = await api!.createPullRequest(projectId, taskId);
+			setOverview(result.workspace); setRefresh(value => value + 1); announceProjectChange(projectId);
+			toastManager.update(id, { type: "success", title: result.status === "created" ? `Created pull request #${result.number}` : `Pull request #${result.number} is already open`, description: taskId ? "Linked to this chat." : undefined, timeout: 6000, actionProps: { children: "Open", onClick: () => openPullRequest({ number: result.number }) } });
+		} catch (reason) { toastManager.update(id, { type: "error", title: "Could not create the pull request", description: ipcError(reason), timeout: 8000 }); }
+	});
 	const stageAll = (files: GitFile[], type: "stage" | "unstage") => run(async () => {
 		for (const file of files) await api!.gitCommand(projectId, { type, filename: file.path });
 		setRefresh(value => value + 1); announceProjectChange(projectId);
@@ -81,6 +97,10 @@ export function GitActions({ projectId, onProjectCreated }: { projectId: string;
 	const ahead = review?.upstream?.ahead ?? 0;
 	const canPush = Boolean(review?.branch) && (review?.upstream ? ahead > 0 : Boolean(review?.hasRemote));
 	const pushLabel = review?.upstream ? `Push ${ahead} ${ahead === 1 ? "commit" : "commits"}` : "Publish branch";
+	// T3 offers Create PR on a feature branch with no open pull request; an open one shows as its own row instead.
+	const openPull = branchPull?.branch === review?.branch && branchPull?.pullRequest?.state === "OPEN" ? branchPull.pullRequest : undefined;
+	const canCreatePull = Boolean(review?.branch) && Boolean(review?.hasRemote || review?.upstream) && !openPull && branchPull?.branch === review?.branch && branchPull?.defaultBranch !== review?.branch;
+	const pullPresentation = openPull ? pullRequestStatePresentation(openPull.state, openPull.draft) : undefined;
 	const heading = (label: string, count: number, action: { label: string; icon: ReactNode; files: GitFile[]; type: "stage" | "unstage" }) => <div className="flex h-7 items-center justify-between px-1.5 text-xs font-semibold text-foreground/80">
 		<span>{label} <span className="font-normal text-muted-foreground">{count}</span></span>
 		<ToolbarButton size="sm" label={action.label} disabled={busy} onClick={() => void stageAll(action.files, action.type)}>{action.icon}</ToolbarButton>
@@ -104,8 +124,12 @@ export function GitActions({ projectId, onProjectCreated }: { projectId: string;
 				</DropdownMenuContent>
 			</DropdownMenu>
 			{review?.upstream && review.upstream.behind > 0 && <span className="text-[11px] text-muted-foreground" title={`${review.upstream.name} has ${review.upstream.behind} newer ${review.upstream.behind === 1 ? "commit" : "commits"}`}>{review.upstream.behind} behind</span>}
-			{canPush && <button type="button" disabled={busy} onClick={() => void git({ type: "push" })} className="ml-auto flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5"><ArrowUp />{pushLabel}</button>}
+			{canCreatePull && <Tip label={canPush ? "Push this branch and open a pull request for it" : "Open a pull request for this branch"}><button type="button" disabled={busy} onClick={() => void createPullRequest(canPush)} className={cn("flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5", !canPush && "ml-auto")}><GitPullRequestArrow />{canPush ? "Push & create PR" : "Create PR"}</button></Tip>}
+			{canPush && !canCreatePull && <button type="button" disabled={busy} onClick={() => void git({ type: "push" })} className="ml-auto flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5"><ArrowUp />{pushLabel}</button>}
 		</div>
+		{openPull && pullPresentation && <button type="button" onClick={() => openPullRequest({ number: openPull.number })} aria-label={`Open pull request #${openPull.number}`} className="flex h-7 min-w-0 items-center gap-1.5 rounded-md px-1.5 text-left text-xs hover:bg-accent/60">
+			<pullPresentation.Icon aria-hidden className={cn("size-3.5 shrink-0", pullPresentation.toneClassName)} /><span className="shrink-0 font-mono text-muted-foreground">#{openPull.number}</span><span className="min-w-0 truncate">{openPull.title}</span>
+		</button>}
 		{newBranch !== undefined && <form className="flex items-center gap-1.5" onSubmit={event => { event.preventDefault(); if (!newBranch.trim()) return; if (branchKind === "branch") void git({ type: "create-branch", name: newBranch.trim() }); else void createWorktree(newBranch.trim()); }}>
 			<input autoFocus aria-label="New branch name" placeholder={branchKind === "branch" ? "Branch name" : "Worktree branch name"} value={newBranch} onChange={event => setNewBranch(event.target.value)} onKeyDown={event => { if (event.key === "Escape") setNewBranch(undefined); }}
 				className="h-7 min-w-0 flex-1 rounded-md border border-input bg-transparent px-2 font-mono text-xs outline-none focus:border-ring" />

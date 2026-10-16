@@ -6,7 +6,7 @@ import type { PromptCommandCatalog, PromptCommandPreview, PromptCommandRequest }
 import type { McpPromptCatalog, McpPromptPreview, McpPromptRequest } from "./mcpPrompts";
 import type { PullRequestContents, PullRequestContentsQuery } from "./pullRequestContents";
 import type { PullRequestFilesPage, PullRequestFilesQuery } from "./pullRequestFiles";
-import type { ProjectPullRequests, PullRequestDetails } from "./pullRequests";
+import type { BranchPullRequest, CreatedPullRequestResult, ProjectPullRequests, PullRequestDetails } from "./pullRequests";
 import { parsePullRequestReference, validRepository, type PullRequestActionRequest, type PullRequestCandidates, type PullRequestView, type TaskPullRequestLink } from "./pullRequestView";
 import type { AgentForm, FormAnswer } from "./agentForms";
 import type { McpCommand, McpConnection } from "./mcp";
@@ -233,6 +233,10 @@ export type WorkspaceApi = {
 	pullRequestCandidates: (projectId: string, query: { number: number; kind: "labels" | "reviewers" }) => Promise<PullRequestCandidates>;
 	/** Merge, close, comment, review and the rest, through GitHub CLI; returns the pull request as it is afterwards. */
 	pullRequestAction: (projectId: string, request: PullRequestActionRequest) => Promise<PullRequestView>;
+	/** The pull request for the project checkout's current branch, linked or not; cached briefly unless `fresh`. */
+	branchPullRequest: (projectId: string, fresh?: boolean) => Promise<BranchPullRequest>;
+	/** Pushes the branch if needed and opens a pull request for it (or finds its open one), linked to `taskId` as created. */
+	createPullRequest: (projectId: string, taskId?: string) => Promise<CreatedPullRequestResult & { workspace: WorkspaceOverview }>;
 	/** The project's GitHub repository (owner/repo) from its origin remote, or null when it has none. */
 	projectRepository: (projectId: string) => Promise<string | null>;
 	/** The native GitHub stack a pull request is in, cached for a minute unless `fresh`; linked chats pick up its layers. */
