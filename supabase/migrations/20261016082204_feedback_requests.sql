@@ -35,9 +35,6 @@ ALTER TABLE "public"."feedback_requests"
 
 CREATE UNIQUE INDEX feedback_requests_access_token_key ON public.feedback_requests USING btree (access_token);
 
-CREATE INDEX feedback_requests_campaign_rewarded_idx ON public.feedback_requests USING btree (campaign)
-  WHERE (reward_grant_id IS NOT NULL);
-
 CREATE UNIQUE INDEX feedback_requests_user_campaign_key ON public.feedback_requests USING btree (user_id, campaign);
 
 CREATE POLICY "deny_direct_client_access" ON "public"."feedback_requests"
@@ -78,8 +75,8 @@ begin
   end if;
 
   select coalesce(p_reward_cap, 0) > count(*) into v_reward_available
-  from public.feedback_requests
-  where campaign = p_campaign and reward_grant_id is not null;
+  from public.credit_grants
+  where note = 'Feedback thank-you (' || p_campaign || ')';
 
   with candidates as (
     select
@@ -188,14 +185,20 @@ CREATE OR REPLACE FUNCTION public.get_feedback_request (
   SET search_path TO ''
   AS $function$
 -- What the emailed feedback page needs for one token, or null for an unknown token.
--- Never returns the email address or user id.
+-- Never returns the email address or user id. rewardsIssued lets the caller stop
+-- offering a code once the campaign's budget is spent.
 select jsonb_build_object(
   'campaign', r.campaign,
   'segment', r.segment,
   'recency', r.recency,
   'responded', r.responded_at is not null,
   'rewardCode', r.reward_code,
-  'optedOut', r.opted_out_at is not null or u.product_emails_opted_out_at is not null
+  'optedOut', r.opted_out_at is not null or u.product_emails_opted_out_at is not null,
+  'rewardsIssued', (
+    select count(*)::integer
+    from public.credit_grants g
+    where g.note = 'Feedback thank-you (' || r.campaign || ')'
+  )
 )
 from public.feedback_requests r
 left join public.users u on u.user_id = r.user_id
@@ -312,9 +315,11 @@ begin
   -- Serialise rewards per campaign so concurrent submissions cannot overrun the cap.
   perform pg_advisory_xact_lock(hashtextextended('feedback_reward:' || v_request.campaign, 0));
 
+  -- Count the codes themselves: a deleted account takes its feedback row with it, but
+  -- the code it was given stays redeemable and still spends the budget.
   select count(*)::integer into v_rewarded
-  from public.feedback_requests
-  where campaign = v_request.campaign and reward_grant_id is not null;
+  from public.credit_grants
+  where note = 'Feedback thank-you (' || v_request.campaign || ')';
 
   if v_rewarded >= p_reward_cap then
     return jsonb_build_object('status', 'submitted', 'rewardStatus', 'budget_exhausted');

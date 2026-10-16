@@ -47,9 +47,11 @@ begin
   -- Serialise rewards per campaign so concurrent submissions cannot overrun the cap.
   perform pg_advisory_xact_lock(hashtextextended('feedback_reward:' || v_request.campaign, 0));
 
+  -- Count the codes themselves: a deleted account takes its feedback row with it, but
+  -- the code it was given stays redeemable and still spends the budget.
   select count(*)::integer into v_rewarded
-  from public.feedback_requests
-  where campaign = v_request.campaign and reward_grant_id is not null;
+  from public.credit_grants
+  where note = 'Feedback thank-you (' || v_request.campaign || ')';
 
   if v_rewarded >= p_reward_cap then
     return jsonb_build_object('status', 'submitted', 'rewardStatus', 'budget_exhausted');
