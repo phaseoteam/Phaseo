@@ -120,9 +120,10 @@ export default function ModelDeprecationNotice({ userId, workspaceId, locale, co
 				>
 					{/* Centred like the site notice; side padding keeps the text clear of the dismiss button. */}
 					<div className="relative px-11 py-2 text-xs lg:text-sm">
-						<p className="mx-auto flex max-w-[1280px] items-start justify-center gap-2 text-center sm:items-center">
-							<TriangleAlert aria-hidden className="mt-px size-4 shrink-0 sm:mt-0" />
-							<span>
+						<p className="mx-auto flex max-w-[1280px] items-center justify-center gap-2 text-center">
+							<TriangleAlert aria-hidden className="size-4 shrink-0" />
+							{/* Balanced so a wrap splits the sentences rather than orphaning "Review". */}
+							<span className="text-balance">
 								{parts.filter(Boolean).join(" ")}{" "}
 								<Link href="/settings/usage/alerts" className="whitespace-nowrap font-semibold underline underline-offset-4">
 									{copy.review}
