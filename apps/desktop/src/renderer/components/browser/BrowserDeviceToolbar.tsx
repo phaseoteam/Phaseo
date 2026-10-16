@@ -46,7 +46,8 @@ export function BrowserDeviceToolbar({ viewport, width, aspectLocked, onAspectLo
 		const preset = browserViewportPresets.find(item => item.id === value);
 		if (preset) onChange({ mode: "device", width: preset.width, height: preset.height, preset: preset.id });
 	};
-	const rotate = () => { setDraft(undefined); const source = custom ?? viewport; onChange({ ...source, width: source.height, height: source.width }); };
+	// Turning a preset device keeps it that device, now on its side.
+	const rotate = () => { setDraft(undefined); const source = custom ?? viewport; onChange({ mode: "device", width: source.height, height: source.width, ...(draft || !viewport.preset ? {} : { preset: viewport.preset }) }); };
 	const numberClass = cn("h-6 rounded-md border border-transparent bg-input/50 px-1.5 text-center font-mono text-xs tabular-nums outline-none [appearance:textfield] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 aria-invalid:border-destructive [&::-webkit-inner-spin-button]:appearance-none", width >= 360 ? "w-14" : "w-12");
 	return <div role="toolbar" aria-label="Browser device toolbar" data-browser-device-toolbar style={{ height: browserDeviceToolbarHeight }}
 		className="flex w-full items-center gap-0.5 overflow-hidden border-b border-border/70 bg-background/95 px-1.5 backdrop-blur-md"

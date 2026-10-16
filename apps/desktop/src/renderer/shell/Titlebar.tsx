@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { ChatDetails } from "./ChatDetails";
 import { ArrowLeft, ArrowRight, Code2, Ellipsis, MessageSquare, Minus, PanelLeft, PanelRight, Search, Square, X, Copy as Restore } from "lucide-react";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowState } from "../../shared/desktop";
 import { useWorkspace, type WorkspaceMode } from "../app/workspace";
@@ -104,6 +105,7 @@ export function Titlebar() {
 			</button>
 		</div>
 		<div className="flex items-center">
+			<ChatDetails />
 			{(mode === "code" || rightPanel) && <IconButton label={rightPanel ? "Hide panel" : "Show panel"} active={!!rightPanel} onClick={() => setRightPanel(rightPanel ? undefined : "restore")}><PanelRight /></IconButton>}
 			<AppMenu />
 		</div>

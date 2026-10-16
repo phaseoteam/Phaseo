@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { usePersistedState } from "../lib/persistedState";
 import { defaultPreferences, type WorkspacePreferences } from "../../shared/preferences";
 import { cn } from "../lib/utils";
 import type { InstructionDocument } from "../../shared/instructions";
@@ -94,6 +95,7 @@ function ChatTitles({ preferences, save, disabled }: { preferences: WorkspacePre
 }
 
 export function GeneralSettings() {
+	const [autoOpenPanes, setAutoOpenPanes] = usePersistedState("phaseo.desktop.panes.autoOpen", true);
 	const { preferences, loading, busy, error, save, ready } = usePreferences();
 	return <SettingsPageLayout title="General">
 		<SettingsSection title="New chats"><DefaultModel /><ChatTitles preferences={preferences} save={save} disabled={!ready || busy} /></SettingsSection>
@@ -104,6 +106,10 @@ export function GeneralSettings() {
 					onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }}
 					className={cn(settingsInput, "w-20 text-right")} />} />
 			{(loading || error) && <SettingsNote tone={error ? "error" : "muted"} role={error ? "alert" : "status"}>{error || "Loading settings…"}</SettingsNote>}
+		</SettingsSection>
+		<SettingsSection title="Panes" label="Panes">
+			<SettingsRow title="Open panes automatically" description="Show the diff when a turn changes files, and a pull request when one is linked to the chat. Using the pane during a turn holds this back."
+				control={<Switch aria-label="Open panes automatically" checked={autoOpenPanes} onCheckedChange={setAutoOpenPanes} />} />
 		</SettingsSection>
 		<SettingsSection title="Code chats" description="Settle a chat when you are done with it; it moves to Settled at the bottom of the sidebar." label="Code chats">
 			<SettingsRow title="Auto-settle inactive chats" description="Code chats with no activity for this long settle automatically. Any new activity un-settles a chat."

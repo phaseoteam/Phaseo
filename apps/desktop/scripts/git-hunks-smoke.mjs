@@ -29,17 +29,18 @@ app.whenReady().then(async () => {
 		window.webContents.setBackgroundThrottling(false);
 		if (window.webContents.isLoading()) await new Promise(resolve => window.webContents.once("did-finish-load", resolve));
 		await installChatNavigation(window);
-		const run = expression => window.webContents.executeJavaScript(expression);
+		const run = expression => window.webContents.executeJavaScript(expression).catch(error => { console.error('FAILED_SCRIPT', expression.slice(0, 400)); throw error; });
 		async function wait(expression) { for (let attempt = 0; attempt < 100; attempt++) { if (await run(expression)) return; await new Promise(resolve => setTimeout(resolve, 50)); } throw new Error("Hunk UI did not settle: " + expression); }
 		const captures = path.resolve('output/playwright/git-hunks', entry ? 'packaged' : 'source'); mkdirSync(captures, { recursive: true });
 		const result = await window.webContents.executeJavaScript(`(async()=>{const api=window.phaseoDesktop.workspace,filename=${JSON.stringify(filename)};const review=await api.gitHunks('fixture',filename,false);if(review.hunks.length!==2)throw Error('Missing hunks');await api.gitCommand('fixture',{type:'stage-hunk',filename,index:1,hash:review.hash});const staged=(await api.gitReview('fixture')).stagedDiff;let stale=false;try{await api.gitCommand('fixture',{type:'stage-hunk',filename,index:0,hash:review.hash})}catch(error){stale=String(error).includes('diff changed')}const confirmed=await api.gitHunks('fixture',filename,true);await api.gitCommand('fixture',{type:'unstage-hunk',filename,index:0,hash:confirmed.hash});let outside=false;try{await api.gitHunks('fixture','../outside',false)}catch{outside=true}return {partial:staged.includes('Second edit')&&!staged.includes('First edit'),stale,outside,unstaged:!(await api.gitReview('fixture')).stagedDiff}})()`);
 		if (Object.values(result).some(value => !value) || readFileSync(target, "utf8") !== edited) throw new Error("Hunk workflow failed: " + JSON.stringify(result));
 		const full = await run(`(async()=>{const api=window.phaseoDesktop.workspace,review=await api.gitReview('fixture');return api.gitDiffContents('fixture',{filename:${JSON.stringify(filename)},staged:false,hash:review.diffHash})})()`);
 		if (full.oldFile.contents !== original || full.newFile.contents !== edited) throw Error('Bridge returned incorrect full file versions');
-		// Changes live in the Files panel's Changes tab: Git actions above the T3-style diff surface.
-		const surface = `document.querySelector('.files-panel .diff-surface')`;
+		// The Diff is its own pane tab (T3).
+		const surface = `document.querySelector('aside[aria-label="Tools"] .diff-surface')`;
 		const viewer = `${surface}?.querySelector('diffs-container')`;
-		const openChanges = async () => { await run(`window.__auditNavigate('Projects')`); await wait(`Array.from(document.querySelectorAll('.files-panel button[aria-haspopup=menu]')).some(button=>button.textContent.trim()==='Fixture')`); await run(`Array.from(document.querySelectorAll('.files-panel button[aria-pressed]')).find(button=>button.textContent.trim()==='Changes').click()`); await wait(`Boolean(${viewer}?.shadowRoot?.textContent.includes('First edit'))`); };
+		// In Code, the new chat's project (Fixture) gives the pane its Diff tab.
+		const openChanges = async () => { await run(`window.__auditNavigate('Tasks')`); await run(`Array.from(document.querySelectorAll('[role=radiogroup][aria-label=Workspace] [role=radio]')).find(button=>button.textContent==='Code').click()`); await run(`Array.from(document.querySelectorAll('aside button')).find(button=>button.textContent.startsWith('New chat')).click()`); await wait(`Boolean(Array.from(document.querySelectorAll('main button')).find(button=>/Choose a project|Fixture/.test(button.textContent)))`); if (!await run(`Array.from(document.querySelectorAll('main button')).some(button=>button.textContent.trim()==='Fixture')`)) { await run(`Array.from(document.querySelectorAll('main button')).find(button=>button.textContent.includes('Choose a project')).click()`); await wait(`Boolean(Array.from(document.querySelectorAll('[role=menuitem]')).find(item=>item.textContent.trim()==='Fixture'))`); await run(`Array.from(document.querySelectorAll('[role=menuitem]')).find(item=>item.textContent.trim()==='Fixture').click()`); } await run(`window.__auditPanel('Diff')`); await wait(`Boolean(${viewer}?.shadowRoot?.textContent.includes('First edit'))`); };
 		await openChanges();
 		// Uncommitted work, then side by side for the context expansion.
 		await run(`${surface}.querySelector('[aria-label^="Diff scope"]').click()`);
@@ -52,13 +53,13 @@ app.whenReady().then(async () => {
 		if (await run(`Boolean(${viewer}.shadowRoot.querySelector('img,script'))`)) throw Error('Diff interpreted source markup');
 		edited = edited.replace('Line 1\n', 'Refreshed context\n'); writeFileSync(target, edited);
 		await run(`${viewer}.shadowRoot.querySelector('[data-expand-index="1"] [data-expand-button]').click()`);
-		await wait(`document.querySelector('.files-panel [data-diff-context-error]')?.textContent.includes('diff changed')`);
-		await run(`document.querySelector('.files-panel [data-diff-context-error] button').click()`);
-		await wait(`!document.querySelector('.files-panel [data-diff-context-error]')&&Boolean(${viewer}?.shadowRoot?.textContent.includes('Refreshed context'))`);
+		await wait(`document.querySelector('aside[aria-label="Tools"] [data-diff-context-error]')?.textContent.includes('diff changed')`);
+		await run(`document.querySelector('aside[aria-label="Tools"] [data-diff-context-error] button').click()`);
+		await wait(`!document.querySelector('aside[aria-label="Tools"] [data-diff-context-error]')&&Boolean(${viewer}?.shadowRoot?.textContent.includes('Refreshed context'))`);
 		const beforeContext = contextRequests; delayContext = true;
 		await run(`(()=>{const button=${viewer}.shadowRoot.querySelector('[data-expand-index="1"] [data-expand-button]');if(button.tabIndex!==0||!button.getAttribute('aria-label')?.includes('unchanged'))throw Error('Expansion control is not named or keyboard-focusable');button.focus();button.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,composed:true,cancelable:true}));button.click()})()`);
-		await wait(`Array.from(document.querySelectorAll('.files-panel [role=status]')).some(node=>node.textContent.includes('Loading unchanged lines'))`);
-		await wait(`${viewer}?.shadowRoot?.querySelector('code[data-additions] [data-line="11"]')?.textContent==='Line 10'&&!Array.from(document.querySelectorAll('.files-panel [role=status]')).some(node=>node.textContent.includes('Loading unchanged lines'))`);
+		await wait(`Array.from(document.querySelectorAll('aside[aria-label="Tools"] [role=status]')).some(node=>node.textContent.includes('Loading unchanged lines'))`);
+		await wait(`${viewer}?.shadowRoot?.querySelector('code[data-additions] [data-line="11"]')?.textContent==='Line 10'&&!Array.from(document.querySelectorAll('aside[aria-label="Tools"] [role=status]')).some(node=>node.textContent.includes('Loading unchanged lines'))`);
 		if (contextRequests !== beforeContext + 1) throw Error('Repeated expansion duplicated full file requests');
 		// Sticky 32px file headers, the change summary and the file tree.
 		const header = await run(`(()=>{const node=${viewer}.shadowRoot.querySelector('[data-diffs-header]'),style=getComputedStyle(node);return {position:style.position,height:node.getBoundingClientRect().height,stat:${surface}.querySelector('[aria-label$="removed"]')?.textContent}})()`);
@@ -86,12 +87,15 @@ app.whenReady().then(async () => {
 		}
 		// The layout is remembered across closing and reopening the panel.
 		await run(`document.querySelector('aside[aria-label="Tools"] [aria-label="Close panel"]').click()`);
-		await wait(`!document.querySelector('.files-panel')`);
+		await wait(`!document.querySelector('aside[aria-label="Tools"]')`);
 		await openChanges();
-		await wait(`Boolean(${viewer}?.shadowRoot?.querySelector('pre[data-diff-type="single"]'))&&${surface}.querySelector('[aria-label="Stacked diff view"]').getAttribute('aria-checked')==='true'`);
+		// The loop above ended on the split layout, so that is what comes back.
+		await wait(`Boolean(${viewer}?.shadowRoot?.querySelector('pre[data-diff-type="split"]'))&&${surface}.querySelector('[aria-label="Split diff view"]').getAttribute('aria-checked')==='true'`);
 		// Staging and committing moved out of the diff into Git actions.
-		const stage = `document.querySelector('.files-panel .git-actions button[aria-label=${JSON.stringify('Stage ' + filename)}]')`;
-		const unstage = `document.querySelector('.files-panel .git-actions button[aria-label=${JSON.stringify('Unstage ' + filename)}]')`;
+		const stage = `document.querySelector('.git-actions button[aria-label=${JSON.stringify('Stage ' + filename)}]')`;
+		const unstage = `document.querySelector('.git-actions button[aria-label=${JSON.stringify('Unstage ' + filename)}]')`;
+		// Git actions live in the details card in the title bar (T3).
+		await run(`document.querySelector('.git-actions')||document.querySelector('[aria-label="Chat details"]').click()`);
 		await wait(`Boolean(${stage})`);
 		await run(`${stage}.click()`);
 		await wait(`Boolean(${unstage})`);

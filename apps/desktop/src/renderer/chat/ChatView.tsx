@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import { TerminalDrawer } from "../views/Terminals";
 import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, FolderOpen, Gauge, GitBranch, Layers, ListChecks, Paperclip, PenLine, Pin, PinOff, Plug, RotateCcw, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
 import { QuestionPanel } from "./QuestionPanel";
-import { shortcut } from "../lib/keybindings";
+import { shortcut, useCommand } from "../lib/keybindings";
 import { CustomSnoozeDialog, SnoozeItems, useThreadActions } from "../shell/threadActions";
 import { hasWoken, isSettled, isSnoozed, settleBlocker, shortDuration } from "../../shared/threadLifecycle";
 import type { TaskOverview } from "../../shared/workspaceOverview";
@@ -221,6 +222,9 @@ function ThreadStatusLine({ task }: { task: TaskOverview }) {
 export function ChatView({ id }: { id: string }) {
 	const { api, overview, command, select, setOverview } = useWorkspace();
 	const snapshot = overview.tasks.find(task => task.id === id);
+	// T3: Ctrl+J opens a terminal drawer under the chat, remembered per chat.
+	const [drawers, setDrawers] = usePersistedState<Record<string, boolean>>("phaseo.desktop.terminalDrawers", {});
+	useCommand("terminal.toggle", () => setDrawers(current => ({ ...current, [id]: !current[id] })));
 	// Having the chat open marks its finished turns read, as T3's visit does. It bypasses command() so it never clears an error on screen.
 	useEffect(() => {
 		if (api && snapshot && (!snapshot.lastVisitedAt || (snapshot.lastCompletedAt && Date.parse(snapshot.lastCompletedAt) > Date.parse(snapshot.lastVisitedAt)))) void api.command({ type: "visit", id, at: new Date().toISOString() }).then(setOverview, () => undefined);
@@ -251,6 +255,7 @@ export function ChatView({ id }: { id: string }) {
 		</Conversation>}
 		<QuestionPanel task={task} />
 		<ChatComposer task={task} />
+		{drawers[task.id] && <TerminalDrawer projectId={task.projectId} taskId={task.id} />}
 		{preview && <AttachmentPreview taskId={task.id} id={preview} onClose={() => setPreview(undefined)} />}
 	</div>;
 }

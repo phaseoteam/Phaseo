@@ -5,7 +5,7 @@ import { usePersistedState } from "../lib/persistedState";
 import type { ThemePreference } from "../types";
 
 export type WorkspaceMode = "chat" | "code";
-export type RightPanelSurface = "changes" | "terminal" | "browser" | "agents" | "pulls";
+export type RightPanelSurface = "changes" | "files" | "diff" | "terminal" | "browser" | "agents" | "pulls";
 /** A surface to show in the right pane, "files" for Files, or "restore" to reopen the chat's own tabs. */
 export type RightPanelTab = RightPanelSurface | "files" | "restore";
 export type SettingsPage = "general" | "appearance" | "notifications" | "accounts" | "usage" | "agents" | "mcp" | "keyboard";

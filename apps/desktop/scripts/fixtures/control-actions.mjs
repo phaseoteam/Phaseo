@@ -85,7 +85,9 @@ const shellActions = String.raw`
   /** Open a dropdown menu from its trigger and choose an item by its text. */
   window.__auditMenu = async function(trigger,label) {
     const selector=typeof trigger==='string'?trigger:undefined;
-    const matches=typeof label==='function'?label:value=>value.textContent.trim()===label;
+    // An item's shortcut label (such as the B after Browser) is not part of its name.
+    const name=value=>Array.from(value.childNodes).filter(node=>!(node.nodeType===1&&node.matches('[data-slot="dropdown-menu-shortcut"]'))).map(node=>node.textContent).join('').trim();
+    const matches=typeof label==='function'?label:value=>value.textContent.trim()===label||name(value)===label;
     const items=()=>Array.from(document.querySelectorAll('[data-slot="dropdown-menu-content"] [role^="menuitem"]'));
     let item;
     // Re-query a selector between attempts: a trigger can re-mount while its menu loads.
@@ -113,7 +115,9 @@ const shellActions = String.raw`
   window.__auditPanel = async function(label) {
     if(label==='Files & changes')label='Files';
     if(!document.querySelector('aside[aria-label="Tools"]'))await window.__auditPaletteRun('Show files and changes');
-    const find=()=>document.querySelector('aside[aria-label="Tools"] [role=tablist] [role=tab][title="'+label+'"]');
+    // Browser and terminal tabs are titled by their page or session, so they are found by kind.
+    const selector=label==='Browser'?'[role=tab][data-browser-tab-id]':label==='Terminal'?'[role=tab][data-pane-tab^="terminal:"]':'[role=tab][title="'+label+'"]';
+    const find=()=>document.querySelector('aside[aria-label="Tools"] [role=tablist] '+selector);
     // A surface that is not open yet opens from the empty pane's launcher, or from the "+" menu.
     if(!find()){
       const launcher=Array.from(document.querySelectorAll('aside[aria-label="Tools"] button')).find(button=>button.querySelector('kbd')&&button.textContent.startsWith(label));
@@ -122,6 +126,21 @@ const shellActions = String.raw`
     }
     const tab=await window.__auditUntil(find,'panel tab '+label);
     tab.click();await window.__auditUntil(()=>tab.getAttribute('aria-selected')==='true','panel tab '+label);
+  };
+  /** Start a new Code chat in a project, choosing it from the new chat's project menu. */
+  window.__auditUseProject = async function(name) {
+    if(document.querySelector('nav[aria-label="Settings sections"]'))await window.__auditCloseSettings();
+    const code=Array.from(document.querySelectorAll('[role=radiogroup][aria-label=Workspace] [role=radio]')).find(button=>button.textContent==='Code');
+    if(code&&code.getAttribute('aria-checked')!=='true')code.click();
+    (await window.__auditUntil(()=>Array.from(document.querySelectorAll('aside button')).find(button=>button.textContent.startsWith('New chat')),'new chat button')).click();
+    const picker=await window.__auditUntil(()=>Array.from(document.querySelectorAll('main button')).find(button=>button.textContent.trim()===name||button.textContent.includes('Choose a project')),'project menu');
+    if(picker.textContent.trim()!==name)await window.__auditMenu(picker,name);
+    await window.__auditUntil(()=>Array.from(document.querySelectorAll('main button')).some(button=>button.textContent.trim()===name),'project '+name);
+  };
+  /** The details card in the title bar (Git actions), opened if needed. */
+  window.__auditDetails = async function() {
+    if(!document.querySelector('.git-actions'))(await window.__auditUntil(()=>document.querySelector('[aria-label="Chat details"]'),'details button')).click();
+    return (await window.__auditUntil(()=>document.querySelector('.git-actions'),'Git actions')).closest('[data-slot="popover-content"]')??document.querySelector('.git-actions');
   };
   /** Switch the theme through the command palette's theme action. */
   window.__auditTheme = async function(theme) {

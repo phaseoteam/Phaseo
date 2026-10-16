@@ -125,10 +125,10 @@ app.whenReady().then(async () => {
 			let staleRejected = false;
 			try { await api.writeDocument('fixture','hello.txt','Stale edit',documentBefore.hash); } catch { staleRejected = true; }
 			if (!staleRejected || (await api.readFile('fixture','hello.txt')) !== 'First edit') throw new Error('Stale file edit was accepted');
-			await window.__auditNavigate('Projects');
-			const files = await window.__auditUntil(() => document.querySelector('aside[aria-label="Tools"] .files-panel'), 'files panel');
-			await window.__auditUntil(() => Array.from(files.querySelectorAll('button[aria-haspopup="menu"]')).some(button => button.textContent.trim() === 'Fixture project'), 'fixture project selected');
-			window.__auditButton('Files', files).click();
+			// Files is a pane tab for the new chat's project.
+			await window.__auditUseProject('Fixture project');
+			await window.__auditPanel('Files');
+			const files = await window.__auditUntil(() => document.querySelector('aside[aria-label="Tools"]'), 'files panel');
 			const fileButton = await window.__auditUntil(() => Array.from(files.querySelectorAll('button')).find(button => button.textContent.trim() === 'hello.txt'), 'project file listing hello.txt');
 			fileButton.click();
 			// The file surface edits in place and saves 500 ms after typing stops; there is no Save button.
@@ -139,20 +139,21 @@ app.whenReady().then(async () => {
 			editor.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'UI edit', bubbles: true, composed: true, cancelable: true }));
 			for (let attempt = 0; attempt < 50 && (await api.readFile('fixture','hello.txt')) !== 'UI edit'; attempt++) await new Promise(resolve => setTimeout(resolve,100));
 			if ((await api.readFile('fixture','hello.txt')) !== 'UI edit') throw new Error('Editor save failed');
-			Array.from(files.querySelectorAll('button[aria-pressed]')).find(button => button.textContent.trim().startsWith('Changes')).click();
-			const stage = await window.__auditUntil(() => files.querySelector('button[aria-label="Stage hello.txt"]'), 'git file staging control');
+			// Staging and committing are in the details card in the title bar (T3).
+			const git = await window.__auditDetails();
+			const stage = await window.__auditUntil(() => git.querySelector('button[aria-label="Stage hello.txt"]'), 'git file staging control');
 			stage.click();
 			let staged = false;
 			for (let attempt = 0; attempt < 50; attempt++) { if ((await api.gitReview('fixture')).stagedDiff.includes('+UI edit')) { staged = true; break; } await new Promise(resolve => setTimeout(resolve,100)); }
 			if (!staged) throw new Error('Git staging did not update the index');
-			const commitInput = await window.__auditUntil(() => files.querySelector('textarea[aria-label="Commit message"]'), 'commit message');
+			const commitInput = await window.__auditUntil(() => git.querySelector('textarea[aria-label="Commit message"]'), 'commit message');
 			window.__auditType(commitInput,'Fixture UI commit');
-			const commitButton = await window.__auditUntil(() => Array.from(files.querySelectorAll('button[type="submit"]')).find(button => button.textContent.trim() === 'Commit 1 file' && !button.disabled), 'git commit control enabled');
+			const commitButton = await window.__auditUntil(() => Array.from(git.querySelectorAll('button[type="submit"]')).find(button => button.textContent.trim() === 'Commit 1 file' && !button.disabled), 'git commit control enabled');
 			commitButton.click();
 			let committed = false;
 			for (let attempt = 0; attempt < 50; attempt++) { if (!(await api.gitReview('fixture')).status) { committed = true; break; } await new Promise(resolve => setTimeout(resolve,100)); }
 			if (!committed) throw new Error('Git commit did not finish');
-			await window.__auditUntil(() => files.textContent.includes('The working tree is clean'), 'clean working tree');
+			await window.__auditUntil(() => git.textContent.includes('The working tree is clean'), 'clean working tree');
 			window.dispatchEvent(new KeyboardEvent('keydown',{key:'n',ctrlKey:true,bubbles:true}));
 			await window.__auditUntil(() => window.__auditChatTitle() === undefined, 'new chat shortcut');
 			window.dispatchEvent(new KeyboardEvent('keydown',{key:'k',ctrlKey:true,bubbles:true}));
@@ -462,9 +463,8 @@ app.whenReady().then(async () => {
 		})()`);
 		if (existsSync(cancelledMarker)) throw new Error("Cancelled terminal authentication unexpectedly completed");
 		const managedProject = await window.webContents.executeJavaScript(`(async () => {
-			const api=window.phaseoDesktop.workspace; await window.__auditNavigate('Projects'); const files=await window.__auditUntil(()=>document.querySelector('aside[aria-label="Tools"] .files-panel'),'files panel');
-			await window.__auditUntil(()=>Array.from(files.querySelectorAll('button[aria-haspopup="menu"]')).some(button=>button.textContent.trim()==='Fixture project'),'fixture project selected');
-			Array.from(files.querySelectorAll('button[aria-pressed]')).find(button=>button.textContent.trim().startsWith('Changes')).click();
+			// Branches and worktrees are in the details card in the title bar (T3).
+			const api=window.phaseoDesktop.workspace; await window.__auditUseProject('Fixture project'); const files=await window.__auditDetails();
 			if(files.querySelector('[aria-label="New branch name"]'))throw new Error('Worktree form should start collapsed');
 			const branchMenu=await window.__auditUntil(()=>Array.from(files.querySelectorAll('button[aria-haspopup="menu"]')).find(button=>button.textContent.trim()==='fixture'&&!button.disabled),'branch menu');
 			await window.__auditMenu(branchMenu,'New worktree…');
@@ -476,7 +476,7 @@ app.whenReady().then(async () => {
 		result.worktrees = true;
 		await window.webContents.executeJavaScript(`(async () => {
 			const api=window.phaseoDesktop.workspace;const id=${JSON.stringify(managedProject.id)};const before=await api.readDocument(id,'hello.txt');await api.writeDocument(id,'hello.txt',before.text+'owned dirty fixture',before.hash);let rejected=false;try{await api.removeWorktree(id);}catch{rejected=true;}if(!rejected)throw new Error('Dirty worktree removal was allowed');const dirty=await api.readDocument(id,'hello.txt');await api.writeDocument(id,'hello.txt',before.text,dirty.hash);
-			const state=await api.command({type:'create-task',projectId:id,harness:'codex',model:'default',mode:'chat',title:'Retained checkout history'});const task=state.tasks.find(value=>value.projectId===id);if(!task)throw new Error('Worktree task missing');const files=document.querySelector('aside[aria-label="Tools"] .files-panel');const branchMenu=await window.__auditUntil(()=>Array.from(files.querySelectorAll('button[aria-haspopup="menu"]')).find(button=>button.textContent.trim()==='feature/smoke-worktree'&&!button.disabled),'worktree branch menu');const confirm=window.confirm;let confirmation;window.confirm=message=>{confirmation=message;return true;};try{await window.__auditMenu(branchMenu,'Remove this worktree');}finally{window.confirm=confirm;}if(!confirmation?.includes('branch and chats are kept'))throw new Error('Worktree removal did not ask for confirmation');let removed;for(let attempt=0;attempt<50;attempt++){removed=await api.get();if(removed.projects.find(value=>value.id===id)?.worktree?.removedAt)break;await new Promise(resolve=>setTimeout(resolve,100));}if(!removed.projects.find(value=>value.id===id)?.worktree?.removedAt||!removed.tasks.some(value=>value.id===task.id))throw new Error('Worktree removal did not retain its history');
+			const state=await api.command({type:'create-task',projectId:id,harness:'codex',model:'default',mode:'chat',title:'Retained checkout history'});const task=state.tasks.find(value=>value.projectId===id);if(!task)throw new Error('Worktree task missing');const files=await window.__auditDetails();const branchMenu=await window.__auditUntil(()=>Array.from(files.querySelectorAll('button[aria-haspopup="menu"]')).find(button=>button.textContent.trim()==='feature/smoke-worktree'&&!button.disabled),'worktree branch menu');const confirm=window.confirm;let confirmation;window.confirm=message=>{confirmation=message;return true;};try{await window.__auditMenu(branchMenu,'Remove this worktree');}finally{window.confirm=confirm;}if(!confirmation?.includes('branch and chats are kept'))throw new Error('Worktree removal did not ask for confirmation');let removed;for(let attempt=0;attempt<50;attempt++){removed=await api.get();if(removed.projects.find(value=>value.id===id)?.worktree?.removedAt)break;await new Promise(resolve=>setTimeout(resolve,100));}if(!removed.projects.find(value=>value.id===id)?.worktree?.removedAt||!removed.tasks.some(value=>value.id===task.id))throw new Error('Worktree removal did not retain its history');
 		})()`);
 		if (existsSync(managedProject.directory)) throw new Error("Removed managed checkout still exists");
 		result.worktreeRemoval = true;
