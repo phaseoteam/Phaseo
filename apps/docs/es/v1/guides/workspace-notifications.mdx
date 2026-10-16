@@ -26,11 +26,13 @@ Phaseo admite:
 
 Las credenciales y las URL de los webhooks se cifran antes de guardarse. Limita las credenciales de canal al envío de notificaciones y rótalas si quedan expuestas.
 
+<span id="enable-product-alerts"></span>
+
 ## Activar alertas de producto
 
-La página de notificaciones muestra los tipos de alertas disponibles para tu espacio de trabajo. Activa **Alertas de retirada de modelos** para recibir un aviso antes de que se retire un modelo usado por el espacio de trabajo.
+La página de notificaciones muestra los tipos de alertas disponibles para tu espacio de trabajo. Activa **Alertas de obsolescencia del modelo** para recibir un aviso antes de que se retire un modelo usado por el espacio de trabajo.
 
-Los **Avisos de modelo sustituto** se envían cuando el [enrutamiento de modelos retirados](./routing-and-fallbacks.mdx#retired-models) está activado y un modelo sustituto responde a las solicitudes del espacio de trabajo para un modelo que ya no sirve ningún proveedor. Se envía un aviso por cada modelo y sustituto, la primera vez que un sustituto responde correctamente. Siempre se envía un correo electrónico al propietario del espacio de trabajo; elige destinos para enviar el aviso también a tu equipo.
+Los **Avisos de modelo sustituto** se envían cuando el [enrutamiento de modelos retirados](./model-retirement.mdx#route-requests-to-a-replacement-automatically) está activado y un modelo sustituto responde a las solicitudes del espacio de trabajo para un modelo que ya no sirve ningún proveedor. Se envía un aviso por cada modelo y sustituto, la primera vez que un sustituto responde correctamente. Siempre se envía un correo electrónico al propietario del espacio de trabajo; elige destinos para enviar el aviso también a tu equipo.
 
 Además de los destinatarios integrados que se muestren en el panel, las alertas se envían a los destinos configurados.
 

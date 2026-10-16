@@ -1,0 +1,157 @@
+---
+title: "模型弃用与停用"
+description: "在你使用的模型停用前收到通知，迁移到替代模型，并可选择自动路由它的请求。"
+icon: "calendar-clock"
+---
+
+随着各实验室发布新版本、提供商停止提供旧版本，模型会被弃用并停用。当你的工作区使用的模型即将下线时，Phaseo 会通知你；只要仍有提供商提供该模型，Phaseo 就会继续提供服务；一旦不再有任何提供商提供，Phaseo 还可以将它的请求路由到替代模型。
+
+<span id="how-a-model-is-retired"></span>
+
+## 模型如何停用
+
+| 阶段 | 含义 | 你的请求会怎样 |
+| --- | --- | --- |
+| 已弃用 | 实验室或提供商已宣布该模型将停用。如已知停用日期，会显示该日期。 | 照常处理。 |
+| 已停用 | 停用日期已过。 | 只要仍有任何提供商提供该模型，就会继续处理。 |
+| 不再提供 | 没有任何提供商提供该模型。 | 返回 `410 model_retired` 被拒绝，除非已开启[自动替代](#route-requests-to-a-replacement-automatically)。 |
+
+模型页面会显示它的状态、弃用和停用日期，以及建议的替代模型（如有）。
+
+<span id="get-notice-before-a-model-is-retired"></span>
+
+## 在模型停用前收到通知
+
+Phaseo 会查看你的工作区在请求中发送的模型 ID，因此即使最终由回退模型处理了请求，该模型也算作已使用。
+
+- **控制台通知。** 如果工作区在过去 90 天内请求过的某个模型将在未来 90 天内停用，已登录的成员会在控制台顶部看到通知。没有停用日期的模型改用其弃用日期。距离停用不超过 7 天时，通知会变为红色。通知链接到**设置 -> 用量 -> 提醒**，该页面会列出每个受影响的模型及其日期、最近使用时间和建议的替代模型。关闭通知后，在该模型的日期发生变化之前不会再显示。
+- **电子邮件和通知目标。** 在**设置 -> 通知**中开启**模型弃用警报**。当工作区在过去 30 天内请求过的某个模型被弃用时，系统会就该模型向工作区所有者发送一封电子邮件，且只发送一次。开启**同时通过电子邮件通知管理员**即可同时通知管理员；选择[通知目标](./workspace-notifications.mdx)即可将提醒发送到 Slack、Discord、Teams 或 Webhook。
+
+提醒按模型只发送一次，不会倒计时提醒，因此请在收到第一封提醒时就规划迁移。
+
+<span id="what-happens-when-no-provider-serves-a-model"></span>
+
+## 没有任何提供商提供模型时会怎样
+
+已停用的模型只要至少还有一个提供商提供，就能继续使用。一旦没有任何提供商提供，请求就会失败并返回 `410`：
+
+```json
+{
+  "error": "model_retired",
+  "reason": "model_retired_without_providers",
+  "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+  "retired_at": "2026-09-30T00:00:00Z",
+  "replacement_model": "lab/new-model"
+}
+```
+
+`replacement_model` 是建议的替代模型；如果没有，则为 `null`。重试同一模型不会成功。完整的错误格式请参阅[错误与调试](../api-reference/errors.mdx#when-a-model-is-retired)。
+
+<span id="move-to-a-replacement"></span>
+
+## 迁移到替代模型
+
+1. 打开**设置 -> 用量 -> 提醒**，查看哪些模型受到影响以及它们的最近使用时间。
+2. 在模型页面查看建议的替代模型。将它的价格、上下文窗口以及支持的端点和参数与你当前使用的模型进行比较。
+3. 使用有代表性的请求测试替代模型。较新的模型对同一提示词的响应可能不同。
+4. 更改代码、预设和动态路由中的模型 ID。
+
+迁移期间，你可以继续将旧模型放在首位，并将替代模型列为[请求级回退](./routing-and-fallbacks.mdx#request-level-model-fallbacks)。当没有任何提供商提供旧模型时，Phaseo 会直接转到 `models` 中的下一个模型：
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "lab/old-model",
+    "models": ["lab/new-model"],
+    "messages": [{ "role": "user", "content": "Hello" }]
+  }'
+```
+
+响应中的 `model` 字段会显示实际处理请求的模型。
+
+<span id="route-requests-to-a-replacement-automatically"></span>
+
+## 自动将请求路由到替代模型
+
+对于已不再提供的模型，工作区可以选择将其请求发送到替代模型，而不是让请求失败。此功能默认关闭。所有者和管理员可以在**设置 -> 路由 -> 已停用模型的路由**中开启，或通过[工作区设置 API](../api-reference/endpoint/workspace-settings-update.mdx) 中的 `model_successor_redirect_enabled` 开启。
+
+开启后，只有同时满足以下所有条件时，请求才会发送到替代模型：
+
+- 所请求的模型已连续 72 小时没有任何提供商提供。在此之前，请求会照常失败。
+- 替代模型已由 Phaseo 批准，或由你的工作区选择。Phaseo 最多会连续沿用三个已批准的替代模型。
+- 不属于所请求的模型免费而替代模型付费的情况。免费模型绝不会被付费模型替代。
+- 替代模型通过与任何请求相同的检查：工作区模型限制、密钥限制、护栏和端点支持。系统绝不会替你将替代模型加入允许列表。
+- 请求直接指定了模型。对 `phaseo/auto` 或带提供商限定的模型 ID 的请求不会被重定向。
+
+<span id="choose-a-price-policy"></span>
+
+### 选择价格策略
+
+工作区的价格策略决定是否允许更贵的替代模型处理请求。价格按两个模型都收费的项目进行比较。
+
+| `model_successor_price_policy` | 行为 |
+| --- | --- |
+| `never`（默认） | 仅在替代模型不更贵时使用。 |
+| `limit` | 允许价格最多高出 `model_successor_max_price_increase_percent`（0 到 1000）所设的百分比。 |
+| `any` | 允许任何价格，包括价格无法比较的替代模型。 |
+
+此请求需要具有 `settings:write` 的[管理 API 密钥](../developers/management-api-keys.mdx)。标准 Gateway API 密钥用于推理请求，不能更改工作区设置。
+
+例如，要允许价格最多高出 20% 的替代模型：
+
+```bash
+curl https://api.phaseo.app/v1/settings \
+  -X PATCH \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model_successor_redirect_enabled": true,
+    "model_successor_price_policy": "limit",
+    "model_successor_max_price_increase_percent": 20
+  }'
+```
+
+<span id="set-your-own-replacements"></span>
+
+### 设置自定义替代模型
+
+在同一设置区域的**自定义替代模型**下，所有者和管理员可以为特定模型选择替代模型，或选择**从不重定向**，让该模型的请求继续失败。自定义替代模型无论价格如何都会使用，但免费模型仍绝不会被付费模型替代。自定义替代模型只能在控制台中设置。
+
+对这些设置的更改将在约一分钟内生效。
+
+<span id="replacements-and-request-level-fallbacks"></span>
+
+### 替代模型与请求级回退
+
+你自己的 `models` 列表优先。当没有任何提供商提供主模型时，Phaseo 会尝试 `models` 中的下一个条目，而不是替代模型。只有列表中的最后一个模型才会考虑替代模型。动态路由的回退模型同样如此，只有最后一个可以被替代。
+
+<span id="tell-when-a-request-was-redirected"></span>
+
+## 判断请求是否已被重定向
+
+响应中的 `model` 字段和你的请求日志会显示实际处理请求的模型，请求也按该模型的价格计费。被重定向的响应还会包含两个标头：
+
+| 标头 | 示例 |
+| --- | --- |
+| `X-Phaseo-Requested-Model` | `lab/old-model` |
+| `X-Phaseo-Model-Substitution` | `reason=unserved; from=lab/old-model; to=lab/new-model` |
+
+当替代模型首次成功响应工作区对某个模型的请求时，系统会向工作区所有者发送一封电子邮件，且只发送一次。如需同时将此通知发送给你的团队，请在[工作区通知](./workspace-notifications.mdx#enable-product-alerts)中为**替代模型通知**选择通知目标。
+
+<span id="troubleshooting"></span>
+
+## 故障排除
+
+**开启自动替代后，请求仍然失败并返回 `410`。**
+请检查：
+
+- 该模型已至少 72 小时没有提供商提供；
+- 该模型有已批准的替代模型，或者你设置了自定义替代模型；
+- 替代模型的价格未超出你的价格策略允许的范围；
+- 不属于免费模型搭配付费替代模型的情况；
+- 你的工作区和密钥的模型限制允许使用该替代模型；
+- 请求没有使用带提供商限定的模型 ID 或 `phaseo/auto`。
+
+**响应的模型与我请求的不同。** 请查找 `X-Phaseo-Model-Substitution` 标头。要防止某个模型被替代，请在**自定义替代模型**下为它设置**从不重定向**，或关闭自动替代。
