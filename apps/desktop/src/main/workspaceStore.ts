@@ -72,7 +72,8 @@ export class WorkspaceStore {
 			for (const message of task.steering ?? []) if (message.status === "sending") { message.status = "unconfirmed"; message.error = "The application stopped before delivery was confirmed."; recovered = true; }
 			if (task.status === "running" || task.status === "waiting") {
 				task.status = "interrupted";
-				task.approvals = []; task.questions = []; task.forms = [];
+				// Questions answered by message do not need the stopped turn.
+				task.approvals = []; task.questions = task.questions?.filter(request => request.responseMode === "message") ?? []; task.forms = [];
 				task.error = "The application stopped during this task. Resume to continue.";
 				this.saveTask(task);
 			}

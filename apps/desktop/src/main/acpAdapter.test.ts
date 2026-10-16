@@ -92,14 +92,46 @@ describe("ACP protocol integration", () => {
 		try { await new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }).run(task, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onQuestion, onApproval: async () => "decline" }); expect(onQuestion).toHaveBeenCalledOnce(); }
 		finally { connection.close(); }
 	});
-	it.each(["Implement plan", "Cancel", "Add validation first."])("returns native plan-review decisions through questions (%s)", async answer => {
+	it.each(["implement", "revise", "decline"] as const)("returns native plan reviews from the plan card (%s)", async outcome => {
 		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
-		const onQuestion = vi.fn(async () => ({ "grok-plan-review": [answer] })); const onApproval = vi.fn(async () => "decline" as const);
+		const onPlan = vi.fn(async () => outcome === "implement" ? { decision: "accept" as const } : { decision: "decline" as const, ...(outcome === "revise" ? { feedback: "Add validation first." } : {}) }); const onApproval = vi.fn(async () => "decline" as const); const onActivity = vi.fn();
 		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => ({ protocolVersion: params.protocolVersion, agentCapabilities: {} })).onRequest("session/new", () => ({ sessionId: "native" })).onRequest("session/prompt", async ({ client }) => {
 			const response = await client.request("_x.ai/exit_plan_mode", { method: "_x.ai/exit_plan_mode", params: { sessionId: "native", toolCallId: "plan", planContent: "Review, implement, verify." } });
-			expect(response).toEqual(answer === "Implement plan" ? { outcome: "approved" } : answer === "Cancel" ? { outcome: "abandoned" } : { outcome: "request_changes", feedback: answer }); return { stopReason: "end_turn" };
+			expect(response).toEqual(outcome === "implement" ? { outcome: "approved" } : outcome === "revise" ? { outcome: "request_changes", feedback: "Add validation first." } : { outcome: "abandoned" }); return { stopReason: "end_turn" };
 		}).connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
-		try { await new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }).run(task, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onQuestion, onApproval }); expect(onQuestion).toHaveBeenCalledExactlyOnceWith([expect.objectContaining({ id: "grok-plan-review", isOther: true, options: [expect.objectContaining({ label: "Implement plan", preview: "Review, implement, verify." }), { label: "Cancel" }] })]); expect(onApproval).not.toHaveBeenCalled(); } finally { connection.close(); }
+		try { await new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }).run(task, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onPlan, onApproval, onActivity }); expect(onPlan).toHaveBeenCalledExactlyOnceWith("Review, implement, verify."); expect(onApproval).not.toHaveBeenCalled(); expect(onActivity).not.toHaveBeenCalled(); } finally { connection.close(); }
+	});
+	it("advertises form elicitation and maps the schema to questions naming the agent", async () => {
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
+		const onQuestion = vi.fn().mockResolvedValueOnce({ region: ["eu"], replicas: ["2"], public: ["false"], when: ["2026-10-16"] }).mockResolvedValueOnce({});
+		let capabilities: unknown;
+		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => { capabilities = params.clientCapabilities; return { protocolVersion: params.protocolVersion, agentCapabilities: {} }; }).onRequest("session/new", () => ({ sessionId: "native" })).onRequest("session/prompt", async ({ client }) => {
+			const requestedSchema = { type: "object" as const, title: null, properties: { region: { type: "string" as const, title: "Region", oneOf: [{ const: "eu", title: "Europe", description: "Frankfurt" }, { const: "us", title: "United States" }] }, replicas: { type: "integer" as const, title: "Replicas", minimum: 1, maximum: 3 }, public: { type: "boolean" as const, title: "Public" }, when: { type: "string" as const, format: "date" as const, minLength: null } }, required: ["region", "replicas"] };
+			expect(await client.request("elicitation/create", { sessionId: "native", mode: "form", message: "Deploy settings", requestedSchema })).toEqual({ action: "accept", content: { region: "eu", replicas: 2, public: false, when: "2026-10-16" } });
+			expect(await client.request("elicitation/create", { sessionId: "native", mode: "form", message: "Deploy settings", requestedSchema })).toEqual({ action: "cancel" });
+			expect(await client.request("elicitation/create", { sessionId: "native", mode: "url", message: "Sign in", elicitationId: "e", url: "https://example.com" })).toEqual({ action: "decline" });
+			await expect(client.request("elicitation/create", { sessionId: "foreign", mode: "form", message: "?", requestedSchema })).rejects.toThrow();
+			return { stopReason: "end_turn" };
+		}).connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		try {
+			await new AcpAdapter({ id: "agent", name: "Fixture agent", executable: "fixture", arguments: [] }).run(task, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline", onQuestion });
+			expect(capabilities).toMatchObject({ elicitation: { form: {} } }); expect((capabilities as { elicitation: object }).elicitation).not.toHaveProperty("url");
+			expect(onQuestion).toHaveBeenCalledWith([
+				expect.objectContaining({ id: "region", header: "Region", question: "Deploy settings", options: [{ label: "Europe", value: "eu", description: "Frankfurt" }, { label: "United States", value: "us" }] }),
+				expect.objectContaining({ id: "replicas", input: { kind: "integer", min: 1, max: 3 } }),
+				expect.objectContaining({ id: "public", required: false, input: { kind: "boolean" } }),
+				expect.objectContaining({ id: "when", required: false, input: { kind: "date" } }),
+			], expect.objectContaining({ origin: "Fixture agent" }));
+		} finally { connection.close(); }
+	});
+	it.each([["accept", "allow"], ["always", "allow-always"], ["decline", "deny"], ["never", "deny-always"]] as const)("offers the agent's lasting permission choices (%s)", async (decision, optionId) => {
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
+		const onApproval = vi.fn(async () => decision);
+		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => ({ protocolVersion: params.protocolVersion, agentCapabilities: {} })).onRequest("session/new", () => ({ sessionId: "native" })).onRequest("session/prompt", async ({ client }) => {
+			const response = await client.request("session/request_permission", { sessionId: "native", toolCall: { toolCallId: "read", title: "Read file", kind: "read", status: "pending" }, options: [{ optionId: "allow", name: "Allow", kind: "allow_once" }, { optionId: "allow-always", name: "Allow always", kind: "allow_always" }, { optionId: "deny", name: "Deny", kind: "reject_once" }, { optionId: "deny-always", name: "Never allow", kind: "reject_always" }] });
+			expect(response).toEqual({ outcome: { outcome: "selected", optionId } }); return { stopReason: "end_turn" };
+		}).connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		try { await new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }).run(task, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval }); expect(onApproval).toHaveBeenCalledWith("Read file", expect.any(String), { always: "Allow always", never: "Never allow" }); } finally { connection.close(); }
 	});
 	it.each(["plan", "chat", "code-accept", "code-decline", "missing-plan"])("captures proposed plans and gates implementation (%s)", async scenario => {
 		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);

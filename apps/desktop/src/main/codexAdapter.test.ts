@@ -5,7 +5,7 @@ import type { Task } from "../shared/workspace";
 
 const native = vi.hoisted(() => ({ spawn: vi.fn() }));
 vi.mock("./nativeProcess", () => ({ spawnNative: native.spawn }));
-import { CodexAdapter } from "./codexAdapter";
+import { CodexAdapter, codexAsyncQuestions, codexQuestions } from "./codexAdapter";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
 import { orchestrationInstructions } from "../shared/orchestration";
@@ -105,6 +105,35 @@ describe("Codex native integration", () => {
 		expect(replies).toContainEqual(expect.objectContaining({ id: "native", result: { action: "accept", content: { name: "Small" }, _meta: null } }));
 		expect(replies).toContainEqual(expect.objectContaining({ id: "foreign", error: expect.objectContaining({ message: "MCP request belongs to another task." }) }));
 		expect(onForm).toHaveBeenCalledOnce(); finish!(); await execution;
+	});
+	it("maps request_user_input fields explicitly, including own and secret answers", () => {
+		expect(codexQuestions([{ id: "token", header: "", question: "API token?", isSecret: true, options: null }, { id: "pick", header: "Pick", question: "Which?", isOther: false, options: [{ label: "A", description: "First" }, { label: " " }], extra: true }])).toEqual([
+			{ id: "token", header: "Question 1", question: "API token?", options: [], isOther: true, isSecret: true },
+			{ id: "pick", header: "Pick", question: "Which?", options: [{ label: "A", description: "First" }], isOther: false, isSecret: false },
+		]);
+		expect(() => codexQuestions([{ header: "No id", question: "?" }])).toThrow();
+		expect(codexAsyncQuestions({ type: "agentMessage", delivery: "async", questions: [{ title: "Ship now?", options: ["Yes", "No"] }, { title: " " }] })).toEqual([{ id: "0", header: "Question", question: "Ship now?", options: [{ label: "Yes" }, { label: "No" }], isOther: true }]);
+		expect(codexAsyncQuestions({ type: "agentMessage", questions: [{ title: "Ship now?" }] })).toBeUndefined();
+	});
+	it("asks async questions once, to be answered by message, and puts tool-call approvals on the approval card", async () => {
+		const replies: unknown[] = [];
+		fixture((packet, send) => {
+			if (packet.method === "initialize") send({ id: packet.id, result: {} });
+			if (packet.method === "thread/start") send({ id: packet.id, result: { thread: { id: "native" } } });
+			if (packet.method === "turn/start") {
+				send({ method: "turn/started", params: { threadId: "native", turn: { id: "turn" } } });
+				send({ id: packet.id, result: { turn: { id: "turn" } } });
+				const item = { id: "ask", type: "agentMessage", text: "Two questions", delivery: "async", questions: [{ title: "Ship now?", options: ["Yes", "No"] }] };
+				for (const method of ["item/started", "item/completed", "item/completed"]) send({ method, params: { threadId: "native", turnId: "turn", item } });
+				send({ id: "approval", method: "mcpServer/elicitation/request", params: { threadId: "native", serverName: "github", message: "Allow GitHub?", mode: "form", requestedSchema: { type: "object", properties: {} }, _meta: { codex_approval_kind: "mcp_tool_call", persist: "always" } } });
+			}
+			if (String(packet.id) === "approval") { replies.push(packet); send({ method: "turn/completed", params: { threadId: "native", turn: { id: "turn", status: "completed" } } }); }
+		});
+		const onQuestion = vi.fn(async () => ({})); const onApproval = vi.fn(async () => "always" as const); const onForm = vi.fn();
+		await new CodexAdapter().run(task, ".", "Start", { onDelta: vi.fn(), onSession: vi.fn(), onApproval, onQuestion, onForm });
+		expect(onQuestion).toHaveBeenCalledExactlyOnceWith([expect.objectContaining({ question: "Ship now?" })], { responseMode: "message" });
+		expect(onApproval).toHaveBeenCalledWith("Allow github?", "Allow GitHub?", { always: "Always allow" }); expect(onForm).not.toHaveBeenCalled();
+		expect(replies).toEqual([expect.objectContaining({ result: { action: "accept", content: {}, _meta: { persist: "always" } } })]);
 	});
 	it.each(["start", "resume", "fork"])("configures MCP before submitting a %s turn", async operation => {
 		const connection: McpConnection = { id: "12345678-1234-1234-1234-123456789abc", name: "Fixture", enabled: true, transport: "http", url: "https://example.com/mcp" }; const methods: string[] = [];

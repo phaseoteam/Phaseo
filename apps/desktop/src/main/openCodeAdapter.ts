@@ -9,7 +9,8 @@ import type { Account, QueuedMessage, Task } from "../shared/workspace";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
-import type { AgentForm } from "../shared/agentForms";
+import { formAnswerError, type AgentForm, type FormAnswer } from "../shared/agentForms";
+import { formQuestionAnswer, formQuestions } from "../shared/agentQuestions";
 import type { Endpoint } from "@opencode/client/service";
 import { openCodeForm } from "./openCodeForms";
 import { AgentInputRejectedError } from "./agentAdapter";
@@ -58,22 +59,37 @@ export class OpenCodeAdapter implements AgentAdapter {
 			const controller = new AbortController(); forms.set(form.id, controller);
 			const signal = AbortSignal.any([this.controller.signal, controller.signal]);
 			let validationError: string | undefined;
+			/** Sends the answer (null cancels); false when OpenCode rejects it, so the form is shown again with the reason. */
+			const settle = async (answer: FormAnswer | null) => {
+				try {
+					if (answer === null) await client.session.form.cancel({ sessionID: this.sessionId!, formID: form.id, message: "Cancelled in Phaseo." }, { signal });
+					else await client.session.form.reply({ sessionID: this.sessionId!, formID: form.id, answer }, { signal });
+					return true;
+				} catch (error) {
+					if (isFormAlreadySettledError(error) || isFormNotFoundError(error) || signal.aborted) return true;
+					if (!isFormInvalidAnswerError(error)) throw error;
+					validationError = error.message;
+					callbacks.onActivity?.({ id: `form:${form.id}:validation`, type: "tool", title: form.title, text: error.message, status: "failed" });
+					return false;
+				}
+			};
 			try {
+				// Text and multiple-choice forms are what OpenCode's question tool asks; they go to the answer panel, as in T3 Code.
+				const questions = callbacks.onQuestion ? formQuestions(form, ["string", "multiselect"]) : undefined;
+				if (questions) {
+					const answers = await callbacks.onQuestion!(questions, { signal });
+					if (signal.aborted) return;
+					if (!Object.keys(answers).length) { await settle(null); return; }
+					const answer = formQuestionAnswer(form, answers);
+					validationError = formAnswerError(form, answer);
+					if (!validationError && await settle(answer)) return;
+				}
 				while (!signal.aborted) {
 					const reply = await callbacks.onForm?.({ id: form.id, title: form.title, fields: form.fields, error: validationError }, signal) ?? null;
 					// OpenCode has no decline; it is a cancel.
 					const answer = reply === "decline" ? null : reply;
 					if (signal.aborted) return;
-					try {
-						if (answer === null) await client.session.form.cancel({ sessionID: this.sessionId!, formID: form.id, message: "Cancelled in Phaseo." }, { signal });
-						else await client.session.form.reply({ sessionID: this.sessionId!, formID: form.id, answer }, { signal });
-						return;
-					} catch (error) {
-						if (isFormAlreadySettledError(error) || isFormNotFoundError(error) || signal.aborted) return;
-						if (!isFormInvalidAnswerError(error)) throw error;
-						validationError = error.message;
-						callbacks.onActivity?.({ id: `form:${form.id}:validation`, type: "tool", title: form.title, text: error.message, status: "failed" });
-					}
+					if (await settle(answer)) return;
 				}
 			} finally { forms.delete(form.id); }
 		};

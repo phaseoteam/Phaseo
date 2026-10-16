@@ -17,7 +17,11 @@ import { nativeMcpName, type McpConnection } from "../shared/mcp";
 import { acpModels, acpModes } from "./acpModels";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { GrokCompletion, grokCompletionMethods } from "./grokCompletion";
-import { grokPlanMethods, grokPlanRequest, grokPlanReview, grokPlanReviewResponse, grokQuestionMethods, grokQuestionRequest, grokQuestionResponse } from "./grokInteraction";
+import { grokPlanMethods, grokPlanRequest, grokQuestionMethods, grokQuestionRequest, grokQuestionResponse } from "./grokInteraction";
+import { mcpApprovalRequest, respondMcpElicitation, withoutNulls } from "./mcpElicitation";
+import type { ApprovalDecision } from "../shared/workspace";
+
+const permissionKinds: Record<ApprovalDecision, string> = { accept: "allow_once", always: "allow_always", decline: "reject_once", never: "reject_always" };
 import { grokModels, grokModelStream } from "./grokModels";
 import { orchestrationInstructions } from "../shared/orchestration";
 
@@ -49,9 +53,11 @@ export class AcpAdapter implements AgentAdapter {
 			.onRequest("session/request_permission", async ({ params }) => {
 				checkSession(params.sessionId);
 				if (task.mode !== "code" && ["edit", "execute", "delete", "move"].includes(params.toolCall.kind ?? "")) return { outcome: { outcome: "cancelled" } };
-				const decision = await callbacks.onApproval(params.toolCall.title ?? "Agent action", JSON.stringify(params.toolCall, null, 2));
+				// The agent's lasting choices are offered as Always allow and Always deny, with its own wording.
+				const always = params.options.find(option => option.kind === "allow_always"), never = params.options.find(option => option.kind === "reject_always");
+				const decision = await callbacks.onApproval(params.toolCall.title ?? "Agent action", JSON.stringify(params.toolCall, null, 2), { ...always ? { always: always.name || "Always allow" } : {}, ...never ? { never: never.name || "Always deny" } : {} });
 				if (this.cancelled) return { outcome: { outcome: "cancelled" } };
-				const option = params.options.find(option => option.kind === (decision === "accept" ? "allow_once" : "reject_once"));
+				const option = params.options.find(option => option.kind === permissionKinds[decision]);
 				return option ? { outcome: { outcome: "selected", optionId: option.optionId } } : { outcome: { outcome: "cancelled" } };
 			})
 			.onRequest("fs/read_text_file", async ({ params }) => {
@@ -68,6 +74,15 @@ export class AcpAdapter implements AgentAdapter {
 				try { expected = contentHash(await readProjectFile(cwd, filename)); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
 				if (await callbacks.onApproval("Write file", `${filename}\n\n${params.content}`) !== "accept" || this.cancelled) throw new Error("File edit declined.");
 				await writeProjectFile(cwd, filename, params.content, expected); return {};
+			})
+			// Form elicitations from the agent (or an MCP server behind it) go to the answer panel naming the agent; tool-call approvals go on the approval card.
+			.onRequest("elicitation/create", async ({ params }) => {
+				if ("sessionId" in params && typeof params.sessionId === "string") checkSession(params.sessionId); else if (this.cancelled) throw new Error("Agent request belongs to an inactive session.");
+				if (params.mode !== "form" || !("requestedSchema" in params)) return { action: "decline" };
+				const request = { serverName: this.agent.name, message: params.message, mode: "form", requestedSchema: withoutNulls(params.requestedSchema), _meta: params._meta };
+				const approval = mcpApprovalRequest(request);
+				if (approval) { const decision = await callbacks.onApproval(approval.title, approval.description, approval.always ? { always: approval.always } : undefined); return this.cancelled ? { action: "cancel" } : approval.response(decision); }
+				return await respondMcpElicitation(request, callbacks, this.controller.signal);
 			})
 			.onNotification("session/update", ({ params }) => {
 				if (!receiving || params.sessionId !== this.sessionId) return;
@@ -95,12 +110,14 @@ export class AcpAdapter implements AgentAdapter {
 		for (const method of grokPlanMethods) app.onRequest(method, grokPlanRequest, async ({ params }) => {
 			checkSession(params.sessionId);
 			if (!receiving || !params.plan) return { outcome: "abandoned", feedback: "Provide the proposed plan before requesting implementation." };
-			callbacks.onActivity?.({ id: params.toolCallId, type: "plan", title: "Proposed plan", text: params.plan });
-			if (task.mode !== "code") return { outcome: "abandoned", feedback: "The plan is captured. Wait for a later implementation instruction in Code mode." };
-			if (callbacks.onQuestion) {
-				const answers = await callbacks.onQuestion([grokPlanReview(params.plan)]);
-				return this.cancelled ? { outcome: "abandoned" } : grokPlanReviewResponse(answers);
+			// In Code mode the plan card asks: Implement approves, Revise sends the person's changes.
+			if (task.mode === "code" && callbacks.onPlan) {
+				const review = await callbacks.onPlan(params.plan);
+				if (this.cancelled) return { outcome: "abandoned" };
+				return review.decision === "accept" ? { outcome: "approved" } : review.feedback ? { outcome: "request_changes", feedback: review.feedback } : { outcome: "abandoned" };
 			}
+			callbacks.onActivity?.({ id: params.toolCallId, type: "plan", title: "Proposed plan", text: params.plan, proposed: {} });
+			if (task.mode !== "code") return { outcome: "abandoned", feedback: "The plan is captured. Wait for a later implementation instruction in Code mode." };
 			const decision = await callbacks.onApproval("Implement plan", params.plan);
 			return { outcome: !this.cancelled && decision === "accept" ? "approved" : "abandoned" };
 		});
@@ -108,7 +125,7 @@ export class AcpAdapter implements AgentAdapter {
 		child.on("error", error => connection.close(error)); child.on("exit", () => connection.close(new Error("ACP agent stopped.")));
 		const startup = setTimeout(() => connection.close(new Error("ACP initialization timed out.")), 30000);
 		try {
-			const initialized = await connection.agent.request("initialize", { protocolVersion: PROTOCOL_VERSION, clientInfo: { name: "phaseo-desktop", version: "0.1.0" }, ...(this.grok ? { _meta: { clientType: "extension" } } : {}), clientCapabilities: { fs: { readTextFile: task.mode !== "chat", writeTextFile: task.mode === "code" }, terminal: task.mode === "code", auth: { terminal: Boolean(callbacks.onTerminalAuth) } } });
+			const initialized = await connection.agent.request("initialize", { protocolVersion: PROTOCOL_VERSION, clientInfo: { name: "phaseo-desktop", version: "0.1.0" }, ...(this.grok ? { _meta: { clientType: "extension" } } : {}), clientCapabilities: { fs: { readTextFile: task.mode !== "chat", writeTextFile: task.mode === "code" }, terminal: task.mode === "code", auth: { terminal: Boolean(callbacks.onTerminalAuth) }, ...callbacks.onQuestion || callbacks.onForm ? { elicitation: { form: {} } } : {} } });
 			clearTimeout(startup);
 			if (initialized.protocolVersion !== PROTOCOL_VERSION) throw new Error("This agent uses an unsupported ACP protocol version.");
 			// Chat admits only the orchestration server; file and terminal capabilities stay off.

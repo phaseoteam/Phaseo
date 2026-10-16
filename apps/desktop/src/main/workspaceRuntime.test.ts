@@ -231,10 +231,53 @@ describe("workspace orchestration", () => {
 			const pending = runtime.store.getTask(id); expect(pending.approvals).toHaveLength(2);
 			await runtime.command({ type: "approval", id, approvalId: pending.approvals![0].id, decision: "accept" });
 			expect(await first).toBe("accept"); expect(runtime.store.getTask(id).status).toBe("waiting");
-			await expect(runtime.command({ type: "answer", id, requestId: pending.questions![0].id, answers: { wrong: ["Small"] } })).rejects.toThrow("every question");
+			await expect(runtime.command({ type: "answer", id, requestId: pending.questions![0].id, answers: { wrong: ["Small"] } })).rejects.toThrow("Answer this question");
 			await runtime.command({ type: "cancel", id });
 			expect(await second).toBe("decline"); expect(await question).toEqual({});
 			await vi.waitFor(() => expect(runtime.store.getTask(id).questions).toEqual([]));
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("checks typed and optional answers, offers lasting choices only where given, and reviews plans", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-question-kinds-"));
+		let callbacks: AgentCallbacks | undefined; let finish: (() => void) | undefined;
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async (_task, _cwd, _text, input) => { callbacks = input; await new Promise<void>(resolve => { finish = resolve; }); }, cancel: async () => { finish?.(); } }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "plan", permissionMode: "full-access" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); await vi.waitFor(() => expect(callbacks).toBeDefined());
+			const typed = callbacks!.onQuestion!([{ id: "count", header: "Count", question: "How many?", input: { kind: "integer", min: 1 } }, { id: "name", header: "Name", question: "Name?", required: false }], { origin: "Fixture server" });
+			const request = runtime.store.getTask(id).questions![0]; expect(request.origin).toBe("Fixture server");
+			await expect(runtime.command({ type: "answer", id, requestId: request.id, answers: { count: ["0"], name: [""] } })).rejects.toThrow("Count: Enter 1 or more.");
+			await runtime.command({ type: "answer", id, requestId: request.id, answers: { count: ["2"], name: [""] } });
+			expect(await typed).toEqual({ count: ["2"], name: [""] });
+			// Full access answers approvals itself, but a plan always waits for the person.
+			expect(await callbacks!.onApproval("Run", "ls", { always: "Allow always" })).toBe("accept");
+			const plan = callbacks!.onPlan!("# Ship it\n\n1. Build");
+			const approval = runtime.store.getTask(id).approvals![0]; expect(approval).toMatchObject({ kind: "plan", description: "# Ship it\n\n1. Build" });
+			await expect(runtime.command({ type: "approval", id, approvalId: approval.id, decision: "always" })).rejects.toThrow("does not offer");
+			await expect(runtime.command({ type: "approval", id, approvalId: approval.id, decision: "accept", feedback: "No" })).rejects.toThrow();
+			await runtime.command({ type: "approval", id, approvalId: approval.id, decision: "decline", feedback: "Smaller steps" });
+			expect(await plan).toEqual({ decision: "decline", feedback: "Smaller steps" });
+			const second = callbacks!.onPlan!("# Ship it\n\n1. Build in steps");
+			await runtime.command({ type: "approval", id, approvalId: runtime.store.getTask(id).approvals![0].id, decision: "accept" });
+			expect(await second).toEqual({ decision: "accept" }); expect(runtime.store.getTask(id).mode).toBe("code");
+			await vi.waitFor(() => expect(runtime.store.getTask(id).activities?.filter(activity => activity.proposed).map(activity => activity.proposed)).toEqual([{ outcome: "revised", feedback: "Smaller steps" }, { outcome: "implemented" }]));
+		} finally { finish?.(); await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("keeps message-answered questions past the turn and sends the answer as a message", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-message-questions-"));
+		const prompts: string[] = []; let callbacks: AgentCallbacks | undefined;
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async (_task, _cwd, text, input) => { prompts.push(text); callbacks = input; if (prompts.length === 1) expect(await input.onQuestion!([{ id: "0", header: "Question", question: "Which colour?", options: [{ label: "Blue" }], isOther: true }], { responseMode: "message" })).toEqual({}); }, cancel: async () => {} }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "code" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" });
+			await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("completed"));
+			const request = runtime.store.getTask(id).questions![0]; expect(request.responseMode).toBe("message");
+			expect(callbacks).toBeDefined();
+			await runtime.command({ type: "answer", id, requestId: request.id, answers: { "0": ["Blue"] } });
+			await vi.waitFor(() => expect(prompts).toHaveLength(2));
+			expect(prompts[1]).toContain("Which colour?\nBlue");
+			expect(runtime.store.getTask(id).questions).toEqual([]);
+			expect(runtime.store.getTask(id).activities?.some(activity => activity.title === "Question answered" && activity.text.includes("→ Blue"))).toBe(true);
 		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
 	it("serializes queued work and keeps streamed output and native session identity", async () => {

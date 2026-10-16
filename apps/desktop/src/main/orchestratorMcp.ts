@@ -6,12 +6,17 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprot
 import type { McpConnection } from "../shared/mcp";
 import type { ThreadTools } from "../shared/orchestration";
 import { threadTools } from "./threadTools";
+import type { AgentQuestion } from "../shared/workspace";
+import { answerPhaseoQuestion, phaseoQuestionTools, QuestionDeferredError } from "./phaseoQuestionTools";
+
+/** Asks the person; throws QuestionDeferredError when the answer will come later as a message. */
+export type OrchestratorAsk = (questions: AgentQuestion[], signal: AbortSignal) => Promise<Record<string, string[]>>;
 
 /** Credentials are invocation-scoped and never stored with workspace connections. */
 export class OrchestratorMcp {
 	private server?: HttpServer;
 	private starting?: Promise<number>;
-	private readonly sessions = new Map<string, { tools: ThreadTools; approve: (name: string, args: unknown) => Promise<boolean>; createdAt: number; lastUsedAt: number }>();
+	private readonly sessions = new Map<string, { tools: ThreadTools; approve: (name: string, args: unknown) => Promise<boolean>; ask?: OrchestratorAsk; createdAt: number; lastUsedAt: number }>();
 	private readonly transports = new Set<StreamableHTTPServerTransport>();
 	constructor(private readonly now: () => number = Date.now) {}
 	private activeSession(token: string) {
@@ -30,13 +35,19 @@ export class OrchestratorMcp {
 				if (request.method !== "POST") { response.writeHead(405).end(); return; }
 				const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
 				const mcp = new Server({ name: "phaseo-orchestrator", version: "1.0.0" }, { capabilities: { tools: {} } });
-				const tools = threadTools(session.tools);
+				// ask_user (Phaseo's AskUserQuestion) is offered only to harnesses without a question tool of their own (Cursor).
+				const tools = threadTools(session.tools); const askTool = session.ask ? phaseoQuestionTools()[0] : undefined;
 				// A client that gives up on a long wait_thread closes the request; the wait then upgrades the child to deliver its result.
 				const disconnected = new AbortController(); response.on("close", () => disconnected.abort());
-				mcp.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: tools.map(tool => ({ name: tool.id, description: tool.description, inputSchema: tool.parameters as { type: "object" } })) }));
+				mcp.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: [...tools, ...askTool ? [askTool] : []].map(tool => ({ name: tool.id, description: tool.description, inputSchema: tool.parameters as { type: "object" } })) }));
 				mcp.setRequestHandler(CallToolRequestSchema, async ({ params }, extra) => {
 					try {
 						if (!this.activeSession(token)) throw new Error("This agent session has ended.");
+						if (askTool && session.ask && params.name === askTool.id) {
+							const ask = session.ask, signal = AbortSignal.any([disconnected.signal, extra.signal]);
+							try { return { content: [{ type: "text" as const, text: JSON.stringify(await answerPhaseoQuestion(params.arguments ?? {}, { onQuestion: questions => ask(questions, signal) }, signal)) }] }; }
+							catch (error) { if (!(error instanceof QuestionDeferredError)) throw error; return { content: [{ type: "text" as const, text: JSON.stringify({ pending: true, message: "The user has not answered yet. Their answer will reach you as a message; carry on with work that does not depend on it, or end your turn." }) }] }; }
+						}
 						const tool = tools.find(value => value.id === params.name);
 						if (!tool) throw new Error("Unknown thread tool.");
 						// Approval can depend on the arguments (organize_thread asks only before archiving), as in the Phaseo agent loop.
@@ -56,9 +67,9 @@ export class OrchestratorMcp {
 			this.server.listen(0, "127.0.0.1", () => { const address = this.server!.address(); if (!address || typeof address === "string") reject(new Error("Orchestration server unavailable.")); else resolve(address.port); });
 		});
 	}
-	async session(tools: ThreadTools, approve: (name: string, args: unknown) => Promise<boolean>): Promise<{ connection: McpConnection; close: () => void }> {
+	async session(tools: ThreadTools, approve: (name: string, args: unknown) => Promise<boolean>, ask?: OrchestratorAsk): Promise<{ connection: McpConnection; close: () => void }> {
 		const port = await this.listen();
-		const token = randomBytes(32).toString("hex"); this.sessions.set(token, { tools, approve, createdAt: this.now(), lastUsedAt: this.now() });
+		const token = randomBytes(32).toString("hex"); this.sessions.set(token, { tools, approve, ...(ask ? { ask } : {}), createdAt: this.now(), lastUsedAt: this.now() });
 		return { connection: { id: randomUUID(), name: "Phaseo orchestration", enabled: true, orchestration: true, transport: "http", url: `http://127.0.0.1:${port}/mcp`, headers: { Authorization: `Bearer ${token}` } }, close: () => { this.sessions.delete(token); } };
 	}
 	async close() {

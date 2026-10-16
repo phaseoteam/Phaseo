@@ -3,7 +3,7 @@ import type { Task } from "../shared/workspace";
 const sdk = vi.hoisted(() => ({ query: vi.fn() }));
 vi.mock("@anthropic-ai/claude-agent-sdk", () => ({ query: sdk.query }));
 vi.mock("./nativeProcess", () => ({ resolveNativeCommand: async () => ({ executable: "claude", prefix: [] }) }));
-import { ClaudeAdapter } from "./claudeAdapter";
+import { ClaudeAdapter, claudeQuestions } from "./claudeAdapter";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
 import { orchestrationInstructions } from "../shared/orchestration";
@@ -98,6 +98,24 @@ describe("Claude SDK integration", () => {
 		const onQuestion = vi.fn(async () => ({ "0": ["Small"] }));
 		await new ClaudeAdapter().run({ ...task, mode: "plan" }, ".", "Plan", { onDelta: () => {}, onSession: () => {}, onApproval: async () => "decline", onQuestion });
 		expect(onQuestion).toHaveBeenCalledWith([expect.objectContaining({ id: "0", question: "Which scope?", isOther: true })]);
+	});
+	it("maps AskUserQuestion explicitly, keeping previews and skipping malformed entries", () => {
+		expect(claudeQuestions([{ header: "", question: "Which?", options: [{ label: "A", description: "First", preview: "# A" }, { label: " " }], multiSelect: true }, { question: " " }, null])).toEqual([
+			{ id: "0", header: "Question 1", question: "Which?", options: [{ label: "A", description: "First", preview: "# A" }], isOther: true, multiSelect: true },
+		]);
+	});
+	it.each(["accept", "revise", "decline"] as const)("turns ExitPlanMode into a proposed plan (%s)", async outcome => {
+		const onApproval = vi.fn(async () => "accept" as const);
+		const onPlan = vi.fn(async () => outcome === "accept" ? { decision: "accept" as const } : { decision: "decline" as const, ...(outcome === "revise" ? { feedback: "Add tests first." } : {}) });
+		sdk.query.mockImplementation(({ options }) => Object.assign((async function* () {
+			expect(options.permissionMode).toBe("plan");
+			const decision = await options.canUseTool("ExitPlanMode", { plan: "# Plan\n\n1. Build it" });
+			if (outcome === "accept") expect(decision).toEqual({ behavior: "allow", updatedInput: { plan: "# Plan\n\n1. Build it" }, updatedPermissions: [{ type: "setMode", mode: "bypassPermissions", destination: "session" }] });
+			else expect(decision).toEqual({ behavior: "deny", message: outcome === "revise" ? expect.stringContaining("Add tests first.") : expect.stringContaining("did not approve") });
+			yield { type: "result", subtype: "success", is_error: false, result: "Done" };
+		})(), { close: vi.fn() }));
+		await new ClaudeAdapter().run({ ...task, mode: "plan", permissionMode: "full-access" }, ".", "Plan", { onDelta: vi.fn(), onSession: vi.fn(), onApproval, onPlan });
+		expect(onPlan).toHaveBeenCalledExactlyOnceWith("# Plan\n\n1. Build it"); expect(onApproval).not.toHaveBeenCalled();
 	});
 	it("streams text once and preserves native session identity", async () => {
 		const close = vi.fn();

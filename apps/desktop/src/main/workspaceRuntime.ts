@@ -5,17 +5,19 @@ import { randomUUID } from "node:crypto";
 import { autoSettleAt } from "../shared/threadLifecycle";
 import { mkdirSync, realpathSync } from "node:fs";
 import path from "node:path";
-import type { AgentActivity, AgentConnection, ModelOption, WorkspaceCommand, AgentQuestion } from "../shared/workspace";
+import type { AgentActivity, AgentConnection, ApprovalDecision, ModelOption, WorkspaceCommand, AgentQuestion, QuestionRequest } from "../shared/workspace";
+import { optionValue, questionAnswerError, questionOptions } from "../shared/agentQuestions";
 import { WorkspaceThreads } from "./workspaceThreads";
 import { git } from "./gitProcess";
 import { githubRepository } from "./projectPullRequests";
 import { parsePullRequestReference, type PullRequestLinkSnapshot } from "../shared/pullRequestView";
 import { OrchestratorMcp } from "./orchestratorMcp";
+import { QuestionDeferredError } from "./phaseoQuestionTools";
 import { CodexAdapter } from "./codexAdapter";
 import { WorkspaceStore } from "./workspaceStore";
 import type { WorkspaceOverview } from "../shared/workspaceOverview";
 import { ClaudeAdapter } from "./claudeAdapter";
-import { AgentInputRejectedError, type AgentAdapter } from "./agentAdapter";
+import { AgentInputRejectedError, type AgentAdapter, type AgentCallbacks } from "./agentAdapter";
 import type { Harness } from "../shared/workspace";
 import type { SecretVault } from "./secretVault";
 import { PhaseoAdapter } from "./phaseoAdapter";
@@ -40,7 +42,11 @@ import { GrokAdapter } from "./grokAdapter";
 import { codexModels } from "./modelCatalog";
 import type { Mission, MissionCommand } from "../shared/missions";
 
-const hasRequests = (task: { approvals?: unknown[]; questions?: unknown[]; forms?: unknown[] }) => Boolean(task.approvals?.length || task.questions?.length || task.forms?.length);
+// Questions answered by message do not hold up the turn.
+const hasRequests = (task: { approvals?: unknown[]; questions?: { responseMode?: string }[]; forms?: unknown[] }) => Boolean(task.approvals?.length || task.questions?.some(request => request.responseMode !== "message") || task.forms?.length);
+/** Under Cursor's 60-second MCP tool-call limit, with time to return the tool result. */
+export const cursorQuestionWindowMs = 50_000;
+const keepMessageQuestions = (questions?: QuestionRequest[]) => questions?.filter(request => request.responseMode === "message") ?? [];
 
 function createAdapter(harness: Harness, agent?: AgentConnection, openCode?: OpenCodeService, mcp: McpConnection[] = [], projectId?: string): AgentAdapter {
 	const active = mcp.filter(connection => connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === projectId));
@@ -62,7 +68,7 @@ export class WorkspaceRuntime {
 	/** Chats stopped while their next run was still being set up; an earlier stop must not block a resume or a new message. */
 	private readonly stoppedDuringSetup = new Set<string>();
 	private readonly running = new Map<string, AgentAdapter>();
-	private readonly approvals = new Map<string, { taskId: string; resolve: (decision: "accept" | "decline") => void }>();
+	private readonly approvals = new Map<string, { taskId: string; resolve: (decision: ApprovalDecision, feedback?: string) => void }>();
 	private readonly questions = new Map<string, { taskId: string; resolve: (answers: Record<string, string[]>) => void }>();
 	private readonly forms = new Map<string, { taskId: string; resolve: (answer: FormAnswer | null | "decline") => void }>();
 	private readonly executions = new Map<string, Promise<void>>();
@@ -377,19 +383,25 @@ export class WorkspaceRuntime {
 		if (command.type === "approval") {
 			const pending = this.approvals.get(command.approvalId);
 			if (!pending || pending.taskId !== command.id) throw new Error("This approval is no longer pending.");
-			const task = this.store.getTask(command.id); task.approvals = task.approvals?.filter(value => value.id !== command.approvalId); task.status = hasRequests(task) ? "waiting" : "running";
+			const task = this.store.getTask(command.id); const request = task.approvals?.find(value => value.id === command.approvalId);
+			if ((command.decision === "always" && !request?.always) || (command.decision === "never" && !request?.never)) throw new Error("The agent does not offer this choice.");
+			if (command.feedback !== undefined && (request?.kind !== "plan" || command.decision !== "decline")) throw new Error("Only a plan revision takes feedback.");
+			task.approvals = task.approvals?.filter(value => value.id !== command.approvalId); task.status = hasRequests(task) ? "waiting" : "running";
+			// Implementing a proposed plan leaves plan mode, as T3 Code's Implement does.
+			if (request?.kind === "plan" && command.decision === "accept" && task.mode === "plan") task.mode = "code";
 			this.store.saveTask(task); this.broadcast();
-			this.approvals.delete(command.approvalId); pending.resolve(command.decision);
+			this.approvals.delete(command.approvalId); pending.resolve(command.decision, command.feedback?.trim() || undefined);
 			return this.store.getOverview();
 		}
 		if (command.type === "answer") {
 			const pending = this.questions.get(command.requestId);
 			const task = this.store.getTask(command.id);
 			const request = task.questions?.find(value => value.id === command.requestId);
-			if (!pending || pending.taskId !== task.id || !request) throw new Error("This question is no longer pending.");
-			if (!command.dismissed && request.questions.some(question => !command.answers[question.id]?.length)) throw new Error("Answer every question.");
+			if (!request || (request.responseMode !== "message" && (!pending || pending.taskId !== task.id))) throw new Error("This question is no longer pending.");
+			if (!command.dismissed) for (const question of request.questions) { const error = questionAnswerError(question, Object.hasOwn(command.answers, question.id) ? command.answers[question.id] : []); if (error) throw new Error(request.questions.length > 1 ? `${question.header}: ${error}` : error); }
+			if (request.responseMode === "message") return this.answerByMessage(task.id, request, command.dismissed ? {} : command.answers);
 			task.questions = task.questions?.filter(value => value.id !== command.requestId); task.status = hasRequests(task) ? "waiting" : "running";
-			this.store.saveTask(task); this.broadcast(); this.questions.delete(command.requestId); pending.resolve(command.dismissed ? {} : command.answers); return this.store.getOverview();
+			this.store.saveTask(task); this.broadcast(); this.questions.delete(command.requestId); pending!.resolve(command.dismissed ? {} : command.answers); return this.store.getOverview();
 		}
 		if (command.type === "form-answer") {
 			const pending = this.forms.get(command.requestId); const task = this.store.getTask(command.id);
@@ -450,6 +462,20 @@ export class WorkspaceRuntime {
 		if (firstMessage) void this.nameChat(task.id, false);
 		return this.store.getOverview();
 	}
+	/** A question answered by message: recorded in the transcript, then its answers reach the agent as the person's message (steered into a running turn where the harness can). */
+	private async answerByMessage(id: string, request: QuestionRequest, answers: Record<string, string[]>): Promise<WorkspaceOverview> {
+		const task = this.store.getTask(id);
+		task.questions = task.questions?.filter(value => value.id !== request.id);
+		if (task.status === "waiting") task.status = hasRequests(task) ? "waiting" : "running";
+		task.activities ??= [];
+		const timelineOrder = [...task.messages, ...task.activities].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), 0) + 1;
+		task.activities.push({ ...questionRecord(request.id, request.questions, answers), timelineOrder });
+		this.store.saveTask(task); this.broadcast();
+		const text = request.questions.flatMap(question => { const values = (answers[question.id] ?? []).filter(value => value.trim()); return values.length ? [`${question.question}\n${values.map(value => questionOptions(question).find(option => optionValue(option) === value)?.label ?? value).join(", ")}`] : []; }).join("\n\n");
+		if (!text) return this.store.getOverview();
+		if (this.running.get(id)?.steer && ["running", "waiting"].includes(this.store.getTask(id).status)) return this.command({ type: "steer", id, text });
+		return this.command({ type: "send", id, text });
+	}
 	private async steer(command: Extract<WorkspaceCommand, { type: "steer" }>): Promise<WorkspaceOverview> {
 		const task = this.store.getTask(command.id); const adapter = this.running.get(task.id);
 		if (task.archived || !adapter?.steer || !["running", "waiting"].includes(task.status)) throw new Error("This task is not ready for live steering.");
@@ -491,6 +517,8 @@ export class WorkspaceRuntime {
 		if (!task.queue.length) return;
 		let adapter: AgentAdapter;
 		let orchestration: Awaited<ReturnType<OrchestratorMcp["session"]>> | undefined;
+		// Set once the run's question handler exists; the orchestration server (created first) asks through it.
+		const asker: { ask?: AgentCallbacks["onQuestion"] } = {};
 		this.stoppedDuringSetup.delete(id);
 		try {
 			const credential = (accountId: string) => { if (!this.vault) throw new Error("Credential storage is unavailable."); const account = this.store.getAccounts().find(value => value.id === accountId); if (!account) throw new Error("Account no longer exists."); if (account.oauthExpiresAt && Date.parse(account.oauthExpiresAt) <= Date.now()) throw new Error("Sign in to Phaseo again to renew this account."); return this.vault.get(account.secretId ?? account.id); };
@@ -507,7 +535,14 @@ export class WorkspaceRuntime {
 				this.approvals.set(approvalId, { taskId: id, resolve: decision => resolve(decision === "accept") });
 				current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method: threadToolLabel(name, args), description: `Allow this thread action with this chat's project and permissions?\n\n${JSON.stringify(args, null, 2).slice(0, 8000)}` });
 				this.store.saveTask(current); this.broadcast();
-			}));
+			}), task.harness === "cursor" ? async (questions, signal) => {
+				const askUser = asker.ask; if (!askUser) throw new Error("Questions are not available yet.");
+				// Cursor's MCP client fails a tool call after 60 seconds; a question still open by then is answered by message instead.
+				const deadline = AbortSignal.timeout(cursorQuestionWindowMs);
+				const answers = await askUser(questions, { signal: AbortSignal.any([signal, deadline]) });
+				if (deadline.aborted && !signal.aborted) { await askUser(questions, { responseMode: "message" }); throw new QuestionDeferredError(); }
+				return answers;
+			} : undefined);
 			if (this.closing || this.stoppedDuringSetup.delete(id)) { orchestration?.close(); return; }
 			if (orchestration) this.orchestrationSessions.set(id, orchestration.close);
 			const connections = [...this.store.getMcpConnections(), ...orchestration ? [orchestration.connection] : []];
@@ -549,14 +584,38 @@ export class WorkspaceRuntime {
 				current.activities ??= [];
 				const activityId = `${message.id}:${activity.id}`;
 				const existing = current.activities.find(value => value.id === activityId);
-				if (existing) { existing.text = activity.append ? existing.text + activity.text : activity.text; existing.status = activity.status; existing.title = activity.title; existing.steps = activity.steps; existing.explanation = activity.explanation; existing.summary = activity.summary; existing.compaction = activity.compaction; existing.nativeAgent = activity.nativeAgent; }
-				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent });
+				if (existing) { existing.text = activity.append ? existing.text + activity.text : activity.text; existing.status = activity.status; existing.title = activity.title; existing.steps = activity.steps; existing.explanation = activity.explanation; existing.summary = activity.summary; existing.compaction = activity.compaction; existing.nativeAgent = activity.nativeAgent; existing.proposed = activity.proposed; }
+				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent, ...(activity.proposed ? { proposed: activity.proposed } : {}) });
 			}
 			this.store.saveTask(current); deltas.clear(); activities = []; this.broadcast();
 		};
 		const scheduleFlush = () => {
 			flushTimer ??= setTimeout(() => { try { flush(); } catch (error) { streamError = error; void adapter.cancel().catch(() => {}); } }, 40);
 		};
+		const onQuestion: NonNullable<AgentCallbacks["onQuestion"]> = (questions, request) => new Promise(resolve => {
+			flush();
+			const signal = request?.signal;
+			if (this.closing || signal?.aborted || this.store.getTask(id).status === "interrupted") { resolve({}); return; }
+			const requestId = randomUUID(); const origin = request?.origin?.trim().slice(0, 200);
+			const current = this.store.getTask(id); current.questions ??= [];
+			if (request?.responseMode === "message") {
+				// Answered later as a message; the turn goes on and the question outlives it.
+				current.questions.push({ id: requestId, questions, responseMode: "message", ...(origin ? { origin } : {}) });
+				this.store.saveTask(current); this.broadcast(); resolve({}); return;
+			}
+			// The answered (or dismissed) question stays in the transcript, as in T3; secret answers are masked.
+			// A withdrawn question (the server cancelled its request) leaves the panel without a record.
+			const abort = () => {
+				if (!this.questions.delete(requestId)) return;
+				const latest = this.store.getTask(id); latest.questions = latest.questions?.filter(value => value.id !== requestId);
+				if (latest.status === "waiting") latest.status = hasRequests(latest) ? "waiting" : "running";
+				this.store.saveTask(latest); this.broadcast(); resolve({});
+			};
+			this.questions.set(requestId, { taskId: id, resolve: answers => { signal?.removeEventListener("abort", abort); activities.push(questionRecord(requestId, questions, answers)); scheduleFlush(); resolve(answers); } });
+			current.status = "waiting"; current.questions.push({ id: requestId, questions, ...(origin ? { origin } : {}) });
+			this.store.saveTask(current); this.broadcast(); signal?.addEventListener("abort", abort, { once: true });
+		});
+		asker.ask = onQuestion;
 		try {
 			mkdirSync(cwd, { recursive: true });
 			const selectedAttachments = task.harness === "phaseo" || ((task.handoffFrom || (task.harness === "cursor" && task.nativeForkFrom)) && !task.nativeSessionId) ? task.messages.flatMap(message => message.attachments ?? []) : message.attachments ?? [];
@@ -580,12 +639,25 @@ export class WorkspaceRuntime {
 					order(`message:${itemId}`); deltas.set(itemId, (deltas.get(itemId) ?? "") + text); scheduleFlush();
 				},
 				onActivity: activity => { order(`activity:${activity.id}`); activities.push(activity); scheduleFlush(); },
-				onApproval: (method, description) => new Promise(resolve => {
+				onApproval: (method, description, choices) => new Promise(resolve => {
 					flush();
 					if (this.closing || this.store.getTask(id).status === "interrupted") { resolve("decline"); return; }
 					if (this.store.getTask(id).permissionMode === "full-access") { resolve("accept"); return; }
 					const approvalId = randomUUID(); this.approvals.set(approvalId, { taskId: id, resolve });
-					const current = this.store.getTask(id); current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method, description });
+					const current = this.store.getTask(id); current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method, description, ...(choices?.always ? { always: choices.always.slice(0, 200) } : {}), ...(choices?.never ? { never: choices.never.slice(0, 200) } : {}) });
+					this.store.saveTask(current); this.broadcast();
+				}),
+				// Plans wait for the person even with full access: implementing is their call, as in T3 Code.
+				onPlan: plan => new Promise(resolve => {
+					flush();
+					if (this.closing || this.store.getTask(id).status === "interrupted") { resolve({ decision: "decline" }); return; }
+					const approvalId = randomUUID(); const markdown = plan.slice(0, 200000);
+					this.approvals.set(approvalId, { taskId: id, resolve: (decision, feedback) => {
+						const outcome = decision === "accept" ? "implemented" as const : feedback ? "revised" as const : "declined" as const;
+						activities.push({ id: `proposed-plan:${approvalId}`, type: "plan", title: "Proposed plan", text: markdown, status: "completed", proposed: { outcome, ...(feedback ? { feedback } : {}) } }); scheduleFlush();
+						resolve(decision === "accept" ? { decision: "accept" } : { decision: "decline", ...(feedback ? { feedback } : {}) });
+					} });
+					const current = this.store.getTask(id); current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method: "Proposed plan", description: markdown, kind: "plan" });
 					this.store.saveTask(current); this.broadcast();
 				}),
 				onForm: (form, signal) => new Promise(resolve => {
@@ -604,22 +676,14 @@ export class WorkspaceRuntime {
 					const current = this.store.getTask(id); current.status = "waiting"; current.forms ??= []; current.forms.push({ id: requestId, form });
 					this.store.saveTask(current); this.broadcast(); signal?.addEventListener("abort", abort, { once: true });
 				}),
-				onQuestion: questions => new Promise(resolve => {
-					flush();
-					if (this.closing || this.store.getTask(id).status === "interrupted") { resolve({}); return; }
-					const requestId = randomUUID();
-					// The answered (or dismissed) question stays in the transcript, as in T3; secret answers are masked.
-					this.questions.set(requestId, { taskId: id, resolve: answers => { activities.push(questionRecord(requestId, questions, answers)); scheduleFlush(); resolve(answers); } });
-					const current = this.store.getTask(id); current.status = "waiting"; current.questions ??= []; current.questions.push({ id: requestId, questions });
-					this.store.saveTask(current); this.broadcast();
-				}),
+				onQuestion,
 			}, this.store.getAccounts().find(account => account.id === task.accountId), attachments, message.nativeAction ? { ...message.nativeAction, arguments: handoffPrompt(task, message.nativeAction.arguments) } : undefined);
 			flush(); if (streamError) throw streamError;
 			const current = this.store.getTask(id);
 			if (current.status !== "interrupted") current.status = "completed";
 			// T3: an agent that settled its own chat mid-turn settles it now, but only when the turn completed.
 			if (current.settleWhenTurnEnds) { if (current.status === "completed" && !current.queue.length) { current.settledOverride = "settled"; current.settledAt = new Date().toISOString(); current.unsettledAt = undefined; current.pinned = false; } current.settleWhenTurnEnds = undefined; }
-			current.approvals = []; current.questions = []; current.forms = [];
+			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = [];
 			this.store.saveTask(current);
 		} catch (error) {
 			flush();
@@ -627,7 +691,7 @@ export class WorkspaceRuntime {
 			if (current.status !== "interrupted") current.status = "failed";
 			if (error instanceof AgentInputRejectedError && !current.messages.some(value => value.role === "assistant" && value.id.startsWith(`${message.id}:`))) { current.messages = current.messages.filter(value => value.id !== message.id); if (!current.queue.some(value => value.id === message.id)) current.queue.unshift(message); }
 			current.error = error instanceof Error ? error.message : "Agent execution failed.";
-			current.approvals = []; current.questions = []; current.forms = []; this.store.saveTask(current);
+			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = []; this.store.saveTask(current);
 		} finally {
 			const finished = this.store.getTask(id); const input = finished.messages.find(item => item.id === message.id); if (input) { input.completedAt = new Date().toISOString(); this.store.saveTask(finished); }
 			if (checkpoint && project) void this.trackCheckpoint(this.recordCheckpoint(id, message.id, checkpoint, project.directory));
@@ -664,6 +728,8 @@ export class WorkspaceRuntime {
 /** A finished question for the transcript: each question with its answer, or that it was dismissed. */
 function questionRecord(requestId: string, questions: AgentQuestion[], answers: Record<string, string[]>) {
 	const dismissed = !Object.keys(answers).length;
-	const text = questions.map(question => `${question.question}\n→ ${dismissed ? "Dismissed" : question.isSecret ? "••••" : (answers[question.id] ?? []).join(", ")}`).join("\n\n");
+	// Options show by label (an answer may be an option's value); an empty answer says so.
+	const shown = (question: AgentQuestion) => (answers[question.id] ?? []).map(value => questionOptions(question).find(option => optionValue(option) === value)?.label ?? value).filter(value => value.trim()).join(", ") || "(empty)";
+	const text = questions.map(question => `${question.question}\n→ ${dismissed ? "Dismissed" : question.isSecret ? "••••" : shown(question)}`).join("\n\n");
 	return { id: `question:${requestId}`, type: "tool" as const, title: dismissed ? "Question dismissed" : questions.length === 1 ? "Question answered" : "Questions answered", text, status: "completed" as const };
 }
