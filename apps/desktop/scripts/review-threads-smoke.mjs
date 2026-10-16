@@ -43,7 +43,7 @@ app.whenReady().then(async()=>{try{
  const click=async(label,scope=pane)=>run(`(()=>{const button=Array.from(document.querySelectorAll(${JSON.stringify(scope+' button')})).find(button=>button.textContent.trim()===${JSON.stringify(label)});if(!button)throw Error('Missing button '+${JSON.stringify(label)});button.click()})()`);
  // Annotations may render in the diff's light or shadow DOM; look in both.
  const thread=`(()=>{for(const host of document.querySelectorAll('${pane} [data-pr-file]')){const found=host.querySelector('[data-thread-id="PRRT_0"]')??Array.from(host.querySelectorAll('*')).map(node=>node.shadowRoot?.querySelector('[data-thread-id="PRRT_0"]')).find(Boolean);if(found)return found;}return null;})()`;
- await run(`window.__auditOpenChat('project-chat')`);await run(`window.__auditPanel('Pull requests')`);await wait(`document.querySelector('section[aria-label="Pull requests"]')?.textContent.includes('No linked pull requests')`);
+ await run(`window.__auditOpenChat('project-chat')`);await run(`window.__auditPanel('Linked pull requests')`);await wait(`document.querySelector('section[aria-label="Pull requests"]')?.textContent.includes('No linked pull requests')`);
  await run(`document.querySelector('[aria-label="Show open pull requests"]').click()`);await wait(`document.querySelector('[data-pull-request-row="12"]')`);await run(`document.querySelector('[data-pull-request-row="12"] button').click()`);
  await wait(`document.querySelector('${pane} [role="alert"]')?.textContent.includes('Owned initial view read failure')`);await click('Retry');await wait(`document.querySelector('${pane}')?.textContent.includes('Owned pull request')`);
  assert.equal(await run(`document.querySelector('${pane} [role="alert"]')`),null);

@@ -17,6 +17,9 @@ import { closeTerminal, createTerminal, terminalTitle, terminalsFor, useTerminal
 import { OPEN_PROJECT_FILE_EVENT, type OpenProjectFileDetail } from "../panels/events";
 import { OPEN_PULL_REQUEST_EVENT, type OpenPullRequestDetail } from "../views/pullRequests/events";
 import { seedPullRequestTabStatus, usePullRequestTabStatus } from "../views/pullRequests/tabStatus";
+import { useBranchPullRequest } from "../views/pullRequests/useBranchPullRequest";
+import { useProjectRepository } from "../views/pullRequests/useProjectRepository";
+import { currentPullRequest } from "../../shared/pullRequestStacks";
 import { closePaneTabs, migratePaneState, movePaneTab, openPaneTab, paneKind, paneValue, paneWidths, reopenPaneTab, type PaneKey, type PaneState } from "./paneTabs";
 
 // The diff viewer and editor are large, so they load when first opened.
@@ -25,13 +28,14 @@ const FileSurface = lazy(() => import("../panels/FileSurface").then(module => ({
 const FileBrowserSurface = lazy(() => import("../panels/FileBrowserSurface").then(module => ({ default: module.FileBrowserSurface })));
 const TerminalSurface = lazy(() => import("../views/Terminals").then(module => ({ default: module.TerminalSurface })));
 
-/** T3's "+" menu and empty-pane launcher, in its order, with the letter that opens each. */
-const launchers: { kind: "browser" | "terminal" | "files" | "diff" | "pulls" | "agents"; label: string; icon: ReactNode; letter: string; needsProject?: boolean }[] = [
+/** T3's "+" menu and empty-pane launcher, in its order, with the letter that opens each and why it may be unavailable. */
+const launchers: { kind: "browser" | "terminal" | "files" | "diff" | "pull" | "pulls" | "agents"; label: string; icon: ReactNode; letter: string; needsProject?: boolean; reason?: string }[] = [
 	{ kind: "browser", label: "Browser", icon: <Globe />, letter: "B" },
 	{ kind: "terminal", label: "Terminal", icon: <SquareTerminal />, letter: "T" },
-	{ kind: "files", label: "Files", icon: <Files />, letter: "F", needsProject: true },
-	{ kind: "diff", label: "Diff", icon: <FileDiff />, letter: "D", needsProject: true },
-	{ kind: "pulls", label: "Pull requests", icon: <Link2 />, letter: "P", needsProject: true },
+	{ kind: "files", label: "Files", icon: <Files />, letter: "F", needsProject: true, reason: "Files are only available when a project is open." },
+	{ kind: "diff", label: "Diff", icon: <FileDiff />, letter: "D", needsProject: true, reason: "Diff is only available for chats in a project." },
+	{ kind: "pull", label: "Pull request", icon: <GitPullRequestArrow />, letter: "P", needsProject: true, reason: "This chat's branch has no pull request yet." },
+	{ kind: "pulls", label: "Linked pull requests", icon: <Link2 />, letter: "L", needsProject: true, reason: "Pull requests are only available for chats in a project." },
 	{ kind: "agents", label: "Agents", icon: <GitBranch />, letter: "A" },
 ];
 const paneTabType = "application/x-phaseo-pane-tab";
@@ -107,30 +111,30 @@ function SurfaceTab({ paneKey, context, projectId, active, dirty, onSelect, onCl
 	</ContextMenu.Root>;
 }
 
-/** T3's empty pane: the surfaces as rows, each opened by its letter. */
-function Launcher({ onOpen, hasProject }: { onOpen: (kind: typeof launchers[number]["kind"]) => void; hasProject: boolean }) {
+/** T3's empty pane: the surfaces as rows, each opened by its letter; an unavailable one says why. */
+function Launcher({ onOpen, unavailable: reason }: { onOpen: (kind: typeof launchers[number]["kind"]) => void; unavailable: (kind: typeof launchers[number]["kind"]) => string | undefined }) {
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (event.metaKey || event.ctrlKey || event.altKey || event.defaultPrevented) return;
 			const target = event.target as HTMLElement | null;
 			if (target?.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target?.tagName ?? "") || document.querySelector("[role=menu],[role=dialog]")) return;
-			const launcher = launchers.find(item => item.letter.toLowerCase() === event.key.toLowerCase() && (hasProject || !item.needsProject));
+			const launcher = launchers.find(item => item.letter.toLowerCase() === event.key.toLowerCase() && !reason(item.kind));
 			if (launcher) { event.preventDefault(); onOpen(launcher.kind); }
 		};
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
-	}, [onOpen, hasProject]);
+	}, [onOpen, reason]);
 	return <div className="flex min-h-0 flex-1 items-center justify-center px-6 pb-10">
 		<div className="w-full max-w-xs py-6">
 			<h3 className="mb-3 text-center text-sm font-medium text-foreground">Open a surface</h3>
 			<div className="flex flex-col gap-0.5">{launchers.map(item => {
-				const unavailable = item.needsProject && !hasProject;
-				const button = <button key={item.kind} type="button" disabled={unavailable} onClick={() => onOpen(item.kind)}
+				const unavailable = reason(item.kind);
+				const button = <button key={item.kind} type="button" disabled={Boolean(unavailable)} onClick={() => onOpen(item.kind)}
 					className="flex h-8 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-sm transition-colors hover:bg-accent/60 disabled:opacity-50 [&>svg]:size-4">
 					{item.icon}<span className="min-w-0 flex-1 truncate">{item.label}</span><Kbd>{item.letter}</Kbd>
 				</button>;
 				// A disabled button gets no pointer events, so its reason sits on a wrapper.
-				return unavailable ? <Tip key={item.kind} label="Only for chats in a project."><div>{button}</div></Tip> : button;
+				return unavailable ? <Tip key={item.kind} label={unavailable}><div>{button}</div></Tip> : button;
 			})}</div>
 		</div>
 	</div>;
@@ -156,6 +160,13 @@ export function RightPanel() {
 	const projectId = task?.projectId ?? (selectedId ? undefined : newChatProjectId || undefined) ?? "";
 	const sessions = useTerminalSessions();
 	const browserTabs = useBrowserTabs(context);
+	// T3's "Pull request" surface: the chat's current linked pull request in its own repository, or else the pull
+	// request for the branch its checkout is on, linked or not. Asked again each time the "+" menu opens.
+	const [launchRead, setLaunchRead] = useState(0);
+	const branchPull = useBranchPullRequest(projectId || undefined, launchRead), ownRepository = useProjectRepository(projectId || undefined);
+	const currentLink = currentPullRequest(task?.pullRequests?.filter(link => ownRepository && link.repository.toLowerCase() === ownRepository.toLowerCase()));
+	const currentPull = currentLink?.number ?? branchPull?.pullRequest?.number;
+	const unavailable = (kind: typeof launchers[number]["kind"]) => { const item = launchers.find(value => value.kind === kind); return (item?.needsProject && !projectId) || (kind === "pull" && !currentPull) ? item?.reason ?? "Only for chats in a project." : undefined; };
 	const saved = states[context];
 	const state: PaneState = saved ? migratePaneState(saved) : { tabs: [] };
 	const exists = (key: PaneKey) => {
@@ -191,6 +202,7 @@ export function RightPanel() {
 		try {
 			if (kind === "browser") show(`browser:${createBrowserTab(context)}`);
 			else if (kind === "terminal") show(`terminal:${(await createTerminal({ projectId: projectId || undefined, taskId: selectedId })).id}`);
+			else if (kind === "pull") { if (currentPull) show(`pull:${currentPull}`); }
 			else show(kind);
 		} catch (reason) { setError(errorText(reason)); }
 	};
@@ -290,9 +302,9 @@ export function RightPanel() {
 						{tabs.map((key, index) => <SurfaceTab key={key} paneKey={key} context={context} projectId={projectId} active={key === active} dirty={Boolean(dirty[key])} onSelect={() => show(key)} onClose={() => close([key])}
 							onCloseOthers={() => close(tabs.filter(value => value !== key))} onCloseRight={() => close(tabs.slice(index + 1))} onCloseAll={() => close(tabs)}
 							onDropBefore={moved => { touched.current = Date.now(); update(movePaneTab({ ...state, tabs }, moved, key)); }} />)}
-						<DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+						<DropdownMenu open={menuOpen} onOpenChange={open => { setMenuOpen(open); if (open) setLaunchRead(value => value + 1); }}>
 							<Tip label="Open a surface" side="bottom"><DropdownMenuTrigger render={<button type="button" aria-label="Open a surface" className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground" />}><Plus className="size-3.5" /></DropdownMenuTrigger></Tip>
-							<DropdownMenuContent align="start" className="w-52">{launchers.map(item => <DropdownMenuItem key={item.kind} disabled={item.needsProject && !projectId} onClick={() => void openKind(item.kind)}>{item.icon}{item.label}<DropdownMenuShortcut>{item.letter}</DropdownMenuShortcut></DropdownMenuItem>)}</DropdownMenuContent>
+							<DropdownMenuContent align="start" className="w-56">{launchers.map(item => { const reason = unavailable(item.kind); const row = <DropdownMenuItem key={item.kind} disabled={Boolean(reason)} onClick={() => void openKind(item.kind)}>{item.icon}{item.label}<DropdownMenuShortcut>{item.letter}</DropdownMenuShortcut></DropdownMenuItem>; return reason ? <Tip key={item.kind} label={reason} side="left"><div>{row}</div></Tip> : row; })}</DropdownMenuContent>
 						</DropdownMenu>
 					</div>
 				</ScrollArea>
@@ -301,7 +313,7 @@ export function RightPanel() {
 					className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground">{state.maximized ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}</button></Tip>}
 				<Tip label="Close panel" side="bottom"><button type="button" aria-label="Close panel" onClick={() => { requested.current = undefined; setRightPanel(undefined); }} className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"><X className="size-4" /></button></Tip>
 			</div>
-			{!active ? <Launcher onOpen={kindToOpen => void openKind(kindToOpen)} hasProject={Boolean(projectId)} />
+			{!active ? <Launcher onOpen={kindToOpen => void openKind(kindToOpen)} unavailable={unavailable} />
 				: kind === "browser" || kind === "terminal" || kind === "diff" || kind === "file" || kind === "files" || kind === "pull" || kind === "pulls" ? <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{content}</div>
 				: <ScrollArea className="chat-tools-content legacy-panel min-h-0 flex-1">{content}</ScrollArea>}
 		</div>
