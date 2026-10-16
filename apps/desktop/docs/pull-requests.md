@@ -19,10 +19,10 @@ expired cursor, and Refresh starts again from the newest results. Failed page
 reads retain the confirmed rows and page number, with Retry for the requested
 page. Changing project resets pagination and ignores obsolete replies.
 
-Background watchers (the Watch flag is stored but not polled), GitHub
+Watched pull requests are polled in the background (see [Watching](chats-and-tools.md#watching)). GitHub
 account selection, enterprise hosts and other Git providers remain unfinished.
 The T3 nightly check-refresh hook remains a reference for future live refresh;
-the selected page also refreshes while visible: every 45 seconds for empty, pending or unavailable check states, and 60 seconds for settled states. Focus/visibility return is limited to one refresh per ten seconds; six idle minutes pause polling until interaction resumes. Page errors pause automatic retry. Manual Refresh/Retry remains available. This is foreground refresh, with no background watcher or task wakeups.
+the selected page also refreshes while visible: every 45 seconds for empty, pending or unavailable check states, and 60 seconds for settled states. Focus/visibility return is limited to one refresh per ten seconds; six idle minutes pause polling until interaction resumes. Page errors pause automatic retry. Manual Refresh/Retry remains available. This is foreground refresh; the background watcher below is separate.
 
 Requests have a 20-second deadline and a 2 MiB output bound. Partial GraphQL
 responses and malformed/excessive records fail explicitly. Unknown check states
@@ -52,3 +52,17 @@ References: [GitHub cursor pagination](https://docs.github.com/en/graphql/guides
 Eight deterministic timer/event cases cover first-read suppression, 45/60-second intervals, focus coalescing, hidden/idle pauses, resumed interaction, busy admission and cleanup. Owned source/archive browser cases drive the production controller clock, confirm one IPC read when a timer and focus arrive together, project pending checks to passing, choose the settled interval, prove successive responses do not reset the idle clock, resume after interaction and stop the timer after project removal. Native OS visibility and complete background-watcher parity remain separate checks.
 
 The idle browser fixture isolates its virtual clock from incidental trusted input in the owned audit window and waits for rendered reads to settle. It exercises the production controller using explicit synthetic interaction; it does not establish native OS focus or visibility behavior. The archive and source renderer assets are verified identical.
+
+## Background watching
+
+`src/main/pullRequestWatcher.ts` ports T3 Code's PullRequestWatchReactor and `src/shared/pullRequestWatch.ts` its `evaluatePullRequestWatch` and update messages. Every two minutes (the first pass 15 seconds after start) the main process collects every chat link with `watching`, ends without a read the watches of merged pull requests and of chats that are archived, settled or delegated, and reads each remaining pull request once with the same GraphQL view the pane uses (checks with their `isRequired` flag, comments with `lastEditedAt`), from the chat's project folder or the app folder. The read refreshes every linked chat's snapshot.
+
+Each link stores what its agent was last told (`watch`: start time, head commit, failed and passed check names, the remark watermark with the ids at that second, whether it conflicts, and comment-only wakes in a row). A moved head starts the check state over. `WorkspaceStore.recordPullRequestWatch` applies a pass only while the same watch is on, so a stop during the read wins, and queues the update as a message carrying `notice` (summary, outcome, URL); the runtime starts an idle chat and raises the desktop notification through `TaskNotifications.notice`. A merged pull request ends quietly; a closed one, or 8 failed reads in a row, ends with one last update; 10 comment-only updates in a row stop it. gh errors that mention a rate limit or HTTP 429 pause all passes, doubling from 2 to 30 minutes, without counting as failures. Unlike T3, there is no host fingerprint or quiet-reread gate: every watched pull request is read on every pass.
+
+The agent tools `link_pull_request`, `unlink_pull_request`, `watch_pull_request` and `unwatch_pull_request` (`src/main/threadTools.ts`, `WorkspaceThreads.forThread().pullRequest`) run the same workspace commands as the pane. Links they make are marked `source: "agent"`; the renderer cannot set that.
+
+## Writes beyond the basics
+
+Auto-merge uses `gh pr merge N --repo R --auto --<method> --match-head-commit <head>` and `--disable-auto`. Reactions use the GraphQL `addReaction` and `removeReaction` mutations on a comment the view lists. Labels use the issues labels REST endpoints and reviewers the `requested_reviewers` endpoint; the pickers read candidates through `workspace:pull-request-candidates` (up to 100 labels or assignable users). Reactions, labels and reviewers do not depend on the code, so they are not refused when the head moved since the pane was read. **Check out** (`workspace:pull-request-worktree`, `src/main/pullRequestCheckout.ts`) fetches `refs/pull/N/head` (and the same-repository branch into `origin/<branch>`) under the project's Git lock, then creates the worktree through `WorkspaceRuntime.createWorktree`.
+
+T3's Guide tab (a generated review guide stored per pull request) is not built: it needs a guide-writing service and storage, not a chat message.
