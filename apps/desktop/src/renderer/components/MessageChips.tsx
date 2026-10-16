@@ -49,7 +49,7 @@ function PullRequestLinkChip({ href, children }: { href: string; children?: Reac
 
 /** A link chip: GitHub PRs and issues read as `PR #12`, other pages by title or host. `children` replaces the label. */
 export function LinkChip({ href, children }: { href: string; children?: ReactNode }) {
-	if (/^https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/\d+/i.test(href) && window.phaseoDesktop?.workspace) return <PullRequestLinkChip href={href}>{children}</PullRequestLinkChip>;
+	if (/^https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/\d+/i.test(href) && typeof window !== "undefined" && window.phaseoDesktop?.workspace) return <PullRequestLinkChip href={href}>{children}</PullRequestLinkChip>;
 	return <PageLinkChip href={href}>{children}</PageLinkChip>;
 }
 function PageLinkChip({ href, children }: { href: string; children?: ReactNode }) {
