@@ -62,7 +62,7 @@ import { gitBranches, gitCommand } from "./gitOperations";
 import { projectPullRequests, projectPullRequest } from "./projectPullRequests";
 import { projectPullRequestAction, projectPullRequestCandidates, projectPullRequestView, readPullRequestView } from "./projectPullRequestView";
 import { PullRequestWatcher } from "./pullRequestWatcher";
-import { checkoutPullRequestWorktree } from "./pullRequestCheckout";
+import { checkoutPullRequestHere, checkoutPullRequestWorktree } from "./pullRequestCheckout";
 import { pullRequestLinkSnapshot } from "../shared/pullRequestView";
 import { readGitHunks } from "./gitHunks";
 import { readGitDiffContents } from "./gitDiffContents";
@@ -376,6 +376,13 @@ ipcMain.handle("workspace:pull-request-worktree", async (event, id: unknown, num
 	const view = await projectPullRequestView(root, number);
 	const result = await checkoutPullRequestWorktree(root, view, async (branch, base) => { const created = await workspaceRuntime.createWorktree(id, branch, base); return { projectId: created.projectId, directory: workspaceRuntime.store.getProjects().find(project => project.id === created.projectId)?.directory }; });
 	return { workspace: workspaceRuntime.store.getOverview(), projectId: result.projectId, branch: result.branch };
+});
+ipcMain.handle("workspace:pull-request-checkout-here", async (event, id: unknown, number: unknown) => {
+	const root = projectRoot(event, id);
+	if (typeof id !== "string" || shutdownStarted) throw new Error("Invalid checkout request.");
+	const view = await projectPullRequestView(root, number);
+	const result = await workspaceRuntime.mutateProject(id, () => checkoutPullRequestHere(root, view));
+	return { workspace: workspaceRuntime.store.getOverview(), projectId: id, branch: result.branch };
 });
 ipcMain.handle("workspace:remove-worktree", (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid worktree request.");

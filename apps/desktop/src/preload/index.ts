@@ -46,6 +46,7 @@ const desktopApi: PhaseoDesktopApi = {
 		projectFile: projectId => ipcRenderer.invoke("workspace:project-file", projectId),
 		createWorktree: (id, branch, base) => ipcRenderer.invoke("workspace:create-worktree", id, branch, base),
 		pullRequestWorktree: (id, number) => ipcRenderer.invoke("workspace:pull-request-worktree", id, number),
+		pullRequestCheckoutHere: (id, number) => ipcRenderer.invoke("workspace:pull-request-checkout-here", id, number),
 		removeWorktree: id => ipcRenderer.invoke("workspace:remove-worktree", id),
 		pasteImage: (id, name, bytes) => ipcRenderer.invoke("workspace:paste-image", id, name, bytes),
 		chooseAttachments: id => ipcRenderer.invoke("workspace:choose-attachments", id),

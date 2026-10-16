@@ -179,6 +179,8 @@ export type WorkspaceApi = {
 	removeWorktree: (projectId: string) => Promise<WorkspaceOverview>;
 	/** Fetches a pull request's head and makes a managed worktree on a new branch at it (T3's "Check out in a separate worktree"). */
 	pullRequestWorktree: (projectId: string, number: number) => Promise<{ workspace: WorkspaceOverview; projectId: string; branch: string }>;
+	/** Switches the project's own checkout to the pull request's branch; refuses while it has uncommitted changes. */
+	pullRequestCheckoutHere: (projectId: string, number: number) => Promise<{ workspace: WorkspaceOverview; projectId: string; branch: string }>;
 	pasteImage: (taskId: string, name: string, bytes: Uint8Array) => Promise<Attachment>;
 	chooseAttachments: (taskId: string) => Promise<{ attachments: Attachment[]; errors: string[] }>;
 	exportTask: (taskId: string, format: "markdown" | "json") => Promise<boolean>;
