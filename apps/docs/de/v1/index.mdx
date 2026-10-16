@@ -6,20 +6,69 @@ icon: "house"
 
 Nutze Phaseo, um Modelle mehrerer Anbieter über eine API aufzurufen, Routing zu steuern und Nutzung sowie Kosten zu verfolgen.
 
-<Columns cols={2}>
-  <Card title="Erste Anfrage senden" icon="rocket" href="./quickstart.mdx">
-    Erstelle einen Schlüssel, sende eine Anfrage und lies das Ergebnis.
-  </Card>
-  <Card title="Anwendung migrieren" icon="arrow-right-left" href="./migration-guides/index.mdx">
-    Aktualisiere eine bestehende Anbieter- oder Gateway-Integration.
-  </Card>
-  <Card title="Programmierassistenten verbinden" icon="terminal" href="./guides/integrations/coding-assistants.mdx">
-    Konfiguriere Codex, Claude Code, Cursor oder einen anderen Assistenten.
-  </Card>
-  <Card title="Mit einem SDK entwickeln" icon="package" href="./sdk-reference/typescript/overview.mdx">
-    Wähle deine Sprache im Menü der Client-SDKs.
-  </Card>
-</Columns>
+<CodeGroup>
+
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "phaseo/free", "input": "Hello"}'
+```
+
+```typescript TypeScript
+import Phaseo, { outputText } from "@phaseo/sdk";
+
+const client = new Phaseo(); // reads PHASEO_API_KEY
+
+const response = await client.generateResponse({
+  model: "phaseo/free",
+  input: "Hello",
+});
+
+console.log(outputText(response));
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo()  # reads PHASEO_API_KEY
+
+response = client.responses.create({"model": "phaseo/free", "input": "Hello"})
+
+print(response.output_text)
+```
+
+</CodeGroup>
+
+Noch kein API-Schlüssel? [Erstelle einen im Dashboard](https://phaseo.app/de-DE/settings/keys) und folge dann dem [Schnellstart](./quickstart.mdx).
+
+## Einstieg wählen
+
+<div className="ph-paths not-prose">
+
+[**<Icon icon="rocket" /> Erste Anfrage senden** Erstelle einen Schlüssel, sende eine Anfrage und lies das Ergebnis.](./quickstart.mdx)
+
+[**<Icon icon="arrow-right-left" /> Anwendung migrieren** Aktualisiere eine bestehende Anbieter- oder Gateway-Integration.](./migration-guides/index.mdx)
+
+[**<Icon icon="terminal" /> Programmierassistenten verbinden** Konfiguriere Codex, Claude Code, Cursor oder einen anderen Assistenten.](./guides/integrations/coding-assistants.mdx)
+
+[**<Icon icon="bot" /> Agenten entwickeln** Gib einem Modell Tools, streame seine Schritte und genehmige seine Aktionen mit dem Agenten-SDK.](./sdk-reference/agent-sdk/overview.mdx)
+
+</div>
+
+## SDK wählen
+
+<div className="ph-sdks not-prose">
+
+[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> TypeScript](./sdk-reference/typescript/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> Python](./sdk-reference/python/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/go/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/csharp/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/php/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/ruby/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/rust/overview.mdx)
+
+</div>
 
 ## Entwickeln und betreiben
 
@@ -30,7 +79,6 @@ Nutze Phaseo, um Modelle mehrerer Anbieter über eine API aufzurufen, Routing zu
 | Bestimmten Arbeitsablauf umsetzen | [Rezeptbuch](./cookbook/index.mdx) |
 | Anbieter und Fallbacks wählen | [Routing](./guides/routing-and-fallbacks.mdx) |
 | Video- oder Batch-Jobs verarbeiten | [Asynchrone Jobs und Webhooks](./guides/async-video-and-batch.mdx) |
-| Agenten mit Tool-Nutzung entwickeln | [Agent SDK](./sdk-reference/agent-sdk/overview.mdx) |
 | Fehlgeschlagene Anfrage untersuchen | [Fehler und Debugging](./api-reference/errors.mdx) |
 
 ## Modell wählen
