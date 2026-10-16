@@ -17,11 +17,14 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 	return {
 		title: getFeedbackMessages(resolveLocale(locale)).metaTitle,
 		robots: { index: false, follow: false },
+		// The token is in the URL, so don't hand it to the next page as a referrer.
+		referrer: "no-referrer",
 	};
 }
 
 // Opened from a feedback request email. The token is the only credential, so the page
-// works without signing in or accepting analytics cookies.
+// works without signing in, and analytics stays off for any visit that starts here
+// (see isAnalyticsBlockedForPageLoad).
 export default async function FeedbackPage({ params }: { params: Params }) {
 	const { locale, token } = await params;
 	const messages = getFeedbackMessages(resolveLocale(locale));
@@ -44,7 +47,9 @@ export default async function FeedbackPage({ params }: { params: Params }) {
 						<header className="space-y-3">
 							<h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{messages.titles[request.segment]}</h1>
 							<p className="text-muted-foreground">{messages.intro}</p>
-							{request.responded ? null : <p className="text-sm text-muted-foreground">{messages.rewardNote}</p>}
+							{!request.responded && request.rewardAvailable ? (
+								<p className="text-sm text-muted-foreground">{messages.rewardNote}</p>
+							) : null}
 						</header>
 						<FeedbackRequestForm
 							token={token}

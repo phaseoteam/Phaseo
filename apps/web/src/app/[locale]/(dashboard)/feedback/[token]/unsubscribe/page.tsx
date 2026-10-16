@@ -16,6 +16,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 	return {
 		title: getFeedbackMessages(resolveLocale(locale)).unsubscribe.metaTitle,
 		robots: { index: false, follow: false },
+		referrer: "no-referrer",
 	};
 }
 

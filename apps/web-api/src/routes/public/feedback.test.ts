@@ -31,15 +31,27 @@ describe("public feedback routes", () => {
 	});
 
 	it("returns the page data for a known token and 404 for an unknown one", async () => {
-		mocks.rpc.mockResolvedValueOnce({ data: { segment: "paid", responded: false }, error: null });
+		mocks.rpc.mockResolvedValueOnce({ data: { segment: "paid", responded: false, rewardsIssued: 3 }, error: null });
 		const known = await app.request(`https://phaseo.app/feedback/${token}`, {}, env);
 		expect(known.status).toBe(200);
 		expect(known.headers.get("cache-control")).toBe("private, no-store");
-		expect(await known.json()).toEqual({ segment: "paid", responded: false });
+		expect(await known.json()).toEqual({ segment: "paid", responded: false, rewardAvailable: true });
 		expect(mocks.rpc).toHaveBeenCalledWith("get_feedback_request", { p_token: token });
 
 		mocks.rpc.mockResolvedValueOnce({ data: null, error: null });
 		expect((await app.request(`https://phaseo.app/feedback/${token}`, {}, env)).status).toBe(404);
+	});
+
+	it("stops offering a reward once the cap is spent or rewards are off", async () => {
+		const rewardAvailable = async (rewardsIssued: number, bindings: Partial<Env> = {}) => {
+			mocks.rpc.mockResolvedValueOnce({ data: { segment: "paid", responded: false, rewardsIssued }, error: null });
+			const response = await app.request(`https://phaseo.app/feedback/${token}`, {}, { ...env, ...bindings });
+			return ((await response.json()) as { rewardAvailable: boolean }).rewardAvailable;
+		};
+		expect(await rewardAvailable(99)).toBe(true);
+		expect(await rewardAvailable(100)).toBe(false);
+		expect(await rewardAvailable(0, { FEEDBACK_REWARD_USD: "0" })).toBe(false);
+		expect(await rewardAvailable(0, { FEEDBACK_REWARD_CAP: "0" })).toBe(false);
 	});
 
 	it("submits cleaned answers with the $1 reward and 100-response cap by default", async () => {
@@ -63,7 +75,7 @@ describe("public feedback routes", () => {
 	});
 
 	it("rejects answers that are not a small flat object", async () => {
-		for (const answers of [undefined, [], {}, { reason: "" }, { "Bad Key": "x" }, { reason: { nested: true } }, { reason: "x".repeat(4_001) }]) {
+		for (const answers of [undefined, [], {}, { reason: "" }, { "Bad Key": "x" }, { reason: { nested: true } }, { reason: "x".repeat(3_001) }]) {
 			expect((await post(token, { answers })).status).toBe(400);
 		}
 		expect(mocks.rpc).not.toHaveBeenCalled();
@@ -102,5 +114,12 @@ describe("parseFeedbackAnswers", () => {
 		expect(parseFeedbackAnswers({ a: " x ", b: 3, c: "" })).toEqual({ a: "x", b: 3 });
 		expect(parseFeedbackAnswers({ a: Number.NaN })).toBeNull();
 		expect(parseFeedbackAnswers(Object.fromEntries(Array.from({ length: 11 }, (_, i) => [`k${i}`, "x"])))).toBeNull();
+	});
+
+	it("rejects answers the database would store as more than 20,000 bytes", () => {
+		// Two full-length answers fit in three-byte scripts such as Chinese, but not seven.
+		const answer = "反".repeat(3_000);
+		expect(parseFeedbackAnswers({ likes: answer, improve: answer })).not.toBeNull();
+		expect(parseFeedbackAnswers(Object.fromEntries(Array.from({ length: 7 }, (_, i) => [`k${i}`, answer])))).toBeNull();
 	});
 });
