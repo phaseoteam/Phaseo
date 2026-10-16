@@ -60,17 +60,18 @@ app.whenReady().then(async () => {
     if(waiting.approvals[0].method!==${JSON.stringify(promptMode?'Documents · get prompt':'Documents · read resource')}||!JSON.stringify(waiting.approvals[0]).includes(${JSON.stringify(identity)}))throw Error('Resource approval identity missing');
     await api.command({type:'approval',id:task.id,approvalId:waiting.approvals[0].id,decision:decision==='cancel'?'accept':decision});
     if(decision!=='decline'){
-     const asking=await wait(async()=>{const value=await api.task(task.id);if(value.status==='failed')throw Error(value.error);return value.forms?.length?value:false;});
-     if(!asking.forms[0].form.title.startsWith('Documents:'))throw Error('Resource form identity missing');
+     const asking=await wait(async()=>{const value=await api.task(task.id);if(value.status==='failed')throw Error(value.error);return value.questions?.length?value:false;});
+     if(!String(asking.questions[0].origin??'').startsWith('Documents'))throw Error('Resource question identity missing');
      if(decision==='cancel'){
       await api.command({type:'cancel',id:task.id});
-      await wait(async()=>{const value=await api.task(task.id);return value.status==='interrupted'&&!value.forms?.length;});
+      await wait(async()=>{const value=await api.task(task.id);return value.status==='interrupted'&&!value.questions?.length;});
       await wait(async()=>{try{await api.mcp({type:'save',connection:${JSON.stringify({ ...connection, enabled: false })}});return true;}catch{return false;}});
       continue;
      }
      await new Promise(resolve=>setTimeout(resolve,${humanWait}));
      await window.__auditOpenChat('Documents '+decision);
-     const topic=await wait(()=>document.querySelector('input[aria-label="topic"]'));Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(topic,'work');topic.dispatchEvent(new Event('input',{bubbles:true}));await new Promise(resolve=>setTimeout(resolve,25));topic.closest('form').requestSubmit();
+     // MCP requests are answered in the panel above the composer; a free-text field is its answer box.
+     const topic=await wait(()=>document.querySelector('[aria-label="Agent questions"] input'));Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(topic,'work');topic.dispatchEvent(new Event('input',{bubbles:true}));await new Promise(resolve=>setTimeout(resolve,50));(await wait(()=>Array.from(document.querySelectorAll('[aria-label="Agent questions"] button')).find(button=>/^Submit answer/.test(button.textContent)&&!button.disabled))).click();
     }
     await wait(async()=>{const value=await api.task(task.id);if(value.status==='failed')throw Error(value.error);return value.status==='completed';});
    }

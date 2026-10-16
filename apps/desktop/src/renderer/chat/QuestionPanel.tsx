@@ -4,6 +4,7 @@ import type { AgentQuestion, QuestionRequest, Task } from "../../shared/workspac
 import { allowsOwnAnswer, optionValue, questionOptions } from "../../shared/agentQuestions";
 import { errorText, useWorkspace } from "../app/workspace";
 import { MessageContent } from "../components/MessageContent";
+import { ScrollArea } from "../components/ui/scroll-area";
 import { cn } from "../lib/utils";
 import { draftAnswer, draftError, draftFor, withOwnAnswer, type QuestionDraft } from "./questionDraft";
 import { registerQuestionAnswerer } from "./questionComposer";
@@ -130,6 +131,8 @@ function QuestionRequestPanel({ task, request }: { task: Task; request: Question
 			<button type="button" aria-label="Dismiss questions" title={message ? "Dismiss: no answer is sent" : "Dismiss: the agent carries on without your answers"} disabled={busy} onClick={() => void send(true)} className="grid size-6 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button>
 		</div>
 		{!collapsed && <div className="mt-2 flex flex-col gap-2">
+			{/* On short windows the question scrolls, so the conversation keeps some room. */}
+			<ScrollArea className="max-h-[40vh]" viewportClassName="max-h-[40vh]"><div className="flex flex-col gap-2">
 			<div data-selectable className="text-[14px] leading-relaxed"><MessageContent text={question.question} projectId={task.projectId} /></div>
 			{question.multiSelect && <p className="-mt-1 text-xs text-muted-foreground">Select one or more options.</p>}
 			{message && <p className="-mt-1 text-xs text-muted-foreground">Your answer is sent to the agent as a message.</p>}
@@ -153,6 +156,7 @@ function QuestionRequestPanel({ task, request }: { task: Task; request: Question
 			{selectedPreview?.preview && <div data-selectable className="border-l-2 border-border pl-3 text-[13px]"><MessageContent text={selectedPreview.preview} projectId={task.projectId} /></div>}
 			{touched && problem && <p className="text-xs text-destructive">{problem}</p>}
 			{error && <p role="alert" className="text-xs text-destructive">{error}</p>}
+			</div></ScrollArea>
 			<div className="flex items-center gap-2 pb-1">
 				{step > 0 && <button type="button" disabled={busy} onClick={() => { setStep(step - 1); setHighlight(0); }} className="h-7 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground">Previous</button>}
 				<button type="button" disabled={busy || !!problem || (last && !request.questions.every(value => answered(value)))} onClick={() => next()}
