@@ -106,7 +106,9 @@ export default function ModelDeprecationNotice({ userId, workspaceId, locale, co
 			soonest?.retirementDate ? fill(copy.firstRetiresOn, { model: soonest.modelName ?? soonest.modelId, date: formatDate(soonest.retirementDate) }) : null,
 		];
 	// Red needs a reason on screen, so the earliest retirement is always named.
-	const critical = visible.some((warning) => warning.severity === "critical");
+	// Older APIs mark deprecation-only warnings critical; without a retirement
+	// date there is nothing to name, so those stay amber.
+	const critical = visible.some((warning) => warning.severity === "critical" && warning.retirementDate);
 
 	function dismiss() {
 		const next = new Set(dismissed);
