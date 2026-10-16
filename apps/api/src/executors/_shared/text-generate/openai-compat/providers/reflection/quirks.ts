@@ -2,6 +2,9 @@ import type { ProviderQuirks } from "../../quirks/types";
 
 export const reflectionQuirks: ProviderQuirks = {
 	transformRequest: ({ request, ir }) => {
+		if (!request.tools?.length) {
+			delete request.parallel_tool_calls;
+		}
 		if (ir.store !== undefined) request.store = ir.store;
 		if (ir.reasoning?.effort !== undefined) request.reasoning_effort = ir.reasoning.effort;
 		if (request.max_tokens !== undefined) {
