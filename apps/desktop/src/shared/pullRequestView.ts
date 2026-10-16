@@ -136,6 +136,10 @@ export function parsePullRequestReference(input: string): { repository?: string;
 export function pullRequestLinkSnapshot(details: PullRequestDetails): PullRequestLinkSnapshot {
 	return { title: details.title, state: details.state === "MERGED" ? "merged" : details.state === "CLOSED" ? "closed" : "open", draft: details.draft, mergeable: details.mergeable, checks: details.checks, review: details.review, additions: details.additions, deletions: details.deletions, author: details.author, head: details.head, base: details.base, updatedAt: details.updatedAt };
 }
+/** What finds a chat by its linked pull requests in the command palette (T3's threadPullRequestSearchTerms): #N, owner/repo#N, the URL and the title. */
+export function pullRequestSearchTerms(links: readonly TaskPullRequestLink[] | undefined) {
+	return (links ?? []).flatMap(link => [`#${link.number}`, `${link.repository}#${link.number}`, link.url, link.snapshot?.title ?? ""]).filter(Boolean).join(" ");
+}
 /** The link without its watch. */
 export function unwatched(link: TaskPullRequestLink): TaskPullRequestLink { const copy = { ...link }; delete copy.watch; delete copy.watching; return copy; }
 export function samePullRequest(left: { repository: string; number: number }, right: { repository: string; number: number }) { return left.number === right.number && left.repository.toLowerCase() === right.repository.toLowerCase(); }
