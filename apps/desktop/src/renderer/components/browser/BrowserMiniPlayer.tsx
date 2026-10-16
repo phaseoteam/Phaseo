@@ -28,13 +28,13 @@ type Gesture = { pointerId: number; pointerType: string; x: number; y: number; f
 
 /** T3 Code's floating player over the chat, for the chat's floated browser tab. Render it inside the chat column (position: relative). */
 export function BrowserMiniPlayerHost() {
-	const { selectedId, settings, scheduled, compareId, compareGroups, commandsOpen } = useWorkspace();
+	const { selectedId, settings, scheduled, pullRequestsPage, compareId, compareGroups, commandsOpen } = useWorkspace();
 	const context = selectedId ?? "draft";
 	const player = useMiniPlayer(context);
 	const tab = useBrowserTab(context, player?.tabId ?? "");
 	// The player steps aside while its tab shows in the pane.
 	const shownInPane = useBrowserSurfaceShown(player?.tabId);
-	if (!player || !tab || shownInPane || settings || scheduled || compareGroups.some(group => group.id === compareId)) return null;
+	if (!player || !tab || shownInPane || settings || scheduled || pullRequestsPage || compareGroups.some(group => group.id === compareId)) return null;
 	return <BrowserMiniPlayer key={player.tabId} context={context} player={player} covered={commandsOpen} />;
 }
 

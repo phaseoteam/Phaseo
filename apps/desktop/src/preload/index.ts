@@ -91,6 +91,7 @@ const desktopApi: PhaseoDesktopApi = {
 		pullRequestThreads: (id, query) => ipcRenderer.invoke("workspace:pull-request-threads", id, query),
 		pullRequest: (id, number) => ipcRenderer.invoke("workspace:pull-request", id, number),
 		pullRequests: (id, cursor) => ipcRenderer.invoke("workspace:pull-requests", id, cursor),
+		pullRequestDirectory: query => ipcRenderer.invoke("workspace:pull-request-directory", query),
 		pullRequestView: (id, number) => ipcRenderer.invoke("workspace:pull-request-view", id, number),
 		pullRequestCandidates: (id, query) => ipcRenderer.invoke("workspace:pull-request-candidates", id, query),
 		pullRequestAction: (id, request) => ipcRenderer.invoke("workspace:pull-request-action", id, request),

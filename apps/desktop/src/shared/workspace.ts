@@ -7,6 +7,7 @@ import type { McpPromptCatalog, McpPromptPreview, McpPromptRequest } from "./mcp
 import type { PullRequestContents, PullRequestContentsQuery } from "./pullRequestContents";
 import type { PullRequestFilesPage, PullRequestFilesQuery } from "./pullRequestFiles";
 import type { ProjectPullRequests, PullRequestDetails } from "./pullRequests";
+import type { PullRequestDirectoryQuery, PullRequestDirectoryResult } from "./pullRequestDirectory";
 import { parsePullRequestReference, validRepository, type PullRequestActionRequest, type PullRequestCandidates, type PullRequestView, type TaskPullRequestLink } from "./pullRequestView";
 import type { AgentForm, FormAnswer } from "./agentForms";
 import type { McpCommand, McpConnection } from "./mcp";
@@ -226,6 +227,8 @@ export type WorkspaceApi = {
 	pullRequestThreads: (projectId: string, query: PullRequestThreadsQuery) => Promise<PullRequestThreadsPage>;
 	pullRequest: (projectId: string, number: number) => Promise<PullRequestDetails>;
 	pullRequests: (projectId: string, cursor?: string) => Promise<ProjectPullRequests>;
+	/** Every project's pull requests for the Pull requests page, searched on GitHub. */
+	pullRequestDirectory: (query: PullRequestDirectoryQuery) => Promise<PullRequestDirectoryResult>;
 	/** One pull request with its checks, reviews, comments, commits and review threads. */
 	pullRequestView: (projectId: string, number: number) => Promise<PullRequestView>;
 	/** The labels or reviewers a Summary picker offers, read when it opens. */

@@ -36,6 +36,8 @@ export const keybindingCommands = [
 	// T3's J and K step through a review guide while its tab is on screen, unless you are typing.
 	{ command: "guide.next", label: "Next stop in a review guide", group: "Pull requests", keys: ["j"], when: "paneOpen && !textFocused && !terminalFocused && !browserFocused" },
 	{ command: "guide.previous", label: "Previous stop in a review guide", group: "Pull requests", keys: ["k"], when: "paneOpen && !textFocused && !terminalFocused && !browserFocused" },
+	// T3: Mod+F belongs to the Pull requests page's own search while it is open.
+	{ command: "pullRequests.focusSearch", label: "Search pull requests", group: "Pull requests", keys: ["mod+f"], when: "!terminalFocused && !browserFocused" },
 	{ command: "view.zoomIn", label: "Zoom in", group: "View", keys: ["mod+=", "mod++"] },
 	{ command: "view.zoomOut", label: "Zoom out", group: "View", keys: ["mod+-"] },
 	{ command: "view.zoomReset", label: "Actual size", group: "View", keys: ["mod+0"] },

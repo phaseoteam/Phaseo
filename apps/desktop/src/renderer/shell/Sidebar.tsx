@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
-import { Archive, CalendarClock, Columns3, Ellipsis, LogIn, WandSparkles, Pencil, Pin, PinOff, Plus, Settings } from "lucide-react";
+import { Archive, CalendarClock, Columns3, GitPullRequestArrow, Ellipsis, LogIn, WandSparkles, Pencil, Pin, PinOff, Plus, Settings } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { chatDragType } from "../../shared/mentions";
 import type { TaskOverview } from "../../shared/workspaceOverview";
@@ -171,6 +171,15 @@ function ScheduledTasksLink() {
 	</button>;
 }
 
+/** T3 puts Pull requests among the sidebar's page links, beside Scheduled tasks. */
+function PullRequestsLink() {
+	const { pullRequestsPage, openPullRequests } = useWorkspace();
+	return <button type="button" aria-current={pullRequestsPage ? "page" : undefined} onClick={openPullRequests}
+		className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] text-sidebar-foreground/85 hover:bg-sidebar-accent/70", pullRequestsPage && "bg-sidebar-accent text-sidebar-foreground")}>
+		<GitPullRequestArrow className="size-4 text-muted-foreground" />Pull requests
+	</button>;
+}
+
 const sidebarWidths = { min: 200, max: 480, default: 256 };
 
 /** The sidebar's frame: its width is dragged from the right edge and remembered. */
@@ -198,8 +207,8 @@ function SidebarFrame({ label, children }: { label: string; children: ReactNode 
 }
 
 export function Sidebar() {
-	const { mode, select, selectedId, compareId, setNewChatProjectId, settings, scheduled } = useWorkspace();
-	const fresh = !selectedId && !compareId && !scheduled;
+	const { mode, select, selectedId, compareId, setNewChatProjectId, settings, scheduled, pullRequestsPage } = useWorkspace();
+	const fresh = !selectedId && !compareId && !scheduled && !pullRequestsPage;
 	if (settings) return <SidebarFrame label="Settings"><SettingsNav /></SidebarFrame>;
 	return <SidebarFrame label={mode === "chat" ? "Chats" : "Projects"}>
 		<div className="p-2.5">
@@ -208,6 +217,7 @@ export function Sidebar() {
 				<Plus className="size-4" />New chat<span className={cn("ml-auto text-[10.5px] font-medium", fresh ? "text-muted-foreground" : "text-primary-foreground/70")}>{shortcut("chat.new")}</span>
 			</button>
 			<ScheduledTasksLink />
+			<PullRequestsLink />
 		</div>
 		{mode === "chat"
 			? <ScrollArea className="min-h-0 flex-1"><nav className="pb-3"><ChatList /></nav></ScrollArea>

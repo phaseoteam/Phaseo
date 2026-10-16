@@ -60,6 +60,7 @@ import { TerminalService } from "./terminalService";
 import { contentHash, writeProjectFile } from "./projectEdits";
 import { gitBranches, gitCommand } from "./gitOperations";
 import { projectPullRequests, projectPullRequest } from "./projectPullRequests";
+import { listPullRequestDirectory } from "./pullRequestDirectory";
 import { ghFailure, projectPullRequestAction, projectPullRequestCandidates, projectPullRequestView, readPullRequestView, runGh } from "./projectPullRequestView";
 import { PullRequestGuides } from "./pullRequestGuides";
 import { PullRequestWatcher } from "./pullRequestWatcher";
@@ -351,6 +352,8 @@ ipcMain.handle("workspace:read-file", (event, id: unknown, filename: unknown) =>
 });
 ipcMain.handle("workspace:git-review", (event, id: unknown) => gitReview(projectRoot(event, id)));
 ipcMain.handle("workspace:pull-requests", (event, id: unknown, cursor: unknown) => projectPullRequests(projectRoot(event, id), cursor));
+// Projects being removed or not yet available are left out rather than failing the whole page.
+ipcMain.handle("workspace:pull-request-directory", (event, query: unknown) => { if (!senderWindow(event)) throw new Error("Invalid pull request list request."); return listPullRequestDirectory(workspaceRuntime.store.getProjects().filter(project => { try { workspaceRuntime.assertProjectAvailable(project.id); return true; } catch { return false; } }), query); });
 ipcMain.handle("workspace:pull-request", async (event, id: unknown, number: unknown) => { const details = await projectPullRequest(projectRoot(event, id), number); workspaceRuntime.syncPullRequestSnapshot(details.repository, details.number, pullRequestLinkSnapshot(details)); return details; });
 ipcMain.handle("workspace:pull-request-candidates", (event, id: unknown, query: unknown) => projectPullRequestCandidates(projectRoot(event, id), query));
 ipcMain.handle("workspace:pull-request-view", async (event, id: unknown, number: unknown) => { const view = await projectPullRequestView(projectRoot(event, id), number); workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)); return view; });
