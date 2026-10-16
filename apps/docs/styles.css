@@ -44,20 +44,21 @@
 	}
 }
 
-/* Luma keeps page content at 40.5rem on every screen. From 1280px, widen it up to 60rem while it stays clear of the
-   sidebar and of the table of contents (18rem) or, on endpoint pages, the request example panel (28rem). */
+/* Luma keeps page content at 40.5rem on every screen. From 1280px, widen it up to 56rem (the same text width on
+   guides and endpoint pages at 1920px) while it stays clear of the sidebar and of the table of contents (18rem)
+   or, on endpoint pages, the request example panel (28rem). */
 @media (min-width: 1280px) {
 	#content-area {
-		--content-width: clamp(40.5rem, min(100vw - 41rem, 100vw - 2 * var(--sidebar-width) - 5rem), 60rem);
+		--content-width: clamp(40.5rem, min(100vw - 41rem, 100vw - 2 * var(--sidebar-width) - 5rem), 56rem);
 	}
 
 	#content-container:has(> [data-api-example]) #content-area {
-		--content-width: clamp(40.5rem, min(100vw - 64rem, 100vw - 2 * var(--sidebar-width) - 5rem), 60rem);
+		--content-width: clamp(40.5rem, min(100vw - 64rem, 100vw - 2 * var(--sidebar-width) - 5rem), 56rem);
 	}
 }
 
-/* On 1080p desktops, keep every sidebar title on one line. 24rem fits all English titles outside the Cookbook;
-   longer ones (Cookbook recipes, some translations) end in an ellipsis instead of wrapping. */
+/* On 1080p desktops, keep every sidebar title on one line. Long titles have a short `sidebarTitle` so that all of
+   them fit in 24rem; the ellipsis only catches titles added later without one. */
 @media (min-width: 1800px) {
 	:root {
 		--sidebar-width: 24rem;
