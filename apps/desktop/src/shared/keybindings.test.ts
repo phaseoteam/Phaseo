@@ -128,3 +128,13 @@ describe("browser shortcuts", () => {
 		expect(evaluateWhen(rows[0].when, {})).toBe(false);
 	});
 });
+
+describe("pull request shortcuts", () => {
+	it("leaves keys that cannot run on a page to the page", () => {
+		const keys = browserShortcuts([]).map(item => item.key);
+		expect(keys).not.toContain("mod+f");
+		expect(keys).not.toContain("escape");
+		expect(keys).toEqual(expect.arrayContaining(["mod+shift+k", "mod+shift+c"]));
+		expect(keybindingRows([]).filter(row => row.group === "Pull requests").map(row => [row.command, row.key])).toEqual(expect.arrayContaining([["pullRequest.copyNumber", "mod+shift+k"], ["pullRequest.copyLink", "mod+shift+c"], ["pullRequest.back", "escape"], ["pullRequests.focusSearch", "mod+f"]]));
+	});
+});

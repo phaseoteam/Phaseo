@@ -3,7 +3,8 @@ import { ArrowDownUp, ArrowLeft, ArrowUpRight, BookOpen, Check, ChevronDown, Cir
 import type { PullRequestMergeMethod, PullRequestReactionContent } from "../../../shared/pullRequestView";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../../components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "../../components/ui/dropdown-menu";
+import { shortcut, useCommand } from "../../lib/keybindings";
 import { Input } from "../../components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover";
 import { ToggleGroup, ToggleGroupItem } from "../../components/ui/toggle-group";
@@ -57,11 +58,18 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 	const [openError, setOpenError] = useState("");
 	const handoff = usePullRequestHandoff(projectId);
 	useEffect(() => { setTab("summary"); setMounted(new Set(["summary"])); setCondensed(false); setTitleDraft(null); }, [projectId, number]);
+	const root = useRef<HTMLDivElement>(null);
+	// Shortcuts act on the pull request on screen: a hidden pane tab, or a second surface while focus is in another, lets the key through.
+	const onScreen = () => { const element = root.current; if (!element?.isConnected || !element.checkVisibility({ checkVisibilityCSS: true })) return false; const focused = document.activeElement?.closest("[data-pull-request-surface]"); return !focused || focused === element; };
+	const url = view?.url ?? "";
+	useCommand("pullRequest.copyNumber", () => { if (!onScreen()) return false; copy(`#${number}`, "PR number"); });
+	useCommand("pullRequest.copyLink", () => { if (!onScreen() || !url) return false; copy(url, "PR link"); });
+	useCommand("pullRequest.back", () => { if (!onBack || !onScreen() || document.querySelector("[role=dialog], [role=menu], [role=listbox]")) return false; onBack(); }, Boolean(onBack));
 	const open = (url: string) => { setOpenError(""); void api?.openLink(url).catch(reason => setOpenError(errorMessage(reason))); };
 	const react = useCallback((subjectId: string, content: PullRequestReactionContent, reacted: boolean) => perform({ type: "react", subjectId, content, reacted }), [perform]);
 	const selectTab = (next: Tab) => { setTab(next); setMounted(current => new Set([...current, next])); setCondensed(false); };
 
-	if (!view) return <div className="flex h-full min-h-0 flex-col bg-background" aria-label={`Pull request #${number}`} aria-busy={pull.refreshing}>
+	if (!view) return <div ref={root} data-pull-request-surface="" className="flex h-full min-h-0 flex-col bg-background" aria-label={`Pull request #${number}`} aria-busy={pull.refreshing}>
 		<div className="flex h-10 min-h-10 shrink-0 items-center gap-1 border-b border-border/60 px-4 text-xs text-muted-foreground">
 			{onBack && <BackButton onBack={onBack} />}<span className="font-medium">#{number}</span>
 		</div>
@@ -87,7 +95,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 	const canEnableAutoMerge = view.state === "OPEN" && !autoMergeArmed && primary !== "enable-auto-merge" && !view.draft && !conflicting && view.autoMergeAllowed && view.viewer.canEnableAutoMerge && view.mergeMethods.length > 0;
 	const canDeleteBranch = view.state !== "OPEN" && view.headRefExists && view.viewer.canDeleteBranch && view.headRepository?.toLowerCase() === view.repository.toLowerCase();
 	const saveTitle = async () => { if (titleDraft === null || !titleDraft.trim()) return; if (titleDraft.trim() === view.title || await pull.perform({ type: "title", title: titleDraft })) setTitleDraft(null); };
-	const number$ = (tabIndex?: number) => <PullRequestNumberMenu url={view.url} onCopy={url => copy(url, "Link")} onNotice={(message, failed) => { if (failed) setOpenError(message); }} className="shrink-0"><Tip label="Open on GitHub"><button type="button" tabIndex={tabIndex} onClick={() => open(view.url)} onAuxClick={event => { if (event.button === 1) open(view.url); }} aria-label={`Open pull request #${view.number} on GitHub`} className={cn("inline-flex shrink-0 cursor-pointer items-center gap-0.5 font-medium underline-offset-2 hover:underline", presentation.toneClassName)}>#{view.number}<ExternalLink aria-hidden className="size-2.5" /></button></Tip></PullRequestNumberMenu>;
+	const number$ = (tabIndex?: number) => <PullRequestNumberMenu url={view.url} onCopy={url => copy(url, "PR link")} onNotice={(message, failed) => { if (failed) setOpenError(message); }} className="shrink-0"><Tip label="Open on GitHub"><button type="button" tabIndex={tabIndex} onClick={() => open(view.url)} onAuxClick={event => { if (event.button === 1) open(view.url); }} aria-label={`Open pull request #${view.number} on GitHub`} className={cn("inline-flex shrink-0 cursor-pointer items-center gap-0.5 font-medium underline-offset-2 hover:underline", presentation.toneClassName)}>#{view.number}<ExternalLink aria-hidden className="size-2.5" /></button></Tip></PullRequestNumberMenu>;
 	const branchLine = (small: boolean) => <span className={cn("flex min-w-0 flex-1 items-center gap-1.5 font-mono", small ? "text-2xs text-muted-foreground/65" : "text-xs text-muted-foreground/70")}>
 		{view.behind && view.state === "OPEN" ? <Popover>
 			<PopoverTrigger openOnHover delay={0} aria-label={`This branch is out of date with ${view.base}.`} className="inline-flex max-w-[40%] min-w-0 shrink-0 cursor-help items-center gap-1 rounded-sm text-amber-600 outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-amber-400"><code className="flex min-w-0"><MiddleTruncate value={view.base} /></code><TriangleAlert aria-hidden className={small ? "size-3 shrink-0" : "size-3.5 shrink-0"} /></PopoverTrigger>
@@ -136,8 +144,8 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 			</DropdownMenuRadioGroup></>}
 			<DropdownMenuSeparator />
 			<DropdownMenuItem onClick={() => open(view.url)}><ArrowUpRight className="size-3.5" />Open on GitHub</DropdownMenuItem>
-			<DropdownMenuItem onClick={() => copy(view.url, "Link")}><LinkIcon className="size-3.5" />Copy link</DropdownMenuItem>
-			<DropdownMenuItem onClick={() => copy(`#${view.number}`, "Number")}><Copy className="size-3.5" />Copy PR number</DropdownMenuItem>
+			<DropdownMenuItem onClick={() => copy(view.url, "PR link")}><LinkIcon className="size-3.5" />Copy link{shortcut("pullRequest.copyLink") && <DropdownMenuShortcut>{shortcut("pullRequest.copyLink")}</DropdownMenuShortcut>}</DropdownMenuItem>
+			<DropdownMenuItem onClick={() => copy(`#${view.number}`, "PR number")}><Copy className="size-3.5" />Copy PR number{shortcut("pullRequest.copyNumber") && <DropdownMenuShortcut>{shortcut("pullRequest.copyNumber")}</DropdownMenuShortcut>}</DropdownMenuItem>
 			{view.state === "OPEN" && view.viewer.canUpdate && <><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" closeOnClick={confirm.isArmed("close")} disabled={busy} aria-label={confirm.isArmed("close") ? "Confirm close?" : "Close pull request"} {...confirm.props("close", () => void pull.perform({ type: "close" }))}><PullRequestGlyph.closed className="size-3.5" />{confirm.isArmed("close") ? "Confirm close?" : "Close pull request"}</DropdownMenuItem></>}
 			{view.state === "CLOSED" && view.viewer.canUpdate && <><DropdownMenuSeparator /><DropdownMenuItem disabled={busy} onClick={() => void pull.perform({ type: "reopen" })}><PullRequestGlyph.reopen className="size-3.5" />Reopen pull request</DropdownMenuItem></>}
 			{canDeleteBranch && <><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" closeOnClick={confirm.isArmed("delete-branch")} disabled={busy} aria-label={confirm.isArmed("delete-branch") ? "Confirm delete?" : "Delete branch"} {...confirm.props("delete-branch", () => void pull.perform({ type: "delete-branch" }))}>
@@ -147,7 +155,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 	</DropdownMenu>;
 
 	const notice = pull.actionError?.message ?? (handoff.error || openError || (copied ? (copied.endsWith("failed") ? `Copy failed` : `${copied} copied`) : ""));
-	return <TooltipProvider delay={150}><ReactContext.Provider value={react}><div className="relative flex h-full min-h-0 w-full flex-col bg-background" aria-label={`Pull request #${view.number}`} data-pull-request={view.number}>
+	return <TooltipProvider delay={150}><ReactContext.Provider value={react}><div ref={root} data-pull-request-surface="" className="relative flex h-full min-h-0 w-full flex-col bg-background" aria-label={`Pull request #${view.number}`} data-pull-request={view.number}>
 		<div className="@container/pr-header grid min-w-0 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 border-b border-border/60">
 			<div className="grid h-10 min-w-0 items-center overflow-hidden pl-4">
 				<div aria-hidden={condensed} inert={condensed} className={cn("col-start-1 row-start-1 flex min-w-0 items-center gap-1 text-xs text-muted-foreground transition-[opacity,transform] ease-out motion-reduce:transition-none", condensed ? "pointer-events-none -translate-y-1 opacity-0 duration-100" : "translate-y-0 opacity-100 delay-50 duration-150")}>
@@ -238,5 +246,5 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 }
 
 function BackButton({ onBack }: { onBack: () => void }) {
-	return <Tip label="Back to pull requests"><Button size="icon-xs" variant="ghost" onClick={onBack} className="-ml-1.5 text-muted-foreground" aria-label="Back to pull requests"><ArrowLeft aria-hidden className="size-3.5" /></Button></Tip>;
+	return <Tip label={shortcut("pullRequest.back") ? `Back to pull requests (${shortcut("pullRequest.back")})` : "Back to pull requests"}><Button size="icon-xs" variant="ghost" onClick={onBack} className="-ml-1.5 text-muted-foreground" aria-label="Back to pull requests"><ArrowLeft aria-hidden className="size-3.5" /></Button></Tip>;
 }

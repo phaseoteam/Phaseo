@@ -36,6 +36,10 @@ export const keybindingCommands = [
 	// T3's J and K step through a review guide while its tab is on screen, unless you are typing.
 	{ command: "guide.next", label: "Next stop in a review guide", group: "Pull requests", keys: ["j"], when: "paneOpen && !textFocused && !terminalFocused && !browserFocused" },
 	{ command: "guide.previous", label: "Previous stop in a review guide", group: "Pull requests", keys: ["k"], when: "paneOpen && !textFocused && !terminalFocused && !browserFocused" },
+	// T3's pullRequest.copyNumber and thread.copyReference, acting on the pull request on screen; Escape goes back to the list.
+	{ command: "pullRequest.copyNumber", label: "Copy pull request number", group: "Pull requests", keys: ["mod+shift+k"], when: "!terminalFocused" },
+	{ command: "pullRequest.copyLink", label: "Copy pull request link", group: "Pull requests", keys: ["mod+shift+c"], when: "!terminalFocused" },
+	{ command: "pullRequest.back", label: "Back to pull requests", group: "Pull requests", keys: ["escape"], when: "!textFocused && !terminalFocused && !browserFocused" },
 	// T3: Mod+F belongs to the Pull requests page's own search while it is open.
 	{ command: "pullRequests.focusSearch", label: "Search pull requests", group: "Pull requests", keys: ["mod+f"], when: "!terminalFocused && !browserFocused" },
 	{ command: "view.zoomIn", label: "Zoom in", group: "View", keys: ["mod+=", "mod++"] },
@@ -249,7 +253,10 @@ export function browserShortcuts(custom: KeybindingEntry[]) {
 	const shortcuts = new Map<string, boolean>();
 	// A bare letter (the guide's J and K) is typing on a page, never the app's.
 	const typed = (key: string) => { const parsed = parseKey(key); return Boolean(parsed && !parsed.mod && !parsed.ctrl && !parsed.meta && !parsed.alt && parsed.key.length === 1); };
-	for (const row of keybindingRows(custom)) if (row.key && row.command !== "thread.undo" && !typed(row.key)) shortcuts.set(row.key, (shortcuts.get(row.key) ?? false) || pageCommands.includes(row.command));
+	// A binding that cannot run while a page has focus (Mod+F for the Pull requests search, Escape back to a list) stays the page's.
+	const others = (Object.keys(whenVariables) as (keyof typeof whenVariables)[]).filter(name => !["browserFocused", "textFocused", "terminalFocused"].includes(name));
+	const runsOnPage = (when?: string) => !when || Array.from({ length: 2 ** others.length }, (_, mask) => Object.fromEntries(others.map((name, index) => [name, Boolean(mask & (1 << index))]))).some(context => evaluateWhen(when, { ...context, browserFocused: true, textFocused: false, terminalFocused: false }));
+	for (const row of keybindingRows(custom)) if (row.key && row.command !== "thread.undo" && !typed(row.key) && runsOnPage(row.when)) shortcuts.set(row.key, (shortcuts.get(row.key) ?? false) || pageCommands.includes(row.command));
 	for (const entry of custom) if (entry.key && isScriptCommand(entry.command) && !typed(entry.key)) shortcuts.set(entry.key, shortcuts.get(entry.key) ?? false);
 	return [...shortcuts].map(([key, keepPageFocus]) => ({ key, keepPageFocus }));
 }
