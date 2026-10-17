@@ -74,11 +74,16 @@ try {
   await rejects(publish({ ...snapshot(3), methodology_version: '4.2.0' }), /stale/);
   const invalid = snapshot(3); invalid.results[0].score_numeric = 'NaN';
   await rejects(publish(invalid), /invalid results/);
+  const mismatched = snapshot(3); mismatched.results[0].other_info = 'Artificial Analysis ID source-0; Intelligence Index v4.3.1';
+  await rejects(publish(mismatched), /invalid results/);
+  const small = snapshot(3); small.results[0].score = '1e-7'; small.results[0].score_numeric = 1e-7;
+  await publish(small);
+  assert.equal(Number((await db.query('select score_numeric from public.v2_benchmark_results where result_id=$1', [small.results[0].result_id])).rows[0].score_numeric), 1e-7);
   await db.exec("insert into public.v2_benchmarks(benchmark_id,name) values ('aa-intelligence-index-v5','Future');");
   await db.exec(`insert into public.v2_benchmark_results(result_id,model_slug,benchmark_id,score_numeric) values ('${id(900)}','lab/one','aa-intelligence-index-v5',99);`);
   assert.equal((await db.query("select published from public.get_artificial_analysis_coverage() where benchmark_id='aa-intelligence-index-v5'")).rows[0].published, false, 'partial future import cannot become current');
   await publish(snapshot(4, 5));
   assert.equal((await db.query("select published from public.get_artificial_analysis_coverage() where benchmark_id='aa-intelligence-index-v5'")).rows[0].published, true);
-  assert.equal(await count('artificial_analysis_snapshots'), 3);
+  assert.equal(await count('artificial_analysis_snapshots'), 4);
   console.log('AA snapshots: atomic rollback, retry identity, freshness, history, permissions, coverage and publication gating passed');
 } finally { await db.close(); }

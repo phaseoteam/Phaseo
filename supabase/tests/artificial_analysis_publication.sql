@@ -28,6 +28,15 @@ BEGIN
   ASSERT EXISTS (SELECT 1 FROM public.v2_benchmark_results WHERE result_id = result_uuid AND score_numeric = 50);
   ASSERT EXISTS (SELECT 1 FROM public.get_artificial_analysis_coverage()
     WHERE benchmark_id = 'aa-intelligence-index-v4' AND total_models > 0 AND published);
+  -- Republish a replacement identity to exercise the retirement UPDATE and its
+  -- catalogue history/routing triggers under the actual backend role.
+  document := jsonb_set(document, '{snapshot_id}', to_jsonb(gen_random_uuid()));
+  document := jsonb_set(document, '{fetched_at}', to_jsonb(now() + interval '1 second'));
+  document := jsonb_set(document, '{results,0,result_id}', to_jsonb(gen_random_uuid()));
+  PERFORM public.publish_artificial_analysis_snapshot(document);
+  ASSERT EXISTS (SELECT 1 FROM public.v2_benchmark_results WHERE result_id = result_uuid AND effective_to IS NOT NULL);
+  ASSERT NOT EXISTS (SELECT 1 FROM public.get_public_intelligence_index(100)
+    WHERE model_id = 'aa-publication-smoke/model' AND score IS DISTINCT FROM 50);
 END;
 $test$;
 ROLLBACK;

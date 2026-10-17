@@ -42,7 +42,7 @@ BEGIN
         OR nullif(r->>'result_key', '') IS NULL
         OR nullif(r->>'score_numeric', '') IS NULL
         OR (r->>'score_numeric')::numeric IN ('NaN'::numeric, 'Infinity'::numeric, '-Infinity'::numeric)
-        OR r->>'score' IS DISTINCT FROM r->>'score_numeric'
+        OR (r->>'score')::numeric IS DISTINCT FROM (r->>'score_numeric')::numeric
         OR substring(r->>'other_info' FROM 'Intelligence Index v([0-9]+\.[0-9]+(?:\.[0-9]+)?)') IS DISTINCT FROM p_snapshot->>'methodology_version'
         OR nullif(substring(r->>'other_info' FROM 'Artificial Analysis ID ([^;]+)'), '') IS NULL
         OR p_snapshot->'source_owners'->>substring(r->>'other_info' FROM 'Artificial Analysis ID ([^;]+)') IS DISTINCT FROM r->>'model_slug')
@@ -75,12 +75,15 @@ BEGIN
     occur_idx = excluded.occur_idx, variant = excluded.variant, effective_to = NULL, updated_at = excluded.updated_at;
   -- Preserve unmatched models and earlier major versions. Retire only matched
   -- replacements and configurations whose source owner has moved to another model.
+  WITH incoming_ids AS MATERIALIZED (
+    SELECT r.result_id FROM jsonb_to_recordset(p_snapshot->'results') AS r(result_id uuid)
+  )
   UPDATE public.v2_benchmark_results old SET effective_to = fetched, updated_at = fetched
   WHERE old.effective_to IS NULL AND old.benchmark_id = ANY(managed_ids)
     AND (p_snapshot->'model_slugs' ? old.model_slug
       OR (p_snapshot->'source_owners' ? substring(old.other_info FROM 'Artificial Analysis ID ([^;]+)')
         AND p_snapshot->'source_owners'->>substring(old.other_info FROM 'Artificial Analysis ID ([^;]+)') <> old.model_slug))
-    AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements(p_snapshot->'results') r WHERE (r->>'result_id')::uuid = old.result_id);
+    AND NOT EXISTS (SELECT 1 FROM incoming_ids r WHERE r.result_id = old.result_id);
   RETURN snapshot_uuid;
 END;
 $function$;
