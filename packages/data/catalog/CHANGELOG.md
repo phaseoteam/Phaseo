@@ -1,5 +1,15 @@
 # @phaseo/data-catalog
 
+## 0.1.1
+
+### Patch Changes
+
+- [#2425](https://github.com/phaseoteam/Phaseo/pull/2425) [`9b68ad3`](https://github.com/phaseoteam/Phaseo/commit/9b68ad32bbad415bd591c01d2d46841fe43119d3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add TypeSafe Jev structured Decisions support through the `/v1/decisions` gateway endpoint, generated SDK operations, catalog pricing, and a dedicated Decisions playground.
+
+- [#2425](https://github.com/phaseoteam/Phaseo/pull/2425) [`9b68ad3`](https://github.com/phaseoteam/Phaseo/commit/9b68ad32bbad415bd591c01d2d46841fe43119d3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add TypeSafe Jev 1.13 to the Decisions capability with the public `/v1/decisions` route, per-million-token pricing, a dedicated Decisions playground, and provider model discovery.
+
+- [#2624](https://github.com/phaseoteam/Phaseo/pull/2624) [`a134fa5`](https://github.com/phaseoteam/Phaseo/commit/a134fa542da6cb529b1827aa84a85d88a31d2edf) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add the Ultrafast tier to gateway routing and the OpenAPI SDKs, and display it with a distinct badge in model and provider pricing.
+
 ## 0.1.0
 
 ### Minor Changes
