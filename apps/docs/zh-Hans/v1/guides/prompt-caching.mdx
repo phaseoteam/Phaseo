@@ -72,11 +72,14 @@ Phaseo 在 Chat Completions、Responses 和 Anthropic Messages 请求中接受�
 
 | 范围 | 行为 |
 | --- | --- |
-| `all_text` | 为尚未设置缓存控制的系统文本和用户文本/图像块添加缓存控制。 |
+| `all_text` | 默认值。为系统文本以及最近三条包含文本或图像的用户消息添加缓存控制。 |
 | `last_user_message` | 仅为最新的用户消息添加缓存控制。 |
+| `agent` | 用于工具循环。为最后一个工具定义、系统文本、最后一条消息（包括工具结果）以及上一步的消息添加缓存控制。`conversation` 是其别名。 |
 | `none` | 不应用默认缓存策略。 |
 
 块级 `cache_control` 优先于默认策略。
+
+Anthropic 每个请求最多接受四个缓存断点。默认策略会把你自己设置的 `cache_control` 计算在内，达到四个即停止。无法识别的 `scope` 值按 `agent` 处理。多步工具循环请使用 `agent`：`all_text` 和 `last_user_message` 不会标记仅包含工具结果的消息，因此缓存前缀无法继续延伸。
 
 ## Chat Completions
 
