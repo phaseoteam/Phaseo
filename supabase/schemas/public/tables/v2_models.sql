@@ -76,11 +76,6 @@ CREATE TRIGGER catalogue_row_history
   FOR EACH ROW
   EXECUTE FUNCTION catalogue_private.record_row_history();
 
-CREATE TRIGGER enqueue_public_model_release_push
-  AFTER INSERT OR UPDATE OF status, hidden, released_at ON public.v2_models
-  FOR EACH ROW
-  EXECUTE FUNCTION public.enqueue_public_model_release_push();
-
 CREATE TRIGGER guard_replacement_cycle
   BEFORE INSERT OR UPDATE OF replacement_model_slug ON public.v2_models
   FOR EACH ROW
