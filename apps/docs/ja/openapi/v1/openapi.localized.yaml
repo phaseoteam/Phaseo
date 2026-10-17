@@ -9529,6 +9529,7 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: 関連するリクエストをまとめ、そのプロンプトキャッシュを持つプロバイダーにとどめます。Phaseoは生のキーではなく、ワークスペースとこのキーのハッシュを上流に送ります。
         safety_identifier:
           type: string
           nullable: true
@@ -10126,12 +10127,32 @@ components:
       properties:
         prompt_tokens:
           type: integer
+          description: 入力トークン。キャッシュの読み取りと書き込みを含みます。
+        prompt_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
         completion_tokens:
+          type: integer
+        input_tokens:
+          type: integer
+          description: 入力トークン。キャッシュの読み取りと書き込みを含みます。
+        input_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
+        output_tokens:
           type: integer
         total_tokens:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+    InputTokensDetails:
+      type: object
+      description: 入力トークンの内訳。
+      properties:
+        cached_tokens:
+          type: integer
+          description: プロバイダーのプロンプトキャッシュから読み取られた入力トークン。
+        cache_write_tokens:
+          type: integer
+          description: プロバイダーのプロンプトキャッシュに書き込まれた入力トークン。
     AnthropicMessagesRequest:
       type: object
       required:
@@ -10326,6 +10347,23 @@ components:
       properties:
         input_tokens:
           type: integer
+          description: キャッシュされていない入力トークン。Anthropicと同様に、キャッシュの読み取りと書き込みは含みません。
+        cache_read_input_tokens:
+          type: integer
+          description: プロバイダーのプロンプトキャッシュから読み取られた入力トークン。
+        cache_creation_input_tokens:
+          type: integer
+          description: プロバイダーのプロンプトキャッシュに書き込まれた入力トークン。
+        cache_creation:
+          type: object
+          description: キャッシュの有効期間別のキャッシュ書き込み。
+          properties:
+            ephemeral_5m_input_tokens:
+              type: integer
+              description: 5分のキャッシュ有効期間で書き込まれた入力トークン。
+            ephemeral_1h_input_tokens:
+              type: integer
+              description: 1時間のキャッシュ有効期間で書き込まれた入力トークン。
         output_tokens:
           type: integer
     ResponsesRequest:
@@ -10368,6 +10406,7 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: サポートされていません。Phaseoはレスポンスを保存しないため、previous_response_idまたはconversationを指定したリクエストは400 unsupported_paramを返します。会話全体をinputで送ってください。
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
@@ -10411,6 +10450,7 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: 関連するリクエストをまとめ、そのプロンプトキャッシュを持つプロバイダーにとどめます。Phaseoは生のキーではなく、ワークスペースとこのキーのハッシュを上流に送ります。
         safety_identifier:
           type: string
           nullable: true

@@ -97,6 +97,9 @@ type AnthropicTool struct {
 }
 
 type AnthropicUsage struct {
+	CacheCreation *map[string]interface{} `json:"cache_creation,omitempty"`
+	CacheCreationInputTokens *int `json:"cache_creation_input_tokens,omitempty"`
+	CacheReadInputTokens *int `json:"cache_read_input_tokens,omitempty"`
 	InputTokens *int `json:"input_tokens,omitempty"`
 	OutputTokens *int `json:"output_tokens,omitempty"`
 }
@@ -2358,6 +2361,11 @@ type ImagesGenerationResponse struct {
 	Data *[]map[string]interface{} `json:"data,omitempty"`
 }
 
+type InputTokensDetails struct {
+	CacheWriteTokens *int `json:"cache_write_tokens,omitempty"`
+	CachedTokens *int `json:"cached_tokens,omitempty"`
+}
+
 type InvalidRequestResponse struct {
 	Error string `json:"error"`
 	MaxOffset *int `json:"max_offset,omitempty"`
@@ -4559,7 +4567,11 @@ type UpdatedResponse struct {
 
 type Usage struct {
 	CompletionTokens *int `json:"completion_tokens,omitempty"`
+	InputTokens *int `json:"input_tokens,omitempty"`
+	InputTokensDetails *map[string]interface{} `json:"input_tokens_details,omitempty"`
+	OutputTokens *int `json:"output_tokens,omitempty"`
 	PromptTokens *int `json:"prompt_tokens,omitempty"`
+	PromptTokensDetails *map[string]interface{} `json:"prompt_tokens_details,omitempty"`
 	ServerToolUse *map[string]interface{} `json:"server_tool_use,omitempty"`
 	TotalTokens *int `json:"total_tokens,omitempty"`
 }

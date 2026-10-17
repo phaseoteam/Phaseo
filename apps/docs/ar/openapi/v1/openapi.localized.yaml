@@ -9529,6 +9529,7 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: يجمع الطلبات المرتبطة لتبقى لدى المزوّد الذي يحتفظ بذاكرة المطالبات المؤقتة الخاصة بها. ترسل Phaseo إلى المزوّد تجزئة لمساحة العمل وهذا المفتاح، وليس المفتاح الخام أبدًا.
         safety_identifier:
           type: string
           nullable: true
@@ -10126,12 +10127,32 @@ components:
       properties:
         prompt_tokens:
           type: integer
+          description: رموز الإدخال، بما فيها القراءات من التخزين المؤقت والكتابات إليه.
+        prompt_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
         completion_tokens:
+          type: integer
+        input_tokens:
+          type: integer
+          description: رموز الإدخال، بما فيها القراءات من التخزين المؤقت والكتابات إليه.
+        input_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
+        output_tokens:
           type: integer
         total_tokens:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+    InputTokensDetails:
+      type: object
+      description: تفصيل رموز الإدخال.
+      properties:
+        cached_tokens:
+          type: integer
+          description: رموز الإدخال المقروءة من ذاكرة المطالبات المؤقتة لدى المزوّد.
+        cache_write_tokens:
+          type: integer
+          description: رموز الإدخال المكتوبة في ذاكرة المطالبات المؤقتة لدى المزوّد.
     AnthropicMessagesRequest:
       type: object
       required:
@@ -10326,6 +10347,23 @@ components:
       properties:
         input_tokens:
           type: integer
+          description: رموز الإدخال غير المخزّنة مؤقتًا. كما في Anthropic، لا تشمل القراءات من التخزين المؤقت والكتابات إليه.
+        cache_read_input_tokens:
+          type: integer
+          description: رموز الإدخال المقروءة من ذاكرة المطالبات المؤقتة لدى المزوّد.
+        cache_creation_input_tokens:
+          type: integer
+          description: رموز الإدخال المكتوبة في ذاكرة المطالبات المؤقتة لدى المزوّد.
+        cache_creation:
+          type: object
+          description: الكتابات إلى التخزين المؤقت مقسّمة حسب مدة صلاحية التخزين المؤقت.
+          properties:
+            ephemeral_5m_input_tokens:
+              type: integer
+              description: رموز الإدخال المكتوبة بمدة صلاحية تخزين مؤقت قدرها 5 دقائق.
+            ephemeral_1h_input_tokens:
+              type: integer
+              description: رموز الإدخال المكتوبة بمدة صلاحية تخزين مؤقت قدرها ساعة واحدة.
         output_tokens:
           type: integer
     ResponsesRequest:
@@ -10368,6 +10406,7 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: غير مدعوم. لا تخزّن Phaseo الردود، لذا تعيد الطلبات التي تحدد previous_response_id أو conversation الخطأ 400 unsupported_param. أرسل المحادثة كاملة في input.
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
@@ -10411,6 +10450,7 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: يجمع الطلبات المرتبطة لتبقى لدى المزوّد الذي يحتفظ بذاكرة المطالبات المؤقتة الخاصة بها. ترسل Phaseo إلى المزوّد تجزئة لمساحة العمل وهذا المفتاح، وليس المفتاح الخام أبدًا.
         safety_identifier:
           type: string
           nullable: true

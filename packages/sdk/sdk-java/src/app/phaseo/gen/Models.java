@@ -100,6 +100,9 @@ public final class Models {
 	}
 
 	public static class AnthropicUsage {
+		public Object cache_creation;
+		public Integer cache_creation_input_tokens;
+		public Integer cache_read_input_tokens;
 		public Integer input_tokens;
 		public Integer output_tokens;
 	}
@@ -1649,6 +1652,11 @@ public final class Models {
 		public java.util.List<Object> data;
 	}
 
+	public static class InputTokensDetails {
+		public Integer cache_write_tokens;
+		public Integer cached_tokens;
+	}
+
 	public static class InvalidRequestResponse {
 		public String error;
 		public Integer max_offset;
@@ -3025,7 +3033,11 @@ public final class Models {
 
 	public static class Usage {
 		public Integer completion_tokens;
+		public Integer input_tokens;
+		public Object input_tokens_details;
+		public Integer output_tokens;
 		public Integer prompt_tokens;
+		public Object prompt_tokens_details;
 		public Object server_tool_use;
 		public Integer total_tokens;
 	}

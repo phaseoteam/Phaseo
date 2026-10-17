@@ -103,6 +103,9 @@ struct AnthropicTool {
 };
 
 struct AnthropicUsage {
+	std::map<std::string, std::any> cache_creation;
+	std::optional<int> cache_creation_input_tokens;
+	std::optional<int> cache_read_input_tokens;
 	std::optional<int> input_tokens;
 	std::optional<int> output_tokens;
 };
@@ -1641,6 +1644,11 @@ struct ImagesGenerationResponse {
 	std::vector<std::map<std::string, std::any>> data;
 };
 
+struct InputTokensDetails {
+	std::optional<int> cache_write_tokens;
+	std::optional<int> cached_tokens;
+};
+
 struct InvalidRequestResponse {
 	std::string error;
 	std::optional<int> max_offset;
@@ -2999,7 +3007,11 @@ struct UpdatedResponse {
 
 struct Usage {
 	std::optional<int> completion_tokens;
+	std::optional<int> input_tokens;
+	std::map<std::string, std::any> input_tokens_details;
+	std::optional<int> output_tokens;
 	std::optional<int> prompt_tokens;
+	std::map<std::string, std::any> prompt_tokens_details;
 	std::map<std::string, std::any> server_tool_use;
 	std::optional<int> total_tokens;
 };

@@ -294,9 +294,11 @@ Un modelo retirado se sigue sirviendo mientras algún proveedor lo sirva. Cuando
 
 ## Afinidad de caché y de sesión
 
-El enrutamiento consciente de la caché está activado de forma predeterminada en los endpoints de generación de texto. Cuando un proveedor informa de una lectura real de la caché de prompts, Phaseo fija el contexto coincidente a ese proveedor durante 15 minutos, siempre que siga activo y permitido por la ruta, el preajuste, los guardrails y la política de solicitud vigentes.
+El enrutamiento consciente de la caché está activado de forma predeterminada en los endpoints de generación de texto. Las solicitudes que envían `prompt_cache_key` o `session_id`, o que activan la caché con un `cache_control` de nivel superior, se fijan al proveedor y la ruta que atendieron su primera solicitud correcta. Las demás solicitudes se fijan durante 15 minutos cuando un proveedor informa de una lectura o escritura de la caché de prompts para el mismo contexto inicial.
 
-Si se incluye `session_id`, la afinidad de caché se vincula a la sesión en lugar de limitarse al contexto inicial. Phaseo la actualiza cuando observa otra lectura de caché y la conserva durante un máximo de 24 horas de actividad de la sesión. Los disyuntores y los filtros de políticas siempre tienen prioridad sobre la afinidad.
+Las fijaciones se guardan por espacio de trabajo y duran entre 15 minutos y 24 horas, según la retención de caché del proveedor. Una fijación solo cambia cuando se abre el disyuntor de su proveedor, su tasa de errores reciente es alta, se agota la cuota gestionada de Phaseo en él o la ruta, el preajuste, los guardrails o la política de solicitud vigentes dejan de permitirlo.
+
+Si se incluye `session_id`, la afinidad de caché se vincula a la sesión en lugar de limitarse al contexto inicial, y se conserva durante un máximo de 24 horas de actividad de la sesión. Consulta [Afinidad con el proveedor](./prompt-caching.mdx#provider-affinity) para ver la duración de las fijaciones y las indicaciones de afinidad que Phaseo envía a cada proveedor.
 
 Desactívala para una solicitud sin cambiar los valores predeterminados del espacio de trabajo o de la ruta dinámica:
 

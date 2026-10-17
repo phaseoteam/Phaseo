@@ -186,6 +186,7 @@ export type { ImagesEditRequest } from "./ImagesEditRequest.js";
 export type { ImagesEditResponse } from "./ImagesEditResponse.js";
 export type { ImagesGenerationRequest } from "./ImagesGenerationRequest.js";
 export type { ImagesGenerationResponse } from "./ImagesGenerationResponse.js";
+export type { InputTokensDetails } from "./InputTokensDetails.js";
 export type { InvalidRequestResponse } from "./InvalidRequestResponse.js";
 export type { KeyInvalidateResponse } from "./KeyInvalidateResponse.js";
 export type { KnownModelId } from "./KnownModelId.js";

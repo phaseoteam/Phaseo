@@ -104,6 +104,9 @@ pub struct AnthropicTool {
 }
 
 pub struct AnthropicUsage {
+	pub cache_creation: Option<HashMap<String, String>>,
+	pub cache_creation_input_tokens: Option<i64>,
+	pub cache_read_input_tokens: Option<i64>,
 	pub input_tokens: Option<i64>,
 	pub output_tokens: Option<i64>,
 }
@@ -1642,6 +1645,11 @@ pub struct ImagesGenerationResponse {
 	pub data: Option<Vec<HashMap<String, String>>>,
 }
 
+pub struct InputTokensDetails {
+	pub cache_write_tokens: Option<i64>,
+	pub cached_tokens: Option<i64>,
+}
+
 pub struct InvalidRequestResponse {
 	pub error: String,
 	pub max_offset: Option<i64>,
@@ -3000,7 +3008,11 @@ pub struct UpdatedResponse {
 
 pub struct Usage {
 	pub completion_tokens: Option<i64>,
+	pub input_tokens: Option<i64>,
+	pub input_tokens_details: Option<HashMap<String, String>>,
+	pub output_tokens: Option<i64>,
 	pub prompt_tokens: Option<i64>,
+	pub prompt_tokens_details: Option<HashMap<String, String>>,
 	pub server_tool_use: Option<HashMap<String, String>>,
 	pub total_tokens: Option<i64>,
 }

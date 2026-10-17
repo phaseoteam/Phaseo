@@ -192,6 +192,7 @@
     "models/ImagesGenerationRequest.ts",
     "models/ImagesGenerationResponse.ts",
     "models/index.ts",
+    "models/InputTokensDetails.ts",
     "models/InvalidRequestResponse.ts",
     "models/KeyInvalidateResponse.ts",
     "models/KnownModelId.ts",

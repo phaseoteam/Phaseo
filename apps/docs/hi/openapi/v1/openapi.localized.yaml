@@ -9529,6 +9529,7 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: संबंधित अनुरोधों को समूहित करता है, ताकि वे उसी प्रदाता पर रहें जिसके पास उनका प्रॉम्प्ट कैश है। Phaseo प्रदाता को आपके वर्कस्पेस और इस कुंजी का हैश भेजता है, कच्ची कुंजी कभी नहीं।
         safety_identifier:
           type: string
           nullable: true
@@ -10126,12 +10127,32 @@ components:
       properties:
         prompt_tokens:
           type: integer
+          description: इनपुट टोकन, कैश से पढ़े और कैश में लिखे गए टोकन सहित।
+        prompt_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
         completion_tokens:
+          type: integer
+        input_tokens:
+          type: integer
+          description: इनपुट टोकन, कैश से पढ़े और कैश में लिखे गए टोकन सहित।
+        input_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
+        output_tokens:
           type: integer
         total_tokens:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+    InputTokensDetails:
+      type: object
+      description: इनपुट टोकन का विवरण।
+      properties:
+        cached_tokens:
+          type: integer
+          description: प्रदाता के प्रॉम्प्ट कैश से पढ़े गए इनपुट टोकन।
+        cache_write_tokens:
+          type: integer
+          description: प्रदाता के प्रॉम्प्ट कैश में लिखे गए इनपुट टोकन।
     AnthropicMessagesRequest:
       type: object
       required:
@@ -10326,6 +10347,23 @@ components:
       properties:
         input_tokens:
           type: integer
+          description: बिना कैश वाले इनपुट टोकन। Anthropic की तरह, इसमें कैश से पढ़े और कैश में लिखे गए टोकन शामिल नहीं होते।
+        cache_read_input_tokens:
+          type: integer
+          description: प्रदाता के प्रॉम्प्ट कैश से पढ़े गए इनपुट टोकन।
+        cache_creation_input_tokens:
+          type: integer
+          description: प्रदाता के प्रॉम्प्ट कैश में लिखे गए इनपुट टोकन।
+        cache_creation:
+          type: object
+          description: कैश की अवधि के अनुसार बाँटे गए कैश लेखन।
+          properties:
+            ephemeral_5m_input_tokens:
+              type: integer
+              description: 5 मिनट की कैश अवधि के साथ लिखे गए इनपुट टोकन।
+            ephemeral_1h_input_tokens:
+              type: integer
+              description: 1 घंटे की कैश अवधि के साथ लिखे गए इनपुट टोकन।
         output_tokens:
           type: integer
     ResponsesRequest:
@@ -10368,6 +10406,7 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: समर्थित नहीं। Phaseo जवाबों को संग्रहीत नहीं करता, इसलिए previous_response_id या conversation सेट करने वाले अनुरोध 400 unsupported_param लौटाते हैं। पूरी बातचीत input में भेजें।
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
@@ -10411,6 +10450,7 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: संबंधित अनुरोधों को समूहित करता है, ताकि वे उसी प्रदाता पर रहें जिसके पास उनका प्रॉम्प्ट कैश है। Phaseo प्रदाता को आपके वर्कस्पेस और इस कुंजी का हैश भेजता है, कच्ची कुंजी कभी नहीं।
         safety_identifier:
           type: string
           nullable: true

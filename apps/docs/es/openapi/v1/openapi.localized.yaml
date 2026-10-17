@@ -9529,6 +9529,7 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: Agrupa las solicitudes relacionadas para que se mantengan en el proveedor que tiene su caché de prompts. Phaseo envía al proveedor un hash de tu espacio de trabajo y esta clave, nunca la clave sin procesar.
         safety_identifier:
           type: string
           nullable: true
@@ -10126,12 +10127,32 @@ components:
       properties:
         prompt_tokens:
           type: integer
+          description: Tokens de entrada, incluidas las lecturas y escrituras de caché.
+        prompt_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
         completion_tokens:
+          type: integer
+        input_tokens:
+          type: integer
+          description: Tokens de entrada, incluidas las lecturas y escrituras de caché.
+        input_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
+        output_tokens:
           type: integer
         total_tokens:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+    InputTokensDetails:
+      type: object
+      description: Desglose de los tokens de entrada.
+      properties:
+        cached_tokens:
+          type: integer
+          description: Tokens de entrada leídos de la caché de prompts del proveedor.
+        cache_write_tokens:
+          type: integer
+          description: Tokens de entrada escritos en la caché de prompts del proveedor.
     AnthropicMessagesRequest:
       type: object
       required:
@@ -10326,6 +10347,23 @@ components:
       properties:
         input_tokens:
           type: integer
+          description: Tokens de entrada sin caché. Como en Anthropic, excluye las lecturas y escrituras de caché.
+        cache_read_input_tokens:
+          type: integer
+          description: Tokens de entrada leídos de la caché de prompts del proveedor.
+        cache_creation_input_tokens:
+          type: integer
+          description: Tokens de entrada escritos en la caché de prompts del proveedor.
+        cache_creation:
+          type: object
+          description: Escrituras en caché desglosadas por duración de la caché.
+          properties:
+            ephemeral_5m_input_tokens:
+              type: integer
+              description: Tokens de entrada escritos con una duración de caché de 5 minutos.
+            ephemeral_1h_input_tokens:
+              type: integer
+              description: Tokens de entrada escritos con una duración de caché de 1 hora.
         output_tokens:
           type: integer
     ResponsesRequest:
@@ -10368,6 +10406,7 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: No se admite. Phaseo no almacena respuestas, por lo que las solicitudes que definen previous_response_id o conversation devuelven 400 unsupported_param. Envía la conversación completa en input.
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
@@ -10411,6 +10450,7 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: Agrupa las solicitudes relacionadas para que se mantengan en el proveedor que tiene su caché de prompts. Phaseo envía al proveedor un hash de tu espacio de trabajo y esta clave, nunca la clave sin procesar.
         safety_identifier:
           type: string
           nullable: true

@@ -142,11 +142,17 @@ module Phaseo
     # @!attribute [rw] name
     #   @return [String]
     AnthropicTool = Struct.new(:async, :description, :input_schema, :name, keyword_init: true)
+    # @!attribute [rw] cache_creation
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] cache_creation_input_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] cache_read_input_tokens
+    #   @return [Integer, nil]
     # @!attribute [rw] input_tokens
     #   @return [Integer, nil]
     # @!attribute [rw] output_tokens
     #   @return [Integer, nil]
-    AnthropicUsage = Struct.new(:input_tokens, :output_tokens, keyword_init: true)
+    AnthropicUsage = Struct.new(:cache_creation, :cache_creation_input_tokens, :cache_read_input_tokens, :input_tokens, :output_tokens, keyword_init: true)
     # @!attribute [rw] created_at
     #   @return [String, nil]
     # @!attribute [rw] created_by
@@ -2352,6 +2358,11 @@ module Phaseo
     # @!attribute [rw] data
     #   @return [Array<Hash{String => Object}>, nil]
     ImagesGenerationResponse = Struct.new(:created, :data, keyword_init: true)
+    # @!attribute [rw] cache_write_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] cached_tokens
+    #   @return [Integer, nil]
+    InputTokensDetails = Struct.new(:cache_write_tokens, :cached_tokens, keyword_init: true)
     # @!attribute [rw] error
     #   @return [String]
     # @!attribute [rw] max_offset
@@ -4272,13 +4283,21 @@ module Phaseo
     UpdatedResponse = Struct.new(:data, keyword_init: true)
     # @!attribute [rw] completion_tokens
     #   @return [Integer, nil]
+    # @!attribute [rw] input_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] input_tokens_details
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] output_tokens
+    #   @return [Integer, nil]
     # @!attribute [rw] prompt_tokens
     #   @return [Integer, nil]
+    # @!attribute [rw] prompt_tokens_details
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] server_tool_use
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] total_tokens
     #   @return [Integer, nil]
-    Usage = Struct.new(:completion_tokens, :prompt_tokens, :server_tool_use, :total_tokens, keyword_init: true)
+    Usage = Struct.new(:completion_tokens, :input_tokens, :input_tokens_details, :output_tokens, :prompt_tokens, :prompt_tokens_details, :server_tool_use, :total_tokens, keyword_init: true)
     # @!attribute [rw] billable
     #   @return [Boolean, nil]
     # @!attribute [rw] billed_at

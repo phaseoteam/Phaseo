@@ -177,6 +177,12 @@ class AnthropicTool
 
 class AnthropicUsage
 {
+	/** @var array<string, mixed>|null */
+	public $cache_creation;
+	/** @var int|null */
+	public $cache_creation_input_tokens;
+	/** @var int|null */
+	public $cache_read_input_tokens;
 	/** @var int|null */
 	public $input_tokens;
 	/** @var int|null */
@@ -2897,6 +2903,14 @@ class ImagesGenerationResponse
 	public $data;
 }
 
+class InputTokensDetails
+{
+	/** @var int|null */
+	public $cache_write_tokens;
+	/** @var int|null */
+	public $cached_tokens;
+}
+
 class InvalidRequestResponse
 {
 	/** @var string */
@@ -5282,7 +5296,15 @@ class Usage
 	/** @var int|null */
 	public $completion_tokens;
 	/** @var int|null */
+	public $input_tokens;
+	/** @var array<string, mixed>|null */
+	public $input_tokens_details;
+	/** @var int|null */
+	public $output_tokens;
+	/** @var int|null */
 	public $prompt_tokens;
+	/** @var array<string, mixed>|null */
+	public $prompt_tokens_details;
 	/** @var array<string, mixed>|null */
 	public $server_tool_use;
 	/** @var int|null */

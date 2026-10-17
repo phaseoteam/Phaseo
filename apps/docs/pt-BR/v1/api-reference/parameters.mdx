@@ -46,10 +46,10 @@ O suporte a parâmetros ainda varia conforme o endpoint, o modelo e o provedor. 
 | [`reasoning_tokens`](#reasoning_tokens) | `integer` | Limite de tokens ou campo de contabilização específico do raciocínio. |
 | [`include_reasoning`](#include_reasoning) | `boolean` | Retornar conteúdo ou resumos do raciocínio quando houver suporte. |
 | [`service_tier`](#service_tier) | `string` | Escolher um nível de solicitação compatível, como `fast`, `ultrafast` ou `flex`. |
-| [`prompt_cache_key`](#prompt_cache_key) | `string` | Manter o roteamento com afinidade de cache para solicitações relacionadas. |
-| [`prompt_cache_options`](#prompt_cache_options) | `object` | Configurar o modo de cache de prompts e os controles de TTL da OpenAI. |
-| [`cache_control`](#cache_control) | `object` | Aplicar dicas de cache de prompt ou pontos de separação independentes do provedor. |
-| [`prompt_cache_retention`](#prompt_cache_retention) | `string` | Definir a retenção do cache de prompt compatível com OpenAI. |
+| [`prompt_cache_key`](#prompt_cache_key) | `string` | Manter solicitações relacionadas no provedor que tem o cache de prompts delas. |
+| [`prompt_cache_options`](#prompt_cache_options) | `object` | Configurar o modo e o TTL do cache de prompts no OpenAI GPT-5.6 e posteriores. |
+| [`cache_control`](#cache_control) | `object` | Definir uma política padrão de cache para o Claude ou marcar pontos de interrupção de cache em blocos de conteúdo. |
+| [`prompt_cache_retention`](#prompt_cache_retention) | `string` | Definir a retenção do cache de prompts em modelos da OpenAI anteriores ao GPT-5.6. |
 | [`provider`](#provider) | `object` | Influenciar o roteamento e a seleção do provedor. |
 | [`provider_options`](#provider_options) | `object` | Repassar configurações nativas do provedor pelo gateway. |
 | [`meta`](#meta) / [`usage`](#usage) | `boolean` | Retornar metadados extras ou dados de uso contabilizado na resposta. |
@@ -462,48 +462,54 @@ Fornece uma chave estável de afinidade de cache para roteamento que considera o
 | Tipo | `string` |
 | Uso | Roteamento persistente para prompts em cache relacionados |
 
-Use quando uma série de solicitações compartilhar prefixos de prompt estáveis e precisar priorizar o mesmo provedor ou região upstream. O Phaseo também pode derivar a afinidade de cache do contexto da solicitação, mas uma chave explícita é melhor para conversas longas, sessões de agente e fluxos repetidos.
+Use-o quando uma série de solicitações compartilhar prefixos de prompt estáveis, como as etapas de um loop de agente. O Phaseo fixa a chave no provedor e na rota (implantação ou região) que atenderam a primeira solicitação bem-sucedida e mantém lá as solicitações seguintes com a mesma chave até que esse provedor falhe, a cota gerenciada do Phaseo nele se esgote ou sua política de roteamento deixe de permiti-lo. As fixações são mantidas por workspace, e a duração delas segue a retenção de cache do provedor. Consulte [Afinidade com o provedor](../guides/prompt-caching.mdx#provider-affinity).
+
+O Phaseo envia ao provedor um hash do ID do seu workspace e da chave, nunca a chave original, então workspaces que escolhem a mesma chave não compartilham um cache de provedor. As respostas retornam a chave que você enviou. Provedores cuja API rejeita o campo não o recebem, e enviá-lo nunca exclui um provedor do roteamento. O Phaseo também pode derivar a afinidade do contexto da solicitação, mas uma chave explícita é melhor para conversas longas, sessões de agentes e fluxos de trabalho repetidos.
 
 <span id="prompt_cache_options"></span>
 <h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
 
-Transmite os controles de cache de prompts da OpenAI pelas rotas OpenAI compatíveis.
+Envia controles de cache de prompts para OpenAI e Azure OpenAI a partir do GPT-5.6, incluindo o GPT-6 Astra, e para a DeepInfra.
 
 | Campo | Valor |
 | --- | --- |
 | Tipo | `object` |
-| Campos comuns | `mode`, `ttl` |
-| Astra TTL | `30m` |
+| Campos comuns | `mode` (`implicit` ou `explicit`), `ttl` |
+| TTL da OpenAI | `30m` |
 
-Para GPT-6 Astra, use `{"mode":"explicit","ttl":"30m"}` para cache explícito de prompts. O Phaseo preserva o objeto durante a normalização da solicitação e o envia à OpenAI sem alterações.
+Use `{"mode":"explicit","ttl":"30m"}` quando quiser que a OpenAI armazene em cache apenas os pontos de interrupção que você posicionar. `30m` é o único `ttl` aceito pela OpenAI. A DeepInfra aceita `5m` ou `1h` e exige `prompt_cache_key` em todas as solicitações da sessão.
+
+O Phaseo envia o objeto sem alterações para essas rotas. Ele o remove para todos os outros provedores e para os modelos da OpenAI anteriores ao GPT-5.6, que usam [`prompt_cache_retention`](#prompt_cache_retention). `provider_options.openai.prompt_cache_options` também é aceito; prevalece o valor do nível superior.
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
 
-Aplica uma política de cache de prompts independente do provedor nas interfaces de solicitação de texto compatíveis.
+Define uma política padrão de cache de prompts para o Claude ou marca um ponto de interrupção de cache em um bloco de conteúdo.
 
 | Campo | Valor |
 | --- | --- |
 | Tipo | `object` |
 | Campos comuns | `type`, `ttl`, `scope` |
-| Uso | Cache automático de prompts e pontos de separação explícitos |
+| Uso | Políticas de cache do Claude e pontos de interrupção de cache explícitos |
 
-Use `cache_control` no nível superior de solicitações Chat Completions, Responses e Anthropic Messages para que a mesma dica de cache percorra o esquema comum do gateway. Também é possível colocá-lo em blocos de conteúdo compatíveis para definir pontos de separação explícitos.
+O `cache_control` no nível superior é aceito em solicitações de Chat Completions, Responses e Anthropic Messages. Ele se aplica ao Claude na Anthropic, Claude on AWS, Amazon Bedrock e Google Vertex AI: o Phaseo posiciona até quatro pontos de interrupção conforme o `scope` (`all_text`, `last_user_message`, `agent` ou `none`). Outros provedores o ignoram. `provider_options.anthropic.cache_control` é a mesma configuração e prevalece quando os dois são enviados.
 
-Os valores comuns de TTL são `5m` e `1h`, conforme o suporte do provedor e do modelo. Aliases específicos de provedores, como `provider_options.anthropic.cache_control` e `provider_options.google.cache_control`, continuam aceitos em integrações nativas.
+Em um bloco de conteúdo, definição de ferramenta ou resultado de ferramenta, `cache_control` marca um ponto de interrupção de cache. O Phaseo o envia às rotas do Claude, ao Alibaba Model Studio e à Venice, converte-o em `prompt_cache_breakpoint` para OpenAI e Azure OpenAI a partir do GPT-5.6 e o remove para outros provedores. O `prompt_cache_breakpoint: {"mode": "explicit"}` da própria OpenAI é aceito nos mesmos blocos e prevalece quando um bloco tem os dois.
+
+Use `type: "ephemeral"` com `ttl` de `5m` (o padrão) ou `1h`. A Anthropic aceita no máximo quatro pontos de interrupção por solicitação; quando suas marcações passam disso, o Phaseo mantém a primeira e as três mais recentes. Consulte [Cache de prompts](../guides/prompt-caching.mdx#cache-controls) para ver os escopos e o que cada provedor recebe.
 
 <span id="prompt_cache_retention"></span>
 <h3 id="parameter-prompt_cache_retention"><code>prompt_cache_retention</code></h3>
 
-Define a política de retenção do cache de prompts compatível com OpenAI em solicitações compatíveis roteadas para a OpenAI.
+Define a política de retenção do cache de prompts em modelos da OpenAI e da Azure OpenAI anteriores ao GPT-5.6.
 
 | Campo | Valor |
 | --- | --- |
 | Tipo | `string` |
-| Exemplo | `24h` |
+| Valores compatíveis | `in_memory`, `24h` |
 | Uso | Retenção do cache de prompts da OpenAI |
 
-Use para enviar opções de retenção de cache da OpenAI sem aninhá-las nas opções específicas do provedor. O alias `provider_options.openai.prompt_cache_retention` continua aceito. Se ambos estiverem presentes, o valor de nível superior `prompt_cache_retention` terá precedência.
+O Phaseo envia este campo apenas a modelos da OpenAI e da Azure OpenAI anteriores ao GPT-5.6, e só os modelos listados pela OpenAI aceitam `24h`. A partir do GPT-5.6, use [`prompt_cache_options.ttl`](#prompt_cache_options); outros provedores não recebem o campo. O alias específico do provedor `provider_options.openai.prompt_cache_retention` continua sendo aceito. Quando os dois estiverem presentes, prevalece o valor de `prompt_cache_retention` no nível superior.
 
 <span id="provider"></span>
 <h3 id="parameter-provider"><code>provider</code></h3>
@@ -549,10 +555,12 @@ Exemplos:
 - `openai.context_management`
 - `openai.prompt_cache_retention`
 - `anthropic.cache_control`
-- `google.cache_control`
 - `google.cached_content`
+- `xai.conversation_id`
 
-Use-o quando precisar de um recurso nativo do provedor, mas quiser manter o restante da solicitação no esquema comum do gateway. Prefira `cache_control` no nível superior para dicas comuns de cache e `prompt_cache_retention` no nível superior para retenção compatível com OpenAI.
+Use-o quando precisar de um recurso nativo do provedor, mas quiser manter o restante da solicitação no esquema comum do gateway. Prefira `cache_control` no nível superior para políticas de cache do Claude e `prompt_cache_retention` no nível superior para retenção da OpenAI.
+
+`google.cached_content` indica um cache explícito do Gemini. No Google AI Studio, ele só funciona com a sua própria chave de API do Google, e na Vertex AI o cache precisa pertencer ao projeto da credencial que atende a solicitação. `google.cache_control` e `google.cache_ttl` são aceitos, mas não são enviados ao Google.
 
 Para ver exemplos de cache de prompts por provedor em Chat Completions, Responses e Anthropic Messages, consulte [Cache de prompts](../guides/prompt-caching.mdx).
 

@@ -244,6 +244,15 @@ public sealed class AnthropicTool
 
 public sealed class AnthropicUsage
 {
+	[JsonPropertyName("cache_creation")]
+	public Dictionary<string, object>? CacheCreation { get; set; }
+
+	[JsonPropertyName("cache_creation_input_tokens")]
+	public long? CacheCreationInputTokens { get; set; }
+
+	[JsonPropertyName("cache_read_input_tokens")]
+	public long? CacheReadInputTokens { get; set; }
+
 	[JsonPropertyName("input_tokens")]
 	public long? InputTokens { get; set; }
 
@@ -3980,6 +3989,16 @@ public sealed class ImagesGenerationResponse
 
 }
 
+public sealed class InputTokensDetails
+{
+	[JsonPropertyName("cache_write_tokens")]
+	public long? CacheWriteTokens { get; set; }
+
+	[JsonPropertyName("cached_tokens")]
+	public long? CachedTokens { get; set; }
+
+}
+
 public sealed class InvalidRequestResponse
 {
 	[JsonPropertyName("error")]
@@ -7241,8 +7260,20 @@ public sealed class Usage
 	[JsonPropertyName("completion_tokens")]
 	public long? CompletionTokens { get; set; }
 
+	[JsonPropertyName("input_tokens")]
+	public long? InputTokens { get; set; }
+
+	[JsonPropertyName("input_tokens_details")]
+	public Dictionary<string, object>? InputTokensDetails { get; set; }
+
+	[JsonPropertyName("output_tokens")]
+	public long? OutputTokens { get; set; }
+
 	[JsonPropertyName("prompt_tokens")]
 	public long? PromptTokens { get; set; }
+
+	[JsonPropertyName("prompt_tokens_details")]
+	public Dictionary<string, object>? PromptTokensDetails { get; set; }
 
 	[JsonPropertyName("server_tool_use")]
 	public Dictionary<string, object>? ServerToolUse { get; set; }

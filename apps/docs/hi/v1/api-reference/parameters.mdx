@@ -46,10 +46,10 @@ icon: "sliders-horizontal"
 | [`reasoning_tokens`](#reasoning_tokens) | `integer` | reasoning-विशिष्ट token सीमा या लेखांकन फ़ील्ड। |
 | [`include_reasoning`](#include_reasoning) | `boolean` | समर्थन होने पर reasoning content या summaries लौटाना। |
 | [`service_tier`](#service_tier) | `string` | समर्थित अनुरोध स्तर चुनना, जैसे `fast`, `ultrafast` या `flex`। |
-| [`prompt_cache_key`](#prompt_cache_key) | `string` | संबंधित requests के लिए cache-aware routing को sticky रखना। |
-| [`prompt_cache_options`](#prompt_cache_options) | `object` | OpenAI प्रॉम्प्ट कैश मोड और TTL नियंत्रण सेट करना। |
-| [`cache_control`](#cache_control) | `object` | provider-neutral prompt cache संकेत या breakpoints लागू करना। |
-| [`prompt_cache_retention`](#prompt_cache_retention) | `string` | OpenAI-compatible prompt cache retention सेट करना। |
+| [`prompt_cache_key`](#prompt_cache_key) | `string` | संबंधित requests को उस provider पर रखना जिसके पास उनका prompt cache है। |
+| [`prompt_cache_options`](#prompt_cache_options) | `object` | OpenAI GPT-5.6 और बाद के मॉडलों पर प्रॉम्प्ट कैश मोड और TTL सेट करना। |
+| [`cache_control`](#cache_control) | `object` | Claude के लिए डिफ़ॉल्ट cache नीति सेट करना, या content blocks पर cache breakpoints लगाना। |
+| [`prompt_cache_retention`](#prompt_cache_retention) | `string` | GPT-5.6 से पहले के OpenAI मॉडलों पर prompt cache retention सेट करना। |
 | [`provider`](#provider) | `object` | रूटिंग और provider चयन को प्रभावित करना। |
 | [`provider_options`](#provider_options) | `object` | gateway के माध्यम से provider-native settings भेजना। |
 | [`meta`](#meta) / [`usage`](#usage) | `boolean` | response में अतिरिक्त metadata या usage accounting लौटाना। |
@@ -462,48 +462,54 @@ prompt-cache-aware routing के लिए स्थिर cache affinity key �
 | प्रकार | `string` |
 | उपयोग | संबंधित cached prompts के लिए sticky routing |
 
-जब कई requests स्थिर prompt prefixes साझा करते हों और संभव हो तो समान upstream provider या region को प्राथमिकता देनी हो, तब इसका उपयोग करें। Phaseo request context से cache affinity निकाल सकता है, लेकिन लंबी बातचीत, agent sessions और दोहराए जाने वाले workflows के लिए स्पष्ट key बेहतर है।
+जब कई requests स्थिर prompt prefixes साझा करते हों, जैसे किसी agent loop के चरण, तब इसका उपयोग करें। Phaseo key को उस provider और route (deployment या region) पर pin करता है जिसने पहला सफल request पूरा किया था, और उसी key वाले बाद के requests को वहीं रखता है, जब तक वह provider विफल न हो, उस पर Phaseo का managed quota खत्म न हो जाए, या आपकी routing नीति उसे अनुमति देना बंद न कर दे। Pins हर workspace के लिए अलग रखे जाते हैं, और उनकी अवधि provider के cache retention के अनुसार तय होती है। [प्रदाता से जुड़ाव](../guides/prompt-caching.mdx#provider-affinity) देखें।
+
+Phaseo upstream को आपके workspace ID और key का hash भेजता है, कच्ची key कभी नहीं, इसलिए एक ही key चुनने वाले workspaces provider cache साझा नहीं करते। Responses में वही key लौटती है जो आपने भेजी थी। जिन providers का API इस field को अस्वीकार करता है, उन्हें यह नहीं भेजा जाता, और इसे भेजने से कोई provider routing से कभी बाहर नहीं होता। Phaseo request context से भी affinity निकाल सकता है, लेकिन लंबी बातचीत, agent sessions और बार-बार चलने वाले workflows के लिए explicit key बेहतर है।
 
 <span id="prompt_cache_options"></span>
 <h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
 
-समर्थित OpenAI रूट से OpenAI प्रॉम्प्ट कैश नियंत्रण भेजता है।
+GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों (GPT-6 Astra सहित) और DeepInfra को prompt-cache नियंत्रण भेजता है।
 
 | फ़ील्ड | मान |
 | --- | --- |
 | प्रकार | `object` |
-| सामान्य फ़ील्ड | `mode`, `ttl` |
-| Astra TTL | `30m` |
+| सामान्य फ़ील्ड | `mode` (`implicit` या `explicit`), `ttl` |
+| OpenAI TTL | `30m` |
 
-GPT-6 Astra में स्पष्ट प्रॉम्प्ट कैश के लिए `{"mode":"explicit","ttl":"30m"}` इस्तेमाल करें। Phaseo अनुरोध सामान्यीकरण में इस ऑब्जेक्ट को सुरक्षित रखता है और बिना बदले OpenAI को भेजता है।
+जब आप चाहते हों कि OpenAI केवल आपके लगाए breakpoints को cache करे, तब `{"mode":"explicit","ttl":"30m"}` उपयोग करें। OpenAI केवल `30m` वाला `ttl` स्वीकार करता है। DeepInfra `5m` या `1h` स्वीकार करता है, और session के हर request में `prompt_cache_key` चाहिए।
+
+Phaseo यह object इन routes को बिना बदलाव भेजता है। बाकी सभी providers के लिए, और GPT-5.6 से पहले के OpenAI मॉडलों के लिए, जो इसकी जगह [`prompt_cache_retention`](#prompt_cache_retention) उपयोग करते हैं, Phaseo इसे हटा देता है। `provider_options.openai.prompt_cache_options` भी स्वीकार किया जाता है; top-level मान लागू होता है।
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
 
-समर्थित टेक्स्ट request surfaces पर provider-neutral prompt cache policy लागू करता है।
+Claude के लिए डिफ़ॉल्ट prompt cache नीति सेट करता है, या किसी content block पर cache breakpoint लगाता है।
 
 | फ़ील्ड | मान |
 | --- | --- |
 | प्रकार | `object` |
 | सामान्य फ़ील्ड | `type`, `ttl`, `scope` |
-| उपयोग | स्वचालित prompt caching और स्पष्ट cache breakpoints |
+| उपयोग | Claude cache नीतियाँ और स्पष्ट cache breakpoints |
 
-एक ही कैश संकेत को गेटवे की साझा स्कीमा से भेजने के लिए, `cache_control` को Chat Completions, Responses और Anthropic Messages अनुरोधों के शीर्ष स्तर पर उपयोग करें। कैश कहाँ टूटे, यह तय करना हो तो समर्थित कंटेंट ब्लॉक्स पर भी इसे रखें।
+Top-level `cache_control` को Chat Completions, Responses और Anthropic Messages requests पर स्वीकार किया जाता है। यह Anthropic, Claude on AWS, Amazon Bedrock और Google Vertex AI पर Claude के लिए लागू होता है: Phaseo `scope` (`all_text`, `last_user_message`, `agent` या `none`) के अनुसार अधिकतम चार breakpoints लगाता है। दूसरे providers इसे अनदेखा करते हैं। `provider_options.anthropic.cache_control` वही सेटिंग है, और दोनों भेजे जाने पर वही लागू होती है।
 
-provider और model के समर्थन के अनुसार सामान्य TTL मान `5m` और `1h` हैं। Native integrations के लिए `provider_options.anthropic.cache_control` और `provider_options.google.cache_control` जैसे provider-specific aliases अब भी स्वीकार किए जाते हैं。
+किसी content block, tool definition या tool result पर `cache_control` एक cache breakpoint लगाता है। Phaseo इसे Claude routes, Alibaba Model Studio और Venice को भेजता है, GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों के लिए इसे `prompt_cache_breakpoint` में बदलता है, और दूसरे providers के लिए हटा देता है। OpenAI का अपना `prompt_cache_breakpoint: {"mode": "explicit"}` भी उन्हीं blocks पर स्वीकार किया जाता है, और जब किसी block पर दोनों हों, तो वही लागू होता है।
+
+`type: "ephemeral"` के साथ `5m` (डिफ़ॉल्ट) या `1h` वाला `ttl` उपयोग करें। Anthropic हर request में अधिकतम चार breakpoints स्वीकार करता है; आपके marks इससे ज़्यादा हों, तो Phaseo पहला और सबसे नए तीन रखता है। Scopes और हर provider को क्या मिलता है, इसके लिए [Prompt Caching](../guides/prompt-caching.mdx#cache-controls) देखें।
 
 <span id="prompt_cache_retention"></span>
 <h3 id="parameter-prompt_cache_retention"><code>prompt_cache_retention</code></h3>
 
-OpenAI के माध्यम से भेजे जाने वाले समर्थित अनुरोधों के लिए यह OpenAI-संगत प्रॉम्प्ट-कैश प्रतिधारण नीति सेट करता है।
+GPT-5.6 से पहले के OpenAI और Azure OpenAI मॉडलों पर prompt cache retention नीति सेट करता है।
 
 | फ़ील्ड | मान |
 | --- | --- |
 | प्रकार | `string` |
-| उदाहरण | `24h` |
+| समर्थित मान | `in_memory`, `24h` |
 | उपयोग | OpenAI prompt cache retention |
 
-OpenAI cache-retention options को provider-specific options में nested किए बिना भेजने के लिए इसका उपयोग करें। Provider-specific alias `provider_options.openai.prompt_cache_retention` अब भी स्वीकार किया जाता है। दोनों मौजूद हों तो top-level `prompt_cache_retention` को प्राथमिकता मिलती है।
+Phaseo यह field केवल GPT-5.6 से पहले के OpenAI और Azure OpenAI मॉडलों को भेजता है, और `24h` केवल वही मॉडल स्वीकार करते हैं जिन्हें OpenAI सूचीबद्ध करता है। GPT-5.6 और बाद के मॉडल इसकी जगह [`prompt_cache_options.ttl`](#prompt_cache_options) उपयोग करते हैं, और दूसरे providers को यह field नहीं मिलता। Provider-specific alias `provider_options.openai.prompt_cache_retention` अब भी स्वीकार किया जाता है। दोनों मौजूद हों, तो top-level `prompt_cache_retention` का मान प्राथमिकता पाता है।
 
 <span id="provider"></span>
 <h3 id="parameter-provider"><code>provider</code></h3>
@@ -549,10 +555,12 @@ provider-specific passthrough settings रखता है जिन्हें
 - `openai.context_management`
 - `openai.prompt_cache_retention`
 - `anthropic.cache_control`
-- `google.cache_control`
 - `google.cached_content`
+- `xai.conversation_id`
 
-जब provider-native feature चाहिए, लेकिन request का बाकी हिस्सा gateway के common schema में रखना हो, तब इसका उपयोग करें। सामान्य cache hints के लिए top-level `cache_control` और OpenAI-compatible retention के लिए top-level `prompt_cache_retention` चुनें।
+जब provider-native feature चाहिए, लेकिन request का बाकी हिस्सा gateway के common schema में रखना हो, तब इसका उपयोग करें। Claude cache नीतियों के लिए top-level `cache_control` और OpenAI retention के लिए top-level `prompt_cache_retention` चुनें।
+
+`google.cached_content` किसी स्पष्ट Gemini cache का नाम देता है। Google AI Studio पर यह केवल आपकी अपनी Google API key के साथ काम करता है, और Vertex AI पर cache उस project का होना चाहिए जिसकी credential request पूरा करती है। `google.cache_control` और `google.cache_ttl` स्वीकार किए जाते हैं, लेकिन Google को नहीं भेजे जाते।
 
 Chat Completions, Responses और Anthropic Messages में प्रदाता की प्रॉम्प्ट-कैशिंग के उदाहरणों के लिए [Prompt Caching](../guides/prompt-caching.mdx) देखें।
 

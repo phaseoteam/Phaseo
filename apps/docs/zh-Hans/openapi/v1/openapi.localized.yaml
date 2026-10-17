@@ -9529,6 +9529,7 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: 将相关请求归为一组，使其保留在持有其 prompt 缓存的提供商上。Phaseo 向上游发送的是你的工作区与该键的哈希值，绝不发送原始键。
         safety_identifier:
           type: string
           nullable: true
@@ -10126,12 +10127,32 @@ components:
       properties:
         prompt_tokens:
           type: integer
+          description: 输入 token，包括缓存读取和缓存写入。
+        prompt_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
         completion_tokens:
+          type: integer
+        input_tokens:
+          type: integer
+          description: 输入 token，包括缓存读取和缓存写入。
+        input_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
+        output_tokens:
           type: integer
         total_tokens:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+    InputTokensDetails:
+      type: object
+      description: 输入 token 的明细。
+      properties:
+        cached_tokens:
+          type: integer
+          description: 从提供商 prompt 缓存中读取的输入 token。
+        cache_write_tokens:
+          type: integer
+          description: 写入提供商 prompt 缓存的输入 token。
     AnthropicMessagesRequest:
       type: object
       required:
@@ -10326,6 +10347,23 @@ components:
       properties:
         input_tokens:
           type: integer
+          description: 未缓存的输入 token。与 Anthropic 一致，不包括缓存读取和缓存写入。
+        cache_read_input_tokens:
+          type: integer
+          description: 从提供商 prompt 缓存中读取的输入 token。
+        cache_creation_input_tokens:
+          type: integer
+          description: 写入提供商 prompt 缓存的输入 token。
+        cache_creation:
+          type: object
+          description: 按缓存有效期拆分的缓存写入。
+          properties:
+            ephemeral_5m_input_tokens:
+              type: integer
+              description: 以 5 分钟缓存有效期写入的输入 token。
+            ephemeral_1h_input_tokens:
+              type: integer
+              description: 以 1 小时缓存有效期写入的输入 token。
         output_tokens:
           type: integer
     ResponsesRequest:
@@ -10368,6 +10406,7 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: 不支持。Phaseo 不存储响应，因此设置了 previous_response_id 或 conversation 的请求会返回 400 unsupported_param。请在 input 中发送完整对话。
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
@@ -10411,6 +10450,7 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: 将相关请求归为一组，使其保留在持有其 prompt 缓存的提供商上。Phaseo 向上游发送的是你的工作区与该键的哈希值，绝不发送原始键。
         safety_identifier:
           type: string
           nullable: true

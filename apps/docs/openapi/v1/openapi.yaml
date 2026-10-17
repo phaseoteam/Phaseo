@@ -9959,6 +9959,10 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: >-
+            Groups related requests so they stay on the provider that holds
+            their prompt cache. Phaseo sends a hash of your workspace and this
+            key upstream, never the raw key.
         safety_identifier:
           type: string
           nullable: true
@@ -10568,12 +10572,32 @@ components:
       properties:
         prompt_tokens:
           type: integer
+          description: Input tokens, including cache reads and cache writes.
+        prompt_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
         completion_tokens:
+          type: integer
+        input_tokens:
+          type: integer
+          description: Input tokens, including cache reads and cache writes.
+        input_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
+        output_tokens:
           type: integer
         total_tokens:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+    InputTokensDetails:
+      type: object
+      description: Breakdown of the input tokens.
+      properties:
+        cached_tokens:
+          type: integer
+          description: Input tokens read from the provider's prompt cache.
+        cache_write_tokens:
+          type: integer
+          description: Input tokens written to the provider's prompt cache.
     AnthropicMessagesRequest:
       type: object
       required:
@@ -10775,6 +10799,25 @@ components:
       properties:
         input_tokens:
           type: integer
+          description: >-
+            Uncached input tokens. As on Anthropic, this excludes cache reads
+            and cache writes.
+        cache_read_input_tokens:
+          type: integer
+          description: Input tokens read from the provider's prompt cache.
+        cache_creation_input_tokens:
+          type: integer
+          description: Input tokens written to the provider's prompt cache.
+        cache_creation:
+          type: object
+          description: Cache writes split by cache lifetime.
+          properties:
+            ephemeral_5m_input_tokens:
+              type: integer
+              description: Input tokens written with a 5-minute cache lifetime.
+            ephemeral_1h_input_tokens:
+              type: integer
+              description: Input tokens written with a 1-hour cache lifetime.
         output_tokens:
           type: integer
     ResponsesRequest:
@@ -10819,6 +10862,10 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: >-
+            Not supported. Phaseo does not store responses, so requests that set
+            previous_response_id or conversation return 400 unsupported_param.
+            Send the full conversation in input.
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
@@ -10865,6 +10912,10 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: >-
+            Groups related requests so they stay on the provider that holds
+            their prompt cache. Phaseo sends a hash of your workspace and this
+            key upstream, never the raw key.
         safety_identifier:
           type: string
           nullable: true

@@ -294,9 +294,11 @@ Um modelo aposentado continua sendo atendido enquanto algum provedor o atender. 
 
 ## Afinidade baseada em cache e sessão
 
-O roteamento baseado em cache fica habilitado por padrão nos endpoints de geração de texto. Depois que um provedor informa uma leitura real do cache de prompt, a Phaseo fixa o contexto correspondente nesse provedor por 15 minutos, desde que ele continue saudável e permitido pela rota, pela predefinição, pelos guardrails e pela política da solicitação ativos.
+O roteamento baseado em cache fica habilitado por padrão nos endpoints de geração de texto. Solicitações que enviam `prompt_cache_key` ou `session_id`, ou que ativam o cache com um `cache_control` no nível superior, são fixadas no provedor e na rota que atenderam a primeira solicitação bem-sucedida. As demais solicitações são fixadas por 15 minutos quando um provedor informa uma leitura ou gravação do cache de prompt para o mesmo contexto inicial.
 
-Quando `session_id` está presente, a afinidade de cache é vinculada à sessão, e não apenas ao contexto inicial. A Phaseo atualiza essa afinidade quando observa outra leitura do cache e a mantém por até 24 horas de atividade da sessão. Disjuntores e filtros de políticas sempre têm prioridade sobre a afinidade.
+As fixações são mantidas por espaço de trabalho e duram de 15 minutos a 24 horas, conforme a retenção de cache do provedor. Uma fixação só muda quando o disjuntor do provedor abre, a taxa de erros recente dele está alta, a cota gerenciada da Phaseo nele se esgota ou a rota, a predefinição, os guardrails ou a política da solicitação ativos deixam de permiti-lo.
+
+Quando `session_id` está presente, a afinidade de cache é vinculada à sessão, e não apenas ao contexto inicial, e é mantida por até 24 horas de atividade da sessão. Consulte [Afinidade com o provedor](./prompt-caching.mdx#provider-affinity) para ver a duração das fixações e as dicas de afinidade que a Phaseo envia a cada provedor.
 
 Desative o recurso em uma solicitação sem alterar os padrões do espaço de trabalho ou da rota dinâmica:
 

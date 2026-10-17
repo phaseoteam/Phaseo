@@ -1101,6 +1101,12 @@ export async function createAnthropicMessage(
   stop_sequence?: string;
   type?: string;
   usage?: {
+    cache_creation?: {
+      ephemeral_1h_input_tokens?: number;
+      ephemeral_5m_input_tokens?: number;
+    };
+    cache_creation_input_tokens?: number;
+    cache_read_input_tokens?: number;
     input_tokens?: number;
     output_tokens?: number;
   };
@@ -1136,6 +1142,12 @@ export async function createAnthropicMessage(
     stop_sequence?: string;
     type?: string;
     usage?: {
+      cache_creation?: {
+        ephemeral_1h_input_tokens?: number;
+        ephemeral_5m_input_tokens?: number;
+      };
+      cache_creation_input_tokens?: number;
+      cache_read_input_tokens?: number;
       input_tokens?: number;
       output_tokens?: number;
     };
@@ -2391,7 +2403,17 @@ export async function createChatCompletion(
   provider?: string;
   usage?: {
     completion_tokens?: number;
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
     prompt_tokens?: number;
+    prompt_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
     server_tool_use?: {
       advisor_requests?: number;
       apply_patch_requests?: number;
@@ -2491,7 +2513,17 @@ export async function createChatCompletion(
     provider?: string;
     usage?: {
       completion_tokens?: number;
+      input_tokens?: number;
+      input_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
+      output_tokens?: number;
       prompt_tokens?: number;
+      prompt_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
       server_tool_use?: {
         advisor_requests?: number;
         apply_patch_requests?: number;
@@ -3012,7 +3044,17 @@ export async function createEmbedding(
   object?: string;
   usage?: {
     completion_tokens?: number;
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
     prompt_tokens?: number;
+    prompt_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
     server_tool_use?: {
       advisor_requests?: number;
       apply_patch_requests?: number;
@@ -3039,7 +3081,17 @@ export async function createEmbedding(
     object?: string;
     usage?: {
       completion_tokens?: number;
+      input_tokens?: number;
+      input_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
+      output_tokens?: number;
       prompt_tokens?: number;
+      prompt_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
       server_tool_use?: {
         advisor_requests?: number;
         apply_patch_requests?: number;
@@ -5001,7 +5053,17 @@ export async function createRerank(
   }[];
   usage?: {
     completion_tokens?: number;
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
     prompt_tokens?: number;
+    prompt_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
     server_tool_use?: {
       advisor_requests?: number;
       apply_patch_requests?: number;
@@ -5034,7 +5096,17 @@ export async function createRerank(
     }[];
     usage?: {
       completion_tokens?: number;
+      input_tokens?: number;
+      input_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
+      output_tokens?: number;
       prompt_tokens?: number;
+      prompt_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
       server_tool_use?: {
         advisor_requests?: number;
         apply_patch_requests?: number;
@@ -5390,7 +5462,17 @@ export async function createResponse(
   type?: string;
   usage?: {
     completion_tokens?: number;
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
     prompt_tokens?: number;
+    prompt_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
     server_tool_use?: {
       advisor_requests?: number;
       apply_patch_requests?: number;
@@ -5494,7 +5576,17 @@ export async function createResponse(
     type?: string;
     usage?: {
       completion_tokens?: number;
+      input_tokens?: number;
+      input_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
+      output_tokens?: number;
       prompt_tokens?: number;
+      prompt_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
       server_tool_use?: {
         advisor_requests?: number;
         apply_patch_requests?: number;
