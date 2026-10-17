@@ -43,6 +43,7 @@ BEGIN
         OR nullif(r->>'score_numeric', '') IS NULL
         OR (r->>'score_numeric')::numeric IN ('NaN'::numeric, 'Infinity'::numeric, '-Infinity'::numeric)
         OR r->>'score' IS DISTINCT FROM r->>'score_numeric'
+        OR substring(r->>'other_info' FROM 'Intelligence Index v([0-9]+\.[0-9]+(?:\.[0-9]+)?)') IS DISTINCT FROM p_snapshot->>'methodology_version'
         OR nullif(substring(r->>'other_info' FROM 'Artificial Analysis ID ([^;]+)'), '') IS NULL
         OR p_snapshot->'source_owners'->>substring(r->>'other_info' FROM 'Artificial Analysis ID ([^;]+)') IS DISTINCT FROM r->>'model_slug')
     OR NOT EXISTS (SELECT 1 FROM jsonb_array_elements(p_snapshot->'results') r WHERE r->>'benchmark_id' = expected_ids[1])

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 const db = new PGlite();
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
@@ -29,6 +29,16 @@ try {
   await db.exec(await read('../schemas/public/functions/publish_artificial_analysis_snapshot.sql'));
   await db.exec(await read('../schemas/public/functions/get_artificial_analysis_coverage.sql'));
   await db.exec("insert into public.v2_models values ('lab/one', false), ('lab/unmatched', false), ('lab/hidden', true);");
+  await db.exec(`insert into public.v2_benchmarks(benchmark_id,name) values ('aa-intelligence-index-v4','Current'),('aa-intelligence-index-v5','Future');
+    insert into public.v2_benchmark_results(result_id,model_slug,benchmark_id,score_numeric,other_info) values
+    ('${id(999)}','lab/one','aa-intelligence-index-v4',50,'Artificial Analysis ID existing; Intelligence Index v4.3.2');`);
+  const seedName = (await readdir(new URL('../migrations/', import.meta.url))).find(name => name.endsWith('_seed_artificial_analysis_publications.sql'));
+  const seed = await read(`../migrations/${seedName}`);
+  await db.exec(seed); await db.exec(seed);
+  assert.equal(await count('artificial_analysis_snapshots'), 1, 'bootstrap is idempotent and ignores empty v5');
+  assert.equal(await count('v2_benchmark_results'), 1, 'bootstrap does not rewrite existing scores');
+  assert.equal((await db.query("select published from public.get_artificial_analysis_coverage() where benchmark_id='aa-intelligence-index-v4'")).rows[0].published, true);
+  await db.exec('truncate public.artificial_analysis_snapshots, public.v2_benchmark_results, public.v2_benchmarks;');
   for (const role of ['anon', 'authenticated']) {
     await db.exec(`set role ${role}`);
     await rejects(publish(snapshot(1)), /permission denied/);
@@ -37,6 +47,8 @@ try {
     await db.exec('reset role');
   }
   await db.exec('set role service_role');
+  await rejects(db.query('delete from public.artificial_analysis_snapshots'), /permission denied/);
+  await rejects(db.query("update public.artificial_analysis_snapshots set methodology_version='4.0'"), /permission denied/);
   const first = snapshot(1);
   assert.equal((await publish(first)).rows[0].id, first.snapshot_id);
   await publish(first);
