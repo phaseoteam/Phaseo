@@ -188,7 +188,7 @@ La même page propose aussi des options pour les canaux bêta et alpha. Vous pou
 
 ### Le repli BYOK est explicite
 
-Dans **Tableau de bord -> Paramètres -> BYOK**, les équipes peuvent autoriser ou non une requête BYOK qui échoue à basculer sur les crédits Phaseo. Il s’agit du contrôle public actuel pour le cas courant « ma clé personnelle a échoué : la requête doit-elle tout de même aboutir ? ».
+Dans **Tableau de bord -> Paramètres -> BYOK**, les équipes peuvent autoriser ou non une requête <Tooltip tip="Apportez votre propre clé : Phaseo route la requête avec votre clé API du fournisseur, et le fournisseur vous facture directement l’utilisation du modèle.">BYOK</Tooltip> qui échoue à basculer sur les crédits Phaseo. Il s’agit du contrôle public actuel pour le cas courant « ma clé personnelle a échoué : la requête doit-elle tout de même aboutir ? ».
 
 ### Les routes dynamiques associent une politique aux clés d’API
 
@@ -220,6 +220,19 @@ Les métadonnées personnalisées sont disponibles sur les surfaces d’inféren
 ## Comportement des solutions de repli
 
 Si un fournisseur renvoie des erreurs ou des limites de débit, Gateway peut réessayer ou acheminer la requête vers un autre fournisseur prenant en charge le même modèle. Vous devez tout de même traiter les réponses `429` et `5xx` avec un délai exponentiel.
+
+```mermaid
+flowchart TD
+  req["Requête"] --> pol["Appliquer les préréglages, les garde-fous et la politique des fournisseurs"]
+  pol --> rnk["Classer les fournisseurs éligibles selon le mode de routage"]
+  rnk --> prov["Appeler le fournisseur le mieux classé"]
+  prov -->|"Succès"| resp["Renvoyer la réponse"]
+  prov -->|"Erreur ou limite de débit du fournisseur"| nextProv{{"Un autre fournisseur éligible ?"}}
+  nextProv -->|"Oui"| prov
+  nextProv -->|"Non"| fallbackCheck{{"Statut réessayable et un modèle de secours restant ?"}}
+  fallbackCheck -->|"Oui : relancer avec le modèle suivant"| pol
+  fallbackCheck -->|"Non"| err["Renvoyer l’erreur"]
+```
 
 Les nœuds de modèle d’une route dynamique peuvent également définir une liste ordonnée de modèles de repli. Phaseo épuise d’abord les tentatives auprès des fournisseurs éligibles pour le modèle sélectionné. Si la réponse obtenue permet une nouvelle tentative (`429`, `500`, `502`, `503` ou `504`), Gateway relance l’ensemble du processus de politique et de sélection des fournisseurs pour chaque modèle de repli, dans l’ordre. Les erreurs client sont renvoyées immédiatement sans changer de modèle.
 

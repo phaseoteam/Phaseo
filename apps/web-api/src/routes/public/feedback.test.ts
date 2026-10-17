@@ -1,0 +1,125 @@
+import { Hono } from "hono";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Env } from "@/env";
+
+const mocks = vi.hoisted(() => ({ rpc: vi.fn(), unsubscribeResendContact: vi.fn() }));
+vi.mock("@/data/supabase", () => ({ getDataClient: () => ({ rpc: mocks.rpc }) }));
+vi.mock("@/auth/resendContacts", () => ({ unsubscribeResendContact: mocks.unsubscribeResendContact }));
+
+const { parseFeedbackAnswers, publicFeedbackRouter } = await import("./feedback");
+
+const app = new Hono<{ Bindings: Env }>();
+app.route("/feedback", publicFeedbackRouter);
+const token = "0f8fad5b-d9cb-469f-a165-70867728950e";
+const env = { ENV: "production" } as Env;
+const post = (path: string, body: unknown, bindings: Partial<Env> = {}) => app.request(
+	`https://phaseo.app/feedback/${path}`,
+	{ method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
+	{ ...env, ...bindings },
+);
+
+describe("public feedback routes", () => {
+	beforeEach(() => {
+		mocks.rpc.mockReset();
+		mocks.unsubscribeResendContact.mockReset().mockResolvedValue(undefined);
+	});
+
+	it("rejects malformed tokens without touching the database", async () => {
+		const response = await app.request("https://phaseo.app/feedback/not-a-token", {}, env);
+		expect(response.status).toBe(404);
+		expect(mocks.rpc).not.toHaveBeenCalled();
+	});
+
+	it("returns the page data for a known token and 404 for an unknown one", async () => {
+		mocks.rpc.mockResolvedValueOnce({ data: { segment: "paid", responded: false, rewardsIssued: 3 }, error: null });
+		const known = await app.request(`https://phaseo.app/feedback/${token}`, {}, env);
+		expect(known.status).toBe(200);
+		expect(known.headers.get("cache-control")).toBe("private, no-store");
+		expect(await known.json()).toEqual({ segment: "paid", responded: false, rewardAvailable: true });
+		expect(mocks.rpc).toHaveBeenCalledWith("get_feedback_request", { p_token: token });
+
+		mocks.rpc.mockResolvedValueOnce({ data: null, error: null });
+		expect((await app.request(`https://phaseo.app/feedback/${token}`, {}, env)).status).toBe(404);
+	});
+
+	it("stops offering a reward once the cap is spent or rewards are off", async () => {
+		const rewardAvailable = async (rewardsIssued: number, bindings: Partial<Env> = {}) => {
+			mocks.rpc.mockResolvedValueOnce({ data: { segment: "paid", responded: false, rewardsIssued }, error: null });
+			const response = await app.request(`https://phaseo.app/feedback/${token}`, {}, { ...env, ...bindings });
+			return ((await response.json()) as { rewardAvailable: boolean }).rewardAvailable;
+		};
+		expect(await rewardAvailable(99)).toBe(true);
+		expect(await rewardAvailable(100)).toBe(false);
+		expect(await rewardAvailable(0, { FEEDBACK_REWARD_USD: "0" })).toBe(false);
+		expect(await rewardAvailable(0, { FEEDBACK_REWARD_CAP: "0" })).toBe(false);
+	});
+
+	it("submits cleaned answers with the $1 reward and 100-response cap by default", async () => {
+		mocks.rpc.mockResolvedValueOnce({ data: { status: "submitted", rewardStatus: "issued", rewardCode: "THANKS-ABC" }, error: null });
+		const response = await post(token, { answers: { reason: " Pricing is unclear ", rating: 4, details: "  " } });
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ status: "submitted", rewardStatus: "issued", rewardCode: "THANKS-ABC" });
+		expect(mocks.rpc).toHaveBeenCalledWith("submit_feedback_response", {
+			p_token: token,
+			p_answers: { reason: "Pricing is unclear", rating: 4 },
+			p_reward_nanos: 1_000_000_000,
+			p_reward_cap: 100,
+			p_reward_valid_days: 90,
+		});
+	});
+
+	it("turns the reward off when it is configured as zero", async () => {
+		mocks.rpc.mockResolvedValueOnce({ data: { status: "submitted", rewardStatus: "none" }, error: null });
+		await post(token, { answers: { reason: "x" } }, { FEEDBACK_REWARD_USD: "0" });
+		expect(mocks.rpc.mock.calls[0][1]).toMatchObject({ p_reward_nanos: 0 });
+	});
+
+	it("rejects answers that are not a small flat object", async () => {
+		for (const answers of [undefined, [], {}, { reason: "" }, { "Bad Key": "x" }, { reason: { nested: true } }, { reason: "x".repeat(3_001) }]) {
+			expect((await post(token, { answers })).status).toBe(400);
+		}
+		expect(mocks.rpc).not.toHaveBeenCalled();
+	});
+
+	it("unsubscribes a known token, including one-click form posts from mail clients", async () => {
+		mocks.rpc.mockResolvedValueOnce({ data: { emails: ["ada@example.com", "ada.old@example.com"] }, error: null });
+		const response = await app.request(`https://phaseo.app/feedback/${token}/unsubscribe`, {
+			method: "POST",
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+			body: "List-Unsubscribe=One-Click",
+		}, env);
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ unsubscribed: true });
+		expect(mocks.rpc).toHaveBeenCalledWith("opt_out_of_product_emails", { p_token: token });
+		expect(mocks.unsubscribeResendContact.mock.calls.map((call) => call[1])).toEqual(["ada@example.com", "ada.old@example.com"]);
+
+		mocks.rpc.mockResolvedValueOnce({ data: null, error: null });
+		expect((await post(`${token}/unsubscribe`, {})).status).toBe(404);
+	});
+
+	it("fails the unsubscribe when Resend cannot be updated, so it can be repeated", async () => {
+		mocks.rpc.mockResolvedValueOnce({ data: { emails: ["ada@example.com"] }, error: null });
+		mocks.unsubscribeResendContact.mockRejectedValueOnce(new Error("resend_contact_unsubscribe_failed:rate_limit"));
+		expect((await post(`${token}/unsubscribe`, {})).status).toBe(503);
+	});
+
+	it("reports database failures as unavailable", async () => {
+		mocks.rpc.mockResolvedValueOnce({ data: null, error: new Error("down") });
+		expect((await app.request(`https://phaseo.app/feedback/${token}`, {}, env)).status).toBe(503);
+	});
+});
+
+describe("parseFeedbackAnswers", () => {
+	it("keeps trimmed strings and finite numbers only", () => {
+		expect(parseFeedbackAnswers({ a: " x ", b: 3, c: "" })).toEqual({ a: "x", b: 3 });
+		expect(parseFeedbackAnswers({ a: Number.NaN })).toBeNull();
+		expect(parseFeedbackAnswers(Object.fromEntries(Array.from({ length: 11 }, (_, i) => [`k${i}`, "x"])))).toBeNull();
+	});
+
+	it("rejects answers the database would store as more than 20,000 bytes", () => {
+		// Two full-length answers fit in three-byte scripts such as Chinese, but not seven.
+		const answer = "反".repeat(3_000);
+		expect(parseFeedbackAnswers({ likes: answer, improve: answer })).not.toBeNull();
+		expect(parseFeedbackAnswers(Object.fromEntries(Array.from({ length: 7 }, (_, i) => [`k${i}`, answer])))).toBeNull();
+	});
+});

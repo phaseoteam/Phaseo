@@ -6,19 +6,35 @@ icon: "rocket"
 
 Nutze dieses Tutorial für eine erfolgreiche Phaseo-Anfrage mit generiertem Text oder einer strukturierten Entscheidung und prüfe, wo die Antwort erscheint.
 
-<Note>
-**Verwendest du einen Programmieragenten?** Kopiere diesen Prompt vor dem Start:
+<Prompt description="**Verwendest du einen Programmieragenten?** Kopiere diesen Prompt vor dem Start" icon="bot" actions={["copy", "cursor"]}>
+{`You are integrating this project with Phaseo Gateway.
 
-```text
-You are integrating this project with Phaseo Gateway. Read the Phaseo agent guidance at https://phaseo.app/docs/skill.md and the relevant API reference before editing anything. Inspect the existing provider configuration and identify the smallest safe change needed. Use https://api.phaseo.app with a server-side PHASEO_API_KEY, preserve the current provider/model behavior unless I explicitly ask for a migration, and never print or commit credentials. Explain the files you would change and the verification commands first. Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.
-```
-</Note>
+Before editing anything:
+- Install the Phaseo skills: npx skills add https://phaseo.app/docs
+- Read https://phaseo.app/docs/skill.md and the API reference for the endpoint you will use. If your tools support MCP, search the docs at https://phaseo.app/docs/mcp.
+- Inspect the existing provider configuration and identify the smallest safe change.
+
+Rules:
+- Call https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY. Never print or commit credentials.
+- Keep the current provider and model behaviour unless I ask for a migration. Check model IDs with GET /v1/models instead of guessing them.
+- Explain the files you would change and the verification commands first.
+- Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.`}
+</Prompt>
 
 Du wirst:
 - einen API-Schlüssel erstellen
 - eine Textanfrage oder strukturierte Entscheidung senden
 - generierten Text oder typisierte Antworten lesen
 - wissen, was du bei einem Fehler zuerst prüfen solltest
+
+<Visibility for="agents">
+Schnellstart-Checkliste für Agenten:
+
+- Schlüssel werden im Dashboard unter https://phaseo.app/settings/keys erstellt. Erzeuge oder rate nie einen Schlüssel. Sende ihn als `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` und nur aus serverseitigem Code.
+- Sende die erste Anfrage mit `POST https://api.phaseo.app/v1/responses` und den Feldern `model` und `input`. `phaseo/free` funktioniert ohne Wallet-Guthaben.
+- Lies die Antwort aus `output[].content[]`, wo `type` den Wert `output_text` hat.
+- Wenn die Anfrage fehlschlägt, entscheide anhand des JSON-Codes `error`, wie in https://phaseo.app/docs/v1/api-reference/errors.md beschrieben.
+</Visibility>
 
 ---
 

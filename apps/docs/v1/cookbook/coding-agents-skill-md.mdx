@@ -8,10 +8,10 @@ This recipe is for teams building internal tools, CLIs, or coding-agent workflow
 
 <Visibility for="humans">
 <Note>
-If you want a reusable starting point instead of writing every skill from scratch, install the public Phaseo skills from [`phaseoteam/skills`](https://github.com/phaseoteam/skills):
+If you want a reusable starting point instead of writing every skill from scratch, install the public Phaseo skills from [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json):
 
 ```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
 ```
 
 Then keep project-specific instructions in your local `SKILL.md`.
@@ -20,10 +20,10 @@ Then keep project-specific instructions in your local `SKILL.md`.
 
 <Visibility for="agents">
 <Note>
-Reusable Phaseo skills live in [`phaseoteam/skills`](https://github.com/phaseoteam/skills). Install them first with:
+Reusable Phaseo skills live in [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json). Install them first with:
 
 ```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
 ```
 
 Then layer project-local instructions into the repository `SKILL.md`.

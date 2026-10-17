@@ -642,9 +642,10 @@ Pour obtenir des conseils plus approfondis sur le réglage plutôt qu’une simp
 - [Erreurs et débogage](./errors.mdx)
 
 <Visibility for="agents">
-Si vous implémentez la gestion des paramètres en tant qu’agent :
+Règles de gestion des paramètres pour les agents :
 
-- utilisez les compétences du dépôt pour valider les schémas et vérifier la structure des requêtes
-- préservez les clés inconnues propres au fournisseur dans les flux de transmission lorsque cela est autorisé
-- vérifiez la compatibilité du point de terminaison avant de combiner des champs avancés comme les outils, le streaming ou le débogage
+- Validez les corps de requête avec le contrat d’API https://phaseo.app/docs/openapi/v1/openapi.yaml au lieu de deviner les noms de champs.
+- Consultez la page de référence de l’endpoint avant de combiner des champs avancés comme les outils, le streaming et les options de débogage.
+- Conservez les clés inconnues propres au fournisseur dans les flux de transmission directe lorsque l’endpoint les autorise.
+- Pour des modèles éprouvés de forme de requête, installez la compétence `phaseo-gateway` : `npx skills add https://phaseo.app/docs --skill phaseo-gateway`.
 </Visibility>

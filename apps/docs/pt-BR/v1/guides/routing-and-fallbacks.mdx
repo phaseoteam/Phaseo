@@ -188,7 +188,7 @@ A mesma página também oferece opções dos canais beta e alpha para introduzir
 
 ### O fallback de BYOK é explícito
 
-Em **Painel -> Configurações -> BYOK**, as equipes podem escolher se uma solicitação BYOK com falha pode usar os créditos da Phaseo como alternativa. Esse é o controle público atual para a dúvida comum: “Minha chave própria falhou; a solicitação ainda deve ser concluída?”
+Em **Painel -> Configurações -> BYOK**, as equipes podem escolher se uma solicitação <Tooltip tip="Use sua própria chave: a Phaseo roteia a solicitação com sua chave de API do provedor, e o provedor cobra o uso do modelo diretamente.">BYOK</Tooltip> com falha pode usar os créditos da Phaseo como alternativa. Esse é o controle público atual para a dúvida comum: “Minha chave própria falhou; a solicitação ainda deve ser concluída?”
 
 ### Rotas dinâmicas associam políticas às chaves de API
 
@@ -220,6 +220,19 @@ Metadados personalizados estão disponíveis nas superfícies de inferência de 
 ## Comportamento das alternativas
 
 Se um provedor retornar erros ou limites de taxa, o Gateway poderá tentar novamente ou encaminhar a solicitação para outro provedor compatível com o mesmo modelo. Ainda assim, trate respostas `429` e `5xx` com backoff exponencial.
+
+```mermaid
+flowchart TD
+  req["Solicitação"] --> pol["Aplicar predefinições, proteções e a política de provedores"]
+  pol --> rnk["Classificar os provedores elegíveis pelo modo de roteamento"]
+  rnk --> prov["Chamar o provedor mais bem classificado"]
+  prov -->|"Sucesso"| resp["Retornar a resposta"]
+  prov -->|"Erro ou limite de taxa do provedor"| nextProv{{"Há outro provedor elegível?"}}
+  nextProv -->|"Sim"| prov
+  nextProv -->|"Não"| fallbackCheck{{"Status com nova tentativa e resta um modelo de fallback?"}}
+  fallbackCheck -->|"Sim: executar de novo com o próximo modelo"| pol
+  fallbackCheck -->|"Não"| err["Retornar o erro"]
+```
 
 Os nós de modelo em uma rota dinâmica também podem definir uma lista ordenada de modelos alternativos. Primeiro, a Phaseo esgota as tentativas de provedores elegíveis para o modelo selecionado. Se a resposta permitir nova tentativa (`429`, `500`, `502`, `503` ou `504`), o Gateway executa novamente todo o fluxo de políticas e seleção de provedores para cada modelo alternativo, na ordem. Erros do cliente são retornados imediatamente e não trocam o modelo.
 

@@ -224,7 +224,7 @@ The same page also exposes beta and alpha channel toggles so preview traffic can
 
 ### BYOK fallback is explicit
 
-In **Dashboard -> Settings -> BYOK**, teams can choose whether a failed BYOK request is allowed to fall back to Phaseo credits. This is the current public control for the common "my own key failed, should the request still complete?" decision.
+In **Dashboard -> Settings -> BYOK**, teams can choose whether a failed <Tooltip tip="Bring your own key: Phaseo routes the request with your own provider API key, and your provider bills the model usage directly.">BYOK</Tooltip> request is allowed to fall back to Phaseo credits. This is the current public control for the common "my own key failed, should the request still complete?" decision.
 
 ### Dynamic routes attach policy to API keys
 
@@ -266,6 +266,19 @@ Custom metadata is available on the OpenAI-compatible text inference surfaces:
 ## Fallback behavior
 
 If a provider returns errors or rate limits, the Gateway can retry or route to another provider that supports the same model. You should still handle 429 and 5xx responses with exponential backoff.
+
+```mermaid
+flowchart TD
+  req["Request"] --> pol["Apply presets, guardrails and provider policy"]
+  pol --> rnk["Rank eligible providers by routing mode"]
+  rnk --> prov["Call the top-ranked provider"]
+  prov -->|"Success"| resp["Return the response"]
+  prov -->|"Provider error or rate limit"| nextProv{{"Another eligible provider?"}}
+  nextProv -->|"Yes"| prov
+  nextProv -->|"No"| fallbackCheck{{"Retryable status and a fallback model left?"}}
+  fallbackCheck -->|"Yes: rerun with the next model"| pol
+  fallbackCheck -->|"No"| err["Return the error"]
+```
 
 Model nodes in a dynamic route can also define an ordered list of fallback
 models. Phaseo first exhausts the eligible provider attempts for the selected

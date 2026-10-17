@@ -85,4 +85,17 @@ API キーをまだお持ちでない場合は、[ダッシュボードで作成
 
 [モデルを探す](https://phaseo.app/models)か[比較](https://phaseo.app/compare)してください。カタログにはルーティングできないモデルも含まれるため、連携前にGatewayの利用可否を確認します。モデル、プロバイダー、料金は[Phaseoの仕組み](./developers/introduction.mdx)を参照してください。
 
-アシスタント内でドキュメントを使うには[Docs MCP](./guides/integrations/docs-mcp.mdx)を接続するか、[エージェント向け機能概要](https://phaseo.app/docs/skill.md)を読んでください。
+## AI エージェントで構築する
+
+<Prompt description="コーディングエージェント（Cursor、Claude Code、Codex など）に、プロジェクトへ Phaseo を追加するために必要な情報をすべて渡します。" icon="bot" actions={["copy", "cursor"]}>
+{`Add Phaseo Gateway to this project.
+
+1. Install the Phaseo skills: npx skills add https://phaseo.app/docs
+2. If your tools support MCP, connect the Phaseo docs server at https://phaseo.app/docs/mcp and look up endpoints and SDK usage there instead of guessing.
+3. Inspect the current AI provider setup and propose the smallest change that sends requests to https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY.
+4. Use the official SDK for this language if there is one (@phaseo/sdk for TypeScript, phaseo for Python). Otherwise call the REST API.
+5. Check model IDs with GET /v1/models instead of inventing them. Use phaseo/free for a first test if no paid model has been chosen.
+6. Explain which files you will change and how you will verify the change before you edit. Never print or commit API keys.`}
+</Prompt>
+
+エージェントは [Docs MCP](./guides/integrations/docs-mcp.mdx) でこのドキュメントを検索したり、[機能の概要](https://phaseo.app/docs/skill.md)を読んだり、[llms.txt](https://phaseo.app/docs/llms.txt) から始めたりすることもできます。

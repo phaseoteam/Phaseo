@@ -30,6 +30,18 @@ description: "أنشئ حلقات وكلاء محلية قابلة للاستئ�
 - [Ruby](../ruby/agent-sdk.mdx)
 - [Rust](../rust/agent-sdk.mdx)
 
+<Prompt description="اطلب من وكيل برمجة إنشاء أول وكيل باستخدام حزمة SDK للوكلاء من Phaseo بلغتك." icon="bot" actions={["copy", "cursor"]}>
+{`Build a small agent in this project with the Phaseo Agent SDK.
+
+1. Install the Phaseo skills: npx skills add https://phaseo.app/docs
+   For TypeScript, follow the phaseo-agent-sdk-typescript skill.
+2. Read the Agent SDK page for this project's language at https://phaseo.app/docs/v1/sdk-reference/agent-sdk/overview and use only the APIs it documents.
+3. Define one agent with at most two local tools that fit [AGENT TASK]. Keep the loop bounded with a step limit, and require approval for any tool that changes data.
+4. Use a server-side PHASEO_API_KEY and check the model ID with GET /v1/models before using it.
+5. Stream the agent's steps to the console so a run can be inspected.
+6. Run the agent once, then report what you verified and what you could not verify.`}
+</Prompt>
+
 ## النموذج المشترك
 
 تحافظ كل Agent SDK على نموذج وقت التشغيل نفسه:

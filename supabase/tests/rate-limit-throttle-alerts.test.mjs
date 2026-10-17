@@ -11,7 +11,7 @@ const policy = (n) => id('6', n);
 const rows = async (sql, params = []) => (await db.query(sql, params)).rows;
 const migration = (name) => readFile(new URL(`../migrations/${name}`, import.meta.url), 'utf8');
 const schema = (path) => readFile(new URL(`../schemas/${path}`, import.meta.url), 'utf8');
-const alertsMigration = await migration('20261016165941_rate_limit_throttle_alerts.sql');
+const alertsMigration = await migration('20261017155708_rate_limit_throttle_alerts.sql');
 
 try {
   // Minimal pre-existing objects the migrations depend on (production shapes, trimmed).

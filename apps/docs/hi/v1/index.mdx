@@ -85,4 +85,17 @@ print(response.output_text)
 
 [मॉडल देखें](https://phaseo.app/models) या [तुलना करें](https://phaseo.app/compare)। कैटलॉग में बिना रूट वाले मॉडल भी हो सकते हैं; जोड़ने से पहले Gateway उपलब्धता जाँचें। मॉडल, प्रदाता और बिलिंग के लिए [Phaseo कैसे काम करता है](./developers/introduction.mdx) देखें।
 
-सहायक में दस्तावेज़ पहुँच के लिए [Docs MCP](./guides/integrations/docs-mcp.mdx) जोड़ें या [एजेंट क्षमता सारांश](https://phaseo.app/docs/skill.md) पढ़ें।
+## AI एजेंट के साथ बनाएँ
+
+<Prompt description="अपने कोडिंग एजेंट (Cursor, Claude Code, Codex और अन्य) को वह सब दें जो उसे आपके प्रोजेक्ट में Phaseo जोड़ने के लिए चाहिए।" icon="bot" actions={["copy", "cursor"]}>
+{`Add Phaseo Gateway to this project.
+
+1. Install the Phaseo skills: npx skills add https://phaseo.app/docs
+2. If your tools support MCP, connect the Phaseo docs server at https://phaseo.app/docs/mcp and look up endpoints and SDK usage there instead of guessing.
+3. Inspect the current AI provider setup and propose the smallest change that sends requests to https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY.
+4. Use the official SDK for this language if there is one (@phaseo/sdk for TypeScript, phaseo for Python). Otherwise call the REST API.
+5. Check model IDs with GET /v1/models instead of inventing them. Use phaseo/free for a first test if no paid model has been chosen.
+6. Explain which files you will change and how you will verify the change before you edit. Never print or commit API keys.`}
+</Prompt>
+
+एजेंट [Docs MCP](./guides/integrations/docs-mcp.mdx) से इन दस्तावेज़ों में खोज भी कर सकते हैं, [क्षमताओं का सार](https://phaseo.app/docs/skill.md) पढ़ सकते हैं या [llms.txt](https://phaseo.app/docs/llms.txt) से शुरू कर सकते हैं।

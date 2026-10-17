@@ -1,5 +1,5 @@
 [
-  {"id":"docs-v1/index","title":"ここから始める","subtitle":"最初のリクエストの送信、アプリ接続、必要なリファレンスの検索を行います。","href":"https://phaseo.app/docs/v1/index","external":true,"keywords":["v1 index","目的から始める","SDK を選ぶ","開発と運用","モデルを選ぶ"]},
+  {"id":"docs-v1/index","title":"ここから始める","subtitle":"最初のリクエストの送信、アプリ接続、必要なリファレンスの検索を行います。","href":"https://phaseo.app/docs/v1/index","external":true,"keywords":["v1 index","目的から始める","SDK を選ぶ","開発と運用","モデルを選ぶ","AI エージェントで構築する"]},
   {"id":"docs-v1/quickstart","title":"クイックスタート","subtitle":"API キーを作成し、現在利用できるテキストモデルで Phaseo に最初のリクエストを送信します。","href":"https://phaseo.app/docs/v1/quickstart","external":true,"keywords":["v1 quickstart","1. API キーを作成する","2. テキストリクエストを送信する","リクエスト","レスポンス","3. 構造化された判断を行う","リクエスト","応答","4. 最初のリクエストをトラブルシューティングする","5. 動画機能を開発する場合","Create","Poll status","6. 続けて開発する"]},
   {"id":"docs-v1/developers/introduction","title":"Phaseo の仕組み","subtitle":"Phaseoとの連携前に、モデル、プロバイダー、ルーティング、料金を理解します。","href":"https://phaseo.app/docs/v1/developers/introduction","external":true,"keywords":["v1 developers introduction","モデルとプロバイダー","リクエストとルーティング","料金とアクセス","連携を開発する"]},
   {"id":"docs-v1/guides/examples","title":"サンプル","subtitle":"ブラウザーアプリ、バックエンド、CLI向けの実行可能なPhaseoスタータープロジェクトを選びます。","href":"https://phaseo.app/docs/v1/guides/examples","external":true,"keywords":["v1 guides examples","実行可能なプロジェクト","言語別のリクエスト"]},

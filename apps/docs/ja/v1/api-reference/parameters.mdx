@@ -642,9 +642,10 @@ Chat Completions、Responses、Anthropic Messagesでのプロバイダー別プ�
 - [エラーとデバッグ](./errors.mdx)
 
 <Visibility for="agents">
-エージェントとしてパラメーター処理を実装する場合:
+エージェント向けのパラメーター処理ルール:
 
-- スキーマ検証とリクエスト構造の確認には、リポジトリのスキルを使用してください
-- 許可されている場合、パススルーフローでは未知のプロバイダー固有キーを保持してください
-- tools、ストリーミング、debugオプションなどの高度なフィールドを併用する前に、エンドポイントとの互換性を確認してください
+- フィールド名を推測せず、https://phaseo.app/docs/openapi/v1/openapi.yaml の API 契約でリクエスト本文を検証します。
+- ツール、ストリーミング、デバッグオプションなどの高度なフィールドを組み合わせる前に、そのエンドポイントの API リファレンスを確認します。
+- エンドポイントが許可する場合、パススルーのフローではプロバイダー固有の未知のキーを保持します。
+- 実績のあるリクエスト形式のパターンには、`phaseo-gateway` スキルをインストールします: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`
 </Visibility>
