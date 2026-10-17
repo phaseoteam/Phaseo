@@ -62,7 +62,13 @@ describe("managed Bedrock Opus 5.5 Mantle contract", () => {
 			expect(mock.calls[0].bodyJson).toMatchObject({ model: "anthropic.claude-opus-5-5", stream: false, thinking: { type: "adaptive" } });
 			expect(result.keySource).toBe("gateway");
 			if (result.kind !== "completed" || !result.ir) throw new Error("expected completion");
-			expect(result.ir.choices[0].message.content).toContainEqual({ type: "provider_block", block: opusMessage.content[0] });
+			// The thinking block keeps its signature, tagged as Claude reasoning from Bedrock.
+			expect(result.ir.choices[0].message.content).toContainEqual(expect.objectContaining({
+				type: "reasoning_text",
+				thoughtSignature: opusMessage.content[0].signature,
+				reasoningFormat: "anthropic-claude-v1",
+				reasoningProvider: "amazon-bedrock",
+			}));
 			const wire = JSON.stringify(encodeProtocol(protocol, result.ir, "req_opus_bedrock"));
 			expect(wire).toContain("Answer");
 			expect(wire).toContain("call_lookup");

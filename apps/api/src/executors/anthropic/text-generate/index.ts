@@ -23,6 +23,7 @@ import { SseParser } from "@core/sse-parser";
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
 import { isIRNativeToolDefinition } from "@core/nativeTools";
+import { ANTHROPIC_REASONING_FORMAT, canReplayReasoning } from "@core/reasoning-state";
 import {
 	supportsAnthropicMidConversationSystemMessages,
 	supportsAnthropicThinkingDisabled,
@@ -193,6 +194,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 			args.providerModelSlug || args.ir.model,
 			{
 				inferenceGeo: resolveAnthropicInferenceGeo(args.providerId, args.ir),
+				providerId: args.providerId,
 			},
 		);
 
@@ -270,7 +272,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 
                         const model = args.providerModelSlug || args.ir.model;
 						const responsesStream = res.body.pipeThrough(
-                                createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting }),
+                                createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting, providerId: args.providerId }),
                         );
                         const normalized = resolveStreamForProtocol(
                                 new Response(responsesStream, {
@@ -572,6 +574,8 @@ export function irToAnthropicMessages(
 	modelHint?: string | null,
 	options?: {
 		inferenceGeo?: "global" | "us" | null;
+		/** Gateway provider the request goes to; decides which signatures are replayed. */
+		providerId?: string | null;
 	},
 ): any {
 	const messages: any[] = [];
@@ -579,6 +583,7 @@ export function irToAnthropicMessages(
 	let conversationStarted = false;
 	const resolvedModel = modelHint || ir.model;
 	const usesAdaptiveThinkingControls = usesClaudeAdaptiveThinkingControls(resolvedModel);
+	const replayTarget = { providerId: options?.providerId ?? "anthropic", model: resolvedModel };
 
 	for (const msg of ir.messages) {
 		if (msg.role === "system" || msg.role === "developer") {
@@ -598,10 +603,27 @@ export function irToAnthropicMessages(
 			});
 		} else if (msg.role === "assistant") {
 			const content: any[] = [];
+			const toolCallIds = new Set((msg.toolCalls ?? []).map((call) => call.id));
+			const anchoredThinking = new Map<string, any[]>();
 
 			for (const part of msg.content) {
 				if (part.type === "text") {
+					// Chat clients send content "" next to tool calls; Anthropic
+					// rejects empty text blocks.
+					if (part.text.length === 0) continue;
 					content.push(mapIRContentToAnthropic(part));
+					continue;
+				}
+				if (part.type === "reasoning_text") {
+					// Only Claude's own thinking goes back, with its signature;
+					// anything else is dropped rather than sent as a forged block.
+					const block = toAnthropicThinkingBlock(part, replayTarget);
+					if (!block) continue;
+					if (part.beforeToolCallId && toolCallIds.has(part.beforeToolCallId)) {
+						anchoredThinking.set(part.beforeToolCallId, [...(anchoredThinking.get(part.beforeToolCallId) ?? []), block]);
+					} else {
+						content.push(block);
+					}
 					continue;
 				}
 				if (part.type === "provider_block") {
@@ -612,6 +634,7 @@ export function irToAnthropicMessages(
 			// Add tool_use blocks
 			if (msg.toolCalls) {
 				for (const tc of msg.toolCalls) {
+					content.push(...(anchoredThinking.get(tc.id) ?? []));
 					content.push({
 						type: "tool_use",
 						id: tc.id,
@@ -764,6 +787,7 @@ export function irToAnthropicMessages(
 		system = appendAnthropicSystemText(system, structuredOutputInstruction);
 		request.system = system;
 	}
+	enforceManualThinkingTurnStructure(request);
 	applyAnthropicCacheControlDefaults(request, ir.anthropicCacheControl);
 	applyAnthropicServiceControls(request, {
 		serviceTier: ir.serviceTier,
@@ -771,6 +795,55 @@ export function irToAnthropicMessages(
 	normaliseAnthropicCacheBreakpoints(request);
 
 	return request;
+}
+
+/**
+ * A replayable thinking or redacted_thinking block for a reasoning part, or
+ * null when the part is not Claude's own state for this route.
+ * https://platform.claude.com/docs/en/build-with-claude/thinking#preserving-thinking-blocks
+ */
+function toAnthropicThinkingBlock(
+	part: Extract<IRContentPart, { type: "reasoning_text" }>,
+	target: { providerId: string; model: string },
+): Record<string, any> | null {
+	if (!part.thoughtSignature && !part.redactedData) return null;
+	const origin = { format: part.reasoningFormat, model: part.reasoningModel, provider: part.reasoningProvider };
+	if (!canReplayReasoning(origin, target)) return null;
+	if (part.redactedData) return { type: "redacted_thinking", data: part.redactedData };
+	return { type: "thinking", thinking: part.text, signature: part.thoughtSignature };
+}
+
+function isToolResultOnlyUserMessage(message: any): boolean {
+	return message?.role === "user"
+		&& Array.isArray(message.content)
+		&& message.content.length > 0
+		&& message.content.every((block: any) => block?.type === "tool_result");
+}
+
+/**
+ * Manual thinking (`type: "enabled"`) requires the final assistant turn to
+ * start with a thinking block. The turn is in progress when tool results
+ * follow it. When its thinking was not returned (or came from another
+ * provider and was dropped), send this step without thinking, which is what
+ * the API's own mid-turn degradation does, instead of an invalid turn.
+ * https://platform.claude.com/docs/en/build-with-claude/thinking#thinking-with-tool-use
+ */
+function enforceManualThinkingTurnStructure(request: any): void {
+	if (request?.thinking?.type !== "enabled" || !Array.isArray(request.messages)) return;
+	const messages = request.messages;
+	let turnStart = -1;
+	for (let index = messages.length - 1; index >= 0; index -= 1) {
+		const message = messages[index];
+		if (message?.role === "user" && !isToolResultOnlyUserMessage(message)) {
+			turnStart = index;
+			break;
+		}
+	}
+	const firstAssistant = messages.slice(turnStart + 1).find((message: any) => message?.role === "assistant");
+	if (!firstAssistant) return;
+	const firstBlock = Array.isArray(firstAssistant.content) ? firstAssistant.content[0] : null;
+	if (firstBlock?.type === "thinking" || firstBlock?.type === "redacted_thinking") return;
+	delete request.thinking;
 }
 
 const LATE_SYSTEM_MESSAGE = Symbol("lateSystemMessage");
@@ -1037,6 +1110,7 @@ export function anthropicMessagesToIR(
 ): IRChatResponse {
 	const toolCalls: IRToolCall[] = [];
 	const contentParts: IRContentPart[] = [];
+	const unanchored: Array<Extract<IRContentPart, { type: "reasoning_text" }>> = [];
 
 	// Extract content blocks
 	for (const block of json.content || []) {
@@ -1051,6 +1125,13 @@ export function anthropicMessagesToIR(
 				name: block.name,
 				arguments: JSON.stringify(block.input),
 			});
+			for (const reasoning of unanchored.splice(0)) reasoning.beforeToolCallId = block.id;
+		} else if (block?.type === "thinking" || block?.type === "redacted_thinking") {
+			// Keep the signature (or redacted data) so OpenAI-style surfaces can
+			// return it and the next tool-loop step can replay it to Claude.
+			const reasoning = anthropicThinkingBlockToIR(block, model, provider);
+			contentParts.push(reasoning);
+			if (toolCalls.length > 0) unanchored.push(reasoning);
 		} else if (block && typeof block === "object") {
 			contentParts.push({ type: "provider_block", block });
 		}
@@ -1118,6 +1199,27 @@ export function anthropicMessagesToIR(
 			}
 			: undefined,
 		serviceTier: resolveAnthropicServiceTierFromResponse(json),
+	};
+}
+
+export function anthropicThinkingBlockToIR(
+	block: any,
+	model: string,
+	provider: string,
+): Extract<IRContentPart, { type: "reasoning_text" }> {
+	const origin = {
+		reasoningFormat: ANTHROPIC_REASONING_FORMAT,
+		...(model ? { reasoningModel: model } : {}),
+		...(provider ? { reasoningProvider: provider } : {}),
+	};
+	if (block?.type === "redacted_thinking") {
+		return { type: "reasoning_text", text: "", redactedData: String(block.data ?? ""), ...origin };
+	}
+	return {
+		type: "reasoning_text",
+		text: typeof block?.thinking === "string" ? block.thinking : "",
+		...(typeof block?.signature === "string" && block.signature ? { thoughtSignature: block.signature } : {}),
+		...origin,
 	};
 }
 

@@ -48,3 +48,17 @@ curl https://api.phaseo.app/v1/responses \
 ## 流式传输说明
 
 同样支持 `stream: true`。对于 Gateway 管理的服务器工具，Phaseo 可能会先处理上游工具调用轮次、继续循环，再重新发出合成流。
+
+## 工具循环中的推理
+
+Phaseo 以 `store: false` 向上游发送 Responses 请求，因此模型的推理只能通过 `reasoning` 输出项在工具循环的各步之间延续。
+
+每个 `reasoning` 项都有 `id`、`summary` 和 `content`。当提供商返回推理状态时，该项还包含 `encrypted_content`：
+
+- OpenAI、Azure OpenAI 和 xAI 的加密推理。对于推理模型，Phaseo 会通过 `include: ["reasoning.encrypted_content"]` 请求它。
+- Claude 的 thinking 签名和已遮蔽的 thinking。
+- Gemini 的思考签名，包括紧挨在签名所属函数调用之前的单独 `reasoning` 项。
+
+流式响应在 `response.output_item.done` 和 `response.completed` 中携带相同的项。
+
+要继续工具循环，请在 `input` 中原样发回所有输出项，包括 `reasoning` 项。`encrypted_content` 不透明，并记录了生成它的提供商和模型。Phaseo 只会把它发送给该提供商系列和该模型，因此回退到其他提供商时会丢弃它，而不会导致请求失败。

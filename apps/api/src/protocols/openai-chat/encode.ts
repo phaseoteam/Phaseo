@@ -7,6 +7,7 @@
 
 import type { IRChatResponse, IRChoice, IRUsage, IRContentPart } from "@core/ir";
 import type { GatewayCompletionsResponse, GatewayReasoningDetail, GatewayUsage } from "@core/types";
+import { encodeChatReasoningDetails, type ReasoningResponseOrigin } from "../shared/reasoning";
 
 /**
  * Encode IR response to OpenAI Chat Completions format (Gateway response)
@@ -31,7 +32,7 @@ export function encodeOpenAIChatResponse(
 		created: ir.created ?? Math.floor(Date.now() / 1000),
 		model: ir.model,
 		provider: ir.provider,
-		choices: ir.choices.map((choice) => encodeChoice(choice, resolvedRequestId)),
+		choices: ir.choices.map((choice) => encodeChoice(choice, resolvedRequestId, { provider: ir.provider, model: ir.model })),
 		usage: encodeUsage(ir.usage),
 		...(ir.usage?.serviceTier || ir.serviceTier ? { service_tier: ir.usage?.serviceTier ?? ir.serviceTier } : {}),
 		...(ir.citations ? { citations: ir.citations } : {}),
@@ -50,15 +51,18 @@ export function encodeOpenAIChatResponse(
 function encodeChoice(
 	choice: IRChoice,
 	requestId: string,
+	origin?: ReasoningResponseOrigin,
 ): GatewayCompletionsResponse["choices"][0] {
 	const { text, reasoningParts, imageParts, audioParts } = splitContentParts(choice.message.content as IRContentPart[]);
 	const reasoningContent = reasoningParts.join("");
-	const reasoningDetails: GatewayReasoningDetail[] = reasoningParts.map((textPart, index) => ({
-		id: `${requestId}-reasoning-${choice.index}-${index + 1}`,
-		index,
-		type: "text",
-		text: textPart,
-	}));
+	// Signatures and encrypted reasoning travel in reasoning_details so agent
+	// clients can send them back on the next tool-loop step.
+	const reasoningDetails: GatewayReasoningDetail[] = encodeChatReasoningDetails(
+		choice.message.content as IRContentPart[],
+		choice.message.toolCalls,
+		`${requestId}-reasoning-${choice.index}`,
+		origin,
+	);
 	const images = imageParts.map((part) => ({
 		type: "image_url" as const,
 		image_url: {

@@ -7,6 +7,13 @@ import { parseMinimaxInterleavedText } from "./providers/minimax/quirks";
 import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
 import { encodeOpenAIResponsesResponse } from "@protocols/openai-responses/encode";
 import { SseParser } from "@core/sse-parser";
+import type { GatewayReasoningDetail } from "@core/types";
+import {
+	isSealedReasoningValue,
+	openReasoningState,
+	reasoningFormatForRoute,
+	sealReasoningState,
+} from "@core/reasoning-state";
 
 export type StreamAdapterState = {
 	requestId: string;
@@ -201,6 +208,7 @@ export function transformResponsesStreamToChat(
 	const toolAlias = new Map<string, string>();
 	const toolIndexById = new Map<string, number>();
 	let nextToolIndex = 0;
+	let nextReasoningDetailIndex = 0;
 
 	const ensureToolIndex = (id: string): number => {
 		const existing = toolIndexById.get(id);
@@ -330,6 +338,14 @@ export function transformResponsesStreamToChat(
 							case "response.output_item.added":
 							case "response.output_item.done": {
 								const item = payload?.item;
+								if (normalizeResponsesEvent(event) === "response.output_item.done" && item?.type === "reasoning") {
+									const detail = buildReasoningDetailDelta(item, args, nextReasoningDetailIndex);
+									if (detail) {
+										nextReasoningDetailIndex += 1;
+										await emitDelta({ role: "assistant", reasoning_details: [detail] }, controller, 0);
+									}
+									break;
+								}
 								if (!isExecutableResponseToolItem(item)) break;
 								const itemName = readResponseToolCallName(item);
 								const canonicalId =
@@ -548,6 +564,10 @@ export function transformChatStreamToResponses(
 
 						if (mode === "responses" && !isChatPayload) {
 							const normalized = normalizeResponsesEvent(event) ?? "response.event";
+							if (sealResponsesReasoningPayload(payload, args)) {
+								controller.enqueue(encoder.encode(`event: ${normalized}\ndata: ${JSON.stringify(payload)}\n\n`));
+								continue;
+							}
 							// The payload is not modified here, so when the event name is
 							// already normalized and the data is a single line, forward
 							// the upstream JSON text instead of re-stringifying it. For
@@ -801,6 +821,10 @@ export function transformChatStreamToResponses(
 							Array.isArray(encoded.output) && encoded.output.length > 0
 								? encoded.output
 								: buildResponsesOutputFromState(choiceStates, args.requestId);
+						for (const [outputIndex, item] of output.entries()) {
+							if ((item as any)?.type !== "reasoning" || !(item as any).encrypted_content) continue;
+							await emitEvent("response.output_item.done", { output_index: outputIndex, item }, controller);
+						}
 						const response = {
 							id: args.requestId,
 							object: "response",
@@ -827,6 +851,62 @@ export function transformChatStreamToResponses(
 			}
 		},
 	});
+}
+
+/**
+ * Seal raw `encrypted_content` on reasoning items in a forwarded Responses
+ * event with the provider and model that issued it, so the gateway can later
+ * replay it only to that provider family. Returns true when it changed.
+ */
+function sealResponsesReasoningPayload(payload: any, args: ExecutorExecuteArgs): boolean {
+	const format = reasoningFormatForRoute(args.providerId, args.providerModelSlug ?? args.ir.model);
+	if (!format || !payload || typeof payload !== "object") return false;
+	let changed = false;
+	const sealItem = (item: any) => {
+		if (item?.type !== "reasoning" || typeof item.encrypted_content !== "string" || !item.encrypted_content) return;
+		if (isSealedReasoningValue(item.encrypted_content)) return;
+		item.encrypted_content = sealReasoningState({
+			format,
+			kind: "encrypted",
+			value: item.encrypted_content,
+			model: args.providerModelSlug ?? args.ir.model,
+			provider: args.providerId,
+		});
+		changed = true;
+	};
+	sealItem(payload.item);
+	const output = payload.response?.output ?? payload.output;
+	if (Array.isArray(output)) for (const item of output) sealItem(item);
+	return changed;
+}
+
+/**
+ * A Chat `reasoning_details` entry for a completed Responses reasoning item.
+ * It carries the full text with the sealed signature or encrypted content, so
+ * clients that merge reasoning_details deltas by index end up with one entry.
+ */
+function buildReasoningDetailDelta(item: any, args: ExecutorExecuteArgs, index: number): GatewayReasoningDetail | null {
+	const model = args.providerModelSlug ?? args.ir.model;
+	const raw = typeof item?.encrypted_content === "string" && item.encrypted_content ? item.encrypted_content : null;
+	if (!raw) return null;
+	const state = openReasoningState(raw, { format: reasoningFormatForRoute(args.providerId, model), kind: "encrypted" });
+	if (!state) return null;
+	const sealed = sealReasoningState({
+		format: state.format,
+		kind: state.kind,
+		value: state.value,
+		model: state.model ?? model,
+		provider: state.provider ?? args.providerId,
+		...(state.callId ? { callId: state.callId } : {}),
+	});
+	const text = [item?.content, item?.summary]
+		.map((parts) => Array.isArray(parts) ? parts.map((part: any) => (typeof part?.text === "string" ? part.text : "")).join("") : "")
+		.find((value) => value.length > 0) ?? "";
+	const id = typeof item?.id === "string" && item.id ? item.id : `${args.requestId}-reasoning-${index + 1}`;
+	if (state.kind === "signature" && !state.callId) {
+		return { id, index, type: "reasoning.text", text, signature: sealed, format: state.format };
+	}
+	return { id: state.callId ?? id, index, type: "reasoning.encrypted", data: sealed, format: state.format };
 }
 
 function buildResponsesOutputFromState(
@@ -1143,6 +1223,9 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 				...(message.reasoning ? { reasoning: message.reasoning } : previousMessage.reasoning ? { reasoning: previousMessage.reasoning } : {}),
 				...(Array.isArray(message.images) ? { images: message.images } : Array.isArray(previousMessage.images) ? { images: previousMessage.images } : {}),
 				...(Array.isArray(message.audios) ? { audios: message.audios } : Array.isArray(previousMessage.audios) ? { audios: previousMessage.audios } : {}),
+				...(Array.isArray(message.reasoning_details)
+					? { reasoning_details: message.reasoning_details }
+					: Array.isArray(previousMessage.reasoning_details) ? { reasoning_details: previousMessage.reasoning_details } : {}),
 				...(Array.isArray(message._contentParts)
 					? { _contentParts: message._contentParts }
 					: Array.isArray(previousMessage._contentParts)
@@ -1161,6 +1244,15 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 		if (chunk.delta?.reasoning) {
 			choice.message.reasoning =
 				(choice.message.reasoning || "") + chunk.delta.reasoning;
+		}
+		// Keep reasoning state the gateway sealed into stream deltas (Gemini
+		// thought signatures) for the final response.
+		if (Array.isArray(chunk.delta?.reasoning_details)) {
+			const sealedDetails = chunk.delta.reasoning_details.filter((entry: any) =>
+				isSealedReasoningValue(entry?.signature) || isSealedReasoningValue(entry?.data));
+			if (sealedDetails.length > 0) {
+				choice.message.reasoning_details = [...(choice.message.reasoning_details ?? []), ...sealedDetails];
+			}
 		}
 		if (chunk.delta?.tool_calls) {
 			if (!choice.message.tool_calls) choice.message.tool_calls = [];

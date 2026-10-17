@@ -48,3 +48,17 @@ Bei Verwendung eines Servertools enthält die Nutzungsübersicht die passenden `
 ## Hinweis zu Streaming
 
 `stream: true` wird ebenfalls unterstützt. Bei vom Gateway verwalteten Servertools kann Phaseo den Upstream-Tool-Aufruf-Zug materialisieren, die Schleife fortsetzen und anschließend einen synthetischen Stream erneut ausgeben.
+
+## Reasoning in Tool-Schleifen
+
+Phaseo sendet Responses-Anfragen mit `store: false` an den Anbieter. Das Reasoning eines Modells setzt sich zwischen den Schritten einer Tool-Schleife daher nur über die `reasoning`-Ausgabeelemente fort.
+
+Jedes `reasoning`-Element hat eine `id`, `summary` und `content`. Liefert der Anbieter Reasoning-Zustand, hat das Element zusätzlich `encrypted_content`:
+
+- Verschlüsseltes Reasoning von OpenAI, Azure OpenAI und xAI. Phaseo fordert es für Reasoning-Modelle mit `include: ["reasoning.encrypted_content"]` an.
+- Claude-Thinking-Signaturen und geschwärztes Thinking.
+- Gemini-Thought-Signaturen, einschließlich eines eigenen `reasoning`-Elements direkt vor dem Funktionsaufruf, zu dem eine Signatur gehört.
+
+Gestreamte Antworten enthalten dieselben Elemente in `response.output_item.done` und `response.completed`.
+
+Um eine Tool-Schleife fortzusetzen, sende alle Ausgabeelemente unverändert in `input` zurück, auch die `reasoning`-Elemente. `encrypted_content` ist undurchsichtig und vermerkt Anbieter und Modell, die es erzeugt haben. Phaseo sendet es nur an diese Anbieterfamilie und dieses Modell. Ein Fallback auf einen anderen Anbieter verwirft es daher, statt fehlzuschlagen.

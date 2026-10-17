@@ -48,3 +48,17 @@ Cuando se usa una herramienta del servidor, los datos de uso incluyen los contad
 ## Nota sobre el streaming
 
 También se admite `stream: true`. Para las herramientas de servidor administradas por Gateway, Phaseo puede materializar el turno de llamada a la herramienta upstream, continuar el ciclo y volver a emitir un flujo sintético.
+
+## Razonamiento en ciclos de herramientas
+
+Phaseo envía las solicitudes de Responses al proveedor con `store: false`, así que el razonamiento de un modelo continúa entre los pasos de un ciclo de herramientas solo a través de los elementos de salida `reasoning`.
+
+Cada elemento `reasoning` tiene `id`, `summary` y `content`. Cuando el proveedor devuelve estado de razonamiento, el elemento también tiene `encrypted_content`:
+
+- Razonamiento cifrado de OpenAI, Azure OpenAI y xAI. Phaseo lo solicita con `include: ["reasoning.encrypted_content"]` para los modelos de razonamiento.
+- Firmas de thinking de Claude y thinking censurado.
+- Firmas de pensamiento de Gemini, incluido un elemento `reasoning` propio justo antes de la llamada a función a la que pertenece una firma.
+
+Las respuestas con streaming llevan los mismos elementos en `response.output_item.done` y `response.completed`.
+
+Para continuar un ciclo de herramientas, devuelva todos los elementos de salida en `input` sin cambios, incluidos los elementos `reasoning`. `encrypted_content` es opaco y registra el proveedor y el modelo que lo generaron. Phaseo lo envía solo a esa familia de proveedores y a ese modelo, así que un fallback a otro proveedor lo descarta en lugar de fallar.

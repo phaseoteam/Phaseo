@@ -32,6 +32,12 @@ function collectMarkedBlocks(blocks: unknown, out: any[]): void {
 		// Copy first: passthrough blocks can be shared with the IR.
 		const block: any = nested ? { ...original, content: [...original.content] } : { ...original };
 		blocks[index] = block;
+		// Thinking blocks cannot carry cache_control; a client mark on one
+		// (for example a replayed Messages block) would be a 400.
+		if (hasMark && (block.type === "thinking" || block.type === "redacted_thinking")) {
+			delete block.cache_control;
+			continue;
+		}
 		if (hasMark) {
 			const next = toAnthropicCacheControl(block.cache_control);
 			if (next) {
