@@ -31,6 +31,13 @@ try {
   await db.exec("insert into public.v2_models values ('lab/one', false), ('lab/unmatched', false), ('lab/hidden', true);");
   await db.exec("alter table public.v2_models add column name text default 'Model', add column lab_slug text default 'lab'; create table public.v2_labs(lab_slug text primary key,name text); grant select on public.v2_labs to service_role;");
   await db.exec(await read('../schemas/public/functions/get_public_intelligence_index.sql'));
+  const functionState = async () => (await db.query(`select proname, prosrc, proconfig, prosecdef, provolatile from pg_proc
+    where proname in ('publish_artificial_analysis_snapshot','get_public_intelligence_index') order by proname`)).rows
+    .map(row => ({ ...row, prosrc: row.prosrc.replaceAll('\r\n', '\n') }));
+  const expectedFunctions = await functionState();
+  const guardName = (await readdir(new URL('../migrations/', import.meta.url))).find(name => name.endsWith('_artificial_analysis_publication_guards.sql'));
+  await db.exec(`begin; ${await read(`../migrations/${guardName}`)} commit;`);
+  assert.deepEqual(await functionState(), expectedFunctions, 'generated guard migration matches authored function bodies and security settings');
   await db.exec(`insert into public.v2_benchmarks(benchmark_id,name) values ('aa-intelligence-index-v4','Current'),('aa-intelligence-index-v5','Future');
     insert into public.v2_benchmark_results(result_id,model_slug,benchmark_id,score_numeric,other_info) values
     ('${id(999)}','lab/one','aa-intelligence-index-v4',50,'Artificial Analysis ID existing; Intelligence Index v4.3.2');`);
