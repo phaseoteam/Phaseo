@@ -540,7 +540,7 @@ describe("cross-provider fallback drops foreign reasoning state", () => {
 		// Manual thinking cannot resume a tool turn without its thinking block.
 		expect(claude.call.bodyJson.thinking).toBeUndefined();
 
-		const azure = await run((url) => url.startsWith("https://api.azure.example"), () => sseResponse([{
+		const azure = await run((url) => new URL(url).host === "api.azure.example", () => sseResponse([{
 			type: "response.completed",
 			response: { id: "resp_az", object: "response", status: "completed", output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "18°C" }] }], usage: { input_tokens: 5, output_tokens: 2, total_tokens: 7 } },
 		}]), () => azureExecute(args(responsesIR({ model: "openai/gpt-5.1", reasoning: { effort: "low" }, tools: [responsesWeatherTool], input }), {
