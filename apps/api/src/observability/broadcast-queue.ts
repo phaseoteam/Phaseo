@@ -123,7 +123,7 @@ async function deliver(delivery: Delivery): Promise<Outcome> {
 	try {
 		return broadcastDelivery(delivery.destination.destination_id) === "webhook"
 			? await deliverGatewayWebhookPayload(delivery.payload, delivery.config, attempts)
-			: await deliverGatewayOtlpPayload(delivery.payload, delivery.config, attempts);
+			: await deliverGatewayOtlpPayload(delivery.payload, delivery.config, attempts, delivery.destination.destination_id);
 	} catch (error) {
 		return { delivered: false, retryable: false, status: null, delayMs: 0, error: errorMessage(error) };
 	}
