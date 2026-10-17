@@ -3544,6 +3544,10 @@ type ObservabilityDestinationResponse struct {
 type ObservabilityDestinationType string
 
 const (
+	ObservabilityDestinationTypeBraintrust ObservabilityDestinationType = "braintrust"
+	ObservabilityDestinationTypeDatadog ObservabilityDestinationType = "datadog"
+	ObservabilityDestinationTypeLangfuse ObservabilityDestinationType = "langfuse"
+	ObservabilityDestinationTypeLangsmith ObservabilityDestinationType = "langsmith"
 	ObservabilityDestinationTypeOtelCollector ObservabilityDestinationType = "otel_collector"
 	ObservabilityDestinationTypeWebhook ObservabilityDestinationType = "webhook"
 )
