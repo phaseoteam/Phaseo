@@ -5,7 +5,8 @@
 // How: Builds functionCall parts for an assistant message and groups consecutive
 //      tool results into one user turn of functionResponse parts.
 
-import type { IRToolCall } from "@core/ir";
+import type { IRContentPart, IRToolCall } from "@core/ir";
+import { GOOGLE_REASONING_FORMAT, canReplayReasoning } from "@core/reasoning-state";
 
 /**
  * Google's documented placeholder for function calls that have no signature,
@@ -44,13 +45,21 @@ function parseFunctionArgs(raw: string | undefined): Record<string, any> {
 export function irToolCallsToGeminiParts(
 	toolCalls: IRToolCall[] | undefined,
 	model: string | null | undefined,
+	providerId: string = "google-ai-studio",
 ): any[] {
 	if (!Array.isArray(toolCalls) || toolCalls.length === 0) return [];
 	const needsSignature = requiresGeminiFunctionCallSignature(model);
 	return toolCalls
 		.filter((call) => call && typeof call.name === "string" && call.name.length > 0)
 		.map((call, index) => {
-			const signature = call.thoughtSignature
+			// A signature issued by another Gemini model is replaced by the placeholder.
+			const ownSignature = call.thoughtSignature && canReplayReasoning(
+				{ format: GOOGLE_REASONING_FORMAT, model: call.thoughtSignatureModel },
+				{ providerId, model },
+			)
+				? call.thoughtSignature
+				: undefined;
+			const signature = ownSignature
 				?? (index === 0 && needsSignature ? GEMINI_SKIP_THOUGHT_SIGNATURE : undefined);
 			return {
 				functionCall: { name: call.name, args: parseFunctionArgs(call.arguments) },
@@ -86,4 +95,77 @@ export function appendGeminiFunctionResponse(contents: any[], part: { functionRe
 		return;
 	}
 	contents.push({ role: "user", parts: [part] });
+}
+
+/**
+ * Assistant content for a Gemini model turn. Gemini's own thoughts go back
+ * with their signatures; reasoning from other providers is dropped so it is
+ * never presented as this model's thinking; plain reasoning text of unknown
+ * origin keeps its previous treatment without a signature.
+ * https://ai.google.dev/gemini-api/docs/thought-signatures
+ */
+export function geminiReplayableAssistantParts(
+	parts: IRContentPart[],
+	target: { providerId: string; model: string | null | undefined },
+): IRContentPart[] {
+	const out: IRContentPart[] = [];
+	for (const part of parts) {
+		if (part.type !== "reasoning_text") {
+			out.push(part);
+			continue;
+		}
+		if (!part.reasoningFormat) {
+			const { thoughtSignature: _unknownOrigin, ...plain } = part;
+			if (plain.text) out.push(plain);
+			continue;
+		}
+		if (part.reasoningFormat !== GOOGLE_REASONING_FORMAT) continue;
+		const replayable = canReplayReasoning(
+			{ format: part.reasoningFormat, model: part.reasoningModel, provider: part.reasoningProvider },
+			target,
+		);
+		if (replayable) {
+			out.push(part);
+		} else if (part.text) {
+			const { thoughtSignature: _otherModel, ...plain } = part;
+			out.push(plain);
+		}
+	}
+	return out;
+}
+
+/** IR reasoning part for a Gemini thought (or signature-only) part. */
+export function geminiThoughtPartToIR(
+	part: any,
+	model: string,
+	provider: string,
+): Extract<IRContentPart, { type: "reasoning_text" }> {
+	const signature = part?.thoughtSignature ?? part?.thought_signature;
+	return {
+		type: "reasoning_text",
+		text: typeof part?.text === "string" ? part.text : "",
+		...(typeof part?.thought_summary === "string" ? { summary: part.thought_summary } : {}),
+		...(typeof signature === "string" && signature
+			? {
+				thoughtSignature: signature,
+				reasoningFormat: GOOGLE_REASONING_FORMAT,
+				...(model ? { reasoningModel: model } : {}),
+				...(provider ? { reasoningProvider: provider } : {}),
+			}
+			: {}),
+	};
+}
+
+/**
+ * Tool call id for a Gemini functionCall part. Gemini omits ids on older
+ * models; the function name is kept for the first call and later calls with
+ * the same name get a suffix so parallel calls stay distinct.
+ */
+export function geminiFunctionCallId(part: any, seen: Map<string, number>): string {
+	const explicit = part?.functionCall?.id;
+	if (typeof explicit === "string" && explicit) return explicit;
+	const name = String(part?.functionCall?.name ?? "function");
+	const count = seen.get(name) ?? 0;
+	seen.set(name, count + 1);
+	return count === 0 ? name : `${name}_${count}`;
 }

@@ -283,6 +283,6 @@ describe("Mistral OpenAI-compatible chat mapping", () => {
 		expect(result.kind).toBe("completed");
 		expect(result.normalized?.choices?.[0]?.message?.content).toContain("Final answer text.");
 		expect(result.normalized?.choices?.[0]?.message?.reasoning_content).toContain("Reasoning text from model.");
-		expect(result.normalized?.choices?.[0]?.message?.reasoning_details?.[0]?.type).toBe("text");
+		expect(result.normalized?.choices?.[0]?.message?.reasoning_details?.[0]?.type).toBe("reasoning.text");
 	});
 });

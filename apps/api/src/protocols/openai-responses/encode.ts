@@ -6,6 +6,12 @@
 // Transforms IR -> OpenAI Responses Response
 
 import type { IRChatResponse, IRUsage, IRContentPart } from "@core/ir";
+import {
+	encodeResponsesReasoningItem,
+	encodeResponsesToolSignatureItem,
+	sealReasoningPart,
+	type ResponsesReasoningItem,
+} from "../shared/reasoning";
 
 /**
  * OpenAI Responses response type
@@ -69,7 +75,7 @@ export type OpenAIResponseOutputItem =
 	}
 	| { type: "function_call"; call_id: string; name: string; arguments: string }
 	| { type: "custom_tool_call"; call_id: string; name: string; input: string }
-	| { type: "reasoning"; content: Array<{ type: "output_text"; text: string; annotations?: any[] }> };
+	| ResponsesReasoningItem;
 
 /**
  * Encode IR response to OpenAI Responses format
@@ -88,15 +94,37 @@ export function encodeOpenAIResponsesResponse(
 ): OpenAIResponsesResponse {
 	const outputItems: OpenAIResponseOutputItem[] = [];
 
+	const origin = { provider: ir.provider, model: ir.model };
+	const responseId = requestId ?? ir.id;
 	for (const choice of ir.choices) {
 		const hasToolCalls = (choice.message.toolCalls?.length ?? 0) > 0;
-		const { textParts, reasoningParts, imageParts, audioParts } = splitContentParts(choice.message.content as IRContentPart[]);
-
-		for (const reasoningText of reasoningParts) {
-			outputItems.push({
-				type: "reasoning",
-				content: [{ type: "output_text", text: reasoningText, annotations: [] }],
-			});
+		const { textParts, imageParts, audioParts } = splitContentParts(choice.message.content as IRContentPart[]);
+		// Reasoning generated between tool calls is placed before the call it
+		// preceded, so the item order matches the provider's output order.
+		const anchoredReasoning = new Map<string, OpenAIResponseOutputItem[]>();
+		let reasoningIndex = 0;
+		for (const part of choice.message.content as IRContentPart[] ?? []) {
+			let item: OpenAIResponseOutputItem | null = null;
+			let anchor: string | undefined;
+			if (part.type === "reasoning_text") {
+				if (!part.text && !sealReasoningPart(part, origin)) continue;
+				item = encodeResponsesReasoningItem(part, `rs_${responseId}_${choice.index}_${reasoningIndex}`, origin);
+				anchor = hasToolCalls ? part.beforeToolCallId : undefined;
+			} else if (part.type === "provider_block" && part.block?.type === "thinking" && typeof part.block.thinking === "string" && part.block.thinking) {
+				item = {
+					type: "reasoning",
+					id: `rs_${responseId}_${choice.index}_${reasoningIndex}`,
+					summary: [],
+					content: [{ type: "output_text", text: part.block.thinking, annotations: [] }],
+				};
+			}
+			if (!item) continue;
+			reasoningIndex += 1;
+			if (anchor && choice.message.toolCalls?.some((call) => call.id === anchor)) {
+				anchoredReasoning.set(anchor, [...(anchoredReasoning.get(anchor) ?? []), item]);
+			} else {
+				outputItems.push(item);
+			}
 		}
 
 		const hasText = textParts.length > 0;
@@ -178,6 +206,11 @@ export function encodeOpenAIResponsesResponse(
 
 		if (hasToolCalls) {
 			for (const toolCall of choice.message.toolCalls ?? []) {
+				outputItems.push(...(anchoredReasoning.get(toolCall.id) ?? []));
+				// A Gemini function-call signature travels in its own reasoning
+				// item, just before the call it belongs to.
+				const signatureItem = encodeResponsesToolSignatureItem(toolCall, origin);
+				if (signatureItem) outputItems.push(signatureItem);
 				outputItems.push(toolCall.type === "custom"
 					? {
 						type: "custom_tool_call",

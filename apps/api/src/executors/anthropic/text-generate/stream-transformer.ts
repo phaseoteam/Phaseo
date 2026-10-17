@@ -3,6 +3,7 @@
 // How: Parse Anthropic events and emit normalized Responses API events
 
 import { SseParser } from "@core/sse-parser";
+import { ANTHROPIC_REASONING_FORMAT, sealReasoningState } from "@core/reasoning-state";
 
 /**
  * Transform Anthropic Messages API streaming to OpenAI Responses API streaming format
@@ -65,9 +66,10 @@ export function createAnthropicPassthroughStreamTransformer(accounting: Anthropi
 export function createAnthropicToResponsesStreamTransformer(
 	requestId: string,
 	model: string,
-	options?: { accounting?: AnthropicStreamAccounting },
+	options?: { accounting?: AnthropicStreamAccounting; providerId?: string },
 ): TransformStream<Uint8Array, Uint8Array> {
 	const accounting = options?.accounting;
+	const providerId = options?.providerId;
 	const parser = new SseParser();
 	const encoder = new TextEncoder();
 
@@ -85,9 +87,40 @@ export function createAnthropicToResponsesStreamTransformer(
 		itemId: string;
 		text?: string;
 		signature?: string;
+		data?: string;
 		name?: string;
 		input?: string;
 	}> = new Map();
+
+	// A reasoning item for a thinking or redacted_thinking block. The signature
+	// (or redacted data) is sealed with its origin so the client can send it
+	// back and the gateway replays it only to Claude.
+	const buildReasoningItem = (block: { type: string; itemId: string; text?: string; signature?: string; data?: string }) => {
+		const redacted = block.type === "redacted_thinking";
+		const value = redacted ? block.data : block.signature;
+		return {
+			type: "reasoning",
+			id: block.itemId,
+			status: "completed",
+			summary: [],
+			content: redacted ? [] : [{
+				type: "output_text",
+				text: block.text || "",
+				annotations: [],
+			}],
+			...(value
+				? {
+					encrypted_content: sealReasoningState({
+						format: ANTHROPIC_REASONING_FORMAT,
+						kind: redacted ? "redacted" : "signature",
+						value,
+						model,
+						...(providerId ? { provider: providerId } : {}),
+					}),
+				}
+				: {}),
+		};
+	};
 
 	let outputCounter = 0;
 	let createdEmitted = false;
@@ -148,9 +181,17 @@ export function createAnthropicToResponsesStreamTransformer(
 						itemId,
 						text: block.type === "thinking" ? (block.thinking || "") : (block.text || ""),
 						signature: block.signature,
+						data: typeof block.data === "string" ? block.data : undefined,
 						name: block.name || "",
 						input: "",
 					});
+
+					if (block.type === "thinking" || block.type === "redacted_thinking") {
+						emitEvent(controller, "response.output_item.added", {
+							output_index: outputIndex,
+							item: { type: "reasoning", id: itemId, summary: [], content: [] },
+						});
+					}
 
 					// For tool_use blocks, emit output_item.added for function_call
 					if (block.type === "tool_use") {
@@ -218,7 +259,12 @@ export function createAnthropicToResponsesStreamTransformer(
 					const block = contentBlocks.get(index);
 					if (!block) continue;
 
-					if (block.type === "tool_use") {
+					if (block.type === "thinking" || block.type === "redacted_thinking") {
+						emitEvent(controller, "response.output_item.done", {
+							output_index: block.outputIndex,
+							item: buildReasoningItem(block),
+						});
+					} else if (block.type === "tool_use") {
 						emitEvent(controller, "response.function_call_arguments.done", {
 							item_id: block.itemId,
 							call_id: block.id,
@@ -263,17 +309,8 @@ export function createAnthropicToResponsesStreamTransformer(
 									annotations: [],
 								}],
 							});
-						} else if (block.type === "thinking") {
-							outputItems.push({
-								type: "reasoning",
-								id: block.itemId,
-								status: "completed",
-								content: [{
-									type: "output_text",
-									text: block.text || "",
-									annotations: [],
-								}],
-							});
+						} else if (block.type === "thinking" || block.type === "redacted_thinking") {
+							outputItems.push(buildReasoningItem(block));
 						} else if (block.type === "tool_use") {
 							// Parse accumulated JSON input
 							let parsedInput: any = block.input;
