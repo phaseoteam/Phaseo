@@ -6,6 +6,7 @@ const db = new PGlite();
 const migration = await readFile(new URL('../migrations/20261017101500_model_discovery_provider_status.sql', import.meta.url), 'utf8');
 const fingerprintMigration = await readFile(new URL('../migrations/20261017114230_model_discovery_provider_payload_fingerprint.sql', import.meta.url), 'utf8');
 const schema = await readFile(new URL('../schemas/public/tables/model_discovery_provider_status.sql', import.meta.url), 'utf8');
+const fingerprintFunction = await readFile(new URL('../schemas/public/functions/record_model_discovery_payload_fingerprints.sql', import.meta.url), 'utf8');
 
 try {
   await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;`);
@@ -27,6 +28,7 @@ try {
   const schemaAfterTable = schema.slice(schema.indexOf('ALTER TABLE'));
   assert.ok(migration.includes(schemaAfterTable), 'policies, grants and comment match the declarative definition');
   assert.ok(fingerprintMigration.includes('ADD COLUMN "payload_fingerprint" text'), 'the column is added by its own migration');
+  assert.ok(fingerprintMigration.includes(fingerprintFunction), 'fingerprint function migration matches the declarative definition');
 
   // The watcher upserts one row per provider on every sweep.
   const upsert = `
@@ -62,6 +64,19 @@ try {
     /model_discovery_provider_status_consecutive_failures_check/,
     'negative streaks are rejected',
   );
+
+  // Fingerprints are recorded by compare-and-set against the value the sweep started from.
+  const record = async (rows) => (await db.query('select public.record_model_discovery_payload_fingerprints($1::jsonb) as conflicts', [JSON.stringify(rows)])).rows[0].conflicts;
+  const fingerprint = async (id) => (await db.query('select payload_fingerprint from public.model_discovery_provider_status where provider_id = $1', [id])).rows[0].payload_fingerprint;
+  assert.equal(await record([{ provider_id: 'mistral', expected: null, next: 'F' }]), 0);
+  assert.equal(await fingerprint('mistral'), 'F', 'a first fingerprint is recorded');
+  assert.equal(await record([{ provider_id: 'mistral', expected: 'F', next: 'G' }]), 0);
+  assert.equal(await fingerprint('mistral'), 'G', 'a sweep that started from F records G');
+  // An overlapping sweep that also started from F must not overwrite G with its own value.
+  assert.equal(await record([{ provider_id: 'mistral', expected: 'F', next: 'H' }]), 1, 'the stale write is reported as a conflict');
+  assert.equal(await fingerprint('mistral'), null, 'a stale write clears the fingerprint so the next sweep re-extracts');
+  assert.equal(await record([{ provider_id: 'stepfun', expected: 'X', next: null }]), 0, 'clearing never conflicts');
+  await assert.rejects(db.query(`select public.record_model_discovery_payload_fingerprints('{}'::jsonb)`), /must be a JSON array/);
 
   // Clients never read operator health directly.
   const grants = (await db.query(`

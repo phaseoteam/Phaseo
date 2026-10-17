@@ -216,8 +216,15 @@ describe("runProviderHealthCheck", () => {
 				}),
 			})),
 		};
-		getSupabaseAdminMock.mockReturnValue({ from: vi.fn(() => table) });
-		return { upserts, deletes };
+		const fingerprintChanges: unknown[][] = [];
+		getSupabaseAdminMock.mockReturnValue({
+			from: vi.fn(() => table),
+			rpc: vi.fn(async (_name: string, params: { p_rows: unknown[] }) => {
+				fingerprintChanges.push(params.p_rows);
+				return { data: 0, error: null };
+			}),
+		});
+		return { upserts, deletes, fingerprintChanges };
 	}
 
 	beforeEach(() => {
@@ -320,5 +327,27 @@ describe("runProviderHealthCheck", () => {
 		expect(acknowledged).toEqual(batches[0]!.alerts.failing.map((alert) => alert.row.provider_id));
 		expect(summary.alertsSent).toBe(acknowledged.length);
 		expect(summary.error).toContain("HTTP 429");
+	});
+
+	it("keeps fingerprints out of the status upsert and records changed ones by compare-and-set", async () => {
+		const db = supabaseWith([
+			row({ status: "ok", failing_since: null, consecutive_failures: 0, payload_fingerprint: "F" }),
+			row({ provider_id: "vercel", provider_name: "Vercel", status: "ok", failing_since: null, consecutive_failures: 0, payload_fingerprint: "V" }),
+		]);
+
+		await runProviderHealthCheck({
+			runId: "run-16",
+			outcomes: [
+				outcome("ok", { payloadFingerprint: "G" }),
+				outcome("ok", { providerId: "vercel", providerName: "Vercel", payloadFingerprint: "V" }),
+			],
+			notify: false,
+			coversAllProviders: false,
+			now: NOW,
+		});
+
+		expect(db.upserts[0]?.every((saved) => !("payload_fingerprint" in saved))).toBe(true);
+		// Only the changed fingerprint is sent, with the value this sweep started from.
+		expect(db.fingerprintChanges).toEqual([[{ provider_id: "stepfun", expected: "F", next: "G" }]]);
 	});
 });

@@ -193,8 +193,15 @@ describe("runModelDiscoveryJob", () => {
 			await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
 			// Store what the first sweep wrote, as the database would return it.
 			supabase.tables.model_discovery_seen_models = JSON.parse(JSON.stringify(upsertedSeenRows()));
+			const fingerprints = new Map(
+				writes("rpc", "record_model_discovery_payload_fingerprints")
+					.flatMap((call) => (call.args[0] as { p_rows: Array<{ provider_id: string; next: string | null }> }).p_rows)
+					.map((change) => [change.provider_id, change.next]),
+			);
 			supabase.tables.model_discovery_provider_status = JSON.parse(JSON.stringify(
-				writes("model_discovery_provider_status", "upsert").flatMap((call) => call.args[0] as unknown[]),
+				writes("model_discovery_provider_status", "upsert")
+					.flatMap((call) => call.args[0] as Array<{ provider_id: string }>)
+					.map((status) => ({ ...status, payload_fingerprint: fingerprints.get(status.provider_id) ?? null })),
 			));
 			supabase.calls = [];
 			prepareSecond?.();
@@ -210,8 +217,10 @@ describe("runModelDiscoveryJob", () => {
 			expect(upsertedSeenRows()).toEqual([]);
 			// Skipped providers still report their stored models to health and coverage.
 			const statusRows = writes("model_discovery_provider_status", "upsert")
-				.flatMap((call) => call.args[0] as Array<{ provider_id: string; model_count: number | null; payload_fingerprint: string | null }>);
-			expect(statusRows.find((row) => row.provider_id === "vercel")).toMatchObject({ model_count: 2, payload_fingerprint: expect.stringMatching(/^[0-9a-f]{64}$/) });
+				.flatMap((call) => call.args[0] as Array<{ provider_id: string; model_count: number | null }>);
+			expect(statusRows.find((row) => row.provider_id === "vercel")).toMatchObject({ model_count: 2 });
+			// An unchanged fingerprint is not rewritten.
+			expect(writes("rpc", "record_model_discovery_payload_fingerprints")).toEqual([]);
 		});
 
 		it("processes a provider whose response changed", async () => {

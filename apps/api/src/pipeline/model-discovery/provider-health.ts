@@ -229,10 +229,34 @@ export async function loadProviderStatuses(): Promise<Map<string, ProviderStatus
 
 async function saveProviderStatuses(rows: ProviderStatusRow[]): Promise<void> {
 	if (rows.length === 0) return;
+	// The fingerprint is recorded separately with a compare-and-set, so an overlapping sweep's upsert can
+	// never write back a fingerprint that no longer matches the stored models.
 	const { error } = await getSupabaseAdmin()
 		.from("model_discovery_provider_status")
-		.upsert(rows, { onConflict: "provider_id" });
+		.upsert(rows.map(({ payload_fingerprint: _fingerprint, ...row }) => row), { onConflict: "provider_id" });
 	if (error) throw new Error(error.message || "Failed to save model discovery provider status");
+}
+
+/**
+ * Records changed response fingerprints. Each one is set only while the row still holds the fingerprint
+ * this sweep started from; otherwise the database clears it, which only forces a full re-extraction.
+ */
+export async function recordPayloadFingerprints(
+	previousById: ReadonlyMap<string, ProviderStatusRow>,
+	rows: ProviderStatusRow[],
+): Promise<number> {
+	const changes = rows.flatMap((row) => {
+		const expected = previousById.get(row.provider_id)?.payload_fingerprint ?? null;
+		return row.payload_fingerprint === expected
+			? []
+			: [{ provider_id: row.provider_id, expected, next: row.payload_fingerprint }];
+	});
+	if (changes.length === 0) return 0;
+	const { data, error } = await getSupabaseAdmin().rpc("record_model_discovery_payload_fingerprints", { p_rows: changes });
+	if (error) throw new Error(error.message || "Failed to record model discovery payload fingerprints");
+	const conflicts = typeof data === "number" ? data : 0;
+	if (conflicts > 0) console.warn("[model-discovery] Cleared payload fingerprints changed by an overlapping sweep:", conflicts);
+	return conflicts;
 }
 
 async function deleteUnwatchedProviderStatuses(previousById: ReadonlyMap<string, ProviderStatusRow>, watchedIds: Set<string>): Promise<void> {
@@ -292,6 +316,7 @@ export async function runProviderHealthCheck(args: {
 	}
 
 	await saveProviderStatuses(rows);
+	await recordPayloadFingerprints(previousById, rows);
 	if (args.coversAllProviders) {
 		await deleteUnwatchedProviderStatuses(previousById, new Set(rows.map((row) => row.provider_id)));
 	}
