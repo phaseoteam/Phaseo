@@ -27,8 +27,10 @@ import { ClaudeAdapter } from "./claudeAdapter";
 import { AgentInputRejectedError, type AgentAdapter, type AgentCallbacks } from "./agentAdapter";
 import type { Harness } from "../shared/workspace";
 import type { SecretVault } from "./secretVault";
+import { McpHeaderSecrets } from "./mcpHeaders";
 import { PhaseoAdapter } from "./phaseoAdapter";
-import { PhaseoCodingAdapter } from "./phaseoCodingAdapter";
+import { PhaseoCodingAdapter, type PhaseoExtras } from "./phaseoCodingAdapter";
+import { closePhaseoMcpConnection } from "./phaseoMcp";
 import { OpenCodeAdapter } from "./openCodeAdapter";
 import { AcpAdapter } from "./acpAdapter";
 import { PiAdapter } from "./piAdapter";
@@ -85,6 +87,8 @@ export class WorkspaceRuntime {
 	private readonly commands = new Set<Promise<WorkspaceOverview>>();
 	private readonly maintainingHarnesses = new Set<Harness>();
 	private readonly steeringExecutions = new Map<string, Promise<WorkspaceOverview>>();
+	/** Lent to Phaseo turns: model facts for context limits, and the long-running commands chats start. */
+	phaseo: PhaseoExtras = {};
 	private readonly imports = new Set<Promise<unknown>>();
 	private readonly modelDiscoveries = new Set<Promise<unknown>>();
 	private readonly worktreeOperations = new Set<Promise<unknown>>();
@@ -119,6 +123,8 @@ export class WorkspaceRuntime {
 		mkdirSync(path.join(directory, "instructions"), { recursive: true });
 		mkdirSync(directory, { recursive: true });
 		this.store = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
+		// MCP header values move to the vault; until they can, they stay in settings and are still never broadcast.
+		this.mcpHeaders = new McpHeaderSecrets(vault); void this.mcpHeaders.migrate(this.store).catch(() => {});
 		this.attachments = new AttachmentService(path.join(directory, "attachments"), this.store);
 		this.openCode = new OpenCodeService(directory);
 		const modelDiscovery = () => this.discoverThreadModels, installationDiscovery = () => this.discoverInstallations, missions = () => this.missionCommand, guides = () => this.pullRequestGuideTools;
@@ -168,6 +174,7 @@ export class WorkspaceRuntime {
 		for (let index = 0; index < ids.length; index++) for (const child of tasks) if (child.delegation?.parentTaskId === ids[index] && !ids.includes(child.id)) ids.push(child.id);
 		if (ids.some(value => this.executions.has(value) || ["running", "waiting"].includes(tasks.find(task => task.id === value)?.status ?? ""))) throw new Error("Stop this chat and its agents before deleting it.");
 		if (this.store.missions.list().some(mission => ids.includes(mission.templateTaskId))) throw new Error("A scheduled task runs like this chat. Change or delete that scheduled task first.");
+		for (const value of ids) this.phaseo.background?.stopTask(value);
 		for (const attachment of this.store.deleteTasks(ids)) await this.attachments.discard(attachment).catch(() => undefined);
 		this.broadcast();
 		return this.store.getOverview();
@@ -188,6 +195,7 @@ export class WorkspaceRuntime {
 		if (this.store.getTerminals().some(session => session.status === "running" && session.projectId && ids.has(session.projectId))) throw new Error("Close this project's terminals before removing it.");
 		if ([...this.projectMutations.values()].some(value => ids.has(value)) || [...this.worktreeSources.keys()].some(value => ids.has(value)) || [...this.removingWorktrees].some(value => ids.has(value))) throw new Error("Wait for project edits, Git actions and worktree changes to finish before removing this project.");
 		if (this.store.missions.list().some(mission => chats.includes(mission.templateTaskId))) throw new Error("A scheduled task runs like a chat in this project. Change or delete that scheduled task first.");
+		for (const value of chats) this.phaseo.background?.stopTask(value);
 		for (const attachment of this.store.deleteTasks(chats)) await this.attachments.discard(attachment).catch(() => undefined);
 		for (const session of this.store.getTerminals()) if (session.projectId && ids.has(session.projectId)) this.store.deleteTerminal(session.id);
 		for (const value of ids) this.store.deleteProject(value);
@@ -253,7 +261,7 @@ export class WorkspaceRuntime {
 		const activityId = `settle:${randomUUID()}`, heading = `$ ${script.command}`, title = `Settle script: ${script.name}`;
 		this.recordActivity(id, { id: activityId, type: "tool", title, text: heading, status: "running" });
 		let result: { output: string; exitCode: number | null; stopped?: string };
-		try { result = await runProjectCommand(directory, script.command, ".", this.settleAbort.signal); }
+		try { result = await runProjectCommand(directory, script.command, ".", { signal: this.settleAbort.signal }); }
 		catch (error) { result = { output: error instanceof Error ? error.message : "The script could not start.", exitCode: null }; }
 		const output = result.output.trim().slice(-64 * 1024) || "(no output)";
 		const outcome = result.stopped ?? (result.exitCode === null ? "The script did not finish." : `Exited with code ${result.exitCode}.`);
@@ -425,13 +433,21 @@ export class WorkspaceRuntime {
 		this.maintainingHarnesses.add(harness);
 		return () => { this.maintainingHarnesses.delete(harness); };
 	}
-	mcp(command: McpCommand): WorkspaceOverview {
+	/** MCP header values, kept in the vault by connection (see McpHeaderSecrets). */
+	private readonly mcpHeaders: McpHeaderSecrets;
+	/** Saved MCP connections with header values filled in for those `projectId` uses, for connecting. Main only. */
+	resolvedMcpConnections(projectId?: string) { return this.mcpHeaders.resolve(this.store.getMcpConnections(), connection => connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === projectId)); }
+	async mcp(command: McpCommand): Promise<WorkspaceOverview> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		const connection = command.connection; const workspace = this.store.getOverview(); const previous = workspace.mcpConnections.find(value => value.id === connection.id);
 		if (connection.projectId && !workspace.projects.some(project => project.id === connection.projectId)) throw new Error("Project no longer exists.");
 		if (!previous && workspace.mcpConnections.length >= 100) throw new Error("The workspace supports up to 100 MCP connections.");
 		if (workspace.tasks.some(task => this.executions.has(task.id) && ["phaseo", "codex", "claude", "opencode", "acp", "cursor", "grok"].includes(task.harness) && ((!connection.projectId || task.projectId === connection.projectId) || (previous && (!previous.projectId || task.projectId === previous.projectId))))) throw new Error("Stop affected tasks before changing their MCP connections.");
-		this.store.saveMcp(connection); this.broadcast(); return this.store.getOverview();
+		const stored = await this.mcpHeaders.save(connection, command.headers, this.store.getMcpConnections().find(value => value.id === connection.id));
+		this.store.saveMcp(stored);
+		// Servers kept warm between turns would otherwise outlive the settings that started them.
+		await closePhaseoMcpConnection(connection.id);
+		this.broadcast(); return this.store.getOverview();
 	}
 	async importTask(command: Extract<WorkspaceCommand, { type: "create-task" }>, conversation: ImportedConversation): Promise<{ workspace: WorkspaceOverview; taskId: string }> {
 		const execution = this.performImport(command, conversation); this.imports.add(execution);
@@ -627,6 +643,7 @@ export class WorkspaceRuntime {
 		this.broadcast();
 		if (command.type === "settle") this.settled(task.id);
 		// Archiving a chat stops the agents it started, as Stop does; they would otherwise keep spending in the background.
+		if (command.type === "update-task" && command.archived === true) this.phaseo.background?.stopTask(command.id);
 		if (command.type === "update-task" && command.archived === true)
 			for (const child of this.store.getOverview().tasks.filter(value => value.delegation?.parentTaskId === command.id && ["idle", "running", "waiting"].includes(value.status))) await this.command({ type: "cancel", id: child.id });
 		if (command.type === "send" || command.type === "resume" || command.type === "steer-queue") this.start(task.id);
@@ -721,8 +738,8 @@ export class WorkspaceRuntime {
 			} : undefined);
 			if (this.closing || this.stoppedDuringSetup.delete(id)) { orchestration?.close(); return; }
 			if (orchestration) this.orchestrationSessions.set(id, orchestration.close);
-			const connections = [...this.store.getMcpConnections(), ...orchestration ? [orchestration.connection] : []];
-			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential, undefined, path.join(this.directory, "instructions"), this.store, this.store.getMcpConnections()) : new PhaseoCodingAdapter(credential, this.store, undefined, this.store.getMcpConnections(), path.join(this.directory, "instructions")) : task.harness === "cursor" ? new CursorAdapter(this.directory, credential, connections) : this.adapterFactory(task.harness, this.store.getAgents().find(agent => agent.id === task.agentId), this.openCode, connections, task.projectId);
+			const saved = await this.resolvedMcpConnections(task.projectId), connections = [...saved, ...orchestration ? [orchestration.connection] : []];
+			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential, undefined, path.join(this.directory, "instructions"), this.store, saved, this.phaseo) : new PhaseoCodingAdapter(credential, this.store, undefined, saved, path.join(this.directory, "instructions"), this.phaseo) : task.harness === "cursor" ? new CursorAdapter(this.directory, credential, connections) : this.adapterFactory(task.harness, this.store.getAgents().find(agent => agent.id === task.agentId), this.openCode, connections, task.projectId);
 		}
 		catch (error) {
 			setup.end(error); turn.setAttributes({ outcome: "failed" }); turn.end(error);
@@ -821,10 +838,10 @@ export class WorkspaceRuntime {
 					order(`message:${itemId}`); deltas.set(itemId, (deltas.get(itemId) ?? "") + text); scheduleFlush();
 				},
 				onActivity: activity => { order(`activity:${activity.id}`); activities.push(activity); scheduleFlush(); },
-				onApproval: (method, description, choices) => new Promise(resolve => {
+				onApproval: (method, description, choices, options) => new Promise(resolve => {
 					flush();
 					if (this.closing || this.store.getTask(id).status === "interrupted") { resolve("decline"); return; }
-					if (this.store.getTask(id).permissionMode === "full-access") { resolve("accept"); return; }
+					if (this.store.getTask(id).permissionMode === "full-access" && !options?.ask) { resolve("accept"); return; }
 					const approvalId = randomUUID(); this.approvals.set(approvalId, { taskId: id, resolve });
 					const current = this.store.getTask(id); current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method, description, ...(choices?.always ? { always: choices.always.slice(0, 200) } : {}), ...(choices?.never ? { never: choices.never.slice(0, 200) } : {}) });
 					this.store.saveTask(current); this.broadcast();

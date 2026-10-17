@@ -1,3 +1,6 @@
+import { phaseoMcpPool } from "./phaseoMcp";
+// Servers close with their turn, so the temporary folders they run in can be removed.
+phaseoMcpPool.idleMs = 0;
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";

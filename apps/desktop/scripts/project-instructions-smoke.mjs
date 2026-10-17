@@ -21,18 +21,18 @@ const server = createServer(async (request, response) => {
   if (url.pathname === "/v1/models") { response.setHeader("content-type", "application/json"); response.end(JSON.stringify({ data: [{ id: "owned-fixture" }] })); return; }
   const body = JSON.parse(raw); calls++;
   if (url.pathname === "/v1/chat/completions") {
-   chatCalls++; assert(body.messages.some(message => message.role === "system" && message.content.includes("Owned root guidance")), "Chat root missing"); assert(!JSON.stringify(body.messages).includes("Owned scoped guidance"), "Chat scope leaked"); assert(body.tools?.every(tool => ["update_plan", "read_plan", "ask_user", "list_skills", "load_skill", ...orchestrationTools].includes(tool.function.name)), "Chat mutation tools");
+   chatCalls++; assert(body.messages.some(message => message.role === "system" && message.content.includes("Owned root guidance")), "Chat root missing"); assert(!JSON.stringify(body.messages).includes("Owned scoped guidance"), "Chat scope leaked"); assert(body.tools?.every(tool => ["update_plan", "read_plan", "ask_user", "list_skills", "load_skill", "load_tools", ...orchestrationTools].includes(tool.function.name)), "Chat mutation tools");
    response.setHeader("content-type", "text/event-stream"); response.end('data: {"choices":[{"delta":{"content":"Owned chat finished"}}]}\n\ndata: [DONE]\n\n'); return;
   }
   assert(url.pathname === "/v1/responses", "Unexpected endpoint");
   const instructions = body.instructions ?? ""; assert(instructions.includes("Owned root guidance"), "Root missing");
-  const tools = body.tools.map(tool => tool.function ?? tool); const writable = tools.some(tool => tool.name === "write_project_file"); let output;
-  if (!writable) { planCalls++; assert(tools.some(tool => tool.name === "project_files") && tools.every(tool => ["project_files", "update_plan", "read_plan", "ask_user", "list_skills", "load_skill", ...orchestrationTools].includes(tool.name)), "Plan mutation tools"); output = [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "Owned plan finished" }] }]; }
+  const tools = body.tools.map(tool => tool.function ?? tool); const writable = tools.some(tool => tool.name === "write_file"); let output;
+  if (!writable) { planCalls++; assert(tools.some(tool => tool.name === "read_file") && tools.every(tool => ["read_file", "list_files", "search_files", "find_files", "view_image", "propose_plan", "read_background_output", "list_background_commands", "stop_background_command", "update_plan", "read_plan", "ask_user", "list_skills", "load_skill", "load_tools", ...orchestrationTools].includes(tool.name)), "Plan mutation tools"); output = [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "Owned plan finished" }] }]; }
   else {
-   codeCalls++; const revision = instructions.match(/instructionRevision ([a-f0-9]{64})/)?.[1]; assert(revision, "Revision missing");
+   codeCalls++;
    let name, input;
-   if (codeCalls === 1) { assert(!instructions.includes("Owned scoped guidance"), "Premature scope"); name = "project_files"; input = { action: "read", path: "src/file.txt" }; }
-   else if (codeCalls === 2) { assert(instructions.includes("Owned scoped guidance"), "Scope missing"); name = "write_project_file"; input = { path: "src/file.txt", content: "After", expectedHash: createHash("sha256").update("Before").digest("hex"), instructionRevision: revision }; }
+   if (codeCalls === 1) { assert(!instructions.includes("Owned scoped guidance"), "Premature scope"); name = "read_file"; input = { path: "src/file.txt" }; }
+   else if (codeCalls === 2) { assert(instructions.includes("Owned scoped guidance"), "Scope missing"); name = "write_file"; input = { path: "src/file.txt", content: "After", expectedHash: createHash("sha256").update("Before").digest("hex") }; }
    else { assert(codeCalls === 3 && readFileSync(path.join(project, "src/file.txt"), "utf8") === "After", "Write not confirmed"); }
    output = name ? [{ type: "function_call", id: "item-" + codeCalls, call_id: "call-" + codeCalls, name, arguments: JSON.stringify(input) }] : [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "Owned code finished" }] }];
   }
@@ -55,7 +55,7 @@ app.whenReady().then(async () => {
    for(const mode of ['chat','plan','code']) {
     const state=await api.command({type:'create-task',harness:'phaseo',accountId:account.id,model:'owned-fixture',mode,projectId:'fixture'}); const task=state.tasks.find(value=>!ids.includes(value.id)); ids.push(task.id);
     await api.command({type:'send',id:task.id,text:'Owned '+mode});
-    if(mode==='code') { const pending=await wait(async()=>{const task=await api.task(ids.at(-1));if(task.status==='failed')throw Error(task.error);return task.approvals?.length?task:false;}); if(pending.approvals[0].method!=='write_project_file')throw Error('Wrong approval'); await api.command({type:'approval',id:task.id,approvalId:pending.approvals[0].id,decision:'accept'}); }
+    if(mode==='code') { const pending=await wait(async()=>{const task=await api.task(ids.at(-1));if(task.status==='failed')throw Error(task.error);return task.approvals?.length?task:false;}); if(pending.approvals[0].method!=='Edit src/file.txt')throw Error('Wrong approval'); await api.command({type:'approval',id:task.id,approvalId:pending.approvals[0].id,decision:'accept'}); }
     const finished=await wait(async()=>{const task=await api.task(ids.at(-1));if(task.status==='failed')throw Error(task.error);return task.status==='completed'?task:false;});
     if(!JSON.stringify(finished).includes('Project instructions'))throw Error('Instruction activity missing');
    }

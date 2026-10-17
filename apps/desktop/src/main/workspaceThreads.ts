@@ -34,7 +34,7 @@ const failure = (error: unknown) => error instanceof Error ? error.message.slice
 
 const active = (status: Task["status"]) => status === "idle" || status === "running" || status === "waiting";
 const modeRank: Record<Task["mode"], number> = { chat: 0, plan: 1, code: 2 };
-const permissionRank = (value?: Task["permissionMode"]) => value === "full-access" ? 1 : 0;
+const permissionRank = (value?: Task["permissionMode"]) => value === "full-access" ? 2 : value === "accept-edits" ? 1 : 0;
 /** T3's privilege ceiling: a child can be narrower than its parent, never broader. Chat has no tools, plan reads, code writes. */
 export function childPrivileges(parent: Pick<Task, "mode" | "permissionMode">, request: { mode?: Task["mode"]; permissionMode?: Task["permissionMode"] } = {}) {
 	if (request.mode && modeRank[request.mode] > modeRank[parent.mode]) throw new Error(`A child of a ${parent.mode} chat cannot use ${request.mode} mode.`);

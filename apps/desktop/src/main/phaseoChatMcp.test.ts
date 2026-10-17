@@ -1,3 +1,6 @@
+import { phaseoMcpPool } from "./phaseoMcp";
+// Servers close with their turn, so the temporary folders they run in can be removed.
+phaseoMcpPool.idleMs = 0;
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -44,7 +47,7 @@ describe("General Chat MCP", () => {
    const fetcher = vi.fn().mockImplementationOnce(firstTurn).mockImplementationOnce(async (_url, options) => { const body = JSON.parse(options.body); expect(body.messages.at(-1).tool_call_id).toBe("notes"); expect(body.messages.at(-1).content).toContain(decision === "accept" ? "Owned notes result" : "rejected"); return answer(); });
    const approval = vi.fn(async () => { expect(() => readFileSync(own.calls)).toThrow(); expect(own.store.loadAgentRun(runId)?.run.status).toBe("waiting_for_human"); return decision; });
    await new PhaseoAdapter(() => "owned-key", fetcher, undefined, own.store, [own.connection]).run(task, own.root, "Find notes", { onDelta: () => {}, onSession: id => { runId = id; }, onApproval: approval }, account);
-   expect(approval).toHaveBeenCalledWith("Owned notes · notes", expect.stringContaining("Owned query")); expect(fetcher).toHaveBeenCalledTimes(2); expect(own.store.loadAgentRun(runId)?.run.status).toBe("completed");
+   expect(approval).toHaveBeenCalledWith("Owned notes · notes", expect.stringContaining("Owned query"), {always:"Always allow this tool in this chat"},{ask:true}); expect(fetcher).toHaveBeenCalledTimes(2); expect(own.store.loadAgentRun(runId)?.run.status).toBe("completed");
    if (decision === "accept") expect(readFileSync(own.calls, "utf8").trim()).toBe("Owned query"); else expect(() => readFileSync(own.calls)).toThrow();
   } finally { own.close(); }
  });
@@ -55,9 +58,9 @@ describe("General Chat MCP", () => {
    expect(fetcher).toHaveBeenCalledOnce();
   } finally { own.close(); }
  });
- it("rejects failed MCP admission before inference", async () => {
+ it("leaves an unreachable MCP server out of a Chat turn", async () => {
   const own = fixture(); try {
-   const fetcher = vi.fn(); await expect(new PhaseoAdapter(() => "owned", fetcher, undefined, own.store, [{ ...own.connection, executable: path.join(own.root, "missing.exe") }]).run(task, own.root, "Keep this input", { onDelta: () => {}, onSession: () => {}, onApproval: async () => "accept" }, account)).rejects.toThrow("not submitted"); expect(fetcher).not.toHaveBeenCalled();
+   const fetcher = vi.fn(async () => new Response('data: {"choices":[{"delta":{"content":"Answered without it"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n')), onActivity = vi.fn(); await new PhaseoAdapter(() => "owned", fetcher, undefined, own.store, [{ ...own.connection, executable: path.join(own.root, "missing.exe") }]).run(task, own.root, "Keep this input", { onDelta: () => {}, onSession: () => {}, onApproval: async () => "accept", onActivity }, account); expect(onActivity).toHaveBeenCalledWith(expect.objectContaining({ title: expect.stringContaining("is unavailable"), status: "failed" })); expect(fetcher).toHaveBeenCalledOnce();
   } finally { own.close(); }
  });
  it("rejects configured tools without durable storage before inference", async () => {

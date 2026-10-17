@@ -1,3 +1,6 @@
+import { phaseoMcpPool } from "./phaseoMcp";
+// Servers close with their turn, so the temporary folders they run in can be removed.
+phaseoMcpPool.idleMs = 0;
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -42,7 +45,7 @@ describe("MCP prompts", () => {
    const fetcher = vi.fn().mockImplementationOnce(async (_url, options) => { const body = JSON.parse(options.body), name = body.tools.find((tool: { function: { name: string } }) => tool.function.name.endsWith("_get_prompt")).function.name; return new Response(`data: ${JSON.stringify({ choices: [{ delta: { tool_calls: [{ index: 0, id: "prompt", type: "function", function: { name, arguments: JSON.stringify({ name: "brief", arguments: { topic: "work" } }) } }] }, finish_reason: "tool_calls" }] })}\n\ndata: [DONE]\n\n`); }).mockImplementationOnce(async (_url, options) => { const body = JSON.parse(options.body); expect(body.messages[0].content).not.toContain("Owned prompt"); expect(body.messages.at(-1).content).toContain(decision === "accept" ? "Owned prompt work" : "rejected"); if (decision === "accept") expect(JSON.parse(body.messages.at(-1).content).messages[1].content.data).toBe("YWJj"); return new Response('data: {"choices":[{"delta":{"content":"Finished"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'); });
    const approval = vi.fn(async () => { expect(() => readFileSync(own.calls)).toThrow(); return decision; });
    await new PhaseoAdapter(() => "owned", fetcher, undefined, store, [own.connection]).run(task, own.root, "Use prompt", { onDelta: () => {}, onSession: () => {}, onApproval: approval }, account);
-   expect(approval).toHaveBeenCalledWith("Prompts · get prompt", expect.stringContaining("brief")); expect(fetcher).toHaveBeenCalledTimes(2);
+   expect(approval).toHaveBeenCalledWith("Prompts · get prompt", expect.stringContaining("brief"), {always:"Always allow this tool in this chat"},{ask:true}); expect(fetcher).toHaveBeenCalledTimes(2);
    if (decision === "accept") expect(JSON.parse(readFileSync(own.calls, "utf8").trim())).toEqual({ name: "brief", arguments: { topic: "work" } }); else expect(() => readFileSync(own.calls)).toThrow();
   } finally { store.close(); own.close(); }
  });

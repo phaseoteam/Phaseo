@@ -262,6 +262,30 @@ const agent = createAgent({
 });
 ```
 
+Attempts back off exponentially from `backoffMs` with full jitter, up to `maxBackoffMs` (8 s by default), unless the gateway sends `Retry-After`. Only errors that `agentErrorIsRetryable` accepts are retried: rate limits, server errors, dropped connections and stalled streams. Pass `retryOn` to decide yourself. An attempt that has already streamed output is never repeated, and each wait emits a `model.retrying` event.
+
+With `createGatewayAgentClient`, error events, failed or incomplete responses, connections that drop and streams that end early all fail the step with an `AgentStreamError` instead of completing it with partial text. Set `streamIdleTimeoutMs` to abandon a stream that sends nothing for that long.
+
+### Keeping long runs healthy
+
+```ts
+const agent = createAgent({
+  id: "coding-agent",
+  maxSteps: 100, // per run or continue call
+  toolExecution: { onError: "return-to-model", maxOutputChars: 40_000 },
+  activeTools: ({ context }) => context.loadedTools,
+  prepareMessages: async (messages, info) => tooLong(messages) || info.reason === "overflow" ? await compact(messages) : undefined,
+});
+```
+
+- With `onError: "return-to-model"`, a failing tool, an unknown tool name and unreadable arguments all come back to the model as error results it can correct.
+- Continuing a failed or cancelled run first answers any tool call the failure left unanswered (`history.repaired`), because providers reject a history with orphaned calls. `repairToolHistory` does the same for histories you build yourself.
+- `maxOutputChars` keeps the start and end of long tool output, with a notice of what was left out.
+- `activeTools` offers a subset of the registered tools on each step. Calls to the others still resolve.
+- `prepareMessages` runs before each request and can replace the history, for example with a summary. After a context-overflow error (`agentErrorIsContextOverflow`) it runs once more with `reason: "overflow"`, and the step is retried.
+- Pass `takeMessages` to `run` or `continueRun` to add messages, such as a person steering, before the next step.
+- Tools marked `parallelSafe` run side by side when a step calls only such tools.
+
 ### Concurrent local tools
 
 If one model turn can safely call several independent local tools, set `toolExecution.toolConcurrency`:

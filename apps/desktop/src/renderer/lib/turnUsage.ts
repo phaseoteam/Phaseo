@@ -17,3 +17,15 @@ export function turnUsage(activities: AgentActivity[]) {
 	}
 	return totals;
 }
+
+/** How full the model's context window was at the turn's last step, when the harness reports the window size. */
+export function contextShare(activities: AgentActivity[]) {
+	for (const activity of [...activities].reverse()) {
+		try {
+			const reported = JSON.parse(activity.text) as Record<string, unknown>;
+			const window = reported.contextTokens, input = [reported.input_tokens, reported.inputTokens, reported.prompt_tokens].find(value => typeof value === "number");
+			if (typeof window === "number" && window > 0 && typeof input === "number") return Math.min(1, input / window);
+		} catch { /* not JSON */ }
+	}
+	return undefined;
+}

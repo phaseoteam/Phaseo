@@ -1,3 +1,6 @@
+import { phaseoMcpPool } from "./phaseoMcp";
+// Servers close with their turn, so the temporary folders they run in can be removed.
+phaseoMcpPool.idleMs = 0;
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -43,7 +46,7 @@ describe("MCP resources", () => {
    const fetcher = vi.fn().mockImplementationOnce(async (_url, options) => { const body = JSON.parse(options.body), name = body.tools.find((tool: { function: { name: string } }) => tool.function.name.endsWith("_read_resource")).function.name; return new Response(`data: ${JSON.stringify({ choices: [{ delta: { tool_calls: [{ index: 0, id: "read", type: "function", function: { name, arguments: JSON.stringify({ uri: "notes:first" }) } }] }, finish_reason: "tool_calls" }] })}\n\ndata: [DONE]\n\n`); }).mockImplementationOnce(async (_url, options) => { const body = JSON.parse(options.body); expect(body.messages.at(-1).content).toContain(decision === "accept" ? "Owned resource text" : "rejected"); return new Response('data: {"choices":[{"delta":{"content":"Finished"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'); });
    const approval = vi.fn(async () => { expect(() => readFileSync(own.calls)).toThrow(); return decision; });
    await new PhaseoAdapter(() => "owned", fetcher, undefined, store, [own.connection]).run(task, own.root, "Read document", { onDelta: () => {}, onSession: () => {}, onApproval: approval }, account);
-   expect(approval).toHaveBeenCalledWith("Documents · read resource", expect.stringContaining("notes:first")); expect(fetcher).toHaveBeenCalledTimes(2);
+   expect(approval).toHaveBeenCalledWith("Documents · read resource", expect.stringContaining("notes:first"), {always:"Always allow this tool in this chat"},{ask:true}); expect(fetcher).toHaveBeenCalledTimes(2);
    if (decision === "accept") expect(readFileSync(own.calls, "utf8").trim()).toBe("notes:first"); else expect(() => readFileSync(own.calls)).toThrow();
   } finally { store.close(); own.close(); }
  });
