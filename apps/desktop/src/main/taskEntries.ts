@@ -13,6 +13,9 @@ const kinds = [["messages", 0], ["activities", 1]] as const;
 const encoder = new TextEncoder();
 /** Tool output is large and never searched, so activities over this many bytes are stored compressed. */
 const compressFrom = 1024;
+/** What a row stores for `data`: deflated above `compressFrom` bytes when `compress` allows. */
+export function packText(data: string, compress = true) { const bytes = encoder.encode(data).byteLength; return { bytes, stored: compress && bytes > compressFrom ? deflateRawSync(data) as Uint8Array : data }; }
+export const unpackText = (data: string | Uint8Array) => typeof data === "string" ? data : inflateRawSync(data).toString("utf8");
 
 /**
  * An entry's rowid is its place: chat key × 2^25 + kind × 2^24 + position. A chat's messages or activities are one
@@ -40,7 +43,7 @@ function encode(entry: Entry) {
 	for (const name in entry) if (name !== "id" && name !== "timelineOrder" && name !== "role") rest[name] = (entry as Record<string, unknown>)[name];
 	return JSON.stringify(rest);
 }
-const text = (row: Row) => typeof row.data === "string" ? row.data : inflateRawSync(row.data).toString("utf8");
+const text = (row: Row) => unpackText(row.data);
 function decode(row: Row, data = text(row)): Entry {
 	const entry = JSON.parse(data) as Entry & { role?: string };
 	entry.id = row.id;
@@ -127,7 +130,7 @@ export class TaskEntries {
 				after.ids.push(entry.id); after.data.push(data);
 				const same = index < before.ids.length && before.ids[index] === entry.id;
 				if (same && before.data[index] === data) continue;
-				const bytes = encoder.encode(data).byteLength, stored = kind === 1 && bytes > compressFrom ? deflateRawSync(data) : data;
+				const { bytes, stored } = packText(data, kind === 1);
 				if (same) update.run(entry.timelineOrder ?? null, bytes, stored, start + index);
 				else replace.run(start + index, key, kind, entry.id, kind === 1 ? owner(entry.id) : null, entry.timelineOrder ?? null, kind === 0 ? (entry as Message).role : null, bytes, stored);
 			}
