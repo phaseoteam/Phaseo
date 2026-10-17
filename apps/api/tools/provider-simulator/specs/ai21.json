@@ -1,0 +1,803 @@
+{
+	"id": "ai21",
+	"source": {
+		"url": "https://api.ai21.com/openapi.json",
+		"docs": null,
+		"fetchedAt": "2026-10-17T17:07:05.482Z",
+		"sha256": "4fe9d3e70b0e4d85eed1f64cc2db2a34e5af02db2d4db893b27084fc6b0c5064",
+		"handWritten": false,
+		"notes": "FastAPI spec served by the API host (no servers block); base https://api.ai21.com. Also contains many Studio app endpoints."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"$ref": "#/components/schemas/ChatRequest"
+			},
+			"response": {
+				"anyOf": [
+					{
+						"$ref": "#/components/schemas/ChatCompletion"
+					},
+					{
+						"items": {
+							"$ref": "#/components/schemas/ChatCompletionVllmStreamingMessage"
+						},
+						"type": "array"
+					}
+				],
+				"title": "Response V1 Chat Complete"
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"ChatRequest": {
+				"properties": {
+					"model": {
+						"$ref": "#/components/schemas/ModelName",
+						"description": "The name of the model to use. Choose one of the following values:\n* `jamba-instruct-preview`\n"
+					},
+					"messages": {
+						"items": {
+							"oneOf": [
+								{
+									"$ref": "#/components/schemas/UserMessage"
+								},
+								{
+									"$ref": "#/components/schemas/AssistantMessage"
+								},
+								{
+									"$ref": "#/components/schemas/ToolMessage"
+								},
+								{
+									"$ref": "#/components/schemas/SystemMessage"
+								}
+							],
+							"discriminator": {
+								"propertyName": "role",
+								"mapping": {
+									"user": "#/components/schemas/UserMessage",
+									"assistant": "#/components/schemas/AssistantMessage",
+									"tool": "#/components/schemas/ToolMessage",
+									"system": "#/components/schemas/SystemMessage"
+								}
+							}
+						},
+						"type": "array",
+						"title": "Messages",
+						"description": "The previous messages in this chat, from oldest (index 0) to newest. Messages\nmust be alternating `user`/`assistant` messages, optionally starting with a `system`\nmessage. For single turn interactions, this should be an optional `system` message,\nand a single `user` message. Maximum total size for the list is about 256K tokens.\n"
+					},
+					"tools": {
+						"items": {
+							"$ref": "#/components/schemas/language_studio_api_server__data_types__chat__ToolDefinition"
+						},
+						"type": "array",
+						"title": "Tools"
+					},
+					"n": {
+						"type": "integer",
+						"title": "N",
+						"default": 1,
+						"description": "How many chat responses to generate. _Range: 1 – 16_ **Notes:**\n- If `n > 1`, setting `temperature=0` will fail because all answers are guaranteed to be duplicates.\n- `n` must be 1 when `stream = True`\n"
+					},
+					"max_tokens": {
+						"type": "integer",
+						"title": "Max Tokens",
+						"default": 4096,
+						"description": "The maximum number of tokens to allow for each generated response message. Typically\nthe best way to limit output length is by providing a length limit in the system\nprompt (for example, \"limit your answers to three sentences\"). _Range: 0 – 4096_\n"
+					},
+					"temperature": {
+						"type": "number",
+						"title": "Temperature",
+						"description": "How much variation to provide in each answer. Setting this value to 0 guarantees the\nsame response to the same question every time. Setting a higher value encourages more\nvariation. Modifies the distribution from which tokens are sampled.\n[More information](https://docs.ai21.com/docs/sampling-from-language-models#temperature)\n_Range: 0.0 – 2.0_\n"
+					},
+					"top_p": {
+						"type": "number",
+						"maximum": 1,
+						"exclusiveMinimum": 0,
+						"title": "Top P",
+						"default": 1,
+						"description": "Limit the pool of next tokens in each step to the top N percentile of possible\ntokens, where 1.0 means the pool of all possible tokens, and 0.01 means the\npool of only the most likely next tokens. [More information]\n(https://docs.ai21.com/docs/sampling-from-language-models#topp) _Range: 0 \\<= value \\<=1.0_\n"
+					},
+					"stop": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"items": {
+									"type": "string"
+								},
+								"type": "array"
+							}
+						],
+						"title": "Stop",
+						"description": "End the message when the model generates one of these strings. The stop sequence\nis not included in the generated message. Each sequence can be up to 64K long, and\ncan contain newlines as `\\n` characters. Examples:\n- Single stop string with a word and a period: \"monkeys.\"\n- Multiple stop strings and a newline: [\"cat\", \"dog\", \" .\", \"####\", \"\\n\"]\n"
+					},
+					"stream": {
+						"type": "boolean",
+						"title": "Stream",
+						"default": false,
+						"description": "Whether or not to stream the result one token at a time using\n[server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events).\nThis can be useful when waiting for long results where a long wait time for an\nanswer can be problematic, such as a chatbot. If set to `True`, then `n` must\nbe 1. A streaming response is different than the non-streaming response.\n"
+					},
+					"mock_response": {
+						"$ref": "#/components/schemas/MockResponseConfig"
+					},
+					"documents": {
+						"items": {
+							"$ref": "#/components/schemas/DocumentSchema"
+						},
+						"type": "array",
+						"title": "Documents",
+						"default": []
+					},
+					"response_format": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/ResponseFormat"
+							}
+						],
+						"title": "Response Format",
+						"default": {
+							"type": "text"
+						}
+					}
+				},
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"title": "ChatRequest"
+			},
+			"ChatCompletion": {
+				"properties": {
+					"id": {
+						"type": "string",
+						"title": "Id",
+						"description": "A unique ID for the request (not the message). Repeated identical requests\nget different IDs. However, for a streaming response, the ID will be the same\nfor all responses in the stream.\n"
+					},
+					"choices": {
+						"items": {
+							"$ref": "#/components/schemas/ChatCompletionResponseChoice"
+						},
+						"type": "array",
+						"title": "Choices",
+						"description": "One or more responses, depending on the `n` parameter from the request.\n"
+					},
+					"usage": {
+						"$ref": "#/components/schemas/UsageInfo",
+						"description": "The token counts for this request. Per-token billing is based on the\nprompt token and completion token counts and rates.\n"
+					},
+					"meta": {
+						"type": "object",
+						"title": "Meta"
+					}
+				},
+				"type": "object",
+				"required": [
+					"id",
+					"choices",
+					"usage"
+				],
+				"title": "ChatCompletion",
+				"description": "Used for non-streaming responses. Streaming responses return `ChatCompletionVllmStreamingMessage`."
+			},
+			"ChatCompletionVllmStreamingMessage": {
+				"properties": {
+					"id": {
+						"type": "string",
+						"title": "Id",
+						"description": "A unique ID for the request (not the message). Repeated identical requests\nget different IDs. However, for a streaming response, the ID will be the same\nfor all responses in the stream.\n"
+					},
+					"choices": {
+						"items": {
+							"$ref": "#/components/schemas/ChatCompletionResponseDeltaChoice"
+						},
+						"type": "array",
+						"title": "Choices",
+						"description": "The message"
+					},
+					"usage": {
+						"$ref": "#/components/schemas/UsageInfo",
+						"description": "Included in the last message only. Total token counts for the message."
+					},
+					"meta": {
+						"type": "object",
+						"title": "Meta"
+					}
+				},
+				"type": "object",
+				"required": [
+					"id",
+					"choices"
+				],
+				"title": "ChatCompletionVllmStreamingMessage",
+				"description": "Returned for streaming messages. Non-streaming responses return `ChatCompletion`."
+			},
+			"ModelName": {
+				"type": "string",
+				"enum": [
+					"jamba-mini",
+					"jamba-large",
+					"jamba-large-1.7",
+					"jamba-large-1.7-2025-07",
+					"jamba-mini-2",
+					"jamba-mini-2-2026-01"
+				],
+				"title": "ModelName",
+				"description": "An enumeration."
+			},
+			"UserMessage": {
+				"properties": {
+					"role": {
+						"type": "string",
+						"enum": [
+							"user"
+						],
+						"title": "Role",
+						"default": "user",
+						"description": "The role of an individual message.\n- `user`:  Input provided by the user. Any instructions given here that conflict\n  with instructions given in the `system` prompt take precedence over the `system`\n  prompt instructions.\n- `assistant`:  Response generated by the model.\n- `system`:  Initial instructions provided to the system to provide general guidance\n  on the tone and voice of the generated message. An initial system message is\n  optional but recommended to provide guidance on the tone of the chat. For\n  example, \"You are a helpful chatbot with a background in earth sciences and a\n  charming French accent.\"\n"
+					},
+					"content": {
+						"type": "string",
+						"title": "Content"
+					}
+				},
+				"type": "object",
+				"required": [
+					"content"
+				],
+				"title": "UserMessage"
+			},
+			"AssistantMessage": {
+				"properties": {
+					"role": {
+						"type": "string",
+						"enum": [
+							"assistant"
+						],
+						"title": "Role",
+						"default": "assistant",
+						"description": "The role of an individual message.\n- `user`:  Input provided by the user. Any instructions given here that conflict\n  with instructions given in the `system` prompt take precedence over the `system`\n  prompt instructions.\n- `assistant`:  Response generated by the model.\n- `system`:  Initial instructions provided to the system to provide general guidance\n  on the tone and voice of the generated message. An initial system message is\n  optional but recommended to provide guidance on the tone of the chat. For\n  example, \"You are a helpful chatbot with a background in earth sciences and a\n  charming French accent.\"\n"
+					},
+					"content": {
+						"type": "string",
+						"title": "Content"
+					},
+					"tool_calls": {
+						"items": {
+							"$ref": "#/components/schemas/ToolCall"
+						},
+						"type": "array",
+						"title": "Tool Calls"
+					},
+					"reasoning_content": {
+						"type": "string",
+						"title": "Reasoning Content"
+					}
+				},
+				"type": "object",
+				"title": "AssistantMessage"
+			},
+			"ToolMessage": {
+				"properties": {
+					"role": {
+						"type": "string",
+						"enum": [
+							"tool"
+						],
+						"title": "Role",
+						"default": "tool",
+						"description": "The role of an individual message.\n- `user`:  Input provided by the user. Any instructions given here that conflict\n  with instructions given in the `system` prompt take precedence over the `system`\n  prompt instructions.\n- `assistant`:  Response generated by the model.\n- `system`:  Initial instructions provided to the system to provide general guidance\n  on the tone and voice of the generated message. An initial system message is\n  optional but recommended to provide guidance on the tone of the chat. For\n  example, \"You are a helpful chatbot with a background in earth sciences and a\n  charming French accent.\"\n"
+					},
+					"content": {
+						"type": "string",
+						"title": "Content"
+					},
+					"tool_call_id": {
+						"type": "string",
+						"title": "Tool Call Id"
+					}
+				},
+				"type": "object",
+				"required": [
+					"content",
+					"tool_call_id"
+				],
+				"title": "ToolMessage"
+			},
+			"SystemMessage": {
+				"properties": {
+					"role": {
+						"type": "string",
+						"enum": [
+							"system"
+						],
+						"title": "Role",
+						"default": "system",
+						"description": "The role of an individual message.\n- `user`:  Input provided by the user. Any instructions given here that conflict\n  with instructions given in the `system` prompt take precedence over the `system`\n  prompt instructions.\n- `assistant`:  Response generated by the model.\n- `system`:  Initial instructions provided to the system to provide general guidance\n  on the tone and voice of the generated message. An initial system message is\n  optional but recommended to provide guidance on the tone of the chat. For\n  example, \"You are a helpful chatbot with a background in earth sciences and a\n  charming French accent.\"\n"
+					},
+					"content": {
+						"type": "string",
+						"title": "Content"
+					}
+				},
+				"type": "object",
+				"required": [
+					"content"
+				],
+				"title": "SystemMessage"
+			},
+			"language_studio_api_server__data_types__chat__ToolDefinition": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"function"
+						],
+						"title": "Type"
+					},
+					"function": {
+						"$ref": "#/components/schemas/FunctionToolDefinition"
+					}
+				},
+				"type": "object",
+				"required": [
+					"type",
+					"function"
+				],
+				"title": "ToolDefinition"
+			},
+			"MockResponseConfig": {
+				"properties": {
+					"response_delay_seconds": {
+						"type": "number",
+						"minimum": 0,
+						"title": "Response Delay Seconds",
+						"default": 1
+					},
+					"stream_response_delay_between_deltas_seconds": {
+						"type": "number",
+						"minimum": 0,
+						"title": "Stream Response Delay Between Deltas Seconds",
+						"default": 0.1
+					}
+				},
+				"type": "object",
+				"title": "MockResponseConfig",
+				"include_in_schema": false
+			},
+			"DocumentSchema": {
+				"properties": {
+					"id": {
+						"type": "string",
+						"title": "Id",
+						"description": "A unique ID for the request (not the message). Repeated identical requests\nget different IDs. However, for a streaming response, the ID will be the same\nfor all responses in the stream.\n"
+					},
+					"content": {
+						"type": "string",
+						"title": "Content"
+					},
+					"metadata": {
+						"additionalProperties": {
+							"type": "string"
+						},
+						"type": "object",
+						"title": "Metadata",
+						"default": {}
+					}
+				},
+				"type": "object",
+				"required": [
+					"content"
+				],
+				"title": "DocumentSchema"
+			},
+			"ResponseFormat": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"text",
+							"json_object"
+						],
+						"title": "Type"
+					}
+				},
+				"type": "object",
+				"required": [
+					"type"
+				],
+				"title": "ResponseFormat"
+			},
+			"ChatCompletionResponseChoice": {
+				"properties": {
+					"index": {
+						"type": "integer",
+						"title": "Index",
+						"description": "Zero-based index of the message in the list of messages. Note that this might not\ncorrespond with the position in the response list.\n"
+					},
+					"message": {
+						"$ref": "#/components/schemas/AssistantMessage",
+						"description": "The message generated by the model. Same structure as the request message, with `role` and `content` members.\n"
+					},
+					"logprobs": {
+						"$ref": "#/components/schemas/Logprobs"
+					},
+					"finish_reason": {
+						"type": "string",
+						"title": "Finish Reason",
+						"description": "Why the message ended. Possible reasons:\n  - `stop`: The response ended naturally as a complete answer (due to\n    [end-of-sequence token](https://huggingface.co/docs/transformers/v4.32.1/en/llm_tutorial#generate-text))\n    or because the model generated a stop sequence provided in the request.\n  - `length`:  The response ended by reaching `max_tokens`.\n"
+					}
+				},
+				"type": "object",
+				"required": [
+					"index",
+					"message"
+				],
+				"title": "ChatCompletionResponseChoice",
+				"description": "A single possible response generated by the system. For non-streaming replies, There\ncan be multiple responses, depending on what `n` value you specified in the request.\n"
+			},
+			"UsageInfo": {
+				"properties": {
+					"prompt_tokens": {
+						"type": "integer",
+						"title": "Prompt Tokens",
+						"description": "Number of tokens in the prompt for this request. Note that the prompt token\nincludes the entire message history, plus extra tokens needed by the system\nwhen combining the list of prompt messages into a single message, as\nrequired by the model. The number of extra tokens is typically proportional\nto the number of messages in the thread, and should be relatively small.\n"
+					},
+					"completion_tokens": {
+						"type": "integer",
+						"title": "Completion Tokens",
+						"description": "Number of tokens in the response message."
+					},
+					"total_tokens": {
+						"type": "integer",
+						"title": "Total Tokens",
+						"description": "`prompt_tokens` + `completion_tokens`.\n"
+					}
+				},
+				"type": "object",
+				"required": [
+					"prompt_tokens",
+					"completion_tokens",
+					"total_tokens"
+				],
+				"title": "UsageInfo"
+			},
+			"ChatCompletionResponseDeltaChoice": {
+				"properties": {
+					"index": {
+						"type": "integer",
+						"title": "Index",
+						"description": "Always zero in streamed responses."
+					},
+					"delta": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/ChatStreamingFirstDelta"
+							},
+							{
+								"$ref": "#/components/schemas/ChatStreamingContentDelta"
+							},
+							{
+								"$ref": "#/components/schemas/ChatStreamingToolCallsFirstDelta"
+							},
+							{
+								"$ref": "#/components/schemas/ChatStreamingToolCallsDelta"
+							}
+						],
+						"title": "Delta",
+						"description": "- **The first message** in the stream will be an object set to `{\"role\":\"assistant\"}`.\n- **Subsequent messages** will have an object `{\"content\": __token__}` with the generated token.\n"
+					},
+					"logprobs": {
+						"$ref": "#/components/schemas/Logprobs"
+					},
+					"finish_reason": {
+						"type": "string",
+						"title": "Finish Reason",
+						"description": "One of the following string values:\n  - `null`: All messages but the last will return null for `finish_reason`.\n  - `stop`: The response ended naturally as a complete answer (due to\n    [end-of-sequence token](https://huggingface.co/docs/transformers/v4.32.1/en/llm_tutorial#generate-text))\n     or because the model generated a stop sequence provided in the request.\n  - `length`:  The response ended by reaching `max_tokens`.\n"
+					}
+				},
+				"type": "object",
+				"required": [
+					"index",
+					"delta"
+				],
+				"title": "ChatCompletionResponseDeltaChoice"
+			},
+			"ToolCall": {
+				"properties": {
+					"id": {
+						"type": "string",
+						"title": "Id",
+						"description": "A unique ID for the request (not the message). Repeated identical requests\nget different IDs. However, for a streaming response, the ID will be the same\nfor all responses in the stream.\n"
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"function"
+						],
+						"title": "Type",
+						"default": "function"
+					},
+					"function": {
+						"$ref": "#/components/schemas/ToolFunction"
+					}
+				},
+				"type": "object",
+				"required": [
+					"id",
+					"function"
+				],
+				"title": "ToolCall"
+			},
+			"FunctionToolDefinition": {
+				"properties": {
+					"name": {
+						"type": "string",
+						"title": "Name"
+					},
+					"description": {
+						"type": "string",
+						"title": "Description"
+					},
+					"parameters": {
+						"$ref": "#/components/schemas/ToolParameters"
+					}
+				},
+				"type": "object",
+				"required": [
+					"name"
+				],
+				"title": "FunctionToolDefinition"
+			},
+			"Logprobs": {
+				"properties": {
+					"content": {
+						"items": {
+							"$ref": "#/components/schemas/LogprobsData"
+						},
+						"type": "array",
+						"title": "Content"
+					}
+				},
+				"type": "object",
+				"required": [
+					"content"
+				],
+				"title": "Logprobs"
+			},
+			"ChatStreamingFirstDelta": {
+				"properties": {
+					"role": {
+						"type": "string",
+						"enum": [
+							"system",
+							"user",
+							"assistant",
+							"tool"
+						],
+						"title": "Role",
+						"description": "The role of an individual message.\n- `user`:  Input provided by the user. Any instructions given here that conflict\n  with instructions given in the `system` prompt take precedence over the `system`\n  prompt instructions.\n- `assistant`:  Response generated by the model.\n- `system`:  Initial instructions provided to the system to provide general guidance\n  on the tone and voice of the generated message. An initial system message is\n  optional but recommended to provide guidance on the tone of the chat. For\n  example, \"You are a helpful chatbot with a background in earth sciences and a\n  charming French accent.\"\n"
+					}
+				},
+				"type": "object",
+				"required": [
+					"role"
+				],
+				"title": "ChatStreamingFirstDelta"
+			},
+			"ChatStreamingContentDelta": {
+				"properties": {
+					"content": {
+						"type": "string",
+						"title": "Content"
+					}
+				},
+				"type": "object",
+				"required": [
+					"content"
+				],
+				"title": "ChatStreamingContentDelta"
+			},
+			"ChatStreamingToolCallsFirstDelta": {
+				"properties": {
+					"tool_calls": {
+						"items": {
+							"$ref": "#/components/schemas/ToolCallDeltaStart"
+						},
+						"type": "array",
+						"title": "Tool Calls"
+					}
+				},
+				"type": "object",
+				"required": [
+					"tool_calls"
+				],
+				"title": "ChatStreamingToolCallsFirstDelta"
+			},
+			"ChatStreamingToolCallsDelta": {
+				"properties": {
+					"tool_calls": {
+						"items": {
+							"$ref": "#/components/schemas/ToolCallDelta"
+						},
+						"type": "array",
+						"title": "Tool Calls"
+					}
+				},
+				"type": "object",
+				"required": [
+					"tool_calls"
+				],
+				"title": "ChatStreamingToolCallsDelta"
+			},
+			"ToolFunction": {
+				"properties": {
+					"name": {
+						"type": "string",
+						"title": "Name"
+					},
+					"arguments": {
+						"type": "string",
+						"title": "Arguments"
+					}
+				},
+				"type": "object",
+				"required": [
+					"name",
+					"arguments"
+				],
+				"title": "ToolFunction"
+			},
+			"ToolParameters": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"object"
+						],
+						"title": "Type",
+						"description": "Type of the parameter schema, only `object` is supported",
+						"default": "object"
+					},
+					"properties": {
+						"type": "object",
+						"title": "Properties"
+					},
+					"required": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array",
+						"title": "Required",
+						"description": "List of required properties"
+					}
+				},
+				"type": "object",
+				"required": [
+					"properties"
+				],
+				"title": "ToolParameters"
+			},
+			"LogprobsData": {
+				"properties": {
+					"token": {
+						"type": "string",
+						"title": "Token"
+					},
+					"logprob": {
+						"type": "number",
+						"title": "Logprob"
+					},
+					"top_logprobs": {
+						"items": {
+							"$ref": "#/components/schemas/TopLogprobsData"
+						},
+						"type": "array",
+						"title": "Top Logprobs"
+					}
+				},
+				"type": "object",
+				"required": [
+					"token",
+					"logprob"
+				],
+				"title": "LogprobsData"
+			},
+			"ToolCallDeltaStart": {
+				"properties": {
+					"id": {
+						"type": "string",
+						"title": "Id",
+						"description": "A unique ID for the request (not the message). Repeated identical requests\nget different IDs. However, for a streaming response, the ID will be the same\nfor all responses in the stream.\n"
+					},
+					"index": {
+						"type": "integer",
+						"title": "Index"
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"function"
+						],
+						"title": "Type"
+					},
+					"function": {
+						"$ref": "#/components/schemas/ToolFunctionDeltaStart"
+					}
+				},
+				"type": "object",
+				"required": [
+					"id",
+					"index",
+					"type",
+					"function"
+				],
+				"title": "ToolCallDeltaStart"
+			},
+			"ToolCallDelta": {
+				"properties": {
+					"index": {
+						"type": "integer",
+						"title": "Index"
+					},
+					"function": {
+						"$ref": "#/components/schemas/ToolFunctionDelta"
+					}
+				},
+				"type": "object",
+				"required": [
+					"index",
+					"function"
+				],
+				"title": "ToolCallDelta"
+			},
+			"TopLogprobsData": {
+				"properties": {
+					"token": {
+						"type": "string",
+						"title": "Token"
+					},
+					"logprob": {
+						"type": "number",
+						"title": "Logprob"
+					}
+				},
+				"type": "object",
+				"required": [
+					"token",
+					"logprob"
+				],
+				"title": "TopLogprobsData"
+			},
+			"ToolFunctionDeltaStart": {
+				"properties": {
+					"name": {
+						"type": "string",
+						"title": "Name"
+					}
+				},
+				"type": "object",
+				"required": [
+					"name"
+				],
+				"title": "ToolFunctionDeltaStart"
+			},
+			"ToolFunctionDelta": {
+				"properties": {
+					"arguments": {
+						"type": "string",
+						"title": "Arguments"
+					}
+				},
+				"type": "object",
+				"required": [
+					"arguments"
+				],
+				"title": "ToolFunctionDelta"
+			}
+		}
+	}
+}

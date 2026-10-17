@@ -1,0 +1,33 @@
+{
+	"id": "hyperbolic",
+	"source": {
+		"url": null,
+		"docs": "https://www.hyperbolic.ai/docs/inference/quickstart",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Page says OpenAI-compatible; no full parameter list. Recorded from a web-search summary. https://www.hyperbolic.ai/docs/api-reference/openapi.json exists (verified OpenAPI 3.1.0) but covers the GPU/storage marketplace only, no chat paths."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"max_tokens": {},
+					"temperature": {},
+					"top_p": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

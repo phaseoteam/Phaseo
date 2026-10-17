@@ -1,0 +1,39 @@
+{
+	"id": "gmicloud",
+	"source": {
+		"url": null,
+		"docs": "https://docs.gmicloud.ai/inference-engine/api-reference/llm-api-reference",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Only {\"type\": \"json_object\"} response_format shown. tool_choice not listed. \"Parameter support varies by model\". max_tokens stated range \"1-128\" contradicts default 2000."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"tools": {},
+					"max_tokens": {},
+					"temperature": {},
+					"top_p": {},
+					"top_k": {},
+					"ignore_eos": {},
+					"stop": {},
+					"response_format": {},
+					"context_length_exceeded_behavior": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}
