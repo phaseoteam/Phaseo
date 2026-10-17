@@ -16,6 +16,7 @@ const runGatewayIoRetentionBillingJobMock = vi.fn();
 const pruneExpiredDataContributionsMock = vi.fn();
 const runPaymentMethodExpiryNotificationJobMock = vi.fn();
 const enqueueFeedbackRequestEmailsMock = vi.fn(async () => 0);
+const runMobilePushJobMock = vi.fn();
 const runNotificationDeliveryJobMock = vi.fn();
 const enqueueModelDeprecationNotificationsMock = vi.fn();
 const runAccountDeletionPurgeJobMock = vi.fn();
@@ -81,6 +82,11 @@ vi.mock("@/pipeline/notifications/feedback-request", () => ({
 	enqueueFeedbackRequestEmails: () => enqueueFeedbackRequestEmailsMock(),
 }));
 
+vi.mock("@/pipeline/notifications/mobile-push", () => ({
+	runMobilePushJob: (...args: unknown[]) => runMobilePushJobMock(...args),
+	hasMobilePushActivity: (summary: Record<string, unknown>) => Object.values(summary).some((value) => Number(value) > 0),
+}));
+
 vi.mock("@/pipeline/notifications/notification-delivery", () => ({
 	runNotificationDeliveryJob: (...args: unknown[]) => runNotificationDeliveryJobMock(...args),
 	enqueueModelDeprecationNotifications: (...args: unknown[]) => enqueueModelDeprecationNotificationsMock(...args),
@@ -143,6 +149,7 @@ describe("handleScheduledEvent", () => {
 		pruneExpiredDataContributionsMock.mockReset();
 		runPaymentMethodExpiryNotificationJobMock.mockReset();
 		enqueueFeedbackRequestEmailsMock.mockClear();
+		runMobilePushJobMock.mockReset().mockResolvedValue({ captured: 0, sent: 0 });
 		runNotificationDeliveryJobMock.mockReset().mockResolvedValue({ queued: 0, sent: 0, failed: 0 });
 		enqueueModelDeprecationNotificationsMock.mockReset().mockResolvedValue({ workspaces: 0, enqueued: 0 });
 		runAccountDeletionPurgeJobMock.mockReset().mockResolvedValue({
@@ -402,5 +409,25 @@ describe("handleScheduledEvent", () => {
 
 		await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), enabled);
 		expect(enqueueFeedbackRequestEmailsMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("runs mobile push every five minutes only when explicitly enabled, logging only real work", async () => {
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		try {
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), {} as any);
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { MOBILE_PUSH_ENABLED: "false" } as any);
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:06:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(runMobilePushJobMock).not.toHaveBeenCalled();
+
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { MOBILE_PUSH_ENABLED: "true", EXPO_ACCESS_TOKEN: "expo-token" } as any);
+			expect(runMobilePushJobMock).toHaveBeenCalledWith({ accessToken: "expo-token" });
+			expect(log).not.toHaveBeenCalledWith("mobile_push_completed", expect.anything());
+
+			runMobilePushJobMock.mockResolvedValueOnce({ captured: 1, sent: 2 });
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:10:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(log).toHaveBeenCalledWith("mobile_push_completed", { captured: 1, sent: 2 });
+		} finally {
+			log.mockRestore();
+		}
 	});
 });
