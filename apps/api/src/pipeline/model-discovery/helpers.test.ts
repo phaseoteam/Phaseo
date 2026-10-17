@@ -4,6 +4,7 @@ import {
 	buildProviderApiModelSnapshotDiff,
 	confirmModelRemovals,
 	collapseDiscordProviderChanges,
+	createSharedProviderModelsFetcher,
 	extractDiscoveredModels,
 	extractListedModels,
 	extractProviderApiModelSnapshot,
@@ -105,6 +106,72 @@ describe("resolveProviderModelsEndpoint", () => {
 		expect(resolveProviderModelsEndpoint(POOLSIDE_DISCOVERY_PROVIDER)).toBe(
 			"https://poolside.example/v1/models",
 		);
+	});
+});
+
+describe("createSharedProviderModelsFetcher", () => {
+	const venice = { providerId: "venice", providerName: "Venice", baseUrl: "https://api.venice.ai/api/v1", apiKeyEnv: ["VENICE_API_KEY"] };
+	const veniceE2ee = { ...venice, providerId: "venice-e2ee", providerName: "Venice E2EE" };
+
+	it("makes one upstream request for entries that share a URL and key", async () => {
+		const fetchMock = installFetchMock([{
+			match: (url) => url === "https://api.venice.ai/api/v1/models",
+			response: () => jsonResponse({ data: [{ id: "venice-uncensored" }, { id: "qwen3-235b" }] }),
+		}]);
+		try {
+			const fetchPayload = createSharedProviderModelsFetcher();
+			const [plain, e2ee] = await Promise.all([
+				fetchProviderModels(venice, "venice-key", fetchPayload),
+				fetchProviderModels(veniceE2ee, "venice-key", fetchPayload),
+			]);
+
+			expect(fetchMock.calls).toHaveLength(1);
+			expect(plain.map((model) => model.id)).toEqual(["qwen3-235b", "venice-uncensored"]);
+			expect(e2ee.map((model) => model.id)).toEqual(["qwen3-235b", "venice-uncensored"]);
+		} finally {
+			fetchMock.restore();
+		}
+	});
+
+	it("keeps requests separate when the key or URL differs", async () => {
+		const fetchMock = installFetchMock([{
+			match: (url) => url.endsWith("/models"),
+			response: () => jsonResponse({ data: [{ id: "model" }] }),
+		}]);
+		try {
+			const fetchPayload = createSharedProviderModelsFetcher();
+			await fetchProviderModels(venice, "key-a", fetchPayload);
+			await fetchProviderModels(veniceE2ee, "key-b", fetchPayload);
+			await fetchProviderModels({ ...venice, providerId: "venice-eu", baseUrl: "https://eu.venice.ai/api/v1" }, "key-a", fetchPayload);
+
+			expect(fetchMock.calls.map((call) => call.url)).toEqual([
+				"https://api.venice.ai/api/v1/models",
+				"https://api.venice.ai/api/v1/models",
+				"https://eu.venice.ai/api/v1/models",
+			]);
+		} finally {
+			fetchMock.restore();
+		}
+	});
+
+	it("names each provider in a shared upstream error", async () => {
+		const fetchMock = installFetchMock([{
+			match: (url) => url === "https://api.venice.ai/api/v1/models",
+			response: () => jsonResponse({ status_code: 1004, status_msg: "invalid api key" }),
+		}]);
+		try {
+			const fetchPayload = createSharedProviderModelsFetcher();
+			const results = await Promise.allSettled([
+				fetchProviderModels(venice, "venice-key", fetchPayload),
+				fetchProviderModels(veniceE2ee, "venice-key", fetchPayload),
+			]);
+
+			expect(fetchMock.calls).toHaveLength(1);
+			expect(results.map((result) => result.status === "rejected" ? String(result.reason?.message).split(" response error")[0] : "ok"))
+				.toEqual(["Venice (venice)", "Venice E2EE (venice-e2ee)"]);
+		} finally {
+			fetchMock.restore();
+		}
 	});
 });
 

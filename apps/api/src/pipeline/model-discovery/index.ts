@@ -10,10 +10,12 @@ import {
 	buildProviderApiModelSnapshotDiff,
 	canonicalProviderId,
 	confirmModelRemovals,
+	createSharedProviderModelsFetcher,
 	computeConfiguredModelCoverageFingerprint,
 	diffModelIds,
 	extractProviderApiModelSnapshot,
 	fetchProviderModels,
+	type ProviderModelsPayloadFetcher,
 	getDiscordProviderFamilyId,
 	hasDiscordNotifiableChanges,
 	hasProviderApiSnapshotValue,
@@ -36,6 +38,13 @@ import {
 	sendPrivateModelDiscoveryNotification,
 } from "./private-model-discovery-notifications";
 import { fetchPricingTableSnapshots, hasPricingSourceChanged, type PricingTableSnapshot } from "./pricing-tables";
+import {
+	seenModelRefreshIntervalMs,
+	shouldWriteSeenModel,
+	watchSnapshotKey,
+	type SeenModelWritePolicy,
+	type StoredSeenModel,
+} from "./seen-model-writes";
 import { MODEL_DISCOVERY_PROVIDERS, type ProviderConfig } from "./providers";
 import {
 	loadProviderStatuses,
@@ -215,6 +224,7 @@ type DiscoveryRunSummary = {
 	providersError: number;
 	changesDetected: number;
 	staleModelsDeleted: number;
+	seenModels: SeenModelWriteSummary;
 	results: ProviderResult[];
 	changes: ProviderChange[];
 	statePersisted: boolean;
@@ -234,6 +244,7 @@ type SupabaseSeenModelRow = {
 	model_id: string;
 	watch_snapshot?: unknown;
 	removal_pending?: boolean;
+	last_seen_at?: string | null;
 };
 
 type ConfiguredProviderModelRow = {
@@ -243,6 +254,13 @@ type ConfiguredProviderModelRow = {
 };
 
 type RunStatus = "completed" | "completed_with_errors" | "failed";
+
+type SeenModelWriteSummary = {
+	/** Rows upserted this sweep: new, changed, resurfaced, or due their periodic last_seen_at refresh. */
+	written: number;
+	/** Current models whose stored row was already up to date. */
+	unchanged: number;
+};
 
 const DISCOVERY_TIMEOUT_MS = 30_000;
 const DEFAULT_RETENTION_DAYS = 7;
@@ -402,6 +420,7 @@ function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError
 	return {
 		discoveryConcurrency: summary.discoveryConcurrency,
 		statePersisted: summary.statePersisted,
+		seenModels: summary.seenModels,
 		persistenceDeferredReason: summary.persistenceDeferredReason ?? undefined,
 		notificationFingerprint: summary.notificationFingerprint ?? undefined,
 		pricingMonitor: {
@@ -486,6 +505,7 @@ type PreviousProviderModels = {
 	modelIds: string[];
 	pendingRemovalIds: Set<string>;
 	providerApiSnapshotByModelId: Map<string, ProviderApiModelSnapshot>;
+	storedByModelId: Map<string, StoredSeenModel>;
 };
 
 type PreviousModelsState = {
@@ -504,6 +524,8 @@ type ProviderProcessingResult = {
 	providerApiModelsWithPricing: number;
 	providerApiPricingBaselineInitialized: boolean;
 	providerApiProviderWithoutPricing: boolean;
+	/** Current models whose stored row was already up to date, so no write was needed. */
+	unchangedModelCount: number;
 };
 
 function emptyProviderProcessingResult(result: ProviderResult): ProviderProcessingResult {
@@ -518,6 +540,7 @@ function emptyProviderProcessingResult(result: ProviderResult): ProviderProcessi
 		providerApiModelsWithPricing: 0,
 		providerApiPricingBaselineInitialized: false,
 		providerApiProviderWithoutPricing: false,
+		unchangedModelCount: 0,
 	};
 }
 
@@ -545,6 +568,8 @@ async function processProvider(
 	previousState: PreviousModelsState,
 	runId: string,
 	checkedEmptyWithinRetention: boolean | null,
+	writePolicy: SeenModelWritePolicy,
+	fetchPayload: ProviderModelsPayloadFetcher,
 ): Promise<ProviderProcessingResult> {
 	const requiresApiKey = !["none", "optional_bearer"].includes(provider.authStyle ?? "bearer");
 	const apiKey = resolveDiscoveryApiKey(provider);
@@ -563,7 +588,7 @@ async function processProvider(
 	const providerStarted = Date.now();
 
 	try {
-		const discoveredModels = await fetchProviderModels(provider, apiKey);
+		const discoveredModels = await fetchProviderModels(provider, apiKey, fetchPayload);
 		const currentModelIds = discoveredModels.map((model) => model.id);
 		const previousProviderState = previousState.byProvider.get(provider.providerId);
 		const previousModelIds = previousProviderState?.modelIds ?? [];
@@ -599,6 +624,7 @@ async function processProvider(
 		}));
 		const watchSnapshotsById = new Map<string, ProviderApiModelSnapshot>();
 		let providerModelsWithPricing = 0;
+		let unchangedModelCount = 0;
 
 		for (const model of discoveredModels) {
 			const watchSnapshot = extractProviderApiModelSnapshot(
@@ -609,6 +635,10 @@ async function processProvider(
 			watchSnapshotsById.set(model.id, watchSnapshot);
 			if (watchSnapshot.pricingFingerprint) providerModelsWithPricing += 1;
 			if (firstCheck === "defer") continue;
+			if (!shouldWriteSeenModel(previousProviderState?.storedByModelId.get(model.id), watchSnapshot, writePolicy)) {
+				unchangedModelCount += 1;
+				continue;
+			}
 			upsertRows.push({
 				provider_id: provider.providerId,
 				provider_name: provider.providerName,
@@ -685,6 +715,7 @@ async function processProvider(
 			providerApiPricingBaselineInitialized,
 			providerApiProviderWithoutPricing:
 				PROVIDER_API_PRICING_WATCH_PROVIDER_IDS.has(provider.providerId) && providerModelsWithPricing === 0,
+			unchangedModelCount,
 		};
 	} catch (error) {
 		return emptyProviderProcessingResult({
@@ -787,6 +818,7 @@ export async function fetchPreviousModelsByProviders(providerIds: string[]): Pro
 			modelIds: [],
 			pendingRemovalIds: new Set<string>(),
 			providerApiSnapshotByModelId: new Map<string, ProviderApiModelSnapshot>(),
+			storedByModelId: new Map<string, StoredSeenModel>(),
 		});
 	}
 	if (providerIds.length === 0) {
@@ -798,7 +830,7 @@ export async function fetchPreviousModelsByProviders(providerIds: string[]): Pro
 	for (let offset = 0; ; offset += SEEN_MODELS_PAGE_SIZE) {
 		const { data, error } = await supabase
 			.from("model_discovery_seen_models")
-			.select("provider_id,model_id,watch_snapshot,removal_pending")
+			.select("provider_id,model_id,watch_snapshot,removal_pending,last_seen_at")
 			.in("provider_id", providerIds)
 			.order("provider_id", { ascending: true })
 			.order("model_id", { ascending: true })
@@ -821,6 +853,11 @@ export async function fetchPreviousModelsByProviders(providerIds: string[]): Pro
 		if (!state) continue;
 		state.modelIds.push(row.model_id);
 		if (row.removal_pending === true) state.pendingRemovalIds.add(row.model_id);
+		state.storedByModelId.set(row.model_id, {
+			snapshotKey: watchSnapshotKey(row.watch_snapshot),
+			lastSeenAt: typeof row.last_seen_at === "string" ? row.last_seen_at : null,
+			removalPending: row.removal_pending === true,
+		});
 		if (PROVIDER_API_PRICING_WATCH_PROVIDER_IDS.has(row.provider_id)) {
 			const snapshot = parseWatchSnapshot(row.watch_snapshot);
 			if (snapshot) {
@@ -954,6 +991,15 @@ async function pruneOldRuns(cutoffIso: string): Promise<void> {
 	if (error) throw new Error(error.message || "Failed to prune old model discovery runs");
 }
 
+// Official pricing pages change a few times a month, and the catalogue sync that acts on them runs
+// hourly, so scheduled sweeps check them on the top-of-hour tick (always a discovery tick) only.
+export function shouldCheckPricingPages(args: RunArgs, startedAt: Date): boolean {
+	if (!shouldRunPricingMonitor(args)) return false;
+	if (args.trigger !== "scheduled") return true;
+	const anchor = args.scheduledAtIso ? new Date(args.scheduledAtIso) : startedAt;
+	return Number.isFinite(anchor.getTime()) && anchor.getUTCMinutes() === 0;
+}
+
 function shouldPruneRunsDaily(args: RunArgs, startedAt: Date): boolean {
 	if (args.trigger !== "scheduled") return false;
 	if (args.shardIndex !== undefined && args.shardIndex !== 0) return false;
@@ -984,7 +1030,11 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 	const pricingEnabled = toBool(readBindingEnv(["PRICING_MONITOR_ENABLED"]) ?? "false", false);
 	const pricingExecuted = pricingEnabled && shouldRunPricingMonitor(args);
 	const pricingPageExecuted = toBool(readBindingEnv(["PRICING_PAGE_MONITOR_ENABLED"]) ?? "true", true)
-		&& shouldRunPricingMonitor(args);
+		&& shouldCheckPricingPages(args, startedAt);
+	const seenModelWritePolicy: SeenModelWritePolicy = {
+		nowMs: startedAt.getTime(),
+		refreshIntervalMs: seenModelRefreshIntervalMs(retentionDays),
+	};
 
 	await insertRunStart(runId, args, startedAt.toISOString());
 	await closeAbandonedRuns(startedAt, runId);
@@ -1015,10 +1065,19 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		const providerApiProvidersWithoutPricing = new Set<string>();
 		let providerApiModelsWithPricing = 0;
 		let providerApiPricingBaselineInitialized = false;
+		let unchangedSeenModels = 0;
+		const fetchPayload = createSharedProviderModelsFetcher();
 		const providerProcessingResults = await mapWithConcurrency(
 			providers,
 			discoveryConcurrency,
-			(provider) => processProvider(provider, previousState, runId, checkedEmptyWithinRetention(provider.providerId)),
+			(provider) => processProvider(
+				provider,
+				previousState,
+				runId,
+				checkedEmptyWithinRetention(provider.providerId),
+				seenModelWritePolicy,
+				fetchPayload,
+			),
 		);
 
 		// Merge in provider order, not completion order, so stored summaries and
@@ -1041,6 +1100,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			}
 			providerApiModelsWithPricing += processed.providerApiModelsWithPricing;
 			providerApiPricingBaselineInitialized ||= processed.providerApiPricingBaselineInitialized;
+			unchangedSeenModels += processed.unchangedModelCount;
 			if (processed.providerApiProviderWithoutPricing) {
 				providerApiProvidersWithoutPricing.add(processed.result.providerId);
 			}
@@ -1150,8 +1210,12 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				});
 				pricingTableMonitor.updatesDetected = pricingTableMonitor.providerChanges.length;
 				// State is persisted only after notifications succeed so a delivery
-				// failure never silently swallows a pricing-page change.
-				pricingPageSnapshotsToSave = sources;
+				// failure never silently swallows a pricing-page change. Unchanged
+				// pages keep their row; only new or changed sources are written.
+				pricingPageSnapshotsToSave = sources.filter((source) => {
+					const previous = previousPages.get(canonicalProviderId(source.providerId));
+					return previous?.source_url !== source.sourceUrl || previous.fingerprint !== source.fingerprint;
+				});
 			} catch (error) {
 				const reason = error instanceof Error ? error.message : String(error);
 				pricingTableMonitor.error = reason;
@@ -1330,6 +1394,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			providersError: results.filter((result) => result.status === "error").length,
 			changesDetected: changes.length,
 			staleModelsDeleted,
+			seenModels: { written: persistenceDeferredReason ? 0 : upsertRows.length, unchanged: unchangedSeenModels },
 			results,
 			changes,
 			statePersisted: !persistenceDeferredReason,
@@ -1376,6 +1441,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			providersError: 0,
 			changesDetected: 0,
 			staleModelsDeleted: 0,
+			seenModels: { written: 0, unchanged: 0 },
 			results: [],
 			changes: [],
 			statePersisted: false,

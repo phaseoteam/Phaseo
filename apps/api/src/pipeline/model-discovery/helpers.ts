@@ -979,7 +979,57 @@ function extractProviderResponseErrorMessage(payload: unknown): string | null {
 	return message ? `status_code ${statusCode}: ${message}` : `status_code ${statusCode}`;
 }
 
-export async function fetchProviderModels(provider: ProviderConfig, apiKey?: string | null): Promise<DiscoveredModel[]> {
+export type ProviderModelsPayloadFetcher = (provider: ProviderConfig, apiKey?: string | null) => Promise<unknown>;
+
+export async function fetchProviderModels(
+	provider: ProviderConfig,
+	apiKey?: string | null,
+	fetchPayload: ProviderModelsPayloadFetcher = fetchProviderModelsPayload,
+): Promise<DiscoveredModel[]> {
+	const payload = await fetchPayload(provider, apiKey);
+	if (provider.authStyle !== "google_vertex") {
+		const providerResponseErrorMessage = extractProviderResponseErrorMessage(payload);
+		if (providerResponseErrorMessage) {
+			throw new Error(`${provider.providerName} (${provider.providerId}) response error: ${providerResponseErrorMessage}`);
+		}
+	}
+	return extractListedModels(provider.providerId, payload);
+}
+
+/**
+ * Identifies the upstream request behind a provider entry. Entries such as anthropic/anthropic-us or
+ * venice/venice-e2ee resolve to the same URL and key, so one sweep can share a single request.
+ */
+export function providerModelsRequestKey(provider: ProviderConfig, apiKey?: string | null): string {
+	const authStyle = provider.authStyle ?? "bearer";
+	const endpoint = authStyle === "google_vertex" ? "google_vertex_publishers" : resolveProviderModelsEndpoint(provider);
+	return JSON.stringify([authStyle, endpoint, apiKey ?? ""]);
+}
+
+/** Returns a fetcher that makes each distinct upstream request once per sweep. */
+export function createSharedProviderModelsFetcher(
+	fetchPayload: ProviderModelsPayloadFetcher = fetchProviderModelsPayload,
+): ProviderModelsPayloadFetcher {
+	const requests = new Map<string, Promise<unknown>>();
+	return (provider, apiKey) => {
+		let key: string;
+		try {
+			key = providerModelsRequestKey(provider, apiKey);
+		} catch {
+			// Let the provider's own fetch report its configuration error.
+			return fetchPayload(provider, apiKey);
+		}
+		let request = requests.get(key);
+		if (!request) {
+			request = fetchPayload(provider, apiKey);
+			requests.set(key, request);
+		}
+		return request;
+	};
+}
+
+/** Fetches a provider's raw /models payload; extraction is per provider entry. */
+export async function fetchProviderModelsPayload(provider: ProviderConfig, apiKey?: string | null): Promise<unknown> {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), DISCOVERY_TIMEOUT_MS);
 
@@ -1028,9 +1078,7 @@ export async function fetchProviderModels(provider: ProviderConfig, apiKey?: str
 					return rows;
 				}),
 			);
-			return extractListedModels(provider.providerId, {
-				publisherModels: publisherModels.flat(),
-			});
+			return { publisherModels: publisherModels.flat() };
 		}
 
 		const headers: Record<string, string> = {};
@@ -1083,12 +1131,7 @@ export async function fetchProviderModels(provider: ProviderConfig, apiKey?: str
 			throw new Error(`HTTP ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}`);
 		}
 
-		const payload = await response.json();
-		const providerResponseErrorMessage = extractProviderResponseErrorMessage(payload);
-		if (providerResponseErrorMessage) {
-			throw new Error(`${provider.providerName} (${provider.providerId}) response error: ${providerResponseErrorMessage}`);
-		}
-		return extractListedModels(provider.providerId, payload);
+		return await response.json();
 	} finally {
 		clearTimeout(timeout);
 	}
