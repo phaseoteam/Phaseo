@@ -1,3 +1,8 @@
+import { phaseoMcpPool } from "./phaseoMcp";
+// Servers close with their turn, so the temporary folders they run in can be removed.
+phaseoMcpPool.idleMs = 0;
+/** Unfinished runs also remember which instructions the model saw; these tests compare the rest. */
+const withoutRevision = (context: unknown) => { const { phaseoInstructionRevision, ...rest } = (context ?? {}) as Record<string, unknown>; void phaseoInstructionRevision; return rest; };
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -20,13 +25,13 @@ describe("durable Phaseo questions", () => {
   try {
    const callbacks = { onSession: (id: string) => { runId = id; }, onDelta: () => {}, onApproval: async () => "accept" as const, onQuestion: async () => { await original.cancel(); return {}; } };
    const original = mode === "chat" ? new PhaseoAdapter(() => "owned", vi.fn(async () => sse(message(oldPlan, "old-question"))), global, store) : new PhaseoCodingAdapter(() => "owned", store, () => ({ generate: async () => ({ message: message(oldPlan, "old-question") }) }), [], global);
-   await expect(original.run(task, root, "Begin", callbacks, account, [], { kind: "skill", id: "global:original", name: "original", arguments: "Begin" })).rejects.toThrow(/aborted|stopped/i); expect(store.loadAgentRun(runId)?.run.context).toEqual({ phaseoPlan: oldPlan, phaseoSkill: { id: "global:original", name: "original" } });
+   await expect(original.run(task, root, "Begin", callbacks, account, [], { kind: "skill", id: "global:original", name: "original", arguments: "Begin" })).rejects.toThrow(/aborted|stopped/i); expect(withoutRevision(store.loadAgentRun(runId)?.run.context)).toEqual({ phaseoPlan: oldPlan, phaseoSkill: { id: "global:original", name: "original" } });
    store.close(); store = new WorkspaceStore(path.join(root, "state.sqlite")); let step = 0;
    const next = () => step++ === 0 ? message(newPlan, "new-question") : { role: "assistant" as const, content: "Finished", toolCalls: [] };
    const questions = vi.fn(async () => ({ "question-0": ["A"] }));
    const resumed = mode === "chat" ? new PhaseoAdapter(() => "owned", vi.fn(async () => sse(next())), global, store) : new PhaseoCodingAdapter(() => "owned", store, () => ({ generate: async () => ({ message: next() }) }), [], global);
    await resumed.run({ ...task, nativeSessionId: runId }, root, "Continue", { ...callbacks, onQuestion: questions }, account, [], { kind: "skill", id: "global:revised", name: "revised", arguments: "Continue" });
-   expect(questions).toHaveBeenCalledTimes(2); expect(store.loadAgentRun(runId)?.run.status).toBe("completed"); expect(store.loadAgentRun(runId)?.run.context).toEqual({ phaseoPlan: newPlan, phaseoSkill: { id: "global:revised", name: "revised" } });
+   expect(questions).toHaveBeenCalledTimes(2); expect(store.loadAgentRun(runId)?.run.status).toBe("completed"); expect(withoutRevision(store.loadAgentRun(runId)?.run.context)).toEqual({ phaseoPlan: newPlan, phaseoSkill: { id: "global:revised", name: "revised" } });
   } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
  });
 

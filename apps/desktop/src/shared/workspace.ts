@@ -68,7 +68,8 @@ export type Task = {
 	nativeMode?: string;
 	authTerminalId?: string;
 	authInputId?: string;
-	permissionMode?: "supervised" | "full-access";
+	/** accept-edits applies file changes without asking but still asks before commands (Phaseo harness; others treat it as supervised). */
+	permissionMode?: "supervised" | "accept-edits" | "full-access";
 	model: string; mode: "chat" | "code" | "plan"; status: TaskStatus; pinned: boolean;
 	/** Labels for grouping and filtering chats, set by the person or the chat's agent. */
 	tags?: string[];
@@ -312,7 +313,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 	} else if (command.type === "create-task" || command.type === "handoff") {
 		if (command.type === "handoff") string("id");
 		if (!harnesses.includes(command.harness as Harness)) throw new Error("Unknown harness.");
-		if (command.permissionMode !== undefined && !["supervised", "full-access"].includes(command.permissionMode as string)) throw new Error("Invalid permissions.");
+		if (command.permissionMode !== undefined && !["supervised", "accept-edits", "full-access"].includes(command.permissionMode as string)) throw new Error("Invalid permissions.");
 		if (!["chat", "code", "plan"].includes(command.mode as string)) throw new Error("Invalid task mode.");
 		string("model"); string("projectId", false); string("accountId", false); string("agentId", false);
 		if (command.serviceTier !== undefined && (typeof command.serviceTier !== "string" || command.serviceTier.length > 100 || [...command.serviceTier].some(character => character.charCodeAt(0) < 32))) throw new Error("Invalid speed setting.");
@@ -332,7 +333,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				if (command.archived !== undefined && typeof command.archived !== "boolean") throw new Error("Invalid archived state.");
 				break;
 			case "update-task":
-				if (command.permissionMode !== undefined && !["supervised", "full-access"].includes(command.permissionMode as string)) throw new Error("Invalid permissions.");
+				if (command.permissionMode !== undefined && !["supervised", "accept-edits", "full-access"].includes(command.permissionMode as string)) throw new Error("Invalid permissions.");
 				string("title", false, 200);
 				if (command.serviceTier !== undefined && (typeof command.serviceTier !== "string" || command.serviceTier.length > 100 || [...command.serviceTier].some(character => character.charCodeAt(0) < 32))) throw new Error("Invalid speed setting.");
 				string("model", false);
