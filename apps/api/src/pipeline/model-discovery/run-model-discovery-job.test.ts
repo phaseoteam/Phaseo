@@ -107,6 +107,17 @@ describe("runModelDiscoveryJob", () => {
 		expect(summary.changes.find((change) => change.providerId === "vercel")).toMatchObject({ added: ["model-a", "model-b"] });
 	});
 
+	it("baselines a provider whose recent success listed models that were never stored", async () => {
+		// For example a sweep whose notification failed recorded the check but did not persist its rows.
+		supabase.tables.model_discovery_provider_status = [
+			{ provider_id: "vercel", provider_name: "Vercel AI Gateway", status: "ok", model_count: 2, consecutive_failures: 0, last_success_at: new Date(Date.now() - 15 * 60_000).toISOString() },
+		];
+
+		const summary = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+
+		expect(summary.changes).toEqual([]);
+	});
+
 	it("re-baselines quietly after an outage longer than the retention window", async () => {
 		supabase.tables.model_discovery_provider_status = [
 			{ provider_id: "vercel", provider_name: "Vercel AI Gateway", status: "error", model_count: null, consecutive_failures: 900, last_success_at: new Date(Date.now() - 9 * 24 * 3600_000).toISOString() },

@@ -16,6 +16,12 @@ export type ProviderCheckOutcome = {
 	reason: string | null;
 	modelCount: number | null;
 	durationMs: number | null;
+	/**
+	 * False when a successful check's models were not persisted this sweep (delivery deferred persistence,
+	 * or the provider's first check was deferred). It then leaves last_success_at and model_count alone,
+	 * because the first-check baseline rule reads them as proof of what was stored.
+	 */
+	recorded?: boolean;
 };
 
 export type ProviderStatusRow = {
@@ -23,6 +29,7 @@ export type ProviderStatusRow = {
 	provider_name: string;
 	status: ProviderCheckStatus;
 	reason: string | null;
+	/** Models listed by the last recorded successful check. */
 	model_count: number | null;
 	duration_ms: number | null;
 	consecutive_failures: number;
@@ -55,6 +62,7 @@ export const PROVIDER_FAILURE_ALERT_AFTER_MS = 60 * 60 * 1000;
 export const PROVIDER_FAILURE_ALERT_MIN_CHECKS = 3;
 const MAX_REASON_LENGTH = 300;
 const MAX_MESSAGE_LENGTH = 1_900;
+const MAX_ALERT_MESSAGES_PER_SWEEP = 5;
 const PROVIDER_STATUS_COLUMNS =
 	"provider_id,provider_name,status,reason,model_count,duration_ms,consecutive_failures,failing_since,alerted_at,skip_notice_pending,last_checked_at,last_success_at,last_run_id";
 const SECRET_PATTERN = /\b(?:sk|pk|rk|api[_-]?key|key)[-_][A-Za-z0-9_-]{12,}/gi;
@@ -80,13 +88,14 @@ export function nextProviderStatus(
 	args: { nowIso: string; runId: string },
 ): ProviderStatusRow {
 	const failing = outcome.status === "error";
+	const recordedSuccess = outcome.status === "ok" && outcome.recorded !== false;
 	const continuingStreak = failing && previous?.status === "error";
 	return {
 		provider_id: outcome.providerId,
 		provider_name: outcome.providerName,
 		status: outcome.status,
 		reason: truncateReason(outcome.reason),
-		model_count: outcome.modelCount,
+		model_count: recordedSuccess ? outcome.modelCount : previous?.model_count ?? null,
 		duration_ms: outcome.durationMs,
 		consecutive_failures: failing ? (continuingStreak ? previous.consecutive_failures + 1 : 1) : 0,
 		failing_since: failing ? (continuingStreak ? previous.failing_since ?? args.nowIso : args.nowIso) : null,
@@ -96,7 +105,7 @@ export function nextProviderStatus(
 		// that notice pending across sweeps until it is delivered.
 		skip_notice_pending: outcome.status === "skipped" && (previous?.status === "ok" || previous?.skip_notice_pending === true),
 		last_checked_at: args.nowIso,
-		last_success_at: outcome.status === "ok" ? args.nowIso : previous?.last_success_at ?? null,
+		last_success_at: recordedSuccess ? args.nowIso : previous?.last_success_at ?? null,
 		last_run_id: args.runId,
 	};
 }
@@ -167,8 +176,35 @@ export function buildProviderHealthMessage(alerts: ProviderHealthAlerts, now: Da
 			lines.push(`- ${providerLabel(row)}: ${row.reason ?? "skipped"}`);
 		}
 	}
-	const text = lines.join("\n");
-	return text.length <= MAX_MESSAGE_LENGTH ? text : `${text.slice(0, MAX_MESSAGE_LENGTH - 16)}\n...[truncated]`;
+	return lines.join("\n");
+}
+
+/**
+ * Splits alerts into messages that each fit Discord's limit, so no alert is acknowledged without being
+ * shown. Each batch keeps the alerts it contains, so only delivered batches are acknowledged.
+ */
+export function batchProviderHealthAlerts(
+	alerts: ProviderHealthAlerts,
+	now: Date,
+): Array<{ text: string; alerts: ProviderHealthAlerts }> {
+	const entries = [
+		...alerts.failing.map((alert) => ({ kind: "failing" as const, alert })),
+		...alerts.recovered.map((alert) => ({ kind: "recovered" as const, alert })),
+		...alerts.stoppedChecking.map((alert) => ({ kind: "stoppedChecking" as const, alert })),
+	];
+	const batches: Array<{ text: string; alerts: ProviderHealthAlerts }> = [];
+	let current: ProviderHealthAlerts = { failing: [], recovered: [], stoppedChecking: [] };
+	for (const { kind, alert } of entries) {
+		const candidate: ProviderHealthAlerts = { ...current, [kind]: [...current[kind], alert] };
+		if (hasProviderHealthAlerts(current) && buildProviderHealthMessage(candidate, now).length > MAX_MESSAGE_LENGTH) {
+			batches.push({ text: buildProviderHealthMessage(current, now), alerts: current });
+			current = { failing: [], recovered: [], stoppedChecking: [], [kind]: [alert] };
+		} else {
+			current = candidate;
+		}
+	}
+	if (hasProviderHealthAlerts(current)) batches.push({ text: buildProviderHealthMessage(current, now), alerts: current });
+	return batches;
 }
 
 export async function loadProviderStatuses(): Promise<Map<string, ProviderStatusRow>> {
@@ -222,21 +258,24 @@ export async function runProviderHealthCheck(args: {
 	let deliveryError: string | null = null;
 
 	if (args.notify && hasProviderHealthAlerts(alerts)) {
-		try {
-			const delivery = await deliverPrivateModelDiscoveryMessage(buildProviderHealthMessage(alerts, now));
-			if (delivery.delivered) {
-				for (const { row } of alerts.failing) row.alerted_at = nowIso;
-				for (const { row } of alerts.recovered) row.alerted_at = null;
-				for (const { row } of alerts.stoppedChecking) {
+		// Bounded per sweep; alerts in batches not sent stay pending and go out on a later sweep.
+		for (const batch of batchProviderHealthAlerts(alerts, now).slice(0, MAX_ALERT_MESSAGES_PER_SWEEP)) {
+			try {
+				const delivery = await deliverPrivateModelDiscoveryMessage(batch.text);
+				deliveryError ??= delivery.error ?? null;
+				// A skipped delivery (no webhook configured) is not an error; it simply retries next sweep.
+				if (!delivery.delivered) break;
+				for (const { row } of batch.alerts.failing) row.alerted_at = nowIso;
+				for (const { row } of batch.alerts.recovered) row.alerted_at = null;
+				for (const { row } of batch.alerts.stoppedChecking) {
 					row.alerted_at = null;
 					row.skip_notice_pending = false;
 				}
-				alertsSent = alerts.failing.length + alerts.recovered.length + alerts.stoppedChecking.length;
+				alertsSent += batch.alerts.failing.length + batch.alerts.recovered.length + batch.alerts.stoppedChecking.length;
+			} catch (error) {
+				deliveryError = error instanceof Error ? error.message : String(error);
+				break;
 			}
-			// A skipped delivery (no webhook configured) is not an error; it simply retries next sweep.
-			deliveryError = delivery.error ?? null;
-		} catch (error) {
-			deliveryError = error instanceof Error ? error.message : String(error);
 		}
 	}
 

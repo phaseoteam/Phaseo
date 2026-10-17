@@ -12,6 +12,7 @@ vi.mock("./private-model-discovery-notifications", () => ({
 }));
 
 import {
+	batchProviderHealthAlerts,
 	buildProviderHealthMessage,
 	nextProviderStatus,
 	redactProviderError,
@@ -82,6 +83,18 @@ describe("nextProviderStatus", () => {
 			last_success_at: NOW.toISOString(),
 			model_count: 12,
 		});
+	});
+
+	it("moves last_success_at and model_count only for recorded successes, and keeps them through failures", () => {
+		const args = { nowIso: NOW.toISOString(), runId: "run" };
+		const healthy = row({ status: "ok", failing_since: null, consecutive_failures: 0, model_count: 0, last_success_at: minutesAgo(15) });
+
+		expect(nextProviderStatus(healthy, outcome("ok", { modelCount: 54 }), args)).toMatchObject({ model_count: 54, last_success_at: NOW.toISOString() });
+		// A success whose models were not persisted proves nothing about what is stored.
+		expect(nextProviderStatus(healthy, outcome("ok", { modelCount: 54, recorded: false }), args)).toMatchObject({
+			status: "ok", model_count: 0, last_success_at: minutesAgo(15),
+		});
+		expect(nextProviderStatus(healthy, outcome("error"), args)).toMatchObject({ model_count: 0, last_success_at: minutesAgo(15) });
 	});
 
 	it("caps stored reasons", () => {
@@ -268,5 +281,34 @@ describe("runProviderHealthCheck", () => {
 
 		expect(deliverMock.mock.calls[0]?.[0]).toContain("No longer checked (1):");
 		expect(second.upserts[0]?.[0]).toMatchObject({ status: "skipped", skip_notice_pending: false });
+	});
+
+	it("splits long alert lists into messages under the limit and acknowledges only delivered batches", async () => {
+		const failing = Array.from({ length: 12 }, (_, i) => row({
+			provider_id: `provider-${i}`,
+			provider_name: `Provider ${i}`,
+			consecutive_failures: 5,
+			failing_since: minutesAgo(90),
+			reason: `HTTP 500: ${"upstream error detail ".repeat(12)}`.slice(0, 300),
+		}));
+		const batches = batchProviderHealthAlerts({ failing: failing.map((r) => ({ row: r, previous: r })), recovered: [], stoppedChecking: [] }, NOW);
+		expect(batches.length).toBeGreaterThan(1);
+		expect(batches.every((batch) => batch.text.length <= 1_900)).toBe(true);
+		expect(batches.flatMap((batch) => batch.alerts.failing.map((alert) => alert.row.provider_id))).toEqual(failing.map((r) => r.provider_id));
+
+		const db = supabaseWith(failing);
+		deliverMock.mockResolvedValueOnce({ delivered: true, skipped: false }).mockRejectedValueOnce(new Error("Discord webhook failed with HTTP 429"));
+		const summary = await runProviderHealthCheck({
+			runId: "run-17",
+			outcomes: failing.map((r) => outcome("error", { providerId: r.provider_id, providerName: r.provider_name, reason: r.reason })),
+			notify: true,
+			coversAllProviders: false,
+			now: NOW,
+		});
+
+		const acknowledged = db.upserts[0]!.filter((saved) => saved.alerted_at === NOW.toISOString()).map((saved) => saved.provider_id);
+		expect(acknowledged).toEqual(batches[0]!.alerts.failing.map((alert) => alert.row.provider_id));
+		expect(summary.alertsSent).toBe(acknowledged.length);
+		expect(summary.error).toContain("HTTP 429");
 	});
 });

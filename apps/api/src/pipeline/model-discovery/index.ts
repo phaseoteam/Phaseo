@@ -185,6 +185,8 @@ type ProviderResult =
 			modelCount: number;
 			durationMs: number;
 			change: ProviderChange | null;
+			/** True when the provider's first check was deferred, so none of its models were written. */
+			firstCheckDeferred?: boolean;
 	  }
 	| {
 			providerId: string;
@@ -522,26 +524,27 @@ function emptyProviderProcessingResult(result: ProviderResult): ProviderProcessi
 export type ProviderFirstCheckDecision = "report" | "baseline" | "defer";
 
 /**
- * Decides how to treat a provider's listed models when nothing is stored for it. With no successful
- * check inside the retention window this check is its baseline; a provider checked recently that listed
- * nothing (AI21) still reports its first models; one whose rows were pruned after a long outage
- * re-baselines quietly. When the status needed to tell these apart could not be read (`null`), the
- * provider's rows are not written this sweep, so the next sweep decides instead of guessing.
+ * Decides how to treat a provider's listed models when nothing is stored for it. Only a provider whose
+ * last recorded successful check inside the retention window listed zero models (AI21) reports its first
+ * models; anything else with no stored models is a baseline, including a provider whose rows were pruned
+ * after a long outage and one whose earlier success was never persisted. When the status needed to tell
+ * these apart could not be read (`null`), the provider's rows are not written this sweep, so the next
+ * sweep decides instead of guessing.
  */
 export function providerFirstCheckDecision(
 	previousModelIds: readonly string[],
-	checkedWithinRetention: boolean | null,
+	checkedEmptyWithinRetention: boolean | null,
 ): ProviderFirstCheckDecision {
 	if (previousModelIds.length > 0) return "report";
-	if (checkedWithinRetention === null) return "defer";
-	return checkedWithinRetention ? "report" : "baseline";
+	if (checkedEmptyWithinRetention === null) return "defer";
+	return checkedEmptyWithinRetention ? "report" : "baseline";
 }
 
 async function processProvider(
 	provider: ProviderConfig,
 	previousState: PreviousModelsState,
 	runId: string,
-	checkedWithinRetention: boolean | null,
+	checkedEmptyWithinRetention: boolean | null,
 ): Promise<ProviderProcessingResult> {
 	const requiresApiKey = !["none", "optional_bearer"].includes(provider.authStyle ?? "bearer");
 	const apiKey = resolveDiscoveryApiKey(provider);
@@ -573,7 +576,7 @@ async function processProvider(
 		// A provider's first successful check records a baseline rather than announcing every model it
 		// lists as new, as the pricing and public-announcement monitors already do. Without this, a
 		// provider that starts working (a fixed key name, a new host) floods the review queue.
-		const firstCheck = providerFirstCheckDecision(previousModelIds, checkedWithinRetention);
+		const firstCheck = providerFirstCheckDecision(previousModelIds, checkedEmptyWithinRetention);
 		if (firstCheck !== "report" && currentModelIds.length > 0) {
 			console.log(
 				firstCheck === "baseline"
@@ -670,6 +673,7 @@ async function processProvider(
 				modelCount: currentModelIds.length,
 				durationMs: Date.now() - providerStarted,
 				change,
+				firstCheckDeferred: firstCheck === "defer",
 			},
 			currentModelIds,
 			upsertRows,
@@ -693,7 +697,11 @@ async function processProvider(
 	}
 }
 
-export function toProviderCheckOutcome(result: ProviderResult): ProviderCheckOutcome {
+/**
+ * Maps a provider result onto the health outcome it records. A success counts as recorded only when its
+ * models were persisted: the sweep's state was saved and the provider's first check was not deferred.
+ */
+export function toProviderCheckOutcome(result: ProviderResult, statePersisted = true): ProviderCheckOutcome {
 	return {
 		providerId: result.providerId,
 		providerName: result.providerName,
@@ -701,6 +709,7 @@ export function toProviderCheckOutcome(result: ProviderResult): ProviderCheckOut
 		reason: result.status === "success" ? null : result.reason,
 		modelCount: result.status === "success" ? result.modelCount : null,
 		durationMs: result.status === "skipped" ? null : result.durationMs,
+		recorded: result.status === "success" ? statePersisted && !result.firstCheckDeferred : true,
 	};
 }
 
@@ -994,10 +1003,13 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			return null;
 		});
 		const staleCutoffMs = Date.parse(staleCutoff);
-		const checkedWithinRetention = (providerId: string): boolean | null => {
+		// last_success_at and model_count only move on successes whose models were persisted, so a recent
+		// empty one proves the provider listed nothing rather than that its rows were never written.
+		const checkedEmptyWithinRetention = (providerId: string): boolean | null => {
 			if (!previousProviderStatuses) return null;
-			const lastSuccessMs = Date.parse(previousProviderStatuses?.get(providerId)?.last_success_at ?? "");
-			return Number.isFinite(lastSuccessMs) && lastSuccessMs >= staleCutoffMs;
+			const status = previousProviderStatuses.get(providerId);
+			const lastSuccessMs = Date.parse(status?.last_success_at ?? "");
+			return status?.model_count === 0 && Number.isFinite(lastSuccessMs) && lastSuccessMs >= staleCutoffMs;
 		};
 		const providerApiPricingChangesByProvider = new Map<string, PricingProviderChange>();
 		const providerApiProvidersWithoutPricing = new Set<string>();
@@ -1006,7 +1018,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		const providerProcessingResults = await mapWithConcurrency(
 			providers,
 			discoveryConcurrency,
-			(provider) => processProvider(provider, previousState, runId, checkedWithinRetention(provider.providerId)),
+			(provider) => processProvider(provider, previousState, runId, checkedEmptyWithinRetention(provider.providerId)),
 		);
 
 		// Merge in provider order, not completion order, so stored summaries and
@@ -1294,7 +1306,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		try {
 			providerHealth = await runProviderHealthCheck({
 				runId,
-				outcomes: results.map(toProviderCheckOutcome),
+				outcomes: results.map((result) => toProviderCheckOutcome(result, !persistenceDeferredReason)),
 				notify: shouldNotify,
 				coversAllProviders: providers.length === PROVIDERS.length,
 				previousById: previousProviderStatuses ?? undefined,

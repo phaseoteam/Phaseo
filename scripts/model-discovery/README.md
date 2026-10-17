@@ -48,7 +48,7 @@ Every sweep records each provider's outcome (`ok`, `skipped` for a missing key, 
 - an alerted provider recovers, or
 - a provider that was being checked becomes skipped (usually a removed key).
 
-A failed or disabled delivery leaves the row's `alerted_at` (failing/recovered) or `skip_notice_pending` (no longer checked) unchanged, so a later sweep retries. A provider with no stored models is baselined silently on its first successful check unless it was checked successfully within the retention window; if the status table cannot be read, such providers are not written that sweep, so the next sweep decides. To see what is failing now:
+A failed or disabled delivery leaves the row's `alerted_at` (failing/recovered) or `skip_notice_pending` (no longer checked) unchanged, so a later sweep retries. Long alert lists are split into messages under Discord's limit (at most 5 per sweep), and only delivered alerts are acknowledged. A provider with no stored models is baselined silently on its first successful check unless its last recorded successful check (one whose models were persisted) within the retention window listed zero models; if the status table cannot be read, such providers are not written that sweep, so the next sweep decides. To see what is failing now:
 
 ```sql
 select provider_id, status, consecutive_failures, failing_since, reason

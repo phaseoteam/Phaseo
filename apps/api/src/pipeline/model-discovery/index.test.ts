@@ -185,15 +185,22 @@ describe("markPendingModelRemovals", () => {
 
 describe("toProviderCheckOutcome", () => {
 	it("maps each provider result onto the health outcome it records", () => {
-		expect(toProviderCheckOutcome({
-			providerId: "mistral", providerName: "Mistral", status: "success", modelCount: 54, durationMs: 190, change: null,
-		})).toEqual({ providerId: "mistral", providerName: "Mistral", status: "ok", reason: null, modelCount: 54, durationMs: 190 });
+		const mistral = { providerId: "mistral", providerName: "Mistral", status: "success" as const, modelCount: 54, durationMs: 190, change: null };
+		expect(toProviderCheckOutcome(mistral)).toEqual({
+			providerId: "mistral", providerName: "Mistral", status: "ok", reason: null, modelCount: 54, durationMs: 190, recorded: true,
+		});
 		expect(toProviderCheckOutcome({
 			providerId: "avian", providerName: "Avian", status: "skipped", reason: "Missing env: AVIAN_API_KEY",
-		})).toEqual({ providerId: "avian", providerName: "Avian", status: "skipped", reason: "Missing env: AVIAN_API_KEY", modelCount: null, durationMs: null });
+		})).toEqual({ providerId: "avian", providerName: "Avian", status: "skipped", reason: "Missing env: AVIAN_API_KEY", modelCount: null, durationMs: null, recorded: true });
 		expect(toProviderCheckOutcome({
 			providerId: "stepfun", providerName: "StepFun", status: "error", reason: "HTTP 401", durationMs: 510,
-		})).toEqual({ providerId: "stepfun", providerName: "StepFun", status: "error", reason: "HTTP 401", modelCount: null, durationMs: 510 });
+		})).toEqual({ providerId: "stepfun", providerName: "StepFun", status: "error", reason: "HTTP 401", modelCount: null, durationMs: 510, recorded: true });
+	});
+
+	it("does not count a success as recorded when its models were not persisted", () => {
+		const mistral = { providerId: "mistral", providerName: "Mistral", status: "success" as const, modelCount: 54, durationMs: 190, change: null };
+		expect(toProviderCheckOutcome(mistral, false).recorded).toBe(false);
+		expect(toProviderCheckOutcome({ ...mistral, firstCheckDeferred: true }).recorded).toBe(false);
 	});
 });
 
