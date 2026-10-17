@@ -1,5 +1,6 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { resolveVertexAccessToken } from "@providers/google-vertex/auth";
+import { isOpenAICompatProvider, resolveOpenAICompatKey } from "@providers/openai-compatible/config";
 import {
 	extractProviderApiModelSnapshot,
 	hasProviderApiSnapshotValue,
@@ -642,6 +643,24 @@ export function readBindingEnv(names: string[]): string | null {
 	return null;
 }
 
+/**
+ * Resolves the key discovery sends to a provider. Falls back to the gateway's own
+ * resolver because the gateway accepts binding aliases that a provider's primary
+ * apiKeyEnv does not list (prod stores MISTRAL_AI_API_KEY and META_MODEL_API_KEY),
+ * and a key the gateway can route with must never leave the provider unwatched.
+ */
+export function resolveDiscoveryApiKey(provider: Pick<ProviderConfig, "providerId" | "apiKeyEnv">): string | null {
+	const configured = provider.apiKeyEnv ? readBindingEnv(provider.apiKeyEnv) : null;
+	if (configured || !isOpenAICompatProvider(provider.providerId)) return configured;
+	try {
+		const { key } = resolveOpenAICompatKey({ providerId: provider.providerId, byokMeta: [], forceGatewayKey: true });
+		const trimmed = key.trim();
+		return trimmed && !isPlaceholderValue(trimmed) ? trimmed : null;
+	} catch {
+		return null;
+	}
+}
+
 export function toBool(value: string | undefined | null, fallback = false): boolean {
 	if (value === undefined || value === null) return fallback;
 	const normalized = value.trim().toLowerCase();
@@ -788,6 +807,14 @@ export function hasAtlascloudLlmCategory(row: Record<string, unknown>): boolean 
 			.some((value) => value === "llm");
 	}
 
+	// AtlasCloud's /models stopped sending categories (seen 2026-10-17) and now
+	// describes models by modality, so a text-output model is the LLM signal.
+	if (row.categories === undefined || row.categories === null) {
+		return asArray(row.output_modalities).some(
+			(value) => typeof value === "string" && value.trim().toLowerCase() === "text",
+		);
+	}
+
 	return false;
 }
 
@@ -801,14 +828,15 @@ export function shouldIncludeDiscoveredModel(providerId: string, row: Record<str
 	return true;
 }
 
-export function extractDiscoveredModels(providerId: string, payload: unknown): DiscoveredModel[] {
+/** The arrays in a /models payload that can hold model entries, in extraction order. */
+function modelListCollections(providerId: string, payload: unknown): unknown[][] {
 	const root = asRecord(payload);
 	if (!root && !Array.isArray(payload)) return [];
 	const nestedProviderModels = providerId === "weights-and-biases" && root
 		? Object.values(root).flatMap((provider) => Object.values(asRecord(asRecord(provider)?.models) ?? {}))
 		: [];
 
-	const candidateCollections: unknown[] = [
+	return [
 		payload,
 		root?.data,
 		root?.models,
@@ -816,13 +844,30 @@ export function extractDiscoveredModels(providerId: string, payload: unknown): D
 		root?.result,
 		asRecord(root?.result)?.data,
 		asRecord(root?.result)?.models,
-		nestedProviderModels,
-	];
+		nestedProviderModels.length > 0 ? nestedProviderModels : undefined,
+	].filter((collection): collection is unknown[] => Array.isArray(collection));
+}
 
+/**
+ * Extracts a provider's models, failing when an empty result is not an explicitly empty list. An
+ * unrecognised payload, or entries a filter dropped (how AtlasCloud's category change went unnoticed),
+ * must not pass as a provider that lists no models.
+ */
+export function extractListedModels(providerId: string, payload: unknown): DiscoveredModel[] {
+	const models = extractDiscoveredModels(providerId, payload);
+	if (models.length > 0) return models;
+	const collections = modelListCollections(providerId, payload);
+	if (collections.length === 0) throw new Error(`${providerId} response has no recognisable model list`);
+	const listed = collections.reduce((total, collection) => total + collection.length, 0);
+	if (listed > 0) throw new Error(`${providerId} listed ${listed} entries but none were usable models`);
+	return models;
+}
+
+export function extractDiscoveredModels(providerId: string, payload: unknown): DiscoveredModel[] {
 	const output = new Map<string, DiscoveredModel>();
 
-	for (const collection of candidateCollections) {
-		for (const item of asArray(collection)) {
+	for (const collection of modelListCollections(providerId, payload)) {
+		for (const item of collection) {
 			const row = asRecord(item);
 			if (!row) continue;
 			if (!shouldIncludeDiscoveredModel(providerId, row)) continue;
@@ -983,7 +1028,7 @@ export async function fetchProviderModels(provider: ProviderConfig, apiKey?: str
 					return rows;
 				}),
 			);
-			return extractDiscoveredModels(provider.providerId, {
+			return extractListedModels(provider.providerId, {
 				publisherModels: publisherModels.flat(),
 			});
 		}
@@ -1043,7 +1088,7 @@ export async function fetchProviderModels(provider: ProviderConfig, apiKey?: str
 		if (providerResponseErrorMessage) {
 			throw new Error(`${provider.providerName} (${provider.providerId}) response error: ${providerResponseErrorMessage}`);
 		}
-		return extractDiscoveredModels(provider.providerId, payload);
+		return extractListedModels(provider.providerId, payload);
 	} finally {
 		clearTimeout(timeout);
 	}
@@ -1075,7 +1120,9 @@ export function assertSafeDiscoverySnapshot(
 	currentIds: string[],
 	minimumRetainedRatio = 0.25,
 ): void {
-	if (currentIds.length === 0) {
+	// An empty list only threatens state when there is a previous snapshot to lose;
+	// a provider that has never listed models (AI21's /models is empty) is just empty.
+	if (currentIds.length === 0 && previousIds.length > 0) {
 		throw new Error(`${providerId} returned zero models; refusing to replace the previous snapshot`);
 	}
 	if (previousIds.length < 5) return;
