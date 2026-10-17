@@ -84,6 +84,11 @@ async function captureAnthropic(ir: IRChatRequest, model = "claude-sonnet-5"): P
 	return mock.calls[0]!;
 }
 
+// Compare the parsed host, not a URL prefix, so the matcher cannot be satisfied by a lookalike host.
+function hasHost(url: string, host: string): boolean {
+	return new URL(url).host === host;
+}
+
 async function captureFailedCall(
 	match: (url: string) => boolean,
 	run: () => Promise<unknown>,
@@ -244,7 +249,7 @@ describe("R5: documented cache_control on Chat and Responses", () => {
 	});
 
 	it("gates Azure on the model, not the deployment name", async () => {
-		const call = await captureFailedCall((url) => url.startsWith("https://api.azure.example"), () => azureExecute(args(chatIR({
+		const call = await captureFailedCall((url) => hasHost(url, "api.azure.example"), () => azureExecute(args(chatIR({
 			model: "openai/gpt-5.4",
 			messages: [{ role: "user", content: [{ type: "text", text: "Doc", prompt_cache_breakpoint: { mode: "explicit" } }] }],
 			prompt_cache_options: { mode: "explicit", ttl: "30m" },
@@ -254,7 +259,7 @@ describe("R5: documented cache_control on Chat and Responses", () => {
 	});
 
 	it("strips OpenAI-only and Anthropic-style cache fields for other compatible providers", async () => {
-		const call = await captureFailedCall((url) => url.startsWith("https://api.cerebras.example"), () => cerebrasExecutor(args(chatIR({
+		const call = await captureFailedCall((url) => hasHost(url, "api.cerebras.example"), () => cerebrasExecutor(args(chatIR({
 			model: "openai/gpt-oss-120b",
 			messages: [
 				{ role: "system", content: [{ type: "text", text: "Policy", cache_control: { type: "ephemeral" } }] },
@@ -348,7 +353,7 @@ describe("R1: Bedrock Claude on every client protocol", () => {
 		["responses", "openai.responses"],
 	])("sends %s requests for Claude to the Messages API", async (endpoint, protocol) => {
 		const mock = installFetchMock([{
-			match: (url) => url.startsWith("https://api.bedrock.example"),
+			match: (url) => hasHost(url, "api.bedrock.example"),
 			response: () => jsonResponse({ id: "msg_bdrk", type: "message", role: "assistant", model: "anthropic.claude-opus-5", content: [{ type: "text", text: "ok" }], stop_reason: "end_turn", usage: { input_tokens: 3, cache_read_input_tokens: 1024, output_tokens: 1 } }),
 		}]);
 		let result;
@@ -481,7 +486,7 @@ describe("R7: cache and identity hints never constrain routing", () => {
 
 describe("R8: production capability params never filter the request", () => {
 	it("forwards tools and prompt_cache_key on an IonRouter route whose catalogue lists three params", async () => {
-		const call = await captureFailedCall((url) => url.startsWith("https://api.ionrouter.example"), () => ionRouterExecutor(args(chatIR({
+		const call = await captureFailedCall((url) => hasHost(url, "api.ionrouter.example"), () => ionRouterExecutor(args(chatIR({
 			model: "z-ai/glm-5",
 			tools: [weatherTool],
 			messages: [{ role: "user", content: "Weather in Paris?" }],
