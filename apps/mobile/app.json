@@ -10,6 +10,7 @@
     ],
     "orientation": "default",
     "userInterfaceStyle": "automatic",
+    "icon": "./assets/phaseo-icon.png",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.phaseo.client"
@@ -17,13 +18,34 @@
     "android": {
       "package": "app.phaseo.client",
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/phaseo-icon.png",
+        "backgroundColor": "#ffffff",
+        "monochromeImage": "./assets/phaseo-icon.png"
       }
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#ffffff",
+          "image": "./assets/phaseo-wordmark-dark.png",
+          "imageWidth": 240,
+          "dark": {
+            "backgroundColor": "#09090b",
+            "image": "./assets/phaseo-wordmark-light.png"
+          }
+        }
+      ],
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "color": "#2563eb",
+          "defaultChannel": "model-releases"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

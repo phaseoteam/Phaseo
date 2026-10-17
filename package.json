@@ -11,6 +11,10 @@
 	],
 	"scripts": {
 		"dev": "turbo run dev --parallel",
+		"brand-assets:sync": "node scripts/sync-brand-assets.mjs",
+		"brand-assets:check": "node scripts/sync-brand-assets.mjs --check",
+		"brand-assets:sync": "node scripts/sync-brand-assets.mjs",
+		"brand-assets:check": "node scripts/sync-brand-assets.mjs --check",
 		"dev:cloudflare-web": "node scripts/dev-cloudflare-web.mjs",
 		"build": "turbo run build",
 		"lint": "turbo run lint",

@@ -4,7 +4,7 @@ import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-nativ
 import { useRouter } from "expo-router";
 import { Screen, usePalette } from "@/components/ui";
 import { useAuth } from "@/providers/AppProviders";
-import { colour, radius, space } from "@/theme";
+import { colour, font, radius, space } from "@/theme";
 
 export default function SignInScreen() {
   const { signInWithEmail, signInWithProvider } = useAuth();
@@ -26,13 +26,13 @@ export default function SignInScreen() {
     }
   };
 
-  return <Screen safeTop={false}><View style={styles.content}>
+  return <Screen headerTitle="Sign in" headerBack><View style={styles.content}>
     <Text style={[styles.title, { color: palette.text }]}>Continue to Phaseo</Text>
     <Text style={[styles.body, { color: palette.muted }]}>Sign in to access your workspaces, usage and account settings.</Text>
-    <Pressable disabled={busy} onPress={() => void run(() => signInWithProvider("google"))} style={[styles.button, { borderColor: palette.border }]}><Text style={{ color: palette.text, fontWeight: "600" }}>Continue with Google</Text></Pressable>
-    <Pressable disabled={busy} onPress={() => void run(() => signInWithProvider("github"))} style={[styles.button, { borderColor: palette.border }]}><Github color={palette.text} size={18} /><Text style={{ color: palette.text, fontWeight: "600" }}>Continue with GitHub</Text></Pressable>
+    <Pressable disabled={busy} onPress={() => void run(() => signInWithProvider("google"))} style={[styles.button, { borderColor: palette.border }]}><Text style={{ color: palette.text, fontFamily: font.semibold }}>Continue with Google</Text></Pressable>
+    <Pressable disabled={busy} onPress={() => void run(() => signInWithProvider("github"))} style={[styles.button, { borderColor: palette.border }]}><Github color={palette.text} size={18} /><Text style={{ color: palette.text, fontFamily: font.semibold }}>Continue with GitHub</Text></Pressable>
     <View style={styles.emailRow}><TextInput autoCapitalize="none" autoComplete="email" keyboardType="email-address" value={email} onChangeText={setEmail} placeholder="you@example.com" placeholderTextColor={palette.muted} style={[styles.input, { borderColor: palette.border, color: palette.text }]} /><Pressable disabled={busy || !email.trim()} onPress={() => void run(() => signInWithEmail(email.trim()), "Open the secure link on this device to finish signing in.")} style={[styles.mailButton, { opacity: busy || !email.trim() ? 0.45 : 1 }]}><Mail color={colour.white} size={18} /></Pressable></View>
   </View></Screen>;
 }
 
-const styles = StyleSheet.create({ content: { padding: space.xl, gap: space.lg }, title: { fontSize: 26, fontWeight: "700" }, body: { fontSize: 15, lineHeight: 22 }, button: { minHeight: 50, borderWidth: 1, borderRadius: radius.md, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: space.sm }, emailRow: { flexDirection: "row", gap: space.sm }, input: { flex: 1, minHeight: 50, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: space.lg }, mailButton: { width: 50, borderRadius: radius.md, backgroundColor: colour.blue, alignItems: "center", justifyContent: "center" } });
+const styles = StyleSheet.create({ content: { padding: space.xl, gap: space.lg }, title: { fontFamily: font.bold, fontSize: 28, letterSpacing: -0.5 }, body: { fontFamily: font.regular, fontSize: 14, lineHeight: 22 }, button: { minHeight: 50, borderWidth: 1, borderRadius: radius.md, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: space.sm }, emailRow: { flexDirection: "row", gap: space.sm }, input: { flex: 1, minHeight: 50, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: space.lg, fontFamily: font.regular, fontSize: 14 }, mailButton: { width: 50, borderRadius: radius.md, backgroundColor: colour.blue, alignItems: "center", justifyContent: "center" } });

@@ -6,6 +6,9 @@ packages:
 publicHoistPattern:
   - "@electron-forge/*"
 
+# Keep native Android/CMake object paths below Windows' path limits.
+virtualStoreDirMaxLength: 32
+
 allowBuilds:
   '@scarf/scarf': false
   core-js: set this to true or false
@@ -31,6 +34,9 @@ minimumReleaseAgeExclude:
   - "expo-*"
   - "eslint-config-expo"
   - "jest-expo"
+  # React Native patch releases are coordinated with Expo SDK compatibility.
+  - "@react-native/*"
+  - "react-native"
   - "@next/*"
   - "eslint-config-next"
   - "next"

@@ -14,6 +14,8 @@ const pruneExpiredDataContributionsMock = vi.fn();
 const runPaymentMethodExpiryNotificationJobMock = vi.fn();
 const runNotificationDeliveryJobMock = vi.fn();
 const enqueueModelDeprecationNotificationsMock = vi.fn();
+const runModelReleasePushJobMock = vi.fn();
+const runModelReleasePushJobMock = vi.fn();
 const runAccountDeletionPurgeJobMock = vi.fn();
 const pruneExpiredGatewayIoLogsMock = vi.fn();
 
@@ -51,6 +53,14 @@ vi.mock("@/pipeline/notifications/billing-alerts", () => ({
 vi.mock("@/pipeline/notifications/notification-delivery", () => ({
 	runNotificationDeliveryJob: (...args: unknown[]) => runNotificationDeliveryJobMock(...args),
 	enqueueModelDeprecationNotifications: (...args: unknown[]) => enqueueModelDeprecationNotificationsMock(...args),
+}));
+
+vi.mock("@/pipeline/notifications/model-release-push", () => ({
+	runModelReleasePushJob: (...args: unknown[]) => runModelReleasePushJobMock(...args),
+}));
+
+vi.mock("@/pipeline/notifications/model-release-push", () => ({
+	runModelReleasePushJob: (...args: unknown[]) => runModelReleasePushJobMock(...args),
 }));
 
 vi.mock("@/pipeline/model-discovery", () => ({
@@ -98,6 +108,10 @@ describe("handleScheduledEvent", () => {
 		runVideoReconciliationJobMock.mockReset();
 		drainEmailOutboxMock.mockReset();
 		runModelDiscoveryJobMock.mockReset();
+		runModelReleasePushJobMock.mockReset();
+		runModelReleasePushJobMock.mockResolvedValue({ events: 0, sent: 0, failed: 0 });
+		runModelReleasePushJobMock.mockReset();
+		runModelReleasePushJobMock.mockResolvedValue({ events: 0, sent: 0, failed: 0 });
 		oauthCleanupRpcMock.mockReset();
 		runGatewayIoRetentionBillingJobMock.mockReset();
 		pruneExpiredDataContributionsMock.mockReset();

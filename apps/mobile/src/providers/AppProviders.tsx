@@ -1,7 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import "react-native-url-polyfill/auto";
 import { createClient, processLock, type Session } from "@supabase/supabase-js";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import Constants from "expo-constants";
 import * as Linking from "expo-linking";
 import * as SecureStore from "expo-secure-store";
@@ -42,7 +44,14 @@ export const supabase = supabaseUrl && supabasePublishableKey ? createClient(sup
   auth: { storage, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false, lock: processLock }
 }) : null;
 
-const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000, retry: 1, networkMode: "offlineFirst" } } });
+const queryCacheKey = "phaseo.react-query-cache";
+const queryCacheMaxAge = 1000 * 60 * 60 * 24;
+const queryPersister = createAsyncStoragePersister({
+  storage: AsyncStorage,
+  key: queryCacheKey,
+  throttleTime: 2000
+});
+const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 1000 * 60 * 5, gcTime: queryCacheMaxAge, retry: 1, networkMode: "offlineFirst" } } });
 
 export function AppProviders({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
@@ -81,12 +90,14 @@ export function AppProviders({ children }: PropsWithChildren) {
     },
     signOut: async () => {
     await supabase?.auth.signOut();
-    await Promise.all([
-      secureKey.clear(),
-      AsyncStorage.removeItem("phaseo.workspace"),
-      AsyncStorage.removeItem("phaseo.private-cache"),
-    ]);
+    await Promise.all([secureKey.clear(), AsyncStorage.multiRemove(["phaseo.workspace", "phaseo.private-cache"])]);
     queryClient.clear();
+    await queryPersister.removeClient();
   } }), [session, ready]);
-  return <QueryClientProvider client={queryClient}><AuthContext.Provider value={value}>{children}</AuthContext.Provider></QueryClientProvider>;
+  return <PersistQueryClientProvider client={queryClient} persistOptions={{
+    persister: queryPersister,
+    maxAge: queryCacheMaxAge,
+    buster: "mobile-catalog-v2",
+    dehydrateOptions: { shouldDehydrateQuery: query => query.state.status === "success" && query.queryKey[0] !== "usage" }
+  }}><AuthContext.Provider value={value}>{children}</AuthContext.Provider></PersistQueryClientProvider>;
 }

@@ -3,6 +3,8 @@
 export type GatewayBindings = {
     SUPABASE_URL: string;
     SUPABASE_SERVICE_ROLE_KEY: string;
+    EXPO_ACCESS_TOKEN?: string;
+    EXPO_ACCESS_TOKEN?: string;
     GATEWAY_CACHE: KVNamespace;
 	GATEWAY_IO_LOGS_BUCKET?: R2Bucket;
 	GATEWAY_IO_LOGS_BUCKET_NAME?: string;

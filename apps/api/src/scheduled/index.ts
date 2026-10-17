@@ -16,6 +16,8 @@ import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
 import { runPaymentMethodExpiryNotificationJob } from "@/pipeline/notifications/billing-alerts";
 import { enqueueModelDeprecationNotifications, runNotificationDeliveryJob } from "@/pipeline/notifications/notification-delivery";
+import { runModelReleasePushJob } from "@/pipeline/notifications/model-release-push";
+import { runModelReleasePushJob } from "@/pipeline/notifications/model-release-push";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 import { runGatewayIoRetentionBillingJob } from "@/pipeline/audit/io-retention-billing";
 import { runBatchProviderWebhookReplayJob } from "@/routes/internal/batch-webhooks.helpers";
@@ -312,6 +314,26 @@ async function handleNotificationDeliveryScheduledEvent(env: GatewayBindings): P
 	}
 }
 
+async function handleModelReleasePushScheduledEvent(env: GatewayBindings): Promise<void> {
+	configureRuntime(env);
+	try {
+		const summary = await runModelReleasePushJob({ expoAccessToken: env.EXPO_ACCESS_TOKEN });
+		if (summary.events > 0 || summary.sent > 0 || summary.failed > 0) console.log("model_release_push_completed", summary);
+	} finally {
+		clearRuntime();
+	}
+}
+
+async function handleModelReleasePushScheduledEvent(env: GatewayBindings): Promise<void> {
+	configureRuntime(env);
+	try {
+		const summary = await runModelReleasePushJob({ expoAccessToken: env.EXPO_ACCESS_TOKEN });
+		if (summary.events > 0 || summary.sent > 0 || summary.failed > 0) console.log("model_release_push_completed", summary);
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handleModelDeprecationScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
 	configureRuntime(env);
 	try {
@@ -472,6 +494,16 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 		}
 	}
 	if (isCoreJobsTick(event)) {
+		try {
+			await handleModelReleasePushScheduledEvent(env);
+		} catch (error) {
+			console.error("model_release_push_scheduled_failed", serializeError(error));
+		}
+		try {
+			await handleModelReleasePushScheduledEvent(env);
+		} catch (error) {
+			console.error("model_release_push_scheduled_failed", serializeError(error));
+		}
 		try {
 			await handleGatewayIoRetentionExpiryScheduledEvent(event, env);
 		} catch (error) {

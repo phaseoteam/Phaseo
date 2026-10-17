@@ -7,7 +7,9 @@
 	},
 	"packageManager": "pnpm@10.33.0",
 	"scripts": {
+		"predev": "node ../../scripts/sync-brand-assets.mjs",
 		"dev": "node --max-http-header-size=32768 ./node_modules/next/dist/bin/next dev --turbopack --port 3100",
+		"prebuild": "node ../../scripts/sync-brand-assets.mjs",
 		"build": "next build",
 		"start": "next start --port 3100",
 		"lint": "eslint src",
@@ -36,6 +38,8 @@
 	},
 	"dependencies": {
 		"@1password/save-button": "^1.3.0",
+		"@phaseo/brand-assets": "workspace:*",
+		"@phaseo/brand-assets": "workspace:*",
 		"@base-ui/react": "^1.3.0",
 		"@dnd-kit/core": "^6.3.1",
 		"@dnd-kit/sortable": "^10.0.0",

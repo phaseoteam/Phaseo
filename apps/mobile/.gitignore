@@ -1,3 +1,6 @@
 .expo/
 dist/
 node_modules/
+expo-env.d.ts
+android/
+ios/
