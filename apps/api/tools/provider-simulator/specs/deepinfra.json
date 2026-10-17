@@ -1,0 +1,2713 @@
+{
+	"id": "deepinfra",
+	"source": {
+		"url": "https://api.deepinfra.com/openapi.json",
+		"docs": null,
+		"fetchedAt": "2026-10-17T17:07:03.471Z",
+		"sha256": "e928e0bf5d3063ef9c8dca1e8a028769894e19e6bd6180de6aa9e05801d5aaeb",
+		"handWritten": false,
+		"notes": "Served live by the API host (server https://api.deepinfra.com). The spec lists chat at /v1/chat/completions, but the gateway code references the /v1/openai prefix and the spec has no /v1/openai/chat/completions path (only /v1/openai/videos*). Assumed (unverified) that both prefixes share the same bo"
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"$ref": "#/components/schemas/OpenAIChatCompletionsIn"
+			},
+			"response": {}
+		},
+		"responses": {
+			"request": {
+				"$ref": "#/components/schemas/ResponsesIn"
+			},
+			"response": {}
+		},
+		"messages": {
+			"request": {
+				"$ref": "#/components/schemas/AnthropicMessagesIn"
+			},
+			"response": {}
+		}
+	},
+	"components": {
+		"schemas": {
+			"OpenAIChatCompletionsIn": {
+				"properties": {
+					"service_tier": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/ServiceTier"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "The service tier used for processing the request. 'priority' processes the request with higher priority (premium rate); 'flex' processes it at lower priority for a discount, served only when spare capacity exists and may be retried/timed out under load. Both apply only to models that support the respective tier. For compatibility, 'auto' is treated as 'priority' and 'standard_only' as 'default'."
+					},
+					"fail_fast": {
+						"type": "boolean",
+						"title": "Fail Fast",
+						"description": "If true, the request is rejected immediately with HTTP 429 when the model has no spare capacity, instead of waiting in the queue. Opt-in; the default (false) keeps standard queueing behavior.",
+						"default": false
+					},
+					"models": {
+						"anyOf": [
+							{
+								"items": {
+									"type": "string"
+								},
+								"type": "array",
+								"maxItems": 4,
+								"minItems": 1
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Models",
+						"description": "Ordered list of up to 4 fallback models. The request is attempted on each model in order: when a model rejects it for lack of capacity (HTTP 429 model-busy / flex no-capacity), the next model is tried server-side. The first model that accepts serves the request; the response's model field and billing reflect that model, at that model's pricing. Models before the last are attempted without queueing (as if fail_fast were set); the last model honors the request's own fail_fast value. When models is set, the model field is ignored. Entries must be plain model names (no deploy_id:, custom_hostport, or :revision specifiers); duplicate entries are ignored, keeping the first occurrence."
+					},
+					"model": {
+						"type": "string",
+						"title": "Model",
+						"description": "model name",
+						"examples": [
+							"meta-llama/Llama-2-70b-chat-hf"
+						]
+					},
+					"messages": {
+						"items": {
+							"oneOf": [
+								{
+									"$ref": "#/components/schemas/ChatCompletionToolMessage"
+								},
+								{
+									"$ref": "#/components/schemas/ChatCompletionAssistantMessage"
+								},
+								{
+									"$ref": "#/components/schemas/ChatCompletionUserMessage"
+								},
+								{
+									"$ref": "#/components/schemas/ChatCompletionSystemMessage"
+								}
+							]
+						},
+						"type": "array",
+						"title": "Messages",
+						"description": "conversation messages: (user,assistant,tool)*,user including one system message anywhere"
+					},
+					"stream": {
+						"type": "boolean",
+						"title": "Stream",
+						"description": "whether to stream the output via SSE or return the full response",
+						"default": false
+					},
+					"temperature": {
+						"type": "number",
+						"maximum": 2,
+						"minimum": 0,
+						"title": "Temperature",
+						"description": "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic",
+						"default": 1
+					},
+					"top_p": {
+						"type": "number",
+						"maximum": 1,
+						"exclusiveMinimum": 0,
+						"title": "Top P",
+						"description": "An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered.",
+						"default": 1
+					},
+					"min_p": {
+						"type": "number",
+						"maximum": 1,
+						"minimum": 0,
+						"title": "Min P",
+						"description": "Float that represents the minimum probability for a token to be considered, relative to the probability of the most likely token. Must be in [0, 1]. Set to 0 to disable this.",
+						"default": 0
+					},
+					"top_k": {
+						"type": "integer",
+						"exclusiveMaximum": 1000,
+						"minimum": 0,
+						"title": "Top K",
+						"description": "Sample from the best k (number of) tokens. 0 means off",
+						"default": 0
+					},
+					"max_tokens": {
+						"anyOf": [
+							{
+								"type": "integer",
+								"maximum": 10000000,
+								"exclusiveMinimum": 0
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Max Tokens",
+						"description": "The maximum number of tokens to generate in the chat completion.\n\nThe total length of input tokens and generated tokens is limited by the model's context length. If explicitly set to None it will be the model's max context length minus input length or 65536, whichever is smaller."
+					},
+					"stop": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"items": {
+									"type": "string"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Stop",
+						"description": "up to 16 sequences where the API will stop generating further tokens"
+					},
+					"stop_token_ids": {
+						"anyOf": [
+							{
+								"items": {
+									"type": "integer"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Stop Token Ids",
+						"description": "Up to 16 token IDs where the API will stop generating further tokens. Merged with the model's built-in stop tokens. Intended for private deployments."
+					},
+					"n": {
+						"type": "integer",
+						"maximum": 4,
+						"minimum": 1,
+						"title": "N",
+						"description": "number of sequences to return",
+						"default": 1
+					},
+					"presence_penalty": {
+						"type": "number",
+						"maximum": 2,
+						"minimum": -2,
+						"title": "Presence Penalty",
+						"description": "Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.",
+						"default": 0
+					},
+					"frequency_penalty": {
+						"type": "number",
+						"maximum": 2,
+						"minimum": -2,
+						"title": "Frequency Penalty",
+						"description": "Positive values penalize new tokens based on how many times they appear in the text so far, increasing the model's likelihood to talk about new topics.",
+						"default": 0
+					},
+					"tools": {
+						"anyOf": [
+							{
+								"items": {
+									"$ref": "#/components/schemas/FunctionTool"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Tools",
+						"description": "A list of tools the model may call. Currently, only functions are supported as a tool."
+					},
+					"tool_choice": {
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": [
+									"none",
+									"auto",
+									"required"
+								]
+							},
+							{
+								"$ref": "#/components/schemas/FunctionTool"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Tool Choice",
+						"description": "Controls which (if any) function is called by the model. none means the model will not call a function and instead generates a message. auto means the model can pick between generating a message or calling a function. required means the model must call a function. defined tool means the model must call that specific tool. none is the default when no functions are present. auto is the default if functions are present."
+					},
+					"response_format": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/TextResponseFormat"
+							},
+							{
+								"$ref": "#/components/schemas/JsonObjectResponseFormat"
+							},
+							{
+								"$ref": "#/components/schemas/JsonSchemaResponseFormat"
+							},
+							{
+								"$ref": "#/components/schemas/RegexResponseFormat"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Response Format",
+						"description": "The format of the response. Currently, only json is supported."
+					},
+					"repetition_penalty": {
+						"type": "number",
+						"maximum": 5,
+						"minimum": 0.01,
+						"title": "Repetition Penalty",
+						"description": "Alternative penalty for repetition, but multiplicative instead of additive (> 1 penalize, < 1 encourage)",
+						"default": 1
+					},
+					"user": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "User",
+						"description": "A unique identifier representing your end-user, which can help monitor and detect abuse. Avoid sending us any identifying information. We recommend hashing user identifiers."
+					},
+					"seed": {
+						"anyOf": [
+							{
+								"type": "integer",
+								"exclusiveMaximum": 18446744073709552000,
+								"minimum": -9223372036854776000
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Seed",
+						"description": "Seed for random number generator. If not provided, a random seed is used. Determinism is not guaranteed."
+					},
+					"logprobs": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Logprobs",
+						"description": "Whether to return log probabilities of the output tokens or not.If true, returns the log probabilities of each output token returned in the `content` of `message`."
+					},
+					"stream_options": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/StreamOptions"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "streaming options"
+					},
+					"reasoning_effort": {
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": [
+									"none",
+									"minimal",
+									"low",
+									"medium",
+									"high",
+									"xhigh",
+									"max"
+								]
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Reasoning Effort",
+						"description": "Constrains effort on reasoning for reasoning models. Currently supported values are none, minimal, low, medium, high, xhigh, and max. Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response. Setting to none disables reasoning entirely if the model supports."
+					},
+					"reasoning": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/ChatReasoningSettings"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "Reasoning configuration."
+					},
+					"prompt_cache_key": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Prompt Cache Key",
+						"description": "A key to identify prompt cache for reuse across requests. If provided, the prompt will be cached and can be reused in subsequent requests with the same key."
+					},
+					"prompt_cache_options": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/PromptCacheOptions"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "Prompt cache options for this request's prefix, e.g. {\"ttl\": \"1h\"}."
+					},
+					"chat_template_kwargs": {
+						"anyOf": [
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Chat Template Kwargs",
+						"description": "Chat template kwargs."
+					},
+					"media_io_kwargs": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/MediaIoKwargs"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "Per-request media decode options keyed by modality, e.g. {\"video\": {\"num_frames\": 16}}. Honoured by video-input models served on vLLM or Dynamo; ignored elsewhere."
+					},
+					"continue_final_message": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Continue Final Message",
+						"description": "If set, the final assistant message is used as a prefix for the model to continue generating from, rather than starting a new turn. Only applicable when the last message in the conversation is an assistant message."
+					},
+					"ignore_eos": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Ignore Eos",
+						"description": "Keep generating until max_tokens instead of stopping at the end-of-sequence token. Only honoured on models tagged with the allow_ignore_eos feature flag; ignored otherwise. Intended for benchmarking, where a fixed output length is needed."
+					}
+				},
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"title": "OpenAIChatCompletionsIn"
+			},
+			"ResponsesIn": {
+				"properties": {
+					"service_tier": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/ServiceTier"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "The service tier used for processing the request. 'priority' processes the request with higher priority (premium rate); 'flex' processes it at lower priority for a discount, served only when spare capacity exists and may be retried/timed out under load. Both apply only to models that support the respective tier. For compatibility, 'auto' is treated as 'priority' and 'standard_only' as 'default'."
+					},
+					"fail_fast": {
+						"type": "boolean",
+						"title": "Fail Fast",
+						"description": "If true, the request is rejected immediately with HTTP 429 when the model has no spare capacity, instead of waiting in the queue. Opt-in; the default (false) keeps standard queueing behavior.",
+						"default": false
+					},
+					"models": {
+						"anyOf": [
+							{
+								"items": {
+									"type": "string"
+								},
+								"type": "array",
+								"maxItems": 4,
+								"minItems": 1
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Models",
+						"description": "Ordered list of up to 4 fallback models. The request is attempted on each model in order: when a model rejects it for lack of capacity (HTTP 429 model-busy / flex no-capacity), the next model is tried server-side. The first model that accepts serves the request; the response's model field and billing reflect that model, at that model's pricing. Models before the last are attempted without queueing (as if fail_fast were set); the last model honors the request's own fail_fast value. When models is set, the model field is ignored. Entries must be plain model names (no deploy_id:, custom_hostport, or :revision specifiers); duplicate entries are ignored, keeping the first occurrence."
+					},
+					"model": {
+						"type": "string",
+						"title": "Model"
+					},
+					"input": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"items": {
+									"anyOf": [
+										{
+											"$ref": "#/components/schemas/InputMessageItem"
+										},
+										{
+											"$ref": "#/components/schemas/InputFunctionCallItem"
+										},
+										{
+											"$ref": "#/components/schemas/InputFunctionCallOutputItem"
+										},
+										{
+											"$ref": "#/components/schemas/InputReasoningItem"
+										}
+									]
+								},
+								"type": "array"
+							}
+						],
+						"title": "Input"
+					},
+					"instructions": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Instructions"
+					},
+					"tools": {
+						"anyOf": [
+							{
+								"items": {
+									"anyOf": [
+										{
+											"$ref": "#/components/schemas/ResponsesFunctionTool"
+										},
+										{
+											"$ref": "#/components/schemas/ResponsesWebSearchTool"
+										},
+										{
+											"$ref": "#/components/schemas/ResponsesNamespaceTool"
+										},
+										{
+											"additionalProperties": true,
+											"type": "object"
+										}
+									]
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Tools"
+					},
+					"tool_choice": {
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": [
+									"auto",
+									"none",
+									"required"
+								]
+							},
+							{
+								"$ref": "#/components/schemas/ResponsesFunctionToolChoice"
+							},
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Tool Choice"
+					},
+					"text": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/ResponsesTextConfig"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"reasoning": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/ResponsesReasoningConfig"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"max_output_tokens": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Max Output Tokens"
+					},
+					"max_tool_calls": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Max Tool Calls"
+					},
+					"temperature": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Temperature"
+					},
+					"top_p": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Top P"
+					},
+					"top_logprobs": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Top Logprobs"
+					},
+					"metadata": {
+						"anyOf": [
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Metadata"
+					},
+					"parallel_tool_calls": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Parallel Tool Calls"
+					},
+					"stream": {
+						"type": "boolean",
+						"title": "Stream",
+						"default": false
+					},
+					"user": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "User"
+					},
+					"store": {
+						"type": "boolean",
+						"title": "Store",
+						"default": false
+					},
+					"previous_response_id": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Previous Response Id"
+					},
+					"background": {
+						"type": "boolean",
+						"title": "Background",
+						"default": false
+					},
+					"include": {
+						"anyOf": [
+							{
+								"items": {
+									"type": "string"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Include"
+					},
+					"truncation": {
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": [
+									"auto",
+									"disabled"
+								]
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Truncation"
+					},
+					"prompt": {
+						"anyOf": [
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Prompt"
+					},
+					"conversation": {
+						"anyOf": [
+							{},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Conversation"
+					},
+					"min_p": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Min P"
+					},
+					"top_k": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Top K"
+					},
+					"repetition_penalty": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Repetition Penalty"
+					},
+					"stop_token_ids": {
+						"anyOf": [
+							{
+								"items": {
+									"type": "integer"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Stop Token Ids"
+					},
+					"chat_template_kwargs": {
+						"anyOf": [
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Chat Template Kwargs"
+					},
+					"continue_final_message": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Continue Final Message"
+					},
+					"ignore_eos": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Ignore Eos"
+					},
+					"prompt_cache_key": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Prompt Cache Key"
+					},
+					"prompt_cache_options": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/PromptCacheOptions"
+							},
+							{
+								"type": "null"
+							}
+						]
+					}
+				},
+				"type": "object",
+				"required": [
+					"model",
+					"input"
+				],
+				"title": "ResponsesIn"
+			},
+			"AnthropicMessagesIn": {
+				"properties": {
+					"service_tier": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/ServiceTier"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "The service tier used for processing the request. 'priority' processes the request with higher priority (premium rate); 'flex' processes it at lower priority for a discount, served only when spare capacity exists and may be retried/timed out under load. Both apply only to models that support the respective tier. For compatibility, 'auto' is treated as 'priority' and 'standard_only' as 'default'."
+					},
+					"fail_fast": {
+						"type": "boolean",
+						"title": "Fail Fast",
+						"description": "If true, the request is rejected immediately with HTTP 429 when the model has no spare capacity, instead of waiting in the queue. Opt-in; the default (false) keeps standard queueing behavior.",
+						"default": false
+					},
+					"models": {
+						"anyOf": [
+							{
+								"items": {
+									"type": "string"
+								},
+								"type": "array",
+								"maxItems": 4,
+								"minItems": 1
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Models",
+						"description": "Ordered list of up to 4 fallback models. The request is attempted on each model in order: when a model rejects it for lack of capacity (HTTP 429 model-busy / flex no-capacity), the next model is tried server-side. The first model that accepts serves the request; the response's model field and billing reflect that model, at that model's pricing. Models before the last are attempted without queueing (as if fail_fast were set); the last model honors the request's own fail_fast value. When models is set, the model field is ignored. Entries must be plain model names (no deploy_id:, custom_hostport, or :revision specifiers); duplicate entries are ignored, keeping the first occurrence."
+					},
+					"model": {
+						"type": "string",
+						"title": "Model"
+					},
+					"max_tokens": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Max Tokens"
+					},
+					"messages": {
+						"items": {
+							"additionalProperties": true,
+							"type": "object"
+						},
+						"type": "array",
+						"title": "Messages"
+					},
+					"system": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"items": {
+									"$ref": "#/components/schemas/AnthropicSystemContent"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "System"
+					},
+					"stop_sequences": {
+						"anyOf": [
+							{
+								"items": {
+									"type": "string"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Stop Sequences"
+					},
+					"stream": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Stream",
+						"default": false
+					},
+					"temperature": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Temperature",
+						"default": 1
+					},
+					"top_p": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Top P"
+					},
+					"top_k": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Top K"
+					},
+					"metadata": {
+						"anyOf": [
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Metadata"
+					},
+					"tools": {
+						"anyOf": [
+							{
+								"items": {
+									"$ref": "#/components/schemas/AnthropicTool"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Tools"
+					},
+					"tool_choice": {
+						"anyOf": [
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Tool Choice"
+					},
+					"thinking": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/AnthropicThinkingConfig"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"prompt_cache_key": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Prompt Cache Key"
+					}
+				},
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"title": "AnthropicMessagesIn"
+			},
+			"ServiceTier": {
+				"type": "string",
+				"enum": [
+					"default",
+					"priority",
+					"flex"
+				],
+				"title": "ServiceTier"
+			},
+			"ChatCompletionToolMessage": {
+				"properties": {
+					"cache_control": {
+						"anyOf": [
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Cache Control",
+						"description": "Cache control for prompt caching"
+					},
+					"role": {
+						"type": "string",
+						"const": "tool",
+						"title": "Role",
+						"description": "the role of the author of this message",
+						"default": "tool"
+					},
+					"content": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"items": {
+									"$ref": "#/components/schemas/ChatCompletionContentPartText"
+								},
+								"type": "array"
+							}
+						],
+						"title": "Content",
+						"description": "the message content"
+					},
+					"tool_call_id": {
+						"type": "string",
+						"title": "Tool Call Id"
+					}
+				},
+				"type": "object",
+				"required": [
+					"content",
+					"tool_call_id"
+				],
+				"title": "ChatCompletionToolMessage"
+			},
+			"ChatCompletionAssistantMessage": {
+				"properties": {
+					"cache_control": {
+						"anyOf": [
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Cache Control",
+						"description": "Cache control for prompt caching"
+					},
+					"role": {
+						"type": "string",
+						"const": "assistant",
+						"title": "Role",
+						"description": "the role of the author of this message",
+						"default": "assistant"
+					},
+					"content": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"items": {
+									"$ref": "#/components/schemas/ChatCompletionContentPartText"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Content",
+						"description": "the message content"
+					},
+					"reasoning_content": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Reasoning Content",
+						"description": "the reasoning content"
+					},
+					"name": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Name"
+					},
+					"tool_calls": {
+						"anyOf": [
+							{
+								"items": {
+									"$ref": "#/components/schemas/ChatCompletionMessageToolCall"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Tool Calls",
+						"description": "the tool calls generated by the mode"
+					}
+				},
+				"type": "object",
+				"title": "ChatCompletionAssistantMessage"
+			},
+			"ChatCompletionUserMessage": {
+				"properties": {
+					"cache_control": {
+						"anyOf": [
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Cache Control",
+						"description": "Cache control for prompt caching"
+					},
+					"role": {
+						"type": "string",
+						"const": "user",
+						"title": "Role",
+						"description": "the role of the author of this message",
+						"default": "user"
+					},
+					"content": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"items": {
+									"anyOf": [
+										{
+											"$ref": "#/components/schemas/ChatCompletionContentPartText"
+										},
+										{
+											"$ref": "#/components/schemas/ChatCompletionContentPartImage"
+										},
+										{
+											"$ref": "#/components/schemas/ChatCompletionContentPartAudio"
+										},
+										{
+											"$ref": "#/components/schemas/ChatCompletionContentPartVideo"
+										},
+										{
+											"$ref": "#/components/schemas/ChatCompletionContentPartFile"
+										}
+									]
+								},
+								"type": "array"
+							}
+						],
+						"title": "Content",
+						"description": "the message content"
+					},
+					"name": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Name"
+					}
+				},
+				"type": "object",
+				"required": [
+					"content"
+				],
+				"title": "ChatCompletionUserMessage"
+			},
+			"ChatCompletionSystemMessage": {
+				"properties": {
+					"cache_control": {
+						"anyOf": [
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Cache Control",
+						"description": "Cache control for prompt caching"
+					},
+					"role": {
+						"type": "string",
+						"const": "system",
+						"title": "Role",
+						"description": "the role of the author of this message",
+						"default": "system"
+					},
+					"content": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"items": {
+									"$ref": "#/components/schemas/ChatCompletionContentPartText"
+								},
+								"type": "array"
+							}
+						],
+						"title": "Content",
+						"description": "the message content"
+					},
+					"name": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Name"
+					}
+				},
+				"type": "object",
+				"required": [
+					"content"
+				],
+				"title": "ChatCompletionSystemMessage"
+			},
+			"FunctionTool": {
+				"properties": {
+					"cache_control": {
+						"anyOf": [
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Cache Control",
+						"description": "Cache control for prompt caching"
+					},
+					"type": {
+						"type": "string",
+						"title": "Type",
+						"default": "function"
+					},
+					"function": {
+						"$ref": "#/components/schemas/FunctionDefinition"
+					}
+				},
+				"type": "object",
+				"required": [
+					"function"
+				],
+				"title": "FunctionTool"
+			},
+			"TextResponseFormat": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "text",
+						"title": "Type",
+						"default": "text"
+					}
+				},
+				"type": "object",
+				"title": "TextResponseFormat"
+			},
+			"JsonObjectResponseFormat": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "json_object",
+						"title": "Type",
+						"default": "json_object"
+					}
+				},
+				"type": "object",
+				"title": "JsonObjectResponseFormat"
+			},
+			"JsonSchemaResponseFormat": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "json_schema",
+						"title": "Type",
+						"default": "json_schema"
+					},
+					"json_schema": {
+						"$ref": "#/components/schemas/JsonSchema",
+						"description": "JSON schema for structured output when type is 'json_schema'"
+					}
+				},
+				"type": "object",
+				"required": [
+					"json_schema"
+				],
+				"title": "JsonSchemaResponseFormat"
+			},
+			"RegexResponseFormat": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "regex",
+						"title": "Type",
+						"default": "regex"
+					},
+					"regex": {
+						"type": "string",
+						"title": "Regex",
+						"description": "Regex pattern for structured output when type is 'regex'"
+					}
+				},
+				"type": "object",
+				"required": [
+					"regex"
+				],
+				"title": "RegexResponseFormat"
+			},
+			"StreamOptions": {
+				"properties": {
+					"include_usage": {
+						"type": "boolean",
+						"title": "Include Usage",
+						"description": "whether to include usage data",
+						"default": true
+					},
+					"continuous_usage_stats": {
+						"type": "boolean",
+						"title": "Continuous Usage Stats",
+						"description": "whether to include usage stats continuously with each streaming event",
+						"default": false
+					}
+				},
+				"type": "object",
+				"title": "StreamOptions"
+			},
+			"ChatReasoningSettings": {
+				"properties": {
+					"effort": {
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": [
+									"none",
+									"minimal",
+									"low",
+									"medium",
+									"high",
+									"xhigh",
+									"max"
+								]
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Effort",
+						"description": "Constrains effort on reasoning for reasoning models. Set to none to disable reasoning entirely if the model supports it."
+					},
+					"enabled": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Enabled",
+						"description": "Enable or disable reasoning with default parameters."
+					}
+				},
+				"type": "object",
+				"title": "ChatReasoningSettings"
+			},
+			"PromptCacheOptions": {
+				"properties": {
+					"mode": {
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": [
+									"explicit",
+									"implicit"
+								]
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Mode",
+						"description": "Prompt caching mode; 'explicit' requests explicit caching."
+					},
+					"ttl": {
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": [
+									"5m",
+									"1h"
+								]
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Ttl",
+						"description": "Requested cache retention for this request's prefix."
+					}
+				},
+				"type": "object",
+				"title": "PromptCacheOptions"
+			},
+			"MediaIoKwargs": {
+				"properties": {
+					"video": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/VideoDecodeOptions"
+							},
+							{
+								"type": "null"
+							}
+						]
+					}
+				},
+				"additionalProperties": false,
+				"type": "object",
+				"title": "MediaIoKwargs"
+			},
+			"InputMessageItem": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "message",
+						"title": "Type",
+						"default": "message"
+					},
+					"role": {
+						"type": "string",
+						"enum": [
+							"user",
+							"assistant",
+							"system",
+							"developer"
+						],
+						"title": "Role"
+					},
+					"content": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"items": {
+									"anyOf": [
+										{
+											"$ref": "#/components/schemas/InputTextPart"
+										},
+										{
+											"$ref": "#/components/schemas/InputImagePart"
+										},
+										{
+											"$ref": "#/components/schemas/InputFilePart"
+										},
+										{
+											"$ref": "#/components/schemas/OutputTextPart"
+										}
+									]
+								},
+								"type": "array"
+							}
+						],
+						"title": "Content"
+					},
+					"status": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Status"
+					}
+				},
+				"type": "object",
+				"required": [
+					"role",
+					"content"
+				],
+				"title": "InputMessageItem"
+			},
+			"InputFunctionCallItem": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "function_call",
+						"title": "Type"
+					},
+					"call_id": {
+						"type": "string",
+						"title": "Call Id"
+					},
+					"name": {
+						"type": "string",
+						"title": "Name"
+					},
+					"arguments": {
+						"type": "string",
+						"title": "Arguments"
+					},
+					"id": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Id"
+					},
+					"status": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Status"
+					}
+				},
+				"type": "object",
+				"required": [
+					"type",
+					"call_id",
+					"name",
+					"arguments"
+				],
+				"title": "InputFunctionCallItem"
+			},
+			"InputFunctionCallOutputItem": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "function_call_output",
+						"title": "Type"
+					},
+					"call_id": {
+						"type": "string",
+						"title": "Call Id"
+					},
+					"output": {
+						"type": "string",
+						"title": "Output"
+					},
+					"id": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Id"
+					},
+					"status": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Status"
+					}
+				},
+				"type": "object",
+				"required": [
+					"type",
+					"call_id",
+					"output"
+				],
+				"title": "InputFunctionCallOutputItem"
+			},
+			"InputReasoningItem": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "reasoning",
+						"title": "Type"
+					},
+					"id": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Id"
+					},
+					"summary": {
+						"items": {
+							"$ref": "#/components/schemas/ReasoningSummaryPart"
+						},
+						"type": "array",
+						"title": "Summary"
+					},
+					"content": {
+						"anyOf": [
+							{
+								"items": {
+									"$ref": "#/components/schemas/ReasoningSummaryPart"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Content"
+					},
+					"encrypted_content": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Encrypted Content"
+					},
+					"status": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Status"
+					}
+				},
+				"type": "object",
+				"required": [
+					"type"
+				],
+				"title": "InputReasoningItem"
+			},
+			"ResponsesFunctionTool": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "function",
+						"title": "Type"
+					},
+					"name": {
+						"type": "string",
+						"title": "Name"
+					},
+					"description": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Description"
+					},
+					"parameters": {
+						"anyOf": [
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Parameters"
+					},
+					"strict": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Strict"
+					}
+				},
+				"type": "object",
+				"required": [
+					"type",
+					"name"
+				],
+				"title": "ResponsesFunctionTool"
+			},
+			"ResponsesWebSearchTool": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "web_search",
+						"title": "Type"
+					},
+					"max_results": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Max Results"
+					},
+					"include_domains": {
+						"anyOf": [
+							{
+								"items": {
+									"type": "string"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Include Domains"
+					},
+					"exclude_domains": {
+						"anyOf": [
+							{
+								"items": {
+									"type": "string"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Exclude Domains"
+					},
+					"search_prompt": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Search Prompt"
+					},
+					"external_web_access": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "External Web Access"
+					}
+				},
+				"type": "object",
+				"required": [
+					"type"
+				],
+				"title": "ResponsesWebSearchTool"
+			},
+			"ResponsesNamespaceTool": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "namespace",
+						"title": "Type"
+					},
+					"name": {
+						"type": "string",
+						"title": "Name"
+					},
+					"description": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Description"
+					},
+					"tools": {
+						"items": {
+							"anyOf": [
+								{
+									"$ref": "#/components/schemas/ResponsesFunctionTool"
+								},
+								{
+									"additionalProperties": true,
+									"type": "object"
+								}
+							]
+						},
+						"type": "array",
+						"title": "Tools"
+					}
+				},
+				"type": "object",
+				"required": [
+					"type",
+					"name"
+				],
+				"title": "ResponsesNamespaceTool"
+			},
+			"ResponsesFunctionToolChoice": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "function",
+						"title": "Type"
+					},
+					"name": {
+						"type": "string",
+						"title": "Name"
+					}
+				},
+				"type": "object",
+				"required": [
+					"type",
+					"name"
+				],
+				"title": "ResponsesFunctionToolChoice"
+			},
+			"ResponsesTextConfig": {
+				"properties": {
+					"format": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/ResponsesTextFormatText"
+							},
+							{
+								"$ref": "#/components/schemas/ResponsesTextFormatJsonObject"
+							},
+							{
+								"$ref": "#/components/schemas/ResponsesTextFormatJsonSchema"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Format"
+					},
+					"verbosity": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Verbosity"
+					}
+				},
+				"type": "object",
+				"title": "ResponsesTextConfig"
+			},
+			"ResponsesReasoningConfig": {
+				"properties": {
+					"effort": {
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": [
+									"none",
+									"minimal",
+									"low",
+									"medium",
+									"high",
+									"xhigh",
+									"max"
+								]
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Effort"
+					},
+					"summary": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Summary"
+					},
+					"generate_summary": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Generate Summary"
+					}
+				},
+				"type": "object",
+				"title": "ResponsesReasoningConfig"
+			},
+			"AnthropicSystemContent": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "text",
+						"title": "Type"
+					},
+					"text": {
+						"type": "string",
+						"title": "Text"
+					}
+				},
+				"type": "object",
+				"required": [
+					"type",
+					"text"
+				],
+				"title": "AnthropicSystemContent"
+			},
+			"AnthropicTool": {
+				"properties": {
+					"name": {
+						"type": "string",
+						"title": "Name"
+					},
+					"description": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Description"
+					},
+					"input_schema": {
+						"additionalProperties": true,
+						"type": "object",
+						"title": "Input Schema"
+					}
+				},
+				"type": "object",
+				"required": [
+					"name",
+					"input_schema"
+				],
+				"title": "AnthropicTool"
+			},
+			"AnthropicThinkingConfig": {
+				"properties": {
+					"type": {
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": [
+									"enabled",
+									"disabled",
+									"adaptive"
+								]
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Type"
+					},
+					"budget_tokens": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Budget Tokens"
+					},
+					"enabled": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Enabled"
+					}
+				},
+				"type": "object",
+				"title": "AnthropicThinkingConfig",
+				"description": "Anthropic `thinking` config: {type: enabled|disabled|adaptive, budget_tokens}.\n\n`enabled` is a legacy pre-spec field this endpoint used to accept; it only\napplies when `type` is absent."
+			},
+			"ChatCompletionContentPartText": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "text",
+						"title": "Type"
+					},
+					"text": {
+						"type": "string",
+						"title": "Text"
+					},
+					"prompt_cache_breakpoint": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/PromptCacheBreakpoint"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "Marks the end of the prefix that prompt_cache_options retention applies to."
+					}
+				},
+				"type": "object",
+				"required": [
+					"type",
+					"text"
+				],
+				"title": "ChatCompletionContentPartText"
+			},
+			"ChatCompletionMessageToolCall": {
+				"properties": {
+					"id": {
+						"type": "string",
+						"title": "Id",
+						"description": "the id of the tool call"
+					},
+					"type": {
+						"type": "string",
+						"title": "Type",
+						"description": "the type of the tool call. only function is supported currently"
+					},
+					"function": {
+						"$ref": "#/components/schemas/Function",
+						"description": "the function that the model called"
+					},
+					"extra_content": {
+						"anyOf": [
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Extra Content",
+						"description": "provider metadata returned with this tool call; send it back unchanged in history"
+					}
+				},
+				"type": "object",
+				"required": [
+					"id",
+					"type",
+					"function"
+				],
+				"title": "ChatCompletionMessageToolCall"
+			},
+			"ChatCompletionContentPartImage": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "image_url",
+						"title": "Type"
+					},
+					"image_url": {
+						"$ref": "#/components/schemas/ImageURL"
+					}
+				},
+				"type": "object",
+				"required": [
+					"type",
+					"image_url"
+				],
+				"title": "ChatCompletionContentPartImage"
+			},
+			"ChatCompletionContentPartAudio": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "input_audio",
+						"title": "Type"
+					},
+					"input_audio": {
+						"$ref": "#/components/schemas/InputAudio"
+					}
+				},
+				"type": "object",
+				"required": [
+					"type",
+					"input_audio"
+				],
+				"title": "ChatCompletionContentPartAudio"
+			},
+			"ChatCompletionContentPartVideo": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "video_url",
+						"title": "Type"
+					},
+					"video_url": {
+						"$ref": "#/components/schemas/VideoURL"
+					}
+				},
+				"type": "object",
+				"required": [
+					"type",
+					"video_url"
+				],
+				"title": "ChatCompletionContentPartVideo"
+			},
+			"ChatCompletionContentPartFile": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "file",
+						"title": "Type"
+					},
+					"file": {
+						"$ref": "#/components/schemas/FileData"
+					}
+				},
+				"type": "object",
+				"required": [
+					"type",
+					"file"
+				],
+				"title": "ChatCompletionContentPartFile"
+			},
+			"FunctionDefinition": {
+				"properties": {
+					"name": {
+						"type": "string",
+						"title": "Name"
+					},
+					"description": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Description"
+					},
+					"parameters": {
+						"anyOf": [
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Parameters"
+					}
+				},
+				"type": "object",
+				"required": [
+					"name"
+				],
+				"title": "FunctionDefinition"
+			},
+			"JsonSchema": {
+				"properties": {
+					"name": {
+						"type": "string",
+						"title": "Name",
+						"description": "Name identifier for the JSON schema"
+					},
+					"schema": {
+						"additionalProperties": true,
+						"type": "object",
+						"title": "Schema",
+						"description": "The actual JSON schema definition"
+					}
+				},
+				"type": "object",
+				"required": [
+					"name",
+					"schema"
+				],
+				"title": "JsonSchema"
+			},
+			"VideoDecodeOptions": {
+				"properties": {
+					"num_frames": {
+						"type": "integer",
+						"maximum": 256,
+						"minimum": 1,
+						"title": "Num Frames",
+						"description": "Number of frames sampled evenly across each input video. The engine default is 32."
+					}
+				},
+				"additionalProperties": false,
+				"type": "object",
+				"required": [
+					"num_frames"
+				],
+				"title": "VideoDecodeOptions"
+			},
+			"InputTextPart": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "input_text",
+						"title": "Type"
+					},
+					"text": {
+						"type": "string",
+						"title": "Text"
+					}
+				},
+				"type": "object",
+				"required": [
+					"type",
+					"text"
+				],
+				"title": "InputTextPart"
+			},
+			"InputImagePart": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "input_image",
+						"title": "Type"
+					},
+					"image_url": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Image Url"
+					},
+					"file_id": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "File Id"
+					},
+					"detail": {
+						"type": "string",
+						"enum": [
+							"auto",
+							"low",
+							"high"
+						],
+						"title": "Detail",
+						"default": "auto"
+					}
+				},
+				"type": "object",
+				"required": [
+					"type"
+				],
+				"title": "InputImagePart"
+			},
+			"InputFilePart": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "input_file",
+						"title": "Type"
+					},
+					"file_id": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "File Id"
+					},
+					"filename": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Filename"
+					},
+					"file_data": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "File Data"
+					},
+					"file_url": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "File Url"
+					}
+				},
+				"type": "object",
+				"required": [
+					"type"
+				],
+				"title": "InputFilePart"
+			},
+			"OutputTextPart": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "output_text",
+						"title": "Type"
+					},
+					"text": {
+						"type": "string",
+						"title": "Text"
+					}
+				},
+				"type": "object",
+				"required": [
+					"type",
+					"text"
+				],
+				"title": "OutputTextPart"
+			},
+			"ReasoningSummaryPart": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"summary_text",
+							"reasoning_text"
+						],
+						"title": "Type",
+						"default": "summary_text"
+					},
+					"text": {
+						"type": "string",
+						"title": "Text"
+					}
+				},
+				"type": "object",
+				"required": [
+					"text"
+				],
+				"title": "ReasoningSummaryPart"
+			},
+			"ResponsesTextFormatText": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "text",
+						"title": "Type",
+						"default": "text"
+					}
+				},
+				"type": "object",
+				"title": "ResponsesTextFormatText"
+			},
+			"ResponsesTextFormatJsonObject": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "json_object",
+						"title": "Type",
+						"default": "json_object"
+					}
+				},
+				"type": "object",
+				"title": "ResponsesTextFormatJsonObject"
+			},
+			"ResponsesTextFormatJsonSchema": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "json_schema",
+						"title": "Type",
+						"default": "json_schema"
+					},
+					"name": {
+						"type": "string",
+						"title": "Name"
+					},
+					"schema": {
+						"additionalProperties": true,
+						"type": "object",
+						"title": "Schema"
+					},
+					"strict": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Strict"
+					},
+					"description": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Description"
+					}
+				},
+				"type": "object",
+				"required": [
+					"name",
+					"schema"
+				],
+				"title": "ResponsesTextFormatJsonSchema"
+			},
+			"PromptCacheBreakpoint": {
+				"properties": {
+					"mode": {
+						"anyOf": [
+							{
+								"type": "string",
+								"const": "explicit"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Mode",
+						"description": "Breakpoint mode; 'explicit' bounds cache retention to the prompt prefix ending at this content part."
+					}
+				},
+				"type": "object",
+				"title": "PromptCacheBreakpoint"
+			},
+			"Function": {
+				"properties": {
+					"name": {
+						"type": "string",
+						"title": "Name",
+						"description": "the name of the function to call"
+					},
+					"arguments": {
+						"type": "string",
+						"title": "Arguments",
+						"description": "the function arguments, generated by the model in JSON format. the model does not always generate valid JSON, and may hallucinate parameters not defined by your function schema"
+					}
+				},
+				"type": "object",
+				"required": [
+					"name",
+					"arguments"
+				],
+				"title": "Function"
+			},
+			"ImageURL": {
+				"properties": {
+					"url": {
+						"type": "string",
+						"title": "Url"
+					},
+					"detail": {
+						"type": "string",
+						"enum": [
+							"auto",
+							"low",
+							"high"
+						],
+						"title": "Detail",
+						"default": "auto"
+					}
+				},
+				"type": "object",
+				"required": [
+					"url"
+				],
+				"title": "ImageURL"
+			},
+			"InputAudio": {
+				"properties": {
+					"data": {
+						"type": "string",
+						"title": "Data"
+					},
+					"format": {
+						"type": "string",
+						"enum": [
+							"wav",
+							"mp3"
+						],
+						"title": "Format",
+						"default": "wav"
+					}
+				},
+				"type": "object",
+				"required": [
+					"data"
+				],
+				"title": "InputAudio"
+			},
+			"VideoURL": {
+				"properties": {
+					"url": {
+						"type": "string",
+						"title": "Url"
+					}
+				},
+				"type": "object",
+				"required": [
+					"url"
+				],
+				"title": "VideoURL"
+			},
+			"FileData": {
+				"properties": {
+					"file_data": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "File Data"
+					},
+					"file_id": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "File Id"
+					},
+					"filename": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Filename"
+					}
+				},
+				"type": "object",
+				"title": "FileData"
+			}
+		}
+	}
+}

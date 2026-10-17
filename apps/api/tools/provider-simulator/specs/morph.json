@@ -1,0 +1,618 @@
+{
+	"id": "morph",
+	"source": {
+		"url": "https://docs.morphllm.com/api-reference/openapi.json",
+		"docs": null,
+		"fetchedAt": "2026-10-17T17:07:10.718Z",
+		"sha256": "94e639b0e59bf422c0dd931e3406190e83adf192c7dfc11647313303d5b15d23",
+		"handWritten": false,
+		"notes": "Served by docs.morphllm.com. Server https://api.morphllm.com."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"anyOf": [
+					{
+						"$ref": "#/components/schemas/ChatCompletionRequest"
+					},
+					{
+						"$ref": "#/components/schemas/WarpGrepRequest"
+					}
+				],
+				"description": "Either a Morph Apply request or a Warp Grep request, discriminated by `model`.",
+				"example": {
+					"model": "morph-v3-fast",
+					"messages": [
+						{
+							"role": "user",
+							"content": "<instruction>I will add error handling</instruction>\n<code>function divide(a, b) {\n  return a / b;\n}</code>\n<update>function divide(a, b) {\n  if (b === 0) throw new Error('Division by zero');\n  return a / b;\n}</update>"
+						}
+					],
+					"stream": false,
+					"max_tokens": 150,
+					"temperature": 0
+				}
+			},
+			"response": {
+				"$ref": "#/components/schemas/ChatCompletionResponse"
+			}
+		},
+		"messages": {
+			"request": {
+				"$ref": "#/components/schemas/AnthropicMessageRequest"
+			},
+			"response": {
+				"$ref": "#/components/schemas/AnthropicMessageResponse"
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"ChatCompletionRequest": {
+				"type": "object",
+				"properties": {
+					"model": {
+						"type": "string",
+						"enum": [
+							"morph-v3-fast",
+							"morph-v3-large",
+							"auto"
+						],
+						"default": "morph-v3-fast",
+						"description": "ID of the Apply model to use, or `auto` to let the router choose",
+						"example": "morph-v3-fast"
+					},
+					"messages": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/Message"
+						},
+						"default": [
+							{
+								"role": "user",
+								"content": "<instruction>I will add error handling</instruction>\n<code>function divide(a, b) {\n  return a / b;\n}</code>\n<update>function divide(a, b) {\n  if (b === 0) throw new Error('Division by zero');\n  return a / b;\n}</update>"
+							}
+						],
+						"description": "Array containing a single user message with structured content using instruction-guided format",
+						"example": [
+							{
+								"role": "user",
+								"content": "<instruction>I will add error handling</instruction>\n<code>function divide(a, b) {\n  return a / b;\n}</code>\n<update>function divide(a, b) {\n  if (b === 0) throw new Error('Division by zero');\n  return a / b;\n}</update>"
+							}
+						]
+					},
+					"stream": {
+						"type": "boolean",
+						"default": false,
+						"description": "Enable streaming response. When true the response is a `text/event-stream` of OpenAI-style `chat.completion.chunk` deltas terminated by `data: [DONE]`.",
+						"example": false
+					},
+					"max_tokens": {
+						"type": "integer",
+						"description": "Maximum number of tokens the Apply model may generate",
+						"example": 150
+					},
+					"temperature": {
+						"type": "number",
+						"default": 0,
+						"description": "Sampling temperature for the Apply request (0.0 for deterministic output)",
+						"example": 0
+					}
+				},
+				"required": [
+					"model",
+					"messages"
+				],
+				"title": "Morph Apply",
+				"description": "Apply request — merges an edit snippet into the original file with a Morph Apply model.",
+				"example": {
+					"model": "morph-v3-fast",
+					"messages": [
+						{
+							"role": "user",
+							"content": "<instruction>I will add error handling</instruction>\n<code>function divide(a, b) {\n  return a / b;\n}</code>\n<update>function divide(a, b) {\n  if (b === 0) throw new Error('Division by zero');\n  return a / b;\n}</update>"
+						}
+					],
+					"stream": false,
+					"max_tokens": 150,
+					"temperature": 0
+				}
+			},
+			"WarpGrepRequest": {
+				"type": "object",
+				"properties": {
+					"model": {
+						"type": "string",
+						"enum": [
+							"morph-warp-grep-v1"
+						],
+						"default": "morph-warp-grep-v1",
+						"description": "ID of the Warp Grep model",
+						"example": "morph-warp-grep-v1"
+					},
+					"messages": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/WarpGrepMessage"
+						},
+						"description": "Multi-turn conversation with system prompt, user queries, assistant tool calls, and tool results",
+						"example": [
+							{
+								"role": "system",
+								"content": "You are a code search agent..."
+							},
+							{
+								"role": "user",
+								"content": "<repo_structure>\nmyapp/\n  src/\n    auth/\n</repo_structure>\n\n<search_string>\nFind JWT validation\n</search_string>"
+							}
+						]
+					},
+					"temperature": {
+						"type": "number",
+						"default": 0,
+						"description": "Sampling temperature (0.0 recommended for deterministic search)",
+						"example": 0
+					},
+					"max_tokens": {
+						"type": "integer",
+						"description": "Maximum tokens per response",
+						"default": 2048,
+						"example": 2048
+					}
+				},
+				"required": [
+					"model",
+					"messages"
+				],
+				"title": "Warp Grep",
+				"description": "Warp Grep request — an agentic repository search turn driven by XML tool calls.",
+				"example": {
+					"model": "morph-warp-grep-v1",
+					"messages": [
+						{
+							"role": "system",
+							"content": "You are a code search agent..."
+						},
+						{
+							"role": "user",
+							"content": "<repo_structure>\nmyapp/\n  src/\n    auth/\n</repo_structure>\n\n<search_string>\nFind JWT validation\n</search_string>"
+						}
+					],
+					"temperature": 0,
+					"max_tokens": 2048
+				}
+			},
+			"ChatCompletionResponse": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"$ref": "#/components/schemas/ResponseId"
+					},
+					"object": {
+						"$ref": "#/components/schemas/ResponseObject"
+					},
+					"created": {
+						"$ref": "#/components/schemas/ResponseCreated"
+					},
+					"choices": {
+						"$ref": "#/components/schemas/ResponseChoices"
+					},
+					"usage": {
+						"$ref": "#/components/schemas/ResponseUsage"
+					}
+				},
+				"required": [
+					"id",
+					"object",
+					"created",
+					"choices",
+					"usage"
+				],
+				"description": "Completion returned by a Morph chat model.",
+				"example": {
+					"id": "chatcmpl-123",
+					"object": "chat.completion",
+					"created": 1677652288,
+					"choices": [
+						{
+							"index": 0,
+							"message": {
+								"role": "assistant",
+								"content": "\ndef calculate_total(items):\n    total = 0\n    for item in items:\n        total += item.price\n    return total * 1.1  # Add 10% tax\n"
+							},
+							"finish_reason": "stop"
+						}
+					],
+					"usage": {
+						"prompt_tokens": 25,
+						"completion_tokens": 32,
+						"total_tokens": 57
+					}
+				}
+			},
+			"AnthropicMessageRequest": {
+				"type": "object",
+				"properties": {
+					"model": {
+						"type": "string",
+						"description": "ID of the Morph model to use",
+						"example": "morph-glm53-744b"
+					},
+					"max_tokens": {
+						"type": "integer",
+						"description": "Maximum number of tokens to generate before stopping",
+						"example": 1024
+					},
+					"messages": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"role": {
+									"type": "string",
+									"enum": [
+										"user",
+										"assistant"
+									],
+									"description": "Which participant produced this Messages API turn",
+									"example": "user"
+								},
+								"content": {
+									"type": "string",
+									"description": "The text content of the message",
+									"example": "Refactor this Express route to use async/await."
+								}
+							},
+							"required": [
+								"role",
+								"content"
+							],
+							"description": "A single turn in the conversation.",
+							"example": {
+								"role": "user",
+								"content": "Refactor this Express route to use async/await."
+							}
+						},
+						"description": "Conversation turns, alternating between user and assistant, oldest first",
+						"example": [
+							{
+								"role": "user",
+								"content": "Refactor this Express route to use async/await."
+							}
+						]
+					},
+					"system": {
+						"type": "string",
+						"description": "System prompt applied ahead of the conversation",
+						"example": "You are a senior TypeScript engineer. Reply with code only."
+					},
+					"stream": {
+						"type": "boolean",
+						"default": false,
+						"description": "Enable streaming response. When true the response is a `text/event-stream` of Anthropic-style `message_start`, `content_block_delta`, and `message_stop` events.",
+						"example": false
+					},
+					"temperature": {
+						"type": "number",
+						"default": 0,
+						"description": "Sampling temperature for the Messages request (0.0 for deterministic output)",
+						"example": 0
+					}
+				},
+				"required": [
+					"model",
+					"max_tokens",
+					"messages"
+				],
+				"description": "Anthropic-shaped Messages request served by a Morph model.",
+				"example": {
+					"model": "morph-glm53-744b",
+					"max_tokens": 1024,
+					"messages": [
+						{
+							"role": "user",
+							"content": "Refactor this Express route to use async/await."
+						}
+					],
+					"system": "You are a senior TypeScript engineer. Reply with code only.",
+					"stream": false,
+					"temperature": 0
+				}
+			},
+			"AnthropicMessageResponse": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "Unique identifier for the message",
+						"example": "msg_01XFDUDYJgAACzvnptvVoYEL"
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"message"
+						],
+						"description": "Object type, always `message`",
+						"example": "message"
+					},
+					"role": {
+						"type": "string",
+						"enum": [
+							"assistant"
+						],
+						"description": "The role of the message author, always `assistant` on a response",
+						"example": "assistant"
+					},
+					"content": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"type": {
+									"type": "string",
+									"enum": [
+										"text"
+									],
+									"description": "Content block type, always `text`",
+									"example": "text"
+								},
+								"text": {
+									"type": "string",
+									"description": "The generated text",
+									"example": "router.get(\"/users\", async (req, res) => {\n  const users = await db.users.findMany();\n  res.json(users);\n});"
+								}
+							},
+							"required": [
+								"type",
+								"text"
+							],
+							"description": "A text content block.",
+							"example": {
+								"type": "text",
+								"text": "router.get(\"/users\", async (req, res) => {\n  const users = await db.users.findMany();\n  res.json(users);\n});"
+							}
+						},
+						"description": "Content blocks generated by the model",
+						"example": [
+							{
+								"type": "text",
+								"text": "router.get(\"/users\", async (req, res) => {\n  const users = await db.users.findMany();\n  res.json(users);\n});"
+							}
+						]
+					},
+					"model": {
+						"type": "string",
+						"description": "ID of the model that produced the message",
+						"example": "morph-glm53-744b"
+					},
+					"stop_reason": {
+						"type": "string",
+						"enum": [
+							"end_turn",
+							"max_tokens",
+							"stop_sequence"
+						],
+						"description": "Why the model stopped generating tokens",
+						"example": "end_turn"
+					},
+					"usage": {
+						"type": "object",
+						"properties": {
+							"input_tokens": {
+								"type": "integer",
+								"description": "Number of input tokens counted for this message",
+								"example": 42
+							},
+							"output_tokens": {
+								"type": "integer",
+								"description": "Number of output tokens generated for this message",
+								"example": 37
+							}
+						},
+						"required": [
+							"input_tokens",
+							"output_tokens"
+						],
+						"description": "Token usage for the message",
+						"example": {
+							"input_tokens": 42,
+							"output_tokens": 37
+						}
+					}
+				},
+				"required": [
+					"id",
+					"type",
+					"role",
+					"content",
+					"model",
+					"stop_reason",
+					"usage"
+				],
+				"description": "Anthropic-shaped Messages response produced by a Morph model.",
+				"example": {
+					"id": "msg_01XFDUDYJgAACzvnptvVoYEL",
+					"type": "message",
+					"role": "assistant",
+					"content": [
+						{
+							"type": "text",
+							"text": "router.get(\"/users\", async (req, res) => {\n  const users = await db.users.findMany();\n  res.json(users);\n});"
+						}
+					],
+					"model": "morph-glm53-744b",
+					"stop_reason": "end_turn",
+					"usage": {
+						"input_tokens": 42,
+						"output_tokens": 37
+					}
+				}
+			},
+			"Message": {
+				"type": "object",
+				"properties": {
+					"role": {
+						"type": "string",
+						"enum": [
+							"system",
+							"user",
+							"assistant"
+						],
+						"description": "Which participant produced this chat message",
+						"example": "user"
+					},
+					"content": {
+						"type": "string",
+						"description": "The content of the message, containing code and update snippets. An Apply message uses the format: <instruction>First-person description</instruction><code>Complete original file content</code><update>Code snippet with // ... existing code ... markers</update>",
+						"example": "<instruction>I will add logic to add 10% tax</instruction>\n<code>def calculate_total(items):\n    total = 0\n    for item in items:\n        total += item.price\n    return total</code>\n<update>def calculate_total(items):\n    total = 0\n    for item in items:\n        total += item.price\n    return total * 1.1  # Add 10% tax</update>"
+					}
+				},
+				"required": [
+					"role",
+					"content"
+				],
+				"description": "A single chat message.",
+				"example": {
+					"role": "user",
+					"content": "<instruction>I will add logic to add 10% tax</instruction>\n<code>def calculate_total(items):\n    total = 0\n    for item in items:\n        total += item.price\n    return total</code>\n<update>def calculate_total(items):\n    total = 0\n    for item in items:\n        total += item.price\n    return total * 1.1  # Add 10% tax</update>"
+				}
+			},
+			"WarpGrepMessage": {
+				"type": "object",
+				"properties": {
+					"role": {
+						"type": "string",
+						"enum": [
+							"system",
+							"user",
+							"assistant"
+						],
+						"description": "Which participant produced this Warp Grep turn",
+						"example": "user"
+					},
+					"content": {
+						"type": "string",
+						"description": "Message content. User messages use <repo_structure> and <search_string> XML. Assistant messages contain <think> reasoning and XML tool calls (<grep>, <read>, <list_directory>, <finish>).",
+						"example": "<repo_structure>\nmyapp/\n  src/\n    auth/\n</repo_structure>\n\n<search_string>\nFind where JWT tokens are validated\n</search_string>"
+					}
+				},
+				"required": [
+					"role",
+					"content"
+				],
+				"description": "A single turn in a Warp Grep search conversation.",
+				"example": {
+					"role": "user",
+					"content": "<repo_structure>\nmyapp/\n  src/\n    auth/\n</repo_structure>\n\n<search_string>\nFind where JWT tokens are validated\n</search_string>"
+				}
+			},
+			"ResponseId": {
+				"type": "string",
+				"description": "Unique identifier for the completion",
+				"example": "chatcmpl-123"
+			},
+			"ResponseObject": {
+				"type": "string",
+				"description": "Always `chat.completion`",
+				"example": "chat.completion"
+			},
+			"ResponseCreated": {
+				"type": "integer",
+				"description": "Unix timestamp of when the completion was created",
+				"example": 1677652288
+			},
+			"ResponseChoices": {
+				"type": "array",
+				"items": {
+					"$ref": "#/components/schemas/Choice"
+				},
+				"description": "List of completion choices",
+				"example": [
+					{
+						"index": 0,
+						"message": {
+							"role": "assistant",
+							"content": "\ndef calculate_total(items):\n    total = 0\n    for item in items:\n        total += item.price\n    return total * 1.1  # Add 10% tax\n"
+						},
+						"finish_reason": "stop"
+					}
+				]
+			},
+			"ResponseUsage": {
+				"type": "object",
+				"properties": {
+					"prompt_tokens": {
+						"type": "integer",
+						"description": "Number of tokens in the prompt",
+						"example": 25
+					},
+					"completion_tokens": {
+						"type": "integer",
+						"description": "Number of tokens in the completion",
+						"example": 32
+					},
+					"total_tokens": {
+						"type": "integer",
+						"description": "Total number of tokens used",
+						"example": 57
+					}
+				},
+				"description": "Usage statistics for the completion request",
+				"example": {
+					"prompt_tokens": 25,
+					"completion_tokens": 32,
+					"total_tokens": 57
+				}
+			},
+			"Choice": {
+				"type": "object",
+				"properties": {
+					"index": {
+						"type": "integer",
+						"description": "Index of the choice in the list",
+						"example": 0
+					},
+					"message": {
+						"type": "object",
+						"properties": {
+							"role": {
+								"type": "string",
+								"description": "Author of the generated message, always `assistant`",
+								"example": "assistant"
+							},
+							"content": {
+								"type": "string",
+								"description": "Text generated by the model for this choice",
+								"example": "\ndef calculate_total(items):\n    total = 0\n    for item in items:\n        total += item.price\n    return total * 1.1  # Add 10% tax\n"
+							}
+						},
+						"description": "The message generated by the model",
+						"example": {
+							"role": "assistant",
+							"content": "\ndef calculate_total(items):\n    total = 0\n    for item in items:\n        total += item.price\n    return total * 1.1  # Add 10% tax\n"
+						}
+					},
+					"finish_reason": {
+						"type": "string",
+						"description": "The reason the model stopped generating tokens",
+						"example": "stop"
+					}
+				},
+				"required": [
+					"index",
+					"message",
+					"finish_reason"
+				],
+				"description": "A single completion choice returned by the model.",
+				"example": {
+					"index": 0,
+					"message": {
+						"role": "assistant",
+						"content": "\ndef calculate_total(items):\n    total = 0\n    for item in items:\n        total += item.price\n    return total * 1.1  # Add 10% tax\n"
+					},
+					"finish_reason": "stop"
+				}
+			}
+		}
+	}
+}

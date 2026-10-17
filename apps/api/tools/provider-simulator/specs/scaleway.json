@@ -1,0 +1,1119 @@
+{
+	"id": "scaleway",
+	"source": {
+		"url": "https://www.scaleway.com/en/developers/api/generative-apis/v1/schema.yml",
+		"docs": null,
+		"fetchedAt": "2026-10-17T17:07:14.478Z",
+		"sha256": "c1a72d1665c7af8548cd529c5b62d3390f5d96a4c54af09e961bd360ac66cf61",
+		"handWritten": false,
+		"notes": "\"Download schema\" link on the API reference. Server https://api.scaleway.ai; project_id path segment is optional in practice (examples use https://api.scaleway.ai/v1/chat/completions). curl on this machine failed the TLS chain for scaleway.com; fetched with Node."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"properties": {
+					"model": {
+						"description": "Unique identifier of the model, such as `llama-3.3-70b-instruct` or `mistral-small-3.2-24b-instruct-2506`.\n\nRefer to our [supported models](https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/) list\nor [/models](#path-models-list-models) endpoint for available models.",
+						"type": "string",
+						"example": "llama-3.3-70b-instruct"
+					},
+					"messages": {
+						"description": "Array of messages representing the conversation history.",
+						"type": "array",
+						"minItems": 1,
+						"items": {
+							"$ref": "#/components/schemas/ChatCompletionRequestMessage"
+						}
+					},
+					"max_completion_tokens": {
+						"$ref": "#/components/schemas/MaxOutputTokens"
+					},
+					"max_tokens": {
+						"description": "Use `max_completion_tokens` instead. Maximum number of total tokens that can be generated\nfor a completion (input and output).",
+						"type": "integer",
+						"nullable": true,
+						"deprecated": true
+					},
+					"frequency_penalty": {
+						"description": "Value which influences the likelihood of generating tokens based on their frequency in the existing text.\nWhen set to a positive value, it reduces the probability of repeating tokens that have already appeared.",
+						"type": "number",
+						"minimum": -2,
+						"maximum": 2,
+						"nullable": true
+					},
+					"logit_bias": {
+						"type": "object",
+						"default": null,
+						"nullable": true,
+						"additionalProperties": true,
+						"description": "List of token IDs with associated bias integer values ranging from `-100` to `100`. This parameter adjusts the probability of these tokens being generated during the model's output.\nA JSON object must be provided in the following format: `{\"354\": 80,\"143\": -50}` where `354` and `143` are token IDs from the tokenizer used with this model. Positive values increase the likelihood of a token being generated, while negative values reduce it.\nModel `qwen3.5-397b-a17b` does not support this field.\n"
+					},
+					"logprobs": {
+						"description": "Defines whether to return log probabilities of each output token.\nThis allows you to see the likelihood of each token being generated.",
+						"type": "boolean",
+						"default": false,
+						"nullable": true
+					},
+					"n": {
+						"description": "Number of chat completion choices to generate for a given input.\nThe value of `n` multiplies the number of generated tokens,\nresulting in `n` separate responses for each input.",
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 128,
+						"default": 1,
+						"nullable": true
+					},
+					"parallel_tool_calls": {
+						"$ref": "#/components/schemas/ParallelToolCalls"
+					},
+					"presence_penalty": {
+						"description": "Value which influences the probability of generating tokens that have\nalready appeared in the text. Positive values reduce the likelihood of\nrepeating a token, regardless of how many times it has already appeared.",
+						"type": "number",
+						"minimum": -2,
+						"maximum": 2,
+						"nullable": true
+					},
+					"reasoning_effort": {
+						"description": "Reasoning effort level to generate the response.\n\nFor `qwen3.5-397b-a17b` and `qwen3.6-35b-a3b` model:\n  - `low` and `high` values are similar to `medium`\n\nFor `mistral-medium-3.5-128b` model:\n  - `low` and `medium` values are not supported\n\nFor `gpt-oss-120b` model:\n  - `none` value is not supported",
+						"type": "string",
+						"enum": [
+							"none",
+							"low",
+							"medium",
+							"high"
+						],
+						"default": "medium"
+					},
+					"response_format": {
+						"$ref": "#/components/schemas/ResponseFormatChatCompletion"
+					},
+					"seed": {
+						"description": "Value which controls the randomness of the output to ensure determinism.\nWhen using the same seed value along with identical input and parameters,\nyou should receive the same model response each time. This holds true even when\ntemperature is set above 0.\n\nNote that fully deterministic output is not guaranteed over long periods of time (such\nas several months), as the inference model may be updated and optimized.",
+						"type": "integer",
+						"minimum": -9223372036854776000,
+						"maximum": 9223372036854776000,
+						"nullable": true
+					},
+					"stop": {
+						"$ref": "#/components/schemas/StopConfiguration"
+					},
+					"stream": {
+						"description": "Defines whether the model's response can be streamed to the client\nusing server-sent events.\n\nThe response will be streamed in chunks over HTTP, where each chunk except\nthe last contains the following content:\n\n`data: {\"id\": ..., \"model\": ..., \"choices\":...}`\n\nThe last chunk will contain `data: [DONE]`.\n\nNote that the object `{\"id\": ..., \"model\": ..., \"choices\":...}` follows the same format as\na non-stream HTTP request.\n\nSee [How to query language models using streaming](https://www.scaleway.com/en/docs/generative-apis/how-to/query-language-models/#streaming)\nfor examples, and [server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)\nfor reference documentation about SSE format.\n\n**Default value:** `false`",
+						"type": "boolean",
+						"nullable": true
+					},
+					"stream_options": {
+						"$ref": "#/components/schemas/ChatCompletionStreamOptions"
+					},
+					"temperature": {
+						"$ref": "#/components/schemas/Temperature"
+					},
+					"tools": {
+						"type": "array",
+						"description": "List of tools the model can call, such as functions. A maximum of `128` tools can be provided. See [How to use function calling](https://www.scaleway.com/en/docs/generative-apis/how-to/use-function-calling/) for code snippets using `openai` Python client.\n",
+						"items": {
+							"$ref": "#/components/schemas/ChatCompletionTool"
+						}
+					},
+					"tool_choice": {
+						"$ref": "#/components/schemas/ChatCompletionToolChoiceOption"
+					},
+					"top_logprobs": {
+						"description": "Number of most likely tokens to return for each token generated, along with their\ngeneration log probability.\nValue must be between `0` and `20`.\n`logprobs` must be set to `true` to use this parameter.",
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 20,
+						"nullable": true
+					},
+					"top_p": {
+						"$ref": "#/components/schemas/TopP"
+					}
+				},
+				"required": [
+					"model",
+					"messages"
+				],
+				"x-properties-order": [
+					"model",
+					"messages",
+					"max_completion_tokens",
+					"max_tokens",
+					"frequency_penalty",
+					"logit_bias",
+					"logprobs",
+					"n",
+					"parallel_tool_calls",
+					"presence_penalty",
+					"reasoning_effort",
+					"response_format",
+					"seed",
+					"stop",
+					"stream",
+					"stream_options",
+					"temperature",
+					"tools",
+					"tool_choice",
+					"top_logprobs",
+					"top_p"
+				]
+			},
+			"response": {
+				"$ref": "#/components/schemas/CreateChatCompletionResponse"
+			}
+		},
+		"responses": {
+			"request": {
+				"type": "object",
+				"properties": {
+					"input": {
+						"type": "array",
+						"description": "String or list of inputs to provide to the model to generate a response. Use an array of inputs to provide multiple strings and/or other content types.",
+						"minItems": 1,
+						"items": {
+							"$ref": "#/components/schemas/ResponseAPIInputList"
+						}
+					},
+					"model": {
+						"description": "Unique identifier of the model. For now, the Responses API only supports `gpt-oss-120b`.\n\nRefer to our [supported models](https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/) list\nor [/models](#path-models-list-models) endpoint for available models.",
+						"type": "string",
+						"example": "gpt-oss-120b"
+					},
+					"max_output_tokens": {
+						"$ref": "#/components/schemas/MaxOutputTokens"
+					},
+					"parallel_tool_calls": {
+						"$ref": "#/components/schemas/ParallelToolCalls"
+					},
+					"instructions": {
+						"description": "System message added to the model's context.",
+						"type": "string",
+						"nullable": true
+					},
+					"reasoning": {
+						"description": "Configuration parameters for reasoning models.",
+						"type": "object",
+						"properties": {
+							"effort": {
+								"type": "string",
+								"description": "Reasoning effort level to generate the response.\n`minimal` is currently not supported.",
+								"enum": [
+									"low",
+									"medium",
+									"high"
+								]
+							}
+						}
+					},
+					"store": {
+						"description": "Defines whether to store the input content for future requests.\n`store` is currently not supported and always set to `false`.",
+						"type": "boolean",
+						"default": false
+					},
+					"stream": {
+						"description": "Defines whether the model's response can be streamed to the client\nusing server-sent events.\n\nThe response will be streamed in chunks over HTTP, where each chunk except\nthe last contains the following content:\n\n`data: {\"id\": ..., \"model\": ..., \"output\":...}`\n\nThe last chunk will contain `data: [DONE]`.\n\nNote that the object `{\"id\": ..., \"model\": ..., \"output\":...}` follows the same format as\na non-stream HTTP request.\n\nSee [How to query language models using streaming](https://www.scaleway.com/en/docs/generative-apis/how-to/query-language-models/#streaming)\nfor examples, and [server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)\nfor reference documentation about SSE format.\n\n**Default value:** `false`",
+						"type": "boolean",
+						"nullable": true
+					},
+					"temperature": {
+						"$ref": "#/components/schemas/Temperature"
+					},
+					"text": {
+						"type": "object",
+						"description": "Configuration of the response format, either plain text or JSON structured data.",
+						"properties": {
+							"format": {
+								"$ref": "#/components/schemas/ResponseFormatResponseAPI"
+							}
+						}
+					},
+					"tools": {
+						"type": "array",
+						"description": "List of tools the model can call, such as functions. A maximum of `128` tools can be provided. See [How to use function calling](https://www.scaleway.com/en/docs/generative-apis/how-to/use-function-calling/) for code snippets using the `openai` Python client.\n",
+						"items": {
+							"$ref": "#/components/schemas/ResponseAPITool"
+						}
+					},
+					"tool_choice": {
+						"$ref": "#/components/schemas/ChatCompletionToolChoiceOption"
+					},
+					"top_logprobs": {
+						"description": "Number of most likely tokens to return for each token generated, along with their\ngeneration log probability.\nValue must be between `0` and `20`.\n`logprobs` must be set to `true` to use this parameter.",
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 20,
+						"nullable": true
+					},
+					"top_p": {
+						"$ref": "#/components/schemas/TopP"
+					},
+					"truncation": {
+						"description": "Truncation configuration for the model response.\nOnly `disabled` is currently supported.",
+						"type": "string",
+						"default": "disabled",
+						"nullable": true
+					}
+				},
+				"required": [
+					"model"
+				],
+				"x-properties-order": [
+					"input",
+					"model",
+					"max_output_tokens",
+					"parallel_tool_calls",
+					"instructions",
+					"reasoning",
+					"store",
+					"stream",
+					"temperature",
+					"text",
+					"tools",
+					"tool_choice",
+					"top_logprobs",
+					"top_p",
+					"truncation"
+				]
+			},
+			"response": {
+				"$ref": "#/components/schemas/CreateResponse"
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"ChatCompletionRequestMessage": {
+				"type": "object",
+				"properties": {
+					"role": {
+						"type": "string",
+						"description": "Role of the message's author.",
+						"enum": [
+							"system",
+							"user",
+							"assistant",
+							"tool"
+						]
+					},
+					"content": {
+						"type": "string",
+						"description": "Content of a message as string. Required for all roles, except `assistant` if `tool_calls` is specified instead.",
+						"x-one-of": "content"
+					},
+					"content​": {
+						"type": "array",
+						"description": "Content of a message as array of content parts. Required for all roles, except `assistant` if `tool_calls` is specified instead.",
+						"items": {
+							"$ref": "#/components/schemas/ChatCompletionRequestMessageContentPart"
+						},
+						"x-one-of": "content"
+					},
+					"tool_calls": {
+						"type": "array",
+						"description": "List of tool calls required by the model. Can only be used with `assistant` if `content` is not specified.",
+						"items": {
+							"$ref": "#/components/schemas/ChatCompletionMessageToolCall"
+						}
+					},
+					"tool_call_id": {
+						"type": "string",
+						"description": "UUID of the tool call. Must only be used with `tool` role."
+					}
+				},
+				"required": [
+					"role"
+				]
+			},
+			"MaxOutputTokens": {
+				"description": "Maximum number of output tokens that can be generated\nfor a `completion`.\nDifferent [default maximum values](https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/)\nare enforced for each model, to avoid edge cases where tokens are\ngenerated indefinitely. These values are not enforced\nin [Managed Inference](https://www.scaleway.com/en/inference/).",
+				"type": "integer",
+				"nullable": true
+			},
+			"ParallelToolCalls": {
+				"description": "Defines whether the model can call multiple tools. Currently, even if\nset `false` this parameter will be ignored and act as if set to `true`.\n\nOnly [specific models](https://www.scaleway.com/en/docs/managed-inference/reference-content/model-catalog/#model-details)\ncan call multiple tools in a single response.\n\n**Default value:** `true`",
+				"type": "boolean"
+			},
+			"ResponseFormatChatCompletion": {
+				"type": "object",
+				"description": "Output format specification.\n\nUsing `{ \"type\": \"json_schema\", \"json_schema\": {...} }`\nenables the model to output only a valid JSON following the provided schema specification.\n\nDeprecated. Using `{ \"type\": \"json_object\" }` enables `JSON\nmode` that should not be used anymore.\n\nSee [How to use structured outputs](https://www.scaleway.com/en/docs/generative-apis/how-to/use-structured-outputs/)\nfor code snippets using `openai` Python client and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/)\nfor documentation about the format.",
+				"properties": {
+					"type": {
+						"type": "string",
+						"description": "Type of response object.",
+						"enum": [
+							"text",
+							"json_schema",
+							"json_object"
+						],
+						"required": [
+							"type"
+						]
+					},
+					"json_schema": {
+						"type": "object",
+						"description": "Schema the response object should follow in `JSON` format. This field\ncan only be used if `type` is set to `json_schema`."
+					}
+				}
+			},
+			"StopConfiguration": {
+				"description": "String, or array of strings, that when encountered in the generated text\nwill stop the model from generating further output tokens.\nThe generated text will not return any of the specified stop sequences.\nA maximum of 4 sequences can be provided.",
+				"default": null,
+				"nullable": true,
+				"type": "string"
+			},
+			"ChatCompletionStreamOptions": {
+				"type": "object",
+				"description": "An object containing parameters that modify the behavior of stream responses. Can only be used if `stream` is set to `true`.\n",
+				"nullable": true,
+				"default": null,
+				"properties": {
+					"include_usage": {
+						"type": "boolean",
+						"description": "Defines whether a usage field is included in a stream. If set, an additional chunk will be streamed before the `data: [DONE]` message. The `usage` field on this chunk shows the token usage statistics for the complete stream.\n"
+					}
+				}
+			},
+			"Temperature": {
+				"description": "Value between `0` and `2` which increases randomness in token generation (e.g. encourages content \"creativity\" instead of \"predictability\").\n\n`temperature:0` means the distribution learned by the model will be used directly, favoring a subset of the most probable tokens at each generation step.\n\n`temperature>0` means randomness is added to the learnt distribution, so that tokens with a lower probability can also be generated.\n\n`temperature>=1` means added randomness will be so high, that almost all tokens are equally probable, leading the model to potentially mix languages.\n\nThe ideal `temperature` value depends on the use case and model. We recommend setting `temperature` to the recommended value for each model,\nas shown in Console Playground (these values are used by default).\n\nNote that `temperature` does not affect request reproducibility (only affected by the `seed` parameter).\nWith the same `seed` and `temperature`, two identical requests to a model will generate the same response.",
+				"type": "number",
+				"minimum": 0,
+				"maximum": 2,
+				"nullable": true
+			},
+			"ChatCompletionTool": {
+				"type": "object",
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"function"
+						],
+						"description": "Type of tool object, always set to `function`."
+					},
+					"function": {
+						"$ref": "#/components/schemas/FunctionObject"
+					}
+				},
+				"required": [
+					"type",
+					"function"
+				]
+			},
+			"ChatCompletionToolChoiceOption": {
+				"type": "string",
+				"description": "Defines whether a model can call tools, and if so, and which ones.\n\n`none`: model will not call any tools, and only generate a message.\n\n`auto`: model can choose either to generate a message, or to call one or\nmultiple tools.\n\n`required`: model must call one or multiple tools.\n\nDefault: `none` when no tools are present, otherwise `auto`.\n\nAn object can also be provided to specify a tool that the model\nmust call. Object format must be:\n\n`{\"type\": \"function\", \"function\": {\"name\": \"function_name_as_provided_in_tools\"}}`",
+				"enum": [
+					"none",
+					"auto",
+					"required"
+				]
+			},
+			"TopP": {
+				"description": "Value between `0` and `1` which increases the proportion of token vocabulary considered during generation (`0` cannot be used).\n\n`top_p`:`0.9` means the next token will be chosen from the 90% most probable tokens at each generation step.\n\nWe recommend setting `top_p` to the recommended value for each model, as shown in Console Playground (these values are used by default).",
+				"type": "number",
+				"minimum": 0,
+				"maximum": 1,
+				"nullable": true
+			},
+			"CreateChatCompletionResponse": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "UUID of the response."
+					},
+					"object": {
+						"type": "string",
+						"description": "Type of response object, always set to `chat.completion`.",
+						"enum": [
+							"chat.completion"
+						]
+					},
+					"created": {
+						"type": "integer",
+						"description": "Timestamp when the response was generated (Unix format, in seconds)."
+					},
+					"model": {
+						"type": "string",
+						"description": "Unique identifier of the model."
+					},
+					"choices": {
+						"type": "array",
+						"description": "List of chat completion variations. Defaults to only `1` choice, but can be increased by setting a value for `n` in the request.",
+						"items": {
+							"$ref": "#/components/schemas/ChatCompletionResponseChoice"
+						}
+					},
+					"usage": {
+						"$ref": "#/components/schemas/ChatCompletionUsage"
+					}
+				},
+				"x-properties-order": [
+					"id",
+					"object",
+					"created",
+					"model",
+					"choices",
+					"usage"
+				]
+			},
+			"ResponseAPIInputList": {
+				"type": "object",
+				"properties": {
+					"role": {
+						"type": "string",
+						"description": "Role providing the content input.",
+						"enum": [
+							"system",
+							"developer",
+							"user",
+							"assistant"
+						]
+					},
+					"content​": {
+						"type": "array",
+						"description": "List of input contents of different `type`, each compatible with different fields:\n\n`input_text`: Requires `text` field.\n\n`input_image`: Requires `detail` and `image_url` fields.\n\n`input_file`: Requires `file_data` or `file_url` field. Optionally, `filename` can be provided.",
+						"items": {
+							"$ref": "#/components/schemas/ResponseAPIInputContentPart"
+						}
+					},
+					"status": {
+						"type": "string",
+						"description": "Status of the response.",
+						"enum": [
+							"in_progress",
+							"completed",
+							"incomplete"
+						]
+					},
+					"type": {
+						"type": "string",
+						"description": "Type of the content input. Always set to `message`."
+					}
+				},
+				"required": [
+					"role"
+				]
+			},
+			"ResponseFormatResponseAPI": {
+				"type": "object",
+				"description": "Output format specification.\n\nUsing `{ \"type\": \"text\"}` ensures the model enables output text (default behavior).\n\nUsing `{ \"type\": \"json_schema\", \"name\": ..., \"schema\": {...}, \"description\": ...,\"strict\": true}`\nenables the model to output only valid JSON following the provided schema specification.\n\nDeprecated. Using `{ \"type\": \"json_object\" }` enables `JSON\nmode`, and should no longer be used.\n\nSee [How to use structured outputs](https://www.scaleway.com/en/docs/generative-apis/how-to/use-structured-outputs/)\nfor code snippets using the `openai` Python client, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/)\nfor documentation about the format.",
+				"properties": {
+					"type": {
+						"type": "string",
+						"description": "Type of response object. The properties `name`, `schema`, `description` and `strict`\ncan only be used if `type` is set to `json_schema`.",
+						"enum": [
+							"text",
+							"json_schema",
+							"json_object"
+						]
+					},
+					"name": {
+						"type": "string",
+						"description": "Name of the response format. Must only contain alphanumeric characters, underscores and dashes."
+					},
+					"description": {
+						"type": "string",
+						"description": "Description of the response format. This helps the model\ngenerate a response that follows the desired structure."
+					},
+					"schema": {
+						"type": "object",
+						"description": "Schema the response object should follow in `JSON` format. This field\ncan only be used if `type` is set to `json_schema`. [Learn more](https://www.scaleway.com/en/docs/generative-apis/how-to/use-structured-outputs/)"
+					},
+					"strict": {
+						"type": "boolean",
+						"nullable": true,
+						"description": "Defines whether to enforce strict schema adherence when generating\nstructured output. Currently, only `true` is supported.\n\n**Default:** `true`"
+					}
+				},
+				"required": [
+					"type",
+					"name",
+					"schema"
+				]
+			},
+			"ResponseAPITool": {
+				"$ref": "#/components/schemas/ResponseAPIFunctionObject"
+			},
+			"CreateResponse": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "UUID of the response."
+					},
+					"object": {
+						"type": "string",
+						"description": "Type of response object, always set to `chat.completion`.",
+						"enum": [
+							"response"
+						]
+					},
+					"created_at": {
+						"type": "integer",
+						"description": "Timestamp when the response was generated (Unix format, in seconds)."
+					},
+					"status": {
+						"type": "string",
+						"description": "Status of the response.",
+						"enum": [
+							"in_progress",
+							"completed",
+							"incomplete"
+						]
+					},
+					"model": {
+						"type": "string",
+						"description": "Unique identifier of the model."
+					},
+					"output": {
+						"type": "array",
+						"description": "List of outputs generated by the model as response.",
+						"minItems": 1,
+						"items": {
+							"$ref": "#/components/schemas/ResponseAPIOutputList"
+						}
+					},
+					"text": {
+						"type": "object",
+						"description": "Configuration of the response format, either plain text or JSON structured data.",
+						"properties": {
+							"format": {
+								"type": "object",
+								"description": "Output format type.",
+								"properties": {
+									"type": {
+										"type": "string",
+										"description": "Type of response object.",
+										"enum": [
+											"text",
+											"json_schema",
+											"json_object"
+										]
+									}
+								}
+							}
+						}
+					},
+					"usage": {
+						"$ref": "#/components/schemas/ResponseAPIUsage"
+					}
+				},
+				"x-properties-order": [
+					"id",
+					"object",
+					"created_at",
+					"status",
+					"model",
+					"output",
+					"usage"
+				]
+			},
+			"ChatCompletionRequestMessageContentPart": {
+				"type": "object",
+				"properties": {
+					"type": {
+						"type": "string",
+						"description": "Type of content. `image_url` and `input_audio` are only supported with `user` role.",
+						"enum": [
+							"text",
+							"image_url",
+							"input_audio"
+						]
+					},
+					"text": {
+						"type": "string",
+						"description": "Text content. Required if `type` is set to `text`."
+					},
+					"image_url": {
+						"type": "object",
+						"properties": {
+							"url": {
+								"type": "string",
+								"description": "URL of a remote image or encoding in base64 of a local image. Required if `type` is set to `image_url`.\n\nSee [How to query vision models](https://www.scaleway.com/en/docs/generative-apis/how-to/query-vision-models/)\nfor code snippets using `openai` Python client or how to encode local images."
+							}
+						}
+					},
+					"input_audio": {
+						"type": "object",
+						"properties": {
+							"data": {
+								"type": "string",
+								"description": "Encoding in base64 of a local audio file. Required if `type` is set to `input_audio`.\n\nSee [How to query audio models](https://www.scaleway.com/en/docs/generative-apis/how-to/query-audio-models/)\nfor code snippets using `openai` Python client or how to encode local audio files."
+							},
+							"format": {
+								"type": "string",
+								"description": "Format of the encoded audio file. Currently, the only supported values are `wav` and `mp3`."
+							}
+						}
+					}
+				},
+				"required": [
+					"type"
+				]
+			},
+			"ChatCompletionMessageToolCall": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "UUID of the tool call."
+					},
+					"type": {
+						"type": "string",
+						"description": "Type of tool call, always set to `function`.",
+						"enum": [
+							"function"
+						]
+					},
+					"function": {
+						"type": "object",
+						"description": "Function to call, identified by the model.",
+						"properties": {
+							"name": {
+								"type": "string",
+								"description": "Name of the function to call."
+							},
+							"arguments": {
+								"type": "string",
+								"description": "Arguments to call the function with, as generated by the model in JSON format. Note that model may not always generate valid JSON or parameters. Validate the arguments in your code before calling a function."
+							}
+						},
+						"x-properties-order": [
+							"name",
+							"arguments"
+						]
+					}
+				},
+				"x-properties-order": [
+					"id",
+					"type",
+					"function"
+				]
+			},
+			"FunctionObject": {
+				"type": "object",
+				"properties": {
+					"description": {
+						"type": "string",
+						"description": "Description of the function. This helps the model choose the right function when needed."
+					},
+					"name": {
+						"type": "string",
+						"description": "Name of the function to be called. Must contain only `a-z`, `A-Z`, `0-9`, underscores and dashes, with a maximum length of `64` characters."
+					},
+					"parameters": {
+						"$ref": "#/components/schemas/FunctionParameters"
+					},
+					"strict": {
+						"type": "boolean",
+						"nullable": true,
+						"description": "Defines whether to enforce strict schema adherence when generating a\nfunction call. If set to `true`, the model will follow the exact\nschema defined in the `parameters` field. Currently, even if\nset `true` this parameter will be ignored and act as if set to `false`.\nWe recommend you check output schema before calling any functions or tools.\n\n**Default:** `false`"
+					}
+				},
+				"required": [
+					"name"
+				]
+			},
+			"ChatCompletionResponseChoice": {
+				"type": "object",
+				"properties": {
+					"index": {
+						"type": "integer",
+						"description": "Index of the choice in the list of choices."
+					},
+					"message": {
+						"$ref": "#/components/schemas/ChatCompletionResponseMessage"
+					},
+					"logprobs": {
+						"description": "Object containing log probability information for each token in a generated response.",
+						"type": "object",
+						"nullable": true,
+						"properties": {
+							"content": {
+								"description": "List of content tokens and their log probability information.",
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/ChatCompletionTokenLogprob"
+								},
+								"nullable": true
+							},
+							"refusal": {
+								"description": "List of refusal tokens and their log probability information.",
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/ChatCompletionTokenLogprob"
+								},
+								"nullable": true
+							}
+						}
+					},
+					"finish_reason": {
+						"type": "string",
+						"description": "Reason the model stopped generating tokens.\n\n`stop`: model successfully reached the end of its answer, or a provided\nstop sequence\n\n`length`: maximum number of output tokens was reached, blocking further generation\n\n`tool_calls`: model needed to call a tool\n",
+						"enum": [
+							"stop",
+							"length",
+							"tool_calls"
+						]
+					}
+				}
+			},
+			"ChatCompletionUsage": {
+				"type": "object",
+				"properties": {
+					"prompt_tokens": {
+						"type": "integer",
+						"description": "Number of input tokens."
+					},
+					"total_tokens": {
+						"type": "integer",
+						"description": "Total number of tokens (input and output)."
+					},
+					"completion_tokens": {
+						"type": "integer",
+						"description": "Number of output tokens."
+					},
+					"completion_tokens_details": {
+						"type": "object",
+						"description": "Breakdown of output tokens by type.",
+						"nullable": true,
+						"properties": {
+							"reasoning_tokens": {
+								"type": "integer",
+								"description": "Number of output tokens used for reasoning."
+							}
+						}
+					},
+					"prompt_tokens_details": {
+						"type": "object",
+						"description": "Breakdown of input tokens by type.",
+						"nullable": true,
+						"properties": {
+							"audio_tokens": {
+								"type": "integer",
+								"description": "Number of audio input tokens."
+							},
+							"cached_tokens": {
+								"type": "integer",
+								"description": "Number of cached input tokens."
+							}
+						}
+					}
+				},
+				"x-properties-order": [
+					"prompt_tokens",
+					"total_tokens",
+					"completion_tokens",
+					"completion_tokens_details",
+					"prompt_tokens_details"
+				]
+			},
+			"ResponseAPIInputContentPart": {
+				"type": "object",
+				"properties": {
+					"type": {
+						"type": "string",
+						"description": "Type of content. (Required).",
+						"enum": [
+							"input_text",
+							"input_image",
+							"input_file"
+						]
+					},
+					"text": {
+						"type": "string",
+						"description": "Text content."
+					},
+					"detail": {
+						"type": "string",
+						"description": "Detail level of the image provided to the model.",
+						"enum": [
+							"high",
+							"low",
+							"auto"
+						],
+						"default": "auto"
+					},
+					"image_url": {
+						"type": "string",
+						"description": "URL of a remote image or encoding in base64 of a local image.\n\nSee [How to query vision models](https://www.scaleway.com/en/docs/generative-apis/how-to/query-vision-models/)\nfor code snippets using the `openai` Python client, and guidance for encoding local images."
+					},
+					"file_data": {
+						"type": "string",
+						"description": "Content of a file."
+					},
+					"file_url": {
+						"type": "string",
+						"description": "URL of a remote file."
+					}
+				},
+				"required": [
+					"type"
+				]
+			},
+			"ResponseAPIFunctionObject": {
+				"type": "object",
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"function"
+						],
+						"description": "Type of tool object, always set to `function`."
+					},
+					"name": {
+						"type": "string",
+						"description": "Name of the function to be called. Must contain only `a-z`, `A-Z`, `0-9`, underscores and dashes, with a maximum length of `64` characters."
+					},
+					"description": {
+						"type": "string",
+						"description": "Description of the function. This helps the model choose the right function when needed."
+					},
+					"parameters": {
+						"$ref": "#/components/schemas/FunctionParameters"
+					},
+					"strict": {
+						"type": "boolean",
+						"nullable": true,
+						"description": "Defines whether to enforce strict schema adherence when generating a\nfunction call. If set to `true`, the model will follow the exact\nschema defined in the `parameters` field. Currently, even if\nset `true` this parameter will be ignored and act as if set to `false`.\nWe recommend you check output schema before calling any functions or tools.\n\n**Default:** `false`"
+					}
+				},
+				"required": [
+					"type",
+					"name"
+				]
+			},
+			"ResponseAPIOutputList": {
+				"type": "object",
+				"properties": {
+					"role": {
+						"type": "string",
+						"description": "Role generating the content output. Always set to `assistant`.",
+						"enum": [
+							"assistant"
+						]
+					},
+					"type": {
+						"type": "string",
+						"description": "List of outputs of different `type`, each also outputting different fields:\n\n`message`: outputs `content` field\n\n`function_call`: outputs `call_id`, `name` and `arguments` fields",
+						"enum": [
+							"message",
+							"function_call",
+							"reasoning"
+						]
+					},
+					"id": {
+						"type": "string",
+						"description": "UUID of the mesage within a response."
+					},
+					"status": {
+						"type": "string",
+						"description": "Status of the response.",
+						"enum": [
+							"in_progress",
+							"completed",
+							"incomplete"
+						]
+					},
+					"content": {
+						"type": "array",
+						"description": "List of text output contents.",
+						"items": {
+							"$ref": "#/components/schemas/ResponseAPIOutputContentPart"
+						}
+					},
+					"call_id": {
+						"type": "string",
+						"description": "UUID of the function tool call."
+					},
+					"name": {
+						"type": "string",
+						"description": "Name the function to execute."
+					},
+					"arguments": {
+						"type": "string",
+						"description": "Arguments to pass to the function, formatted as a JSON string.\n\nExample: `{\"city\": \"Paris\",\"timezone\": \"UTC+2\"}`"
+					}
+				},
+				"x-properties-order": [
+					"role",
+					"type",
+					"id",
+					"status",
+					"content",
+					"call_id",
+					"name",
+					"arguments"
+				]
+			},
+			"ResponseAPIUsage": {
+				"type": "object",
+				"properties": {
+					"input_tokens": {
+						"type": "integer",
+						"description": "Number of input tokens."
+					},
+					"input_tokens_details": {
+						"type": "object",
+						"description": "Breakdown of input tokens by type.",
+						"nullable": true,
+						"properties": {
+							"cached_tokens": {
+								"type": "integer",
+								"description": "Number of cached input tokens."
+							}
+						}
+					},
+					"output_tokens": {
+						"type": "integer",
+						"description": "Number of output tokens."
+					},
+					"output_tokens_details": {
+						"type": "object",
+						"description": "Breakdown of output tokens by type.",
+						"nullable": true,
+						"properties": {
+							"reasoning_tokens": {
+								"type": "integer",
+								"description": "Number of output tokens used for reasoning."
+							}
+						}
+					},
+					"total_tokens": {
+						"type": "integer",
+						"description": "Total number of tokens (input and output)."
+					}
+				}
+			},
+			"FunctionParameters": {
+				"type": "object",
+				"description": "Parameters of the function, described as a JSON schema object. See [How to use function calling](https://www.scaleway.com/en/docs/generative-apis/how-to/use-function-calling/) for examples, and the [JSON schema reference](https://json-schema.org/understanding-json-schema/) for documentation about the format.\nOmitting `parameters` defines a function with an empty parameter list.",
+				"additionalProperties": true
+			},
+			"ChatCompletionResponseMessage": {
+				"type": "object",
+				"description": "Message generated by the model.",
+				"properties": {
+					"role": {
+						"type": "string",
+						"description": "Role of the message's author, always set to `assistant` in the response.",
+						"enum": [
+							"assistant"
+						]
+					},
+					"content": {
+						"type": "string",
+						"description": "Content of the message."
+					},
+					"reasoning_content": {
+						"type": "string",
+						"description": "Reasoning content generated for this message."
+					},
+					"tool_calls": {
+						"$ref": "#/components/schemas/ChatCompletionMessageToolCalls"
+					}
+				},
+				"x-properties-order": [
+					"role",
+					"content",
+					"tool_calls"
+				]
+			},
+			"ChatCompletionTokenLogprob": {
+				"type": "object",
+				"properties": {
+					"token": {
+						"description": "Token generated.",
+						"type": "string"
+					},
+					"logprob": {
+						"description": "Log probability of generating this token, if it is among the top 20 most likely tokens. Otherwise, the value `-9999.0` is used to mean that the token is very unlikely.",
+						"type": "number"
+					},
+					"bytes": {
+						"description": "List of integers representing the UTF-8 bytes (in decimal format) representation of a token. Since some characters may be represented by multiple tokens, this representation can be combined to represent the corresponding character in UTF-8.",
+						"type": "array",
+						"items": {
+							"type": "integer"
+						},
+						"nullable": true
+					},
+					"top_logprobs": {
+						"description": "List of most probable next tokens and their log probability.",
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"token": {
+									"description": "A token among the most next likely ones.",
+									"type": "string"
+								},
+								"logprob": {
+									"description": "Log probability of generating this token, if it is among the top 20 most likely tokens. Otherwise, the value `-9999.0` will be used to mean that the token is very unlikely.",
+									"type": "number"
+								},
+								"bytes": {
+									"description": "List of integers representing the UTF-8 bytes (in decimal format) representation of a token. Since some characters may be represented by multiple tokens, this representation can be combined to represent the corresponding character in UTF-8.",
+									"type": "array",
+									"items": {
+										"type": "integer"
+									},
+									"nullable": true
+								}
+							},
+							"x-properties-order": [
+								"token",
+								"logprob",
+								"bytes"
+							]
+						}
+					}
+				},
+				"x-properties-order": [
+					"token",
+					"logprob",
+					"bytes",
+					"top_logprobs"
+				]
+			},
+			"ResponseAPIOutputContentPart": {
+				"type": "object",
+				"properties": {
+					"type": {
+						"type": "string",
+						"description": "Type of content. Always set to `output_text`.",
+						"enum": [
+							"output_text"
+						]
+					},
+					"text": {
+						"type": "string",
+						"description": "Text content."
+					},
+					"annotations": {
+						"type": "array",
+						"description": "Annotations of the text output, such as citations or path to a file.",
+						"items": {
+							"$ref": "#/components/schemas/ResponseAPIAnnotation"
+						}
+					}
+				},
+				"x-properties-order": [
+					"type",
+					"text",
+					"tutu"
+				]
+			},
+			"ChatCompletionMessageToolCalls": {
+				"type": "array",
+				"description": "List of tool calls required by the model, such as function calls.",
+				"items": {
+					"$ref": "#/components/schemas/ChatCompletionMessageToolCall"
+				}
+			},
+			"ResponseAPIAnnotation": {
+				"type": "object"
+			}
+		}
+	}
+}

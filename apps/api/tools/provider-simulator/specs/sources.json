@@ -1,0 +1,495 @@
+{
+	"accessed": "2026-10-17",
+	"note": "Public spec documents fetched by scripts/refresh-specs.ts. Ids are gateway provider ids.",
+	"sources": [
+		{
+			"id": "openai",
+			"url": "https://raw.githubusercontent.com/openai/openai-openapi/main/openapi.yaml",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/chat/completions"
+				},
+				"responses": {
+					"path": "/responses"
+				}
+			},
+			"docs": null,
+			"notes": "Official openai/openai-openapi repo (default branch main, last commit 2026-10-17). Server https://api.openai.com/v1. A JSON twin is at .../main/openapi.json. /chat/completions also has GET (list stored completions)."
+		},
+		{
+			"id": "azure",
+			"url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/ai/data-plane/OpenAI.v1/azure-v1-v1-generated.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/chat/completions"
+				},
+				"responses": {
+					"path": "/responses"
+				}
+			},
+			"docs": null,
+			"notes": "Azure OpenAI v1 GA data-plane spec (TypeSpec-generated, OpenAPI 3.2.0). Server is {endpoint}/openai/v1, i.e. https://<resource>.openai.azure.com/openai/v1; model is the deployment name in the body. The older dated /openai/deployments/{deployment-id}/chat/completions?api-version=... surface lives in "
+		},
+		{
+			"id": "anthropic",
+			"url": "https://app.stainless.com/api/spec/documented/anthropic/openapi.documented.yml",
+			"format": "openapi",
+			"operations": {
+				"messages": {
+					"path": "/v1/messages"
+				}
+			},
+			"docs": null,
+			"notes": "Stainless \"documented\" spec, served live by app.stainless.com (current). Beta variants are separate paths suffixed ?beta=true. Server https://api.anthropic.com."
+		},
+		{
+			"id": "google-ai-studio",
+			"url": "https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta",
+			"format": "google-discovery",
+			"operations": {
+				"generateContent": {
+					"discoveryMethod": "generativelanguage.models.generateContent"
+				}
+			},
+			"docs": "https://ai.google.dev/gemini-api/docs/openai",
+			"notes": "Gemini API discovery document (v1beta). Paths are discovery flatPaths. The Interactions API is NOT in the discovery doc; it has its own OpenAPI file (see additionalSpecs). The OpenAI-compatible endpoint (/v1beta/openai/chat/completions) is in neither."
+		},
+		{
+			"id": "google-vertex",
+			"url": "https://aiplatform.googleapis.com/$discovery/rest?version=v1",
+			"format": "google-discovery",
+			"operations": {
+				"generateContent": {
+					"discoveryMethod": "aiplatform.projects.locations.publishers.models.generateContent"
+				}
+			},
+			"docs": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/migrate/openai/overview",
+			"notes": "Vertex AI (now \"Gemini Enterprise Agent Platform\") discovery doc v1 (v1beta1 also at ?version=v1beta1, 5.3 MB). generateContent request is fully typed (GoogleCloudAiplatformV1GenerateContentRequest). The OpenAI-compatible chat/completions body is GoogleApiHttpBody (opaque), and rawPredict (used for Claude/partner models) is RawPredictRequest wrapping an opaque HttpBody, so neither is schema-checkable from this spec; see docs. Endpoint id for the OpenAI layer is the literal \"openapi\"."
+		},
+		{
+			"id": "spacex-ai",
+			"url": "https://docs.x.ai/openapi.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/v1/chat/completions"
+				},
+				"responses": {
+					"path": "/v1/responses"
+				},
+				"messages": {
+					"path": "/v1/messages"
+				}
+			},
+			"docs": null,
+			"notes": "Same file is served at https://api.x.ai/api-docs/openapi.json and https://docs.x.ai/api/openapi.json. Server https://api.x.ai."
+		},
+		{
+			"id": "mistral",
+			"url": "https://docs.mistral.ai/openapi.yaml",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/v1/chat/completions"
+				}
+			},
+			"docs": null,
+			"notes": "Served by docs.mistral.ai (current). An older copy exists at raw.githubusercontent.com/mistralai/platform-docs-public/main/openapi.yaml (661 KB, stale). Server https://api.mistral.ai (gateway also uses api.eu.mistral.ai)."
+		},
+		{
+			"id": "groq",
+			"url": "https://storage.googleapis.com/stainless-sdk-openapi-specs/groqcloud/groqcloud-debd965baa031e12228c41e538741fa6055bf2813bcd062840a19f84a17cea95.yml",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/openai/v1/chat/completions"
+				},
+				"responses": {
+					"path": "/openai/v1/responses"
+				}
+			},
+			"docs": null,
+			"notes": "Stainless spec URL taken from the last groq/groq-typescript .stats.yml that published one (commit 1df552f, 2026-06-21); newer .stats.yml files omit openapi_spec_url, so this may lag the live API by ~4 months. Server https://api.groq.com."
+		},
+		{
+			"id": "cerebras",
+			"url": "https://storage.googleapis.com/stainless-sdk-openapi-specs/cerebras/cerebras-cloud-5471bd6d34fdddff21977458788b979ce93f6b080e11ff0d35777182b6615baa.yml",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/v1/chat/completions"
+				}
+			},
+			"docs": null,
+			"notes": "Stainless spec from Cerebras/cerebras-cloud-sdk-node .stats.yml (updated 2026-07-08). Server https://api.cerebras.ai. The docs site also embeds a newer per-operation spec (see additionalSpecs)."
+		},
+		{
+			"id": "together",
+			"url": "https://docs.together.ai/openapi.yaml",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/chat/completions"
+				}
+			},
+			"docs": null,
+			"notes": "Served by docs.together.ai (the API reference .md pages cite openapi.yaml). Server https://api.together.ai/v1. No /responses or /messages path in this spec."
+		},
+		{
+			"id": "fireworks",
+			"url": "https://storage.googleapis.com/stainless-sdk-openapi-specs/fireworks-ai/fireworks-ai-65b17041c3092296c4492a7bb6a368b62cb49c14a7bea6e8f053261641d8a0cc.yml",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/v1/chat/completions"
+				},
+				"responses": {
+					"path": "/v1/responses"
+				},
+				"messages": {
+					"path": "/v1/messages"
+				}
+			},
+			"docs": null,
+			"notes": "Stainless spec from fw-ai-external/python-sdk .stats.yml (last updated 2026-05-01; may lag). No servers block; base is https://api.fireworks.ai/inference (chat at https://api.fireworks.ai/inference/v1/chat/completions). The docs page embeds a newer chat-only spec (additionalSpecs)."
+		},
+		{
+			"id": "deepinfra",
+			"url": "https://api.deepinfra.com/openapi.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/v1/chat/completions"
+				},
+				"responses": {
+					"path": "/v1/responses"
+				},
+				"messages": {
+					"path": "/anthropic/v1/messages"
+				}
+			},
+			"docs": null,
+			"notes": "Served live by the API host (server https://api.deepinfra.com). The spec lists chat at /v1/chat/completions, but the gateway code references the /v1/openai prefix and the spec has no /v1/openai/chat/completions path (only /v1/openai/videos*). Assumed (unverified) that both prefixes share the same bo"
+		},
+		{
+			"id": "perplexity",
+			"url": "https://storage.googleapis.com/stainless-sdk-openapi-specs/perplexity-ai/perplexity-9fca0405579d6d1a2b8e686dfa59daaaf3a60d0627d0638c8079c6d85a4ff7d9.yml",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/chat/completions"
+				},
+				"responses": {
+					"path": "/v1/responses"
+				}
+			},
+			"docs": null,
+			"notes": "Stainless spec from perplexityai/perplexity-node .stats.yml on branch next (updated 2026-07-17). Server https://api.perplexity.ai. Note chat is /chat/completions (no /v1) while responses is /v1/responses."
+		},
+		{
+			"id": "sambanova",
+			"url": "https://storage.googleapis.com/stainless-sdk-openapi-specs/sambanova/sambanova-50fb2e3f57f67505e5e7230bf1191aaa021757640fd2c889fe30d5228a240f80.yml",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/chat/completions"
+				},
+				"responses": {
+					"path": "/responses"
+				},
+				"messages": {
+					"path": "/messages"
+				}
+			},
+			"docs": null,
+			"notes": "Stainless spec from the last SambaNova/sambanova-python .stats.yml that published one (commit 6e9c54e, 2026-06-25). Base https://api.sambanova.ai/v1."
+		},
+		{
+			"id": "moonshotai",
+			"url": "https://platform.moonshot.ai/docs/openapi.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/v1/chat/completions"
+				},
+				"responses": {
+					"path": "/v1/responses"
+				},
+				"messages": {
+					"path": "/anthropic/v1/messages"
+				}
+			},
+			"docs": null,
+			"notes": "Served from the Kimi platform docs site. Server https://api.moonshot.ai."
+		},
+		{
+			"id": "z-ai",
+			"url": "https://docs.z.ai/openapi.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/paas/v4/chat/completions"
+				}
+			},
+			"docs": null,
+			"notes": "Served by docs.z.ai. Server https://api.z.ai/api. Coding-plan and Anthropic-compatible endpoints are not in this spec."
+		},
+		{
+			"id": "ai21",
+			"url": "https://api.ai21.com/openapi.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/studio/v1/chat/completions"
+				}
+			},
+			"docs": null,
+			"notes": "FastAPI spec served by the API host (no servers block); base https://api.ai21.com. Also contains many Studio app endpoints."
+		},
+		{
+			"id": "akashml",
+			"url": "https://api.akashml.com/openapi.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/v1/chat/completions"
+				},
+				"messages": {
+					"path": "/anthropic/v1/messages"
+				}
+			},
+			"docs": null,
+			"notes": "Served live by the API host. Server https://api.akashml.com."
+		},
+		{
+			"id": "ambient",
+			"url": "https://api.ambient.xyz/openapi.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/v1/chat/completions"
+				},
+				"responses": {
+					"path": "/v1/responses"
+				},
+				"messages": {
+					"path": "/v1/messages"
+				}
+			},
+			"docs": null,
+			"notes": "Served live by the API host (no servers block; base https://api.ambient.xyz)."
+		},
+		{
+			"id": "arcee-ai",
+			"url": "https://api.arcee.ai/openapi.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/v1/chat/completions"
+				},
+				"responses": {
+					"path": "/v1/responses"
+				}
+			},
+			"docs": "https://docs.arcee.ai/api-reference/chat-completion",
+			"notes": "FastAPI spec served by https://api.arcee.ai (no servers block); also contains many /app/v1/* web-app routes to ignore."
+		},
+		{
+			"id": "baseten",
+			"url": "https://docs.baseten.co/reference/inference-api/llm-openapi-spec.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/v1/chat/completions"
+				}
+			},
+			"docs": null,
+			"notes": "Model APIs spec linked from the chat reference page (embedded as reference/inference-api/llm-openapi-spec.json). Server https://inference.baseten.co. Self-deployed models use a different per-deployment base URL."
+		},
+		{
+			"id": "friendli",
+			"url": "https://friendli.ai/docs/openapi.yaml",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/serverless/v1/chat/completions"
+				},
+				"messages": {
+					"path": "/serverless/v1/messages"
+				}
+			},
+			"docs": null,
+			"notes": "Served by friendli.ai/docs. Server https://api.friendli.ai. Streaming variants appear as separate \"#stream\" path keys (e.g. /serverless/v1/chat/completions#stream), a Mintlify convention, not real URLs."
+		},
+		{
+			"id": "inception",
+			"url": "https://docs.inceptionlabs.ai/openapi.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/v1/chat/completions"
+				}
+			},
+			"docs": null,
+			"notes": "Served by docs.inceptionlabs.ai. Server https://api.inceptionlabs.ai. (docs.inceptionlabs.ai/api-reference/openapi.json is an unrelated Mintlify sample.)"
+		},
+		{
+			"id": "io-net",
+			"url": "https://io.net/docs/openapi/ai-models/create-chat-completion.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/api/v1/chat/completions"
+				}
+			},
+			"docs": null,
+			"notes": "Single-operation spec referenced by the Mintlify page https://io.net/docs/reference/ai-models/create-chat-completion. Server https://api.intelligence.io.solutions."
+		},
+		{
+			"id": "meta",
+			"url": "https://storage.googleapis.com/stainless-sdk-openapi-specs/meta%2Fllama-api-edf0a308dd29bea2feb29f2e7f04eec4dbfb130ffe52511641783958168f60a4.yml",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/chat/completions"
+				}
+			},
+			"docs": null,
+			"notes": "Llama API Stainless spec from meta-llama/llama-api-typescript .stats.yml (last updated 2025-10-01, likely stale). Spec server is http://api.llama.com while the Phaseo gateway config uses https://api.meta.ai - confirm which API the provider id targets."
+		},
+		{
+			"id": "morph",
+			"url": "https://docs.morphllm.com/api-reference/openapi.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/v1/chat/completions"
+				},
+				"messages": {
+					"path": "/v1/messages"
+				}
+			},
+			"docs": null,
+			"notes": "Served by docs.morphllm.com. Server https://api.morphllm.com."
+		},
+		{
+			"id": "morpheus",
+			"url": "https://api.mor.org/api/v1/openapi.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/api/v1/chat/completions"
+				}
+			},
+			"docs": null,
+			"notes": "FastAPI spec from the Morpheus API Gateway (v1.50.0). Base https://api.mor.org."
+		},
+		{
+			"id": "nebius-token-factory",
+			"url": "https://api.tokenfactory.nebius.com/openapi.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/v1/chat/completions"
+				},
+				"responses": {
+					"path": "/v1/responses"
+				}
+			},
+			"docs": null,
+			"notes": "Served live by the API host (same file at api.studio.nebius.com). Title \"Nebius OpenAI-compatible inference API\", version 20261015."
+		},
+		{
+			"id": "ovhcloud",
+			"url": "https://oai.endpoints.kepler.ai.cloud.ovh.net/openapi.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/v1/chat/completions"
+				},
+				"responses": {
+					"path": "/v1/responses"
+				}
+			},
+			"docs": null,
+			"notes": "Served by the unified AI Endpoints host (title \"OpenAI Compatible API\" 0.3.11). Per-model hosts may expose their own specs."
+		},
+		{
+			"id": "reka",
+			"url": "https://docs.reka.ai/openapi/api-reference.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/chat/completions"
+				}
+			},
+			"docs": null,
+			"notes": "Listed on https://docs.reka.ai/openapi.json (an HTML index, not a spec). Server https://api.reka.ai/v1. A second spec (openapi/api-reference-2.json) is the Vision Agent API."
+		},
+		{
+			"id": "relace",
+			"url": "https://docs.relace.ai/api-reference/openapi.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/v1/chat/completions"
+				},
+				"messages": {
+					"path": "/v1/messages"
+				}
+			},
+			"docs": null,
+			"notes": "Served by docs.relace.ai. Servers https://models.relace.ai (models) and https://api.relace.run (infra)."
+		},
+		{
+			"id": "sail-research",
+			"url": "https://docs.sailresearch.com/openapi.json",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/chat/completions"
+				},
+				"responses": {
+					"path": "/responses"
+				},
+				"messages": {
+					"path": "/messages"
+				}
+			},
+			"docs": null,
+			"notes": "Served by docs.sailresearch.com. Server https://api.sailresearch.com/v1."
+		},
+		{
+			"id": "venice",
+			"url": "https://api.venice.ai/doc/api/swagger.yaml",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/chat/completions"
+				},
+				"responses": {
+					"path": "/responses"
+				}
+			},
+			"docs": null,
+			"notes": "Served by the API host. Base https://api.venice.ai/api/v1."
+		},
+		{
+			"id": "scaleway",
+			"url": "https://www.scaleway.com/en/developers/api/generative-apis/v1/schema.yml",
+			"format": "openapi",
+			"operations": {
+				"chat": {
+					"path": "/{project_id}/v1/chat/completions"
+				},
+				"responses": {
+					"path": "/{project_id}/v1/responses"
+				}
+			},
+			"docs": null,
+			"notes": "\"Download schema\" link on the API reference. Server https://api.scaleway.ai; project_id path segment is optional in practice (examples use https://api.scaleway.ai/v1/chat/completions). curl on this machine failed the TLS chain for scaleway.com; fetched with Node."
+		}
+	]
+}
