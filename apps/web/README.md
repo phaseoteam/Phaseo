@@ -35,3 +35,4 @@ Optional tools use `LazyMessages` and the allowlist in `src/i18n/lazy-message-sc
 The models page has one 15-second server budget covering session resolution, provider previews, catalogue pages, pricing and private data. Its signal reaches each request, including Auth requests, and server prefetch retries are disabled. Browser query policies remain independent. If the account scope is already known when the deadline expires, the browser can recover the catalogue request; an unresolved session is never silently treated as anonymous.
 
 The shared authentication header loader also has one 15-second budget, forwards cancellation to Auth and the account API, and makes one attempt. Its callers retain their existing error fallbacks.
+
