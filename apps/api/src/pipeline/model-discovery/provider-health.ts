@@ -202,11 +202,13 @@ export async function runProviderHealthCheck(args: {
 	notify: boolean;
 	/** True when the sweep covered every watched provider, so rows for removed providers can go. */
 	coversAllProviders: boolean;
+	/** Rows the sweep already loaded before checking providers; loaded here when absent. */
+	previousById?: ReadonlyMap<string, ProviderStatusRow>;
 	now?: Date;
 }): Promise<ProviderHealthSummary> {
 	const now = args.now ?? new Date();
 	const nowIso = now.toISOString();
-	const previousById = await loadProviderStatuses();
+	const previousById = args.previousById ?? await loadProviderStatuses();
 	const rows = args.outcomes.map((outcome) =>
 		nextProviderStatus(previousById.get(outcome.providerId), outcome, { nowIso, runId: args.runId }),
 	);

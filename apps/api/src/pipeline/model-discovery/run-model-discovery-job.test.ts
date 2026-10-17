@@ -88,4 +88,35 @@ describe("runModelDiscoveryJob", () => {
 			expect.objectContaining({ model_id: "model-b", change_type: "added" }),
 		]);
 	});
+
+	it("reports the first models of a provider that was checked recently with an empty list", async () => {
+		supabase.tables.model_discovery_provider_status = [
+			{ provider_id: "vercel", provider_name: "Vercel AI Gateway", status: "ok", model_count: 0, consecutive_failures: 0, last_success_at: new Date(Date.now() - 15 * 60_000).toISOString() },
+		];
+
+		const summary = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+
+		expect(summary.changes.find((change) => change.providerId === "vercel")).toMatchObject({ added: ["model-a", "model-b"] });
+	});
+
+	it("re-baselines quietly after an outage longer than the retention window", async () => {
+		supabase.tables.model_discovery_provider_status = [
+			{ provider_id: "vercel", provider_name: "Vercel AI Gateway", status: "error", model_count: null, consecutive_failures: 900, last_success_at: new Date(Date.now() - 9 * 24 * 3600_000).toISOString() },
+		];
+
+		const summary = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+
+		expect(summary.changes).toEqual([]);
+	});
+
+	it("records every provider's check outcome in one status upsert", async () => {
+		const summary = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+
+		const statusRows = writes("model_discovery_provider_status", "upsert")
+			.flatMap((call) => call.args[0] as Array<{ provider_id: string; status: string; model_count: number | null }>);
+		expect(statusRows).toHaveLength(summary.providersTotal);
+		expect(statusRows.find((row) => row.provider_id === "vercel")).toMatchObject({ status: "ok", model_count: 2 });
+		expect(statusRows.find((row) => row.provider_id === "openai")).toMatchObject({ status: "skipped", model_count: null });
+		expect(summary.providerHealth).toMatchObject({ checked: summary.providersTotal, alertsSent: 0 });
+	});
 });

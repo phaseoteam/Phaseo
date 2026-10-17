@@ -38,6 +38,7 @@ import {
 import { fetchPricingTableSnapshots, hasPricingSourceChanged, type PricingTableSnapshot } from "./pricing-tables";
 import { MODEL_DISCOVERY_PROVIDERS, type ProviderConfig } from "./providers";
 import {
+	loadProviderStatuses,
 	redactProviderError,
 	runProviderHealthCheck,
 	type ProviderCheckOutcome,
@@ -518,15 +519,20 @@ function emptyProviderProcessingResult(result: ProviderResult): ProviderProcessi
 	};
 }
 
-/** True when the provider has no stored models, so this check establishes its baseline. */
-export function isProviderBaselineCheck(previousModelIds: readonly string[]): boolean {
-	return previousModelIds.length === 0;
+/**
+ * True when this check establishes the provider's baseline: it has no stored models and no successful
+ * check inside the retention window. A provider that was checked recently and listed nothing (AI21)
+ * still reports its first models; one whose rows were pruned after a long outage re-baselines quietly.
+ */
+export function isProviderBaselineCheck(previousModelIds: readonly string[], checkedWithinRetention = false): boolean {
+	return previousModelIds.length === 0 && !checkedWithinRetention;
 }
 
 async function processProvider(
 	provider: ProviderConfig,
 	previousState: PreviousModelsState,
 	runId: string,
+	checkedWithinRetention: boolean,
 ): Promise<ProviderProcessingResult> {
 	const requiresApiKey = !["none", "optional_bearer"].includes(provider.authStyle ?? "bearer");
 	const apiKey = resolveDiscoveryApiKey(provider);
@@ -558,7 +564,7 @@ async function processProvider(
 		// A provider's first successful check records a baseline rather than announcing every model it
 		// lists as new, as the pricing and public-announcement monitors already do. Without this, a
 		// provider that starts working (a fixed key name, a new host) floods the review queue.
-		const baselineCheck = isProviderBaselineCheck(previousModelIds);
+		const baselineCheck = isProviderBaselineCheck(previousModelIds, checkedWithinRetention);
 		if (baselineCheck && currentModelIds.length > 0) {
 			console.log("[model-discovery] Recorded provider baseline:", provider.providerId, currentModelIds.length);
 		}
@@ -967,6 +973,15 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		const pendingRemovalRows: SeenModelPendingRemovalRow[] = [];
 		const discoveredModelIdsByProvider = new Map<string, string[]>();
 		const previousState = await fetchPreviousModelsByProviders(providers.map((provider) => provider.providerId));
+		const previousProviderStatuses = await loadProviderStatuses().catch((error: unknown) => {
+			console.warn("[model-discovery] Could not load provider status:", error instanceof Error ? error.message : String(error));
+			return null;
+		});
+		const staleCutoffMs = Date.parse(staleCutoff);
+		const checkedWithinRetention = (providerId: string): boolean => {
+			const lastSuccessMs = Date.parse(previousProviderStatuses?.get(providerId)?.last_success_at ?? "");
+			return Number.isFinite(lastSuccessMs) && lastSuccessMs >= staleCutoffMs;
+		};
 		const providerApiPricingChangesByProvider = new Map<string, PricingProviderChange>();
 		const providerApiProvidersWithoutPricing = new Set<string>();
 		let providerApiModelsWithPricing = 0;
@@ -974,7 +989,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		const providerProcessingResults = await mapWithConcurrency(
 			providers,
 			discoveryConcurrency,
-			(provider) => processProvider(provider, previousState, runId),
+			(provider) => processProvider(provider, previousState, runId, checkedWithinRetention(provider.providerId)),
 		);
 
 		// Merge in provider order, not completion order, so stored summaries and
@@ -1265,6 +1280,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				outcomes: results.map(toProviderCheckOutcome),
 				notify: shouldNotify,
 				coversAllProviders: providers.length === PROVIDERS.length,
+				previousById: previousProviderStatuses ?? undefined,
 			});
 		} catch (error) {
 			providerHealth.error = error instanceof Error ? error.message : String(error);
