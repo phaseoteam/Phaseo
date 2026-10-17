@@ -1,5 +1,6 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { resolveVertexAccessToken } from "@providers/google-vertex/auth";
+import { isOpenAICompatProvider, resolveOpenAICompatKey } from "@providers/openai-compatible/config";
 import {
 	extractProviderApiModelSnapshot,
 	hasProviderApiSnapshotValue,
@@ -642,6 +643,24 @@ export function readBindingEnv(names: string[]): string | null {
 	return null;
 }
 
+/**
+ * Resolves the key discovery sends to a provider. Falls back to the gateway's own
+ * resolver because the gateway accepts binding aliases that a provider's primary
+ * apiKeyEnv does not list (prod stores MISTRAL_AI_API_KEY and META_MODEL_API_KEY),
+ * and a key the gateway can route with must never leave the provider unwatched.
+ */
+export function resolveDiscoveryApiKey(provider: Pick<ProviderConfig, "providerId" | "apiKeyEnv">): string | null {
+	const configured = provider.apiKeyEnv ? readBindingEnv(provider.apiKeyEnv) : null;
+	if (configured || !isOpenAICompatProvider(provider.providerId)) return configured;
+	try {
+		const { key } = resolveOpenAICompatKey({ providerId: provider.providerId, byokMeta: [], forceGatewayKey: true });
+		const trimmed = key.trim();
+		return trimmed && !isPlaceholderValue(trimmed) ? trimmed : null;
+	} catch {
+		return null;
+	}
+}
+
 export function toBool(value: string | undefined | null, fallback = false): boolean {
 	if (value === undefined || value === null) return fallback;
 	const normalized = value.trim().toLowerCase();
@@ -786,6 +805,14 @@ export function hasAtlascloudLlmCategory(row: Record<string, unknown>): boolean 
 			.split(",")
 			.map((value) => value.trim().toLowerCase())
 			.some((value) => value === "llm");
+	}
+
+	// AtlasCloud's /models stopped sending categories (seen 2026-10-17) and now
+	// describes models by modality, so a text-output model is the LLM signal.
+	if (row.categories === undefined || row.categories === null) {
+		return asArray(row.output_modalities).some(
+			(value) => typeof value === "string" && value.trim().toLowerCase() === "text",
+		);
 	}
 
 	return false;
@@ -1075,7 +1102,9 @@ export function assertSafeDiscoverySnapshot(
 	currentIds: string[],
 	minimumRetainedRatio = 0.25,
 ): void {
-	if (currentIds.length === 0) {
+	// An empty list only threatens state when there is a previous snapshot to lose;
+	// a provider that has never listed models (AI21's /models is empty) is just empty.
+	if (currentIds.length === 0 && previousIds.length > 0) {
 		throw new Error(`${providerId} returned zero models; refusing to replace the previous snapshot`);
 	}
 	if (previousIds.length < 5) return;

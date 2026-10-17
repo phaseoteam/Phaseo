@@ -22,6 +22,7 @@ import {
 	loadLatestDiscordNotificationFingerprint,
 	loadPricingPageStates,
 	readBindingEnv,
+	resolveDiscoveryApiKey,
 	runPricingMonitorCheck,
 	shouldRunPricingMonitor,
 	savePricingPageStates,
@@ -515,7 +516,7 @@ async function processProvider(
 	runId: string,
 ): Promise<ProviderProcessingResult> {
 	const requiresApiKey = !["none", "optional_bearer"].includes(provider.authStyle ?? "bearer");
-	const apiKey = provider.apiKeyEnv ? readBindingEnv(provider.apiKeyEnv) : null;
+	const apiKey = resolveDiscoveryApiKey(provider);
 	if (requiresApiKey && !apiKey) {
 		return emptyProviderProcessingResult({
 			providerId: provider.providerId,

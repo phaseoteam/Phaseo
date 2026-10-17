@@ -78,7 +78,8 @@ const PROVIDER_OVERRIDES: Record<string, ProviderOverride> = {
 		authStyle: "none",
 	},
 	chutes: { providerName: "Chutes", authStyle: "none" },
-	clarifai: { providerName: "Clarifai", authStyle: "clarifai_key" },
+	// api.clarifai.com stopped resolving (NXDOMAIN, 2026-10-17); every check failed.
+	clarifai: { providerName: "Clarifai", authStyle: "clarifai_key", disabled: true },
 	cloudflare: {
 		providerName: "Cloudflare Workers AI",
 		modelsEndpoint:
@@ -243,7 +244,8 @@ const NATIVE_DISCOVERY_PROVIDERS: ProviderConfig[] = [
 	{
 		providerId: "pioneer",
 		providerName: "Pioneer",
-		modelsEndpoint: "https://api.pioneer.ai/v1/models",
+		// api.pioneer.ai answers 410 host_retired and names this host as its replacement.
+		modelsEndpoint: "https://api.fastino.ai/v1/models",
 		authStyle: "none",
 	},
 	{

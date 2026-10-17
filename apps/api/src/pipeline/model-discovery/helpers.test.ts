@@ -11,6 +11,7 @@ import {
 	getDiscordProviderFamilyId,
 	loadLatestDiscordNotificationFingerprint,
 	saveDiscordNotificationFingerprint,
+	resolveDiscoveryApiKey,
 	resolveProviderModelsEndpoint,
 } from "./helpers";
 import {
@@ -399,6 +400,30 @@ describe("extractDiscoveredModels", () => {
 			id: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
 			pricingDetails: { pricing: { input: 0.88, output: 0.88 } },
 		});
+	});
+
+	it("keeps AtlasCloud text models now that its /models omits categories", () => {
+		const models = extractDiscoveredModels("atlascloud", {
+			code: 200,
+			msg: "success",
+			data: [
+				{ id: "deepseek-ai/DeepSeek-V3.2-Exp", input_modalities: ["text"], output_modalities: ["text"] },
+				{ id: "black-forest-labs/flux-dev", input_modalities: ["text"], output_modalities: ["image"] },
+			],
+		});
+
+		expect(models.map((model) => model.id)).toEqual(["deepseek-ai/DeepSeek-V3.2-Exp"]);
+	});
+
+	it("still honours AtlasCloud categories when they are sent", () => {
+		const models = extractDiscoveredModels("atlascloud", {
+			data: [
+				{ id: "llm-model", categories: ["LLM"], output_modalities: ["text"] },
+				{ id: "video-model", categories: ["Video"], output_modalities: ["text"] },
+			],
+		});
+
+		expect(models.map((model) => model.id)).toEqual(["llm-model"]);
 	});
 });
 
@@ -852,6 +877,34 @@ describe("assertSafeDiscoverySnapshot", () => {
 
 	it("accepts normal provider churn", () => {
 		expect(() => assertSafeDiscoverySnapshot("provider", ["a", "b", "c", "d", "e"], ["a", "b", "c", "f"])).not.toThrow();
+	});
+
+	it("accepts an empty list when there is no previous snapshot to lose", () => {
+		// AI21's /models returns {"data":[]}; that is a provider state, not a failed check.
+		expect(() => assertSafeDiscoverySnapshot("ai21", [], [])).not.toThrow();
+	});
+});
+
+describe("resolveDiscoveryApiKey", () => {
+	it("prefers the provider's configured binding", () => {
+		setupRuntimeFromEnv({ MISTRAL_API_KEY: "primary", MISTRAL_AI_API_KEY: "alias" } as any);
+
+		expect(resolveDiscoveryApiKey({ providerId: "mistral", apiKeyEnv: ["MISTRAL_API_KEY"] })).toBe("primary");
+	});
+
+	it("falls back to the gateway's binding aliases so routable providers stay watched", () => {
+		setupRuntimeFromEnv({ MISTRAL_AI_API_KEY: "mistral-alias", META_MODEL_API_KEY: "meta-alias" } as any);
+
+		expect(resolveDiscoveryApiKey({ providerId: "mistral", apiKeyEnv: ["MISTRAL_API_KEY"] })).toBe("mistral-alias");
+		expect(resolveDiscoveryApiKey({ providerId: "mistral-eu", apiKeyEnv: ["MISTRAL_API_KEY"] })).toBe("mistral-alias");
+		expect(resolveDiscoveryApiKey({ providerId: "meta", apiKeyEnv: ["MODEL_API_KEY"] })).toBe("meta-alias");
+	});
+
+	it("returns null when neither discovery nor the gateway has a key", () => {
+		setupRuntimeFromEnv({ MISTRAL_API_KEY: "your-mistral-key" } as any);
+
+		expect(resolveDiscoveryApiKey({ providerId: "mistral", apiKeyEnv: ["MISTRAL_API_KEY"] })).toBeNull();
+		expect(resolveDiscoveryApiKey({ providerId: "not-a-provider", apiKeyEnv: ["NOT_A_PROVIDER_KEY"] })).toBeNull();
 	});
 });
 

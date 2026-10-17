@@ -46,6 +46,18 @@ describe("MODEL_DISCOVERY_PROVIDERS", () => {
 		expect(providerIds.has("zai")).toBe(false);
 	});
 
+	it("watches Pioneer at the host its retired API names as the replacement", () => {
+		const pioneer = MODEL_DISCOVERY_PROVIDERS.find((provider) => provider.providerId === "pioneer");
+
+		expect(pioneer).toMatchObject({ modelsEndpoint: "https://api.fastino.ai/v1/models", authStyle: "none" });
+	});
+
+	it("does not poll Clarifai while its API host does not resolve", () => {
+		const providerIds = new Set(MODEL_DISCOVERY_PROVIDERS.map((provider) => provider.providerId));
+
+		expect(providerIds.has("clarifai")).toBe(false);
+	});
+
 	it("does not include external aggregators in routable discovery", () => {
 		const providerIds = new Set(MODEL_DISCOVERY_PROVIDERS.map((provider) => provider.providerId));
 
