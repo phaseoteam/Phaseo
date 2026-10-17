@@ -252,14 +252,40 @@ After you add prompt caching:
 
 ## Provider affinity
 
-Phaseo uses provider prompt-cache usage as a routing signal by default. Once a
-provider returns cached input tokens, requests with the same cache key or stable
-opening context prefer that provider for 15 minutes. This avoids paying another
-provider to rebuild the same prompt cache.
+A prompt cache lives with one provider, and often with one region or deployment of
+that provider. Phaseo keeps related requests on the provider and route that served
+them, so an agent loop does not pay to rebuild its cache on a different provider.
 
-If you include `session_id`, an observed cache read creates session affinity as
-well. Phaseo retains that affinity for the active session window while still
-allowing failover when the provider is unhealthy or no longer policy-eligible.
+Send `prompt_cache_key` or `session_id`, or opt into caching with `cache_control`
+(top-level or `provider_options.anthropic.cache_control`), to pin a conversation.
+Phaseo pins it to the provider and route that served the first successful request,
+and later requests with the same key go there too. Pins are kept per workspace.
+
+How long a pin lasts depends on the provider's cache retention:
+
+| Request | Pin lasts |
+| --- | --- |
+| `session_id` | 24 hours, refreshed while the session is active |
+| Anthropic `cache_control` with `ttl: "1h"` | 90 minutes |
+| OpenAI or Azure OpenAI with `prompt_cache_retention: "24h"` | 24 hours |
+| OpenAI or Azure OpenAI with in-memory retention (the default) | 90 minutes |
+| Anything else | 15 minutes |
+
+A pin moves only when its provider fails (an open circuit breaker or a high recent
+error rate) or when Phaseo's managed quota on that provider is used up. The request
+then fails over, and the pin moves to the provider that served it. Request details
+record this as `sticky_routing.demotionReason` in the routing diagnostics.
+
+Without a key, `session_id` or `cache_control`, Phaseo still prefers a provider that
+returned cached tokens for the same opening context, for 15 minutes.
+
+Phaseo sends a hash of your workspace and `prompt_cache_key` to providers, never
+the raw key, so the same key in two workspaces never shares a provider cache. With
+only a `session_id`, Phaseo derives that hash from the session for OpenAI, xAI,
+Fireworks and Cerebras. Fireworks and Cloudflare Workers AI also receive it in the
+`x-session-affinity` header, and xAI receives it as `x-grok-conv-id` unless you set
+`provider_options.xai.conversation_id`. Responses still echo your own
+`prompt_cache_key`.
 
 Set `provider.cache_aware_routing` to `false` to opt out for one request. Set
 `routing.session_affinity` to `false` when the request carries a `session_id`

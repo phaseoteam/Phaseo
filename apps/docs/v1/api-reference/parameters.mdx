@@ -462,7 +462,9 @@ Provides a stable cache affinity key for prompt-cache-aware routing.
 | Type | `string` |
 | Use for | Sticky routing for related cached prompts |
 
-Use this when a series of requests share stable prompt prefixes and should prefer the same upstream provider or region when possible. Phaseo can also derive cache affinity from request context, but an explicit key is better for long-running conversations, agent sessions, and repeated workflows.
+Use this when a series of requests share stable prompt prefixes, such as the steps of an agent loop. Phaseo pins the key to the provider and route (deployment or region) that served the first successful request, and keeps later requests with the same key there until that provider fails or Phaseo's managed quota on it runs out. Pins are kept per workspace, and their lifetime follows the provider's cache retention. See [Provider affinity](../guides/prompt-caching.mdx#provider-affinity).
+
+Phaseo sends a hash of your workspace ID and key upstream, never the raw key, so workspaces that choose the same key do not share a provider cache. Responses echo the key you sent. Phaseo can also derive affinity from request context, but an explicit key is better for long-running conversations, agent sessions, and repeated workflows.
 
 <span id="prompt_cache_options"></span>
 <h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>

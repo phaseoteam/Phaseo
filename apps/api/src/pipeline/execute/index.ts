@@ -108,6 +108,7 @@ import { extractDownstreamRateLimitHeaders } from "../upstream-rate-limit-header
 import { guardFreeRouteQuota } from "@core/customer-rate-limits";
 import { guardRateLimitPolicies } from "@core/rate-limit-policies";
 import { shouldRecordLastUsed } from "@core/last-used-throttle";
+import { applyUpstreamPromptCacheKey, resolveUpstreamPromptCacheKey } from "./prompt-cache-key";
 import {
 	chargeManagedProvider,
 	estimateProviderTokenReservation,
@@ -957,9 +958,21 @@ async function attemptProviderWithIR(
 		}
 		let reservationDenial: import("@core/video-reservations").VideoReservationDenial | undefined;
 		const catalogTier = readProviderCatalogTier(candidate.capabilityParams);
-		const executorIr = isTextGenerate && catalogTier
+		// Upstream prompt cache keys are namespaced per workspace. ctx.body keeps the
+		// client key for sticky routing inside Phaseo.
+		const upstreamPromptCacheKey = isTextGenerate
+			? await resolveUpstreamPromptCacheKey({
+				workspaceId: ctx.workspaceId,
+				promptCacheKey: (ir as IRChatRequest).promptCacheKey,
+				sessionId: ctx.meta.sessionId,
+			})
+			: null;
+		const tieredIr = isTextGenerate && catalogTier
 			? { ...normalizedIr, serviceTier: catalogTier.upstream ?? undefined }
 			: normalizedIr;
+		const executorIr = isTextGenerate
+			? applyUpstreamPromptCacheKey(tieredIr as IRChatRequest, candidate.providerId, upstreamPromptCacheKey)
+			: tieredIr;
 		const buildExecutorArgs = () =>
 			({
 				ir: executorIr,
@@ -994,6 +1007,7 @@ async function attemptProviderWithIR(
 							: undefined,
 					appId: ctx.meta.appId ?? null,
 					sessionId: ctx.meta.sessionId ?? null,
+					cacheAffinityKey: upstreamPromptCacheKey?.key ?? null,
 					requestUserId: ctx.meta.requestUserId ?? null,
 					trace: ctx.meta.trace ?? null,
 					testId: ctx.meta.testId ?? null,
