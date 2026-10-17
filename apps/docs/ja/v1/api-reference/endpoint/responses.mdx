@@ -48,3 +48,17 @@ curl https://api.phaseo.app/v1/responses \
 ## ストリーミングに関する注意
 
 `stream: true` にも対応しています。Gateway 管理サーバーツールでは、Phaseo が上流のツール呼び出しターンを処理し、ループを続行した後に合成ストリームを再送する場合があります。
+
+## ツールループでの推論
+
+Phaseo は Responses リクエストを `store: false` で上流に送ります。そのため、ツールループのステップ間でモデルの推論が続くのは `reasoning` 出力アイテムを通じた場合だけです。
+
+各 `reasoning` アイテムには `id`、`summary`、`content` があります。プロバイダーが推論の状態を返した場合、アイテムには `encrypted_content` も含まれます。
+
+- OpenAI、Azure OpenAI、xAI の暗号化された推論。Phaseo は推論モデルに対して `include: ["reasoning.encrypted_content"]` で要求します。
+- Claude の thinking 署名と秘匿された thinking。
+- Gemini の思考署名。署名が属する関数呼び出しの直前に置かれる専用の `reasoning` アイテムも含みます。
+
+ストリーミングのレスポンスでは、同じアイテムが `response.output_item.done` と `response.completed` に含まれます。
+
+ツールループを続けるには、`reasoning` アイテムを含むすべての出力アイテムを変更せずに `input` で送り返してください。`encrypted_content` は不透明で、生成したプロバイダーとモデルを記録しています。Phaseo はそのプロバイダーファミリーとモデルにだけ送るため、別のプロバイダーへのフォールバックでは失敗せずに破棄されます。

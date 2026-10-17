@@ -49,3 +49,17 @@ When a server tool is used, usage includes the matching `usage.server_tool_use.*
 ## Streaming note
 
 `stream: true` is also supported. For gateway-managed server tools, Phaseo may materialize the upstream tool-call turn and re-emit a synthetic stream after continuing the loop.
+
+## Reasoning in tool loops
+
+Phaseo sends Responses requests upstream with `store: false`, so a model's reasoning continues between tool-loop steps only through the `reasoning` output items.
+
+Each `reasoning` item has an `id`, `summary` and `content`. When the provider returns reasoning state, the item also has `encrypted_content`:
+
+- OpenAI, Azure OpenAI and xAI encrypted reasoning. Phaseo requests it with `include: ["reasoning.encrypted_content"]` for reasoning models.
+- Claude thinking signatures and redacted thinking.
+- Gemini thought signatures, including a separate `reasoning` item placed just before the function call a signature belongs to.
+
+Streaming responses carry the same items on `response.output_item.done` and `response.completed`.
+
+To continue a tool loop, send every output item back in `input`, including `reasoning` items, unchanged. `encrypted_content` is opaque and records the provider and model that produced it. Phaseo sends it only to that provider family and model, so a fallback to another provider drops it rather than failing.

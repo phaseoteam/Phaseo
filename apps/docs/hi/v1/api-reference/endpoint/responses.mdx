@@ -48,3 +48,17 @@ curl https://api.phaseo.app/v1/responses \
 ## स्ट्रीमिंग नोट
 
 `stream: true` भी समर्थित है। Gateway-प्रबंधित server tools के लिए Phaseo upstream tool-call turn को materialize करके loop जारी रख सकता है और फिर synthetic stream दोबारा भेज सकता है।
+
+## टूल लूप में रीज़निंग
+
+Phaseo Responses अनुरोध अपस्ट्रीम को `store: false` के साथ भेजता है, इसलिए टूल लूप के चरणों के बीच मॉडल की रीज़निंग केवल `reasoning` आउटपुट आइटम के ज़रिए जारी रहती है।
+
+हर `reasoning` आइटम में `id`, `summary` और `content` होते हैं। जब प्रदाता रीज़निंग स्थिति लौटाता है, तो आइटम में `encrypted_content` भी होता है:
+
+- OpenAI, Azure OpenAI और xAI की एन्क्रिप्टेड रीज़निंग। Phaseo रीज़निंग मॉडल के लिए इसे `include: ["reasoning.encrypted_content"]` के साथ माँगता है।
+- Claude के thinking सिग्नेचर और छिपाई गई thinking।
+- Gemini के थॉट सिग्नेचर, जिसमें उस फ़ंक्शन कॉल से ठीक पहले रखा गया अलग `reasoning` आइटम भी शामिल है जिससे सिग्नेचर जुड़ा है।
+
+स्ट्रीमिंग रिस्पॉन्स में यही आइटम `response.output_item.done` और `response.completed` में आते हैं।
+
+टूल लूप जारी रखने के लिए, `reasoning` आइटम सहित सभी आउटपुट आइटम को `input` में बिना बदलाव वापस भेजें। `encrypted_content` अपारदर्शी होता है और उसे बनाने वाले प्रदाता और मॉडल को दर्ज करता है। Phaseo इसे केवल उसी प्रदाता परिवार और मॉडल को भेजता है, इसलिए किसी दूसरे प्रदाता पर फ़ॉलबैक होने पर यह विफल होने के बजाय हटा दिया जाता है।

@@ -48,3 +48,17 @@ Quando uma ferramenta de servidor é usada, o uso inclui os contadores correspon
 ## Nota sobre streaming
 
 `stream: true` também é compatível. Para ferramentas de servidor gerenciadas pelo Gateway, a Phaseo pode materializar o turno de chamada à ferramenta upstream, continuar o ciclo e emitir novamente um stream sintético.
+
+## Raciocínio em ciclos de ferramentas
+
+A Phaseo envia as solicitações de Responses ao provedor com `store: false`, então o raciocínio de um modelo continua entre as etapas de um ciclo de ferramentas apenas pelos itens de saída `reasoning`.
+
+Cada item `reasoning` tem `id`, `summary` e `content`. Quando o provedor retorna estado de raciocínio, o item também tem `encrypted_content`:
+
+- Raciocínio criptografado da OpenAI, do Azure OpenAI e da xAI. A Phaseo o solicita com `include: ["reasoning.encrypted_content"]` para modelos de raciocínio.
+- Assinaturas de thinking do Claude e thinking ocultado.
+- Assinaturas de pensamento do Gemini, incluindo um item `reasoning` próprio logo antes da chamada de função a que uma assinatura pertence.
+
+Respostas com streaming trazem os mesmos itens em `response.output_item.done` e `response.completed`.
+
+Para continuar um ciclo de ferramentas, envie todos os itens de saída de volta em `input` sem alterações, incluindo os itens `reasoning`. `encrypted_content` é opaco e registra o provedor e o modelo que o geraram. A Phaseo o envia apenas para essa família de provedores e esse modelo, então um fallback para outro provedor o descarta em vez de falhar.
