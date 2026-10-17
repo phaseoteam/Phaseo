@@ -324,7 +324,8 @@ export function extractErrorDescription(body: any): string | null {
  */
 export function isRateLimitPolicyRejection(errorCode: string | null | undefined, body: any): boolean {
     if (errorCode !== "rate_limit_exceeded") return false;
-    return (body?.reason ?? body?.error?.reason) === "policy_requests_per_minute";
+    const reason = body?.reason ?? body?.error?.reason;
+    return reason === "policy_requests_per_minute" || reason === "policy_tokens_per_minute";
 }
 
 // Classify error attribution for error header

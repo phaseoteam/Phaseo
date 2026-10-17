@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => ({
 	inserts: [] as Array<{ table: string; payload: Record<string, unknown> }>,
 	bindings: {} as Record<string, unknown>,
 	admit: vi.fn(),
+	chargeTokens: vi.fn(),
+	peekTokens: vi.fn(),
 	getByName: vi.fn(),
 	background: [] as Promise<unknown>[],
 }));
@@ -70,7 +72,7 @@ vi.mock("@core/customer-rate-limit-tiers", () => ({ readCustomerLimits: vi.fn() 
 import { __resetTieredCacheForTests } from "./tiered-cache";
 import { __resetCustomerQuotaStateForTests } from "./customer-rate-limits";
 import {
-	applicableRateLimits, buildRateLimitPlan, copyKeyRateLimitAssignment, guardRateLimitPolicies, publishRateLimitPlan, reconcileRateLimitPlans,
+	applicableRateLimits, buildRateLimitPlan, chargeRateLimitPolicyTokens, copyKeyRateLimitAssignment, guardRateLimitPolicies, publishRateLimitPlan, reconcileRateLimitPlans,
 	rateLimitPlanKey, rateLimitPolicyHeaders, readRateLimitPlan, rejectedByRateLimitPolicy, withRateLimitPolicyHeaders,
 	type RateLimitPlan,
 } from "./rate-limit-policies";
@@ -81,8 +83,8 @@ const STRICT = "policy-strict";
 const LOOSE = "policy-loose";
 const TOKENS = "policy-tokens";
 
-function policy(id: string, name: string, rpm: number | null, workspace = WS) {
-	return { id, workspace_id: workspace, name, requests_per_minute: rpm };
+function policy(id: string, name: string, rpm: number | null, workspace = WS, tpm: number | string | null = null) {
+	return { id, workspace_id: workspace, name, requests_per_minute: rpm, tokens_per_minute: tpm };
 }
 function assignment(policyId: string, target: string, columns: Record<string, string> = {}, workspace = WS) {
 	return { id: `${target}-${Object.values(columns).join("-")}`, workspace_id: workspace, policy_id: policyId, target_type: target,
@@ -128,7 +130,10 @@ beforeEach(() => {
 	mocks.tables = { workspace_rate_limit_policies: [], workspace_rate_limit_policy_assignments: [] };
 	mocks.admit.mockReset().mockImplementation(async (_scope: string, _kind: string, _id: string, limits: { requestsPerMinute: number }) =>
 		({ allowed: true, limit: limits.requestsPerMinute, remaining: limits.requestsPerMinute - 1, retryAfterSeconds: 0 }));
-	mocks.getByName.mockReset().mockReturnValue({ admit: mocks.admit });
+	mocks.chargeTokens.mockReset().mockImplementation(async (_scope: string, tokens: number, limit: number) =>
+		({ allowed: tokens < limit, limit, remaining: Math.max(0, limit - tokens), retryAfterSeconds: tokens < limit ? 0 : 30 }));
+	mocks.peekTokens.mockReset().mockImplementation(async (_scope: string, limit: number) => ({ allowed: true, limit, remaining: limit, retryAfterSeconds: 0 }));
+	mocks.getByName.mockReset().mockReturnValue({ admit: mocks.admit, chargeTokens: mocks.chargeTokens, peekTokens: mocks.peekTokens });
 	mocks.bindings = { RATE_LIMIT_POLICIES_ENABLED: "true", CUSTOMER_RATE_LIMITS: { getByName: mocks.getByName } };
 });
 
@@ -136,7 +141,7 @@ afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
 
 describe("rate limit plan publication", () => {
 	it("builds a compact plan from the workspace's policies and assignments, omitting departments", async () => {
-		mocks.tables.workspace_rate_limit_policies = [policy(STRICT, "Strict", 2), policy(TOKENS, "Tokens", null), policy("other", "Other", 9, "elsewhere")];
+		mocks.tables.workspace_rate_limit_policies = [policy(STRICT, "Strict", 2), policy(TOKENS, "Tokens", null, WS, "50000"), policy("other", "Other", 9, "elsewhere")];
 		mocks.tables.workspace_rate_limit_policy_assignments = [
 			assignment(STRICT, "key", { key_id: "key-1" }),
 			assignment(STRICT, "member", { user_id: "user-1" }),
@@ -147,7 +152,7 @@ describe("rate limit plan publication", () => {
 		];
 		expect(await buildRateLimitPlan(WS)).toEqual({
 			v: 1,
-			policies: { [STRICT]: { rpm: 2, name: "Strict" }, [TOKENS]: { rpm: null, name: "Tokens" } },
+			policies: { [STRICT]: { rpm: 2, tpm: null, name: "Strict" }, [TOKENS]: { rpm: null, tpm: 50000, name: "Tokens" } },
 			keys: { "key-1": STRICT },
 			members: { "user-1": STRICT },
 			guardrails: { "guard-1": TOKENS },
@@ -205,20 +210,21 @@ describe("rate limit plan publication", () => {
 describe("applicable rate limits", () => {
 	it("resolves key, member and end-user default policies", () => {
 		expect(applicableRateLimits(plan, { keyId: "key-1", userId: "user-1", endUserId: "customer-42" })).toEqual([
-			{ policyId: LOOSE, name: "Loose", targetType: "key", rpm: 100, scopeKey: "key:key-1" },
-			{ policyId: LOOSE, name: "Loose", targetType: "member", rpm: 100, scopeKey: "member:user-1" },
-			{ policyId: LOOSE, name: "Loose", targetType: "end_user", rpm: 100, scopeKey: "end-user:customer-42" },
+			{ policyId: LOOSE, name: "Loose", targetType: "key", rpm: 100, tpm: null, scopeKey: "key:key-1" },
+			{ policyId: LOOSE, name: "Loose", targetType: "member", rpm: 100, tpm: null, scopeKey: "member:user-1" },
+			{ policyId: LOOSE, name: "Loose", targetType: "end_user", rpm: 100, tpm: null, scopeKey: "end-user:customer-42" },
 		]);
 	});
 
-	it("skips the end-user default without an end-user id, and policies without a request limit", () => {
+	it("skips the end-user default without an end-user id, and policies without any enforced limit", () => {
+		// TOKENS has no request limit and was published before plans carried tpm.
 		expect(applicableRateLimits(plan, { keyId: "key-tokens", userId: "user-2", endUserId: null })).toEqual([]);
 		expect(applicableRateLimits(null, { keyId: "key-1" })).toEqual([]);
 	});
 
 	it("gives each key or OAuth user its own guardrail allowance", () => {
 		const forKey = applicableRateLimits(plan, { keyId: "key-2", userId: "user-2", guardrailIds: ["guard-1", "guard-1", "unlimited"] });
-		expect(forKey).toEqual([{ policyId: STRICT, name: "Strict", targetType: "guardrail", rpm: 2, scopeKey: "guardrail:guard-1:key:key-2" }]);
+		expect(forKey).toEqual([{ policyId: STRICT, name: "Strict", targetType: "guardrail", rpm: 2, tpm: null, scopeKey: "guardrail:guard-1:key:key-2" }]);
 		expect(applicableRateLimits(plan, { keyId: "key-3", guardrailIds: ["guard-1"] })[0].scopeKey).toBe("guardrail:guard-1:key:key-3");
 		// OAuth requests carry the client ID in keyId; it never matches a key assignment.
 		const oauth = applicableRateLimits({ ...plan, keys: { client: STRICT } }, {
@@ -346,6 +352,116 @@ describe("rate limit policy enforcement", () => {
 		vi.spyOn(console, "warn").mockImplementation(() => {});
 		mocks.admit.mockRejectedValue(new Error("unavailable"));
 		expect(await guardRateLimitPolicies(ctx())).toBeNull();
+		await settle();
+		expect(await guardRateLimitPolicies(ctx())).toBeNull();
+	});
+});
+
+describe("tokens per minute", () => {
+	const TPM = "policy-tpm";
+	const tokenPlan: RateLimitPlan = {
+		...plan,
+		policies: { ...plan.policies, [TPM]: { rpm: null, tpm: 1000, name: "Token budget" }, [LOOSE]: { rpm: 100, tpm: 5000, name: "Loose" } },
+		keys: { "key-1": TPM },
+	};
+	const scope = (target: string) => `rate-limit-policy:v1:${WS}:${target}`;
+
+	it("applies a token-only policy and asks its counter what is left without counting a request", async () => {
+		publishPlan(tokenPlan);
+		expect(applicableRateLimits(tokenPlan, { keyId: "key-1" })).toEqual([
+			{ policyId: TPM, name: "Token budget", targetType: "key", rpm: null, tpm: 1000, scopeKey: "key:key-1" },
+		]);
+		const request = ctx({ quotaUserId: "user-1" });
+		expect(await guardRateLimitPolicies(request)).toBeNull();
+		await settle();
+		expect(mocks.peekTokens.mock.calls).toEqual([
+			[scope(`${TPM}:key:key-1`), 1000],
+			[scope(`${LOOSE}:member:user-1`), 5000],
+		]);
+		// Only the member policy has a request limit.
+		expect(mocks.admit.mock.calls.map(([key]) => key)).toEqual([scope(`${LOOSE}:member:user-1`)]);
+		expect(rateLimitPolicyHeaders(request)).toEqual({
+			"x-ratelimit-limit-requests": "100", "x-ratelimit-remaining-requests": "99", "x-ratelimit-reset-requests": "60s",
+			"x-ratelimit-limit-tokens": "1000", "x-ratelimit-remaining-tokens": "1000", "x-ratelimit-reset-tokens": "60s",
+		});
+	});
+
+	it("charges completed usage once to each token allowance, then rejects locally while exhausted", async () => {
+		publishPlan(tokenPlan);
+		const first = ctx({ quotaUserId: "user-1" });
+		await guardRateLimitPolicies(first);
+		await settle();
+		const usage = { input_tokens: 700, output_tokens: 500 };
+		chargeRateLimitPolicyTokens(first, usage);
+		chargeRateLimitPolicyTokens(first, usage);
+		await settle();
+		expect(mocks.chargeTokens.mock.calls).toEqual([
+			[scope(`${TPM}:key:key-1`), 1200, 1000],
+			[scope(`${LOOSE}:member:user-1`), 1200, 5000],
+		]);
+		expect(rateLimitPolicyHeaders(first)).toMatchObject({ "x-ratelimit-remaining-tokens": "0", "x-ratelimit-reset-tokens": "30s" });
+
+		const second = ctx({ quotaUserId: "user-1" });
+		const response = await guardRateLimitPolicies(second);
+		expect(response?.status).toBe(429);
+		expect(response?.headers.get("Retry-After")).toBe("30");
+		expect(response?.headers.get("x-ratelimit-limit-tokens")).toBe("1000");
+		expect(response?.headers.get("x-ratelimit-remaining-tokens")).toBe("0");
+		expect(response?.headers.get("x-ratelimit-limit-requests")).toBeNull();
+		expect(await response?.json()).toMatchObject({
+			error: "rate_limit_exceeded",
+			reason: "policy_tokens_per_minute",
+			policy_id: TPM,
+			limit_scope: "key",
+			description: "This API key reached the \"Token budget\" rate limit policy's 1000 tokens per minute. Retry after 30 seconds.",
+		});
+		// A rejected request is never charged.
+		chargeRateLimitPolicyTokens(second, usage);
+		await settle();
+		expect(mocks.chargeTokens).toHaveBeenCalledTimes(2);
+	});
+
+	it("charges each attempt once, using the largest usage a failed attempt reports", async () => {
+		publishPlan(tokenPlan);
+		const request = ctx({ quotaUserId: "nobody" });
+		await guardRateLimitPolicies(request);
+		// A failed attempt before a provider fallback, reported by two candidates.
+		chargeRateLimitPolicyTokens(request, [{ input_tokens: 40, output_tokens: 0 }, null, { usage: "unparsed" }, { input_tokens: 90, output_tokens: 10 }], "attempt:1:openai");
+		chargeRateLimitPolicyTokens(request, [{ input_tokens: 90, output_tokens: 10 }], "attempt:1:openai");
+		// The fallback that succeeded, reported by two settlement paths.
+		chargeRateLimitPolicyTokens(request, { input_tokens: 200, output_tokens: 50 });
+		chargeRateLimitPolicyTokens(request, { input_tokens: 200, output_tokens: 50 });
+		await settle();
+		expect(mocks.chargeTokens.mock.calls.map(([, tokens]) => tokens)).toEqual([100, 250]);
+	});
+
+	it("learns of exhaustion caused on other isolates when admitting", async () => {
+		publishPlan(tokenPlan);
+		mocks.peekTokens.mockImplementation(async (_scope: string, limit: number) => ({ allowed: false, limit, remaining: 0, retryAfterSeconds: 12 }));
+		expect(await guardRateLimitPolicies(ctx({ quotaUserId: "nobody" }))).toBeNull();
+		await settle();
+		const response = await guardRateLimitPolicies(ctx({ quotaUserId: "nobody" }));
+		expect(response?.headers.get("Retry-After")).toBe("12");
+	});
+
+	it("charges nothing without token limits, usage, enforcement, or when the counter fails", async () => {
+		publishPlan(plan);
+		const requestOnly = ctx();
+		await guardRateLimitPolicies(requestOnly);
+		chargeRateLimitPolicyTokens(requestOnly, { input_tokens: 10, output_tokens: 10 });
+		chargeRateLimitPolicyTokens(ctx(), { input_tokens: 10, output_tokens: 10 });
+		publishPlan(tokenPlan);
+		__resetTieredCacheForTests();
+		const noUsage = ctx();
+		await guardRateLimitPolicies(noUsage);
+		chargeRateLimitPolicyTokens(noUsage, null);
+		chargeRateLimitPolicyTokens(noUsage, { input_tokens: 0, output_tokens: 0 });
+		await settle();
+		expect(mocks.chargeTokens).not.toHaveBeenCalled();
+
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		mocks.chargeTokens.mockRejectedValue(new Error("unavailable"));
+		chargeRateLimitPolicyTokens(noUsage, { input_tokens: 5, output_tokens: 5 });
 		await settle();
 		expect(await guardRateLimitPolicies(ctx())).toBeNull();
 	});

@@ -47,6 +47,7 @@ import { applyResponsePlugins } from "@/plugins/registry";
 import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } from "./billing-policy";
 import { calculateOutputPerformanceMetrics } from "./performance-metrics";
 import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
+import { chargeRateLimitPolicyTokens } from "@core/rate-limit-policies";
 
 function shouldAttachRoutingDiagnostics(ctx: PipelineContext): boolean {
 	return Boolean(ctx.meta?.debug?.enabled || ctx.meta?.returnRoutingDiagnostics);
@@ -563,6 +564,7 @@ export async function handleStreamResponse(
 					usage: shapedUsage,
 					reservation: result.providerRateLimitReservation,
 				});
+				chargeRateLimitPolicyTokens(ctx, shapedUsage);
 				suppressFailedResponseBilling({ ctx, result, usage: shapedUsage, reason });
 				await handleFailureAudit(
 					ctx,
@@ -689,6 +691,7 @@ export async function handleStreamResponse(
                 }
 
 				await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: result.bill.usage, reservation: result.providerRateLimitReservation });
+				chargeRateLimitPolicyTokens(ctx, result.bill.usage);
                 await recordUsageAndChargeOnce({
                     ctx,
                     costNanos: pricedWithByok.totalNanos,
@@ -750,6 +753,7 @@ export async function handleStreamResponse(
 				};
                 await maybeWriteStickyForUsage(pricedWithByok.pricedUsage);
 				await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: pricedWithByok.pricedUsage, reservation: result.providerRateLimitReservation });
+				chargeRateLimitPolicyTokens(ctx, pricedWithByok.pricedUsage);
                 await recordUsageAndChargeOnce({
                     ctx,
                     costNanos: pricedWithByok.totalNanos,
@@ -828,6 +832,7 @@ export async function handleStreamResponse(
             await maybeWriteStickyForUsage(result.bill.usage);
 
 			await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: result.bill.usage, reservation: result.providerRateLimitReservation });
+			chargeRateLimitPolicyTokens(ctx, result.bill.usage);
             await recordUsageAndChargeOnce({
                 ctx,
                 costNanos: pricedWithByok.totalNanos,

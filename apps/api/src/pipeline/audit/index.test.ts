@@ -110,9 +110,10 @@ describe("audit request detail persistence", () => {
 	});
 
 	it.each([
-		["a policy rejection", "user:rate_limit_exceeded", { policy_id: "policy-1", limit_scope: "member" }],
-		["a provider rate limit", "rate_limit_exceeded", null],
-	])("records the rejecting rate limit policy on %s", async (_label, errorCode, expected) => {
+		["a requests-per-minute policy rejection", "user:rate_limit_exceeded", "policy_requests_per_minute", { policy_id: "policy-1", limit_scope: "member", limit: "requests" }],
+		["a tokens-per-minute policy rejection", "user:rate_limit_exceeded", "policy_tokens_per_minute", { policy_id: "policy-1", limit_scope: "member", limit: "tokens" }],
+		["a provider rate limit", "rate_limit_exceeded", "policy_requests_per_minute", null],
+	])("records the rejecting rate limit policy on %s", async (_label, errorCode, reason, expected) => {
 		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
 			data: { id: "row", created_at: "2026-10-15T00:00:00Z", workspace_id: "ws" }, error: null,
 		}) }) }));
@@ -122,7 +123,7 @@ describe("audit request detail persistence", () => {
 		await auditFailure({
 			stage: "execute", requestId: "req", workspaceId: "ws", model: "model", endpoint: "responses",
 			stream: false, statusCode: 429, errorCode,
-			errorPayload: { reason: "policy_requests_per_minute", policy_id: "policy-1", limit_scope: "member" },
+			errorPayload: { reason, policy_id: "policy-1", limit_scope: "member" },
 		});
 		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
 		expect(event.safe_metadata.rate_limit).toEqual(expected);

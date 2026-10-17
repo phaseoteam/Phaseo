@@ -9,8 +9,10 @@
 //      headroom for a scope (a cold isolate, or one near the limit) awaits the
 //      object before admitting, so an exhausted scope cannot get one free request
 //      through on every isolate it reaches.
-//      Workspace rate limit policies (requests per minute) reuse the minute
-//      contract per policy scope; see core/rate-limit-policies.ts.
+//      Workspace rate limit policies reuse the minute contract per policy scope
+//      for requests per minute; tokens per minute are charged after each
+//      request completes, and an exhausted token allowance is replayed locally
+//      the same way. See core/rate-limit-policies.ts.
 import { dispatchBackground, ensureRuntimeForBackground, getBindingsIfConfigured } from "@/runtime/env";
 import { awaitShared } from "@core/shared-wait";
 import type { GatewayBindings } from "@/runtime/env.types";
@@ -23,6 +25,7 @@ export const DEFAULT_CUSTOMER_LIMITS = { requestsPerMinute: 25, freeRequestsPerD
 export type CustomerLimits = typeof DEFAULT_CUSTOMER_LIMITS;
 export type CustomerScope = { workspaceId: string; userId?: string | null };
 export type CustomerQuotaKind = "minute" | "free-day";
+type PolicyQuotaKind = CustomerQuotaKind | "tokens";
 export type CustomerAdmission = {
 	allowed: boolean;
 	limit: number;
@@ -52,6 +55,8 @@ export function parseCustomerLimits(value: unknown): CustomerLimits {
 
 type CustomerStub = {
 	admit(scopeKey: string, kind: CustomerQuotaKind, admissionId: string, limits: Partial<CustomerLimits>): Promise<CustomerAdmission>;
+	chargeTokens(scopeKey: string, tokens: number, tokensPerMinute: number): Promise<CustomerAdmission>;
+	peekTokens(scopeKey: string, tokensPerMinute: number): Promise<CustomerAdmission>;
 };
 
 const MAX_DENIALS = 10_000;
@@ -76,6 +81,8 @@ const freeDayHeadroom = new Map<string, Headroom>();
 /** What the counter last reported for a policy scope, for approximate rate-limit headers. */
 export type PolicyQuotaReport = CustomerAdmission & { at: number; admissionId: string };
 const policyReports = new Map<string, PolicyQuotaReport>();
+/** The same, for a policy scope's token allowance. */
+const policyTokenReports = new Map<string, PolicyQuotaReport>();
 let missingBindingReported = false;
 
 function remember<V>(map: Map<string, V>, key: string, value: V, max: number): void {
@@ -97,6 +104,7 @@ export function __resetCustomerQuotaStateForTests(): void {
 	admissions.clear();
 	freeDayHeadroom.clear();
 	policyReports.clear();
+	policyTokenReports.clear();
 	missingBindingReported = false;
 }
 
@@ -105,7 +113,7 @@ export function __customerQuotaStateSizeForTests(): { denials: number; admission
 }
 
 /** Records what the counter reported for a scope: a denial to replay locally, or free-day headroom. */
-function noteAdmission(kind: CustomerQuotaKind, scopeKey: string, admission: CustomerAdmission): void {
+function noteAdmission(kind: PolicyQuotaKind, scopeKey: string, admission: CustomerAdmission): void {
 	if (!admission.allowed || (admission.remaining <= 0 && admission.retryAfterSeconds > 0)) {
 		const until = Date.now() + Math.max(1, admission.retryAfterSeconds) * 1000;
 		remember(denials, `${kind}|${scopeKey}`, { until, limit: admission.limit }, MAX_DENIALS);
@@ -259,8 +267,8 @@ export async function guardFreeRouteQuota(args: CustomerScope & {
 }
 
 /** A workspace rate limit policy allowance (see core/rate-limit-policies.ts). */
-export type PolicyQuotaScope = { scopeKey: string; requestsPerMinute: number };
-export type PolicyQuotaDenial = { scope: PolicyQuotaScope; limit: number; retryAfterSeconds: number };
+export type PolicyQuotaScope = { scopeKey: string; requestsPerMinute: number | null; tokensPerMinute: number | null };
+export type PolicyQuotaDenial = { scope: PolicyQuotaScope; kind: "requests" | "tokens"; limit: number; retryAfterSeconds: number };
 
 /** Bindings that enforce rate limit policies, or null when enforcement is off or unavailable. */
 export function policyQuotaBindings(): GatewayBindings | null {
@@ -274,17 +282,39 @@ export function policyQuotaBindings(): GatewayBindings | null {
 	return bindings;
 }
 
-export function policyQuotaReport(scopeKey: string): PolicyQuotaReport | null {
-	return policyReports.get(scopeKey) ?? null;
+export function policyQuotaReport(scopeKey: string, kind: "requests" | "tokens" = "requests"): PolicyQuotaReport | null {
+	return (kind === "tokens" ? policyTokenReports : policyReports).get(scopeKey) ?? null;
+}
+
+function tokenReporter(scopeKey: string, admissionId: string) {
+	return (admission: CustomerAdmission) => {
+		noteAdmission("tokens", scopeKey, admission);
+		remember(policyTokenReports, scopeKey, { ...admission, at: Date.now(), admissionId }, MAX_DENIALS);
+	};
+}
+
+function tokensInBackground(bindings: GatewayBindings, scopeKey: string, call: (stub: CustomerStub) => Promise<CustomerAdmission>, onCounted: (admission: CustomerAdmission) => void): void {
+	const release = ensureRuntimeForBackground();
+	dispatchBackground((async () => {
+		try {
+			onCounted(await call(bindings.CUSTOMER_RATE_LIMITS!.getByName(scopeKey) as unknown as CustomerStub));
+		} catch (error) {
+			console.warn("customer_rate_limit_count_failed", { kind: "tokens", error: error instanceof Error ? error.message : String(error) });
+		} finally {
+			release();
+		}
+	})());
 }
 
 /**
  * Admits a request against every applicable policy allowance with the same
  * non-blocking contract as the customer minute quota: a scope this isolate
- * knows is exhausted rejects locally; otherwise every scope is counted in the
- * background. All scopes are checked before any is counted, so a rejected
- * request never uses another scope's allowance. Fallback attempts of an
- * admitted request (same admission ID) are neither recounted nor rejected.
+ * knows is exhausted (of requests or of tokens) rejects locally; otherwise
+ * every request allowance is counted in the background, and every token
+ * allowance is asked how much is left, so this isolate learns of exhaustion
+ * caused elsewhere. All scopes are checked before any is counted, so a
+ * rejected request never uses another scope's allowance. Fallback attempts of
+ * an admitted request (same admission ID) are neither recounted nor rejected.
  */
 export function admitPolicyQuotas(args: { scopes: PolicyQuotaScope[]; admissionId: string }): PolicyQuotaDenial | null {
 	const bindings = policyQuotaBindings();
@@ -292,19 +322,44 @@ export function admitPolicyQuotas(args: { scopes: PolicyQuotaScope[]; admissionI
 	const now = Date.now();
 	const uncounted: PolicyQuotaScope[] = [];
 	for (const scope of args.scopes) {
-		if ((admissions.get(`minute|${scope.scopeKey}|${args.admissionId}`) ?? 0) > now) continue;
-		const denial = activeDenial(`minute|${scope.scopeKey}`, now);
-		if (denial) return { scope, limit: denial.limit, retryAfterSeconds: Math.max(1, Math.ceil((denial.until - now) / 1000)) };
+		if ((admissions.get(`policy|${scope.scopeKey}|${args.admissionId}`) ?? 0) > now) continue;
+		for (const [kind, limited] of [["minute", scope.requestsPerMinute], ["tokens", scope.tokensPerMinute]] as const) {
+			if (limited == null) continue;
+			const denial = activeDenial(`${kind}|${scope.scopeKey}`, now);
+			if (denial) return { scope, kind: kind === "minute" ? "requests" : "tokens", limit: denial.limit, retryAfterSeconds: Math.max(1, Math.ceil((denial.until - now) / 1000)) };
+		}
 		uncounted.push(scope);
 	}
 	for (const scope of uncounted) {
-		remember(admissions, `minute|${scope.scopeKey}|${args.admissionId}`, now + ADMISSION_MEMORY_MS, MAX_ADMISSIONS);
-		countInBackground(bindings, scope.scopeKey, {
-			admissionId: args.admissionId,
-			kind: "minute",
-			limits: async () => ({ requestsPerMinute: scope.requestsPerMinute }),
-			onCounted: (admission) => remember(policyReports, scope.scopeKey, { ...admission, at: Date.now(), admissionId: args.admissionId }, MAX_DENIALS),
-		});
+		remember(admissions, `policy|${scope.scopeKey}|${args.admissionId}`, now + ADMISSION_MEMORY_MS, MAX_ADMISSIONS);
+		const requestsPerMinute = scope.requestsPerMinute;
+		if (requestsPerMinute != null) {
+			countInBackground(bindings, scope.scopeKey, {
+				admissionId: args.admissionId,
+				kind: "minute",
+				limits: async () => ({ requestsPerMinute }),
+				onCounted: (admission) => remember(policyReports, scope.scopeKey, { ...admission, at: Date.now(), admissionId: args.admissionId }, MAX_DENIALS),
+			});
+		}
+		const tokensPerMinute = scope.tokensPerMinute;
+		if (tokensPerMinute != null) {
+			tokensInBackground(bindings, scope.scopeKey, (stub) => stub.peekTokens(scope.scopeKey, tokensPerMinute), tokenReporter(scope.scopeKey, args.admissionId));
+		}
 	}
 	return null;
+}
+
+/**
+ * Charges a completed attempt's token usage to each token allowance that
+ * applied to its request, in the background. Callers charge each attempt once. A later request on this isolate is then
+ * rejected locally once an allowance is exhausted.
+ */
+export function chargePolicyTokens(args: { scopes: PolicyQuotaScope[]; admissionId: string; tokens: number }): void {
+	const bindings = policyQuotaBindings();
+	if (!bindings || !Number.isSafeInteger(args.tokens) || args.tokens <= 0) return;
+	for (const scope of args.scopes) {
+		const tokensPerMinute = scope.tokensPerMinute;
+		if (tokensPerMinute == null) continue;
+		tokensInBackground(bindings, scope.scopeKey, (stub) => stub.chargeTokens(scope.scopeKey, args.tokens, tokensPerMinute), tokenReporter(scope.scopeKey, args.admissionId));
+	}
 }
