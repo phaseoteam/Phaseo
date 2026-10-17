@@ -78,7 +78,7 @@ BEGIN
   WITH incoming_ids AS MATERIALIZED (
     SELECT r.result_id FROM jsonb_to_recordset(p_snapshot->'results') AS r(result_id uuid)
   )
-  UPDATE public.v2_benchmark_results old SET effective_to = fetched, updated_at = fetched
+  UPDATE public.v2_benchmark_results old SET effective_to = least(fetched, now()), updated_at = fetched
   WHERE old.effective_to IS NULL AND old.benchmark_id = ANY(managed_ids)
     AND (p_snapshot->'model_slugs' ? old.model_slug
       OR (p_snapshot->'source_owners' ? substring(old.other_info FROM 'Artificial Analysis ID ([^;]+)')

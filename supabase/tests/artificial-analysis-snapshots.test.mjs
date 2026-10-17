@@ -88,5 +88,8 @@ try {
   await publish(snapshot(4, 5));
   assert.equal((await db.query("select published from public.get_artificial_analysis_coverage() where benchmark_id='aa-intelligence-index-v5'")).rows[0].published, true);
   assert.equal(await count('artificial_analysis_snapshots'), 4);
+  const future = { ...snapshot(5, 5), fetched_at: new Date(Date.now() + 1000).toISOString() };
+  await publish(future);
+  assert.equal(Number((await db.query("select count(*) as n from public.v2_benchmark_results where benchmark_id='aa-intelligence-index-v5' and (effective_to is null or effective_to > now())")).rows[0].n), 2, 'clock-skewed fetch retires old results immediately');
   console.log('AA snapshots: atomic rollback, retry identity, freshness, history, permissions, coverage and publication gating passed');
 } finally { await db.close(); }
