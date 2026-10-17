@@ -162,7 +162,7 @@ describe("runModelDiscoveryJob", () => {
 
 		expect(first.seenModels.written).toBeGreaterThan(10);
 		expect(upsertedSeenRows()).toEqual([]);
-		expect(second.seenModels).toEqual({ written: 0, unchanged: first.seenModels.written });
+		expect(second.seenModels).toEqual({ written: 0, unchanged: first.seenModels.written, unchangedProviders: 0 });
 	});
 
 	it("rewrites only rows due their daily last_seen_at refresh", async () => {
@@ -186,5 +186,66 @@ describe("runModelDiscoveryJob", () => {
 		expect(fetchMock.calls.filter((call) => call.url === "https://api.venice.ai/api/v1/models")).toHaveLength(1);
 		expect(summary.results.filter((result) => result.providerId.startsWith("venice")).map((result) => [result.providerId, result.status]))
 			.toEqual([["venice", "success"], ["venice-e2ee", "success"]]);
+	});
+
+	describe("unchanged /models responses", () => {
+		async function sweepTwice(prepareSecond?: () => void) {
+			await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+			// Store what the first sweep wrote, as the database would return it.
+			supabase.tables.model_discovery_seen_models = JSON.parse(JSON.stringify(upsertedSeenRows()));
+			const fingerprints = new Map(
+				writes("rpc", "record_model_discovery_payload_fingerprints")
+					.flatMap((call) => (call.args[0] as { p_rows: Array<{ provider_id: string; next: string | null }> }).p_rows)
+					.map((change) => [change.provider_id, change.next]),
+			);
+			supabase.tables.model_discovery_provider_status = JSON.parse(JSON.stringify(
+				writes("model_discovery_provider_status", "upsert")
+					.flatMap((call) => call.args[0] as Array<{ provider_id: string }>)
+					.map((status) => ({ ...status, payload_fingerprint: fingerprints.get(status.provider_id) ?? null })),
+			));
+			supabase.calls = [];
+			prepareSecond?.();
+			return runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+		}
+
+		it("skips extraction for providers whose response matches the last processed one", async () => {
+			const second = await sweepTwice();
+
+			const succeeded = second.results.filter((result) => result.status === "success");
+			expect(succeeded.length).toBeGreaterThan(5);
+			expect(second.seenModels.unchangedProviders).toBe(succeeded.length);
+			expect(upsertedSeenRows()).toEqual([]);
+			// Skipped providers still report their stored models to health and coverage.
+			const statusRows = writes("model_discovery_provider_status", "upsert")
+				.flatMap((call) => call.args[0] as Array<{ provider_id: string; model_count: number | null }>);
+			expect(statusRows.find((row) => row.provider_id === "vercel")).toMatchObject({ model_count: 2 });
+			// An unchanged fingerprint is not rewritten.
+			expect(writes("rpc", "record_model_discovery_payload_fingerprints")).toEqual([]);
+		});
+
+		it("processes a provider whose response changed", async () => {
+			const second = await sweepTwice(() => {
+				fetchMock.restore();
+				fetchMock = installFetchMock([
+					{ match: (url) => url === "https://ai-gateway.vercel.sh/v1/models", response: () => jsonResponse({ data: [{ id: "model-a" }, { id: "model-b" }, { id: "model-c" }] }) },
+					{ match: () => true, response: () => jsonResponse({ data: [{ id: "model-a" }, { id: "model-b" }] }) },
+				]);
+			});
+
+			expect(second.results.find((result) => result.providerId === "vercel")).toMatchObject({ status: "success", modelCount: 3 });
+			expect(second.changes.find((change) => change.providerId === "vercel")).toMatchObject({ added: ["model-c"] });
+		});
+
+		it("processes an unchanged provider that has a removal to confirm", async () => {
+			const second = await sweepTwice(() => {
+				supabase.tables.model_discovery_seen_models = [
+					...supabase.tables.model_discovery_seen_models!,
+					{ provider_id: "vercel", model_id: "model-gone", watch_snapshot: null, removal_pending: true, last_seen_at: new Date().toISOString() },
+				];
+			});
+
+			expect(second.results.find((result) => result.providerId === "vercel")).not.toHaveProperty("unchangedPayload", true);
+			expect(second.changes.find((change) => change.providerId === "vercel")).toMatchObject({ removed: ["model-gone"] });
+		});
 	});
 });
