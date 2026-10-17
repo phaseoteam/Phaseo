@@ -1,0 +1,417 @@
+# Provider audit, 2026-10-17
+
+This audit covers every registered text provider of the gateway. It used the provider simulator in this folder, plus code reading. Paths are relative to `apps/api/src` unless they say otherwise.
+
+- **Base:** `origin/main` at `6551de1fa3`.
+- **Live calls:** none were made to providers or to the Phaseo API.
+
+Each finding is marked with how it was established:
+
+- **simulated:** the simulator proved it, through the gateway's real code path with fetch captured. The scenario ids and provider counts come from `results/` and can be reproduced with `pnpm --filter @phaseo/gateway-api simulate:providers`.
+- **traced:** established by reading the code.
+- **needs-live:** only a live call can settle it, because it depends on what the provider actually accepts or returns.
+
+## Scope and limits
+
+**Providers.**
+- 104 registered `text.generate` executor groups. Aliases of the same catalogue provider are merged.
+- 68 have active catalogue routes. 36 have none and appear as "not routable".
+- Up to three routes per provider are driven through the executor, one per model family. Every active route (1,279) is priced in the pricing sweep.
+
+**Client scenarios.**
+- 203 scenarios per route.
+- Every documented top-level parameter of `ChatCompletionsRequest`, `ResponsesRequest` and `AnthropicMessagesRequest` in `apps/docs/openapi/v1/openapi.yaml`, plus curated variants.
+- Every content part type, tool shape and `tool_choice`, reasoning and cache options.
+- Three-step agent conversations on each surface.
+
+**Response variants**, for each of chat, responses and messages, streaming and buffered:
+- text;
+- "max": reasoning and signatures, two parallel tool calls, citations, logprobs, and every documented usage field;
+- four finish reasons and a refusal;
+- HTTP errors and a mid-stream error.
+
+**Specs.**
+- 34 provider specs fetched (OpenAPI or Google discovery).
+- 29 hand-written top-level schemas from API references.
+- The OpenAI schema is used as a labelled baseline for the rest.
+- `specs/manifest.json` records which is which.
+
+**Catalogue.** Data comes from the archived fixtures in `packages/data/catalog/src/data`. The database owns live rows, so a price or route changed since that snapshot can still show here.
+
+**Not covered by the simulator.** These were traced instead (section 5, and `AUDIT-traced-nontext.md`):
+- presets, guardrails, the auto-router, candidate ranking, sticky reads, BYOK, rate limits;
+- the non-text endpoint families.
+
+### What production does that the review missed
+
+`pipeline/surfaces/text-generate.ts:686-691` forces `stream: true` upstream for every text request.
+
+Buffered clients are rebuilt from the client-protocol stream (`materializeStreamResultToCompleted`, `:558-612`), which drops the executor's `usageFinalizer`. So the executors' non-streaming branches (for example `openai-compat/index.ts:330-354`) do not run for `/v1/chat/completions`, `/v1/responses` or `/v1/messages`.
+
+Several cache-review findings were argued from those branches (see section 3). The simulator reproduces the real shape: streaming upstream, then either the stream rewriter (`pipeline/after/stream.ts:247-349`) or the materialiser.
+
+## 1. Summary
+
+**New critical and high findings** (not in the cache review):
+
+1. **Gemini thinking tokens are never billed** (AI Studio and Vertex, every surface and mode). Neither are tool-use prompt tokens. (N1)
+2. **Text-to-speech is never billed** on nine providers. (N2, traced)
+3. **Cache reads are billed wrongly for Chat clients of Claude and of every provider routed to `/responses`.** Streaming bills reads at the full input price; buffered bills them twice. The client sees no cached count. (N3)
+4. **`/v1/messages` loses cache reads and writes for every provider.** Non-Anthropic providers bill reads as full-price input. Claude bills reads and writes at zero. Input is reported in OpenAI semantics. (N4)
+5. **Buffered `/v1/messages` always returns `stop_reason: "end_turn"`**, on every provider including Claude. `max_tokens`, `stop_sequence`, `refusal` and `pause_turn` are lost. (N5)
+6. **A Responses-API upstream that stops early (`response.incomplete`) breaks Chat clients.** The stream has no `finish_reason`, no final chunk and no usage, so length-truncated responses are unbilled. (N6)
+7. **Mid-stream upstream errors are delivered as successful completions** on most surface and dialect pairs. (N7)
+8. **Claude thinking signatures and `redacted_thinking` are lost on `/v1/messages` too**, not only on Chat and Responses. (N8)
+9. **SambaNova (all 7 active routes) and Ambient's Kimi route get `input_items` instead of `input` on `/v1/responses`.** (N9)
+10. **Our own request schema rejects shapes OpenAI SDKs send**: `content: null` on assistant tool-call messages, and `file` parts. It also strips per-part cache markers. (N10)
+11. **Three documented `/v1/messages` parameters return 400 `unknown_param`**: `session_id`, `reasoning` and `provider_options`. (N11)
+
+**On the cache review:**
+- B1, B2, R1, R2, R5, R6, G-F7 and G-F8 are confirmed by simulation. B2 is extended to buffered clients and to the Messages surface.
+- R8 is disproved: `cherryPickIRParams` never filters in production.
+- R4 is disproved on Chat (the breakpoint never reaches any provider).
+- The "1× + 1.25×" half of B3 cannot happen on the text surfaces.
+
+Details are in section 3.
+
+**Verdicts:**
+
+| Verdict | Providers |
+|---|---|
+| works | 0 |
+| partial | 16 |
+| broken | 52 |
+| not routable | 36 |
+
+No routable provider passes cleanly. The shared response path (N3–N7) affects all of them. The verdict rules are in `src/report.ts`.
+
+## 2. Findings ranked by severity
+
+### Critical
+
+**N1. Gemini thinking output and tool-use prompt tokens are never billed.**
+- **Mark:** simulated. Google's current split is needs-live.
+- **Evidence:**
+  - `providers/google-ai-studio/usage.ts:125-133`: `outputTokens` = `candidatesTokenCount`.
+  - `:139-142`: `thoughtsTokenCount` only becomes `reasoningTokens`; it is never added to output.
+  - `:116-117`: input = `promptTokenCount`, so `toolUsePromptTokenCount` is ignored. `normalizeGoogleUsage` does add it (`:78`), but its result is not used for the input total.
+  - The engine then bills `output_text_tokens` = canonical output (`pipeline/pricing/engine.ts:395-410`).
+- **Simulated:**
+  - For `google-vertex` and `google-vertex-eu` (generateContent) and `google-ai-studio` (Interactions), on all three surfaces in both modes:
+    - metered output = 3,894 for a response with `candidatesTokenCount` 3,894 and `thoughtsTokenCount` 1,109;
+    - input is short by the 401 tool-use prompt tokens.
+  - Google documents `totalTokenCount = prompt + candidates + toolUsePrompt + thoughts` and bills thinking at the output rate.
+- **Impact:** Gemini 3.x thinking is often most of the output, so every thinking request on Phaseo's managed keys is under-billed by its thinking tokens.
+- **Fix:** output = `candidatesTokenCount + thoughtsTokenCount`; input += `toolUsePromptTokenCount`. Add a regression test with the sentinel usage. **Effort:** S.
+- **Live check:** a Gemini 3 thinking request whose `usageMetadata` has `thoughtsTokenCount`, compared with the billed `output_text_tokens`.
+
+**N2. Text-to-speech is never priced, charged or logged.**
+- **Mark:** traced. Found by the non-text sub-audit; I re-read the chain myself.
+- **Evidence:**
+  - Speech adapters return `kind: "stream"` (`providers/openai/endpoints/audio-speech.ts:412-418`; also DeepInfra, MiniMax, StepFun, Novita and OVHcloud, listed in `AUDIT-traced-nontext.md` C1).
+  - `ctx.stream` is `Boolean(body.stream)`, and the speech schema has no `stream` field.
+  - `normalized` is only set for `kind: "completed"` (`pipeline/surfaces/non-text.ts:575-580`).
+  - So `finalizeRequest` skips both pricing branches (`pipeline/after/index.ts:349,368`). It ends in `handlePassthroughFallback` (`:373-375`), with no pricing, charge, success audit or quota settlement.
+- **Affected:** OpenAI, OpenAI EU, Azure, Together, Morpheus, DeepInfra, MiniMax, StepFun, Novita, OVHcloud.
+- **Fix:** materialise speech streams, or price from `bill.usage` in the passthrough branch. **Effort:** S–M.
+
+### High
+
+**N3. Chat clients of Claude, and of every provider routed to `/responses`, get cache reads billed wrongly.**
+- **Mark:** simulated, root cause traced.
+- **Evidence:**
+  - The gateway's own Chat encoder writes the read as `usage.input_details.cached_tokens` and the write as `output_tokens_details.cached_tokens` (`protocols/openai-chat/encode.ts:196-211`).
+  - The streaming biller shapes usage with `shapeUsageForClient`, which reads `input_tokens_details` and `prompt_tokens_details` only (`pipeline/usage.ts:160-166`). So the read is stripped and billed as input.
+  - The buffered biller keeps the raw object. The engine finds `input_details.cached_tokens` (`engine.ts:225`) but treats reads as a subset of input only when `input_tokens_details.cached_tokens` is present (`engine.ts:388-394`). So the read is billed twice.
+  - The Chat client's final usage carries no `prompt_tokens_details.cached_tokens`.
+- **Simulated (chat surface, "max" usage):**
+  - 13 Responses-upstream providers (Ambient, BytePlus, DeepSeek V4, Fireworks, Groq, Meta, Venice, …) and 4 Claude providers.
+  - Stream: `cachedRead` −20,011, `uncachedInput` +20,011.
+  - Buffered: `uncachedInput` +20,011, with the read also billed.
+- **Side effects:**
+  - No sticky pin forms on streams (`extractCacheAffinityTokens` sees no read).
+  - This also explains part of B2's under-billing for Claude.
+- **Fix:** have `shapeUsageForClient` and the engine read `input_details`, or emit `input_tokens_details` from `encodeUsage`. Add a cross-surface usage test. **Effort:** S.
+
+**N4. `/v1/messages` drops cache usage for every provider.**
+- **Mark:** simulated, root cause traced.
+- **Evidence:**
+  - For non-Anthropic providers, the Responses-to-Messages adapter's `normalizeUsageToAnthropic` keeps only `input_tokens` and `output_tokens` (`executors/_shared/text-generate/openai-compat/index.ts:801-818`).
+  - The client gets `cache_read_input_tokens: null`, and `input_tokens` includes the cached tokens, which is wrong under Anthropic semantics.
+- **Simulated:**
+  - **Non-Anthropic providers:** on 47 chat-dialect and 13 Responses-dialect providers, reads are billed at the full input price on messages/stream and messages/buffered. Alibaba, Moonshot, OpenAI and Venice also lose writes.
+  - **Claude itself (Anthropic, Vertex, Bedrock Messages):** the read (−20,011) and the write (−3,019) are billed at zero on both modes.
+  - **Gemini:** reads are billed as input on this surface too.
+- **Fix:**
+  - Carry cache read and write (5m/1h split) and reasoning through `normalizeUsageToAnthropic`, using Anthropic semantics (input excludes cache).
+  - Fix the Claude Messages re-encode to keep `cache_creation*` and `cache_read_input_tokens`.
+- **Effort:** M.
+
+**N5. Buffered `/v1/messages` always reports `stop_reason: "end_turn"`.**
+- **Mark:** simulated, root cause traced.
+- **Evidence:**
+  - `pipeline/after/stream-events.ts:672-678` turns every `message_stop` into a stop event with a hard-coded `"end_turn"`.
+  - The materialiser keeps the last stop it sees (`pipeline/surfaces/server-tools.stream.ts:629-634`), so the real `message_delta.stop_reason` is overwritten.
+- **Simulated:** on all 68 routable providers, including native Claude:
+  - `max_tokens`, `stop_sequence`, `refusal` and `pause_turn` arrive as `end_turn` on messages/buffered.
+  - On messages/stream, a non-Anthropic provider's `content_filter`, `stop_sequence` and `pause_turn` also become `end_turn` (`openai-compat/index.ts:835-849`).
+- **Impact:** agents use `max_tokens` to decide to continue. With this, truncated output looks complete.
+- **Fix:** give `message_stop` no stop reason, or never overwrite a non-null reason. **Effort:** S.
+
+**N6. Responses-API upstreams that end with `response.incomplete` break Chat clients.**
+- **Mark:** simulated, root cause traced.
+- **Evidence:** `transformResponsesStreamToChat` only builds the final chunk on `response.completed` (`openai-compat/stream-transforms.ts:384-399`). There is no `response.incomplete` case.
+- **Simulated:** on 13 Responses-upstream providers, for `max_output_tokens` and content-filter stops:
+  - chat/stream ends with no `finish_reason`, no final chunk and no usage, so the response reaches billing with no usage at all;
+  - chat/buffered reports `stop`.
+- **Impact:** every truncated answer from Groq, DeepSeek V4, Fireworks, BytePlus, Meta, Ambient, Venice and the Claude path is unbilled for streaming Chat clients, and mislabelled for buffered ones.
+- **Fix:** handle `response.incomplete` like `response.completed`, mapping `incomplete_details.reason`. **Effort:** S.
+
+**N7. Mid-stream upstream errors are delivered as successes.**
+- **Mark:** simulated.
+- **Evidence:**
+  - The chat-to-chat transform ignores frames that are neither chat nor Responses payloads, so an OpenAI-style `{"error":…}` frame is dropped (`openai-compat/stream-transforms.ts:535-547`).
+  - `mapResponsesStatusToAnthropicStopReason` returns `null` for `failed` (`openai-compat/index.ts:840`), and N5 then turns that into `end_turn`.
+- **Simulated outcomes:**
+
+  | Upstream | Client surface and mode | What the client gets |
+  |---|---|---|
+  | chat-dialect providers (59) | chat/buffered | `stop` |
+  | chat-dialect providers (56) | messages (both modes) | `end_turn` |
+  | chat-dialect providers (55) | responses (both modes) | `completed` |
+  | Responses providers | messages/stream | `max_tokens` |
+  | Claude | chat and responses | `stop` / `completed` |
+
+  The error is surfaced only on chat/stream for chat-dialect upstreams and on responses for Responses-dialect upstreams.
+- **Impact:** partial output looks complete. Retries are not triggered.
+- **Fix:** propagate an error event on every encoder, and map it to `failed`, an error, or an HTTP error for buffered clients. **Effort:** M.
+
+**N8. Claude `thinking` signatures and `redacted_thinking` are lost on every surface, including `/v1/messages`.**
+- **Mark:** simulated.
+- **Evidence:** the Claude stream reaches a Messages client as `thinking_delta` frames with no `signature_delta`. The thinking block starts with an empty `thinking` and no `signature`. This happens because the Anthropic executor converts to Responses events and re-encodes (`executors/anthropic/text-generate/stream-transformer.ts:199-203,266-276`; `protocols/stream/encode.ts`).
+- **Simulated:** signature, `redacted_thinking` and citations are lost on 5 Claude providers × 3 surfaces × 2 modes.
+- **Impact:** Anthropic requires the signed thinking block to be replayed with tool results. So a Messages-API agent (for example Claude Code pointed at Phaseo) using extended thinking with tools fails from step 2.
+- **Relation to in-flight work:** this widens the reasoning-round-trip PR (#4) to the Messages surface.
+- **Fix:** pass `signature_delta` and `redacted_thinking` through; emit them on Messages. **Effort:** M.
+
+**N9. SambaNova and Ambient's Kimi route get `input_items` instead of `input`.**
+- **Mark:** simulated. Whether the providers reject it is needs-live.
+- **Evidence:**
+  - `usesOpenAIResponsesShape` (`openai-compat/transform.ts:79-100`) decides between `input` and `input_items` (`:234`).
+  - SambaNova is on `/responses` (`providers/sambanova/config.ts:10`) but not on that list. Its quirk does not rename the field (`providers/sambanova/quirks.ts`). Groq and Fireworks rename it in their quirks.
+  - SambaNova's own spec requires `input` and Responses-style flat tools. The gateway sends `input_items` and chat-style `tools[].function`.
+  - Scaleway (no active routes) and Ambient's `moonshotai/kimi-k2.7-code` get the same shape.
+- **Impact:** probably a 400 on every SambaNova request (7 active routes).
+- **Fix:** use the OpenAI shape for these providers. **Effort:** S.
+
+**N10. Our Chat Completions schema rejects or strips shapes the OpenAI SDKs send.**
+- **Mark:** simulated, traced.
+- **Evidence:**
+  - Assistant `content` is optional but not nullable (`core/schemas.ts:818-823`). Replaying an SDK assistant tool-call message (`content: null`) returns `400 messages.2.content: Invalid input`.
+  - `MessageContentPartSchema` (`core/schemas.ts:549-557`) has no `file` part, so `file_data` and `file_id` parts return 400.
+  - `TextPartSchema` (`:495-498`) is a plain `z.object`, so `cache_control` and `prompt_cache_breakpoint` on parts are stripped before decode.
+- **Simulated:** on all 68 routable providers.
+- **Fix:** allow `content: null`, add a `file` part, and pass the part-level cache keys through. **Effort:** S.
+
+**N11. Documented `/v1/messages` parameters return 400.**
+- **Mark:** simulated, traced.
+- **Evidence:**
+  - The Messages allowlist (`pipeline/before/textParamPolicy.ts:287-317`) has no `session_id`, `reasoning`, `provider_options` or `prompt_cache_key`. `keyToCanonicalParam` maps two of them (`:337-342`).
+  - `AnthropicMessagesRequest` in `apps/docs/openapi/v1/openapi.yaml` documents `session_id`, `reasoning` and `provider_options`.
+  - Every request using them gets `unknown_param`. That includes the desktop app's planned `provider_options.anthropic.cache_control` on `/v1/messages`.
+  - The native Anthropic value `service_tier: "auto"` fails zod. `output_config`, `output_format`, `container`, `mcp_servers` and `context_management` return `unknown_param`. These are Anthropic API parameters, not in our spec.
+- **Fix:** add the documented keys to the allowlist; decide on the Anthropic-native ones. **Effort:** S.
+
+**N12. Vertex Gemini tool loops are malformed beyond the missing `functionCall`.**
+- **Mark:** simulated. Vertex's response is needs-live.
+- **Evidence:** the captured `contents` for the step-2 agent request on `google/gemini-3.8-flash`:
+  - the model turn carries only `{text: reasoning, thought: true}` and an empty `{text: ""}`, with no `functionCall` (this is R2);
+  - each `functionResponse` is in its own user turn;
+  - an array tool result is sent as `functionResponse.response = [...]`, which Gemini requires to be an object (Vertex spec: `type_mismatch`);
+  - thought text is replayed without a signature.
+- **Code:** `executors/google-vertex/text-generate/index.ts:420-467`.
+- **Fix:** together with R2: group `functionResponse` parts into one turn, wrap arrays as `{content: […]}`, and drop thought parts without signatures. **Effort:** M.
+
+### Medium
+
+**N13. The gateway invents upstream fields the client did not send** (simulated, traced).
+
+| Field | Providers | Evidence | Effect |
+|---|---|---|---|
+| `temperature: 1` | 61 | zod default, `core/schemas.ts:869` | Overrides provider and model defaults (DeepSeek, Qwen and Llama recommend lower values) on every Chat request. |
+| `parallel_tool_calls: true` | 57 | – | Sent even with no tools. |
+| `logprobs: false` | 47 | `transform-chat.ts:127` | – |
+| `prompt_cache_key: null` | 57 Responses upstreams | `core/schemas.ts:347-349`, `transform.ts:350` | Moonshot, Relace and Sail Research specs type it as a string, so `null` fails type checks. Confirms G-F7. |
+| `safety_identifier: null` | 52 | `transform.ts:353` | – |
+| `stream_options.include_usage` | many | `openai-compat/index.ts:116-118` | Sent to providers whose spec lacks it (for example Groq and xAI Responses). |
+
+**N14. `service_tier` and tool types are forwarded without checking the provider's schema** (simulated).
+- Gateway tier names (`standard`, `fast`, `ultrafast`, `priority`, `batch`) reach providers whose enum differs. Examples: Groq `auto|default|flex`; Anthropic expects `auto|standard_only`.
+- Hosted and custom tools (`web_search`, `file_search`, `mcp`, `custom`) reach Chat providers that accept only function tools. Examples: Baseten, Cerebras, DeepInfra, Friendli, Inception (`tools[].function` missing).
+- Responses-shaped custom tools reach 25 Chat bodies.
+
+**N15. Citations and metadata are lost on the way back** (simulated).
+- `url_citation` annotations and `system_fingerprint` are lost for buffered Chat clients on 59 chat-dialect providers.
+- Citations are lost on the Responses and Messages surfaces for all dialects.
+- Claude citations are lost everywhere.
+- Buffered Responses clients of 37 chat-dialect providers lose `reasoning_content` text.
+
+**N16. When per-frame pricing throws, the client gets the raw upstream frame** (simulated).
+- `pipeline/after/stream.ts:286-299` prices every usage frame inline.
+- `pipeline/after/streaming.ts:419` swallows rewrite errors and forwards the frame unrewritten. The client then sees the upstream id instead of the gateway id, and unshaped usage.
+- Seen on 61 provider × surface combinations where B1's `pricing_rule_missing` fires.
+
+**N17. Bedrock sends non-Claude models to `/anthropic/v1/messages` for Messages clients** (simulated, needs-live).
+- Gemma and GPT routes on Bedrock Mantle go to `https://bedrock-mantle…/anthropic/v1/messages` when the client uses `/v1/messages`.
+- AWS documents that path for Claude only.
+
+**N18. DeepSeek V4 is sent to `/responses`** (traced, needs-live).
+- `providers/openai-compatible/config.ts:354-362` routes four DeepSeek V4 models to `/responses` on `api.deepseek.com`.
+- DeepSeek's API reference documents only chat completions.
+- If DeepSeek has no Responses endpoint, all V4 traffic fails over.
+
+**N19. OpenAI client `metadata` is replaced on the Responses and Messages surfaces** (simulated).
+- `executors/openai/text-generate/index.ts:572-589` sets `metadata.phaseo_request_id` per request.
+- Client `metadata` is dropped on Chat.
+- This is the only per-request non-determinism found. It is outside the prompt, so it does not affect caching.
+
+**N20. Prefix stability holds** (simulated). Across three-step agent conversations, the tools, system prompt and every earlier history item are byte-identical between steps (cache markers aside) on all 68 routable providers. This confirms the review's H6 conclusion.
+
+### Non-text families and routing (traced; full detail in `AUDIT-traced-nontext.md`)
+
+These come from the read-only sub-audit. I re-checked C1 (N2 above) in code; the rest are as traced, with `file:line` evidence in that file.
+
+- **H1.** An exception after a successful upstream response (for example adapter-level `computeBill` throwing `pricing_rule_missing` in image, OCR, speech or music adapters) is treated as an attempt failure, so the next provider is called and Phaseo pays twice (`pipeline/execute/index.ts:1398-1466`; only `video.generate` stops fallback).
+- **H2.** Synchronous media with a configured but unmatched meter, and nothing else priced, costs $0 with no alert (`pipeline/pricing/engine.ts:891-910`). Examples: Grok Imagine without `resolution`, Together Whisper and Azure MAI Transcribe priced on minutes that nothing emits.
+- **H3.** Speech-to-text is billed from file-size estimates, ignoring OpenAI's `usage.seconds` and `input_token_details.audio_tokens` (`providers/openai/endpoints/audio-transcription-usage.ts:72-143`).
+- **M1–M6:**
+  - pass-through forwards every upstream response header to clients (`pipeline/after/streaming.ts:22-27`);
+  - gateway-made 400s and 502s fail over and count against provider health;
+  - client `anthropic-beta` headers are dropped (`executors/anthropic/text-generate/index.ts:209-220`);
+  - Fireworks images go to an undocumented path;
+  - Cohere rerank is billed per request, not per search unit;
+  - the image stream finaliser misses `output_image` for non-GPT-image models.
+- **Batch, video and realtime** are well guarded; only low-severity gaps were found.
+
+### Low
+
+- **Claude `developer` and later `system` messages** are dropped or replaced (simulated: `chat.content.developer-role` and `chat.content.second-system` drop `$.messages[0].content`). This confirms A-F8.
+- **`n` > 1** is dropped silently on most providers instead of being rejected (simulated).
+- **Vertex open models (`openai/gpt-oss-120b`)** reject every reasoning option locally (`unsupported_parameter`). Clients that always send `reasoning` cannot use those routes. This is an intended guard, but it is not reflected in catalogue params.
+
+## 3. Cache review: confirmed, disproved, refined
+
+| Review item | Result | Evidence |
+|---|---|---|
+| **B1** cache meter with no price row throws | **Confirmed** | The sweep prices the provider's real "max" usage against each active route's catalogue card: 507 of 1,279 active routes throw (427 read, 57 write, 22 both). The largest counts: Venice 79/105, Alibaba 71/82, Bedrock 46/65, SiliconFlow 46/63, ModelScope 38/38, DeepInfra 34/81, Nebius 29/29, Baidu 18/24, IonRouter 17/17, OpenAI 17/57 (legacy models and `-pro` models). This only bites where the provider actually reports cache tokens for that model. Stream frames are also forwarded unrewritten (N16). |
+| **B2** streamed Claude drops writes and under-bills input | **Confirmed and extended** | Because buffered clients are materialised streams, buffered Chat and Responses lose writes too. Chat/stream also loses reads (N3), and Messages loses both reads and writes (N4). |
+| **B3** writes counted inside input | **Stream half confirmed; non-stream half not reachable** | OpenAI, OpenAI EU, Alibaba and Moonshot writes are billed at 1× input on Chat and Responses (`cacheWrite` −3,019, `uncachedInput` +3,019). The "1× + 1.25×" double billing in `usage/text.ts:140-154` runs only on the executors' non-stream branch, which text surfaces never take (see "What production does"). Batch may still use it. |
+| **B4** top-level `cached_tokens` ignored | **Partly confirmed** | StepFun's top-level `cached_tokens` is lost on the Responses surface only; Chat keeps it. |
+| **R1** Bedrock Claude to Mantle OpenAI paths | **Confirmed** | Captured URLs: Chat goes to `bedrock-mantle…/v1/chat/completions`, Responses to `…/v1/responses`. Only Messages goes to `/anthropic/v1/messages`. |
+| **R2** Vertex drops assistant `functionCall` | **Confirmed** | See N12 for the body and the additional defects. |
+| **R4** `prompt_cache_breakpoint` reaches Claude as an invalid `cache_control` | **Disproved for Chat** | Zod strips the key from Chat parts (`core/schemas.ts:495-498`). A breakpoint on a user or system part makes no upstream change on Anthropic, OpenAI or DeepSeek. The real defect is that it never reaches any provider (N10). |
+| **R5** documented `cache_control` rejected or dropped | **Confirmed, root cause refined** | Top-level `cache_control` returns 400 `unknown_param` on all three surfaces. Per-part markers on Chat are stripped by zod, not by `normalizeContent`. Native Messages blocks pass through. |
+| **R6** `user` sent to Anthropic as `metadata.user` | **Confirmed (shape)** | `chat.param.user` produces `+ $.metadata.user`. Anthropic's spec allows only `metadata.user_id`; whether the API returns 400 is needs-live. |
+| **R7** cache key as a routing constraint | **Partly confirmed** | In the catalogue snapshot, `prompt_cache_key` is unsupported for LongCat, SambaNova and Tensorix, so those routes are deprioritised. Scaleway, Perplexity and Reflection have no active routes in the snapshot. |
+| **R8** `cherryPickIRParams` drops tools and `prompt_cache_key` | **Disproved** | Production passes `v2_route_capabilities.params` as an array or keyed object (`pipeline/before/context.ts:924`). The allowlist reads `.request.allowlist`, `.request.params` or `.params` (`executors/_shared/text-generate/shared.ts:19-22`), which never exist, so nothing is filtered. Simulated: `tools` and `prompt_cache_key` change the upstream body on Cerebras, IonRouter, AkashML, DeepInfra, GMI and Cloudflare. LongCat's own quirk does strip both, as reported. |
+| **H6** prefix stability | **Confirmed** | 0 unstable prefixes on 68 providers. |
+| **G-F7** `prompt_cache_key: null` | **Confirmed** | Sent to 57 Responses upstreams (N13). |
+| **G-F8** top-level `prompt_cache_retention` ignored | **Confirmed** | No upstream effect for OpenAI on Chat. |
+
+## 4. What still needs a live test
+
+Use a provider-pinned request with `debug.return_upstream_request`. Do not run any of these without the user's go-ahead.
+
+1. **Gemini thinking billing (N1).** Send `POST /v1/chat/completions` with `{"model":"google/gemini-3.8-flash","provider":{"only":["google-vertex"]},"messages":[{"role":"user","content":"Plan a 5-step proof that √2 is irrational."}],"reasoning":{"effort":"high"}}`. Compare `usageMetadata.thoughtsTokenCount` with the billed `output_text_tokens`.
+2. **SambaNova `input_items` (N9).** Any request pinned to `sambanova`. Expect a 400 if SambaNova enforces `input`.
+3. **DeepSeek V4 on `/responses` (N18).** A request pinned to `deepseek` with `deepseek/deepseek-v4-flash`. Check whether the upstream returns 404.
+4. **Bedrock non-Claude Messages (N17).** `POST /v1/messages` with `google/gemma-3-12b` pinned to `amazon-bedrock`.
+5. **Anthropic `metadata.user` (R6).** `POST /v1/chat/completions` with `user` set, pinned to `anthropic`.
+6. **Vertex tool loop (N12, R2).** Replay `chat.agent.step2` from `src/client-requests.ts` pinned to `google-vertex` with a Gemini model.
+7. **Responses-upstream truncation (N6).** `max_tokens: 16` on Groq `openai/gpt-oss-120b`, streamed to `/v1/chat/completions`. Check for a `finish_reason` and a billed request row.
+8. **The non-text items in `AUDIT-traced-nontext.md` section 4:** TTS billing rows, the Grok Imagine double charge, STT minutes.
+
+## 5. Per-provider matrix
+
+Counts are from the simulator. Full lists per provider are in `results/MATRIX.md` and `results/summary.json`; regenerate `results/providers/*.json` with the simulator.
+
+**Column notes:**
+- **Dropped params:** documented parameters with no upstream effect, including ones the provider does not support.
+- **Invented:** upstream fields the client never sent.
+- **Mistranslated:** schema type, enum or required violations, changed values and finish mismatches.
+- **Unknown to spec:** fields the provider's schema does not define.
+- **Lost (resp):** response fields lost across surfaces and modes.
+- **Upstream dialects:** `oai-chat` (OpenAI Chat), `oai-responses` (OpenAI Responses), `anthropic` (Anthropic Messages), `gemini` (generateContent), `gemini-int` (Interactions).
+
+| Provider | Active routes | Upstream | Spec | Verdict | Dropped params | Invented | Mistranslated | Unknown to spec | Lost (resp) | Pricing throws (sampled/sweep) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| openai | 57 | oai-chat, oai-responses | own | partial | 5 | 14 | 25 | 10 | 9 | 0/17 |
+| openai-eu | 9 | oai-chat, oai-responses | own | partial | 5 | 13 | 28 | 10 | 9 | 0/2 |
+| anthropic | 11 | anthropic | own | broken | 27 | 6 | 28 | 8 | 24 | 0/0 |
+| anthropic-us | 1 | anthropic | own | broken | 27 | 9 | 28 | 8 | 24 | 0/0 |
+| anthropic-aws | 2 | anthropic | own | broken | 27 | 6 | 28 | 5 | 24 | 0/0 |
+| anthropic-aws-us | 1 | anthropic | own | broken | 27 | 9 | 28 | 5 | 24 | 0/0 |
+| ai21 | 2 | oai-chat | own | broken | 9 | 5 | 2 | 36 | 0 | 0/0 |
+| akashml | 9 | oai-chat | own | broken | 7 | 8 | 13 | 1 | 12 | 4/2 |
+| arcee-ai | 8 | oai-chat | own | broken | 7 | 8 | 13 | 12 | 12 | 4/2 |
+| azure | 10 | oai-chat, oai-responses | own | broken | 7 | 8 | 14 | 41 | 7 | 0/1 |
+| baidu | 24 | oai-chat, oai-responses | hand-written/baseline | broken | 5 | 11 | 16 | 25 | 7 | 0/18 |
+| reka | 3 | oai-chat | own | broken | 10 | 8 | 38 | 59 | 12 | 0/0 |
+| streamlake | 2 | oai-chat | baseline | broken | 10 | 8 | 31 | 13 | 12 | 0/0 |
+| upstage | 4 | oai-chat | hand-written | partial | 8 | 8 | 13 | 34 | 12 | 0/1 |
+| wafer | 6 | oai-chat | hand-written | partial | 9 | 8 | 13 | 24 | 12 | 0/0 |
+| alibaba-cloud | 82 | oai-chat | hand-written | partial | 8 | 8 | 13 | 24 | 12 | 0/71 |
+| atlascloud | 60 | oai-chat | baseline | broken | 10 | 8 | 31 | 13 | 12 | 0/8 |
+| baseten | 13 | oai-chat | own | broken | 8 | 8 | 30 | 30 | 11 | 0/0 |
+| byteplus | 17 | oai-responses | baseline | broken | 7 | 4 | 37 | 19 | 12 | 0/1 |
+| cerebras | 3 | oai-chat | own | broken | 10 | 7 | 30 | 31 | 11 | 8/2 |
+| cloudflare | 3 | oai-chat | baseline | broken | 8 | 8 | 31 | 13 | 11 | 0/1 |
+| cohere | 4 | oai-chat | hand-written | broken | 22 | 4 | 13 | 8 | 12 | 4/4 |
+| canopy-wave | 10 | oai-chat | hand-written | partial | 10 | 8 | 13 | 55 | 12 | 0/0 |
+| tensorix | 20 | oai-chat | hand-written | partial | 10 | 8 | 13 | 40 | 12 | 0/0 |
+| google-ai-studio | 20 | gemini-int | none | partial | 27 | 3 | 15 | 0 | 19 | 0/11 |
+| spacex-ai | 5 | oai-responses | own | broken | 11 | 10 | 38 | 21 | 12 | 0/0 |
+| friendli | 7 | oai-chat | own | broken | 7 | 8 | 33 | 42 | 12 | 4/1 |
+| deepseek | 5 | oai-responses | baseline | broken | 20 | 1 | 33 | 13 | 12 | 0/0 |
+| gmicloud | 45 | oai-chat | hand-written | partial | 10 | 8 | 13 | 42 | 11 | 0/0 |
+| inception | 3 | oai-chat | own | broken | 8 | 8 | 26 | 56 | 11 | 0/0 |
+| inflection | 2 | oai-chat | baseline | broken | 10 | 8 | 31 | 13 | 12 | 4/2 |
+| ionrouter | 17 | oai-chat | hand-written | broken | 10 | 8 | 13 | 52 | 12 | 8/17 |
+| longcat | 1 | oai-chat | hand-written | partial | 33 | 4 | 13 | 4 | 11 | 0/0 |
+| ambient | 4 | oai-responses | own | broken | 9 | 16 | 26 | 37 | 12 | 0/0 |
+| avian | 13 | oai-chat | hand-written | partial | 10 | 8 | 13 | 58 | 12 | 0/0 |
+| minimax | 7 | oai-chat | hand-written | broken | 11 | 8 | 13 | 41 | 15 | 0/1 |
+| minimax-lightning | 3 | oai-chat | hand-written | broken | 11 | 8 | 13 | 41 | 15 | 0/0 |
+| modelscope | 38 | oai-chat | baseline | broken | 10 | 8 | 31 | 13 | 12 | 4/38 |
+| morph | 15 | oai-chat | own | broken | 8 | 8 | 29 | 64 | 12 | 0/8 |
+| morpheus | 1 | oai-chat | own | broken | 9 | 8 | 18 | 22 | 12 | 4/1 |
+| nebius-token-factory | 29 | oai-chat | own | broken | 8 | 8 | 45 | 11 | 12 | 12/29 |
+| parasail | 35 | oai-chat | hand-written | broken | 10 | 8 | 13 | 38 | 12 | 0/0 |
+| poolside | 3 | oai-chat | hand-written | broken | 8 | 8 | 13 | 58 | 11 | 4/3 |
+| z-ai | 18 | oai-chat | own | broken | 8 | 14 | 37 | 49 | 15 | 0/1 |
+| xiaomi | 3 | oai-responses | baseline | broken | 8 | 4 | 33 | 16 | 12 | 0/1 |
+| mistral | 24 | oai-chat | own | broken | 12 | 7 | 26 | 14 | 12 | 4/10 |
+| mistral-eu | 1 | oai-chat | own | partial | 12 | 7 | 26 | 14 | 12 | 0/0 |
+| moonshotai | 10 | oai-chat | own | broken | 11 | 7 | 30 | 51 | 11 | 2/6 |
+| aion-labs | 4 | oai-chat | hand-written | partial | 10 | 8 | 13 | 44 | 12 | 0/1 |
+| amazon-bedrock | 65 | oai-chat, oai-responses, anthropic | baseline | broken | 10 | 8 | 21 | 9 | 11 | 4/46 |
+| google-vertex | 38 | anthropic, gemini, oai-chat | baseline/own | broken | 30 | 15 | 78 | 27 | 45 | 4/7 |
+| google-vertex-eu | 4 | anthropic, gemini | baseline/own | broken | 30 | 7 | 60 | 14 | 44 | 4/1 |
+| deepinfra | 81 | oai-chat | own | broken | 8 | 8 | 33 | 38 | 11 | 12/34 |
+| io-net | 34 | oai-chat | own | broken | 10 | 8 | 26 | 1 | 12 | 0/7 |
+| fireworks | 21 | oai-responses | own | partial | 9 | 4 | 16 | 30 | 12 | 0/1 |
+| groq | 7 | oai-responses | own | broken | 14 | 2 | 60 | 34 | 12 | 0/1 |
+| novita | 93 | oai-chat | hand-written | partial | 10 | 8 | 13 | 29 | 11 | 0/0 |
+| relace | 1 | oai-chat | own | broken | 10 | 8 | 14 | 0 | 12 | 4/1 |
+| sambanova | 7 | oai-responses | own | broken | 19 | 13 | 32 | 14 | 12 | 9/6 |
+| sail-research | 5 | oai-responses | own | broken | 10 | 10 | 36 | 16 | 12 | 0/0 |
+| siliconflow | 63 | oai-chat | baseline | broken | 7 | 8 | 31 | 20 | 11 | 8/46 |
+| stepfun | 15 | oai-chat | hand-written | partial | 7 | 8 | 13 | 44 | 11 | 0/0 |
+| together | 30 | oai-chat | own | broken | 9 | 8 | 21 | 48 | 12 | 8/14 |
+| venice | 105 | oai-responses | own | broken | 9 | 4 | 25 | 41 | 12 | 4/79 |
+| weights-and-biases | 30 | oai-chat | baseline | broken | 8 | 8 | 31 | 16 | 11 | 0/3 |
+| meta | 2 | oai-responses | baseline | broken | 7 | 4 | 34 | 19 | 12 | 0/0 |
+| ovhcloud | 4 | oai-responses | own | broken | 7 | 4 | 39 | 40 | 12 | 3/1 |
+| sakana | 2 | oai-responses | baseline | broken | 7 | 4 | 37 | 16 | 12 | 0/0 |
+
+Not routable (no active catalogue routes; simulated with inactive routes or a placeholder): private-model, darkbloom, inference-net, doubleword, mara, switchpoint, wafer-zdr, tencent-cloud, bytedance-seed, chutes, clarifai, openrouter, crusoe, featherless, hyperbolic, infermatic, ionrouter-kimi, ionrouter-minimax, mancer, empiriolabs, scaledown, alibaba, qwen, nebius-token-factory-eu-north-1, nebius-token-factory-us-central-1, nvidia, phala, zai, moonshotai-turbo, liquid, liquid-ai, perplexity, venice-e2ee, scaleway, thinking-machines, reflection.

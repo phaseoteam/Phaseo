@@ -1,0 +1,490 @@
+{
+	"id": "reka",
+	"source": {
+		"url": "https://docs.reka.ai/openapi/api-reference.json",
+		"docs": null,
+		"fetchedAt": "2026-10-17T17:07:12.331Z",
+		"sha256": "db3f6f55120538163a169701bfd6463d66376a321d384269bb3d27e1062009d2",
+		"handWritten": false,
+		"notes": "Listed on https://docs.reka.ai/openapi.json (an HTML index, not a spec). Server https://api.reka.ai/v1. A second spec (openapi/api-reference-2.json) is the Vision Agent API."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"$ref": "#/components/schemas/ChatCompletionRequest"
+			},
+			"response": {
+				"$ref": "#/components/schemas/ChatCompletion"
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"ChatCompletionRequest": {
+				"type": "object",
+				"properties": {
+					"model": {
+						"type": "string",
+						"description": "A model ID from `GET /v1/models`, such as `reka-flash-3`. IDs have no namespace prefix."
+					},
+					"messages": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/Message"
+						},
+						"description": "The conversation so far."
+					},
+					"stream": {
+						"type": "boolean",
+						"default": false,
+						"description": "Return the response as server-sent events. Usage totals arrive on the final chunk."
+					},
+					"max_tokens": {
+						"type": "integer",
+						"description": "Maximum number of tokens to generate, capped by the model's maximum output length."
+					},
+					"temperature": {
+						"type": "number",
+						"format": "double",
+						"description": "Sampling temperature. Lower values give more predictable output."
+					},
+					"top_p": {
+						"type": "number",
+						"format": "double",
+						"description": "Nucleus sampling probability mass."
+					},
+					"top_k": {
+						"type": "integer",
+						"description": "Only sample from the `top_k` most likely tokens. Honored by models that list it in `supported_sampling_parameters`."
+					},
+					"stop": {
+						"$ref": "#/components/schemas/ChatCompletionRequestStop",
+						"description": "A string or list of strings that end generation."
+					},
+					"seed": {
+						"type": "integer",
+						"description": "Random seed. Honored by models that list it in `supported_sampling_parameters`."
+					},
+					"frequency_penalty": {
+						"type": "number",
+						"format": "double",
+						"description": "Penalize tokens by how often they have appeared. Honored by models that list it in `supported_sampling_parameters`."
+					},
+					"presence_penalty": {
+						"type": "number",
+						"format": "double",
+						"description": "Penalize tokens that have already appeared. Honored by models that list it in `supported_sampling_parameters`."
+					},
+					"tools": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/Tool"
+						},
+						"description": "Functions the model may call. Supported by models that list `tools` in `supported_features`."
+					},
+					"tool_choice": {
+						"$ref": "#/components/schemas/ChatCompletionRequestToolChoice",
+						"description": "`auto` lets the model decide, `none` disables tool calls, `required` forces at least one call. Defaults to `auto` when `tools` is set."
+					},
+					"response_format": {
+						"$ref": "#/components/schemas/ResponseFormat"
+					},
+					"logprobs": {
+						"type": "boolean",
+						"description": "Return log probabilities of the output tokens. Supported by models that list `logprobs` in `supported_features`."
+					}
+				},
+				"required": [
+					"model",
+					"messages"
+				],
+				"title": "ChatCompletionRequest"
+			},
+			"ChatCompletion": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"object": {
+						"type": "string",
+						"description": "`chat.completion`, or `chat.completion.chunk` for streamed events."
+					},
+					"created": {
+						"type": "integer",
+						"description": "Unix timestamp in seconds."
+					},
+					"model": {
+						"type": "string"
+					},
+					"choices": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/Choice"
+						}
+					},
+					"usage": {
+						"$ref": "#/components/schemas/Usage"
+					},
+					"metadata": {
+						"$ref": "#/components/schemas/ChatCompletionMetadata"
+					}
+				},
+				"required": [
+					"id",
+					"object",
+					"created",
+					"model",
+					"choices"
+				],
+				"title": "ChatCompletion"
+			},
+			"Message": {
+				"type": "object",
+				"properties": {
+					"role": {
+						"$ref": "#/components/schemas/MessageRole"
+					},
+					"content": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/MessageContent"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "The message text, or a list of content parts for multimodal input."
+					},
+					"tool_calls": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/ToolCall"
+						},
+						"description": "Tool calls made by the assistant. Send them back unchanged in the conversation history."
+					},
+					"tool_call_id": {
+						"type": "string",
+						"description": "On a `tool` message, the ID of the tool call this message answers."
+					}
+				},
+				"required": [
+					"role"
+				],
+				"title": "Message"
+			},
+			"ChatCompletionRequestStop": {
+				"oneOf": [
+					{
+						"type": "string"
+					},
+					{
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					}
+				],
+				"description": "A string or list of strings that end generation.",
+				"title": "ChatCompletionRequestStop"
+			},
+			"Tool": {
+				"type": "object",
+				"properties": {
+					"type": {
+						"$ref": "#/components/schemas/ToolType"
+					},
+					"function": {
+						"$ref": "#/components/schemas/ToolFunction"
+					}
+				},
+				"required": [
+					"type",
+					"function"
+				],
+				"title": "Tool"
+			},
+			"ChatCompletionRequestToolChoice": {
+				"type": "string",
+				"enum": [
+					"auto",
+					"none",
+					"required"
+				],
+				"description": "`auto` lets the model decide, `none` disables tool calls, `required` forces at least one call. Defaults to `auto` when `tools` is set.",
+				"title": "ChatCompletionRequestToolChoice"
+			},
+			"ResponseFormat": {
+				"type": "object",
+				"properties": {
+					"type": {
+						"$ref": "#/components/schemas/ResponseFormatType"
+					},
+					"json_schema": {
+						"$ref": "#/components/schemas/ResponseFormatJsonSchema"
+					}
+				},
+				"required": [
+					"type"
+				],
+				"description": "Constrain the output to a JSON schema. Supported by models that list `structured_outputs` in `supported_features`.",
+				"title": "ResponseFormat"
+			},
+			"Choice": {
+				"type": "object",
+				"properties": {
+					"index": {
+						"type": "integer"
+					},
+					"message": {
+						"$ref": "#/components/schemas/Message"
+					},
+					"delta": {
+						"$ref": "#/components/schemas/Message",
+						"description": "On streamed chunks, the next piece of the message."
+					},
+					"finish_reason": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "`stop` when the model finished, `length` when it hit `max_tokens`, `tool_calls` when it called a tool."
+					}
+				},
+				"required": [
+					"index"
+				],
+				"title": "Choice"
+			},
+			"Usage": {
+				"type": "object",
+				"properties": {
+					"prompt_tokens": {
+						"type": "integer"
+					},
+					"completion_tokens": {
+						"type": "integer",
+						"description": "Output tokens, including reasoning tokens."
+					},
+					"total_tokens": {
+						"type": "integer"
+					},
+					"reasoning_tokens": {
+						"type": "integer",
+						"description": "Reasoning tokens, already counted in `completion_tokens`, on models that report them here."
+					}
+				},
+				"title": "Usage"
+			},
+			"ChatCompletionMetadata": {
+				"type": "object",
+				"properties": {
+					"weight_version": {
+						"type": "string",
+						"description": "The checkpoint that served the request."
+					}
+				},
+				"title": "ChatCompletionMetadata"
+			},
+			"MessageRole": {
+				"type": "string",
+				"enum": [
+					"system",
+					"user",
+					"assistant",
+					"tool"
+				],
+				"title": "MessageRole"
+			},
+			"MessageContent": {
+				"oneOf": [
+					{
+						"type": "string"
+					},
+					{
+						"$ref": "#/components/schemas/MessageContent1"
+					}
+				],
+				"description": "The message text, or a list of content parts for multimodal input.",
+				"title": "MessageContent"
+			},
+			"ToolCall": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"type": {
+						"$ref": "#/components/schemas/ToolCallType"
+					},
+					"function": {
+						"$ref": "#/components/schemas/ToolCallFunction"
+					}
+				},
+				"required": [
+					"id",
+					"type",
+					"function"
+				],
+				"title": "ToolCall"
+			},
+			"ToolType": {
+				"type": "string",
+				"enum": [
+					"function"
+				],
+				"title": "ToolType"
+			},
+			"ToolFunction": {
+				"type": "object",
+				"properties": {
+					"name": {
+						"type": "string"
+					},
+					"description": {
+						"type": "string"
+					},
+					"parameters": {
+						"$ref": "#/components/schemas/ToolFunctionParameters",
+						"description": "A JSON schema for the function's arguments."
+					}
+				},
+				"required": [
+					"name",
+					"parameters"
+				],
+				"title": "ToolFunction"
+			},
+			"ResponseFormatType": {
+				"type": "string",
+				"enum": [
+					"text",
+					"json_schema"
+				],
+				"title": "ResponseFormatType"
+			},
+			"ResponseFormatJsonSchema": {
+				"type": "object",
+				"properties": {
+					"name": {
+						"type": "string"
+					},
+					"schema": {
+						"$ref": "#/components/schemas/ResponseFormatJsonSchemaSchema"
+					},
+					"strict": {
+						"type": "boolean"
+					}
+				},
+				"required": [
+					"name",
+					"schema"
+				],
+				"title": "ResponseFormatJsonSchema"
+			},
+			"MessageContent1": {
+				"type": "array",
+				"items": {
+					"$ref": "#/components/schemas/ContentPart"
+				},
+				"title": "MessageContent1"
+			},
+			"ToolCallType": {
+				"type": "string",
+				"enum": [
+					"function"
+				],
+				"title": "ToolCallType"
+			},
+			"ToolCallFunction": {
+				"type": "object",
+				"properties": {
+					"name": {
+						"type": "string"
+					},
+					"arguments": {
+						"type": "string",
+						"description": "The arguments as a JSON string."
+					}
+				},
+				"required": [
+					"name",
+					"arguments"
+				],
+				"title": "ToolCallFunction"
+			},
+			"ToolFunctionParameters": {
+				"type": "object",
+				"properties": {},
+				"description": "A JSON schema for the function's arguments.",
+				"title": "ToolFunctionParameters"
+			},
+			"ResponseFormatJsonSchemaSchema": {
+				"type": "object",
+				"properties": {},
+				"title": "ResponseFormatJsonSchemaSchema"
+			},
+			"ContentPart": {
+				"type": "object",
+				"properties": {
+					"type": {
+						"$ref": "#/components/schemas/ContentPartType"
+					},
+					"text": {
+						"type": "string",
+						"description": "The text, when `type` is `text`."
+					},
+					"image_url": {
+						"$ref": "#/components/schemas/ContentPartImageUrl",
+						"description": "The image, when `type` is `image_url`. Supported by models that list `image` in `input_modalities`."
+					},
+					"video_url": {
+						"$ref": "#/components/schemas/ContentPartVideoUrl",
+						"description": "The video, when `type` is `video_url`. Supported by models that list `video` in `input_modalities`."
+					}
+				},
+				"required": [
+					"type"
+				],
+				"title": "ContentPart"
+			},
+			"ContentPartType": {
+				"type": "string",
+				"enum": [
+					"text",
+					"image_url",
+					"video_url"
+				],
+				"title": "ContentPartType"
+			},
+			"ContentPartImageUrl": {
+				"type": "object",
+				"properties": {
+					"url": {
+						"type": "string",
+						"description": "An HTTPS URL or a base64 data URL."
+					}
+				},
+				"required": [
+					"url"
+				],
+				"description": "The image, when `type` is `image_url`. Supported by models that list `image` in `input_modalities`.",
+				"title": "ContentPartImageUrl"
+			},
+			"ContentPartVideoUrl": {
+				"type": "object",
+				"properties": {
+					"url": {
+						"type": "string",
+						"description": "A publicly downloadable video URL."
+					}
+				},
+				"required": [
+					"url"
+				],
+				"description": "The video, when `type` is `video_url`. Supported by models that list `video` in `input_modalities`.",
+				"title": "ContentPartVideoUrl"
+			}
+		}
+	}
+}

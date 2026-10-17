@@ -1,0 +1,40 @@
+{
+	"id": "stepfun",
+	"source": {
+		"url": null,
+		"docs": "https://platform.stepfun.ai/docs/en/api-reference/chat/chat-completion-create",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Undocumented (possibly unsupported): stream_options, tool_choice, presence_penalty, logprobs, seed, max_completion_tokens, json_schema. frequency_penalty range 0-1. Defaults temperature 0.5, top_p 0.9. response_format text|json_object. UNCERTAIN cached_tokens nesting: the English reference fetched shows it flat under usage; a search summary of the Chinese reference placed it at usage.prompt_tokens"
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"tools": {},
+					"max_tokens": {},
+					"temperature": {},
+					"top_p": {},
+					"n": {},
+					"stop": {},
+					"frequency_penalty": {},
+					"response_format": {},
+					"reasoning_format": {},
+					"reasoning_effort": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

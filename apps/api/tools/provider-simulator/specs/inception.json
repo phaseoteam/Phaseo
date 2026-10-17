@@ -1,0 +1,590 @@
+{
+	"id": "inception",
+	"source": {
+		"url": "https://docs.inceptionlabs.ai/openapi.json",
+		"docs": null,
+		"fetchedAt": "2026-10-17T17:07:09.713Z",
+		"sha256": "b27f48098cc6e4a7b7925c2e6b7c74847069af4c509ec66661052c1877d91c81",
+		"handWritten": false,
+		"notes": "Served by docs.inceptionlabs.ai. Server https://api.inceptionlabs.ai. (docs.inceptionlabs.ai/api-reference/openapi.json is an unrelated Mintlify sample.)"
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"$ref": "#/components/schemas/ChatCompletionRequest"
+			},
+			"response": {
+				"$ref": "#/components/schemas/ChatCompletionResponse"
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"ChatCompletionRequest": {
+				"properties": {
+					"messages": {
+						"items": {
+							"$ref": "#/components/schemas/Message"
+						},
+						"type": "array",
+						"title": "Messages"
+					},
+					"model": {
+						"type": "string",
+						"title": "Model",
+						"description": "The model to use for the chat completion."
+					},
+					"max_tokens": {
+						"type": "integer",
+						"title": "Max Tokens",
+						"description": "Maximum number of tokens to generate.",
+						"minimum": 1,
+						"maximum": 50000,
+						"default": 16384
+					},
+					"temperature": {
+						"type": "number",
+						"title": "Temperature",
+						"description": "What sampling temperature to use, between 0.5 and 1. Higher values make the output more random; lower values make it more focused and deterministic. Values outside this range are reset to 0.75 and a `warning` is returned in the response.",
+						"default": 0.75,
+						"minimum": 0.5,
+						"maximum": 1
+					},
+					"stop": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array",
+						"title": "Stop",
+						"description": "A list of sequences where the API will stop generating further tokens. The returned text will not contain the stop sequences."
+					},
+					"tools": {
+						"type": "array",
+						"title": "Tools",
+						"description": "A list of tools the model may call. Use this to provide functions the model can generate JSON arguments for.",
+						"items": {
+							"$ref": "#/components/schemas/ChatCompletionTool"
+						}
+					},
+					"stream": {
+						"type": "boolean",
+						"title": "Stream",
+						"description": "Whether to stream the response.",
+						"default": false
+					},
+					"stream_options": {
+						"$ref": "#/components/schemas/StreamOptions",
+						"description": "Options that control streaming behavior."
+					},
+					"diffusing": {
+						"type": "boolean",
+						"title": "Diffusing",
+						"description": "Whether to show the diffusion effect in the streamed response.",
+						"default": false
+					},
+					"extra_body": {
+						"additionalProperties": true,
+						"type": "object",
+						"title": "Extra Body",
+						"description": "Extra parameters passed to the model (OpenAI-compat passthrough).",
+						"x-stainless-param": "extra_params"
+					},
+					"realtime": {
+						"type": "boolean",
+						"title": "Realtime",
+						"description": "Enable flag for more realtime workloads that require lower TTFT/TTFAT.",
+						"default": false
+					},
+					"response_format": {
+						"title": "Response Format",
+						"description": "An object specifying the format that the model must output.",
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/ResponseFormatText"
+							},
+							{
+								"$ref": "#/components/schemas/ResponseFormatJSONObject"
+							},
+							{
+								"$ref": "#/components/schemas/ResponseFormatJSONSchema"
+							}
+						]
+					},
+					"reasoning_summary": {
+						"type": "boolean",
+						"title": "Reasoning Summary",
+						"description": "Request a summary of the model's reasoning process.",
+						"default": false
+					},
+					"reasoning_summary_wait": {
+						"type": "boolean",
+						"title": "Reasoning Summary Wait",
+						"description": "Wait for all reasoning summaries to complete before finishing the response.",
+						"default": false
+					},
+					"reasoning_effort": {
+						"type": "string",
+						"title": "Reasoning Effort",
+						"description": "Constrains the effort spent on reasoning before the model responds.",
+						"enum": [
+							"instant",
+							"low",
+							"medium",
+							"high"
+						],
+						"default": "medium"
+					}
+				},
+				"type": "object",
+				"required": [
+					"messages",
+					"model"
+				],
+				"title": "ChatCompletionRequest"
+			},
+			"ChatCompletionResponse": {
+				"properties": {
+					"id": {
+						"type": "string",
+						"title": "Id"
+					},
+					"object": {
+						"type": "string",
+						"const": "chat.completion",
+						"title": "Object",
+						"default": "chat.completion"
+					},
+					"created": {
+						"type": "integer",
+						"title": "Created"
+					},
+					"model": {
+						"type": "string",
+						"title": "Model"
+					},
+					"choices": {
+						"items": {
+							"$ref": "#/components/schemas/Choice"
+						},
+						"type": "array",
+						"title": "Choices"
+					},
+					"usage": {
+						"$ref": "#/components/schemas/Usage"
+					},
+					"warning": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Warning"
+					},
+					"reasoning_summary": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/ReasoningSummary"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "Summary of reasoning process if requested and available."
+					}
+				},
+				"type": "object",
+				"required": [
+					"id",
+					"created",
+					"model",
+					"choices",
+					"usage",
+					"object"
+				],
+				"title": "ChatCompletionResponse",
+				"example": {
+					"id": "chatcmpl-7a2b3c4d5e",
+					"object": "chat.completion",
+					"created": 1745798400,
+					"model": "mercury-2",
+					"choices": [
+						{
+							"index": 0,
+							"finish_reason": "stop",
+							"message": {
+								"role": "assistant",
+								"content": "A diffusion language model is a type of language model that uses diffusion to generate text."
+							}
+						}
+					],
+					"usage": {
+						"prompt_tokens": 12,
+						"completion_tokens": 8,
+						"total_tokens": 20,
+						"reasoning_tokens": 0,
+						"cached_input_tokens": 0
+					}
+				}
+			},
+			"Message": {
+				"properties": {
+					"role": {
+						"type": "string",
+						"enum": [
+							"system",
+							"user",
+							"assistant",
+							"tool",
+							"function"
+						],
+						"title": "Role",
+						"description": "The role of the message sender (system, user, assistant, tool, function)."
+					},
+					"content": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"items": {
+									"additionalProperties": true,
+									"type": "object"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Content",
+						"description": "The content of the message, can be string or array of content items."
+					},
+					"tool_calls": {
+						"anyOf": [
+							{
+								"items": {
+									"$ref": "#/components/schemas/ToolCall"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Tool Calls",
+						"description": "The tool calls generated by the model."
+					},
+					"tool_call_id": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Tool Call Id",
+						"description": "The ID of the tool call this message is responding to (for role='tool')."
+					}
+				},
+				"type": "object",
+				"required": [
+					"role"
+				],
+				"title": "Message"
+			},
+			"ChatCompletionTool": {
+				"type": "object",
+				"title": "ChatCompletionTool",
+				"required": [
+					"type",
+					"function"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "function",
+						"description": "The type of the tool."
+					},
+					"function": {
+						"$ref": "#/components/schemas/FunctionDefinition"
+					}
+				}
+			},
+			"StreamOptions": {
+				"properties": {
+					"include_usage": {
+						"type": "boolean",
+						"title": "Include Usage",
+						"description": "If true, an additional chunk is streamed before the `data: [DONE]` message containing the token usage statistics for the entire request. Inside that chunk, `choices` is an empty array and the `usage` field is populated.",
+						"default": false
+					}
+				},
+				"type": "object",
+				"title": "StreamOptions",
+				"description": "Options for controlling streaming behavior. Only used when `stream=true`.",
+				"required": []
+			},
+			"ResponseFormatText": {
+				"type": "object",
+				"title": "ResponseFormatText",
+				"required": [
+					"type"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "text",
+						"description": "The type of response format being defined. Always `text`. The model responds with plain text and output is not constrained to JSON."
+					}
+				}
+			},
+			"ResponseFormatJSONObject": {
+				"type": "object",
+				"title": "ResponseFormatJSONObject",
+				"required": [
+					"type"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "json_object",
+						"description": "The type of response format being defined. Always `json_object`."
+					}
+				}
+			},
+			"ResponseFormatJSONSchema": {
+				"type": "object",
+				"title": "ResponseFormatJSONSchema",
+				"required": [
+					"type",
+					"json_schema"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"const": "json_schema",
+						"description": "The type of response format being defined. Always `json_schema`."
+					},
+					"json_schema": {
+						"$ref": "#/components/schemas/JSONSchema"
+					}
+				}
+			},
+			"Choice": {
+				"properties": {
+					"index": {
+						"type": "integer",
+						"title": "Index"
+					},
+					"message": {
+						"$ref": "#/components/schemas/Message"
+					},
+					"finish_reason": {
+						"type": [
+							"string",
+							"null"
+						],
+						"enum": [
+							"stop",
+							"length",
+							"tool_calls",
+							"content_filter",
+							null
+						],
+						"description": "The reason the model stopped generating tokens."
+					}
+				},
+				"type": "object",
+				"required": [
+					"index",
+					"message",
+					"finish_reason"
+				],
+				"title": "Choice"
+			},
+			"Usage": {
+				"properties": {
+					"prompt_tokens": {
+						"type": "integer",
+						"title": "Prompt Tokens"
+					},
+					"reasoning_tokens": {
+						"type": "integer",
+						"title": "Reasoning Tokens"
+					},
+					"completion_tokens": {
+						"type": "integer",
+						"title": "Completion Tokens"
+					},
+					"total_tokens": {
+						"type": "integer",
+						"title": "Total Tokens"
+					},
+					"cached_input_tokens": {
+						"type": "integer",
+						"title": "Cached Input Tokens"
+					}
+				},
+				"type": "object",
+				"required": [
+					"prompt_tokens",
+					"reasoning_tokens",
+					"completion_tokens",
+					"total_tokens",
+					"cached_input_tokens"
+				],
+				"title": "Usage"
+			},
+			"ReasoningSummary": {
+				"description": "Summary of the model's reasoning process.",
+				"properties": {
+					"content": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"default": null,
+						"description": "The summarized reasoning.",
+						"title": "Content"
+					},
+					"status": {
+						"default": "unavailable",
+						"description": "Status of the summary.",
+						"enum": [
+							"complete",
+							"unavailable"
+						],
+						"title": "Status",
+						"type": "string"
+					}
+				},
+				"title": "ReasoningSummary",
+				"type": "object",
+				"required": []
+			},
+			"ToolCall": {
+				"properties": {
+					"index": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"default": 0,
+						"title": "Index"
+					},
+					"id": {
+						"title": "Id",
+						"type": "string"
+					},
+					"type": {
+						"const": "function",
+						"default": "function",
+						"title": "Type",
+						"type": "string"
+					},
+					"function": {
+						"$ref": "#/components/schemas/FunctionCall"
+					}
+				},
+				"required": [
+					"id",
+					"function",
+					"type"
+				],
+				"title": "ToolCall",
+				"type": "object"
+			},
+			"FunctionDefinition": {
+				"type": "object",
+				"title": "FunctionDefinition",
+				"required": [
+					"name"
+				],
+				"properties": {
+					"name": {
+						"type": "string",
+						"description": "The name of the function to call. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64."
+					},
+					"description": {
+						"type": "string",
+						"description": "A description of what the function does, used by the model to choose when and how to call the function."
+					},
+					"parameters": {
+						"type": "object",
+						"additionalProperties": true,
+						"description": "The parameters the function accepts, described as a JSON Schema object."
+					},
+					"strict": {
+						"type": "boolean",
+						"default": false,
+						"description": "Whether to enforce strict schema adherence when generating the function call. When true, the model output is constrained to match the `parameters` schema exactly."
+					}
+				}
+			},
+			"JSONSchema": {
+				"type": "object",
+				"title": "JSONSchema",
+				"required": [
+					"name"
+				],
+				"properties": {
+					"name": {
+						"type": "string",
+						"description": "The name of the response format. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64."
+					},
+					"description": {
+						"type": "string",
+						"description": "A description of what the response format is for, used by the model to determine how to respond in the format."
+					},
+					"schema": {
+						"type": "object",
+						"additionalProperties": true,
+						"description": "The schema for the response format, described as a JSON Schema object."
+					},
+					"strict": {
+						"type": "boolean",
+						"default": false,
+						"description": "Whether to enforce strict schema adherence when generating the output. When true, the model output is constrained to match the supplied `schema` exactly."
+					}
+				}
+			},
+			"FunctionCall": {
+				"properties": {
+					"name": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"default": null,
+						"title": "Name"
+					},
+					"arguments": {
+						"title": "Arguments",
+						"type": "string"
+					}
+				},
+				"required": [
+					"arguments"
+				],
+				"title": "FunctionCall",
+				"type": "object"
+			}
+		}
+	}
+}

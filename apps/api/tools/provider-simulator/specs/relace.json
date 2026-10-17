@@ -1,0 +1,313 @@
+{
+	"id": "relace",
+	"source": {
+		"url": "https://docs.relace.ai/api-reference/openapi.json",
+		"docs": null,
+		"fetchedAt": "2026-10-17T17:07:12.862Z",
+		"sha256": "aececdd88251b29569bc5494c531995cd9c15786970f8bbd96ac3f036f0b63f7",
+		"handWritten": false,
+		"notes": "Served by docs.relace.ai. Servers https://models.relace.ai (models) and https://api.relace.run (infra)."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"$ref": "#/components/schemas/ChatCompletionsRequest"
+			},
+			"response": {
+				"$ref": "#/components/schemas/ChatCompletionsResponse"
+			}
+		},
+		"messages": {
+			"request": {
+				"$ref": "#/components/schemas/MessagesRequest"
+			},
+			"response": {
+				"$ref": "#/components/schemas/MessagesResponse"
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"ChatCompletionsRequest": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {
+						"type": "string",
+						"description": "ID of the hosted model to use, e.g. `deepseek-ai/DeepSeek-V4.1-Flash`, `deepseek-ai/DeepSeek-V4-Flash-0731` or `moonshotai/kimi-k3`."
+					},
+					"messages": {
+						"type": "array",
+						"items": {
+							"type": "object"
+						},
+						"description": "The conversation so far, as OpenAI-format message objects with `role` and `content`."
+					},
+					"stream": {
+						"type": "boolean",
+						"description": "If true, tokens are sent as server-sent events as they are generated. Token usage is always reported in the final chunk of the stream."
+					},
+					"max_tokens": {
+						"type": "integer",
+						"description": "Maximum number of tokens to generate. Reasoning tokens count toward this limit, so set a generous budget."
+					},
+					"temperature": {
+						"type": "number",
+						"description": "Sampling temperature. Higher values make output more random."
+					},
+					"top_p": {
+						"type": "number",
+						"description": "Nucleus sampling: only tokens within the top `top_p` probability mass are considered."
+					},
+					"top_k": {
+						"type": "integer",
+						"description": "Only the `top_k` most likely tokens are considered at each step."
+					},
+					"stop": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"description": "Up to 4 sequences at which generation stops."
+					},
+					"frequency_penalty": {
+						"type": "number",
+						"description": "Penalizes tokens by how often they have appeared so far. Range -2 to 2."
+					},
+					"presence_penalty": {
+						"type": "number",
+						"description": "Penalizes tokens that have appeared at all so far. Range -2 to 2."
+					},
+					"repetition_penalty": {
+						"type": "number",
+						"description": "Multiplicative penalty on repeated tokens. Values above 1 discourage repetition."
+					},
+					"tools": {
+						"type": "array",
+						"items": {
+							"type": "object"
+						},
+						"description": "OpenAI-format function tool definitions the model may call."
+					},
+					"tool_choice": {
+						"description": "Controls tool use: `none`, `auto`, `required`, or a specific tool."
+					},
+					"response_format": {
+						"type": "object",
+						"description": "Set to `{\"type\": \"json_object\"}` for JSON mode. Kimi K3 only."
+					},
+					"prompt_cache_key": {
+						"type": "string",
+						"maxLength": 512,
+						"description": "Cache affinity key. Requests with the same key are served by the same server, improving cache hit rates for multi-turn sessions. Use a stable value per conversation or session. Compatible with OpenAI's parameter of the same name."
+					}
+				},
+				"additionalProperties": true,
+				"description": "OpenAI-compatible request. Supported sampling parameters vary slightly by model."
+			},
+			"ChatCompletionsResponse": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "Unique identifier for the completion"
+					},
+					"object": {
+						"type": "string",
+						"description": "Always `chat.completion`"
+					},
+					"created": {
+						"type": "integer",
+						"description": "Unix timestamp of when the completion was created"
+					},
+					"model": {
+						"type": "string",
+						"description": "The model that served the request"
+					},
+					"choices": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"index": {
+									"type": "integer"
+								},
+								"message": {
+									"type": "object",
+									"description": "The generated message, with `role` and `content` (and `tool_calls` when the model called tools)"
+								},
+								"finish_reason": {
+									"type": "string",
+									"description": "Why generation stopped, e.g. `stop`, `length`, or `tool_calls`"
+								}
+							}
+						},
+						"description": "The generated completions"
+					},
+					"usage": {
+						"type": "object",
+						"properties": {
+							"prompt_tokens": {
+								"type": "integer",
+								"description": "Number of tokens in the prompt"
+							},
+							"completion_tokens": {
+								"type": "integer",
+								"description": "Number of tokens in the completion"
+							},
+							"total_tokens": {
+								"type": "integer",
+								"description": "Total number of tokens used"
+							}
+						},
+						"description": "Token usage information for the request"
+					}
+				}
+			},
+			"MessagesRequest": {
+				"type": "object",
+				"required": [
+					"model",
+					"max_tokens",
+					"messages"
+				],
+				"properties": {
+					"model": {
+						"type": "string",
+						"description": "ID of the hosted model to use, e.g. `deepseek-ai/DeepSeek-V4.1-Flash`, `deepseek-ai/DeepSeek-V4-Flash-0731` or `moonshotai/kimi-k3`."
+					},
+					"max_tokens": {
+						"type": "integer",
+						"description": "Maximum number of tokens to generate. Reasoning tokens count toward this limit, so set a generous budget."
+					},
+					"messages": {
+						"type": "array",
+						"items": {
+							"type": "object"
+						},
+						"description": "The conversation so far, as Anthropic-format message objects with `role` (`user` or `assistant`) and `content` (a string, or an array of `text`, `image`, `tool_use`, `tool_result`, and `thinking` blocks)."
+					},
+					"system": {
+						"description": "System prompt, as a string or an array of `text` blocks."
+					},
+					"stream": {
+						"type": "boolean",
+						"description": "If true, the response is sent as server-sent events in the Anthropic streaming format. Token usage is reported in the `message_delta` event."
+					},
+					"temperature": {
+						"type": "number",
+						"description": "Sampling temperature. Higher values make output more random."
+					},
+					"top_p": {
+						"type": "number",
+						"description": "Nucleus sampling: only tokens within the top `top_p` probability mass are considered."
+					},
+					"top_k": {
+						"type": "integer",
+						"description": "Only the `top_k` most likely tokens are considered at each step."
+					},
+					"stop_sequences": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"description": "Up to 4 sequences at which generation stops."
+					},
+					"tools": {
+						"type": "array",
+						"items": {
+							"type": "object"
+						},
+						"description": "Anthropic-format tool definitions with `name`, `description`, and `input_schema`. Server tools are ignored."
+					},
+					"tool_choice": {
+						"type": "object",
+						"description": "Controls tool use: `{\"type\": \"auto\"}`, `{\"type\": \"any\"}`, `{\"type\": \"tool\", \"name\": ...}`, or `{\"type\": \"none\"}`. `any` and a named tool require a model with forced tool choice; others are served as `auto`. Set `disable_parallel_tool_use` to limit the model to one call per turn."
+					},
+					"thinking": {
+						"type": "object",
+						"description": "`{\"type\": \"enabled\"}` or `{\"type\": \"adaptive\"}` turns reasoning on; `{\"type\": \"disabled\"}` turns it off. `budget_tokens` is accepted but not enforced."
+					},
+					"output_config": {
+						"type": "object",
+						"description": "`effort` (`low` to `max`) maps onto the model's reasoning effort levels where it has them. `format` is accepted and ignored."
+					},
+					"metadata": {
+						"type": "object",
+						"properties": {
+							"user_id": {
+								"type": "string",
+								"maxLength": 512,
+								"description": "Cache affinity key. Requests with the same value are served by the same server, improving cache hit rates for multi-turn sessions. Use a stable value per conversation or session."
+							}
+						}
+					}
+				},
+				"additionalProperties": true,
+				"description": "Anthropic-compatible request. `cache_control` markers and other Anthropic-only fields are accepted and ignored. Supported sampling parameters vary slightly by model."
+			},
+			"MessagesResponse": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "Unique identifier for the message, prefixed `msg_`"
+					},
+					"type": {
+						"type": "string",
+						"description": "Always `message`"
+					},
+					"role": {
+						"type": "string",
+						"description": "Always `assistant`"
+					},
+					"model": {
+						"type": "string",
+						"description": "The model that served the request"
+					},
+					"content": {
+						"type": "array",
+						"items": {
+							"type": "object"
+						},
+						"description": "The generated content blocks, in order: `thinking` (when reasoning is on), `text`, and `tool_use` (with the call's `id`, `name`, and parsed `input`)"
+					},
+					"stop_reason": {
+						"type": "string",
+						"description": "Why generation stopped: `end_turn`, `max_tokens`, `stop_sequence`, or `tool_use`"
+					},
+					"stop_sequence": {
+						"type": "string",
+						"nullable": true,
+						"description": "The matched stop sequence when `stop_reason` is `stop_sequence`; otherwise null"
+					},
+					"usage": {
+						"type": "object",
+						"properties": {
+							"input_tokens": {
+								"type": "integer",
+								"description": "Prompt tokens not served from cache"
+							},
+							"cache_read_input_tokens": {
+								"type": "integer",
+								"description": "Prompt tokens served from cache, billed at the Cached Input rate"
+							},
+							"cache_creation_input_tokens": {
+								"type": "integer",
+								"description": "Always 0; writing to the cache is free"
+							},
+							"output_tokens": {
+								"type": "integer",
+								"description": "Tokens generated, including reasoning"
+							}
+						},
+						"description": "Token usage information for the request"
+					}
+				}
+			}
+		}
+	}
+}

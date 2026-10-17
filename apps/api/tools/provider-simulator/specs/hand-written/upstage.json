@@ -1,0 +1,42 @@
+{
+	"id": "upstage",
+	"source": {
+		"url": null,
+		"docs": "https://console.upstage.ai/api/chat",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Reasoning text in choices[].message.reasoning / delta.reasoning. response_format json_object (conversation must contain \"JSON\") or json_schema (strict true, additionalProperties false, all properties required). tool_choice none|auto|required|named. frequency_penalty default 1.1. n, stop, seed, logprobs, user absent from the page."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"reasoning_effort": {},
+					"max_tokens": {},
+					"stream_options": {},
+					"temperature": {},
+					"top_p": {},
+					"frequency_penalty": {},
+					"presence_penalty": {},
+					"tools": {},
+					"tool_choice": {},
+					"parallel_tool_calls": {},
+					"response_format": {},
+					"prompt_cache_key": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

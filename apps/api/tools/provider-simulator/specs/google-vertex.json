@@ -1,0 +1,3437 @@
+{
+	"id": "google-vertex",
+	"source": {
+		"url": "https://aiplatform.googleapis.com/$discovery/rest?version=v1",
+		"docs": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/migrate/openai/overview",
+		"fetchedAt": "2026-10-17T17:07:00.713Z",
+		"sha256": "034e2806e7a39585010064000cc455df2eaa16bc84380f0d0f8ba07fb017a5a1",
+		"handWritten": false,
+		"notes": "Vertex AI (now \"Gemini Enterprise Agent Platform\") discovery doc v1 (v1beta1 also at ?version=v1beta1, 5.3 MB). generateContent request is fully typed (GoogleCloudAiplatformV1GenerateContentRequest). The OpenAI-compatible chat/completions body is GoogleApiHttpBody (opaque), and rawPredict (used for Claude/partner models) is RawPredictRequest wrapping an opaque HttpBody, so neither is schema-checkable from this spec; see docs. Endpoint id for the OpenAI layer is the literal \"openapi\"."
+	},
+	"operations": {
+		"generateContent": {
+			"request": {
+				"$ref": "#/components/schemas/GoogleCloudAiplatformV1GenerateContentRequest"
+			},
+			"response": {
+				"$ref": "#/components/schemas/GoogleCloudAiplatformV1GenerateContentResponse"
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"GoogleCloudAiplatformV1GenerateContentRequest": {
+				"description": "Request message for [PredictionService.GenerateContent].",
+				"properties": {
+					"contents": {
+						"description": "Required. The content of the current conversation with the model. For single-turn queries, this is a single instance. For multi-turn queries, this is a repeated field that contains conversation history + latest request.",
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1Content"
+						},
+						"type": "array"
+					},
+					"toolConfig": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ToolConfig",
+						"description": "Optional. Tool config. This config is shared for all tools provided in the request."
+					},
+					"generationConfig": {
+						"description": "Optional. Generation config.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GenerationConfig"
+					},
+					"modelArmorConfig": {
+						"description": "Optional. Settings for prompt and response sanitization using the Model Armor service. If supplied, safety_settings must not be supplied.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ModelArmorConfig"
+					},
+					"tools": {
+						"type": "array",
+						"description": "Optional. A list of `Tools` the model may use to generate the next response. A `Tool` is a piece of code that enables the system to interact with external systems to perform an action, or set of actions, outside of knowledge and scope of the model.",
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1Tool"
+						}
+					},
+					"cachedContent": {
+						"description": "Optional. The name of the cached content used as context to serve the prediction. Note: only used in explicit caching, where users can have control over caching (e.g. what content to cache) and enjoy guaranteed cost savings. Format: `projects/{project}/locations/{location}/cachedContents/{cachedContent}`",
+						"type": "string"
+					},
+					"labels": {
+						"type": "object",
+						"additionalProperties": {
+							"type": "string"
+						},
+						"description": "Optional. The labels with user-defined metadata for the request. It is used for billing and reporting only. Label keys and values can be no longer than 63 characters (Unicode codepoints) and can only contain lowercase letters, numeric characters, underscores, and dashes. International characters are allowed. Label values are optional. Label keys must start with a letter."
+					},
+					"safetySettings": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1SafetySetting"
+						},
+						"description": "Optional. Per request settings for blocking unsafe content. Enforced on GenerateContentResponse.candidates."
+					},
+					"systemInstruction": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1Content",
+						"description": "Optional. The user provided system instructions for the model. Note: only text should be used in parts and content in each part will be in a separate paragraph."
+					}
+				},
+				"id": "GoogleCloudAiplatformV1GenerateContentRequest",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1GenerateContentResponse": {
+				"id": "GoogleCloudAiplatformV1GenerateContentResponse",
+				"description": "Response message for [PredictionService.GenerateContent].",
+				"type": "object",
+				"properties": {
+					"usageMetadata": {
+						"description": "Usage metadata about the response(s).",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GenerateContentResponseUsageMetadata"
+					},
+					"promptFeedback": {
+						"description": "Output only. Content filter results for a prompt sent in the request. Note: Sent only in the first stream chunk. Only happens when no candidates were generated due to content violations.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GenerateContentResponsePromptFeedback",
+						"readOnly": true
+					},
+					"modelVersion": {
+						"readOnly": true,
+						"description": "Output only. The model version used to generate the response.",
+						"type": "string"
+					},
+					"candidates": {
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1Candidate"
+						},
+						"type": "array",
+						"readOnly": true,
+						"description": "Output only. Generated candidates."
+					},
+					"createTime": {
+						"readOnly": true,
+						"type": "string",
+						"format": "google-datetime",
+						"description": "Output only. Timestamp when the request is made to the server."
+					},
+					"responseId": {
+						"description": "Output only. response_id is used to identify each response. It is the encoding of the event_id.",
+						"readOnly": true,
+						"type": "string"
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1Content": {
+				"description": "The structured data content of a message. A Content message contains a `role` field, which indicates the producer of the content, and a `parts` field, which contains the multi-part data of the message.",
+				"type": "object",
+				"properties": {
+					"role": {
+						"type": "string",
+						"description": "Optional. The producer of the content. Must be either 'user' or 'model'. If not set, the service will default to 'user'."
+					},
+					"parts": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1Part"
+						},
+						"description": "Required. A list of Part objects that make up a single message. Parts of a message can have different MIME types. A Content message must have at least one Part."
+					}
+				},
+				"id": "GoogleCloudAiplatformV1Content"
+			},
+			"GoogleCloudAiplatformV1ToolConfig": {
+				"description": "Tool config. This config is shared for all tools provided in the request.",
+				"properties": {
+					"functionCallingConfig": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1FunctionCallingConfig",
+						"description": "Optional. Function calling config."
+					},
+					"retrievalConfig": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1RetrievalConfig",
+						"description": "Optional. Retrieval config."
+					}
+				},
+				"id": "GoogleCloudAiplatformV1ToolConfig",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1GenerationConfig": {
+				"description": "Configuration for content generation. This message contains all the parameters that control how the model generates content. It allows you to influence the randomness, length, and structure of the output.",
+				"properties": {
+					"responseSchema": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1Schema",
+						"deprecated": true,
+						"description": "Optional. Lets you to specify a schema for the model's response, ensuring that the output conforms to a particular structure. This is useful for generating structured data such as JSON. The schema is a subset of the [OpenAPI 3.0 schema object](https://spec.openapis.org/oas/v3.0.3#schema) object. When this field is set, you must also set the `response_mime_type` to `application/json`. Deprecated: Use `response_format` instead."
+					},
+					"audioTranscriptionConfig": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1AudioTranscriptionConfig",
+						"description": "Optional. Configuration for audio transcription (speech recognition)."
+					},
+					"translationConfig": {
+						"description": "Optional. Config for translation.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1TranslationConfig"
+					},
+					"topP": {
+						"format": "float",
+						"type": "number",
+						"description": "Optional. Specifies the nucleus sampling threshold. The model considers only the smallest set of tokens whose cumulative probability is at least `top_p`. This helps generate more diverse and less repetitive responses. For example, a `top_p` of 0.9 means the model considers tokens until the cumulative probability of the tokens to select from reaches 0.9. It's recommended to adjust either temperature or `top_p`, but not both."
+					},
+					"enableAffectiveDialog": {
+						"description": "Optional. If enabled, the model will detect emotions and adapt its responses accordingly. For example, if the model detects that the user is frustrated, it may provide a more empathetic response.",
+						"type": "boolean"
+					},
+					"speechConfig": {
+						"description": "Optional. The speech generation config.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1SpeechConfig"
+					},
+					"responseModalities": {
+						"type": "array",
+						"items": {
+							"enumDescriptions": [
+								"Unspecified modality. Will be processed as text.",
+								"Text modality.",
+								"Image modality.",
+								"Audio modality.",
+								"Video modality."
+							],
+							"type": "string",
+							"enum": [
+								"MODALITY_UNSPECIFIED",
+								"TEXT",
+								"IMAGE",
+								"AUDIO",
+								"VIDEO"
+							]
+						},
+						"description": "Optional. The modalities of the response. The model will generate a response that includes all the specified modalities. For example, if this is set to `[TEXT, IMAGE]`, the response will include both text and an image."
+					},
+					"logprobs": {
+						"type": "integer",
+						"format": "int32",
+						"description": "Optional. The number of top log probabilities to return for each token. This can be used to see which other tokens were considered likely candidates for a given position. A higher value will return more options, but it will also increase the size of the response."
+					},
+					"routingConfig": {
+						"description": "Optional. Routing configuration.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GenerationConfigRoutingConfig"
+					},
+					"temperature": {
+						"description": "Optional. Controls the randomness of the output. A higher temperature results in more creative and diverse responses, while a lower temperature makes the output more predictable and focused. The valid range is (0.0, 2.0].",
+						"format": "float",
+						"type": "number"
+					},
+					"audioTimestamp": {
+						"description": "Optional. If enabled, audio timestamps will be included in the request to the model. This can be useful for synchronizing audio with other modalities in the response.",
+						"type": "boolean"
+					},
+					"responseMimeType": {
+						"type": "string",
+						"deprecated": true,
+						"description": "Optional. The IANA standard MIME type of the response. The model will generate output that conforms to this MIME type. Supported values include 'text/plain' (default) and 'application/json'. The model needs to be prompted to output the appropriate response type, otherwise the behavior is undefined. Deprecated: Use `response_format` instead."
+					},
+					"frequencyPenalty": {
+						"type": "number",
+						"description": "Optional. Penalizes tokens based on their frequency in the generated text. A positive value helps to reduce the repetition of words and phrases. Valid values can range from [-2.0, 2.0].",
+						"format": "float"
+					},
+					"imageConfig": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ImageConfig",
+						"deprecated": true,
+						"description": "Optional. Config for image generation features. Deprecated: Use `response_format.image` instead."
+					},
+					"thinkingConfig": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GenerationConfigThinkingConfig",
+						"description": "Optional. Configuration for thinking features. An error will be returned if this field is set for models that don't support thinking."
+					},
+					"topK": {
+						"format": "float",
+						"type": "number",
+						"description": "Optional. Specifies the top-k sampling threshold. The model considers only the top k most probable tokens for the next token. This can be useful for generating more coherent and less random text. For example, a `top_k` of 40 means the model will choose the next word from the 40 most likely words."
+					},
+					"seed": {
+						"type": "integer",
+						"format": "int32",
+						"description": "Optional. A seed for the random number generator. By setting a seed, you can make the model's output mostly deterministic. For a given prompt and parameters (like temperature, top_p, etc.), the model will produce the same response every time. However, it's not a guaranteed absolute deterministic behavior. This is different from parameters like `temperature`, which control the *level* of randomness. `seed` ensures that the \"random\" choices the model makes are the same on every run, making it essential for testing and ensuring reproducible results."
+					},
+					"mediaResolution": {
+						"type": "string",
+						"enum": [
+							"MEDIA_RESOLUTION_UNSPECIFIED",
+							"MEDIA_RESOLUTION_LOW",
+							"MEDIA_RESOLUTION_MEDIUM",
+							"MEDIA_RESOLUTION_HIGH"
+						],
+						"enumDescriptions": [
+							"Media resolution has not been set.",
+							"Media resolution set to low (64 tokens).",
+							"Media resolution set to medium (256 tokens).",
+							"Media resolution set to high (zoomed reframing with 256 tokens)."
+						],
+						"description": "Optional. The token resolution at which input media content is sampled. This is used to control the trade-off between the quality of the response and the number of tokens used to represent the media. A higher resolution allows the model to perceive more detail, which can lead to a more nuanced response, but it will also use more tokens. This does not affect the image dimensions sent to the model."
+					},
+					"candidateCount": {
+						"type": "integer",
+						"description": "Optional. The number of candidate responses to generate. A higher `candidate_count` can provide more options to choose from, but it also consumes more resources. This can be useful for generating a variety of responses and selecting the best one.",
+						"format": "int32"
+					},
+					"responseFormat": {
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1ResponseFormat"
+						},
+						"description": "Optional. New response format field for the model to configure output formatting and delivery.",
+						"type": "array"
+					},
+					"responseLogprobs": {
+						"description": "Optional. If set to true, the log probabilities of the output tokens are returned. Log probabilities are the logarithm of the probability of a token appearing in the output. A higher log probability means the token is more likely to be generated. This can be useful for analyzing the model's confidence in its own output and for debugging.",
+						"type": "boolean"
+					},
+					"maxOutputTokens": {
+						"type": "integer",
+						"format": "int32",
+						"description": "Optional. The maximum number of tokens to generate in the response. A token is approximately four characters. The default value varies by model. This parameter can be used to control the length of the generated text and prevent overly long responses."
+					},
+					"presencePenalty": {
+						"description": "Optional. Penalizes tokens that have already appeared in the generated text. A positive value encourages the model to generate more diverse and less repetitive text. Valid values can range from [-2.0, 2.0].",
+						"format": "float",
+						"type": "number"
+					},
+					"responseJsonSchema": {
+						"description": "Optional. When this field is set, response_schema must be omitted and response_mime_type must be set to `application/json`. Deprecated: Use `response_format` instead.",
+						"deprecated": true,
+						"type": "any"
+					},
+					"stopSequences": {
+						"type": "array",
+						"description": "Optional. A list of character sequences that will stop the model from generating further tokens. If a stop sequence is generated, the output will end at that point. This is useful for controlling the length and structure of the output. For example, you can use [\"\\n\", \"###\"] to stop generation at a new line or a specific marker.",
+						"items": {
+							"type": "string"
+						}
+					}
+				},
+				"id": "GoogleCloudAiplatformV1GenerationConfig",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1ModelArmorConfig": {
+				"id": "GoogleCloudAiplatformV1ModelArmorConfig",
+				"description": "Configuration for Model Armor. Model Armor is a Google Cloud service that provides safety and security filtering for prompts and responses. It helps protect your AI applications from risks such as harmful content, sensitive data leakage, and prompt injection attacks.",
+				"type": "object",
+				"properties": {
+					"responseTemplateName": {
+						"description": "Optional. The resource name of the Model Armor template to use for response screening. A Model Armor template is a set of customized filters and thresholds that define how Model Armor screens content. If specified, Model Armor will use this template to check the model's response for safety and security risks before it is returned to the user. The name must be in the format `projects/{project}/locations/{location}/templates/{template}`.",
+						"type": "string"
+					},
+					"promptTemplateName": {
+						"type": "string",
+						"description": "Optional. The resource name of the Model Armor template to use for prompt screening. A Model Armor template is a set of customized filters and thresholds that define how Model Armor screens content. If specified, Model Armor will use this template to check the user's prompt for safety and security risks before it is sent to the model. The name must be in the format `projects/{project}/locations/{location}/templates/{template}`."
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1Tool": {
+				"properties": {
+					"googleMaps": {
+						"description": "Optional. GoogleMaps tool type. Tool to support Google Maps in Model.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GoogleMaps"
+					},
+					"parallelAiSearch": {
+						"description": "Optional. If specified, Vertex AI will use Parallel.ai to search for information to answer user queries. The search results will be grounded on Parallel.ai and presented to the model for response generation",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ToolParallelAiSearch"
+					},
+					"urlContext": {
+						"description": "Optional. Tool to support URL context retrieval.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1UrlContext"
+					},
+					"enterpriseWebSearch": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1EnterpriseWebSearch",
+						"description": "Optional. Tool to support searching public web data, powered by Vertex AI Search and Sec4 compliance."
+					},
+					"computerUse": {
+						"description": "Optional. Tool to support the model interacting directly with the computer. If enabled, it automatically populates computer-use specific Function Declarations.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ToolComputerUse"
+					},
+					"googleSearchRetrieval": {
+						"description": "Optional. Specialized retrieval tool that is powered by Google Search.",
+						"deprecated": true,
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GoogleSearchRetrieval"
+					},
+					"exaAiSearch": {
+						"description": "Optional. Uses Exa.ai to search for information to answer user queries. The search results will be grounded on Exa.ai and presented to the model for response generation",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ToolExaAiSearch"
+					},
+					"codeExecution": {
+						"description": "Optional. CodeExecution tool type. Enables the model to execute code as part of generation.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ToolCodeExecution"
+					},
+					"googleSearch": {
+						"description": "Optional. GoogleSearch tool type. Tool to support Google Search in Model. Powered by Google.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ToolGoogleSearch"
+					},
+					"retrieval": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1Retrieval",
+						"description": "Optional. Retrieval tool type. System will always execute the provided retrieval tool(s) to get external knowledge to answer the prompt. Retrieval results are presented to the model for generation."
+					},
+					"functionDeclarations": {
+						"type": "array",
+						"description": "Optional. Function tool type. One or more function declarations to be passed to the model along with the current user query. Model may decide to call a subset of these functions by populating FunctionCall in the response. User should provide a FunctionResponse for each function call in the next turn. Based on the function responses, Model will generate the final response back to the user. Maximum 512 function declarations can be provided.",
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1FunctionDeclaration"
+						}
+					}
+				},
+				"id": "GoogleCloudAiplatformV1Tool",
+				"type": "object",
+				"description": "Tool details that the model may use to generate response. A `Tool` is a piece of code that enables the system to interact with external systems to perform an action, or set of actions, outside of knowledge and scope of the model. A Tool object should contain exactly one type of Tool (e.g FunctionDeclaration, Retrieval or GoogleSearchRetrieval)."
+			},
+			"GoogleCloudAiplatformV1SafetySetting": {
+				"properties": {
+					"method": {
+						"type": "string",
+						"enum": [
+							"HARM_BLOCK_METHOD_UNSPECIFIED",
+							"SEVERITY",
+							"PROBABILITY"
+						],
+						"description": "Optional. The method for blocking content. If not specified, the default behavior is to use the probability score.",
+						"enumDescriptions": [
+							"The harm block method is unspecified.",
+							"The harm block method uses both probability and severity scores.",
+							"The harm block method uses the probability score."
+						]
+					},
+					"category": {
+						"enumDeprecated": [
+							false,
+							false,
+							false,
+							false,
+							false,
+							true,
+							false,
+							false,
+							false,
+							false,
+							false
+						],
+						"enumDescriptions": [
+							"Default value. This value is unused.",
+							"Content that promotes violence or incites hatred against individuals or groups based on certain attributes.",
+							"Content that promotes, facilitates, or enables dangerous activities.",
+							"Abusive, threatening, or content intended to bully, torment, or ridicule.",
+							"Content that contains sexually explicit material.",
+							"Deprecated: Election filter is not longer supported. The harm category is civic integrity.",
+							"Images that contain hate speech.",
+							"Images that contain dangerous content.",
+							"Images that contain harassment.",
+							"Images that contain sexually explicit content.",
+							"Prompts designed to bypass safety filters."
+						],
+						"description": "Required. The harm category to be blocked.",
+						"type": "string",
+						"enum": [
+							"HARM_CATEGORY_UNSPECIFIED",
+							"HARM_CATEGORY_HATE_SPEECH",
+							"HARM_CATEGORY_DANGEROUS_CONTENT",
+							"HARM_CATEGORY_HARASSMENT",
+							"HARM_CATEGORY_SEXUALLY_EXPLICIT",
+							"HARM_CATEGORY_CIVIC_INTEGRITY",
+							"HARM_CATEGORY_IMAGE_HATE",
+							"HARM_CATEGORY_IMAGE_DANGEROUS_CONTENT",
+							"HARM_CATEGORY_IMAGE_HARASSMENT",
+							"HARM_CATEGORY_IMAGE_SEXUALLY_EXPLICIT",
+							"HARM_CATEGORY_JAILBREAK"
+						]
+					},
+					"threshold": {
+						"enumDescriptions": [
+							"The harm block threshold is unspecified.",
+							"Block content with a low harm probability or higher.",
+							"Block content with a medium harm probability or higher.",
+							"Block content with a high harm probability.",
+							"Do not block any content, regardless of its harm probability.",
+							"Turn off the safety filter entirely."
+						],
+						"type": "string",
+						"enum": [
+							"HARM_BLOCK_THRESHOLD_UNSPECIFIED",
+							"BLOCK_LOW_AND_ABOVE",
+							"BLOCK_MEDIUM_AND_ABOVE",
+							"BLOCK_ONLY_HIGH",
+							"BLOCK_NONE",
+							"OFF"
+						],
+						"description": "Required. The threshold for blocking content. If the harm probability exceeds this threshold, the content will be blocked."
+					}
+				},
+				"type": "object",
+				"description": "A safety setting that affects the safety-blocking behavior. A SafetySetting consists of a harm category and a threshold for that category.",
+				"id": "GoogleCloudAiplatformV1SafetySetting"
+			},
+			"GoogleCloudAiplatformV1GenerateContentResponseUsageMetadata": {
+				"type": "object",
+				"description": "Usage metadata about the content generation request and response. This message provides a detailed breakdown of token usage and other relevant metrics.",
+				"id": "GoogleCloudAiplatformV1GenerateContentResponseUsageMetadata",
+				"properties": {
+					"toolUsePromptTokenCount": {
+						"type": "integer",
+						"description": "Output only. The number of tokens in the results from tool executions, which are provided back to the model as input, if applicable.",
+						"format": "int32",
+						"readOnly": true
+					},
+					"cachedContentTokenCount": {
+						"format": "int32",
+						"type": "integer",
+						"description": "Output only. The number of tokens in the cached content that was used for this request.",
+						"readOnly": true
+					},
+					"candidatesTokensDetails": {
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1ModalityTokenCount"
+						},
+						"description": "Output only. A detailed breakdown of the token count for each modality in the generated candidates.",
+						"readOnly": true,
+						"type": "array"
+					},
+					"candidatesTokenCount": {
+						"type": "integer",
+						"description": "The total number of tokens in the generated candidates.",
+						"format": "int32"
+					},
+					"promptTokenCount": {
+						"description": "The total number of tokens in the prompt. This includes any text, images, or other media provided in the request. When `cached_content` is set, this also includes the number of tokens in the cached content.",
+						"format": "int32",
+						"type": "integer"
+					},
+					"promptTokensDetails": {
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1ModalityTokenCount"
+						},
+						"description": "Output only. A detailed breakdown of the token count for each modality in the prompt.",
+						"type": "array",
+						"readOnly": true
+					},
+					"trafficType": {
+						"type": "string",
+						"enum": [
+							"TRAFFIC_TYPE_UNSPECIFIED",
+							"ON_DEMAND",
+							"ON_DEMAND_PRIORITY",
+							"ON_DEMAND_FLEX",
+							"ON_DEMAND_OFFPEAK",
+							"PROVISIONED_THROUGHPUT"
+						],
+						"readOnly": true,
+						"description": "Output only. The traffic type for this request.",
+						"enumDescriptions": [
+							"Unspecified request traffic type.",
+							"The request was processed using Pay-As-You-Go quota.",
+							"Type for Priority Pay-As-You-Go traffic.",
+							"Type for Flex traffic.",
+							"Type for Off-Peak Pay-As-You-Go traffic.",
+							"Type for Provisioned Throughput traffic."
+						]
+					},
+					"totalTokenCount": {
+						"description": "The total number of tokens for the entire request. This is the sum of `prompt_token_count`, `candidates_token_count`, `tool_use_prompt_token_count`, and `thoughts_token_count`.",
+						"type": "integer",
+						"format": "int32"
+					},
+					"toolUsePromptTokensDetails": {
+						"description": "Output only. A detailed breakdown by modality of the token counts from the results of tool executions, which are provided back to the model as input.",
+						"readOnly": true,
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1ModalityTokenCount"
+						},
+						"type": "array"
+					},
+					"cacheTokensDetails": {
+						"description": "Output only. A detailed breakdown of the token count for each modality in the cached content.",
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1ModalityTokenCount"
+						},
+						"type": "array",
+						"readOnly": true
+					},
+					"thoughtsTokenCount": {
+						"type": "integer",
+						"description": "Output only. The number of tokens that were part of the model's generated \"thoughts\" output, if applicable.",
+						"format": "int32",
+						"readOnly": true
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1GenerateContentResponsePromptFeedback": {
+				"properties": {
+					"blockReason": {
+						"readOnly": true,
+						"description": "Output only. The reason why the prompt was blocked.",
+						"type": "string",
+						"enum": [
+							"BLOCKED_REASON_UNSPECIFIED",
+							"SAFETY",
+							"OTHER",
+							"BLOCKLIST",
+							"PROHIBITED_CONTENT",
+							"MODEL_ARMOR",
+							"IMAGE_SAFETY",
+							"JAILBREAK"
+						],
+						"enumDescriptions": [
+							"The blocked reason is unspecified.",
+							"The prompt was blocked for safety reasons.",
+							"The prompt was blocked for other reasons. For example, it may be due to the prompt's language, or because it contains other harmful content.",
+							"The prompt was blocked because it contains a term from the terminology blocklist.",
+							"The prompt was blocked because it contains prohibited content.",
+							"The prompt was blocked by Model Armor.",
+							"The prompt was blocked because it contains content that is unsafe for image generation.",
+							"The prompt was blocked as a jailbreak attempt."
+						]
+					},
+					"blockReasonMessage": {
+						"description": "Output only. A readable message that explains the reason why the prompt was blocked.",
+						"type": "string",
+						"readOnly": true
+					},
+					"safetyRatings": {
+						"description": "Output only. A list of safety ratings for the prompt. There is one rating per category.",
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1SafetyRating"
+						},
+						"type": "array",
+						"readOnly": true
+					}
+				},
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1GenerateContentResponsePromptFeedback",
+				"description": "Content filter results for a prompt sent in the request. Note: This is sent only in the first stream chunk and only if no candidates were generated due to content violations."
+			},
+			"GoogleCloudAiplatformV1Candidate": {
+				"description": "A response candidate generated from the model.",
+				"id": "GoogleCloudAiplatformV1Candidate",
+				"type": "object",
+				"properties": {
+					"urlContextMetadata": {
+						"description": "Output only. Metadata returned when the model uses the `url_context` tool to get information from a user-provided URL.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1UrlContextMetadata",
+						"readOnly": true
+					},
+					"index": {
+						"format": "int32",
+						"type": "integer",
+						"description": "Output only. The 0-based index of this candidate in the list of generated responses. This is useful for distinguishing between multiple candidates when `candidate_count` > 1.",
+						"readOnly": true
+					},
+					"logprobsResult": {
+						"readOnly": true,
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1LogprobsResult",
+						"description": "Output only. The detailed log probability information for the tokens in this candidate. This is useful for debugging, understanding model uncertainty, and identifying potential \"hallucinations\"."
+					},
+					"citationMetadata": {
+						"readOnly": true,
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1CitationMetadata",
+						"description": "Output only. A collection of citations that apply to the generated content."
+					},
+					"groundingMetadata": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GroundingMetadata",
+						"description": "Output only. Metadata returned when grounding is enabled. It contains the sources used to ground the generated content.",
+						"readOnly": true
+					},
+					"content": {
+						"description": "Output only. The content of the candidate.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1Content",
+						"readOnly": true
+					},
+					"continuationToken": {
+						"format": "byte",
+						"type": "string",
+						"readOnly": true,
+						"description": "Output only. An optional opaque continuation token returned when `finish_reason` is `CONTINUATION`. Clients can pass this token in a subsequent `GenerateContentRequest` to continue generation."
+					},
+					"safetyRatings": {
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1SafetyRating"
+						},
+						"description": "Output only. A list of ratings for the safety of a response candidate. There is at most one rating per category.",
+						"type": "array",
+						"readOnly": true
+					},
+					"finishMessage": {
+						"type": "string",
+						"description": "Output only. Describes the reason the model stopped generating tokens in more detail. This field is returned only when `finish_reason` is set.",
+						"readOnly": true
+					},
+					"finishReason": {
+						"description": "Output only. The reason why the model stopped generating tokens. If empty, the model has not stopped generating.",
+						"enumDescriptions": [
+							"The finish reason is unspecified.",
+							"The model reached a natural stopping point or a configured stop sequence.",
+							"The model generated the maximum number of tokens allowed by the `max_output_tokens` parameter.",
+							"The model stopped generating because the content potentially violates safety policies. NOTE: When streaming, the `content` field is empty if content filters block the output.",
+							"The model stopped generating because the content may be a recitation from a source.",
+							"The model stopped generating for a reason not otherwise specified.",
+							"The model stopped generating because the content contains a term from a configured blocklist.",
+							"The model stopped generating because the content may be prohibited.",
+							"The model stopped generating because the content may contain sensitive personally identifiable information (SPII).",
+							"The model generated a function call that is syntactically invalid and can't be parsed.",
+							"The model response was blocked by Model Armor.",
+							"The generated image potentially violates safety policies.",
+							"The generated image may contain prohibited content.",
+							"The generated image may be a recitation from a source.",
+							"The image generation stopped for a reason not otherwise specified.",
+							"The model generated a function call that is semantically invalid. This can happen, for example, if function calling is not enabled or the generated function is not in the function declaration.",
+							"The model was expected to generate an image, but didn't.",
+							"Finishes due to malformed response.",
+							"Token generation was stopped because the response reached the per-request token limit, but generation is not yet complete. The model response can be continued via a subsequent request using the returned `continuation_token`."
+						],
+						"type": "string",
+						"enum": [
+							"FINISH_REASON_UNSPECIFIED",
+							"STOP",
+							"MAX_TOKENS",
+							"SAFETY",
+							"RECITATION",
+							"OTHER",
+							"BLOCKLIST",
+							"PROHIBITED_CONTENT",
+							"SPII",
+							"MALFORMED_FUNCTION_CALL",
+							"MODEL_ARMOR",
+							"IMAGE_SAFETY",
+							"IMAGE_PROHIBITED_CONTENT",
+							"IMAGE_RECITATION",
+							"IMAGE_OTHER",
+							"UNEXPECTED_TOOL_CALL",
+							"NO_IMAGE",
+							"MALFORMED_RESPONSE",
+							"CONTINUATION"
+						],
+						"readOnly": true
+					},
+					"avgLogprobs": {
+						"format": "double",
+						"type": "number",
+						"description": "Output only. The average log probability of the tokens in this candidate. This is a length-normalized score that can be used to compare the quality of candidates of different lengths. A higher average log probability suggests a more confident and coherent response.",
+						"readOnly": true
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1Part": {
+				"id": "GoogleCloudAiplatformV1Part",
+				"description": "A datatype containing media that is part of a multi-part Content message. A `Part` consists of data which has an associated datatype. A `Part` must contain one of the accepted types in `Part.data`. For media types that are not text, `Part` must have a fixed IANA MIME type identifying the type and subtype of the media if `inline_data` or `file_data` field is filled with raw bytes.",
+				"type": "object",
+				"properties": {
+					"functionCall": {
+						"description": "Optional. A predicted function call returned from the model. This contains the name of the function to call and the arguments to pass to the function.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1FunctionCall"
+					},
+					"thoughtSignature": {
+						"format": "byte",
+						"type": "string",
+						"description": "Optional. An opaque signature for the thought so it can be reused in subsequent requests."
+					},
+					"videoMetadata": {
+						"description": "Optional. Video metadata. The metadata should only be specified while the video data is presented in inline_data or file_data.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1VideoMetadata"
+					},
+					"thought": {
+						"type": "boolean",
+						"description": "Optional. Indicates whether the `part` represents the model's thought process or reasoning."
+					},
+					"functionResponse": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1FunctionResponse",
+						"description": "Optional. The result of a function call. This is used to provide the model with the result of a function call that it predicted."
+					},
+					"mediaResolution": {
+						"description": "per part media resolution. Media resolution for the input media.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1PartMediaResolution"
+					},
+					"executableCode": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ExecutableCode",
+						"description": "Optional. Code generated by the model that is intended to be executed."
+					},
+					"inlineData": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1Blob",
+						"description": "Optional. The inline data content of the part. This can be used to include images, audio, or video in a request."
+					},
+					"speechMetadata": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1SpeechMetadata",
+						"description": "Optional. Turn-level metadata for speech generation (e.g. Daikon speaker/style). May be set alongside `text` to attach speaker and style information to a text part."
+					},
+					"audioTranscription": {
+						"description": "Optional. Audio (input or output) transcription. This is only set when this `Part` contains audio data.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1AudioTranscription"
+					},
+					"fileData": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1FileData",
+						"description": "Optional. The URI-based data of the part. This can be used to include files from Google Cloud Storage."
+					},
+					"codeExecutionResult": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1CodeExecutionResult",
+						"description": "Optional. The result of executing the ExecutableCode."
+					},
+					"text": {
+						"type": "string",
+						"description": "Optional. The text content of the part. When sent from the VSCode Gemini Code Assist extension, references to @mentioned items will be converted to markdown boldface text. For example `@my-repo` will be converted to and sent as `**my-repo**` by the IDE agent."
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1FunctionCallingConfig": {
+				"properties": {
+					"allowedFunctionNames": {
+						"description": "Optional. Function names to call. Only set when the Mode is ANY. Function names should match FunctionDeclaration.name. With mode set to ANY, model will predict a function call from the set of function names provided.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"streamFunctionCallArguments": {
+						"description": "Optional. When set to true, arguments of a single function call will be streamed out in multiple parts/contents/responses. Partial parameter results will be returned in the `FunctionCall.partial_args` field.",
+						"type": "boolean"
+					},
+					"mode": {
+						"type": "string",
+						"enum": [
+							"MODE_UNSPECIFIED",
+							"AUTO",
+							"ANY",
+							"NONE",
+							"VALIDATED"
+						],
+						"enumDescriptions": [
+							"Unspecified function calling mode. This value should not be used.",
+							"Default model behavior, model decides to predict either function calls or natural language response.",
+							"Model is constrained to always predicting function calls only. If \"allowed_function_names\" are set, the predicted function calls will be limited to any one of \"allowed_function_names\", else the predicted function calls will be any one of the provided \"function_declarations\".",
+							"Model will not predict any function calls. Model behavior is same as when not passing any function declarations.",
+							"Model is constrained to predict either function calls or natural language response. If \"allowed_function_names\" are set, the predicted function calls will be limited to any one of \"allowed_function_names\", else the predicted function calls will be any one of the provided \"function_declarations\"."
+						],
+						"description": "Optional. Function calling mode."
+					}
+				},
+				"description": "Function calling config.",
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1FunctionCallingConfig"
+			},
+			"GoogleCloudAiplatformV1RetrievalConfig": {
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1RetrievalConfig",
+				"description": "Retrieval config.",
+				"properties": {
+					"latLng": {
+						"$ref": "#/components/schemas/GoogleTypeLatLng",
+						"description": "The location of the user."
+					},
+					"languageCode": {
+						"type": "string",
+						"description": "The language code of the user."
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1Schema": {
+				"id": "GoogleCloudAiplatformV1Schema",
+				"description": "Defines the schema of input and output data. This is a subset of the [OpenAPI 3.0 Schema Object](https://spec.openapis.org/oas/v3.0.3#schema-object).",
+				"type": "object",
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"TYPE_UNSPECIFIED",
+							"STRING",
+							"NUMBER",
+							"INTEGER",
+							"BOOLEAN",
+							"ARRAY",
+							"OBJECT",
+							"NULL"
+						],
+						"description": "Optional. Data type of the schema field.",
+						"enumDescriptions": [
+							"Not specified, should not be used.",
+							"OpenAPI string type",
+							"OpenAPI number type",
+							"OpenAPI integer type",
+							"OpenAPI boolean type",
+							"OpenAPI array type",
+							"OpenAPI object type",
+							"Null type"
+						]
+					},
+					"minProperties": {
+						"description": "Optional. If type is `OBJECT`, `min_properties` specifies the minimum number of properties that can be provided.",
+						"type": "integer"
+					},
+					"description": {
+						"type": "string",
+						"description": "Optional. Describes the data. The model uses this field to understand the purpose of the schema and how to use it. It is a best practice to provide a clear and descriptive explanation for the schema and its properties here, rather than in the prompt."
+					},
+					"defs": {
+						"type": "object",
+						"additionalProperties": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1Schema"
+						},
+						"description": "Optional. `defs` provides a map of schema definitions that can be reused by `ref` elsewhere in the schema. Only allowed at root level of the schema."
+					},
+					"nullable": {
+						"description": "Optional. Indicates if the value of this field can be null.",
+						"type": "boolean"
+					},
+					"pattern": {
+						"type": "string",
+						"description": "Optional. If type is `STRING`, `pattern` specifies a regular expression that the string must match."
+					},
+					"enum": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"description": "Optional. Possible values of the field. This field can be used to restrict a value to a fixed set of values. To mark a field as an enum, set `format` to `enum` and provide the list of possible values in `enum`. For example: 1. To define directions: `{type:STRING, format:enum, enum:[\"EAST\", \"NORTH\", \"SOUTH\", \"WEST\"]}` 2. To define apartment numbers: `{type:INTEGER, format:enum, enum:[\"101\", \"201\", \"301\"]}`"
+					},
+					"anyOf": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1Schema"
+						},
+						"description": "Optional. The instance must be valid against any (one or more) of the subschemas listed in `any_of`."
+					},
+					"maxItems": {
+						"type": "integer",
+						"description": "Optional. If type is `ARRAY`, `max_items` specifies the maximum number of items in an array."
+					},
+					"minLength": {
+						"type": "integer",
+						"description": "Optional. If type is `STRING`, `min_length` specifies the minimum length of the string."
+					},
+					"format": {
+						"description": "Optional. The format of the data. For `NUMBER` type, format can be `float` or `double`. For `INTEGER` type, format can be `int32` or `int64`. For `STRING` type, format can be `email`, `byte`, `date`, `date-time`, `password`, and other formats to further refine the data type.",
+						"type": "string"
+					},
+					"required": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array",
+						"description": "Optional. If type is `OBJECT`, `required` lists the names of properties that must be present."
+					},
+					"properties": {
+						"type": "object",
+						"additionalProperties": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1Schema"
+						},
+						"description": "Optional. If type is `OBJECT`, `properties` is a map of property names to schema definitions for each property of the object."
+					},
+					"maxProperties": {
+						"type": "integer",
+						"description": "Optional. If type is `OBJECT`, `max_properties` specifies the maximum number of properties that can be provided."
+					},
+					"ref": {
+						"type": "string",
+						"description": "Optional. Allows referencing another schema definition to use in place of this schema. The value must be a valid reference to a schema in `defs`. For example, the following schema defines a reference to a schema node named \"Pet\": type: object properties: pet: ref: #/defs/Pet defs: Pet: type: object properties: name: type: string The value of the \"pet\" property is a reference to the schema node named \"Pet\". See details in https://json-schema.org/understanding-json-schema/structuring"
+					},
+					"default": {
+						"description": "Optional. Default value to use if the field is not specified.",
+						"type": "any"
+					},
+					"title": {
+						"description": "Optional. Title for the schema.",
+						"type": "string"
+					},
+					"example": {
+						"description": "Optional. Example of an instance of this schema.",
+						"type": "any"
+					},
+					"minimum": {
+						"description": "Optional. If type is `INTEGER` or `NUMBER`, `minimum` specifies the minimum allowed value.",
+						"type": "number",
+						"format": "double"
+					},
+					"maximum": {
+						"format": "double",
+						"type": "number",
+						"description": "Optional. If type is `INTEGER` or `NUMBER`, `maximum` specifies the maximum allowed value."
+					},
+					"propertyOrdering": {
+						"description": "Optional. Order of properties displayed or used where order matters. This is not a standard field in OpenAPI specification, but can be used to control the order of properties.",
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"additionalProperties": {
+						"description": "Optional. If `type` is `OBJECT`, specifies how to handle properties not defined in `properties`. If it is a boolean `false`, no additional properties are allowed. If it is a schema, additional properties are allowed if they conform to the schema.",
+						"type": "any"
+					},
+					"minItems": {
+						"type": "integer",
+						"description": "Optional. If type is `ARRAY`, `min_items` specifies the minimum number of items in an array."
+					},
+					"items": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1Schema",
+						"description": "Optional. If type is `ARRAY`, `items` specifies the schema of elements in the array."
+					},
+					"maxLength": {
+						"type": "integer",
+						"description": "Optional. If type is `STRING`, `max_length` specifies the maximum length of the string."
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1AudioTranscriptionConfig": {
+				"id": "GoogleCloudAiplatformV1AudioTranscriptionConfig",
+				"type": "object",
+				"properties": {
+					"customVocabulary": {
+						"description": "Optional. A list of custom vocabulary phrases to bias the speech recognition model toward recognizing specific terms.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"diarization": {
+						"description": "Optional. Configures speaker diarization.",
+						"type": "boolean"
+					},
+					"languageAuto": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1AudioTranscriptionConfigLanguageAuto",
+						"description": "Optional. Deprecated: Use top-level `language_codes` instead. The model will detect the language automatically.",
+						"deprecated": true
+					},
+					"languageHints": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1AudioTranscriptionConfigLanguageHints",
+						"deprecated": true,
+						"description": "Optional. Deprecated: Use top-level `language_codes` instead. Specifies one or more languages in the audio."
+					},
+					"adaptationPhrases": {
+						"description": "Optional. Deprecated: Use `custom_vocabulary` instead. A list of phrases to bias the speech recognition model towards.",
+						"deprecated": true,
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"mode": {
+						"enumDescriptions": [
+							"Unspecified transcription mode.",
+							"Verbatim transcription mode.",
+							"Smart transcription mode."
+						],
+						"description": "Optional. Configures transcription mode. Supported values: `VERBATIM`, `SMART`. If unspecified, defaults to `VERBATIM` transcription. In `SMART` mode, the model performs disfluency removal (eliminating filler words, repetitions, and false starts), light grammatical cleanup, automatic formatting (paragraphs, bullet points, numbered lists), and minor user edits (inline self-corrections). Timestamps and diarization are incompatible with mode `SMART`.",
+						"type": "string",
+						"enum": [
+							"MODE_UNSPECIFIED",
+							"VERBATIM",
+							"SMART"
+						]
+					},
+					"languageCodes": {
+						"description": "Optional. BCP-47 language codes providing hints about the languages present in the audio. If omitted or empty, defaults to automatic language detection.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"wordTimestamp": {
+						"type": "boolean",
+						"description": "Optional. Configures word-level timestamp generation."
+					}
+				},
+				"description": "Configuration for speech recognition (transcription)."
+			},
+			"GoogleCloudAiplatformV1TranslationConfig": {
+				"id": "GoogleCloudAiplatformV1TranslationConfig",
+				"properties": {
+					"echoTargetLanguage": {
+						"description": "Optional. If `true`, the model will generate audio when the target language is spoken, essentially it will parrot the input. If `false`, we will not produce audio for the target language.",
+						"type": "boolean"
+					},
+					"targetLanguageCode": {
+						"type": "string",
+						"description": "Required. The target language for translation. Supported values are BCP-47 language codes (e.g. \"en\", \"es\", \"fr\")."
+					}
+				},
+				"description": "Config for translation features.",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1SpeechConfig": {
+				"properties": {
+					"languageCode": {
+						"description": "Optional. The language code (ISO 639-1) for the speech synthesis.",
+						"type": "string"
+					},
+					"voiceConfig": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1VoiceConfig",
+						"description": "The configuration for the voice to use."
+					},
+					"multiSpeakerVoiceConfig": {
+						"description": "The configuration for a multi-speaker text-to-speech request. This field is mutually exclusive with `voice_config`.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1MultiSpeakerVoiceConfig"
+					}
+				},
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1SpeechConfig",
+				"description": "Configuration for speech generation."
+			},
+			"GoogleCloudAiplatformV1GenerationConfigRoutingConfig": {
+				"type": "object",
+				"description": "The configuration for routing the request to a specific model. This can be used to control which model is used for the generation, either automatically or by specifying a model name.",
+				"id": "GoogleCloudAiplatformV1GenerationConfigRoutingConfig",
+				"properties": {
+					"manualMode": {
+						"description": "In this mode, the model is specified manually.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GenerationConfigRoutingConfigManualRoutingMode"
+					},
+					"autoMode": {
+						"description": "In this mode, the model is selected automatically based on the content of the request.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GenerationConfigRoutingConfigAutoRoutingMode"
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1ImageConfig": {
+				"description": "Configuration for image generation. This message allows you to control various aspects of image generation, such as the output format, aspect ratio, and whether the model can generate images of people.",
+				"id": "GoogleCloudAiplatformV1ImageConfig",
+				"properties": {
+					"imageOutputOptions": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ImageConfigImageOutputOptions",
+						"description": "Optional. The image output format for generated images."
+					},
+					"imageSize": {
+						"type": "string",
+						"description": "Optional. Specifies the size of generated images. Supported values are `1K`, `2K`, `4K`. If not specified, the model will use default value `1K`."
+					},
+					"aspectRatio": {
+						"type": "string",
+						"description": "Optional. The desired aspect ratio for the generated images. The following aspect ratios are supported: \"1:1\" \"2:3\", \"3:2\" \"3:4\", \"4:3\" \"4:5\", \"5:4\" \"9:16\", \"16:9\" \"21:9\""
+					},
+					"personGeneration": {
+						"type": "string",
+						"enum": [
+							"PERSON_GENERATION_UNSPECIFIED",
+							"ALLOW_ALL",
+							"ALLOW_ADULT",
+							"ALLOW_NONE"
+						],
+						"description": "Optional. Controls whether the model can generate people.",
+						"enumDescriptions": [
+							"The default behavior is unspecified. The model will decide whether to generate images of people.",
+							"Allows the model to generate images of people, including adults and children.",
+							"Allows the model to generate images of adults, but not children.",
+							"Prevents the model from generating images of people."
+						]
+					},
+					"prominentPeople": {
+						"description": "Optional. Controls whether prominent people (celebrities) generation is allowed. If used with personGeneration, personGeneration enum would take precedence. For instance, if ALLOW_NONE is set, all person generation would be blocked. If this field is unspecified, the default behavior is to allow prominent people.",
+						"type": "string",
+						"enum": [
+							"PROMINENT_PEOPLE_UNSPECIFIED",
+							"ALLOW_PROMINENT_PEOPLE",
+							"BLOCK_PROMINENT_PEOPLE"
+						],
+						"enumDescriptions": [
+							"Unspecified value. The model will proceed with the default behavior, which is to allow generation of prominent people.",
+							"Allows the model to generate images of prominent people.",
+							"Prevents the model from generating images of prominent people."
+						]
+					}
+				},
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1GenerationConfigThinkingConfig": {
+				"properties": {
+					"thinkingLevel": {
+						"type": "string",
+						"enum": [
+							"THINKING_LEVEL_UNSPECIFIED",
+							"LOW",
+							"MEDIUM",
+							"HIGH",
+							"MINIMAL"
+						],
+						"enumDescriptions": [
+							"Unspecified thinking level.",
+							"Low thinking level.",
+							"Medium thinking level.",
+							"High thinking level.",
+							"MINIMAL thinking level."
+						],
+						"description": "Optional. The number of thoughts tokens that the model should generate."
+					},
+					"thinkingBudget": {
+						"type": "integer",
+						"format": "int32",
+						"description": "Optional. The token budget for the model's thinking process. The model will make a best effort to stay within this budget. This can be used to control the trade-off between response quality and latency."
+					},
+					"includeThoughts": {
+						"type": "boolean",
+						"description": "Optional. If true, the model will include its thoughts in the response. \"Thoughts\" are the intermediate steps the model takes to arrive at the final response. They can provide insights into the model's reasoning process and help with debugging. If this is true, thoughts are returned only when available."
+					}
+				},
+				"id": "GoogleCloudAiplatformV1GenerationConfigThinkingConfig",
+				"description": "Configuration for the model's thinking features. \"Thinking\" is a process where the model breaks down a complex task into smaller, manageable steps. This allows the model to reason about the task, plan its approach, and execute the plan to generate a high-quality response.",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1ResponseFormat": {
+				"id": "GoogleCloudAiplatformV1ResponseFormat",
+				"type": "object",
+				"properties": {
+					"text": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1TextResponseFormat",
+						"description": "Text output format."
+					},
+					"audio": {
+						"description": "Audio output format.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1AudioResponseFormat"
+					},
+					"image": {
+						"description": "Image output format.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ImageResponseFormat"
+					},
+					"video": {
+						"description": "Video output format.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1VideoResponseFormat"
+					}
+				},
+				"description": "Configuration for the model to configure output formatting and delivery."
+			},
+			"GoogleCloudAiplatformV1GoogleMaps": {
+				"type": "object",
+				"properties": {
+					"enableWidget": {
+						"description": "Optional. Deprecated: The Google Maps contextual widget behavior in Grounding with Google Maps is being deprecated; this field is planned for removal and no longer has any effect once removed. If true, include the widget context token in the response.",
+						"type": "boolean",
+						"deprecated": true
+					},
+					"groundingTypes": {
+						"description": "Optional. Specifies the types of Google Maps grounding to enable. Defaults to `places` when unset.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GoogleMapsGroundingTypes"
+					}
+				},
+				"description": "Tool to retrieve public maps data for grounding, powered by Google.",
+				"id": "GoogleCloudAiplatformV1GoogleMaps"
+			},
+			"GoogleCloudAiplatformV1ToolParallelAiSearch": {
+				"properties": {
+					"enableZeroDataRetention": {
+						"type": "boolean",
+						"description": "Optional. Instructs Vertex Grounding to use Parallel's Zero Data Retention Marketplace product. If this value is \"false\" or omitted, the Parallel Web Search for Grounding standard subscription will be used. If this value is \"true\", the Parallel Web Search for Grounding - ZDR subscription will be used."
+					},
+					"enableDataRetention": {
+						"description": "Optional. Deprecated: Use `enable_zero_data_retention` instead. Instructs Vertex Grounding to use Parallel's Zero Data Retention Marketplace product. If this value is \"false\" or omitted, the Parallel Web Search for Grounding standard subscription will be used. If this value is \"true\", the Parallel Web Search for Grounding - ZDR subscription will be used.",
+						"deprecated": true,
+						"type": "boolean"
+					},
+					"apiKey": {
+						"description": "Optional. The API key for ParallelAiSearch. If an API key is not provided, the system will attempt to verify access by checking for an active Parallel.ai subscription through the Google Cloud Marketplace. See https://docs.parallel.ai/search/search-quickstart for more details.",
+						"type": "string"
+					},
+					"customConfigs": {
+						"additionalProperties": {
+							"description": "Properties of the object.",
+							"type": "any"
+						},
+						"type": "object",
+						"description": "Optional. Custom configs for ParallelAiSearch. This field can be used to pass any parameter from the Parallel.ai Search API. See the Parallel.ai documentation for the full list of available parameters and their usage: https://docs.parallel.ai/api-reference/search-beta/search Currently only `source_policy`, `excerpts`, `max_results`, `mode`, `fetch_policy` can be set via this field. For example: { \"source_policy\": { \"include_domains\": [\"google.com\", \"wikipedia.org\"], \"exclude_domains\": [\"example.com\"] }, \"fetch_policy\": { \"max_age_seconds\": 3600 } }"
+					}
+				},
+				"id": "GoogleCloudAiplatformV1ToolParallelAiSearch",
+				"description": "ParallelAiSearch tool type. A tool that uses the Parallel.ai search engine for grounding.",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1UrlContext": {
+				"description": "Tool to support URL context.",
+				"id": "GoogleCloudAiplatformV1UrlContext",
+				"properties": {},
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1EnterpriseWebSearch": {
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1EnterpriseWebSearch",
+				"properties": {
+					"excludeDomains": {
+						"description": "Optional. List of domains to be excluded from the search results. The default limit is 2000 domains.",
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"blockingConfidence": {
+						"type": "string",
+						"enum": [
+							"PHISH_BLOCK_THRESHOLD_UNSPECIFIED",
+							"BLOCK_LOW_AND_ABOVE",
+							"BLOCK_MEDIUM_AND_ABOVE",
+							"BLOCK_HIGH_AND_ABOVE",
+							"BLOCK_HIGHER_AND_ABOVE",
+							"BLOCK_VERY_HIGH_AND_ABOVE",
+							"BLOCK_ONLY_EXTREMELY_HIGH"
+						],
+						"enumDescriptions": [
+							"Defaults to unspecified.",
+							"Blocks Low and above confidence URL that is risky.",
+							"Blocks Medium and above confidence URL that is risky.",
+							"Blocks High and above confidence URL that is risky.",
+							"Blocks Higher and above confidence URL that is risky.",
+							"Blocks Very high and above confidence URL that is risky.",
+							"Blocks Extremely high confidence URL that is risky."
+						],
+						"description": "Optional. Sites with confidence level chosen & above this value will be blocked from the search results."
+					}
+				},
+				"description": "Tool to search public web data, powered by Vertex AI Search and Sec4 compliance."
+			},
+			"GoogleCloudAiplatformV1ToolComputerUse": {
+				"description": "A tool that enables the model to interact directly with a computer environment.",
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1ToolComputerUse",
+				"properties": {
+					"disabledSafetyPolicies": {
+						"type": "array",
+						"items": {
+							"enumDescriptions": [
+								"The safety policy is unspecified.",
+								"Policy that restricts financial transactions.",
+								"Policy that restricts modification of sensitive data.",
+								"Policy that restricts the use of communication tools.",
+								"Policy that restricts the creation of accounts.",
+								"Policy that restricts general data modification.",
+								"Policy that restricts user consent management.",
+								"Policy that restricts interaction with legal terms and agreements."
+							],
+							"type": "string",
+							"enum": [
+								"SAFETY_POLICY_UNSPECIFIED",
+								"FINANCIAL_TRANSACTIONS",
+								"SENSITIVE_DATA_MODIFICATION",
+								"COMMUNICATION_TOOL",
+								"ACCOUNT_CREATION",
+								"DATA_MODIFICATION",
+								"USER_CONSENT_MANAGEMENT",
+								"LEGAL_TERMS_AND_AGREEMENTS"
+							]
+						},
+						"description": "Optional. A list of safety policies to disable for the computer use tool."
+					},
+					"enablePromptInjectionDetection": {
+						"type": "boolean",
+						"description": "Optional. Whether to enable the prompt injection detection check on the computer use request."
+					},
+					"environment": {
+						"enumDescriptions": [
+							"The environment is unspecified.",
+							"The tool operates in a web browser.",
+							"The tool operates in a mobile environment.",
+							"The tool operates in a desktop environment."
+						],
+						"type": "string",
+						"enum": [
+							"ENVIRONMENT_UNSPECIFIED",
+							"ENVIRONMENT_BROWSER",
+							"ENVIRONMENT_MOBILE",
+							"ENVIRONMENT_DESKTOP"
+						],
+						"description": "Required. The target environment where the computer use tool operates."
+					},
+					"excludedPredefinedFunctions": {
+						"description": "Optional. A list of predefined functions to explicitly exclude from the model call. By default, [predefined functions](https://cloud.google.com/vertex-ai/generative-ai/docs/computer-use#supported-actions) are included. Excluding functions allows for a more restricted action space or custom definitions for predefined functions.",
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1GoogleSearchRetrieval": {
+				"description": "Tool to retrieve public web data for grounding, powered by Google.",
+				"type": "object",
+				"properties": {
+					"dynamicRetrievalConfig": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1DynamicRetrievalConfig",
+						"description": "Specifies the dynamic retrieval configuration for the given source."
+					}
+				},
+				"id": "GoogleCloudAiplatformV1GoogleSearchRetrieval"
+			},
+			"GoogleCloudAiplatformV1ToolExaAiSearch": {
+				"properties": {
+					"apiKey": {
+						"type": "string",
+						"description": "Required. The API key for ExaAiSearch."
+					},
+					"customConfigs": {
+						"additionalProperties": {
+							"type": "any",
+							"description": "Properties of the object."
+						},
+						"type": "object",
+						"description": "Optional. This field can be used to pass any parameter from the Exa.ai Search API."
+					}
+				},
+				"type": "object",
+				"description": "ExaAiSearch tool type. A tool that uses the Exa.ai search engine for grounding.",
+				"id": "GoogleCloudAiplatformV1ToolExaAiSearch"
+			},
+			"GoogleCloudAiplatformV1ToolCodeExecution": {
+				"type": "object",
+				"properties": {},
+				"id": "GoogleCloudAiplatformV1ToolCodeExecution",
+				"description": "Tool that executes code generated by the model, and automatically returns the result to the model. See also ExecutableCode and CodeExecutionResult, which are input and output to this tool."
+			},
+			"GoogleCloudAiplatformV1ToolGoogleSearch": {
+				"description": "GoogleSearch tool type. Tool to support Google Search in Model. Powered by Google.",
+				"type": "object",
+				"properties": {
+					"blockingConfidence": {
+						"enumDescriptions": [
+							"Defaults to unspecified.",
+							"Blocks Low and above confidence URL that is risky.",
+							"Blocks Medium and above confidence URL that is risky.",
+							"Blocks High and above confidence URL that is risky.",
+							"Blocks Higher and above confidence URL that is risky.",
+							"Blocks Very high and above confidence URL that is risky.",
+							"Blocks Extremely high confidence URL that is risky."
+						],
+						"type": "string",
+						"enum": [
+							"PHISH_BLOCK_THRESHOLD_UNSPECIFIED",
+							"BLOCK_LOW_AND_ABOVE",
+							"BLOCK_MEDIUM_AND_ABOVE",
+							"BLOCK_HIGH_AND_ABOVE",
+							"BLOCK_HIGHER_AND_ABOVE",
+							"BLOCK_VERY_HIGH_AND_ABOVE",
+							"BLOCK_ONLY_EXTREMELY_HIGH"
+						],
+						"description": "Optional. Sites with confidence level chosen & above this value will be blocked from the search results."
+					},
+					"searchTypes": {
+						"description": "Optional. The set of search types to enable. If not set, web search is enabled by default.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ToolGoogleSearchSearchTypes"
+					},
+					"excludeDomains": {
+						"items": {
+							"type": "string"
+						},
+						"description": "Optional. List of domains to be excluded from the search results. The default limit is 2000 domains. Example: [\"amazon.com\", \"facebook.com\"].",
+						"type": "array"
+					}
+				},
+				"id": "GoogleCloudAiplatformV1ToolGoogleSearch"
+			},
+			"GoogleCloudAiplatformV1Retrieval": {
+				"description": "Defines a retrieval tool that model can call to access external knowledge.",
+				"properties": {
+					"externalApi": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ExternalApi",
+						"description": "Use data source powered by external API for grounding."
+					},
+					"disableAttribution": {
+						"description": "Optional. Deprecated. This option is no longer supported.",
+						"type": "boolean",
+						"deprecated": true
+					},
+					"vertexAiSearch": {
+						"description": "Set to use data source powered by Vertex AI Search.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1VertexAISearch"
+					},
+					"vertexRagStore": {
+						"description": "Set to use data source powered by Vertex RAG store. User data is uploaded via the VertexRagDataService.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1VertexRagStore"
+					}
+				},
+				"id": "GoogleCloudAiplatformV1Retrieval",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1FunctionDeclaration": {
+				"properties": {
+					"description": {
+						"description": "Optional. Description and purpose of the function. Model uses it to decide how and whether to call the function.",
+						"type": "string"
+					},
+					"name": {
+						"type": "string",
+						"description": "Required. The name of the function to call. Must start with a letter or an underscore. Must be a-z, A-Z, 0-9, or contain underscores, dots, colons and dashes, with a maximum length of 128."
+					},
+					"behavior": {
+						"enumDescriptions": [
+							"This value is unspecified.",
+							"If set, the system will wait to receive the function response before continuing the conversation.",
+							"If set, the system will not wait to receive the function response. Instead, it will attempt to handle function responses as they become available while maintaining the conversation between the user and the model."
+						],
+						"description": "Optional. Specifies the function Behavior. If not specified, the system keeps the current function call behavior. This field is currently only supported by the BidiGenerateContent method.",
+						"type": "string",
+						"enum": [
+							"UNSPECIFIED",
+							"BLOCKING",
+							"NON_BLOCKING"
+						]
+					},
+					"parametersJsonSchema": {
+						"description": "Optional. Describes the parameters to the function in JSON Schema format. The schema must describe an object where the properties are the parameters to the function. For example: ``` { \"type\": \"object\", \"properties\": { \"name\": { \"type\": \"string\" }, \"age\": { \"type\": \"integer\" } }, \"additionalProperties\": false, \"required\": [\"name\", \"age\"], \"propertyOrdering\": [\"name\", \"age\"] } ``` This field is mutually exclusive with `parameters`.",
+						"type": "any"
+					},
+					"response": {
+						"description": "Optional. Describes the output from this function in JSON Schema format. Reflects the Open API 3.03 Response Object. The Schema defines the type used for the response value of the function.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1Schema"
+					},
+					"responseJsonSchema": {
+						"description": "Optional. Describes the output from this function in JSON Schema format. The value specified by the schema is the response value of the function. This field is mutually exclusive with `response`.",
+						"type": "any"
+					},
+					"parameters": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1Schema",
+						"description": "Optional. Describes the parameters to this function in JSON Schema Object format. Reflects the Open API 3.03 Parameter Object. string Key: the name of the parameter. Parameter names are case sensitive. Schema Value: the Schema defining the type used for the parameter. For function with no parameters, this can be left unset. Parameter names must start with a letter or an underscore and must only contain chars a-z, A-Z, 0-9, or underscores with a maximum length of 64. Example with 1 required and 1 optional parameter: type: OBJECT properties: param1: type: STRING param2: type: INTEGER required: - param1"
+					}
+				},
+				"id": "GoogleCloudAiplatformV1FunctionDeclaration",
+				"type": "object",
+				"description": "Structured representation of a function declaration as defined by the [OpenAPI 3.0 specification](https://spec.openapis.org/oas/v3.0.3). Included in this declaration are the function name, description, parameters and response type. This FunctionDeclaration is a representation of a block of code that can be used as a `Tool` by the model and executed by the client."
+			},
+			"GoogleCloudAiplatformV1ModalityTokenCount": {
+				"id": "GoogleCloudAiplatformV1ModalityTokenCount",
+				"description": "Represents a breakdown of token usage by modality. This message is used in CountTokensResponse and GenerateContentResponse.UsageMetadata to provide a detailed view of how many tokens are used by each modality (e.g., text, image, video) in a request. This is particularly useful for multimodal models, allowing you to track and manage token consumption for billing and quota purposes.",
+				"properties": {
+					"tokenCount": {
+						"description": "The number of tokens counted for this modality.",
+						"format": "int32",
+						"type": "integer"
+					},
+					"modality": {
+						"enumDescriptions": [
+							"When a modality is not specified, it is treated as `TEXT`.",
+							"The `Part` contains plain text.",
+							"The `Part` contains an image.",
+							"The `Part` contains a video.",
+							"The `Part` contains audio.",
+							"The `Part` contains a document, such as a PDF."
+						],
+						"type": "string",
+						"enum": [
+							"MODALITY_UNSPECIFIED",
+							"TEXT",
+							"IMAGE",
+							"VIDEO",
+							"AUDIO",
+							"DOCUMENT"
+						],
+						"description": "The modality that this token count applies to."
+					}
+				},
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1SafetyRating": {
+				"id": "GoogleCloudAiplatformV1SafetyRating",
+				"type": "object",
+				"properties": {
+					"overwrittenThreshold": {
+						"enumDescriptions": [
+							"The harm block threshold is unspecified.",
+							"Block content with a low harm probability or higher.",
+							"Block content with a medium harm probability or higher.",
+							"Block content with a high harm probability.",
+							"Do not block any content, regardless of its harm probability.",
+							"Turn off the safety filter entirely."
+						],
+						"type": "string",
+						"enum": [
+							"HARM_BLOCK_THRESHOLD_UNSPECIFIED",
+							"BLOCK_LOW_AND_ABOVE",
+							"BLOCK_MEDIUM_AND_ABOVE",
+							"BLOCK_ONLY_HIGH",
+							"BLOCK_NONE",
+							"OFF"
+						],
+						"description": "Output only. The overwritten threshold for the safety category of Gemini 2.0 image out. If minors are detected in the output image, the threshold of each safety category will be overwritten if user sets a lower threshold.",
+						"readOnly": true
+					},
+					"category": {
+						"enumDeprecated": [
+							false,
+							false,
+							false,
+							false,
+							false,
+							true,
+							false,
+							false,
+							false,
+							false,
+							false
+						],
+						"type": "string",
+						"enum": [
+							"HARM_CATEGORY_UNSPECIFIED",
+							"HARM_CATEGORY_HATE_SPEECH",
+							"HARM_CATEGORY_DANGEROUS_CONTENT",
+							"HARM_CATEGORY_HARASSMENT",
+							"HARM_CATEGORY_SEXUALLY_EXPLICIT",
+							"HARM_CATEGORY_CIVIC_INTEGRITY",
+							"HARM_CATEGORY_IMAGE_HATE",
+							"HARM_CATEGORY_IMAGE_DANGEROUS_CONTENT",
+							"HARM_CATEGORY_IMAGE_HARASSMENT",
+							"HARM_CATEGORY_IMAGE_SEXUALLY_EXPLICIT",
+							"HARM_CATEGORY_JAILBREAK"
+						],
+						"readOnly": true,
+						"enumDescriptions": [
+							"Default value. This value is unused.",
+							"Content that promotes violence or incites hatred against individuals or groups based on certain attributes.",
+							"Content that promotes, facilitates, or enables dangerous activities.",
+							"Abusive, threatening, or content intended to bully, torment, or ridicule.",
+							"Content that contains sexually explicit material.",
+							"Deprecated: Election filter is not longer supported. The harm category is civic integrity.",
+							"Images that contain hate speech.",
+							"Images that contain dangerous content.",
+							"Images that contain harassment.",
+							"Images that contain sexually explicit content.",
+							"Prompts designed to bypass safety filters."
+						],
+						"description": "Output only. The harm category of this rating."
+					},
+					"probability": {
+						"enumDescriptions": [
+							"The harm probability is unspecified.",
+							"The harm probability is negligible.",
+							"The harm probability is low.",
+							"The harm probability is medium.",
+							"The harm probability is high."
+						],
+						"readOnly": true,
+						"description": "Output only. The probability of harm for this category.",
+						"type": "string",
+						"enum": [
+							"HARM_PROBABILITY_UNSPECIFIED",
+							"NEGLIGIBLE",
+							"LOW",
+							"MEDIUM",
+							"HIGH"
+						]
+					},
+					"probabilityScore": {
+						"type": "number",
+						"readOnly": true,
+						"format": "float",
+						"description": "Output only. The probability score of harm for this category."
+					},
+					"severityScore": {
+						"format": "float",
+						"readOnly": true,
+						"type": "number",
+						"description": "Output only. The severity score of harm for this category."
+					},
+					"severity": {
+						"type": "string",
+						"enum": [
+							"HARM_SEVERITY_UNSPECIFIED",
+							"HARM_SEVERITY_NEGLIGIBLE",
+							"HARM_SEVERITY_LOW",
+							"HARM_SEVERITY_MEDIUM",
+							"HARM_SEVERITY_HIGH"
+						],
+						"description": "Output only. The severity of harm for this category.",
+						"readOnly": true,
+						"enumDescriptions": [
+							"The harm severity is unspecified.",
+							"The harm severity is negligible.",
+							"The harm severity is low.",
+							"The harm severity is medium.",
+							"The harm severity is high."
+						]
+					},
+					"blocked": {
+						"description": "Output only. Indicates whether the content was blocked because of this rating.",
+						"type": "boolean",
+						"readOnly": true
+					}
+				},
+				"description": "A safety rating for a piece of content. The safety rating contains the harm category and the harm probability level."
+			},
+			"GoogleCloudAiplatformV1UrlContextMetadata": {
+				"description": "Metadata returned when the model uses the `url_context` tool to get information from a user-provided URL.",
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1UrlContextMetadata",
+				"properties": {
+					"urlMetadata": {
+						"description": "Output only. A list of URL metadata, with one entry for each URL retrieved by the tool.",
+						"readOnly": true,
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1UrlMetadata"
+						},
+						"type": "array"
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1LogprobsResult": {
+				"id": "GoogleCloudAiplatformV1LogprobsResult",
+				"description": "The log probabilities of the tokens generated by the model. This is useful for understanding the model's confidence in its predictions and for debugging. For example, you can use log probabilities to identify when the model is making a less confident prediction or to explore alternative responses that the model considered. A low log probability can also indicate that the model is \"hallucinating\" or generating factually incorrect information.",
+				"type": "object",
+				"properties": {
+					"topCandidates": {
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1LogprobsResultTopCandidates"
+						},
+						"description": "A list of the top candidate tokens at each decoding step. The length of this list is equal to the total number of decoding steps.",
+						"type": "array"
+					},
+					"chosenCandidates": {
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1LogprobsResultCandidate"
+						},
+						"type": "array",
+						"description": "A list of the chosen candidate tokens at each decoding step. The length of this list is equal to the total number of decoding steps. Note that the chosen candidate might not be in `top_candidates`."
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1CitationMetadata": {
+				"description": "A collection of citations that apply to a piece of generated content.",
+				"type": "object",
+				"properties": {
+					"citations": {
+						"type": "array",
+						"description": "Output only. A list of citations for the content.",
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1Citation"
+						},
+						"readOnly": true
+					}
+				},
+				"id": "GoogleCloudAiplatformV1CitationMetadata"
+			},
+			"GoogleCloudAiplatformV1GroundingMetadata": {
+				"id": "GoogleCloudAiplatformV1GroundingMetadata",
+				"type": "object",
+				"properties": {
+					"imageSearchQueries": {
+						"description": "Optional. The image search queries that were used to generate the content. This field is populated only when the grounding source is Google Search with the Image Search search_type enabled.",
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"webSearchQueries": {
+						"description": "Optional. The web search queries that were used to generate the content. This field is populated only when the grounding source is Google Search.",
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"retrievalQueries": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array",
+						"description": "Optional. The queries that were executed by the retrieval tools. This field is populated only when the grounding source is a retrieval tool, such as Vertex AI Search."
+					},
+					"groundingSupports": {
+						"description": "Optional. A list of grounding supports that connect the generated content to the grounding chunks. This field is populated when the grounding source is Google Search or Vertex AI Search.",
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1GroundingSupport"
+						}
+					},
+					"retrievalMetadata": {
+						"description": "Optional. Output only. Metadata related to the retrieval grounding source.",
+						"readOnly": true,
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1RetrievalMetadata"
+					},
+					"groundingChunks": {
+						"description": "A list of supporting references retrieved from the grounding source. This field is populated when the grounding source is Google Search, Vertex AI Search, or Google Maps.",
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1GroundingChunk"
+						}
+					},
+					"sourceFlaggingUris": {
+						"description": "Optional. Output only. A list of URIs that can be used to flag a place or review for inappropriate content. This field is populated only when the grounding source is Google Maps.",
+						"readOnly": true,
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1GroundingMetadataSourceFlaggingUri"
+						}
+					},
+					"searchEntryPoint": {
+						"description": "Optional. A web search entry point that can be used to display search results. This field is populated only when the grounding source is Google Search.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1SearchEntryPoint"
+					},
+					"googleMapsWidgetContextToken": {
+						"readOnly": true,
+						"type": "string",
+						"deprecated": true,
+						"description": "Optional. Output only. Deprecated: The Google Maps contextual widget behavior in Grounding with Google Maps is being deprecated; this field is planned for removal and will no longer be populated once removed. A token that can be used to render a Google Maps widget with the contextual data. This field is populated only when the grounding source is Google Maps."
+					}
+				},
+				"description": "Information about the sources that support the content of a response. When grounding is enabled, the model returns citations for claims in the response. This object contains the retrieved sources."
+			},
+			"GoogleCloudAiplatformV1FunctionCall": {
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1FunctionCall",
+				"properties": {
+					"args": {
+						"description": "Optional. The function parameters and values in JSON object format. See FunctionDeclaration.parameters for parameter details.",
+						"type": "object",
+						"additionalProperties": {
+							"type": "any",
+							"description": "Properties of the object."
+						}
+					},
+					"name": {
+						"description": "Optional. The name of the function to call. Matches FunctionDeclaration.name.",
+						"type": "string"
+					},
+					"willContinue": {
+						"type": "boolean",
+						"description": "Optional. Whether this is the last part of the FunctionCall. If true, another partial message for the current FunctionCall is expected to follow."
+					},
+					"id": {
+						"description": "Optional. The unique id of the function call. If populated, the client to execute the `function_call` and return the response with the matching `id`.",
+						"type": "string"
+					},
+					"partialArgs": {
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1PartialArg"
+						},
+						"description": "Optional. The partial argument value of the function call. If provided, represents the arguments/fields that are streamed incrementally.",
+						"type": "array"
+					}
+				},
+				"description": "A predicted FunctionCall returned from the model that contains a string representing the FunctionDeclaration.name and a structured JSON object containing the parameters and their values."
+			},
+			"GoogleCloudAiplatformV1VideoMetadata": {
+				"id": "GoogleCloudAiplatformV1VideoMetadata",
+				"description": "Provides metadata for a video, including the start and end offsets for clipping and the frame rate.",
+				"properties": {
+					"endOffset": {
+						"description": "Optional. The end offset of the video.",
+						"format": "google-duration",
+						"type": "string"
+					},
+					"fps": {
+						"format": "double",
+						"description": "Optional. The frame rate of the video sent to the model. If not specified, the default value is 1.0. The valid range is (0.0, 24.0].",
+						"type": "number"
+					},
+					"startOffset": {
+						"description": "Optional. The start offset of the video.",
+						"format": "google-duration",
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1FunctionResponse": {
+				"id": "GoogleCloudAiplatformV1FunctionResponse",
+				"type": "object",
+				"properties": {
+					"id": {
+						"description": "Optional. The id of the function call this response is for. Populated by the client to match the corresponding function call `id`.",
+						"type": "string"
+					},
+					"name": {
+						"description": "Required. The name of the function to call. Matches FunctionDeclaration.name and FunctionCall.name.",
+						"type": "string"
+					},
+					"response": {
+						"additionalProperties": {
+							"type": "any",
+							"description": "Properties of the object."
+						},
+						"description": "Required. The function response in JSON object format. Use \"output\" key to specify function output and \"error\" key to specify error details (if any). If \"output\" and \"error\" keys are not specified, then whole \"response\" is treated as function output.",
+						"type": "object"
+					},
+					"parts": {
+						"description": "Optional. Ordered `Parts` that constitute a function response. Parts may have different IANA MIME types.",
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1FunctionResponsePart"
+						},
+						"type": "array"
+					},
+					"scheduling": {
+						"enumDescriptions": [
+							"This value is unused.",
+							"Only add the result to the conversation context, do not interrupt or trigger generation.",
+							"Add the result to the conversation context, and prompt to generate output without interrupting ongoing generation.",
+							"Add the result to the conversation context, interrupt ongoing generation and prompt to generate output."
+						],
+						"description": "Optional. Specifies how the response should be scheduled in the conversation. Only applicable to NON_BLOCKING function calls, is ignored otherwise. Defaults to WHEN_IDLE.",
+						"type": "string",
+						"enum": [
+							"SCHEDULING_UNSPECIFIED",
+							"SILENT",
+							"WHEN_IDLE",
+							"INTERRUPT"
+						]
+					}
+				},
+				"description": "The result output from a FunctionCall that contains a string representing the FunctionDeclaration.name and a structured JSON object containing any output from the function is used as context to the model. This should contain the result of a `FunctionCall` made based on model prediction."
+			},
+			"GoogleCloudAiplatformV1PartMediaResolution": {
+				"type": "object",
+				"description": "per part media resolution. Media resolution for the input media.",
+				"properties": {
+					"level": {
+						"type": "string",
+						"enum": [
+							"MEDIA_RESOLUTION_UNSPECIFIED",
+							"MEDIA_RESOLUTION_LOW",
+							"MEDIA_RESOLUTION_MEDIUM",
+							"MEDIA_RESOLUTION_HIGH",
+							"MEDIA_RESOLUTION_ULTRA_HIGH"
+						],
+						"description": "The tokenization quality used for given media.",
+						"enumDescriptions": [
+							"Media resolution has not been set.",
+							"Media resolution set to low.",
+							"Media resolution set to medium.",
+							"Media resolution set to high.",
+							"Media resolution set to ultra high. This is for image only."
+						]
+					}
+				},
+				"id": "GoogleCloudAiplatformV1PartMediaResolution"
+			},
+			"GoogleCloudAiplatformV1ExecutableCode": {
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1ExecutableCode",
+				"properties": {
+					"code": {
+						"description": "Required. The code to be executed.",
+						"type": "string"
+					},
+					"language": {
+						"type": "string",
+						"enum": [
+							"LANGUAGE_UNSPECIFIED",
+							"PYTHON"
+						],
+						"enumDescriptions": [
+							"Unspecified language. This value should not be used.",
+							"Python >= 3.10, with numpy and simpy available."
+						],
+						"description": "Required. Programming language of the `code`."
+					},
+					"id": {
+						"description": "Optional. Unique identifier of the `ExecutableCode` part. The server returns the `CodeExecutionResult` with the matching `id`.",
+						"type": "string"
+					}
+				},
+				"description": "Code generated by the model that is meant to be executed, and the result returned to the model. Generated when using the `CodeExecution` tool, in which the code will be automatically executed, and a corresponding CodeExecutionResult will also be generated."
+			},
+			"GoogleCloudAiplatformV1Blob": {
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1Blob",
+				"properties": {
+					"displayName": {
+						"type": "string",
+						"description": "Optional. The display name of the blob. Used to provide a label or filename to distinguish blobs. This field is only returned in `PromptMessage` for prompt management. It is used in the Gemini calls only when server-side tools (`code_execution`, `google_search`, and `url_context`) are enabled."
+					},
+					"mimeType": {
+						"type": "string",
+						"description": "Required. The IANA standard MIME type of the source data."
+					},
+					"data": {
+						"description": "Required. The raw bytes of the data.",
+						"type": "string",
+						"format": "byte"
+					}
+				},
+				"description": "A content blob. A Blob contains data of a specific media type. It is used to represent images, audio, and video."
+			},
+			"GoogleCloudAiplatformV1SpeechMetadata": {
+				"properties": {
+					"speaker": {
+						"description": "Optional. Identifies which speaker is speaking this turn.",
+						"type": "string"
+					},
+					"style": {
+						"type": "string",
+						"description": "Optional. Natural language description of the vocal style (e.g., \"cheerful\")."
+					}
+				},
+				"id": "GoogleCloudAiplatformV1SpeechMetadata",
+				"type": "object",
+				"description": "Structured Metadata Sub-Message for Part"
+			},
+			"GoogleCloudAiplatformV1AudioTranscription": {
+				"id": "GoogleCloudAiplatformV1AudioTranscription",
+				"properties": {
+					"words": {
+						"type": "array",
+						"description": "Optional. Detailed word-level transcriptions and timing details. Present when `word_timestamp` is set.",
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1AudioTranscriptionWordInfo"
+						}
+					},
+					"text": {
+						"description": "Required. The transcription text of this audio segment.",
+						"type": "string"
+					},
+					"speakerLabel": {
+						"type": "string",
+						"description": "Optional. A label identifying the speaker of this audio segment (e.g. `spk_1`, `spk_2`). Present when `diarization` is set."
+					}
+				},
+				"description": "The transcription of an audio part. For multi-speaker audio, each speaker segment is a separate `Part` with its own `AudioTranscription` carrying the `speaker_label`.",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1FileData": {
+				"id": "GoogleCloudAiplatformV1FileData",
+				"properties": {
+					"fileUri": {
+						"description": "Required. The URI of the file in Google Cloud Storage.",
+						"type": "string"
+					},
+					"displayName": {
+						"type": "string",
+						"description": "Optional. The display name of the file. Used to provide a label or filename to distinguish files. This field is only returned in `PromptMessage` for prompt management. It is used in the Gemini calls only when server side tools (`code_execution`, `google_search`, and `url_context`) are enabled."
+					},
+					"mimeType": {
+						"description": "Required. The IANA standard MIME type of the source data.",
+						"type": "string"
+					}
+				},
+				"type": "object",
+				"description": "URI-based data. A FileData message contains a URI pointing to data of a specific media type. It is used to represent images, audio, and video stored in Google Cloud Storage."
+			},
+			"GoogleCloudAiplatformV1CodeExecutionResult": {
+				"description": "Result of executing the ExecutableCode. Generated only when the `CodeExecution` tool is used.",
+				"properties": {
+					"id": {
+						"description": "Optional. The identifier of the `ExecutableCode` part this result is for. Only populated if the corresponding `ExecutableCode` has an id.",
+						"type": "string"
+					},
+					"output": {
+						"type": "string",
+						"description": "Optional. Contains stdout when code execution is successful, stderr or other description otherwise."
+					},
+					"outcome": {
+						"description": "Required. Outcome of the code execution.",
+						"enumDescriptions": [
+							"Unspecified status. This value should not be used.",
+							"Code execution completed successfully. `output` contains the stdout, if any.",
+							"Code execution failed. `output` contains the stderr and stdout, if any.",
+							"Code execution ran for too long, and was cancelled. There may or may not be a partial `output` present."
+						],
+						"type": "string",
+						"enum": [
+							"OUTCOME_UNSPECIFIED",
+							"OUTCOME_OK",
+							"OUTCOME_FAILED",
+							"OUTCOME_DEADLINE_EXCEEDED"
+						]
+					}
+				},
+				"id": "GoogleCloudAiplatformV1CodeExecutionResult",
+				"type": "object"
+			},
+			"GoogleTypeLatLng": {
+				"description": "An object that represents a latitude/longitude pair. This is expressed as a pair of doubles to represent degrees latitude and degrees longitude. Unless specified otherwise, this object must conform to the WGS84 standard. Values must be within normalized ranges.",
+				"properties": {
+					"longitude": {
+						"type": "number",
+						"description": "The longitude in degrees. It must be in the range [-180.0, +180.0].",
+						"format": "double"
+					},
+					"latitude": {
+						"description": "The latitude in degrees. It must be in the range [-90.0, +90.0].",
+						"format": "double",
+						"type": "number"
+					}
+				},
+				"id": "GoogleTypeLatLng",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1AudioTranscriptionConfigLanguageAuto": {
+				"description": "Deprecated: Use top-level `language_codes` instead. Indicates the language of the audio should be automatically detected.",
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1AudioTranscriptionConfigLanguageAuto",
+				"deprecated": true,
+				"properties": {}
+			},
+			"GoogleCloudAiplatformV1AudioTranscriptionConfigLanguageHints": {
+				"deprecated": true,
+				"properties": {
+					"languageCodes": {
+						"type": "array",
+						"description": "Required. Deprecated: Use top-level `language_codes` instead. BCP-47 language codes. At least one must be specified.",
+						"items": {
+							"type": "string"
+						},
+						"deprecated": true
+					}
+				},
+				"description": "Deprecated: Use top-level `language_codes` instead. Provides hints to the model about possible languages present in the audio.",
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1AudioTranscriptionConfigLanguageHints"
+			},
+			"GoogleCloudAiplatformV1VoiceConfig": {
+				"description": "Configuration for a voice.",
+				"properties": {
+					"prebuiltVoiceConfig": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1PrebuiltVoiceConfig",
+						"description": "The configuration for a prebuilt voice."
+					},
+					"voice": {
+						"description": "Optional. The speaker identifier for synthesis. Supported formats: * Speaker name for prebuilt voices (for example, `Orus` or `Kore`). * Voice ID for stored voices (for example, `voice_xxx`). * Voice replication key (for example, `voicekey_xxx`).",
+						"type": "string"
+					},
+					"replicatedVoiceConfig": {
+						"description": "Optional. The configuration for a replicated voice. This enables users to replicate a voice from an audio sample.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ReplicatedVoiceConfig"
+					}
+				},
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1VoiceConfig"
+			},
+			"GoogleCloudAiplatformV1MultiSpeakerVoiceConfig": {
+				"description": "Configuration for a multi-speaker text-to-speech request.",
+				"type": "object",
+				"properties": {
+					"speakerVoiceConfigs": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1SpeakerVoiceConfig"
+						},
+						"description": "Required. A list of configurations for the voices of the speakers. Exactly two speaker voice configurations must be provided."
+					}
+				},
+				"id": "GoogleCloudAiplatformV1MultiSpeakerVoiceConfig"
+			},
+			"GoogleCloudAiplatformV1GenerationConfigRoutingConfigManualRoutingMode": {
+				"properties": {
+					"modelName": {
+						"type": "string",
+						"description": "The name of the model to use. Only public LLM models are accepted."
+					}
+				},
+				"description": "The configuration for manual routing. When manual routing is specified, the model will be selected based on the model name provided.",
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1GenerationConfigRoutingConfigManualRoutingMode"
+			},
+			"GoogleCloudAiplatformV1GenerationConfigRoutingConfigAutoRoutingMode": {
+				"id": "GoogleCloudAiplatformV1GenerationConfigRoutingConfigAutoRoutingMode",
+				"description": "The configuration for automated routing. When automated routing is specified, the routing will be determined by the pretrained routing model and customer provided model routing preference.",
+				"type": "object",
+				"properties": {
+					"modelRoutingPreference": {
+						"description": "The model routing preference.",
+						"type": "string",
+						"enum": [
+							"UNKNOWN",
+							"PRIORITIZE_QUALITY",
+							"BALANCED",
+							"PRIORITIZE_COST"
+						],
+						"enumDescriptions": [
+							"Unspecified model routing preference.",
+							"The model will be selected to prioritize the quality of the response.",
+							"The model will be selected to balance quality and cost.",
+							"The model will be selected to prioritize the cost of the request."
+						]
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1ImageConfigImageOutputOptions": {
+				"description": "The image output format for generated images.",
+				"id": "GoogleCloudAiplatformV1ImageConfigImageOutputOptions",
+				"properties": {
+					"compressionQuality": {
+						"description": "Optional. The compression quality of the output image.",
+						"format": "int32",
+						"type": "integer"
+					},
+					"mimeType": {
+						"description": "Optional. The image format that the output should be saved as.",
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1TextResponseFormat": {
+				"type": "object",
+				"description": "Configuration for text-specific output formatting.",
+				"properties": {
+					"mimeType": {
+						"enumDescriptions": [
+							"Default value. This value is unused.",
+							"JSON output format.",
+							"Plain text output format."
+						],
+						"description": "Optional. The IANA standard MIME type of the response.",
+						"type": "string",
+						"enum": [
+							"MIME_TYPE_UNSPECIFIED",
+							"APPLICATION_JSON",
+							"TEXT_PLAIN"
+						]
+					},
+					"schema": {
+						"type": "any",
+						"description": "Optional. The JSON schema that the output should conform to. Only applicable when mime_type is APPLICATION_JSON."
+					}
+				},
+				"id": "GoogleCloudAiplatformV1TextResponseFormat"
+			},
+			"GoogleCloudAiplatformV1AudioResponseFormat": {
+				"id": "GoogleCloudAiplatformV1AudioResponseFormat",
+				"properties": {
+					"bitRate": {
+						"format": "int32",
+						"description": "Optional. Bit rate in bits per second (bps). Only applicable for compressed formats (MP3, Opus).",
+						"type": "integer"
+					},
+					"sampleRate": {
+						"type": "integer",
+						"format": "int32",
+						"description": "Optional. Sample rate for the generated audio in Hertz."
+					},
+					"delivery": {
+						"enumDescriptions": [
+							"Default value. This value is unused.",
+							"Generated bytes are returned inline in the response.",
+							"Generated content is stored and a URI is returned."
+						],
+						"description": "Optional. Delivery mode for the generated content.",
+						"type": "string",
+						"enum": [
+							"DELIVERY_UNSPECIFIED",
+							"INLINE",
+							"URI"
+						]
+					},
+					"mimeType": {
+						"enumDescriptions": [
+							"Default value. This value is unused.",
+							"MP3 audio format.",
+							"OGG Opus audio format.",
+							"Raw PCM (L16) audio format.",
+							"WAV audio format.",
+							"A-law audio format.",
+							"Mu-law audio format."
+						],
+						"description": "Optional. The MIME type of the audio output.",
+						"type": "string",
+						"enum": [
+							"MIME_TYPE_UNSPECIFIED",
+							"AUDIO_MP3",
+							"AUDIO_OGG_OPUS",
+							"AUDIO_L16",
+							"AUDIO_WAV",
+							"AUDIO_ALAW",
+							"AUDIO_MULAW"
+						]
+					}
+				},
+				"description": "Configuration for audio-specific output formatting.",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1ImageResponseFormat": {
+				"type": "object",
+				"description": "Configuration for image-specific output formatting.",
+				"id": "GoogleCloudAiplatformV1ImageResponseFormat",
+				"properties": {
+					"imageSize": {
+						"enumDescriptions": [
+							"Default value. This value is unused.",
+							"512px image size.",
+							"1K image size.",
+							"2K image size.",
+							"4K image size."
+						],
+						"type": "string",
+						"enum": [
+							"IMAGE_SIZE_UNSPECIFIED",
+							"IMAGE_SIZE_FIVE_TWELVE",
+							"IMAGE_SIZE_ONE_K",
+							"IMAGE_SIZE_TWO_K",
+							"IMAGE_SIZE_FOUR_K"
+						],
+						"description": "Optional. The size of the image output."
+					},
+					"aspectRatio": {
+						"enumDescriptions": [
+							"Default value. This value is unused.",
+							"1:1 aspect ratio.",
+							"2:3 aspect ratio.",
+							"3:2 aspect ratio.",
+							"3:4 aspect ratio.",
+							"4:3 aspect ratio.",
+							"4:5 aspect ratio.",
+							"5:4 aspect ratio.",
+							"9:16 aspect ratio.",
+							"16:9 aspect ratio.",
+							"21:9 aspect ratio.",
+							"1:8 aspect ratio.",
+							"8:1 aspect ratio.",
+							"1:4 aspect ratio.",
+							"4:1 aspect ratio."
+						],
+						"type": "string",
+						"enum": [
+							"ASPECT_RATIO_UNSPECIFIED",
+							"ASPECT_RATIO_ONE_BY_ONE",
+							"ASPECT_RATIO_TWO_BY_THREE",
+							"ASPECT_RATIO_THREE_BY_TWO",
+							"ASPECT_RATIO_THREE_BY_FOUR",
+							"ASPECT_RATIO_FOUR_BY_THREE",
+							"ASPECT_RATIO_FOUR_BY_FIVE",
+							"ASPECT_RATIO_FIVE_BY_FOUR",
+							"ASPECT_RATIO_NINE_BY_SIXTEEN",
+							"ASPECT_RATIO_SIXTEEN_BY_NINE",
+							"ASPECT_RATIO_TWENTY_ONE_BY_NINE",
+							"ASPECT_RATIO_ONE_BY_EIGHT",
+							"ASPECT_RATIO_EIGHT_BY_ONE",
+							"ASPECT_RATIO_ONE_BY_FOUR",
+							"ASPECT_RATIO_FOUR_BY_ONE"
+						],
+						"description": "Optional. The aspect ratio for the image output."
+					},
+					"delivery": {
+						"enumDescriptions": [
+							"Default value. This value is unused.",
+							"Generated bytes are returned inline in the response.",
+							"Generated content is stored and a URI is returned."
+						],
+						"type": "string",
+						"enum": [
+							"DELIVERY_UNSPECIFIED",
+							"INLINE",
+							"URI"
+						],
+						"description": "Optional. Delivery mode for the generated content."
+					},
+					"mimeType": {
+						"type": "string",
+						"enum": [
+							"MIME_TYPE_UNSPECIFIED",
+							"IMAGE_JPEG"
+						],
+						"enumDescriptions": [
+							"Default value. This value is unused.",
+							"JPEG image format."
+						],
+						"description": "Optional. The MIME type of the image output."
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1VideoResponseFormat": {
+				"id": "GoogleCloudAiplatformV1VideoResponseFormat",
+				"type": "object",
+				"properties": {
+					"gcsUri": {
+						"description": "Optional. The Google Cloud Storage URI to store the video output. Required for Vertex if delivery is URI.",
+						"type": "string"
+					},
+					"aspectRatio": {
+						"description": "The aspect ratio for the video output.",
+						"type": "string",
+						"enum": [
+							"ASPECT_RATIO_UNSPECIFIED",
+							"ASPECT_RATIO_SIXTEEN_BY_NINE",
+							"ASPECT_RATIO_NINE_BY_SIXTEEN"
+						],
+						"enumDescriptions": [
+							"Default value. This value is unused.",
+							"16:9 aspect ratio.",
+							"9:16 aspect ratio."
+						]
+					},
+					"duration": {
+						"format": "google-duration",
+						"description": "Optional. The duration for the video output.",
+						"type": "string"
+					},
+					"delivery": {
+						"enumDescriptions": [
+							"Default value. This value is unused.",
+							"Generated bytes are returned inline in the response.",
+							"Generated content is stored and a URI is returned."
+						],
+						"type": "string",
+						"enum": [
+							"DELIVERY_UNSPECIFIED",
+							"INLINE",
+							"URI"
+						],
+						"description": "Optional. Delivery mode for the generated content."
+					},
+					"resolution": {
+						"description": "Optional. The video output resolution. Supported values: \"360p\", \"720p\", \"1080p\", \"4k\".",
+						"type": "string"
+					}
+				},
+				"description": "Configuration for video-specific output formatting."
+			},
+			"GoogleCloudAiplatformV1GoogleMapsGroundingTypes": {
+				"id": "GoogleCloudAiplatformV1GoogleMapsGroundingTypes",
+				"description": "Defines the types of Google Maps grounding that can be enabled and their configurations.",
+				"properties": {
+					"routing": {
+						"description": "Optional. Enables grounding with Google Maps Routing APIs (ComputeRoutes and SearchAlongRoute).",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GoogleMapsRouting"
+					},
+					"places": {
+						"description": "Optional. Enables grounding with Google Maps Places. This is the default grounding type when no `GroundingTypes` are specified.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GoogleMapsPlaces"
+					}
+				},
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1DynamicRetrievalConfig": {
+				"type": "object",
+				"description": "Describes the options to customize dynamic retrieval.",
+				"properties": {
+					"mode": {
+						"type": "string",
+						"enum": [
+							"MODE_UNSPECIFIED",
+							"MODE_DYNAMIC"
+						],
+						"enumDescriptions": [
+							"Always trigger retrieval.",
+							"Run retrieval only when system decides it is necessary."
+						],
+						"description": "The mode of the predictor to be used in dynamic retrieval."
+					},
+					"dynamicThreshold": {
+						"description": "Optional. The threshold to be used in dynamic retrieval. If not set, a system default value is used.",
+						"format": "float",
+						"type": "number"
+					}
+				},
+				"id": "GoogleCloudAiplatformV1DynamicRetrievalConfig"
+			},
+			"GoogleCloudAiplatformV1ToolGoogleSearchSearchTypes": {
+				"description": "Different types of search that can be enabled on the GoogleSearch tool.",
+				"properties": {
+					"webSearch": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ToolGoogleSearchWebSearch",
+						"description": "Optional. Setting this field enables web search. Only text results are returned."
+					},
+					"imageSearch": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ToolGoogleSearchImageSearch",
+						"description": "Optional. Setting this field enables image search. Image bytes are returned."
+					}
+				},
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1ToolGoogleSearchSearchTypes"
+			},
+			"GoogleCloudAiplatformV1ExternalApi": {
+				"id": "GoogleCloudAiplatformV1ExternalApi",
+				"description": "Retrieve from data source powered by external API for grounding. The external API is not owned by Google, but need to follow the pre-defined API spec.",
+				"properties": {
+					"authConfig": {
+						"description": "The authentication config to access the API.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1AuthConfig"
+					},
+					"apiAuth": {
+						"description": "The authentication config to access the API. Deprecated. Please use auth_config instead.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ApiAuth",
+						"deprecated": true
+					},
+					"elasticSearchParams": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ExternalApiElasticSearchParams",
+						"description": "Parameters for the elastic search API."
+					},
+					"apiSpec": {
+						"enumDescriptions": [
+							"Unspecified API spec. This value should not be used.",
+							"Simple search API spec.",
+							"Elastic search API spec."
+						],
+						"type": "string",
+						"enum": [
+							"API_SPEC_UNSPECIFIED",
+							"SIMPLE_SEARCH",
+							"ELASTIC_SEARCH"
+						],
+						"description": "The API spec that the external API implements."
+					},
+					"simpleSearchParams": {
+						"description": "Parameters for the simple search API.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ExternalApiSimpleSearchParams"
+					},
+					"endpoint": {
+						"description": "The endpoint of the external API. The system will call the API at this endpoint to retrieve the data for grounding. Example: https://acme.com:443/search",
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1VertexAISearch": {
+				"id": "GoogleCloudAiplatformV1VertexAISearch",
+				"description": "Retrieve from Vertex AI Search datastore or engine for grounding. datastore and engine are mutually exclusive. See https://cloud.google.com/products/agent-builder",
+				"properties": {
+					"engine": {
+						"type": "string",
+						"description": "Optional. Fully-qualified Vertex AI Search engine resource ID. Format: `projects/{project}/locations/{location}/collections/{collection}/engines/{engine}`"
+					},
+					"filter": {
+						"description": "Optional. Filter strings to be passed to the search API.",
+						"type": "string"
+					},
+					"maxResults": {
+						"type": "integer",
+						"description": "Optional. Number of search results to return per query. The default value is 10. The maximumm allowed value is 10.",
+						"format": "int32"
+					},
+					"datastore": {
+						"description": "Optional. Fully-qualified Vertex AI Search data store resource ID. Format: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{dataStore}`",
+						"type": "string"
+					},
+					"dataStoreSpecs": {
+						"type": "array",
+						"description": "Specifications that define the specific DataStores to be searched, along with configurations for those data stores. This is only considered for Engines with multiple data stores. It should only be set if engine is used.",
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1VertexAISearchDataStoreSpec"
+						}
+					}
+				},
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1VertexRagStore": {
+				"type": "object",
+				"properties": {
+					"ragRetrievalConfig": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1RagRetrievalConfig",
+						"description": "Optional. The retrieval config for the Rag query."
+					},
+					"similarityTopK": {
+						"deprecated": true,
+						"description": "Optional. Number of top k results to return from the selected corpora.",
+						"format": "int32",
+						"type": "integer"
+					},
+					"vectorDistanceThreshold": {
+						"format": "double",
+						"description": "Optional. Only return results with vector distance smaller than the threshold.",
+						"deprecated": true,
+						"type": "number"
+					},
+					"ragResources": {
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1VertexRagStoreRagResource"
+						},
+						"type": "array",
+						"description": "Optional. The representation of the rag source. It can be used to specify corpus only or ragfiles. Currently only support one corpus or multiple files from one corpus. In the future we may open up multiple corpora support."
+					}
+				},
+				"id": "GoogleCloudAiplatformV1VertexRagStore",
+				"description": "Retrieve from Vertex RAG Store for grounding."
+			},
+			"GoogleCloudAiplatformV1UrlMetadata": {
+				"description": "The metadata for a single URL retrieval.",
+				"properties": {
+					"retrievedUrl": {
+						"description": "The URL retrieved by the tool.",
+						"type": "string"
+					},
+					"urlRetrievalStatus": {
+						"enumDescriptions": [
+							"Default value. This value is unused.",
+							"The URL was retrieved successfully.",
+							"The URL retrieval failed."
+						],
+						"description": "The status of the URL retrieval.",
+						"type": "string",
+						"enum": [
+							"URL_RETRIEVAL_STATUS_UNSPECIFIED",
+							"URL_RETRIEVAL_STATUS_SUCCESS",
+							"URL_RETRIEVAL_STATUS_ERROR"
+						]
+					}
+				},
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1UrlMetadata"
+			},
+			"GoogleCloudAiplatformV1LogprobsResultTopCandidates": {
+				"properties": {
+					"candidates": {
+						"description": "The list of candidate tokens, sorted by log probability in descending order.",
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1LogprobsResultCandidate"
+						},
+						"type": "array"
+					}
+				},
+				"id": "GoogleCloudAiplatformV1LogprobsResultTopCandidates",
+				"type": "object",
+				"description": "A list of the top candidate tokens and their log probabilities at each decoding step. This can be used to see what other tokens the model considered."
+			},
+			"GoogleCloudAiplatformV1LogprobsResultCandidate": {
+				"id": "GoogleCloudAiplatformV1LogprobsResultCandidate",
+				"properties": {
+					"tokenId": {
+						"description": "The token's numerical ID. While the `token` field provides the string representation of the token, the `token_id` is the numerical representation that the model uses internally. This can be useful for developers who want to build custom logic based on the model's vocabulary.",
+						"format": "int32",
+						"type": "integer"
+					},
+					"token": {
+						"type": "string",
+						"description": "The token's string representation."
+					},
+					"logProbability": {
+						"type": "number",
+						"description": "The log probability of this token. A higher value indicates that the model was more confident in this token. The log probability can be used to assess the relative likelihood of different tokens and to identify when the model is uncertain.",
+						"format": "float"
+					}
+				},
+				"description": "A single token and its associated log probability.",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1Citation": {
+				"id": "GoogleCloudAiplatformV1Citation",
+				"type": "object",
+				"properties": {
+					"uri": {
+						"readOnly": true,
+						"description": "Output only. The URI of the source of the citation.",
+						"type": "string"
+					},
+					"license": {
+						"type": "string",
+						"readOnly": true,
+						"description": "Output only. The license of the source of the citation."
+					},
+					"title": {
+						"type": "string",
+						"readOnly": true,
+						"description": "Output only. The title of the source of the citation."
+					},
+					"publicationDate": {
+						"$ref": "#/components/schemas/GoogleTypeDate",
+						"readOnly": true,
+						"description": "Output only. The publication date of the source of the citation."
+					},
+					"endIndex": {
+						"readOnly": true,
+						"format": "int32",
+						"type": "integer",
+						"description": "Output only. The end index of the citation in the content."
+					},
+					"startIndex": {
+						"type": "integer",
+						"readOnly": true,
+						"description": "Output only. The start index of the citation in the content.",
+						"format": "int32"
+					}
+				},
+				"description": "A citation for a piece of generatedcontent."
+			},
+			"GoogleCloudAiplatformV1GroundingSupport": {
+				"id": "GoogleCloudAiplatformV1GroundingSupport",
+				"type": "object",
+				"properties": {
+					"confidenceScores": {
+						"type": "array",
+						"items": {
+							"format": "float",
+							"type": "number"
+						},
+						"description": "The confidence scores for the support references. This list is parallel to the `grounding_chunk_indices` list. A score is a value between 0.0 and 1.0, with a higher score indicating a higher confidence that the reference supports the claim. For Gemini 2.0 and before, this list has the same size as `grounding_chunk_indices`. For Gemini 2.5 and later, this list is empty and should be ignored."
+					},
+					"renderedParts": {
+						"type": "array",
+						"description": "Indices into the `rendered_parts` field of the `GroundingMetadata` message. These indices specify which rendered parts are associated with this support message.",
+						"items": {
+							"type": "integer",
+							"format": "int32"
+						}
+					},
+					"segment": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1Segment",
+						"description": "The content segment that this support message applies to."
+					},
+					"groundingChunkIndices": {
+						"description": "A list of indices into the `grounding_chunks` field of the `GroundingMetadata` message. These indices specify which grounding chunks support the claim made in the content segment. For example, if this field has the values `[1, 3]`, it means that `grounding_chunks[1]` and `grounding_chunks[3]` are the sources for the claim in the content segment.",
+						"type": "array",
+						"items": {
+							"format": "int32",
+							"type": "integer"
+						}
+					}
+				},
+				"description": "A collection of supporting references for a segment or part of the model's response."
+			},
+			"GoogleCloudAiplatformV1RetrievalMetadata": {
+				"type": "object",
+				"properties": {
+					"googleSearchDynamicRetrievalScore": {
+						"format": "float",
+						"description": "Optional. A score indicating how likely it is that a Google Search query could help answer the prompt. The score is in the range of `[0, 1]`. A score of 1 means the model is confident that a search will be helpful, and 0 means it is not. This score is populated only when Google Search grounding and dynamic retrieval are enabled. The score is used to determine whether to trigger a search.",
+						"type": "number"
+					}
+				},
+				"description": "Metadata related to the retrieval grounding source. This is part of the `GroundingMetadata` returned when grounding is enabled.",
+				"id": "GoogleCloudAiplatformV1RetrievalMetadata"
+			},
+			"GoogleCloudAiplatformV1GroundingChunk": {
+				"id": "GoogleCloudAiplatformV1GroundingChunk",
+				"type": "object",
+				"properties": {
+					"image": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GroundingChunkImage",
+						"description": "A grounding chunk from an image search result. See the `Image` message for details."
+					},
+					"maps": {
+						"description": "A grounding chunk from Google Maps. See the `Maps` message for details.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GroundingChunkMaps"
+					},
+					"web": {
+						"description": "A grounding chunk from a web page, typically from Google Search. See the `Web` message for details.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GroundingChunkWeb"
+					},
+					"retrievedContext": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GroundingChunkRetrievedContext",
+						"description": "A grounding chunk from a data source retrieved by a retrieval tool, such as Vertex AI Search. See the `RetrievedContext` message for details"
+					}
+				},
+				"description": "A piece of evidence that supports a claim made by the model. This is used to show a citation for a claim made by the model. When grounding is enabled, the model returns a `GroundingChunk` that contains a reference to the source of the information."
+			},
+			"GoogleCloudAiplatformV1GroundingMetadataSourceFlaggingUri": {
+				"type": "object",
+				"description": "A URI that can be used to flag a place or review for inappropriate content. This is populated only when the grounding source is Google Maps.",
+				"id": "GoogleCloudAiplatformV1GroundingMetadataSourceFlaggingUri",
+				"properties": {
+					"flagContentUri": {
+						"type": "string",
+						"description": "The URI that can be used to flag the content."
+					},
+					"sourceId": {
+						"type": "string",
+						"description": "The ID of the place or review."
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1SearchEntryPoint": {
+				"id": "GoogleCloudAiplatformV1SearchEntryPoint",
+				"description": "An entry point for displaying Google Search results. A `SearchEntryPoint` is populated when the grounding source for a model's response is Google Search. It provides information that you can use to display the search results in your application.",
+				"type": "object",
+				"properties": {
+					"renderedContent": {
+						"description": "Optional. An HTML snippet that can be embedded in a web page or an application's webview. This snippet displays a search result, including the title, URL, and a brief description of the search result.",
+						"type": "string"
+					},
+					"sdkBlob": {
+						"format": "byte",
+						"type": "string",
+						"description": "Optional. A base64-encoded JSON object that contains a list of search queries and their corresponding search URLs. This information can be used to build a custom search UI."
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1PartialArg": {
+				"properties": {
+					"boolValue": {
+						"description": "Optional. Represents a boolean value.",
+						"type": "boolean"
+					},
+					"stringValue": {
+						"description": "Optional. Represents a string value.",
+						"type": "string"
+					},
+					"nullValue": {
+						"description": "Optional. Represents a null value.",
+						"type": "string",
+						"enum": [
+							"NULL_VALUE"
+						],
+						"enumDescriptions": [
+							"Null value."
+						]
+					},
+					"numberValue": {
+						"format": "double",
+						"description": "Optional. Represents a double value.",
+						"type": "number"
+					},
+					"jsonPath": {
+						"type": "string",
+						"description": "Required. A JSON Path (RFC 9535) to the argument being streamed. https://datatracker.ietf.org/doc/html/rfc9535. e.g. \"$.foo.bar[0].data\"."
+					},
+					"willContinue": {
+						"description": "Optional. Whether this is not the last part of the same json_path. If true, another PartialArg message for the current json_path is expected to follow.",
+						"type": "boolean"
+					}
+				},
+				"id": "GoogleCloudAiplatformV1PartialArg",
+				"description": "Partial argument value of the function call.",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1FunctionResponsePart": {
+				"id": "GoogleCloudAiplatformV1FunctionResponsePart",
+				"type": "object",
+				"properties": {
+					"fileData": {
+						"description": "URI based data.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1FunctionResponseFileData"
+					},
+					"inlineData": {
+						"description": "Inline media bytes.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1FunctionResponseBlob"
+					}
+				},
+				"description": "A datatype containing media that is part of a `FunctionResponse` message. A `FunctionResponsePart` consists of data which has an associated datatype. A `FunctionResponsePart` can only contain one of the accepted types in `FunctionResponsePart.data`. A `FunctionResponsePart` must have a fixed IANA MIME type identifying the type and subtype of the media if the `inline_data` field is filled with raw bytes."
+			},
+			"GoogleCloudAiplatformV1AudioTranscriptionWordInfo": {
+				"properties": {
+					"word": {
+						"type": "string",
+						"description": "Required. Transcript of the word."
+					},
+					"endOffset": {
+						"description": "Optional. End offset in time of the word relative to the start of the audio.",
+						"format": "google-duration",
+						"type": "string"
+					},
+					"startOffset": {
+						"type": "string",
+						"format": "google-duration",
+						"description": "Optional. Start offset in time of the word relative to the start of the audio."
+					}
+				},
+				"id": "GoogleCloudAiplatformV1AudioTranscriptionWordInfo",
+				"type": "object",
+				"description": "Information about a single recognized word."
+			},
+			"GoogleCloudAiplatformV1PrebuiltVoiceConfig": {
+				"id": "GoogleCloudAiplatformV1PrebuiltVoiceConfig",
+				"type": "object",
+				"description": "Configuration for a prebuilt voice.",
+				"properties": {
+					"voiceName": {
+						"type": "string",
+						"description": "The name of the prebuilt voice to use."
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1ReplicatedVoiceConfig": {
+				"properties": {
+					"voiceSampleAudio": {
+						"format": "byte",
+						"type": "string",
+						"description": "Optional. The sample of the custom voice."
+					},
+					"mimeType": {
+						"description": "Optional. The mimetype of the voice sample. The only currently supported value is `audio/wav`. This represents 16-bit signed little-endian wav data, with a 24kHz sampling rate. `mime_type` will default to `audio/wav` if not set.",
+						"type": "string"
+					}
+				},
+				"description": "The configuration for the replicated voice to use.",
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1ReplicatedVoiceConfig"
+			},
+			"GoogleCloudAiplatformV1SpeakerVoiceConfig": {
+				"id": "GoogleCloudAiplatformV1SpeakerVoiceConfig",
+				"description": "Configuration for a single speaker in a multi-speaker setup.",
+				"type": "object",
+				"properties": {
+					"voiceConfig": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1VoiceConfig",
+						"description": "Required. The configuration for the voice of this speaker."
+					},
+					"speaker": {
+						"description": "Required. The name of the speaker. This should be the same as the speaker name used in the prompt.",
+						"type": "string"
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1GoogleMapsRouting": {
+				"id": "GoogleCloudAiplatformV1GoogleMapsRouting",
+				"properties": {},
+				"type": "object",
+				"description": "Grounding with Google Maps Routing APIs (ComputeRoutes and SearchAlongRoute)."
+			},
+			"GoogleCloudAiplatformV1GoogleMapsPlaces": {
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1GoogleMapsPlaces",
+				"description": "Grounding with Google Maps Places data (e.g. QueryPlaces). This is the default Google Maps grounding type when no other type is specified.",
+				"properties": {}
+			},
+			"GoogleCloudAiplatformV1ToolGoogleSearchWebSearch": {
+				"description": "Standard web search for grounding and related configurations. Only text results are returned.",
+				"properties": {},
+				"id": "GoogleCloudAiplatformV1ToolGoogleSearchWebSearch",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1ToolGoogleSearchImageSearch": {
+				"type": "object",
+				"properties": {},
+				"id": "GoogleCloudAiplatformV1ToolGoogleSearchImageSearch",
+				"description": "Image search for grounding and related configurations."
+			},
+			"GoogleCloudAiplatformV1AuthConfig": {
+				"id": "GoogleCloudAiplatformV1AuthConfig",
+				"properties": {
+					"oidcConfig": {
+						"description": "Config for user OIDC auth.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1AuthConfigOidcConfig"
+					},
+					"authType": {
+						"enumDescriptions": [
+							"",
+							"No Auth.",
+							"API Key Auth.",
+							"HTTP Basic Auth.",
+							"Google Service Account Auth.",
+							"OAuth auth.",
+							"OpenID Connect (OIDC) Auth."
+						],
+						"description": "Type of auth scheme.",
+						"type": "string",
+						"enum": [
+							"AUTH_TYPE_UNSPECIFIED",
+							"NO_AUTH",
+							"API_KEY_AUTH",
+							"HTTP_BASIC_AUTH",
+							"GOOGLE_SERVICE_ACCOUNT_AUTH",
+							"OAUTH",
+							"OIDC_AUTH"
+						]
+					},
+					"googleServiceAccountConfig": {
+						"description": "Config for Google Service Account auth.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1AuthConfigGoogleServiceAccountConfig"
+					},
+					"httpBasicAuthConfig": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1AuthConfigHttpBasicAuthConfig",
+						"description": "Config for HTTP Basic auth."
+					},
+					"oauthConfig": {
+						"description": "Config for user oauth.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1AuthConfigOauthConfig"
+					},
+					"apiKeyConfig": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1AuthConfigApiKeyConfig",
+						"description": "Config for API key auth."
+					}
+				},
+				"description": "Auth configuration to run the extension.",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1ApiAuth": {
+				"description": "The generic reusable api auth config. Deprecated. Please use AuthConfig (google/cloud/aiplatform/master/auth.proto) instead.",
+				"type": "object",
+				"properties": {
+					"apiKeyConfig": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1ApiAuthApiKeyConfig",
+						"description": "The API secret."
+					}
+				},
+				"id": "GoogleCloudAiplatformV1ApiAuth"
+			},
+			"GoogleCloudAiplatformV1ExternalApiElasticSearchParams": {
+				"id": "GoogleCloudAiplatformV1ExternalApiElasticSearchParams",
+				"properties": {
+					"searchTemplate": {
+						"type": "string",
+						"description": "The ElasticSearch search template to use."
+					},
+					"index": {
+						"description": "The ElasticSearch index to use.",
+						"type": "string"
+					},
+					"numHits": {
+						"description": "Optional. Number of hits (chunks) to request. When specified, it is passed to Elasticsearch as the `num_hits` param.",
+						"format": "int32",
+						"type": "integer"
+					}
+				},
+				"type": "object",
+				"description": "The search parameters to use for the ELASTIC_SEARCH spec."
+			},
+			"GoogleCloudAiplatformV1ExternalApiSimpleSearchParams": {
+				"description": "The search parameters to use for SIMPLE_SEARCH spec.",
+				"properties": {},
+				"id": "GoogleCloudAiplatformV1ExternalApiSimpleSearchParams",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1VertexAISearchDataStoreSpec": {
+				"type": "object",
+				"description": "Define data stores within engine to filter on in a search call and configurations for those data stores. For more information, see https://cloud.google.com/generative-ai-app-builder/docs/reference/rpc/google.cloud.discoveryengine.v1#datastorespec",
+				"id": "GoogleCloudAiplatformV1VertexAISearchDataStoreSpec",
+				"properties": {
+					"dataStore": {
+						"description": "Full resource name of DataStore, such as Format: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{dataStore}`",
+						"type": "string"
+					},
+					"filter": {
+						"description": "Optional. Filter specification to filter documents in the data store specified by data_store field. For more information on filtering, see [Filtering](https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata)",
+						"type": "string"
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1RagRetrievalConfig": {
+				"id": "GoogleCloudAiplatformV1RagRetrievalConfig",
+				"type": "object",
+				"properties": {
+					"ranking": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1RagRetrievalConfigRanking",
+						"description": "Optional. Config for ranking and reranking."
+					},
+					"topK": {
+						"description": "Optional. The number of contexts to retrieve.",
+						"type": "integer",
+						"format": "int32"
+					},
+					"filter": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1RagRetrievalConfigFilter",
+						"description": "Optional. Config for filters."
+					}
+				},
+				"description": "Specifies the context retrieval config."
+			},
+			"GoogleCloudAiplatformV1VertexRagStoreRagResource": {
+				"description": "The definition of the Rag resource.",
+				"id": "GoogleCloudAiplatformV1VertexRagStoreRagResource",
+				"properties": {
+					"ragCorpus": {
+						"description": "Optional. RagCorpora resource name. Format: `projects/{project}/locations/{location}/ragCorpora/{rag_corpus}`",
+						"type": "string"
+					},
+					"ragFileIds": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"description": "Optional. rag_file_id. The files should be in the same rag_corpus set in rag_corpus field."
+					}
+				},
+				"type": "object"
+			},
+			"GoogleTypeDate": {
+				"properties": {
+					"year": {
+						"description": "Year of the date. Must be from 1 to 9999, or 0 to specify a date without a year.",
+						"format": "int32",
+						"type": "integer"
+					},
+					"day": {
+						"description": "Day of a month. Must be from 1 to 31 and valid for the year and month, or 0 to specify a year by itself or a year and month where the day isn't significant.",
+						"format": "int32",
+						"type": "integer"
+					},
+					"month": {
+						"description": "Month of a year. Must be from 1 to 12, or 0 to specify a year without a month and day.",
+						"type": "integer",
+						"format": "int32"
+					}
+				},
+				"description": "Represents a whole or partial calendar date, such as a birthday. The time of day and time zone are either specified elsewhere or are insignificant. The date is relative to the Gregorian Calendar. This can represent one of the following: * A full date, with non-zero year, month, and day values. * A month and day, with a zero year (for example, an anniversary). * A year on its own, with a zero month and a zero day. * A year and month, with a zero day (for example, a credit card expiration date). Related types: * google.type.TimeOfDay * google.type.DateTime * google.protobuf.Timestamp",
+				"type": "object",
+				"id": "GoogleTypeDate"
+			},
+			"GoogleCloudAiplatformV1Segment": {
+				"properties": {
+					"partIndex": {
+						"readOnly": true,
+						"description": "Output only. The index of the `Part` object that this segment belongs to. This is useful for associating the segment with a specific part of the content.",
+						"type": "integer",
+						"format": "int32"
+					},
+					"endIndex": {
+						"format": "int32",
+						"type": "integer",
+						"description": "Output only. The end index of the segment in the `Part`, measured in bytes. This marks the end of the segment and is exclusive, meaning the segment includes content up to, but not including, the byte at this index.",
+						"readOnly": true
+					},
+					"text": {
+						"readOnly": true,
+						"type": "string",
+						"description": "Output only. The text of the segment."
+					},
+					"startIndex": {
+						"type": "integer",
+						"description": "Output only. The start index of the segment in the `Part`, measured in bytes. This marks the beginning of the segment and is inclusive, meaning the byte at this index is the first byte of the segment.",
+						"format": "int32",
+						"readOnly": true
+					}
+				},
+				"description": "A segment of the content.",
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1Segment"
+			},
+			"GoogleCloudAiplatformV1GroundingChunkImage": {
+				"id": "GoogleCloudAiplatformV1GroundingChunkImage",
+				"properties": {
+					"imageUri": {
+						"description": "The URI of the image.",
+						"type": "string"
+					},
+					"title": {
+						"type": "string",
+						"description": "The title of the image search result page."
+					},
+					"domain": {
+						"type": "string",
+						"description": "The domain of the image search result page."
+					},
+					"sourceUri": {
+						"description": "The URI of the image search result page.",
+						"type": "string"
+					}
+				},
+				"type": "object",
+				"description": "An `Image` chunk is a piece of evidence that comes from an image search result. It contains the URI of the image search result and the URI of the image. This is used to provide the user with a link to the source of the information."
+			},
+			"GoogleCloudAiplatformV1GroundingChunkMaps": {
+				"properties": {
+					"uri": {
+						"type": "string",
+						"description": "The URI of the place."
+					},
+					"title": {
+						"description": "The title of the place.",
+						"type": "string"
+					},
+					"placeAnswerSources": {
+						"description": "The sources that were used to generate the place answer. This includes review snippets and photos that were used to generate the answer, as well as URIs to flag content.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GroundingChunkMapsPlaceAnswerSources"
+					},
+					"placeId": {
+						"description": "This Place's resource name, in `places/{place_id}` format. This can be used to look up the place in the Google Maps API.",
+						"type": "string"
+					},
+					"route": {
+						"description": "Output only. Route information.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1GroundingChunkMapsRoute",
+						"readOnly": true
+					},
+					"text": {
+						"type": "string",
+						"description": "The text of the place answer."
+					}
+				},
+				"description": "A `Maps` chunk is a piece of evidence that comes from Google Maps, containing information about places or routes. This is used to provide the user with rich, location-based information.",
+				"id": "GoogleCloudAiplatformV1GroundingChunkMaps",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1GroundingChunkWeb": {
+				"properties": {
+					"domain": {
+						"description": "The domain of the web page that contains the evidence. This can be used to filter out low-quality sources.",
+						"type": "string"
+					},
+					"title": {
+						"type": "string",
+						"description": "The title of the web page that contains the evidence."
+					},
+					"uri": {
+						"type": "string",
+						"description": "The URI of the web page that contains the evidence."
+					}
+				},
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1GroundingChunkWeb",
+				"description": "A `Web` chunk is a piece of evidence that comes from a web page. It contains the URI of the web page, the title of the page, and the domain of the page. This is used to provide the user with a link to the source of the information."
+			},
+			"GoogleCloudAiplatformV1GroundingChunkRetrievedContext": {
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1GroundingChunkRetrievedContext",
+				"description": "Context retrieved from a data source to ground the model's response. This is used when a retrieval tool fetches information from a user-provided corpus or a public dataset.",
+				"properties": {
+					"ragChunk": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1RagChunk",
+						"description": "Additional context for a Retrieval-Augmented Generation (RAG) retrieval result. This is populated only when the RAG retrieval tool is used."
+					},
+					"documentName": {
+						"description": "Output only. The full resource name of the referenced Vertex AI Search document. This is used to identify the specific document that was retrieved. The format is `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store}/branches/{branch}/documents/{document}`.",
+						"readOnly": true,
+						"type": "string"
+					},
+					"text": {
+						"type": "string",
+						"description": "The content of the retrieved data source."
+					},
+					"title": {
+						"type": "string",
+						"description": "The title of the retrieved data source."
+					},
+					"uri": {
+						"description": "The URI of the retrieved data source.",
+						"type": "string"
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1FunctionResponseFileData": {
+				"properties": {
+					"fileUri": {
+						"type": "string",
+						"description": "Required. URI."
+					},
+					"mimeType": {
+						"type": "string",
+						"description": "Required. The IANA standard MIME type of the source data."
+					},
+					"displayName": {
+						"description": "Optional. Display name of the file data. Used to provide a label or filename to distinguish file datas. This field is only returned in PromptMessage for prompt management. It is currently used in the Gemini GenerateContent calls only when server side tools (code_execution, google_search, and url_context) are enabled.",
+						"type": "string"
+					}
+				},
+				"id": "GoogleCloudAiplatformV1FunctionResponseFileData",
+				"description": "URI based data for function response.",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1FunctionResponseBlob": {
+				"id": "GoogleCloudAiplatformV1FunctionResponseBlob",
+				"properties": {
+					"data": {
+						"description": "Required. Raw bytes.",
+						"format": "byte",
+						"type": "string"
+					},
+					"displayName": {
+						"description": "Optional. Display name of the blob. Used to provide a label or filename to distinguish blobs. This field is only returned in PromptMessage for prompt management. It is currently used in the Gemini GenerateContent calls only when server side tools (code_execution, google_search, and url_context) are enabled.",
+						"type": "string"
+					},
+					"mimeType": {
+						"description": "Required. The IANA standard MIME type of the source data.",
+						"type": "string"
+					}
+				},
+				"description": "Raw media bytes for function response. Text should not be sent as raw bytes, use the 'text' field.",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1AuthConfigOidcConfig": {
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1AuthConfigOidcConfig",
+				"properties": {
+					"idToken": {
+						"description": "OpenID Connect formatted ID token for extension endpoint. Only used to propagate token from [[ExecuteExtensionRequest.runtime_auth_config]] at request time.",
+						"type": "string"
+					},
+					"serviceAccount": {
+						"type": "string",
+						"description": "The service account used to generate an OpenID Connect (OIDC)-compatible JWT token signed by the Google OIDC Provider (accounts.google.com) for extension endpoint (https://cloud.google.com/iam/docs/create-short-lived-credentials-direct#sa-credentials-oidc). - The audience for the token will be set to the URL in the server url defined in the OpenApi spec. - If the service account is provided, the service account should grant `iam.serviceAccounts.getOpenIdToken` permission to Vertex AI Extension Service Agent (https://cloud.google.com/vertex-ai/docs/general/access-control#service-agents)."
+					}
+				},
+				"description": "Config for user OIDC auth."
+			},
+			"GoogleCloudAiplatformV1AuthConfigGoogleServiceAccountConfig": {
+				"id": "GoogleCloudAiplatformV1AuthConfigGoogleServiceAccountConfig",
+				"type": "object",
+				"description": "Config for Google Service Account Authentication.",
+				"properties": {
+					"serviceAccount": {
+						"description": "Optional. The service account that the extension execution service runs as. - If the service account is specified, the `iam.serviceAccounts.getAccessToken` permission should be granted to Vertex AI Extension Service Agent (https://cloud.google.com/vertex-ai/docs/general/access-control#service-agents) on the specified service account. - If not specified, the Vertex AI Extension Service Agent will be used to execute the Extension.",
+						"type": "string"
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1AuthConfigHttpBasicAuthConfig": {
+				"id": "GoogleCloudAiplatformV1AuthConfigHttpBasicAuthConfig",
+				"description": "Config for HTTP Basic Authentication.",
+				"type": "object",
+				"properties": {
+					"credentialSecret": {
+						"description": "Required. The name of the SecretManager secret version resource storing the base64 encoded credentials. Format: `projects/{project}/secrets/{secrete}/versions/{version}` - If specified, the `secretmanager.versions.access` permission should be granted to Vertex AI Extension Service Agent (https://cloud.google.com/vertex-ai/docs/general/access-control#service-agents) on the specified resource.",
+						"type": "string"
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1AuthConfigOauthConfig": {
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1AuthConfigOauthConfig",
+				"description": "Config for user oauth.",
+				"properties": {
+					"accessToken": {
+						"description": "Access token for extension endpoint. Only used to propagate token from [[ExecuteExtensionRequest.runtime_auth_config]] at request time.",
+						"type": "string"
+					},
+					"serviceAccount": {
+						"description": "The service account used to generate access tokens for executing the Extension. - If the service account is specified, the `iam.serviceAccounts.getAccessToken` permission should be granted to Vertex AI Extension Service Agent (https://cloud.google.com/vertex-ai/docs/general/access-control#service-agents) on the provided service account.",
+						"type": "string"
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1AuthConfigApiKeyConfig": {
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1AuthConfigApiKeyConfig",
+				"description": "Config for authentication with API key.",
+				"properties": {
+					"name": {
+						"type": "string",
+						"description": "Optional. The parameter name of the API key. E.g. If the API request is \"https://example.com/act?api_key=\", \"api_key\" would be the parameter name."
+					},
+					"httpElementLocation": {
+						"enumDescriptions": [
+							"",
+							"Element is in the HTTP request query.",
+							"Element is in the HTTP request header.",
+							"Element is in the HTTP request path.",
+							"Element is in the HTTP request body.",
+							"Element is in the HTTP request cookie."
+						],
+						"description": "Optional. The location of the API key.",
+						"type": "string",
+						"enum": [
+							"HTTP_IN_UNSPECIFIED",
+							"HTTP_IN_QUERY",
+							"HTTP_IN_HEADER",
+							"HTTP_IN_PATH",
+							"HTTP_IN_BODY",
+							"HTTP_IN_COOKIE"
+						]
+					},
+					"apiKeySecret": {
+						"description": "Optional. The name of the SecretManager secret version resource storing the API key. Format: `projects/{project}/secrets/{secrete}/versions/{version}` - If both `api_key_secret` and `api_key_string` are specified, this field takes precedence over `api_key_string`. - If specified, the `secretmanager.versions.access` permission should be granted to Vertex AI Extension Service Agent (https://cloud.google.com/vertex-ai/docs/general/access-control#service-agents) on the specified resource.",
+						"type": "string"
+					},
+					"apiKeyString": {
+						"description": "Optional. The API key to be used in the request directly.",
+						"type": "string"
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1ApiAuthApiKeyConfig": {
+				"description": "The API secret.",
+				"properties": {
+					"apiKeyString": {
+						"description": "The API key string. Either this or `api_key_secret_version` must be set.",
+						"type": "string"
+					},
+					"apiKeySecretVersion": {
+						"type": "string",
+						"description": "Required. The SecretManager secret version resource name storing API key. e.g. projects/{project}/secrets/{secret}/versions/{version}"
+					}
+				},
+				"id": "GoogleCloudAiplatformV1ApiAuthApiKeyConfig",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1RagRetrievalConfigRanking": {
+				"properties": {
+					"llmRanker": {
+						"description": "Optional. Config for LlmRanker.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1RagRetrievalConfigRankingLlmRanker"
+					},
+					"rankService": {
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1RagRetrievalConfigRankingRankService",
+						"description": "Optional. Config for Rank Service."
+					}
+				},
+				"description": "Config for ranking and reranking.",
+				"id": "GoogleCloudAiplatformV1RagRetrievalConfigRanking",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1RagRetrievalConfigFilter": {
+				"type": "object",
+				"properties": {
+					"vectorDistanceThreshold": {
+						"type": "number",
+						"description": "Optional. Only returns contexts with vector distance smaller than the threshold.",
+						"format": "double"
+					},
+					"vectorSimilarityThreshold": {
+						"description": "Optional. Only returns contexts with vector similarity larger than the threshold.",
+						"type": "number",
+						"format": "double"
+					},
+					"metadataFilter": {
+						"description": "Optional. String for metadata filtering.",
+						"type": "string"
+					}
+				},
+				"description": "Config for filters.",
+				"id": "GoogleCloudAiplatformV1RagRetrievalConfigFilter"
+			},
+			"GoogleCloudAiplatformV1GroundingChunkMapsPlaceAnswerSources": {
+				"description": "The sources that were used to generate the place answer. This includes review snippets and photos that were used to generate the answer, as well as URIs to flag content.",
+				"properties": {
+					"reviewSnippets": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/GoogleCloudAiplatformV1GroundingChunkMapsPlaceAnswerSourcesReviewSnippet"
+						},
+						"description": "Snippets of reviews that were used to generate the answer."
+					}
+				},
+				"id": "GoogleCloudAiplatformV1GroundingChunkMapsPlaceAnswerSources",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1GroundingChunkMapsRoute": {
+				"description": "Route information from Google Maps.",
+				"type": "object",
+				"properties": {
+					"encodedPolyline": {
+						"type": "string",
+						"description": "An encoded polyline of the route. See https://developers.google.com/maps/documentation/utilities/polylinealgorithm"
+					},
+					"distanceMeters": {
+						"type": "integer",
+						"description": "The total distance of the route, in meters.",
+						"format": "int32"
+					},
+					"duration": {
+						"type": "string",
+						"format": "google-duration",
+						"description": "The total duration of the route."
+					}
+				},
+				"id": "GoogleCloudAiplatformV1GroundingChunkMapsRoute"
+			},
+			"GoogleCloudAiplatformV1RagChunk": {
+				"type": "object",
+				"description": "A RagChunk includes the content of a chunk of a RagFile, and associated metadata.",
+				"id": "GoogleCloudAiplatformV1RagChunk",
+				"properties": {
+					"pageSpan": {
+						"description": "If populated, represents where the chunk starts and ends in the document.",
+						"$ref": "#/components/schemas/GoogleCloudAiplatformV1RagChunkPageSpan"
+					},
+					"fileId": {
+						"type": "string",
+						"description": "The ID of the file that the chunk belongs to."
+					},
+					"chunkId": {
+						"type": "string",
+						"description": "The ID of the chunk."
+					},
+					"text": {
+						"type": "string",
+						"description": "The content of the chunk."
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1RagRetrievalConfigRankingLlmRanker": {
+				"id": "GoogleCloudAiplatformV1RagRetrievalConfigRankingLlmRanker",
+				"type": "object",
+				"description": "Config for LlmRanker.",
+				"properties": {
+					"modelName": {
+						"description": "Optional. The model name used for ranking. See [Supported models](https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference#supported-models).",
+						"type": "string"
+					}
+				}
+			},
+			"GoogleCloudAiplatformV1RagRetrievalConfigRankingRankService": {
+				"id": "GoogleCloudAiplatformV1RagRetrievalConfigRankingRankService",
+				"properties": {
+					"modelName": {
+						"description": "Optional. The model name of the rank service. Format: `semantic-ranker-512@latest`",
+						"type": "string"
+					}
+				},
+				"description": "Config for Rank Service.",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1GroundingChunkMapsPlaceAnswerSourcesReviewSnippet": {
+				"properties": {
+					"reviewId": {
+						"description": "The ID of the review that is being referenced.",
+						"type": "string"
+					},
+					"googleMapsUri": {
+						"description": "A link to show the review on Google Maps.",
+						"type": "string"
+					},
+					"title": {
+						"description": "The title of the review.",
+						"type": "string"
+					}
+				},
+				"description": "A review snippet that is used to generate the answer.",
+				"id": "GoogleCloudAiplatformV1GroundingChunkMapsPlaceAnswerSourcesReviewSnippet",
+				"type": "object"
+			},
+			"GoogleCloudAiplatformV1RagChunkPageSpan": {
+				"description": "Represents where the chunk starts and ends in the document.",
+				"type": "object",
+				"id": "GoogleCloudAiplatformV1RagChunkPageSpan",
+				"properties": {
+					"lastPage": {
+						"description": "Page where chunk ends in the document. Inclusive. 1-indexed.",
+						"format": "int32",
+						"type": "integer"
+					},
+					"firstPage": {
+						"description": "Page where chunk starts in the document. Inclusive. 1-indexed.",
+						"type": "integer",
+						"format": "int32"
+					}
+				}
+			}
+		}
+	}
+}

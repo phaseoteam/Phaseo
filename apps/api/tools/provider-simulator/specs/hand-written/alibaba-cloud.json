@@ -1,0 +1,62 @@
+{
+	"id": "alibaba-cloud",
+	"source": {
+		"url": null,
+		"docs": "https://www.alibabacloud.com/help/en/model-studio/qwen-api-via-openai-chat-completions",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Non-OpenAI params go at top level for raw HTTP (extra_body in the Python SDK). response_format: text, json_object (prompt must mention JSON), json_schema. tool_choice: auto (default), none, required, named. parallel_tool_calls defaults to false. reasoning_effort values vary by model (qwen3.8: low/medium/xhigh; DeepSeek-V4 and GLM: high/max). Nesting of cache_creation* fields is ambiguous on the pa"
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"stream_options": {},
+					"modalities": {},
+					"audio": {},
+					"temperature": {},
+					"top_p": {},
+					"presence_penalty": {},
+					"seed": {},
+					"stop": {},
+					"response_format": {},
+					"max_tokens": {},
+					"max_completion_tokens": {},
+					"n": {},
+					"logprobs": {},
+					"top_logprobs": {},
+					"tools": {},
+					"tool_choice": {},
+					"parallel_tool_calls": {},
+					"reasoning_effort": {},
+					"top_k": {},
+					"repetition_penalty": {},
+					"enable_thinking": {},
+					"thinking": {},
+					"preserve_thinking": {},
+					"thinking_budget": {},
+					"clear_thinking": {},
+					"vl_high_resolution_images": {},
+					"use_multichannel": {},
+					"tool_stream": {},
+					"enable_code_interpreter": {},
+					"enable_search": {},
+					"search_options": {},
+					"include_tool_usage": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}
