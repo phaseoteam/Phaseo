@@ -61,7 +61,8 @@ export function Row({ title, subtitle, icon, leading, trailing, value, onPress, 
 
 /** Label/value line for facts (pricing, limits, dates). */
 export function Fact({ label, value, last }: { label: string; value?: ReactNode; last?: boolean }) {
-  if (value == null || value === "") return null;
+  // Unknown values ("—" from the formatters) are left out rather than shown as a dash.
+  if (value == null || value === "" || value === "—") return null;
   return (
     <View className="pl-4">
       <View className={cn("flex-row items-start justify-between gap-4 py-3 pr-4", !last && "border-b border-border")}>
