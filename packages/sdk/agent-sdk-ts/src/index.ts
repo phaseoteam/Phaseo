@@ -1,7 +1,8 @@
 export { createAgent, defineTool, tool } from "./agent.js";
 export { createGatewayAgentClient } from "./adapters/gateway-client.js";
 export { createAgentDevtools } from "./devtools.js";
-export { AgentGatewayError, isAgentGatewayError } from "./errors.js";
+export { AgentGatewayError, AgentStreamError, agentErrorIsContextOverflow, agentErrorIsRetryable, agentRetryAfterMs, isAgentGatewayError } from "./errors.js";
+export { repairToolHistory, truncateToolOutput } from "./runtime/loop.js";
 export { AgentSchemaValidationError } from "./schema.js";
 export { finishReasonIs, hasToolCall, maxCost, maxDuration, maxTokensUsed, stepCountIs } from "./stop-conditions.js";
 export type {
@@ -23,6 +24,9 @@ export type {
 	AgentMessage,
 	AgentModelClient,
 	AgentModelRetryConfig,
+	AgentModelStreamEvent,
+	AgentPendingToolCall,
+	AgentPrepareMessages,
 	AgentModelRequest,
 	AgentModelResponse,
 	AgentRunOptions,

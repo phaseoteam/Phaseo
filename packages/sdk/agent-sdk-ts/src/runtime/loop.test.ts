@@ -506,13 +506,13 @@ describe("Agent SDK runtime loop", () => {
 		expect(result.messages.slice(-3)).toEqual([
 			{
 				role: "tool",
-				content: JSON.stringify({ label: "slow" }, null, 2),
+				content: JSON.stringify({ label: "slow" }),
 				toolCallId: "call_1",
 				name: "slow-tool",
 			},
 			{
 				role: "tool",
-				content: JSON.stringify({ label: "fast" }, null, 2),
+				content: JSON.stringify({ label: "fast" }),
 				toolCallId: "call_2",
 				name: "fast-tool",
 			},
