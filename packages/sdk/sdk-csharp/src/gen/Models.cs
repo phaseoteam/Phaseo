@@ -130,6 +130,9 @@ public sealed class AnthropicMessage
 
 public sealed class AnthropicMessagesRequest
 {
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
+
 	[JsonPropertyName("debug")]
 	public Dictionary<string, object>? Debug { get; set; }
 
@@ -1323,11 +1326,17 @@ public sealed class ChatAudioOutputPart
 	[JsonPropertyName("audio_url")]
 	public Dictionary<string, object> AudioUrl { get; set; }
 
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
+
 	[JsonPropertyName("format")]
 	public string? Format { get; set; }
 
 	[JsonPropertyName("mime_type")]
 	public string? MimeType { get; set; }
+
+	[JsonPropertyName("prompt_cache_breakpoint")]
+	public Dictionary<string, object>? PromptCacheBreakpoint { get; set; }
 
 	[JsonPropertyName("type")]
 	public string Type { get; set; }
@@ -1349,6 +1358,9 @@ public sealed class ChatChoice
 
 public sealed class ChatCompletionsRequest
 {
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
+
 	[JsonPropertyName("debug")]
 	public Dictionary<string, object>? Debug { get; set; }
 
@@ -1402,6 +1414,12 @@ public sealed class ChatCompletionsRequest
 
 	[JsonPropertyName("prompt_cache_key")]
 	public string? PromptCacheKey { get; set; }
+
+	[JsonPropertyName("prompt_cache_options")]
+	public Dictionary<string, object>? PromptCacheOptions { get; set; }
+
+	[JsonPropertyName("prompt_cache_retention")]
+	public string? PromptCacheRetention { get; set; }
 
 	[JsonPropertyName("provider")]
 	public object? Provider { get; set; }
@@ -2687,6 +2705,9 @@ public sealed class FunctionToolDefinition
 {
 	[JsonPropertyName("async")]
 	public bool? Async { get; set; }
+
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
 
 	[JsonPropertyName("function")]
 	public Dictionary<string, object> Function { get; set; }
@@ -6185,6 +6206,23 @@ public sealed class PrivateModelUpdateRequest
 
 }
 
+public sealed class PromptCacheBreakpoint
+{
+	[JsonPropertyName("mode")]
+	public string? Mode { get; set; }
+
+}
+
+public sealed class PromptCacheOptions
+{
+	[JsonPropertyName("mode")]
+	public string? Mode { get; set; }
+
+	[JsonPropertyName("ttl")]
+	public string? Ttl { get; set; }
+
+}
+
 public sealed class Provider
 {
 	[JsonPropertyName("api_provider_id")]
@@ -6371,6 +6409,9 @@ public sealed class ProviderOptions
 
 	[JsonPropertyName("openai")]
 	public Dictionary<string, object>? Openai { get; set; }
+
+	[JsonPropertyName("xai")]
+	public Dictionary<string, object>? Xai { get; set; }
 
 }
 
@@ -6877,6 +6918,9 @@ public sealed class ResponsesRequest
 	[JsonPropertyName("background")]
 	public bool? Background { get; set; }
 
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
+
 	[JsonPropertyName("debug")]
 	public Dictionary<string, object>? Debug { get; set; }
 
@@ -6921,6 +6965,12 @@ public sealed class ResponsesRequest
 
 	[JsonPropertyName("prompt_cache_key")]
 	public string? PromptCacheKey { get; set; }
+
+	[JsonPropertyName("prompt_cache_options")]
+	public Dictionary<string, object>? PromptCacheOptions { get; set; }
+
+	[JsonPropertyName("prompt_cache_retention")]
+	public string? PromptCacheRetention { get; set; }
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
@@ -7200,6 +7250,12 @@ public sealed class SystemOneUsage
 
 public sealed class TextContentPart
 {
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
+
+	[JsonPropertyName("prompt_cache_breakpoint")]
+	public Dictionary<string, object>? PromptCacheBreakpoint { get; set; }
+
 	[JsonPropertyName("text")]
 	public string Text { get; set; }
 

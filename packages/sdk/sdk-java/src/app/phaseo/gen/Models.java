@@ -57,6 +57,7 @@ public final class Models {
 	}
 
 	public static class AnthropicMessagesRequest {
+		public Object cache_control;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public Integer max_tokens;
@@ -531,8 +532,10 @@ public final class Models {
 
 	public static class ChatAudioOutputPart {
 		public Object audio_url;
+		public Object cache_control;
 		public Object format;
 		public String mime_type;
+		public Object prompt_cache_breakpoint;
 		public Object type;
 	}
 
@@ -543,6 +546,7 @@ public final class Models {
 	}
 
 	public static class ChatCompletionsRequest {
+		public Object cache_control;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public Double frequency_penalty;
@@ -561,6 +565,8 @@ public final class Models {
 		public Boolean parallel_tool_calls;
 		public Double presence_penalty;
 		public String prompt_cache_key;
+		public Object prompt_cache_options;
+		public Object prompt_cache_retention;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
@@ -1117,6 +1123,7 @@ public final class Models {
 
 	public static class FunctionToolDefinition {
 		public Boolean async;
+		public Object cache_control;
 		public Object function;
 		public Object type;
 	}
@@ -2573,6 +2580,15 @@ public final class Models {
 		public String upstream_model_id;
 	}
 
+	public static class PromptCacheBreakpoint {
+		public Object mode;
+	}
+
+	public static class PromptCacheOptions {
+		public Object mode;
+		public String ttl;
+	}
+
 	public static class Provider {
 		public String api_provider_id;
 		public String api_provider_name;
@@ -2653,6 +2669,7 @@ public final class Models {
 		public Object anthropic;
 		public Object google;
 		public Object openai;
+		public Object xai;
 	}
 
 	public static class ProviderRoutingOptions {
@@ -2870,6 +2887,7 @@ public final class Models {
 
 	public static class ResponsesRequest {
 		public Boolean background;
+		public Object cache_control;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public Object image_config;
@@ -2885,6 +2903,8 @@ public final class Models {
 		public Boolean parallel_tool_calls;
 		public String previous_response_id;
 		public String prompt_cache_key;
+		public Object prompt_cache_options;
+		public Object prompt_cache_retention;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
@@ -3000,6 +3020,8 @@ public final class Models {
 	}
 
 	public static class TextContentPart {
+		public Object cache_control;
+		public Object prompt_cache_breakpoint;
 		public String text;
 		public Object type;
 	}

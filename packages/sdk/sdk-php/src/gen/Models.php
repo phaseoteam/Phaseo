@@ -98,6 +98,8 @@ class AnthropicMessage
 class AnthropicMessagesRequest
 {
 	/** @var array<string, mixed>|null */
+	public $cache_control;
+	/** @var array<string, mixed>|null */
 	public $debug;
 	/** @var bool|null */
 	public $echo_upstream_request;
@@ -951,10 +953,14 @@ class ChatAudioOutputPart
 {
 	/** @var array<string, mixed> */
 	public $audio_url;
+	/** @var array<string, mixed>|null */
+	public $cache_control;
 	/** @var string|null */
 	public $format;
 	/** @var string|null */
 	public $mime_type;
+	/** @var array<string, mixed>|null */
+	public $prompt_cache_breakpoint;
 	/** @var string */
 	public $type;
 }
@@ -971,6 +977,8 @@ class ChatChoice
 
 class ChatCompletionsRequest
 {
+	/** @var array<string, mixed>|null */
+	public $cache_control;
 	/** @var array<string, mixed>|null */
 	public $debug;
 	/** @var bool|null */
@@ -1007,6 +1015,10 @@ class ChatCompletionsRequest
 	public $presence_penalty;
 	/** @var string|null */
 	public $prompt_cache_key;
+	/** @var array<string, mixed>|null */
+	public $prompt_cache_options;
+	/** @var string|null */
+	public $prompt_cache_retention;
 	/** @var string|array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -1961,6 +1973,8 @@ class FunctionToolDefinition
 {
 	/** @var bool|null */
 	public $async;
+	/** @var array<string, mixed>|null */
+	public $cache_control;
 	/** @var array<string, mixed> */
 	public $function;
 	/** @var string */
@@ -4505,6 +4519,20 @@ class PrivateModelUpdateRequest
 	public $upstream_model_id;
 }
 
+class PromptCacheBreakpoint
+{
+	/** @var string|null */
+	public $mode;
+}
+
+class PromptCacheOptions
+{
+	/** @var string|null */
+	public $mode;
+	/** @var string|null */
+	public $ttl;
+}
+
 class Provider
 {
 	/** @var string|null */
@@ -4643,6 +4671,8 @@ class ProviderOptions
 	public $google;
 	/** @var array<string, mixed>|null */
 	public $openai;
+	/** @var array<string, mixed>|null */
+	public $xai;
 }
 
 class ProviderRoutingOptions
@@ -5016,6 +5046,8 @@ class ResponsesRequest
 	/** @var bool|null */
 	public $background;
 	/** @var array<string, mixed>|null */
+	public $cache_control;
+	/** @var array<string, mixed>|null */
 	public $debug;
 	/** @var bool|null */
 	public $echo_upstream_request;
@@ -5045,6 +5077,10 @@ class ResponsesRequest
 	public $previous_response_id;
 	/** @var string|null */
 	public $prompt_cache_key;
+	/** @var array<string, mixed>|null */
+	public $prompt_cache_options;
+	/** @var string|null */
+	public $prompt_cache_retention;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -5247,6 +5283,10 @@ class SystemOneUsage
 
 class TextContentPart
 {
+	/** @var array<string, mixed>|null */
+	public $cache_control;
+	/** @var array<string, mixed>|null */
+	public $prompt_cache_breakpoint;
 	/** @var string */
 	public $text;
 	/** @var string */

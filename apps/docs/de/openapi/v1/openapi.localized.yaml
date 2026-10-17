@@ -8787,12 +8787,34 @@ components:
             - full
     CacheControl:
       type: object
+      description: Prompt-Cache-Steuerung. Verwende type ephemeral mit einer optionalen ttl von 5m oder 1h. scope gilt nur für eine Claude-Cache-Richtlinie auf oberster Ebene.
       properties:
         type:
           type: string
         ttl:
           type: string
         scope:
+          type: string
+      additionalProperties: true
+    PromptCacheBreakpoint:
+      type: object
+      description: OpenAI-Cache-Breakpoint. Cacht alles bis einschließlich dieses Blocks. Wird an OpenAI und Azure OpenAI ab GPT-5.6 sowie an DeepInfra gesendet; Claude-Routen erhalten ihn als cache_control.
+      properties:
+        mode:
+          type: string
+          enum:
+            - explicit
+      additionalProperties: true
+    PromptCacheOptions:
+      type: object
+      description: Prompt-Cache-Modus und TTL für OpenAI und Azure OpenAI ab GPT-5.6 (ttl 30m) sowie für DeepInfra (ttl 5m oder 1h). Wird für andere Anbieter entfernt.
+      properties:
+        mode:
+          type: string
+          enum:
+            - implicit
+            - explicit
+        ttl:
           type: string
       additionalProperties: true
     ProviderOptions:
@@ -8816,11 +8838,19 @@ components:
                 - type
             prompt_cache_retention:
               type: string
+            prompt_cache_options:
+              $ref: '#/components/schemas/PromptCacheOptions'
         anthropic:
           type: object
           properties:
             cache_control:
               $ref: '#/components/schemas/CacheControl'
+        xai:
+          type: object
+          properties:
+            conversation_id:
+              type: string
+              description: xAI-Unterhaltungs-ID, gesendet im Header x-grok-conv-id.
         google:
           type: object
           properties:
@@ -9530,6 +9560,16 @@ components:
           type: string
           nullable: true
           description: Gruppiert zusammengehörige Anfragen, damit sie bei dem Anbieter bleiben, der ihren Prompt-Cache hat. Phaseo sendet einen Hash aus deinem Workspace und diesem Schlüssel an den Anbieter, nie den Rohschlüssel.
+        prompt_cache_retention:
+          type: string
+          enum:
+            - in_memory
+            - 24h
+          description: Prompt-Cache-Aufbewahrung für OpenAI- und Azure-OpenAI-Modelle vor GPT-5.6. Hat Vorrang vor provider_options.openai.prompt_cache_retention.
+        prompt_cache_options:
+          $ref: '#/components/schemas/PromptCacheOptions'
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         safety_identifier:
           type: string
           nullable: true
@@ -9596,6 +9636,10 @@ components:
             - text
         text:
           type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
+        prompt_cache_breakpoint:
+          $ref: '#/components/schemas/PromptCacheBreakpoint'
     ImageContentPart:
       type: object
       required:
@@ -9662,6 +9706,10 @@ components:
             - ogg
             - pcm16
             - pcm24
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
+        prompt_cache_breakpoint:
+          $ref: '#/components/schemas/PromptCacheBreakpoint'
     AudioContentPart:
       type: object
       required:
@@ -9757,6 +9805,8 @@ components:
         async:
           type: boolean
           description: Lässt unterstützte OpenAI-Modelle weiterarbeiten, während der Aufrufer dieses Tool ausführt. Wird auf allen Text-API-Schnittstellen akzeptiert und von anderen Anbietern ignoriert.
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         function:
           type: object
           required:
@@ -10241,6 +10291,8 @@ components:
           type: array
           items:
             type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         provider_options:
           $ref: '#/components/schemas/ProviderOptions'
         usage:
@@ -10451,6 +10503,16 @@ components:
           type: string
           nullable: true
           description: Gruppiert zusammengehörige Anfragen, damit sie bei dem Anbieter bleiben, der ihren Prompt-Cache hat. Phaseo sendet einen Hash aus deinem Workspace und diesem Schlüssel an den Anbieter, nie den Rohschlüssel.
+        prompt_cache_retention:
+          type: string
+          enum:
+            - in_memory
+            - 24h
+          description: Prompt-Cache-Aufbewahrung für OpenAI- und Azure-OpenAI-Modelle vor GPT-5.6. Hat Vorrang vor provider_options.openai.prompt_cache_retention.
+        prompt_cache_options:
+          $ref: '#/components/schemas/PromptCacheOptions'
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         safety_identifier:
           type: string
           nullable: true

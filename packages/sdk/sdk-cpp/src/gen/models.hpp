@@ -60,6 +60,7 @@ struct AnthropicMessage {
 };
 
 struct AnthropicMessagesRequest {
+	std::map<std::string, std::any> cache_control;
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	int max_tokens;
@@ -532,8 +533,10 @@ struct CacheControl {
 
 struct ChatAudioOutputPart {
 	std::map<std::string, std::any> audio_url;
+	std::map<std::string, std::any> cache_control;
 	std::any format;
 	std::string mime_type;
+	std::map<std::string, std::any> prompt_cache_breakpoint;
 	std::any type;
 };
 
@@ -544,6 +547,7 @@ struct ChatChoice {
 };
 
 struct ChatCompletionsRequest {
+	std::map<std::string, std::any> cache_control;
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	std::optional<double> frequency_penalty;
@@ -562,6 +566,8 @@ struct ChatCompletionsRequest {
 	std::optional<bool> parallel_tool_calls;
 	std::optional<double> presence_penalty;
 	std::optional<std::string> prompt_cache_key;
+	std::map<std::string, std::any> prompt_cache_options;
+	std::any prompt_cache_retention;
 	std::any provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
@@ -1114,6 +1120,7 @@ struct FileUploadRequest {
 
 struct FunctionToolDefinition {
 	std::optional<bool> async;
+	std::map<std::string, std::any> cache_control;
 	std::map<std::string, std::any> function;
 	std::any type;
 };
@@ -2554,6 +2561,15 @@ struct PrivateModelUpdateRequest {
 	std::string upstream_model_id;
 };
 
+struct PromptCacheBreakpoint {
+	std::any mode;
+};
+
+struct PromptCacheOptions {
+	std::any mode;
+	std::string ttl;
+};
+
 struct Provider {
 	std::string api_provider_id;
 	std::optional<std::string> api_provider_name;
@@ -2633,6 +2649,7 @@ struct ProviderOptions {
 	std::map<std::string, std::any> anthropic;
 	std::map<std::string, std::any> google;
 	std::map<std::string, std::any> openai;
+	std::map<std::string, std::any> xai;
 };
 
 struct ProviderRoutingOptions {
@@ -2847,6 +2864,7 @@ struct ResponsesOutputTextPart {
 
 struct ResponsesRequest {
 	std::optional<bool> background;
+	std::map<std::string, std::any> cache_control;
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	std::map<std::string, std::any> image_config;
@@ -2862,6 +2880,8 @@ struct ResponsesRequest {
 	std::optional<bool> parallel_tool_calls;
 	std::string previous_response_id;
 	std::optional<std::string> prompt_cache_key;
+	std::map<std::string, std::any> prompt_cache_options;
+	std::any prompt_cache_retention;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
@@ -2976,6 +2996,8 @@ struct SystemOneUsage {
 };
 
 struct TextContentPart {
+	std::map<std::string, std::any> cache_control;
+	std::map<std::string, std::any> prompt_cache_breakpoint;
 	std::string text;
 	std::any type;
 };

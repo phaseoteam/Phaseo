@@ -301,6 +301,8 @@
     "models/PrivateModelListResponse.ts",
     "models/PrivateModelResponse.ts",
     "models/PrivateModelUpdateRequest.ts",
+    "models/PromptCacheBreakpoint.ts",
+    "models/PromptCacheOptions.ts",
     "models/Provider.ts",
     "models/ProviderCredential.ts",
     "models/ProviderCredentialCreateRequest.ts",

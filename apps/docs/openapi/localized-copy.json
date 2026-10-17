@@ -8343,6 +8343,56 @@
 			"ja": "サポートされていません。Phaseoはレスポンスを保存しないため、previous_response_idまたはconversationを指定したリクエストは400 unsupported_paramを返します。会話全体をinputで送ってください。",
 			"zh-Hans": "不支持。Phaseo 不存储响应，因此设置了 previous_response_id 或 conversation 的请求会返回 400 unsupported_param。请在 input 中发送完整对话。",
 			"ar": "غير مدعوم. لا تخزّن Phaseo الردود، لذا تعيد الطلبات التي تحدد previous_response_id أو conversation الخطأ 400 unsupported_param. أرسل المحادثة كاملة في input."
+		},
+		"Prompt cache control. Use type ephemeral with an optional ttl of 5m or 1h. scope applies only to a top-level Claude cache policy.": {
+			"es": "Control de la caché de prompts. Usa type ephemeral con un ttl opcional de 5m o 1h. scope solo se aplica a una política de caché de Claude de nivel superior.",
+			"fr": "Contrôle du cache de prompts. Utilisez type ephemeral avec un ttl facultatif de 5m ou 1h. scope ne s’applique qu’à une politique de cache Claude de premier niveau.",
+			"de": "Prompt-Cache-Steuerung. Verwende type ephemeral mit einer optionalen ttl von 5m oder 1h. scope gilt nur für eine Claude-Cache-Richtlinie auf oberster Ebene.",
+			"pt-BR": "Controle do cache de prompts. Use type ephemeral com um ttl opcional de 5m ou 1h. scope se aplica apenas a uma política de cache do Claude no nível superior.",
+			"hi": "प्रॉम्प्ट कैश नियंत्रण। type ephemeral के साथ वैकल्पिक ttl 5m या 1h उपयोग करें। scope केवल शीर्ष-स्तरीय Claude कैश नीति पर लागू होता है।",
+			"ja": "プロンプトキャッシュの制御。type ephemeralと、任意で5mまたは1hのttlを指定します。scopeはトップレベルのClaudeキャッシュポリシーにだけ適用されます。",
+			"zh-Hans": "prompt 缓存控制。使用 type ephemeral，并可选设置 ttl 为 5m 或 1h。scope 仅适用于顶层 Claude 缓存策略。",
+			"ar": "التحكم في ذاكرة المطالبات المؤقتة. استخدم type ephemeral مع ttl اختياري قيمته 5m أو 1h. ولا ينطبق scope إلا على سياسة تخزين مؤقت لـ Claude على المستوى الأعلى."
+		},
+		"OpenAI cache breakpoint. Caches everything up to and including this block. Sent to OpenAI and Azure OpenAI GPT-5.6 and later and to DeepInfra; Claude routes receive it as cache_control.": {
+			"es": "Punto de corte de caché de OpenAI. Almacena en caché todo lo anterior, incluido este bloque. Se envía a OpenAI y Azure OpenAI desde GPT-5.6 y a DeepInfra; las rutas de Claude lo reciben como cache_control.",
+			"fr": "Point d’arrêt de cache OpenAI. Met en cache tout ce qui précède, ce bloc compris. Envoyé à OpenAI et Azure OpenAI à partir de GPT-5.6 et à DeepInfra ; les routes Claude le reçoivent sous forme de cache_control.",
+			"de": "OpenAI-Cache-Breakpoint. Cacht alles bis einschließlich dieses Blocks. Wird an OpenAI und Azure OpenAI ab GPT-5.6 sowie an DeepInfra gesendet; Claude-Routen erhalten ihn als cache_control.",
+			"pt-BR": "Ponto de interrupção de cache da OpenAI. Armazena em cache tudo até este bloco, inclusive. Enviado à OpenAI e à Azure OpenAI a partir do GPT-5.6 e à DeepInfra; as rotas do Claude o recebem como cache_control.",
+			"hi": "OpenAI कैश ब्रेकपॉइंट। इस ब्लॉक तक (इसे मिलाकर) सब कुछ कैश करता है। GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों तथा DeepInfra को भेजा जाता है; Claude रूट इसे cache_control के रूप में पाते हैं।",
+			"ja": "OpenAIのキャッシュブレークポイント。このブロックまでのすべてをキャッシュします。GPT-5.6以降のOpenAIとAzure OpenAI、およびDeepInfraに送られ、Claudeのルートにはcache_controlとして届きます。",
+			"zh-Hans": "OpenAI 缓存断点。缓存到该块为止（含该块）的全部内容。会发送给 GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI，以及 DeepInfra；Claude 路由会以 cache_control 的形式收到它。",
+			"ar": "نقطة توقف للتخزين المؤقت في OpenAI. تخزّن مؤقتًا كل ما يسبقها حتى هذه الكتلة، بما فيها الكتلة نفسها. تُرسل إلى OpenAI وAzure OpenAI بدءًا من GPT-5.6 وإلى DeepInfra؛ وتتلقاها مسارات Claude بصيغة cache_control."
+		},
+		"Prompt cache mode and TTL for OpenAI and Azure OpenAI GPT-5.6 and later (ttl 30m) and for DeepInfra (ttl 5m or 1h). Removed for other providers.": {
+			"es": "Modo y TTL de la caché de prompts para OpenAI y Azure OpenAI desde GPT-5.6 (ttl 30m) y para DeepInfra (ttl 5m o 1h). Se elimina para los demás proveedores.",
+			"fr": "Mode et TTL du cache de prompts pour OpenAI et Azure OpenAI à partir de GPT-5.6 (ttl 30m) et pour DeepInfra (ttl 5m ou 1h). Retiré pour les autres fournisseurs.",
+			"de": "Prompt-Cache-Modus und TTL für OpenAI und Azure OpenAI ab GPT-5.6 (ttl 30m) sowie für DeepInfra (ttl 5m oder 1h). Wird für andere Anbieter entfernt.",
+			"pt-BR": "Modo e TTL do cache de prompts para OpenAI e Azure OpenAI a partir do GPT-5.6 (ttl 30m) e para a DeepInfra (ttl 5m ou 1h). Removido para os demais provedores.",
+			"hi": "GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों (ttl 30m) तथा DeepInfra (ttl 5m या 1h) के लिए प्रॉम्प्ट कैश मोड और TTL। अन्य प्रदाताओं के लिए हटा दिया जाता है।",
+			"ja": "GPT-5.6以降のOpenAIとAzure OpenAI（ttl 30m）、およびDeepInfra（ttl 5mまたは1h）向けのプロンプトキャッシュのモードとTTL。ほかのプロバイダーでは削除されます。",
+			"zh-Hans": "适用于 GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI（ttl 30m）以及 DeepInfra（ttl 5m 或 1h）的 prompt 缓存模式和 TTL。对其他提供商会被移除。",
+			"ar": "وضع ذاكرة المطالبات المؤقتة ومدة صلاحيتها لـ OpenAI وAzure OpenAI بدءًا من GPT-5.6 (ttl 30m) ولـ DeepInfra (ttl 5m أو 1h). يُحذف للمزوّدين الآخرين."
+		},
+		"xAI conversation ID, sent as the x-grok-conv-id header.": {
+			"es": "ID de conversación de xAI, enviado en el encabezado x-grok-conv-id.",
+			"fr": "Identifiant de conversation xAI, envoyé dans l’en-tête x-grok-conv-id.",
+			"de": "xAI-Unterhaltungs-ID, gesendet im Header x-grok-conv-id.",
+			"pt-BR": "ID de conversa da xAI, enviado no cabeçalho x-grok-conv-id.",
+			"hi": "xAI बातचीत ID, जिसे x-grok-conv-id हेडर में भेजा जाता है।",
+			"ja": "xAIの会話ID。x-grok-conv-idヘッダーとして送られます。",
+			"zh-Hans": "xAI 对话 ID，通过 x-grok-conv-id 请求头发送。",
+			"ar": "معرّف محادثة xAI، ويُرسل في الترويسة x-grok-conv-id."
+		},
+		"Prompt cache retention for OpenAI and Azure OpenAI models before GPT-5.6. Takes precedence over provider_options.openai.prompt_cache_retention.": {
+			"es": "Retención de la caché de prompts para los modelos de OpenAI y Azure OpenAI anteriores a GPT-5.6. Prevalece sobre provider_options.openai.prompt_cache_retention.",
+			"fr": "Conservation du cache de prompts pour les modèles OpenAI et Azure OpenAI antérieurs à GPT-5.6. Prévaut sur provider_options.openai.prompt_cache_retention.",
+			"de": "Prompt-Cache-Aufbewahrung für OpenAI- und Azure-OpenAI-Modelle vor GPT-5.6. Hat Vorrang vor provider_options.openai.prompt_cache_retention.",
+			"pt-BR": "Retenção do cache de prompts para modelos da OpenAI e da Azure OpenAI anteriores ao GPT-5.6. Prevalece sobre provider_options.openai.prompt_cache_retention.",
+			"hi": "GPT-5.6 से पहले के OpenAI और Azure OpenAI मॉडलों के लिए प्रॉम्प्ट कैश प्रतिधारण। provider_options.openai.prompt_cache_retention पर प्राथमिकता पाता है।",
+			"ja": "GPT-5.6より前のOpenAIとAzure OpenAIのモデル向けのプロンプトキャッシュ保持期間。provider_options.openai.prompt_cache_retentionより優先されます。",
+			"zh-Hans": "适用于 GPT-5.6 之前的 OpenAI 和 Azure OpenAI 模型的 prompt 缓存保留策略。优先于 provider_options.openai.prompt_cache_retention。",
+			"ar": "مدة الاحتفاظ بذاكرة المطالبات المؤقتة لنماذج OpenAI وAzure OpenAI السابقة لـ GPT-5.6. تتقدّم على provider_options.openai.prompt_cache_retention."
 		}
 	},
 	"GET /apps": {

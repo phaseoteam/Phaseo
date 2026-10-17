@@ -71,6 +71,8 @@ module Phaseo
     # @!attribute [rw] role
     #   @return [String]
     AnthropicMessage = Struct.new(:content, :role, keyword_init: true)
+    # @!attribute [rw] cache_control
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] debug
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] echo_upstream_request
@@ -115,7 +117,7 @@ module Phaseo
     #   @return [Float, nil]
     # @!attribute [rw] usage
     #   @return [Boolean, nil]
-    AnthropicMessagesRequest = Struct.new(:debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :models, :provider, :provider_options, :reasoning, :service_tier, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, keyword_init: true)
+    AnthropicMessagesRequest = Struct.new(:cache_control, :debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :models, :provider, :provider_options, :reasoning, :service_tier, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, keyword_init: true)
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] id
@@ -794,13 +796,17 @@ module Phaseo
     CacheControl = Struct.new(:scope, :ttl, :type, keyword_init: true)
     # @!attribute [rw] audio_url
     #   @return [Hash{String => Object}]
+    # @!attribute [rw] cache_control
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] format
     #   @return [String, nil]
     # @!attribute [rw] mime_type
     #   @return [String, nil]
+    # @!attribute [rw] prompt_cache_breakpoint
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] type
     #   @return [String]
-    ChatAudioOutputPart = Struct.new(:audio_url, :format, :mime_type, :type, keyword_init: true)
+    ChatAudioOutputPart = Struct.new(:audio_url, :cache_control, :format, :mime_type, :prompt_cache_breakpoint, :type, keyword_init: true)
     # @!attribute [rw] finish_reason
     #   @return [String, nil]
     # @!attribute [rw] index
@@ -808,6 +814,8 @@ module Phaseo
     # @!attribute [rw] message
     #   @return [Hash{String => Object}, nil]
     ChatChoice = Struct.new(:finish_reason, :index, :message, keyword_init: true)
+    # @!attribute [rw] cache_control
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] debug
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] echo_upstream_request
@@ -843,6 +851,10 @@ module Phaseo
     # @!attribute [rw] presence_penalty
     #   @return [Float, nil]
     # @!attribute [rw] prompt_cache_key
+    #   @return [String, nil]
+    # @!attribute [rw] prompt_cache_options
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] prompt_cache_retention
     #   @return [String, nil]
     # @!attribute [rw] provider
     #   @return [String, Hash{String => Object}, nil]
@@ -886,7 +898,7 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] user_id
     #   @return [String, nil]
-    ChatCompletionsRequest = Struct.new(:debug, :echo_upstream_request, :frequency_penalty, :image_config, :logit_bias, :logprobs, :max_completion_tokens, :max_tokens, :max_tool_calls, :messages, :meta, :metadata, :modalities, :model, :models, :parallel_tool_calls, :presence_penalty, :prompt_cache_key, :provider, :provider_options, :reasoning, :reasoning_effort, :response_format, :safety_identifier, :seed, :service_tier, :session_id, :stop, :store, :stream, :stream_options, :temperature, :tool_choice, :tools, :top_logprobs, :top_p, :usage, :user, :user_id, keyword_init: true)
+    ChatCompletionsRequest = Struct.new(:cache_control, :debug, :echo_upstream_request, :frequency_penalty, :image_config, :logit_bias, :logprobs, :max_completion_tokens, :max_tokens, :max_tool_calls, :messages, :meta, :metadata, :modalities, :model, :models, :parallel_tool_calls, :presence_penalty, :prompt_cache_key, :prompt_cache_options, :prompt_cache_retention, :provider, :provider_options, :reasoning, :reasoning_effort, :response_format, :safety_identifier, :seed, :service_tier, :session_id, :stop, :store, :stream, :stream_options, :temperature, :tool_choice, :tools, :top_logprobs, :top_p, :usage, :user, :user_id, keyword_init: true)
     # @!attribute [rw] choices
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] created
@@ -1581,11 +1593,13 @@ module Phaseo
     FileUploadRequest = Struct.new(:file, :purpose, keyword_init: true)
     # @!attribute [rw] async
     #   @return [Boolean, nil]
+    # @!attribute [rw] cache_control
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] function
     #   @return [Hash{String => Object}]
     # @!attribute [rw] type
     #   @return [String]
-    FunctionToolDefinition = Struct.new(:async, :function, :type, keyword_init: true)
+    FunctionToolDefinition = Struct.new(:async, :cache_control, :function, :type, keyword_init: true)
     # @!attribute [rw] parameters
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] type
@@ -3655,6 +3669,14 @@ module Phaseo
     # @!attribute [rw] upstream_model_id
     #   @return [String, nil]
     PrivateModelUpdateRequest = Struct.new(:base_url, :context_length, :credential, :custom_provider_name, :custom_provider_url, :description, :enabled, :host_provider_id, :max_output_tokens, :model_reference, :name, :routing_policy, :supports_responses, :upstream_model_id, keyword_init: true)
+    # @!attribute [rw] mode
+    #   @return [String, nil]
+    PromptCacheBreakpoint = Struct.new(:mode, keyword_init: true)
+    # @!attribute [rw] mode
+    #   @return [String, nil]
+    # @!attribute [rw] ttl
+    #   @return [String, nil]
+    PromptCacheOptions = Struct.new(:mode, :ttl, keyword_init: true)
     # @!attribute [rw] api_provider_id
     #   @return [String, nil]
     # @!attribute [rw] api_provider_name
@@ -3763,7 +3785,9 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] openai
     #   @return [Hash{String => Object}, nil]
-    ProviderOptions = Struct.new(:anthropic, :google, :openai, keyword_init: true)
+    # @!attribute [rw] xai
+    #   @return [Hash{String => Object}, nil]
+    ProviderOptions = Struct.new(:anthropic, :google, :openai, :xai, keyword_init: true)
     # @!attribute [rw] allow_fallbacks
     #   @return [Boolean, nil]
     # @!attribute [rw] data_collection
@@ -4057,6 +4081,8 @@ module Phaseo
     ResponsesOutputTextPart = Struct.new(:annotations, :text, :type, keyword_init: true)
     # @!attribute [rw] background
     #   @return [Boolean, nil]
+    # @!attribute [rw] cache_control
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] debug
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] echo_upstream_request
@@ -4086,6 +4112,10 @@ module Phaseo
     # @!attribute [rw] previous_response_id
     #   @return [String, nil]
     # @!attribute [rw] prompt_cache_key
+    #   @return [String, nil]
+    # @!attribute [rw] prompt_cache_options
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] prompt_cache_retention
     #   @return [String, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
@@ -4119,7 +4149,7 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    ResponsesRequest = Struct.new(:background, :debug, :echo_upstream_request, :image_config, :include, :input, :instructions, :max_output_tokens, :meta, :metadata, :modalities, :model, :models, :parallel_tool_calls, :previous_response_id, :prompt_cache_key, :provider, :provider_options, :reasoning, :safety_identifier, :service_tier, :session_id, :store, :stream, :temperature, :text, :tool_choice, :tools, :top_p, :truncation, :usage, :user, keyword_init: true)
+    ResponsesRequest = Struct.new(:background, :cache_control, :debug, :echo_upstream_request, :image_config, :include, :input, :instructions, :max_output_tokens, :meta, :metadata, :modalities, :model, :models, :parallel_tool_calls, :previous_response_id, :prompt_cache_key, :prompt_cache_options, :prompt_cache_retention, :provider, :provider_options, :reasoning, :safety_identifier, :service_tier, :session_id, :store, :stream, :temperature, :text, :tool_choice, :tools, :top_p, :truncation, :usage, :user, keyword_init: true)
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] cost_cents
@@ -4252,11 +4282,15 @@ module Phaseo
     # @!attribute [rw] total_tokens
     #   @return [Integer, nil]
     SystemOneUsage = Struct.new(:input_tokens, :output_tokens, :total_tokens, keyword_init: true)
+    # @!attribute [rw] cache_control
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] prompt_cache_breakpoint
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] text
     #   @return [String]
     # @!attribute [rw] type
     #   @return [String]
-    TextContentPart = Struct.new(:text, :type, keyword_init: true)
+    TextContentPart = Struct.new(:cache_control, :prompt_cache_breakpoint, :text, :type, keyword_init: true)
     TextGenerateTool = Object
     # @!attribute [rw] text
     #   @return [String]
