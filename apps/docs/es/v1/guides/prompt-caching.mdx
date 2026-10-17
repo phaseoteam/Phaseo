@@ -72,11 +72,14 @@ Valores admitidos de `scope`:
 
 | Alcance | Comportamiento |
 | --- | --- |
-| `all_text` | Añade control de caché al texto del sistema y a los bloques de texto o imagen del usuario que aún no lo tengan. |
+| `all_text` | Predeterminado. Añade control de caché al texto del sistema y a los tres mensajes más recientes del usuario que contengan texto o imágenes. |
 | `last_user_message` | Añade control de caché únicamente al mensaje más reciente del usuario. |
+| `agent` | Para bucles de herramientas. Añade control de caché a la última definición de herramienta, al texto del sistema, al mensaje final (incluidos los resultados de herramientas) y al mensaje del paso anterior. `conversation` es un alias. |
 | `none` | No apliques una política de caché predeterminada. |
 
 El `cache_control` de cada bloque prevalece sobre la política predeterminada.
+
+Anthropic acepta como máximo cuatro puntos de corte de caché por solicitud. Las políticas predeterminadas cuentan los `cache_control` que defines tú y se detienen en cuatro. Los valores de `scope` no reconocidos se tratan como `agent`. Usa `agent` en bucles de herramientas de varios pasos: `all_text` y `last_user_message` no marcan los mensajes que solo contienen resultados de herramientas, por lo que el prefijo en caché deja de crecer.
 
 ## Chat Completions
 

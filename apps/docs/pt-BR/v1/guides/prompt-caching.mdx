@@ -72,11 +72,14 @@ Valores `scope` compatíveis:
 
 | Escopo | Comportamento |
 | --- | --- |
-| `all_text` | Adicione o controle de cache ao texto do sistema e aos blocos de texto/imagem do usuário que ainda não tenham esse controle. |
+| `all_text` | Padrão. Adicione o controle de cache ao texto do sistema e às três mensagens mais recentes do usuário que contenham texto ou imagens. |
 | `last_user_message` | Adicione o controle de cache apenas à mensagem mais recente do usuário. |
+| `agent` | Para loops de ferramentas. Adicione o controle de cache à última definição de ferramenta, ao texto do sistema, à mensagem final (incluindo resultados de ferramentas) e à mensagem da etapa anterior. `conversation` é um alias. |
 | `none` | Não aplique uma política padrão de cache. |
 
 O `cache_control` definido por bloco prevalece sobre a política padrão.
+
+A Anthropic aceita no máximo quatro pontos de interrupção de cache por requisição. As políticas padrão contam os `cache_control` que você define e param em quatro. Valores de `scope` não reconhecidos são tratados como `agent`. Use `agent` em loops de ferramentas com várias etapas: `all_text` e `last_user_message` não marcam mensagens que contêm apenas resultados de ferramentas, então o prefixo em cache para de crescer.
 
 ## Chat Completions
 
