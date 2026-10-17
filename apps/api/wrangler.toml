@@ -75,6 +75,7 @@ EMAIL_OUTBOX_DRAIN_ENABLED = "true"
 EMAIL_OUTBOX_DRAIN_LIMIT = "25"
 # Off until the founder approves sending.
 FEEDBACK_REQUEST_EMAILS_ENABLED = "false"
+MOBILE_PUSH_ENABLED = "false"
 FEEDBACK_REQUEST_FROM_EMAIL = "Daniel at Phaseo <daniel@phaseo.app>"
 VIDEO_API_ENABLED = "true"
 PRICING_MONITOR_ENABLED = "false"
