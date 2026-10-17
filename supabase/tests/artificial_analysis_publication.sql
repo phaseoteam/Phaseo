@@ -33,10 +33,12 @@ BEGIN
   document := jsonb_set(document, '{snapshot_id}', to_jsonb(gen_random_uuid()));
   document := jsonb_set(document, '{fetched_at}', to_jsonb(now() + interval '1 second'));
   document := jsonb_set(document, '{results,0,result_id}', to_jsonb(gen_random_uuid()));
+  document := jsonb_set(document, '{results,0,score}', to_jsonb('55'::text));
+  document := jsonb_set(document, '{results,0,score_numeric}', to_jsonb(55));
   PERFORM public.publish_artificial_analysis_snapshot(document);
   ASSERT EXISTS (SELECT 1 FROM public.v2_benchmark_results WHERE result_id = result_uuid AND effective_to IS NOT NULL);
-  ASSERT NOT EXISTS (SELECT 1 FROM public.get_public_intelligence_index(100)
-    WHERE model_id = 'aa-publication-smoke/model' AND score IS DISTINCT FROM 50);
+  ASSERT (SELECT count(*) = 1 AND min(score) = 55 FROM public.get_public_intelligence_index(100)
+    WHERE model_id = 'aa-publication-smoke/model');
 END;
 $test$;
 ROLLBACK;

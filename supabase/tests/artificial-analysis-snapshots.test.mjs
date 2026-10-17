@@ -29,6 +29,8 @@ try {
   await db.exec(await read('../schemas/public/functions/publish_artificial_analysis_snapshot.sql'));
   await db.exec(await read('../schemas/public/functions/get_artificial_analysis_coverage.sql'));
   await db.exec("insert into public.v2_models values ('lab/one', false), ('lab/unmatched', false), ('lab/hidden', true);");
+  await db.exec("alter table public.v2_models add column name text default 'Model', add column lab_slug text default 'lab'; create table public.v2_labs(lab_slug text primary key,name text); grant select on public.v2_labs to service_role;");
+  await db.exec(await read('../schemas/public/functions/get_public_intelligence_index.sql'));
   await db.exec(`insert into public.v2_benchmarks(benchmark_id,name) values ('aa-intelligence-index-v4','Current'),('aa-intelligence-index-v5','Future');
     insert into public.v2_benchmark_results(result_id,model_slug,benchmark_id,score_numeric,other_info) values
     ('${id(999)}','lab/one','aa-intelligence-index-v4',50,'Artificial Analysis ID existing; Intelligence Index v4.3.2');`);
@@ -70,6 +72,7 @@ try {
   assert.equal(await count('artificial_analysis_snapshots'), 2, 'older payload retained');
   assert.equal(Number((await db.query("select count(*) as n from public.v2_benchmark_results where model_slug='lab/one' and score_numeric is not null and effective_to is null")).rows[0].n), 2, 'old matched configs retired');
   assert.equal(Number((await db.query("select count(*) as n from public.v2_benchmark_results where model_slug='lab/unmatched' and effective_to is null")).rows[0].n), 1, 'unmatched results retained');
+  assert.equal((await db.query("select * from public.get_public_intelligence_index(100) where model_id='lab/one'")).rows.length, 2, 'retired configurations do not reappear in intelligence ranking');
   await rejects(publish({ ...snapshot(3), fetched_at: first.fetched_at }), /stale/);
   await rejects(publish({ ...snapshot(3), methodology_version: '4.2.0' }), /stale/);
   const invalid = snapshot(3); invalid.results[0].score_numeric = 'NaN';
