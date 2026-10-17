@@ -123,3 +123,46 @@ describe("customer quota coordinator", () => {
 		await expect(limiter.admit("customer-quota:v1:other:user", "minute", "2")).rejects.toThrow("customer_scope_mismatch");
 	});
 });
+
+describe("policy token counter", () => {
+	const scope = "rate-limit-policy:v1:workspace:policy:key:key-1";
+
+	it("charges completed usage over a rolling minute and reports when the allowance frees up", async () => {
+		const limiter = object();
+		expect(await limiter.chargeTokens(scope, "a", 600, 1000)).toEqual({ allowed: true, limit: 1000, remaining: 400, retryAfterSeconds: 0 });
+		vi.advanceTimersByTime(20_000);
+		// Usage can overshoot: the request was already admitted.
+		expect(await limiter.chargeTokens(scope, "b", 700, 1000)).toEqual({ allowed: false, limit: 1000, remaining: 0, retryAfterSeconds: 40 });
+		// A repeated charge for the same admission (a fallback attempt) is ignored.
+		expect(await limiter.chargeTokens(scope, "b", 700, 1000)).toMatchObject({ remaining: 0, retryAfterSeconds: 40 });
+		vi.advanceTimersByTime(40_000);
+		expect(await limiter.peekTokens(scope, 1000)).toEqual({ allowed: true, limit: 1000, remaining: 300, retryAfterSeconds: 0 });
+		vi.advanceTimersByTime(20_000);
+		expect(await limiter.peekTokens(scope, 1000)).toMatchObject({ allowed: true, remaining: 1000 });
+	});
+
+	it("waits for as many charges to expire as it takes to get back under the limit", async () => {
+		const limiter = object();
+		await limiter.chargeTokens(scope, "a", 100, 1000);
+		vi.advanceTimersByTime(10_000);
+		await limiter.chargeTokens(scope, "b", 100, 1000);
+		vi.advanceTimersByTime(10_000);
+		expect(await limiter.chargeTokens(scope, "c", 950, 1000)).toMatchObject({ allowed: false, retryAfterSeconds: 50 });
+	});
+
+	it("keeps token usage across a restart and ignores zero or invalid charges", async () => {
+		const limiter = object();
+		await limiter.chargeTokens(scope, "a", 900, 1000);
+		expect(await limiter.chargeTokens(scope, "zero", 0, 1000)).toMatchObject({ remaining: 100 });
+		expect(await limiter.chargeTokens(scope, "fraction", 1.5, 1000)).toMatchObject({ remaining: 100 });
+		vi.advanceTimersByTime(5_000);
+		const restarted = object();
+		expect(await restarted.peekTokens(scope, 1000)).toMatchObject({ remaining: 100 });
+	});
+
+	it("rejects a scope mismatch", async () => {
+		const limiter = object();
+		await limiter.chargeTokens(scope, "a", 1, 10);
+		await expect(limiter.peekTokens("other", 10)).rejects.toThrow("customer_scope_mismatch");
+	});
+});

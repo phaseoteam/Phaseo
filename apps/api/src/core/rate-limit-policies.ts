@@ -1,4 +1,4 @@
-// Purpose: Enforce workspace rate limit policies (requests per minute) on the request path.
+// Purpose: Enforce workspace rate limit policies (requests and tokens per minute) on the request path.
 // Why: Admins assign named limits to keys, members, guardrails and end users;
 //      the request path must apply them without Postgres or added latency.
 // How: The control API publishes a compact per-workspace plan to KV after
@@ -10,13 +10,16 @@
 //      Object, and a scope the isolate knows is exhausted is rejected locally.
 //      Changes therefore take effect within about a minute; a scheduled
 //      reconcile republishes every workspace so a missed or out-of-order
-//      publish cannot persist. Department
-//      assignments, tokens_per_minute and concurrent_requests are not enforced
-//      yet, and fail_closed is ignored: every failure admits the request.
+//      publish cannot persist. Tokens per minute are charged with each
+//      request's real usage once it completes (chargeRateLimitPolicyTokens),
+//      so requests already in flight can take an allowance past its limit.
+//      Department assignments and concurrent_requests are not enforced yet, and
+//      fail_closed is ignored: every failure admits the request.
 import { getCache, getSupabaseAdmin } from "@/runtime/env";
+import { resolveCanonicalTokenUsage } from "@core/usage-normalization";
 import { invalidateTieredL1, tieredRead } from "@core/tiered-cache";
 import {
-	admitPolicyQuotas, policyQuotaBindings, policyQuotaReport,
+	admitPolicyQuotas, chargePolicyTokens, policyQuotaBindings, policyQuotaReport,
 	type PolicyQuotaDenial,
 } from "@core/customer-rate-limits";
 import { err } from "@pipeline/before/http";
@@ -24,7 +27,8 @@ import type { PipelineContext } from "@pipeline/before/types";
 
 export type RateLimitPlan = {
 	v: 1;
-	policies: Record<string, { rpm: number | null; name: string }>;
+	/** `tpm` is absent from plans published before tokens per minute were enforced. */
+	policies: Record<string, { rpm: number | null; tpm?: number | null; name: string }>;
 	keys: Record<string, string>;
 	members: Record<string, string>;
 	guardrails: Record<string, string>;
@@ -37,7 +41,8 @@ export type ApplicableRateLimit = {
 	policyId: string;
 	name: string;
 	targetType: RateLimitTarget;
-	rpm: number;
+	rpm: number | null;
+	tpm: number | null;
 	/** Subject within the policy, e.g. `key:{keyId}`. */
 	scopeKey: string;
 };
@@ -64,8 +69,9 @@ export function isRateLimitPlan(value: unknown): value is RateLimitPlan {
 	if (!value || typeof value !== "object") return false;
 	const plan = value as Partial<RateLimitPlan>;
 	if (plan.v !== 1 || !plan.policies || typeof plan.policies !== "object") return false;
+	const limitValid = (value: unknown) => value === null || (typeof value === "number" && Number.isSafeInteger(value) && value > 0);
 	const policiesValid = Object.values(plan.policies).every((policy) => Boolean(policy) && typeof policy.name === "string"
-		&& (policy.rpm === null || (typeof policy.rpm === "number" && Number.isSafeInteger(policy.rpm) && policy.rpm > 0)));
+		&& limitValid(policy.rpm) && (policy.tpm === undefined || limitValid(policy.tpm)));
 	return policiesValid && isStringRecord(plan.keys) && isStringRecord(plan.members) && isStringRecord(plan.guardrails)
 		&& (plan.endUserDefault === null || typeof plan.endUserDefault === "string");
 }
@@ -88,7 +94,7 @@ async function readAll<T>(table: string, columns: string, workspaceId: string): 
 	}
 }
 
-type PolicyRow = { id: string; name: string; requests_per_minute: number | null };
+type PolicyRow = { id: string; name: string; requests_per_minute: number | null; tokens_per_minute: number | string | null };
 type AssignmentRow = {
 	policy_id: string;
 	target_type: string;
@@ -100,7 +106,7 @@ type AssignmentRow = {
 /** Reads a workspace's policies and assignments. Department assignments are not enforced yet and are omitted. */
 export async function buildRateLimitPlan(workspaceId: string): Promise<RateLimitPlan> {
 	const [policies, assignments] = await Promise.all([
-		readAll<PolicyRow>("workspace_rate_limit_policies", "id,name,requests_per_minute", workspaceId),
+		readAll<PolicyRow>("workspace_rate_limit_policies", "id,name,requests_per_minute,tokens_per_minute", workspaceId),
 		readAll<AssignmentRow>("workspace_rate_limit_policy_assignments", "id,policy_id,target_type,key_id,user_id,guardrail_id", workspaceId),
 	]);
 	const known = new Map(policies.map((policy) => [policy.id, policy]));
@@ -115,6 +121,7 @@ export async function buildRateLimitPlan(workspaceId: string): Promise<RateLimit
 		else continue;
 		plan.policies[policy.id] = {
 			rpm: policy.requests_per_minute == null ? null : Number(policy.requests_per_minute),
+			tpm: policy.tokens_per_minute == null ? null : Number(policy.tokens_per_minute),
 			name: policy.name,
 		};
 	}
@@ -255,8 +262,9 @@ export function applicableRateLimits(plan: RateLimitPlan | null, subject: {
 	const limits: ApplicableRateLimit[] = [];
 	const add = (policyId: string | null | undefined, targetType: RateLimitTarget, scopeKey: string) => {
 		const policy = policyId ? plan.policies[policyId] : undefined;
-		if (!policyId || !policy || policy.rpm == null) return;
-		limits.push({ policyId, name: policy.name, targetType, rpm: policy.rpm, scopeKey });
+		const tpm = policy?.tpm ?? null;
+		if (!policyId || !policy || (policy.rpm == null && tpm == null)) return;
+		limits.push({ policyId, name: policy.name, targetType, rpm: policy.rpm, tpm, scopeKey });
 	};
 	// OAuth requests carry the OAuth client ID in place of a key ID.
 	const keyId = subject.authMethodIsOAuth ? null : subject.keyId || null;
@@ -325,6 +333,30 @@ export async function guardRateLimitPolicies(ctx: PipelineContext): Promise<Resp
 	}
 }
 
+function policyScopes(state: RequestLimits) {
+	return state.limits.map((limit) => ({ scopeKey: limit.quotaKey, requestsPerMinute: limit.rpm, tokensPerMinute: limit.tpm }));
+}
+
+/**
+ * Charges a completed request's token usage to the tokens-per-minute
+ * allowances that applied to it. Call once usage is final; repeated calls for
+ * one request (several settlement paths) charge once. Never throws.
+ */
+export function chargeRateLimitPolicyTokens(ctx: PipelineContext, usage: unknown): void {
+	try {
+		const state = resolvedLimits.get(ctx);
+		if (!state || state.denied || !state.limits.some((limit) => limit.tpm != null)) return;
+		const meta = ctx.meta as Record<string, unknown>;
+		if (meta.__rateLimitPolicyTokensCharged === true) return;
+		const tokens = resolveCanonicalTokenUsage(usage).totalTokens;
+		if (!Number.isSafeInteger(tokens) || tokens <= 0) return;
+		meta.__rateLimitPolicyTokensCharged = true;
+		chargePolicyTokens({ scopes: policyScopes(state), admissionId: state.admissionId, tokens });
+	} catch (error) {
+		console.warn("rate_limit_policy_token_charge_failed", { error: error instanceof Error ? error.message : String(error) });
+	}
+}
+
 async function admitRequest(ctx: PipelineContext): Promise<Response | null> {
 	if (!policyQuotaBindings()) return null;
 	let pending = pendingLimits.get(ctx);
@@ -337,67 +369,83 @@ async function admitRequest(ctx: PipelineContext): Promise<Response | null> {
 	}
 	const state = await pending;
 	if (!state) return null;
-	const denial = admitPolicyQuotas({
-		scopes: state.limits.map((limit) => ({ scopeKey: limit.quotaKey, requestsPerMinute: limit.rpm })),
-		admissionId: state.admissionId,
-	});
+	const denial = admitPolicyQuotas({ scopes: policyScopes(state), admissionId: state.admissionId });
 	if (!denial) return null;
 	const entry = state.limits.find((limit) => limit.quotaKey === denial.scope.scopeKey)!;
 	state.denied = { ...denial, entry };
 	const response = err("rate_limit_exceeded", {
 		request_id: ctx.requestId,
 		error_origin: "user",
-		reason: "policy_requests_per_minute",
+		reason: denial.kind === "tokens" ? "policy_tokens_per_minute" : "policy_requests_per_minute",
 		policy_id: entry.policyId,
 		limit_scope: entry.targetType,
-		description: `${limitedSubject(entry)} reached the "${entry.name}" rate limit policy's ${denial.limit} requests per minute. Retry after ${denial.retryAfterSeconds} seconds.`,
+		description: `${limitedSubject(entry)} reached the "${entry.name}" rate limit policy's ${denial.limit} ${denial.kind} per minute. Retry after ${denial.retryAfterSeconds} seconds.`,
 	});
 	response.headers.set("Retry-After", String(denial.retryAfterSeconds));
 	for (const [name, value] of Object.entries(rateLimitPolicyHeaders(ctx) ?? {})) response.headers.set(name, value);
 	return response;
 }
 
+type HeaderValues = { limit: number; remaining: number; reset: number };
+
+/** Approximate values for one allowance from what this isolate last heard from its counter. */
+function reportedValues(report: ReturnType<typeof policyQuotaReport>, limit: number, admissionId: string, ownCost: number, now: number): HeaderValues {
+	const elapsedSeconds = report ? (now - report.at) / 1000 : Infinity;
+	const fresh = report && elapsedSeconds < MINUTE_SECONDS ? report : null;
+	const reportedLimit = fresh?.limit ?? limit;
+	const remaining = fresh
+		? Math.max(0, fresh.remaining - (fresh.admissionId === admissionId ? 0 : ownCost))
+		: Math.max(0, reportedLimit - ownCost);
+	const reset = remaining === 0 && fresh && fresh.retryAfterSeconds > 0
+		? Math.max(1, Math.ceil(fresh.retryAfterSeconds - elapsedSeconds))
+		: MINUTE_SECONDS;
+	return { limit: reportedLimit, remaining, reset };
+}
+
+function tighter(chosen: HeaderValues | null, next: HeaderValues): HeaderValues {
+	return !chosen || next.remaining < chosen.remaining || (next.remaining === chosen.remaining && next.limit < chosen.limit) ? next : chosen;
+}
+
 /**
- * OpenAI-style request rate-limit headers for the most restrictive policy that
- * applied to this request, or null when none did (or the request never reached
- * enforcement, e.g. a cache hit).
+ * OpenAI-style rate-limit headers for the most restrictive request allowance
+ * and the most restrictive token allowance that applied to this request, or
+ * null when none did (or the request never reached enforcement, e.g. a cache
+ * hit). A rejected request reports only the allowance that rejected it.
  *
- * Counting is non-blocking, so the values are approximate: `remaining` is what
- * this isolate last heard from the scope's counter, less one if that report
- * predates this request's own count, and `limit - 1` before any report.
- * `reset` is when the next request will be accepted once nothing remains;
- * otherwise 60s, when the rolling window clears this request.
+ * Counting is non-blocking, so the values are approximate. For requests,
+ * `remaining` is what this isolate last heard from the scope's counter, less
+ * one if that report predates this request's own count, and `limit - 1`
+ * before any report. For tokens it is what the counter last reported; this
+ * request's own usage is charged after it completes. `reset` is when the
+ * allowance frees up once nothing remains; otherwise 60s, the rolling window.
  */
 export function rateLimitPolicyHeaders(ctx: PipelineContext): Record<string, string> | null {
 	const state = resolvedLimits.get(ctx);
 	if (!state || !state.limits.length) return null;
-	let chosen: { limit: number; remaining: number; reset: number } | null = null;
+	let requests: HeaderValues | null = null;
+	let tokens: HeaderValues | null = null;
 	if (state.denied) {
-		chosen = { limit: state.denied.limit, remaining: 0, reset: state.denied.retryAfterSeconds };
+		const denied = { limit: state.denied.limit, remaining: 0, reset: state.denied.retryAfterSeconds };
+		if (state.denied.kind === "tokens") tokens = denied; else requests = denied;
 	} else {
 		const now = Date.now();
 		for (const entry of state.limits) {
-			const report = policyQuotaReport(entry.quotaKey);
-			const elapsedSeconds = report ? (now - report.at) / 1000 : Infinity;
-			const fresh = report && elapsedSeconds < MINUTE_SECONDS ? report : null;
-			const limit = fresh?.limit ?? entry.rpm;
-			const remaining = fresh
-				? Math.max(0, fresh.remaining - (fresh.admissionId === state.admissionId ? 0 : 1))
-				: Math.max(0, limit - 1);
-			const reset = remaining === 0 && fresh && fresh.retryAfterSeconds > 0
-				? Math.max(1, Math.ceil(fresh.retryAfterSeconds - elapsedSeconds))
-				: MINUTE_SECONDS;
-			if (!chosen || remaining < chosen.remaining || (remaining === chosen.remaining && limit < chosen.limit)) {
-				chosen = { limit, remaining, reset };
-			}
+			if (entry.rpm != null) requests = tighter(requests, reportedValues(policyQuotaReport(entry.quotaKey), entry.rpm, state.admissionId, 1, now));
+			if (entry.tpm != null) tokens = tighter(tokens, reportedValues(policyQuotaReport(entry.quotaKey, "tokens"), entry.tpm, state.admissionId, 0, now));
 		}
 	}
-	if (!chosen) return null;
-	return {
-		"x-ratelimit-limit-requests": String(chosen.limit),
-		"x-ratelimit-remaining-requests": String(chosen.remaining),
-		"x-ratelimit-reset-requests": `${chosen.reset}s`,
-	};
+	const headers: Record<string, string> = {};
+	if (requests) {
+		headers["x-ratelimit-limit-requests"] = String(requests.limit);
+		headers["x-ratelimit-remaining-requests"] = String(requests.remaining);
+		headers["x-ratelimit-reset-requests"] = `${requests.reset}s`;
+	}
+	if (tokens) {
+		headers["x-ratelimit-limit-tokens"] = String(tokens.limit);
+		headers["x-ratelimit-remaining-tokens"] = String(tokens.remaining);
+		headers["x-ratelimit-reset-tokens"] = `${tokens.reset}s`;
+	}
+	return Object.keys(headers).length ? headers : null;
 }
 
 /** True when this request was rejected by a rate limit policy (other models would be rejected too). */
@@ -424,4 +472,7 @@ export const RATE_LIMIT_POLICY_HEADERS = [
 	"x-ratelimit-limit-requests",
 	"x-ratelimit-remaining-requests",
 	"x-ratelimit-reset-requests",
+	"x-ratelimit-limit-tokens",
+	"x-ratelimit-remaining-tokens",
+	"x-ratelimit-reset-tokens",
 ];
