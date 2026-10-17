@@ -5,6 +5,7 @@ import {
 	confirmModelRemovals,
 	collapseDiscordProviderChanges,
 	extractDiscoveredModels,
+	extractListedModels,
 	extractProviderApiModelSnapshot,
 	fetchProviderModels,
 	formatPricingSample,
@@ -877,6 +878,16 @@ describe("assertSafeDiscoverySnapshot", () => {
 
 	it("accepts normal provider churn", () => {
 		expect(() => assertSafeDiscoverySnapshot("provider", ["a", "b", "c", "d", "e"], ["a", "b", "c", "f"])).not.toThrow();
+	});
+
+	it("accepts zero models only from an explicitly empty model list", () => {
+		expect(extractListedModels("ai21", { data: [] })).toEqual([]);
+		expect(extractListedModels("provider", [])).toEqual([]);
+		expect(() => extractListedModels("provider", { object: "list" })).toThrow("has no recognisable model list");
+		expect(() => extractListedModels("provider", "<html>maintenance</html>")).toThrow("has no recognisable model list");
+		// A filter that drops every listed entry is a discovery bug, not an empty provider.
+		expect(() => extractListedModels("atlascloud", { data: [{ id: "video-model", categories: ["Video"] }] }))
+			.toThrow("atlascloud listed 1 entries but none were usable models");
 	});
 
 	it("accepts an empty list when there is no previous snapshot to lose", () => {
