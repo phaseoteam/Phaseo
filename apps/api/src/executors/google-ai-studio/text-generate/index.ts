@@ -18,6 +18,7 @@ import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { withNormalizedReasoning } from "./normalize-reasoning";
 import { irPartsToGeminiParts } from "../../google/shared/media";
+import { appendGeminiFunctionResponse, irToolCallsToGeminiParts, withoutEmptyGeminiTextParts } from "../../google/shared/function-history";
 import { normalizeGoogleModelSlug, resolveGoogleModelCandidates } from "../../google/shared/model";
 import { applyGoogleOutputTokenFallback, applyOpenAIUsageFallback } from "../../google/shared/usage-fallback";
 import {
@@ -116,10 +117,13 @@ async function irToLegacyGemini(
 		}
 
 		if (message.role === "user" || message.role === "assistant") {
-			contents.push({
-				role: message.role === "assistant" ? "model" : "user",
-				parts: await irPartsToGeminiParts(message.content, { preserveReasoningAsThought: true, upstreamTiming }),
-			});
+			const contentParts = await irPartsToGeminiParts(message.content, { preserveReasoningAsThought: true, upstreamTiming });
+			const parts = message.role === "assistant"
+				? [...withoutEmptyGeminiTextParts(contentParts), ...irToolCallsToGeminiParts(message.toolCalls, modelOverride ?? ir.model)]
+				: contentParts;
+			if (message.role === "user" || parts.length > 0) {
+				contents.push({ role: message.role === "assistant" ? "model" : "user", parts });
+			}
 			continue;
 		}
 
@@ -133,14 +137,11 @@ async function irToLegacyGemini(
 						response = { content: response };
 					}
 				}
-				contents.push({
-					role: "user",
-					parts: [{
-						functionResponse: {
-							name: toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
-							response,
-						},
-					}],
+				appendGeminiFunctionResponse(contents, {
+					functionResponse: {
+						name: toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
+						response,
+					},
 				});
 			}
 		}
@@ -648,10 +649,12 @@ function geminiToIR(
 					}
 				} else if (part.functionCall) {
 					// Tool call
+					const signature = part.thoughtSignature ?? part.thought_signature;
 					toolCalls.push({
 						id: part.functionCall.name, // Google doesn't provide IDs
 						name: part.functionCall.name,
 						arguments: JSON.stringify(part.functionCall.args || {}),
+						...(typeof signature === "string" && signature ? { thoughtSignature: signature } : {}),
 					});
 				}
 			}
