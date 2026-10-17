@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { MODEL_DISCOVERY_PROVIDERS } from "./providers";
 
 describe("MODEL_DISCOVERY_PROVIDERS", () => {
+	it("discovers each provider once when native and compatible entries overlap", () => {
+		const ids = MODEL_DISCOVERY_PROVIDERS.map((provider) => provider.providerId);
+		expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
+		expect(MODEL_DISCOVERY_PROVIDERS.find((provider) => provider.providerId === "empiriolabs"))
+			.toMatchObject({ modelsEndpoint: "https://api.empiriolabs.ai/v1/models", authStyle: "none" });
+	});
 	it("includes the newly supported self-serve providers with model APIs", () => {
 		const providerIds = new Set(MODEL_DISCOVERY_PROVIDERS.map((provider) => provider.providerId));
 
