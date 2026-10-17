@@ -31,6 +31,8 @@ minimumReleaseAgeExclude:
   # Security patches for static-path middleware bypasses must not wait a week.
   - "hono"
   - "@hono/node-server"
+  # Install the indexed source-map denial-of-service security patch immediately.
+  - "source-map-js@1.2.2"
   - "@shadcn/react"
   - "cn"
   # Expo SDK releases are coordinated and must resolve as a compatible set.
