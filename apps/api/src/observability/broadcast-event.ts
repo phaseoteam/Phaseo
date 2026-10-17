@@ -49,7 +49,8 @@ async function gzip(text: string): Promise<Uint8Array> {
 }
 
 export async function gunzipJson<T>(bytes: Uint8Array): Promise<T> {
-	const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+	// Copied so the Blob gets an ArrayBuffer-backed view, as its type requires.
+	const stream = new Blob([new Uint8Array(bytes)]).stream().pipeThrough(new DecompressionStream("gzip"));
 	return await new Response(stream).json() as T;
 }
 
