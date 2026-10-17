@@ -73,6 +73,7 @@ The most common defect here is a change that works on the path you tested and is
 - TypeScript-first (ES modules, absolute imports `@/...` in the web app); Python for the SDK. Prefer named exports for shared utilities.
 - Components use PascalCase; hooks `useX`; helpers/files camelCase. Keep shared UI pieces in `apps/web/src/components` before adding new primitives.
 - Styling via Tailwind; keep globals lean. Follow lint output for spacing/quotes since no repo-wide formatter is enforced.
+- Do not name competitor products in shipped UI copy, docs, feature copy, or code identifiers. Migration guides for customers moving to Phaseo are the exception.
 
 ## Taste
 - Prefer the smallest change that makes the correct behaviour unsurprising. Do not keep complexity just because it exists, and do not add layers, options, or abstractions until there is a second real use for them.
