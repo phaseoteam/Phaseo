@@ -7,6 +7,7 @@ const supabase = vi.hoisted(() => ({
 	tables: {} as Record<string, unknown[]>,
 	calls: [] as Array<{ table: string; op: string; args: unknown[] }>,
 	failingReads: new Set<string>(),
+	bindings: {} as Record<string, string>,
 }));
 
 vi.mock("@/runtime/env", () => {
@@ -42,7 +43,7 @@ vi.mock("@/runtime/env", () => {
 		},
 	};
 	return {
-		getBindings: () => ({ PRICING_PAGE_MONITOR_ENABLED: "false" }),
+		getBindings: () => supabase.bindings,
 		getSupabaseAdmin: () => client,
 	};
 });
@@ -60,6 +61,7 @@ describe("runModelDiscoveryJob", () => {
 		supabase.tables = {};
 		supabase.calls = [];
 		supabase.failingReads = new Set();
+		supabase.bindings = { PRICING_PAGE_MONITOR_ENABLED: "false" };
 		vi.spyOn(console, "log").mockImplementation(() => {});
 		vi.spyOn(console, "warn").mockImplementation(() => {});
 		vi.spyOn(console, "error").mockImplementation(() => {});
@@ -148,5 +150,41 @@ describe("runModelDiscoveryJob", () => {
 		// Providers with stored rows still diff normally; the rest neither report nor persist anything.
 		expect(summary.changes.map((change) => change.providerId)).toEqual(["vercel"]);
 		expect([...new Set(upsertedSeenRows().map((row) => row.provider_id))]).toEqual(["vercel"]);
+	});
+
+	it("writes no seen-model rows when a second sweep finds nothing changed", async () => {
+		const first = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+		// Store what the first sweep wrote, as Postgres would hand it back.
+		supabase.tables.model_discovery_seen_models = JSON.parse(JSON.stringify(upsertedSeenRows()));
+		supabase.calls = [];
+
+		const second = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+
+		expect(first.seenModels.written).toBeGreaterThan(10);
+		expect(upsertedSeenRows()).toEqual([]);
+		expect(second.seenModels).toEqual({ written: 0, unchanged: first.seenModels.written });
+	});
+
+	it("rewrites only rows due their daily last_seen_at refresh", async () => {
+		await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+		const stored = JSON.parse(JSON.stringify(upsertedSeenRows())) as Array<{ provider_id: string; last_seen_at: string }>;
+		const dayAgo = new Date(Date.now() - 25 * 3600_000).toISOString();
+		supabase.tables.model_discovery_seen_models = stored.map((row) => row.provider_id === "vercel" ? { ...row, last_seen_at: dayAgo } : row);
+		supabase.calls = [];
+
+		const summary = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+
+		expect(upsertedSeenRows().map((row) => `${row.provider_id}/${row.model_id}`)).toEqual(["vercel/model-a", "vercel/model-b"]);
+		expect(summary.seenModels.written).toBe(2);
+	});
+
+	it("fetches a /models list once when two provider entries share its URL and key", async () => {
+		supabase.bindings = { ...supabase.bindings, VENICE_API_KEY: "venice-key" };
+
+		const summary = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+
+		expect(fetchMock.calls.filter((call) => call.url === "https://api.venice.ai/api/v1/models")).toHaveLength(1);
+		expect(summary.results.filter((result) => result.providerId.startsWith("venice")).map((result) => [result.providerId, result.status]))
+			.toEqual([["venice", "success"], ["venice-e2ee", "success"]]);
 	});
 });

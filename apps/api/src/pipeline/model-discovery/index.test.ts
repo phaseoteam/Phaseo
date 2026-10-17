@@ -13,6 +13,7 @@ import {
 	dedupeSeenModelRows,
 	fetchPreviousModelsByProviders,
 	markPendingModelRemovals,
+	shouldCheckPricingPages,
 	toProviderCheckOutcome,
 } from "./index";
 
@@ -21,6 +22,7 @@ type SeenModelRow = {
 	model_id: string;
 	watch_snapshot?: unknown;
 	removal_pending?: boolean;
+	last_seen_at?: string;
 };
 
 function buildPagedSupabase(rows: SeenModelRow[]) {
@@ -180,6 +182,44 @@ describe("markPendingModelRemovals", () => {
 			removal_pending: true,
 			last_seen_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
 		});
+	});
+});
+
+describe("fetchPreviousModelsByProviders write state", () => {
+	it("keeps each row's snapshot key, last_seen_at and pending flag for the write decision", async () => {
+		const supabase = buildPagedSupabase([{
+			provider_id: "vercel",
+			model_id: "openai/gpt-6",
+			watch_snapshot: { pricingFingerprint: null, contextLength: 400_000, maxCompletionTokens: null, pricingDetails: null },
+			removal_pending: false,
+			last_seen_at: "2026-10-17T09:00:00.000Z",
+		} as SeenModelRow]);
+		getSupabaseAdminMock.mockReturnValue(supabase.client);
+
+		const state = await fetchPreviousModelsByProviders(["vercel"]);
+
+		expect(state.byProvider.get("vercel")?.storedByModelId.get("openai/gpt-6")).toEqual({
+			snapshotKey: '{"contextLength":400000,"maxCompletionTokens":null,"pricingDetails":null,"pricingFingerprint":null}',
+			lastSeenAt: "2026-10-17T09:00:00.000Z",
+			removalPending: false,
+		});
+	});
+});
+
+describe("shouldCheckPricingPages", () => {
+	const scheduled = (scheduledAtIso: string) => ({ trigger: "scheduled" as const, source: "cloudflare_cron:all-providers", scheduledAtIso });
+
+	it("checks official pricing pages on the top-of-hour sweep only", () => {
+		const startedAt = new Date("2026-10-17T15:03:01.000Z");
+		expect(shouldCheckPricingPages(scheduled("2026-10-17T15:00:00.000Z"), startedAt)).toBe(true);
+		expect(shouldCheckPricingPages(scheduled("2026-10-17T15:03:00.000Z"), startedAt)).toBe(false);
+		expect(shouldCheckPricingPages(scheduled("2026-10-17T15:45:00.000Z"), startedAt)).toBe(false);
+	});
+
+	it("always checks them on manual runs, and only on the first shard", () => {
+		const startedAt = new Date("2026-10-17T15:03:01.000Z");
+		expect(shouldCheckPricingPages({ trigger: "manual", source: "script" }, startedAt)).toBe(true);
+		expect(shouldCheckPricingPages({ ...scheduled("2026-10-17T15:00:00.000Z"), shardIndex: 1, shardCount: 2 }, startedAt)).toBe(false);
 	});
 });
 
