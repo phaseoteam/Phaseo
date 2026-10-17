@@ -12,6 +12,7 @@ CREATE TABLE "public"."model_discovery_provider_status" (
   "last_checked_at"      timestamp with time zone NOT NULL,
   "last_success_at"      timestamp with time zone,
   "last_run_id"          uuid,
+  "payload_fingerprint"  text,
   CONSTRAINT "model_discovery_provider_status_consecutive_failures_check" CHECK ((consecutive_failures >= 0)),
   CONSTRAINT "model_discovery_provider_status_pkey" PRIMARY KEY (provider_id),
   CONSTRAINT "model_discovery_provider_status_status_check" CHECK ((status = ANY (ARRAY['ok'::text, 'skipped'::text, 'error'::text])))

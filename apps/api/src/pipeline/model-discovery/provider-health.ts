@@ -22,6 +22,11 @@ export type ProviderCheckOutcome = {
 	 * because the first-check baseline rule reads them as proof of what was stored.
 	 */
 	recorded?: boolean;
+	/**
+	 * Fingerprint of the processed /models response. `undefined` keeps the stored one (the sweep's model
+	 * state was not persisted); `null` clears it.
+	 */
+	payloadFingerprint?: string | null;
 };
 
 export type ProviderStatusRow = {
@@ -38,6 +43,8 @@ export type ProviderStatusRow = {
 	alerted_at: string | null;
 	/** A checked provider became skipped and operators have not been told yet. */
 	skip_notice_pending: boolean;
+	/** Fingerprint of the last /models response whose models were processed and persisted. */
+	payload_fingerprint: string | null;
 	last_checked_at: string;
 	last_success_at: string | null;
 	last_run_id: string | null;
@@ -64,7 +71,7 @@ const MAX_REASON_LENGTH = 300;
 const MAX_MESSAGE_LENGTH = 1_900;
 const MAX_ALERT_MESSAGES_PER_SWEEP = 5;
 const PROVIDER_STATUS_COLUMNS =
-	"provider_id,provider_name,status,reason,model_count,duration_ms,consecutive_failures,failing_since,alerted_at,skip_notice_pending,last_checked_at,last_success_at,last_run_id";
+	"provider_id,provider_name,status,reason,model_count,duration_ms,consecutive_failures,failing_since,alerted_at,skip_notice_pending,payload_fingerprint,last_checked_at,last_success_at,last_run_id";
 const SECRET_PATTERN = /\b(?:sk|pk|rk|api[_-]?key|key)[-_][A-Za-z0-9_-]{12,}/gi;
 
 /** Removes the provider key and anything shaped like a key from an upstream error before it is stored or posted. */
@@ -104,6 +111,11 @@ export function nextProviderStatus(
 		// A checked provider that becomes skipped (usually a removed key) is noticed once; the flag keeps
 		// that notice pending across sweeps until it is delivered.
 		skip_notice_pending: outcome.status === "skipped" && (previous?.status === "ok" || previous?.skip_notice_pending === true),
+		payload_fingerprint: outcome.status !== "ok"
+			? null
+			: outcome.payloadFingerprint === undefined
+				? previous?.payload_fingerprint ?? null
+				: outcome.payloadFingerprint,
 		last_checked_at: args.nowIso,
 		last_success_at: recordedSuccess ? args.nowIso : previous?.last_success_at ?? null,
 		last_run_id: args.runId,

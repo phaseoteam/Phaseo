@@ -14,7 +14,7 @@ The boundaries are intentional:
 - `public-model-announcement-discord.ts` is the only model-discovery module that creates public model URLs, OG image URLs, and embeds.
 - `public-model-catalog-announcements.ts` decides which public catalog rows are new, pending, or ready to announce.
 - `helpers.ts` contains shared provider polling, diffing, pricing monitoring, and text-section helpers used by the private workflow.
-- `seen-model-writes.ts` decides which `model_discovery_seen_models` rows a sweep writes (new, changed, resurfaced, or due the daily `last_seen_at` refresh).
+- `seen-model-writes.ts` decides which `model_discovery_seen_models` rows a sweep writes (new, changed, resurfaced, or due the daily `last_seen_at` refresh), and whether a provider with a byte-identical `/models` response can reuse its stored models instead of being re-extracted.
 - `provider-health.ts` keeps one `model_discovery_provider_status` row per provider and sends the private failing/recovered/no-longer-checked alerts through the same private destinations.
 
 The private and public Discord webhooks are separate bindings: `DISCORD_WEBHOOK_URL` is for operator alerts and `DISCORD_WEBHOOK_NEW_MODELS_PUBLIC` is for public catalog announcements.

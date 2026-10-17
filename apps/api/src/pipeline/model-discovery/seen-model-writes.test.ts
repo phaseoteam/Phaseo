@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { seenModelRefreshIntervalMs, shouldWriteSeenModel, watchSnapshotKey } from "./seen-model-writes";
+import { seenModelRefreshIntervalMs, shouldWriteSeenModel, storedModelsAreCurrent, watchSnapshotKey } from "./seen-model-writes";
 
 const HOUR_MS = 60 * 60 * 1000;
 const NOW_MS = Date.parse("2026-10-17T12:00:00.000Z");
@@ -14,8 +14,8 @@ const storedSnapshot = JSON.parse(
 	'{"contextLength":128000,"pricingDetails":{"pricing":{"output":0.00000038,"input":0.00000026}},"maxCompletionTokens":8192,"pricingFingerprint":"{\\"input\\":2.6e-7}"}',
 );
 const policy = { nowMs: NOW_MS, refreshIntervalMs: 24 * HOUR_MS };
-const stored = (overrides: Partial<{ snapshotKey: string | null; lastSeenAt: string | null; removalPending: boolean }> = {}) => ({
-	snapshotKey: watchSnapshotKey(storedSnapshot),
+const stored = (overrides: Partial<{ snapshot: unknown; lastSeenAt: string | null; removalPending: boolean }> = {}) => ({
+	snapshot: storedSnapshot as unknown,
 	lastSeenAt: new Date(NOW_MS - 2 * HOUR_MS).toISOString(),
 	removalPending: false,
 	...overrides,
@@ -51,6 +51,15 @@ describe("shouldWriteSeenModel", () => {
 		expect(shouldWriteSeenModel(stored({ lastSeenAt: new Date(NOW_MS - 23 * HOUR_MS).toISOString() }), snapshot, policy)).toBe(false);
 		expect(shouldWriteSeenModel(stored({ lastSeenAt: new Date(NOW_MS - 24 * HOUR_MS).toISOString() }), snapshot, policy)).toBe(true);
 		expect(shouldWriteSeenModel(stored({ lastSeenAt: null }), snapshot, policy)).toBe(true);
+	});
+});
+
+describe("storedModelsAreCurrent", () => {
+	it("lets an unchanged provider skip extraction only when no stored row needs this sweep", () => {
+		expect(storedModelsAreCurrent([stored(), stored()], policy)).toBe(true);
+		expect(storedModelsAreCurrent([], policy)).toBe(false);
+		expect(storedModelsAreCurrent([stored(), stored({ removalPending: true })], policy)).toBe(false);
+		expect(storedModelsAreCurrent([stored(), stored({ lastSeenAt: new Date(NOW_MS - 25 * HOUR_MS).toISOString() })], policy)).toBe(false);
 	});
 });
 

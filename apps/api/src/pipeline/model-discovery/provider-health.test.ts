@@ -49,6 +49,7 @@ function row(overrides: Partial<ProviderStatusRow> = {}): ProviderStatusRow {
 		failing_since: minutesAgo(15),
 		alerted_at: null,
 		skip_notice_pending: false,
+		payload_fingerprint: null,
 		last_checked_at: minutesAgo(15),
 		last_success_at: minutesAgo(600),
 		last_run_id: "run-0",
@@ -95,6 +96,15 @@ describe("nextProviderStatus", () => {
 			status: "ok", model_count: 0, last_success_at: minutesAgo(15),
 		});
 		expect(nextProviderStatus(healthy, outcome("error"), args)).toMatchObject({ model_count: 0, last_success_at: minutesAgo(15) });
+	});
+
+	it("records the processed response fingerprint, keeps it when the sweep did not persist, and clears it on failure", () => {
+		const args = { nowIso: NOW.toISOString(), runId: "run" };
+		const healthy = row({ status: "ok", failing_since: null, consecutive_failures: 0, payload_fingerprint: "old" });
+
+		expect(nextProviderStatus(healthy, outcome("ok", { payloadFingerprint: "new" }), args).payload_fingerprint).toBe("new");
+		expect(nextProviderStatus(healthy, outcome("ok", { payloadFingerprint: undefined }), args).payload_fingerprint).toBe("old");
+		expect(nextProviderStatus(healthy, outcome("error", { payloadFingerprint: undefined }), args).payload_fingerprint).toBeNull();
 	});
 
 	it("caps stored reasons", () => {

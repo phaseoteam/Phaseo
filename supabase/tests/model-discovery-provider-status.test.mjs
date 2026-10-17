@@ -4,13 +4,29 @@ const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pgli
 
 const db = new PGlite();
 const migration = await readFile(new URL('../migrations/20261017101500_model_discovery_provider_status.sql', import.meta.url), 'utf8');
+const fingerprintMigration = await readFile(new URL('../migrations/20261017114230_model_discovery_provider_payload_fingerprint.sql', import.meta.url), 'utf8');
 const schema = await readFile(new URL('../schemas/public/tables/model_discovery_provider_status.sql', import.meta.url), 'utf8');
 
 try {
   await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;`);
   await db.exec(migration);
+  await db.exec(fingerprintMigration);
 
-  assert.ok(migration.includes(schema), 'migration matches the declarative definition');
+  // The table is created by one migration and extended by another; together they must produce exactly
+  // the declarative definition's columns, in order.
+  const declaredColumns = schema
+    .split('\n')
+    .filter((line) => /^ {2}"[a-z_]+" /.test(line))
+    .map((line) => line.trim().split('"')[1]);
+  const actualColumns = (await db.query(`
+    select column_name from information_schema.columns
+    where table_schema = 'public' and table_name = 'model_discovery_provider_status'
+    order by ordinal_position`)).rows.map((row) => row.column_name);
+  assert.deepEqual(actualColumns, declaredColumns, 'migrations produce the declarative columns');
+  // Everything after the CREATE TABLE (RLS, policy, comment, grants) is unchanged from the first migration.
+  const schemaAfterTable = schema.slice(schema.indexOf('ALTER TABLE'));
+  assert.ok(migration.includes(schemaAfterTable), 'policies, grants and comment match the declarative definition');
+  assert.ok(fingerprintMigration.includes('ADD COLUMN "payload_fingerprint" text'), 'the column is added by its own migration');
 
   // The watcher upserts one row per provider on every sweep.
   const upsert = `
@@ -32,8 +48,9 @@ try {
     { provider_id: 'stepfun', status: 'error', consecutive_failures: 2 },
   ]);
 
-  const [{ skip_notice_pending }] = (await db.query(`select skip_notice_pending from public.model_discovery_provider_status where provider_id = 'mistral'`)).rows;
+  const [{ skip_notice_pending, payload_fingerprint }] = (await db.query(`select skip_notice_pending, payload_fingerprint from public.model_discovery_provider_status where provider_id = 'mistral'`)).rows;
   assert.equal(skip_notice_pending, false, 'no stopped-checking notice is pending by default');
+  assert.equal(payload_fingerprint, null, 'no response fingerprint until a sweep records one');
 
   await assert.rejects(
     db.query(upsert, ['other', 'Other', 'broken', null, 0, null]),

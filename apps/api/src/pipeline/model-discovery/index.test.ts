@@ -199,7 +199,7 @@ describe("fetchPreviousModelsByProviders write state", () => {
 		const state = await fetchPreviousModelsByProviders(["vercel"]);
 
 		expect(state.byProvider.get("vercel")?.storedByModelId.get("openai/gpt-6")).toEqual({
-			snapshotKey: '{"contextLength":400000,"maxCompletionTokens":null,"pricingDetails":null,"pricingFingerprint":null}',
+			snapshot: { pricingFingerprint: null, contextLength: 400_000, maxCompletionTokens: null, pricingDetails: null },
 			lastSeenAt: "2026-10-17T09:00:00.000Z",
 			removalPending: false,
 		});
@@ -225,22 +225,24 @@ describe("shouldCheckPricingPages", () => {
 
 describe("toProviderCheckOutcome", () => {
 	it("maps each provider result onto the health outcome it records", () => {
-		const mistral = { providerId: "mistral", providerName: "Mistral", status: "success" as const, modelCount: 54, durationMs: 190, change: null };
+		const mistral = {
+			providerId: "mistral", providerName: "Mistral", status: "success" as const, modelCount: 54, durationMs: 190, change: null, payloadFingerprint: "abc",
+		};
 		expect(toProviderCheckOutcome(mistral)).toEqual({
-			providerId: "mistral", providerName: "Mistral", status: "ok", reason: null, modelCount: 54, durationMs: 190, recorded: true,
+			providerId: "mistral", providerName: "Mistral", status: "ok", reason: null, modelCount: 54, durationMs: 190, recorded: true, payloadFingerprint: "abc",
 		});
 		expect(toProviderCheckOutcome({
 			providerId: "avian", providerName: "Avian", status: "skipped", reason: "Missing env: AVIAN_API_KEY",
-		})).toEqual({ providerId: "avian", providerName: "Avian", status: "skipped", reason: "Missing env: AVIAN_API_KEY", modelCount: null, durationMs: null, recorded: true });
+		})).toEqual({ providerId: "avian", providerName: "Avian", status: "skipped", reason: "Missing env: AVIAN_API_KEY", modelCount: null, durationMs: null, recorded: true, payloadFingerprint: null });
 		expect(toProviderCheckOutcome({
 			providerId: "stepfun", providerName: "StepFun", status: "error", reason: "HTTP 401", durationMs: 510,
-		})).toEqual({ providerId: "stepfun", providerName: "StepFun", status: "error", reason: "HTTP 401", modelCount: null, durationMs: 510, recorded: true });
+		})).toEqual({ providerId: "stepfun", providerName: "StepFun", status: "error", reason: "HTTP 401", modelCount: null, durationMs: 510, recorded: true, payloadFingerprint: null });
 	});
 
-	it("does not count a success as recorded when its models were not persisted", () => {
-		const mistral = { providerId: "mistral", providerName: "Mistral", status: "success" as const, modelCount: 54, durationMs: 190, change: null };
-		expect(toProviderCheckOutcome(mistral, false).recorded).toBe(false);
-		expect(toProviderCheckOutcome({ ...mistral, firstCheckDeferred: true }).recorded).toBe(false);
+	it("does not count a success, or its response fingerprint, as recorded when its models were not persisted", () => {
+		const mistral = { providerId: "mistral", providerName: "Mistral", status: "success" as const, modelCount: 54, durationMs: 190, change: null, payloadFingerprint: "abc" };
+		expect(toProviderCheckOutcome(mistral, false)).toMatchObject({ recorded: false, payloadFingerprint: undefined });
+		expect(toProviderCheckOutcome({ ...mistral, firstCheckDeferred: true, payloadFingerprint: null })).toMatchObject({ recorded: false, payloadFingerprint: null });
 	});
 });
 

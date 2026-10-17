@@ -979,14 +979,25 @@ function extractProviderResponseErrorMessage(payload: unknown): string | null {
 	return message ? `status_code ${statusCode}: ${message}` : `status_code ${statusCode}`;
 }
 
-export type ProviderModelsPayloadFetcher = (provider: ProviderConfig, apiKey?: string | null) => Promise<unknown>;
+/** A fetched /models response: a fingerprint of its bytes and a payload parsed only when asked for. */
+export type ProviderModelsResponse = {
+	/** SHA-256 of the response body; null when the payload is assembled from several requests. */
+	fingerprint: string | null;
+	payload: () => unknown;
+};
+
+export type ProviderModelsPayloadFetcher = (provider: ProviderConfig, apiKey?: string | null) => Promise<ProviderModelsResponse>;
 
 export async function fetchProviderModels(
 	provider: ProviderConfig,
 	apiKey?: string | null,
 	fetchPayload: ProviderModelsPayloadFetcher = fetchProviderModelsPayload,
 ): Promise<DiscoveredModel[]> {
-	const payload = await fetchPayload(provider, apiKey);
+	return extractProviderModels(provider, await fetchPayload(provider, apiKey));
+}
+
+export function extractProviderModels(provider: ProviderConfig, response: ProviderModelsResponse): DiscoveredModel[] {
+	const payload = response.payload();
 	if (provider.authStyle !== "google_vertex") {
 		const providerResponseErrorMessage = extractProviderResponseErrorMessage(payload);
 		if (providerResponseErrorMessage) {
@@ -1010,7 +1021,7 @@ export function providerModelsRequestKey(provider: ProviderConfig, apiKey?: stri
 export function createSharedProviderModelsFetcher(
 	fetchPayload: ProviderModelsPayloadFetcher = fetchProviderModelsPayload,
 ): ProviderModelsPayloadFetcher {
-	const requests = new Map<string, Promise<unknown>>();
+	const requests = new Map<string, Promise<ProviderModelsResponse>>();
 	return (provider, apiKey) => {
 		let key: string;
 		try {
@@ -1028,8 +1039,15 @@ export function createSharedProviderModelsFetcher(
 	};
 }
 
-/** Fetches a provider's raw /models payload; extraction is per provider entry. */
-export async function fetchProviderModelsPayload(provider: ProviderConfig, apiKey?: string | null): Promise<unknown> {
+function toHex(buffer: ArrayBuffer): string {
+	return Array.from(new Uint8Array(buffer), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Fetches a provider's raw /models response; extraction is per provider entry. The body is hashed before
+ * it is decoded, so a sweep can skip parsing a list that has not changed since it was last processed.
+ */
+export async function fetchProviderModelsPayload(provider: ProviderConfig, apiKey?: string | null): Promise<ProviderModelsResponse> {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), DISCOVERY_TIMEOUT_MS);
 
@@ -1078,7 +1096,8 @@ export async function fetchProviderModelsPayload(provider: ProviderConfig, apiKe
 					return rows;
 				}),
 			);
-			return { publisherModels: publisherModels.flat() };
+			const payload = { publisherModels: publisherModels.flat() };
+			return { fingerprint: null, payload: () => payload };
 		}
 
 		const headers: Record<string, string> = {};
@@ -1131,7 +1150,13 @@ export async function fetchProviderModelsPayload(provider: ProviderConfig, apiKe
 			throw new Error(`HTTP ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}`);
 		}
 
-		return await response.json();
+		const body = await response.arrayBuffer();
+		const fingerprint = toHex(await crypto.subtle.digest("SHA-256", body));
+		let parsed: { value: unknown } | null = null;
+		return {
+			fingerprint,
+			payload: () => (parsed ??= { value: JSON.parse(new TextDecoder().decode(body)) }).value,
+		};
 	} finally {
 		clearTimeout(timeout);
 	}
