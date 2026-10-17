@@ -43,6 +43,15 @@ minimumReleaseAgeExclude:
   # React Native patch releases are coordinated with Expo SDK compatibility.
   - "@react-native/*"
   - "react-native"
+  # Expo SDK 58 pins these native companions in bundledNativeModules.json
+  # (expo-router 58 requires drawer-layout ^4.2.12; @expo/cli and
+  # @expo/metro-config 58 require 2g ^1.0.1, by an Expo maintainer).
+  # Exact versions only; they pass the 7-day window by 2026-10-23.
+  - "2g@1.0.1"
+  - "react-native-drawer-layout@4.2.12"
+  - "react-native-keyboard-controller@1.22.7"
+  - "react-native-screens@4.30.0"
+  - "react-native-svg@15.16.0"
   - "@next/*"
   - "eslint-config-next"
   - "next"
