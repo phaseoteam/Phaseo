@@ -3626,10 +3626,15 @@ export function mergeIRUsageTotals(base?: IRUsage, incoming?: IRUsage): IRUsage 
 		totalTokens: (base.totalTokens ?? 0) + (incoming.totalTokens ?? 0),
 		cachedInputTokens: sumMaybe(base.cachedInputTokens, incoming.cachedInputTokens),
 		cachedReadTokensAreSubsetOfInput:
-			base.cachedReadTokensAreSubsetOfInput === true &&
-			incoming.cachedReadTokensAreSubsetOfInput === true
-				? true
+			typeof base.cachedReadTokensAreSubsetOfInput === "boolean" &&
+			base.cachedReadTokensAreSubsetOfInput === incoming.cachedReadTokensAreSubsetOfInput
+				? base.cachedReadTokensAreSubsetOfInput
 				: undefined,
+		// Both turns come from the same provider, so a shared write semantic carries over.
+		...(typeof base.cachedWriteTokensAreSubsetOfInput === "boolean" &&
+			base.cachedWriteTokensAreSubsetOfInput === incoming.cachedWriteTokensAreSubsetOfInput
+			? { cachedWriteTokensAreSubsetOfInput: base.cachedWriteTokensAreSubsetOfInput }
+			: {}),
 		reasoningTokens: sumMaybe(base.reasoningTokens, incoming.reasoningTokens),
 		_ext: Object.values(mergedExt).some((value) => value != null)
 			? {

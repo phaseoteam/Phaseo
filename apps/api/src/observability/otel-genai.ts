@@ -1,5 +1,6 @@
 import type { Endpoint } from "@core/types";
 import type { ProviderAttemptLog } from "@pipeline/before/types";
+import { reportedCacheTokens } from "@core/cache-usage";
 
 type TraceContext = {
 	traceId: string;
@@ -299,13 +300,13 @@ export function normaliseToolDefinitions(payload: unknown): Array<Record<string,
 
 function usageAttributes(rawUsage: unknown): Array<OtlpAttribute | null> {
 	const usage = object(rawUsage);
+	// Cache reads and writes as billed (priced meters), whichever field name the provider used.
+	const cache = reportedCacheTokens(usage);
 	return [
 		attr("gen_ai.usage.input_tokens", finite(usage.input_tokens ?? usage.prompt_tokens)),
 		attr("gen_ai.usage.output_tokens", finite(usage.output_tokens ?? usage.completion_tokens)),
-		attr("gen_ai.usage.cache_read.input_tokens", finite(
-			usage.cache_read_input_tokens ?? object(usage.input_tokens_details).cached_tokens,
-		)),
-		attr("gen_ai.usage.cache_creation.input_tokens", finite(usage.cache_creation_input_tokens)),
+		attr("gen_ai.usage.cache_read.input_tokens", finite(cache.readTokens)),
+		attr("gen_ai.usage.cache_creation.input_tokens", finite(cache.writeTokens)),
 		attr("gen_ai.usage.reasoning.output_tokens", finite(
 			usage.reasoning_output_tokens ?? object(usage.output_tokens_details).reasoning_tokens,
 		)),
