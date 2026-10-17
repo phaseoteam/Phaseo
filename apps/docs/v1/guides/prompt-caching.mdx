@@ -9,7 +9,7 @@ Use prompt caching when the same large context appears across many requests. Mar
 Prompt caching is different from [response caching](../cookbook/response-caching-with-presets.mdx). Prompt caching still runs inference, but can reduce repeated input processing cost and latency. Response caching returns a previously generated answer for an identical request.
 
 <Note>
-Prompt caching is provider- and model-specific. Unsupported providers ignore cache hints or route without cached pricing. Check the model page pricing table for cache read/write rates.
+Prompt caching is provider- and model-specific. Unsupported providers ignore cache hints. If a provider reports cached tokens on a route that has no cache price yet, Phaseo bills cache reads at the route's normal input rate and cache writes at the input rate times the provider's documented write multiplier. Check the model page pricing table for cache read/write rates.
 </Note>
 
 ## What to cache

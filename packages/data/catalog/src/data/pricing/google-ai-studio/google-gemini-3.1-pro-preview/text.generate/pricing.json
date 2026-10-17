@@ -38,6 +38,38 @@
       "source": null
     },
     {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Gemini Developer API context caching price: 10% of the standard input price (official pricing page, accessed 2026-10-17).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-02-19T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": "https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    {
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
@@ -100,6 +132,38 @@
         }
       ],
       "source": null
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.4,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Gemini Developer API context caching price: 10% of the standard input price (official pricing page, accessed 2026-10-17).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-02-19T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": "https://ai.google.dev/gemini-api/docs/pricing"
     },
     {
       "meter": "output_text_tokens",
@@ -525,7 +589,9 @@
     "flex",
     "priority"
   ],
-  "sources": [],
+  "sources": [
+    "https://ai.google.dev/gemini-api/docs/pricing"
+  ],
   "verification": {
     "status": "unverified",
     "checked_at": null,

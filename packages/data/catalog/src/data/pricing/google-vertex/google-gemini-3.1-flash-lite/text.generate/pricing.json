@@ -22,6 +22,22 @@
       "source": null
     },
     {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.025,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Vertex AI implicit caching: \"a 90% discount on cached tokens compared to standard input tokens\" (accessed 2026-10-17).",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-07T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/context-cache/context-cache-overview"
+    },
+    {
       "meter": "input_image_tokens",
       "unit": "token",
       "unit_size": 1000000,
@@ -333,7 +349,9 @@
     "flex",
     "priority"
   ],
-  "sources": [],
+  "sources": [
+    "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/context-cache/context-cache-overview"
+  ],
   "verification": {
     "status": "unverified",
     "checked_at": null,
