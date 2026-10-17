@@ -191,6 +191,11 @@ jobs:
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
 
+            - name: Validate agent skills, the Phaseo plugin and marketplaces
+              run: |
+                  pnpm run skills:validate
+                  pnpm run skills:check
+
             - name: Test model-discovery GitHub issue sync helpers
               run: pnpm exec tsx scripts/model-discovery/github-issues.test.ts
 

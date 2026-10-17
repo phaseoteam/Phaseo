@@ -1,0 +1,41 @@
+[
+	{
+		"id": "add-phaseo-to-node-app",
+		"query": "Add Phaseo to this Express app so the /summarise route calls a model through it. Keep the existing OpenAI SDK if that's simplest.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Keeps the OpenAI SDK and changes only baseURL to the Phaseo API and the key to PHASEO_API_KEY",
+			"Reads the key from an environment variable, never inline",
+			"Suggests confirming the model ID with GET /v1/models",
+			"Runs or describes one smoke request, using phaseo/free when no model is specified"
+		]
+	},
+	{
+		"id": "debug-401",
+		"query": "Every call to api.phaseo.app returns 401. Here's my fetch code. What's wrong?",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Checks the Authorization: Bearer header format and the PHASEO_API_KEY value",
+			"Suggests GET /v1/health and one minimal request to isolate the problem",
+			"Does not ask the user to paste the key into chat"
+		]
+	},
+	{
+		"id": "responses-body",
+		"query": "Write a curl request to Phaseo's Responses endpoint that returns a one-line answer.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Posts to https://api.phaseo.app/v1/responses",
+			"Sends `input`, not `messages`",
+			"Uses a model ID from GET /v1/models or phaseo/free"
+		]
+	},
+	{
+		"id": "not-for-openrouter-migration",
+		"query": "We're on OpenRouter with sk-or-v1 keys and provider routing objects everywhere. Plan the full move to Phaseo.",
+		"should_trigger": false,
+		"expected_behavior": [
+			"Uses the OpenRouter migration skill rather than only swapping the base URL"
+		]
+	}
+]

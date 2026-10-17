@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "phaseo",
+  "displayName": "Phaseo",
+  "version": "0.4.0",
+  "description": "Build on the Phaseo AI gateway: integration, migration, model selection, SDK and CLI skills, plus the Phaseo MCP for live models, pricing and usage and the Phaseo Docs MCP.",
+  "author": {
+    "name": "Phaseo",
+    "url": "https://phaseo.app"
+  },
+  "homepage": "https://phaseo.app/docs",
+  "repository": "https://github.com/phaseoteam/Phaseo",
+  "license": "MIT",
+  "keywords": ["phaseo", "ai-gateway", "llm", "models", "pricing", "openai-compatible", "migration", "mcp"],
+  "icon": "./assets/logo_light.svg",
+  "documentationUrl": "https://phaseo.app/docs",
+  "supportUrl": "https://phaseo.app/support",
+  "privacyPolicyUrl": "https://phaseo.app/privacy",
+  "termsOfServiceUrl": "https://phaseo.app/terms",
+  "mcpServers": {
+    "phaseo": {
+      "type": "http",
+      "url": "https://mcp.phaseo.app/mcp"
+    },
+    "phaseo-docs": {
+      "type": "http",
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}

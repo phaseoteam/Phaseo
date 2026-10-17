@@ -108,14 +108,51 @@ For UI development without account access, run `pnpm --filter @phaseo/mcp dev:ui
 and open `http://127.0.0.1:4318`. This development-only host uses the official MCP
 Apps bridge with labeled fixture data. It is never included in the Worker bundle.
 
-## Plugin release
+## Plugin
 
-The `plugin/phaseo` directory contains the existing plugin's portable source,
-compatibility manifests, workflow skill, and Phaseo logos. Run
+`plugin/phaseo` is one plugin for Codex, ChatGPT and Claude Code. It bundles:
+
+- the Phaseo MCP (`https://mcp.phaseo.app/mcp`, OAuth) and the Phaseo Docs MCP
+  (`https://phaseo.app/docs/mcp`, no sign-in);
+- the `phaseo` skill, which covers the MCP tools and lives only here;
+- the public skills from `.agents/skills`, copied by `pnpm skills:sync` at the
+  repository root. Do not edit `plugin/phaseo/skills/<public-skill>` directly.
+
+Each host reads its own manifest, so keep them in step (`pnpm skills:validate`
+checks the versions and paths):
+
+| File | Read by |
+| --- | --- |
+| `plugin.json` | Portable Agent Plugins format; ChatGPT and Codex (`extensions.com.openai`) |
+| `.codex-plugin/plugin.json` | Codex compatibility layout, for hosts that do not read `plugin.json` |
+| `.claude-plugin/plugin.json` | Claude Code; declares the MCP servers with `type: "http"` |
+| `.mcp.json`, `mcp.json` | Codex and portable hosts (`streamable-http`) |
+
+The repository root has a marketplace for each host
+(`.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json`). Users
+install from the small `phaseoteam/skills` mirror rather than this repository:
+
+```bash
+# Claude Code
+/plugin marketplace add phaseoteam/skills
+/plugin install phaseo@phaseo
+
+# Codex
+codex plugin marketplace add phaseoteam/skills
+codex plugin add phaseo@phaseo
+```
+
+To test local changes, run `claude plugin validate apps/mcp/plugin/phaseo` and
+`claude --plugin-dir apps/mcp/plugin/phaseo`, or add the repository root as a
+Codex marketplace with a throwaway `CODEX_HOME`.
+
+### Release
+
+Bump `version` in all three manifests together. Run
 `pnpm --filter @phaseo/mcp build:plugin` to create `dist/plugin/phaseo.tar.gz`.
 Deploy the MCP Worker through the repository's PR release flow before uploading
-this package as an update to the existing private plugin. Then reconnect the
-plugin and verify the explorer in the target host with Phaseo OAuth.
+this package as an update to the existing private ChatGPT plugin. Then reconnect
+the plugin and verify the explorer in the target host with Phaseo OAuth.
 
 ## Validation
 

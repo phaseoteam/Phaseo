@@ -12,8 +12,8 @@
 		"translation:freshness:check": "node scripts/translation-freshness.mjs check",
 		"translation:freshness:record": "node scripts/translation-freshness.mjs record",
 		"validate:locales": "node scripts/validate-locales.mjs",
-		"skills:sync": "node scripts/sync-skills.mjs",
-		"skills:check": "node scripts/sync-skills.mjs --check",
+		"skills:sync": "node ../../scripts/skills/sync.mjs",
+		"skills:check": "node ../../scripts/skills/sync.mjs --check",
 		"preview": "mintlify preview",
 		"clean": "rimraf .mint"
 	},
