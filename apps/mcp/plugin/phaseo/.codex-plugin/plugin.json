@@ -8,6 +8,7 @@
   },
   "homepage": "https://phaseo.app/docs",
   "repository": "https://github.com/phaseoteam/Phaseo",
+  "license": "MIT",
   "keywords": ["phaseo", "ai-gateway", "llm", "models", "pricing", "openai-compatible", "migration", "mcp"],
   "skills": "./skills",
   "mcpServers": "./.mcp.json",

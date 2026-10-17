@@ -1,6 +1,7 @@
 ---
 name: phaseo
 description: "Uses the connected Phaseo MCP for live data: the interactive model explorer, model and provider details, token cost estimates, credits, activity, analytics and privacy-minimised request health, and reviewed text inference. Use when comparing AI models or provider availability through Phaseo, estimating costs, or investigating a Phaseo account's usage or a request. Not for writing integration code (use phaseo-gateway or an SDK skill) or changing keys, guardrails or settings, which the MCP cannot do (use phaseo-cli)."
+license: MIT
 ---
 
 # Phaseo

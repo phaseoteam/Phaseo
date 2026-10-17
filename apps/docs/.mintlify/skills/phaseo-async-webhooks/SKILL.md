@@ -1,6 +1,7 @@
 ---
 name: phaseo-async-webhooks
 description: "Builds Phaseo async video, batch and webhook integrations: creating jobs and persisting their IDs, polling or websocket status helpers, idempotent webhook consumers for the standard payload, and recovery when local state and the gateway disagree. Use when a project generates video, submits batches, receives Phaseo webhooks or has stuck long-running jobs. Not for synchronous text, image or audio requests (use phaseo-gateway or an SDK skill)."
+license: MIT
 ---
 
 # Phaseo Async Jobs and Webhooks

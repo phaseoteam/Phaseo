@@ -1,6 +1,7 @@
 ---
 name: phaseo-usage-monitoring
 description: "Monitors and debugs Phaseo spend and usage through REST, the phaseo CLI or the Phaseo MCP: credit balance, per-request cost and tokens, log and generation lookup by request ID, analytics by day, model, key or label, 429 rate limits, budgets, alerts and observability destinations. Use when asked why a request cost X or failed, where credits went, to export usage, or about x-request-id, /v1/credits, /v1/analytics, /v1/logs or Retry-After. Not for key restrictions or guardrail setup (phaseo-guardrails), choosing models by price (phaseo-model-selection) or first integration (phaseo-gateway)."
+license: MIT
 ---
 
 # Phaseo usage monitoring

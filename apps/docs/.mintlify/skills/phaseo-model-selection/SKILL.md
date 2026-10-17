@@ -1,6 +1,7 @@
 ---
 name: phaseo-model-selection
 description: Chooses, compares and pins Phaseo model IDs for a workload by modality, context window, token price, capabilities (tools, structured output, reasoning, vision), provider availability, data policy and lifecycle, using GET /v1/models or the Phaseo MCP. Use when someone asks which model to use, the cheapest or best model for a task, whether a model supports a feature, what a workload will cost, or what replaces a deprecated model or alias. Not for wiring requests (phaseo-gateway), routing or fallback policy (phaseo-routing-presets), or tracking spend (phaseo-usage-monitoring).
+license: MIT
 ---
 
 # Phaseo Model Selection

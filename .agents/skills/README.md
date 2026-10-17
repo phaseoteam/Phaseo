@@ -58,6 +58,7 @@ phaseo-example/
 **Frontmatter**
 
 - `name`: lowercase letters, digits and hyphens, at most 64 characters, the same as the directory.
+- `license`: `MIT` (public skills and the plugin are MIT; the rest of the repository is AGPL).
 - `description`: third person, at most 600 characters (the spec allows 1,024, but Codex shortens long descriptions when many skills are installed). Three parts, in this order:
   1. what the skill does, with the trigger words first;
   2. `Use when …` with concrete signals (package names, file patterns, endpoints, user phrasing);

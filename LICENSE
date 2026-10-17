@@ -9,6 +9,11 @@ under the GNU Affero General Public License, version 3 (AGPL-3.0).
 Client SDKs in packages/sdk-\* are licensed separately under
 the MIT Licence; see the LICENSE files in those directories.
 
+The public agent skills in .agents/skills (those marked
+"license: MIT" in their SKILL.md) and the Phaseo plugin in
+apps/mcp/plugin/phaseo are also licensed under the MIT Licence;
+see apps/mcp/plugin/phaseo/LICENSE.
+
 GNU AFFERO GENERAL PUBLIC LICENSE
 Version 3, 19 November 2007
 

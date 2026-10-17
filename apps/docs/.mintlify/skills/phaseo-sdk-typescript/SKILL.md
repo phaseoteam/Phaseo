@@ -1,6 +1,7 @@
 ---
 name: phaseo-sdk-typescript
 description: "Builds Phaseo integrations with the official TypeScript and JavaScript SDK, `@phaseo/sdk`: one shared client, `generateResponse` and streaming, images, audio, async video, presets, model discovery and request IDs for debugging. Use when a project depends on or should adopt `@phaseo/sdk` in Node.js, Bun or edge runtimes. Not for agent loops (use phaseo-agent-sdk-typescript), Python (phaseo-sdk-python) or code that keeps the OpenAI SDK with a swapped base URL (phaseo-gateway)."
+license: MIT
 ---
 
 # Phaseo SDK TypeScript

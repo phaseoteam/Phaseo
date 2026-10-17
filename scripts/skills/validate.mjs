@@ -206,6 +206,7 @@ function checkSkill(skillDir, catalogue, today) {
 	if (!/^[A-Z][a-z]+s\b/.test(description)) error(skillFile, 'description should start in the third person ("Builds…", "Migrates…")');
 	if (!/\bUse when\b/.test(description)) error(skillFile, 'description needs a "Use when …" clause');
 	if (!/\bNot for\b/.test(description)) error(skillFile, 'description needs a "Not for …" boundary');
+	if (meta.license !== "MIT") error(skillFile, "public skills are MIT licensed: add `license: MIT` to the frontmatter");
 	checkOpenAiYaml(skillDir, name);
 	checkEvals(skillDir);
 }
@@ -227,6 +228,7 @@ function checkPlugin() {
 	for (const [key, manifest] of Object.entries(data)) {
 		if (!manifest) continue;
 		if (manifest.name !== "phaseo") error(manifests[key], 'name must be "phaseo"');
+		if (manifest.license !== "MIT") error(manifests[key], 'license must be "MIT"');
 		const paths = [];
 		const collect = (value) => {
 			if (typeof value === "string" && value.startsWith("./")) paths.push(value);

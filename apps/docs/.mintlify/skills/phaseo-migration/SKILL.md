@@ -1,6 +1,7 @@
 ---
 name: phaseo-migration
 description: Migrates existing LLM integrations to Phaseo from OpenAI, Anthropic, OpenRouter, Vercel AI Gateway, LiteLLM, Cloudflare AI Gateway, Helicone or LLM Gateway. Swaps base URL and API key with a minimal diff, maps model IDs via GET /v1/models, maps fallbacks, caching, headers and observability, and smoke tests. Use when code has api.openai.com, openrouter.ai, ai-gateway.vercel.sh, gateway.ai.cloudflare.com, helicone.ai, api.llmgateway.io or a LiteLLM proxy, or the user asks to switch to Phaseo. Not for new integrations (phaseo-gateway) or deep OpenRouter work (openrouter-to-phaseo-migration).
+license: MIT
 ---
 
 # Phaseo Migration

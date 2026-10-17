@@ -1,6 +1,7 @@
 ---
 name: phaseo-guardrails
 description: "Configures and debugs Phaseo guardrails on API keys: model and provider restrictions, budget limits, prompt-injection handling, sensitive-information detection, preview testing and verification in activity and request logs. Use when a rollout needs to limit what a key can call or spend, or a request was blocked by a guardrail. Not for routing or fallbacks (use phaseo-routing-presets) or reviewing spend after the fact (phaseo-usage-monitoring)."
+license: MIT
 ---
 
 # Phaseo Guardrails

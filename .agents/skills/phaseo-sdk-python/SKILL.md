@@ -1,6 +1,7 @@
 ---
 name: phaseo-sdk-python
 description: "Builds Phaseo integrations with the official Python SDK, `phaseo`: one shared client, `generate_response` and streaming, images, audio, async video, presets, model discovery and request IDs for debugging. Use when a Python project depends on or should adopt `phaseo`, in scripts, notebooks or services. Not for TypeScript (use phaseo-sdk-typescript) or code that keeps the OpenAI Python SDK with a swapped base URL (phaseo-gateway)."
+license: MIT
 ---
 
 # Phaseo SDK Python

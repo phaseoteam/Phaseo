@@ -1,6 +1,7 @@
 ---
 name: phaseo-response-healing
 description: "Configures and debugs Phaseo response healing, the `response-healing` plugin that repairs malformed structured JSON output, at the workspace, preset or request level, with log-based verification. Use when a structured-output or JSON-mode workflow returns invalid JSON, or healing should be rolled out or ruled out. Not for choosing models that support structured output (use phaseo-model-selection) or validating JSON in application code."
+license: MIT
 ---
 
 # Phaseo Response Healing
