@@ -1,38 +1,65 @@
-import { Github, Mail } from "lucide-react-native";
-import { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Screen, usePalette } from "@/components/ui";
-import { useAuth } from "@/providers/AppProviders";
-import { colour, radius, space } from "@/theme";
+import { Mail } from "lucide-react-native";
+import { useEffect, useState } from "react";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { View } from "react-native";
+import { Button, Divider, Screen, Text, TextField } from "@/components/ui";
+import { useAuth, type OAuthProvider } from "@/providers/AuthProvider";
 
 export default function SignInScreen() {
-  const { signInWithEmail, signInWithProvider } = useAuth();
   const router = useRouter();
-  const palette = usePalette();
+  const { session, configured, signInWithProvider, sendEmailLink } = useAuth();
   const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<OAuthProvider | "email" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
 
-  const run = async (action: () => Promise<void>, success?: string) => {
-    setBusy(true);
+  useEffect(() => {
+    if (session && router.canGoBack()) router.back();
+  }, [session, router]);
+
+  async function run(kind: OAuthProvider | "email", action: () => Promise<void>) {
+    setBusy(kind);
+    setError(null);
     try {
       await action();
-      if (success) Alert.alert("Check your email", success);
-      else router.back();
-    } catch (error) {
-      Alert.alert("Sign-in failed", error instanceof Error ? error.message : "Please try again.");
+      if (kind === "email") setSent(true);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Sign-in didn't work. Try again.");
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
-  };
+  }
 
-  return <Screen safeTop={false}><View style={styles.content}>
-    <Text style={[styles.title, { color: palette.text }]}>Continue to Phaseo</Text>
-    <Text style={[styles.body, { color: palette.muted }]}>Sign in to access your workspaces, usage and account settings.</Text>
-    <Pressable disabled={busy} onPress={() => void run(() => signInWithProvider("google"))} style={[styles.button, { borderColor: palette.border }]}><Text style={{ color: palette.text, fontWeight: "600" }}>Continue with Google</Text></Pressable>
-    <Pressable disabled={busy} onPress={() => void run(() => signInWithProvider("github"))} style={[styles.button, { borderColor: palette.border }]}><Github color={palette.text} size={18} /><Text style={{ color: palette.text, fontWeight: "600" }}>Continue with GitHub</Text></Pressable>
-    <View style={styles.emailRow}><TextInput autoCapitalize="none" autoComplete="email" keyboardType="email-address" value={email} onChangeText={setEmail} placeholder="you@example.com" placeholderTextColor={palette.muted} style={[styles.input, { borderColor: palette.border, color: palette.text }]} /><Pressable disabled={busy || !email.trim()} onPress={() => void run(() => signInWithEmail(email.trim()), "Open the secure link on this device to finish signing in.")} style={[styles.mailButton, { opacity: busy || !email.trim() ? 0.45 : 1 }]}><Mail color={colour.white} size={18} /></Pressable></View>
-  </View></Screen>;
+  return (
+    <Screen edges={[]} className="bg-popover">
+      <KeyboardAwareScrollView contentContainerClassName="px-5 pb-10 pt-6" keyboardShouldPersistTaps="handled">
+        <Text variant="title">Sign in to Phaseo</Text>
+        <Text variant="muted" className="mt-1">Sign in once to chat, see your usage and manage your workspace. Browsing models never needs an account.</Text>
+        {!configured ? <Text variant="small" className="mt-4 text-destructive">{"Sign-in isn't set up in this build."}</Text> : null}
+        <View className="mt-6 gap-2">
+          <Button label="Continue with Google" variant="outline" loading={busy === "google"} disabled={!configured || busy != null} onPress={() => void run("google", () => signInWithProvider("google"))} />
+          <Button label="Continue with GitHub" variant="outline" loading={busy === "github"} disabled={!configured || busy != null} onPress={() => void run("github", () => signInWithProvider("github"))} />
+        </View>
+        <View className="my-6 flex-row items-center gap-3">
+          <Divider className="flex-1" />
+          <Text variant="caption">or</Text>
+          <Divider className="flex-1" />
+        </View>
+        {sent ? (
+          <View className="gap-1">
+            <Text variant="label">Check your email</Text>
+            <Text variant="muted">Open the link we sent to {email.trim()} on this phone to finish signing in.</Text>
+            <Button label="Use a different email" variant="ghost" size="sm" className="mt-2 self-start" onPress={() => setSent(false)} />
+          </View>
+        ) : (
+          <View className="gap-2">
+            <TextField value={email} onChangeText={setEmail} placeholder="you@example.com" autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" returnKeyType="send" onSubmitEditing={() => email.trim() && void run("email", () => sendEmailLink(email.trim()))} />
+            <Button label="Email me a sign-in link" icon={Mail} loading={busy === "email"} disabled={!configured || busy != null || !email.includes("@")} onPress={() => void run("email", () => sendEmailLink(email.trim()))} />
+          </View>
+        )}
+        {error ? <Text variant="small" className="mt-4 text-destructive">{error}</Text> : null}
+      </KeyboardAwareScrollView>
+    </Screen>
+  );
 }
-
-const styles = StyleSheet.create({ content: { padding: space.xl, gap: space.lg }, title: { fontSize: 26, fontWeight: "700" }, body: { fontSize: 15, lineHeight: 22 }, button: { minHeight: 50, borderWidth: 1, borderRadius: radius.md, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: space.sm }, emailRow: { flexDirection: "row", gap: space.sm }, input: { flex: 1, minHeight: 50, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: space.lg }, mailButton: { width: 50, borderRadius: radius.md, backgroundColor: colour.blue, alignItems: "center", justifyContent: "center" } });
