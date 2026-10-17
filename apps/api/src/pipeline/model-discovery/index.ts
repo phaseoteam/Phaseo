@@ -38,6 +38,12 @@ import {
 import { fetchPricingTableSnapshots, hasPricingSourceChanged, type PricingTableSnapshot } from "./pricing-tables";
 import { MODEL_DISCOVERY_PROVIDERS, type ProviderConfig } from "./providers";
 import {
+	redactProviderError,
+	runProviderHealthCheck,
+	type ProviderCheckOutcome,
+	type ProviderHealthSummary,
+} from "./provider-health";
+import {
 	DEFAULT_MODEL_DISCOVERY_CONCURRENCY,
 	mapWithConcurrency,
 	normalizeModelDiscoveryConcurrency,
@@ -216,6 +222,7 @@ type DiscoveryRunSummary = {
 	configuredModelCoverageMonitor: ConfiguredModelCoverageMonitorSummary;
 	reviewQueue: ModelDiscoveryReviewQueueSummary;
 	publicModelAnnouncements: PublicModelAnnouncementSummary;
+	providerHealth: ProviderHealthSummary;
 	notificationFingerprint: string | null;
 };
 
@@ -427,6 +434,7 @@ function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError
 		},
 		reviewQueue: summary.reviewQueue,
 		publicModelAnnouncements: summary.publicModelAnnouncements,
+		providerHealth: summary.providerHealth,
 		notificationError: extra.notificationError ?? undefined,
 		error: extra.error ?? undefined,
 	};
@@ -657,10 +665,21 @@ async function processProvider(
 			providerId: provider.providerId,
 			providerName: provider.providerName,
 			status: "error",
-			reason: error instanceof Error ? error.message : String(error),
+			reason: redactProviderError(error instanceof Error ? error.message : String(error), apiKey),
 			durationMs: Date.now() - providerStarted,
 		});
 	}
+}
+
+export function toProviderCheckOutcome(result: ProviderResult): ProviderCheckOutcome {
+	return {
+		providerId: result.providerId,
+		providerName: result.providerName,
+		status: result.status === "success" ? "ok" : result.status,
+		reason: result.status === "success" ? null : result.reason,
+		modelCount: result.status === "success" ? result.modelCount : null,
+		durationMs: result.status === "skipped" ? null : result.durationMs,
+	};
 }
 
 async function upsertModelDiscoveryReviewItems(
@@ -1238,6 +1257,20 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			}
 		}
 
+		// Independent of model-change delivery: a provider can fail for hours with nothing else changing.
+		let providerHealth: ProviderHealthSummary = { checked: 0, failing: 0, alertsSent: 0 };
+		try {
+			providerHealth = await runProviderHealthCheck({
+				runId,
+				outcomes: results.map(toProviderCheckOutcome),
+				notify: shouldNotify,
+				coversAllProviders: providers.length === PROVIDERS.length,
+			});
+		} catch (error) {
+			providerHealth.error = error instanceof Error ? error.message : String(error);
+			console.error("[model-discovery] Provider health check failed:", providerHealth.error);
+		}
+
 		const finishedAt = new Date();
 		const summary: DiscoveryRunSummary = {
 			runId,
@@ -1262,6 +1295,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			configuredModelCoverageMonitor,
 			reviewQueue,
 			publicModelAnnouncements,
+			providerHealth,
 			notificationFingerprint,
 		};
 
@@ -1275,7 +1309,8 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			summary.pricingTableMonitor.errors.length > 0 ||
 			Boolean(summary.configuredModelCoverageMonitor.error) ||
 			Boolean(summary.reviewQueue.error) ||
-			Boolean(summary.publicModelAnnouncements.error)
+			Boolean(summary.publicModelAnnouncements.error) ||
+			Boolean(summary.providerHealth.error)
 				? "completed_with_errors"
 				: "completed";
 		await updateRunFinish(summary, status, { notificationError });
@@ -1349,6 +1384,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				pending: 0,
 				error: reason,
 			},
+			providerHealth: { checked: 0, failing: 0, alertsSent: 0 },
 			notificationFingerprint: deliveredNotificationFingerprint,
 		};
 		try {

@@ -1,0 +1,241 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const getSupabaseAdminMock = vi.fn();
+const deliverMock = vi.fn();
+
+vi.mock("@/runtime/env", () => ({
+	getBindings: () => ({}),
+	getSupabaseAdmin: () => getSupabaseAdminMock(),
+}));
+vi.mock("./private-model-discovery-notifications", () => ({
+	deliverPrivateModelDiscoveryMessage: (message: string) => deliverMock(message),
+}));
+
+import {
+	buildProviderHealthMessage,
+	nextProviderStatus,
+	redactProviderError,
+	runProviderHealthCheck,
+	selectProviderHealthAlerts,
+	type ProviderCheckOutcome,
+	type ProviderStatusRow,
+} from "./provider-health";
+
+const NOW = new Date("2026-10-17T12:00:00.000Z");
+const minutesAgo = (minutes: number) => new Date(NOW.getTime() - minutes * 60_000).toISOString();
+
+function outcome(status: ProviderCheckOutcome["status"], overrides: Partial<ProviderCheckOutcome> = {}): ProviderCheckOutcome {
+	return {
+		providerId: "stepfun",
+		providerName: "StepFun",
+		status,
+		reason: status === "ok" ? null : "HTTP 401: Incorrect API key provided",
+		modelCount: status === "ok" ? 12 : null,
+		durationMs: status === "skipped" ? null : 250,
+		...overrides,
+	};
+}
+
+function row(overrides: Partial<ProviderStatusRow> = {}): ProviderStatusRow {
+	return {
+		provider_id: "stepfun",
+		provider_name: "StepFun",
+		status: "error",
+		reason: "HTTP 401",
+		model_count: null,
+		duration_ms: 250,
+		consecutive_failures: 1,
+		failing_since: minutesAgo(15),
+		alerted_at: null,
+		last_checked_at: minutesAgo(15),
+		last_success_at: minutesAgo(600),
+		last_run_id: "run-0",
+		...overrides,
+	};
+}
+
+describe("nextProviderStatus", () => {
+	it("starts a failure streak on the first failed check", () => {
+		const next = nextProviderStatus(undefined, outcome("error"), { nowIso: NOW.toISOString(), runId: "run-1" });
+
+		expect(next).toMatchObject({ status: "error", consecutive_failures: 1, failing_since: NOW.toISOString(), last_success_at: null });
+	});
+
+	it("extends a streak without moving its start", () => {
+		const next = nextProviderStatus(row({ consecutive_failures: 4, failing_since: minutesAgo(45) }), outcome("error"), {
+			nowIso: NOW.toISOString(),
+			runId: "run-2",
+		});
+
+		expect(next).toMatchObject({ consecutive_failures: 5, failing_since: minutesAgo(45), last_success_at: minutesAgo(600) });
+	});
+
+	it("clears the streak on success but keeps alerted_at until a recovery notice is delivered", () => {
+		const next = nextProviderStatus(row({ alerted_at: minutesAgo(30) }), outcome("ok"), { nowIso: NOW.toISOString(), runId: "run-3" });
+
+		expect(next).toMatchObject({
+			status: "ok",
+			consecutive_failures: 0,
+			failing_since: null,
+			alerted_at: minutesAgo(30),
+			last_success_at: NOW.toISOString(),
+			model_count: 12,
+		});
+	});
+
+	it("caps stored reasons", () => {
+		const next = nextProviderStatus(undefined, outcome("error", { reason: "x".repeat(1_000) }), { nowIso: NOW.toISOString(), runId: "run" });
+
+		expect(next.reason).toHaveLength(300);
+	});
+});
+
+describe("selectProviderHealthAlerts", () => {
+	it("alerts once a streak has lasted an hour over at least three checks", () => {
+		const longStreak = row({ consecutive_failures: 5, failing_since: minutesAgo(61) });
+		const shortStreak = row({ provider_id: "nvidia", consecutive_failures: 5, failing_since: minutesAgo(30) });
+		const fewChecks = row({ provider_id: "z-ai", consecutive_failures: 2, failing_since: minutesAgo(90) });
+		const alreadyAlerted = row({ provider_id: "cloudflare", consecutive_failures: 9, failing_since: minutesAgo(600), alerted_at: minutesAgo(500) });
+
+		const alerts = selectProviderHealthAlerts(new Map(), [longStreak, shortStreak, fewChecks, alreadyAlerted], NOW);
+
+		expect(alerts.failing.map((alert) => alert.row.provider_id)).toEqual(["stepfun"]);
+		expect(alerts.recovered).toEqual([]);
+	});
+
+	it("reports recoveries only for providers operators were told about", () => {
+		const alerted = row({ status: "ok", consecutive_failures: 0, failing_since: null, alerted_at: minutesAgo(30) });
+		const silent = row({ provider_id: "z-ai", status: "ok", consecutive_failures: 0, failing_since: null });
+
+		const alerts = selectProviderHealthAlerts(new Map(), [alerted, silent], NOW);
+
+		expect(alerts.recovered.map((alert) => alert.row.provider_id)).toEqual(["stepfun"]);
+	});
+
+	it("says once when a checked provider stops being checked", () => {
+		const previous = new Map([["mistral", row({ provider_id: "mistral", status: "ok", failing_since: null })]]);
+		const skipped = row({ provider_id: "mistral", status: "skipped", reason: "Missing env: MISTRAL_API_KEY", failing_since: null, consecutive_failures: 0 });
+		const neverChecked = row({ provider_id: "avian", status: "skipped", failing_since: null, consecutive_failures: 0 });
+
+		const alerts = selectProviderHealthAlerts(previous, [skipped, neverChecked], NOW);
+
+		expect(alerts.stoppedChecking.map((alert) => alert.row.provider_id)).toEqual(["mistral"]);
+	});
+});
+
+describe("buildProviderHealthMessage", () => {
+	it("lists failing, recovered and stopped providers with durations", () => {
+		const message = buildProviderHealthMessage({
+			failing: [{ row: row({ consecutive_failures: 6, failing_since: minutesAgo(125) }), previous: undefined }],
+			recovered: [{
+				row: row({ provider_id: "cloudflare", provider_name: "Cloudflare Workers AI", status: "ok", model_count: 30 }),
+				previous: row({ provider_id: "cloudflare", failing_since: minutesAgo(605) }),
+			}],
+			stoppedChecking: [{ row: row({ provider_id: "mistral", provider_name: "Mistral", status: "skipped", reason: "Missing env: MISTRAL_API_KEY" }), previous: undefined }],
+		}, NOW);
+
+		expect(message).toBe([
+			"Model watcher provider checks",
+			"",
+			"Failing for over an hour (1):",
+			"- StepFun (stepfun): 6 failed checks over 2h 5m. HTTP 401",
+			"",
+			"Recovered (1):",
+			"- Cloudflare Workers AI (cloudflare): checking again after 10h 5m, 30 models.",
+			"",
+			"No longer checked (1):",
+			"- Mistral (mistral): Missing env: MISTRAL_API_KEY",
+		].join("\n"));
+	});
+});
+
+describe("redactProviderError", () => {
+	it("removes the provider key and key-shaped tokens", () => {
+		expect(redactProviderError("bad key abcd1234efgh5678 for sk-proj-ABCDEFGHIJKLMNOP", "abcd1234efgh5678"))
+			.toBe("bad key [redacted] for [redacted]");
+	});
+
+	it("leaves ordinary errors alone", () => {
+		expect(redactProviderError("HTTP 410: host_retired", "short")).toBe("HTTP 410: host_retired");
+	});
+});
+
+describe("runProviderHealthCheck", () => {
+	function supabaseWith(previous: ProviderStatusRow[]) {
+		const upserts: ProviderStatusRow[][] = [];
+		const deletes: string[][] = [];
+		const table = {
+			select: vi.fn(async () => ({ data: previous, error: null })),
+			upsert: vi.fn(async (rows: ProviderStatusRow[]) => {
+				upserts.push(rows);
+				return { error: null };
+			}),
+			delete: vi.fn(() => ({
+				in: vi.fn(async (_column: string, ids: string[]) => {
+					deletes.push(ids);
+					return { error: null };
+				}),
+			})),
+		};
+		getSupabaseAdminMock.mockReturnValue({ from: vi.fn(() => table) });
+		return { upserts, deletes };
+	}
+
+	beforeEach(() => {
+		getSupabaseAdminMock.mockReset();
+		deliverMock.mockReset();
+	});
+
+	it("marks a delivered failure alert so it is not repeated", async () => {
+		const db = supabaseWith([row({ consecutive_failures: 3, failing_since: minutesAgo(70) })]);
+		deliverMock.mockResolvedValue({ delivered: true, skipped: false });
+
+		const summary = await runProviderHealthCheck({ runId: "run-9", outcomes: [outcome("error")], notify: true, coversAllProviders: false, now: NOW });
+
+		expect(deliverMock).toHaveBeenCalledTimes(1);
+		expect(deliverMock.mock.calls[0]?.[0]).toContain("StepFun (stepfun): 4 failed checks over 1h 10m");
+		expect(db.upserts[0]?.[0]).toMatchObject({ alerted_at: NOW.toISOString(), consecutive_failures: 4 });
+		expect(summary).toEqual({ checked: 1, failing: 1, alertsSent: 1, error: null });
+	});
+
+	it("keeps alert state when delivery fails so the next sweep retries", async () => {
+		const db = supabaseWith([row({ consecutive_failures: 3, failing_since: minutesAgo(70) })]);
+		deliverMock.mockRejectedValue(new Error("Discord webhook failed with HTTP 500"));
+
+		const summary = await runProviderHealthCheck({ runId: "run-9", outcomes: [outcome("error")], notify: true, coversAllProviders: false, now: NOW });
+
+		expect(db.upserts[0]?.[0]?.alerted_at).toBeNull();
+		expect(summary.alertsSent).toBe(0);
+		expect(summary.error).toContain("HTTP 500");
+	});
+
+	it("clears alert state once a recovery is delivered", async () => {
+		const db = supabaseWith([row({ consecutive_failures: 8, alerted_at: minutesAgo(60), failing_since: minutesAgo(130) })]);
+		deliverMock.mockResolvedValue({ delivered: true, skipped: false });
+
+		await runProviderHealthCheck({ runId: "run-10", outcomes: [outcome("ok")], notify: true, coversAllProviders: false, now: NOW });
+
+		expect(deliverMock.mock.calls[0]?.[0]).toContain("checking again after 2h 10m, 12 models.");
+		expect(db.upserts[0]?.[0]).toMatchObject({ status: "ok", alerted_at: null });
+	});
+
+	it("records outcomes without alerting when notifications are off", async () => {
+		const db = supabaseWith([row({ consecutive_failures: 3, failing_since: minutesAgo(70) })]);
+
+		await runProviderHealthCheck({ runId: "run-11", outcomes: [outcome("error")], notify: false, coversAllProviders: false, now: NOW });
+
+		expect(deliverMock).not.toHaveBeenCalled();
+		expect(db.upserts[0]?.[0]).toMatchObject({ consecutive_failures: 4, alerted_at: null });
+	});
+
+	it("removes rows for providers no longer watched only after a full sweep", async () => {
+		const removed = row({ provider_id: "clarifai", status: "error" });
+		const partial = supabaseWith([removed]);
+		await runProviderHealthCheck({ runId: "run-12", outcomes: [outcome("ok")], notify: false, coversAllProviders: false, now: NOW });
+		expect(partial.deletes).toEqual([]);
+
+		const full = supabaseWith([removed]);
+		await runProviderHealthCheck({ runId: "run-13", outcomes: [outcome("ok")], notify: false, coversAllProviders: true, now: NOW });
+		expect(full.deletes).toEqual([["clarifai"]]);
+	});
+});
