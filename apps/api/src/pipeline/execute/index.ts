@@ -106,7 +106,7 @@ import { getEffectiveRoutingHints } from "../requestRouting";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
 import { extractDownstreamRateLimitHeaders } from "../upstream-rate-limit-headers";
 import { guardFreeRouteQuota } from "@core/customer-rate-limits";
-import { guardRateLimitPolicies } from "@core/rate-limit-policies";
+import { chargeRateLimitPolicyTokens, guardRateLimitPolicies } from "@core/rate-limit-policies";
 import { shouldRecordLastUsed } from "@core/last-used-throttle";
 import {
 	chargeManagedProvider,
@@ -1224,6 +1224,8 @@ async function attemptProviderWithIR(
 				usageCandidates: [executorResult.bill?.usage, payloadUsage, upstreamFailure.payload],
 				upstreamRequestCount: upstreamTiming.upstreamRequestCount,
 			});
+			// A failed attempt that reports usage still consumed the policy's tokens.
+			chargeRateLimitPolicyTokens(ctx, [executorResult.bill?.usage, payloadUsage, upstreamFailure.payload], `attempt:${attemptNumber}:${candidate.providerId}`);
 			if (terminalFailure && upstreamTiming.upstreamRequestCount === 0 && !reservationHandled) {
 				await releaseManagedProviderReservation(providerRateLimitReservation);
 			}

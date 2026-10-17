@@ -55,7 +55,7 @@ export function parseCustomerLimits(value: unknown): CustomerLimits {
 
 type CustomerStub = {
 	admit(scopeKey: string, kind: CustomerQuotaKind, admissionId: string, limits: Partial<CustomerLimits>): Promise<CustomerAdmission>;
-	chargeTokens(scopeKey: string, admissionId: string, tokens: number, tokensPerMinute: number): Promise<CustomerAdmission>;
+	chargeTokens(scopeKey: string, tokens: number, tokensPerMinute: number): Promise<CustomerAdmission>;
 	peekTokens(scopeKey: string, tokensPerMinute: number): Promise<CustomerAdmission>;
 };
 
@@ -350,8 +350,8 @@ export function admitPolicyQuotas(args: { scopes: PolicyQuotaScope[]; admissionI
 }
 
 /**
- * Charges a completed request's token usage to each token allowance that
- * applied to it, in the background. A later request on this isolate is then
+ * Charges a completed attempt's token usage to each token allowance that
+ * applied to its request, in the background. Callers charge each attempt once. A later request on this isolate is then
  * rejected locally once an allowance is exhausted.
  */
 export function chargePolicyTokens(args: { scopes: PolicyQuotaScope[]; admissionId: string; tokens: number }): void {
@@ -360,6 +360,6 @@ export function chargePolicyTokens(args: { scopes: PolicyQuotaScope[]; admission
 	for (const scope of args.scopes) {
 		const tokensPerMinute = scope.tokensPerMinute;
 		if (tokensPerMinute == null) continue;
-		tokensInBackground(bindings, scope.scopeKey, (stub) => stub.chargeTokens(scope.scopeKey, args.admissionId, args.tokens, tokensPerMinute), tokenReporter(scope.scopeKey, args.admissionId));
+		tokensInBackground(bindings, scope.scopeKey, (stub) => stub.chargeTokens(scope.scopeKey, args.tokens, tokensPerMinute), tokenReporter(scope.scopeKey, args.admissionId));
 	}
 }

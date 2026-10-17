@@ -19,7 +19,8 @@ const MINUTE_CHECKPOINT_INTERVAL_MS = 5_000;
  * per admission. Daily free-model admissions stay in SQLite exactly.
  *
  * Rate limit policy scopes also keep a rolling minute of token usage, charged
- * after each request completes with its real usage and checkpointed the same way.
+ * after each request attempt completes with its real usage, in one-second
+ * buckets (at most 60, however busy the scope) checkpointed the same way.
  *
  * Limits are supplied by the caller (see `resolveCustomerLimits`); this object
  * performs no KV or network reads.
@@ -29,8 +30,8 @@ export class CustomerRateLimitDurableObject extends DurableObject<GatewayBinding
 	/** Admission ID -> start time, in arrival order. */
 	private readonly minute = new Map<string, number>();
 	private lastMinuteCheckpoint = 0;
-	/** Admission ID -> [charged at, tokens], in charge order. */
-	private readonly tokens = new Map<string, [number, number]>();
+	/** Second (epoch ms) -> tokens charged in it, oldest first. */
+	private readonly tokens = new Map<number, number>();
 	private tokensUsed = 0;
 	private lastTokenCheckpoint = 0;
 	private freeDay = -1;
@@ -77,10 +78,10 @@ export class CustomerRateLimitDurableObject extends DurableObject<GatewayBinding
 		const row = this.ctx.storage.sql.exec<{ entries: string }>("SELECT entries FROM token_checkpoint WHERE id = 1").toArray()[0];
 		if (!row) return;
 		try {
-			const entries = JSON.parse(row.entries) as Array<[string, [number, number]]>;
-			for (const [id, [chargedAt, tokens]] of entries) {
-				if (typeof id !== "string" || !Number.isFinite(chargedAt) || !Number.isSafeInteger(tokens) || tokens <= 0 || chargedAt <= now - MINUTE_MS) continue;
-				this.tokens.set(id, [chargedAt, tokens]);
+			const entries = JSON.parse(row.entries) as Array<[number, number]>;
+			for (const [second, tokens] of entries) {
+				if (!Number.isFinite(second) || !Number.isSafeInteger(tokens) || tokens <= 0 || second <= now - MINUTE_MS) continue;
+				this.tokens.set(second, tokens);
 				this.tokensUsed += tokens;
 			}
 		} catch {
@@ -98,20 +99,19 @@ export class CustomerRateLimitDurableObject extends DurableObject<GatewayBinding
 	}
 
 	private expireTokens(now: number): void {
-		for (const [id, [chargedAt, tokens]] of this.tokens) {
-			if (chargedAt > now - MINUTE_MS) break;
-			this.tokens.delete(id);
+		for (const [second, tokens] of this.tokens) {
+			if (second > now - MINUTE_MS) break;
+			this.tokens.delete(second);
 			this.tokensUsed -= tokens;
 		}
 	}
 
-	/** Seconds until usage falls below `limit` as charges leave the rolling minute. */
+	/** Seconds until usage falls below `limit` as buckets leave the rolling minute. */
 	private tokenRetryAfter(now: number, limit: number): number {
 		let used = this.tokensUsed;
-		for (const [chargedAt, tokens] of this.tokens.values()) {
-			if (used < limit) break;
+		for (const [second, tokens] of this.tokens) {
 			used -= tokens;
-			if (used < limit) return Math.max(1, Math.ceil((chargedAt + MINUTE_MS - now) / 1000));
+			if (used < limit) return Math.max(1, Math.ceil((second + MINUTE_MS - now) / 1000));
 		}
 		return 1;
 	}
@@ -122,17 +122,18 @@ export class CustomerRateLimitDurableObject extends DurableObject<GatewayBinding
 	}
 
 	/**
-	 * Charges one admission's completed token usage to the rolling minute and
-	 * reports what is left. A repeated charge for the same admission is ignored.
+	 * Charges one completed attempt's token usage to the rolling minute and
+	 * reports what is left. The caller charges each attempt once.
 	 */
-	async chargeTokens(scopeKey: string, admissionId: string, tokens: number, tokensPerMinute: number): Promise<CustomerAdmission> {
+	async chargeTokens(scopeKey: string, tokens: number, tokensPerMinute: number): Promise<CustomerAdmission> {
 		if (this.scope !== null && this.scope !== scopeKey) throw new Error("customer_scope_mismatch");
 		this.scope = scopeKey;
 		const limit = Number.isSafeInteger(tokensPerMinute) && tokensPerMinute > 0 ? tokensPerMinute : Number.MAX_SAFE_INTEGER;
 		const now = Date.now();
 		this.expireTokens(now);
-		if (Number.isSafeInteger(tokens) && tokens > 0 && !this.tokens.has(admissionId)) {
-			this.tokens.set(admissionId, [now, tokens]);
+		if (Number.isSafeInteger(tokens) && tokens > 0) {
+			const second = Math.floor(now / 1000) * 1000;
+			this.tokens.set(second, (this.tokens.get(second) ?? 0) + tokens);
 			this.tokensUsed += tokens;
 			this.checkpointTokens(now);
 		}

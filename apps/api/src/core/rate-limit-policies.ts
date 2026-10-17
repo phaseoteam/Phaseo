@@ -338,19 +338,25 @@ function policyScopes(state: RequestLimits) {
 }
 
 /**
- * Charges a completed request's token usage to the tokens-per-minute
- * allowances that applied to it. Call once usage is final; repeated calls for
- * one request (several settlement paths) charge once. Never throws.
+ * Charges an attempt's token usage to the tokens-per-minute allowances that
+ * applied to its request. `usage` may list several candidates (e.g. a failed
+ * response's billed usage and its error payload); the largest counts. Each
+ * `attempt` is charged once however many settlement paths report it: the
+ * default "final" covers the attempt whose response was delivered, and a
+ * failed attempt before a provider fallback passes its own key. Never throws.
  */
-export function chargeRateLimitPolicyTokens(ctx: PipelineContext, usage: unknown): void {
+export function chargeRateLimitPolicyTokens(ctx: PipelineContext, usage: unknown, attempt = "final"): void {
 	try {
 		const state = resolvedLimits.get(ctx);
 		if (!state || state.denied || !state.limits.some((limit) => limit.tpm != null)) return;
 		const meta = ctx.meta as Record<string, unknown>;
-		if (meta.__rateLimitPolicyTokensCharged === true) return;
-		const tokens = resolveCanonicalTokenUsage(usage).totalTokens;
+		const charged = meta.__rateLimitPolicyTokensCharged instanceof Set ? meta.__rateLimitPolicyTokensCharged as Set<string> : new Set<string>();
+		if (charged.has(attempt)) return;
+		const candidates = Array.isArray(usage) ? usage : [usage];
+		const tokens = Math.max(0, ...candidates.map((candidate) => resolveCanonicalTokenUsage(candidate).totalTokens));
 		if (!Number.isSafeInteger(tokens) || tokens <= 0) return;
-		meta.__rateLimitPolicyTokensCharged = true;
+		charged.add(attempt);
+		meta.__rateLimitPolicyTokensCharged = charged;
 		chargePolicyTokens({ scopes: policyScopes(state), admissionId: state.admissionId, tokens });
 	} catch (error) {
 		console.warn("rate_limit_policy_token_charge_failed", { error: error instanceof Error ? error.message : String(error) });

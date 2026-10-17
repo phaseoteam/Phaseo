@@ -130,7 +130,7 @@ beforeEach(() => {
 	mocks.tables = { workspace_rate_limit_policies: [], workspace_rate_limit_policy_assignments: [] };
 	mocks.admit.mockReset().mockImplementation(async (_scope: string, _kind: string, _id: string, limits: { requestsPerMinute: number }) =>
 		({ allowed: true, limit: limits.requestsPerMinute, remaining: limits.requestsPerMinute - 1, retryAfterSeconds: 0 }));
-	mocks.chargeTokens.mockReset().mockImplementation(async (_scope: string, _id: string, tokens: number, limit: number) =>
+	mocks.chargeTokens.mockReset().mockImplementation(async (_scope: string, tokens: number, limit: number) =>
 		({ allowed: tokens < limit, limit, remaining: Math.max(0, limit - tokens), retryAfterSeconds: tokens < limit ? 0 : 30 }));
 	mocks.peekTokens.mockReset().mockImplementation(async (_scope: string, limit: number) => ({ allowed: true, limit, remaining: limit, retryAfterSeconds: 0 }));
 	mocks.getByName.mockReset().mockReturnValue({ admit: mocks.admit, chargeTokens: mocks.chargeTokens, peekTokens: mocks.peekTokens });
@@ -396,8 +396,8 @@ describe("tokens per minute", () => {
 		chargeRateLimitPolicyTokens(first, usage);
 		await settle();
 		expect(mocks.chargeTokens.mock.calls).toEqual([
-			[scope(`${TPM}:key:key-1`), first.billingRequestId, 1200, 1000],
-			[scope(`${LOOSE}:member:user-1`), first.billingRequestId, 1200, 5000],
+			[scope(`${TPM}:key:key-1`), 1200, 1000],
+			[scope(`${LOOSE}:member:user-1`), 1200, 5000],
 		]);
 		expect(rateLimitPolicyHeaders(first)).toMatchObject({ "x-ratelimit-remaining-tokens": "0", "x-ratelimit-reset-tokens": "30s" });
 
@@ -419,6 +419,20 @@ describe("tokens per minute", () => {
 		chargeRateLimitPolicyTokens(second, usage);
 		await settle();
 		expect(mocks.chargeTokens).toHaveBeenCalledTimes(2);
+	});
+
+	it("charges each attempt once, using the largest usage a failed attempt reports", async () => {
+		publishPlan(tokenPlan);
+		const request = ctx({ quotaUserId: "nobody" });
+		await guardRateLimitPolicies(request);
+		// A failed attempt before a provider fallback, reported by two candidates.
+		chargeRateLimitPolicyTokens(request, [{ input_tokens: 40, output_tokens: 0 }, null, { usage: "unparsed" }, { input_tokens: 90, output_tokens: 10 }], "attempt:1:openai");
+		chargeRateLimitPolicyTokens(request, [{ input_tokens: 90, output_tokens: 10 }], "attempt:1:openai");
+		// The fallback that succeeded, reported by two settlement paths.
+		chargeRateLimitPolicyTokens(request, { input_tokens: 200, output_tokens: 50 });
+		chargeRateLimitPolicyTokens(request, { input_tokens: 200, output_tokens: 50 });
+		await settle();
+		expect(mocks.chargeTokens.mock.calls.map(([, tokens]) => tokens)).toEqual([100, 250]);
 	});
 
 	it("learns of exhaustion caused on other isolates when admitting", async () => {
