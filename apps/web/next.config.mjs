@@ -47,8 +47,10 @@ const nextConfig = {
   ...(configuredAllowedDevOrigins.length > 0
     ? { allowedDevOrigins: configuredAllowedDevOrigins }
     : {}),
+  // Partial Prerendering comes from cacheComponents. `partialPrefetching` stays
+  // off: it re-renders every dynamic page as a runtime prefetch and embeds that
+  // copy in the response, and links here only prefetch static shells on intent.
   cacheComponents: true,
-  partialPrefetching: true,
   experimental: {
     globalNotFound: true,
   },
