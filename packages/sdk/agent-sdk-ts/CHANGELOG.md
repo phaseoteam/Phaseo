@@ -1,5 +1,12 @@
 # @phaseo/agent-sdk
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [[`9b68ad3`](https://github.com/phaseoteam/Phaseo/commit/9b68ad32bbad415bd591c01d2d46841fe43119d3), [`280687b`](https://github.com/phaseoteam/Phaseo/commit/280687b57f92c63322f2765c197dbd82303e2330), [`a134fa5`](https://github.com/phaseoteam/Phaseo/commit/a134fa542da6cb529b1827aa84a85d88a31d2edf), [`65b3d54`](https://github.com/phaseoteam/Phaseo/commit/65b3d545d0ee9d476447ce7dc0909ea36e3aa0d8), [`0a47362`](https://github.com/phaseoteam/Phaseo/commit/0a473627713fffd53ea55d52ec6f97b584884f1b), [`d8ae83c`](https://github.com/phaseoteam/Phaseo/commit/d8ae83ccc9d6626eeffa64a8c219ae8df2bc5bde), [`4de0d4c`](https://github.com/phaseoteam/Phaseo/commit/4de0d4c85c77c2f0e2416da12ab8ba56bd8643d3), [`d14aab2`](https://github.com/phaseoteam/Phaseo/commit/d14aab2d7db12ccbbb089daa0ff8e95eb8859c6e), [`1a5fbcc`](https://github.com/phaseoteam/Phaseo/commit/1a5fbcc3b53e6ac0b0402725c10ac653a81dce1d), [`e03d835`](https://github.com/phaseoteam/Phaseo/commit/e03d835eee473288e47045fab23f33d0c875b5b4), [`d6f8d0a`](https://github.com/phaseoteam/Phaseo/commit/d6f8d0a5be5eed5b92fe43faf30b7e5704145f3c), [`fc3ad0e`](https://github.com/phaseoteam/Phaseo/commit/fc3ad0e3cb95e5d677e87f469a7ef5d736bc853b), [`5cc4d2f`](https://github.com/phaseoteam/Phaseo/commit/5cc4d2faa1440b62f07a6c5774f44adc1a066d62), [`dafbc58`](https://github.com/phaseoteam/Phaseo/commit/dafbc580dcda55d340613949c80939763f07215d), [`105d6d2`](https://github.com/phaseoteam/Phaseo/commit/105d6d28d5947798db8f6013034cfd0f300047ff), [`2b78b13`](https://github.com/phaseoteam/Phaseo/commit/2b78b13e7225b6ccb54c9c4a615b73455cdb26b6), [`6f98576`](https://github.com/phaseoteam/Phaseo/commit/6f985766f09ad3c626a3a3fdbcb65b265663c181), [`d97391a`](https://github.com/phaseoteam/Phaseo/commit/d97391ae0d33702621b35d350f88df31c7f100d5), [`2a980af`](https://github.com/phaseoteam/Phaseo/commit/2a980af08a30469407228b8d80915a5a10e67e04), [`f0c2012`](https://github.com/phaseoteam/Phaseo/commit/f0c201294b5b5feffc9da8d45d6059bf0761f18d), [`a94e315`](https://github.com/phaseoteam/Phaseo/commit/a94e31546ec77fbcbdc708f622d2c581afec2a4d), [`c2c745a`](https://github.com/phaseoteam/Phaseo/commit/c2c745a3c5e5ce3fbea985ee2db2045badaa1983)]:
+  - @phaseo/sdk@4.0.0
+
 ## 0.3.0
 
 ### Minor Changes
