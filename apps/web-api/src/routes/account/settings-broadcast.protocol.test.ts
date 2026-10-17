@@ -42,6 +42,37 @@ describe("broadcast OTLP protocol", () => {
 		expect((init.body as Uint8Array)[0]).toBe(0x0a);
 	});
 
+	it("sends a sample trace when testing an OTLP configuration", async () => {
+		const fetchMock = vi.fn(async () => new Response("{}", { status: 200, headers: { "content-type": "application/json" } }));
+		vi.stubGlobal("fetch", fetchMock);
+		const { accountSettingsBroadcastRouter } = await import("./settings-broadcast");
+		const response = await accountSettingsBroadcastRouter.request("https://example.com/broadcast/test-config", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: "workspace_1", destinationId: "otel_collector", config: { endpoint: "https://collector.example.com", auth_header: "Bearer x", otlp_compression: "gzip" } }),
+		}, {});
+		expect(await response.json()).toMatchObject({ ok: true, status: "Connection verified", httpStatus: 200, headerCount: 1 });
+		const [url, init] = fetchMock.mock.calls[0] as unknown as [URL, RequestInit];
+		expect(url.toString()).toBe("https://collector.example.com/v1/traces");
+		const sent = new Headers(init.headers);
+		expect(sent.get("authorization")).toBe("Bearer x");
+		expect(sent.get("content-encoding")).toBe("gzip");
+		const body = JSON.parse(await new Response(new Blob([init.body as Uint8Array]).stream().pipeThrough(new DecompressionStream("gzip"))).text());
+		expect(body.resourceSpans[0].scopeSpans[0].spans[0].name).toBe("Test Generation");
+	});
+
+	it("reports a collector's error when testing a configuration", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response("unauthorized", { status: 401 })));
+		const { accountSettingsBroadcastRouter } = await import("./settings-broadcast");
+		const response = await accountSettingsBroadcastRouter.request("https://example.com/broadcast/test-config", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: "workspace_1", destinationId: "otel_collector", config: { endpoint: "https://collector.example.com" } }),
+		}, {});
+		expect(response.status).toBe(400);
+		expect(await response.json()).toEqual({ error: "OTLP collector returned 401: unauthorized" });
+	});
+
 	it("rejects an unsupported protocol when testing a configuration", async () => {
 		const { accountSettingsBroadcastRouter } = await import("./settings-broadcast");
 		const response = await accountSettingsBroadcastRouter.request("https://example.com/broadcast/test-config", {

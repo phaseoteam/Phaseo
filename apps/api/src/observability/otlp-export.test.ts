@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { deliverGatewayOtlpPayload, deliverGatewayWebhookPayload, drainGatewayOtlpOutbox, filterMetadata, selected } from "./otlp-export";
 import { encodeOtlpTraceRequest } from "./otlp-protobuf";
+import { OTLP_PRESETS } from "./broadcast-destinations";
 
 vi.mock("@core/webhook-endpoints", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("@core/webhook-endpoints")>();
@@ -302,7 +303,47 @@ describe("deliverGatewayOtlpPayload over protobuf", () => {
 		const fetchMock = vi.fn();
 		vi.stubGlobal("fetch", fetchMock);
 		const result = await deliverGatewayOtlpPayload(payload, { endpoint: "https://collector.example.com", otlp_protocol: "grpc" });
-		expect(result).toMatchObject({ delivered: false, retryable: false, error: "OTLP protocol must be http/json or http/protobuf" });
+		expect(result).toMatchObject({ delivered: false, retryable: false, error: "Protocol must be http/json or http/protobuf" });
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+});
+
+describe("deliverGatewayOtlpPayload with a vendor preset", () => {
+	afterEach(() => {
+		delete OTLP_PRESETS.langfuse;
+	});
+
+	it("sends a gzipped request to the vendor's endpoint with its credentials and attributes", async () => {
+		OTLP_PRESETS.langfuse = {
+			endpoint: "{base_url}/api/public/otel/v1/traces",
+			defaults: { base_url: "https://cloud.example.com" },
+			headers: { Authorization: "{basic:public_key:secret_key}" },
+			compression: "gzip",
+			resourceAttributes: { "vendor.environment": "{environment}" },
+		};
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+		const payload = { resourceSpans: [{ scopeSpans: [{ spans: [{ name: "chat" }] }] }] };
+
+		const result = await deliverGatewayOtlpPayload(payload, { public_key: "pk", secret_key: "sk", environment: "prod" }, 1, "langfuse");
+
+		expect(result).toMatchObject({ delivered: true });
+		const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+		expect(url.toString()).toBe("https://cloud.example.com/api/public/otel/v1/traces");
+		const sent = new Headers(init.headers);
+		expect(sent.get("authorization")).toBe(`Basic ${btoa("pk:sk")}`);
+		expect(sent.get("content-encoding")).toBe("gzip");
+		expect(sent.get("content-type")).toBe("application/json");
+		const body = JSON.parse(await new Response(new Blob([init.body as Uint8Array]).stream().pipeThrough(new DecompressionStream("gzip"))).text());
+		expect(body.resourceSpans[0].resource.attributes).toEqual([{ key: "vendor.environment", value: { stringValue: "prod" } }]);
+	});
+
+	it("fails without sending when a required field is missing", async () => {
+		OTLP_PRESETS.langfuse = { endpoint: "{base_url}/v1/traces", headers: { Authorization: "{basic:public_key:secret_key}" } };
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const result = await deliverGatewayOtlpPayload({ resourceSpans: [] }, { base_url: "https://cloud.example.com", public_key: "pk" }, 1, "langfuse");
+		expect(result).toMatchObject({ delivered: false, retryable: false, error: "secret_key is required" });
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 });
