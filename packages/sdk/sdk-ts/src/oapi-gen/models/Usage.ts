@@ -1,6 +1,16 @@
 export interface Usage {
   completion_tokens?: number;
+  input_tokens?: number;
+  input_tokens_details?: {
+    cache_write_tokens?: number;
+    cached_tokens?: number;
+  };
+  output_tokens?: number;
   prompt_tokens?: number;
+  prompt_tokens_details?: {
+    cache_write_tokens?: number;
+    cached_tokens?: number;
+  };
   server_tool_use?: {
     advisor_requests?: number;
     apply_patch_requests?: number;

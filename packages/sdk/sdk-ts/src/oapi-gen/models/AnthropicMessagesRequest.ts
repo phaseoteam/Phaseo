@@ -1,4 +1,10 @@
 export interface AnthropicMessagesRequest {
+  cache_control?: {
+    scope?: string;
+    ttl?: string;
+    type?: string;
+    [key: string]: unknown;
+  };
   debug?: {
     enabled?: boolean;
     return_upstream_request?: boolean;
@@ -101,7 +107,15 @@ export interface AnthropicMessagesRequest {
         compact_threshold?: number;
         type: "compaction";
       };
+      prompt_cache_options?: {
+        mode?: "implicit" | "explicit";
+        ttl?: string;
+        [key: string]: unknown;
+      };
       prompt_cache_retention?: string;
+    };
+    xai?: {
+      conversation_id?: string;
     };
   };
   reasoning?: {

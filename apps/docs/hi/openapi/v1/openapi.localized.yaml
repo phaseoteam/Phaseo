@@ -8787,12 +8787,34 @@ components:
             - full
     CacheControl:
       type: object
+      description: प्रॉम्प्ट कैश नियंत्रण। type ephemeral के साथ वैकल्पिक ttl 5m या 1h उपयोग करें। scope केवल शीर्ष-स्तरीय Claude कैश नीति पर लागू होता है।
       properties:
         type:
           type: string
         ttl:
           type: string
         scope:
+          type: string
+      additionalProperties: true
+    PromptCacheBreakpoint:
+      type: object
+      description: OpenAI कैश ब्रेकपॉइंट। इस ब्लॉक तक (इसे मिलाकर) सब कुछ कैश करता है। GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों तथा DeepInfra को भेजा जाता है; Claude रूट इसे cache_control के रूप में पाते हैं।
+      properties:
+        mode:
+          type: string
+          enum:
+            - explicit
+      additionalProperties: true
+    PromptCacheOptions:
+      type: object
+      description: GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों (ttl 30m) तथा DeepInfra (ttl 5m या 1h) के लिए प्रॉम्प्ट कैश मोड और TTL। अन्य प्रदाताओं के लिए हटा दिया जाता है।
+      properties:
+        mode:
+          type: string
+          enum:
+            - implicit
+            - explicit
+        ttl:
           type: string
       additionalProperties: true
     ProviderOptions:
@@ -8816,11 +8838,19 @@ components:
                 - type
             prompt_cache_retention:
               type: string
+            prompt_cache_options:
+              $ref: '#/components/schemas/PromptCacheOptions'
         anthropic:
           type: object
           properties:
             cache_control:
               $ref: '#/components/schemas/CacheControl'
+        xai:
+          type: object
+          properties:
+            conversation_id:
+              type: string
+              description: xAI बातचीत ID, जिसे x-grok-conv-id हेडर में भेजा जाता है।
         google:
           type: object
           properties:
@@ -9529,6 +9559,17 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: संबंधित अनुरोधों को समूहित करता है, ताकि वे उसी प्रदाता पर रहें जिसके पास उनका प्रॉम्प्ट कैश है। Phaseo प्रदाता को आपके वर्कस्पेस और इस कुंजी का हैश भेजता है, कच्ची कुंजी कभी नहीं।
+        prompt_cache_retention:
+          type: string
+          enum:
+            - in_memory
+            - 24h
+          description: GPT-5.6 से पहले के OpenAI और Azure OpenAI मॉडलों के लिए प्रॉम्प्ट कैश प्रतिधारण। provider_options.openai.prompt_cache_retention पर प्राथमिकता पाता है।
+        prompt_cache_options:
+          $ref: '#/components/schemas/PromptCacheOptions'
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         safety_identifier:
           type: string
           nullable: true
@@ -9595,6 +9636,10 @@ components:
             - text
         text:
           type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
+        prompt_cache_breakpoint:
+          $ref: '#/components/schemas/PromptCacheBreakpoint'
     ImageContentPart:
       type: object
       required:
@@ -9661,6 +9706,10 @@ components:
             - ogg
             - pcm16
             - pcm24
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
+        prompt_cache_breakpoint:
+          $ref: '#/components/schemas/PromptCacheBreakpoint'
     AudioContentPart:
       type: object
       required:
@@ -9756,6 +9805,8 @@ components:
         async:
           type: boolean
           description: कॉलर के इस टूल को चलाने के दौरान समर्थित OpenAI मॉडल को जारी रहने देता है। सभी टेक्स्ट API पर स्वीकार किया जाता है और अन्य प्रदाता इसे अनदेखा करते हैं।
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         function:
           type: object
           required:
@@ -10126,12 +10177,32 @@ components:
       properties:
         prompt_tokens:
           type: integer
+          description: इनपुट टोकन, कैश से पढ़े और कैश में लिखे गए टोकन सहित।
+        prompt_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
         completion_tokens:
+          type: integer
+        input_tokens:
+          type: integer
+          description: इनपुट टोकन, कैश से पढ़े और कैश में लिखे गए टोकन सहित।
+        input_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
+        output_tokens:
           type: integer
         total_tokens:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+    InputTokensDetails:
+      type: object
+      description: इनपुट टोकन का विवरण।
+      properties:
+        cached_tokens:
+          type: integer
+          description: प्रदाता के प्रॉम्प्ट कैश से पढ़े गए इनपुट टोकन।
+        cache_write_tokens:
+          type: integer
+          description: प्रदाता के प्रॉम्प्ट कैश में लिखे गए इनपुट टोकन।
     AnthropicMessagesRequest:
       type: object
       required:
@@ -10220,6 +10291,8 @@ components:
           type: array
           items:
             type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         provider_options:
           $ref: '#/components/schemas/ProviderOptions'
         usage:
@@ -10326,6 +10399,23 @@ components:
       properties:
         input_tokens:
           type: integer
+          description: बिना कैश वाले इनपुट टोकन। Anthropic की तरह, इसमें कैश से पढ़े और कैश में लिखे गए टोकन शामिल नहीं होते।
+        cache_read_input_tokens:
+          type: integer
+          description: प्रदाता के प्रॉम्प्ट कैश से पढ़े गए इनपुट टोकन।
+        cache_creation_input_tokens:
+          type: integer
+          description: प्रदाता के प्रॉम्प्ट कैश में लिखे गए इनपुट टोकन।
+        cache_creation:
+          type: object
+          description: कैश की अवधि के अनुसार बाँटे गए कैश लेखन।
+          properties:
+            ephemeral_5m_input_tokens:
+              type: integer
+              description: 5 मिनट की कैश अवधि के साथ लिखे गए इनपुट टोकन।
+            ephemeral_1h_input_tokens:
+              type: integer
+              description: 1 घंटे की कैश अवधि के साथ लिखे गए इनपुट टोकन।
         output_tokens:
           type: integer
     ResponsesRequest:
@@ -10368,6 +10458,7 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: समर्थित नहीं। Phaseo जवाबों को संग्रहीत नहीं करता, इसलिए previous_response_id या conversation सेट करने वाले अनुरोध 400 unsupported_param लौटाते हैं। पूरी बातचीत input में भेजें।
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
@@ -10411,6 +10502,17 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: संबंधित अनुरोधों को समूहित करता है, ताकि वे उसी प्रदाता पर रहें जिसके पास उनका प्रॉम्प्ट कैश है। Phaseo प्रदाता को आपके वर्कस्पेस और इस कुंजी का हैश भेजता है, कच्ची कुंजी कभी नहीं।
+        prompt_cache_retention:
+          type: string
+          enum:
+            - in_memory
+            - 24h
+          description: GPT-5.6 से पहले के OpenAI और Azure OpenAI मॉडलों के लिए प्रॉम्प्ट कैश प्रतिधारण। provider_options.openai.prompt_cache_retention पर प्राथमिकता पाता है।
+        prompt_cache_options:
+          $ref: '#/components/schemas/PromptCacheOptions'
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         safety_identifier:
           type: string
           nullable: true

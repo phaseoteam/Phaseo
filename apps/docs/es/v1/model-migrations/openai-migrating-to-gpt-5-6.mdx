@@ -37,7 +37,7 @@ Phaseo también registra alias de nivel para el modelo más reciente de cada uno
 - GPT-5.6 añade controles de razonamiento persistentes mediante `reasoning.context`.
 - GPT-5.6 añade compatibilidad beta con varios agentes y Programmatic Tool Calling para flujos de trabajo con muchas herramientas que cumplan los requisitos.
 - La caché de prompts tiene tarifas separadas para entrada sin caché, lectura de caché, escritura de caché y salida.
-- La caché de prompts explícita está disponible mediante `prompt_cache_options`; actualmente OpenAI recomienda `prompt_cache_options.ttl` en lugar de `prompt_cache_retention`.
+- La caché de prompts explícita está disponible mediante puntos de corte de caché y `prompt_cache_options`. En GPT-5.6, `prompt_cache_options.ttl` sustituye a `prompt_cache_retention`, que Phaseo no envía a los modelos GPT-5.6.
 
 ## Actualiza tu solicitud
 
@@ -92,7 +92,7 @@ El catálogo registra los precios de GPT-5.6 por cada millón de tokens.
 | Terra | $2.50 | $0.25 | $3.125 | $15.00 |
 | Luna | $1.00 | $0.10 | $1.25 | $6.00 |
 
-Las lecturas de caché se cobran por separado de las escrituras. En el catálogo actual, las lecturas tienen un descuento del 90 % respecto a la entrada sin caché, mientras que las escrituras cuestan 1,25 veces el precio de la entrada sin caché.
+Las lecturas de caché se cobran por separado de las escrituras. En el catálogo actual, las lecturas tienen un descuento del 90 % respecto a la entrada sin caché, mientras que las escrituras cuestan 1,25 veces el precio de la entrada sin caché. Cada token de entrada se factura a una sola de las tres tarifas. El uso cuenta las lecturas y escrituras de caché dentro de `input_tokens` (`prompt_tokens` en Chat Completions) e informa de las escrituras en `cache_write_tokens`; consulta [campos de uso y precios](../guides/prompt-caching.mdx#usage-and-pricing-fields).
 
 ## Usa la caché de prompts de forma deliberada
 
@@ -108,9 +108,8 @@ Si el contexto se repite, mantén la parte estable del prompt en bloques que pue
         {
           "type": "input_text",
           "text": "Stable policy document...",
-          "cache_control": {
-            "type": "ephemeral",
-            "ttl": "1h"
+          "prompt_cache_breakpoint": {
+            "mode": "explicit"
           }
         },
         {
@@ -122,12 +121,12 @@ Si el contexto se repite, mantén la parte estable del prompt en bloques que pue
   ],
   "prompt_cache_options": {
     "mode": "explicit",
-    "ttl": "24h"
+    "ttl": "30m"
   }
 }
 ```
 
-Usa `cache_control` para indicar sugerencias de caché independientes del proveedor o puntos de separación explícitos. Usa `prompt_cache_options` para pasar directamente el modo de caché y las opciones TTL de OpenAI.
+`prompt_cache_breakpoint` almacena en caché todo lo anterior, incluido su bloque. También funciona un `cache_control` en el bloque, como `{"type": "ephemeral"}`, y Phaseo lo envía a GPT-5.6 como `prompt_cache_breakpoint`. Cualquiera de las dos marcas llega a Claude como punto de corte de caché, así que un failover a Claude también usa la caché. En modo `explicit`, OpenAI solo almacena en caché los puntos de corte que colocas, y `30m` es el único `ttl` que acepta. Phaseo no envía `prompt_cache_retention` a GPT-5.6. Consulta [Caché de prompts](../guides/prompt-caching.mdx#openai-retention-and-options).
 
 ## Qué probar
 

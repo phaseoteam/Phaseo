@@ -8787,12 +8787,34 @@ components:
             - full
     CacheControl:
       type: object
+      description: prompt 缓存控制。使用 type ephemeral，并可选设置 ttl 为 5m 或 1h。scope 仅适用于顶层 Claude 缓存策略。
       properties:
         type:
           type: string
         ttl:
           type: string
         scope:
+          type: string
+      additionalProperties: true
+    PromptCacheBreakpoint:
+      type: object
+      description: OpenAI 缓存断点。缓存到该块为止（含该块）的全部内容。会发送给 GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI，以及 DeepInfra；Claude 路由会以 cache_control 的形式收到它。
+      properties:
+        mode:
+          type: string
+          enum:
+            - explicit
+      additionalProperties: true
+    PromptCacheOptions:
+      type: object
+      description: 适用于 GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI（ttl 30m）以及 DeepInfra（ttl 5m 或 1h）的 prompt 缓存模式和 TTL。对其他提供商会被移除。
+      properties:
+        mode:
+          type: string
+          enum:
+            - implicit
+            - explicit
+        ttl:
           type: string
       additionalProperties: true
     ProviderOptions:
@@ -8816,11 +8838,19 @@ components:
                 - type
             prompt_cache_retention:
               type: string
+            prompt_cache_options:
+              $ref: '#/components/schemas/PromptCacheOptions'
         anthropic:
           type: object
           properties:
             cache_control:
               $ref: '#/components/schemas/CacheControl'
+        xai:
+          type: object
+          properties:
+            conversation_id:
+              type: string
+              description: xAI 对话 ID，通过 x-grok-conv-id 请求头发送。
         google:
           type: object
           properties:
@@ -9529,6 +9559,17 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: 将相关请求归为一组，使其保留在持有其 prompt 缓存的提供商上。Phaseo 向上游发送的是你的工作区与该键的哈希值，绝不发送原始键。
+        prompt_cache_retention:
+          type: string
+          enum:
+            - in_memory
+            - 24h
+          description: 适用于 GPT-5.6 之前的 OpenAI 和 Azure OpenAI 模型的 prompt 缓存保留策略。优先于 provider_options.openai.prompt_cache_retention。
+        prompt_cache_options:
+          $ref: '#/components/schemas/PromptCacheOptions'
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         safety_identifier:
           type: string
           nullable: true
@@ -9595,6 +9636,10 @@ components:
             - text
         text:
           type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
+        prompt_cache_breakpoint:
+          $ref: '#/components/schemas/PromptCacheBreakpoint'
     ImageContentPart:
       type: object
       required:
@@ -9661,6 +9706,10 @@ components:
             - ogg
             - pcm16
             - pcm24
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
+        prompt_cache_breakpoint:
+          $ref: '#/components/schemas/PromptCacheBreakpoint'
     AudioContentPart:
       type: object
       required:
@@ -9756,6 +9805,8 @@ components:
         async:
           type: boolean
           description: 允许受支持的 OpenAI 模型在调用方执行此工具时继续处理。所有文本 API 均接受此设置，其他提供商会忽略它。
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         function:
           type: object
           required:
@@ -10126,12 +10177,32 @@ components:
       properties:
         prompt_tokens:
           type: integer
+          description: 输入 token，包括缓存读取和缓存写入。
+        prompt_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
         completion_tokens:
+          type: integer
+        input_tokens:
+          type: integer
+          description: 输入 token，包括缓存读取和缓存写入。
+        input_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
+        output_tokens:
           type: integer
         total_tokens:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+    InputTokensDetails:
+      type: object
+      description: 输入 token 的明细。
+      properties:
+        cached_tokens:
+          type: integer
+          description: 从提供商 prompt 缓存中读取的输入 token。
+        cache_write_tokens:
+          type: integer
+          description: 写入提供商 prompt 缓存的输入 token。
     AnthropicMessagesRequest:
       type: object
       required:
@@ -10220,6 +10291,8 @@ components:
           type: array
           items:
             type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         provider_options:
           $ref: '#/components/schemas/ProviderOptions'
         usage:
@@ -10326,6 +10399,23 @@ components:
       properties:
         input_tokens:
           type: integer
+          description: 未缓存的输入 token。与 Anthropic 一致，不包括缓存读取和缓存写入。
+        cache_read_input_tokens:
+          type: integer
+          description: 从提供商 prompt 缓存中读取的输入 token。
+        cache_creation_input_tokens:
+          type: integer
+          description: 写入提供商 prompt 缓存的输入 token。
+        cache_creation:
+          type: object
+          description: 按缓存有效期拆分的缓存写入。
+          properties:
+            ephemeral_5m_input_tokens:
+              type: integer
+              description: 以 5 分钟缓存有效期写入的输入 token。
+            ephemeral_1h_input_tokens:
+              type: integer
+              description: 以 1 小时缓存有效期写入的输入 token。
         output_tokens:
           type: integer
     ResponsesRequest:
@@ -10368,6 +10458,7 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: 不支持。Phaseo 不存储响应，因此设置了 previous_response_id 或 conversation 的请求会返回 400 unsupported_param。请在 input 中发送完整对话。
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
@@ -10411,6 +10502,17 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: 将相关请求归为一组，使其保留在持有其 prompt 缓存的提供商上。Phaseo 向上游发送的是你的工作区与该键的哈希值，绝不发送原始键。
+        prompt_cache_retention:
+          type: string
+          enum:
+            - in_memory
+            - 24h
+          description: 适用于 GPT-5.6 之前的 OpenAI 和 Azure OpenAI 模型的 prompt 缓存保留策略。优先于 provider_options.openai.prompt_cache_retention。
+        prompt_cache_options:
+          $ref: '#/components/schemas/PromptCacheOptions'
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         safety_identifier:
           type: string
           nullable: true

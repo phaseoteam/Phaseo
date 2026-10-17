@@ -850,6 +850,12 @@ export type CreateAnthropicMessageParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    cache_control?: {
+      scope?: string;
+      ttl?: string;
+      type?: string;
+      [key: string]: unknown;
+    };
     debug?: {
       enabled?: boolean;
       return_upstream_request?: boolean;
@@ -952,7 +958,15 @@ export type CreateAnthropicMessageParams = {
           compact_threshold?: number;
           type: "compaction";
         };
+        prompt_cache_options?: {
+          mode?: "implicit" | "explicit";
+          ttl?: string;
+          [key: string]: unknown;
+        };
         prompt_cache_retention?: string;
+      };
+      xai?: {
+        conversation_id?: string;
       };
     };
     reasoning?: {
@@ -1101,6 +1115,12 @@ export async function createAnthropicMessage(
   stop_sequence?: string;
   type?: string;
   usage?: {
+    cache_creation?: {
+      ephemeral_1h_input_tokens?: number;
+      ephemeral_5m_input_tokens?: number;
+    };
+    cache_creation_input_tokens?: number;
+    cache_read_input_tokens?: number;
     input_tokens?: number;
     output_tokens?: number;
   };
@@ -1136,6 +1156,12 @@ export async function createAnthropicMessage(
     stop_sequence?: string;
     type?: string;
     usage?: {
+      cache_creation?: {
+        ephemeral_1h_input_tokens?: number;
+        ephemeral_5m_input_tokens?: number;
+      };
+      cache_creation_input_tokens?: number;
+      cache_read_input_tokens?: number;
       input_tokens?: number;
       output_tokens?: number;
     };
@@ -1985,6 +2011,12 @@ export type CreateChatCompletionParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    cache_control?: {
+      scope?: string;
+      ttl?: string;
+      type?: string;
+      [key: string]: unknown;
+    };
     debug?: {
       enabled?: boolean;
       return_upstream_request?: boolean;
@@ -2020,14 +2052,34 @@ export type CreateChatCompletionParams = {
         audio_url: {
           url: string;
         };
+        cache_control?: {
+          scope?: string;
+          ttl?: string;
+          type?: string;
+          [key: string]: unknown;
+        };
         format?: "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
         mime_type?: string;
+        prompt_cache_breakpoint?: {
+          mode?: "explicit";
+          [key: string]: unknown;
+        };
         type: "audio_url";
       }[];
       content?:
         | string
         | (
             | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                prompt_cache_breakpoint?: {
+                  mode?: "explicit";
+                  [key: string]: unknown;
+                };
                 text: string;
                 type: "text";
               }
@@ -2089,6 +2141,12 @@ export type CreateChatCompletionParams = {
     parallel_tool_calls?: boolean;
     presence_penalty?: number;
     prompt_cache_key?: string | null;
+    prompt_cache_options?: {
+      mode?: "implicit" | "explicit";
+      ttl?: string;
+      [key: string]: unknown;
+    };
+    prompt_cache_retention?: "in_memory" | "24h";
     provider?:
       | "openai"
       | "anthropic"
@@ -2160,7 +2218,15 @@ export type CreateChatCompletionParams = {
           compact_threshold?: number;
           type: "compaction";
         };
+        prompt_cache_options?: {
+          mode?: "implicit" | "explicit";
+          ttl?: string;
+          [key: string]: unknown;
+        };
         prompt_cache_retention?: string;
+      };
+      xai?: {
+        conversation_id?: string;
       };
     };
     reasoning?: {
@@ -2226,6 +2292,12 @@ export type CreateChatCompletionParams = {
     tools?: (
       | {
           async?: boolean;
+          cache_control?: {
+            scope?: string;
+            ttl?: string;
+            type?: string;
+            [key: string]: unknown;
+          };
           function: {
             description?: string;
             name: string;
@@ -2323,14 +2395,34 @@ export async function createChatCompletion(
         audio_url: {
           url: string;
         };
+        cache_control?: {
+          scope?: string;
+          ttl?: string;
+          type?: string;
+          [key: string]: unknown;
+        };
         format?: "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
         mime_type?: string;
+        prompt_cache_breakpoint?: {
+          mode?: "explicit";
+          [key: string]: unknown;
+        };
         type: "audio_url";
       }[];
       content?:
         | string
         | (
             | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                prompt_cache_breakpoint?: {
+                  mode?: "explicit";
+                  [key: string]: unknown;
+                };
                 text: string;
                 type: "text";
               }
@@ -2391,7 +2483,17 @@ export async function createChatCompletion(
   provider?: string;
   usage?: {
     completion_tokens?: number;
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
     prompt_tokens?: number;
+    prompt_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
     server_tool_use?: {
       advisor_requests?: number;
       apply_patch_requests?: number;
@@ -2417,14 +2519,34 @@ export async function createChatCompletion(
           audio_url: {
             url: string;
           };
+          cache_control?: {
+            scope?: string;
+            ttl?: string;
+            type?: string;
+            [key: string]: unknown;
+          };
           format?: "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
           mime_type?: string;
+          prompt_cache_breakpoint?: {
+            mode?: "explicit";
+            [key: string]: unknown;
+          };
           type: "audio_url";
         }[];
         content?:
           | string
           | (
               | {
+                  cache_control?: {
+                    scope?: string;
+                    ttl?: string;
+                    type?: string;
+                    [key: string]: unknown;
+                  };
+                  prompt_cache_breakpoint?: {
+                    mode?: "explicit";
+                    [key: string]: unknown;
+                  };
                   text: string;
                   type: "text";
                 }
@@ -2491,7 +2613,17 @@ export async function createChatCompletion(
     provider?: string;
     usage?: {
       completion_tokens?: number;
+      input_tokens?: number;
+      input_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
+      output_tokens?: number;
       prompt_tokens?: number;
+      prompt_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
       server_tool_use?: {
         advisor_requests?: number;
         apply_patch_requests?: number;
@@ -3012,7 +3144,17 @@ export async function createEmbedding(
   object?: string;
   usage?: {
     completion_tokens?: number;
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
     prompt_tokens?: number;
+    prompt_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
     server_tool_use?: {
       advisor_requests?: number;
       apply_patch_requests?: number;
@@ -3039,7 +3181,17 @@ export async function createEmbedding(
     object?: string;
     usage?: {
       completion_tokens?: number;
+      input_tokens?: number;
+      input_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
+      output_tokens?: number;
       prompt_tokens?: number;
+      prompt_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
       server_tool_use?: {
         advisor_requests?: number;
         apply_patch_requests?: number;
@@ -5001,7 +5153,17 @@ export async function createRerank(
   }[];
   usage?: {
     completion_tokens?: number;
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
     prompt_tokens?: number;
+    prompt_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
     server_tool_use?: {
       advisor_requests?: number;
       apply_patch_requests?: number;
@@ -5034,7 +5196,17 @@ export async function createRerank(
     }[];
     usage?: {
       completion_tokens?: number;
+      input_tokens?: number;
+      input_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
+      output_tokens?: number;
       prompt_tokens?: number;
+      prompt_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
       server_tool_use?: {
         advisor_requests?: number;
         apply_patch_requests?: number;
@@ -5063,6 +5235,12 @@ export type CreateResponseParams = {
   headers?: Record<string, never>;
   body?: {
     background?: boolean;
+    cache_control?: {
+      scope?: string;
+      ttl?: string;
+      type?: string;
+      [key: string]: unknown;
+    };
     debug?: {
       enabled?: boolean;
       return_upstream_request?: boolean;
@@ -5106,6 +5284,12 @@ export type CreateResponseParams = {
     parallel_tool_calls?: boolean;
     previous_response_id?: string;
     prompt_cache_key?: string | null;
+    prompt_cache_options?: {
+      mode?: "implicit" | "explicit";
+      ttl?: string;
+      [key: string]: unknown;
+    };
+    prompt_cache_retention?: "in_memory" | "24h";
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -5167,7 +5351,15 @@ export type CreateResponseParams = {
           compact_threshold?: number;
           type: "compaction";
         };
+        prompt_cache_options?: {
+          mode?: "implicit" | "explicit";
+          ttl?: string;
+          [key: string]: unknown;
+        };
         prompt_cache_retention?: string;
+      };
+      xai?: {
+        conversation_id?: string;
       };
     };
     reasoning?: {
@@ -5216,6 +5408,12 @@ export type CreateResponseParams = {
     tools?: (
       | {
           async?: boolean;
+          cache_control?: {
+            scope?: string;
+            ttl?: string;
+            type?: string;
+            [key: string]: unknown;
+          };
           function: {
             description?: string;
             name: string;
@@ -5390,7 +5588,17 @@ export async function createResponse(
   type?: string;
   usage?: {
     completion_tokens?: number;
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
     prompt_tokens?: number;
+    prompt_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
     server_tool_use?: {
       advisor_requests?: number;
       apply_patch_requests?: number;
@@ -5494,7 +5702,17 @@ export async function createResponse(
     type?: string;
     usage?: {
       completion_tokens?: number;
+      input_tokens?: number;
+      input_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
+      output_tokens?: number;
       prompt_tokens?: number;
+      prompt_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
       server_tool_use?: {
         advisor_requests?: number;
         apply_patch_requests?: number;

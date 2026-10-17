@@ -294,9 +294,11 @@ Ein eingestelltes Modell wird weiterhin bereitgestellt, solange ein Anbieter es 
 
 ## Cache- und sitzungsbewusste Affinität
 
-Cache-bewusstes Routing ist für Textgenerierungsendpunkte standardmäßig aktiviert. Sobald ein Anbieter einen tatsächlichen Prompt-Cache-Lesezugriff meldet, bindet Phaseo den passenden Kontext für 15 Minuten an diesen Anbieter – vorausgesetzt, der Anbieter ist weiterhin verfügbar und durch die aktive Route, Voreinstellung, Guardrail- und Anfragerichtlinie erlaubt.
+Cache-bewusstes Routing ist für Textgenerierungsendpunkte standardmäßig aktiviert. Anfragen, die `prompt_cache_key` oder `session_id` senden oder Caching mit `cache_control` auf oberster Ebene aktivieren, werden auf den Anbieter und die Route festgelegt, die ihre erste erfolgreiche Anfrage bedient haben. Andere Anfragen werden für 15 Minuten festgelegt, sobald ein Anbieter für denselben Anfangskontext einen Prompt-Cache-Lese- oder -Schreibvorgang meldet.
 
-Wenn `session_id` vorhanden ist, wird die Cache-Affinität an die Sitzung statt nur an den Anfangskontext gebunden. Phaseo aktualisiert sie, sobald ein weiterer Cache-Lesezugriff beobachtet wird, und behält sie bis zu 24 Stunden Sitzungsaktivität bei. Schutzschalter und Richtlinienfilter haben immer Vorrang vor der Affinität.
+Festlegungen gelten pro Workspace und dauern je nach Cache-Aufbewahrung des Anbieters 15 Minuten bis 24 Stunden. Eine Festlegung wechselt nur, wenn der Schutzschalter ihres Anbieters öffnet, seine aktuelle Fehlerquote hoch ist, das von Phaseo verwaltete Kontingent bei ihm aufgebraucht ist oder die aktive Route, Voreinstellung, Guardrail- oder Anfragerichtlinie ihn nicht mehr erlaubt.
+
+Wenn `session_id` vorhanden ist, wird die Cache-Affinität an die Sitzung statt nur an den Anfangskontext gebunden und bis zu 24 Stunden Sitzungsaktivität beibehalten. Die Dauer der Festlegungen und die Affinitätshinweise, die Phaseo an jeden Anbieter sendet, findest du unter [Provider-Affinität](./prompt-caching.mdx#provider-affinity).
 
 Du kannst die Funktion für eine Anfrage deaktivieren, ohne die Workspace- oder dynamischen Routing-Standards zu ändern:
 

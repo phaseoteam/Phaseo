@@ -8787,12 +8787,34 @@ components:
             - full
     CacheControl:
       type: object
+      description: Controle do cache de prompts. Use type ephemeral com um ttl opcional de 5m ou 1h. scope se aplica apenas a uma política de cache do Claude no nível superior.
       properties:
         type:
           type: string
         ttl:
           type: string
         scope:
+          type: string
+      additionalProperties: true
+    PromptCacheBreakpoint:
+      type: object
+      description: Ponto de interrupção de cache da OpenAI. Armazena em cache tudo até este bloco, inclusive. Enviado à OpenAI e à Azure OpenAI a partir do GPT-5.6 e à DeepInfra; as rotas do Claude o recebem como cache_control.
+      properties:
+        mode:
+          type: string
+          enum:
+            - explicit
+      additionalProperties: true
+    PromptCacheOptions:
+      type: object
+      description: Modo e TTL do cache de prompts para OpenAI e Azure OpenAI a partir do GPT-5.6 (ttl 30m) e para a DeepInfra (ttl 5m ou 1h). Removido para os demais provedores.
+      properties:
+        mode:
+          type: string
+          enum:
+            - implicit
+            - explicit
+        ttl:
           type: string
       additionalProperties: true
     ProviderOptions:
@@ -8816,11 +8838,19 @@ components:
                 - type
             prompt_cache_retention:
               type: string
+            prompt_cache_options:
+              $ref: '#/components/schemas/PromptCacheOptions'
         anthropic:
           type: object
           properties:
             cache_control:
               $ref: '#/components/schemas/CacheControl'
+        xai:
+          type: object
+          properties:
+            conversation_id:
+              type: string
+              description: ID de conversa da xAI, enviado no cabeçalho x-grok-conv-id.
         google:
           type: object
           properties:
@@ -9529,6 +9559,17 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: Agrupa solicitações relacionadas para que permaneçam no provedor que tem o cache de prompts delas. O Phaseo envia ao provedor um hash do seu workspace e desta chave, nunca a chave original.
+        prompt_cache_retention:
+          type: string
+          enum:
+            - in_memory
+            - 24h
+          description: Retenção do cache de prompts para modelos da OpenAI e da Azure OpenAI anteriores ao GPT-5.6. Prevalece sobre provider_options.openai.prompt_cache_retention.
+        prompt_cache_options:
+          $ref: '#/components/schemas/PromptCacheOptions'
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         safety_identifier:
           type: string
           nullable: true
@@ -9595,6 +9636,10 @@ components:
             - text
         text:
           type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
+        prompt_cache_breakpoint:
+          $ref: '#/components/schemas/PromptCacheBreakpoint'
     ImageContentPart:
       type: object
       required:
@@ -9661,6 +9706,10 @@ components:
             - ogg
             - pcm16
             - pcm24
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
+        prompt_cache_breakpoint:
+          $ref: '#/components/schemas/PromptCacheBreakpoint'
     AudioContentPart:
       type: object
       required:
@@ -9756,6 +9805,8 @@ components:
         async:
           type: boolean
           description: Permite que os modelos OpenAI suportados continuem enquanto o chamador executa esta ferramenta. Aceito em todas as APIs de texto e ignorado por outros provedores.
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         function:
           type: object
           required:
@@ -10126,12 +10177,32 @@ components:
       properties:
         prompt_tokens:
           type: integer
+          description: Tokens de entrada, incluindo leituras e gravações de cache.
+        prompt_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
         completion_tokens:
+          type: integer
+        input_tokens:
+          type: integer
+          description: Tokens de entrada, incluindo leituras e gravações de cache.
+        input_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
+        output_tokens:
           type: integer
         total_tokens:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+    InputTokensDetails:
+      type: object
+      description: Detalhamento dos tokens de entrada.
+      properties:
+        cached_tokens:
+          type: integer
+          description: Tokens de entrada lidos do cache de prompts do provedor.
+        cache_write_tokens:
+          type: integer
+          description: Tokens de entrada gravados no cache de prompts do provedor.
     AnthropicMessagesRequest:
       type: object
       required:
@@ -10220,6 +10291,8 @@ components:
           type: array
           items:
             type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         provider_options:
           $ref: '#/components/schemas/ProviderOptions'
         usage:
@@ -10326,6 +10399,23 @@ components:
       properties:
         input_tokens:
           type: integer
+          description: Tokens de entrada sem cache. Como na Anthropic, não inclui leituras e gravações de cache.
+        cache_read_input_tokens:
+          type: integer
+          description: Tokens de entrada lidos do cache de prompts do provedor.
+        cache_creation_input_tokens:
+          type: integer
+          description: Tokens de entrada gravados no cache de prompts do provedor.
+        cache_creation:
+          type: object
+          description: Gravações no cache divididas pela duração do cache.
+          properties:
+            ephemeral_5m_input_tokens:
+              type: integer
+              description: Tokens de entrada gravados com duração de cache de 5 minutos.
+            ephemeral_1h_input_tokens:
+              type: integer
+              description: Tokens de entrada gravados com duração de cache de 1 hora.
         output_tokens:
           type: integer
     ResponsesRequest:
@@ -10368,6 +10458,7 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: Não compatível. O Phaseo não armazena respostas, então solicitações que definem previous_response_id ou conversation retornam 400 unsupported_param. Envie a conversa inteira em input.
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
@@ -10411,6 +10502,17 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: Agrupa solicitações relacionadas para que permaneçam no provedor que tem o cache de prompts delas. O Phaseo envia ao provedor um hash do seu workspace e desta chave, nunca a chave original.
+        prompt_cache_retention:
+          type: string
+          enum:
+            - in_memory
+            - 24h
+          description: Retenção do cache de prompts para modelos da OpenAI e da Azure OpenAI anteriores ao GPT-5.6. Prevalece sobre provider_options.openai.prompt_cache_retention.
+        prompt_cache_options:
+          $ref: '#/components/schemas/PromptCacheOptions'
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         safety_identifier:
           type: string
           nullable: true
