@@ -32,6 +32,9 @@ try {
     { provider_id: 'stepfun', status: 'error', consecutive_failures: 2 },
   ]);
 
+  const [{ skip_notice_pending }] = (await db.query(`select skip_notice_pending from public.model_discovery_provider_status where provider_id = 'mistral'`)).rows;
+  assert.equal(skip_notice_pending, false, 'no stopped-checking notice is pending by default');
+
   await assert.rejects(
     db.query(upsert, ['other', 'Other', 'broken', null, 0, null]),
     /model_discovery_provider_status_status_check/,

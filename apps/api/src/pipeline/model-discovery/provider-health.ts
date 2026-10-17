@@ -29,6 +29,8 @@ export type ProviderStatusRow = {
 	failing_since: string | null;
 	/** Set when operators were told the provider is failing; cleared once they are told it stopped. */
 	alerted_at: string | null;
+	/** A checked provider became skipped and operators have not been told yet. */
+	skip_notice_pending: boolean;
 	last_checked_at: string;
 	last_success_at: string | null;
 	last_run_id: string | null;
@@ -54,7 +56,7 @@ export const PROVIDER_FAILURE_ALERT_MIN_CHECKS = 3;
 const MAX_REASON_LENGTH = 300;
 const MAX_MESSAGE_LENGTH = 1_900;
 const PROVIDER_STATUS_COLUMNS =
-	"provider_id,provider_name,status,reason,model_count,duration_ms,consecutive_failures,failing_since,alerted_at,last_checked_at,last_success_at,last_run_id";
+	"provider_id,provider_name,status,reason,model_count,duration_ms,consecutive_failures,failing_since,alerted_at,skip_notice_pending,last_checked_at,last_success_at,last_run_id";
 const SECRET_PATTERN = /\b(?:sk|pk|rk|api[_-]?key|key)[-_][A-Za-z0-9_-]{12,}/gi;
 
 /** Removes the provider key and anything shaped like a key from an upstream error before it is stored or posted. */
@@ -90,6 +92,9 @@ export function nextProviderStatus(
 		failing_since: failing ? (continuingStreak ? previous.failing_since ?? args.nowIso : args.nowIso) : null,
 		// Carried until delivery says otherwise, so an undelivered recovery notice is retried.
 		alerted_at: previous?.alerted_at ?? null,
+		// A checked provider that becomes skipped (usually a removed key) is noticed once; the flag keeps
+		// that notice pending across sweeps until it is delivered.
+		skip_notice_pending: outcome.status === "skipped" && (previous?.status === "ok" || previous?.skip_notice_pending === true),
 		last_checked_at: args.nowIso,
 		last_success_at: outcome.status === "ok" ? args.nowIso : previous?.last_success_at ?? null,
 		last_run_id: args.runId,
@@ -116,7 +121,7 @@ export function selectProviderHealthAlerts(
 			}
 		} else if (row.status === "ok") {
 			if (row.alerted_at) alerts.recovered.push({ row, previous });
-		} else if (row.alerted_at || previous?.status === "ok") {
+		} else if (row.alerted_at || row.skip_notice_pending) {
 			// A key removed from the Worker silently stops a provider's checks, so say so once.
 			alerts.stoppedChecking.push({ row, previous });
 		}
@@ -221,7 +226,11 @@ export async function runProviderHealthCheck(args: {
 			const delivery = await deliverPrivateModelDiscoveryMessage(buildProviderHealthMessage(alerts, now));
 			if (delivery.delivered) {
 				for (const { row } of alerts.failing) row.alerted_at = nowIso;
-				for (const { row } of [...alerts.recovered, ...alerts.stoppedChecking]) row.alerted_at = null;
+				for (const { row } of alerts.recovered) row.alerted_at = null;
+				for (const { row } of alerts.stoppedChecking) {
+					row.alerted_at = null;
+					row.skip_notice_pending = false;
+				}
 				alertsSent = alerts.failing.length + alerts.recovered.length + alerts.stoppedChecking.length;
 			}
 			// A skipped delivery (no webhook configured) is not an error; it simply retries next sweep.

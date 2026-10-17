@@ -519,20 +519,29 @@ function emptyProviderProcessingResult(result: ProviderResult): ProviderProcessi
 	};
 }
 
+export type ProviderFirstCheckDecision = "report" | "baseline" | "defer";
+
 /**
- * True when this check establishes the provider's baseline: it has no stored models and no successful
- * check inside the retention window. A provider that was checked recently and listed nothing (AI21)
- * still reports its first models; one whose rows were pruned after a long outage re-baselines quietly.
+ * Decides how to treat a provider's listed models when nothing is stored for it. With no successful
+ * check inside the retention window this check is its baseline; a provider checked recently that listed
+ * nothing (AI21) still reports its first models; one whose rows were pruned after a long outage
+ * re-baselines quietly. When the status needed to tell these apart could not be read (`null`), the
+ * provider's rows are not written this sweep, so the next sweep decides instead of guessing.
  */
-export function isProviderBaselineCheck(previousModelIds: readonly string[], checkedWithinRetention = false): boolean {
-	return previousModelIds.length === 0 && !checkedWithinRetention;
+export function providerFirstCheckDecision(
+	previousModelIds: readonly string[],
+	checkedWithinRetention: boolean | null,
+): ProviderFirstCheckDecision {
+	if (previousModelIds.length > 0) return "report";
+	if (checkedWithinRetention === null) return "defer";
+	return checkedWithinRetention ? "report" : "baseline";
 }
 
 async function processProvider(
 	provider: ProviderConfig,
 	previousState: PreviousModelsState,
 	runId: string,
-	checkedWithinRetention: boolean,
+	checkedWithinRetention: boolean | null,
 ): Promise<ProviderProcessingResult> {
 	const requiresApiKey = !["none", "optional_bearer"].includes(provider.authStyle ?? "bearer");
 	const apiKey = resolveDiscoveryApiKey(provider);
@@ -564,11 +573,17 @@ async function processProvider(
 		// A provider's first successful check records a baseline rather than announcing every model it
 		// lists as new, as the pricing and public-announcement monitors already do. Without this, a
 		// provider that starts working (a fixed key name, a new host) floods the review queue.
-		const baselineCheck = isProviderBaselineCheck(previousModelIds, checkedWithinRetention);
-		if (baselineCheck && currentModelIds.length > 0) {
-			console.log("[model-discovery] Recorded provider baseline:", provider.providerId, currentModelIds.length);
+		const firstCheck = providerFirstCheckDecision(previousModelIds, checkedWithinRetention);
+		if (firstCheck !== "report" && currentModelIds.length > 0) {
+			console.log(
+				firstCheck === "baseline"
+					? "[model-discovery] Recorded provider baseline:"
+					: "[model-discovery] Deferred provider baseline until provider status loads:",
+				provider.providerId,
+				currentModelIds.length,
+			);
 		}
-		const added = baselineCheck ? [] : modelIdDiff.added;
+		const added = firstCheck === "report" ? modelIdDiff.added : [];
 		const nowIso = new Date().toISOString();
 		const upsertRows: SeenModelUpsertRow[] = [];
 		const deleteRows: SeenModelDeleteRow[] = removed.map((modelId) => ({
@@ -590,6 +605,7 @@ async function processProvider(
 			);
 			watchSnapshotsById.set(model.id, watchSnapshot);
 			if (watchSnapshot.pricingFingerprint) providerModelsWithPricing += 1;
+			if (firstCheck === "defer") continue;
 			upsertRows.push({
 				provider_id: provider.providerId,
 				provider_name: provider.providerName,
@@ -978,7 +994,8 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			return null;
 		});
 		const staleCutoffMs = Date.parse(staleCutoff);
-		const checkedWithinRetention = (providerId: string): boolean => {
+		const checkedWithinRetention = (providerId: string): boolean | null => {
+			if (!previousProviderStatuses) return null;
 			const lastSuccessMs = Date.parse(previousProviderStatuses?.get(providerId)?.last_success_at ?? "");
 			return Number.isFinite(lastSuccessMs) && lastSuccessMs >= staleCutoffMs;
 		};

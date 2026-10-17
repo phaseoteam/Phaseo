@@ -47,6 +47,7 @@ function row(overrides: Partial<ProviderStatusRow> = {}): ProviderStatusRow {
 		consecutive_failures: 1,
 		failing_since: minutesAgo(15),
 		alerted_at: null,
+		skip_notice_pending: false,
 		last_checked_at: minutesAgo(15),
 		last_success_at: minutesAgo(600),
 		last_run_id: "run-0",
@@ -113,13 +114,28 @@ describe("selectProviderHealthAlerts", () => {
 	});
 
 	it("says once when a checked provider stops being checked", () => {
-		const previous = new Map([["mistral", row({ provider_id: "mistral", status: "ok", failing_since: null })]]);
-		const skipped = row({ provider_id: "mistral", status: "skipped", reason: "Missing env: MISTRAL_API_KEY", failing_since: null, consecutive_failures: 0 });
-		const neverChecked = row({ provider_id: "avian", status: "skipped", failing_since: null, consecutive_failures: 0 });
+		const args = { nowIso: NOW.toISOString(), runId: "run" };
+		const wasChecked = row({ provider_id: "mistral", provider_name: "Mistral", status: "ok", failing_since: null, consecutive_failures: 0 });
+		const neverChecked = row({ provider_id: "avian", provider_name: "Avian", status: "skipped", failing_since: null, consecutive_failures: 0 });
+		const skipped = nextProviderStatus(wasChecked, outcome("skipped", { providerId: "mistral", providerName: "Mistral" }), args);
+		const stillSkipped = nextProviderStatus(neverChecked, outcome("skipped", { providerId: "avian", providerName: "Avian" }), args);
 
-		const alerts = selectProviderHealthAlerts(previous, [skipped, neverChecked], NOW);
+		const alerts = selectProviderHealthAlerts(new Map([["mistral", wasChecked], ["avian", neverChecked]]), [skipped, stillSkipped], NOW);
 
+		expect(skipped.skip_notice_pending).toBe(true);
+		expect(stillSkipped.skip_notice_pending).toBe(false);
 		expect(alerts.stoppedChecking.map((alert) => alert.row.provider_id)).toEqual(["mistral"]);
+	});
+
+	it("keeps an undelivered no-longer-checked notice pending on later sweeps", () => {
+		const args = { nowIso: NOW.toISOString(), runId: "run" };
+		const pending = row({ status: "skipped", skip_notice_pending: true, failing_since: null, consecutive_failures: 0 });
+
+		const next = nextProviderStatus(pending, outcome("skipped"), args);
+
+		expect(next.skip_notice_pending).toBe(true);
+		expect(selectProviderHealthAlerts(new Map([["stepfun", pending]]), [next], NOW).stoppedChecking).toHaveLength(1);
+		expect(nextProviderStatus(pending, outcome("ok"), args).skip_notice_pending).toBe(false);
 	});
 });
 
@@ -237,5 +253,20 @@ describe("runProviderHealthCheck", () => {
 		const full = supabaseWith([removed]);
 		await runProviderHealthCheck({ runId: "run-13", outcomes: [outcome("ok")], notify: false, coversAllProviders: true, now: NOW });
 		expect(full.deletes).toEqual([["clarifai"]]);
+	});
+
+	it("retries a no-longer-checked notice that was not delivered, then clears it", async () => {
+		const wasChecked = row({ status: "ok", failing_since: null, consecutive_failures: 0 });
+		const first = supabaseWith([wasChecked]);
+		await runProviderHealthCheck({ runId: "run-14", outcomes: [outcome("skipped")], notify: false, coversAllProviders: false, now: NOW });
+		const savedAfterSilentSweep = first.upserts[0]?.[0];
+		expect(savedAfterSilentSweep).toMatchObject({ status: "skipped", skip_notice_pending: true });
+
+		const second = supabaseWith([savedAfterSilentSweep!]);
+		deliverMock.mockResolvedValue({ delivered: true, skipped: false });
+		await runProviderHealthCheck({ runId: "run-15", outcomes: [outcome("skipped")], notify: true, coversAllProviders: false, now: NOW });
+
+		expect(deliverMock.mock.calls[0]?.[0]).toContain("No longer checked (1):");
+		expect(second.upserts[0]?.[0]).toMatchObject({ status: "skipped", skip_notice_pending: false });
 	});
 });

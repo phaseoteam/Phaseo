@@ -3,7 +3,11 @@ import { installFetchMock, jsonResponse } from "../../../tests/helpers/mock-fetc
 
 type Call = { table: string; op: string; args: unknown[] };
 
-const supabase = vi.hoisted(() => ({ tables: {} as Record<string, unknown[]>, calls: [] as Array<{ table: string; op: string; args: unknown[] }> }));
+const supabase = vi.hoisted(() => ({
+	tables: {} as Record<string, unknown[]>,
+	calls: [] as Array<{ table: string; op: string; args: unknown[] }>,
+	failingReads: new Set<string>(),
+}));
 
 vi.mock("@/runtime/env", () => {
 	const WRITE_OPS = new Set(["insert", "upsert", "update", "delete"]);
@@ -13,6 +17,9 @@ vi.mock("@/runtime/env", () => {
 		const builder: Record<string, unknown> = new Proxy({}, {
 			get(_target, prop: string) {
 				if (prop === "then") {
+					if (op === "select" && supabase.failingReads.has(table)) {
+						return (resolve: (value: unknown) => void) => resolve({ data: null, error: { message: "statement timeout" } });
+					}
 					const data = op === "select" ? supabase.tables[table] ?? [] : [];
 					return (resolve: (value: unknown) => void) => resolve({ data, error: null });
 				}
@@ -52,6 +59,7 @@ describe("runModelDiscoveryJob", () => {
 	beforeEach(() => {
 		supabase.tables = {};
 		supabase.calls = [];
+		supabase.failingReads = new Set();
 		vi.spyOn(console, "log").mockImplementation(() => {});
 		vi.spyOn(console, "warn").mockImplementation(() => {});
 		vi.spyOn(console, "error").mockImplementation(() => {});
@@ -118,5 +126,16 @@ describe("runModelDiscoveryJob", () => {
 		expect(statusRows.find((row) => row.provider_id === "vercel")).toMatchObject({ status: "ok", model_count: 2 });
 		expect(statusRows.find((row) => row.provider_id === "openai")).toMatchObject({ status: "skipped", model_count: null });
 		expect(summary.providerHealth).toMatchObject({ checked: summary.providersTotal, alertsSent: 0 });
+	});
+
+	it("defers writing first-check providers when their status cannot be read", async () => {
+		supabase.failingReads.add("model_discovery_provider_status");
+		supabase.tables.model_discovery_seen_models = [{ provider_id: "vercel", model_id: "model-a", watch_snapshot: null, removal_pending: false }];
+
+		const summary = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+
+		// Providers with stored rows still diff normally; the rest neither report nor persist anything.
+		expect(summary.changes.map((change) => change.providerId)).toEqual(["vercel"]);
+		expect([...new Set(upsertedSeenRows().map((row) => row.provider_id))]).toEqual(["vercel"]);
 	});
 });
