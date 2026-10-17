@@ -19,6 +19,7 @@ import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
 import { runPaymentMethodExpiryNotificationJob } from "@/pipeline/notifications/billing-alerts";
 import { enqueueFeedbackRequestEmails } from "@/pipeline/notifications/feedback-request";
+import { hasMobilePushActivity, runMobilePushJob } from "@/pipeline/notifications/mobile-push";
 import { enqueueModelDeprecationNotifications, runNotificationDeliveryJob } from "@/pipeline/notifications/notification-delivery";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 import { runGatewayIoRetentionBillingJob } from "@/pipeline/audit/io-retention-billing";
@@ -372,6 +373,18 @@ async function handleFeedbackRequestScheduledEvent(env: GatewayBindings): Promis
 	try {
 		const queued = await enqueueFeedbackRequestEmails();
 		console.log("feedback_request_emails_queued", { queued });
+	} finally {
+		clearRuntime();
+	}
+}
+
+async function handleMobilePushScheduledEvent(env: GatewayBindings): Promise<void> {
+	// Off unless explicitly enabled; EXPO_ACCESS_TOKEN is only needed once Expo push security is on.
+	if (env.MOBILE_PUSH_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		const summary = await runMobilePushJob({ accessToken: env.EXPO_ACCESS_TOKEN });
+		if (hasMobilePushActivity(summary)) console.log("mobile_push_completed", summary);
 	} finally {
 		clearRuntime();
 	}
@@ -737,6 +750,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleNotificationDeliveryScheduledEvent(env);
 		} catch (error) {
 			console.error("notification_delivery_scheduled_failed", serializeError(error));
+		}
+		try {
+			await handleMobilePushScheduledEvent(env);
+		} catch (error) {
+			console.error("mobile_push_scheduled_failed", serializeError(error));
 		}
 		try {
 			await handleAsyncWebhookRetriesScheduledEvent(event, env);
