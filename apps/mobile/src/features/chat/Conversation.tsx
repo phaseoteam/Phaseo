@@ -59,7 +59,7 @@ export function Conversation({ chatId }: { chatId: string }) {
   return (
     <Screen>
       <Header back={!split} title={chat.title} subtitle={chat.models.map(label).join(", ")} />
-      <KeyboardAvoidingView behavior="padding" className="flex-1">
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <LegendList
           data={turns}
           keyExtractor={(turn) => turn.key}
@@ -108,7 +108,7 @@ export function NewChat({ initialModel }: { initialModel?: string }) {
   return (
     <Screen>
       <Header back={!split} title="New chat" />
-      <KeyboardAvoidingView behavior="padding" className="flex-1">
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <View className="flex-1 items-center justify-center px-8">
           <EmptyState icon={MessageSquare} title={models.length > 1 ? "Ask several models at once" : "What can I help with?"} body="This chat is saved only on this phone. Messages go through your Phaseo workspace." />
           {!session ? <Button label="Sign in to chat" onPress={() => router.push("/sign-in")} /> : null}

@@ -33,7 +33,7 @@ export default function SignInScreen() {
 
   return (
     <Screen edges={[]} className="bg-popover">
-      <KeyboardAwareScrollView contentContainerClassName="px-5 pb-10 pt-6" keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <Text variant="title">Sign in to Phaseo</Text>
         <Text variant="muted" className="mt-1">Sign in once to chat, see your usage and manage your workspace. Browsing models never needs an account.</Text>
         {!configured ? <Text variant="small" className="mt-4 text-destructive">{"Sign-in isn't set up in this build."}</Text> : null}

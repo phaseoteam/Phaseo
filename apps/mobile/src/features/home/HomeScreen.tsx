@@ -13,7 +13,16 @@ import { formatCompact, formatRelativeDay, formatUsd } from "@/lib/format";
 import { useAuth } from "@/providers/AuthProvider";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 
-const RELEASE_TYPE: Record<string, string> = { released: "Released", added: "Added to Phaseo", announced: "Announced", deprecated: "Deprecated", retired: "Retired", coming_soon: "Coming soon" };
+// One label per release, most useful first: "Released" beats "Announced" when both apply.
+// Upcoming entries (mostly retirements) read in the future tense.
+const RELEASE_TYPES: [string, string, string][] = [["added", "Added to Phaseo", "Coming to Phaseo"], ["released", "Released", "Releases"], ["announced", "Announced", "Announcement"], ["deprecated", "Deprecated", "Deprecated"], ["retired", "Retired", "Retires"]];
+// The feed sends display-cased types ("Released", "Retired"); compare in one form.
+const typeKey = (value: string) => value.trim().toLowerCase().replace(/[\s-]+/g, "_");
+const releaseLabel = (types: string[], upcoming: boolean) => {
+  const match = RELEASE_TYPES.find(([type]) => types.some((value) => typeKey(value) === type));
+  return match ? match[upcoming ? 2 : 1] : "Update";
+};
+const isNewRelease = (release: ModelRelease) => release.types.some((value) => ["released", "added", "announced"].includes(typeKey(value)));
 
 export function HomeScreen() {
   const router = useRouter();
@@ -40,12 +49,12 @@ export function HomeScreen() {
           </View>
 
           <Section title="Latest releases" action={<Link href="/models" asChild><Pressable hitSlop={8}><Text variant="small" className="font-semibold text-primary">All models</Text></Pressable></Link>}>
-            {releases.isLoading ? <ReleaseSkeleton /> : (releases.data?.past ?? []).slice(0, 8).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} />)}
+            {releases.isLoading ? <ReleaseSkeleton /> : (releases.data?.past ?? []).filter(isNewRelease).slice(0, 8).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} />)}
           </Section>
 
           {releases.data?.future.length ? (
             <Section title="Coming up">
-              {releases.data.future.slice(0, 5).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} />)}
+              {releases.data.future.slice(0, 5).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} upcoming />)}
             </Section>
           ) : null}
 
@@ -100,9 +109,9 @@ function QuickAction({ label, icon, href }: { label: string; icon: typeof Messag
   return <Button label={label} icon={icon} variant="secondary" className="flex-1" onPress={() => router.navigate(href)} />;
 }
 
-function ReleaseRow({ release, last }: { release: ModelRelease; last: boolean }) {
+function ReleaseRow({ release, last, upcoming }: { release: ModelRelease; last: boolean; upcoming?: boolean }) {
   const router = useRouter();
-  const type = release.types.map((value) => RELEASE_TYPE[value] ?? value).join(", ") || "Update";
+  const type = releaseLabel(release.types, Boolean(upcoming));
   const org = release.model.organisation?.name ?? release.model.organisation_name ?? release.model.model_id.split("/")[0];
   return (
     <Row

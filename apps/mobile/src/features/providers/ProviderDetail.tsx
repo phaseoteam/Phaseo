@@ -31,7 +31,7 @@ export function ProviderDetail({ id }: { id: string }) {
   const summary = metrics.data?.summary;
   return (
     <Screen>
-      <Header back={!split} title={split ? undefined : provider.api_provider_name} />
+      <Header back={!split} />
       <ScrollView contentContainerClassName="pb-16" refreshControl={<RefreshControl refreshing={models.isRefetching} onRefresh={() => { void models.refetch(); void metrics.refetch(); }} />}>
         <ReadableWidth>
           <View className="flex-row items-center gap-3 px-4 pt-2">

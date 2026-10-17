@@ -50,7 +50,7 @@ export function ModelDetail({ id }: { id: string }) {
 
   return (
     <Screen>
-      <Header back={!split} title={split ? undefined : name} />
+      <Header back={!split} />
       <ScrollView contentContainerClassName="pb-16" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
         <ReadableWidth>
           <View className="flex-row items-center gap-3 px-4 pt-2">

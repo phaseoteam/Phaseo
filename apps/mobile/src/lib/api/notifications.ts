@@ -42,8 +42,9 @@ export async function getNotificationSettings(installationId: string): Promise<N
   return settingsSchema.parse(await request(base, { auth: true, query: { installationId } }));
 }
 
-export async function updateNotificationSettings(patch: { enabled?: boolean; quietHours?: { start: string; end: string } | null; dailyCap?: number }): Promise<NotificationSettings> {
-  return settingsSchema.parse(await request(base, { method: "PUT", auth: true, body: patch }));
+/** Pass this install's ID so the response says whether this phone is registered. */
+export async function updateNotificationSettings(installationId: string, patch: { enabled?: boolean; quietHours?: { start: string; end: string } | null; dailyCap?: number }): Promise<NotificationSettings> {
+  return settingsSchema.parse(await request(base, { method: "PUT", auth: true, query: { installationId }, body: patch }));
 }
 
 export async function registerDevice(device: { installationId: string; expoPushToken: string; platform: "android" | "ios"; timeZone: string; deviceName: string | null; appVersion: string }) {

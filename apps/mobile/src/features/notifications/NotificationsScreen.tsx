@@ -5,11 +5,11 @@ import { Alert, Pressable, RefreshControl, ScrollView, Switch, View } from "reac
 import { Button, EmptyState, ErrorState, Header, Icon, LoadingState, ReadableWidth, Row, Screen, Section, Text } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { ApiError } from "@/lib/api/http";
-import { registerDevice, sendTestNotification, updateNotificationSettings, updateRule, type NotificationRule } from "@/lib/api/notifications";
+import { createRule, registerDevice, sendTestNotification, updateNotificationSettings, updateRule, type NotificationRule } from "@/lib/api/notifications";
 import { APP_VERSION } from "@/lib/config";
 import { useAuth } from "@/providers/AuthProvider";
 import { registerForPush } from "./device";
-import { describeRule, RULE_TEMPLATES } from "./rules";
+import { describeRule, EMPTY_RULE, RULE_TEMPLATES } from "./rules";
 import { draftRuleStore, useNotificationSettings, useRuleNames } from "./state";
 
 const QUIET_PRESETS = [{ start: "22:00", end: "07:00" }, { start: "23:00", end: "08:00" }, { start: "21:00", end: "09:00" }];
@@ -26,13 +26,15 @@ export function NotificationsScreen() {
       if (on) {
         const device = await registerForPush();
         await registerDevice({ ...device, appVersion: APP_VERSION });
+        // A first switch-on with no rules would send nothing; start with every new model.
+        if (!settings.data?.rules.length) await createRule({ ...EMPTY_RULE, name: "Every new model" });
       }
-      return updateNotificationSettings({ enabled: on });
+      return updateNotificationSettings(settings.installationId!, { enabled: on });
     },
     onSuccess: settings.set,
     onError: (error) => Alert.alert("Couldn't turn on notifications", error instanceof Error ? error.message : "Try again."),
   });
-  const update = useMutation({ mutationFn: updateNotificationSettings, onSuccess: settings.set });
+  const update = useMutation({ mutationFn: (patch: Parameters<typeof updateNotificationSettings>[1]) => updateNotificationSettings(settings.installationId!, patch), onSuccess: settings.set });
   const toggleRule = useMutation({
     mutationFn: ({ rule, enabled }: { rule: NotificationRule; enabled: boolean }) => updateRule(rule.id, { enabled }),
     onSuccess: () => void settings.refetch(),

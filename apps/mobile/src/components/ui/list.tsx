@@ -63,9 +63,11 @@ export function Row({ title, subtitle, icon, leading, trailing, value, onPress, 
 export function Fact({ label, value, last }: { label: string; value?: ReactNode; last?: boolean }) {
   if (value == null || value === "") return null;
   return (
-    <View className={cn("flex-row items-start justify-between gap-4 px-4 py-3", !last && "border-b border-border")}>
-      <Text variant="muted" className="flex-1">{label}</Text>
-      {typeof value === "string" || typeof value === "number" ? <Text variant="small" className="max-w-[60%] text-right font-semibold" selectable>{String(value)}</Text> : value}
+    <View className="pl-4">
+      <View className={cn("flex-row items-start justify-between gap-4 py-3 pr-4", !last && "border-b border-border")}>
+        <Text variant="muted" className="flex-1">{label}</Text>
+        {typeof value === "string" || typeof value === "number" ? <Text variant="small" className="max-w-[60%] text-right font-semibold" selectable>{String(value)}</Text> : value}
+      </View>
     </View>
   );
 }
