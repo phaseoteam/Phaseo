@@ -30,9 +30,9 @@ I care more about knowing why a change was made and what it actually achieved th
 - Shared tooling lives in `scripts/`, release metadata in `.changeset/`; the database owns catalog data. `packages/data/catalog/src/data` contains archived compatibility fixtures; daily public exports live under `packages/data/catalog/generated/database-v2`.
 
 ## Build, Test, and Development Commands
-- Install: `pnpm install` (Node >=22.12.0).
+- Install: `pnpm install` (Node `^22.13.0 || >=24.0.0`, as in `package.json` `engines`).
 - Dev servers: `pnpm dev` to run everything, or scope with `pnpm --filter @phaseo/web dev`, `pnpm --filter @phaseo/gateway-api dev`, `pnpm --filter @phaseo/docs dev`.
-- Quality gates: `pnpm lint`, `pnpm typecheck`, `pnpm build`. CI runs the full set on every PR; locally, run the scoped equivalents for what you changed (see Verifying).
+- Quality gates: `pnpm lint`, `pnpm typecheck`, `pnpm build`. Run the scoped equivalents for the packages you changed, not the whole monorepo (see Verifying).
 - Archived fixture checks (only when fixtures or validators change): `pnpm validate:data`, `pnpm validate:pricing`, `pnpm validate:gateway`. These do not validate live catalogue data. Docs: `pnpm docs:links` then `pnpm docs:build`.
 - Tests: `pnpm --filter @phaseo/web test`; Python SDK via `pnpm test:sdk-py` (`python -m pytest packages/sdk/sdk-py/tests`); TS SDK local compatibility suite via `pnpm --filter @phaseo/sdk test` and optional live smoke checks via `pnpm --filter @phaseo/sdk test:smoke` (full `pnpm test` runs the TS SDK local suite plus pytest).
 
@@ -82,8 +82,14 @@ The most common defect here is a change that works on the path you tested and is
 - Customers notice a wrong number, a stale label, or a spinner that lies. Show real state, and say when data is missing or estimated.
 
 ## Verifying
-- Use the smallest proof that the change works: the tests for the files you touched, plus targeted lint and typecheck for the package you changed, for example `pnpm --filter @phaseo/gateway-api exec vitest run src/path/to/file.test.ts`.
-- Do not run repo-wide checks (`pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test:all`) unless asked. CI owns the full suite, and repo-wide runs exhaust the shared machine.
+- Use the smallest proof that the change works: the tests for the area you touched, plus lint and typecheck for the package you changed. The verification skill in `.agents/skills/verify-phaseo-change` lists the commands and evidence for each surface.
+- Do not run monorepo-wide checks (`pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test:all`) unless asked; they exhaust the shared machine.
+- Do not rely on CI to run your tests. It runs only a small part of the suites:
+  - `apps/api`: CI runs lint, typecheck, a Wrangler dry-run build, the AIMock matrix, and one unit-test file. Run the unit tests for the directories you touched yourself: `pnpm --filter @phaseo/gateway-api exec vitest run src/<area>`.
+  - `apps/web`: CI runs the i18n checks, four Jest files, and a compile-only build, with no typecheck or ESLint. Run `pnpm --filter @phaseo/web typecheck`, ESLint on the files you changed, and the Jest tests for the area you touched.
+  - TypeScript and Python SDKs: CI builds and packs them but does not run their tests. Run `pnpm test:sdk-ts` or `pnpm test:sdk-py`.
+  - `apps/web-api`, `apps/mcp`, the other seven SDKs' lifecycle tests, all agent SDK tests, and the docs checks do run in full.
+- Some unit tests already fail on `main`, especially on Windows. Before blaming your change for a failure, run the same test against `origin/main`.
 - Test behaviour a customer or caller can observe. Do not add tests that only mirror the implementation or assert that a callback was wired.
 - Never make a test wait on sleeps or polling. Await the event, promise, or state that marks the milestone; a test that needs a timeout to pass is wrong.
 - Backend behaviour changes ship with focused tests for that behaviour. Bug fixes include a test that fails before the fix.
