@@ -184,7 +184,8 @@ function buildResponsesPayload(ctx: PipelineContext, result: RequestResult): Any
         background: raw?.background ?? request.background ?? null,
         service_tier: raw?.service_tier ?? request.service_tier ?? null,
         safety_identifier: raw?.safety_identifier ?? request.safety_identifier ?? null,
-        prompt_cache_key: raw?.prompt_cache_key ?? request.prompt_cache_key ?? null,
+        // Echo the client key, not the workspace-namespaced key sent upstream.
+        prompt_cache_key: request.prompt_cache_key ?? null,
         metadata: raw?.metadata ?? request.metadata ?? {},
         nativeResponseId,
     };
