@@ -800,7 +800,7 @@ describe("decodeOpenAIResponsesRequest", () => {
 		expect(ir.metadata).toEqual({ custom: "value" });
 	});
 
-	it("should merge metadata and user fields", () => {
+	it("keeps metadata and user fields separate", () => {
 		const request = {
 			model: "gpt-4",
 			input: "Hello",
@@ -809,7 +809,7 @@ describe("decodeOpenAIResponsesRequest", () => {
 		};
 
 		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
-		expect(ir.metadata).toEqual({ custom: "value", user: "user-42" });
+		expect(ir.metadata).toEqual({ custom: "value" });
 		expect(ir.userId).toBe("user-42");
 	});
 
