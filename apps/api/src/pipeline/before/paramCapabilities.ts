@@ -8,6 +8,7 @@ import type { ProviderCandidate } from "./types";
 import {
 	expandCapabilityParamAliases,
 	isAlwaysSupportedParam,
+	isDroppableHintParam,
 	resolveProviderParamSupportOverride,
 	textEndpointRegistryFor,
 } from "./textParamPolicy";
@@ -95,6 +96,8 @@ export function extractRequestedParams(endpoint: Endpoint, rawBody: any): string
 
 	const params: string[] = [];
 	for (const [key, canonical] of Object.entries(registry.keyToCanonicalParam)) {
+		// Cache and identity hints are best effort and never constrain routing.
+		if (isDroppableHintParam(canonical)) continue;
 		if (Object.prototype.hasOwnProperty.call(rawBody, key)) {
 			const rawValue = rawBody[key];
 			if (canonical === "provider_options") {

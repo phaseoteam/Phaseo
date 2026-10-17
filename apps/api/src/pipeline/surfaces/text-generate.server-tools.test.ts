@@ -473,7 +473,9 @@ describe("runTextGeneratePipeline server tools", () => {
 		);
 
 		const followUpRequest = doRequestWithIRMock.mock.calls[1]?.[1];
-		expect(followUpRequest.toolChoice).toBe("auto");
+		// The follow-up keeps the first request's tool_choice so its prefix
+		// (and prompt cache) matches; only forced choices relax to "auto".
+		expect(followUpRequest.toolChoice).toBe(doRequestWithIRMock.mock.calls[0]?.[1]?.toolChoice);
 		expect(followUpRequest.messages).toHaveLength(3);
 		expect(followUpRequest.messages[1]).toMatchObject({
 			role: "assistant",
@@ -977,7 +979,9 @@ describe("runTextGeneratePipeline server tools", () => {
 		);
 
 		const followUpRequest = doRequestWithIRMock.mock.calls[1]?.[1];
-		expect(followUpRequest.toolChoice).toBe("auto");
+		// The follow-up keeps the first request's tool_choice so its prefix
+		// (and prompt cache) matches; only forced choices relax to "auto".
+		expect(followUpRequest.toolChoice).toBe(doRequestWithIRMock.mock.calls[0]?.[1]?.toolChoice);
 		expect(followUpRequest.messages).toHaveLength(3);
 		expect(followUpRequest.messages[1]).toMatchObject({
 			role: "assistant",

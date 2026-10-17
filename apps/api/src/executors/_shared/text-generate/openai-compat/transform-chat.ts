@@ -10,6 +10,7 @@ import { isIRNativeToolDefinition } from "@core/nativeTools";
 import { applyChatRequestQuirks, applyChatResponseQuirks } from "./chat-quirks-bridge";
 import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
+import { applyPromptCacheFieldPolicy } from "./prompt-cache-policy";
 
 /**
  * Transform IR request to OpenAI Chat Completions format
@@ -99,7 +100,11 @@ export function irToOpenAIChat(
 				messages.push({
 					role: "tool",
 					tool_call_id: result.toolCallId,
-					content: result.content,
+					// A marked result is sent as a text part so the mark survives;
+					// the cache policy turns it back into a string where unsupported.
+					content: result.cacheControl
+						? [mapTextPartToOpenAI({ type: "text", text: result.content, cacheControl: result.cacheControl })]
+						: result.content,
 				});
 			}
 		}
@@ -290,6 +295,8 @@ export function irToOpenAIChat(
 		if (openAIOptions?.prediction !== undefined) request.prediction = openAIOptions.prediction;
 		if (openAIOptions?.moderation !== undefined) request.moderation = openAIOptions.moderation;
 	}
+
+	applyPromptCacheFieldPolicy(request, { providerId, model, irModel: ir.model });
 
 	// Apply provider-specific request transformations after base params are set.
 	applyChatRequestQuirks({ ir, providerId, model, request });

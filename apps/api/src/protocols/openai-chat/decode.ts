@@ -15,7 +15,7 @@ import type {
 	IRTool,
 } from "@core/ir";
 import { extractToolNameOrType, isOpenAINativeWebSearchTool } from "@core/nativeTools";
-import { normalizeOpenAIContent } from "../shared/normalizeContent";
+import { normalizeOpenAIContent, normalizePartCacheControl, normalizeToolResultContent } from "../shared/normalizeContent";
 import {
 	normalizeImageConfig,
 	normalizeModalities,
@@ -41,11 +41,10 @@ import {
  */
 export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequest {
 	const reqAny = req as any;
-	const metadataFromRequest = req.metadata ? { ...req.metadata } : undefined;
+	// `user` stays in `userId`; folding it into metadata sent an unknown
+	// `metadata.user` key upstream (Anthropic rejects anything but user_id).
+	const metadata = req.metadata ? { ...req.metadata } : undefined;
 	const providerCacheOptions = normalizeProviderCacheOptions(req as any);
-	const metadata = req.user
-		? { ...(metadataFromRequest ?? {}), user: req.user }
-		: metadataFromRequest;
 	const messages: IRMessage[] = [];
 
 	const systemPrompt = reqAny.system ?? reqAny.system_prompt;
@@ -77,12 +76,14 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 				toolCalls: Array.isArray(msgAny.tool_calls) ? msgAny.tool_calls.map(decodeToolCall) : undefined,
 			});
 		} else if (normalizedRole === "tool") {
+			const toolResult = normalizeToolResultContent(msgAny.content);
 			messages.push({
 				role: "tool",
 				toolResults: [
 					{
 						toolCallId: msgAny.tool_call_id,
-						content: typeof msgAny.content === "string" ? msgAny.content : JSON.stringify(msgAny.content),
+						content: toolResult.content,
+						...(toolResult.cacheControl ? { cacheControl: toolResult.cacheControl } : {}),
 					},
 				],
 			});
@@ -305,6 +306,7 @@ function decodeOpenAITool(tool: any): IRTool {
 					: undefined,
 			parameters: {},
 			async: typeof tool.async === "boolean" ? tool.async : undefined,
+			cacheControl: normalizePartCacheControl(tool),
 			raw: { ...tool },
 		};
 	}
@@ -315,6 +317,7 @@ function decodeOpenAITool(tool: any): IRTool {
 		parameters: tool.function?.parameters || tool.parameters || {},
 		strict: tool.function?.strict ?? tool.strict,
 		async: typeof tool.async === "boolean" ? tool.async : undefined,
+		cacheControl: normalizePartCacheControl(tool) ?? normalizePartCacheControl(tool.function),
 	};
 }
 

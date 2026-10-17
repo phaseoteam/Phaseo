@@ -779,7 +779,7 @@ describe("Moonshot chat extensions", () => {
 });
 
 describe("irToOpenAIChat", () => {
-	it("passes current OpenAI Chat audio, cache, verbosity, and prompt breakpoint fields", () => {
+	it("passes current OpenAI Chat audio and verbosity fields, and drops GPT-5.6 cache controls on older models", () => {
 		const request = irToOpenAIChat({
 			model: "openai/gpt-4o-audio-preview",
 			messages: [{
@@ -798,8 +798,28 @@ describe("irToOpenAIChat", () => {
 		} as any, "gpt-4o-audio-preview", "openai-eu");
 
 		expect(request.audio).toEqual({ format: "wav", voice: "alloy" });
-		expect(request.prompt_cache_options).toEqual({ mode: "explicit", ttl: "30m" });
 		expect(request.verbosity).toBe("low");
+		// OpenAI documents explicit breakpoints and prompt_cache_options for GPT-5.6+ only.
+		expect(request.prompt_cache_options).toBeUndefined();
+		expect(request.messages[0].content).toBe("Say hello");
+	});
+
+	it("passes prompt_cache_options and breakpoints to GPT-5.6", () => {
+		const request = irToOpenAIChat({
+			model: "openai/gpt-5.6-terra",
+			messages: [{
+				role: "user",
+				content: [{
+					type: "text",
+					text: "Say hello",
+					cacheControl: { type: "prompt_cache_breakpoint", mode: "explicit" },
+				}],
+			}],
+			stream: false,
+			promptCacheOptions: { mode: "explicit", ttl: "30m" },
+		} as any, "gpt-5.6-terra", "openai-eu");
+
+		expect(request.prompt_cache_options).toEqual({ mode: "explicit", ttl: "30m" });
 		expect(request.messages[0].content[0].prompt_cache_breakpoint).toEqual({ mode: "explicit" });
 	});
 	it("preserves cache_control markers for explicit cache providers", () => {
