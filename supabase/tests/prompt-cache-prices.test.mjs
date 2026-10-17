@@ -58,7 +58,7 @@ try {
     [nanos(0.3), nanos(2.75)],
   );
 
-  const migration = await read('../migrations/20261017180000_add_missing_prompt_cache_prices.sql');
+  const migration = await read('../migrations/20261017170000_add_missing_prompt_cache_prices.sql');
   const priceOf = async (skuId, meterKey) => {
     const { rows } = await db.query(
       'select price_nanos::float8 as price from public.v2_pricing_sku_meters where sku_id = $1 and meter_key = $2',
