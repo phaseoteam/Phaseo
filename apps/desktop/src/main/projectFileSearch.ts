@@ -8,13 +8,17 @@ import { PROJECT_TREE_SEARCH_LIMIT, projectTreeEntries, validateProjectTreeReque
 const execute = promisify(execFile);
 const MAX_FILES = 50_000, INDEX_TTL = 15_000;
 const skipped = new Set([".git", "node_modules"]);
-const indexes = new Map<string, { at: number; files: Promise<string[]> }>();
+const indexes = new Map<string, { at: number; index: Promise<ProjectFileIndex> }>();
+
+/** `git` is set when Git listed the files, so ignored files are already left out. */
+export type ProjectFileIndex = { files: string[]; git: boolean; truncated: boolean };
 
 /** Tracked and untracked files that Git does not ignore; a bounded walk when the project is not a repository. */
-async function indexFiles(root: string): Promise<string[]> {
+async function indexFiles(root: string): Promise<ProjectFileIndex> {
 	try {
-		const { stdout } = await execute("git", ["ls-files", "-co", "--exclude-standard", "-z"], { cwd: root, windowsHide: true, timeout: 15000, maxBuffer: 64 * 1024 * 1024, env: { ...process.env, GIT_OPTIONAL_LOCKS: "0" } });
-		return stdout.split("\0").filter(Boolean).slice(0, MAX_FILES);
+		const { stdout } = await execute("git", ["-c", "core.fsmonitor=false", "ls-files", "-co", "--exclude-standard", "-z"], { cwd: root, windowsHide: true, timeout: 15000, maxBuffer: 64 * 1024 * 1024, env: { ...process.env, GIT_OPTIONAL_LOCKS: "0" } });
+		const files = stdout.split("\0").filter(Boolean);
+		return { files: files.slice(0, MAX_FILES), git: true, truncated: files.length > MAX_FILES };
 	} catch {
 		const files: string[] = [], queue = [""];
 		while (queue.length && files.length < MAX_FILES) {
@@ -26,18 +30,20 @@ async function indexFiles(root: string): Promise<string[]> {
 				if (entry.isDirectory()) queue.push(relative); else if (entry.isFile()) files.push(relative);
 			}
 		}
-		return files;
+		return { files, git: false, truncated: files.length >= MAX_FILES };
 	}
 }
 
-function projectIndex(root: string) {
+/** The cached index shared by the @ picker, the file tree and the agent's file tools. */
+export function projectFileIndex(root: string): Promise<ProjectFileIndex> {
 	const cached = indexes.get(root);
-	if (cached && Date.now() - cached.at < INDEX_TTL) return cached.files;
-	const files = indexFiles(root);
-	indexes.set(root, { at: Date.now(), files });
-	files.catch(() => indexes.delete(root));
-	return files;
+	if (cached && Date.now() - cached.at < INDEX_TTL) return cached.index;
+	const index = indexFiles(root);
+	indexes.set(root, { at: Date.now(), index });
+	index.catch(() => indexes.delete(root));
+	return index;
 }
+const projectIndex = async (root: string) => (await projectFileIndex(root)).files;
 
 /** Name matches beat path matches; an in-order subsequence is the last resort. Shorter paths win ties. */
 function score(candidate: string, name: string, query: string) {

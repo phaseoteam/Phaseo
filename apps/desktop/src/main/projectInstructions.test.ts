@@ -32,7 +32,8 @@ describe("project instruction discovery", () => {
 			expect(instructions.prompt()).toContain("Changed root"); expect(instructions.prompt()).not.toContain("Scoped guidance"); expect(changed).toHaveBeenCalledTimes(2);
 		} finally { rmSync(root, { recursive: true, force: true }); }
 	});
-	it.each([Buffer.from([0xff]), Buffer.from("binary\0text"), Buffer.from("😀".repeat(4096) + "x")])("rejects invalid UTF-8, binary or oversized guidance without committing partial state", async content => {
+	// Oversized guidance is cut short with a warning instead; phaseoFileTools.test.ts covers that.
+	it.each([Buffer.from([0xff]), Buffer.from("binary\0text")])("rejects invalid UTF-8 or binary guidance without committing partial state", async content => {
 		const root = mkdtempSync(path.join(tmpdir(), "phaseo-instructions-")); writeFileSync(path.join(root, "AGENTS.md"), content);
 		try { const instructions = new ProjectInstructions(root); await expect(instructions.load(".", true)).rejects.toThrow(/UTF-8/); expect(instructions.list()).toEqual([]); }
 		finally { rmSync(root, { recursive: true, force: true }); }
@@ -60,9 +61,8 @@ describe("project instruction discovery", () => {
 		try {
 			const instructions = new ProjectInstructions(root);
 			for (let index = 0; index < 33; index++) { mkdirSync(path.join(root, String(index))); writeFileSync(path.join(root, String(index), "AGENTS.md"), "Owned"); if (index < 32) await instructions.load(String(index), true); }
-			const revision = instructions.revision(); await expect(instructions.load("32", true)).rejects.toThrow("32 files"); expect(instructions.revision()).toBe(revision);
-			const combined = new ProjectInstructions(root); for (let index = 0; index < 5; index++) { writeFileSync(path.join(root, String(index), "AGENTS.md"), "a".repeat(15 * 1024)); if (index < 4) await combined.load(String(index), true); }
-			await expect(combined.load("4", true)).rejects.toThrow("64 KiB");
+			// Past the file and size budgets, guidance is left out with a warning rather than rejecting the input.
+			await instructions.load("32", true); expect(instructions.prompt()).toMatch(/Warning/);
 			const deep = Array.from({ length: 32 }, () => "d").join(path.sep); mkdirSync(path.join(root, deep), { recursive: true }); await expect(new ProjectInstructions(root).load(deep, true)).rejects.toThrow("32 directories");
 		} finally { rmSync(root, { recursive: true, force: true }); }
 	});
