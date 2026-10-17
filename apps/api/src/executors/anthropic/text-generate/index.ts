@@ -22,6 +22,7 @@ import { SseParser } from "@core/sse-parser";
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
 import { isIRNativeToolDefinition } from "@core/nativeTools";
+import { applyAnthropicCacheControlDefaults, normalizeAnthropicCacheControlValue } from "./cache-control";
 import {
 	supportsAnthropicThinkingDisabled,
 	usesClaudeAdaptiveThinkingControls,
@@ -595,7 +596,8 @@ export function irToAnthropicMessages(
 					continue;
 				}
 				if (part.type === "provider_block") {
-					content.push(part.block);
+					// Copy so cache defaults never write back into the shared IR.
+					content.push({ ...part.block });
 				}
 			}
 
@@ -833,62 +835,6 @@ function appendAnthropicSystemText(system: string | any[] | undefined, text: str
 }
 
 
-function normalizeAnthropicCacheControlValue(value: unknown): Record<string, any> | undefined {
-	if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
-	const next: Record<string, any> = { ...(value as Record<string, any>) };
-	delete next.scope;
-	if (typeof next.type === "string") next.type = next.type.trim();
-	if (typeof next.ttl === "string") next.ttl = next.ttl.trim();
-	for (const key of Object.keys(next)) {
-		if (next[key] === undefined || next[key] === null || next[key] === "") delete next[key];
-	}
-	return Object.keys(next).length > 0 ? next : undefined;
-}
-
-function applyCacheControlToContentBlocks(content: any[] | undefined, cacheControl: Record<string, any>): void {
-	if (!Array.isArray(content)) return;
-	for (const block of content) {
-		if (!block || typeof block !== "object") continue;
-		if (block.type !== "text" && block.type !== "image") continue;
-		if (block.cache_control && typeof block.cache_control === "object") continue;
-		block.cache_control = { ...cacheControl };
-	}
-}
-
-function applyAnthropicCacheControlDefaults(
-	request: any,
-	control: unknown,
-): void {
-	const scopeRaw = typeof (control as any)?.scope === "string" ? (control as any).scope.trim().toLowerCase() : "all_text";
-	if (scopeRaw === "none") return;
-
-	const cacheControl = normalizeAnthropicCacheControlValue(control);
-	if (!cacheControl) return;
-
-	if (scopeRaw === "all_text") {
-		if (typeof request.system === "string" && request.system.trim().length > 0) {
-			request.system = [{ type: "text", text: request.system, cache_control: { ...cacheControl } }];
-		} else if (Array.isArray(request.system)) {
-			applyCacheControlToContentBlocks(request.system, cacheControl);
-		}
-	}
-
-	const messages = Array.isArray(request.messages) ? request.messages : [];
-	if (scopeRaw === "last_user_message") {
-		for (let i = messages.length - 1; i >= 0; i -= 1) {
-			const msg = messages[i];
-			if (msg?.role !== "user") continue;
-			applyCacheControlToContentBlocks(msg.content, cacheControl);
-			break;
-		}
-		return;
-	}
-
-	for (const msg of messages) {
-		if (msg?.role !== "user") continue;
-		applyCacheControlToContentBlocks(msg.content, cacheControl);
-	}
-}
 function applyAnthropicServiceControls(
 	request: any,
 	controls: { serviceTier?: string },
@@ -946,7 +892,8 @@ function mapIRContentToAnthropic(part: any): any {
 	}
 
 	if (part.type === "provider_block") {
-		return part.block;
+		// Copy so cache defaults never write back into the shared IR.
+		return { ...part.block };
 	}
 
 	// Fallback
