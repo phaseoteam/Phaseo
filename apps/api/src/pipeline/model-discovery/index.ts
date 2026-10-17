@@ -510,6 +510,11 @@ function emptyProviderProcessingResult(result: ProviderResult): ProviderProcessi
 	};
 }
 
+/** True when the provider has no stored models, so this check establishes its baseline. */
+export function isProviderBaselineCheck(previousModelIds: readonly string[]): boolean {
+	return previousModelIds.length === 0;
+}
+
 async function processProvider(
 	provider: ProviderConfig,
 	previousState: PreviousModelsState,
@@ -542,7 +547,14 @@ async function processProvider(
 			modelIdDiff.removed,
 			previousProviderState?.pendingRemovalIds ?? new Set<string>(),
 		);
-		const added = modelIdDiff.added;
+		// A provider's first successful check records a baseline rather than announcing every model it
+		// lists as new, as the pricing and public-announcement monitors already do. Without this, a
+		// provider that starts working (a fixed key name, a new host) floods the review queue.
+		const baselineCheck = isProviderBaselineCheck(previousModelIds);
+		if (baselineCheck && currentModelIds.length > 0) {
+			console.log("[model-discovery] Recorded provider baseline:", provider.providerId, currentModelIds.length);
+		}
+		const added = baselineCheck ? [] : modelIdDiff.added;
 		const nowIso = new Date().toISOString();
 		const upsertRows: SeenModelUpsertRow[] = [];
 		const deleteRows: SeenModelDeleteRow[] = removed.map((modelId) => ({
