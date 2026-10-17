@@ -38,6 +38,13 @@ import {
 import { fetchPricingTableSnapshots, hasPricingSourceChanged, type PricingTableSnapshot } from "./pricing-tables";
 import { MODEL_DISCOVERY_PROVIDERS, type ProviderConfig } from "./providers";
 import {
+	loadProviderStatuses,
+	redactProviderError,
+	runProviderHealthCheck,
+	type ProviderCheckOutcome,
+	type ProviderHealthSummary,
+} from "./provider-health";
+import {
 	DEFAULT_MODEL_DISCOVERY_CONCURRENCY,
 	mapWithConcurrency,
 	normalizeModelDiscoveryConcurrency,
@@ -178,6 +185,8 @@ type ProviderResult =
 			modelCount: number;
 			durationMs: number;
 			change: ProviderChange | null;
+			/** True when the provider's first check was deferred, so none of its models were written. */
+			firstCheckDeferred?: boolean;
 	  }
 	| {
 			providerId: string;
@@ -216,6 +225,7 @@ type DiscoveryRunSummary = {
 	configuredModelCoverageMonitor: ConfiguredModelCoverageMonitorSummary;
 	reviewQueue: ModelDiscoveryReviewQueueSummary;
 	publicModelAnnouncements: PublicModelAnnouncementSummary;
+	providerHealth: ProviderHealthSummary;
 	notificationFingerprint: string | null;
 };
 
@@ -427,6 +437,7 @@ function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError
 		},
 		reviewQueue: summary.reviewQueue,
 		publicModelAnnouncements: summary.publicModelAnnouncements,
+		providerHealth: summary.providerHealth,
 		notificationError: extra.notificationError ?? undefined,
 		error: extra.error ?? undefined,
 	};
@@ -510,15 +521,30 @@ function emptyProviderProcessingResult(result: ProviderResult): ProviderProcessi
 	};
 }
 
-/** True when the provider has no stored models, so this check establishes its baseline. */
-export function isProviderBaselineCheck(previousModelIds: readonly string[]): boolean {
-	return previousModelIds.length === 0;
+export type ProviderFirstCheckDecision = "report" | "baseline" | "defer";
+
+/**
+ * Decides how to treat a provider's listed models when nothing is stored for it. Only a provider whose
+ * last recorded successful check inside the retention window listed zero models (AI21) reports its first
+ * models; anything else with no stored models is a baseline, including a provider whose rows were pruned
+ * after a long outage and one whose earlier success was never persisted. When the status needed to tell
+ * these apart could not be read (`null`), the provider's rows are not written this sweep, so the next
+ * sweep decides instead of guessing.
+ */
+export function providerFirstCheckDecision(
+	previousModelIds: readonly string[],
+	checkedEmptyWithinRetention: boolean | null,
+): ProviderFirstCheckDecision {
+	if (previousModelIds.length > 0) return "report";
+	if (checkedEmptyWithinRetention === null) return "defer";
+	return checkedEmptyWithinRetention ? "report" : "baseline";
 }
 
 async function processProvider(
 	provider: ProviderConfig,
 	previousState: PreviousModelsState,
 	runId: string,
+	checkedEmptyWithinRetention: boolean | null,
 ): Promise<ProviderProcessingResult> {
 	const requiresApiKey = !["none", "optional_bearer"].includes(provider.authStyle ?? "bearer");
 	const apiKey = resolveDiscoveryApiKey(provider);
@@ -550,11 +576,17 @@ async function processProvider(
 		// A provider's first successful check records a baseline rather than announcing every model it
 		// lists as new, as the pricing and public-announcement monitors already do. Without this, a
 		// provider that starts working (a fixed key name, a new host) floods the review queue.
-		const baselineCheck = isProviderBaselineCheck(previousModelIds);
-		if (baselineCheck && currentModelIds.length > 0) {
-			console.log("[model-discovery] Recorded provider baseline:", provider.providerId, currentModelIds.length);
+		const firstCheck = providerFirstCheckDecision(previousModelIds, checkedEmptyWithinRetention);
+		if (firstCheck !== "report" && currentModelIds.length > 0) {
+			console.log(
+				firstCheck === "baseline"
+					? "[model-discovery] Recorded provider baseline:"
+					: "[model-discovery] Deferred provider baseline until provider status loads:",
+				provider.providerId,
+				currentModelIds.length,
+			);
 		}
-		const added = baselineCheck ? [] : modelIdDiff.added;
+		const added = firstCheck === "report" ? modelIdDiff.added : [];
 		const nowIso = new Date().toISOString();
 		const upsertRows: SeenModelUpsertRow[] = [];
 		const deleteRows: SeenModelDeleteRow[] = removed.map((modelId) => ({
@@ -576,6 +608,7 @@ async function processProvider(
 			);
 			watchSnapshotsById.set(model.id, watchSnapshot);
 			if (watchSnapshot.pricingFingerprint) providerModelsWithPricing += 1;
+			if (firstCheck === "defer") continue;
 			upsertRows.push({
 				provider_id: provider.providerId,
 				provider_name: provider.providerName,
@@ -640,6 +673,7 @@ async function processProvider(
 				modelCount: currentModelIds.length,
 				durationMs: Date.now() - providerStarted,
 				change,
+				firstCheckDeferred: firstCheck === "defer",
 			},
 			currentModelIds,
 			upsertRows,
@@ -657,10 +691,26 @@ async function processProvider(
 			providerId: provider.providerId,
 			providerName: provider.providerName,
 			status: "error",
-			reason: error instanceof Error ? error.message : String(error),
+			reason: redactProviderError(error instanceof Error ? error.message : String(error), apiKey),
 			durationMs: Date.now() - providerStarted,
 		});
 	}
+}
+
+/**
+ * Maps a provider result onto the health outcome it records. A success counts as recorded only when its
+ * models were persisted: the sweep's state was saved and the provider's first check was not deferred.
+ */
+export function toProviderCheckOutcome(result: ProviderResult, statePersisted = true): ProviderCheckOutcome {
+	return {
+		providerId: result.providerId,
+		providerName: result.providerName,
+		status: result.status === "success" ? "ok" : result.status,
+		reason: result.status === "success" ? null : result.reason,
+		modelCount: result.status === "success" ? result.modelCount : null,
+		durationMs: result.status === "skipped" ? null : result.durationMs,
+		recorded: result.status === "success" ? statePersisted && !result.firstCheckDeferred : true,
+	};
 }
 
 async function upsertModelDiscoveryReviewItems(
@@ -948,6 +998,19 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		const pendingRemovalRows: SeenModelPendingRemovalRow[] = [];
 		const discoveredModelIdsByProvider = new Map<string, string[]>();
 		const previousState = await fetchPreviousModelsByProviders(providers.map((provider) => provider.providerId));
+		const previousProviderStatuses = await loadProviderStatuses().catch((error: unknown) => {
+			console.warn("[model-discovery] Could not load provider status:", error instanceof Error ? error.message : String(error));
+			return null;
+		});
+		const staleCutoffMs = Date.parse(staleCutoff);
+		// last_success_at and model_count only move on successes whose models were persisted, so a recent
+		// empty one proves the provider listed nothing rather than that its rows were never written.
+		const checkedEmptyWithinRetention = (providerId: string): boolean | null => {
+			if (!previousProviderStatuses) return null;
+			const status = previousProviderStatuses.get(providerId);
+			const lastSuccessMs = Date.parse(status?.last_success_at ?? "");
+			return status?.model_count === 0 && Number.isFinite(lastSuccessMs) && lastSuccessMs >= staleCutoffMs;
+		};
 		const providerApiPricingChangesByProvider = new Map<string, PricingProviderChange>();
 		const providerApiProvidersWithoutPricing = new Set<string>();
 		let providerApiModelsWithPricing = 0;
@@ -955,7 +1018,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		const providerProcessingResults = await mapWithConcurrency(
 			providers,
 			discoveryConcurrency,
-			(provider) => processProvider(provider, previousState, runId),
+			(provider) => processProvider(provider, previousState, runId, checkedEmptyWithinRetention(provider.providerId)),
 		);
 
 		// Merge in provider order, not completion order, so stored summaries and
@@ -1238,6 +1301,21 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			}
 		}
 
+		// Independent of model-change delivery: a provider can fail for hours with nothing else changing.
+		let providerHealth: ProviderHealthSummary = { checked: 0, failing: 0, alertsSent: 0 };
+		try {
+			providerHealth = await runProviderHealthCheck({
+				runId,
+				outcomes: results.map((result) => toProviderCheckOutcome(result, !persistenceDeferredReason)),
+				notify: shouldNotify,
+				coversAllProviders: providers.length === PROVIDERS.length,
+				previousById: previousProviderStatuses ?? undefined,
+			});
+		} catch (error) {
+			providerHealth.error = error instanceof Error ? error.message : String(error);
+			console.error("[model-discovery] Provider health check failed:", providerHealth.error);
+		}
+
 		const finishedAt = new Date();
 		const summary: DiscoveryRunSummary = {
 			runId,
@@ -1262,6 +1340,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			configuredModelCoverageMonitor,
 			reviewQueue,
 			publicModelAnnouncements,
+			providerHealth,
 			notificationFingerprint,
 		};
 
@@ -1275,7 +1354,8 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			summary.pricingTableMonitor.errors.length > 0 ||
 			Boolean(summary.configuredModelCoverageMonitor.error) ||
 			Boolean(summary.reviewQueue.error) ||
-			Boolean(summary.publicModelAnnouncements.error)
+			Boolean(summary.publicModelAnnouncements.error) ||
+			Boolean(summary.providerHealth.error)
 				? "completed_with_errors"
 				: "completed";
 		await updateRunFinish(summary, status, { notificationError });
@@ -1349,6 +1429,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				pending: 0,
 				error: reason,
 			},
+			providerHealth: { checked: 0, failing: 0, alertsSent: 0 },
 			notificationFingerprint: deliveredNotificationFingerprint,
 		};
 		try {

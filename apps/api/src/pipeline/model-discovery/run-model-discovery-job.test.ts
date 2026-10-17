@@ -3,7 +3,11 @@ import { installFetchMock, jsonResponse } from "../../../tests/helpers/mock-fetc
 
 type Call = { table: string; op: string; args: unknown[] };
 
-const supabase = vi.hoisted(() => ({ tables: {} as Record<string, unknown[]>, calls: [] as Array<{ table: string; op: string; args: unknown[] }> }));
+const supabase = vi.hoisted(() => ({
+	tables: {} as Record<string, unknown[]>,
+	calls: [] as Array<{ table: string; op: string; args: unknown[] }>,
+	failingReads: new Set<string>(),
+}));
 
 vi.mock("@/runtime/env", () => {
 	const WRITE_OPS = new Set(["insert", "upsert", "update", "delete"]);
@@ -13,6 +17,9 @@ vi.mock("@/runtime/env", () => {
 		const builder: Record<string, unknown> = new Proxy({}, {
 			get(_target, prop: string) {
 				if (prop === "then") {
+					if (op === "select" && supabase.failingReads.has(table)) {
+						return (resolve: (value: unknown) => void) => resolve({ data: null, error: { message: "statement timeout" } });
+					}
 					const data = op === "select" ? supabase.tables[table] ?? [] : [];
 					return (resolve: (value: unknown) => void) => resolve({ data, error: null });
 				}
@@ -52,6 +59,7 @@ describe("runModelDiscoveryJob", () => {
 	beforeEach(() => {
 		supabase.tables = {};
 		supabase.calls = [];
+		supabase.failingReads = new Set();
 		vi.spyOn(console, "log").mockImplementation(() => {});
 		vi.spyOn(console, "warn").mockImplementation(() => {});
 		vi.spyOn(console, "error").mockImplementation(() => {});
@@ -87,5 +95,58 @@ describe("runModelDiscoveryJob", () => {
 		expect(reviewRows.filter((row) => row.provider_id === "vercel")).toEqual([
 			expect.objectContaining({ model_id: "model-b", change_type: "added" }),
 		]);
+	});
+
+	it("reports the first models of a provider that was checked recently with an empty list", async () => {
+		supabase.tables.model_discovery_provider_status = [
+			{ provider_id: "vercel", provider_name: "Vercel AI Gateway", status: "ok", model_count: 0, consecutive_failures: 0, last_success_at: new Date(Date.now() - 15 * 60_000).toISOString() },
+		];
+
+		const summary = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+
+		expect(summary.changes.find((change) => change.providerId === "vercel")).toMatchObject({ added: ["model-a", "model-b"] });
+	});
+
+	it("baselines a provider whose recent success listed models that were never stored", async () => {
+		// For example a sweep whose notification failed recorded the check but did not persist its rows.
+		supabase.tables.model_discovery_provider_status = [
+			{ provider_id: "vercel", provider_name: "Vercel AI Gateway", status: "ok", model_count: 2, consecutive_failures: 0, last_success_at: new Date(Date.now() - 15 * 60_000).toISOString() },
+		];
+
+		const summary = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+
+		expect(summary.changes).toEqual([]);
+	});
+
+	it("re-baselines quietly after an outage longer than the retention window", async () => {
+		supabase.tables.model_discovery_provider_status = [
+			{ provider_id: "vercel", provider_name: "Vercel AI Gateway", status: "error", model_count: null, consecutive_failures: 900, last_success_at: new Date(Date.now() - 9 * 24 * 3600_000).toISOString() },
+		];
+
+		const summary = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+
+		expect(summary.changes).toEqual([]);
+	});
+
+	it("records every provider's check outcome in one status upsert", async () => {
+		const summary = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+
+		const statusRows = writes("model_discovery_provider_status", "upsert")
+			.flatMap((call) => call.args[0] as Array<{ provider_id: string; status: string; model_count: number | null }>);
+		expect(statusRows).toHaveLength(summary.providersTotal);
+		expect(statusRows.find((row) => row.provider_id === "vercel")).toMatchObject({ status: "ok", model_count: 2 });
+		expect(statusRows.find((row) => row.provider_id === "openai")).toMatchObject({ status: "skipped", model_count: null });
+		expect(summary.providerHealth).toMatchObject({ checked: summary.providersTotal, alertsSent: 0 });
+	});
+
+	it("defers writing first-check providers when their status cannot be read", async () => {
+		supabase.failingReads.add("model_discovery_provider_status");
+		supabase.tables.model_discovery_seen_models = [{ provider_id: "vercel", model_id: "model-a", watch_snapshot: null, removal_pending: false }];
+
+		const summary = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+
+		// Providers with stored rows still diff normally; the rest neither report nor persist anything.
+		expect(summary.changes.map((change) => change.providerId)).toEqual(["vercel"]);
+		expect([...new Set(upsertedSeenRows().map((row) => row.provider_id))]).toEqual(["vercel"]);
 	});
 });

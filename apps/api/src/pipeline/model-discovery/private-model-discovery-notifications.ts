@@ -59,19 +59,24 @@ export async function computePrivateModelDiscoveryFingerprint(
 	return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+export type PrivateDeliveryResult = { delivered: boolean; skipped: boolean; reason?: string | null; error?: string | null };
+
 export async function sendPrivateModelDiscoveryNotification(
 	args: PrivateModelDiscoveryNotification,
-): Promise<{ delivered: boolean; skipped: boolean; reason?: string | null; error?: string | null }> {
+): Promise<PrivateDeliveryResult> {
 	if (!hasDiscordNotifiableChanges(args)) {
 		return { delivered: false, skipped: true, reason: "no notifiable changes" };
 	}
+	return deliverPrivateModelDiscoveryMessage(appendReviewQueueLink(buildPrivateModelDiscoveryMessage(args)));
+}
+
+/** Sends an operator message to the private Discord and optional Slack destinations. */
+export async function deliverPrivateModelDiscoveryMessage(message: string): Promise<PrivateDeliveryResult> {
 	const discordWebhookUrl = readBindingEnv(["DISCORD_WEBHOOK_URL"]);
 	const slackWebhookUrl = readBindingEnv(["MODEL_DISCOVERY_SLACK_WEBHOOK_URL"]);
 	if (!discordWebhookUrl && !slackWebhookUrl) {
 		return { delivered: false, skipped: true, reason: "missing Discord and Slack webhook URLs" };
 	}
-
-	const message = appendReviewQueueLink(buildPrivateModelDiscoveryMessage(args));
 	if (!message.trim()) {
 		return { delivered: false, skipped: true, reason: "empty Discord message" };
 	}

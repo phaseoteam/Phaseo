@@ -7,7 +7,14 @@ vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => getSupabaseAdminMock(),
 }));
 
-import { ABANDONED_RUN_ERROR, closeAbandonedRuns, dedupeSeenModelRows, fetchPreviousModelsByProviders, markPendingModelRemovals } from "./index";
+import {
+	ABANDONED_RUN_ERROR,
+	closeAbandonedRuns,
+	dedupeSeenModelRows,
+	fetchPreviousModelsByProviders,
+	markPendingModelRemovals,
+	toProviderCheckOutcome,
+} from "./index";
 
 type SeenModelRow = {
 	provider_id: string;
@@ -173,6 +180,27 @@ describe("markPendingModelRemovals", () => {
 			removal_pending: true,
 			last_seen_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
 		});
+	});
+});
+
+describe("toProviderCheckOutcome", () => {
+	it("maps each provider result onto the health outcome it records", () => {
+		const mistral = { providerId: "mistral", providerName: "Mistral", status: "success" as const, modelCount: 54, durationMs: 190, change: null };
+		expect(toProviderCheckOutcome(mistral)).toEqual({
+			providerId: "mistral", providerName: "Mistral", status: "ok", reason: null, modelCount: 54, durationMs: 190, recorded: true,
+		});
+		expect(toProviderCheckOutcome({
+			providerId: "avian", providerName: "Avian", status: "skipped", reason: "Missing env: AVIAN_API_KEY",
+		})).toEqual({ providerId: "avian", providerName: "Avian", status: "skipped", reason: "Missing env: AVIAN_API_KEY", modelCount: null, durationMs: null, recorded: true });
+		expect(toProviderCheckOutcome({
+			providerId: "stepfun", providerName: "StepFun", status: "error", reason: "HTTP 401", durationMs: 510,
+		})).toEqual({ providerId: "stepfun", providerName: "StepFun", status: "error", reason: "HTTP 401", modelCount: null, durationMs: 510, recorded: true });
+	});
+
+	it("does not count a success as recorded when its models were not persisted", () => {
+		const mistral = { providerId: "mistral", providerName: "Mistral", status: "success" as const, modelCount: 54, durationMs: 190, change: null };
+		expect(toProviderCheckOutcome(mistral, false).recorded).toBe(false);
+		expect(toProviderCheckOutcome({ ...mistral, firstCheckDeferred: true }).recorded).toBe(false);
 	});
 });
 

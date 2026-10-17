@@ -40,6 +40,23 @@ Provider `/models` Discord alerts are filtered to provider model IDs already kno
 
 Issue state is stored in `scripts/model-discovery/state/provider-change-issues.json`. Issue threads are grouped by source, provider/org, and action type so provider API and Hugging Face signals cannot collide.
 
+## Provider check health
+
+Every sweep records each provider's outcome (`ok`, `skipped` for a missing key, or `error` with a redacted reason) in `model_discovery_provider_status`, one row per provider, along with the current failure streak. The Worker posts to the private discovery channel when:
+
+- a provider has failed at least 3 checks in a row for over an hour (once per streak),
+- an alerted provider recovers, or
+- a provider that was being checked becomes skipped (usually a removed key).
+
+A failed or disabled delivery leaves the row's `alerted_at` (failing/recovered) or `skip_notice_pending` (no longer checked) unchanged, so a later sweep retries. Long alert lists are split into messages under Discord's limit (at most 5 per sweep), and only delivered alerts are acknowledged. A provider with no stored models is baselined silently on its first successful check unless its last recorded successful check (one whose models were persisted) within the retention window listed zero models; if the status table cannot be read, such providers are not written that sweep, so the next sweep decides. To see what is failing now:
+
+```sql
+select provider_id, status, consecutive_failures, failing_since, reason
+from model_discovery_provider_status
+where status <> 'ok'
+order by status, failing_since nulls last;
+```
+
 ## Internal Phaseo catalog discovery
 
 Public Phaseo catalog additions are checked by the same Cloudflare Worker schedule as provider discovery. The Worker reads `v2_models`, keeps a database-backed cursor in `model_discovery_public_announcements`, silently baselines the existing catalog on first run, and leaves later public additions pending until the public Discord webhook accepts the embed. Failed deliveries remain pending for a later retry. These checks may send Discord notifications or write reports, but they do not create, update, comment on, close, label, or otherwise mutate GitHub issues.
