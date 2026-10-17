@@ -1,7 +1,7 @@
 {
   "model_id": "cohere/north-mini-code",
   "organisation_id": "cohere",
-  "name": "Cohere: North Mini Code (free)",
+  "name": "Cohere: North Mini Code",
   "status": "Available",
   "previous_model_id": null,
   "description": "North Mini Code is Cohere's first agentic coding model and the debut of its North family. A sparse mixture-of-experts model with 30B total parameters and 3B active, it is optimized...",
@@ -17,6 +17,13 @@
     "text"
   ],
   "api_model_id": "cohere/north-mini-code",
+  "variants": [
+    {
+      "model_id": "cohere/north-mini-code:free",
+      "name": "Cohere: North Mini Code (Free)",
+      "variant_kind": "free"
+    }
+  ],
   "links": [
     {
       "platform": "model",
