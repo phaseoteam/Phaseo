@@ -6,6 +6,7 @@ import type { PipelineContext } from "@pipeline/before/types";
 import type { RequestResult } from "@pipeline/execute";
 import { ensureRuntimeForBackground, getBindings } from "@/runtime/env";
 import { sendAxiomWideEvent } from "./axiom";
+import { reportedCacheTokens } from "@core/cache-usage";
 import { sanitizeForAxiom, sanitizeJsonStringForAxiom, stringifyForAxiom } from "./privacy";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
 
@@ -220,10 +221,16 @@ function usageSummary(usage: any) {
     const total = usage.total_tokens ?? (typeof input === "number" && typeof output === "number" ? input + output : null);
     const inputDetails = usage.input_tokens_details ?? usage.input_details ?? usage.prompt_tokens_details ?? {};
     const outputDetails = usage.output_tokens_details ?? usage.completion_tokens_details ?? {};
+    // Cache reads and writes as billed (priced meters), whichever field the provider used.
+    const cache = reportedCacheTokens(usage);
     return {
         usage_input_tokens: toNum(input),
         usage_output_tokens: toNum(output),
         usage_total_tokens: toNum(total),
+        usage_cache_read_tokens: toNum(cache.readTokens ?? null),
+        usage_cache_write_tokens: toNum(cache.writeTokens ?? null),
+        usage_cache_write_5m_tokens: toNum(cache.write5mTokens ?? null),
+        usage_cache_write_1h_tokens: toNum(cache.write1hTokens ?? null),
         usage_request_tool_count: toNum(
             usage.request_tool_count ?? usage.requested_tool_count ?? null
         ),

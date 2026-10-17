@@ -163,6 +163,9 @@ export type ExecutorStreamingResult = {
 	stream: ReadableStream<Uint8Array>;
 	streamAlreadyTransformed?: boolean;
 	usageFinalizer: () => Promise<Bill | null>;
+	// True when the finalizer reads usage from the upstream stream itself (Anthropic,
+	// Bedrock Messages, Vertex Claude). The after-stage then bills from it, not from frames.
+	usageFinalizerAuthoritative?: boolean;
 	bill: Bill;
 	upstream: Response;
 	keySource?: "gateway" | "byok";

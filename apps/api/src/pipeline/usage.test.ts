@@ -155,7 +155,7 @@ describe("shapeUsageForClient", () => {
 		expect(shaped.total_tokens).toBe(0);
 	});
 
-	it("maps Anthropic cache usage fields to gateway cache meters", () => {
+	it("maps Anthropic cache usage fields to OpenAI-style client usage", () => {
 		const shaped = shapeUsageForClient({
 			input_tokens: 100,
 			output_tokens: 20,
@@ -173,8 +173,12 @@ describe("shapeUsageForClient", () => {
 		expect(shaped.cached_write_text_tokens_5m).toBe(8);
 		expect(shaped.cached_write_text_tokens_1h).toBe(4);
 		expect(shaped.input_text_tokens).toBeUndefined();
+		// Anthropic reports reads and writes on top of input_tokens; OpenAI counts them inside.
+		expect(shaped.input_tokens).toBe(157);
+		expect(shaped.total_tokens).toBe(177);
 		expect(shaped.input_tokens_details.cached_tokens).toBe(45);
-		expect(shaped.output_tokens_details.cached_tokens).toBe(12);
+		expect(shaped.input_tokens_details.cache_write_tokens).toBe(12);
+		expect(shaped.output_tokens_details).toBeUndefined();
 	});
 
 	it("maps China-lab cache hit aliases to client cached-token details", () => {
@@ -190,7 +194,7 @@ describe("shapeUsageForClient", () => {
 		expect(shaped.input_tokens_details.cached_tokens).toBe(42);
 	});
 
-	it("maps OpenAI-compatible explicit cache creation aliases to output cached-token details", () => {
+	it("maps OpenAI-compatible explicit cache creation aliases to input cache-write details", () => {
 		const shaped = shapeUsageForClient({
 			input_tokens: 100,
 			output_tokens: 5,
@@ -200,7 +204,9 @@ describe("shapeUsageForClient", () => {
 			},
 		});
 
-		expect(shaped.output_tokens_details.cached_tokens).toBe(31);
+		expect(shaped.input_tokens).toBe(100);
+		expect(shaped.input_tokens_details.cache_write_tokens).toBe(31);
+		expect(shaped.output_tokens_details).toBeUndefined();
 	});
 
 	it("keeps canonical token totals without exposing legacy uncached-input aliases", () => {
@@ -259,7 +265,9 @@ describe("shapeUsageForClient", () => {
 			cached_read_tokens_are_subset_of_input: false,
 		});
 
-		expect(shaped.input_tokens).toBe(123);
+		// Reads reported on top of input are folded into the OpenAI-style total.
+		expect(shaped.input_tokens).toBe(187);
+		expect(shaped.total_tokens).toBe(196);
 		expect(shaped.input_tokens_details.cached_tokens).toBe(64);
 		expect((shaped as any).cached_read_tokens_are_subset_of_input).toBeUndefined();
 	});
