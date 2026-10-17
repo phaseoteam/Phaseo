@@ -48,15 +48,15 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 	{
 		id: "braintrust",
 		label: "Braintrust",
-		description: "Export traces into your Braintrust project.",
+		description: "Send GenAI traces to a Braintrust project over OpenTelemetry.",
 		logoId: "observability-braintrust",
 		fields: [
 			{ key: "api_key", label: "API Key", placeholder: "bt_...", type: "password" },
-			{ key: "project_id", label: "Project ID", placeholder: "proj_..." },
+			{ key: "project_id", label: "Project ID", placeholder: "Project ID from the project's configuration page" },
 			{
 				key: "base_url",
-				label: "Base URL (Optional)",
-				placeholder: "https://api.braintrust.dev",
+				label: "API URL (Optional)",
+				placeholder: "https://api.braintrust.dev, or https://api-eu.braintrust.dev",
 				required: false,
 			},
 		],
@@ -88,15 +88,15 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 	{
 		id: "datadog",
 		label: "Datadog",
-		description: "Publish traces to Datadog intake.",
+		description: "Send GenAI traces to Datadog LLM Observability over OpenTelemetry.",
 		logoId: "observability-datadog",
 		fields: [
 			{ key: "api_key", label: "API Key", placeholder: "dd_...", type: "password" },
-			{ key: "ml_app", label: "ML App", placeholder: "gateway-prod" },
+			{ key: "ml_app", label: "ML App (Optional)", placeholder: "phaseo-gateway", required: false },
 			{
-				key: "url",
-				label: "URL (Optional)",
-				placeholder: "https://trace.agent.datadoghq.com",
+				key: "site",
+				label: "Site (Optional)",
+				placeholder: "datadoghq.com, us3.datadoghq.com, us5.datadoghq.com, datadoghq.eu, ap1.datadoghq.com, ap2.datadoghq.com or uk1.datadoghq.com",
 				required: false,
 			},
 		],
@@ -119,7 +119,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 	{
 		id: "langfuse",
 		label: "Langfuse",
-		description: "Forward traces to Langfuse projects.",
+		description: "Send GenAI traces to a Langfuse project over OpenTelemetry.",
 		logoId: "observability-langfuse",
 		fields: [
 			{ key: "secret_key", label: "Secret Key", placeholder: "sk-lf-...", type: "password" },
@@ -127,7 +127,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 			{
 				key: "base_url",
 				label: "Base URL (Optional)",
-				placeholder: "https://cloud.langfuse.com",
+				placeholder: "https://cloud.langfuse.com, or us., jp. or hipaa.cloud.langfuse.com",
 				required: false,
 			},
 		],
@@ -135,15 +135,15 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 	{
 		id: "langsmith",
 		label: "LangSmith",
-		description: "Send traces/events to LangSmith.",
+		description: "Send GenAI traces to a LangSmith project over OpenTelemetry.",
 		logoId: "observability-langsmith",
 		fields: [
 			{ key: "api_key", label: "API Key", placeholder: "lsv2_...", type: "password" },
-			{ key: "project", label: "Project", placeholder: "gateway-traces" },
+			{ key: "project", label: "Project (Optional)", placeholder: "default", required: false },
 			{
-				key: "endpoint",
-				label: "Endpoint (Optional)",
-				placeholder: "https://api.smith.langchain.com",
+				key: "base_url",
+				label: "API URL (Optional)",
+				placeholder: "https://api.smith.langchain.com, or https://eu.api.smith.langchain.com",
 				required: false,
 			},
 		],
