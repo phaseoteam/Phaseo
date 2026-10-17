@@ -45,6 +45,33 @@ const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
 });
 ```
 
+## Multi-turn Chat with `/v1/responses`
+1. Send the first turn with `model` and `input`.
+2. On each later turn, pass `previous_response_id` from the last successful response instead of resending the history.
+3. Read the reply from `output_text`. If it is absent, join the `text` parts of `output[].content[]`.
+4. When the user switches model, clear the conversation state and `previous_response_id`.
+
+```json
+{
+  "model": "phaseo/free",
+  "input": "Now list the action items.",
+  "previous_response_id": "resp_..."
+}
+```
+
+## Video Jobs
+Video generation is asynchronous:
+- Create: `POST /v1/videos`
+- Status: `GET /v1/videos/{video_id}`; poll every 20 seconds or so until it reaches a terminal state.
+- Download: `POST /v1/videos/{video_id}/download_url` for a signed URL, or `GET /v1/videos/{video_id}/content` for the bytes.
+- Cancel an in-progress job: `POST /v1/videos/{video_id}/cancel`
+- Delete: `DELETE /v1/videos/{video_id}`
+
+## Errors and Retries
+- Retry `429`, `5xx`, and transient network failures with exponential backoff and jitter.
+- Do not retry `400` (fix the request), `401`/`403` (fix or refresh credentials first), or `404` (wrong path, resource, or model ID).
+- Normalise errors at your integration boundary to: the endpoint, HTTP status, `code` if present, `message`, `request_id` if present, and whether the error is retryable.
+
 ## Validation Sequence
 1. `GET /v1/health` returns healthy.
 2. `GET /v1/models` includes target model.
