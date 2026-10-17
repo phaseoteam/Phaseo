@@ -9,23 +9,19 @@ export const AA_METRICS = [
 ] as const;
 
 type Benchmark = { benchmark_id: string; name: string | null; total_models: number | null };
-type CoverageRow = { benchmark_id: string; model_slug: string };
+type CoverageRow = { benchmark_id: string; total_models: number; published: boolean };
 
 export function isArtificialAnalysisEntry(id: string) {
 	return id === ARTIFICIAL_ANALYSIS_ID || id.startsWith("aa-");
 }
 
 export function artificialAnalysisCatalogue(rows: Benchmark[], coverage: CoverageRow[]) {
-	const models = new Map<string, Set<string>>();
-	for (const row of coverage) {
-		const set = models.get(row.benchmark_id) ?? new Set<string>();
-		set.add(row.model_slug);
-		models.set(row.benchmark_id, set);
-	}
-	const count = (id: string) => models.get(id)?.size ?? 0;
+	const counts = new Map(coverage.map((row) => [row.benchmark_id, row.total_models]));
+	const published = new Set(coverage.filter((row) => row.published).map((row) => row.benchmark_id));
+	const count = (id: string) => counts.get(id) ?? 0;
 	const versions = rows.flatMap((row) => {
 		const version = row.benchmark_id.match(/^aa-intelligence-index-v([1-9]\d*)$/)?.[1];
-		return version && count(row.benchmark_id) > 0 ? [Number(version)] : [];
+		return version && published.has(row.benchmark_id) && count(row.benchmark_id) > 0 ? [Number(version)] : [];
 	}).sort((a, b) => b - a);
 	const currentVersion = versions[0] ?? null;
 	const metrics = (version: number) => AA_METRICS.map((metric) => ({
@@ -55,23 +51,10 @@ export function artificialAnalysisCatalogue(rows: Benchmark[], coverage: Coverag
 	};
 }
 
-/** Count actual scored models, not source variants or stale benchmark totals. */
+/** SQL counts visible scored models and admits only atomically published versions. */
 export async function fetchArtificialAnalysisCoverage(client: ReturnType<typeof getDataClient>, rows: Benchmark[]) {
-	const ids = rows.filter((row) => isArtificialAnalysisEntry(row.benchmark_id)).map((row) => row.benchmark_id);
-	const coverage: CoverageRow[] = [];
-	if (!ids.length) return coverage;
-	const now = new Date().toISOString();
-	for (let offset = 0; ; offset += 500) {
-		const { data, error } = await client.from("v2_benchmark_results")
-			.select("benchmark_id,model_slug,model:v2_models!inner(hidden)")
-			.in("benchmark_id", ids)
-			.or(`effective_to.is.null,effective_to.gt.${now}`)
-			.not("score_numeric", "is", null)
-			.eq("model.hidden", false)
-			.order("result_id")
-			.range(offset, offset + 499);
-		if (error) throw error;
-		coverage.push(...(data ?? []));
-		if ((data ?? []).length < 500) return coverage;
-	}
+	if (!rows.some((row) => isArtificialAnalysisEntry(row.benchmark_id))) return [];
+	const { data, error } = await client.rpc("get_artificial_analysis_coverage");
+	if (error) throw error;
+	return (data ?? []) as CoverageRow[];
 }

@@ -5,13 +5,11 @@ import { getDataClient } from "@/data/supabase";
 
 const rows = ["artificial-analysis", "aa-intelligence-index", "aa-intelligence-index-v3", "aa-intelligence-index-v4", "aa-intelligence-index-v5", "aa-coding-index-v4", "aa-intelligence-index-cost-v4", "aa-briefcase", "mmlu"].map((id) => ({ benchmark_id: id, name: id, total_models: 999 }));
 const coverage = [
-	{ benchmark_id: "aa-intelligence-index-v3", model_slug: "old" },
-	{ benchmark_id: "aa-intelligence-index-v4", model_slug: "one" },
-	{ benchmark_id: "aa-intelligence-index-v4", model_slug: "one" },
-	{ benchmark_id: "aa-intelligence-index-v4", model_slug: "two" },
-	{ benchmark_id: "aa-coding-index-v4", model_slug: "one" },
-	{ benchmark_id: "aa-intelligence-index-cost-v4", model_slug: "one" },
-	{ benchmark_id: "aa-briefcase", model_slug: "one" },
+	{ benchmark_id: "aa-intelligence-index-v3", total_models: 1, published: true },
+	{ benchmark_id: "aa-intelligence-index-v4", total_models: 2, published: true },
+	{ benchmark_id: "aa-coding-index-v4", total_models: 1, published: true },
+	{ benchmark_id: "aa-intelligence-index-cost-v4", total_models: 1, published: true },
+	{ benchmark_id: "aa-briefcase", total_models: 1, published: false },
 ];
 const env = { ENV: "development" as const, SUPABASE_URL: "https://example.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "test" };
 afterEach(() => vi.unstubAllGlobals());
@@ -26,12 +24,13 @@ describe("Artificial Analysis catalogue", () => {
 		expect(catalogue.metrics(4)[1].total_models).toBe(1);
 		expect(catalogue.otherEvaluations).toEqual([{ id: "aa-briefcase", name: "aa-briefcase" }]);
 	});
-	it("selects a newer version only after scored results exist", () => {
-		expect(artificialAnalysisCatalogue(rows, [...coverage, { benchmark_id: "aa-intelligence-index-v5", model_slug: "new" }]).currentVersion).toBe(5);
+	it("selects a newer version only after complete publication, even if partial results exist", () => {
+		expect(artificialAnalysisCatalogue(rows, [...coverage, { benchmark_id: "aa-intelligence-index-v5", total_models: 1, published: false }]).currentVersion).toBe(4);
+		expect(artificialAnalysisCatalogue(rows, [...coverage, { benchmark_id: "aa-intelligence-index-v5", total_models: 1, published: true }]).currentVersion).toBe(5);
 	});
 	it("keeps legacy and other evaluations discoverable without a populated versioned index", () => {
 		expect(artificialAnalysisCatalogue(rows, []).entries).toEqual(rows);
-		const catalogue = artificialAnalysisCatalogue(rows, [...coverage, { benchmark_id: "aa-intelligence-index", model_slug: "legacy" }]);
+		const catalogue = artificialAnalysisCatalogue(rows, [...coverage, { benchmark_id: "aa-intelligence-index", total_models: 1, published: false }]);
 		expect(catalogue.otherEvaluations).toContainEqual({ id: "aa-intelligence-index", name: "aa-intelligence-index" });
 	});
 	it("keeps global search independent of unavailable score coverage", async () => {
@@ -64,24 +63,21 @@ describe("Artificial Analysis catalogue", () => {
 		expect(response.status).toBe(404);
 		expect(fetch).toHaveBeenCalledTimes(1);
 	});
-	it("reads every coverage page while excluding hidden and retired results in the query", async () => {
+	it("loads SQL-aggregated coverage in one RPC without downloading result rows", async () => {
 		const fetch = vi.fn(async (input: RequestInfo | URL) => {
 			const url = new URL(String(input));
-			expect(url.searchParams.get("model.hidden")).toBe("eq.false");
-			expect(url.searchParams.get("score_numeric")).toBe("not.is.null");
-			expect(url.searchParams.get("or")).toContain("effective_to.is.null");
-			return Response.json(url.searchParams.get("offset") === "0"
-				? Array.from({ length: 500 }, (_, i) => ({ benchmark_id: "aa-intelligence-index-v4", model_slug: `model-${i}` }))
-				: [{ benchmark_id: "aa-intelligence-index-v4", model_slug: "last" }]);
+			expect(url.pathname).toBe("/rest/v1/rpc/get_artificial_analysis_coverage");
+			return Response.json(coverage);
 		});
 		vi.stubGlobal("fetch", fetch);
 		const result = await fetchArtificialAnalysisCoverage(getDataClient(env), rows);
-		expect(result).toHaveLength(501);
-		expect(fetch).toHaveBeenCalledTimes(2);
+		expect(result).toEqual(coverage);
+		expect(fetch).toHaveBeenCalledTimes(1);
 	});
 	it("serves one search entry and resolves stable detail links to the selected version", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = new URL(String(input));
+			if (url.pathname.endsWith("/rpc/get_artificial_analysis_coverage")) return Response.json(coverage);
 			if (url.pathname.endsWith("/v2_benchmarks")) {
 				const id = url.searchParams.get("benchmark_id");
 				return Response.json(id?.startsWith("eq.") ? rows.find((row) => row.benchmark_id === id.slice(3)) ?? null : rows);
