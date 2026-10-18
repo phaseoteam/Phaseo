@@ -1,0 +1,163 @@
+{
+	"provider": "moonshotai",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
+	"clock": "2026-10-18T12:00:00.000Z",
+	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "moonshotai:moonshotai/kimi-k2.5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/moonshotai/moonshotai-kimi-k2.5/text.generate/pricing.json",
+			"rules": [
+				["#6","standard","native_web_search_requests","0.005/1 request",100,null,null,null],
+				["#3","batch","input_text_tokens","0.36/1000000 token",100,null,null,null],
+				["#4","batch","cached_read_text_tokens","0.06/1000000 token",100,null,null,null],
+				["#5","batch","output_text_tokens","1.8/1000000 token",100,null,null,null],
+				["#0","standard","input_text_tokens","0.6/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.1/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":2392000,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",102400],["input_text_tokens",1576,"#0","input_text_tokens",945600],["output_text_tokens",448,"#2","output_text_tokens",1344000]]}},
+				{"id":"rule.batch.cached_read_text_tokens","kind":"rule","targets":["#4"],"plan":"batch","body":{"model":"moonshotai/kimi-k2.5","service_tier":"batch"},"usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":10941540,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",274020],["input_text_tokens",12347,"#3","input_text_tokens",4444920],["output_text_tokens",3457,"#5","output_text_tokens",6222600]]}},
+				{"id":"rule.batch.input_text_tokens","kind":"rule","targets":["#3","#5"],"plan":"batch","body":{"model":"moonshotai/kimi-k2.5","service_tier":"batch"},"usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":10667520,"lines":[["input_text_tokens",12347,"#3","input_text_tokens",4444920],["output_text_tokens",3457,"#5","output_text_tokens",6222600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":18235900,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",456700],["input_text_tokens",12347,"#0","input_text_tokens",7408200],["output_text_tokens",3457,"#2","output_text_tokens",10371000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":17779200,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",7408200],["output_text_tokens",3457,"#2","output_text_tokens",10371000]]}},
+				{"id":"rule.standard.native_web_search_requests","kind":"rule","targets":["#6"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"native_web_search_requests":2,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":27779200,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",7408200],["native_web_search_requests",2,"#6","native_web_search_requests",10000000],["output_text_tokens",3457,"#2","output_text_tokens",10371000]]}}
+			]
+		},
+		{
+			"key": "moonshotai:moonshotai/kimi-k2.6:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/moonshotai/moonshotai-kimi-k2.6/text.generate/pricing.json",
+			"rules": [
+				["#6","standard","native_web_search_requests","0.005/1 request",100,null,null,null],
+				["#3","batch","input_text_tokens","0.57/1000000 token",100,null,null,null],
+				["#4","batch","cached_read_text_tokens","0.096/1000000 token",100,null,null,null],
+				["#5","batch","output_text_tokens","2.4/1000000 token",100,null,null,null],
+				["#0","standard","input_text_tokens","0.95/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.16/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3453040,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",163840],["input_text_tokens",1576,"#0","input_text_tokens",1497200],["output_text_tokens",448,"#2","output_text_tokens",1792000]]}},
+				{"id":"rule.batch.cached_read_text_tokens","kind":"rule","targets":["#4"],"plan":"batch","body":{"model":"moonshotai/kimi-k2.6","service_tier":"batch"},"usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":15773022,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",438432],["input_text_tokens",12347,"#3","input_text_tokens",7037790],["output_text_tokens",3457,"#5","output_text_tokens",8296800]]}},
+				{"id":"rule.batch.input_text_tokens","kind":"rule","targets":["#3","#5"],"plan":"batch","body":{"model":"moonshotai/kimi-k2.6","service_tier":"batch"},"usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":15334590,"lines":[["input_text_tokens",12347,"#3","input_text_tokens",7037790],["output_text_tokens",3457,"#5","output_text_tokens",8296800]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":26288370,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",730720],["input_text_tokens",12347,"#0","input_text_tokens",11729650],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":25557650,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",11729650],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.native_web_search_requests","kind":"rule","targets":["#6"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"native_web_search_requests":2,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":35557650,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",11729650],["native_web_search_requests",2,"#6","native_web_search_requests",10000000],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}}
+			]
+		},
+		{
+			"key": "moonshotai:moonshotai/kimi-k2.7-code:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/moonshotai/moonshotai-kimi-k2.7-code/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.95/1000000 token",100,null,null,null],
+				["#1","priority","input_text_tokens","1.9/1000000 token",100,null,null,null],
+				["#2","standard","cached_read_text_tokens","0.19/1000000 token",100,null,null,null],
+				["#3","priority","cached_read_text_tokens","0.38/1000000 token",100,null,null,null],
+				["#4","standard","output_text_tokens","4/1000000 token",100,null,null,null],
+				["#5","priority","output_text_tokens","8/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3483760,"lines":[["cached_read_text_tokens",1024,"#2","cached_read_text_tokens",194560],["input_text_tokens",1576,"#0","input_text_tokens",1497200],["output_text_tokens",448,"#4","output_text_tokens",1792000]]}},
+				{"id":"rule.priority.cached_read_text_tokens","kind":"rule","targets":["#3"],"plan":"priority","body":{"model":"moonshotai/kimi-k2.7-code","service_tier":"priority"},"usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":52850760,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",1735460],["input_text_tokens",12347,"#1","input_text_tokens",23459300],["output_text_tokens",3457,"#5","output_text_tokens",27656000]]}},
+				{"id":"rule.priority.input_text_tokens","kind":"rule","targets":["#1","#5"],"plan":"priority","body":{"model":"moonshotai/kimi-k2.7-code","service_tier":"priority"},"usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":51115300,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",23459300],["output_text_tokens",3457,"#5","output_text_tokens",27656000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":26425380,"lines":[["cached_read_text_tokens",4567,"#2","cached_read_text_tokens",867730],["input_text_tokens",12347,"#0","input_text_tokens",11729650],["output_text_tokens",3457,"#4","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":25557650,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",11729650],["output_text_tokens",3457,"#4","output_text_tokens",13828000]]}}
+			]
+		},
+		{
+			"key": "moonshotai:moonshotai/kimi-k3:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/moonshotai/moonshotai-kimi-k3/text.generate/pricing.json",
+			"rules": [
+				["#3","standard","native_web_search_requests","0.005/1 request",100,null,null,null],
+				["#0","standard","input_text_tokens","3/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","15/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":11755200,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",307200],["input_text_tokens",1576,"#0","input_text_tokens",4728000],["output_text_tokens",448,"#2","output_text_tokens",6720000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":90266100,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",1370100],["input_text_tokens",12347,"#0","input_text_tokens",37041000],["output_text_tokens",3457,"#2","output_text_tokens",51855000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":88896000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",37041000],["output_text_tokens",3457,"#2","output_text_tokens",51855000]]}},
+				{"id":"rule.standard.native_web_search_requests","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"native_web_search_requests":2,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":98896000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",37041000],["native_web_search_requests",2,"#3","native_web_search_requests",10000000],["output_text_tokens",3457,"#2","output_text_tokens",51855000]]}}
+			]
+		},
+		{
+			"key": "moonshotai:moonshotai/moonshot-v1-128k-vision-preview:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/moonshotai/moonshotai-moonshot-v1-128k-vision-preview/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","2/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":7440000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",5200000],["output_text_tokens",448,"#1","output_text_tokens",2240000]]}},
+				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":7440000,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",2048000,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",3152000],["output_text_tokens",448,"#1","output_text_tokens",2240000]]},"source":{"kind":"spec","spec":"moonshotai","path":"usage schema"}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":41979000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",24694000],["output_text_tokens",3457,"#1","output_text_tokens",17285000]]}}
+			]
+		},
+		{
+			"key": "moonshotai:moonshotai/moonshot-v1-128k:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/moonshotai/moonshotai-moonshot-v1-128k/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","2/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":7440000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",5200000],["output_text_tokens",448,"#1","output_text_tokens",2240000]]}},
+				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":7440000,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",2048000,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",3152000],["output_text_tokens",448,"#1","output_text_tokens",2240000]]},"source":{"kind":"spec","spec":"moonshotai","path":"usage schema"}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":41979000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",24694000],["output_text_tokens",3457,"#1","output_text_tokens",17285000]]}}
+			]
+		},
+		{
+			"key": "moonshotai:moonshotai/moonshot-v1-32k-vision-preview:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/moonshotai/moonshotai-moonshot-v1-32k-vision-preview/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","1/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","3/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":3944000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",2600000],["output_text_tokens",448,"#1","output_text_tokens",1344000]]}},
+				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3944000,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",1024000,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",1576000],["output_text_tokens",448,"#1","output_text_tokens",1344000]]},"source":{"kind":"spec","spec":"moonshotai","path":"usage schema"}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":22718000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",12347000],["output_text_tokens",3457,"#1","output_text_tokens",10371000]]}}
+			]
+		},
+		{
+			"key": "moonshotai:moonshotai/moonshot-v1-32k:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/moonshotai/moonshotai-moonshot-v1-32k/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","1/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","3/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":3944000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",2600000],["output_text_tokens",448,"#1","output_text_tokens",1344000]]}},
+				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3944000,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",1024000,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",1576000],["output_text_tokens",448,"#1","output_text_tokens",1344000]]},"source":{"kind":"spec","spec":"moonshotai","path":"usage schema"}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":22718000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",12347000],["output_text_tokens",3457,"#1","output_text_tokens",10371000]]}}
+			]
+		},
+		{
+			"key": "moonshotai:moonshotai/moonshot-v1-8k-vision-preview:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/moonshotai/moonshotai-moonshot-v1-8k-vision-preview/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.2/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1416000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",520000],["output_text_tokens",448,"#1","output_text_tokens",896000]]}},
+				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1416000,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",204800,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",315200],["output_text_tokens",448,"#1","output_text_tokens",896000]]},"source":{"kind":"spec","spec":"moonshotai","path":"usage schema"}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":9383400,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2469400],["output_text_tokens",3457,"#1","output_text_tokens",6914000]]}}
+			]
+		},
+		{
+			"key": "moonshotai:moonshotai/moonshot-v1-8k:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/moonshotai/moonshotai-moonshot-v1-8k/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.2/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1416000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",520000],["output_text_tokens",448,"#1","output_text_tokens",896000]]}},
+				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1416000,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",204800,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",315200],["output_text_tokens",448,"#1","output_text_tokens",896000]]},"source":{"kind":"spec","spec":"moonshotai","path":"usage schema"}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":9383400,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2469400],["output_text_tokens",3457,"#1","output_text_tokens",6914000]]}}
+			]
+		}
+	]
+}

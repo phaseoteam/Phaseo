@@ -1,0 +1,387 @@
+{
+  "pairs": [
+    {
+      "provider": "openai",
+      "capability": "audio.speech",
+      "endpoint": "audio.speech",
+      "cases": [
+        "nontext.audio.speech.openai"
+      ]
+    },
+    {
+      "provider": "openai",
+      "capability": "audio.transcription",
+      "endpoint": "audio.transcription",
+      "cases": [
+        "nontext.audio.transcription.openai-gpt-4o-transcribe",
+        "nontext.audio.transcription.openai-whisper-1"
+      ]
+    },
+    {
+      "provider": "openai",
+      "capability": "audio.translations",
+      "endpoint": "audio.translations",
+      "cases": [
+        "nontext.audio.translations.openai-whisper-1"
+      ]
+    },
+    {
+      "provider": "openai",
+      "capability": "embeddings",
+      "endpoint": "embeddings",
+      "cases": [
+        "nontext.embeddings.openai"
+      ]
+    },
+    {
+      "provider": "openai",
+      "capability": "image.edit",
+      "endpoint": "images.edits",
+      "cases": [
+        "nontext.images.edits.openai"
+      ]
+    },
+    {
+      "provider": "openai",
+      "capability": "image.generate",
+      "endpoint": "images.generations",
+      "cases": [
+        "nontext.images.generations.openai"
+      ]
+    },
+    {
+      "provider": "openai",
+      "capability": "moderations",
+      "endpoint": "moderations",
+      "cases": [
+        "nontext.moderations.openai"
+      ]
+    },
+    {
+      "provider": "mistral",
+      "capability": "ocr",
+      "endpoint": "ocr",
+      "cases": [
+        "nontext.ocr.mistral"
+      ]
+    },
+    {
+      "provider": "cohere",
+      "capability": "rerank",
+      "endpoint": "rerank",
+      "cases": [
+        "nontext.rerank.cohere"
+      ]
+    },
+    {
+      "provider": "anthropic",
+      "capability": "text.generate",
+      "endpoint": "chat.completions",
+      "cases": [
+        "billing.anthropic.chat.stream",
+        "billing.anthropic.chat.buffered",
+        "dynamic.model-fallback-after-503",
+        "request.models-fallback-after-503",
+        "request.models-no-fallback-after-400"
+      ]
+    },
+    {
+      "provider": "anthropic",
+      "capability": "text.generate",
+      "endpoint": "messages",
+      "cases": [
+        "errors.anthropic.400",
+        "errors.anthropic.401",
+        "errors.anthropic.403",
+        "errors.anthropic.404",
+        "errors.anthropic.408",
+        "errors.anthropic.413",
+        "errors.anthropic.422",
+        "errors.anthropic.429",
+        "errors.anthropic.500",
+        "errors.anthropic.503",
+        "errors.anthropic.529",
+        "billing.anthropic.messages.stream",
+        "billing.anthropic.messages.buffered",
+        "byok.anthropic-fee-cache-usage"
+      ]
+    },
+    {
+      "provider": "anthropic",
+      "capability": "text.generate",
+      "endpoint": "responses",
+      "cases": [
+        "billing.anthropic.responses.stream",
+        "billing.anthropic.responses.buffered"
+      ]
+    },
+    {
+      "provider": "deepinfra",
+      "capability": "text.generate",
+      "endpoint": "chat.completions",
+      "cases": [
+        "failover.500-then-ok",
+        "failover.502-then-ok",
+        "failover.503-then-ok",
+        "failover.529-then-ok",
+        "failover.429-retry-after-then-ok",
+        "failover.400-then-ok",
+        "failover.connection-error-then-ok",
+        "failover.headers-timeout-then-ok",
+        "failover.500-stream-then-ok",
+        "failover.all-503",
+        "failover.all-fail-last-429",
+        "failover.midstream-stream",
+        "failover.midstream-buffered",
+        "errors.deepinfra.400",
+        "errors.deepinfra.401",
+        "errors.deepinfra.403",
+        "errors.deepinfra.404",
+        "errors.deepinfra.408",
+        "errors.deepinfra.413",
+        "errors.deepinfra.422",
+        "errors.deepinfra.429",
+        "errors.deepinfra.500",
+        "errors.deepinfra.503",
+        "errors.deepinfra.529",
+        "billing.deepinfra.chat.stream",
+        "billing.deepinfra.chat.buffered",
+        "billing.deepinfra.chat.stream.unpriced-cache-field",
+        "billing.deepinfra.chat.buffered.unpriced-cache-field",
+        "byok.managed-baseline",
+        "byok.priority-within-free-allowance",
+        "byok.priority-fee-after-allowance",
+        "byok.priority-fee-stream",
+        "byok.failing-key-no-managed-fallback",
+        "byok.failing-key-managed-fallback",
+        "byok.rate-limited-quota-headers",
+        "preset.chat.system-and-defaults",
+        "preset.chat.request-overrides-default",
+        "dynamic.model-fallback-after-503",
+        "request.models-fallback-after-503",
+        "request.models-no-fallback-after-400"
+      ]
+    },
+    {
+      "provider": "deepinfra",
+      "capability": "text.generate",
+      "endpoint": "messages",
+      "cases": [
+        "billing.deepinfra.messages.stream",
+        "billing.deepinfra.messages.buffered",
+        "preset.messages.system-and-defaults"
+      ]
+    },
+    {
+      "provider": "deepinfra",
+      "capability": "text.generate",
+      "endpoint": "responses",
+      "cases": [
+        "billing.deepinfra.responses.stream",
+        "billing.deepinfra.responses.buffered",
+        "preset.responses.system-and-defaults"
+      ]
+    },
+    {
+      "provider": "google-vertex",
+      "capability": "text.generate",
+      "endpoint": "chat.completions",
+      "cases": [
+        "errors.google-vertex.400",
+        "errors.google-vertex.401",
+        "errors.google-vertex.403",
+        "errors.google-vertex.404",
+        "errors.google-vertex.408",
+        "errors.google-vertex.413",
+        "errors.google-vertex.422",
+        "errors.google-vertex.429",
+        "errors.google-vertex.500",
+        "errors.google-vertex.503",
+        "errors.google-vertex.529",
+        "billing.google-vertex.chat.stream",
+        "billing.google-vertex.chat.buffered"
+      ]
+    },
+    {
+      "provider": "google-vertex",
+      "capability": "text.generate",
+      "endpoint": "messages",
+      "cases": [
+        "billing.google-vertex.messages.stream",
+        "billing.google-vertex.messages.buffered"
+      ]
+    },
+    {
+      "provider": "google-vertex",
+      "capability": "text.generate",
+      "endpoint": "responses",
+      "cases": [
+        "billing.google-vertex.responses.stream",
+        "billing.google-vertex.responses.buffered"
+      ]
+    },
+    {
+      "provider": "groq",
+      "capability": "text.generate",
+      "endpoint": "chat.completions",
+      "cases": [
+        "failover.all-503",
+        "failover.all-fail-last-429",
+        "failover.midstream-responses-upstream-stream"
+      ]
+    },
+    {
+      "provider": "openai",
+      "capability": "text.generate",
+      "endpoint": "chat.completions",
+      "cases": [
+        "billing.openai.chat.stream",
+        "billing.openai.chat.buffered"
+      ]
+    },
+    {
+      "provider": "openai",
+      "capability": "text.generate",
+      "endpoint": "messages",
+      "cases": [
+        "billing.openai.messages.stream",
+        "billing.openai.messages.buffered"
+      ]
+    },
+    {
+      "provider": "openai",
+      "capability": "text.generate",
+      "endpoint": "responses",
+      "cases": [
+        "errors.openai.400",
+        "errors.openai.401",
+        "errors.openai.403",
+        "errors.openai.404",
+        "errors.openai.408",
+        "errors.openai.413",
+        "errors.openai.422",
+        "errors.openai.429",
+        "errors.openai.500",
+        "errors.openai.503",
+        "errors.openai.529",
+        "billing.openai.responses.stream",
+        "billing.openai.responses.buffered"
+      ]
+    },
+    {
+      "provider": "together",
+      "capability": "text.generate",
+      "endpoint": "chat.completions",
+      "cases": [
+        "failover.500-then-ok",
+        "failover.502-then-ok",
+        "failover.503-then-ok",
+        "failover.529-then-ok",
+        "failover.429-retry-after-then-ok",
+        "failover.400-then-ok",
+        "failover.connection-error-then-ok",
+        "failover.headers-timeout-then-ok",
+        "failover.500-stream-then-ok",
+        "failover.all-503",
+        "failover.all-fail-last-429",
+        "dynamic.model-override-provider-only"
+      ]
+    },
+    {
+      "provider": "openai",
+      "capability": "video.generate",
+      "endpoint": "video.generation",
+      "cases": [
+        "nontext.video.openai-sora-2-submit"
+      ]
+    }
+  ],
+  "families": {
+    "audio.speech": {
+      "registeredProviders": 19,
+      "exercisedProviders": 1
+    },
+    "audio.transcription": {
+      "registeredProviders": 21,
+      "exercisedProviders": 1
+    },
+    "audio.translations": {
+      "registeredProviders": 5,
+      "exercisedProviders": 1
+    },
+    "decisions.make": {
+      "registeredProviders": 14,
+      "exercisedProviders": 0
+    },
+    "embeddings": {
+      "registeredProviders": 31,
+      "exercisedProviders": 1
+    },
+    "image.edit": {
+      "registeredProviders": 16,
+      "exercisedProviders": 1
+    },
+    "image.generate": {
+      "registeredProviders": 24,
+      "exercisedProviders": 1
+    },
+    "moderations": {
+      "registeredProviders": 4,
+      "exercisedProviders": 1
+    },
+    "music.generate": {
+      "registeredProviders": 4,
+      "exercisedProviders": 0
+    },
+    "ocr": {
+      "registeredProviders": 2,
+      "exercisedProviders": 1
+    },
+    "parse": {
+      "registeredProviders": 1,
+      "exercisedProviders": 0
+    },
+    "rerank": {
+      "registeredProviders": 10,
+      "exercisedProviders": 1
+    },
+    "text.generate": {
+      "registeredProviders": 113,
+      "exercisedProviders": 6
+    },
+    "video.edit": {
+      "registeredProviders": 3,
+      "exercisedProviders": 0
+    },
+    "video.generate": {
+      "registeredProviders": 22,
+      "exercisedProviders": 1
+    }
+  },
+  "notCovered": [
+    {
+      "what": "Batches (/v1/batches) and files (/v1/files)",
+      "reason": "Not built with makeEndpointHandler (the registry maps them to runNotImplementedPipeline); the batch routes own their own credential, reservation and job-store modules. Create-request mapping is already exercised with module mocks in src/routes/v1/data/batches.gateway-smoke.test.ts, so this harness does not duplicate it."
+    },
+    {
+      "what": "Realtime and live sessions (/v1/realtime, audio.realtime)",
+      "reason": "Needs a WebSocket upgrade and the session Durable Object; there is no request/response pair for the finaliser to settle, so it cannot be driven through makeEndpointHandler offline."
+    },
+    {
+      "what": "Music generation",
+      "reason": "music.generate persists job metadata (core/music-jobs) and its priced routes (ElevenLabs, Lyria) return provider-specific binary or long-running payloads that need their own writers; not attempted in this pass."
+    },
+    {
+      "what": "Video completion and download",
+      "reason": "Only submission runs through the pipeline; completion is polled by routes/v1/data/videos.ts and settled by core/video-finalization outside makeEndpointHandler."
+    },
+    {
+      "what": "Parse (/v1/parse), decisions (/v1/decisions)",
+      "reason": "Not in the requested family list for this pass; both run through the same non-text and decisions runners and can be added with a writer each."
+    },
+    {
+      "what": "Response cache hits, guardrail blocking, auto-router (phaseo/auto)",
+      "reason": "getResponseCache() returns null in this build, guardrails need workspace guardrail rows, and the auto-router needs benchmark data; the harness uses an empty guardrail policy and never requests phaseo/auto."
+    }
+  ]
+}

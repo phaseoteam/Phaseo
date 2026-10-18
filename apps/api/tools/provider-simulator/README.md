@@ -11,7 +11,8 @@ Nothing here calls a model provider or the Phaseo API. The only networked part i
 ## Run it
 
 ```sh
-# Every registered text provider (about 25 minutes, one process, no network)
+# Every registered text provider, then the expected-outcome gate (about 45 minutes, one process, no network).
+# Exits non-zero when a mismatch is not on expectations/allowlist.json; SIM_NO_GATE=1 only writes the reports.
 pnpm --filter @phaseo/gateway-api simulate:providers
 
 # A subset
@@ -23,10 +24,12 @@ SIM_RESULTS_DIR=/tmp/sim pnpm --filter @phaseo/gateway-api simulate:providers
 # The simulator's own tests (also part of the api vitest suite)
 pnpm --filter @phaseo/gateway-api simulate:providers:test
 
-# Refresh the cached provider specs (network: GETs of public spec documents only)
+# Refresh the cached provider specs (network: GETs of public spec documents only), then regenerate
+# the per-provider expectation facts from them
 pnpm --filter @phaseo/gateway-api simulate:providers:refresh-specs [provider-id ...]
+pnpm --filter @phaseo/gateway-api simulate:providers:expectations
 
-# Rebuild summary.json and MATRIX.md from an earlier run's results/providers/*.json
+# Rebuild summary.json, MATRIX.md, COVERAGE.md and the gate from an earlier run's results
 SIM_REPORT_ONLY=1 pnpm --filter @phaseo/gateway-api simulate:providers
 
 # Trace one provider, surface and mode stage by stage (upstream body, client frames, usage, pricing)
@@ -47,6 +50,38 @@ Outputs:
   all-routes pricing sweep.
 - `results/summary.json`: per-provider roll-up, counts and verdict.
 - `results/MATRIX.md`: the Markdown matrix.
+
+## Expected outcomes and the gate
+
+The simulator asserts what should happen, not only what does. Expectations are data under
+`expectations/` (see `expectations/README.md`), and every one cites its source: a provider spec path,
+a provider docs URL, a Phaseo docs page, or `assumed` with the reason.
+
+- `params.json`: where each documented client parameter must land in each upstream dialect, with value
+  translations. Whether a provider should receive it is decided from that provider's own spec: a path the
+  spec does not define, or a value outside its enum, must not be sent.
+- `gateway.json`: client-surface semantics: finish reasons, usage fields per surface, stream grammar,
+  mid-stream failure, affinity, and the billing fallback rates.
+- `providers/<id>.json`: upstream URL and auth header per dialect, generated from `specs/` and
+  `specs/research.json` by `scripts/build-expectations.ts`; hand edits go in `overrides`.
+- `e2e/` and `pricing/`: the end-to-end and pricing-sweep layers (below).
+
+`src/expect/` compares observations with expectations and records each difference as a `Mismatch`:
+dropped, invented, renamed, wrong value, wrong type, billing over or under (with the delta in tokens and
+nanos), stream order, error mapping or nondeterminism. `src/expect/gate.ts` applies
+`expectations/allowlist.json` (each entry names its AUDIT finding, the proposed fix group and a
+justification) and writes `results/EXPECTATIONS.md` (failing and allowed groups) and
+`results/COVERAGE.md` (what share of executors, routes, documented parameters and price meters were
+exercised, and what was not, with reasons). `results/baselines/` keeps earlier gate summaries for
+before-and-after comparisons.
+
+Checks per route: upstream URL, method and auth header; invented fields in the base request; every
+parameter scenario; every value sent in content, tool and agent scenarios (3, 10 and 40 step
+histories); determinism and cache-prefix stability; BYOK key use; the affinity pin; and, for every
+response variant on every surface and mode, surfaced text, tool ids and arguments, reasoning text and
+state, citations, refusals, finish reason, per-field usage, billing per meter, stream grammar and
+mid-stream failure. A tool-loop round trip sends each buffered client response back as the next step
+and checks that tool calls, ids and reasoning signatures reach the same provider.
 
 ## How it works
 

@@ -31,10 +31,53 @@ export function collectMismatches(resultsDir: string): Mismatch[] {
 }
 
 /** Groups mismatches that share everything but the provider and model, so one defect reads as one line. */
+export function groupKey(mismatch: Mismatch): string {
+	return [mismatch.layer, mismatch.kind, mismatch.family, mismatch.surface ?? "", mismatch.mode ?? "", mismatch.caseId.replace(/\d{2,}/g, "N"), mismatch.path].join("|");
+}
+
+/** Compares this run's groups with the newest saved baseline (results/baselines/ next to the tool). */
+function baselineComparison(baselineDir: string, groups: ReturnType<typeof groupMismatches>, lines: string[]) {
+	if (!fs.existsSync(baselineDir)) return;
+	const files = fs.readdirSync(baselineDir).filter((name) => name.endsWith(".json")).sort();
+	if (!files.length) return;
+	const baseline = readJson(path.join(baselineDir, files[files.length - 1]));
+	const layers = new Set((baseline.groups ?? []).map((group: any) => String(group.key).split("|")[0]));
+	const inLayers = (key: string) => layers.has(key.split("|")[0]);
+	const before = new Map<string, any>((baseline.groups ?? []).map((group: any) => [group.key, group]));
+	const after = new Map<string, (typeof groups)[number]>();
+	for (const group of groups) {
+		const key = groupKey(group.sample);
+		if (!inLayers(key)) continue;
+		const existing = after.get(key);
+		if (existing) {
+			for (const provider of group.providers) existing.providers.add(provider);
+			existing.count += group.count;
+		} else after.set(key, { ...group, providers: new Set(group.providers) });
+	}
+	const fixed = Array.from(before.keys()).filter((key) => !after.has(key));
+	const added = Array.from(after.keys()).filter((key) => !before.has(key));
+	const nowTotal = Array.from(after.values()).reduce((sum, group) => sum + group.count, 0);
+	lines.push("", `## Compared with baseline ${files[files.length - 1]}`, "");
+	if (baseline.note) lines.push(baseline.note, "");
+	lines.push("| | Baseline | Now |", "|---|---|---|");
+	lines.push(`| Mismatches (layers in the baseline) | ${baseline.summary?.total ?? "?"} | ${nowTotal} |`);
+	lines.push(`| Groups | ${before.size} | ${after.size} |`);
+	lines.push(`| Groups fixed since the baseline | | ${fixed.length} |`);
+	lines.push(`| Groups new since the baseline | | ${added.length} |`);
+	if (fixed.length) {
+		lines.push("", "Fixed groups (largest first):", "");
+		for (const key of fixed.sort((a, b) => before.get(b).providers - before.get(a).providers).slice(0, 80)) lines.push(`- ${before.get(key).providers} providers: \`${key}\``);
+	}
+	if (added.length) {
+		lines.push("", "New groups:", "");
+		for (const key of added.sort((a, b) => after.get(b)!.providers.size - after.get(a)!.providers.size).slice(0, 80)) lines.push(`- ${after.get(key)!.providers.size} providers: \`${key}\``);
+	}
+}
+
 export function groupMismatches(mismatches: Mismatch[]) {
 	const groups = new Map<string, { sample: Mismatch; providers: Set<string>; count: number; nanos: number; tokens: number }>();
 	for (const mismatch of mismatches) {
-		const key = [mismatch.layer, mismatch.kind, mismatch.family, mismatch.surface ?? "", mismatch.mode ?? "", mismatch.caseId.replace(/\d{2,}/g, "N"), mismatch.path, mismatch.allowed?.id ?? ""].join("|");
+		const key = `${groupKey(mismatch)}|${mismatch.allowed?.id ?? ""}`;
 		const group = groups.get(key) ?? { sample: mismatch, providers: new Set<string>(), count: 0, nanos: 0, tokens: 0 };
 		group.providers.add(mismatch.provider);
 		group.count += 1;
@@ -61,7 +104,7 @@ function md(value: unknown, max = 80): string {
 	return String(text ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ").slice(0, max);
 }
 
-export function runGate(resultsDir: string): GateResult {
+export function runGate(resultsDir: string, baselineDir?: string): GateResult {
 	const mismatches = collectMismatches(resultsDir);
 	const summary = applyAllowlist(mismatches, loadAllowlist());
 	const groups = groupMismatches(mismatches);
@@ -101,6 +144,7 @@ export function runGate(resultsDir: string): GateResult {
 		}
 		if (list.length > limit) lines.push(`\n… ${list.length - limit} more groups in results/gate.json.`);
 	};
+	if (baselineDir) baselineComparison(baselineDir, groups, lines);
 	section("Failing", groups.filter((group) => !group.sample.allowed), 400);
 	section("Allowed", groups.filter((group) => group.sample.allowed), 300);
 	lines.push("");

@@ -1,0 +1,773 @@
+{
+	"group": "nontext",
+	"description": "Non-text families through the real finaliser: upstream request per the provider's API reference, client shape per Phaseo's OpenAPI spec, and the charge from the catalogue card applied to the provider's reported usage.",
+	"entries": [
+		{
+			"id": "embeddings-openai",
+			"cases": "nontext.embeddings.openai",
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 200,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "assumed",
+						"reason": "The provider returned a documented 2xx response; the client must receive a success."
+					}
+				},
+				{
+					"path": "upstream.calls[0].url",
+					"op": "equals",
+					"value": "https://api.openai.com/v1/embeddings",
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/embeddings/create"
+					}
+				},
+				{
+					"path": "upstream.calls[0].body.model",
+					"op": "equals",
+					"value": "text-embedding-3-small",
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/embeddings/create",
+						"note": "model is the provider model id."
+					}
+				},
+				{
+					"path": "upstream.calls[0].body.input",
+					"op": "equals",
+					"value": [
+						"SIM-E2E-EMBED-0001 first",
+						"SIM-E2E-EMBED-0002 second"
+					],
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/embeddings/create"
+					}
+				},
+				{
+					"path": "client.body.object",
+					"op": "equals",
+					"value": "list",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/openapi/v1/openapi.yaml",
+						"note": "components.schemas.EmbeddingsResponse.object"
+					}
+				},
+				{
+					"path": "client.body.data[0].object",
+					"op": "equals",
+					"value": "embedding",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/openapi/v1/openapi.yaml",
+						"note": "components.schemas.Embedding.object"
+					}
+				},
+				{
+					"path": "billing.successAudits",
+					"op": "equals",
+					"value": 1,
+					"kind": "dropped",
+					"source": {
+						"kind": "assumed",
+						"reason": "Every successful request writes one request-log row (success audit) so it appears in usage logs and analytics."
+					}
+				},
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"input_text_tokens": 1207
+						}
+					},
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/embeddings/object",
+						"note": "usage.prompt_tokens"
+					}
+				}
+			]
+		},
+		{
+			"id": "images-generations-openai",
+			"cases": "nontext.images.generations.openai",
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 200,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "assumed",
+						"reason": "The provider returned a documented 2xx response; the client must receive a success."
+					}
+				},
+				{
+					"path": "upstream.calls[0].url",
+					"op": "equals",
+					"value": "https://api.openai.com/v1/images/generations",
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/images/create"
+					}
+				},
+				{
+					"path": "upstream.calls[0].body.quality",
+					"op": "equals",
+					"value": "low",
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/images/create"
+					}
+				},
+				{
+					"path": "upstream.calls[0].body.size",
+					"op": "equals",
+					"value": "1024x1024",
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/images/create"
+					}
+				},
+				{
+					"path": "client.body.data[0].b64_json",
+					"op": "present",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/openapi/v1/openapi.yaml",
+						"note": "components.schemas.Image.b64_json"
+					}
+				},
+				{
+					"path": "client.body.created",
+					"op": "present",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/openapi/v1/openapi.yaml",
+						"note": "components.schemas.ImagesGenerationResponse.created"
+					}
+				},
+				{
+					"path": "billing.successAudits",
+					"op": "equals",
+					"value": 1,
+					"kind": "dropped",
+					"source": {
+						"kind": "assumed",
+						"reason": "Every successful request writes one request-log row (success audit) so it appears in usage logs and analytics."
+					}
+				},
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"input_text_tokens": 57,
+							"output_image_tokens": 272
+						},
+						"params": {
+							"image_params": {
+								"quality": "low",
+								"resolution": "1024x1024"
+							}
+						}
+					},
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/images/object",
+						"note": "GPT image usage: input_tokens_details.text_tokens / image_tokens and output_tokens (image tokens) are what OpenAI bills; the per-image catalogue rows are the token prices expressed per image and must not be billed in addition."
+					}
+				}
+			]
+		},
+		{
+			"id": "images-edits-openai",
+			"cases": "nontext.images.edits.openai",
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 200,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "assumed",
+						"reason": "The provider returned a documented 2xx response; the client must receive a success."
+					}
+				},
+				{
+					"path": "upstream.calls[0].url",
+					"op": "equals",
+					"value": "https://api.openai.com/v1/images/edits",
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/images/createEdit"
+					}
+				},
+				{
+					"path": "upstream.calls[0].method",
+					"op": "equals",
+					"value": "POST",
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/images/createEdit"
+					}
+				},
+				{
+					"path": "client.body.data[0].b64_json",
+					"op": "present",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/openapi/v1/openapi.yaml",
+						"note": "components.schemas.ImagesEditResponse"
+					}
+				},
+				{
+					"path": "billing.successAudits",
+					"op": "equals",
+					"value": 1,
+					"kind": "dropped",
+					"source": {
+						"kind": "assumed",
+						"reason": "Every successful request writes one request-log row (success audit) so it appears in usage logs and analytics."
+					}
+				},
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"input_text_tokens": 57,
+							"input_image_tokens": 323,
+							"output_image_tokens": 272
+						}
+					},
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/images/object",
+						"note": "usage.input_tokens_details.text_tokens / image_tokens and output_tokens."
+					}
+				}
+			]
+		},
+		{
+			"id": "audio-speech-openai",
+			"cases": "nontext.audio.speech.openai",
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 200,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "assumed",
+						"reason": "The provider returned a documented 2xx response; the client must receive a success."
+					}
+				},
+				{
+					"path": "upstream.calls[0].url",
+					"op": "equals",
+					"value": "https://api.openai.com/v1/audio/speech",
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/audio/createSpeech"
+					}
+				},
+				{
+					"path": "client.contentType",
+					"op": "matches",
+					"value": "^audio/",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/openapi/v1/openapi.yaml",
+						"note": "paths./audio/speech.post.responses.200: audio/mpeg binary"
+					}
+				},
+				{
+					"path": "billing.successAudits",
+					"op": "equals",
+					"value": 1,
+					"kind": "dropped",
+					"source": {
+						"kind": "assumed",
+						"reason": "Every successful request writes one request-log row (success audit) so it appears in usage logs and analytics."
+					}
+				},
+				{
+					"path": "billing.chargeCount",
+					"op": "equals",
+					"value": 1,
+					"kind": "billing_under",
+					"source": {
+						"kind": "assumed",
+						"reason": "A successful managed speech request is charged once; the provider reported usage in speech.audio.done."
+					}
+				},
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"input_text_tokens": 31,
+							"output_audio_tokens": 1337
+						}
+					},
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/audio/speech-audio-done-event",
+						"note": "speech.audio.done.usage.input_tokens (text) and output_tokens (audio)."
+					}
+				}
+			]
+		},
+		{
+			"id": "audio-transcription-gpt-4o-transcribe",
+			"cases": "nontext.audio.transcription.openai-gpt-4o-transcribe",
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 200,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "assumed",
+						"reason": "The provider returned a documented 2xx response; the client must receive a success."
+					}
+				},
+				{
+					"path": "upstream.calls[0].url",
+					"op": "equals",
+					"value": "https://api.openai.com/v1/audio/transcriptions",
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/audio/createTranscription"
+					}
+				},
+				{
+					"path": "client.body.text",
+					"op": "equals",
+					"value": "SIM-TRANSCRIPT-0001 the forecast is clear",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/openapi/v1/openapi.yaml",
+						"note": "components.schemas.AudioTranscriptionResponse.text"
+					}
+				},
+				{
+					"path": "billing.successAudits",
+					"op": "equals",
+					"value": 1,
+					"kind": "dropped",
+					"source": {
+						"kind": "assumed",
+						"reason": "Every successful request writes one request-log row (success audit) so it appears in usage logs and analytics."
+					}
+				},
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"input_audio_tokens": 1511,
+							"output_text_tokens": 87
+						}
+					},
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/audio/json-object",
+						"note": "usage.type = tokens: input_token_details.audio_tokens and output_tokens are authoritative."
+					}
+				},
+				{
+					"path": "client.body.usage.input_tokens",
+					"op": "equals",
+					"value": 1511,
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/audio/json-object",
+						"note": "The client should see the provider's reported input tokens, not an estimate."
+					}
+				}
+			]
+		},
+		{
+			"id": "audio-whisper-seconds",
+			"cases": [
+				"nontext.audio.transcription.openai-whisper-1",
+				"nontext.audio.translations.openai-whisper-1"
+			],
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 200,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "assumed",
+						"reason": "The provider returned a documented 2xx response; the client must receive a success."
+					}
+				},
+				{
+					"path": "billing.successAudits",
+					"op": "equals",
+					"value": 1,
+					"kind": "dropped",
+					"source": {
+						"kind": "assumed",
+						"reason": "Every successful request writes one request-log row (success audit) so it appears in usage logs and analytics."
+					}
+				},
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"input_audio_tokens": 2480
+						}
+					},
+					"source": {
+						"kind": "assumed",
+						"reason": "OpenAI reports usage.type = duration, seconds = 62 (https://platform.openai.com/docs/api-reference/audio/json-object). The catalogue prices whisper-1 on input_audio_tokens and the gateway converts at 40 tokens per second (providers/openai/endpoints/audio-transcription-usage.ts), so the authoritative quantity is 62 x 40 = 2,480, not the 20 s file-size estimate."
+					}
+				}
+			]
+		},
+		{
+			"id": "audio-transcription-url",
+			"cases": "nontext.audio.transcription.openai-whisper-1",
+			"checks": [
+				{
+					"path": "upstream.calls[0].url",
+					"op": "equals",
+					"value": "https://api.openai.com/v1/audio/transcriptions",
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/audio/createTranscription"
+					}
+				}
+			]
+		},
+		{
+			"id": "audio-translations-url",
+			"cases": "nontext.audio.translations.openai-whisper-1",
+			"checks": [
+				{
+					"path": "upstream.calls[0].url",
+					"op": "equals",
+					"value": "https://api.openai.com/v1/audio/translations",
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/audio/createTranslation"
+					}
+				},
+				{
+					"path": "client.body.text",
+					"op": "equals",
+					"value": "SIM-TRANSLATION-0001 the forecast is clear",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/openapi/v1/openapi.yaml",
+						"note": "components.schemas.AudioTranslationResponse.text"
+					}
+				}
+			]
+		},
+		{
+			"id": "moderations-openai",
+			"cases": "nontext.moderations.openai",
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 200,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "assumed",
+						"reason": "The provider returned a documented 2xx response; the client must receive a success."
+					}
+				},
+				{
+					"path": "upstream.calls[0].url",
+					"op": "equals",
+					"value": "https://api.openai.com/v1/moderations",
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/moderations/create"
+					}
+				},
+				{
+					"path": "client.body.results[0].flagged",
+					"op": "equals",
+					"value": false,
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/openapi/v1/openapi.yaml",
+						"note": "components.schemas.ModerationsResponse.results"
+					}
+				},
+				{
+					"path": "billing.successAudits",
+					"op": "equals",
+					"value": 1,
+					"kind": "dropped",
+					"source": {
+						"kind": "assumed",
+						"reason": "Every successful request writes one request-log row (success audit) so it appears in usage logs and analytics."
+					}
+				},
+				{
+					"path": "billing.chargeNanos",
+					"op": "equals",
+					"value": 0,
+					"kind": "billing_over",
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/guides/moderation",
+						"note": "The moderation endpoint is free to use; the catalogue route is a free plan."
+					}
+				}
+			]
+		},
+		{
+			"id": "rerank-cohere",
+			"cases": "nontext.rerank.cohere",
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 200,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "assumed",
+						"reason": "The provider returned a documented 2xx response; the client must receive a success."
+					}
+				},
+				{
+					"path": "upstream.calls[0].url",
+					"op": "equals",
+					"value": "https://api.cohere.com/v2/rerank",
+					"source": {
+						"kind": "docs",
+						"url": "https://docs.cohere.com/reference/rerank",
+						"note": "POST https://api.cohere.com/v2/rerank (api.cohere.ai is the legacy host)."
+					}
+				},
+				{
+					"path": "upstream.calls[0].body.model",
+					"op": "equals",
+					"value": "rerank-v3.5",
+					"source": {
+						"kind": "docs",
+						"url": "https://docs.cohere.com/reference/rerank"
+					}
+				},
+				{
+					"path": "client.body.results.length",
+					"op": "equals",
+					"value": 2,
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/openapi/v1/openapi.yaml",
+						"note": "components.schemas.RerankResponse.results (top_n = 2)"
+					}
+				},
+				{
+					"path": "billing.successAudits",
+					"op": "equals",
+					"value": 1,
+					"kind": "dropped",
+					"source": {
+						"kind": "assumed",
+						"reason": "Every successful request writes one request-log row (success audit) so it appears in usage logs and analytics."
+					}
+				},
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"requests": 2
+						}
+					},
+					"source": {
+						"kind": "docs",
+						"url": "https://docs.cohere.com/reference/rerank",
+						"note": "meta.billed_units.search_units is what Cohere bills (one search unit = one query over up to 100 documents); 150 documents = 2 search units. The catalogue meter for a search is requests at $0.002."
+					}
+				}
+			]
+		},
+		{
+			"id": "ocr-mistral",
+			"cases": "nontext.ocr.mistral",
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 200,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "assumed",
+						"reason": "The provider returned a documented 2xx response; the client must receive a success."
+					}
+				},
+				{
+					"path": "upstream.calls[0].url",
+					"op": "equals",
+					"value": "https://api.mistral.ai/v1/ocr",
+					"source": {
+						"kind": "docs",
+						"url": "https://docs.mistral.ai/api/#tag/ocr"
+					}
+				},
+				{
+					"path": "upstream.calls[0].body.model",
+					"op": "equals",
+					"value": "mistral-ocr-2512",
+					"source": {
+						"kind": "docs",
+						"url": "https://docs.mistral.ai/api/#tag/ocr"
+					}
+				},
+				{
+					"path": "upstream.calls[0].body.document.document_url",
+					"op": "equals",
+					"value": "https://sim.example/sim-report.pdf",
+					"source": {
+						"kind": "docs",
+						"url": "https://docs.mistral.ai/api/#tag/ocr"
+					}
+				},
+				{
+					"path": "client.body.pages.length",
+					"op": "equals",
+					"value": 3,
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/openapi/v1/openapi.yaml",
+						"note": "components.schemas.OcrResponse"
+					}
+				},
+				{
+					"path": "billing.successAudits",
+					"op": "equals",
+					"value": 1,
+					"kind": "dropped",
+					"source": {
+						"kind": "assumed",
+						"reason": "Every successful request writes one request-log row (success audit) so it appears in usage logs and analytics."
+					}
+				},
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"input_pages": 3
+						}
+					},
+					"source": {
+						"kind": "docs",
+						"url": "https://docs.mistral.ai/api/#tag/ocr",
+						"note": "usage_info.pages_processed; Mistral OCR is billed per page."
+					}
+				}
+			]
+		},
+		{
+			"id": "video-openai-submit",
+			"cases": "nontext.video.openai-sora-2-submit",
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 200,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "assumed",
+						"reason": "The provider returned a documented 2xx response; the client must receive a success."
+					}
+				},
+				{
+					"path": "upstream.calls[0].url",
+					"op": "equals",
+					"value": "https://api.openai.com/v1/videos",
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/videos/create"
+					}
+				},
+				{
+					"path": "upstream.calls[0].method",
+					"op": "equals",
+					"value": "POST",
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/videos/create"
+					}
+				},
+				{
+					"path": "client.body.status",
+					"op": "equals",
+					"value": "queued",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/openapi/v1/openapi.yaml",
+						"note": "components.schemas.VideoGenerationResponse.status"
+					}
+				},
+				{
+					"path": "client.body.polling_url",
+					"op": "present",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/openapi/v1/openapi.yaml",
+						"note": "components.schemas.VideoGenerationResponse.polling_url"
+					}
+				},
+				{
+					"path": "client.body.lifecycle_status",
+					"op": "present",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/openapi/v1/openapi.yaml",
+						"note": "components.schemas.VideoGenerationResponse.lifecycle_status: normalized async lifecycle status for polling, websocket, and webhook consumers"
+					}
+				},
+				{
+					"path": "client.body.model",
+					"op": "equals",
+					"value": "openai/sora-2",
+					"source": {
+						"kind": "assumed",
+						"reason": "Every other Phaseo surface echoes the requested Phaseo model id; the provider snapshot slug (sora-2-2025-12-08) is not a Phaseo model id."
+					}
+				},
+				{
+					"path": "billing.reservations[0].amountNanos",
+					"op": "equals",
+					"value": 800000000,
+					"source": {
+						"kind": "assumed",
+						"reason": "8 s at the catalogue's $0.10 per second for 1280x720 (packages/data/catalog/src/data/pricing/openai/openai-sora-2/video.generate) is held before submission."
+					}
+				},
+				{
+					"path": "billing.chargeCount",
+					"op": "equals",
+					"value": 0,
+					"kind": "billing_over",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/async-video-and-batch.mdx",
+						"note": "Video submission reserves credit before contacting the provider; a zero-cost create response alone is normal for asynchronous generation; final billing uses the job's billable usage."
+					}
+				}
+			]
+		}
+	]
+}

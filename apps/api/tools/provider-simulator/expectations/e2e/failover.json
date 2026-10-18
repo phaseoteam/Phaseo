@@ -1,0 +1,194 @@
+{
+	"group": "failover",
+	"description": "Provider failover inside one request: which upstream calls happen, what the client gets, Retry-After forwarding, and billing of the successful attempt only. Cases use openai/gpt-oss-120b on DeepInfra, Together and Groq with provider.order pinned.",
+	"entries": [
+		{
+			"id": "failover-first-fails-second-serves",
+			"cases": "re:^failover\\.[a-z0-9-]+-then-ok$",
+			"description": "A failed first attempt moves to the next eligible provider, which serves and is the only one billed.",
+			"checks": [
+				{
+					"path": "upstream.providers",
+					"op": "equals",
+					"value": ["deepinfra", "together"],
+					"source": { "kind": "gateway-docs", "page": "apps/docs/v1/guides/routing-and-fallbacks.mdx", "note": "Fallback behavior: if a provider returns errors or rate limits, the Gateway can retry or route to another provider that supports the same model." }
+				},
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 200,
+					"kind": "error_mapping",
+					"source": { "kind": "gateway-docs", "page": "apps/docs/v1/guides/routing-and-fallbacks.mdx", "note": "Fallback flowchart: provider error -> another eligible provider -> success -> return the response." }
+				},
+				{
+					"path": "billing.servedProvider",
+					"op": "equals",
+					"value": "together",
+					"source": { "kind": "gateway-docs", "page": "apps/docs/v1/guides/routing-and-fallbacks.mdx" }
+				},
+				{
+					"path": "billing.chargeCount",
+					"op": "equals",
+					"value": 1,
+					"source": { "kind": "assumed", "reason": "A failed provider attempt returned no output and no usage, so only the attempt that served the response is billable; the docs bill each served attempt exactly as without fallbacks." }
+				},
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": { "meters": { "input_text_tokens": 100003, "output_text_tokens": 5003 } },
+					"source": { "kind": "docs", "url": "https://platform.openai.com/docs/api-reference/chat/object", "note": "usage.prompt_tokens / completion_tokens of the serving provider (Together, OpenAI-compatible) priced with its catalogue card." }
+				},
+				{
+					"path": "client.headers.retry-after",
+					"op": "absent",
+					"source": { "kind": "gateway-docs", "page": "apps/docs/v1/api-reference/limits.mdx", "note": "Phaseo forwards a validated Retry-After value when the routed provider supplies one; the provider that served the response sent none." }
+				}
+			]
+		},
+		{
+			"id": "failover-headers-timeout-recorded",
+			"cases": "failover.headers-timeout-then-ok",
+			"checks": [
+				{
+					"path": "attempts[0].upstream_error_code",
+					"op": "equals",
+					"value": "upstream_headers_timeout",
+					"source": { "kind": "assumed", "reason": "The 300 ms GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS deadline elapsed on the first provider; the attempt log should name the timeout so request logs explain the failover." }
+				}
+			]
+		},
+		{
+			"id": "failover-all-candidates-fail",
+			"cases": ["failover.all-503", "failover.all-fail-last-429"],
+			"checks": [
+				{
+					"path": "upstream.providers",
+					"op": "includes",
+					"value": "groq",
+					"source": { "kind": "gateway-docs", "page": "apps/docs/v1/guides/routing-and-fallbacks.mdx", "note": "Every eligible provider is tried before the error is returned." }
+				},
+				{
+					"path": "client.body.error",
+					"op": "equals",
+					"value": "upstream_error",
+					"kind": "error_mapping",
+					"source": { "kind": "gateway-docs", "page": "apps/docs/v1/api-reference/errors.mdx", "note": "Example error response for a provider failure." }
+				},
+				{
+					"path": "client.body.reason",
+					"op": "equals",
+					"value": "all_candidates_failed",
+					"source": { "kind": "gateway-docs", "page": "apps/docs/v1/api-reference/errors.mdx" }
+				},
+				{
+					"path": "client.body.failed_providers",
+					"op": "equals",
+					"value": ["deepinfra", "together", "groq"],
+					"source": { "kind": "gateway-docs", "page": "apps/docs/v1/api-reference/errors.mdx", "note": "failed_providers, failed_statuses, and attempt_count: extra retry and failover context." }
+				},
+				{
+					"path": "billing.chargeCount",
+					"op": "equals",
+					"value": 0,
+					"source": { "kind": "assumed", "reason": "No provider produced output or usage, so nothing is billable; failed requests are never charged to the wallet." }
+				}
+			]
+		},
+		{
+			"id": "failover-all-503-status",
+			"cases": "failover.all-503",
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 502,
+					"kind": "error_mapping",
+					"source": { "kind": "gateway-docs", "page": "apps/docs/v1/api-reference/errors.mdx", "note": "500-599: Phaseo or upstream provider failure; example upstream_error with status_code 502." }
+				},
+				{
+					"path": "client.headers.retry-after",
+					"op": "absent",
+					"source": { "kind": "gateway-docs", "page": "apps/docs/v1/api-reference/limits.mdx" }
+				}
+			]
+		},
+		{
+			"id": "failover-last-429-retry-after",
+			"cases": "failover.all-fail-last-429",
+			"checks": [
+				{
+					"path": "client.headers.retry-after",
+					"op": "equals",
+					"value": "11",
+					"source": { "kind": "gateway-docs", "page": "apps/docs/v1/api-reference/limits.mdx", "note": "Phaseo forwards a validated Retry-After value when the routed provider supplies one." }
+				},
+				{
+					"path": "client.status",
+					"op": "oneOf",
+					"value": [429, 502],
+					"kind": "error_mapping",
+					"source": { "kind": "assumed", "reason": "Mixed 5xx and 429 failures: either the throttling status (limits.mdx: a request can still return 429) or the generic upstream 502 is acceptable." }
+				}
+			]
+		},
+		{
+			"id": "failover-midstream-no-second-provider",
+			"cases": "re:^failover\\.midstream-",
+			"description": "Once the upstream stream has started producing output there is no failover and no double billing.",
+			"checks": [
+				{
+					"path": "upstream.count",
+					"op": "equals",
+					"value": 1,
+					"source": { "kind": "gateway-docs", "page": "apps/docs/v1/guides/routing-and-fallbacks.mdx", "note": "Streaming: fallbacks happen only before the first byte is sent. An error after a stream has started is returned in that stream." }
+				},
+				{
+					"path": "billing.chargeCount",
+					"op": "lte",
+					"value": 1,
+					"kind": "billing_over",
+					"source": { "kind": "assumed", "reason": "One upstream generation can be charged at most once, whatever happened to the stream." }
+				}
+			]
+		},
+		{
+			"id": "failover-midstream-streaming-client",
+			"cases": ["failover.midstream-stream", "failover.midstream-responses-upstream-stream"],
+			"checks": [
+				{
+					"path": "client.sse",
+					"op": "sseIncludes",
+					"value": "\"error\"",
+					"source": { "kind": "gateway-docs", "page": "apps/docs/v1/guides/routing-and-fallbacks.mdx", "note": "An error after a stream has started is returned in that stream." }
+				},
+				{
+					"path": "client.sse",
+					"op": "sseExcludes",
+					"value": "\"finish_reason\":\"(stop|length)\"|\\[DONE\\]",
+					"kind": "stream_order",
+					"source": { "kind": "gateway-docs", "page": "apps/docs/v1/api-reference/errors.mdx", "note": "If it fails mid-stream, treat the partial stream as incomplete: no successful terminal frame may follow." }
+				}
+			]
+		},
+		{
+			"id": "failover-midstream-buffered-client",
+			"cases": "failover.midstream-buffered",
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 502,
+					"kind": "error_mapping",
+					"source": { "kind": "gateway-docs", "page": "apps/docs/v1/api-reference/errors.mdx", "note": "Streaming-specific notes: if the request fails before streaming begins (to the client), you get a standard JSON error payload. A buffered client received no bytes before the upstream failed." }
+				},
+				{
+					"path": "billing.successAudits",
+					"op": "equals",
+					"value": 0,
+					"kind": "invented",
+					"source": { "kind": "assumed", "reason": "An upstream stream that ended in an error is not a successful request and must not be logged as one." }
+				}
+			]
+		}
+	]
+}

@@ -1,35 +1,151 @@
 {
 	"note": "Named citations used by the expectation data. Gateway pages are paths under apps/docs; line ranges refer to origin/main after the cache fix stack (#2971).",
 	"sources": {
-		"phaseo-caching-usage": { "kind": "gateway-docs", "page": "apps/docs/v1/guides/prompt-caching.mdx", "note": "## Usage and pricing fields: Chat and Responses follow OpenAI semantics (input includes reads and writes); Messages follows Anthropic semantics; field table per surface." },
-		"phaseo-caching-pricing": { "kind": "gateway-docs", "page": "apps/docs/v1/guides/prompt-caching.mdx", "note": "Uncached input at the input rate, reads at the read rate, writes at the write rate; without a cache row reads bill at the input rate and writes at input x documented multiplier (pricing_fallback: input_rate)." },
-		"phaseo-caching-forwarding": { "kind": "gateway-docs", "page": "apps/docs/v1/guides/prompt-caching.mdx", "note": "## Automatic and opt-in caching and ### Cache breakpoints on blocks: which cache fields each provider receives; others are removed. prompt_cache_key is sent as a hash of workspace and key." },
-		"phaseo-caching-affinity": { "kind": "gateway-docs", "page": "apps/docs/v1/guides/prompt-caching.mdx", "note": "## Provider affinity: a request with prompt_cache_key or cache_control is pinned to the provider that served the first successful request." },
-		"phaseo-caching-controls": { "kind": "gateway-docs", "page": "apps/docs/v1/guides/prompt-caching.mdx", "note": "Top-level cache_control is accepted on Chat Completions, Responses and Anthropic Messages; other providers ignore it." },
-		"phaseo-streaming": { "kind": "gateway-docs", "page": "apps/docs/v1/guides/streaming.mdx", "note": "Terminal events per endpoint; mark a response complete only after the endpoint's successful terminal event; streams that fail after output begins are interrupted." },
-		"phaseo-parameters": { "kind": "gateway-docs", "page": "apps/docs/v1/api-reference/parameters.mdx", "note": "Parameter support varies by endpoint, model and provider." },
-		"phaseo-openapi-chat": { "kind": "spec", "spec": "apps/docs/openapi/v1/openapi.yaml", "path": "#/components/schemas/ChatCompletionsRequest" },
-		"phaseo-openapi-responses": { "kind": "spec", "spec": "apps/docs/openapi/v1/openapi.yaml", "path": "#/components/schemas/ResponsesRequest" },
-		"phaseo-openapi-messages": { "kind": "spec", "spec": "apps/docs/openapi/v1/openapi.yaml", "path": "#/components/schemas/AnthropicMessagesRequest" },
-		"openai-chat-object": { "kind": "docs", "url": "https://platform.openai.com/docs/api-reference/chat/object", "note": "finish_reason: stop | length | tool_calls | content_filter | function_call; usage.prompt_tokens_details.cached_tokens; completion_tokens_details.reasoning_tokens." },
-		"openai-chat-streaming": { "kind": "docs", "url": "https://platform.openai.com/docs/api-reference/chat-streaming", "note": "chat.completion.chunk objects; with stream_options.include_usage a final chunk carries usage and empty choices; the stream ends with data: [DONE]." },
-		"openai-responses-object": { "kind": "docs", "url": "https://platform.openai.com/docs/api-reference/responses/object", "note": "status completed | incomplete | failed; incomplete_details.reason max_output_tokens | content_filter; usage.input_tokens_details.cached_tokens." },
-		"openai-responses-streaming": { "kind": "docs", "url": "https://platform.openai.com/docs/api-reference/responses-streaming", "note": "response.created first; output_item.added before its deltas; one terminal response.completed, response.incomplete or response.failed; increasing sequence_number." },
-		"openai-sdk-assistant-null": { "kind": "docs", "url": "https://platform.openai.com/docs/api-reference/chat/create", "note": "Assistant message content is required unless tool_calls or function_call is specified (nullable)." },
-		"anthropic-messages": { "kind": "docs", "url": "https://docs.anthropic.com/en/api/messages", "note": "stop_reason end_turn | max_tokens | stop_sequence | tool_use | pause_turn | refusal; usage.input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens." },
-		"anthropic-streaming": { "kind": "docs", "url": "https://docs.anthropic.com/en/docs/build-with-claude/streaming", "note": "message_start, then content_block_start/delta/stop per block, message_delta with stop_reason and usage, message_stop; thinking blocks end with a signature_delta; error events on failure." },
-		"anthropic-thinking": { "kind": "docs", "url": "https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking", "note": "Thinking blocks carry a signature and must be passed back unmodified with tool results; redacted_thinking blocks are returned as-is." },
-		"anthropic-versioning": { "kind": "docs", "url": "https://docs.anthropic.com/en/api/versioning", "note": "anthropic-version header is required." },
-		"vertex-claude": { "kind": "docs", "url": "https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/claude/use-claude", "note": "Body carries anthropic_version vertex-2023-10-16; the model is in the URL, not the body." },
-		"bedrock-claude-messages": { "kind": "docs", "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages-request-response.html", "note": "anthropic_version bedrock-2023-05-31; Claude is served through the Messages API." },
-		"gemini-usage": { "kind": "docs", "url": "https://ai.google.dev/api/generate-content#UsageMetadata", "note": "totalTokenCount = promptTokenCount + candidatesTokenCount + toolUsePromptTokenCount + thoughtsTokenCount; thinking tokens are billed as output." },
-		"gemini-pricing-thinking": { "kind": "docs", "url": "https://ai.google.dev/gemini-api/docs/pricing", "note": "Output price including thinking tokens." },
-		"gemini-finish": { "kind": "docs", "url": "https://ai.google.dev/api/generate-content#FinishReason", "note": "STOP | MAX_TOKENS | SAFETY | RECITATION | PROHIBITED_CONTENT | ..." },
-		"gemini-function-calling": { "kind": "docs", "url": "https://ai.google.dev/gemini-api/docs/function-calling", "note": "Model turn carries functionCall parts (with thought signatures on Gemini 3); the next user turn carries all functionResponse parts; response must be an object." },
-		"openai-auth": { "kind": "docs", "url": "https://platform.openai.com/docs/api-reference/authentication", "note": "Authorization: Bearer <key>." },
-		"assumed-gateway-streams-upstream": { "kind": "assumed", "reason": "Phaseo streams every text request upstream and buffers on its side for non-streaming clients; not documented, but required to measure time to first token and harmless to providers." },
-		"assumed-unsupported-dropped": { "kind": "assumed", "reason": "Phaseo's docs say parameter support varies by provider but not what happens to an unsupported parameter. A provider whose API reference does not define a parameter should not receive it, since that risks a 400 and a failover." },
-		"assumed-identity-fields": { "kind": "assumed", "reason": "Docs do not say whether user and safety_identifier are rewritten; they must reach providers that document them, value unchanged unless a docs page says otherwise." },
-		"assumed-finish-translation": { "kind": "assumed", "reason": "Cross-dialect finish reasons follow the closest documented value of the client surface: length <-> max_tokens <-> max_output_tokens, content filter <-> refusal <-> content_filter." }
+		"phaseo-caching-usage": {
+			"kind": "gateway-docs",
+			"page": "apps/docs/v1/guides/prompt-caching.mdx",
+			"note": "## Usage and pricing fields: Chat and Responses follow OpenAI semantics (input includes reads and writes); Messages follows Anthropic semantics; field table per surface."
+		},
+		"phaseo-caching-pricing": {
+			"kind": "gateway-docs",
+			"page": "apps/docs/v1/guides/prompt-caching.mdx",
+			"note": "Uncached input at the input rate, reads at the read rate, writes at the write rate; without a cache row reads bill at the input rate and writes at input x documented multiplier (pricing_fallback: input_rate)."
+		},
+		"phaseo-caching-forwarding": {
+			"kind": "gateway-docs",
+			"page": "apps/docs/v1/guides/prompt-caching.mdx",
+			"note": "## Automatic and opt-in caching and ### Cache breakpoints on blocks: which cache fields each provider receives; others are removed. prompt_cache_key is sent as a hash of workspace and key."
+		},
+		"phaseo-caching-affinity": {
+			"kind": "gateway-docs",
+			"page": "apps/docs/v1/guides/prompt-caching.mdx",
+			"note": "## Provider affinity: a request with prompt_cache_key or cache_control is pinned to the provider that served the first successful request."
+		},
+		"phaseo-caching-controls": {
+			"kind": "gateway-docs",
+			"page": "apps/docs/v1/guides/prompt-caching.mdx",
+			"note": "Top-level cache_control is accepted on Chat Completions, Responses and Anthropic Messages; other providers ignore it."
+		},
+		"phaseo-streaming": {
+			"kind": "gateway-docs",
+			"page": "apps/docs/v1/guides/streaming.mdx",
+			"note": "Terminal events per endpoint; mark a response complete only after the endpoint's successful terminal event; streams that fail after output begins are interrupted."
+		},
+		"phaseo-parameters": {
+			"kind": "gateway-docs",
+			"page": "apps/docs/v1/api-reference/parameters.mdx",
+			"note": "Parameter support varies by endpoint, model and provider."
+		},
+		"phaseo-openapi-chat": {
+			"kind": "spec",
+			"spec": "apps/docs/openapi/v1/openapi.yaml",
+			"path": "#/components/schemas/ChatCompletionsRequest"
+		},
+		"phaseo-openapi-responses": {
+			"kind": "spec",
+			"spec": "apps/docs/openapi/v1/openapi.yaml",
+			"path": "#/components/schemas/ResponsesRequest"
+		},
+		"phaseo-openapi-messages": {
+			"kind": "spec",
+			"spec": "apps/docs/openapi/v1/openapi.yaml",
+			"path": "#/components/schemas/AnthropicMessagesRequest"
+		},
+		"openai-chat-object": {
+			"kind": "docs",
+			"url": "https://platform.openai.com/docs/api-reference/chat/object",
+			"note": "finish_reason: stop | length | tool_calls | content_filter | function_call; usage.prompt_tokens_details.cached_tokens; completion_tokens_details.reasoning_tokens."
+		},
+		"openai-chat-streaming": {
+			"kind": "docs",
+			"url": "https://platform.openai.com/docs/api-reference/chat-streaming",
+			"note": "chat.completion.chunk objects; with stream_options.include_usage a final chunk carries usage and empty choices; the stream ends with data: [DONE]."
+		},
+		"openai-responses-object": {
+			"kind": "docs",
+			"url": "https://platform.openai.com/docs/api-reference/responses/object",
+			"note": "status completed | incomplete | failed; incomplete_details.reason max_output_tokens | content_filter; usage.input_tokens_details.cached_tokens."
+		},
+		"openai-responses-streaming": {
+			"kind": "docs",
+			"url": "https://platform.openai.com/docs/api-reference/responses-streaming",
+			"note": "response.created first; output_item.added before its deltas; one terminal response.completed, response.incomplete or response.failed; increasing sequence_number."
+		},
+		"openai-sdk-assistant-null": {
+			"kind": "docs",
+			"url": "https://platform.openai.com/docs/api-reference/chat/create",
+			"note": "Assistant message content is required unless tool_calls or function_call is specified (nullable)."
+		},
+		"anthropic-messages": {
+			"kind": "docs",
+			"url": "https://docs.anthropic.com/en/api/messages",
+			"note": "stop_reason end_turn | max_tokens | stop_sequence | tool_use | pause_turn | refusal; usage.input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens."
+		},
+		"anthropic-streaming": {
+			"kind": "docs",
+			"url": "https://docs.anthropic.com/en/docs/build-with-claude/streaming",
+			"note": "message_start, then content_block_start/delta/stop per block, message_delta with stop_reason and usage, message_stop; thinking blocks end with a signature_delta; error events on failure."
+		},
+		"anthropic-thinking": {
+			"kind": "docs",
+			"url": "https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking",
+			"note": "Thinking blocks carry a signature and must be passed back unmodified with tool results; redacted_thinking blocks are returned as-is."
+		},
+		"anthropic-versioning": {
+			"kind": "docs",
+			"url": "https://docs.anthropic.com/en/api/versioning",
+			"note": "anthropic-version header is required."
+		},
+		"vertex-claude": {
+			"kind": "docs",
+			"url": "https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/claude/use-claude",
+			"note": "Body carries anthropic_version vertex-2023-10-16; the model is in the URL, not the body."
+		},
+		"bedrock-claude-messages": {
+			"kind": "docs",
+			"url": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages-request-response.html",
+			"note": "anthropic_version bedrock-2023-05-31; Claude is served through the Messages API."
+		},
+		"gemini-usage": {
+			"kind": "docs",
+			"url": "https://ai.google.dev/api/generate-content#UsageMetadata",
+			"note": "totalTokenCount = promptTokenCount + candidatesTokenCount + toolUsePromptTokenCount + thoughtsTokenCount; thinking tokens are billed as output."
+		},
+		"gemini-pricing-thinking": {
+			"kind": "docs",
+			"url": "https://ai.google.dev/gemini-api/docs/pricing",
+			"note": "Output price including thinking tokens."
+		},
+		"gemini-finish": {
+			"kind": "docs",
+			"url": "https://ai.google.dev/api/generate-content#FinishReason",
+			"note": "STOP | MAX_TOKENS | SAFETY | RECITATION | PROHIBITED_CONTENT | ..."
+		},
+		"gemini-function-calling": {
+			"kind": "docs",
+			"url": "https://ai.google.dev/gemini-api/docs/function-calling",
+			"note": "Model turn carries functionCall parts (with thought signatures on Gemini 3); the next user turn carries all functionResponse parts; response must be an object."
+		},
+		"openai-auth": {
+			"kind": "docs",
+			"url": "https://platform.openai.com/docs/api-reference/authentication",
+			"note": "Authorization: Bearer <key>."
+		},
+		"assumed-gateway-streams-upstream": {
+			"kind": "assumed",
+			"reason": "Phaseo streams every text request upstream and buffers on its side for non-streaming clients; not documented, but required to measure time to first token and harmless to providers."
+		},
+		"assumed-unsupported-dropped": {
+			"kind": "assumed",
+			"reason": "Phaseo's public docs say parameter support varies by provider but not what happens to an unsupported parameter. A provider whose API reference does not define a parameter must not receive it, since that risks a 400 and a failover. apps/api/AGENTS.md prefers rejecting it explicitly over dropping it; the simulator accepts either and reports only forwarding."
+		},
+		"assumed-identity-fields": {
+			"kind": "assumed",
+			"reason": "Docs do not say whether user and safety_identifier are rewritten; they must reach providers that document them, value unchanged unless a docs page says otherwise."
+		},
+		"assumed-finish-translation": {
+			"kind": "assumed",
+			"reason": "Cross-dialect finish reasons follow the closest documented value of the client surface: length <-> max_tokens <-> max_output_tokens, content filter <-> refusal <-> content_filter."
+		}
 	}
 }

@@ -49,7 +49,7 @@ it("simulates every registered text provider", async () => {
 /** Fails the run when a mismatch is not on the allow-list (set SIM_NO_GATE=1 to only write the report). */
 function gate(resultsDir: string) {
 	writeCoverage(resultsDir);
-	const { summary } = runGate(resultsDir);
+	const { summary } = runGate(resultsDir, path.join(here, "results", "baselines"));
 	if (process.env.SIM_NO_GATE) return;
 	expect(summary.failing, `${summary.failing} mismatches are not on the allow-list; see ${path.join(resultsDir, "EXPECTATIONS.md")}`).toBe(0);
 }
