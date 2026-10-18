@@ -2857,6 +2857,11 @@ pub struct ResponsesOutputTextPart {
 	pub r#type: String,
 }
 
+pub struct ResponsesReasoningSummaryPart {
+	pub text: String,
+	pub r#type: String,
+}
+
 pub struct ResponsesRequest {
 	pub background: Option<bool>,
 	pub debug: Option<HashMap<String, String>>,

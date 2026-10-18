@@ -52,7 +52,7 @@ When a server tool is used, usage includes the matching `usage.server_tool_use.*
 
 ## Reasoning in tool loops
 
-Phaseo sends Responses requests upstream with `store: false`, so a model's reasoning continues between tool-loop steps only through the `reasoning` output items.
+On OpenAI, Azure OpenAI and xAI, Phaseo sends Responses requests upstream with `store: false`, so a model's reasoning continues between tool-loop steps only through the `reasoning` output items.
 
 Each `reasoning` item has an `id`, `summary` and `content`. When the provider returns reasoning state, the item also has `encrypted_content`:
 

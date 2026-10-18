@@ -51,7 +51,7 @@ curl https://api.phaseo.app/v1/responses \
 
 ## ツールループでの推論
 
-Phaseo は Responses リクエストを `store: false` で上流に送ります。そのため、ツールループのステップ間でモデルの推論が続くのは `reasoning` 出力アイテムを通じた場合だけです。
+OpenAI、Azure OpenAI、xAI では、Phaseo は Responses リクエストを `store: false` で上流に送ります。そのため、ツールループのステップ間でモデルの推論が続くのは `reasoning` 出力アイテムを通じた場合だけです。
 
 各 `reasoning` アイテムには `id`、`summary`、`content` があります。プロバイダーが推論の状態を返した場合、アイテムには `encrypted_content` も含まれます。
 

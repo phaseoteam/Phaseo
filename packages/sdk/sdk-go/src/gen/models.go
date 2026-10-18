@@ -4416,6 +4416,11 @@ type ResponsesOutputTextPart struct {
 	Type string `json:"type"`
 }
 
+type ResponsesReasoningSummaryPart struct {
+	Text string `json:"text"`
+	Type string `json:"type"`
+}
+
 type ResponsesRequest struct {
 	Background *bool `json:"background,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`

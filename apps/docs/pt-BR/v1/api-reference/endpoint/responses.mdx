@@ -51,7 +51,7 @@ Quando uma ferramenta de servidor é usada, o uso inclui os contadores correspon
 
 ## Raciocínio em ciclos de ferramentas
 
-A Phaseo envia as solicitações de Responses ao provedor com `store: false`, então o raciocínio de um modelo continua entre as etapas de um ciclo de ferramentas apenas pelos itens de saída `reasoning`.
+Na OpenAI, no Azure OpenAI e na xAI, a Phaseo envia as solicitações de Responses ao provedor com `store: false`, então o raciocínio de um modelo continua entre as etapas de um ciclo de ferramentas apenas pelos itens de saída `reasoning`.
 
 Cada item `reasoning` tem `id`, `summary` e `content`. Quando o provedor retorna estado de raciocínio, o item também tem `encrypted_content`:
 

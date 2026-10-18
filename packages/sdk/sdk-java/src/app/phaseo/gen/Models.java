@@ -2879,6 +2879,11 @@ public final class Models {
 		public Object type;
 	}
 
+	public static class ResponsesReasoningSummaryPart {
+		public String text;
+		public Object type;
+	}
+
 	public static class ResponsesRequest {
 		public Boolean background;
 		public Object debug;

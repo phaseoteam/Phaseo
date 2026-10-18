@@ -4077,6 +4077,11 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     ResponsesOutputTextPart = Struct.new(:annotations, :text, :type, keyword_init: true)
+    # @!attribute [rw] text
+    #   @return [String]
+    # @!attribute [rw] type
+    #   @return [String]
+    ResponsesReasoningSummaryPart = Struct.new(:text, :type, keyword_init: true)
     # @!attribute [rw] background
     #   @return [Boolean, nil]
     # @!attribute [rw] debug

@@ -51,7 +51,7 @@ También se admite `stream: true`. Para las herramientas de servidor administrad
 
 ## Razonamiento en ciclos de herramientas
 
-Phaseo envía las solicitudes de Responses al proveedor con `store: false`, así que el razonamiento de un modelo continúa entre los pasos de un ciclo de herramientas solo a través de los elementos de salida `reasoning`.
+Con OpenAI, Azure OpenAI y xAI, Phaseo envía las solicitudes de Responses al proveedor con `store: false`, así que el razonamiento de un modelo continúa entre los pasos de un ciclo de herramientas solo a través de los elementos de salida `reasoning`.
 
 Cada elemento `reasoning` tiene `id`, `summary` y `content`. Cuando el proveedor devuelve estado de razonamiento, el elemento también tiene `encrypted_content`:
 

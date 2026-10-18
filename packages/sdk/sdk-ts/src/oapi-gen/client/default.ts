@@ -5126,7 +5126,10 @@ export type CreateResponseParams = {
           encrypted_content?: string;
           id?: string;
           role?: "user" | "assistant" | "system" | "developer";
-          summary?: {}[];
+          summary?: {
+            text: string;
+            type: "summary_text";
+          }[];
           type?: string;
         }[]
       | {};
@@ -5384,7 +5387,10 @@ export async function createResponse(
     id?: string;
     name?: string;
     role?: string;
-    summary?: {}[];
+    summary?: {
+      text: string;
+      type: "summary_text";
+    }[];
     type?: string;
   }[];
   output_items?: {
@@ -5418,7 +5424,10 @@ export async function createResponse(
     id?: string;
     name?: string;
     role?: string;
-    summary?: {}[];
+    summary?: {
+      text: string;
+      type: "summary_text";
+    }[];
     type?: string;
   }[];
   pricing_lines?: {
@@ -5494,7 +5503,10 @@ export async function createResponse(
       id?: string;
       name?: string;
       role?: string;
-      summary?: {}[];
+      summary?: {
+        text: string;
+        type: "summary_text";
+      }[];
       type?: string;
     }[];
     output_items?: {
@@ -5528,7 +5540,10 @@ export async function createResponse(
       id?: string;
       name?: string;
       role?: string;
-      summary?: {}[];
+      summary?: {
+        text: string;
+        type: "summary_text";
+      }[];
       type?: string;
     }[];
     pricing_lines?: {

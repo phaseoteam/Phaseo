@@ -32,6 +32,9 @@ export interface ResponsesOutputItem {
   id?: string;
   name?: string;
   role?: string;
-  summary?: {}[];
+  summary?: {
+    text: string;
+    type: "summary_text";
+  }[];
   type?: string;
 }

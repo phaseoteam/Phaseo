@@ -197,6 +197,7 @@ describe("Claude manual thinking (Opus 4.5 with a budget) over Chat Completions"
 	});
 
 	it("sends the step without thinking when the client dropped the signature mid-turn", async () => {
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 		const step = await run(isAnthropic, () => claudeStep([{ type: "text", text: "Paris is 18°C." }], model), () =>
 			anthropicExecutor(args(chatIR({
 				...base,
@@ -211,6 +212,11 @@ describe("Claude manual thinking (Opus 4.5 with a budget) over Chat Completions"
 		expect(step.call.bodyJson.messages[1].content).toEqual([
 			{ type: "tool_use", id: "toolu_paris", name: "get_weather", input: { city: "Paris" } },
 		]);
+		// The downgrade is logged, without prompt content.
+		const logged = warn.mock.calls.find(([message]) => message === "[gateway] manual thinking dropped for this step");
+		warn.mockRestore();
+		expect(logged?.[1]).toMatchObject({ reason: "in_progress_turn_without_thinking_block" });
+		expect(JSON.stringify(logged?.[1])).not.toContain("Paris");
 	});
 });
 

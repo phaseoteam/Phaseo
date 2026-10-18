@@ -51,7 +51,7 @@ Lorsqu’un outil serveur est utilisé, les compteurs `usage.server_tool_use.*` 
 
 ## Raisonnement dans les boucles d’outils
 
-Phaseo envoie les requêtes Responses au fournisseur avec `store: false` : le raisonnement d’un modèle ne se poursuit donc d’une étape à l’autre d’une boucle d’outils qu’au moyen des éléments de sortie `reasoning`.
+Avec OpenAI, Azure OpenAI et xAI, Phaseo envoie les requêtes Responses au fournisseur avec `store: false` : le raisonnement d’un modèle ne se poursuit donc d’une étape à l’autre d’une boucle d’outils qu’au moyen des éléments de sortie `reasoning`.
 
 Chaque élément `reasoning` possède un `id`, un `summary` et un `content`. Lorsque le fournisseur renvoie un état de raisonnement, l’élément contient aussi `encrypted_content` :
 

@@ -6905,6 +6905,16 @@ public sealed class ResponsesOutputTextPart
 
 }
 
+public sealed class ResponsesReasoningSummaryPart
+{
+	[JsonPropertyName("text")]
+	public string Text { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class ResponsesRequest
 {
 	[JsonPropertyName("background")]

@@ -5033,6 +5033,14 @@ class ResponsesOutputTextPart
 	public $type;
 }
 
+class ResponsesReasoningSummaryPart
+{
+	/** @var string */
+	public $text;
+	/** @var string */
+	public $type;
+}
+
 class ResponsesRequest
 {
 	/** @var bool|null */

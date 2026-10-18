@@ -51,7 +51,7 @@ curl https://api.phaseo.app/v1/responses \
 
 ## टूल लूप में रीज़निंग
 
-Phaseo Responses अनुरोध अपस्ट्रीम को `store: false` के साथ भेजता है, इसलिए टूल लूप के चरणों के बीच मॉडल की रीज़निंग केवल `reasoning` आउटपुट आइटम के ज़रिए जारी रहती है।
+OpenAI, Azure OpenAI और xAI पर Phaseo Responses अनुरोध अपस्ट्रीम को `store: false` के साथ भेजता है, इसलिए टूल लूप के चरणों के बीच मॉडल की रीज़निंग केवल `reasoning` आउटपुट आइटम के ज़रिए जारी रहती है।
 
 हर `reasoning` आइटम में `id`, `summary` और `content` होते हैं। जब प्रदाता रीज़निंग स्थिति लौटाता है, तो आइटम में `encrypted_content` भी होता है:
 

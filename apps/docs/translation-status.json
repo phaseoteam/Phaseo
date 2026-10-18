@@ -2,7 +2,7 @@
   "version": 1,
   "locales": {
     "ar": {
-      "@openapi": "be748cc7166f6699860b264d4dcd3f33435ab6d09e34fb2f557fb75d17c3b49f",
+      "@openapi": "dcf8cf8c9bded224bf56e572b8df430bb6c24788c18b25cef4a1aaffe4e4606a",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -169,7 +169,7 @@
       "api-reference/endpoint/provider-credentials-update.mdx": "c5b5b8ff9ff70e53bbd1c0d76401e26cda7acad75ab1d6a9ed33594737f31202",
       "api-reference/endpoint/providers.mdx": "4263972821477e6d6215650caab1aa31c81bb13d540440eea3f6d11b6439f576",
       "api-reference/endpoint/rerank.mdx": "2809b06ccce6c740648c769257a21821727d02e247c0b4c3401db9b899396a5f",
-      "api-reference/endpoint/responses.mdx": "edfc8b7d0bcdd65f3bdcb640c10d5b977fe00a26a254c12481fd0f06af7ceb0e",
+      "api-reference/endpoint/responses.mdx": "682d073f6efd3095bb01fff5a5b9f64685960347c31283751638822601811347",
       "api-reference/endpoint/video-cancel.mdx": "370cf21c56332c9c8cb963776eff87f8a1a9b414656bd3ddaa85062d0f6a8910",
       "api-reference/endpoint/video-content.mdx": "62f3d07a92ec17fab88edba4723139454b098fb8ed1c295189ca95abe3e2b61f",
       "api-reference/endpoint/video-create.mdx": "5ac2202a3209b6714e4866e41b574da2cf49a546d6f0c70cdda0e267fcd143e8",
@@ -630,7 +630,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "de": {
-      "@openapi": "be748cc7166f6699860b264d4dcd3f33435ab6d09e34fb2f557fb75d17c3b49f",
+      "@openapi": "dcf8cf8c9bded224bf56e572b8df430bb6c24788c18b25cef4a1aaffe4e4606a",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -797,7 +797,7 @@
       "api-reference/endpoint/provider-credentials-update.mdx": "c5b5b8ff9ff70e53bbd1c0d76401e26cda7acad75ab1d6a9ed33594737f31202",
       "api-reference/endpoint/providers.mdx": "4263972821477e6d6215650caab1aa31c81bb13d540440eea3f6d11b6439f576",
       "api-reference/endpoint/rerank.mdx": "2809b06ccce6c740648c769257a21821727d02e247c0b4c3401db9b899396a5f",
-      "api-reference/endpoint/responses.mdx": "edfc8b7d0bcdd65f3bdcb640c10d5b977fe00a26a254c12481fd0f06af7ceb0e",
+      "api-reference/endpoint/responses.mdx": "682d073f6efd3095bb01fff5a5b9f64685960347c31283751638822601811347",
       "api-reference/endpoint/video-cancel.mdx": "370cf21c56332c9c8cb963776eff87f8a1a9b414656bd3ddaa85062d0f6a8910",
       "api-reference/endpoint/video-content.mdx": "62f3d07a92ec17fab88edba4723139454b098fb8ed1c295189ca95abe3e2b61f",
       "api-reference/endpoint/video-create.mdx": "5ac2202a3209b6714e4866e41b574da2cf49a546d6f0c70cdda0e267fcd143e8",
@@ -1258,7 +1258,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "es": {
-      "@openapi": "be748cc7166f6699860b264d4dcd3f33435ab6d09e34fb2f557fb75d17c3b49f",
+      "@openapi": "dcf8cf8c9bded224bf56e572b8df430bb6c24788c18b25cef4a1aaffe4e4606a",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -1425,7 +1425,7 @@
       "api-reference/endpoint/provider-credentials-update.mdx": "c5b5b8ff9ff70e53bbd1c0d76401e26cda7acad75ab1d6a9ed33594737f31202",
       "api-reference/endpoint/providers.mdx": "4263972821477e6d6215650caab1aa31c81bb13d540440eea3f6d11b6439f576",
       "api-reference/endpoint/rerank.mdx": "2809b06ccce6c740648c769257a21821727d02e247c0b4c3401db9b899396a5f",
-      "api-reference/endpoint/responses.mdx": "edfc8b7d0bcdd65f3bdcb640c10d5b977fe00a26a254c12481fd0f06af7ceb0e",
+      "api-reference/endpoint/responses.mdx": "682d073f6efd3095bb01fff5a5b9f64685960347c31283751638822601811347",
       "api-reference/endpoint/video-cancel.mdx": "370cf21c56332c9c8cb963776eff87f8a1a9b414656bd3ddaa85062d0f6a8910",
       "api-reference/endpoint/video-content.mdx": "62f3d07a92ec17fab88edba4723139454b098fb8ed1c295189ca95abe3e2b61f",
       "api-reference/endpoint/video-create.mdx": "5ac2202a3209b6714e4866e41b574da2cf49a546d6f0c70cdda0e267fcd143e8",
@@ -1886,7 +1886,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "fr": {
-      "@openapi": "be748cc7166f6699860b264d4dcd3f33435ab6d09e34fb2f557fb75d17c3b49f",
+      "@openapi": "dcf8cf8c9bded224bf56e572b8df430bb6c24788c18b25cef4a1aaffe4e4606a",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -2053,7 +2053,7 @@
       "api-reference/endpoint/provider-credentials-update.mdx": "c5b5b8ff9ff70e53bbd1c0d76401e26cda7acad75ab1d6a9ed33594737f31202",
       "api-reference/endpoint/providers.mdx": "4263972821477e6d6215650caab1aa31c81bb13d540440eea3f6d11b6439f576",
       "api-reference/endpoint/rerank.mdx": "2809b06ccce6c740648c769257a21821727d02e247c0b4c3401db9b899396a5f",
-      "api-reference/endpoint/responses.mdx": "edfc8b7d0bcdd65f3bdcb640c10d5b977fe00a26a254c12481fd0f06af7ceb0e",
+      "api-reference/endpoint/responses.mdx": "682d073f6efd3095bb01fff5a5b9f64685960347c31283751638822601811347",
       "api-reference/endpoint/video-cancel.mdx": "370cf21c56332c9c8cb963776eff87f8a1a9b414656bd3ddaa85062d0f6a8910",
       "api-reference/endpoint/video-content.mdx": "62f3d07a92ec17fab88edba4723139454b098fb8ed1c295189ca95abe3e2b61f",
       "api-reference/endpoint/video-create.mdx": "5ac2202a3209b6714e4866e41b574da2cf49a546d6f0c70cdda0e267fcd143e8",
@@ -2514,7 +2514,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "hi": {
-      "@openapi": "be748cc7166f6699860b264d4dcd3f33435ab6d09e34fb2f557fb75d17c3b49f",
+      "@openapi": "dcf8cf8c9bded224bf56e572b8df430bb6c24788c18b25cef4a1aaffe4e4606a",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -2681,7 +2681,7 @@
       "api-reference/endpoint/provider-credentials-update.mdx": "c5b5b8ff9ff70e53bbd1c0d76401e26cda7acad75ab1d6a9ed33594737f31202",
       "api-reference/endpoint/providers.mdx": "4263972821477e6d6215650caab1aa31c81bb13d540440eea3f6d11b6439f576",
       "api-reference/endpoint/rerank.mdx": "2809b06ccce6c740648c769257a21821727d02e247c0b4c3401db9b899396a5f",
-      "api-reference/endpoint/responses.mdx": "edfc8b7d0bcdd65f3bdcb640c10d5b977fe00a26a254c12481fd0f06af7ceb0e",
+      "api-reference/endpoint/responses.mdx": "682d073f6efd3095bb01fff5a5b9f64685960347c31283751638822601811347",
       "api-reference/endpoint/video-cancel.mdx": "370cf21c56332c9c8cb963776eff87f8a1a9b414656bd3ddaa85062d0f6a8910",
       "api-reference/endpoint/video-content.mdx": "62f3d07a92ec17fab88edba4723139454b098fb8ed1c295189ca95abe3e2b61f",
       "api-reference/endpoint/video-create.mdx": "5ac2202a3209b6714e4866e41b574da2cf49a546d6f0c70cdda0e267fcd143e8",
@@ -3142,7 +3142,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "ja": {
-      "@openapi": "be748cc7166f6699860b264d4dcd3f33435ab6d09e34fb2f557fb75d17c3b49f",
+      "@openapi": "dcf8cf8c9bded224bf56e572b8df430bb6c24788c18b25cef4a1aaffe4e4606a",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -3309,7 +3309,7 @@
       "api-reference/endpoint/provider-credentials-update.mdx": "c5b5b8ff9ff70e53bbd1c0d76401e26cda7acad75ab1d6a9ed33594737f31202",
       "api-reference/endpoint/providers.mdx": "4263972821477e6d6215650caab1aa31c81bb13d540440eea3f6d11b6439f576",
       "api-reference/endpoint/rerank.mdx": "2809b06ccce6c740648c769257a21821727d02e247c0b4c3401db9b899396a5f",
-      "api-reference/endpoint/responses.mdx": "edfc8b7d0bcdd65f3bdcb640c10d5b977fe00a26a254c12481fd0f06af7ceb0e",
+      "api-reference/endpoint/responses.mdx": "682d073f6efd3095bb01fff5a5b9f64685960347c31283751638822601811347",
       "api-reference/endpoint/video-cancel.mdx": "370cf21c56332c9c8cb963776eff87f8a1a9b414656bd3ddaa85062d0f6a8910",
       "api-reference/endpoint/video-content.mdx": "62f3d07a92ec17fab88edba4723139454b098fb8ed1c295189ca95abe3e2b61f",
       "api-reference/endpoint/video-create.mdx": "5ac2202a3209b6714e4866e41b574da2cf49a546d6f0c70cdda0e267fcd143e8",
@@ -3770,7 +3770,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "pt-BR": {
-      "@openapi": "be748cc7166f6699860b264d4dcd3f33435ab6d09e34fb2f557fb75d17c3b49f",
+      "@openapi": "dcf8cf8c9bded224bf56e572b8df430bb6c24788c18b25cef4a1aaffe4e4606a",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -3937,7 +3937,7 @@
       "api-reference/endpoint/provider-credentials-update.mdx": "c5b5b8ff9ff70e53bbd1c0d76401e26cda7acad75ab1d6a9ed33594737f31202",
       "api-reference/endpoint/providers.mdx": "4263972821477e6d6215650caab1aa31c81bb13d540440eea3f6d11b6439f576",
       "api-reference/endpoint/rerank.mdx": "2809b06ccce6c740648c769257a21821727d02e247c0b4c3401db9b899396a5f",
-      "api-reference/endpoint/responses.mdx": "edfc8b7d0bcdd65f3bdcb640c10d5b977fe00a26a254c12481fd0f06af7ceb0e",
+      "api-reference/endpoint/responses.mdx": "682d073f6efd3095bb01fff5a5b9f64685960347c31283751638822601811347",
       "api-reference/endpoint/video-cancel.mdx": "370cf21c56332c9c8cb963776eff87f8a1a9b414656bd3ddaa85062d0f6a8910",
       "api-reference/endpoint/video-content.mdx": "62f3d07a92ec17fab88edba4723139454b098fb8ed1c295189ca95abe3e2b61f",
       "api-reference/endpoint/video-create.mdx": "5ac2202a3209b6714e4866e41b574da2cf49a546d6f0c70cdda0e267fcd143e8",
@@ -4398,7 +4398,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "zh-Hans": {
-      "@openapi": "be748cc7166f6699860b264d4dcd3f33435ab6d09e34fb2f557fb75d17c3b49f",
+      "@openapi": "dcf8cf8c9bded224bf56e572b8df430bb6c24788c18b25cef4a1aaffe4e4606a",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -4565,7 +4565,7 @@
       "api-reference/endpoint/provider-credentials-update.mdx": "c5b5b8ff9ff70e53bbd1c0d76401e26cda7acad75ab1d6a9ed33594737f31202",
       "api-reference/endpoint/providers.mdx": "4263972821477e6d6215650caab1aa31c81bb13d540440eea3f6d11b6439f576",
       "api-reference/endpoint/rerank.mdx": "2809b06ccce6c740648c769257a21821727d02e247c0b4c3401db9b899396a5f",
-      "api-reference/endpoint/responses.mdx": "edfc8b7d0bcdd65f3bdcb640c10d5b977fe00a26a254c12481fd0f06af7ceb0e",
+      "api-reference/endpoint/responses.mdx": "682d073f6efd3095bb01fff5a5b9f64685960347c31283751638822601811347",
       "api-reference/endpoint/video-cancel.mdx": "370cf21c56332c9c8cb963776eff87f8a1a9b414656bd3ddaa85062d0f6a8910",
       "api-reference/endpoint/video-content.mdx": "62f3d07a92ec17fab88edba4723139454b098fb8ed1c295189ca95abe3e2b61f",
       "api-reference/endpoint/video-create.mdx": "5ac2202a3209b6714e4866e41b574da2cf49a546d6f0c70cdda0e267fcd143e8",

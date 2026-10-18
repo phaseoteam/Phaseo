@@ -2856,6 +2856,11 @@ struct ResponsesOutputTextPart {
 	std::any type;
 };
 
+struct ResponsesReasoningSummaryPart {
+	std::string text;
+	std::any type;
+};
+
 struct ResponsesRequest {
 	std::optional<bool> background;
 	std::map<std::string, std::any> debug;

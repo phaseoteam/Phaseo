@@ -43,7 +43,10 @@ export interface ResponsesResponse {
     id?: string;
     name?: string;
     role?: string;
-    summary?: {}[];
+    summary?: {
+      text: string;
+      type: "summary_text";
+    }[];
     type?: string;
   }[];
   output_items?: {
@@ -77,7 +80,10 @@ export interface ResponsesResponse {
     id?: string;
     name?: string;
     role?: string;
-    summary?: {}[];
+    summary?: {
+      text: string;
+      type: "summary_text";
+    }[];
     type?: string;
   }[];
   pricing_lines?: {

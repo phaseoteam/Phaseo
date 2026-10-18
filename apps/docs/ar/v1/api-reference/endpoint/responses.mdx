@@ -51,7 +51,7 @@ curl https://api.phaseo.app/v1/responses \
 
 ## الاستدلال في حلقات الأدوات
 
-يرسل Phaseo طلبات Responses إلى المزوّد مع `store: false`، لذلك لا يستمر استدلال النموذج بين خطوات حلقة الأدوات إلا عبر عناصر الإخراج `reasoning`.
+مع OpenAI وAzure OpenAI وxAI، يرسل Phaseo طلبات Responses إلى المزوّد مع `store: false`، لذلك لا يستمر استدلال النموذج بين خطوات حلقة الأدوات إلا عبر عناصر الإخراج `reasoning`.
 
 لكل عنصر `reasoning` قيم `id` و`summary` و`content`. وعندما يعيد المزوّد حالة استدلال، يحتوي العنصر أيضًا على `encrypted_content`:
 

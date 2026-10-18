@@ -845,7 +845,14 @@ function enforceManualThinkingTurnStructure(request: any): void {
 	if (!firstAssistant) return;
 	const firstBlock = Array.isArray(firstAssistant.content) ? firstAssistant.content[0] : null;
 	if (firstBlock?.type === "thinking" || firstBlock?.type === "redacted_thinking") return;
+	const budgetTokens = request.thinking.budget_tokens;
 	delete request.thinking;
+	// Observable downgrade: no prompt content, only what was changed and why.
+	console.warn("[gateway] manual thinking dropped for this step", {
+		model: typeof request.model === "string" ? request.model : null,
+		reason: "in_progress_turn_without_thinking_block",
+		budget_tokens: typeof budgetTokens === "number" ? budgetTokens : null,
+	});
 }
 
 const LATE_SYSTEM_MESSAGE = Symbol("lateSystemMessage");

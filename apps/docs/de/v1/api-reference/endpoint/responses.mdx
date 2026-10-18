@@ -51,7 +51,7 @@ Bei Verwendung eines Servertools enthält die Nutzungsübersicht die passenden `
 
 ## Reasoning in Tool-Schleifen
 
-Phaseo sendet Responses-Anfragen mit `store: false` an den Anbieter. Das Reasoning eines Modells setzt sich zwischen den Schritten einer Tool-Schleife daher nur über die `reasoning`-Ausgabeelemente fort.
+Bei OpenAI, Azure OpenAI und xAI sendet Phaseo Responses-Anfragen mit `store: false` an den Anbieter. Das Reasoning eines Modells setzt sich zwischen den Schritten einer Tool-Schleife daher nur über die `reasoning`-Ausgabeelemente fort.
 
 Jedes `reasoning`-Element hat eine `id`, `summary` und `content`. Liefert der Anbieter Reasoning-Zustand, hat das Element zusätzlich `encrypted_content`:
 

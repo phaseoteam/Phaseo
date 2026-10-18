@@ -51,7 +51,7 @@ curl https://api.phaseo.app/v1/responses \
 
 ## 工具循环中的推理
 
-Phaseo 以 `store: false` 向上游发送 Responses 请求，因此模型的推理只能通过 `reasoning` 输出项在工具循环的各步之间延续。
+对于 OpenAI、Azure OpenAI 和 xAI，Phaseo 以 `store: false` 向上游发送 Responses 请求，因此模型的推理只能通过 `reasoning` 输出项在工具循环的各步之间延续。
 
 每个 `reasoning` 项都有 `id`、`summary` 和 `content`。当提供商返回推理状态时，该项还包含 `encrypted_content`：
 

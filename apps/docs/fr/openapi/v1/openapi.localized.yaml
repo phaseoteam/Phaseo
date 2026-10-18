@@ -10554,7 +10554,7 @@ components:
         summary:
           type: array
           items:
-            type: object
+            $ref: '#/components/schemas/ResponsesReasoningSummaryPart'
         encrypted_content:
           type: string
     ResponsesOutputItem:
@@ -10580,8 +10580,20 @@ components:
         summary:
           type: array
           items:
-            type: object
+            $ref: '#/components/schemas/ResponsesReasoningSummaryPart'
         encrypted_content:
+          type: string
+    ResponsesReasoningSummaryPart:
+      type: object
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - summary_text
+        text:
           type: string
     ResponsesOutputContentPart:
       oneOf:
