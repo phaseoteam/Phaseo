@@ -1,6 +1,10 @@
 import * as Crypto from "expo-crypto";
+import { ApiError } from "@/lib/api/http";
 import { createChat, deleteMessagesFrom, getChat, indexAnswer, insertMessage, listMessages, nextPosition, updateChat, updateMessage } from "./db";
+import { requestCapabilities } from "./models";
+import type { ModelSettings } from "./settings";
 import { liveStore, notifyChat } from "./state";
+import { StreamError } from "./stream";
 import { ChatRequestError, historyFor, streamCompletion } from "./transport";
 import type { ChatAttachment, ChatMessage } from "./types";
 
@@ -24,11 +28,12 @@ export function onChatError(listener: ErrorListener) {
   return () => { errorListeners.delete(listener); };
 }
 
-/** Creates a chat with its first message and starts every model answering. */
-export function startChat(args: { text: string; attachments: ChatAttachment[]; models: string[]; workspaceId: string | null }) {
+/** Creates a chat with its first message (and any settings chosen before it) and starts every model answering. */
+export function startChat(args: { text: string; attachments: ChatAttachment[]; models: string[]; modelSettings?: Record<string, ModelSettings>; workspaceId: string | null }) {
   const now = Date.now();
   const chatId = Crypto.randomUUID();
-  createChat({ id: chatId, title: titleFrom(args.text), models: args.models, workspaceId: args.workspaceId, createdAt: now, updatedAt: now, preview: args.text.slice(0, 140) });
+  const modelSettings = Object.fromEntries(Object.entries(args.modelSettings ?? {}).filter(([model]) => args.models.includes(model)));
+  createChat({ id: chatId, title: titleFrom(args.text), models: args.models, modelSettings, workspaceId: args.workspaceId, createdAt: now, updatedAt: now, preview: args.text.slice(0, 140) });
   sendMessage({ chatId, text: args.text, attachments: args.attachments, workspaceId: args.workspaceId });
   return chatId;
 }
@@ -37,7 +42,7 @@ export function sendMessage(args: { chatId: string; text: string; attachments: C
   const chat = getChat(args.chatId);
   if (!chat) return;
   const now = Date.now();
-  const user: ChatMessage = { id: Crypto.randomUUID(), chatId: chat.id, role: "user", model: null, parentId: null, content: args.text, reasoning: "", status: "done", error: null, attachments: args.attachments, usage: null, createdAt: now, position: nextPosition(chat.id) };
+  const user: ChatMessage = { id: Crypto.randomUUID(), chatId: chat.id, role: "user", model: null, parentId: null, content: args.text, reasoning: "", status: "done", error: null, errorCode: null, errorStatus: null, attachments: args.attachments, usage: null, createdAt: now, position: nextPosition(chat.id) };
   insertMessage(user);
   updateChat(chat.id, { updatedAt: now, preview: args.text.slice(0, 140) });
   for (const model of chat.models) void answer(chat.id, user.id, model, args.workspaceId ?? chat.workspaceId);
@@ -46,8 +51,8 @@ export function sendMessage(args: { chatId: string; text: string; attachments: C
 
 /** Runs one model's answer to one user message. */
 async function answer(chatId: string, parentId: string, model: string, workspaceId: string | null, reuse?: ChatMessage) {
-  const message: ChatMessage = reuse ?? { id: Crypto.randomUUID(), chatId, role: "assistant", model, parentId, content: "", reasoning: "", status: "streaming", error: null, attachments: [], usage: null, createdAt: Date.now(), position: nextPosition(chatId) };
-  if (reuse) updateMessage(message.id, { content: "", reasoning: "", status: "streaming", error: null, usage: null });
+  const message: ChatMessage = reuse ?? { id: Crypto.randomUUID(), chatId, role: "assistant", model, parentId, content: "", reasoning: "", status: "streaming", error: null, errorCode: null, errorStatus: null, attachments: [], usage: null, createdAt: Date.now(), position: nextPosition(chatId) };
+  if (reuse) updateMessage(message.id, { content: "", reasoning: "", status: "streaming", error: null, errorCode: null, errorStatus: null, usage: null });
   else insertMessage(message);
   notifyChat(chatId);
 
@@ -66,9 +71,13 @@ async function answer(chatId: string, parentId: string, model: string, workspace
 
   try {
     const history = await historyFor(listMessages(chatId), model, parentId);
+    // Settings are read when the answer starts, so a change applies from the next message or retry.
+    const settings = getChat(chatId)?.modelSettings[model];
     const result = await streamCompletion({
       model,
       messages: history,
+      settings,
+      capabilities: await requestCapabilities(model, settings),
       workspaceId,
       signal: controller.signal,
       onText: (text) => { content += text; publish(); },
@@ -80,8 +89,10 @@ async function answer(chatId: string, parentId: string, model: string, workspace
   } catch (error) {
     const stopped = controller.signal.aborted;
     const text = error instanceof Error ? error.message : "The answer failed.";
-    updateMessage(message.id, { content, reasoning, status: stopped ? "stopped" : "error", error: stopped ? null : text });
-    if (!stopped && error instanceof ChatRequestError) for (const listener of errorListeners) listener(chatId, { code: error.code, message: error.message });
+    const code = error instanceof ChatRequestError || error instanceof StreamError ? error.code : error instanceof ApiError ? error.code ?? null : null;
+    const status = error instanceof ChatRequestError || error instanceof ApiError ? error.status : null;
+    updateMessage(message.id, { content, reasoning, status: stopped ? "stopped" : "error", error: stopped ? null : text, errorCode: stopped ? null : code, errorStatus: stopped ? null : status });
+    if (!stopped && (error instanceof ChatRequestError || error instanceof ApiError)) for (const listener of errorListeners) listener(chatId, { code: code ?? "", message: text });
   } finally {
     running.delete(message.id);
     liveStore.set((current) => {
@@ -115,14 +126,15 @@ export function editAndResend(message: ChatMessage, text: string, workspaceId: s
   sendMessage({ chatId: message.chatId, text, attachments: message.attachments, workspaceId });
 }
 
-/** Copies a chat up to and including a message into a new chat. */
+/** Copies a chat up to and including a message into a new chat (the website's "Branch"), with the kept models' settings. */
 export function forkChat(message: ChatMessage, workspaceId: string | null) {
   const source = getChat(message.chatId);
   if (!source) return null;
   const now = Date.now();
   const chatId = Crypto.randomUUID();
   const models = message.role === "assistant" && message.model ? [message.model] : source.models;
-  createChat({ id: chatId, title: `${source.title} (fork)`, models, workspaceId, createdAt: now, updatedAt: now, preview: source.preview });
+  const modelSettings = Object.fromEntries(Object.entries(source.modelSettings).filter(([model]) => models.includes(model)));
+  createChat({ id: chatId, title: `${source.title} (branch)`, models, modelSettings, workspaceId, createdAt: now, updatedAt: now, preview: source.preview });
   const kept = listMessages(message.chatId).filter((entry) => entry.position <= message.position && (entry.role === "user" || models.includes(entry.model ?? "")));
   const ids = new Map<string, string>();
   kept.forEach((entry, index) => {

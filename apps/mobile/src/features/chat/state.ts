@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { kv } from "@/lib/storage";
 import { createStore } from "@/lib/store";
-import { getChat, listChats, listMessages } from "./db";
+import { getChat, listChats, listMessages, setModelSettings, updateChat } from "./db";
+import { cleanSettings, sharedSettings, type ModelSettings } from "./settings";
 import type { Chat, ChatMessage } from "./types";
 
 export const MAX_CHAT_MODELS = 4;
@@ -25,6 +26,48 @@ export function toggleChatModel(id: string) {
 
 export function setChatModels(ids: string[]) {
   chatModelStore.set(ids.slice(0, MAX_CHAT_MODELS));
+}
+
+/** Settings picked for a new chat before its first message; they move into the chat when it starts. */
+export const draftSettingsStore = createStore<Record<string, ModelSettings>>({});
+
+/** Changes a chat's models (or, without a chat, the new chat's). At least one model always stays. */
+export function setModelsFor(chatId: string | null, models: string[]) {
+  const next = [...new Set(models)].slice(0, MAX_CHAT_MODELS);
+  if (!next.length) return;
+  if (!chatId) return setChatModels(next);
+  updateChat(chatId, { models: next });
+  notifyChat(chatId);
+}
+
+/** Reads one model's settings in a chat, or in the new-chat draft when there's no chat yet. */
+export function settingsFor(chatId: string | null, modelId: string): ModelSettings {
+  return (chatId ? getChat(chatId)?.modelSettings[modelId] : draftSettingsStore.get()[modelId]) ?? {};
+}
+
+export function saveSettings(chatId: string | null, modelId: string, settings: ModelSettings) {
+  if (chatId) {
+    setModelSettings(chatId, modelId, settings);
+    notifyChat(chatId);
+    return;
+  }
+  const cleaned = cleanSettings(settings);
+  draftSettingsStore.set((current) => {
+    const next = { ...current };
+    if (Object.keys(cleaned).length) next[modelId] = cleaned;
+    else delete next[modelId];
+    return next;
+  });
+}
+
+/** The website's "Apply to all": copies one model's settings, except its provider and name, to the chat's other models. */
+export function applySettingsToAll(chatId: string | null, fromModel: string, models: string[]) {
+  const shared = sharedSettings(settingsFor(chatId, fromModel));
+  for (const model of models) {
+    if (model === fromModel) continue;
+    const current = settingsFor(chatId, model);
+    saveSettings(chatId, model, { ...current, ...shared, providerId: current.providerId, displayName: current.displayName });
+  }
 }
 
 /** Bumped whenever chats or messages change shape (insert, delete, status, title). */

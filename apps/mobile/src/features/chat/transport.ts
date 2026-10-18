@@ -1,6 +1,8 @@
 import { fetch as streamingFetch } from "expo/fetch";
 import { File } from "expo-file-system";
 import { authHeaders, buildUrl, workspaceCookie } from "@/lib/api/http";
+import { audioFormat, buildRequestBody, loggableRequest, type ContentPart, type WireMessage } from "./request";
+import type { ModelSettings, RequestCapabilities } from "./settings";
 import { readChatCompletion, StreamError, type StreamHandlers, type StreamUsage } from "./stream";
 import type { ChatMessage } from "./types";
 
@@ -10,9 +12,6 @@ export class ChatRequestError extends Error {
   }
 }
 
-type ContentPart = { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } };
-type WireMessage = { role: "user" | "assistant"; content: string | ContentPart[] };
-
 async function userContent(message: ChatMessage): Promise<string | ContentPart[]> {
   if (!message.attachments.length) return message.content;
   const parts: ContentPart[] = [];
@@ -21,6 +20,7 @@ async function userContent(message: ChatMessage): Promise<string | ContentPart[]
     const file = new File(attachment.uri);
     if (!file.exists) continue;
     if (attachment.kind === "image") parts.push({ type: "image_url", image_url: { url: `data:${attachment.mimeType};base64,${await file.base64()}` } });
+    else if (attachment.kind === "audio") parts.push({ type: "input_audio", input_audio: { data: await file.base64(), format: audioFormat(attachment.mimeType, attachment.name) } });
     else texts.push(`Attached file ${attachment.name}:\n\`\`\`\n${await file.text()}\n\`\`\``);
   }
   const text = [message.content, ...texts].filter(Boolean).join("\n\n");
@@ -48,16 +48,16 @@ export type CompletionResult = { text: string; reasoning: string; usage?: Stream
  * workspace with the same managed key as web chat. The proxy picks the workspace
  * from the `activeWorkspaceId` cookie (checked against the user's memberships).
  */
-export async function streamCompletion(args: { model: string; messages: WireMessage[]; workspaceId: string | null; signal: AbortSignal } & StreamHandlers): Promise<CompletionResult> {
+export async function streamCompletion(args: { model: string; messages: WireMessage[]; settings?: ModelSettings; capabilities?: RequestCapabilities; workspaceId: string | null; signal: AbortSignal } & StreamHandlers): Promise<CompletionResult> {
   const headers: Record<string, string> = { ...(await authHeaders()), ...workspaceCookie(args.workspaceId), "content-type": "application/json", accept: "text/event-stream" };
+  const requestBody = buildRequestBody(args);
+  // Opt-in (EXPO_PUBLIC_CHAT_DEBUG=1 at build time) proof of what was sent; the bearer token is in the headers, never logged.
+  if (process.env.EXPO_PUBLIC_CHAT_DEBUG === "1") console.info(`[phaseo-chat] POST /api/chat/chat-completions ${JSON.stringify({ workspaceId: args.workspaceId ? "<workspace>" : null, requestBody: loggableRequest(requestBody) })}`);
   const response = await streamingFetch(buildUrl("/api/chat/chat-completions"), {
     method: "POST",
     headers,
     signal: args.signal,
-    body: JSON.stringify({
-      workspaceId: args.workspaceId,
-      requestBody: { model: args.model, messages: args.messages, stream: true, stream_options: { include_usage: true } },
-    }),
+    body: JSON.stringify({ workspaceId: args.workspaceId, requestBody }),
   });
   if (!response.ok) {
     const text = await response.text().catch(() => "");
