@@ -81,6 +81,23 @@ describe("response expectations", () => {
 		const mismatches = checkBilling(ctx, expected, { ok: true, lines: [{ meter: "input_text_tokens", quantity: 600, nanos: 600_000 }, { meter: "output_text_tokens", quantity: 10, nanos: 20_000 }] }, true);
 		expect(mismatches.map((m) => [m.kind, m.path, m.delta?.nanos])).toEqual([["billing_under", "billing.read", -400_000]]);
 	});
+
+	it("reports writes moved between meters with the same charge as a renamed meter, not as billing", () => {
+		const rate = (meter: string, perToken: number) => ({ meter, perToken });
+		const none = { tokens: 0 };
+		const expected = {
+			lines: {
+				uncachedInput: none, read: none, output: none, reasoning: none,
+				write5m: { tokens: 1_000, rate: rate("cached_write_text_tokens_5m", 1.25e-6) },
+				write1h: { tokens: 2_000, rate: rate("cached_write_text_tokens_1h", 2e-6) },
+				write: { tokens: 0, rate: rate("cached_write_text_tokens", 1.25e-6) },
+			},
+		} as any;
+		const moved = checkBilling(ctx, expected, { ok: true, lines: [{ meter: "cached_write_text_tokens", quantity: 3_000, nanos: 5_250_000 }] }, true);
+		expect(moved.map((m) => [m.kind, m.path])).toEqual([["renamed", "billing.write.meter"]]);
+		const underBilled = checkBilling(ctx, expected, { ok: true, lines: [{ meter: "cached_write_text_tokens", quantity: 3_000, nanos: 3_750_000 }] }, true);
+		expect(underBilled.map((m) => m.kind)).toContain("billing_under");
+	});
 });
 
 describe("allow-list gate", () => {

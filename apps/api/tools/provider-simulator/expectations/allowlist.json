@@ -56,6 +56,17 @@
 			}
 		},
 		{
+			"id": "billing-alibaba-double-read",
+			"finding": "N23",
+			"fixGroup": "billing-2",
+			"justification": "Alibaba Qwen 3.8 Max bills the one reported prompt_tokens_details.cached_tokens twice, on both cached_read_text_tokens and implicit_cached_input_text_tokens (traced on the preview: 20,011 tokens on each meter), on every surface. The pricing sweep found the same defect on the card.",
+			"match": {
+				"provider": "alibaba-cloud",
+				"kind": "billing_over",
+				"path": "billing.read"
+			}
+		},
+		{
 			"id": "billing-chat-cached-reads",
 			"finding": "N3",
 			"fixGroup": "billing-2",
@@ -490,19 +501,15 @@
 			}
 		},
 		{
-			"id": "billing-reasoning-meter-split",
+			"id": "billing-meter-label",
 			"finding": "N36",
 			"fixGroup": "billing-2",
-			"justification": "OpenRouter routes whose card has a separate reasoning row bill reasoning tokens under the output meter when the upstream reports them only in completion_tokens_details; the simulated rates are equal, so the net charge is unchanged, but the meter split is wrong.",
+			"justification": "Tokens billed under a related meter with the same total charge: OpenRouter reasoning inside output, Vertex Claude writes on the undivided write meter instead of the 5m and 1h meters, Kimi K3 writes without a TTL on the 5m meter. The charge is right, but usage exports and per-meter reports show the wrong meter.",
 			"match": {
-				"provider": "openrouter",
-				"kind": [
-					"billing_over",
-					"billing_under"
-				],
+				"kind": "renamed",
 				"path": [
-					"billing.output",
-					"billing.reasoning"
+					"billing.write.meter",
+					"billing.output.meter"
 				]
 			}
 		},

@@ -572,6 +572,25 @@ export function checkBilling(ctx: Ctx, expected: BillingExpectation | null, actu
 			note: reason ?? (billedUsage ? undefined : "no usage reached billing"),
 		}));
 	}
+	return collapseMeterMoves(ctx, out, tolerance, source);
+}
+
+/** Categories that can carry the same tokens under different meters (a TTL split, or reasoning inside output). */
+const RELATED_METERS = [["write", "write5m", "write1h"], ["output", "reasoning"]];
+
+/** Tokens moved between related meters with the same total charge are a meter label, not a billing error. */
+function collapseMeterMoves(ctx: Ctx, mismatches: Mismatch[], tolerance: number, source: Source): Mismatch[] {
+	let out = mismatches;
+	for (const group of RELATED_METERS) {
+		const moved = out.filter((entry) => group.includes(entry.path.replace(/^billing\./, "")));
+		if (moved.length < 2) continue;
+		const tokens = moved.reduce((sum, entry) => sum + (entry.delta?.tokens ?? 0), 0);
+		const nanos = moved.reduce((sum, entry) => sum + (entry.delta?.nanos ?? 0), 0);
+		if (tokens !== 0 || Math.abs(nanos) > tolerance * moved.length) continue;
+		out = out.filter((entry) => !moved.includes(entry));
+		const meters = (pick: "expected" | "actual") => Object.fromEntries(moved.map((entry) => [entry.path.replace(/^billing\./, ""), (entry[pick] as any)?.tokens ?? 0]));
+		out.push(mm(ctx, "renamed", `billing.${group[0]}.meter`, meters("expected"), meters("actual"), source, { note: "same tokens and charge, billed under a different meter" }));
+	}
 	return out;
 }
 
