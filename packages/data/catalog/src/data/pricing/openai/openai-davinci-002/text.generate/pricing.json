@@ -22,6 +22,22 @@
       "source": null
     },
     {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "OpenAI lists no cached-input price (\"-\") for this model, so cached tokens bill at the standard input rate (accessed 2026-10-17).",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2023-08-22T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
@@ -75,7 +91,9 @@
     "standard",
     "batch"
   ],
-  "sources": [],
+  "sources": [
+    "https://developers.openai.com/api/docs/pricing"
+  ],
   "verification": {
     "status": "unverified",
     "checked_at": null,

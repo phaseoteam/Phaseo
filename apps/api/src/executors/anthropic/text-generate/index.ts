@@ -16,6 +16,7 @@ import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { normaliseAnthropicCacheBreakpoints } from "./breakpoints";
 import {
+	ANTHROPIC_CACHE_USAGE_SEMANTICS,
 	createAnthropicStreamAccounting,
 	createAnthropicToResponsesStreamTransformer,
 } from "./stream-transformer";
@@ -294,10 +295,11 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 									const final = accounting.snapshot();
 									return {
 										...bill,
-										usage: normalizeTextUsageForPricing(final.usage) ?? undefined,
+										usage: normalizeTextUsageForPricing(final.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined,
 										finish_reason: mapAnthropicStopReason(final.stopReason),
 									};
 								},
+								usageFinalizerAuthoritative: true,
                                 bill,
                                 upstream: res,
                                 keySource: keyInfo.source,
@@ -317,7 +319,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
                         const ir = anthropicMessagesToIR(message, args.requestId, args.ir.model, args.providerId);
 
 			// Calculate pricing
-			const usageMeters = normalizeTextUsageForPricing(ir.usage);
+			const usageMeters = normalizeTextUsageForPricing(ir.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS);
 			if (usageMeters) {
 				bill.usage = usageMeters;
 			}
@@ -1182,6 +1184,9 @@ export function anthropicMessagesToIR(
 					typeof json.usage.cache_read_input_tokens === "number"
 						? json.usage.cache_read_input_tokens
 						: undefined,
+				// Anthropic's input_tokens excludes cache reads and writes; both are billed on top.
+				cachedReadTokensAreSubsetOfInput: false,
+				cachedWriteTokensAreSubsetOfInput: false,
 				_ext:
 					typeof json.usage.cache_creation_input_tokens === "number"
 						? {

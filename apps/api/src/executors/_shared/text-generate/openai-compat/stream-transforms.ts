@@ -1,5 +1,6 @@
 import type { ExecutorExecuteArgs } from "@executors/types";
 import type { IRChatResponse, IRContentPart } from "@core/ir";
+import { irUsageToOpenAIStyle } from "@core/cache-usage";
 import { openAIResponsesToIR } from "./transform";
 import { openAIChatToIR } from "./transform-chat";
 import { getProviderQuirks } from "./quirks";
@@ -1022,8 +1023,13 @@ function encodeResponsesUsageFromIR(usage?: IRChatResponse["usage"]) {
 	if (!usage) return undefined;
 	const inputDetails: Record<string, number> = {};
 	const outputDetails: Record<string, number> = {};
-	if (typeof usage.cachedInputTokens === "number") {
-		inputDetails.cached_tokens = usage.cachedInputTokens;
+	// OpenAI semantics: input_tokens includes cache reads and writes.
+	const cache = irUsageToOpenAIStyle(usage);
+	if (typeof cache.readTokens === "number") {
+		inputDetails.cached_tokens = cache.readTokens;
+	}
+	if (typeof cache.writeTokens === "number") {
+		inputDetails.cache_write_tokens = cache.writeTokens;
 	}
 	if (typeof usage._ext?.inputImageTokens === "number") {
 		inputDetails.input_images = usage._ext.inputImageTokens;
@@ -1037,9 +1043,6 @@ function encodeResponsesUsageFromIR(usage?: IRChatResponse["usage"]) {
 	if (typeof usage.reasoningTokens === "number") {
 		outputDetails.reasoning_tokens = usage.reasoningTokens;
 	}
-	if (typeof usage._ext?.cachedWriteTokens === "number") {
-		outputDetails.cached_tokens = usage._ext.cachedWriteTokens;
-	}
 	if (typeof usage._ext?.outputImageTokens === "number") {
 		outputDetails.output_images = usage._ext.outputImageTokens;
 	}
@@ -1051,15 +1054,18 @@ function encodeResponsesUsageFromIR(usage?: IRChatResponse["usage"]) {
 	}
 
 	const out: any = {
-		input_tokens: usage.inputTokens,
+		input_tokens: cache.inputTokens,
 		output_tokens: usage.outputTokens,
-		total_tokens: usage.totalTokens,
+		total_tokens: cache.totalTokens,
 	};
+	if (typeof cache.write5mTokens === "number") out.cached_write_text_tokens_5m = cache.write5mTokens;
+	if (typeof cache.write1hTokens === "number") out.cached_write_text_tokens_1h = cache.write1hTokens;
+	if (typeof cache.writeTokens === "number") out.cached_write_tokens_are_subset_of_input = true;
 	if (typeof usage._ext?.citationTokens === "number") out.citation_tokens = usage._ext.citationTokens;
 	if (typeof usage._ext?.numSearchQueries === "number") out.num_search_queries = usage._ext.numSearchQueries;
 	if (typeof usage._ext?.searchContextSize === "string") out.search_context_size = usage._ext.searchContextSize;
 	if (usage._ext?.providerCost) out.cost = usage._ext.providerCost;
-	if (usage.cachedReadTokensAreSubsetOfInput === true) {
+	if (typeof cache.readTokens === "number") {
 		out.cached_read_tokens_are_subset_of_input = true;
 	}
 	if (Object.keys(inputDetails).length) out.input_tokens_details = inputDetails;

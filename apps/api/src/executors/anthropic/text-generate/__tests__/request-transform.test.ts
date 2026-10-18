@@ -723,9 +723,10 @@ describe("irToAnthropicMessages cache control", () => {
 		}];
 
 		const payload = irToAnthropicMessages(request);
+		// Anthropic rejects 5m marks before a 1h mark, so the earlier marks are raised to 1h.
 		expect(payload.messages[0].content[0].cache_control).toEqual({
 			type: "ephemeral",
-			ttl: "5m",
+			ttl: "1h",
 		});
 		expect(payload.messages[1].content[0].cache_control).toEqual({
 			type: "ephemeral",
@@ -733,7 +734,7 @@ describe("irToAnthropicMessages cache control", () => {
 		});
 		expect(payload.tools[0].cache_control).toEqual({
 			type: "ephemeral",
-			ttl: "5m",
+			ttl: "1h",
 		});
 	});
 });

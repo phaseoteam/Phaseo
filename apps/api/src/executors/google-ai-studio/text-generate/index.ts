@@ -20,6 +20,7 @@ import { withNormalizedReasoning } from "./normalize-reasoning";
 import { irPartsToGeminiParts } from "../../google/shared/media";
 import {
 	appendGeminiFunctionResponse,
+	geminiFunctionResponsePart,
 	geminiFunctionCallId,
 	geminiReplayableAssistantParts,
 	geminiThoughtPartToIR,
@@ -148,12 +149,11 @@ async function irToLegacyGemini(
 						response = { content: response };
 					}
 				}
-				appendGeminiFunctionResponse(contents, {
-					functionResponse: {
-						name: toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
-						response,
-					},
-				});
+				appendGeminiFunctionResponse(contents, geminiFunctionResponsePart(
+					toolResult.toolCallId,
+					toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
+					response,
+				));
 			}
 		}
 	}
@@ -1808,7 +1808,9 @@ export function transformStream(
 							let state = toolStates.get(stateKey);
 							if (!state) {
 								state = {
-									id: `call_${args.requestId}_${index}_${partIdx}`,
+									id: typeof part.functionCall.id === "string" && part.functionCall.id
+										? part.functionCall.id
+										: `call_${args.requestId}_${index}_${partIdx}`,
 									argumentsSoFar: "",
 									emittedName: false,
 								};

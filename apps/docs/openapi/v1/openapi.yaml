@@ -10819,6 +10819,10 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: >-
+            Not supported. The gateway does not store responses, so a non-empty
+            value is rejected with a 400 validation error. Send the full
+            conversation in input instead.
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
@@ -20805,6 +20809,7 @@ components:
         - payment_method_expiring
         - model_deprecation
         - model_substitution
+        - rate_limit_throttled
     WorkspaceNotificationRouteMap:
       type: object
       required:
@@ -20813,6 +20818,7 @@ components:
         - payment_method_expiring
         - model_deprecation
         - model_substitution
+        - rate_limit_throttled
       properties:
         low_balance:
           type: array
@@ -20835,6 +20841,11 @@ components:
             type: string
             format: uuid
         model_substitution:
+          type: array
+          items:
+            type: string
+            format: uuid
+        rate_limit_throttled:
           type: array
           items:
             type: string

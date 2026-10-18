@@ -6461,6 +6461,8 @@ class WorkspaceNotificationRouteMap
 	public $model_substitution;
 	/** @var array */
 	public $payment_method_expiring;
+	/** @var array */
+	public $rate_limit_throttled;
 }
 
 class WorkspaceNotificationRouteResponse

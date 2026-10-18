@@ -9,7 +9,7 @@ import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-g
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
 import { irToAnthropicMessages, anthropicMessagesToIR, bufferAnthropicStreamToMessage, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
-import { createAnthropicToResponsesStreamTransformer, createAnthropicStreamAccounting, createAnthropicPassthroughStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
+import { ANTHROPIC_CACHE_USAGE_SEMANTICS, createAnthropicToResponsesStreamTransformer, createAnthropicStreamAccounting, createAnthropicPassthroughStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
 import { isClaudeOpus55 } from "@core/claudeModelCapabilities";
 import { assertClaudeRequestSupported } from "@core/claudeRequestValidation";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
@@ -25,6 +25,7 @@ import { withNormalizedReasoning } from "@executors/google/text-generate/normali
 import { irPartsToGeminiParts } from "@executors/google/shared/media";
 import {
 	appendGeminiFunctionResponse,
+	geminiFunctionResponsePart,
 	geminiFunctionCallId,
 	geminiReplayableAssistantParts,
 	geminiThoughtPartToIR,
@@ -138,7 +139,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	if (res.body && !isJsonResponse) {
 		if (irRequest.stream) {
-			const accounting = route.family === "anthropic" && isClaudeOpus55(model) ? createAnthropicStreamAccounting() : undefined;
+			// Every Claude stream records usage from the upstream frames, so cache writes are
+			// billed whichever model it is.
+			const accounting = route.family === "anthropic" ? createAnthropicStreamAccounting() : undefined;
 			const stream = (() => {
 				if (route.family === "gemini") {
 					return transformGoogleGeminiStream(res.body!, args);
@@ -153,7 +156,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 						"chat",
 					);
 				}
-				if (accounting && args.protocol === "anthropic.messages") {
+				if (accounting && isClaudeOpus55(model) && args.protocol === "anthropic.messages") {
 					return res.body!.pipeThrough(createAnthropicPassthroughStreamTransformer(accounting));
 				}
 				const responsesStream = res.body!.pipeThrough(
@@ -176,9 +179,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				usageFinalizer: async () => {
 					if (!accounting) return null;
 					const final = accounting.snapshot();
-					return { ...bill, usage: normalizeTextUsageForPricing(final.usage) ?? undefined,
+					return { ...bill, usage: normalizeTextUsageForPricing(final.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined,
 						finish_reason: mapAnthropicStopReason(final.stopReason) };
 				},
+				usageFinalizerAuthoritative: accounting !== undefined,
 				bill,
 				upstream: res,
 				keySource: keyInfo.source,
@@ -193,7 +197,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		if (route.family === "anthropic" && isClaudeOpus55(model)) {
 			const { message, firstFrameMs, totalMs } = await bufferAnthropicStreamToMessage(res, selectedDispatchAtMs);
 			const ir = anthropicMessagesToIR(message, args.requestId, model, args.providerId);
-			bill.usage = normalizeTextUsageForPricing(message.usage) ?? undefined;
+			bill.usage = normalizeTextUsageForPricing(message.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined;
 			bill.finish_reason = ir.choices[0]?.finishReason ?? null;
 			return { kind: "completed", ir, bill, upstream: res, keySource: keyInfo.source, byokKeyId: keyInfo.byokId,
 				mappedRequest, rawResponse: message, timing: { latencyMs: firstFrameMs ?? undefined, generationMs: totalMs } };
@@ -467,12 +471,11 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 						responsePayload = { content: toolResult.content };
 					}
 				}
-				appendGeminiFunctionResponse(contents, {
-					functionResponse: {
-						name: toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
-						response: responsePayload,
-					},
-				});
+				appendGeminiFunctionResponse(contents, geminiFunctionResponsePart(
+					toolResult.toolCallId,
+					toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
+					responsePayload,
+				));
 			}
 		}
 	}

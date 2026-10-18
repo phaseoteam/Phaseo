@@ -416,7 +416,8 @@ describe("computeBillSummary long context thresholds", () => {
 		);
 
 		const byDim = new Map(result.lines.map((line) => [line.dimension, line]));
-		expect(byDim.get("input_text_tokens")?.quantity).toBe(100);
+		// DeepSeek: prompt_tokens = prompt_cache_hit_tokens + prompt_cache_miss_tokens.
+		expect(byDim.get("input_text_tokens")?.quantity).toBe(58);
 		expect(byDim.get("cached_read_text_tokens")?.quantity).toBe(42);
 		expect(byDim.get("output_text_tokens")?.quantity).toBe(5);
 	});

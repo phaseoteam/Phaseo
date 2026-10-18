@@ -17689,6 +17689,7 @@ export async function listWorkspaceNotificationRoutes(
     model_deprecation: string[];
     model_substitution: string[];
     payment_method_expiring: string[];
+    rate_limit_throttled: string[];
   };
 }> {
   const { path, query, headers, body } = args;
@@ -17700,6 +17701,7 @@ export async function listWorkspaceNotificationRoutes(
       model_deprecation: string[];
       model_substitution: string[];
       payment_method_expiring: string[];
+      rate_limit_throttled: string[];
     };
   }>({
     method: "GET",
@@ -22147,7 +22149,8 @@ export type UpdateWorkspaceNotificationRouteParams = {
       | "auto_top_up_failed"
       | "payment_method_expiring"
       | "model_deprecation"
-      | "model_substitution";
+      | "model_substitution"
+      | "rate_limit_throttled";
   };
   query?: Record<string, never>;
   headers?: Record<string, never>;
@@ -22170,7 +22173,8 @@ export async function updateWorkspaceNotificationRoute(
       | "auto_top_up_failed"
       | "payment_method_expiring"
       | "model_deprecation"
-      | "model_substitution";
+      | "model_substitution"
+      | "rate_limit_throttled";
   };
 }> {
   const { path, query, headers, body } = args;
@@ -22185,7 +22189,8 @@ export async function updateWorkspaceNotificationRoute(
         | "auto_top_up_failed"
         | "payment_method_expiring"
         | "model_deprecation"
-        | "model_substitution";
+        | "model_substitution"
+        | "rate_limit_throttled";
     };
   }>({
     method: "PUT",

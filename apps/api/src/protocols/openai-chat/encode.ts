@@ -6,6 +6,7 @@
 // Transforms IR → OpenAI Chat Completions Response (Gateway format)
 
 import type { IRChatResponse, IRChoice, IRUsage, IRContentPart } from "@core/ir";
+import { irUsageToOpenAIStyle } from "@core/cache-usage";
 import type { GatewayCompletionsResponse, GatewayReasoningDetail, GatewayUsage } from "@core/types";
 import { encodeChatReasoningDetails, type ReasoningResponseOrigin } from "../shared/reasoning";
 
@@ -166,9 +167,12 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 		promptTokens?: number;
 		completionTokens?: number;
 	};
-	const inputTokens = usage.inputTokens ?? usageAny.promptTokens;
+	const rawInputTokens = usage.inputTokens ?? usageAny.promptTokens;
 	const outputTokens = usage.outputTokens ?? usageAny.completionTokens;
-	const totalTokens = usage.totalTokens ?? ((inputTokens ?? 0) + (outputTokens ?? 0));
+	// OpenAI semantics: prompt tokens include cache reads and writes.
+	const cache = irUsageToOpenAIStyle({ ...usage, inputTokens: rawInputTokens ?? 0, outputTokens: outputTokens ?? 0 });
+	const inputTokens = rawInputTokens == null ? rawInputTokens : cache.inputTokens;
+	const totalTokens = usage.totalTokens == null ? ((inputTokens ?? 0) + (outputTokens ?? 0)) : cache.totalTokens;
 
 	const result: GatewayUsage = {
 		input_tokens: inputTokens,
@@ -197,19 +201,26 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 		(result as any).cost = usage._ext.providerCost;
 	}
 
-	if (usage.cachedInputTokens || usage._ext?.inputImageTokens || usage._ext?.inputAudioTokens || usage._ext?.inputVideoTokens) {
+	if (cache.readTokens || cache.writeTokens || usage._ext?.inputImageTokens || usage._ext?.inputAudioTokens || usage._ext?.inputVideoTokens) {
 		result.input_details = {
-			cached_tokens: usage.cachedInputTokens,
+			cached_tokens: cache.readTokens,
+			...(typeof cache.writeTokens === "number" ? { cache_write_tokens: cache.writeTokens } : {}),
 			input_images: usage._ext?.inputImageTokens,
 			input_audio: usage._ext?.inputAudioTokens,
 			input_videos: usage._ext?.inputVideoTokens,
 		};
 	}
+	if (typeof cache.readTokens === "number") (result as any).cached_read_tokens_are_subset_of_input = true;
+	if (typeof cache.writeTokens === "number") {
+		(result as any).cached_write_text_tokens = cache.writeTokens;
+		(result as any).cached_write_tokens_are_subset_of_input = true;
+	}
+	if (typeof cache.write5mTokens === "number") (result as any).cached_write_text_tokens_5m = cache.write5mTokens;
+	if (typeof cache.write1hTokens === "number") (result as any).cached_write_text_tokens_1h = cache.write1hTokens;
 
-	if (usage.reasoningTokens || usage._ext?.outputImageTokens || usage._ext?.outputAudioTokens || usage._ext?.cachedWriteTokens) {
+	if (usage.reasoningTokens || usage._ext?.outputImageTokens || usage._ext?.outputAudioTokens) {
 		result.output_tokens_details = {
 			reasoning_tokens: usage.reasoningTokens,
-			cached_tokens: usage._ext?.cachedWriteTokens,
 			output_images: usage._ext?.outputImageTokens,
 			output_audio: usage._ext?.outputAudioTokens,
 		};

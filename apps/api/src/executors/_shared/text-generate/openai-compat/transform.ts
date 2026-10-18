@@ -9,7 +9,7 @@ import { isIRNativeToolDefinition } from "@core/nativeTools";
 import { applyResponsesRequestQuirks, applyResponsesResponseQuirks } from "./responses-quirks";
 import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
-import { applyPromptCacheFieldPolicy } from "./prompt-cache-policy";
+import { applyPromptCacheFieldPolicy, cacheMarkFields } from "./prompt-cache-policy";
 import { normalizeProviderId } from "@/lib/config/providerAliases";
 import {
 	canReplayReasoning,
@@ -479,6 +479,7 @@ function toOpenAIResponsesTool(tool: IRTool, useOpenAIShape: boolean, providerId
 			parameters: tool.parameters,
 			...(tool.strict !== undefined ? { strict: tool.strict } : {}),
 			...(supportsAsync && tool.async !== undefined ? { async: tool.async } : {}),
+			...cacheMarkFields(tool.cacheControl),
 		};
 	}
 
@@ -490,6 +491,7 @@ function toOpenAIResponsesTool(tool: IRTool, useOpenAIShape: boolean, providerId
 			parameters: tool.parameters,
 			...(tool.strict !== undefined ? { strict: tool.strict } : {}),
 		},
+		...cacheMarkFields(tool.cacheControl),
 	};
 }
 
@@ -515,15 +517,12 @@ function mapContentPart(part: IRContentPart): any {
 	}
 
         if (part.type === "image") {
-			const promptCacheBreakpoint = part.cacheControl?.type === "prompt_cache_breakpoint"
-				? { mode: part.cacheControl.mode }
-				: undefined;
                 if (part.source === "url") {
                         return {
                                 type: "input_image",
                                 image_url: part.data,
                                 detail: part.detail,
-								...(promptCacheBreakpoint ? { prompt_cache_breakpoint: promptCacheBreakpoint } : {}),
+								...cacheMarkFields(part.cacheControl),
                         };
                 } else {
                         const dataUrl = part.data.startsWith("data:")
@@ -533,7 +532,7 @@ function mapContentPart(part: IRContentPart): any {
                                 type: "input_image",
                                 image_url: dataUrl,
                                 detail: part.detail,
-								...(promptCacheBreakpoint ? { prompt_cache_breakpoint: promptCacheBreakpoint } : {}),
+								...cacheMarkFields(part.cacheControl),
                         };
                 }
         }
@@ -1026,6 +1025,13 @@ function extractReasoningText(item: any): string {
 	return contentText || summaryText;
 }
 
+function firstFiniteUsageNumber(...values: unknown[]): number | undefined {
+	for (const value of values) {
+		if (typeof value === "number" && Number.isFinite(value)) return value;
+	}
+	return undefined;
+}
+
 /**
  * Normalize usage from OpenAI format to IR format
  */
@@ -1038,14 +1044,38 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 
 	const inputDetails = usage.input_tokens_details ?? usage.prompt_tokens_details;
 	const outputDetails = usage.output_tokens_details ?? usage.completion_tokens_details;
-	const cachedInputTokens = inputDetails?.cached_tokens;
-	const cachedWriteTokens =
-		inputDetails?.cache_write_tokens ??
-		inputDetails?.cache_creation_input_tokens ??
-		inputDetails?.cache_creation_tokens ??
-		outputDetails?.cached_tokens;
+	// Top-level fallbacks (StepFun, DeepSeek, SiliconFlow style) also count inside input.
+	const cachedInputTokens = firstFiniteUsageNumber(
+		inputDetails?.cached_tokens,
+		usage.cached_tokens,
+		usage.prompt_cache_hit_tokens,
+		usage.cached_input_tokens,
+	);
+	// Writes nested in input details (OpenAI/Azure GPT-5.6+, Kimi, Alibaba) are part of
+	// input tokens; the top-level and output-detail forms are reported on top of input.
+	const nestedCachedWriteTokens = firstFiniteUsageNumber(
+		inputDetails?.cache_write_tokens,
+		inputDetails?.cache_creation_input_tokens,
+		inputDetails?.cache_creation_tokens,
+	);
+	const cachedWriteTokens = nestedCachedWriteTokens ?? firstFiniteUsageNumber(
+		usage.cache_write_tokens,
+		usage.cache_creation_input_tokens,
+		outputDetails?.cached_tokens,
+	);
+	const cachedWriteTokens5m = firstFiniteUsageNumber(
+		usage.cached_write_text_tokens_5m,
+		usage.cache_creation?.ephemeral_5m_input_tokens,
+	);
+	const cachedWriteTokens1h = firstFiniteUsageNumber(
+		usage.cached_write_text_tokens_1h,
+		usage.cache_creation?.ephemeral_1h_input_tokens,
+	);
 	const reasoningTokens = outputDetails?.reasoning_tokens;
 	const cachedReadTokensAreSubsetOfInput = typeof cachedInputTokens === "number" ? true : undefined;
+	const cachedWriteTokensAreSubsetOfInput = typeof nestedCachedWriteTokens === "number" || typeof usage.cache_write_tokens === "number"
+		? true
+		: typeof cachedWriteTokens === "number" ? false : undefined;
 	const serverToolUseRaw =
 		usage.server_tool_use && typeof usage.server_tool_use === "object"
 			? usage.server_tool_use
@@ -1111,6 +1141,7 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 		totalTokens,
 		cachedInputTokens,
 		cachedReadTokensAreSubsetOfInput,
+		...(cachedWriteTokensAreSubsetOfInput !== undefined ? { cachedWriteTokensAreSubsetOfInput } : {}),
 		reasoningTokens,
 		_ext: {
 			inputImageTokens: inputDetails?.input_images,
@@ -1120,6 +1151,8 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 			outputAudioTokens: outputDetails?.audio_tokens ?? outputDetails?.output_audio,
 			outputVideoTokens: outputDetails?.output_videos,
 			cachedWriteTokens,
+			...(cachedWriteTokens5m !== undefined ? { cachedWriteTokens5m } : {}),
+			...(cachedWriteTokens1h !== undefined ? { cachedWriteTokens1h } : {}),
 			...(serverToolUse ? { serverToolUse } : {}),
 		},
 	};

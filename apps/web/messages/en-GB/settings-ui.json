@@ -1989,6 +1989,8 @@
 		"Product alerts": "Product alerts",
 		"Model Deprecation Alerts": "Model Deprecation Alerts",
 		"phraseGetNoticeBeforeAModelYourWorkspaceUsesIsRetired": "Get notice before a model your workspace uses is retired.",
+		"Rate Limit Alerts": "Rate Limit Alerts",
+		"phraseGetAnAlertWhenRateLimitPoliciesRejectRequestsAtMostOnceAnHour": "Get an alert when rate limit policies reject requests, at most once an hour.",
 		"Destinations": "Destinations",
 		"phraseCreateReusableChannelsThenChooseThemOnEachAlertAbove": "Create reusable channels, then choose them on each alert above.",
 		"Add destination": "Add destination",

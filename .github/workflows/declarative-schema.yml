@@ -19,6 +19,10 @@ on:
                 description: Generate a forward migration from this branch's desired schemas
                 type: boolean
                 default: false
+            migration_name:
+                description: Name of the generated forward migration
+                type: string
+                default: declarative_change
     merge_group:
         types: [checks_requested]
 
@@ -39,6 +43,7 @@ jobs:
             - name: Test public model query behavior and permissions
               run: |
                   npm install --prefix "$RUNNER_TEMP/public-model-timeout-tests" --ignore-scripts --no-audit --no-fund --save-exact @electric-sql/pglite@0.5.8
+                  PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/artificial-analysis-snapshots.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/public-model-timeouts.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/monitor-model-rows.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/analytics-outbox-coalescing.test.mjs
@@ -58,6 +63,7 @@ jobs:
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/otel-export-outbox-prune.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/rate-limit-policies.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/rate-limit-throttle-rollups.test.mjs
+                  PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/rate-limit-throttle-alerts.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/broadcast-event-receipts.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/structured-subscriptions.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/private-usage-month-days.test.mjs
@@ -69,13 +75,16 @@ jobs:
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/gateway-model-successor-redirect.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/model-substitution-notice.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/model-discovery-provider-status.test.mjs
+                  PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/prompt-cache-prices.test.mjs
             - name: Verify declarative schemas against frozen baseline and forward migrations
               if: inputs.generate_migration != true
               run: node scripts/declarative-schema.mjs check
             - name: Generate forward migration in a disposable database
               if: inputs.generate_migration == true
+              env:
+                  MIGRATION_NAME: ${{ inputs.migration_name || 'declarative_change' }}
               run: |
-                  node scripts/declarative-schema.mjs sync -f automatic_provider_catalog_updates
+                  node scripts/declarative-schema.mjs sync -f "$MIGRATION_NAME"
                   mkdir -p generated-migrations
                   git ls-files --others --exclude-standard supabase/migrations | while IFS= read -r file; do
                     cp "$file" generated-migrations/

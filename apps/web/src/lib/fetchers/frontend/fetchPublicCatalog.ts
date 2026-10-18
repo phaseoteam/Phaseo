@@ -674,10 +674,17 @@ export async function fetchFrontendBenchmarks(
 
 export async function fetchFrontendBenchmark(
 	benchmarkId: string,
+	selection: { version?: string; metric?: string } = {},
 ): Promise<BenchmarkPage | null> {
 	// Epoch ECI was initially cached with inverted score ordering. Keep the
 	// corrected cache namespace explicit while older edge entries expire.
-	const cacheRevision = benchmarkId === "epoch-capabilities-index" ? "?revision=2" : "";
+	const query = new URLSearchParams();
+	if (benchmarkId === "epoch-capabilities-index") query.set("revision", "2");
+	if (benchmarkId === "artificial-analysis") {
+		if (selection.version) query.set("version", selection.version);
+		if (selection.metric) query.set("metric", selection.metric);
+	}
+	const cacheRevision = query.size ? `?${query}` : "";
 	const payload = await fetchOptionalPublicWebApi<{ benchmark: BenchmarkPage }>(
 		`/api/_web/benchmarks/${encodeURIComponent(benchmarkId)}${cacheRevision}`,
 	);

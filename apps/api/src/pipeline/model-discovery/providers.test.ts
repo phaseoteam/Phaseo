@@ -2,6 +2,15 @@ import { describe, expect, it } from "vitest";
 import { MODEL_DISCOVERY_PROVIDERS } from "./providers";
 
 describe("MODEL_DISCOVERY_PROVIDERS", () => {
+	it("discovers Inference.net's public catalog without inference credentials", () => {
+		const provider = MODEL_DISCOVERY_PROVIDERS.find((entry) => entry.providerId === "inference-net");
+
+		expect(provider).toMatchObject({
+			modelsEndpoint: "https://api.inference.net/v1/models",
+			authStyle: "none",
+		});
+	});
+
 	it("includes the newly supported self-serve providers with model APIs", () => {
 		const providerIds = new Set(MODEL_DISCOVERY_PROVIDERS.map((provider) => provider.providerId));
 

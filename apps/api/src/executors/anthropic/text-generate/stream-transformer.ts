@@ -63,6 +63,50 @@ export function createAnthropicPassthroughStreamTransformer(accounting: Anthropi
 	});
 }
 
+/**
+ * Anthropic Messages usage semantics for normalizeTextUsageForPricing: `input_tokens`
+ * excludes cache reads and cache writes, which are billed on top.
+ */
+export const ANTHROPIC_CACHE_USAGE_SEMANTICS = {
+	cachedReadTokensAreSubsetOfInput: false,
+	cachedWriteTokensAreSubsetOfInput: false,
+} as const;
+
+function finiteCount(value: unknown): number | undefined {
+	return typeof value === "number" && Number.isFinite(value) ? Math.max(0, value) : undefined;
+}
+
+/**
+ * Convert Anthropic Messages usage to OpenAI Responses usage.
+ *
+ * Anthropic's `input_tokens` excludes cache reads and writes. OpenAI counts both inside
+ * `input_tokens`, with reads under `input_tokens_details.cached_tokens` and writes under
+ * `input_tokens_details.cache_write_tokens`. The 5-minute and 1-hour write split is kept
+ * so the after-stage bills each TTL at its own rate.
+ */
+export function anthropicUsageToResponsesUsage(usage: any): Record<string, unknown> | undefined {
+	if (!usage || typeof usage !== "object") return undefined;
+	const uncachedInput = finiteCount(usage.input_tokens) ?? 0;
+	const output = finiteCount(usage.output_tokens) ?? 0;
+	const read = finiteCount(usage.cache_read_input_tokens);
+	const write5m = finiteCount(usage.cache_creation?.ephemeral_5m_input_tokens);
+	const write1h = finiteCount(usage.cache_creation?.ephemeral_1h_input_tokens);
+	const write = finiteCount(usage.cache_creation_input_tokens) ??
+		(write5m !== undefined || write1h !== undefined ? (write5m ?? 0) + (write1h ?? 0) : undefined);
+	const input = uncachedInput + (read ?? 0) + (write ?? 0);
+	const inputDetails: Record<string, number> = {};
+	if (read !== undefined) inputDetails.cached_tokens = read;
+	if (write !== undefined) inputDetails.cache_write_tokens = write;
+	return {
+		input_tokens: input,
+		output_tokens: output,
+		total_tokens: input + output,
+		...(Object.keys(inputDetails).length ? { input_tokens_details: inputDetails } : {}),
+		...(write5m !== undefined ? { cached_write_text_tokens_5m: write5m } : {}),
+		...(write1h !== undefined ? { cached_write_text_tokens_1h: write1h } : {}),
+	};
+}
+
 export function createAnthropicToResponsesStreamTransformer(
 	requestId: string,
 	model: string,
@@ -337,17 +381,7 @@ export function createAnthropicToResponsesStreamTransformer(
 						status = "incomplete";
 					}
 
-					// Build usage object
-					const responseUsage = usage ? {
-						input_tokens: usage.input_tokens || 0,
-						output_tokens: usage.output_tokens || 0,
-						total_tokens: (usage.input_tokens || 0) + (usage.output_tokens || 0),
-						...(typeof usage.cache_read_input_tokens === "number" ? {
-							input_tokens_details: {
-								cached_tokens: usage.cache_read_input_tokens,
-							},
-						} : {}),
-					} : undefined;
+					const responseUsage = anthropicUsageToResponsesUsage(usage);
 
 					// Emit response.completed
 					emitEvent(controller, "response.completed", {

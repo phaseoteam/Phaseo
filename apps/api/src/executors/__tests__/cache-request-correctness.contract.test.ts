@@ -18,6 +18,7 @@ import { execute as azureExecute } from "@executors/azure/text-generate";
 import { execute as vertexExecute } from "@executors/google-vertex/text-generate";
 import { executor as aiStudioExecutor } from "@executors/google-ai-studio/text-generate";
 import { irToOpenAIChat } from "@executors/_shared/text-generate/openai-compat/transform-chat";
+import { irToOpenAIResponses } from "@executors/_shared/text-generate/openai-compat/transform";
 import { irToolCallsToGeminiParts, GEMINI_SKIP_THOUGHT_SIGNATURE } from "@executors/google/shared/function-history";
 import { validateCapabilities } from "@pipeline/before/capabilityValidation";
 import { mergePresetWithBody } from "@pipeline/before/presetMerge";
@@ -159,6 +160,22 @@ describe("R4: OpenAI prompt_cache_breakpoint on Anthropic targets", () => {
 			.map((message: any) => message.content[0].text);
 		expect(markedTurns).toEqual(["turn 3", "turn 4", "turn 5"]);
 	});
+
+	it("raises a translated breakpoint that precedes a 1h mark to 1h", async () => {
+		const call = await captureAnthropic(chatIR({
+			model: "anthropic/claude-sonnet-5",
+			messages: [
+				{ role: "system", content: [{ type: "text", text: "System", prompt_cache_breakpoint: { mode: "explicit" } }] },
+				{ role: "user", content: [{ type: "text", text: "Long document", cache_control: { type: "ephemeral", ttl: "1h" } }] },
+				{ role: "assistant", content: "a1" },
+				{ role: "user", content: [{ type: "text", text: "Latest turn", cache_control: { type: "ephemeral" } }] },
+			],
+		}));
+		// Anthropic requires longer TTLs first; the trailing 5m mark stays 5m.
+		expect(call.bodyJson.system[0].cache_control).toEqual({ type: "ephemeral", ttl: "1h" });
+		expect(call.bodyJson.messages[0].content[0].cache_control).toEqual({ type: "ephemeral", ttl: "1h" });
+		expect(call.bodyJson.messages[2].content[0].cache_control).toEqual({ type: "ephemeral" });
+	});
 });
 
 describe("R5: documented cache_control on Chat and Responses", () => {
@@ -222,7 +239,8 @@ describe("R5: documented cache_control on Chat and Responses", () => {
 				{ type: "input_text", text: "Apply the policy to this new customer request." },
 			] }],
 			prompt_cache_options: { mode: "explicit", ttl: "30m" },
-			prompt_cache_retention: "24h",
+			// The decoded alias, so the assertion below proves the GPT-5.6 deletion rule.
+			provider_options: { openai: { prompt_cache_retention: "24h" } },
 		}), { providerId: "openai", providerModelSlug: "gpt-5.6-sol", endpoint: "responses", protocol: "openai.responses" })));
 		const body = call.bodyJson;
 		expect(body.input[0].content[0]).toEqual({ type: "input_text", text: "Stable policy document...", prompt_cache_breakpoint: { mode: "explicit" } });
@@ -273,6 +291,39 @@ describe("R5: documented cache_control on Chat and Responses", () => {
 		expect(body.messages[1]).toEqual({ role: "user", content: "Hello" });
 		expect(body.prompt_cache_options).toBeUndefined();
 		expect(body.prompt_cache_retention).toBeUndefined();
+	});
+
+	it("forwards tool and image cache_control to cache-control upstreams on Chat and Responses", () => {
+		const image = "https://example.com/diagram.png";
+		const chat = irToOpenAIChat(chatIR({
+			model: "anthropic/claude-sonnet-5",
+			tools: [{ ...weatherTool, cache_control: { type: "ephemeral" } }],
+			messages: [{ role: "user", content: [
+				{ type: "image_url", image_url: { url: image }, cache_control: { type: "ephemeral" } },
+				{ type: "text", text: "Describe it." },
+			] }],
+		}), "anthropic/claude-sonnet-5", "openrouter");
+		expect(chat.tools[0].cache_control).toEqual({ type: "ephemeral" });
+		expect(chat.messages[0].content[0]).toMatchObject({ type: "image_url", cache_control: { type: "ephemeral" } });
+
+		const responses = irToOpenAIResponses(responsesIR({
+			model: "anthropic/claude-sonnet-5",
+			tools: [{ type: "function", name: "get_weather", parameters: weatherTool.function.parameters, cache_control: { type: "ephemeral" } }],
+			input: [{ role: "user", content: [
+				{ type: "input_image", image_url: image, cache_control: { type: "ephemeral" } },
+				{ type: "input_text", text: "Describe it." },
+			] }],
+		}), "anthropic/claude-sonnet-5", "openrouter");
+		expect(responses.tools[0].cache_control).toEqual({ type: "ephemeral" });
+		expect((responses.input ?? responses.input_items)[0].content[0]).toMatchObject({ type: "input_image", cache_control: { type: "ephemeral" } });
+
+		// Upstreams without Anthropic-style marks still get none.
+		const cerebras = irToOpenAIChat(chatIR({
+			model: "openai/gpt-oss-120b",
+			tools: [{ ...weatherTool, cache_control: { type: "ephemeral" } }],
+			messages: [{ role: "user", content: "Hi" }],
+		}), "gpt-oss-120b", "cerebras");
+		expect(cerebras.tools[0].cache_control).toBeUndefined();
 	});
 
 	it("keeps cache_control for Alibaba Model Studio's explicit cache", () => {
@@ -403,15 +454,16 @@ describe("R2: Gemini tool-call history", () => {
 		expect(contents[1]).toEqual({
 			role: "model",
 			parts: [
-				{ functionCall: { name: "get_weather", args: { city: "Paris" } }, thoughtSignature: GEMINI_SKIP_THOUGHT_SIGNATURE },
-				{ functionCall: { name: "get_weather", args: { city: "Rome" } } },
+				{ functionCall: { id: "call_paris", name: "get_weather", args: { city: "Paris" } }, thoughtSignature: GEMINI_SKIP_THOUGHT_SIGNATURE },
+				{ functionCall: { id: "call_rome", name: "get_weather", args: { city: "Rome" } } },
 			],
 		});
+		// Same-name parallel calls are paired by id, not by order.
 		expect(contents[2]).toEqual({
 			role: "user",
 			parts: [
-				{ functionResponse: { name: "get_weather", response: { temp_c: 18 } } },
-				{ functionResponse: { name: "get_weather", response: { temp_c: 24 } } },
+				{ functionResponse: { id: "call_paris", name: "get_weather", response: { temp_c: 18 } } },
+				{ functionResponse: { id: "call_rome", name: "get_weather", response: { temp_c: 24 } } },
 			],
 		});
 	});
@@ -430,8 +482,8 @@ describe("R2: Gemini tool-call history", () => {
 		expect(contents[1].role).toBe("model");
 		// Gemma has no thought-signature validator, so no placeholder is added.
 		expect(contents[1].parts).toEqual([
-			{ functionCall: { name: "get_weather", args: { city: "Paris" } } },
-			{ functionCall: { name: "get_weather", args: { city: "Rome" } } },
+			{ functionCall: { id: "call_paris", name: "get_weather", args: { city: "Paris" } } },
+			{ functionCall: { id: "call_rome", name: "get_weather", args: { city: "Rome" } } },
 		]);
 		expect(contents[2].parts).toHaveLength(2);
 	});
@@ -588,7 +640,7 @@ describe("A-F10 and H6: prefix stability", () => {
 			system: [{ type: "text", text: "Long policy", cache_control: { type: "ephemeral" } }],
 		}, preset);
 		expect(anthropicStyle.system).toEqual([
-			{ type: "text", text: "Company tone guide." },
+			{ type: "text", text: "Company tone guide.\n\n" },
 			{ type: "text", text: "Long policy", cache_control: { type: "ephemeral" } },
 		]);
 	});

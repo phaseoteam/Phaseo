@@ -7,6 +7,7 @@ import {
     resolveCanonicalTokenUsage,
     resolveRequestCountUsage,
 } from "@core/usage-normalization";
+import { resolveCacheTokenUsage, totalInputTokens } from "@core/cache-usage";
 
 const pickNumber = (obj: any, path: string): number | undefined => {
     if (!obj || typeof obj !== "object") return undefined;
@@ -18,13 +19,6 @@ const pickNumber = (obj: any, path: string): number | undefined => {
     }
     return typeof cur === "number" ? cur : undefined;
 };
-
-const CACHED_READ_SUBSET_PROVIDERS = new Set([
-    "x-ai",
-    "openai",
-    "google",
-    "google-ai-studio",
-]);
 
 /**
  * Remove billing outputs from a usage payload so downstream pricing
@@ -153,49 +147,19 @@ export function shapeUsageForClient(
     }
 
     const canonicalTokens = resolveCanonicalTokenUsage(base);
-    const tokensIn = canonicalTokens.inputTokens;
+    // Client usage follows OpenAI semantics on every surface: input_tokens counts uncached
+    // input, cache reads and cache writes. Providers that report the cache on top of input
+    // (Anthropic) are converted here, so shaping is idempotent and pricing reads one form.
+    const cache = resolveCacheTokenUsage(base, canonicalTokens.inputTokens, { readSubsetDefault: true });
+    const tokensIn = totalInputTokens(canonicalTokens.inputTokens, cache);
     const tokensOut = canonicalTokens.outputTokens;
-    const totalTokens = canonicalTokens.totalTokens;
+    const totalTokens = canonicalTokens.totalTokens + (tokensIn - canonicalTokens.inputTokens);
 
-    const cachedRead =
-        pickNumber(base, "cached_read_text_tokens") ??
-        pickNumber(base, "input_tokens_details.cached_tokens") ??
-        pickNumber(base, "prompt_tokens_details.cached_tokens") ??
-        pickNumber(base, "cached_tokens") ??
-        pickNumber(base, "prompt_cache_hit_tokens") ??
-        pickNumber(base, "cache_read_input_tokens");
-    const cachedWrite =
-        pickNumber(base, "cached_write_text_tokens") ??
-        pickNumber(base, "output_tokens_details.cached_tokens") ??
-        pickNumber(base, "input_tokens_details.cache_creation_input_tokens") ??
-        pickNumber(base, "prompt_tokens_details.cache_creation_input_tokens") ??
-        pickNumber(base, "input_tokens_details.cache_creation_tokens") ??
-        pickNumber(base, "prompt_tokens_details.cache_creation_tokens") ??
-        pickNumber(base, "cache_creation_input_tokens");
-    const cachedWrite5m =
-        pickNumber(base, "cached_write_text_tokens_5m") ??
-        pickNumber(base, "_ext.cachedWriteTokens5m") ??
-        pickNumber(base, "cache_creation.ephemeral_5m_input_tokens") ??
-        pickNumber(base, "cache_creation_5m_input_tokens") ??
-        pickNumber(base, "cache_creation_ephemeral_5m_input_tokens");
-    const cachedWrite1h =
-        pickNumber(base, "cached_write_text_tokens_1h") ??
-        pickNumber(base, "_ext.cachedWriteTokens1h") ??
-        pickNumber(base, "cache_creation.ephemeral_1h_input_tokens") ??
-        pickNumber(base, "cache_creation_1h_input_tokens") ??
-        pickNumber(base, "cache_creation_ephemeral_1h_input_tokens");
+    const cachedRead = cache.readTokens;
+    const cachedWrite = cache.writeTokens;
+    const cachedWrite5m = cache.write5mTokens;
+    const cachedWrite1h = cache.write1hTokens;
     const reasoningTokens = pickNumber(base, "reasoning_tokens") ?? pickNumber(base, "output_tokens_details.reasoning_tokens");
-    const cachedReadIsSubsetHint = ((): boolean => {
-        const explicit = (base as any).cached_read_tokens_are_subset_of_input;
-        if (explicit === false) return false;
-        if (explicit === true) return true;
-        const providerHintRaw =
-            (base as any)._provider_id ??
-            (base as any).provider_id ??
-            (base as any).provider;
-        const providerHint = typeof providerHintRaw === "string" ? providerHintRaw.toLowerCase() : "";
-        return CACHED_READ_SUBSET_PROVIDERS.has(providerHint);
-    })();
 
     // Multimodal signals (prefer tokenized meters, then detail fields, then count-based fallbacks).
     const inputImageTokens =
@@ -237,6 +201,7 @@ export function shapeUsageForClient(
         inputDetails.cache_write_tokens = pickNumber(base, "input_tokens_details.cache_write_tokens") ?? cachedWrite ?? 0;
     }
     if (cachedRead !== undefined) inputDetails.cached_tokens = cachedRead;
+    if (cachedWrite !== undefined) inputDetails.cache_write_tokens = cachedWrite;
     if (inputImages !== undefined) inputDetails.input_images = inputImages;
     if (inputAudio !== undefined) inputDetails.input_audio = inputAudio;
     if (inputVideo !== undefined) inputDetails.input_videos = inputVideo;
@@ -244,7 +209,6 @@ export function shapeUsageForClient(
     const outputDetails: Record<string, number> = {};
     if (nativeDecisions) outputDetails.reasoning_tokens = reasoningTokens ?? 0;
     if (reasoningTokens !== undefined) outputDetails.reasoning_tokens = reasoningTokens;
-    if (cachedWrite !== undefined) outputDetails.cached_tokens = cachedWrite;
     if (outputImages !== undefined) outputDetails.output_images = outputImages;
     if (outputAudio !== undefined) outputDetails.output_audio = outputAudio;
     if (outputVideo !== undefined) outputDetails.output_videos = outputVideo;
@@ -337,8 +301,13 @@ export function shapeUsageForClient(
         shaped.output_tokens_details = outputDetails;
     }
 
-    if (ctx?.includeInternalHints && cachedReadIsSubsetHint && cachedRead !== undefined) {
+    // The shaped totals above already include reads and writes, so the hints are always true
+    // here. They override any raw-usage hints this object is merged over before pricing.
+    if (ctx?.includeInternalHints && cachedRead !== undefined) {
         shaped.cached_read_tokens_are_subset_of_input = true;
+    }
+    if (ctx?.includeInternalHints && cachedWrite !== undefined) {
+        shaped.cached_write_tokens_are_subset_of_input = true;
     }
 
     return shaped;
