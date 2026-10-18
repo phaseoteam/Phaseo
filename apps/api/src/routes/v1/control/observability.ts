@@ -59,15 +59,15 @@ function config(value: unknown): Record<string, string> | null {
 }
 
 function validateEndpoint(type: string, values: Record<string, string>) {
+	if (type !== "webhook" && !otlpProtocol(values)) throw new Error(`otlp_protocol must be one of: ${OTLP_PROTOCOLS.join(", ")}`);
+	// Outside the try: an OTLP preset names the field it is missing.
+	const resolved = broadcastDestinationEndpoint(type, values);
 	let url: URL;
-	try { url = new URL(broadcastDestinationEndpoint(type, values)); } catch { throw new Error("Destination endpoint must be a valid absolute URL"); }
+	try { url = new URL(resolved); } catch { throw new Error("Destination endpoint must be a valid absolute URL"); }
 	if (url.protocol !== "https:" || url.username || url.password) throw new Error("Destination endpoint must use HTTPS without URL credentials");
 	const validated = validateWebhookEndpointUrl(url.toString());
 	if (!validated.ok) throw new Error("Private or loopback destination addresses are not allowed");
-	if (type !== "webhook") {
-		if (!otlpProtocol(values)) throw new Error(`otlp_protocol must be one of: ${OTLP_PROTOCOLS.join(", ")}`);
-		return;
-	}
+	if (type !== "webhook") return;
 	const method = String(values.method ?? "POST").toUpperCase();
 	if (method !== "POST" && method !== "PUT") throw new Error("Webhook method must be POST or PUT");
 	if (values.headers_json?.trim()) {
