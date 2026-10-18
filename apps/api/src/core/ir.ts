@@ -304,7 +304,7 @@ export type IRChatRequest = {
 		compact_threshold?: number;
 	}>;
 	anthropicCacheControl?: IRCacheControl & {
-		scope?: "all_text" | "last_user_message" | "none" | string;
+		scope?: "all_text" | "last_user_message" | "agent" | "conversation" | "none" | string;
 	};
 	googleCachedContent?: string;
 	xaiConversationId?: string;
