@@ -4,7 +4,7 @@
 
 ## Running
 
-Set `ARTIFICIAL_ANALYSIS_API_KEY` in the environment, root `.env.local`, `.env`, or `apps/web/.env.local`. The daily workflow loads it from the `prod` Infisical environment at `/operations` using OIDC. Database access requires `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
+Set `ARTIFICIAL_ANALYSIS_API_KEY` in the environment, root `.env.local`, `.env`, or `apps/web/.env.local`. The hourly workflow loads it from the `prod` Infisical environment at `/operations` using OIDC. Database access requires `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
 
 ```sh
 pnpm data:sync-artificial-analysis --report=artificial-analysis-report.json
@@ -23,7 +23,7 @@ When the key is absent, automatic matching requires creator agreement and a uniq
 
 Unmatched, ambiguous, and disabled models retain previous scores and provenance. Successful matches replace only the four managed metrics; obsolete scores are withdrawn using `effective_to`. Higher Intelligence/Coding/Agentic is better; lower USD cost is better. Major index versions are stored separately.
 
-The free API has a 100-request daily quota; each page costs one request. See the [API documentation](https://artificialanalysis.ai/data-api/docs) for licensing and source details.
+The free API allows 100 requests per 24-hour window, shared by the user or organization; each page costs one request. Hourly runs fit only while a full import takes at most four pages (96 requests, leaving four for manual runs). If pagination or other usage exceeds that budget, reduce the schedule or use a higher-quota plan. The 100-page per-run safety limit does not enforce a shared daily budget. A rate-limit error aborts the import before database writes. See the [API documentation](https://artificialanalysis.ai/data-api/docs) for licensing and source details.
 
 ## Atomic publication and history
 
@@ -53,10 +53,11 @@ the publisher RPC is not deployed yet. No source import is required to initializ
 the existing v4 publication.
 
 The bootstrap is pinned to the verified complete v4.3.2 import. It refuses
-unexpected majors, mixed methodologies, and a missing metric instead of guessing
+future majors, mixed v4 methodologies, and a missing metric instead of guessing
 completion from whichever version has the highest row. A shared table lock keeps
 legacy per-model writers from changing that evidence during capture. If the
 precondition fails, reconcile and verify the import before deployment.
+Retained earlier-major scores are preserved and do not initialize publications.
 
 Rollback application code only; retain snapshot history and the additive schema.
 After deployment, verify the coverage RPC, the bootstrap publication and one

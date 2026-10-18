@@ -12,7 +12,9 @@ IF EXISTS (
   WHERE r.benchmark_id ~ '^aa-(intelligence|coding|agentic)-index(-cost)?-v[1-9][0-9]*$'
     AND (r.effective_to IS NULL OR r.effective_to > now())
     AND r.score_numeric IS NOT NULL AND r.other_info LIKE '%Artificial Analysis ID %'
-    AND (r.benchmark_id !~ '-v4$' OR substring(r.other_info FROM 'Intelligence Index v([0-9]+\.[0-9]+(?:\.[0-9]+)?)') IS DISTINCT FROM '4.3.2')
+    AND (substring(r.benchmark_id FROM '-v([1-9][0-9]*)$')::integer > 4
+      OR (r.benchmark_id ~ '-v4$'
+        AND substring(r.other_info FROM 'Intelligence Index v([0-9]+\.[0-9]+(?:\.[0-9]+)?)') IS DISTINCT FROM '4.3.2'))
 ) THEN RAISE EXCEPTION 'AA bootstrap requires the verified complete v4.3.2 import; reconcile unexpected or mixed methodologies first'; END IF;
 IF EXISTS (SELECT 1 FROM public.v2_benchmark_results r
   WHERE r.benchmark_id = 'aa-intelligence-index-v4' AND (r.effective_to IS NULL OR r.effective_to > now())

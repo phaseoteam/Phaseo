@@ -57,9 +57,13 @@ try {
   await rejects(db.exec(seed), /unexpected or mixed methodologies/);
   assert.equal(await count('artificial_analysis_snapshots'), 0, 'partial future major never bootstraps a publication');
   await db.exec(`delete from public.v2_benchmark_results where result_id='${id(989)}';`);
+  await db.exec(`insert into public.v2_benchmarks(benchmark_id,name) values ('aa-intelligence-index-v3','Historical');
+    insert into public.v2_benchmark_results(result_id,model_slug,benchmark_id,score_numeric,other_info)
+    values ('${id(988)}','lab/one','aa-intelligence-index-v3',40,'Artificial Analysis ID historical; Intelligence Index v3.0');`);
   await db.exec(seed); await db.exec(seed);
   assert.equal(await count('artificial_analysis_snapshots'), 1, 'bootstrap is idempotent and ignores empty v5');
-  assert.equal(await count('v2_benchmark_results'), 4, 'bootstrap does not rewrite existing scores');
+  assert.equal(await count('v2_benchmark_results'), 5, 'bootstrap preserves current and historical scores');
+  assert.equal((await db.query('select major_version from public.artificial_analysis_snapshots')).rows[0].major_version, 4, 'retained v3 does not become a publication');
   assert.equal((await db.query("select published from public.get_artificial_analysis_coverage() where benchmark_id='aa-intelligence-index-v4'")).rows[0].published, true);
   await db.exec('truncate public.artificial_analysis_snapshots, public.v2_benchmark_results, public.v2_benchmarks;');
   for (const role of ['anon', 'authenticated']) {
