@@ -41,6 +41,32 @@ not modify the scheduled API import. Before publication, review unmatched IDs,
 benchmark metadata/scales, and methodology compatibility. Preserve attribution
 to [Artificial Analysis](https://artificialanalysis.ai/models).
 
+### Database storage and page access
+
+After deploying the schema migration, add `--write --match-db` to publish a fresh
+full snapshot. Saved HTML/data cannot be published. Each publication retains all
+source configurations, raw source records, provenance, and the source-to-catalogue
+mapping. The service-only `artificial_analysis_public_snapshots` table is append-only;
+the publisher validates identities and ownership, rejects stale methodology/data,
+and treats identical content as a no-op. The existing four-metric API import and
+its history remain separate. No additional schedule is enabled here.
+
+`GET /api/_web/benchmarks/artificial-analysis/data` returns a bounded page of
+matched, currently visible catalogue configurations. It accepts `model` (canonical
+model slug), `version` (major), `limit` (1–200), and `offset`. The response includes
+the snapshot ID, methodology version and fetch time. Raw source records and the
+unmatched/ambiguous matching report never leave the server through this route.
+The server fetcher `fetchFrontendArtificialAnalysisData` provides the typed page
+contract. Missing publication returns 404; an unavailable storage RPC returns 503.
+
+Stored/displayable fields include benchmark and domain capability scores, token
+totals and weighted per-task token use, costs and timing, price/cache rates,
+performance measurements, context/parameter/modality/licensing details, openness
+and available evaluation breakdowns. Raw upstream fields remain available in the
+private snapshot for future reviewed display additions.
+
+Storage contract test: `node supabase/tests/artificial-analysis-public-data.test.mjs`.
+
 Tests: `pnpm exec tsx --test scripts/artificial-analysis/public-page.test.ts
 scripts/artificial-analysis/core.test.ts`.
 

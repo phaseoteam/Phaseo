@@ -5,6 +5,36 @@ export interface BenchmarkCard {
 	metrics?: ArtificialAnalysisMetric[];
 }
 
+export interface ArtificialAnalysisPublicConfiguration {
+	id: string;
+	model_id: string;
+	name: string;
+	slug: string;
+	effort: string | null;
+	intelligenceIndex: number | null;
+	totalTokens: Record<string, number | null> | null;
+	outputTokensPerTask: Record<string, number | null> | null;
+	totalCostUsd: Record<string, number | null> | null;
+	costPerTaskUsd: Record<string, number | null> | null;
+	timePerTaskSeconds: number | null;
+	benchmarkScores: Record<string, number | null>;
+	capabilityScores: Record<string, number | null> | null;
+	modelDetails: Record<string, unknown>;
+	pricing: Record<string, number | null>;
+	performance: Record<string, unknown>;
+	breakdowns: Record<string, unknown>;
+	evaluations: Array<{ slug: string; score: number | null; outputTokensPerTask: number | null; costPerTaskUsd: number | null; timePerTaskSeconds: number | null }>;
+}
+
+export interface ArtificialAnalysisPublicData {
+	snapshot_id: string;
+	methodology_version: string;
+	fetched_at: string;
+	source_url: string;
+	total: number;
+	models: ArtificialAnalysisPublicConfiguration[];
+}
+
 export interface ArtificialAnalysisMetric {
 	key: "intelligence" | "coding" | "agentic" | "cost";
 	id: string;

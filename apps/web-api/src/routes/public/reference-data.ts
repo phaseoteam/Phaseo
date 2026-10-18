@@ -19,6 +19,21 @@ function policy(tag: string): PublicCachePolicy {
 
 export const publicReferenceDataRouter = new Hono<{ Bindings: Env }>();
 
+publicReferenceDataRouter.get("/benchmarks/artificial-analysis/data", async (c) => {
+	const integer = (value: string | undefined, fallback: number, min: number, max: number) => value === undefined ? fallback : /^\d+$/.test(value) && Number(value) >= min && Number(value) <= max ? Number(value) : null;
+	const limit = integer(c.req.query("limit"), 50, 1, 200);
+	const offset = integer(c.req.query("offset"), 0, 0, 10000);
+	const major = integer(c.req.query("version"), 0, 1, 999);
+	const model = c.req.query("model");
+	if (limit === null || offset === null || major === null || (model !== undefined && (!model || model.length > 200))) return c.json({ error: "invalid_aa_data_selection" }, 400);
+	try {
+		const { data, error } = await getDataClient(c.env).rpc("get_artificial_analysis_public_models", { p_model_slug: model ?? null, p_major: major || null, p_limit: limit, p_offset: offset });
+		if (error) return c.json({ error: "aa_data_unavailable" }, 503);
+		if (!data) return c.json({ error: "aa_data_not_found" }, 404);
+		return withPublicCache(c.json(data), { edgeTtlSeconds: 300, cacheTags: ["web-api-reference-data", "artificial-analysis-public-data"] });
+	} catch { return c.json({ error: "aa_data_unavailable" }, 503); }
+});
+
 function notFound(c: { json: (value: unknown, status: number) => Response }, resource: string) {
 	return c.json({ error: `${resource}_not_found` }, 404);
 }

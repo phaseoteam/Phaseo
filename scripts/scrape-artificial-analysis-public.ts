@@ -1,12 +1,14 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
+import { createHash } from "node:crypto";
 import { extractFullPublicModels, publicDataManifest } from "./artificial-analysis/public-page";
 import { createAdminClient } from "../apps/web/src/utils/supabase/admin";
 import { databaseModelMappings, matchModels, type CatalogModel, type SourceModel } from "./artificial-analysis/core";
 
 async function main() {
-	const { values } = parseArgs({ options: { url: { type: "string", default: "https://artificialanalysis.ai/models" }, input: { type: "string" }, data: { type: "string" }, output: { type: "string" }, "match-db": { type: "boolean" } } });
+	const { values } = parseArgs({ options: { url: { type: "string", default: "https://artificialanalysis.ai/models" }, input: { type: "string" }, data: { type: "string" }, output: { type: "string" }, "match-db": { type: "boolean" }, write: { type: "boolean" } } });
 	if (!values.output) throw new Error("Supply --output <snapshot.json>; optionally --input <saved.html>, --data <saved-data.txt>, and --match-db");
+	if (values.write && (!values["match-db"] || values.input || values.data || values.url !== "https://artificialanalysis.ai/models")) throw new Error("Publication requires a fresh full /models fetch and --match-db");
 	const url = new URL(values.url);
 	if (url.origin !== "https://artificialanalysis.ai" || !/^\/models(?:\/[a-zA-Z0-9._-]+)?\/?$/.test(url.pathname) || url.username || url.password) throw new Error("Use an Artificial Analysis public model page URL");
 	let html: string;
@@ -51,6 +53,13 @@ async function main() {
 	const snapshot = { ...full, fetchedAt: values.input || values.data ? null : extractedAt, extractedAt, matching };
 	// Exclusive creation prevents an accidental overwrite of an earlier source snapshot.
 	writeFileSync(values.output, `${JSON.stringify(snapshot, null, 2)}\n`, { flag: "wx" });
+	if (values.write) {
+		if (snapshot.methodologyVersions.length !== 1 || !matching?.matchedModels) throw new Error("Cannot publish without an unambiguous methodology and matched models");
+		const contentHash = createHash("sha256").update(JSON.stringify({ models: snapshot.models, owners: matching.sources, versions: snapshot.methodologyVersions, dataUrl: snapshot.dataUrl })).digest("hex");
+		const { data, error } = await createAdminClient().rpc("publish_artificial_analysis_public_snapshot", { p_snapshot: { ...snapshot, contentHash } });
+		if (error) throw new Error(`Public snapshot publication failed: ${error.code}`);
+		console.log(JSON.stringify({ publishedSnapshot: data }));
+	}
 	console.log(JSON.stringify({ output: values.output, models: snapshot.models.length, methodologyVersions: snapshot.methodologyVersions, coverage: snapshot.coverage, matchedModels: matching?.matchedModels, matchedConfigurations: matching?.sources.filter((source) => source.model_id).length }));
 }
 

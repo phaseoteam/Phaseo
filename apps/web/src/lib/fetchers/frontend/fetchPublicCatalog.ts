@@ -24,7 +24,7 @@ import type { APIProviderModelListItem } from "@/lib/fetchers/api-providers/prov
 import type { ProviderAppTokenTimeseries, ProviderTokenTimeseries } from "@/lib/fetchers/api-providers/providerDataTypes";
 import type { AppStats, ModelStats, APIProviderUpdates } from "@/lib/fetchers/api-providers/providerDataTypes";
 import type { ProviderMetrics } from "@/lib/fetchers/api-providers/providerDataTypes";
-import type { BenchmarkCard, BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
+import type { ArtificialAnalysisPublicData, BenchmarkCard, BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
 import type { CountryListSummary, CountrySummary } from "@/lib/fetchers/countries/types";
 import { getComparisonModelsCached } from "@/lib/fetchers/compare/getComparisonModels";
 import type { FamilyCard, FamilyInfo } from "@/lib/fetchers/families/types";
@@ -689,6 +689,12 @@ export async function fetchFrontendBenchmark(
 		`/api/_web/benchmarks/${encodeURIComponent(benchmarkId)}${cacheRevision}`,
 	);
 	return payload?.benchmark ?? null;
+}
+
+export async function fetchFrontendArtificialAnalysisData(selection: { model?: string; version?: number; limit?: number; offset?: number } = {}): Promise<ArtificialAnalysisPublicData | null> {
+	const query = new URLSearchParams();
+	for (const [key, value] of Object.entries(selection)) if (value !== undefined) query.set(key, String(value));
+	return fetchOptionalPublicWebApi<ArtificialAnalysisPublicData>(`/api/_web/benchmarks/artificial-analysis/data?${query}`);
 }
 
 export async function fetchFrontendFamilies(): Promise<FamilyCard[]> {
