@@ -811,8 +811,14 @@ function buildIRFromAccumulatedEvents(args: {
 		const toolCalls = accumulator.toolCallOrder
 			.map((key) => accumulator.toolCallsByKey.get(key))
 			.filter((value): value is IRToolCall => Boolean(value));
+		// A stream-wide truncation (Responses response.incomplete) wins over an accumulated
+		// tool call: its arguments may be cut off, and tool_calls would invite running them.
+		const truncated = args.globalFinishReason === "length" || args.globalFinishReason === "content_filter"
+			? args.globalFinishReason
+			: null;
 		const finishReason =
 			accumulator.finishReason ??
+			truncated ??
 			(toolCalls.length > 0 ? "tool_calls" : null) ??
 			args.globalFinishReason ??
 			"stop";

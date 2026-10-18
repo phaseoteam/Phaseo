@@ -126,6 +126,35 @@ describe("Responses upstream ending with response.incomplete (N6)", () => {
 		expect(delta.usage).toMatchObject({ input_tokens: 120, output_tokens: 16 });
 		expect(out[out.length - 1].data.type).toBe("message_stop");
 	});
+
+	/** A function call whose arguments were cut off by max_output_tokens. */
+	function responsesIncompleteToolCall(): Frame[] {
+		const call = { id: "fc_1", type: "function_call", call_id: "call_1", name: "weather", arguments: "{\"city\":\"Ly", status: "incomplete" };
+		return [
+			{ event: "response.created", data: { type: "response.created", response: { id: "resp_2", object: "response", status: "in_progress", model: "gpt-oss", output: [] } } },
+			{ event: "response.output_item.added", data: { type: "response.output_item.added", output_index: 0, item: { ...call, arguments: "" } } },
+			{ event: "response.function_call_arguments.delta", data: { type: "response.function_call_arguments.delta", output_index: 0, item_id: "fc_1", delta: "{\"city\":\"Ly" } },
+			{ event: "response.output_item.done", data: { type: "response.output_item.done", output_index: 0, item: call } },
+			{
+				event: "response.incomplete",
+				data: {
+					type: "response.incomplete",
+					response: { id: "resp_2", object: "response", status: "incomplete", incomplete_details: { reason: "max_output_tokens" }, model: "gpt-oss", output: [call], usage: RESPONSES_USAGE },
+				},
+			},
+		];
+	}
+
+	it("reports a truncated tool call as max_tokens, not tool_use, to Messages clients", async () => {
+		const out = parseFrames(await text(resolveStreamForProtocol(sseResponse(responsesIncompleteToolCall()), args("anthropic.messages"), "responses")));
+		expect(out.find((frame) => frame.data.type === "message_delta")!.data.delta.stop_reason).toBe("max_tokens");
+	});
+
+	it("reports a truncated tool call as length, not tool_calls, to buffered Chat clients", async () => {
+		const stream = resolveStreamForProtocol(sseResponse(responsesIncompleteToolCall()), args("openai.chat.completions"), "responses");
+		const { ir } = await consumeTextProtocolStreamToIR({ protocol: "openai.chat.completions", stream, requestId: "r", model: "m", provider: "groq" });
+		expect(ir.choices[0].finishReason).toBe("length");
+	});
 });
 
 describe("Claude stop reasons on every surface (N5)", () => {

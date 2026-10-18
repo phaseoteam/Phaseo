@@ -973,13 +973,15 @@ function mapResponsesStatusToAnthropicStopReason(
 ): AnthropicStopReason | null {
 	const status = String(response?.status ?? "").toLowerCase();
 	if (status === "failed") return null;
-	if (hasToolUse) return "tool_use";
+	// An incomplete response wins over a tool call: the call's arguments may have been cut
+	// off (max_output_tokens), and reporting tool_use would invite the client to run them.
 	if (status === "incomplete") {
 		const reason = String(response?.incomplete_details?.reason ?? "").toLowerCase();
 		if (reason.includes("stop_sequence")) return "stop_sequence";
 		if (reason.includes("content")) return "refusal";
 		return "max_tokens";
 	}
+	if (hasToolUse) return "tool_use";
 	// Responses has no status for Anthropic's stop_sequence, pause_turn or refusal;
 	// the canonical stream carries them internally (core/finish-reason.ts).
 	const gatewayStop = readGatewayStop(response);
