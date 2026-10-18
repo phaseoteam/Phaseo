@@ -35,9 +35,10 @@ const commandWrites = new Set(["run_command", "start_background_command"]);
 const streamTimeoutMs = 60 * 60_000, streamIdleMs = 180_000;
 /**
  * Anthropic caches nothing unless asked. The gateway's "agent" scope (phaseoteam/Phaseo#2957) places at most four breakpoints
- * that follow a tool loop; before it, gateways mark every user message and reject long chats, so this stays off until it ships.
+ * that follow a tool loop, and cache writes are billed since #2964; both are live, so every Phaseo chat asks for it.
+ * Other providers ignore the hint.
  */
-export const phaseoAnthropicCache = { enabled: false, options: { anthropic: { cache_control: { type: "ephemeral", scope: "agent" } } } };
+export const phaseoAnthropicCache = { enabled: true, options: { anthropic: { cache_control: { type: "ephemeral", scope: "agent" } } } };
 
 /** Gateway client options for a task, carrying its explicit effort and speed choices and a cache key for the chat. */
 export function phaseoGatewayClientOptions(account: Account, key: string, task: Pick<Task, "modelOptions"> & Partial<Pick<Task, "id">>): GatewayAgentClientOptions {
