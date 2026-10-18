@@ -7,6 +7,7 @@
 
 import type { IRChatResponse, IRChoice, IRContentPart } from "@core/ir";
 import { encodeAnthropicThinkingBlock, type ReasoningResponseOrigin } from "../shared/reasoning";
+import { toAnthropicCitations } from "../shared/citations";
 
 /**
  * Anthropic Messages response type
@@ -252,10 +253,11 @@ function encodeOrderedContentParts(parts: IRContentPart[], origin?: ReasoningRes
 	for (const part of parts) {
 		if (part.type === "text") {
 			if (part.text.length > 0) {
+				const citations = toAnthropicCitations(part.annotations, part.text);
 				content.push({
 					type: "text",
 					text: part.text,
-					citations: null,
+					citations: citations.length > 0 ? citations : null,
 				});
 			}
 			continue;

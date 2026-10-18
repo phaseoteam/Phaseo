@@ -3,6 +3,7 @@
 import type { IRChatResponse, IRContentPart, IRToolCall, IRUsage } from "@core/ir";
 import { isSealedReasoningValue } from "@core/reasoning-state";
 import type { Protocol } from "@protocols/detect";
+import { createStreamCitationCollector } from "./stream-citations";
 import { encodeUnifiedStreamEvent, type StreamProtocol } from "@protocols/stream/encode";
 import { extractUnifiedStreamEvents, type UnifiedStreamEvent } from "../after/stream-events";
 import { SseParser } from "@core/sse-parser";
@@ -861,6 +862,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 		sawToolDelta: false,
 		sawContentPartDelta: false,
 	};
+	const citations = createStreamCitationCollector();
 
 	while (true) {
 		const { done, value } = await reader.read();
@@ -890,6 +892,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 			const normalizedPayloadForMeta = resolveRawPayloadForUsage(payload);
 			nativeId = nativeId ?? resolveNativeId(normalizedPayloadForMeta);
 			modelFromStream = modelFromStream ?? resolveModelFromPayload(normalizedPayloadForMeta);
+			citations.observe(eventName, payload);
 			const events = extractUnifiedStreamEvents({
 				protocol: args.protocol,
 				eventName,
@@ -941,6 +944,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 					eventName,
 					frame: payload,
 				});
+				citations.observe(eventName, payload);
 				for (const event of events) {
 					args.onEvent?.(event);
 					if (event.type === "snapshot" && event.isFinal) {
@@ -1028,7 +1032,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 	});
 
 	return {
-		ir,
+		ir: citations.apply(ir),
 		rawResponse: rawResponse ?? null,
 		usageRaw: effectiveUsageRaw,
 		frameCount,

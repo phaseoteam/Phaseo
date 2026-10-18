@@ -9,6 +9,7 @@ import type { IRChatResponse, IRChoice, IRUsage, IRContentPart } from "@core/ir"
 import { irUsageToOpenAIStyle } from "@core/cache-usage";
 import type { GatewayCompletionsResponse, GatewayReasoningDetail, GatewayUsage } from "@core/types";
 import { encodeChatReasoningDetails, type ReasoningResponseOrigin } from "../shared/reasoning";
+import { toChatAnnotations } from "../shared/citations";
 
 /**
  * Encode IR response to OpenAI Chat Completions format (Gateway response)
@@ -56,6 +57,9 @@ function encodeChoice(
 ): GatewayCompletionsResponse["choices"][0] {
 	const { text, reasoningParts, imageParts, audioParts } = splitContentParts(choice.message.content as IRContentPart[]);
 	const reasoningContent = reasoningParts.join("");
+	const contentParts: IRContentPart[] = Array.isArray(choice.message.content) ? choice.message.content : [];
+	const annotations = toChatAnnotations(contentParts.flatMap((part) =>
+		part.type === "text" && Array.isArray(part.annotations) ? part.annotations : []));
 	// Signatures and encrypted reasoning travel in reasoning_details so agent
 	// clients can send them back on the next tool-loop step.
 	const reasoningDetails: GatewayReasoningDetail[] = encodeChatReasoningDetails(
@@ -106,6 +110,7 @@ function encodeChoice(
 			...(images.length > 0 ? { images } : {}),
 			...(audios.length > 0 ? { audios } : {}),
 			...(choice.message.refusal ? { refusal: choice.message.refusal } : {}),
+			...(annotations.length > 0 ? { annotations } : {}),
 			tool_calls: choice.message.toolCalls?.map((tc) => ({
 				id: tc.id,
 				...(tc.type === "custom"

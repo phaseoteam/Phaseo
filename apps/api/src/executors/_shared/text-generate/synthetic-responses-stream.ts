@@ -39,7 +39,22 @@ export function createSyntheticResponsesStreamFromIR(
 					emit(controller, "response.output_item.added", { item, output_index: outputIndex });
 
 					if (item.type === "message") {
-						for (const part of Array.isArray(item.content) ? item.content : []) {
+						for (const [contentIndex, part] of (Array.isArray(item.content) ? item.content : []).entries()) {
+							if (part?.type === "refusal" && typeof part.refusal === "string") {
+								emit(controller, "response.refusal.delta", {
+									item_id: item.id,
+									output_index: outputIndex,
+									content_index: contentIndex,
+									delta: part.refusal,
+								});
+								emit(controller, "response.refusal.done", {
+									item_id: item.id,
+									output_index: outputIndex,
+									content_index: contentIndex,
+									refusal: part.refusal,
+								});
+								continue;
+							}
 							if (part?.type !== "output_text" || typeof part.text !== "string") continue;
 							emit(controller, "response.output_text.delta", {
 								item_id: item.id,
@@ -47,6 +62,15 @@ export function createSyntheticResponsesStreamFromIR(
 								content_index: 0,
 								delta: part.text,
 							});
+							for (const [annotationIndex, annotation] of (Array.isArray(part.annotations) ? part.annotations : []).entries()) {
+								emit(controller, "response.output_text.annotation.added", {
+									item_id: item.id,
+									output_index: outputIndex,
+									content_index: 0,
+									annotation_index: annotationIndex,
+									annotation,
+								});
+							}
 							emit(controller, "response.output_text.done", {
 								item_id: item.id,
 								output_index: outputIndex,
