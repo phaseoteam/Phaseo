@@ -12,10 +12,15 @@ const openApiCopyPath = join(docsRoot, "openapi/localized-copy.json");
 const manifestPath = join(docsRoot, "translation-status.json");
 const locales = ["ar", "de", "es", "fr", "hi", "ja", "pt-BR", "zh-Hans"];
 const pageExtensions = new Set([".md", ".mdx"]);
+// The generated share-image line (scripts/sync-og-images.mjs) changes whenever a
+// title or description does, and is not translated, so it is left out of the hash.
+const OG_IMAGE_LINE = /^"og:image": .*\n/m;
 const hash = (contents) => {
-	const normalized = Buffer.isBuffer(contents)
-		? contents.toString("utf8").replace(/\r\n/g, "\n")
-		: contents.replace(/\r\n/g, "\n");
+	const normalized = (
+		Buffer.isBuffer(contents)
+			? contents.toString("utf8").replace(/\r\n/g, "\n")
+			: contents.replace(/\r\n/g, "\n")
+	).replace(OG_IMAGE_LINE, "");
 	return createHash("sha256").update(normalized).digest("hex");
 };
 
