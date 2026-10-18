@@ -97,6 +97,11 @@ const nextConfig = {
         ],
       },
       {
+        // Client dictionaries are named by their content, so a file never changes.
+        source: "/_i18n/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+      {
         source: "/:locale(en-GB|en-US|es-ES|fr-FR|de-DE|pt-BR|ja|zh-Hans|hi|ar-SA)?/oauth/consent",
         headers: [
           {
