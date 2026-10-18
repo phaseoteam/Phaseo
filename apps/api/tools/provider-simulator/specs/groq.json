@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://storage.googleapis.com/stainless-sdk-openapi-specs/groqcloud/groqcloud-debd965baa031e12228c41e538741fa6055bf2813bcd062840a19f84a17cea95.yml",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:02.033Z",
+		"fetchedAt": "2026-10-18T08:40:56.158Z",
 		"sha256": "ea91f46f212ab4ed66f8278cbe43999c377a76217fa0c980d9cea9470c3ea8de",
 		"handWritten": false,
 		"notes": "Stainless spec URL taken from the last groq/groq-typescript .stats.yml that published one (commit 1df552f, 2026-06-21); newer .stats.yml files omit openapi_spec_url, so this may lag the live API by ~4 months. Server https://api.groq.com."
@@ -3055,5 +3055,21 @@
 				]
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "https://api.groq.com"
+		}
+	],
+	"securitySchemes": {
+		"api_key": {
+			"type": "http",
+			"scheme": "bearer",
+			"bearerFormat": "apiKey"
+		}
+	},
+	"operationPaths": {
+		"chat": "/openai/v1/chat/completions",
+		"responses": "/openai/v1/responses"
 	}
 }

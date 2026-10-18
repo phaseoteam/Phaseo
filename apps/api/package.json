@@ -16,7 +16,7 @@
 		"simulate:pricing": "tsx scripts/pricing-simulator.tsx --all",
 		"simulate:pricing:test": "tsx scripts/test-pricing/pricing-simulator-harness.ts",
 		"simulate:providers": "vitest run --config tools/provider-simulator/vitest.config.ts tools/provider-simulator/simulate.sim.ts",
-		"simulate:providers:test": "vitest run --config tools/provider-simulator/vitest.config.ts tools/provider-simulator/__tests__",
+		"simulate:providers:test": "vitest run --config tools/provider-simulator/vitest.config.ts __tests__",
 		"simulate:providers:refresh-specs": "tsx tools/provider-simulator/scripts/refresh-specs.ts",
 		"test": "pnpm exec vitest run",
 		"test:aimock": "tsx scripts/run-aimock-tests.ts",
@@ -50,7 +50,8 @@
 		"test:live:provider:alpha-beta": "tsx scripts/run-live-provider-tests-alpha-beta.ts",
 		"test:live:nano-banana": "pnpm exec vitest run tests/integration/nano-banana-image.live.spec.ts",
 		"test:live:video:sora": "tsx scripts/sora-video-live.ts",
-		"report:missing-discovered-models": "tsx scripts/report-missing-discovered-models.ts"
+		"report:missing-discovered-models": "tsx scripts/report-missing-discovered-models.ts",
+		"simulate:providers:expectations": "tsx tools/provider-simulator/scripts/build-expectations.ts"
 	},
 	"dependencies": {
 		"@streamparser/json": "0.0.26",

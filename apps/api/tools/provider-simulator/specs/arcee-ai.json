@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://api.arcee.ai/openapi.json",
 		"docs": "https://docs.arcee.ai/api-reference/chat-completion",
-		"fetchedAt": "2026-10-17T17:07:08.041Z",
+		"fetchedAt": "2026-10-18T08:41:03.987Z",
 		"sha256": "c950116d20ff23c6fd1f42e5645f8bfbc8c2a95532f76c94b005edc5520bf30d",
 		"handWritten": false,
 		"notes": "FastAPI spec served by https://api.arcee.ai (no servers block); also contains many /app/v1/* web-app routes to ignore."
@@ -263,5 +263,16 @@
 				"description": "Pinned, safe Open Responses create request.\n\nThe field names are pinned to Open Responses 2026-04-24. Inference values\nintentionally remain loose so OpenRouter owns their semantic validation;\nstructural and server-owned routing fields are still rejected here."
 			}
 		}
+	},
+	"servers": [],
+	"securitySchemes": {
+		"HTTPBearer": {
+			"type": "http",
+			"scheme": "bearer"
+		}
+	},
+	"operationPaths": {
+		"chat": "/v1/chat/completions",
+		"responses": "/v1/responses"
 	}
 }

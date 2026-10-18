@@ -169,6 +169,12 @@ async function refresh(source: Source) {
 		id: source.id,
 		source: { url: source.url, docs: source.docs ?? null, fetchedAt: new Date().toISOString(), sha256, handWritten: false, notes: source.notes ?? "" },
 		...trimmed,
+		// Base URL and authentication, for the upstream URL and header expectations.
+		servers: source.format === "google-discovery"
+			? [{ url: `${doc.rootUrl ?? ""}${doc.servicePath ?? ""}` }]
+			: (Array.isArray(doc.servers) ? doc.servers : doc.host ? [{ url: `https://${doc.host}${doc.basePath ?? ""}` }] : []),
+		securitySchemes: doc.components?.securitySchemes ?? doc.securityDefinitions ?? (doc.auth ? { oauth2: doc.auth } : {}),
+		operationPaths: Object.fromEntries(Object.entries(source.operations).map(([key, op]) => [key, op.path ?? op.discoveryMethod ?? null])),
 	};
 	fs.writeFileSync(path.join(specsDir, `${source.id}.json`), `${JSON.stringify(out, null, "\t")}\n`);
 	console.log(`[refresh-specs] ${source.id}: ${Object.keys(trimmed.operations).join(", ")}; ${Object.keys(trimmed.components.schemas ?? {}).length} schemas`);

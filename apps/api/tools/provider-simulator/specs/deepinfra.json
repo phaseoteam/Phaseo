@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://api.deepinfra.com/openapi.json",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:03.471Z",
+		"fetchedAt": "2026-10-18T08:40:58.585Z",
 		"sha256": "e928e0bf5d3063ef9c8dca1e8a028769894e19e6bd6180de6aa9e05801d5aaeb",
 		"handWritten": false,
 		"notes": "Served live by the API host (server https://api.deepinfra.com). The spec lists chat at /v1/chat/completions, but the gateway code references the /v1/openai prefix and the spec has no /v1/openai/chat/completions path (only /v1/openai/videos*). Assumed (unverified) that both prefixes share the same bo"
@@ -2709,5 +2709,21 @@
 				"title": "FileData"
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "https://api.deepinfra.com"
+		}
+	],
+	"securitySchemes": {
+		"HTTPBearer": {
+			"type": "http",
+			"scheme": "bearer"
+		}
+	},
+	"operationPaths": {
+		"chat": "/v1/chat/completions",
+		"responses": "/v1/responses",
+		"messages": "/anthropic/v1/messages"
 	}
 }

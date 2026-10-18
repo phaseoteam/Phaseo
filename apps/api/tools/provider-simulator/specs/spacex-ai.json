@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://docs.x.ai/openapi.json",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:01.701Z",
+		"fetchedAt": "2026-10-18T08:40:55.733Z",
 		"sha256": "ee418da1de9d6b66648250e1ecb9fdd98cef472dde7b05c66cc9d0db8dad7f1f",
 		"handWritten": false,
 		"notes": "Same file is served at https://api.x.ai/api-docs/openapi.json and https://docs.x.ai/api/openapi.json. Server https://api.x.ai."
@@ -4975,5 +4975,17 @@
 				"description": "A single content block within a tool_result's array content."
 			}
 		}
+	},
+	"servers": [],
+	"securitySchemes": {
+		"bearerAuth": {
+			"type": "http",
+			"scheme": "bearer"
+		}
+	},
+	"operationPaths": {
+		"chat": "/v1/chat/completions",
+		"responses": "/v1/responses",
+		"messages": "/v1/messages"
 	}
 }

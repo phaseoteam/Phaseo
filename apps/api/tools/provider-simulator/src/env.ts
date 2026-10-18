@@ -25,8 +25,19 @@ const FIXED_BINDINGS: Record<string, string> = {
 	NODE_ENV: "test",
 };
 
+/** One in-memory KV for every simulator runtime, so routing decisions written to it can be inspected. */
+const KV_STORE = new Map<string, string>();
+
+export function simulatorKvEntries(): Array<[string, string]> {
+	return Array.from(KV_STORE.entries());
+}
+
+export function clearSimulatorKv(): void {
+	KV_STORE.clear();
+}
+
 function createMemoryKv(): KVNamespace {
-	const store = new Map<string, string>();
+	const store = KV_STORE;
 	return {
 		async get(key: string, type?: string) {
 			const value = store.get(key);

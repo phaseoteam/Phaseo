@@ -21,6 +21,13 @@ import {
 } from "./response-variants";
 import { derivedUsageProfile, requestSchema, resolveSpec, responseSchema, extraUsageFor, usageProfileFor } from "./spec-registry";
 import { validateAgainstSchema, type SchemaIssue } from "./schema";
+import {
+	checkBaseBody, checkBilling, checkClientUsage, checkContentFates, checkFinish, checkMidStream, checkParam, checkStreamOrder,
+	checkSurfaced, checkUpstreamRequest, expectedBilling as expectedBillingFor, expectedUsage, resolveSource,
+} from "./expect/text";
+import { roundTripMismatches } from "./expect/round-trip";
+import { affinityMismatches } from "./expect/affinity";
+import type { Mismatch } from "./expect/types";
 import { comparePrefix, diffBodies, inventedFields, isEmptyDiff, nondeterministicPaths, summariseDiff, traceSentinels } from "./trace";
 
 // ---------------------------------------------------------------------------
@@ -90,6 +97,8 @@ export type RouteResult = {
 	prefix: Array<{ conversation: string; step: number; stable: boolean; divergence?: string }>;
 	responses: ResponseResult[];
 	responseSpecIssues: Partial<Record<Dialect, SchemaIssue[]>>;
+	/** Expected-versus-observed differences for this route (before the allow-list). */
+	mismatches: Mismatch[];
 };
 
 export type ProviderResult = {
@@ -211,6 +220,7 @@ async function simulateRoute(provider: SimProvider, route: RouteUnderTest, scena
 		prefix: [],
 		responses: [],
 		responseSpecIssues: {},
+		mismatches: [],
 	};
 	const baseUpstream = new Map<Surface, any>();
 	const agentBodies = new Map<string, any>();
@@ -270,9 +280,34 @@ async function simulateRoute(provider: SimProvider, route: RouteUnderTest, scena
 			if (scenario.conversation) agentBodies.set(`${scenario.conversation.id}:${scenario.conversation.step}`, body);
 		}
 		result.requests.push(entry);
+		{
+			const ctx = { layer: "executor" as const, provider: provider.providerId, family: "text", model: route.route.apiModelId, surface: scenario.surface, caseId: scenario.id };
+			const dialect = call ? detectDialect(call.url) : "unknown";
+			const upstream = call ? { url: call.url, method: call.method, headers: call.headers, body: call.bodyJson, bodyText: call.bodyText ?? "" } : undefined;
+			const input = {
+				ctx, provider: provider.providerId, dialect, scenario, outcome, clientBody: run.clientBody, upstream,
+				baseBody: baseUpstream.get(scenario.surface), documented: entry.documented,
+				fates: call ? traceSentinels(run.clientBody, call.bodyJson, call.bodyText ?? "") : [],
+			};
+			if (scenario.kind === "param") result.mismatches.push(...checkParam(input));
+			if (scenario.kind === "base") result.mismatches.push(...checkUpstreamRequest(input), ...checkBaseBody(input));
+			if (scenario.kind === "content" || scenario.kind === "tools" || scenario.kind === "agent" || scenario.kind === "cache" || scenario.kind === "reasoning") {
+				result.mismatches.push(...checkContentFates(input));
+				if (outcome.startsWith("rejected")) {
+					result.mismatches.push({
+						...ctx, kind: "error_mapping", path: "client.status", expected: 200, actual: 400,
+						source: resolveSource(scenario.id.endsWith("assistant-null-content") ? { kind: "ref", ref: "openai-sdk-assistant-null" } : { kind: "assumed", reason: "The request shape is documented by the API the surface mirrors (OpenAI Chat/Responses or Anthropic Messages)." }),
+						note: entry.detail,
+					});
+				}
+			}
+			if (outcome === "executor_error" || outcome === "no_upstream_call") {
+				result.mismatches.push({ ...ctx, kind: "error_mapping", path: "upstream.call", expected: "an upstream request", actual: entry.detail, source: { kind: "assumed", reason: "A valid request routed to an active provider must reach that provider." } });
+			}
+		}
 
 		// Determinism: the same client request again under a different request id.
-		if (call && (scenario.kind === "base" || (scenario.kind === "agent" && scenario.conversation?.step === 2))) {
+		if (call && (scenario.kind === "base" || (scenario.kind === "agent" && (scenario.conversation?.step === 2 || scenario.conversation?.step === 40)))) {
 			await new Promise((resolve) => setTimeout(resolve, 3));
 			const again = await runRequest({ scenario, route, requestId: `req_sim_repeat_${counter}` });
 			cancelStream(again);
@@ -280,21 +315,59 @@ async function simulateRoute(provider: SimProvider, route: RouteUnderTest, scena
 				const paths = nondeterministicPaths(call.bodyJson, again.providerCall.bodyJson);
 				const urlDiff = again.providerCall.url !== call.url ? ["<url>"] : [];
 				if (paths.length || urlDiff.length) result.nondeterminism.push({ scenario: scenario.id, paths: [...urlDiff, ...paths.map((p) => `${p.path}: ${JSON.stringify(p.a)} vs ${JSON.stringify(p.b)}`.slice(0, 200))] });
+				for (const p of paths) {
+					result.mismatches.push({
+						layer: "executor", kind: "nondeterminism", provider: provider.providerId, family: "text", model: route.route.apiModelId, surface: scenario.surface, caseId: scenario.id,
+						path: `upstream.body.${p.path.replace(/\[\d+\]/g, "[]")}`, expected: p.a, actual: p.b,
+						source: resolveSource({ kind: "ref", ref: "phaseo-caching-forwarding" }), note: "the same client request produced a different upstream body",
+					});
+				}
 			}
 		}
 	}
 
-	for (const conversation of ["chat-agent", "responses-agent", "messages-agent"]) {
-		for (const step of [2, 3]) {
+	// BYOK: the customer key must be the one that reaches the provider.
+	for (const surface of ["chat", "responses", "messages"] as Surface[]) {
+		const base = scenarios.find((entry) => entry.id === `${surface}.base`);
+		if (!base) continue;
+		const byok = await runRequest({ scenario: base, route, requestId: `req_sim_byok_${surface}`, byokKey: "sim-byok-customer-key-0001" });
+		cancelStream(byok);
+		const ctx = { layer: "executor" as const, provider: provider.providerId, family: "text", model: route.route.apiModelId, surface, caseId: `byok:${surface}.base` };
+		const source = resolveSource({ kind: "gateway-docs", page: "apps/docs/v1/api-reference/endpoint/provider-credentials-create.mdx", note: "A workspace provider credential is used for that provider instead of Phaseo's key." });
+		if (!byok.providerCall) {
+			result.mismatches.push({ ...ctx, kind: "error_mapping", path: "upstream.call", expected: "an upstream request with the customer key", actual: byok.executorError ?? byok.validation.errorDetail, source });
+		} else {
+			const headerValues = Object.values(byok.providerCall.headers).join(" ") + " " + byok.providerCall.url;
+			if (!headerValues.includes("sim-byok-customer-key-0001")) {
+				result.mismatches.push({ ...ctx, kind: "wrong_value", path: "upstream.auth", expected: "customer key", actual: /sim-[a-z0-9-]+/.exec(headerValues)?.[0] ?? "no key", source });
+			}
+			const keySource = (byok.result as any)?.keySource;
+			if (byok.result && keySource !== "byok") result.mismatches.push({ ...ctx, kind: "wrong_value", path: "result.keySource", expected: "byok", actual: keySource, source });
+		}
+	}
+
+	const conversations = new Set(Array.from(agentBodies.keys()).map((key) => key.split(":")[0]));
+	for (const conversation of conversations) {
+		const steps = Array.from(agentBodies.keys()).filter((key) => key.startsWith(`${conversation}:`)).map((key) => Number(key.split(":")[1])).sort((a, b) => a - b);
+		for (const step of steps.slice(1)) {
 			const previous = agentBodies.get(`${conversation}:${step - 1}`);
 			const next = agentBodies.get(`${conversation}:${step}`);
 			if (!previous || !next) continue;
 			const check = comparePrefix(previous, next);
 			result.prefix.push({ conversation, step, stable: check.stable, divergence: check.divergence });
+			if (!check.stable) {
+				result.mismatches.push({
+					layer: "executor", kind: "nondeterminism", provider: provider.providerId, family: "text", model: route.route.apiModelId,
+					surface: conversation.split("-")[0], caseId: `${conversation}.step${step}`, path: "upstream.prefix", expected: "byte-identical prefix", actual: check.divergence,
+					source: resolveSource({ kind: "ref", ref: "phaseo-caching-forwarding" }),
+				});
+			}
 		}
 	}
 
 	result.responses = await simulateResponses(provider, route, scenarios, result);
+	result.mismatches.push(...await roundTripMismatches(provider.providerId, route, scenarios));
+	result.mismatches.push(...await affinityMismatches(provider.providerId, route.route.apiModelId));
 	return result;
 }
 
@@ -427,6 +500,10 @@ async function simulateResponses(provider: SimProvider, route: RouteUnderTest, s
 				} catch (error) {
 					entry.outcome = "materialise_error";
 					entry.detail = errorMessage(error);
+					routeResult.mismatches.push({
+						layer: "executor", kind: "error_mapping", provider: provider.providerId, family: "text", model: route.route.apiModelId, surface, mode, caseId: `resp:${variant.id}`,
+						path: "client.response", expected: "a delivered response", actual: entry.detail, source: { kind: "assumed", reason: "A successful upstream response must reach the client." },
+					});
 					out.push(entry);
 					continue;
 				}
@@ -435,6 +512,24 @@ async function simulateResponses(provider: SimProvider, route: RouteUnderTest, s
 					entry.detail = outcome.materialiseError;
 				}
 				entry.finishReason = finishValue(outcome);
+				{
+					const ctx = { layer: "executor" as const, provider: provider.providerId, family: "text", model: route.route.apiModelId, surface, mode, caseId: `resp:${variant.id}` };
+					const mismatches = routeResult.mismatches;
+					if (variant.error?.kind === "mid_stream") {
+						mismatches.push(...checkMidStream(ctx, outcome, entry.finishReason));
+					} else {
+						mismatches.push(...checkFinish(ctx, surface, entry.finishReason, variant.finish));
+						mismatches.push(...checkStreamOrder(ctx, outcome));
+						if (variant.id === "max" || variant.id === "text" || variant.id === "finish:refusal") mismatches.push(...checkSurfaced({ ctx, outcome, dialect: dialect as Dialect, variant }));
+						const usage = variant.usage === "max"
+							? expectedUsage(dialect as Dialect, profile)
+							: { totalInput: 100_003, output: 5_003 };
+						if (variant.usage === "max") mismatches.push(...checkClientUsage(ctx, outcome, usage));
+						const billing = expectedBillingFor(provider.catalogueId, route.route.apiModelId, route.priceCard, usage, dialect as Dialect);
+						const pricing = outcome.pricing as any;
+						mismatches.push(...checkBilling(ctx, billing, outcome.shapedUsage ? pricing : null, Boolean(outcome.shapedUsage)));
+					}
+				}
 				if (variant.error?.kind === "mid_stream") {
 					// The upstream failed part-way: the client must see an error, never a normal stop.
 					const surfaced = /SIM-ERROR-MID-STREAM|"type":"error"|"status":"failed"|"error":{/.test(outcome.clientText) || Boolean(outcome.materialiseError);

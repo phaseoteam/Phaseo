@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://docs.inceptionlabs.ai/openapi.json",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:09.713Z",
+		"fetchedAt": "2026-10-18T08:41:05.368Z",
 		"sha256": "b27f48098cc6e4a7b7925c2e6b7c74847069af4c509ec66661052c1877d91c81",
 		"handWritten": false,
 		"notes": "Served by docs.inceptionlabs.ai. Server https://api.inceptionlabs.ai. (docs.inceptionlabs.ai/api-reference/openapi.json is an unrelated Mintlify sample.)"
@@ -586,5 +586,21 @@
 				"type": "object"
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "https://api.inceptionlabs.ai",
+			"description": "Production"
+		}
+	],
+	"securitySchemes": {
+		"BearerAuth": {
+			"type": "http",
+			"scheme": "bearer",
+			"description": "API key provided as a Bearer token: `Authorization: Bearer <api_key>`. Get an API key at https://platform.inceptionlabs.ai."
+		}
+	},
+	"operationPaths": {
+		"chat": "/v1/chat/completions"
 	}
 }

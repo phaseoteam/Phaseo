@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://docs.together.ai/openapi.yaml",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:02.572Z",
+		"fetchedAt": "2026-10-18T08:40:56.945Z",
 		"sha256": "4a7b9e7cac217b475361af6c177c46016d44b454e0c2c0bc5c7d77f82cb4e2ac",
 		"handWritten": false,
 		"notes": "Served by docs.together.ai (the API reference .md pages cite openapi.yaml). Server https://api.together.ai/v1. No /responses or /messages path in this spec."
@@ -911,5 +911,26 @@
 				}
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "https://api.together.ai/v1",
+			"description": "Default environment for APIs"
+		},
+		{
+			"url": "https://api-inference.together.ai/v2",
+			"description": "Optimized environment for inference"
+		}
+	],
+	"securitySchemes": {
+		"bearerAuth": {
+			"type": "http",
+			"scheme": "bearer",
+			"x-bearer-format": "bearer",
+			"x-default": "default"
+		}
+	},
+	"operationPaths": {
+		"chat": "/chat/completions"
 	}
 }

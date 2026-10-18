@@ -553,6 +553,68 @@ export function buildClientMatrix(): ClientMatrix {
 		scenarios.push(...params.scenarios);
 		coverage[surface] = { documented: params.documented, schemaDerived: params.derived };
 	}
-	scenarios.push(...chatScenarios(), ...responsesScenarios(), ...messagesScenarios(), ...agentScenarios());
+	scenarios.push(...chatScenarios(), ...responsesScenarios(), ...messagesScenarios(), ...agentScenarios(), ...longAgentScenarios());
 	return { scenarios, coverage };
+}
+
+/**
+ * Long agent turns: N tool steps, each with reasoning, two parallel tool calls and their results, an image in
+ * every fifth tool result. Steps N-1 and N are emitted so the cacheable prefix can be compared between them.
+ */
+export function longAgentScenarios(lengths = [3, 10, 40]): ClientScenario[] {
+	const out: ClientScenario[] = [];
+	const args = (step: number) => JSON.stringify({ sim_arg_city: `SIM-ARG-City-${step}`, sim_arg_units: "c", sim_arg_nested: { sim_arg_depth: 5000 + step } });
+	const chatSteps = (n: number) => {
+		const messages: any[] = [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: USER_TEXT }];
+		for (let step = 1; step < n; step += 1) {
+			messages.push({
+				role: "assistant",
+				reasoning_content: `SIM-REASONING-${step}`,
+				tool_calls: [
+					{ id: `call_SIM_${step}_a`, type: "function", function: { name: "sim_tool_weather", arguments: args(step) } },
+					{ id: `call_SIM_${step}_b`, type: "function", function: { name: "sim_tool_search", arguments: JSON.stringify({ sim_arg_query: `SIM-Q-${step}` }) } },
+				],
+			});
+			messages.push({ role: "tool", tool_call_id: `call_SIM_${step}_a`, content: `SIM-RESULT-${step}-a` });
+			messages.push({ role: "tool", tool_call_id: `call_SIM_${step}_b`, content: step % 5 === 0 ? [{ type: "text", text: `SIM-RESULT-${step}-b` }] : `SIM-RESULT-${step}-b` });
+		}
+		return messages;
+	};
+	const responsesSteps = (n: number) => {
+		const input: any[] = [{ type: "message", role: "user", content: [{ type: "input_text", text: USER_TEXT }] }];
+		for (let step = 1; step < n; step += 1) {
+			input.push({ type: "function_call", call_id: `call_SIM_${step}_a`, name: "sim_tool_weather", arguments: args(step) });
+			input.push({ type: "function_call", call_id: `call_SIM_${step}_b`, name: "sim_tool_search", arguments: JSON.stringify({ sim_arg_query: `SIM-Q-${step}` }) });
+			input.push({ type: "function_call_output", call_id: `call_SIM_${step}_a`, output: `SIM-RESULT-${step}-a` });
+			input.push({
+				type: "function_call_output",
+				call_id: `call_SIM_${step}_b`,
+				output: step % 5 === 0 ? [{ type: "input_text", text: `SIM-RESULT-${step}-b` }, { type: "input_image", image_url: PNG_DATA_URL }] : `SIM-RESULT-${step}-b`,
+			});
+		}
+		return input;
+	};
+	const messagesSteps = (n: number) => {
+		const messages: any[] = [{ role: "user", content: USER_TEXT }];
+		for (let step = 1; step < n; step += 1) {
+			messages.push({ role: "assistant", content: [
+				{ type: "text", text: `SIM-PREAMBLE-${step}` },
+				{ type: "tool_use", id: `toolu_SIM_${step}_a`, name: "sim_tool_weather", input: JSON.parse(args(step)) },
+				{ type: "tool_use", id: `toolu_SIM_${step}_b`, name: "sim_tool_search", input: { sim_arg_query: `SIM-Q-${step}` } },
+			] });
+			messages.push({ role: "user", content: [
+				{ type: "tool_result", tool_use_id: `toolu_SIM_${step}_a`, content: `SIM-RESULT-${step}-a` },
+				{ type: "tool_result", tool_use_id: `toolu_SIM_${step}_b`, content: step % 5 === 0 ? [{ type: "text", text: `SIM-RESULT-${step}-b` }, { type: "image", source: { type: "base64", media_type: "image/png", data: PNG_BASE64 } }] : `SIM-RESULT-${step}-b` },
+			] });
+		}
+		return messages;
+	};
+	for (const n of lengths) {
+		for (const step of [n - 1, n]) {
+			out.push({ id: `chat.agent${n}.step${step}`, surface: "chat", kind: "agent", conversation: { id: `chat-agent${n}`, step }, body: { messages: chatSteps(step), tools: chatTools(), tool_choice: "auto", prompt_cache_key: "sim-pck-agent-02" } });
+			out.push({ id: `responses.agent${n}.step${step}`, surface: "responses", kind: "agent", conversation: { id: `responses-agent${n}`, step }, body: { instructions: SYSTEM_PROMPT, input: responsesSteps(step), tools: responsesTools(), tool_choice: "auto", prompt_cache_key: "sim-pck-agent-02" } });
+			out.push({ id: `messages.agent${n}.step${step}`, surface: "messages", kind: "agent", conversation: { id: `messages-agent${n}`, step }, body: { max_tokens: 4096, system: SYSTEM_PROMPT, messages: messagesSteps(step), tools: messagesTools(), tool_choice: { type: "auto" } } });
+		}
+	}
+	return out;
 }

@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://docs.z.ai/openapi.json",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:05.198Z",
+		"fetchedAt": "2026-10-18T08:41:01.474Z",
 		"sha256": "7f6180b5813f06e7d34566471e85f0ebbe024fcf39a9bd79c7034f3c4b4de638",
 		"handWritten": false,
 		"notes": "Served by docs.z.ai. Server https://api.z.ai/api. Coding-plan and Anthropic-compatible endpoints are not in this spec."
@@ -1053,5 +1053,21 @@
 				"additionalProperties": true
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "https://api.z.ai/api",
+			"description": "Production server"
+		}
+	],
+	"securitySchemes": {
+		"bearerAuth": {
+			"type": "http",
+			"scheme": "bearer",
+			"description": "Use the following format for authentication: Bearer [<your api key>](https://z.ai/manage-apikey/apikey-list)"
+		}
+	},
+	"operationPaths": {
+		"chat": "/paas/v4/chat/completions"
 	}
 }

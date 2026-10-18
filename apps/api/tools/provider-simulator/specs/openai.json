@@ -3,8 +3,8 @@
 	"source": {
 		"url": "https://raw.githubusercontent.com/openai/openai-openapi/main/openapi.yaml",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:06:56.912Z",
-		"sha256": "2fa40050a4a4a85c3bf16bb20f3083fd32674cab360cb0aa98d05d2693f96025",
+		"fetchedAt": "2026-10-18T08:40:49.323Z",
+		"sha256": "5ee00b466cb48a392c91773f62f1ca93392ec1bb26b52e0381af7fad0e4817a4",
 		"handWritten": false,
 		"notes": "Official openai/openai-openapi repo (default branch main, last commit 2026-10-17). Server https://api.openai.com/v1. A JSON twin is at .../main/openapi.json. /chat/completions also has GET (list stored completions)."
 	},
@@ -11926,5 +11926,24 @@
 				"description": "Inline skill payload"
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "https://api.openai.com/v1"
+		}
+	],
+	"securitySchemes": {
+		"ApiKeyAuth": {
+			"type": "http",
+			"scheme": "bearer"
+		},
+		"AdminApiKeyAuth": {
+			"type": "http",
+			"scheme": "bearer"
+		}
+	},
+	"operationPaths": {
+		"chat": "/chat/completions",
+		"responses": "/responses"
 	}
 }

@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://docs.morphllm.com/api-reference/openapi.json",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:10.718Z",
+		"fetchedAt": "2026-10-18T08:41:06.677Z",
 		"sha256": "94e639b0e59bf422c0dd931e3406190e83adf192c7dfc11647313303d5b15d23",
 		"handWritten": false,
 		"notes": "Served by docs.morphllm.com. Server https://api.morphllm.com."
@@ -614,5 +614,23 @@
 				}
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "https://api.morphllm.com",
+			"description": "Production"
+		}
+	],
+	"securitySchemes": {
+		"bearerAuth": {
+			"type": "http",
+			"scheme": "bearer",
+			"bearerFormat": "opaque",
+			"description": "Morph API key, passed as `Authorization: Bearer sk-...`. Create keys at https://www.morphllm.com/dashboard/api-keys."
+		}
+	},
+	"operationPaths": {
+		"chat": "/v1/chat/completions",
+		"messages": "/v1/messages"
 	}
 }

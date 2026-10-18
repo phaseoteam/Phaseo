@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://www.scaleway.com/en/developers/api/generative-apis/v1/schema.yml",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:14.478Z",
+		"fetchedAt": "2026-10-18T08:41:10.363Z",
 		"sha256": "c1a72d1665c7af8548cd529c5b62d3390f5d96a4c54af09e961bd360ac66cf61",
 		"handWritten": false,
 		"notes": "\"Download schema\" link on the API reference. Server https://api.scaleway.ai; project_id path segment is optional in practice (examples use https://api.scaleway.ai/v1/chat/completions). curl on this machine failed the TLS chain for scaleway.com; fetched with Node."
@@ -1115,5 +1115,15 @@
 				"type": "object"
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "https://api.scaleway.ai"
+		}
+	],
+	"securitySchemes": {},
+	"operationPaths": {
+		"chat": "/{project_id}/v1/chat/completions",
+		"responses": "/{project_id}/v1/responses"
 	}
 }

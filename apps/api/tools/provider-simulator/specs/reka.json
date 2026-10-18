@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://docs.reka.ai/openapi/api-reference.json",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:12.331Z",
+		"fetchedAt": "2026-10-18T08:41:08.168Z",
 		"sha256": "db3f6f55120538163a169701bfd6463d66376a321d384269bb3d27e1062009d2",
 		"handWritten": false,
 		"notes": "Listed on https://docs.reka.ai/openapi.json (an HTML index, not a spec). Server https://api.reka.ai/v1. A second spec (openapi/api-reference-2.json) is the Vision Agent API."
@@ -486,5 +486,21 @@
 				"title": "ContentPartVideoUrl"
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "https://api.reka.ai/v1",
+			"description": "https://api.reka.ai/v1"
+		}
+	],
+	"securitySchemes": {
+		"BearerAuth": {
+			"type": "http",
+			"scheme": "bearer",
+			"description": "Your Reka API key, sent as `Authorization: Bearer <key>`."
+		}
+	},
+	"operationPaths": {
+		"chat": "/chat/completions"
 	}
 }

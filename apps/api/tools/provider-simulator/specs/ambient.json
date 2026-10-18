@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://api.ambient.xyz/openapi.json",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:07.182Z",
+		"fetchedAt": "2026-10-18T08:41:03.239Z",
 		"sha256": "01253185db3009dc5e22bed79cb4a36ed9e5af1cae25e79acb5e3c4230a8a937",
 		"handWritten": false,
 		"notes": "Served live by the API host (no servers block; base https://api.ambient.xyz)."
@@ -7565,5 +7565,17 @@
 				"title": "LogprobTopLogprob"
 			}
 		}
+	},
+	"servers": [],
+	"securitySchemes": {
+		"HTTPBearer": {
+			"type": "http",
+			"scheme": "bearer"
+		}
+	},
+	"operationPaths": {
+		"chat": "/v1/chat/completions",
+		"responses": "/v1/responses",
+		"messages": "/v1/messages"
 	}
 }

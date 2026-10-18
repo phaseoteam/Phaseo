@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://docs.relace.ai/api-reference/openapi.json",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:12.862Z",
+		"fetchedAt": "2026-10-18T08:41:08.659Z",
 		"sha256": "aececdd88251b29569bc5494c531995cd9c15786970f8bbd96ac3f036f0b63f7",
 		"handWritten": false,
 		"notes": "Served by docs.relace.ai. Servers https://models.relace.ai (models) and https://api.relace.run (infra)."
@@ -309,5 +309,32 @@
 				}
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "https://models.relace.ai",
+			"description": "Server for model API endpoints"
+		},
+		{
+			"url": "https://api.relace.run",
+			"description": "Server for general infrastructure"
+		}
+	],
+	"securitySchemes": {
+		"bearerAuth": {
+			"type": "http",
+			"scheme": "bearer",
+			"description": "Relace API key Authorization header using the Bearer scheme."
+		},
+		"apiKeyAuth": {
+			"type": "apiKey",
+			"in": "header",
+			"name": "x-api-key",
+			"description": "Relace API key in the `x-api-key` header, as the Anthropic SDKs send it. Accepted on `/v1/messages` only."
+		}
+	},
+	"operationPaths": {
+		"chat": "/v1/chat/completions",
+		"messages": "/v1/messages"
 	}
 }

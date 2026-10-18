@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://oai.endpoints.kepler.ai.cloud.ovh.net/openapi.json",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:11.866Z",
+		"fetchedAt": "2026-10-18T08:41:07.656Z",
 		"sha256": "e84f4e00279453579538c7a9081bce3f7df1da3ea205b5163c15f220eb32559e",
 		"handWritten": false,
 		"notes": "Served by the unified AI Endpoints host (title \"OpenAI Compatible API\" 0.3.11). Per-model hosts may expose their own specs."
@@ -4429,5 +4429,11 @@
 				]
 			}
 		}
+	},
+	"servers": [],
+	"securitySchemes": {},
+	"operationPaths": {
+		"chat": "/v1/chat/completions",
+		"responses": "/v1/responses"
 	}
 }

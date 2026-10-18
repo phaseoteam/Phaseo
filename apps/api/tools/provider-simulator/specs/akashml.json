@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://api.akashml.com/openapi.json",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:05.858Z",
+		"fetchedAt": "2026-10-18T08:41:02.095Z",
 		"sha256": "e4ff35993783ff3b338635d4899c8c79d2a66a49449ac3a9621dcf26ec0f61e8",
 		"handWritten": false,
 		"notes": "Served live by the API host. Server https://api.akashml.com."
@@ -484,5 +484,22 @@
 	},
 	"components": {
 		"schemas": {}
+	},
+	"servers": [
+		{
+			"url": "https://api.akashml.com",
+			"description": "Production"
+		}
+	],
+	"securitySchemes": {
+		"BearerAuth": {
+			"type": "http",
+			"scheme": "bearer",
+			"description": "API key passed as Bearer token"
+		}
+	},
+	"operationPaths": {
+		"chat": "/v1/chat/completions",
+		"messages": "/anthropic/v1/messages"
 	}
 }

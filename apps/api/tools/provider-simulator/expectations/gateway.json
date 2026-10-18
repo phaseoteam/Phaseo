@@ -1,0 +1,64 @@
+{
+	"note": "Phaseo client-surface semantics the simulator asserts. Every block names its source.",
+	"baseBody": {
+		"note": "Keys a base upstream body may contain without the client asking. Anything else is reported as invented. 'ifSpecDefines' keys are allowed only when the provider spec defines them.",
+		"source": { "kind": "ref", "ref": "assumed-gateway-streams-upstream" },
+		"openai-chat": { "always": ["model", "messages", "stream"], "ifSpecDefines": ["stream_options"] },
+		"openai-responses": { "always": ["model", "input", "instructions", "stream"], "ifSpecDefines": [] },
+		"anthropic-messages": { "always": ["model", "messages", "system", "stream", "max_tokens", "anthropic_version"], "ifSpecDefines": [] },
+		"gemini": { "always": ["contents", "systemInstruction", "generationConfig"], "ifSpecDefines": [] },
+		"gemini-interactions": { "always": ["model", "input", "system_instruction", "stream", "generation_config"], "ifSpecDefines": [] },
+		"anthropicMaxTokens": { "source": { "kind": "ref", "ref": "anthropic-messages" }, "note": "max_tokens is required by the Messages API, so a default is expected when the client sends none." }
+	},
+	"finish": {
+		"source": { "kind": "ref", "ref": "assumed-finish-translation" },
+		"chat": { "stop": ["stop"], "length": ["length"], "tool_calls": ["tool_calls"], "content_filter": ["content_filter"], "stop_sequence": ["stop"], "refusal": ["stop", "content_filter"], "pause_turn": ["stop"] },
+		"responses": { "stop": ["completed"], "length": ["incomplete:max_output_tokens"], "tool_calls": ["completed"], "content_filter": ["incomplete:content_filter"], "stop_sequence": ["completed"], "refusal": ["completed"], "pause_turn": ["completed"] },
+		"messages": { "stop": ["end_turn"], "length": ["max_tokens"], "tool_calls": ["tool_use"], "content_filter": ["refusal"], "stop_sequence": ["stop_sequence"], "refusal": ["refusal"], "pause_turn": ["pause_turn"] },
+		"sources": { "chat": { "kind": "ref", "ref": "openai-chat-object" }, "responses": { "kind": "ref", "ref": "openai-responses-object" }, "messages": { "kind": "ref", "ref": "anthropic-messages" } }
+	},
+	"usage": {
+		"source": { "kind": "ref", "ref": "phaseo-caching-usage" },
+		"chat": { "input": "prompt_tokens", "cachedRead": "prompt_tokens_details.cached_tokens", "cacheWrite": "prompt_tokens_details.cache_write_tokens", "output": "completion_tokens", "reasoning": "completion_tokens_details.reasoning_tokens", "inputIncludesCache": true },
+		"responses": { "input": "input_tokens", "cachedRead": "input_tokens_details.cached_tokens", "cacheWrite": "input_tokens_details.cache_write_tokens", "output": "output_tokens", "reasoning": "output_tokens_details.reasoning_tokens", "inputIncludesCache": true },
+		"messages": { "input": "input_tokens", "cachedRead": "cache_read_input_tokens", "cacheWrite": "cache_creation_input_tokens", "cacheWrite5m": "cache_creation.ephemeral_5m_input_tokens", "cacheWrite1h": "cache_creation.ephemeral_1h_input_tokens", "output": "output_tokens", "inputIncludesCache": false },
+		"upstreamSemantics": {
+			"openai": { "source": { "kind": "ref", "ref": "openai-chat-object" }, "note": "prompt_tokens includes cached reads and (where reported) cache writes." },
+			"anthropic": { "source": { "kind": "ref", "ref": "anthropic-messages" }, "note": "input_tokens excludes cache reads and writes." },
+			"gemini": { "source": { "kind": "ref", "ref": "gemini-usage" }, "note": "Input is promptTokenCount + toolUsePromptTokenCount; output is candidatesTokenCount + thoughtsTokenCount; cachedContentTokenCount is part of promptTokenCount." }
+		}
+	},
+	"billing": {
+		"source": { "kind": "ref", "ref": "phaseo-caching-pricing" },
+		"fallbackWriteMultiplier": { "anthropic-5m": 1.25, "anthropic-1h": 2, "openai": 1.25, "azure": 1.25, "alibaba-cloud": 1.25, "kimi-5m": 1, "kimi-1h": 2, "default": 1 },
+		"toleranceNanos": 2
+	},
+	"surfaced": {
+		"note": "Response concepts each client surface must carry, by upstream dialect where it matters.",
+		"text": { "chat": "choices.0.message.content", "responses": "output[].content[].text", "messages": "content[].text", "source": { "kind": "ref", "ref": "openai-chat-object" } },
+		"toolCallIds": { "source": { "kind": "ref", "ref": "openai-chat-object" }, "note": "Upstream tool-call ids must reach the client unchanged so tool results can reference them." },
+		"toolArguments": { "source": { "kind": "ref", "ref": "openai-chat-object" } },
+		"reasoningText": { "chat": { "kind": "gateway-docs", "page": "apps/docs/v1/api-reference/endpoint/chat-completions.mdx", "note": "## Reasoning in tool loops: reasoning_content and reasoning_details" }, "responses": { "kind": "gateway-docs", "page": "apps/docs/v1/api-reference/endpoint/responses.mdx", "note": "## Reasoning in tool loops: reasoning output items" }, "messages": { "kind": "ref", "ref": "anthropic-thinking" } },
+		"reasoningState": {
+			"note": "Signatures, redacted thinking and encrypted reasoning must reach the client in some form and must come back to the same provider family on the next step (round trip).",
+			"chat": { "kind": "gateway-docs", "page": "apps/docs/v1/api-reference/endpoint/chat-completions.mdx", "note": "reasoning_details carry Claude signatures, redacted thinking, OpenAI encrypted reasoning and Gemini thought signatures; Phaseo sends them back only to the same family and model." },
+			"responses": { "kind": "gateway-docs", "page": "apps/docs/v1/api-reference/endpoint/responses.mdx", "note": "reasoning items carry encrypted_content for OpenAI, Azure, xAI, Claude and Gemini." },
+			"messages": { "kind": "ref", "ref": "anthropic-thinking" }
+		},
+		"citations": { "chat": { "kind": "ref", "ref": "openai-chat-object" }, "responses": { "kind": "spec", "spec": "apps/docs/openapi/v1/openapi.yaml", "path": "#/components/schemas/ResponsesResponse/properties/output/items/properties/content/items/properties/annotations" }, "messages": { "kind": "docs", "url": "https://docs.anthropic.com/en/docs/build-with-claude/citations" } },
+		"refusal": { "chat": { "kind": "ref", "ref": "openai-chat-object" }, "responses": { "kind": "ref", "ref": "openai-responses-object" }, "messages": { "kind": "ref", "ref": "anthropic-messages" } }
+	},
+	"streamGrammar": {
+		"chat": { "source": { "kind": "ref", "ref": "openai-chat-streaming" }, "rules": ["every data frame is a chat.completion.chunk", "exactly one finish_reason across chunks", "usage chunk (empty choices) after the finish chunk when usage is reported", "[DONE] is the last frame"] },
+		"responses": { "source": { "kind": "ref", "ref": "openai-responses-streaming" }, "rules": ["response.created first", "output_item.added before any delta of that item", "one terminal response.completed | response.incomplete | response.failed and it is last", "sequence_number strictly increasing when present"] },
+		"messages": { "source": { "kind": "ref", "ref": "anthropic-streaming" }, "rules": ["message_start first", "content_block_start(i) before its deltas and content_block_stop(i) after; blocks do not interleave", "message_delta after the last content_block_stop", "message_stop last"] }
+	},
+	"midStream": {
+		"source": { "kind": "ref", "ref": "phaseo-streaming" },
+		"note": "When the upstream fails after output starts, the client must see a failure (error event, response.failed, or an error status for buffered clients) and never a successful terminal event."
+	},
+	"affinity": {
+		"source": { "kind": "ref", "ref": "phaseo-caching-affinity" },
+		"note": "A request carrying prompt_cache_key or cache_control pins the provider after the first successful response."
+	}
+}

@@ -443,6 +443,7 @@ jobs:
               run: |
                   pnpm run validate:api
                   pnpm --filter @phaseo/gateway-api exec vitest run src/executors/_shared/text-generate/openai-compat/__tests__/execute.test.ts
+                  pnpm --filter @phaseo/gateway-api simulate:providers:test
                   cd apps/api && pnpm exec tsx scripts/pricing-simulator-cli.ts
 
             - name: Docs validation

@@ -256,13 +256,22 @@ export function integerLeafPaths(doc: SchemaDocument, schema: Schema | undefined
 	return Array.from(new Set(out.filter(Boolean)));
 }
 
-/** Top-level documented property names of a request schema. */
+/**
+ * Documented properties of a schema, including those of its oneOf/anyOf branches. A property defined by several
+ * branches becomes a union of their schemas, so no single branch's enum or const wins.
+ */
 export function topLevelProperties(doc: SchemaDocument, schema: Schema | undefined): Record<string, Schema> {
 	const shape = flatten(doc, schema);
-	const props = { ...shape.properties };
+	const collected = new Map<string, Schema[]>();
+	const add = (props: Record<string, Schema>) => {
+		for (const [key, value] of Object.entries(props)) collected.set(key, [...(collected.get(key) ?? []), value]);
+	};
+	add(shape.properties);
 	for (const variantList of shape.variants) {
-		for (const variant of variantList) Object.assign(props, flatten(doc, variant).properties);
+		for (const variant of variantList) add(flatten(doc, variant).properties);
 	}
+	const props: Record<string, Schema> = {};
+	for (const [key, list] of collected) props[key] = list.length === 1 ? list[0] : { anyOf: list };
 	return props;
 }
 
@@ -270,11 +279,16 @@ export function enumValuesOf(doc: SchemaDocument, schema: Schema | undefined, de
 	const shape = flatten(doc, schema);
 	if (shape.enumValues) return shape.enumValues;
 	if (depth > 4) return null;
+	// A union is an enum only when every branch is one (an open string branch accepts anything).
 	const merged: unknown[] = [];
 	for (const variantList of shape.variants) {
 		for (const variant of variantList) {
 			const inner = enumValuesOf(doc, variant, depth + 1);
-			if (inner) merged.push(...inner);
+			if (!inner) {
+				if (typeOf(doc, variant).some((type) => type !== "null")) return null;
+				continue;
+			}
+			merged.push(...inner);
 		}
 	}
 	return merged.length ? Array.from(new Set(merged)) : null;

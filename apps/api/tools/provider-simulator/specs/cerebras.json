@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://storage.googleapis.com/stainless-sdk-openapi-specs/cerebras/cerebras-cloud-5471bd6d34fdddff21977458788b979ce93f6b080e11ff0d35777182b6615baa.yml",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:02.057Z",
+		"fetchedAt": "2026-10-18T08:40:56.332Z",
 		"sha256": "130749c46caf3000582192de027116e2c396b5cdf19d6235259dcbf978381d12",
 		"handWritten": false,
 		"notes": "Stainless spec from Cerebras/cerebras-cloud-sdk-node .stats.yml (updated 2026-07-08). Server https://api.cerebras.ai. The docs site also embeds a newer per-operation spec (see additionalSpecs)."
@@ -2257,5 +2257,15 @@
 				"type": "object"
 			}
 		}
+	},
+	"servers": [],
+	"securitySchemes": {
+		"HTTPBearer": {
+			"scheme": "bearer",
+			"type": "http"
+		}
+	},
+	"operationPaths": {
+		"chat": "/v1/chat/completions"
 	}
 }

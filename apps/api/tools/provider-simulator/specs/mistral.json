@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://docs.mistral.ai/openapi.yaml",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:01.942Z",
+		"fetchedAt": "2026-10-18T08:40:55.926Z",
 		"sha256": "0a8661df8379c4ba3f69a66fc61e447a2bd247bd6639d459d9b6683faea1f9d9",
 		"handWritten": false,
 		"notes": "Served by docs.mistral.ai (current). An older copy exists at raw.githubusercontent.com/mistralai/platform-docs-public/main/openapi.yaml (661 KB, stale). Server https://api.mistral.ai (gateway also uses api.eu.mistral.ai)."
@@ -2240,5 +2240,42 @@
 				]
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "https://api.mistral.ai",
+			"description": "Production server"
+		}
+	],
+	"securitySchemes": {
+		"DashboardUserContextAuth": {
+			"type": "apiKey",
+			"description": "Public API key. The gateway validates the key and forwards authenticated user context to the dashboard.",
+			"name": "x-api-key",
+			"in": "header"
+		},
+		"BearerUserContextAuth": {
+			"type": "http",
+			"description": "Bearer token. The gateway validates the token and forwards authenticated user context to the dashboard.",
+			"scheme": "bearer"
+		},
+		"DashboardUserOrServiceAccountContextAuth": {
+			"type": "apiKey",
+			"description": "Public API key. The gateway validates the key and forwards authenticated user context to the dashboard.",
+			"name": "x-api-key",
+			"in": "header"
+		},
+		"AdminApiKey": {
+			"type": "http",
+			"description": "Admin-scoped API key passed as a bearer token. Standard workspace/inference API keys are rejected.",
+			"scheme": "bearer"
+		},
+		"ApiKey": {
+			"type": "http",
+			"scheme": "bearer"
+		}
+	},
+	"operationPaths": {
+		"chat": "/v1/chat/completions"
 	}
 }

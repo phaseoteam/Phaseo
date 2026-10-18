@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://storage.googleapis.com/stainless-sdk-openapi-specs/sambanova/sambanova-50fb2e3f57f67505e5e7230bf1191aaa021757640fd2c889fe30d5228a240f80.yml",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:03.584Z",
+		"fetchedAt": "2026-10-18T08:40:59.012Z",
 		"sha256": "f4182353d907fd813cac37d73f4e22c20eae7683eb4dc578cc583daadf77b822",
 		"handWritten": false,
 		"notes": "Stainless spec from the last SambaNova/sambanova-python .stats.yml that published one (commit 6e9c54e, 2026-06-25). Base https://api.sambanova.ai/v1."
@@ -6999,5 +6999,29 @@
 				}
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "https://api.sambanova.ai/v1"
+		}
+	],
+	"securitySchemes": {
+		"api_key": {
+			"type": "http",
+			"description": "SambaNova API key, sent as a bearer token in the `Authorization` header (`Authorization: Bearer <key>`). Default authentication scheme used by the SambaNova SDK across every OpenAI compatible endpoint.",
+			"scheme": "bearer",
+			"bearerFormat": "apiKey"
+		},
+		"x_api_key": {
+			"type": "apiKey",
+			"description": "SambaNova API key, sent in the `x-api-key` header. Accepted on the Messages API routes (`/messages`, `/messages/count_tokens`) so that callers can point the official Anthropic SDK at SambaNova by swapping `base_url` — no code changes. The credential value is the same as the bearer `api_key` scheme; only the transport differs.",
+			"in": "header",
+			"name": "x-api-key"
+		}
+	},
+	"operationPaths": {
+		"chat": "/chat/completions",
+		"responses": "/responses",
+		"messages": "/messages"
 	}
 }

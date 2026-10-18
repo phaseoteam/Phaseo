@@ -121,6 +121,8 @@ export async function runRequest(args: {
 	onProviderCall?: (call: CapturedRequest) => ResponseVariant | void;
 	/** Client streaming mode; production always streams upstream and materialises buffered clients. */
 	clientStream?: boolean;
+	/** Run with a customer key (BYOK, priority routing) instead of the managed key. */
+	byokKey?: string;
 }): Promise<RequestRun> {
 	const { scenario, route, requestId } = args;
 	const endpoint = SURFACE_ENDPOINT[scenario.surface];
@@ -229,7 +231,9 @@ export async function runRequest(args: {
 		capabilityParams: route.route.capabilityParams as any,
 		maxInputTokens: route.route.contextLength,
 		maxOutputTokens: route.route.maxOutputTokens,
-		byokMeta: [],
+		byokMeta: args.byokKey
+			? [{ id: "byok_sim_0001", providerId: route.providerId, fingerprintSha256: "sim", keyVersion: null, alwaysUse: true, routingMode: "priority", key: args.byokKey }]
+			: [],
 		pricingCard: route.priceCard,
 		upstreamTiming: tracker.timing,
 		hasAlternateCandidates: false,
@@ -247,7 +251,7 @@ export async function runRequest(args: {
 			authMethod: "api_key",
 			oauthClientId: null,
 			oauthUserId: null,
-			forceGatewayKey: true,
+			forceGatewayKey: !args.byokKey,
 		},
 	};
 	const captured = await withCapturedFetch(

@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://platform.moonshot.ai/docs/openapi.json",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:04.887Z",
+		"fetchedAt": "2026-10-18T08:41:00.938Z",
 		"sha256": "c160b187366dc261236200ba48f8a5441dd9f557b364b9325b07d589e5c8cfbf",
 		"handWritten": false,
 		"notes": "Served from the Kimi platform docs site. Server https://api.moonshot.ai."
@@ -2981,5 +2981,23 @@
 				]
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "https://api.moonshot.ai",
+			"description": "Production"
+		}
+	],
+	"securitySchemes": {
+		"bearerAuth": {
+			"type": "http",
+			"scheme": "bearer",
+			"description": "The Authorization header expects a Bearer token. Use an MOONSHOT_API_KEY as the token. This is a server-side secret key. Generate one on the [API keys page](https://platform.kimi.ai/console/api-keys) in your dashboard."
+		}
+	},
+	"operationPaths": {
+		"chat": "/v1/chat/completions",
+		"responses": "/v1/responses",
+		"messages": "/anthropic/v1/messages"
 	}
 }

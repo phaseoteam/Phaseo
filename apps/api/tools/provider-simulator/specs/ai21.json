@@ -3,8 +3,8 @@
 	"source": {
 		"url": "https://api.ai21.com/openapi.json",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:05.482Z",
-		"sha256": "4fe9d3e70b0e4d85eed1f64cc2db2a34e5af02db2d4db893b27084fc6b0c5064",
+		"fetchedAt": "2026-10-18T08:41:01.788Z",
+		"sha256": "00989e549b0be5be5867dae9e9f594161c4abfd4b41c49e054a0eb765ffc84e5",
 		"handWritten": false,
 		"notes": "FastAPI spec served by the API host (no servers block); base https://api.ai21.com. Also contains many Studio app endpoints."
 	},
@@ -799,5 +799,10 @@
 				"title": "ToolFunctionDelta"
 			}
 		}
+	},
+	"servers": [],
+	"securitySchemes": {},
+	"operationPaths": {
+		"chat": "/studio/v1/chat/completions"
 	}
 }

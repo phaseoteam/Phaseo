@@ -31,7 +31,8 @@ export function traceSentinels(clientBody: any, upstreamBody: any, upstreamText:
 			continue;
 		}
 		if (typeof leaf.value === "string" && upstreamText.includes(JSON.stringify(leaf.value).slice(1, -1))) {
-			out.push({ clientPath: leaf.path, value: leaf.value, fate: "stringified", upstreamPaths: [] });
+			const holders = upstreamLeaves.filter((candidate) => typeof candidate.value === "string" && candidate.value.includes(leaf.value as string)).map((candidate) => candidate.path);
+			out.push({ clientPath: leaf.path, value: leaf.value, fate: "stringified", upstreamPaths: holders.slice(0, 4) });
 			continue;
 		}
 		// A JSON string (tool-call arguments) is often sent upstream parsed: trace the values inside it.

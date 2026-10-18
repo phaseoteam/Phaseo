@@ -3,13 +3,15 @@
 //   SIM_PROVIDERS=anthropic,openai pnpm --filter @phaseo/gateway-api simulate:providers
 // Writes results/<provider>.json, results/summary.json and results/MATRIX.md. No network access.
 
-import { it } from "vitest";
+import { expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { setupSimulatorRuntime, teardownSimulatorRuntime } from "./src/env";
 import { runSimulation } from "./src/run";
 import { writeReports } from "./src/report";
+import { runGate } from "./src/expect/gate";
+import { writeCoverage } from "./src/expect/coverage";
 import { buildClientMatrix } from "./src/client-requests";
 import { listSimProviders } from "./src/providers";
 
@@ -25,6 +27,7 @@ it("simulates every registered text provider", async () => {
 		results.sort((a, b) => (order.get(a.providerId) ?? 999) - (order.get(b.providerId) ?? 999));
 		const previous = fs.existsSync(path.join(resultsDir, "summary.json")) ? JSON.parse(fs.readFileSync(path.join(resultsDir, "summary.json"), "utf8")) : null;
 		writeReports({ resultsDir, matrix: buildClientMatrix(), results, durationMs: previous?.durationMs ?? 0, partial: false });
+		gate(resultsDir);
 		return;
 	}
 	setupSimulatorRuntime();
@@ -40,4 +43,13 @@ it("simulates every registered text provider", async () => {
 	});
 	writeReports({ resultsDir, matrix, results, durationMs: Date.now() - started, partial: Boolean(providers?.length) });
 	teardownSimulatorRuntime();
+	gate(resultsDir);
 });
+
+/** Fails the run when a mismatch is not on the allow-list (set SIM_NO_GATE=1 to only write the report). */
+function gate(resultsDir: string) {
+	writeCoverage(resultsDir);
+	const { summary } = runGate(resultsDir);
+	if (process.env.SIM_NO_GATE) return;
+	expect(summary.failing, `${summary.failing} mismatches are not on the allow-list; see ${path.join(resultsDir, "EXPECTATIONS.md")}`).toBe(0);
+}

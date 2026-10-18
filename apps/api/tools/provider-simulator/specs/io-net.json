@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://io.net/docs/openapi/ai-models/create-chat-completion.json",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:10.289Z",
+		"fetchedAt": "2026-10-18T08:41:05.959Z",
 		"sha256": "188cb371c6a47702c2fedb74e8032a93f992aba09d85b5a53165644fcaa5f506",
 		"handWritten": false,
 		"notes": "Single-operation spec referenced by the Mintlify page https://io.net/docs/reference/ai-models/create-chat-completion. Server https://api.intelligence.io.solutions."
@@ -1494,5 +1494,19 @@
 				"title": "VideoURL"
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "https://api.intelligence.io.solutions"
+		}
+	],
+	"securitySchemes": {
+		"sec0": {
+			"type": "oauth2",
+			"flows": {}
+		}
+	},
+	"operationPaths": {
+		"chat": "/api/v1/chat/completions"
 	}
 }

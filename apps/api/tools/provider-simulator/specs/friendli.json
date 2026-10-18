@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://friendli.ai/docs/openapi.yaml",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:09.194Z",
+		"fetchedAt": "2026-10-18T08:41:04.930Z",
 		"sha256": "38fb43993a112267dd8e595f30704425a6dc853e59aad08d7ffbad13c03d18fe",
 		"handWritten": false,
 		"notes": "Served by friendli.ai/docs. Server https://api.friendli.ai. Streaming variants appear as separate \"#stream\" path keys (e.g. /serverless/v1/chat/completions#stream), a Mintlify convention, not real URLs."
@@ -2497,5 +2497,21 @@
 				"title": "MessagesUrlImageSource"
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "https://api.friendli.ai"
+		}
+	],
+	"securitySchemes": {
+		"token": {
+			"type": "http",
+			"description": "When using Friendli Suite API for inference requests, you need to provide a **Friendli Token** for authentication and authorization purposes.\n\nFor more detailed information, please refer [here](https://friendli.ai/docs/openapi/introduction#authentication).",
+			"scheme": "bearer"
+		}
+	},
+	"operationPaths": {
+		"chat": "/serverless/v1/chat/completions",
+		"messages": "/serverless/v1/messages"
 	}
 }

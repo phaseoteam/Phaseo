@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://app.stainless.com/api/spec/documented/anthropic/openapi.documented.yml",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:06:59.086Z",
+		"fetchedAt": "2026-10-18T08:40:51.595Z",
 		"sha256": "417e17b257863bb1bb2c23f1bf69e08bc46e7678efab9c223557111da801387f",
 		"handWritten": false,
 		"notes": "Stainless \"documented\" spec, served live by app.stainless.com (current). Beta variants are separate paths suffixed ?beta=true. Server https://api.anthropic.com."
@@ -9554,5 +9554,14 @@
 				"type": "object"
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "https://api.anthropic.com"
+		}
+	],
+	"securitySchemes": {},
+	"operationPaths": {
+		"messages": "/v1/messages"
 	}
 }

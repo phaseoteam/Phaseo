@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://api.mor.org/api/v1/openapi.json",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:11.316Z",
+		"fetchedAt": "2026-10-18T08:41:07.308Z",
 		"sha256": "a2247c9f4fd910af69ec8925d35c3760231e50bf72b8a198196909df978121bd",
 		"handWritten": false,
 		"notes": "FastAPI spec from the Morpheus API Gateway (v1.50.0). Base https://api.mor.org."
@@ -506,5 +506,39 @@
 				"description": "File reference for file content parts."
 			}
 		}
+	},
+	"servers": [],
+	"securitySchemes": {
+		"OAuth2": {
+			"type": "oauth2",
+			"flows": {
+				"authorizationCode": {
+					"authorizationUrl": "https://auth.mor.org/oauth2/authorize",
+					"tokenUrl": "https://auth.mor.org/oauth2/token",
+					"scopes": {
+						"aws.cognito.signin.user.admin": "Read own user attributes (GetUser)",
+						"openid": "OpenID Connect authentication",
+						"email": "Access to email address",
+						"profile": "Access to profile information"
+					}
+				}
+			},
+			"description": "🚀 OAuth2 authentication via secure identity provider"
+		},
+		"BearerAuth": {
+			"type": "http",
+			"scheme": "bearer",
+			"bearerFormat": "JWT",
+			"description": "🎫 JWT Bearer token from OAuth2 login or direct token"
+		},
+		"APIKeyAuth": {
+			"type": "apiKey",
+			"in": "header",
+			"name": "Authorization",
+			"description": "🗝️ API key in format: 'Bearer sk-xxxxxx'"
+		}
+	},
+	"operationPaths": {
+		"chat": "/api/v1/chat/completions"
 	}
 }

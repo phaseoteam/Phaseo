@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://storage.googleapis.com/stainless-sdk-openapi-specs/meta%2Fllama-api-edf0a308dd29bea2feb29f2e7f04eec4dbfb130ffe52511641783958168f60a4.yml",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:10.337Z",
+		"fetchedAt": "2026-10-18T08:41:06.232Z",
 		"sha256": "edf0a308dd29bea2feb29f2e7f04eec4dbfb130ffe52511641783958168f60a4",
 		"handWritten": false,
 		"notes": "Llama API Stainless spec from meta-llama/llama-api-typescript .stats.yml (last updated 2025-10-01, likely stale). Spec server is http://api.llama.com while the Phaseo gateway config uses https://api.meta.ai - confirm which API the provider id targets."
@@ -628,5 +628,14 @@
 				]
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "http://api.llama.com"
+		}
+	],
+	"securitySchemes": {},
+	"operationPaths": {
+		"chat": "/chat/completions"
 	}
 }

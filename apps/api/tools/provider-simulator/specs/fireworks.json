@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://storage.googleapis.com/stainless-sdk-openapi-specs/fireworks-ai/fireworks-ai-65b17041c3092296c4492a7bb6a368b62cb49c14a7bea6e8f053261641d8a0cc.yml",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:02.766Z",
+		"fetchedAt": "2026-10-18T08:40:57.622Z",
 		"sha256": "29a1e4db152cc9622ca27ae4a9ff310dd3ca650e27ac88a502badfb9b08b2477",
 		"handWritten": false,
 		"notes": "Stainless spec from fw-ai-external/python-sdk .stats.yml (last updated 2026-05-01; may lag). No servers block; base is https://api.fireworks.ai/inference (chat at https://api.fireworks.ai/inference/v1/chat/completions). The docs page embeds a newer chat-only spec (additionalSpecs)."
@@ -4607,5 +4607,19 @@
 				"type": "object"
 			}
 		}
+	},
+	"servers": [],
+	"securitySchemes": {
+		"BearerAuth": {
+			"type": "http",
+			"scheme": "bearer",
+			"description": "Bearer authentication using your Fireworks API key. Format: Bearer <API_KEY>",
+			"bearerFormat": "API_KEY"
+		}
+	},
+	"operationPaths": {
+		"chat": "/v1/chat/completions",
+		"responses": "/v1/responses",
+		"messages": "/v1/messages"
 	}
 }

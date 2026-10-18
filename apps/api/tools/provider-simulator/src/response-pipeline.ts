@@ -35,6 +35,8 @@ export type ClientOutcome = {
 	clientText: string;
 	clientJson: any;
 	frames: any[];
+	/** Streaming only: the stream ended with data: [DONE]. */
+	sawDone?: boolean;
 	materialiseError?: string;
 };
 
@@ -124,18 +126,28 @@ function productionRewriteFrame(ctx: any, card: PriceCard | null, provider: stri
 	};
 }
 
-function parseSse(text: string): any[] {
+function parseSse(text: string): { frames: any[]; sawDone: boolean } {
 	const frames: any[] = [];
+	let sawDone = false;
 	for (const block of text.split(/\n\n+/)) {
-		const data = block.split("\n").filter((line) => line.startsWith("data:")).map((line) => line.slice(5).trim()).join("\n");
-		if (!data || data === "[DONE]") continue;
+		const lines = block.split("\n");
+		const event = lines.find((line) => line.startsWith("event:"))?.slice(6).trim();
+		const data = lines.filter((line) => line.startsWith("data:")).map((line) => line.slice(5).trim()).join("\n");
+		if (!data) continue;
+		if (data === "[DONE]") {
+			sawDone = true;
+			continue;
+		}
 		try {
-			frames.push(JSON.parse(data));
+			const frame = JSON.parse(data);
+			// Keep the SSE event name where the data frame does not repeat it.
+			if (event && frame && typeof frame === "object" && frame.type === undefined) frame.type = event;
+			frames.push(frame);
 		} catch {
 			// ignore non-JSON frames
 		}
 	}
-	return frames;
+	return { frames, sawDone };
 }
 
 function lastUsageInFrames(frames: any[]): any {
@@ -171,7 +183,7 @@ async function streamingClient(result: Extract<ExecutorResult, { kind: "stream" 
 	const clientText = await response.text();
 	const timeout = new Promise<{ usage: any }>((resolve) => setTimeout(() => resolve({ usage: undefined }), 2_000));
 	const final = await Promise.race([finalUsage, timeout]);
-	const frames = parseSse(clientText);
+	const { frames, sawDone } = parseSse(clientText);
 
 	// pipeline/after/stream.ts:478: usage from the final frame, else the latest usage frame, else the executor bill.
 	const latestFrameUsage = (() => {
@@ -203,6 +215,7 @@ async function streamingClient(result: Extract<ExecutorResult, { kind: "stream" 
 		clientText,
 		clientJson: null,
 		frames,
+		sawDone,
 	};
 }
 

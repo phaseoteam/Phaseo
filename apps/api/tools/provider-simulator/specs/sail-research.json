@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://docs.sailresearch.com/openapi.json",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:13.288Z",
+		"fetchedAt": "2026-10-18T08:41:09.059Z",
 		"sha256": "b2cfc5c22b138402677043f4e09fb7e19d935fda7021620ae80b1fece4ae0916",
 		"handWritten": false,
 		"notes": "Served by docs.sailresearch.com. Server https://api.sailresearch.com/v1."
@@ -1784,5 +1784,27 @@
 				"additionalProperties": false
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "https://api.sailresearch.com/v1"
+		}
+	],
+	"securitySchemes": {
+		"BearerAuth": {
+			"type": "http",
+			"scheme": "bearer",
+			"bearerFormat": "API Key"
+		},
+		"AnthropicApiKey": {
+			"type": "apiKey",
+			"in": "header",
+			"name": "x-api-key"
+		}
+	},
+	"operationPaths": {
+		"chat": "/chat/completions",
+		"responses": "/responses",
+		"messages": "/messages"
 	}
 }

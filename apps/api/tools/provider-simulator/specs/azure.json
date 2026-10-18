@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/ai/data-plane/OpenAI.v1/azure-v1-v1-generated.json",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:06:57.111Z",
+		"fetchedAt": "2026-10-18T08:40:49.590Z",
 		"sha256": "9fade08c5d30751828e67fecca63b3800567c802d1d6c4c91bba3d193843f7a8",
 		"handWritten": false,
 		"notes": "Azure OpenAI v1 GA data-plane spec (TypeSpec-generated, OpenAPI 3.2.0). Server is {endpoint}/openai/v1, i.e. https://<resource>.openai.azure.com/openai/v1; model is the deployment name in the body. The older dated /openai/deployments/{deployment-id}/chat/completions?api-version=... surface lives in "
@@ -3803,5 +3803,44 @@
 				}
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "{endpoint}/openai/v1",
+			"description": "Azure AI Foundry Models APIs",
+			"variables": {
+				"endpoint": {
+					"default": "",
+					"description": "A supported Azure AI Foundry Models APIs endpoint, including protocol and hostname.\nFor example:\nhttps://westus.api.cognitive.microsoft.com)."
+				}
+			}
+		}
+	],
+	"securitySchemes": {
+		"ApiKeyAuth": {
+			"type": "apiKey",
+			"in": "header",
+			"name": "api-key"
+		},
+		"ApiKeyAuth_": {
+			"type": "apiKey",
+			"in": "header",
+			"name": "authorization"
+		},
+		"OAuth2Auth": {
+			"type": "oauth2",
+			"flows": {
+				"implicit": {
+					"authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+					"scopes": {
+						"https://cognitiveservices.azure.com/.default": ""
+					}
+				}
+			}
+		}
+	},
+	"operationPaths": {
+		"chat": "/chat/completions",
+		"responses": "/responses"
 	}
 }

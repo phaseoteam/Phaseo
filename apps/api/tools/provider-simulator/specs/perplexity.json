@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://storage.googleapis.com/stainless-sdk-openapi-specs/perplexity-ai/perplexity-9fca0405579d6d1a2b8e686dfa59daaaf3a60d0627d0638c8079c6d85a4ff7d9.yml",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:03.512Z",
+		"fetchedAt": "2026-10-18T08:40:58.780Z",
 		"sha256": "bcca72d3b56449e9dc1695edda584a1461dc1ad6d81188778b2314040dc01d48",
 		"handWritten": false,
 		"notes": "Stainless spec from perplexityai/perplexity-node .stats.yml on branch next (updated 2026-07-17). Server https://api.perplexity.ai. Note chat is /chat/completions (no /v1) while responses is /v1/responses."
@@ -3812,5 +3812,16 @@
 				"title": "SearchRecencyFilter"
 			}
 		}
+	},
+	"servers": [],
+	"securitySchemes": {
+		"HTTPBearer": {
+			"type": "http",
+			"scheme": "bearer"
+		}
+	},
+	"operationPaths": {
+		"chat": "/chat/completions",
+		"responses": "/v1/responses"
 	}
 }

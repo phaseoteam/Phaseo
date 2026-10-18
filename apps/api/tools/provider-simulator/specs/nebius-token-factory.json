@@ -3,7 +3,7 @@
 	"source": {
 		"url": "https://api.tokenfactory.nebius.com/openapi.json",
 		"docs": null,
-		"fetchedAt": "2026-10-17T17:07:11.690Z",
+		"fetchedAt": "2026-10-18T08:41:07.525Z",
 		"sha256": "bbc566f661a089b6dbc257c1902a6c966d3afc416bbad75abb01faf7763f45a4",
 		"handWritten": false,
 		"notes": "Served live by the API host (same file at api.studio.nebius.com). Title \"Nebius OpenAI-compatible inference API\", version 20261015."
@@ -9582,5 +9582,20 @@
 				"description": "Inline skill payload"
 			}
 		}
+	},
+	"servers": [
+		{
+			"url": "https://api.tokenfactory.nebius.com"
+		}
+	],
+	"securitySchemes": {
+		"HTTPBearer": {
+			"type": "http",
+			"scheme": "bearer"
+		}
+	},
+	"operationPaths": {
+		"chat": "/v1/chat/completions",
+		"responses": "/v1/responses"
 	}
 }
