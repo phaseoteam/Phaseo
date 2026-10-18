@@ -130,7 +130,7 @@ export function compare(card: SweepCard, entry: PricingCase, expected: ExpectedB
 	const noteParts = [...(entry.notes ?? [])];
 	for (const line of expected.lines) if (line.fallback) noteParts.push(`${line.meter}: ${line.fallback}`);
 
-	if (!actual.ok) {
+	if (actual.ok === false) {
 		const meter = /:(\w+)/.exec(actual.error)?.[1];
 		mismatches.push({
 			...shared,

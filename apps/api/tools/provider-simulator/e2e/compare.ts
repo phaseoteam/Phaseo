@@ -70,9 +70,17 @@ function evaluateBilling(obs: Observation, spec: BillingSpec, cards: CardLookup)
 	const actual = obs.billing.chargeNanos;
 	const diff = actual - expectedNanos;
 	const extra: NonNullable<Verdict["extra"]> = [];
+	// An unpriced meter may be folded into its target, or kept and billed at the target's rate
+	// (pricing_fallback: input_rate in the prompt-caching guide); both are correct, so compare the sum.
+	const observedMeters = { ...obs.billing.meters };
+	for (const [from, to] of Object.entries(spec.foldUnpriced ?? {})) {
+		if (meters[from] !== undefined || !observedMeters[from]) continue;
+		observedMeters[to] = (observedMeters[to] ?? 0) + observedMeters[from];
+		delete observedMeters[from];
+	}
 	if (factor === 1) {
 		for (const line of expected.lines) {
-			const observed = obs.billing.meters[line.meter] ?? 0;
+			const observed = observedMeters[line.meter] ?? 0;
 			if (observed === line.quantity) continue;
 			const tokens = observed - line.quantity;
 			const nanos = line.pricePerUnit === null ? 0 : Math.round((tokens * line.pricePerUnit * 1e9) / (line.unitSize || 1));
@@ -85,7 +93,7 @@ function evaluateBilling(obs: Observation, spec: BillingSpec, cards: CardLookup)
 				note: line.pricePerUnit === null ? "the card has no rule for this meter" : undefined,
 			});
 		}
-		for (const [meter, quantity] of Object.entries(obs.billing.meters)) {
+		for (const [meter, quantity] of Object.entries(observedMeters)) {
 			if (meters[meter] !== undefined || !quantity) continue;
 			const line = obs.billing.lines.find((entry) => entry.meter === meter);
 			if (!line || line.lineNanos <= 0) continue;

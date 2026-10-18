@@ -189,7 +189,7 @@ it("prices every active route against an independent oracle", async () => {
 				continue;
 			}
 			// A meter the card prices that this request leaves without a rule (unpriced, or priced only by a fallback).
-			const cardMeters = new Set(card.rules.map((rule) => rule.meter));
+			const cardMeters = new Set<string>(card.rules.map((rule) => rule.meter));
 			const gapMeters = [...bill.unpriced.map((u) => u.meter), ...bill.lines.filter((line) => line.fallback && line.pricedAs !== "output_reasoning_tokens").map((line) => line.meter)];
 			for (const meter of gapMeters) {
 				const gapKey = `${card.key}|${meter}`;
@@ -204,7 +204,7 @@ it("prices every active route against an independent oracle", async () => {
 			evaluated.push({ entry, bill });
 
 			const actual = runEngine(card, entry, engine);
-			if (!actual.ok) {
+			if (actual.ok === false) {
 				const key = actual.error.replace(/:.*/, "");
 				totals.engineErrors[key] = (totals.engineErrors[key] ?? 0) + 1;
 			}

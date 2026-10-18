@@ -100,6 +100,12 @@ describe("evaluateCheck", () => {
 		expect(verdict.extra?.[0]).toMatchObject({ kind: "billing_under", path: "billing.meter.input_text_tokens", delta: { tokens: -1_000, nanos: -3_000_000, meter: "input_text_tokens" } });
 	});
 
+	it("accepts an unpriced meter billed at its fold target's rate", () => {
+		const billing = { ...observation().billing, meters: { input_text_tokens: 800, cached_read_text_tokens: 200 }, lines: [{ meter: "input_text_tokens", quantity: 800, lineNanos: 2_400_000 }, { meter: "cached_read_text_tokens", quantity: 200, lineNanos: 600_000 }] };
+		const check: Check = { path: "billing", op: "billing", value: { meters: { input_text_tokens: 800, cached_read_text_tokens: 200 }, foldUnpriced: { cached_read_text_tokens: "input_text_tokens" } }, source: assumed };
+		expect(evaluateCheck(observation({ billing }), check, () => RULES)).toMatchObject({ pass: true, extra: [] });
+	});
+
 	it("applies a fee factor without per-meter comparison", () => {
 		const obs = observation({ billing: { ...observation().billing, charges: [150_000], chargeNanos: 150_000, meters: { requests: 1 } } });
 		const check: Check = { path: "billing", op: "billing", value: { meters: { input_text_tokens: 2_000 }, factor: 0.025 }, source: assumed };

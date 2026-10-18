@@ -6,7 +6,7 @@
 import type { CaseDef } from "../types";
 import { route } from "./shared";
 
-function bytes(size: number, header: number[]): Uint8Array {
+function bytes(size: number, header: number[]): Uint8Array<ArrayBuffer> {
 	const out = new Uint8Array(size);
 	out.set(header);
 	return out;

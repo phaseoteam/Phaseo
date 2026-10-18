@@ -119,7 +119,7 @@ export function checkCard(card: SweepCard, _route: SweepRoute | null): Mismatch[
 		}
 	}
 
-	const meters = new Set(card.rules.map((rule) => rule.meter));
+	const meters = new Set<string>(card.rules.map((rule) => rule.meter));
 	const aggregateOverlaps = [
 		["input_tokens", "input_text_tokens"],
 		["output_tokens", "output_text_tokens"],
