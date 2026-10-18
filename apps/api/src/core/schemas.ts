@@ -492,9 +492,22 @@ export const EmbeddingsSchema = lazySchema(() => z.object({
 export type EmbeddingsRequest = z.infer<typeof EmbeddingsSchema>;
 
 // Chat Completions schema
+// Cache marks on Chat content blocks: OpenAI's prompt_cache_breakpoint and the
+// documented Anthropic-style cache_control. Without them the schema stripped
+// both before decoding.
+const PromptCacheBreakpointSchema = lazySchema(() => z.object({
+	mode: z.string().optional(),
+}).passthrough());
+
+const ContentCacheMarkFields = () => ({
+	cache_control: CacheControlSchema.optional(),
+	prompt_cache_breakpoint: PromptCacheBreakpointSchema.optional(),
+});
+
 const TextPartSchema = lazySchema(() => z.object({
     type: z.literal("text"),
     text: z.string(),
+    ...ContentCacheMarkFields(),
 }));
 
 const ImageUrlPartSchema = lazySchema(() => z.object({
@@ -503,6 +516,7 @@ const ImageUrlPartSchema = lazySchema(() => z.object({
         url: z.string().min(1),
 		detail: z.enum(["auto", "low", "high", "original"]).optional(),
     }),
+    ...ContentCacheMarkFields(),
 }));
 
 const InputAudioPartSchema = lazySchema(() => z.object({
@@ -575,6 +589,7 @@ const ToolCallSchema = lazySchema(() => z.object({
 const FunctionToolSchema = lazySchema(() => z.object({
 	type: z.literal("function"),
 	async: z.boolean().optional(),
+	cache_control: CacheControlSchema.optional(),
 	function: z.object({
 		name: z.string(),
 		description: z.string().optional(),
@@ -820,6 +835,11 @@ export const ChatCompletionsSchema = lazySchema(() => z.object({
                 name: z.string().optional(),
                 tool_calls: z.array(ToolCallSchema).optional(),
                 reasoning_content: z.string().optional(),
+                // OpenRouter-style alias for reasoning_content.
+                reasoning: z.string().optional(),
+                // Reasoning blocks with signatures or encrypted reasoning, sent
+                // back unchanged from an earlier response.
+                reasoning_details: z.array(z.record(z.string(), z.unknown())).optional(),
             }),
             z.object({
                 role: z.literal("tool"),

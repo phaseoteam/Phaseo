@@ -57,6 +57,7 @@ public final class Models {
 	}
 
 	public static class AnthropicMessagesRequest {
+		public Object cache_control;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public Integer max_tokens;
@@ -100,6 +101,9 @@ public final class Models {
 	}
 
 	public static class AnthropicUsage {
+		public Object cache_creation;
+		public Integer cache_creation_input_tokens;
+		public Integer cache_read_input_tokens;
 		public Integer input_tokens;
 		public Integer output_tokens;
 	}
@@ -540,6 +544,7 @@ public final class Models {
 	}
 
 	public static class ChatCompletionsRequest {
+		public Object cache_control;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public Double frequency_penalty;
@@ -558,6 +563,8 @@ public final class Models {
 		public Boolean parallel_tool_calls;
 		public Double presence_penalty;
 		public String prompt_cache_key;
+		public Object prompt_cache_options;
+		public Object prompt_cache_retention;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
@@ -603,9 +610,22 @@ public final class Models {
 		public Object content;
 		public java.util.List<Object> images;
 		public String name;
+		public String reasoning_content;
+		public java.util.List<Object> reasoning_details;
 		public Object role;
 		public String tool_call_id;
 		public java.util.List<Object> tool_calls;
+	}
+
+	public static class ChatReasoningDetail {
+		public String data;
+		public String format;
+		public String id;
+		public Integer index;
+		public String signature;
+		public String summary;
+		public String text;
+		public Object type;
 	}
 
 	public static class CreditsResponse {
@@ -1114,6 +1134,7 @@ public final class Models {
 
 	public static class FunctionToolDefinition {
 		public Boolean async;
+		public Object cache_control;
 		public Object function;
 		public Object type;
 	}
@@ -1647,6 +1668,11 @@ public final class Models {
 	public static class ImagesGenerationResponse {
 		public Integer created;
 		public java.util.List<Object> data;
+	}
+
+	public static class InputTokensDetails {
+		public Integer cache_write_tokens;
+		public Integer cached_tokens;
 	}
 
 	public static class InvalidRequestResponse {
@@ -2565,6 +2591,15 @@ public final class Models {
 		public String upstream_model_id;
 	}
 
+	public static class PromptCacheBreakpoint {
+		public Object mode;
+	}
+
+	public static class PromptCacheOptions {
+		public Object mode;
+		public String ttl;
+	}
+
 	public static class Provider {
 		public String api_provider_id;
 		public String api_provider_name;
@@ -2645,6 +2680,7 @@ public final class Models {
 		public Object anthropic;
 		public Object google;
 		public Object openai;
+		public Object xai;
 	}
 
 	public static class ProviderRoutingOptions {
@@ -2823,7 +2859,10 @@ public final class Models {
 
 	public static class ResponsesInputItem {
 		public Object content;
+		public String encrypted_content;
+		public String id;
 		public Object role;
+		public java.util.List<Object> summary;
 		public String type;
 	}
 
@@ -2849,8 +2888,11 @@ public final class Models {
 		public String arguments;
 		public String call_id;
 		public java.util.List<Object> content;
+		public String encrypted_content;
+		public String id;
 		public String name;
 		public String role;
+		public java.util.List<Object> summary;
 		public String type;
 	}
 
@@ -2860,8 +2902,14 @@ public final class Models {
 		public Object type;
 	}
 
+	public static class ResponsesReasoningSummaryPart {
+		public String text;
+		public Object type;
+	}
+
 	public static class ResponsesRequest {
 		public Boolean background;
+		public Object cache_control;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public Object image_config;
@@ -2877,6 +2925,8 @@ public final class Models {
 		public Boolean parallel_tool_calls;
 		public String previous_response_id;
 		public String prompt_cache_key;
+		public Object prompt_cache_options;
+		public Object prompt_cache_retention;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
@@ -2992,6 +3042,8 @@ public final class Models {
 	}
 
 	public static class TextContentPart {
+		public Object cache_control;
+		public Object prompt_cache_breakpoint;
 		public String text;
 		public Object type;
 	}
@@ -3025,7 +3077,11 @@ public final class Models {
 
 	public static class Usage {
 		public Integer completion_tokens;
+		public Integer input_tokens;
+		public Object input_tokens_details;
+		public Integer output_tokens;
 		public Integer prompt_tokens;
+		public Object prompt_tokens_details;
 		public Object server_tool_use;
 		public Integer total_tokens;
 	}
@@ -3717,6 +3773,7 @@ public final class Models {
 		public java.util.List<String> model_deprecation;
 		public java.util.List<String> model_substitution;
 		public java.util.List<String> payment_method_expiring;
+		public java.util.List<String> rate_limit_throttled;
 	}
 
 	public static class WorkspaceNotificationRouteResponse {

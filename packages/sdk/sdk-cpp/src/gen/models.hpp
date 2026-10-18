@@ -60,6 +60,7 @@ struct AnthropicMessage {
 };
 
 struct AnthropicMessagesRequest {
+	std::map<std::string, std::any> cache_control;
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	int max_tokens;
@@ -103,6 +104,9 @@ struct AnthropicTool {
 };
 
 struct AnthropicUsage {
+	std::map<std::string, std::any> cache_creation;
+	std::optional<int> cache_creation_input_tokens;
+	std::optional<int> cache_read_input_tokens;
 	std::optional<int> input_tokens;
 	std::optional<int> output_tokens;
 };
@@ -541,6 +545,7 @@ struct ChatChoice {
 };
 
 struct ChatCompletionsRequest {
+	std::map<std::string, std::any> cache_control;
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	std::optional<double> frequency_penalty;
@@ -559,6 +564,8 @@ struct ChatCompletionsRequest {
 	std::optional<bool> parallel_tool_calls;
 	std::optional<double> presence_penalty;
 	std::optional<std::string> prompt_cache_key;
+	std::map<std::string, std::any> prompt_cache_options;
+	std::any prompt_cache_retention;
 	std::any provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
@@ -604,9 +611,22 @@ struct ChatMessage {
 	std::any content;
 	std::vector<std::map<std::string, std::any>> images;
 	std::string name;
+	std::string reasoning_content;
+	std::vector<std::map<std::string, std::any>> reasoning_details;
 	std::any role;
 	std::string tool_call_id;
 	std::vector<std::map<std::string, std::any>> tool_calls;
+};
+
+struct ChatReasoningDetail {
+	std::string data;
+	std::string format;
+	std::string id;
+	std::optional<int> index;
+	std::string signature;
+	std::string summary;
+	std::string text;
+	std::any type;
 };
 
 struct CreditsResponse {
@@ -1111,6 +1131,7 @@ struct FileUploadRequest {
 
 struct FunctionToolDefinition {
 	std::optional<bool> async;
+	std::map<std::string, std::any> cache_control;
 	std::map<std::string, std::any> function;
 	std::any type;
 };
@@ -1639,6 +1660,11 @@ struct ImagesGenerationRequest {
 struct ImagesGenerationResponse {
 	std::optional<int> created;
 	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct InputTokensDetails {
+	std::optional<int> cache_write_tokens;
+	std::optional<int> cached_tokens;
 };
 
 struct InvalidRequestResponse {
@@ -2546,6 +2572,15 @@ struct PrivateModelUpdateRequest {
 	std::string upstream_model_id;
 };
 
+struct PromptCacheBreakpoint {
+	std::any mode;
+};
+
+struct PromptCacheOptions {
+	std::any mode;
+	std::string ttl;
+};
+
 struct Provider {
 	std::string api_provider_id;
 	std::optional<std::string> api_provider_name;
@@ -2625,6 +2660,7 @@ struct ProviderOptions {
 	std::map<std::string, std::any> anthropic;
 	std::map<std::string, std::any> google;
 	std::map<std::string, std::any> openai;
+	std::map<std::string, std::any> xai;
 };
 
 struct ProviderRoutingOptions {
@@ -2801,7 +2837,10 @@ struct RerankResult {
 
 struct ResponsesInputItem {
 	std::any content;
+	std::string encrypted_content;
+	std::string id;
 	std::any role;
+	std::vector<std::map<std::string, std::any>> summary;
 	std::string type;
 };
 
@@ -2826,8 +2865,11 @@ struct ResponsesOutputItem {
 	std::string arguments;
 	std::string call_id;
 	std::vector<std::any> content;
+	std::string encrypted_content;
+	std::string id;
 	std::string name;
 	std::string role;
+	std::vector<std::map<std::string, std::any>> summary;
 	std::string type;
 };
 
@@ -2837,8 +2879,14 @@ struct ResponsesOutputTextPart {
 	std::any type;
 };
 
+struct ResponsesReasoningSummaryPart {
+	std::string text;
+	std::any type;
+};
+
 struct ResponsesRequest {
 	std::optional<bool> background;
+	std::map<std::string, std::any> cache_control;
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	std::map<std::string, std::any> image_config;
@@ -2854,6 +2902,8 @@ struct ResponsesRequest {
 	std::optional<bool> parallel_tool_calls;
 	std::string previous_response_id;
 	std::optional<std::string> prompt_cache_key;
+	std::map<std::string, std::any> prompt_cache_options;
+	std::any prompt_cache_retention;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
@@ -2968,6 +3018,8 @@ struct SystemOneUsage {
 };
 
 struct TextContentPart {
+	std::map<std::string, std::any> cache_control;
+	std::map<std::string, std::any> prompt_cache_breakpoint;
 	std::string text;
 	std::any type;
 };
@@ -2999,7 +3051,11 @@ struct UpdatedResponse {
 
 struct Usage {
 	std::optional<int> completion_tokens;
+	std::optional<int> input_tokens;
+	std::map<std::string, std::any> input_tokens_details;
+	std::optional<int> output_tokens;
 	std::optional<int> prompt_tokens;
+	std::map<std::string, std::any> prompt_tokens_details;
 	std::map<std::string, std::any> server_tool_use;
 	std::optional<int> total_tokens;
 };
@@ -3683,6 +3739,7 @@ struct WorkspaceNotificationRouteMap {
 	std::vector<std::string> model_deprecation;
 	std::vector<std::string> model_substitution;
 	std::vector<std::string> payment_method_expiring;
+	std::vector<std::string> rate_limit_throttled;
 };
 
 struct WorkspaceNotificationRouteResponse {

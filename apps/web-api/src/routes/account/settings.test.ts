@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import app from "@/index";
 
+// The fixtures' users have a verified TOTP factor, so their session must have used it (aal2).
+const sessionToken = `header.${btoa(JSON.stringify({ sub: "user-1", aal: "aal2" })).replace(/=+$/, "")}.signature`;
+
 const env = {
 	ENV: "development" as const,
 	SUPABASE_URL: "https://example.supabase.co",
@@ -12,7 +15,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 it.each(["keys", "management-api-keys"])("omits credential material from the %s response", async (path) => {
 	vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => authenticatedFetch(input)));
-	const response = await app.request(`https://phaseo.app/api/account/settings/${path}?workspaceId=workspace-1`, { headers: { authorization: "Bearer token" } }, env);
+	const response = await app.request(`https://phaseo.app/api/account/settings/${path}?workspaceId=workspace-1`, { headers: { authorization: `Bearer ${sessionToken}` } }, env);
 	expect(response.status).toBe(200);
 	expect(response.headers.get("cache-control")).toContain("no-store");
 	expect(await response.text()).not.toContain("do-not-send");
@@ -21,7 +24,7 @@ it.each(["keys", "management-api-keys"])("omits credential material from the %s 
 it("reports weekly and monthly key usage from the gateway's window totals", async () => {
 	const fetchMock = vi.fn(async (input: RequestInfo | URL) => authenticatedFetch(input));
 	vi.stubGlobal("fetch", fetchMock);
-	const response = await app.request("https://phaseo.app/api/account/settings/keys?workspaceId=workspace-1", { headers: { authorization: "Bearer token" } }, env);
+	const response = await app.request("https://phaseo.app/api/account/settings/keys?workspaceId=workspace-1", { headers: { authorization: `Bearer ${sessionToken}` } }, env);
 	const payload = await response.json() as { teamsWithKeys: Array<{ keys: Array<Record<string, unknown>> }> };
 	expect(payload.teamsWithKeys[0]?.keys[0]).toMatchObject({
 		current_usage_daily: 3,
@@ -272,7 +275,7 @@ describe("account settings routes", () => {
 		}));
 		const response = await app.request(
 			"https://phaseo.app/api/account/settings/credits/transactions?workspaceId=workspace-1",
-			{ headers: { authorization: "Bearer session-token" } }, env,
+			{ headers: { authorization: `Bearer ${sessionToken}` } }, env,
 		);
 		expect(response.status).toBe(200);
 		expect(ledgerQuery?.searchParams.get("workspace_id")).toBe("eq.workspace-1");
@@ -296,7 +299,7 @@ describe("account settings routes", () => {
 		}));
 
 		const response = await app.request("https://phaseo.app/api/account/settings/authorized-apps", {
-			headers: { authorization: "Bearer session-token" },
+			headers: { authorization: `Bearer ${sessionToken}` },
 		}, env);
 
 		expect(response.status).toBe(200);
@@ -330,7 +333,7 @@ describe("account settings routes", () => {
 			"https://phaseo.app/api/account/settings/authorized-apps/authorization-1/scopes",
 			{
 				method: "PATCH",
-				headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+				headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
 				body: JSON.stringify({ scopes: ["models:read"] }),
 			},
 			env,
@@ -358,7 +361,7 @@ describe("account settings routes", () => {
 			"https://phaseo.app/api/account/settings/authorized-apps/authorization-1/scopes",
 			{
 				method: "PATCH",
-				headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+				headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
 				body: JSON.stringify({ scopes: ["models:read", "usage:read"] }),
 			},
 			env,
@@ -389,7 +392,7 @@ describe("account settings routes", () => {
 			"https://phaseo.app/api/account/settings/authorized-apps/authorization-cli/reauthorize",
 			{
 				method: "POST",
-				headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+				headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
 				body: JSON.stringify({ scopes: ["openid", "models:read", "pricing:read"] }),
 			},
 			env,
@@ -407,7 +410,7 @@ describe("account settings routes", () => {
 	it("returns private layout, beta, and privacy bootstrap data", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => authenticatedFetch(input)));
 		const init = {
-			headers: { authorization: "Bearer session-token" },
+			headers: { authorization: `Bearer ${sessionToken}` },
 		};
 		const [layout, beta, privacy, broadcast, danger, details, mfa, apps, authorizedApps, oauthApps, managementKeys, byok, keys, onboarding, transactions, credits, paymentMethods, oauthAppDetail, observability, workspacePrivacy] = await Promise.all([
 			app.request("https://phaseo.app/api/account/settings/layout?workspaceId=workspace-1", init, env),
@@ -661,7 +664,7 @@ describe("account settings routes", () => {
 			"https://phaseo.app/api/account/settings/apps/source-app/merge",
 			{
 				method: "POST",
-				headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+				headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
 				body: JSON.stringify({ targetAppId: "target-app" }),
 			},
 			env,
@@ -692,7 +695,7 @@ describe("account settings routes", () => {
 		}));
 		const response = await app.request(
 			"https://phaseo.app/api/account/settings/privacy?workspaceId=workspace-2",
-			{ headers: { authorization: "Bearer session-token" } },
+			{ headers: { authorization: `Bearer ${sessionToken}` } },
 			env,
 		);
 		expect(response.status).toBe(403);

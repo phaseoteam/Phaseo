@@ -6,6 +6,7 @@
 // Transforms IR -> Anthropic Messages Response
 
 import type { IRChatResponse, IRChoice, IRContentPart } from "@core/ir";
+import { encodeAnthropicThinkingBlock, type ReasoningResponseOrigin } from "../shared/reasoning";
 
 /**
  * Anthropic Messages response type
@@ -95,13 +96,28 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 			text: mainChoice.message.refusal,
 			citations: null,
 		});
-	} else {
-		content.push(...encodeOrderedContentParts(contentParts));
+	}
+	const origin = { provider: ir.provider, model: ir.model };
+	// Thinking generated after an earlier tool call goes back in front of the
+	// call it preceded: Claude checks the order of its thinking blocks.
+	const toolCallIds = new Set((mainChoice.message.toolCalls ?? []).map((call) => call.id));
+	const anchored = new Map<string, IRContentPart[]>();
+	const inline: IRContentPart[] = [];
+	for (const part of Array.isArray(contentParts) ? contentParts : []) {
+		if (part.type === "reasoning_text" && part.beforeToolCallId && toolCallIds.has(part.beforeToolCallId)) {
+			anchored.set(part.beforeToolCallId, [...(anchored.get(part.beforeToolCallId) ?? []), part]);
+		} else {
+			inline.push(part);
+		}
+	}
+	if (typeof mainChoice.message.refusal !== "string") {
+		content.push(...encodeOrderedContentParts(inline, origin));
 	}
 
 	// CRITICAL FIX: Add tool_use blocks from tool calls
 	if (mainChoice.message.toolCalls && mainChoice.message.toolCalls.length > 0) {
 		for (const toolCall of mainChoice.message.toolCalls) {
+			content.push(...encodeOrderedContentParts(anchored.get(toolCall.id) ?? [], origin));
 			content.push({
 				type: "tool_use",
 				id: toolCall.id,
@@ -230,7 +246,7 @@ function countReasoningParts(parts: IRContentPart[]): number {
 	return parts.filter((part) => part.type === "reasoning_text").length;
 }
 
-function encodeOrderedContentParts(parts: IRContentPart[]): AnthropicResponseContent[] {
+function encodeOrderedContentParts(parts: IRContentPart[], origin?: ReasoningResponseOrigin): AnthropicResponseContent[] {
 	if (!Array.isArray(parts)) return [];
 	const content: AnthropicResponseContent[] = [];
 	for (const part of parts) {
@@ -245,13 +261,10 @@ function encodeOrderedContentParts(parts: IRContentPart[]): AnthropicResponseCon
 			continue;
 		}
 		if (part.type === "reasoning_text") {
-			if (part.text.length > 0) {
-				content.push({
-					type: "thinking",
-					thinking: part.text,
-					signature: part.thoughtSignature ?? "",
-				});
-			}
+			// Thinking with an empty text (display "omitted") still carries the
+			// signature the client must send back.
+			const block = encodeAnthropicThinkingBlock(part, origin);
+			if (block) content.push(block);
 			continue;
 		}
 		if (part.type === "image") {

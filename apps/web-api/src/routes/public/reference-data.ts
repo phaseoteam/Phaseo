@@ -5,6 +5,7 @@ import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
 import { fetchModelsPageCatalogue } from "@/models/page-catalogue";
+import { AA_METRICS, ARTIFICIAL_ANALYSIS_ID, artificialAnalysisCatalogue, fetchArtificialAnalysisCoverage } from "@/benchmarks/artificial-analysis-catalogue";
 
 const REFERENCE_CACHE: PublicCachePolicy = {
 	edgeTtlSeconds: 24 * 60 * 60,
@@ -148,18 +149,21 @@ publicReferenceDataRouter.get("/organisations", async (c) => {
 publicReferenceDataRouter.get("/benchmarks", async (c) => {
 	try {
 		const sorted = c.req.query("sort") === "coverage";
-		let query = getDataClient(c.env).from("v2_benchmarks").select("benchmark_id,name,total_models");
+		const client = getDataClient(c.env);
+		let query = client.from("v2_benchmarks").select("benchmark_id,name,total_models");
 		query = sorted
 			? query.order("total_models", { ascending: false, nullsFirst: false }).order("name", { ascending: true })
 			: query.order("name", { ascending: true });
 		const { data, error } = await query;
 		if (error) throw error;
-		const benchmarks = (data ?? []).map((row) => ({
+		const catalogue = artificialAnalysisCatalogue(data ?? [], await fetchArtificialAnalysisCoverage(client, data ?? []));
+		const benchmarks = catalogue.entries.map((row) => ({
 			benchmark_id: row.benchmark_id,
 			benchmark_name: row.name ?? "",
 			total_models: row.total_models ?? 0,
-		}));
-		return withPublicCache(c.json({ benchmarks }), policy("web-api-benchmarks"));
+			...("metrics" in row ? { metrics: row.metrics } : {}),
+		})).sort((a, b) => sorted ? b.total_models - a.total_models || a.benchmark_name.localeCompare(b.benchmark_name) : a.benchmark_name.localeCompare(b.benchmark_name));
+		return withPublicCache(c.json({ benchmarks }), { ...policy("web-api-benchmarks"), ...PUBLIC_LIVE_DATA_CACHE });
 	} catch (error) {
 		console.error("[web-api/reference] benchmarks failed", error);
 		return c.json({ error: "benchmarks_unavailable" }, 503);
@@ -170,15 +174,32 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 	const benchmarkId = c.req.param("benchmarkId");
 	try {
 		const client = getDataClient(c.env);
+		let resolvedId = benchmarkId;
+		let suite;
+		if (benchmarkId === ARTIFICIAL_ANALYSIS_ID) {
+			const version = c.req.query("version");
+			const metricKey = c.req.query("metric") ?? "intelligence";
+			const metric = AA_METRICS.find((item) => item.key === metricKey);
+			if (!metric || (version !== undefined && !/^[1-9]\d{0,2}$/.test(version))) return notFound(c, "benchmark");
+			const { data, error } = await client.from("v2_benchmarks").select("benchmark_id,name,total_models").like("benchmark_id", "aa-%");
+			if (error) throw error;
+			if (version !== undefined && !(data ?? []).some((row) => row.benchmark_id === `aa-intelligence-index-v${version}`)) return notFound(c, "benchmark");
+			const catalogue = artificialAnalysisCatalogue(data ?? [], await fetchArtificialAnalysisCoverage(client, data ?? []));
+			const selectedVersion = version === undefined ? catalogue.currentVersion : Number(version);
+			if (selectedVersion === null || !catalogue.versions.includes(selectedVersion)) return notFound(c, "benchmark");
+			const selectedMetric = catalogue.metrics(selectedVersion).find((item) => item.key === metric.key && item.total_models > 0);
+			resolvedId = selectedMetric?.id ?? `aa-intelligence-index-v${selectedVersion}`;
+			suite = { id: ARTIFICIAL_ANALYSIS_ID, name: "Artificial Analysis", current_version: catalogue.currentVersion, selected_version: selectedVersion, versions: catalogue.versions, metrics: catalogue.metrics(selectedVersion), other_evaluations: catalogue.otherEvaluations };
+		}
 		const [benchmarkResult, resultsResult] = await Promise.all([
 			client.from("v2_benchmarks")
 				.select("benchmark_id,name,category,ascending_order,total_models,link,benchmark_type")
-				.eq("benchmark_id", benchmarkId)
+				.eq("benchmark_id", resolvedId)
 				.maybeSingle(),
 			client.from("v2_benchmark_results")
 				.select("result_id,model_slug,score,is_self_reported,other_info,source_link,created_at,updated_at,rank,variant,result_key")
                 .or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
-				.eq("benchmark_id", benchmarkId)
+				.eq("benchmark_id", resolvedId)
 				.order("rank", { ascending: true, nullsFirst: false }),
 		]);
 		if (benchmarkResult.error) throw benchmarkResult.error;
@@ -220,6 +241,7 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 
 		return withPublicCache(c.json({
 			benchmark: {
+				...(suite ? { suite } : {}),
 				id: data.benchmark_id,
 				name: data.name ?? null,
 				category: data.category ?? null,
@@ -230,7 +252,9 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 				type: data.benchmark_type ?? null,
 				results,
 			},
-		}), policy(`web-api-benchmark-${encodeURIComponent(benchmarkId).replace(/%/g, "")}`));
+		}), benchmarkId === ARTIFICIAL_ANALYSIS_ID
+			? { ...PUBLIC_LIVE_DATA_CACHE, cacheTags: ["web-api-reference-data", "web-api-benchmarks", "web-api-benchmark-artificial-analysis", ...(suite?.metrics.map((metric) => `web-api-benchmark-${metric.id}`) ?? [])] }
+			: policy(`web-api-benchmark-${encodeURIComponent(benchmarkId).replace(/%/g, "")}`));
 	} catch (error) {
 		console.error("[web-api/reference] benchmark failed", { benchmarkId, error });
 		return c.json({ error: "benchmark_unavailable" }, 503);
@@ -246,15 +270,21 @@ publicReferenceDataRouter.get("/api-providers/:providerId/header", async (c) => 
 	if (["inception", "inceptron", "nextbit"].includes(providerId.toLowerCase())) return notFound(c, "api_provider");
 	try {
 		const { data, error } = await getDataClient(c.env).from("v2_providers")
-			.select("provider_slug,name,country_code,subdivision_code")
+			.select("provider_slug,name,country_code,subdivision_code,status,metadata")
 			.eq("provider_slug", providerId).maybeSingle();
 		if (error) throw error;
 		if (!data) return notFound(c, "api_provider");
+		const retirement = ["deprecated", "disabled"].includes(data.status) ? data.metadata?.retirement : null;
+		const successorId = typeof retirement?.successor_provider_slug === "string" && /^[a-z0-9][a-z0-9._-]*$/.test(retirement.successor_provider_slug)
+			? retirement.successor_provider_slug : null;
 		return withPublicCache(c.json({ provider: {
 			api_provider_id: data.provider_slug,
 			api_provider_name: data.name,
 			country_code: data.country_code,
 			subdivision_code: data.subdivision_code,
+			retirement_notice: typeof retirement?.message === "string" ? retirement.message : null,
+			successor_provider_id: successorId,
+			successor_provider_name: successorId && typeof retirement?.successor_name === "string" ? retirement.successor_name : null,
 		} }), { ...policy(`web-api-provider-${encodeURIComponent(providerId).replace(/%/g, "")}`), ...PUBLIC_LIVE_DATA_CACHE });
 	} catch (error) {
 		console.error("[web-api/reference] provider header failed", { providerId, error });

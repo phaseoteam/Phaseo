@@ -61,6 +61,18 @@
 	}
 }
 
+/* Luma centres a 61.5rem footer in the space beside the sidebar, while page content centres on the window, so on
+   wide screens the footer sits off to the right of the text. Run it the full width of that space instead, with the
+   header's 2rem side padding, under a rule that separates it from the page. */
+#footer {
+	border-top-width: 1px;
+}
+
+#footer > div {
+	max-width: none;
+	padding-inline: 2rem;
+}
+
 /* On 1080p desktops, keep every sidebar title on one line. Long titles have a short `sidebarTitle` so that all of
    them fit in 24rem; the ellipsis only catches titles added later without one. */
 @media (min-width: 1800px) {

@@ -7,6 +7,14 @@ import { normalizeProviderId, normalizeProviderList } from "@/lib/config/provide
 import { mergeGatewayPlugins } from "@/plugins/normalize";
 
 /**
+ * Prepend the preset prompt as its own text part, ending with the same blank
+ * line the string form uses, so the client's parts and cache marks stay as sent.
+ */
+function prependPresetTextPart(content: any[], systemPrompt: string, type: "text" | "input_text"): any[] {
+	return [{ type, text: `${systemPrompt}\n\n` }, ...content];
+}
+
+/**
  * Merge preset configuration with request body
  * Preset defaults are applied only if not already present in the request
  * System prompts are prepended to messages
@@ -32,6 +40,8 @@ export function mergePresetWithBody(body: any, preset: PresetData): any {
 	if (config.systemPrompt) {
 		if (typeof merged.instructions === "string") {
 			merged.instructions = `${config.systemPrompt}\n\n${merged.instructions}`;
+		} else if (Array.isArray(merged.instructions)) {
+			merged.instructions = prependPresetTextPart(merged.instructions, config.systemPrompt, "input_text");
 		} else if (merged.instructions === undefined && merged.input !== undefined) {
 			merged.instructions = config.systemPrompt;
 		} else if (merged.messages && Array.isArray(merged.messages)) {
@@ -44,6 +54,11 @@ export function mergePresetWithBody(body: any, preset: PresetData): any {
 				merged.messages = merged.messages.map((m: any) => {
 					if (m.role === "system" && !injected) {
 						injected = true;
+						// Keep array content as parts: stringifying it sent JSON to
+						// the model and dropped per-part cache marks.
+						if (Array.isArray(m.content)) {
+							return { ...m, content: prependPresetTextPart(m.content, config.systemPrompt, "text") };
+						}
 						const content = typeof m.content === "string" ? m.content : JSON.stringify(m.content);
 						return {
 							...m,
@@ -61,7 +76,9 @@ export function mergePresetWithBody(body: any, preset: PresetData): any {
 			}
 		} else if (merged.system !== undefined) {
 			// Anthropic-style system parameter
-			merged.system = config.systemPrompt + "\n\n" + merged.system;
+			merged.system = Array.isArray(merged.system)
+				? prependPresetTextPart(merged.system, config.systemPrompt, "text")
+				: config.systemPrompt + "\n\n" + merged.system;
 		}
 	}
 

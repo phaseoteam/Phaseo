@@ -87,6 +87,56 @@ describe("buildGatewayGenAiOtlpPayload", () => {
 		expect(output[1].startTimeUnixNano).toBe("1000000000");
 	});
 
+	it("reports cache reads and writes from the priced meters", () => {
+		const payload = buildGatewayGenAiOtlpPayload({
+			requestId: "req_cache",
+			workspaceId: "ws_1",
+			endpoint: "responses",
+			requestedModel: "anthropic/claude-sonnet-4-6",
+			provider: "anthropic",
+			requestPayload: { input: "hello" },
+			responsePayload: { output: [] },
+			usage: {
+				input_tokens: 32_050,
+				output_tokens: 400,
+				input_tokens_details: { cached_tokens: 30_000, cache_write_tokens: 2_000 },
+				pricing: { lines: [
+					{ dimension: "input_text_tokens", quantity: 50 },
+					{ dimension: "cached_read_text_tokens", quantity: 30_000 },
+					{ dimension: "cached_write_text_tokens_5m", quantity: 2_000 },
+				] },
+			},
+			statusCode: 200,
+			success: true,
+			startedAtMs: 1,
+			completedAtMs: 2,
+		}, options);
+		const span = attributes(spans(payload)[1]);
+		expect(span["gen_ai.usage.input_tokens"]).toEqual({ intValue: "32050" });
+		expect(span["gen_ai.usage.cache_read.input_tokens"]).toEqual({ intValue: "30000" });
+		expect(span["gen_ai.usage.cache_creation.input_tokens"]).toEqual({ intValue: "2000" });
+	});
+
+	it("reports OpenAI-style cache writes without a pricing breakdown", () => {
+		const payload = buildGatewayGenAiOtlpPayload({
+			requestId: "req_cache_openai",
+			workspaceId: "ws_1",
+			endpoint: "chat.completions",
+			requestedModel: "openai/gpt-5.6-sol",
+			provider: "openai",
+			requestPayload: { messages: [] },
+			responsePayload: { choices: [] },
+			usage: { prompt_tokens: 10_000, completion_tokens: 10, prompt_tokens_details: { cached_tokens: 6_000, cache_write_tokens: 3_000 } },
+			statusCode: 200,
+			success: true,
+			startedAtMs: 1,
+			completedAtMs: 2,
+		}, options);
+		const span = attributes(spans(payload)[1]);
+		expect(span["gen_ai.usage.cache_read.input_tokens"]).toEqual({ intValue: "6000" });
+		expect(span["gen_ai.usage.cache_creation.input_tokens"]).toEqual({ intValue: "3000" });
+	});
+
 	it("omits sensitive content when privacy excludes it", () => {
 		const payload = buildGatewayGenAiOtlpPayload({
 			requestId: "req_private",

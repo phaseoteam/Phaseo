@@ -6,7 +6,11 @@ import type { IRChatRequest } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult, ProviderExecutor, Bill } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
-import { irToOpenAIResponses } from "@executors/_shared/text-generate/openai-compat/transform";
+import {
+	capabilitySupportsReasoning,
+	ensureEncryptedReasoningInclude,
+	irToOpenAIResponses,
+} from "@executors/_shared/text-generate/openai-compat/transform";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { azureDeployment, azureHeaders, azureMaiUrl, azureOpenAIV1Url, azureUrl, resolveAzureConfig, resolveAzureCredential, usesAzureV1 } from "@providers/azure/config";
@@ -62,8 +66,13 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const url = isMai ? azureMaiUrl("chat/completions", config.baseUrl) : resolveAzureTextUrl({ route, deployment, baseUrl: config.baseUrl, apiVersion: config.apiVersion });
 
 	const requestPayload = route === "responses"
-		? irToOpenAIResponses(args.ir, config.deployment || args.providerModelSlug, "openai", args.capabilityParams, args.providerId)
+		? irToOpenAIResponses(args.ir, config.deployment || args.providerModelSlug, "openai", args.capabilityParams, args.providerId, {
+			replayModel: args.providerModelSlug || args.ir.model,
+		})
 		: irToOpenAIChat(args.ir, config.deployment || args.providerModelSlug, args.providerId, args.capabilityParams);
+	if (route === "responses" && (requestPayload.reasoning || capabilitySupportsReasoning(args.capabilityParams))) {
+		ensureEncryptedReasoningInclude(requestPayload);
+	}
 	const payload = {
 		...(route === "chat" ? normalizeAzureChatRequest(requestPayload, args) : requestPayload),
 		stream: true,

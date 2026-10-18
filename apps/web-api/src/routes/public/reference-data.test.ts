@@ -12,6 +12,32 @@ afterEach(() => {
 });
 
 describe("public reference-data routes", () => {
+	it("keeps retired provider pages addressable and links their successor", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => Response.json([{
+			provider_slug: "pioneer", name: "Pioneer", status: "deprecated", country_code: "US", subdivision_code: null,
+			metadata: { retirement: { message: "Pioneer is now Fastino.", successor_provider_slug: "fastino", successor_name: "Fastino" } },
+		}])));
+		const response = await app.request("https://phaseo.app/api/_web/api-providers/pioneer/header", {}, env);
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ provider: {
+			api_provider_id: "pioneer", api_provider_name: "Pioneer", retirement_notice: "Pioneer is now Fastino.",
+			successor_provider_id: "fastino", successor_provider_name: "Fastino",
+		} });
+	});
+
+	it("only exposes retirement notices for retired providers and rejects invalid successor IDs", async () => {
+		for (const status of ["active", "deprecated"]) {
+			vi.stubGlobal("fetch", vi.fn(async () => Response.json([{
+				provider_slug: "sample", name: "Sample", status,
+				metadata: { retirement: { message: "Retired.", successor_provider_slug: "../settings", successor_name: "Invalid" } },
+			}])));
+			const response = await app.request("https://phaseo.app/api/_web/api-providers/sample/header", {}, env);
+			expect(await response.json()).toMatchObject({ provider: {
+				retirement_notice: status === "deprecated" ? "Retired." : null,
+				successor_provider_id: null, successor_provider_name: null,
+			} });
+		}
+	});
     it("excludes retired plan prices from listings and detail pages", async () => {
         vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
             const url = String(input);
@@ -28,7 +54,7 @@ describe("public reference-data routes", () => {
         expect(retired.status).toBe(404);
     });
 
-	it("keeps reference data long-lived but refreshes provider information every fifteen minutes", async () => {
+	it("keeps reference data long-lived but refreshes scored benchmark coverage and provider information every fifteen minutes", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
 			if (url.includes("v2_labs")) {
@@ -50,7 +76,7 @@ describe("public reference-data routes", () => {
 		for (const response of [organisations, benchmarks, providerHeader, sources]) {
 			expect(response.status).toBe(200);
 			expect(response.headers.get("cloudflare-cdn-cache-control")).toBe(
-				response === providerHeader || response === sources
+				response === benchmarks || response === providerHeader || response === sources
 					? "public, max-age=900, stale-while-revalidate=900, stale-if-error=3600"
 					: "public, max-age=86400, stale-while-revalidate=604800",
 			);

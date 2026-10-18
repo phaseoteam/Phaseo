@@ -793,6 +793,8 @@ interface ValidationState {
     benchmarkIds: Set<string>;
     apiProviderIds: Set<string>;
     providerModelKeys: Set<string>;
+    /** provider:api_model_id for routes serving text.generate on the gateway. */
+    activeTextRouteKeys: Set<string>;
     modelIds: Map<string, string>;
     modelVariants: Map<string, { baseModelId: string; variantKind: string }>;
     models: ModelEntry[];
@@ -831,6 +833,7 @@ function createState(): ValidationState {
         benchmarkIds: new Set(),
         apiProviderIds: new Set(),
         providerModelKeys: new Set(),
+        activeTextRouteKeys: new Set(),
         modelIds: new Map(),
         modelVariants: new Map(),
         models: [],
@@ -1641,6 +1644,9 @@ function checkApiProviderModels(
 				);
 			}
             state.providerModelKeys.add(`${provider}:${apiModelId}`);
+            if (isActiveTextRoute(row as Record<string, unknown>)) {
+                state.activeTextRouteKeys.add(`${provider}:${apiModelId}`);
+            }
 
             if (apiModelId.toLowerCase().endsWith(':free')) {
                 const internalVariant = internalModelId
@@ -1919,8 +1925,55 @@ function checkModelReferences(state: ValidationState): { errors: string[]; warni
     return { errors, warnings };
 }
 
-function checkPricing(state: ValidationState): string[] {
+/**
+ * Providers that cache prompts automatically, so any text request can report cached
+ * tokens without the caller asking for it. Their active text routes need a cached-read
+ * price; without one the gateway bills hits at the input rate and logs a fallback.
+ */
+export const AUTO_CACHING_TEXT_PROVIDERS = new Set<string>([
+    'alibaba-cloud', 'atlascloud', 'azure', 'cerebras', 'deepinfra', 'deepseek', 'fireworks',
+    'gmicloud', 'google-ai-studio', 'google-vertex', 'google-vertex-eu', 'groq', 'minimax',
+    'mistral', 'mistral-eu', 'moonshotai', 'moonshotai-turbo', 'nebius-token-factory', 'novita',
+    'openai', 'openai-eu', 'ovhcloud', 'sambanova', 'siliconflow', 'stepfun', 'together',
+    'venice', 'x-ai', 'z-ai',
+]);
+
+const CACHED_READ_METERS = new Set<string>(['cached_read_text_tokens', 'implicit_cached_input_text_tokens']);
+
+function isActiveTextRoute(row: Record<string, unknown>): boolean {
+    if (row?.is_active_gateway !== true || row?.routable === false) return false;
+    const capabilities = Array.isArray(row?.capabilities) ? row.capabilities : [];
+    return capabilities.some((capability: any) =>
+        capability?.capability_id === 'text.generate' &&
+        ['', 'active'].includes(String(capability?.status ?? '').trim().toLowerCase())
+    );
+}
+
+export function hasCachedReadRule(pricing: any): boolean {
+    return Array.isArray(pricing?.rules) &&
+        pricing.rules.some((rule: any) => CACHED_READ_METERS.has(String(rule?.meter ?? '')));
+}
+
+/** Warn for every active text route on an auto-caching provider with no cached-read price. */
+export function checkAutoCacheReadCoverage(
+    activeTextRouteKeys: Iterable<string>,
+    routesWithCachedRead: ReadonlySet<string>,
+): string[] {
+    const warnings: string[] = [];
+    for (const key of activeTextRouteKeys) {
+        const provider = key.slice(0, key.indexOf(':'));
+        if (!AUTO_CACHING_TEXT_PROVIDERS.has(provider) || routesWithCachedRead.has(key)) continue;
+        warnings.push(
+            `pricing: no cached-read rule for auto-caching text route ${key} ` +
+            `(cache hits bill at the input rate until one is added)`
+        );
+    }
+    return warnings.sort();
+}
+
+function checkPricing(state: ValidationState): { errors: string[]; warnings: string[] } {
     const errors: string[] = [];
+    const routesWithCachedRead = new Set<string>();
     const pricingDir = path.join(DATA_ROOT, 'pricing');
     for (const filePath of listPricingFiles(pricingDir)) {
         state.pricingEntryCount += 1;
@@ -1944,8 +1997,12 @@ function checkPricing(state: ValidationState): string[] {
         if (entryErrors.length) {
             errors.push(`${path.relative(DATA_ROOT, filePath)} -> ${entryErrors.join('; ')}`);
         }
+        const capabilityId = typeof data['capability_id'] === 'string' ? data['capability_id'] : undefined;
+        if (apiProviderId && modelId && capabilityId === 'text.generate' && hasCachedReadRule(data)) {
+            routesWithCachedRead.add(`${apiProviderId}:${modelId}`);
+        }
     }
-    return errors;
+    return { errors, warnings: checkAutoCacheReadCoverage(state.activeTextRouteKeys, routesWithCachedRead) };
 }
 
 export function checkSubscriptionPlanModels(
@@ -2141,8 +2198,14 @@ export function runWebDataValidation(options?: { gatingSections?: ValidationSect
         warnings: modelRefChecks.warnings,
     });
 
-    const pricingErrors = checkPricing(state);
-    results.push({ key: 'pricing', label: 'Pricing entries', info: `${state.pricingEntryCount} files`, errors: pricingErrors });
+    const pricingChecks = checkPricing(state);
+    results.push({
+        key: 'pricing',
+        label: 'Pricing entries',
+        info: `${state.pricingEntryCount} files`,
+        errors: pricingChecks.errors,
+        warnings: pricingChecks.warnings,
+    });
 
     const planErrors = checkSubscriptionPlans(state);
     results.push({

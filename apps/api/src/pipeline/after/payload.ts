@@ -9,6 +9,7 @@ import type { GatewayCompletionsChoice } from "@core/types";
 import type { IRChatResponse, IRUsage } from "@core/ir";
 import { encodeAnthropicMessagesResponse } from "@/protocols/anthropic-messages/encode";
 import { shapeUsageForClient } from "../usage";
+import { irUsageToOpenAIStyle } from "@core/cache-usage";
 
 type AnyRecord = Record<string, any>;
 
@@ -184,7 +185,8 @@ function buildResponsesPayload(ctx: PipelineContext, result: RequestResult): Any
         background: raw?.background ?? request.background ?? null,
         service_tier: raw?.service_tier ?? request.service_tier ?? null,
         safety_identifier: raw?.safety_identifier ?? request.safety_identifier ?? null,
-        prompt_cache_key: raw?.prompt_cache_key ?? request.prompt_cache_key ?? null,
+        // Echo the client key, not the workspace-namespaced key sent upstream.
+        prompt_cache_key: request.prompt_cache_key ?? null,
         metadata: raw?.metadata ?? request.metadata ?? {},
         nativeResponseId,
     };
@@ -259,8 +261,13 @@ function deriveResponsesStatus(ir?: IRChatResponse) {
 function encodeResponsesUsage(usage: IRUsage) {
     const inputDetails: Record<string, number> = {};
     const outputDetails: Record<string, number> = {};
-    if (typeof usage.cachedInputTokens === "number") {
-        inputDetails.cached_tokens = usage.cachedInputTokens;
+    // OpenAI semantics: input_tokens includes cache reads and writes.
+    const cache = irUsageToOpenAIStyle(usage);
+    if (typeof cache.readTokens === "number") {
+        inputDetails.cached_tokens = cache.readTokens;
+    }
+    if (typeof cache.writeTokens === "number") {
+        inputDetails.cache_write_tokens = cache.writeTokens;
     }
     if (typeof usage._ext?.inputImageTokens === "number") {
         inputDetails.input_images = usage._ext.inputImageTokens;
@@ -274,9 +281,6 @@ function encodeResponsesUsage(usage: IRUsage) {
     if (typeof usage.reasoningTokens === "number") {
         outputDetails.reasoning_tokens = usage.reasoningTokens;
     }
-    if (typeof usage._ext?.cachedWriteTokens === "number") {
-        outputDetails.cached_tokens = usage._ext.cachedWriteTokens;
-    }
     if (typeof usage._ext?.outputImageTokens === "number") {
         outputDetails.output_images = usage._ext.outputImageTokens;
     }
@@ -288,18 +292,21 @@ function encodeResponsesUsage(usage: IRUsage) {
     }
 
 	const out: any = {
-		input_tokens: usage.inputTokens,
+		input_tokens: cache.inputTokens,
 		output_tokens: usage.outputTokens,
-		total_tokens: usage.totalTokens,
+		total_tokens: cache.totalTokens,
 	};
-	if (typeof usage._ext?.cachedWriteTokens === "number") {
-		out.cached_write_text_tokens = usage._ext.cachedWriteTokens;
+	// The totals above already contain the cache, which overrides raw executor hints.
+	if (typeof cache.readTokens === "number") out.cached_read_tokens_are_subset_of_input = true;
+	if (typeof cache.writeTokens === "number") {
+		out.cached_write_text_tokens = cache.writeTokens;
+		out.cached_write_tokens_are_subset_of_input = true;
 	}
-	if (typeof usage._ext?.cachedWriteTokens5m === "number") {
-		out.cached_write_text_tokens_5m = usage._ext.cachedWriteTokens5m;
+	if (typeof cache.write5mTokens === "number") {
+		out.cached_write_text_tokens_5m = cache.write5mTokens;
 	}
-	if (typeof usage._ext?.cachedWriteTokens1h === "number") {
-		out.cached_write_text_tokens_1h = usage._ext.cachedWriteTokens1h;
+	if (typeof cache.write1hTokens === "number") {
+		out.cached_write_text_tokens_1h = cache.write1hTokens;
 	}
 	const serverToolUse = buildServerToolUsePayload(usage._ext?.serverToolUse);
 	if (serverToolUse) out.server_tool_use = serverToolUse;
@@ -721,6 +728,32 @@ function buildAnthropicMessagesPayload(
 }
 
 export function normalizeAnthropicUsage(raw: any, irUsage?: IRUsage) {
+    const hasAnthropicCacheFields =
+        typeof raw?.cache_read_input_tokens === "number" ||
+        typeof raw?.cache_creation_input_tokens === "number";
+    const details = raw?.input_tokens_details ?? raw?.prompt_tokens_details;
+    const openAIRead = typeof details?.cached_tokens === "number" ? details.cached_tokens : undefined;
+    const openAIWrite = typeof details?.cache_write_tokens === "number" ? details.cache_write_tokens : undefined;
+    if (!hasAnthropicCacheFields && (openAIRead !== undefined || openAIWrite !== undefined)) {
+        // Gateway usage follows OpenAI semantics (input includes the cache); the Messages
+        // surface reports input_tokens without cache reads and writes, as Anthropic does.
+        const totalInput = Number(raw?.input_tokens ?? 0);
+        const write5m = typeof raw?.cached_write_text_tokens_5m === "number" ? raw.cached_write_text_tokens_5m : undefined;
+        const write1h = typeof raw?.cached_write_text_tokens_1h === "number" ? raw.cached_write_text_tokens_1h : undefined;
+        const uncachedInput = Math.max(0, totalInput - (openAIRead ?? 0) - (openAIWrite ?? 0));
+        return normalizeAnthropicUsage({
+            ...raw,
+            input_tokens: uncachedInput,
+            ...(typeof raw?.total_tokens === "number"
+                ? { total_tokens: uncachedInput + Number(raw?.output_tokens ?? 0) }
+                : {}),
+            cache_read_input_tokens: openAIRead ?? 0,
+            cache_creation_input_tokens: openAIWrite ?? 0,
+            ...(write5m !== undefined || write1h !== undefined
+                ? { cache_creation: { ephemeral_5m_input_tokens: write5m ?? 0, ephemeral_1h_input_tokens: write1h ?? 0 } }
+                : {}),
+        }, irUsage);
+    }
     const inputTokens = raw?.input_tokens ?? irUsage?.inputTokens ?? 0;
     const outputTokens = raw?.output_tokens ?? irUsage?.outputTokens ?? 0;
     const serviceTier = raw?.service_tier ?? (irUsage as any)?.serviceTier ?? null;
@@ -751,17 +784,20 @@ export function normalizeAnthropicUsage(raw: any, irUsage?: IRUsage) {
 }
 
 function encodeChatUsage(usage: IRUsage) {
-    const inputTextTokens = usage.inputTokens;
+    // OpenAI semantics: input_tokens includes cache reads and writes.
+    const cache = irUsageToOpenAIStyle(usage);
+    const inputTextTokens = Math.max(0, cache.inputTokens - (cache.readTokens ?? 0) - (cache.writeTokens ?? 0));
     return {
-        input_tokens: usage.inputTokens,
+        input_tokens: cache.inputTokens,
         output_tokens: usage.outputTokens,
-        total_tokens: usage.totalTokens,
+        total_tokens: cache.totalTokens,
         ...(typeof (usage as any).serviceTier === "string"
             ? { service_tier: (usage as any).serviceTier }
             : {}),
-        input_details: usage.cachedInputTokens
+        input_details: cache.readTokens || cache.writeTokens
             ? {
-                cached_tokens: usage.cachedInputTokens,
+                cached_tokens: cache.readTokens,
+                cache_write_tokens: cache.writeTokens,
                 input_images: usage._ext?.inputImageTokens,
                 input_audio: usage._ext?.inputAudioTokens,
                 input_videos: usage._ext?.inputVideoTokens,
@@ -771,7 +807,6 @@ function encodeChatUsage(usage: IRUsage) {
             usage.reasoningTokens || usage._ext?.outputImageTokens || usage._ext?.outputAudioTokens
                 ? {
                     reasoning_tokens: usage.reasoningTokens,
-                    cached_tokens: usage._ext?.cachedWriteTokens,
                     output_images: usage._ext?.outputImageTokens,
                     output_audio: usage._ext?.outputAudioTokens,
                     output_videos: usage._ext?.outputVideoTokens,
@@ -779,12 +814,13 @@ function encodeChatUsage(usage: IRUsage) {
                 : undefined,
         input_text_tokens: inputTextTokens,
         output_text_tokens: usage.outputTokens,
-        cached_read_text_tokens: usage.cachedInputTokens,
-        cached_read_tokens_are_subset_of_input: usage.cachedReadTokensAreSubsetOfInput,
+        cached_read_text_tokens: cache.readTokens,
+        cached_read_tokens_are_subset_of_input: typeof cache.readTokens === "number" ? true : undefined,
+        cached_write_tokens_are_subset_of_input: typeof cache.writeTokens === "number" ? true : undefined,
         reasoning_tokens: usage.reasoningTokens,
-        cached_write_text_tokens: usage._ext?.cachedWriteTokens,
-        cached_write_text_tokens_5m: usage._ext?.cachedWriteTokens5m,
-        cached_write_text_tokens_1h: usage._ext?.cachedWriteTokens1h,
+        cached_write_text_tokens: cache.writeTokens,
+        cached_write_text_tokens_5m: cache.write5mTokens,
+        cached_write_text_tokens_1h: cache.write1hTokens,
 		"x-spent-credits": usage._ext?.spentCredits,
         server_tool_use: buildServerToolUsePayload(usage._ext?.serverToolUse),
     };

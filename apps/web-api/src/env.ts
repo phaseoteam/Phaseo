@@ -33,6 +33,7 @@ export type Env = {
 	GATEWAY_API_ORIGIN?: string;
 	GATEWAY_INTERNAL_TEST_TOKEN?: string;
 	RESEND_API_KEY?: string;
+	EXPO_ACCESS_TOKEN?: string;
 	FEEDBACK_REWARD_USD?: string;
 	FEEDBACK_REWARD_CAP?: string;
 	DISCORD_BILLING_WEBHOOK_URL?: string;

@@ -98,6 +98,8 @@ class AnthropicMessage
 class AnthropicMessagesRequest
 {
 	/** @var array<string, mixed>|null */
+	public $cache_control;
+	/** @var array<string, mixed>|null */
 	public $debug;
 	/** @var bool|null */
 	public $echo_upstream_request;
@@ -177,6 +179,12 @@ class AnthropicTool
 
 class AnthropicUsage
 {
+	/** @var array<string, mixed>|null */
+	public $cache_creation;
+	/** @var int|null */
+	public $cache_creation_input_tokens;
+	/** @var int|null */
+	public $cache_read_input_tokens;
 	/** @var int|null */
 	public $input_tokens;
 	/** @var int|null */
@@ -966,6 +974,8 @@ class ChatChoice
 class ChatCompletionsRequest
 {
 	/** @var array<string, mixed>|null */
+	public $cache_control;
+	/** @var array<string, mixed>|null */
 	public $debug;
 	/** @var bool|null */
 	public $echo_upstream_request;
@@ -1001,6 +1011,10 @@ class ChatCompletionsRequest
 	public $presence_penalty;
 	/** @var string|null */
 	public $prompt_cache_key;
+	/** @var array<string, mixed>|null */
+	public $prompt_cache_options;
+	/** @var string|null */
+	public $prompt_cache_retention;
 	/** @var string|array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -1085,12 +1099,36 @@ class ChatMessage
 	public $images;
 	/** @var string|null */
 	public $name;
+	/** @var string|null */
+	public $reasoning_content;
+	/** @var array|null */
+	public $reasoning_details;
 	/** @var string */
 	public $role;
 	/** @var string|null */
 	public $tool_call_id;
 	/** @var array|null */
 	public $tool_calls;
+}
+
+class ChatReasoningDetail
+{
+	/** @var string|null */
+	public $data;
+	/** @var string|null */
+	public $format;
+	/** @var string|null */
+	public $id;
+	/** @var int|null */
+	public $index;
+	/** @var string|null */
+	public $signature;
+	/** @var string|null */
+	public $summary;
+	/** @var string|null */
+	public $text;
+	/** @var string */
+	public $type;
 }
 
 class CreditsResponse
@@ -1955,6 +1993,8 @@ class FunctionToolDefinition
 {
 	/** @var bool|null */
 	public $async;
+	/** @var array<string, mixed>|null */
+	public $cache_control;
 	/** @var array<string, mixed> */
 	public $function;
 	/** @var string */
@@ -2895,6 +2935,14 @@ class ImagesGenerationResponse
 	public $created;
 	/** @var array|null */
 	public $data;
+}
+
+class InputTokensDetails
+{
+	/** @var int|null */
+	public $cache_write_tokens;
+	/** @var int|null */
+	public $cached_tokens;
 }
 
 class InvalidRequestResponse
@@ -4491,6 +4539,20 @@ class PrivateModelUpdateRequest
 	public $upstream_model_id;
 }
 
+class PromptCacheBreakpoint
+{
+	/** @var string|null */
+	public $mode;
+}
+
+class PromptCacheOptions
+{
+	/** @var string|null */
+	public $mode;
+	/** @var string|null */
+	public $ttl;
+}
+
 class Provider
 {
 	/** @var string|null */
@@ -4629,6 +4691,8 @@ class ProviderOptions
 	public $google;
 	/** @var array<string, mixed>|null */
 	public $openai;
+	/** @var array<string, mixed>|null */
+	public $xai;
 }
 
 class ProviderRoutingOptions
@@ -4938,7 +5002,13 @@ class ResponsesInputItem
 	/** @var string|array|array<string, mixed>|null */
 	public $content;
 	/** @var string|null */
+	public $encrypted_content;
+	/** @var string|null */
+	public $id;
+	/** @var string|null */
 	public $role;
+	/** @var array|null */
+	public $summary;
 	/** @var string|null */
 	public $type;
 }
@@ -4980,9 +5050,15 @@ class ResponsesOutputItem
 	/** @var array|null */
 	public $content;
 	/** @var string|null */
+	public $encrypted_content;
+	/** @var string|null */
+	public $id;
+	/** @var string|null */
 	public $name;
 	/** @var string|null */
 	public $role;
+	/** @var array|null */
+	public $summary;
 	/** @var string|null */
 	public $type;
 }
@@ -4997,10 +5073,20 @@ class ResponsesOutputTextPart
 	public $type;
 }
 
+class ResponsesReasoningSummaryPart
+{
+	/** @var string */
+	public $text;
+	/** @var string */
+	public $type;
+}
+
 class ResponsesRequest
 {
 	/** @var bool|null */
 	public $background;
+	/** @var array<string, mixed>|null */
+	public $cache_control;
 	/** @var array<string, mixed>|null */
 	public $debug;
 	/** @var bool|null */
@@ -5031,6 +5117,10 @@ class ResponsesRequest
 	public $previous_response_id;
 	/** @var string|null */
 	public $prompt_cache_key;
+	/** @var array<string, mixed>|null */
+	public $prompt_cache_options;
+	/** @var string|null */
+	public $prompt_cache_retention;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -5233,6 +5323,10 @@ class SystemOneUsage
 
 class TextContentPart
 {
+	/** @var array<string, mixed>|null */
+	public $cache_control;
+	/** @var array<string, mixed>|null */
+	public $prompt_cache_breakpoint;
 	/** @var string */
 	public $text;
 	/** @var string */
@@ -5282,7 +5376,15 @@ class Usage
 	/** @var int|null */
 	public $completion_tokens;
 	/** @var int|null */
+	public $input_tokens;
+	/** @var array<string, mixed>|null */
+	public $input_tokens_details;
+	/** @var int|null */
+	public $output_tokens;
+	/** @var int|null */
 	public $prompt_tokens;
+	/** @var array<string, mixed>|null */
+	public $prompt_tokens_details;
 	/** @var array<string, mixed>|null */
 	public $server_tool_use;
 	/** @var int|null */
@@ -6461,6 +6563,8 @@ class WorkspaceNotificationRouteMap
 	public $model_substitution;
 	/** @var array */
 	public $payment_method_expiring;
+	/** @var array */
+	public $rate_limit_throttled;
 }
 
 class WorkspaceNotificationRouteResponse

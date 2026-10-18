@@ -6,7 +6,7 @@ import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { encryptNotificationTarget, NOTIFICATION_DESTINATION_TYPES, targetPreview, validateNotificationTarget, type NotificationDestinationType } from "@/lib/notification-destinations";
 
 const EMPTY_TIER_SUMMARY = { lastMonthCents: 0, mtdCents: 0, teamTier: "basic" as const };
-const NOTIFICATION_EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution"] as const;
+const NOTIFICATION_EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled"] as const;
 
 export function parseLowBalanceThresholdNanos(value: unknown): number | null {
 	const thresholdUsd = Number(value);

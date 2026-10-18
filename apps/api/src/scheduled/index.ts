@@ -19,6 +19,7 @@ import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
 import { runPaymentMethodExpiryNotificationJob } from "@/pipeline/notifications/billing-alerts";
 import { enqueueFeedbackRequestEmails } from "@/pipeline/notifications/feedback-request";
+import { hasMobilePushActivity, runMobilePushJob } from "@/pipeline/notifications/mobile-push";
 import { enqueueModelDeprecationNotifications, runNotificationDeliveryJob } from "@/pipeline/notifications/notification-delivery";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 import { runGatewayIoRetentionBillingJob } from "@/pipeline/audit/io-retention-billing";
@@ -377,6 +378,18 @@ async function handleFeedbackRequestScheduledEvent(env: GatewayBindings): Promis
 	}
 }
 
+async function handleMobilePushScheduledEvent(env: GatewayBindings): Promise<void> {
+	// Off unless explicitly enabled; EXPO_ACCESS_TOKEN is only needed once Expo push security is on.
+	if (env.MOBILE_PUSH_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		const summary = await runMobilePushJob({ accessToken: env.EXPO_ACCESS_TOKEN });
+		if (hasMobilePushActivity(summary)) console.log("mobile_push_completed", summary);
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handlePaymentMethodExpiryScheduledEvent(env: GatewayBindings): Promise<void> {
 	if (!env.STRIPE_SECRET_KEY?.trim() && !env.TEST_STRIPE_SECRET_KEY?.trim()) return;
 	configureRuntime(env);
@@ -482,6 +495,10 @@ async function handleRateLimitThrottleRollupScheduledEvent(env: GatewayBindings)
 		const { data, error } = await getSupabaseAdmin().rpc("refresh_rate_limit_throttle_rollups");
 		if (error) throw new Error(error.message || "Failed to refresh rate limit throttle rollups");
 		if (Number((data as any)?.rows ?? 0) > 0) console.log("rate_limit_throttle_rollups_refreshed", data);
+		// Queue alerts from the fresh rollups; the notification delivery job later in this tick sends them.
+		const alerts = await getSupabaseAdmin().rpc("enqueue_rate_limit_throttle_alerts");
+		if (alerts.error) throw new Error(alerts.error.message || "Failed to queue rate limit throttle alerts");
+		if (Number(alerts.data ?? 0) > 0) console.log("rate_limit_throttle_alerts_queued", { events: Number(alerts.data) });
 	} finally {
 		clearRuntime();
 	}
@@ -733,6 +750,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleNotificationDeliveryScheduledEvent(env);
 		} catch (error) {
 			console.error("notification_delivery_scheduled_failed", serializeError(error));
+		}
+		try {
+			await handleMobilePushScheduledEvent(env);
+		} catch (error) {
+			console.error("mobile_push_scheduled_failed", serializeError(error));
 		}
 		try {
 			await handleAsyncWebhookRetriesScheduledEvent(event, env);

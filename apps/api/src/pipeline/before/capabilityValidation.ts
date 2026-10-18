@@ -205,6 +205,19 @@ function getRequestedMaxTokens(body: any): number | null {
 }
 
 /**
+ * Responses state parameters that cannot work through the gateway: OpenAI,
+ * Azure and xAI requests are forced to `store: false`, and a follow-up may be
+ * routed to a different provider, so the referenced state never exists there.
+ */
+function getUnsupportedStatefulResponsesParams(endpoint: Endpoint, rawBody: any): string[] {
+	if (endpoint !== "responses" || !rawBody || typeof rawBody !== "object") return [];
+	return ["previous_response_id", "conversation"].filter((param) => {
+		const value = rawBody[param];
+		return value !== undefined && value !== null && value !== "";
+	});
+}
+
+/**
  * Validates that providers support all requested parameters
  */
 function validateParameterSupport(args: {
@@ -229,6 +242,23 @@ function validateParameterSupport(args: {
 			ok: false,
 			response: err("validation_error", {
 				details,
+				request_id: args.requestId,
+				workspace_id: args.workspaceId,
+			}),
+		};
+	}
+
+	const statefulParams = getUnsupportedStatefulResponsesParams(args.endpoint, args.rawBody);
+	if (statefulParams.length > 0) {
+		return {
+			ok: false,
+			response: err("validation_error", {
+				details: statefulParams.map((param) => ({
+					message: `${param} is not supported: the gateway does not store responses (requests are sent with store=false and may be routed to any provider), so there is no earlier response or conversation to continue. Send the full conversation in input instead.`,
+					path: [param],
+					keyword: "unsupported_param",
+					params: { param, model: args.model },
+				})),
 				request_id: args.requestId,
 				workspace_id: args.workspaceId,
 			}),

@@ -56,3 +56,20 @@ curl https://api.phaseo.app/v1/chat/completions \
 ## 流式传输说明
 
 同样支持 `stream: true`。对于 Gateway 管理的服务器工具，Phaseo 可能会先处理上游工具调用轮次、继续循环，再重新发出合成流。
+
+## 工具循环中的推理
+
+推理模型在助手消息的两个字段中返回推理：
+
+- `reasoning_content`：推理文本（如果提供商返回）。
+- `reasoning_details`：采用 OpenRouter 所用格式的推理块数组。每个条目都有 `type`（`reasoning.text`、`reasoning.summary` 或 `reasoning.encrypted`）、`index`，以及表示提供商系列的 `format`，例如 `anthropic-claude-v1` 或 `google-gemini-v1`。
+
+条目可以携带模型在工具循环下一步所需的提供商状态：
+
+- Claude 的 thinking 签名，位于 `reasoning.text` 条目的 `signature` 中。
+- Claude 的已遮蔽 thinking 和 OpenAI 的加密推理，位于 `reasoning.encrypted` 条目的 `data` 中。
+- Gemini 的思考签名，位于 `reasoning.encrypted` 条目的 `data` 中，条目的 `id` 是其所属的工具调用。
+
+流式传输时，每个推理块完成后会收到一个 `reasoning_details` 增量。
+
+要让模型在各步之间保留推理，请原样发回带有 `reasoning_details` 的助手消息。`signature` 和 `data` 的值不透明，并记录了生成它们的提供商和模型。Phaseo 只会把它们发送给该提供商系列和该模型，因此回退到其他提供商时会丢弃它们，而不会导致请求失败。处于手动 thinking 模式的 Claude 模型需要收到其 thinking，才能在工具循环中继续思考；如果缺少，该步骤将在没有 thinking 的情况下运行。

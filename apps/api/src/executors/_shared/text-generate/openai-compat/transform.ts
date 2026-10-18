@@ -9,7 +9,13 @@ import { isIRNativeToolDefinition } from "@core/nativeTools";
 import { applyResponsesRequestQuirks, applyResponsesResponseQuirks } from "./responses-quirks";
 import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
+import { applyPromptCacheFieldPolicy, cacheMarkFields } from "./prompt-cache-policy";
 import { normalizeProviderId } from "@/lib/config/providerAliases";
+import {
+	canReplayReasoning,
+	openReasoningState,
+	reasoningFormatForRoute,
+} from "@core/reasoning-state";
 
 function readResponseToolCallName(item: any): string | null {
 	const candidates = [
@@ -160,9 +166,12 @@ export function irToOpenAIResponses(
 	providerId?: string,
 	capabilityParams?: Record<string, any> | null,
 	actualProviderId?: string,
+	options?: { replayModel?: string | null },
 ): any {
 	const asyncToolProviderId = actualProviderId ?? providerId;
 	const inputItems: any[] = [];
+	// Azure deployment names need not name the model, so callers can pass the model to compare.
+	const replayTarget = { providerId: actualProviderId ?? providerId, model: options?.replayModel ?? providerModelSlug ?? ir.model };
 
 	// Convert IR messages to Responses API input_items
 	for (const msg of ir.messages) {
@@ -186,6 +195,20 @@ export function irToOpenAIResponses(
 			});
 		} else if (msg.role === "assistant") {
 			const assistantContent = msg.content.map(mapAssistantContentPart).filter(Boolean);
+			// Reasoning items go back only to the provider family (and model)
+			// that issued their encrypted_content; others are dropped.
+			const toolCallIds = new Set((msg.toolCalls ?? []).map((call) => call.id));
+			const anchoredReasoning = new Map<string, any[]>();
+			for (const part of msg.content) {
+				if (part.type !== "reasoning_text") continue;
+				const item = toResponsesReasoningInputItem(part, replayTarget);
+				if (!item) continue;
+				if (part.beforeToolCallId && toolCallIds.has(part.beforeToolCallId)) {
+					anchoredReasoning.set(part.beforeToolCallId, [...(anchoredReasoning.get(part.beforeToolCallId) ?? []), item]);
+				} else {
+					inputItems.push(item);
+				}
+			}
 
 			// Assistant message with optional tool calls
 			if (hasMeaningfulAssistantContent(assistantContent)) {
@@ -200,6 +223,7 @@ export function irToOpenAIResponses(
 			// Add tool calls as function_call items
 			if (msg.toolCalls) {
 				for (const tc of msg.toolCalls) {
+					inputItems.push(...(anchoredReasoning.get(tc.id) ?? []));
 					inputItems.push(tc.type === "custom"
 						? {
 							type: "custom_tool_call",
@@ -221,7 +245,11 @@ export function irToOpenAIResponses(
 				inputItems.push({
 					type: result.type === "custom" ? "custom_tool_call_output" : "function_call_output",
 					call_id: result.toolCallId,
-					output: result.content,
+					// OpenAI accepts a breakpoint on an input_text block inside
+					// function_call_output; the cache policy collapses it elsewhere.
+					output: result.cacheControl
+						? [mapContentPart({ type: "text", text: result.content, cacheControl: result.cacheControl })]
+						: result.content,
 				});
 			}
 		}
@@ -347,7 +375,8 @@ export function irToOpenAIResponses(
 	if (ir.conversation !== undefined) request.conversation = ir.conversation;
 	if (ir.previousResponseId !== undefined) request.previous_response_id = ir.previousResponseId;
 	if (ir.prompt !== undefined) request.prompt = ir.prompt;
-	if (ir.promptCacheKey !== undefined) request.prompt_cache_key = ir.promptCacheKey;
+	// Never send null: absent keys stay absent. The pipeline has already namespaced the key per workspace.
+	if (typeof ir.promptCacheKey === "string" && ir.promptCacheKey.length > 0) request.prompt_cache_key = ir.promptCacheKey;
 	if (ir.promptCacheRetention !== undefined) request.prompt_cache_retention = ir.promptCacheRetention;
 	if (ir.promptCacheOptions !== undefined) request.prompt_cache_options = ir.promptCacheOptions;
 	if (ir.safetyIdentifier !== undefined) request.safety_identifier = ir.safetyIdentifier;
@@ -404,6 +433,8 @@ export function irToOpenAIResponses(
 	if (ir.userId) request.user = ir.userId;
 	if (ir.metadata) request.metadata = ir.metadata;
 
+	applyPromptCacheFieldPolicy(request, { providerId: actualProviderId ?? providerId, model: providerModelSlug, irModel: ir.model });
+
 	// Apply provider-specific request transformations (e.g., Z.AI thinking mode)
 	applyResponsesRequestQuirks({
 		ir,
@@ -449,6 +480,7 @@ function toOpenAIResponsesTool(tool: IRTool, useOpenAIShape: boolean, providerId
 			parameters: tool.parameters,
 			...(tool.strict !== undefined ? { strict: tool.strict } : {}),
 			...(supportsAsync && tool.async !== undefined ? { async: tool.async } : {}),
+			...cacheMarkFields(tool.cacheControl),
 		};
 	}
 
@@ -460,6 +492,7 @@ function toOpenAIResponsesTool(tool: IRTool, useOpenAIShape: boolean, providerId
 			parameters: tool.parameters,
 			...(tool.strict !== undefined ? { strict: tool.strict } : {}),
 		},
+		...cacheMarkFields(tool.cacheControl),
 	};
 }
 
@@ -485,15 +518,12 @@ function mapContentPart(part: IRContentPart): any {
 	}
 
         if (part.type === "image") {
-			const promptCacheBreakpoint = part.cacheControl?.type === "prompt_cache_breakpoint"
-				? { mode: part.cacheControl.mode }
-				: undefined;
                 if (part.source === "url") {
                         return {
                                 type: "input_image",
                                 image_url: part.data,
                                 detail: part.detail,
-								...(promptCacheBreakpoint ? { prompt_cache_breakpoint: promptCacheBreakpoint } : {}),
+								...cacheMarkFields(part.cacheControl),
                         };
                 } else {
                         const dataUrl = part.data.startsWith("data:")
@@ -503,7 +533,7 @@ function mapContentPart(part: IRContentPart): any {
                                 type: "input_image",
                                 image_url: dataUrl,
                                 detail: part.detail,
-								...(promptCacheBreakpoint ? { prompt_cache_breakpoint: promptCacheBreakpoint } : {}),
+								...cacheMarkFields(part.cacheControl),
                         };
                 }
         }
@@ -534,11 +564,68 @@ function mapContentPart(part: IRContentPart): any {
 	return { type: "input_text", text: String(part) };
 }
 
+/**
+ * A Responses `reasoning` input item carrying the part's encrypted_content,
+ * or null unless the target route issued it. Without the server-side store,
+ * OpenAI, Azure and xAI continue reasoning only from encrypted_content.
+ * https://platform.openai.com/docs/guides/reasoning#encrypted-reasoning-items
+ */
+function toResponsesReasoningInputItem(
+	part: Extract<IRContentPart, { type: "reasoning_text" }>,
+	target: { providerId?: string; model?: string | null },
+): any | null {
+	if (!part.encryptedContent) return null;
+	const origin = { format: part.reasoningFormat, model: part.reasoningModel, provider: part.reasoningProvider };
+	if (!canReplayReasoning(origin, { providerId: target.providerId, model: target.model })) return null;
+	const summaryText = part.summary ?? "";
+	return {
+		type: "reasoning",
+		...(part.reasoningId ? { id: part.reasoningId } : {}),
+		summary: summaryText ? [{ type: "summary_text", text: summaryText }] : [],
+		encrypted_content: part.encryptedContent,
+	};
+}
+
+/**
+ * The gateway sends Responses requests with `store: false`, so reasoning can
+ * only continue across tool-loop steps through encrypted reasoning items.
+ * Request them for reasoning models, as OpenAI and xAI recommend for
+ * stateless use.
+ */
+export function ensureEncryptedReasoningInclude(request: any): void {
+	if (!request || typeof request !== "object") return;
+	const include = Array.isArray(request.include) ? [...request.include] : [];
+	if (!include.includes("reasoning.encrypted_content")) include.push("reasoning.encrypted_content");
+	request.include = include;
+}
+
+/** Whether a route's capability params describe a reasoning model. */
+export function capabilitySupportsReasoning(capabilityParams?: Record<string, any> | null): boolean {
+	if (!capabilityParams || typeof capabilityParams !== "object") return false;
+	const isReasoningKey = (key: unknown) => typeof key === "string"
+		&& (key === "reasoning" || key.startsWith("reasoning.") || key === "reasoning_effort");
+	const declares = (raw: unknown): boolean => {
+		if (Array.isArray(raw)) return raw.some(isReasoningKey);
+		if (raw && typeof raw === "object") {
+			return Object.entries(raw).some(([key, value]) => isReasoningKey(key) && value !== false && value != null);
+		}
+		return false;
+	};
+	// Catalogue capabilities keep params as top-level keys (`reasoning`, `reasoning.effort`);
+	// some routes nest them under request.allowlist, request.params or params.
+	return declares(capabilityParams.request?.allowlist)
+		|| declares(capabilityParams.request?.params)
+		|| declares(capabilityParams.params)
+		|| declares(capabilityParams);
+}
+
 function mapAssistantContentPart(part: IRContentPart): any {
 	if (part.type === "text") {
 		return { type: "output_text", text: part.text };
 	}
-	if (part.type === "reasoning_text") {
+	if (part.type === "reasoning_text" || part.type === "provider_block") {
+		// Reasoning travels as reasoning items; provider blocks (for example
+		// Claude thinking from a Messages client) have no Responses equivalent.
 		return null;
 	}
 	return { type: "output_text", text: String(part) };
@@ -797,7 +884,10 @@ export function openAIResponsesToIR(
 			}
 		} else if (item.type === "reasoning" || item.type === "reasoning_details") {
 			const reasoningText = extractReasoningText(item);
-			if (reasoningText) {
+			const reasoningPart = readResponsesReasoningState(item, reasoningText, provider, model);
+			if (reasoningPart) {
+				choice.message.content.push(reasoningPart);
+			} else if (reasoningText) {
 				choice.message.content.push({
 					type: "reasoning_text",
 					text: reasoningText,
@@ -901,6 +991,39 @@ function extractTextFromContent(content: any[]): string {
 		.join("");
 }
 
+/**
+ * A reasoning part carrying the item's `encrypted_content`. Values sealed by
+ * the gateway's own stream transformers (Claude) keep their recorded origin;
+ * raw values belong to the provider that returned them (OpenAI, Azure, xAI).
+ */
+function readResponsesReasoningState(
+	item: any,
+	text: string,
+	provider: string,
+	model: string,
+): Extract<IRContentPart, { type: "reasoning_text" }> | null {
+	const state = openReasoningState(item?.encrypted_content, {
+		format: reasoningFormatForRoute(provider, model),
+		kind: "encrypted",
+	});
+	if (!state) return null;
+	const summary = Array.isArray(item?.summary)
+		? item.summary.map((entry: any) => (typeof entry?.text === "string" ? entry.text : "")).join("")
+		: "";
+	return {
+		type: "reasoning_text",
+		text,
+		...(summary ? { summary } : {}),
+		...(state.kind === "signature" ? { thoughtSignature: state.value } : {}),
+		...(state.kind === "redacted" ? { redactedData: state.value } : {}),
+		...(state.kind === "encrypted" ? { encryptedContent: state.value } : {}),
+		reasoningFormat: state.format,
+		reasoningModel: state.model ?? model,
+		reasoningProvider: state.provider ?? provider,
+		...(state.kind === "encrypted" && typeof item?.id === "string" && item.id ? { reasoningId: item.id } : {}),
+	};
+}
+
 function extractReasoningText(item: any): string {
 	const summary = Array.isArray(item?.summary) ? item.summary : [];
 	const content = Array.isArray(item?.content) ? item.content : [];
@@ -911,6 +1034,13 @@ function extractReasoningText(item: any): string {
 		.map((c: any) => (typeof c?.text === "string" ? c.text : ""))
 		.join("");
 	return contentText || summaryText;
+}
+
+function firstFiniteUsageNumber(...values: unknown[]): number | undefined {
+	for (const value of values) {
+		if (typeof value === "number" && Number.isFinite(value)) return value;
+	}
+	return undefined;
 }
 
 /**
@@ -925,14 +1055,38 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 
 	const inputDetails = usage.input_tokens_details ?? usage.prompt_tokens_details;
 	const outputDetails = usage.output_tokens_details ?? usage.completion_tokens_details;
-	const cachedInputTokens = inputDetails?.cached_tokens;
-	const cachedWriteTokens =
-		inputDetails?.cache_write_tokens ??
-		inputDetails?.cache_creation_input_tokens ??
-		inputDetails?.cache_creation_tokens ??
-		outputDetails?.cached_tokens;
+	// Top-level fallbacks (StepFun, DeepSeek, SiliconFlow style) also count inside input.
+	const cachedInputTokens = firstFiniteUsageNumber(
+		inputDetails?.cached_tokens,
+		usage.cached_tokens,
+		usage.prompt_cache_hit_tokens,
+		usage.cached_input_tokens,
+	);
+	// Writes nested in input details (OpenAI/Azure GPT-5.6+, Kimi, Alibaba) are part of
+	// input tokens; the top-level and output-detail forms are reported on top of input.
+	const nestedCachedWriteTokens = firstFiniteUsageNumber(
+		inputDetails?.cache_write_tokens,
+		inputDetails?.cache_creation_input_tokens,
+		inputDetails?.cache_creation_tokens,
+	);
+	const cachedWriteTokens = nestedCachedWriteTokens ?? firstFiniteUsageNumber(
+		usage.cache_write_tokens,
+		usage.cache_creation_input_tokens,
+		outputDetails?.cached_tokens,
+	);
+	const cachedWriteTokens5m = firstFiniteUsageNumber(
+		usage.cached_write_text_tokens_5m,
+		usage.cache_creation?.ephemeral_5m_input_tokens,
+	);
+	const cachedWriteTokens1h = firstFiniteUsageNumber(
+		usage.cached_write_text_tokens_1h,
+		usage.cache_creation?.ephemeral_1h_input_tokens,
+	);
 	const reasoningTokens = outputDetails?.reasoning_tokens;
 	const cachedReadTokensAreSubsetOfInput = typeof cachedInputTokens === "number" ? true : undefined;
+	const cachedWriteTokensAreSubsetOfInput = typeof nestedCachedWriteTokens === "number" || typeof usage.cache_write_tokens === "number"
+		? true
+		: typeof cachedWriteTokens === "number" ? false : undefined;
 	const serverToolUseRaw =
 		usage.server_tool_use && typeof usage.server_tool_use === "object"
 			? usage.server_tool_use
@@ -998,6 +1152,7 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 		totalTokens,
 		cachedInputTokens,
 		cachedReadTokensAreSubsetOfInput,
+		...(cachedWriteTokensAreSubsetOfInput !== undefined ? { cachedWriteTokensAreSubsetOfInput } : {}),
 		reasoningTokens,
 		_ext: {
 			inputImageTokens: inputDetails?.input_images,
@@ -1007,6 +1162,8 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 			outputAudioTokens: outputDetails?.audio_tokens ?? outputDetails?.output_audio,
 			outputVideoTokens: outputDetails?.output_videos,
 			cachedWriteTokens,
+			...(cachedWriteTokens5m !== undefined ? { cachedWriteTokens5m } : {}),
+			...(cachedWriteTokens1h !== undefined ? { cachedWriteTokens1h } : {}),
 			...(serverToolUse ? { serverToolUse } : {}),
 		},
 	};

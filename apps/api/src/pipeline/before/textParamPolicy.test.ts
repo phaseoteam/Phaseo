@@ -81,7 +81,7 @@ describe("textParamPolicy", () => {
 		]);
 	});
 
-	it("recognizes OpenAI prompt cache options on Responses requests", () => {
+	it("accepts OpenAI prompt cache options on Responses requests without making them a routing constraint", () => {
 		const body = {
 			model: "openai/gpt-6-astra",
 			input: "Hello",
@@ -89,7 +89,34 @@ describe("textParamPolicy", () => {
 		};
 
 		expect(getUnknownTopLevelParams("responses", body)).toEqual([]);
-		expect(extractRequestedParams("responses", body)).toContain("prompt_cache_options");
+		expect(extractRequestedParams("responses", body)).not.toContain("prompt_cache_options");
+	});
+
+	it.each(["chat.completions", "responses", "messages"] as const)(
+		"accepts a top-level cache_control on %s",
+		(endpoint) => {
+			const body = {
+				model: "anthropic/claude-sonnet-5",
+				cache_control: { type: "ephemeral", ttl: "5m" },
+			};
+			expect(getUnknownTopLevelParams(endpoint, body)).toEqual([]);
+		},
+	);
+
+	it("never counts cache or identity hints as requested params", () => {
+		const body = {
+			model: "openai/gpt-5.5",
+			messages: [{ role: "user", content: "Hello" }],
+			temperature: 0.2,
+			prompt_cache_key: "session-42",
+			prompt_cache_retention: "24h",
+			prompt_cache_options: { mode: "explicit", ttl: "30m" },
+			safety_identifier: "user-hash-1",
+			user: "user-1",
+			session_id: "session-42",
+		};
+		expect(getUnknownTopLevelParams("chat.completions", body)).toEqual([]);
+		expect(extractRequestedParams("chat.completions", body)).toEqual(["temperature"]);
 	});
 });
 

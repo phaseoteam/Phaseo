@@ -425,6 +425,8 @@ export type GatewayBindings = {
     FEEDBACK_REQUEST_CAMPAIGN?: string;
     FEEDBACK_REWARD_USD?: string;
     FEEDBACK_REWARD_CAP?: string;
+    MOBILE_PUSH_ENABLED?: string;
+    EXPO_ACCESS_TOKEN?: string;
     LEAKED_KEY_REPORT_MODE?: string;
     VIDEO_API_ENABLED?: string;
     PRICING_MONITOR_ENABLED?: string;

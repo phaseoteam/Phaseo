@@ -90,6 +90,20 @@ function encodeOpenAIChat(
 			},
 		};
 	}
+	if (event.type === "reasoning_state") {
+		return {
+			frame: {
+				object: "chat.completion.chunk",
+				choices: [
+					{
+						index: event.choiceIndex ?? 0,
+						delta: { reasoning_details: event.details },
+						finish_reason: null,
+					},
+				],
+			},
+		};
+	}
 	if (event.type === "delta_tool") {
 		return {
 			frame: {

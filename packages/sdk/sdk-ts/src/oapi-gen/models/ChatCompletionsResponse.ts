@@ -15,6 +15,16 @@ export interface ChatCompletionsResponse {
         | string
         | (
             | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                prompt_cache_breakpoint?: {
+                  mode?: "explicit";
+                  [key: string]: unknown;
+                };
                 text: string;
                 type: "text";
               }
@@ -53,6 +63,17 @@ export interface ChatCompletionsResponse {
         type: "image_url";
       }[];
       name?: string;
+      reasoning_content?: string;
+      reasoning_details?: {
+        data?: string;
+        format?: string;
+        id?: string;
+        index?: number;
+        signature?: string;
+        summary?: string;
+        text?: string;
+        type: "reasoning.text" | "reasoning.summary" | "reasoning.encrypted";
+      }[];
       role: "system" | "developer" | "user" | "assistant" | "tool";
       tool_call_id?: string;
       tool_calls?: {
@@ -75,7 +96,17 @@ export interface ChatCompletionsResponse {
   provider?: string;
   usage?: {
     completion_tokens?: number;
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
     prompt_tokens?: number;
+    prompt_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
     server_tool_use?: {
       advisor_requests?: number;
       apply_patch_requests?: number;

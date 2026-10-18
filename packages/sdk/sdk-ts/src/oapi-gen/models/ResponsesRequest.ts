@@ -1,5 +1,11 @@
 export interface ResponsesRequest {
   background?: boolean;
+  cache_control?: {
+    scope?: string;
+    ttl?: string;
+    type?: string;
+    [key: string]: unknown;
+  };
   debug?: {
     enabled?: boolean;
     return_upstream_request?: boolean;
@@ -27,7 +33,13 @@ export interface ResponsesRequest {
     | string
     | {
         content?: string | {}[] | {};
+        encrypted_content?: string;
+        id?: string;
         role?: "user" | "assistant" | "system" | "developer";
+        summary?: {
+          text: string;
+          type: "summary_text";
+        }[];
         type?: string;
       }[]
     | {};
@@ -43,6 +55,12 @@ export interface ResponsesRequest {
   parallel_tool_calls?: boolean;
   previous_response_id?: string;
   prompt_cache_key?: string | null;
+  prompt_cache_options?: {
+    mode?: "implicit" | "explicit";
+    ttl?: string;
+    [key: string]: unknown;
+  };
+  prompt_cache_retention?: "in_memory" | "24h";
   provider?: {
     allow_fallbacks?: boolean | null;
     data_collection?: "allow" | "deny" | null;
@@ -104,7 +122,15 @@ export interface ResponsesRequest {
         compact_threshold?: number;
         type: "compaction";
       };
+      prompt_cache_options?: {
+        mode?: "implicit" | "explicit";
+        ttl?: string;
+        [key: string]: unknown;
+      };
       prompt_cache_retention?: string;
+    };
+    xai?: {
+      conversation_id?: string;
     };
   };
   reasoning?: {
@@ -153,6 +179,12 @@ export interface ResponsesRequest {
   tools?: (
     | {
         async?: boolean;
+        cache_control?: {
+          scope?: string;
+          ttl?: string;
+          type?: string;
+          [key: string]: unknown;
+        };
         function: {
           description?: string;
           name: string;

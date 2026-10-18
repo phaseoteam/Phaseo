@@ -1,12 +1,77 @@
-import "react-native-gesture-handler";
-import { ThemeProvider } from "@react-navigation/native";
-import { Stack } from "expo-router";
+import "../global.css";
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useColorScheme } from "react-native";
-import { AppProviders } from "@/providers/AppProviders";
-import { navigationTheme } from "@/theme";
+import * as SystemUI from "expo-system-ui";
+import { useEffect, useMemo } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useCSSVariable } from "uniwind";
+import { NotificationObserver } from "@/features/notifications/NotificationObserver";
+import { AppearanceProvider, useAppearance } from "@/providers/AppearanceProvider";
+import { AuthProvider, useAuth } from "@/providers/AuthProvider";
+import { QueryProvider } from "@/providers/QueryProvider";
+import { WorkspaceProvider } from "@/providers/WorkspaceProvider";
+
+void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 export default function RootLayout() {
-  const dark = useColorScheme() === "dark";
-  return <AppProviders><ThemeProvider value={navigationTheme(dark)}><StatusBar style={dark ? "light" : "dark"} /><Stack screenOptions={{ headerBackButtonDisplayMode: "minimal" }}><Stack.Screen name="(tabs)" options={{ headerShown: false }} /><Stack.Screen name="model/[id]" options={{ title: "Model" }} /><Stack.Screen name="sign-in" options={{ title: "Sign in" }} /></Stack></ThemeProvider></AppProviders>;
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <KeyboardProvider>
+          <AppearanceProvider>
+            <AuthProvider>
+              <QueryProvider>
+                <WorkspaceProvider>
+                  <RootNavigator />
+                </WorkspaceProvider>
+              </QueryProvider>
+            </AuthProvider>
+          </AppearanceProvider>
+        </KeyboardProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
+  );
+}
+
+function RootNavigator() {
+  const { resolved, ready: appearanceReady } = useAppearance();
+  const { ready: authReady } = useAuth();
+  const [background, card, text, border, primary] = useCSSVariable(["--color-background", "--color-card", "--color-foreground", "--color-border", "--color-primary"]);
+  const ready = appearanceReady && authReady;
+
+  // Navigation surfaces (screen backgrounds during transitions) follow the same tokens as the app.
+  const theme = useMemo(() => {
+    const base = resolved === "dark" ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: { ...base.colors, background: String(background ?? base.colors.background), card: String(card ?? base.colors.card), text: String(text ?? base.colors.text), border: String(border ?? base.colors.border), primary: String(primary ?? base.colors.primary) },
+    };
+  }, [resolved, background, card, text, border, primary]);
+
+  useEffect(() => {
+    if (background) void SystemUI.setBackgroundColorAsync(String(background));
+  }, [background]);
+
+  useEffect(() => {
+    if (ready) void SplashScreen.hideAsync();
+  }, [ready]);
+
+  if (!ready) return null;
+
+  return (
+    <ThemeProvider value={theme}>
+      <StatusBar style={resolved === "dark" ? "light" : "dark"} />
+      <NotificationObserver />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(app)" />
+        <Stack.Screen name="sign-in" options={{ presentation: "formSheet", sheetAllowedDetents: [0.75, 1], sheetGrabberVisible: true }} />
+        <Stack.Screen name="filters/[kind]" options={{ presentation: "formSheet", sheetAllowedDetents: [0.6, 1], sheetGrabberVisible: true }} />
+        <Stack.Screen name="sheets/[kind]" options={{ presentation: "formSheet", sheetAllowedDetents: [0.6, 1], sheetGrabberVisible: true }} />
+        <Stack.Screen name="auth/callback" options={{ presentation: "transparentModal", animation: "fade" }} />
+      </Stack>
+    </ThemeProvider>
+  );
 }

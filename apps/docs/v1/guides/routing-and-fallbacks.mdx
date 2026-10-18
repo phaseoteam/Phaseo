@@ -381,15 +381,24 @@ always tried before a replacement. See
 
 ## Cache-aware and session-aware affinity
 
-Cache-aware routing is enabled by default on text generation endpoints. After a
-provider reports a real prompt-cache read, Phaseo pins matching context back to
-that provider for 15 minutes, provided the provider remains healthy and allowed
-by the active route, preset, guardrail, and request policy.
+Cache-aware routing is enabled by default on text generation endpoints. Requests
+that send `prompt_cache_key` or `session_id`, or opt into caching with
+`cache_control` (top-level, `provider_options.anthropic.cache_control`, or a
+`cache_control` or `prompt_cache_breakpoint` mark on a message block or tool),
+are pinned to the provider and route that served their first successful request.
+Other requests are pinned for 15 minutes once a provider reports a prompt-cache
+read or write for the same opening context, as long as that provider's cached
+input is cheaper than its standard input.
+
+Pins are kept per workspace and last from 15 minutes to 24 hours, following the
+provider's cache retention. A pin moves only when its provider's circuit breaker
+opens, its recent error rate is high, Phaseo's managed quota on it runs out, or
+the active route, preset, guardrail, or request policy no longer allows it.
 
 When `session_id` is present, the cache affinity is keyed to the session instead
-of only the opening context. Session affinity is refreshed when Phaseo observes
-another cache read and is retained for up to 24 hours of session activity.
-Circuit breakers and policy filters always take precedence over affinity.
+of only the opening context, and is retained for up to 24 hours of session
+activity. See [Provider affinity](./prompt-caching.mdx#provider-affinity) for pin
+lifetimes and the affinity hints Phaseo sends to each provider.
 
 Opt out for one request without changing workspace or dynamic-route defaults:
 

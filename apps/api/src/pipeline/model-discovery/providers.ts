@@ -78,7 +78,8 @@ const PROVIDER_OVERRIDES: Record<string, ProviderOverride> = {
 		authStyle: "none",
 	},
 	chutes: { providerName: "Chutes", authStyle: "none" },
-	clarifai: { providerName: "Clarifai", authStyle: "clarifai_key" },
+	// api.clarifai.com stopped resolving (NXDOMAIN, 2026-10-17); every check failed.
+	clarifai: { providerName: "Clarifai", authStyle: "clarifai_key", disabled: true },
 	cloudflare: {
 		providerName: "Cloudflare Workers AI",
 		modelsEndpoint:
@@ -104,6 +105,8 @@ const PROVIDER_OVERRIDES: Record<string, ProviderOverride> = {
 	groq: { providerName: "Groq" },
 	"inference-net": {
 		providerName: "Inference.net",
+		modelsEndpoint: "https://api.inference.net/v1/models",
+		authStyle: "none",
 		apiKeyEnv: ["INFERENCE_API_KEY", "INFERENCE_NET_API_KEY"],
 	},
 	doubleword: {
@@ -241,9 +244,10 @@ const NATIVE_DISCOVERY_PROVIDERS: ProviderConfig[] = [
 		authStyle: "optional_bearer",
 	},
 	{
-		providerId: "pioneer",
-		providerName: "Pioneer",
-		modelsEndpoint: "https://api.pioneer.ai/v1/models",
+		providerId: "fastino",
+		providerName: "Fastino",
+		// api.pioneer.ai answers 410 host_retired and names this host as its replacement.
+		modelsEndpoint: "https://api.fastino.ai/v1/models",
 		authStyle: "none",
 	},
 	{

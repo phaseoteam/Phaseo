@@ -15,7 +15,8 @@ import type {
 	IRTool,
 } from "@core/ir";
 import { extractToolNameOrType, isOpenAINativeWebSearchTool } from "@core/nativeTools";
-import { normalizeOpenAIContent } from "../shared/normalizeContent";
+import { normalizeOpenAIContent, normalizePartCacheControl, normalizeToolResultContent } from "../shared/normalizeContent";
+import { applyToolCallSignatures, decodeChatReasoningDetails } from "../shared/reasoning";
 import {
 	normalizeImageConfig,
 	normalizeModalities,
@@ -41,11 +42,10 @@ import {
  */
 export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequest {
 	const reqAny = req as any;
-	const metadataFromRequest = req.metadata ? { ...req.metadata } : undefined;
+	// `user` stays in `userId`; folding it into metadata sent an unknown
+	// `metadata.user` key upstream (Anthropic rejects anything but user_id).
+	const metadata = req.metadata ? { ...req.metadata } : undefined;
 	const providerCacheOptions = normalizeProviderCacheOptions(req as any);
-	const metadata = req.user
-		? { ...(metadataFromRequest ?? {}), user: req.user }
-		: metadataFromRequest;
 	const messages: IRMessage[] = [];
 
 	const systemPrompt = reqAny.system ?? reqAny.system_prompt;
@@ -66,23 +66,36 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 			});
 		} else if (normalizedRole === "assistant") {
 			const assistantContent = normalizeOpenAIContent(msgAny.content || "");
-			const reasoningContent = typeof msgAny.reasoning_content === "string" ? msgAny.reasoning_content : "";
-			const content: IRContentPart[] = reasoningContent
-				? [{ type: "reasoning_text", text: reasoningContent } as const, ...assistantContent]
-				: assistantContent;
+			const toolCalls: IRToolCall[] | undefined = Array.isArray(msgAny.tool_calls) ? msgAny.tool_calls.map(decodeToolCall) : undefined;
+			// reasoning_details carries provider state (signatures, encrypted
+			// reasoning) and wins over the plain reasoning_content text.
+			const decodedDetails = decodeChatReasoningDetails(
+				msgAny.reasoning_details,
+				new Set((toolCalls ?? []).map((call) => call.id)),
+			);
+			applyToolCallSignatures(toolCalls, decodedDetails.toolSignatures);
+			const reasoningContent = typeof msgAny.reasoning_content === "string"
+				? msgAny.reasoning_content
+				: typeof msgAny.reasoning === "string" ? msgAny.reasoning : "";
+			const reasoningParts: IRContentPart[] = decodedDetails.parts.length > 0
+				? decodedDetails.parts
+				: reasoningContent ? [{ type: "reasoning_text", text: reasoningContent }] : [];
+			const content: IRContentPart[] = [...reasoningParts, ...assistantContent];
 
 			messages.push({
 				role: "assistant",
 				content,
-				toolCalls: Array.isArray(msgAny.tool_calls) ? msgAny.tool_calls.map(decodeToolCall) : undefined,
+				toolCalls,
 			});
 		} else if (normalizedRole === "tool") {
+			const toolResult = normalizeToolResultContent(msgAny.content);
 			messages.push({
 				role: "tool",
 				toolResults: [
 					{
 						toolCallId: msgAny.tool_call_id,
-						content: typeof msgAny.content === "string" ? msgAny.content : JSON.stringify(msgAny.content),
+						content: toolResult.content,
+						...(toolResult.cacheControl ? { cacheControl: toolResult.cacheControl } : {}),
 					},
 				],
 			});
@@ -305,6 +318,7 @@ function decodeOpenAITool(tool: any): IRTool {
 					: undefined,
 			parameters: {},
 			async: typeof tool.async === "boolean" ? tool.async : undefined,
+			cacheControl: normalizePartCacheControl(tool),
 			raw: { ...tool },
 		};
 	}
@@ -315,6 +329,7 @@ function decodeOpenAITool(tool: any): IRTool {
 		parameters: tool.function?.parameters || tool.parameters || {},
 		strict: tool.function?.strict ?? tool.strict,
 		async: typeof tool.async === "boolean" ? tool.async : undefined,
+		cacheControl: normalizePartCacheControl(tool) ?? normalizePartCacheControl(tool.function),
 	};
 }
 

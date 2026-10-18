@@ -18,12 +18,9 @@ vi.mock("./health", () => ({
 }));
 
 vi.mock("./sticky-routing", () => ({
-	readStickyRoutingOptimistic: (...args: any[]) => readStickyRoutingMock(...args),
+	readStickyRoutingForRouting: async (...args: any[]) => ({ entry: readStickyRoutingMock(...args), mode: "l1" }),
 	resolveStickyRoutingContext: (...args: any[]) => resolveStickyRoutingContextMock(...args),
-	stickyRoutingCacheBoostMultiplier: (cachedReadTokens: number) => {
-		if (!Number.isFinite(cachedReadTokens) || cachedReadTokens <= 0) return 1;
-		return 1 + Math.min(12, Math.log10(cachedReadTokens + 1) * 4);
-	},
+	STICKY_ROUTING_PIN_MULTIPLIER: 1_000_000,
 }));
 
 function health(

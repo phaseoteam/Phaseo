@@ -18,6 +18,7 @@ import { bytesToString, decryptBYOK } from "@pipeline/byok/decrypt";
 import { BYOK_KEYS_PER_PROVIDER_LIMIT, isByokKeyEligible } from "@/core/byok";
 import { contextSchema } from "./schemas";
 import { loadPriceCard } from "@pipeline/pricing";
+import { isFreePriceCard } from "@pipeline/pricing/free";
 import { getContextCapabilityCandidates } from "./context.capability-aliases";
 import {
 	applyNebiusRegionalModelAllowlist,
@@ -1043,12 +1044,20 @@ async function fetchFreeRouterProviderPool(args: {
             row.provider_model_slug === null || row.provider_model_slug === undefined
                 ? null
                 : String(row.provider_model_slug);
+        // The router must never incur cost: pool only routes whose card bills
+        // nothing. A `:free` slug is not proof. A route whose free window has
+        // expired, or whose card also carries paid rules, is left out rather
+        // than letting it block (or bill) every phaseo/free request.
+        const card = await loadPriceCard(providerId, apiModelId, args.endpoint, providerModelSlug);
+        if (!isFreePriceCard(card)) continue;
+
         const providerStatus = providerStatusById.get(providerId);
         const residency = getProviderResidencyMetadata({
             providerId,
             providerModelSlug,
         });
 		const pricingKey = getProviderPricingKey(providerId, apiModelId, providerModelSlug);
+        pricing[pricingKey] = card;
         providers.push({
             providerId,
             providerStatus: providerStatus?.status ?? "not_ready",
@@ -1080,11 +1089,6 @@ async function fetchFreeRouterProviderPool(args: {
                     ? null
                     : Number(capability.max_output_tokens),
         });
-
-        const card = await loadPriceCard(providerId, apiModelId, args.endpoint, providerModelSlug);
-        if (card) {
-            pricing[pricingKey] = card;
-        }
     }
 
     return { providers, pricing };

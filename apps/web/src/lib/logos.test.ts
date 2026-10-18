@@ -1,6 +1,17 @@
 import { getLogoLabel, resolveLogo } from "@/lib/logos";
 
 describe("logos", () => {
+	test("keeps Pioneer and Fastino as separate identities sharing their official mark", () => {
+		for (const id of ["pioneer", "fastino"]) {
+			for (const theme of ["light", "dark"] as const) {
+				expect(resolveLogo(id, { theme })).toMatchObject({
+					id,
+					label: id === "pioneer" ? "Pioneer" : "Fastino",
+					src: `/logos/fastino_${theme}.svg`,
+				});
+			}
+		}
+	});
 	test("resolves the DigitalOcean logo asset by provider id", () => {
 		expect(resolveLogo("digitalocean")).toMatchObject({
 			id: "digitalocean",
