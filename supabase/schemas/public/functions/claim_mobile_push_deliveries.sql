@@ -20,7 +20,8 @@ CREATE OR REPLACE FUNCTION public.claim_mobile_push_deliveries (
 -- Claims due pushes (pending, or deferred past quiet hours, or processing rows a crashed
 -- run left behind for ten minutes) under the caller's token, skipping rows another run
 -- holds. Pushes over two days old, for a device that is no longer active or for a user who
--- has since switched push off, are closed first instead of sent.
+-- has since switched push off, are closed first instead of sent, including processing rows
+-- about to be reclaimed.
 #variable_conflict use_column
 begin
   if p_limit is null or p_limit < 1 or p_limit > 500 then
@@ -37,11 +38,13 @@ begin
         when dev.status <> 'active' then 'device_inactive'
         else 'notifications_disabled'
       end,
+      claim_token = null,
+      claimed_at = null,
       updated_at = now()
   from public.mobile_push_devices dev
   left join public.mobile_notification_preferences p on p.user_id = dev.user_id
   where dev.id = x.device_id
-    and x.status in ('pending', 'deferred')
+    and (x.status in ('pending', 'deferred') or (x.status = 'processing' and x.claimed_at < now() - interval '10 minutes'))
     and (x.created_at <= now() - interval '2 days' or dev.status <> 'active' or not coalesce(p.enabled, false));
 
   return query

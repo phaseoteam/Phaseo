@@ -19,6 +19,8 @@ CREATE OR REPLACE FUNCTION public.capture_catalogue_notification_events (
 -- and only once every transaction older than that call has finished, so a long transaction
 -- that commits after later ids cannot be skipped. A transaction touching more than
 -- p_max_models_per_transaction models is a bulk sync or backfill: it is recorded and skipped.
+-- It is sized by all of its unread rows before any of them is read, so a transaction that
+-- spans several calls is skipped from its first row.
 -- Rows older than two days only move the cursor, so resuming the job sends no stale news.
 declare
   v_source constant text := 'v2_catalogue_row_history';
@@ -29,6 +31,8 @@ declare
   v_upper bigint;
   v_last bigint;
   v_ids bigint[] := '{}';
+  v_transactions bigint[] := '{}';
+  v_fresh boolean := false;
   v_relevant bigint[] := '{}';
   v_scanned integer := 0;
   v_skipped integer := 0;
@@ -77,17 +81,29 @@ begin
       v_last := v_upper;
     end if;
 
-    insert into public.catalogue_notification_skipped_transactions as s (transaction_id, model_count, row_count, first_history_event_id)
-    select h.transaction_id, count(distinct h.model_slug)::integer, count(*)::integer, min(h.event_id)
+    -- Size each transaction in this page by every unread row it wrote, not only those in the
+    -- page (a primary key range scan from the cursor). Every transaction with a row up to
+    -- v_upper has finished, so all of its rows are visible now; any below the cursor were read
+    -- by an earlier call, which sized the whole transaction then and recorded it if it was bulk.
+    -- A page that is all older than two days emits nothing and is not sized.
+    select coalesce(array_agg(distinct h.transaction_id) filter (where h.operation <> 'BASELINE'), '{}'),
+           coalesce(bool_or(h.recorded_at > now() - interval '2 days'), false)
+      into v_transactions, v_fresh
     from public.v2_catalogue_row_history h
-    where h.event_id = any (v_ids) and h.operation <> 'BASELINE'
-    group by h.transaction_id
-    having count(distinct h.model_slug) > p_max_models_per_transaction
-    on conflict (transaction_id) do update
-      set model_count = greatest(s.model_count, excluded.model_count),
-          row_count = s.row_count + excluded.row_count,
-          first_history_event_id = least(s.first_history_event_id, excluded.first_history_event_id);
-    get diagnostics v_skipped = row_count;
+    where h.event_id = any (v_ids);
+
+    if v_fresh and cardinality(v_transactions) > 0 then
+      insert into public.catalogue_notification_skipped_transactions (transaction_id, model_count, row_count, first_history_event_id)
+      select h.transaction_id, count(distinct h.model_slug)::integer, count(*)::integer, min(h.event_id)
+      from public.v2_catalogue_row_history h
+      where h.event_id > v_cursor.last_history_event_id
+        and h.transaction_id = any (v_transactions)
+        and h.operation <> 'BASELINE'
+      group by h.transaction_id
+      having count(distinct h.model_slug) > p_max_models_per_transaction
+      on conflict (transaction_id) do nothing;
+      get diagnostics v_skipped = row_count;
+    end if;
 
     select coalesce(array_agg(h.event_id), '{}') into v_relevant
     from public.v2_catalogue_row_history h

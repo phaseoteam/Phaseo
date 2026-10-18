@@ -181,43 +181,42 @@ describe("mobile notification rules", () => {
 		labs: { mode: "except", ids: ["Qwen", "meta"] }, outputModalities: ["text"],
 	};
 
-	function ruleStore(options: { count?: number; lastPosition?: number | null } = {}) {
-		let inserted: Record<string, unknown> | null = null;
-		const calls = stubFetch((call) => {
-			if (!call.url.pathname.endsWith("/mobile_notification_rules")) return undefined;
-			if (call.method === "HEAD") return new Response(null, { status: 200, headers: { "content-range": `*/${options.count ?? 0}` } });
-			if (call.method === "GET") return Response.json(options.lastPosition == null ? [] : [{ position: options.lastPosition }]);
-			if (call.method === "POST") {
-				inserted = call.body as Record<string, unknown>;
-				return Response.json({ id: RULE, ...inserted }, { status: 201 });
-			}
-			return undefined;
-		});
-		return { calls, inserted: () => inserted };
+	// The database allocates the position and applies the defaults (supabase/tests/mobile-push-rules.test.mjs).
+	function ruleStore(result: unknown = { rule: { ...ruleRow, position: 5 } }, status = 200) {
+		const calls = stubFetch((call) => call.url.pathname.endsWith("/rpc/create_mobile_notification_rule")
+			? Response.json(result, { status })
+			: undefined);
+		return { calls };
 	}
 
-	it("creates a rule with defaults, normalised lists and the next position", async () => {
-		const store = ruleStore({ count: 2, lastPosition: 4 });
+	it("creates a rule with normalised lists in one locked database call", async () => {
+		const store = ruleStore();
 		const response = await send("/rules", { method: "POST", body: input });
 		expect(response.status).toBe(201);
-		expect(store.inserted()).toEqual({
-			name: "No Qwen or Meta", enabled: true, action: "notify", event_kinds: ["model_released", "gateway_available"],
-			lab_mode: "except", lab_slugs: ["qwen", "meta"], provider_mode: "all", provider_slugs: [], model_slugs: [],
-			input_modalities: [], output_modalities: ["text"], only_on_phaseo: false, include_free_variants: false,
-			user_id: USER, position: 5,
+		expect(store.calls).toHaveLength(1);
+		expect(store.calls[0].method).toBe("POST");
+		expect(store.calls[0].url.pathname).toBe("/rest/v1/rpc/create_mobile_notification_rule");
+		expect(store.calls[0].body).toEqual({
+			p_user_id: USER,
+			p_rule: { name: "No Qwen or Meta", event_kinds: ["model_released", "gateway_available"], lab_mode: "except", lab_slugs: ["qwen", "meta"], output_modalities: ["text"] },
+			p_max_rules: 50,
 		});
 		expect(await response.json()).toEqual({ rule: { ...rule, position: 5 } });
-		for (const call of store.calls) {
-			if (call.method !== "POST") expect(call.url.searchParams.get("user_id")).toBe(`eq.${USER}`);
-		}
 	});
 
 	it("caps users at 50 rules", async () => {
-		const store = ruleStore({ count: 50, lastPosition: 49 });
+		const store = ruleStore({ error: "rule_limit_reached" });
 		const response = await send("/rules", { method: "POST", body: input });
 		expect(response.status).toBe(400);
 		expect(await response.json()).toEqual({ error: "rule_limit_reached", message: "You can have up to 50 notification rules. Delete one to add another." });
-		expect(store.inserted()).toBeNull();
+		expect(store.calls).toHaveLength(1);
+	});
+
+	it("reports a failed create as unavailable", async () => {
+		ruleStore({ message: "boom" }, 500);
+		const response = await send("/rules", { method: "POST", body: input });
+		expect(response.status).toBe(503);
+		expect((await response.json()).error).toBe("mobile_notification_rule_write_failed");
 	});
 
 	it.each([

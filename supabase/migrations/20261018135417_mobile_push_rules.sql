@@ -227,6 +227,7 @@ CREATE TABLE "public"."mobile_push_deliveries" (
   "claim_token"        uuid,
   "claimed_at"         timestamp with time zone,
   "expo_ticket_id"     text,
+  "receipt_claimed_at" timestamp with time zone,
   "receipt_checked_at" timestamp with time zone,
   "error_code"         text,
   "error_message"      text,
@@ -269,6 +270,10 @@ CREATE POLICY "deny_direct_client_access" ON "public"."mobile_push_deliveries"
   TO "anon", "authenticated"
   USING (false)
   WITH CHECK (false);
+
+COMMENT ON COLUMN "public"."mobile_push_deliveries"."receipt_checked_at" IS 'When the Expo receipt was read, or when the ticket was closed unread a day after sending.';
+
+COMMENT ON COLUMN "public"."mobile_push_deliveries"."receipt_claimed_at" IS 'When a run last asked Expo for the receipt. A receipt Expo did not return is asked for again 15 minutes later.';
 
 COMMENT ON TABLE "public"."mobile_push_deliveries" IS 'One mobile push per catalogue event and device. Deferred rows wait for quiet hours to end; suppressed rows were over the daily cap or no longer wanted. Claimed with a token so overlapping runs never send twice.';
 
@@ -434,6 +439,8 @@ CREATE OR REPLACE FUNCTION public.capture_catalogue_notification_events (
 -- and only once every transaction older than that call has finished, so a long transaction
 -- that commits after later ids cannot be skipped. A transaction touching more than
 -- p_max_models_per_transaction models is a bulk sync or backfill: it is recorded and skipped.
+-- It is sized by all of its unread rows before any of them is read, so a transaction that
+-- spans several calls is skipped from its first row.
 -- Rows older than two days only move the cursor, so resuming the job sends no stale news.
 declare
   v_source constant text := 'v2_catalogue_row_history';
@@ -444,6 +451,8 @@ declare
   v_upper bigint;
   v_last bigint;
   v_ids bigint[] := '{}';
+  v_transactions bigint[] := '{}';
+  v_fresh boolean := false;
   v_relevant bigint[] := '{}';
   v_scanned integer := 0;
   v_skipped integer := 0;
@@ -492,17 +501,29 @@ begin
       v_last := v_upper;
     end if;
 
-    insert into public.catalogue_notification_skipped_transactions as s (transaction_id, model_count, row_count, first_history_event_id)
-    select h.transaction_id, count(distinct h.model_slug)::integer, count(*)::integer, min(h.event_id)
+    -- Size each transaction in this page by every unread row it wrote, not only those in the
+    -- page (a primary key range scan from the cursor). Every transaction with a row up to
+    -- v_upper has finished, so all of its rows are visible now; any below the cursor were read
+    -- by an earlier call, which sized the whole transaction then and recorded it if it was bulk.
+    -- A page that is all older than two days emits nothing and is not sized.
+    select coalesce(array_agg(distinct h.transaction_id) filter (where h.operation <> 'BASELINE'), '{}'),
+           coalesce(bool_or(h.recorded_at > now() - interval '2 days'), false)
+      into v_transactions, v_fresh
     from public.v2_catalogue_row_history h
-    where h.event_id = any (v_ids) and h.operation <> 'BASELINE'
-    group by h.transaction_id
-    having count(distinct h.model_slug) > p_max_models_per_transaction
-    on conflict (transaction_id) do update
-      set model_count = greatest(s.model_count, excluded.model_count),
-          row_count = s.row_count + excluded.row_count,
-          first_history_event_id = least(s.first_history_event_id, excluded.first_history_event_id);
-    get diagnostics v_skipped = row_count;
+    where h.event_id = any (v_ids);
+
+    if v_fresh and cardinality(v_transactions) > 0 then
+      insert into public.catalogue_notification_skipped_transactions (transaction_id, model_count, row_count, first_history_event_id)
+      select h.transaction_id, count(distinct h.model_slug)::integer, count(*)::integer, min(h.event_id)
+      from public.v2_catalogue_row_history h
+      where h.event_id > v_cursor.last_history_event_id
+        and h.transaction_id = any (v_transactions)
+        and h.operation <> 'BASELINE'
+      group by h.transaction_id
+      having count(distinct h.model_slug) > p_max_models_per_transaction
+      on conflict (transaction_id) do nothing;
+      get diagnostics v_skipped = row_count;
+    end if;
 
     select coalesce(array_agg(h.event_id), '{}') into v_relevant
     from public.v2_catalogue_row_history h
@@ -983,7 +1004,8 @@ CREATE OR REPLACE FUNCTION public.claim_mobile_push_deliveries (
 -- Claims due pushes (pending, or deferred past quiet hours, or processing rows a crashed
 -- run left behind for ten minutes) under the caller's token, skipping rows another run
 -- holds. Pushes over two days old, for a device that is no longer active or for a user who
--- has since switched push off, are closed first instead of sent.
+-- has since switched push off, are closed first instead of sent, including processing rows
+-- about to be reclaimed.
 #variable_conflict use_column
 begin
   if p_limit is null or p_limit < 1 or p_limit > 500 then
@@ -1000,11 +1022,13 @@ begin
         when dev.status <> 'active' then 'device_inactive'
         else 'notifications_disabled'
       end,
+      claim_token = null,
+      claimed_at = null,
       updated_at = now()
   from public.mobile_push_devices dev
   left join public.mobile_notification_preferences p on p.user_id = dev.user_id
   where dev.id = x.device_id
-    and x.status in ('pending', 'deferred')
+    and (x.status in ('pending', 'deferred') or (x.status = 'processing' and x.claimed_at < now() - interval '10 minutes'))
     and (x.created_at <= now() - interval '2 days' or dev.status <> 'active' or not coalesce(p.enabled, false));
 
   return query
@@ -1131,9 +1155,11 @@ CREATE OR REPLACE FUNCTION public.claim_mobile_push_receipts (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
--- Hands out Expo tickets whose receipts should be ready (sent 15 minutes to a day ago) and
--- marks them checked, so each receipt is fetched once. Expo keeps receipts for a day;
--- older unchecked tickets are closed without a check.
+-- Hands out Expo tickets whose receipts should be ready (sent 15 minutes to a day ago) under
+-- a claim that lapses after 15 minutes. Only record_mobile_push_receipts closes a ticket, for
+-- the receipts Expo returned, so a failed request or a receipt that is not ready yet is
+-- asked for again on a later run. Expo keeps receipts for a day; tickets still unchecked
+-- after that are closed without a check.
 #variable_conflict use_column
 begin
   if p_limit is null or p_limit < 1 or p_limit > 1000 then
@@ -1151,12 +1177,13 @@ begin
     from public.mobile_push_deliveries x
     where x.status = 'sent' and x.expo_ticket_id is not null and x.receipt_checked_at is null
       and x.sent_at <= now() - interval '15 minutes'
+      and (x.receipt_claimed_at is null or x.receipt_claimed_at <= now() - interval '15 minutes')
     order by x.sent_at, x.id
     for update skip locked
     limit p_limit
   )
   update public.mobile_push_deliveries x
-  set receipt_checked_at = now(), updated_at = now()
+  set receipt_claimed_at = now(), updated_at = now()
   from due
   where x.id = due.id
   returning x.id, x.expo_ticket_id;
@@ -1179,8 +1206,9 @@ CREATE OR REPLACE FUNCTION public.record_mobile_push_receipts (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
--- Records receipts Expo reported as errors: [{ "id", "errorCode", "errorMessage" }]. The push
--- is marked failed and DeviceNotRegistered retires the device.
+-- Closes the receipts Expo returned: [{ "id", "status": "ok" | "error", "errorCode",
+-- "errorMessage" }]. An error marks the push failed and DeviceNotRegistered retires the
+-- device. Tickets left out stay open, so claim_mobile_push_receipts hands them out again.
 declare
   v_result jsonb;
 begin
@@ -1189,30 +1217,35 @@ begin
   end if;
 
   with results as (
-    select distinct on (r.id) r.id, left(r."errorCode", 100) as error_code, left(r."errorMessage", 1000) as error_message
-    from jsonb_to_recordset(p_results) as r(id uuid, "errorCode" text, "errorMessage" text)
-    where r.id is not null
+    select distinct on (r.id) r.id, r.status, left(r."errorCode", 100) as error_code, left(r."errorMessage", 1000) as error_message
+    from jsonb_to_recordset(p_results) as r(id uuid, status text, "errorCode" text, "errorMessage" text)
+    where r.id is not null and r.status in ('ok', 'error')
     order by r.id
   ),
-  failed as (
+  checked as (
     update public.mobile_push_deliveries x
-    set status = 'failed',
-        error_code = coalesce(r.error_code, 'receipt_error'),
-        error_message = r.error_message,
+    set status = case when r.status = 'error' then 'failed' else x.status end,
+        error_code = case when r.status = 'error' then coalesce(r.error_code, 'receipt_error') else x.error_code end,
+        error_message = case when r.status = 'error' then r.error_message else x.error_message end,
+        receipt_checked_at = now(),
         updated_at = now()
     from results r
-    where x.id = r.id and x.status = 'sent'
-    returning x.device_id, x.error_code
+    where x.id = r.id and x.status = 'sent' and x.receipt_checked_at is null
+    returning x.device_id, x.status, x.error_code
   ),
   invalidated as (
     update public.mobile_push_devices dev
     set status = 'invalid', invalidated_at = now(), updated_at = now()
-    where dev.id in (select f.device_id from failed f where f.error_code = 'DeviceNotRegistered')
+    where dev.id in (select c.device_id from checked c where c.status = 'failed' and c.error_code = 'DeviceNotRegistered')
       and dev.status = 'active'
     returning dev.id
   )
-  select jsonb_build_object('failed', count(*), 'invalidated', (select count(*) from invalidated)) into v_result
-  from failed;
+  select jsonb_build_object(
+    'checked', count(*),
+    'failed', count(*) filter (where c.status = 'failed'),
+    'invalidated', (select count(*) from invalidated)
+  ) into v_result
+  from checked c;
 
   return v_result;
 end;
@@ -1357,6 +1390,78 @@ REVOKE ALL ON FUNCTION "public"."reorder_mobile_notification_rules"(uuid, uuid[]
 GRANT EXECUTE ON FUNCTION "public"."reorder_mobile_notification_rules"(uuid, uuid[]) TO "postgres";
 
 REVOKE ALL ON FUNCTION "public"."reorder_mobile_notification_rules"(uuid, uuid[]) FROM PUBLIC, "anon", "authenticated";
+
+CREATE OR REPLACE FUNCTION public.create_mobile_notification_rule (
+  p_user_id   uuid,
+  p_rule      jsonb,
+  p_max_rules integer
+)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+-- Adds a rule after the user's last one, unless they already have p_max_rules. p_rule holds
+-- mobile_notification_rules columns; omitted ones take the table's defaults, and id, user_id
+-- and position are ignored. Creates for one user run one at a time, so concurrent requests
+-- can neither pass the limit nor share a position. Returns {"rule": {...}} or
+-- {"error": "rule_limit_reached"}.
+declare
+  v_count integer;
+  v_last_position integer;
+  v_rule public.mobile_notification_rules%rowtype;
+begin
+  if p_user_id is null or jsonb_typeof(p_rule) is distinct from 'object' then
+    raise exception 'invalid_mobile_notification_rule';
+  end if;
+  if p_max_rules is null or p_max_rules < 1 or p_max_rules > 1000 then
+    raise exception 'invalid_mobile_notification_rule_limit';
+  end if;
+
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('mobile_notification_rules:' || p_user_id::text, 0));
+
+  select count(*)::integer, max(r."position") into v_count, v_last_position
+  from public.mobile_notification_rules r
+  where r.user_id = p_user_id;
+
+  if v_count >= p_max_rules then
+    return jsonb_build_object('error', 'rule_limit_reached');
+  end if;
+
+  insert into public.mobile_notification_rules as r (
+    user_id, name, enabled, action, event_kinds, lab_mode, lab_slugs, provider_mode, provider_slugs, model_slugs,
+    input_modalities, output_modalities, only_on_phaseo, include_free_variants, "position"
+  )
+  select
+    p_user_id,
+    x.name,
+    coalesce(x.enabled, true),
+    coalesce(x.action, 'notify'),
+    x.event_kinds,
+    coalesce(x.lab_mode, 'all'),
+    coalesce(x.lab_slugs, '{}'),
+    coalesce(x.provider_mode, 'all'),
+    coalesce(x.provider_slugs, '{}'),
+    coalesce(x.model_slugs, '{}'),
+    coalesce(x.input_modalities, '{}'),
+    coalesce(x.output_modalities, '{}'),
+    coalesce(x.only_on_phaseo, false),
+    coalesce(x.include_free_variants, false),
+    coalesce(v_last_position + 1, 0)
+  from jsonb_populate_record(null::public.mobile_notification_rules, p_rule) as x
+  returning r.* into v_rule;
+
+  return jsonb_build_object('rule', to_jsonb(v_rule) - 'user_id' - 'created_at' - 'updated_at');
+end;
+$function$;
+
+GRANT EXECUTE ON FUNCTION "public"."create_mobile_notification_rule"(uuid, jsonb, integer) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."create_mobile_notification_rule"(uuid, jsonb, integer) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."create_mobile_notification_rule"(uuid, jsonb, integer) TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."create_mobile_notification_rule"(uuid, jsonb, integer) FROM PUBLIC, "anon", "authenticated";
 
 CREATE OR REPLACE FUNCTION public.claim_mobile_push_test (
   p_user_id         uuid,

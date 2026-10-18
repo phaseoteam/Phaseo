@@ -61,6 +61,8 @@ export type MobilePushSummary = {
 	failed: number;
 	invalidated: number;
 	receipts: number;
+	// Receipts claimed but not returned by Expo this run; they are asked for again later.
+	receiptsPending: number;
 	receiptErrors: number;
 	receiptError: string | null;
 };
@@ -79,6 +81,7 @@ function emptySummary(): MobilePushSummary {
 		failed: 0,
 		invalidated: 0,
 		receipts: 0,
+		receiptsPending: 0,
 		receiptErrors: 0,
 		receiptError: null,
 	};
@@ -157,6 +160,23 @@ export function ticketResult(id: string, ticket: ExpoTicket | undefined): Mobile
 	};
 }
 
+export type MobilePushReceiptResult =
+	| { id: string; status: "ok" }
+	| { id: string; status: "error"; errorCode: string; errorMessage?: string };
+
+// A receipt Expo has not returned yet (or at all) produces nothing, which leaves it to be
+// asked for again.
+export function receiptResult(id: string, receipt: ExpoReceipt | undefined): MobilePushReceiptResult[] {
+	if (receipt?.status === "ok") return [{ id, status: "ok" }];
+	if (receipt?.status !== "error") return [];
+	return [{
+		id,
+		status: "error",
+		errorCode: receipt.details?.error ?? "receipt_error",
+		...(receipt.message ? { errorMessage: receipt.message.slice(0, 1_000) } : {}),
+	}];
+}
+
 async function sendClaimedPushes(pushes: ClaimedMobilePush[], accessToken?: string): Promise<MobilePushResult[]> {
 	try {
 		const tickets = await sendExpoPushMessages(pushes.map(buildMobilePushMessage), accessToken);
@@ -222,26 +242,22 @@ export async function runMobilePushJob(options: { accessToken?: string } = {}): 
 		if (pushes.length < EXPO_SEND_BATCH_SIZE) break;
 	}
 
-	// Receipts are best effort: a failed check never fails the run.
+	// Receipts are best effort: a failed check never fails the run. Only the receipts Expo
+	// returns are recorded; the claim on the rest lapses, so a failed request or a receipt that
+	// is not ready yet is asked for again on a later run, for up to a day.
 	const receipts = await supabase.rpc("claim_mobile_push_receipts", { p_limit: EXPO_RECEIPT_BATCH_SIZE });
 	if (receipts.error) throw new Error(`mobile_push_receipts_claim_failed:${receipts.error.message}`);
 	const tickets = (Array.isArray(receipts.data) ? receipts.data : []) as Array<{ id: string; expo_ticket_id: string }>;
 	if (tickets.length > 0) {
 		summary.receipts = tickets.length;
+		summary.receiptsPending = tickets.length;
 		try {
 			const byTicket = await fetchExpoReceipts(tickets.map((ticket) => ticket.expo_ticket_id), options.accessToken);
-			const errors = tickets.flatMap((ticket) => {
-				const receipt = byTicket[ticket.expo_ticket_id];
-				if (receipt?.status !== "error") return [];
-				return [{
-					id: ticket.id,
-					errorCode: receipt.details?.error ?? "receipt_error",
-					...(receipt.message ? { errorMessage: receipt.message.slice(0, 1_000) } : {}),
-				}];
-			});
-			if (errors.length > 0) {
-				const recorded = await supabase.rpc("record_mobile_push_receipts", { p_results: errors });
+			const results = tickets.flatMap((ticket) => receiptResult(ticket.id, byTicket[ticket.expo_ticket_id]));
+			if (results.length > 0) {
+				const recorded = await supabase.rpc("record_mobile_push_receipts", { p_results: results });
 				if (recorded.error) throw new Error(`mobile_push_receipts_record_failed:${recorded.error.message}`);
+				summary.receiptsPending = tickets.length - results.length;
 				summary.receiptErrors = count(record(recorded.data).failed);
 				summary.invalidated += count(record(recorded.data).invalidated);
 			}

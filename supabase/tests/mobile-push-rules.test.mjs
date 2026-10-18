@@ -21,12 +21,13 @@ const schemaFiles = [
     '../schemas/public/functions/record_mobile_push_receipts.sql',
     '../schemas/public/functions/register_mobile_push_device.sql',
     '../schemas/public/functions/reorder_mobile_notification_rules.sql',
+    '../schemas/public/functions/create_mobile_notification_rule.sql',
     '../schemas/public/functions/claim_mobile_push_test.sql',
 ];
 const rows = async (sql, params) => (await db.query(sql, params)).rows;
 const one = async (sql, params) => (await rows(sql, params))[0];
 const asService = async fn => { await db.exec('set role service_role'); try { return await fn(); } finally { await db.exec('reset role'); } };
-const capture = () => asService(async () => (await one('select public.capture_catalogue_notification_events(2000, 20) r')).r);
+const capture = (limit = 2000) => asService(async () => (await one('select public.capture_catalogue_notification_events($1, 20) r', [limit])).r);
 const user = n => `00000000-0000-4000-8000-0000000000${String(n).padStart(2, '0')}`;
 const token = name => `ExponentPushToken[${name}]`;
 
@@ -323,13 +324,61 @@ try {
     assert.deepEqual(await rows(`select x.status, x.error_code from public.mobile_push_deliveries x join public.mobile_push_devices d on d.id = x.device_id where d.installation_id = 'install-d7' and x.id <> $1`, [d7.id]),
         [{ status: 'suppressed', error_code: 'device_inactive' }]);
 
-    // Receipts are fetched once, after 15 minutes; an error receipt retires the device.
-    assert.equal((await asService(() => rows('select * from public.claim_mobile_push_receipts(100)'))).length, 0);
-    await db.exec(`update public.mobile_push_deliveries set sent_at = now() - interval '20 minutes' where id = '${sent.id}'`);
-    assert.deepEqual(await asService(() => rows('select * from public.claim_mobile_push_receipts(100)')), [{ id: sent.id, expo_ticket_id: 'ticket-1' }]);
-    assert.equal((await asService(() => rows('select * from public.claim_mobile_push_receipts(100)'))).length, 0);
-    assert.deepEqual((await asService(() => one('select public.record_mobile_push_receipts($1) r', [JSON.stringify([{ id: sent.id, errorCode: 'DeviceNotRegistered' }])]))).r,
-        { failed: 1, invalidated: 1 });
+    // A push a crashed run left processing is checked again before it is reclaimed after ten
+    // minutes: it is closed if its user switched push off or it expired, and only otherwise
+    // sent again. Pushes still within their claim are left alone.
+    const sqlIds = ids => ids.map(id => `'${id}'`).join(', ');
+    const stuck = await rows(`
+      select x.id, d.installation_id from public.mobile_push_deliveries x join public.mobile_push_devices d on d.id = x.device_id
+      where x.status = 'processing' and d.installation_id in ('install-d1', 'install-d3') order by x.created_at, x.id`);
+    const stuckD1 = stuck.filter(x => x.installation_id === 'install-d1').map(x => x.id);
+    const stuckD3 = stuck.filter(x => x.installation_id === 'install-d3').map(x => x.id);
+    assert.deepEqual([stuckD1.length, stuckD3.length], [4, 7]);
+    const [expired, resent] = stuckD3;
+    await db.exec(`
+      update public.mobile_push_deliveries set claimed_at = now() - interval '11 minutes' where id in (${sqlIds([...stuckD1, expired, resent])});
+      update public.mobile_push_deliveries set created_at = now() - interval '3 days' where id = '${expired}';
+      update public.mobile_notification_preferences set enabled = false where user_id = '${user(1)}';
+    `);
+    const claimC = '20000000-0000-4000-8000-00000000000c';
+    const reclaimed = await asService(() => rows('select * from public.claim_mobile_push_deliveries(500, $1)', [claimC]));
+    assert.deepEqual(reclaimed.map(x => [x.id, x.attempts]), [[resent, 2]], 'only the stale push still wanted is claimed again');
+    assert.deepEqual(await rows(`select status, error_code, claim_token from public.mobile_push_deliveries where id in (${sqlIds(stuckD1)})`),
+        stuckD1.map(() => ({ status: 'suppressed', error_code: 'notifications_disabled', claim_token: null })));
+    assert.deepEqual(await one(`select status, error_code from public.mobile_push_deliveries where id = $1`, [expired]), { status: 'failed', error_code: 'expired' });
+    assert.equal((await one(`select count(*)::int n from public.mobile_push_deliveries where id in (${sqlIds(stuckD3.slice(2))}) and status = 'processing' and claim_token = $1`, [claimA])).n, 5);
+    await db.exec(`update public.mobile_notification_preferences set enabled = true where user_id = '${user(1)}'`);
+    assert.deepEqual((await asService(() => one('select public.complete_mobile_push_deliveries($1, $2) r', [claimC, JSON.stringify([{ id: resent, status: 'sent', ticketId: 'ticket-2' }])]))).r,
+        { sent: 1, retrying: 0, failed: 0, invalidated: 0 });
+
+    // Receipts are asked for 15 minutes after sending, under a claim that lapses after 15
+    // minutes, so a check that never reported back (a failed request) or a receipt Expo left
+    // out (not ready yet) is asked for again. Only receipts Expo returned are closed; an error
+    // receipt fails the push and DeviceNotRegistered retires the device.
+    const claimReceipts = () => asService(() => rows('select * from public.claim_mobile_push_receipts(100) order by expo_ticket_id'));
+    const recordReceipts = async results => (await asService(() => one('select public.record_mobile_push_receipts($1) r', [JSON.stringify(results)]))).r;
+    const lapse = () => db.exec(`update public.mobile_push_deliveries set receipt_claimed_at = receipt_claimed_at - interval '16 minutes' where receipt_claimed_at is not null`);
+    assert.equal((await claimReceipts()).length, 0);
+    await db.exec(`update public.mobile_push_deliveries set sent_at = now() - interval '20 minutes' where id in (${sqlIds([sent.id, resent])})`);
+    const bothTickets = [{ id: sent.id, expo_ticket_id: 'ticket-1' }, { id: resent, expo_ticket_id: 'ticket-2' }];
+    assert.deepEqual(await claimReceipts(), bothTickets);
+    assert.equal((await claimReceipts()).length, 0, 'a claimed receipt is not handed out twice at once');
+    await lapse();
+    assert.deepEqual(await claimReceipts(), bothTickets, 'a check that never reported back is asked for again');
+    // Expo returned ticket-1 as an error and left ticket-2 out.
+    assert.deepEqual(await recordReceipts([{ id: sent.id, status: 'error', errorCode: 'DeviceNotRegistered' }]), { checked: 1, failed: 1, invalidated: 1 });
+    await lapse();
+    assert.deepEqual(await claimReceipts(), [{ id: resent, expo_ticket_id: 'ticket-2' }], 'only the receipt Expo left out is asked for again');
+    assert.deepEqual(await recordReceipts([{ id: resent, status: 'ok' }, { id: sent.id, status: 'error', errorCode: 'DeviceNotRegistered' }]),
+        { checked: 1, failed: 0, invalidated: 0 }, 'an ok receipt closes its ticket and a receipt is recorded once');
+    await lapse();
+    assert.equal((await claimReceipts()).length, 0);
+    assert.deepEqual(await one(`select status, error_code from public.mobile_push_deliveries where id = $1`, [resent]), { status: 'sent', error_code: null });
+    // Expo keeps receipts for a day; a ticket still unchecked by then is closed without a check.
+    await db.exec(`update public.mobile_push_deliveries set status = 'sent', expo_ticket_id = 'ticket-3', sent_at = now() - interval '25 hours',
+      receipt_claimed_at = now() - interval '16 minutes' where id = '${stuckD1[0]}'`);
+    assert.equal((await claimReceipts()).length, 0);
+    assert.ok((await one(`select receipt_checked_at from public.mobile_push_deliveries where id = $1`, [stuckD1[0]])).receipt_checked_at);
 
     // Stale events and events about models that went private close without sending.
     await db.exec(`insert into public.catalogue_notification_events (kind, dedupe_key, model_slug, lab_slug, title, body, href, occurred_at) values
@@ -349,6 +398,26 @@ try {
     await asService(() => one('select public.enqueue_mobile_push_deliveries($1) r', [llama]));
     assert.deepEqual((await rows(`select d.installation_id from public.mobile_push_deliveries x join public.mobile_push_devices d on d.id = x.device_id where x.event_id = $1 order by 1`, [llama])).map(x => x.installation_id),
         ['install-d3', 'install-d4', 'install-d5', 'install-d8']);
+
+    // A bulk transaction is sized by all of its rows before any of them is read, even when it
+    // spans several capture pages and no single page passes the threshold, so the route it
+    // switches on first is not news.
+    await db.exec(`
+      insert into public.v2_models (model_slug, lab_slug, name) values ('meta/llama-5-scout', 'meta', 'Llama 5 Scout');
+      insert into public.v2_model_provider_routes (provider_model_id, model_slug, provider_slug) values ('deepinfra:llama-5-scout', 'meta/llama-5-scout', 'deepinfra');
+    `);
+    assert.equal((await capture()).emitted, 0);
+    assert.equal((await capture()).emitted, 0);
+    await db.exec(`
+      update public.v2_model_provider_routes set routing_enabled = true where provider_model_id = 'deepinfra:llama-5-scout';
+      insert into public.v2_models (model_slug, lab_slug, name) select 'bulk/late-' || n, 'bulk', 'Late bulk ' || n from generate_series(1, 25) n;
+    `);
+    const pages = [];
+    for (let call = 0; call < 5; call += 1) pages.push(await capture(10));
+    assert.deepEqual(pages.map(page => [page.scanned, page.emitted, page.skippedTransactions]), [[0, 0, 0], [10, 0, 1], [10, 0, 0], [6, 0, 0], [0, 0, 0]]);
+    assert.equal((await one(`select count(*)::int n from public.catalogue_notification_events where model_slug = 'meta/llama-5-scout'`)).n, 0);
+    assert.deepEqual(await one(`select model_count, row_count from public.catalogue_notification_skipped_transactions order by first_history_event_id desc limit 1`),
+        { model_count: 26, row_count: 26 });
 
     // Device registration: one row per token and installation, across accounts.
     await asService(async () => {
@@ -377,6 +446,30 @@ try {
         assert.deepEqual((await rows(`select id from public.mobile_notification_rules where user_id = $1 order by "position"`, [user(1)])).map(x => x.id), [ids[2], ids[1], ids[0]]);
     });
 
+    // Creating a rule counts, positions and inserts in one call under a per-user lock, so
+    // concurrent creates can neither pass the limit nor share a position.
+    await db.exec(`insert into auth.users values ('${user(9)}')`);
+    const createRule = async (rule, max = 50, userId = user(9)) =>
+        (await asService(() => one('select public.create_mobile_notification_rule($1, $2, $3) r', [userId, JSON.stringify(rule), max]))).r;
+    const first = await createRule({ event_kinds: ['price_changed'], position: 7, user_id: user(1) });
+    assert.match(first.rule.id, /^[0-9a-f-]{36}$/);
+    assert.deepEqual({ ...first.rule, id: null }, {
+        id: null, name: null, enabled: true, action: 'notify', event_kinds: ['price_changed'], lab_mode: 'all', lab_slugs: [], provider_mode: 'all',
+        provider_slugs: [], model_slugs: [], input_modalities: [], output_modalities: [], only_on_phaseo: false, include_free_variants: false, position: 0,
+    }, 'omitted fields take the defaults; position and user come from the database');
+    const second = await createRule({ name: 'Mute OpenAI releases', enabled: false, action: 'mute', event_kinds: ['model_released'], lab_mode: 'only',
+        lab_slugs: ['openai'], output_modalities: ['text'], only_on_phaseo: true, include_free_variants: true });
+    assert.deepEqual([second.rule.name, second.rule.enabled, second.rule.action, second.rule.lab_slugs, second.rule.output_modalities, second.rule.only_on_phaseo,
+        second.rule.include_free_variants, second.rule.position], ['Mute OpenAI releases', false, 'mute', ['openai'], ['text'], true, true, 1]);
+    assert.equal((await createRule({ event_kinds: ['provider_added'] }, 50, user(1))).rule.position, 3, 'a new rule goes after the last one');
+    assert.deepEqual(await createRule({ event_kinds: ['price_changed'] }, 2), { error: 'rule_limit_reached' });
+    assert.deepEqual(await rows(`select "position" from public.mobile_notification_rules where user_id = $1 order by 1`, [user(9)]), [{ position: 0 }, { position: 1 }]);
+    await db.exec(`begin; set local role service_role`);
+    await db.query('select public.create_mobile_notification_rule($1, $2, 50)', [user(9), JSON.stringify({ event_kinds: ['price_changed'] })]);
+    const held = await one(`select count(*)::int n from pg_catalog.pg_locks where locktype = 'advisory' and granted and pid = pg_catalog.pg_backend_pid()`);
+    await db.exec('rollback');
+    assert.equal(held.n, 1, 'the per-user lock is held until the transaction ends');
+
     // Test pushes: three per ten minutes, only to the caller's registered installation.
     await asService(async () => {
         const test = installation => one('select public.claim_mobile_push_test($1, $2) r', [user(3), installation]);
@@ -398,6 +491,7 @@ try {
         await assert.rejects(db.query('select * from public.claim_mobile_push_deliveries(10, $1)', [claimA]), /permission denied/);
         await assert.rejects(db.query(`select public.register_mobile_push_device($1, 'install-x', $2, 'android', null, null, null)`, [user(1), token('x')]), /permission denied/);
         await assert.rejects(db.query(`select public.claim_mobile_push_test($1, 'install-d3')`, [user(3)]), /permission denied/);
+        await assert.rejects(db.query(`select public.create_mobile_notification_rule($1, '{"event_kinds": ["price_changed"]}', 50)`, [user(3)]), /permission denied/);
         await db.exec('reset role');
     }
     console.log('mobile push rules: ok');

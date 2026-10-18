@@ -27,7 +27,7 @@ vi.mock("@/runtime/env", () => ({
 	}),
 }));
 
-const { buildMobilePushMessage, hasMobilePushActivity, runMobilePushJob, ticketResult, EXPO_PUSH_RECEIPTS_URL, EXPO_PUSH_SEND_URL } = await import("./mobile-push");
+const { buildMobilePushMessage, hasMobilePushActivity, receiptResult, runMobilePushJob, ticketResult, EXPO_PUSH_RECEIPTS_URL, EXPO_PUSH_SEND_URL } = await import("./mobile-push");
 
 function push(id: string, token = `ExponentPushToken[${id}]`) {
 	return { id, event_id: "event-1", attempts: 1, expo_push_token: token, kind: "price_changed", model_slug: "deepseek/deepseek-v4",
@@ -167,26 +167,60 @@ describe("mobile push job", () => {
 		]);
 	});
 
-	it("checks receipts and records only the errors", async () => {
+	it("records the receipts Expo returned and leaves the rest to be asked for again", async () => {
 		const recorded: unknown[] = [];
 		mockRpc({
 			capture_catalogue_notification_events: () => ({ data: { emitted: 0 }, error: null }),
 			claim_mobile_push_deliveries: [() => ({ data: [], error: null })],
 			claim_mobile_push_receipts: (args) => {
 				expect(args).toEqual({ p_limit: 300 });
-				return { data: [{ id: "a", expo_ticket_id: "ticket-a" }, { id: "b", expo_ticket_id: "ticket-b" }], error: null };
+				return { data: [
+					{ id: "a", expo_ticket_id: "ticket-a" }, { id: "b", expo_ticket_id: "ticket-b" }, { id: "c", expo_ticket_id: "ticket-c" },
+				], error: null };
 			},
-			record_mobile_push_receipts: (args) => { recorded.push(args.p_results); return { data: { failed: 1, invalidated: 1 }, error: null }; },
+			record_mobile_push_receipts: (args) => { recorded.push(args.p_results); return { data: { checked: 2, failed: 1, invalidated: 1 }, error: null }; },
 		});
+		// ticket-c's receipt is not ready yet, so Expo leaves it out.
 		fetchMock.mockResolvedValueOnce(Response.json({ data: {
 			"ticket-a": { status: "ok" },
 			"ticket-b": { status: "error", message: "uninstalled", details: { error: "DeviceNotRegistered" } },
 		} }));
 
-		expect(await runMobilePushJob()).toMatchObject({ receipts: 2, receiptErrors: 1, invalidated: 1, receiptError: null });
+		expect(await runMobilePushJob()).toMatchObject({ receipts: 3, receiptsPending: 1, receiptErrors: 1, invalidated: 1, receiptError: null });
 		expect(fetchMock.mock.calls[0][0]).toBe(EXPO_PUSH_RECEIPTS_URL);
-		expect(JSON.parse(String((fetchMock.mock.calls[0][1] as RequestInit).body))).toEqual({ ids: ["ticket-a", "ticket-b"] });
-		expect(recorded).toEqual([[{ id: "b", errorCode: "DeviceNotRegistered", errorMessage: "uninstalled" }]]);
+		expect(JSON.parse(String((fetchMock.mock.calls[0][1] as RequestInit).body))).toEqual({ ids: ["ticket-a", "ticket-b", "ticket-c"] });
+		expect(recorded).toEqual([[
+			{ id: "a", status: "ok" },
+			{ id: "b", status: "error", errorCode: "DeviceNotRegistered", errorMessage: "uninstalled" },
+		]]);
+	});
+
+	it("records nothing when the receipt request fails, so every claimed receipt is asked for again", async () => {
+		mockRpc({
+			capture_catalogue_notification_events: () => ({ data: { emitted: 0 }, error: null }),
+			claim_mobile_push_deliveries: [() => ({ data: [], error: null })],
+			claim_mobile_push_receipts: () => ({ data: [{ id: "a", expo_ticket_id: "ticket-a" }, { id: "b", expo_ticket_id: "ticket-b" }], error: null }),
+		});
+		fetchMock.mockResolvedValueOnce(new Response("slow down", { status: 429 }));
+
+		expect(await runMobilePushJob()).toMatchObject({ receipts: 2, receiptsPending: 2, receiptErrors: 0, receiptError: "expo_receipts_http_429" });
+		expect(state.rpc.mock.calls.some(([name]) => name === "record_mobile_push_receipts")).toBe(false);
+
+		// A response without data (for example an error payload) records nothing either.
+		mockRpc({
+			capture_catalogue_notification_events: () => ({ data: { emitted: 0 }, error: null }),
+			claim_mobile_push_deliveries: [() => ({ data: [], error: null })],
+			claim_mobile_push_receipts: () => ({ data: [{ id: "a", expo_ticket_id: "ticket-a" }], error: null }),
+		});
+		fetchMock.mockResolvedValueOnce(Response.json({ errors: [{ code: "PUSH_TOO_MANY_RECEIPTS" }] }));
+		expect(await runMobilePushJob()).toMatchObject({ receipts: 1, receiptsPending: 1, receiptError: null });
+	});
+
+	it("maps Expo receipts: ok and error close the ticket, a missing receipt does not", () => {
+		expect(receiptResult("a", { status: "ok" })).toEqual([{ id: "a", status: "ok" }]);
+		expect(receiptResult("b", { status: "error", details: { error: "MessageRateExceeded" } })).toEqual([{ id: "b", status: "error", errorCode: "MessageRateExceeded" }]);
+		expect(receiptResult("c", { status: "error" })).toEqual([{ id: "c", status: "error", errorCode: "receipt_error" }]);
+		expect(receiptResult("d", undefined)).toEqual([]);
 	});
 
 	it("does nothing visible when there is nothing to do, and fails loudly when the database does", async () => {

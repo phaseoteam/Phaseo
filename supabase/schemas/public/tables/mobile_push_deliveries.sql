@@ -10,6 +10,7 @@ CREATE TABLE "public"."mobile_push_deliveries" (
   "claim_token"        uuid,
   "claimed_at"         timestamp with time zone,
   "expo_ticket_id"     text,
+  "receipt_claimed_at" timestamp with time zone,
   "receipt_checked_at" timestamp with time zone,
   "error_code"         text,
   "error_message"      text,
@@ -52,6 +53,10 @@ CREATE POLICY "deny_direct_client_access" ON "public"."mobile_push_deliveries"
   TO "anon", "authenticated"
   USING (false)
   WITH CHECK (false);
+
+COMMENT ON COLUMN "public"."mobile_push_deliveries"."receipt_checked_at" IS 'When the Expo receipt was read, or when the ticket was closed unread a day after sending.';
+
+COMMENT ON COLUMN "public"."mobile_push_deliveries"."receipt_claimed_at" IS 'When a run last asked Expo for the receipt. A receipt Expo did not return is asked for again 15 minutes later.';
 
 COMMENT ON TABLE "public"."mobile_push_deliveries" IS 'One mobile push per catalogue event and device. Deferred rows wait for quiet hours to end; suppressed rows were over the daily cap or no longer wanted. Claimed with a token so overlapping runs never send twice.';
 

@@ -453,35 +453,21 @@ accountSettingsMobileNotificationsRouter.post("/mobile-notifications/rules", bod
 	if (!user) return unauthorized(c);
 	const parsed = await parseBody(c, createRuleSchema, "invalid_rule");
 	if ("response" in parsed) return parsed.response;
-	const client = getDataClient(c.env);
-	const [existing, last] = await Promise.all([
-		client.from("mobile_notification_rules").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-		client.from("mobile_notification_rules").select("position").eq("user_id", user.id).order("position", { ascending: false }).limit(1).maybeSingle(),
-	]);
-	if (existing.error || last.error) return unavailable(c, "mobile_notification_rules_unavailable");
-	if ((existing.count ?? 0) >= MAX_MOBILE_NOTIFICATION_RULES) {
+	// One locked database call counts the user's rules, picks the next position and inserts,
+	// so concurrent creates cannot pass the limit or share a position. Fields left out take the
+	// table's defaults.
+	const created = await getDataClient(c.env).rpc("create_mobile_notification_rule", {
+		p_user_id: user.id,
+		p_rule: ruleChangesToRow(parsed.data),
+		p_max_rules: MAX_MOBILE_NOTIFICATION_RULES,
+	});
+	if (created.error) return unavailable(c, "mobile_notification_rule_write_failed");
+	const result = (created.data ?? {}) as { error?: unknown; rule?: RuleRow };
+	if (result.error === "rule_limit_reached") {
 		return invalid(c, "rule_limit_reached", `You can have up to ${MAX_MOBILE_NOTIFICATION_RULES} notification rules. Delete one to add another.`);
 	}
-	const lastPosition = (last.data as { position?: unknown } | null)?.position;
-	const created = await client.from("mobile_notification_rules").insert({
-		name: null,
-		enabled: true,
-		action: "notify",
-		lab_mode: "all",
-		lab_slugs: [],
-		provider_mode: "all",
-		provider_slugs: [],
-		model_slugs: [],
-		input_modalities: [],
-		output_modalities: [],
-		only_on_phaseo: false,
-		include_free_variants: false,
-		...ruleChangesToRow(parsed.data),
-		user_id: user.id,
-		position: typeof lastPosition === "number" ? lastPosition + 1 : 0,
-	}).select(RULE_SELECT).single();
-	if (created.error || !created.data) return unavailable(c, "mobile_notification_rule_write_failed");
-	return c.json({ rule: ruleFromRow(created.data as unknown as RuleRow) }, 201, PRIVATE_NO_STORE_HEADERS);
+	if (!result.rule) return unavailable(c, "mobile_notification_rule_write_failed");
+	return c.json({ rule: ruleFromRow(result.rule) }, 201, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsMobileNotificationsRouter.put("/mobile-notifications/rules/order", bodyLimit({ maxSize: 8192, onError: tooLarge }), async (c) => {
