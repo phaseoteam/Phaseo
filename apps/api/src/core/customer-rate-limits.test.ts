@@ -173,12 +173,20 @@ describe("customer quota integration", () => {
 		expect(mocks.admit).toHaveBeenCalledTimes(1);
 	});
 
-	it("does not apply RPD to paid, missing, or zero-price standard pricing", async () => {
-		for (const pricingCard of [card("standard", "0.01"), card("standard", "0"), null]) {
+	it("does not apply RPD to paid, missing, or private-model pricing", async () => {
+		const privateModel = { ...card("standard", "0"), provider: "private-model" } as PriceCard;
+		for (const pricingCard of [card("standard", "0.01"), privateModel, null]) {
 			expect(await guardFreeRouteQuota({ ...args, pricingCard })).toBeNull();
 		}
 		expect(mocks.admit).not.toHaveBeenCalled();
 		expect(mocks.background).toHaveLength(0);
+	});
+
+	// A $0 route admitted without credit must also count against the daily
+	// free allowance, whatever service tier its SKU is labelled with.
+	it("applies RPD to a $0 route labelled with the standard plan", async () => {
+		expect(await guardFreeRouteQuota({ ...args, pricingCard: card("standard", "0") })).toBeNull();
+		expect(mocks.admit).toHaveBeenCalledWith(customerScopeKey(args), "free-day", "server-admission", expect.any(Object));
 	});
 
 	it.each([1500, 2500])("explains the effective %i free-model limit and recovery options", async (limit) => {
