@@ -62,6 +62,17 @@ export type IRContentPart =
 		url: string;
 	}
 	| {
+		// A document or other file input: an OpenAI Chat `file` part or a
+		// Responses `input_file` part. Executors map it to the provider's own
+		// file block, or leave it out where the provider has none.
+		type: "file";
+		source: "data" | "url" | "id";
+		data: string; // base64 (no data: prefix), URL, or provider file id
+		mimeType?: string;
+		filename?: string;
+		cacheControl?: IRCacheControl;
+	}
+	| {
 		type: "provider_block";
 		block: Record<string, any>;
 	};

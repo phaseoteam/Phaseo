@@ -373,14 +373,44 @@ function mapSystemLikeContentToOpenAI(content: IRContentPart[]): any {
 		.map((part) => mapTextPartToOpenAI(part));
 }
 
+/**
+ * Chat Completions `file` part: base64 `file_data` (as a data URL) or an
+ * uploaded `file_id`. Chat has no URL form, so a file given by URL is left out
+ * rather than sent in a shape the provider would reject.
+ * https://platform.openai.com/docs/api-reference/chat/create
+ */
+export function mapFilePartToOpenAIChat(part: Extract<IRContentPart, { type: "file" }>): any | null {
+	const filename = part.filename ? { filename: part.filename } : {};
+	if (part.source === "data") {
+		return {
+			type: "file",
+			file: { ...filename, file_data: `data:${part.mimeType || "application/pdf"};base64,${part.data}` },
+			...cacheMarkFields(part.cacheControl),
+		};
+	}
+	if (part.source === "id") {
+		return {
+			type: "file",
+			file: { ...filename, file_id: part.data },
+			...cacheMarkFields(part.cacheControl),
+		};
+	}
+	return null;
+}
+
 function mapIRContentToOpenAI(content: IRContentPart[]): any {
 	if (content.length === 1 && content[0].type === "text" && !content[0].cacheControl) {
 		return content[0].text;
 	}
 
-	return content.map((part) => {
+	return content.flatMap((part) => {
 		if (part.type === "text") {
 			return mapTextPartToOpenAI(part);
+		}
+
+		if (part.type === "file") {
+			const mapped = mapFilePartToOpenAIChat(part);
+			return mapped ? [mapped] : [];
 		}
 
 		if (part.type === "image") {

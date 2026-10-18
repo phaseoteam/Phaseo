@@ -897,7 +897,7 @@ export async function beforeRequest(
         } = await import("./presetMerge");
 
         // Merge preset config with request body
-        mergedBody = mergePresetWithBody(body, context.preset);
+        mergedBody = mergePresetWithBody(body, context.preset, endpoint);
         const presetModelValidationError = validatePresetModel(
             resolvedModel || model,
             context.preset.config,

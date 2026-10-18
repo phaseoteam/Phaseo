@@ -551,6 +551,18 @@ function mapContentPart(part: IRContentPart): any {
 		};
 	}
 
+	if (part.type === "file") {
+		// Responses `input_file`: file_data (a data URL), file_url or file_id.
+		// https://platform.openai.com/docs/api-reference/responses/create
+		const filename = part.filename ? { filename: part.filename } : {};
+		const file = part.source === "data"
+			? { file_data: `data:${part.mimeType || "application/pdf"};base64,${part.data}` }
+			: part.source === "url"
+				? { file_url: part.data }
+				: { file_id: part.data };
+		return { type: "input_file", ...filename, ...file, ...cacheMarkFields(part.cacheControl) };
+	}
+
 	if (part.type === "provider_block") return { ...part.block };
 
 	if (part.type === "video") {
@@ -623,7 +635,7 @@ function mapAssistantContentPart(part: IRContentPart): any {
 	if (part.type === "text") {
 		return { type: "output_text", text: part.text };
 	}
-	if (part.type === "reasoning_text" || part.type === "provider_block") {
+	if (part.type === "reasoning_text" || part.type === "provider_block" || part.type === "file") {
 		// Reasoning travels as reasoning items; provider blocks (for example
 		// Claude thinking from a Messages client) have no Responses equivalent.
 		return null;
