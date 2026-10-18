@@ -127,9 +127,14 @@ export function createStreamReasoningStateCollector(protocol: Protocol): StreamR
 			responsesItems.push({ kind: "call", id: item.call_id });
 			return;
 		}
-		if (item?.type !== "reasoning" || !isSealedReasoningValue(item.encrypted_content)) return;
-		if (responsesSeen.has(item.encrypted_content)) return;
-		responsesSeen.add(item.encrypted_content);
+		if (item?.type !== "reasoning") return;
+		// Plain items are kept too: once any item carries state, the decoded parts replace the
+		// rebuilt reasoning text, so a plain item's text must come from its own part.
+		const key = isSealedReasoningValue(item.encrypted_content)
+			? item.encrypted_content
+			: typeof item.id === "string" && item.id ? `reasoning:${item.id}` : null;
+		if (!key || responsesSeen.has(key)) return;
+		responsesSeen.add(key);
 		responsesItems.push({ kind: "reasoning", item });
 	};
 

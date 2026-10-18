@@ -219,6 +219,24 @@ describe("buffered responses keep reasoning state from the stream", () => {
 		expect((reasoning[0] as any).beforeToolCallId).toBeUndefined();
 	});
 
+	it("Responses: keeps a plain reasoning item's text beside a sealed one", async () => {
+		const plain = { type: "reasoning", id: "rs_1", summary: [], content: [{ type: "reasoning_text", text: "Plain step." }] };
+		const sealed = { type: "reasoning", id: "rs_2", summary: [], content: [{ type: "reasoning_text", text: "Signed step." }], encrypted_content: SIGNED };
+		const message = { type: "message", role: "assistant", content: [{ type: "output_text", text: "Hi." }] };
+		const stream = sse([
+			{ event: "response.output_item.done", data: { type: "response.output_item.done", output_index: 0, item: plain } },
+			{ event: "response.output_item.done", data: { type: "response.output_item.done", output_index: 1, item: sealed } },
+			{ event: "response.completed", data: { type: "response.completed", response: { id: "resp_1", object: "response", status: "completed", output: [plain, sealed, message] } } },
+		]);
+		const { ir } = await consumeTextProtocolStreamToIR({ protocol: "openai.responses", stream, requestId: "req_mixed", model: "anthropic/claude-fable-5.1", provider: "anthropic" });
+
+		const reasoning = ir.choices[0].message.content.filter((part) => part.type === "reasoning_text");
+		expect(reasoning).toEqual([
+			expect.objectContaining({ text: "Plain step." }),
+			expect.objectContaining({ text: "Signed step.", thoughtSignature: "SIG-0001" }),
+		]);
+	});
+
 	it("leaves plain reasoning text alone when the stream carries no state", async () => {
 		const stream = sse([
 			chatChunk({ role: "assistant", reasoning_content: "Plain thought." }),
