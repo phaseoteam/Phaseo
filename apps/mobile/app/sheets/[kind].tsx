@@ -4,9 +4,11 @@ import { Check } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { Button, EmptyState, ErrorState, Fact, Header, Icon, LoadingState, Row, RouteSheet, SearchField, Section, Text, TextField } from "@/components/ui";
+import { ChatModelPicker } from "@/features/chat/ChatModelPicker";
 import { getChat, listMessages, updateChat } from "@/features/chat/db";
+import { ModelSettingsSheet } from "@/features/chat/ModelSettingsSheet";
 import { editAndResend } from "@/features/chat/runner";
-import { chatModelStore, MAX_CHAT_MODELS, notifyChat, toggleChatModel } from "@/features/chat/state";
+import { notifyChat } from "@/features/chat/state";
 import { ModelPicker } from "@/features/models/ModelPicker";
 import { draftRuleStore, useRuleNames } from "@/features/notifications/state";
 import { useProviders } from "@/features/providers/ProviderBrowser";
@@ -16,7 +18,7 @@ import { MAX_COMPARE } from "@/lib/api/compare";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 
 /** Long pickers take the full dialog height on tablets; short forms size to their content. */
-const TALL_SHEETS = new Set(["compare", "chat-models", "pick"]);
+const TALL_SHEETS = new Set(["compare", "chat-models", "model-settings", "pick"]);
 
 /** Root-level sheets shared by several sections: bottom sheets on phones, centred dialogs on tablets. */
 export default function SheetRoute() {
@@ -25,6 +27,7 @@ export default function SheetRoute() {
     <RouteSheet size={TALL_SHEETS.has(kind) ? "tall" : "fit"}>
       {kind === "compare" ? <CompareSheet />
         : kind === "chat-models" ? <ChatModelsSheet />
+        : kind === "model-settings" ? <ModelSettingsRoute />
         : kind === "workspace" ? <WorkspaceSheet />
         : kind === "rename-chat" ? <RenameChatSheet />
         : kind === "edit-message" ? <EditMessageSheet />
@@ -48,25 +51,14 @@ function CompareSheet() {
 
 /** Models for a new chat, or for an existing chat's next messages when `chatId` is set. */
 function ChatModelsSheet() {
-  const router = useRouter();
   const { chatId } = useLocalSearchParams<{ chatId?: string }>();
-  const draft = chatModelStore.use();
-  const [chatModels, setChatModels] = useState<string[]>(() => (chatId ? getChat(chatId)?.models ?? [] : []));
-  const selected = chatId ? chatModels : draft;
-  const toggle = (id: string) => {
-    if (!chatId) return toggleChatModel(id);
-    const next = selected.includes(id) ? (selected.length > 1 ? selected.filter((entry) => entry !== id) : selected) : selected.length >= MAX_CHAT_MODELS ? selected : [...selected, id];
-    setChatModels(next);
-    updateChat(chatId, { models: next });
-    notifyChat(chatId);
-  };
-  return (
-    <View className="flex-1">
-      <Header title={selected.length > 1 ? `${selected.length} models answer side by side` : "Model"} right={<Button label="Done" size="sm" variant="ghost" onPress={() => router.back()} />} />
-      <Text variant="caption" className="px-4 pb-2">{chatId ? "Applies to your next message. " : ""}Pick up to {MAX_CHAT_MODELS} models to compare their answers.</Text>
-      <ModelPicker onlyChat selected={selected} onSelect={(model) => toggle(model.model_id)} />
-    </View>
-  );
+  return <ChatModelPicker chatId={chatId ?? null} />;
+}
+
+/** One model's settings in a chat (or in the new chat being set up). */
+function ModelSettingsRoute() {
+  const { chatId, model } = useLocalSearchParams<{ chatId?: string; model: string }>();
+  return <ModelSettingsSheet chatId={chatId ?? null} modelId={model} />;
 }
 
 function WorkspaceSheet() {
@@ -101,10 +93,13 @@ function RenameChatSheet() {
     router.back();
   };
   return (
-    <View className="gap-3 px-4 pb-4 pt-4">
+    <View className="gap-3 px-4 pb-4 pt-5">
       <Text variant="heading">Rename chat</Text>
-      <TextField value={title} onChangeText={setTitle} autoFocus selectTextOnFocus returnKeyType="done" onSubmitEditing={save} />
-      <Button label="Save" disabled={!title.trim()} onPress={save} />
+      <TextField value={title} onChangeText={setTitle} autoFocus selectTextOnFocus returnKeyType="done" onSubmitEditing={save} accessibilityLabel="Chat title" />
+      <View className="flex-row justify-end gap-2 pt-1">
+        <Button label="Cancel" variant="outline" size="sm" onPress={() => router.back()} />
+        <Button label="Save" size="sm" disabled={!title.trim()} onPress={save} />
+      </View>
     </View>
   );
 }
@@ -117,11 +112,16 @@ function EditMessageSheet() {
   const [text, setText] = useState(message?.content ?? "");
   if (!message) return <EmptyState title="Message not found" />;
   return (
-    <View className="gap-3 px-4 pb-4 pt-4">
-      <Text variant="heading">Edit and resend</Text>
-      <Text variant="muted">Answers after this message are replaced.</Text>
-      <TextField value={text} onChangeText={setText} multiline autoFocus className="max-h-60 min-h-28" textAlignVertical="top" />
-      <Button label="Resend" disabled={!text.trim()} onPress={() => { editAndResend(message, text.trim(), workspaceId); router.back(); }} />
+    <View className="gap-3 px-4 pb-4 pt-5">
+      <View>
+        <Text variant="heading">Edit message</Text>
+        <Text variant="muted" className="mt-1">Every model answers again, and answers after this message are replaced.</Text>
+      </View>
+      <TextField value={text} onChangeText={setText} multiline autoFocus className="max-h-60 min-h-28" textAlignVertical="top" accessibilityLabel="Message" />
+      <View className="flex-row justify-end gap-2 pt-1">
+        <Button label="Cancel" variant="outline" size="sm" onPress={() => router.back()} />
+        <Button label="Send" size="sm" disabled={!text.trim()} onPress={() => { editAndResend(message, text.trim(), workspaceId); router.back(); }} />
+      </View>
     </View>
   );
 }

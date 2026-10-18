@@ -16,7 +16,7 @@ function attachmentsDir() {
 /** Copies a picked file into app storage so the chat keeps it after the picker's cache is cleared. */
 function keep(uri: string, name: string, mimeType: string, kind: ChatAttachment["kind"], size?: number): ChatAttachment {
   const id = Crypto.randomUUID();
-  const extension = name.includes(".") ? name.slice(name.lastIndexOf(".")) : kind === "image" ? ".jpg" : ".txt";
+  const extension = name.includes(".") ? name.slice(name.lastIndexOf(".")) : kind === "image" ? ".jpg" : kind === "audio" ? ".mp3" : ".txt";
   const target = new File(attachmentsDir(), `${id}${extension}`);
   new File(uri).copy(target);
   return { id, kind, name, mimeType, uri: target.uri, size };
@@ -39,9 +39,21 @@ export async function pickTextFile(): Promise<ChatAttachment[]> {
   if (result.canceled) return [];
   return result.assets.map((asset) => {
     const mimeType = asset.mimeType ?? "text/plain";
-    if (!TEXT_TYPES.test(mimeType) && !/\.(md|txt|csv|json|ya?ml|ts|tsx|js|py|go|rs|java|kt|swift|sql|sh|toml|xml|html|css)$/i.test(asset.name)) throw new Error(`${asset.name} isn't a text file. Images and text files can be attached.`);
+    if (!TEXT_TYPES.test(mimeType) && !/\.(md|txt|csv|json|ya?ml|ts|tsx|js|py|go|rs|java|kt|swift|sql|sh|toml|xml|html|css)$/i.test(asset.name)) throw new Error(`${asset.name} isn't a text file. Attach photos, text or code files, or audio.`);
     if ((asset.size ?? 0) > MAX_TEXT_BYTES) throw new Error(`${asset.name} is over 200 KB. Attach a smaller file.`);
     return keep(asset.uri, asset.name, mimeType, "text", asset.size ?? undefined);
+  });
+}
+
+const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
+
+/** Audio files go to the model as input_audio, for models that take audio. */
+export async function pickAudioFile(): Promise<ChatAttachment[]> {
+  const result = await DocumentPicker.getDocumentAsync({ type: ["audio/*"], copyToCacheDirectory: true, multiple: false });
+  if (result.canceled) return [];
+  return result.assets.map((asset) => {
+    if ((asset.size ?? 0) > MAX_AUDIO_BYTES) throw new Error(`${asset.name} is over 10 MB. Attach a shorter recording.`);
+    return keep(asset.uri, asset.name, asset.mimeType ?? "audio/mpeg", "audio", asset.size ?? undefined);
   });
 }
 

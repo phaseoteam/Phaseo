@@ -18,7 +18,8 @@ export function LogoMark({ id, size = 18 }: { id: string; size?: number }) {
   return <Image source={{ uri: `${WEB_ORIGIN}${logo.src}` }} style={{ width: size, height: size }} contentFit="contain" cachePolicy="disk" onError={() => setFailed(true)} accessibilityElementsHidden importantForAccessibility="no" />;
 }
 
-export function Logo({ id, label, colour, size = 32, className }: { id?: string | null; label?: string | null; colour?: string | null; size?: number; className?: string }) {
+/** `bare` draws the logo on its own (as web chat does beside model names); unknown labs still get a letter tile. */
+export function Logo({ id, label, colour, size = 32, className, bare }: { id?: string | null; label?: string | null; colour?: string | null; size?: number; className?: string; bare?: boolean }) {
   const { resolved } = useAppearance();
   const [failed, setFailed] = useState(false);
   const logo = id ? resolveLogo(id, { theme: resolved, fallbackToColor: true }) : null;
@@ -27,6 +28,9 @@ export function Logo({ id, label, colour, size = 32, className }: { id?: string 
   // rounded-md (8 px) on normal tiles; small tiles scale down so they stay squares, not circles.
   const radius = Math.min(8, Math.round(size * 0.25));
 
+  if (src && bare) {
+    return <Image source={{ uri: src }} style={{ width: size, height: size }} contentFit="contain" cachePolicy="disk" onError={() => setFailed(true)} accessibilityLabel={`${name} logo`} />;
+  }
   if (src) {
     return (
       <View className={cn("items-center justify-center overflow-hidden border border-border bg-background", className)} style={{ width: size, height: size, borderRadius: radius }}>
