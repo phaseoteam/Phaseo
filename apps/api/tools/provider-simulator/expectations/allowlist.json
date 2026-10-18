@@ -1,0 +1,4 @@
+{
+	"note": "Known or intended mismatches. Each entry needs a finding id, a proposed fix group (or 'none' for intended behaviour) and a justification. Anything not matched here fails the run.",
+	"entries": []
+}
