@@ -366,4 +366,80 @@ describe("google-ai-studio stream transform", () => {
 		expect(output).toContain("\"output_tokens_details\"");
 		expect(output).toContain("\"output_audio\":22");
 	});
+
+	function functionCallFrame(functionCall: Record<string, unknown>, last = false) {
+		return {
+			candidates: [{
+				index: 0,
+				content: { role: "model", parts: [{ functionCall, thoughtSignature: `sig-${String(functionCall.id ?? functionCall.name)}` }] },
+				...(last ? { finishReason: "STOP" } : {}),
+			}],
+			usageMetadata: last
+				? { promptTokenCount: 10, candidatesTokenCount: 4, totalTokenCount: 14 }
+				: { promptTokenCount: 10 },
+		};
+	}
+
+	function chatToolCallDeltas(output: string): any[] {
+		return output
+			.split("\n")
+			.filter((line) => line.startsWith("data: {"))
+			.map((line) => JSON.parse(line.slice(6)))
+			.flatMap((chunk) => chunk.choices ?? [])
+			.flatMap((choice: any) => choice.delta?.tool_calls ?? []);
+	}
+
+	it("gives parallel function calls in separate frames their own index and keeps upstream ids", async () => {
+		const upstream = makeGoogleSseStream([
+			functionCallFrame({ id: "call_up_1", name: "get_weather", args: { city: "Lyon" } }),
+			functionCallFrame({ id: "call_up_2", name: "search", args: { query: "lyon" } }, true),
+		]);
+
+		const deltas = chatToolCallDeltas(await readStreamText(transformStream(upstream, baseArgs())));
+
+		expect(deltas.map((delta) => [delta.index, delta.id, delta.function?.name])).toEqual([
+			[0, "call_up_1", "get_weather"],
+			[1, "call_up_2", "search"],
+		]);
+		expect(deltas.map((delta) => delta.function?.arguments)).toEqual([
+			"{\"city\":\"Lyon\"}",
+			"{\"query\":\"lyon\"}",
+		]);
+	});
+
+	it("keeps two same-name calls without upstream ids apart and an identical re-send as one call", async () => {
+		const upstream = makeGoogleSseStream([
+			functionCallFrame({ name: "get_weather", args: { city: "Lyon" } }),
+			functionCallFrame({ name: "get_weather", args: { city: "Lyon" } }),
+			functionCallFrame({ name: "get_weather", args: { city: "Paris" } }, true),
+		]);
+
+		const deltas = chatToolCallDeltas(await readStreamText(transformStream(upstream, baseArgs())));
+
+		expect(deltas.map((delta) => [delta.index, delta.function?.arguments])).toEqual([
+			[0, "{\"city\":\"Lyon\"}"],
+			[1, "{\"city\":\"Paris\"}"],
+		]);
+		expect(new Set(deltas.map((delta) => delta.id)).size).toBe(2);
+	});
+
+	it("emits one Responses function_call item per parallel Gemini call", async () => {
+		const upstream = makeGoogleSseStream([
+			functionCallFrame({ id: "call_up_1", name: "get_weather", args: { city: "Lyon" } }),
+			functionCallFrame({ id: "call_up_2", name: "search", args: { query: "lyon" } }, true),
+		]);
+
+		const output = await readStreamText(transformStream(upstream, baseArgs({
+			endpoint: "responses",
+			protocol: "openai.responses",
+		})));
+		const done = parseSseEvents(output)
+			.filter((event) => event.event === "response.output_item.done" && event.data.item?.type === "function_call")
+			.map((event) => event.data.item);
+
+		expect(done.map((item) => [item.call_id, item.name, item.arguments])).toEqual([
+			["call_up_1", "get_weather", "{\"city\":\"Lyon\"}"],
+			["call_up_2", "search", "{\"query\":\"lyon\"}"],
+		]);
+	});
 });
