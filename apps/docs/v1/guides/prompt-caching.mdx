@@ -72,14 +72,11 @@ Supported `scope` values:
 
 | Scope | Behavior |
 | --- | --- |
-| `all_text` | Default. Add cache control to the system text and the three most recent user messages that contain text or images. |
+| `all_text` | Add cache control to system text and user text/image blocks that do not already have cache control. |
 | `last_user_message` | Add cache control only to the latest user message. |
-| `agent` | For tool loops. Add cache control to the last tool definition, the system text, the final message (including tool results), and the message from the previous step. `conversation` is an alias. |
 | `none` | Do not apply a default cache policy. |
 
 Per-block `cache_control` wins over the default policy.
-
-Anthropic accepts at most four cache breakpoints per request. Default policies count the `cache_control` blocks you set yourself and stop at four. Unrecognised `scope` values are treated as `agent`. Use `agent` for multi-step tool loops: `all_text` and `last_user_message` don't mark messages that contain only tool results, so the cached prefix stops growing.
 
 ## Chat Completions
 

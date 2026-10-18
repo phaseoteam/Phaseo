@@ -72,14 +72,11 @@ Unterstützte Werte für `scope`:
 
 | Geltungsbereich | Verhalten |
 | --- | --- |
-| `all_text` | Standard. Fügt dem Systemtext und den drei neuesten Nutzernachrichten mit Text oder Bildern eine Cache-Steuerung hinzu. |
+| `all_text` | Fügt dem Systemtext sowie Nutzer-Text- und Bildblöcken eine Cache-Steuerung hinzu, sofern sie noch keine haben. |
 | `last_user_message` | Fügt nur der letzten Nutzernachricht eine Cache-Steuerung hinzu. |
-| `agent` | Für Tool-Schleifen. Fügt der letzten Tool-Definition, dem Systemtext, der letzten Nachricht (einschließlich Tool-Ergebnissen) und der Nachricht des vorherigen Schritts eine Cache-Steuerung hinzu. `conversation` ist ein Alias. |
 | `none` | Wende keine standardmäßige Cache-Richtlinie an. |
 
 `cache_control` auf Blockebene hat Vorrang vor der Standardrichtlinie.
-
-Anthropic akzeptiert höchstens vier Cache-Breakpoints pro Anfrage. Standardrichtlinien zählen die `cache_control`-Angaben mit, die du selbst setzt, und hören bei vier auf. Unbekannte `scope`-Werte werden wie `agent` behandelt. Nutze `agent` für mehrstufige Tool-Schleifen: `all_text` und `last_user_message` markieren keine Nachrichten, die nur Tool-Ergebnisse enthalten, sodass das zwischengespeicherte Präfix nicht mitwächst.
 
 ## Chat Completions
 

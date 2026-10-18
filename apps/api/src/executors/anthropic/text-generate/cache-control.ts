@@ -65,7 +65,9 @@ export function countAnthropicCacheBreakpoints(request: any): number {
 		if (!Array.isArray(blocks)) return;
 		for (const block of blocks) {
 			if (!block || typeof block !== "object") continue;
-			if (hasCacheControl(block)) count += 1;
+			// Marks on thinking blocks are stripped before sending, so they use no budget.
+			const thinking = (block as any).type === "thinking" || (block as any).type === "redacted_thinking";
+			if (hasCacheControl(block) && !thinking) count += 1;
 			// Blocks nested inside a tool result can carry their own marks.
 			if ((block as any).type === "tool_result") countBlocks((block as any).content);
 		}
