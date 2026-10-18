@@ -15,7 +15,7 @@ import { recordUsageAndChargeOnce } from "./charge";
 import { shapeUsageForClient, stripUsagePricing } from "../usage";
 import { applyByokServiceFee } from "../pricing/byok-fee";
 import { applyDataContributionDiscount } from "../pricing/data-contribution-discount";
-import { applySuccessfulResponseBillingPolicy } from "./billing-policy";
+import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } from "./billing-policy";
 import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
 import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
 
@@ -59,6 +59,26 @@ async function settleSpeechStream(
 		delivered_bytes: deliveredBytes,
 		stream_outcome: outcome,
 	};
+	if (outcome === "errored") {
+		// Same policy as the text stream finaliser: an upstream failure part-way through is not
+		// charged (the client got partial or corrupt audio); the provider's tokens still count
+		// against its rate limit, and the failure is audited.
+		const shaped = usage
+			? shapeUsageForClient({ ...usage, _provider_id: result.provider }, { endpoint: ctx.endpoint, body: ctx.body, includeInternalHints: true })
+			: null;
+		await recordManagedProviderTokensOnce({
+			ctx,
+			providerId: result.provider,
+			keySource: result.keySource,
+			usage: shaped,
+			reservation: result.providerRateLimitReservation,
+		});
+		suppressFailedResponseBilling({ ctx, result, usage: shaped ?? undefined, reason: "upstream_failure" });
+		await handleFailureAudit(ctx, result, 502, "upstream", "upstream_stream_failure",
+			"The upstream speech stream failed before successful completion.", { ...accounting, billing_status: "suppressed" },
+			null, { gatewayResponse: null, rawUsage: usage, pricingCard: card });
+		return;
+	}
 	if (!usage) {
 		await handleFailureAudit(ctx, result, 502, "gateway", "speech_usage_missing",
 			"The provider returned audio without usage to bill.", { ...accounting, billing_status: "pending_reconciliation" },

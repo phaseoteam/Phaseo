@@ -201,6 +201,32 @@ describe("text-to-speech stream finalisation", () => {
 		// handleFailureAudit(ctx, result, status, attribution, errorCode, ...)
 		expect(mocks.auditFailure.mock.calls[0][4]).toBe("speech_usage_missing");
 	});
+
+	it("does not charge when the upstream audio stream fails part-way", async () => {
+		let sent = false;
+		const failing = new ReadableStream<Uint8Array>({
+			pull(controller) {
+				if (!sent) {
+					sent = true;
+					controller.enqueue(new Uint8Array([0x49, 0x44, 0x33]));
+					return;
+				}
+				controller.error(new Error("upstream reset"));
+			},
+		});
+		const result = speechResult({ stream: failing, billUsage: speechUsage });
+		const response = await finalize(result);
+		await response.arrayBuffer().catch(() => undefined);
+		await settle();
+
+		expect(mocks.charge).not.toHaveBeenCalled();
+		expect(mocks.auditSuccess).not.toHaveBeenCalled();
+		expect(mocks.auditFailure).toHaveBeenCalledTimes(1);
+		expect(mocks.auditFailure.mock.calls[0][2]).toBe(502);
+		expect(mocks.auditFailure.mock.calls[0][4]).toBe("upstream_stream_failure");
+		expect(result.bill.cost_cents).toBe(0);
+		expect(result.bill.usage.pricing).toMatchObject({ total_nanos: 0, billing_suppressed: true, billing_suppression_reason: "upstream_failure" });
+	});
 });
 
 describe("meterSpeechStream", () => {
