@@ -43,7 +43,7 @@ function listPages(dir, pages = []) {
 	for (const entry of readdirSync(dir, { withFileTypes: true })) {
 		const path = join(dir, entry.name);
 		if (entry.isDirectory()) listPages(path, pages);
-		else if (entry.name.endsWith(".mdx")) pages.push(path);
+		else if (/\.mdx?$/.test(entry.name)) pages.push(path);
 	}
 	return pages;
 }
@@ -90,7 +90,7 @@ function buildImageUrl(page, frontmatter, problems) {
 			return undefined;
 		}
 	}
-	const pathname = `/docs/v1/${page.replace(/\.mdx$/, "")}`.replace(/\/index$/, "");
+	const pathname = `/docs/v1/${page.replace(/\.mdx?$/, "")}`.replace(/\/index$/, "");
 	if (pathname.length > LIMITS.pathname) {
 		problems.push(`${page}: path is longer than ${LIMITS.pathname} characters`);
 		return undefined;
