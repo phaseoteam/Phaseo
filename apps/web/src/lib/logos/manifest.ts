@@ -1,4 +1,8 @@
 export const logoManifest = {
+	pioneer: {
+		light: "/logos/fastino_light.svg",
+		dark: "/logos/fastino_dark.svg",
+	},
 	fastino: {
 		light: "/logos/fastino_light.svg",
 		dark: "/logos/fastino_dark.svg",

@@ -320,7 +320,7 @@ function routeAvailability(
 	row: Record<string, any>,
 	capabilityStatuses: string[],
 	now: number,
-): "active" | "coming_soon" | null {
+): "active" | "coming_soon" | "not_active" | null {
 	if (!["active", "degraded"].includes(normalizedStatus(row.status))) return null;
 	if (normalizedStatus(row.access_scope) !== "public") return null;
 
@@ -341,7 +341,9 @@ function routeAvailability(
 		capabilityPreview;
 	if (isComingSoon) return "coming_soon";
 
-	if (row.routing_enabled !== true) return null;
+	if (row.routing_enabled !== true) {
+		return phaseoStatus === "unsupported" && providerAvailability === "available" ? "not_active" : null;
+	}
 	if (providerAvailability && !PUBLIC_PROVIDER_AVAILABILITY.has(providerAvailability)) return null;
 	if (phaseoStatus && phaseoStatus !== "enabled") return null;
 	return "active";
@@ -360,7 +362,7 @@ function routeAvailabilityReason(
 	if (normalizedStatus(row.provider_availability_status) === "coming_soon") return "provider_coming_soon";
 	const phaseoStatus = normalizedStatus(row.phaseo_status);
 	if (COMING_SOON_PHASEO_STATUSES.has(phaseoStatus)) return `phaseo_${phaseoStatus}`;
-	return availability === "coming_soon" ? "not_routable" : "active";
+	return availability === "active" ? "active" : "not_routable";
 }
 
 function lifecycleDate(model: RecentModel): string | null {
@@ -622,9 +624,9 @@ publicProvidersRouter.get("/:providerId/models", async (c) => {
 				existing.is_active_gateway = true;
 				existing.availability_status = "active";
 				existing.availability_reason = "active";
-			} else if (existing.availability_status !== "active") {
+			} else if (availabilityStatus === "coming_soon" && existing.availability_status !== "active") {
 				existing.availability_status = "coming_soon";
-				existing.availability_reason = existing.availability_reason ?? routeAvailabilityReason(row, routeStatuses, now);
+				existing.availability_reason = routeAvailabilityReason(row, routeStatuses, now);
 			}
 		}
 		const skuById = new Map((skusResult.data ?? []).map((row) => [row.sku_id, row]));
