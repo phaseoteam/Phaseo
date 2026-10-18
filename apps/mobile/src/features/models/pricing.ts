@@ -51,11 +51,16 @@ function unitLabel(rule: PricingRule) {
 
 type Condition = { op?: string; path?: string; value?: number };
 
-/** The input size above which a rule applies (a long-context tier), or null for the normal price. */
+/**
+ * The input size above which a rule applies (a long-context tier), or null for the normal price.
+ * Like the website's `tokenRangeFromConditions`, any token-count condition counts: Anthropic routes
+ * use `long_context_input_tokens`, OpenAI's `input_tokens`.
+ */
 export function longContextThreshold(rule: PricingRule): number | null {
   const conditions = Array.isArray((rule as { match?: unknown }).match) ? (rule as { match: Condition[] }).match : [];
-  const tier = conditions.find((condition) => condition.path === "long_context_input_tokens" && (condition.op === "gt" || condition.op === "gte"));
-  return tier && typeof tier.value === "number" ? tier.value : null;
+  const tier = conditions.find((condition) => typeof condition.path === "string" && condition.path.toLowerCase().includes("token") && (condition.op === "gt" || condition.op === "gte"));
+  const value = Number(tier?.value);
+  return tier && Number.isFinite(value) ? value : null;
 }
 
 export type PriceLine = { meter: string; label: string; value: string; unit: string; longContext: { value: string; above: string } | null };
