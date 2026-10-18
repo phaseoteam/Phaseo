@@ -40,6 +40,8 @@ export interface BenchmarkModelInfo {
 }
 
 export interface BenchmarkResult {
+	variant?: string | null;
+	result_key?: string | null;
 	id: string;
 	model_id: string;
 	score: string | number | null;
@@ -53,6 +55,7 @@ export interface BenchmarkResult {
 }
 
 export interface BenchmarkPage {
+	comparison_benchmarks?: BenchmarkPage[];
 	suite?: ArtificialAnalysisSuite;
 	id: string;
 	name: string | null;

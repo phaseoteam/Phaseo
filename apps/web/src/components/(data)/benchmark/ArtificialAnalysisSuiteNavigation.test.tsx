@@ -6,7 +6,6 @@ import type { ArtificialAnalysisSuite } from "@/lib/fetchers/benchmarks/types";
 jest.mock("@/i18n/navigation", () => ({
 	Link: ({ children, ...props }: React.ComponentProps<"a">) => createElement("a", props, children),
 }));
-jest.mock("next-intl/server", () => ({ getTranslations: async () => (key: string) => key }));
 
 const suite: ArtificialAnalysisSuite = {
 	id: "artificial-analysis", name: "Artificial Analysis", current_version: 4, selected_version: 4, versions: [4, 3],
@@ -17,11 +16,12 @@ const suite: ArtificialAnalysisSuite = {
 	], other_evaluations: [],
 };
 
-it("keeps latest metric links unpinned, hides unavailable metrics, and resets metric when changing version", async () => {
-	const html = renderToStaticMarkup(await ArtificialAnalysisSuiteNavigation({ suite, selectedId: "aa-coding-index-v4" }));
+it("keeps the latest version unpinned and resets the metric when changing version", async () => {
+	const html = renderToStaticMarkup(await ArtificialAnalysisSuiteNavigation({ suite, selectedId: "aa-coding-index-v4", currentLabel: "Index v4.3.2" }));
 	expect(html).toContain('href="/benchmarks/artificial-analysis?metric=coding" aria-current="page"');
-	expect(html).not.toContain("benchmarkMetrics.agentic");
+	expect(html).toContain(">Index v4.3.2</a>");
 	expect(html).toContain('href="/benchmarks/artificial-analysis?metric=intelligence&amp;version=3"');
+	expect(html).not.toContain("benchmarkMetrics");
 });
 
 it("keeps historical metric links pinned to their selected version", async () => {

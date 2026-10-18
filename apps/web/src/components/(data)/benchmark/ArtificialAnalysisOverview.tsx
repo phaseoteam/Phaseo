@@ -1,8 +1,13 @@
 import { useLocale, useTranslations } from "next-intl";
+import { ArrowUpRight } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
-import { artificialAnalysisVersion, formatArtificialAnalysisScore, isArtificialAnalysisCostBenchmark } from "@/lib/benchmarks/artificialAnalysis";
-import ArtificialAnalysisMetricCharts from "./ArtificialAnalysisMetricCharts";
+import { artificialAnalysisVersion, artificialAnalysisMetricKey } from "@/lib/benchmarks/artificialAnalysis";
+import { buildArtificialAnalysisExplorer } from "@/lib/benchmarks/artificialAnalysisExplorer";
+import ArtificialAnalysisExplorer from "./ArtificialAnalysisExplorer";
+import ArtificialAnalysisSuiteNavigation from "./ArtificialAnalysisSuiteNavigation";
+import { BenchmarkDisclosure } from "./BenchmarkDisclosure";
 import BenchmarkProgressChart from "./BenchmarkProgressChart";
 import ModelsUsingBenchmark from "./ModelsUsingBenchmark";
 
@@ -14,45 +19,42 @@ export function ArtificialAnalysisOverview({
 	rankings: PublicBenchmarkRanking[];
 }) {
 	const t = useTranslations("Catalogue.benchmarks.current");
+	const tOther = useTranslations("Catalogue.models.detail.benchmarkGrid");
 	const locale = useLocale();
 	const versionOf = (info: unknown) => artificialAnalysisVersion(typeof info === "string" ? info : null) ?? "Unspecified";
 	const versions = [...new Set(benchmark.results.map((result) => versionOf(result.other_info)))].sort((a, b) => b.localeCompare(a, "en", { numeric: true }));
 	const latestVersion = versions.find((version) => version !== "Unspecified") ?? versions[0] ?? "Unspecified";
 	const results = benchmark.results.filter((result) => versionOf(result.other_info) === latestVersion && result.score !== null && Number.isFinite(Number(result.score)));
-	const current = { ...benchmark, results };
-	const cost = isArtificialAnalysisCostBenchmark(benchmark.id);
-	const sorted = [...results].sort((a, b) => cost ? Number(a.score) - Number(b.score) : Number(b.score) - Number(a.score));
+	const { comparison_benchmarks: _comparisons, suite: _suite, ...currentBenchmark } = benchmark;
+	const current = { ...currentBenchmark, results };
 	const updated = results.map((result) => result.updated_at).filter((date): date is string => Boolean(date)).sort().at(-1);
-	const best = sorted[0];
-	const modelCount = new Set(results.map((result) => result.model_id)).size;
+	const metric = artificialAnalysisMetricKey(benchmark.id);
+	const points = buildArtificialAnalysisExplorer(rankings);
+	// Web previews can precede the API deployment or encounter older edge payloads.
+	const comparisonView = points.some((point) => point.cost !== undefined && point.cost > 0 && point.intelligence !== undefined)
+		? "cost-intelligence" : "intelligence";
 	const currentVersionLabel = latestVersion === "Unspecified" ? t("versionUnspecified") : t("indexVersion", {version: latestVersion});
+	const otherEvaluations = benchmark.suite?.other_evaluations ?? [];
+
+	// Source, version and freshness live in one row under the chart instead of floating above it.
+	const footer = <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-4 text-xs text-muted-foreground">
+		<a href="https://artificialanalysis.ai/models" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-foreground">{t("source", {brand: "Artificial Analysis"})}<ArrowUpRight className="size-3.5" /></a>
+		<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+			{benchmark.suite ? <ArtificialAnalysisSuiteNavigation suite={benchmark.suite} selectedId={benchmark.id} currentLabel={currentVersionLabel} /> : <span>{currentVersionLabel}</span>}
+			{updated ? <span>{t("lastSynced")} {new Date(updated).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}</span> : null}
+		</div>
+	</div>;
 
 	return (
-		<div className="space-y-12 pb-12">
-			<section id="summary" className="scroll-mt-36 space-y-5">
-				<div className="flex flex-wrap items-center justify-between gap-3">
-					<p className="max-w-3xl text-sm text-muted-foreground">{t("aaDescription")}</p>
-					<span className="text-xs text-muted-foreground">{currentVersionLabel}</span>
-				</div>
-				<div className="grid grid-cols-2 overflow-hidden rounded-xl border bg-card lg:grid-cols-4">
-					{[
-						{ label: t("modelsResults"), value: modelCount.toLocaleString(locale) },
-						{ label: cost ? t("lowestCost") : t("highestScore"), value: best ? formatArtificialAnalysisScore(benchmark.id, Number(best.score), locale) : "—" },
-						{ label: cost ? t("lowestCostModel") : t("leadingModel"), value: best?.model?.name ?? best?.model_id ?? "—" },
-						{ label: t("lastSynced"), value: updated ? new Date(updated).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "—" },
-					].map((item) => <div key={item.label} className="space-y-2 border-b p-5 odd:border-r lg:border-b-0 lg:border-r lg:last:border-r-0"><p className="text-xs text-muted-foreground">{item.label}</p><p className="truncate text-lg font-semibold tabular-nums" title={item.value}>{item.value}</p></div>)}
-				</div>
-				<p className="text-xs text-muted-foreground"><a href="https://artificialanalysis.ai/models" target="_blank" rel="noreferrer" className="underline underline-offset-2">{t("source", {brand: "Artificial Analysis"})}</a>. {t("aaResultsNote")}</p>
-			</section>
-
-			<ArtificialAnalysisMetricCharts rankings={rankings} />
-
-			<section id="progress" className="scroll-mt-36 space-y-4">
-				<div><h2 className="text-xl font-semibold">{t("progress")}</h2><p className="mt-1 text-sm text-muted-foreground">{t("aaProgress")}</p></div>
-				<BenchmarkProgressChart benchmark={current} />
-			</section>
-
-			<section id="model-results" className="scroll-mt-36"><ModelsUsingBenchmark benchmark={current} /></section>
+		<div className="pb-12">
+			<ArtificialAnalysisExplorer points={points} footer={footer} initialView={metric === "coding" || metric === "agentic" || metric === "cost" ? metric : comparisonView} />
+			<div className="border-b">
+				<BenchmarkDisclosure id="progress" title={t("progress")}><BenchmarkProgressChart benchmark={current} /></BenchmarkDisclosure>
+				<BenchmarkDisclosure id="model-results" title={t("modelsResults")}><ModelsUsingBenchmark benchmark={current} /></BenchmarkDisclosure>
+				{otherEvaluations.length ? <BenchmarkDisclosure title={tOther("otherBenchmarks")} count={otherEvaluations.length.toLocaleString(locale)}>
+					<ul className="flex flex-wrap gap-2">{otherEvaluations.map((evaluation) => <li key={evaluation.id}><Link href={`/benchmarks/${evaluation.id}`} className="inline-flex rounded-md border px-3 py-1.5 text-sm transition-colors hover:bg-muted">{evaluation.name}</Link></li>)}</ul>
+				</BenchmarkDisclosure> : null}
+			</div>
 		</div>
 	);
 }

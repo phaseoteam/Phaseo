@@ -17,6 +17,7 @@ import { Kbd } from "@/components/ui/kbd";
 import { KeyboardShortcut } from "@/components/ui/keyboard-shortcut";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Logo } from "@/components/Logo";
+import { ArtificialAnalysisLogo } from "@/components/ArtificialAnalysisLogo";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 import { cn } from "@/lib/utils";
 import {
@@ -625,6 +626,9 @@ function SearchBrowseIcon({
 	}
 
 	if (effectiveType === "benchmark") {
+		if (/\/benchmarks\/(?:artificial-analysis|aa-[^/?#]+)(?:[/?#]|$)/.test(item.href ?? "")) {
+			return <ArtificialAnalysisLogo size={20} />;
+		}
 		return (
 			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground">
 				<Trophy className="size-3" />
