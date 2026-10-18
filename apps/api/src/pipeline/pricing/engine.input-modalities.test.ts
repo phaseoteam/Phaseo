@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
+import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
 import { computeBillSummary } from "./engine";
 import type { PriceCard, PriceRule } from "./types";
 
@@ -102,6 +104,26 @@ describe("pricing engine image, audio and video input", () => {
 			.toEqual({ input_text_tokens: 900, input_audio_tokens: 100, output_text_tokens: 10 });
 		expect(() => quantities({ input_tokens: 300_000, output_tokens: 10, input_audio_tokens: 100 }, conditional))
 			.toThrow("pricing_rule_missing:input_audio_tokens");
+	});
+
+	it("bills cached Gemini media once, as a cache read, from usageMetadata to the bill", () => {
+		// 1,000-token prompt: 900 image tokens, 800 of them cached.
+		const ir = googleUsageMetadataToIRUsage({
+			promptTokenCount: 1_000,
+			cachedContentTokenCount: 800,
+			candidatesTokenCount: 10,
+			totalTokenCount: 1_010,
+			promptTokensDetails: [{ modality: "TEXT", tokenCount: 100 }, { modality: "IMAGE", tokenCount: 900 }],
+			cacheTokensDetails: [{ modality: "IMAGE", tokenCount: 800 }],
+		});
+		expect(ir?._ext?.inputImageTokens).toBe(100);
+
+		expect(quantities(normalizeTextUsageForPricing(ir) as Record<string, unknown>, geminiCard)).toEqual({
+			input_text_tokens: 100,
+			input_image_tokens: 100,
+			cached_read_text_tokens: 800,
+			output_text_tokens: 10,
+		});
 	});
 
 	it("uses the standard rule for a plan that does not price the modality", () => {

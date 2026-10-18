@@ -148,9 +148,17 @@ export function googleUsageMetadataToIRUsage(meta: UsageMetadata | undefined, he
         pickFiniteNumber(normalized.cached_read_text_tokens);
 
     const ext: IRUsage["_ext"] = {};
-    if (pickFiniteNumber(normalized.input_image_tokens) != null) ext.inputImageTokens = normalized.input_image_tokens;
-    if (pickFiniteNumber(normalized.input_audio_tokens) != null) ext.inputAudioTokens = normalized.input_audio_tokens;
-    if (pickFiniteNumber(normalized.input_video_tokens) != null) ext.inputVideoTokens = normalized.input_video_tokens;
+    // Media prompt tokens net of cached media (cacheTokensDetails): promptTokenCount includes
+    // cached content, and the cached part is billed through cachedInputTokens, so pricing the
+    // full modality count on its own meter would bill cached media twice.
+    const uncachedModality = (input: number | undefined, cached: number | undefined) =>
+        pickFiniteNumber(input) == null ? undefined : Math.max(0, (input as number) - (pickFiniteNumber(cached) ?? 0));
+    const inputImage = uncachedModality(normalized.input_image_tokens, normalized.cached_read_image_tokens);
+    const inputAudio = uncachedModality(normalized.input_audio_tokens, normalized.cached_read_audio_tokens);
+    const inputVideo = uncachedModality(normalized.input_video_tokens, normalized.cached_read_video_tokens);
+    if (inputImage != null) ext.inputImageTokens = inputImage;
+    if (inputAudio != null) ext.inputAudioTokens = inputAudio;
+    if (inputVideo != null) ext.inputVideoTokens = inputVideo;
     if (pickFiniteNumber(normalized.output_image_tokens) != null) ext.outputImageTokens = normalized.output_image_tokens;
     if (pickFiniteNumber(normalized.output_audio_tokens) != null) ext.outputAudioTokens = normalized.output_audio_tokens;
     if (pickFiniteNumber(normalized.output_video_tokens) != null) ext.outputVideoTokens = normalized.output_video_tokens;

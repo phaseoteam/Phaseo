@@ -940,14 +940,6 @@ function sumUsageCounts(counts: Record<string, number>): number | undefined {
 	return values.reduce((total, value) => total + value, 0);
 }
 
-function pickModality(sources: Array<Record<string, number>>, modality: string): Record<string, number> {
-	const picked: Record<string, number> = {};
-	sources.forEach((counts, index) => {
-		if (pickFiniteUsageNumber(counts[modality]) != null) picked[String(index)] = counts[modality];
-	});
-	return picked;
-}
-
 function interactionUsageToIRUsage(usage: any): IRUsage | undefined {
 	if (!usage || typeof usage !== "object") return undefined;
 
@@ -955,18 +947,15 @@ function interactionUsageToIRUsage(usage: any): IRUsage | undefined {
 	const outputByModality = readInteractionModalityCounts(usage.output_tokens_by_modality);
 	const cachedByModality = readInteractionModalityCounts(usage.cached_tokens_by_modality);
 
-	const toolUseByModality = readInteractionModalityCounts(usage.tool_use_tokens_by_modality);
-
-	// Same accounting as generateContent's usageMetadata: tool-use prompt tokens are
-	// input on top of the prompt, and thought tokens are output on top of the
-	// responses, billed at the output price.
+	// Unlike generateContent's toolUsePromptTokenCount, Interactions' total_tool_use_tokens is
+	// not added to input: Google's function-calling example reports input 100, output 25,
+	// tool use 50 and total 125 (https://ai.google.dev/api/interactions-api-v1). Thought
+	// tokens are output on top of the responses (7 + 20 + 22 = 49 in the same docs), billed
+	// at the output price.
 	const promptTokens =
 		pickFiniteUsageNumber(usage.total_input_tokens ?? usage.input_tokens) ??
 		sumUsageCounts(inputByModality);
-	const toolUseTokens =
-		pickFiniteUsageNumber(usage.total_tool_use_tokens ?? usage.tool_use_tokens) ??
-		sumUsageCounts(toolUseByModality);
-	const inputTokens = (promptTokens ?? 0) + (toolUseTokens ?? 0);
+	const inputTokens = promptTokens ?? 0;
 	const reasoningTokens =
 		pickFiniteUsageNumber(
 			usage.total_thought_tokens ??
@@ -986,9 +975,14 @@ function interactionUsageToIRUsage(usage: any): IRUsage | undefined {
 		sumUsageCounts(cachedByModality);
 
 	const ext: IRUsage["_ext"] = {};
-	const inputImageTokens = sumUsageCounts(pickModality([inputByModality, toolUseByModality], "image"));
-	const inputAudioTokens = sumUsageCounts(pickModality([inputByModality, toolUseByModality], "audio"));
-	const inputVideoTokens = sumUsageCounts(pickModality([inputByModality, toolUseByModality], "video"));
+	// Media prompt tokens net of cached media: the cached part is billed through cachedInputTokens.
+	const uncachedModality = (modality: string) => {
+		const input = pickFiniteUsageNumber(inputByModality[modality]);
+		return input == null ? undefined : Math.max(0, input - (pickFiniteUsageNumber(cachedByModality[modality]) ?? 0));
+	};
+	const inputImageTokens = uncachedModality("image");
+	const inputAudioTokens = uncachedModality("audio");
+	const inputVideoTokens = uncachedModality("video");
 	if (inputImageTokens != null) ext.inputImageTokens = inputImageTokens;
 	if (inputAudioTokens != null) ext.inputAudioTokens = inputAudioTokens;
 	if (inputVideoTokens != null) ext.inputVideoTokens = inputVideoTokens;
