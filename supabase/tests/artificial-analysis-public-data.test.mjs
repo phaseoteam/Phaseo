@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 const db = new PGlite();
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
@@ -13,8 +13,12 @@ const publish = value => db.query('select public.publish_artificial_analysis_pub
 const get = (model = null, major = null, limit = 50, offset = 0) => db.query('select public.get_artificial_analysis_public_models($1,$2,$3,$4) as data', [model, major, limit, offset]);
 try {
   await db.exec("create role anon; create role authenticated; create role service_role bypassrls; grant usage on schema public to anon, authenticated, service_role; create table public.v2_models(model_slug text primary key, hidden boolean); insert into public.v2_models values ('lab/visible',false),('lab/hidden',true); grant select on public.v2_models to service_role;");
-  await db.exec(await read('../schemas/public/tables/artificial_analysis_public_snapshots.sql'));
-  for (const name of ['publish_artificial_analysis_public_snapshot','get_artificial_analysis_public_models']) await db.exec(await read(`../schemas/public/functions/${name}.sql`));
+  const migration = (await readdir(new URL('../migrations/', import.meta.url))).find(name => name.endsWith('_artificial_analysis_public_data.sql'));
+  if (migration && process.env.AA_PUBLIC_SCHEMA_ONLY !== '1') await db.exec(`begin; ${await read(`../migrations/${migration}`)} commit;`);
+  else {
+    await db.exec(await read('../schemas/public/tables/artificial_analysis_public_snapshots.sql'));
+    for (const name of ['publish_artificial_analysis_public_snapshot','get_artificial_analysis_public_models']) await db.exec(await read(`../schemas/public/functions/${name}.sql`));
+  }
   for (const role of ['anon','authenticated']) {
     await db.exec(`set role ${role}`);
     await assert.rejects(publish(snapshot()), /permission denied/);

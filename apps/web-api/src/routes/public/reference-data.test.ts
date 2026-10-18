@@ -29,6 +29,15 @@ describe("public reference-data routes", () => {
 		expect((await app.request(`https://phaseo.app/api/_web/benchmarks/artificial-analysis/data?${query}`, {}, env)).status).toBe(400);
 		expect(fetch).not.toHaveBeenCalled();
 	});
+	it("keeps missing AA publications distinct from unavailable storage", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => Response.json(null)));
+		expect((await app.request("https://phaseo.app/api/_web/benchmarks/artificial-analysis/data", {}, env)).status).toBe(404);
+		vi.stubGlobal("fetch", vi.fn(async () => Response.json({ message: "not deployed" }, { status: 503 })));
+		const response = await app.request("https://phaseo.app/api/_web/benchmarks/artificial-analysis/data", {}, env);
+		expect(response.status).toBe(503);
+		expect(await response.json()).toEqual({ error: "aa_data_unavailable" });
+		expect(response.headers.get("Cloudflare-CDN-Cache-Control")).toBeNull();
+	});
 	it("loads AA comparisons in one nested score query and preserves configurations", async () => {
 		const ids = ["aa-intelligence-index-v4", "aa-coding-index-v4", "aa-agentic-index-v4", "aa-intelligence-index-cost-v4"];
 		const scoreQueries: URL[] = [];

@@ -65,6 +65,14 @@ performance measurements, context/parameter/modality/licensing details, openness
 and available evaluation breakdowns. Raw upstream fields remain available in the
 private snapshot for future reviewed display additions.
 
+`methodology_version` identifies the Intelligence Index, not the independent
+versions of every evaluation or domain capability index. The frontend dataset
+does not supply all those versions. Preserve each source metric's scale and
+snapshot provenance; do not label domain scores with the Intelligence Index
+version or combine historical domain scores into a trend without their version
+definitions. AA performance/pricing measurements also have different semantics
+from benchmark-task timing/cost and must keep their distinct field names.
+
 Storage contract test: `node supabase/tests/artificial-analysis-public-data.test.mjs`.
 
 Tests: `pnpm exec tsx --test scripts/artificial-analysis/public-page.test.ts

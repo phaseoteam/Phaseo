@@ -28,6 +28,7 @@ export interface ArtificialAnalysisPublicConfiguration {
 
 export interface ArtificialAnalysisPublicData {
 	snapshot_id: string;
+	/** Intelligence Index methodology only; domain capability indices are versioned independently. */
 	methodology_version: string;
 	fetched_at: string;
 	source_url: string;
