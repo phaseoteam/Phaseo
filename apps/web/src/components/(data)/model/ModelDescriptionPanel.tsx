@@ -74,7 +74,7 @@ export default function ModelDescriptionPanel({
 					size="sm"
 					className={cn(
 						"h-7 gap-1.5 rounded-md bg-background px-2.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground",
-						expanded ? "mt-2 ml-auto flex" : "absolute right-0 bottom-2",
+						expanded ? "mt-2 ml-auto flex w-fit" : "absolute right-0 bottom-2",
 					)}
 					aria-expanded={expanded}
 					aria-controls={descriptionId}
