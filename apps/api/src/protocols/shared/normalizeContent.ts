@@ -58,13 +58,56 @@ function parseDataUrl(value: string): { data: string; mimeType?: string } {
 	};
 }
 
-function normalizePromptCacheBreakpoint(part: any): IRCacheControl | undefined {
+/**
+ * Read a content block's or tool definition's cache mark. OpenAI's
+ * `prompt_cache_breakpoint` wins over an Anthropic-style `cache_control`
+ * when a block carries both. Executors translate the IR mark into each
+ * provider's own field, or drop it where the provider has none.
+ */
+export function normalizePartCacheControl(part: any): IRCacheControl | undefined {
 	const breakpoint = part?.prompt_cache_breakpoint;
-	if (!breakpoint || typeof breakpoint !== "object") return undefined;
-	return {
-		type: "prompt_cache_breakpoint",
-		mode: breakpoint.mode,
-	};
+	if (breakpoint && typeof breakpoint === "object" && !Array.isArray(breakpoint)) {
+		return {
+			type: "prompt_cache_breakpoint",
+			mode: breakpoint.mode,
+		};
+	}
+	const cacheControl = part?.cache_control ?? part?.cacheControl;
+	if (!cacheControl || typeof cacheControl !== "object" || Array.isArray(cacheControl)) return undefined;
+	const type = typeof cacheControl.type === "string" && cacheControl.type.trim()
+		? cacheControl.type.trim()
+		: "ephemeral";
+	const ttl = typeof cacheControl.ttl === "string" && cacheControl.ttl.trim()
+		? cacheControl.ttl.trim()
+		: undefined;
+	return { type, ...(ttl ? { ttl } : {}) };
+}
+
+const TEXT_PART_TYPES = new Set(["text", "input_text", "output_text"]);
+
+/**
+ * Tool results are stored as text in the IR. Array content that is all text
+ * and carries a cache mark keeps its text and the mark (the last one wins), so
+ * the breakpoint can be re-emitted upstream. Other arrays keep the historical
+ * JSON encoding so existing prompts stay byte-identical.
+ */
+export function normalizeToolResultContent(content: unknown): { content: string; cacheControl?: IRCacheControl } {
+	if (typeof content === "string") return { content };
+	if (content === null || content === undefined) return { content: "" };
+	if (
+		Array.isArray(content) &&
+		content.length > 0 &&
+		content.every((part) => part && typeof part === "object" && TEXT_PART_TYPES.has(part.type) && typeof part.text === "string")
+	) {
+		const marks = content.map(normalizePartCacheControl).filter((mark): mark is IRCacheControl => Boolean(mark));
+		if (marks.length > 0) {
+			return {
+				content: content.map((part) => part.text).join(""),
+				cacheControl: marks[marks.length - 1],
+			};
+		}
+	}
+	return { content: JSON.stringify(content) };
 }
 
 function normalizeImageUrl(
@@ -118,7 +161,7 @@ export function normalizeOpenAIContent(content: string | any[]): IRContentPart[]
 			return {
 				type: "text",
 				text: asString(part.text),
-				cacheControl: normalizePromptCacheBreakpoint(part),
+				cacheControl: normalizePartCacheControl(part),
 			};
 		}
 
@@ -136,7 +179,7 @@ export function normalizeOpenAIContent(content: string | any[]): IRContentPart[]
 				data: normalized.data,
 				detail: normalized.detail,
 				mimeType: normalized.mimeType,
-				cacheControl: normalizePromptCacheBreakpoint(part),
+				cacheControl: normalizePartCacheControl(part),
 			} as IRContentPart;
 		}
 
@@ -157,7 +200,7 @@ export function normalizeOpenAIContent(content: string | any[]): IRContentPart[]
 				source: audioUrl ? "url" : "data",
 				data: audioUrl || audioData,
 				format: resolveAudioFormat(part),
-				cacheControl: normalizePromptCacheBreakpoint(part),
+				cacheControl: normalizePartCacheControl(part),
 			} as IRContentPart;
 		}
 

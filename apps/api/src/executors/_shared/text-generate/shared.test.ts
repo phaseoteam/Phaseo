@@ -4,6 +4,7 @@ import { cherryPickIRParams } from "./shared";
 import { ChatCompletionsSchema } from "@core/schemas";
 import { decodeOpenAIChatRequest } from "@protocols/openai-chat/decode";
 import { irToOpenAIChat } from "./openai-compat/transform-chat";
+import { contextSchema } from "@pipeline/before/schemas";
 
 describe("cherryPickIRParams", () => {
 	it("preserves structured output when the catalog uses Responses text.format", () => {
@@ -32,7 +33,7 @@ describe("cherryPickIRParams", () => {
 		expect(ir.reasoning?.mode).toBe("pro");
 	});
 
-	it("maps supported audio and verbosity controls without admitting unrelated sampling params", () => {
+	it("maps audio and verbosity controls through to the wire request", () => {
 		const ir: IRChatRequest = {
 			model: "gpt-audio", stream: false, messages: [],
 			audioConfig: { voice: "alloy", format: "wav" }, modalities: ["text", "audio"],
@@ -44,7 +45,49 @@ describe("cherryPickIRParams", () => {
 		expect(wire.modalities).toEqual(["text", "audio"]);
 		expect(wire.verbosity).toBe("low");
 		expect(wire.web_search_options).toEqual({ search_context_size: "low" });
-		expect(wire.temperature).toBeUndefined();
+		// The hook no longer filters: support is enforced during routing.
+		expect(wire.temperature).toBe(0.7);
+	});
+
+	it("never drops tools or cache hints for the capability shape production routing builds", () => {
+		// IonRouter's catalogue lists only three params. Routing parses that list
+		// into a keyed record, which is the shape executors receive.
+		const parsed = contextSchema.parse({
+			workspace_id: "ws_cherry_pick",
+			resolved_model: "z-ai/glm-5",
+			key_ok: { ok: true, reason: null },
+			key_limit_ok: { ok: true, reason: null },
+			credit_ok: { ok: true, reason: null },
+			providers: [{
+				provider_id: "ionrouter",
+				api_model_id: "z-ai/glm-5",
+				provider_model_slug: "glm-5",
+				capability_params: [
+					{ param_id: "max_tokens", provider_min: null, provider_max: null, provider_default: null, notes: null },
+					{ param_id: "temperature", provider_min: null, provider_max: null, provider_default: null, notes: null },
+					{ param_id: "top_p", provider_min: null, provider_max: null, provider_default: null, notes: null },
+				],
+			}],
+			pricing: {},
+		});
+		const capabilityParams = parsed.providers[0]!.capabilityParams;
+		expect(capabilityParams).toEqual({
+			max_tokens: expect.any(Object), temperature: expect.any(Object), top_p: expect.any(Object),
+		});
+
+		const ir = decodeOpenAIChatRequest(ChatCompletionsSchema.parse({
+			model: "z-ai/glm-5",
+			messages: [{ role: "user", content: "What is the weather in Paris?" }],
+			tools: [{ type: "function", function: { name: "get_weather", parameters: { type: "object", properties: { city: { type: "string" } } } } }],
+			tool_choice: "auto",
+			prompt_cache_key: "session-42",
+			max_tokens: 256,
+		}) as any);
+		const wire = irToOpenAIChat(cherryPickIRParams(ir, capabilityParams), "glm-5", "ionrouter", capabilityParams);
+		expect(wire.tools?.[0]?.function?.name).toBe("get_weather");
+		expect(wire.tool_choice).toBe("auto");
+		expect(wire.prompt_cache_key).toBe("session-42");
+		expect(wire.max_tokens).toBe(256);
 	});
 
 	it("preserves provider cache and geographic context alongside an allowlist", () => {

@@ -87,6 +87,7 @@ export type IRToolCall = {
 	name: string; // Function name
 	arguments: string; // JSON string of arguments
 	type?: "function" | "custom";
+	thoughtSignature?: string; // Gemini signature returned on a functionCall part
 };
 
 /**

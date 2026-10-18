@@ -10368,6 +10368,7 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: غير مدعوم. لا تخزن البوابة الاستجابات، لذا تُرفض أي قيمة غير فارغة بخطأ تحقق 400. أرسل المحادثة كاملة في input بدلًا من ذلك.
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
