@@ -30,3 +30,9 @@ it("keeps historical metric links pinned to their selected version", async () =>
 	expect(html).toContain('href="/benchmarks/artificial-analysis?metric=coding&amp;version=3" aria-current="page"');
 	expect(html).toContain('href="/benchmarks/artificial-analysis?metric=intelligence"');
 });
+
+it("keeps other evaluations separate from version navigation", async () => {
+	const html = renderToStaticMarkup(await ArtificialAnalysisSuiteNavigation({ suite: { ...suite, other_evaluations: [{ id: "aa-lcr", name: "AA-LCR" }] }, selectedId: "aa-intelligence-index-v4" }));
+	expect(html).toMatch(/<details[^>]*><summary[^>]*>otherBenchmarks<\/summary>/);
+	expect(html).toContain('href="/benchmarks/aa-lcr"');
+});

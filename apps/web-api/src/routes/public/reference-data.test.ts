@@ -12,6 +12,33 @@ afterEach(() => {
 });
 
 describe("public reference-data routes", () => {
+	it("loads AA comparisons in one nested score query and preserves configurations", async () => {
+		const ids = ["aa-intelligence-index-v4", "aa-coding-index-v4", "aa-agentic-index-v4", "aa-intelligence-index-cost-v4"];
+		const scoreQueries: URL[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(String(input));
+			if (url.pathname.includes("get_artificial_analysis_coverage")) return Response.json(ids.map((benchmark_id) => ({ benchmark_id, total_models: 1, published: true })));
+			if (url.pathname.endsWith("v2_models")) return Response.json([{ model_slug: "lab/model", name: "Model", hidden: false, lab_slug: "lab", lab: null }]);
+			if (url.searchParams.get("select")?.includes("results:v2_benchmark_results")) {
+				scoreQueries.push(url);
+				return Response.json(ids.map((benchmark_id) => ({ benchmark_id, results: Array.from({ length: 300 }, (_, i) => ({
+					result_id: `${benchmark_id}-${i}`, model_slug: "lab/model", score: i, variant: "high", result_key: String(i),
+					other_info: `Artificial Analysis ID source-${i}; Intelligence Index v4.3.2`, updated_at: "2026-10-18T00:00:00Z",
+				})) })));
+			}
+			if (url.searchParams.has("benchmark_id")) return Response.json([{ benchmark_id: ids[0], name: "Artificial Analysis Intelligence Index" }]);
+			return Response.json(ids.map((benchmark_id) => ({ benchmark_id, name: benchmark_id, total_models: 1 })));
+		}));
+		const response = await app.request("https://phaseo.app/api/_web/benchmarks/artificial-analysis", {}, env);
+		expect(response.status).toBe(200);
+		const { benchmark } = await response.json() as { benchmark: { results: unknown[]; comparison_benchmarks: Array<{ results: Array<{ variant: string; result_key: string }> }> } };
+		expect(benchmark.results).toHaveLength(300);
+		expect(benchmark.comparison_benchmarks.map((metric) => metric.results.length)).toEqual([300, 300, 300, 300]);
+		expect(benchmark.comparison_benchmarks[0].results[0]).toMatchObject({ variant: "high", result_key: "0" });
+		expect(scoreQueries).toHaveLength(1);
+		expect(scoreQueries[0].searchParams.get("results.or")).toContain("effective_to.is.null");
+	});
+
 	it("keeps retired provider pages addressable and links their successor", async () => {
 		vi.stubGlobal("fetch", vi.fn(async () => Response.json([{
 			provider_slug: "pioneer", name: "Pioneer", status: "deprecated", country_code: "US", subdivision_code: null,

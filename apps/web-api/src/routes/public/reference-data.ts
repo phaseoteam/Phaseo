@@ -191,16 +191,32 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 			resolvedId = selectedMetric?.id ?? `aa-intelligence-index-v${selectedVersion}`;
 			suite = { id: ARTIFICIAL_ANALYSIS_ID, name: "Artificial Analysis", current_version: catalogue.currentVersion, selected_version: selectedVersion, versions: catalogue.versions, metrics: catalogue.metrics(selectedVersion), other_evaluations: catalogue.otherEvaluations };
 		}
+		const physicalMajor = resolvedId.match(/^aa-(?:intelligence|coding|agentic)-index(?:-cost)?-v([1-9][0-9]*)$/)?.[1];
+		const comparisonMetrics = suite?.metrics ?? (physicalMajor ? AA_METRICS.map((metric) => ({
+			...metric, id: `${metric.prefix}-v${physicalMajor}`, total_models: null,
+		})) : null);
+		const fetchResults = async () => {
+			if (comparisonMetrics) {
+				// One MVCC snapshot for all four measures. Nested rows avoid a combined
+				// PostgREST row cap truncating a later metric in the comparison.
+				const { data, error } = await client.from("v2_benchmarks")
+					.select("benchmark_id,results:v2_benchmark_results(result_id,model_slug,score,is_self_reported,other_info,source_link,created_at,updated_at,rank,variant,result_key)")
+					.in("benchmark_id", comparisonMetrics.map((metric) => metric.id))
+					.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`, { referencedTable: "results" });
+				return { error, data: (data ?? []).flatMap((row) => row.results.map((result) => ({ ...result, benchmark_id: row.benchmark_id }))) };
+			}
+			return client.from("v2_benchmark_results")
+				.select("benchmark_id,result_id,model_slug,score,is_self_reported,other_info,source_link,created_at,updated_at,rank,variant,result_key")
+				.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
+				.eq("benchmark_id", resolvedId)
+				.order("rank", { ascending: true, nullsFirst: false });
+		};
 		const [benchmarkResult, resultsResult] = await Promise.all([
 			client.from("v2_benchmarks")
 				.select("benchmark_id,name,category,ascending_order,total_models,link,benchmark_type")
 				.eq("benchmark_id", resolvedId)
 				.maybeSingle(),
-			client.from("v2_benchmark_results")
-				.select("result_id,model_slug,score,is_self_reported,other_info,source_link,created_at,updated_at,rank,variant,result_key")
-                .or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
-				.eq("benchmark_id", resolvedId)
-				.order("rank", { ascending: true, nullsFirst: false }),
+			fetchResults(),
 		]);
 		if (benchmarkResult.error) throw benchmarkResult.error;
 		if (resultsResult.error) throw resultsResult.error;
@@ -221,6 +237,9 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 			const organisation = labRow ? labOrganisation(labRow) : null;
 			return [{
 				id: result.result_id,
+				benchmark_id: result.benchmark_id,
+				variant: result.variant ?? null,
+				result_key: result.result_key ?? null,
 				model_id: result.model_slug,
 				score: result.score,
 				is_self_reported: Boolean(result.is_self_reported),
@@ -242,6 +261,11 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 		return withPublicCache(c.json({
 			benchmark: {
 				...(suite ? { suite } : {}),
+				...(comparisonMetrics ? { comparison_benchmarks: comparisonMetrics.map((metric) => ({
+					id: metric.id, name: `Artificial Analysis ${metric.label}`, category: data.category ?? null,
+					ascending_order: metric.key !== "cost", total_models: metric.total_models, link: data.link ?? null,
+					results: results.filter((result) => result.benchmark_id === metric.id),
+				})) } : {}),
 				id: data.benchmark_id,
 				name: data.name ?? null,
 				category: data.category ?? null,
@@ -250,7 +274,7 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 				total_models: data.total_models ?? null,
 				link: data.link ?? null,
 				type: data.benchmark_type ?? null,
-				results,
+				results: results.filter((result) => result.benchmark_id === resolvedId),
 			},
 		}), benchmarkId === ARTIFICIAL_ANALYSIS_ID
 			? { ...PUBLIC_LIVE_DATA_CACHE, cacheTags: ["web-api-reference-data", "web-api-benchmarks", "web-api-benchmark-artificial-analysis", ...(suite?.metrics.map((metric) => `web-api-benchmark-${metric.id}`) ?? [])] }

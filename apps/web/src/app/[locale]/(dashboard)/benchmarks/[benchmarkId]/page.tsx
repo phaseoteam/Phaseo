@@ -108,7 +108,8 @@ export default async function Page({
 			const metricDefinitions = artificialAnalysisMetricsForBenchmark(benchmark.id);
 			const [rankings, organisations] = await Promise.all([
 				Promise.all(metricDefinitions.map(async ({ id }) => {
-					const metricBenchmark = id === benchmark.id ? benchmark : await fetchFrontendBenchmark(id).catch(() => null);
+					const metricBenchmark = benchmark.comparison_benchmarks?.find((metric) => metric.id === id)
+						?? (id === benchmark.id ? benchmark : await fetchFrontendBenchmark(id).catch(() => null));
 					return metricBenchmark ? buildArtificialAnalysisRanking(metricBenchmark) : null;
 				})),
 				fetchFrontendOrganisations().catch(() => []),
@@ -177,10 +178,10 @@ export default async function Page({
 				</>
 			)}
 			<BenchmarkDetailShell benchmark={displayBenchmark} tocItems={artificialAnalysis
-				? [{ id: "summary", label: t("tocSummary") }, { id: "comparisons", label: t("tocIndexComparisons") }, { id: "progress", label: t("tocProgress") }, { id: "model-results", label: t("tocModelResults") }]
+				? []
 				: epochCapabilitiesIndex ? [{ id: "summary", label: t("tocSummary") }, { id: "comparisons", label: t("tocIndexLeaderboard") }, { id: "progress", label: t("tocProgress") }, { id: "model-results", label: t("tocModelResults") }]
 				: [{ id: "summary", label: t("tocSummary") }, { id: "progress", label: t("tocProgress") }, { id: "model-results", label: t("tocModelResults") }]}>
-				{benchmark.suite ? <ArtificialAnalysisSuiteNavigation suite={benchmark.suite} selectedId={benchmark.id} /> : null}
+				{benchmark.suite ? <ArtificialAnalysisSuiteNavigation suite={benchmark.suite} selectedId={benchmark.id} showMetrics={false} /> : null}
 				<BenchmarkOverview benchmark={displayBenchmark} artificialAnalysisRankings={artificialAnalysisRankings} />
 			</BenchmarkDetailShell>
 		</>
