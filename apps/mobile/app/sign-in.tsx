@@ -88,10 +88,10 @@ export default function SignInScreen() {
         {error ? <Text variant="small" className="mt-4 text-destructive">{error}</Text> : null}
         <View className="mt-6 flex-row flex-wrap justify-between gap-3">
           <Pressable accessibilityRole="link" hitSlop={8} onPress={() => openWeb("/sign-in")}>
-            <Text variant="small" className="font-semibold text-primary">Forgot your password?</Text>
+            <Text variant="small" className="font-semibold text-link">Forgot your password?</Text>
           </Pressable>
           <Pressable accessibilityRole="link" hitSlop={8} onPress={() => openWeb("/sign-up")}>
-            <Text variant="small" className="font-semibold text-primary">Create an account</Text>
+            <Text variant="small" className="font-semibold text-link">Create an account</Text>
           </Pressable>
         </View>
       </KeyboardAwareScrollView>

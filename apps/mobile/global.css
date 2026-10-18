@@ -23,6 +23,7 @@
       --color-popover-foreground: oklch(0.145 0 0);
       --color-primary: oklch(0.5 0.134 242.749);
       --color-primary-foreground: oklch(0.977 0.013 236.62);
+      --color-link: oklch(0.5 0.134 242.749);
       --color-secondary: oklch(0.967 0.001 286.375);
       --color-secondary-foreground: oklch(0.21 0.006 285.885);
       --color-muted: oklch(0.97 0 0);
@@ -56,6 +57,8 @@
       --color-popover-foreground: oklch(0.985 0 0);
       --color-primary: oklch(0.443 0.11 240.79);
       --color-primary-foreground: oklch(0.977 0.013 236.62);
+      /* The dark primary is a button fill; text on the dark background needs a lighter blue. */
+      --color-link: oklch(0.746 0.16 232.661);
       --color-secondary: oklch(0.274 0.006 286.033);
       --color-secondary-foreground: oklch(0.985 0 0);
       --color-muted: oklch(0.269 0 0);

@@ -76,10 +76,18 @@ function startOfDay(date: Date) {
   return copy;
 }
 
-const MODALITY_LABELS: Record<string, string> = { text: "Text", image: "Image", audio: "Audio", video: "Video", embedding: "Embeddings", moderation: "Moderation", file: "Files", pdf: "PDF" };
+const MODALITY_LABELS: Record<string, string> = {
+  text: "Text", image: "Image", audio: "Audio", video: "Video", embedding: "Embeddings", embeddings: "Embeddings",
+  moderation: "Moderation", moderations: "Moderation", file: "Files", pdf: "PDF", document: "Documents",
+  audio_tts: "Speech", audio_stt: "Transcription", audio_music: "Music", music: "Music", rerank: "Rerank",
+};
 
+/** "audio_tts" → "Speech", "image/*" → "Image"; unknown values lose underscores and get a capital. */
 export function modalityLabel(value: string) {
-  return MODALITY_LABELS[value] ?? value.slice(0, 1).toUpperCase() + value.slice(1);
+  const key = value.replace(/\/\*$/, "");
+  if (MODALITY_LABELS[key]) return MODALITY_LABELS[key];
+  const words = key.replace(/[_-]+/g, " ").trim();
+  return words.slice(0, 1).toUpperCase() + words.slice(1);
 }
 
 export function formatPercent(value: number | null | undefined, digits = 1) {

@@ -31,7 +31,7 @@ export function ChipRow({ children, className }: { children: React.ReactNode; cl
 export function Badge({ label, tone = "neutral" }: { label: string; tone?: "neutral" | "primary" | "success" | "warning" | "destructive" }) {
   const tones = {
     neutral: "bg-muted text-muted-foreground",
-    primary: "bg-primary/12 text-primary",
+    primary: "bg-primary/12 text-link",
     success: "bg-success/12 text-success",
     warning: "bg-warning/15 text-warning",
     destructive: "bg-destructive/12 text-destructive",

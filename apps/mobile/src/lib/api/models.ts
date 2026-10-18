@@ -153,6 +153,7 @@ const pricingRuleSchema = z.object({
 
 const providerPricingSchema = z.object({
   provider: z.object({ api_provider_id: str, api_provider_name: str, status: str }).passthrough(),
+  provider_models: z.array(z.object({ is_active_gateway: z.boolean().nullish(), endpoint: str }).passthrough()).default([]),
   pricing_rules: z.array(pricingRuleSchema).default([]),
 }).passthrough();
 

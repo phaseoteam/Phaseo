@@ -48,7 +48,7 @@ export function HomeScreen() {
             <QuickAction label="Providers" icon={Server} href="/providers" />
           </View>
 
-          <Section title="Latest releases" action={<Link href="/models" asChild><Pressable hitSlop={8}><Text variant="small" className="font-semibold text-primary">All models</Text></Pressable></Link>}>
+          <Section title="Latest releases" action={<Link href="/models" asChild><Pressable hitSlop={8} className="shrink-0"><Text variant="small" numberOfLines={1} className="font-semibold text-link">All models</Text></Pressable></Link>}>
             {releases.isLoading ? <ReleaseSkeleton /> : (releases.data?.past ?? []).filter(isNewRelease).slice(0, 8).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} />)}
           </Section>
 

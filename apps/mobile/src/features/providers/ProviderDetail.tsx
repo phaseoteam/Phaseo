@@ -8,9 +8,8 @@ import { Badge, Button, EmptyState, Fact, Header, LoadingState, ReadableWidth, R
 import { useLayout } from "@/hooks/useLayout";
 import { getProviderMetrics, getProviderModels } from "@/lib/api/providers";
 import { formatCompact, formatMs, formatPercent, formatPrice, modalityLabel } from "@/lib/format";
+import { regionsLabel, trainingLabel } from "./labels";
 import { useProviders } from "./ProviderBrowser";
-
-const POLICY_LABELS: Record<string, string> = { never: "Never trains on prompts", opt_in: "Trains only if you opt in", opt_out: "Trains unless you opt out", always: "May train on prompts", unknown: "Not published" };
 
 export function ProviderDetail({ id }: { id: string }) {
   const router = useRouter();
@@ -63,9 +62,9 @@ export function ProviderDetail({ id }: { id: string }) {
           </Section>
 
           <Section title="Data and privacy">
-            <Fact label="Prompt training" value={POLICY_LABELS[provider.prompt_training_policy ?? "unknown"] ?? provider.prompt_training_policy ?? undefined} />
+            <Fact label="Prompt training" value={trainingLabel(provider.prompt_training_policy)} />
             <Fact label="Data retention" value={provider.zero_data_retention ? "None" : provider.data_retention_days != null ? `${provider.data_retention_days} days` : "Not published"} />
-            <Fact label="Runs in" value={provider.default_execution_regions?.length ? provider.default_execution_regions.join(", ").toUpperCase() : undefined} last />
+            <Fact label="Runs in" value={regionsLabel(provider.default_execution_regions)} last />
             <View className="flex-row gap-2 px-4 pt-3">
               {provider.privacy_policy_url ? <Button label="Privacy policy" variant="outline" size="sm" onPress={() => void Linking.openURL(provider.privacy_policy_url!)} /> : null}
               {provider.terms_of_service_url ? <Button label="Terms" variant="outline" size="sm" onPress={() => void Linking.openURL(provider.terms_of_service_url!)} /> : null}

@@ -13,7 +13,7 @@ import { contextWindow, isChatModel, isFree, isOnPhaseo, modelName, organisation
 import { WEB_ORIGIN } from "@/lib/config";
 import { formatCompact, formatDate, formatMs, formatPercent, formatPrice, formatShortDate, formatTokens, modalityLabel } from "@/lib/format";
 import { compareStore, toggleCompare, useCatalogueIndex } from "./state";
-import { plansFor, priceLines } from "./pricing";
+import { isRoutable, plansFor, priceLines, providerLabel, sortByRoutable } from "./pricing";
 
 const publicKey = (id: string, part: string) => ["public", "model", id, part] as const;
 
@@ -194,29 +194,32 @@ function Description({ text }: { text: string }) {
 }
 
 function PricingSection({ pricing, loading }: { pricing?: Awaited<ReturnType<typeof getModelPricing>>; loading: boolean }) {
-  const providers = useMemo(() => (pricing ?? []).filter((provider) => provider.pricing_rules.length > 0), [pricing]);
+  const providers = useMemo(() => sortByRoutable((pricing ?? []).filter((provider) => provider.pricing_rules.length > 0)), [pricing]);
   if (loading) return <Section title="Pricing"><LoadingState /></Section>;
   if (!providers.length) return null;
   return (
-    <Section title="Pricing" description="Per million tokens unless noted. Ranges cover tiers such as long context.">
+    <Section title="Pricing" description="Per million tokens unless noted.">
       {providers.map((provider) => {
         const lines = priceLines(provider);
         const otherPlans = plansFor(provider).filter((plan) => plan !== "standard");
+        const routable = isRoutable(provider);
         return (
           <View key={provider.provider.api_provider_id ?? provider.provider.api_provider_name} className="border-b border-border px-4 py-3">
             <View className="flex-row items-center gap-2">
               <Logo id={provider.provider.api_provider_id} label={provider.provider.api_provider_name} size={22} />
-              <Text variant="label" className="flex-1">{provider.provider.api_provider_name ?? provider.provider.api_provider_id}</Text>
-              {otherPlans.length ? <Text variant="caption">Also {otherPlans.join(", ")}</Text> : null}
+              <Text variant="label" className="flex-1">{providerLabel(provider.provider)}</Text>
+              {routable ? (otherPlans.length ? <Text variant="caption">Also {otherPlans.join(", ")}</Text> : null) : <Badge label="Not active" />}
             </View>
-            <View className="mt-2 flex-row flex-wrap gap-x-6 gap-y-1">
+            <View className="mt-2 flex-row flex-wrap gap-x-6 gap-y-2">
               {lines.map((line) => (
                 <View key={line.meter}>
                   <Text variant="caption">{line.label}</Text>
                   <Text variant="small" className="font-semibold">{line.value}{line.unit !== "1M tokens" ? ` / ${line.unit}` : ""}</Text>
+                  {line.longContext ? <Text variant="caption">{line.longContext.value} over {line.longContext.above}</Text> : null}
                 </View>
               ))}
             </View>
+            {lines.some((line) => line.longContext) ? <Text variant="caption" className="mt-2">{`Higher prices apply when a request's input is over ${lines.find((line) => line.longContext)!.longContext!.above} tokens.`}</Text> : null}
           </View>
         );
       })}
