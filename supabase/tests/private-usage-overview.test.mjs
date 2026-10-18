@@ -215,9 +215,12 @@ assert.deepEqual(privileges, { anon: false, authenticated: false, service_role: 
 
 // Executing is not enough: the RPCs run as the caller, so service_role must be able to
 // read every table they touch. (A missing grant on previous grains broke every overview.)
+const dayTotals = await expected(day);
+const dayLabels = await expectedFacets(day);
+assert.equal(dayLabels.length > 0, true, 'the fixture has labels to list');
 await db.exec('set role service_role');
-assert.deepEqual(byBucket(await overview(day)), await (async () => { await db.exec('reset role'); const rows = await expected(day); await db.exec('set role service_role'); return rows; })(), 'service_role gets the same overview');
-assert.equal(Array.isArray(await facets(day)), true, 'service_role can list labels');
+assert.deepEqual(byBucket(await overview(day)), dayTotals, 'service_role gets the same overview');
+assert.deepEqual(await facets(day), dayLabels, 'service_role gets the same labels');
 await db.exec('reset role');
 await db.close();
 console.log('Passed: the rollups plus edge requests match the requests exactly across time zones, buckets, keys, creators, labels and workspaces; label lists; grants, including running both RPCs as service_role.');
