@@ -105,6 +105,60 @@ describe("request-level models fallbacks", () => {
 		expect(beforeRequestMock).toHaveBeenCalledTimes(1);
 	});
 
+	it.each([400, 413, 422])("does not switch models when every provider rejected the request with %s (surfaced as 502)", async (status) => {
+		const primary = requestContext("primary/model", ["fallback/model"], {
+			attemptErrors: [
+				{ provider: "anthropic", type: "upstream_non_2xx", status },
+				{ provider: "bedrock", type: "upstream_non_2xx", status },
+			],
+		});
+		beforeRequestMock.mockResolvedValueOnce({ ok: true, ctx: primary });
+		runnerMock.mockResolvedValueOnce(new Response("upstream_error", { status: 502 }));
+
+		const response = await makeEndpointHandler({ endpoint: "chat.completions", schema: null })(post("chat/completions"));
+
+		expect(response.status).toBe(502);
+		expect(beforeRequestMock).toHaveBeenCalledTimes(1);
+		expect(runnerMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("still switches models after a 502 when a provider failed for a retryable reason", async () => {
+		const primary = requestContext("primary/model", ["fallback/model"], {
+			attemptErrors: [
+				{ provider: "anthropic", type: "upstream_non_2xx", status: 400 },
+				{ provider: "bedrock", type: "upstream_non_2xx", status: 503 },
+			],
+		});
+		beforeRequestMock
+			.mockResolvedValueOnce({ ok: true, ctx: primary })
+			.mockResolvedValueOnce({ ok: true, ctx: requestContext("fallback/model") });
+		runnerMock
+			.mockResolvedValueOnce(new Response("upstream_error", { status: 502 }))
+			.mockResolvedValueOnce(new Response("ok", { status: 200 }));
+
+		const response = await makeEndpointHandler({ endpoint: "chat.completions", schema: null })(post("chat/completions"));
+
+		expect(response.status).toBe(200);
+		expect(runnerMock).toHaveBeenCalledTimes(2);
+	});
+
+	it("stops at a fallback model whose providers all rejected the request", async () => {
+		beforeRequestMock
+			.mockResolvedValueOnce({ ok: true, ctx: requestContext("primary/model", ["first/model", "second/model"]) })
+			.mockResolvedValueOnce({
+				ok: true,
+				ctx: requestContext("first/model", [], { attemptErrors: [{ provider: "openai", type: "upstream_non_2xx", status: 400 }] }),
+			});
+		runnerMock
+			.mockResolvedValueOnce(new Response("unavailable", { status: 503 }))
+			.mockResolvedValueOnce(new Response("upstream_error", { status: 502 }));
+
+		const response = await makeEndpointHandler({ endpoint: "chat.completions", schema: null })(post("chat/completions"));
+
+		expect(response.status).toBe(502);
+		expect(runnerMock).toHaveBeenCalledTimes(2);
+	});
+
 	it("never retries a stream that has already started", async () => {
 		beforeRequestMock.mockResolvedValueOnce({ ok: true, ctx: requestContext("primary/model", ["fallback/model"]) });
 		runnerMock.mockResolvedValueOnce(new Response('data: {"error":"upstream reset"}\n\n', {

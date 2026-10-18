@@ -14,6 +14,7 @@ import { handleStreamResponse, handlePassthroughFallback } from "./stream";
 import { handleSpeechStreamResponse } from "./speech-stream";
 import { handleSuccessAudit, handleFailureAudit } from "./audit";
 import { makeHeaders, createResponse } from "./http";
+import { withServedModel } from "./served-model";
 import { recordUsageAndChargeOnce } from "./charge";
 import { mergeBillAndPayloadUsage, shapeUsageForClient } from "../usage";
 import { logDebugEvent, previewValue } from "../debug";
@@ -590,6 +591,7 @@ async function handleNonStreamResponse(
         includeMeta,
     });
     if (responseBody && typeof responseBody === "object" && !Array.isArray(responseBody)) {
+        withServedModel(responseBody, ctx);
         attachRoutingDiagnosticsToPayload({
             ctx,
             payload: responseBody,

@@ -38,11 +38,11 @@ const FRIENDLY_DESCRIPTIONS: Partial<Record<ExecuteErrorCode, string>> = {
         "Oops, we forgot to pay our provider bills. Please try again in a few minutes.",
 };
 
-export function err(code: ExecuteErrorCode, payload: Record<string, unknown>) {
+export function err(code: ExecuteErrorCode, payload: Record<string, unknown>, status: number = STATUS[code]) {
     const description = FRIENDLY_DESCRIPTIONS[code];
     const body = { error: code, ...payload } as Record<string, unknown>;
     if (description && typeof body.description !== "string") body.description = description;
-    return json(body, STATUS[code]);
+    return json(body, status);
 }
 
 

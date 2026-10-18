@@ -154,6 +154,34 @@ describe("handleError", () => {
 		expect(emitGatewayRequestEventMock).toHaveBeenCalledWith(expect.objectContaining({ errorCode: "gateway:phaseo_free_model_limit_exceeded", provider: null }));
 	});
 
+	it("keeps BYOK upstream quota headers and the throttling status when every provider returned 429", async () => {
+		const response = await handleError({
+			stage: "execute",
+			endpoint: "chat.completions",
+			res: new Response(JSON.stringify({
+				error: "upstream_error",
+				reason: "all_candidates_failed",
+				attempt_count: 1,
+				failed_statuses: [429],
+			}), {
+				status: 429,
+				headers: {
+					"Retry-After": "9",
+					"X-Phaseo-Upstream-RateLimit-Remaining-Requests": "0",
+					// A provider header name is never forwarded.
+					"x-ratelimit-remaining-tokens": "100",
+				},
+			}),
+			ctx: { requestId: "G-BYOK-429", workspaceId: "workspace", model: "openai/gpt-oss-120b", meta: {}, providers: [{ providerId: "deepinfra" }] } as any,
+			auditFailure: async () => {},
+		});
+		expect(response.status).toBe(429);
+		expect(response.headers.get("Retry-After")).toBe("9");
+		expect(response.headers.get("X-Phaseo-Upstream-RateLimit-Remaining-Requests")).toBe("0");
+		expect(response.headers.get("x-ratelimit-remaining-tokens")).toBeNull();
+		expect(await response.json()).toMatchObject({ status_code: 429, error: "upstream_error", error_origin: "upstream" });
+	});
+
 	it("attributes a rate limit policy rejection to the caller and keeps the policy fields", async () => {
 		let capturedAuditArgs: any = null;
 		const response = await handleError({

@@ -14,6 +14,7 @@ import type { PipelineTiming } from "./execute";
 import { resolvePipeline } from "./registry";
 import { ResponsesSchema } from "@core/schemas";
 import { MAX_REQUEST_MODEL_FALLBACKS } from "./before/requestModelFallbacks";
+import { everyAttemptRejectedRequest } from "./execute/attempt-outcomes";
 import { runAutoRouterClassifierGatewayRequest } from "./auto-router-classifier-gateway";
 import {
 	buildPipelineExecutionErrorResponse,
@@ -77,8 +78,15 @@ function modelFallbackAttemptKey(ctx: {
 	return `${ctx.model}|${providers}|${ctx.preset?.id ?? ""}`;
 }
 
-function shouldTryModelFallback(response: Response): boolean {
-    return MODEL_FALLBACK_STATUSES.has(response.status);
+// A provider rejection of the request itself (400, 413, 422) reaches the client
+// as a 502 upstream_error, but it is the request's fault: another model would
+// be called, and billed, with the same bad request.
+function shouldTryModelFallback(
+	response: Response,
+	ctx: { attemptErrors?: Array<Record<string, unknown>> | null },
+): boolean {
+	if (!MODEL_FALLBACK_STATUSES.has(response.status)) return false;
+	return !(response.status === 502 && everyAttemptRejectedRequest(ctx.attemptErrors));
 }
 
 function discardResponseBody(response: Response) {
@@ -342,7 +350,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 				}
 				response = withRateLimitPolicyHeaders(response, fallbackPre.ctx);
 				attempts.push({ model: fallbackPre.ctx.model, status: response.status, stage: "execute" });
-				if (!shouldTryModelFallback(response) || rejectedByRateLimitPolicy(fallbackPre.ctx)) return response;
+				if (!shouldTryModelFallback(response, fallbackPre.ctx) || rejectedByRateLimitPolicy(fallbackPre.ctx)) return response;
 			}
 			return response;
         };
@@ -384,7 +392,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 
         try {
 			const response = withRateLimitPolicyHeaders(await runWithHeaders({ pre, req, endpoint, timing }), pre.ctx);
-			if (!shouldTryModelFallback(response)) return response;
+			if (!shouldTryModelFallback(response, pre.ctx)) return response;
 			// Other models share the exhausted policy allowance.
 			if (rejectedByRateLimitPolicy(pre.ctx)) return response;
 			const fallbackPlan = configuredModelFallbacks(pre.ctx);

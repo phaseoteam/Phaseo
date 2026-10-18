@@ -26,6 +26,7 @@ import {
 } from "../execute/health";
 import { getBaseModel } from "../execute/utils";
 import { noteModelSubstitutionServed } from "../before/modelSuccessor";
+import { withServedModel } from "./served-model";
 import { logDebugEvent, previewValue } from "../debug";
 import { ensureRuntimeForBackground } from "@/runtime/env";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
@@ -274,7 +275,7 @@ export async function handleStreamResponse(
         rewriteFrame: (frame: any) => {
             if (!frame || typeof frame !== "object") return frame;
             const includeMeta = ctx.meta.returnMeta ?? false;
-            const next: any = { ...frame };
+            const next: any = withServedModel({ ...frame }, ctx);
             delete next.provider;
             delete next.gateway;
 
