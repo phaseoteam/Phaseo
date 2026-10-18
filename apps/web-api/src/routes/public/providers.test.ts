@@ -262,10 +262,34 @@ describe("public provider routes", () => {
 		expect(payload.models[0]?.pricing_meters).toEqual(expect.arrayContaining([expect.objectContaining({ meter: "input_text_tokens", price_per_1m_usd: 2 })]));
 	});
 
+	it("lists available catalogue models as inactive without exposing internal, blocked or retired routes", async () => {
+		const rows = [
+			{ provider_model_id: "fastino:public", model_slug: "fastino/public", access_scope: "public", phaseo_status: "unsupported", status: "active" },
+			{ provider_model_id: "fastino:public-alt", model_slug: "fastino/public", access_scope: "public", phaseo_status: "unsupported", status: "active" },
+			{ provider_model_id: "fastino:internal", model_slug: "fastino/internal", access_scope: "internal", phaseo_status: "unsupported", status: "active" },
+			{ provider_model_id: "fastino:blocked", model_slug: "fastino/blocked", access_scope: "public", phaseo_status: "blocked", status: "active" },
+			{ provider_model_id: "fastino:retired", model_slug: "fastino/retired", access_scope: "public", phaseo_status: "unsupported", status: "retired" },
+		].map((row) => ({ ...row, provider_model_slug: row.model_slug, routing_enabled: false, provider_availability_status: "available", created_at: "2026-10-18T00:00:00Z" }));
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("v2_model_provider_routes")) return Response.json(rows);
+			if (url.includes("v2_models")) return Response.json(rows.map((row) => ({ model_slug: row.model_slug, name: row.model_slug, hidden: false })));
+			if (url.includes("v2_pricing_skus")) return Response.json([{ sku_id: "sku", provider_model_id: "fastino:public", status: "active", service_tier_slug: "standard", effective_from: "2026-01-01T00:00:00Z" }]);
+			if (url.includes("v2_pricing_sku_meters")) return Response.json([{ sku_id: "sku", meter_key: "input_text_tokens", unit: "token", unit_quantity: 1000000, price_nanos: 80000000 }]);
+			return Response.json([]);
+		}));
+		const response = await app.request("https://phaseo.app/api/_web/api-providers/fastino/models", {}, env);
+		expect(response.status).toBe(200);
+		const payload = await response.json() as { models: Array<Record<string, unknown>> };
+		expect(payload.models).toHaveLength(1);
+		expect(payload.models[0]).toMatchObject({ model_id: "fastino/public", availability_status: "not_active", is_active_gateway: false, input_price_per_1m_usd: 0.08 });
+	});
+
 	it("lists public coming-soon mappings while withholding internal routes", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([
+				{ provider_model_id: "pm-catalog", provider_slug: "openai", provider_model_slug: "gpt-preview-catalog", model_slug: "openai/gpt-preview", routing_enabled: false, status: "active", provider_availability_status: "available", phaseo_status: "unsupported", access_scope: "public", created_at: "2026-06-01T00:00:00Z" },
 				{ provider_model_id: "pm-preview", provider_slug: "openai", provider_model_slug: "gpt-preview", model_slug: "openai/gpt-preview", routing_enabled: false, status: "active", provider_availability_status: "coming_soon", phaseo_status: "planned", access_scope: "public", input_modalities: ["text"], output_modalities: ["text"], created_at: "2026-07-01T00:00:00Z" },
 				{ provider_model_id: "pm-internal", provider_slug: "openai", provider_model_slug: "gpt-internal", model_slug: "openai/gpt-internal", routing_enabled: false, status: "active", provider_availability_status: "coming_soon", phaseo_status: "testing", access_scope: "internal", input_modalities: ["text"], output_modalities: ["text"], created_at: "2026-07-02T00:00:00Z" },
 			]), { status: 200 });
