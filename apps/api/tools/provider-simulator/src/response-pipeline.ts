@@ -9,6 +9,7 @@ import { passthroughWithPricing } from "@pipeline/after/streaming";
 import { calculatePricing } from "@pipeline/after/pricing";
 import { enrichSuccessPayload, formatClientPayload, normalizeAnthropicUsage, presentUsageForClient } from "@pipeline/after/payload";
 import { shapeUsageForClient, stripUsagePricing } from "@pipeline/usage";
+import * as usageModule from "@pipeline/usage";
 import { consumeTextProtocolStreamToIR } from "@pipeline/surfaces/server-tools.stream";
 import { encodeProtocol } from "@protocols/index";
 import type { PriceCard } from "@pipeline/pricing/types";
@@ -273,7 +274,11 @@ async function bufferedClient(result: ExecutorResult, surface: Surface, body: an
 	const payload = await enrichSuccessPayload(ctx, requestResult);
 	const clientJson = formatClientPayload({ ctx, result: requestResult, payload, includeUsage: true, includeMeta: false } as any);
 	// pipeline/after/index.ts:437-486
-	const usageNormalized = { ...(completed.bill?.usage ?? {}), ...(payload?.usage ?? {}) };
+	// Use the gateway's own merge when the build has one (it keeps cache hints with the payload's input).
+	const mergeUsage = (usageModule as any).mergeBillAndPayloadUsage as ((bill: unknown, payload: unknown) => any) | undefined;
+	const usageNormalized = mergeUsage
+		? mergeUsage(completed.bill?.usage, payload?.usage)
+		: { ...(completed.bill?.usage ?? {}), ...(payload?.usage ?? {}) };
 	const raw = { ...usageNormalized, _provider_id: route.providerId };
 	const shaped = shapeUsageForClient(raw, { endpoint: ctx.endpoint, body: ctx.body, includeInternalHints: true });
 	const shapedUsage = { ...raw, ...(shaped && typeof shaped === "object" ? shaped : {}) };
