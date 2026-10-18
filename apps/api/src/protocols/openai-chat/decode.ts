@@ -16,6 +16,7 @@ import type {
 } from "@core/ir";
 import { extractToolNameOrType, isOpenAINativeWebSearchTool } from "@core/nativeTools";
 import { normalizeOpenAIContent, normalizePartCacheControl, normalizeToolResultContent } from "../shared/normalizeContent";
+import { applyToolCallSignatures, decodeChatReasoningDetails } from "../shared/reasoning";
 import {
 	normalizeImageConfig,
 	normalizeModalities,
@@ -65,15 +66,26 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 			});
 		} else if (normalizedRole === "assistant") {
 			const assistantContent = normalizeOpenAIContent(msgAny.content || "");
-			const reasoningContent = typeof msgAny.reasoning_content === "string" ? msgAny.reasoning_content : "";
-			const content: IRContentPart[] = reasoningContent
-				? [{ type: "reasoning_text", text: reasoningContent } as const, ...assistantContent]
-				: assistantContent;
+			const toolCalls: IRToolCall[] | undefined = Array.isArray(msgAny.tool_calls) ? msgAny.tool_calls.map(decodeToolCall) : undefined;
+			// reasoning_details carries provider state (signatures, encrypted
+			// reasoning) and wins over the plain reasoning_content text.
+			const decodedDetails = decodeChatReasoningDetails(
+				msgAny.reasoning_details,
+				new Set((toolCalls ?? []).map((call) => call.id)),
+			);
+			applyToolCallSignatures(toolCalls, decodedDetails.toolSignatures);
+			const reasoningContent = typeof msgAny.reasoning_content === "string"
+				? msgAny.reasoning_content
+				: typeof msgAny.reasoning === "string" ? msgAny.reasoning : "";
+			const reasoningParts: IRContentPart[] = decodedDetails.parts.length > 0
+				? decodedDetails.parts
+				: reasoningContent ? [{ type: "reasoning_text", text: reasoningContent }] : [];
+			const content: IRContentPart[] = [...reasoningParts, ...assistantContent];
 
 			messages.push({
 				role: "assistant",
 				content,
-				toolCalls: Array.isArray(msgAny.tool_calls) ? msgAny.tool_calls.map(decodeToolCall) : undefined,
+				toolCalls,
 			});
 		} else if (normalizedRole === "tool") {
 			const toolResult = normalizeToolResultContent(msgAny.content);

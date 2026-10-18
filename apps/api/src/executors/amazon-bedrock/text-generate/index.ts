@@ -78,7 +78,7 @@ async function executeBedrockMessages(
 ): Promise<ExecutorResult> {
 	const irRequest = args.ir as IRChatRequest;
 	const requestPayload = {
-		...irToAnthropicMessages(irRequest, args.maxOutputTokens, model),
+		...irToAnthropicMessages(irRequest, args.maxOutputTokens, model, { providerId: args.providerId || "amazon-bedrock" }),
 		model,
 		stream: Boolean(irRequest.stream),
 	};
@@ -130,7 +130,7 @@ async function executeBedrockMessages(
 		const accounting = createAnthropicStreamAccounting();
 		const nativeMessages = isClaudeOpus55(model) && args.protocol === "anthropic.messages";
 		const responsesStream = nativeMessages ? null : res.body.pipeThrough(
-			createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting }),
+			createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting, providerId: args.providerId }),
 		);
 		const stream = nativeMessages ? res.body.pipeThrough(createAnthropicPassthroughStreamTransformer(accounting)) : resolveStreamForProtocol(
 			new Response(responsesStream!, {

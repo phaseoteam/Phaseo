@@ -23,7 +23,15 @@ import { getBindings } from "@/runtime/env";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { withNormalizedReasoning } from "@executors/google/text-generate/normalize-reasoning";
 import { irPartsToGeminiParts } from "@executors/google/shared/media";
-import { appendGeminiFunctionResponse, geminiFunctionResponsePart, irToolCallsToGeminiParts, withoutEmptyGeminiTextParts } from "@executors/google/shared/function-history";
+import {
+	appendGeminiFunctionResponse,
+	geminiFunctionResponsePart,
+	geminiFunctionCallId,
+	geminiReplayableAssistantParts,
+	geminiThoughtPartToIR,
+	irToolCallsToGeminiParts,
+	withoutEmptyGeminiTextParts,
+} from "@executors/google/shared/function-history";
 import {
 	modelSupportsGoogleThinkingLevels,
 	resolveGoogleThinkingLevelForEffort,
@@ -64,7 +72,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	let endpoint: string;
 
 	if (route.family === "anthropic") {
-		payload = irToAnthropicMessages(irRequest, args.maxOutputTokens, route.modelForPath);
+		payload = irToAnthropicMessages(irRequest, args.maxOutputTokens, route.modelForPath, { providerId: args.providerId || "google-vertex" });
 		delete payload.model;
 		payload.anthropic_version = "vertex-2023-10-16";
 		payload.stream = true;
@@ -152,7 +160,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 					return res.body!.pipeThrough(createAnthropicPassthroughStreamTransformer(accounting));
 				}
 				const responsesStream = res.body!.pipeThrough(
-					createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting }),
+					createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting, providerId: args.providerId }),
 				);
 				return resolveStreamForProtocol(
 					new Response(responsesStream, {
@@ -208,7 +216,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				return res.body!;
 			}
 			return res.body!.pipeThrough(
-				createAnthropicToResponsesStreamTransformer(args.requestId, model),
+				createAnthropicToResponsesStreamTransformer(args.requestId, model, { providerId: args.providerId }),
 			);
 		})();
 		const routeForBuffer = route.family === "anthropic" ? "responses" : "chat";
@@ -444,8 +452,11 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 		}
 		if (msg.role === "assistant") {
 			const parts = [
-				...withoutEmptyGeminiTextParts(await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true, upstreamTiming })),
-				...irToolCallsToGeminiParts(msg.toolCalls, modelOverride ?? ir.model),
+				...withoutEmptyGeminiTextParts(await irPartsToGeminiParts(
+					geminiReplayableAssistantParts(msg.content, { providerId: "google-vertex", model: modelOverride ?? ir.model }),
+					{ preserveReasoningAsThought: true, upstreamTiming },
+				)),
+				...irToolCallsToGeminiParts(msg.toolCalls, modelOverride ?? ir.model, "google-vertex"),
 			];
 			if (parts.length > 0) contents.push({ role: "model", parts });
 			continue;
@@ -595,21 +606,15 @@ export function geminiToIR(
 	for (const candidate of json.candidates || []) {
 		const contentParts: IRContentPart[] = [];
 		const toolCalls: any[] = [];
+		const callIds = new Map<string, number>();
 
 		if (candidate.content?.parts) {
 			for (const part of candidate.content.parts) {
 				const inlineData = normalizeGeminiInlineData(part);
-				if (part.text) {
-					if (part.thought) {
-						contentParts.push({
-							type: "reasoning_text",
-							text: part.text,
-							thoughtSignature: part.thought_signature,
-							summary: part.thought_summary,
-						} as any);
-					} else {
-						contentParts.push({ type: "text", text: part.text });
-					}
+				if (part.thought && (part.text || part.thoughtSignature || part.thought_signature)) {
+					contentParts.push(geminiThoughtPartToIR(part, model, provider));
+				} else if (part.text) {
+					contentParts.push({ type: "text", text: part.text });
 				} else if (inlineData?.data) {
 					contentParts.push({
 						type: "image",
@@ -621,11 +626,12 @@ export function geminiToIR(
 				} else if (part.functionCall) {
 					const signature = part.thoughtSignature ?? part.thought_signature;
 					toolCalls.push({
-						// Gemini 3+ returns an id; older models only a name.
-						id: typeof part.functionCall.id === "string" && part.functionCall.id ? part.functionCall.id : part.functionCall.name,
+						id: geminiFunctionCallId(part, callIds),
 						name: part.functionCall.name,
 						arguments: JSON.stringify(part.functionCall.args || {}),
-						...(typeof signature === "string" && signature ? { thoughtSignature: signature } : {}),
+						...(typeof signature === "string" && signature
+							? { thoughtSignature: signature, thoughtSignatureModel: model }
+							: {}),
 					});
 				}
 			}

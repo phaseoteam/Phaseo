@@ -5,12 +5,14 @@
 // OpenAI Chat Completions format transformations
 // Transforms IR <-> OpenAI Chat Completions upstream format
 
-import type { IRChatRequest, IRChatResponse, IRMessage, IRContentPart, IRTool } from "@core/ir";
+import type { IRChatRequest, IRChatResponse, IRMessage, IRContentPart, IRTool, IRToolCall } from "@core/ir";
 import { isIRNativeToolDefinition } from "@core/nativeTools";
 import { applyChatRequestQuirks, applyChatResponseQuirks } from "./chat-quirks-bridge";
 import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
 import { applyPromptCacheFieldPolicy, cacheMarkFields } from "./prompt-cache-policy";
+import { isSealedReasoningValue } from "@core/reasoning-state";
+import { applyToolCallSignatures, decodeChatReasoningDetails } from "@protocols/shared/reasoning";
 
 /**
  * Transform IR request to OpenAI Chat Completions format
@@ -45,8 +47,12 @@ export function irToOpenAIChat(
 				.filter((c) => c.type === "text")
 				.map((c) => c.text)
 				.join("");
+			// Plain reasoning text goes back to providers that accept it. Reasoning
+			// that carries another provider family's state (Claude signatures,
+			// OpenAI encrypted reasoning, Gemini thoughts) never does.
 			const assistantReasoning = msg.content
-				.filter((c) => c.type === "reasoning_text")
+				.filter((c): c is Extract<IRContentPart, { type: "reasoning_text" }> => c.type === "reasoning_text")
+				.filter((c) => !c.reasoningFormat)
 				.map((c) => c.text)
 				.join("");
 
@@ -73,7 +79,20 @@ export function irToOpenAIChat(
 				providerId === "wafer" ||
 				providerId === "doubleword";
 			if (providerSupportsAssistantReasoningContent && assistantReasoning.length > 0) {
-				message.reasoning_content = assistantReasoning;
+				if (providerId === "minimax" || providerId === "minimax-lightning") {
+					// With reasoning_split, MiniMax returns thinking in reasoning_details
+					// and documents passing that field back unchanged in tool loops.
+					// https://platform.minimax.io/docs/guides/text-m3-function-call
+					message.reasoning_details = [{
+						type: "reasoning.text",
+						id: "reasoning-text-1",
+						format: "MiniMax-response-v1",
+						index: 0,
+						text: assistantReasoning,
+					}];
+				} else {
+					message.reasoning_content = assistantReasoning;
+				}
 			}
 
 			if (msg.toolCalls && msg.toolCalls.length > 0) {
@@ -201,7 +220,8 @@ export function irToOpenAIChat(
 	if (ir.seed !== undefined) request.seed = ir.seed;
 	if (ir.background !== undefined) request.background = ir.background;
 	if (ir.serviceTier !== undefined) request.service_tier = ir.serviceTier;
-	if (ir.promptCacheKey !== undefined) request.prompt_cache_key = ir.promptCacheKey;
+	// Never send null: absent keys stay absent. The pipeline has already namespaced the key per workspace.
+	if (typeof ir.promptCacheKey === "string" && ir.promptCacheKey.length > 0) request.prompt_cache_key = ir.promptCacheKey;
 	if (ir.promptCacheRetention !== undefined) request.prompt_cache_retention = ir.promptCacheRetention;
 	if (ir.promptCacheOptions !== undefined) request.prompt_cache_options = ir.promptCacheOptions;
 	if (ir.textVerbosity !== undefined) request.verbosity = ir.textVerbosity;
@@ -409,6 +429,34 @@ function mapIRContentToOpenAI(content: IRContentPart[]): any {
 /**
  * Transform OpenAI Chat Completions response to IR
  */
+/**
+ * Read reasoning state the gateway sealed into `reasoning_details` while
+ * converting a provider stream to chat chunks (Gemini thought signatures).
+ * Unsealed entries are a provider's own text (for example MiniMax) and are
+ * already handled by the provider quirks.
+ */
+function applySealedReasoningDetails(
+	details: unknown,
+	contentParts: IRContentPart[],
+	toolCalls: IRToolCall[] | undefined,
+): void {
+	if (!Array.isArray(details)) return;
+	const sealed = details.filter((entry: any) =>
+		isSealedReasoningValue(entry?.signature) || isSealedReasoningValue(entry?.data));
+	if (sealed.length === 0) return;
+	const decoded = decodeChatReasoningDetails(sealed, new Set((toolCalls ?? []).map((call) => call.id)));
+	applyToolCallSignatures(toolCalls, decoded.toolSignatures);
+	for (const part of decoded.parts) {
+		const plain = contentParts.find((candidate): candidate is Extract<IRContentPart, { type: "reasoning_text" }> =>
+			candidate.type === "reasoning_text" && !candidate.reasoningFormat);
+		if (plain && !part.text) {
+			Object.assign(plain, { ...part, text: plain.text });
+		} else {
+			contentParts.push(part);
+		}
+	}
+}
+
 export function openAIChatToIR(
 	json: any,
 	requestId: string,
@@ -603,6 +651,7 @@ export function openAIChatToIR(
 				});
 			}
 		}
+		applySealedReasoningDetails(choice.message?.reasoning_details, contentParts, toolCalls);
 		contentParts.push(...extractInlineImages(choice.message?.content));
 		contentParts.push(...extractInlineImages(choice.message?.images));
 		contentParts.push(...extractInlineAudios(choice.message?.content));

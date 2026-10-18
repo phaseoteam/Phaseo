@@ -6,7 +6,11 @@ import type { IRChatRequest } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
-import { irToOpenAIResponses } from "@executors/_shared/text-generate/openai-compat/transform";
+import {
+	capabilitySupportsReasoning,
+	ensureEncryptedReasoningInclude,
+	irToOpenAIResponses,
+} from "@executors/_shared/text-generate/openai-compat/transform";
 import { resolveStreamForProtocol, bufferStreamToIR } from "@executors/_shared/text-generate/openai-compat";
 import { getProviderQuirks } from "@executors/_shared/text-generate/openai-compat/quirks";
 import { sanitizeOpenAICompatRequest } from "@executors/_shared/text-generate/openai-compat/provider-policy";
@@ -45,6 +49,9 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		"openai",
 		args.capabilityParams,
 		args.providerId,
+		// Reasoning variants can change the model id sent upstream; compare
+		// replayed reasoning against the route model it was recorded with.
+		{ replayModel: args.providerModelSlug ?? irRequest.model },
 	);
 
 	requestPayload.stream = true;
@@ -63,6 +70,11 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	}
 	// Enforce non-persistent storage semantics for SpaceXAI requests.
 	requestPayload.store = false;
+	// With store=false, reasoning continues across steps only through
+	// encrypted reasoning items. https://docs.x.ai/developers/model-capabilities/text/reasoning
+	if (requestPayload.reasoning || capabilitySupportsReasoning(args.capabilityParams)) {
+		ensureEncryptedReasoningInclude(requestPayload);
+	}
 
 	const captureRequest = Boolean(
 		args.meta.returnUpstreamRequest ||
@@ -92,7 +104,9 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 			const response = await fetchUpstream(args, openAICompatUrl(args.providerId, "/responses"), {
 				method: "POST",
 				headers: openAICompatHeaders(args.providerId, keyInfo.key, {
-					"x-grok-conv-id": irRequest.xaiConversationId,
+					// The client conversation id wins; otherwise the workspace-namespaced cache key
+					// keeps the conversation on one xAI server.
+					"x-grok-conv-id": irRequest.xaiConversationId ?? args.meta.cacheAffinityKey ?? undefined,
 					"Idempotency-Key": args.requestId,
 					...upstreamTestHeaders(args.meta),
 				}),

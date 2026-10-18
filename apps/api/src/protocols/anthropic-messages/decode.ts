@@ -15,6 +15,7 @@ import type {
 } from "@core/ir";
 import { extractToolNameOrType, isNativeAdvisorTool, isNativeWebFetchTool, isNativeWebSearchTool } from "@core/nativeTools";
 import { mapAnthropicEffortToIr } from "@core/reasoningEffort";
+import { applyToolCallSignatures, decodeAnthropicThinkingBlock, type ToolCallSignature } from "../shared/reasoning";
 import {
 	normalizeProviderGeoPreferences,
 	normalizeProviderCacheOptions,
@@ -217,6 +218,8 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 
 			// Separate tool_use blocks from text content
 			const textContent: IRContentPart[] = [];
+			const toolSignatures = new Map<string, ToolCallSignature>();
+			const unanchored: Array<Extract<IRContentPart, { type: "reasoning_text" }>> = [];
 			for (const part of content) {
 				if ((part as any).type === "tool_use") {
 					const toolUse = part as any;
@@ -225,10 +228,23 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 						name: toolUse.name,
 						arguments: JSON.stringify(toolUse.input),
 					});
-				} else {
-					textContent.push(part);
+					// Thinking generated after an earlier tool call precedes this one.
+					for (const reasoning of unanchored.splice(0)) reasoning.beforeToolCallId = toolUse.id;
+					continue;
 				}
+				const thinking = part.type === "provider_block" ? decodeAnthropicThinkingBlock(part.block) : null;
+				if (thinking?.kind === "tool_signature") {
+					toolSignatures.set(thinking.callId, thinking.signature);
+					continue;
+				}
+				if (thinking?.kind === "part") {
+					textContent.push(thinking.part);
+					if (toolCalls.length > 0) unanchored.push(thinking.part);
+					continue;
+				}
+				textContent.push(part);
 			}
+			applyToolCallSignatures(toolCalls, toolSignatures);
 
 			messages.push({
 				role: "assistant",
