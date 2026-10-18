@@ -11,10 +11,12 @@ import type {
 	IRContentPart,
 	IRTool,
 	IRReasoning,
+	IRToolCall,
 } from "@core/ir";
 import type { ResponsesRequest } from "@core/schemas";
 import { extractToolNameOrType, isOpenAINativeWebSearchTool } from "@core/nativeTools";
 import { normalizeOpenAIContent, normalizePartCacheControl, normalizeToolResultContent } from "../shared/normalizeContent";
+import { applyToolCallSignatures, decodeResponsesReasoningItem, type ToolCallSignature } from "../shared/reasoning";
 
 /**
  * Deterministic id for a function call item that arrived without `call_id`.
@@ -84,6 +86,21 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 	const messages: IRMessage[] = [];
 	const input = req.input;
 	const pendingUserParts: IRContentPart[] = [];
+	// Gemini function-call signatures arrive in reasoning items next to their call
+	// (before it in a buffered response, after it in a stream). Generated call ids
+	// can repeat across turns, so a signature only binds to a call in its own turn.
+	let turnSignatures = new Map<string, ToolCallSignature>();
+	let turnCalls: IRToolCall[] = [];
+	const bindTurnSignature = (callId: string, signature: ToolCallSignature) => {
+		const call = turnCalls.find((candidate) => candidate.id === callId);
+		if (call) applyToolCallSignatures([call], new Map([[callId, signature]]));
+		else turnSignatures.set(callId, signature);
+	};
+	const endAssistantTurn = () => {
+		turnSignatures = new Map();
+		turnCalls = [];
+	};
+	const unanchoredReasoning: Array<{ owner: IRMessage; part: Extract<IRContentPart, { type: "reasoning_text" }> }> = [];
 	const openAIContextManagement = normalizeOpenAIContextManagement(req);
 	// `user` stays in `userId`; folding it into metadata sent an unknown
 	// `metadata.user` key upstream (Anthropic rejects anything but user_id).
@@ -121,6 +138,11 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		// Array of input items
 		else if (Array.isArray(input)) {
 			for (const [itemIndex, item] of input.entries()) {
+				const assistantItem = item?.type === "reasoning"
+					|| item?.type === "function_call"
+					|| item?.type === "custom_tool_call"
+					|| ((item?.type === "message" || (!item?.type && item?.role)) && item?.role === "assistant");
+				if (!assistantItem) endAssistantTurn();
 				// Input parts (Responses API)
 				if (item?.type === "input_text" || item?.type === "input_image" || item?.type === "input_audio" || item?.type === "input_video") {
 					const parts = normalizeOpenAIContent([item]);
@@ -130,16 +152,47 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 					continue;
 				}
 
+				// Reasoning item: attach it to the assistant turn it came from.
+				if (item?.type === "reasoning") {
+					flushPendingUserParts();
+					const decoded = decodeResponsesReasoningItem(item);
+					if (!decoded) continue;
+					if (decoded.kind === "tool_signature") {
+						bindTurnSignature(decoded.callId, decoded.signature);
+						continue;
+					}
+					let lastAssistant = messages[messages.length - 1];
+					if (!lastAssistant || lastAssistant.role !== "assistant") {
+						lastAssistant = { role: "assistant", content: [], toolCalls: [] };
+						messages.push(lastAssistant);
+					}
+					lastAssistant.content.push(decoded.part);
+					// Reasoning after a call in the same turn precedes the next call.
+					if ((lastAssistant.toolCalls?.length ?? 0) > 0) unanchoredReasoning.push({ owner: lastAssistant, part: decoded.part });
+					continue;
+				}
+
 				// Message item
 				if (item.type === "message" || (!item.type && item.role && "content" in item)) {
 					flushPendingUserParts();
 					const content = normalizeOpenAIContent(item.content ?? "");
+					const previous = messages[messages.length - 1];
 
 					if (item.role === "user" || item.role === "system" || item.role === "developer") {
 						messages.push({
 							role: item.role,
 							content,
 						});
+					} else if (
+						item.role === "assistant"
+						&& previous?.role === "assistant"
+						&& !(previous.toolCalls?.length)
+						&& previous.content.length > 0
+						&& !previous.content.some((part) => part.type !== "reasoning_text")
+					) {
+						// The message that follows its reasoning items is the same turn.
+						previous.content.push(...content);
+						if (item.phase !== undefined) previous.phase = item.phase;
 					} else if (item.role === "assistant") {
 						messages.push({
 							role: "assistant",
@@ -185,14 +238,22 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 						lastAssistant.toolCalls = [];
 					}
 
-					lastAssistant.toolCalls.push({
-						id: item.call_id || deriveResponsesCallId(itemIndex, item.name, item.type === "custom_tool_call" ? item.input : item.arguments),
+					const callId = item.call_id || deriveResponsesCallId(itemIndex, item.name, item.type === "custom_tool_call" ? item.input : item.arguments);
+					const toolCall: IRToolCall = {
+						id: callId,
 						name: item.name,
 						arguments: item.type === "custom_tool_call"
 							? (item.input || "")
 							: (item.arguments || "{}"),
 						...(item.type === "custom_tool_call" ? { type: "custom" as const } : {}),
-					});
+					};
+					lastAssistant.toolCalls.push(toolCall);
+					turnCalls.push(toolCall);
+					applyToolCallSignatures([toolCall], turnSignatures);
+					turnSignatures.delete(callId);
+					for (const entry of unanchoredReasoning.splice(0)) {
+						if (entry.owner === lastAssistant) entry.part.beforeToolCallId = callId;
+					}
 				}
 				// Function call output (tool result)
 				else if (item.type === "function_call_output" || item.type === "custom_tool_call_output") {

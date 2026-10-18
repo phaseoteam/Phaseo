@@ -58,3 +58,20 @@ When a server tool is used, usage includes:
 
 `stream: true` is also supported. For gateway-managed server tools, Phaseo may materialize the upstream tool-call turn and re-emit a synthetic stream after continuing the loop.
 
+
+## Reasoning in tool loops
+
+Reasoning models return their reasoning on the assistant message in two fields:
+
+- `reasoning_content`: the reasoning text, where the provider returns any.
+- `reasoning_details`: an array of reasoning blocks in the format OpenRouter uses. Each entry has a `type` of `reasoning.text`, `reasoning.summary` or `reasoning.encrypted`, an `index`, and a `format` naming the provider family, for example `anthropic-claude-v1` or `google-gemini-v1`.
+
+Entries can carry provider state that the model needs on the next step of a tool loop:
+
+- Claude thinking signatures, in `signature` on `reasoning.text` entries.
+- Claude redacted thinking and OpenAI encrypted reasoning, in `data` on `reasoning.encrypted` entries.
+- Gemini thought signatures, in `data` on `reasoning.encrypted` entries whose `id` is the tool call they belong to.
+
+When streaming, a `reasoning_details` delta arrives once each reasoning block is complete.
+
+To keep the model's reasoning between steps, send the assistant message back with its `reasoning_details` unchanged. `signature` and `data` values are opaque and record the provider and model that produced them. Phaseo sends them only to that provider family and model, so a fallback to another provider drops them rather than failing. Claude models in manual thinking mode need their thinking back to keep thinking during a tool loop; if it is missing, that step runs without thinking.

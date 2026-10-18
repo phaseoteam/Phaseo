@@ -835,6 +835,11 @@ export const ChatCompletionsSchema = lazySchema(() => z.object({
                 name: z.string().optional(),
                 tool_calls: z.array(ToolCallSchema).optional(),
                 reasoning_content: z.string().optional(),
+                // OpenRouter-style alias for reasoning_content.
+                reasoning: z.string().optional(),
+                // Reasoning blocks with signatures or encrypted reasoning, sent
+                // back unchanged from an earlier response.
+                reasoning_details: z.array(z.record(z.string(), z.unknown())).optional(),
             }),
             z.object({
                 role: z.literal("tool"),

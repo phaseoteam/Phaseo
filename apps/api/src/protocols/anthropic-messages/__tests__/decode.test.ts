@@ -735,9 +735,10 @@ describe("decodeAnthropicMessagesRequest", () => {
 		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
 
 		if (ir.messages[0].role === "assistant") {
-			// Thinking blocks are preserved in content
+			// Thinking blocks become reasoning parts; an unsigned block has no
+			// provider state, so it is never replayed as Claude thinking.
 			expect(ir.messages[0].content).toHaveLength(2);
-			expect(ir.messages[0].content[0].type).toBe("provider_block");
+			expect(ir.messages[0].content[0]).toEqual({ type: "reasoning_text", text: "Let me analyze this problem..." });
 			expect(ir.messages[0].content[1].type).toBe("text");
 		}
 	});

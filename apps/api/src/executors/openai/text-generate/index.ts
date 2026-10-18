@@ -6,7 +6,12 @@ import type { IRChatRequest, IRReasoning } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
-import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
+import {
+	capabilitySupportsReasoning,
+	ensureEncryptedReasoningInclude,
+	irToOpenAIResponses,
+	openAIResponsesToIR,
+} from "@executors/_shared/text-generate/openai-compat/transform";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { sanitizeOpenAICompatRequest } from "@executors/_shared/text-generate/openai-compat/provider-policy";
@@ -798,6 +803,13 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 
 	requestPayload.stream = true;
 	requestPayload.store = false;
+	if (
+		route === "responses"
+		&& isOpenAIProviderOffer(args.providerId)
+		&& (requestPayload.reasoning || capabilitySupportsReasoning(args.capabilityParams))
+	) {
+		ensureEncryptedReasoningInclude(requestPayload);
+	}
 	if (route === "chat") {
 		requestPayload.stream_options = {
 			...(requestPayload.stream_options ?? {}),

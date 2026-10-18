@@ -344,7 +344,7 @@ describe("encodeOpenAIChatResponse", () => {
 		expect(response.choices[0].message.content).toBe("Final answer");
 		expect(response.choices[0].message.reasoning_content).toBe("Thinking...");
 		expect(response.choices[0].message.reasoning_details).toHaveLength(1);
-		expect(response.choices[0].message.reasoning_details?.[0].type).toBe("text");
+		expect(response.choices[0].message.reasoning_details?.[0].type).toBe("reasoning.text");
 		expect(response.choices[0].message.reasoning_details?.[0].text).toBe("Thinking...");
 	});
 

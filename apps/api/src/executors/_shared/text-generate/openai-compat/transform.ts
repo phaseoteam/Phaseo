@@ -11,6 +11,11 @@ import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
 import { applyPromptCacheFieldPolicy, cacheMarkFields } from "./prompt-cache-policy";
 import { normalizeProviderId } from "@/lib/config/providerAliases";
+import {
+	canReplayReasoning,
+	openReasoningState,
+	reasoningFormatForRoute,
+} from "@core/reasoning-state";
 
 function readResponseToolCallName(item: any): string | null {
 	const candidates = [
@@ -161,9 +166,12 @@ export function irToOpenAIResponses(
 	providerId?: string,
 	capabilityParams?: Record<string, any> | null,
 	actualProviderId?: string,
+	options?: { replayModel?: string | null },
 ): any {
 	const asyncToolProviderId = actualProviderId ?? providerId;
 	const inputItems: any[] = [];
+	// Azure deployment names need not name the model, so callers can pass the model to compare.
+	const replayTarget = { providerId: actualProviderId ?? providerId, model: options?.replayModel ?? providerModelSlug ?? ir.model };
 
 	// Convert IR messages to Responses API input_items
 	for (const msg of ir.messages) {
@@ -187,6 +195,20 @@ export function irToOpenAIResponses(
 			});
 		} else if (msg.role === "assistant") {
 			const assistantContent = msg.content.map(mapAssistantContentPart).filter(Boolean);
+			// Reasoning items go back only to the provider family (and model)
+			// that issued their encrypted_content; others are dropped.
+			const toolCallIds = new Set((msg.toolCalls ?? []).map((call) => call.id));
+			const anchoredReasoning = new Map<string, any[]>();
+			for (const part of msg.content) {
+				if (part.type !== "reasoning_text") continue;
+				const item = toResponsesReasoningInputItem(part, replayTarget);
+				if (!item) continue;
+				if (part.beforeToolCallId && toolCallIds.has(part.beforeToolCallId)) {
+					anchoredReasoning.set(part.beforeToolCallId, [...(anchoredReasoning.get(part.beforeToolCallId) ?? []), item]);
+				} else {
+					inputItems.push(item);
+				}
+			}
 
 			// Assistant message with optional tool calls
 			if (hasMeaningfulAssistantContent(assistantContent)) {
@@ -201,6 +223,7 @@ export function irToOpenAIResponses(
 			// Add tool calls as function_call items
 			if (msg.toolCalls) {
 				for (const tc of msg.toolCalls) {
+					inputItems.push(...(anchoredReasoning.get(tc.id) ?? []));
 					inputItems.push(tc.type === "custom"
 						? {
 							type: "custom_tool_call",
@@ -541,11 +564,68 @@ function mapContentPart(part: IRContentPart): any {
 	return { type: "input_text", text: String(part) };
 }
 
+/**
+ * A Responses `reasoning` input item carrying the part's encrypted_content,
+ * or null unless the target route issued it. Without the server-side store,
+ * OpenAI, Azure and xAI continue reasoning only from encrypted_content.
+ * https://platform.openai.com/docs/guides/reasoning#encrypted-reasoning-items
+ */
+function toResponsesReasoningInputItem(
+	part: Extract<IRContentPart, { type: "reasoning_text" }>,
+	target: { providerId?: string; model?: string | null },
+): any | null {
+	if (!part.encryptedContent) return null;
+	const origin = { format: part.reasoningFormat, model: part.reasoningModel, provider: part.reasoningProvider };
+	if (!canReplayReasoning(origin, { providerId: target.providerId, model: target.model })) return null;
+	const summaryText = part.summary ?? "";
+	return {
+		type: "reasoning",
+		...(part.reasoningId ? { id: part.reasoningId } : {}),
+		summary: summaryText ? [{ type: "summary_text", text: summaryText }] : [],
+		encrypted_content: part.encryptedContent,
+	};
+}
+
+/**
+ * The gateway sends Responses requests with `store: false`, so reasoning can
+ * only continue across tool-loop steps through encrypted reasoning items.
+ * Request them for reasoning models, as OpenAI and xAI recommend for
+ * stateless use.
+ */
+export function ensureEncryptedReasoningInclude(request: any): void {
+	if (!request || typeof request !== "object") return;
+	const include = Array.isArray(request.include) ? [...request.include] : [];
+	if (!include.includes("reasoning.encrypted_content")) include.push("reasoning.encrypted_content");
+	request.include = include;
+}
+
+/** Whether a route's capability params describe a reasoning model. */
+export function capabilitySupportsReasoning(capabilityParams?: Record<string, any> | null): boolean {
+	if (!capabilityParams || typeof capabilityParams !== "object") return false;
+	const isReasoningKey = (key: unknown) => typeof key === "string"
+		&& (key === "reasoning" || key.startsWith("reasoning.") || key === "reasoning_effort");
+	const declares = (raw: unknown): boolean => {
+		if (Array.isArray(raw)) return raw.some(isReasoningKey);
+		if (raw && typeof raw === "object") {
+			return Object.entries(raw).some(([key, value]) => isReasoningKey(key) && value !== false && value != null);
+		}
+		return false;
+	};
+	// Catalogue capabilities keep params as top-level keys (`reasoning`, `reasoning.effort`);
+	// some routes nest them under request.allowlist, request.params or params.
+	return declares(capabilityParams.request?.allowlist)
+		|| declares(capabilityParams.request?.params)
+		|| declares(capabilityParams.params)
+		|| declares(capabilityParams);
+}
+
 function mapAssistantContentPart(part: IRContentPart): any {
 	if (part.type === "text") {
 		return { type: "output_text", text: part.text };
 	}
-	if (part.type === "reasoning_text") {
+	if (part.type === "reasoning_text" || part.type === "provider_block") {
+		// Reasoning travels as reasoning items; provider blocks (for example
+		// Claude thinking from a Messages client) have no Responses equivalent.
 		return null;
 	}
 	return { type: "output_text", text: String(part) };
@@ -804,7 +884,10 @@ export function openAIResponsesToIR(
 			}
 		} else if (item.type === "reasoning" || item.type === "reasoning_details") {
 			const reasoningText = extractReasoningText(item);
-			if (reasoningText) {
+			const reasoningPart = readResponsesReasoningState(item, reasoningText, provider, model);
+			if (reasoningPart) {
+				choice.message.content.push(reasoningPart);
+			} else if (reasoningText) {
 				choice.message.content.push({
 					type: "reasoning_text",
 					text: reasoningText,
@@ -906,6 +989,39 @@ function extractTextFromContent(content: any[]): string {
 		.filter((item) => item.type === "text" || item.type === "input_text" || item.type === "output_text")
 		.map((item) => item.text || "")
 		.join("");
+}
+
+/**
+ * A reasoning part carrying the item's `encrypted_content`. Values sealed by
+ * the gateway's own stream transformers (Claude) keep their recorded origin;
+ * raw values belong to the provider that returned them (OpenAI, Azure, xAI).
+ */
+function readResponsesReasoningState(
+	item: any,
+	text: string,
+	provider: string,
+	model: string,
+): Extract<IRContentPart, { type: "reasoning_text" }> | null {
+	const state = openReasoningState(item?.encrypted_content, {
+		format: reasoningFormatForRoute(provider, model),
+		kind: "encrypted",
+	});
+	if (!state) return null;
+	const summary = Array.isArray(item?.summary)
+		? item.summary.map((entry: any) => (typeof entry?.text === "string" ? entry.text : "")).join("")
+		: "";
+	return {
+		type: "reasoning_text",
+		text,
+		...(summary ? { summary } : {}),
+		...(state.kind === "signature" ? { thoughtSignature: state.value } : {}),
+		...(state.kind === "redacted" ? { redactedData: state.value } : {}),
+		...(state.kind === "encrypted" ? { encryptedContent: state.value } : {}),
+		reasoningFormat: state.format,
+		reasoningModel: state.model ?? model,
+		reasoningProvider: state.provider ?? provider,
+		...(state.kind === "encrypted" && typeof item?.id === "string" && item.id ? { reasoningId: item.id } : {}),
+	};
 }
 
 function extractReasoningText(item: any): string {

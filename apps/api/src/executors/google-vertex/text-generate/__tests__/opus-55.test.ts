@@ -56,7 +56,13 @@ describe("managed Vertex Opus 5.5", () => {
 			expect(result.keySource).toBe("gateway");
 			if (result.kind !== "completed") throw new Error("expected completion");
 			expect(result.ir?.choices[0].message.content).toEqual(expect.arrayContaining([{ type: "text", text: "Answer" }]));
-			expect(result.ir?.choices[0].message.content).toContainEqual({ type: "provider_block", block: opusMessage.content[0] });
+			// The thinking block keeps its signature, tagged as Claude reasoning.
+			expect(result.ir?.choices[0].message.content).toContainEqual(expect.objectContaining({
+				type: "reasoning_text",
+				text: "",
+				thoughtSignature: opusMessage.content[0].signature,
+				reasoningFormat: "anthropic-claude-v1",
+			}));
 			expect(result.ir?.choices[0].message.toolCalls?.[0]).toMatchObject({ id: "call_lookup", name: "lookup", arguments: '{"city":"London"}' });
 			expect(result.bill.usage).toMatchObject({ input_tokens: 10, output_tokens: 7 });
 			expect(priceOpusUsage(result.bill.usage, "google-vertex").cost_usd_str).toBe("0.000041000");

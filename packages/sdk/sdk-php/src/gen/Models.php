@@ -1085,12 +1085,36 @@ class ChatMessage
 	public $images;
 	/** @var string|null */
 	public $name;
+	/** @var string|null */
+	public $reasoning_content;
+	/** @var array|null */
+	public $reasoning_details;
 	/** @var string */
 	public $role;
 	/** @var string|null */
 	public $tool_call_id;
 	/** @var array|null */
 	public $tool_calls;
+}
+
+class ChatReasoningDetail
+{
+	/** @var string|null */
+	public $data;
+	/** @var string|null */
+	public $format;
+	/** @var string|null */
+	public $id;
+	/** @var int|null */
+	public $index;
+	/** @var string|null */
+	public $signature;
+	/** @var string|null */
+	public $summary;
+	/** @var string|null */
+	public $text;
+	/** @var string */
+	public $type;
 }
 
 class CreditsResponse
@@ -4938,7 +4962,13 @@ class ResponsesInputItem
 	/** @var string|array|array<string, mixed>|null */
 	public $content;
 	/** @var string|null */
+	public $encrypted_content;
+	/** @var string|null */
+	public $id;
+	/** @var string|null */
 	public $role;
+	/** @var array|null */
+	public $summary;
 	/** @var string|null */
 	public $type;
 }
@@ -4980,9 +5010,15 @@ class ResponsesOutputItem
 	/** @var array|null */
 	public $content;
 	/** @var string|null */
+	public $encrypted_content;
+	/** @var string|null */
+	public $id;
+	/** @var string|null */
 	public $name;
 	/** @var string|null */
 	public $role;
+	/** @var array|null */
+	public $summary;
 	/** @var string|null */
 	public $type;
 }
@@ -4991,6 +5027,14 @@ class ResponsesOutputTextPart
 {
 	/** @var array|null */
 	public $annotations;
+	/** @var string */
+	public $text;
+	/** @var string */
+	public $type;
+}
+
+class ResponsesReasoningSummaryPart
+{
 	/** @var string */
 	public $text;
 	/** @var string */

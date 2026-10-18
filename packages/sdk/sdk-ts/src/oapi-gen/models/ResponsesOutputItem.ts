@@ -28,7 +28,13 @@ export interface ResponsesOutputItem {
         type: "output_audio";
       }
   )[];
+  encrypted_content?: string;
+  id?: string;
   name?: string;
   role?: string;
+  summary?: {
+    text: string;
+    type: "summary_text";
+  }[];
   type?: string;
 }

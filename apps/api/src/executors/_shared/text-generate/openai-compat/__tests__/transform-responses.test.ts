@@ -4,7 +4,7 @@
 
 // Unit tests for Responses API transformations
 import { describe, expect, it } from "vitest";
-import { irToOpenAIResponses, openAIResponsesToIR } from "../transform";
+import { capabilitySupportsReasoning, irToOpenAIResponses, openAIResponsesToIR } from "../transform";
 
 describe("openAIResponsesToIR", () => {
 	it("maps official incomplete status, refusal, annotations, and current usage details", () => {
@@ -1241,5 +1241,17 @@ describe("Alibaba Cloud Responses reasoning request contract", () => {
 		} as any, "qwen3.8-max-0902", "alibaba-cloud");
 
 		expect(request.reasoning).toEqual({ effort: "xhigh" });
+	});
+});
+
+describe("capabilitySupportsReasoning", () => {
+	it("reads the catalogue's top-level keys as well as nested allowlists", () => {
+		expect(capabilitySupportsReasoning({ reasoning: true, tools: true })).toBe(true);
+		expect(capabilitySupportsReasoning({ "reasoning.effort": { enum: ["low", "high"] } })).toBe(true);
+		expect(capabilitySupportsReasoning({ params: ["reasoning", "tools"] })).toBe(true);
+		expect(capabilitySupportsReasoning({ request: { params: { reasoning_effort: {} } } })).toBe(true);
+		expect(capabilitySupportsReasoning({ reasoning: false, tools: true })).toBe(false);
+		expect(capabilitySupportsReasoning({ tools: true, max_output_tokens: {} })).toBe(false);
+		expect(capabilitySupportsReasoning(null)).toBe(false);
 	});
 });

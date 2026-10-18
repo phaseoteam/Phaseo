@@ -1514,6 +1514,12 @@ public sealed class ChatMessage
 	[JsonPropertyName("name")]
 	public string? Name { get; set; }
 
+	[JsonPropertyName("reasoning_content")]
+	public string? ReasoningContent { get; set; }
+
+	[JsonPropertyName("reasoning_details")]
+	public List<Dictionary<string, object>>? ReasoningDetails { get; set; }
+
 	[JsonPropertyName("role")]
 	public string Role { get; set; }
 
@@ -1522,6 +1528,34 @@ public sealed class ChatMessage
 
 	[JsonPropertyName("tool_calls")]
 	public List<Dictionary<string, object>>? ToolCalls { get; set; }
+
+}
+
+public sealed class ChatReasoningDetail
+{
+	[JsonPropertyName("data")]
+	public string? Data { get; set; }
+
+	[JsonPropertyName("format")]
+	public string? Format { get; set; }
+
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
+	[JsonPropertyName("index")]
+	public long? Index { get; set; }
+
+	[JsonPropertyName("signature")]
+	public string? Signature { get; set; }
+
+	[JsonPropertyName("summary")]
+	public string? Summary { get; set; }
+
+	[JsonPropertyName("text")]
+	public string? Text { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
 
 }
 
@@ -6773,8 +6807,17 @@ public sealed class ResponsesInputItem
 	[JsonPropertyName("content")]
 	public object? Content { get; set; }
 
+	[JsonPropertyName("encrypted_content")]
+	public string? EncryptedContent { get; set; }
+
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
 	[JsonPropertyName("role")]
 	public string? Role { get; set; }
+
+	[JsonPropertyName("summary")]
+	public List<Dictionary<string, object>>? Summary { get; set; }
 
 	[JsonPropertyName("type")]
 	public string? Type { get; set; }
@@ -6829,11 +6872,20 @@ public sealed class ResponsesOutputItem
 	[JsonPropertyName("content")]
 	public List<object>? Content { get; set; }
 
+	[JsonPropertyName("encrypted_content")]
+	public string? EncryptedContent { get; set; }
+
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
 	[JsonPropertyName("name")]
 	public string? Name { get; set; }
 
 	[JsonPropertyName("role")]
 	public string? Role { get; set; }
+
+	[JsonPropertyName("summary")]
+	public List<Dictionary<string, object>>? Summary { get; set; }
 
 	[JsonPropertyName("type")]
 	public string? Type { get; set; }
@@ -6845,6 +6897,16 @@ public sealed class ResponsesOutputTextPart
 	[JsonPropertyName("annotations")]
 	public List<Dictionary<string, object>>? Annotations { get; set; }
 
+	[JsonPropertyName("text")]
+	public string Text { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ResponsesReasoningSummaryPart
+{
 	[JsonPropertyName("text")]
 	public string Text { get; set; }
 

@@ -1,6 +1,7 @@
 // Purpose: Stream synthesis and stream-to-IR normalization for server tools.
 
 import type { IRChatResponse, IRContentPart, IRToolCall, IRUsage } from "@core/ir";
+import { isSealedReasoningValue } from "@core/reasoning-state";
 import type { Protocol } from "@protocols/detect";
 import { encodeUnifiedStreamEvent, type StreamProtocol } from "@protocols/stream/encode";
 import { extractUnifiedStreamEvents, type UnifiedStreamEvent } from "../after/stream-events";
@@ -117,6 +118,11 @@ function buildUnifiedEventsFromChatCompletionsPayload(payload: any): UnifiedStre
 					choiceIndex,
 				});
 			}
+		}
+		const reasoningState = reasoningDetails.filter((detail: any) =>
+			isSealedReasoningValue(detail?.signature) || isSealedReasoningValue(detail?.data));
+		if (reasoningState.length > 0) {
+			events.push({ type: "reasoning_state", details: reasoningState, choiceIndex });
 		}
 		if (reasoningDetails.length === 0 && typeof message?.reasoning_content === "string" && message.reasoning_content.length > 0) {
 			events.push({
