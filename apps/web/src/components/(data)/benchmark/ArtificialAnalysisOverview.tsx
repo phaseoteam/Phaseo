@@ -23,6 +23,10 @@ export function ArtificialAnalysisOverview({
 	const current = { ...benchmark, results };
 	const updated = results.map((result) => result.updated_at).filter((date): date is string => Boolean(date)).sort().at(-1);
 	const metric = artificialAnalysisMetricKey(benchmark.id);
+	const points = buildArtificialAnalysisExplorer(rankings);
+	// Web previews can precede the API deployment or encounter older edge payloads.
+	const comparisonView = points.some((point) => point.cost !== undefined && point.cost > 0 && point.intelligence !== undefined)
+		? "cost-intelligence" : "intelligence";
 	const currentVersionLabel = latestVersion === "Unspecified" ? t("versionUnspecified") : t("indexVersion", {version: latestVersion});
 
 	return (
@@ -34,7 +38,7 @@ export function ArtificialAnalysisOverview({
 				</div>
 			</section>
 
-			<ArtificialAnalysisExplorer points={buildArtificialAnalysisExplorer(rankings)} initialView={metric === "coding" || metric === "agentic" || metric === "cost" ? metric : "cost-intelligence"} />
+			<ArtificialAnalysisExplorer points={points} initialView={metric === "coding" || metric === "agentic" || metric === "cost" ? metric : comparisonView} />
 
 			<details id="progress" className="scroll-mt-36 border-t pt-4">
 				<summary className="cursor-pointer text-sm font-medium">{t("progress")} · {benchmark.name}</summary>
