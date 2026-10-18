@@ -109,6 +109,7 @@ import { guardFreeRouteQuota } from "@core/customer-rate-limits";
 import { guardRateLimitPolicies } from "@core/rate-limit-policies";
 import { shouldRecordLastUsed } from "@core/last-used-throttle";
 import { applyUpstreamPromptCacheKey, resolveUpstreamPromptCacheKey } from "./prompt-cache-key";
+import { resolveSessionAffinityPreference } from "./sticky-routing";
 import {
 	chargeManagedProvider,
 	estimateProviderTokenReservation,
@@ -216,6 +217,42 @@ export function buildCredentialAttemptPlan(
 		...gatewayAttempts,
 		...fallbackAttempts,
 	];
+}
+
+type CredentialAttempt = ReturnType<typeof buildCredentialAttemptPlan>[number];
+
+/**
+ * A provider cache belongs to one account. When a pin names the credential that served
+ * the cached turn, try that credential first for the pinned route; the others stay as
+ * failover in their usual order.
+ */
+export function preferPinnedCredential(
+	plan: CredentialAttempt[],
+	sticky: {
+		hintedProvider?: string | null;
+		hintedProviderModelSlug?: string | null;
+		hintedKeySource?: "gateway" | "byok" | null;
+		hintedByokKeyId?: string | null;
+	} | null | undefined,
+): CredentialAttempt[] {
+	if (!sticky?.hintedProvider || !sticky.hintedKeySource) return plan;
+	const routeMatches = (attempt: CredentialAttempt) =>
+		attempt.routed.candidate.providerId === sticky.hintedProvider
+		&& (!sticky.hintedProviderModelSlug
+			|| String(attempt.routed.candidate.providerModelSlug ?? "").trim() === sticky.hintedProviderModelSlug);
+	const firstForRoute = plan.findIndex(routeMatches);
+	if (firstForRoute < 0) return plan;
+	const routed = plan[firstForRoute].routed;
+	const pinnedIndex = plan.findIndex((attempt) => attempt.routed === routed && (
+		sticky.hintedKeySource === "byok"
+			? attempt.credential.kind === "byok" && attempt.credential.key.id === sticky.hintedByokKeyId
+			: attempt.credential.kind === "gateway"
+	));
+	if (pinnedIndex <= firstForRoute) return plan;
+	const reordered = [...plan];
+	const [pinned] = reordered.splice(pinnedIndex, 1);
+	reordered.splice(firstForRoute, 0, pinned);
+	return reordered;
 }
 
 function shouldRetrySingleProviderStatus(status: number | null | undefined): boolean {
@@ -612,10 +649,10 @@ export async function doRequestWithIR(
 	const allowFallbacks = getEffectiveRoutingHints(ctx.body).allowFallbacks;
 	const maxTries = calculateMaxTries(ranked.length, allowFallbacks);
 	const rankedProviders = ranked.slice(0, maxTries);
-	const credentialPlan = buildCredentialAttemptPlan(rankedProviders, {
+	const credentialPlan = preferPinnedCredential(buildCredentialAttemptPlan(rankedProviders, {
 		includeFallbackByok: true,
 		allowManagedFallback: ctx.teamSettings?.byokFallbackEnabled === true,
-	});
+	}), (ctx as any).routingDiagnostics?.stickyRouting);
 	if (credentialPlan.length === 0 && rankedProviders.some((entry) => entry.candidate.credentialMode === "byok_only")) {
 		return err("byok_credentials_required", {
 			reason: "byok_credentials_required",
@@ -959,12 +996,13 @@ async function attemptProviderWithIR(
 		let reservationDenial: import("@core/video-reservations").VideoReservationDenial | undefined;
 		const catalogTier = readProviderCatalogTier(candidate.capabilityParams);
 		// Upstream prompt cache keys are namespaced per workspace. ctx.body keeps the
-		// client key for sticky routing inside Phaseo.
+		// client key for sticky routing inside Phaseo. A session_id only becomes an
+		// upstream key while session affinity is on (routing.session_affinity: false opts out).
 		const upstreamPromptCacheKey = isTextGenerate
 			? await resolveUpstreamPromptCacheKey({
 				workspaceId: ctx.workspaceId,
 				promptCacheKey: (ir as IRChatRequest).promptCacheKey,
-				sessionId: ctx.meta.sessionId,
+				sessionId: resolveSessionAffinityPreference(ctx.rawBody) ? ctx.meta.sessionId : undefined,
 			})
 			: null;
 		const tieredIr = isTextGenerate && catalogTier

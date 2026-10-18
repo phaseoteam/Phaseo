@@ -418,6 +418,50 @@ export function resolveSessionAffinityPreference(body: any, fallback = true): bo
     return fallback;
 }
 
+const BLOCK_CACHE_MARK_FIELDS = ["cache_control", "cacheControl", "prompt_cache_breakpoint"] as const;
+
+function collectBlockMarks(blocks: unknown, out: Record<string, unknown>[], depth = 0): void {
+    if (!Array.isArray(blocks) || depth > 2) return;
+    for (const block of blocks) {
+        if (!isPlainObject(block)) continue;
+        for (const field of BLOCK_CACHE_MARK_FIELDS) {
+            const mark = (block as any)[field];
+            if (isPlainObject(mark)) out.push(mark as Record<string, unknown>);
+        }
+        // Message items (Chat messages, Responses input items) and tool results nest blocks.
+        collectBlockMarks((block as any).content, out, depth + 1);
+        collectBlockMarks((block as any).output, out, depth + 1);
+    }
+}
+
+const MARK_SCAN_OPENING_ITEMS = 8;
+const MARK_SCAN_LATEST_ITEMS = 4;
+
+/**
+ * The opening and latest conversation items. Clients mark the stable opening and move
+ * a mark along the latest turns, so this finds an opt-in without walking a long
+ * agent history on every request.
+ */
+function markScanItems(items: unknown): unknown[] {
+    if (!Array.isArray(items)) return [];
+    if (items.length <= MARK_SCAN_OPENING_ITEMS + MARK_SCAN_LATEST_ITEMS) return items;
+    return [...items.slice(0, MARK_SCAN_OPENING_ITEMS), ...items.slice(-MARK_SCAN_LATEST_ITEMS)];
+}
+
+/**
+ * Cache marks on content blocks and tool definitions: the documented Anthropic
+ * placement, also accepted on Chat and Responses.
+ */
+function blockCacheMarks(body: any): Record<string, unknown>[] {
+    const marks: Record<string, unknown>[] = [];
+    collectBlockMarks(body?.tools, marks);
+    collectBlockMarks(body?.system, marks);
+    collectBlockMarks(body?.instructions, marks);
+    collectBlockMarks(markScanItems(body?.messages), marks);
+    collectBlockMarks(markScanItems(body?.input), marks);
+    return marks;
+}
+
 function hasCacheControlOptIn(body: any): boolean {
     const providerOptions = body?.provider_options ?? body?.providerOptions;
     const anthropicOptions = providerOptions?.anthropic;
@@ -426,7 +470,21 @@ function hasCacheControlOptIn(body: any): boolean {
         body?.cacheControl,
         anthropicOptions?.cache_control,
         anthropicOptions?.cacheControl,
-    ].some((value) => isPlainObject(value) && hasMeaningfulValue(value));
+    ].some((value) => isPlainObject(value) && hasMeaningfulValue(value))
+        || blockCacheMarks(body).length > 0;
+}
+
+/**
+ * The longest TTL named by a block cache mark, in seconds. Only Anthropic's 5m and
+ * 1h count: other values are dropped before the request is sent.
+ */
+function longestBlockTtlSeconds(body: any): number | null {
+    let longest: number | null = null;
+    for (const mark of blockCacheMarks(body)) {
+        const seconds = mark.ttl === "5m" || mark.ttl === "1h" ? parseRetentionSeconds(mark.ttl) : null;
+        if (seconds && (longest === null || seconds > longest)) longest = seconds;
+    }
+    return longest;
 }
 
 export async function resolveStickyRoutingContext(args: {
@@ -512,7 +570,7 @@ export function resolveProviderCacheRetentionSeconds(args: {
         body?.cacheControl?.ttl ??
         anthropicOptions?.cache_control?.ttl ??
         anthropicOptions?.cacheControl?.ttl,
-    );
+    ) ?? longestBlockTtlSeconds(body);
     if (anthropicTtl) retention.push(anthropicTtl);
     else if (hasCacheControlOptIn(body)) retention.push(5 * 60);
     const oneHourWrites = [

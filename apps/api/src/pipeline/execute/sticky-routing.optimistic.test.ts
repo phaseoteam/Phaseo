@@ -164,7 +164,15 @@ describe("optimistic sticky routing", () => {
                 body: endpoint === "responses" ? { input: opening } : { messages: opening },
             });
             const laterContent = vi.fn(() => "Later answer");
-            const history = [...opening, { role: "assistant", get content() { return laterContent(); } }];
+            // A mid-conversation turn: neither the context hash nor the cache-mark scan
+            // (opening and latest turns only) should read it.
+            const turn = (index: number) => ({ role: index % 2 ? "user" : "assistant", content: `Turn ${index}` });
+            const history = [
+                ...opening,
+                ...Array.from({ length: 6 }, (_, index) => turn(index)),
+                { role: "assistant", get content() { return laterContent(); } },
+                ...Array.from({ length: 4 }, (_, index) => turn(index + 7)),
+            ];
             const actual = await sticky.resolveStickyRoutingContext({
                 endpoint,
                 body: endpoint === "responses" ? { input: history } : { messages: history },
@@ -281,6 +289,42 @@ describe("optimistic sticky routing", () => {
             provider_options: { anthropic: { cache_control: { type: "ephemeral", ttl: "1h" } } },
         })).toBe(true);
         expect(await explicitFor("chat.completions", base)).toBe(false);
+    });
+
+    it("treats block-level cache marks on content and tools as explicit affinity", async () => {
+        const explicitFor = async (endpoint: "chat.completions" | "messages" | "responses", body: any) =>
+            (await sticky.resolveStickyRoutingContext({ endpoint, body }))?.explicit;
+        const mark = { type: "ephemeral" };
+        expect(await explicitFor("messages", {
+            system: [{ type: "text", text: "Policy", cache_control: mark }],
+            messages: [{ role: "user", content: "hi" }],
+        })).toBe(true);
+        expect(await explicitFor("chat.completions", {
+            messages: [{ role: "user", content: [{ type: "text", text: "Doc", cache_control: mark }] }],
+        })).toBe(true);
+        expect(await explicitFor("chat.completions", {
+            tools: [{ type: "function", function: { name: "f", parameters: {} }, cache_control: mark }],
+            messages: [{ role: "user", content: "hi" }],
+        })).toBe(true);
+        expect(await explicitFor("responses", {
+            input: [{ role: "user", content: [{ type: "input_text", text: "Doc", prompt_cache_breakpoint: { mode: "explicit" } }] }],
+        })).toBe(true);
+        expect(await explicitFor("messages", {
+            messages: [{ role: "user", content: [{ type: "tool_result", tool_use_id: "t", content: [{ type: "text", text: "out", cache_control: mark }] }] }],
+        })).toBe(true);
+
+        // The longest valid block TTL sets the provider retention.
+        expect(sticky.resolveProviderCacheRetentionSeconds({
+            providerId: "anthropic",
+            body: { messages: [
+                { role: "user", content: [{ type: "text", text: "a", cache_control: { type: "ephemeral", ttl: "1h" } }] },
+                { role: "user", content: [{ type: "text", text: "b", cache_control: mark }] },
+            ] },
+        })).toBe(60 * 60);
+        expect(sticky.resolveProviderCacheRetentionSeconds({
+            providerId: "anthropic",
+            body: { messages: [{ role: "user", content: [{ type: "text", text: "a", cache_control: { type: "ephemeral", ttl: "24h" } }] }] },
+        })).toBe(5 * 60);
     });
 
     it("pins on the first successful step without a reported cache read or write", async () => {

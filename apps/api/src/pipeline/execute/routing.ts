@@ -722,6 +722,9 @@ export type RoutingDiagnostics = {
         readMode: StickyRoutingReadMode | null;
         hintedProvider: string | null;
         hintedProviderModelSlug: string | null;
+        /** The credential that served the pinned turn and owns its provider cache. */
+        hintedKeySource: "gateway" | "byok" | null;
+        hintedByokKeyId: string | null;
         cachedReadTokens: number | null;
         applied: boolean;
         /** Why an existing pin did not decide the first provider; null when it did or there was none. */
@@ -1037,6 +1040,8 @@ export async function routeProviders(
         readMode: stickyReadMode,
         hintedProvider: stickyHint?.providerId ?? null,
         hintedProviderModelSlug: stickyHint?.providerModelSlug ?? null,
+        hintedKeySource: stickyHint?.keySource ?? null,
+        hintedByokKeyId: stickyHint?.byokKeyId ?? null,
         cachedReadTokens:
             typeof stickyHint?.cachedReadTokens === "number"
                 ? stickyHint.cachedReadTokens
