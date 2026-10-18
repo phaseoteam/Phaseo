@@ -25,6 +25,17 @@ const ANTHROPIC_CACHEABLE_MESSAGE_BLOCK_TYPES = new Set([
 	"search_result",
 	"tool_use",
 	"tool_result",
+	// Server-tool blocks replayed from earlier turns (Anthropic Messages schema).
+	"server_tool_use",
+	"web_search_tool_result",
+	"web_fetch_tool_result",
+	"code_execution_tool_result",
+	"bash_code_execution_tool_result",
+	"text_editor_code_execution_tool_result",
+	"tool_search_tool_result",
+	"mcp_tool_use",
+	"mcp_tool_result",
+	"container_upload",
 ]);
 const ANTHROPIC_TEXT_CACHE_BLOCK_TYPES = new Set(["text", "image"]);
 const ALL_TEXT_MAX_USER_MESSAGES = 3;

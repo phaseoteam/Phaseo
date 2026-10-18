@@ -196,6 +196,26 @@ describe("irToAnthropicMessages cache scopes", () => {
 		expect((thinking as any).cache_control).toBeUndefined();
 	});
 
+	it("agent checkpoints a final turn that ends with a server-tool result", () => {
+		const request: IRChatRequest = {
+			...createBaseRequest(),
+			messages: [
+				{ role: "user", content: [{ type: "text", text: "Latest news on the launch?" }] },
+				{
+					role: "assistant",
+					content: [
+						{ type: "provider_block", block: { type: "server_tool_use", id: "srvtoolu_1", name: "web_search", input: { query: "launch" } } },
+						{ type: "provider_block", block: { type: "web_search_tool_result", tool_use_id: "srvtoolu_1", content: [] } },
+					],
+				},
+			] as any,
+			anthropicCacheControl: { ...AGENT_CACHE },
+		};
+
+		const payload = irToAnthropicMessages(request);
+		expect(listBreakpoints(payload)).toContain("messages[1].web_search_tool_result[1]");
+	});
+
 	it("agent skips deferred tools when choosing the tool breakpoint", () => {
 		const request = buildToolLoopRequest(1, { toolCount: 2 });
 		(request.tools as any[]).push({
