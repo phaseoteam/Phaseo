@@ -338,6 +338,45 @@ describe("irToAnthropicMessages cache scopes", () => {
 		}
 	});
 
+	it("combines caller marks, agent defaults and the normaliser within Anthropic's rules", () => {
+		const thinking = { type: "thinking", thinking: "", signature: "sig", cache_control: { type: "ephemeral" } };
+		const request = buildToolLoopRequest(6);
+		// A translated OpenAI breakpoint (default 5m) on the system prompt, then a caller 1h mark later on.
+		request.messages[0] = {
+			role: "system",
+			content: [{ type: "text", text: "You are a coding agent.", cacheControl: { type: "prompt_cache_breakpoint", mode: "explicit" } }],
+		} as any;
+		(request.messages[3] as any).toolResults[0].cacheControl = { type: "ephemeral", ttl: "1h" };
+		(request.messages[4] as any).content.push({ type: "provider_block", block: thinking });
+		request.anthropicCacheControl = { type: "ephemeral", ttl: "5m", scope: "agent" };
+
+		const payload = irToAnthropicMessages(request);
+		const marks: Array<{ path: string; ttl?: string }> = [];
+		(payload.tools ?? []).forEach((tool: any, index: number) => {
+			if (tool.cache_control) marks.push({ path: `tools[${index}]`, ttl: tool.cache_control.ttl });
+		});
+		(Array.isArray(payload.system) ? payload.system : []).forEach((block: any, index: number) => {
+			if (block.cache_control) marks.push({ path: `system[${index}]`, ttl: block.cache_control.ttl });
+		});
+		payload.messages.forEach((message: any, messageIndex: number) => {
+			(Array.isArray(message.content) ? message.content : []).forEach((block: any, blockIndex: number) => {
+				if (block.cache_control) marks.push({ path: `messages[${messageIndex}].${block.type}[${blockIndex}]`, ttl: block.cache_control.ttl });
+			});
+		});
+
+		expect(marks.length).toBeLessThanOrEqual(ANTHROPIC_MAX_CACHE_BREAKPOINTS);
+		// No thinking block carries a mark, from the caller or the defaults.
+		const thinkingBlocks = payload.messages.flatMap((message: any) => (Array.isArray(message.content) ? message.content : []))
+			.filter((block: any) => block.type === "thinking" || block.type === "redacted_thinking");
+		expect(thinkingBlocks.length).toBeGreaterThan(0);
+		expect(thinkingBlocks.every((block: any) => !block.cache_control)).toBe(true);
+		// Anthropic order is tools, system, messages: every mark before the last 1h mark is 1h too.
+		const lastOneHour = marks.map((mark) => mark.ttl).lastIndexOf("1h");
+		expect(lastOneHour).toBeGreaterThan(-1);
+		expect(marks.slice(0, lastOneHour + 1).every((mark) => mark.ttl === "1h")).toBe(true);
+		expect(marks[marks.length - 1]).toMatchObject({ ttl: "5m" });
+	});
+
 	it("decodes the desktop Responses opt-in through to the Anthropic payload", () => {
 		const ir = decodeOpenAIResponsesRequest({
 			model: "anthropic/claude-opus-5.5",
