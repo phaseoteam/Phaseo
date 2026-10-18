@@ -21,6 +21,19 @@ function bearerToken(request: Request): string | null {
   return token || null;
 }
 
+/** The session's authenticator assurance level from the access token, which getUser has already verified. */
+export function tokenAssuranceLevel(token: string): string | null {
+  const payload = token.split(".")[1];
+  if (!payload) return null;
+  try {
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(payload.length / 4) * 4, "=");
+    const claims = JSON.parse(atob(base64)) as { aal?: unknown };
+    return typeof claims.aal === "string" ? claims.aal : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function requireUser(request: Request, env: Env): Promise<AuthenticatedUser | null> {
   const token = bearerToken(request);
   const url = (env.SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL)?.trim();
@@ -32,6 +45,12 @@ export async function requireUser(request: Request, env: Env): Promise<Authentic
   });
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) return null;
+
+  // An account with a verified second factor must have used it in this session. The
+  // website enforces this by redirecting pages to /auth/verify-mfa, which doesn't cover
+  // direct API calls, so a password-only (aal1) session is treated as signed out here.
+  const hasVerifiedFactor = (data.user.factors ?? []).some((factor) => factor.status === "verified");
+  if (hasVerifiedFactor && tokenAssuranceLevel(token) !== "aal2") return null;
 
   return {
     id: data.user.id,
