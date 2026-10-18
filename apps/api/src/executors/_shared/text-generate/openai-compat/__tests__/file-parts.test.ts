@@ -26,10 +26,10 @@ describe("irToOpenAIChat file parts", () => {
 		]);
 	});
 
-	it("leaves out a file given only by URL, which Chat Completions cannot carry", () => {
-		const request = irToOpenAIChat(requestWith([urlFile]), "gpt-5.4", "openai");
-		expect(request.messages[0].content).toEqual([{ type: "text", text: "Summarise" }]);
-		expect(JSON.stringify(request)).not.toContain("example.com/doc.pdf");
+	it("fails the attempt for a file given only by URL instead of dropping it", () => {
+		// Chat Completions has no file-by-URL field; answering without the document would be wrong.
+		expect(() => irToOpenAIChat(requestWith([urlFile]), "gpt-5.4", "openai"))
+			.toThrow(expect.objectContaining({ code: "unsupported_parameter", param: "file" }));
 	});
 });
 

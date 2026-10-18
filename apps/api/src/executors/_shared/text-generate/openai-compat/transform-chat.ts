@@ -410,7 +410,16 @@ function mapIRContentToOpenAI(content: IRContentPart[]): any {
 
 		if (part.type === "file") {
 			const mapped = mapFilePartToOpenAIChat(part);
-			return mapped ? [mapped] : [];
+			// Chat Completions has no file-by-URL field. Dropping the document would let the model
+			// answer without it, so fail this attempt instead: routing then tries a provider that can
+			// carry it, and the client gets an explicit error if none can.
+			if (!mapped) {
+				throw Object.assign(
+					new Error("This provider's Chat Completions API cannot take a file by URL; send the file as file_data or file_id."),
+					{ code: "unsupported_parameter", param: "file" },
+				);
+			}
+			return [mapped];
 		}
 
 		if (part.type === "image") {
