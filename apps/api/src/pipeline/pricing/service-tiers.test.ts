@@ -40,6 +40,10 @@ describe("pricing plan names", () => {
         [["free"], "free"],
         [["priority"], null],
         [["fast"], null],
+        // Several provider labels and no standard: nothing ties one to the route, so none is guessed.
+        [["64k", "256k"], null],
+        [["upstream-1", "upstream-2", "priority"], null],
+        [["default", "default"], "default"],
         [[], "standard"],
     ] as Array<[string[], string | null]>)("takes %j as the base plan %s", (plans, expected) => {
         expect(resolveBasePricingPlan(cardWith(plans))).toBe(expected);
