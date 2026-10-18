@@ -244,8 +244,8 @@ const NATIVE_DISCOVERY_PROVIDERS: ProviderConfig[] = [
 		authStyle: "optional_bearer",
 	},
 	{
-		providerId: "pioneer",
-		providerName: "Pioneer",
+		providerId: "fastino",
+		providerName: "Fastino",
 		// api.pioneer.ai answers 410 host_retired and names this host as its replacement.
 		modelsEndpoint: "https://api.fastino.ai/v1/models",
 		authStyle: "none",

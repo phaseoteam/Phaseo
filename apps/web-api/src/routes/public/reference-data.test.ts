@@ -12,6 +12,32 @@ afterEach(() => {
 });
 
 describe("public reference-data routes", () => {
+	it("keeps retired provider pages addressable and links their successor", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => Response.json([{
+			provider_slug: "pioneer", name: "Pioneer", status: "deprecated", country_code: "US", subdivision_code: null,
+			metadata: { retirement: { message: "Pioneer is now Fastino.", successor_provider_slug: "fastino", successor_name: "Fastino" } },
+		}])));
+		const response = await app.request("https://phaseo.app/api/_web/api-providers/pioneer/header", {}, env);
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ provider: {
+			api_provider_id: "pioneer", api_provider_name: "Pioneer", retirement_notice: "Pioneer is now Fastino.",
+			successor_provider_id: "fastino", successor_provider_name: "Fastino",
+		} });
+	});
+
+	it("only exposes retirement notices for retired providers and rejects invalid successor IDs", async () => {
+		for (const status of ["active", "deprecated"]) {
+			vi.stubGlobal("fetch", vi.fn(async () => Response.json([{
+				provider_slug: "sample", name: "Sample", status,
+				metadata: { retirement: { message: "Retired.", successor_provider_slug: "../settings", successor_name: "Invalid" } },
+			}])));
+			const response = await app.request("https://phaseo.app/api/_web/api-providers/sample/header", {}, env);
+			expect(await response.json()).toMatchObject({ provider: {
+				retirement_notice: status === "deprecated" ? "Retired." : null,
+				successor_provider_id: null, successor_provider_name: null,
+			} });
+		}
+	});
     it("excludes retired plan prices from listings and detail pages", async () => {
         vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
             const url = String(input);

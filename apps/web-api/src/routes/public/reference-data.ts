@@ -246,15 +246,21 @@ publicReferenceDataRouter.get("/api-providers/:providerId/header", async (c) => 
 	if (["inception", "inceptron", "nextbit"].includes(providerId.toLowerCase())) return notFound(c, "api_provider");
 	try {
 		const { data, error } = await getDataClient(c.env).from("v2_providers")
-			.select("provider_slug,name,country_code,subdivision_code")
+			.select("provider_slug,name,country_code,subdivision_code,status,metadata")
 			.eq("provider_slug", providerId).maybeSingle();
 		if (error) throw error;
 		if (!data) return notFound(c, "api_provider");
+		const retirement = ["deprecated", "disabled"].includes(data.status) ? data.metadata?.retirement : null;
+		const successorId = typeof retirement?.successor_provider_slug === "string" && /^[a-z0-9][a-z0-9._-]*$/.test(retirement.successor_provider_slug)
+			? retirement.successor_provider_slug : null;
 		return withPublicCache(c.json({ provider: {
 			api_provider_id: data.provider_slug,
 			api_provider_name: data.name,
 			country_code: data.country_code,
 			subdivision_code: data.subdivision_code,
+			retirement_notice: typeof retirement?.message === "string" ? retirement.message : null,
+			successor_provider_id: successorId,
+			successor_provider_name: successorId && typeof retirement?.successor_name === "string" ? retirement.successor_name : null,
 		} }), { ...policy(`web-api-provider-${encodeURIComponent(providerId).replace(/%/g, "")}`), ...PUBLIC_LIVE_DATA_CACHE });
 	} catch (error) {
 		console.error("[web-api/reference] provider header failed", { providerId, error });

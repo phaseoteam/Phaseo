@@ -85,6 +85,16 @@ export default async function APIProviderDetailShell({
 			<EntityStickyHeader kind="provider" id={apiProviderId} name={header.api_provider_name} observeId="provider-detail-primary-header" baseHref={`/api-providers/${apiProviderId}`} navigation={[]} />
 			<div className="container mx-auto px-4 py-6 md:py-8">
 				<WorkspacePolicyNotice kind="provider" id={apiProviderId} />
+				{header.retirement_notice ? (
+					<div role="status" className="mb-6 rounded-lg border bg-muted/30 px-4 py-3 text-sm">
+						{header.retirement_notice}{" "}
+						{header.successor_provider_id && header.successor_provider_name ? (
+							<Link href={`/api-providers/${header.successor_provider_id}`} className="font-medium underline underline-offset-4">
+								{header.successor_provider_name}
+							</Link>
+						) : null}
+					</div>
+				) : null}
 				<div id="provider-detail-primary-header" className="mb-6 flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 					<div className="flex min-w-0 items-center gap-4">
 						<div className="relative flex size-14 shrink-0 items-center justify-center rounded-md border border-border/70 bg-card/40">
