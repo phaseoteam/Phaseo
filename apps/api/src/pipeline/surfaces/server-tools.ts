@@ -3603,6 +3603,16 @@ function sumMaybe(left?: number, right?: number): number | undefined {
 	return (left ?? 0) + (right ?? 0);
 }
 
+/**
+ * Both turns come from the same provider, so a cache-semantics flag set on one turn applies to the
+ * other when that turn reported no cache counts. Only a real conflict leaves it unknown.
+ */
+function mergeSubsetFlag(left?: boolean, right?: boolean): boolean | undefined {
+	if (typeof left !== "boolean") return typeof right === "boolean" ? right : undefined;
+	if (typeof right !== "boolean") return left;
+	return left === right ? left : undefined;
+}
+
 export function mergeIRUsageTotals(base?: IRUsage, incoming?: IRUsage): IRUsage | undefined {
 	if (!base && !incoming) return undefined;
 	if (!base) return incoming ? { ...incoming } : undefined;
@@ -3619,22 +3629,15 @@ export function mergeIRUsageTotals(base?: IRUsage, incoming?: IRUsage): IRUsage 
 		cachedWriteTokens5m: sumMaybe(base._ext?.cachedWriteTokens5m, incoming._ext?.cachedWriteTokens5m),
 		cachedWriteTokens1h: sumMaybe(base._ext?.cachedWriteTokens1h, incoming._ext?.cachedWriteTokens1h),
 	};
+	const writeSubset = mergeSubsetFlag(base.cachedWriteTokensAreSubsetOfInput, incoming.cachedWriteTokensAreSubsetOfInput);
 
 	return {
 		inputTokens: (base.inputTokens ?? 0) + (incoming.inputTokens ?? 0),
 		outputTokens: (base.outputTokens ?? 0) + (incoming.outputTokens ?? 0),
 		totalTokens: (base.totalTokens ?? 0) + (incoming.totalTokens ?? 0),
 		cachedInputTokens: sumMaybe(base.cachedInputTokens, incoming.cachedInputTokens),
-		cachedReadTokensAreSubsetOfInput:
-			typeof base.cachedReadTokensAreSubsetOfInput === "boolean" &&
-			base.cachedReadTokensAreSubsetOfInput === incoming.cachedReadTokensAreSubsetOfInput
-				? base.cachedReadTokensAreSubsetOfInput
-				: undefined,
-		// Both turns come from the same provider, so a shared write semantic carries over.
-		...(typeof base.cachedWriteTokensAreSubsetOfInput === "boolean" &&
-			base.cachedWriteTokensAreSubsetOfInput === incoming.cachedWriteTokensAreSubsetOfInput
-			? { cachedWriteTokensAreSubsetOfInput: base.cachedWriteTokensAreSubsetOfInput }
-			: {}),
+		cachedReadTokensAreSubsetOfInput: mergeSubsetFlag(base.cachedReadTokensAreSubsetOfInput, incoming.cachedReadTokensAreSubsetOfInput),
+		...(typeof writeSubset === "boolean" ? { cachedWriteTokensAreSubsetOfInput: writeSubset } : {}),
 		reasoningTokens: sumMaybe(base.reasoningTokens, incoming.reasoningTokens),
 		_ext: Object.values(mergedExt).some((value) => value != null)
 			? {
