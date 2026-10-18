@@ -90,7 +90,9 @@ icon: "bug"
 | `phaseo_free_model_limit_exceeded` | `429` | Phaseo 免费模型的共享每日配额已用尽（默认 1,500 次请求）。请遵循 `Retry-After`，等待 00:00 UTC 重置，或选择付费模型。 |
 | `rate_limit_exceeded` | `429` | 工作区的某个[速率限制策略](./limits.mdx)已耗尽。可通过 `policy_id` 和 `limit_scope` 确定是哪一个。请遵循 `Retry-After`，或请工作区管理员修改该策略。 |
 | `validation_error` | `400` | 参数或请求正文无效。 |
+| `upstream_error` | `429` | 为该请求尝试的所有提供商都对其进行了速率限制。请遵循 `Retry-After`；BYOK 请求还会带有 `X-Phaseo-Upstream-RateLimit-*` 标头。其他提供商故障使用 `502`。 |
 | `provider_error` | `502` | 上游模型提供商未能正确响应。 |
+| `upstream_stream_failure` | `502` | 非流式请求的提供商在开始生成后失败。不会返回部分输出，也不会对该请求计费。 |
 | `server_error` | `500` | Phaseo 内部发生意外问题。 |
 
 ## 提供商故障时
@@ -253,7 +255,8 @@ icon: "bug"
 ## 流式传输注意事项
 
 - 如果请求在流式传输开始前失败，会收到标准 JSON 错误负载。
-- 如果请求在流式传输期间失败，请将不完整的部分流视为未完成，并提供重试选项。
+- 如果请求在流式传输期间失败，流会以端点的失败事件结束，而不是正常完成：Chat Completions 为 `error` 帧，Responses 为 `response.failed`（或 `error`），Messages 为 `error` 事件。请将不完整的部分流视为未完成，并提供重试选项。
+- 非流式请求的提供商中途失败时，会返回带有 `upstream_stream_failure` 的 `502`，而不是部分响应。
 - 请始终记录 `generation_id` 以及端点和模型元数据。
 
 ## 故障排查提示
