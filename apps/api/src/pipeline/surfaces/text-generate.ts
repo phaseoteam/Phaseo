@@ -129,12 +129,16 @@ const UPSTREAM_STREAM_FAILURE_MESSAGE = "The upstream stream failed before succe
  * (pipeline/after/stream.ts): partial output of a failed stream is not charged,
  * but its tokens still count against managed provider rate limits.
  */
-async function settleBufferedUpstreamStreamFailure(
+export async function settleBufferedUpstreamStreamFailure(
 	ctx: PipelineContext,
 	result: any,
 	error: UpstreamStreamError,
+	/** Usage of earlier server-tool rounds of the same request, which the failing round's usage does not include. */
+	priorUsage?: IRChatResponse["usage"],
 ): Promise<Response> {
-	const usage = error.partial.usageRaw ?? result.bill?.usage ?? null;
+	const usage = priorUsage
+		? mergeIRUsageTotals(priorUsage, (error.partial.ir as IRChatResponse | undefined)?.usage) ?? null
+		: error.partial.usageRaw ?? result.bill?.usage ?? null;
 	const partialResult = {
 		...result,
 		kind: "completed" as const,
@@ -1265,7 +1269,7 @@ async function runTextGeneratePipelineInner(
 						return await handleError({
 							stage: "execute",
 							res: upstreamFailed
-								? await settleBufferedUpstreamStreamFailure(pre.ctx, followUpResult, error)
+								? await settleBufferedUpstreamStreamFailure(pre.ctx, followUpResult, error, aggregateUsage)
 								: createJsonErrorResponse(
 									502,
 									"gateway_stream_materialization_error",

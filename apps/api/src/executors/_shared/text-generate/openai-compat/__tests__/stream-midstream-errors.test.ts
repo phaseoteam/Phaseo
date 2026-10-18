@@ -151,4 +151,12 @@ describe("mid-stream upstream errors from Anthropic", () => {
 		const events = frames(await new Response(claudeStream("openai.chat.completions")).text());
 		expect(events.at(-1)?.data).toMatchObject({ object: "error", message: "Overloaded" });
 	});
+
+	it("opens with response.created when Anthropic fails before message_start", async () => {
+		const immediate = sse([{ event: "error", data: { type: "error", error: { type: "overloaded_error", message: "Overloaded" } } }]);
+		const responses = sseResponse(immediate).body!.pipeThrough(createAnthropicToResponsesStreamTransformer("req_immediate", "claude-test"));
+		const events = frames(await new Response(responses).text()).map((frame) => frame.event ?? frame.data?.type);
+		expect(events[0]).toBe("response.created");
+		expect(events).toContain("response.failed");
+	});
 });

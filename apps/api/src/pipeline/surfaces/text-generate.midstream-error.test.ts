@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Timer } from "../telemetry/timer";
-import { runTextGeneratePipeline } from "./text-generate";
+import { runTextGeneratePipeline, settleBufferedUpstreamStreamFailure } from "./text-generate";
+import { mergeIRUsageTotals } from "./server-tools";
 import { UpstreamStreamError } from "@core/stream-errors";
 
 const mocks = vi.hoisted(() => ({
@@ -132,6 +133,26 @@ describe("buffered text request whose upstream stream fails after output began",
 		const auditSpy = vi.fn();
 		await handleErrorArgs.auditFailure(auditSpy);
 		expect(auditSpy).not.toHaveBeenCalled();
+	});
+
+	it("settles a failed server-tool follow-up with the earlier rounds' usage too", async () => {
+		vi.mocked(mergeIRUsageTotals).mockImplementation(((a: any, b: any) => ({
+			inputTokens: (a?.inputTokens ?? 0) + (b?.inputTokens ?? 0),
+			outputTokens: (a?.outputTokens ?? 0) + (b?.outputTokens ?? 0),
+			totalTokens: (a?.totalTokens ?? 0) + (b?.totalTokens ?? 0),
+		})) as any);
+		const partial = { usage: { inputTokens: 12, outputTokens: 3, totalTokens: 15 }, choices: [] };
+		const error = new UpstreamStreamError("upstream reset", { ir: partial as any, rawResponse: null, usageRaw: { prompt_tokens: 12, completion_tokens: 3 } });
+		const result = { provider: "deepinfra", keySource: "gateway", providerRateLimitReservation: null, bill: { cost_cents: 0, currency: "USD" } };
+		const earlierRounds = { inputTokens: 400, outputTokens: 60, totalTokens: 460 };
+
+		const response = await settleBufferedUpstreamStreamFailure(args().pre.ctx, result, error, earlierRounds);
+
+		expect(response.status).toBe(502);
+		expect(mergeIRUsageTotals).toHaveBeenCalledWith(earlierRounds, partial.usage);
+		expect(mocks.recordManagedProviderTokensOnce).toHaveBeenCalledWith(expect.objectContaining({
+			usage: { inputTokens: 412, outputTokens: 63, totalTokens: 475 },
+		}));
 	});
 
 	it("keeps the generic materialisation error for other stream failures", async () => {
