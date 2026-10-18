@@ -10368,6 +10368,7 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: 不支持。网关不存储响应，因此非空值会被拒绝并返回 400 验证错误。请改为在 input 中发送完整对话。
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:

@@ -18,7 +18,7 @@ import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { withNormalizedReasoning } from "./normalize-reasoning";
 import { irPartsToGeminiParts } from "../../google/shared/media";
-import { appendGeminiFunctionResponse, irToolCallsToGeminiParts, withoutEmptyGeminiTextParts } from "../../google/shared/function-history";
+import { appendGeminiFunctionResponse, geminiFunctionResponsePart, irToolCallsToGeminiParts, withoutEmptyGeminiTextParts } from "../../google/shared/function-history";
 import { normalizeGoogleModelSlug, resolveGoogleModelCandidates } from "../../google/shared/model";
 import { applyGoogleOutputTokenFallback, applyOpenAIUsageFallback } from "../../google/shared/usage-fallback";
 import {
@@ -137,12 +137,11 @@ async function irToLegacyGemini(
 						response = { content: response };
 					}
 				}
-				appendGeminiFunctionResponse(contents, {
-					functionResponse: {
-						name: toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
-						response,
-					},
-				});
+				appendGeminiFunctionResponse(contents, geminiFunctionResponsePart(
+					toolResult.toolCallId,
+					toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
+					response,
+				));
 			}
 		}
 	}
@@ -651,7 +650,8 @@ function geminiToIR(
 					// Tool call
 					const signature = part.thoughtSignature ?? part.thought_signature;
 					toolCalls.push({
-						id: part.functionCall.name, // Google doesn't provide IDs
+						// Gemini 3+ returns an id; older models only a name.
+						id: typeof part.functionCall.id === "string" && part.functionCall.id ? part.functionCall.id : part.functionCall.name,
 						name: part.functionCall.name,
 						arguments: JSON.stringify(part.functionCall.args || {}),
 						...(typeof signature === "string" && signature ? { thoughtSignature: signature } : {}),
@@ -1749,7 +1749,9 @@ export function transformStream(
 							let state = toolStates.get(stateKey);
 							if (!state) {
 								state = {
-									id: `call_${args.requestId}_${index}_${partIdx}`,
+									id: typeof part.functionCall.id === "string" && part.functionCall.id
+										? part.functionCall.id
+										: `call_${args.requestId}_${index}_${partIdx}`,
 									argumentsSoFar: "",
 									emittedName: false,
 								};

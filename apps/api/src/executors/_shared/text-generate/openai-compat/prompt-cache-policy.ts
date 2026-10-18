@@ -5,6 +5,7 @@
 // How: Runs at the end of irToOpenAIChat / irToOpenAIResponses, before provider
 //      quirks, and rewrites the built request in place.
 
+import type { IRCacheControl } from "@core/ir";
 import { resolveTextProviderParamPolicyOverride } from "@providers/textProfiles";
 
 const OPENAI_CACHE_PROVIDERS = new Set(["openai", "openai-eu", "azure"]);
@@ -100,6 +101,17 @@ function applyToContent(
 	let changed = false;
 	for (const part of content) changed = stripPartMarks(part, mode) || changed;
 	return changed && collapse ? collapseTextParts(content) : content;
+}
+
+/**
+ * Serialize an IR cache mark the way the text serializers do. The field policy
+ * below then keeps, converts or strips it for the target upstream.
+ */
+export function cacheMarkFields(cacheControl: IRCacheControl | undefined): Record<string, unknown> {
+	if (!cacheControl) return {};
+	return cacheControl.type === "prompt_cache_breakpoint"
+		? { prompt_cache_breakpoint: { mode: cacheControl.mode } }
+		: { cache_control: cacheControl };
 }
 
 export function applyPromptCacheFieldPolicy(request: Record<string, any>, args: PromptCachePolicyArgs): void {

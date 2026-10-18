@@ -9,7 +9,7 @@ import { isIRNativeToolDefinition } from "@core/nativeTools";
 import { applyResponsesRequestQuirks, applyResponsesResponseQuirks } from "./responses-quirks";
 import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
-import { applyPromptCacheFieldPolicy } from "./prompt-cache-policy";
+import { applyPromptCacheFieldPolicy, cacheMarkFields } from "./prompt-cache-policy";
 import { normalizeProviderId } from "@/lib/config/providerAliases";
 
 function readResponseToolCallName(item: any): string | null {
@@ -456,6 +456,7 @@ function toOpenAIResponsesTool(tool: IRTool, useOpenAIShape: boolean, providerId
 			parameters: tool.parameters,
 			...(tool.strict !== undefined ? { strict: tool.strict } : {}),
 			...(supportsAsync && tool.async !== undefined ? { async: tool.async } : {}),
+			...cacheMarkFields(tool.cacheControl),
 		};
 	}
 
@@ -467,6 +468,7 @@ function toOpenAIResponsesTool(tool: IRTool, useOpenAIShape: boolean, providerId
 			parameters: tool.parameters,
 			...(tool.strict !== undefined ? { strict: tool.strict } : {}),
 		},
+		...cacheMarkFields(tool.cacheControl),
 	};
 }
 
@@ -492,15 +494,12 @@ function mapContentPart(part: IRContentPart): any {
 	}
 
         if (part.type === "image") {
-			const promptCacheBreakpoint = part.cacheControl?.type === "prompt_cache_breakpoint"
-				? { mode: part.cacheControl.mode }
-				: undefined;
                 if (part.source === "url") {
                         return {
                                 type: "input_image",
                                 image_url: part.data,
                                 detail: part.detail,
-								...(promptCacheBreakpoint ? { prompt_cache_breakpoint: promptCacheBreakpoint } : {}),
+								...cacheMarkFields(part.cacheControl),
                         };
                 } else {
                         const dataUrl = part.data.startsWith("data:")
@@ -510,7 +509,7 @@ function mapContentPart(part: IRContentPart): any {
                                 type: "input_image",
                                 image_url: dataUrl,
                                 detail: part.detail,
-								...(promptCacheBreakpoint ? { prompt_cache_breakpoint: promptCacheBreakpoint } : {}),
+								...cacheMarkFields(part.cacheControl),
                         };
                 }
         }

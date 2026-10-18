@@ -77,7 +77,7 @@ export function mergePresetWithBody(body: any, preset: PresetData): any {
 		} else if (merged.system !== undefined) {
 			// Anthropic-style system parameter
 			merged.system = Array.isArray(merged.system)
-				? [{ type: "text", text: config.systemPrompt }, ...merged.system]
+				? prependPresetTextPart(merged.system, config.systemPrompt, "text")
 				: config.systemPrompt + "\n\n" + merged.system;
 		}
 	}

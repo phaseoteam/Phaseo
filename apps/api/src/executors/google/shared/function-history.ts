@@ -25,6 +25,15 @@ export function requiresGeminiFunctionCallSignature(model: string | null | undef
 	return major !== null && major >= 3;
 }
 
+/**
+ * The call id to send to Gemini, which pairs each functionResponse with its
+ * functionCall when parallel calls share a name. Older Gemini responses carry
+ * no id and the gateway falls back to the function name; that is not sent.
+ */
+function geminiCallId(id: string | undefined, name: string): string | undefined {
+	return typeof id === "string" && id.length > 0 && id !== name ? id : undefined;
+}
+
 function parseFunctionArgs(raw: string | undefined): Record<string, any> {
 	if (typeof raw !== "string" || raw.trim().length === 0) return {};
 	try {
@@ -52,8 +61,9 @@ export function irToolCallsToGeminiParts(
 		.map((call, index) => {
 			const signature = call.thoughtSignature
 				?? (index === 0 && needsSignature ? GEMINI_SKIP_THOUGHT_SIGNATURE : undefined);
+			const id = geminiCallId(call.id, call.name);
 			return {
-				functionCall: { name: call.name, args: parseFunctionArgs(call.arguments) },
+				functionCall: { ...(id ? { id } : {}), name: call.name, args: parseFunctionArgs(call.arguments) },
 				...(signature ? { thoughtSignature: signature } : {}),
 			};
 		});
@@ -69,6 +79,12 @@ export function withoutEmptyGeminiTextParts(parts: any[]): any[] {
 		part && typeof part === "object" && part.text === "" && !part.thought
 		&& !part.thought_signature && !part.thoughtSignature && Object.keys(part).length <= 2
 	));
+}
+
+/** A functionResponse part, carrying the matching call id when there is one. */
+export function geminiFunctionResponsePart(toolCallId: string, name: string, response: unknown): { functionResponse: any } {
+	const id = geminiCallId(toolCallId, name);
+	return { functionResponse: { ...(id ? { id } : {}), name, response } };
 }
 
 /**

@@ -8243,6 +8243,16 @@
 			"ja": "要求されたモデルが置き換えられた理由と方法。例: `reason=unserved; from=lab/old-model; to=lab/new-model`。提供終了モデルのルーティングが代替モデルでリクエストに応答した場合にのみ送信されます。",
 			"zh-Hans": "请求的模型被替换的原因和方式，例如 `reason=unserved; from=lab/old-model; to=lab/new-model`。仅当已停用模型的路由使用替代模型响应请求时才会发送。",
 			"ar": "سبب استبدال النموذج المطلوب وكيفيته، مثل `reason=unserved; from=lab/old-model; to=lab/new-model`. يُرسل فقط عندما يجيب توجيه النماذج المتوقفة عن الطلب بنموذج بديل."
+		},
+		"Not supported. The gateway does not store responses, so a non-empty value is rejected with a 400 validation error. Send the full conversation in input instead.": {
+			"es": "No compatible. El gateway no almacena respuestas, por lo que un valor no vacío se rechaza con un error de validación 400. Envía la conversación completa en input.",
+			"fr": "Non pris en charge. La passerelle ne stocke pas les réponses : une valeur non vide est donc rejetée avec une erreur de validation 400. Envoyez plutôt la conversation complète dans input.",
+			"de": "Nicht unterstützt. Das Gateway speichert keine Antworten, daher wird ein nicht leerer Wert mit einem 400-Validierungsfehler abgelehnt. Sende stattdessen die vollständige Unterhaltung in input.",
+			"pt-BR": "Não suportado. O gateway não armazena respostas, então um valor não vazio é rejeitado com um erro de validação 400. Envie a conversa completa em input.",
+			"hi": "समर्थित नहीं। गेटवे प्रतिक्रियाएँ संग्रहीत नहीं करता, इसलिए खाली न होने वाला मान 400 सत्यापन त्रुटि के साथ अस्वीकार कर दिया जाता है। इसके बजाय पूरी बातचीत input में भेजें।",
+			"ja": "サポートされていません。ゲートウェイはレスポンスを保存しないため、空でない値は 400 検証エラーで拒否されます。代わりに会話全体を input で送信してください。",
+			"zh-Hans": "不支持。网关不存储响应，因此非空值会被拒绝并返回 400 验证错误。请改为在 input 中发送完整对话。",
+			"ar": "غير مدعوم. لا تخزن البوابة الاستجابات، لذا تُرفض أي قيمة غير فارغة بخطأ تحقق 400. أرسل المحادثة كاملة في input بدلًا من ذلك."
 		}
 	},
 	"GET /apps": {

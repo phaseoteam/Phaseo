@@ -10,7 +10,7 @@ import { isIRNativeToolDefinition } from "@core/nativeTools";
 import { applyChatRequestQuirks, applyChatResponseQuirks } from "./chat-quirks-bridge";
 import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
-import { applyPromptCacheFieldPolicy } from "./prompt-cache-policy";
+import { applyPromptCacheFieldPolicy, cacheMarkFields } from "./prompt-cache-policy";
 
 /**
  * Transform IR request to OpenAI Chat Completions format
@@ -320,6 +320,7 @@ function toOpenAIChatTool(tool: IRTool): any {
 			parameters: tool.parameters,
 			...(tool.strict !== undefined ? { strict: tool.strict } : {}),
 		},
+		...cacheMarkFields(tool.cacheControl),
 	};
 }
 
@@ -367,17 +368,13 @@ function mapIRContentToOpenAI(content: IRContentPart[]): any {
 				return {
 					type: "image_url",
 					image_url: { url: part.data, detail: part.detail },
-					...(part.cacheControl?.type === "prompt_cache_breakpoint"
-						? { prompt_cache_breakpoint: { mode: part.cacheControl.mode } }
-						: {}),
+					...cacheMarkFields(part.cacheControl),
 				};
 			} else {
 				return {
 					type: "image_url",
 					image_url: { url: `data:${part.mimeType || "image/jpeg"};base64,${part.data}` },
-					...(part.cacheControl?.type === "prompt_cache_breakpoint"
-						? { prompt_cache_breakpoint: { mode: part.cacheControl.mode } }
-						: {}),
+					...cacheMarkFields(part.cacheControl),
 				};
 			}
 		}

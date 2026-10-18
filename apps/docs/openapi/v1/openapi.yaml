@@ -10819,6 +10819,10 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: >-
+            Not supported. The gateway does not store responses, so a non-empty
+            value is rejected with a 400 validation error. Send the full
+            conversation in input instead.
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:

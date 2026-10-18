@@ -10368,6 +10368,7 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: Nicht unterstützt. Das Gateway speichert keine Antworten, daher wird ein nicht leerer Wert mit einem 400-Validierungsfehler abgelehnt. Sende stattdessen die vollständige Unterhaltung in input.
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:

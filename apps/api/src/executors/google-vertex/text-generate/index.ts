@@ -23,7 +23,7 @@ import { getBindings } from "@/runtime/env";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { withNormalizedReasoning } from "@executors/google/text-generate/normalize-reasoning";
 import { irPartsToGeminiParts } from "@executors/google/shared/media";
-import { appendGeminiFunctionResponse, irToolCallsToGeminiParts, withoutEmptyGeminiTextParts } from "@executors/google/shared/function-history";
+import { appendGeminiFunctionResponse, geminiFunctionResponsePart, irToolCallsToGeminiParts, withoutEmptyGeminiTextParts } from "@executors/google/shared/function-history";
 import {
 	modelSupportsGoogleThinkingLevels,
 	resolveGoogleThinkingLevelForEffort,
@@ -457,12 +457,11 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 						responsePayload = { content: toolResult.content };
 					}
 				}
-				appendGeminiFunctionResponse(contents, {
-					functionResponse: {
-						name: toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
-						response: responsePayload,
-					},
-				});
+				appendGeminiFunctionResponse(contents, geminiFunctionResponsePart(
+					toolResult.toolCallId,
+					toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
+					responsePayload,
+				));
 			}
 		}
 	}
@@ -619,7 +618,8 @@ export function geminiToIR(
 				} else if (part.functionCall) {
 					const signature = part.thoughtSignature ?? part.thought_signature;
 					toolCalls.push({
-						id: part.functionCall.name,
+						// Gemini 3+ returns an id; older models only a name.
+						id: typeof part.functionCall.id === "string" && part.functionCall.id ? part.functionCall.id : part.functionCall.name,
 						name: part.functionCall.name,
 						arguments: JSON.stringify(part.functionCall.args || {}),
 						...(typeof signature === "string" && signature ? { thoughtSignature: signature } : {}),

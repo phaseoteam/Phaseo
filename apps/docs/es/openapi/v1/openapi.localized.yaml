@@ -10368,6 +10368,7 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: No compatible. El gateway no almacena respuestas, por lo que un valor no vacío se rechaza con un error de validación 400. Envía la conversación completa en input.
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:

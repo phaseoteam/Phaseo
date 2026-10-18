@@ -60,9 +60,28 @@ export function normaliseAnthropicCacheBreakpoints(request: any): void {
 	if (Array.isArray(request.messages)) {
 		for (const message of request.messages) collectMarkedBlocks(message?.content, marked);
 	}
-	if (marked.length <= MAX_BREAKPOINTS) return;
-	const keep = new Set([marked[0], ...marked.slice(-(MAX_BREAKPOINTS - 1))]);
-	for (const block of marked) {
-		if (!keep.has(block)) delete block.cache_control;
+	let kept = marked;
+	if (marked.length > MAX_BREAKPOINTS) {
+		const keep = new Set([marked[0], ...marked.slice(-(MAX_BREAKPOINTS - 1))]);
+		for (const block of marked) {
+			if (!keep.has(block)) delete block.cache_control;
+		}
+		kept = marked.filter((block) => keep.has(block));
+	}
+	promoteMarksBeforeOneHour(kept);
+}
+
+/**
+ * Anthropic rejects a 1h breakpoint that follows a 5m one: longer TTLs must come
+ * first. A translated OpenAI breakpoint (default 5m) can precede a client's 1h
+ * mark, so raise every earlier mark to 1h. The 1h breakpoint already writes that
+ * prefix at the 1h rate, so this changes neither what is cached nor the cost.
+ */
+function promoteMarksBeforeOneHour(marked: any[]): void {
+	let laterOneHour = false;
+	for (let index = marked.length - 1; index >= 0; index -= 1) {
+		const mark = marked[index].cache_control;
+		if (mark?.ttl === "1h") laterOneHour = true;
+		else if (laterOneHour && mark) mark.ttl = "1h";
 	}
 }
