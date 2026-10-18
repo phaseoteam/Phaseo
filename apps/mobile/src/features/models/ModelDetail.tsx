@@ -1,13 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
-import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Bolt, Check, ChevronDown, CircleAlert, Info, MessageSquare, MessageSquareWarning, Scale, ScrollText, TriangleAlert } from "lucide-react-native";
+import { ArrowLeft, Check, ChevronDown, CircleAlert, Info, MessageSquare, Scale, ScrollText, TriangleAlert } from "lucide-react-native";
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import { type NativeScrollEvent, type NativeSyntheticEvent, Pressable, ScrollView, type ScrollViewInstance, View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { Markdown } from "@/components/Markdown";
-import { Button, EmptyState, Icon, IconButton, LoadingState, OptionSheet, ReadableWidth, Screen, Text, type SelectOption } from "@/components/ui";
+import { Button, EmptyState, Icon, IconButton, LoadingState, OptionSheet, ReadableWidth, Screen, Text, useMenu, type SelectOption, type ViewRef } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import {
   getModel, getModelAvailability, getModelBenchmarks, getModelGatewayMetadata, getModelPricing, getModelSubscriptions, getModelTimeline,
@@ -29,7 +28,6 @@ import { PerformanceSection, UptimeSection } from "./detail/PerformanceSection";
 import { PricingSection } from "./detail/PricingSection";
 import { ProvidersSection } from "./detail/ProvidersSection";
 import { activeSectionAt, modelAccessLayout, modelPageSections, scrollTargetFor, SECTION_META, supportsProvenanceVerification, type SectionId } from "./detail/sections";
-import { UseModelSheet } from "./detail/UseModelSheet";
 
 const publicKey = (id: string, part: string) => ["public", "model", id, part] as const;
 const FREE_ROUTER_ID = "phaseo/free";
@@ -62,8 +60,10 @@ export function ModelDetail({ id }: { id: string }) {
   const [headerEnd, setHeaderEnd] = useState(0);
   const [menuY, setMenuY] = useState(0);
   const [view, setView] = useState<{ compact: boolean; pinned: boolean; active: string | null }>({ compact: false, pinned: false, active: null });
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [useOpen, setUseOpen] = useState(false);
+  // One jump menu, opened from the inline or the pinned button (a dropdown under it on tablets).
+  const jumpMenu = useMenu();
+  const inlineMenuRef = useRef<ViewRef>(null);
+  const pinnedMenuRef = useRef<ViewRef>(null);
 
   const data = model.data;
   const name = data?.name ?? (card ? cardName(card) : id.split("/").at(-1) ?? id);
@@ -88,14 +88,9 @@ export function ModelDetail({ id }: { id: string }) {
     const relatedCard = index.get(relatedId);
     return relatedCard ? cardName(relatedCard) : null;
   }), [timeline.data, data?.previous_model_id, index]);
-  // The website offers "Use this model" whenever the API can be used; the app's chat also needs a live chat route.
-  const webCanChat = layout.canUseApi && data?.status !== "Retired";
-  // Decision models get the website's Decisions playground instead of "Use this model" (not in the app yet).
-  const activeEndpoints = (gateway.data?.activeProviders ?? []).map((route) => route.endpoint ?? "");
-  const isDecisionsModel = activeEndpoints.length ? activeEndpoints.includes("decisions.make") : outputTypes.includes("decisions");
-  const supportsText = activeEndpoints.includes("text.generate") || !isDecisionsModel;
-  const canUse = webCanChat && supportsText;
-  const canChat = canUse && (card ? isChatModel(card) : (gateway.data?.activeProviders.length ?? 0) > 0);
+  // The website offers Chat whenever the API can be used; the app's chat also needs a live chat route.
+  const canChat = layout.canUseApi && data?.status !== "Retired" && (card ? isChatModel(card) : (gateway.data?.activeProviders.length ?? 0) > 0);
+  const openChat = () => router.push({ pathname: "/chat/new", params: { model: id } });
   const description = data?.description ?? card?.description ?? null;
 
   const onLayoutSection = useCallback((section: string, y: number) => {
@@ -205,9 +200,8 @@ export function ModelDetail({ id }: { id: string }) {
     <View className="flex-1 flex-row items-center gap-2">
       <Logo id={organisationId} label={organisation} colour={card?.organisation_colour} size={32} />
       <Text variant="label" numberOfLines={1} className="flex-1">{organisation}: {name}</Text>
-      {canChat ? <IconButton icon={MessageSquare} label="Chat about this model" size={18} className="h-9 w-9 border border-border" onPress={() => router.push({ pathname: "/chat/new", params: { model: id } })} /> : null}
-      <IconButton icon={Scale} label="Compare this model" size={18} className="h-9 w-9 border border-border" onPress={compare} />
-      {canUse ? <IconButton icon={Bolt} label={`Use ${name}`} tone="primary-foreground" size={18} className="h-9 w-9 bg-primary active:opacity-85" onPress={() => setUseOpen(true)} /> : null}
+      {canChat ? <IconButton icon={MessageSquare} label="Chat about this model" tone="primary-foreground" size={18} className="h-9 w-9 bg-primary active:opacity-85" onPress={openChat} /> : null}
+      <IconButton icon={Scale} label="Compare this model" tone={canChat ? "foreground" : "primary-foreground"} size={18} className={cn("h-9 w-9", canChat ? "border border-border" : "bg-primary active:opacity-85")} onPress={compare} />
     </View>
   ) : null;
 
@@ -229,18 +223,11 @@ export function ModelDetail({ id }: { id: string }) {
                 </View>
               </View>
             </View>
-            <HeaderActions
-              canChat={canChat}
-              canUse={canUse}
-              onReport={() => void Linking.openURL(issueUrl(id))}
-              onChat={() => router.push({ pathname: "/chat/new", params: { model: id } })}
-              onCompare={compare}
-              onUse={() => setUseOpen(true)}
-            />
+            <HeaderActions canChat={canChat} onChat={openChat} onCompare={compare} />
             {description ? <Description text={description} /> : null}
             {menuOptions.length ? (
               <View className="px-4 pt-5" onLayout={(event) => setMenuY(event.nativeEvent.layout.y + event.nativeEvent.layout.height)}>
-                <SectionMenuButton section={activeSection} onPress={() => setMenuOpen(true)} />
+                <View ref={inlineMenuRef} collapsable={false}><SectionMenuButton section={activeSection} onPress={() => void jumpMenu.show(inlineMenuRef)} /></View>
               </View>
             ) : null}
             {/* Sections stay direct children here so their layout y is the scroll offset the jump menu uses. */}
@@ -257,12 +244,11 @@ export function ModelDetail({ id }: { id: string }) {
         </ScrollView>
         {view.pinned && activeSection ? (
           <View className="absolute inset-x-0 top-0 border-b border-border bg-background px-4 py-2" style={{ height: PINNED_MENU_HEIGHT }}>
-            <ReadableWidth><SectionMenuButton section={activeSection} onPress={() => setMenuOpen(true)} pinned /></ReadableWidth>
+            <ReadableWidth><View ref={pinnedMenuRef} collapsable={false}><SectionMenuButton section={activeSection} onPress={() => void jumpMenu.show(pinnedMenuRef)} pinned /></View></ReadableWidth>
           </View>
         ) : null}
       </View>
-      <OptionSheet open={menuOpen} title="Jump to section" value={activeSection} options={menuOptions} onChange={jump} onClose={() => setMenuOpen(false)} />
-      <UseModelSheet open={useOpen} onClose={() => setUseOpen(false)} modelId={id} modelName={name} gateway={gateway.data} />
+      <OptionSheet open={jumpMenu.open} anchor={jumpMenu.anchor} title="Jump to section" value={activeSection} options={menuOptions} onChange={jump} onClose={jumpMenu.close} />
     </Screen>
   );
 }
@@ -279,26 +265,15 @@ function TopBar({ back, children }: { back?: boolean; children?: ReactNode }) {
   );
 }
 
-function issueUrl(modelId: string) {
-  const query = new URLSearchParams({
-    template: "incorrect-info.yml",
-    area: "Data",
-    title: `[Incorrect Info] Model: ${modelId}`,
-    incorrect: `Model: ${modelId}\n\nWhat's wrong or missing?`,
-  });
-  return `https://github.com/phaseoteam/Phaseo/issues/new?${query.toString()}`;
-}
-
-/** Report an issue · Chat · Compare, then a full-width "Use this model", as the website lays them out on phones. */
-function HeaderActions({ canChat, canUse, onReport, onChat, onCompare, onUse }: { canChat: boolean; canUse: boolean; onReport: () => void; onChat: () => void; onCompare: () => void; onUse: () => void }) {
+/**
+ * Chat and Compare side by side. Reporting data issues and copying request code are left to the
+ * website: neither is likely on a phone. Chat is the primary action when the model can chat.
+ */
+function HeaderActions({ canChat, onChat, onCompare }: { canChat: boolean; onChat: () => void; onCompare: () => void }) {
   return (
-    <View className="mt-4 gap-2 px-4">
-      <View className="flex-row flex-wrap gap-2">
-        <Button label="Report an issue" icon={MessageSquareWarning} variant="outline" size="sm" className="min-w-[45%] flex-1" onPress={onReport} />
-        {canChat ? <Button label="Chat" icon={MessageSquare} variant="outline" size="sm" className="min-w-[45%] flex-1" onPress={onChat} /> : null}
-        <Button label="Compare" icon={Scale} variant="outline" size="sm" className={cn("min-w-[45%]", canChat ? "max-w-[49%] flex-1" : "flex-1")} onPress={onCompare} />
-      </View>
-      {canUse ? <Button label="Use this model" icon={Bolt} size="sm" onPress={onUse} /> : null}
+    <View className="mt-4 flex-row gap-2 px-4">
+      {canChat ? <Button label="Chat" icon={MessageSquare} className="flex-1" onPress={onChat} /> : null}
+      <Button label="Compare" icon={Scale} variant={canChat ? "outline" : "primary"} className="flex-1" onPress={onCompare} />
     </View>
   );
 }
@@ -306,7 +281,8 @@ function HeaderActions({ canChat, canUse, onReport, onChat, onCompare, onUse }: 
 /** The model ID; with aliases or variants it opens a list to copy any of them (ModelIdentifierControl). */
 function ModelIdentifier({ modelId, aliases, variants }: { modelId: string; aliases: string[]; variants: NonNullable<ModelDetailData["variants"]> }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const menu = useMenu();
+  const triggerRef = useRef<ViewRef>(null);
   const [copied, setCopied] = useState(false);
   const identifiers = [modelId, ...aliases.filter((alias) => alias !== modelId)];
   const otherVariants = variants.filter((variant) => variant.model_id !== modelId);
@@ -321,22 +297,25 @@ function ModelIdentifier({ modelId, aliases, variants }: { modelId: string; alia
   ];
   return (
     <>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={identifiers.length > 1 || otherVariants.length ? "Model identifiers" : `Copy model identifier ${modelId}`}
-        onPress={() => (identifiers.length > 1 || otherVariants.length ? setOpen(true) : copy(modelId))}
-        className="mt-2 flex-row items-center gap-1 self-start"
-      >
-        <Text variant="mono" numberOfLines={1} className="shrink text-[13px] text-foreground/80">{modelId}</Text>
-        <Icon icon={copied ? Check : ChevronDown} tone="muted" size={14} />
-      </Pressable>
+      <View ref={triggerRef} collapsable={false} className="mt-2 self-start">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={identifiers.length > 1 || otherVariants.length ? "Model identifiers" : `Copy model identifier ${modelId}`}
+          onPress={() => (identifiers.length > 1 || otherVariants.length ? void menu.show(triggerRef) : copy(modelId))}
+          className="flex-row items-center gap-1"
+        >
+          <Text variant="mono" numberOfLines={1} className="shrink text-[13px] text-foreground/80">{modelId}</Text>
+          <Icon icon={copied ? Check : ChevronDown} tone="muted" size={14} />
+        </Pressable>
+      </View>
       <OptionSheet
-        open={open}
+        open={menu.open}
+        anchor={menu.anchor}
         title="Identifiers"
         value={null}
         options={options}
         onChange={(value) => (value.startsWith("variant:") ? router.push(`/models/${value.slice("variant:".length)}`) : copy(value))}
-        onClose={() => setOpen(false)}
+        onClose={menu.close}
       />
     </>
   );

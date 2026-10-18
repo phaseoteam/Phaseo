@@ -1,16 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { Activity, BarChart3, CalendarDays, Globe2 } from "lucide-react-native";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useCSSVariable } from "uniwind";
 import { View } from "react-native";
 import { LegendItem, LineChart } from "@/components/charts";
-import { Button, OptionSheet, Text, useToneColor } from "@/components/ui";
+import { Button, OptionSheet, Text, useMenu, useToneColor, type ViewRef } from "@/components/ui";
 import { getModelPerformance, getModelPerformanceColos, type ModelPerformance } from "@/lib/api/models";
 import { formatMs, formatShortDate } from "@/lib/format";
 import { EmptyBox, PageSection } from "./parts";
 import { averageUptime, formatPercentile, hasPerformanceHistory, PERCENTILES, performanceView, RANGE_DAYS, showsLeastStableProvider, TREND_METRICS, trendSeries, uptimeHours, type RangeDays, type TrendMetric } from "./performance";
 import type { SectionId } from "./sections";
 
-const FALLBACK = ["#3b82f6", "#f97316", "#10b981"];
+/** Providers without a brand colour use the chart tokens, as the website's trend charts do. */
+const CHART_TOKENS = ["--color-chart-1", "--color-chart-2", "--color-chart-3", "--color-chart-4", "--color-chart-5"];
 
 /** Shared by Performance and Uptime: the website requests percentile 50 over three days by default. */
 export function usePerformance(modelId: string, options: { range?: RangeDays; colo?: string | null; percentile?: number } = {}, enabled = true) {
@@ -43,7 +45,12 @@ export function PerformanceSection({ modelId, onLayoutSection, first }: { modelI
   const [range, setRange] = useState<RangeDays>(3);
   const [colo, setColo] = useState<string | null>(null);
   const [percentile, setPercentile] = useState(50);
-  const [sheet, setSheet] = useState<"range" | "location" | "percentile" | null>(null);
+  const rangeMenu = useMenu();
+  const percentileMenu = useMenu();
+  const locationMenu = useMenu();
+  const rangeRef = useRef<ViewRef>(null);
+  const percentileRef = useRef<ViewRef>(null);
+  const locationRef = useRef<ViewRef>(null);
   const metrics = usePerformance(modelId, { range, colo, percentile });
   const colos = useQuery({ queryKey: ["model-page", modelId, "colos"], queryFn: () => getModelPerformanceColos(modelId), staleTime: 15 * 60_000 });
   const data = metrics.data;
@@ -61,9 +68,9 @@ export function PerformanceSection({ modelId, onLayoutSection, first }: { modelI
       description="Hourly latency and throughput from the past seven days."
       action={
         <View className="flex-row gap-2">
-          <Button label={`${range}D`} icon={CalendarDays} variant="outline" size="sm" className="flex-1" onPress={() => setSheet("range")} />
-          {view && view.providerCount > 1 ? <Button label={formatPercentile(percentile)} icon={BarChart3} variant="outline" size="sm" className="flex-1" onPress={() => setSheet("percentile")} /> : null}
-          <Button label={colo ?? "All locations"} icon={Globe2} variant="outline" size="sm" className="flex-1" loading={metrics.isFetching && metrics.isPlaceholderData} onPress={() => setSheet("location")} />
+          <View ref={rangeRef} collapsable={false} className="flex-1"><Button label={`${range}D`} icon={CalendarDays} variant="outline" size="sm" onPress={() => void rangeMenu.show(rangeRef)} /></View>
+          {view && view.providerCount > 1 ? <View ref={percentileRef} collapsable={false} className="flex-1"><Button label={formatPercentile(percentile)} icon={BarChart3} variant="outline" size="sm" onPress={() => void percentileMenu.show(percentileRef)} /></View> : null}
+          <View ref={locationRef} collapsable={false} className="flex-1"><Button label={colo ?? "All locations"} icon={Globe2} variant="outline" size="sm" loading={metrics.isFetching && metrics.isPlaceholderData} onPress={() => void locationMenu.show(locationRef)} /></View>
         </View>
       }
     >
@@ -77,15 +84,16 @@ export function PerformanceSection({ modelId, onLayoutSection, first }: { modelI
       ) : (
         <EmptyBox icon={Activity} title="No gateway telemetry in the past 7 days" body="Hourly charts will appear when this model processes gateway traffic in the selected location." />
       )}
-      <OptionSheet open={sheet === "range"} title="Time range" value={String(range)} options={RANGE_DAYS.map((days) => ({ value: String(days), label: `${days} ${days === 1 ? "day" : "days"}` }))} onChange={(value) => setRange(Number(value) as RangeDays)} onClose={() => setSheet(null)} />
-      <OptionSheet open={sheet === "percentile"} title="Select performance percentile" value={String(percentile)} options={PERCENTILES.map((value) => ({ value: String(value), label: formatPercentile(value) }))} onChange={(value) => setPercentile(Number(value))} onClose={() => setSheet(null)} />
+      <OptionSheet open={rangeMenu.open} anchor={rangeMenu.anchor} title="Time range" value={String(range)} options={RANGE_DAYS.map((days) => ({ value: String(days), label: `${days} ${days === 1 ? "day" : "days"}` }))} onChange={(value) => setRange(Number(value) as RangeDays)} onClose={rangeMenu.close} />
+      <OptionSheet open={percentileMenu.open} anchor={percentileMenu.anchor} title="Select performance percentile" value={String(percentile)} options={PERCENTILES.map((value) => ({ value: String(value), label: formatPercentile(value) }))} onChange={(value) => setPercentile(Number(value))} onClose={percentileMenu.close} />
       <OptionSheet
-        open={sheet === "location"}
+        open={locationMenu.open}
+        anchor={locationMenu.anchor}
         title="API execution location"
         value={colo ?? "all"}
         options={[{ value: "all", label: "All locations" }, ...locations.map((entry) => ({ value: entry.colo, label: entry.colo, description: `${entry.requests.toLocaleString("en-GB")} requests` }))]}
         onChange={(value) => setColo(value === "all" ? null : value)}
-        onClose={() => setSheet(null)}
+        onClose={locationMenu.close}
       />
     </PageSection>
   );
@@ -94,6 +102,7 @@ export function PerformanceSection({ modelId, onLayoutSection, first }: { modelI
 function TrendCard({ metric, label, view }: { metric: TrendMetric; label: string; view: ReturnType<typeof performanceView> }) {
   const [inspected, setInspected] = useState<number | null>(null);
   const series = useMemo(() => trendSeries(view.data, metric, 3), [view.data, metric]);
+  const chart = useCSSVariable(CHART_TOKENS).map((value) => String(value ?? "#3b82f6"));
   return (
     <View className="rounded-md border border-border px-4 py-4">
       <View className="flex-row items-center justify-between">
@@ -106,13 +115,13 @@ function TrendCard({ metric, label, view }: { metric: TrendMetric; label: string
             className="mt-2"
             height={148}
             showYAxis={false}
-            series={series.map((entry, index) => ({ key: entry.provider, colour: entry.colour ?? FALLBACK[index] ?? "#3b82f6", points: entry.points.map((point) => ({ x: point.time, y: point.value })) }))}
+            series={series.map((entry, index) => ({ key: entry.provider, colour: entry.colour ?? chart[index] ?? "#3b82f6", points: entry.points.map((point) => ({ x: point.time, y: point.value })) }))}
             onInspect={setInspected}
           />
           <View className="mt-2 gap-1.5">
             {series.map((entry, index) => {
               const value = inspected != null ? entry.points.find((point) => point.time === inspected)?.value ?? null : entry.average;
-              return <LegendItem key={entry.provider} colour={entry.colour ?? FALLBACK[index] ?? "#3b82f6"} label={entry.name} value={formatValue(metric, value)} />;
+              return <LegendItem key={entry.provider} colour={entry.colour ?? chart[index] ?? "#3b82f6"} label={entry.name} value={formatValue(metric, value)} />;
             })}
           </View>
         </>
@@ -157,14 +166,14 @@ function UptimeCard({ metrics }: { metrics: ModelPerformance | null }) {
         xTicks={4}
         xFormat={(time) => `${String(new Date(time).getHours()).padStart(2, "0")}:00`}
         series={[
-          { key: "overall", colour: "#16a34a", points: hours.map((hour) => ({ x: Date.parse(hour.bucket), y: hour.overall })) },
-          ...(leastStable ? [{ key: "worst", colour: "#e11d48", points: hours.map((hour) => ({ x: Date.parse(hour.bucket), y: hour.worst })) }] : []),
+          { key: "overall", colour: "#16a249", points: hours.map((hour) => ({ x: Date.parse(hour.bucket), y: hour.overall })) },
+          ...(leastStable ? [{ key: "worst", colour: "#e92063", points: hours.map((hour) => ({ x: Date.parse(hour.bucket), y: hour.worst })) }] : []),
         ]}
         onInspect={setInspected}
       />
       <View className="mt-3 flex-row flex-wrap justify-center gap-x-4 gap-y-1">
-        <LegendItem colour="#16a34a" label="Phaseo routing" value={format(average)} />
-        {leastStable ? <LegendItem colour="#e11d48" label="Without Phaseo Routing" value={format(without)} /> : null}
+        <LegendItem colour="#16a249" label="Phaseo routing" value={format(average)} />
+        {leastStable ? <LegendItem colour="#e92063" label="Without Phaseo Routing" value={format(without)} /> : null}
       </View>
     </View>
   );

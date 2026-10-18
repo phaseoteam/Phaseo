@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Check } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { ScrollView, View } from "react-native";
-import { Button, EmptyState, ErrorState, Fact, Header, Icon, LoadingState, Row, Screen, SearchField, Section, Text, TextField } from "@/components/ui";
+import { Button, EmptyState, ErrorState, Fact, Header, Icon, LoadingState, Row, RouteSheet, SearchField, Section, Text, TextField } from "@/components/ui";
 import { getChat, listMessages, updateChat } from "@/features/chat/db";
 import { editAndResend } from "@/features/chat/runner";
 import { chatModelStore, MAX_CHAT_MODELS, notifyChat, toggleChatModel } from "@/features/chat/state";
@@ -15,11 +15,14 @@ import { acceptChatPrivacyReview, getChatPrivacyReview } from "@/lib/api/account
 import { MAX_COMPARE } from "@/lib/api/compare";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 
-/** Root-level bottom sheets shared by several sections. */
+/** Long pickers take the full dialog height on tablets; short forms size to their content. */
+const TALL_SHEETS = new Set(["compare", "chat-models", "pick"]);
+
+/** Root-level sheets shared by several sections: bottom sheets on phones, centred dialogs on tablets. */
 export default function SheetRoute() {
   const { kind } = useLocalSearchParams<{ kind: string }>();
   return (
-    <Screen edges={[]} className="bg-popover">
+    <RouteSheet size={TALL_SHEETS.has(kind) ? "tall" : "fit"}>
       {kind === "compare" ? <CompareSheet />
         : kind === "chat-models" ? <ChatModelsSheet />
         : kind === "workspace" ? <WorkspaceSheet />
@@ -28,7 +31,7 @@ export default function SheetRoute() {
         : kind === "privacy" ? <PrivacySheet />
         : kind === "pick" ? <PickSheet />
         : <EmptyState title="Nothing here" />}
-    </Screen>
+    </RouteSheet>
   );
 }
 
@@ -70,7 +73,7 @@ function WorkspaceSheet() {
   const router = useRouter();
   const { workspaces, workspaceId, selectWorkspace } = useWorkspace();
   return (
-    <View className="flex-1">
+    <View className="pb-2">
       <Header title="Workspace" />
       {workspaces.map((workspace, index) => (
         <Row
@@ -98,7 +101,7 @@ function RenameChatSheet() {
     router.back();
   };
   return (
-    <View className="gap-3 px-4 pt-4">
+    <View className="gap-3 px-4 pb-4 pt-4">
       <Text variant="heading">Rename chat</Text>
       <TextField value={title} onChangeText={setTitle} autoFocus selectTextOnFocus returnKeyType="done" onSubmitEditing={save} />
       <Button label="Save" disabled={!title.trim()} onPress={save} />
@@ -114,7 +117,7 @@ function EditMessageSheet() {
   const [text, setText] = useState(message?.content ?? "");
   if (!message) return <EmptyState title="Message not found" />;
   return (
-    <View className="gap-3 px-4 pt-4">
+    <View className="gap-3 px-4 pb-4 pt-4">
       <Text variant="heading">Edit and resend</Text>
       <Text variant="muted">Answers after this message are replaced.</Text>
       <TextField value={text} onChangeText={setText} multiline autoFocus className="max-h-60 min-h-28" textAlignVertical="top" />

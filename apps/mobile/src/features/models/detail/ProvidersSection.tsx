@@ -1,20 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { BarChart3, Check, ChevronDown, ChevronRight, CircleAlert, Filter, Info, MapPin } from "lucide-react-native";
-import { Fragment, useMemo, useState } from "react";
-import { Modal, Pressable, ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Fragment, useMemo, useRef, useState } from "react";
+import { Pressable, ScrollView, View } from "react-native";
 import { Logo } from "@/components/Logo";
-import { Button, Icon, OptionSheet, Text } from "@/components/ui";
+import { Button, Icon, OptionSheet, Sheet, Text, useMenu, type ViewRef } from "@/components/ui";
 import { getModelProviderHealth, type ProviderPricing } from "@/lib/api/models";
 import { cn } from "@/lib/cn";
 import { formatMs, formatPrice, formatTokens } from "@/lib/format";
 import { basePricePerMillion, priceLines, tablePrices } from "../pricing";
-import { EmptyBox, PolicyIcon, StatusIcon, STATUS_META, TinyBadge } from "./parts";
+import { EmptyBox, PolicyIcon, ServiceTierBadge, StatusIcon, STATUS_META } from "./parts";
 import { formatPercentile, PERCENTILES } from "./performance";
 import {
   DATA_POLICY_LABELS, dataPolicyTier, DEFAULT_STATUS_FILTERS, defaultPlan, executionRegions, isRouteVariant, listingCategory, providerDisplayName, providerLogoId,
-  providerPlans, providerStatus, RESIDENCY_LABELS, routeLimits, runtimeStatsFromHealth, sortProviders, statsKey, tierLabel, type ListingCategory, type RuntimeStats,
+  providerPlans, providerStatus, RESIDENCY_LABELS, routeLimits, runtimeStatsFromHealth, sortProviders, statsKey, type ListingCategory, type RuntimeStats,
 } from "./providers";
 
 type Privacy = "all" | "zdr" | "no_training";
@@ -32,7 +31,8 @@ const formatUptime = (value: number | null | undefined) => (value == null || !Nu
 /** The website's provider table, as rows: API providers with list prices, status, privacy, regions and 3-day routing health. */
 export function ProvidersSection({ modelId, providers, creatorId, modelStatus, organisationName }: { modelId: string; providers: ProviderPricing[]; creatorId?: string | null; modelStatus?: string | null; organisationName?: string | null }) {
   const [percentile, setPercentile] = useState(50);
-  const [percentileOpen, setPercentileOpen] = useState(false);
+  const percentileMenu = useMenu();
+  const percentileRef = useRef<ViewRef>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [statusFilters, setStatusFilters] = useState<ListingCategory[]>(DEFAULT_STATUS_FILTERS);
   const [privacy, setPrivacy] = useState<Privacy>("all");
@@ -94,7 +94,9 @@ export function ProvidersSection({ modelId, providers, creatorId, modelStatus, o
     <View>
       <View className="mb-4 flex-row gap-2">
         <Button label={activeFilters ? `Filters · ${activeFilters}` : "Filters"} icon={Filter} variant="outline" size="sm" className="flex-1" onPress={() => setFiltersOpen(true)} />
-        <Button label={formatPercentile(percentile)} icon={BarChart3} variant="outline" size="sm" className="flex-1" loading={health.isFetching && health.isPlaceholderData} onPress={() => setPercentileOpen(true)} />
+        <View ref={percentileRef} collapsable={false} className="flex-1">
+          <Button label={formatPercentile(percentile)} icon={BarChart3} variant="outline" size="sm" loading={health.isFetching && health.isPlaceholderData} onPress={() => void percentileMenu.show(percentileRef)} />
+        </View>
       </View>
       {rows.length ? (
         <View className="overflow-hidden rounded-md border border-border">
@@ -113,12 +115,13 @@ export function ProvidersSection({ modelId, providers, creatorId, modelStatus, o
         <EmptyBox icon={Filter} title="No providers match these filters" body="Change the filters to see more providers." />
       )}
       <OptionSheet
-        open={percentileOpen}
+        open={percentileMenu.open}
+        anchor={percentileMenu.anchor}
         title="Select provider percentile"
         value={String(percentile)}
         options={PERCENTILES.map((value) => ({ value: String(value), label: formatPercentile(value), description: value === 50 ? "Median" : undefined }))}
         onChange={(value) => setPercentile(Number(value))}
-        onClose={() => setPercentileOpen(false)}
+        onClose={percentileMenu.close}
       />
       <FiltersSheet open={filtersOpen} statusFilters={statusFilters} privacy={privacy} onStatus={setStatusFilters} onPrivacy={setPrivacy} onClose={() => setFiltersOpen(false)} />
     </View>
@@ -190,7 +193,7 @@ function ProviderRow({ provider, stats, open, onToggle, last }: { provider: Prov
                 <View className="flex-row items-center gap-2">
                   <Logo id={providerLogoId(provider.provider)} label={name} size={22} />
                   <Text variant="label" numberOfLines={1} className="shrink">{name}</Text>
-                  <TinyBadge label={tierLabel(tier)} tone="warning" />
+                  <ServiceTierBadge plan={tier} />
                   <StatusIcon status={providerStatus(provider, tier)} />
                 </View>
                 <View className="flex-row flex-wrap gap-y-2">
@@ -240,14 +243,11 @@ function ProviderDetails({ provider, plan, status, regions }: { provider: Provid
 }
 
 function FiltersSheet({ open, statusFilters, privacy, onStatus, onPrivacy, onClose }: { open: boolean; statusFilters: ListingCategory[]; privacy: Privacy; onStatus(value: ListingCategory[]): void; onPrivacy(value: Privacy): void; onClose(): void }) {
-  const insets = useSafeAreaInsets();
   const toggle = (category: ListingCategory) => onStatus(statusFilters.includes(category) ? statusFilters.filter((value) => value !== category) : [...statusFilters, category]);
   const check = (on: boolean) => <View className={cn("h-5 w-5 items-center justify-center rounded-[4px] border", on ? "border-primary bg-primary" : "border-border")}>{on ? <Icon icon={Check} tone="primary-foreground" size={14} /> : null}</View>;
   return (
-    <Modal visible={open} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
-      <Pressable accessibilityLabel="Close" className="flex-1 justify-end bg-black/40" onPress={onClose}>
-        <Pressable className="rounded-t-md border-t border-border bg-popover" style={{ paddingBottom: insets.bottom + 12 }} onPress={() => undefined}>
-          <ScrollView contentContainerClassName="pt-4">
+    <Sheet open={open} onClose={onClose}>
+          <ScrollView contentContainerClassName="pb-4 pt-4">
             <Text variant="label" className="px-4 pb-1">Status · {statusFilters.length}/4</Text>
             {(Object.keys(CATEGORY_LABELS) as ListingCategory[]).map((category) => (
               <Pressable key={category} accessibilityRole="checkbox" accessibilityState={{ checked: statusFilters.includes(category) }} onPress={() => toggle(category)} className="min-h-12 flex-row items-center gap-3 px-4 active:bg-accent">
@@ -267,8 +267,6 @@ function FiltersSheet({ open, statusFilters, privacy, onStatus, onPrivacy, onClo
               <Button label="Done" className="flex-1" onPress={onClose} />
             </View>
           </ScrollView>
-        </Pressable>
-      </Pressable>
-    </Modal>
+    </Sheet>
   );
 }
