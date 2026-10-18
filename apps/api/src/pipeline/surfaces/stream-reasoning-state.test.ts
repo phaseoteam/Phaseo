@@ -135,6 +135,55 @@ describe("buffered responses keep reasoning state from the stream", () => {
 		]);
 	});
 
+	it("Messages: maps Gemini signature-only thinking blocks back to their function calls", async () => {
+		// Vertex Gemini on /v1/messages: the plain thought first, then each function call's
+		// signature as its own signature-only thinking block after the tool_use blocks.
+		const gemini = { format: "google-gemini-v1" as const, kind: "signature" as const, model: "gemini-3.8-flash", provider: "google-vertex" };
+		const signature1 = sealReasoningState({ ...gemini, value: "FC-SIG-1", callId: "call_1" });
+		const signature2 = sealReasoningState({ ...gemini, value: "FC-SIG-2", callId: "call_2" });
+		const block = (index: number, content_block: Record<string, unknown>) => ({ event: "content_block_start", data: { type: "content_block_start", index, content_block } });
+		const delta = (index: number, value: Record<string, unknown>) => ({ event: "content_block_delta", data: { type: "content_block_delta", index, delta: value } });
+		const stop = (index: number) => ({ event: "content_block_stop", data: { type: "content_block_stop", index } });
+		const stream = sse([
+			{ event: "message_start", data: { type: "message_start", message: { id: "req_vertex", model: "gemini-3.8-flash", content: [], usage: { input_tokens: 0, output_tokens: 0 } } } },
+			block(0, { type: "thinking", thinking: "" }),
+			delta(0, { type: "thinking_delta", thinking: "Check the weather." }),
+			stop(0),
+			block(1, { type: "tool_use", id: "call_1", name: "weather", input: {} }),
+			delta(1, { type: "input_json_delta", partial_json: "{\"city\":\"Lyon\"}" }),
+			stop(1),
+			block(2, { type: "tool_use", id: "call_2", name: "search", input: {} }),
+			delta(2, { type: "input_json_delta", partial_json: "{\"q\":\"lyon\"}" }),
+			stop(2),
+			block(3, { type: "thinking", thinking: "" }),
+			delta(3, { type: "signature_delta", signature: signature1 }),
+			stop(3),
+			block(4, { type: "thinking", thinking: "" }),
+			delta(4, { type: "signature_delta", signature: signature2 }),
+			stop(4),
+			{ event: "message_delta", data: { type: "message_delta", delta: { stop_reason: "tool_use", stop_sequence: null }, usage: { input_tokens: 5, output_tokens: 9 } } },
+			{ event: "message_stop", data: { type: "message_stop" } },
+		]);
+		const { ir } = await consumeTextProtocolStreamToIR({ protocol: "anthropic.messages", stream, requestId: "req_vertex", model: "google/gemini-3.8-flash", provider: "google-vertex" });
+
+		expect(ir.choices[0].message.toolCalls).toEqual([
+			expect.objectContaining({ id: "call_1", thoughtSignature: "FC-SIG-1", thoughtSignatureModel: "gemini-3.8-flash" }),
+			expect.objectContaining({ id: "call_2", thoughtSignature: "FC-SIG-2", thoughtSignatureModel: "gemini-3.8-flash" }),
+		]);
+		// The signature-only blocks are not reasoning text of their own.
+		expect(ir.choices[0].message.content.filter((part) => part.type === "reasoning_text")).toEqual([
+			expect.objectContaining({ text: "Check the weather." }),
+		]);
+
+		// The buffered body returns them, and the next step decodes them onto the same calls.
+		const messages = encodeProtocol("anthropic.messages", ir, "req_vertex", { provider: "google-vertex", model: "gemini-3.8-flash" } as any);
+		const signatures = messages.content
+			.filter((part: any) => part.type === "thinking" && part.signature)
+			.map((part: any) => openReasoningState(part.signature))
+			.map((state: any) => [state?.callId, state?.value]);
+		expect(signatures).toEqual([["call_1", "FC-SIG-1"], ["call_2", "FC-SIG-2"]]);
+	});
+
 	it("Messages: a sealed signature from another provider keeps its format", async () => {
 		const openaiState = sealReasoningState({ format: "openai-responses-v1", kind: "encrypted", value: "ENC-0001", model: "gpt-5.4", provider: "openai" });
 		const stream = sse([
