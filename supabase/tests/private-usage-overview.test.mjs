@@ -11,7 +11,7 @@ const other = '00000000-0000-0000-0000-000000000002';
 const [keyA, keyB, owner] = ['00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b2', '00000000-0000-0000-0000-0000000000c3'];
 
 await db.exec(`
-  create role anon; create role authenticated; create role service_role;
+  create role anon; create role authenticated; create role service_role bypassrls; -- as on Supabase
   create schema private;
   set timezone = 'UTC';
   create table public.v2_request_facts (
@@ -23,10 +23,14 @@ await db.exec(`
   create table public.v2_model_provider_routes (provider_model_id text primary key, provider_slug text);
   create table public.keys (id uuid primary key, workspace_id uuid, created_by uuid);
   create table public.v2_analytics_outbox (request_event_id uuid primary key, workspace_id uuid, occurred_at timestamptz, status text);
-  create table private.v2_analytics_previous_grains (workspace_id uuid, occurred_at timestamptz);
   insert into public.v2_model_provider_routes values ('route-a', 'provider-a'), ('route-b', 'provider-b'), ('route-c', 'provider-a');
   insert into public.keys values ('${keyA}', '${workspace}', null), ('${keyB}', '${workspace}', '${owner}');
+  -- web-api calls the RPCs as service_role, which can read these tables in production.
+  grant usage on schema private to service_role;
+  grant select on public.v2_request_facts, public.v2_request_usage, public.v2_model_provider_routes, public.keys, public.v2_analytics_outbox to service_role;
 `);
+// The real table, with its grants: the RPCs read it as the caller.
+await db.exec(await read('../schemas/private/tables/v2_analytics_previous_grains.sql'));
 // Workspaces have no identity table here.
 await db.exec((await read('../schemas/public/tables/v2_private_usage_15m.sql')).replace(/,\r?\n  CONSTRAINT "v2_private_usage_15m_workspace_id_fkey"[^\r\n]*/, ''));
 await db.exec((await read('../schemas/public/tables/v2_private_usage_labels_15m.sql')).replace(/,\r?\n  CONSTRAINT "v2_private_usage_labels_15m_workspace_id_fkey"[^\r\n]*/, ''));
@@ -185,7 +189,7 @@ await db.exec(`
   insert into public.v2_analytics_outbox
     select request_event_id, workspace_id, occurred_at, 'pending' from public.v2_request_facts
     where workspace_id = '${workspace}' and occurred_at in ('2026-10-14 15:06:00+00', '2026-10-14 20:09:00+00');
-  insert into private.v2_analytics_previous_grains values ('${workspace}', '2026-10-14 16:00:00+00'), ('${workspace}', '2026-10-14 18:00:00+00');
+  insert into private.v2_analytics_previous_grains (workspace_id, occurred_at) values ('${workspace}', '2026-10-14 16:00:00+00'), ('${workspace}', '2026-10-14 18:00:00+00');
 `);
 assert.notEqual(
   Number((await db.query(`select sum(requests) n from public.v2_private_usage_15m where workspace_id = '${workspace}' and bucket_start >= '2026-10-14 18:00+00' and bucket_start < '2026-10-14 19:00+00'`)).rows[0].n),
@@ -208,5 +212,15 @@ const privileges = (await db.query(`select
   has_table_privilege('authenticated', 'public.v2_private_usage_15m', 'select') as rollup_authenticated,
   has_table_privilege('authenticated', 'public.v2_private_usage_labels_15m', 'select') as labels_authenticated`)).rows[0];
 assert.deepEqual(privileges, { anon: false, authenticated: false, service_role: true, facets_authenticated: false, facets_service_role: true, rollup_authenticated: false, labels_authenticated: false });
+
+// Executing is not enough: the RPCs run as the caller, so service_role must be able to
+// read every table they touch. (A missing grant on previous grains broke every overview.)
+const dayTotals = await expected(day);
+const dayLabels = await expectedFacets(day);
+assert.equal(dayLabels.length > 0, true, 'the fixture has labels to list');
+await db.exec('set role service_role');
+assert.deepEqual(byBucket(await overview(day)), dayTotals, 'service_role gets the same overview');
+assert.deepEqual(await facets(day), dayLabels, 'service_role gets the same labels');
+await db.exec('reset role');
 await db.close();
-console.log('Passed: the rollups plus edge requests match the requests exactly across time zones, buckets, keys, creators, labels and workspaces; label lists; grants.');
+console.log('Passed: the rollups plus edge requests match the requests exactly across time zones, buckets, keys, creators, labels and workspaces; label lists; grants, including running both RPCs as service_role.');
