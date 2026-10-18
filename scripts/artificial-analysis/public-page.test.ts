@@ -39,6 +39,12 @@ test("ignores lightweight navigation entries and retains missing metrics as null
 	assert.equal(result.models[0].totalTokens, null);
 	assert.equal(result.fetchedAt, null);
 });
+test("normalizes frontend effort objects while preserving their raw metadata", () => {
+	const row = { ...model, effort: { slug: "high", label: "High", level: 40 } };
+	const result = extractPublicModels(html(`a:${JSON.stringify([row])}\n`), source, null).models[0];
+	assert.equal(result.effort, "high");
+	assert.deepEqual((result.sourceData as Record<string, unknown>).effort, row.effort);
+});
 
 const key = Buffer.alloc(32, 7);
 const manifest = { path: "/data/abc123.txt", key: key.toString("hex") };

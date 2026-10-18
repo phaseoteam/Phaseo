@@ -95,7 +95,7 @@ export function extractPublicModels(html: string, sourceUrl: string, fetchedAt: 
 			const evaluations = row.intelligenceIndexEvaluations;
 			if (evaluations !== null && evaluations !== undefined && !Array.isArray(evaluations)) throw new Error("Invalid evaluation list");
 			const result = {
-				id: row.id, slug: row.slug, name: row.name, effort: row.effort ?? null,
+				id: row.id, slug: row.slug, name: row.name, effort: object(row.effort) && typeof row.effort.slug === "string" ? row.effort.slug : typeof row.effort === "string" ? row.effort : null,
 				creator: row.creator ?? null,
 				intelligenceIndex: numeric(row.intelligenceIndex, "intelligenceIndex"),
 				intelligenceIndexIsEstimated: row.intelligenceIndexIsEstimated ?? null,
