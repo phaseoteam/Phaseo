@@ -61,6 +61,11 @@ export type CalcInput = {
 	 * response has reasoning, the visible answer is billed at the reasoning price too. The value is the citation.
 	 */
 	thinkingModeBillsAnswer?: Source;
+	/**
+	 * Documented input multiplier for a cache write the card does not price (Claude 1.25 or 2 by TTL,
+	 * OpenAI, Azure and Alibaba 1.25, otherwise 1). Without it an unpriced write costs 1x input.
+	 */
+	writeInputMultiplier?: (ttl: "5m" | "1h" | "any") => number;
 };
 
 export type ExpectedLine = {
@@ -101,14 +106,28 @@ const OPENAI_REASONING_DOCS: Source = {
 	note: "Reasoning tokens \"are billed as output tokens\"; Gemini's pricing page likewise lists \"Output price (including thinking tokens)\".",
 };
 
-type Fallback = { meter: string; source: Source; label: string };
+type Fallback = { meter: string; source: Source; label: string; multiplier?: number };
+
+const WRITE_FALLBACK_DOCS: Source = {
+	kind: "gateway-docs",
+	page: "apps/docs/v1/guides/prompt-caching.mdx",
+	note: "Without a cache-write price, writes bill at the input price times the provider's documented multiplier (pricing_fallback: input_rate).",
+};
+
+/** An unpriced cache write at the input price, times the documented multiplier when one is known. */
+function writeAtInput(multiplier: number | undefined): Fallback {
+	if (multiplier && multiplier !== 1) {
+		return { meter: "input_text_tokens", label: `cache write at the input price x ${multiplier}`, source: WRITE_FALLBACK_DOCS, multiplier };
+	}
+	return { meter: "input_text_tokens", label: "cache write at the input price", source: WRITE_FALLBACK_DOCS };
+}
 
 function assumed(reason: string): Source {
 	return { kind: "assumed", reason };
 }
 
 /** Where a meter's quantity is billed when the card has no rule for it, in order of preference. */
-function fallbacksFor(meter: string, context: Record<string, unknown>): Fallback[] {
+function fallbacksFor(meter: string, context: Record<string, unknown>, writeMultiplier?: CalcInput["writeInputMultiplier"]): Fallback[] {
 	switch (meter) {
 		case "cached_read_text_tokens":
 			return [
@@ -124,14 +143,15 @@ function fallbacksFor(meter: string, context: Record<string, unknown>): Fallback
 		case "cached_write_text_tokens_1h":
 			return [
 				{ meter: "cached_write_text_tokens", label: "TTL write at the single cache-write price", source: { kind: "gateway-docs", page: "apps/docs/v1/guides/prompt-caching.mdx", note: "cached_write_text_tokens is the meter \"when the provider has one cache-write price\"." } },
-				{ meter: "input_text_tokens", label: "cache write at the input price", source: assumed("Docs are silent on unpriced cache writes; written tokens are prompt tokens, so they cost at least the input price.") },
+				writeAtInput(writeMultiplier?.(meter.endsWith("1h") ? "1h" : "5m")),
 			];
 		case "cached_write_text_tokens": {
 			const ttl = String(context.cache_ttl ?? "").toLowerCase();
-			const preferred = ttl === "1h" || ttl === "60m" || ttl === "3600" ? "cached_write_text_tokens_1h" : "cached_write_text_tokens_5m";
+			const oneHour = ttl === "1h" || ttl === "60m" || ttl === "3600";
+			const preferred = oneHour ? "cached_write_text_tokens_1h" : "cached_write_text_tokens_5m";
 			return [
 				{ meter: preferred, label: `write without a TTL split at the ${preferred.endsWith("1h") ? "1h" : "5m"} price`, source: assumed("A write with no TTL split takes the requested cache_control TTL, else the 5 minute default documented on the prompt caching page.") },
-				{ meter: "input_text_tokens", label: "cache write at the input price", source: assumed("Docs are silent on unpriced cache writes; written tokens are prompt tokens, so they cost at least the input price.") },
+				writeAtInput(writeMultiplier?.(oneHour ? "1h" : ttl ? "5m" : "any")),
 			];
 		}
 		case "output_reasoning_tokens":
@@ -344,7 +364,7 @@ export function selectRule(rules: CalcRule[], meter: string, plans: string[], sc
 // Bill
 
 export function expectedBill(input: CalcInput): ExpectedBill {
-	const { rules, usage, context, plan, timestampMs, thinkingModeBillsAnswer } = input;
+	const { rules, usage, context, plan, timestampMs, thinkingModeBillsAnswer, writeInputMultiplier } = input;
 	const scope: Record<string, unknown> = { ...context, ...usage };
 	const plans = planChain(rules, plan);
 	type Pending = { meter: string; quantity: number; rule: CalcRule | null; fallback?: Fallback };
@@ -366,7 +386,7 @@ export function expectedBill(input: CalcInput): ExpectedBill {
 			continue;
 		}
 		let placed = false;
-		for (const fallback of fallbacksFor(meter, context)) {
+		for (const fallback of fallbacksFor(meter, context, writeInputMultiplier)) {
 			const rule = selectRule(rules, fallback.meter, plans, scope);
 			if (rule) {
 				pending.push({ meter, quantity, rule, fallback });
@@ -378,12 +398,13 @@ export function expectedBill(input: CalcInput): ExpectedBill {
 	}
 
 	// Round once per rule and price window, the way a provider invoice line is computed.
-	const groups = new Map<string, { rule: CalcRule; window: CalcTimeWindow | null; quantity: number; members: Pending[] }>();
+	const groups = new Map<string, { rule: CalcRule; window: CalcTimeWindow | null; multiplier: number; quantity: number; members: Pending[] }>();
 	for (const entry of pending) {
 		const rule = entry.rule!;
 		const window = activeWindow(rule, timestampMs);
-		const key = `${rule.id}|${window?.label ?? ""}`;
-		const group = groups.get(key) ?? { rule, window, quantity: 0, members: [] };
+		const multiplier = entry.fallback?.multiplier ?? 1;
+		const key = `${rule.id}|${window?.label ?? ""}|${multiplier}`;
+		const group = groups.get(key) ?? { rule, window, multiplier, quantity: 0, members: [] };
 		group.quantity += entry.quantity;
 		group.members.push(entry);
 		groups.set(key, group);
@@ -395,7 +416,8 @@ export function expectedBill(input: CalcInput): ExpectedBill {
 		const included = Math.max(0, Number(group.rule.included_quantity ?? 0));
 		const price = group.window?.price_per_unit ?? group.rule.price_per_unit;
 		const billable = Math.max(0, group.quantity - included);
-		const groupNanos = lineNanos(billable, group.rule.unit_size, price);
+		// A documented fallback multiplier (unpriced cache writes) scales the quantity priced at the input rate.
+		const groupNanos = lineNanos(billable * group.multiplier, group.rule.unit_size, price);
 		total += groupNanos;
 		// Split the group's cost over its members by quantity; the remainder goes to the first member.
 		let assigned = 0;

@@ -1,6 +1,6 @@
 # Expected-outcome gate
 
-Mismatches: 24494. Allowed by the allow-list: 24494. **Failing: 0.**
+Mismatches: 24484. Allowed by the allow-list: 24484. **Failing: 0.**
 
 | Kind | Total | Failing |
 |---|---|---|
@@ -9,7 +9,7 @@ Mismatches: 24494. Allowed by the allow-list: 24494. **Failing: 0.**
 | renamed | 130 | 0 |
 | wrong_value | 2581 | 0 |
 | wrong_type | 5497 | 0 |
-| billing_over | 54 | 0 |
+| billing_over | 44 | 0 |
 | billing_under | 568 | 0 |
 | stream_order | 2010 | 0 |
 | error_mapping | 4524 | 0 |
@@ -19,9 +19,9 @@ Mismatches: 24494. Allowed by the allow-list: 24494. **Failing: 0.**
 |---|---|---|
 | executor | 24022 | 0 |
 | e2e | 95 | 0 |
-| pricing | 377 | 0 |
+| pricing | 367 | 0 |
 
-Billing deltas over all simulated responses: over 1.3373 USD, under -26.3413 USD (sentinel usage of about 128k tokens per response; see AUDIT.md for per-request impact).
+Billing deltas over all simulated responses: over 1.3235 USD, under -26.3413 USD (sentinel usage of about 128k tokens per response; see AUDIT.md for per-request impact).
 
 ## Compared with baseline 2026-10-17.json
 
@@ -152,7 +152,7 @@ New groups:
 | Kind | Layer | Surface/mode | Case | Path | Providers | Expected | Actual | Δ nanos | Source | Allow-list |
 |---|---|---|---|---|---|---|---|---|---|---|
 
-## Allowed (1119 groups)
+## Allowed (1118 groups)
 
 | Kind | Layer | Surface/mode | Case | Path | Providers | Expected | Actual | Δ nanos | Source | Allow-list |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -457,7 +457,7 @@ New groups:
 | error_mapping | executor | chat | chat.param.stop | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | chat | chat.param.response_format | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 
-… 819 more groups in results/gate.json.
+… 818 more groups in results/gate.json.
 
 ## Allow-list use
 
@@ -482,7 +482,7 @@ New groups:
 - `billing-gemini-thinking`: 123
 - `request-executor-local-errors`: 107
 - `request-url-and-dialect`: 75
-- `billing-pricing-engine`: 70
+- `billing-pricing-engine`: 60
 - `request-other-rejections`: 39
 - `billing-responses-claude-cache`: 29
 - `stream-tool-ids`: 28

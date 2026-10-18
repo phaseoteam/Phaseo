@@ -4,7 +4,7 @@
  "cards": 1550,
  "cardsExercised": 1532,
  "metersPresent": 5347,
- "metersExercised": 5347,
+ "metersExercised": 5344,
  "conditionBranchesPresent": 1466,
  "conditionBranchesExercised": 1466,
  "byCapability": {
@@ -114,7 +114,7 @@
    "cards": 1266,
    "cardsExercised": 1256,
    "metersPresent": 4836,
-   "metersExercised": 4836
+   "metersExercised": 4833
   },
   "text.moderate": {
    "cards": 2,

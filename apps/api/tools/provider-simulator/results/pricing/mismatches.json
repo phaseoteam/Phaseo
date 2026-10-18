@@ -146,164 +146,7 @@
   "layer": "pricing",
   "provider": "alibaba-cloud",
   "family": "text",
-  "model": "qwen/qwen-flash",
-  "surface": "text.generate",
-  "caseId": "text.generate:fallback.cache-write.no-rule",
-  "kind": "billing_over",
-  "path": "billing.total_nanos",
-  "expected": {
-   "nanos": 2117400,
-   "lines": [
-    [
-     "cached_write_text_tokens_5m",
-     "input_text_tokens",
-     "#0",
-     2345,
-     117250
-    ],
-    [
-     "input_text_tokens",
-     "input_text_tokens",
-     "#0",
-     12347,
-     617350
-    ],
-    [
-     "output_text_tokens",
-     "output_text_tokens",
-     "#2",
-     3457,
-     1382800
-    ]
-   ]
-  },
-  "actual": {
-   "nanos": 2146713,
-   "lines": [
-    [
-     "input_text_tokens",
-     12347,
-     "0.050000000",
-     617350
-    ],
-    [
-     "output_text_tokens",
-     3457,
-     "0.400000000",
-     1382800
-    ],
-    [
-     "cached_write_text_tokens_5m",
-     2345,
-     "0.062500000",
-     146563
-    ]
-   ]
-  },
-  "delta": {
-   "nanos": 29313,
-   "meter": "cached_write_text_tokens_5m",
-   "tokens": 2345
-  },
-  "source": {
-   "kind": "spec",
-   "spec": "alibaba-cloud",
-   "path": "usageFields"
-  },
-  "note": "provider documents cache writes; the card has no cache-write price; cached_write_text_tokens_5m: cache write at the input price"
- },
- {
-  "layer": "pricing",
-  "provider": "alibaba-cloud",
-  "family": "text",
   "model": "qwen/qwen-flash-character",
-  "surface": "text.generate",
-  "caseId": "catalogue:cache-write-missing",
-  "kind": "dropped",
-  "path": "catalogue.cached_write_text_tokens",
-  "expected": "a cache-write price",
-  "actual": null,
-  "source": {
-   "kind": "spec",
-   "spec": "alibaba-cloud",
-   "path": "usageFields"
-  }
- },
- {
-  "layer": "pricing",
-  "provider": "alibaba-cloud",
-  "family": "text",
-  "model": "qwen/qwen-flash-character",
-  "surface": "text.generate",
-  "caseId": "text.generate:fallback.cache-write.no-rule",
-  "kind": "billing_over",
-  "path": "billing.total_nanos",
-  "expected": {
-   "nanos": 2117400,
-   "lines": [
-    [
-     "cached_write_text_tokens_5m",
-     "input_text_tokens",
-     "#0",
-     2345,
-     117250
-    ],
-    [
-     "input_text_tokens",
-     "input_text_tokens",
-     "#0",
-     12347,
-     617350
-    ],
-    [
-     "output_text_tokens",
-     "output_text_tokens",
-     "#2",
-     3457,
-     1382800
-    ]
-   ]
-  },
-  "actual": {
-   "nanos": 2146713,
-   "lines": [
-    [
-     "input_text_tokens",
-     12347,
-     "0.050000000",
-     617350
-    ],
-    [
-     "output_text_tokens",
-     3457,
-     "0.400000000",
-     1382800
-    ],
-    [
-     "cached_write_text_tokens_5m",
-     2345,
-     "0.062500000",
-     146563
-    ]
-   ]
-  },
-  "delta": {
-   "nanos": 29313,
-   "meter": "cached_write_text_tokens_5m",
-   "tokens": 2345
-  },
-  "source": {
-   "kind": "spec",
-   "spec": "alibaba-cloud",
-   "path": "usageFields"
-  },
-  "note": "provider documents cache writes; the card has no cache-write price; cached_write_text_tokens_5m: cache write at the input price"
- },
- {
-  "layer": "pricing",
-  "provider": "alibaba-cloud",
-  "family": "text",
-  "model": "qwen/qwen-max",
   "surface": "text.generate",
   "caseId": "catalogue:cache-write-missing",
   "kind": "dropped",
@@ -322,69 +165,16 @@
   "family": "text",
   "model": "qwen/qwen-max",
   "surface": "text.generate",
-  "caseId": "text.generate:fallback.cache-write.no-rule",
-  "kind": "billing_over",
-  "path": "billing.total_nanos",
-  "expected": {
-   "nanos": 45632000,
-   "lines": [
-    [
-     "cached_write_text_tokens_5m",
-     "input_text_tokens",
-     "#0",
-     2345,
-     3752000
-    ],
-    [
-     "input_text_tokens",
-     "input_text_tokens",
-     "#0",
-     12347,
-     19755200
-    ],
-    [
-     "output_text_tokens",
-     "output_text_tokens",
-     "#2",
-     3457,
-     22124800
-    ]
-   ]
-  },
-  "actual": {
-   "nanos": 46570000,
-   "lines": [
-    [
-     "input_text_tokens",
-     12347,
-     "1.600000000",
-     19755200
-    ],
-    [
-     "output_text_tokens",
-     3457,
-     "6.400000000",
-     22124800
-    ],
-    [
-     "cached_write_text_tokens_5m",
-     2345,
-     "2.000000000",
-     4690000
-    ]
-   ]
-  },
-  "delta": {
-   "nanos": 938000,
-   "meter": "cached_write_text_tokens_5m",
-   "tokens": 2345
-  },
+  "caseId": "catalogue:cache-write-missing",
+  "kind": "dropped",
+  "path": "catalogue.cached_write_text_tokens",
+  "expected": "a cache-write price",
+  "actual": null,
   "source": {
    "kind": "spec",
    "spec": "alibaba-cloud",
    "path": "usageFields"
-  },
-  "note": "provider documents cache writes; the card has no cache-write price; cached_write_text_tokens_5m: cache write at the input price"
+  }
  },
  {
   "layer": "pricing",
@@ -1405,76 +1195,6 @@
   "layer": "pricing",
   "provider": "alibaba-cloud",
   "family": "text",
-  "model": "qwen/qwen3-coder-flash",
-  "surface": "text.generate",
-  "caseId": "text.generate:fallback.cache-write.no-rule",
-  "kind": "billing_over",
-  "path": "billing.total_nanos",
-  "expected": {
-   "nanos": 9593100,
-   "lines": [
-    [
-     "cached_write_text_tokens_5m",
-     "input_text_tokens",
-     "#0",
-     2345,
-     703500
-    ],
-    [
-     "input_text_tokens",
-     "input_text_tokens",
-     "#0",
-     12347,
-     3704100
-    ],
-    [
-     "output_text_tokens",
-     "output_text_tokens",
-     "#2",
-     3457,
-     5185500
-    ]
-   ]
-  },
-  "actual": {
-   "nanos": 9768975,
-   "lines": [
-    [
-     "input_text_tokens",
-     12347,
-     "0.300000000",
-     3704100
-    ],
-    [
-     "output_text_tokens",
-     3457,
-     "1.500000000",
-     5185500
-    ],
-    [
-     "cached_write_text_tokens_5m",
-     2345,
-     "0.375000000",
-     879375
-    ]
-   ]
-  },
-  "delta": {
-   "nanos": 175875,
-   "meter": "cached_write_text_tokens_5m",
-   "tokens": 2345
-  },
-  "source": {
-   "kind": "spec",
-   "spec": "alibaba-cloud",
-   "path": "usageFields"
-  },
-  "note": "provider documents cache writes; the card has no cache-write price; cached_write_text_tokens_5m: cache write at the input price"
- },
- {
-  "layer": "pricing",
-  "provider": "alibaba-cloud",
-  "family": "text",
   "model": "qwen/qwen3-coder-next",
   "surface": "text.generate",
   "caseId": "catalogue:cache-read-missing",
@@ -1505,76 +1225,6 @@
    "spec": "alibaba-cloud",
    "path": "usageFields"
   }
- },
- {
-  "layer": "pricing",
-  "provider": "alibaba-cloud",
-  "family": "text",
-  "model": "qwen/qwen3-coder-plus-2025-07-22",
-  "surface": "text.generate",
-  "caseId": "text.generate:fallback.cache-write.no-rule",
-  "kind": "billing_over",
-  "path": "billing.total_nanos",
-  "expected": {
-   "nanos": 31977000,
-   "lines": [
-    [
-     "cached_write_text_tokens_5m",
-     "input_text_tokens",
-     "#0",
-     2345,
-     2345000
-    ],
-    [
-     "input_text_tokens",
-     "input_text_tokens",
-     "#0",
-     12347,
-     12347000
-    ],
-    [
-     "output_text_tokens",
-     "output_text_tokens",
-     "#1",
-     3457,
-     17285000
-    ]
-   ]
-  },
-  "actual": {
-   "nanos": 32563250,
-   "lines": [
-    [
-     "input_text_tokens",
-     12347,
-     "1.000000000",
-     12347000
-    ],
-    [
-     "output_text_tokens",
-     3457,
-     "5.000000000",
-     17285000
-    ],
-    [
-     "cached_write_text_tokens_5m",
-     2345,
-     "1.250000000",
-     2931250
-    ]
-   ]
-  },
-  "delta": {
-   "nanos": 586250,
-   "meter": "cached_write_text_tokens_5m",
-   "tokens": 2345
-  },
-  "source": {
-   "kind": "spec",
-   "spec": "alibaba-cloud",
-   "path": "usageFields"
-  },
-  "note": "provider documents cache writes; the card has no cache-write price; cached_write_text_tokens_5m: cache write at the input price"
  },
  {
   "layer": "pricing",
@@ -2053,76 +1703,6 @@
   "layer": "pricing",
   "provider": "alibaba-cloud",
   "family": "text",
-  "model": "qwen/qwen3.7-plus",
-  "surface": "text.generate",
-  "caseId": "text.generate:fallback.cache-write.no-rule",
-  "kind": "billing_over",
-  "path": "billing.total_nanos",
-  "expected": {
-   "nanos": 11408000,
-   "lines": [
-    [
-     "cached_write_text_tokens_5m",
-     "input_text_tokens",
-     "#0",
-     2345,
-     938000
-    ],
-    [
-     "input_text_tokens",
-     "input_text_tokens",
-     "#0",
-     12347,
-     4938800
-    ],
-    [
-     "output_text_tokens",
-     "output_text_tokens",
-     "#2",
-     3457,
-     5531200
-    ]
-   ]
-  },
-  "actual": {
-   "nanos": 11642500,
-   "lines": [
-    [
-     "input_text_tokens",
-     12347,
-     "0.400000000",
-     4938800
-    ],
-    [
-     "output_text_tokens",
-     3457,
-     "1.600000000",
-     5531200
-    ],
-    [
-     "cached_write_text_tokens_5m",
-     2345,
-     "0.500000000",
-     1172500
-    ]
-   ]
-  },
-  "delta": {
-   "nanos": 234500,
-   "meter": "cached_write_text_tokens_5m",
-   "tokens": 2345
-  },
-  "source": {
-   "kind": "spec",
-   "spec": "alibaba-cloud",
-   "path": "usageFields"
-  },
-  "note": "provider documents cache writes; the card has no cache-write price; cached_write_text_tokens_5m: cache write at the input price"
- },
- {
-  "layer": "pricing",
-  "provider": "alibaba-cloud",
-  "family": "text",
   "model": "qwen/qwen3.7-plus-2026-05-26",
   "surface": "text.generate",
   "caseId": "catalogue:cache-read-missing",
@@ -2145,7 +1725,7 @@
   "surface": "text.generate",
   "caseId": "text.generate:documented",
   "kind": "invented",
-  "path": "billing.meter.implicit_cached_input_text_tokens",
+  "path": "billing.meter.cached_read_text_tokens",
   "expected": null,
   "actual": {
    "quantity": 1024,
@@ -2153,7 +1733,7 @@
   },
   "delta": {
    "nanos": 16384,
-   "meter": "implicit_cached_input_text_tokens"
+   "meter": "cached_read_text_tokens"
   },
   "source": {
    "kind": "docs",
@@ -2175,9 +1755,9 @@
    "nanos": 553584,
    "lines": [
     [
-     "cached_read_text_tokens",
-     "cached_read_text_tokens",
-     "#3",
+     "implicit_cached_input_text_tokens",
+     "implicit_cached_input_text_tokens",
+     "#1",
      1024,
      16384
     ],
@@ -2235,7 +1815,7 @@
   },
   "delta": {
    "nanos": 16384,
-   "meter": "implicit_cached_input_text_tokens",
+   "meter": "cached_read_text_tokens",
    "tokens": 1024
   },
   "source": {
@@ -2253,7 +1833,7 @@
   "surface": "text.generate",
   "caseId": "text.generate:rule.standard.cached_read_text_tokens",
   "kind": "invented",
-  "path": "billing.meter.implicit_cached_input_text_tokens",
+  "path": "billing.meter.cached_read_text_tokens",
   "expected": null,
   "actual": {
    "quantity": 4567,
@@ -2261,7 +1841,7 @@
   },
   "delta": {
    "nanos": 73072,
-   "meter": "implicit_cached_input_text_tokens"
+   "meter": "cached_read_text_tokens"
   },
   "source": {
    "kind": "docs",
@@ -2283,9 +1863,9 @@
    "nanos": 3920742,
    "lines": [
     [
-     "cached_read_text_tokens",
-     "cached_read_text_tokens",
-     "#3",
+     "implicit_cached_input_text_tokens",
+     "implicit_cached_input_text_tokens",
+     "#1",
      4567,
      73072
     ],
@@ -2343,7 +1923,7 @@
   },
   "delta": {
    "nanos": 73072,
-   "meter": "implicit_cached_input_text_tokens",
+   "meter": "cached_read_text_tokens",
    "tokens": 4567
   },
   "source": {
@@ -2469,15 +2049,15 @@
   "surface": "text.generate",
   "caseId": "text.generate:documented",
   "kind": "invented",
-  "path": "billing.meter.implicit_cached_input_text_tokens",
+  "path": "billing.meter.cached_read_text_tokens",
   "expected": null,
   "actual": {
    "quantity": 1024,
-   "nanos": 256000
+   "nanos": 174080
   },
   "delta": {
-   "nanos": 256000,
-   "meter": "implicit_cached_input_text_tokens"
+   "nanos": 174080,
+   "meter": "cached_read_text_tokens"
   },
   "source": {
    "kind": "assumed",
@@ -2495,14 +2075,14 @@
   "kind": "billing_over",
   "path": "billing.total_nanos",
   "expected": {
-   "nanos": 6014080,
+   "nanos": 6096000,
    "lines": [
     [
-     "cached_read_text_tokens",
-     "cached_read_text_tokens",
-     "#3",
+     "implicit_cached_input_text_tokens",
+     "implicit_cached_input_text_tokens",
+     "#1",
      1024,
-     174080
+     256000
     ],
     [
      "input_text_tokens",
@@ -2550,8 +2130,8 @@
    ]
   },
   "delta": {
-   "nanos": 256000,
-   "meter": "implicit_cached_input_text_tokens",
+   "nanos": 174080,
+   "meter": "cached_read_text_tokens",
    "tokens": 1024
   },
   "source": {
@@ -2568,15 +2148,15 @@
   "surface": "text.generate",
   "caseId": "text.generate:rule.standard.cached_read_text_tokens",
   "kind": "invented",
-  "path": "billing.meter.implicit_cached_input_text_tokens",
+  "path": "billing.meter.cached_read_text_tokens",
   "expected": null,
   "actual": {
    "quantity": 4567,
-   "nanos": 1141750
+   "nanos": 776390
   },
   "delta": {
-   "nanos": 1141750,
-   "meter": "implicit_cached_input_text_tokens"
+   "nanos": 776390,
+   "meter": "cached_read_text_tokens"
   },
   "source": {
    "kind": "assumed",
@@ -2594,14 +2174,14 @@
   "kind": "billing_over",
   "path": "billing.total_nanos",
   "expected": {
-   "nanos": 46212390,
+   "nanos": 46577750,
    "lines": [
     [
-     "cached_read_text_tokens",
-     "cached_read_text_tokens",
-     "#3",
+     "implicit_cached_input_text_tokens",
+     "implicit_cached_input_text_tokens",
+     "#1",
      4567,
-     776390
+     1141750
     ],
     [
      "input_text_tokens",
@@ -2649,8 +2229,8 @@
    ]
   },
   "delta": {
-   "nanos": 1141750,
-   "meter": "implicit_cached_input_text_tokens",
+   "nanos": 776390,
+   "meter": "cached_read_text_tokens",
    "tokens": 4567
   },
   "source": {
@@ -2764,15 +2344,15 @@
   "surface": "text.generate",
   "caseId": "text.generate:documented",
   "kind": "invented",
-  "path": "billing.meter.implicit_cached_input_text_tokens",
+  "path": "billing.meter.cached_read_text_tokens",
   "expected": null,
   "actual": {
    "quantity": 1024,
-   "nanos": 256000
+   "nanos": 174080
   },
   "delta": {
-   "nanos": 256000,
-   "meter": "implicit_cached_input_text_tokens"
+   "nanos": 174080,
+   "meter": "cached_read_text_tokens"
   },
   "source": {
    "kind": "assumed",
@@ -2790,14 +2370,14 @@
   "kind": "billing_over",
   "path": "billing.total_nanos",
   "expected": {
-   "nanos": 6014080,
+   "nanos": 6096000,
    "lines": [
     [
-     "cached_read_text_tokens",
-     "cached_read_text_tokens",
-     "#3",
+     "implicit_cached_input_text_tokens",
+     "implicit_cached_input_text_tokens",
+     "#1",
      1024,
-     174080
+     256000
     ],
     [
      "input_text_tokens",
@@ -2845,8 +2425,8 @@
    ]
   },
   "delta": {
-   "nanos": 256000,
-   "meter": "implicit_cached_input_text_tokens",
+   "nanos": 174080,
+   "meter": "cached_read_text_tokens",
    "tokens": 1024
   },
   "source": {
@@ -2863,15 +2443,15 @@
   "surface": "text.generate",
   "caseId": "text.generate:rule.standard.cached_read_text_tokens",
   "kind": "invented",
-  "path": "billing.meter.implicit_cached_input_text_tokens",
+  "path": "billing.meter.cached_read_text_tokens",
   "expected": null,
   "actual": {
    "quantity": 4567,
-   "nanos": 1141750
+   "nanos": 776390
   },
   "delta": {
-   "nanos": 1141750,
-   "meter": "implicit_cached_input_text_tokens"
+   "nanos": 776390,
+   "meter": "cached_read_text_tokens"
   },
   "source": {
    "kind": "assumed",
@@ -2889,14 +2469,14 @@
   "kind": "billing_over",
   "path": "billing.total_nanos",
   "expected": {
-   "nanos": 46212390,
+   "nanos": 46577750,
    "lines": [
     [
-     "cached_read_text_tokens",
-     "cached_read_text_tokens",
-     "#3",
+     "implicit_cached_input_text_tokens",
+     "implicit_cached_input_text_tokens",
+     "#1",
      4567,
-     776390
+     1141750
     ],
     [
      "input_text_tokens",
@@ -2944,8 +2524,8 @@
    ]
   },
   "delta": {
-   "nanos": 1141750,
-   "meter": "implicit_cached_input_text_tokens",
+   "nanos": 776390,
+   "meter": "cached_read_text_tokens",
    "tokens": 4567
   },
   "source": {
@@ -3144,158 +2724,6 @@
   "layer": "pricing",
   "provider": "amazon-bedrock",
   "family": "text",
-  "model": "anthropic/claude-3-haiku",
-  "surface": "text.generate",
-  "caseId": "text.generate:documented",
-  "kind": "billing_over",
-  "path": "billing.total_nanos",
-  "expected": {
-   "nanos": 1210000,
-   "lines": [
-    [
-     "cached_read_text_tokens",
-     "input_text_tokens",
-     "#5",
-     1024,
-     256000
-    ],
-    [
-     "cached_write_text_tokens_5m",
-     "input_text_tokens",
-     "#5",
-     512,
-     128000
-    ],
-    [
-     "input_text_tokens",
-     "input_text_tokens",
-     "#5",
-     1064,
-     266000
-    ],
-    [
-     "output_text_tokens",
-     "output_text_tokens",
-     "#6",
-     448,
-     560000
-    ]
-   ]
-  },
-  "actual": {
-   "nanos": 1242000,
-   "lines": [
-    [
-     "input_text_tokens",
-     1064,
-     "0.250000000",
-     266000
-    ],
-    [
-     "output_text_tokens",
-     448,
-     "1.250000000",
-     560000
-    ],
-    [
-     "cached_read_text_tokens",
-     1024,
-     "0.250000000",
-     256000
-    ],
-    [
-     "cached_write_text_tokens_5m",
-     512,
-     "0.312500000",
-     160000
-    ]
-   ]
-  },
-  "delta": {
-   "nanos": 32000,
-   "meter": "cached_read_text_tokens",
-   "tokens": 1024
-  },
-  "source": {
-   "kind": "assumed",
-   "reason": "only the OpenAI baseline schema is recorded for this provider"
-  },
-  "note": "dialect anthropic-messages; cache read reported (provider documents it, card has no cache-read price); IR usage: inputTokens includes cache reads (cachedReadTokensAreSubsetOfInput); cache writes are in _ext, outside inputTokens; outputTokens includes reasoning.; cached_read_text_tokens: cache read at the input price; cached_write_text_tokens_5m: cache write at the input price"
- },
- {
-  "layer": "pricing",
-  "provider": "amazon-bedrock",
-  "family": "text",
-  "model": "anthropic/claude-3-haiku",
-  "surface": "text.generate",
-  "caseId": "text.generate:fallback.cache-write.no-rule",
-  "kind": "billing_over",
-  "path": "billing.total_nanos",
-  "expected": {
-   "nanos": 7994250,
-   "lines": [
-    [
-     "cached_write_text_tokens_5m",
-     "input_text_tokens",
-     "#5",
-     2345,
-     586250
-    ],
-    [
-     "input_text_tokens",
-     "input_text_tokens",
-     "#5",
-     12347,
-     3086750
-    ],
-    [
-     "output_text_tokens",
-     "output_text_tokens",
-     "#6",
-     3457,
-     4321250
-    ]
-   ]
-  },
-  "actual": {
-   "nanos": 8140813,
-   "lines": [
-    [
-     "input_text_tokens",
-     12347,
-     "0.250000000",
-     3086750
-    ],
-    [
-     "output_text_tokens",
-     3457,
-     "1.250000000",
-     4321250
-    ],
-    [
-     "cached_write_text_tokens_5m",
-     2345,
-     "0.312500000",
-     732813
-    ]
-   ]
-  },
-  "delta": {
-   "nanos": 146563,
-   "meter": "cached_write_text_tokens_5m",
-   "tokens": 2345
-  },
-  "source": {
-   "kind": "docs",
-   "url": "https://platform.claude.com/docs/en/about-claude/pricing#prompt-caching",
-   "note": "5-minute cache write 1.25x base input; 1-hour 2x. Partner platforms (Bedrock, Google Cloud) set their own prices."
-  },
-  "note": "provider documents cache writes; the card has no cache-write price; cached_write_text_tokens_5m: cache write at the input price"
- },
- {
-  "layer": "pricing",
-  "provider": "amazon-bedrock",
-  "family": "text",
   "model": "anthropic/claude-opus-4",
   "surface": "text.generate",
   "caseId": "catalogue:cache-read-missing",
@@ -3326,158 +2754,6 @@
    "url": "https://platform.claude.com/docs/en/about-claude/pricing#prompt-caching",
    "note": "5-minute cache write 1.25x base input; 1-hour 2x. Partner platforms (Bedrock, Google Cloud) set their own prices."
   }
- },
- {
-  "layer": "pricing",
-  "provider": "amazon-bedrock",
-  "family": "text",
-  "model": "anthropic/claude-opus-4",
-  "surface": "text.generate",
-  "caseId": "text.generate:documented",
-  "kind": "billing_over",
-  "path": "billing.total_nanos",
-  "expected": {
-   "nanos": 72600000,
-   "lines": [
-    [
-     "cached_read_text_tokens",
-     "input_text_tokens",
-     "#0",
-     1024,
-     15360000
-    ],
-    [
-     "cached_write_text_tokens_5m",
-     "input_text_tokens",
-     "#0",
-     512,
-     7680000
-    ],
-    [
-     "input_text_tokens",
-     "input_text_tokens",
-     "#0",
-     1064,
-     15960000
-    ],
-    [
-     "output_text_tokens",
-     "output_text_tokens",
-     "#1",
-     448,
-     33600000
-    ]
-   ]
-  },
-  "actual": {
-   "nanos": 74520000,
-   "lines": [
-    [
-     "input_text_tokens",
-     1064,
-     "15.000000000",
-     15960000
-    ],
-    [
-     "output_text_tokens",
-     448,
-     "75.000000000",
-     33600000
-    ],
-    [
-     "cached_read_text_tokens",
-     1024,
-     "15.000000000",
-     15360000
-    ],
-    [
-     "cached_write_text_tokens_5m",
-     512,
-     "18.750000000",
-     9600000
-    ]
-   ]
-  },
-  "delta": {
-   "nanos": 1920000,
-   "meter": "cached_read_text_tokens",
-   "tokens": 1024
-  },
-  "source": {
-   "kind": "assumed",
-   "reason": "only the OpenAI baseline schema is recorded for this provider"
-  },
-  "note": "dialect anthropic-messages; cache read reported (provider documents it, card has no cache-read price); IR usage: inputTokens includes cache reads (cachedReadTokensAreSubsetOfInput); cache writes are in _ext, outside inputTokens; outputTokens includes reasoning.; cached_read_text_tokens: cache read at the input price; cached_write_text_tokens_5m: cache write at the input price"
- },
- {
-  "layer": "pricing",
-  "provider": "amazon-bedrock",
-  "family": "text",
-  "model": "anthropic/claude-opus-4",
-  "surface": "text.generate",
-  "caseId": "text.generate:fallback.cache-write.no-rule",
-  "kind": "billing_over",
-  "path": "billing.total_nanos",
-  "expected": {
-   "nanos": 479655000,
-   "lines": [
-    [
-     "cached_write_text_tokens_5m",
-     "input_text_tokens",
-     "#0",
-     2345,
-     35175000
-    ],
-    [
-     "input_text_tokens",
-     "input_text_tokens",
-     "#0",
-     12347,
-     185205000
-    ],
-    [
-     "output_text_tokens",
-     "output_text_tokens",
-     "#1",
-     3457,
-     259275000
-    ]
-   ]
-  },
-  "actual": {
-   "nanos": 488448750,
-   "lines": [
-    [
-     "input_text_tokens",
-     12347,
-     "15.000000000",
-     185205000
-    ],
-    [
-     "output_text_tokens",
-     3457,
-     "75.000000000",
-     259275000
-    ],
-    [
-     "cached_write_text_tokens_5m",
-     2345,
-     "18.750000000",
-     43968750
-    ]
-   ]
-  },
-  "delta": {
-   "nanos": 8793750,
-   "meter": "cached_write_text_tokens_5m",
-   "tokens": 2345
-  },
-  "source": {
-   "kind": "docs",
-   "url": "https://platform.claude.com/docs/en/about-claude/pricing#prompt-caching",
-   "note": "5-minute cache write 1.25x base input; 1-hour 2x. Partner platforms (Bedrock, Google Cloud) set their own prices."
-  },
-  "note": "provider documents cache writes; the card has no cache-write price; cached_write_text_tokens_5m: cache write at the input price"
  },
  {
   "layer": "pricing",

@@ -26,7 +26,7 @@ Text executors with no upstream request in the executor layer: private-model, sc
 
 - Active text routes driven through their executor (up to three per provider, one per model family): 109/1281 (9%).
 - Active routes (all capabilities) with a price card: 1550/1571 (99%); cards exercised by the pricing sweep: 1532/1550 (99%).
-- Price meters exercised: 5347/5347 (100%); condition branches (tiers, resolutions, windows): 1466/1466 (100%).
+- Price meters exercised: 5344/5347 (100%); condition branches (tiers, resolutions, windows): 1466/1466 (100%).
 
 | Capability | Cards | Exercised | Meters | Exercised |
 |---|---|---|---|---|
@@ -47,7 +47,7 @@ Text executors with no upstream request in the executor layer: private-model, sc
 | parse | 1 | 1 | 1 | 1 |
 | rerank | 7 | 7 | 8 | 8 |
 | text.embed | 48 | 48 | 65 | 65 |
-| text.generate | 1266 | 1256 | 4836 | 4836 |
+| text.generate | 1266 | 1256 | 4836 | 4833 |
 | text.moderate | 2 | 2 | 2 | 2 |
 | text.rerank | 1 | 1 | 1 | 1 |
 | video.edit | 1 | 1 | 3 | 3 |

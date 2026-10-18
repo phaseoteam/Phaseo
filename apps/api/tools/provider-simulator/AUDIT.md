@@ -27,7 +27,7 @@ The simulator now checks declarative expected outcomes (`expectations/`) instead
 
 ### Gate result
 
-`pnpm --filter @phaseo/gateway-api simulate:providers` exits 0 in 7 min 5 s. 24,494 mismatches (executor 24,022, end-to-end 95, pricing 377), all matched by the 43 justified entries in `expectations/allowlist.json`; none unused. Any new mismatch fails the run. The full table is `results/EXPECTATIONS.md`, with coverage in `results/COVERAGE.md`.
+`pnpm --filter @phaseo/gateway-api simulate:providers` exits 0 in 7 min 5 s. 24,484 mismatches (executor 24,022, end-to-end 95, pricing 367), all matched by the 43 justified entries in `expectations/allowlist.json`; none unused. Any new mismatch fails the run. The full table is `results/EXPECTATIONS.md`, with coverage in `results/COVERAGE.md`. The pricing figure is after two corrections to the sweep's own calculator (documented cache-write multipliers, Alibaba implicit hits), which removed 10 false positives.
 
 ### Before and after
 
@@ -40,9 +40,9 @@ The 17 October baseline is the same expectation engine run on `6551de1fa3`, befo
 | Groups fixed | | 85 | |
 | Groups new (includes new cases) | | 27 | |
 | End-to-end mismatches | 120 | 95 | −25 |
-| Pricing-sweep mismatches | 566 | 377 | −189 |
+| Pricing-sweep mismatches | 566 | 367 | −199 |
 | Simulated under-billing, executor layer, all responses | not measured | $26.34 | |
-| Gate: mismatches not on the allow-list | n/a | **0** of 24,494 | |
+| Gate: mismatches not on the allow-list | n/a | **0** of 24,484 | |
 
 **Fixed by the stack** (largest groups):
 - top-level `cache_control` is accepted on all three surfaces (was a 400 on all 104 providers; R5);

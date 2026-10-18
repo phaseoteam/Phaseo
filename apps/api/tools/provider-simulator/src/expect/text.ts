@@ -493,7 +493,7 @@ export type BillingExpectation = {
 	skipped?: string;
 };
 
-function writeMultiplier(provider: string, ttl: "5m" | "1h" | "any", model: string): number {
+export function writeMultiplier(provider: string, ttl: "5m" | "1h" | "any", model: string): number {
 	const table = expectationData().gateway.billing.fallbackWriteMultiplier;
 	if (/claude|anthropic/.test(model)) return ttl === "1h" ? table["anthropic-1h"] : table["anthropic-5m"];
 	if (/kimi-k3/.test(model)) return ttl === "1h" ? table["kimi-1h"] : table["kimi-5m"];

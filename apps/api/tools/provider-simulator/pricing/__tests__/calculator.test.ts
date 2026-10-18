@@ -109,6 +109,17 @@ describe("fallbacks", () => {
 		expect(oneHour.nanos).toBe(6_000_000_000);
 		expect(fiveMinutes.nanos).toBe(3_750_000_000);
 	});
+
+	it("bills an unpriced write at the input price times the documented multiplier, on its own line", () => {
+		const rules = [per1M("in", "input_text_tokens", "2")];
+		const multiplier = (ttl: "5m" | "1h" | "any") => (ttl === "1h" ? 2 : 1.25);
+		const bill = expectedBill({ rules, usage: { input_text_tokens: 1_000_000, cached_write_text_tokens_5m: 1_000_000, cached_write_text_tokens_1h: 1_000_000 }, context: {}, plan: "standard", timestampMs: NOW, writeInputMultiplier: multiplier });
+		// 2 + 2 x 1.25 + 2 x 2 dollars.
+		expect(bill.nanos).toBe(8_500_000_000);
+		expect(bill.lines.find((l) => l.meter === "cached_write_text_tokens_5m")).toMatchObject({ nanos: 2_500_000_000, fallback: "cache write at the input price x 1.25" });
+		const plain = expectedBill({ rules, usage: { cached_write_text_tokens: 1_000_000 }, context: {}, plan: "standard", timestampMs: NOW });
+		expect(plain.nanos).toBe(2_000_000_000);
+	});
 });
 
 describe("time windows and included quantities", () => {

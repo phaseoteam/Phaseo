@@ -18,10 +18,25 @@ import { buildCases, calcRules, type PricingCase } from "./cases";
 import { loadActiveRoutes, loadSweepCard, SWEEP_NOW_ISO, SWEEP_NOW_MS, type SweepCard } from "./catalogue-cards";
 import { compare, loadEngine, runEngine } from "./evaluate";
 import { checkCard, checkMissingCard, conditionGap, overlapMismatch, THINKING_MODE_PRICING } from "./sanity";
+import { writeMultiplier } from "../src/expect/text";
 import { coverageJson, renderSummary, type CardCoverage, type SweepTotals } from "./summary";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const SIM_ROOT = path.resolve(here, "..");
+
+/**
+ * Alibaba's implicit and explicit context caches are exclusive: a hit is explicit only when the request marked
+ * the prompt with cache_control (or the response reports a cache write), otherwise it is an implicit hit
+ * (https://www.alibabacloud.com/help/en/model-studio/context-cache). The calculator prices what the docs say.
+ */
+function documentedCacheUsage(card: SweepCard, entry: PricingCase): PricingCase["usage"] {
+	const usage = entry.usage as Record<string, number>;
+	if (!/^alibaba/.test(card.providerId) || !(usage.cached_read_text_tokens > 0)) return entry.usage;
+	const explicit = Boolean(entry.body.cache_control) || Object.keys(usage).some((meter) => meter.startsWith("cached_write_") && usage[meter] > 0);
+	if (explicit) return entry.usage;
+	const { cached_read_text_tokens: read, ...rest } = usage;
+	return { ...rest, implicit_cached_input_text_tokens: (rest.implicit_cached_input_text_tokens ?? 0) + read } as PricingCase["usage"];
+}
 
 function calcContext(entry: PricingCase): Record<string, unknown> {
 	const ttl = (entry.body.cache_control as any)?.ttl;
@@ -183,7 +198,15 @@ it("prices every active route against an independent oracle", async () => {
 		for (const entry of cases) {
 			let bill: ExpectedBill;
 			try {
-				bill = expectedBill({ rules, usage: entry.usage, context: calcContext(entry), plan: entry.plan, timestampMs: entry.timestampMs, thinkingModeBillsAnswer: THINKING_MODE_PRICING[card.providerId] });
+				bill = expectedBill({
+					rules,
+					usage: documentedCacheUsage(card, entry),
+					context: calcContext(entry),
+					plan: entry.plan,
+					timestampMs: entry.timestampMs,
+					thinkingModeBillsAnswer: THINKING_MODE_PRICING[card.providerId],
+					writeInputMultiplier: (ttl) => writeMultiplier(card.providerId, ttl, card.apiModelId),
+				});
 			} catch (error) {
 				totals.calculatorErrors.push(`${card.key} ${entry.id}: ${error instanceof Error ? error.message : String(error)}`);
 				continue;

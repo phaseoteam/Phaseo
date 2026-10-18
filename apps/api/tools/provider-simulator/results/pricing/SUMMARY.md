@@ -11,8 +11,8 @@ Expected costs come from `pricing/calculator.ts` (independent of the engine); ac
 | Active routes with a price card | 1550 | 1571 | 98.7% |
 | Active routes with a rule in effect | 1532 | 1571 | 97.5% |
 | Cards exercised | 1532 | 1532 | 100.0% |
-| Rules exercised | 6133 | 6381 | 96.1% |
-| Meters (card × plan × meter) exercised | 5347 | 5347 | 100.0% |
+| Rules exercised | 6130 | 6381 | 96.1% |
+| Meters (card × plan × meter) exercised | 5344 | 5347 | 99.9% |
 | Condition branches exercised | 1466 | 1466 | 100.0% |
 | Plans (card × plan) exercised | 1857 | 1857 | 100.0% |
 | Time windows exercised | 9 | 9 | 100.0% |
@@ -51,7 +51,7 @@ Expected costs come from `pricing/calculator.ts` (independent of the engine); ac
 |---|---:|---:|
 | input_text_tokens | 1700 | 1700 |
 | output_text_tokens | 1624 | 1624 |
-| cached_read_text_tokens | 1000 | 1000 |
+| cached_read_text_tokens | 997 | 1000 |
 | native_web_search_requests | 181 | 181 |
 | input_image_tokens | 128 | 128 |
 | cached_write_text_tokens | 125 | 125 |
@@ -86,28 +86,28 @@ Expected costs come from `pricing/calculator.ts` (independent of the engine); ac
 
 ## Mismatches
 
-377 in total (282 catalogue data checks, the rest engine vs expected).
+367 in total (282 catalogue data checks, the rest engine vs expected).
 
 | Kind | Count |
 |---|---:|
 | dropped | 221 |
 | wrong_value | 89 |
 | billing_under | 37 |
-| billing_over | 19 |
 | invented | 11 |
+| billing_over | 9 |
 
 ### By provider
 
 | Provider | billing_over | billing_under | wrong_value | invented | dropped | catalogue |
 |---|---:|---:|---:|---:|---:|---:|
-| alibaba-cloud | 15 | 5 | 1 | 9 | 0 | 76 |
+| alibaba-cloud | 9 | 5 | 1 | 9 | 0 | 76 |
 | openai | 0 | 0 | 0 | 0 | 0 | 33 |
 | venice | 0 | 10 | 0 | 0 | 0 | 22 |
 | nebius-token-factory | 0 | 0 | 0 | 0 | 0 | 29 |
 | deepinfra | 0 | 10 | 0 | 0 | 10 | 6 |
-| amazon-bedrock | 4 | 2 | 4 | 1 | 0 | 6 |
 | together | 0 | 0 | 0 | 0 | 0 | 14 |
 | weights-and-biases | 0 | 0 | 0 | 0 | 0 | 14 |
+| amazon-bedrock | 0 | 2 | 4 | 1 | 0 | 6 |
 | baidu | 0 | 3 | 0 | 0 | 0 | 10 |
 | moonshotai | 0 | 1 | 0 | 1 | 1 | 6 |
 | gmicloud | 0 | 0 | 2 | 0 | 0 | 6 |
@@ -151,7 +151,7 @@ Expected costs come from `pricing/calculator.ts` (independent of the engine); ac
 
 | | Cases | Total |
 |---|---:|---:|
-| Over-billed | 5 | $0.002480 |
+| Over-billed | 3 | $0.000365 |
 | Under-billed | 10 | -$0.5544 |
 | Pricing threw (expected charge lost) | 3 | -$0.0117 |
 
@@ -163,14 +163,14 @@ Expected costs come from `pricing/calculator.ts` (independent of the engine); ac
 |---|---|---|---|---|---:|
 | venice | anthropic/claude-opus-4.8 | text.generate:rule.fast.cached_read_text_tokens | billing_under | output_text_tokens | $-30.0000 per 1M output_text_tokens |
 | venice | anthropic/claude-opus-5 | text.generate:rule.fast.cached_read_text_tokens | billing_under | output_text_tokens | $-30.0000 per 1M output_text_tokens |
-| amazon-bedrock | anthropic/claude-opus-4 | text.generate:fallback.cache-write.no-rule | billing_over | cached_write_text_tokens_5m | +$18.7500 per 1M cached_write_text_tokens_5m |
-| amazon-bedrock | anthropic/claude-opus-4 | text.generate:documented | billing_over | cached_read_text_tokens | +$15.0000 per 1M cached_read_text_tokens |
 | amazon-bedrock | anthropic/claude-sonnet-4.5 | text.generate:documented.long-context@200001 | billing_under | cached_write_text_tokens_5m | $-8.2500 per 1M cached_write_text_tokens_5m |
 | fireworks | z-ai/glm-5.3 | text.generate:rule.fast.input_text_tokens | billing_under | output_text_tokens | $-6.6000 per 1M output_text_tokens |
 | moonshotai | moonshotai/kimi-k3 | text.generate:fallback.cache-write.no-ttl-split.ttl-1h | billing_under | cached_write_text_tokens_1h | $-6.0000 per 1M cached_write_text_tokens_1h |
 | venice | moonshotai/kimi-k3 | text.generate:rule.fast.cached_read_text_tokens | billing_under | output_text_tokens | $-3.7500 per 1M output_text_tokens |
 | alibaba-cloud | qwen/qwen3-14b | text.generate:rule.standard.output_reasoning_tokens | billing_under | output_reasoning_tokens | $-3.4195 per 1M output_reasoning_tokens |
-| alibaba-cloud | qwen/qwen-max | text.generate:fallback.cache-write.no-rule | billing_over | cached_write_text_tokens_5m | +$2.0000 per 1M cached_write_text_tokens_5m |
+| alibaba-cloud | qwen/qwen3-8b | text.generate:rule.standard.output_reasoning_tokens | billing_under | output_reasoning_tokens | $-1.7098 per 1M output_reasoning_tokens |
+| xiaomi | xiaomi/mimo-v2.5-pro-ultraspeed | text.generate:rule.standard.input_text_tokens | billing_under | input_text_tokens | $-1.3050 per 1M input_text_tokens |
+| alibaba-cloud | qwen/qwen3-0.6b | text.generate:rule.standard.output_reasoning_tokens | billing_under | output_reasoning_tokens | $-1.0259 per 1M output_reasoning_tokens |
 
 ### Per request (non-token meters and thrown errors)
 
