@@ -7,13 +7,47 @@ import type { GitFile, GitReview, ProjectFile } from "../shared/workspace";
 import { extensionOf, FILE_EDIT_LIMIT, FILE_IMAGE_LIMIT, FILE_PDF_LIMIT, imageTypes, type FilePreview } from "../shared/filePreview";
 
 const execute = promisify(execFile);
+const outside = (root: string, absolute: string) => { const remainder = path.relative(root, absolute); return remainder === ".." || remainder.startsWith(`..${path.sep}`) || path.isAbsolute(remainder); };
 export async function resolveProjectPath(root: string, relative: string): Promise<string> {
 	if (typeof relative !== "string" || relative.includes("\0") || path.isAbsolute(relative)) throw new Error("Choose a path inside this project.");
 	const absoluteRoot = await realpath(root);
 	const absolute = await realpath(path.resolve(absoluteRoot, relative || "."));
-	const remainder = path.relative(absoluteRoot, absolute);
-	if (remainder === ".." || remainder.startsWith(`..${path.sep}`) || path.isAbsolute(remainder)) throw new Error("This path is outside the project.");
+	if (outside(absoluteRoot, absolute)) throw new Error("This path is outside the project.");
 	return absolute;
+}
+
+/** A model-supplied path as project-relative with forward slashes and no `./`. Absolute paths inside the project are accepted. */
+export async function projectRelativePath(root: string, value: unknown): Promise<string> {
+	if (typeof value !== "string" || value.includes("\0")) throw new Error("Expected `path` as a project-relative path.");
+	let candidate = value.trim();
+	if (path.isAbsolute(candidate) && /^([a-zA-Z]:)?[\\/]/.test(candidate)) {
+		const bases = [await realpath(root).catch(() => path.resolve(root)), path.resolve(root)], base = bases.find(base => !outside(base, path.resolve(candidate)));
+		if (base) candidate = path.relative(base, path.resolve(candidate));
+		else if (/^[\\/][^\\/]/.test(candidate)) candidate = candidate.slice(1);
+		else throw new Error(`\`${value}\` is outside this project. Use a path relative to the project root, such as \`src/app.ts\`.`);
+	}
+	const normal = path.posix.normalize(candidate.replaceAll("\\", "/")).replace(/\/+$/, "");
+	if (normal === ".." || normal.startsWith("../")) throw new Error(`\`${value}\` is outside this project. Use a path inside it.`);
+	return normal === "." ? "" : normal.replace(/^(\.\/)+/, "");
+}
+
+export type ProjectTarget ={ root: string; absolute: string; exists: boolean; ancestor: string; missing: string[] };
+/** Resolves a path that may not exist yet. The deepest existing ancestor is realpath-contained; `missing` lists the segments below it. */
+export async function resolveProjectTarget(root: string, relative: string): Promise<ProjectTarget> {
+	if (typeof relative !== "string" || relative.includes("\0") || path.isAbsolute(relative)) throw new Error("Choose a path inside this project.");
+	const absoluteRoot = await realpath(root), lexical = path.resolve(absoluteRoot, relative || ".");
+	if (outside(absoluteRoot, lexical)) throw new Error("This path is outside the project.");
+	const missing: string[] = [];
+	for (let current = lexical; ;) {
+		let ancestor: string;
+		try { ancestor = await realpath(current); }
+		catch (error) {
+			if ((error as NodeJS.ErrnoException).code !== "ENOENT" || current === absoluteRoot) throw error;
+			missing.unshift(path.basename(current)); current = path.dirname(current); continue;
+		}
+		if (outside(absoluteRoot, ancestor)) throw new Error("This path is outside the project.");
+		return { root: absoluteRoot, absolute: path.join(ancestor, ...missing), exists: !missing.length, ancestor, missing };
+	}
 }
 
 export async function listProjectFiles(root: string, directory: string): Promise<ProjectFile[]> {
@@ -32,7 +66,7 @@ export async function readProjectFile(root: string, filename: string): Promise<s
 }
 
 export async function gitReview(root: string): Promise<GitReview> {
-	const git = async (args: string[]) => (await execute("git", ["--no-pager", ...args], { cwd: root, windowsHide: true, timeout: 15000, maxBuffer: 4 * 1024 * 1024, env: { ...process.env, GIT_OPTIONAL_LOCKS: "0" } })).stdout;
+	const git = async (args: string[]) => (await execute("git", ["--no-pager", "-c", "core.fsmonitor=false", ...args],{ cwd: root, windowsHide: true, timeout: 15000, maxBuffer: 4 * 1024 * 1024, env: { ...process.env, GIT_OPTIONAL_LOCKS: "0" } })).stdout;
 	const [status, diff, stagedDiff, branch] = await Promise.all([
 		git(["status", "--porcelain=v1", "-z"]), git(["diff", "--no-ext-diff", "--no-textconv", "--full-index"]),
 		git(["diff", "--cached", "--no-ext-diff", "--no-textconv", "--full-index"]), git(["branch", "--show-current"]),

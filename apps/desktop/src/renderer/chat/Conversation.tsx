@@ -5,7 +5,7 @@ import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
 import type { AgentActivity, Message, Task } from "../../shared/workspace";
 import { useConversationPage } from "../lib/useConversationPage";
 import { conversationTurns, turnDuration, type TurnEntry } from "../lib/conversationTurns";
-import { turnUsage } from "../lib/turnUsage";
+import { contextShare, turnUsage } from "../lib/turnUsage";
 import { cn } from "../lib/utils";
 import { MessageContent } from "../components/MessageContent";
 import { MessageText } from "../components/MessageChips";
@@ -19,7 +19,7 @@ import { ProposedPlan } from "./ProposedPlan";
 
 const planOutcomes = { implemented: "Implemented", revised: "Revision requested", declined: "Not implemented" } as const;
 
-const toolLabels: Record<string, string> = { run_project_command: "Ran", read_project_file: "Read", write_project_file: "Edited", list_project_files: "Listed", load_skill: "Loaded skill", ask_user: "Asked" };
+const toolLabels: Record<string, string> = { run_command: "Ran", start_background_command: "Started", read_background_output: "Read output", stop_background_command: "Stopped", list_background_commands: "Listed commands", read_file: "Read", view_image: "Viewed", edit_file: "Edited", write_file: "Wrote", delete_file: "Deleted", list_files: "Listed", search_files: "Searched", find_files: "Found files", propose_plan: "Proposed plan", load_tools: "Loaded tools", load_skill: "Loaded skill", ask_user: "Asked" };
 function toolIcon(title: string) {
 	if (/command|terminal|bash|shell|run/i.test(title)) return SquareTerminal;
 	if (/write|edit|patch|apply/i.test(title)) return FilePen;
@@ -151,7 +151,7 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 	const work = entries.filter(entry => entry !== final && !(entry.kind === "message" && entry.value.delivery === "subagent") && !(entry.kind === "activity" && entry.value.proposed));
 	const delegated = entries.filter(entry => entry.kind === "message" && entry.value.delivery === "subagent");
 	// The timeline omits usage reports, so read them from the turn's activities.
-	const usage = turnUsage(usageActivities);
+	const usage = turnUsage(usageActivities), context = contextShare(usageActivities);
 	const canBranch = !["running", "waiting"].includes(task.status) && !task.archived;
 	const hasAssistant = work.length > 0 || plans.length > 0 || !!final || live;
 	return <div data-turn-id={user && user.delivery !== "subagent" && !user.notice ? user.id : undefined} className="flex flex-col gap-4">
@@ -169,6 +169,7 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 				<CopyButton text={final.value.text} />
 				<ActionButton label="Branch from this answer" disabled={!canBranch} onClick={() => onBranch(final.value.id)}><GitBranch /></ActionButton>
 				{usage.Total !== undefined && <span className="ml-2 font-mono text-[11px] text-muted-foreground">{new Intl.NumberFormat(undefined, { notation: "compact" }).format(usage.Total)} tokens</span>}
+				{context !== undefined && <span title="How much of the model's context window the conversation used at the end of this turn. Phaseo compacts it automatically when it nears the limit." className={cn("font-mono text-[11px]", context >= 0.8 ? "text-warning" : "text-muted-foreground")}>· {Math.round(context * 100)}% of context</span>}
 			</div>}
 		</div>}
 	</div>;

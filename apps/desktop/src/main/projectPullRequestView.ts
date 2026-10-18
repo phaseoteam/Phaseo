@@ -14,9 +14,9 @@ reviewRequests(first:20){nodes{requestedReviewer{__typename ... on User{login av
 latestOpinionatedReviews(first:20){nodes{author{${actor}} state submittedAt}}
 commits(last:1){nodes{commit{statusCheckRollup{state contexts(first:100){nodes{__typename ... on CheckRun{name status conclusion detailsUrl title isRequired(pullRequestNumber:$number)} ... on StatusContext{context state targetUrl description isRequired(pullRequestNumber:$number)}}}}}}}
 history:commits(last:100){totalCount nodes{commit{oid messageHeadline committedDate additions deletions authors(first:3){nodes{name user{login avatarUrl}}}}}}
-comments(last:50){totalCount nodes{id author{${actor}} body createdAt lastEditedAt url viewerCanUpdate ${reactions}}}
-reviews(last:50){totalCount nodes{id author{${actor}} body state submittedAt createdAt lastEditedAt url viewerCanUpdate ${reactions}}}
-reviewThreads(first:50){totalCount nodes{id path line originalLine startLine diffSide isResolved isOutdated viewerCanReply viewerCanResolve viewerCanUnresolve comments(first:20){totalCount pageInfo{hasNextPage endCursor} nodes{id author{${actor}} body createdAt lastEditedAt url viewerCanUpdate ${reactions}}}}}}}}`;
+comments(last:50){totalCount nodes{id author{${actor}} authorAssociation body createdAt lastEditedAt url viewerCanUpdate ${reactions}}}
+reviews(last:50){totalCount nodes{id author{${actor}} authorAssociation body state submittedAt createdAt lastEditedAt url viewerCanUpdate ${reactions}}}
+reviewThreads(first:50){totalCount nodes{id path line originalLine startLine diffSide isResolved isOutdated viewerCanReply viewerCanResolve viewerCanUnresolve comments(first:20){totalCount pageInfo{hasNextPage endCursor} nodes{id author{${actor}} authorAssociation body createdAt lastEditedAt url viewerCanUpdate ${reactions}}}}}}}}`;
 
 type Item = Record<string, unknown>;
 const item = (value: unknown): Item => value && typeof value === "object" && !Array.isArray(value) ? value as Item : {};
@@ -44,8 +44,8 @@ function parseReactions(value: unknown): PullRequestReaction[] {
 function parseComment(value: unknown, kind: PullRequestComment["kind"], extra: Partial<PullRequestComment> = {}): PullRequestComment | undefined {
 	const entry = item(value), id = entry.id, body = text(entry.body, 512 * 1024), createdAt = date(entry.submittedAt) ?? date(entry.createdAt);
 	if (!reviewNodeId(id) || body === undefined || !createdAt) return;
-	const url = link(entry.url), state = text(entry.state, 40), editedAt = date(entry.lastEditedAt);
-	return { id, kind, author: parseActor(entry.author), body, createdAt, ...(editedAt && editedAt > createdAt ? { editedAt } : {}), ...(url ? { url } : {}), ...(kind === "review" && state ? { reviewState: state } : {}), reactions: parseReactions(entry.reactionGroups), ...(entry.viewerCanReact === true ? { canReact: true } : {}), ...(entry.viewerCanUpdate === true ? { canEdit: true } : {}), ...extra };
+	const url = link(entry.url), state = text(entry.state, 40), editedAt = date(entry.lastEditedAt), association = text(entry.authorAssociation, 40);
+	return { id, kind, author: parseActor(entry.author), ...(association && /^[A-Z_]+$/.test(association) ? { authorAssociation: association } : {}), body, createdAt, ...(editedAt && editedAt > createdAt ? { editedAt } : {}), ...(url ? { url } : {}), ...(kind === "review" && state ? { reviewState: state } : {}), reactions: parseReactions(entry.reactionGroups), ...(entry.viewerCanReact === true ? { canReact: true } : {}), ...(entry.viewerCanUpdate === true ? { canEdit: true } : {}), ...extra };
 }
 export function checkStatus(entry: Item): PullRequestCheckStatus {
 	if (entry.__typename === "StatusContext") {

@@ -57,6 +57,8 @@ import { ModelCatalogCache } from "./modelCatalogCache";
 import { openCodeModels, piModels } from "./nativeModels";
 import { resolveOpenCodeCommand } from "./openCodeService";
 import { TerminalService } from "./terminalService";
+import { backgroundCommands, closeBackgroundCommands } from "./backgroundCommands";
+import { closePhaseoMcpPool } from "./phaseoMcp";
 import { contentHash, writeProjectFile } from "./projectEdits";
 import { gitBranches, gitCommand } from "./gitOperations";
 import { projectPullRequests, projectPullRequest } from "./projectPullRequests";
@@ -236,7 +238,9 @@ app.on("before-quit", event => {
 	for (const controller of nativeCatalogChecks) controller.abort();
 	// Stop renderer IPC before the runtime closes its database.
 	for (const window of BrowserWindow.getAllWindows()) window.destroy();
-	void Promise.allSettled([workspaceRuntime.close().catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed]).finally(() => { stopTracing(); shutdownComplete = true; app.quit(); });
+	// A hung shutdown (a process that won't die, a stuck run) must not leave an invisible app holding the database.
+	const deadline = setTimeout(() => { console.error("Shutdown timed out; quitting anyway."); stopTracing(); shutdownComplete = true; app.exit(0); }, 10_000);
+	void Promise.allSettled([workspaceRuntime.close().catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed, closeBackgroundCommands(), closePhaseoMcpPool()]).finally(() => { clearTimeout(deadline); stopTracing(); shutdownComplete = true; app.quit(); });
 });
 
 ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
@@ -352,7 +356,7 @@ ipcMain.handle("workspace:mcp-prompts", async (event, id: unknown, request: unkn
  const abort = () => controller.abort(); event.sender.once("destroyed", abort);
  try {
   if (!task.projectId) await mkdir(cwd, { recursive: true });
-  return await new McpPromptCatalogService(workspaceRuntime.store.getMcpConnections(), cwd, task.projectId).request(request, AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]));
+  return await new McpPromptCatalogService(await workspaceRuntime.resolvedMcpConnections(task.projectId), cwd, task.projectId).request(request, AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]));
  } finally { event.sender.removeListener("destroyed", abort); mcpPromptChecks.delete(requestId); nativeCatalogChecks.delete(controller); }
 });
 ipcMain.handle("workspace:search-files", (event, id: unknown, query: unknown) => { const root = projectRoot(event, id); return span("files.search", undefined, () => searchProjectFiles(root, query as string)); });
@@ -804,6 +808,9 @@ app.whenReady().then(() => {
 	usageHubs = new UsageHubs(usageHubFile(workspaceDirectory), { set: (id, value) => vault.set(id, value), get: id => vault.get(id), remove: id => vault.remove(id) });
 	modelCatalogCache = new ModelCatalogCache(path.join(app.getPath("userData"), "cache"), ({ accountId }) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness: "phaseo", accountId }); });
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
+	workspaceRuntime.phaseo.background = backgroundCommands();
+	// Phaseo turns size compaction and output limits from the cached catalogue; a model not in it gets safe defaults.
+	workspaceRuntime.phaseo.facts = async (account, model) => account.endpoint ? (await modelCatalogCache.read({ endpoint: account.endpoint, accountId: account.id }))?.models.find(value => value.id === model)?.facts : undefined;
 	pullRequestGuides = new PullRequestGuides(path.join(workspaceDirectory, "pull-request-guides"), input => workspaceRuntime.completeWithTitleModel(input), async (root, view) => {
 		try { return await runGh(root, ["pr", "diff", String(view.number), "--repo", `github.com/${view.repository}`, "--color", "never"]); }
 		catch (reason) { throw new Error(ghFailure((reason as { stderr?: unknown }).stderr, "Could not read the pull request's diff."), { cause: reason }); }

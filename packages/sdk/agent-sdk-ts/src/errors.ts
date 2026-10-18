@@ -225,3 +225,48 @@ export function toAgentGatewayErrorDetails(error: AgentGatewayError): AgentGatew
 		details: structuredClone(error.details),
 	};
 }
+
+/** A model stream that failed after it started: an error event, a failed or incomplete response, a stall, or an early end. */
+export class AgentStreamError extends Error {
+	readonly retryable: boolean;
+	readonly code: string;
+	constructor(message: string, options: { code: string; retryable: boolean; cause?: unknown }) {
+		super(message, { cause: options.cause });
+		this.name = "AgentStreamError";
+		this.code = options.code;
+		this.retryable = options.retryable;
+	}
+}
+
+const retryableStatuses = new Set([408, 409, 425, 429, 500, 502, 503, 504, 529]);
+
+/** Rate limits, server errors, dropped connections and stalled streams are worth another attempt; bad requests and refused credentials are not. */
+export function agentErrorIsRetryable(error: unknown): boolean {
+	if (!isRecord(error)) return false;
+	if (error.name === "AbortError") return false;
+	if (typeof error.retryable === "boolean") return error.retryable;
+	if (error instanceof AgentGatewayError || (typeof error.status === "number" && error.status > 0)) return retryableStatuses.has(error.status as number);
+	return true;
+}
+
+/** The wait a gateway asked for in Retry-After or retry-after-ms, if any. */
+export function agentRetryAfterMs(error: unknown): number | undefined {
+	const headers = error instanceof AgentGatewayError ? error.headers : undefined;
+	const milliseconds = Number(headers?.["retry-after-ms"]);
+	if (Number.isFinite(milliseconds) && milliseconds >= 0) return milliseconds;
+	const value = headers?.["retry-after"];
+	if (!value) return undefined;
+	const seconds = Number(value);
+	if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+	const date = Date.parse(value);
+	return Number.isFinite(date) ? Math.max(0, date - Date.now()) : undefined;
+}
+
+/** Whether a request failed because the conversation no longer fits the model's context window. */
+export function agentErrorIsContextOverflow(error: unknown): boolean {
+	if (!isRecord(error)) return false;
+	const status = typeof error.status === "number" ? error.status : undefined;
+	if (status !== undefined && status !== 400 && status !== 413) return false;
+	const text = `${typeof error.message === "string" ? error.message : ""} ${error instanceof AgentGatewayError ? JSON.stringify(error.body ?? "") : ""}`;
+	return /context[ _-]?(length|window)|maximum context|prompt is too long|too many (input )?tokens|exceeds? the (model'?s? )?(maximum|context)|input is too long|request too large/i.test(text);
+}

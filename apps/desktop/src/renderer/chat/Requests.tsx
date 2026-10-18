@@ -9,6 +9,14 @@ import { Button } from "../components/ui/button";
 import { QuestionPanel } from "./QuestionPanel";
 import { AgentForm } from "../components/AgentForm";
 import { threadToolLabels } from "../../shared/orchestration";
+import { DiffView } from "../components/DiffView";
+
+/** A file change offered for approval as a unified diff, after any text that introduces it. */
+function approvalDiff(description: string) {
+	const start = description.search(/^--- (?:a\/|\/dev\/null)/m);
+	if (start < 0 || !/^\+\+\+ /m.test(description.slice(start)) || !/^@@ /m.test(description.slice(start))) return undefined;
+	return { preface: description.slice(0, start).trim(), patch: description.slice(start) };
+}
 
 /** Reads the JSON arguments an approval describes, so they can be listed as fields rather than raw JSON. */
 function approvalFields(description: string): [string, string][] | undefined {
@@ -59,15 +67,17 @@ function PlanCard({ approval, projectId, onDecision }: { approval: ApprovalReque
 
 function ApprovalCard({ title, description, always, never, onDecision }: { title?: string; description: string; always?: string; never?: string; onDecision: Decide }) {
 	const { pending, error, decide } = useDecision(onDecision);
-	const fields = approvalFields(description);
+	const diff = approvalDiff(description);
+	const fields = diff ? undefined : approvalFields(description);
 	// Text before the arguments, such as a warning that an interrupted action may already have run, stays visible.
-	const preface = fields ? description.slice(0, description.indexOf("{")).trim() : "";
+	const preface = diff ? diff.preface : fields ? description.slice(0, description.indexOf("{")).trim() : "";
 	const tool = title?.replace(/^mcp__[^_]+(?:_[^_]+)*?__/, "");
 	const heading = !title ? "Allow this action?" : /\s/.test(title) ? title : threadToolLabels[tool!] ?? `Allow ${tool}?`;
 	return <section aria-label="Approval needed" aria-busy={!!pending} className="border-l-2 border-warning py-1 pl-3.5">
 		<div className="flex items-center gap-2 text-[13px] font-semibold"><ShieldQuestion className="size-4 shrink-0 text-warning" />{heading}</div>
 		{preface && <p data-selectable className="mt-1.5 text-[13px] whitespace-pre-wrap text-foreground/85">{preface}</p>}
-		{fields
+		{diff ? <ScrollArea className="mt-1.5 max-h-96" viewportClassName="max-h-96"><DiffView patch={diff.patch} layout="unified" hideActions /></ScrollArea>
+			: fields
 			? <dl data-selectable className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[13px]">{fields.map(([key, value]) => <div key={key} className="contents"><dt className="text-muted-foreground">{key}</dt><dd className="min-w-0 break-words">{value}</dd></div>)}</dl>
 			: <ScrollArea className="mt-1.5 max-h-48" viewportClassName="max-h-48"><pre data-selectable className="font-mono text-[11.5px] whitespace-pre-wrap text-foreground/85">{description}</pre></ScrollArea>}
 		{error && <p role="alert" className="mt-2 text-xs text-destructive">{error}</p>}

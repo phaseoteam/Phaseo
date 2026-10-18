@@ -135,10 +135,10 @@ describe("workspace orchestration", () => {
 		try {
 			const state = await runtime.command({ type: "create-task", harness: "grok", model: "default", mode: "plan" }); const id = state.tasks[0].id;
 			await runtime.command({ type: "send", id, text: "Start" }); await vi.waitFor(() => expect(run).toHaveBeenCalledOnce());
-			expect(() => runtime.mcp({ type: "save", connection })).toThrow("Stop affected tasks");
+			await expect(runtime.mcp({ type: "save", connection })).rejects.toThrow("Stop affected tasks");
 			expect(runtime.store.get().mcpConnections).toHaveLength(0);
 			await runtime.command({ type: "cancel", id });
-			await vi.waitFor(() => expect(() => runtime.mcp({ type: "save", connection })).not.toThrow());
+			await vi.waitFor(() => runtime.mcp({ type: "save", connection }));
 			expect(runtime.store.get().mcpConnections).toEqual([connection]);
 		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
 	});

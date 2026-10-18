@@ -45,7 +45,7 @@ function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () =
 	useEffect(() => { setRenaming(false); }, [task.id]);
 	useEffect(() => { const rename = () => setRenaming(true); window.addEventListener(renameChatEvent, rename); return () => window.removeEventListener(renameChatEvent, rename); }, []);
 	const fork = async () => { const known = new Set(overview.tasks.map(value => value.id)); const state = await command({ type: "fork", id: task.id }); const id = state?.tasks.find(value => !known.has(value.id))?.id; if (id) select(id); };
-	const canCompact = ["opencode", "codex", "claude", "pi"].includes(task.harness) && !!task.nativeSessionId && !task.archived && !["running", "waiting"].includes(task.status);
+	const canCompact = ["opencode", "codex", "claude", "pi", "phaseo"].includes(task.harness) && !!task.nativeSessionId && !task.archived && !["running", "waiting"].includes(task.status);
 	// Agents link to the chat that started them; launched chats to the chat that launched them.
 	const parentId = task.delegation?.parentTaskId ?? task.launch?.byTaskId;
 	const parent = parentId ? overview.tasks.find(value => value.id === parentId) : undefined;
@@ -118,9 +118,9 @@ function ChatComposer({ task }: { task: Task }) {
 		placeholder: task.archived ? "This chat is archived" : answerer ? "Type your own answer, or leave this blank to use the selected option" : running ? "Queue a follow-up…" : code ? "Ask for a change, or reply to the agent…" : "Reply…" });
 	const selection: ModelSelection = { harness: task.harness, model: task.model, accountId: task.accountId, reasoningEffort: task.reasoningEffort, serviceTier: task.serviceTier, options: task.modelOptions };
 	const settingActions = useModelSettingActions(task.archived || running ? undefined : selection, next => void changeSettings(next));
-	const canCompact = ["opencode", "codex", "claude", "pi"].includes(task.harness) && !!task.nativeSessionId && !task.archived && !running;
+	const canCompact = ["opencode", "codex", "claude", "pi", "phaseo"].includes(task.harness) && !!task.nativeSessionId && !task.archived && !running;
 	const fork = async () => { const known = new Set(overview.tasks.map(value => value.id)); const state = await command({ type: "fork", id: task.id }); const id = state?.tasks.find(value => !known.has(value.id))?.id; if (id) select(id); };
-	const plan = task.mode === "plan", full = task.permissionMode === "full-access";
+	const plan = task.mode === "plan", full = task.permissionMode === "full-access", edits = task.permissionMode === "accept-edits";
 	const actions: ComposerAction[] = [
 		{ id: "archive", label: "Archive", description: "Archive this chat", icon: <Archive />, run: () => void command({ type: "update-task", id: task.id, archived: true }) },
 		...canCompact ? [{ id: "compact", label: "Compact", description: "Summarise earlier messages to free up context", icon: <Layers />, run: () => void command({ type: "send", id: task.id, text: "/compact" }) }] : [],
@@ -133,8 +133,9 @@ function ChatComposer({ task }: { task: Task }) {
 		{ id: "pin", label: task.pinned ? "Unpin chat" : "Pin chat", description: task.pinned ? "Remove this chat from Pinned" : "Keep this chat at the top of the sidebar", icon: task.pinned ? <PinOff /> : <Pin />, run: () => void command({ type: "update-task", id: task.id, pinned: !task.pinned }) },
 		...code && !running ? [
 			{ id: "plan", label: "Plan mode", description: plan ? "Turn plan mode off" : "Turn plan mode on: the agent proposes a plan before changing anything", icon: <ListChecks />, checked: plan, run: () => void command({ type: "update-task", id: task.id, mode: plan ? "code" as const : "plan" as const }) },
-			{ id: "permissions", label: "Permissions", hint: full ? "Full access" : "Ask first", icon: <ShieldCheck />, options: [
-				{ id: "permissions:supervised", label: "Ask first", description: "Approve commands and file changes before they run", icon: null, checked: !full, run: () => void command({ type: "update-task", id: task.id, permissionMode: "supervised" }) },
+			{ id: "permissions", label: "Permissions", hint: full ? "Full access" : edits ? "Accept edits" : "Ask first", icon: <ShieldCheck />, options: [
+				{ id: "permissions:supervised", label: "Ask first", description: "Approve commands and file changes before they run", icon: null, checked: !full && !edits, run: () => void command({ type: "update-task", id: task.id, permissionMode: "supervised" }) },
+				{ id: "permissions:accept-edits", label: "Accept edits", description: "File changes apply without asking; commands still ask first", icon: null, checked: edits, run: () => void command({ type: "update-task", id: task.id, permissionMode: "accept-edits" }) },
 				{ id: "permissions:full-access", label: "Full access", description: "The agent runs commands and edits files without asking", icon: null, checked: full, run: () => void command({ type: "update-task", id: task.id, permissionMode: "full-access" }) },
 			] },
 		] : [],

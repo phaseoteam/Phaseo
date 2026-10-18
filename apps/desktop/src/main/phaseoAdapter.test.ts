@@ -1,3 +1,6 @@
+import { phaseoMcpPool } from "./phaseoMcp";
+// Servers close with their turn, so the temporary folders they run in can be removed.
+phaseoMcpPool.idleMs = 0;
 import { describe, expect, it, vi } from "vitest";
 import type { Account, Task } from "../shared/workspace";
 import { PhaseoAdapter } from "./phaseoAdapter";
@@ -41,7 +44,7 @@ describe("Phaseo inference transport", () => {
 	});
 	it("rejects truncated streams and unsupported coding mode", async () => {
 		const fetcher = vi.fn().mockResolvedValue(new Response('data: {"choices":[{"delta":{"content":"Partial"}}]}\n\n'));
-		await expect(new PhaseoAdapter(() => "secret", fetcher).run(task, ".", "Hi", callbacks(), account)).rejects.toThrow("before completion");
+		await expect(new PhaseoAdapter(() => "secret", fetcher).run(task, ".", "Hi", callbacks(), account)).rejects.toThrow("ended before it finished");
 		await expect(new PhaseoAdapter(() => "secret", fetcher).run({ ...task, mode: "code" }, ".", "Hi", callbacks(), account)).rejects.toThrow("Agent SDK adapter");
 	});
 	it("includes earlier image attachments and documents without duplicating the latest user message", async () => {

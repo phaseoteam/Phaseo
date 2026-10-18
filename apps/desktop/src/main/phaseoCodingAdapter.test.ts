@@ -1,3 +1,6 @@
+import { phaseoMcpPool } from "./phaseoMcp";
+// Servers close with their turn, so the temporary folders they run in can be removed.
+phaseoMcpPool.idleMs = 0;
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -29,8 +32,9 @@ describe("Phaseo coding run loop", () => {
    const factory = vi.fn<(account: Account, key: string, task: Task) => AgentModelClient>(() => ({ generate: async () => ({ message: { role: "assistant" as const, content: "Done" } }) }));
    await new PhaseoCodingAdapter(() => "owned-key", store, factory).run(current, root, "Go", { onSession: () => {}, onDelta: () => {}, onApproval: async () => "accept" }, account);
    expect(factory).toHaveBeenCalledWith(account, "owned-key", current);
-   expect(phaseoGatewayClientOptions(account, "owned-key", current)).toEqual({ clientOptions: { apiKey: "owned-key", baseUrl: account.endpoint }, includeMeta: true, reasoning: { effort: "xhigh" }, requestOptions: { service_tier: "flex" } });
-   expect(phaseoGatewayClientOptions(account, "owned-key", { modelOptions: { speed: "standard" } })).toEqual({ clientOptions: { apiKey: "owned-key", baseUrl: account.endpoint }, includeMeta: true });
+   // Streams get an hour in total but are abandoned after three quiet minutes; each chat has its own cache key.
+   expect(phaseoGatewayClientOptions(account, "owned-key", current)).toEqual({ clientOptions: { apiKey: "owned-key", baseUrl: account.endpoint, timeoutMs: 3_600_000 }, includeMeta: true, streamIdleTimeoutMs: 180_000, promptCacheKey: "phaseo-desktop:task", providerOptions: { anthropic: { cache_control: { type: "ephemeral", scope: "agent" } } }, reasoning: { effort: "xhigh" }, requestOptions: { service_tier: "flex" } });
+   expect(phaseoGatewayClientOptions(account, "owned-key", { modelOptions: { speed: "standard" } })).toEqual({ clientOptions: { apiKey: "owned-key", baseUrl: account.endpoint, timeoutMs: 3_600_000 }, includeMeta: true, streamIdleTimeoutMs: 180_000, providerOptions: { anthropic: { cache_control: { type: "ephemeral", scope: "agent" } } } });
    const create = vi.fn(async () => ({ id: "response", model: "model", output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "Done" }] }] }));
    await createGatewayAgentClient({ ...phaseoGatewayClientOptions(account, "owned-key", { modelOptions: { effort: "high", speed: "priority" } }), client: { responses: { create } } as never }).generate({ model: "model", messages: [{ role: "user", content: "Go" }], tools: [] } as never);
    expect(create).toHaveBeenCalledWith(expect.objectContaining({ model: "model", reasoning: { effort: "high" }, service_tier: "priority" }));
@@ -89,17 +93,17 @@ describe("Phaseo coding run loop", () => {
    let runId='';const approval=vi.fn(async()=>{expect(()=>readFileSync(calls)).toThrow();expect(store.loadAgentRun(runId)?.run.status).toBe('waiting_for_human');return decision;});
    const adapter=new PhaseoCodingAdapter(()=>"secret",store,()=>({generate}),[connection]);
    await adapter.run(task,root,"Look up owned data",{onSession:id=>{runId=id;},onDelta:()=>{},onApproval:approval},account);
-   expect(approval).toHaveBeenCalledWith('Owned · owned_lookup',expect.stringContaining('owned query'));expect(store.loadAgentRun(runId)?.run.status).toBe('completed');
+   expect(approval).toHaveBeenCalledWith('Owned · owned_lookup',expect.stringContaining('owned query'),{always:"Always allow this tool in this chat"},undefined);expect(store.loadAgentRun(runId)?.run.status).toBe('completed');
    if(decision==='accept')expect(readFileSync(calls,'utf8')).toBe('owned query');else expect(()=>readFileSync(calls)).toThrow();
   } finally {store.close();rmSync(root,{recursive:true,force:true});}
  });
- it("preserves input before inference when native MCP setup fails",async()=>{const root=mkdtempSync(path.join(tmpdir(),"phaseo-mcp-failure-"));const store=new WorkspaceStore(path.join(root,"state.sqlite"));try{const generate=vi.fn();const adapter=new PhaseoCodingAdapter(()=>"secret",store,()=>({generate}),[{id:"12345678-1234-1234-1234-123456789abc",name:"Missing",enabled:true,transport:"stdio",executable:path.join(root,"missing.exe"),arguments:[]}]);await expect(adapter.run(task,root,"Pending",{onSession:()=>{},onDelta:()=>{},onApproval:async()=>"accept"},account)).rejects.toThrow("not submitted");expect(generate).not.toHaveBeenCalled();}finally{store.close();rmSync(root,{recursive:true,force:true});}});
+ it("leaves an unreachable MCP server out of the turn and says so",async()=>{const root=mkdtempSync(path.join(tmpdir(),"phaseo-mcp-failure-"));const store=new WorkspaceStore(path.join(root,"state.sqlite"));try{const generate=vi.fn();const adapter=new PhaseoCodingAdapter(()=>"secret",store,()=>({generate}),[{id:"12345678-1234-1234-1234-123456789abc",name:"Missing",enabled:true,transport:"stdio",executable:path.join(root,"missing.exe"),arguments:[]}]);const onActivity=vi.fn();generate.mockResolvedValue({message:{role:"assistant",content:"Answered without it"}});await adapter.run(task,root,"Pending",{onSession:()=>{},onDelta:()=>{},onApproval:async()=>"accept",onActivity},account);expect(onActivity).toHaveBeenCalledWith(expect.objectContaining({title:"Missing is unavailable",status:"failed"}));expect(generate).toHaveBeenCalledOnce();}finally{store.close();rmSync(root,{recursive:true,force:true});}});
 
 	it.each(["accept", "decline"] as const)("persists a pending edit and continues after %s", async decision => {
 		const root = mkdtempSync(path.join(tmpdir(), "phaseo-agent-"));
 		const store = new WorkspaceStore(path.join(root, "state.sqlite"));
 		try {
-			const generate = vi.fn().mockResolvedValueOnce({ message: { role: "assistant", content: "", toolCalls: [{ id: "edit", name: "write_project_file", input: { path: "hello.txt", content: "Hello", expectedHash: "new" } }] } }).mockResolvedValueOnce({ message: { role: "assistant", content: "Finished" } });
+			const generate = vi.fn().mockResolvedValueOnce({ message: { role: "assistant", content: "", toolCalls: [{ id: "edit", name: "write_file", input: { path: "hello.txt", content: "Hello" } }] } }).mockResolvedValueOnce({ message: { role: "assistant", content: "Finished" } });
 			let runId = "";
 			const adapter = new PhaseoCodingAdapter(() => "secret", store, () => ({ generate }));
 			await adapter.run(task, root, "Create hello.txt", {

@@ -19,8 +19,8 @@ export type AgentCallbacks = {
 	onQuestion?: (questions: AgentQuestion[], request?: { responseMode?: "message"; origin?: string; /** Withdraws the question (an MCP request the server cancelled). */ signal?: AbortSignal }) => Promise<Record<string, string[]>>;
 	/** null cancels; "decline" refuses (MCP and ACP tell the two apart). */
 	onForm?: (form: AgentForm, signal?: AbortSignal) => Promise<FormAnswer | null | "decline">;
-	/** "always" and "never" come back only when offered, with the agent's own labels for those choices. */
-	onApproval: (method: string, description: string, choices?: { always?: string; never?: string }) => Promise<ApprovalDecision>;
+	/** "always" and "never" come back only when offered, with the agent's own labels for those choices. ask holds the request for the person even with full access. */
+	onApproval: (method: string, description: string, choices?: { always?: string; never?: string }, options?: { ask?: boolean }) => Promise<ApprovalDecision>;
 	/** A proposed plan (Markdown): implement it, or revise it with the person's feedback. */
 	onPlan?: (plan: string) => Promise<PlanDecision>;
 };

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, Box, Check, ChevronDown, Code2, FolderOpen, FolderPlus, Gauge, Lightbulb, ListChecks, PenLine, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
+import { BookOpen, Box, Check, ChevronDown, Code2, FilePen, FolderOpen, FolderPlus, Gauge, Lightbulb, ListChecks, PenLine, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { ScrollArea } from "../components/ui/scroll-area";
 import type { Task } from "../../shared/workspace";
@@ -36,13 +36,14 @@ function greeting() {
 }
 
 export function PermissionMenu({ value, onChange }: { value: Task["permissionMode"]; onChange: (value: NonNullable<Task["permissionMode"]>) => void }) {
-	const full = value === "full-access";
+	const full = value === "full-access", edits = value === "accept-edits";
 	return <DropdownMenu>
 		<DropdownMenuTrigger render={<button type="button" className={cn("flex h-8 items-center gap-1.5 rounded-lg px-2 text-[12.5px] font-medium hover:bg-muted [&_svg]:size-4", full ? "text-warning" : "text-muted-foreground hover:text-foreground")} />}>
-			{full ? <ShieldAlert /> : <ShieldCheck />}{full ? "Full access" : "Ask first"}<ChevronDown className="size-3!" />
+			{full ? <ShieldAlert /> : <ShieldCheck />}{full ? "Full access" : edits ? "Accept edits" : "Ask first"}<ChevronDown className="size-3!" />
 		</DropdownMenuTrigger>
 		<DropdownMenuContent align="start" side="top" className="w-72">
-			<DropdownMenuItem onClick={() => onChange("supervised")} className="items-start"><ShieldCheck className="mt-0.5" /><span><span className="block font-semibold">Ask first</span><span className="text-xs text-muted-foreground">Approve commands and file changes before they run.</span></span>{!full && <Check className="ml-auto" />}</DropdownMenuItem>
+			<DropdownMenuItem onClick={() => onChange("supervised")} className="items-start"><ShieldCheck className="mt-0.5" /><span><span className="block font-semibold">Ask first</span><span className="text-xs text-muted-foreground">Approve commands and file changes before they run.</span></span>{!full && !edits && <Check className="ml-auto" />}</DropdownMenuItem>
+			<DropdownMenuItem onClick={() => onChange("accept-edits")} className="items-start"><FilePen className="mt-0.5" /><span><span className="block font-semibold">Accept edits</span><span className="text-xs text-muted-foreground">File changes apply without asking; commands still ask first.</span></span>{edits && <Check className="ml-auto" />}</DropdownMenuItem>
 			<DropdownMenuItem onClick={() => onChange("full-access")} className="items-start"><ShieldAlert className="mt-0.5 text-warning" /><span><span className="block font-semibold">Full access</span><span className="text-xs text-muted-foreground">The agent runs commands and edits files without asking.</span></span>{full && <Check className="ml-auto" />}</DropdownMenuItem>
 		</DropdownMenuContent>
 	</DropdownMenu>;
@@ -81,15 +82,16 @@ export function NewChat() {
 	const editor = useComposerEditor({ value: draft, onChange: setDraft, disabled: busy, onFiles: files => addImages(files),
 		placeholder: compare ? "Ask every model the same question…" : code ? (project ? `Describe a change to ${project.name}…` : "Choose a project, then describe what to build…") : "Message Phaseo…" });
 	// Native commands depend on one agent, so comparing models offers saved prompts, chats and files only.
-	const plan = planMode === "plan", full = permissionMode === "full-access";
+	const plan = planMode === "plan", full = permissionMode === "full-access", edits = permissionMode === "accept-edits";
 	const settingActions = useModelSettingActions(selections.length === 1 ? selections[0] : undefined, next => setSelections([next]));
 	const actions: ComposerAction[] = [
 		{ id: "mcp", label: "MCP", description: "Manage MCP servers", icon: <Plug />, run: () => openSettings("mcp") },
 		{ id: "model", label: "Model", description: compare ? "Choose the models to compare" : "Choose the model", icon: <Box />, run: () => window.dispatchEvent(new Event(openModelPickerEvent)) },
 		...code ? [
 			{ id: "plan", label: "Plan mode", description: plan ? "Turn plan mode off" : "Turn plan mode on: the agent proposes a plan before changing anything", icon: <ListChecks />, checked: plan, run: () => setPlanMode(plan ? "code" : "plan") },
-			{ id: "permissions", label: "Permissions", hint: full ? "Full access" : "Ask first", icon: <ShieldCheck />, options: [
-				{ id: "permissions:supervised", label: "Ask first", description: "Approve commands and file changes before they run", icon: null, checked: !full, run: () => setPermissionMode("supervised") },
+			{ id: "permissions", label: "Permissions", hint: full ? "Full access" : edits ? "Accept edits" : "Ask first", icon: <ShieldCheck />, options: [
+				{ id: "permissions:supervised", label: "Ask first", description: "Approve commands and file changes before they run", icon: null, checked: !full && !edits, run: () => setPermissionMode("supervised") },
+				{ id: "permissions:accept-edits", label: "Accept edits", description: "File changes apply without asking; commands still ask first", icon: null, checked: edits, run: () => setPermissionMode("accept-edits") },
 				{ id: "permissions:full-access", label: "Full access", description: "The agent runs commands and edits files without asking", icon: null, checked: full, run: () => setPermissionMode("full-access") },
 			] },
 		] : [],

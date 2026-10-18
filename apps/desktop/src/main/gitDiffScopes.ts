@@ -4,6 +4,7 @@ import { stat } from "node:fs/promises";
 import path from "node:path";
 import type { GitDiffContents } from "../shared/workspace";
 import { isRefName, isTreeId, validateGitDiffRequest, type GitDiffRequest, type GitDiffResult, type GitRefs } from "../shared/gitDiff";
+import { appGitArgs } from "./appGit";
 import { gitFilename } from "./gitHunks";
 import { blobContents, workingContents } from "./gitDiffContents";
 
@@ -22,7 +23,7 @@ async function inGitSlot<T>(run: () => Promise<T>) {
 
 export function runGit(root: string, args: string[], options: { allowDifference?: boolean; input?: string; env?: NodeJS.ProcessEnv } = {}) {
 	return inGitSlot(() => new Promise<string>((resolve, reject) => {
-		const child = execFile("git", ["--no-pager", ...args], { cwd: root, windowsHide: true, timeout: 30_000, maxBuffer: PATCH_LIMIT * 2, env: { ...process.env, GIT_OPTIONAL_LOCKS: "0", ...options.env } }, (error, stdout) => {
+		const child = execFile("git", [...appGitArgs, "--no-pager", ...args], { cwd: root, windowsHide: true, timeout: 30_000, maxBuffer: PATCH_LIMIT * 2, env: { ...process.env, GIT_OPTIONAL_LOCKS: "0", ...options.env } }, (error, stdout) => {
 			if (error && !(options.allowDifference && (error as { code?: unknown }).code === 1)) reject(error); else resolve(stdout);
 		});
 		child.stdin?.end(options.input ?? "");

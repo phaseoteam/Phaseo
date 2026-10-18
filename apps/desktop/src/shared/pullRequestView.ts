@@ -13,7 +13,8 @@ export type PullRequestReactionContent = typeof pullRequestReactionContents[numb
 /** `actors` names up to three people besides the viewer, for the hover text. */
 export type PullRequestReaction = { content: string; count: number; viewerHasReacted?: boolean; actors?: string[] };
 /** `canEdit` is GitHub's own viewerCanUpdate for that comment. */
-export type PullRequestComment = { id: string; kind: "comment" | "review" | "review-comment"; author: PullRequestActor | null; body: string; createdAt: string; editedAt?: string; url?: string; reviewState?: string; path?: string; threadId?: string; reactions: PullRequestReaction[]; canReact?: boolean; canEdit?: boolean };
+/** `authorAssociation` is GitHub's: OWNER, MEMBER and COLLABORATOR can write to the repository; anyone else may be a stranger. */
+export type PullRequestComment = { id: string; kind: "comment" | "review" | "review-comment"; author: PullRequestActor | null; authorAssociation?: string; body: string; createdAt: string; editedAt?: string; url?: string; reviewState?: string; path?: string; threadId?: string; reactions: PullRequestReaction[]; canReact?: boolean; canEdit?: boolean };
 export type PullRequestCommit = { oid: string; headline: string; committedAt: string; additions?: number; deletions?: number; authors: PullRequestActor[] };
 /** `commentsCursor` continues the thread's comments past the ones read with it. */
 export type PullRequestReviewThreadView = { id: string; path: string; line?: number; originalLine?: number; startLine?: number; side: "LEFT" | "RIGHT"; resolved: boolean; outdated: boolean; canReply: boolean; canResolve: boolean; canUnresolve: boolean; comments: PullRequestComment[]; totalComments: number; commentsCursor?: string };
