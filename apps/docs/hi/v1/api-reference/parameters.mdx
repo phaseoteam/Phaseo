@@ -17,6 +17,17 @@ icon: "sliders-horizontal"
 
 पैरामीटर का समर्थन अब भी endpoint, model और provider के अनुसार अलग होता है। मॉडल की क्विकस्टार्ट तालिका किसी खास रूट के लिए सक्रिय प्रदाताओं के समर्थन को एक साथ दिखाती है।
 
+## असमर्थित पैरामीटर
+
+अगर अनुरोध को सर्व करने वाला प्रदाता उसके किसी सैंपलिंग पैरामीटर का समर्थन नहीं करता, तो Phaseo उस पैरामीटर को हटा देता है। वह प्रदाता को नहीं भेजा जाता और अनुरोध अस्वीकार नहीं होता, इसलिए हमेशा OpenAI डिफ़ॉल्ट भेजने वाले क्लाइंट काम करते रहते हैं। समर्थन हर प्रदाता के लिए Phaseo के प्रदाता प्रोफ़ाइल और रूट के कैटलॉग पैरामीटर से तय होता है। अगर कोई रूट कोई पैरामीटर घोषित नहीं करता, तो कुछ भी नहीं हटाया जाता।
+
+केवल ये पैरामीटर हटाए जा सकते हैं: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`/v1/messages` पर `stop_sequences`), `parallel_tool_calls`, `max_tool_calls` और `image_config`। संदेश, टूल, `tool_choice`, `response_format`, रीज़निंग सेटिंग और आउटपुट सीमाएँ कभी नहीं हटाई जातीं।
+
+हर हटाए गए पैरामीटर की सूचना दी जाती है:
+
+- `X-Phaseo-Dropped-Params` रिस्पॉन्स हेडर में, उदाहरण के लिए `X-Phaseo-Dropped-Params: top_k, min_p`
+- `meta.routing.dropped_params` में, जब अनुरोध `meta: true` सेट करता है, उदाहरण के लिए `[{"param": "top_k", "reason": "unsupported_by_provider"}]`
+
 ## त्वरित संदर्भ
 
 | पैरामीटर | प्रकार | उपयोग |

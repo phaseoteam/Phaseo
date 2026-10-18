@@ -17,6 +17,17 @@ Wenn du Tipps zur Abstimmung statt Felddefinitionen suchst, findest du sie unter
 
 Die Parameterunterstützung variiert weiterhin je nach Endpunkt, Modell und Anbieter. Die Schnellstarttabelle des Modells fasst die Unterstützung der aktuell aktiven Anbieter für eine bestimmte Route zusammen.
 
+## Nicht unterstützte Parameter
+
+Unterstützt der Anbieter, der eine Anfrage bedient, einen ihrer Sampling-Parameter nicht, entfernt Phaseo diesen Parameter. Er wird nicht an den Anbieter gesendet, und die Anfrage wird nicht abgelehnt, sodass Clients, die immer die OpenAI-Standardwerte senden, weiter funktionieren. Die Unterstützung wird pro Anbieter anhand der Anbieterprofile von Phaseo und der Katalogparameter der Route bestimmt. Gibt eine Route keine Parameter an, wird nichts entfernt.
+
+Nur diese Parameter können entfernt werden: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`stop_sequences` bei `/v1/messages`), `parallel_tool_calls`, `max_tool_calls` und `image_config`. Nachrichten, Tools, `tool_choice`, `response_format`, Reasoning-Einstellungen und Ausgabelimits werden nie entfernt.
+
+Jeder entfernte Parameter wird gemeldet:
+
+- im Antwort-Header `X-Phaseo-Dropped-Params`, zum Beispiel `X-Phaseo-Dropped-Params: top_k, min_p`
+- in `meta.routing.dropped_params`, wenn die Anfrage `meta: true` setzt, zum Beispiel `[{"param": "top_k", "reason": "unsupported_by_provider"}]`
+
 ## Schnellübersicht
 
 | Parameter | Typ | Zweck |

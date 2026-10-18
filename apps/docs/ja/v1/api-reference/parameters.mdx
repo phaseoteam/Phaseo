@@ -17,6 +17,17 @@ icon: "sliders-horizontal"
 
 パラメーターのサポート状況は、エンドポイント、モデル、プロバイダーによって異なります。モデルのクイックスタート表には、特定のルートで現在有効なプロバイダーの対応状況が集約されています。
 
+## サポートされていないパラメーター
+
+リクエストを処理するプロバイダーがサンプリングパラメーターのいずれかをサポートしていない場合、Phaseo はそのパラメーターを削除します。プロバイダーには送信されず、リクエストも拒否されないため、常に OpenAI の既定値を送信するクライアントもそのまま動作します。サポートの有無は、Phaseo のプロバイダープロファイルとルートのカタログパラメーターからプロバイダーごとに判断されます。ルートがパラメーターを宣言していない場合は、何も削除されません。
+
+削除される可能性があるのは次のパラメーターだけです: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop`（`/v1/messages` では `stop_sequences`）、`parallel_tool_calls`、`max_tool_calls`、`image_config`。メッセージ、ツール、`tool_choice`、`response_format`、推論設定、出力上限は削除されません。
+
+削除されたパラメーターはすべて次の場所で通知されます。
+
+- `X-Phaseo-Dropped-Params` レスポンスヘッダー。例: `X-Phaseo-Dropped-Params: top_k, min_p`
+- リクエストで `meta: true` を設定した場合の `meta.routing.dropped_params`。例: `[{"param": "top_k", "reason": "unsupported_by_provider"}]`
+
 ## クイック参照
 
 | パラメーター | 型 | 用途 |

@@ -15,6 +15,7 @@ import {
 	REASONING_EFFORT_ORDER,
 	type ReasoningEffort,
 } from "./textNormalizePolicy";
+import { dropUnsupportedParams, type DroppedParam } from "./unsupportedParams";
 type ParamRange = {
     min?: number;
     max?: number;
@@ -205,9 +206,16 @@ export function normalizeIRForProvider(
         capabilityParams?: Record<string, any> | null;
         providerMaxOutputTokens?: number | null;
         modelForReasoning?: string | null;
+        /** Called with the optional parameters removed for this provider. */
+        onDroppedParams?: (dropped: DroppedParam[]) => void;
     }
 ): IRChatRequest {
     const capabilityParams = options?.capabilityParams ?? null;
+    // Parameters the provider does not support are dropped (and reported), not
+    // forwarded: see ./unsupportedParams.ts.
+    const supported = dropUnsupportedParams(ir, providerId, capabilityParams);
+    if (supported.dropped.length > 0) options?.onDroppedParams?.(supported.dropped);
+    ir = supported.ir;
     const modelForReasoning = options?.modelForReasoning ?? ir.model;
     const nextMaxTokens = normalizeMaxTokens(
         ir,

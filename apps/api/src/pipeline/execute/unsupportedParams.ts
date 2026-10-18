@@ -1,0 +1,198 @@
+// Purpose: Remove optional request parameters the chosen provider does not support.
+// Why: Clients (and SDKs) send OpenAI defaults to every model. Forwarding a field
+//      the provider's API does not define gets a 400 or is silently ignored;
+//      rejecting the request breaks those clients. The gateway drops it instead
+//      and reports the drop (X-Phaseo-Dropped-Params, meta.routing.dropped_params,
+//      routing diagnostics).
+// How: Runs per provider attempt in the execute stage, before the executor. The
+//      provider profile (`@providers/providerProfiles`) decides first; the
+//      route's catalogue params decide next, for the sampling parameters the
+//      catalogue tracks. A route with no declared params keeps everything.
+
+import type { IRChatRequest } from "@core/ir";
+import {
+	expandCapabilityParamAliases,
+	resolveProviderParamSupportOverride,
+} from "@pipeline/before/textParamPolicy";
+
+export type DroppedParamReason = "unsupported_by_provider" | "value_not_supported";
+
+export type DroppedParam = {
+	/** Client-facing parameter name, for example `top_k`. */
+	param: string;
+	reason: DroppedParamReason;
+	/** Where the decision came from. */
+	source: "provider_profile" | "catalogue";
+};
+
+type OptionalParam = {
+	param: string;
+	field: keyof IRChatRequest;
+	/**
+	 * Whether the catalogue's per-route params decide support. Only parameters
+	 * the catalogue records on most routes are judged by absence; others are
+	 * dropped only when the provider profile marks them unsupported.
+	 */
+	catalogueTracked: boolean;
+};
+
+// Optional generation controls: removing one changes sampling, never the
+// conversation, the tools or the output format. Messages, tools, tool_choice,
+// response_format, reasoning, max_tokens, stream and gateway-only options
+// (session_id, meta, usage, debug, echo_upstream_request) are never dropped here.
+const OPTIONAL_PARAMS: OptionalParam[] = [
+	{ param: "temperature", field: "temperature", catalogueTracked: true },
+	{ param: "top_p", field: "topP", catalogueTracked: true },
+	{ param: "top_k", field: "topK", catalogueTracked: true },
+	{ param: "min_p", field: "minP", catalogueTracked: true },
+	{ param: "repetition_penalty", field: "repetitionPenalty", catalogueTracked: true },
+	{ param: "frequency_penalty", field: "frequencyPenalty", catalogueTracked: true },
+	{ param: "presence_penalty", field: "presencePenalty", catalogueTracked: true },
+	{ param: "logit_bias", field: "logitBias", catalogueTracked: true },
+	{ param: "logprobs", field: "logprobs", catalogueTracked: true },
+	{ param: "top_logprobs", field: "topLogprobs", catalogueTracked: true },
+	{ param: "seed", field: "seed", catalogueTracked: true },
+	{ param: "stop", field: "stop", catalogueTracked: true },
+	{ param: "parallel_tool_calls", field: "parallelToolCalls", catalogueTracked: false },
+	{ param: "max_tool_calls", field: "maxToolCalls", catalogueTracked: false },
+	{ param: "image_config", field: "imageConfig", catalogueTracked: false },
+];
+
+function isPlainObject(value: unknown): value is Record<string, any> {
+	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+/**
+ * The catalogue stores route params as a record (`{ top_k: {...} }`), a list of
+ * ids, or a list of `{ param_id, ... }` rows. Returns null when the route
+ * declares nothing, which means "unknown", not "unsupported".
+ */
+export function declaredRouteParams(capabilityParams: unknown): Record<string, any> | null {
+	if (Array.isArray(capabilityParams)) {
+		const record: Record<string, any> = {};
+		for (const entry of capabilityParams) {
+			if (typeof entry === "string" && entry.trim()) record[entry.trim()] = {};
+			else if (isPlainObject(entry) && typeof entry.param_id === "string" && entry.param_id.trim()) {
+				const { param_id: paramId, ...config } = entry;
+				record[paramId.trim()] = config;
+			}
+		}
+		return Object.keys(record).length > 0 ? record : null;
+	}
+	if (isPlainObject(capabilityParams) && Object.keys(capabilityParams).length > 0) return capabilityParams;
+	return null;
+}
+
+function declaredConfig(params: Record<string, any>, param: string): { declared: boolean; config: Record<string, any> | null } {
+	for (const key of expandCapabilityParamAliases(param)) {
+		if (key in params) return { declared: true, config: isPlainObject(params[key]) ? params[key] : null };
+	}
+	return { declared: false, config: null };
+}
+
+function allowedValues(config: Record<string, any> | null): unknown[] | null {
+	const values = config?.supported_values ?? config?.allowed_values ?? config?.enum ?? config?.values;
+	return Array.isArray(values) && values.length > 0 ? values : null;
+}
+
+function valueAllowed(value: unknown, allowed: unknown[]): boolean {
+	const list = Array.isArray(value) ? value : [value];
+	return list.every((entry) => allowed.some((option) => option === entry || String(option).toLowerCase() === String(entry).toLowerCase()));
+}
+
+/**
+ * Removes the optional parameters the provider does not support, and values
+ * outside a declared list, from a text request. Returns the request unchanged
+ * (same object) when nothing is dropped.
+ */
+export function dropUnsupportedParams(
+	ir: IRChatRequest,
+	providerId: string,
+	capabilityParams: unknown,
+): { ir: IRChatRequest; dropped: DroppedParam[] } {
+	const params = declaredRouteParams(capabilityParams);
+	const dropped: DroppedParam[] = [];
+	let next: IRChatRequest | null = null;
+	for (const entry of OPTIONAL_PARAMS) {
+		const value = ir[entry.field];
+		if (value === undefined || value === null) continue;
+		const override = resolveProviderParamSupportOverride(providerId, entry.param);
+		let decision: DroppedParam | null = null;
+		if (override === false) {
+			decision = { param: entry.param, reason: "unsupported_by_provider", source: "provider_profile" };
+		} else if (params) {
+			const { declared, config } = declaredConfig(params, entry.param);
+			if (!declared && override !== true && entry.catalogueTracked) {
+				decision = { param: entry.param, reason: "unsupported_by_provider", source: "catalogue" };
+			} else if (declared) {
+				const allowed = allowedValues(config);
+				if (allowed && !valueAllowed(value, allowed)) {
+					decision = { param: entry.param, reason: "value_not_supported", source: "catalogue" };
+				}
+			}
+		}
+		if (!decision) continue;
+		next ??= { ...ir };
+		delete next[entry.field];
+		dropped.push(decision);
+	}
+	return { ir: next ?? ir, dropped };
+}
+
+/** `X-Phaseo-Dropped-Params` value: the dropped client parameter names, comma separated. */
+export function droppedParamsHeader(dropped: Array<Pick<DroppedParam, "param">>): string {
+	return Array.from(new Set(dropped.map((entry) => entry.param))).join(", ");
+}
+
+/** What the request context keeps for the provider attempt that ran last. */
+export type DroppedParamsRecord = {
+	provider: string;
+	params: Array<DroppedParam & { client_sent: boolean }>;
+};
+
+type DroppedParamsContext = {
+	endpoint?: string | null;
+	requestedParams?: string[] | null;
+	routingDiagnostics?: Record<string, any> | null;
+};
+
+// Client-facing names where a surface spells a parameter differently.
+const SURFACE_PARAM_NAMES: Record<string, Record<string, string>> = {
+	messages: { stop: "stop_sequences" },
+};
+
+/**
+ * Records the drops for this provider attempt in the routing diagnostics (sent
+ * to the audit log and returned under `routing_diagnostics`). A later attempt
+ * on another provider replaces them. A drop counts as client-sent when the
+ * client's body named the parameter; values filled in by a preset or a schema
+ * default are recorded but not reported in the response.
+ */
+export function recordDroppedParams(ctx: DroppedParamsContext, providerId: string, dropped: DroppedParam[]): void {
+	const requested = new Set(ctx.requestedParams ?? []);
+	const names = SURFACE_PARAM_NAMES[String(ctx.endpoint ?? "")] ?? {};
+	const record: DroppedParamsRecord = {
+		provider: providerId,
+		params: dropped.map((entry) => ({
+			...entry,
+			param: names[entry.param] ?? entry.param,
+			client_sent: requested.has(entry.param),
+		})),
+	};
+	if (!ctx.routingDiagnostics) ctx.routingDiagnostics = {};
+	ctx.routingDiagnostics.droppedParams = record;
+}
+
+/** Forgets the previous attempt's drops before the next provider is tried. */
+export function clearDroppedParams(ctx: DroppedParamsContext): void {
+	if (ctx.routingDiagnostics && "droppedParams" in ctx.routingDiagnostics) delete ctx.routingDiagnostics.droppedParams;
+}
+
+/** The drops to report to the client: those of the provider that served it, client-sent only. */
+export function droppedParamsForClient(ctx: { routingDiagnostics?: Record<string, any> | null }): Array<DroppedParam & { provider: string }> {
+	const record = ctx.routingDiagnostics?.droppedParams as DroppedParamsRecord | undefined;
+	if (!record || !Array.isArray(record.params)) return [];
+	return record.params
+		.filter((entry) => entry.client_sent)
+		.map(({ client_sent: _clientSent, ...entry }) => ({ ...entry, provider: record.provider }));
+}

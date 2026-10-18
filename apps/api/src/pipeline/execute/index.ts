@@ -98,6 +98,7 @@ import type {
 import type { ExecutorExecuteArgs } from "@executors/types";
 import { createUpstreamTimingTracker } from "@executors/_shared/timing/upstream";
 import { getReasoningEffortAllowlist, normalizeIRForProvider } from "./normalize";
+import { clearDroppedParams, recordDroppedParams } from "./unsupportedParams";
 import { normalizeCapability } from "@/executors";
 import { filterCandidatesByModalities, filterEmbeddingCandidatesByModalities, filterDecisionCandidatesByModalities } from "./modalities";
 import { loadPriceCard } from "../pricing";
@@ -958,6 +959,7 @@ async function attemptProviderWithIR(
 			ctx.teamSettings?.ioLoggingEnabled === true &&
 			ctx.teamSettings?.ioLoggingIncludeProviderPayloads === true;
 
+		if (isTextGenerate) clearDroppedParams(ctx);
 		const normalizedIr = await timing.timer.span(`${attemptPrefix}_normalize_ir`, () =>
 			isTextGenerate
 				? normalizeIRForProvider(
@@ -968,6 +970,7 @@ async function attemptProviderWithIR(
 						capabilityParams: candidate.capabilityParams,
 						providerMaxOutputTokens: candidate.maxOutputTokens,
 						modelForReasoning,
+						onDroppedParams: (dropped) => recordDroppedParams(ctx, candidate.providerId, dropped),
 					},
 				)
 				: normalizedCapability === "video.generate"

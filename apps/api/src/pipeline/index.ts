@@ -5,6 +5,7 @@
 
 import { beforeRequest, type BeforeRequestObservabilitySnapshot, type UnservedModelFallback } from "./before";
 import { modelSubstitutionHeader, noteModelSubstitutionServed, type ModelSubstitution } from "./before/modelSuccessor";
+import { droppedParamsForClient, droppedParamsHeader } from "./execute/unsupportedParams";
 import type { Endpoint } from "@core/types";
 import { handleError } from "@core/error-handler";
 import { auditFailure } from "./audit";
@@ -201,6 +202,22 @@ function withModelSubstitutionHeaders(
 	return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
+/**
+ * Tells the client which of its parameters the serving provider does not
+ * support and the gateway removed (`X-Phaseo-Dropped-Params: top_k, min_p`).
+ */
+function withDroppedParamsHeader(
+	response: Response,
+	ctx: { routingDiagnostics?: Record<string, any> | null },
+): Response {
+	if (!response.ok) return response;
+	const dropped = droppedParamsForClient(ctx);
+	if (dropped.length === 0) return response;
+	const headers = new Headers(response.headers);
+	headers.set("X-Phaseo-Dropped-Params", droppedParamsHeader(dropped));
+	return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
 function cloneRequestForEarlyObservability(req: Request): Request | undefined {
     const contentType = (req.headers.get("content-type") ?? "").toLowerCase();
     const capturesTextBody =
@@ -255,7 +272,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 
         const runner = resolvePipeline(endpoint);
         const runWithHeaders = async (attempt: Parameters<typeof runner>[0]) =>
-            withModelSubstitutionHeaders(await runner(attempt), attempt.pre.ctx);
+            withDroppedParamsHeader(withModelSubstitutionHeaders(await runner(attempt), attempt.pre.ctx), attempt.pre.ctx);
 
         // Tries the configured fallback models in order after the first model
         // failed. Returns the first response that should not fall back further,

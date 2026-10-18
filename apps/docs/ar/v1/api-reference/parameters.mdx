@@ -17,6 +17,17 @@ icon: "sliders-horizontal"
 
 يختلف دعم المعلمات حسب نقطة النهاية والنموذج والمزوّد. يجمع جدول البدء السريع للنموذج دعم المزوّدين النشطين حاليًا لمسار محدد。
 
+## المعلمات غير المدعومة
+
+إذا كان المزوّد الذي يخدم الطلب لا يدعم إحدى معلمات أخذ العينات فيه، فإن Phaseo يحذف هذه المعلمة. لا تُرسل إلى المزوّد ولا يُرفض الطلب، لذا تستمر العملاء التي ترسل دائمًا القيم الافتراضية لـ OpenAI في العمل. يُحدَّد الدعم لكل مزوّد من ملفات تعريف المزوّدين في Phaseo ومن معلمات الكتالوج الخاصة بالمسار. إذا لم يعلن المسار أي معلمات، فلا يُحذف شيء.
+
+يمكن حذف هذه المعلمات فقط: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`stop_sequences` على `/v1/messages`)، و`parallel_tool_calls` و`max_tool_calls` و`image_config`. لا تُحذف أبدًا الرسائل والأدوات و`tool_choice` و`response_format` وإعدادات الاستدلال وحدود المخرجات.
+
+يُبلَّغ عن كل معلمة محذوفة:
+
+- في ترويسة الاستجابة `X-Phaseo-Dropped-Params`، مثل `X-Phaseo-Dropped-Params: top_k, min_p`
+- في `meta.routing.dropped_params` عندما يضبط الطلب `meta: true`، مثل `[{"param": "top_k", "reason": "unsupported_by_provider"}]`
+
 ## نظرة سريعة
 
 | المعلمة | النوع | الاستخدام |

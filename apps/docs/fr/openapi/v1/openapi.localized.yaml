@@ -750,6 +750,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -800,6 +802,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -921,6 +925,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -8566,6 +8572,10 @@ components:
         type: string
     ModelSubstitution:
       description: Pourquoi et comment le modèle demandé a été remplacé, par exemple `reason=unserved; from=lab/old-model; to=lab/new-model`. Envoyé uniquement lorsque le routage des modèles retirés a répondu à la requête avec un modèle remplaçant.
+      schema:
+        type: string
+    DroppedParams:
+      description: Paramètres de la requête que le fournisseur qui la traite ne prend pas en charge et que la passerelle a retirés au lieu de les envoyer au fournisseur ou de rejeter la requête, par exemple `top_k, min_p`. Envoyé uniquement lorsqu'un paramètre a été retiré.
       schema:
         type: string
     UpstreamRateLimitValue:

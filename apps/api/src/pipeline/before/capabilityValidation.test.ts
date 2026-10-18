@@ -419,7 +419,8 @@ describe("validateCapabilities", () => {
 			workspaceId: "team_test",
 			providers: [
 				provider("google-ai-studio", { image_config: {}, temperature: {} }, 4096),
-				provider("openai", { temperature: {} }, 4096),
+				// DeepInfra's profile says nothing about image_config, so its support is unknown.
+				provider("deepinfra", { temperature: {} }, 4096),
 			],
 			model: "google/gemini-2-5-flash-image",
 		});
@@ -427,7 +428,7 @@ describe("validateCapabilities", () => {
 		expect(result.ok).toBe(true);
 		if (result.ok) {
 			expect(result.requestedParams).toContain("image_config");
-			expect(result.providers.map((p: any) => p.providerId)).toEqual(["google-ai-studio", "openai"]);
+			expect(result.providers.map((p: any) => p.providerId)).toEqual(["google-ai-studio", "deepinfra"]);
 		}
 	});
 

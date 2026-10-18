@@ -777,6 +777,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -821,6 +823,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -943,6 +947,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -8962,6 +8968,14 @@ components:
         Why and how the requested model was replaced, for example
         `reason=unserved; from=lab/old-model; to=lab/new-model`. Sent only when
         retired model routing answered the request with a replacement model.
+      schema:
+        type: string
+    DroppedParams:
+      description: >-
+        Request parameters the serving provider does not support, which the
+        gateway removed instead of sending them upstream or rejecting the
+        request, for example `top_k, min_p`. Sent only when a parameter was
+        dropped.
       schema:
         type: string
     UpstreamRateLimitValue:

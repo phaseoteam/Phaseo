@@ -23,6 +23,7 @@ import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
 import { applyByokServiceFee } from "../pricing/byok-fee";
 import { applyDataContributionDiscount } from "../pricing/data-contribution-discount";
 import { getBaseModel } from "../execute/utils";
+import { droppedParamsForClient } from "../execute/unsupportedParams";
 import { dispatchBackground, ensureRuntimeForBackground, getResponseCache } from "@/runtime/env";
 import { resolveNonStreamLatencyMs } from "./timing";
 import { calculateOutputPerformanceMetrics } from "./performance-metrics";
@@ -297,6 +298,8 @@ export function attachGatewaySuccessMeta(args: {
                     provider: entry.providerId,
                     unsupported_params: entry.unsupportedParams,
                 })) ?? [],
+            // Parameters the serving provider does not support, removed before the call.
+            dropped_params: droppedParamsForClient(ctx).map(({ param, reason }) => ({ param, reason })),
         },
         ...(ctx.responseCache ? { response_cache: ctx.responseCache } : {}),
         ...(ctx.guardrailEnforcement
