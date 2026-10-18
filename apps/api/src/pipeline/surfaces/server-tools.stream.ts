@@ -10,6 +10,7 @@ import { encodeUnifiedStreamEvent, type StreamProtocol } from "@protocols/stream
 import { extractUnifiedStreamEvents, type UnifiedStreamEvent } from "../after/stream-events";
 import { SseParser } from "@core/sse-parser";
 import { createStreamReasoningStateCollector } from "./stream-reasoning-state";
+import { UpstreamStreamError } from "@core/stream-errors";
 
 export type ServerToolTraceItem = {
 	id: string;
@@ -878,6 +879,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 	let nativeId: string | undefined;
 	let modelFromStream: string | undefined;
 	let globalFinishReason: IRChatResponse["choices"][number]["finishReason"] | null = null;
+	let streamErrorMessage: string | null = null;
 	const choiceAccumulators = new Map<number, StreamChoiceAccumulator>();
 	const reasoningState = createStreamReasoningStateCollector(args.protocol);
 	const accumulationState: AccumulationState = {
@@ -926,6 +928,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 
 			for (const event of events) {
 				args.onEvent?.(event);
+				if (event.type === "error") { streamErrorMessage ??= event.message ?? "stream_error"; continue; }
 				if (event.type === "snapshot" && event.isFinal) {
 					finalSnapshot = event.payload;
 					nativeId = nativeId ?? resolveNativeId(event.payload);
@@ -973,6 +976,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 				citations.observe(eventName, payload);
 				for (const event of events) {
 					args.onEvent?.(event);
+					if (event.type === "error") { streamErrorMessage ??= event.message ?? "stream_error"; continue; }
 					if (event.type === "snapshot" && event.isFinal) {
 						finalSnapshot = event.payload;
 						nativeId = nativeId ?? resolveNativeId(event.payload);
@@ -1057,6 +1061,8 @@ export async function consumeTextProtocolStreamToIR(args: {
 		modelFromStream,
 	});
 	reasoningState.apply(ir);
+	// The upstream reported a failure after output began: never a completion.
+	if (streamErrorMessage !== null) throw new UpstreamStreamError(streamErrorMessage, { ir, rawResponse: rawResponse ?? null, usageRaw: effectiveUsageRaw });
 
 	return {
 		ir: citations.apply(ir),

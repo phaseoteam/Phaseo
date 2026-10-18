@@ -419,3 +419,33 @@ describe("extractUnifiedStreamEvents", () => {
 		expect(stop).toEqual([{ type: "stop", finishReason: null, payload: { type: "message_stop" } }]);
 	});
 });
+
+describe("mid-stream upstream errors", () => {
+	it("reads a bare OpenAI-compatible error frame on a Chat stream as an error", () => {
+		const events = extractUnifiedStreamEvents({
+			protocol: "openai.chat.completions",
+			frame: { error: { message: "upstream reset", type: "server_error" } },
+		});
+		expect(events).toEqual([expect.objectContaining({ type: "error", message: "upstream reset" })]);
+	});
+
+	it("does not read a chunk that carries an error field next to choices as a failure", () => {
+		const events = extractUnifiedStreamEvents({
+			protocol: "openai.chat.completions",
+			frame: { object: "chat.completion.chunk", error: null, choices: [{ index: 0, delta: { content: "hi" } }] },
+		});
+		expect(events.some((event) => event.type === "error")).toBe(false);
+	});
+
+	it("takes the message of response.failed from response.error", () => {
+		const events = extractUnifiedStreamEvents({
+			protocol: "openai.responses",
+			eventName: "response.failed",
+			frame: { response: { status: "failed", error: { code: "server_error", message: "upstream reset" } } },
+		});
+		expect(events).toEqual(expect.arrayContaining([
+			expect.objectContaining({ type: "error", message: "upstream reset" }),
+			expect.objectContaining({ type: "stop", finishReason: "error" }),
+		]));
+	});
+});

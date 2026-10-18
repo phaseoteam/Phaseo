@@ -34,6 +34,9 @@ import {
 	mergeIRUsageTotals,
 	prepareServerToolsForTextRequest,
 } from "./server-tools";
+import { UpstreamStreamError } from "@core/stream-errors";
+import { suppressFailedResponseBilling } from "../after/billing-policy";
+import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
 import {
 	buildResponseCacheFingerprint,
 	buildResponseCacheKey,
@@ -115,6 +118,58 @@ function extractAssistantText(response: IRChatResponse): string {
 		.map((part) => part.text)
 		.join("")
 		.trim();
+}
+
+const UPSTREAM_STREAM_FAILURE_MESSAGE = "The upstream stream failed before successful completion.";
+
+/**
+ * A buffered client asked for one complete response, so an upstream stream
+ * that failed after output began is a failed request: the client gets a 502
+ * and no partial text. Billing follows the streaming path
+ * (pipeline/after/stream.ts): partial output of a failed stream is not charged,
+ * but its tokens still count against managed provider rate limits.
+ */
+async function settleBufferedUpstreamStreamFailure(
+	ctx: PipelineContext,
+	result: any,
+	error: UpstreamStreamError,
+): Promise<Response> {
+	const usage = error.partial.usageRaw ?? result.bill?.usage ?? null;
+	const partialResult = {
+		...result,
+		kind: "completed" as const,
+		ir: error.partial.ir,
+		stream: null,
+		usageFinalizer: null,
+		rawResponse: error.partial.rawResponse,
+		bill: { ...result.bill, usage: usage ?? undefined },
+	};
+	await recordManagedProviderTokensOnce({
+		ctx,
+		providerId: result.provider,
+		keySource: result.keySource,
+		usage,
+		reservation: result.providerRateLimitReservation,
+	});
+	suppressFailedResponseBilling({ ctx, result: partialResult, usage: usage ?? undefined, reason: "upstream_failure" });
+	await handleFailureAudit(
+		ctx,
+		partialResult,
+		502,
+		"upstream",
+		"upstream_stream_failure",
+		UPSTREAM_STREAM_FAILURE_MESSAGE,
+		{ upstream_error_message: sanitizeErrorMessage(error.upstreamMessage) },
+		{
+			generation_id: ctx.requestId,
+			status_code: 502,
+			error: "upstream_stream_failure",
+			description: UPSTREAM_STREAM_FAILURE_MESSAGE,
+		},
+	);
+	return createJsonErrorResponse(502, "upstream_stream_failure", UPSTREAM_STREAM_FAILURE_MESSAGE, {
+		error_origin: "upstream",
+	});
 }
 
 function emptyProviderResponse(
@@ -882,21 +937,25 @@ async function runTextGeneratePipelineInner(
 					onEvent: liveSink?.beginRound(),
 				});
 				finishStreamingProvider(pre.ctx);
-			} catch {
+			} catch (error) {
 				finishStreamingProvider(pre.ctx, "error");
 				const header = timing.timer.header();
 				pre.ctx.timing = timing.timer.snapshot();
+				const upstreamFailed = error instanceof UpstreamStreamError;
 				return await handleError({
 					stage: "execute",
-					res: createJsonErrorResponse(
-						502,
-						"gateway_stream_materialization_error",
-						"The upstream stream could not be materialized.",
-					),
+					res: upstreamFailed
+						? await settleBufferedUpstreamStreamFailure(pre.ctx, exec.result, error)
+						: createJsonErrorResponse(
+							502,
+							"gateway_stream_materialization_error",
+							"The upstream stream could not be materialized.",
+						),
 					endpoint,
 					ctx: pre.ctx,
 					timingHeader: header || undefined,
-					auditFailure,
+					// The upstream failure is audited with its partial result above.
+					auditFailure: upstreamFailed ? async () => {} : auditFailure,
 					req,
 				});
 			}
@@ -1198,21 +1257,24 @@ async function runTextGeneratePipelineInner(
 							onEvent: liveSink?.beginRound(),
 						});
 						finishStreamingProvider(pre.ctx);
-					} catch {
+					} catch (error) {
 						finishStreamingProvider(pre.ctx, "error");
 						const header = timing.timer.header();
 						pre.ctx.timing = timing.timer.snapshot();
+						const upstreamFailed = error instanceof UpstreamStreamError;
 						return await handleError({
 							stage: "execute",
-							res: createJsonErrorResponse(
-								502,
-								"gateway_stream_materialization_error",
-								"The upstream stream could not be materialized.",
-							),
+							res: upstreamFailed
+								? await settleBufferedUpstreamStreamFailure(pre.ctx, followUpResult, error)
+								: createJsonErrorResponse(
+									502,
+									"gateway_stream_materialization_error",
+									"The upstream stream could not be materialized.",
+								),
 							endpoint,
 							ctx: pre.ctx,
 							timingHeader: header || undefined,
-							auditFailure,
+							auditFailure: upstreamFailed ? async () => {} : auditFailure,
 							req,
 						});
 					}

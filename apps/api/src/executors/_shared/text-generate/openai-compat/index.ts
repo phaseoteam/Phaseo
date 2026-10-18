@@ -42,6 +42,7 @@ import {
 	readErrorPayload,
 } from "./retry-policy";
 import { SseParser } from "@core/sse-parser";
+import { readUpstreamStreamError } from "@core/stream-errors";
 import {
 	ANTHROPIC_REASONING_FORMAT,
 	openReasoningState,
@@ -957,6 +958,18 @@ function transformResponsesStreamToAnthropic(
 							if (block) stopBlock(block);
 							continue;
 						}
+						if (normalizedEvent === "error" || normalizedEvent === "response.failed") {
+							// Messages clients receive a failure after output began as an
+							// `error` event with no message_delta or message_stop.
+							if (terminalEmitted) continue;
+							const failure = readUpstreamStreamError(payload);
+							emit(controller, "error", {
+								type: "error",
+								error: { type: anthropicStreamErrorType(failure.code), message: failure.message },
+							});
+							terminalEmitted = true;
+							continue;
+						}
 						// response.incomplete is terminal too: its response carries the
 						// usage and the max_output_tokens or content_filter reason.
 						if (normalizedEvent === "response.completed" || normalizedEvent === "response.incomplete") {
@@ -980,6 +993,25 @@ function transformResponsesStreamToAnthropic(
 			}
 		},
 	});
+}
+
+const ANTHROPIC_STREAM_ERROR_TYPES = new Set([
+	"invalid_request_error",
+	"authentication_error",
+	"permission_error",
+	"not_found_error",
+	"request_too_large",
+	"rate_limit_error",
+	"api_error",
+	"overloaded_error",
+]);
+
+function anthropicStreamErrorType(code: string | null): string {
+	const value = String(code ?? "").toLowerCase();
+	if (ANTHROPIC_STREAM_ERROR_TYPES.has(value)) return value;
+	if (value.includes("overload")) return "overloaded_error";
+	if (value.includes("rate_limit")) return "rate_limit_error";
+	return "api_error";
 }
 
 function normalizeUsageToAnthropic(usage: any): {
