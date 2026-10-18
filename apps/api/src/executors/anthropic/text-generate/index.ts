@@ -9,6 +9,7 @@
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { IRChatRequest, IRChatResponse, IRChoice, IRContentPart, IRToolCall } from "@core/ir";
+import { routeOutputTokenLimit } from "@core/route-token-limits";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { azureAnthropicHeaders, azureAnthropicUrl, resolveAzureConfig, resolveAzureCredential } from "@providers/azure/config";
@@ -669,8 +670,9 @@ export function irToAnthropicMessages(
 	placeLateSystemMessages(messages, systemSegments, supportsAnthropicMidConversationSystemMessages(resolvedModel));
 	let system = joinAnthropicSystemSegments(systemSegments);
 
-	// Use IR maxTokens if provided, otherwise fall back to provider's max_output_tokens, otherwise 4096
-	const maxTokens = ir.maxTokens ?? providerMaxOutputTokens ?? 4096;
+	// Use IR maxTokens if provided, otherwise fall back to provider's max_output_tokens
+	// (a stored 0 is unknown, not a limit), otherwise 4096
+	const maxTokens = ir.maxTokens ?? routeOutputTokenLimit(providerMaxOutputTokens) ?? 4096;
 
 	const request: any = {
 		messages,

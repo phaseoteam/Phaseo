@@ -11,6 +11,7 @@ import { tieredRead } from "@/core/tiered-cache";
 import { gatewayCreditCacheKey } from "@/core/gateway-credit-cache";
 import { isDataContributionAccessEnabled } from "@/core/feature-flags";
 import { normalizePrivateModelBaseUrl } from "@/core/private-models";
+import { routeOutputTokenLimit } from "@core/route-token-limits";
 import { loadPrivateRouteRow } from "./privateModelCache";
 import { getWorkspacePolicyVersionToken } from "./workspacePolicy";
 import { contextBundleEnabled, loadTextContextBundle, type ContextBundle } from "./contextBundle";
@@ -507,8 +508,10 @@ function mergeGatewayContextVariants(
                         : provider.capabilityParams,
                 maxInputTokens:
                     existing.maxInputTokens ?? provider.maxInputTokens ?? null,
+                // A stored 0 is unknown, so it must not hide the other row's real limit.
                 maxOutputTokens:
-                    existing.maxOutputTokens ?? provider.maxOutputTokens ?? null,
+                    routeOutputTokenLimit(existing.maxOutputTokens) ??
+                    routeOutputTokenLimit(provider.maxOutputTokens),
             };
         }
     }

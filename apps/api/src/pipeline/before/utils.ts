@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { adapterFor } from "@providers/index";
 import type { Endpoint } from "@core/types";
+import { routeOutputTokenLimit } from "@core/route-token-limits";
 import type { ProviderCandidate } from "./types";
 import type { GatewayContextData } from "./types";
 import type { ProviderCandidateBuildDiagnostics } from "./types";
@@ -98,7 +99,8 @@ export function buildProviderCandidatesWithDiagnostics(
             capabilityParams: provider.capabilityParams ?? {},
             effectiveDataPolicy,
             maxInputTokens: provider.maxInputTokens ?? null,
-            maxOutputTokens: provider.maxOutputTokens ?? null,
+            // A stored 0 means unknown; routing, clamping and executors see null.
+            maxOutputTokens: routeOutputTokenLimit(provider.maxOutputTokens),
         });
     }
 
