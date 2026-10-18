@@ -2,8 +2,8 @@ import { useMutation } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { X } from "lucide-react-native";
 import { useEffect, useRef } from "react";
-import { Alert, Pressable, ScrollView, Switch, View } from "react-native";
-import { Button, Chip, Header, Icon, ReadableWidth, Row, Screen, Section, Segmented, Text, TextField } from "@/components/ui";
+import { Pressable, ScrollView, Switch, View } from "react-native";
+import { Button, Chip, confirm, Header, Icon, ReadableWidth, Row, Screen, Section, Segmented, Text, TextField, toastError } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { createRule, deleteRule, EVENT_KINDS, updateRule, type RuleInput, type ScopeMode } from "@/lib/api/notifications";
 import { cn } from "@/lib/cn";
@@ -42,7 +42,7 @@ export function RuleEditor() {
   const save = useMutation({
     mutationFn: (rule: RuleInput) => (isNew ? createRule(rule) : updateRule(id, rule)),
     onSuccess: () => { void settings.refetch(); router.back(); },
-    onError: (error) => Alert.alert("Couldn't save the rule", error instanceof Error ? error.message : "Try again."),
+    onError: (error) => toastError("Couldn't save the rule", error),
   });
   const remove = useMutation({
     mutationFn: () => deleteRule(id),
@@ -138,7 +138,7 @@ export function RuleEditor() {
 
           {!isNew ? (
             <View className="px-4 pt-8">
-              <Button label="Delete rule" variant="destructive" loading={remove.isPending} onPress={() => Alert.alert("Delete this rule?", undefined, [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => remove.mutate() }])} />
+              <Button label="Delete rule" variant="destructive" loading={remove.isPending} onPress={() => void confirm({ title: "Delete this rule?", body: "You'll stop getting notifications from it.", confirmLabel: "Delete", destructive: true }).then((ok) => { if (ok) remove.mutate(); })} />
             </View>
           ) : null}
         </ReadableWidth>

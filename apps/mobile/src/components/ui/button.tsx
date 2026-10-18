@@ -11,6 +11,8 @@ const variants = {
   outline: { box: "border border-border bg-background active:bg-accent", text: "text-foreground", tone: "foreground" },
   ghost: { box: "active:bg-accent", text: "text-foreground", tone: "foreground" },
   destructive: { box: "border border-border active:bg-accent", text: "text-destructive", tone: "destructive" },
+  /** The confirming action of a destructive dialog (the website's destructive AlertDialogAction). */
+  danger: { box: "bg-destructive active:opacity-85", text: "text-white", tone: "primary-foreground" },
 } as const satisfies Record<string, { box: string; text: string; tone: IconTone }>;
 
 const sizes = {
