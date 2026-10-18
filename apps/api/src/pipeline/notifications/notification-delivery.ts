@@ -5,8 +5,9 @@ import { getEmailSuppressionReason } from "@/pipeline/notifications/email-suppre
 import { getModelDeprecationContent, getModelDeprecationTemplateVariables, renderModelDeprecationEmail, renderNotificationTestEmail } from "@/pipeline/notifications/model-deprecation";
 import { getModelSubstitutionContent, renderModelSubstitutionEmail } from "@/pipeline/notifications/model-substitution";
 
-const DELIVERABLE_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "notification_test"];
+const DELIVERABLE_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "notification_test"];
 const EVENT_PAGE_SIZE = 100;
+const MAX_ROUTING_PASSES = 20;
 // Kept below PostgREST's 1,000-row response cap; the RPC also clamps it.
 const MODEL_DEPRECATION_TARGET_PAGE_SIZE = 500;
 const MODEL_DEPRECATION_USAGE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
@@ -43,6 +44,14 @@ export async function forEachPage<T>(pageSize: number, fetchPage: (from: number,
 	}
 }
 
+function rateLimitThrottledMessage(payload: Record<string, unknown>): string {
+	const total = Number(payload.throttled_requests ?? 0);
+	const minutes = Number(payload.window_minutes ?? 15);
+	const policies = (Array.isArray(payload.policies) ? payload.policies : []) as Array<Record<string, unknown>>;
+	const top = policies.slice(0, 5).map((policy) => `${String(policy.policy_name ?? "Deleted policy")} (${String(policy.limit_scope ?? "unknown").replaceAll("_", " ")} limit, ${Number(policy.throttled_requests ?? 0)})`);
+	return `Rate limit policies rejected ${total} ${total === 1 ? "request" : "requests"} in the last ${minutes} minutes.${top.length ? ` Most rejected: ${top.join(", ")}.` : ""}`;
+}
+
 export function eventContent(event: EventRow) {
 	if (event.kind === "model_deprecation") {
 		const content = getModelDeprecationContent(event.payload ?? {});
@@ -53,12 +62,13 @@ export function eventContent(event: EventRow) {
 		return { title: content.title, message: content.message, settingsUrl: content.settingsUrl };
 	}
 	const payload = event.payload ?? {};
-	const title = String(payload.title ?? event.subject ?? ({ low_balance: "Low balance alert", auto_top_up_failed: "Auto Top-Up failed", payment_method_expiring: "Payment method expiring soon", model_deprecation: "Model deprecation alert", notification_test: "Phaseo test notification" } as Record<string, string>)[event.kind] ?? "Phaseo notification");
+	const title = String(payload.title ?? event.subject ?? ({ low_balance: "Low balance alert", auto_top_up_failed: "Auto Top-Up failed", payment_method_expiring: "Payment method expiring soon", model_deprecation: "Model deprecation alert", rate_limit_throttled: "Rate limit alert", notification_test: "Phaseo test notification" } as Record<string, string>)[event.kind] ?? "Phaseo notification");
 	let message = String(payload.message ?? "");
 	if (!message && event.kind === "low_balance") message = `Your workspace balance is $${Number(payload.balance_usd ?? 0).toFixed(2)}, at or below the configured $${Number(payload.threshold_usd ?? 0).toFixed(2)} threshold.`;
 	if (!message && event.kind === "auto_top_up_failed") message = String(payload.reason ?? "Phaseo could not automatically add credits to your workspace.");
 	if (!message && event.kind === "payment_method_expiring") message = `The ${String(payload.brand ?? "card")} ending in ${String(payload.last4 ?? "unknown")} expires ${String(payload.expiry ?? "soon")}.`;
 	if (!message && event.kind === "model_deprecation") message = `${String(payload.model_name ?? payload.model_id ?? "A model used by your workspace")} has been deprecated${payload.retirement_date ? ` and is scheduled to retire on ${String(payload.retirement_date)}` : ""}.`;
+	if (!message && event.kind === "rate_limit_throttled") message = rateLimitThrottledMessage(payload);
 	return { title, message: message || "A workspace notification was generated.", settingsUrl: "https://phaseo.app/settings/notifications" };
 }
 
@@ -198,16 +208,20 @@ export async function runNotificationDeliveryJob(limit = 25): Promise<{ queued: 
 	const supabase = getSupabaseAdmin();
 	const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 	let queued = 0;
-	await forEachPage(EVENT_PAGE_SIZE, async (from, to) => {
-		const eventsResult = await supabase.from("email_outbox").select("id,kind,subject,workspace_id,payload,created_at").in("kind", DELIVERABLE_KINDS).not("workspace_id", "is", null).gte("created_at", since).order("created_at", { ascending: true }).order("id", { ascending: true }).range(from, to);
+	// Only events without a routing snapshot are read. Routing an event removes it from that set,
+	// so each pass reads from the start rather than paging by offset.
+	for (let pass = 0; pass < MAX_ROUTING_PASSES; pass += 1) {
+		const eventsResult = await supabase.from("email_outbox").select("id,kind,subject,workspace_id,payload,created_at,notification_routed_events(event_id)").in("kind", DELIVERABLE_KINDS).not("workspace_id", "is", null).gte("created_at", since).is("notification_routed_events", null).order("created_at", { ascending: true }).order("id", { ascending: true }).limit(EVENT_PAGE_SIZE);
 		if (eventsResult.error) throw new Error(`notification_events_fetch_failed:${eventsResult.error.message}`);
-		return (eventsResult.data ?? []) as EventRow[];
-	}, async (event) => {
+		const events = (eventsResult.data ?? []) as unknown as EventRow[];
+		for (const event of events) {
 			const requestedDestinationId = event.kind === "notification_test" && typeof event.payload?.destination_id === "string" ? event.payload.destination_id : null;
 			const snapshot = await supabase.rpc("enqueue_notification_event_deliveries", { p_event_id: event.id, p_workspace_id: event.workspace_id, p_event_kind: event.kind, p_requested_destination_id: requestedDestinationId });
 			if (snapshot.error) throw new Error(`notification_attempts_enqueue_failed:${snapshot.error.message}`);
 			queued += Number(snapshot.data ?? 0);
-	});
+		}
+		if (events.length < EVENT_PAGE_SIZE) break;
+	}
 	const attempts = await supabase.rpc("claim_notification_delivery_attempts", { p_limit: limit });
 	if (attempts.error) throw new Error(`notification_attempts_claim_failed:${attempts.error.message}`);
 	let sent = 0; let failed = 0;

@@ -482,6 +482,10 @@ async function handleRateLimitThrottleRollupScheduledEvent(env: GatewayBindings)
 		const { data, error } = await getSupabaseAdmin().rpc("refresh_rate_limit_throttle_rollups");
 		if (error) throw new Error(error.message || "Failed to refresh rate limit throttle rollups");
 		if (Number((data as any)?.rows ?? 0) > 0) console.log("rate_limit_throttle_rollups_refreshed", data);
+		// Queue alerts from the fresh rollups; the notification delivery job later in this tick sends them.
+		const alerts = await getSupabaseAdmin().rpc("enqueue_rate_limit_throttle_alerts");
+		if (alerts.error) throw new Error(alerts.error.message || "Failed to queue rate limit throttle alerts");
+		if (Number(alerts.data ?? 0) > 0) console.log("rate_limit_throttle_alerts_queued", { events: Number(alerts.data) });
 	} finally {
 		clearRuntime();
 	}

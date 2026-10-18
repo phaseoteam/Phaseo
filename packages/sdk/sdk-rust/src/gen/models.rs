@@ -3684,6 +3684,7 @@ pub struct WorkspaceNotificationRouteMap {
 	pub model_deprecation: Vec<String>,
 	pub model_substitution: Vec<String>,
 	pub payment_method_expiring: Vec<String>,
+	pub rate_limit_throttled: Vec<String>,
 }
 
 pub struct WorkspaceNotificationRouteResponse {

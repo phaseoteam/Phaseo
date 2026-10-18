@@ -5,5 +5,6 @@ export interface WorkspaceNotificationRoutesResponse {
     model_deprecation: string[];
     model_substitution: string[];
     payment_method_expiring: string[];
+    rate_limit_throttled: string[];
   };
 }

@@ -1,34 +1,50 @@
 ---
 title: "Planes de suscripción"
-description: "Resumen de los planes y niveles de suscripción que ofrecen los proveedores de API y de cómo afectan al acceso y los precios."
-sidebarTitle: "Planes de proveedores"
+description: "Elige acceso gratuito, uso de modelos de pago por consumo, BYOK o un complemento Enterprise para el espacio de trabajo."
+sidebarTitle: "Planes"
 icon: "tags"
 ---
 
-## Planes de suscripción
+Phaseo ofrece acceso gratuito y uso de modelos de pago por consumo. Los equipos que necesitan controles de identidad y directorio pueden añadir una suscripción mensual Enterprise independiente. Todos los precios siguientes están en USD.
 
-Esta página explica los planes y niveles de suscripción habituales que puedes encontrar al usar proveedores de API disponibles en Phaseo. Describe los límites típicos, la periodicidad de facturación y cómo las funciones de cada plan afectan al acceso a los modelos y a los precios.
+## Elige cómo usar Phaseo
 
----
+| Opción | Cargos de Phaseo | Qué incluye |
+| --- | --- | --- |
+| Acceso gratuito | Sin suscripción ni recarga para los modelos gratuitos compatibles | Uso de modelos gratuitos, datos públicos del catálogo, SDK e integraciones |
+| Pay As You Go | Uso al precio del catálogo más una comisión del 5% por compra de créditos (mínimo de $1) | Solicitudes a modelos de pago con créditos prepagados del espacio de trabajo |
+| Trae tu propia clave (BYOK) | Cuando el uso mensual está disponible, las primeras 250,000 solicitudes completadas por espacio de trabajo cada mes natural UTC no tienen comisión de servicio de Phaseo; después, el 2.5% del coste equivalente del proveedor. Si no están disponibles ni el contador mensual ni la lectura alternativa, esa solicitud paga la comisión del 2.5% | Enrutamiento y observabilidad de Phaseo con tus credenciales; el proveedor factura directamente el uso del modelo |
+| Self Serve Enterprise | Suscripción mensual desde $29, más uso de modelos y comisiones por compra de créditos | SSO, SCIM, gestión del directorio, departamentos y soporte prioritario por correo electrónico |
 
-### Qué incluyen los planes de suscripción
+Pay As You Go no exige suscripción mensual, contrato ni gasto mínimo mensual. La comisión se aplica al comprar créditos; después, las solicitudes gestionadas consumen esos créditos al precio publicado de cada modelo.
 
--   Límites de frecuencia (solicitudes por minuto o por día)
--   Cuota de cómputo o tokens incluida
--   Acceso a modelos o funciones prémium (por ejemplo, modo JSON o endpoints dedicados)
--   Acuerdos de nivel de servicio (SLA) y condiciones comerciales
+El acceso a modelos gratuitos está sujeto a cuotas. El límite predeterminado del Gateway es de 25 solicitudes por minuto móvil por usuario y espacio de trabajo, más 1,500 solicitudes a modelos gratuitos por día UTC. También se aplican las cuotas del proveedor. Consulta [Límites de solicitudes](../api-reference/limits.mdx) para conocer su alcance y los reintentos.
 
-### Niveles habituales
+Consulta [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx) para configurar BYOK y revisar su facturación. Una solicitud BYOK sin comisión de Phaseo sigue generando los cargos de uso del proveedor.
 
-A continuación se muestran ejemplos de niveles habituales; sus nombres y funciones exactos varían según el proveedor:
+## Precios de Enterprise por miembros
 
--   Gratis / prueba: uso limitado, límites de frecuencia más bajos y sin SLA
--   Desarrollador / aficionado: tarifa mensual baja y límites moderados para crear prototipos
--   Empresa / equipo: límites más altos, puestos para el equipo y asistencia prioritaria
--   Empresa: límites personalizados, asistencia dedicada y SLA contractuales
+La suscripción inicial incluye hasta 100 miembros del espacio de trabajo, también para equipos más pequeños. Las capacidades mayores se calculan por número de miembros; estos precios son referencias, no niveles con funciones diferentes:
 
----
+| Miembros incluidos | Suscripción mensual |
+| ---: | ---: |
+| 100 | $29 |
+| 1,000 | $79 |
+| 10,000 | $299 |
+| 25,000 | $599 |
+| 50,000 | $1,099 |
+| 100,000 | $1,999 |
 
-Para ver precios detallados por modelo y comparar el coste por token, consulta la página [Precios y rendimiento](./pricing-performance.mdx).
+Abre [Precios](https://phaseo.app/pricing) para elegir una capacidad y ver la cotización de tu número de miembros. La disponibilidad del autoservicio depende del acceso de tu espacio de trabajo al despliegue. Contacta con el [Centro de ayuda](https://phaseo.app/help) para facturación, compras o condiciones comerciales personalizadas.
 
-Si lo necesitas, puedo ampliar esta página con un desglose por proveedor o una tabla breve que compare las funciones de los planes de ejemplo.
+Los miembros cuentan mientras pertenecen al espacio de trabajo, aunque no inicien sesión. Por debajo de 100,000 miembros, se bloquean las nuevas incorporaciones que superarían la capacidad elegida. Actualmente no se puede cambiar la capacidad mediante autoservicio; prevé el crecimiento antes de suscribirte.
+
+Con la capacidad de 100,000 miembros, cada miembro único adicional cuesta $0.02 por período de facturación de la suscripción, incluidos los miembros eliminados durante ese período.
+
+Enterprise no incluye créditos de modelos ni elimina la comisión estándar del 5% por compra de créditos (mínimo de $1). Consulta [Precios y facturación](../pricing/tiers.mdx) para ver ejemplos y detalles de las capacidades.
+
+## Suscripciones de los proveedores
+
+El [catálogo de planes de suscripción](https://phaseo.app/subscription-plans) muestra las suscripciones que venden los proveedores de modelos. Tienen sus propios precios, modelos incluidos, límites y condiciones de facturación. Una suscripción de proveedor no añade automáticamente créditos de Phaseo ni habilita una ruta del Gateway.
+
+Comprueba las condiciones del proveedor y las rutas activas del modelo antes de elegir un plan. Usa [Precios y rendimiento](./pricing-performance.mdx) para comparar costes de uso y datos de rendimiento disponibles.
