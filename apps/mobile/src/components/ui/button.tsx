@@ -15,8 +15,8 @@ const variants = {
 
 const sizes = {
   sm: "h-9 px-3 rounded-md gap-1.5",
-  md: "h-11 px-4 rounded-lg gap-2",
-  lg: "h-12 px-5 rounded-lg gap-2",
+  md: "h-11 px-4 rounded-md gap-2",
+  lg: "h-12 px-5 rounded-md gap-2",
 } as const;
 
 export type ButtonProps = Omit<PressableProps, "children"> & {
@@ -49,7 +49,7 @@ export function Button({ label, variant = "primary", size = "md", icon, leading,
 
 export function IconButton({ icon, label, tone = "foreground", onPress, className, size = 20 }: { icon: LucideIcon; label: string; tone?: IconTone; onPress?: () => void; className?: string; size?: number }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={8} onPress={onPress} className={cn("h-10 w-10 items-center justify-center rounded-full active:bg-accent", className)}>
+    <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={8} onPress={onPress} className={cn("h-10 w-10 items-center justify-center rounded-md active:bg-accent", className)}>
       <View pointerEvents="none"><Icon icon={icon} tone={tone} size={size} /></View>
     </Pressable>
   );

@@ -24,7 +24,8 @@ export function Logo({ id, label, colour, size = 32, className }: { id?: string 
   const logo = id ? resolveLogo(id, { theme: resolved, fallbackToColor: true }) : null;
   const src = logo?.src && !failed ? `${WEB_ORIGIN}${logo.src}` : null;
   const name = label ?? logo?.label ?? id ?? "?";
-  const radius = Math.round(size * 0.28);
+  // rounded-md (8 px) on normal tiles; small tiles scale down so they stay squares, not circles.
+  const radius = Math.min(8, Math.round(size * 0.25));
 
   if (src) {
     return (

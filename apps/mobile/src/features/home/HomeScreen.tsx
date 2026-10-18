@@ -110,7 +110,7 @@ function HomeSearch({ count }: { count?: number }) {
       accessibilityRole="search"
       accessibilityLabel="Search models"
       onPress={() => { searchFocusStore.set((value) => value + 1); router.navigate("/models"); }}
-      className="mx-4 mt-1 h-11 flex-row items-center gap-2 rounded-lg bg-muted px-3 active:opacity-80"
+      className="mx-4 mt-1 h-11 flex-row items-center gap-2 rounded-md bg-muted px-3 active:opacity-80"
     >
       <Icon icon={Search} tone="muted" size={17} />
       <Text variant="body" className="text-muted-foreground" numberOfLines={1}>{count ? `Search ${count.toLocaleString()} models, labs or IDs` : "Search models, labs or IDs"}</Text>
@@ -137,13 +137,13 @@ function BalancePill() {
   const { workspace, workspaceId } = useWorkspace();
   const balance = useQuery({ queryKey: ["account", workspaceId, "balance"], queryFn: () => getBalance(workspaceId!), enabled: Boolean(workspaceId) });
   if (!workspaceId) return null;
-  if (balance.isLoading) return <Skeleton className="mr-1 h-8 w-20 rounded-full" />;
+  if (balance.isLoading) return <Skeleton className="mr-1 h-8 w-20 rounded-md" />;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${workspace?.name ?? "Workspace"} credit balance ${formatUsd(balance.data)}. Opens usage.`}
       onPress={() => router.navigate("/account/usage")}
-      className="mr-1 h-8 flex-row items-center gap-1.5 rounded-full bg-secondary px-3 active:bg-accent"
+      className="mr-1 h-8 flex-row items-center gap-1.5 rounded-md bg-secondary px-3 active:bg-accent"
     >
       <Icon icon={Wallet} tone="muted" size={14} />
       <Text variant="small" className="font-semibold">{formatUsd(balance.data)}</Text>

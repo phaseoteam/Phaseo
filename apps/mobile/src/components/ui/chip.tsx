@@ -10,7 +10,7 @@ export function Chip({ label, selected, onPress, icon, leading, dropdown, classN
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
-      className={cn("h-8 flex-row items-center gap-1.5 rounded-full border px-3", selected ? "border-primary bg-primary" : "border-border bg-background active:bg-accent", className)}
+      className={cn("h-8 flex-row items-center gap-1.5 rounded-md border px-3", selected ? "border-primary bg-primary" : "border-border bg-background active:bg-accent", className)}
     >
       {icon ? <Icon icon={icon} tone={selected ? "primary-foreground" : "muted"} size={14} /> : leading ?? null}
       <Text variant="small" className={cn("font-semibold", selected ? "text-primary-foreground" : "text-foreground")}>{label}</Text>

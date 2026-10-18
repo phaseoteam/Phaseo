@@ -116,7 +116,7 @@ export function ModelBrowser() {
 function CompareTray({ count }: { count: number }) {
   const router = useRouter();
   return (
-    <View className="absolute bottom-3 left-3 right-3 flex-row items-center gap-2 rounded-xl border border-border bg-popover p-2 pl-4">
+    <View className="absolute bottom-3 left-3 right-3 flex-row items-center gap-2 rounded-md border border-border bg-popover p-2 pl-4">
       <Text variant="label" className="flex-1">{count === 1 ? "1 model selected" : `${count} models selected`}</Text>
       <Button label="Clear" variant="ghost" size="sm" onPress={() => compareStore.set([])} />
       <Button label="Compare" size="sm" disabled={count < 2} onPress={() => router.push("/compare")} />

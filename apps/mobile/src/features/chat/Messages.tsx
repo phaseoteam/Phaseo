@@ -24,7 +24,7 @@ export const TurnView = memo(function TurnView({ turn, side, modelName, workspac
       {answers.length > 1 && !side ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-1.5 px-4 pb-1 pt-3">
           {answers.map((answer, index) => (
-            <Pressable key={answer.id} onPress={() => setSelected(index)} className={cn("h-8 flex-row items-center gap-1.5 rounded-full border px-3", index === selected ? "border-foreground" : "border-border")}>
+            <Pressable key={answer.id} onPress={() => setSelected(index)} className={cn("h-8 flex-row items-center gap-1.5 rounded-md border px-3", index === selected ? "border-foreground" : "border-border")}>
               <StatusDot status={answer.status} />
               <Text variant="small" className={cn("font-semibold", index === selected ? "text-foreground" : "text-muted-foreground")}>{modelName(answer.model)}</Text>
             </Pressable>
@@ -49,7 +49,7 @@ export const TurnView = memo(function TurnView({ turn, side, modelName, workspac
 });
 
 function StatusDot({ status }: { status: ChatMessage["status"] }) {
-  return <View className={cn("h-1.5 w-1.5 rounded-full", status === "streaming" ? "bg-primary" : status === "error" ? "bg-destructive" : status === "stopped" ? "bg-warning" : "bg-success")} />;
+  return <View className={cn("h-1.5 w-1.5 rounded-md", status === "streaming" ? "bg-primary" : status === "error" ? "bg-destructive" : status === "stopped" ? "bg-warning" : "bg-success")} />;
 }
 
 function UserMessage({ message, workspaceId }: { message: ChatMessage; workspaceId: string | null }) {
@@ -65,9 +65,9 @@ function UserMessage({ message, workspaceId }: { message: ChatMessage; workspace
       {message.attachments.length ? (
         <View className="mb-1.5 flex-row flex-wrap justify-end gap-1.5">
           {message.attachments.map((attachment) => attachment.kind === "image" ? (
-            <Image key={attachment.id} source={{ uri: attachment.uri }} style={{ width: 120, height: 120, borderRadius: 12 }} contentFit="cover" />
+            <Image key={attachment.id} source={{ uri: attachment.uri }} style={{ width: 120, height: 120, borderRadius: 8 }} contentFit="cover" />
           ) : (
-            <View key={attachment.id} className="flex-row items-center gap-1.5 rounded-lg bg-muted px-2.5 py-2">
+            <View key={attachment.id} className="flex-row items-center gap-1.5 rounded-md bg-muted px-2.5 py-2">
               <Icon icon={FileText} tone="muted" size={15} />
               <Text variant="caption" numberOfLines={1} className="max-w-40">{attachment.name}</Text>
             </View>
@@ -75,7 +75,7 @@ function UserMessage({ message, workspaceId }: { message: ChatMessage; workspace
         </View>
       ) : null}
       {message.content ? (
-        <View className="max-w-[85%] rounded-2xl bg-muted px-3.5 py-2.5">
+        <View className="max-w-[85%] rounded-md bg-muted px-3.5 py-2.5">
           <Text variant="body" selectable>{message.content}</Text>
         </View>
       ) : null}
@@ -124,7 +124,7 @@ export function AnswerView({ message, label, showLabel, workspaceId, compact }: 
 
 function Action({ icon, label, onPress }: { icon: typeof Copy; label: string; onPress(): void }) {
   return (
-    <Pressable accessibilityLabel={label} onPress={onPress} hitSlop={6} className="h-8 w-8 items-center justify-center rounded-full active:bg-accent">
+    <Pressable accessibilityLabel={label} onPress={onPress} hitSlop={6} className="h-8 w-8 items-center justify-center rounded-md active:bg-accent">
       <Icon icon={icon} tone="muted" size={15} />
     </Pressable>
   );

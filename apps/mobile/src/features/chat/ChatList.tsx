@@ -62,7 +62,7 @@ export function ChatList() {
         accessibilityRole="button"
         onPress={() => openDetail(`/chat/${chat.id}`)}
         onLongPress={() => actions(chat)}
-        className={cn("mx-2 rounded-lg px-3 py-2.5 active:bg-accent", selectedId === chat.id && "bg-accent")}
+        className={cn("mx-2 rounded-md px-3 py-2.5 active:bg-accent", selectedId === chat.id && "bg-accent")}
       >
         <View className="flex-row items-center gap-2">
           {chat.pinned ? <Icon icon={Pin} tone="muted" size={13} /> : null}

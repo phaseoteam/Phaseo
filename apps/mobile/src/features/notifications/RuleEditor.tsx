@@ -169,7 +169,7 @@ function Chips({ ids, name, onRemove }: { ids: string[]; name(id: string): strin
   return (
     <View className="flex-row flex-wrap gap-2 px-4 pt-3">
       {ids.map((value) => (
-        <Pressable key={value} accessibilityLabel={`Remove ${name(value)}`} onPress={() => onRemove(value)} className="h-8 flex-row items-center gap-1.5 rounded-full bg-muted px-3 active:bg-accent">
+        <Pressable key={value} accessibilityLabel={`Remove ${name(value)}`} onPress={() => onRemove(value)} className="h-8 flex-row items-center gap-1.5 rounded-md bg-muted px-3 active:bg-accent">
           <Text variant="small" className="font-semibold">{name(value)}</Text>
           <Icon icon={X} tone="muted" size={13} />
         </Pressable>

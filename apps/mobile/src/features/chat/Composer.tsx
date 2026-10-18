@@ -50,20 +50,20 @@ export function Composer({ modelLabel, onModelPress, running, onSend, onStop, au
 
   return (
     <View className="bg-background px-3 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
-        <View className="rounded-2xl border border-input bg-background px-2 pb-2 pt-1">
+        <View className="rounded-md border border-input bg-background px-2 pb-2 pt-1">
           {attachments.length ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 px-1 pt-1.5">
               {attachments.map((attachment) => (
                 <View key={attachment.id}>
                   {attachment.kind === "image" ? (
-                    <Image source={{ uri: attachment.uri }} style={{ width: 56, height: 56, borderRadius: 10 }} contentFit="cover" />
+                    <Image source={{ uri: attachment.uri }} style={{ width: 56, height: 56, borderRadius: 8 }} contentFit="cover" />
                   ) : (
-                    <View className="h-14 w-28 justify-center rounded-lg bg-muted px-2">
+                    <View className="h-14 w-28 justify-center rounded-md bg-muted px-2">
                       <Icon icon={FileText} tone="muted" size={16} />
                       <Text variant="caption" numberOfLines={1}>{attachment.name}</Text>
                     </View>
                   )}
-                  <Pressable accessibilityLabel={`Remove ${attachment.name}`} hitSlop={8} onPress={() => { removeAttachmentFiles([attachment]); setAttachments((current) => current.filter((entry) => entry.id !== attachment.id)); }} className="absolute -right-1.5 -top-1.5 h-5 w-5 items-center justify-center rounded-full bg-foreground">
+                  <Pressable accessibilityLabel={`Remove ${attachment.name}`} hitSlop={8} onPress={() => { removeAttachmentFiles([attachment]); setAttachments((current) => current.filter((entry) => entry.id !== attachment.id)); }} className="absolute -right-1.5 -top-1.5 h-5 w-5 items-center justify-center rounded-md bg-foreground">
                     <Icon icon={X} tone="primary-foreground" size={12} />
                   </Pressable>
                 </View>
@@ -82,19 +82,19 @@ export function Composer({ modelLabel, onModelPress, running, onSend, onStop, au
             cursorColorClassName="accent-primary"
           />
           <View className="flex-row items-center gap-1">
-            <Pressable accessibilityLabel="Attach" onPress={openAttach} className="h-9 w-9 items-center justify-center rounded-full active:bg-accent">
+            <Pressable accessibilityLabel="Attach" onPress={openAttach} className="h-9 w-9 items-center justify-center rounded-md active:bg-accent">
               <Icon icon={Plus} tone="muted" size={20} />
             </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel={`Model: ${modelLabel}`} onPress={onModelPress} className="h-9 max-w-[70%] flex-row items-center rounded-full px-3 active:bg-accent">
+            <Pressable accessibilityRole="button" accessibilityLabel={`Model: ${modelLabel}`} onPress={onModelPress} className="h-9 max-w-[70%] flex-row items-center rounded-md px-3 active:bg-accent">
               <Text variant="small" numberOfLines={1} className="font-semibold text-muted-foreground">{modelLabel}</Text>
             </Pressable>
             <View className="flex-1" />
             {running ? (
-              <Pressable accessibilityLabel="Stop" onPress={onStop} className="h-9 w-9 items-center justify-center rounded-full bg-foreground">
+              <Pressable accessibilityLabel="Stop" onPress={onStop} className="h-9 w-9 items-center justify-center rounded-md bg-foreground">
                 <Icon icon={Square} tone="primary-foreground" size={14} />
               </Pressable>
             ) : (
-              <Pressable accessibilityLabel="Send" disabled={!canSend} onPress={send} className={cn("h-9 w-9 items-center justify-center rounded-full", canSend ? "bg-primary" : "bg-muted")}>
+              <Pressable accessibilityLabel="Send" disabled={!canSend} onPress={send} className={cn("h-9 w-9 items-center justify-center rounded-md", canSend ? "bg-primary" : "bg-muted")}>
                 <Icon icon={ArrowUp} tone={canSend ? "primary-foreground" : "muted"} size={18} strokeWidth={2.4} />
               </Pressable>
             )}

@@ -25,8 +25,8 @@ export function BarChart({ values, labels, height = 96, className }: { values: n
 /** Horizontal share bars for breakdowns (spend by model). */
 export function ShareBar({ fraction }: { fraction: number }) {
   return (
-    <View className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
-      <View className="h-full rounded-full bg-chart-3" style={{ width: `${Math.max(2, Math.min(100, fraction * 100))}%` }} />
+    <View className="mt-1.5 h-1.5 overflow-hidden rounded-[2px] bg-muted">
+      <View className="h-full rounded-[2px] bg-chart-3" style={{ width: `${Math.max(2, Math.min(100, fraction * 100))}%` }} />
     </View>
   );
 }
