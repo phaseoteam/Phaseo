@@ -6,6 +6,7 @@
 // Transforms IR -> OpenAI Responses Response
 
 import type { IRChatResponse, IRUsage, IRContentPart } from "@core/ir";
+import { irUsageToOpenAIStyle } from "@core/cache-usage";
 
 /**
  * OpenAI Responses response type
@@ -251,28 +252,32 @@ function encodeUsage(usage?: IRUsage): OpenAIResponsesResponse["usage"] | undefi
 	if (promptTokens == null && completionTokens == null && totalTokens == null) {
 		return undefined;
 	}
+	// OpenAI semantics: input_tokens includes cache reads and writes.
+	const cache = irUsageToOpenAIStyle({ ...usage, inputTokens: promptTokens ?? 0, outputTokens: completionTokens ?? 0, totalTokens });
 
 	return {
-		input_tokens: promptTokens ?? 0,
+		input_tokens: cache.inputTokens,
 		output_tokens: completionTokens ?? 0,
-		total_tokens: totalTokens ?? 0,
+		total_tokens: totalTokens == null ? cache.inputTokens + (completionTokens ?? 0) : cache.totalTokens,
 		...(usage.serviceTier ? { service_tier: usage.serviceTier } : {}),
 		...(typeof usage._ext?.citationTokens === "number" ? { citation_tokens: usage._ext.citationTokens } : {}),
 		...(typeof usage._ext?.numSearchQueries === "number" ? { num_search_queries: usage._ext.numSearchQueries } : {}),
 		...(typeof usage._ext?.searchContextSize === "string" ? { search_context_size: usage._ext.searchContextSize } : {}),
 		...(usage._ext?.providerCost ? { cost: usage._ext.providerCost } : {}),
 		input_tokens_details:
-			typeof usage.cachedInputTokens === "number" ||
-			typeof usage._ext?.cachedWriteTokens === "number"
+			typeof cache.readTokens === "number" ||
+			typeof cache.writeTokens === "number"
 				? {
-					...(typeof usage.cachedInputTokens === "number"
-						? { cached_tokens: usage.cachedInputTokens }
+					...(typeof cache.readTokens === "number"
+						? { cached_tokens: cache.readTokens }
 						: {}),
-					...(typeof usage._ext?.cachedWriteTokens === "number"
-						? { cache_write_tokens: usage._ext.cachedWriteTokens }
+					...(typeof cache.writeTokens === "number"
+						? { cache_write_tokens: cache.writeTokens }
 						: {}),
 				}
 				: undefined,
+		...(typeof cache.write5mTokens === "number" ? { cached_write_text_tokens_5m: cache.write5mTokens } : {}),
+		...(typeof cache.write1hTokens === "number" ? { cached_write_text_tokens_1h: cache.write1hTokens } : {}),
 		output_tokens_details:
 			typeof usage.reasoningTokens === "number"
 				? { reasoning_tokens: usage.reasoningTokens }

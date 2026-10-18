@@ -659,19 +659,56 @@ export function openAIChatToIR(
 	};
 }
 
+function firstFiniteNumber(...values: unknown[]): number | undefined {
+	for (const value of values) {
+		if (typeof value === "number" && Number.isFinite(value)) return value;
+	}
+	return undefined;
+}
+
 function normalizeChatUsage(usage: any, observedServiceTier?: unknown): IRChatResponse["usage"] {
 	if (!usage || typeof usage !== "object") return undefined;
 
 	const inputDetails = usage.input_tokens_details ?? usage.prompt_tokens_details;
 	const outputDetails = usage.output_tokens_details ?? usage.completion_tokens_details;
-	const cachedInputTokens = inputDetails?.cached_tokens ?? usage.cached_input_tokens;
-	const cachedWriteTokens =
-		inputDetails?.cache_write_tokens ??
-		inputDetails?.cache_creation_input_tokens ??
-		inputDetails?.cache_creation_tokens ??
-		outputDetails?.cached_tokens;
+	// Top-level fallbacks: StepFun and some Together/Alibaba models report `cached_tokens`,
+	// DeepSeek and SiliconFlow `prompt_cache_hit_tokens`. All count inside prompt tokens.
+	const cachedInputTokens = firstFiniteNumber(
+		inputDetails?.cached_tokens,
+		usage.cached_tokens,
+		usage.prompt_cache_hit_tokens,
+		usage.cached_input_tokens,
+	);
+	// Writes nested in input details (OpenAI/Azure GPT-5.6+, Kimi, Alibaba, Venice) are part
+	// of prompt tokens; the top-level and output-detail forms are reported on top of input.
+	const nestedCachedWriteTokens = firstFiniteNumber(
+		inputDetails?.cache_write_tokens,
+		inputDetails?.cache_creation_input_tokens,
+		inputDetails?.cache_creation_tokens,
+	);
+	const cachedWriteTokens5m = firstFiniteNumber(
+		usage.cached_write_text_tokens_5m,
+		usage.cache_creation?.ephemeral_5m_input_tokens,
+	);
+	const cachedWriteTokens1h = firstFiniteNumber(
+		usage.cached_write_text_tokens_1h,
+		usage.cache_creation?.ephemeral_1h_input_tokens,
+	);
+	// TTL-split writes (Anthropic-shaped `cache_creation`, gateway meters) sit on top of input.
+	const ttlCachedWriteTokens =
+		cachedWriteTokens5m !== undefined || cachedWriteTokens1h !== undefined
+			? (cachedWriteTokens5m ?? 0) + (cachedWriteTokens1h ?? 0)
+			: undefined;
+	const cachedWriteTokens = nestedCachedWriteTokens ?? firstFiniteNumber(
+		usage.cache_write_tokens,
+		usage.cache_creation_input_tokens,
+		outputDetails?.cached_tokens,
+	) ?? ttlCachedWriteTokens;
 	const reasoningTokens = usage.reasoning_tokens ?? outputDetails?.reasoning_tokens;
 	const cachedReadTokensAreSubsetOfInput = typeof cachedInputTokens === "number" ? true : undefined;
+	const cachedWriteTokensAreSubsetOfInput = typeof nestedCachedWriteTokens === "number" || typeof usage.cache_write_tokens === "number"
+		? true
+		: typeof cachedWriteTokens === "number" ? false : undefined;
 	const inputTokens = usage.prompt_tokens ?? usage.input_tokens ?? usage.input_text_tokens ?? 0;
 	const outputTokens = usage.completion_tokens ?? usage.output_tokens ?? usage.output_text_tokens ?? 0;
 	const totalTokens = usage.total_tokens ?? (inputTokens + outputTokens);
@@ -742,6 +779,7 @@ function normalizeChatUsage(usage: any, observedServiceTier?: unknown): IRChatRe
 		totalTokens,
 		cachedInputTokens,
 		cachedReadTokensAreSubsetOfInput,
+		...(cachedWriteTokensAreSubsetOfInput !== undefined ? { cachedWriteTokensAreSubsetOfInput } : {}),
 		reasoningTokens,
 		...(
 			typeof observedServiceTier === "string"
@@ -763,6 +801,8 @@ function normalizeChatUsage(usage: any, observedServiceTier?: unknown): IRChatRe
 			outputAudioTokens: outputDetails?.audio_tokens ?? outputDetails?.output_audio,
 			outputVideoTokens: outputDetails?.output_videos,
 			cachedWriteTokens,
+			...(cachedWriteTokens5m !== undefined ? { cachedWriteTokens5m } : {}),
+			...(cachedWriteTokens1h !== undefined ? { cachedWriteTokens1h } : {}),
 			...(serverToolUse ? { serverToolUse } : {}),
 		},
 	};

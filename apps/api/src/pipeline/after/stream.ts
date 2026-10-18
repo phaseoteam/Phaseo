@@ -67,6 +67,12 @@ function getStreamTerminalPayload(frame: any): any | null {
     return null;
 }
 
+function hasBillableTokenUsage(usage: any): boolean {
+    if (!usage || typeof usage !== "object") return false;
+    return ["input_tokens", "output_tokens", "cached_read_text_tokens", "cached_write_text_tokens"]
+        .some((key) => typeof usage[key] === "number" && usage[key] > 0);
+}
+
 function getUsageOutputTokens(usage: any): number {
     if (!usage || typeof usage !== "object") return 0;
     const value =
@@ -717,11 +723,26 @@ export async function handleStreamResponse(
                 return true;
             };
 
+            // Executors that read usage from the upstream stream itself (Claude on Anthropic,
+            // Bedrock Messages, Vertex) are authoritative: transformed client frames can omit
+            // meters such as cache writes, so bill from the finalizer whenever it has usage.
+            let finalizedBill: Bill | null | undefined;
+            const readFinalizedBill = async () => {
+                if (finalizedBill === undefined) {
+                    finalizedBill = result.usageFinalizer ? await result.usageFinalizer() : null;
+                }
+                return finalizedBill;
+            };
+            if (result.usageFinalizerAuthoritative && result.usageFinalizer) {
+                const authoritative = await readFinalizedBill();
+                if (hasBillableTokenUsage(authoritative?.usage) && await finalizeFromBill(authoritative)) return;
+            }
+
             if (!effectiveUsageRaw) {
                 const usageWithToolMetrics = attachToolUsageMetrics(null, {
                     ...buildToolUsage(),
                 });
-                const finalized = result.usageFinalizer ? await result.usageFinalizer() : null;
+                const finalized = await readFinalizedBill();
                 if (await finalizeFromBill(finalized)) return;
                 const fallbackUsageWithToolMetrics = attachToolUsageMetrics(
                     shapeStreamUsageForClient(usageForShaping),

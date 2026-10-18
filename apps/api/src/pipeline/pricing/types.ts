@@ -151,6 +151,8 @@ export type PricingBreakdownLine = {
         start_time: string;
         end_time: string;
     } | null;
+    /** Set when no rule existed for this cache meter and it was priced from the input rate. */
+    pricing_fallback?: "input_rate";
 };
 
 export type PricingResult = {
@@ -159,6 +161,14 @@ export type PricingResult = {
     cost_cents: number;
     currency: "USD";
     lines: PricingBreakdownLine[];
+    /** Cache meters billed from the input rate because the card has no row for them. */
+    cache_pricing_fallback?: Array<{
+        meter: string;
+        quantity: number;
+        input_meter: string;
+        input_rule_id: string | null;
+        multiplier: number;
+    }>;
 };
 
 

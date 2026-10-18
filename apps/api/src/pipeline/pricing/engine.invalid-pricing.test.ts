@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { computeBillSummary } from "./engine";
 import type { PriceCard, PriceRule } from "./types";
 
@@ -31,10 +31,18 @@ describe("invalid pricing cannot become a wallet charge", () => {
         expect(() => computeBillSummary({ input_text_tokens: 1000, output_text_tokens: 500 }, mixed, { quality: "premium" }))
             .toThrow("pricing_rule_missing:output_text_tokens");
     });
-    it("rejects positive cache usage when the effective card omits its cache meter", () => {
-        expect(() => computeBillSummary({ input_text_tokens: 1000, cached_read_text_tokens: 500 }, card()))
-            .toThrow("pricing_rule_missing:cached_read_text_tokens");
-        expect(() => computeBillSummary({ cached_read_text_tokens: 500 }, card()))
+    it("prices cache usage from the input rule when the effective card omits its cache meter", () => {
+        const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+        const withInput = computeBillSummary({ input_text_tokens: 1000, cached_read_text_tokens: 500 }, card());
+        expect(withInput.lines.find((line) => line.dimension === "cached_read_text_tokens")?.pricing_fallback).toBe("input_rate");
+        expect(computeBillSummary({ cached_read_text_tokens: 500 }, card()).cache_pricing_fallback?.[0]?.meter)
+            .toBe("cached_read_text_tokens");
+        warn.mockRestore();
+    });
+    it("still rejects cache usage when the card has no input rule to fall back to", () => {
+        const outputOnly = card();
+        outputOnly.rules = outputOnly.rules.map((rule) => ({ ...rule, meter: "output_text_tokens" }));
+        expect(() => computeBillSummary({ output_text_tokens: 10, cached_read_text_tokens: 500 }, outputOnly))
             .toThrow("pricing_rule_missing:cached_read_text_tokens");
     });
     it("preserves aggregate cache-write pricing for providers that also report TTL detail", () => {
@@ -57,14 +65,17 @@ describe("invalid pricing cannot become a wallet charge", () => {
 		const result = computeBillSummary({ cached_tokens: 500 }, implicit);
 		expect(result.lines.map((line) => line.dimension)).toContain("implicit_cached_input_text_tokens");
 	});
-	it("rejects split cache-write usage when aggregate pricing conditions do not match", () => {
+	it("falls back to the input rate for split cache writes when aggregate conditions do not match", () => {
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 		const aggregate = card();
 		aggregate.rules.push({
 			...aggregate.rules[0], meter: "cached_write_text_tokens", price_per_unit: "3",
 			match: [{ path: "cache_class", op: "eq", value: "eligible" }],
 		});
-		expect(() => computeBillSummary({ cached_write_text_tokens_5m: 300 }, aggregate))
-			.toThrow("pricing_rule_missing:cached_write_text_tokens");
+		const result = computeBillSummary({ cached_write_text_tokens_5m: 300 }, aggregate);
+		expect(result.lines.map((line) => line.dimension)).toEqual(["cached_write_text_tokens_5m"]);
+		expect(result.lines[0]?.pricing_fallback).toBe("input_rate");
+		warn.mockRestore();
 	});
 	it("rejects an aggregate cache-write quantity smaller than its split detail", () => {
 		const aggregate = card();

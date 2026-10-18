@@ -1,5 +1,6 @@
 import BenchmarkDetailShell from "@/components/(data)/benchmark/BenchmarkDetailShell";
 import BenchmarkOverview from "@/components/(data)/benchmark/BenchmarkOverview";
+import ArtificialAnalysisSuiteNavigation from "@/components/(data)/benchmark/ArtificialAnalysisSuiteNavigation";
 import { applyArtificialAnalysisOrganisationColours, artificialAnalysisMetricsForBenchmark, buildArtificialAnalysisRanking, isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
 import { isEpochCapabilitiesIndex, isEpochConfidenceIntervalForScore } from "@/lib/benchmarks/epoch";
 import { epochModelKey, fetchEpochConfidenceIntervals } from "@/lib/benchmarks/epochData";
@@ -51,7 +52,7 @@ export async function generateMetadata(props: {
 		});
 	}
 
-	const cleanName: string = benchmark.name ?? t("keywordAiBenchmark");
+	const cleanName: string = benchmark.suite?.name ?? benchmark.name ?? t("keywordAiBenchmark");
 	const modelCount = benchmark.results?.length ?? 0;
 
 	return buildLocalizedPageMetadata({
@@ -73,13 +74,19 @@ export async function generateMetadata(props: {
 
 export default async function Page({
 	params,
+	searchParams,
 }: {
 	params: Promise<{ benchmarkId: string }>;
+	searchParams: Promise<{ version?: string | string[]; metric?: string | string[] }>;
 }) {
 	const t = await getTranslations("Catalogue.benchmarks");
 	const tNav = await getTranslations("Common.nav");
 	const { benchmarkId } = await params;
-	const benchmark = await fetchFrontendBenchmark(benchmarkId);
+	const selection = benchmarkId === "artificial-analysis" ? await searchParams : {};
+	const benchmark = await fetchFrontendBenchmark(benchmarkId, {
+		version: typeof selection.version === "string" ? selection.version : undefined,
+		metric: typeof selection.metric === "string" ? selection.metric : undefined,
+	});
 
 	if (!benchmark) {
 		notFound();
@@ -116,7 +123,7 @@ export default async function Page({
 
 	// Generate structured data for the benchmark page.
 	const generateStructuredData = () => {
-		const benchmarkName = benchmark.name || t("keywordAiBenchmark");
+		const benchmarkName = benchmark.suite?.name ?? benchmark.name ?? t("keywordAiBenchmark");
 
 		// Dataset Schema
 		const datasetSchema = {
@@ -173,6 +180,7 @@ export default async function Page({
 				? [{ id: "summary", label: t("tocSummary") }, { id: "comparisons", label: t("tocIndexComparisons") }, { id: "progress", label: t("tocProgress") }, { id: "model-results", label: t("tocModelResults") }]
 				: epochCapabilitiesIndex ? [{ id: "summary", label: t("tocSummary") }, { id: "comparisons", label: t("tocIndexLeaderboard") }, { id: "progress", label: t("tocProgress") }, { id: "model-results", label: t("tocModelResults") }]
 				: [{ id: "summary", label: t("tocSummary") }, { id: "progress", label: t("tocProgress") }, { id: "model-results", label: t("tocModelResults") }]}>
+				{benchmark.suite ? <ArtificialAnalysisSuiteNavigation suite={benchmark.suite} selectedId={benchmark.id} /> : null}
 				<BenchmarkOverview benchmark={displayBenchmark} artificialAnalysisRankings={artificialAnalysisRankings} />
 			</BenchmarkDetailShell>
 		</>
