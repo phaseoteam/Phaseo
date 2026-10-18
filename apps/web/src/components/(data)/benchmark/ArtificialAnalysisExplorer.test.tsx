@@ -6,15 +6,28 @@ import catalogue from "../../../../messages/en-GB/catalogue.json";
 import site from "../../../../messages/en-GB/site.json";
 import ArtificialAnalysisExplorer from "./ArtificialAnalysisExplorer";
 
+let mockView = "cost-intelligence";
+afterEach(() => { mockView = "cost-intelligence"; });
+
 jest.mock("nuqs", () => {
 	const parser = { withDefault: () => parser };
 	return { parseAsString: parser, parseAsArrayOf: () => parser, parseAsStringLiteral: () => parser,
-		useQueryStates: () => [{ aaView: "cost-intelligence", aaScale: "log", aaModels: null, aaEffort: "" }, jest.fn()] };
+		useQueryStates: () => [{ aaView: mockView, aaScale: "log", aaModels: null, aaEffort: "" }, jest.fn()] };
 });
 jest.mock("@/i18n/navigation", () => ({ Link: ({ children, ...props }: React.ComponentProps<"a">) => createElement("a", props, children) }));
 jest.mock("@/components/Logo", () => ({ Logo: () => null }));
 
 const render = (children: ReactNode) => renderToStaticMarkup(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ Common: common, Catalogue: catalogue, Site: site }}>{children}</NextIntlClientProvider>);
+
+it("includes coding-only models in the default coding selection", () => {
+	mockView = "coding";
+	const html = render(<ArtificialAnalysisExplorer points={[
+		{ id: "paired", model_id: "lab/paired", model_name: "Paired", organisation_id: null, organisation_name: null, variant: null, intelligence: 50, cost: 20 },
+		{ id: "coding", model_id: "lab/coding", model_name: "Coding only", organisation_id: null, organisation_name: null, variant: null, coding: 42 },
+	]} />);
+	expect(html).toContain("Coding only");
+	expect(html).not.toContain("No results available for this metric.");
+});
 
 it("renders an accessible comparison explorer with inspectable configuration scores", () => {
 	const html = render(<ArtificialAnalysisExplorer footer={<p>Source footer</p>} points={[

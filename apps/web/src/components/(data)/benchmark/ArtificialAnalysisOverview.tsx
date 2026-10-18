@@ -25,7 +25,8 @@ export function ArtificialAnalysisOverview({
 	const versions = [...new Set(benchmark.results.map((result) => versionOf(result.other_info)))].sort((a, b) => b.localeCompare(a, "en", { numeric: true }));
 	const latestVersion = versions.find((version) => version !== "Unspecified") ?? versions[0] ?? "Unspecified";
 	const results = benchmark.results.filter((result) => versionOf(result.other_info) === latestVersion && result.score !== null && Number.isFinite(Number(result.score)));
-	const current = { ...benchmark, results };
+	const { comparison_benchmarks: _comparisons, suite: _suite, ...currentBenchmark } = benchmark;
+	const current = { ...currentBenchmark, results };
 	const updated = results.map((result) => result.updated_at).filter((date): date is string => Boolean(date)).sort().at(-1);
 	const metric = artificialAnalysisMetricKey(benchmark.id);
 	const points = buildArtificialAnalysisExplorer(rankings);

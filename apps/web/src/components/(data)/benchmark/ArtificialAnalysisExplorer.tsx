@@ -69,7 +69,7 @@ export default function ArtificialAnalysisExplorer({ points, initialView = "cost
 		}
 		return [...map.values()].sort((a, b) => (b.intelligence ?? -Infinity) - (a.intelligence ?? -Infinity) || a.model_name.localeCompare(b.model_name));
 	}, [points]);
-	const defaultModels = models.filter((model) => points.some((point) => point.model_id === model.model_id && point.cost !== undefined && point.intelligence !== undefined)).slice(0, DEFAULT_MODELS).map((model) => model.model_id);
+	const defaultModels = models.filter((model) => points.some((point) => point.model_id === model.model_id && point[metric] !== undefined && (!scatter || point.cost !== undefined))).slice(0, DEFAULT_MODELS).map((model) => model.model_id);
 	const selected = new Set(filters.aaModels ?? (defaultModels.length ? defaultModels : models.slice(0, DEFAULT_MODELS).map((model) => model.model_id)));
 	const variants = [...new Set(points.map((point) => point.variant || "default"))].sort();
 	const visible = points.filter((point) => selected.has(point.model_id) && (!filters.aaEffort || (point.variant || "default") === filters.aaEffort));
