@@ -27,6 +27,12 @@ CREATE INDEX model_discovery_public_announcements_claim_idx ON public.model_disc
 
 CREATE INDEX model_discovery_public_announcements_status_idx ON public.model_discovery_public_announcements USING btree (status, updated_at DESC);
 
+CREATE TRIGGER record_model_released_notification
+  AFTER UPDATE OF status ON public.model_discovery_public_announcements
+  FOR EACH ROW
+  WHEN (((new.status = 'announced'::text) AND (old.status IS DISTINCT FROM 'announced'::text)))
+  EXECUTE FUNCTION private.record_model_released_notification();
+
 CREATE POLICY "deny_direct_client_access" ON "public"."model_discovery_public_announcements"
   AS RESTRICTIVE
   FOR ALL
