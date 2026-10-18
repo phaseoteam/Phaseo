@@ -22,6 +22,66 @@ export function parseUsdToNanos(x: string | number): number {
     return neg ? -val : val;
 }
 
+type DecimalFraction = { num: bigint; den: bigint };
+
+/** Parses a decimal or exponent string into an exact fraction (num / den, den a power of ten). */
+function parseDecimalFraction(raw: string | number): DecimalFraction | null {
+    let text = String(raw).trim();
+    if (!text) return null;
+    let negative = false;
+    if (text.startsWith("-") || text.startsWith("+")) {
+        negative = text.startsWith("-");
+        text = text.slice(1);
+    }
+    const match = /^(\d*)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$/.exec(text);
+    if (!match || (!match[1] && !match[2])) return null;
+    const whole = match[1] || "0";
+    const frac = match[2] ?? "";
+    const exponent = Number(match[3] ?? 0);
+    let num = BigInt(whole + frac);
+    let scale = frac.length - exponent;
+    if (scale < 0) {
+        num *= 10n ** BigInt(-scale);
+        scale = 0;
+    }
+    return { num: negative ? -num : num, den: 10n ** BigInt(scale) };
+}
+
+/**
+ * Exact cost in nanos of `quantity` at `pricePerUnit` USD per `unitSize` units, rounded
+ * half up once. Catalogue prices are stored with sub-nano precision (numeric(30,12)
+ * nanos), so the unit price must not be truncated to whole nanos before multiplying.
+ * Returns null when an input is not a finite decimal.
+ */
+export function priceLineNanosExact(quantity: number, unitSize: number, pricePerUnit: string | number): number | null {
+    if (!Number.isFinite(quantity) || !Number.isFinite(unitSize) || unitSize <= 0) return null;
+    const qty = parseDecimalFraction(String(quantity));
+    const unit = parseDecimalFraction(String(unitSize));
+    const usd = parseDecimalFraction(pricePerUnit);
+    if (!qty || !unit || !usd || unit.num <= 0n) return null;
+    const num = qty.num * usd.num * BigInt(NANOS_PER_USD) * unit.den;
+    const den = qty.den * usd.den * unit.num;
+    const negative = num < 0n;
+    const abs = negative ? -num : num;
+    const quotient = abs / den;
+    const rounded = (abs % den) * 2n >= den ? quotient + 1n : quotient;
+    const nanos = Number(negative ? -rounded : rounded);
+    return Number.isFinite(nanos) ? nanos : null;
+}
+
+/** The unit price as a USD decimal string, keeping digits below a nano when the catalogue has them. */
+export function formatUsdPriceExact(pricePerUnit: string | number): string {
+    const parsed = parseDecimalFraction(pricePerUnit);
+    if (!parsed) return formatUsdFromNanosExact(parseUsdToNanos(pricePerUnit));
+    const decimals = parsed.den.toString().length - 1;
+    if (decimals <= 9) return formatUsdFromNanosExact(parseUsdToNanos(pricePerUnit));
+    const negative = parsed.num < 0n;
+    const digits = (negative ? -parsed.num : parsed.num).toString().padStart(decimals + 1, "0");
+    const whole = digits.slice(0, digits.length - decimals);
+    const frac = digits.slice(digits.length - decimals).replace(/0+$/, "").padEnd(9, "0");
+    return `${negative ? "-" : ""}${whole}.${frac}`;
+}
+
 export function nanosToCentsCeil(n: number): number {
     return Math.ceil(n / NANOS_PER_CENT);
 }

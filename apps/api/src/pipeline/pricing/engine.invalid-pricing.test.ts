@@ -107,8 +107,9 @@ describe("invalid pricing cannot become a wallet charge", () => {
             .toThrow("pricing_amount_out_of_range");
     });
     it("does not silently turn a positive sub-nano rate into free usage", () => {
-        expect(() => computeBillSummary({ input_text_tokens: 1_000_000 }, card({ price_per_unit: "0.0000000001" })))
-            .toThrow("pricing_unit_price_below_precision");
+        // $0.0000000001 per token is a tenth of a nano: priced exactly, not truncated to $0.
+        const bill = computeBillSummary({ input_text_tokens: 1_000_000 }, card({ unit_size: 1, price_per_unit: "0.0000000001" }));
+        expect(bill.lines[0]).toMatchObject({ line_nanos: 100_000, unit_price_usd: "0.0000000001" });
     });
     it("preserves explicit zero rates and fractional quantities", () => {
         expect(computeBillSummary({ input_text_tokens: 1000 }, card({ price_per_unit: "0" })).cost_usd).toBe(0);

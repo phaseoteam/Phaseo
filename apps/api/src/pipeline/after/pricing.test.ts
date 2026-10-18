@@ -268,6 +268,29 @@ describe("after/pricing calculatePricing", () => {
         expect(result.totalNanos).toBe(20_000_000_000);
     });
 
+    it("bills a fast request at the fast price on a card that names the plan fast", () => {
+        // The request-context RPC returns the stored service tier slug, so Venice and Fireworks
+        // fast SKUs arrive as pricing_plan "fast".
+        const card: PriceCard = {
+            ...TTS_CARD,
+            provider: "venice",
+            model: "anthropic/claude-opus-5",
+            endpoint: "text.generate",
+            rules: [
+                { ...TTS_CARD.rules[0], meter: "input_text_tokens", pricing_plan: "standard", price_per_unit: "6" },
+                { ...TTS_CARD.rules[0], meter: "input_text_tokens", pricing_plan: "fast", price_per_unit: "12" },
+            ],
+        };
+        expect(calculatePricing({ input_text_tokens: 1_000_000 }, card, { service_tier: "fast" }).totalNanos).toBe(12_000_000_000);
+        expect(calculatePricing({ input_text_tokens: 1_000_000 }, card, { service_tier: "priority" }).totalNanos).toBe(12_000_000_000);
+        expect(calculatePricing({ input_text_tokens: 1_000_000 }, card, {}).totalNanos).toBe(6_000_000_000);
+    });
+
+    it("bills a card whose only plan is a provider label", () => {
+        const card: PriceCard = { ...TTS_CARD, rules: [{ ...TTS_CARD.rules[0], pricing_plan: "default", price_per_unit: "0.01" }] };
+        expect(calculatePricing({ input_text_tokens: 1_000_000 }, card, {}).totalNanos).toBe(10_000_000);
+    });
+
     it("rejects default billing against a priority-only card", () => {
         const card: PriceCard = { ...TTS_CARD, rules: [{ ...TTS_CARD.rules[0], pricing_plan: "priority" }] };
         expect(() => calculatePricing({ input_text_tokens: 1_000 }, card, {})).toThrow("pricing_plan_missing:standard");
