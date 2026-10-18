@@ -233,7 +233,7 @@ export function summariseProvider(result: ProviderResult): ProviderSummary {
 }
 
 function mdEscape(value: string): string {
-	return value.replace(/\|/g, "\\|").replace(/\n/g, " ");
+	return value.replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/\n/g, " ");
 }
 
 export function renderMatrix(summaries: ProviderSummary[], matrix: ClientMatrix, meta: { durationMs: number; partial: boolean }): string {

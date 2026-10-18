@@ -5065,7 +5065,7 @@
    "url": "https://developers.openai.com/api/docs/guides/reasoning",
    "note": "Reasoning tokens \"are billed as output tokens\"; Gemini's pricing page likewise lists \"Output price (including thinking tokens)\"."
   },
-  "note": "pricing threw; the request would fail after the provider was paid; dialect openai-responses; cache read reported; IR usage: inputTokens includes cache reads (cachedReadTokensAreSubsetOfInput); cache writes are in _ext, outside inputTokens; outputTokens includes reasoning.; output_reasoning_tokens: reasoning at the output price"
+  "note": "pricing threw; the request would fail after the provider was paid; dialect openai-chat; cache read reported; IR usage: inputTokens includes cache reads (cachedReadTokensAreSubsetOfInput); cache writes are in _ext, outside inputTokens; outputTokens includes reasoning.; output_reasoning_tokens: reasoning at the output price"
  },
  {
   "layer": "pricing",

@@ -46,6 +46,16 @@ const TINY_PNG = Uint8Array.from(
 );
 
 /** Media and auth calls an executor may make before the provider call. */
+/** True for the simulator's fake Supabase host only, compared on the parsed host rather than a URL prefix. */
+export function isSimSupabase(url: string): boolean {
+	try {
+		const parsed = new URL(url);
+		return parsed.protocol === "https:" && parsed.hostname === "supabase.sim.invalid";
+	} catch {
+		return false;
+	}
+}
+
 export function defaultSideResponse(request: CapturedRequest): Response | null {
 	const url = request.url;
 	if (/^https:\/\/sim\.example\/.*\.(png|jpg|jpeg|webp)$/i.test(url)) {
@@ -65,7 +75,7 @@ export function defaultSideResponse(request: CapturedRequest): Response | null {
 			headers: { "content-type": "application/json" },
 		});
 	}
-	if (url.startsWith("https://supabase.sim.invalid")) {
+	if (isSimSupabase(url)) {
 		return new Response(JSON.stringify([]), { status: 200, headers: { "content-type": "application/json" } });
 	}
 	return null;

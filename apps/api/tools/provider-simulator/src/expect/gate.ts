@@ -101,7 +101,7 @@ function sourceLabel(mismatch: Mismatch): string {
 
 function md(value: unknown, max = 80): string {
 	const text = typeof value === "string" ? value : JSON.stringify(value);
-	return String(text ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ").slice(0, max);
+	return String(text ?? "").replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/\n/g, " ").slice(0, max);
 }
 
 export function runGate(resultsDir: string, baselineDir?: string): GateResult {

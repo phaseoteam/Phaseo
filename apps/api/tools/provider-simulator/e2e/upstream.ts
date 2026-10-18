@@ -2,7 +2,7 @@
 // Why: The real gateway runs end to end, so every fetch it makes (providers, Supabase, OAuth) must be captured offline.
 // How: globalThis.fetch is replaced once for the whole run; each case installs a script of upstream behaviours.
 
-import { defaultSideResponse, type CapturedRequest } from "../src/fetch-capture";
+import { defaultSideResponse, isSimSupabase, type CapturedRequest } from "../src/fetch-capture";
 import { detectDialect, synthesiseResponse, wantsStreamingResponse, type ResponseVariant } from "../src/dialects";
 import { BASIC } from "../src/response-variants";
 import { harnessState } from "./state";
@@ -165,7 +165,7 @@ export const guardedFetch: typeof fetch = (async (input: RequestInfo | URL, init
 	const record = { ...call, classification: "side" as "provider" | "side" | "blocked", provider: null as string | null, outcome: "" };
 	harnessState.captures.calls.push(record);
 
-	if (url.startsWith("https://supabase.sim.invalid")) {
+	if (isSimSupabase(url)) {
 		record.outcome = "supabase";
 		return supabaseResponse(call);
 	}
