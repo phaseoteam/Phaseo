@@ -471,6 +471,8 @@ type ResponsesStreamChoiceState = {
 	emittedText?: boolean;
 	emittedReasoning?: boolean;
 	sawRefusal?: boolean;
+	announcedMessage?: boolean;
+	announcedReasoning?: boolean;
 };
 
 export function transformChatStreamToResponses(
@@ -528,6 +530,46 @@ export function transformChatStreamToResponses(
 			entry.reasoningItemId = `reasoning_${args.requestId}_${choiceIndex}`;
 		}
 		return { outputIndex: entry.reasoningOutputIndex, itemId: entry.reasoningItemId! };
+	};
+
+	// Responses streams announce an item (output_item.added, and the text part of a
+	// message) before any delta for it.
+	const announceMessage = async (
+		choiceIndex: number,
+		entry: ResponsesStreamChoiceState,
+		controller: ReadableStreamDefaultController<Uint8Array>,
+	) => {
+		const { outputIndex, itemId } = ensureMessageIndex(choiceIndex, entry);
+		if (!entry.announcedMessage) {
+			entry.announcedMessage = true;
+			await emitEvent("response.output_item.added", {
+				output_index: outputIndex,
+				item: { type: "message", id: itemId, status: "in_progress", role: "assistant", content: [] },
+			}, controller);
+			await emitEvent("response.content_part.added", {
+				item_id: itemId,
+				output_index: outputIndex,
+				content_index: 0,
+				part: { type: "output_text", text: "", annotations: [] },
+			}, controller);
+		}
+		return { outputIndex, itemId };
+	};
+
+	const announceReasoning = async (
+		choiceIndex: number,
+		entry: ResponsesStreamChoiceState,
+		controller: ReadableStreamDefaultController<Uint8Array>,
+	) => {
+		const { outputIndex, itemId } = ensureReasoningIndex(choiceIndex, entry);
+		if (!entry.announcedReasoning) {
+			entry.announcedReasoning = true;
+			await emitEvent("response.output_item.added", {
+				output_index: outputIndex,
+				item: { type: "reasoning", id: itemId, summary: [], content: [] },
+			}, controller);
+		}
+		return { outputIndex, itemId };
 	};
 
 	const ensureToolCallState = (
@@ -724,11 +766,12 @@ export function transformChatStreamToResponses(
 									entry.text += deltaContent;
 									if (!isMiniMaxToolInterop) {
 										entry.emittedText = true;
-										const { outputIndex, itemId } = ensureMessageIndex(choiceIndex, entry);
+										const { outputIndex, itemId } = await announceMessage(choiceIndex, entry, controller);
 										await emitEvent("response.output_text.delta", {
 											delta: deltaContent,
 											output_index: outputIndex,
 											item_id: itemId,
+											content_index: 0,
 										}, controller);
 									}
 								}
@@ -744,7 +787,7 @@ export function transformChatStreamToResponses(
 								if (typeof deltaReasoning === "string" && deltaReasoning.length > 0) {
 									entry.reasoning += deltaReasoning;
 									entry.emittedReasoning = true;
-									const { outputIndex, itemId } = ensureReasoningIndex(choiceIndex, entry);
+									const { outputIndex, itemId } = await announceReasoning(choiceIndex, entry, controller);
 									await emitEvent("response.reasoning_text.delta", {
 										delta: deltaReasoning,
 										output_index: outputIndex,
@@ -875,17 +918,18 @@ export function transformChatStreamToResponses(
 
 					for (const [choiceIndex, entry] of choiceStates.entries()) {
 						if (entry.text.length > 0 && !entry.emittedText) {
-							const { outputIndex, itemId } = ensureMessageIndex(choiceIndex, entry);
+							const { outputIndex, itemId } = await announceMessage(choiceIndex, entry, controller);
 							await emitEvent("response.output_text.delta", {
 								delta: entry.text,
 								output_index: outputIndex,
 								item_id: itemId,
+								content_index: 0,
 							}, controller);
 							entry.emittedText = true;
 						}
 						if (entry.emittedText) await emitAnnotations(choiceIndex, entry, [], controller);
 						if (entry.reasoning.length > 0 && !entry.emittedReasoning) {
-							const { outputIndex, itemId } = ensureReasoningIndex(choiceIndex, entry);
+							const { outputIndex, itemId } = await announceReasoning(choiceIndex, entry, controller);
 							await emitEvent("response.reasoning_text.delta", {
 								delta: entry.reasoning,
 								output_index: outputIndex,
@@ -978,7 +1022,13 @@ export function transformChatStreamToResponses(
 							...(encoded.related_questions ? { related_questions: encoded.related_questions } : {}),
 							...(encoded.reasoning_steps ? { reasoning_steps: encoded.reasoning_steps } : {}),
 						};
-						await emitEvent(upstreamFailure ? "response.failed" : "response.completed", { response }, controller);
+						// One terminal event: response.failed when the upstream failed, response.incomplete
+						// for length and content filter, otherwise response.completed.
+						await emitEvent(
+							upstreamFailure ? "response.failed" : completion.status === "incomplete" ? "response.incomplete" : "response.completed",
+							{ response },
+							controller,
+						);
 					}
 				}
 				if (upstreamFailure && mode === "unknown") {

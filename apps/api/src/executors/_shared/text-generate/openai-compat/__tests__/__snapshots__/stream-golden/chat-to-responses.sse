@@ -1,14 +1,23 @@
 event: response.created
 data: {"response":{"id":"chatcmpl-1","created_at":1700000000,"model":"gpt-x"}}
 
+event: response.output_item.added
+data: {"output_index":0,"item":{"type":"reasoning","id":"reasoning_req_golden_0","summary":[],"content":[]}}
+
 event: response.reasoning_text.delta
 data: {"delta":"Thinking ✓","output_index":0,"item_id":"reasoning_req_golden_0"}
 
-event: response.output_text.delta
-data: {"delta":"Hel","output_index":1,"item_id":"msg_req_golden_0"}
+event: response.output_item.added
+data: {"output_index":1,"item":{"type":"message","id":"msg_req_golden_0","status":"in_progress","role":"assistant","content":[]}}
+
+event: response.content_part.added
+data: {"item_id":"msg_req_golden_0","output_index":1,"content_index":0,"part":{"type":"output_text","text":"","annotations":[]}}
 
 event: response.output_text.delta
-data: {"delta":"lo wörld 👋","output_index":1,"item_id":"msg_req_golden_0"}
+data: {"delta":"Hel","output_index":1,"item_id":"msg_req_golden_0","content_index":0}
+
+event: response.output_text.delta
+data: {"delta":"lo wörld 👋","output_index":1,"item_id":"msg_req_golden_0","content_index":0}
 
 event: response.output_item.added
 data: {"output_index":2,"item":{"type":"function_call","id":"call_1","call_id":"call_1","name":"get_weather","arguments":"","status":"in_progress"}}
