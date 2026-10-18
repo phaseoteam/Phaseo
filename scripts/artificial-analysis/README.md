@@ -1,5 +1,34 @@
 # Artificial Analysis benchmarks
 
+## Public page extractor
+
+`pnpm exec tsx scripts/scrape-artificial-analysis-public.ts --output snapshot.json`
+reads the public `/models` HTML without an API key and writes a reviewable JSON
+snapshot. It extracts embedded model UUIDs, configurations, Intelligence Index
+scores, total token counts, output tokens per task, costs, timings, and individual
+Intelligence Index evaluation scores. Field names and units remain explicit;
+individual evaluation scores retain their source scales, including negative scores.
+
+Use `--url https://artificialanalysis.ai/models/<slug>` for a public model page,
+or `--input saved.html` to parse a saved response. The output file must not exist.
+Snapshots include the source URL, HTML SHA-256, detected methodology versions,
+and extraction time. Saved HTML has an unknown fetch time (`fetchedAt: null`).
+
+Coverage is **page selection only**, not the entire AA catalogue. In the initial
+live check, the page embedded 27 configurations with 270 individual evaluation
+scores. Model detail pages and query parameters can still embed the same default
+comparison set; requesting a URL does not guarantee that model is present. Match
+the returned UUIDs before using any record. Missing fields remain null, and page
+format changes or conflicting rows fail extraction. The script parses JSON;
+it never executes downloaded JavaScript or calls private APIs.
+
+This command makes one public page request, does not crawl automatically, and
+does not modify the database or the scheduled API import. Review coverage and
+methodology before adding a publication/import path. Preserve attribution to
+[Artificial Analysis](https://artificialanalysis.ai/models) in downstream displays.
+
+Tests: `pnpm exec tsx --test scripts/artificial-analysis/public-page.test.ts`.
+
 `pnpm data:sync-artificial-analysis` fetches every free V2 API page and imports Intelligence, Coding, Agentic, and total evaluation cost in USD into Supabase. Results retain source ID, index version, tested configuration, source link, and timestamp. Null metrics are omitted; zero is a score.
 
 ## Running
