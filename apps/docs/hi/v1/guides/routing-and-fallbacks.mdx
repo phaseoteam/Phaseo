@@ -293,9 +293,11 @@ Multipart endpoints दोहराए गए `models` fields, `models[]` fields
 
 ## कैश और सत्र-आधारित अनुरोध संबद्धता
 
-Text generation endpoints पर cache-aware routing डिफ़ॉल्ट रूप से चालू होती है। Provider द्वारा prompt-cache का वास्तविक read रिपोर्ट करने के बाद, यदि वह provider स्वस्थ हो और सक्रिय route, preset, guardrail तथा request policy में अनुमति-प्राप्त हो, तो Phaseo मेल खाने वाले context को 15 मिनट के लिए उसी provider से जोड़ देता है।
+Text generation endpoints पर cache-aware routing डिफ़ॉल्ट रूप से चालू होती है। जो अनुरोध `prompt_cache_key` या `session_id` भेजते हैं, या `cache_control` (top-level, `provider_options.anthropic.cache_control`, या किसी message block या tool पर `cache_control` या `prompt_cache_breakpoint` mark) से caching में ऑप्ट-इन करते हैं, उन्हें उस provider और route पर pin किया जाता है जिसने उनका पहला सफल अनुरोध पूरा किया था। बाकी अनुरोध तब 15 मिनट के लिए pin होते हैं, जब कोई provider उसी शुरुआती context के लिए prompt-cache read या write रिपोर्ट करता है, बशर्ते उस provider का cached input उसके standard input से सस्ता हो।
 
-`session_id` मौजूद होने पर cache affinity केवल शुरुआती context से नहीं, session से जुड़ती है। अगला cache read दिखने पर Phaseo affinity refresh करता है और session activity के 24 घंटे तक इसे बनाए रखता है। Circuit breakers और policy filters को affinity पर हमेशा प्राथमिकता मिलती है।
+Pins हर workspace के लिए अलग रखे जाते हैं और provider के cache retention के अनुसार 15 मिनट से 24 घंटे तक रहते हैं। Pin तभी बदलता है जब उसके provider का circuit breaker खुल जाए, उसकी हाल की error rate ऊँची हो, उस पर Phaseo का managed quota खत्म हो जाए, या सक्रिय route, preset, guardrail या request policy उसे अनुमति न दे।
+
+`session_id` मौजूद होने पर cache affinity केवल शुरुआती context से नहीं, session से जुड़ती है और session activity के 24 घंटे तक बनी रहती है। Pin की अवधि और Phaseo हर provider को कौन-से affinity संकेत भेजता है, इसके लिए [प्रदाता से जुड़ाव](./prompt-caching.mdx#provider-affinity) देखें।
 
 Workspace या dynamic-route defaults बदले बिना एक अनुरोध के लिए इसे बंद करें:
 

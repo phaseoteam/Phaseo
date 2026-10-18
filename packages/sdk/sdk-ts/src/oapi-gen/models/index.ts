@@ -187,6 +187,7 @@ export type { ImagesEditRequest } from "./ImagesEditRequest.js";
 export type { ImagesEditResponse } from "./ImagesEditResponse.js";
 export type { ImagesGenerationRequest } from "./ImagesGenerationRequest.js";
 export type { ImagesGenerationResponse } from "./ImagesGenerationResponse.js";
+export type { InputTokensDetails } from "./InputTokensDetails.js";
 export type { InvalidRequestResponse } from "./InvalidRequestResponse.js";
 export type { KeyInvalidateResponse } from "./KeyInvalidateResponse.js";
 export type { KnownModelId } from "./KnownModelId.js";
@@ -295,6 +296,8 @@ export type { PrivateModelDeleteResponse } from "./PrivateModelDeleteResponse.js
 export type { PrivateModelListResponse } from "./PrivateModelListResponse.js";
 export type { PrivateModelResponse } from "./PrivateModelResponse.js";
 export type { PrivateModelUpdateRequest } from "./PrivateModelUpdateRequest.js";
+export type { PromptCacheBreakpoint } from "./PromptCacheBreakpoint.js";
+export type { PromptCacheOptions } from "./PromptCacheOptions.js";
 export type { Provider } from "./Provider.js";
 export type { ProviderCredential } from "./ProviderCredential.js";
 export type { ProviderCredentialCreateRequest } from "./ProviderCredentialCreateRequest.js";

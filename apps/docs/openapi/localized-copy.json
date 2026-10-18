@@ -8244,15 +8244,155 @@
 			"zh-Hans": "请求的模型被替换的原因和方式，例如 `reason=unserved; from=lab/old-model; to=lab/new-model`。仅当已停用模型的路由使用替代模型响应请求时才会发送。",
 			"ar": "سبب استبدال النموذج المطلوب وكيفيته، مثل `reason=unserved; from=lab/old-model; to=lab/new-model`. يُرسل فقط عندما يجيب توجيه النماذج المتوقفة عن الطلب بنموذج بديل."
 		},
-		"Not supported. The gateway does not store responses, so a non-empty value is rejected with a 400 validation error. Send the full conversation in input instead.": {
-			"es": "No compatible. El gateway no almacena respuestas, por lo que un valor no vacío se rechaza con un error de validación 400. Envía la conversación completa en input.",
-			"fr": "Non pris en charge. La passerelle ne stocke pas les réponses : une valeur non vide est donc rejetée avec une erreur de validation 400. Envoyez plutôt la conversation complète dans input.",
-			"de": "Nicht unterstützt. Das Gateway speichert keine Antworten, daher wird ein nicht leerer Wert mit einem 400-Validierungsfehler abgelehnt. Sende stattdessen die vollständige Unterhaltung in input.",
-			"pt-BR": "Não suportado. O gateway não armazena respostas, então um valor não vazio é rejeitado com um erro de validação 400. Envie a conversa completa em input.",
-			"hi": "समर्थित नहीं। गेटवे प्रतिक्रियाएँ संग्रहीत नहीं करता, इसलिए खाली न होने वाला मान 400 सत्यापन त्रुटि के साथ अस्वीकार कर दिया जाता है। इसके बजाय पूरी बातचीत input में भेजें।",
-			"ja": "サポートされていません。ゲートウェイはレスポンスを保存しないため、空でない値は 400 検証エラーで拒否されます。代わりに会話全体を input で送信してください。",
-			"zh-Hans": "不支持。网关不存储响应，因此非空值会被拒绝并返回 400 验证错误。请改为在 input 中发送完整对话。",
-			"ar": "غير مدعوم. لا تخزن البوابة الاستجابات، لذا تُرفض أي قيمة غير فارغة بخطأ تحقق 400. أرسل المحادثة كاملة في input بدلًا من ذلك."
+		"Input tokens, including cache reads and cache writes.": {
+			"es": "Tokens de entrada, incluidas las lecturas y escrituras de caché.",
+			"fr": "Jetons d’entrée, lectures et écritures du cache comprises.",
+			"de": "Eingabetoken, einschließlich Cache-Lese- und Schreibvorgängen.",
+			"pt-BR": "Tokens de entrada, incluindo leituras e gravações de cache.",
+			"hi": "इनपुट टोकन, कैश से पढ़े और कैश में लिखे गए टोकन सहित।",
+			"ja": "入力トークン。キャッシュの読み取りと書き込みを含みます。",
+			"zh-Hans": "输入 token，包括缓存读取和缓存写入。",
+			"ar": "رموز الإدخال، بما فيها القراءات من التخزين المؤقت والكتابات إليه."
+		},
+		"Breakdown of the input tokens.": {
+			"es": "Desglose de los tokens de entrada.",
+			"fr": "Détail des jetons d’entrée.",
+			"de": "Aufschlüsselung der Eingabetoken.",
+			"pt-BR": "Detalhamento dos tokens de entrada.",
+			"hi": "इनपुट टोकन का विवरण।",
+			"ja": "入力トークンの内訳。",
+			"zh-Hans": "输入 token 的明细。",
+			"ar": "تفصيل رموز الإدخال."
+		},
+		"Input tokens read from the provider's prompt cache.": {
+			"es": "Tokens de entrada leídos de la caché de prompts del proveedor.",
+			"fr": "Jetons d’entrée lus depuis le cache de prompts du fournisseur.",
+			"de": "Aus dem Prompt-Cache des Anbieters gelesene Eingabetoken.",
+			"pt-BR": "Tokens de entrada lidos do cache de prompts do provedor.",
+			"hi": "प्रदाता के प्रॉम्प्ट कैश से पढ़े गए इनपुट टोकन।",
+			"ja": "プロバイダーのプロンプトキャッシュから読み取られた入力トークン。",
+			"zh-Hans": "从提供商 prompt 缓存中读取的输入 token。",
+			"ar": "رموز الإدخال المقروءة من ذاكرة المطالبات المؤقتة لدى المزوّد."
+		},
+		"Input tokens written to the provider's prompt cache.": {
+			"es": "Tokens de entrada escritos en la caché de prompts del proveedor.",
+			"fr": "Jetons d’entrée écrits dans le cache de prompts du fournisseur.",
+			"de": "In den Prompt-Cache des Anbieters geschriebene Eingabetoken.",
+			"pt-BR": "Tokens de entrada gravados no cache de prompts do provedor.",
+			"hi": "प्रदाता के प्रॉम्प्ट कैश में लिखे गए इनपुट टोकन।",
+			"ja": "プロバイダーのプロンプトキャッシュに書き込まれた入力トークン。",
+			"zh-Hans": "写入提供商 prompt 缓存的输入 token。",
+			"ar": "رموز الإدخال المكتوبة في ذاكرة المطالبات المؤقتة لدى المزوّد."
+		},
+		"Uncached input tokens. As on Anthropic, this excludes cache reads and cache writes.": {
+			"es": "Tokens de entrada sin caché. Como en Anthropic, excluye las lecturas y escrituras de caché.",
+			"fr": "Jetons d’entrée non mis en cache. Comme chez Anthropic, cette valeur exclut les lectures et écritures du cache.",
+			"de": "Ungecachte Eingabetoken. Wie bei Anthropic sind Cache-Lese- und Schreibvorgänge nicht enthalten.",
+			"pt-BR": "Tokens de entrada sem cache. Como na Anthropic, não inclui leituras e gravações de cache.",
+			"hi": "बिना कैश वाले इनपुट टोकन। Anthropic की तरह, इसमें कैश से पढ़े और कैश में लिखे गए टोकन शामिल नहीं होते।",
+			"ja": "キャッシュされていない入力トークン。Anthropicと同様に、キャッシュの読み取りと書き込みは含みません。",
+			"zh-Hans": "未缓存的输入 token。与 Anthropic 一致，不包括缓存读取和缓存写入。",
+			"ar": "رموز الإدخال غير المخزّنة مؤقتًا. كما في Anthropic، لا تشمل القراءات من التخزين المؤقت والكتابات إليه."
+		},
+		"Cache writes split by cache lifetime.": {
+			"es": "Escrituras en caché desglosadas por duración de la caché.",
+			"fr": "Écritures dans le cache réparties par durée de vie du cache.",
+			"de": "Cache-Schreibvorgänge, aufgeteilt nach Cache-Lebensdauer.",
+			"pt-BR": "Gravações no cache divididas pela duração do cache.",
+			"hi": "कैश की अवधि के अनुसार बाँटे गए कैश लेखन।",
+			"ja": "キャッシュの有効期間別のキャッシュ書き込み。",
+			"zh-Hans": "按缓存有效期拆分的缓存写入。",
+			"ar": "الكتابات إلى التخزين المؤقت مقسّمة حسب مدة صلاحية التخزين المؤقت."
+		},
+		"Input tokens written with a 5-minute cache lifetime.": {
+			"es": "Tokens de entrada escritos con una duración de caché de 5 minutos.",
+			"fr": "Jetons d’entrée écrits avec une durée de vie du cache de 5 minutes.",
+			"de": "Mit einer Cache-Lebensdauer von 5 Minuten geschriebene Eingabetoken.",
+			"pt-BR": "Tokens de entrada gravados com duração de cache de 5 minutos.",
+			"hi": "5 मिनट की कैश अवधि के साथ लिखे गए इनपुट टोकन।",
+			"ja": "5分のキャッシュ有効期間で書き込まれた入力トークン。",
+			"zh-Hans": "以 5 分钟缓存有效期写入的输入 token。",
+			"ar": "رموز الإدخال المكتوبة بمدة صلاحية تخزين مؤقت قدرها 5 دقائق."
+		},
+		"Input tokens written with a 1-hour cache lifetime.": {
+			"es": "Tokens de entrada escritos con una duración de caché de 1 hora.",
+			"fr": "Jetons d’entrée écrits avec une durée de vie du cache d’une heure.",
+			"de": "Mit einer Cache-Lebensdauer von 1 Stunde geschriebene Eingabetoken.",
+			"pt-BR": "Tokens de entrada gravados com duração de cache de 1 hora.",
+			"hi": "1 घंटे की कैश अवधि के साथ लिखे गए इनपुट टोकन।",
+			"ja": "1時間のキャッシュ有効期間で書き込まれた入力トークン。",
+			"zh-Hans": "以 1 小时缓存有效期写入的输入 token。",
+			"ar": "رموز الإدخال المكتوبة بمدة صلاحية تخزين مؤقت قدرها ساعة واحدة."
+		},
+		"Groups related requests so they stay on the provider that holds their prompt cache. Phaseo sends a hash of your workspace and this key upstream, never the raw key.": {
+			"es": "Agrupa las solicitudes relacionadas para que se mantengan en el proveedor que tiene su caché de prompts. Phaseo envía al proveedor un hash de tu espacio de trabajo y esta clave, nunca la clave sin procesar.",
+			"fr": "Regroupe les requêtes liées afin qu’elles restent chez le fournisseur qui détient leur cache de prompts. Phaseo envoie au fournisseur un hachage de votre espace de travail et de cette clé, jamais la clé brute.",
+			"de": "Gruppiert zusammengehörige Anfragen, damit sie bei dem Anbieter bleiben, der ihren Prompt-Cache hat. Phaseo sendet einen Hash aus deinem Workspace und diesem Schlüssel an den Anbieter, nie den Rohschlüssel.",
+			"pt-BR": "Agrupa solicitações relacionadas para que permaneçam no provedor que tem o cache de prompts delas. O Phaseo envia ao provedor um hash do seu workspace e desta chave, nunca a chave original.",
+			"hi": "संबंधित अनुरोधों को समूहित करता है, ताकि वे उसी प्रदाता पर रहें जिसके पास उनका प्रॉम्प्ट कैश है। Phaseo प्रदाता को आपके वर्कस्पेस और इस कुंजी का हैश भेजता है, कच्ची कुंजी कभी नहीं।",
+			"ja": "関連するリクエストをまとめ、そのプロンプトキャッシュを持つプロバイダーにとどめます。Phaseoは生のキーではなく、ワークスペースとこのキーのハッシュを上流に送ります。",
+			"zh-Hans": "将相关请求归为一组，使其保留在持有其 prompt 缓存的提供商上。Phaseo 向上游发送的是你的工作区与该键的哈希值，绝不发送原始键。",
+			"ar": "يجمع الطلبات المرتبطة لتبقى لدى المزوّد الذي يحتفظ بذاكرة المطالبات المؤقتة الخاصة بها. ترسل Phaseo إلى المزوّد تجزئة لمساحة العمل وهذا المفتاح، وليس المفتاح الخام أبدًا."
+		},
+		"Not supported. Phaseo does not store responses, so requests that set previous_response_id or conversation return 400 unsupported_param. Send the full conversation in input.": {
+			"es": "No se admite. Phaseo no almacena respuestas, por lo que las solicitudes que definen previous_response_id o conversation devuelven 400 unsupported_param. Envía la conversación completa en input.",
+			"fr": "Non pris en charge. Phaseo ne stocke pas les réponses : les requêtes qui définissent previous_response_id ou conversation renvoient 400 unsupported_param. Envoyez toute la conversation dans input.",
+			"de": "Nicht unterstützt. Phaseo speichert keine Antworten, daher geben Anfragen mit previous_response_id oder conversation 400 unsupported_param zurück. Sende die gesamte Unterhaltung in input.",
+			"pt-BR": "Não compatível. O Phaseo não armazena respostas, então solicitações que definem previous_response_id ou conversation retornam 400 unsupported_param. Envie a conversa inteira em input.",
+			"hi": "समर्थित नहीं। Phaseo जवाबों को संग्रहीत नहीं करता, इसलिए previous_response_id या conversation सेट करने वाले अनुरोध 400 unsupported_param लौटाते हैं। पूरी बातचीत input में भेजें।",
+			"ja": "サポートされていません。Phaseoはレスポンスを保存しないため、previous_response_idまたはconversationを指定したリクエストは400 unsupported_paramを返します。会話全体をinputで送ってください。",
+			"zh-Hans": "不支持。Phaseo 不存储响应，因此设置了 previous_response_id 或 conversation 的请求会返回 400 unsupported_param。请在 input 中发送完整对话。",
+			"ar": "غير مدعوم. لا تخزّن Phaseo الردود، لذا تعيد الطلبات التي تحدد previous_response_id أو conversation الخطأ 400 unsupported_param. أرسل المحادثة كاملة في input."
+		},
+		"Prompt cache control. Use type ephemeral with an optional ttl of 5m or 1h. scope applies only to a top-level Claude cache policy.": {
+			"es": "Control de la caché de prompts. Usa type ephemeral con un ttl opcional de 5m o 1h. scope solo se aplica a una política de caché de Claude de nivel superior.",
+			"fr": "Contrôle du cache de prompts. Utilisez type ephemeral avec un ttl facultatif de 5m ou 1h. scope ne s’applique qu’à une politique de cache Claude de premier niveau.",
+			"de": "Prompt-Cache-Steuerung. Verwende type ephemeral mit einer optionalen ttl von 5m oder 1h. scope gilt nur für eine Claude-Cache-Richtlinie auf oberster Ebene.",
+			"pt-BR": "Controle do cache de prompts. Use type ephemeral com um ttl opcional de 5m ou 1h. scope se aplica apenas a uma política de cache do Claude no nível superior.",
+			"hi": "प्रॉम्प्ट कैश नियंत्रण। type ephemeral के साथ वैकल्पिक ttl 5m या 1h उपयोग करें। scope केवल शीर्ष-स्तरीय Claude कैश नीति पर लागू होता है।",
+			"ja": "プロンプトキャッシュの制御。type ephemeralと、任意で5mまたは1hのttlを指定します。scopeはトップレベルのClaudeキャッシュポリシーにだけ適用されます。",
+			"zh-Hans": "prompt 缓存控制。使用 type ephemeral，并可选设置 ttl 为 5m 或 1h。scope 仅适用于顶层 Claude 缓存策略。",
+			"ar": "التحكم في ذاكرة المطالبات المؤقتة. استخدم type ephemeral مع ttl اختياري قيمته 5m أو 1h. ولا ينطبق scope إلا على سياسة تخزين مؤقت لـ Claude على المستوى الأعلى."
+		},
+		"OpenAI cache breakpoint. Caches everything up to and including this block. Sent to OpenAI and Azure OpenAI GPT-5.6 and later and to DeepInfra; Claude routes receive it as cache_control.": {
+			"es": "Punto de corte de caché de OpenAI. Almacena en caché todo lo anterior, incluido este bloque. Se envía a OpenAI y Azure OpenAI desde GPT-5.6 y a DeepInfra; las rutas de Claude lo reciben como cache_control.",
+			"fr": "Point d’arrêt de cache OpenAI. Met en cache tout ce qui précède, ce bloc compris. Envoyé à OpenAI et Azure OpenAI à partir de GPT-5.6 et à DeepInfra ; les routes Claude le reçoivent sous forme de cache_control.",
+			"de": "OpenAI-Cache-Breakpoint. Cacht alles bis einschließlich dieses Blocks. Wird an OpenAI und Azure OpenAI ab GPT-5.6 sowie an DeepInfra gesendet; Claude-Routen erhalten ihn als cache_control.",
+			"pt-BR": "Ponto de interrupção de cache da OpenAI. Armazena em cache tudo até este bloco, inclusive. Enviado à OpenAI e à Azure OpenAI a partir do GPT-5.6 e à DeepInfra; as rotas do Claude o recebem como cache_control.",
+			"hi": "OpenAI कैश ब्रेकपॉइंट। इस ब्लॉक तक (इसे मिलाकर) सब कुछ कैश करता है। GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों तथा DeepInfra को भेजा जाता है; Claude रूट इसे cache_control के रूप में पाते हैं।",
+			"ja": "OpenAIのキャッシュブレークポイント。このブロックまでのすべてをキャッシュします。GPT-5.6以降のOpenAIとAzure OpenAI、およびDeepInfraに送られ、Claudeのルートにはcache_controlとして届きます。",
+			"zh-Hans": "OpenAI 缓存断点。缓存到该块为止（含该块）的全部内容。会发送给 GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI，以及 DeepInfra；Claude 路由会以 cache_control 的形式收到它。",
+			"ar": "نقطة توقف للتخزين المؤقت في OpenAI. تخزّن مؤقتًا كل ما يسبقها حتى هذه الكتلة، بما فيها الكتلة نفسها. تُرسل إلى OpenAI وAzure OpenAI بدءًا من GPT-5.6 وإلى DeepInfra؛ وتتلقاها مسارات Claude بصيغة cache_control."
+		},
+		"Prompt cache mode and TTL for OpenAI and Azure OpenAI GPT-5.6 and later (ttl 30m) and for DeepInfra (ttl 5m or 1h). Removed for other providers.": {
+			"es": "Modo y TTL de la caché de prompts para OpenAI y Azure OpenAI desde GPT-5.6 (ttl 30m) y para DeepInfra (ttl 5m o 1h). Se elimina para los demás proveedores.",
+			"fr": "Mode et TTL du cache de prompts pour OpenAI et Azure OpenAI à partir de GPT-5.6 (ttl 30m) et pour DeepInfra (ttl 5m ou 1h). Retiré pour les autres fournisseurs.",
+			"de": "Prompt-Cache-Modus und TTL für OpenAI und Azure OpenAI ab GPT-5.6 (ttl 30m) sowie für DeepInfra (ttl 5m oder 1h). Wird für andere Anbieter entfernt.",
+			"pt-BR": "Modo e TTL do cache de prompts para OpenAI e Azure OpenAI a partir do GPT-5.6 (ttl 30m) e para a DeepInfra (ttl 5m ou 1h). Removido para os demais provedores.",
+			"hi": "GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों (ttl 30m) तथा DeepInfra (ttl 5m या 1h) के लिए प्रॉम्प्ट कैश मोड और TTL। अन्य प्रदाताओं के लिए हटा दिया जाता है।",
+			"ja": "GPT-5.6以降のOpenAIとAzure OpenAI（ttl 30m）、およびDeepInfra（ttl 5mまたは1h）向けのプロンプトキャッシュのモードとTTL。ほかのプロバイダーでは削除されます。",
+			"zh-Hans": "适用于 GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI（ttl 30m）以及 DeepInfra（ttl 5m 或 1h）的 prompt 缓存模式和 TTL。对其他提供商会被移除。",
+			"ar": "وضع ذاكرة المطالبات المؤقتة ومدة صلاحيتها لـ OpenAI وAzure OpenAI بدءًا من GPT-5.6 (ttl 30m) ولـ DeepInfra (ttl 5m أو 1h). يُحذف للمزوّدين الآخرين."
+		},
+		"xAI conversation ID, sent as the x-grok-conv-id header.": {
+			"es": "ID de conversación de xAI, enviado en el encabezado x-grok-conv-id.",
+			"fr": "Identifiant de conversation xAI, envoyé dans l’en-tête x-grok-conv-id.",
+			"de": "xAI-Unterhaltungs-ID, gesendet im Header x-grok-conv-id.",
+			"pt-BR": "ID de conversa da xAI, enviado no cabeçalho x-grok-conv-id.",
+			"hi": "xAI बातचीत ID, जिसे x-grok-conv-id हेडर में भेजा जाता है।",
+			"ja": "xAIの会話ID。x-grok-conv-idヘッダーとして送られます。",
+			"zh-Hans": "xAI 对话 ID，通过 x-grok-conv-id 请求头发送。",
+			"ar": "معرّف محادثة xAI، ويُرسل في الترويسة x-grok-conv-id."
+		},
+		"Prompt cache retention for OpenAI and Azure OpenAI models before GPT-5.6. Takes precedence over provider_options.openai.prompt_cache_retention.": {
+			"es": "Retención de la caché de prompts para los modelos de OpenAI y Azure OpenAI anteriores a GPT-5.6. Prevalece sobre provider_options.openai.prompt_cache_retention.",
+			"fr": "Conservation du cache de prompts pour les modèles OpenAI et Azure OpenAI antérieurs à GPT-5.6. Prévaut sur provider_options.openai.prompt_cache_retention.",
+			"de": "Prompt-Cache-Aufbewahrung für OpenAI- und Azure-OpenAI-Modelle vor GPT-5.6. Hat Vorrang vor provider_options.openai.prompt_cache_retention.",
+			"pt-BR": "Retenção do cache de prompts para modelos da OpenAI e da Azure OpenAI anteriores ao GPT-5.6. Prevalece sobre provider_options.openai.prompt_cache_retention.",
+			"hi": "GPT-5.6 से पहले के OpenAI और Azure OpenAI मॉडलों के लिए प्रॉम्प्ट कैश प्रतिधारण। provider_options.openai.prompt_cache_retention पर प्राथमिकता पाता है।",
+			"ja": "GPT-5.6より前のOpenAIとAzure OpenAIのモデル向けのプロンプトキャッシュ保持期間。provider_options.openai.prompt_cache_retentionより優先されます。",
+			"zh-Hans": "适用于 GPT-5.6 之前的 OpenAI 和 Azure OpenAI 模型的 prompt 缓存保留策略。优先于 provider_options.openai.prompt_cache_retention。",
+			"ar": "مدة الاحتفاظ بذاكرة المطالبات المؤقتة لنماذج OpenAI وAzure OpenAI السابقة لـ GPT-5.6. تتقدّم على provider_options.openai.prompt_cache_retention."
 		}
 	},
 	"GET /apps": {

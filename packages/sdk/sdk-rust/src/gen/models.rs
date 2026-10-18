@@ -61,6 +61,7 @@ pub struct AnthropicMessage {
 }
 
 pub struct AnthropicMessagesRequest {
+	pub cache_control: Option<HashMap<String, String>>,
 	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
 	pub max_tokens: i64,
@@ -104,6 +105,9 @@ pub struct AnthropicTool {
 }
 
 pub struct AnthropicUsage {
+	pub cache_creation: Option<HashMap<String, String>>,
+	pub cache_creation_input_tokens: Option<i64>,
+	pub cache_read_input_tokens: Option<i64>,
 	pub input_tokens: Option<i64>,
 	pub output_tokens: Option<i64>,
 }
@@ -542,6 +546,7 @@ pub struct ChatChoice {
 }
 
 pub struct ChatCompletionsRequest {
+	pub cache_control: Option<HashMap<String, String>>,
 	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
 	pub frequency_penalty: Option<f64>,
@@ -560,6 +565,8 @@ pub struct ChatCompletionsRequest {
 	pub parallel_tool_calls: Option<bool>,
 	pub presence_penalty: Option<f64>,
 	pub prompt_cache_key: Option<Option<String>>,
+	pub prompt_cache_options: Option<HashMap<String, String>>,
+	pub prompt_cache_retention: Option<String>,
 	pub provider: Option<String>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
@@ -1125,6 +1132,7 @@ pub struct FileUploadRequest {
 
 pub struct FunctionToolDefinition {
 	pub r#async: Option<bool>,
+	pub cache_control: Option<HashMap<String, String>>,
 	pub function: HashMap<String, String>,
 	pub r#type: String,
 }
@@ -1653,6 +1661,11 @@ pub struct ImagesGenerationRequest {
 pub struct ImagesGenerationResponse {
 	pub created: Option<i64>,
 	pub data: Option<Vec<HashMap<String, String>>>,
+}
+
+pub struct InputTokensDetails {
+	pub cache_write_tokens: Option<i64>,
+	pub cached_tokens: Option<i64>,
 }
 
 pub struct InvalidRequestResponse {
@@ -2560,6 +2573,15 @@ pub struct PrivateModelUpdateRequest {
 	pub upstream_model_id: Option<String>,
 }
 
+pub struct PromptCacheBreakpoint {
+	pub mode: Option<String>,
+}
+
+pub struct PromptCacheOptions {
+	pub mode: Option<String>,
+	pub ttl: Option<String>,
+}
+
 pub struct Provider {
 	pub api_provider_id: Option<String>,
 	pub api_provider_name: Option<Option<String>>,
@@ -2639,6 +2661,7 @@ pub struct ProviderOptions {
 	pub anthropic: Option<HashMap<String, String>>,
 	pub google: Option<HashMap<String, String>>,
 	pub openai: Option<HashMap<String, String>>,
+	pub xai: Option<HashMap<String, String>>,
 }
 
 pub struct ProviderRoutingOptions {
@@ -2864,6 +2887,7 @@ pub struct ResponsesReasoningSummaryPart {
 
 pub struct ResponsesRequest {
 	pub background: Option<bool>,
+	pub cache_control: Option<HashMap<String, String>>,
 	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
 	pub image_config: Option<HashMap<String, String>>,
@@ -2879,6 +2903,8 @@ pub struct ResponsesRequest {
 	pub parallel_tool_calls: Option<bool>,
 	pub previous_response_id: Option<String>,
 	pub prompt_cache_key: Option<Option<String>>,
+	pub prompt_cache_options: Option<HashMap<String, String>>,
+	pub prompt_cache_retention: Option<String>,
 	pub provider: Option<HashMap<String, String>>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
@@ -2993,6 +3019,8 @@ pub struct SystemOneUsage {
 }
 
 pub struct TextContentPart {
+	pub cache_control: Option<HashMap<String, String>>,
+	pub prompt_cache_breakpoint: Option<HashMap<String, String>>,
 	pub text: String,
 	pub r#type: String,
 }
@@ -3024,7 +3052,11 @@ pub struct UpdatedResponse {
 
 pub struct Usage {
 	pub completion_tokens: Option<i64>,
+	pub input_tokens: Option<i64>,
+	pub input_tokens_details: Option<HashMap<String, String>>,
+	pub output_tokens: Option<i64>,
 	pub prompt_tokens: Option<i64>,
+	pub prompt_tokens_details: Option<HashMap<String, String>>,
 	pub server_tool_use: Option<HashMap<String, String>>,
 	pub total_tokens: Option<i64>,
 }

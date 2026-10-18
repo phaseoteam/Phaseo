@@ -1,4 +1,10 @@
 export interface ChatCompletionsRequest {
+  cache_control?: {
+    scope?: string;
+    ttl?: string;
+    type?: string;
+    [key: string]: unknown;
+  };
   debug?: {
     enabled?: boolean;
     return_upstream_request?: boolean;
@@ -42,6 +48,16 @@ export interface ChatCompletionsRequest {
       | string
       | (
           | {
+              cache_control?: {
+                scope?: string;
+                ttl?: string;
+                type?: string;
+                [key: string]: unknown;
+              };
+              prompt_cache_breakpoint?: {
+                mode?: "explicit";
+                [key: string]: unknown;
+              };
               text: string;
               type: "text";
             }
@@ -114,6 +130,12 @@ export interface ChatCompletionsRequest {
   parallel_tool_calls?: boolean;
   presence_penalty?: number;
   prompt_cache_key?: string | null;
+  prompt_cache_options?: {
+    mode?: "implicit" | "explicit";
+    ttl?: string;
+    [key: string]: unknown;
+  };
+  prompt_cache_retention?: "in_memory" | "24h";
   provider?:
     | "openai"
     | "anthropic"
@@ -185,7 +207,15 @@ export interface ChatCompletionsRequest {
         compact_threshold?: number;
         type: "compaction";
       };
+      prompt_cache_options?: {
+        mode?: "implicit" | "explicit";
+        ttl?: string;
+        [key: string]: unknown;
+      };
       prompt_cache_retention?: string;
+    };
+    xai?: {
+      conversation_id?: string;
     };
   };
   reasoning?: {
@@ -251,6 +281,12 @@ export interface ChatCompletionsRequest {
   tools?: (
     | {
         async?: boolean;
+        cache_control?: {
+          scope?: string;
+          ttl?: string;
+          type?: string;
+          [key: string]: unknown;
+        };
         function: {
           description?: string;
           name: string;

@@ -54,6 +54,7 @@ type AnthropicMessage struct {
 }
 
 type AnthropicMessagesRequest struct {
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	MaxTokens int `json:"max_tokens"`
@@ -97,6 +98,9 @@ type AnthropicTool struct {
 }
 
 type AnthropicUsage struct {
+	CacheCreation *map[string]interface{} `json:"cache_creation,omitempty"`
+	CacheCreationInputTokens *int `json:"cache_creation_input_tokens,omitempty"`
+	CacheReadInputTokens *int `json:"cache_read_input_tokens,omitempty"`
 	InputTokens *int `json:"input_tokens,omitempty"`
 	OutputTokens *int `json:"output_tokens,omitempty"`
 }
@@ -1213,6 +1217,7 @@ type ChatChoice struct {
 }
 
 type ChatCompletionsRequest struct {
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	FrequencyPenalty *float64 `json:"frequency_penalty,omitempty"`
@@ -1231,6 +1236,8 @@ type ChatCompletionsRequest struct {
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
 	PresencePenalty *float64 `json:"presence_penalty,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
+	PromptCacheOptions *map[string]interface{} `json:"prompt_cache_options,omitempty"`
+	PromptCacheRetention *string `json:"prompt_cache_retention,omitempty"`
 	Provider interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
@@ -1796,6 +1803,7 @@ type FileUploadRequest struct {
 
 type FunctionToolDefinition struct {
 	Async *bool `json:"async,omitempty"`
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
 	Function map[string]interface{} `json:"function"`
 	Type string `json:"type"`
 }
@@ -2369,6 +2377,11 @@ type ImagesGenerationRequest struct {
 type ImagesGenerationResponse struct {
 	Created *int `json:"created,omitempty"`
 	Data *[]map[string]interface{} `json:"data,omitempty"`
+}
+
+type InputTokensDetails struct {
+	CacheWriteTokens *int `json:"cache_write_tokens,omitempty"`
+	CachedTokens *int `json:"cached_tokens,omitempty"`
 }
 
 type InvalidRequestResponse struct {
@@ -4104,6 +4117,15 @@ type PrivateModelUpdateRequest struct {
 	UpstreamModelId *string `json:"upstream_model_id,omitempty"`
 }
 
+type PromptCacheBreakpoint struct {
+	Mode *string `json:"mode,omitempty"`
+}
+
+type PromptCacheOptions struct {
+	Mode *string `json:"mode,omitempty"`
+	Ttl *string `json:"ttl,omitempty"`
+}
+
 type Provider struct {
 	ApiProviderId *string `json:"api_provider_id,omitempty"`
 	ApiProviderName *string `json:"api_provider_name,omitempty"`
@@ -4189,6 +4211,7 @@ type ProviderOptions struct {
 	Anthropic *map[string]interface{} `json:"anthropic,omitempty"`
 	Google *map[string]interface{} `json:"google,omitempty"`
 	Openai *map[string]interface{} `json:"openai,omitempty"`
+	Xai *map[string]interface{} `json:"xai,omitempty"`
 }
 
 type ProviderRoutingOptions struct {
@@ -4423,6 +4446,7 @@ type ResponsesReasoningSummaryPart struct {
 
 type ResponsesRequest struct {
 	Background *bool `json:"background,omitempty"`
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	ImageConfig *map[string]interface{} `json:"image_config,omitempty"`
@@ -4438,6 +4462,8 @@ type ResponsesRequest struct {
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
 	PreviousResponseId *string `json:"previous_response_id,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
+	PromptCacheOptions *map[string]interface{} `json:"prompt_cache_options,omitempty"`
+	PromptCacheRetention *string `json:"prompt_cache_retention,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
@@ -4552,6 +4578,8 @@ type SystemOneUsage struct {
 }
 
 type TextContentPart struct {
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
+	PromptCacheBreakpoint *map[string]interface{} `json:"prompt_cache_breakpoint,omitempty"`
 	Text string `json:"text"`
 	Type string `json:"type"`
 }
@@ -4583,7 +4611,11 @@ type UpdatedResponse struct {
 
 type Usage struct {
 	CompletionTokens *int `json:"completion_tokens,omitempty"`
+	InputTokens *int `json:"input_tokens,omitempty"`
+	InputTokensDetails *map[string]interface{} `json:"input_tokens_details,omitempty"`
+	OutputTokens *int `json:"output_tokens,omitempty"`
 	PromptTokens *int `json:"prompt_tokens,omitempty"`
+	PromptTokensDetails *map[string]interface{} `json:"prompt_tokens_details,omitempty"`
 	ServerToolUse *map[string]interface{} `json:"server_tool_use,omitempty"`
 	TotalTokens *int `json:"total_tokens,omitempty"`
 }
