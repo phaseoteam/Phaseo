@@ -10149,10 +10149,6 @@ components:
             - ogg
             - pcm16
             - pcm24
-        cache_control:
-          $ref: '#/components/schemas/CacheControl'
-        prompt_cache_breakpoint:
-          $ref: '#/components/schemas/PromptCacheBreakpoint'
     AudioContentPart:
       type: object
       required:
