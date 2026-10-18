@@ -89,7 +89,7 @@ Implement these modules (or equivalents):
 3. `gatewayClient`: typed request wrapper + retries + error normalization
 4. `modelCatalog`: fetch + normalize model metadata from `/models`
 5. `capabilityRouter`: pick valid models by surface/modality
-6. `chatOrchestrator`: Responses API conversation state (`previous_response_id`)
+6. `chatOrchestrator`: Responses API conversation state (the full turn history, resent in `input`)
 7. `asyncJobs`: poll/cancel/download flow for video/music jobs
 8. `observability`: request IDs, latency, surface, model, status, retry counts
 
@@ -179,13 +179,14 @@ Implement this exact flow for a robust chat product:
     - `model`
     - `input` (or `messages`, depending chosen response style)
 3. On subsequent turns:
-  - include `previous_response_id` from the prior successful response
+  - resend the full conversation in `input`: earlier user turns, the assistant replies, then the new user turn
+  - do not send `previous_response_id` or `conversation`: the gateway does not store responses and rejects both with `400`
 4. Parse assistant text:
   - prefer `output_text`
   - fallback parse from `output[].content[].text`
   - fallback parse from chat-style `choices[0].message.content`
 5. Handle model switch:
-  - clear conversation state and `previous_response_id`
+  - clear conversation state
 
 ### Minimal non-streaming request
 
@@ -201,8 +202,11 @@ Implement this exact flow for a robust chat product:
 ```json
 {
   "model": "openai/gpt-5-nano-2025-08-07",
-  "input": "Now provide action items.",
-  "previous_response_id": "resp_..."
+  "input": [
+    { "role": "user", "content": "Summarize this issue in one sentence." },
+    { "role": "assistant", "content": "The export job times out on large workspaces." },
+    { "role": "user", "content": "Now provide action items." }
+  ]
 }
 ```
 
@@ -212,7 +216,7 @@ Implement this exact flow for a robust chat product:
 
 - Method: `POST`
 - Required: `model`, `input` (or equivalent supported input format)
-- Optional: `previous_response_id`
+- Not supported: `previous_response_id`, `conversation` (send the full history in `input`)
 - Client behavior:
   - store `id` for conversation continuity
   - extract display text using parsing order defined above
@@ -363,7 +367,7 @@ At integration boundary, normalize to:
 ### Text
 
 4. `POST /responses` success with selected model
-5. Follow-up request with `previous_response_id` success
+5. Follow-up request with the full history in `input` success
 6. `POST /chat/completions` success for compatibility path
 
 ### Additional modality checks (as in scope)

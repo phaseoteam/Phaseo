@@ -14,7 +14,9 @@ import { resolveProviderKey } from "@providers/keys";
 import { azureAnthropicHeaders, azureAnthropicUrl, resolveAzureConfig, resolveAzureCredential } from "@providers/azure/config";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
+import { normaliseAnthropicCacheBreakpoints } from "./breakpoints";
 import {
+	ANTHROPIC_CACHE_USAGE_SEMANTICS,
 	createAnthropicStreamAccounting,
 	createAnthropicToResponsesStreamTransformer,
 } from "./stream-transformer";
@@ -24,6 +26,7 @@ import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
 import { isIRNativeToolDefinition } from "@core/nativeTools";
 import { applyAnthropicCacheControlDefaults, normalizeAnthropicCacheControlValue } from "./cache-control";
 import {
+	supportsAnthropicMidConversationSystemMessages,
 	supportsAnthropicThinkingDisabled,
 	usesClaudeAdaptiveThinkingControls,
 } from "@core/claudeModelCapabilities";
@@ -291,10 +294,11 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 									const final = accounting.snapshot();
 									return {
 										...bill,
-										usage: normalizeTextUsageForPricing(final.usage) ?? undefined,
+										usage: normalizeTextUsageForPricing(final.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined,
 										finish_reason: mapAnthropicStopReason(final.stopReason),
 									};
 								},
+								usageFinalizerAuthoritative: true,
                                 bill,
                                 upstream: res,
                                 keySource: keyInfo.source,
@@ -314,7 +318,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
                         const ir = anthropicMessagesToIR(message, args.requestId, args.ir.model, args.providerId);
 
 			// Calculate pricing
-			const usageMeters = normalizeTextUsageForPricing(ir.usage);
+			const usageMeters = normalizeTextUsageForPricing(ir.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS);
 			if (usageMeters) {
 				bill.usage = usageMeters;
 			}
@@ -574,15 +578,23 @@ export function irToAnthropicMessages(
 	},
 ): any {
 	const messages: any[] = [];
-	let system: string | any[] | undefined;
+	const systemSegments: Array<string | any[]> = [];
+	let conversationStarted = false;
 	const resolvedModel = modelHint || ir.model;
 	const usesAdaptiveThinkingControls = usesClaudeAdaptiveThinkingControls(resolvedModel);
 
 	for (const msg of ir.messages) {
-		if (msg.role === "system") {
-			// Anthropic has system as a separate field
-			system = mapSystemContentToAnthropic(msg.content);
-		} else if (msg.role === "user") {
+		if (msg.role === "system" || msg.role === "developer") {
+			const mapped = mapSystemContentToAnthropic(msg.content);
+			if (!mapped) continue;
+			// Leading system and developer messages form the top-level system
+			// prompt. Later ones are placed after the loop.
+			if (!conversationStarted) systemSegments.push(mapped);
+			else messages.push({ role: "system", content: mapped, [LATE_SYSTEM_MESSAGE]: true });
+			continue;
+		}
+		conversationStarted = true;
+		if (msg.role === "user") {
 			messages.push({
 				role: "user",
 				content: msg.content.map(mapIRContentToAnthropic),
@@ -630,6 +642,9 @@ export function irToAnthropicMessages(
 			});
 		}
 	}
+
+	placeLateSystemMessages(messages, systemSegments, supportsAnthropicMidConversationSystemMessages(resolvedModel));
+	let system = joinAnthropicSystemSegments(systemSegments);
 
 	// Use IR maxTokens if provided, otherwise fall back to provider's max_output_tokens, otherwise 4096
 	const maxTokens = ir.maxTokens ?? providerMaxOutputTokens ?? 4096;
@@ -686,7 +701,9 @@ export function irToAnthropicMessages(
 
 	// Add other parameters
 	if (ir.stop) request.stop_sequences = Array.isArray(ir.stop) ? ir.stop : [ir.stop];
-	if (ir.metadata) request.metadata = ir.metadata;
+	// Anthropic's metadata accepts only `user_id` and rejects any other key.
+	const anthropicUserId = resolveAnthropicMetadataUserId(ir);
+	if (anthropicUserId) request.metadata = { user_id: anthropicUserId };
 	const reasoningDisabled = ir.reasoning?.enabled === false || ir.reasoning?.effort === "none";
 
 	if (usesAdaptiveThinkingControls) {
@@ -755,8 +772,65 @@ export function irToAnthropicMessages(
 	applyAnthropicServiceControls(request, {
 		serviceTier: ir.serviceTier,
 	});
+	normaliseAnthropicCacheBreakpoints(request);
 
 	return request;
+}
+
+const LATE_SYSTEM_MESSAGE = Symbol("lateSystemMessage");
+const ANTHROPIC_METADATA_USER_ID_MAX_LENGTH = 256;
+
+function resolveAnthropicMetadataUserId(ir: IRChatRequest): string | undefined {
+	const candidates = [ir.metadata?.user_id, ir.userId];
+	for (const candidate of candidates) {
+		if (typeof candidate !== "string") continue;
+		const value = candidate.trim();
+		if (value && value.length <= ANTHROPIC_METADATA_USER_ID_MAX_LENGTH) return value;
+	}
+	return undefined;
+}
+
+/**
+ * Place system or developer messages that arrive after the conversation has
+ * started. Models that support mid-conversation system messages keep them in
+ * place when Anthropic's placement rule holds (straight after a user turn, and
+ * either last or followed by an assistant turn), which leaves the cached
+ * prefix untouched. Anything else is hoisted into the top-level system prompt,
+ * which is how Anthropic's own OpenAI compatibility layer treats them.
+ */
+function placeLateSystemMessages(
+	messages: any[],
+	systemSegments: Array<string | any[]>,
+	supportsMidConversation: boolean,
+): void {
+	for (let index = 0; index < messages.length; index += 1) {
+		const message = messages[index];
+		if (!message?.[LATE_SYSTEM_MESSAGE]) continue;
+		// Consecutive system messages are judged together, so merge them.
+		const parts: Array<string | any[]> = [message.content];
+		while (messages[index + 1]?.[LATE_SYSTEM_MESSAGE]) {
+			parts.push(messages[index + 1].content);
+			messages.splice(index + 1, 1);
+		}
+		const previous = messages[index - 1];
+		const next = messages[index + 1];
+		const validPlacement = previous?.role === "user" && (!next || next.role === "assistant");
+		if (supportsMidConversation && validPlacement) {
+			messages[index] = { role: "system", content: joinAnthropicSystemSegments(parts) };
+			continue;
+		}
+		systemSegments.push(...parts);
+		messages.splice(index, 1);
+		index -= 1;
+	}
+}
+
+function joinAnthropicSystemSegments(segments: Array<string | any[]>): string | any[] | undefined {
+	if (segments.length === 0) return undefined;
+	if (segments.length === 1) return segments[0];
+	// Anthropic's compatibility layer joins system messages with one newline.
+	if (segments.every((segment) => typeof segment === "string")) return segments.join("\n");
+	return segments.flatMap((segment) => typeof segment === "string" ? [{ type: "text", text: segment }] : segment);
 }
 
 export function resolveAnthropicInferenceGeo(
@@ -976,6 +1050,9 @@ export function anthropicMessagesToIR(
 					typeof json.usage.cache_read_input_tokens === "number"
 						? json.usage.cache_read_input_tokens
 						: undefined,
+				// Anthropic's input_tokens excludes cache reads and writes; both are billed on top.
+				cachedReadTokensAreSubsetOfInput: false,
+				cachedWriteTokensAreSubsetOfInput: false,
 				_ext:
 					typeof json.usage.cache_creation_input_tokens === "number"
 						? {

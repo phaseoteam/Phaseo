@@ -10368,6 +10368,7 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: समर्थित नहीं। गेटवे प्रतिक्रियाएँ संग्रहीत नहीं करता, इसलिए खाली न होने वाला मान 400 सत्यापन त्रुटि के साथ अस्वीकार कर दिया जाता है। इसके बजाय पूरी बातचीत input में भेजें।
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
@@ -20129,6 +20130,7 @@ components:
         - payment_method_expiring
         - model_deprecation
         - model_substitution
+        - rate_limit_throttled
     WorkspaceNotificationRouteMap:
       type: object
       required:
@@ -20137,6 +20139,7 @@ components:
         - payment_method_expiring
         - model_deprecation
         - model_substitution
+        - rate_limit_throttled
       properties:
         low_balance:
           type: array
@@ -20159,6 +20162,11 @@ components:
             type: string
             format: uuid
         model_substitution:
+          type: array
+          items:
+            type: string
+            format: uuid
+        rate_limit_throttled:
           type: array
           items:
             type: string

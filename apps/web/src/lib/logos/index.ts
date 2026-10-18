@@ -121,6 +121,7 @@ for (const [key, assets] of manifestEntries) {
 // Provider/catalog IDs are not always identical to logo IDs.
 // Keep common aliases here so callers can pass provider IDs directly.
 normalisedAliasMap.set(normalise("novitaai"), "novita");
+normalisedAliasMap.set(normalise("pioneer"), "fastino");
 normalisedAliasMap.set(normalise("EmpirioLabs AI"), "empiriolabs");
 normalisedAliasMap.set(normalise("cogito-ai"), "cogito");
 normalisedAliasMap.set(normalise("inference-net"), "inference");

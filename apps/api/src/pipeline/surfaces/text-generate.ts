@@ -89,6 +89,19 @@ function createJsonErrorResponse(
 	);
 }
 
+/**
+ * tool_choice for the request that continues after a server tool ran. A forced
+ * choice ("required" or a named tool) would make the model call a tool again
+ * on every round, so it relaxes to "auto". Anything else is kept as the client
+ * sent it, so the follow-up's prefix matches the first request and its cache.
+ */
+export function serverToolFollowUpToolChoice(
+	toolChoice: IRChatRequest["toolChoice"],
+): IRChatRequest["toolChoice"] {
+	if (toolChoice === "required" || (toolChoice && typeof toolChoice === "object")) return "auto";
+	return toolChoice;
+}
+
 function cloneJsonValue<T>(value: T): T {
 	if (value === null || value === undefined) return value;
 	return JSON.parse(JSON.stringify(value)) as T;
@@ -1106,7 +1119,7 @@ async function runTextGeneratePipelineInner(
 				nextIrRequest = {
 					...nextIrRequest,
 					stream: true,
-					toolChoice: "auto",
+					toolChoice: serverToolFollowUpToolChoice(nextIrRequest.toolChoice),
 					...(latestIrResponse.provider === "google-ai-studio" &&
 						latestIrResponse.nativeId &&
 						latestIrResponse.nativeId !== pre.ctx.requestId &&

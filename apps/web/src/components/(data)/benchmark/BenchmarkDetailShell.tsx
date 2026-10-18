@@ -69,7 +69,7 @@ export default async function BenchmarkDetailShell({
 
 	return (
 		<main className="flex flex-col">
-			<EntityStickyHeader kind="benchmark" id={benchmark.id} name={displayName} observeId="benchmark-detail-primary-header" baseHref={`/benchmarks/${benchmark.id}`} navigation={[]} brandLogo={epochCapabilitiesIndex ? { light: "/benchmarks/epoch-ai.svg", dark: "/benchmarks/epoch-ai_dark.svg", width: 150, height: 26 } : undefined} />
+			<EntityStickyHeader kind="benchmark" id={benchmark.suite?.id ?? benchmark.id} name={displayName} observeId="benchmark-detail-primary-header" baseHref={`/benchmarks/${benchmark.suite?.id ?? benchmark.id}`} navigation={[]} brandLogo={epochCapabilitiesIndex ? { light: "/benchmarks/epoch-ai.svg", dark: "/benchmarks/epoch-ai_dark.svg", width: 150, height: 26 } : undefined} />
 			<div className="container mx-auto px-4 py-6 md:py-8">
 				<div id="benchmark-detail-primary-header" className="mb-6 flex w-full items-start justify-between gap-4">
 					<div className="flex min-w-0 items-center gap-4">

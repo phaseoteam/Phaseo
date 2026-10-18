@@ -22,6 +22,38 @@
       "source": null
     },
     {
+      "meter": "cached_write_text_tokens_1h",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Kimi K3 1-hour cache write: $6.00 per 1M tokens, 2x the input price (accessed 2026-10-17).",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-16T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://platform.kimi.ai/docs/pricing/chat-k3"
+    },
+    {
+      "meter": "cached_write_text_tokens_5m",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Kimi K3 5-minute cache write: $3.00 per 1M tokens, equal to the input price (accessed 2026-10-17).",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-16T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://platform.kimi.ai/docs/pricing/chat-k3"
+    },
+    {
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
@@ -74,7 +106,10 @@
   "service_tiers": [
     "standard"
   ],
-  "sources": ["https://platform.kimi.ai/docs/pricing/chat-k3", "https://platform.kimi.ai/docs/pricing/tools"],
+  "sources": [
+    "https://platform.kimi.ai/docs/pricing/chat-k3",
+    "https://platform.kimi.ai/docs/pricing/tools"
+  ],
   "verification": {
     "status": "verified",
     "checked_at": "2026-08-23T00:00:00Z",

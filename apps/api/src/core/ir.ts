@@ -87,6 +87,7 @@ export type IRToolCall = {
 	name: string; // Function name
 	arguments: string; // JSON string of arguments
 	type?: "function" | "custom";
+	thoughtSignature?: string; // Gemini signature returned on a functionCall part
 };
 
 /**
@@ -896,6 +897,10 @@ export type IRUsage = {
 	// Optional detailed counts
 	cachedInputTokens?: number; // Prompt caching
 	cachedReadTokensAreSubsetOfInput?: boolean; // Cached reads are already included in inputTokens
+	// Cache writes (_ext.cachedWriteTokens) are already included in inputTokens. True for
+	// OpenAI-style details (GPT-5.6+, Kimi, Alibaba); false for Anthropic, which reports
+	// cache_creation_input_tokens on top of input_tokens.
+	cachedWriteTokensAreSubsetOfInput?: boolean;
 	reasoningTokens?: number; // Reasoning/thinking tokens (o1, MiniMax)
 
 	// Modality-specific counts (extended meters)

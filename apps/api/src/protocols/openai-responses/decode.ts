@@ -14,7 +14,22 @@ import type {
 } from "@core/ir";
 import type { ResponsesRequest } from "@core/schemas";
 import { extractToolNameOrType, isOpenAINativeWebSearchTool } from "@core/nativeTools";
-import { normalizeOpenAIContent } from "../shared/normalizeContent";
+import { normalizeOpenAIContent, normalizePartCacheControl, normalizeToolResultContent } from "../shared/normalizeContent";
+
+/**
+ * Deterministic id for a function call item that arrived without `call_id`.
+ * It depends only on the item's position and content, so replaying the same
+ * history produces the same upstream prefix (a timestamp never repeats).
+ */
+function deriveResponsesCallId(index: number, name: unknown, args: unknown): string {
+	const seed = `${index}:${typeof name === "string" ? name : ""}:${typeof args === "string" ? args : JSON.stringify(args ?? null)}`;
+	let hash = 0x811c9dc5;
+	for (let i = 0; i < seed.length; i += 1) {
+		hash ^= seed.charCodeAt(i);
+		hash = Math.imul(hash, 0x01000193);
+	}
+	return `call_${(hash >>> 0).toString(16).padStart(8, "0")}`;
+}
 import {
 	normalizeImageConfig,
 	normalizeModalities,
@@ -70,11 +85,10 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 	const input = req.input;
 	const pendingUserParts: IRContentPart[] = [];
 	const openAIContextManagement = normalizeOpenAIContextManagement(req);
-	const metadataFromRequest = req.metadata ? { ...req.metadata } : undefined;
+	// `user` stays in `userId`; folding it into metadata sent an unknown
+	// `metadata.user` key upstream (Anthropic rejects anything but user_id).
+	const metadata = req.metadata ? { ...req.metadata } : undefined;
 	const providerCacheOptions = normalizeProviderCacheOptions(req as any);
-	const metadata = (req as any).user
-		? { ...(metadataFromRequest ?? {}), user: (req as any).user }
-		: metadataFromRequest;
 
 	// Handle instructions as a system message (string or content-like object/array).
 	const instructions = (req as any).instructions;
@@ -106,7 +120,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		}
 		// Array of input items
 		else if (Array.isArray(input)) {
-			for (const item of input) {
+			for (const [itemIndex, item] of input.entries()) {
 				// Input parts (Responses API)
 				if (item?.type === "input_text" || item?.type === "input_image" || item?.type === "input_audio" || item?.type === "input_video") {
 					const parts = normalizeOpenAIContent([item]);
@@ -140,14 +154,14 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 							phase: item.phase ?? undefined,
 						});
 					} else if (item.role === "tool" && item.tool_call_id) {
+						const toolResult = normalizeToolResultContent(item.content);
 						messages.push({
 							role: "tool",
 							toolResults: [
 								{
 									toolCallId: item.tool_call_id,
-									content: typeof item.content === "string"
-										? item.content
-										: JSON.stringify(item.content),
+									content: toolResult.content,
+									...(toolResult.cacheControl ? { cacheControl: toolResult.cacheControl } : {}),
 								},
 							],
 						});
@@ -172,7 +186,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 					}
 
 					lastAssistant.toolCalls.push({
-						id: item.call_id || `call_${Date.now()}`,
+						id: item.call_id || deriveResponsesCallId(itemIndex, item.name, item.type === "custom_tool_call" ? item.input : item.arguments),
 						name: item.name,
 						arguments: item.type === "custom_tool_call"
 							? (item.input || "")
@@ -184,16 +198,14 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 				else if (item.type === "function_call_output" || item.type === "custom_tool_call_output") {
 					flushPendingUserParts();
 					// Create tool result message
+					const toolResult = normalizeToolResultContent(item.output);
 					messages.push({
 						role: "tool",
 						toolResults: [
 							{
 								toolCallId: item.call_id,
-								content: typeof item.output === "string"
-									? item.output
-									: item.output == null
-										? ""
-										: JSON.stringify(item.output),
+								content: toolResult.content,
+								...(toolResult.cacheControl ? { cacheControl: toolResult.cacheControl } : {}),
 								...(item.type === "custom_tool_call_output" ? { type: "custom" as const } : {}),
 							},
 						],
@@ -330,6 +342,7 @@ function decodeOpenAITool(tool: any): IRTool {
 					: undefined,
 			parameters: {},
 			async: typeof tool.async === "boolean" ? tool.async : undefined,
+			cacheControl: normalizePartCacheControl(tool),
 			raw: { ...tool },
 		};
 	}
@@ -340,5 +353,6 @@ function decodeOpenAITool(tool: any): IRTool {
 		parameters: tool.parameters || tool.function?.parameters || {},
 		strict: tool.strict ?? tool.function?.strict,
 		async: typeof tool.async === "boolean" ? tool.async : undefined,
+		cacheControl: normalizePartCacheControl(tool) ?? normalizePartCacheControl(tool.function),
 	};
 }

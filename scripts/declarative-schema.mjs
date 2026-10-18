@@ -67,6 +67,7 @@ if (mode === "smoke") {
 			query(readFileSync(join(source, "tests", file), "utf8"));
 		}
 		await runRollupLockSmoke(`supabase_db_${projectId}`);
+		query(readFileSync(join(source, "tests", "artificial_analysis_publication.sql"), "utf8"));
 		writeFileSync(join(temporary, "schemas", "public", "tables", "phaseo_declarative_smoke.sql"),
 			"CREATE TABLE public.phaseo_declarative_smoke (id bigint PRIMARY KEY);\nALTER TABLE public.phaseo_declarative_smoke ENABLE ROW LEVEL SECURITY;\n");
 		run(["db", "schema", "declarative", "sync", "--no-apply", "--strict-coverage", "-f", "trial_incremental_change"]);

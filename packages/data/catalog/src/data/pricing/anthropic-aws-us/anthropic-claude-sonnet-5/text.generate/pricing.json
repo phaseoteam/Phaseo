@@ -22,6 +22,22 @@
       "source": null
     },
     {
+      "meter": "cached_write_text_tokens_1h",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 4.4,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Anthropic: 1-hour cache write tokens are 2 times the base input price; multipliers stack with data residency (accessed 2026-10-17).",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching"
+    },
+    {
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
@@ -86,6 +102,12 @@
       "url": "https://platform.claude.com/docs/en/manage-claude/data-residency",
       "accessed_at": "2026-08-24T00:00:00Z",
       "notes": "US-only inference eligibility and multiplier coverage across input, output, cache-write, and cache-read token categories."
+    },
+    {
+      "kind": "pricing",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+      "accessed_at": "2026-10-17T00:00:00Z",
+      "notes": "Anthropic: 1-hour cache write tokens are 2 times the base input price; multipliers stack with data residency (accessed 2026-10-17)."
     }
   ],
   "verification": {

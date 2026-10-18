@@ -9,7 +9,9 @@
 import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types";
 import { fetchUpstream, UpstreamHeadersTimeoutError } from "@executors/_shared/timing/upstream";
 import type { IRChatResponse } from "@core/ir";
+import { resolveCacheTokenUsage, uncachedInputTokens } from "@core/cache-usage";
 import { irToOpenAIResponses, openAIResponsesToIR } from "./transform";
+import { providerAcceptsStreamOptions } from "./prompt-cache-policy";
 import { irToOpenAIChat, openAIChatToIR } from "./transform-chat";
 import {
 	openAICompatHeaders,
@@ -112,7 +114,15 @@ export async function executeOpenAIWire(
 			...requestPayload,
 			stream: upstreamStream,
 		};
-		if (targetRoute === "chat" && upstreamStream && args.providerId !== "ai21" && args.providerId !== "mancer") {
+		// Never re-add stream_options for providers whose profile rejects it
+		// (their quirks have already removed any client value).
+		if (
+			targetRoute === "chat" &&
+			upstreamStream &&
+			args.providerId !== "ai21" &&
+			args.providerId !== "mancer" &&
+			providerAcceptsStreamOptions(args.providerId)
+		) {
 			payload.stream_options = {
 				...(payload.stream_options ?? {}),
 				include_usage: true,
@@ -798,7 +808,13 @@ function transformResponsesStreamToAnthropic(
 	});
 }
 
-function normalizeUsageToAnthropic(usage: any): { input_tokens: number; output_tokens: number } {
+function normalizeUsageToAnthropic(usage: any): {
+	input_tokens: number;
+	output_tokens: number;
+	cache_read_input_tokens?: number;
+	cache_creation_input_tokens?: number;
+	cache_creation?: { ephemeral_5m_input_tokens: number; ephemeral_1h_input_tokens: number };
+} {
 	const inputTokens = Number(
 		usage?.input_tokens ??
 		usage?.prompt_tokens ??
@@ -811,9 +827,25 @@ function normalizeUsageToAnthropic(usage: any): { input_tokens: number; output_t
 		usage?.outputTokens ??
 		0,
 	);
+	const safeInput = Number.isFinite(inputTokens) ? inputTokens : 0;
+	// Responses usage counts cache reads and writes inside input_tokens; Anthropic reports
+	// them separately, on top of input_tokens.
+	const cache = resolveCacheTokenUsage(usage, safeInput, { readSubsetDefault: true });
+	const read = cache.readTokens;
+	const write = cache.writeTokens;
 	return {
-		input_tokens: Number.isFinite(inputTokens) ? inputTokens : 0,
+		input_tokens: uncachedInputTokens(safeInput, cache),
 		output_tokens: Number.isFinite(outputTokens) ? outputTokens : 0,
+		...(typeof read === "number" ? { cache_read_input_tokens: read } : {}),
+		...(typeof write === "number" ? { cache_creation_input_tokens: write } : {}),
+		...(typeof cache.write5mTokens === "number" || typeof cache.write1hTokens === "number"
+			? {
+				cache_creation: {
+					ephemeral_5m_input_tokens: cache.write5mTokens ?? 0,
+					ephemeral_1h_input_tokens: cache.write1hTokens ?? 0,
+				},
+			}
+			: {}),
 	};
 }
 

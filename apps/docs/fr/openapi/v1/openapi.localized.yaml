@@ -10368,6 +10368,7 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: 'Non pris en charge. La passerelle ne stocke pas les réponses : une valeur non vide est donc rejetée avec une erreur de validation 400. Envoyez plutôt la conversation complète dans input.'
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
@@ -20129,6 +20130,7 @@ components:
         - payment_method_expiring
         - model_deprecation
         - model_substitution
+        - rate_limit_throttled
     WorkspaceNotificationRouteMap:
       type: object
       required:
@@ -20137,6 +20139,7 @@ components:
         - payment_method_expiring
         - model_deprecation
         - model_substitution
+        - rate_limit_throttled
       properties:
         low_balance:
           type: array
@@ -20159,6 +20162,11 @@ components:
             type: string
             format: uuid
         model_substitution:
+          type: array
+          items:
+            type: string
+            format: uuid
+        rate_limit_throttled:
           type: array
           items:
             type: string

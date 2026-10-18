@@ -1989,6 +1989,8 @@
 		"Product alerts": "製品アラート",
 		"Model Deprecation Alerts": "モデル非推奨アラート",
 		"phraseGetNoticeBeforeAModelYourWorkspaceUsesIsRetired": "ワークスペースで使用しているモデルが提供終了になる前に通知を受け取ります。",
+		"Rate Limit Alerts": "レート制限アラート",
+		"phraseGetAnAlertWhenRateLimitPoliciesRejectRequestsAtMostOnceAnHour": "レート制限ポリシーがリクエストを拒否したときに通知を受け取ります（最大で1時間に1回）。",
 		"Destinations": "送信先",
 		"phraseCreateReusableChannelsThenChooseThemOnEachAlertAbove": "再利用できるチャンネルを作成し、上の各アラートで選択します。",
 		"Add destination": "送信先を追加",
