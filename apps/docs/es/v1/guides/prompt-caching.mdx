@@ -367,7 +367,7 @@ Después de añadir el caché de prompts:
 
 Un caché de prompts reside en un proveedor y, a menudo, en una región o un despliegue concretos de ese proveedor. Phaseo mantiene las solicitudes relacionadas en el proveedor y la ruta que las atendieron, para que un bucle de agente no pague por reconstruir su caché en otro proveedor.
 
-Envía `prompt_cache_key` o `session_id`, o activa el caché con `cache_control` (de nivel superior o en `provider_options.anthropic.cache_control`), para fijar una conversación. Phaseo la fija al proveedor y la ruta que atendieron la primera solicitud correcta, y las solicitudes posteriores con la misma clave también van allí. Las fijaciones se guardan por espacio de trabajo.
+Envía `prompt_cache_key` o `session_id`, o activa el caché con `cache_control` (de nivel superior, en `provider_options.anthropic.cache_control` o como marca `cache_control` o `prompt_cache_breakpoint` en un bloque de mensaje o una herramienta), para fijar una conversación. Phaseo la fija al proveedor y la ruta que atendieron la primera solicitud correcta, y las solicitudes posteriores con la misma clave también van allí. Las fijaciones se guardan por espacio de trabajo.
 
 La duración de una fijación depende de la retención del caché del proveedor:
 
@@ -382,13 +382,13 @@ La duración de una fijación depende de la retención del caché del proveedor:
 
 Una fijación solo cambia cuando su proveedor falla (un circuit breaker abierto o una tasa de errores reciente alta), cuando se agota la cuota gestionada de Phaseo en ese proveedor o cuando la ruta, el preset, la barrera de protección o la política de solicitud activos dejan de permitirlo. La solicitud hace entonces failover, y la fijación pasa al proveedor que la atendió. Los detalles de la solicitud lo registran como `sticky_routing.demotionReason` en el diagnóstico de enrutamiento. Las solicitudes fijadas no se usan para sondear proveedores que se están recuperando.
 
-Sin clave, `session_id` ni `cache_control`, Phaseo sigue prefiriendo durante 15 minutos un proveedor que devolvió tokens en caché para el mismo contexto inicial.
+Sin clave, `session_id` ni marca de caché, Phaseo sigue fijando el contexto inicial durante 15 minutos a un proveedor que informó de una lectura o escritura de caché para él, siempre que la entrada en caché de ese proveedor sea más barata que su entrada normal.
 
 Phaseo envía a los proveedores un hash de tu espacio de trabajo y `prompt_cache_key`, nunca la clave sin procesar, así que la misma clave en dos espacios de trabajo nunca comparte un caché de proveedor. Con solo un `session_id`, Phaseo deriva ese hash de la sesión para OpenAI, xAI, Fireworks y Cerebras. Fireworks y Cloudflare Workers AI también lo reciben en el encabezado `x-session-affinity`, y xAI lo recibe como `x-grok-conv-id`, salvo que definas `provider_options.xai.conversation_id`. Las respuestas siguen devolviendo tu propio `prompt_cache_key`.
 
 Establece `provider.cache_aware_routing` en `false` para excluir una solicitud. Establece
 `routing.session_affinity` en `false` cuando la solicitud incluya `session_id`
-pero deba usar únicamente el enrutamiento normal basado en contexto.
+pero deba usar únicamente el enrutamiento normal basado en contexto. Phaseo deja entonces de derivar también una clave de caché del proveedor a partir de la sesión.
 
 ## Páginas relacionadas
 

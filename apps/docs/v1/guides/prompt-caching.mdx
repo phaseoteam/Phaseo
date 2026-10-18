@@ -366,7 +366,8 @@ that provider. Phaseo keeps related requests on the provider and route that serv
 them, so an agent loop does not pay to rebuild its cache on a different provider.
 
 Send `prompt_cache_key` or `session_id`, or opt into caching with `cache_control`
-(top-level or `provider_options.anthropic.cache_control`), to pin a conversation.
+(top-level, `provider_options.anthropic.cache_control`, or a `cache_control` or
+`prompt_cache_breakpoint` mark on a message block or tool), to pin a conversation.
 Phaseo pins it to the provider and route that served the first successful request,
 and later requests with the same key go there too. Pins are kept per workspace.
 
@@ -388,8 +389,9 @@ then fails over, and the pin moves to the provider that served it. Request detai
 record this as `sticky_routing.demotionReason` in the routing diagnostics. Pinned
 requests are not used to probe recovering providers.
 
-Without a key, `session_id` or `cache_control`, Phaseo still prefers a provider that
-returned cached tokens for the same opening context, for 15 minutes.
+Without a key, `session_id` or cache mark, Phaseo still pins the opening context for
+15 minutes to a provider that reported a cache read or a cache write for it, as long
+as that provider's cached input is cheaper than its standard input.
 
 Phaseo sends a hash of your workspace and `prompt_cache_key` to providers, never
 the raw key, so the same key in two workspaces never shares a provider cache. With
@@ -401,7 +403,8 @@ Fireworks and Cerebras. Fireworks and Cloudflare Workers AI also receive it in t
 
 Set `provider.cache_aware_routing` to `false` to opt out for one request. Set
 `routing.session_affinity` to `false` when the request carries a `session_id`
-but should use only normal context-based routing.
+but should use only normal context-based routing. Phaseo then also stops deriving a
+provider cache key from the session.
 
 ## Related pages
 

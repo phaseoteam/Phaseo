@@ -558,7 +558,7 @@ provider-specific passthrough settings रखता है जिन्हें
 - `google.cached_content`
 - `xai.conversation_id`
 
-जब provider-native feature चाहिए, लेकिन request का बाकी हिस्सा gateway के common schema में रखना हो, तब इसका उपयोग करें। Claude cache नीतियों के लिए top-level `cache_control` और OpenAI retention के लिए top-level `prompt_cache_retention` चुनें।
+जब provider-native feature चाहिए, लेकिन request का बाकी हिस्सा gateway के common schema में रखना हो, तब इसका उपयोग करें। Claude cache नीतियों के लिए top-level `cache_control` चुनें। OpenAI retention के लिए GPT-5.6 और बाद के मॉडलों पर top-level `prompt_cache_options`, और पुराने मॉडलों पर top-level `prompt_cache_retention` उपयोग करें।
 
 `google.cached_content` किसी स्पष्ट Gemini cache का नाम देता है। Google AI Studio पर यह केवल आपकी अपनी Google API key के साथ काम करता है, और Vertex AI पर cache उस project का होना चाहिए जिसकी credential request पूरा करती है। `google.cache_control` और `google.cache_ttl` स्वीकार किए जाते हैं, लेकिन Google को नहीं भेजे जाते।
 

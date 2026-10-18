@@ -558,7 +558,7 @@ Phaseo 只会把该字段发送给 GPT-5.6 之前的 OpenAI 和 Azure OpenAI 模
 - `google.cached_content`
 - `xai.conversation_id`
 
-需要使用提供商原生功能，同时希望请求其余部分仍采用网关通用 schema 时使用。Claude 缓存策略优先使用顶层 `cache_control`；OpenAI 保留设置优先使用顶层 `prompt_cache_retention`。
+需要使用提供商原生功能，同时希望请求其余部分仍采用网关通用 schema 时使用。Claude 缓存策略优先使用顶层 `cache_control`；OpenAI 保留设置在 GPT-5.6 及更高版本上使用顶层 `prompt_cache_options`，在更早的模型上使用顶层 `prompt_cache_retention`。
 
 `google.cached_content` 指定一个 Gemini 显式缓存。在 Google AI Studio 上，它仅在使用你自己的 Google API 密钥时有效；在 Vertex AI 上，缓存必须属于处理请求的凭据所在的项目。`google.cache_control` 和 `google.cache_ttl` 会被接受，但不会发送给 Google。
 

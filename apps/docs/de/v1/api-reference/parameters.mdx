@@ -558,7 +558,7 @@ Beispiele:
 - `google.cached_content`
 - `xai.conversation_id`
 
-Nutze den Parameter für anbietereigene Funktionen, wenn der Rest der Anfrage im gemeinsamen Gateway-Schema bleiben soll. Für Claude-Cache-Richtlinien solltest du `cache_control` auf oberster Ebene verwenden, für die OpenAI-Aufbewahrung `prompt_cache_retention`.
+Nutze den Parameter für anbietereigene Funktionen, wenn der Rest der Anfrage im gemeinsamen Gateway-Schema bleiben soll. Für Claude-Cache-Richtlinien solltest du `cache_control` auf oberster Ebene verwenden, für die OpenAI-Aufbewahrung `prompt_cache_options` auf oberster Ebene ab GPT-5.6 oder `prompt_cache_retention` auf oberster Ebene bei älteren Modellen.
 
 `google.cached_content` benennt einen expliziten Gemini-Cache. Bei Google AI Studio funktioniert er nur mit deinem eigenen Google-API-Schlüssel, und bei Vertex AI muss der Cache zum Projekt der Anmeldedaten gehören, die die Anfrage ausführen. `google.cache_control` und `google.cache_ttl` werden akzeptiert, aber nicht an Google gesendet.
 

@@ -367,7 +367,7 @@ Après avoir activé la mise en cache des prompts :
 
 Un cache de prompts réside chez un fournisseur, et souvent dans une région ou un déploiement de ce fournisseur. Phaseo maintient les requêtes liées chez le fournisseur et sur la route qui les ont servies, afin qu’une boucle d’agent ne paie pas pour reconstruire son cache chez un autre fournisseur.
 
-Envoyez `prompt_cache_key` ou `session_id`, ou activez la mise en cache avec `cache_control` (au premier niveau ou via `provider_options.anthropic.cache_control`), pour épingler une conversation. Phaseo l’épingle au fournisseur et à la route qui ont servi la première requête réussie, et les requêtes suivantes avec la même clé y sont aussi envoyées. Les épinglages sont conservés par espace de travail.
+Envoyez `prompt_cache_key` ou `session_id`, ou activez la mise en cache avec `cache_control` (au premier niveau, via `provider_options.anthropic.cache_control` ou sous forme de marque `cache_control` ou `prompt_cache_breakpoint` sur un bloc de message ou un outil), pour épingler une conversation. Phaseo l’épingle au fournisseur et à la route qui ont servi la première requête réussie, et les requêtes suivantes avec la même clé y sont aussi envoyées. Les épinglages sont conservés par espace de travail.
 
 La durée d’un épinglage dépend de la rétention du cache du fournisseur :
 
@@ -382,13 +382,13 @@ La durée d’un épinglage dépend de la rétention du cache du fournisseur :
 
 Un épinglage ne change que lorsque son fournisseur est défaillant (disjoncteur ouvert ou taux d’erreur récent élevé), lorsque le quota géré par Phaseo chez ce fournisseur est épuisé, ou lorsque la route, le préréglage, le garde-fou ou la politique de requête actifs ne l’autorisent plus. La requête bascule alors, et l’épinglage passe au fournisseur qui l’a servie. Les détails de la requête l’enregistrent sous `sticky_routing.demotionReason` dans les diagnostics de routage. Les requêtes épinglées ne servent pas à sonder les fournisseurs en cours de rétablissement.
 
-Sans clé, `session_id` ni `cache_control`, Phaseo privilégie toujours pendant 15 minutes un fournisseur qui a renvoyé des jetons mis en cache pour le même contexte initial.
+Sans clé, `session_id` ni marque de cache, Phaseo épingle toujours le contexte initial pendant 15 minutes au fournisseur qui a signalé une lecture ou une écriture du cache pour ce contexte, à condition que l’entrée en cache de ce fournisseur coûte moins cher que son entrée standard.
 
 Phaseo envoie aux fournisseurs un hachage de votre espace de travail et de `prompt_cache_key`, jamais la clé brute : la même clé dans deux espaces de travail ne partage donc jamais un cache de fournisseur. Avec seulement un `session_id`, Phaseo dérive ce hachage de la session pour OpenAI, xAI, Fireworks et Cerebras. Fireworks et Cloudflare Workers AI le reçoivent aussi dans l’en-tête `x-session-affinity`, et xAI le reçoit sous la forme `x-grok-conv-id`, sauf si vous définissez `provider_options.xai.conversation_id`. Les réponses renvoient toujours votre propre `prompt_cache_key`.
 
 Définissez `provider.cache_aware_routing` sur `false` pour désactiver cette option sur une requête. Définissez
 `routing.session_affinity` sur `false` lorsque la requête contient `session_id`
-mais que vous souhaitez conserver le routage normal fondé sur le contexte.
+mais que vous souhaitez conserver le routage normal fondé sur le contexte. Phaseo cesse alors aussi de dériver une clé de cache fournisseur de la session.
 
 ## Pages associées
 

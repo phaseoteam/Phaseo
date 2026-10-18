@@ -382,10 +382,13 @@ always tried before a replacement. See
 ## Cache-aware and session-aware affinity
 
 Cache-aware routing is enabled by default on text generation endpoints. Requests
-that send `prompt_cache_key` or `session_id`, or opt into caching with a
-top-level `cache_control`, are pinned to the provider and route that served their
-first successful request. Other requests are pinned once a provider reports a
-prompt-cache read or write for the same opening context, for 15 minutes.
+that send `prompt_cache_key` or `session_id`, or opt into caching with
+`cache_control` (top-level, `provider_options.anthropic.cache_control`, or a
+`cache_control` or `prompt_cache_breakpoint` mark on a message block or tool),
+are pinned to the provider and route that served their first successful request.
+Other requests are pinned for 15 minutes once a provider reports a prompt-cache
+read or write for the same opening context, as long as that provider's cached
+input is cheaper than its standard input.
 
 Pins are kept per workspace and last from 15 minutes to 24 hours, following the
 provider's cache retention. A pin moves only when its provider's circuit breaker

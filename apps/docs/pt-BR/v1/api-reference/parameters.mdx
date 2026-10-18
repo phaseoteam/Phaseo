@@ -558,7 +558,7 @@ Exemplos:
 - `google.cached_content`
 - `xai.conversation_id`
 
-Use-o quando precisar de um recurso nativo do provedor, mas quiser manter o restante da solicitação no esquema comum do gateway. Prefira `cache_control` no nível superior para políticas de cache do Claude e `prompt_cache_retention` no nível superior para retenção da OpenAI.
+Use-o quando precisar de um recurso nativo do provedor, mas quiser manter o restante da solicitação no esquema comum do gateway. Prefira `cache_control` no nível superior para políticas de cache do Claude e, para retenção da OpenAI, `prompt_cache_options` no nível superior no GPT-5.6 e posteriores ou `prompt_cache_retention` no nível superior em modelos anteriores.
 
 `google.cached_content` indica um cache explícito do Gemini. No Google AI Studio, ele só funciona com a sua própria chave de API do Google, e na Vertex AI o cache precisa pertencer ao projeto da credencial que atende a solicitação. `google.cache_control` e `google.cache_ttl` são aceitos, mas não são enviados ao Google.
 

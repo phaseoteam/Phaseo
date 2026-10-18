@@ -294,7 +294,7 @@ Ein eingestelltes Modell wird weiterhin bereitgestellt, solange ein Anbieter es 
 
 ## Cache- und sitzungsbewusste Affinität
 
-Cache-bewusstes Routing ist für Textgenerierungsendpunkte standardmäßig aktiviert. Anfragen, die `prompt_cache_key` oder `session_id` senden oder Caching mit `cache_control` auf oberster Ebene aktivieren, werden auf den Anbieter und die Route festgelegt, die ihre erste erfolgreiche Anfrage bedient haben. Andere Anfragen werden für 15 Minuten festgelegt, sobald ein Anbieter für denselben Anfangskontext einen Prompt-Cache-Lese- oder -Schreibvorgang meldet.
+Cache-bewusstes Routing ist für Textgenerierungsendpunkte standardmäßig aktiviert. Anfragen, die `prompt_cache_key` oder `session_id` senden oder Caching mit `cache_control` aktivieren (auf oberster Ebene, über `provider_options.anthropic.cache_control` oder als `cache_control`- bzw. `prompt_cache_breakpoint`-Markierung an einem Nachrichtenblock oder Tool), werden auf den Anbieter und die Route festgelegt, die ihre erste erfolgreiche Anfrage bedient haben. Andere Anfragen werden für 15 Minuten festgelegt, sobald ein Anbieter für denselben Anfangskontext einen Prompt-Cache-Lese- oder -Schreibvorgang meldet, sofern gecachte Eingaben bei diesem Anbieter günstiger sind als normale Eingaben.
 
 Festlegungen gelten pro Workspace und dauern je nach Cache-Aufbewahrung des Anbieters 15 Minuten bis 24 Stunden. Eine Festlegung wechselt nur, wenn der Schutzschalter ihres Anbieters öffnet, seine aktuelle Fehlerquote hoch ist, das von Phaseo verwaltete Kontingent bei ihm aufgebraucht ist oder die aktive Route, Voreinstellung, Guardrail- oder Anfragerichtlinie ihn nicht mehr erlaubt.
 

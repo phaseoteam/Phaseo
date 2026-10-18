@@ -367,7 +367,7 @@ Nach dem Einrichten von Prompt-Caching:
 
 Ein Prompt-Cache liegt bei einem Provider und oft bei einer Region oder einem Deployment dieses Providers. Phaseo hält zusammengehörige Anfragen beim Provider und bei der Route, die sie bedient haben, damit eine Agentenschleife nicht dafür bezahlt, ihren Cache bei einem anderen Provider neu aufzubauen.
 
-Sende `prompt_cache_key` oder `session_id` oder aktiviere Caching mit `cache_control` (auf oberster Ebene oder als `provider_options.anthropic.cache_control`), um eine Unterhaltung festzulegen. Phaseo legt sie auf den Provider und die Route fest, die die erste erfolgreiche Anfrage bedient haben, und spätere Anfragen mit demselben Schlüssel gehen ebenfalls dorthin. Festlegungen gelten pro Workspace.
+Sende `prompt_cache_key` oder `session_id` oder aktiviere Caching mit `cache_control` (auf oberster Ebene, als `provider_options.anthropic.cache_control` oder als `cache_control`- bzw. `prompt_cache_breakpoint`-Markierung an einem Nachrichtenblock oder Tool), um eine Unterhaltung festzulegen. Phaseo legt sie auf den Provider und die Route fest, die die erste erfolgreiche Anfrage bedient haben, und spätere Anfragen mit demselben Schlüssel gehen ebenfalls dorthin. Festlegungen gelten pro Workspace.
 
 Wie lange eine Festlegung gilt, hängt von der Cache-Aufbewahrung des Providers ab:
 
@@ -382,13 +382,13 @@ Wie lange eine Festlegung gilt, hängt von der Cache-Aufbewahrung des Providers 
 
 Eine Festlegung wechselt nur, wenn ihr Provider ausfällt (ein offener Circuit Breaker oder eine hohe aktuelle Fehlerquote), wenn das von Phaseo verwaltete Kontingent bei diesem Provider aufgebraucht ist oder wenn die aktive Route, das Preset, die Guardrail oder die Anfragerichtlinie ihn nicht mehr zulässt. Die Anfrage wechselt dann per Failover, und die Festlegung geht auf den Provider über, der sie bedient hat. Die Anfragedetails vermerken dies als `sticky_routing.demotionReason` in der Routing-Diagnose. Festgelegte Anfragen werden nicht genutzt, um sich erholende Provider zu testen.
 
-Ohne Schlüssel, `session_id` oder `cache_control` bevorzugt Phaseo weiterhin 15 Minuten lang einen Provider, der für denselben Anfangskontext gecachte Token zurückgegeben hat.
+Ohne Schlüssel, `session_id` oder Cache-Markierung legt Phaseo den Anfangskontext weiterhin 15 Minuten lang auf einen Provider fest, der dafür einen Cache-Lese- oder -Schreibvorgang gemeldet hat, sofern gecachte Eingaben bei diesem Provider günstiger sind als normale Eingaben.
 
 Phaseo sendet Providern einen Hash aus deinem Workspace und `prompt_cache_key`, nie den Rohschlüssel. Derselbe Schlüssel in zwei Workspaces teilt sich daher nie einen Provider-Cache. Gibt es nur eine `session_id`, leitet Phaseo diesen Hash für OpenAI, xAI, Fireworks und Cerebras aus der Sitzung ab. Fireworks und Cloudflare Workers AI erhalten ihn zusätzlich im Header `x-session-affinity`, und xAI erhält ihn als `x-grok-conv-id`, sofern du nicht `provider_options.xai.conversation_id` setzt. Antworten geben weiterhin deinen eigenen `prompt_cache_key` zurück.
 
 Setze `provider.cache_aware_routing` auf `false`, um es für eine Anfrage zu deaktivieren. Setze
 `routing.session_affinity` auf `false`, wenn die Anfrage eine `session_id` enthält
-aber weiterhin nur normales kontextbasiertes Routing verwenden soll.
+aber weiterhin nur normales kontextbasiertes Routing verwenden soll. Phaseo leitet dann auch keinen Provider-Cache-Schlüssel mehr aus der Sitzung ab.
 
 ## Verwandte Seiten
 

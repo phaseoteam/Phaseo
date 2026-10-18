@@ -367,7 +367,7 @@ Phaseo 对每个输入 token 只计费一次，且只按一种价格计费：
 
 prompt 缓存位于某个供应商，通常还位于该供应商的某个区域或部署。Phaseo 会让相关请求留在曾处理它们的供应商和路由上，这样智能体循环就不必付费在另一个供应商上重建缓存。
 
-发送 `prompt_cache_key` 或 `session_id`，或通过 `cache_control`（顶层或 `provider_options.anthropic.cache_control`）启用缓存，即可固定一段对话。Phaseo 会把它固定到处理第一个成功请求的供应商和路由，之后带有相同键的请求也会发送到那里。固定按工作区保存。
+发送 `prompt_cache_key` 或 `session_id`，或通过 `cache_control`（顶层、`provider_options.anthropic.cache_control`，或消息块、工具上的 `cache_control` / `prompt_cache_breakpoint` 标记）启用缓存，即可固定一段对话。Phaseo 会把它固定到处理第一个成功请求的供应商和路由，之后带有相同键的请求也会发送到那里。固定按工作区保存。
 
 固定的有效时间取决于供应商的缓存保留时间：
 
@@ -382,13 +382,13 @@ prompt 缓存位于某个供应商，通常还位于该供应商的某个区域�
 
 只有在以下情况下固定才会转移：其供应商发生故障（熔断器打开或近期错误率较高）、Phaseo 在该供应商上的托管配额用尽，或当前生效的路由、预设、护栏或请求策略不再允许使用它。此时请求会进行故障转移，固定会转到处理该请求的供应商。请求详情会在路由诊断中将其记录为 `sticky_routing.demotionReason`。已固定的请求不会用于探测正在恢复的供应商。
 
-如果没有键、`session_id` 或 `cache_control`，Phaseo 仍会在 15 分钟内优先使用曾为相同开头上下文返回缓存 token 的供应商。
+如果没有键、`session_id` 或缓存标记，Phaseo 仍会把开头上下文固定到曾为其报告缓存读取或写入的供应商 15 分钟，前提是该供应商的缓存输入比标准输入便宜。
 
 Phaseo 向供应商发送的是你的工作区与 `prompt_cache_key` 的哈希值，绝不发送原始键，因此两个工作区中的相同键永远不会共享供应商缓存。只有 `session_id` 时，Phaseo 会为 OpenAI、xAI、Fireworks 和 Cerebras 从会话派生该哈希值。Fireworks 和 Cloudflare Workers AI 还会在 `x-session-affinity` 请求头中收到它；除非你设置了 `provider_options.xai.conversation_id`，xAI 会以 `x-grok-conv-id` 的形式收到它。响应中仍会返回你自己的 `prompt_cache_key`。
 
 如需对单个请求停用此功能，请将 `provider.cache_aware_routing` 设为 `false`。如果请求中
 包含 `session_id`，但你只想使用常规的上下文路由，请将 `routing.session_affinity`
-设为 `false`。
+设为 `false`。此时 Phaseo 也不再从会话派生供应商缓存键。
 
 ## 相关页面
 

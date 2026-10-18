@@ -294,7 +294,7 @@ Um modelo aposentado continua sendo atendido enquanto algum provedor o atender. 
 
 ## Afinidade baseada em cache e sessão
 
-O roteamento baseado em cache fica habilitado por padrão nos endpoints de geração de texto. Solicitações que enviam `prompt_cache_key` ou `session_id`, ou que ativam o cache com um `cache_control` no nível superior, são fixadas no provedor e na rota que atenderam a primeira solicitação bem-sucedida. As demais solicitações são fixadas por 15 minutos quando um provedor informa uma leitura ou gravação do cache de prompt para o mesmo contexto inicial.
+O roteamento baseado em cache fica habilitado por padrão nos endpoints de geração de texto. Solicitações que enviam `prompt_cache_key` ou `session_id`, ou que ativam o cache com `cache_control` (no nível superior, em `provider_options.anthropic.cache_control` ou como marca `cache_control` ou `prompt_cache_breakpoint` em um bloco de mensagem ou ferramenta), são fixadas no provedor e na rota que atenderam a primeira solicitação bem-sucedida. As demais solicitações são fixadas por 15 minutos quando um provedor informa uma leitura ou gravação do cache de prompt para o mesmo contexto inicial, desde que a entrada em cache desse provedor seja mais barata que a entrada padrão.
 
 As fixações são mantidas por espaço de trabalho e duram de 15 minutos a 24 horas, conforme a retenção de cache do provedor. Uma fixação só muda quando o disjuntor do provedor abre, a taxa de erros recente dele está alta, a cota gerenciada da Phaseo nele se esgota ou a rota, a predefinição, os guardrails ou a política da solicitação ativos deixam de permiti-lo.
 

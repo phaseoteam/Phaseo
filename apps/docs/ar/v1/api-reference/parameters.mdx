@@ -558,7 +558,7 @@ icon: "sliders-horizontal"
 - `google.cached_content`
 - `xai.conversation_id`
 
-استخدمه عند الحاجة إلى ميزة أصلية للمزوّد مع إبقاء بقية الطلب ضمن المخطط المشترك للبوابة. فضّل `cache_control` في المستوى الأعلى لسياسات التخزين المؤقت في Claude و`prompt_cache_retention` في المستوى الأعلى للاحتفاظ في OpenAI.
+استخدمه عند الحاجة إلى ميزة أصلية للمزوّد مع إبقاء بقية الطلب ضمن المخطط المشترك للبوابة. فضّل `cache_control` في المستوى الأعلى لسياسات التخزين المؤقت في Claude، وللاحتفاظ في OpenAI استخدم `prompt_cache_options` في المستوى الأعلى مع GPT-5.6 وما بعده، أو `prompt_cache_retention` في المستوى الأعلى مع النماذج الأقدم.
 
 يحدد `google.cached_content` ذاكرة تخزين مؤقت صريحة في Gemini. على Google AI Studio لا يعمل إلا بمفتاح Google API الخاص بك، وعلى Vertex AI يجب أن تنتمي ذاكرة التخزين المؤقت إلى مشروع بيانات الاعتماد التي تخدم الطلب. يُقبل `google.cache_control` و`google.cache_ttl`، لكنهما لا يُرسلان إلى Google.
 

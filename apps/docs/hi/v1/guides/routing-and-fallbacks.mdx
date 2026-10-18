@@ -293,7 +293,7 @@ Multipart endpoints दोहराए गए `models` fields, `models[]` fields
 
 ## कैश और सत्र-आधारित अनुरोध संबद्धता
 
-Text generation endpoints पर cache-aware routing डिफ़ॉल्ट रूप से चालू होती है। जो अनुरोध `prompt_cache_key` या `session_id` भेजते हैं, या top-level `cache_control` से caching में ऑप्ट-इन करते हैं, उन्हें उस provider और route पर pin किया जाता है जिसने उनका पहला सफल अनुरोध पूरा किया था। बाकी अनुरोध तब 15 मिनट के लिए pin होते हैं, जब कोई provider उसी शुरुआती context के लिए prompt-cache read या write रिपोर्ट करता है।
+Text generation endpoints पर cache-aware routing डिफ़ॉल्ट रूप से चालू होती है। जो अनुरोध `prompt_cache_key` या `session_id` भेजते हैं, या `cache_control` (top-level, `provider_options.anthropic.cache_control`, या किसी message block या tool पर `cache_control` या `prompt_cache_breakpoint` mark) से caching में ऑप्ट-इन करते हैं, उन्हें उस provider और route पर pin किया जाता है जिसने उनका पहला सफल अनुरोध पूरा किया था। बाकी अनुरोध तब 15 मिनट के लिए pin होते हैं, जब कोई provider उसी शुरुआती context के लिए prompt-cache read या write रिपोर्ट करता है, बशर्ते उस provider का cached input उसके standard input से सस्ता हो।
 
 Pins हर workspace के लिए अलग रखे जाते हैं और provider के cache retention के अनुसार 15 मिनट से 24 घंटे तक रहते हैं। Pin तभी बदलता है जब उसके provider का circuit breaker खुल जाए, उसकी हाल की error rate ऊँची हो, उस पर Phaseo का managed quota खत्म हो जाए, या सक्रिय route, preset, guardrail या request policy उसे अनुमति न दे।
 
