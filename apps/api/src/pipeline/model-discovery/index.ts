@@ -322,7 +322,7 @@ const PROVIDER_API_PRICING_WATCH_PROVIDER_IDS = new Set<string>([
 	"venice",
 	"vercel",
 	"weights-and-biases",
-	"pioneer",
+	"fastino",
 	"poe",
 	"requesty",
 	"zenmux",
