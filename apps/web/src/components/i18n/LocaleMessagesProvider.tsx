@@ -4,7 +4,7 @@
 // client entry, which avoids next-intl's server wrapper reading request headers.
 export { NextIntlClientProvider as LocaleMessagesProvider } from "next-intl";
 
-import { NextIntlClientProvider, useLocale, useMessages, useTimeZone, type AbstractIntlMessages } from "next-intl";
+import { NextIntlClientProvider, useLocale, useMessages, useTimeZone, type AbstractIntlMessages, type Locale } from "next-intl";
 import { use, useMemo, type ReactNode } from "react";
 import { combineMessages } from "@/i18n/message-scopes";
 import { clientMessagesFallbackUrl, clientMessagesUrl, type ClientMessagesSource } from "@/i18n/client-message-source";
@@ -50,7 +50,7 @@ function useClientMessages(source: ClientMessagesSource | undefined): AbstractIn
 /** The document root: shared shell copy for every page. */
 export function ClientMessagesProvider({ children, locale, source, timeZone }: {
 	children: ReactNode;
-	locale: string;
+	locale: Locale;
 	source: ClientMessagesSource;
 	timeZone: string;
 }) {
