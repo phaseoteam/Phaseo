@@ -168,6 +168,57 @@ describe("buffered responses keep reasoning state from the stream", () => {
 		expect(reasoning).toEqual([expect.objectContaining({ text: "Think.", thoughtSignature: "SIG-0001", reasoningFormat: CLAUDE.format })]);
 	});
 
+	it("Chat: keeps each encrypted reasoning item's own text from the final snapshot", async () => {
+		const OPENAI = { format: "openai-responses-v1" as const, model: "gpt-5.4", provider: "openai" };
+		const enc1 = sealReasoningState({ ...OPENAI, kind: "encrypted", value: "ENC-0001" });
+		const enc2 = sealReasoningState({ ...OPENAI, kind: "encrypted", value: "ENC-0002" });
+		// Deltas carry only the sealed entries; the snapshot pairs each with its text.
+		const snapshotDetails = [
+			{ id: "rs_1", index: 0, type: "reasoning.text", text: "First.", format: OPENAI.format },
+			{ id: "rs_1", index: 1, type: "reasoning.encrypted", data: enc1, format: OPENAI.format },
+			{ id: "rs_2", index: 2, type: "reasoning.text", text: "Second.", format: OPENAI.format },
+			{ id: "rs_2", index: 3, type: "reasoning.encrypted", data: enc2, format: OPENAI.format },
+		];
+		const stream = sse([
+			chatChunk({ role: "assistant", reasoning_content: "First." }),
+			chatChunk({ reasoning_details: [snapshotDetails[1]] }),
+			chatChunk({ reasoning_content: "Second." }),
+			chatChunk({ reasoning_details: [snapshotDetails[3]] }),
+			chatChunk({ content: "Answer." }),
+			{ data: { object: "chat.completion", choices: [{ index: 0, message: { role: "assistant", content: "Answer.", reasoning_content: "First.Second.", reasoning_details: snapshotDetails }, finish_reason: "stop" }] } },
+			"[DONE]",
+		]);
+		const { ir } = await consumeTextProtocolStreamToIR({ protocol: "openai.chat.completions", stream, requestId: "req_enc", model: "openai/gpt-5.4", provider: "openai" });
+
+		const reasoning = ir.choices[0].message.content.filter((part) => part.type === "reasoning_text");
+		expect(reasoning).toEqual([
+			expect.objectContaining({ text: "First.", encryptedContent: "ENC-0001" }),
+			expect.objectContaining({ text: "Second.", encryptedContent: "ENC-0002" }),
+		]);
+	});
+
+	it("Responses: anchors reasoning that follows a function call to the next call", async () => {
+		const SIGNED_2 = sealReasoningState({ ...CLAUDE, kind: "signature", value: "SIG-0002" });
+		const reasoning1 = { type: "reasoning", id: "rs_1", summary: [], content: [{ type: "reasoning_text", text: "Check the weather." }], encrypted_content: SIGNED };
+		const call1 = { type: "function_call", id: "fc_1", call_id: "call_1", name: "weather", arguments: "{\"city\":\"Lyon\"}", status: "completed" };
+		const reasoning2 = { type: "reasoning", id: "rs_2", summary: [], content: [{ type: "reasoning_text", text: "Now search." }], encrypted_content: SIGNED_2 };
+		const call2 = { type: "function_call", id: "fc_2", call_id: "call_2", name: "search", arguments: "{\"q\":\"lyon\"}", status: "completed" };
+		const output = [reasoning1, call1, reasoning2, call2];
+		const done = (item: any, index: number) => ({ event: "response.output_item.done", data: { type: "response.output_item.done", output_index: index, item } });
+		const stream = sse([
+			...output.map(done),
+			{ event: "response.completed", data: { type: "response.completed", response: { id: "resp_1", object: "response", status: "completed", output } } },
+		]);
+		const { ir } = await consumeTextProtocolStreamToIR({ protocol: "openai.responses", stream, requestId: "req_interleaved", model: "anthropic/claude-fable-5.1", provider: "anthropic" });
+
+		const reasoning = ir.choices[0].message.content.filter((part) => part.type === "reasoning_text");
+		expect(reasoning).toEqual([
+			expect.objectContaining({ thoughtSignature: "SIG-0001" }),
+			expect.objectContaining({ thoughtSignature: "SIG-0002", beforeToolCallId: "call_2" }),
+		]);
+		expect((reasoning[0] as any).beforeToolCallId).toBeUndefined();
+	});
+
 	it("leaves plain reasoning text alone when the stream carries no state", async () => {
 		const stream = sse([
 			chatChunk({ role: "assistant", reasoning_content: "Plain thought." }),

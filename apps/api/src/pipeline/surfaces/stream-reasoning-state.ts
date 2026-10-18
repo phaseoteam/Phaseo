@@ -45,11 +45,14 @@ export function createStreamReasoningStateCollector(protocol: Protocol): StreamR
 	// Chat: sealed reasoning_details entries per choice, in stream order.
 	const chatDetails = new Map<number, any[]>();
 	const chatSeen = new Set<string>();
+	// Chat: the terminal chat.completion snapshot's full reasoning_details. Deltas carry only
+	// sealed entries; the snapshot also keeps the text or summary paired with each encrypted entry.
+	const chatSnapshotDetails = new Map<number, any[]>();
 	// Messages: thinking and tool_use blocks in the order they closed.
 	const anthropicBlocks: AnthropicStreamBlock[] = [];
 	const openAnthropicBlocks = new Map<number, AnthropicStreamBlock>();
-	// Responses: reasoning items carrying sealed state, in stream order.
-	const responsesItems: any[] = [];
+	// Responses: reasoning items carrying sealed state and function calls, in output order.
+	const responsesItems: Array<{ kind: "reasoning"; item: any } | { kind: "call"; id: string }> = [];
 	const responsesSeen = new Set<string>();
 
 	const closeAnthropicBlock = (index: number) => {
@@ -65,6 +68,9 @@ export function createStreamReasoningStateCollector(protocol: Protocol): StreamR
 			const details = choice?.delta?.reasoning_details ?? choice?.message?.reasoning_details;
 			if (!Array.isArray(details)) continue;
 			const index = Number.isFinite(Number(choice?.index)) ? Number(choice.index) : 0;
+			if (Array.isArray(choice?.message?.reasoning_details) && details.some(isSealedEntry)) {
+				chatSnapshotDetails.set(index, details);
+			}
 			for (const entry of details) {
 				if (!entry || typeof entry !== "object" || !isSealedEntry(entry)) continue;
 				// Terminal chat.completion snapshots repeat the entries already streamed.
@@ -113,11 +119,18 @@ export function createStreamReasoningStateCollector(protocol: Protocol): StreamR
 	};
 
 	const pushResponsesItem = (item: any) => {
-		if (item?.type !== "reasoning" || !isSealedReasoningValue(item.encrypted_content)) return;
 		// response.completed repeats the items already announced by output_item.done.
+		if (item?.type === "function_call" && typeof item.call_id === "string" && item.call_id) {
+			const key = `call:${item.call_id}`;
+			if (responsesSeen.has(key)) return;
+			responsesSeen.add(key);
+			responsesItems.push({ kind: "call", id: item.call_id });
+			return;
+		}
+		if (item?.type !== "reasoning" || !isSealedReasoningValue(item.encrypted_content)) return;
 		if (responsesSeen.has(item.encrypted_content)) return;
 		responsesSeen.add(item.encrypted_content);
-		responsesItems.push(item);
+		responsesItems.push({ kind: "reasoning", item });
 	};
 
 	const pushResponses = (eventName: string | null, payload: any) => {
@@ -132,7 +145,7 @@ export function createStreamReasoningStateCollector(protocol: Protocol): StreamR
 
 	const decodeChoice = (choiceIndex: number, toolCallIds: ReadonlySet<string>): DecodedChoiceReasoning | null => {
 		if (protocol === "openai.chat.completions") {
-			const details = chatDetails.get(choiceIndex);
+			const details = chatSnapshotDetails.get(choiceIndex) ?? chatDetails.get(choiceIndex);
 			if (!details?.length) return null;
 			const decoded = decodeChatReasoningDetails(details, toolCallIds);
 			return { parts: decoded.parts.map((part) => ({ part })), toolSignatures: decoded.toolSignatures };
@@ -166,11 +179,24 @@ export function createStreamReasoningStateCollector(protocol: Protocol): StreamR
 		if (protocol === "openai.responses") {
 			const parts: DecodedChoiceReasoning["parts"] = [];
 			const toolSignatures = new Map<string, ToolCallSignature>();
-			for (const item of responsesItems) {
-				const decoded = decodeResponsesReasoningItem(item);
+			let sawCall = false;
+			// Reasoning after an earlier function_call belongs in front of the next one.
+			const pendingAnchor: DecodedChoiceReasoning["parts"] = [];
+			for (const entry of responsesItems) {
+				if (entry.kind === "call") {
+					sawCall = true;
+					for (const anchored of pendingAnchor.splice(0)) anchored.nextToolUseId = entry.id;
+					continue;
+				}
+				const decoded = decodeResponsesReasoningItem(entry.item);
 				if (!decoded) continue;
-				if (decoded.kind === "tool_signature") toolSignatures.set(decoded.callId, decoded.signature);
-				else parts.push({ part: decoded.part });
+				if (decoded.kind === "tool_signature") {
+					toolSignatures.set(decoded.callId, decoded.signature);
+					continue;
+				}
+				const collected: DecodedChoiceReasoning["parts"][number] = { part: decoded.part };
+				parts.push(collected);
+				if (sawCall) pendingAnchor.push(collected);
 			}
 			return { parts, toolSignatures };
 		}
