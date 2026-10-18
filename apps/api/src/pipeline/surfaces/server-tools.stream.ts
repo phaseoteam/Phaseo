@@ -8,6 +8,7 @@ import type { Protocol } from "@protocols/detect";
 import { encodeUnifiedStreamEvent, type StreamProtocol } from "@protocols/stream/encode";
 import { extractUnifiedStreamEvents, type UnifiedStreamEvent } from "../after/stream-events";
 import { SseParser } from "@core/sse-parser";
+import { createStreamReasoningStateCollector } from "./stream-reasoning-state";
 
 export type ServerToolTraceItem = {
 	id: string;
@@ -877,6 +878,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 	let modelFromStream: string | undefined;
 	let globalFinishReason: IRChatResponse["choices"][number]["finishReason"] | null = null;
 	const choiceAccumulators = new Map<number, StreamChoiceAccumulator>();
+	const reasoningState = createStreamReasoningStateCollector(args.protocol);
 	const accumulationState: AccumulationState = {
 		sawOutputTextDelta: false,
 		sawReasoningTextDelta: false,
@@ -909,6 +911,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 				firstFrameMs = Math.max(0, Date.now() - baseStartedAt);
 			}
 			lastPayload = payload;
+			reasoningState.push(eventName, payload);
 			const normalizedPayloadForMeta = resolveRawPayloadForUsage(payload);
 			nativeId = nativeId ?? resolveNativeId(normalizedPayloadForMeta);
 			modelFromStream = modelFromStream ?? resolveModelFromPayload(normalizedPayloadForMeta);
@@ -958,6 +961,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 					firstFrameMs = Math.max(0, Date.now() - baseStartedAt);
 				}
 				lastPayload = payload;
+				reasoningState.push(eventName, payload);
 				const events = extractUnifiedStreamEvents({
 					protocol: args.protocol,
 					eventName,
@@ -1048,6 +1052,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 		nativeId,
 		modelFromStream,
 	});
+	reasoningState.apply(ir);
 
 	return {
 		ir,
