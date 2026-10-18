@@ -1,247 +1,437 @@
 import { useQuery } from "@tanstack/react-query";
+import * as Clipboard from "expo-clipboard";
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
-import { Columns3, ExternalLink, MessageSquare } from "lucide-react-native";
-import { useMemo, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, View } from "react-native";
-import { BarChart } from "@/components/charts";
+import { ArrowLeft, Bolt, Check, ChevronDown, CircleAlert, Info, MessageSquare, MessageSquareWarning, Scale, ScrollText, TriangleAlert } from "lucide-react-native";
+import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import { type NativeScrollEvent, type NativeSyntheticEvent, Pressable, ScrollView, type ScrollViewInstance, View } from "react-native";
 import { Logo } from "@/components/Logo";
-import { Badge, Button, EmptyState, Fact, Header, LoadingState, ReadableWidth, Row, Screen, Section, Text } from "@/components/ui";
+import { Markdown } from "@/components/Markdown";
+import { Button, EmptyState, Icon, IconButton, LoadingState, OptionSheet, ReadableWidth, Screen, Text, type SelectOption } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
-import { getModel, getModelActivity, getModelApps, getModelBenchmarks, getModelGatewayMetadata, getModelPerformance, getModelPricing, getModelSubscriptions, getModelTimeline } from "@/lib/api/models";
-import { contextWindow, isChatModel, isFree, isOnPhaseo, modelName, organisationName } from "@/lib/catalogue";
-import { WEB_ORIGIN } from "@/lib/config";
-import { formatCompact, formatDate, formatMs, formatPercent, formatPrice, formatShortDate, formatTokens, modalityLabel } from "@/lib/format";
-import { compareStore, toggleCompare, useCatalogueIndex } from "./state";
-import { isRoutable, plansFor, priceLines, providerLabel, sortByRoutable } from "./pricing";
+import {
+  getModel, getModelAvailability, getModelBenchmarks, getModelGatewayMetadata, getModelPricing, getModelSubscriptions, getModelTimeline,
+  type ModelDetail as ModelDetailData,
+} from "@/lib/api/models";
+import { request } from "@/lib/api/http";
+import { isChatModel, modelName as cardName, organisationName as cardOrganisation } from "@/lib/catalogue";
+import { cn } from "@/lib/cn";
+import { formatCompact } from "@/lib/format";
+import { compareStore, toggleCompare, updateFilters, useCatalogueIndex } from "./state";
+import { lineage, parseTypes } from "./detail/about";
+import { AboutSection, SubscriptionsList, VerificationBlock } from "./detail/AboutSection";
+import { ActivitySection, AppsSection } from "./detail/ActivitySection";
+import { BenchmarksSection } from "./detail/BenchmarksSection";
+import { buildFaq } from "./detail/faq";
+import { FaqList, OtherModels } from "./detail/FaqSection";
+import { PageSection } from "./detail/parts";
+import { PerformanceSection, UptimeSection } from "./detail/PerformanceSection";
+import { PricingSection } from "./detail/PricingSection";
+import { ProvidersSection } from "./detail/ProvidersSection";
+import { activeSectionAt, modelAccessLayout, modelPageSections, scrollTargetFor, SECTION_META, supportsProvenanceVerification, type SectionId } from "./detail/sections";
+import { UseModelSheet } from "./detail/UseModelSheet";
 
 const publicKey = (id: string, part: string) => ["public", "model", id, part] as const;
+const FREE_ROUTER_ID = "phaseo/free";
 
+/** Height of the pinned section menu that covers the top of the scroll area once you scroll past it. */
+const PINNED_MENU_HEIGHT = 56;
+
+/**
+ * A model's page, rebuilt to match phaseo.app at phone width: the same sections in the same order, from
+ * the same `/api/_web` endpoints. Also the detail pane beside the Models list on tablets.
+ */
 export function ModelDetail({ id }: { id: string }) {
   const router = useRouter();
   const { split } = useLayout();
   const { index } = useCatalogueIndex();
   const card = index.get(id);
-  const comparing = compareStore.use().includes(id);
 
   const model = useQuery({ queryKey: publicKey(id, "detail"), queryFn: () => getModel(id) });
   const gateway = useQuery({ queryKey: publicKey(id, "gateway"), queryFn: () => getModelGatewayMetadata(id) });
   const pricing = useQuery({ queryKey: publicKey(id, "pricing"), queryFn: () => getModelPricing(id) });
-  const performance = useQuery({ queryKey: publicKey(id, "performance"), queryFn: () => getModelPerformance(id), staleTime: 60_000 });
+  const availability = useQuery({ queryKey: publicKey(id, "availability"), queryFn: () => getModelAvailability(id) });
   const benchmarks = useQuery({ queryKey: publicKey(id, "benchmarks"), queryFn: () => getModelBenchmarks(id) });
-  const activity = useQuery({ queryKey: publicKey(id, "activity"), queryFn: () => getModelActivity(id) });
-  const apps = useQuery({ queryKey: publicKey(id, "apps"), queryFn: () => getModelApps(id) });
   const plans = useQuery({ queryKey: publicKey(id, "plans"), queryFn: () => getModelSubscriptions(id) });
   const timeline = useQuery({ queryKey: publicKey(id, "timeline"), queryFn: () => getModelTimeline(id) });
+  const notice = useQuery({ queryKey: publicKey(id, "notice"), queryFn: async () => (await request<{ notice?: { tone: string; markdown: string } | null }>(`/api/_web/models/${encodeURIComponent(id)}/notice`))?.notice ?? null });
 
-  const refreshing = model.isRefetching || pricing.isRefetching;
-  const refresh = () => { for (const query of [model, gateway, pricing, performance, benchmarks, activity, apps, plans, timeline]) void query.refetch(); };
+  const scroll = useRef<ScrollViewInstance>(null);
+  const offsets = useRef(new Map<string, number>());
+  const [renderedSections, setRenderedSections] = useState<string[]>([]);
+  const [headerEnd, setHeaderEnd] = useState(0);
+  const [menuY, setMenuY] = useState(0);
+  const [view, setView] = useState<{ compact: boolean; pinned: boolean; active: string | null }>({ compact: false, pinned: false, active: null });
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [useOpen, setUseOpen] = useState(false);
 
-  const name = card ? modelName(card) : model.data?.name ?? id.split("/").at(-1) ?? id;
-  const org = card ? organisationName(card) : model.data?.organisation?.name ?? model.data?.organisation_id ?? id.split("/")[0];
-  const onPhaseo = card ? isOnPhaseo(card) : (gateway.data?.activeProviders.length ?? 0) > 0;
-  const canChat = card ? isChatModel(card) : onPhaseo;
-  const maxOutput = Math.max(0, ...(gateway.data?.activeProviders ?? []).map((route) => route.max_output_tokens ?? 0));
-  const inputs = card?.gateway_input_modalities.length ? card.gateway_input_modalities : model.data?.input_modalities ?? [];
-  const outputs = card?.gateway_output_modalities.length ? card.gateway_output_modalities : model.data?.output_modalities ?? [];
+  const data = model.data;
+  const name = data?.name ?? (card ? cardName(card) : id.split("/").at(-1) ?? id);
+  const organisation = data?.organisation?.name ?? (card ? cardOrganisation(card) : data?.organisation_id ?? id.split("/")[0] ?? "");
+  const organisationId = data?.organisation_id ?? card?.organisation_id ?? id.split("/")[0] ?? "";
+  const providers = pricing.data ?? [];
+  const hasApiProviders = (availability.data?.activeProviderCount ?? 0) > 0 || (gateway.data?.providers.length ?? 0) > 0 || providers.some((provider) => provider.provider_models.length > 0);
+  const layout = modelAccessLayout({ hasSubscriptions: plans.data ? plans.data.length > 0 : null, hasApiProviders, isPrivateModel: data?.is_private === true, status: data?.status });
+  const isGatewayActive = data?.is_private ? true : layout.subscriptionOnly ? false : availability.data?.isGatewayActive ?? true;
+  const outputTypes = parseTypes(data?.output_types ?? data?.output_modalities ?? []);
+  const sections = modelPageSections({
+    subscriptionOnly: layout.subscriptionOnly,
+    showBenchmarks: (benchmarks.data?.highlights.length ?? 0) > 0,
+    showSubscriptions: (plans.data?.length ?? 0) > 0,
+    status: data?.status,
+    isGatewayActive,
+    showProviders: layout.showProviders,
+    showVerification: supportsProvenanceVerification(outputTypes),
+    isPrivateModel: data?.is_private === true,
+  });
+  const related = useMemo(() => lineage(timeline.data, data?.previous_model_id, (relatedId) => {
+    const relatedCard = index.get(relatedId);
+    return relatedCard ? cardName(relatedCard) : null;
+  }), [timeline.data, data?.previous_model_id, index]);
+  // The website offers "Use this model" whenever the API can be used; the app's chat also needs a live chat route.
+  const webCanChat = layout.canUseApi && data?.status !== "Retired";
+  // Decision models get the website's Decisions playground instead of "Use this model" (not in the app yet).
+  const activeEndpoints = (gateway.data?.activeProviders ?? []).map((route) => route.endpoint ?? "");
+  const isDecisionsModel = activeEndpoints.length ? activeEndpoints.includes("decisions.make") : outputTypes.includes("decisions");
+  const supportsText = activeEndpoints.includes("text.generate") || !isDecisionsModel;
+  const canUse = webCanChat && supportsText;
+  const canChat = canUse && (card ? isChatModel(card) : (gateway.data?.activeProviders.length ?? 0) > 0);
+  const description = data?.description ?? card?.description ?? null;
 
-  if (model.isLoading && !card) return <Screen><Header back={!split} /><LoadingState /></Screen>;
-  if (model.isError && !card) return <Screen><Header back={!split} /><EmptyState title="Model not found" body="It may have been renamed or removed from the catalogue." /></Screen>;
+  const onLayoutSection = useCallback((section: string, y: number) => {
+    if (offsets.current.get(section) === y) return;
+    offsets.current.set(section, y);
+    setRenderedSections([...offsets.current.keys()]);
+  }, []);
+
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const y = event.nativeEvent.contentOffset.y;
+    const listed = sections.filter((section) => offsets.current.has(section)).map((section) => ({ id: section as string, y: offsets.current.get(section)! }));
+    const next = { compact: headerEnd > 0 && y > headerEnd, pinned: menuY > 0 && y > menuY, active: activeSectionAt(listed, y, PINNED_MENU_HEIGHT + 96) };
+    if (next.compact !== view.compact || next.pinned !== view.pinned || next.active !== view.active) setView(next);
+  };
+
+  const jump = (section: SectionId) => {
+    const y = offsets.current.get(section);
+    if (y == null) return;
+    scroll.current?.scrollTo({ y: scrollTargetFor(y, PINNED_MENU_HEIGHT), animated: true });
+    setView((current) => ({ ...current, active: section }));
+  };
+
+  const menuSections = sections.filter((section) => renderedSections.includes(section));
+  const activeSection = (view.active as SectionId | null) ?? menuSections[0] ?? null;
+  const menuOptions: SelectOption<SectionId>[] = menuSections.map((section) => ({ value: section, label: SECTION_META[section].label, icon: SECTION_META[section].icon }));
+  const compare = () => {
+    if (!compareStore.get().includes(id)) toggleCompare(id);
+    router.push("/compare");
+  };
+  const showLab = () => {
+    updateFilters({ organisations: [organisation] });
+    router.push("/models");
+  };
+
+  if (model.isLoading && !card) return <Screen><TopBar back={!split} /><LoadingState /></Screen>;
+  if (model.isError && !card) return <Screen><TopBar back={!split} /><EmptyState title="Model not found" body="It may have been renamed or removed from the catalogue." /></Screen>;
+
+  const sectionProps = (section: SectionId) => ({ onLayoutSection, first: section === sections[0] });
+  const faq = data ? buildFaq({
+    model: data,
+    description,
+    benchmarkCount: benchmarks.data?.highlights.length ?? 0,
+    activeProviderCount: data.is_private ? 1 : availability.data?.activeProviderCount ?? gateway.data?.activeProviders.length ?? 0,
+    isGatewayActive,
+    showProviders: layout.showProviders,
+    pricing: providers,
+    related,
+    gateway: gateway.data,
+  }) : [];
+
+  const renderSection = (section: SectionId): ReactNode => {
+    switch (section) {
+      case "providers":
+        return (
+          <PageSection key={section} id={section} {...sectionProps(section)} title="Providers" description={layout.subscriptionOnly || !isGatewayActive ? "Provider listings and known route availability for this model." : "API providers, route pricing, availability, and recent reliability signals."}>
+            {pricing.isLoading ? <LoadingState /> : <ProvidersSection modelId={id} providers={providers} creatorId={organisationId} modelStatus={data?.status} organisationName={organisation} />}
+          </PageSection>
+        );
+      case "performance":
+        return <PerformanceSection key={section} modelId={id} {...sectionProps(section)} />;
+      case "pricing":
+        return (
+          <PageSection key={section} id={section} {...sectionProps(section)} title="Pricing" description="Weighted provider pricing over the last 30 days, with recent route pricing history below.">
+            {pricing.isLoading ? <LoadingState /> : <PricingSection modelId={id} providers={providers} />}
+          </PageSection>
+        );
+      case "benchmarks":
+        return (
+          <PageSection key={section} id={section} {...sectionProps(section)} title="Benchmarks">
+            <BenchmarksSection modelId={id} highlights={benchmarks.data?.highlights ?? []} results={benchmarks.data?.results ?? []} />
+          </PageSection>
+        );
+      case "activity":
+        return <ActivitySection key={section} modelId={id} {...sectionProps(section)} />;
+      case "apps":
+        return <AppsSection key={section} modelId={id} {...sectionProps(section)} />;
+      case "uptime":
+        return <UptimeSection key={section} modelId={id} {...sectionProps(section)} />;
+      case "verification":
+        return (
+          <PageSection key={section} id={section} {...sectionProps(section)} title="Verification" description="Check generated media for known OpenAI provenance signals.">
+            <VerificationBlock outputTypes={outputTypes} />
+          </PageSection>
+        );
+      case "about":
+        return data ? (
+          <PageSection key={section} id={section} {...sectionProps(section)} title="About" description={data.status === "Retired" ? "Archived dates, capabilities, links, and model metadata." : "Key dates, capabilities, and model metadata."}>
+            <AboutSection model={data} related={related} />
+          </PageSection>
+        ) : null;
+      case "subscriptions":
+        return (
+          <PageSection key={section} id={section} {...sectionProps(section)} title="Subscriptions" description={data?.status === "Retired" ? "Historical commercial plans and bundled access that listed this model." : "Commercial plans and bundled access that currently include this model."}>
+            <SubscriptionsList plans={plans.data ?? []} />
+          </PageSection>
+        );
+      case "faq":
+        return data ? (
+          <PageSection key={section} id={section} {...sectionProps(section)} title="Frequently asked questions">
+            <FaqList items={faq} onJump={jump} />
+          </PageSection>
+        ) : null;
+    }
+  };
+
+  const compactHeader = view.compact ? (
+    <View className="flex-1 flex-row items-center gap-2">
+      <Logo id={organisationId} label={organisation} colour={card?.organisation_colour} size={32} />
+      <Text variant="label" numberOfLines={1} className="flex-1">{organisation}: {name}</Text>
+      {canChat ? <IconButton icon={MessageSquare} label="Chat about this model" size={18} className="h-9 w-9 border border-border" onPress={() => router.push({ pathname: "/chat/new", params: { model: id } })} /> : null}
+      <IconButton icon={Scale} label="Compare this model" size={18} className="h-9 w-9 border border-border" onPress={compare} />
+      {canUse ? <IconButton icon={Bolt} label={`Use ${name}`} tone="primary-foreground" size={18} className="h-9 w-9 bg-primary active:opacity-85" onPress={() => setUseOpen(true)} /> : null}
+    </View>
+  ) : null;
 
   return (
     <Screen>
-      <Header back={!split} />
-      <ScrollView contentContainerClassName="pb-16" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
-        <ReadableWidth>
-          <View className="flex-row items-center gap-3 px-4 pt-2">
-            <Logo id={card?.organisation_id ?? model.data?.organisation_id} label={org} colour={card?.organisation_colour} size={48} />
-            <View className="flex-1">
-              <Text variant="title" selectable>{name}</Text>
-              <Text variant="muted">{org}</Text>
+      <TopBar back={!split}>{compactHeader}</TopBar>
+      <View className="flex-1">
+        <ScrollView ref={scroll} contentContainerClassName="pb-16" onScroll={onScroll} scrollEventThrottle={32}>
+          <ReadableWidth>
+            <View onLayout={(event) => setHeaderEnd(event.nativeEvent.layout.y + event.nativeEvent.layout.height)}>
+              <Banners status={data?.status} notice={notice.data ?? null} />
+              <View className="flex-row items-start gap-3 px-4 pt-2">
+                <Logo id={organisationId} label={organisation} colour={card?.organisation_colour} size={44} />
+                <View className="flex-1">
+                  <Text className="text-[28px] font-bold leading-[34px] tracking-tight text-foreground" selectable accessibilityRole="header">
+                    <Text accessibilityRole="link" onPress={showLab} suppressHighlighting className="text-[28px] font-bold leading-[34px] tracking-tight text-foreground">{organisation}:</Text> {name}
+                  </Text>
+                  <ModelIdentifier modelId={data?.id || id} aliases={gateway.data?.aliases?.length ? gateway.data.aliases : data?.aliases ?? []} variants={data?.variants ?? []} />
+                </View>
+              </View>
             </View>
+            <HeaderActions
+              canChat={canChat}
+              canUse={canUse}
+              onReport={() => void Linking.openURL(issueUrl(id))}
+              onChat={() => router.push({ pathname: "/chat/new", params: { model: id } })}
+              onCompare={compare}
+              onUse={() => setUseOpen(true)}
+            />
+            {description ? <Description text={description} /> : null}
+            {menuOptions.length ? (
+              <View className="px-4 pt-5" onLayout={(event) => setMenuY(event.nativeEvent.layout.y + event.nativeEvent.layout.height)}>
+                <SectionMenuButton section={activeSection} onPress={() => setMenuOpen(true)} />
+              </View>
+            ) : null}
+            {/* Sections stay direct children here so their layout y is the scroll offset the jump menu uses. */}
+            <View className="h-6" />
+            {id === FREE_ROUTER_ID ? <FreeRouterOverview /> : sections.map(renderSection)}
+            {data && data.status !== "Retired" && organisationId && id !== FREE_ROUTER_ID ? (
+              <View className="mt-10">
+                <View className="mx-4 mb-6 h-px bg-border" />
+                <Text className="mx-4 mb-3 text-[20px] font-semibold leading-7 tracking-tight text-foreground">Other models from <Text className="text-[20px] font-semibold leading-7 tracking-tight text-link" onPress={showLab} suppressHighlighting>{organisation}</Text></Text>
+                <OtherModels modelId={id} organisationId={organisationId} />
+              </View>
+            ) : null}
+          </ReadableWidth>
+        </ScrollView>
+        {view.pinned && activeSection ? (
+          <View className="absolute inset-x-0 top-0 border-b border-border bg-background px-4 py-2" style={{ height: PINNED_MENU_HEIGHT }}>
+            <ReadableWidth><SectionMenuButton section={activeSection} onPress={() => setMenuOpen(true)} pinned /></ReadableWidth>
           </View>
-          <View className="mt-3 flex-row flex-wrap gap-1.5 px-4">
-            {onPhaseo ? <Badge label="On Phaseo" tone="primary" /> : card?.gateway_status === "coming_soon" ? <Badge label="Coming soon" /> : <Badge label="Not on Phaseo" />}
-            {card && isFree(card) ? <Badge label="Free" tone="success" /> : null}
-            {model.data?.deprecation_date ? <Badge label={`Deprecated ${formatShortDate(model.data.deprecation_date)}`} tone="warning" /> : null}
-            {model.data?.retirement_date ? <Badge label={`Retires ${formatShortDate(model.data.retirement_date)}`} tone="destructive" /> : null}
-          </View>
-          <Text variant="mono" className="mt-2 px-4" selectable>{gateway.data?.primaryModelIdentifier ?? id}</Text>
-          {model.data?.description ?? card?.description ? <Description text={(model.data?.description ?? card?.description)!} /> : null}
-
-          <View className="mt-4 flex-row gap-2 px-4">
-            {canChat ? <Button label="Chat" icon={MessageSquare} className="flex-1" onPress={() => router.push({ pathname: "/chat/new", params: { model: id } })} /> : null}
-            <Button label={comparing ? "Comparing" : "Compare"} icon={Columns3} variant="outline" className="flex-1" onPress={() => toggleCompare(id)} />
-            <Button label="Web" icon={ExternalLink} variant="ghost" onPress={() => void Linking.openURL(`${WEB_ORIGIN}/models/${id}`)} />
-          </View>
-
-          <Section title="At a glance">
-            <Fact label="Context window" value={formatTokens(card ? contextWindow(card) : model.data?.context_length)} />
-            <Fact label="Max output" value={maxOutput ? formatTokens(maxOutput) : undefined} />
-            <Fact label="Input price" value={card?.lowest_input_price != null ? `${formatPrice(card.lowest_input_price)} / 1M tokens` : undefined} />
-            <Fact label="Output price" value={card?.lowest_output_price != null ? `${formatPrice(card.lowest_output_price)} / 1M tokens` : undefined} />
-            <Fact label="Input" value={inputs.map(modalityLabel).join(", ")} />
-            <Fact label="Output" value={outputs.map(modalityLabel).join(", ")} />
-            <Fact label="Released" value={model.data?.release_date ? formatDate(model.data.release_date) : undefined} />
-            <Fact label="Announced" value={model.data?.announcement_date ? formatDate(model.data.announcement_date) : undefined} />
-            <Fact label="Licence" value={model.data?.license ?? undefined} />
-            <Fact label="Family" value={model.data?.model_family?.display_name ?? undefined} last />
-          </Section>
-
-          <Section title="Providers" description={onPhaseo ? "Routes Phaseo can send this model's requests to." : undefined}>
-            {gateway.isLoading ? <LoadingState /> : (gateway.data?.activeProviders.length ?? 0) + (gateway.data?.comingSoonProviders.length ?? 0) === 0 ? (
-              <Text variant="muted" className="px-4 py-3">No providers serve this model through Phaseo yet.</Text>
-            ) : (
-              <>
-                {dedupeRoutes(gateway.data!.activeProviders).map((route, index, list) => (
-                  <Row
-                    key={route.api_provider_id ?? index}
-                    leading={<Logo id={route.api_provider_id} label={route.provider?.api_provider_name} size={28} />}
-                    title={route.provider?.api_provider_name ?? route.api_provider_id ?? "Provider"}
-                    subtitle={[route.context_length ? `${formatTokens(route.context_length)} context` : null, route.max_output_tokens ? `${formatTokens(route.max_output_tokens)} output` : null].filter(Boolean).join(" · ") || null}
-                    onPress={route.api_provider_id ? () => router.push(`/providers/${route.api_provider_id}`) : undefined}
-                    last={index === list.length - 1 && !gateway.data!.comingSoonProviders.length}
-                  />
-                ))}
-                {dedupeRoutes(gateway.data!.comingSoonProviders).map((route, index, list) => (
-                  <Row key={`soon-${route.api_provider_id ?? index}`} leading={<Logo id={route.api_provider_id} label={route.provider?.api_provider_name} size={28} />} title={route.provider?.api_provider_name ?? route.api_provider_id ?? "Provider"} value="Coming soon" last={index === list.length - 1} />
-                ))}
-              </>
-            )}
-          </Section>
-
-          <PricingSection pricing={pricing.data} loading={pricing.isLoading} />
-
-          {performance.data && performance.data.summary.totalRequests > 0 ? (
-            <Section title="Performance" description="Median over the last 3 days of Phaseo traffic.">
-              <Fact label="Throughput" value={performance.data.summary.avgThroughput != null ? `${Math.round(performance.data.summary.avgThroughput)} tokens/s` : undefined} />
-              <Fact label="Time to first token" value={formatMs(performance.data.summary.avgLatencyMs)} />
-              <Fact label="Uptime" value={formatPercent(performance.data.summary.uptimePct)} />
-              <Fact label="Requests" value={formatCompact(performance.data.summary.totalRequests)} last />
-            </Section>
-          ) : null}
-
-          {benchmarks.data?.length ? (
-            <Section title="Benchmarks">
-              {benchmarks.data.slice(0, 10).map((benchmark, index, list) => (
-                <Fact
-                  key={benchmark.benchmarkId ?? index}
-                  label={benchmark.benchmarkName ?? benchmark.benchmarkId ?? "Benchmark"}
-                  value={[benchmark.scoreDisplay ?? (benchmark.score != null ? String(benchmark.score) : null), benchmark.rank && benchmark.totalModels ? `#${benchmark.rank} of ${benchmark.totalModels}` : null].filter(Boolean).join("  ·  ")}
-                  last={index === list.length - 1}
-                />
-              ))}
-            </Section>
-          ) : null}
-
-          {activity.data?.some((row) => row.totalTokens > 0) ? (
-            <Section title="Usage on Phaseo" description={`${formatCompact(activity.data.reduce((sum, row) => sum + row.totalTokens, 0))} tokens in the last 30 days`}>
-              <BarChart className="mt-3" values={activity.data.map((row) => row.totalTokens)} labels={[formatShortDate(activity.data[0]?.dayBucket), formatShortDate(activity.data.at(-1)?.dayBucket)]} />
-            </Section>
-          ) : null}
-
-          {apps.data?.length ? (
-            <Section title="Apps using it">
-              {apps.data.slice(0, 6).map((app, index, list) => (
-                <Row key={app.appId} title={app.title} subtitle={`${formatCompact(app.totalTokens)} tokens`} onPress={app.url ? () => void Linking.openURL(app.url!) : undefined} last={index === list.length - 1} />
-              ))}
-            </Section>
-          ) : null}
-
-          {plans.data?.length ? (
-            <Section title="Included in subscriptions">
-              {plans.data.map((plan, index, list) => (
-                <Row
-                  key={plan.plan_id ?? plan.name ?? index}
-                  title={plan.name ?? "Plan"}
-                  subtitle={plan.organisation?.name ?? null}
-                  value={plan.prices[0] ? `${new Intl.NumberFormat("en-GB", { style: "currency", currency: plan.prices[0].currency }).format(plan.prices[0].price)} / ${plan.prices[0].frequency}` : null}
-                  onPress={plan.link ? () => void Linking.openURL(plan.link!) : undefined}
-                  last={index === list.length - 1}
-                />
-              ))}
-            </Section>
-          ) : null}
-
-          {timeline.data?.length ? (
-            <Section title="Timeline">
-              {timeline.data.slice(0, 8).map((event, index, list) => (
-                <Fact key={`${event.date}-${index}`} label={event.eventName ?? event.eventType ?? "Update"} value={formatDate(event.date)} last={index === list.length - 1} />
-              ))}
-            </Section>
-          ) : null}
-
-          {model.data?.model_links?.length ? (
-            <Section title="Links">
-              {model.data.model_links.map((link, index, list) => (
-                <Row key={link.url} title={link.title ?? linkLabel(link.kind ?? link.platform)} subtitle={hostOf(link.url)} onPress={() => void Linking.openURL(link.url)} last={index === list.length - 1} />
-              ))}
-            </Section>
-          ) : null}
-        </ReadableWidth>
-      </ScrollView>
+        ) : null}
+      </View>
+      <OptionSheet open={menuOpen} title="Jump to section" value={activeSection} options={menuOptions} onChange={jump} onClose={() => setMenuOpen(false)} />
+      <UseModelSheet open={useOpen} onClose={() => setUseOpen(false)} modelId={id} modelName={name} gateway={gateway.data} />
     </Screen>
   );
 }
 
+/** Back arrow, plus the compact model header once the title has scrolled away. */
+function TopBar({ back, children }: { back?: boolean; children?: ReactNode }) {
+  const router = useRouter();
+  const showBack = back && router.canGoBack();
+  return (
+    <View className={cn("min-h-12 flex-row items-center gap-1 px-2", children && "border-b border-border pb-1.5 pt-1")}>
+      {showBack ? <IconButton icon={ArrowLeft} label="Back" onPress={() => router.back()} /> : <View className="w-2" />}
+      {children}
+    </View>
+  );
+}
+
+function issueUrl(modelId: string) {
+  const query = new URLSearchParams({
+    template: "incorrect-info.yml",
+    area: "Data",
+    title: `[Incorrect Info] Model: ${modelId}`,
+    incorrect: `Model: ${modelId}\n\nWhat's wrong or missing?`,
+  });
+  return `https://github.com/phaseoteam/Phaseo/issues/new?${query.toString()}`;
+}
+
+/** Report an issue · Chat · Compare, then a full-width "Use this model", as the website lays them out on phones. */
+function HeaderActions({ canChat, canUse, onReport, onChat, onCompare, onUse }: { canChat: boolean; canUse: boolean; onReport: () => void; onChat: () => void; onCompare: () => void; onUse: () => void }) {
+  return (
+    <View className="mt-4 gap-2 px-4">
+      <View className="flex-row flex-wrap gap-2">
+        <Button label="Report an issue" icon={MessageSquareWarning} variant="outline" size="sm" className="min-w-[45%] flex-1" onPress={onReport} />
+        {canChat ? <Button label="Chat" icon={MessageSquare} variant="outline" size="sm" className="min-w-[45%] flex-1" onPress={onChat} /> : null}
+        <Button label="Compare" icon={Scale} variant="outline" size="sm" className={cn("min-w-[45%]", canChat ? "max-w-[49%] flex-1" : "flex-1")} onPress={onCompare} />
+      </View>
+      {canUse ? <Button label="Use this model" icon={Bolt} size="sm" onPress={onUse} /> : null}
+    </View>
+  );
+}
+
+/** The model ID; with aliases or variants it opens a list to copy any of them (ModelIdentifierControl). */
+function ModelIdentifier({ modelId, aliases, variants }: { modelId: string; aliases: string[]; variants: NonNullable<ModelDetailData["variants"]> }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const identifiers = [modelId, ...aliases.filter((alias) => alias !== modelId)];
+  const otherVariants = variants.filter((variant) => variant.model_id !== modelId);
+  const copy = (value: string) => {
+    void Clipboard.setStringAsync(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  const options: SelectOption<string>[] = [
+    ...identifiers.map((value) => ({ value, label: value, description: value === modelId ? "Default · tap to copy" : "Alias · tap to copy" })),
+    ...otherVariants.map((variant) => ({ value: `variant:${variant.model_id}`, label: variant.name ?? variant.model_id, description: `Variant · ${variant.model_id}` })),
+  ];
+  return (
+    <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={identifiers.length > 1 || otherVariants.length ? "Model identifiers" : `Copy model identifier ${modelId}`}
+        onPress={() => (identifiers.length > 1 || otherVariants.length ? setOpen(true) : copy(modelId))}
+        className="mt-2 flex-row items-center gap-1 self-start"
+      >
+        <Text variant="mono" numberOfLines={1} className="shrink text-[13px] text-foreground/80">{modelId}</Text>
+        <Icon icon={copied ? Check : ChevronDown} tone="muted" size={14} />
+      </Pressable>
+      <OptionSheet
+        open={open}
+        title="Identifiers"
+        value={null}
+        options={options}
+        onChange={(value) => (value.startsWith("variant:") ? router.push(`/models/${value.slice("variant:".length)}`) : copy(value))}
+        onClose={() => setOpen(false)}
+      />
+    </>
+  );
+}
+
+/** Four lines, then "Show full" (ModelDescriptionPanel). */
 function Description({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
+  const [long, setLong] = useState(false);
   return (
-    <Pressable onPress={() => setOpen(!open)} className="mt-3 px-4" accessibilityRole="button" accessibilityHint={open ? "Collapse" : "Expand"}>
-      <Text variant="body" numberOfLines={open ? undefined : 3} className="text-muted-foreground">{text}</Text>
+    <View className="mt-5 px-4">
+      {/* An unclamped, invisible copy measures whether the text runs past four lines. */}
+      <Text variant="body" aria-hidden accessibilityElementsHidden importantForAccessibility="no-hide-descendants" pointerEvents="none" className="absolute inset-x-4 top-0 leading-[24px] opacity-0" onTextLayout={(event) => setLong(event.nativeEvent.lines.length > 4)}>{text}</Text>
+      <Text variant="body" numberOfLines={open ? undefined : 4} className="leading-[24px] text-muted-foreground">{text}</Text>
+      {long ? (
+        <Pressable accessibilityRole="button" onPress={() => setOpen(!open)} className="mt-1 flex-row items-center gap-1 self-end">
+          <Text variant="small" className="font-medium text-muted-foreground">{open ? "Show less" : "Show full"}</Text>
+          <View style={{ transform: [{ rotate: open ? "180deg" : "0deg" }] }}><Icon icon={ChevronDown} tone="muted" size={14} /></View>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+/** The website's section jump menu: the current section's icon and name; tap for the full list. */
+function SectionMenuButton({ section, onPress, pinned }: { section: SectionId | null; onPress: () => void; pinned?: boolean }) {
+  const meta = section ? SECTION_META[section] : null;
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={`Jump to section. Current: ${meta?.label ?? "none"}`} onPress={onPress} className={cn("h-10 flex-row items-center gap-2 rounded-md border border-border px-3 active:bg-accent", pinned ? "bg-muted/40" : "bg-background")}>
+      <Icon icon={meta?.icon ?? ScrollText} tone="muted" size={16} />
+      <Text variant="small" className="flex-1 font-medium">{meta?.label ?? "Jump to section"}</Text>
+      <Icon icon={ChevronDown} tone="muted" size={16} />
     </Pressable>
   );
 }
 
-function PricingSection({ pricing, loading }: { pricing?: Awaited<ReturnType<typeof getModelPricing>>; loading: boolean }) {
-  const providers = useMemo(() => sortByRoutable((pricing ?? []).filter((provider) => provider.pricing_rules.length > 0)), [pricing]);
-  if (loading) return <Section title="Pricing"><LoadingState /></Section>;
-  if (!providers.length) return null;
+const STATUS_BANNERS: Record<string, { title: string; body: string; tone: "info" | "warning" | "critical" }> = {
+  Rumoured: { title: "Rumoured Model", body: "This model is rumoured to be coming soon. Any data here is subject to change until the release is confirmed.", tone: "info" },
+  Announced: { title: "Announced Model", body: "This model has been announced, but not released. We await the full release to make more information available.", tone: "info" },
+  Withheld: { title: "Withheld Model", body: "This model was announced with preliminary details but is currently withheld and may never be released publicly. Information may change at any time.", tone: "warning" },
+  Preview: { title: "Preview Model", body: "This model is released as a preview. Availability, behaviour and pricing may change before general availability.", tone: "info" },
+  "Limited Access": { title: "Limited Access Model", body: "This model is known to exist, but access is limited to selected customers, trusted partners, or private preview programs. It is not generally available through public routes.", tone: "info" },
+  Deprecated: { title: "Deprecated Model", body: "This model has been marked deprecated. It is likely to be retired soon. You should look to move off this model and onto a newer model if you are using it.", tone: "warning" },
+  Retired: { title: "Retired Model", body: "This model has reached end of life and can no longer be used. We keep this page as an archive for historical metadata, benchmark context, and any related subscription records.", tone: "critical" },
+};
+
+/** A page notice from the catalogue when there is one, otherwise the status banner (ModelDetailShell ModelNotice). */
+function Banners({ status, notice }: { status?: string | null; notice: { tone: string; markdown: string } | null }) {
+  const banner = notice?.markdown ? { title: null, body: notice.markdown, tone: (notice.tone as "info" | "warning" | "critical") ?? "info" } : status ? STATUS_BANNERS[status] : undefined;
+  if (!banner) return null;
+  const tones = { info: { box: "border-border bg-muted/40", icon: Info, tone: "link" as const }, warning: { box: "border-warning/40 bg-warning/10", icon: TriangleAlert, tone: "warning" as const }, critical: { box: "border-destructive/40 bg-destructive/10", icon: CircleAlert, tone: "destructive" as const } };
+  const style = tones[banner.tone] ?? tones.info;
   return (
-    <Section title="Pricing" description="Per million tokens unless noted.">
-      {providers.map((provider) => {
-        const lines = priceLines(provider);
-        const otherPlans = plansFor(provider).filter((plan) => plan !== "standard");
-        const routable = isRoutable(provider);
-        return (
-          <View key={provider.provider.api_provider_id ?? provider.provider.api_provider_name} className="border-b border-border px-4 py-3">
-            <View className="flex-row items-center gap-2">
-              <Logo id={provider.provider.api_provider_id} label={provider.provider.api_provider_name} size={22} />
-              <Text variant="label" className="flex-1">{providerLabel(provider.provider)}</Text>
-              {routable ? (otherPlans.length ? <Text variant="caption">Also {otherPlans.join(", ")}</Text> : null) : <Badge label="Not active" />}
-            </View>
-            <View className="mt-2 flex-row flex-wrap gap-x-6 gap-y-2">
-              {lines.map((line) => (
-                <View key={line.meter}>
-                  <Text variant="caption">{line.label}</Text>
-                  <Text variant="small" className="font-semibold">{line.value}{line.unit !== "1M tokens" ? ` / ${line.unit}` : ""}</Text>
-                  {line.longContext ? <Text variant="caption">{line.longContext.value} over {line.longContext.above}</Text> : null}
-                </View>
-              ))}
-            </View>
-            {lines.some((line) => line.longContext) ? <Text variant="caption" className="mt-2">{`Higher prices apply when a request's input is over ${lines.find((line) => line.longContext)!.longContext!.above} tokens.`}</Text> : null}
-          </View>
-        );
-      })}
-    </Section>
+    <View className={cn("mx-4 mb-4 mt-1 flex-row gap-3 rounded-md border p-3", style.box)}>
+      <Icon icon={style.icon} tone={style.tone} size={18} />
+      <View className="flex-1">
+        {banner.title ? <Text variant="label">{banner.title}</Text> : null}
+        {notice?.markdown ? <Markdown text={banner.body} /> : <Text variant="small" className="mt-0.5 text-muted-foreground">{banner.body}</Text>}
+      </View>
+    </View>
   );
 }
 
-function dedupeRoutes<T extends { api_provider_id?: string | null }>(routes: T[]) {
-  const seen = new Set<string>();
-  return routes.filter((route) => {
-    const key = route.api_provider_id ?? "";
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
+type FreeRouterData = { summary: { eligibleModels: number; eligibleProviders: number; routedRequests30d: number; totalCostNanos30d: number }; models: { modelId: string; name: string; organisationId: string; providerCount: number; usage?: { requests30d?: number } }[] };
 
-function hostOf(url: string) {
-  try { return new URL(url).host; } catch { return url; }
-}
-
-function linkLabel(kind?: string | null) {
-  if (!kind) return "Link";
-  return kind.replace(/[_-]/g, " ").replace(/^\w/, (letter) => letter.toUpperCase());
+/** phaseo/free: the website shows the free model pool instead of the usual sections. */
+function FreeRouterOverview() {
+  const router = useRouter();
+  const overview = useQuery({ queryKey: ["public", "free-router-overview"], queryFn: () => request<FreeRouterData>("/api/_web/models/free-router-overview"), retry: false });
+  const summary = overview.data?.summary;
+  return (
+    <PageSection id="providers" title="Free model pool" description="Currently eligible models served by phaseo/free. Usage below counts only requests made through the router itself.">
+      {overview.isLoading ? <LoadingState /> : !summary ? (
+        <Text variant="muted">{"The free model pool isn't available right now."}</Text>
+      ) : (
+        <View className="gap-4">
+          <View className="flex-row flex-wrap overflow-hidden rounded-md border border-border">
+            {([["Eligible models", formatCompact(summary.eligibleModels)], ["Eligible providers", formatCompact(summary.eligibleProviders)], ["Requests (30d)", formatCompact(summary.routedRequests30d)], ["Spend (30d)", `$${(summary.totalCostNanos30d / 1e9).toFixed(2)}`]] as const).map(([label, value], index) => (
+              <View key={label} className={cn("w-1/2 px-3 py-3", index % 2 && "border-l border-border", index > 1 && "border-t border-border")}>
+                <Text variant="caption">{label}</Text>
+                <Text variant="heading">{value}</Text>
+              </View>
+            ))}
+          </View>
+          <View className="overflow-hidden rounded-md border border-border">
+            {(overview.data?.models ?? []).map((entry, index, list) => (
+              <Pressable key={entry.modelId} onPress={() => router.push(`/models/${entry.modelId}`)} className={cn("flex-row items-center gap-3 px-3 py-3 active:bg-accent", index < list.length - 1 && "border-b border-border")}>
+                <Logo id={entry.organisationId} label={entry.name} size={24} />
+                <Text variant="small" numberOfLines={1} className="flex-1 font-medium">{entry.name}</Text>
+                <Text variant="caption">{entry.providerCount} providers</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
+    </PageSection>
+  );
 }

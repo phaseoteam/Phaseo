@@ -1,0 +1,229 @@
+import { useQuery } from "@tanstack/react-query";
+import { ChevronDown, ChevronRight, CircleAlert } from "lucide-react-native";
+import { useMemo, useState } from "react";
+import { Pressable, View } from "react-native";
+import { LegendItem, LineChart } from "@/components/charts";
+import { Logo } from "@/components/Logo";
+import { Badge, Icon, Segmented, Select, Text } from "@/components/ui";
+import { getModelEffectivePricing, getModelPricingHistory, type ProviderPricing } from "@/lib/api/models";
+import { cn } from "@/lib/cn";
+import { formatPrice, formatShortDate } from "@/lib/format";
+import { isRoutable, plansFor, priceLines } from "../pricing";
+import { meterName } from "./faq";
+import { EmptyBox, SubHeading, TinyBadge } from "./parts";
+import {
+  buildPriceHistory, defaultRowPlan, effectiveRows, isEffectiveMeter, isSeriesVisibleByDefault, meterOptions, observedUsageByProviderPlan, RANGE_OPTIONS, summaryCutoffMs,
+  tierDashArray, weightedEffectivePrice, type EffectiveRow, type PricingRange, type PricingView,
+} from "./pricingInsights";
+import { providerDisplayName, providerLogoId, tierLabel } from "./providers";
+
+/** Small prices keep their precision ("$0.0042"); the website rounds axis labels the same way. */
+const axisPrice = (value: number) => (value === 0 ? "0" : `$${Number(value.toPrecision(2))}`);
+const price = (value: number | null | undefined) => (value == null || !Number.isFinite(value) ? "—" : value === 0 ? "$0" : formatPrice(value));
+
+/**
+ * "Weighted provider pricing over the last 30 days, with recent route pricing history below": effective
+ * prices from what requests actually cost, a price history chart, and every provider's list prices.
+ */
+export function PricingSection({ modelId, providers }: { modelId: string; providers: ProviderPricing[] }) {
+  const history = useQuery({ queryKey: ["model-page", modelId, "pricing-history"], queryFn: () => getModelPricingHistory(modelId), staleTime: 30 * 60_000 });
+  const effective = useQuery({ queryKey: ["model-page", modelId, "effective-pricing"], queryFn: () => getModelEffectivePricing(modelId), staleTime: 30 * 60_000 });
+  const [view, setView] = useState<PricingView>("effective");
+  const [range, setRange] = useState<PricingRange>("30d");
+  const [meter, setMeter] = useState("input_text_tokens");
+  const [visibility, setVisibility] = useState<Record<string, boolean>>({});
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const [inspected, setInspected] = useState<number | null>(null);
+  const [nowMs] = useState(() => Date.now());
+
+  const derived = useMemo(() => {
+    const rowsInput = effective.data ?? [];
+    const cutoff = summaryCutoffMs(rowsInput);
+    const observed = observedUsageByProviderPlan(rowsInput, cutoff);
+    const rows = effectiveRows(providers, observed, cutoff, nowMs);
+    return { observed, rows, cutoff, summary: weightedEffectivePrice(rows, observed, cutoff) };
+  }, [effective.data, providers, nowMs]);
+
+  const meters = useMemo(() => meterOptions(history.data ?? [], derived.rows), [history.data, derived.rows]);
+  const activeMeter = meters.includes(meter) ? meter : meters[0] ?? "input_text_tokens";
+  const effectiveState = useMemo(() => buildPriceHistory({ rows: derived.rows, rules: history.data ?? [], observed: derived.observed, view: "effective", meter: activeMeter, range, nowMs }), [derived, history.data, activeMeter, range, nowMs]);
+  const hasEffective = isEffectiveMeter(activeMeter) && effectiveState.hasData;
+  const shownView: PricingView = view === "effective" && !hasEffective ? "listed" : view;
+  const state = useMemo(() => (shownView === "effective" ? effectiveState : buildPriceHistory({ rows: derived.rows, rules: history.data ?? [], observed: derived.observed, view: "listed", meter: activeMeter, range, nowMs })), [shownView, effectiveState, derived, history.data, activeMeter, range, nowMs]);
+
+  const visible = (row: EffectiveRow) => visibility[row.seriesKey] ?? isSeriesVisibleByDefault(row);
+  const visibleRows = derived.rows.filter(visible);
+  const plans = [...new Set(derived.rows.map((row) => row.plan))];
+  // One row per provider (its default tier), busiest first, then by name; tier rows expand underneath.
+  const providerRows = useMemo(() => {
+    const primary = derived.rows.filter((row) => row.plan === defaultRowPlan(row));
+    return [...primary].sort((a, b) => Number(a.isExternal) - Number(b.isExternal) || (b.tokenSharePct ?? -1) - (a.tokenSharePct ?? -1) || a.providerName.localeCompare(b.providerName));
+  }, [derived.rows]);
+  const pricedProviders = providers.filter((provider) => provider.pricing_rules.length > 0);
+
+  if (!providers.length) {
+    return <EmptyBox icon={CircleAlert} title="No pricing data yet" body="No provider pricing is recorded for this model yet." />;
+  }
+
+  return (
+    <View className="gap-5">
+      <View>
+        <SubHeading>Effective pricing</SubHeading>
+        <Text variant="muted" className="mt-1">Weighted by observed usage over the last 30 days. Every provider with recorded pricing is included.</Text>
+        <View className="mt-3 overflow-hidden rounded-md border border-border">
+          <EffectiveTile label="Weighted input price" value={derived.summary.input} />
+          <EffectiveTile label="Weighted output price" value={derived.summary.output} last />
+        </View>
+      </View>
+
+      <View>
+        <SubHeading>Price history</SubHeading>
+        <Text variant="caption" className="mt-1">USD per million tokens · 30-day rolling effective prices · exact UTC list changes</Text>
+        <View className="mt-3 gap-2">
+          <View className="flex-row gap-2">
+            <Segmented
+              className="w-40"
+              value={shownView}
+              options={[{ value: "effective", label: "Effective" }, { value: "listed", label: "List" }]}
+              onChange={(next) => setView(next === "effective" && !hasEffective ? "listed" : next)}
+            />
+            <Select className="flex-1" title="Pricing meter" value={activeMeter} options={(meters.length ? meters : [activeMeter]).map((value) => ({ value, label: meterName(value) }))} onChange={setMeter} />
+          </View>
+          <Segmented value={range} options={RANGE_OPTIONS} onChange={(value) => setRange(value)} />
+        </View>
+        {history.isLoading || effective.isLoading ? (
+          <View className="mt-3 h-[200px] rounded-md bg-muted" />
+        ) : state.hasData && visibleRows.length ? (
+          <View className="mt-3 rounded-md border border-border px-3 pb-3 pt-3">
+            {inspected != null ? <Text variant="caption" className="mb-1">{new Date(inspected).toISOString().slice(0, 16).replace("T", " ")} UTC</Text> : null}
+            <LineChart
+              height={200}
+              step={shownView === "listed"}
+              yFormat={axisPrice}
+              xFormat={(time) => formatShortDate(time)}
+              series={visibleRows.map((row) => ({ key: row.seriesKey, colour: row.colour, dash: tierDashArray(row.plan), points: state.points.map((point) => ({ x: point.time, y: point.values[row.seriesKey] ?? null })) }))}
+              onInspect={setInspected}
+            />
+            {plans.length > 1 || plans[0] !== "standard" ? (
+              <View className="mt-3 flex-row flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-border pt-2.5">
+                <Text variant="caption" className="font-medium text-foreground">Service tier</Text>
+                {plans.map((plan) => <LegendItem key={plan} colour="#888888" label={plan === "standard" ? "Standard" : tierLabel(plan)} dash={tierDashArray(plan)} />)}
+              </View>
+            ) : null}
+          </View>
+        ) : (
+          <View className="mt-3 items-center rounded-md border border-dashed border-border px-4 py-8">
+            <Text variant="caption" className="text-center">{visibleRows.length ? "No price history in this range." : "Turn on a provider below to chart its prices."}</Text>
+          </View>
+        )}
+
+        <View className="mt-3 overflow-hidden rounded-md border border-border">
+          <View className="flex-row border-b border-border px-3 py-2">
+            <Text variant="caption" className="flex-1">Provider</Text>
+            <Text variant="caption" className="w-16 text-right">Input</Text>
+            <Text variant="caption" className="w-16 text-right">Output</Text>
+          </View>
+          {providerRows.map((row, index) => {
+            const tiers = derived.rows.filter((candidate) => candidate.providerId === row.providerId && candidate.seriesKey !== row.seriesKey);
+            const open = expanded.has(row.providerId);
+            const values = (target: EffectiveRow) => {
+              const value = inspected != null ? state.points.find((point) => point.time === inspected)?.values[target.seriesKey] : undefined;
+              return {
+                input: shownView === "effective" ? target.input : target.listedInput,
+                output: shownView === "effective" ? target.output : target.listedOutput,
+                inspected: value,
+              };
+            };
+            return (
+              <View key={row.seriesKey} className={cn(index < providerRows.length - 1 && "border-b border-border")}>
+                <SeriesRow row={row} values={values(row)} visible={visible(row)} onToggle={() => setVisibility((current) => ({ ...current, [row.seriesKey]: !visible(row) }))} expandable={tiers.length > 0} open={open} onExpand={() => setExpanded((current) => { const next = new Set(current); if (next.has(row.providerId)) next.delete(row.providerId); else next.add(row.providerId); return next; })} />
+                {open ? tiers.map((tier) => (
+                  <SeriesRow key={tier.seriesKey} row={tier} values={values(tier)} visible={visible(tier)} onToggle={() => setVisibility((current) => ({ ...current, [tier.seriesKey]: !visible(tier) }))} tier />
+                )) : null}
+              </View>
+            );
+          })}
+        </View>
+      </View>
+
+      {pricedProviders.length ? (
+        <View>
+          <SubHeading>Provider list prices</SubHeading>
+          <Text variant="muted" className="mt-1">Per million tokens unless noted.</Text>
+          <View className="mt-3 overflow-hidden rounded-md border border-border">
+            {pricedProviders.map((provider, index) => <ListPrices key={provider.provider.api_provider_id ?? index} provider={provider} last={index === pricedProviders.length - 1} />)}
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function EffectiveTile({ label, value, last }: { label: string; value: number | null; last?: boolean }) {
+  return (
+    <View className={cn("px-4 py-3.5", !last && "border-b border-border")}>
+      <Text variant="caption">{label}</Text>
+      <Text className="mt-1 text-[26px] font-bold leading-8 tracking-tight text-foreground">{price(value)}</Text>
+      <Text variant="caption" className="mt-0.5">Per 1M tokens</Text>
+    </View>
+  );
+}
+
+function SeriesRow({ row, values, visible, onToggle, expandable, open, onExpand, tier }: { row: EffectiveRow; values: { input: number | null; output: number | null; inspected?: number | null }; visible: boolean; onToggle: () => void; expandable?: boolean; open?: boolean; onExpand?: () => void; tier?: boolean }) {
+  return (
+    <View className={cn("flex-row items-center gap-2 px-3 py-2.5", tier && "bg-muted/40 pl-8")}>
+      <Pressable accessibilityRole="switch" accessibilityState={{ checked: visible }} accessibilityLabel={`${visible ? "Hide" : "Show"} ${row.providerName} ${tierLabel(row.plan)} price line`} hitSlop={8} onPress={onToggle} className={cn(!visible && "opacity-40")}>
+        <LegendItem colour={row.colour} label="" dash={tierDashArray(row.plan)} />
+      </Pressable>
+      <Pressable accessibilityRole={expandable ? "button" : undefined} disabled={!expandable} onPress={onExpand} className="flex-1 flex-row items-center gap-2">
+        {tier ? null : <Logo id={row.logoId} label={row.providerName} size={22} />}
+        <Text variant="small" numberOfLines={1} className="shrink font-medium">{row.providerName}</Text>
+        {tier ? <TinyBadge label={tierLabel(row.plan)} tone="warning" /> : null}
+        {row.isExternal ? <TinyBadge label="External" /> : null}
+        {expandable ? <Icon icon={open ? ChevronDown : ChevronRight} tone="muted" size={14} /> : null}
+      </Pressable>
+      {values.inspected !== undefined ? (
+        <Text variant="small" className="w-32 text-right font-semibold">{price(values.inspected)}</Text>
+      ) : (
+        <>
+          <Text variant="small" className="w-16 text-right font-semibold">{price(values.input)}</Text>
+          <Text variant="small" className="w-16 text-right font-semibold">{price(values.output)}</Text>
+        </>
+      )}
+    </View>
+  );
+}
+
+/** Every priced meter per provider: long-context prices, cache writes and other tiers, as the app has always shown. */
+function ListPrices({ provider, last }: { provider: ProviderPricing; last: boolean }) {
+  const [open, setOpen] = useState(false);
+  const lines = priceLines(provider);
+  const otherPlans = plansFor(provider).filter((plan) => plan !== "standard");
+  const routable = isRoutable(provider);
+  const name = providerName(provider);
+  const longContext = lines.find((line) => line.longContext)?.longContext;
+  // Collapsed: the first two meters (input and output); open: every meter, long-context tier and cache write.
+  const shown = open ? lines : lines.slice(0, 2);
+  return (
+    <View className={cn(!last && "border-b border-border")}>
+      <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`${name} list prices`} onPress={() => setOpen(!open)} className="flex-row items-center gap-2 px-3 pt-3 active:bg-accent">
+        <Icon icon={open ? ChevronDown : ChevronRight} tone="muted" size={16} />
+        <Logo id={providerLogoId(provider.provider)} label={name} size={22} />
+        <Text variant="label" numberOfLines={1} className="flex-1">{name}</Text>
+        {routable ? (otherPlans.length ? <Text variant="caption">Also {otherPlans.map(tierLabel).join(", ")}</Text> : null) : <Badge label="Not active" />}
+      </Pressable>
+      <View className={cn("flex-row flex-wrap gap-x-6 gap-y-2 px-3 pl-9 pt-2", open && longContext ? "pb-1" : "pb-3")}>
+        {shown.map((line) => (
+          <View key={line.meter}>
+            <Text variant="caption">{line.label}</Text>
+            <Text variant="small" className="font-semibold">{line.value}{line.unit !== "1M tokens" ? ` / ${line.unit}` : ""}</Text>
+            {line.longContext ? <Text variant="caption">{line.longContext.value} over {line.longContext.above}</Text> : null}
+          </View>
+        ))}
+      </View>
+      {open && longContext ? <Text variant="caption" className="px-3 pb-3 pl-9 pt-1">{`Higher prices apply when a request's input is over ${longContext.above} tokens.`}</Text> : null}
+    </View>
+  );
+}
+
+const providerName = (provider: ProviderPricing) => providerDisplayName(provider.provider);

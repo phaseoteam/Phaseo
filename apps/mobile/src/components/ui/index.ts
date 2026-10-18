@@ -4,6 +4,7 @@ export { Icon, useToneColor } from "./icon";
 export { SearchField, TextField } from "./input";
 export { Divider, Fact, Row, Section } from "./list";
 export { Header, ReadableWidth, Screen } from "./screen";
+export { OptionSheet, Select, type SelectOption } from "./select";
 export { Segmented } from "./segmented";
 export { EmptyState, ErrorState, LoadingState, Skeleton, SkeletonRows } from "./states";
 export { Text } from "./text";
