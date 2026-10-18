@@ -384,6 +384,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		contextManagement: openAIContextManagement,
 		anthropicCacheControl: providerCacheOptions.anthropicCacheControl,
 		googleCachedContent: providerCacheOptions.googleCachedContent,
+		xaiConversationId: providerCacheOptions.xaiConversationId,
 		safetyIdentifier: (req as any).safety_identifier,
 		modalities: normalizeModalities((req as any).modalities),
 		imageConfig: normalizeImageConfig((req as any).image_config),

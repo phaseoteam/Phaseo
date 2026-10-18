@@ -503,6 +503,10 @@ export async function handleStreamResponse(
                         model: stickyRoutingModel,
                         body: ctx.body,
                         providerId: result.provider,
+                        apiModelId: result.apiModelId ?? null,
+                        providerModelSlug: result.providerModelSlug ?? null,
+                        keySource: result.keySource ?? null,
+                        byokKeyId: result.byokKeyId ?? null,
                         usage: usageForSticky,
                         enabled: cacheAwareRoutingEnabled,
                     });

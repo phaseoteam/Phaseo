@@ -290,7 +290,9 @@ export function normalizeProviderCacheOptions(rawRequest: any): {
 	const xaiOptions = providerOptions?.xai ?? providerOptions?.["x-ai"] ?? {};
 
 	return {
+		// The top-level field takes precedence over the provider_options alias (as documented).
 		promptCacheRetention: pickFirstNonEmptyString(
+			rawRequest?.prompt_cache_retention,
 			openaiOptions?.prompt_cache_retention,
 		),
 		anthropicCacheControl: normalizeCacheControl(

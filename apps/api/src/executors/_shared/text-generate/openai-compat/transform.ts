@@ -375,7 +375,8 @@ export function irToOpenAIResponses(
 	if (ir.conversation !== undefined) request.conversation = ir.conversation;
 	if (ir.previousResponseId !== undefined) request.previous_response_id = ir.previousResponseId;
 	if (ir.prompt !== undefined) request.prompt = ir.prompt;
-	if (ir.promptCacheKey !== undefined) request.prompt_cache_key = ir.promptCacheKey;
+	// Never send null: absent keys stay absent. The pipeline has already namespaced the key per workspace.
+	if (typeof ir.promptCacheKey === "string" && ir.promptCacheKey.length > 0) request.prompt_cache_key = ir.promptCacheKey;
 	if (ir.promptCacheRetention !== undefined) request.prompt_cache_retention = ir.promptCacheRetention;
 	if (ir.promptCacheOptions !== undefined) request.prompt_cache_options = ir.promptCacheOptions;
 	if (ir.safetyIdentifier !== undefined) request.safety_identifier = ir.safetyIdentifier;

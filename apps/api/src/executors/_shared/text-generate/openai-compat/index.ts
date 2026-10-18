@@ -74,6 +74,19 @@ async function sleep(ms: number): Promise<void> {
 	await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Providers that keep prompt caches per replica and route on an x-session-affinity
+// header. The value is the workspace-namespaced cache key, never the raw client key.
+// https://docs.fireworks.ai/guides/prompt-caching
+// https://developers.cloudflare.com/workers-ai/features/prompt-caching
+const SESSION_AFFINITY_HEADER_PROVIDERS = new Set(["fireworks", "cloudflare"]);
+
+export function sessionAffinityHeaders(args: Pick<ExecutorExecuteArgs, "providerId" | "meta">): Record<string, string> {
+	const key = args.meta?.cacheAffinityKey;
+	if (typeof key !== "string" || key.length === 0) return {};
+	if (!SESSION_AFFINITY_HEADER_PROVIDERS.has(String(args.providerId ?? "").trim().toLowerCase())) return {};
+	return { "x-session-affinity": key };
+}
+
 export type OpenAIWirePolicy = {
 	forceChat?: boolean;
 	useClientStreamingMode?: boolean;
@@ -181,6 +194,7 @@ export async function executeOpenAIWire(
 			}
 			: openAICompatHeaders(args.providerId, keyInfo.key, {
 				...upstreamTestHeaders(args.meta),
+				...sessionAffinityHeaders(args),
 				...(bytePlusMcpBeta ? { "ark-beta-mcp": "true" } : {}),
 			});
 		const response = await fetchUpstream(args, upstreamUrl, {

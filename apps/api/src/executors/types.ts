@@ -96,6 +96,8 @@ export type ExecutorExecuteArgs = {
 		beta?: RequestBetaOptions;
 		appId?: string | null;
 		sessionId?: string | null;
+		/** Workspace-namespaced prompt cache key for provider affinity headers (never the raw client key). */
+		cacheAffinityKey?: string | null;
 		requestUserId?: string | null;
 		trace?: Record<string, unknown> | null;
 		testId?: string | null;
