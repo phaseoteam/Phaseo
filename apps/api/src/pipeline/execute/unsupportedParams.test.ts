@@ -132,4 +132,14 @@ describe("dropped parameter notice", () => {
 		clearDroppedParams(ctx);
 		expect(droppedParamsForClient(ctx)).toEqual([]);
 	});
+
+	it("does not let a sub-request on a copied context overwrite the main record", () => {
+		const main: any = { endpoint: "chat.completions", requestedParams: ["top_k"], routingDiagnostics: { stickyRouting: { hit: true } } };
+		recordDroppedParams(main, "openai", [{ param: "top_k", reason: "unsupported_by_provider", source: "catalogue" }]);
+		const advisor: any = { ...main, requestedParams: [] };
+		clearDroppedParams(advisor);
+		recordDroppedParams(advisor, "anthropic", []);
+		expect(droppedParamsForClient(main)).toEqual([{ param: "top_k", reason: "unsupported_by_provider", source: "catalogue", provider: "openai" }]);
+		expect(main.routingDiagnostics.stickyRouting).toEqual({ hit: true });
+	});
 });

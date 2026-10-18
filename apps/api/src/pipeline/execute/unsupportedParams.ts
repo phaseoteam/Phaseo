@@ -179,13 +179,16 @@ export function recordDroppedParams(ctx: DroppedParamsContext, providerId: strin
 			client_sent: requested.has(entry.param),
 		})),
 	};
-	if (!ctx.routingDiagnostics) ctx.routingDiagnostics = {};
-	ctx.routingDiagnostics.droppedParams = record;
+	// Copy on write: sub-requests (advisor, image tools) run on shallow copies of
+	// the request context and must not overwrite the main request's record.
+	ctx.routingDiagnostics = { ...(ctx.routingDiagnostics ?? {}), droppedParams: record };
 }
 
 /** Forgets the previous attempt's drops before the next provider is tried. */
 export function clearDroppedParams(ctx: DroppedParamsContext): void {
-	if (ctx.routingDiagnostics && "droppedParams" in ctx.routingDiagnostics) delete ctx.routingDiagnostics.droppedParams;
+	if (!ctx.routingDiagnostics || !("droppedParams" in ctx.routingDiagnostics)) return;
+	const { droppedParams: _previous, ...rest } = ctx.routingDiagnostics;
+	ctx.routingDiagnostics = rest;
 }
 
 /** The drops to report to the client: those of the provider that served it, client-sent only. */
