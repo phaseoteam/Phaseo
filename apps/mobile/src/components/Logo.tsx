@@ -9,6 +9,15 @@ import { useAppearance } from "@/providers/AppearanceProvider";
 // keeps organisation and provider logos identical to phaseo.app without a copy.
 import { resolveLogo } from "../../../web/src/lib/logos";
 
+/** A logo on its own, without the tile: for buttons, chips and dense lists. Renders nothing if unknown. */
+export function LogoMark({ id, size = 18 }: { id: string; size?: number }) {
+  const { resolved } = useAppearance();
+  const [failed, setFailed] = useState(false);
+  const logo = resolveLogo(id, { theme: resolved, fallbackToColor: true });
+  if (!logo?.src || failed) return null;
+  return <Image source={{ uri: `${WEB_ORIGIN}${logo.src}` }} style={{ width: size, height: size }} contentFit="contain" cachePolicy="disk" onError={() => setFailed(true)} accessibilityElementsHidden importantForAccessibility="no" />;
+}
+
 export function Logo({ id, label, colour, size = 32, className }: { id?: string | null; label?: string | null; colour?: string | null; size?: number; className?: string }) {
   const { resolved } = useAppearance();
   const [failed, setFailed] = useState(false);

@@ -4,7 +4,7 @@ import { cn } from "@/lib/cn";
 import { Icon } from "./icon";
 import { Text } from "./text";
 
-export function Chip({ label, selected, onPress, icon, dropdown, className }: { label: string; selected?: boolean; onPress?: () => void; icon?: LucideIcon; dropdown?: boolean; className?: string }) {
+export function Chip({ label, selected, onPress, icon, leading, dropdown, className }: { label: string; selected?: boolean; onPress?: () => void; icon?: LucideIcon; leading?: React.ReactNode; dropdown?: boolean; className?: string }) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -12,7 +12,7 @@ export function Chip({ label, selected, onPress, icon, dropdown, className }: { 
       onPress={onPress}
       className={cn("h-8 flex-row items-center gap-1.5 rounded-full border px-3", selected ? "border-primary bg-primary" : "border-border bg-background active:bg-accent", className)}
     >
-      {icon ? <Icon icon={icon} tone={selected ? "primary-foreground" : "muted"} size={14} /> : null}
+      {icon ? <Icon icon={icon} tone={selected ? "primary-foreground" : "muted"} size={14} /> : leading ?? null}
       <Text variant="small" className={cn("font-semibold", selected ? "text-primary-foreground" : "text-foreground")}>{label}</Text>
       {dropdown ? <Icon icon={ChevronDown} tone={selected ? "primary-foreground" : "muted"} size={14} /> : null}
     </Pressable>

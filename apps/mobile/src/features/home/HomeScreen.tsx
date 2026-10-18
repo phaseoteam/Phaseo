@@ -1,15 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
+import { Image } from "expo-image";
 import { Link, useRouter } from "expo-router";
-import { Columns3, MessageSquare, Server, UserRound } from "lucide-react-native";
+import { Columns3, MessageSquare, Search, Server, UserRound, Wallet } from "lucide-react-native";
 import { useMemo } from "react";
 import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 import { Logo } from "@/components/Logo";
-import { Button, Header, IconButton, ReadableWidth, Row, Screen, Section, Skeleton, Text } from "@/components/ui";
-import { useCatalogue } from "@/features/models/state";
+import { Button, Header, Icon, IconButton, ReadableWidth, Row, Screen, Section, Skeleton, Text } from "@/components/ui";
+import { searchFocusStore, useCatalogue } from "@/features/models/state";
 import { getBalance } from "@/lib/api/account";
 import { getReleases, type ModelRelease } from "@/lib/api/models";
 import { isOnPhaseo, modelName, organisationName } from "@/lib/catalogue";
 import { formatCompact, formatRelativeDay, formatUsd } from "@/lib/format";
+import { useAppearance } from "@/providers/AppearanceProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 
@@ -37,10 +39,21 @@ export function HomeScreen() {
 
   return (
     <Screen>
-      <Header large title="Phaseo" right={<IconButton icon={UserRound} label={session ? "Account" : "Sign in"} onPress={() => router.navigate(session ? "/account" : "/sign-in")} />} />
-      <ScrollView contentContainerClassName="pb-16" refreshControl={<RefreshControl refreshing={releases.isRefetching} onRefresh={refresh} />}>
+      <Header
+        large
+        title="Phaseo"
+        leading={<PhaseoMark />}
+        right={(
+          <>
+            {session ? <BalancePill /> : null}
+            <IconButton icon={UserRound} label={session ? "Account" : "Sign in"} onPress={() => router.navigate(session ? "/account" : "/sign-in")} />
+          </>
+        )}
+      />
+      <ScrollView contentContainerClassName="pb-16" keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={releases.isRefetching} onRefresh={refresh} />}>
         <ReadableWidth>
-          {session ? <WorkspaceSummary /> : <SignedOutIntro />}
+          <HomeSearch count={catalogue.data?.models.length} />
+          {session ? null : <SignedOutIntro />}
 
           <View className="mt-4 flex-row gap-2 px-4">
             <QuickAction label="Chat" icon={MessageSquare} href="/chat" />
@@ -78,10 +91,37 @@ export function HomeScreen() {
   );
 }
 
+function PhaseoMark() {
+  const { resolved } = useAppearance();
+  // The "light" asset is a white mark on black, for the dark theme, and the reverse.
+  const source = resolved === "dark" ? require("../../../assets/phaseo-logo-light.png") : require("../../../assets/phaseo-logo-dark.png");
+  return (
+    <View className="overflow-hidden border border-border" style={{ width: 30, height: 30, borderRadius: 8 }}>
+      <Image source={source} style={{ width: "100%", height: "100%" }} accessibilityLabel="Phaseo" />
+    </View>
+  );
+}
+
+/** Looks like a search field; opens Models with its search field focused. */
+function HomeSearch({ count }: { count?: number }) {
+  const router = useRouter();
+  return (
+    <Pressable
+      accessibilityRole="search"
+      accessibilityLabel="Search models"
+      onPress={() => { searchFocusStore.set((value) => value + 1); router.navigate("/models"); }}
+      className="mx-4 mt-1 h-11 flex-row items-center gap-2 rounded-lg bg-muted px-3 active:opacity-80"
+    >
+      <Icon icon={Search} tone="muted" size={17} />
+      <Text variant="body" className="text-muted-foreground" numberOfLines={1}>{count ? `Search ${count.toLocaleString()} models, labs or IDs` : "Search models, labs or IDs"}</Text>
+    </Pressable>
+  );
+}
+
 function SignedOutIntro() {
   const router = useRouter();
   return (
-    <View className="px-4 pt-2">
+    <View className="px-4 pt-4">
       <Text variant="body" className="text-muted-foreground">Prices, providers, benchmarks and releases for every model, with one API to use them.</Text>
       <View className="mt-4 flex-row gap-2">
         <Button label="Sign in" className="flex-1" onPress={() => router.push("/sign-in")} />
@@ -91,15 +131,22 @@ function SignedOutIntro() {
   );
 }
 
-function WorkspaceSummary() {
+/** The workspace's credit balance, small, in the header. Opens usage. */
+function BalancePill() {
   const router = useRouter();
   const { workspace, workspaceId } = useWorkspace();
   const balance = useQuery({ queryKey: ["account", workspaceId, "balance"], queryFn: () => getBalance(workspaceId!), enabled: Boolean(workspaceId) });
+  if (!workspaceId) return null;
+  if (balance.isLoading) return <Skeleton className="mr-1 h-8 w-20 rounded-full" />;
   return (
-    <Pressable onPress={() => router.navigate("/account/usage")} className="mx-4 mt-1 border-b border-border pb-4 active:opacity-80">
-      <Text variant="caption">{workspace?.name ?? "Workspace"}</Text>
-      {balance.isLoading ? <Skeleton className="mt-1 h-8 w-32" /> : <Text variant="display" className="mt-0.5">{formatUsd(balance.data)}</Text>}
-      <Text variant="muted">Credit balance · Tap for usage</Text>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${workspace?.name ?? "Workspace"} credit balance ${formatUsd(balance.data)}. Opens usage.`}
+      onPress={() => router.navigate("/account/usage")}
+      className="mr-1 h-8 flex-row items-center gap-1.5 rounded-full bg-secondary px-3 active:bg-accent"
+    >
+      <Icon icon={Wallet} tone="muted" size={14} />
+      <Text variant="small" className="font-semibold">{formatUsd(balance.data)}</Text>
     </Pressable>
   );
 }

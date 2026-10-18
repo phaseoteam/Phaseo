@@ -21,12 +21,13 @@ export function Screen({ children, className, edges = ["top"] }: { children: Rea
  * Screen title row. `back` shows a back arrow when there is somewhere to go back to;
  * `large` uses the page-title size for tab roots.
  */
-export function Header({ title, subtitle, back, large, right, className }: { title?: string; subtitle?: string | null; back?: boolean; large?: boolean; right?: ReactNode; className?: string }) {
+export function Header({ title, subtitle, back, large, leading, right, className }: { title?: string; subtitle?: string | null; back?: boolean; large?: boolean; leading?: ReactNode; right?: ReactNode; className?: string }) {
   const router = useRouter();
   const showBack = back && router.canGoBack();
   return (
     <View className={cn("flex-row items-center gap-1 px-2", large ? "min-h-14 pt-2" : "min-h-12", className)}>
       {showBack ? <IconButton icon={ArrowLeft} label="Back" onPress={() => router.back()} /> : <View className="w-2" />}
+      {leading ? <View className="mr-1.5">{leading}</View> : null}
       <View className="flex-1">
         {title ? <Text variant={large ? "title" : "heading"} numberOfLines={1}>{title}</Text> : null}
         {subtitle ? <Text variant="caption" numberOfLines={1}>{subtitle}</Text> : null}
