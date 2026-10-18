@@ -1,6 +1,5 @@
 import BenchmarkDetailShell from "@/components/(data)/benchmark/BenchmarkDetailShell";
 import BenchmarkOverview from "@/components/(data)/benchmark/BenchmarkOverview";
-import ArtificialAnalysisSuiteNavigation from "@/components/(data)/benchmark/ArtificialAnalysisSuiteNavigation";
 import { applyArtificialAnalysisOrganisationColours, artificialAnalysisMetricsForBenchmark, buildArtificialAnalysisRanking, isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
 import { isEpochCapabilitiesIndex, isEpochConfidenceIntervalForScore } from "@/lib/benchmarks/epoch";
 import { epochModelKey, fetchEpochConfidenceIntervals } from "@/lib/benchmarks/epochData";
@@ -181,7 +180,6 @@ export default async function Page({
 				? []
 				: epochCapabilitiesIndex ? [{ id: "summary", label: t("tocSummary") }, { id: "comparisons", label: t("tocIndexLeaderboard") }, { id: "progress", label: t("tocProgress") }, { id: "model-results", label: t("tocModelResults") }]
 				: [{ id: "summary", label: t("tocSummary") }, { id: "progress", label: t("tocProgress") }, { id: "model-results", label: t("tocModelResults") }]}>
-				{benchmark.suite ? <ArtificialAnalysisSuiteNavigation suite={benchmark.suite} selectedId={benchmark.id} showMetrics={false} /> : null}
 				<BenchmarkOverview benchmark={displayBenchmark} artificialAnalysisRankings={artificialAnalysisRankings} />
 			</BenchmarkDetailShell>
 		</>

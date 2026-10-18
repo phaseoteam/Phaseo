@@ -17,10 +17,14 @@ jest.mock("@/components/Logo", () => ({ Logo: () => null }));
 const render = (children: ReactNode) => renderToStaticMarkup(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ Common: common, Catalogue: catalogue, Site: site }}>{children}</NextIntlClientProvider>);
 
 it("renders an accessible comparison explorer with inspectable configuration scores", () => {
-	const html = render(<ArtificialAnalysisExplorer points={[{ id: "one", model_id: "lab/model", model_name: "Model", organisation_id: null, organisation_name: null, variant: "high", intelligence: 50, cost: 20 }]} />);
-	expect(html).toContain("Evaluation cost × Intelligence");
-	expect(html).toContain('type="checkbox"');
+	const html = render(<ArtificialAnalysisExplorer footer={<p>Source footer</p>} points={[
+		{ id: "one", model_id: "lab/model", model_name: "Model", organisation_id: null, organisation_name: null, variant: "high", intelligence: 50, cost: 20 },
+		{ id: "two", model_id: "lab/model", model_name: "Model", organisation_id: null, organisation_name: null, variant: "low", intelligence: 40, cost: 10 },
+	]} />);
+	expect(html).toMatch(/aria-pressed="true"[^>]*>Evaluation cost × Intelligence</);
+	expect(html).toMatch(/Models<\/span><span[^>]*>1 \/ 1</);
 	expect(html).toContain("All configurations");
+	expect(html).toContain("Source footer");
 	expect(html).toContain("Model / configuration");
 	expect(html).toContain("$20.00");
 });
@@ -29,4 +33,10 @@ it("renders a truthful empty state without invented cost values", () => {
 	const html = render(<ArtificialAnalysisExplorer points={[{ id: "one", model_id: "lab/model", model_name: "Model", organisation_id: null, organisation_name: null, variant: null, intelligence: 50 }]} />);
 	expect(html).toContain("No results available for this metric.");
 	expect(html).not.toContain("$0.00");
+});
+
+it("offers linear scale when selected zero-cost results cannot appear on a log axis", () => {
+	const html = render(<ArtificialAnalysisExplorer points={[{ id: "zero", model_id: "lab/model", model_name: "Model", organisation_id: null, organisation_name: null, variant: null, intelligence: 50, cost: 0 }]} />);
+	expect(html).not.toContain("No results available for this metric.");
+	expect(html).toMatch(/role="status"[^>]*><button[^>]*>Linear scale<\/button>/);
 });

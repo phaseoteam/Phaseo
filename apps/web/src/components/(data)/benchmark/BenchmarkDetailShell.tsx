@@ -22,6 +22,7 @@ export default async function BenchmarkDetailShell({
 	tocItems = [],
 }: BenchmarkDetailShellProps) {
 	const t = await getTranslations("Catalogue.benchmarks");
+	const tChart = await getTranslations("Common.ui.benchmarkChartCopy");
 	if (!benchmark) {
 		return (
 			<main className="flex min-h-screen flex-col">
@@ -64,7 +65,6 @@ export default async function BenchmarkDetailShell({
 	}
 	const artificialAnalysis = isArtificialAnalysisBenchmark(benchmark.id);
 	const epochCapabilitiesIndex = isEpochCapabilitiesIndex(benchmark.id);
-	const artificialAnalysisMetric = benchmark.name?.replace(/^Artificial Analysis\s*/i, "").trim() || benchmark.id;
 	const displayName = artificialAnalysis ? "Artificial Analysis" : epochCapabilitiesIndex ? "Epoch AI" : benchmark.name ?? benchmark.id;
 
 	return (
@@ -80,7 +80,7 @@ export default async function BenchmarkDetailShell({
 							<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
 								{displayName}
 							</h1>
-							<p className="mt-1.5 text-sm text-muted-foreground">{artificialAnalysis ? t("independentEvaluations", { metric: artificialAnalysisMetric }) : epochCapabilitiesIndex ? t("independentEvaluations", { metric: "Capabilities Index" }) : t("detailSubtitle")}</p>
+							<p className="mt-1.5 text-sm text-muted-foreground">{artificialAnalysis ? tChart("independentEvaluations") : epochCapabilitiesIndex ? t("independentEvaluations", { metric: "Capabilities Index" }) : t("detailSubtitle")}</p>
 						</div>
 					</div>
 					<BenchmarkEditButton benchmarkId={benchmark.id} />

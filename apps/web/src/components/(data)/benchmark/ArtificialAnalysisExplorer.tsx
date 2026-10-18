@@ -1,25 +1,51 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { useLocale, useTranslations } from "next-intl";
+import { Check, ChevronsUpDown, ListChecks, Search } from "lucide-react";
 import { CartesianGrid, ComposedChart, ResponsiveContainer, Scatter, Tooltip, XAxis, YAxis } from "recharts";
 import { Link } from "@/i18n/navigation";
 import { Logo } from "@/components/Logo";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { HorizontalRankingChart } from "@/components/(rankings)/HorizontalRankingChart";
 import { localizedBenchmarkConfiguration } from "@/i18n/benchmark-display";
 import { artificialAnalysisChartColour, formatArtificialAnalysisScore } from "@/lib/benchmarks/artificialAnalysis";
 import type { ExplorerMetric, ExplorerPoint } from "@/lib/benchmarks/artificialAnalysisExplorer";
+import { BenchmarkDisclosure } from "./BenchmarkDisclosure";
 
 const views = ["cost-intelligence", "intelligence", "coding", "agentic", "cost"] as const;
 const scales = ["log", "linear"] as const;
+const metricKeys = ["intelligence", "coding", "agentic", "cost"] as const;
+const DEFAULT_MODELS = 10;
+const ALL_CONFIGURATIONS = "all";
 type View = typeof views[number];
 
-export default function ArtificialAnalysisExplorer({ points, initialView = "cost-intelligence" }: { points: ExplorerPoint[]; initialView?: View }) {
+const axisTick = { fontSize: 11, fill: "var(--muted-foreground)" };
+const axisLabel = { fontSize: 12, fill: "var(--muted-foreground)" };
+
+/** 1–2–5 ticks keep log-scale cost axes readable instead of recharts' arbitrary data-derived values. */
+function logTicks(values: number[]) {
+	const positive = values.filter((value) => value > 0);
+	if (!positive.length) return undefined;
+	const min = Math.min(...positive);
+	const max = Math.max(...positive);
+	const steps: number[] = [];
+	for (let exponent = Math.floor(Math.log10(min)); exponent <= Math.ceil(Math.log10(max)); exponent++) for (const step of [1, 2, 5]) steps.push(Number((step * 10 ** exponent).toPrecision(1)));
+	const lower = steps.filter((value) => value <= min).at(-1) ?? steps[0];
+	const upper = steps.find((value) => value >= max) ?? steps.at(-1)!;
+	const ticks = steps.filter((value) => value >= lower && value <= upper);
+	return ticks.length > 1 ? ticks : undefined;
+}
+
+export default function ArtificialAnalysisExplorer({ points, initialView = "cost-intelligence", footer }: { points: ExplorerPoint[]; initialView?: View; footer?: ReactNode }) {
 	const tx = useTranslations();
 	const locale = useLocale();
 	const [search, setSearch] = useState("");
+	const [pickerOpen, setPickerOpen] = useState(false);
 	const [filters, setFilters] = useQueryStates({
 		aaView: parseAsStringLiteral(views).withDefault(initialView),
 		aaScale: parseAsStringLiteral(scales).withDefault("log"),
@@ -27,11 +53,14 @@ export default function ArtificialAnalysisExplorer({ points, initialView = "cost
 		aaEffort: parseAsString.withDefault(""),
 	}, { shallow: true, scroll: false });
 	const metricLabel = (metric: ExplorerMetric) => tx(`Catalogue.rankings.benchmarkMetrics.${metric}`);
+	const viewLabel = (view: View) => view === "cost-intelligence" ? `${metricLabel("cost")} × ${metricLabel("intelligence")}` : metricLabel(view);
 	const format = (metric: ExplorerMetric, score: number) => formatArtificialAnalysisScore(metric === "cost" ? "aa-intelligence-index-cost-v4" : "aa-intelligence-index-v4", score, locale);
-	const configuration = (variant: string | null) => localizedBenchmarkConfiguration(variant, tx);
+	const compactCost = new Intl.NumberFormat(locale, { style: "currency", currency: "USD", currencyDisplay: "narrowSymbol", notation: "compact", maximumFractionDigits: 1 });
+	const configuration = (point: Pick<ExplorerPoint, "variant" | "configuration_label">) => point.configuration_label?.match(/\(([^)]+)\)$/)?.[1] ?? localizedBenchmarkConfiguration(point.variant, tx);
 	const scatter = filters.aaView === "cost-intelligence";
 	const metric: ExplorerMetric = scatter ? "intelligence" : filters.aaView as ExplorerMetric;
-	const title = scatter ? `${metricLabel("cost")} × ${metricLabel("intelligence")}` : metricLabel(metric);
+	const logScale = scatter && filters.aaScale === "log";
+
 	const models = useMemo(() => {
 		const map = new Map<string, ExplorerPoint>();
 		for (const point of points) {
@@ -40,58 +69,113 @@ export default function ArtificialAnalysisExplorer({ points, initialView = "cost
 		}
 		return [...map.values()].sort((a, b) => (b.intelligence ?? -Infinity) - (a.intelligence ?? -Infinity) || a.model_name.localeCompare(b.model_name));
 	}, [points]);
-	const defaultModels = models.filter((model) => points.some((point) => point.model_id === model.model_id && point.cost !== undefined && point.intelligence !== undefined)).slice(0, 10).map((model) => model.model_id);
-	const selected = new Set(filters.aaModels ?? (defaultModels.length ? defaultModels : models.slice(0, 10).map((model) => model.model_id)));
-	const variants = [...new Set(points.map((point) => point.variant ?? ""))].sort();
-	const visible = points.filter((point) => selected.has(point.model_id) && (!filters.aaEffort || (point.variant ?? "default") === filters.aaEffort));
-	const plotted = visible.filter((point) => point[metric] !== undefined && (!scatter || (point.cost !== undefined && (filters.aaScale !== "log" || point.cost > 0))));
+	const defaultModels = models.filter((model) => points.some((point) => point.model_id === model.model_id && point.cost !== undefined && point.intelligence !== undefined)).slice(0, DEFAULT_MODELS).map((model) => model.model_id);
+	const selected = new Set(filters.aaModels ?? (defaultModels.length ? defaultModels : models.slice(0, DEFAULT_MODELS).map((model) => model.model_id)));
+	const variants = [...new Set(points.map((point) => point.variant || "default"))].sort();
+	const visible = points.filter((point) => selected.has(point.model_id) && (!filters.aaEffort || (point.variant || "default") === filters.aaEffort));
+	const plotted = visible.filter((point) => point[metric] !== undefined && (!scatter || (point.cost !== undefined && (!logScale || point.cost > 0))));
 	const rows = [...plotted].sort((a, b) => metric === "cost" ? a.cost! - b.cost! : b[metric]! - a[metric]!);
-	const colour = (point: ExplorerPoint) => artificialAnalysisChartColour(point.organisation_id, point.organisation_colour);
+	const colour = (point: ExplorerPoint) => {
+		const brand = artificialAnalysisChartColour(point.organisation_id, point.organisation_colour);
+		const channels = [1, 3, 5].map((offset) => Number.parseInt(brand.slice(offset, offset + 2), 16));
+		return Math.max(...channels) < 96 && Math.max(...channels) - Math.min(...channels) < 12 ? "var(--foreground)" : brand;
+	};
 	const series = models.filter((model) => selected.has(model.model_id)).map((model) => ({ model, points: plotted.filter((point) => point.model_id === model.model_id).sort((a, b) => (a.cost ?? 0) - (b.cost ?? 0)) })).filter((item) => item.points.length);
-	const costAxis = tx("Catalogue.rankings.intelligenceValue.evaluationCostUsd");
-	const scoreAxis = metricLabel(metric);
-	const logExcluded = scatter && filters.aaScale === "log" && visible.some((point) => point.cost === 0 && point.intelligence !== undefined);
+	const costTicks = logScale ? logTicks(plotted.map((point) => point.cost!)) : undefined;
+	const logExcluded = logScale && visible.some((point) => point.cost === 0 && point.intelligence !== undefined);
+	const caption = scatter || metric === "cost" ? tx("Catalogue.benchmarks.metricDescriptions.cost") : tx("Catalogue.compare.higherIsBetter");
+	const pickerOptions = models.filter((model) => `${model.model_name} ${model.organisation_name ?? ""}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
+	const toggleModel = (modelId: string) => {
+		const next = new Set(selected);
+		if (next.has(modelId)) next.delete(modelId);
+		else next.add(modelId);
+		void setFilters({ aaModels: [...next] });
+	};
 
-	return <section id="comparisons" className="scroll-mt-24 overflow-hidden rounded-xl border" aria-label={tx("Catalogue.benchmarks.tocIndexComparisons")}>
-		<div className="flex flex-wrap items-center gap-1 border-b bg-muted/30 p-2" aria-label={tx("Catalogue.benchmarks.tocIndexComparisons")}>
-			{views.map((view) => <Button key={view} variant={filters.aaView === view ? "secondary" : "ghost"} size="sm" aria-pressed={filters.aaView === view} onClick={() => void setFilters({ aaView: view })}>{view === "cost-intelligence" ? `${metricLabel("cost")} × ${metricLabel("intelligence")}` : metricLabel(view)}</Button>)}
+	return <section id="comparisons" className="scroll-mt-24" aria-labelledby="aa-explorer-title">
+		<h2 id="aa-explorer-title" className="sr-only">{tx("Catalogue.benchmarks.tocIndexComparisons")}</h2>
+		<div className="flex gap-6 overflow-x-auto border-b" role="group" aria-label={tx("Catalogue.rankings.benchmarkMetric")}>
+			{views.map((view) => <button key={view} type="button" aria-pressed={filters.aaView === view} onClick={() => void setFilters({ aaView: view })} className={`shrink-0 border-b-2 py-3 text-sm transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${filters.aaView === view ? "border-foreground font-semibold" : "border-transparent text-muted-foreground"}`}>{viewLabel(view)}</button>)}
 		</div>
-		<div className="grid lg:grid-cols-[minmax(0,1fr)_250px]">
-			<div className="min-w-0 p-4 sm:p-6">
-				<div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-					<div><h2 className="font-semibold">{title}</h2><p className="mt-1 text-xs text-muted-foreground">{scatter || metric === "cost" ? tx("Catalogue.benchmarks.metricDescriptions.cost") : tx("Catalogue.compare.higherIsBetter")}</p></div>
-					{scatter ? <div className="flex gap-1">{scales.map((scale) => <Button key={scale} size="sm" variant={filters.aaScale === scale ? "secondary" : "ghost"} aria-pressed={filters.aaScale === scale} onClick={() => void setFilters({ aaScale: scale })}>{tx(`Catalogue.compare.${scale === "log" ? "logScale" : "linearScale"}`)}</Button>)}</div> : null}
-				</div>
-				{plotted.length ? <div className="h-[360px] sm:h-[min(55vh,560px)] sm:min-h-[360px]" role="img" aria-label={title}>
-					<ResponsiveContainer width="100%" height="100%">
-						<ComposedChart data={scatter ? undefined : rows.map((row, index) => ({ ...row, position: index + 1 }))} margin={{ top: 16, right: 24, bottom: 36, left: 10 }}>
-							<CartesianGrid stroke="var(--border)" strokeDasharray="2 5" vertical={false} />
-							<XAxis type="number" dataKey={scatter ? "cost" : "position"} scale={scatter && filters.aaScale === "log" ? "log" : "auto"} domain={scatter && filters.aaScale === "log" ? ["auto", "auto"] : [0, "auto"]} tick={{ fontSize: 11 }} tickFormatter={(value: number) => scatter ? format("cost", value) : String(value)} label={{ value: scatter ? costAxis : tx("Site.homeQuickstart.rank"), position: "bottom", offset: 16, fontSize: 12 }} />
-							<YAxis type="number" dataKey={metric} domain={[0, "auto"]} tick={{ fontSize: 11 }} tickFormatter={(value: number) => format(metric, value)} width={metric === "cost" ? 80 : 45} label={{ value: scoreAxis, angle: -90, position: "insideLeft", style: { textAnchor: "middle", fontSize: 12 } }} />
-							<Tooltip shared={false} content={({ active, payload }) => {
-								const point = payload?.[0]?.payload as ExplorerPoint | undefined;
-								return active && point ? <div className="max-w-80 rounded-lg border bg-popover p-3 text-sm text-popover-foreground shadow-md"><p className="font-semibold">{point.model_name}</p><p className="mb-2 text-xs text-muted-foreground">{point.configuration_label ?? configuration(point.variant)}</p>{(["intelligence", "coding", "agentic", "cost"] as const).map((key) => point[key] === undefined ? null : <p key={key} className="flex justify-between gap-6"><span>{metricLabel(key)}</span><span className="font-mono tabular-nums">{format(key, point[key])}</span></p>)}</div> : null;
-							}} />
-							{scatter ? series.map(({ model, points: modelPoints }) => <Scatter key={model.model_id} name={model.model_name} data={modelPoints} fill={colour(model)} line={{ stroke: colour(model), strokeWidth: 1.5 }} lineType="joint" lineJointType="linear" isAnimationActive={false} />) : <Scatter data={rows.map((row, index) => ({ ...row, position: index + 1 }))} fill="var(--primary)" isAnimationActive={false} />}
-						</ComposedChart>
-					</ResponsiveContainer>
-				</div> : <p role="status" className="flex min-h-80 items-center justify-center text-sm text-muted-foreground">{tx("Common.ui.benchmarkChartCopy.noResultsAvailableForThisMetric")}</p>}
-				<div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">{series.filter((item) => item.points.length).map(({ model }) => <Link key={model.model_id} href={`/models/${model.model_id}`} className="flex items-center gap-2 text-xs hover:underline"><span className="size-2 rounded-full" style={{ background: colour(model) }} /><span>{model.model_name}</span></Link>)}</div>
-				{logExcluded ? <p className="mt-4 text-xs text-muted-foreground">{tx("Catalogue.compare.linearScale")}: {tx("Catalogue.rankings.benchmarkMetrics.cost")} = $0</p> : null}
+
+		<div className="flex flex-wrap items-center justify-between gap-3 py-4">
+			<p className="text-sm text-muted-foreground">{caption}</p>
+			<div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+				{scatter ? <div role="group" aria-label={tx("Catalogue.compare.logScale")} className="flex gap-1">
+					{scales.map((scale) => <Button key={scale} size="sm" variant={filters.aaScale === scale ? "secondary" : "ghost"} aria-pressed={filters.aaScale === scale} onClick={() => void setFilters({ aaScale: scale })}>{tx(`Catalogue.compare.${scale === "log" ? "logScale" : "linearScale"}`)}</Button>)}
+				</div> : null}
+				{variants.length > 1 ? <Select value={filters.aaEffort || ALL_CONFIGURATIONS} onValueChange={(value: string) => void setFilters({ aaEffort: value === ALL_CONFIGURATIONS ? "" : value })}>
+					<SelectTrigger size="sm" aria-label={tx("Common.ui.benchmarkChartCopy.modelConfiguration")} className="min-w-36 flex-1 sm:flex-none">
+						<SelectValue>{filters.aaEffort ? localizedBenchmarkConfiguration(filters.aaEffort, tx) : tx("Catalogue.benchmarks.allConfigurations")}</SelectValue>
+					</SelectTrigger>
+					<SelectContent align="end" alignItemWithTrigger={false}>
+						<SelectItem value={ALL_CONFIGURATIONS}>{tx("Catalogue.benchmarks.allConfigurations")}</SelectItem>
+						{variants.map((variant) => <SelectItem key={variant} value={variant}>{localizedBenchmarkConfiguration(variant, tx)}</SelectItem>)}
+					</SelectContent>
+				</Select> : null}
+				<Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+					<PopoverTrigger asChild><Button variant="outline" size="sm" className="flex-1 justify-between gap-3 sm:w-48 sm:flex-none"><span>{tx("Common.nav.models")}</span><span className="ml-auto tabular-nums text-muted-foreground">{selected.size.toLocaleString(locale)} / {models.length.toLocaleString(locale)}</span><ChevronsUpDown className="size-3.5 text-muted-foreground" /></Button></PopoverTrigger>
+					<PopoverContent initialFocus={false} align="end" className="w-[min(22rem,calc(100vw-2rem))] gap-0 p-0">
+						<div className="relative p-2"><Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input aria-label={tx("Catalogue.rankings.searchModels")} value={search} onChange={(event) => setSearch(event.target.value)} placeholder={tx("Catalogue.benchmarks.filterModels")} className="h-8 pl-8" /></div>
+						<div className="max-h-80 overflow-y-auto overscroll-contain p-1" role="group" aria-label={tx("Common.nav.models")}>
+							{!pickerOptions.length ? <p className="py-6 text-center text-sm text-muted-foreground">{tx("Catalogue.rankings.noSearchMatches")}</p> : null}
+							{pickerOptions.map((model) => <button key={model.model_id} type="button" role="checkbox" aria-checked={selected.has(model.model_id)} onClick={() => toggleModel(model.model_id)} className="flex min-h-8 w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-sm hover:bg-muted focus-visible:bg-muted focus-visible:outline-none">
+								<span className="relative size-5 shrink-0 overflow-hidden rounded bg-muted"><Logo id={model.organisation_id ?? model.model_id} alt="" fill className="object-contain p-0.5" /></span>
+								<span className="min-w-0 flex-1 truncate">{model.model_name}</span>
+								<span aria-hidden="true" className="size-2 shrink-0 rounded-full" style={{ background: colour(model) }} />
+								<Check aria-hidden="true" className={`size-4 shrink-0 ${selected.has(model.model_id) ? "" : "invisible"}`} />
+							</button>)}
+						</div>
+						<div className="grid grid-cols-2 gap-1.5 border-t p-2">
+							<Button variant="ghost" size="sm" className="h-8 bg-muted/40 text-xs" onClick={() => void setFilters({ aaModels: null })}>{tx("Common.ui.rankings.showTop", { count: DEFAULT_MODELS })}</Button>
+							<Button variant="ghost" size="sm" className="h-8 justify-between bg-muted/40 px-2.5 text-xs" onClick={() => void setFilters({ aaModels: models.map((model) => model.model_id) })}>{tx("Common.ui.benchmarkChartCopy.showAllModels")}<ListChecks className="size-3.5" /></Button>
+						</div>
+					</PopoverContent>
+				</Popover>
 			</div>
-			<aside className="border-t bg-muted/15 lg:border-l lg:border-t-0">
-				<div className="space-y-3 border-b p-4">
-					<div className="flex items-center justify-between"><h3 className="text-sm font-semibold">{tx("Common.nav.models")}</h3><span className="font-mono text-xs text-muted-foreground">{selected.size} / {models.length}</span></div>
-					<Input aria-label={tx("Catalogue.rankings.intelligenceValue.searchConfigurations")} placeholder={tx("Catalogue.benchmarks.filterModels")} value={search} onChange={(event) => setSearch(event.target.value)} />
-					<select aria-label={tx("Common.ui.benchmarkChartCopy.modelConfiguration")} value={filters.aaEffort} onChange={(event) => void setFilters({ aaEffort: event.target.value })} className="h-8 w-full rounded-md border bg-background px-2 text-xs"><option value="">{tx("Catalogue.benchmarks.allConfigurations")}</option>{variants.map((variant) => <option key={variant} value={variant || "default"}>{configuration(variant)}</option>)}</select>
-					<Button variant="ghost" size="sm" className="w-full" onClick={() => void setFilters({ aaModels: selected.size === models.length ? null : models.map((model) => model.model_id) })}>{selected.size === models.length ? tx("Common.ui.rankings.showTop", { count: 10 }) : tx("Common.ui.benchmarkChartCopy.showAllModels")}</Button>
-				</div>
-				<div className="max-h-64 overflow-y-auto p-2 lg:max-h-[520px]">{models.filter((model) => `${model.model_name} ${model.organisation_name ?? ""}`.toLocaleLowerCase().includes(search.toLocaleLowerCase())).map((model) => <label key={model.model_id} className="flex cursor-pointer items-center gap-2 rounded-md p-2 text-xs hover:bg-muted"><input type="checkbox" checked={selected.has(model.model_id)} onChange={() => { const next = new Set(selected); if (next.has(model.model_id)) next.delete(model.model_id); else next.add(model.model_id); void setFilters({ aaModels: [...next] }); }} className="accent-current" /><span className="relative size-4 shrink-0"><Logo id={model.organisation_id ?? model.model_id} alt="" fill className="object-contain" /></span><span className="min-w-0 flex-1 truncate">{model.model_name}</span><span className="size-1.5 shrink-0 rounded-full" style={{ background: colour(model) }} /></label>)}</div>
-			</aside>
 		</div>
-		<details className="border-t">
-			<summary className="cursor-pointer p-4 text-sm font-medium">{tx("Catalogue.rankings.intelligenceValue.evaluatedConfigurations")} · {plotted.length}</summary>
-			<div className="max-h-96 overflow-auto"><table className="w-full text-left text-xs"><caption className="sr-only">{title}</caption><thead className="sticky top-0 bg-background"><tr><th className="p-3">{tx("Catalogue.rankings.intelligenceValue.modelConfiguration")}</th>{(["intelligence", "coding", "agentic", "cost"] as const).map((key) => <th key={key} className="p-3 text-right">{metricLabel(key)}</th>)}</tr></thead><tbody>{rows.map((point) => <tr key={point.id} className="border-t"><th className="p-3 font-normal"><Link className="hover:underline" href={`/models/${point.model_id}`}>{point.model_name}</Link><span className="ml-2 text-muted-foreground">{configuration(point.variant)}</span></th>{(["intelligence", "coding", "agentic", "cost"] as const).map((key) => <td key={key} className="p-3 text-right font-mono tabular-nums">{point[key] === undefined ? "—" : format(key, point[key])}</td>)}</tr>)}</tbody></table></div>
-		</details>
+
+		{!plotted.length ? <div role="status" className="flex min-h-80 items-center justify-center border-y text-sm text-muted-foreground">{logExcluded ? <Button variant="outline" onClick={() => void setFilters({ aaScale: "linear" })}>{tx("Catalogue.compare.linearScale")}</Button> : selected.size ? tx("Common.ui.benchmarkChartCopy.noResultsAvailableForThisMetric") : tx("Common.ui.benchmarkChartCopy.selectModelsToCompare")}</div> : scatter ? <figure>
+			<div className="h-[340px] sm:h-[460px]" role="img" aria-label={viewLabel(filters.aaView)}>
+				<ResponsiveContainer width="100%" height="100%">
+					<ComposedChart margin={{ top: 12, right: 16, bottom: 28, left: 4 }}>
+						<CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
+						<XAxis type="number" dataKey="cost" scale={logScale ? "log" : "auto"} domain={costTicks ? [costTicks[0], costTicks.at(-1)!] : logScale ? ["auto", "auto"] : [0, "auto"]} ticks={costTicks} allowDataOverflow={false} tick={axisTick} tickLine={false} axisLine={{ stroke: "var(--border)" }} tickFormatter={(value: number) => compactCost.format(value)} label={{ value: tx("Catalogue.rankings.intelligenceValue.evaluationCostUsd"), position: "bottom", offset: 10, ...axisLabel }} />
+						<YAxis type="number" dataKey="intelligence" domain={[(min: number) => Math.max(0, Math.floor((min - 2) / 10) * 10), (max: number) => Math.ceil((max + 2) / 10) * 10]} allowDecimals={false} tick={axisTick} tickLine={false} axisLine={false} width={44} label={{ value: metricLabel("intelligence"), angle: -90, position: "insideLeft", style: { textAnchor: "middle", ...axisLabel } }} />
+						<Tooltip shared={false} cursor={{ strokeDasharray: "3 3" }} content={({ active, payload }) => {
+							const point = payload?.[0]?.payload as ExplorerPoint | undefined;
+							return active && point ? <div className="max-w-72 rounded-lg border bg-popover p-3 text-xs text-popover-foreground shadow-md">
+								<p className="font-semibold">{point.model_name}</p>
+								<p className="mb-2 text-muted-foreground">{configuration(point)}</p>
+								{metricKeys.map((key) => point[key] === undefined ? null : <p key={key} className="flex justify-between gap-6"><span className="text-muted-foreground">{metricLabel(key)}</span><span className="tabular-nums">{format(key, point[key])}</span></p>)}
+							</div> : null;
+						}} />
+						{series.map(({ model, points: modelPoints }) => <Scatter key={model.model_id} name={model.model_name} data={modelPoints} fill={colour(model)} stroke="var(--background)" strokeWidth={1} line={{ stroke: colour(model), strokeWidth: 1.5, strokeOpacity: 0.7 }} lineType="joint" lineJointType="linear" isAnimationActive={false} />)}
+					</ComposedChart>
+				</ResponsiveContainer>
+			</div>
+			<figcaption className="flex flex-wrap gap-x-4 gap-y-2 pt-2 text-xs">
+				{series.map(({ model }) => <Link key={model.model_id} href={`/models/${model.model_id}`} className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"><span aria-hidden="true" className="size-2 rounded-full" style={{ background: colour(model) }} />{model.model_name}</Link>)}
+			</figcaption>
+		</figure> : <HorizontalRankingChart lowerIsBetter={metric === "cost"} entries={rows.map((point) => ({ key: point.id, label: `${point.model_name} (${configuration(point)})`, value: point[metric]!, valueLabel: format(metric, point[metric]!), logoId: point.organisation_id ?? point.model_id }))} />}
+
+		{footer}
+
+		<BenchmarkDisclosure title={tx("Catalogue.rankings.intelligenceValue.evaluatedConfigurations")} count={rows.length.toLocaleString(locale)}>
+			<div className="max-h-[28rem] overflow-auto">
+				<table className="w-full text-left text-sm">
+					<caption className="sr-only">{viewLabel(filters.aaView)}</caption>
+					<thead className="sticky top-0 border-b bg-muted/30 text-xs text-muted-foreground backdrop-blur">
+						<tr><th scope="col" className="px-3 py-3 font-medium">{tx("Catalogue.rankings.intelligenceValue.modelConfiguration")}</th>{metricKeys.map((key) => <th key={key} scope="col" className="px-3 py-3 text-right font-medium">{metricLabel(key)}</th>)}</tr>
+					</thead>
+					<tbody className="divide-y">
+						{rows.map((point) => <tr key={point.id}>
+							<th scope="row" className="min-w-52 px-3 py-3 font-normal"><Link className="font-medium hover:underline" href={`/models/${point.model_id}`}>{point.model_name}</Link><p className="mt-0.5 text-xs text-muted-foreground">{configuration(point)}</p></th>
+							{metricKeys.map((key) => <td key={key} className="px-3 py-3 text-right tabular-nums">{point[key] === undefined ? "—" : format(key, point[key])}</td>)}
+						</tr>)}
+					</tbody>
+				</table>
+			</div>
+		</BenchmarkDisclosure>
 	</section>;
 }
