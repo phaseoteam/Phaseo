@@ -10,6 +10,7 @@ import { isIRNativeToolDefinition } from "@core/nativeTools";
 import { applyChatRequestQuirks, applyChatResponseQuirks } from "./chat-quirks-bridge";
 import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
+import { applyPromptCacheFieldPolicy, cacheMarkFields } from "./prompt-cache-policy";
 
 /**
  * Transform IR request to OpenAI Chat Completions format
@@ -99,7 +100,11 @@ export function irToOpenAIChat(
 				messages.push({
 					role: "tool",
 					tool_call_id: result.toolCallId,
-					content: result.content,
+					// A marked result is sent as a text part so the mark survives;
+					// the cache policy turns it back into a string where unsupported.
+					content: result.cacheControl
+						? [mapTextPartToOpenAI({ type: "text", text: result.content, cacheControl: result.cacheControl })]
+						: result.content,
 				});
 			}
 		}
@@ -291,6 +296,8 @@ export function irToOpenAIChat(
 		if (openAIOptions?.moderation !== undefined) request.moderation = openAIOptions.moderation;
 	}
 
+	applyPromptCacheFieldPolicy(request, { providerId, model, irModel: ir.model });
+
 	// Apply provider-specific request transformations after base params are set.
 	applyChatRequestQuirks({ ir, providerId, model, request });
 
@@ -313,6 +320,7 @@ function toOpenAIChatTool(tool: IRTool): any {
 			parameters: tool.parameters,
 			...(tool.strict !== undefined ? { strict: tool.strict } : {}),
 		},
+		...cacheMarkFields(tool.cacheControl),
 	};
 }
 
@@ -360,17 +368,13 @@ function mapIRContentToOpenAI(content: IRContentPart[]): any {
 				return {
 					type: "image_url",
 					image_url: { url: part.data, detail: part.detail },
-					...(part.cacheControl?.type === "prompt_cache_breakpoint"
-						? { prompt_cache_breakpoint: { mode: part.cacheControl.mode } }
-						: {}),
+					...cacheMarkFields(part.cacheControl),
 				};
 			} else {
 				return {
 					type: "image_url",
 					image_url: { url: `data:${part.mimeType || "image/jpeg"};base64,${part.data}` },
-					...(part.cacheControl?.type === "prompt_cache_breakpoint"
-						? { prompt_cache_breakpoint: { mode: part.cacheControl.mode } }
-						: {}),
+					...cacheMarkFields(part.cacheControl),
 				};
 			}
 		}

@@ -88,6 +88,7 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"prompt_cache_key",
 			"prompt_cache_retention",
 			"prompt_cache_options",
+			"cache_control",
 			"provider_options",
 			"providerOptions",
 			"web_search_options",
@@ -200,6 +201,7 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"prompt_cache_key",
 			"prompt_cache_retention",
 			"prompt_cache_options",
+			"cache_control",
 			"provider_options",
 			"providerOptions",
 			"modalities",
@@ -299,6 +301,7 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"tools",
 			"tool_choice",
 			"metadata",
+			"cache_control",
 			"service_tier",
 			"modalities",
 			"response_modalities",
@@ -343,6 +346,27 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 		},
 	},
 };
+
+/**
+ * Cache and identity hints. A provider that ignores or lacks one of these still
+ * serves the request correctly, so they never deprioritise or exclude a
+ * provider during routing. Executors and quirks strip them for upstreams that
+ * reject them.
+ */
+export const DROPPABLE_HINT_PARAMS: ReadonlySet<string> = new Set([
+	"prompt_cache_key",
+	"prompt_cache_retention",
+	"prompt_cache_options",
+	"safety_identifier",
+	"user",
+	"user_id",
+	"session_id",
+]);
+
+export function isDroppableHintParam(paramPath: string): boolean {
+	const root = paramPath.split(".", 1)[0] ?? paramPath;
+	return DROPPABLE_HINT_PARAMS.has(root);
+}
 
 const CAPABILITY_PARAM_ALIASES: Record<string, string[]> = {
 	max_tokens: ["max_tokens", "max_output_tokens", "max_completion_tokens"],

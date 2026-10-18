@@ -10368,6 +10368,7 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: サポートされていません。ゲートウェイはレスポンスを保存しないため、空でない値は 400 検証エラーで拒否されます。代わりに会話全体を input で送信してください。
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:

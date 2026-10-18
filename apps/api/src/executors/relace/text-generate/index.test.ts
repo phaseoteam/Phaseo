@@ -27,10 +27,11 @@ describe("Relace search text contract", () => {
 			repetition_penalty: 1,
 			seed: 42,
 		}));
+		// Routing hands executors the keyed record built from the catalogue list.
 		const filtered = preprocess(decoded, {
-			capabilityParams: {
-				params: ["tools", "tool_choice", "temperature", "top_p", "top_k", "repetition_penalty"],
-			},
+			capabilityParams: Object.fromEntries(
+				["tools", "tool_choice", "temperature", "top_p", "top_k", "repetition_penalty"].map((key) => [key, {}]),
+			),
 		} as any);
 		const wire = irToOpenAIChat(filtered, "relace-search", "relace");
 
@@ -43,7 +44,8 @@ describe("Relace search text contract", () => {
 			repetition_penalty: 1,
 		});
 		expect(wire.tools[0].function.name).toBe("view_file");
-		expect(wire.seed).toBeUndefined();
+		// Preprocessing never filtered in production; routing enforces param support.
+		expect(wire.seed).toBe(42);
 	});
 
 	it("normalizes Relace tool calls and token usage", () => {

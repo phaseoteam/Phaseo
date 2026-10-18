@@ -11,6 +11,7 @@ import { fetchUpstream, UpstreamHeadersTimeoutError } from "@executors/_shared/t
 import type { IRChatResponse } from "@core/ir";
 import { resolveCacheTokenUsage, uncachedInputTokens } from "@core/cache-usage";
 import { irToOpenAIResponses, openAIResponsesToIR } from "./transform";
+import { providerAcceptsStreamOptions } from "./prompt-cache-policy";
 import { irToOpenAIChat, openAIChatToIR } from "./transform-chat";
 import {
 	openAICompatHeaders,
@@ -113,7 +114,15 @@ export async function executeOpenAIWire(
 			...requestPayload,
 			stream: upstreamStream,
 		};
-		if (targetRoute === "chat" && upstreamStream && args.providerId !== "ai21" && args.providerId !== "mancer") {
+		// Never re-add stream_options for providers whose profile rejects it
+		// (their quirks have already removed any client value).
+		if (
+			targetRoute === "chat" &&
+			upstreamStream &&
+			args.providerId !== "ai21" &&
+			args.providerId !== "mancer" &&
+			providerAcceptsStreamOptions(args.providerId)
+		) {
 			payload.stream_options = {
 				...(payload.stream_options ?? {}),
 				include_usage: true,

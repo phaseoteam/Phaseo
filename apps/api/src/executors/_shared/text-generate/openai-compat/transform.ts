@@ -9,6 +9,7 @@ import { isIRNativeToolDefinition } from "@core/nativeTools";
 import { applyResponsesRequestQuirks, applyResponsesResponseQuirks } from "./responses-quirks";
 import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
+import { applyPromptCacheFieldPolicy, cacheMarkFields } from "./prompt-cache-policy";
 import { normalizeProviderId } from "@/lib/config/providerAliases";
 
 function readResponseToolCallName(item: any): string | null {
@@ -221,7 +222,11 @@ export function irToOpenAIResponses(
 				inputItems.push({
 					type: result.type === "custom" ? "custom_tool_call_output" : "function_call_output",
 					call_id: result.toolCallId,
-					output: result.content,
+					// OpenAI accepts a breakpoint on an input_text block inside
+					// function_call_output; the cache policy collapses it elsewhere.
+					output: result.cacheControl
+						? [mapContentPart({ type: "text", text: result.content, cacheControl: result.cacheControl })]
+						: result.content,
 				});
 			}
 		}
@@ -404,6 +409,8 @@ export function irToOpenAIResponses(
 	if (ir.userId) request.user = ir.userId;
 	if (ir.metadata) request.metadata = ir.metadata;
 
+	applyPromptCacheFieldPolicy(request, { providerId: actualProviderId ?? providerId, model: providerModelSlug, irModel: ir.model });
+
 	// Apply provider-specific request transformations (e.g., Z.AI thinking mode)
 	applyResponsesRequestQuirks({
 		ir,
@@ -449,6 +456,7 @@ function toOpenAIResponsesTool(tool: IRTool, useOpenAIShape: boolean, providerId
 			parameters: tool.parameters,
 			...(tool.strict !== undefined ? { strict: tool.strict } : {}),
 			...(supportsAsync && tool.async !== undefined ? { async: tool.async } : {}),
+			...cacheMarkFields(tool.cacheControl),
 		};
 	}
 
@@ -460,6 +468,7 @@ function toOpenAIResponsesTool(tool: IRTool, useOpenAIShape: boolean, providerId
 			parameters: tool.parameters,
 			...(tool.strict !== undefined ? { strict: tool.strict } : {}),
 		},
+		...cacheMarkFields(tool.cacheControl),
 	};
 }
 
@@ -485,15 +494,12 @@ function mapContentPart(part: IRContentPart): any {
 	}
 
         if (part.type === "image") {
-			const promptCacheBreakpoint = part.cacheControl?.type === "prompt_cache_breakpoint"
-				? { mode: part.cacheControl.mode }
-				: undefined;
                 if (part.source === "url") {
                         return {
                                 type: "input_image",
                                 image_url: part.data,
                                 detail: part.detail,
-								...(promptCacheBreakpoint ? { prompt_cache_breakpoint: promptCacheBreakpoint } : {}),
+								...cacheMarkFields(part.cacheControl),
                         };
                 } else {
                         const dataUrl = part.data.startsWith("data:")
@@ -503,7 +509,7 @@ function mapContentPart(part: IRContentPart): any {
                                 type: "input_image",
                                 image_url: dataUrl,
                                 detail: part.detail,
-								...(promptCacheBreakpoint ? { prompt_cache_breakpoint: promptCacheBreakpoint } : {}),
+								...cacheMarkFields(part.cacheControl),
                         };
                 }
         }
