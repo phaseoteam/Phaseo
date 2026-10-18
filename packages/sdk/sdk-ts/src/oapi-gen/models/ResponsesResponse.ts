@@ -39,8 +39,11 @@ export interface ResponsesResponse {
           type: "output_audio";
         }
     )[];
+    encrypted_content?: string;
+    id?: string;
     name?: string;
     role?: string;
+    summary?: {}[];
     type?: string;
   }[];
   output_items?: {
@@ -70,8 +73,11 @@ export interface ResponsesResponse {
           type: "output_audio";
         }
     )[];
+    encrypted_content?: string;
+    id?: string;
     name?: string;
     role?: string;
+    summary?: {}[];
     type?: string;
   }[];
   pricing_lines?: {

@@ -61,6 +61,7 @@
     "models/ChatCompletionsResponse.ts",
     "models/ChatImageOutputPart.ts",
     "models/ChatMessage.ts",
+    "models/ChatReasoningDetail.ts",
     "models/CreditsResponse.ts",
     "models/DataContributionCategories.ts",
     "models/DataContributionClassifier.ts",

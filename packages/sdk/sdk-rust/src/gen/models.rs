@@ -605,9 +605,22 @@ pub struct ChatMessage {
 	pub content: Option<String>,
 	pub images: Option<Vec<HashMap<String, String>>>,
 	pub name: Option<String>,
+	pub reasoning_content: Option<String>,
+	pub reasoning_details: Option<Vec<HashMap<String, String>>>,
 	pub role: String,
 	pub tool_call_id: Option<String>,
 	pub tool_calls: Option<Vec<HashMap<String, String>>>,
+}
+
+pub struct ChatReasoningDetail {
+	pub data: Option<String>,
+	pub format: Option<String>,
+	pub id: Option<String>,
+	pub index: Option<i64>,
+	pub signature: Option<String>,
+	pub summary: Option<String>,
+	pub text: Option<String>,
+	pub r#type: String,
 }
 
 pub struct CreditsResponse {
@@ -2802,7 +2815,10 @@ pub struct RerankResult {
 
 pub struct ResponsesInputItem {
 	pub content: Option<String>,
+	pub encrypted_content: Option<String>,
+	pub id: Option<String>,
 	pub role: Option<String>,
+	pub summary: Option<Vec<HashMap<String, String>>>,
 	pub r#type: Option<String>,
 }
 
@@ -2827,8 +2843,11 @@ pub struct ResponsesOutputItem {
 	pub arguments: Option<String>,
 	pub call_id: Option<String>,
 	pub content: Option<Vec<String>>,
+	pub encrypted_content: Option<String>,
+	pub id: Option<String>,
 	pub name: Option<String>,
 	pub role: Option<String>,
+	pub summary: Option<Vec<HashMap<String, String>>>,
 	pub r#type: Option<String>,
 }
 

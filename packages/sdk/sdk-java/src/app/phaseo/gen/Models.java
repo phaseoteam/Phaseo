@@ -603,9 +603,22 @@ public final class Models {
 		public Object content;
 		public java.util.List<Object> images;
 		public String name;
+		public String reasoning_content;
+		public java.util.List<Object> reasoning_details;
 		public Object role;
 		public String tool_call_id;
 		public java.util.List<Object> tool_calls;
+	}
+
+	public static class ChatReasoningDetail {
+		public String data;
+		public String format;
+		public String id;
+		public Integer index;
+		public String signature;
+		public String summary;
+		public String text;
+		public Object type;
 	}
 
 	public static class CreditsResponse {
@@ -2823,7 +2836,10 @@ public final class Models {
 
 	public static class ResponsesInputItem {
 		public Object content;
+		public String encrypted_content;
+		public String id;
 		public Object role;
+		public java.util.List<Object> summary;
 		public String type;
 	}
 
@@ -2849,8 +2865,11 @@ public final class Models {
 		public String arguments;
 		public String call_id;
 		public java.util.List<Object> content;
+		public String encrypted_content;
+		public String id;
 		public String name;
 		public String role;
+		public java.util.List<Object> summary;
 		public String type;
 	}
 

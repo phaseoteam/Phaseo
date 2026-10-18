@@ -9574,8 +9574,39 @@ components:
             $ref: '#/components/schemas/ChatAudioOutputPart'
         tool_call_id:
           type: string
+        reasoning_content:
+          type: string
+        reasoning_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatReasoningDetail'
       discriminator:
         propertyName: role
+    ChatReasoningDetail:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - reasoning.text
+            - reasoning.summary
+            - reasoning.encrypted
+        id:
+          type: string
+        index:
+          type: integer
+        format:
+          type: string
+        text:
+          type: string
+        summary:
+          type: string
+        signature:
+          type: string
+        data:
+          type: string
     MessageContentPart:
       oneOf:
         - $ref: '#/components/schemas/TextContentPart'
@@ -10504,6 +10535,8 @@ components:
       properties:
         type:
           type: string
+        id:
+          type: string
         role:
           type: string
           enum:
@@ -10518,11 +10551,19 @@ components:
               items:
                 type: object
             - type: object
+        summary:
+          type: array
+          items:
+            type: object
+        encrypted_content:
+          type: string
     ResponsesOutputItem:
       type: object
       description: Ausgabeelement der Responses API.
       properties:
         type:
+          type: string
+        id:
           type: string
         role:
           type: string
@@ -10535,6 +10576,12 @@ components:
         name:
           type: string
         arguments:
+          type: string
+        summary:
+          type: array
+          items:
+            type: object
+        encrypted_content:
           type: string
     ResponsesOutputContentPart:
       oneOf:

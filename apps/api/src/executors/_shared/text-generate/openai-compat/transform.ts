@@ -600,12 +600,22 @@ export function ensureEncryptedReasoningInclude(request: any): void {
 
 /** Whether a route's capability params describe a reasoning model. */
 export function capabilitySupportsReasoning(capabilityParams?: Record<string, any> | null): boolean {
-	const raw = capabilityParams?.request?.allowlist ?? capabilityParams?.request?.params ?? capabilityParams?.params;
+	if (!capabilityParams || typeof capabilityParams !== "object") return false;
 	const isReasoningKey = (key: unknown) => typeof key === "string"
 		&& (key === "reasoning" || key.startsWith("reasoning.") || key === "reasoning_effort");
-	if (Array.isArray(raw)) return raw.some(isReasoningKey);
-	if (raw && typeof raw === "object") return Object.keys(raw).some(isReasoningKey);
-	return false;
+	const declares = (raw: unknown): boolean => {
+		if (Array.isArray(raw)) return raw.some(isReasoningKey);
+		if (raw && typeof raw === "object") {
+			return Object.entries(raw).some(([key, value]) => isReasoningKey(key) && value !== false && value != null);
+		}
+		return false;
+	};
+	// Catalogue capabilities keep params as top-level keys (`reasoning`, `reasoning.effort`);
+	// some routes nest them under request.allowlist, request.params or params.
+	return declares(capabilityParams.request?.allowlist)
+		|| declares(capabilityParams.request?.params)
+		|| declares(capabilityParams.params)
+		|| declares(capabilityParams);
 }
 
 function mapAssistantContentPart(part: IRContentPart): any {

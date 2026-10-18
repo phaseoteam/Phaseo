@@ -15,6 +15,7 @@ vi.mock("@/runtime/env", async (importOriginal) => {
 
 import { bufferStreamToIR, resolveStreamForProtocol } from "../index";
 import { transformChatStream } from "../stream-transforms";
+import { sealReasoningState } from "@core/reasoning-state";
 import { executeAnthropic } from "../../../../anthropic/text-generate";
 import { execute as executeBedrock } from "../../../../amazon-bedrock/text-generate";
 import { passthroughWithPricing } from "@pipeline/after/streaming";
@@ -425,5 +426,46 @@ describe("stream adapter golden output", () => {
 		}
 		for (const output of outputs.slice(1)) expect(output).toBe(outputs[0]);
 		await expect(outputs[0]).toMatchFileSnapshot(`${SNAPSHOT_DIR}/consume-${name}.json`);
+	});
+});
+
+describe("chat-backed Responses stream with a Gemini function-call signature", () => {
+	it("gives the signature item its own index with an added/done pair and keeps indexes consistent", async () => {
+		const signature = sealReasoningState({
+			format: "google-gemini-v1",
+			kind: "signature",
+			value: "CtUBAdHtim9",
+			model: "gemini-3.6-flash",
+			provider: "google-ai-studio",
+			callId: "call_1",
+		});
+		const fixture = [
+			chunk([{ index: 0, delta: { role: "assistant", content: "" }, finish_reason: null }]),
+			chunk([{ index: 0, delta: { tool_calls: [{ index: 0, id: "call_1", type: "function", function: { name: "get_weather", arguments: "{\"city\":\"Paris\"}" } }] }, finish_reason: null }]),
+			chunk([{ index: 0, delta: { reasoning_details: [{ type: "reasoning.encrypted", id: "call_1", format: "google-gemini-v1", data: signature }] }, finish_reason: "tool_calls" }]),
+			chunk([], { usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 } }),
+			"data: [DONE]\n\n",
+		].join("");
+		const text = await readText(resolveStreamForProtocol(
+			new Response(bodyFrom(fixture, 0)),
+			baseArgs({ protocol: "openai.responses", endpoint: "responses", providerId: "google-ai-studio" }),
+			"chat",
+		));
+		const events = text.split("\n\n").filter(Boolean).map((block) => ({
+			event: block.split("\n").find((line) => line.startsWith("event:"))?.slice(6).trim(),
+			data: JSON.parse(block.split("\n").find((line) => line.startsWith("data:"))!.slice(5)),
+		}));
+		const added = events.filter((entry) => entry.event === "response.output_item.added");
+		const done = events.filter((entry) => entry.event === "response.output_item.done");
+		const callIndex = added.find((entry) => entry.data.item.type === "function_call")!.data.output_index;
+		const reasoningAdded = added.find((entry) => entry.data.item.type === "reasoning");
+		const reasoningDone = done.find((entry) => entry.data.item.type === "reasoning");
+		expect(reasoningAdded).toBeDefined();
+		expect(reasoningDone!.data.output_index).toBe(reasoningAdded!.data.output_index);
+		expect(reasoningDone!.data.output_index).not.toBe(callIndex);
+		const completed = events.find((entry) => entry.event === "response.completed")!.data.response;
+		expect(completed.output[callIndex].type).toBe("function_call");
+		expect(completed.output[reasoningDone!.data.output_index].type).toBe("reasoning");
+		expect(completed.output[reasoningDone!.data.output_index].encrypted_content).toBe(signature);
 	});
 });

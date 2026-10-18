@@ -56,6 +56,7 @@ export type { ChatCompletionsRequest } from "./ChatCompletionsRequest.js";
 export type { ChatCompletionsResponse } from "./ChatCompletionsResponse.js";
 export type { ChatImageOutputPart } from "./ChatImageOutputPart.js";
 export type { ChatMessage } from "./ChatMessage.js";
+export type { ChatReasoningDetail } from "./ChatReasoningDetail.js";
 export type { CreditsResponse } from "./CreditsResponse.js";
 export type { DataContributionCategories } from "./DataContributionCategories.js";
 export type { DataContributionClassifier } from "./DataContributionClassifier.js";

@@ -822,9 +822,15 @@ export function transformChatStreamToResponses(
 							Array.isArray(encoded.output) && encoded.output.length > 0
 								? encoded.output
 								: buildResponsesOutputFromState(choiceStates, args.requestId);
-						for (const [outputIndex, item] of output.entries()) {
+						const indexed = assignStreamedOutputIndexes(output, choiceStates, () => nextOutputIndex++);
+						for (const { index, item, streamed } of indexed) {
 							if ((item as any)?.type !== "reasoning" || !(item as any).encrypted_content) continue;
-							await emitEvent("response.output_item.done", { output_index: outputIndex, item }, controller);
+							// Items the stream never announced (for example a Gemini function-call
+							// signature) get a full added/done pair at a fresh index.
+							if (!streamed) {
+								await emitEvent("response.output_item.added", { output_index: index, item }, controller);
+							}
+							await emitEvent("response.output_item.done", { output_index: index, item }, controller);
 						}
 						const response = {
 							id: args.requestId,
@@ -833,7 +839,7 @@ export function transformChatStreamToResponses(
 							status: completion.status,
 							...(completion.incompleteDetails ? { incomplete_details: completion.incompleteDetails } : {}),
 							model: ir.model ?? model,
-							output,
+							output: [...indexed].sort((left, right) => left.index - right.index).map(({ item }) => item),
 							usage,
 							nativeResponseId: ir.nativeId ?? nativeResponseId,
 							...(encoded.citations ? { citations: encoded.citations } : {}),
@@ -908,6 +914,43 @@ function buildReasoningDetailDelta(item: any, args: ExecutorExecuteArgs, index: 
 		return { id, index, type: "reasoning.text", text, signature: sealed, format: state.format };
 	}
 	return { id: state.callId ?? id, index, type: "reasoning.encrypted", data: sealed, format: state.format };
+}
+
+/**
+ * Match each final output item to the output_index the stream already used for it, so
+ * the completed response and the streamed events agree. Function calls match by
+ * call id (then by order), messages and text reasoning by their choice's indexes.
+ * Anything the stream never emitted takes the next free index.
+ */
+function assignStreamedOutputIndexes(
+	output: any[],
+	choiceStates: Map<number, ResponsesStreamChoiceState>,
+	allocateIndex: () => number,
+): Array<{ index: number; item: any; streamed: boolean }> {
+	const tools = [...choiceStates.values()].flatMap((entry) => [...entry.toolCalls.values()]);
+	const toolIndexByCallId = new Map(tools.map((tool) => [tool.id, tool.outputIndex]));
+	const firstChoice = choiceStates.get(0) ?? choiceStates.values().next().value;
+	const used = new Set<number>();
+	const streamedIndexFor = (item: any): number | undefined => {
+		if (item?.type === "function_call") {
+			const byId = toolIndexByCallId.get(item.call_id ?? item.id);
+			if (byId !== undefined && !used.has(byId)) return byId;
+			return tools.map((tool) => tool.outputIndex).find((index) => !used.has(index));
+		}
+		if (item?.type === "message") return firstChoice?.messageOutputIndex;
+		if (item?.type === "reasoning") {
+			const hasText = (item.content?.length ?? 0) > 0 || (item.summary?.length ?? 0) > 0;
+			return hasText ? firstChoice?.reasoningOutputIndex : undefined;
+		}
+		return undefined;
+	};
+	return output.map((item) => {
+		const candidate = streamedIndexFor(item);
+		const streamed = candidate !== undefined && candidate !== null && !used.has(candidate);
+		const index = streamed ? candidate! : allocateIndex();
+		used.add(index);
+		return { index, item, streamed };
+	});
 }
 
 function buildResponsesOutputFromState(

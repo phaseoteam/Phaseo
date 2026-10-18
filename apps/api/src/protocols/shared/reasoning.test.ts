@@ -7,6 +7,7 @@ import {
 	sealReasoningState,
 } from "@core/reasoning-state";
 import { decodeAnthropicMessagesRequest } from "../anthropic-messages/decode";
+import { decodeOpenAIResponsesRequest } from "../openai-responses/decode";
 import { encodeAnthropicMessagesResponse } from "../anthropic-messages/encode";
 import { decodeChatReasoningDetails, decodeResponsesReasoningItem } from "./reasoning";
 import { normaliseAnthropicCacheBreakpoints } from "@executors/anthropic/text-generate/breakpoints";
@@ -202,5 +203,40 @@ describe("provider request rules", () => {
 		expect(minimax.messages[1].reasoning_content).toBeUndefined();
 		const deepseek = irToOpenAIChat(ir, "deepseek-v4", "deepseek");
 		expect(deepseek.messages[1].reasoning_content).toBe("Call the tool.");
+	});
+});
+
+describe("Responses history with Gemini function-call signatures", () => {
+	const signatureItem = (value: string) => ({
+		type: "reasoning",
+		id: "rs_get_weather",
+		summary: [],
+		content: [],
+		encrypted_content: sealReasoningState({
+			format: "google-gemini-v1",
+			kind: "signature",
+			value,
+			model: "gemini-3.6-flash",
+			provider: "google-vertex",
+			callId: "get_weather",
+		}),
+	});
+	const call = (city: string) => ({ type: "function_call", call_id: "get_weather", name: "get_weather", arguments: JSON.stringify({ city }) });
+	const output = (temp: number) => ({ type: "function_call_output", call_id: "get_weather", output: JSON.stringify({ temp }) });
+
+	it("binds each signature to the call in its own turn when generated ids repeat", () => {
+		const ir = decodeOpenAIResponsesRequest({
+			model: "google/gemini-3.6-flash",
+			input: [
+				{ role: "user", content: "Weather in Paris, then Rome?" },
+				signatureItem("SIG_TURN_1"), call("Paris"), output(18),
+				// A streamed response lists the signature after its call.
+				call("Rome"), signatureItem("SIG_TURN_2"), output(24),
+			],
+		} as any);
+		const signatures = ir.messages
+			.filter((message) => message.role === "assistant")
+			.map((message: any) => message.toolCalls?.map((toolCall: any) => toolCall.thoughtSignature));
+		expect(signatures).toEqual([["SIG_TURN_1"], ["SIG_TURN_2"]]);
 	});
 });

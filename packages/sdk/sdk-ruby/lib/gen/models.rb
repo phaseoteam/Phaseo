@@ -913,13 +913,34 @@ module Phaseo
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] name
     #   @return [String, nil]
+    # @!attribute [rw] reasoning_content
+    #   @return [String, nil]
+    # @!attribute [rw] reasoning_details
+    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] role
     #   @return [String]
     # @!attribute [rw] tool_call_id
     #   @return [String, nil]
     # @!attribute [rw] tool_calls
     #   @return [Array<Hash{String => Object}>, nil]
-    ChatMessage = Struct.new(:audios, :content, :images, :name, :role, :tool_call_id, :tool_calls, keyword_init: true)
+    ChatMessage = Struct.new(:audios, :content, :images, :name, :reasoning_content, :reasoning_details, :role, :tool_call_id, :tool_calls, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [String, nil]
+    # @!attribute [rw] format
+    #   @return [String, nil]
+    # @!attribute [rw] id
+    #   @return [String, nil]
+    # @!attribute [rw] index
+    #   @return [Integer, nil]
+    # @!attribute [rw] signature
+    #   @return [String, nil]
+    # @!attribute [rw] summary
+    #   @return [String, nil]
+    # @!attribute [rw] text
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    ChatReasoningDetail = Struct.new(:data, :format, :id, :index, :signature, :summary, :text, :type, keyword_init: true)
     # @!attribute [rw] credits
     #   @return [Hash{String => Object}]
     # @!attribute [rw] ok
@@ -3998,11 +4019,17 @@ module Phaseo
     RerankResult = Struct.new(:document, :index, :relevance_score, keyword_init: true)
     # @!attribute [rw] content
     #   @return [String, Array<Hash{String => Object}>, Hash{String => Object}, nil]
+    # @!attribute [rw] encrypted_content
+    #   @return [String, nil]
+    # @!attribute [rw] id
+    #   @return [String, nil]
     # @!attribute [rw] role
     #   @return [String, nil]
+    # @!attribute [rw] summary
+    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] type
     #   @return [String, nil]
-    ResponsesInputItem = Struct.new(:content, :role, :type, keyword_init: true)
+    ResponsesInputItem = Struct.new(:content, :encrypted_content, :id, :role, :summary, :type, keyword_init: true)
     # @!attribute [rw] audio_url
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] b64_json
@@ -4030,13 +4057,19 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] encrypted_content
+    #   @return [String, nil]
+    # @!attribute [rw] id
+    #   @return [String, nil]
     # @!attribute [rw] name
     #   @return [String, nil]
     # @!attribute [rw] role
     #   @return [String, nil]
+    # @!attribute [rw] summary
+    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] type
     #   @return [String, nil]
-    ResponsesOutputItem = Struct.new(:arguments, :call_id, :content, :name, :role, :type, keyword_init: true)
+    ResponsesOutputItem = Struct.new(:arguments, :call_id, :content, :encrypted_content, :id, :name, :role, :summary, :type, keyword_init: true)
     # @!attribute [rw] annotations
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] text
