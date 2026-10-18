@@ -2,6 +2,12 @@ begin;
 do $$
 declare routing_table text;
 begin
+  assert (select relrowsecurity from pg_class where oid = 'public.artificial_analysis_snapshots'::regclass), 'AA snapshot RLS disabled';
+  assert not has_table_privilege('anon', 'public.artificial_analysis_snapshots', 'SELECT'), 'public can read AA import payloads';
+  assert not has_table_privilege('service_role', 'public.artificial_analysis_snapshots', 'UPDATE'), 'AA snapshot history is mutable';
+  assert not has_table_privilege('service_role', 'public.artificial_analysis_snapshots', 'DELETE'), 'AA snapshot history can be deleted';
+  assert not has_function_privilege('authenticated', 'public.publish_artificial_analysis_snapshot(jsonb)', 'EXECUTE'), 'client can publish AA snapshots';
+  assert has_function_privilege('service_role', 'public.get_artificial_analysis_coverage()', 'EXECUTE'), 'AA coverage RPC unavailable to backend';
   assert public.canonical_routing_capability_id('audio.transcribe') = 'audio.transcription', 'production capability mapping missing';
   assert public.canonical_routing_capability_id('unsupported.operation') is null, 'unknown capability accepted';
   assert public.canonical_routing_capability_id('audio') is null, 'retired generic audio capability accepted';

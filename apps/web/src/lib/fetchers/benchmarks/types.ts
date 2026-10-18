@@ -2,6 +2,24 @@ export interface BenchmarkCard {
 	benchmark_id: string;
 	benchmark_name: string;
 	total_models: number;
+	metrics?: ArtificialAnalysisMetric[];
+}
+
+export interface ArtificialAnalysisMetric {
+	key: "intelligence" | "coding" | "agentic" | "cost";
+	id: string;
+	label: string;
+	total_models: number;
+}
+
+export interface ArtificialAnalysisSuite {
+	id: string;
+	name: string;
+	current_version: number;
+	selected_version: number;
+	versions: number[];
+	metrics: ArtificialAnalysisMetric[];
+	other_evaluations: { id: string; name: string }[];
 }
 
 export interface BenchmarkOrganisation {
@@ -35,6 +53,7 @@ export interface BenchmarkResult {
 }
 
 export interface BenchmarkPage {
+	suite?: ArtificialAnalysisSuite;
 	id: string;
 	name: string | null;
 	category: string | null;
