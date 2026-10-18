@@ -93,6 +93,21 @@ function discardResponseBody(response: Response) {
 	response.body?.cancel().catch(() => undefined);
 }
 
+/**
+ * A 429 upstream_error says every provider called was rate limited. Across model fallbacks
+ * that holds only if every model that ran also ended in 429; otherwise (for example the
+ * primary's provider failed with 503) the request failed for mixed reasons and is a 502.
+ */
+export async function settleMixedRateLimitAcrossModels(response: Response, attempts: readonly ModelFallbackAttempt[]): Promise<Response> {
+	if (response.status !== 429) return response;
+	const executed = attempts.filter((attempt) => attempt.stage === "execute");
+	if (executed.every((attempt) => attempt.status === 429)) return response;
+	const body = await response.clone().json().catch(() => null) as Record<string, unknown> | null;
+	if (!body || body.error !== "upstream_error") return response;
+	discardResponseBody(response);
+	return new Response(JSON.stringify({ ...body, status_code: 502 }), { status: 502, headers: response.headers });
+}
+
 function hasBlobValue(value: unknown): boolean {
 	if (value instanceof Blob) return true;
 	return Array.isArray(value) && value.some((item) => item instanceof Blob);
@@ -352,7 +367,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 				attempts.push({ model: fallbackPre.ctx.model, status: response.status, stage: "execute" });
 				if (!shouldTryModelFallback(response, fallbackPre.ctx) || rejectedByRateLimitPolicy(fallbackPre.ctx)) return response;
 			}
-			return response;
+			return await settleMixedRateLimitAcrossModels(response, attempts);
         };
 
         // If before failed, log and return error immediately

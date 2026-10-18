@@ -15,7 +15,7 @@ vi.mock("./error-response", () => ({
 	logPipelineExecutionError: vi.fn(),
 }));
 
-import { makeEndpointHandler } from "./index";
+import { makeEndpointHandler, settleMixedRateLimitAcrossModels } from "./index";
 
 function requestContext(model: string, models: string[] = [], extra: Record<string, any> = {}) {
 	return {
@@ -416,5 +416,39 @@ describe("request-level models fallbacks", () => {
 
 		expect(response.status).toBe(200);
 		expect(beforeRequestMock).toHaveBeenCalledTimes(2);
+	});
+});
+
+describe("settleMixedRateLimitAcrossModels", () => {
+	const throttled = () => new Response(JSON.stringify({ error: "upstream_error", status_code: 429 }), {
+		status: 429,
+		headers: { "Content-Type": "application/json", "Retry-After": "7" },
+	});
+
+	it("keeps 429 when every model that ran was rate limited", async () => {
+		const response = await settleMixedRateLimitAcrossModels(throttled(), [
+			{ model: "a/primary", status: 429, stage: "execute" },
+			{ model: "b/fallback", status: 422, stage: "before" },
+			{ model: "c/fallback", status: 429, stage: "execute" },
+		]);
+		expect(response.status).toBe(429);
+	});
+
+	it("reports 502 when an earlier model failed for another reason", async () => {
+		const response = await settleMixedRateLimitAcrossModels(throttled(), [
+			{ model: "a/primary", status: 503, stage: "execute" },
+			{ model: "b/fallback", status: 429, stage: "execute" },
+		]);
+		expect(response.status).toBe(502);
+		expect(await response.json()).toMatchObject({ error: "upstream_error", status_code: 502 });
+	});
+
+	it("leaves a workspace rate-limit policy 429 alone", async () => {
+		const policy = new Response(JSON.stringify({ error: "rate_limit_exceeded", status_code: 429 }), { status: 429 });
+		const response = await settleMixedRateLimitAcrossModels(policy, [
+			{ model: "a/primary", status: 503, stage: "execute" },
+			{ model: "b/fallback", status: 429, stage: "execute" },
+		]);
+		expect(response.status).toBe(429);
 	});
 });

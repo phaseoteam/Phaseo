@@ -99,7 +99,7 @@ describe("mid-stream upstream errors from a Responses upstream", () => {
 	it("gives a Chat client an error frame carrying the upstream message", async () => {
 		const text = await new Response(resolveStreamForProtocol(sseResponse(RESPONSES_UPSTREAM_FAILURE), args("openai.chat.completions", "groq"), "responses")).text();
 		const events = frames(text);
-		expect(events.at(-1)?.data).toMatchObject({ object: "error", message: "upstream reset" });
+		expect(events.at(-1)?.data).toMatchObject({ object: "error", message: "upstream reset", error: { message: "upstream reset" } });
 		expect(text).not.toMatch(/"finish_reason":"(stop|length)"/);
 	});
 
@@ -149,7 +149,7 @@ describe("mid-stream upstream errors from Anthropic", () => {
 
 	it("gives Chat clients an error frame", async () => {
 		const events = frames(await new Response(claudeStream("openai.chat.completions")).text());
-		expect(events.at(-1)?.data).toMatchObject({ object: "error", message: "Overloaded" });
+		expect(events.at(-1)?.data).toMatchObject({ object: "error", message: "Overloaded", error: { message: "Overloaded", type: "overloaded_error" } });
 	});
 
 	it("opens with response.created when Anthropic fails before message_start", async () => {

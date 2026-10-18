@@ -34,10 +34,15 @@ function encodeOpenAIChat(
 		return { frame: event.payload as Record<string, any> };
 	}
 	if (event.type === "error") {
+		const message = event.message ?? "stream_error";
+		const rawCode = event.payload?.error?.code ?? event.payload?.error?.type ?? event.payload?.response?.error?.code ?? event.payload?.code;
+		const code = typeof rawCode === "string" && rawCode && rawCode !== "error" ? rawCode : null;
 		return {
 			frame: {
 				object: "error",
-				message: event.message ?? "stream_error",
+				message,
+				// OpenAI SDKs raise on a frame's `error` field; object/message stay for existing readers.
+				error: { message, type: code ?? "upstream_error", code },
 			},
 		};
 	}

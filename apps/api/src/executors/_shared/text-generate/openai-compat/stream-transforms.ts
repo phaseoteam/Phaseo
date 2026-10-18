@@ -422,7 +422,15 @@ export function transformResponsesStreamToChat(
 								break;
 							case "response.failed":
 							case "error":
-								await emit({ object: "error", message: readUpstreamStreamError(payload).message }, controller);
+								{
+									// OpenAI SDKs raise on a frame's `error` field; object/message stay for existing readers.
+									const failure = readUpstreamStreamError(payload);
+									await emit({
+										object: "error",
+										message: failure.message,
+										error: { message: failure.message, type: failure.code ?? "upstream_error", code: failure.code },
+									}, controller);
+								}
 								break;
 							default:
 								break;
