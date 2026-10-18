@@ -11,6 +11,7 @@ import { guardUpstreamStatus } from "./guards";
 import { loadProviderPricing, calculatePricing } from "./pricing";
 import { enrichSuccessPayload, extractFinishReason, formatClientPayload } from "./payload";
 import { handleStreamResponse, handlePassthroughFallback } from "./stream";
+import { handleSpeechStreamResponse } from "./speech-stream";
 import { handleSuccessAudit, handleFailureAudit } from "./audit";
 import { makeHeaders, createResponse } from "./http";
 import { recordUsageAndChargeOnce } from "./charge";
@@ -373,13 +374,19 @@ export async function finalizeRequest(args: {
         return await handleNonStreamResponse(ctx, result, args.timingHeader);
     }
 
-    // 4) Passthrough fallback for endpoints where binary/media passthrough is expected
+    // 4) Speech audio streamed straight from the provider: forward the bytes, then price,
+    // charge and audit once the body has ended (or the client has gone).
+    if (ctx.endpoint === "audio.speech" && result.kind === "stream" && result.stream) {
+        return await handleSpeechStreamResponse(ctx, result, args.timingHeader);
+    }
+
+    // 5) Passthrough fallback for endpoints where binary/media passthrough is expected
     const passthroughOk = ["audio.speech", "audio.transcription", "audio.translations", "video.generation", "images.edits"].includes(ctx.endpoint);
     if (passthroughOk) {
         return handlePassthroughFallback(result.upstream);
     }
 
-    // 5) If we reach this state without a normalized payload, treat as failure.
+    // 6) If we reach this state without a normalized payload, treat as failure.
     const status = 502;
     const errorCode = "normalization_failed";
     const errorMessage = "Gateway could not normalize upstream response.";
