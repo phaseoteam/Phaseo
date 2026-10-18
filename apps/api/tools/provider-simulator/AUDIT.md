@@ -1,8 +1,8 @@
-# Provider audit, 2026-10-17
+# Provider audit, 2026-10-17 (updated 2026-10-18)
 
 This audit covers every registered text provider of the gateway. It used the provider simulator in this folder, plus code reading. Paths are relative to `apps/api/src` unless they say otherwise.
 
-- **Base:** `origin/main` at `6551de1fa3`.
+- **Base:** `origin/main` at `6551de1fa3` for the 17 October sections; `6dd0d405ce` for the 18 October run.
 - **Live calls:** none were made to providers or to the Phaseo API.
 
 Each finding is marked with how it was established:
@@ -10,6 +10,130 @@ Each finding is marked with how it was established:
 - **simulated:** the simulator proved it, through the gateway's real code path with fetch captured. The scenario ids and provider counts come from `results/` and can be reproduced with `pnpm --filter @phaseo/gateway-api simulate:providers`.
 - **traced:** established by reading the code.
 - **needs-live:** only a live call can settle it, because it depends on what the provider actually accepts or returns.
+
+The 18 October expected-outcome run comes first. The 17 October audit it updates follows from "Scope and limits" onwards; its finding numbers (N1–N20, B1–B4, R1–R8) are reused, and N21–N37 are new.
+
+## Expected-outcome run, 18 October
+
+The simulator now checks declarative expected outcomes (`expectations/`) instead of only reporting differences, and fails when a mismatch is not on the justified allow-list (`expectations/allowlist.json`). This section reports that run against the code after the cache fix stack.
+
+- **Base:** `origin/main` at `6dd0d405ce`, after #2964, #2965, #2969, #2970, #2957 and #2971 merged.
+- **Live calls:** none. Only public specs and docs were fetched.
+- **Layers:**
+  - **executor:** 104 provider groups, 109 routes, 221 client scenarios per route, plus BYOK, a tool-loop round trip and a sticky-routing check per surface, and 11 response variants per surface and mode;
+  - **end-to-end:** 111 cases through the real endpoint handler (auth, context, routing, failover, finaliser, charge and audit captured): text on three surfaces, presets, dynamic routes, BYOK, 429 and 5xx with `Retry-After`, mid-stream failure, embeddings, images, speech, transcription, translation, moderation, OCR, rerank and video submission;
+  - **pricing:** every active price card (1,532 of 1,550 cards, 5,347 of 5,347 meters, 1,466 of 1,466 condition branches), priced by an independent BigInt calculator.
+- **Coverage:** `results/COVERAGE.md`. Non-text families run one provider each, end to end. Batches, files, realtime and music are not driven (reasons in the coverage report).
+
+### Gate result
+
+`pnpm --filter @phaseo/gateway-api simulate:providers` exits 0 in 7 min 5 s. 24,494 mismatches (executor 24,022, end-to-end 95, pricing 377), all matched by the 43 justified entries in `expectations/allowlist.json`; none unused. Any new mismatch fails the run. The full table is `results/EXPECTATIONS.md`, with coverage in `results/COVERAGE.md`.
+
+### Before and after
+
+The 17 October baseline is the same expectation engine run on `6551de1fa3`, before the stack (`results/baselines/2026-10-17.json`). The executor-layer case set has grown since then (affinity, BYOK, 3/10/40-step agents), so new groups are partly new coverage.
+
+| | 17 October (`6551de1fa3`) | 18 October (`6dd0d405ce`) | Change |
+|---|---|---|---|
+| Executor-layer mismatches | 27,217 | 24,022 | −3,195 (−12%) |
+| Executor-layer groups | 913 | 855 | −58 |
+| Groups fixed | | 85 | |
+| Groups new (includes new cases) | | 27 | |
+| End-to-end mismatches | 120 | 95 | −25 |
+| Pricing-sweep mismatches | 566 | 377 | −189 |
+| Simulated under-billing, executor layer, all responses | not measured | $26.34 | |
+| Gate: mismatches not on the allow-list | n/a | **0** of 24,494 | |
+
+**Fixed by the stack** (largest groups):
+- top-level `cache_control` is accepted on all three surfaces (was a 400 on all 104 providers; R5);
+- `/v1/messages` streams report cache reads (88 providers) and writes, and Chat and Responses report `cache_write_tokens` (11 providers);
+- `prompt_cache_key: null` is no longer sent to Responses upstreams (85 providers; G-F7);
+- Claude cache writes are billed at the 5m and 1h rates on Chat, Responses and streamed Messages (5–6 providers per surface; B2);
+- uncached input is no longer over-billed on Messages (54 providers, both modes), streamed Chat (15) and streamed Responses (3) (B2);
+- Bedrock Claude goes to `/anthropic/v1/messages` on every surface (R1; captured URL `https://bedrock-mantle.us-east-1.api.aws/anthropic/v1/messages`);
+- Claude reasoning state is carried on streams (7–8 providers per surface), and the Responses tool-loop round trip keeps thinking signatures, `redacted_thinking` and encrypted reasoning;
+- `user` reaches Claude as `metadata.user_id` (R6); developer and later system messages reach Claude;
+- `prompt_cache_retention` reaches OpenAI (G-F8).
+
+**New groups since the baseline** (27; most come from cases or checks added since 17 October):
+- `previous_response_id` returns 400 on every provider (N28). #2965 forces `store: false` upstream, but `ResponsesRequest` in our OpenAPI spec still documents the parameter.
+- Alibaba Qwen 3.8 Max bills one reported cache read on two meters (N23).
+- Same-charge meter moves are now reported as renamed meters (N36): Vertex Claude writes, Kimi K3 writes, OpenRouter reasoning. This is a new check, not a new defect.
+- OpenAI and OpenAI EU receive `include: ["reasoning.encrypted_content"]` without asking, on Responses and Messages. This is how #2970 round-trips reasoning with `store: false`, so it is intended; it is allow-listed under N13.
+- Bedrock's upstream auth header is now `x-api-key`, because #2965 moved Claude to the Anthropic-compatible endpoint. The expectation still says `Authorization: Bearer`. Which header Bedrock Mantle's Anthropic endpoint accepts needs a live check (N18).
+- Fireworks receives `reasoning_effort: 1337` when the client sends both an effort and a token budget. Its quirk maps the budget to an integer (`executors/_shared/text-generate/openai-compat/providers/fireworks/quirks.ts:92`), which the cached spec's enum does not allow. Needs a live check.
+- The rest are new prompt-cache cases hitting the five executors that cannot run offline (harness), and single-provider parameter cases (Reflection `user`, `stream_options` on three providers).
+
+**Found this round:** `max_output_tokens: 0` rejects every `/v1/messages` request on Parasail's Gemma routes (N37, code unchanged since 17 October). Buffered Chat and Messages responses from Claude still lose the thinking signature after #2970 (N8, below).
+
+### Remaining mismatches, ranked by severity
+
+Counts are mismatches and distinct providers on this run. Billing deltas are summed over every simulated response at the "max" usage of about 128k tokens per response, so they show relative size, not production revenue.
+
+| Rank | Finding | Severity | Mismatches | Providers | Billing Δ (simulated) | What is wrong |
+|---|---|---|---|---|---|---|
+| 1 | N4 `billing-messages-usage` | Critical | 440 | 87 | −$12.51 | `/v1/messages` loses cache reads and writes for every provider; reads bill as input or not at all, writes are not billed |
+| 2 | N3 `billing-chat-cached-reads` | Critical | 147 | 28 | −$9.34, +$0.92 | Chat clients of Claude and of Responses-dialect upstreams: reads billed as input, writes unbilled, no cached count returned |
+| 3 | N6 `billing-truncated-unbilled` | Critical | 128 | 16 | −$2.19 | Length- and filter-truncated answers from Responses-dialect upstreams are unbilled for Chat clients |
+| 4 | N22 `billing-fast-plan` | Critical | 15 | 2 | −$1.19 | Fast-tier requests bill at standard (or $0 where only a fast card exists) |
+| 5 | N1 `billing-gemini-thinking` | Critical | 123 | 3 | −$0.18, +$0.26 | Gemini thinking and tool-use prompt tokens unbilled; image and audio prompt tokens billed as text |
+| 6 | N2, H3 `billing-tts-unbilled`, `billing-stt-estimates` | Critical | 13 | 1 each (e2e) | −$0.05 | Speech is never priced, charged or audited; transcription is billed from file-size estimates |
+| 7 | N21 `billing-anthropic-web-search` | High | 6 | 1 | −$0.12 | Claude web searches are never metered |
+| 8 | N23 `billing-pricing-engine`, `billing-alibaba-double-read` | High | 75 | 9 | −$0.67, +$0.04 | `default` and `early_access` plans never selected, unreadable conditions, sub-nano truncation; Alibaba bills one cache read on two meters |
+| 9 | B2 residual `billing-responses-claude-cache` | High | 29 | 11 | −$0.08, +$0.12 | `/v1/responses` with Claude: reads subtracted from an input that already excludes them; writes unbilled |
+| 10 | N24, B1 `catalogue-data-rows`, `billing-pricing-throws` | High (data) | 292 | 36+ | – | Missing or wrong cache rows, expired-only rules, active routes without a card; 10 cards still throw |
+| 11 | N7 `stream-midstream-errors` | High | 1,398 | 97 | – | A mid-stream upstream error is delivered as a successful completion; buffered clients get 200 and a success audit |
+| 12 | N8 `reasoning-roundtrip` | High | 167 | 61 | – | **Residual of #2970:** buffered Chat and Messages responses from Claude (Anthropic, Bedrock, Anthropic on AWS) return thinking without its signature, so the next tool-loop step reaches Claude without a signed thinking block. Streams are fixed. Production's buffered path calls `encodeProtocol(protocol, ir, requestId)` with no reasoning origin after materialising the stream (`pipeline/surfaces/text-generate.ts:1299`, `protocols/shared/reasoning.ts:186-221`). Also: reasoning text missing from buffered Responses (46 providers), Vertex Gemini tool loops |
+| 13 | N5 `stream-finish-mapping` | High | 1,324 | 98 | – | Buffered Messages always `end_turn`; content filter and refusal become `stop`; `stop_sequence` and `pause_turn` lost |
+| 14 | N31, N32 `routing-429-as-502`, `routing-model-fallback` | High | 14 | 4 (e2e) | – | Upstream 429 reaches the client as 502; BYOK 429 drops the rate-limit headers; a 400 triggers a billed fallback to another model |
+| 15 | N37 `routing-zero-max-output` | High | 14 | 1 | – | `max_output_tokens: 0` is treated as a limit, so every request with `max_tokens` (all of `/v1/messages`) is rejected; 3 active Parasail routes in the snapshot |
+| 16 | N28 `request-previous-response-id` | High | 162 | 104 | – | Documented `previous_response_id` returns 400 since #2965 |
+| 17 | N10, N11 `request-rejected-sdk-shapes`, `request-messages-params`, `request-other-rejections` | High | 1,355 | 104 | – | Assistant `content: null` and `file` parts rejected; documented `/v1/messages` params (`session_id`, `reasoning`, `provider_options`, `service_tier`) return 400 |
+| 18 | N26 `stream-grammar` | Medium | 2,010 | 96 | – | A non-chunk `chat.completion` frame inside Chat streams; Claude-to-Responses deltas before `output_item.added` |
+| 19 | N13, N9 `request-invented-defaults` | Medium | 720 | 99 | – | `temperature: 1`, `parallel_tool_calls`, `logprobs: false`, `safety_identifier`, `stream_options` and Claude adaptive thinking sent unasked; `input_items` to SambaNova, Ambient, Scaleway and Baidu |
+| 20 | N14 `request-unsupported-forwarded`, `request-params-dropped-or-changed` | Medium | 6,461 | 92 | – | Parameters outside the provider's spec forwarded; parameters it defines dropped or sent with values outside its enum (see the policy question) |
+| 21 | N29 `request-content-values` | Medium | 6,237 | 99 | – | Array tool results stringified into JSON text; message names dropped; Vertex Gemini replays no assistant `functionCall` |
+| 22 | N15 `stream-citations-refusal` | Medium | 1,450 | 98 | – | Citations and refusal text lost on the way back |
+| 23 | N18, N30, N33, N34 | Medium | 206 | 27 | −$0.004 | URL or dialect differs from the provider's docs; executor-local rejections after routing; preset system prompt dropped on Messages; Cohere rerank host and per-request billing; video submission fields |
+| 24 | N25 `billing-usage-reasoning-field` | Low | 187 | 63 | – | Reasoning reported as top-level `reasoning_tokens`, not `completion_tokens_details.reasoning_tokens` |
+| 25 | N12 `stream-tool-ids` | Low | 28 | 6 | – | Gemini `functionCall` ids replaced; Vertex Messages clients lose tool arguments |
+| 26 | N36 `billing-meter-label` | Low | 12 | 3 | $0 net | Same charge on the wrong meter (Vertex Claude writes, Kimi K3 writes, OpenRouter reasoning) |
+| – | N35, N19, harness | By design or docs | 1,481 | 8 | – | Google `cached_content` needs BYOK (docs gap); OpenAI `metadata.phaseo_request_id` differs per request; 5 executors cannot run offline |
+
+### Proposed second fix round
+
+These are proposals; nothing in this branch changes gateway behaviour. Estimates are for one engineer with the simulator as the regression test, including tests.
+
+Order: billing first, because it loses money on every request type; then streams; then request hygiene, which needs the policy decision below. Each PR removes its allow-list entries, so the gate proves the fix.
+
+| # | PR | Findings (allow-list entries) | Evidence | Estimate |
+|---|---|---|---|---|
+| 1 | **billing-2a: cache and reasoning usage on every surface** | N3 `billing-chat-cached-reads`, N4 `billing-messages-usage`, B2 residual `billing-responses-claude-cache`, N25 `billing-usage-reasoning-field`, N36 `billing-meter-label` | Chat encoder writes reads as `usage.input_details.cached_tokens`, which `shapeUsageForClient` and the engine ignore (`protocols/openai-chat/encode.ts:196-211`, `pipeline/usage.ts:160-166`); `normalizeUsageToAnthropic` keeps only input and output (`executors/_shared/text-generate/openai-compat/index.ts:801-818`) | 2–3 days |
+| 2 | **billing-2b: Gemini usage** | N1 `billing-gemini-thinking` | `thoughtsTokenCount` and `toolUsePromptTokenCount` are not added (`providers/google-ai-studio/usage.ts:116-142`); image and audio prompt tokens billed as text | 1 day |
+| 3 | **billing-2c: truncated streams** | N6 `billing-truncated-unbilled` | A Responses-dialect upstream ending with `response.incomplete` produces no final chunk or usage for Chat and Messages clients (`stream-transforms.ts:384-399`); 16 providers. Ships with PR 6, since the fix is the same terminal-event mapping | with PR 6 |
+| 4 | **billing-2d: non-text billing** | N2 `billing-tts-unbilled`, H3 `billing-stt-estimates` | TTS results are `kind: "stream"` while `ctx.stream` is false, so `finalizeRequest` skips pricing, charge and audit (`pipeline/after/index.ts:349-375`, `pipeline/surfaces/non-text.ts:575`); STT ignores `usage.seconds` (`audio-transcription-usage.ts:72-157`) | 2 days |
+| 5 | **billing-2e: pricing engine** | N22 `billing-fast-plan`, N23 `billing-pricing-engine` and `billing-alibaba-double-read`, N21 `billing-anthropic-web-search` | `fast` cards selected as `priority` only in the fallback loader (`pipeline/before/context.sql:579`, `pricing/loader.ts:142`, `pipeline/after/pricing.ts:45,200`); `default` and `early_access` plans never selected; one Alibaba `cached_tokens` billed on two meters; `server_tool_use.web_search_requests` never metered (`anthropic-messages/encode.ts:169-172`, `stream-transformer.ts:303-313`) | 2–3 days |
+| – | **catalogue data** (database operations, not a PR to this repo's code) | N24 `catalogue-data-rows`, B1 `billing-pricing-throws` | 199 cards without a cache-read row, 9 without a write row, 19 with read = input, 5 with read at $0, wrong Bedrock long-context 5m price, Novita overlapping tiers, 18 routes with only expired rules, 21 active routes without a card | 1–2 days with readback |
+| 6 | **stream-2a: finish reasons and terminal events** | N5 `stream-finish-mapping`, N26 `stream-grammar`, plus PR 3 | Buffered Messages always `end_turn` (`stream-events.ts:672-678`); content filter and refusal become `stop`/`completed`; a final `object: "chat.completion"` frame inside Chat streams; Claude-to-Responses deltas before `output_item.added`; 96–98 providers | 2–3 days |
+| 7 | **stream-2b: mid-stream errors and error mapping** | N7 `stream-midstream-errors`, `stream-midstream-e2e`; N31 `routing-429-as-502`; N32 `routing-model-fallback` | Buffered clients get 200 and a success audit after a mid-stream failure (`pipeline/surfaces/text-generate.ts:833-861`); upstream 429 becomes 502 (`pipeline/execute/guards.ts:631`, `pipeline/execute/http.ts:31`); BYOK 429 drops the rate-limit headers (`core/error-handler.ts:680`); a 400 triggers a billed model fallback (`pipeline/index.ts:25`) | 2 days |
+| 8 | **stream-2c: reasoning and content returned to the client** | N8 `reasoning-roundtrip`, N15 `stream-citations-refusal`, N12 `stream-tool-ids` | Buffered Chat and Messages responses from Claude drop the thinking signature after materialisation (`pipeline/surfaces/text-generate.ts:1299` calls `encodeProtocol` with no reasoning origin; `protocols/shared/reasoning.ts:186-221`), so non-streaming Claude agents with thinking cannot continue a tool loop; reasoning text missing from buffered Responses (46 providers); citations and refusals lost (98 providers); Gemini `functionCall` ids replaced | 2–3 days; the Claude signature fix first, as a small separate PR |
+| 9 | **request-2a: schema and documented parameters** | N10 `request-rejected-sdk-shapes`, N11 `request-messages-params` and `request-other-rejections`, N28 `request-previous-response-id`, N33 `routing-presets`, N35 docs | Zod rejects assistant `content: null` and `file` parts (`core/schemas.ts:549-557,818-823`); `/v1/messages` rejects `session_id`, `reasoning`, `provider_options`, `service_tier` (`pipeline/before/textParamPolicy.ts:287-317`); preset system prompt dropped on Messages (`presetMerge.ts:37`); zod `temperature` default overrides presets (`core/schemas.ts:869`) | 1–2 days |
+| 10 | **request-2b: provider request hygiene** (split per provider family) | N9 and N13 `request-invented-defaults`, N14 `request-unsupported-forwarded` and `request-params-dropped-or-changed`, N29 `request-content-values`, N18 `request-url-and-dialect`, N30 `request-executor-*`, N34 `routing-nontext-misc` | SambaNova, Ambient, Scaleway and Baidu get `input_items`; `temperature: 1`, `parallel_tool_calls`, `logprobs: false` and `safety_identifier` sent unasked; array tool results stringified on 98 providers; Cohere rerank on the legacy host and billed per request | 3–5 days; blocked on the policy question |
+| 11 | **new: zero output limit** | N37 `routing-zero-max-output` | `max_output_tokens = 0` treated as a limit (`pipeline/before/capabilityValidation.ts:365-371`); 3 active Parasail routes in the snapshot | 0.5 day plus a readback |
+
+### Policy question
+
+`apps/api/AGENTS.md` says unsupported parameters should be rejected explicitly, not dropped or forwarded. Our public docs only say support varies. Today the gateway forwards parameters the provider's API does not define (N14: 4,353 mismatches on 92 providers), drops some it does define, and rejects a few in the executor after routing (N30). The expectations accept rejection or removal and flag only forwarding. A decision is needed before request-2: reject before routing (strict, clear errors, but breaks clients that send OpenAI defaults everywhere), or drop silently with a `phaseo.dropped_params` notice (lenient).
+
+### Still needs a live test
+
+Section 4 still applies. Add:
+- **N37:** read back production routes with `max_output_tokens = 0` (read-only query) before fixing the code or the data.
+- **N28:** decide whether `previous_response_id` should be removed from the docs or supported through a stored-response path; no live call needed.
+- **Bedrock auth (N18):** one `/v1/messages` request pinned to `amazon-bedrock` with a Claude model; a 401 means Mantle's Anthropic endpoint wants `Authorization: Bearer`.
+- **Fireworks integer effort:** `reasoning: {effort: "high", max_tokens: 2048}` pinned to `fireworks`; check that an integer `reasoning_effort` is accepted.
+- **N8 buffered signatures:** a non-streaming Claude tool loop with thinking on `/v1/chat/completions`; expect a 400 from Anthropic on step 2 if the signature is missing.
+- **N36, N23 (Alibaba):** a provider-pinned request with cache hits on `qwen/qwen3.8-max-0902`, then compare the billed meters with `prompt_tokens_details.cached_tokens`.
 
 ## Scope and limits
 

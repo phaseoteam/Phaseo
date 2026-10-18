@@ -3,10 +3,10 @@
  "activeRoutesWithCard": 1550,
  "cards": 1550,
  "cardsExercised": 1532,
- "metersPresent": 5289,
- "metersExercised": 5289,
- "conditionBranchesPresent": 1452,
- "conditionBranchesExercised": 1452,
+ "metersPresent": 5347,
+ "metersExercised": 5347,
+ "conditionBranchesPresent": 1466,
+ "conditionBranchesExercised": 1466,
  "byCapability": {
   "audio.generate": {
    "cards": 0,
@@ -113,8 +113,8 @@
   "text.generate": {
    "cards": 1266,
    "cardsExercised": 1256,
-   "metersPresent": 4778,
-   "metersExercised": 4778
+   "metersPresent": 4836,
+   "metersExercised": 4836
   },
   "text.moderate": {
    "cards": 2,

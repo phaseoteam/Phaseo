@@ -194,100 +194,6 @@
     "family": "text",
     "model": "openai/gpt-5-mini",
     "surface": "messages",
-    "mode": "stream",
-    "caseId": "billing.openai.messages.stream",
-    "kind": "billing_over",
-    "path": "billing.meter.input_text_tokens",
-    "expected": 79992,
-    "actual": 100003,
-    "delta": {
-      "tokens": 20011,
-      "nanos": 5002750,
-      "meter": "input_text_tokens"
-    },
-    "note": "expectation billing-openai",
-    "source": {
-      "kind": "docs",
-      "url": "https://platform.openai.com/docs/api-reference/responses/object",
-      "note": "usage.input_tokens includes input_tokens_details.cached_tokens (100,003 = 79,992 uncached + 20,011 cached); output_tokens includes reasoning_tokens."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "openai",
-    "family": "text",
-    "model": "openai/gpt-5-mini",
-    "surface": "messages",
-    "mode": "stream",
-    "caseId": "billing.openai.messages.stream",
-    "kind": "billing_under",
-    "path": "billing.meter.cached_read_text_tokens",
-    "expected": 20011,
-    "actual": 0,
-    "delta": {
-      "tokens": -20011,
-      "nanos": -500275,
-      "meter": "cached_read_text_tokens"
-    },
-    "note": "expectation billing-openai",
-    "source": {
-      "kind": "docs",
-      "url": "https://platform.openai.com/docs/api-reference/responses/object",
-      "note": "usage.input_tokens includes input_tokens_details.cached_tokens (100,003 = 79,992 uncached + 20,011 cached); output_tokens includes reasoning_tokens."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "openai",
-    "family": "text",
-    "model": "openai/gpt-5-mini",
-    "surface": "messages",
-    "mode": "stream",
-    "caseId": "billing.openai.messages.stream",
-    "kind": "billing_over",
-    "path": "billing",
-    "expected": 30504275,
-    "actual": 35006750,
-    "delta": {
-      "nanos": 4502475
-    },
-    "source": {
-      "kind": "docs",
-      "url": "https://platform.openai.com/docs/api-reference/responses/object",
-      "note": "usage.input_tokens includes input_tokens_details.cached_tokens (100,003 = 79,992 uncached + 20,011 cached); output_tokens includes reasoning_tokens."
-    },
-    "note": "expectation billing-openai"
-  },
-  {
-    "layer": "e2e",
-    "provider": "openai",
-    "family": "text",
-    "model": "openai/gpt-5-mini",
-    "surface": "messages",
-    "mode": "buffered",
-    "caseId": "billing.openai.messages.buffered",
-    "kind": "billing_over",
-    "path": "billing.meter.input_text_tokens",
-    "expected": 79992,
-    "actual": 100003,
-    "delta": {
-      "tokens": 20011,
-      "nanos": 5002750,
-      "meter": "input_text_tokens"
-    },
-    "note": "expectation billing-openai",
-    "source": {
-      "kind": "docs",
-      "url": "https://platform.openai.com/docs/api-reference/responses/object",
-      "note": "usage.input_tokens includes input_tokens_details.cached_tokens (100,003 = 79,992 uncached + 20,011 cached); output_tokens includes reasoning_tokens."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "openai",
-    "family": "text",
-    "model": "openai/gpt-5-mini",
-    "surface": "messages",
     "mode": "buffered",
     "caseId": "billing.openai.messages.buffered",
     "kind": "billing_under",
@@ -314,12 +220,12 @@
     "surface": "messages",
     "mode": "buffered",
     "caseId": "billing.openai.messages.buffered",
-    "kind": "billing_over",
+    "kind": "billing_under",
     "path": "billing",
     "expected": 30504275,
-    "actual": 35006750,
+    "actual": 30004000,
     "delta": {
-      "nanos": 4502475
+      "nanos": -500275
     },
     "source": {
       "kind": "docs",
@@ -356,6 +262,76 @@
     "mode": "stream",
     "caseId": "billing.anthropic.chat.stream",
     "kind": "billing_under",
+    "path": "billing.meter.native_web_search_requests",
+    "expected": 2,
+    "actual": 0,
+    "delta": {
+      "tokens": -2,
+      "nanos": -20000000,
+      "meter": "native_web_search_requests"
+    },
+    "note": "expectation billing-anthropic",
+    "source": {
+      "kind": "docs",
+      "url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
+      "note": "input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens; cache_creation splits into ephemeral_5m/1h; output_tokens includes thinking; server_tool_use.web_search_requests is billed per search."
+    }
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "chat",
+    "mode": "stream",
+    "caseId": "billing.anthropic.chat.stream",
+    "kind": "billing_under",
+    "path": "billing",
+    "expected": 416892050,
+    "actual": 396892050,
+    "delta": {
+      "nanos": -20000000
+    },
+    "source": {
+      "kind": "docs",
+      "url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
+      "note": "input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens; cache_creation splits into ephemeral_5m/1h; output_tokens includes thinking; server_tool_use.web_search_requests is billed per search."
+    },
+    "note": "expectation billing-anthropic"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "billing.anthropic.chat.buffered",
+    "kind": "billing_over",
+    "path": "billing.meter.input_text_tokens",
+    "expected": 100003,
+    "actual": 123033,
+    "delta": {
+      "tokens": 23030,
+      "nanos": 69090000,
+      "meter": "input_text_tokens"
+    },
+    "note": "expectation billing-anthropic",
+    "source": {
+      "kind": "docs",
+      "url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
+      "note": "input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens; cache_creation splits into ephemeral_5m/1h; output_tokens includes thinking; server_tool_use.web_search_requests is billed per search."
+    }
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "billing.anthropic.chat.buffered",
+    "kind": "billing_under",
     "path": "billing.meter.cached_read_text_tokens",
     "expected": 20011,
     "actual": 0,
@@ -377,148 +353,6 @@
     "family": "text",
     "model": "anthropic/claude-sonnet-4.5",
     "surface": "chat",
-    "mode": "stream",
-    "caseId": "billing.anthropic.chat.stream",
-    "kind": "billing_under",
-    "path": "billing.meter.cached_write_text_tokens_5m",
-    "expected": 1013,
-    "actual": 0,
-    "delta": {
-      "tokens": -1013,
-      "nanos": -3798750,
-      "meter": "cached_write_text_tokens_5m"
-    },
-    "note": "expectation billing-anthropic",
-    "source": {
-      "kind": "docs",
-      "url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
-      "note": "input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens; cache_creation splits into ephemeral_5m/1h; output_tokens includes thinking; server_tool_use.web_search_requests is billed per search."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "anthropic",
-    "family": "text",
-    "model": "anthropic/claude-sonnet-4.5",
-    "surface": "chat",
-    "mode": "stream",
-    "caseId": "billing.anthropic.chat.stream",
-    "kind": "billing_under",
-    "path": "billing.meter.cached_write_text_tokens_1h",
-    "expected": 2006,
-    "actual": 0,
-    "delta": {
-      "tokens": -2006,
-      "nanos": -12036000,
-      "meter": "cached_write_text_tokens_1h"
-    },
-    "note": "expectation billing-anthropic",
-    "source": {
-      "kind": "docs",
-      "url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
-      "note": "input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens; cache_creation splits into ephemeral_5m/1h; output_tokens includes thinking; server_tool_use.web_search_requests is billed per search."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "anthropic",
-    "family": "text",
-    "model": "anthropic/claude-sonnet-4.5",
-    "surface": "chat",
-    "mode": "stream",
-    "caseId": "billing.anthropic.chat.stream",
-    "kind": "billing_under",
-    "path": "billing.meter.native_web_search_requests",
-    "expected": 2,
-    "actual": 0,
-    "delta": {
-      "tokens": -2,
-      "nanos": -20000000,
-      "meter": "native_web_search_requests"
-    },
-    "note": "expectation billing-anthropic",
-    "source": {
-      "kind": "docs",
-      "url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
-      "note": "input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens; cache_creation splits into ephemeral_5m/1h; output_tokens includes thinking; server_tool_use.web_search_requests is billed per search."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "anthropic",
-    "family": "text",
-    "model": "anthropic/claude-sonnet-4.5",
-    "surface": "chat",
-    "mode": "stream",
-    "caseId": "billing.anthropic.chat.stream",
-    "kind": "billing_under",
-    "path": "billing",
-    "expected": 416892050,
-    "actual": 375054000,
-    "delta": {
-      "nanos": -41838050
-    },
-    "source": {
-      "kind": "docs",
-      "url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
-      "note": "input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens; cache_creation splits into ephemeral_5m/1h; output_tokens includes thinking; server_tool_use.web_search_requests is billed per search."
-    },
-    "note": "expectation billing-anthropic"
-  },
-  {
-    "layer": "e2e",
-    "provider": "anthropic",
-    "family": "text",
-    "model": "anthropic/claude-sonnet-4.5",
-    "surface": "chat",
-    "mode": "buffered",
-    "caseId": "billing.anthropic.chat.buffered",
-    "kind": "billing_under",
-    "path": "billing.meter.cached_write_text_tokens_5m",
-    "expected": 1013,
-    "actual": 0,
-    "delta": {
-      "tokens": -1013,
-      "nanos": -3798750,
-      "meter": "cached_write_text_tokens_5m"
-    },
-    "note": "expectation billing-anthropic",
-    "source": {
-      "kind": "docs",
-      "url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
-      "note": "input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens; cache_creation splits into ephemeral_5m/1h; output_tokens includes thinking; server_tool_use.web_search_requests is billed per search."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "anthropic",
-    "family": "text",
-    "model": "anthropic/claude-sonnet-4.5",
-    "surface": "chat",
-    "mode": "buffered",
-    "caseId": "billing.anthropic.chat.buffered",
-    "kind": "billing_under",
-    "path": "billing.meter.cached_write_text_tokens_1h",
-    "expected": 2006,
-    "actual": 0,
-    "delta": {
-      "tokens": -2006,
-      "nanos": -12036000,
-      "meter": "cached_write_text_tokens_1h"
-    },
-    "note": "expectation billing-anthropic",
-    "source": {
-      "kind": "docs",
-      "url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
-      "note": "input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens; cache_creation splits into ephemeral_5m/1h; output_tokens includes thinking; server_tool_use.web_search_requests is billed per search."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "anthropic",
-    "family": "text",
-    "model": "anthropic/claude-sonnet-4.5",
-    "surface": "chat",
     "mode": "buffered",
     "caseId": "billing.anthropic.chat.buffered",
     "kind": "billing_under",
@@ -545,12 +379,12 @@
     "surface": "chat",
     "mode": "buffered",
     "caseId": "billing.anthropic.chat.buffered",
-    "kind": "billing_under",
+    "kind": "billing_over",
     "path": "billing",
     "expected": 416892050,
-    "actual": 381057300,
+    "actual": 459978750,
     "delta": {
-      "nanos": -35834750
+      "nanos": 43086700
     },
     "source": {
       "kind": "docs",
@@ -586,78 +420,6 @@
     "mode": "stream",
     "caseId": "billing.anthropic.responses.stream",
     "kind": "billing_under",
-    "path": "billing.meter.input_text_tokens",
-    "expected": 100003,
-    "actual": 79992,
-    "delta": {
-      "tokens": -20011,
-      "nanos": -60033000,
-      "meter": "input_text_tokens"
-    },
-    "note": "expectation billing-anthropic",
-    "source": {
-      "kind": "docs",
-      "url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
-      "note": "input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens; cache_creation splits into ephemeral_5m/1h; output_tokens includes thinking; server_tool_use.web_search_requests is billed per search."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "anthropic",
-    "family": "text",
-    "model": "anthropic/claude-sonnet-4.5",
-    "surface": "responses",
-    "mode": "stream",
-    "caseId": "billing.anthropic.responses.stream",
-    "kind": "billing_under",
-    "path": "billing.meter.cached_write_text_tokens_5m",
-    "expected": 1013,
-    "actual": 0,
-    "delta": {
-      "tokens": -1013,
-      "nanos": -3798750,
-      "meter": "cached_write_text_tokens_5m"
-    },
-    "note": "expectation billing-anthropic",
-    "source": {
-      "kind": "docs",
-      "url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
-      "note": "input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens; cache_creation splits into ephemeral_5m/1h; output_tokens includes thinking; server_tool_use.web_search_requests is billed per search."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "anthropic",
-    "family": "text",
-    "model": "anthropic/claude-sonnet-4.5",
-    "surface": "responses",
-    "mode": "stream",
-    "caseId": "billing.anthropic.responses.stream",
-    "kind": "billing_under",
-    "path": "billing.meter.cached_write_text_tokens_1h",
-    "expected": 2006,
-    "actual": 0,
-    "delta": {
-      "tokens": -2006,
-      "nanos": -12036000,
-      "meter": "cached_write_text_tokens_1h"
-    },
-    "note": "expectation billing-anthropic",
-    "source": {
-      "kind": "docs",
-      "url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
-      "note": "input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens; cache_creation splits into ephemeral_5m/1h; output_tokens includes thinking; server_tool_use.web_search_requests is billed per search."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "anthropic",
-    "family": "text",
-    "model": "anthropic/claude-sonnet-4.5",
-    "surface": "responses",
-    "mode": "stream",
-    "caseId": "billing.anthropic.responses.stream",
-    "kind": "billing_under",
     "path": "billing.meter.native_web_search_requests",
     "expected": 2,
     "actual": 0,
@@ -684,9 +446,9 @@
     "kind": "billing_under",
     "path": "billing",
     "expected": 416892050,
-    "actual": 321024300,
+    "actual": 396892050,
     "delta": {
-      "nanos": -95867750
+      "nanos": -20000000
     },
     "source": {
       "kind": "docs",
@@ -703,13 +465,13 @@
     "surface": "responses",
     "mode": "buffered",
     "caseId": "billing.anthropic.responses.buffered",
-    "kind": "billing_under",
+    "kind": "billing_over",
     "path": "billing.meter.input_text_tokens",
     "expected": 100003,
-    "actual": 79992,
+    "actual": 103022,
     "delta": {
-      "tokens": -20011,
-      "nanos": -60033000,
+      "tokens": 3019,
+      "nanos": 9057000,
       "meter": "input_text_tokens"
     },
     "note": "expectation billing-anthropic",
@@ -728,54 +490,6 @@
     "mode": "buffered",
     "caseId": "billing.anthropic.responses.buffered",
     "kind": "billing_under",
-    "path": "billing.meter.cached_write_text_tokens_5m",
-    "expected": 1013,
-    "actual": 0,
-    "delta": {
-      "tokens": -1013,
-      "nanos": -3798750,
-      "meter": "cached_write_text_tokens_5m"
-    },
-    "note": "expectation billing-anthropic",
-    "source": {
-      "kind": "docs",
-      "url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
-      "note": "input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens; cache_creation splits into ephemeral_5m/1h; output_tokens includes thinking; server_tool_use.web_search_requests is billed per search."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "anthropic",
-    "family": "text",
-    "model": "anthropic/claude-sonnet-4.5",
-    "surface": "responses",
-    "mode": "buffered",
-    "caseId": "billing.anthropic.responses.buffered",
-    "kind": "billing_under",
-    "path": "billing.meter.cached_write_text_tokens_1h",
-    "expected": 2006,
-    "actual": 0,
-    "delta": {
-      "tokens": -2006,
-      "nanos": -12036000,
-      "meter": "cached_write_text_tokens_1h"
-    },
-    "note": "expectation billing-anthropic",
-    "source": {
-      "kind": "docs",
-      "url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
-      "note": "input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens; cache_creation splits into ephemeral_5m/1h; output_tokens includes thinking; server_tool_use.web_search_requests is billed per search."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "anthropic",
-    "family": "text",
-    "model": "anthropic/claude-sonnet-4.5",
-    "surface": "responses",
-    "mode": "buffered",
-    "caseId": "billing.anthropic.responses.buffered",
-    "kind": "billing_under",
     "path": "billing.meter.native_web_search_requests",
     "expected": 2,
     "actual": 0,
@@ -802,9 +516,9 @@
     "kind": "billing_under",
     "path": "billing",
     "expected": 416892050,
-    "actual": 321024300,
+    "actual": 405949050,
     "delta": {
-      "nanos": -95867750
+      "nanos": -10943000
     },
     "source": {
       "kind": "docs",
@@ -822,78 +536,6 @@
     "mode": "stream",
     "caseId": "billing.anthropic.messages.stream",
     "kind": "billing_under",
-    "path": "billing.meter.cached_read_text_tokens",
-    "expected": 20011,
-    "actual": 0,
-    "delta": {
-      "tokens": -20011,
-      "nanos": -6003300,
-      "meter": "cached_read_text_tokens"
-    },
-    "note": "expectation billing-anthropic",
-    "source": {
-      "kind": "docs",
-      "url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
-      "note": "input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens; cache_creation splits into ephemeral_5m/1h; output_tokens includes thinking; server_tool_use.web_search_requests is billed per search."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "anthropic",
-    "family": "text",
-    "model": "anthropic/claude-sonnet-4.5",
-    "surface": "messages",
-    "mode": "stream",
-    "caseId": "billing.anthropic.messages.stream",
-    "kind": "billing_under",
-    "path": "billing.meter.cached_write_text_tokens_5m",
-    "expected": 1013,
-    "actual": 0,
-    "delta": {
-      "tokens": -1013,
-      "nanos": -3798750,
-      "meter": "cached_write_text_tokens_5m"
-    },
-    "note": "expectation billing-anthropic",
-    "source": {
-      "kind": "docs",
-      "url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
-      "note": "input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens; cache_creation splits into ephemeral_5m/1h; output_tokens includes thinking; server_tool_use.web_search_requests is billed per search."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "anthropic",
-    "family": "text",
-    "model": "anthropic/claude-sonnet-4.5",
-    "surface": "messages",
-    "mode": "stream",
-    "caseId": "billing.anthropic.messages.stream",
-    "kind": "billing_under",
-    "path": "billing.meter.cached_write_text_tokens_1h",
-    "expected": 2006,
-    "actual": 0,
-    "delta": {
-      "tokens": -2006,
-      "nanos": -12036000,
-      "meter": "cached_write_text_tokens_1h"
-    },
-    "note": "expectation billing-anthropic",
-    "source": {
-      "kind": "docs",
-      "url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
-      "note": "input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens; cache_creation splits into ephemeral_5m/1h; output_tokens includes thinking; server_tool_use.web_search_requests is billed per search."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "anthropic",
-    "family": "text",
-    "model": "anthropic/claude-sonnet-4.5",
-    "surface": "messages",
-    "mode": "stream",
-    "caseId": "billing.anthropic.messages.stream",
-    "kind": "billing_under",
     "path": "billing.meter.native_web_search_requests",
     "expected": 2,
     "actual": 0,
@@ -920,9 +562,9 @@
     "kind": "billing_under",
     "path": "billing",
     "expected": 416892050,
-    "actual": 375054000,
+    "actual": 396892050,
     "delta": {
-      "nanos": -41838050
+      "nanos": -20000000
     },
     "source": {
       "kind": "docs",
@@ -1570,10 +1212,10 @@
     "kind": "billing_over",
     "path": "billing.meter.input_text_tokens",
     "expected": 79875,
-    "actual": 100003,
+    "actual": 79992,
     "delta": {
-      "tokens": 20128,
-      "nanos": 6038400,
+      "tokens": 117,
+      "nanos": 35100,
       "meter": "input_text_tokens"
     },
     "note": "expectation billing-google-vertex",
@@ -1640,30 +1282,6 @@
     "mode": "stream",
     "caseId": "billing.google-vertex.messages.stream",
     "kind": "billing_under",
-    "path": "billing.meter.cached_read_text_tokens",
-    "expected": 20011,
-    "actual": 0,
-    "delta": {
-      "tokens": -20011,
-      "nanos": -600330,
-      "meter": "cached_read_text_tokens"
-    },
-    "note": "expectation billing-google-vertex",
-    "source": {
-      "kind": "docs",
-      "url": "https://ai.google.dev/api/generate-content#UsageMetadata",
-      "note": "promptTokenCount (100,003; TEXT 99,485 + IMAGE 307 + AUDIO 211) includes cachedContentTokenCount (TEXT 20,011); toolUsePromptTokenCount (401) is extra input; thoughtsTokenCount (1,109) is billed as output with candidatesTokenCount (3,894), per https://cloud.google.com/vertex-ai/generative-ai/pricing."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "google-vertex",
-    "family": "text",
-    "model": "google/gemini-2.5-flash",
-    "surface": "messages",
-    "mode": "stream",
-    "caseId": "billing.google-vertex.messages.stream",
-    "kind": "billing_under",
     "path": "billing.meter.output_text_tokens",
     "expected": 5003,
     "actual": 3894,
@@ -1687,12 +1305,12 @@
     "surface": "messages",
     "mode": "stream",
     "caseId": "billing.google-vertex.messages.stream",
-    "kind": "billing_over",
+    "kind": "billing_under",
     "path": "billing",
     "expected": 37373430,
-    "actual": 39735900,
+    "actual": 34332930,
     "delta": {
-      "nanos": 2362470
+      "nanos": -3040500
     },
     "source": {
       "kind": "docs",
@@ -1712,10 +1330,10 @@
     "kind": "billing_over",
     "path": "billing.meter.input_text_tokens",
     "expected": 79875,
-    "actual": 100003,
+    "actual": 79992,
     "delta": {
-      "tokens": 20128,
-      "nanos": 6038400,
+      "tokens": 117,
+      "nanos": 35100,
       "meter": "input_text_tokens"
     },
     "note": "expectation billing-google-vertex",
@@ -1829,12 +1447,12 @@
     "surface": "messages",
     "mode": "buffered",
     "caseId": "billing.google-vertex.messages.buffered",
-    "kind": "billing_over",
+    "kind": "billing_under",
     "path": "billing",
     "expected": 37373430,
-    "actual": 39735900,
+    "actual": 33732600,
     "delta": {
-      "nanos": 2362470
+      "nanos": -3640830
     },
     "source": {
       "kind": "docs",
@@ -1861,200 +1479,6 @@
       "note": "Cached prompt tokens are reported to the client in the surface's own usage field."
     },
     "note": "expectation billing-client-cached-google-vertex-messages"
-  },
-  {
-    "layer": "e2e",
-    "provider": "deepinfra",
-    "family": "text",
-    "model": "openai/gpt-oss-120b",
-    "surface": "chat",
-    "mode": "stream",
-    "caseId": "billing.deepinfra.chat.stream.unpriced-cache-field",
-    "kind": "billing_under",
-    "path": "billing.chargeCount",
-    "expected": 1,
-    "actual": 0,
-    "source": {
-      "kind": "assumed",
-      "reason": "Every successful managed request is charged exactly once."
-    },
-    "note": "expectation billing-unpriced-cache-field"
-  },
-  {
-    "layer": "e2e",
-    "provider": "deepinfra",
-    "family": "text",
-    "model": "openai/gpt-oss-120b",
-    "surface": "chat",
-    "mode": "stream",
-    "caseId": "billing.deepinfra.chat.stream.unpriced-cache-field",
-    "kind": "billing_under",
-    "path": "billing.meter.input_text_tokens",
-    "expected": 100003,
-    "actual": 0,
-    "delta": {
-      "tokens": -100003,
-      "nanos": -3700111,
-      "meter": "input_text_tokens"
-    },
-    "note": "expectation billing-unpriced-cache-field",
-    "source": {
-      "kind": "docs",
-      "url": "https://platform.openai.com/docs/api-reference/chat/object",
-      "note": "prompt_tokens includes prompt_tokens_details.cached_tokens; with no cached-read rule the cached part is billed at the input price."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "deepinfra",
-    "family": "text",
-    "model": "openai/gpt-oss-120b",
-    "surface": "chat",
-    "mode": "stream",
-    "caseId": "billing.deepinfra.chat.stream.unpriced-cache-field",
-    "kind": "billing_under",
-    "path": "billing.meter.output_text_tokens",
-    "expected": 5003,
-    "actual": 0,
-    "delta": {
-      "tokens": -5003,
-      "nanos": -850510,
-      "meter": "output_text_tokens"
-    },
-    "note": "expectation billing-unpriced-cache-field",
-    "source": {
-      "kind": "docs",
-      "url": "https://platform.openai.com/docs/api-reference/chat/object",
-      "note": "prompt_tokens includes prompt_tokens_details.cached_tokens; with no cached-read rule the cached part is billed at the input price."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "deepinfra",
-    "family": "text",
-    "model": "openai/gpt-oss-120b",
-    "surface": "chat",
-    "mode": "stream",
-    "caseId": "billing.deepinfra.chat.stream.unpriced-cache-field",
-    "kind": "billing_under",
-    "path": "billing",
-    "expected": 4550621,
-    "actual": 0,
-    "delta": {
-      "nanos": -4550621
-    },
-    "source": {
-      "kind": "docs",
-      "url": "https://platform.openai.com/docs/api-reference/chat/object",
-      "note": "prompt_tokens includes prompt_tokens_details.cached_tokens; with no cached-read rule the cached part is billed at the input price."
-    },
-    "note": "expectation billing-unpriced-cache-field"
-  },
-  {
-    "layer": "e2e",
-    "provider": "deepinfra",
-    "family": "text",
-    "model": "openai/gpt-oss-120b",
-    "surface": "chat",
-    "mode": "buffered",
-    "caseId": "billing.deepinfra.chat.buffered.unpriced-cache-field",
-    "kind": "error_mapping",
-    "path": "client.status",
-    "expected": 200,
-    "actual": 500,
-    "source": {
-      "kind": "assumed",
-      "reason": "The provider returned a successful completion; a missing price rule for a sub-meter is a Phaseo catalogue gap, not a client error."
-    },
-    "note": "expectation billing-unpriced-cache-field"
-  },
-  {
-    "layer": "e2e",
-    "provider": "deepinfra",
-    "family": "text",
-    "model": "openai/gpt-oss-120b",
-    "surface": "chat",
-    "mode": "buffered",
-    "caseId": "billing.deepinfra.chat.buffered.unpriced-cache-field",
-    "kind": "billing_under",
-    "path": "billing.chargeCount",
-    "expected": 1,
-    "actual": 0,
-    "source": {
-      "kind": "assumed",
-      "reason": "Every successful managed request is charged exactly once."
-    },
-    "note": "expectation billing-unpriced-cache-field"
-  },
-  {
-    "layer": "e2e",
-    "provider": "deepinfra",
-    "family": "text",
-    "model": "openai/gpt-oss-120b",
-    "surface": "chat",
-    "mode": "buffered",
-    "caseId": "billing.deepinfra.chat.buffered.unpriced-cache-field",
-    "kind": "billing_under",
-    "path": "billing.meter.input_text_tokens",
-    "expected": 100003,
-    "actual": 0,
-    "delta": {
-      "tokens": -100003,
-      "nanos": -3700111,
-      "meter": "input_text_tokens"
-    },
-    "note": "expectation billing-unpriced-cache-field",
-    "source": {
-      "kind": "docs",
-      "url": "https://platform.openai.com/docs/api-reference/chat/object",
-      "note": "prompt_tokens includes prompt_tokens_details.cached_tokens; with no cached-read rule the cached part is billed at the input price."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "deepinfra",
-    "family": "text",
-    "model": "openai/gpt-oss-120b",
-    "surface": "chat",
-    "mode": "buffered",
-    "caseId": "billing.deepinfra.chat.buffered.unpriced-cache-field",
-    "kind": "billing_under",
-    "path": "billing.meter.output_text_tokens",
-    "expected": 5003,
-    "actual": 0,
-    "delta": {
-      "tokens": -5003,
-      "nanos": -850510,
-      "meter": "output_text_tokens"
-    },
-    "note": "expectation billing-unpriced-cache-field",
-    "source": {
-      "kind": "docs",
-      "url": "https://platform.openai.com/docs/api-reference/chat/object",
-      "note": "prompt_tokens includes prompt_tokens_details.cached_tokens; with no cached-read rule the cached part is billed at the input price."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "deepinfra",
-    "family": "text",
-    "model": "openai/gpt-oss-120b",
-    "surface": "chat",
-    "mode": "buffered",
-    "caseId": "billing.deepinfra.chat.buffered.unpriced-cache-field",
-    "kind": "billing_under",
-    "path": "billing",
-    "expected": 4550621,
-    "actual": 0,
-    "delta": {
-      "nanos": -4550621
-    },
-    "source": {
-      "kind": "docs",
-      "url": "https://platform.openai.com/docs/api-reference/chat/object",
-      "note": "prompt_tokens includes prompt_tokens_details.cached_tokens; with no cached-read rule the cached part is billed at the input price."
-    },
-    "note": "expectation billing-unpriced-cache-field"
   },
   {
     "layer": "e2e",

@@ -290,7 +290,7 @@
 			"id": "reasoning-roundtrip",
 			"finding": "N8",
 			"fixGroup": "reasoning-2",
-			"justification": "Reasoning text, signatures, redacted thinking or encrypted reasoning are not carried to the client or back to the same provider on some surfaces and dialects (residual after #2970).",
+			"justification": "Residual after #2970: buffered Chat and Messages responses from Claude return thinking without its signature, because the materialised response is encoded with no reasoning origin (pipeline/surfaces/text-generate.ts:1299), so the next tool-loop step reaches Claude unsigned; streams are fixed. Also reasoning text missing from buffered Responses, and Vertex Gemini tool-loop signatures.",
 			"match": {
 				"kind": "dropped",
 				"path": "re:^(client\\.reasoning\\.|roundtrip\\.upstream\\.)"
