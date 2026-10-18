@@ -151,6 +151,8 @@ describe("openai text executor HTTP mode", () => {
 		expect(mock.calls[0]?.bodyJson?.safety_identifier).toBe("team_test");
 		expect(mock.calls[0]?.bodyJson?.stream).toBe(true);
 		expect(mock.calls[0]?.bodyJson?.stream_options).toEqual({ include_usage: true });
+		// Chat Completions does not store by default; store is not sent unasked.
+		expect(mock.calls[0]?.bodyJson).not.toHaveProperty("store");
 	});
 
 	it.each([

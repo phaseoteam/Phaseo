@@ -925,11 +925,12 @@ export const ChatCompletionsSchema = lazySchema(() => z.object({
 	).optional(),
 
     max_tool_calls: z.number().int().positive().optional(),
-    parallel_tool_calls: z.boolean().optional().default(true),
+    // No default: an unset value is not sent upstream (the provider default applies).
+    parallel_tool_calls: z.boolean().optional(),
     tool_choice: z.union([z.string(), z.record(z.string(), z.any())]).optional(),
     web_search_options: z.record(z.string(), z.any()).optional(),
 
-    logprobs: z.boolean().optional().default(false),
+    logprobs: z.boolean().optional(),
     top_logprobs: z.number().int().min(0).max(20).optional(),
     top_p: z.number().min(0).max(1).optional(),
     top_k: z.number().int().min(-1).optional(),

@@ -31,16 +31,19 @@ export function irToOpenAIChat(
 			messages.push({
 				role: "system",
 				content: mapSystemLikeContentToOpenAI(msg.content),
+				...messageNameField(msg.name, providerId),
 			});
 		} else if (msg.role === "developer") {
 			messages.push({
 				role: "developer",
 				content: mapSystemLikeContentToOpenAI(msg.content),
+				...messageNameField(msg.name, providerId),
 			});
 		} else if (msg.role === "user") {
 			messages.push({
 				role: "user",
 				content: mapIRContentToOpenAI(msg.content),
+				...messageNameField(msg.name, providerId),
 			});
 		} else if (msg.role === "assistant") {
 			const assistantText = msg.content
@@ -59,6 +62,7 @@ export function irToOpenAIChat(
 			const message: any = {
 				role: "assistant",
 				content: assistantText || null,
+				...messageNameField(msg.name, providerId),
 			};
 
 			const providerSupportsAssistantReasoningContent =
@@ -119,11 +123,7 @@ export function irToOpenAIChat(
 				messages.push({
 					role: "tool",
 					tool_call_id: result.toolCallId,
-					// A marked result is sent as a text part so the mark survives;
-					// the cache policy turns it back into a string where unsupported.
-					content: result.cacheControl
-						? [mapTextPartToOpenAI({ type: "text", text: result.content, cacheControl: result.cacheControl })]
-						: result.content,
+					content: mapToolResultToOpenAIChat(result, providerId),
 				});
 			}
 		}
@@ -349,6 +349,50 @@ function toOpenAIChatTool(tool: IRTool): any {
  */
 function hasCacheControl(content: IRContentPart[]): boolean {
 	return content.some((part) => part.type === "text" && part.cacheControl);
+}
+
+// Chat APIs whose message schema defines a participant `name` on system, user and
+// assistant messages (from each provider's published spec). Strict APIs such as
+// Mistral's reject the field, so it is sent only here.
+const MESSAGE_NAME_PROVIDERS = new Set([
+	"openai", "openai-eu", "azure", "akashml", "ambient", "baidu", "baseten", "cerebras", "deepinfra",
+	"deepseek", "friendli", "io-net", "moonshot-ai", "moonshotai", "nebius-token-factory",
+	"nebius-token-factory-eu-north-1", "nebius-token-factory-us-central-1", "ovhcloud",
+	"sail-research", "together", "venice",
+]);
+
+// Chat APIs whose tool message content may be an array of text parts, as in
+// OpenAI's schema. Others take a string.
+const TOOL_CONTENT_PARTS_PROVIDERS = new Set([
+	"openai", "openai-eu", "azure", "akashml", "ambient", "baseten", "cerebras", "deepinfra",
+	"deepseek", "groq", "inception", "io-net", "meta", "mistral", "mistral-eu", "moonshot-ai", "moonshotai",
+	"nebius-token-factory", "nebius-token-factory-eu-north-1", "nebius-token-factory-us-central-1",
+	"ovhcloud", "perplexity", "reka", "sail-research", "sambanova",
+]);
+
+function messageNameField(name: string | undefined, providerId: string | undefined): { name?: string } {
+	if (!name || !providerId || !MESSAGE_NAME_PROVIDERS.has(providerId)) return {};
+	return { name };
+}
+
+/**
+ * Tool result content: the client's text parts as an array where the provider
+ * accepts one, otherwise the text parts joined. Chat tool messages carry text
+ * only, so image parts in a tool result have no place here.
+ */
+function mapToolResultToOpenAIChat(
+	result: Extract<IRMessage, { role: "tool" }>["toolResults"][number],
+	providerId: string | undefined,
+): any {
+	const textParts = (result.parts ?? []).filter((part): part is Extract<IRContentPart, { type: "text" }> => part.type === "text");
+	if (textParts.length > 0 && providerId && TOOL_CONTENT_PARTS_PROVIDERS.has(providerId)) {
+		return textParts.map((part) => mapTextPartToOpenAI(part));
+	}
+	// A marked result is sent as a text part so the mark survives;
+	// the cache policy turns it back into a string where unsupported.
+	return result.cacheControl
+		? [mapTextPartToOpenAI({ type: "text", text: result.content, cacheControl: result.cacheControl })]
+		: result.content;
 }
 
 function mapTextPartToOpenAI(part: Extract<IRContentPart, { type: "text" }>, type = "text"): any {

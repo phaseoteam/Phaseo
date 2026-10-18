@@ -177,10 +177,13 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 
 			for (const block of msg.content) {
 				if (block.type === "tool_result") {
+					const parts = toolResultParts(block.content);
 					toolResults.push({
 						toolCallId: block.tool_use_id,
 						content: normalizeToolResultContent(block.content),
 						cacheControl: normalizeAnthropicCacheControl((block as any).cache_control),
+						...(parts ? { parts } : {}),
+						...((block as any).is_error === true ? { isError: true } : {}),
 					});
 					continue;
 				}
@@ -482,6 +485,16 @@ function normalizeAnthropicCacheControl(value: unknown): AnthropicCacheControl |
 	if (typeof next.scope === "string") next.scope = next.scope.trim();
 	return Object.keys(next).length > 0 ? next : undefined;
 }
+/** Text and image blocks of an array tool result, kept so they reach upstreams that take them. */
+function toolResultParts(content: unknown): IRContentPart[] | undefined {
+	if (!Array.isArray(content)) return undefined;
+	const parts = content
+		.filter((block) => block && (block.type === "text" || block.type === "image"))
+		.map((block) => normalizeAnthropicContent(block) as IRContentPart)
+		.filter(Boolean);
+	return parts.length > 0 ? parts : undefined;
+}
+
 function normalizeToolResultContent(content: string | any[]): string {
 	if (typeof content === "string") {
 		return content;

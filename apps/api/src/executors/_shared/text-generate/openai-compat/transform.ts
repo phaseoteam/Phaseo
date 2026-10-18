@@ -4,7 +4,7 @@
 
 // Transformation functions between IR and OpenAI Responses API format
 
-import type { IRChatRequest, IRChatResponse, IRMessage, IRContentPart, IRChoice, IRUsage, IRTool } from "@core/ir";
+import type { IRChatRequest, IRChatResponse, IRMessage, IRContentPart, IRChoice, IRUsage, IRTool, IRToolResult } from "@core/ir";
 import { isIRNativeToolDefinition } from "@core/nativeTools";
 import { readGatewayStop } from "@core/finish-reason";
 import { applyResponsesRequestQuirks, applyResponsesResponseQuirks } from "./responses-quirks";
@@ -83,10 +83,19 @@ function readCustomResponseToolCall(item: any): { id: string | null; name: strin
 	};
 }
 
+/**
+ * Providers whose Responses API takes OpenAI's flat function tools
+ * (`{type, name, parameters}`), object `tool_choice` and `text.format`.
+ * SambaNova, Scaleway and Ambient publish OpenAPI specs with exactly that shape.
+ * The others listed get chat-style `tools[].function` and `response_format`.
+ */
 function usesOpenAIResponsesShape(providerId?: string): boolean {
 	const canonicalProviderId = providerId ? normalizeProviderId(providerId) : providerId;
 	return (
 		canonicalProviderId === "openai" ||
+		canonicalProviderId === "sambanova" ||
+		canonicalProviderId === "scaleway" ||
+		canonicalProviderId === "ambient" ||
 		canonicalProviderId === "openai-eu" ||
 		canonicalProviderId === "empiriolabs" ||
 		canonicalProviderId === "xiaomi" ||
@@ -105,6 +114,33 @@ function usesOpenAIResponsesShape(providerId?: string): boolean {
 		canonicalProviderId === "nebius-token-factory-eu-north-1" ||
 		canonicalProviderId === "nebius-token-factory-us-central-1"
 	);
+}
+
+// Responses APIs whose function_call_output.output may be a list of input_text,
+// input_image and input_file parts (from each provider's published spec). The
+// others (SambaNova, Groq, Fireworks, DeepInfra, OVHcloud, Perplexity) take a string.
+const TOOL_OUTPUT_PARTS_PROVIDERS = new Set([
+	"openai", "openai-eu", "azure", "ambient", "moonshot-ai", "moonshotai",
+	"nebius-token-factory", "nebius-token-factory-eu-north-1", "nebius-token-factory-us-central-1",
+]);
+
+/**
+ * function_call_output.output: the client's content parts where the provider
+ * accepts a list, otherwise the text parts joined (never a JSON string of the list).
+ */
+function mapToolResultOutput(result: IRToolResult, providerId?: string): any {
+	const canonicalProviderId = providerId ? normalizeProviderId(providerId) : providerId;
+	if (result.parts?.length && canonicalProviderId && TOOL_OUTPUT_PARTS_PROVIDERS.has(canonicalProviderId)) {
+		const parts = result.parts
+			.filter((part) => part.type === "text" || part.type === "image")
+			.map(mapContentPart);
+		if (parts.length > 0) return parts;
+	}
+	// OpenAI accepts a breakpoint on an input_text block inside
+	// function_call_output; the cache policy collapses it elsewhere.
+	return result.cacheControl
+		? [mapContentPart({ type: "text", text: result.content, cacheControl: result.cacheControl })]
+		: result.content;
 }
 
 function supportsOpenAIAsyncToolCalling(providerId?: string): boolean {
@@ -152,7 +188,7 @@ function addMetaWebSearchTool(request: any, ir: IRChatRequest): void {
 /**
  * Transform IR request to OpenAI Responses API format
  *
- * The Responses API uses "input_items" instead of "messages":
+ * The Responses API uses "input" items instead of "messages":
  * - message items (conversation turns)
  * - function_call items (tool calls from assistant)
  * - function_call_output items (tool results from user)
@@ -174,7 +210,7 @@ export function irToOpenAIResponses(
 	// Azure deployment names need not name the model, so callers can pass the model to compare.
 	const replayTarget = { providerId: actualProviderId ?? providerId, model: options?.replayModel ?? providerModelSlug ?? ir.model };
 
-	// Convert IR messages to Responses API input_items
+	// Convert IR messages to Responses API input items
 	for (const msg of ir.messages) {
 		if (msg.role === "system") {
 			inputItems.push({
@@ -246,11 +282,7 @@ export function irToOpenAIResponses(
 				inputItems.push({
 					type: result.type === "custom" ? "custom_tool_call_output" : "function_call_output",
 					call_id: result.toolCallId,
-					// OpenAI accepts a breakpoint on an input_text block inside
-					// function_call_output; the cache policy collapses it elsewhere.
-					output: result.cacheControl
-						? [mapContentPart({ type: "text", text: result.content, cacheControl: result.cacheControl })]
-						: result.content,
+					output: mapToolResultOutput(result, providerId),
 				});
 			}
 		}
@@ -258,9 +290,11 @@ export function irToOpenAIResponses(
 
 	// Build Responses API request
 	const useOpenAIShape = usesOpenAIResponsesShape(providerId);
+	// Every Responses API (OpenAI's and the compatible ones) takes the
+	// conversation as `input`; `input_items` is not a request field anywhere.
 	const request: any = {
 		model: providerModelSlug || ir.model,
-		...(useOpenAIShape ? { input: inputItems } : { input_items: inputItems }),
+		input: inputItems,
 	};
 
 	// Add generation parameters

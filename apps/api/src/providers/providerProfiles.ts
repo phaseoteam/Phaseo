@@ -375,6 +375,8 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		text: {
 			paramPolicy: {
 				supportedParams: ["max_tokens", "reasoning.enabled", "reasoning.effort", "service_tier"],
+				// Not in Mistral's API; its streams end with usage without it.
+				unsupportedParams: ["stream_options"],
 			},
 			normalize: { reasoningEffortFallback: ["none", "low", "medium", "high", "max"] },
 		},
@@ -458,6 +460,17 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		text: {
 			paramPolicy: {
 				supportedParams: ["service_tier"],
+				unsupportedParams: ["stream_options"],
+			},
+		},
+	},
+	{
+		// Together's chat API has no stream_options; usage arrives on the last chunk.
+		// https://docs.together.ai/reference/chat-completions-1
+		id: "together",
+		text: {
+			paramPolicy: {
+				unsupportedParams: ["stream_options"],
 			},
 		},
 	},

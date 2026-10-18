@@ -51,7 +51,9 @@ describe("managed Vertex Opus 5.5", () => {
 		try {
 			const result = await executor(args(protocol));
 			expect(mock.calls).toHaveLength(1);
-			expect(mock.calls[0].bodyJson).toMatchObject({ anthropic_version: "vertex-2023-10-16", stream: true, thinking: { type: "adaptive" } });
+			expect(mock.calls[0].bodyJson).toMatchObject({ anthropic_version: "vertex-2023-10-16", stream: true });
+			// No reasoning settings from the client: thinking is left to the model default.
+			expect(mock.calls[0].bodyJson).not.toHaveProperty("thinking");
 			expect(mock.calls[0].bodyJson).not.toHaveProperty("model");
 			expect(result.keySource).toBe("gateway");
 			if (result.kind !== "completed") throw new Error("expected completion");

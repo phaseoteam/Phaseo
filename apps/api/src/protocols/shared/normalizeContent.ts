@@ -136,26 +136,34 @@ export function normalizePartCacheControl(part: any): IRCacheControl | undefined
 const TEXT_PART_TYPES = new Set(["text", "input_text", "output_text"]);
 
 /**
- * Tool results are stored as text in the IR. Array content that is all text
- * and carries a cache mark keeps its text and the mark (the last one wins), so
- * the breakpoint can be re-emitted upstream. Other arrays keep the historical
- * JSON encoding so existing prompts stay byte-identical.
+ * Tool results keep their text in the IR (`content`, the text parts joined)
+ * and, when the client sent an array of content parts, the parts themselves.
+ * Encoders send the parts where the upstream accepts structured tool results
+ * and the joined text elsewhere, never a JSON string of the array. A cache mark
+ * on any part is kept (the last one wins) so the breakpoint can be re-emitted.
  */
-export function normalizeToolResultContent(content: unknown): { content: string; cacheControl?: IRCacheControl } {
+export function normalizeToolResultContent(content: unknown): { content: string; cacheControl?: IRCacheControl; parts?: IRContentPart[] } {
 	if (typeof content === "string") return { content };
 	if (content === null || content === undefined) return { content: "" };
 	if (
 		Array.isArray(content) &&
 		content.length > 0 &&
-		content.every((part) => part && typeof part === "object" && TEXT_PART_TYPES.has(part.type) && typeof part.text === "string")
+		content.every((part) => part && typeof part === "object" && typeof part.type === "string")
 	) {
 		const marks = content.map(normalizePartCacheControl).filter((mark): mark is IRCacheControl => Boolean(mark));
-		if (marks.length > 0) {
-			return {
-				content: content.map((part) => part.text).join(""),
-				cacheControl: marks[marks.length - 1],
-			};
-		}
+		const cacheControl = marks.length > 0 ? marks[marks.length - 1] : undefined;
+		const allText = content.every((part) => TEXT_PART_TYPES.has(part.type) && typeof part.text === "string");
+		const text = content
+			.filter((part) => TEXT_PART_TYPES.has(part.type) && typeof part.text === "string")
+			.map((part) => part.text)
+			.join("");
+		// A marked all-text result is sent as one marked text part, as before.
+		if (allText && cacheControl) return { content: text, cacheControl };
+		return {
+			content: text,
+			parts: normalizeOpenAIContent(content),
+			...(cacheControl ? { cacheControl } : {}),
+		};
 	}
 	return { content: JSON.stringify(content) };
 }

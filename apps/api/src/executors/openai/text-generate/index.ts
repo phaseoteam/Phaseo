@@ -804,7 +804,10 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		: irToOpenAIChat(irWithRequestMetadata, modelForRouting, args.providerId, args.capabilityParams);
 
 	requestPayload.stream = true;
-	requestPayload.store = false;
+	// Responses requests always go upstream with store: false (documented on the
+	// Responses endpoint page). Chat Completions does not store by default, so
+	// store is only sent there when the client set it, and then as false.
+	if (route === "responses" || (args.ir as IRChatRequest).store !== undefined) requestPayload.store = false;
 	if (
 		route === "responses"
 		&& isOpenAIProviderOffer(args.providerId)
