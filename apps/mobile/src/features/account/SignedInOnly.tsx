@@ -1,8 +1,10 @@
 import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { LogIn } from "lucide-react-native";
 import type { ReactNode } from "react";
 import { EmptyState, Header, LoadingState, Screen } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
+import { WEB_ORIGIN } from "@/lib/config";
 import { useAuth } from "@/providers/AuthProvider";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 
@@ -24,7 +26,10 @@ export function SignedInOnly({ title, children }: { title: string; children: (wo
     return (
       <Screen>
         <Header back={!split} title={title} />
-        {loading ? <LoadingState /> : <EmptyState className="flex-1" title="No workspace yet" body="Create a workspace on phaseo.app, then come back." />}
+        {loading ? <LoadingState /> : (
+          // New accounts get their workspace when they first sign in on phaseo.app.
+          <EmptyState className="flex-1" title="Finish setting up" body="Sign in once on phaseo.app to create your workspace, then come back." action="Open phaseo.app" onAction={() => void WebBrowser.openBrowserAsync(`${WEB_ORIGIN}/sign-in`)} />
+        )}
       </Screen>
     );
   }

@@ -3,9 +3,9 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { Button, LoadingState, Text } from "@/components/ui";
-import { useAuth } from "@/providers/AuthProvider";
+import { authErrorMessage, useAuth } from "@/providers/AuthProvider";
 
-/** Opened by phaseo://auth/callback?code=… from an email sign-in link. */
+/** Opened by phaseo://auth/callback?code=… when a Google, GitHub or GitLab sign-in returns to the app. */
 export default function AuthCallback() {
   const router = useRouter();
   const url = Linking.useLinkingURL();
@@ -17,7 +17,7 @@ export default function AuthCallback() {
     let cancelled = false;
     void completeSignIn(url)
       .then(() => { if (!cancelled) router.replace("/account"); })
-      .catch((cause) => { if (!cancelled) setError(cause instanceof Error ? cause.message : "This sign-in link didn't work."); });
+      .catch((cause) => { if (!cancelled) setError(authErrorMessage(cause)); });
     return () => { cancelled = true; };
   }, [url, completeSignIn, router]);
 
@@ -25,7 +25,7 @@ export default function AuthCallback() {
   return (
     <View className="flex-1 items-center justify-center gap-3 bg-background px-8">
       <Text variant="heading">{"Couldn't sign you in"}</Text>
-      <Text variant="muted" className="text-center">{error} Links work once and expire after an hour.</Text>
+      <Text variant="muted" className="text-center">{error}</Text>
       <Button label="Try again" onPress={() => router.replace("/sign-in")} />
     </View>
   );

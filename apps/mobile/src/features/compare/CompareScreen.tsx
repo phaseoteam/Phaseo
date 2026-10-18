@@ -106,7 +106,12 @@ export function CompareScreen() {
             </View>
           ))}
         </View>
-        {isLoading ? null : ROWS.map((row) => <CompareRow key={row.label} label={row.label} values={columns.map(row.value)} best={bestIndex(columns, row)} />)}
+        {isLoading ? null : ROWS.map((row) => {
+          const values = columns.map(row.value);
+          // A row nobody has data for (e.g. knowledge cutoff) says nothing; leave it out.
+          if (values.every((value) => value === "—")) return null;
+          return <CompareRow key={row.label} label={row.label} values={values} best={bestIndex(columns, row)} />;
+        })}
         {benchmarks.length ? (
           <>
             <Text variant="heading" className="px-4 pb-1 pt-6">Benchmarks</Text>

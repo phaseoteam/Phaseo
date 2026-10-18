@@ -1,35 +1,68 @@
+import * as WebBrowser from "expo-web-browser";
 import { useRouter } from "expo-router";
-import { Mail } from "lucide-react-native";
 import { useEffect, useState } from "react";
+import { Pressable, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
-import { View } from "react-native";
 import { Button, Divider, Screen, Text, TextField } from "@/components/ui";
-import { useAuth, type OAuthProvider } from "@/providers/AuthProvider";
+import { WEB_ORIGIN } from "@/lib/config";
+import { authErrorMessage, useAuth, type OAuthProvider } from "@/providers/AuthProvider";
+
+type Busy = OAuthProvider | "password" | "code" | null;
 
 export default function SignInScreen() {
   const router = useRouter();
-  const { session, configured, signInWithProvider, sendEmailLink } = useAuth();
+  const { session, mfaPending, configured, signInWithProvider, signInWithPassword, verifyMfa, signOut } = useAuth();
   const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState<OAuthProvider | "email" | null>(null);
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<string | null>(null);
-  const [sent, setSent] = useState(false);
 
   useEffect(() => {
     if (session && router.canGoBack()) router.back();
   }, [session, router]);
 
-  async function run(kind: OAuthProvider | "email", action: () => Promise<void>) {
+  async function run(kind: Busy, action: () => Promise<void>) {
     setBusy(kind);
     setError(null);
     try {
       await action();
-      if (kind === "email") setSent(true);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Sign-in didn't work. Try again.");
+      setError(authErrorMessage(cause));
     } finally {
       setBusy(null);
     }
   }
+
+  const openWeb = (path: string) => void WebBrowser.openBrowserAsync(`${WEB_ORIGIN}${path}`);
+
+  if (mfaPending) {
+    return (
+      <Screen edges={[]} className="bg-popover">
+        <KeyboardAwareScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+          <Text variant="title">Enter your code</Text>
+          <Text variant="muted" className="mt-1">Your account uses two-factor authentication. Enter the 6-digit code from your authenticator app.</Text>
+          <TextField
+            className="mt-6 text-center text-[22px] tracking-[6px]"
+            value={code}
+            onChangeText={(value) => setCode(value.replace(/\D/g, "").slice(0, 6))}
+            placeholder="000000"
+            keyboardType="number-pad"
+            textContentType="oneTimeCode"
+            autoComplete="one-time-code"
+            autoFocus
+            onSubmitEditing={() => code.length === 6 && void run("code", () => verifyMfa(code))}
+          />
+          <Button className="mt-3" label="Verify" loading={busy === "code"} disabled={code.length !== 6 || busy != null} onPress={() => void run("code", () => verifyMfa(code))} />
+          <Button className="mt-2" label="Use a different account" variant="ghost" onPress={() => void signOut()} />
+          {error ? <Text variant="small" className="mt-4 text-destructive">{error}</Text> : null}
+        </KeyboardAwareScrollView>
+      </Screen>
+    );
+  }
+
+  const canSubmit = configured && busy == null && email.includes("@") && password.length > 0;
+  const submit = () => canSubmit && void run("password", () => signInWithPassword(email.trim(), password));
 
   return (
     <Screen edges={[]} className="bg-popover">
@@ -40,25 +73,27 @@ export default function SignInScreen() {
         <View className="mt-6 gap-2">
           <Button label="Continue with Google" variant="outline" loading={busy === "google"} disabled={!configured || busy != null} onPress={() => void run("google", () => signInWithProvider("google"))} />
           <Button label="Continue with GitHub" variant="outline" loading={busy === "github"} disabled={!configured || busy != null} onPress={() => void run("github", () => signInWithProvider("github"))} />
+          <Button label="Continue with GitLab" variant="outline" loading={busy === "gitlab"} disabled={!configured || busy != null} onPress={() => void run("gitlab", () => signInWithProvider("gitlab"))} />
         </View>
         <View className="my-6 flex-row items-center gap-3">
           <Divider className="flex-1" />
           <Text variant="caption">or</Text>
           <Divider className="flex-1" />
         </View>
-        {sent ? (
-          <View className="gap-1">
-            <Text variant="label">Check your email</Text>
-            <Text variant="muted">Open the link we sent to {email.trim()} on this phone to finish signing in.</Text>
-            <Button label="Use a different email" variant="ghost" size="sm" className="mt-2 self-start" onPress={() => setSent(false)} />
-          </View>
-        ) : (
-          <View className="gap-2">
-            <TextField value={email} onChangeText={setEmail} placeholder="you@example.com" autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" returnKeyType="send" onSubmitEditing={() => email.trim() && void run("email", () => sendEmailLink(email.trim()))} />
-            <Button label="Email me a sign-in link" icon={Mail} loading={busy === "email"} disabled={!configured || busy != null || !email.includes("@")} onPress={() => void run("email", () => sendEmailLink(email.trim()))} />
-          </View>
-        )}
+        <View className="gap-2">
+          <TextField value={email} onChangeText={setEmail} placeholder="Email" autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" returnKeyType="next" />
+          <TextField value={password} onChangeText={setPassword} placeholder="Password" secureTextEntry autoComplete="current-password" textContentType="password" returnKeyType="go" onSubmitEditing={submit} />
+          <Button label="Sign in" loading={busy === "password"} disabled={!canSubmit} onPress={submit} />
+        </View>
         {error ? <Text variant="small" className="mt-4 text-destructive">{error}</Text> : null}
+        <View className="mt-6 flex-row flex-wrap justify-between gap-3">
+          <Pressable accessibilityRole="link" hitSlop={8} onPress={() => openWeb("/sign-in")}>
+            <Text variant="small" className="font-semibold text-primary">Forgot your password?</Text>
+          </Pressable>
+          <Pressable accessibilityRole="link" hitSlop={8} onPress={() => openWeb("/sign-up")}>
+            <Text variant="small" className="font-semibold text-primary">Create an account</Text>
+          </Pressable>
+        </View>
       </KeyboardAwareScrollView>
     </Screen>
   );
