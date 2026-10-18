@@ -6,6 +6,13 @@
 // Transforms IR -> OpenAI Responses Response
 
 import type { IRChatResponse, IRUsage, IRContentPart } from "@core/ir";
+import { irUsageToOpenAIStyle } from "@core/cache-usage";
+import {
+	encodeResponsesReasoningItem,
+	encodeResponsesToolSignatureItem,
+	sealReasoningPart,
+	type ResponsesReasoningItem,
+} from "../shared/reasoning";
 
 /**
  * OpenAI Responses response type
@@ -69,7 +76,7 @@ export type OpenAIResponseOutputItem =
 	}
 	| { type: "function_call"; call_id: string; name: string; arguments: string }
 	| { type: "custom_tool_call"; call_id: string; name: string; input: string }
-	| { type: "reasoning"; content: Array<{ type: "output_text"; text: string; annotations?: any[] }> };
+	| ResponsesReasoningItem;
 
 /**
  * Encode IR response to OpenAI Responses format
@@ -88,15 +95,37 @@ export function encodeOpenAIResponsesResponse(
 ): OpenAIResponsesResponse {
 	const outputItems: OpenAIResponseOutputItem[] = [];
 
+	const origin = { provider: ir.provider, model: ir.model };
+	const responseId = requestId ?? ir.id;
 	for (const choice of ir.choices) {
 		const hasToolCalls = (choice.message.toolCalls?.length ?? 0) > 0;
-		const { textParts, reasoningParts, imageParts, audioParts } = splitContentParts(choice.message.content as IRContentPart[]);
-
-		for (const reasoningText of reasoningParts) {
-			outputItems.push({
-				type: "reasoning",
-				content: [{ type: "output_text", text: reasoningText, annotations: [] }],
-			});
+		const { textParts, imageParts, audioParts } = splitContentParts(choice.message.content as IRContentPart[]);
+		// Reasoning generated between tool calls is placed before the call it
+		// preceded, so the item order matches the provider's output order.
+		const anchoredReasoning = new Map<string, OpenAIResponseOutputItem[]>();
+		let reasoningIndex = 0;
+		for (const part of choice.message.content as IRContentPart[] ?? []) {
+			let item: OpenAIResponseOutputItem | null = null;
+			let anchor: string | undefined;
+			if (part.type === "reasoning_text") {
+				if (!part.text && !sealReasoningPart(part, origin)) continue;
+				item = encodeResponsesReasoningItem(part, `rs_${responseId}_${choice.index}_${reasoningIndex}`, origin);
+				anchor = hasToolCalls ? part.beforeToolCallId : undefined;
+			} else if (part.type === "provider_block" && part.block?.type === "thinking" && typeof part.block.thinking === "string" && part.block.thinking) {
+				item = {
+					type: "reasoning",
+					id: `rs_${responseId}_${choice.index}_${reasoningIndex}`,
+					summary: [],
+					content: [{ type: "output_text", text: part.block.thinking, annotations: [] }],
+				};
+			}
+			if (!item) continue;
+			reasoningIndex += 1;
+			if (anchor && choice.message.toolCalls?.some((call) => call.id === anchor)) {
+				anchoredReasoning.set(anchor, [...(anchoredReasoning.get(anchor) ?? []), item]);
+			} else {
+				outputItems.push(item);
+			}
 		}
 
 		const hasText = textParts.length > 0;
@@ -178,6 +207,11 @@ export function encodeOpenAIResponsesResponse(
 
 		if (hasToolCalls) {
 			for (const toolCall of choice.message.toolCalls ?? []) {
+				outputItems.push(...(anchoredReasoning.get(toolCall.id) ?? []));
+				// A Gemini function-call signature travels in its own reasoning
+				// item, just before the call it belongs to.
+				const signatureItem = encodeResponsesToolSignatureItem(toolCall, origin);
+				if (signatureItem) outputItems.push(signatureItem);
 				outputItems.push(toolCall.type === "custom"
 					? {
 						type: "custom_tool_call",
@@ -251,28 +285,32 @@ function encodeUsage(usage?: IRUsage): OpenAIResponsesResponse["usage"] | undefi
 	if (promptTokens == null && completionTokens == null && totalTokens == null) {
 		return undefined;
 	}
+	// OpenAI semantics: input_tokens includes cache reads and writes.
+	const cache = irUsageToOpenAIStyle({ ...usage, inputTokens: promptTokens ?? 0, outputTokens: completionTokens ?? 0, totalTokens });
 
 	return {
-		input_tokens: promptTokens ?? 0,
+		input_tokens: cache.inputTokens,
 		output_tokens: completionTokens ?? 0,
-		total_tokens: totalTokens ?? 0,
+		total_tokens: totalTokens == null ? cache.inputTokens + (completionTokens ?? 0) : cache.totalTokens,
 		...(usage.serviceTier ? { service_tier: usage.serviceTier } : {}),
 		...(typeof usage._ext?.citationTokens === "number" ? { citation_tokens: usage._ext.citationTokens } : {}),
 		...(typeof usage._ext?.numSearchQueries === "number" ? { num_search_queries: usage._ext.numSearchQueries } : {}),
 		...(typeof usage._ext?.searchContextSize === "string" ? { search_context_size: usage._ext.searchContextSize } : {}),
 		...(usage._ext?.providerCost ? { cost: usage._ext.providerCost } : {}),
 		input_tokens_details:
-			typeof usage.cachedInputTokens === "number" ||
-			typeof usage._ext?.cachedWriteTokens === "number"
+			typeof cache.readTokens === "number" ||
+			typeof cache.writeTokens === "number"
 				? {
-					...(typeof usage.cachedInputTokens === "number"
-						? { cached_tokens: usage.cachedInputTokens }
+					...(typeof cache.readTokens === "number"
+						? { cached_tokens: cache.readTokens }
 						: {}),
-					...(typeof usage._ext?.cachedWriteTokens === "number"
-						? { cache_write_tokens: usage._ext.cachedWriteTokens }
+					...(typeof cache.writeTokens === "number"
+						? { cache_write_tokens: cache.writeTokens }
 						: {}),
 				}
 				: undefined,
+		...(typeof cache.write5mTokens === "number" ? { cached_write_text_tokens_5m: cache.write5mTokens } : {}),
+		...(typeof cache.write1hTokens === "number" ? { cached_write_text_tokens_1h: cache.write1hTokens } : {}),
 		output_tokens_details:
 			typeof usage.reasoningTokens === "number"
 				? { reasoning_tokens: usage.reasoningTokens }

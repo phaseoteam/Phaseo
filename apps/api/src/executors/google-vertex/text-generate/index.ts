@@ -9,7 +9,7 @@ import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-g
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
 import { irToAnthropicMessages, anthropicMessagesToIR, bufferAnthropicStreamToMessage, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
-import { createAnthropicToResponsesStreamTransformer, createAnthropicStreamAccounting, createAnthropicPassthroughStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
+import { ANTHROPIC_CACHE_USAGE_SEMANTICS, createAnthropicToResponsesStreamTransformer, createAnthropicStreamAccounting, createAnthropicPassthroughStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
 import { isClaudeOpus55 } from "@core/claudeModelCapabilities";
 import { assertClaudeRequestSupported } from "@core/claudeRequestValidation";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
@@ -23,6 +23,15 @@ import { getBindings } from "@/runtime/env";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { withNormalizedReasoning } from "@executors/google/text-generate/normalize-reasoning";
 import { irPartsToGeminiParts } from "@executors/google/shared/media";
+import {
+	appendGeminiFunctionResponse,
+	geminiFunctionResponsePart,
+	geminiFunctionCallId,
+	geminiReplayableAssistantParts,
+	geminiThoughtPartToIR,
+	irToolCallsToGeminiParts,
+	withoutEmptyGeminiTextParts,
+} from "@executors/google/shared/function-history";
 import {
 	modelSupportsGoogleThinkingLevels,
 	resolveGoogleThinkingLevelForEffort,
@@ -63,7 +72,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	let endpoint: string;
 
 	if (route.family === "anthropic") {
-		payload = irToAnthropicMessages(irRequest, args.maxOutputTokens, route.modelForPath);
+		payload = irToAnthropicMessages(irRequest, args.maxOutputTokens, route.modelForPath, { providerId: args.providerId || "google-vertex" });
 		delete payload.model;
 		payload.anthropic_version = "vertex-2023-10-16";
 		payload.stream = true;
@@ -130,7 +139,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	if (res.body && !isJsonResponse) {
 		if (irRequest.stream) {
-			const accounting = route.family === "anthropic" && isClaudeOpus55(model) ? createAnthropicStreamAccounting() : undefined;
+			// Every Claude stream records usage from the upstream frames, so cache writes are
+			// billed whichever model it is.
+			const accounting = route.family === "anthropic" ? createAnthropicStreamAccounting() : undefined;
 			const stream = (() => {
 				if (route.family === "gemini") {
 					return transformGoogleGeminiStream(res.body!, args);
@@ -145,11 +156,11 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 						"chat",
 					);
 				}
-				if (accounting && args.protocol === "anthropic.messages") {
+				if (accounting && isClaudeOpus55(model) && args.protocol === "anthropic.messages") {
 					return res.body!.pipeThrough(createAnthropicPassthroughStreamTransformer(accounting));
 				}
 				const responsesStream = res.body!.pipeThrough(
-					createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting }),
+					createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting, providerId: args.providerId }),
 				);
 				return resolveStreamForProtocol(
 					new Response(responsesStream, {
@@ -168,9 +179,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				usageFinalizer: async () => {
 					if (!accounting) return null;
 					const final = accounting.snapshot();
-					return { ...bill, usage: normalizeTextUsageForPricing(final.usage) ?? undefined,
+					return { ...bill, usage: normalizeTextUsageForPricing(final.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined,
 						finish_reason: mapAnthropicStopReason(final.stopReason) };
 				},
+				usageFinalizerAuthoritative: accounting !== undefined,
 				bill,
 				upstream: res,
 				keySource: keyInfo.source,
@@ -185,7 +197,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		if (route.family === "anthropic" && isClaudeOpus55(model)) {
 			const { message, firstFrameMs, totalMs } = await bufferAnthropicStreamToMessage(res, selectedDispatchAtMs);
 			const ir = anthropicMessagesToIR(message, args.requestId, model, args.providerId);
-			bill.usage = normalizeTextUsageForPricing(message.usage) ?? undefined;
+			bill.usage = normalizeTextUsageForPricing(message.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined;
 			bill.finish_reason = ir.choices[0]?.finishReason ?? null;
 			return { kind: "completed", ir, bill, upstream: res, keySource: keyInfo.source, byokKeyId: keyInfo.byokId,
 				mappedRequest, rawResponse: message, timing: { latencyMs: firstFrameMs ?? undefined, generationMs: totalMs } };
@@ -204,7 +216,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				return res.body!;
 			}
 			return res.body!.pipeThrough(
-				createAnthropicToResponsesStreamTransformer(args.requestId, model),
+				createAnthropicToResponsesStreamTransformer(args.requestId, model, { providerId: args.providerId }),
 			);
 		})();
 		const routeForBuffer = route.family === "anthropic" ? "responses" : "chat";
@@ -439,10 +451,14 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 			continue;
 		}
 		if (msg.role === "assistant") {
-			contents.push({
-				role: "model",
-				parts: await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true, upstreamTiming }),
-			});
+			const parts = [
+				...withoutEmptyGeminiTextParts(await irPartsToGeminiParts(
+					geminiReplayableAssistantParts(msg.content, { providerId: "google-vertex", model: modelOverride ?? ir.model }),
+					{ preserveReasoningAsThought: true, upstreamTiming },
+				)),
+				...irToolCallsToGeminiParts(msg.toolCalls, modelOverride ?? ir.model, "google-vertex"),
+			];
+			if (parts.length > 0) contents.push({ role: "model", parts });
 			continue;
 		}
 		if (msg.role === "tool") {
@@ -455,15 +471,11 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 						responsePayload = { content: toolResult.content };
 					}
 				}
-				contents.push({
-					role: "user",
-					parts: [{
-						functionResponse: {
-							name: toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
-							response: responsePayload,
-						},
-					}],
-				});
+				appendGeminiFunctionResponse(contents, geminiFunctionResponsePart(
+					toolResult.toolCallId,
+					toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
+					responsePayload,
+				));
 			}
 		}
 	}
@@ -594,21 +606,15 @@ export function geminiToIR(
 	for (const candidate of json.candidates || []) {
 		const contentParts: IRContentPart[] = [];
 		const toolCalls: any[] = [];
+		const callIds = new Map<string, number>();
 
 		if (candidate.content?.parts) {
 			for (const part of candidate.content.parts) {
 				const inlineData = normalizeGeminiInlineData(part);
-				if (part.text) {
-					if (part.thought) {
-						contentParts.push({
-							type: "reasoning_text",
-							text: part.text,
-							thoughtSignature: part.thought_signature,
-							summary: part.thought_summary,
-						} as any);
-					} else {
-						contentParts.push({ type: "text", text: part.text });
-					}
+				if (part.thought && (part.text || part.thoughtSignature || part.thought_signature)) {
+					contentParts.push(geminiThoughtPartToIR(part, model, provider));
+				} else if (part.text) {
+					contentParts.push({ type: "text", text: part.text });
 				} else if (inlineData?.data) {
 					contentParts.push({
 						type: "image",
@@ -618,10 +624,14 @@ export function geminiToIR(
 						thoughtSignature: inlineData.thought_signature,
 					});
 				} else if (part.functionCall) {
+					const signature = part.thoughtSignature ?? part.thought_signature;
 					toolCalls.push({
-						id: part.functionCall.name,
+						id: geminiFunctionCallId(part, callIds),
 						name: part.functionCall.name,
 						arguments: JSON.stringify(part.functionCall.args || {}),
+						...(typeof signature === "string" && signature
+							? { thoughtSignature: signature, thoughtSignatureModel: model }
+							: {}),
 					});
 				}
 			}

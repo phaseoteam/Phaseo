@@ -56,6 +56,7 @@ export type { ChatCompletionsRequest } from "./ChatCompletionsRequest.js";
 export type { ChatCompletionsResponse } from "./ChatCompletionsResponse.js";
 export type { ChatImageOutputPart } from "./ChatImageOutputPart.js";
 export type { ChatMessage } from "./ChatMessage.js";
+export type { ChatReasoningDetail } from "./ChatReasoningDetail.js";
 export type { CreditsResponse } from "./CreditsResponse.js";
 export type { DataContributionCategories } from "./DataContributionCategories.js";
 export type { DataContributionClassifier } from "./DataContributionClassifier.js";
@@ -335,6 +336,7 @@ export type { ResponsesOutputContentPart } from "./ResponsesOutputContentPart.js
 export type { ResponsesOutputImagePart } from "./ResponsesOutputImagePart.js";
 export type { ResponsesOutputItem } from "./ResponsesOutputItem.js";
 export type { ResponsesOutputTextPart } from "./ResponsesOutputTextPart.js";
+export type { ResponsesReasoningSummaryPart } from "./ResponsesReasoningSummaryPart.js";
 export type { ResponsesRequest } from "./ResponsesRequest.js";
 export type { ResponsesResponse } from "./ResponsesResponse.js";
 export type { SearchModelsToolDefinition } from "./SearchModelsToolDefinition.js";

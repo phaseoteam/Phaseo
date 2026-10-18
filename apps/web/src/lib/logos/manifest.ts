@@ -1,4 +1,8 @@
 export const logoManifest = {
+	fastino: {
+		light: "/logos/fastino_light.svg",
+		dark: "/logos/fastino_dark.svg",
+	},
 	"abliteration-ai": {
 		color: "/logos/abliteration-ai.svg",
 	},

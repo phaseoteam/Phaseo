@@ -32,6 +32,9 @@ export type UnifiedStreamEvent =
 			choiceIndex?: number;
 			payload?: any;
 	  }
+	// Provider reasoning state (sealed signatures or encrypted reasoning) that
+	// Chat clients receive as reasoning_details and send back unchanged.
+	| { type: "reasoning_state"; details: Array<Record<string, any>>; choiceIndex?: number; payload?: any }
 	| { type: "usage"; usage: any; payload?: any }
 	| { type: "stop"; finishReason?: string | null; choiceIndex?: number; payload?: any }
 	| { type: "error"; message?: string; payload?: any }

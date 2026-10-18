@@ -1205,10 +1205,8 @@ type CacheControl struct {
 
 type ChatAudioOutputPart struct {
 	AudioUrl map[string]interface{} `json:"audio_url"`
-	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
 	Format *string `json:"format,omitempty"`
 	MimeType *string `json:"mime_type,omitempty"`
-	PromptCacheBreakpoint *map[string]interface{} `json:"prompt_cache_breakpoint,omitempty"`
 	Type string `json:"type"`
 }
 
@@ -1285,9 +1283,22 @@ type ChatMessage struct {
 	Content interface{} `json:"content,omitempty"`
 	Images *[]map[string]interface{} `json:"images,omitempty"`
 	Name *string `json:"name,omitempty"`
+	ReasoningContent *string `json:"reasoning_content,omitempty"`
+	ReasoningDetails *[]map[string]interface{} `json:"reasoning_details,omitempty"`
 	Role string `json:"role"`
 	ToolCallId *string `json:"tool_call_id,omitempty"`
 	ToolCalls *[]map[string]interface{} `json:"tool_calls,omitempty"`
+}
+
+type ChatReasoningDetail struct {
+	Data *string `json:"data,omitempty"`
+	Format *string `json:"format,omitempty"`
+	Id *string `json:"id,omitempty"`
+	Index *int `json:"index,omitempty"`
+	Signature *string `json:"signature,omitempty"`
+	Summary *string `json:"summary,omitempty"`
+	Text *string `json:"text,omitempty"`
+	Type string `json:"type"`
 }
 
 type CreditsResponse struct {
@@ -4386,7 +4397,10 @@ type RerankResult struct {
 
 type ResponsesInputItem struct {
 	Content interface{} `json:"content,omitempty"`
+	EncryptedContent *string `json:"encrypted_content,omitempty"`
+	Id *string `json:"id,omitempty"`
 	Role *string `json:"role,omitempty"`
+	Summary *[]map[string]interface{} `json:"summary,omitempty"`
 	Type *string `json:"type,omitempty"`
 }
 
@@ -4411,13 +4425,21 @@ type ResponsesOutputItem struct {
 	Arguments *string `json:"arguments,omitempty"`
 	CallId *string `json:"call_id,omitempty"`
 	Content *[]interface{} `json:"content,omitempty"`
+	EncryptedContent *string `json:"encrypted_content,omitempty"`
+	Id *string `json:"id,omitempty"`
 	Name *string `json:"name,omitempty"`
 	Role *string `json:"role,omitempty"`
+	Summary *[]map[string]interface{} `json:"summary,omitempty"`
 	Type *string `json:"type,omitempty"`
 }
 
 type ResponsesOutputTextPart struct {
 	Annotations *[]map[string]interface{} `json:"annotations,omitempty"`
+	Text string `json:"text"`
+	Type string `json:"type"`
+}
+
+type ResponsesReasoningSummaryPart struct {
 	Text string `json:"text"`
 	Type string `json:"type"`
 }

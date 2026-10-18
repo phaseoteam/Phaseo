@@ -14,7 +14,9 @@ import { resolveProviderKey } from "@providers/keys";
 import { azureAnthropicHeaders, azureAnthropicUrl, resolveAzureConfig, resolveAzureCredential } from "@providers/azure/config";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
+import { normaliseAnthropicCacheBreakpoints } from "./breakpoints";
 import {
+	ANTHROPIC_CACHE_USAGE_SEMANTICS,
 	createAnthropicStreamAccounting,
 	createAnthropicToResponsesStreamTransformer,
 } from "./stream-transformer";
@@ -22,7 +24,9 @@ import { SseParser } from "@core/sse-parser";
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
 import { isIRNativeToolDefinition } from "@core/nativeTools";
+import { ANTHROPIC_REASONING_FORMAT, canReplayReasoning } from "@core/reasoning-state";
 import {
+	supportsAnthropicMidConversationSystemMessages,
 	supportsAnthropicThinkingDisabled,
 	usesClaudeAdaptiveThinkingControls,
 } from "@core/claudeModelCapabilities";
@@ -191,6 +195,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 			args.providerModelSlug || args.ir.model,
 			{
 				inferenceGeo: resolveAnthropicInferenceGeo(args.providerId, args.ir),
+				providerId: args.providerId,
 			},
 		);
 
@@ -268,7 +273,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 
                         const model = args.providerModelSlug || args.ir.model;
 						const responsesStream = res.body.pipeThrough(
-                                createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting }),
+                                createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting, providerId: args.providerId }),
                         );
                         const normalized = resolveStreamForProtocol(
                                 new Response(responsesStream, {
@@ -290,10 +295,11 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 									const final = accounting.snapshot();
 									return {
 										...bill,
-										usage: normalizeTextUsageForPricing(final.usage) ?? undefined,
+										usage: normalizeTextUsageForPricing(final.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined,
 										finish_reason: mapAnthropicStopReason(final.stopReason),
 									};
 								},
+								usageFinalizerAuthoritative: true,
                                 bill,
                                 upstream: res,
                                 keySource: keyInfo.source,
@@ -313,7 +319,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
                         const ir = anthropicMessagesToIR(message, args.requestId, args.ir.model, args.providerId);
 
 			// Calculate pricing
-			const usageMeters = normalizeTextUsageForPricing(ir.usage);
+			const usageMeters = normalizeTextUsageForPricing(ir.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS);
 			if (usageMeters) {
 				bill.usage = usageMeters;
 			}
@@ -570,28 +576,56 @@ export function irToAnthropicMessages(
 	modelHint?: string | null,
 	options?: {
 		inferenceGeo?: "global" | "us" | null;
+		/** Gateway provider the request goes to; decides which signatures are replayed. */
+		providerId?: string | null;
 	},
 ): any {
 	const messages: any[] = [];
-	let system: string | any[] | undefined;
+	const systemSegments: Array<string | any[]> = [];
+	let conversationStarted = false;
 	const resolvedModel = modelHint || ir.model;
 	const usesAdaptiveThinkingControls = usesClaudeAdaptiveThinkingControls(resolvedModel);
+	const replayTarget = { providerId: options?.providerId ?? "anthropic", model: resolvedModel };
 
 	for (const msg of ir.messages) {
-		if (msg.role === "system") {
-			// Anthropic has system as a separate field
-			system = mapSystemContentToAnthropic(msg.content);
-		} else if (msg.role === "user") {
+		if (msg.role === "system" || msg.role === "developer") {
+			const mapped = mapSystemContentToAnthropic(msg.content);
+			if (!mapped) continue;
+			// Leading system and developer messages form the top-level system
+			// prompt. Later ones are placed after the loop.
+			if (!conversationStarted) systemSegments.push(mapped);
+			else messages.push({ role: "system", content: mapped, [LATE_SYSTEM_MESSAGE]: true });
+			continue;
+		}
+		conversationStarted = true;
+		if (msg.role === "user") {
 			messages.push({
 				role: "user",
 				content: msg.content.map(mapIRContentToAnthropic),
 			});
 		} else if (msg.role === "assistant") {
 			const content: any[] = [];
+			const toolCallIds = new Set((msg.toolCalls ?? []).map((call) => call.id));
+			const anchoredThinking = new Map<string, any[]>();
 
 			for (const part of msg.content) {
 				if (part.type === "text") {
+					// Chat clients send content "" next to tool calls; Anthropic
+					// rejects empty text blocks.
+					if (part.text.length === 0) continue;
 					content.push(mapIRContentToAnthropic(part));
+					continue;
+				}
+				if (part.type === "reasoning_text") {
+					// Only Claude's own thinking goes back, with its signature;
+					// anything else is dropped rather than sent as a forged block.
+					const block = toAnthropicThinkingBlock(part, replayTarget);
+					if (!block) continue;
+					if (part.beforeToolCallId && toolCallIds.has(part.beforeToolCallId)) {
+						anchoredThinking.set(part.beforeToolCallId, [...(anchoredThinking.get(part.beforeToolCallId) ?? []), block]);
+					} else {
+						content.push(block);
+					}
 					continue;
 				}
 				if (part.type === "provider_block") {
@@ -602,6 +636,7 @@ export function irToAnthropicMessages(
 			// Add tool_use blocks
 			if (msg.toolCalls) {
 				for (const tc of msg.toolCalls) {
+					content.push(...(anchoredThinking.get(tc.id) ?? []));
 					content.push({
 						type: "tool_use",
 						id: tc.id,
@@ -628,6 +663,9 @@ export function irToAnthropicMessages(
 			});
 		}
 	}
+
+	placeLateSystemMessages(messages, systemSegments, supportsAnthropicMidConversationSystemMessages(resolvedModel));
+	let system = joinAnthropicSystemSegments(systemSegments);
 
 	// Use IR maxTokens if provided, otherwise fall back to provider's max_output_tokens, otherwise 4096
 	const maxTokens = ir.maxTokens ?? providerMaxOutputTokens ?? 4096;
@@ -684,7 +722,9 @@ export function irToAnthropicMessages(
 
 	// Add other parameters
 	if (ir.stop) request.stop_sequences = Array.isArray(ir.stop) ? ir.stop : [ir.stop];
-	if (ir.metadata) request.metadata = ir.metadata;
+	// Anthropic's metadata accepts only `user_id` and rejects any other key.
+	const anthropicUserId = resolveAnthropicMetadataUserId(ir);
+	if (anthropicUserId) request.metadata = { user_id: anthropicUserId };
 	const reasoningDisabled = ir.reasoning?.enabled === false || ir.reasoning?.effort === "none";
 
 	if (usesAdaptiveThinkingControls) {
@@ -749,12 +789,126 @@ export function irToAnthropicMessages(
 		system = appendAnthropicSystemText(system, structuredOutputInstruction);
 		request.system = system;
 	}
+	enforceManualThinkingTurnStructure(request);
 	applyAnthropicCacheControlDefaults(request, ir.anthropicCacheControl);
 	applyAnthropicServiceControls(request, {
 		serviceTier: ir.serviceTier,
 	});
+	normaliseAnthropicCacheBreakpoints(request);
 
 	return request;
+}
+
+/**
+ * A replayable thinking or redacted_thinking block for a reasoning part, or
+ * null when the part is not Claude's own state for this route.
+ * https://platform.claude.com/docs/en/build-with-claude/thinking#preserving-thinking-blocks
+ */
+function toAnthropicThinkingBlock(
+	part: Extract<IRContentPart, { type: "reasoning_text" }>,
+	target: { providerId: string; model: string },
+): Record<string, any> | null {
+	if (!part.thoughtSignature && !part.redactedData) return null;
+	const origin = { format: part.reasoningFormat, model: part.reasoningModel, provider: part.reasoningProvider };
+	if (!canReplayReasoning(origin, target)) return null;
+	if (part.redactedData) return { type: "redacted_thinking", data: part.redactedData };
+	return { type: "thinking", thinking: part.text, signature: part.thoughtSignature };
+}
+
+function isToolResultOnlyUserMessage(message: any): boolean {
+	return message?.role === "user"
+		&& Array.isArray(message.content)
+		&& message.content.length > 0
+		&& message.content.every((block: any) => block?.type === "tool_result");
+}
+
+/**
+ * Manual thinking (`type: "enabled"`) requires the final assistant turn to
+ * start with a thinking block. The turn is in progress when tool results
+ * follow it. When its thinking was not returned (or came from another
+ * provider and was dropped), send this step without thinking, which is what
+ * the API's own mid-turn degradation does, instead of an invalid turn.
+ * https://platform.claude.com/docs/en/build-with-claude/thinking#thinking-with-tool-use
+ */
+function enforceManualThinkingTurnStructure(request: any): void {
+	if (request?.thinking?.type !== "enabled" || !Array.isArray(request.messages)) return;
+	const messages = request.messages;
+	let turnStart = -1;
+	for (let index = messages.length - 1; index >= 0; index -= 1) {
+		const message = messages[index];
+		if (message?.role === "user" && !isToolResultOnlyUserMessage(message)) {
+			turnStart = index;
+			break;
+		}
+	}
+	const firstAssistant = messages.slice(turnStart + 1).find((message: any) => message?.role === "assistant");
+	if (!firstAssistant) return;
+	const firstBlock = Array.isArray(firstAssistant.content) ? firstAssistant.content[0] : null;
+	if (firstBlock?.type === "thinking" || firstBlock?.type === "redacted_thinking") return;
+	const budgetTokens = request.thinking.budget_tokens;
+	delete request.thinking;
+	// Observable downgrade: no prompt content, only what was changed and why.
+	console.warn("[gateway] manual thinking dropped for this step", {
+		model: typeof request.model === "string" ? request.model : null,
+		reason: "in_progress_turn_without_thinking_block",
+		budget_tokens: typeof budgetTokens === "number" ? budgetTokens : null,
+	});
+}
+
+const LATE_SYSTEM_MESSAGE = Symbol("lateSystemMessage");
+const ANTHROPIC_METADATA_USER_ID_MAX_LENGTH = 256;
+
+function resolveAnthropicMetadataUserId(ir: IRChatRequest): string | undefined {
+	const candidates = [ir.metadata?.user_id, ir.userId];
+	for (const candidate of candidates) {
+		if (typeof candidate !== "string") continue;
+		const value = candidate.trim();
+		if (value && value.length <= ANTHROPIC_METADATA_USER_ID_MAX_LENGTH) return value;
+	}
+	return undefined;
+}
+
+/**
+ * Place system or developer messages that arrive after the conversation has
+ * started. Models that support mid-conversation system messages keep them in
+ * place when Anthropic's placement rule holds (straight after a user turn, and
+ * either last or followed by an assistant turn), which leaves the cached
+ * prefix untouched. Anything else is hoisted into the top-level system prompt,
+ * which is how Anthropic's own OpenAI compatibility layer treats them.
+ */
+function placeLateSystemMessages(
+	messages: any[],
+	systemSegments: Array<string | any[]>,
+	supportsMidConversation: boolean,
+): void {
+	for (let index = 0; index < messages.length; index += 1) {
+		const message = messages[index];
+		if (!message?.[LATE_SYSTEM_MESSAGE]) continue;
+		// Consecutive system messages are judged together, so merge them.
+		const parts: Array<string | any[]> = [message.content];
+		while (messages[index + 1]?.[LATE_SYSTEM_MESSAGE]) {
+			parts.push(messages[index + 1].content);
+			messages.splice(index + 1, 1);
+		}
+		const previous = messages[index - 1];
+		const next = messages[index + 1];
+		const validPlacement = previous?.role === "user" && (!next || next.role === "assistant");
+		if (supportsMidConversation && validPlacement) {
+			messages[index] = { role: "system", content: joinAnthropicSystemSegments(parts) };
+			continue;
+		}
+		systemSegments.push(...parts);
+		messages.splice(index, 1);
+		index -= 1;
+	}
+}
+
+function joinAnthropicSystemSegments(segments: Array<string | any[]>): string | any[] | undefined {
+	if (segments.length === 0) return undefined;
+	if (segments.length === 1) return segments[0];
+	// Anthropic's compatibility layer joins system messages with one newline.
+	if (segments.every((segment) => typeof segment === "string")) return segments.join("\n");
+	return segments.flatMap((segment) => typeof segment === "string" ? [{ type: "text", text: segment }] : segment);
 }
 
 export function resolveAnthropicInferenceGeo(
@@ -965,6 +1119,7 @@ export function anthropicMessagesToIR(
 ): IRChatResponse {
 	const toolCalls: IRToolCall[] = [];
 	const contentParts: IRContentPart[] = [];
+	const unanchored: Array<Extract<IRContentPart, { type: "reasoning_text" }>> = [];
 
 	// Extract content blocks
 	for (const block of json.content || []) {
@@ -979,6 +1134,13 @@ export function anthropicMessagesToIR(
 				name: block.name,
 				arguments: JSON.stringify(block.input),
 			});
+			for (const reasoning of unanchored.splice(0)) reasoning.beforeToolCallId = block.id;
+		} else if (block?.type === "thinking" || block?.type === "redacted_thinking") {
+			// Keep the signature (or redacted data) so OpenAI-style surfaces can
+			// return it and the next tool-loop step can replay it to Claude.
+			const reasoning = anthropicThinkingBlockToIR(block, model, provider);
+			contentParts.push(reasoning);
+			if (toolCalls.length > 0) unanchored.push(reasoning);
 		} else if (block && typeof block === "object") {
 			contentParts.push({ type: "provider_block", block });
 		}
@@ -1029,6 +1191,9 @@ export function anthropicMessagesToIR(
 					typeof json.usage.cache_read_input_tokens === "number"
 						? json.usage.cache_read_input_tokens
 						: undefined,
+				// Anthropic's input_tokens excludes cache reads and writes; both are billed on top.
+				cachedReadTokensAreSubsetOfInput: false,
+				cachedWriteTokensAreSubsetOfInput: false,
 				_ext:
 					typeof json.usage.cache_creation_input_tokens === "number"
 						? {
@@ -1046,6 +1211,27 @@ export function anthropicMessagesToIR(
 			}
 			: undefined,
 		serviceTier: resolveAnthropicServiceTierFromResponse(json),
+	};
+}
+
+export function anthropicThinkingBlockToIR(
+	block: any,
+	model: string,
+	provider: string,
+): Extract<IRContentPart, { type: "reasoning_text" }> {
+	const origin = {
+		reasoningFormat: ANTHROPIC_REASONING_FORMAT,
+		...(model ? { reasoningModel: model } : {}),
+		...(provider ? { reasoningProvider: provider } : {}),
+	};
+	if (block?.type === "redacted_thinking") {
+		return { type: "reasoning_text", text: "", redactedData: String(block.data ?? ""), ...origin };
+	}
+	return {
+		type: "reasoning_text",
+		text: typeof block?.thinking === "string" ? block.thinking : "",
+		...(typeof block?.signature === "string" && block.signature ? { thoughtSignature: block.signature } : {}),
+		...origin,
 	};
 }
 

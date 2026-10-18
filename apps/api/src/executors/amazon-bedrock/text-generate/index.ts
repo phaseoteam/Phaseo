@@ -3,7 +3,7 @@
 // How: IR -> Anthropic Messages or OpenAI Chat/Responses, then protocol shaping is handled by the pipeline.
 
 import type { IRChatRequest } from "@core/ir";
-import { isClaudeOpus55 } from "@core/claudeModelCapabilities";
+import { isClaudeOpus55, normalizeClaudeModelId } from "@core/claudeModelCapabilities";
 import { assertClaudeRequestSupported } from "@core/claudeRequestValidation";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
@@ -13,6 +13,7 @@ import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate
 import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
 import { irToAnthropicMessages, anthropicMessagesToIR, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
 import {
+	ANTHROPIC_CACHE_USAGE_SEMANTICS,
 	createAnthropicStreamAccounting,
 	createAnthropicPassthroughStreamTransformer,
 	createAnthropicToResponsesStreamTransformer,
@@ -77,7 +78,7 @@ async function executeBedrockMessages(
 ): Promise<ExecutorResult> {
 	const irRequest = args.ir as IRChatRequest;
 	const requestPayload = {
-		...irToAnthropicMessages(irRequest, args.maxOutputTokens, model),
+		...irToAnthropicMessages(irRequest, args.maxOutputTokens, model, { providerId: args.providerId || "amazon-bedrock" }),
 		model,
 		stream: Boolean(irRequest.stream),
 	};
@@ -129,7 +130,7 @@ async function executeBedrockMessages(
 		const accounting = createAnthropicStreamAccounting();
 		const nativeMessages = isClaudeOpus55(model) && args.protocol === "anthropic.messages";
 		const responsesStream = nativeMessages ? null : res.body.pipeThrough(
-			createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting }),
+			createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting, providerId: args.providerId }),
 		);
 		const stream = nativeMessages ? res.body.pipeThrough(createAnthropicPassthroughStreamTransformer(accounting)) : resolveStreamForProtocol(
 			new Response(responsesStream!, {
@@ -147,10 +148,11 @@ async function executeBedrockMessages(
 				const final = accounting.snapshot();
 				return {
 					...bill,
-					usage: normalizeTextUsageForPricing(final.usage) ?? undefined,
+					usage: normalizeTextUsageForPricing(final.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined,
 					finish_reason: mapAnthropicStopReason(final.stopReason),
 				};
 			},
+			usageFinalizerAuthoritative: true,
 			bill,
 			upstream: res,
 			keySource: keyInfo.source,
@@ -166,7 +168,7 @@ async function executeBedrockMessages(
 	const json: any = await res.json().catch(() => null);
 	const providerId = args.providerId || "amazon-bedrock";
 	const ir = anthropicMessagesToIR(json ?? {}, args.requestId, model, providerId);
-	const usageMeters = normalizeTextUsageForPricing(json?.usage ?? ir.usage);
+	const usageMeters = normalizeTextUsageForPricing(json?.usage ?? ir.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS);
 	if (usageMeters) {
 		bill.usage = usageMeters;
 	}
@@ -340,12 +342,26 @@ export function transformStream(stream: ReadableStream<Uint8Array>): ReadableStr
 export function resolveMantleTextRoute(
 	args: ExecutorExecuteArgs,
 ): "messages" | "chat" | "responses" {
-	// Opus 5.5 supports only Anthropic Messages on Mantle, irrespective of
-	// the public protocol. Preserve the existing selection for other models.
-	if (isClaudeOpus55(args.ir.model) || isClaudeOpus55(args.providerModelSlug) || usesBedrockMessagesApi(args)) return "messages";
+	// Claude on Mantle serves only the Anthropic Messages API, so every Claude
+	// model uses it whatever the client protocol. The OpenAI-compatible
+	// /openai/v1 surfaces are kept for non-Claude models.
+	if (isBedrockClaudeModel(args.providerModelSlug) || isBedrockClaudeModel(args.ir.model) || usesBedrockMessagesApi(args)) return "messages";
 	const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
 	const wantsResponses = protocol === "openai.responses" || args.endpoint === "responses";
 	return wantsResponses ? "responses" : "chat";
+}
+
+/**
+ * Bedrock model cards list Messages as the only Mantle API for Claude
+ * (Responses and Chat Completions are "not supported"). Matches bare Mantle IDs
+ * such as `anthropic.claude-sonnet-5`, inference-profile IDs such as
+ * `us.anthropic.claude-fable-5-1` and gateway IDs such as
+ * `anthropic/claude-opus-5`.
+ */
+export function isBedrockClaudeModel(model: string | null | undefined): boolean {
+	const normalized = normalizeClaudeModelId(model);
+	if (!normalized) return false;
+	return isClaudeOpus55(normalized) || /(?:^|[./:])(?:anthropic[./])?claude-/.test(normalized);
 }
 
 function usesBedrockMessagesApi(args: ExecutorExecuteArgs): boolean {

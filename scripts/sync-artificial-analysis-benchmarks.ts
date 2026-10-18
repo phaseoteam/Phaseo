@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { loadEnvFile } from "node:process";
 import { createAdminClient } from "../apps/web/src/utils/supabase/admin";
-import { METRICS, benchmarkId, databaseModelMappings, fetchModels, matchModels, mergeResults, metricValue, methodologyVersionFromHtml, reassignedArtificialAnalysisResultIds, resultsForConfigurations, type CatalogModel, type MappingConfig } from "./artificial-analysis/core";
+import { METRICS, benchmarkId, databaseModelMappings, fetchModels, matchModels, mergeResults, metricValue, methodologyVersionFromHtml, resultsForConfigurations, type CatalogModel, type MappingConfig } from "./artificial-analysis/core";
 
 for (const file of ["apps/web/.env.local", ".env.local", ".env"]) {
 	if (existsSync(resolve(file))) loadEnvFile(resolve(file));
@@ -42,11 +42,11 @@ async function main() {
 		}
 	}
 	const config: MappingConfig = { models: databaseModelMappings(entries.map((entry) => entry.model)), creators };
+	const updated_at = new Date().toISOString();
 	const source = await fetchModels(apiKey);
 	const versionResponse = await fetch("https://artificialanalysis.ai/data-api/docs", { signal: AbortSignal.timeout(30_000) });
 	if (!versionResponse.ok) throw new Error(`Artificial Analysis version documentation returned ${versionResponse.status}; no data was written.`);
 	const methodologyVersion = methodologyVersionFromHtml(await versionResponse.text(), source.version);
-	const updated_at = new Date().toISOString();
 	const matches = matchModels(entries.map((entry) => entry.model), source.models, config);
 	const plan = entries.map((entry, index) => ({ ...entry, match: matches[index] }));
 	const report = { version: source.version, methodologyVersion, sourceModels: source.models.length,
@@ -61,7 +61,6 @@ async function main() {
 	if (!report.matched) throw new Error("No models matched; no benchmark data was written.");
 	if (!write) { console.log("Dry run complete. Use --write to update the database catalog."); return; }
 	const activeBenchmarkIds = METRICS.map((metric) => benchmarkId(metric, source.version));
-	const managedBenchmarkIds = [...new Set([...activeBenchmarkIds, ...METRICS.map((metric) => metric.id)])];
 	const metadata = METRICS.map((metric) => ({ benchmark_id: benchmarkId(metric, source.version), benchmark_name: metric.name, category: metric.field === "total_cost" ? "cost" : metric.field === "artificial_analysis_coding_index" ? "coding" : metric.field === "artificial_analysis_agentic_index" ? "agentic" : "general", ascending_order: metric.higherBetter, type: "numerical", link: "https://artificialanalysis.ai/data-api/docs", total_models: source.models.filter((model) => metricValue(model, metric) !== null).length }));
 	// Metadata is published to the database below, never to the retired JSON source.
 	for (const entry of plan) {
@@ -71,10 +70,8 @@ async function main() {
 
 	}
 	if (!db) return;
-	const { error } = await db.from("v2_benchmarks").upsert(metadata.map(({ benchmark_name, type, ...rest }) => ({ ...rest, name: benchmark_name, benchmark_type: type, updated_at })), { onConflict: "benchmark_id" });
-	if (error) throw error;
-	for (const entry of plan) {
-		if (!entry.match.source || !dbIds.has(entry.model.model_id)) continue;
+	const results = plan.flatMap((entry) => {
+		if (!entry.match.source || !dbIds.has(entry.model.model_id)) return [];
 		const rows = (entry.model.benchmarks ?? []).flatMap((result, index) => {
 			if (!activeBenchmarkIds.includes(String(result.benchmark_id))) return [];
 			const sourceId = String(result.other_info).match(/Artificial Analysis ID ([^;]+)/)?.[1];
@@ -82,33 +79,19 @@ async function main() {
 			const result_key = `${entry.model.model_id}:${result.benchmark_id}:${sourceId}`;
 			return [{ result_id: stableUuid(`benchmark-result:${result_key}`), model_slug: entry.model.model_id, benchmark_id: result.benchmark_id, score: String(result.score), score_numeric: result.score, is_self_reported: false, other_info: result.other_info, source_link: result.source_link, rank: result.rank, occur_idx: index, variant: result.variant ?? null, result_key, effective_to: null, updated_at }];
 		});
-		if (rows.length) {
-			const { error } = await db.from("v2_benchmark_results").upsert(rows, { onConflict: "result_id" });
-			if (error) throw error;
-		}
-		// Scope cleanup to this matched model, after its replacement succeeds.
-		const { data: old, error: readError } = await db.from("v2_benchmark_results").select("result_id").eq("model_slug", entry.model.model_id).is("effective_to", null).in("benchmark_id", managedBenchmarkIds);
-		if (readError) throw readError;
-		const stale = (old ?? []).filter((row) => !rows.some((result) => result.result_id === row.result_id)).map((row) => row.result_id);
-		// Saved catalogue records cannot be deleted. Withdraw obsolete scores in place.
-		if (stale.length) { const { error } = await db.from("v2_benchmark_results").update({ effective_to: updated_at, updated_at }).is("effective_to", null).in("result_id", stale); if (error) throw error; }
-	}
-	// Retire former owners only after all newly assigned results were published.
-	const sourceOwners = new Map(plan.flatMap((entry) => (entry.match.sources ?? []).map((source) => [source.id, entry.model.model_id] as const)));
-	const reassignedIds: string[] = [];
-	for (let offset = 0; ; offset += 500) {
-		const { data, error } = await db.from("v2_benchmark_results")
-			.select("result_id,model_slug,other_info").is("effective_to", null)
-			.in("benchmark_id", managedBenchmarkIds).order("result_id").range(offset, offset + 499);
-		if (error) throw error;
-		reassignedIds.push(...reassignedArtificialAnalysisResultIds(data ?? [], sourceOwners));
-		if ((data ?? []).length < 500) break;
-	}
-	for (let offset = 0; offset < reassignedIds.length; offset += 200) {
-		const { error } = await db.from("v2_benchmark_results").update({ effective_to: updated_at, updated_at })
-			.is("effective_to", null).in("result_id", reassignedIds.slice(offset, offset + 200));
-		if (error) throw error;
-	}
+		return rows;
+	});
+	const snapshot = {
+		snapshot_id: stableUuid(`aa-snapshot:${methodologyVersion}:${updated_at}`),
+		major_version: Math.floor(source.version), methodology_version: methodologyVersion, fetched_at: updated_at,
+		benchmarks: metadata.map(({ benchmark_name, type, ...rest }) => ({ ...rest, name: benchmark_name, benchmark_type: type })),
+		results,
+		model_slugs: plan.filter((entry) => entry.match.source && dbIds.has(entry.model.model_id)).map((entry) => entry.model.model_id),
+		source_owners: Object.fromEntries(plan.flatMap((entry) => (entry.match.sources ?? []).map((source) => [source.id, entry.model.model_id]))),
+	};
+	const { error } = await db.rpc("publish_artificial_analysis_snapshot", { p_snapshot: snapshot });
+	if (error) throw error;
+
 	console.log("Synchronized matched database models. Public caches expire under their normal TTLs.");
 }
 main().catch((error) => { console.error(error instanceof Error ? error.message : error); process.exitCode = 1; });

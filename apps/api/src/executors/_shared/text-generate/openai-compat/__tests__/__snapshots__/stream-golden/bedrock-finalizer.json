@@ -9,7 +9,9 @@
     "total_tokens": 67,
     "cached_read_text_tokens": 5,
     "cached_write_text_tokens": 2,
-    "requests": 1
+    "requests": 1,
+    "cached_read_tokens_are_subset_of_input": false,
+    "cached_write_tokens_are_subset_of_input": false
   },
   "upstream_id": "aws_req_1",
   "finish_reason": "tool_calls"

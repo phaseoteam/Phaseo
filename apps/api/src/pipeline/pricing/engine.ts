@@ -7,6 +7,7 @@ import { requiresExplicitServiceTier } from "./service-tiers";
 import { matchesConditions, shallowMerge, evaluateConditions } from "./conditions";
 import type { PriceCard, PriceRule, PricingBreakdownLine, PricingDimensionKey, PricingResult, PricingTimestampBasis } from "./types";
 import { pickFirstFiniteNumber, resolveCanonicalTokenUsage, resolveRequestCountUsage } from "@core/usage-normalization";
+import { CACHED_WRITE_TOKEN_PATHS, resolveCacheTokenUsage } from "@core/cache-usage";
 
 const KNOWN_METERS = new Set<string>([
     "input_tokens",
@@ -207,42 +208,11 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
     if (meters.output_tokens == null) meters.output_tokens = canonicalOutputTokens;
     if (meters.total_tokens == null) meters.total_tokens = canonicalTotalTokens;
 
-    const cachedReadTokens = pickFirstFiniteNumber(usageRaw, [
-        "cached_read_text_tokens",
-        "cache_read_input_tokens",
-        "cached_tokens",
-        "prompt_cache_hit_tokens",
-        "cachedInputTokens",
-        "cachedContentTokenCount",
-        "input_tokens_details.cached_tokens",
-        "input_details.cached_tokens",
-        "prompt_tokens_details.cached_tokens",
-    ]);
-    const cachedWriteTokens = pickFirstFiniteNumber(usageRaw, [
-        "cached_write_text_tokens",
-        "cache_creation_input_tokens",
-        "input_tokens_details.cache_creation_input_tokens",
-        "prompt_tokens_details.cache_creation_input_tokens",
-        "input_tokens_details.cache_creation_tokens",
-        "prompt_tokens_details.cache_creation_tokens",
-        "_ext.cachedWriteTokens",
-        "output_tokens_details.cached_tokens",
-        "completion_tokens_details.cached_tokens",
-    ]);
-    const cachedWrite5mTokens = pickFirstFiniteNumber(usageRaw, [
-        "cached_write_text_tokens_5m",
-        "_ext.cachedWriteTokens5m",
-        "cache_creation.ephemeral_5m_input_tokens",
-        "cache_creation_5m_input_tokens",
-        "cache_creation_ephemeral_5m_input_tokens",
-    ]);
-    const cachedWrite1hTokens = pickFirstFiniteNumber(usageRaw, [
-        "cached_write_text_tokens_1h",
-        "_ext.cachedWriteTokens1h",
-        "cache_creation.ephemeral_1h_input_tokens",
-        "cache_creation_1h_input_tokens",
-        "cache_creation_ephemeral_1h_input_tokens",
-    ]);
+    const cache = resolveCacheTokenUsage(usageRaw, canonicalInputTokens);
+    const cachedReadTokens = cache.readTokens;
+    const cachedWriteTokens = pickFirstFiniteNumber(usageRaw, [...CACHED_WRITE_TOKEN_PATHS]);
+    const cachedWrite5mTokens = cache.write5mTokens;
+    const cachedWrite1hTokens = cache.write1hTokens;
     const reasoningTokens = pickFirstFiniteNumber(usageRaw, [
         "output_reasoning_tokens",
         "reasoning_tokens",
@@ -386,23 +356,19 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
     }
 
     const inputTextTokens = meters.input_text_tokens;
-    const cachedReadIsSubsetHint = usageRaw?.cached_read_tokens_are_subset_of_input;
-    const shouldTreatCachedReadAsSubset =
-        cachedReadIsSubsetHint === true ||
-        (
-            cachedReadIsSubsetHint !== false &&
-            typeof usageRaw?.input_tokens_details?.cached_tokens === "number"
-        );
+    // Reads and writes that the provider counted inside input are billed on their own
+    // meters, so they come out of the uncached input meter (OpenAI, Kimi, Alibaba). Anthropic
+    // reports both on top of input, so nothing is subtracted there.
+    const cachedTokensInsideInput =
+        (cache.readSubset ? Math.max(0, cachedReadTokens ?? 0) : 0) +
+        (cache.writeSubset ? Math.max(0, cache.writeTokens ?? 0) : 0);
     const inputTextMirrorsCanonical =
         typeof inputTextTokens === "number" &&
         typeof canonicalInputTokens === "number" &&
         inputTextTokens === canonicalInputTokens;
 
     if (meters.input_text_tokens == null) {
-        meters.input_text_tokens =
-            shouldTreatCachedReadAsSubset && typeof cachedReadTokens === "number"
-                ? Math.max(0, canonicalInputTokens - cachedReadTokens)
-                : canonicalInputTokens;
+        meters.input_text_tokens = Math.max(0, canonicalInputTokens - cachedTokensInsideInput);
     }
     if (meters.output_text_tokens == null) {
         meters.output_text_tokens =
@@ -419,13 +385,8 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
     ) {
         meters.output_text_tokens = Math.max(0, meters.output_text_tokens - reasoningTokens);
     }
-    if (
-        shouldTreatCachedReadAsSubset &&
-        inputTextMirrorsCanonical &&
-        typeof cachedReadTokens === "number" &&
-        cachedReadTokens > 0
-    ) {
-        meters.input_text_tokens = Math.max(0, inputTextTokens - cachedReadTokens);
+    if (inputTextMirrorsCanonical && cachedTokensInsideInput > 0) {
+        meters.input_text_tokens = Math.max(0, inputTextTokens - cachedTokensInsideInput);
     }
 
     // Anthropic 1M pricing thresholds are based on input + cache read + cache write tokens.
@@ -666,6 +627,132 @@ function nativeToolFallbackRule(card: PriceCard, meter: PricingDimensionKey): Pr
     return null;
 }
 
+type CachePricingFallback = NonNullable<PricingResult["cache_pricing_fallback"]>[number];
+
+type PricingJob = { dim: PricingDimensionKey; qty: number; context: Record<string, any> };
+
+function rulesReferenceCacheTtl(card: PriceCard, meter: string): boolean {
+    return card.rules.some((rule) =>
+        rule.meter === meter &&
+        Array.isArray(rule.match) &&
+        rule.match.some((condition: any) => condition?.path === "cache_ttl"),
+    );
+}
+
+/**
+ * One pricing job per meter, except cache writes: a write rule keyed on `cache_ttl` is
+ * matched against the TTL the provider reported for those tokens (5-minute or 1-hour split),
+ * and defaults to 5 minutes, Anthropic's default, when neither the usage nor the request
+ * names one.
+ */
+function buildPricingJobs(
+    card: PriceCard,
+    dims: PricingDimensionKey[],
+    meters: Record<string, number>,
+    matchContext: Record<string, any>,
+): PricingJob[] {
+    const jobs: PricingJob[] = [];
+    const requestTtl = typeof matchContext.cache_ttl === "string" && matchContext.cache_ttl.trim()
+        ? matchContext.cache_ttl
+        : undefined;
+    const withTtl = (ttl: string) => ({ ...matchContext, cache_ttl: ttl });
+    for (const dim of dims) {
+        const qty = meters[dim];
+        if (!qty || qty <= 0) continue;
+        if (dim === "cached_write_text_tokens_5m" || dim === "cached_write_text_tokens_1h") {
+            jobs.push({ dim, qty, context: withTtl(dim.endsWith("_1h") ? "1h" : "5m") });
+            continue;
+        }
+        if (dim === "cached_write_text_tokens" && rulesReferenceCacheTtl(card, dim)) {
+            const write5m = Math.max(0, meters.cached_write_text_tokens_5m ?? 0);
+            const write1h = Math.max(0, meters.cached_write_text_tokens_1h ?? 0);
+            if (write5m + write1h > 0 && write5m + write1h <= qty) {
+                const fiveMinuteQty = qty - write1h;
+                if (fiveMinuteQty > 0) jobs.push({ dim, qty: fiveMinuteQty, context: withTtl("5m") });
+                if (write1h > 0) jobs.push({ dim, qty: write1h, context: withTtl("1h") });
+                continue;
+            }
+            jobs.push({ dim, qty, context: requestTtl ? matchContext : withTtl("5m") });
+            continue;
+        }
+        jobs.push({ dim, qty, context: matchContext });
+    }
+    return jobs;
+}
+
+/**
+ * Documented cache-write price as a multiple of the input price, for routes whose card has
+ * no write row. Claude (every platform): 5-minute writes 1.25x, 1-hour writes 2x. OpenAI and
+ * Azure GPT-5.6+ and Alibaba explicit cache: 1.25x. Kimi K3: 5-minute writes 1x, 1-hour 2x.
+ * Anything else: 1x.
+ */
+function cacheWriteFallbackMultiplier(card: PriceCard, meter: string): number {
+    const provider = String(card.provider ?? "").toLowerCase();
+    const model = String(card.model ?? "").toLowerCase();
+    const isOneHour = meter === "cached_write_text_tokens_1h";
+    if (model.includes("claude")) return isOneHour ? 2 : 1.25;
+    if (provider.startsWith("moonshotai") || model.includes("kimi-k3")) return isOneHour ? 2 : 1;
+    if (provider === "openai" || provider === "openai-eu" || provider === "azure" || provider.startsWith("alibaba")) {
+        return 1.25;
+    }
+    return 1;
+}
+
+function scaleUsdPrice(price: string | number, multiplier: number): string {
+    if (multiplier === 1) return String(price);
+    return formatUsdFromNanosExact(Math.round(parseUsdToNanos(String(price)) * multiplier));
+}
+
+/**
+ * Price a cache meter with no matching rule from the route's ordinary input rule: reads at
+ * the input rate, writes at the input rate times the documented write multiplier. Mirrors
+ * the audio cached-read fallback in after/pricing.ts.
+ */
+function cacheMeterFallbackRule(
+    card: PriceCard,
+    meter: PricingDimensionKey,
+    pricingPlan: string,
+    matchContext: Record<string, any>,
+): { rule: PriceRule; inputRule: PriceRule; multiplier: number } | null {
+    if (!CACHE_METERS.has(meter)) return null;
+    const inputMeters: PricingDimensionKey[] = meter.includes("image")
+        ? ["input_image_tokens", "input_text_tokens", "input_tokens"]
+        : meter.includes("audio")
+            ? ["input_audio_tokens", "input_text_tokens", "input_tokens"]
+            : meter.includes("video")
+                ? ["input_video_tokens", "input_text_tokens", "input_tokens"]
+                : ["input_text_tokens", "input_tokens"];
+    const plans = pricingPlan === "standard" ? ["standard"] : [pricingPlan, "standard"];
+    for (const plan of plans) {
+        for (const inputMeter of inputMeters) {
+            const candidates = card.rules
+                .filter((rule) => rule.pricing_plan === plan && rule.meter === inputMeter)
+                .filter((rule) => matchesConditions(rule.match, matchContext));
+            const inputRule = selectBestRule(candidates, matchContext)?.rule;
+            if (!inputRule) continue;
+            const multiplier = meter.startsWith("cached_write") ? cacheWriteFallbackMultiplier(card, meter) : 1;
+            return {
+                inputRule,
+                multiplier,
+                rule: {
+                    ...inputRule,
+                    meter,
+                    included_quantity: undefined,
+                    price_per_unit: scaleUsdPrice(inputRule.price_per_unit, multiplier),
+                    time_windows: inputRule.time_windows?.map((window) => ({
+                        ...window,
+                        price_per_unit: window.price_per_unit == null
+                            ? window.price_per_unit
+                            : scaleUsdPrice(window.price_per_unit, multiplier),
+                    })),
+                    id: `${inputRule.id ?? inputMeter}:cache_fallback:${meter}`,
+                },
+            };
+        }
+    }
+    return null;
+}
+
 /** Main public API -- build a full pricing summary from raw usage. */
 export function computeBillSummary(
     usageRaw: Record<string, any>,
@@ -703,18 +790,21 @@ export function computeBillSummary(
     const missingRequiredCacheMeters: string[] = [];
     const matchContext = { ...ctx, ...meters };
 
-    const findCandidatesForPlanAndMeter = (plan: string, meter: PricingDimensionKey): PriceRule[] =>
+    const findCandidatesForPlanAndMeter = (
+        plan: string,
+        meter: PricingDimensionKey,
+        context: Record<string, any> = matchContext,
+    ): PriceRule[] =>
         card.rules
             .filter((r) => r.pricing_plan === plan && r.meter === meter)
-            .filter((r) => matchesConditions(r.match, matchContext))
+            .filter((r) => matchesConditions(r.match, context))
 			.sort((a, b) => effectiveRulePriority(b) - effectiveRulePriority(a));
 
-    for (const dim of dims) {
-        const qty = meters[dim];
-        if (!qty || qty <= 0) continue;
+    for (const job of buildPricingJobs(card, dims, meters, matchContext)) {
+        const { dim, qty, context: jobContext } = job;
 
         // choose the highest priority rule for this meter that matches plan + conditions
-        let candidates = findCandidatesForPlanAndMeter(pricingPlan, dim);
+        let candidates = findCandidatesForPlanAndMeter(pricingPlan, dim, jobContext);
         let resolvedPlan = pricingPlan;
         let conservativeCoverageFallback = false;
         if (!candidates.length && pricingPlan !== "standard") {
@@ -742,7 +832,7 @@ export function computeBillSummary(
             if (conservativeCoverageFallback) {
                 resolvedPlan = pricingPlan;
             } else if (!requestedPlanDefinesMeter || pricingPlan !== "batch") {
-                const fallbackCandidates = findCandidatesForPlanAndMeter("standard", dim);
+                const fallbackCandidates = findCandidatesForPlanAndMeter("standard", dim, jobContext);
                 if (fallbackCandidates.length) {
                     candidates = fallbackCandidates;
                     resolvedPlan = "standard";
@@ -769,7 +859,7 @@ export function computeBillSummary(
             }
         }
 
-        const selectionSummary = analyzeRuleSelection(candidates, matchContext);
+        const selectionSummary = analyzeRuleSelection(candidates, jobContext);
 
         logPricingDebug("meter_candidates", {
             meter: dim,
@@ -875,22 +965,84 @@ export function computeBillSummary(
         });
     }
 
-    const totalNanos = lines.reduce((sum, line: any) => sum + (line.line_nanos ?? parseUsdToNanos(line.line_cost_usd)), 0);
     // A partial bill (even a free matched line) cannot cover unmatched usage.
     // Preserve the empty-lines sentinel: async callers use it to reject
     // reservations or retain holds when there is no matching price at all.
 	const hasPricedAggregateCacheWrite = lines.some((line) => line.dimension === "cached_write_text_tokens");
 	const hasPricedImplicitCacheRead = lines.some((line) => line.dimension === "implicit_cached_input_text_tokens");
-	const effectiveMissingCacheMeters = missingRequiredCacheMeters.filter((meter) =>
+	let effectiveMissingCacheMeters = missingRequiredCacheMeters.filter((meter) =>
 		!(hasPricedAggregateCacheWrite && cacheMeterCanUseAggregate(meter, meters)) &&
 		!(meter === "cached_read_text_tokens" && hasPricedImplicitCacheRead)
 	);
-    if (effectiveMissingCacheMeters.length > 0) {
-		throw new Error(`pricing_rule_missing:${effectiveMissingCacheMeters.join(",")}`);
+	// With no write rule at all, price the TTL split rather than the aggregate so 1-hour
+	// writes get their own multiplier and nothing is billed twice.
+	if (
+		effectiveMissingCacheMeters.includes("cached_write_text_tokens") &&
+		((meters.cached_write_text_tokens_5m ?? 0) > 0 || (meters.cached_write_text_tokens_1h ?? 0) > 0) &&
+		effectiveMissingCacheMeters.some((meter) => meter === "cached_write_text_tokens_5m" || meter === "cached_write_text_tokens_1h")
+	) {
+		effectiveMissingCacheMeters = effectiveMissingCacheMeters.filter((meter) => meter !== "cached_write_text_tokens");
+	}
+	const cachePricingFallback: CachePricingFallback[] = [];
+	const unpricedCacheMeters: string[] = [];
+	for (const meter of effectiveMissingCacheMeters) {
+		const qty = meters[meter];
+		// A priced aggregate write smaller than its own TTL split is inconsistent usage;
+		// pricing the split on top would bill the same writes twice.
+		const fallback = hasPricedAggregateCacheWrite &&
+			(meter === "cached_write_text_tokens_5m" || meter === "cached_write_text_tokens_1h")
+			? null
+			: cacheMeterFallbackRule(card, meter as PricingDimensionKey, pricingPlan, matchContext);
+		if (!fallback) {
+			unpricedCacheMeters.push(meter);
+			continue;
+		}
+		const priced = priceWithRule(qty, fallback.rule, requestOptions);
+		lines.push({
+			dimension: meter as PricingDimensionKey,
+			quantity: qty,
+			billable_units: priced.billableUnits,
+			unit_size: fallback.rule.unit_size,
+			unit_price_usd: priced.unitPriceUsd,
+			line_cost_usd: priced.lineCostUsd,
+			line_nanos: priced.lineNanos,
+			bill_mode: "all",
+			rule_priority: effectiveRulePriority(fallback.rule),
+			rule_id: fallback.rule.id,
+			billing_timestamp_basis: priced.billingTimestampBasis,
+			billing_timestamp_basis_configured: priced.billingTimestampBasisConfigured,
+			billing_timestamp_ms: priced.billingTimestampMs,
+			billing_timestamp_iso: priced.billingTimestampMs === null
+				? null
+				: new Date(priced.billingTimestampMs).toISOString(),
+			pricing_time_window: priced.pricingTimeWindow,
+			pricing_fallback: "input_rate",
+		});
+		cachePricingFallback.push({
+			meter,
+			quantity: qty,
+			input_meter: fallback.inputRule.meter,
+			input_rule_id: fallback.inputRule.id ?? null,
+			multiplier: fallback.multiplier,
+		});
+	}
+	if (cachePricingFallback.length > 0) {
+		// A missing cache price row is a catalogue gap, not a reason to fail a request the
+		// provider has already charged for. Bill at the input rate and make the gap visible.
+		console.warn("[pricing] cache meter priced at input-rate fallback", {
+			provider: card.provider,
+			model: card.model,
+			pricing_plan: pricingPlan,
+			fallback: cachePricingFallback,
+		});
+	}
+    if (unpricedCacheMeters.length > 0) {
+		throw new Error(`pricing_rule_missing:${unpricedCacheMeters.join(",")}`);
     }
     if (lines.length > 0 && unmatchedConfiguredMeters.length > 0) {
         throw new Error(`pricing_rule_missing:${unmatchedConfiguredMeters.join(",")}`);
     }
+    const totalNanos = lines.reduce((sum, line: any) => sum + (line.line_nanos ?? parseUsdToNanos(line.line_cost_usd)), 0);
     if (!Number.isSafeInteger(totalNanos)) throw new Error("pricing_amount_out_of_range");
     const centsCeil = nanosToCentsCeil(totalNanos);
 
@@ -907,6 +1059,7 @@ export function computeBillSummary(
         cost_cents: centsCeil,
         currency: "USD",
         lines,
+        ...(cachePricingFallback.length > 0 ? { cache_pricing_fallback: cachePricingFallback } : {}),
     };
 }
 
@@ -950,6 +1103,7 @@ export function computeBill(
         billing_timestamp_ms: line.billing_timestamp_ms ?? null,
         billing_timestamp_iso: line.billing_timestamp_iso ?? null,
         pricing_time_window: line.pricing_time_window ?? null,
+        ...(line.pricing_fallback ? { pricing_fallback: line.pricing_fallback } : {}),
     }));
 
     return {
@@ -960,6 +1114,7 @@ export function computeBill(
             total_cents: total_cents_floor,
             currency: "USD",
             lines: slimLines,
+            ...(summary.cache_pricing_fallback ? { cache_pricing_fallback: summary.cache_pricing_fallback } : {}),
         },
     };
 }

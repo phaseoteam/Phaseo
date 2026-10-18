@@ -2052,18 +2052,8 @@ export type CreateChatCompletionParams = {
         audio_url: {
           url: string;
         };
-        cache_control?: {
-          scope?: string;
-          ttl?: string;
-          type?: string;
-          [key: string]: unknown;
-        };
         format?: "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
         mime_type?: string;
-        prompt_cache_breakpoint?: {
-          mode?: "explicit";
-          [key: string]: unknown;
-        };
         type: "audio_url";
       }[];
       content?:
@@ -2118,6 +2108,17 @@ export type CreateChatCompletionParams = {
         type: "image_url";
       }[];
       name?: string;
+      reasoning_content?: string;
+      reasoning_details?: {
+        data?: string;
+        format?: string;
+        id?: string;
+        index?: number;
+        signature?: string;
+        summary?: string;
+        text?: string;
+        type: "reasoning.text" | "reasoning.summary" | "reasoning.encrypted";
+      }[];
       role: "system" | "developer" | "user" | "assistant" | "tool";
       tool_call_id?: string;
       tool_calls?: {
@@ -2395,18 +2396,8 @@ export async function createChatCompletion(
         audio_url: {
           url: string;
         };
-        cache_control?: {
-          scope?: string;
-          ttl?: string;
-          type?: string;
-          [key: string]: unknown;
-        };
         format?: "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
         mime_type?: string;
-        prompt_cache_breakpoint?: {
-          mode?: "explicit";
-          [key: string]: unknown;
-        };
         type: "audio_url";
       }[];
       content?:
@@ -2461,6 +2452,17 @@ export async function createChatCompletion(
         type: "image_url";
       }[];
       name?: string;
+      reasoning_content?: string;
+      reasoning_details?: {
+        data?: string;
+        format?: string;
+        id?: string;
+        index?: number;
+        signature?: string;
+        summary?: string;
+        text?: string;
+        type: "reasoning.text" | "reasoning.summary" | "reasoning.encrypted";
+      }[];
       role: "system" | "developer" | "user" | "assistant" | "tool";
       tool_call_id?: string;
       tool_calls?: {
@@ -2519,18 +2521,8 @@ export async function createChatCompletion(
           audio_url: {
             url: string;
           };
-          cache_control?: {
-            scope?: string;
-            ttl?: string;
-            type?: string;
-            [key: string]: unknown;
-          };
           format?: "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
           mime_type?: string;
-          prompt_cache_breakpoint?: {
-            mode?: "explicit";
-            [key: string]: unknown;
-          };
           type: "audio_url";
         }[];
         content?:
@@ -2591,6 +2583,17 @@ export async function createChatCompletion(
           type: "image_url";
         }[];
         name?: string;
+        reasoning_content?: string;
+        reasoning_details?: {
+          data?: string;
+          format?: string;
+          id?: string;
+          index?: number;
+          signature?: string;
+          summary?: string;
+          text?: string;
+          type: "reasoning.text" | "reasoning.summary" | "reasoning.encrypted";
+        }[];
         role: "system" | "developer" | "user" | "assistant" | "tool";
         tool_call_id?: string;
         tool_calls?: {
@@ -5268,7 +5271,13 @@ export type CreateResponseParams = {
       | string
       | {
           content?: string | {}[] | {};
+          encrypted_content?: string;
+          id?: string;
           role?: "user" | "assistant" | "system" | "developer";
+          summary?: {
+            text: string;
+            type: "summary_text";
+          }[];
           type?: string;
         }[]
       | {};
@@ -5542,8 +5551,14 @@ export async function createResponse(
           type: "output_audio";
         }
     )[];
+    encrypted_content?: string;
+    id?: string;
     name?: string;
     role?: string;
+    summary?: {
+      text: string;
+      type: "summary_text";
+    }[];
     type?: string;
   }[];
   output_items?: {
@@ -5573,8 +5588,14 @@ export async function createResponse(
           type: "output_audio";
         }
     )[];
+    encrypted_content?: string;
+    id?: string;
     name?: string;
     role?: string;
+    summary?: {
+      text: string;
+      type: "summary_text";
+    }[];
     type?: string;
   }[];
   pricing_lines?: {
@@ -5656,8 +5677,14 @@ export async function createResponse(
             type: "output_audio";
           }
       )[];
+      encrypted_content?: string;
+      id?: string;
       name?: string;
       role?: string;
+      summary?: {
+        text: string;
+        type: "summary_text";
+      }[];
       type?: string;
     }[];
     output_items?: {
@@ -5687,8 +5714,14 @@ export async function createResponse(
             type: "output_audio";
           }
       )[];
+      encrypted_content?: string;
+      id?: string;
       name?: string;
       role?: string;
+      summary?: {
+        text: string;
+        type: "summary_text";
+      }[];
       type?: string;
     }[];
     pricing_lines?: {

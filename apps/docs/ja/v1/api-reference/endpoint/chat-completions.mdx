@@ -56,3 +56,20 @@ curl https://api.phaseo.app/v1/chat/completions \
 ## ストリーミングに関する注意
 
 `stream: true` にも対応しています。Gateway 管理サーバーツールでは、Phaseo が上流のツール呼び出しターンを処理し、ループを続行した後に合成ストリームを再送する場合があります。
+
+## ツールループでの推論
+
+推論モデルは、アシスタントメッセージの 2 つのフィールドで推論を返します。
+
+- `reasoning_content`: プロバイダーが返す場合の推論テキスト。
+- `reasoning_details`: OpenRouter と同じ形式の推論ブロックの配列。各エントリには `type`（`reasoning.text`、`reasoning.summary`、`reasoning.encrypted` のいずれか）、`index`、プロバイダーファミリーを示す `format`（例: `anthropic-claude-v1`、`google-gemini-v1`）があります。
+
+エントリには、ツールループの次のステップでモデルが必要とするプロバイダーの状態が含まれることがあります。
+
+- Claude の thinking 署名。`reasoning.text` エントリの `signature` に入ります。
+- Claude の秘匿された thinking と OpenAI の暗号化された推論。`reasoning.encrypted` エントリの `data` に入ります。
+- Gemini の思考署名。`id` が対応するツール呼び出しを示す `reasoning.encrypted` エントリの `data` に入ります。
+
+ストリーミングでは、各推論ブロックが完了した時点で `reasoning_details` のデルタが届きます。
+
+ステップ間でモデルの推論を保つには、アシスタントメッセージを `reasoning_details` ごと変更せずに送り返してください。`signature` と `data` の値は不透明で、生成したプロバイダーとモデルを記録しています。Phaseo はそのプロバイダーファミリーとモデルにだけ送るため、別のプロバイダーへのフォールバックでは失敗せずに破棄されます。手動 thinking モードの Claude モデルは、ツールループ中に thinking を続けるために thinking を送り返す必要があります。欠けている場合、そのステップは thinking なしで実行されます。

@@ -28,6 +28,16 @@ export type IRContentPart =
 		text: string;
 		thoughtSignature?: string; // Encrypted state for multi-turn conversations
 		summary?: string; // Abbreviated thought (Gemini 2.5+)
+		// Provider reasoning state for round trips (see core/reasoning-state.ts).
+		// `reasoningFormat` names the family that issued `thoughtSignature`,
+		// `redactedData` or `encryptedContent`; state without it is never replayed.
+		reasoningFormat?: string;
+		reasoningModel?: string;
+		reasoningProvider?: string;
+		redactedData?: string; // Anthropic redacted_thinking `data`
+		encryptedContent?: string; // OpenAI, Azure or xAI `encrypted_content`
+		reasoningId?: string; // Upstream reasoning item id (OpenAI `rs_...`)
+		beforeToolCallId?: string; // Generated after an earlier tool call, immediately before this one
 	}
 	| {
 		type: "image";
@@ -87,6 +97,8 @@ export type IRToolCall = {
 	name: string; // Function name
 	arguments: string; // JSON string of arguments
 	type?: "function" | "custom";
+	thoughtSignature?: string; // Gemini signature returned on a functionCall part
+	thoughtSignatureModel?: string; // Gemini model that issued thoughtSignature, when known
 };
 
 /**
@@ -896,6 +908,10 @@ export type IRUsage = {
 	// Optional detailed counts
 	cachedInputTokens?: number; // Prompt caching
 	cachedReadTokensAreSubsetOfInput?: boolean; // Cached reads are already included in inputTokens
+	// Cache writes (_ext.cachedWriteTokens) are already included in inputTokens. True for
+	// OpenAI-style details (GPT-5.6+, Kimi, Alibaba); false for Anthropic, which reports
+	// cache_creation_input_tokens on top of input_tokens.
+	cachedWriteTokensAreSubsetOfInput?: boolean;
 	reasoningTokens?: number; // Reasoning/thinking tokens (o1, MiniMax)
 
 	// Modality-specific counts (extended meters)

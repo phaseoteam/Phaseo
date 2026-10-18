@@ -33,7 +33,13 @@ export interface ResponsesRequest {
     | string
     | {
         content?: string | {}[] | {};
+        encrypted_content?: string;
+        id?: string;
         role?: "user" | "assistant" | "system" | "developer";
+        summary?: {
+          text: string;
+          type: "summary_text";
+        }[];
         type?: string;
       }[]
     | {};

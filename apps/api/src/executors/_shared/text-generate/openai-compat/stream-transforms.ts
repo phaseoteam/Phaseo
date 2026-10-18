@@ -1,5 +1,6 @@
 import type { ExecutorExecuteArgs } from "@executors/types";
 import type { IRChatResponse, IRContentPart } from "@core/ir";
+import { irUsageToOpenAIStyle } from "@core/cache-usage";
 import { openAIResponsesToIR } from "./transform";
 import { openAIChatToIR } from "./transform-chat";
 import { getProviderQuirks } from "./quirks";
@@ -7,6 +8,13 @@ import { parseMinimaxInterleavedText } from "./providers/minimax/quirks";
 import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
 import { encodeOpenAIResponsesResponse } from "@protocols/openai-responses/encode";
 import { SseParser } from "@core/sse-parser";
+import type { GatewayReasoningDetail } from "@core/types";
+import {
+	isSealedReasoningValue,
+	openReasoningState,
+	reasoningFormatForRoute,
+	sealReasoningState,
+} from "@core/reasoning-state";
 
 export type StreamAdapterState = {
 	requestId: string;
@@ -201,6 +209,7 @@ export function transformResponsesStreamToChat(
 	const toolAlias = new Map<string, string>();
 	const toolIndexById = new Map<string, number>();
 	let nextToolIndex = 0;
+	let nextReasoningDetailIndex = 0;
 
 	const ensureToolIndex = (id: string): number => {
 		const existing = toolIndexById.get(id);
@@ -330,6 +339,14 @@ export function transformResponsesStreamToChat(
 							case "response.output_item.added":
 							case "response.output_item.done": {
 								const item = payload?.item;
+								if (normalizeResponsesEvent(event) === "response.output_item.done" && item?.type === "reasoning") {
+									const detail = buildReasoningDetailDelta(item, args, nextReasoningDetailIndex);
+									if (detail) {
+										nextReasoningDetailIndex += 1;
+										await emitDelta({ role: "assistant", reasoning_details: [detail] }, controller, 0);
+									}
+									break;
+								}
 								if (!isExecutableResponseToolItem(item)) break;
 								const itemName = readResponseToolCallName(item);
 								const canonicalId =
@@ -548,6 +565,10 @@ export function transformChatStreamToResponses(
 
 						if (mode === "responses" && !isChatPayload) {
 							const normalized = normalizeResponsesEvent(event) ?? "response.event";
+							if (sealResponsesReasoningPayload(payload, args)) {
+								controller.enqueue(encoder.encode(`event: ${normalized}\ndata: ${JSON.stringify(payload)}\n\n`));
+								continue;
+							}
 							// The payload is not modified here, so when the event name is
 							// already normalized and the data is a single line, forward
 							// the upstream JSON text instead of re-stringifying it. For
@@ -801,6 +822,16 @@ export function transformChatStreamToResponses(
 							Array.isArray(encoded.output) && encoded.output.length > 0
 								? encoded.output
 								: buildResponsesOutputFromState(choiceStates, args.requestId);
+						const indexed = assignStreamedOutputIndexes(output, choiceStates, () => nextOutputIndex++);
+						for (const { index, item, streamed } of indexed) {
+							if ((item as any)?.type !== "reasoning" || !(item as any).encrypted_content) continue;
+							// Items the stream never announced (for example a Gemini function-call
+							// signature) get a full added/done pair at a fresh index.
+							if (!streamed) {
+								await emitEvent("response.output_item.added", { output_index: index, item }, controller);
+							}
+							await emitEvent("response.output_item.done", { output_index: index, item }, controller);
+						}
 						const response = {
 							id: args.requestId,
 							object: "response",
@@ -808,7 +839,7 @@ export function transformChatStreamToResponses(
 							status: completion.status,
 							...(completion.incompleteDetails ? { incomplete_details: completion.incompleteDetails } : {}),
 							model: ir.model ?? model,
-							output,
+							output: [...indexed].sort((left, right) => left.index - right.index).map(({ item }) => item),
 							usage,
 							nativeResponseId: ir.nativeId ?? nativeResponseId,
 							...(encoded.citations ? { citations: encoded.citations } : {}),
@@ -826,6 +857,99 @@ export function transformChatStreamToResponses(
 				controller.close();
 			}
 		},
+	});
+}
+
+/**
+ * Seal raw `encrypted_content` on reasoning items in a forwarded Responses
+ * event with the provider and model that issued it, so the gateway can later
+ * replay it only to that provider family. Returns true when it changed.
+ */
+function sealResponsesReasoningPayload(payload: any, args: ExecutorExecuteArgs): boolean {
+	const format = reasoningFormatForRoute(args.providerId, args.providerModelSlug ?? args.ir.model);
+	if (!format || !payload || typeof payload !== "object") return false;
+	let changed = false;
+	const sealItem = (item: any) => {
+		if (item?.type !== "reasoning" || typeof item.encrypted_content !== "string" || !item.encrypted_content) return;
+		if (isSealedReasoningValue(item.encrypted_content)) return;
+		item.encrypted_content = sealReasoningState({
+			format,
+			kind: "encrypted",
+			value: item.encrypted_content,
+			model: args.providerModelSlug ?? args.ir.model,
+			provider: args.providerId,
+		});
+		changed = true;
+	};
+	sealItem(payload.item);
+	const output = payload.response?.output ?? payload.output;
+	if (Array.isArray(output)) for (const item of output) sealItem(item);
+	return changed;
+}
+
+/**
+ * A Chat `reasoning_details` entry for a completed Responses reasoning item.
+ * It carries the full text with the sealed signature or encrypted content, so
+ * clients that merge reasoning_details deltas by index end up with one entry.
+ */
+function buildReasoningDetailDelta(item: any, args: ExecutorExecuteArgs, index: number): GatewayReasoningDetail | null {
+	const model = args.providerModelSlug ?? args.ir.model;
+	const raw = typeof item?.encrypted_content === "string" && item.encrypted_content ? item.encrypted_content : null;
+	if (!raw) return null;
+	const state = openReasoningState(raw, { format: reasoningFormatForRoute(args.providerId, model), kind: "encrypted" });
+	if (!state) return null;
+	const sealed = sealReasoningState({
+		format: state.format,
+		kind: state.kind,
+		value: state.value,
+		model: state.model ?? model,
+		provider: state.provider ?? args.providerId,
+		...(state.callId ? { callId: state.callId } : {}),
+	});
+	const text = [item?.content, item?.summary]
+		.map((parts) => Array.isArray(parts) ? parts.map((part: any) => (typeof part?.text === "string" ? part.text : "")).join("") : "")
+		.find((value) => value.length > 0) ?? "";
+	const id = typeof item?.id === "string" && item.id ? item.id : `${args.requestId}-reasoning-${index + 1}`;
+	if (state.kind === "signature" && !state.callId) {
+		return { id, index, type: "reasoning.text", text, signature: sealed, format: state.format };
+	}
+	return { id: state.callId ?? id, index, type: "reasoning.encrypted", data: sealed, format: state.format };
+}
+
+/**
+ * Match each final output item to the output_index the stream already used for it, so
+ * the completed response and the streamed events agree. Function calls match by
+ * call id (then by order), messages and text reasoning by their choice's indexes.
+ * Anything the stream never emitted takes the next free index.
+ */
+function assignStreamedOutputIndexes(
+	output: any[],
+	choiceStates: Map<number, ResponsesStreamChoiceState>,
+	allocateIndex: () => number,
+): Array<{ index: number; item: any; streamed: boolean }> {
+	const tools = [...choiceStates.values()].flatMap((entry) => [...entry.toolCalls.values()]);
+	const toolIndexByCallId = new Map(tools.map((tool) => [tool.id, tool.outputIndex]));
+	const firstChoice = choiceStates.get(0) ?? choiceStates.values().next().value;
+	const used = new Set<number>();
+	const streamedIndexFor = (item: any): number | undefined => {
+		if (item?.type === "function_call") {
+			const byId = toolIndexByCallId.get(item.call_id ?? item.id);
+			if (byId !== undefined && !used.has(byId)) return byId;
+			return tools.map((tool) => tool.outputIndex).find((index) => !used.has(index));
+		}
+		if (item?.type === "message") return firstChoice?.messageOutputIndex;
+		if (item?.type === "reasoning") {
+			const hasText = (item.content?.length ?? 0) > 0 || (item.summary?.length ?? 0) > 0;
+			return hasText ? firstChoice?.reasoningOutputIndex : undefined;
+		}
+		return undefined;
+	};
+	return output.map((item) => {
+		const candidate = streamedIndexFor(item);
+		const streamed = candidate !== undefined && candidate !== null && !used.has(candidate);
+		const index = streamed ? candidate! : allocateIndex();
+		used.add(index);
+		return { index, item, streamed };
 	});
 }
 
@@ -942,8 +1066,13 @@ function encodeResponsesUsageFromIR(usage?: IRChatResponse["usage"]) {
 	if (!usage) return undefined;
 	const inputDetails: Record<string, number> = {};
 	const outputDetails: Record<string, number> = {};
-	if (typeof usage.cachedInputTokens === "number") {
-		inputDetails.cached_tokens = usage.cachedInputTokens;
+	// OpenAI semantics: input_tokens includes cache reads and writes.
+	const cache = irUsageToOpenAIStyle(usage);
+	if (typeof cache.readTokens === "number") {
+		inputDetails.cached_tokens = cache.readTokens;
+	}
+	if (typeof cache.writeTokens === "number") {
+		inputDetails.cache_write_tokens = cache.writeTokens;
 	}
 	if (typeof usage._ext?.inputImageTokens === "number") {
 		inputDetails.input_images = usage._ext.inputImageTokens;
@@ -957,9 +1086,6 @@ function encodeResponsesUsageFromIR(usage?: IRChatResponse["usage"]) {
 	if (typeof usage.reasoningTokens === "number") {
 		outputDetails.reasoning_tokens = usage.reasoningTokens;
 	}
-	if (typeof usage._ext?.cachedWriteTokens === "number") {
-		outputDetails.cached_tokens = usage._ext.cachedWriteTokens;
-	}
 	if (typeof usage._ext?.outputImageTokens === "number") {
 		outputDetails.output_images = usage._ext.outputImageTokens;
 	}
@@ -971,15 +1097,18 @@ function encodeResponsesUsageFromIR(usage?: IRChatResponse["usage"]) {
 	}
 
 	const out: any = {
-		input_tokens: usage.inputTokens,
+		input_tokens: cache.inputTokens,
 		output_tokens: usage.outputTokens,
-		total_tokens: usage.totalTokens,
+		total_tokens: cache.totalTokens,
 	};
+	if (typeof cache.write5mTokens === "number") out.cached_write_text_tokens_5m = cache.write5mTokens;
+	if (typeof cache.write1hTokens === "number") out.cached_write_text_tokens_1h = cache.write1hTokens;
+	if (typeof cache.writeTokens === "number") out.cached_write_tokens_are_subset_of_input = true;
 	if (typeof usage._ext?.citationTokens === "number") out.citation_tokens = usage._ext.citationTokens;
 	if (typeof usage._ext?.numSearchQueries === "number") out.num_search_queries = usage._ext.numSearchQueries;
 	if (typeof usage._ext?.searchContextSize === "string") out.search_context_size = usage._ext.searchContextSize;
 	if (usage._ext?.providerCost) out.cost = usage._ext.providerCost;
-	if (usage.cachedReadTokensAreSubsetOfInput === true) {
+	if (typeof cache.readTokens === "number") {
 		out.cached_read_tokens_are_subset_of_input = true;
 	}
 	if (Object.keys(inputDetails).length) out.input_tokens_details = inputDetails;
@@ -1143,6 +1272,9 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 				...(message.reasoning ? { reasoning: message.reasoning } : previousMessage.reasoning ? { reasoning: previousMessage.reasoning } : {}),
 				...(Array.isArray(message.images) ? { images: message.images } : Array.isArray(previousMessage.images) ? { images: previousMessage.images } : {}),
 				...(Array.isArray(message.audios) ? { audios: message.audios } : Array.isArray(previousMessage.audios) ? { audios: previousMessage.audios } : {}),
+				...(Array.isArray(message.reasoning_details)
+					? { reasoning_details: message.reasoning_details }
+					: Array.isArray(previousMessage.reasoning_details) ? { reasoning_details: previousMessage.reasoning_details } : {}),
 				...(Array.isArray(message._contentParts)
 					? { _contentParts: message._contentParts }
 					: Array.isArray(previousMessage._contentParts)
@@ -1161,6 +1293,15 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 		if (chunk.delta?.reasoning) {
 			choice.message.reasoning =
 				(choice.message.reasoning || "") + chunk.delta.reasoning;
+		}
+		// Keep reasoning state the gateway sealed into stream deltas (Gemini
+		// thought signatures) for the final response.
+		if (Array.isArray(chunk.delta?.reasoning_details)) {
+			const sealedDetails = chunk.delta.reasoning_details.filter((entry: any) =>
+				isSealedReasoningValue(entry?.signature) || isSealedReasoningValue(entry?.data));
+			if (sealedDetails.length > 0) {
+				choice.message.reasoning_details = [...(choice.message.reasoning_details ?? []), ...sealedDetails];
+			}
 		}
 		if (chunk.delta?.tool_calls) {
 			if (!choice.message.tool_calls) choice.message.tool_calls = [];

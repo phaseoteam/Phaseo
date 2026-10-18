@@ -533,10 +533,8 @@ struct CacheControl {
 
 struct ChatAudioOutputPart {
 	std::map<std::string, std::any> audio_url;
-	std::map<std::string, std::any> cache_control;
 	std::any format;
 	std::string mime_type;
-	std::map<std::string, std::any> prompt_cache_breakpoint;
 	std::any type;
 };
 
@@ -613,9 +611,22 @@ struct ChatMessage {
 	std::any content;
 	std::vector<std::map<std::string, std::any>> images;
 	std::string name;
+	std::string reasoning_content;
+	std::vector<std::map<std::string, std::any>> reasoning_details;
 	std::any role;
 	std::string tool_call_id;
 	std::vector<std::map<std::string, std::any>> tool_calls;
+};
+
+struct ChatReasoningDetail {
+	std::string data;
+	std::string format;
+	std::string id;
+	std::optional<int> index;
+	std::string signature;
+	std::string summary;
+	std::string text;
+	std::any type;
 };
 
 struct CreditsResponse {
@@ -2826,7 +2837,10 @@ struct RerankResult {
 
 struct ResponsesInputItem {
 	std::any content;
+	std::string encrypted_content;
+	std::string id;
 	std::any role;
+	std::vector<std::map<std::string, std::any>> summary;
 	std::string type;
 };
 
@@ -2851,13 +2865,21 @@ struct ResponsesOutputItem {
 	std::string arguments;
 	std::string call_id;
 	std::vector<std::any> content;
+	std::string encrypted_content;
+	std::string id;
 	std::string name;
 	std::string role;
+	std::vector<std::map<std::string, std::any>> summary;
 	std::string type;
 };
 
 struct ResponsesOutputTextPart {
 	std::vector<std::map<std::string, std::any>> annotations;
+	std::string text;
+	std::any type;
+};
+
+struct ResponsesReasoningSummaryPart {
 	std::string text;
 	std::any type;
 };

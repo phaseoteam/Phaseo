@@ -9,7 +9,9 @@
 import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types";
 import { fetchUpstream, UpstreamHeadersTimeoutError } from "@executors/_shared/timing/upstream";
 import type { IRChatResponse } from "@core/ir";
+import { resolveCacheTokenUsage, uncachedInputTokens } from "@core/cache-usage";
 import { irToOpenAIResponses, openAIResponsesToIR } from "./transform";
+import { providerAcceptsStreamOptions } from "./prompt-cache-policy";
 import { irToOpenAIChat, openAIChatToIR } from "./transform-chat";
 import {
 	openAICompatHeaders,
@@ -32,6 +34,12 @@ import {
 	readErrorPayload,
 } from "./retry-policy";
 import { SseParser } from "@core/sse-parser";
+import {
+	ANTHROPIC_REASONING_FORMAT,
+	openReasoningState,
+	reasoningFormatForRoute,
+	sealReasoningState,
+} from "@core/reasoning-state";
 
 const OPENAI_COMPAT_MAX_ADAPTIVE_RETRIES = 1;
 const OPENAI_COMPAT_MAX_TRANSIENT_RETRIES = 1;
@@ -64,6 +72,19 @@ function parseRetryAfterMs(value: string | null): number | null {
 async function sleep(ms: number): Promise<void> {
 	if (ms <= 0) return;
 	await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Providers that keep prompt caches per replica and route on an x-session-affinity
+// header. The value is the workspace-namespaced cache key, never the raw client key.
+// https://docs.fireworks.ai/guides/prompt-caching
+// https://developers.cloudflare.com/workers-ai/features/prompt-caching
+const SESSION_AFFINITY_HEADER_PROVIDERS = new Set(["fireworks", "cloudflare"]);
+
+export function sessionAffinityHeaders(args: Pick<ExecutorExecuteArgs, "providerId" | "meta">): Record<string, string> {
+	const key = args.meta?.cacheAffinityKey;
+	if (typeof key !== "string" || key.length === 0) return {};
+	if (!SESSION_AFFINITY_HEADER_PROVIDERS.has(String(args.providerId ?? "").trim().toLowerCase())) return {};
+	return { "x-session-affinity": key };
 }
 
 export type OpenAIWirePolicy = {
@@ -112,7 +133,15 @@ export async function executeOpenAIWire(
 			...requestPayload,
 			stream: upstreamStream,
 		};
-		if (targetRoute === "chat" && upstreamStream && args.providerId !== "ai21" && args.providerId !== "mancer") {
+		// Never re-add stream_options for providers whose profile rejects it
+		// (their quirks have already removed any client value).
+		if (
+			targetRoute === "chat" &&
+			upstreamStream &&
+			args.providerId !== "ai21" &&
+			args.providerId !== "mancer" &&
+			providerAcceptsStreamOptions(args.providerId)
+		) {
 			payload.stream_options = {
 				...(payload.stream_options ?? {}),
 				include_usage: true,
@@ -165,6 +194,7 @@ export async function executeOpenAIWire(
 			}
 			: openAICompatHeaders(args.providerId, keyInfo.key, {
 				...upstreamTestHeaders(args.meta),
+				...sessionAffinityHeaders(args),
 				...(bytePlusMcpBeta ? { "ark-beta-mcp": "true" } : {}),
 			});
 		const response = await fetchUpstream(args, upstreamUrl, {
@@ -606,6 +636,66 @@ function transformResponsesStreamToAnthropic(
 				return block;
 			};
 
+			// Finish a reasoning item as a Messages block: Claude's own signature
+			// goes out raw in a signature_delta, redacted thinking as a
+			// redacted_thinking block, and other providers' state sealed.
+			const completedReasoning = new Set<AnthropicBlock>();
+			const completeReasoningItem = (item: any, aliases: string[]) => {
+				const existing = aliases.map((alias) => blocksByAlias.get(alias)).find(Boolean);
+				if (existing && completedReasoning.has(existing)) return;
+				const model = args.providerModelSlug ?? args.ir.model;
+				const state = openReasoningState(item?.encrypted_content, {
+					format: reasoningFormatForRoute(args.providerId, model),
+					kind: "encrypted",
+				});
+				if (state?.format === ANTHROPIC_REASONING_FORMAT && state.kind === "redacted" && !existing) {
+					ensureMessageStart();
+					if (activeBlock) stopBlock(activeBlock);
+					const block: AnthropicBlock = { index: nextBlockIndex++, type: "thinking", open: false, emittedContent: true };
+					blocks.push(block);
+					for (const alias of aliases) blocksByAlias.set(alias, block);
+					completedReasoning.add(block);
+					emit(controller, "content_block_start", {
+						type: "content_block_start",
+						index: block.index,
+						content_block: { type: "redacted_thinking", data: state.value },
+					});
+					emit(controller, "content_block_stop", { type: "content_block_stop", index: block.index });
+					return;
+				}
+				const block = existing ?? ensureBlock(aliases, "thinking");
+				completedReasoning.add(block);
+				if (!block.emittedContent) {
+					const text = extractOutputText(item?.content) || extractOutputText(item?.summary);
+					if (text) {
+						emit(controller, "content_block_delta", {
+							type: "content_block_delta",
+							index: block.index,
+							delta: { type: "thinking_delta", thinking: text },
+						});
+					}
+					block.emittedContent = true;
+				}
+				if (state && block.open) {
+					const signature = state.format === ANTHROPIC_REASONING_FORMAT && state.kind === "signature"
+						? state.value
+						: sealReasoningState({
+							format: state.format,
+							kind: state.kind,
+							value: state.value,
+							model: state.model ?? model,
+							provider: state.provider ?? args.providerId,
+							...(state.callId ? { callId: state.callId } : {}),
+						});
+					emit(controller, "content_block_delta", {
+						type: "content_block_delta",
+						index: block.index,
+						delta: { type: "signature_delta", signature },
+					});
+				}
+				stopBlock(block);
+			};
+
 			function stopBlock(block: { index: number; open: boolean }) {
 				if (!block.open) return;
 				block.open = false;
@@ -628,8 +718,12 @@ function transformResponsesStreamToAnthropic(
 				for (let outputIndex = 0; outputIndex < outputItems.length; outputIndex += 1) {
 					const item = outputItems[outputIndex];
 					const itemType = String(item?.type ?? "").toLowerCase();
-					if (itemType === "reasoning" || itemType === "message") {
-						const blockType = itemType === "reasoning" ? "thinking" : "text";
+					if (itemType === "reasoning") {
+						completeReasoningItem(item, aliasesFor({ id: item?.id, outputIndex }));
+						continue;
+					}
+					if (itemType === "message") {
+						const blockType = "text" as "text" | "thinking";
 						const block = ensureBlock(aliasesFor({ id: item?.id, outputIndex }), blockType);
 						if (!block.emittedContent) {
 							const text = extractOutputText(item?.content);
@@ -760,6 +854,14 @@ function transformResponsesStreamToAnthropic(
 							block.emittedContent = true;
 							continue;
 						}
+						if (normalizedEvent === "response.output_item.done" && payload?.item?.type === "reasoning") {
+							completeReasoningItem(payload.item, aliasesFor({
+								id: payload.item?.id,
+								itemId: payload?.item_id,
+								outputIndex: payload?.output_index,
+							}));
+							continue;
+						}
 						if (
 							normalizedEvent === "response.output_text.done" ||
 							normalizedEvent === "response.reasoning_text.done" ||
@@ -798,7 +900,13 @@ function transformResponsesStreamToAnthropic(
 	});
 }
 
-function normalizeUsageToAnthropic(usage: any): { input_tokens: number; output_tokens: number } {
+function normalizeUsageToAnthropic(usage: any): {
+	input_tokens: number;
+	output_tokens: number;
+	cache_read_input_tokens?: number;
+	cache_creation_input_tokens?: number;
+	cache_creation?: { ephemeral_5m_input_tokens: number; ephemeral_1h_input_tokens: number };
+} {
 	const inputTokens = Number(
 		usage?.input_tokens ??
 		usage?.prompt_tokens ??
@@ -811,9 +919,25 @@ function normalizeUsageToAnthropic(usage: any): { input_tokens: number; output_t
 		usage?.outputTokens ??
 		0,
 	);
+	const safeInput = Number.isFinite(inputTokens) ? inputTokens : 0;
+	// Responses usage counts cache reads and writes inside input_tokens; Anthropic reports
+	// them separately, on top of input_tokens.
+	const cache = resolveCacheTokenUsage(usage, safeInput, { readSubsetDefault: true });
+	const read = cache.readTokens;
+	const write = cache.writeTokens;
 	return {
-		input_tokens: Number.isFinite(inputTokens) ? inputTokens : 0,
+		input_tokens: uncachedInputTokens(safeInput, cache),
 		output_tokens: Number.isFinite(outputTokens) ? outputTokens : 0,
+		...(typeof read === "number" ? { cache_read_input_tokens: read } : {}),
+		...(typeof write === "number" ? { cache_creation_input_tokens: write } : {}),
+		...(typeof cache.write5mTokens === "number" || typeof cache.write1hTokens === "number"
+			? {
+				cache_creation: {
+					ephemeral_5m_input_tokens: cache.write5mTokens ?? 0,
+					ephemeral_1h_input_tokens: cache.write1hTokens ?? 0,
+				},
+			}
+			: {}),
 	};
 }
 

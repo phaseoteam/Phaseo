@@ -18,6 +18,15 @@ import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { withNormalizedReasoning } from "./normalize-reasoning";
 import { irPartsToGeminiParts } from "../../google/shared/media";
+import {
+	appendGeminiFunctionResponse,
+	geminiFunctionResponsePart,
+	geminiFunctionCallId,
+	geminiReplayableAssistantParts,
+	geminiThoughtPartToIR,
+	irToolCallsToGeminiParts,
+	withoutEmptyGeminiTextParts,
+} from "../../google/shared/function-history";
 import { normalizeGoogleModelSlug, resolveGoogleModelCandidates } from "../../google/shared/model";
 import { applyGoogleOutputTokenFallback, applyOpenAIUsageFallback } from "../../google/shared/usage-fallback";
 import {
@@ -32,6 +41,7 @@ import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-ge
 import { buildSyntheticServerToolStream } from "@pipeline/surfaces/server-tools.stream";
 import { sanitizeGeminiSchema } from "@executors/google/shared/schema";
 import { supportsTextProviderInteractionsModel } from "@providers/textProfiles";
+import { GOOGLE_REASONING_FORMAT, canReplayReasoning, sealReasoningState } from "@core/reasoning-state";
 
 const DEFAULT_LYRIA_RETRY_ATTEMPTS = 3;
 const DEFAULT_LYRIA_RETRY_DELAY_MS = 300;
@@ -116,10 +126,16 @@ async function irToLegacyGemini(
 		}
 
 		if (message.role === "user" || message.role === "assistant") {
-			contents.push({
-				role: message.role === "assistant" ? "model" : "user",
-				parts: await irPartsToGeminiParts(message.content, { preserveReasoningAsThought: true, upstreamTiming }),
-			});
+			const sourceParts = message.role === "assistant"
+				? geminiReplayableAssistantParts(message.content, { providerId: "google-ai-studio", model: modelOverride ?? ir.model })
+				: message.content;
+			const contentParts = await irPartsToGeminiParts(sourceParts, { preserveReasoningAsThought: true, upstreamTiming });
+			const parts = message.role === "assistant"
+				? [...withoutEmptyGeminiTextParts(contentParts), ...irToolCallsToGeminiParts(message.toolCalls, modelOverride ?? ir.model, "google-ai-studio")]
+				: contentParts;
+			if (message.role === "user" || parts.length > 0) {
+				contents.push({ role: message.role === "assistant" ? "model" : "user", parts });
+			}
 			continue;
 		}
 
@@ -133,15 +149,11 @@ async function irToLegacyGemini(
 						response = { content: response };
 					}
 				}
-				contents.push({
-					role: "user",
-					parts: [{
-						functionResponse: {
-							name: toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
-							response,
-						},
-					}],
-				});
+				appendGeminiFunctionResponse(contents, geminiFunctionResponsePart(
+					toolResult.toolCallId,
+					toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
+					response,
+				));
 			}
 		}
 	}
@@ -273,8 +285,27 @@ export async function irToGemini(
 				content: await irPartsToInteractionContent(msg.content, upstreamTiming),
 			});
 		} else if (msg.role === "assistant") {
+			const target = { providerId: "google-ai-studio", model: modelOverride ?? ir.model };
+			const replayable = geminiReplayableAssistantParts(msg.content, target);
+			const toolCallIds = new Set((msg.toolCalls ?? []).map((call) => call.id));
+			const thoughtStep = (part: Extract<IRContentPart, { type: "reasoning_text" }>) => {
+				const summaryText = part.summary || part.text;
+				return {
+					type: "thought",
+					...(part.thoughtSignature ? { signature: part.thoughtSignature } : {}),
+					...(summaryText ? { summary: { type: "text", text: summaryText } } : {}),
+				};
+			};
+			// Stateless Interactions needs every model-generated step back in
+			// order, with its signature: thoughts, then output and calls.
+			// https://ai.google.dev/gemini-api/docs/interactions/function-calling
+			for (const part of replayable) {
+				if (part.type !== "reasoning_text") continue;
+				if (part.beforeToolCallId && toolCallIds.has(part.beforeToolCallId)) continue;
+				input.push(thoughtStep(part));
+			}
 			const outputContent = await irPartsToInteractionContent(
-				msg.content.filter((part) => part.type !== "reasoning_text"),
+				replayable.filter((part) => part.type !== "reasoning_text"),
 				upstreamTiming,
 			);
 			if (outputContent.length > 0) {
@@ -283,21 +314,23 @@ export async function irToGemini(
 					content: outputContent,
 				});
 			}
-			for (const part of msg.content) {
-				if (part.type !== "reasoning_text") continue;
-				input.push({
-					type: "thought",
-					...(part.thoughtSignature ? { signature: part.thoughtSignature } : {}),
-					summary: { type: "text", text: part.summary || part.text },
-				});
-			}
 			if (Array.isArray(msg.toolCalls)) {
 				for (const toolCall of msg.toolCalls) {
+					for (const part of replayable) {
+						if (part.type === "reasoning_text" && part.beforeToolCallId === toolCall.id) input.push(thoughtStep(part));
+					}
+					const signature = toolCall.thoughtSignature && canReplayReasoning(
+						{ format: GOOGLE_REASONING_FORMAT, model: toolCall.thoughtSignatureModel },
+						target,
+					)
+						? toolCall.thoughtSignature
+						: undefined;
 					input.push({
 						type: "function_call",
 						id: toolCall.id,
 						name: toolCall.name,
 						arguments: parseToolCallArguments(toolCall.arguments),
+						...(signature ? { signature } : {}),
 					});
 				}
 			}
@@ -620,27 +653,21 @@ function geminiToIR(
 	for (const candidate of json.candidates || []) {
 		const contentParts: IRContentPart[] = [];
 		const toolCalls: any[] = [];
+		const callIds = new Map<string, number>();
 
 		// Extract parts from candidate.content.parts
 		if (candidate.content?.parts) {
 			for (const part of candidate.content.parts) {
 				const inlineData = normalizeGeminiInlineData(part);
-				if (part.text) {
-					// Check if it's a reasoning part
-					if (part.thought) {
-						contentParts.push({
-							type: "reasoning_text",
-							text: part.text,
-							thoughtSignature: part.thought_signature,
-							summary: part.thought_summary,
-						} as any);
-					} else {
-						// Regular text part
-						contentParts.push({
-							type: "text",
-							text: part.text,
-						});
-					}
+				if (part.thought && (part.text || part.thoughtSignature || part.thought_signature)) {
+					// Thought, with its signature tagged so it goes back only to Gemini.
+					contentParts.push(geminiThoughtPartToIR(part, model, provider));
+				} else if (part.text) {
+					// Regular text part
+					contentParts.push({
+						type: "text",
+						text: part.text,
+					});
 				} else if (inlineData?.data) {
 					const mediaPart = inlineDataToIRContentPart(inlineData);
 					if (mediaPart) {
@@ -648,10 +675,14 @@ function geminiToIR(
 					}
 				} else if (part.functionCall) {
 					// Tool call
+					const signature = part.thoughtSignature ?? part.thought_signature;
 					toolCalls.push({
-						id: part.functionCall.name, // Google doesn't provide IDs
+						id: geminiFunctionCallId(part, callIds),
 						name: part.functionCall.name,
 						arguments: JSON.stringify(part.functionCall.args || {}),
+						...(typeof signature === "string" && signature
+							? { thoughtSignature: signature, thoughtSignatureModel: model }
+							: {}),
 					});
 				}
 			}
@@ -731,19 +762,31 @@ function interactionToIR(
 			}
 		} else if (step.type === "thought") {
 			const text = interactionTextFromContent(step.summary);
-			if (text) {
+			const signature = typeof step.signature === "string" && step.signature ? step.signature : undefined;
+			// A thought without a summary still carries the signature that
+			// stateless requests must send back.
+			if (text || signature) {
 				contentParts.push({
 					type: "reasoning_text",
 					text,
-					thoughtSignature: typeof step.signature === "string" ? step.signature : undefined,
-					summary: text,
+					...(text ? { summary: text } : {}),
+					...(signature
+						? {
+							thoughtSignature: signature,
+							reasoningFormat: GOOGLE_REASONING_FORMAT,
+							reasoningModel: model,
+							reasoningProvider: provider,
+						}
+						: {}),
 				});
 			}
 		} else if (step.type === "function_call") {
+			const signature = typeof step.signature === "string" && step.signature ? step.signature : undefined;
 			toolCalls.push({
 				id: typeof step.id === "string" ? step.id : `call_${requestId}_${toolCalls.length}`,
 				name: String(step.name ?? "function"),
 				arguments: stringifyToolArguments(step.arguments),
+				...(signature ? { thoughtSignature: signature, thoughtSignatureModel: model } : {}),
 			});
 		}
 	}
@@ -1732,8 +1775,27 @@ export function transformStream(
 						arguments?: string;
 					}> = [];
 					let functionCallIndex = 0;
+					// Thought signatures, sealed so chat clients can return them
+					// and the gateway replays them only to this Gemini model.
+					const signatureDetails: Array<Record<string, any>> = [];
+					const sealGeminiSignature = (signature: string, callId?: string) => sealReasoningState({
+						format: GOOGLE_REASONING_FORMAT,
+						kind: "signature",
+						value: signature,
+						model,
+						provider,
+						...(callId ? { callId } : {}),
+					});
 
 					for (const [partIdx, part] of parts.entries()) {
+						const partSignature = part.thoughtSignature ?? part.thought_signature;
+						if (part.thought && typeof partSignature === "string" && partSignature && !part.functionCall) {
+							signatureDetails.push({
+								type: "reasoning.encrypted",
+								data: sealGeminiSignature(partSignature),
+								format: GOOGLE_REASONING_FORMAT,
+							});
+						}
 						if (part.text) {
 							if (part.thought) {
 								reasoning += part.text;
@@ -1746,7 +1808,9 @@ export function transformStream(
 							let state = toolStates.get(stateKey);
 							if (!state) {
 								state = {
-									id: `call_${args.requestId}_${index}_${partIdx}`,
+									id: typeof part.functionCall.id === "string" && part.functionCall.id
+										? part.functionCall.id
+										: `call_${args.requestId}_${index}_${partIdx}`,
 									argumentsSoFar: "",
 									emittedName: false,
 								};
@@ -1787,6 +1851,14 @@ export function transformStream(
 									id: state.id,
 									name: functionDelta.name,
 									arguments: functionDelta.arguments,
+								});
+							}
+							if (typeof partSignature === "string" && partSignature) {
+								signatureDetails.push({
+									type: "reasoning.encrypted",
+									id: state.id,
+									data: sealGeminiSignature(partSignature, state.id),
+									format: GOOGLE_REASONING_FORMAT,
 								});
 							}
 						} else {
@@ -1831,6 +1903,9 @@ export function transformStream(
 					};
 					if (toolCalls.length > 0) {
 						choice.delta.toolCalls = toolCalls;
+					}
+					if (signatureDetails.length > 0) {
+						choice.delta.reasoningDetails = signatureDetails;
 					}
 
 					if (Object.keys(choice.delta).length > 0 || finishReason) {
@@ -2023,6 +2098,10 @@ function encodeIRChunkToOpenAI(chunk: IRStreamChunk): any {
 					});
 				}
 			}
+		}
+		const reasoningDetails = (c.delta as any).reasoningDetails;
+		if (Array.isArray(reasoningDetails) && reasoningDetails.length > 0) {
+			delta.reasoning_details = reasoningDetails.map((detail: Record<string, any>, index: number) => ({ ...detail, index }));
 		}
 		if (Array.isArray(c.delta.toolCalls) && c.delta.toolCalls.length > 0) {
 			delta.tool_calls = c.delta.toolCalls.map((tc) => ({
